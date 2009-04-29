@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		9C46FBAF0FA8F31800ABEF05 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FBAE0FA8F31800ABEF05 /* main.c */; };
+		9C46FBCD0FA8FEA000ABEF05 /* hci.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FBCC0FA8FEA000ABEF05 /* hci.c */; };
+		9C46FBD00FA8FF3700ABEF05 /* hci_h4_transport.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FBCF0FA8FF3700ABEF05 /* hci_h4_transport.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,6 +27,11 @@
 /* Begin PBXFileReference section */
 		8DD76FB20486AB0100D96B5E /* project */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = project; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C46FBAE0FA8F31800ABEF05 /* main.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = main.c; path = src/main.c; sourceTree = "<group>"; usesTabs = 0; };
+		9C46FBC70FA8F3B800ABEF05 /* hci_transport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hci_transport.h; sourceTree = "<group>"; };
+		9C46FBCB0FA8FEA000ABEF05 /* hci.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hci.h; sourceTree = "<group>"; };
+		9C46FBCC0FA8FEA000ABEF05 /* hci.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hci.c; sourceTree = "<group>"; };
+		9C46FBCE0FA8FF3700ABEF05 /* hci_h4_transport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hci_h4_transport.h; sourceTree = "<group>"; };
+		9C46FBCF0FA8FF3700ABEF05 /* hci_h4_transport.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hci_h4_transport.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,6 +59,11 @@
 			isa = PBXGroup;
 			children = (
 				9C46FBAE0FA8F31800ABEF05 /* main.c */,
+				9C46FBCB0FA8FEA000ABEF05 /* hci.h */,
+				9C46FBCC0FA8FEA000ABEF05 /* hci.c */,
+				9C46FBCE0FA8FF3700ABEF05 /* hci_h4_transport.h */,
+				9C46FBCF0FA8FF3700ABEF05 /* hci_h4_transport.c */,
+				9C46FBC70FA8F3B800ABEF05 /* hci_transport.h */,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -116,6 +128,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				9C46FBAF0FA8F31800ABEF05 /* main.c in Sources */,
+				9C46FBCD0FA8FEA000ABEF05 /* hci.c in Sources */,
+				9C46FBD00FA8FF3700ABEF05 /* hci_h4_transport.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
