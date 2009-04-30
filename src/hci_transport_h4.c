@@ -1,9 +1,7 @@
 /*
  *  hci_h4_transport.c
- *  project
  *
  *  Created by Matthias Ringwald on 4/29/09.
- *  Copyright 2009 Dybuster AG. All rights reserved.
  *
  */
 
