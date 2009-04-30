@@ -8,8 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		9C46FBAF0FA8F31800ABEF05 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FBAE0FA8F31800ABEF05 /* main.c */; };
-		9C46FBCD0FA8FEA000ABEF05 /* hci.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FBCC0FA8FEA000ABEF05 /* hci.c */; };
-		9C46FBD00FA8FF3700ABEF05 /* hci_h4_transport.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FBCF0FA8FF3700ABEF05 /* hci_h4_transport.c */; };
+		9C46FC390FA906F700ABEF05 /* hci.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC340FA906F700ABEF05 /* hci.c */; };
+		9C46FC3A0FA906F700ABEF05 /* hci_transport_h4.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -27,11 +27,11 @@
 /* Begin PBXFileReference section */
 		8DD76FB20486AB0100D96B5E /* project */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = project; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C46FBAE0FA8F31800ABEF05 /* main.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = main.c; path = src/main.c; sourceTree = "<group>"; usesTabs = 0; };
-		9C46FBC70FA8F3B800ABEF05 /* hci_transport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hci_transport.h; sourceTree = "<group>"; };
-		9C46FBCB0FA8FEA000ABEF05 /* hci.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hci.h; sourceTree = "<group>"; };
-		9C46FBCC0FA8FEA000ABEF05 /* hci.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hci.c; sourceTree = "<group>"; };
-		9C46FBCE0FA8FF3700ABEF05 /* hci_h4_transport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hci_h4_transport.h; sourceTree = "<group>"; };
-		9C46FBCF0FA8FF3700ABEF05 /* hci_h4_transport.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hci_h4_transport.c; sourceTree = "<group>"; };
+		9C46FC340FA906F700ABEF05 /* hci.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci.c; path = src/hci.c; sourceTree = "<group>"; };
+		9C46FC350FA906F700ABEF05 /* hci.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci.h; path = src/hci.h; sourceTree = "<group>"; };
+		9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci_transport_h4.c; path = src/hci_transport_h4.c; sourceTree = "<group>"; };
+		9C46FC370FA906F700ABEF05 /* hci_transport_h4.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci_transport_h4.h; path = src/hci_transport_h4.h; sourceTree = "<group>"; };
+		9C46FC380FA906F700ABEF05 /* hci_transport.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci_transport.h; path = src/hci_transport.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,12 +58,12 @@
 		08FB7795FE84155DC02AAC07 /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				9C46FC340FA906F700ABEF05 /* hci.c */,
+				9C46FC350FA906F700ABEF05 /* hci.h */,
+				9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */,
+				9C46FC370FA906F700ABEF05 /* hci_transport_h4.h */,
+				9C46FC380FA906F700ABEF05 /* hci_transport.h */,
 				9C46FBAE0FA8F31800ABEF05 /* main.c */,
-				9C46FBCB0FA8FEA000ABEF05 /* hci.h */,
-				9C46FBCC0FA8FEA000ABEF05 /* hci.c */,
-				9C46FBCE0FA8FF3700ABEF05 /* hci_h4_transport.h */,
-				9C46FBCF0FA8FF3700ABEF05 /* hci_h4_transport.c */,
-				9C46FBC70FA8F3B800ABEF05 /* hci_transport.h */,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -128,8 +128,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				9C46FBAF0FA8F31800ABEF05 /* main.c in Sources */,
-				9C46FBCD0FA8FEA000ABEF05 /* hci.c in Sources */,
-				9C46FBD00FA8FF3700ABEF05 /* hci_h4_transport.c in Sources */,
+				9C46FC390FA906F700ABEF05 /* hci.c in Sources */,
+				9C46FC3A0FA906F700ABEF05 /* hci_transport_h4.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
