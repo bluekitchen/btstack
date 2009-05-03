@@ -8,9 +8,25 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+
+#include <pthread.h>
 
 #include "hci.h"
-#include "hci_h4_transport.h"
+#include "hci_transport_h4.h"
+
+static hci_transport_t * transport;
+static hci_uart_config_t config;
+
+
+#if 0
+static void *hci_daemon_thread(void *arg){
+    printf("HCI Daemon started\n");
+    hci_run(transport, &config);
+    return NULL;
+}
+#endif
+
 
 int main (int argc, const char * argv[]) {
     
@@ -21,16 +37,31 @@ int main (int argc, const char * argv[]) {
     }
     
     // H4 UART
-    hci_transport_t * transport = &hci_h4_transport;
+    transport = &hci_h4_transport;
 
     // Ancient Ericsson ROK 101 007 (ca. 2001)
-    hci_uart_config_t config;
     config.device_name = argv[1];
     config.baudrate    = 57600;
     config.flowcontrol = 1;
 
-    // Go
-    hci_run(transport, &config);
+#if 0
+    // create and start HCI daemon thread
+    pthread_t new_thread;
+    pthread_create(&new_thread, NULL, hci_daemon_thread, NULL);
+
+    // open UNIX domain socket
+    while(1){
+        sleep(1);
+        printf(".\n");
+    }
     
+#endif
+
+    hci_init(transport, &config);
+    hci_power_control(HCI_POWER_ON);
+    // 
+    // register callback
+    //
+    hci_run();    
     return 0;
 }
