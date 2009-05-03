@@ -5,7 +5,7 @@
  *
  */
 
-#include "hci_h4_transport.h"
+#include "hci_transport_h4.h"
 
 // prototypes
 static int    open(void *transport_config){
@@ -26,6 +26,7 @@ static int    send_acl_packet(void *packet, int size){
 
 static void   register_event_packet_handler(void (*handler)(void *packet, int size)){
 }
+
 static void   register_acl_packet_handler  (void (*handler)(void *packet, int size)){
 }
 
@@ -43,7 +44,10 @@ static const char * get_transport_name(){
 
 // private data
 
-typedef struct {
+typedef struct {    
+    hci_uart_config_t *config;
+    void (*event_packet_handle)(void *packet, int size);
+    void (*acl_packet_handle)(void *packet, int size);
 } hci_h4_transport_private_t;
 
 // single instance
