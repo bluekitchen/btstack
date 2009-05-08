@@ -8,13 +8,15 @@
  */
 #pragma once
 
+#include <stdint.h>
+
 typedef struct {
     int    (*open)(void *transport_config);
     int    (*close)();
-    int    (*send_cmd_packet)(void *packet, int size);
-    int    (*send_acl_packet)(void *packet, int size);
-    void   (*register_event_packet_handler)(void (*handler)(void *packet, int size));
-    void   (*register_acl_packet_handler)  (void (*handler)(void *packet, int size));
+    int    (*send_cmd_packet)(uint8_t *packet, int size);
+    int    (*send_acl_packet)(uint8_t *packet, int size);
+    void   (*register_event_packet_handler)(void (*handler)(uint8_t *packet, int size));
+    void   (*register_acl_packet_handler)  (void (*handler)(uint8_t *packet, int size));
     int    (*get_fd)();      // <-- only used for select(..) call
     int    (*handle_data)(); // -- to be called when select( .. ) returns for the fd
     const char * (*get_transport_name)();

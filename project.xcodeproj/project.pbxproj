@@ -58,10 +58,10 @@
 		08FB7795FE84155DC02AAC07 /* Source */ = {
 			isa = PBXGroup;
 			children = (
-				9C46FC340FA906F700ABEF05 /* hci.c */,
 				9C46FC350FA906F700ABEF05 /* hci.h */,
-				9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */,
+				9C46FC340FA906F700ABEF05 /* hci.c */,
 				9C46FC370FA906F700ABEF05 /* hci_transport_h4.h */,
+				9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */,
 				9C46FC380FA906F700ABEF05 /* hci_transport.h */,
 				9C46FBAE0FA8F31800ABEF05 /* main.c */,
 			);

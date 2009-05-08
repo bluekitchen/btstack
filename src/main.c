@@ -18,7 +18,6 @@
 static hci_transport_t * transport;
 static hci_uart_config_t config;
 
-
 #if 0
 static void *hci_daemon_thread(void *arg){
     printf("HCI Daemon started\n");
@@ -26,6 +25,26 @@ static void *hci_daemon_thread(void *arg){
     return NULL;
 }
 #endif
+
+void hexdump(uint8_t *data, int size){
+    int i;
+    for (i=0; i<size;i++){
+        printf("%02X ", data[i]);
+    }
+    printf("\n");
+}
+
+void event_handler(uint8_t *packet, int size){
+    printf("Event received, size %u\n", size );
+    hexdump( packet, size);
+    
+    // 
+    if (packet[3] == 3 && packet[4] == 12){
+        // reset done, send inq
+        uint8_t inq[] = {  0x01, 0x04, 0x05, 0x33,  0x8b,  0x9e, 0x0a, 0x14};
+        transport->send_cmd_packet( inq, sizeof(inq) );
+    }
+}
 
 
 int main (int argc, const char * argv[]) {
@@ -57,11 +76,35 @@ int main (int argc, const char * argv[]) {
     
 #endif
 
-    hci_init(transport, &config);
-    hci_power_control(HCI_POWER_ON);
+    // hci_init(transport, &config);
+    // hci_power_control(HCI_POWER_ON);
+    
+    // open low-level device
+    transport->open(&config);
+    
     // 
-    // register callback
+    // register callbacks
     //
-    hci_run();    
+    // hci_run();    
+    transport->register_event_packet_handler(&event_handler);
+
+    // get fd for select call
+    int transport_fd = transport->get_fd();
+    
+    // send hci reset
+    uint8_t reset[] = { 0x03, 0x0c, 0x00 };
+    transport->send_cmd_packet( reset, sizeof(reset) );
+    
+    // 
+    fd_set descriptors;
+    FD_ZERO(&descriptors);
+    while (1){
+        FD_SET(transport_fd, &descriptors);
+        // int ready = 
+        select( transport_fd+1, &descriptors, NULL, NULL, NULL);
+        // printf("Ready: %d, isset() = %u\n", ready, FD_ISSET(transport_fd, &descriptors));
+        transport->handle_data();
+    }
+    
     return 0;
 }
