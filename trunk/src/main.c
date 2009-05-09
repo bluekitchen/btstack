@@ -17,6 +17,7 @@
 
 static hci_transport_t * transport;
 static hci_uart_config_t config;
+static uint8_t buffer [200];
 
 #if 0
 static void *hci_daemon_thread(void *arg){
@@ -34,21 +35,28 @@ void hexdump(uint8_t *data, int size){
     printf("\n");
 }
 
+void dump_cmd(uint8_t *data, int size){
+    printf("CMD: ");
+    hexdump(data, size);
+}
+
 void event_handler(uint8_t *packet, int size){
-    printf("Event received, size %u\n", size );
+    printf("EVT: ");
     hexdump( packet, size);
     
     // 
     if (packet[3] == 3 && packet[4] == 12){
         // reset done, send inq
-        uint8_t inq[] = {  0x01, 0x04, 0x05, 0x33,  0x8b,  0x9e, 0x0a, 0x14};
-        transport->send_cmd_packet( inq, sizeof(inq) );
+        uint8_t len;
+        hci_create_cmd_packet( buffer, &len, &hci_inquiry, HCI_INQUIRY_LAP, 30, 0);
+        transport->send_cmd_packet( buffer, len );
+        dump_cmd( buffer, len);
     }
 }
 
 
 int main (int argc, const char * argv[]) {
-    
+        
     // 
     if (argc <= 1){
         printf("HCI Daemon tester. Specify device name for Ericsson ROK 101 007\n");
@@ -75,7 +83,7 @@ int main (int argc, const char * argv[]) {
     }
     
 #endif
-
+    
     // hci_init(transport, &config);
     // hci_power_control(HCI_POWER_ON);
     
@@ -92,9 +100,11 @@ int main (int argc, const char * argv[]) {
     int transport_fd = transport->get_fd();
     
     // send hci reset
-    uint8_t reset[] = { 0x03, 0x0c, 0x00 };
-    transport->send_cmd_packet( reset, sizeof(reset) );
-    
+    uint8_t len;
+    hci_create_cmd_packet( buffer, &len, &hci_reset);
+    transport->send_cmd_packet( buffer, len );
+    dump_cmd( buffer, len);
+
     // 
     fd_set descriptors;
     FD_ZERO(&descriptors);
