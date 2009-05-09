@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdio.h>
 #include "hci.h"
 
 
@@ -21,6 +22,22 @@ hci_cmd_t hci_reset = {
 
 
 static hci_transport_t *hci_transport;
+
+void hexdump(uint8_t *data, int size){
+    int i;
+    for (i=0; i<size;i++){
+        printf("%02X ", data[i]);
+    }
+    printf("\n");
+}
+
+#if 0
+static void *hci_daemon_thread(void *arg){
+    printf("HCI Daemon started\n");
+    hci_run(transport, &config);
+    return NULL;
+}
+#endif
 
 void hci_init(hci_transport_t *transport, void *config){
     
@@ -40,7 +57,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
     return 0;
 }
 
-int hci_send_cmd(uint8_t *buffer, int size){
+int hci_send_cmd_packet(uint8_t *buffer, int size){
     return hci_transport->send_cmd_packet(buffer, size);
 }
 
