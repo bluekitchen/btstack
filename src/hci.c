@@ -88,12 +88,12 @@ void hci_create_cmd_packet(uint8_t *buffer, uint8_t *cmd_len, hci_cmd_t *cmd, ..
             case '1': //  8 bit value
             case '2': // 16 bit value
             case 'H': // hci_handle
-                word = va_arg(argptr, int);  // minimum c parameter width is int
+                word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
                 buffer[pos++] = word & 0xff;
                 if (*format == '2') {
                     buffer[pos++] = word >> 8;
                 } else if (*format == 'H') {
-                    
+                    // TODO
                 } 
                 break;
             case '3':

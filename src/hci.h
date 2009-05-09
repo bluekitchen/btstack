@@ -31,8 +31,13 @@ int hci_power_control(HCI_POWER_MODE mode);
 // run the hci daemon loop
 void hci_run();
 
+//
+void hexdump(uint8_t *data, int size);
+
 // create hci command packet based on a template and a list of parameters
 void hci_create_cmd_packet(uint8_t *buffer, uint8_t *cmd_len, hci_cmd_t *cmd, ...);
+
+int hci_send_cmd_packet(uint8_t *buffer, int size);
 
 extern hci_cmd_t hci_inquiry;
 extern hci_cmd_t hci_reset;

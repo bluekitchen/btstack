@@ -9,6 +9,7 @@
 #include <unistd.h>   /* UNIX standard function definitions */
 #include <stdio.h>
 
+#include "hci.h"
 #include "hci_transport_h4.h"
 
 typedef enum {
@@ -98,6 +99,9 @@ static int    h4_close(){
 }
 
 static int    h4_send_cmd_packet(uint8_t *packet, int size){
+    printf("CMD: ");
+    hexdump(packet, size);
+    
     char *data = (char*) packet;
     char cmd_type = 1;
     write(fd, &cmd_type, 1);
@@ -155,6 +159,8 @@ static int    h4_handle_data() {
             h4_state = H4_W4_EVENT_PAYLOAD;
             break;
         case H4_W4_EVENT_PAYLOAD:
+            printf("EVT: ");
+            hexdump( hci_event_buffer, read_pos);
             event_packet_handler(hci_event_buffer, read_pos);
             h4_state = H4_W4_PACKET_TYPE;
             read_pos = 0;
