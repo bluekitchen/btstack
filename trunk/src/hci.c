@@ -11,13 +11,15 @@
 #include <stdio.h>
 #include "hci.h"
 
+// calculate combined ogf/ocf value
+#define OPCODE(ogf, ocf) (ocf | ogf << 10)
 
 hci_cmd_t hci_inquiry = {
-    0x01, 0x01, "311" // LAP, Inquiry length, Num_responses
+    OPCODE(0x01, 0x01), "311" // LAP, Inquiry length, Num_responses
 };
 
 hci_cmd_t hci_reset = {
-    0x03, 0x03, ""
+    OPCODE(0x03, 0x03), ""
 };
 
 
@@ -73,8 +75,8 @@ void hci_run(){
 
 
 void hci_create_cmd_packet(uint8_t *buffer, uint8_t *cmd_len, hci_cmd_t *cmd, ...){
-    buffer[0] = cmd->ocf;
-    buffer[1] = cmd->ocf >> 8 | cmd->ogf << 2;
+    buffer[0] = cmd->opcode & 0xff;
+    buffer[1] = cmd->opcode >> 8;
     int pos = 3;
 
     va_list argptr;
