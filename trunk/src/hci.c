@@ -17,7 +17,17 @@
 #define OGF_CONTROLLER_BASEBAND 0x03
 
 hci_cmd_t hci_inquiry = {
-    OPCODE(OGF_LINK_CONTROL, 0x01), "311" // LAP, Inquiry length, Num_responses
+    OPCODE(OGF_LINK_CONTROL, 0x01), "311"
+    // LAP, Inquiry length, Num_responses
+};
+
+hci_cmd_t hci_link_key_request_negative_reply = {
+    OPCODE(OGF_LINK_CONTROL, 0x0c), "B"
+};
+
+hci_cmd_t hci_pin_code_request_reply = {
+    OPCODE(OGF_LINK_CONTROL, 0x0d), "B1P"
+    // BD_ADDR, pin length, PIN: c-string
 };
 
 hci_cmd_t hci_reset = {
@@ -32,6 +42,11 @@ hci_cmd_t hci_create_connection = {
 hci_cmd_t hci_write_page_timeout = {
     OPCODE(OGF_CONTROLLER_BASEBAND, 0x18), "2"
     // Page_Timeout * 0.625 ms
+};
+
+hci_cmd_t hci_write_authentication_enable = {
+    OPCODE(OGF_CONTROLLER_BASEBAND, 0x20), "1"
+    // Authentication_Enable
 };
 
 hci_cmd_t hci_host_buffer_size = {
@@ -100,7 +115,7 @@ int hci_send_cmd(hci_cmd_t *cmd, ...){
     const char *format = cmd->format;
     uint16_t word;
     uint32_t longword;
-    uint8_t * bt_addr;
+    uint8_t * ptr;
     while (*format) {
         switch(*format) {
             case '1': //  8 bit value
@@ -126,13 +141,18 @@ int hci_send_cmd(hci_cmd_t *cmd, ...){
                 }
                 break;
             case 'B': // bt-addr
-                bt_addr = va_arg(argptr, uint8_t *);
-                hci_cmd_buffer[pos++] = bt_addr[5];
-                hci_cmd_buffer[pos++] = bt_addr[4];
-                hci_cmd_buffer[pos++] = bt_addr[3];
-                hci_cmd_buffer[pos++] = bt_addr[2];
-                hci_cmd_buffer[pos++] = bt_addr[1];
-                hci_cmd_buffer[pos++] = bt_addr[0];
+                ptr = va_arg(argptr, uint8_t *);
+                hci_cmd_buffer[pos++] = ptr[5];
+                hci_cmd_buffer[pos++] = ptr[4];
+                hci_cmd_buffer[pos++] = ptr[3];
+                hci_cmd_buffer[pos++] = ptr[2];
+                hci_cmd_buffer[pos++] = ptr[1];
+                hci_cmd_buffer[pos++] = ptr[0];
+                break;
+            case 'P': // c string passed as pascal string with leading 1-byte len
+                ptr = va_arg(argptr, uint8_t *);
+                memcpy(&hci_cmd_buffer[pos], ptr, 16);
+                pos += 16;
                 break;
             default:
                 break;
