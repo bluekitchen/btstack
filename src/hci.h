@@ -17,8 +17,7 @@ typedef enum {
 } HCI_POWER_MODE;
 
 typedef struct {
-    uint8_t  ogf;
-    uint16_t ocf;
+    uint16_t    opcode;
     const char *format;
 } hci_cmd_t;
 

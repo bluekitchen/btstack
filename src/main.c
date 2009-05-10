@@ -19,9 +19,11 @@ static hci_transport_t * transport;
 static hci_uart_config_t config;
 static uint8_t buffer [200];
 
+#define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == 0x0e && (event[3] | (event[4] << 8)) == cmd.opcode)
+
 void event_handler(uint8_t *packet, int size){
-    // 
-    if (packet[3] == 3 && packet[4] == 12){
+    // printf("Event type: %x, opcode: %x, other %x\n", packet[0], packet[3] | packet[4] << 8);
+    if ( COMMAND_COMPLETE_EVENT(packet, hci_reset) ) {
         // reset done, send inq
         uint8_t len;
         hci_create_cmd_packet( buffer, &len, &hci_inquiry, HCI_INQUIRY_LAP, 30, 0);
