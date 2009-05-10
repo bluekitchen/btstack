@@ -8,6 +8,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "hci_transport.h"
 
@@ -21,6 +22,8 @@ typedef struct {
     const char *format;
 } hci_cmd_t;
 
+typedef uint8_t bd_addr_t[6];
+
 // set up HCI
 void hci_init(hci_transport_t *transport, void *config);
 
@@ -33,12 +36,13 @@ void hci_run();
 //
 void hexdump(uint8_t *data, int size);
 
-// create hci command packet based on a template and a list of parameters
-void hci_create_cmd_packet(uint8_t *buffer, uint8_t *cmd_len, hci_cmd_t *cmd, ...);
-
-int hci_send_cmd_packet(uint8_t *buffer, int size);
+// create and send hci command packet based on a template and a list of parameters
+int hci_send_cmd(hci_cmd_t *cmd, ...);
 
 extern hci_cmd_t hci_inquiry;
 extern hci_cmd_t hci_reset;
+extern hci_cmd_t hci_create_connection;
+extern hci_cmd_t hci_host_buffer_size;
+extern hci_cmd_t hci_write_page_timeout;
     
 #define HCI_INQUIRY_LAP 0x9E8B33L  // 0x9E8B33: General/Unlimited Inquiry Access Code (GIAC)
