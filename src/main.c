@@ -17,25 +17,20 @@
 
 static hci_transport_t * transport;
 static hci_uart_config_t config;
-static uint8_t buffer [200];
 
 #define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == 0x0e && (event[3] | (event[4] << 8)) == cmd.opcode)
 
 #if 0
 // reset done, send host buffer size
-hci_create_cmd_packet( buffer, &len, &hci_host_buffer_size, 400, 255, 1, 0, 0);
-hci_send_cmd_packet( buffer, len );
+hci_send_cmd(&hci_host_buffer_size, 400, 255, 1, 0, 0);
 // reset done, send inq
-hci_create_cmd_packet( buffer, &len, &hci_inquiry, HCI_INQUIRY_LAP, 30, 0);
-hci_send_cmd_packet( buffer, len );
+hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, 30, 0);
 #endif
 void event_handler(uint8_t *packet, int size){
-    uint8_t len;
     // printf("Event type: %x, opcode: %x, other %x\n", packet[0], packet[3] | packet[4] << 8);
     if ( COMMAND_COMPLETE_EVENT(packet, hci_reset) ) {
         // reset done, write page timeout
-        hci_create_cmd_packet( buffer, &len, &hci_write_page_timeout, 0x6000); // ca. 15 sec
-        hci_send_cmd_packet( buffer, len );
+        hci_send_cmd(&hci_write_page_timeout, 0x6000); // ca. 15 sec
     }
 
     if ( COMMAND_COMPLETE_EVENT(packet, hci_host_buffer_size) ) {
@@ -45,8 +40,7 @@ void event_handler(uint8_t *packet, int size){
         // hci_host_buffer_size done, send connect
         // bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };
         bd_addr_t addr = { 0x00, 0x16, 0xcb, 0x09, 0x94, 0xa9};
-        hci_create_cmd_packet( buffer, &len, &hci_create_connection, &addr, 0x18, 0, 0, 0, 0);
-        hci_send_cmd_packet( buffer, len );
+        hci_send_cmd(&hci_create_connection, &addr, 0x18, 0, 0, 0, 0);
     }
 }
 
@@ -82,10 +76,8 @@ int main (int argc, const char * argv[]) {
     int transport_fd = transport->get_fd();
     
     // send hci reset
-    uint8_t len;
-    hci_create_cmd_packet( buffer, &len, &hci_reset);
-    hci_send_cmd_packet( buffer, len );
-
+    hci_send_cmd(&hci_reset);
+ 
     // 
     fd_set descriptors;
     FD_ZERO(&descriptors);

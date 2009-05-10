@@ -13,17 +13,35 @@
 
 // calculate combined ogf/ocf value
 #define OPCODE(ogf, ocf) (ocf | ogf << 10)
+#define OGF_LINK_CONTROL 0x01
+#define OGF_CONTROLLER_BASEBAND 0x03
 
 hci_cmd_t hci_inquiry = {
-    OPCODE(0x01, 0x01), "311" // LAP, Inquiry length, Num_responses
+    OPCODE(OGF_LINK_CONTROL, 0x01), "311" // LAP, Inquiry length, Num_responses
 };
 
 hci_cmd_t hci_reset = {
-    OPCODE(0x03, 0x03), ""
+    OPCODE(OGF_CONTROLLER_BASEBAND, 0x03), ""
+};
+
+hci_cmd_t hci_create_connection = {
+    OPCODE(OGF_LINK_CONTROL, 0x05), "B21121"
+    // BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
+};
+
+hci_cmd_t hci_write_page_timeout = {
+    OPCODE(OGF_CONTROLLER_BASEBAND, 0x18), "2"
+    // Page_Timeout * 0.625 ms
+};
+
+hci_cmd_t hci_host_buffer_size = {
+    OPCODE(OGF_CONTROLLER_BASEBAND, 0x33), "2122"
+    // Host_ACL_Data_Packet_Length:, Host_Synchronous_Data_Packet_Length:, Host_Total_Num_ACL_Data_Packets:, Host_Total_Num_Synchronous_Data_Packets:
 };
 
 
-static hci_transport_t *hci_transport;
+static hci_transport_t * hci_transport;
+static uint8_t         * hci_cmd_buffer;
 
 void hexdump(uint8_t *data, int size){
     int i;
@@ -46,6 +64,9 @@ void hci_init(hci_transport_t *transport, void *config){
     // reference to use transport layer implementation
     hci_transport = transport;
     
+    // empty cmd buffer
+    hci_cmd_buffer = malloc(3+255);
+    
     // open unix socket
     
     // wait for connections
@@ -59,10 +80,6 @@ int hci_power_control(HCI_POWER_MODE power_mode){
     return 0;
 }
 
-int hci_send_cmd_packet(uint8_t *buffer, int size){
-    return hci_transport->send_cmd_packet(buffer, size);
-}
-
 void hci_run(){
     while (1) {
         //  construct file descriptor set to wait for
@@ -73,10 +90,9 @@ void hci_run(){
     }
 }
 
-
-void hci_create_cmd_packet(uint8_t *buffer, uint8_t *cmd_len, hci_cmd_t *cmd, ...){
-    buffer[0] = cmd->opcode & 0xff;
-    buffer[1] = cmd->opcode >> 8;
+int hci_send_cmd(hci_cmd_t *cmd, ...){
+    hci_cmd_buffer[0] = cmd->opcode & 0xff;
+    hci_cmd_buffer[1] = cmd->opcode >> 8;
     int pos = 3;
 
     va_list argptr;
@@ -91,9 +107,9 @@ void hci_create_cmd_packet(uint8_t *buffer, uint8_t *cmd_len, hci_cmd_t *cmd, ..
             case '2': // 16 bit value
             case 'H': // hci_handle
                 word = va_arg(argptr, int);  // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
-                buffer[pos++] = word & 0xff;
+                hci_cmd_buffer[pos++] = word & 0xff;
                 if (*format == '2') {
-                    buffer[pos++] = word >> 8;
+                    hci_cmd_buffer[pos++] = word >> 8;
                 } else if (*format == 'H') {
                     // TODO
                 } 
@@ -102,17 +118,21 @@ void hci_create_cmd_packet(uint8_t *buffer, uint8_t *cmd_len, hci_cmd_t *cmd, ..
             case '4':
                 longword = va_arg(argptr, uint32_t);
                 // longword = va_arg(argptr, int);
-                buffer[pos++] = longword;
-                buffer[pos++] = longword >> 8;
-                buffer[pos++] = longword >> 16;
+                hci_cmd_buffer[pos++] = longword;
+                hci_cmd_buffer[pos++] = longword >> 8;
+                hci_cmd_buffer[pos++] = longword >> 16;
                 if (*format == '4'){
-                    buffer[pos++] = longword >> 24;
+                    hci_cmd_buffer[pos++] = longword >> 24;
                 }
                 break;
             case 'B': // bt-addr
                 bt_addr = va_arg(argptr, uint8_t *);
-                memcpy( &buffer[pos], bt_addr, 6);
-                pos += 6;
+                hci_cmd_buffer[pos++] = bt_addr[5];
+                hci_cmd_buffer[pos++] = bt_addr[4];
+                hci_cmd_buffer[pos++] = bt_addr[3];
+                hci_cmd_buffer[pos++] = bt_addr[2];
+                hci_cmd_buffer[pos++] = bt_addr[1];
+                hci_cmd_buffer[pos++] = bt_addr[0];
                 break;
             default:
                 break;
@@ -120,6 +140,7 @@ void hci_create_cmd_packet(uint8_t *buffer, uint8_t *cmd_len, hci_cmd_t *cmd, ..
         format++;
     };
     va_end(argptr);
-    buffer[2] = pos - 3;
-    *cmd_len = pos;
+    hci_cmd_buffer[2] = pos - 3;
+    // send packet
+    return hci_transport->send_cmd_packet(hci_cmd_buffer, pos);
 }
