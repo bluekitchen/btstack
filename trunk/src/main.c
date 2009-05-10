@@ -18,7 +18,7 @@
 static hci_transport_t * transport;
 static hci_uart_config_t config;
 
-#define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == 0x0e && (event[3] | (event[4] << 8)) == cmd.opcode)
+#define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == 0x0e && READ_BT_16(event,2) == cmd.opcode)
 
 #if 0
 // reset done, send host buffer size
