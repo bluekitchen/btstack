@@ -21,25 +21,26 @@ typedef enum {
 } H4_STATE;
 
 static void dummy_handler(uint8_t *packet, int size); 
+static    hci_uart_config_t *hci_uart_config;
 
-// typedef struct {
-// static    hci_uart_config_t *config;
 static  int fd;
 static  void (*event_packet_handler)(uint8_t *packet, int size) = dummy_handler;
-static  void (*acl_packet_handler)(uint8_t *packet, int size)   = dummy_handler;
+static  void (*acl_packet_handler)  (uint8_t *packet, int size) = dummy_handler;
+
+// packet reader state machine
 static  H4_STATE h4_state;
 static int bytes_to_read;
 static int read_pos;
-static uint8_t hci_event_buffer[255+2]; // maximal payload + 2 bytes header
-// } hci_h4_transport_private;
+// static uint8_t hci_event_buffer[255+2]; // maximal payload + 2 bytes header
+static uint8_t hci_packet[400]; // bigger than largest packet
 
 
 
 // prototypes
 static int    h4_open(void *transport_config){
-    hci_uart_config_t * uart_config = (hci_uart_config_t*) transport_config;
+    hci_uart_config = (hci_uart_config_t*) transport_config;
     struct termios toptions;
-    fd = open(uart_config->device_name, O_RDWR | O_NOCTTY | O_NDELAY);
+    fd = open(hci_uart_config->device_name, O_RDWR | O_NOCTTY | O_NDELAY);
     if (fd == -1)  {
         perror("init_serialport: Unable to open port ");
         return -1;
@@ -49,8 +50,8 @@ static int    h4_open(void *transport_config){
         perror("init_serialport: Couldn't get term attributes");
         return -1;
     }
-    speed_t brate = uart_config->baudrate; // let you override switch below if needed
-    switch(uart_config->baudrate) {
+    speed_t brate = hci_uart_config->baudrate; // let you override switch below if needed
+    switch(hci_uart_config->baudrate) {
         case 57600:  brate=B57600;  break;
         case 115200: brate=B115200; break;
     }
@@ -63,7 +64,7 @@ static int    h4_open(void *transport_config){
     toptions.c_cflag &= ~CSIZE;
     toptions.c_cflag |= CS8;
 
-    if (uart_config->flowcontrol) {
+    if (hci_uart_config->flowcontrol) {
         // with flow control
         toptions.c_cflag |= CRTSCTS;
     } else {
@@ -103,8 +104,8 @@ static int    h4_send_cmd_packet(uint8_t *packet, int size){
     hexdump(packet, size);
     
     char *data = (char*) packet;
-    char cmd_type = 1;
-    write(fd, &cmd_type, 1);
+    char packet_type = HCI_COMMAND_DATA_PACKET;
+    write(fd, &packet_type, 1);
     while (size > 0) {
         int bytes_written = write(fd, data, size);
         if (bytes_written < 0) {
@@ -117,6 +118,20 @@ static int    h4_send_cmd_packet(uint8_t *packet, int size){
 }
 
 static int    h4_send_acl_packet(uint8_t *packet, int size){
+    printf("ACL> ");
+    hexdump(packet, size);
+    
+    char *data = (char*) packet;
+    char packet_type = HCI_ACL_DATA_PACKET;
+    write(fd, &packet_type, 1);
+    while (size > 0) {
+        int bytes_written = write(fd, data, size);
+        if (bytes_written < 0) {
+            return bytes_written;
+        }
+        data += bytes_written;
+        size -= bytes_written;
+    }
     return 0;
 }
 
@@ -134,7 +149,7 @@ static int    h4_get_fd() {
 
 static int    h4_handle_data() {
     // read up to bytes_to_read data in
-    int bytes_read = read(fd, &hci_event_buffer[read_pos], bytes_to_read);
+    int bytes_read = read(fd, &hci_packet[read_pos], bytes_to_read);
     if (bytes_read < 0) {
         return bytes_read;
     }
@@ -148,27 +163,40 @@ static int    h4_handle_data() {
     // act
     switch (h4_state) {
         case H4_W4_PACKET_TYPE:
-            if (hci_event_buffer[0] == 4){
+            if (hci_packet[0] == HCI_EVENT_PACKET){
                 read_pos = 0;
-                bytes_to_read = 2;
+                bytes_to_read = HCI_EVENT_PKT_HDR;
                 h4_state = H4_W4_EVENT_HEADER;
+            } else if (hci_packet[0] == HCI_ACL_DATA_PACKET){
+                read_pos = 0;
+                bytes_to_read = HCI_ACL_DATA_PKT_HDR;
+                h4_state = H4_W4_ACL_HEADER;
+            } else {
             }
             break;
         case H4_W4_EVENT_HEADER:
-            bytes_to_read = hci_event_buffer[1];
+            bytes_to_read = hci_packet[1];
             h4_state = H4_W4_EVENT_PAYLOAD;
             break;
         case H4_W4_EVENT_PAYLOAD:
             printf("EVT: ");
-            hexdump( hci_event_buffer, read_pos);
-            event_packet_handler(hci_event_buffer, read_pos);
+            hexdump(hci_packet, read_pos);
+            event_packet_handler(hci_packet, read_pos);
             h4_state = H4_W4_PACKET_TYPE;
             read_pos = 0;
             bytes_to_read = 1;
             break;
         case H4_W4_ACL_HEADER:
+            bytes_to_read = READ_BT_16( hci_packet, 2);
+            h4_state = H4_W4_ACL_PAYLOAD;
             break;
         case H4_W4_ACL_PAYLOAD:
+            printf("<ACL ");
+            hexdump(hci_packet, read_pos);
+            acl_packet_handler(hci_packet, read_pos);
+            h4_state = H4_W4_PACKET_TYPE;
+            read_pos = 0;
+            bytes_to_read = 1;
             break;
     }
     return 0;
