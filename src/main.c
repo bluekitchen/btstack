@@ -14,9 +14,13 @@
 
 #include "hci.h"
 #include "hci_transport_h4.h"
+#include "l2cap.h"
 
 static hci_transport_t * transport;
 static hci_uart_config_t config;
+
+hci_con_handle_t con_handle= 0;
+uint16_t dest_cid;
 
 #define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == 0x0e && READ_BT_16(event,3) == cmd.opcode)
 
@@ -55,11 +59,56 @@ void event_handler(uint8_t *packet, int size){
     if (packet[0] == 0x16){
         hci_send_cmd(&hci_pin_code_request_reply, &addr, 4, "1234");
     }
+    
+    // connection established -> start L2CAP conection
+    if (packet[0] == 0x03){
+        if (packet[2] == 0){
+            // get new connection handle
+            con_handle = READ_BT_16(packet, 3);
+            
+            // request l2cap connection
+            printf("> CONNECTION REQUEST\n");
+            l2cap_send_signaling_packet(con_handle, CONNECTION_REQUEST, sig_seq_nr++, 0x13, local_cid);
+        }
+    }
 }
 
+void acl_handler(uint8_t *packet, int size){
+    uint16_t source_cid;
+    uint16_t result;
+    uint8_t config_options[] = { 1, 2, 150, 0}; // mtu = 48 
+    // connection response 
+    if (packet[8] == CONNECTION_RESPONSE){
+        dest_cid = READ_BT_16(packet, 12);
+        source_cid = READ_BT_16(packet, 14);
+        result = READ_BT_16(packet, 16);
+        uint16_t status = READ_BT_16(packet, 18);
+        printf("< CONNECTION_RESPONSE: id %u, dest cid %u, src cid %u, result %u, status %u\n", packet[9], dest_cid, source_cid, result, status); 
+        if (result == 0){
+            printf("> CONFIGURE_REQUEST: id %u\n", sig_seq_nr);
+            l2cap_send_signaling_packet(con_handle, CONFIGURE_REQUEST, sig_seq_nr++, dest_cid, 0, 4, &config_options);
+        }
+    } 
+    else if (packet[8] == CONFIGURE_RESPONSE){
+        source_cid = READ_BT_16(packet, 12);
+        uint16_t flags = READ_BT_16(packet, 14);
+        result = READ_BT_16(packet, 16);
+        printf("< CONFIGURE_RESPONSE: id %u, src cid %u, flags %u, result %u!!!\n", packet[9], flags, result);
+        hexdump(&packet[18], size-18);
+    }
+    else if (packet[8] == CONFIGURE_REQUEST){
+        printf("< CONFIGURE_REQUEST: id %u\n", packet[9]);
+        hexdump(&packet[16], size-16);
+        printf("> CONFIGURE_RESPONSE: id %u\n", packet[9]);
+        l2cap_send_signaling_packet(con_handle, CONFIGURE_RESPONSE, packet[9], local_cid, 0, 0, size - 16, &packet[16]);
+    }
+    else {
+        printf("Unknown ACL ^^^ \n");
+    }
+}
 
 int main (int argc, const char * argv[]) {
-        
+    
     // 
     if (argc <= 1){
         printf("HCI Daemon tester. Specify device name for Ericsson ROK 101 007\n");
@@ -69,22 +118,28 @@ int main (int argc, const char * argv[]) {
     // H4 UART
     transport = &hci_h4_transport;
 
+
     // Ancient Ericsson ROK 101 007 (ca. 2001)
     config.device_name = argv[1];
     config.baudrate    = 57600;
     config.flowcontrol = 1;
     
-    hci_init(transport, &config);
-    hci_power_control(HCI_POWER_ON);
-    
     // open low-level device
     transport->open(&config);
+
+    // init HCI
+    hci_init(transport, &config);
+    hci_power_control(HCI_POWER_ON);
+
+    // init L2CAP
+    l2cap_init();
     
     // 
     // register callbacks
     //
     transport->register_event_packet_handler(&event_handler);
-
+    transport->register_acl_packet_handler(&acl_handler);
+    
     // get fd for select call
     int transport_fd = transport->get_fd();
     

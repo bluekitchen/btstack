@@ -18,6 +18,7 @@
 #define READ_BT_24( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[pos+1]) << 8) | (((uint32_t)buffer[pos+2]) << 16))
 #define READ_BT_32( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[pos+1]) << 8) | (((uint32_t)buffer[pos+2]) << 16) | (((uint32_t) buffer[pos+3])) << 24)
 
+// #define STORE_BT_16( buffer, pos, value ) { buffer[pos] = (value) & 0xff; buffer[pos+1] = (value) >> 8; }
 
 // packet headers
 #define HCI_CMD_DATA_PKT_HDR	  0x03
@@ -31,13 +32,16 @@
 #define BD_ADDR_LEN 6
 typedef uint8_t bd_addr_t[BD_ADDR_LEN];
 
-
 /**
  * @brief The link key type
  */
 #define LINK_KEY_LEN 16
 typedef uint8_t link_key_t[LINK_KEY_LEN]; 
 
+/**
+ * @brief hci connection handle type
+ */
+typedef uint16_t hci_con_handle_t;
 
 typedef enum {
     HCI_POWER_OFF = 0,
@@ -64,6 +68,12 @@ void hexdump(uint8_t *data, int size);
 
 // create and send hci command packet based on a template and a list of parameters
 int hci_send_cmd(hci_cmd_t *cmd, ...);
+
+// send ACL packet
+int hci_send_acl_packet(uint8_t *packet, int size);
+
+// helper
+extern void bt_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
 
 extern hci_cmd_t hci_inquiry;
 extern hci_cmd_t hci_link_key_request_negative_reply;
