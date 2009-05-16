@@ -58,6 +58,11 @@ hci_cmd_t hci_host_buffer_size = {
 static hci_transport_t * hci_transport;
 static uint8_t         * hci_cmd_buffer;
 
+void bt_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
+    buffer[pos] = value & 0xff;
+    buffer[pos+1] = value >> 8;
+}
+
 void hexdump(uint8_t *data, int size){
     int i;
     for (i=0; i<size;i++){
@@ -103,6 +108,10 @@ void hci_run(){
         // for each ready file in FD - call handle_data
         sleep(1);
     }
+}
+
+int hci_send_acl_packet(uint8_t *packet, int size){
+    return hci_transport->send_acl_packet(packet, size);
 }
 
 int hci_send_cmd(hci_cmd_t *cmd, ...){
