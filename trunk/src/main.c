@@ -44,13 +44,9 @@ void event_handler(uint8_t *packet, int size){
         // hci_write_authentication_enable done, send connect
         hci_send_cmd(&hci_create_connection, &addr, 0x18, 0, 0, 0, 0);
     }
-    // link key request
-    if (packet[0] == 0x17){
-        hci_send_cmd(&hci_link_key_request_negative_reply, &addr);
-    }
-    // pin code request
+
     if (packet[0] == 0x16){
-        hci_send_cmd(&hci_pin_code_request_reply, &addr, 4, "1234");
+        printf("Please enter PIN 1234 on remote device\n");
     }
     
     // connection established -> start L2CAP conection
