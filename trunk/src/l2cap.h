@@ -22,6 +22,14 @@ typedef enum {
     INFORMATIONAL_RESPONSE
 } L2CAP_SIGNALING_COMMANDS;
 
+typedef struct {
+    
+} l2cap_channel_t;
+
+typedef struct {
+    
+} l2cap_service_t;
+
 void l2cap_init();
 int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...);
 
