@@ -20,6 +20,8 @@
 
 // #define STORE_BT_16( buffer, pos, value ) { buffer[pos] = (value) & 0xff; buffer[pos+1] = (value) >> 8; }
 
+#define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == 0x0e && READ_BT_16(event,3) == cmd.opcode)
+
 // packet headers
 #define HCI_CMD_DATA_PKT_HDR	  0x03
 #define HCI_ACL_DATA_PKT_HDR	  0x04

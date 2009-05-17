@@ -89,7 +89,21 @@ static void dummy_handler(uint8_t *packet, int size){
 static void acl_handler(uint8_t *packet, int size){
     hci_stack.acl_packet_handler(packet, size);
 }
+
 static void event_handler(uint8_t *packet, int size){
+
+    if ( COMMAND_COMPLETE_EVENT(packet, hci_reset) ) {
+        // reset done, write page timeout
+        hci_send_cmd(&hci_write_page_timeout, 0x6000); // ca. 15 sec
+        return;
+    }
+    
+    if ( COMMAND_COMPLETE_EVENT(packet, hci_write_page_timeout) ) {
+        uint8_t micro_packet = 100;
+        hci_stack.event_packet_handler(&micro_packet, 1);
+        return;
+    }
+
     hci_stack.event_packet_handler(packet, size);
 }
 
@@ -118,7 +132,7 @@ void hci_init(hci_transport_t *transport, void *config){
     transport->register_acl_packet_handler( acl_handler);
     
     // open low-level device
-    transport->open(&config);
+    transport->open(config);
     
     // open unix socket
     
@@ -134,6 +148,11 @@ int hci_power_control(HCI_POWER_MODE power_mode){
 }
 
 void hci_run(){
+
+    // send hci reset
+    hci_send_cmd(&hci_reset);
+
+#if 0    
     while (1) {
         //  construct file descriptor set to wait for
         //  select
@@ -141,6 +160,7 @@ void hci_run(){
         // for each ready file in FD - call handle_data
         sleep(1);
     }
+#endif
 }
 
 

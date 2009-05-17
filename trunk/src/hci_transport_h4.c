@@ -43,6 +43,7 @@ static int    h4_open(void *transport_config){
     fd = open(hci_uart_config->device_name, O_RDWR | O_NOCTTY | O_NDELAY);
     if (fd == -1)  {
         perror("init_serialport: Unable to open port ");
+        perror(hci_uart_config->device_name);
         return -1;
     }
     
