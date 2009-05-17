@@ -55,8 +55,9 @@ hci_cmd_t hci_host_buffer_size = {
 };
 
 
-static hci_transport_t * hci_transport;
-static uint8_t         * hci_cmd_buffer;
+// the stack is here
+static hci_stack_t       hci_stack;
+
 
 void bt_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
     buffer[pos] = value & 0xff;
@@ -79,13 +80,45 @@ static void *hci_daemon_thread(void *arg){
 }
 #endif
 
+/** 
+ * Handler called by HCI transport
+ */
+static void dummy_handler(uint8_t *packet, int size){
+}
+
+static void acl_handler(uint8_t *packet, int size){
+    hci_stack.acl_packet_handler(packet, size);
+}
+static void event_handler(uint8_t *packet, int size){
+    hci_stack.event_packet_handler(packet, size);
+}
+
+/** Register L2CAP handlers */
+void hci_register_event_packet_handler(void (*handler)(uint8_t *packet, int size)){
+    hci_stack.event_packet_handler = handler;
+}
+void hci_register_acl_packet_handler  (void (*handler)(uint8_t *packet, int size)){
+    hci_stack.acl_packet_handler = handler;
+}
+
 void hci_init(hci_transport_t *transport, void *config){
     
     // reference to use transport layer implementation
-    hci_transport = transport;
+    hci_stack.hci_transport = transport;
     
     // empty cmd buffer
-    hci_cmd_buffer = malloc(3+255);
+    hci_stack.hci_cmd_buffer = malloc(3+255);
+    
+    // higher level handler
+    hci_stack.event_packet_handler = dummy_handler;
+    hci_stack.acl_packet_handler = dummy_handler;
+    
+    // register packet handlers with transport
+    transport->register_event_packet_handler( event_handler);
+    transport->register_acl_packet_handler( acl_handler);
+    
+    // open low-level device
+    transport->open(&config);
     
     // open unix socket
     
@@ -110,11 +143,16 @@ void hci_run(){
     }
 }
 
+
+
+
+
 int hci_send_acl_packet(uint8_t *packet, int size){
-    return hci_transport->send_acl_packet(packet, size);
+    return hci_stack.hci_transport->send_acl_packet(packet, size);
 }
 
 int hci_send_cmd(hci_cmd_t *cmd, ...){
+    uint8_t * hci_cmd_buffer = hci_stack.hci_cmd_buffer;
     hci_cmd_buffer[0] = cmd->opcode & 0xff;
     hci_cmd_buffer[1] = cmd->opcode >> 8;
     int pos = 3;
@@ -171,5 +209,5 @@ int hci_send_cmd(hci_cmd_t *cmd, ...){
     va_end(argptr);
     hci_cmd_buffer[2] = pos - 3;
     // send packet
-    return hci_transport->send_cmd_packet(hci_cmd_buffer, pos);
+    return hci_stack.hci_transport->send_cmd_packet(hci_cmd_buffer, pos);
 }

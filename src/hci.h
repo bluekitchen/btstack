@@ -53,10 +53,36 @@ typedef struct {
     const char *format;
 } hci_cmd_t;
 
+typedef struct hci_connection {
+    struct hci_connection * next;
+    bd_addr_t address;
+    hci_con_handle_t con_handle;
+} hci_connection_t;
+
+typedef struct {
+    
+    hci_transport_t * hci_transport;
+    uint8_t         * hci_cmd_buffer;
+    hci_connection_t *connections;
+    
+    /* host to controller flow control */
+    uint8_t  num_cmd_packets;
+    uint8_t  num_acl_packets;
+
+    /* callback to L2CAP layer */
+    void (*event_packet_handler)(uint8_t *packet, int size);
+    void (*acl_packet_handler)  (uint8_t *packet, int size);
+
+} hci_stack_t;
+
 
 // set up HCI
 void hci_init(hci_transport_t *transport, void *config);
 
+void hci_register_event_packet_handler(void (*handler)(uint8_t *packet, int size));
+
+void hci_register_acl_packet_handler  (void (*handler)(uint8_t *packet, int size));
+    
 // power control
 int hci_power_control(HCI_POWER_MODE mode);
 
@@ -71,6 +97,8 @@ int hci_send_cmd(hci_cmd_t *cmd, ...);
 
 // send ACL packet
 int hci_send_acl_packet(uint8_t *packet, int size);
+
+
 
 // helper
 extern void bt_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);

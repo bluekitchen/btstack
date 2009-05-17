@@ -118,27 +118,23 @@ int main (int argc, const char * argv[]) {
     // H4 UART
     transport = &hci_h4_transport;
 
-
     // Ancient Ericsson ROK 101 007 (ca. 2001)
     config.device_name = argv[1];
     config.baudrate    = 57600;
     config.flowcontrol = 1;
     
-    // open low-level device
-    transport->open(&config);
-
     // init HCI
     hci_init(transport, &config);
     hci_power_control(HCI_POWER_ON);
 
-    // init L2CAP
-    l2cap_init();
-    
     // 
     // register callbacks
     //
-    transport->register_event_packet_handler(&event_handler);
-    transport->register_acl_packet_handler(&acl_handler);
+    hci_register_event_packet_handler(&event_handler);
+    hci_register_acl_packet_handler(&acl_handler);
+
+    // init L2CAP
+    l2cap_init();
     
     // get fd for select call
     int transport_fd = transport->get_fd();
