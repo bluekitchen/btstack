@@ -64,6 +64,15 @@ void bt_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
     buffer[pos+1] = value >> 8;
 }
 
+void bt_flip_addr(bd_addr_t dest, bd_addr_t src){
+    dest[0] = src[5];
+    dest[1] = src[4];
+    dest[2] = src[3];
+    dest[3] = src[2];
+    dest[4] = src[1];
+    dest[5] = src[0];
+}
+
 void hexdump(uint8_t *data, int size){
     int i;
     for (i=0; i<size;i++){
@@ -91,6 +100,7 @@ static void acl_handler(uint8_t *packet, int size){
 }
 
 static void event_handler(uint8_t *packet, int size){
+    bd_addr_t addr;
 
     if ( COMMAND_COMPLETE_EVENT(packet, hci_reset) ) {
         // reset done, write page timeout
@@ -104,6 +114,19 @@ static void event_handler(uint8_t *packet, int size){
         return;
     }
 
+    // link key request
+    if (packet[0] == 0x17){
+        bt_flip_addr(addr, &packet[2]); 
+        hci_send_cmd(&hci_link_key_request_negative_reply, &addr);
+        return;
+    }
+    
+    // pin code request
+    if (packet[0] == 0x16){
+        bt_flip_addr(addr, &packet[2]); 
+        hci_send_cmd(&hci_pin_code_request_reply, &addr, 4, "1234");
+    }
+    
     hci_stack.event_packet_handler(packet, size);
 }
 
