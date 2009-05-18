@@ -101,28 +101,32 @@ static void acl_handler(uint8_t *packet, int size){
 
 static void event_handler(uint8_t *packet, int size){
     bd_addr_t addr;
-
-    if ( COMMAND_COMPLETE_EVENT(packet, hci_reset) ) {
-        // reset done, write page timeout
-        hci_send_cmd(&hci_write_page_timeout, 0x6000); // ca. 15 sec
-        return;
-    }
     
-    if ( COMMAND_COMPLETE_EVENT(packet, hci_write_page_timeout) ) {
-        uint8_t micro_packet = 100;
-        hci_stack.event_packet_handler(&micro_packet, 1);
-        return;
+    // Get Num_HCI_Command_Packets
+    if (packet[0] == HCI_EVENT_COMMAND_COMPLETE ||
+        packet[0] == HCI_EVENT_COMMAND_STATUS){
+        hci_stack.num_cmd_packets = packet[2];
+    }
+
+    // handle BT initialization
+    if (hci_stack.state == HCI_STATE_INITIALIZING){
+        if (hci_stack.substate % 2){
+            // odd: waiting for event
+            if (packet[0] == HCI_EVENT_COMMAND_COMPLETE){
+                hci_stack.substate++;
+            }
+        }
     }
 
     // link key request
-    if (packet[0] == 0x17){
+    if (packet[0] == HCI_EVENT_LINK_KEY_REQUEST){
         bt_flip_addr(addr, &packet[2]); 
         hci_send_cmd(&hci_link_key_request_negative_reply, &addr);
         return;
     }
     
     // pin code request
-    if (packet[0] == 0x16){
+    if (packet[0] == HCI_EVENT_PIN_CODE_REQUEST){
         bt_flip_addr(addr, &packet[2]); 
         hci_send_cmd(&hci_pin_code_request_reply, &addr, 4, "1234");
     }
@@ -146,6 +150,11 @@ void hci_init(hci_transport_t *transport, void *config){
     // empty cmd buffer
     hci_stack.hci_cmd_buffer = malloc(3+255);
     
+    // set up state
+    hci_stack.num_cmd_packets = 1; // assume that one cmd can be sent
+    hci_stack.state = HCI_STATE_INITIALIZING;
+    hci_stack.substate = 0;
+    
     // higher level handler
     hci_stack.event_packet_handler = dummy_handler;
     hci_stack.acl_packet_handler = dummy_handler;
@@ -156,44 +165,60 @@ void hci_init(hci_transport_t *transport, void *config){
     
     // open low-level device
     transport->open(config);
-    
-    // open unix socket
-    
-    // wait for connections
-    
-    // enter loop
-    
-    // handle events
 }
 
 int hci_power_control(HCI_POWER_MODE power_mode){
     return 0;
 }
 
-void hci_run(){
-
-    // send hci reset
-    hci_send_cmd(&hci_reset);
-
-#if 0    
-    while (1) {
-        //  construct file descriptor set to wait for
-        //  select
-        
-        // for each ready file in FD - call handle_data
-        sleep(1);
+uint32_t hci_run(){
+    uint8_t micro_packet;
+    switch (hci_stack.state){
+        case HCI_STATE_INITIALIZING:
+            if (hci_stack.substate % 2) {
+                // odd: waiting for command completion
+                return 0;
+            }
+            if (hci_stack.num_cmd_packets == 0) {
+                // cannot send command yet
+                return 0;
+            }
+            switch (hci_stack.substate/2){
+                case 0:
+                    hci_send_cmd(&hci_reset);
+                    break;
+                case 1:
+                    // ca. 15 sec
+                    hci_send_cmd(&hci_write_page_timeout, 0x6000);
+                    break;
+                case 2:
+                    // done.
+                    hci_stack.state = HCI_STATE_WORKING;
+                    micro_packet = BTSTACK_EVENT_HCI_WORKING;
+                    hci_stack.event_packet_handler(&micro_packet, 1);
+                    break;
+                default:
+                    break;
+            }
+            hci_stack.substate++;
+            break;
+        default:
+            break;
     }
-#endif
+    
+    // don't check for timetous yet
+    return 0;
 }
-
-
-
 
 
 int hci_send_acl_packet(uint8_t *packet, int size){
     return hci_stack.hci_transport->send_acl_packet(packet, size);
 }
 
+
+/**
+ * pre: numcmds >= 0 - it's allowed to send a command to the controller
+ */
 int hci_send_cmd(hci_cmd_t *cmd, ...){
     uint8_t * hci_cmd_buffer = hci_stack.hci_cmd_buffer;
     hci_cmd_buffer[0] = cmd->opcode & 0xff;
@@ -252,5 +277,6 @@ int hci_send_cmd(hci_cmd_t *cmd, ...){
     va_end(argptr);
     hci_cmd_buffer[2] = pos - 3;
     // send packet
+    hci_stack.num_cmd_packets--;
     return hci_stack.hci_transport->send_cmd_packet(hci_cmd_buffer, pos);
 }

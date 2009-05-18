@@ -36,7 +36,7 @@ void event_handler(uint8_t *packet, int size){
     // printf("Event type: %x, opcode: %x, other %x\n", packet[0], packet[3] | packet[4] << 8);
 
     // bt stack activated, set authentication enabled
-    if (packet[0] == 100) {
+    if (packet[0] == BTSTACK_EVENT_HCI_WORKING) {
         hci_send_cmd(&hci_write_authentication_enable, 1);
     }
     
@@ -45,12 +45,12 @@ void event_handler(uint8_t *packet, int size){
         hci_send_cmd(&hci_create_connection, &addr, 0x18, 0, 0, 0, 0);
     }
 
-    if (packet[0] == 0x16){
+    if (packet[0] == HCI_EVENT_PIN_CODE_REQUEST){
         printf("Please enter PIN 1234 on remote device\n");
     }
     
     // connection established -> start L2CAP conection
-    if (packet[0] == 0x03){
+    if (packet[0] == HCI_EVENT_CONNECTION_COMPLETE){
         if (packet[2] == 0){
             // get new connection handle
             con_handle = READ_BT_16(packet, 3);
@@ -125,9 +125,6 @@ int main (int argc, const char * argv[]) {
     // init L2CAP
     l2cap_init();
     
-    // go! 
-    hci_run();
-    
     // get fd for select call
     int transport_fd = transport->get_fd();
      
@@ -135,10 +132,15 @@ int main (int argc, const char * argv[]) {
     fd_set descriptors;
     FD_ZERO(&descriptors);
     while (1){
+        // handle HCI
+        hci_run();
+        
         FD_SET(transport_fd, &descriptors);
         // int ready = 
         select( transport_fd+1, &descriptors, NULL, NULL, NULL);
         // printf("Ready: %d, isset() = %u\n", ready, FD_ISSET(transport_fd, &descriptors));
+
+        // handle incoming data from BT module
         transport->handle_data();
     }
     
