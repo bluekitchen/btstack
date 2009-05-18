@@ -99,11 +99,24 @@ typedef struct {
     const char *format;
 } hci_cmd_t;
 
+typedef enum {
+    SEND_NEGATIVE_LINK_KEY_REQUEST = 1 << 0,
+    SEND_PIN_CODE_RESPONSE = 1 << 1
+} hci_connection_flags_t;
+
 typedef struct hci_connection {
+    // linked list
     struct hci_connection * next;
+    
+    // remote side
     bd_addr_t address;
     hci_con_handle_t con_handle;
+    
+    // hci state machine
+    hci_connection_flags_t flags;
+    
 } hci_connection_t;
+
 
 typedef struct {
     
