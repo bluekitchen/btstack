@@ -10,10 +10,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <pthread.h>
+#include "bt_control_iphone.h"
 
 #include "hci.h"
 #include "hci_transport_h4.h"
+
 #include "l2cap.h"
 
 static hci_transport_t * transport;
@@ -105,7 +106,7 @@ int main (int argc, const char * argv[]) {
     }
     
     // H4 UART
-    transport = &hci_h4_transport;
+    transport = &hci_transport_h4;
 
     // Ancient Ericsson ROK 101 007 (ca. 2001)
     config.device_name = argv[1];
