@@ -12,21 +12,16 @@
 
 #include "hci_transport.h"
 
-
 // helper for BT little endian format
 #define READ_BT_16( buffer, pos) (buffer[pos] | (buffer[pos+1] << 8))
 #define READ_BT_24( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[pos+1]) << 8) | (((uint32_t)buffer[pos+2]) << 16))
 #define READ_BT_32( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[pos+1]) << 8) | (((uint32_t)buffer[pos+2]) << 16) | (((uint32_t) buffer[pos+3])) << 24)
 
-// #define STORE_BT_16( buffer, pos, value ) { buffer[pos] = (value) & 0xff; buffer[pos+1] = (value) >> 8; }
-
-
-// packet headers
+// packet header lengh
 #define HCI_CMD_DATA_PKT_HDR	  0x03
 #define HCI_ACL_DATA_PKT_HDR	  0x04
 #define HCI_SCO_DATA_PKT_HDR	  0x03
 #define HCI_EVENT_PKT_HDR         0x02
-
 
 // Events from host controller to host
 #define HCI_EVENT_INQUIRY_COMPLETE				           0x01
@@ -64,6 +59,12 @@
 #define BTSTACK_EVENT_HCI_WORKING                          0x80
 
 #define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && READ_BT_16(event,3) == cmd.opcode)
+
+
+/**
+ * Default INQ Mode
+ */
+#define HCI_INQUIRY_LAP 0x9E8B33L  // 0x9E8B33: General/Unlimited Inquiry Access Code (GIAC)
 
 /**
  * @brief Length of a bluetooth device address.
@@ -178,4 +179,3 @@ extern hci_cmd_t hci_host_buffer_size;
 extern hci_cmd_t hci_write_authentication_enable;
 extern hci_cmd_t hci_write_page_timeout;
     
-#define HCI_INQUIRY_LAP 0x9E8B33L  // 0x9E8B33: General/Unlimited Inquiry Access Code (GIAC)

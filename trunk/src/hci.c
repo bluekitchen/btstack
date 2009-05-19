@@ -89,6 +89,19 @@ static void *hci_daemon_thread(void *arg){
 }
 #endif
 
+/**
+ * Linked link list 
+ */
+
+/**
+ * get link for given address
+ *
+ * @return connection OR NULL, if not found
+ */
+static hci_connection_t *link_for_addr(bd_addr_t addr){
+    return NULL;
+}
+
 /** 
  * Handler called by HCI transport
  */

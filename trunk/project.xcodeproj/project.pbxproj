@@ -10,6 +10,8 @@
 		9C46FBAF0FA8F31800ABEF05 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FBAE0FA8F31800ABEF05 /* main.c */; };
 		9C46FC390FA906F700ABEF05 /* hci.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC340FA906F700ABEF05 /* hci.c */; };
 		9C46FC3A0FA906F700ABEF05 /* hci_transport_h4.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */; };
+		9C88500E0FBF6702004980E4 /* l2cap.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C88500C0FBF6702004980E4 /* l2cap.c */; };
+		9C8851E10FC3403F004980E4 /* bt_control_iphone.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C8851E00FC3403F004980E4 /* bt_control_iphone.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -32,6 +34,12 @@
 		9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci_transport_h4.c; path = src/hci_transport_h4.c; sourceTree = "<group>"; };
 		9C46FC370FA906F700ABEF05 /* hci_transport_h4.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci_transport_h4.h; path = src/hci_transport_h4.h; sourceTree = "<group>"; };
 		9C46FC380FA906F700ABEF05 /* hci_transport.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci_transport.h; path = src/hci_transport.h; sourceTree = "<group>"; };
+		9C88500C0FBF6702004980E4 /* l2cap.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = l2cap.c; path = src/l2cap.c; sourceTree = "<group>"; };
+		9C88500D0FBF6702004980E4 /* l2cap.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = l2cap.h; path = src/l2cap.h; sourceTree = "<group>"; };
+		9C8851DF0FC3403E004980E4 /* bt_control_iphone.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bt_control_iphone.h; sourceTree = "<group>"; };
+		9C8851E00FC3403F004980E4 /* bt_control_iphone.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = bt_control_iphone.c; sourceTree = "<group>"; };
+		9C8851E20FC340F8004980E4 /* bt_control.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = bt_control.h; sourceTree = "<group>"; };
+		9CA3C0900FB8B3C4005F48DE /* TODO.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = TODO.txt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -51,6 +59,7 @@
 				08FB7795FE84155DC02AAC07 /* Source */,
 				C6A0FF2B0290797F04C91782 /* Documentation */,
 				1AB674ADFE9D54B511CA2CBB /* Products */,
+				9CA3C0900FB8B3C4005F48DE /* TODO.txt */,
 			);
 			name = project;
 			sourceTree = "<group>";
@@ -58,11 +67,16 @@
 		08FB7795FE84155DC02AAC07 /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				9C8851E20FC340F8004980E4 /* bt_control.h */,
+				9C8851DF0FC3403E004980E4 /* bt_control_iphone.h */,
+				9C8851E00FC3403F004980E4 /* bt_control_iphone.c */,
 				9C46FC350FA906F700ABEF05 /* hci.h */,
 				9C46FC340FA906F700ABEF05 /* hci.c */,
+				9C46FC380FA906F700ABEF05 /* hci_transport.h */,
 				9C46FC370FA906F700ABEF05 /* hci_transport_h4.h */,
 				9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */,
-				9C46FC380FA906F700ABEF05 /* hci_transport.h */,
+				9C88500C0FBF6702004980E4 /* l2cap.c */,
+				9C88500D0FBF6702004980E4 /* l2cap.h */,
 				9C46FBAE0FA8F31800ABEF05 /* main.c */,
 			);
 			name = Source;
@@ -130,6 +144,8 @@
 				9C46FBAF0FA8F31800ABEF05 /* main.c in Sources */,
 				9C46FC390FA906F700ABEF05 /* hci.c in Sources */,
 				9C46FC3A0FA906F700ABEF05 /* hci_transport_h4.c in Sources */,
+				9C88500E0FBF6702004980E4 /* l2cap.c in Sources */,
+				9C8851E10FC3403F004980E4 /* bt_control_iphone.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

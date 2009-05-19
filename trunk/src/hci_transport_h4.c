@@ -1,8 +1,9 @@
 /*
  *  hci_h4_transport.c
  *
- *  Created by Matthias Ringwald on 4/29/09.
+ *  HCI Transport API implementation for basic H4 protocol
  *
+ *  Created by Matthias Ringwald on 4/29/09.
  */
 #include <termios.h>  /* POSIX terminal control definitions */
 #include <fcntl.h>    /* File control definitions */
@@ -211,7 +212,7 @@ static void dummy_handler(uint8_t *packet, int size){
 }
 
 // single instance
-hci_transport_t hci_h4_transport = {
+hci_transport_t hci_transport_h4 = {
     h4_open, 
     h4_close,
     h4_send_cmd_packet,
