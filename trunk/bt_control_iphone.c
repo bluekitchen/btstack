@@ -66,30 +66,17 @@ static int iphone_on (void *config){
     bzero (&noTime, sizeof(struct timeval));
     while (1){
         int chars = read(input, &buffer[pos], 1);
-        
-        int ready;
-        do {
-            fd_set fds;
-            FD_ZERO(&fds);
-            FD_SET(output,&fds);
-            ready=select(output+1,&fds,NULL,NULL,&noTime);
-            if (ready>0)
-            {
-                if (FD_ISSET(output,&fds)) {
-                    char singlechar = fgetc(outputFile);
-                    printf("%c", singlechar);
-                }
-            }
-        } while (ready);
-        
+                
         // end-of-line
         if (chars == 0 || buffer[pos]=='\n' || buffer[pos]== '\r'){
             if (store) {
                 // stored characters
                 write(output, buffer, pos+chars);
+                write(fileno(stdout), buffer, pos+chars);
             }
             if (mirror) {
                 write(output, "\n", 1);
+                write(fileno(stdout), "\n", 1);
             }
             pos = 0;
             mirror = 0;
@@ -104,6 +91,7 @@ static int iphone_on (void *config){
         // mirror
         if (mirror){
             write(output, &buffer[pos], 1);
+            write(fileno(stdout),  &buffer[pos], 1);
         }
         
         // store
@@ -117,24 +105,49 @@ static int iphone_on (void *config){
             store = 0;
             if (sscanf(buffer, "csr -p 0x%x=0x%x", &pskey, &value) == 2){
                 if (pskey == 0x01f9) {       // UART MODE
-                    write(output, "Skipping: ", 10);
-                    write(output, buffer, pos);
-                    mirror = 1;
+                    // write(output, buffer, pos);
+                    write(fileno(stdout), "Skipping: ", 10);
+                    write(fileno(stdout), buffer, pos);
+                    mirror = 0;
                 } else if (pskey == 0x01be) { // UART Baud
-                    write(output, "Skipping: ", 10);
-                    write(output, buffer, pos);
-                    mirror = 1;
+                    // write(output, buffer, pos);
+                    write(fileno(stdout), "Skipping: ", 10);
+                    write(fileno(stdout), buffer, pos);
+                    mirror = 0;
                 } else {
                     // dump buffer and start forwarding
                     write(output, buffer, pos);
+                    write(fileno(stdout), buffer, pos);
                     mirror = 1;
                 }
             } else {
                 write(output, buffer, pos);
+                write(fileno(stdout), buffer, pos);
                 mirror = 1;
             }
         }
     }
+    // close ports
+    close(input);
+
+    // log output
+    int ready;
+    do {
+        fd_set fds;
+        FD_ZERO(&fds);
+        FD_SET(output,&fds);
+        ready=select(output+1,&fds,NULL,NULL,&noTime);
+        if (ready>0)
+        {
+            if (FD_ISSET(output,&fds)) {
+                char singlechar = fgetc(outputFile);
+                printf("%c", singlechar);
+            }
+        }
+    } while (ready);
+    
+    fflush(outputFile);
+    pclose(outputFile);
     return 0;
 }
 
