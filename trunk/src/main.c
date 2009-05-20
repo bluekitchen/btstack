@@ -31,9 +31,9 @@ void event_handler(uint8_t *packet, int size){
 
     // bt stack activated, set authentication enabled
     if (packet[0] == BTSTACK_EVENT_HCI_WORKING) {
-        // hci_send_cmd(&hci_write_authentication_enable, 1);
+        hci_send_cmd(&hci_write_authentication_enable, 1);
         // hci_send_cmd(&hci_host_buffer_size, 400, 255, 1, 0, 0);
-        hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, 30, 0);
+        // hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, 30, 0);
     }
     
     if ( COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable) ) {

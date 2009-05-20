@@ -148,6 +148,10 @@ static int iphone_on (void *config){
     
     fflush(outputFile);
     pclose(outputFile);
+    
+    // pause
+    sleep(3);
+    
     return 0;
 }
 
