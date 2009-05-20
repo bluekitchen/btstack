@@ -23,13 +23,6 @@ static hci_uart_config_t config;
 hci_con_handle_t con_handle= 0;
 uint16_t dest_cid;
 
-#if 0
-// reset done, send host buffer size
-hci_send_cmd(&hci_host_buffer_size, 400, 255, 1, 0, 0);
-// reset done, send inq
-hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, 30, 0);
-#endif
-
 void event_handler(uint8_t *packet, int size){
     bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };
     // bd_addr_t addr = { 0x00, 0x16, 0xcb, 0x09, 0x94, 0xa9};
@@ -38,7 +31,9 @@ void event_handler(uint8_t *packet, int size){
 
     // bt stack activated, set authentication enabled
     if (packet[0] == BTSTACK_EVENT_HCI_WORKING) {
-        hci_send_cmd(&hci_write_authentication_enable, 1);
+        // hci_send_cmd(&hci_write_authentication_enable, 1);
+        // hci_send_cmd(&hci_host_buffer_size, 400, 255, 1, 0, 0);
+        hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, 30, 0);
     }
     
     if ( COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable) ) {
