@@ -98,7 +98,7 @@ void acl_handler(uint8_t *packet, int size){
 }
 
 int main (int argc, const char * argv[]) {
-    
+        
     // 
     if (argc <= 1){
         printf("HCI Daemon tester. Specify device name for Ericsson ROK 101 007\n");
@@ -114,7 +114,7 @@ int main (int argc, const char * argv[]) {
     config.flowcontrol = 1;
     
     // init HCI
-    hci_init(transport, &config);
+    hci_init(transport, &config, NULL);
     hci_power_control(HCI_POWER_ON);
 
     // 

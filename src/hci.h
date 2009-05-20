@@ -11,6 +11,7 @@
 #include <stdlib.h>
 
 #include "hci_transport.h"
+#include "bt_control.h"
 
 // helper for BT little endian format
 #define READ_BT_16( buffer, pos) (buffer[pos] | (buffer[pos+1] << 8))
@@ -122,6 +123,9 @@ typedef struct hci_connection {
 typedef struct {
     
     hci_transport_t  * hci_transport;
+    bt_control_t     * control;
+    void             * config;
+    
     uint8_t          * hci_cmd_buffer;
     hci_connection_t * connections;
     
@@ -142,7 +146,7 @@ typedef struct {
 
 
 // set up HCI
-void hci_init(hci_transport_t *transport, void *config);
+void hci_init(hci_transport_t *transport, void *config, bt_control_t *control);
 
 void hci_register_event_packet_handler(void (*handler)(uint8_t *packet, int size));
 

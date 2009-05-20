@@ -16,7 +16,7 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
-
+#include <errno.h>
 
 #define BUFF_LEN 80
 static char buffer[BUFF_LEN+1];
@@ -44,27 +44,52 @@ static const char * iphone_name(void *config){
 
 static int iphone_on (void *config){
     // get path to script
-    strcpy(buffer, "./etc/bluetool/");
+    strcpy(buffer, "/etc/bluetool/");
     char *machine = get_machine_name();
     strcat(buffer, machine);
     strcat(buffer, ".init.script");
     
+    // hack
+    // strcpy(buffer, "iPhone1,2.init.script");
+    
     // open script
     int input = open(buffer, O_RDONLY);
+    
+    // open tool
+    FILE * outputFile = popen("BlueTool", "r+");
+    int output = fileno(outputFile);
+     
     int pos = 0;
     int mirror = 0;
     int store = 1;
+    struct timeval noTime;
+    bzero (&noTime, sizeof(struct timeval));
     while (1){
         int chars = read(input, &buffer[pos], 1);
+        
+        int ready;
+        do {
+            fd_set fds;
+            FD_ZERO(&fds);
+            FD_SET(output,&fds);
+            ready=select(output+1,&fds,NULL,NULL,&noTime);
+            if (ready>0)
+            {
+                if (FD_ISSET(output,&fds)) {
+                    char singlechar = fgetc(outputFile);
+                    printf("%c", singlechar);
+                }
+            }
+        } while (ready);
         
         // end-of-line
         if (chars == 0 || buffer[pos]=='\n' || buffer[pos]== '\r'){
             if (store) {
                 // stored characters
-                write(fileno(stdout), buffer, pos+chars);
+                write(output, buffer, pos+chars);
             }
             if (mirror) {
-                write(fileno(stdout), "\n", 1);
+                write(output, "\n", 1);
             }
             pos = 0;
             mirror = 0;
@@ -78,7 +103,7 @@ static int iphone_on (void *config){
         
         // mirror
         if (mirror){
-            write(fileno(stdout), &buffer[pos], 1);
+            write(output, &buffer[pos], 1);
         }
         
         // store
@@ -86,32 +111,27 @@ static int iphone_on (void *config){
             pos++;
         }
         
-        // enough chars, check for pskey store command
-        if (mirror == 0 && pos == 9) {
-            if (strncmp(buffer, "csr -p 0x", 9) != 0) {
-                write(fileno(stdout), buffer, pos);
-                mirror = 1;
-                store = 0;
-            }
-        }
         // check for "csr -p 0x002a=0x0011" (20)
-        if (mirror == 0 && store == 1 && pos == 20) {
+        if (store == 1 && pos == 20) {
             int pskey, value;
             store = 0;
             if (sscanf(buffer, "csr -p 0x%x=0x%x", &pskey, &value) == 2){
                 if (pskey == 0x01f9) {       // UART MODE
-                    write(fileno(stdout), "Skipping: ", 10);
-                    write(fileno(stdout), buffer, pos);
+                    write(output, "Skipping: ", 10);
+                    write(output, buffer, pos);
                     mirror = 1;
                 } else if (pskey == 0x01be) { // UART Baud
-                    write(fileno(stdout), "Skipping: ", 10);
-                    write(fileno(stdout), buffer, pos);
+                    write(output, "Skipping: ", 10);
+                    write(output, buffer, pos);
                     mirror = 1;
                 } else {
                     // dump buffer and start forwarding
-                    write(fileno(stdout), buffer, pos);
+                    write(output, buffer, pos);
                     mirror = 1;
                 }
+            } else {
+                write(output, buffer, pos);
+                mirror = 1;
             }
         }
     }
