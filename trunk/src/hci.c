@@ -155,10 +155,16 @@ void hci_register_acl_packet_handler  (void (*handler)(uint8_t *packet, int size
     hci_stack.acl_packet_handler = handler;
 }
 
-void hci_init(hci_transport_t *transport, void *config){
+void hci_init(hci_transport_t *transport, void *config, bt_control_t *control){
     
     // reference to use transport layer implementation
     hci_stack.hci_transport = transport;
+    
+    // references to used control implementation
+    hci_stack.control = control;
+    
+    // reference to used config
+    hci_stack.config = config;
     
     // empty cmd buffer
     hci_stack.hci_cmd_buffer = malloc(3+255);
@@ -181,6 +187,13 @@ void hci_init(hci_transport_t *transport, void *config){
 }
 
 int hci_power_control(HCI_POWER_MODE power_mode){
+    if (hci_stack.control) {
+        if (power_mode == HCI_POWER_ON) {
+            hci_stack.control->on(hci_stack.config);
+        } else if (power_mode == HCI_POWER_OFF){
+            hci_stack.control->off(hci_stack.config);
+        }
+    }
     return 0;
 }
 

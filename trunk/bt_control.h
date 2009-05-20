@@ -7,6 +7,8 @@
  *
  */
 
+#pragma once
+
 typedef struct {
     int          (*on)(void *config);     // <-- turn BT module on and configure
     int          (*off)(void *config);    // <-- turn BT module off
