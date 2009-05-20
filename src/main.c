@@ -83,7 +83,7 @@ void acl_handler(uint8_t *packet, int size){
         source_cid = READ_BT_16(packet, 12);
         uint16_t flags = READ_BT_16(packet, 14);
         result = READ_BT_16(packet, 16);
-        printf("< CONFIGURE_RESPONSE: id %u, src cid %u, flags %u, result %u!!!\n", packet[9], flags, result);
+        printf("< CONFIGURE_RESPONSE: id %u, src cid %u, flags %u, result %u!!!\n", packet[9], source_cid, flags, result);
         hexdump(&packet[18], size-18);
     }
     else if (packet[8] == CONFIGURE_REQUEST){
@@ -98,23 +98,33 @@ void acl_handler(uint8_t *packet, int size){
 }
 
 int main (int argc, const char * argv[]) {
-        
+    
+    bt_control_t * control = NULL;
+    
+#if 1
     // 
     if (argc <= 1){
         printf("HCI Daemon tester. Specify device name for Ericsson ROK 101 007\n");
         exit(1);
     }
-    
-    // H4 UART
-    transport = &hci_transport_h4;
 
     // Ancient Ericsson ROK 101 007 (ca. 2001)
     config.device_name = argv[1];
     config.baudrate    = 57600;
     config.flowcontrol = 1;
+#else 
+    // iPhone
+    config.device_name = "/dev/bluetooth";
+    config.baudrate    = 115200;
+    config.flowcontrol = 1;
+    control = &bt_control_iphone;
+#endif
     
+    // H4 UART
+    transport = &hci_transport_h4;
+
     // init HCI
-    hci_init(transport, &config, NULL);
+    hci_init(transport, &config, control);
     hci_power_control(HCI_POWER_ON);
 
     // 

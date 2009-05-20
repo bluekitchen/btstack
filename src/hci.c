@@ -98,9 +98,11 @@ static void *hci_daemon_thread(void *arg){
  *
  * @return connection OR NULL, if not found
  */
+#if 0
 static hci_connection_t *link_for_addr(bd_addr_t addr){
     return NULL;
 }
+#endif
 
 /** 
  * Handler called by HCI transport
