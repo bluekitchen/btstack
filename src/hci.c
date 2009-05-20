@@ -184,6 +184,9 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control){
     transport->register_event_packet_handler( event_handler);
     transport->register_acl_packet_handler( acl_handler);
     
+    // turn on 
+    hci_power_control(HCI_POWER_ON);
+    
     // open low-level device
     transport->open(config);
 }

@@ -101,7 +101,7 @@ int main (int argc, const char * argv[]) {
     
     bt_control_t * control = NULL;
     
-#if 1
+#if 0
     // 
     if (argc <= 1){
         printf("HCI Daemon tester. Specify device name for Ericsson ROK 101 007\n");
@@ -114,7 +114,7 @@ int main (int argc, const char * argv[]) {
     config.flowcontrol = 1;
 #else 
     // iPhone
-    config.device_name = "/dev/bluetooth";
+    config.device_name = "/dev/tty.bluetooth";
     config.baudrate    = 115200;
     config.flowcontrol = 1;
     control = &bt_control_iphone;
@@ -125,7 +125,6 @@ int main (int argc, const char * argv[]) {
 
     // init HCI
     hci_init(transport, &config, control);
-    hci_power_control(HCI_POWER_ON);
 
     // 
     // register callbacks
