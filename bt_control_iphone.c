@@ -42,41 +42,31 @@ static const char * iphone_name(void *config){
     return get_machine_name();
 }
 
-static int iphone_on (void *config){
-    // get path to script
+
+static int iphone_write_initscript (void *config, int output){
+    // construct script path from device name
     strcpy(buffer, "/etc/bluetool/");
     char *machine = get_machine_name();
     strcat(buffer, machine);
     strcat(buffer, ".init.script");
     
-    // hack
-    // strcpy(buffer, "iPhone1,2.init.script");
-    
     // open script
     int input = open(buffer, O_RDONLY);
     
-    // open tool
-    FILE * outputFile = popen("BlueTool", "r+");
-    int output = fileno(outputFile);
-     
     int pos = 0;
     int mirror = 0;
     int store = 1;
-    struct timeval noTime;
-    bzero (&noTime, sizeof(struct timeval));
     while (1){
         int chars = read(input, &buffer[pos], 1);
-                
+        
         // end-of-line
         if (chars == 0 || buffer[pos]=='\n' || buffer[pos]== '\r'){
             if (store) {
                 // stored characters
                 write(output, buffer, pos+chars);
-                write(fileno(stdout), buffer, pos+chars);
             }
             if (mirror) {
                 write(output, "\n", 1);
-                write(fileno(stdout), "\n", 1);
             }
             pos = 0;
             mirror = 0;
@@ -91,7 +81,6 @@ static int iphone_on (void *config){
         // mirror
         if (mirror){
             write(output, &buffer[pos], 1);
-            write(fileno(stdout),  &buffer[pos], 1);
         }
         
         // store
@@ -104,54 +93,62 @@ static int iphone_on (void *config){
             int pskey, value;
             store = 0;
             if (sscanf(buffer, "csr -p 0x%x=0x%x", &pskey, &value) == 2){
-                if (pskey == 0x01f9) {       // UART MODE
-                    // write(output, buffer, pos);
-                    write(fileno(stdout), "Skipping: ", 10);
-                    write(fileno(stdout), buffer, pos);
-                    mirror = 0;
-                } else if (pskey == 0x01be) { // UART Baud
-                    // write(output, buffer, pos);
-                    write(fileno(stdout), "Skipping: ", 10);
-                    write(fileno(stdout), buffer, pos);
-                    mirror = 0;
-                } else {
-                    // dump buffer and start forwarding
-                    write(output, buffer, pos);
-                    write(fileno(stdout), buffer, pos);
-                    mirror = 1;
+                switch (pskey) {
+                    case 0x01f9:    // UART MODE
+                    case 0x01c1:    // Configure H5 mode
+                        mirror = 0;
+                        break;
+                    case 0x01be:    // UART Baud
+                        // use own settings
+                        sprintf(buffer, "csr -p 0x01be=0x01d8\n");  // 115200 for now
+                        write(output, buffer, pos+1);
+                        mirror = 0;
+                        break;
+                    default:
+                        // anything else: dump buffer and start forwarding
+                        write(output, buffer, pos);
+                        mirror = 1;
+                        break;
                 }
             } else {
                 write(output, buffer, pos);
-                write(fileno(stdout), buffer, pos);
                 mirror = 1;
             }
         }
     }
-    // close ports
+    // close input
     close(input);
+    return 0;
+}
 
+static int iphone_on (void *config){
+
+#if 0
+    // use tmp file
+    int output = open("/tmp/bt.init", O_WRONLY | O_CREAT | O_TRUNC);
+    iphone_write_initscript(config, output);
+    close(output);
+    system ("BlueTool < /tmp/bt.init");
+#else
+    // modify original script on the fly
+    FILE * outputFile = popen("BlueTool", "r+");
+    setvbuf(outputFile, NULL, _IONBF, 0);
+    int output = fileno(outputFile);
+    iphone_write_initscript(config, output);
+    
     // log output
-    int ready;
-    do {
-        fd_set fds;
-        FD_ZERO(&fds);
-        FD_SET(output,&fds);
-        ready=select(output+1,&fds,NULL,NULL,&noTime);
-        if (ready>0)
-        {
-            if (FD_ISSET(output,&fds)) {
-                char singlechar = fgetc(outputFile);
-                printf("%c", singlechar);
-            }
-        }
-    } while (ready);
-    
     fflush(outputFile);
+    int singlechar;
+    while (1) {
+        singlechar = fgetc(outputFile);
+        if (singlechar == EOF) break;
+        printf("%c", singlechar);
+    };
     pclose(outputFile);
-    
-    // pause
-    sleep(3);
-    
+        
+#endif
+    // if we sleep for about 3 seconds, we miss a strage packet
+    // sleep(3); 
     return 0;
 }
 
