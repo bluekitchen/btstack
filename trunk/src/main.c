@@ -24,8 +24,8 @@ hci_con_handle_t con_handle= 0;
 uint16_t dest_cid;
 
 void event_handler(uint8_t *packet, int size){
-    bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };
-    // bd_addr_t addr = { 0x00, 0x16, 0xcb, 0x09, 0x94, 0xa9};
+    // bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };  // Think Outside Keyboard
+    bd_addr_t addr = { 0x00, 0x16, 0xcb, 0x09, 0x94, 0xa9};  // MacBook Pro
 
     // printf("Event type: %x, opcode: %x, other %x\n", packet[0], packet[3] | packet[4] << 8);
 
