@@ -56,6 +56,15 @@ static int    h4_open(void *transport_config){
     switch(hci_uart_config->baudrate) {
         case 57600:  brate=B57600;  break;
         case 115200: brate=B115200; break;
+#ifdef B230400
+        case 230400: brate=B230400; break;
+#endif
+#ifdef B460800
+        case 460800: brate=B460800; break;
+#endif
+#ifdef B921600
+        case 921600: brate=B921600; break;
+#endif
     }
     cfsetispeed(&toptions, brate);
     cfsetospeed(&toptions, brate);
