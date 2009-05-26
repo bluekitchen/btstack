@@ -110,8 +110,11 @@ int main (int argc, const char * argv[]) {
 #else 
     // iPhone
     config.device_name = "/dev/tty.bluetooth";
-//    config.baudrate    = 115200;
-    config.baudrate    = 230400;
+    config.baudrate    = 115200;
+//    config.baudrate    = 230400;  // ok
+//    config.baudrate    = 460800;  // ok
+//    config.baudrate    = 921600;  // ok
+//    config.baudrate    = 2400000; // does not work (yet)
     config.flowcontrol = 1;
     control = &bt_control_iphone;
 #endif
