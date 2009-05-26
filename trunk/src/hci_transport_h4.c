@@ -12,6 +12,9 @@
 
 #include "hci.h"
 #include "hci_transport_h4.h"
+#include "hci_dump.h"
+
+#define HCI_DUMP
 
 typedef enum {
     H4_W4_PACKET_TYPE,
@@ -34,7 +37,6 @@ static int bytes_to_read;
 static int read_pos;
 // static uint8_t hci_event_buffer[255+2]; // maximal payload + 2 bytes header
 static uint8_t hci_packet[400]; // bigger than largest packet
-
 
 
 // prototypes
@@ -102,11 +104,18 @@ static int    h4_open(void *transport_config){
     bytes_to_read = 1;
     h4_state = H4_W4_PACKET_TYPE;
     read_pos = 0;
+
+#ifdef HCI_DUMP
+    hci_dump_open("/tmp/hci_dump.cap");
+#endif
     
     return 0;
 }
 
 static int    h4_close(){
+#ifdef HCI_DUMP
+    hci_dump_close();
+#endif
     return 0;
 }
 
@@ -116,6 +125,11 @@ static int    h4_send_cmd_packet(uint8_t *packet, int size){
     
     char *data = (char*) packet;
     char packet_type = HCI_COMMAND_DATA_PACKET;
+
+#ifdef HCI_DUMP
+    hci_dump_packet( (uint8_t) packet_type, 0, packet, size);
+#endif
+    
     write(fd, &packet_type, 1);
     while (size > 0) {
         int bytes_written = write(fd, data, size);
@@ -134,6 +148,11 @@ static int    h4_send_acl_packet(uint8_t *packet, int size){
     
     char *data = (char*) packet;
     char packet_type = HCI_ACL_DATA_PACKET;
+
+#ifdef HCI_DUMP
+    hci_dump_packet( (uint8_t) packet_type, 0, packet, size);
+#endif
+    
     write(fd, &packet_type, 1);
     while (size > 0) {
         int bytes_written = write(fd, data, size);
@@ -192,6 +211,9 @@ static int    h4_handle_data() {
         case H4_W4_EVENT_PAYLOAD:
             printf("EVT: ");
             hexdump(hci_packet, read_pos);
+#ifdef HCI_DUMP
+            hci_dump_packet( HCI_EVENT_PACKET, 1, hci_packet, read_pos);
+#endif
             event_packet_handler(hci_packet, read_pos);
             h4_state = H4_W4_PACKET_TYPE;
             read_pos = 0;
@@ -204,6 +226,9 @@ static int    h4_handle_data() {
         case H4_W4_ACL_PAYLOAD:
             printf("<ACL ");
             hexdump(hci_packet, read_pos);
+#ifdef HCI_DUMP
+            hci_dump_packet( HCI_ACL_DATA_PACKET, 1, hci_packet, read_pos);
+#endif
             acl_packet_handler(hci_packet, read_pos);
             h4_state = H4_W4_PACKET_TYPE;
             read_pos = 0;

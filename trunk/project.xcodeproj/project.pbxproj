@@ -11,6 +11,7 @@
 		9C46FC390FA906F700ABEF05 /* hci.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC340FA906F700ABEF05 /* hci.c */; };
 		9C46FC3A0FA906F700ABEF05 /* hci_transport_h4.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */; };
 		9C7ECB840FCC85650085DAC5 /* bt_control_iphone.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7ECB820FCC85650085DAC5 /* bt_control_iphone.c */; };
+		9C7ECBB50FCC95DD0085DAC5 /* hci_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7ECBB40FCC95DD0085DAC5 /* hci_dump.c */; };
 		9C88500E0FBF6702004980E4 /* l2cap.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C88500C0FBF6702004980E4 /* l2cap.c */; };
 /* End PBXBuildFile section */
 
@@ -37,6 +38,8 @@
 		9C7ECB810FCC85650085DAC5 /* bt_control.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = bt_control.h; path = src/bt_control.h; sourceTree = "<group>"; };
 		9C7ECB820FCC85650085DAC5 /* bt_control_iphone.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = bt_control_iphone.c; path = src/bt_control_iphone.c; sourceTree = "<group>"; };
 		9C7ECB830FCC85650085DAC5 /* bt_control_iphone.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = bt_control_iphone.h; path = src/bt_control_iphone.h; sourceTree = "<group>"; };
+		9C7ECBB30FCC95DD0085DAC5 /* hci_dump.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = hci_dump.h; path = src/hci_dump.h; sourceTree = "<group>"; };
+		9C7ECBB40FCC95DD0085DAC5 /* hci_dump.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = hci_dump.c; path = src/hci_dump.c; sourceTree = "<group>"; };
 		9C88500C0FBF6702004980E4 /* l2cap.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = l2cap.c; path = src/l2cap.c; sourceTree = "<group>"; };
 		9C88500D0FBF6702004980E4 /* l2cap.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = l2cap.h; path = src/l2cap.h; sourceTree = "<group>"; };
 		9CA3C0900FB8B3C4005F48DE /* TODO.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = TODO.txt; sourceTree = "<group>"; };
@@ -78,6 +81,8 @@
 				9C88500C0FBF6702004980E4 /* l2cap.c */,
 				9C88500D0FBF6702004980E4 /* l2cap.h */,
 				9C46FBAE0FA8F31800ABEF05 /* main.c */,
+				9C7ECBB30FCC95DD0085DAC5 /* hci_dump.h */,
+				9C7ECBB40FCC95DD0085DAC5 /* hci_dump.c */,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -146,6 +151,7 @@
 				9C46FC3A0FA906F700ABEF05 /* hci_transport_h4.c in Sources */,
 				9C88500E0FBF6702004980E4 /* l2cap.c in Sources */,
 				9C7ECB840FCC85650085DAC5 /* bt_control_iphone.c in Sources */,
+				9C7ECBB50FCC95DD0085DAC5 /* hci_dump.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
