@@ -8,6 +8,8 @@
 
 #include "bt_control_iphone.h"
 
+#include "hci_transport.h"
+
 #include <sys/utsname.h>  // uname
 #include <stdlib.h>       // system
 #include <stdio.h>        // sscanf, printf
@@ -42,8 +44,21 @@ static const char * iphone_name(void *config){
     return get_machine_name();
 }
 
+static void iphone_set_pskey(int fd, int key, int value){
+    sprintf(buffer, "csr -p 0x%04x=0x%04x\n", key, value);
+    write(fd, buffer, 21);
+}
+                                                
 
 static int iphone_write_initscript (void *config, int output){
+    
+    // get uart config 
+    hci_uart_config_t * uart_config = (hci_uart_config_t *) config;
+    
+    // calculate baud rate (assume rate is multiply of 100)
+    uint32_t baud_key = (4096 * (uart_config->baudrate/100) + 4999) / 10000;
+    printf("Baud key %u\n", baud_key);
+    
     // construct script path from device name
     strcpy(buffer, "/etc/bluetool/");
     char *machine = get_machine_name();
@@ -88,7 +103,7 @@ static int iphone_write_initscript (void *config, int output){
             pos++;
         }
         
-        // check for "csr -p 0x002a=0x0011" (20)
+        // check for "csr -p 0x1234=0x5678" (20)
         if (store == 1 && pos == 20) {
             int pskey, value;
             store = 0;
@@ -98,10 +113,8 @@ static int iphone_write_initscript (void *config, int output){
                     case 0x01c1:    // Configure H5 mode
                         mirror = 0;
                         break;
-                    case 0x01be:    // UART Baud
-                        // use own settings
-                        sprintf(buffer, "csr -p 0x01be=0x01d8\n");  // 115200 for now
-                        write(output, buffer, pos+1);
+                    case 0x01be:    // PSKET_UART_BAUD_RATE
+                        iphone_set_pskey(output, 0x01be, baud_key);
                         mirror = 0;
                         break;
                     default:
