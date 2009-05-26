@@ -24,7 +24,7 @@ typedef struct {
 
 typedef struct {
     const char *device_name;
-    int   baudrate;
+    uint32_t   baudrate;
     int   flowcontrol; // 
 } hci_uart_config_t;
 
