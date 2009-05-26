@@ -73,10 +73,10 @@ void bt_flip_addr(bd_addr_t dest, bd_addr_t src){
     dest[5] = src[0];
 }
 
-void hexdump(uint8_t *data, int size){
+void hexdump(void *data, int size){
     int i;
     for (i=0; i<size;i++){
-        printf("%02X ", data[i]);
+        printf("%02X ", ((uint8_t *)data)[i]);
     }
     printf("\n");
 }

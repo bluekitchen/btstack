@@ -163,7 +163,7 @@ int hci_power_control(HCI_POWER_MODE mode);
 uint32_t hci_run();
 
 //
-void hexdump(uint8_t *data, int size);
+void hexdump(void *data, int size);
 
 // create and send hci command packet based on a template and a list of parameters
 int hci_send_cmd(hci_cmd_t *cmd, ...);
