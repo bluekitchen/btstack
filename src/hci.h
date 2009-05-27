@@ -173,6 +173,7 @@ int hci_send_acl_packet(uint8_t *packet, int size);
 
 // helper
 extern void bt_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
+extern void bt_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 
 extern hci_cmd_t hci_inquiry;
 extern hci_cmd_t hci_link_key_request_negative_reply;

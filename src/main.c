@@ -10,10 +10,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "bt_control_iphone.h"
-
 #include "hci.h"
 #include "hci_transport_h4.h"
+#include "hci_dump.h"
 
 #include "l2cap.h"
 
@@ -96,7 +95,7 @@ int main (int argc, const char * argv[]) {
     
     bt_control_t * control = NULL;
     
-#if 0
+#if 1
     // 
     if (argc <= 1){
         printf("HCI Daemon tester. Specify device name for Ericsson ROK 101 007\n");
@@ -118,6 +117,9 @@ int main (int argc, const char * argv[]) {
     config.flowcontrol = 1;
     control = &bt_control_iphone;
 #endif
+    
+    // use logger: format HCI_DUMP_PACKETLOGGER or HCI_DUMP_BLUEZ
+    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
     
     // H4 UART
     transport = &hci_transport_h4;
