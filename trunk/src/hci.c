@@ -60,8 +60,15 @@ static hci_stack_t       hci_stack;
 
 
 void bt_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
-    buffer[pos] = value & 0xff;
-    buffer[pos+1] = value >> 8;
+    buffer[pos++] = value;
+    buffer[pos++] = value >> 8;
+}
+
+void bt_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
+    buffer[pos++] = value;
+    buffer[pos++] = value >> 8;
+    buffer[pos++] = value >> 16;
+    buffer[pos++] = value >> 24;
 }
 
 void bt_flip_addr(bd_addr_t dest, bd_addr_t src){
