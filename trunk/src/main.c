@@ -111,7 +111,7 @@ int main (int argc, const char * argv[]) {
     
     bt_control_t * control = NULL;
     
-#if 0
+#if 1
     // 
     if (argc <= 1){
         printf("HCI Daemon tester. Specify device name for Ericsson ROK 101 007\n");
@@ -151,10 +151,7 @@ int main (int argc, const char * argv[]) {
 
     // init L2CAP
     l2cap_init();
-    
-    // get fd for select call
-    int transport_fd = transport->get_fd();
-     
+         
     // 
     fd_set descriptors;
     FD_ZERO(&descriptors);
@@ -162,6 +159,8 @@ int main (int argc, const char * argv[]) {
         // handle HCI
         hci_run();
         
+        // get fd for select call
+        int transport_fd = transport->get_fd();
         FD_SET(transport_fd, &descriptors);
         // int ready = 
         select( transport_fd+1, &descriptors, NULL, NULL, NULL);
