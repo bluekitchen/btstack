@@ -13,6 +13,7 @@
 #include "hci.h"
 #include "hci_transport_h4.h"
 #include "hci_dump.h"
+#include "bt_control_iphone.h"
 
 #include "l2cap.h"
 
@@ -23,16 +24,16 @@ hci_con_handle_t con_handle= 0;
 uint16_t dest_cid;
 
 void event_handler(uint8_t *packet, int size){
-    bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };  // Think Outside Keyboard
-    // bd_addr_t addr = { 0x00, 0x16, 0xcb, 0x09, 0x94, 0xa9};  // MacBook Pro
-
     // printf("Event type: %x, opcode: %x, other %x\n", packet[0], packet[3] | packet[4] << 8);
+
+#if 0
+    // bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };  // Think Outside Keyboard
+    // bd_addr_t addr = { 0x00, 0x16, 0xcb, 0x09, 0x94, 0xa9};  // MacBook Pro
 
     // bt stack activated, set authentication enabled
     if (packet[0] == BTSTACK_EVENT_HCI_WORKING) {
         hci_send_cmd(&hci_write_authentication_enable, 1);
         // hci_send_cmd(&hci_host_buffer_size, 400, 255, 1, 0, 0);
-        // hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, 30, 0);
     }
     
     if ( COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable) ) {
@@ -55,6 +56,21 @@ void event_handler(uint8_t *packet, int size){
             l2cap_send_signaling_packet(con_handle, CONNECTION_REQUEST, sig_seq_nr++, 0x13, local_cid);
         }
     }
+#else
+    if (packet[0] == BTSTACK_EVENT_HCI_WORKING) {
+        hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, 10, 0);
+    }
+    if (packet[0] == HCI_EVENT_INQUIRY_COMPLETE){
+        // power cycle
+        hci_power_control( HCI_POWER_OFF );
+        // 
+        printf ("Power off!\n");
+        sleep(10);
+        printf ("Restart!\n");
+        hci_power_control( HCI_POWER_ON );
+    }
+#endif
+    
 }
 
 void acl_handler(uint8_t *packet, int size){
@@ -95,7 +111,7 @@ int main (int argc, const char * argv[]) {
     
     bt_control_t * control = NULL;
     
-#if 1
+#if 0
     // 
     if (argc <= 1){
         printf("HCI Daemon tester. Specify device name for Ericsson ROK 101 007\n");

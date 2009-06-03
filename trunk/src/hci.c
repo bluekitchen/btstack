@@ -132,6 +132,11 @@ static void event_handler(uint8_t *packet, int size){
 
     // handle BT initialization
     if (hci_stack.state == HCI_STATE_INITIALIZING){
+        // handle H4 synchronization loss on restart
+        // if (hci_stack.substate == 1 && packet[0] == HCI_EVENT_HARDWARE_ERROR){
+        //    hci_stack.substate = 0;
+        // }
+        // handle normal init sequence
         if (hci_stack.substate % 2){
             // odd: waiting for event
             if (packet[0] == HCI_EVENT_COMMAND_COMPLETE){
@@ -164,47 +169,71 @@ void hci_register_acl_packet_handler  (void (*handler)(uint8_t *packet, int size
     hci_stack.acl_packet_handler = handler;
 }
 
+static int null_control_function(void *config){
+    return 0;
+}
+static const char * null_control_name(void *config){
+    return "Hardware unknown";
+}
+
+static bt_control_t null_control = {
+    null_control_function,
+    null_control_function,
+    null_control_function,
+    null_control_name
+}; 
+
 void hci_init(hci_transport_t *transport, void *config, bt_control_t *control){
     
     // reference to use transport layer implementation
     hci_stack.hci_transport = transport;
     
     // references to used control implementation
-    hci_stack.control = control;
+    if (control) {
+        hci_stack.control = control;
+    } else {
+        hci_stack.control = &null_control;
+    }
     
     // reference to used config
     hci_stack.config = config;
     
     // empty cmd buffer
     hci_stack.hci_cmd_buffer = malloc(3+255);
-    
-    // set up state
-    hci_stack.num_cmd_packets = 1; // assume that one cmd can be sent
-    hci_stack.state = HCI_STATE_INITIALIZING;
-    hci_stack.substate = 0;
-    
+
     // higher level handler
     hci_stack.event_packet_handler = dummy_handler;
     hci_stack.acl_packet_handler = dummy_handler;
-    
+
     // register packet handlers with transport
     transport->register_event_packet_handler( event_handler);
     transport->register_acl_packet_handler( acl_handler);
     
     // turn on 
     hci_power_control(HCI_POWER_ON);
-    
-    // open low-level device
-    transport->open(config);
 }
 
 int hci_power_control(HCI_POWER_MODE power_mode){
-    if (hci_stack.control) {
-        if (power_mode == HCI_POWER_ON) {
-            hci_stack.control->on(hci_stack.config);
-        } else if (power_mode == HCI_POWER_OFF){
-            hci_stack.control->off(hci_stack.config);
-        }
+    if (power_mode == HCI_POWER_ON) {
+        
+        // set up state machine
+        hci_stack.num_cmd_packets = 1; // assume that one cmd can be sent
+        hci_stack.state = HCI_STATE_INITIALIZING;
+        hci_stack.substate = 0;
+        
+        // power on
+        hci_stack.control->on(hci_stack.config);
+        
+        // open low-level device
+        hci_stack.hci_transport->open(hci_stack.config);
+        
+    } else if (power_mode == HCI_POWER_OFF){
+        
+        // close low-level device
+        hci_stack.hci_transport->close(hci_stack.config);
+
+        // power off
+        hci_stack.control->off(hci_stack.config);
     }
     return 0;
 }
