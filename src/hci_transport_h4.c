@@ -108,6 +108,7 @@ static int    h4_open(void *transport_config){
 
 static int    h4_close(){
     hci_dump_close();
+    close(fd);
     return 0;
 }
 
