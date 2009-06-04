@@ -111,7 +111,7 @@ int main (int argc, const char * argv[]) {
     
     bt_control_t * control = NULL;
     
-#if 1
+#if 0
     // 
     if (argc <= 1){
         printf("HCI Daemon tester. Specify device name for Ericsson ROK 101 007\n");

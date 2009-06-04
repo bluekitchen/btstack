@@ -41,8 +41,10 @@ static hcidump_hdr header_bluez;
 static pktlog_hdr  header_packetlogger;
 
 void hci_dump_open(char *filename, hci_dump_format_t format){
-    dump_file =  open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
-    dump_format = format;
+    if (dump_file < 0) {
+        dump_file =  open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
+        dump_format = format;
+    }
 }
 
 void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {
@@ -91,5 +93,6 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
 
 void hci_dump_close(){
     close(dump_file);
+    dump_file = -1;
 }
 
