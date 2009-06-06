@@ -119,6 +119,9 @@ static void dummy_handler(uint8_t *packet, int size){
 
 static void acl_handler(uint8_t *packet, int size){
     hci_stack.acl_packet_handler(packet, size);
+    
+    // execute main loop
+    hci_run();
 }
 
 static void event_handler(uint8_t *packet, int size){
@@ -159,6 +162,9 @@ static void event_handler(uint8_t *packet, int size){
     }
     
     hci_stack.event_packet_handler(packet, size);
+	
+	// execute main loop
+	hci_run();
 }
 
 /** Register L2CAP handlers */

@@ -17,6 +17,8 @@
 
 #include "l2cap.h"
 
+#include "run_loop.h"
+
 static hci_transport_t * transport;
 static hci_uart_config_t config;
 
@@ -26,8 +28,8 @@ uint16_t dest_cid;
 void event_handler(uint8_t *packet, int size){
     // printf("Event type: %x, opcode: %x, other %x\n", packet[0], packet[3] | packet[4] << 8);
 
-#if 0
-    // bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };  // Think Outside Keyboard
+#if 1
+    bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };  // Think Outside Keyboard
     // bd_addr_t addr = { 0x00, 0x16, 0xcb, 0x09, 0x94, 0xa9};  // MacBook Pro
 
     // bt stack activated, set authentication enabled
@@ -107,11 +109,16 @@ void acl_handler(uint8_t *packet, int size){
     }
 }
 
+int transport_run_loop_cb(data_source_t * ds, int ready){
+    transport->handle_data();
+    return 0;
+}
+
 int main (int argc, const char * argv[]) {
     
     bt_control_t * control = NULL;
     
-#if 0
+#if 1
     // 
     if (argc <= 1){
         printf("HCI Daemon tester. Specify device name for Ericsson ROK 101 007\n");
@@ -151,24 +158,17 @@ int main (int argc, const char * argv[]) {
 
     // init L2CAP
     l2cap_init();
-         
-    // 
-    fd_set descriptors;
-    FD_ZERO(&descriptors);
-    while (1){
-        // handle HCI
-        hci_run();
-        
-        // get fd for select call
-        int transport_fd = transport->get_fd();
-        FD_SET(transport_fd, &descriptors);
-        // int ready = 
-        select( transport_fd+1, &descriptors, NULL, NULL, NULL);
-        // printf("Ready: %d, isset() = %u\n", ready, FD_ISSET(transport_fd, &descriptors));
-
-        // handle incoming data from BT module
-        transport->handle_data();
-    }
     
+    // trigger first hci action
+    hci_run();
+    
+    // configure run loop
+    data_source_t hci_transport;
+    hci_transport.fd = transport->get_fd();
+    hci_transport.process = &transport_run_loop_cb;
+    run_loop_add(&hci_transport);
+   
+    // go!
+    run_loop_execute();
     return 0;
 }
