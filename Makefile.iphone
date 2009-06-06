@@ -24,6 +24,7 @@ hci_dump.c                        \
 hci_transport_h4.c                \
 l2cap.c                           \
 main.c                            \
+run_loop.c                        \
  
 HEADERS = \
 bt_control.h                      \
@@ -33,6 +34,7 @@ hci_dump.h                        \
 hci_transport.h                   \
 hci_transport_h4.h                \
 l2cap.h                           \
+run_loop.h                        \
  
 all: $(NAME)
 
