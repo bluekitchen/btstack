@@ -109,11 +109,6 @@ void acl_handler(uint8_t *packet, int size){
     }
 }
 
-int transport_run_loop_cb(data_source_t * ds, int ready){
-    transport->handle_data();
-    return 0;
-}
-
 int main (int argc, const char * argv[]) {
     
     bt_control_t * control = NULL;
@@ -145,7 +140,7 @@ int main (int argc, const char * argv[]) {
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
     
     // H4 UART
-    transport = &hci_transport_h4;
+    transport = hci_transport_h4_instance();
 
     // init HCI
     hci_init(transport, &config, control);
@@ -163,10 +158,7 @@ int main (int argc, const char * argv[]) {
     hci_run();
     
     // configure run loop
-    data_source_t hci_transport;
-    hci_transport.fd = transport->get_fd();
-    hci_transport.process = &transport_run_loop_cb;
-    run_loop_add(&hci_transport);
+    run_loop_add( (data_source_t *) transport);
    
     // go!
     run_loop_execute();

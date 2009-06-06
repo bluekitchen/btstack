@@ -22,10 +22,12 @@ typedef enum {
     H4_W4_ACL_PAYLOAD
 } H4_STATE;
 
+// single instance
+static hci_transport_t * hci_transport_h4 = NULL;
+
 static void dummy_handler(uint8_t *packet, int size); 
 static    hci_uart_config_t *hci_uart_config;
 
-static  int fd;
 static  void (*event_packet_handler)(uint8_t *packet, int size) = dummy_handler;
 static  void (*acl_packet_handler)  (uint8_t *packet, int size) = dummy_handler;
 
@@ -41,7 +43,7 @@ static uint8_t hci_packet[400]; // bigger than largest packet
 static int    h4_open(void *transport_config){
     hci_uart_config = (hci_uart_config_t*) transport_config;
     struct termios toptions;
-    fd = open(hci_uart_config->device_name, O_RDWR | O_NOCTTY | O_NDELAY);
+    int fd = open(hci_uart_config->device_name, O_RDWR | O_NOCTTY | O_NDELAY);
     if (fd == -1)  {
         perror("init_serialport: Unable to open port ");
         perror(hci_uart_config->device_name);
@@ -98,6 +100,9 @@ static int    h4_open(void *transport_config){
         return -1;
     }
     
+    // set up data_source
+    hci_transport_h4->ds.fd = fd;
+    
     // init state machine
     bytes_to_read = 1;
     h4_state = H4_W4_PACKET_TYPE;
@@ -107,11 +112,14 @@ static int    h4_open(void *transport_config){
 }
 
 static int    h4_close(){
-    close(fd);
+    close(hci_transport_h4->ds.fd);
+    hci_transport_h4->ds.fd = 0;
     return 0;
 }
 
 static int    h4_send_cmd_packet(uint8_t *packet, int size){
+    if (hci_transport_h4->ds.fd == 0) return -1;
+
     printf("CMD: ");
     hexdump(packet, size);
     
@@ -120,9 +128,9 @@ static int    h4_send_cmd_packet(uint8_t *packet, int size){
 
     hci_dump_packet( (uint8_t) packet_type, 0, packet, size);
     
-    write(fd, &packet_type, 1);
+    write(hci_transport_h4->ds.fd, &packet_type, 1);
     while (size > 0) {
-        int bytes_written = write(fd, data, size);
+        int bytes_written = write(hci_transport_h4->ds.fd, data, size);
         if (bytes_written < 0) {
             return bytes_written;
         }
@@ -133,6 +141,8 @@ static int    h4_send_cmd_packet(uint8_t *packet, int size){
 }
 
 static int    h4_send_acl_packet(uint8_t *packet, int size){
+    if (hci_transport_h4->ds.fd == 0) return -1;
+
     printf("ACL> ");
     hexdump(packet, size);
     
@@ -141,9 +151,9 @@ static int    h4_send_acl_packet(uint8_t *packet, int size){
 
     hci_dump_packet( (uint8_t) packet_type, 0, packet, size);
     
-    write(fd, &packet_type, 1);
+    write(hci_transport_h4->ds.fd, &packet_type, 1);
     while (size > 0) {
-        int bytes_written = write(fd, data, size);
+        int bytes_written = write(hci_transport_h4->ds.fd, data, size);
         if (bytes_written < 0) {
             return bytes_written;
         }
@@ -161,13 +171,11 @@ static void   h4_register_acl_packet_handler  (void (*handler)(uint8_t *packet, 
     acl_packet_handler = handler;
 }
 
-static int    h4_get_fd() {
-    return fd;
-}
-
 static int    h4_handle_data() {
+    if (hci_transport_h4->ds.fd == 0) return -1;
+
     // read up to bytes_to_read data in
-    int bytes_read = read(fd, &hci_packet[read_pos], bytes_to_read);
+    int bytes_read = read(hci_transport_h4->ds.fd, &hci_packet[read_pos], bytes_to_read);
     if (bytes_read < 0) {
         return bytes_read;
     }
@@ -233,15 +241,19 @@ static const char * h4_get_transport_name(){
 static void dummy_handler(uint8_t *packet, int size){
 }
 
-// single instance
-hci_transport_t hci_transport_h4 = {
-    h4_open, 
-    h4_close,
-    h4_send_cmd_packet,
-    h4_send_acl_packet,
-    h4_register_event_packet_handler,
-    h4_register_acl_packet_handler,
-    h4_get_fd,
-    h4_handle_data,
-    h4_get_transport_name
-};
+// get h4 singleton
+hci_transport_t * hci_transport_h4_instance() {
+    if (hci_transport_h4 == NULL) {
+        hci_transport_h4 = malloc( sizeof(hci_transport_t));
+        hci_transport_h4->ds.fd                         = 0;
+        hci_transport_h4->ds.process                    = h4_handle_data;
+        hci_transport_h4->open                          = h4_open;
+        hci_transport_h4->close                         = h4_close;
+        hci_transport_h4->send_cmd_packet               = h4_send_cmd_packet;
+        hci_transport_h4->send_acl_packet               = h4_send_acl_packet;
+        hci_transport_h4->register_event_packet_handler = h4_register_event_packet_handler;
+        hci_transport_h4->register_acl_packet_handler   = h4_register_acl_packet_handler;
+        hci_transport_h4->get_transport_name            = h4_get_transport_name;
+    }
+    return hci_transport_h4;
+}
