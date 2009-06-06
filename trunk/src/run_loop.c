@@ -65,8 +65,12 @@ void run_loop_execute() {
         select( highest_fd+1 , &descriptors, NULL, NULL, NULL);
 
         // process input
-        for (ds = the_run_loop; ds != NULL ; ds = ds->next){
-            ds->process(ds, FD_ISSET(ds->fd, &descriptors));
+        data_source_t *next;
+        for (ds = the_run_loop; ds != NULL ; ds = next){
+            next = ds->next; // cache pointer to next data_source to allow data source to remove itself
+            if (FD_ISSET(ds->fd, &descriptors)) {
+                ds->process(ds, FD_ISSET(ds->fd, &descriptors));
+            }
         }
     }
 }

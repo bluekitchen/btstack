@@ -18,6 +18,7 @@
 #include "l2cap.h"
 
 #include "run_loop.h"
+#include "socket_server.h"
 
 static hci_transport_t * transport;
 static hci_uart_config_t config;
@@ -28,7 +29,7 @@ uint16_t dest_cid;
 void event_handler(uint8_t *packet, int size){
     // printf("Event type: %x, opcode: %x, other %x\n", packet[0], packet[3] | packet[4] << 8);
 
-#if 1
+#if 0
     bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };  // Think Outside Keyboard
     // bd_addr_t addr = { 0x00, 0x16, 0xcb, 0x09, 0x94, 0xa9};  // MacBook Pro
 
@@ -157,8 +158,12 @@ int main (int argc, const char * argv[]) {
     // trigger first hci action
     hci_run();
     
+    // create server
+    data_source_t *socket_server = socket_server_create_tcp(1919);
+
     // configure run loop
     run_loop_add( (data_source_t *) transport);
+	run_loop_add( socket_server );
    
     // go!
     run_loop_execute();

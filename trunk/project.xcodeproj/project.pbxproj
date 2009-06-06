@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		9C1F0E9A0FDAE023008F472F /* run_loop.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C1F0E980FDAE023008F472F /* run_loop.c */; };
+		9C1F0F340FDB024B008F472F /* socket_server.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C1F0F320FDB024B008F472F /* socket_server.c */; };
 		9C46FBAF0FA8F31800ABEF05 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FBAE0FA8F31800ABEF05 /* main.c */; };
 		9C46FC390FA906F700ABEF05 /* hci.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC340FA906F700ABEF05 /* hci.c */; };
 		9C46FC3A0FA906F700ABEF05 /* hci_transport_h4.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */; };
@@ -32,6 +33,8 @@
 		8DD76FB20486AB0100D96B5E /* project */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = project; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C1F0E980FDAE023008F472F /* run_loop.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = run_loop.c; path = src/run_loop.c; sourceTree = "<group>"; };
 		9C1F0E990FDAE023008F472F /* run_loop.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = run_loop.h; path = src/run_loop.h; sourceTree = "<group>"; };
+		9C1F0F320FDB024B008F472F /* socket_server.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = socket_server.c; path = src/socket_server.c; sourceTree = "<group>"; };
+		9C1F0F330FDB024B008F472F /* socket_server.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = socket_server.h; path = src/socket_server.h; sourceTree = "<group>"; };
 		9C46FBAE0FA8F31800ABEF05 /* main.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = main.c; path = src/main.c; sourceTree = "<group>"; usesTabs = 0; };
 		9C46FC340FA906F700ABEF05 /* hci.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci.c; path = src/hci.c; sourceTree = "<group>"; };
 		9C46FC350FA906F700ABEF05 /* hci.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci.h; path = src/hci.h; sourceTree = "<group>"; };
@@ -88,6 +91,8 @@
 				9C7ECBB40FCC95DD0085DAC5 /* hci_dump.c */,
 				9C1F0E990FDAE023008F472F /* run_loop.h */,
 				9C1F0E980FDAE023008F472F /* run_loop.c */,
+				9C1F0F320FDB024B008F472F /* socket_server.c */,
+				9C1F0F330FDB024B008F472F /* socket_server.h */,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -158,6 +163,7 @@
 				9C7ECB840FCC85650085DAC5 /* bt_control_iphone.c in Sources */,
 				9C7ECBB50FCC95DD0085DAC5 /* hci_dump.c in Sources */,
 				9C1F0E9A0FDAE023008F472F /* run_loop.c in Sources */,
+				9C1F0F340FDB024B008F472F /* socket_server.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
