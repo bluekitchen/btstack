@@ -49,7 +49,6 @@ int run_loop_remove(data_source_t *ds){
 void run_loop_execute() {
     fd_set descriptors;
     data_source_t *ds;
-    int highest;
     while (1) {
         // collect FDs
         FD_ZERO(&descriptors);
@@ -63,7 +62,7 @@ void run_loop_execute() {
             }
         }
         // wait for ready FDs
-        select( highest+1, &descriptors, NULL, NULL, NULL);
+        select( highest_fd+1 , &descriptors, NULL, NULL, NULL);
 
         // process input
         for (ds = the_run_loop; ds != NULL ; ds = ds->next){

@@ -1,16 +1,11 @@
 /* new todo file for BTstack */
 
-REFACTOR
-- implement data_source
-  - single fd per data_source
-- implement run_loop
-- adapt current BT implementation to use new run_loop
-
 NEW FUNCTIONALITY
 - implement single connection event-driven socket server
   - socket fd in data_source can be temp. replaced by actual connection fd
 
 IMPROVE
+- make data_source_t opaque: data_source_set_fd, data_source_set_cb
 - implement TimerSource
 - implement some kind of noitfy mechanism between multiple units
 - make SocketServer object-oriented

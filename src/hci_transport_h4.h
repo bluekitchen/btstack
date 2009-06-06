@@ -32,4 +32,4 @@
 #define HCI_EVENT_PACKET	    0x04
 
 
-extern hci_transport_t hci_transport_h4;
+extern hci_transport_t * hci_transport_h4_instance();
