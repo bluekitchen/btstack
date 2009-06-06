@@ -171,7 +171,7 @@ static void   h4_register_acl_packet_handler  (void (*handler)(uint8_t *packet, 
     acl_packet_handler = handler;
 }
 
-static int    h4_handle_data() {
+static int    h4_process(struct data_source *ds, int ready) {
     if (hci_transport_h4->ds.fd == 0) return -1;
 
     // read up to bytes_to_read data in
@@ -246,7 +246,7 @@ hci_transport_t * hci_transport_h4_instance() {
     if (hci_transport_h4 == NULL) {
         hci_transport_h4 = malloc( sizeof(hci_transport_t));
         hci_transport_h4->ds.fd                         = 0;
-        hci_transport_h4->ds.process                    = h4_handle_data;
+        hci_transport_h4->ds.process                    = h4_process;
         hci_transport_h4->open                          = h4_open;
         hci_transport_h4->close                         = h4_close;
         hci_transport_h4->send_cmd_packet               = h4_send_cmd_packet;

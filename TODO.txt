@@ -1,16 +1,8 @@
 /* new todo file for BTstack */
 
-NEW FUNCTIONALITY
-- implement single connection event-driven socket server
-  - socket fd in data_source can be temp. replaced by actual connection fd
-
 IMPROVE
 - make data_source_t opaque: data_source_set_fd, data_source_set_cb
 - implement TimerSource
 - implement some kind of noitfy mechanism between multiple units
-- make SocketServer object-oriented
-  - put data into struct
-  - DataSource * dataSource = SocketServer_createUnixSocket( name );
-  - DataSource * dataSource = SocketServer_createTcpSocket( port);
-  - how to handle multiple parallel connections?
-    - callback to announce new connection, allow to store local context pointer
+- support better handling of multiple parallel socket connections?
+	- callback to announce new connection, allow to store local context pointer
