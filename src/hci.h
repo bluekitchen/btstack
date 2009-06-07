@@ -186,5 +186,7 @@ extern hci_cmd_t hci_create_connection;
 extern hci_cmd_t hci_host_buffer_size;
 extern hci_cmd_t hci_write_authentication_enable;
 extern hci_cmd_t hci_write_page_timeout;
+extern hci_cmd_t hci_remote_name_request;
+extern hci_cmd_t hci_remote_name_request_cancel;
 extern hci_cmd_t hci_read_bd_addr;
 
