@@ -24,6 +24,8 @@
 
 static char test_buffer[DATA_BUF_SIZE];
 
+static int socket_server_echo_process(struct data_source *ds, int ready);
+static int (*socket_server_process)(struct data_source *ds, int ready) = socket_server_echo_process;
 
 int socket_server_set_non_blocking(int fd)
 {
@@ -35,7 +37,7 @@ int socket_server_set_non_blocking(int fd)
     return err;
 }
 
-static int socket_server_process(struct data_source *ds, int ready) {
+static int socket_server_echo_process(struct data_source *ds, int ready) {
     int bytes_read = read(ds->fd, test_buffer, DATA_BUF_SIZE);
     
     // connection closed by client?
@@ -140,3 +142,10 @@ data_source_t * socket_server_create_unix(char *path){
     return 0;
 }
 
+/**
+ * register data available callback
+ * @todo: hack callback to allow data reception - replace with better architecture
+ */
+void socket_server_register_process_callback( int (*process_callback)(struct data_source *ds, int ready) ){
+    socket_server_process = process_callback;
+}
