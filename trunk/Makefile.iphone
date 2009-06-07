@@ -25,6 +25,7 @@ hci_transport_h4.c                \
 l2cap.c                           \
 main.c                            \
 run_loop.c                        \
+socket_server.c                   \
  
 HEADERS = \
 bt_control.h                      \
@@ -35,6 +36,7 @@ hci_transport.h                   \
 hci_transport_h4.h                \
 l2cap.h                           \
 run_loop.h                        \
+socket_server.h                   \
  
 all: $(NAME)
 
