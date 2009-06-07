@@ -21,30 +21,33 @@ hci_cmd_t hci_inquiry = {
     OPCODE(OGF_LINK_CONTROL, 0x01), "311"
     // LAP, Inquiry length, Num_responses
 };
-
 hci_cmd_t hci_inquiry_cancel = {
-OPCODE(OGF_LINK_CONTROL, 0x02), ""
-// no params
+	OPCODE(OGF_LINK_CONTROL, 0x02), ""
+	// no params
 };
-
+hci_cmd_t hci_create_connection = {
+	OPCODE(OGF_LINK_CONTROL, 0x05), "B21121"
+	// BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
+};
 hci_cmd_t hci_link_key_request_negative_reply = {
     OPCODE(OGF_LINK_CONTROL, 0x0c), "B"
 };
-
 hci_cmd_t hci_pin_code_request_reply = {
     OPCODE(OGF_LINK_CONTROL, 0x0d), "B1P"
     // BD_ADDR, pin length, PIN: c-string
+};
+hci_cmd_t hci_remote_name_request = {
+	OPCODE(OGF_LINK_CONTROL, 0x19), "B112"
+	// BD_ADDR, Page_Scan_Repetition_Mode, Reserved, Clock_Offset
+};
+	hci_cmd_t hci_remote_name_request_cancel = {
+	OPCODE(OGF_LINK_CONTROL, 0x1A), "B"
+	// BD_ADDR
 };
 
 hci_cmd_t hci_reset = {
     OPCODE(OGF_CONTROLLER_BASEBAND, 0x03), ""
 };
-
-hci_cmd_t hci_create_connection = {
-    OPCODE(OGF_LINK_CONTROL, 0x05), "B21121"
-    // BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
-};
-
 hci_cmd_t hci_write_page_timeout = {
     OPCODE(OGF_CONTROLLER_BASEBAND, 0x18), "2"
     // Page_Timeout * 0.625 ms
@@ -61,8 +64,8 @@ hci_cmd_t hci_host_buffer_size = {
 };
 
 hci_cmd_t hci_read_bd_addr = {
-OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x09), ""
-// no params
+	OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x09), ""
+	// no params
 };
 
 
