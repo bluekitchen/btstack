@@ -176,7 +176,9 @@ extern void bt_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
 extern void bt_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 extern void bt_flip_addr(bd_addr_t dest, bd_addr_t src);
 
+// HCI Commands - see hci.c for info on parameters
 extern hci_cmd_t hci_inquiry;
+extern hci_cmd_t hci_inquiry_cancel;
 extern hci_cmd_t hci_link_key_request_negative_reply;
 extern hci_cmd_t hci_pin_code_request_reply;
 extern hci_cmd_t hci_reset;
