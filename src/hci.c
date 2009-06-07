@@ -22,6 +22,11 @@ hci_cmd_t hci_inquiry = {
     // LAP, Inquiry length, Num_responses
 };
 
+hci_cmd_t hci_inquiry_cancel = {
+OPCODE(OGF_LINK_CONTROL, 0x02), ""
+// no params
+};
+
 hci_cmd_t hci_link_key_request_negative_reply = {
     OPCODE(OGF_LINK_CONTROL, 0x0c), "B"
 };
