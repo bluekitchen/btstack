@@ -155,8 +155,8 @@ int main (int argc, const char * argv[]) {
     // init L2CAP
     l2cap_init();
     
-    // trigger first hci action
-    hci_run();
+    // turn on 
+    hci_power_control(HCI_POWER_ON);
     
     // create server
     data_source_t *socket_server = socket_server_create_tcp(1919);

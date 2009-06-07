@@ -15,6 +15,7 @@
 #define OPCODE(ogf, ocf) (ocf | ogf << 10)
 #define OGF_LINK_CONTROL 0x01
 #define OGF_CONTROLLER_BASEBAND 0x03
+#define OGF_INFORMATIONAL_PARAMETERS 0x04
 
 hci_cmd_t hci_inquiry = {
     OPCODE(OGF_LINK_CONTROL, 0x01), "311"
@@ -52,6 +53,11 @@ hci_cmd_t hci_write_authentication_enable = {
 hci_cmd_t hci_host_buffer_size = {
     OPCODE(OGF_CONTROLLER_BASEBAND, 0x33), "2122"
     // Host_ACL_Data_Packet_Length:, Host_Synchronous_Data_Packet_Length:, Host_Total_Num_ACL_Data_Packets:, Host_Total_Num_Synchronous_Data_Packets:
+};
+
+hci_cmd_t hci_read_bd_addr = {
+OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x09), ""
+// no params
 };
 
 
@@ -214,9 +220,6 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control){
     // register packet handlers with transport
     transport->register_event_packet_handler( event_handler);
     transport->register_acl_packet_handler( acl_handler);
-    
-    // turn on 
-    hci_power_control(HCI_POWER_ON);
 }
 
 int hci_power_control(HCI_POWER_MODE power_mode){
@@ -241,6 +244,10 @@ int hci_power_control(HCI_POWER_MODE power_mode){
         // power off
         hci_stack.control->off(hci_stack.config);
     }
+	
+	// trigger next/first action
+	hci_run();
+	
     return 0;
 }
 

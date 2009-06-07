@@ -174,6 +174,7 @@ int hci_send_acl_packet(uint8_t *packet, int size);
 // helper
 extern void bt_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
 extern void bt_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
+extern void bt_flip_addr(bd_addr_t dest, bd_addr_t src);
 
 extern hci_cmd_t hci_inquiry;
 extern hci_cmd_t hci_link_key_request_negative_reply;
@@ -183,4 +184,5 @@ extern hci_cmd_t hci_create_connection;
 extern hci_cmd_t hci_host_buffer_size;
 extern hci_cmd_t hci_write_authentication_enable;
 extern hci_cmd_t hci_write_page_timeout;
-    
+extern hci_cmd_t hci_read_bd_addr;
+
