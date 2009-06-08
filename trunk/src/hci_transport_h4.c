@@ -38,7 +38,6 @@ static int read_pos;
 // static uint8_t hci_event_buffer[255+2]; // maximal payload + 2 bytes header
 static uint8_t hci_packet[400]; // bigger than largest packet
 
-
 // prototypes
 static int    h4_open(void *transport_config){
     hci_uart_config = (hci_uart_config_t*) transport_config;
@@ -119,10 +118,6 @@ static int    h4_close(){
 
 static int    h4_send_cmd_packet(uint8_t *packet, int size){
     if (hci_transport_h4->ds.fd == 0) return -1;
-
-    printf("CMD: ");
-    hexdump(packet, size);
-    
     char *data = (char*) packet;
     char packet_type = HCI_COMMAND_DATA_PACKET;
 
@@ -142,10 +137,7 @@ static int    h4_send_cmd_packet(uint8_t *packet, int size){
 
 static int    h4_send_acl_packet(uint8_t *packet, int size){
     if (hci_transport_h4->ds.fd == 0) return -1;
-
-    printf("ACL> ");
-    hexdump(packet, size);
-    
+	
     char *data = (char*) packet;
     char packet_type = HCI_ACL_DATA_PACKET;
 
@@ -205,11 +197,7 @@ static int    h4_process(struct data_source *ds, int ready) {
             h4_state = H4_W4_EVENT_PAYLOAD;
             break;
         case H4_W4_EVENT_PAYLOAD:
-            printf("EVT: ");
-            hexdump(hci_packet, read_pos);
-            
-            hci_dump_packet( HCI_EVENT_PACKET, 1, hci_packet, read_pos);
-
+			hci_dump_packet( HCI_EVENT_PACKET, 1, hci_packet, read_pos);
             event_packet_handler(hci_packet, read_pos);
             h4_state = H4_W4_PACKET_TYPE;
             read_pos = 0;
@@ -220,9 +208,6 @@ static int    h4_process(struct data_source *ds, int ready) {
             h4_state = H4_W4_ACL_PAYLOAD;
             break;
         case H4_W4_ACL_PAYLOAD:
-            printf("<ACL ");
-            hexdump(hci_packet, read_pos);
-
             hci_dump_packet( HCI_ACL_DATA_PACKET, 1, hci_packet, read_pos);
             
             acl_packet_handler(hci_packet, read_pos);
