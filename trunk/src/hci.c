@@ -17,6 +17,9 @@
 #define OGF_CONTROLLER_BASEBAND 0x03
 #define OGF_INFORMATIONAL_PARAMETERS 0x04
 
+/**
+ *  Link Control Commands 
+ */
 hci_cmd_t hci_inquiry = {
     OPCODE(OGF_LINK_CONTROL, 0x01), "311"
     // LAP, Inquiry length, Num_responses
@@ -45,19 +48,25 @@ hci_cmd_t hci_remote_name_request = {
 	// BD_ADDR
 };
 
+/**
+ *  Controller & Baseband Commands 
+ */
 hci_cmd_t hci_reset = {
     OPCODE(OGF_CONTROLLER_BASEBAND, 0x03), ""
+    // no params
+};
+hci_cmd_t hci_delete_stored_link_key = {
+    OPCODE(OGF_CONTROLLER_BASEBAND, 0x12), "B1"
+	// BD_ADDR, Delete_All_Flag
 };
 hci_cmd_t hci_write_page_timeout = {
     OPCODE(OGF_CONTROLLER_BASEBAND, 0x18), "2"
     // Page_Timeout * 0.625 ms
 };
-
 hci_cmd_t hci_write_authentication_enable = {
     OPCODE(OGF_CONTROLLER_BASEBAND, 0x20), "1"
     // Authentication_Enable
 };
-
 hci_cmd_t hci_host_buffer_size = {
     OPCODE(OGF_CONTROLLER_BASEBAND, 0x33), "2122"
     // Host_ACL_Data_Packet_Length:, Host_Synchronous_Data_Packet_Length:, Host_Total_Num_ACL_Data_Packets:, Host_Total_Num_Synchronous_Data_Packets:

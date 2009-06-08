@@ -189,4 +189,4 @@ extern hci_cmd_t hci_write_page_timeout;
 extern hci_cmd_t hci_remote_name_request;
 extern hci_cmd_t hci_remote_name_request_cancel;
 extern hci_cmd_t hci_read_bd_addr;
-
+extern hci_cmd_t hci_delete_stored_link_key;
