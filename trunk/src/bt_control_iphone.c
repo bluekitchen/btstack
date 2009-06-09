@@ -113,6 +113,36 @@ static int iphone_write_initscript (void *config, int output){
             pos++;
         }
         
+		// iPod2,1
+		// check for "bcm -X" cmds
+		if (store == 1 && pos == 7){
+			if (strncmp(buffer, "bcm -", 5) == 0) {
+				store  = 0;
+				switch (buffer[5]){
+					case 'a': // BT Address
+						write(output, buffer, pos); // "bcm -a "
+						sprintf(buffer, "00:00:%.2x:%.2x:%.2x:%.2x\n", random_nr & 0xff, (random_nr >> 8) & 0xff,
+								(random_nr >> 16) & 0xff, (random_nr >> 24) & 0xff);
+						write(output, buffer, 18);
+						mirror = 0;
+						break;
+					case 'b': // baud rate command
+						write(output, buffer, pos); // "bcm -b "
+						sprintf(buffer, "%u\n",  uart_config->baudrate);
+						write(output, buffer, strlen(buffer));
+						mirror = 0;
+						break;
+					case 's': // sleep mode - replace with "wake" command?
+						write(output,"wake on\n", strlen("wake on\n"));
+						mirror = 0;
+						break;
+					default: // other "bcm -X" command
+						write(output, buffer, pos);
+						mirror = 1;
+				}
+			}
+		}
+		
 		// iPhone1,1 & iPhone 2,1:
         // check for "csr -p 0x1234=0x5678" (20)
         if (store == 1 && pos == 20) {
@@ -139,38 +169,6 @@ static int iphone_write_initscript (void *config, int output){
                 mirror = 1;
             }
         }
-		// iPod2,1
-		// check for bcm -X
-		if (store == 1 && pos == 7){
-			store  = 0;
-			if (strncmp(buffer, "bcm -", 5) == 0) {
-				switch (buffer[5]){
-					case 'a': // BT Address
-						write(output, buffer, pos); // "bcm -a "
-						sprintf(buffer, "00:00:%.2x:%.2x:%.2x:%.2x\n", random_nr & 0xff, (random_nr >> 8) & 0xff,
-								(random_nr >> 16) & 0xff, (random_nr >> 24) & 0xff);
-						write(output, buffer, 18);
-						mirror = 0;
-						break;
-					case 'b': // baud rate command
-						write(output, buffer, pos); // "bcm -b "
-						sprintf(buffer, "%u\n",  uart_config->baudrate);
-						write(output, buffer, strlen(buffer));
-						mirror = 0;
-						break;
-					case 's': // sleep mode - replace with "wake" command?
-						write(output,"wake on\n", strlen("wake on\n"));
-						mirror = 0;
-						break;
-					default: // other command
-						write(output, buffer, pos);
-						mirror = 1;
-				}
-			} else {
-				write(output, buffer, pos);
-				mirror = 1;
-			}
-		}
     }
     // close input
     close(input);
