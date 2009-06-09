@@ -7,8 +7,8 @@
  */
 
 #include "bt_control_iphone.h"
-
 #include "hci_transport.h"
+#include "hci.h"
 
 #include <sys/utsname.h>  // uname
 #include <stdlib.h>       // system
@@ -37,7 +37,9 @@ static char *get_machine_name(void){
  */
 static int iphone_valid(void *config){
 	char * machine = get_machine_name();
-	return strncmp("iPhone", machine, strlen("iPhone")) == 0;
+	if (!strncmp("iPhone",  machine, strlen("iPhone" ))) return 1;
+	if (!strncmp("iPod2,1", machine, strlen("iPod2,1"))) return 1;
+	return 0;
 }
 
 static const char * iphone_name(void *config){
@@ -48,7 +50,6 @@ static void iphone_set_pskey(int fd, int key, int value){
     sprintf(buffer, "csr -p 0x%04x=0x%04x\n", key, value);
     write(fd, buffer, 21);
 }
-                                                
 
 static int iphone_write_initscript (void *config, int output){
     
@@ -59,11 +60,20 @@ static int iphone_write_initscript (void *config, int output){
     uint32_t baud_key = (4096 * (uart_config->baudrate/100) + 4999) / 10000;
     printf("Baud key %u\n", baud_key);
     
+	// pick random BT address
+	uint32_t random_nr = random();
+	
     // construct script path from device name
     strcpy(buffer, "/etc/bluetool/");
     char *machine = get_machine_name();
     strcat(buffer, machine);
-    strcat(buffer, ".init.script");
+	if (strncmp(machine, "iPhone", strlen("iPhone")) == 0){
+		// It's an iPhone
+		strcat(buffer, ".init.script");
+	} else {
+		// It's an iPod Touch (2G)
+		strcat(buffer, ".boot.script");
+	}
     
     // open script
     int input = open(buffer, O_RDONLY);
@@ -103,6 +113,7 @@ static int iphone_write_initscript (void *config, int output){
             pos++;
         }
         
+		// iPhone1,1 & iPhone 2,1:
         // check for "csr -p 0x1234=0x5678" (20)
         if (store == 1 && pos == 20) {
             int pskey, value;
@@ -128,6 +139,38 @@ static int iphone_write_initscript (void *config, int output){
                 mirror = 1;
             }
         }
+		// iPod2,1
+		// check for bcm -X
+		if (store == 1 && pos == 7){
+			store  = 0;
+			if (strncmp(buffer, "bcm -", 5) == 0) {
+				switch (buffer[5]){
+					case 'a': // BT Address
+						write(output, buffer, pos); // "bcm -a "
+						sprintf(buffer, "00:00:%.2x:%.2x:%.2x:%.2x\n", random_nr & 0xff, (random_nr >> 8) & 0xff,
+								(random_nr >> 16) & 0xff, (random_nr >> 24) & 0xff);
+						write(output, buffer, 18);
+						mirror = 0;
+						break;
+					case 'b': // baud rate command
+						write(output, buffer, pos); // "bcm -b "
+						sprintf(buffer, "%u\n",  uart_config->baudrate);
+						write(output, buffer, strlen(buffer));
+						mirror = 0;
+						break;
+					case 's': // sleep mode - replace with "wake" command?
+						write(output,"wake on\n", strlen("wake on\n"));
+						mirror = 0;
+						break;
+					default: // other command
+						write(output, buffer, pos);
+						mirror = 1;
+				}
+			} else {
+				write(output, buffer, pos);
+				mirror = 1;
+			}
+		}
     }
     // close input
     close(input);
