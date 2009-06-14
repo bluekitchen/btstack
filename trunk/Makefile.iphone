@@ -4,19 +4,25 @@ SRCDIR   = src
 VPATH    = src
 
 # These paths must be changed to match the compilation environment
-SDK_PATH        = /Developer/Platforms/iPhoneOS.platform/Developer
+DEVELOPER_PATH  = /Developer/Platforms/iPhoneOS.platform/Developer
 SDK_VERSION     = 2.1
+SDK_PATH        = $(DEVELOPER_PATH)/SDKs/iPhoneOS$(SDK_VERSION).sdk
 GCC_VERSION     = 4.0.1
 
 # 
-CXX      = $(SDK_PATH)/usr/bin/arm-apple-darwin9-gcc-$(GCC_VERSION)
-CXXFLAGS = -g0 -O2 -Wall -Werror -I. -Iinclude
-LDFLAGS =  \
-		  -multiply_defined suppress \
-		  -I$(SDK_PATH)/SDKs/iPhoneOS$(SDK_VERSION).sdk/usr/include \
-		  -I$(SDK_PATH)/SDKs/iPhoneOS$(SDK_VERSION).sdk/usr/lib/gcc/arm-apple-darwin9/4.0.1/include \
-		  -L$(SDK_PATH)/SDKs/iPhoneOS$(SDK_VERSION).sdk/usr/lib \
+CC       = $(DEVELOPER_PATH)/usr/bin/arm-apple-darwin9-gcc-$(GCC_VERSION)
+CFLAGS   = -g0 -O2 -Wall -Werror -I. -Iinclude \
+		  -I$(SDK_PATH)/usr/include \
+		  -I$(SDK_PATH)/usr/lib/gcc/arm-apple-darwin9/4.0.1/include \
+          -F$(SDK_PATH)/System/Library/Frameworks \
 
+LDFLAGS  =  \
+		  -multiply_defined suppress \
+		  -L$(SDK_PATH)/usr/lib \
+          -framework CoreFoundation \
+          -L$(SDK_PATH)/System/Library/Frameworks/IOKit.framework/Versions/A \
+          -lIOKit
+                    
 SRCS  = \
 bt_control_iphone.c               \
 hci.c                             \
@@ -46,7 +52,7 @@ clean:
 $(SRCS): $(HEADERS)
  
 $(NAME): $(SRCS)
-	$(CXX) $(CXXFLAGS) -o $(NAME) $(filter %.mm,$^) $(filter %.m,$^) $(filter %.c,$^) $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $(NAME) $(filter %.mm,$^) $(filter %.m,$^) $(filter %.c,$^) $(LDFLAGS)
 	export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $(NAME)
 	ssh root@192.168.3.102 rm -f BTdaemon
 	scp $(NAME) root@192.168.3.102:/var/mobile
