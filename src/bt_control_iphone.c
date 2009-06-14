@@ -46,6 +46,31 @@ static const char * iphone_name(void *config){
     return get_machine_name();
 }
 
+// Get BD_ADDR from IORegistry
+#ifdef __APPLE__
+#include <mach/mach.h>
+#define IOKIT
+#include <device/device_types.h>
+#include <CoreFoundation/CoreFoundation.h>
+kern_return_t IOMasterPort( mach_port_t	bootstrapPort, mach_port_t * masterPort );
+CFMutableDictionaryRef IOServiceNameMatching(const char * name );
+CFTypeRef IORegistryEntrySearchCFProperty(mach_port_t entry, const io_name_t plane,
+                                          CFStringRef key, CFAllocatorRef allocator, UInt32 options );
+mach_port_t IOServiceGetMatchingService(mach_port_t masterPort, CFDictionaryRef matching );
+kern_return_t IOObjectRelease(mach_port_t object);
+static bd_addr_t ioRegAddr;
+static void ioregistry_get_bd_addr() {
+    mach_port_t mp;
+    IOMasterPort(MACH_PORT_NULL,&mp);
+    CFMutableDictionaryRef bt_matching = IOServiceNameMatching("bluetooth");
+    mach_port_t bt_service = IOServiceGetMatchingService(mp, bt_matching);
+    CFTypeRef bt_typeref = IORegistryEntrySearchCFProperty(bt_service,"IODevicTree",CFSTR("local-mac-address"), kCFAllocatorDefault, 1);
+    CFDataGetBytes(bt_typeref,CFRangeMake(0,CFDataGetLength(bt_typeref)),ioRegAddr); // buffer needs to be unsigned char
+    IOObjectRelease(bt_service);
+}
+#endif
+
+
 static void iphone_set_pskey(int fd, int key, int value){
     sprintf(buffer, "csr -p 0x%04x=0x%04x\n", key, value);
     write(fd, buffer, 21);
@@ -58,11 +83,8 @@ static int iphone_write_initscript (void *config, int output){
     
     // calculate baud rate (assume rate is multiply of 100)
     uint32_t baud_key = (4096 * (uart_config->baudrate/100) + 4999) / 10000;
-    printf("Baud key %u\n", baud_key);
+    // printf("Baud key %u\n", baud_key);
     
-	// pick random BT address
-	uint32_t random_nr = random();
-	
     // construct script path from device name
     strcpy(buffer, "/etc/bluetool/");
     char *machine = get_machine_name();
@@ -73,6 +95,8 @@ static int iphone_write_initscript (void *config, int output){
 	} else {
 		// It's an iPod Touch (2G)
 		strcat(buffer, ".boot.script");
+        // then, get bd_addr from IORegistry
+        ioregistry_get_bd_addr();
 	}
     
     // open script
@@ -121,9 +145,9 @@ static int iphone_write_initscript (void *config, int output){
 				switch (buffer[5]){
 					case 'a': // BT Address
 						write(output, buffer, pos); // "bcm -a "
-						sprintf(buffer, "00:00:%.2x:%.2x:%.2x:%.2x\n", random_nr & 0xff, (random_nr >> 8) & 0xff,
-								(random_nr >> 16) & 0xff, (random_nr >> 24) & 0xff);
-						write(output, buffer, 18);
+						sprintf(buffer, "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n", ioRegAddr[0], ioRegAddr[1],
+                                ioRegAddr[2], ioRegAddr[3], ioRegAddr[4], ioRegAddr[5]);
+                    	write(output, buffer, 18);
 						mirror = 0;
 						break;
 					case 'b': // baud rate command
@@ -176,7 +200,8 @@ static int iphone_write_initscript (void *config, int output){
 }
 
 static int iphone_on (void *config){
-
+    ioregistry_get_bd_addr();
+    
 #if 0
     // use tmp file
     int output = open("/tmp/bt.init", O_WRONLY | O_CREAT | O_TRUNC);
