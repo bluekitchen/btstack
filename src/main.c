@@ -23,27 +23,39 @@
 static hci_transport_t * transport;
 static hci_uart_config_t config;
 
-hci_con_handle_t con_handle= 0;
+hci_con_handle_t con_handle_out = 0;
+hci_con_handle_t con_handle_in = 0;
 uint16_t dest_cid;
+
+// #define BT_HID
+// #define POWER_CYCLE_TEST
+#define MITM
 
 void event_handler(uint8_t *packet, int size){
     // printf("Event type: %x, opcode: %x, other %x\n", packet[0], packet[3] | packet[4] << 8);
 
-#if 0
+#if defined(BT_HID) || defined(MITM)
     bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };  // Think Outside Keyboard
     // bd_addr_t addr = { 0x00, 0x16, 0xcb, 0x09, 0x94, 0xa9};  // MacBook Pro
 
     // bt stack activated, set authentication enabled
     if (packet[0] == BTSTACK_EVENT_HCI_WORKING) {
+#if 0
         hci_send_cmd(&hci_write_authentication_enable, 1);
         // hci_send_cmd(&hci_host_buffer_size, 400, 255, 1, 0, 0);
     }
     
     if ( COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable) ) {
         // hci_write_authentication_enable done, send connect
+#endif
         hci_send_cmd(&hci_create_connection, &addr, 0x18, 0, 0, 0, 0);
     }
 
+    if (packet[0] == HCI_EVENT_CONNECTION_REQUEST){
+        bt_flip_addr(addr, &packet[2]); 
+        hci_send_cmd(&hci_accept_connection_request, &addr, 1);
+    }
+    
     if (packet[0] == HCI_EVENT_PIN_CODE_REQUEST){
         printf("Please enter PIN 1234 on remote device\n");
     }
@@ -52,14 +64,24 @@ void event_handler(uint8_t *packet, int size){
     if (packet[0] == HCI_EVENT_CONNECTION_COMPLETE){
         if (packet[2] == 0){
             // get new connection handle
-            con_handle = READ_BT_16(packet, 3);
-            
+            if (! con_handle_out) {
+                con_handle_out = READ_BT_16(packet, 3);
+            } else {
+                con_handle_in  = READ_BT_16(packet, 3);
+            }
+#ifndef MITM
             // request l2cap connection
             printf("> CONNECTION REQUEST\n");
-            l2cap_send_signaling_packet(con_handle, CONNECTION_REQUEST, sig_seq_nr++, 0x13, local_cid);
+            l2cap_send_signaling_packet(con_handle_out, CONNECTION_REQUEST, sig_seq_nr++, 0x13, local_cid);
+#else
+            printf("Connected to target device, please start!\n");
+#endif
+            
         }
     }
-#else
+#endif 
+    
+#ifdef POWER_CYCLE_TEST
     if (packet[0] == BTSTACK_EVENT_HCI_WORKING) {
         hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, 10, 0);
     }
@@ -73,10 +95,27 @@ void event_handler(uint8_t *packet, int size){
         hci_power_control( HCI_POWER_ON );
     }
 #endif
-    
 }
 
 void acl_handler(uint8_t *packet, int size){
+    
+#ifdef MITM
+    // forward packet on "other" connection
+    hci_con_handle_t incoming_hdl = READ_BT_16(packet, 0) & 0xfff;
+    hci_con_handle_t outgoing_hdl = 0;
+    if  (incoming_hdl == con_handle_in){
+        outgoing_hdl = con_handle_out;
+    } else if (incoming_hdl == con_handle_out){
+        outgoing_hdl = con_handle_in;
+    } else {
+        printf("Incoming acl packet on handle %u\n!", incoming_hdl);
+    }
+    if (outgoing_hdl){
+        bt_store_16( packet, 0, (READ_BT_16(packet, 0) & 0xf000) | outgoing_hdl);
+        hci_send_acl_packet(packet, size);
+    }
+    
+#else
     uint16_t source_cid;
     uint16_t result;
     uint8_t config_options[] = { 1, 2, 150, 0}; // mtu = 48 
@@ -89,7 +128,7 @@ void acl_handler(uint8_t *packet, int size){
         printf("< CONNECTION_RESPONSE: id %u, dest cid %u, src cid %u, result %u, status %u\n", packet[9], dest_cid, source_cid, result, status); 
         if (result == 0){
             printf("> CONFIGURE_REQUEST: id %u\n", sig_seq_nr);
-            l2cap_send_signaling_packet(con_handle, CONFIGURE_REQUEST, sig_seq_nr++, dest_cid, 0, 4, &config_options);
+            l2cap_send_signaling_packet(con_handle_out, CONFIGURE_REQUEST, sig_seq_nr++, dest_cid, 0, 4, &config_options);
         }
     } 
     else if (packet[8] == CONFIGURE_RESPONSE){
@@ -103,11 +142,12 @@ void acl_handler(uint8_t *packet, int size){
         printf("< CONFIGURE_REQUEST: id %u\n", packet[9]);
         hexdump(&packet[16], size-16);
         printf("> CONFIGURE_RESPONSE: id %u\n", packet[9]);
-        l2cap_send_signaling_packet(con_handle, CONFIGURE_RESPONSE, packet[9], local_cid, 0, 0, size - 16, &packet[16]);
+        l2cap_send_signaling_packet(con_handle_out, CONFIGURE_RESPONSE, packet[9], local_cid, 0, 0, size - 16, &packet[16]);
     }
     else {
         printf("Unknown ACL ^^^ \n");
     }
+#endif
 }
 
 int main (int argc, const char * argv[]) {
