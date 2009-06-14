@@ -20,8 +20,14 @@
 #include <unistd.h>
 #include <errno.h>
 
+
+
 #define BUFF_LEN 80
 static char buffer[BUFF_LEN+1];
+
+// bd addr for iPod touch -- undef if you have compiling problems
+#define iPodTouchSupport
+static bd_addr_t ioRegAddr;
 
 /** 
  * get machine name
@@ -47,7 +53,7 @@ static const char * iphone_name(void *config){
 }
 
 // Get BD_ADDR from IORegistry
-#ifdef __APPLE__
+#if defined(__APPLE__) && defined(iPodTouchSupport)
 #include <mach/mach.h>
 #define IOKIT
 #include <device/device_types.h>
@@ -58,7 +64,6 @@ CFTypeRef IORegistryEntrySearchCFProperty(mach_port_t entry, const io_name_t pla
                                           CFStringRef key, CFAllocatorRef allocator, UInt32 options );
 mach_port_t IOServiceGetMatchingService(mach_port_t masterPort, CFDictionaryRef matching );
 kern_return_t IOObjectRelease(mach_port_t object);
-static bd_addr_t ioRegAddr;
 static void ioregistry_get_bd_addr() {
     mach_port_t mp;
     IOMasterPort(MACH_PORT_NULL,&mp);
@@ -96,7 +101,9 @@ static int iphone_write_initscript (void *config, int output){
 		// It's an iPod Touch (2G)
 		strcat(buffer, ".boot.script");
         // then, get bd_addr from IORegistry
+#ifdef iPodTouchSupport
         ioregistry_get_bd_addr();
+#endif
 	}
     
     // open script
@@ -200,8 +207,6 @@ static int iphone_write_initscript (void *config, int output){
 }
 
 static int iphone_on (void *config){
-    ioregistry_get_bd_addr();
-    
 #if 0
     // use tmp file
     int output = open("/tmp/bt.init", O_WRONLY | O_CREAT | O_TRUNC);
