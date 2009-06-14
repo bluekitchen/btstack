@@ -32,6 +32,11 @@ hci_cmd_t hci_create_connection = {
 	OPCODE(OGF_LINK_CONTROL, 0x05), "B21121"
 	// BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
 };
+
+hci_cmd_t hci_accept_connection_request = {
+	OPCODE(OGF_LINK_CONTROL, 0x09), "B1"
+	// BD_ADDR, Role: become master, stay slave
+};
 hci_cmd_t hci_link_key_request_negative_reply = {
     OPCODE(OGF_LINK_CONTROL, 0x0c), "B"
 };
@@ -63,6 +68,11 @@ hci_cmd_t hci_write_page_timeout = {
     OPCODE(OGF_CONTROLLER_BASEBAND, 0x18), "2"
     // Page_Timeout * 0.625 ms
 };
+hci_cmd_t hci_write_scan_enable = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x1A), "1"
+// Scan_enable: no, inq, page, inq+page
+};
+
 hci_cmd_t hci_write_authentication_enable = {
     OPCODE(OGF_CONTROLLER_BASEBAND, 0x20), "1"
     // Authentication_Enable
@@ -110,14 +120,6 @@ void hexdump(void *data, int size){
     }
     printf("\n");
 }
-
-#if 0
-static void *hci_daemon_thread(void *arg){
-    printf("HCI Daemon started\n");
-    hci_run(transport, &config);
-    return NULL;
-}
-#endif
 
 /**
  * Linked link list 
@@ -284,11 +286,17 @@ uint32_t hci_run(){
                 case 0:
                     hci_send_cmd(&hci_reset);
                     break;
-                case 1:
+				case 1:
+					hci_send_cmd(&hci_read_bd_addr);
+					break;
+                case 2:
                     // ca. 15 sec
                     hci_send_cmd(&hci_write_page_timeout, 0x6000);
                     break;
-                case 2:
+				case 3:
+					hci_send_cmd(&hci_write_scan_enable, 3);
+					break;
+                case 4:
                     // done.
                     hci_stack.state = HCI_STATE_WORKING;
                     micro_packet = BTSTACK_EVENT_HCI_WORKING;
