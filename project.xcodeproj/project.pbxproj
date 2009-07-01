@@ -15,6 +15,8 @@
 		9C7ECB840FCC85650085DAC5 /* bt_control_iphone.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7ECB820FCC85650085DAC5 /* bt_control_iphone.c */; };
 		9C7ECBB50FCC95DD0085DAC5 /* hci_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7ECBB40FCC95DD0085DAC5 /* hci_dump.c */; };
 		9C88500E0FBF6702004980E4 /* l2cap.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C88500C0FBF6702004980E4 /* l2cap.c */; };
+		9CC813A20FFC0774002816F9 /* btstack.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CC813A10FFC0774002816F9 /* btstack.c */; };
+		9CC813A50FFC0A51002816F9 /* daemon.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CC813A40FFC0A51002816F9 /* daemon.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -49,6 +51,10 @@
 		9C88500C0FBF6702004980E4 /* l2cap.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = l2cap.c; path = src/l2cap.c; sourceTree = "<group>"; };
 		9C88500D0FBF6702004980E4 /* l2cap.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = l2cap.h; path = src/l2cap.h; sourceTree = "<group>"; };
 		9CA3C0900FB8B3C4005F48DE /* TODO.txt */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = TODO.txt; sourceTree = "<group>"; };
+		9CC813A00FFC0774002816F9 /* btstack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = btstack.h; path = src/btstack.h; sourceTree = "<group>"; };
+		9CC813A10FFC0774002816F9 /* btstack.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = btstack.c; path = src/btstack.c; sourceTree = "<group>"; };
+		9CC813A30FFC0A51002816F9 /* daemon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = daemon.h; path = src/daemon.h; sourceTree = "<group>"; };
+		9CC813A40FFC0A51002816F9 /* daemon.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = daemon.c; path = src/daemon.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -79,6 +85,10 @@
 				9C7ECB810FCC85650085DAC5 /* bt_control.h */,
 				9C7ECB820FCC85650085DAC5 /* bt_control_iphone.c */,
 				9C7ECB830FCC85650085DAC5 /* bt_control_iphone.h */,
+				9CC813A00FFC0774002816F9 /* btstack.h */,
+				9CC813A10FFC0774002816F9 /* btstack.c */,
+				9CC813A30FFC0A51002816F9 /* daemon.h */,
+				9CC813A40FFC0A51002816F9 /* daemon.c */,
 				9C46FC350FA906F700ABEF05 /* hci.h */,
 				9C46FC340FA906F700ABEF05 /* hci.c */,
 				9C46FC380FA906F700ABEF05 /* hci_transport.h */,
@@ -164,6 +174,8 @@
 				9C7ECBB50FCC95DD0085DAC5 /* hci_dump.c in Sources */,
 				9C1F0E9A0FDAE023008F472F /* run_loop.c in Sources */,
 				9C1F0F340FDB024B008F472F /* socket_server.c in Sources */,
+				9CC813A20FFC0774002816F9 /* btstack.c in Sources */,
+				9CC813A50FFC0A51002816F9 /* daemon.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
