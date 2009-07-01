@@ -1,5 +1,17 @@
 /* new todo file for BTstack */
 
+NEXT:
+- implement client BT API in btstack.h: prefix all functions by bt_$PROTOCOL_*
+  - client/server part using unix domain sockets (portable and fast)
+- generalize run_loop_add/remove into linked_list_add/remove
+- use linked_list for: 
+  - run loop
+  - event handler
+  - data handler
+- keep track of HCI state (links, inquiries, acl flow control) in linked list
+- implement L2CAP state machine
+- implement PAN
+
 IMPROVE
 - make data_source_t opaque: data_source_set_fd, data_source_set_cb
 - implement TimerSource
