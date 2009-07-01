@@ -18,11 +18,20 @@
 #define READ_BT_24( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[pos+1]) << 8) | (((uint32_t)buffer[pos+2]) << 16))
 #define READ_BT_32( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[pos+1]) << 8) | (((uint32_t)buffer[pos+2]) << 16) | (((uint32_t) buffer[pos+3])) << 24)
 
+// calculate combined ogf/ocf value
+#define OPCODE(ogf, ocf) (ocf | ogf << 10)
+
 // packet header lengh
 #define HCI_CMD_DATA_PKT_HDR	  0x03
 #define HCI_ACL_DATA_PKT_HDR	  0x04
 #define HCI_SCO_DATA_PKT_HDR	  0x03
 #define HCI_EVENT_PKT_HDR         0x02
+
+// OGFs
+#define OGF_LINK_CONTROL 0x01
+#define OGF_CONTROLLER_BASEBAND 0x03
+#define OGF_INFORMATIONAL_PARAMETERS 0x04
+#define OGF_VENDOR_COMMANDS 0x3f
 
 // Events from host controller to host
 #define HCI_EVENT_INQUIRY_COMPLETE				           0x01
@@ -181,14 +190,20 @@ extern hci_cmd_t hci_inquiry;
 extern hci_cmd_t hci_inquiry_cancel;
 extern hci_cmd_t hci_link_key_request_negative_reply;
 extern hci_cmd_t hci_pin_code_request_reply;
+extern hci_cmd_t hci_set_event_mask;
 extern hci_cmd_t hci_reset;
 extern hci_cmd_t hci_create_connection;
 extern hci_cmd_t hci_host_buffer_size;
 extern hci_cmd_t hci_write_authentication_enable;
+extern hci_cmd_t hci_write_local_name;
 extern hci_cmd_t hci_write_page_timeout;
+extern hci_cmd_t hci_write_class_of_device;
 extern hci_cmd_t hci_remote_name_request;
 extern hci_cmd_t hci_remote_name_request_cancel;
 extern hci_cmd_t hci_read_bd_addr;
 extern hci_cmd_t hci_delete_stored_link_key;
 extern hci_cmd_t hci_write_scan_enable;
 extern hci_cmd_t hci_accept_connection_request;
+extern hci_cmd_t hci_write_inquiry_mode;
+extern hci_cmd_t hci_write_extended_inquiry_response;
+extern hci_cmd_t hci_write_simple_pairing_mode;
