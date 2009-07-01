@@ -1,11 +1,14 @@
 NAME = BTdaemon
 
+# set IP address of your phone. this is using USB and Internet Tethering
+IPHONE = 192.168.20.1
+
 SRCDIR   = src
 VPATH    = src
 
 # These paths must be changed to match the compilation environment
 DEVELOPER_PATH  = /Developer/Platforms/iPhoneOS.platform/Developer
-SDK_VERSION     = 2.1
+SDK_VERSION     = 2.0
 SDK_PATH        = $(DEVELOPER_PATH)/SDKs/iPhoneOS$(SDK_VERSION).sdk
 GCC_VERSION     = 4.0.1
 
@@ -54,7 +57,7 @@ $(SRCS): $(HEADERS)
 $(NAME): $(SRCS)
 	$(CC) $(CFLAGS) -o $(NAME) $(filter %.mm,$^) $(filter %.m,$^) $(filter %.c,$^) $(LDFLAGS)
 	export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $(NAME)
-	ssh root@192.168.3.102 rm -f BTdaemon
-	scp $(NAME) root@192.168.3.102:/var/mobile
+	ssh mobile@$(IPHONE) rm -f /var/mobile/$(NAME)
+	scp $(NAME) mobile@$(IPHONE):/var/mobile
 	
 .PHONY: all clean
