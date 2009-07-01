@@ -11,12 +11,6 @@
 #include <stdio.h>
 #include "hci.h"
 
-// calculate combined ogf/ocf value
-#define OPCODE(ogf, ocf) (ocf | ogf << 10)
-#define OGF_LINK_CONTROL 0x01
-#define OGF_CONTROLLER_BASEBAND 0x03
-#define OGF_INFORMATIONAL_PARAMETERS 0x04
-
 /**
  *  Link Control Commands 
  */
@@ -56,6 +50,10 @@ hci_cmd_t hci_remote_name_request = {
 /**
  *  Controller & Baseband Commands 
  */
+hci_cmd_t hci_set_event_mask = {
+    OPCODE(OGF_CONTROLLER_BASEBAND, 0x01), "44"
+    // event_mask lower 4 octets, higher 4 bytes
+};
 hci_cmd_t hci_reset = {
     OPCODE(OGF_CONTROLLER_BASEBAND, 0x03), ""
     // no params
@@ -64,22 +62,44 @@ hci_cmd_t hci_delete_stored_link_key = {
     OPCODE(OGF_CONTROLLER_BASEBAND, 0x12), "B1"
 	// BD_ADDR, Delete_All_Flag
 };
+hci_cmd_t hci_write_local_name = {
+    OPCODE(OGF_CONTROLLER_BASEBAND, 0x13), "N"
+    // Local name (UTF-8, Null Terminated, max 248 octets)
+};
 hci_cmd_t hci_write_page_timeout = {
     OPCODE(OGF_CONTROLLER_BASEBAND, 0x18), "2"
     // Page_Timeout * 0.625 ms
 };
 hci_cmd_t hci_write_scan_enable = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x1A), "1"
-// Scan_enable: no, inq, page, inq+page
+    OPCODE(OGF_CONTROLLER_BASEBAND, 0x1A), "1"
+    // Scan_enable: no, inq, page, inq+page
 };
-
 hci_cmd_t hci_write_authentication_enable = {
     OPCODE(OGF_CONTROLLER_BASEBAND, 0x20), "1"
     // Authentication_Enable
 };
+hci_cmd_t hci_write_class_of_device = {
+    OPCODE(OGF_CONTROLLER_BASEBAND, 0x24), "3"
+    // Class of Device
+};
 hci_cmd_t hci_host_buffer_size = {
     OPCODE(OGF_CONTROLLER_BASEBAND, 0x33), "2122"
     // Host_ACL_Data_Packet_Length:, Host_Synchronous_Data_Packet_Length:, Host_Total_Num_ACL_Data_Packets:, Host_Total_Num_Synchronous_Data_Packets:
+};
+
+hci_cmd_t hci_write_inquiry_mode = {
+    OPCODE(OGF_CONTROLLER_BASEBAND, 0x45), "1"
+    // Inquiry mode: 0x00 = standard, 0x01 = with RSSI, 0x02 = extended
+};
+
+hci_cmd_t hci_write_extended_inquiry_response = {
+    OPCODE(OGF_CONTROLLER_BASEBAND, 0x52), "1E"
+    // FEC_Required, Exstended Inquiry Response
+};
+
+hci_cmd_t hci_write_simple_pairing_mode = {
+    OPCODE(OGF_CONTROLLER_BASEBAND, 0x56), "1"
+    // mode: 0 = off, 1 = on
 };
 
 hci_cmd_t hci_read_bd_addr = {
@@ -294,7 +314,7 @@ uint32_t hci_run(){
                     hci_send_cmd(&hci_write_page_timeout, 0x6000);
                     break;
 				case 3:
-					hci_send_cmd(&hci_write_scan_enable, 3);
+					hci_send_cmd(&hci_write_scan_enable, 3); // 3 inq scan + page scan
 					break;
                 case 4:
                     // done.
@@ -373,6 +393,16 @@ int hci_send_cmd(hci_cmd_t *cmd, ...){
                 ptr = va_arg(argptr, uint8_t *);
                 memcpy(&hci_cmd_buffer[pos], ptr, 16);
                 pos += 16;
+                break;
+            case 'N': // UTF-8 string, null terminated
+                ptr = va_arg(argptr, uint8_t *);
+                memcpy(&hci_cmd_buffer[pos], ptr, 248);
+                pos += 248;
+                break;
+            case 'E': // Extended Inquiry Information 240 octets
+                ptr = va_arg(argptr, uint8_t *);
+                memcpy(&hci_cmd_buffer[pos], ptr, 240);
+                pos += 240;
                 break;
             default:
                 break;
