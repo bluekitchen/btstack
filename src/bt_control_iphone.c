@@ -20,13 +20,29 @@
 #include <unistd.h>
 #include <errno.h>
 
-
+// minimal IOKit
+#ifdef __APPLE__
+#include <Availability.h>
+#if __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_2_0
+#include <mach/mach.h>
+#define IOKIT
+#include <device/device_types.h>
+#include <CoreFoundation/CoreFoundation.h>
+kern_return_t IOMasterPort( mach_port_t	bootstrapPort, mach_port_t * masterPort );
+CFMutableDictionaryRef IOServiceNameMatching(const char * name );
+CFTypeRef IORegistryEntrySearchCFProperty(mach_port_t entry, const io_name_t plane,
+                                          CFStringRef key, CFAllocatorRef allocator, UInt32 options );
+mach_port_t IOServiceGetMatchingService(mach_port_t masterPort, CFDictionaryRef matching );
+kern_return_t IOObjectRelease(mach_port_t object);
+#endif
+#endif
 
 #define BUFF_LEN 80
 static char buffer[BUFF_LEN+1];
 
-// bd addr for iPod touch -- undef if you have compiling problems
-#define iPodTouchSupport
+// bd addr from iphone/ipod IORegistry
+// the Broadcom chipsets done store a BD_ADDR and the one on the iPhone
+// is different to the one reported by About in the Settings app
 static bd_addr_t ioRegAddr;
 
 /** 
@@ -53,18 +69,8 @@ static const char * iphone_name(void *config){
 }
 
 // Get BD_ADDR from IORegistry
-#if defined(__APPLE__) && defined(iPodTouchSupport)
-#include <mach/mach.h>
-#define IOKIT
-#include <device/device_types.h>
-#include <CoreFoundation/CoreFoundation.h>
-kern_return_t IOMasterPort( mach_port_t	bootstrapPort, mach_port_t * masterPort );
-CFMutableDictionaryRef IOServiceNameMatching(const char * name );
-CFTypeRef IORegistryEntrySearchCFProperty(mach_port_t entry, const io_name_t plane,
-                                          CFStringRef key, CFAllocatorRef allocator, UInt32 options );
-mach_port_t IOServiceGetMatchingService(mach_port_t masterPort, CFDictionaryRef matching );
-kern_return_t IOObjectRelease(mach_port_t object);
 static void ioregistry_get_bd_addr() {
+#ifdef IOKIT
     mach_port_t mp;
     IOMasterPort(MACH_PORT_NULL,&mp);
     CFMutableDictionaryRef bt_matching = IOServiceNameMatching("bluetooth");
@@ -72,9 +78,14 @@ static void ioregistry_get_bd_addr() {
     CFTypeRef bt_typeref = IORegistryEntrySearchCFProperty(bt_service,"IODevicTree",CFSTR("local-mac-address"), kCFAllocatorDefault, 1);
     CFDataGetBytes(bt_typeref,CFRangeMake(0,CFDataGetLength(bt_typeref)),ioRegAddr); // buffer needs to be unsigned char
     IOObjectRelease(bt_service);
-}
+#else
+    // use dummy addr if not on iphone/ipod touch
+    int i = 0;
+    for (i=0;i<6;i++) {
+        ioRegAddr[i] = i;
+    }
 #endif
-
+}
 
 static void iphone_set_pskey(int fd, int key, int value){
     sprintf(buffer, "csr -p 0x%04x=0x%04x\n", key, value);
@@ -100,12 +111,11 @@ static int iphone_write_initscript (void *config, int output){
 	} else {
 		// It's an iPod Touch (2G)
 		strcat(buffer, ".boot.script");
-        // then, get bd_addr from IORegistry
-#ifdef iPodTouchSupport
-        ioregistry_get_bd_addr();
-#endif
 	}
     
+	// get bd_addr from IORegistry 
+	ioregistry_get_bd_addr();
+
     // open script
     int input = open(buffer, O_RDONLY);
     
@@ -143,23 +153,34 @@ static int iphone_write_initscript (void *config, int output){
         if (store) {
             pos++;
         }
-        
+        			
+		// iPhone - set BD_ADDR after "csr -i"
+		if (store == 1 && pos == 6 && strncmp(buffer, "csr -i", 6) == 0) {
+			store = 0;
+			write(output, buffer, pos); // "csr -i"
+			sprintf(buffer,"\ncsr -p 0x0001=0x00%.2x,0x%.2x%.2x,0x00%.2x,0x%.2x%.2x\n",
+					ioRegAddr[3], ioRegAddr[4], ioRegAddr[5], ioRegAddr[2], ioRegAddr[0], ioRegAddr[1]);
+			write(output, buffer, 42);
+		}
+		
 		// iPod2,1
 		// check for "bcm -X" cmds
-		if (store == 1 && pos == 7){
-			if (strncmp(buffer, "bcm -", 5) == 0) {
+		if (store == 1 && pos == 6){
+ 			if (strncmp(buffer, "bcm -", 5) == 0) {
 				store  = 0;
 				switch (buffer[5]){
 					case 'a': // BT Address
-						write(output, buffer, pos); // "bcm -a "
-						sprintf(buffer, "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n", ioRegAddr[0], ioRegAddr[1],
+						write(output, buffer, pos); // "bcm -a"
+						sprintf(buffer, " %.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n", ioRegAddr[0], ioRegAddr[1],
                                 ioRegAddr[2], ioRegAddr[3], ioRegAddr[4], ioRegAddr[5]);
                     	write(output, buffer, 18);
 						mirror = 0;
 						break;
-					case 'b': // baud rate command
-						write(output, buffer, pos); // "bcm -b "
-						sprintf(buffer, "%u\n",  uart_config->baudrate);
+					case 'b': // baud rate command OS 2.x
+                    case 'B': // baud rate command OS 3.x
+                        buffer[5] = 'b';
+						write(output, buffer, pos); // "bcm -b"
+						sprintf(buffer, " %u\n",  uart_config->baudrate);
 						write(output, buffer, strlen(buffer));
 						mirror = 0;
 						break;
@@ -173,8 +194,26 @@ static int iphone_write_initscript (void *config, int output){
 				}
 			}
 		}
-		
-		// iPhone1,1 & iPhone 2,1:
+        
+        // iPhone1,1 & iPhone 2,1: OS 3.x
+        // check for "csr -B" and "csr -T"
+        if (store == 1 && pos == 6){
+			if (strncmp(buffer, "csr -", 5) == 0) {
+                switch(buffer[5]){
+                    case 'T':   // Transport Mode
+                        store  = 0;
+                        break;
+                    case 'B':   // Baud rate
+                        iphone_set_pskey(output, 0x01be, baud_key);
+                        store  = 0;
+                        break;
+                    default:    // wait for full command
+                        break;
+                }
+            }
+        }
+                
+		// iPhone1,1 & iPhone 2,1: OS 2.x
         // check for "csr -p 0x1234=0x5678" (20)
         if (store == 1 && pos == 20) {
             int pskey, value;
@@ -208,7 +247,7 @@ static int iphone_write_initscript (void *config, int output){
 
 static int iphone_on (void *config){
 #if 0
-    // use tmp file
+    // use tmp file for testing
     int output = open("/tmp/bt.init", O_WRONLY | O_CREAT | O_TRUNC);
     iphone_write_initscript(config, output);
     close(output);
@@ -231,7 +270,7 @@ static int iphone_on (void *config){
     pclose(outputFile);
         
 #endif
-    // if we sleep for about 3 seconds, we miss a strage packet
+    // if we sleep for about 3 seconds, we miss a strage packet... but we don't care
     // sleep(3); 
     return 0;
 }
