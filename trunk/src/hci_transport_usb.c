@@ -51,7 +51,7 @@ int find_bt(libusb_device **devs)
 	return 0;
 }
 
-int main(void)
+int usb_main(void)
 {
 	libusb_device **devs;
 	int r;
@@ -77,13 +77,15 @@ int main(void)
 		goto exit;
 	}
     
+#if 0
 	r = libusb_detach_kernel_driver (handle, 0);
 	if (r < 0) {
 		fprintf(stderr, "libusb_detach_kernel_driver error %d\n", r);
 		goto close;
 	}
 	printf("libusb_detach_kernel_driver\n");
-	
+#endif
+
 	libusb_claim_interface(handle, 0);
 	if (r < 0) {
 		fprintf(stderr, "usb_claim_interface error %d\n", r);
@@ -91,6 +93,7 @@ int main(void)
 	}
 	printf("claimed interface 0\n");
 	
+#if 0
 	struct libusb_config_descriptor *config_descriptor;
 	r = libusb_get_active_config_descriptor(dev, &config_descriptor);
 	printf("configuration: %u interfacs\n", config_descriptor->bNumInterfaces);
@@ -101,6 +104,7 @@ int main(void)
 	for (r=0;r<interface0descriptor->bNumEndpoints;r++,endpoint++){
 		printf("endpoint %x, attributes %x\n", endpoint->bEndpointAddress, endpoint->bmAttributes);
 	}
+#endif
 	
 	uint8_t hci_reset[] = { 0x03, 0x0c, 0x00 };
 	r = libusb_control_transfer (handle, LIBUSB_REQUEST_TYPE_CLASS,
@@ -132,7 +136,7 @@ out:
 release_interface:
 	libusb_release_interface(handle, 0);	
 reattach:
-	libusb_attach_kernel_driver (handle, 0);
+	// libusb_attach_kernel_driver (handle, 0);
 close: 	
 	libusb_close(handle);
 exit:
