@@ -40,15 +40,52 @@ int find_bt(libusb_device **devs)
 			   desc.bDeviceClass, desc.bDeviceSubClass, desc.bDeviceProtocol);
 		
 		// @TODO detect BT USB Dongle based on character and not by id
-		// The class code (bDeviceClass) is 0xE0 a Wireless Controller. 
-		// The SubClass code (bDeviceSubClass) is 0x01 a RF Controller. 
-		// The Protocol code (bDeviceProtocol) is 0x01 a Bluetooth programming.
-		if (desc.idVendor == 0x0a12 && desc.idProduct == 0x0001){
+		// The class code (bDeviceClass) is 0xE0 – Wireless Controller. 
+		// The SubClass code (bDeviceSubClass) is 0x01 – RF Controller. 
+		// The Protocol code (bDeviceProtocol) is 0x01 – Bluetooth programming.
+		if (desc.bDeviceClass == 0xe0 && desc.bDeviceSubClass == 0x01 && desc.bDeviceProtocol == 0x01){
+		// if (desc.idVendor == 0x0a12 && desc.idProduct == 0x0001){
 			printf("BT Dongle found.\n");
 			return 1;
 		}
 	}
 	return 0;
+}
+
+int state = 0;
+struct libusb_transfer *interrupt_transfer;
+static void control_callback(struct libusb_transfer *transfer){
+	if (transfer->status != LIBUSB_TRANSFER_COMPLETED) {
+		fprintf(stderr, "control_callback not completed!\n");
+	}
+	
+	printf("async cb_mode_changed length=%d actual_length=%d\n",
+		   transfer->length, transfer->actual_length);
+	
+	printf("control_callback\n");
+	state = 1;
+}
+
+static void event_callback(struct libusb_transfer *transfer)
+{
+	if (transfer->status != LIBUSB_TRANSFER_COMPLETED) {
+		fprintf(stderr, "interrupttransfer not completed!\n");
+	} 
+	printf("async cb_mode_changed length=%d actual_length=%d\n",
+		   transfer->length, transfer->actual_length);
+
+	printf("received data len %u\n", transfer->actual_length);
+	int r;
+	for (r=0;r<transfer->actual_length; r++) printf("0x%.x ", transfer->buffer[r]);
+	printf("\n");
+	
+	r = libusb_submit_transfer(interrupt_transfer);
+	if (r) {
+		printf("Error submitting interrupt transfer %d\n", r);
+	}
+	
+	if (state) 
+		state++;
 }
 
 int usb_main(void)
@@ -66,18 +103,20 @@ int usb_main(void)
 		return (int) cnt;
 	
 	r = find_bt(devs);
-    
+
 	if (r) {
 		r = libusb_open(dev, &handle);
 		printf("libusb open %d, handle %xu\n", r, (int) handle);
 	}
 	libusb_free_device_list(devs, 1);
-    
+
 	if (r < 0) {
 		goto exit;
 	}
-    
-#if 0
+	
+	libusb_set_debug(0,3);
+
+#ifndef __APPLE__
 	r = libusb_detach_kernel_driver (handle, 0);
 	if (r < 0) {
 		fprintf(stderr, "libusb_detach_kernel_driver error %d\n", r);
@@ -86,6 +125,7 @@ int usb_main(void)
 	printf("libusb_detach_kernel_driver\n");
 #endif
 
+	printf("claimed interface 0\n");
 	libusb_claim_interface(handle, 0);
 	if (r < 0) {
 		fprintf(stderr, "usb_claim_interface error %d\n", r);
@@ -104,39 +144,64 @@ int usb_main(void)
 	for (r=0;r<interface0descriptor->bNumEndpoints;r++,endpoint++){
 		printf("endpoint %x, attributes %x\n", endpoint->bEndpointAddress, endpoint->bmAttributes);
 	}
-#endif
+#endif	
+	// allocation
+	struct libusb_transfer *control_transfer = libusb_alloc_transfer(0);   // 0 isochronous transfers CMDs
+	interrupt_transfer = libusb_alloc_transfer(0); // 0 isochronous transfers Events
 	
-	uint8_t hci_reset[] = { 0x03, 0x0c, 0x00 };
-	r = libusb_control_transfer (handle, LIBUSB_REQUEST_TYPE_CLASS,
-								 0, 0, 0, 
-								 hci_reset, sizeof (hci_reset),
-								 0);
-	if (r < 0) {
-		fprintf(stderr, "libusb_control_transfer error %d\n", r);
-		goto out;
-	}
-	printf("send data (%u bytes)\n", r);
-	
-    
 	// get answer
 	uint8_t buffer[260];
-	int length = -1;
-	r = libusb_interrupt_transfer(handle, 0x81, buffer, 100, &length, 0);
+	libusb_fill_interrupt_transfer(interrupt_transfer, handle, 0x81, buffer, 260, event_callback, NULL, 2000) ;	
+	r = libusb_submit_transfer(interrupt_transfer);
+	if (r) {
+		printf("Error submitting interrupt transfer %d\n", r);
+	}
+	printf("interrupt started\n");
+	
+	
+	// control
+	uint8_t hci_reset[] = { 0x03, 0x0c, 0x00 };
+	uint8_t cmd_buffer[20];
+	
+	// synchronous
+	// r = libusb_control_transfer (handle, LIBUSB_REQUEST_TYPE_CLASS,
+	//							 0, 0, 0, 
+	//							 hci_reset, sizeof (hci_reset),
+	//							 0);
+
+	libusb_fill_control_setup(cmd_buffer, LIBUSB_REQUEST_TYPE_CLASS, 0, 0, 0, sizeof(hci_reset));
+	for (r = 0 ; r < sizeof(hci_reset) ; r++)
+		cmd_buffer[LIBUSB_CONTROL_SETUP_SIZE + r] = hci_reset[r];
+	libusb_fill_control_transfer(control_transfer, handle, cmd_buffer, control_callback, NULL, 1000);
+	control_transfer->flags = LIBUSB_TRANSFER_SHORT_NOT_OK | LIBUSB_TRANSFER_FREE_TRANSFER;
+	r = libusb_submit_transfer(control_transfer);
+	if (r) {
+		printf("Error submitting control transfer %d\n", r);
+	}
+	while (state < 5) 
+		libusb_handle_events(NULL);
+
+	printf("interrupt done\n");
+
+	// libusb_free_transfer(control_transfer);
+	libusb_free_transfer(interrupt_transfer);
+	
+	// int length = -1;
+	// r = libusb_interrupt_transfer(handle, 0x81, buffer, 100, &length, 0);
+
+/*	r = libusb_interrupt_transfer(handle, 0x81, buffer, 100, &length, 0);
 	printf("received data len %u, r= %d\n", length, r);
 	for (r=0;r<length; r++) printf("0x%.x ", buffer[r]);
 	printf("\n");
-    
-	r = libusb_interrupt_transfer(handle, 0x81, buffer, 100, &length, 0);
-	printf("received data len %u, r= %d\n", length, r);
-	for (r=0;r<length; r++) printf("0x%.x ", buffer[r]);
-	printf("\n");
-    
+*/				
 out:
 	
 release_interface:
 	libusb_release_interface(handle, 0);	
 reattach:
-	// libusb_attach_kernel_driver (handle, 0);
+#ifndef __APPLE__
+	libusb_attach_kernel_driver (handle, 0);
+#endif
 close: 	
 	libusb_close(handle);
 exit:
