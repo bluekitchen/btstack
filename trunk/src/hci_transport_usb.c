@@ -1,6 +1,8 @@
 /*
  *  hci_transport_usb.c
  *
+ *  HCI Transport API implementation for USB
+ *
  *  Created by Matthias Ringwald on 7/5/09.
  */
 
@@ -16,13 +18,44 @@
 // ACL Data  0 0 0x02 Bulk (OUT) 32/64 
 
 #include <stdio.h>
+#include <strings.h>
+#include <unistd.h>   /* UNIX standard function definitions */
 #include <sys/types.h>
 
 #include <libusb-1.0/libusb.h>
 
-struct libusb_device_descriptor desc;
-libusb_device *dev;
-libusb_device_handle *handle;
+#include "hci.h"
+#include "hci_transport_usb.h"
+#include "hci_dump.h"
+
+// prototypes
+static void dummy_handler(uint8_t *packet, int size); 
+static int usb_close();
+    
+enum {
+    LIB_USB_CLOSED,
+    LIB_USB_OPENED,
+    LIB_USB_DEVICE_OPENDED,
+    LIB_USB_KERNEL_DETACHED,
+    LIB_USB_INTERFACE_CLAIMED,
+    LIB_USB_TRANSFERS_ALLOCATED
+} libusb_state = LIB_USB_CLOSED;
+
+// single instance
+static hci_transport_t * hci_transport_usb = NULL;
+
+static  void (*event_packet_handler)(uint8_t *packet, int size) = dummy_handler;
+static  void (*acl_packet_handler)  (uint8_t *packet, int size) = dummy_handler;
+
+static uint8_t hci_event_buffer[255+2]; // maximal payload + 2 bytes header
+static uint8_t hci_packet[400]; // bigger than largest packet
+
+// libusb
+static struct libusb_device_descriptor desc;
+static libusb_device        * dev;
+static libusb_device_handle * handle;
+static struct libusb_transfer *interrupt_transfer;
+static struct libusb_transfer *control_transfer;
 
 int find_bt(libusb_device **devs)
 {
@@ -52,88 +85,105 @@ int find_bt(libusb_device **devs)
 	return 0;
 }
 
-int state = 0;
-struct libusb_transfer *interrupt_transfer;
 static void control_callback(struct libusb_transfer *transfer){
 	if (transfer->status != LIBUSB_TRANSFER_COMPLETED) {
 		fprintf(stderr, "control_callback not completed!\n");
+        return;
 	}
 	
-	printf("async cb_mode_changed length=%d actual_length=%d\n",
+	printf("control_callback length=%d actual_length=%d\n",
 		   transfer->length, transfer->actual_length);
-	
-	printf("control_callback\n");
-	state = 1;
 }
 
 static void event_callback(struct libusb_transfer *transfer)
 {
 	if (transfer->status != LIBUSB_TRANSFER_COMPLETED) {
-		fprintf(stderr, "interrupttransfer not completed!\n");
-	} 
-	printf("async cb_mode_changed length=%d actual_length=%d\n",
-		   transfer->length, transfer->actual_length);
+		fprintf(stderr, "event_callback not completed!\n");
+	} else {
+        
+        printf("event_callback length=%d actual_length=%d: ",
+               transfer->length, transfer->actual_length);
+        int i;
+        for (i=0;i<transfer->actual_length; i++) printf("0x%02x ", transfer->buffer[i]);
+        printf("\n");
 
-	printf("received data len %u\n", transfer->actual_length);
-	int r;
-	for (r=0;r<transfer->actual_length; r++) printf("0x%.x ", transfer->buffer[r]);
-	printf("\n");
-	
-	r = libusb_submit_transfer(interrupt_transfer);
+        hci_dump_packet( HCI_EVENT_PACKET, 1, transfer->buffer, transfer->actual_length);
+        event_packet_handler(transfer->buffer, transfer->actual_length);
+    }
+	int r = libusb_submit_transfer(interrupt_transfer);
 	if (r) {
 		printf("Error submitting interrupt transfer %d\n", r);
 	}
-	
-	if (state) 
-		state++;
 }
 
-int usb_main(void)
-{
-	libusb_device **devs;
+static int usb_process(struct data_source *ds, int ready) {
+    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
+    struct timeval tv;
+    bzero(&tv, sizeof(struct timeval));
+    libusb_handle_events_timeout(NULL, &tv);
+    return 0;
+}
+
+static int usb_open(void *transport_config){
+   
+    libusb_device **devs;
 	int r;
 	ssize_t cnt;
 	
-	r = libusb_init(NULL);
-	if (r < 0)
+	// USB init
+    r = libusb_init(NULL);
+	if (r < 0) {
 		return r;
-	
-	cnt = libusb_get_device_list(NULL, &devs);
-	if (cnt < 0)
-		return (int) cnt;
-	
-	r = find_bt(devs);
-
+    }
+    libusb_state = LIB_USB_OPENED;
+    
+	// Get Devices 
+    cnt = libusb_get_device_list(NULL, &devs);
+	if (cnt < 0) {
+		usb_close();
+        return (int) cnt;
+    }	
+	// Find BT modul
+    r = find_bt(devs);
 	if (r) {
 		r = libusb_open(dev, &handle);
 		printf("libusb open %d, handle %xu\n", r, (int) handle);
+        libusb_state = LIB_USB_OPENED;
 	}
 	libusb_free_device_list(devs, 1);
-
 	if (r < 0) {
-		goto exit;
+        usb_close();
+        return r;
 	}
 	
-	libusb_set_debug(0,3);
-
+	// libusb_set_debug(0,3);
+    
+    // Detach OS driver (not possible for OS X)
 #ifndef __APPLE__
 	r = libusb_detach_kernel_driver (handle, 0);
 	if (r < 0) {
 		fprintf(stderr, "libusb_detach_kernel_driver error %d\n", r);
 		goto close;
+        usb_close();
+        return r;
 	}
 	printf("libusb_detach_kernel_driver\n");
 #endif
+    libusb_state = LIB_USB_KERNEL_DETACHED;
 
+    // reserve access to device
 	printf("claimed interface 0\n");
 	libusb_claim_interface(handle, 0);
 	if (r < 0) {
 		fprintf(stderr, "usb_claim_interface error %d\n", r);
-		goto reattach;
+        usb_close();
+        return r;
 	}
+    libusb_state = LIB_USB_INTERFACE_CLAIMED;
 	printf("claimed interface 0\n");
 	
 #if 0
+    // get endpoints - broken on OS X (libusb 1.0.2)
 	struct libusb_config_descriptor *config_descriptor;
 	r = libusb_get_active_config_descriptor(dev, &config_descriptor);
 	printf("configuration: %u interfacs\n", config_descriptor->bNumInterfaces);
@@ -145,68 +195,153 @@ int usb_main(void)
 		printf("endpoint %x, attributes %x\n", endpoint->bEndpointAddress, endpoint->bmAttributes);
 	}
 #endif	
+    
 	// allocation
-	struct libusb_transfer *control_transfer = libusb_alloc_transfer(0);   // 0 isochronous transfers CMDs
+	control_transfer   = libusb_alloc_transfer(0); // 0 isochronous transfers CMDs
 	interrupt_transfer = libusb_alloc_transfer(0); // 0 isochronous transfers Events
-	
-	// get answer
-	uint8_t buffer[260];
-	libusb_fill_interrupt_transfer(interrupt_transfer, handle, 0x81, buffer, 260, event_callback, NULL, 2000) ;	
+	if (!control_transfer || !interrupt_transfer){
+        usb_close();
+        return LIBUSB_ERROR_NO_MEM;
+    }
+    libusb_state = LIB_USB_TRANSFERS_ALLOCATED;
+    
+    // interrupt (= HCI event) handler
+	libusb_fill_interrupt_transfer(interrupt_transfer, handle, 0x81, hci_event_buffer, 260, event_callback, NULL, 3000) ;	
+	interrupt_transfer->flags = LIBUSB_TRANSFER_SHORT_NOT_OK;
 	r = libusb_submit_transfer(interrupt_transfer);
 	if (r) {
 		printf("Error submitting interrupt transfer %d\n", r);
 	}
 	printf("interrupt started\n");
 	
+    // set up data_source
+    const struct libusb_pollfd ** pollfd = libusb_get_pollfds(NULL);
+    for (r = 0 ; pollfd[r] ; r++) {
+        printf("%u: %x fd: %u, events %x\n", r, pollfd[r], pollfd[r]->fd, pollfd[r]->events);
+    }
+
+    // HACK
+    hci_transport_usb->ds.fd = pollfd[0]->fd;
+    hci_transport_usb->ds.process = usb_process;
+    data_source_t *second_ds = malloc(sizeof(data_source_t));
+    second_ds->fd = pollfd[1]->fd;
+    second_ds->process = usb_process;
+    run_loop_add(second_ds);
+    
+    // init state machine
+    // bytes_to_read = 1;
+    // usb_state = USB_W4_PACKET_TYPE;
+    // read_pos = 0;
+    
+    return 0;
+}
+
+#if 0
+ // data transfer
+	// get answer
 	
 	// control
 	uint8_t hci_reset[] = { 0x03, 0x0c, 0x00 };
-	uint8_t cmd_buffer[20];
 	
 	// synchronous
 	// r = libusb_control_transfer (handle, LIBUSB_REQUEST_TYPE_CLASS,
 	//							 0, 0, 0, 
 	//							 hci_reset, sizeof (hci_reset),
 	//							 0);
-
-	libusb_fill_control_setup(cmd_buffer, LIBUSB_REQUEST_TYPE_CLASS, 0, 0, 0, sizeof(hci_reset));
-	for (r = 0 ; r < sizeof(hci_reset) ; r++)
-		cmd_buffer[LIBUSB_CONTROL_SETUP_SIZE + r] = hci_reset[r];
-	libusb_fill_control_transfer(control_transfer, handle, cmd_buffer, control_callback, NULL, 1000);
-	control_transfer->flags = LIBUSB_TRANSFER_SHORT_NOT_OK | LIBUSB_TRANSFER_FREE_TRANSFER;
-	r = libusb_submit_transfer(control_transfer);
-	if (r) {
-		printf("Error submitting control transfer %d\n", r);
-	}
-	while (state < 5) 
-		libusb_handle_events(NULL);
-
-	printf("interrupt done\n");
-
-	// libusb_free_transfer(control_transfer);
-	libusb_free_transfer(interrupt_transfer);
-	
+    
 	// int length = -1;
 	// r = libusb_interrupt_transfer(handle, 0x81, buffer, 100, &length, 0);
+    
+    /*	r = libusb_interrupt_transfer(handle, 0x81, buffer, 100, &length, 0);
+     printf("received data len %u, r= %d\n", length, r);
+     for (r=0;r<length; r++) printf("0x%.x ", buffer[r]);
+     printf("\n");
+     */
 
-/*	r = libusb_interrupt_transfer(handle, 0x81, buffer, 100, &length, 0);
-	printf("received data len %u, r= %d\n", length, r);
-	for (r=0;r<length; r++) printf("0x%.x ", buffer[r]);
-	printf("\n");
-*/				
-out:
-	
-release_interface:
-	libusb_release_interface(handle, 0);	
-reattach:
-#ifndef __APPLE__
-	libusb_attach_kernel_driver (handle, 0);
+    // 
 #endif
-close: 	
-	libusb_close(handle);
-exit:
-	libusb_exit(NULL);
-	return 0;
+
+static int usb_close(){
+    hci_transport_usb->ds.fd = 0;
+
+    switch (libusb_state){
+        case LIB_USB_TRANSFERS_ALLOCATED:
+            libusb_free_transfer(control_transfer);
+            libusb_free_transfer(interrupt_transfer);
+        case LIB_USB_INTERFACE_CLAIMED:
+            libusb_release_interface(handle, 0);	
+        case LIB_USB_KERNEL_DETACHED:
+#ifndef __APPLE__
+            libusb_attach_kernel_driver (handle, 0);
+#endif
+        case LIB_USB_DEVICE_OPENDED:
+            libusb_close(handle);
+        case LIB_USB_OPENED:
+            libusb_exit(NULL);
+    }
+    return 0;
+}
+
+static int    usb_send_cmd_packet(uint8_t *packet, int size){
+
+    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
+    
+    hci_dump_packet( HCI_COMMAND_DATA_PACKET, 0, packet, size);
+    printf("send HCI packet, len %u\n", size);
+    
+    // send packet over USB
+	libusb_fill_control_setup(hci_packet, LIBUSB_REQUEST_TYPE_CLASS, 0, 0, 0, size);
+    memcpy(&hci_packet[LIBUSB_CONTROL_SETUP_SIZE], packet, size);
+	libusb_fill_control_transfer(control_transfer, handle, hci_packet, control_callback, NULL, 1000);
+	control_transfer->flags = LIBUSB_TRANSFER_SHORT_NOT_OK;
+	int r = libusb_submit_transfer(control_transfer);
+	if (r) {
+		printf("Error submitting control transfer %d\n", r);
+        return r;
+	}
+    
+    return 0;
+}
+
+static int usb_send_acl_packet(uint8_t *packet, int size){
+    
+    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
+	
+    hci_dump_packet( HCI_ACL_DATA_PACKET, 0, packet, size);
+    
+    // send packet over USB
+    return 0;
+}
+
+static void usb_register_event_packet_handler(void (*handler)(uint8_t *packet, int size)){
+    event_packet_handler = handler;
+}
+
+static void usb_register_acl_packet_handler  (void (*handler)(uint8_t *packet, int size)){
+    acl_packet_handler = handler;
 }
 
 
+static const char * usb_get_transport_name(){
+    return "USB";
+}
+
+static void dummy_handler(uint8_t *packet, int size){
+}
+
+// get usb singleton
+hci_transport_t * hci_transport_usb_instance() {
+    if (!hci_transport_usb) {
+        hci_transport_usb = malloc( sizeof(hci_transport_t));
+        hci_transport_usb->ds.fd                         = 0;
+        hci_transport_usb->ds.process                    = usb_process;
+        hci_transport_usb->open                          = usb_open;
+        hci_transport_usb->close                         = usb_close;
+        hci_transport_usb->send_cmd_packet               = usb_send_cmd_packet;
+        hci_transport_usb->send_acl_packet               = usb_send_acl_packet;
+        hci_transport_usb->register_event_packet_handler = usb_register_event_packet_handler;
+        hci_transport_usb->register_acl_packet_handler   = usb_register_acl_packet_handler;
+        hci_transport_usb->get_transport_name            = usb_get_transport_name;
+    }
+    return hci_transport_usb;
+}
