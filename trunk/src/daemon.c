@@ -23,6 +23,7 @@
 
 #include "hci.h"
 #include "hci_transport_h4.h"
+#include "hci_transport_usb.h"
 #include "hci_dump.h"
 #include "bt_control_iphone.h"
 
@@ -32,6 +33,7 @@
 #include "socket_server.h"
 #include "daemon.h"
 
+#include <libusb-1.0/libusb.h>
 
 hci_con_handle_t con_handle_out = 0;
 hci_con_handle_t con_handle_in = 0;
@@ -255,9 +257,13 @@ int daemon_main (int argc, const char * argv[]){
     // use logger: format HCI_DUMP_PACKETLOGGER or HCI_DUMP_BLUEZ
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
+#if 1
     // H4 UART
     transport = hci_transport_h4_instance();
-
+#else
+    transport = hci_transport_usb_instance();
+#endif
+    
     // init HCI
     hci_init(transport, &config, control);
     
@@ -273,15 +279,16 @@ int daemon_main (int argc, const char * argv[]){
     // turn on 
     hci_power_control(HCI_POWER_ON);
     
-    // configure run loop
-    run_loop_add( (data_source_t *) transport);
-
     // create server
-    data_source_t *socket_server = socket_server_create_tcp(1919);
-	run_loop_add( socket_server );
+    socket_server_create_tcp(1919);
     
     // go!
     run_loop_execute();
-    
+/*    
+    while (1) {
+        libusb_handle_events(NULL);
+        hci_run();
+    }
+ */
     return 0;
 }

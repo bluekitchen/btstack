@@ -8,7 +8,4 @@
 
 #include "hci_transport.h"
 
-/* HCI packet types */
-
-
 extern hci_transport_t * hci_transport_h4_instance();
