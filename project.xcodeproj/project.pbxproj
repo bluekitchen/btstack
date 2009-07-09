@@ -59,6 +59,7 @@
 		9CC813A10FFC0774002816F9 /* btstack.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = btstack.c; path = src/btstack.c; sourceTree = "<group>"; };
 		9CC813A30FFC0A51002816F9 /* daemon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = daemon.h; path = src/daemon.h; sourceTree = "<group>"; };
 		9CC813A40FFC0A51002816F9 /* daemon.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = daemon.c; path = src/daemon.c; sourceTree = "<group>"; };
+		9CEB22DC1005345400FA2B98 /* hci_transport_usb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = hci_transport_usb.h; path = src/hci_transport_usb.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -100,6 +101,7 @@
 				9C46FC380FA906F700ABEF05 /* hci_transport.h */,
 				9C46FC370FA906F700ABEF05 /* hci_transport_h4.h */,
 				9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */,
+				9CEB22DC1005345400FA2B98 /* hci_transport_usb.h */,
 				9C2071F210014D3200A07EA4 /* hci_transport_usb.c */,
 				9C88500C0FBF6702004980E4 /* l2cap.c */,
 				9C88500D0FBF6702004980E4 /* l2cap.h */,

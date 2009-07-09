@@ -207,27 +207,23 @@ static int usb_open(void *transport_config){
     
     // interrupt (= HCI event) handler
 	libusb_fill_interrupt_transfer(interrupt_transfer, handle, 0x81, hci_event_buffer, 260, event_callback, NULL, 3000) ;	
-	interrupt_transfer->flags = LIBUSB_TRANSFER_SHORT_NOT_OK;
+	// interrupt_transfer->flags = LIBUSB_TRANSFER_SHORT_NOT_OK;
 	r = libusb_submit_transfer(interrupt_transfer);
 	if (r) {
 		printf("Error submitting interrupt transfer %d\n", r);
 	}
 	printf("interrupt started\n");
 	
-    // set up data_source
+    // set up data_sources
     const struct libusb_pollfd ** pollfd = libusb_get_pollfds(NULL);
     for (r = 0 ; pollfd[r] ; r++) {
+        data_source_t *ds = malloc(sizeof(data_source_t));
+        ds->fd = pollfd[r]->fd;
+        ds->process = usb_process;
+        run_loop_add(ds);
         printf("%u: %x fd: %u, events %x\n", r, pollfd[r], pollfd[r]->fd, pollfd[r]->events);
     }
 
-    // HACK
-    hci_transport_usb->ds.fd = pollfd[0]->fd;
-    hci_transport_usb->ds.process = usb_process;
-    data_source_t *second_ds = malloc(sizeof(data_source_t));
-    second_ds->fd = pollfd[1]->fd;
-    second_ds->process = usb_process;
-    run_loop_add(second_ds);
-    
     // init state machine
     // bytes_to_read = 1;
     // usb_state = USB_W4_PACKET_TYPE;
@@ -262,7 +258,7 @@ static int usb_open(void *transport_config){
 #endif
 
 static int usb_close(){
-    hci_transport_usb->ds.fd = 0;
+    // @TODO remove all run loops!
 
     switch (libusb_state){
         case LIB_USB_TRANSFERS_ALLOCATED:
@@ -333,8 +329,6 @@ static void dummy_handler(uint8_t *packet, int size){
 hci_transport_t * hci_transport_usb_instance() {
     if (!hci_transport_usb) {
         hci_transport_usb = malloc( sizeof(hci_transport_t));
-        hci_transport_usb->ds.fd                         = 0;
-        hci_transport_usb->ds.process                    = usb_process;
         hci_transport_usb->open                          = usb_open;
         hci_transport_usb->close                         = usb_close;
         hci_transport_usb->send_cmd_packet               = usb_send_cmd_packet;

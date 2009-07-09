@@ -11,6 +11,8 @@
 #include <stdint.h>
 #include "run_loop.h"
 
+/* HCI packet types */
+
 /**
  * Indicates (first byte) that this pkt to the bluetooth module is a command pkt. The
  * module will send a #HCI_EVENT_PACKET for response.
@@ -33,7 +35,6 @@
 #define HCI_EVENT_PACKET	    0x04
 
 typedef struct {
-    data_source_t ds;
     int    (*open)(void *transport_config);
     int    (*close)();
     int    (*send_cmd_packet)(uint8_t *packet, int size);
