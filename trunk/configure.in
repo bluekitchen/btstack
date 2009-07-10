@@ -2,13 +2,14 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.60)
-AC_INIT(btstack, 0.1.0, matthias.ringwald@gmail.com)
+AC_INIT(BTstack, 0.1.0, matthias.ringwald@gmail.com)
 
+AC_ARG_WITH(hci-transport, [AS_HELP_STRING([--with-hci-transport=transportType], [Specify BT type to use: h4, usb])], HCI_TRANSPORT=$withval, HCI_TRANSPORT="h4")  
+AC_ARG_WITH(uart-device, [AS_HELP_STRING([--with-uart-device=uartDevice], [Specify BT UART device to use])], UART_DEVICE=$withval, UART_DEVICE="DEFAULT")  
+AC_ARG_WITH(uart-speed, [AS_HELP_STRING([--with-uart-speed=uartSpeed], [Specify BT UART speed to use])], UART_SPEED=$withval, UART_SPEED="115200")
+AC_ARG_ENABLE(bluetool, [AS_HELP_STRING([--disable-bluetool],[Disable init of Bluetooth module by BlueTool])], USE_BLUETOOL=$enableval, USE_BLUETOOL="DEFAULT")
 AC_ARG_WITH(vendor-id, [AS_HELP_STRING([--with-vendor-id=vendorID], [Specify USB BT Dongle vendorID])], USB_VENDOR_ID=$withval, USB_VENDOR_ID="")  
 AC_ARG_WITH(product-id, [AS_HELP_STRING([--with-product-id=productID], [Specify USB BT Dongle productID])], USB_PRODUCT_ID=$withval, USB_PRODUCT_ID="")  
-AC_ARG_WITH(uart-device, [AS_HELP_STRING([--with-uart-device=uartDevice], [Specify BT UART device to use])], UART_DEVICE=$withval, UART_DEVICE="/dev/ttyS0")  
-AC_ARG_WITH(uart-speed, [AS_HELP_STRING([--with-uart-speed=uartSpeed], [Specify BT UART speed to use])], UART_SPEED=$withval, UART_SPEED="115200")  
-AC_ARG_WITH(hci-transport, [AS_HELP_STRING([--with-hci-transport=transportType], [Specify BT type to use: h4, usb])], HCI_TRANSPORT=$withval, HCI_TRANSPORT="h4")  
 
 # BUILD/HOST/TARGET
 AC_CANONICAL_HOST
@@ -29,6 +30,7 @@ PKG_CHECK_MODULES([LIBUSB], [libusb-1.0], HAVE_LIBUSB="yes", HAVE_LIBUSB="no")
 
 # check USB specs
 if test "x$HCI_TRANSPORT" = xusb; then
+    HCI_TRANSPORT="USB"
     if test -z "$USB_VENDOR_ID" ; then 
         AC_MSG_ERROR(USB Transport requested but USB_VENDOR_ID not set. Please specify vendor ID of your USB dongle using --with-vendor-id=0x1234)
     fi
@@ -38,11 +40,31 @@ if test "x$HCI_TRANSPORT" = xusb; then
     if test "$HAVE_LIBUSB" == "no" ; then 
         AC_MSG_ERROR(USB Transport requested but libusb-1.0 not found using pkg-config. Please set PKG_CONFIG_PATH correctly and/or install libusb-1.0 from your distribution or from http://libusb.sourceforge.net/api-1.0/)
     fi
+else
+    HCI_TRANSPORT=H4
+fi
+
+
+
+echo
+echo "BTstack configured for HCI $HCI_TRANSPORT Transport"
+
+# iPhone/iPod touch cross-compilation for darwin
+if test "x$target" = xiphone; then
+    echo "Cross-compiling for iPhone/iPod touch"
+    if test "x$UART_DEVICE" = xDEFAULT ; then
+        UART_DEVICE=/dev/tty.bluetooth
+    fi
+    if test "x$USE_BLUETOOL" = xDEFAULT ; then
+        USE_BLUETOOL="yes"
+    fi
+else
+    if test "x$UART_DEVICE"=xDEFAULT ; then
+        UART_DEVICE=/dev/ttyS0
+    fi
 fi
 
 # summary
-echo
-echo "BTstack configuration for $HCI_TRANSPORT"
 if test "x$HCI_TRANSPORT" = xusb; then
     echo "USB_PRODUCT_ID=$USB_PRODUCT_ID"
     echo "USB_VENDOR_ID=$USB_VENDOR_ID"
@@ -51,6 +73,7 @@ if test "x$HCI_TRANSPORT" = xusb; then
 else
     echo "UART_DEVICE=$UART_DEVICE"
     echo "UART_SPEED=$UART_SPEED"
+    echo "USE_BLUETOOL=$USE_BLUETOOL"
 fi
 echo
 
@@ -64,8 +87,10 @@ else
     echo "#define HAVE_TRANSPORT_H4" >> config.h
     echo "#define UART_DEVICE=$UART_DEVICE" >> config.h
     echo "#define UART_SPEED=$UART_SPEED" >> config.h
+    if test "x$USE_BLUETOOL" = xyes; then
+        echo "#define USE_BLUETOOL" >> config.h
+    fi
 fi
-
 
 AC_SUBST(LIBTOOL)
 AC_SUBST(INSTALL_PROGRAM)
