@@ -42,7 +42,7 @@ static pktlog_hdr  header_packetlogger;
 
 void hci_dump_open(char *filename, hci_dump_format_t format){
     if (dump_file < 0) {
-        dump_file =  open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
+        dump_file =  open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
         dump_format = format;
     }
 }
