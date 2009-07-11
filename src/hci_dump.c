@@ -16,6 +16,7 @@
 #include <unistd.h>       // write 
 #include <stdio.h>
 #include <sys/time.h>     // for timestamps
+#include <sys/stat.h>     // for mode flags
 
 // BLUEZ hcidump
 typedef struct {
