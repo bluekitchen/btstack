@@ -163,7 +163,6 @@ static int usb_open(void *transport_config){
 	r = libusb_detach_kernel_driver (handle, 0);
 	if (r < 0) {
 		fprintf(stderr, "libusb_detach_kernel_driver error %d\n", r);
-		goto close;
         usb_close();
         return r;
 	}
