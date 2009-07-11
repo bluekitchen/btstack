@@ -11,7 +11,6 @@
 		9C1F0F340FDB024B008F472F /* socket_server.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C1F0F320FDB024B008F472F /* socket_server.c */; };
 		9C2071F310014D3200A07EA4 /* hci_transport_usb.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C2071F210014D3200A07EA4 /* hci_transport_usb.c */; };
 		9C20720F10025E0500A07EA4 /* libusb-1.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C20720E10025E0500A07EA4 /* libusb-1.0.dylib */; };
-		9C46FBAF0FA8F31800ABEF05 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FBAE0FA8F31800ABEF05 /* main.c */; };
 		9C46FC390FA906F700ABEF05 /* hci.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC340FA906F700ABEF05 /* hci.c */; };
 		9C46FC3A0FA906F700ABEF05 /* hci_transport_h4.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */; };
 		9C7ECB840FCC85650085DAC5 /* bt_control_iphone.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7ECB820FCC85650085DAC5 /* bt_control_iphone.c */; };
@@ -41,7 +40,6 @@
 		9C1F0F330FDB024B008F472F /* socket_server.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = socket_server.h; path = src/socket_server.h; sourceTree = "<group>"; };
 		9C2071F210014D3200A07EA4 /* hci_transport_usb.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci_transport_usb.c; path = src/hci_transport_usb.c; sourceTree = "<group>"; };
 		9C20720E10025E0500A07EA4 /* libusb-1.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.dylib"; path = "/usr/local/lib/libusb-1.0.dylib"; sourceTree = "<absolute>"; };
-		9C46FBAE0FA8F31800ABEF05 /* main.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = main.c; path = src/main.c; sourceTree = "<group>"; usesTabs = 0; };
 		9C46FC340FA906F700ABEF05 /* hci.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci.c; path = src/hci.c; sourceTree = "<group>"; };
 		9C46FC350FA906F700ABEF05 /* hci.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci.h; path = src/hci.h; sourceTree = "<group>"; };
 		9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci_transport_h4.c; path = src/hci_transport_h4.c; sourceTree = "<group>"; };
@@ -107,7 +105,6 @@
 				9C2071F210014D3200A07EA4 /* hci_transport_usb.c */,
 				9C88500C0FBF6702004980E4 /* l2cap.c */,
 				9C88500D0FBF6702004980E4 /* l2cap.h */,
-				9C46FBAE0FA8F31800ABEF05 /* main.c */,
 				9C7ECBB30FCC95DD0085DAC5 /* hci_dump.h */,
 				9C7ECBB40FCC95DD0085DAC5 /* hci_dump.c */,
 				9C1F0E990FDAE023008F472F /* run_loop.h */,
@@ -177,7 +174,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9C46FBAF0FA8F31800ABEF05 /* main.c in Sources */,
 				9C46FC390FA906F700ABEF05 /* hci.c in Sources */,
 				9C46FC3A0FA906F700ABEF05 /* hci_transport_h4.c in Sources */,
 				9C88500E0FBF6702004980E4 /* l2cap.c in Sources */,
