@@ -18,7 +18,6 @@ BTdaemon_SOURCES =       \
 include_HEADERS = \
     bt_control.h                      \
     bt_control_iphone.h               \
-    daemon.h                          \
     hci.h                             \
     hci_dump.h                        \
     hci_transport.h                   \
