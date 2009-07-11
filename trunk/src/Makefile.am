@@ -12,7 +12,6 @@ BTdaemon_SOURCES =       \
     hci_transport_h4.c   \
     $(usb_support)       \
     l2cap.c              \
-    main.c               \
     run_loop.c           \
     socket_server.c
     
