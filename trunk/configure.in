@@ -2,7 +2,8 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.60)
-AC_INIT(BTstack, 0.1.0, matthias.ringwald@gmail.com)
+AC_INIT(BTstack, 0.1)
+AM_INIT_AUTOMAKE(BTstack,0.1)
 
 AC_ARG_WITH(hci-transport, [AS_HELP_STRING([--with-hci-transport=transportType], [Specify BT type to use: h4, usb])], HCI_TRANSPORT=$withval, HCI_TRANSPORT="h4")  
 AC_ARG_WITH(uart-device, [AS_HELP_STRING([--with-uart-device=uartDevice], [Specify BT UART device to use])], UART_DEVICE=$withval, UART_DEVICE="DEFAULT")  
@@ -25,8 +26,7 @@ PKG_PROG_PKG_CONFIG
 
 # libdvdread used to get info on audio and subtitle languages
 PKG_CHECK_MODULES([LIBUSB], [libusb-1.0], HAVE_LIBUSB="yes", HAVE_LIBUSB="no")
-
-# AC_CONFIG_FILES([Makefile])
+AM_CONDITIONAL(HAVE_LIBUSB, [test "x$HAVE_LIBUSB" == "xyes"])
 
 # check USB specs
 if test "x$HCI_TRANSPORT" = xusb; then
@@ -57,6 +57,7 @@ if test "x$target" = xiphone; then
     fi
     if test "x$USE_BLUETOOL" = xDEFAULT ; then
         USE_BLUETOOL="yes"
+        echo "USE_BLUETOOL=$USE_BLUETOOL"
     fi
 else
     if test "x$UART_DEVICE"=xDEFAULT ; then
@@ -73,7 +74,6 @@ if test "x$HCI_TRANSPORT" = xusb; then
 else
     echo "UART_DEVICE=$UART_DEVICE"
     echo "UART_SPEED=$UART_SPEED"
-    echo "USE_BLUETOOL=$USE_BLUETOOL"
 fi
 echo
 
@@ -95,4 +95,5 @@ fi
 AC_SUBST(LIBTOOL)
 AC_SUBST(INSTALL_PROGRAM)
 AC_SUBST(HAVE_LIBUSB)
-AC_OUTPUT
+AC_OUTPUT(Makefile)
+AC_OUTPUT(src/Makefile)
