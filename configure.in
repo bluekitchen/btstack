@@ -12,8 +12,10 @@ AC_ARG_ENABLE(bluetool, [AS_HELP_STRING([--disable-bluetool],[Disable init of Bl
 AC_ARG_WITH(vendor-id, [AS_HELP_STRING([--with-vendor-id=vendorID], [Specify USB BT Dongle vendorID])], USB_VENDOR_ID=$withval, USB_VENDOR_ID="")  
 AC_ARG_WITH(product-id, [AS_HELP_STRING([--with-product-id=productID], [Specify USB BT Dongle productID])], USB_PRODUCT_ID=$withval, USB_PRODUCT_ID="")  
 
+
 # BUILD/HOST/TARGET
 AC_CANONICAL_HOST
+
 
 # Checks for programs.
 AC_PROG_CC
@@ -21,14 +23,8 @@ AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
-PKG_PROG_PKG_CONFIG
 
-
-# libdvdread used to get info on audio and subtitle languages
-PKG_CHECK_MODULES([LIBUSB], [libusb-1.0], HAVE_LIBUSB="yes", HAVE_LIBUSB="no")
-AM_CONDITIONAL(HAVE_LIBUSB, [test "x$HAVE_LIBUSB" == "xyes"])
-
-# use capitals for transprot type
+# use capitals for transport type
 if test "x$HCI_TRANSPORT" = xusb; then
     HCI_TRANSPORT="USB"
 fi
@@ -36,20 +32,26 @@ if test "x$HCI_TRANSPORT" = xh4; then
     HCI_TRANSPORT="H4"
 fi
 
-# check USB specs
+
+# validate USB support
 if test "x$HCI_TRANSPORT" = xUSB; then
+    # pkg-config needed
+    PKG_PROG_PKG_CONFIG
+    # libusb installed?
+    PKG_CHECK_MODULES([LIBUSB], [libusb-1.0], HAVE_LIBUSB="yes", HAVE_LIBUSB="no")
+    if test "$HAVE_LIBUSB" == "no" ; then 
+        AC_MSG_ERROR(USB Transport requested but libusb-1.0 not found using pkg-config. Please set PKG_CONFIG_PATH correctly and/or install libusb-1.0 from your distribution or from http://libusb.sourceforge.net/api-1.0/)
+    fi
     if test -z "$USB_VENDOR_ID" ; then 
         AC_MSG_ERROR(USB Transport requested but USB_VENDOR_ID not set. Please specify vendor ID of your USB dongle using --with-vendor-id=0x1234)
     fi
     if test -z "$USB_PRODUCT_ID" ; then 
         AC_MSG_ERROR(USB Transport requested but USB_PRODUCT_ID not set. Please specify product ID of your USB dongle using --with-product-id=0x1234)
     fi
-    if test "$HAVE_LIBUSB" == "no" ; then 
-        AC_MSG_ERROR(USB Transport requested but libusb-1.0 not found using pkg-config. Please set PKG_CONFIG_PATH correctly and/or install libusb-1.0 from your distribution or from http://libusb.sourceforge.net/api-1.0/)
-    fi
     CFLAGS="$CFLAGS $LIBUSB_CFLAGS"
     LDFLAGS="$LDFLAGS $LIBUSB_LIBS"
 fi
+AM_CONDITIONAL(HAVE_LIBUSB, [test "x$HAVE_LIBUSB" == "xyes"])
 
 
 
@@ -99,8 +101,6 @@ else
     fi
 fi
 
-# AC_SUBST(LIBTOOL)
-# AC_SUBST(INSTALL_PROGRAM)
 AC_SUBST(HAVE_LIBUSB)
 AC_OUTPUT(Makefile)
 AC_OUTPUT(src/Makefile)
