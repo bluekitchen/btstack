@@ -228,7 +228,7 @@ void acl_handler(uint8_t *packet, int size){
 static hci_transport_t * transport;
 static hci_uart_config_t config;
 
-int daemon_main (int argc, const char * argv[]){
+int main (int argc, const char * argv[]){
     
     bt_control_t * control = NULL;
 
