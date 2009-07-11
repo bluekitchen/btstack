@@ -1,4 +1,4 @@
 #!/bin/sh
 aclocal
 autoconf
-automake
+automake --add-missing
