@@ -21,11 +21,10 @@
 #endif
 #endif
 
+#include "../config.h"
+
 #include "hci.h"
-#include "hci_transport_h4.h"
-#include "hci_transport_usb.h"
 #include "hci_dump.h"
-#include "bt_control_iphone.h"
 
 #include "l2cap.h"
 
@@ -33,7 +32,18 @@
 #include "socket_server.h"
 #include "daemon.h"
 
+#ifdef USE_BLUETOOL
+#include "bt_control_iphone.h"
+#endif
+
+#ifdef HAVE_TRANSPORT_H4
+#include "hci_transport_h4.h"
+#endif
+
+#ifdef HAVE_TRANSPORT_USB
 #include <libusb-1.0/libusb.h>
+#include "hci_transport_usb.h"
+#endif
 
 hci_con_handle_t con_handle_out = 0;
 hci_con_handle_t con_handle_in = 0;
@@ -220,49 +230,25 @@ static hci_uart_config_t config;
 
 int daemon_main (int argc, const char * argv[]){
     
-#if 0
-    pid_t parent_pid = fork();
-    
-    if (parent_pid > 0) {
-        // parent returns
-        return 0;
-    }
-#endif
-    
     bt_control_t * control = NULL;
 
-#ifndef __IPHONE__
-    // 
-    if (argc <= 1){
-        printf("HCI Daemon tester. Specify device name for Ericsson ROK 101 007\n");
-        return 1;
-    }
+#ifdef HAVE_TRANSPORT_H4
+    transport = hci_transport_h4_instance();
+    config.device_name = UART_DEVICE;
+    config.baudrate    = UART_SPEED;
+    config.flowcontrol = 1;
+#endif
 
-    // Ancient Ericsson ROK 101 007 (ca. 2001)
-    config.device_name = argv[1];
-    config.baudrate    = 57600;
-    config.flowcontrol = 1;
-#else 
-    // iPhone
-    config.device_name = "/dev/tty.bluetooth";
-    config.baudrate    = 115200;
-    //    config.baudrate    = 230400;  // ok
-    //    config.baudrate    = 460800;  // ok
-    //    config.baudrate    = 921600;  // ok
-    //    config.baudrate    = 2400000; // does not work (yet)
-    config.flowcontrol = 1;
+#ifdef HAVE_TRANSPORT_USB
+    transport = hci_transport_usb_instance();
+#endif
+
+#ifdef USE_BLUETOOL
     control = &bt_control_iphone;
 #endif
 
     // use logger: format HCI_DUMP_PACKETLOGGER or HCI_DUMP_BLUEZ
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
-
-#if 1
-    // H4 UART
-    transport = hci_transport_h4_instance();
-#else
-    transport = hci_transport_usb_instance();
-#endif
     
     // init HCI
     hci_init(transport, &config, control);
