@@ -15,12 +15,38 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdint.h>
 #include <arpa/inet.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 
+#include "hci.h"
+
 #define MAX_PENDING_CONNECTIONS 10
 #define DATA_BUF_SIZE           80
+
+
+typedef struct packet_header {
+    uint16_t length;
+    uint8_t  type;
+    uint8_t  data[0];
+} packet_header_t;
+
+typedef enum {
+    SOCKET_W4_HEADER,
+    SOCKET_W4_DATA,
+} SOCKET_STATE;
+
+typedef struct connection {
+    data_source_t ds;
+    struct connection * next;
+    SOCKET_STATE state;
+    uint16_t bytes_read;
+    uint16_t bytes_to_read;
+    char   buffer[3+3+255]; // max HCI CMD + packet_header
+} connection_t;
+
+connection_t *connections = NULL;
 
 static char test_buffer[DATA_BUF_SIZE];
 
@@ -61,28 +87,67 @@ static int socket_server_echo_process(struct data_source *ds, int ready) {
     return 0;
 }
 
+#if 0
+static int socket_server_connection_process(struct data_source *ds, int ready) {
+    connection_t *conn = (connection_t *) ds;
+    int bytes_read = read(ds->fd, &conn->buffer[conn->bytes_read],
+                      sizeof(packet_header_t) - conn->bytes_read);
+    if (bytes_read < 0){
+        //
+    }
+    conn->bytes_read += bytes_read;
+    conn->bytes_to_read -= bytes_read;
+    if (conn->bytes_to_read > 0) {
+        return 0;
+    }
+    switch (conn->state){
+        case SOCKET_W4_HEADER:
+            conn->state = SOCKET_W4_DATA;
+            conn->bytes_to_read = READ_BT_16( conn->buffer, 0);
+            break;
+        case SOCKET_W4_DATA:
+            // process packet !!!
+            
+            
+            // wait for next packet
+            conn->state = SOCKET_W4_HEADER;
+            conn->bytes_read = 0;
+            conn->bytes_to_read = sizeof(packet_header_t);
+            break;
+    }
+	return 0;
+}
+#endif
 
 static int socket_server_accept(struct data_source *socket_ds, int ready) {
     
     // create data_source_t
-    data_source_t *ds = malloc( sizeof(data_source_t));
-    if (ds == NULL) return 0;
-    ds->fd = 0;
-    ds->process = socket_server_process;
+    connection_t * conn = malloc( sizeof(connection_t));
+    if (conn == NULL) return 0;
+    conn->ds.fd = 0;
+    conn->ds.process = socket_server_process;
     
-	/* We have a new connection coming in!  We'll
-     try to find a spot for it in connectlist. */
-	ds->fd = accept(socket_ds->fd, NULL, NULL);
-	if (ds->fd < 0) {
+    // init state machine
+    conn->state = SOCKET_W4_HEADER;
+    conn->bytes_read = 0;
+    conn->bytes_to_read = 2;
+    
+	/* New connection coming in! */
+	conn->ds.fd = accept(socket_ds->fd, NULL, NULL);
+	if (conn->ds.fd < 0) {
 		perror("accept");
-		free(ds);
+		free(conn);
         return 0;
 	}
     // non-blocking ?
 	// socket_server_set_non_blocking(ds->fd);
     
+    // store reference to this connection
+    conn->next = NULL;
+    connections = conn;
+    
     // add this socket to the run_loop
-    run_loop_add( ds );
+    run_loop_add( &conn->ds );
     
     return 0;
 }
