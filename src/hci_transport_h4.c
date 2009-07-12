@@ -121,8 +121,14 @@ static int    h4_open(void *transport_config){
 }
 
 static int    h4_close(){
+    // first remove run loop handler
+	run_loop_remove(hci_transport_h4->ds);
+    
+    // close device 
     close(hci_transport_h4->ds->fd);
     free(hci_transport_h4->ds);
+    
+    // free struct
     hci_transport_h4->ds = NULL;
     return 0;
 }
