@@ -194,6 +194,8 @@ data_source_t * socket_server_create_tcp(int port){
         return NULL;
 	}
     
+    run_loop_add(ds);
+    
 	printf ("Server up and running ...\n");
     return ds;
 }
