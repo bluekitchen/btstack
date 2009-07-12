@@ -7,8 +7,6 @@
  *
  */
 
-#include "daemon.h"
-
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,7 +28,6 @@
 
 #include "run_loop.h"
 #include "socket_server.h"
-#include "daemon.h"
 
 #ifdef USE_BLUETOOL
 #include "bt_control_iphone.h"

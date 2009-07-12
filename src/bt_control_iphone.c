@@ -6,6 +6,8 @@
  *  Created by Matthias Ringwald on 5/19/09.
  */
 
+#include "../config.h"
+
 #include "bt_control_iphone.h"
 #include "hci_transport.h"
 #include "hci.h"

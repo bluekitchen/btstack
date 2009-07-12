@@ -251,5 +251,5 @@ hci_transport_t * hci_transport_h4_instance() {
         hci_transport_h4->transport.register_acl_packet_handler   = h4_register_acl_packet_handler;
         hci_transport_h4->transport.get_transport_name            = h4_get_transport_name;
     }
-    return hci_transport_h4;
+    return (hci_transport_t *) hci_transport_h4;
 }
