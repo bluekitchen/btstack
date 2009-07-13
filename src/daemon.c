@@ -25,7 +25,7 @@
 #include "hci_dump.h"
 
 #include "l2cap.h"
-
+#include "linked_list.h"
 #include "run_loop.h"
 #include "socket_server.h"
 
