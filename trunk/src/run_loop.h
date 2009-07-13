@@ -6,8 +6,10 @@
 
 #pragma once
 
+#include "linked_list.h"
+
 typedef struct data_source {
-    struct data_source *next;                           // <-- used internally by RunLoop
+    linked_item_t item;
     int  fd;                                            // <-- file descriptors to watch or 0
     int  (*process)(struct data_source *ds, int ready); // <-- do processing, @return: more to do
 } data_source_t;

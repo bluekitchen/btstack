@@ -92,7 +92,7 @@ static int socket_server_connection_process(struct data_source *ds, int ready) {
     connection_t *conn = (connection_t *) ds;
     int bytes_read = read(ds->fd, &conn->buffer[conn->bytes_read],
                       sizeof(packet_header_t) - conn->bytes_read);
-    if (bytes_read < 0){
+    if (bytes_read <= 0){
         //
     }
     conn->bytes_read += bytes_read;
