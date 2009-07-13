@@ -38,15 +38,15 @@ typedef enum {
 } SOCKET_STATE;
 
 typedef struct connection {
-    data_source_t ds;
-    struct connection * next;
+    data_source_t ds;       // used for run loop
+    linked_item_t item;     // used for connection list
     SOCKET_STATE state;
     uint16_t bytes_read;
     uint16_t bytes_to_read;
-    char   buffer[3+3+255]; // max HCI CMD + packet_header
+    uint8_t  buffer[3+3+255]; // max HCI CMD + packet_header
 } connection_t;
 
-connection_t *connections = NULL;
+linked_list_t connections = NULL;
 
 static char test_buffer[DATA_BUF_SIZE];
 
@@ -63,21 +63,24 @@ int socket_server_set_non_blocking(int fd)
     return err;
 }
 
+void socket_server_free_connection(connection_t *conn){
+    // remove from run_loop 
+    run_loop_remove(&conn->ds);
+    
+    // and from connection list
+    linked_list_remove(&connections, &conn->item);
+    
+    // destroy
+    free(conn);
+}
+
 static int socket_server_echo_process(struct data_source *ds, int ready) {
     int bytes_read = read(ds->fd, test_buffer, DATA_BUF_SIZE);
     
     // connection closed by client?
-    if (bytes_read < 0){
-        
-        // emit signal
-        
-        // remove from run_loop 
-        // @note: run_loop_execute must be prepared for this
-        run_loop_remove(ds);
-        
-        // destroy
-        free(ds);
-        
+    if (bytes_read <= 0){
+        // free
+        socket_server_free_connection(  linked_item_get_user(&ds->item));
         return 0;
     }
     
@@ -87,13 +90,14 @@ static int socket_server_echo_process(struct data_source *ds, int ready) {
     return 0;
 }
 
-#if 0
-static int socket_server_connection_process(struct data_source *ds, int ready) {
+int socket_server_connection_process(struct data_source *ds, int ready) {
     connection_t *conn = (connection_t *) ds;
     int bytes_read = read(ds->fd, &conn->buffer[conn->bytes_read],
                       sizeof(packet_header_t) - conn->bytes_read);
     if (bytes_read <= 0){
-        //
+        // free
+        socket_server_free_connection(  linked_item_get_user(&ds->item));
+        return 0;
     }
     conn->bytes_read += bytes_read;
     conn->bytes_to_read -= bytes_read;
@@ -103,11 +107,20 @@ static int socket_server_connection_process(struct data_source *ds, int ready) {
     switch (conn->state){
         case SOCKET_W4_HEADER:
             conn->state = SOCKET_W4_DATA;
-            conn->bytes_to_read = READ_BT_16( conn->buffer, 0);
+            conn->bytes_to_read = READ_BT_16( conn->buffer, 0) + sizeof(packet_header_t);
             break;
         case SOCKET_W4_DATA:
             // process packet !!!
-            
+            switch (conn->buffer[2]){
+                case HCI_COMMAND_DATA_PACKET:
+                    hci_send_cmd_packet(&conn->buffer[3], READ_BT_16( conn->buffer, 0));
+                    break;
+                case HCI_ACL_DATA_PACKET:
+                    hci_send_acl_packet(&conn->buffer[3], READ_BT_16( conn->buffer, 0));
+                    break;
+                default:
+                    break;
+            }
             
             // wait for next packet
             conn->state = SOCKET_W4_HEADER;
@@ -117,7 +130,29 @@ static int socket_server_connection_process(struct data_source *ds, int ready) {
     }
 	return 0;
 }
-#endif
+
+int socket_server_send_packet_all(uint8_t type, uint8_t *packet, uint16_t size){
+    uint8_t length[2];
+    bt_store_16( (uint8_t *) &length, 0, size);
+    connection_t *next;
+    connection_t *it;
+    for (it = (connection_t *) connections; it != NULL ; it = next){
+        next = (connection_t *) it->item.next; // cache pointer to next connection_t to allow for removal
+        write(it->ds.fd, &length, 2);
+        write(it->ds.fd, &type, 1);
+        write(it->ds.fd, packet, size);
+    }
+    return 0;
+}
+
+int socket_server_send_event_all(uint8_t *packet, uint16_t size){
+    return socket_server_send_packet_all( HCI_EVENT_PACKET, packet, size);
+}
+
+int socket_server_send_acl_all(uint8_t *packet, uint16_t size){
+    return socket_server_send_packet_all( HCI_ACL_DATA_PACKET, packet, size);
+}
+
 
 static int socket_server_accept(struct data_source *socket_ds, int ready) {
     
@@ -141,13 +176,14 @@ static int socket_server_accept(struct data_source *socket_ds, int ready) {
 	}
     // non-blocking ?
 	// socket_server_set_non_blocking(ds->fd);
-    
-    // store reference to this connection
-    conn->next = NULL;
-    connections = conn;
-    
+        
     // add this socket to the run_loop
+    linked_item_set_user( &conn->ds.item, conn);
     run_loop_add( &conn->ds );
+    
+    // and the connection list
+    linked_item_set_user( &conn->item, conn);
+    linked_list_add( &connections, &conn->item);
     
     return 0;
 }
@@ -161,7 +197,7 @@ data_source_t * socket_server_create_tcp(int port){
     
     // create data_source_t
     data_source_t *ds = malloc( sizeof(data_source_t));
-    if (ds == NULL) return ds;
+    if (ds == NULL) return NULL;
     ds->fd = 0;
     ds->process = socket_server_accept;
     

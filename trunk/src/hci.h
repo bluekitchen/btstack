@@ -176,6 +176,7 @@ void hexdump(void *data, int size);
 
 // create and send hci command packet based on a template and a list of parameters
 int hci_send_cmd(hci_cmd_t *cmd, ...);
+int hci_send_cmd_packet(uint8_t *packet, int size);
 
 // send ACL packet
 int hci_send_acl_packet(uint8_t *packet, int size);
