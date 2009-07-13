@@ -340,6 +340,10 @@ int hci_send_acl_packet(uint8_t *packet, int size){
     return hci_stack.hci_transport->send_acl_packet(packet, size);
 }
 
+int hci_send_cmd_packet(uint8_t *packet, int size){
+    hci_stack.num_cmd_packets--;
+    return hci_stack.hci_transport->send_cmd_packet(packet, size);
+}
 
 /**
  * pre: numcmds >= 0 - it's allowed to send a command to the controller
@@ -411,7 +415,5 @@ int hci_send_cmd(hci_cmd_t *cmd, ...){
     };
     va_end(argptr);
     hci_cmd_buffer[2] = pos - 3;
-    // send packet
-    hci_stack.num_cmd_packets--;
-    return hci_stack.hci_transport->send_cmd_packet(hci_cmd_buffer, pos);
+    return hci_send_cmd_packet(hci_cmd_buffer, pos);
 }

@@ -50,7 +50,7 @@ void run_loop_execute() {
 
         // process input
         data_source_t *next;
-        for (ds = (data_source_t *) the_run_loop; ds != NULL ; ds = (data_source_t *) ds->item.next){
+        for (ds = (data_source_t *) the_run_loop; ds != NULL ; ds = next){
             next = (data_source_t *) ds->item.next; // cache pointer to next data_source to allow data source to remove itself
             if (FD_ISSET(ds->fd, &descriptors)) {
                 ds->process(ds, FD_ISSET(ds->fd, &descriptors));
