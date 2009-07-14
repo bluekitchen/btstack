@@ -6,6 +6,8 @@
  *  Created by Matthias Ringwald on 5/16/09.
  */
 
+#pragma once
+
 #include "hci.h"
 
 typedef enum {

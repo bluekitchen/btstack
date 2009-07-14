@@ -1,5 +1,5 @@
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = src
+SUBDIRS = src example
 
 iphone_ip=@IPHONE_IP@
 install-iphone: src/BTdaemon
