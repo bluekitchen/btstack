@@ -125,5 +125,4 @@ fi
 
 AC_SUBST(IPHONE_IP)
 AC_SUBST(HAVE_LIBUSB)
-AC_OUTPUT(Makefile)
-AC_OUTPUT(src/Makefile)
+AC_OUTPUT(Makefile src/Makefile example/Makefile)

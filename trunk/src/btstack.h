@@ -7,6 +7,9 @@
  *  
  */
 
+#pragma once
+#include "hci.h"
+
 // init BTstack library
 int bt_open();
 
@@ -14,10 +17,10 @@ int bt_open();
 int bt_close();
 
 // send hci cmd packet
-int hci_send_cmd(hci_cmd_t *cmd, ...);
+int bt_send_cmd(hci_cmd_t *cmd, ...);
 
 // send hci acl packet
-int hci_send_acl_packet(uint8_t *packet, int size);
+int bt_send_acl_packet(uint8_t *packet, int size);
 
 // register packet and event handler
 void bt_register_event_packet_handler(void (*handler)(uint8_t *packet, int size));
