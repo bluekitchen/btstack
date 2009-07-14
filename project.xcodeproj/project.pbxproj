@@ -14,6 +14,7 @@
 		9C46FC390FA906F700ABEF05 /* hci.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC340FA906F700ABEF05 /* hci.c */; };
 		9C46FC3A0FA906F700ABEF05 /* hci_transport_h4.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */; };
 		9C7B5AC0100BD3340065D87E /* linked_list.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7B5ABF100BD3340065D87E /* linked_list.c */; };
+		9C7B5B7F100D04450065D87E /* test.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7B5B7E100D04450065D87E /* test.c */; };
 		9C7ECB840FCC85650085DAC5 /* bt_control_iphone.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7ECB820FCC85650085DAC5 /* bt_control_iphone.c */; };
 		9C7ECBB50FCC95DD0085DAC5 /* hci_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7ECBB40FCC95DD0085DAC5 /* hci_dump.c */; };
 		9C88500E0FBF6702004980E4 /* l2cap.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C88500C0FBF6702004980E4 /* l2cap.c */; };
@@ -48,6 +49,7 @@
 		9C46FC380FA906F700ABEF05 /* hci_transport.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci_transport.h; path = src/hci_transport.h; sourceTree = "<group>"; };
 		9C7B5ABE100BD3340065D87E /* linked_list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = linked_list.h; path = src/linked_list.h; sourceTree = "<group>"; };
 		9C7B5ABF100BD3340065D87E /* linked_list.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = linked_list.c; path = src/linked_list.c; sourceTree = "<group>"; };
+		9C7B5B7E100D04450065D87E /* test.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = test.c; path = example/test.c; sourceTree = "<group>"; };
 		9C7ECB810FCC85650085DAC5 /* bt_control.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = bt_control.h; path = src/bt_control.h; sourceTree = "<group>"; };
 		9C7ECB820FCC85650085DAC5 /* bt_control_iphone.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = bt_control_iphone.c; path = src/bt_control_iphone.c; sourceTree = "<group>"; };
 		9C7ECB830FCC85650085DAC5 /* bt_control_iphone.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = bt_control_iphone.h; path = src/bt_control_iphone.h; sourceTree = "<group>"; };
@@ -78,12 +80,13 @@
 		08FB7794FE84155DC02AAC07 /* project */ = {
 			isa = PBXGroup;
 			children = (
-				9CC152C61009052100223347 /* config.h */,
-				9C20720E10025E0500A07EA4 /* libusb-1.0.dylib */,
+				9C7B5B81100D04520065D87E /* Example */,
 				08FB7795FE84155DC02AAC07 /* Source */,
 				C6A0FF2B0290797F04C91782 /* Documentation */,
 				1AB674ADFE9D54B511CA2CBB /* Products */,
+				9CC152C61009052100223347 /* config.h */,
 				9CA3C0900FB8B3C4005F48DE /* TODO.txt */,
+				9C20720E10025E0500A07EA4 /* libusb-1.0.dylib */,
 			);
 			name = project;
 			sourceTree = "<group>";
@@ -125,6 +128,14 @@
 				8DD76FB20486AB0100D96B5E /* project */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		9C7B5B81100D04520065D87E /* Example */ = {
+			isa = PBXGroup;
+			children = (
+				9C7B5B7E100D04450065D87E /* test.c */,
+			);
+			name = Example;
 			sourceTree = "<group>";
 		};
 		C6A0FF2B0290797F04C91782 /* Documentation */ = {
@@ -188,6 +199,7 @@
 				9CC813A50FFC0A51002816F9 /* daemon.c in Sources */,
 				9C2071F310014D3200A07EA4 /* hci_transport_usb.c in Sources */,
 				9C7B5AC0100BD3340065D87E /* linked_list.c in Sources */,
+				9C7B5B7F100D04450065D87E /* test.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
