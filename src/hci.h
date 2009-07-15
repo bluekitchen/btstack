@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #include "hci_transport.h"
 #include "bt_control.h"
@@ -143,8 +144,8 @@ typedef struct {
     uint8_t  num_acl_packets;
 
     /* callback to L2CAP layer */
-    void (*event_packet_handler)(uint8_t *packet, int size);
-    void (*acl_packet_handler)  (uint8_t *packet, int size);
+    void (*event_packet_handler)(uint8_t *packet, uint16_t size);
+    void (*acl_packet_handler)  (uint8_t *packet, uint16_t size);
 
     /* hci state machine */
     HCI_STATE state;
@@ -157,9 +158,9 @@ typedef struct {
 // set up HCI
 void hci_init(hci_transport_t *transport, void *config, bt_control_t *control);
 
-void hci_register_event_packet_handler(void (*handler)(uint8_t *packet, int size));
+void hci_register_event_packet_handler(void (*handler)(uint8_t *packet, uint16_t size));
 
-void hci_register_acl_packet_handler  (void (*handler)(uint8_t *packet, int size));
+void hci_register_acl_packet_handler  (void (*handler)(uint8_t *packet, uint16_t size));
     
 // power control
 int hci_power_control(HCI_POWER_MODE mode);
@@ -174,7 +175,9 @@ uint32_t hci_run();
 //
 void hexdump(void *data, int size);
 
-// create and send hci command packet based on a template and a list of parameters
+// create and send hci command packets based on a template and a list of parameters
+uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, va_list argptr);
+uint16_t hci_create_cmd(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, ...);
 int hci_send_cmd(hci_cmd_t *cmd, ...);
 int hci_send_cmd_packet(uint8_t *packet, int size);
 

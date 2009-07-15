@@ -159,7 +159,7 @@ static hci_connection_t *link_for_addr(bd_addr_t addr){
 /** 
  * Handler called by HCI transport
  */
-static void dummy_handler(uint8_t *packet, int size){
+static void dummy_handler(uint8_t *packet, uint16_t size){
 }
 
 static void acl_handler(uint8_t *packet, int size){
@@ -213,10 +213,10 @@ static void event_handler(uint8_t *packet, int size){
 }
 
 /** Register L2CAP handlers */
-void hci_register_event_packet_handler(void (*handler)(uint8_t *packet, int size)){
+void hci_register_event_packet_handler(void (*handler)(uint8_t *packet, uint16_t size)){
     hci_stack.event_packet_handler = handler;
 }
-void hci_register_acl_packet_handler  (void (*handler)(uint8_t *packet, int size)){
+void hci_register_acl_packet_handler  (void (*handler)(uint8_t *packet, uint16_t size)){
     hci_stack.acl_packet_handler = handler;
 }
 
@@ -345,17 +345,12 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     return hci_stack.hci_transport->send_cmd_packet(packet, size);
 }
 
-/**
- * pre: numcmds >= 0 - it's allowed to send a command to the controller
- */
-int hci_send_cmd(hci_cmd_t *cmd, ...){
-    uint8_t * hci_cmd_buffer = hci_stack.hci_cmd_buffer;
+uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, va_list argptr){
+    
     hci_cmd_buffer[0] = cmd->opcode & 0xff;
     hci_cmd_buffer[1] = cmd->opcode >> 8;
     int pos = 3;
-
-    va_list argptr;
-    va_start(argptr, cmd);
+    
     const char *format = cmd->format;
     uint16_t word;
     uint32_t longword;
@@ -413,7 +408,26 @@ int hci_send_cmd(hci_cmd_t *cmd, ...){
         }
         format++;
     };
-    va_end(argptr);
     hci_cmd_buffer[2] = pos - 3;
-    return hci_send_cmd_packet(hci_cmd_buffer, pos);
+    return pos;
+}
+
+uint16_t hci_create_cmd(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, ...){
+    va_list argptr;
+    va_start(argptr, cmd);
+    uint16_t len = hci_create_cmd_internal(hci_cmd_buffer, cmd, argptr);
+    va_end(argptr);
+    return len;
+}
+
+/**
+ * pre: numcmds >= 0 - it's allowed to send a command to the controller
+ */
+int hci_send_cmd(hci_cmd_t *cmd, ...){
+    va_list argptr;
+    va_start(argptr, cmd);
+    uint8_t * hci_cmd_buffer = hci_stack.hci_cmd_buffer;
+    uint16_t size = hci_create_cmd_internal(hci_stack.hci_cmd_buffer, cmd, argptr);
+    va_end(argptr);
+    return hci_send_cmd_packet(hci_cmd_buffer, size);
 }
