@@ -145,12 +145,14 @@ int socket_server_send_packet_all(uint8_t type, uint8_t *packet, uint16_t size){
     return 0;
 }
 
-int socket_server_send_event_all(uint8_t *packet, uint16_t size){
-    return socket_server_send_packet_all( HCI_EVENT_PACKET, packet, size);
+void socket_server_send_event_all(uint8_t *packet, uint16_t size){
+    socket_server_send_packet_all( HCI_EVENT_PACKET, packet, size);
+    return;
 }
 
-int socket_server_send_acl_all(uint8_t *packet, uint16_t size){
-    return socket_server_send_packet_all( HCI_ACL_DATA_PACKET, packet, size);
+void socket_server_send_acl_all(uint8_t *packet, uint16_t size){
+    socket_server_send_packet_all( HCI_ACL_DATA_PACKET, packet, size);
+    return;
 }
 
 
@@ -202,7 +204,6 @@ data_source_t * socket_server_create_tcp(int port){
     ds->process = socket_server_accept;
     
 	// create tcp socket
-    struct sockaddr_in addr;
 	if ((ds->fd = socket (PF_INET, SOCK_STREAM, 0)) < 0) {
 		printf ("Error creating socket ...(%s)\n", strerror(errno));
 		free(ds);
@@ -211,6 +212,7 @@ data_source_t * socket_server_create_tcp(int port){
     
 	printf ("Socket created\n");
 	
+    struct sockaddr_in addr;
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons (port);
 	memset (&addr.sin_addr, 0, sizeof (addr.sin_addr));

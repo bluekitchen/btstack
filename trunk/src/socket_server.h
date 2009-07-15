@@ -25,8 +25,8 @@ data_source_t * socket_server_create_unix(char *path);
  */
 void socket_server_register_process_callback( int (*process_callback)(struct data_source *ds, int ready) );
 
-int socket_server_send_event_all(uint8_t *packet, uint16_t size);
-int socket_server_send_acl_all(uint8_t *packet, uint16_t size);
+void socket_server_send_event_all(uint8_t *packet, uint16_t size);
+void socket_server_send_acl_all(uint8_t *packet, uint16_t size);
 
 // send ACL packet
 int hci_send_acl_packet(uint8_t *packet, int size);
