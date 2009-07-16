@@ -22,6 +22,10 @@
 // calculate combined ogf/ocf value
 #define OPCODE(ogf, ocf) (ocf | ogf << 10)
 
+// get HCI CMD OGF
+#define READ_CMD_OGF(buffer) (buffer[1] >> 2)
+#define READ_CMD_OCF(buffer) ((buffer[1] & 0x03) << 8 | buffer[0])
+
 // packet header lengh
 #define HCI_CMD_DATA_PKT_HDR	  0x03
 #define HCI_ACL_DATA_PKT_HDR	  0x04
@@ -32,7 +36,8 @@
 #define OGF_LINK_CONTROL 0x01
 #define OGF_CONTROLLER_BASEBAND 0x03
 #define OGF_INFORMATIONAL_PARAMETERS 0x04
-#define OGF_VENDOR_COMMANDS 0x3f
+#define OGF_BTSTACK 0x3d
+#define OGF_VENDOR  0x3f
 
 // Events from host controller to host
 #define HCI_EVENT_INQUIRY_COMPLETE				           0x01
@@ -67,7 +72,11 @@
 #define HCI_EVENT_VENDOR_SPECIFIC				           0xFF
 
 // events from BTstack for application/client lib
-#define BTSTACK_EVENT_HCI_WORKING                          0x80
+#define HCI_EVENT_BTSTACK_WORKING                          0x80
+#define HCI_EVENT_BTSTACK_STATE                            0x81
+
+// cmds for BTstack
+#define HCI_BTSTACK_GET_STATE                              0x01
 
 #define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && READ_BT_16(event,3) == cmd.opcode)
 
@@ -211,3 +220,6 @@ extern hci_cmd_t hci_accept_connection_request;
 extern hci_cmd_t hci_write_inquiry_mode;
 extern hci_cmd_t hci_write_extended_inquiry_response;
 extern hci_cmd_t hci_write_simple_pairing_mode;
+
+// BTSTACK client/server commands - see hci.c for info on parameters
+extern hci_cmd_t hci_get_btstack_state;

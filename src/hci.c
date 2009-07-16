@@ -107,6 +107,11 @@ hci_cmd_t hci_read_bd_addr = {
 	// no params
 };
 
+hci_cmd_t hci_get_btstack_state = {
+    OPCODE(OGF_BTSTACK, HCI_BTSTACK_GET_STATE), ""
+    // no params -> 
+};
+
 
 // the stack is here
 static hci_stack_t       hci_stack;
@@ -319,7 +324,7 @@ uint32_t hci_run(){
                 case 4:
                     // done.
                     hci_stack.state = HCI_STATE_WORKING;
-                    micro_packet = BTSTACK_EVENT_HCI_WORKING;
+                    micro_packet = HCI_EVENT_BTSTACK_WORKING;
                     hci_stack.event_packet_handler(&micro_packet, 1);
                     break;
                 default:
@@ -337,7 +342,25 @@ uint32_t hci_run(){
 
 
 int hci_send_acl_packet(uint8_t *packet, int size){
-    return hci_stack.hci_transport->send_acl_packet(packet, size);
+    if (READ_CMD_OGF(packet) != OGF_BTSTACK) { 
+        return hci_stack.hci_transport->send_acl_packet(packet, size);
+    }
+    
+    // BTstack internal commands
+    uint8_t event[3];
+    switch (READ_CMD_OCF(packet)){
+        case HCI_BTSTACK_GET_STATE:
+            event[0] =  HCI_EVENT_BTSTACK_STATE;
+            event[1] = 1;
+            event[2] = hci_stack.state;
+            hci_stack.event_packet_handler(event, 3);
+            break;
+        default:
+            // TODO log into hci dump as vendor specific"event"
+            printf("Error: command %u not implemented\n:", READ_CMD_OCF(packet));
+            break;
+    }
+    return 0;
 }
 
 int hci_send_cmd_packet(uint8_t *packet, int size){

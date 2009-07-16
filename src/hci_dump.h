@@ -10,7 +10,8 @@
 
 typedef enum {
     HCI_DUMP_BLUEZ = 0,
-    HCI_DUMP_PACKETLOGGER
+    HCI_DUMP_PACKETLOGGER,
+    HCI_DUMP_STDOUT
 } hci_dump_format_t;
 
 void hci_dump_open(char *filename, hci_dump_format_t format);
