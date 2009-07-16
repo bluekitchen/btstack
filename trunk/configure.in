@@ -91,7 +91,7 @@ if test "x$target" = xiphone; then
         echo "USE_BLUETOOL=$USE_BLUETOOL"
     fi
 else
-    if test "x$UART_DEVICE"=xDEFAULT ; then
+    if test "x$UART_DEVICE" = xDEFAULT ; then
         UART_DEVICE=/dev/ttyS0
     fi
 fi
