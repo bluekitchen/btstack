@@ -24,6 +24,7 @@ data_source_t * socket_server_create_unix(char *path);
  * @todo: hack callback to allow data reception - replace with better architecture
  */
 void socket_server_register_process_callback( int (*process_callback)(struct data_source *ds, int ready) );
+int socket_server_connection_process(struct data_source *ds, int ready);
 
 void socket_server_send_event_all(uint8_t *packet, uint16_t size);
 void socket_server_send_acl_all(uint8_t *packet, uint16_t size);

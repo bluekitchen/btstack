@@ -92,8 +92,10 @@ static int socket_server_echo_process(struct data_source *ds, int ready) {
 
 int socket_server_connection_process(struct data_source *ds, int ready) {
     connection_t *conn = (connection_t *) ds;
-    int bytes_read = read(ds->fd, &conn->buffer[conn->bytes_read],
-                      sizeof(packet_header_t) - conn->bytes_read);
+    int bytes_read = read(ds->fd, &conn->buffer[conn->bytes_read], conn->bytes_to_read);
+    
+    printf("socket_server_connection_process: state %u, new %u, read %u, toRead %u\n", conn->state,
+           bytes_read, conn->bytes_read, conn->bytes_to_read);
     if (bytes_read <= 0){
         // free
         socket_server_free_connection(  linked_item_get_user(&ds->item));
@@ -101,22 +103,23 @@ int socket_server_connection_process(struct data_source *ds, int ready) {
     }
     conn->bytes_read += bytes_read;
     conn->bytes_to_read -= bytes_read;
+    hexdump( conn->buffer, conn->bytes_read);
     if (conn->bytes_to_read > 0) {
         return 0;
     }
     switch (conn->state){
         case SOCKET_W4_HEADER:
             conn->state = SOCKET_W4_DATA;
-            conn->bytes_to_read = READ_BT_16( conn->buffer, 0) + sizeof(packet_header_t);
+            conn->bytes_to_read = READ_BT_16( conn->buffer, 0);
             break;
         case SOCKET_W4_DATA:
             // process packet !!!
             switch (conn->buffer[2]){
                 case HCI_COMMAND_DATA_PACKET:
-                    hci_send_cmd_packet(&conn->buffer[3], READ_BT_16( conn->buffer, 0));
+                    hci_send_cmd_packet(&conn->buffer[sizeof(packet_header_t)], READ_BT_16( conn->buffer, 0));
                     break;
                 case HCI_ACL_DATA_PACKET:
-                    hci_send_acl_packet(&conn->buffer[3], READ_BT_16( conn->buffer, 0));
+                    hci_send_acl_packet(&conn->buffer[sizeof(packet_header_t)], READ_BT_16( conn->buffer, 0));
                     break;
                 default:
                     break;
@@ -140,6 +143,7 @@ int socket_server_send_packet_all(uint8_t type, uint8_t *packet, uint16_t size){
         next = (connection_t *) it->item.next; // cache pointer to next connection_t to allow for removal
         write(it->ds.fd, &length, 2);
         write(it->ds.fd, &type, 1);
+        write(it->ds.fd, &type, 1); // padding for now
         write(it->ds.fd, packet, size);
     }
     return 0;
@@ -167,7 +171,7 @@ static int socket_server_accept(struct data_source *socket_ds, int ready) {
     // init state machine
     conn->state = SOCKET_W4_HEADER;
     conn->bytes_read = 0;
-    conn->bytes_to_read = 2;
+    conn->bytes_to_read = sizeof(packet_header_t);
     
 	/* New connection coming in! */
 	conn->ds.fd = accept(socket_ds->fd, NULL, NULL);
@@ -179,6 +183,8 @@ static int socket_server_accept(struct data_source *socket_ds, int ready) {
     // non-blocking ?
 	// socket_server_set_non_blocking(ds->fd);
         
+    printf("socket_server_accept new connection %u\n", conn->ds.fd);
+    
     // add this socket to the run_loop
     linked_item_set_user( &conn->ds.item, conn);
     run_loop_add( &conn->ds );
