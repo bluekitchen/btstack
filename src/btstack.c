@@ -73,17 +73,17 @@ int bt_open(){
 		return -1;
 	}
     
-    // init state machine
-    btstack_connection->state = SOCKET_W4_HEADER;
-    btstack_connection->bytes_read = 0;
-    btstack_connection->bytes_to_read = 2;
-    
     // register with run loop
     btstack_connection = malloc( sizeof(connection_t));
     if (btstack_connection == NULL) return -1;
     btstack_connection->ds.fd = btstack_socket;
     btstack_connection->ds.process = btstack_socket_process;
     run_loop_add(&btstack_connection->ds);
+
+    // init state machine
+    btstack_connection->state = SOCKET_W4_HEADER;
+    btstack_connection->bytes_read = 0;
+    btstack_connection->bytes_to_read = 2;
     
     return 0;
 }
