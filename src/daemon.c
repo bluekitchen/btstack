@@ -83,6 +83,7 @@ int main (int argc, const char * argv[]){
     
     // create server
     socket_server_create_tcp(1919);
+    socket_server_register_process_callback(socket_server_connection_process);
     
     // go!
     run_loop_execute();

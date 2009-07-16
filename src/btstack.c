@@ -14,6 +14,8 @@
 #include <unistd.h>
 #include <stdarg.h>
 
+#include <stdio.h>
+
 typedef struct packet_header {
     uint16_t length;
     uint8_t  type;
@@ -54,6 +56,7 @@ static void (*acl_packet_handler)  (uint8_t *packet, int size) = dummy_handler;
 int bt_open(){
     // TCP
     struct protoent* tcp = getprotobyname("tcp");
+    
     btstack_socket = socket(PF_INET, SOCK_STREAM, tcp->p_proto);
 	if(btstack_socket == -1){
 		return -1;
@@ -152,8 +155,14 @@ int bt_send_cmd(hci_cmd_t *cmd, ...){
     va_start(argptr, cmd);
     uint16_t len = hci_create_cmd_internal(hci_cmd_buffer, cmd, argptr);
     va_end(argptr);
+    packet_header_t header;
+    bt_store_16( (uint8_t*) &header.length, 0, len);
+    header.type = HCI_COMMAND_DATA_PACKET;
+    hexdump( (uint8_t*)&header, sizeof(header)); // TODO use packet instead of tweaking sizeof(header));
+    write(btstack_socket, (uint8_t*)&header, sizeof(header));
+    hexdump( hci_cmd_buffer, len);
+    write(btstack_socket, hci_cmd_buffer, len);
     return len;
-    return 0;
 }
 
 // send hci acl packet

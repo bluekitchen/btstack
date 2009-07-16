@@ -342,17 +342,25 @@ uint32_t hci_run(){
 
 
 int hci_send_acl_packet(uint8_t *packet, int size){
+    return hci_stack.hci_transport->send_acl_packet(packet, size);
+}
+
+int hci_send_cmd_packet(uint8_t *packet, int size){
     if (READ_CMD_OGF(packet) != OGF_BTSTACK) { 
-        return hci_stack.hci_transport->send_acl_packet(packet, size);
+        hci_stack.num_cmd_packets--;
+        return hci_stack.hci_transport->send_cmd_packet(packet, size);
     }
+    
+    hci_dump_packet( HCI_COMMAND_DATA_PACKET, 1, packet, size);
     
     // BTstack internal commands
     uint8_t event[3];
     switch (READ_CMD_OCF(packet)){
         case HCI_BTSTACK_GET_STATE:
-            event[0] =  HCI_EVENT_BTSTACK_STATE;
+            event[0] = HCI_EVENT_BTSTACK_STATE;
             event[1] = 1;
             event[2] = hci_stack.state;
+            hci_dump_packet( HCI_EVENT_PACKET, 0, event, 3);
             hci_stack.event_packet_handler(event, 3);
             break;
         default:
@@ -361,11 +369,6 @@ int hci_send_acl_packet(uint8_t *packet, int size){
             break;
     }
     return 0;
-}
-
-int hci_send_cmd_packet(uint8_t *packet, int size){
-    hci_stack.num_cmd_packets--;
-    return hci_stack.hci_transport->send_cmd_packet(packet, size);
 }
 
 uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, va_list argptr){
