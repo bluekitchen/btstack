@@ -29,24 +29,22 @@ static char *l2cap_signaling_commands_format[] = {
 
 static uint8_t * sig_buffer;
 
-uint8_t   sig_seq_nr;
-uint16_t  local_cid;
+uint8_t   sig_seq_nr = 1;
+uint16_t  local_cid  = 0x40;
 
-int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...){
+uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer,hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
 
     // 0 - Connection handle : PB=10 : BC=00 
-     bt_store_16(sig_buffer, 0, handle | (2 << 12) | (0 << 14));
+     bt_store_16(acl_buffer, 0, handle | (2 << 12) | (0 << 14));
     // 6 - L2CAP channel = 1
-    bt_store_16(sig_buffer, 6, 1);
+    bt_store_16(acl_buffer, 6, 1);
     // 8 - Code
-    sig_buffer[8] = cmd;
+    acl_buffer[8] = cmd;
     // 9 - id (!= 0 sequentially)
-    sig_buffer[9] = identifier;
+    acl_buffer[9] = identifier;
 
     // 12 - L2CAP signaling parameters
     uint16_t pos = 12;
-    va_list argptr;
-    va_start(argptr, identifier);
     const char *format = l2cap_signaling_commands_format[cmd-1];
     uint16_t word;
     uint8_t * ptr;
@@ -56,15 +54,15 @@ int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMAND
             case '2': // 16 bit value
                 word = va_arg(argptr, int);
                 // minimal va_arg is int: 2 bytes on 8+16 bit CPUs
-                sig_buffer[pos++] = word & 0xff;
+                acl_buffer[pos++] = word & 0xff;
                 if (*format == '2') {
-                    sig_buffer[pos++] = word >> 8;
+                    acl_buffer[pos++] = word >> 8;
                 }
                 break;
             case 'D': // variable data. passed: len, ptr
                 word = va_arg(argptr, int);
                 ptr  = va_arg(argptr, uint8_t *);
-                memcpy(&sig_buffer[pos], ptr, word);
+                memcpy(&acl_buffer[pos], ptr, word);
                 pos += word;
                 break;
             default:
@@ -78,17 +76,29 @@ int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMAND
     // - the l2cap payload length is counted after the following channel id (only payload) 
     
     // 2 - ACL length
-    bt_store_16(sig_buffer, 2,  pos - 4);
+    bt_store_16(acl_buffer, 2,  pos - 4);
     // 4 - L2CAP packet length
-    bt_store_16(sig_buffer, 4,  pos - 6 - 2);
+    bt_store_16(acl_buffer, 4,  pos - 6 - 2);
     // 10 - L2CAP signaling parameter length
-    bt_store_16(sig_buffer, 10, pos - 12);
+    bt_store_16(acl_buffer, 10, pos - 12);
     
-    return hci_send_acl_packet(sig_buffer, pos);
+    return pos;
+}
+int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...){
+    va_list argptr;
+    va_start(argptr, identifier);
+    uint16_t len = l2cap_create_signaling_internal(sig_buffer, handle, cmd, identifier, argptr);
+    return hci_send_acl_packet(sig_buffer, len);
+}
+
+uint16_t l2cap_create_signaling_packet(uint8_t *acl_buffer, hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...){
+    va_list argptr;
+    va_start(argptr, identifier);
+    uint16_t len = l2cap_create_signaling_internal(acl_buffer, handle, cmd, identifier, argptr);
+    va_end(argptr);
+    return len;
 }
 
 void l2cap_init(){
     sig_buffer = malloc( 48 );
-    sig_seq_nr = 1;
-    local_cid = 0x40;
 }
