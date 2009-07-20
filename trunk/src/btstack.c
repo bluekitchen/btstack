@@ -8,6 +8,7 @@
 
 #include "btstack.h"
 
+#include "l2cap.h"
 #include "run_loop.h"
 #include <netdb.h>
 #include <string.h>
@@ -38,6 +39,7 @@ typedef struct connection {
 
 uint8_t hci_cmd_buffer[3+255];
 
+uint8_t l2cap_sig_buffer[48];
 
 
 static void dummy_handler(uint8_t *packet, int size);
@@ -86,7 +88,7 @@ int bt_open(){
     // init state machine
     btstack_connection->state = SOCKET_W4_HEADER;
     btstack_connection->bytes_read = 0;
-    btstack_connection->bytes_to_read = 2;
+    btstack_connection->bytes_to_read = sizeof(packet_header_t);
     
     return 0;
 }
@@ -107,8 +109,7 @@ int bt_close(){
 // run_loop based data handling
 int btstack_socket_process(struct data_source *ds, int ready) {
     connection_t *conn = (connection_t *) ds;
-    int bytes_read = read(ds->fd, &conn->buffer[conn->bytes_read],
-                          sizeof(packet_header_t) - conn->bytes_read);
+    int bytes_read = read(ds->fd, &conn->buffer[conn->bytes_read], conn->bytes_to_read);
     if (bytes_read <= 0){
         // free
         run_loop_remove(&conn->ds);
@@ -118,22 +119,23 @@ int btstack_socket_process(struct data_source *ds, int ready) {
     }
     conn->bytes_read += bytes_read;
     conn->bytes_to_read -= bytes_read;
+    hexdump( conn->buffer, conn->bytes_read);
     if (conn->bytes_to_read > 0) {
         return 0;
     }
     switch (conn->state){
         case SOCKET_W4_HEADER:
             conn->state = SOCKET_W4_DATA;
-            conn->bytes_to_read = READ_BT_16( conn->buffer, 0) + sizeof(packet_header_t);
+            conn->bytes_to_read = READ_BT_16( conn->buffer, 0);
             break;
         case SOCKET_W4_DATA:
             // process packet !!!
             switch (conn->buffer[2]){
                 case HCI_EVENT_PACKET:
-                    (*event_packet_handler)(&conn->buffer[3], READ_BT_16( conn->buffer, 0));
+                    (*event_packet_handler)(&conn->buffer[sizeof(packet_header_t)], READ_BT_16( conn->buffer, 0));
                     break;
                 case HCI_ACL_DATA_PACKET:
-                    (*acl_packet_handler)(&conn->buffer[3], READ_BT_16( conn->buffer, 0));
+                    (*acl_packet_handler)(&conn->buffer[sizeof(packet_header_t)], READ_BT_16( conn->buffer, 0));
                     break;
                 default:
                     break;
@@ -158,7 +160,7 @@ int bt_send_cmd(hci_cmd_t *cmd, ...){
     packet_header_t header;
     bt_store_16( (uint8_t*) &header.length, 0, len);
     header.type = HCI_COMMAND_DATA_PACKET;
-    hexdump( (uint8_t*)&header, sizeof(header)); // TODO use packet instead of tweaking sizeof(header));
+    hexdump( (uint8_t*)&header, sizeof(header));
     write(btstack_socket, (uint8_t*)&header, sizeof(header));
     hexdump( hci_cmd_buffer, len);
     write(btstack_socket, hci_cmd_buffer, len);
@@ -167,7 +169,22 @@ int bt_send_cmd(hci_cmd_t *cmd, ...){
 
 // send hci acl packet
 int bt_send_acl_packet(uint8_t *packet, int size){
+    packet_header_t header;
+    bt_store_16( (uint8_t*) &header.length, 0, size);
+    header.type = HCI_ACL_DATA_PACKET;
+    hexdump( (uint8_t*)&header, sizeof(header)); 
+    write(btstack_socket, (uint8_t*)&header, sizeof(header));
+    hexdump( hci_cmd_buffer, size);
+    write(btstack_socket, packet, size);
     return 0;
+}
+
+int bt_send_l2cap_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...){
+    va_list argptr;
+    va_start(argptr, identifier);
+    uint16_t len = l2cap_create_signaling_packet(l2cap_sig_buffer, handle, cmd, identifier, argptr);
+    va_end(argptr);
+    return bt_send_acl_packet(l2cap_sig_buffer, len);
 }
 
 static void dummy_handler(uint8_t *packet, int size){

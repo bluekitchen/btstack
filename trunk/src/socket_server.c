@@ -137,14 +137,15 @@ int socket_server_connection_process(struct data_source *ds, int ready) {
 int socket_server_send_packet_all(uint8_t type, uint8_t *packet, uint16_t size){
     uint8_t length[2];
     bt_store_16( (uint8_t *) &length, 0, size);
-    connection_t *next;
-    connection_t *it;
-    for (it = (connection_t *) connections; it != NULL ; it = next){
-        next = (connection_t *) it->item.next; // cache pointer to next connection_t to allow for removal
-        write(it->ds.fd, &length, 2);
-        write(it->ds.fd, &type, 1);
-        write(it->ds.fd, &type, 1); // padding for now
-        write(it->ds.fd, packet, size);
+    linked_item_t *next;
+    linked_item_t *it;
+    for (it = (linked_item_t *) connections; it != NULL ; it = next){
+        next = it->next; // cache pointer to next connection_t to allow for removal
+        connection_t *conn = (connection_t *) linked_item_get_user(it);
+        write(conn->ds.fd, &length, 2);
+        write(conn->ds.fd, &type, 1);
+        write(conn->ds.fd, &type, 1); // padding for now
+        write(conn->ds.fd, packet, size);
     }
     return 0;
 }
