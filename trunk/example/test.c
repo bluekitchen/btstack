@@ -161,7 +161,7 @@ void acl_handler(uint8_t *packet, int size){
 #endif
     if (outgoing_hdl){
         bt_store_16( packet, 0, (READ_BT_16(packet, 0) & 0xf000) | outgoing_hdl);
-        hci_send_acl_packet(packet, size);
+        bt_send_acl_packet(packet, size);
     }
     
 #else
