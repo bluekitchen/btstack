@@ -182,7 +182,7 @@ int bt_send_acl_packet(uint8_t *packet, int size){
 int bt_send_l2cap_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...){
     va_list argptr;
     va_start(argptr, identifier);
-    uint16_t len = l2cap_create_signaling_packet(l2cap_sig_buffer, handle, cmd, identifier, argptr);
+    uint16_t len = l2cap_create_signaling_internal(l2cap_sig_buffer, handle, cmd, identifier, argptr);
     va_end(argptr);
     return bt_send_acl_packet(l2cap_sig_buffer, len);
 }
