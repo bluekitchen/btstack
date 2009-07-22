@@ -25,7 +25,7 @@
 #define MAX_PENDING_CONNECTIONS 10
 #define DATA_BUF_SIZE           80
 
-
+/** packet header used over socket connections, in front of the HCI packet */
 typedef struct packet_header {
     uint16_t length;
     uint8_t  type;
@@ -37,21 +37,27 @@ typedef enum {
     SOCKET_W4_DATA,
 } SOCKET_STATE;
 
-typedef struct connection {
+struct connection {
     data_source_t ds;       // used for run loop
     linked_item_t item;     // used for connection list
     SOCKET_STATE state;
     uint16_t bytes_read;
     uint16_t bytes_to_read;
     uint8_t  buffer[3+3+255]; // max HCI CMD + packet_header
-} connection_t;
+};
 
-linked_list_t connections = NULL;
+/** list of socket connections */
+static linked_list_t connections = NULL;
 
-static char test_buffer[DATA_BUF_SIZE];
 
-static int socket_server_echo_process(struct data_source *ds, int ready);
-static int (*socket_server_process)(struct data_source *ds, int ready) = socket_server_echo_process;
+/** client packet handler */
+static int socket_server_dummy_handler(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t length);
+static int (*socket_server_packet_callback)(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t length) = socket_server_dummy_handler;
+
+static int socket_server_dummy_handler(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t length){
+    return 0;
+}
+
 
 int socket_server_set_non_blocking(int fd)
 {
@@ -74,23 +80,7 @@ void socket_server_free_connection(connection_t *conn){
     free(conn);
 }
 
-static int socket_server_echo_process(struct data_source *ds, int ready) {
-    int bytes_read = read(ds->fd, test_buffer, DATA_BUF_SIZE);
-    
-    // connection closed by client?
-    if (bytes_read <= 0){
-        // free
-        socket_server_free_connection(  linked_item_get_user(&ds->item));
-        return 0;
-    }
-    
-    write(ds->fd, "echo: ", 5);
-    write(ds->fd, test_buffer, bytes_read);
-    
-    return 0;
-}
-
-int socket_server_connection_process(struct data_source *ds, int ready) {
+int socket_server_hci_process(struct data_source *ds, int ready) {
     connection_t *conn = (connection_t *) ds;
     int bytes_read = read(ds->fd, &conn->buffer[conn->bytes_read], conn->bytes_to_read);
     
@@ -113,17 +103,9 @@ int socket_server_connection_process(struct data_source *ds, int ready) {
             conn->bytes_to_read = READ_BT_16( conn->buffer, 0);
             break;
         case SOCKET_W4_DATA:
-            // process packet !!!
-            switch (conn->buffer[2]){
-                case HCI_COMMAND_DATA_PACKET:
-                    hci_send_cmd_packet(&conn->buffer[sizeof(packet_header_t)], READ_BT_16( conn->buffer, 0));
-                    break;
-                case HCI_ACL_DATA_PACKET:
-                    hci_send_acl_packet(&conn->buffer[sizeof(packet_header_t)], READ_BT_16( conn->buffer, 0));
-                    break;
-                default:
-                    break;
-            }
+            // dispatch packet !!!
+            (*socket_server_packet_callback)(conn, conn->buffer[2], &conn->buffer[sizeof(packet_header_t)],
+                                             READ_BT_16( conn->buffer, 0));
             
             // wait for next packet
             conn->state = SOCKET_W4_HEADER;
@@ -134,31 +116,6 @@ int socket_server_connection_process(struct data_source *ds, int ready) {
 	return 0;
 }
 
-int socket_server_send_packet_all(uint8_t type, uint8_t *packet, uint16_t size){
-    uint8_t length[2];
-    bt_store_16( (uint8_t *) &length, 0, size);
-    linked_item_t *next;
-    linked_item_t *it;
-    for (it = (linked_item_t *) connections; it != NULL ; it = next){
-        next = it->next; // cache pointer to next connection_t to allow for removal
-        connection_t *conn = (connection_t *) linked_item_get_user(it);
-        write(conn->ds.fd, &length, 2);
-        write(conn->ds.fd, &type, 1);
-        write(conn->ds.fd, &type, 1); // padding for now
-        write(conn->ds.fd, packet, size);
-    }
-    return 0;
-}
-
-void socket_server_send_event_all(uint8_t *packet, uint16_t size){
-    socket_server_send_packet_all( HCI_EVENT_PACKET, packet, size);
-    return;
-}
-
-void socket_server_send_acl_all(uint8_t *packet, uint16_t size){
-    socket_server_send_packet_all( HCI_ACL_DATA_PACKET, packet, size);
-    return;
-}
 
 
 static int socket_server_accept(struct data_source *socket_ds, int ready) {
@@ -167,7 +124,7 @@ static int socket_server_accept(struct data_source *socket_ds, int ready) {
     connection_t * conn = malloc( sizeof(connection_t));
     if (conn == NULL) return 0;
     conn->ds.fd = 0;
-    conn->ds.process = socket_server_process;
+    conn->ds.process = socket_server_hci_process;
     
     // init state machine
     conn->state = SOCKET_W4_HEADER;
@@ -202,11 +159,11 @@ static int socket_server_accept(struct data_source *socket_ds, int ready) {
  *
  * @return data_source object. If null, check errno
  */
-data_source_t * socket_server_create_tcp(int port){
+int socket_server_create_tcp(int port){
     
     // create data_source_t
     data_source_t *ds = malloc( sizeof(data_source_t));
-    if (ds == NULL) return NULL;
+    if (ds == NULL) return -1;
     ds->fd = 0;
     ds->process = socket_server_accept;
     
@@ -214,7 +171,7 @@ data_source_t * socket_server_create_tcp(int port){
 	if ((ds->fd = socket (PF_INET, SOCK_STREAM, 0)) < 0) {
 		printf ("Error creating socket ...(%s)\n", strerror(errno));
 		free(ds);
-        return NULL;
+        return -1;
 	}
     
 	printf ("Socket created\n");
@@ -230,19 +187,19 @@ data_source_t * socket_server_create_tcp(int port){
 	if (bind ( ds->fd, (struct sockaddr *) &addr, sizeof (addr) ) ) {
 		printf ("Error on bind() ...(%s)\n", strerror(errno));
 		free(ds);
-        return NULL;
+        return -1;
 	}
 	
 	if (listen (ds->fd, MAX_PENDING_CONNECTIONS)) {
 		printf ("Error on listen() ...(%s)\n", strerror(errno));
 		free(ds);
-        return NULL;
+        return -1;
 	}
     
     run_loop_add(ds);
     
 	printf ("Server up and running ...\n");
-    return ds;
+    return 0;
 }
 
 /** 
@@ -250,14 +207,54 @@ data_source_t * socket_server_create_tcp(int port){
  *
  * @TODO: implement socket_server_create_unix
  */
-data_source_t * socket_server_create_unix(char *path){
+int socket_server_create_unix(char *path){
     return 0;
 }
 
 /**
- * register data available callback
- * @todo: hack callback to allow data reception - replace with better architecture
+ * set packet handler for all auto-accepted connections 
  */
-void socket_server_register_process_callback( int (*process_callback)(struct data_source *ds, int ready) ){
-    socket_server_process = process_callback;
+void socket_server_register_packet_callback( int (*packet_callback)(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t length) ){
+    socket_server_packet_callback = packet_callback;
+}
+
+/**
+ * send HCI packet to single connection
+ */
+void socket_server_send_packet(connection_t *conn, uint8_t type, uint8_t *packet, uint16_t size){
+    uint8_t length[2];
+    bt_store_16( (uint8_t *) &length, 0, size);
+
+    write(conn->ds.fd, &length, 2);
+    write(conn->ds.fd, &type, 1);
+    write(conn->ds.fd, &type, 1); // padding for now
+    write(conn->ds.fd, packet, size);
+}
+
+/**
+ * send HCI packet to all connections 
+ */
+int socket_server_send_packet_all(uint8_t type, uint8_t *packet, uint16_t size){
+    linked_item_t *next;
+    linked_item_t *it;
+    for (it = (linked_item_t *) connections; it != NULL ; it = next){
+        next = it->next; // cache pointer to next connection_t to allow for removal
+        socket_server_send_packet( (connection_t *) linked_item_get_user(it), type, packet, size);
+    }
+    return 0;
+}
+
+/**
+ * send HCI ACL packet to all connections
+ */
+void socket_server_send_acl_all(uint8_t *packet, uint16_t size){
+    socket_server_send_packet_all( HCI_ACL_DATA_PACKET, packet, size);
+    return;
+}
+/**
+ * send HCI Event packet to all connections
+ */
+void socket_server_send_event_all(uint8_t *packet, uint16_t size){
+    socket_server_send_packet_all( HCI_EVENT_PACKET, packet, size);
+    return;
 }

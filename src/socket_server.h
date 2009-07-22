@@ -9,25 +9,31 @@
 #include "run_loop.h"
 #include <stdint.h>
 
+/** opaque connection type */
+typedef struct connection connection_t;
+
 /** 
  * create socket data_source for tcp socket
  */
-data_source_t * socket_server_create_tcp(int port);
+int socket_server_create_tcp(int port);
 
 /** 
  * create socket data_source for unix domain socket
  */
-data_source_t * socket_server_create_unix(char *path);
+int socket_server_create_unix(char *path);
 
 /**
- * register data available callback
- * @todo: hack callback to allow data reception - replace with better architecture
+ * set packet handler for all auto-accepted connections 
  */
-void socket_server_register_process_callback( int (*process_callback)(struct data_source *ds, int ready) );
-int socket_server_connection_process(struct data_source *ds, int ready);
+void socket_server_register_packet_callback( int (*packet_callback)(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t length) );
 
+/**
+ * send HCI packet to single connection
+ */
+void socket_server_send_packet(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t size);
+
+/**
+ * send event/acl data to all clients
+ */
 void socket_server_send_event_all(uint8_t *packet, uint16_t size);
 void socket_server_send_acl_all(uint8_t *packet, uint16_t size);
-
-// send ACL packet
-int hci_send_acl_packet(uint8_t *packet, int size);
