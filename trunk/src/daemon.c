@@ -19,7 +19,7 @@
 #include "l2cap.h"
 #include "linked_list.h"
 #include "run_loop.h"
-#include "socket_server.h"
+#include "socket_connection.h"
 
 #ifdef USE_BLUETOOL
 #include "bt_control_iphone.h"
@@ -83,8 +83,8 @@ int main (int argc, const char * argv[]){
     // 
     // register callbacks
     //
-    hci_register_event_packet_handler(&socket_server_send_event_all);
-    hci_register_acl_packet_handler(&socket_server_send_acl_all);
+    hci_register_event_packet_handler(&socket_connection_send_event_all);
+    hci_register_acl_packet_handler(&socket_connection_send_acl_all);
     
     // @TODO allow control per HCI CMD
     // turn on 
@@ -94,8 +94,8 @@ int main (int argc, const char * argv[]){
     // @TODO make port and/or socket configurable per config.h
     
     // create server
-    socket_server_create_tcp(1919);
-    socket_server_register_packet_callback(daemon_packet_handler);
+    socket_connection_create_tcp(1919);
+    socket_connection_register_packet_callback(daemon_packet_handler);
     
     // go!
     run_loop_execute();

@@ -14,7 +14,7 @@ BTdaemon_SOURCES =       \
     l2cap.c              \
     linked_list.c        \
     run_loop.c           \
-    socket_server.c
+    socket_connection.c
     
 include_HEADERS = \
     bt_control.h                      \
@@ -27,4 +27,4 @@ include_HEADERS = \
     linked_list.h                     \
     l2cap.h                           \
     run_loop.h                        \
-    socket_server.h                     
+    socket_connection.h                     
