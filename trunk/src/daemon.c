@@ -37,6 +37,18 @@
 static hci_transport_t * transport;
 static hci_uart_config_t config;
 
+static int daemon_packet_handler(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t length){
+    switch (packet_type){
+        case HCI_COMMAND_DATA_PACKET:
+            hci_send_cmd_packet(data, length);
+            break;
+        case HCI_ACL_DATA_PACKET:
+            hci_send_acl_packet(data, length);
+            break;
+    }
+    return 0;
+}
+
 int main (int argc, const char * argv[]){
     
     bt_control_t * control = NULL;
@@ -83,7 +95,7 @@ int main (int argc, const char * argv[]){
     
     // create server
     socket_server_create_tcp(1919);
-    socket_server_register_process_callback(socket_server_connection_process);
+    socket_server_register_packet_callback(daemon_packet_handler);
     
     // go!
     run_loop_execute();
