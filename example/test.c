@@ -15,7 +15,7 @@
 #include "../src/btstack.h"
 #include "../src/linked_list.h"
 #include "../src/run_loop.h"
-#include "../src/socket_server.h"
+#include "../src/socket_connection.h"
 #include "../src/hci.h"
 #include "../src/l2cap.h"
 
