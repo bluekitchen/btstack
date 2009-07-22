@@ -9,21 +9,26 @@
 
 #include "socket_connection.h"
 
+#include "hci.h"
+
+#include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <stdlib.h>
+#include <netdb.h>
 #include <stdio.h>
-#include <string.h>
-#include <unistd.h>
 #include <stdint.h>
-#include <arpa/inet.h>
-#include <sys/select.h>
+#include <string.h>
 #include <sys/socket.h>
-
-#include "hci.h"
+#include <unistd.h>
 
 #define MAX_PENDING_CONNECTIONS 10
 #define DATA_BUF_SIZE           80
+
+/** prototypes */
+static int socket_connection_hci_process(struct data_source *ds, int ready);
+static int socket_connection_dummy_handler(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t length);
+
+/** globals */
 
 /** packet header used over socket connections, in front of the HCI packet */
 typedef struct packet_header {
@@ -51,8 +56,9 @@ static linked_list_t connections = NULL;
 
 
 /** client packet handler */
-static int socket_connection_dummy_handler(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t length);
+
 static int (*socket_connection_packet_callback)(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t length) = socket_connection_dummy_handler;
+
 
 static int socket_connection_dummy_handler(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t length){
     return 0;
@@ -80,20 +86,48 @@ void socket_connection_free_connection(connection_t *conn){
     free(conn);
 }
 
+void socket_connection_init_statemachine(connection_t *connection){
+    // wait for next packet
+    connection->state = SOCKET_W4_HEADER;
+    connection->bytes_read = 0;
+    connection->bytes_to_read = sizeof(packet_header_t);
+}
+
+connection_t * socket_connection_register_new_connection(int fd){
+    // create connection objec 
+    connection_t * conn = malloc( sizeof(connection_t));
+    if (conn == NULL) return 0;
+    linked_item_set_user( &conn->ds.item, conn);
+    linked_item_set_user( &conn->item, conn);
+    conn->ds.fd = fd;
+    conn->ds.process = socket_connection_hci_process;
+    
+    // prepare state machine and
+    socket_connection_init_statemachine(conn);
+    
+    // add this socket to the run_loop
+    run_loop_add( &conn->ds );
+    
+    // and the connection list
+    linked_list_add( &connections, &conn->item);
+    
+    return conn;
+}
+
 int socket_connection_hci_process(struct data_source *ds, int ready) {
     connection_t *conn = (connection_t *) ds;
     int bytes_read = read(ds->fd, &conn->buffer[conn->bytes_read], conn->bytes_to_read);
     
-    printf("socket_connection_connection_process: state %u, new %u, read %u, toRead %u\n", conn->state,
-           bytes_read, conn->bytes_read, conn->bytes_to_read);
+    // printf("socket_connection_connection_process: state %u, new %u, read %u, toRead %u\n", conn->state,
+    //       bytes_read, conn->bytes_read, conn->bytes_to_read);
     if (bytes_read <= 0){
         // free
-        socket_connection_free_connection(  linked_item_get_user(&ds->item));
+        socket_connection_free_connection(linked_item_get_user(&ds->item));
         return 0;
     }
     conn->bytes_read += bytes_read;
     conn->bytes_to_read -= bytes_read;
-    hexdump( conn->buffer, conn->bytes_read);
+    // hexdump( conn->buffer, conn->bytes_read);
     if (conn->bytes_to_read > 0) {
         return 0;
     }
@@ -106,50 +140,27 @@ int socket_connection_hci_process(struct data_source *ds, int ready) {
             // dispatch packet !!!
             (*socket_connection_packet_callback)(conn, conn->buffer[2], &conn->buffer[sizeof(packet_header_t)],
                                              READ_BT_16( conn->buffer, 0));
-            
-            // wait for next packet
-            conn->state = SOCKET_W4_HEADER;
-            conn->bytes_read = 0;
-            conn->bytes_to_read = sizeof(packet_header_t);
+            // reset state machine
+            socket_connection_init_statemachine(conn);
             break;
     }
 	return 0;
 }
 
-
-
 static int socket_connection_accept(struct data_source *socket_ds, int ready) {
     
-    // create data_source_t
-    connection_t * conn = malloc( sizeof(connection_t));
-    if (conn == NULL) return 0;
-    conn->ds.fd = 0;
-    conn->ds.process = socket_connection_hci_process;
-    
-    // init state machine
-    conn->state = SOCKET_W4_HEADER;
-    conn->bytes_read = 0;
-    conn->bytes_to_read = sizeof(packet_header_t);
-    
 	/* New connection coming in! */
-	conn->ds.fd = accept(socket_ds->fd, NULL, NULL);
-	if (conn->ds.fd < 0) {
+	int fd = accept(socket_ds->fd, NULL, NULL);
+	if (fd < 0) {
 		perror("accept");
-		free(conn);
         return 0;
 	}
     // non-blocking ?
 	// socket_connection_set_non_blocking(ds->fd);
         
-    printf("socket_connection_accept new connection %u\n", conn->ds.fd);
+    printf("socket_connection_accept new connection %u\n", fd);
     
-    // add this socket to the run_loop
-    linked_item_set_user( &conn->ds.item, conn);
-    run_loop_add( &conn->ds );
-    
-    // and the connection list
-    linked_item_set_user( &conn->item, conn);
-    linked_list_add( &connections, &conn->item);
+    socket_connection_register_new_connection(fd);
     
     return 0;
 }
@@ -257,4 +268,45 @@ void socket_connection_send_acl_all(uint8_t *packet, uint16_t size){
 void socket_connection_send_event_all(uint8_t *packet, uint16_t size){
     socket_connection_send_packet_all( HCI_EVENT_PACKET, packet, size);
     return;
+}
+
+/**
+ * create socket connection to BTdaemon 
+ */
+connection_t * socket_connection_open_tcp(){
+    // TCP
+    struct protoent* tcp = getprotobyname("tcp");
+    
+    int btsocket = socket(PF_INET, SOCK_STREAM, tcp->p_proto);
+	if(btsocket == -1){
+		return NULL;
+	}
+    // localhost
+	struct sockaddr_in btdaemon_address;
+	btdaemon_address.sin_family = AF_INET;
+	btdaemon_address.sin_port = htons(BTSTACK_PORT);
+	struct hostent* localhost = gethostbyname("localhost");
+	if(!localhost){
+		return NULL;
+	}
+    // connect
+	char* addr = localhost->h_addr_list[0];
+	memcpy(&btdaemon_address.sin_addr.s_addr, addr, sizeof addr);
+	if(connect(btsocket, (struct sockaddr*)&btdaemon_address, sizeof btdaemon_address) == -1){
+		return NULL;
+	}
+    
+    return socket_connection_register_new_connection(btsocket);
+}
+
+
+/**
+ * close socket connection to BTdaemon 
+ */
+int socket_connection_close_tcp(connection_t * connection){
+    if (!connection) return -1;
+    shutdown(connection->ds.fd, SHUT_RDWR);
+    run_loop_remove(&connection->ds);
+    free( connection );
+    return 0;
 }

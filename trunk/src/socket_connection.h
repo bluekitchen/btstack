@@ -7,20 +7,34 @@
 #pragma once
 
 #include "run_loop.h"
+
 #include <stdint.h>
+
+/** TCP port for BTstack */
+#define BTSTACK_PORT            13333
 
 /** opaque connection type */
 typedef struct connection connection_t;
 
 /** 
- * create socket data_source for tcp socket
+ * create socket for incoming tcp connections
  */
 int socket_connection_create_tcp(int port);
 
 /** 
- * create socket data_source for unix domain socket
+ * create socket for incoming for unix domain connections
  */
 int socket_connection_create_unix(char *path);
+
+/**
+ * create socket connection to BTdaemon 
+ */
+connection_t * socket_connection_open_tcp();
+
+/**
+ * close socket connection to BTdaemon 
+ */
+int socket_connection_close_tcp(connection_t *connection);
 
 /**
  * set packet handler for all auto-accepted connections 

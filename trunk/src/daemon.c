@@ -94,7 +94,7 @@ int main (int argc, const char * argv[]){
     // @TODO make port and/or socket configurable per config.h
     
     // create server
-    socket_connection_create_tcp(1919);
+    socket_connection_create_tcp(BTSTACK_PORT);
     socket_connection_register_packet_callback(daemon_packet_handler);
     
     // go!
