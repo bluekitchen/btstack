@@ -15,18 +15,20 @@ BTdaemon_SOURCES =       \
     l2cap.c              \
     linked_list.c        \
     run_loop.c           \
-    socket_connection.c
+    socket_connection.c  \
+    utils.c
     
 include_HEADERS = \
-    bt_control.h                      \
-    bt_control_iphone.h               \
-    hci.h                             \
-    hci_cmds.h                        \
-    hci_dump.h                        \
-    hci_transport.h                   \
-    hci_transport_h4.h                \
-    hci_transport_usb.h               \
-    linked_list.h                     \
-    l2cap.h                           \
-    run_loop.h                        \
-    socket_connection.h                     
+    bt_control.h         \
+    bt_control_iphone.h  \
+    hci.h                \
+    hci_cmds.h           \
+    hci_dump.h           \
+    hci_transport.h      \
+    hci_transport_h4.h   \
+    hci_transport_usb.h  \
+    linked_list.h        \
+    l2cap.h              \
+    run_loop.h           \
+    socket_connection.h  \
+    utils.h

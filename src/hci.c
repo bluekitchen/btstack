@@ -15,56 +15,36 @@
 // the stack is here
 static hci_stack_t       hci_stack;
 
-
-void bt_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
-    buffer[pos++] = value;
-    buffer[pos++] = value >> 8;
-}
-
-void bt_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
-    buffer[pos++] = value;
-    buffer[pos++] = value >> 8;
-    buffer[pos++] = value >> 16;
-    buffer[pos++] = value >> 24;
-}
-
-void bt_flip_addr(bd_addr_t dest, bd_addr_t src){
-    dest[0] = src[5];
-    dest[1] = src[4];
-    dest[2] = src[3];
-    dest[3] = src[2];
-    dest[4] = src[1];
-    dest[5] = src[0];
-}
-
-void hexdump(void *data, int size){
-    int i;
-    for (i=0; i<size;i++){
-        printf("%02X ", ((uint8_t *)data)[i]);
-    }
-    printf("\n");
-}
-
-/**
- * Linked link list 
- */
-
 /**
  * get link for given address
  *
  * @return connection OR NULL, if not found
  */
-#if 0
 static hci_connection_t *link_for_addr(bd_addr_t addr){
     return NULL;
 }
-#endif
 
 /** 
- * Handler called by HCI transport
+ * Dummy handler called by HCI
  */
 static void dummy_handler(uint8_t *packet, uint16_t size){
 }
+
+/**
+ * Dummy control handler
+ */
+static int null_control_function(void *config){
+    return 0;
+}
+static const char * null_control_name(void *config){
+    return "Hardware unknown";
+}
+static bt_control_t null_control = {
+    null_control_function,
+    null_control_function,
+    null_control_function,
+    null_control_name
+}; 
 
 static void acl_handler(uint8_t *packet, int size){
     hci_stack.acl_packet_handler(packet, size);
@@ -123,20 +103,6 @@ void hci_register_event_packet_handler(void (*handler)(uint8_t *packet, uint16_t
 void hci_register_acl_packet_handler  (void (*handler)(uint8_t *packet, uint16_t size)){
     hci_stack.acl_packet_handler = handler;
 }
-
-static int null_control_function(void *config){
-    return 0;
-}
-static const char * null_control_name(void *config){
-    return "Hardware unknown";
-}
-
-static bt_control_t null_control = {
-    null_control_function,
-    null_control_function,
-    null_control_function,
-    null_control_name
-}; 
 
 void hci_init(hci_transport_t *transport, void *config, bt_control_t *control){
     
@@ -263,13 +229,12 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
             hci_stack.event_packet_handler(event, 3);
             break;
         default:
-            // TODO log into hci dump as vendor specific"event"
+            // TODO log into hci dump as vendor specific "event"
             printf("Error: command %u not implemented\n:", READ_CMD_OCF(packet));
             break;
     }
     return 0;
 }
-
 
 /**
  * pre: numcmds >= 0 - it's allowed to send a command to the controller
