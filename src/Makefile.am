@@ -8,6 +8,7 @@ BTdaemon_SOURCES =       \
     bt_control_iphone.c  \
     daemon.c             \
     hci.c                \
+    hci_cmds.c           \
     hci_dump.c           \
     hci_transport_h4.c   \
     $(usb_support)       \
@@ -20,6 +21,7 @@ include_HEADERS = \
     bt_control.h                      \
     bt_control_iphone.h               \
     hci.h                             \
+    hci_cmds.h                        \
     hci_dump.h                        \
     hci_transport.h                   \
     hci_transport_h4.h                \

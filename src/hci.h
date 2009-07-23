@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+#include "hci_cmds.h"
 #include "hci_transport.h"
 #include "bt_control.h"
 
@@ -19,25 +20,11 @@
 #define READ_BT_24( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[pos+1]) << 8) | (((uint32_t)buffer[pos+2]) << 16))
 #define READ_BT_32( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[pos+1]) << 8) | (((uint32_t)buffer[pos+2]) << 16) | (((uint32_t) buffer[pos+3])) << 24)
 
-// calculate combined ogf/ocf value
-#define OPCODE(ogf, ocf) (ocf | ogf << 10)
-
-// get HCI CMD OGF
-#define READ_CMD_OGF(buffer) (buffer[1] >> 2)
-#define READ_CMD_OCF(buffer) ((buffer[1] & 0x03) << 8 | buffer[0])
-
 // packet header lengh
 #define HCI_CMD_DATA_PKT_HDR	  0x03
 #define HCI_ACL_DATA_PKT_HDR	  0x04
 #define HCI_SCO_DATA_PKT_HDR	  0x03
 #define HCI_EVENT_PKT_HDR         0x02
-
-// OGFs
-#define OGF_LINK_CONTROL 0x01
-#define OGF_CONTROLLER_BASEBAND 0x03
-#define OGF_INFORMATIONAL_PARAMETERS 0x04
-#define OGF_BTSTACK 0x3d
-#define OGF_VENDOR  0x3f
 
 // Events from host controller to host
 #define HCI_EVENT_INQUIRY_COMPLETE				           0x01
@@ -75,11 +62,7 @@
 #define HCI_EVENT_BTSTACK_WORKING                          0x80
 #define HCI_EVENT_BTSTACK_STATE                            0x81
 
-// cmds for BTstack
-#define HCI_BTSTACK_GET_STATE                              0x01
-
 #define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && READ_BT_16(event,3) == cmd.opcode)
-
 
 /**
  * Default INQ Mode
@@ -114,11 +97,6 @@ typedef enum {
     HCI_STATE_WORKING,
     HCI_STATE_HALTING
 } HCI_STATE;
-
-typedef struct {
-    uint16_t    opcode;
-    const char *format;
-} hci_cmd_t;
 
 typedef enum {
     SEND_NEGATIVE_LINK_KEY_REQUEST = 1 << 0,
@@ -185,9 +163,9 @@ uint32_t hci_run();
 void hexdump(void *data, int size);
 
 // create and send hci command packets based on a template and a list of parameters
-uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, va_list argptr);
-uint16_t hci_create_cmd(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, ...);
 int hci_send_cmd(hci_cmd_t *cmd, ...);
+
+// send complete CMD packet
 int hci_send_cmd_packet(uint8_t *packet, int size);
 
 // send ACL packet
@@ -198,28 +176,3 @@ extern void bt_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
 extern void bt_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 extern void bt_flip_addr(bd_addr_t dest, bd_addr_t src);
 
-// HCI Commands - see hci.c for info on parameters
-extern hci_cmd_t hci_inquiry;
-extern hci_cmd_t hci_inquiry_cancel;
-extern hci_cmd_t hci_link_key_request_negative_reply;
-extern hci_cmd_t hci_pin_code_request_reply;
-extern hci_cmd_t hci_set_event_mask;
-extern hci_cmd_t hci_reset;
-extern hci_cmd_t hci_create_connection;
-extern hci_cmd_t hci_host_buffer_size;
-extern hci_cmd_t hci_write_authentication_enable;
-extern hci_cmd_t hci_write_local_name;
-extern hci_cmd_t hci_write_page_timeout;
-extern hci_cmd_t hci_write_class_of_device;
-extern hci_cmd_t hci_remote_name_request;
-extern hci_cmd_t hci_remote_name_request_cancel;
-extern hci_cmd_t hci_read_bd_addr;
-extern hci_cmd_t hci_delete_stored_link_key;
-extern hci_cmd_t hci_write_scan_enable;
-extern hci_cmd_t hci_accept_connection_request;
-extern hci_cmd_t hci_write_inquiry_mode;
-extern hci_cmd_t hci_write_extended_inquiry_response;
-extern hci_cmd_t hci_write_simple_pairing_mode;
-
-// BTSTACK client/server commands - see hci.c for info on parameters
-extern hci_cmd_t hci_get_btstack_state;
