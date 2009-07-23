@@ -13,6 +13,7 @@ BTdaemon_SOURCES =       \
     hci_transport_h4.c   \
     $(usb_support)       \
     l2cap.c              \
+    l2cap_signaling.c    \
     linked_list.c        \
     run_loop.c           \
     socket_connection.c  \
@@ -29,6 +30,7 @@ include_HEADERS = \
     hci_transport_usb.h  \
     linked_list.h        \
     l2cap.h              \
+    l2cap_signaling.h    \
     run_loop.h           \
     socket_connection.h  \
     utils.h
