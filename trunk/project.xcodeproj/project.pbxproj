@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		9C00F7321017ACC3008DAB17 /* socket_connection.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C00F7301017ACC3008DAB17 /* socket_connection.c */; };
+		9C00F7D71019082F008DAB17 /* hci_cmds.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C00F7D61019082F008DAB17 /* hci_cmds.c */; };
+		9C00F7D81019082F008DAB17 /* hci_cmds.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C00F7D61019082F008DAB17 /* hci_cmds.c */; };
 		9C1F0E9A0FDAE023008F472F /* run_loop.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C1F0E980FDAE023008F472F /* run_loop.c */; };
 		9C2071F310014D3200A07EA4 /* hci_transport_usb.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C2071F210014D3200A07EA4 /* hci_transport_usb.c */; };
 		9C20720F10025E0500A07EA4 /* libusb-1.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C20720E10025E0500A07EA4 /* libusb-1.0.dylib */; };
@@ -45,6 +47,8 @@
 		8DD76FB20486AB0100D96B5E /* project */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = project; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C00F7301017ACC3008DAB17 /* socket_connection.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = socket_connection.c; path = src/socket_connection.c; sourceTree = "<group>"; };
 		9C00F7311017ACC3008DAB17 /* socket_connection.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = socket_connection.h; path = src/socket_connection.h; sourceTree = "<group>"; };
+		9C00F7D51019082F008DAB17 /* hci_cmds.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = hci_cmds.h; path = src/hci_cmds.h; sourceTree = "<group>"; };
+		9C00F7D61019082F008DAB17 /* hci_cmds.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = hci_cmds.c; path = src/hci_cmds.c; sourceTree = "<group>"; };
 		9C1F0E980FDAE023008F472F /* run_loop.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = run_loop.c; path = src/run_loop.c; sourceTree = "<group>"; };
 		9C1F0E990FDAE023008F472F /* run_loop.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = run_loop.h; path = src/run_loop.h; sourceTree = "<group>"; };
 		9C2071F210014D3200A07EA4 /* hci_transport_usb.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci_transport_usb.c; path = src/hci_transport_usb.c; sourceTree = "<group>"; };
@@ -132,6 +136,8 @@
 				9C1F0E980FDAE023008F472F /* run_loop.c */,
 				9C00F7301017ACC3008DAB17 /* socket_connection.c */,
 				9C00F7311017ACC3008DAB17 /* socket_connection.h */,
+				9C00F7D51019082F008DAB17 /* hci_cmds.h */,
+				9C00F7D61019082F008DAB17 /* hci_cmds.c */,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -232,6 +238,7 @@
 				9C2071F310014D3200A07EA4 /* hci_transport_usb.c in Sources */,
 				9C7B5AC0100BD3340065D87E /* linked_list.c in Sources */,
 				9C00F7321017ACC3008DAB17 /* socket_connection.c in Sources */,
+				9C00F7D71019082F008DAB17 /* hci_cmds.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -247,6 +254,7 @@
 				9C7B5D0D100FC9CE0065D87E /* linked_list.c in Sources */,
 				9C7B5D0E100FC9D00065D87E /* run_loop.c in Sources */,
 				9C7B5D12100FC9F00065D87E /* l2cap.c in Sources */,
+				9C00F7D81019082F008DAB17 /* hci_cmds.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
