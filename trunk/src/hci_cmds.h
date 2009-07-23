@@ -10,6 +10,12 @@
 #include <stdarg.h>
 #include <string.h>
 
+// packet header lenghts
+#define HCI_CMD_DATA_PKT_HDR	  0x03
+#define HCI_ACL_DATA_PKT_HDR	  0x04
+#define HCI_SCO_DATA_PKT_HDR	  0x03
+#define HCI_EVENT_PKT_HDR         0x02
+
 // calculate combined ogf/ocf value
 #define OPCODE(ogf, ocf) (ocf | ogf << 10)
 
@@ -27,6 +33,48 @@
 // cmds for BTstack
 #define HCI_BTSTACK_GET_STATE                              0x01
 
+// Events from host controller to host
+#define HCI_EVENT_INQUIRY_COMPLETE				           0x01
+#define HCI_EVENT_INQUIRY_RESULT				           0x02
+#define HCI_EVENT_CONNECTION_COMPLETE			           0x03
+#define HCI_EVENT_CONNECTION_REQUEST			           0x04
+#define HCI_EVENT_DISCONNECTION_COMPLETE		      	   0x05
+#define HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT            0x06
+#define HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE	           0x07
+#define HCI_EVENT_ENCRIPTION_CHANGE                        0x08
+#define HCI_EVENT_CHANGE_CONNECTION_LINK_KEY_COMPLETE      0x09
+#define HCI_EVENT_MASTER_LINK_KEY_COMPLETE                 0x0A
+#define HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE  0x0B
+#define HCI_EVENT_READ_REMOTE_VERSION_INFORMATION_COMPLETE 0x0C
+#define HCI_EVENT_QOS_SETUP_COMPLETE			           0x0D
+#define HCI_EVENT_COMMAND_COMPLETE				           0x0E
+#define HCI_EVENT_COMMAND_STATUS				           0x0F
+#define HCI_EVENT_HARDWARE_ERROR                           0x10
+#define HCI_EVENT_FLUSH_OCCURED                            0x11
+#define HCI_EVENT_ROLE_CHANGE				               0x12
+#define HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS	      	   0x13
+#define HCI_EVENT_MODE_CHANGE_EVENT                        0x14
+#define HCI_EVENT_RETURN_LINK_KEYS                         0x15
+#define HCI_EVENT_PIN_CODE_REQUEST                         0x16
+#define HCI_EVENT_LINK_KEY_REQUEST                         0x17
+#define HCI_EVENT_LINK_KEY_NOTIFICATION                    0x18
+#define HCI_EVENT_DATA_BUFFER_OVERFLOW                     0x1A
+#define HCI_EVENT_MAX_SLOTS_CHANGED			               0x1B
+#define HCI_EVENT_READ_CLOCK_OFFSET_COMPLETE               0x1C
+#define NECTEVENT_ION_PACKET_TYPE_CHANGED                  0x1D
+#define HCI_EVENT_INQUIRY_RESULT_WITH_RSSI		      	   0x22
+#define HCI_EVENT_VENDOR_SPECIFIC				           0xFF
+
+// events from BTstack for application/client lib
+#define HCI_EVENT_BTSTACK_WORKING                          0x80
+#define HCI_EVENT_BTSTACK_STATE                            0x81
+
+#define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && READ_BT_16(event,3) == cmd.opcode)
+
+/**
+ * Default INQ Mode
+ */
+#define HCI_INQUIRY_LAP 0x9E8B33L  // 0x9E8B33: General/Unlimited Inquiry Access Code (GIAC)
 
 /** 
  * compact HCI Command packet description
@@ -39,6 +87,7 @@
 // create and send hci command packets based on a template and a list of parameters
 uint16_t hci_create_cmd(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, ...);
 uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, va_list argptr);
+
 
 // HCI Commands - see hci_cmds.c for info on parameters
 extern hci_cmd_t hci_inquiry;

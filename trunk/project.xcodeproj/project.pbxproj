@@ -10,6 +10,8 @@
 		9C00F7321017ACC3008DAB17 /* socket_connection.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C00F7301017ACC3008DAB17 /* socket_connection.c */; };
 		9C00F7D71019082F008DAB17 /* hci_cmds.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C00F7D61019082F008DAB17 /* hci_cmds.c */; };
 		9C00F7D81019082F008DAB17 /* hci_cmds.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C00F7D61019082F008DAB17 /* hci_cmds.c */; };
+		9C00F86410191097008DAB17 /* utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C00F86210191097008DAB17 /* utils.c */; };
+		9C00F86510191097008DAB17 /* utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C00F86210191097008DAB17 /* utils.c */; };
 		9C1F0E9A0FDAE023008F472F /* run_loop.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C1F0E980FDAE023008F472F /* run_loop.c */; };
 		9C2071F310014D3200A07EA4 /* hci_transport_usb.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C2071F210014D3200A07EA4 /* hci_transport_usb.c */; };
 		9C20720F10025E0500A07EA4 /* libusb-1.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C20720E10025E0500A07EA4 /* libusb-1.0.dylib */; };
@@ -49,6 +51,8 @@
 		9C00F7311017ACC3008DAB17 /* socket_connection.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = socket_connection.h; path = src/socket_connection.h; sourceTree = "<group>"; };
 		9C00F7D51019082F008DAB17 /* hci_cmds.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = hci_cmds.h; path = src/hci_cmds.h; sourceTree = "<group>"; };
 		9C00F7D61019082F008DAB17 /* hci_cmds.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = hci_cmds.c; path = src/hci_cmds.c; sourceTree = "<group>"; };
+		9C00F86210191097008DAB17 /* utils.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = utils.c; path = src/utils.c; sourceTree = "<group>"; };
+		9C00F86310191097008DAB17 /* utils.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = utils.h; path = src/utils.h; sourceTree = "<group>"; };
 		9C1F0E980FDAE023008F472F /* run_loop.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = run_loop.c; path = src/run_loop.c; sourceTree = "<group>"; };
 		9C1F0E990FDAE023008F472F /* run_loop.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = run_loop.h; path = src/run_loop.h; sourceTree = "<group>"; };
 		9C2071F210014D3200A07EA4 /* hci_transport_usb.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci_transport_usb.c; path = src/hci_transport_usb.c; sourceTree = "<group>"; };
@@ -121,6 +125,10 @@
 				9CC813A40FFC0A51002816F9 /* daemon.c */,
 				9C46FC350FA906F700ABEF05 /* hci.h */,
 				9C46FC340FA906F700ABEF05 /* hci.c */,
+				9C00F7D51019082F008DAB17 /* hci_cmds.h */,
+				9C00F7D61019082F008DAB17 /* hci_cmds.c */,
+				9C7ECBB30FCC95DD0085DAC5 /* hci_dump.h */,
+				9C7ECBB40FCC95DD0085DAC5 /* hci_dump.c */,
 				9C46FC380FA906F700ABEF05 /* hci_transport.h */,
 				9C46FC370FA906F700ABEF05 /* hci_transport_h4.h */,
 				9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */,
@@ -128,16 +136,14 @@
 				9C2071F210014D3200A07EA4 /* hci_transport_usb.c */,
 				9C88500C0FBF6702004980E4 /* l2cap.c */,
 				9C88500D0FBF6702004980E4 /* l2cap.h */,
-				9C7ECBB30FCC95DD0085DAC5 /* hci_dump.h */,
-				9C7ECBB40FCC95DD0085DAC5 /* hci_dump.c */,
 				9C7B5ABE100BD3340065D87E /* linked_list.h */,
 				9C7B5ABF100BD3340065D87E /* linked_list.c */,
 				9C1F0E990FDAE023008F472F /* run_loop.h */,
 				9C1F0E980FDAE023008F472F /* run_loop.c */,
 				9C00F7301017ACC3008DAB17 /* socket_connection.c */,
 				9C00F7311017ACC3008DAB17 /* socket_connection.h */,
-				9C00F7D51019082F008DAB17 /* hci_cmds.h */,
-				9C00F7D61019082F008DAB17 /* hci_cmds.c */,
+				9C00F86210191097008DAB17 /* utils.c */,
+				9C00F86310191097008DAB17 /* utils.h */,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -239,6 +245,7 @@
 				9C7B5AC0100BD3340065D87E /* linked_list.c in Sources */,
 				9C00F7321017ACC3008DAB17 /* socket_connection.c in Sources */,
 				9C00F7D71019082F008DAB17 /* hci_cmds.c in Sources */,
+				9C00F86510191097008DAB17 /* utils.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -255,6 +262,7 @@
 				9C7B5D0E100FC9D00065D87E /* run_loop.c in Sources */,
 				9C7B5D12100FC9F00065D87E /* l2cap.c in Sources */,
 				9C00F7D81019082F008DAB17 /* hci_cmds.c in Sources */,
+				9C00F86410191097008DAB17 /* utils.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
