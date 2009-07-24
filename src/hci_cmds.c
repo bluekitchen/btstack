@@ -194,8 +194,16 @@ OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x09), ""
 // no params
 };
 
+// BTstack commands
+
 hci_cmd_t hci_get_btstack_state = {
 OPCODE(OGF_BTSTACK, HCI_BTSTACK_GET_STATE), ""
 // no params -> 
 };
+
+hci_cmd_t hci_set_power_mode = {
+OPCODE(OGF_BTSTACK, HCI_BTSTACK_SET_POWER_MODE), "1"
+// mode: 0 = off, 1 = on
+};
+
 

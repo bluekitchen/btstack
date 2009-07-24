@@ -92,7 +92,7 @@ int main (int argc, const char * argv[]){
     
     // @TODO allow control per HCI CMD
     // turn on 
-    hci_power_control(HCI_POWER_ON);
+    // hci_power_control(HCI_POWER_ON);
     
     // @TODO make choice of socket server configurable (TCP and/or Unix Domain Socket)
     // @TODO make port and/or socket configurable per config.h

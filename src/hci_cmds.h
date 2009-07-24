@@ -30,8 +30,13 @@
 #define OGF_BTSTACK 0x3d
 #define OGF_VENDOR  0x3f
 
-// cmds for BTstack
+// cmds for BTstack 
+
+// get state: @returns HCI_STATE
 #define HCI_BTSTACK_GET_STATE                              0x01
+
+// set power mode: @param HCI_POWER_MODE
+#define HCI_BTSTACK_SET_POWER_MODE                         0x02
 
 // Events from host controller to host
 #define HCI_EVENT_INQUIRY_COMPLETE				           0x01
@@ -75,6 +80,23 @@
  * Default INQ Mode
  */
 #define HCI_INQUIRY_LAP 0x9E8B33L  // 0x9E8B33: General/Unlimited Inquiry Access Code (GIAC)
+/**
+ *  Hardware state of Bluetooth controller 
+ */
+typedef enum {
+    HCI_POWER_OFF = 0,
+    HCI_POWER_ON 
+} HCI_POWER_MODE;
+
+/**
+ * State of BTstack 
+ */
+typedef enum {
+    HCI_STATE_OFF = 0,
+    HCI_STATE_INITIALIZING,
+    HCI_STATE_WORKING,
+    HCI_STATE_HALTING
+} HCI_STATE;
 
 /** 
  * compact HCI Command packet description
@@ -114,3 +136,4 @@ extern hci_cmd_t hci_write_simple_pairing_mode;
 
 // BTSTACK client/server commands - see hci.c for info on parameters
 extern hci_cmd_t hci_get_btstack_state;
+extern hci_cmd_t hci_set_power_mode;

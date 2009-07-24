@@ -35,7 +35,8 @@ void event_handler(uint8_t *packet, int size){
     bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };  // Think Outside Keyboard
     
     // bt stack activated, get started
-    if (packet[0] == HCI_EVENT_BTSTACK_WORKING || packet[0] == HCI_EVENT_BTSTACK_STATE) {
+    if (packet[0] == HCI_EVENT_BTSTACK_WORKING ||
+	   (packet[0] == HCI_EVENT_BTSTACK_STATE && packet[2] == HCI_STATE_WORKING)) {
         bt_send_cmd(&hci_write_class_of_device, 0x7A020C);  // used on iPhone
     }
     
@@ -203,7 +204,7 @@ int main (int argc, const char * argv[]){
 	bt_open();
 	bt_register_event_packet_handler(event_handler);
 	bt_register_acl_packet_handler  (acl_handler);
-	bt_send_cmd(&hci_get_btstack_state);
+	bt_send_cmd(&hci_set_power_mode, HCI_POWER_ON );
 	run_loop_execute();
 	bt_close();
 }
