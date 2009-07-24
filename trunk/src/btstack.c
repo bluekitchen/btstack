@@ -71,7 +71,8 @@ int bt_send_cmd(hci_cmd_t *cmd, ...){
 
 // send hci acl packet
 int bt_send_acl_packet(uint8_t *packet, int size){
-    socket_connection_send_packet(btstack_connection, HCI_ACL_DATA_PACKET, hci_cmd_buffer, size);
+    // printf("Send ACL: "); hexdump(packet,size); printf("\n");
+    socket_connection_send_packet(btstack_connection, HCI_ACL_DATA_PACKET, packet, size);
     return 0;
 }
 
