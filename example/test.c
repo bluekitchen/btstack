@@ -1,10 +1,7 @@
 /*
  *  test.c
- *  project
- *
+ * 
  *  Created by Matthias Ringwald on 7/14/09.
- *  Copyright 2009 Dybuster AG. All rights reserved.
- *
  */
 
 #include <unistd.h>
