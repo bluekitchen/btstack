@@ -12,15 +12,36 @@
 #include "hci.h"
 #include "hci_dump.h"
 
-// the stack is here
+// the STACK is here
 static hci_stack_t       hci_stack;
 
 /**
- * get link for given address
+ * get connection for given address
  *
  * @return connection OR NULL, if not found
  */
-static hci_connection_t *link_for_addr(bd_addr_t addr){
+static hci_connection_t *link_for_addr(bd_addr_t address){
+    linked_item_t *it;
+    for (it = (linked_item_t *) hci_stack.connections; it ; it = it->next){
+        if ( ! BD_ADDR_CMP( ((hci_connection_t *) it)->address, address) ){
+            return (hci_connection_t *) it;
+        }
+    }
+    return NULL;
+}
+
+/**
+ * get connection for a given handle
+ *
+ * @return connection OR NULL, if not found
+ */
+static hci_connection_t *link_for_handle(hci_con_handle_t con_handle){
+    linked_item_t *it;
+    for (it = (linked_item_t *) hci_stack.connections; it ; it = it->next){
+        if ( ((hci_connection_t *) it)->con_handle == con_handle){
+            return (hci_connection_t *) it;
+        }
+    }
     return NULL;
 }
 
@@ -160,17 +181,17 @@ int hci_power_control(HCI_POWER_MODE power_mode){
     return 0;
 }
 
-uint32_t hci_run(){
+void hci_run(){
     uint8_t micro_packet;
     switch (hci_stack.state){
         case HCI_STATE_INITIALIZING:
             if (hci_stack.substate % 2) {
                 // odd: waiting for command completion
-                return 0;
+                return;
             }
             if (hci_stack.num_cmd_packets == 0) {
                 // cannot send command yet
-                return 0;
+                return;
             }
             switch (hci_stack.substate/2){
                 case 0:
@@ -200,9 +221,6 @@ uint32_t hci_run(){
         default:
             break;
     }
-    
-    // don't check for timetous yet
-    return 0;
 }
 
 
