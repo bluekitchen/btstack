@@ -20,7 +20,7 @@ static hci_stack_t       hci_stack;
  *
  * @return connection OR NULL, if not found
  */
-static hci_connection_t *link_for_addr(bd_addr_t address){
+static hci_connection_t * connection_for_address(bd_addr_t address){
     linked_item_t *it;
     for (it = (linked_item_t *) hci_stack.connections; it ; it = it->next){
         if ( ! BD_ADDR_CMP( ((hci_connection_t *) it)->address, address) ){
@@ -35,7 +35,7 @@ static hci_connection_t *link_for_addr(bd_addr_t address){
  *
  * @return connection OR NULL, if not found
  */
-static hci_connection_t *link_for_handle(hci_con_handle_t con_handle){
+static hci_connection_t * connection_for_handle(hci_con_handle_t con_handle){
     linked_item_t *it;
     for (it = (linked_item_t *) hci_stack.connections; it ; it = it->next){
         if ( ((hci_connection_t *) it)->con_handle == con_handle){
@@ -76,6 +76,7 @@ static void acl_handler(uint8_t *packet, int size){
 
 static void event_handler(uint8_t *packet, int size){
     bd_addr_t addr;
+    hci_con_handle_t handle;
     
     // Get Num_HCI_Command_Packets
     if (packet[0] == HCI_EVENT_COMMAND_COMPLETE ||
@@ -83,6 +84,42 @@ static void event_handler(uint8_t *packet, int size){
         hci_stack.num_cmd_packets = packet[2];
     }
 
+    // Connection management
+    if (packet[0] == HCI_EVENT_CONNECTION_COMPLETE) {
+        if (!packet[2]){
+            bt_flip_addr(addr, &packet[5]);
+            hci_connection_t * conn = connection_for_address(addr);
+            if (!conn) {
+                conn = malloc( sizeof(hci_connection_t) );
+                if (conn) {
+                    linked_list_add(&hci_stack.connections, (linked_item_t *) conn);
+                }
+            }
+            if (conn) {
+                BD_ADDR_COPY(conn->address, addr);
+                conn->con_handle = READ_BT_16(packet, 3);
+                conn->flags = 0;
+                printf("New connection: handle %u, ", conn->con_handle);
+                print_bd_addr( conn->address );
+                printf("\n");
+            }
+        }
+    }
+    
+    if (packet[0] == HCI_EVENT_DISCONNECTION_COMPLETE) {
+        if (!packet[2]){
+            handle = READ_BT_16(packet, 3);
+            hci_connection_t * conn = connection_for_handle(handle);
+            if (conn) {
+                printf("Connection closed: handle %u, ", conn->con_handle);
+                print_bd_addr( conn->address );
+                printf("\n");
+                linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
+                free( conn );
+            }
+        }
+    }
+    
     // handle BT initialization
     if (hci_stack.state == HCI_STATE_INITIALIZING){
         // handle H4 synchronization loss on restart
@@ -139,6 +176,9 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control){
     
     // reference to used config
     hci_stack.config = config;
+    
+    // no connections yet
+    hci_stack.connections = NULL;
     
     // empty cmd buffer
     hci_stack.hci_cmd_buffer = malloc(3+255);

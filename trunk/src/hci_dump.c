@@ -1,8 +1,12 @@
 /*
  *  hci_dump.c
  *
- *  Dump HCI trace in BlueZ's hcidump format
- * 
+ *  Dump HCI trace in various formats:
+ *
+ *  - BlueZ's hcidump format
+ *  - Apple's PacketLogger
+ *  - stdout hexdump
+ *
  *  Created by Matthias Ringwald on 5/26/09.
  */
 
@@ -51,7 +55,6 @@ void hci_dump_open(char *filename, hci_dump_format_t format){
         dump_file =  open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     }
 }
-
 
 void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {
     if (dump_file < 0) return; // not activated yet
