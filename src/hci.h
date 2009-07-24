@@ -44,7 +44,7 @@ typedef enum {
 
 typedef struct hci_connection {
     // linked list - assert: first field
-    linked_item_t       item;
+    linked_item_t    item;
     
     // remote side
     bd_addr_t address;
@@ -68,7 +68,7 @@ typedef struct {
     bt_control_t     * control;
     
     // list of existing baseband connections
-    hci_connection_t * connections;
+    linked_list_t     connections;
 
     // single buffer for HCI Command assembly
     uint8_t          * hci_cmd_buffer;

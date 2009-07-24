@@ -41,11 +41,15 @@ static int daemon_packet_handler(connection_t *connection, uint8_t packet_type, 
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
             hci_send_cmd_packet(data, length);
+            // printf("CMD from client: ");
             break;
         case HCI_ACL_DATA_PACKET:
             hci_send_acl_packet(data, length);
+            // printf("ACL from client: ");
             break;
     }
+    hexdump(data, length);
+    // printf("\n");
     return 0;
 }
 
