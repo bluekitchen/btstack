@@ -45,3 +45,4 @@ void print_bd_addr( bd_addr_t addr){
     }
     printf("%02X", ((uint8_t *)addr)[i]);
 }
+

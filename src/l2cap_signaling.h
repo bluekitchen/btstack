@@ -24,8 +24,8 @@ typedef enum {
     INFORMATIONAL_RESPONSE
 } L2CAP_SIGNALING_COMMANDS;
 
-extern uint16_t  local_cid;
-extern uint8_t   sig_seq_nr;
-
 uint16_t l2cap_create_signaling_packet(uint8_t *acl_buffer, hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...);
 uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer,hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr);
+uint8_t  l2cap_next_sig_id();
+uint16_t l2cap_next_local_cid();
+

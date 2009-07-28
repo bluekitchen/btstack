@@ -19,6 +19,7 @@
 hci_con_handle_t con_handle_out = 0;
 hci_con_handle_t con_handle_in = 0;
 uint16_t dest_cid;
+uint16_t local_cid;
 
 #define BT_HID
 // #define POWER_CYCLE_TEST
@@ -115,7 +116,8 @@ if (packet[0] == HCI_EVENT_CONNECTION_COMPLETE){
 #ifndef MITM
         // request l2cap connection
         printf("> CONNECTION REQUEST\n");
-        bt_send_l2cap_signaling_packet(con_handle_out, CONNECTION_REQUEST, sig_seq_nr++, 0x13, local_cid);
+		local_cid = l2cap_next_local_cid();
+        bt_send_l2cap_signaling_packet(con_handle_out, CONNECTION_REQUEST, l2cap_next_sig_id(), 0x13, local_cid);
 #else
         printf("Connected to target device, please start!\n");
 #endif
@@ -174,8 +176,8 @@ void acl_handler(uint8_t *packet, int size){
         uint16_t status = READ_BT_16(packet, 18);
         printf("< CONNECTION_RESPONSE: id %u, dest cid %u, src cid %u, result %u, status %u\n", packet[9], dest_cid, source_cid, result, status); 
         if (result == 0){
-            printf("> CONFIGURE_REQUEST: id %u\n", sig_seq_nr);
-            bt_send_l2cap_signaling_packet(con_handle_out, CONFIGURE_REQUEST, sig_seq_nr++, dest_cid, 0, 4, &config_options);
+            // printf("> CONFIGURE_REQUEST: id %u\n", sig_seq_nr);
+            bt_send_l2cap_signaling_packet(con_handle_out, CONFIGURE_REQUEST, l2cap_next_sig_id(), dest_cid, 0, 4, &config_options);
         }
     } 
     else if (packet[8] == CONFIGURE_RESPONSE){
