@@ -1,20 +1,20 @@
 /* new todo file for BTstack */
 
+UNTIL 13. August 2009 : Google Open Source Jam
+- implement L2CAP state machine
+- decide on naming conventions for various layers
+- provide demos:
+  - BT Scanner: module info, inquiry, remote name
+  - Terminal app with L2CAP support - Python or Java PC demo
+  - evtl. SDP browser
+  - evtl. RFCOMM to BT GPS
+  
 NEXT:
-- implement client BT API in btstack.h: prefix all functions by bt_$PROTOCOL_*
-  - client/server part using unix domain sockets (portable and fast)
-- generalize run_loop_add/remove into linked_list_add/remove
+- client/server part using unix domain sockets (portable and fast)
+- implement RFCOMM
+- implement
 - use linked_list for: 
-  - run loop
   - event handler
   - data handler
-- keep track of HCI state (links, inquiries, acl flow control) in linked list
-- implement L2CAP state machine
 - implement PAN
-
-IMPROVE
-- make data_source_t opaque: data_source_set_fd, data_source_set_cb
-- implement TimerSource
 - implement some kind of noitfy mechanism between multiple units
-- support better handling of multiple parallel socket connections?
-	- callback to announce new connection, allow to store local context pointer

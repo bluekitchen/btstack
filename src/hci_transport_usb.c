@@ -17,6 +17,8 @@
 // ACL Data  0 0 0x82 Bulk (IN) 32/64 
 // ACL Data  0 0 0x02 Bulk (OUT) 32/64 
 
+#ifdef HAVE_TRANSPORT_USB
+
 #include <stdio.h>
 #include <strings.h>
 #include <unistd.h>   /* UNIX standard function definitions */
@@ -338,3 +340,5 @@ hci_transport_t * hci_transport_usb_instance() {
     }
     return hci_transport_usb;
 }
+
+#endif

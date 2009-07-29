@@ -26,12 +26,12 @@ static connection_t *btstack_connection = NULL;
 static linked_list_t l2cap_channels = NULL;
 
 /** prototypes */
-static void dummy_handler(uint8_t *packet, int size);
+static void dummy_handler(uint8_t *packet, uint16_t size);
 int btstack_packet_handler(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t size);
 
 /* callback to L2CAP layer */
-static void (*event_packet_handler)(uint8_t *packet, int size) = dummy_handler;
-static void (*acl_packet_handler)  (uint8_t *packet, int size) = dummy_handler;
+static void (*event_packet_handler)(uint8_t *packet, uint16_t size) = dummy_handler;
+static void (*acl_packet_handler)  (uint8_t *packet, uint16_t size) = dummy_handler;
 
 // init BTstack library
 int bt_open(){
@@ -52,18 +52,21 @@ int bt_close(){
 void l2cap_event_handler( uint8_t *packet, uint16_t size ){
     // handle connection complete events
     if (packet[0] == HCI_EVENT_CONNECTION_COMPLETE && packet[2] == 0){
-        linked_item_t *it;
         bd_addr_t address;
         bt_flip_addr(address, &packet[5]);
+        
+        linked_item_t *it;
         for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
             l2cap_channel_t * chan = (l2cap_channel_t *) it;
             if ( ! BD_ADDR_CMP( chan->address, address) ){
                 if (chan->state == L2CAP_STATE_CLOSED) {
-                    chan->state = L2CAP_STATE_CONNECTED;
                     chan->handle = READ_BT_16(packet, 3);
                     chan->sig_id = l2cap_next_sig_id();
                     chan->local_cid = l2cap_next_local_cid();
+
                     bt_send_l2cap_signaling_packet( chan->handle, CONNECTION_REQUEST, chan->sig_id, chan->psm, chan->local_cid);                   
+
+                    chan->state = L2CAP_STATE_WAIT_CONNECT_RSP;
                 }
             }
         }
@@ -71,20 +74,94 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
     // handle disconnection complete events
     // TODO ...
 }
-void l2cap_data_handler( uint8_t *packet, uint16_t size ){
-    // Get Channel ID 
 
+void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t size){
+
+    static uint8_t config_options[] = { 1, 2, 150, 0}; // mtu = 48 
+
+    uint8_t code       = READ_L2CAP_SIGNALING_CODE( packet );
+    uint8_t identifier = READ_L2CAP_SIGNALING_IDENTIFIER( packet );
+    
+    switch (channel->state) {
+            
+        case L2CAP_STATE_WAIT_CONNECT_RSP:
+            switch (code){
+                case CONNECTION_RESPONSE:
+                    if ( READ_BT_16 (packet, L2CAP_SIGNALING_DATA_OFFSET+3) == 0){
+                        // successfull connection
+                        channel->dest_cid = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET + 0);
+                        channel->sig_id = l2cap_next_sig_id();
+                        bt_send_l2cap_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->dest_cid, 0, 4, &config_options);
+                        channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP;
+                    } else {
+                        // TODO implement failed
+                    }
+                    break;
+                // TODO implement other signaling packets
+            }
+            break;
+            
+        case L2CAP_STATE_WAIT_CONFIG_REQ_RSP:
+            switch (code) {
+                case CONFIGURE_RESPONSE:
+                    channel->state = L2CAP_STATE_WAIT_CONFIG_REQ;
+                    break;
+            }
+            break;
+            
+        case L2CAP_STATE_WAIT_CONFIG_REQ:
+            switch (code) {
+                case CONFIGURE_REQUEST:
+                    
+                    // accept the other's configuration options
+                    bt_send_l2cap_signaling_packet(channel->handle, CONFIGURE_RESPONSE, identifier, channel->dest_cid, 0, 0, size - 16, &packet[16]);
+                    
+                    channel->state = L2CAP_STATE_OPEN;
+                    
+                    //  notify client
+                    uint8_t event[6];
+                    event[0] = HCI_EVENT_L2CAP_CHANNEL_OPENED;
+                    event[1] = 4;
+                    bt_store_16(event, 2, channel->handle);
+                    bt_store_16(event, 4, channel->local_cid);
+                    (*channel->event_callback)(event, sizeof(event));
+                    break;
+            }
+            break;
+    }
+}
+
+void l2cap_data_handler( uint8_t *packet, uint16_t size ){
+
+    // Get Channel ID 
+    uint16_t channel_id = READ_L2CAP_CHANNEL_ID(packet); 
+    
+    // Get Connection
+    hci_con_handle_t handle = READ_ACL_CONNECTION_HANDLE(packet);
+    
     // Signaling Packet?
+    if (channel_id == 1) {
+        // Get Signaling Identifier
+        uint8_t sig_id = READ_L2CAP_SIGNALING_IDENTIFIER(packet);
+        
+        // Find channel for this sig_id and connection handle
+        linked_item_t *it;
+        for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+            l2cap_channel_t * chan = (l2cap_channel_t *) it;
+            if ( chan->sig_id == sig_id && chan->handle == handle) {
+                l2cap_signaling_handler( chan, packet, size);
+            }
+        }
+    }
     
-    // Get Signaling Identifier
-    
-    // Find channel for this sig_id
-    
-    // Handle CONNECTION_RESPONSE
-    
-    // Handle CONFIGURE_RESPONSE
-    
-    // Handle CONFIGURE_REQUEST
+    // Find channel for this channel_id and connection handle
+    linked_item_t *it;
+    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+        l2cap_channel_t * channel = (l2cap_channel_t *) it;
+        if ( channel->local_cid == channel_id && channel->handle == handle) {
+            (*channel->data_callback)(packet, size);
+        }
+    }
 }
 
 int btstack_packet_handler(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t size){
@@ -128,15 +205,15 @@ int bt_send_l2cap_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMM
     return bt_send_acl_packet(l2cap_sig_buffer, len);
 }
 
-static void dummy_handler(uint8_t *packet, int size){
+static void dummy_handler(uint8_t *packet, uint16_t size){
 }
 
 // register packet and event handler
-void bt_register_event_packet_handler(void (*handler)(uint8_t *packet, int size)){
+void bt_register_event_packet_handler(void (*handler)(uint8_t *packet, uint16_t size)){
     event_packet_handler = handler;
 }
 
-void bt_register_acl_packet_handler  (void (*handler)(uint8_t *packet, int size)){
+void bt_register_acl_packet_handler  (void (*handler)(uint8_t *packet, uint16_t size)){
     acl_packet_handler = handler;
 }
 
@@ -163,7 +240,7 @@ l2cap_channel_t * l2cap_create_channel(bd_addr_t address, uint16_t psm, void (*e
     
     // send connection request
     // BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
-    bt_send_cmd(&hci_create_connection, &address, 0x18, 0, 0, 0, 0); 
+    bt_send_cmd(&hci_create_connection, address, 0x18, 0, 0, 0, 0); 
     
     return chan;
 }
