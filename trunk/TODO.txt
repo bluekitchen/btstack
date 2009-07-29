@@ -2,7 +2,11 @@
 
 UNTIL 13. August 2009 : Google Open Source Jam
 - implement L2CAP state machine
+  - outgoing for now only
 - decide on naming conventions for various layers
+- decide where L2CAP state machine belongs
+- decide on l2CAP event/data interface
+  - client does not need to send raw ACL packets
 - provide demos:
   - BT Scanner: module info, inquiry, remote name
   - Terminal app with L2CAP support - Python or Java PC demo
