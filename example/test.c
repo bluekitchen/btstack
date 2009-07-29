@@ -13,7 +13,8 @@
 #include "../src/run_loop.h"
 #include "../src/hci.h"
 
-bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };  // Think Outside Keyboard
+// bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };  // Think Outside Keyboard
+bd_addr_t addr = {0x00, 0x19, 0x1d, 0x90, 0x44, 0x68 };  // WiiMote
 
 void acl_handler(uint8_t *packet, uint16_t size){
 	// just dump data for now
@@ -29,7 +30,7 @@ void event_handler(uint8_t *packet, uint16_t size){
     
 	// use pairing
     if ( COMMAND_COMPLETE_EVENT(packet, hci_write_local_name) ) {
-        bt_send_cmd(&hci_write_authentication_enable, 1);
+        bt_send_cmd(&hci_write_authentication_enable, 0);
     }
 	
 	// connect to HID device (PSM 0x13) at addr

@@ -89,11 +89,7 @@ int main (int argc, const char * argv[]){
     //
     hci_register_event_packet_handler(&socket_connection_send_event_all);
     hci_register_acl_packet_handler(&socket_connection_send_acl_all);
-    
-    // @TODO allow control per HCI CMD
-    // turn on 
-    // hci_power_control(HCI_POWER_ON);
-    
+        
     // @TODO make choice of socket server configurable (TCP and/or Unix Domain Socket)
     // @TODO make port and/or socket configurable per config.h
     
