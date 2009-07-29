@@ -27,8 +27,8 @@ int bt_send_cmd(hci_cmd_t *cmd, ...);
 int bt_send_acl_packet(uint8_t *packet, int size);
 
 // register packet and event handler
-void bt_register_event_packet_handler(void (*handler)(uint8_t *packet, int size));
-void bt_register_acl_packet_handler  (void (*handler)(uint8_t *packet, int size));
+void bt_register_event_packet_handler(void (*handler)(uint8_t *packet, uint16_t size));
+void bt_register_acl_packet_handler  (void (*handler)(uint8_t *packet, uint16_t size));
 
 // TODO: temp
 int bt_send_l2cap_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...);

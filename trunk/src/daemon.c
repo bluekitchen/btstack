@@ -48,7 +48,7 @@ static int daemon_packet_handler(connection_t *connection, uint8_t packet_type, 
             // printf("ACL from client: ");
             break;
     }
-    hexdump(data, length);
+    // hexdump(data, length);
     // printf("\n");
     return 0;
 }
