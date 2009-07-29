@@ -1,19 +1,26 @@
 /* new todo file for BTstack */
 
 UNTIL 13. August 2009 : Google Open Source Jam
-- implement L2CAP state machine
-  - outgoing for now only
+- implement L2CAP state machine (outgoing only) - take care for matching channels with signaling packets better
+  - test sig_id for incoming responses - 
+  - test channel id for incoming requests (
 - decide on naming conventions for various layers
 - decide where L2CAP state machine belongs
 - decide on l2CAP event/data interface
-  - client does not need to send raw ACL packets
+  - client only sends L2CAP packets (or higher) - no need to send/receive raw ACL packets
 - provide demos:
   - BT Scanner: module info, inquiry, remote name
   - Terminal app with L2CAP support - Python or Java PC demo
+	- implement l2cap_send_packet
+    - readline? own command line support?
   - evtl. SDP browser
   - evtl. RFCOMM to BT GPS
   
 NEXT:
+- implement rest of L2CAP state machine
+  - incoming
+  - error handling
+  - error notification
 - client/server part using unix domain sockets (portable and fast)
 - implement RFCOMM
 - implement
