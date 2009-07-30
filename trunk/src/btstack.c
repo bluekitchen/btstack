@@ -119,11 +119,12 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
                     channel->state = L2CAP_STATE_OPEN;
                     
                     //  notify client
-                    uint8_t event[6];
+                    uint8_t event[8];
                     event[0] = HCI_EVENT_L2CAP_CHANNEL_OPENED;
-                    event[1] = 4;
+                    event[1] = 6;
                     bt_store_16(event, 2, channel->handle);
                     bt_store_16(event, 4, channel->source_cid);
+                    bt_store_16(event, 6, channel->dest_cid);
                     (*channel->event_callback)(event, sizeof(event));
                     break;
             }
@@ -264,7 +265,34 @@ l2cap_channel_t * l2cap_create_channel(bd_addr_t address, uint16_t psm, void (*e
     return chan;
 }
 
-void l2cap_disconnect(l2cap_channel_t *channel, uint8_t reason){
+void l2cap_send(uint16_t source_cid, uint8_t *data, uint16_t len){
+    // find channel for source_cid, construct l2cap packet and send
+    linked_item_t *it;
+    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+        l2cap_channel_t * channel = (l2cap_channel_t *) it;
+        if ( channel->source_cid == source_cid) {
+
+            // use hci_cmd_buffer for now
+            
+            // 0 - Connection handle : PB=10 : BC=00 
+            bt_store_16(hci_cmd_buffer, 0, channel->handle | (2 << 12) | (0 << 14));
+            // 2 - ACL length
+            bt_store_16(hci_cmd_buffer, 2,  len + 4);
+            // 4 - L2CAP packet length
+            bt_store_16(hci_cmd_buffer, 4,  len + 0);
+            // 6 - L2CAP channel DEST
+            bt_store_16(hci_cmd_buffer, 6, channel->dest_cid);
+            // 8 - data
+            memcpy(&hci_cmd_buffer[8], data, len);
+            // send
+            bt_send_acl_packet(hci_cmd_buffer, len+8);
+            
+            return;
+        }
+    }
+}
+
+void l2cap_disconnect(uint16_t source_cid, uint8_t reason){
     // TODO implement
 }
 
