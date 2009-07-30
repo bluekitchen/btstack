@@ -62,9 +62,9 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
                 if (chan->state == L2CAP_STATE_CLOSED) {
                     chan->handle = READ_BT_16(packet, 3);
                     chan->sig_id = l2cap_next_sig_id();
-                    chan->local_cid = l2cap_next_local_cid();
+                    chan->source_cid = l2cap_next_source_cid();
 
-                    bt_send_l2cap_signaling_packet( chan->handle, CONNECTION_REQUEST, chan->sig_id, chan->psm, chan->local_cid);                   
+                    bt_send_l2cap_signaling_packet( chan->handle, CONNECTION_REQUEST, chan->sig_id, chan->psm, chan->source_cid);                   
 
                     chan->state = L2CAP_STATE_WAIT_CONNECT_RSP;
                 }
@@ -123,7 +123,7 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
                     event[0] = HCI_EVENT_L2CAP_CHANNEL_OPENED;
                     event[1] = 4;
                     bt_store_16(event, 2, channel->handle);
-                    bt_store_16(event, 4, channel->local_cid);
+                    bt_store_16(event, 4, channel->source_cid);
                     (*channel->event_callback)(event, sizeof(event));
                     break;
             }
@@ -133,32 +133,51 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
 
 void l2cap_data_handler( uint8_t *packet, uint16_t size ){
 
-    // Get Channel ID 
+    // Get Channel ID and command code 
     uint16_t channel_id = READ_L2CAP_CHANNEL_ID(packet); 
+    uint8_t  code       = READ_L2CAP_SIGNALING_CODE( packet );
     
     // Get Connection
     hci_con_handle_t handle = READ_ACL_CONNECTION_HANDLE(packet);
     
     // Signaling Packet?
     if (channel_id == 1) {
-        // Get Signaling Identifier
-        uint8_t sig_id = READ_L2CAP_SIGNALING_IDENTIFIER(packet);
+        
+        if (code < 1 || code == 2 || code >= 8){
+            // not for a particular channel
+            return;
+        }
+        
+        // Get Signaling Identifier and potential destination CID
+        uint8_t sig_id    = READ_L2CAP_SIGNALING_IDENTIFIER(packet);
+        uint16_t dest_cid = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET);
         
         // Find channel for this sig_id and connection handle
         linked_item_t *it;
         for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
             l2cap_channel_t * chan = (l2cap_channel_t *) it;
-            if ( chan->sig_id == sig_id && chan->handle == handle) {
-                l2cap_signaling_handler( chan, packet, size);
+            if (chan->handle == handle) {
+                if (code & 1) {
+                    // match odd commands by previous signaling identifier 
+                    if (chan->sig_id == sig_id) {
+                        l2cap_signaling_handler( chan, packet, size);
+                    }
+                } else {
+                    // match even commands by source channel id
+                    if (chan->source_cid == dest_cid) {
+                        l2cap_signaling_handler( chan, packet, size);
+                    }
+                }
             }
         }
+        return;
     }
     
     // Find channel for this channel_id and connection handle
     linked_item_t *it;
     for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
         l2cap_channel_t * channel = (l2cap_channel_t *) it;
-        if ( channel->local_cid == channel_id && channel->handle == handle) {
+        if ( channel->source_cid == channel_id && channel->handle == handle) {
             (*channel->data_callback)(packet, size);
         }
     }

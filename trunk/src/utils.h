@@ -44,7 +44,7 @@ typedef uint8_t link_key_t[LINK_KEY_LEN];
 // L2CAP Signaling Packet
 #define READ_L2CAP_SIGNALING_CODE( buffer )       (buffer[ 8])
 #define READ_L2CAP_SIGNALING_IDENTIFIER( buffer ) (buffer[ 9])
-#define READ_L2CAP_SIGNALING_LENGTH( buffer )     (buffer[10])
+#define READ_L2CAP_SIGNALING_LENGTH( buffer )     (READ_BT_16(buffer, 10))
 
 #define L2CAP_SIGNALING_DATA_OFFSET 12
 

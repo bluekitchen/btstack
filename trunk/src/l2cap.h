@@ -30,7 +30,7 @@ typedef struct {
 
     L2CAP_STATE state;
     uint8_t   sig_id;
-    uint16_t  local_cid;
+    uint16_t  source_cid;
     uint16_t  dest_cid;
     bd_addr_t address;
     uint16_t  psm;

@@ -23,7 +23,7 @@ static char *l2cap_signaling_commands_format[] = {
 };
 
 uint8_t   sig_seq_nr = 0xff;
-uint16_t  local_cid  = 0x40;
+uint16_t  source_cid  = 0x40;
 
 uint8_t l2cap_next_sig_id(void){
     if (sig_seq_nr == 0xff) {
@@ -34,8 +34,8 @@ uint8_t l2cap_next_sig_id(void){
     return sig_seq_nr;
 }
 
-uint16_t l2cap_next_local_cid(void){
-    return local_cid++;
+uint16_t l2cap_next_source_cid(void){
+    return source_cid++;
 }
 
 uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer,hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
