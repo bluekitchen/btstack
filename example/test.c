@@ -28,7 +28,7 @@ void event_handler(uint8_t *packet, uint16_t size){
         bt_send_cmd(&hci_write_local_name, "BTstack-Test");
     }
     
-	// use pairing
+	// use pairing yes/no
     if ( COMMAND_COMPLETE_EVENT(packet, hci_write_local_name) ) {
         bt_send_cmd(&hci_write_authentication_enable, 0);
     }
@@ -46,7 +46,7 @@ void event_handler(uint8_t *packet, uint16_t size){
 	
 	// inform about new l2cap connection
 	if (packet[0] == HCI_EVENT_L2CAP_CHANNEL_OPENED){
-		printf("Channel successfully opened, handle 0x%02x, local cid 0x%02x\n", READ_BT_16(packet, 2), READ_BT_16(packet, 4));;
+		printf("Channel successfully opened, handle 0x%02x, source cid 0x%02x, dest cid 0x%02x\n", READ_BT_16(packet, 2), READ_BT_16(packet, 4),  READ_BT_16(packet, 6));;
 	}
 }
 
