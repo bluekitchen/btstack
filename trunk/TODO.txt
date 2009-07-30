@@ -1,26 +1,34 @@
 /* new todo file for BTstack */
 
 UNTIL 13. August 2009 : Google Open Source Jam
-- implement L2CAP state machine (outgoing only) - take care for matching channels with signaling packets better
-  - test sig_id for incoming responses - 
-  - test channel id for incoming requests (
-- decide on naming conventions for various layers
-- decide where L2CAP state machine belongs
-- decide on l2CAP event/data interface
-  - client only sends L2CAP packets (or higher) - no need to send/receive raw ACL packets
-- provide demos:
-  - BT Scanner: module info, inquiry, remote name
-  - Terminal app with L2CAP support - Python or Java PC demo
-	- implement l2cap_send_packet
-    - readline? own command line support?
-  - evtl. SDP browser
+- naming conventions for various layers
+  - if all control is done by pseudo hci commands, only bt_send_cmd(&cmd_name, ... ) is needed
+- move L2CAP code from btstack.c to l2cap.c
+  - connections are managed in BTdaemon
+  - source_cids and signaling_ids are assigned in BTdaemon
+  - create pseudo hci commands for create/destroy l2cap channel
+- implement new L2CAP data interface, similar to unix sockets
+  - send data (channel, data, len)
+  - data callback(channel, data, len)
+- DEMOS:
+  - Python lightBlue: only L2CAP outgoing, or RFCOMM
+  - BTstack-cmd
+    - info
+	- inquiry
+	- remote name
+	- open/close l2cap connection
+    - evtl. SDP browser
+  - evtl. WiiMote
   - evtl. RFCOMM to BT GPS
   
 NEXT:
+- WiiMote - http://wiibrew.org/wiki/Wiimote#Bluetooth_Communication
+  - turn on accellerometer by sending packet 52 12 00 33 over PSM 0x13 OR 0x11
 - implement rest of L2CAP state machine
   - incoming
   - error handling
   - error notification
+  - reassembly is best done in BTdaemon, assigning source_cids too.
 - client/server part using unix domain sockets (portable and fast)
 - implement RFCOMM
 - implement
