@@ -12,6 +12,9 @@
 #include "hci.h"
 #include "hci_dump.h"
 
+// temp
+#include "l2cap.h"
+
 // the STACK is here
 static hci_stack_t       hci_stack;
 
@@ -192,7 +195,7 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control){
     transport->register_acl_packet_handler( acl_handler);
 }
 
-static void hci_emit_state(){
+void hci_emit_state(){
     uint8_t event[3];
     event[0] = HCI_EVENT_BTSTACK_STATE;
     event[1] = 1;
@@ -285,22 +288,6 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     if (READ_CMD_OGF(packet) != OGF_BTSTACK) { 
         hci_stack.num_cmd_packets--;
         return hci_stack.hci_transport->send_cmd_packet(packet, size);
-    }
-    
-    hci_dump_packet( HCI_COMMAND_DATA_PACKET, 1, packet, size);
-    
-    // BTstack internal commands - 16 Bit OpCode, 8 Bit ParamLen, Params...
-    switch (READ_CMD_OCF(packet)){
-        case HCI_BTSTACK_GET_STATE:
-            hci_emit_state();
-            break;
-        case HCI_BTSTACK_SET_POWER_MODE:
-            hci_power_control(packet[3]);
-            break;
-        default:
-            // TODO log into hci dump as vendor specific "event"
-            printf("Error: command %u not implemented\n:", READ_CMD_OCF(packet));
-            break;
     }
     return 0;
 }

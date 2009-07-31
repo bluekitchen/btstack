@@ -37,20 +37,63 @@
 static hci_transport_t * transport;
 static hci_uart_config_t config;
 
-static int daemon_packet_handler(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t length){
-    switch (packet_type){
-        case HCI_COMMAND_DATA_PACKET:
-            hci_send_cmd_packet(data, length);
-            // printf("CMD from client: ");
+static int btstack_command_handler(connection_t *connection, uint8_t *packet, uint16_t size){
+    // BTstack Commands
+    hci_dump_packet( HCI_COMMAND_DATA_PACKET, 1, packet, size);
+    bd_addr_t addr;
+    uint16_t cid;
+    uint16_t psm;
+    uint8_t reason;
+    // BTstack internal commands - 16 Bit OpCode, 8 Bit ParamLen, Params...
+    switch (READ_CMD_OCF(packet)){
+        case HCI_BTSTACK_GET_STATE:
+            hci_emit_state();
             break;
-        case HCI_ACL_DATA_PACKET:
-            hci_send_acl_packet(data, length);
-            // printf("ACL from client: ");
+        case HCI_BTSTACK_SET_POWER_MODE:
+            hci_power_control(packet[3]);
+            break;
+        case L2CAP_CREATE_CHANNEL:
+            bt_flip_addr(addr, &packet[3]);
+            psm = READ_BT_16(packet, 9);
+            l2cap_create_channel_internal( connection, addr, psm );
+            break;
+        case L2CAP_DISCONNECT:
+            cid = READ_BT_16(packet, 3);
+            reason = packet[5];
+            l2cap_disconnect_internal(cid, reason);
+            break;
+        default:
+            //@TODO: log into hci dump as vendor specific "event"
+            printf("Error: command %u not implemented\n:", READ_CMD_OCF(packet));
             break;
     }
-    // hexdump(data, length);
-    // printf("\n");
     return 0;
+}
+
+static int daemon_client_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t length){
+    switch (packet_type){
+        case HCI_COMMAND_DATA_PACKET:
+            if (READ_CMD_OGF(data) != OGF_BTSTACK) { 
+                // HCI Command
+                hci_send_cmd_packet(data, length);
+            } else {
+                // BTstack command
+                btstack_command_handler(connection, data, length);
+            }
+            break;
+        case HCI_ACL_DATA_PACKET:
+            // process l2cap packet...
+            channel = READ_BT_16(data, 0);
+            l2cap_send_internal(channel, data, length);
+            break;
+    }
+    return 0;
+}
+
+static void event_handler( uint8_t *packet, uint16_t size ){
+    // already passed by HCI, send to L2CAP & client
+    l2cap_event_handler(packet, size);
+    socket_connection_send_packet_all(HCI_EVENT_PACKET, 0, packet, size);
 }
 
 int main (int argc, const char * argv[]){
@@ -72,11 +115,11 @@ int main (int argc, const char * argv[]){
     control = &bt_control_iphone;
 #endif
 
-    // @TODO allow configuration per HCI CMD
+    // @TODO: allow configuration per HCI CMD
     
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
-    // hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    // hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+    hci_dump_open(NULL, HCI_DUMP_STDOUT);
                   
     // init HCI
     hci_init(transport, &config, control);
@@ -87,15 +130,15 @@ int main (int argc, const char * argv[]){
     // 
     // register callbacks
     //
-    hci_register_event_packet_handler(&socket_connection_send_event_all);
-    hci_register_acl_packet_handler(&socket_connection_send_acl_all);
+    hci_register_event_packet_handler(&event_handler);
+    hci_register_acl_packet_handler(&l2cap_acl_handler);
         
-    // @TODO make choice of socket server configurable (TCP and/or Unix Domain Socket)
-    // @TODO make port and/or socket configurable per config.h
+    // @TODO: make choice of socket server configurable (TCP and/or Unix Domain Socket)
+    // @TODO: make port and/or socket configurable per config.h
     
     // create server
     socket_connection_create_tcp(BTSTACK_PORT);
-    socket_connection_register_packet_callback(daemon_packet_handler);
+    socket_connection_register_packet_callback(daemon_client_handler);
     
     // go!
     run_loop_execute();

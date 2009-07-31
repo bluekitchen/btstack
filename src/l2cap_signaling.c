@@ -22,7 +22,7 @@ static char *l2cap_signaling_commands_format[] = {
 "22D",  // 0x0b information response: InfoType, Result, Data
 };
 
-uint8_t   sig_seq_nr = 0xff;
+uint8_t   sig_seq_nr  = 0xff;
 uint16_t  source_cid  = 0x40;
 
 uint8_t l2cap_next_sig_id(void){
@@ -38,7 +38,7 @@ uint16_t l2cap_next_source_cid(void){
     return source_cid++;
 }
 
-uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer,hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
+uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
     
     // 0 - Connection handle : PB=10 : BC=00 
     bt_store_16(acl_buffer, 0, handle | (2 << 12) | (0 << 14));

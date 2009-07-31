@@ -39,15 +39,14 @@ int socket_connection_close_tcp(connection_t *connection);
 /**
  * set packet handler for all auto-accepted connections 
  */
-void socket_connection_register_packet_callback( int (*packet_callback)(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t length) );
+void socket_connection_register_packet_callback( int (*packet_callback)(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t length) );
 
 /**
  * send HCI packet to single connection
  */
-void socket_connection_send_packet(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t size);
+void socket_connection_send_packet(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t size);
 
 /**
- * send event/acl data to all clients
+ * send event data to all clients
  */
-void socket_connection_send_event_all(uint8_t *packet, uint16_t size);
-void socket_connection_send_acl_all(uint8_t *packet, uint16_t size);
+void socket_connection_send_packet_all(uint16_t type, uint16_t channel, uint8_t *packet, uint16_t size);

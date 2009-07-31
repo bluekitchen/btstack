@@ -74,7 +74,7 @@ int find_bt(libusb_device **devs)
 			   libusb_get_bus_number(dev), libusb_get_device_address(dev),
 			   desc.bDeviceClass, desc.bDeviceSubClass, desc.bDeviceProtocol);
 		
-		// @TODO detect BT USB Dongle based on character and not by id
+		// @TODO: detect BT USB Dongle based on character and not by id
 		// The class code (bDeviceClass) is 0xE0 – Wireless Controller. 
 		// The SubClass code (bDeviceSubClass) is 0x01 – RF Controller. 
 		// The Protocol code (bDeviceProtocol) is 0x01 – Bluetooth programming.
@@ -259,7 +259,7 @@ static int usb_open(void *transport_config){
 #endif
 
 static int usb_close(){
-    // @TODO remove all run loops!
+    // @TODO: remove all run loops!
 
     switch (libusb_state){
         case LIB_USB_TRANSFERS_ALLOCATED:
