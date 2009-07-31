@@ -1,29 +1,29 @@
 /* new todo file for BTstack */
 
 UNTIL 13. August 2009 : Google Open Source Jam
-- naming conventions for various layers
-  - if all control is done by pseudo hci commands, only bt_send_cmd(&cmd_name, ... ) is needed
-- move L2CAP code from btstack.c to l2cap.c
-  - connections are managed in BTdaemon
-  - source_cids and signaling_ids are assigned in BTdaemon
-  - create pseudo hci commands for create/destroy l2cap channel
-- implement new L2CAP data interface, similar to unix sockets
-  - send data (channel, data, len)
-  - data callback(channel, data, len)
 - DEMOS:
-  - Python lightBlue: only L2CAP outgoing, or RFCOMM
-  - BTstack-cmd
+  - OpenGL-ES-WiiMote
+    - WiiMote - http://wiibrew.org/wiki/Wiimote#Bluetooth_Communication
+    - turn on accellerometer by sending packet 52 12 00 33 over PSM 0x13 OR 0x11 - 0x13 did not work -> send to 0x11
+    - quick hack: run BTstack run loop in separate thread and use performOnMainThread to deliver data
+	- better: move run_loop.c to run_loop_posix.c and create run_loop_darwin.c
+  - BTstack-cmd - running on laptop and iPhone? 
     - info
 	- inquiry
 	- remote name
 	- open/close l2cap connection
     - evtl. SDP browser
-  - evtl. WiiMote
-  - evtl. RFCOMM to BT GPS
   
 NEXT:
-- WiiMote - http://wiibrew.org/wiki/Wiimote#Bluetooth_Communication
-  - turn on accellerometer by sending packet 52 12 00 33 over PSM 0x13 OR 0x11
+- better connection management
+  - connections are managed in BTdaemon
+  - implement short cut for create connection, when connection already open
+  - already track connection request for better parallel access
+- naming conventions for various layers
+  - if all control is done by pseudo hci commands, only bt_send_cmd(&cmd_name, ... ) is needed anyway
+- auto-generate code for sending commands from structured text input file
+- devise concept for access to event data
+  - auto-generate event struct getter? STRUCTURE_get_FIELD
 - implement rest of L2CAP state machine
   - incoming
   - error handling
@@ -31,9 +31,5 @@ NEXT:
   - reassembly is best done in BTdaemon, assigning source_cids too.
 - client/server part using unix domain sockets (portable and fast)
 - implement RFCOMM
-- implement
-- use linked_list for: 
-  - event handler
-  - data handler
+- implement SDP
 - implement PAN
-- implement some kind of noitfy mechanism between multiple units

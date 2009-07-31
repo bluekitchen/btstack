@@ -11,6 +11,7 @@
 #include "hci.h"
 #include "l2cap_signaling.h"
 #include "utils.h"
+#include "socket_connection.h"
 
 #define L2CAP_SIG_ID_INVALID 0
 
@@ -35,8 +36,7 @@ typedef struct {
     bd_addr_t address;
     uint16_t  psm;
     hci_con_handle_t handle;
-    void (*event_callback)(uint8_t *packet, uint16_t size);
-    void (*data_callback)(uint8_t *packet, uint16_t size);
+    connection_t *connection;
     // uint16_t mtu_incoming;
     // uint16_t mtu_outgoing;
     // uint16_t flush_timeout_incoming;
@@ -48,4 +48,10 @@ typedef struct {
 } l2cap_service_t;
 
 void l2cap_init();
-int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...);
+void l2cap_create_channel_internal(connection_t * connection, bd_addr_t address, uint16_t psm);
+void l2cap_disconnect_internal(uint16_t source_cid, uint8_t reason);
+void l2cap_send_internal(uint16_t source_cid, uint8_t *data, uint16_t len);
+void l2cap_acl_handler( uint8_t *packet, uint16_t size );
+void l2cap_event_handler( uint8_t *packet, uint16_t size );
+
+

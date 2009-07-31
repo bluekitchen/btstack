@@ -95,3 +95,4 @@ int hci_send_cmd_packet(uint8_t *packet, int size);
 int hci_send_acl_packet(uint8_t *packet, int size);
 
 // 
+void hci_emit_state();

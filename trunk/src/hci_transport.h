@@ -34,6 +34,9 @@
  */
 #define HCI_EVENT_PACKET	    0x04
 
+// extension for client/server communication
+#define L2CAP_DATA_PACKET      0x05
+
 typedef struct {
     int    (*open)(void *transport_config);
     int    (*close)();

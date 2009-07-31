@@ -16,7 +16,7 @@
 // bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };  // Think Outside Keyboard
 bd_addr_t addr = {0x00, 0x19, 0x1d, 0x90, 0x44, 0x68 };  // WiiMote
 
-void acl_handler(uint8_t *packet, uint16_t size){
+void data_handler(uint8_t *packet, uint16_t size){
 	// just dump data for now
 	hexdump( packet, size );
 }
@@ -35,7 +35,7 @@ void event_handler(uint8_t *packet, uint16_t size){
 	
 	// connect to HID device (PSM 0x13) at addr
     if ( COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable) ) {
-		l2cap_create_channel(addr, 0x13, event_handler, acl_handler);
+		bt_send_cmd(&l2cap_create_channel, addr, 0x13);
 	}
 
 	
@@ -46,7 +46,12 @@ void event_handler(uint8_t *packet, uint16_t size){
 	
 	// inform about new l2cap connection
 	if (packet[0] == HCI_EVENT_L2CAP_CHANNEL_OPENED){
-		printf("Channel successfully opened, handle 0x%02x, source cid 0x%02x, dest cid 0x%02x\n", READ_BT_16(packet, 2), READ_BT_16(packet, 4),  READ_BT_16(packet, 6));;
+		uint16_t source_cid = READ_BT_16(packet, 4);
+		printf("Channel successfully opened, handle 0x%02x, source cid 0x%02x, dest cid 0x%02x\n", READ_BT_16(packet, 2), source_cid,  READ_BT_16(packet, 6));;
+
+		// request acceleration data.. probably has to be sent to control channel 0x11 instead of 0x13
+		// uint8_t setMode33[] = { 0x52, 0x12, 0x00, 0x33 };
+		// l2cap_send( source_cid, setMode33, sizeof(setMode33));
 	}
 }
 
@@ -54,7 +59,8 @@ void event_handler(uint8_t *packet, uint16_t size){
 int main (int argc, const char * argv[]){
 	bt_open();
 	bt_register_event_packet_handler(event_handler);
-	bt_send_cmd(&hci_set_power_mode, HCI_POWER_ON );
+	bt_register_data_packet_handler(data_handler);
+	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
 	run_loop_execute();
 	bt_close();
 }

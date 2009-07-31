@@ -26,14 +26,15 @@
 
 /** prototypes */
 static int socket_connection_hci_process(struct data_source *ds, int ready);
-static int socket_connection_dummy_handler(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t length);
+static int socket_connection_dummy_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t length);
 
 /** globals */
 
 /** packet header used over socket connections, in front of the HCI packet */
 typedef struct packet_header {
+    uint16_t type;
+    uint16_t channel;
     uint16_t length;
-    uint8_t  type;
     uint8_t  data[0];
 } packet_header_t;
 
@@ -57,10 +58,9 @@ static linked_list_t connections = NULL;
 
 /** client packet handler */
 
-static int (*socket_connection_packet_callback)(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t length) = socket_connection_dummy_handler;
+static int (*socket_connection_packet_callback)(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t length) = socket_connection_dummy_handler;
 
-
-static int socket_connection_dummy_handler(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t length){
+static int socket_connection_dummy_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t length){
     return 0;
 }
 
@@ -134,12 +134,12 @@ int socket_connection_hci_process(struct data_source *ds, int ready) {
     switch (conn->state){
         case SOCKET_W4_HEADER:
             conn->state = SOCKET_W4_DATA;
-            conn->bytes_to_read = READ_BT_16( conn->buffer, 0);
+            conn->bytes_to_read = READ_BT_16( conn->buffer, 4);
             break;
         case SOCKET_W4_DATA:
-            // dispatch packet !!!
-            (*socket_connection_packet_callback)(conn, conn->buffer[2], &conn->buffer[sizeof(packet_header_t)],
-                                             READ_BT_16( conn->buffer, 0));
+            // dispatch packet !!! connection, type, channel, data, size
+            (*socket_connection_packet_callback)(conn, READ_BT_16( conn->buffer, 0), READ_BT_16( conn->buffer, 2),
+                                    &conn->buffer[sizeof(packet_header_t)], READ_BT_16( conn->buffer, 4));
             // reset state machine
             socket_connection_init_statemachine(conn);
             break;
@@ -225,49 +225,33 @@ int socket_connection_create_unix(char *path){
 /**
  * set packet handler for all auto-accepted connections 
  */
-void socket_connection_register_packet_callback( int (*packet_callback)(connection_t *connection, uint8_t packet_type, uint8_t *data, uint16_t length) ){
+void socket_connection_register_packet_callback( int (*packet_callback)(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t length) ){
     socket_connection_packet_callback = packet_callback;
 }
 
 /**
  * send HCI packet to single connection
  */
-void socket_connection_send_packet(connection_t *conn, uint8_t type, uint8_t *packet, uint16_t size){
-    uint8_t length[2];
-    bt_store_16( (uint8_t *) &length, 0, size);
+void socket_connection_send_packet(connection_t *conn, uint16_t type, uint16_t channel, uint8_t *packet, uint16_t size){
 
-    write(conn->ds.fd, &length, 2);
-    write(conn->ds.fd, &type, 1);
-    write(conn->ds.fd, &type, 1); // padding for now
+    uint8_t header[sizeof(packet_header_t)];
+    bt_store_16(header, 0, type);
+    bt_store_16(header, 2, channel);
+    bt_store_16(header, 4, size);
+    write(conn->ds.fd, header, 6);
     write(conn->ds.fd, packet, size);
 }
 
 /**
  * send HCI packet to all connections 
  */
-int socket_connection_send_packet_all(uint8_t type, uint8_t *packet, uint16_t size){
+void socket_connection_send_packet_all(uint16_t type, uint16_t channel, uint8_t *packet, uint16_t size){
     linked_item_t *next;
     linked_item_t *it;
     for (it = (linked_item_t *) connections; it != NULL ; it = next){
         next = it->next; // cache pointer to next connection_t to allow for removal
-        socket_connection_send_packet( (connection_t *) linked_item_get_user(it), type, packet, size);
+        socket_connection_send_packet( (connection_t *) linked_item_get_user(it), type, channel, packet, size);
     }
-    return 0;
-}
-
-/**
- * send HCI ACL packet to all connections
- */
-void socket_connection_send_acl_all(uint8_t *packet, uint16_t size){
-    socket_connection_send_packet_all( HCI_ACL_DATA_PACKET, packet, size);
-    return;
-}
-/**
- * send HCI Event packet to all connections
- */
-void socket_connection_send_event_all(uint8_t *packet, uint16_t size){
-    socket_connection_send_packet_all( HCI_EVENT_PACKET, packet, size);
-    return;
 }
 
 /**

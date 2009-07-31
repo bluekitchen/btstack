@@ -196,14 +196,24 @@ OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x09), ""
 
 // BTstack commands
 
-hci_cmd_t hci_get_btstack_state = {
+hci_cmd_t btstack_get_state = {
 OPCODE(OGF_BTSTACK, HCI_BTSTACK_GET_STATE), ""
 // no params -> 
 };
 
-hci_cmd_t hci_set_power_mode = {
+hci_cmd_t btstack_set_power_mode = {
 OPCODE(OGF_BTSTACK, HCI_BTSTACK_SET_POWER_MODE), "1"
 // mode: 0 = off, 1 = on
+};
+
+hci_cmd_t l2cap_create_channel = {
+OPCODE(OGF_BTSTACK, L2CAP_CREATE_CHANNEL), "B2"
+// @param bd_addr(48), psm (16)
+};
+
+hci_cmd_t l2cap_disconnect = {
+OPCODE(OGF_BTSTACK, L2CAP_DISCONNECT), "21"
+// @param channel(16), reason(8)
 };
 
 
