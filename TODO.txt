@@ -3,11 +3,7 @@
 UNTIL 13. August 2009 : Google Open Source Jam
 - DEMOS:
   - OpenGL-ES-WiiMote
-    - show staus label
-	- 
     - WiiMote - http://wiibrew.org/wiki/Wiimote#Bluetooth_Communication
-    - quick hack: run BTstack run loop in separate thread and use performOnMainThread to deliver data
-	- better: move run_loop.c to run_loop_posix.c and create run_loop_darwin.c
   - BTstack-cmd - running on laptop and iPhone? 
     - info
 	- inquiry
@@ -16,10 +12,12 @@ UNTIL 13. August 2009 : Google Open Source Jam
     - evtl. SDP browser
   
 NEXT:
-- better connection management
-  - connections are managed in BTdaemon
-  - implement short cut for create connection, when connection already open
-  - already track connection request for better parallel access
+- automatic disconnects
+  - when client connection breaks, also close open L2CAP channels
+  - periodically close HCI connections without active L2CAP channel
+- connection management
+  - handle disconnect
+    - broadcast l2cap disconnects,too
 - naming conventions for various layers
   - if all control is done by pseudo hci commands, only bt_send_cmd(&cmd_name, ... ) is needed anyway
 - auto-generate code for sending commands from structured text input file
