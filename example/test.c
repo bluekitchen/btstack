@@ -60,8 +60,8 @@ void event_handler(uint8_t *packet, uint16_t size){
 			bt_send_cmd(&l2cap_create_channel, addr, 0x11);
 		} else {
 			// request acceleration data.. probably has to be sent to control channel 0x11 instead of 0x13
-			uint8_t setMode33[] = { 0x52, 0x12, 0x00, 0x33 };
-			l2cap_send( source_cid, setMode33, sizeof(setMode33));
+			uint8_t setMode31[] = { 0x52, 0x12, 0x00, 0x31 };
+			l2cap_send( source_cid, setMode31, sizeof(setMode31));
 		}
 	}
 }
