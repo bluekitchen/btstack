@@ -90,12 +90,6 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
     return 0;
 }
 
-static void event_handler( uint8_t *packet, uint16_t size ){
-    // already passed by HCI, send to L2CAP & client
-    l2cap_event_handler(packet, size);
-    socket_connection_send_packet_all(HCI_EVENT_PACKET, 0, packet, size);
-}
-
 int main (int argc, const char * argv[]){
     
     bt_control_t * control = NULL;
@@ -126,13 +120,7 @@ int main (int argc, const char * argv[]){
     
     // init L2CAP
     l2cap_init();
-
-    // 
-    // register callbacks
-    //
-    hci_register_event_packet_handler(&event_handler);
-    hci_register_acl_packet_handler(&l2cap_acl_handler);
-        
+            
     // @TODO: make choice of socket server configurable (TCP and/or Unix Domain Socket)
     // @TODO: make port and/or socket configurable per config.h
     

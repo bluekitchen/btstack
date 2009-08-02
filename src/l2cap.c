@@ -13,13 +13,37 @@
 
 #include <stdio.h>
 
+static void null_event_handler(uint8_t *packet, uint16_t size);
+static void null_data_handler(uint16_t source_cid, uint8_t *packet, uint16_t size);
+
 static uint8_t * sig_buffer = NULL;
 static linked_list_t l2cap_channels = NULL;
 static uint8_t * acl_buffer = NULL;
+static void (*event_packet_handler) (uint8_t *packet, uint16_t size) = null_event_handler;
+static void (*data_packet_handler)  (uint16_t source_cid, uint8_t *packet, uint16_t size) = null_data_handler;
 
 void l2cap_init(){
     sig_buffer = malloc( 48 );
     acl_buffer = malloc( 255 + 8 ); 
+
+    // 
+    // register callbacks with HCI
+    //
+    hci_register_event_packet_handler(&l2cap_event_handler);
+    hci_register_acl_packet_handler(&l2cap_acl_handler);
+}
+
+
+/** Register L2CAP packet handlers */
+static void null_event_handler(uint8_t *packet, uint16_t size){
+}
+static void null_data_handler(uint16_t  source_cid, uint8_t *packet, uint16_t size){
+}
+void l2cap_register_event_packet_handler(void (*handler)(uint8_t *packet, uint16_t size)){
+    event_packet_handler = handler;
+}
+void l2cap_register_data_packet_handler  (void (*handler)(uint16_t source_cid, uint8_t *packet, uint16_t size)){
+    data_packet_handler = handler;
 }
 
 
@@ -86,6 +110,12 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
     }
     // handle disconnection complete events
     //@TODO:...
+    
+    // forward to higher layers
+    (*event_packet_handler)(packet, size);
+    
+    // forward event to clients
+    socket_connection_send_packet_all(HCI_EVENT_PACKET, 0, packet, size);
 }
 
 void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t size){
@@ -196,33 +226,36 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
             socket_connection_send_packet(channel->connection, HCI_ACL_DATA_PACKET, 0, packet, size);
         }
     }
+
+     // forward to higher layers
+    (*data_packet_handler)(channel_id, packet, size);
 }
 
 void l2cap_send_internal(uint16_t source_cid, uint8_t *data, uint16_t len){
     // find channel for source_cid, construct l2cap packet and send
     linked_item_t *it;
+     l2cap_channel_t * channel = NULL;
     for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-        l2cap_channel_t * channel = (l2cap_channel_t *) it;
-        if ( channel->source_cid == source_cid) {
-            
-            // use hci_cmd_buffer for now
-            
-            // 0 - Connection handle : PB=10 : BC=00 
-            bt_store_16(acl_buffer, 0, channel->handle | (2 << 12) | (0 << 14));
-            // 2 - ACL length
-            bt_store_16(acl_buffer, 2,  len + 4);
-            // 4 - L2CAP packet length
-            bt_store_16(acl_buffer, 4,  len + 0);
-            // 6 - L2CAP channel DEST
-            bt_store_16(acl_buffer, 6, channel->dest_cid);
-            // 8 - data
-            memcpy(&acl_buffer[8], data, len);
-            // send
-            hci_send_acl_packet(acl_buffer, len+8);
-            
-            return;
+        if ( ((l2cap_channel_t *) it)->source_cid == source_cid) {
+            channel = (l2cap_channel_t *) it;
+            break;
         }
     }
+     
+    if (channel) {
+         // 0 - Connection handle : PB=10 : BC=00 
+         bt_store_16(acl_buffer, 0, channel->handle | (2 << 12) | (0 << 14));
+         // 2 - ACL length
+         bt_store_16(acl_buffer, 2,  len + 4);
+         // 4 - L2CAP packet length
+         bt_store_16(acl_buffer, 4,  len + 0);
+         // 6 - L2CAP channel DEST
+         bt_store_16(acl_buffer, 6, channel->dest_cid);
+         // 8 - data
+         memcpy(&acl_buffer[8], data, len);
+         // send
+         hci_send_acl_packet(acl_buffer, len+8);
+     }
 }
 
 
