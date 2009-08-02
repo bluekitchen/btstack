@@ -3,8 +3,9 @@
 UNTIL 13. August 2009 : Google Open Source Jam
 - DEMOS:
   - OpenGL-ES-WiiMote
+    - show staus label
+	- 
     - WiiMote - http://wiibrew.org/wiki/Wiimote#Bluetooth_Communication
-    - turn on accellerometer by sending packet 52 12 00 33 over PSM 0x13 OR 0x11 - 0x13 did not work -> send to 0x11
     - quick hack: run BTstack run loop in separate thread and use performOnMainThread to deliver data
 	- better: move run_loop.c to run_loop_posix.c and create run_loop_darwin.c
   - BTstack-cmd - running on laptop and iPhone? 
