@@ -160,19 +160,24 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
                     l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, identifier, channel->dest_cid, 0, 0, size - 16, &packet[16]);
                     
                     channel->state = L2CAP_STATE_OPEN;
-                    
-                    //  notify client
-                    uint8_t event[8];
-                    event[0] = HCI_EVENT_L2CAP_CHANNEL_OPENED;
-                    event[1] = 6;
-                    bt_store_16(event, 2, channel->handle);
-                    bt_store_16(event, 4, channel->source_cid);
-                    bt_store_16(event, 6, channel->dest_cid);
-                    socket_connection_send_packet(channel->connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+                    l2cap_emit_channel_opened(channel);
                     break;
             }
             break;
     }
+}
+
+//  notify client
+void l2cap_emit_channel_opened(l2cap_channel_t *channel) {
+    uint8_t event[16];
+    event[0] = HCI_EVENT_L2CAP_CHANNEL_OPENED;
+    event[1] = sizeof(event) - 2;
+    bt_flip_addr(&event[2], channel->address);
+    bt_store_16(event,  8, channel->handle);
+    bt_store_16(event, 10, channel->psm);
+    bt_store_16(event, 12, channel->source_cid);
+    bt_store_16(event, 14, channel->dest_cid);
+    socket_connection_send_packet(channel->connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 void l2cap_acl_handler( uint8_t *packet, uint16_t size ){

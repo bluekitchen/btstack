@@ -85,6 +85,8 @@
 
 #define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && READ_BT_16(event,3) == cmd.opcode)
 
+#define IS_COMMAND(packet, command) (READ_BT_16(packet,0) == command.opcode)
+
 /**
  * Default INQ Mode
  */

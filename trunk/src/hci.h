@@ -24,7 +24,16 @@ typedef enum {
     SEND_PIN_CODE_RESPONSE = 1 << 1
 } hci_connection_flags_t;
 
-typedef struct hci_connection {
+typedef enum {
+    SENT_CREATE_CONNECTION = 1,
+    RECEIVED_CONNECTION_REQUEST,
+    ACCEPTED_CONNECTION_REQUEST,
+    REJECTED_CONNECTION_REQUEST,
+    OPEN,
+    SENT_DISCONNECT
+} CONNECTION_STATE;
+
+typedef struct {
     // linked list - assert: first field
     linked_item_t    item;
     
@@ -33,9 +42,13 @@ typedef struct hci_connection {
     
     // module handle
     hci_con_handle_t con_handle;
+
+    // state
+    CONNECTION_STATE state;
     
     // errands
     hci_connection_flags_t flags;
+    
 } hci_connection_t;
 
 /**
@@ -81,7 +94,7 @@ void hci_register_acl_packet_handler  (void (*handler)(uint8_t *packet, uint16_t
 int hci_power_control(HCI_POWER_MODE mode);
 
 /**
- * run the hci daemon loop once
+ * run the hci control loop once
  */
 void hci_run();
 
@@ -96,3 +109,4 @@ int hci_send_acl_packet(uint8_t *packet, int size);
 
 // 
 void hci_emit_state();
+void hci_emit_connection_complete(hci_connection_t *conn);
