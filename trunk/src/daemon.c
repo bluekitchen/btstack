@@ -81,9 +81,8 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                 btstack_command_handler(connection, data, length);
             }
             break;
-        case HCI_ACL_DATA_PACKET:
+        case L2CAP_DATA_PACKET:
             // process l2cap packet...
-            channel = READ_BT_16(data, 0);
             l2cap_send_internal(channel, data, length);
             break;
     }

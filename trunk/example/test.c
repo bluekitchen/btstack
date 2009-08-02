@@ -49,7 +49,7 @@ void event_handler(uint8_t *packet, uint16_t size){
 		bd_addr_t addr;
 		bt_flip_addr(addr, &packet[2]);
 		uint16_t psm = READ_BT_16(packet, 10); 
-		uint16_t source_cid = READ_BT_16(packet, 8); 
+		uint16_t source_cid = READ_BT_16(packet, 12); 
 		printf("Channel successfully opened: ");
 		print_bd_addr(addr);
 		printf(", handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x\n",
