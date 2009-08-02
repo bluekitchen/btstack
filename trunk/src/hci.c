@@ -157,7 +157,7 @@ static void event_handler(uint8_t *packet, int size){
 	hci_run();
 }
 
-/** Register L2CAP handlers */
+/** Register HCI packet handlers */
 void hci_register_event_packet_handler(void (*handler)(uint8_t *packet, uint16_t size)){
     hci_stack.event_packet_handler = handler;
 }
