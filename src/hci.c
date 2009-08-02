@@ -19,6 +19,21 @@
 static hci_stack_t       hci_stack;
 
 /**
+ * create connection for given address
+ *
+ * @return connection OR NULL, if not found
+ */
+static hci_connection_t * create_connection_for_addr(bd_addr_t addr){
+    hci_connection_t * conn = malloc( sizeof(hci_connection_t) );
+    if (!conn) return NULL;
+    BD_ADDR_COPY(conn->address, addr);
+    conn->con_handle = 0xffff;
+    conn->flags = 0;
+    linked_list_add(&hci_stack.connections, (linked_item_t *) conn);
+    return conn;
+}
+
+/**
  * get connection for given address
  *
  * @return connection OR NULL, if not found
@@ -48,6 +63,7 @@ static hci_connection_t * connection_for_handle(hci_con_handle_t con_handle){
     return NULL;
 }
 
+
 /** 
  * Dummy handler called by HCI
  */
@@ -70,6 +86,7 @@ static bt_control_t null_control = {
     null_control_name
 }; 
 
+
 static void acl_handler(uint8_t *packet, int size){
     hci_stack.acl_packet_handler(packet, size);
     
@@ -91,15 +108,10 @@ static void event_handler(uint8_t *packet, int size){
     if (packet[0] == HCI_EVENT_CONNECTION_COMPLETE) {
         if (!packet[2]){
             bt_flip_addr(addr, &packet[5]);
+            printf("Connection_complete "); print_bd_addr(addr); printf("\n");
             hci_connection_t * conn = connection_for_address(addr);
-            if (!conn) {
-                conn = malloc( sizeof(hci_connection_t) );
-                if (conn) {
-                    linked_list_add(&hci_stack.connections, (linked_item_t *) conn);
-                }
-            }
             if (conn) {
-                BD_ADDR_COPY(conn->address, addr);
+                conn->state = OPEN;
                 conn->con_handle = READ_BT_16(packet, 3);
                 conn->flags = 0;
                 printf("New connection: handle %u, ", conn->con_handle);
@@ -195,15 +207,6 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control){
     transport->register_acl_packet_handler( acl_handler);
 }
 
-void hci_emit_state(){
-    uint8_t event[3];
-    event[0] = HCI_EVENT_BTSTACK_STATE;
-    event[1] = 1;
-    event[2] = hci_stack.state;
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, 3);
-    hci_stack.event_packet_handler(event, 3);
-}
-
 int hci_power_control(HCI_POWER_MODE power_mode){
     if (power_mode == HCI_POWER_ON) {
         
@@ -285,11 +288,42 @@ int hci_send_acl_packet(uint8_t *packet, int size){
 }
 
 int hci_send_cmd_packet(uint8_t *packet, int size){
-    if (READ_CMD_OGF(packet) != OGF_BTSTACK) { 
-        hci_stack.num_cmd_packets--;
-        return hci_stack.hci_transport->send_cmd_packet(packet, size);
+    bd_addr_t addr;
+    hci_connection_t * conn;
+    // house-keeping
+    
+    // create_connection?
+    if (IS_COMMAND(packet, hci_create_connection)){
+        bt_flip_addr(addr, &packet[3]);
+        printf("Create_connection to "); print_bd_addr(addr); printf("\n");
+        conn = connection_for_address(addr);
+        if (conn) {
+            // if connection exists
+            if (conn->state == OPEN) {
+                // if OPEN, emit connection complete command
+                hci_emit_connection_complete(conn);
+            }
+            //    otherwise, just ignore
+            return 0; // don't sent packet to controller
+            
+        } else{
+            conn = create_connection_for_addr(addr);
+            if (conn){
+                //    create connection struct and register, state = SENT_CREATE_CONNECTION
+                conn->state = SENT_CREATE_CONNECTION;
+            }
+        }
     }
-    return 0;
+    
+    // accept connection
+    
+    // reject connection
+    
+    // close_connection?
+      // set state = SENT_DISCONNECT 
+    
+    hci_stack.num_cmd_packets--;
+    return hci_stack.hci_transport->send_cmd_packet(packet, size);
 }
 
 /**
@@ -303,3 +337,27 @@ int hci_send_cmd(hci_cmd_t *cmd, ...){
     va_end(argptr);
     return hci_send_cmd_packet(hci_cmd_buffer, size);
 }
+
+void hci_emit_state(){
+    uint8_t len = 3; 
+    uint8_t event[len];
+    event[0] = HCI_EVENT_BTSTACK_STATE;
+    event[1] = 1;
+    event[2] = hci_stack.state;
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
+    hci_stack.event_packet_handler(event, len);
+}
+
+void hci_emit_connection_complete(hci_connection_t *conn){
+    uint8_t len = 13; 
+    uint8_t event[len];
+    event[0] = HCI_EVENT_CONNECTION_COMPLETE;
+    event[2] = 0; // status = OK
+    bt_store_16(event, 3, conn->con_handle);
+    bt_flip_addr(&event[5], conn->address);
+    event[11] = 1; // ACL connection
+    event[12] = 0; // encryption disabled
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
+    hci_stack.event_packet_handler(event, len);
+}
+

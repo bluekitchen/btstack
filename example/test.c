@@ -46,12 +46,23 @@ void event_handler(uint8_t *packet, uint16_t size){
 	
 	// inform about new l2cap connection
 	if (packet[0] == HCI_EVENT_L2CAP_CHANNEL_OPENED){
-		uint16_t source_cid = READ_BT_16(packet, 4);
-		printf("Channel successfully opened, handle 0x%02x, source cid 0x%02x, dest cid 0x%02x\n", READ_BT_16(packet, 2), source_cid,  READ_BT_16(packet, 6));;
+		bd_addr_t addr;
+		bt_flip_addr(addr, &packet[2]);
+		uint16_t psm = READ_BT_16(packet, 10); 
+		uint16_t source_cid = READ_BT_16(packet, 8); 
+		printf("Channel successfully opened: ");
+		print_bd_addr(addr);
+		printf(", handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x\n",
+			   READ_BT_16(packet, 8), psm, source_cid,  READ_BT_16(packet, 14));
 
-		// request acceleration data.. probably has to be sent to control channel 0x11 instead of 0x13
-		// uint8_t setMode33[] = { 0x52, 0x12, 0x00, 0x33 };
-		// l2cap_send( source_cid, setMode33, sizeof(setMode33));
+		if (psm == 0x13) {
+			// interupt channel openedn succesfully, now open control channel, too.
+			bt_send_cmd(&l2cap_create_channel, addr, 0x11);
+		} else {
+			// request acceleration data.. probably has to be sent to control channel 0x11 instead of 0x13
+			uint8_t setMode33[] = { 0x52, 0x12, 0x00, 0x33 };
+			l2cap_send( source_cid, setMode33, sizeof(setMode33));
+		}
 	}
 }
 
