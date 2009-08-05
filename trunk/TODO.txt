@@ -1,34 +1,46 @@
 /* new todo file for BTstack */
 
 UNTIL 13. August 2009 : Google Open Source Jam
+- Talk
+  - 1 Titel, 1 Motivation, 1 Slide Architecture, 1 Slide Status, 1 Demo
+  
+NEXT:
+- l2cap state machine
+  - disconnect channel
+- automatic L2CAP & higher disconnects
+  - when client connection breaks, also close open L2CAP channels
+=== Restart client app without restarting BTdaemon
+- handle HCI link disconnect
+  - broadcast l2cap disconnects,too
+- implement timers for POSIX run loop
+- automatic HCI link disconnect
+  - periodically close HCI connections without active L2CAP channel
+=== BTdaemon can run always
+- implement rest of L2CAP state machine
+  - incoming connections
+=== Incoming L2CAP supported
+- client/server part using unix domain sockets (portable and fast)
+- implement rest of L2CAP state machine
+  - error handling
+  - error notification
+  - flow control
+  - reassembly/segmentation
 - DEMOS:
-  - OpenGL-ES-WiiMote
-    - WiiMote - http://wiibrew.org/wiki/Wiimote#Bluetooth_Communication
-  - BTstack-cmd - running on laptop and iPhone? 
+  - BTstack-cmd
     - info
 	- inquiry
 	- remote name
 	- open/close l2cap connection
     - evtl. SDP browser
-  
-NEXT:
-- automatic disconnects
-  - when client connection breaks, also close open L2CAP channels
-  - periodically close HCI connections without active L2CAP channel
-- connection management
-  - handle disconnect
-    - broadcast l2cap disconnects,too
+
+== Release Version 0.1
+- implement RFCOMM
+- implement SDP
+- implement PAN
+
+== Release Version 0.2
 - naming conventions for various layers
   - if all control is done by pseudo hci commands, only bt_send_cmd(&cmd_name, ... ) is needed anyway
 - auto-generate code for sending commands from structured text input file
 - devise concept for access to event data
   - auto-generate event struct getter? STRUCTURE_get_FIELD
-- implement rest of L2CAP state machine
-  - incoming
-  - error handling
-  - error notification
-  - reassembly is best done in BTdaemon, assigning source_cids too.
-- client/server part using unix domain sockets (portable and fast)
-- implement RFCOMM
-- implement SDP
-- implement PAN
