@@ -208,7 +208,7 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control){
 }
 
 int hci_power_control(HCI_POWER_MODE power_mode){
-    if (power_mode == HCI_POWER_ON) {
+    if (power_mode == HCI_POWER_ON && hci_stack.state == HCI_STATE_OFF) {
         
         // set up state machine
         hci_stack.num_cmd_packets = 1; // assume that one cmd can be sent
@@ -223,7 +223,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
         
         // create internal event
         
-    } else if (power_mode == HCI_POWER_OFF){
+    } else if (power_mode == HCI_POWER_OFF && hci_stack.state == HCI_STATE_WORKING){
         
         // close low-level device
         hci_stack.hci_transport->close(hci_stack.config);
