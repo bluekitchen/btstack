@@ -56,3 +56,4 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size );
 
 
 void l2cap_emit_channel_opened(l2cap_channel_t *channel);
+void l2cap_emit_channel_closed(l2cap_channel_t *channel);
