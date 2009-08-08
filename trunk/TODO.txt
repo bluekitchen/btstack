@@ -1,9 +1,8 @@
 /* new todo file for BTstack */
 
 NEXT:
-- automatic L2CAP & higher disconnects
-  - when client connection breaks, also close open L2CAP channels
-=== Restart client app without restarting BTdaemon
+- implement HCI disconnection
+=== Restart client app without restarting BTdaemon possible
 - handle HCI link disconnect
   - broadcast l2cap disconnects,too
 - implement timers for POSIX run loop

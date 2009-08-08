@@ -125,8 +125,19 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
             }
         }
     }
+    
     // handle disconnection complete events
-    //@TODO:...
+    if (packet[0] == HCI_EVENT_DISCONNECTION_COMPLETE) {
+        // send l2cap disconnect events for all channels on this handle
+        hci_con_handle_t handle = READ_BT_16(packet, 3);
+        linked_item_t *it;
+        for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+            l2cap_channel_t * channel = (l2cap_channel_t *) it;
+            if ( channel->handle == handle ){
+                l2cap_finialize_channel_close(channel);
+            }
+        }
+    }
     
     // forward to higher layers
     (*event_packet_handler)(packet, size);
@@ -185,16 +196,21 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
         case L2CAP_STATE_WAIT_DISCONNECT:
             switch (code) {
                 case DISCONNECTION_RESPONSE:
-                    channel->state = L2CAP_STATE_CLOSED;
-                    l2cap_emit_channel_closed(channel);
-                    
-                    // discard channel
-                    linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
-                    free (channel);
+                    l2cap_finialize_channel_close(channel);
                     break;
             }
             break;
     }
+}
+
+// finalize closed channel
+void l2cap_finialize_channel_close(l2cap_channel_t *channel){
+    channel->state = L2CAP_STATE_CLOSED;
+    l2cap_emit_channel_closed(channel);
+    
+    // discard channel
+    linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
+    free (channel);
 }
 
 //  notify client
