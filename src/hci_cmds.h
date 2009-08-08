@@ -80,8 +80,10 @@
 #define HCI_EVENT_BTSTACK_WORKING                          0x80
 #define HCI_EVENT_BTSTACK_STATE                            0x81
 
-// data: event (8), len(8), handle(16), channel(16) 
+// data: event (8), len(8), address(48), handle (16), psm (16), source_cid(16), dest_cid (16) 
 #define HCI_EVENT_L2CAP_CHANNEL_OPENED                     0x82
+// data: event (8), len(8), channel (16)
+#define HCI_EVENT_L2CAP_CHANNEL_CLOSED                     0x83
 
 #define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && READ_BT_16(event,3) == cmd.opcode)
 

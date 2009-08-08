@@ -16,9 +16,18 @@
 // bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };  // Think Outside Keyboard
 bd_addr_t addr = {0x00, 0x19, 0x1d, 0x90, 0x44, 0x68 };  // WiiMote
 
+uint16_t source_cid_interrupt;
+uint16_t source_cid_control;
+
 void data_handler(uint8_t *packet, uint16_t size){
 	// just dump data for now
 	hexdump( packet, size );
+	
+	// HOME => disconnect L2CAP
+	if (packet[11] == 0x080){
+		printf("Closing interrupt channel\n");
+		bt_send_cmd(&l2cap_disconnect, source_cid_interrupt);
+	}
 }
 
 void event_handler(uint8_t *packet, uint16_t size){
@@ -56,12 +65,28 @@ void event_handler(uint8_t *packet, uint16_t size){
 			   READ_BT_16(packet, 8), psm, source_cid,  READ_BT_16(packet, 14));
 
 		if (psm == 0x13) {
+			source_cid_interrupt = source_cid;
 			// interupt channel openedn succesfully, now open control channel, too.
 			bt_send_cmd(&l2cap_create_channel, addr, 0x11);
 		} else {
-			// request acceleration data.. probably has to be sent to control channel 0x11 instead of 0x13
+			source_cid_control = source_cid;
+			// request acceleration data..
 			uint8_t setMode31[] = { 0x52, 0x12, 0x00, 0x31 };
-			l2cap_send( source_cid, setMode31, sizeof(setMode31));
+			// l2cap_send( source_cid, setMode31, sizeof(setMode31));
+		}
+	}
+	
+	if (packet[0] == HCI_EVENT_L2CAP_CHANNEL_CLOSED) {
+		uint16_t source_cid = READ_BT_16(packet, 2); 
+		if (source_cid == source_cid_interrupt){
+			printf("Interrupt channel closed, closing control channel\n");
+			bt_send_cmd(&l2cap_disconnect, source_cid_control);
+		}
+		if (source_cid == source_cid_control){
+			printf("Control channel closed, closing baseband connection\n");
+			printf("To be implemented..\n");
+			exit(0);
+			// bt_send_cmd(&l2cap_disconnect, source_cid_control);
 		}
 	}
 }

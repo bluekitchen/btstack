@@ -1,12 +1,6 @@
 /* new todo file for BTstack */
 
-UNTIL 13. August 2009 : Google Open Source Jam
-- Talk
-  - 1 Titel, 1 Motivation, 1 Slide Architecture, 1 Slide Status, 1 Demo
-  
 NEXT:
-- l2cap state machine
-  - disconnect channel
 - automatic L2CAP & higher disconnects
   - when client connection breaks, also close open L2CAP channels
 === Restart client app without restarting BTdaemon

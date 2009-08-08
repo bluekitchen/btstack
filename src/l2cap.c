@@ -46,7 +46,6 @@ void l2cap_register_data_packet_handler  (void (*handler)(uint16_t source_cid, u
     data_packet_handler = handler;
 }
 
-
 int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...){
     va_list argptr;
     va_start(argptr, identifier);
@@ -55,6 +54,18 @@ int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMAND
     return hci_send_acl_packet(sig_buffer, len);
 }
 
+l2cap_channel_t * l2cap_get_channel_for_source_cid(uint16_t source_cid){
+    linked_item_t *it;
+    l2cap_channel_t * channel;
+    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+        channel = (l2cap_channel_t *) it;
+        if ( channel->source_cid == source_cid) {
+            return channel;
+        }
+    }
+    return NULL;
+}
+            
 // open outgoing L2CAP channel
 void l2cap_create_channel_internal(connection_t * connection, bd_addr_t address, uint16_t psm){
     
@@ -82,7 +93,13 @@ void l2cap_create_channel_internal(connection_t * connection, bd_addr_t address,
 }
 
 void l2cap_disconnect_internal(uint16_t source_cid, uint8_t reason){
-    // TODO: implement
+    // find channel for source_cid
+    l2cap_channel_t * channel = l2cap_get_channel_for_source_cid(source_cid);
+    if (channel) {
+        channel->sig_id = l2cap_next_sig_id();
+        l2cap_send_signaling_packet( channel->handle, DISCONNECTION_REQUEST, channel->sig_id, channel->dest_cid, channel->source_cid);   
+        channel->state = L2CAP_STATE_WAIT_DISCONNECT;
+    }
 }
 
 
@@ -164,6 +181,19 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
                     break;
             }
             break;
+            
+        case L2CAP_STATE_WAIT_DISCONNECT:
+            switch (code) {
+                case DISCONNECTION_RESPONSE:
+                    channel->state = L2CAP_STATE_CLOSED;
+                    l2cap_emit_channel_closed(channel);
+                    
+                    // discard channel
+                    linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
+                    free (channel);
+                    break;
+            }
+            break;
     }
 }
 
@@ -177,6 +207,14 @@ void l2cap_emit_channel_opened(l2cap_channel_t *channel) {
     bt_store_16(event, 10, channel->psm);
     bt_store_16(event, 12, channel->source_cid);
     bt_store_16(event, 14, channel->dest_cid);
+    socket_connection_send_packet(channel->connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+void l2cap_emit_channel_closed(l2cap_channel_t *channel) {
+    uint8_t event[4];
+    event[0] = HCI_EVENT_L2CAP_CHANNEL_CLOSED;
+    event[1] = sizeof(event) - 2;
+    bt_store_16(event, 2, channel->source_cid);
     socket_connection_send_packet(channel->connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -223,30 +261,19 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
     }
     
     // Find channel for this channel_id and connection handle
-    linked_item_t *it;
-    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-        l2cap_channel_t * channel = (l2cap_channel_t *) it;
-        if ( channel->source_cid == channel_id && channel->handle == handle) {
-            // send data packet back
-            socket_connection_send_packet(channel->connection, HCI_ACL_DATA_PACKET, 0, packet, size);
-        }
+    l2cap_channel_t * channel = l2cap_get_channel_for_source_cid(channel_id);
+    if (channel) {
+        socket_connection_send_packet(channel->connection, HCI_ACL_DATA_PACKET, 0, packet, size);
     }
 
      // forward to higher layers
     (*data_packet_handler)(channel_id, packet, size);
 }
 
+
 void l2cap_send_internal(uint16_t source_cid, uint8_t *data, uint16_t len){
     // find channel for source_cid, construct l2cap packet and send
-    linked_item_t *it;
-     l2cap_channel_t * channel = NULL;
-    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-        if ( ((l2cap_channel_t *) it)->source_cid == source_cid) {
-            channel = (l2cap_channel_t *) it;
-            break;
-        }
-    }
-     
+    l2cap_channel_t * channel = l2cap_get_channel_for_source_cid(source_cid);
     if (channel) {
          // 0 - Connection handle : PB=10 : BC=00 
          bt_store_16(acl_buffer, 0, channel->handle | (2 << 12) | (0 << 14));
