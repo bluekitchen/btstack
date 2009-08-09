@@ -19,7 +19,7 @@ typedef struct data_source {
 typedef struct timer {
     linked_item_t item; 
     struct timeval timeout;                             // <-- next timeout
-    int  (*process)(struct timer *ts);                  // <-- do processing
+    void  (*process)(struct timer *ts);                  // <-- do processing
 } timer_t;
 
 // set timer based on current time
