@@ -30,9 +30,9 @@ typedef struct hci_transport_h4 {
 // single instance
 static hci_transport_h4_t * hci_transport_h4 = NULL;
 
-static int    h4_process(struct data_source *ds, int ready);
+static int  h4_process(struct data_source *ds);
 static void dummy_handler(uint8_t *packet, int size); 
-static    hci_uart_config_t *hci_uart_config;
+static      hci_uart_config_t *hci_uart_config;
 
 static  void (*event_packet_handler)(uint8_t *packet, int size) = dummy_handler;
 static  void (*acl_packet_handler)  (uint8_t *packet, int size) = dummy_handler;
@@ -110,7 +110,7 @@ static int    h4_open(void *transport_config){
     if (!hci_transport_h4) return -1;
     hci_transport_h4->ds->fd = fd;
     hci_transport_h4->ds->process = h4_process;
-    run_loop_add(hci_transport_h4->ds);
+    run_loop_add_data_source(hci_transport_h4->ds);
     
     // init state machine
     bytes_to_read = 1;
@@ -122,7 +122,7 @@ static int    h4_open(void *transport_config){
 
 static int    h4_close(){
     // first remove run loop handler
-	run_loop_remove(hci_transport_h4->ds);
+	run_loop_remove_data_source(hci_transport_h4->ds);
     
     // close device 
     close(hci_transport_h4->ds->fd);
@@ -181,7 +181,7 @@ static void   h4_register_acl_packet_handler  (void (*handler)(uint8_t *packet, 
     acl_packet_handler = handler;
 }
 
-static int    h4_process(struct data_source *ds, int ready) {
+static int    h4_process(struct data_source *ds) {
     if (hci_transport_h4->ds->fd == 0) return -1;
 
     // read up to bytes_to_read data in

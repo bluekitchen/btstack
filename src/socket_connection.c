@@ -25,7 +25,7 @@
 #define DATA_BUF_SIZE           80
 
 /** prototypes */
-static int socket_connection_hci_process(struct data_source *ds, int ready);
+static int socket_connection_hci_process(struct data_source *ds);
 static int socket_connection_dummy_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t length);
 
 /** globals */
@@ -77,7 +77,7 @@ int socket_connection_set_non_blocking(int fd)
 
 void socket_connection_free_connection(connection_t *conn){
     // remove from run_loop 
-    run_loop_remove(&conn->ds);
+    run_loop_remove_data_source(&conn->ds);
     
     // and from connection list
     linked_list_remove(&connections, &conn->item);
@@ -106,7 +106,7 @@ connection_t * socket_connection_register_new_connection(int fd){
     socket_connection_init_statemachine(conn);
     
     // add this socket to the run_loop
-    run_loop_add( &conn->ds );
+    run_loop_add_data_source( &conn->ds );
     
     // and the connection list
     linked_list_add( &connections, &conn->item);
@@ -114,7 +114,7 @@ connection_t * socket_connection_register_new_connection(int fd){
     return conn;
 }
 
-int socket_connection_hci_process(struct data_source *ds, int ready) {
+int socket_connection_hci_process(struct data_source *ds) {
     connection_t *conn = (connection_t *) ds;
     int bytes_read = read(ds->fd, &conn->buffer[conn->bytes_read], conn->bytes_to_read);
     
@@ -147,7 +147,7 @@ int socket_connection_hci_process(struct data_source *ds, int ready) {
 	return 0;
 }
 
-static int socket_connection_accept(struct data_source *socket_ds, int ready) {
+static int socket_connection_accept(struct data_source *socket_ds) {
     
 	/* New connection coming in! */
 	int fd = accept(socket_ds->fd, NULL, NULL);
@@ -207,7 +207,7 @@ int socket_connection_create_tcp(int port){
         return -1;
 	}
     
-    run_loop_add(ds);
+    run_loop_add_data_source(ds);
     
 	printf ("Server up and running ...\n");
     return 0;
@@ -290,7 +290,7 @@ connection_t * socket_connection_open_tcp(){
 int socket_connection_close_tcp(connection_t * connection){
     if (!connection) return -1;
     shutdown(connection->ds.fd, SHUT_RDWR);
-    run_loop_remove(&connection->ds);
+    run_loop_remove_data_source(&connection->ds);
     free( connection );
     return 0;
 }
