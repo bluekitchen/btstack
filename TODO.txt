@@ -4,8 +4,10 @@ Last milestone reached: Restart client app without restarting BTdaemon possible
 
 NEXT:
 - turn off Bluetooth on ctrl-c
+- extend hci_logger to write to /var/hci_dump.txt as text
 - automatic start/stop of BTdaemon
   - start BTdaemon by client lib
+    - e.g. use popen and wait for initial "I'm ready" message
   - stop  BTdaemon after X minutes idle
 - iPhone status icon support
   - bt_control_iphone.c -> bt_control_iphone.m
@@ -18,6 +20,12 @@ NEXT:
 	- commands and events
 === Incoming L2CAP supported
 - client/server part using unix domain sockets (portable and fast)
+- configuration: /etc/btstack
+  - single Bluetooth module supported
+  - transport type: H4, H5, USB
+  - h4/h5: usart name
+  - usb: product/vendor ID
+  - logging mode: text, bluez, packetlogger
 - implement rest of L2CAP state machine
   - error handling
   - error notification
