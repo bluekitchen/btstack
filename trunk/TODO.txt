@@ -3,9 +3,10 @@
 Last milestone reached: Restart client app without restarting BTdaemon possible
 
 NEXT:
-- implement timers for POSIX run loop
+- if client conenctions breaks, close all L2CAP channels used by client
 - automatic HCI link disconnect
   - periodically (e.g., 5 seconds) close HCI connections without active L2CAP channel
+- automatic turn off Bluetooth after X minutes idle
 === BTdaemon can run always
 - implement rest of L2CAP state machine
   - incoming connections
@@ -16,6 +17,9 @@ NEXT:
   - error notification
   - flow control
   - reassembly/segmentation
+- automatic start/stop of BTdaemon
+  - start BTdaemon by client lib
+  - stop  BTdaemon after X minutes idle
 - DEMOS:
   - BTstack-cmd
     - info
