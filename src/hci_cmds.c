@@ -37,7 +37,9 @@ uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, va_lis
                 if (*format == '2') {
                     hci_cmd_buffer[pos++] = word >> 8;
                 } else if (*format == 'H') {
-                    // TODO
+                    // TODO implement opaque client connection handles
+                    //      pass module handle for now
+                    hci_cmd_buffer[pos++] = word >> 8;
                 } 
                 break;
             case '3':
@@ -114,12 +116,19 @@ OPCODE(OGF_LINK_CONTROL, 0x05), "B21121"
 // BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
 };
 
+hci_cmd_t hci_disconnect = {
+OPCODE(OGF_LINK_CONTROL, 0x06), "H1"
+// Handle, Reason: 0x05, 0x13-0x15, 0x1a, 0x29
+// see Errors Codes in BT Spec Part D
+};
+
 hci_cmd_t hci_accept_connection_request = {
 OPCODE(OGF_LINK_CONTROL, 0x09), "B1"
 // BD_ADDR, Role: become master, stay slave
 };
 hci_cmd_t hci_link_key_request_negative_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x0c), "B"
+// BD_ADDR
 };
 hci_cmd_t hci_pin_code_request_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x0d), "B1P"

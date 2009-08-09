@@ -16,6 +16,7 @@
 // bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };  // Think Outside Keyboard
 bd_addr_t addr = {0x00, 0x19, 0x1d, 0x90, 0x44, 0x68 };  // WiiMote
 
+hci_con_handle_t con_handle;
 uint16_t source_cid_interrupt;
 uint16_t source_cid_control;
 
@@ -23,10 +24,14 @@ void data_handler(uint8_t *packet, uint16_t size){
 	// just dump data for now
 	hexdump( packet, size );
 	
-	// HOME => disconnect L2CAP
-	if (packet[11] == 0x080){
-		printf("Closing interrupt channel\n");
-		bt_send_cmd(&l2cap_disconnect, source_cid_interrupt);
+	// HOME => disconnect
+	if (packet[8] == 0xA1) {							// Status report
+		if (packet[9] == 0x30 || packet[9] == 0x31) {   // type 0x30 or 0x31
+			if (packet[11] & 0x080) {                   // homne button pressed
+				printf("Disconnect baseband\n");
+				bt_send_cmd(&hci_disconnect, con_handle, 0x13); // remote closed connection
+			}
+		}
 	}
 }
 
@@ -45,6 +50,7 @@ void event_handler(uint8_t *packet, uint16_t size){
 	// connect to HID device (PSM 0x13) at addr
     if ( COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable) ) {
 		bt_send_cmd(&l2cap_create_channel, addr, 0x13);
+		printf("Press 1+2 on WiiMote to make it discoverable - Press HOME to disconnect later :)\n");
 	}
 
 	
@@ -59,10 +65,11 @@ void event_handler(uint8_t *packet, uint16_t size){
 		bt_flip_addr(addr, &packet[2]);
 		uint16_t psm = READ_BT_16(packet, 10); 
 		uint16_t source_cid = READ_BT_16(packet, 12); 
+		con_handle = READ_BT_16(packet, 8);
 		printf("Channel successfully opened: ");
 		print_bd_addr(addr);
 		printf(", handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x\n",
-			   READ_BT_16(packet, 8), psm, source_cid,  READ_BT_16(packet, 14));
+			   con_handle, psm, source_cid,  READ_BT_16(packet, 14));
 
 		if (psm == 0x13) {
 			source_cid_interrupt = source_cid;
@@ -72,22 +79,14 @@ void event_handler(uint8_t *packet, uint16_t size){
 			source_cid_control = source_cid;
 			// request acceleration data..
 			uint8_t setMode31[] = { 0x52, 0x12, 0x00, 0x31 };
-			// l2cap_send( source_cid, setMode31, sizeof(setMode31));
+			l2cap_send( source_cid, setMode31, sizeof(setMode31));
 		}
 	}
 	
-	if (packet[0] == HCI_EVENT_L2CAP_CHANNEL_CLOSED) {
-		uint16_t source_cid = READ_BT_16(packet, 2); 
-		if (source_cid == source_cid_interrupt){
-			printf("Interrupt channel closed, closing control channel\n");
-			bt_send_cmd(&l2cap_disconnect, source_cid_control);
-		}
-		if (source_cid == source_cid_control){
-			printf("Control channel closed, closing baseband connection\n");
-			printf("To be implemented..\n");
-			exit(0);
-			// bt_send_cmd(&l2cap_disconnect, source_cid_control);
-		}
+	// connection closed -> quit tes app
+	if (packet[0] == HCI_EVENT_DISCONNECTION_COMPLETE) {
+		printf("Basebank connection closed, exit.\n");
+		exit(0);
 	}
 }
 
