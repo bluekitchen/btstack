@@ -1,13 +1,11 @@
 /* new todo file for BTstack */
 
+Last milestone reached: Restart client app without restarting BTdaemon possible
+
 NEXT:
-- implement HCI disconnection
-=== Restart client app without restarting BTdaemon possible
-- handle HCI link disconnect
-  - broadcast l2cap disconnects,too
 - implement timers for POSIX run loop
 - automatic HCI link disconnect
-  - periodically close HCI connections without active L2CAP channel
+  - periodically (e.g., 5 seconds) close HCI connections without active L2CAP channel
 === BTdaemon can run always
 - implement rest of L2CAP state machine
   - incoming connections
