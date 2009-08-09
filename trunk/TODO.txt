@@ -3,8 +3,6 @@
 Last milestone reached: Restart client app without restarting BTdaemon possible
 
 NEXT:
-- automatic HCI link disconnect
-  - periodically (e.g., 5 seconds) close HCI connections without active L2CAP channel
 - automatic turn off Bluetooth after X minutes idle
 - turn off Bluetooth on ctrl-c
 - automatic start/stop of BTdaemon
