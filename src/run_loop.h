@@ -25,7 +25,8 @@ typedef struct timer {
 // set timer based on current time
 void run_loop_set_timer(timer_t *a, int timeout_in_seconds);
 
-// compare timers - NULL is assumed to be before the Big Bang
+// compare timeval or timers - NULL is assumed to be before the Big Bang
+int run_loop_timeval_compare(struct timeval *a, struct timeval *b);
 int run_loop_timer_compare(timer_t *a, timer_t *b);
 
 void run_loop_add_data_source(data_source_t *dataSource);     // <-- add DataSource to RunLoop

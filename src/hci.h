@@ -49,6 +49,10 @@ typedef struct {
     // errands
     hci_connection_flags_t flags;
     
+    // timer
+    timer_t timeout;
+    struct timeval timestamp;
+
 } hci_connection_t;
 
 /**
@@ -110,3 +114,4 @@ int hci_send_acl_packet(uint8_t *packet, int size);
 // 
 void hci_emit_state();
 void hci_emit_connection_complete(hci_connection_t *conn);
+void hci_emit_l2cap_check_timeout(hci_connection_t *conn);

@@ -139,6 +139,23 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
         }
     }
     
+    // HCI Connection Timeouts
+    if (packet[0] == HCI_EVENT_L2CAP_TIMEOUT_CHECK){
+        hci_con_handle_t handle = READ_BT_16(packet, 2);
+        linked_item_t *it;
+        l2cap_channel_t * channel;
+        int used = 0;
+        for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+            channel = (l2cap_channel_t *) it;
+            if (channel->handle == handle) {
+                used = 1;
+            }
+        }
+        if (!used) {
+            hci_send_cmd(&hci_disconnect, handle, 0x13); // remote closd connection             
+        }
+    }
+    
     // forward to higher layers
     (*event_packet_handler)(packet, size);
     

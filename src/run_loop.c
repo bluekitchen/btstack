@@ -23,27 +23,36 @@ void run_loop_set_timer(timer_t *a, int timeout_in_seconds){
 
 // compare timers - NULL is assumed to be before the Big Bang
 // pre: 0 <= tv_usec < 1000000
-int run_loop_timer_compare(timer_t *a, timer_t *b){
-    
+int run_loop_timeval_compare(struct timeval *a, struct timeval *b){
     if (!a || !b) return 0;
     if (!a) return -1;
     if (!b) return 1;
     
-    if (a->timeout.tv_sec < b->timeout.tv_sec) {
+    if (a->tv_sec < b->tv_sec) {
         return -1;
     }
-    if (a->timeout.tv_sec > b->timeout.tv_sec) {
+    if (a->tv_sec > b->tv_sec) {
         return 1;
     }
-
-    if (a->timeout.tv_usec < b->timeout.tv_usec) {
+    
+    if (a->tv_usec < b->tv_usec) {
         return -1;
     }
-    if (a->timeout.tv_usec > b->timeout.tv_usec) {
+    if (a->tv_usec > b->tv_usec) {
         return 1;
     }
     
     return 0;
+    
+}
+
+// compare timers - NULL is assumed to be before the Big Bang
+// pre: 0 <= tv_usec < 1000000
+int run_loop_timer_compare(timer_t *a, timer_t *b){
+    if (!a || !b) return 0;
+    if (!a) return -1;
+    if (!b) return 1;
+    return run_loop_timeval_compare(&a->timeout, &b->timeout);
 }
 
 /**

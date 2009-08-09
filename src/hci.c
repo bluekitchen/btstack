@@ -15,8 +15,51 @@
 // temp
 #include "l2cap.h"
 
+#define HCI_CONNECTION_TIMEOUT 10
+
 // the STACK is here
 static hci_stack_t       hci_stack;
+
+/**
+ * get connection for a given handle
+ *
+ * @return connection OR NULL, if not found
+ */
+static hci_connection_t * connection_for_handle(hci_con_handle_t con_handle){
+    linked_item_t *it;
+    for (it = (linked_item_t *) hci_stack.connections; it ; it = it->next){
+        if ( ((hci_connection_t *) it)->con_handle == con_handle){
+            return (hci_connection_t *) it;
+        }
+    }
+    return NULL;
+}
+
+static void hci_connection_timeout_handler(timer_t *timer){
+    hci_connection_t * connection = linked_item_get_user(&timer->item);
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    if (tv.tv_sec > connection->timestamp.tv_sec + HCI_CONNECTION_TIMEOUT) {
+        // connections might be timed out
+        hci_emit_l2cap_check_timeout(connection);
+        run_loop_set_timer(timer, HCI_CONNECTION_TIMEOUT);
+    } else {
+        // next timeout check at
+        timer->timeout.tv_sec = connection->timestamp.tv_sec + HCI_CONNECTION_TIMEOUT;
+    }
+    run_loop_add_timer(timer);
+}
+
+static void hci_connection_timestamp(hci_connection_t *connection){
+    gettimeofday(&connection->timestamp, NULL);
+}
+
+static void hci_connection_update_timestamp_for_acl(uint8_t *packet) {
+    // update timestamp
+    hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
+    hci_connection_t *connection = connection_for_handle( con_handle);
+    if (connection) hci_connection_timestamp(connection);
+}
 
 /**
  * create connection for given address
@@ -29,6 +72,9 @@ static hci_connection_t * create_connection_for_addr(bd_addr_t addr){
     BD_ADDR_COPY(conn->address, addr);
     conn->con_handle = 0xffff;
     conn->flags = 0;
+    linked_item_set_user(&conn->timeout.item, conn);
+    conn->timeout.process = hci_connection_timeout_handler;
+    hci_connection_timestamp(conn);
     linked_list_add(&hci_stack.connections, (linked_item_t *) conn);
     return conn;
 }
@@ -42,21 +88,6 @@ static hci_connection_t * connection_for_address(bd_addr_t address){
     linked_item_t *it;
     for (it = (linked_item_t *) hci_stack.connections; it ; it = it->next){
         if ( ! BD_ADDR_CMP( ((hci_connection_t *) it)->address, address) ){
-            return (hci_connection_t *) it;
-        }
-    }
-    return NULL;
-}
-
-/**
- * get connection for a given handle
- *
- * @return connection OR NULL, if not found
- */
-static hci_connection_t * connection_for_handle(hci_con_handle_t con_handle){
-    linked_item_t *it;
-    for (it = (linked_item_t *) hci_stack.connections; it ; it = it->next){
-        if ( ((hci_connection_t *) it)->con_handle == con_handle){
             return (hci_connection_t *) it;
         }
     }
@@ -87,7 +118,13 @@ static bt_control_t null_control = {
 }; 
 
 
+int hci_send_acl_packet(uint8_t *packet, int size){
+    hci_connection_update_timestamp_for_acl(packet);
+    return hci_stack.hci_transport->send_acl_packet(packet, size);
+}
+
 static void acl_handler(uint8_t *packet, int size){
+    hci_connection_update_timestamp_for_acl(packet);
     hci_stack.acl_packet_handler(packet, size);
     
     // execute main loop
@@ -114,6 +151,11 @@ static void event_handler(uint8_t *packet, int size){
                 conn->state = OPEN;
                 conn->con_handle = READ_BT_16(packet, 3);
                 conn->flags = 0;
+                
+                gettimeofday(&conn->timestamp, NULL);
+                run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT);
+                run_loop_add_timer(&conn->timeout);
+                
                 printf("New connection: handle %u, ", conn->con_handle);
                 print_bd_addr( conn->address );
                 printf("\n");
@@ -129,6 +171,7 @@ static void event_handler(uint8_t *packet, int size){
                 printf("Connection closed: handle %u, ", conn->con_handle);
                 print_bd_addr( conn->address );
                 printf("\n");
+                run_loop_remove_timer(&conn->timeout);
                 linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
                 free( conn );
             }
@@ -282,11 +325,6 @@ void hci_run(){
     }
 }
 
-
-int hci_send_acl_packet(uint8_t *packet, int size){
-    return hci_stack.hci_transport->send_acl_packet(packet, size);
-}
-
 int hci_send_cmd_packet(uint8_t *packet, int size){
     bd_addr_t addr;
     hci_connection_t * conn;
@@ -338,6 +376,9 @@ int hci_send_cmd(hci_cmd_t *cmd, ...){
     return hci_send_cmd_packet(hci_cmd_buffer, size);
 }
 
+// Create various non-HCI events. 
+// TODO: generalize, use table similar to hci_create_command
+
 void hci_emit_state(){
     uint8_t len = 3; 
     uint8_t event[len];
@@ -361,3 +402,12 @@ void hci_emit_connection_complete(hci_connection_t *conn){
     hci_stack.event_packet_handler(event, len);
 }
 
+void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
+    uint8_t len = 4; 
+    uint8_t event[len];
+    event[0] = HCI_EVENT_L2CAP_TIMEOUT_CHECK;
+    event[1] = 2;
+    bt_store_16(event, 2, conn->con_handle);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
+    hci_stack.event_packet_handler(event, len);
+}
