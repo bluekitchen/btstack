@@ -72,7 +72,7 @@
 #define HCI_EVENT_DATA_BUFFER_OVERFLOW                     0x1A
 #define HCI_EVENT_MAX_SLOTS_CHANGED			               0x1B
 #define HCI_EVENT_READ_CLOCK_OFFSET_COMPLETE               0x1C
-#define NECTEVENT_ION_PACKET_TYPE_CHANGED                  0x1D
+#define HCI_EVENT_PACKET_TYPE_CHANGED                      0x1D
 #define HCI_EVENT_INQUIRY_RESULT_WITH_RSSI		      	   0x22
 #define HCI_EVENT_VENDOR_SPECIFIC				           0xFF
 
@@ -89,6 +89,12 @@
 // data: event(8), len(8), handle(16)
 #define HCI_EVENT_L2CAP_TIMEOUT_CHECK                      0x84
 
+
+// data: event(8)
+#define DAEMON_CONNECTION_CLOSED                           0xc0
+
+// data: event(8), nr_connections(8)
+#define DAEMON_NR_CONNECTIONS_CHANGED                      0xc1
 
 #define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && READ_BT_16(event,3) == cmd.opcode)
 

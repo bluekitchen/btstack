@@ -34,8 +34,17 @@
 #include "hci_transport_usb.h"
 #endif
 
+#define DAEMON_NO_CONNECTION_TIMEOUT 60
+
 static hci_transport_t * transport;
 static hci_uart_config_t config;
+
+static timer_t timeout;
+
+static void daemon_no_connections_timeout(){
+    printf("No connection for %u secondes -> POWER OFF\n", DAEMON_NO_CONNECTION_TIMEOUT);
+    hci_power_control( HCI_POWER_OFF);
+}
 
 static int btstack_command_handler(connection_t *connection, uint8_t *packet, uint16_t size){
     // BTstack Commands
@@ -86,8 +95,22 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
             l2cap_send_internal(channel, data, length);
             break;
         case DAEMON_EVENT_PACKET:
+            switch (data[0]) {
+                case DAEMON_CONNECTION_CLOSED:
+                    l2cap_close_channels_for_connection(connection);
+                    break;
+                case DAEMON_NR_CONNECTIONS_CHANGED:
+                    // printf("Nr Connections changed, new %u\n", data[1]);
+                    if (data[1]) {
+                        run_loop_remove_timer(&timeout);
+                    } else {
+                        run_loop_set_timer(&timeout, DAEMON_NO_CONNECTION_TIMEOUT);
+                        run_loop_add_timer(&timeout);
+                    }
+                default:
+                    break;
+            }
             // only one event so far: client connection died
-            l2cap_close_channels_for_connection(connection);
             break;
     }
     return 0;
@@ -123,7 +146,9 @@ int main (int argc, const char * argv[]){
     
     // init L2CAP
     l2cap_init();
-            
+    
+    timeout.process = daemon_no_connections_timeout;
+    
     // @TODO: make choice of socket server configurable (TCP and/or Unix Domain Socket)
     // @TODO: make port and/or socket configurable per config.h
     

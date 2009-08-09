@@ -3,7 +3,6 @@
 Last milestone reached: Restart client app without restarting BTdaemon possible
 
 NEXT:
-- automatic turn off Bluetooth after X minutes idle
 - turn off Bluetooth on ctrl-c
 - automatic start/stop of BTdaemon
   - start BTdaemon by client lib
