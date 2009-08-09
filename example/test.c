@@ -90,10 +90,6 @@ void event_handler(uint8_t *packet, uint16_t size){
 	}
 }
 
-void timerCB(struct timer *t){
-	printf("timeout test!\n");
-}
-
 int main (int argc, const char * argv[]){
 	bt_open();
 	bt_register_event_packet_handler(event_handler);
