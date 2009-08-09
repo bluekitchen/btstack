@@ -3,13 +3,22 @@
 Last milestone reached: Restart client app without restarting BTdaemon possible
 
 NEXT:
-- if client conenctions breaks, close all L2CAP channels used by client
 - automatic HCI link disconnect
   - periodically (e.g., 5 seconds) close HCI connections without active L2CAP channel
 - automatic turn off Bluetooth after X minutes idle
+- turn off Bluetooth on ctrl-c
+- automatic start/stop of BTdaemon
+  - start BTdaemon by client lib
+  - stop  BTdaemon after X minutes idle
+- iPhone status icon support
+  - bt_control_iphone.c -> bt_control_iphone.m
+  - call SpringBoard on/off BT
+  - create BTstack icon. Flipped B in red
 === BTdaemon can run always
 - implement rest of L2CAP state machine
   - incoming connections
+    - list of supported PSM
+	- commands and events
 === Incoming L2CAP supported
 - client/server part using unix domain sockets (portable and fast)
 - implement rest of L2CAP state machine
@@ -17,9 +26,6 @@ NEXT:
   - error notification
   - flow control
   - reassembly/segmentation
-- automatic start/stop of BTdaemon
-  - start BTdaemon by client lib
-  - stop  BTdaemon after X minutes idle
 - DEMOS:
   - BTstack-cmd
     - info

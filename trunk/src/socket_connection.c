@@ -117,11 +117,11 @@ connection_t * socket_connection_register_new_connection(int fd){
 int socket_connection_hci_process(struct data_source *ds) {
     connection_t *conn = (connection_t *) ds;
     int bytes_read = read(ds->fd, &conn->buffer[conn->bytes_read], conn->bytes_to_read);
-    
-    // printf("socket_connection_connection_process: state %u, new %u, read %u, toRead %u\n", conn->state,
-    //       bytes_read, conn->bytes_read, conn->bytes_to_read);
     if (bytes_read <= 0){
-        // free
+        // connection broken (no particular channel, no date yet)
+        (*socket_connection_packet_callback)(conn, DAEMON_EVENT_PACKET, 0, NULL, 0);
+        
+        // free connection
         socket_connection_free_connection(linked_item_get_user(&ds->item));
         return 0;
     }

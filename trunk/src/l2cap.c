@@ -213,6 +213,20 @@ void l2cap_finialize_channel_close(l2cap_channel_t *channel){
     free (channel);
 }
 
+//
+void l2cap_close_channels_for_connection(connection_t *connection){
+    linked_item_t *it;
+    l2cap_channel_t * channel;
+    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+        channel = (l2cap_channel_t *) it;
+        if ( channel->connection == connection) {
+            channel->sig_id = l2cap_next_sig_id();
+            l2cap_send_signaling_packet( channel->handle, DISCONNECTION_REQUEST, channel->sig_id, channel->dest_cid, channel->source_cid);   
+            channel->state = L2CAP_STATE_WAIT_DISCONNECT;
+        }
+    }    
+}
+
 //  notify client
 void l2cap_emit_channel_opened(l2cap_channel_t *channel) {
     uint8_t event[16];
