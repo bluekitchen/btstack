@@ -85,6 +85,10 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
             // process l2cap packet...
             l2cap_send_internal(channel, data, length);
             break;
+        case DAEMON_EVENT_PACKET:
+            // only one event so far: client connection died
+            l2cap_close_channels_for_connection(connection);
+            break;
     }
     return 0;
 }

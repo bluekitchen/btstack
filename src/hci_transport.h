@@ -36,6 +36,7 @@
 
 // extension for client/server communication
 #define L2CAP_DATA_PACKET      0x05
+#define DAEMON_EVENT_PACKET    0x06
 
 typedef struct {
     int    (*open)(void *transport_config);
