@@ -22,6 +22,7 @@ void run_loop_set_timer(timer_t *a, int timeout_in_seconds){
 }
 
 // compare timers - NULL is assumed to be before the Big Bang
+// pre: 0 <= tv_usec < 1000000
 int run_loop_timer_compare(timer_t *a, timer_t *b){
     
     if (!a || !b) return 0;
@@ -96,6 +97,8 @@ void run_loop_execute() {
     fd_set descriptors;
     data_source_t *ds;
     timer_t       *ts;
+    struct timeval tv;
+    struct timeval *timeout;
     
     while (1) {
         // collect FDs
@@ -111,11 +114,27 @@ void run_loop_execute() {
         }
         
         // get next timeout
-        // ..
-        
+        // pre: 0 <= tv_usec < 1000000
+        timeout = NULL;
+        if (timers) {
+            gettimeofday(&tv, NULL);
+            ts = (timer_t *) timers;
+            tv.tv_sec  -= ts->timeout.tv_sec;
+            tv.tv_usec -= ts->timeout.tv_usec;
+            if (tv.tv_usec < 0){
+                tv.tv_usec += 1000000;
+                tv.tv_sec--;
+            }
+            if (tv.tv_sec < 0){
+                tv.tv_sec =  0;
+                tv.tv_usec = 0;
+            }
+            timeout = &tv;
+        }
+                
         // wait for ready FDs
-        select( highest_fd+1 , &descriptors, NULL, NULL, NULL);
-
+        select( highest_fd+1 , &descriptors, NULL, NULL, timeout);
+        
         // process data sources
         data_source_t *next;
         for (ds = (data_source_t *) data_sources; ds != NULL ; ds = next){
@@ -126,7 +145,15 @@ void run_loop_execute() {
         }
         
         // process timers
-        // ..
+        // pre: 0 <= tv_usec < 1000000
+        while (timers) {
+            gettimeofday(&tv, NULL);
+            ts = (timer_t *) timers;
+            if (ts->timeout.tv_sec  > tv.tv_sec) break;
+            if (ts->timeout.tv_sec == tv.tv_sec && ts->timeout.tv_usec > tv.tv_usec) break;
+            run_loop_remove_timer(ts);
+            ts->process(ts);
+        }
     }
 }
 
