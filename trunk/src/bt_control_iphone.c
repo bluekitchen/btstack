@@ -63,6 +63,7 @@ static int iphone_valid(void *config){
 	char * machine = get_machine_name();
 	if (!strncmp("iPhone",  machine, strlen("iPhone" ))) return 1;
 	if (!strncmp("iPod2,1", machine, strlen("iPod2,1"))) return 1;
+	if (!strncmp("iPod3,1", machine, strlen("iPod2,1"))) return 1;
 	return 0;
 }
 
@@ -107,11 +108,11 @@ static int iphone_write_initscript (void *config, int output){
     strcpy(buffer, "/etc/bluetool/");
     char *machine = get_machine_name();
     strcat(buffer, machine);
-	if (strncmp(machine, "iPhone", strlen("iPhone")) == 0){
-		// It's an iPhone
+	if (strncmp(machine, "iPhone1,", strlen("iPhone1,")) == 0) {
+		// It's an iPhone 2G or 3G
 		strcat(buffer, ".init.script");
 	} else {
-		// It's an iPod Touch (2G)
+		// It's an iPod Touch (2G) or an iPhone 3GS
 		strcat(buffer, ".boot.script");
 	}
     
