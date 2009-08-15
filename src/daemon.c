@@ -9,10 +9,11 @@
 
 #include "../config.h"
 
-#include <unistd.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
+#include <unistd.h>
 
 #include "hci.h"
 #include "hci_dump.h"
@@ -116,6 +117,13 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
     return 0;
 }
 
+void daemon_sigint_handler(int param){
+    printf(" <= SIGINT received, shutting down..\n");    
+    hci_power_control( HCI_POWER_OFF);
+    printf("Good bye, see you.\n");    
+    exit(0);
+}
+
 int main (int argc, const char * argv[]){
     
     bt_control_t * control = NULL;
@@ -139,7 +147,7 @@ int main (int argc, const char * argv[]){
     
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
     // hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
-    hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    // hci_dump_open(NULL, HCI_DUMP_STDOUT);
                   
     // init HCI
     hci_init(transport, &config, control);
@@ -155,6 +163,9 @@ int main (int argc, const char * argv[]){
     // create server
     socket_connection_create_tcp(BTSTACK_PORT);
     socket_connection_register_packet_callback(daemon_client_handler);
+
+    // handle CTRL-c
+    signal(SIGINT, daemon_sigint_handler);
     
     // go!
     run_loop_execute();

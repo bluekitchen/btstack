@@ -5,21 +5,30 @@ Last milestone reached: Restart client app without restarting BTdaemon possible
 NEXT:
 - turn off Bluetooth on ctrl-c
 - extend hci_logger to write to /var/hci_dump.txt as text
+- client/server part using unix domain sockets (portable and fast)
+- iPhone status icon support
+  - create BTstack icon. Flipped B in red, or blue on orange
+  - bt_control_iphone.c -> bt_control_iphone.m // or objcSendMsg
+  - call SpringBoard on/off BT
 - automatic start/stop of BTdaemon
   - start BTdaemon by client lib
     - e.g. use popen and wait for initial "I'm ready" message
+  - autostart by launchd
   - stop  BTdaemon after X minutes idle
-- iPhone status icon support
-  - bt_control_iphone.c -> bt_control_iphone.m
-  - call SpringBoard on/off BT
-  - create BTstack icon. Flipped B in red
+- better deal with Apple stack
+  - detect that it is running
+  - figure out how to shut it down
+  - user interface
+- Cocoa User Interface Components
+  - Alert and shutdown of Apple's stack
+  - Inquiry
+  - Detect iPhone sleep mode
 === BTdaemon can run always
 - implement rest of L2CAP state machine
   - incoming connections
     - list of supported PSM
 	- commands and events
 === Incoming L2CAP supported
-- client/server part using unix domain sockets (portable and fast)
 - configuration: /etc/btstack
   - single Bluetooth module supported
   - transport type: H4, H5, USB
@@ -50,3 +59,4 @@ NEXT:
 - auto-generate code for sending commands from structured text input file
 - devise concept for access to event data
   - auto-generate event struct getter? STRUCTURE_get_FIELD
+- Bluetooth low-power modes useful
