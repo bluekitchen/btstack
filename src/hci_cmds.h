@@ -89,6 +89,8 @@
 // data: event(8), len(8), handle(16)
 #define HCI_EVENT_L2CAP_TIMEOUT_CHECK                      0x84
 
+// data: event(8), len(8), nr hci connections
+#define HCI_EVENT_NR_CONNECTIONS_CHANGED                   0x85
 
 // data: event(8)
 #define DAEMON_CONNECTION_CLOSED                           0xc0
