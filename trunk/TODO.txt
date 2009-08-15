@@ -3,11 +3,9 @@
 Last milestone reached: Restart client app without restarting BTdaemon possible
 
 NEXT:
-- client/server part using unix domain sockets (portable and fast)
 - iPhone status icon support
-  - create BTstack icon. Flipped B in red, or blue on orange
-  - bt_control_iphone.c -> bt_control_iphone.m // or objcSendMsg
   - call SpringBoard on/off BT
+- client/server part using unix domain sockets (portable and fast)
 - automatic start/stop of BTdaemon
   - start BTdaemon by client lib
     - e.g. use popen and wait for initial "I'm ready" message

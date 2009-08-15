@@ -33,6 +33,12 @@ typedef enum {
     SENT_DISCONNECT
 } CONNECTION_STATE;
 
+typedef enum {
+    BLUETOOTH_OFF = 1,
+    BLUETOOTH_ON,
+    BLUETOOTH_ACTIVE
+} BLUETOOTH_STATE;
+
 typedef struct {
     // linked list - assert: first field
     linked_item_t    item;
@@ -115,3 +121,4 @@ int hci_send_acl_packet(uint8_t *packet, int size);
 void hci_emit_state();
 void hci_emit_connection_complete(hci_connection_t *conn);
 void hci_emit_l2cap_check_timeout(hci_connection_t *conn);
+void hci_emit_nr_connections_changed();

@@ -158,9 +158,6 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
     
     // forward to higher layers
     (*event_packet_handler)(packet, size);
-    
-    // forward event to clients
-    socket_connection_send_packet_all(HCI_EVENT_PACKET, 0, packet, size);
 }
 
 void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t size){

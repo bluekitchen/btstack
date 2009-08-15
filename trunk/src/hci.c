@@ -94,6 +94,15 @@ static hci_connection_t * connection_for_address(bd_addr_t address){
     return NULL;
 }
 
+/**
+ * count connections
+ */
+static int nr_hci_connections(){
+    int count;
+    linked_item_t *it;
+    for (it = (linked_item_t *) hci_stack.connections; it ; it = it->next, count++);
+    return count;
+}
 
 /** 
  * Dummy handler called by HCI
@@ -159,6 +168,8 @@ static void event_handler(uint8_t *packet, int size){
                 printf("New connection: handle %u, ", conn->con_handle);
                 print_bd_addr( conn->address );
                 printf("\n");
+                
+                hci_emit_nr_connections_changed();
             }
         }
     }
@@ -174,6 +185,7 @@ static void event_handler(uint8_t *packet, int size){
                 run_loop_remove_timer(&conn->timeout);
                 linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
                 free( conn );
+                hci_emit_nr_connections_changed();
             }
         }
     }
@@ -273,6 +285,9 @@ int hci_power_control(HCI_POWER_MODE power_mode){
 
         // power off
         hci_stack.control->off(hci_stack.config);
+
+        // we're off now
+        hci_stack.state = HCI_STATE_OFF;
     }
     
 	hci_emit_state();
@@ -408,6 +423,16 @@ void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
     event[0] = HCI_EVENT_L2CAP_TIMEOUT_CHECK;
     event[1] = 2;
     bt_store_16(event, 2, conn->con_handle);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
+    hci_stack.event_packet_handler(event, len);
+}
+
+void hci_emit_nr_connections_changed(){
+    uint8_t len = 3; 
+    uint8_t event[len];
+    event[0] = HCI_EVENT_NR_CONNECTIONS_CHANGED;
+    event[1] = 1;
+    event[2] = nr_hci_connections();
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
     hci_stack.event_packet_handler(event, len);
 }

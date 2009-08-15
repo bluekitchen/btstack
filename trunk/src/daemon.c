@@ -42,8 +42,13 @@ static hci_uart_config_t config;
 
 static timer_t timeout;
 
+static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
+    printf("Bluetooth status: %u\n", state);
+};
+static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth_status_handler;
+
 static void daemon_no_connections_timeout(){
-    printf("No connection for %u secondes -> POWER OFF\n", DAEMON_NO_CONNECTION_TIMEOUT);
+    printf("No connection for %u seconds -> POWER OFF\n", DAEMON_NO_CONNECTION_TIMEOUT);
     hci_power_control( HCI_POWER_OFF);
 }
 
@@ -111,13 +116,37 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                 default:
                     break;
             }
-            // only one event so far: client connection died
             break;
     }
     return 0;
 }
 
-void daemon_sigint_handler(int param){
+static void daemon_event_handler(uint8_t *packet, uint16_t size){
+    // handle state event
+    if (packet[0] == HCI_EVENT_BTSTACK_WORKING){
+        bluetooth_status_handler(BLUETOOTH_ON);
+    }
+    if (packet[0] == HCI_EVENT_BTSTACK_STATE){
+        if (packet[2] == HCI_STATE_WORKING) {
+            bluetooth_status_handler(BLUETOOTH_ON);
+        }
+        if (packet[2] == HCI_STATE_OFF) {
+            bluetooth_status_handler(BLUETOOTH_OFF);
+        }
+    }
+    if (packet[0] == HCI_EVENT_NR_CONNECTIONS_CHANGED){
+        if (packet[2]) {
+            bluetooth_status_handler(BLUETOOTH_ACTIVE);
+        } else {
+            bluetooth_status_handler(BLUETOOTH_ON);
+        }
+    }
+    
+    // forward event to clients
+    socket_connection_send_packet_all(HCI_EVENT_PACKET, 0, packet, size);
+}
+
+static void daemon_sigint_handler(int param){
     printf(" <= SIGINT received, shutting down..\n");    
     hci_power_control( HCI_POWER_OFF);
     printf("Good bye, see you.\n");    
@@ -142,7 +171,11 @@ int main (int argc, const char * argv[]){
 #ifdef USE_BLUETOOL
     control = &bt_control_iphone;
 #endif
-
+    
+#ifdef USE_SPRINGBOARD
+    bluetooth_status_handler = platform_iphone_status_handler
+#endif
+    
     // @TODO: allow configuration per HCI CMD
     
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
@@ -154,7 +187,7 @@ int main (int argc, const char * argv[]){
     
     // init L2CAP
     l2cap_init();
-    
+    l2cap_register_event_packet_handler(daemon_event_handler);
     timeout.process = daemon_no_connections_timeout;
     
     // @TODO: make choice of socket server configurable (TCP and/or Unix Domain Socket)

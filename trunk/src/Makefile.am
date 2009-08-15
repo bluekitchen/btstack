@@ -15,6 +15,7 @@ BTdaemon_SOURCES =       \
     l2cap.c              \
     l2cap_signaling.c    \
     linked_list.c        \
+    platform_iphone.m    \
     run_loop.c           \
     socket_connection.c  \
     utils.c
@@ -31,6 +32,7 @@ include_HEADERS = \
     linked_list.h        \
     l2cap.h              \
     l2cap_signaling.h    \
+    platform_iphone.h    \
     run_loop.h           \
     socket_connection.h  \
     utils.h
