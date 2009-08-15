@@ -3,8 +3,6 @@
 Last milestone reached: Restart client app without restarting BTdaemon possible
 
 NEXT:
-- turn off Bluetooth on ctrl-c
-- extend hci_logger to write to /var/hci_dump.txt as text
 - client/server part using unix domain sockets (portable and fast)
 - iPhone status icon support
   - create BTstack icon. Flipped B in red, or blue on orange
@@ -15,6 +13,7 @@ NEXT:
     - e.g. use popen and wait for initial "I'm ready" message
   - autostart by launchd
   - stop  BTdaemon after X minutes idle
+- extend hci_logger to write to /var/hci_dump.txt as text
 - better deal with Apple stack
   - detect that it is running
   - figure out how to shut it down
