@@ -177,7 +177,7 @@ int main (int argc, const char * argv[]){
 #endif
     
 #ifdef USE_SPRINGBOARD
-    // bluetooth_status_handler = platform_iphone_status_handler;
+    bluetooth_status_handler = platform_iphone_status_handler;
 #endif
     
     // @TODO: allow configuration per HCI CMD
