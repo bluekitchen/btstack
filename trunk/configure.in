@@ -72,6 +72,7 @@ if test "x$target" = xiphone; then
             echo "Cross-compiling for iPhone/iPod touch using Apple's iPhone SDK"
             echo "iPhone IP for install-iphone target: $IPHONE_IP"
             CC="$DEVELOPER_PATH/usr/bin/arm-apple-darwin9-gcc-$GCC_VERSION"
+            OBJC="$DEVELOPER_PATH/usr/bin/arm-apple-darwin9-gcc-$GCC_VERSION"
             CFLAGS="$CFLAGS -g"
             CFLAGS="$CFLAGS -I$SDK_PATH/usr/include"
             CFLAGS="$CFLAGS -I$SDK_PATH/usr/lib/gcc/arm-apple-darwin9/$GCC_VERSION/include"
