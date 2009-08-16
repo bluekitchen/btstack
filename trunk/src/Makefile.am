@@ -15,7 +15,6 @@ BTdaemon_SOURCES =       \
     l2cap.c              \
     l2cap_signaling.c    \
     linked_list.c        \
-    platform_iphone.m    \
     run_loop.c           \
     socket_connection.c  \
     utils.c
