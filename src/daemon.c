@@ -26,6 +26,10 @@
 #include "bt_control_iphone.h"
 #endif
 
+#ifdef USE_SPRINGBOARD
+#include "platform_iphone.h"
+#endif
+
 #ifdef HAVE_TRANSPORT_H4
 #include "hci_transport_h4.h"
 #endif
@@ -173,7 +177,7 @@ int main (int argc, const char * argv[]){
 #endif
     
 #ifdef USE_SPRINGBOARD
-    bluetooth_status_handler = platform_iphone_status_handler
+    // bluetooth_status_handler = platform_iphone_status_handler;
 #endif
     
     // @TODO: allow configuration per HCI CMD

@@ -4,13 +4,17 @@ Last milestone reached: Restart client app without restarting BTdaemon possible
 
 NEXT:
 - iPhone status icon support
-  - call SpringBoard on/off BT
-- client/server part using unix domain sockets (portable and fast)
-- automatic start/stop of BTdaemon
-  - start BTdaemon by client lib
-    - e.g. use popen and wait for initial "I'm ready" message
-  - autostart by launchd
-  - stop  BTdaemon after X minutes idle
+  - set BTstack SpringBoard icon
+- client/server part using unix domain sockets (faster than TCP/IP)
+- autostart by launchd
+  - Unix Socket example Mac: http://lists.apple.com/archives/Macnetworkprog/2007/Oct/msg00078.html
+  - Mac OS X book: 472-485
+  - check with launchd, too?
+  - launch.h exists in 3.0 SDK, but also in inofficial headers before
+  - socket handling using kevent
+  - exists too.
+  - too complicated 
+- stop  BTdaemon after X minutes idle
 - extend hci_logger to write to /var/hci_dump.txt as text
 - better deal with Apple stack
   - detect that it is running
