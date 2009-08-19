@@ -4,21 +4,16 @@ Last milestone reached: Restart client app without restarting BTdaemon possible
 
 NEXT:
 - autostart by launchd: ch.ringwald.BTstack.plist
-  - provide SIGTERM handler
-  - Unix Socket example Mac: http://lists.apple.com/archives/Macnetworkprog/2007/Oct/msg00078.html
-  - Mac OS X book: 472-485
-  - check with launchd, too?
-    - launch.h exists in 3.0 SDK, but also in inofficial headers before
-- stop  BTdaemon after X minutes idle
+  - get to work
+- better deal with Apple stack
+  - detect that it is running
+  - figure out how to shut it down
+  - user interface
 - iPhone status icon support
   - set BTstack SpringBoard icon from background deamon
     - possible without MobileSubstrate
 	- MobileSubstrate used by veency
 - extend hci_logger to write to /var/hci_dump.txt as text
-- better deal with Apple stack
-  - detect that it is running
-  - figure out how to shut it down
-  - user interface
 - Cocoa User Interface Components
   - Alert and shutdown of Apple's stack
   - Inquiry

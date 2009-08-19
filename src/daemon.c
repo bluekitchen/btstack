@@ -52,8 +52,9 @@ static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
 static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth_status_handler;
 
 static void daemon_no_connections_timeout(){
-    printf("No connection for %u seconds -> POWER OFF\n", DAEMON_NO_CONNECTION_TIMEOUT);
+    printf("No connection for %u seconds -> POWER OFF and quit\n", DAEMON_NO_CONNECTION_TIMEOUT);
     hci_power_control( HCI_POWER_OFF);
+    exit(0);
 }
 
 static int btstack_command_handler(connection_t *connection, uint8_t *packet, uint16_t size){
