@@ -6,6 +6,8 @@
 
 #import "platform_iphone.h"
 
+#ifdef USE_SPRINGBOARD
+
 #ifdef __OBJC__
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
@@ -37,3 +39,5 @@ void platform_iphone_status_handler(BLUETOOTH_STATE state){
             break;
     }
 }
+
+#endif
