@@ -4,6 +4,8 @@
 //  Created by Matthias Ringwald on 8/15/09.
 //
 
+#include "../config.h"
+
 #import "platform_iphone.h"
 
 #ifdef USE_SPRINGBOARD
