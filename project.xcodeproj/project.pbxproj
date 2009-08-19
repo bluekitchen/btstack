@@ -67,6 +67,7 @@
 		9C78A04B103C6734003B2950 /* Default_BTstackActive.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Default_BTstackActive.png; path = resources/Default_BTstackActive.png; sourceTree = "<group>"; };
 		9C78A04C103C6734003B2950 /* FSO_BTstack.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = FSO_BTstack.png; path = resources/FSO_BTstack.png; sourceTree = "<group>"; };
 		9C78A04D103C6734003B2950 /* FSO_BTstackActive.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = FSO_BTstackActive.png; path = resources/FSO_BTstackActive.png; sourceTree = "<group>"; };
+		9C78A0BB103C9DEE003B2950 /* ch.ringwald.BTstack.plist */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text.plist.xml; name = ch.ringwald.BTstack.plist; path = resources/ch.ringwald.BTstack.plist; sourceTree = "<group>"; };
 		9C7B5ABE100BD3340065D87E /* linked_list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = linked_list.h; path = src/linked_list.h; sourceTree = "<group>"; };
 		9C7B5ABF100BD3340065D87E /* linked_list.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = linked_list.c; path = src/linked_list.c; sourceTree = "<group>"; };
 		9C7B5B7E100D04450065D87E /* test.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = test.c; path = example/test.c; sourceTree = "<group>"; };
@@ -169,6 +170,7 @@
 		9C78A049103C671D003B2950 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				9C78A0BB103C9DEE003B2950 /* ch.ringwald.BTstack.plist */,
 				9C78A04A103C6734003B2950 /* Default_BTstack.png */,
 				9C78A04B103C6734003B2950 /* Default_BTstackActive.png */,
 				9C78A04C103C6734003B2950 /* FSO_BTstack.png */,

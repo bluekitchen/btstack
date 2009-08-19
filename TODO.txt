@@ -3,15 +3,12 @@
 Last milestone reached: Restart client app without restarting BTdaemon possible
 
 NEXT:
-- client/server part using unix domain sockets (faster than TCP/IP)
-- autostart by launchd
+- autostart by launchd: ch.ringwald.BTstack.plist
+  - provide SIGTERM handler
   - Unix Socket example Mac: http://lists.apple.com/archives/Macnetworkprog/2007/Oct/msg00078.html
   - Mac OS X book: 472-485
   - check with launchd, too?
     - launch.h exists in 3.0 SDK, but also in inofficial headers before
-  - socket handling using kevent
-    - exists too.
-    - too complicated 
 - stop  BTdaemon after X minutes idle
 - iPhone status icon support
   - set BTstack SpringBoard icon from background deamon

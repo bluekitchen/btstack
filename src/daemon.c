@@ -204,7 +204,11 @@ int main (int argc, const char * argv[]){
 
     // handle CTRL-c
     signal(SIGINT, daemon_sigint_handler);
-
+    // handle SIGTERM - suggested for launchd
+    signal(SIGTERM, daemon_sigint_handler);
+    // make stderr unbuffered
+    setbuf(stderr, NULL);
+    
     bluetooth_status_handler(BLUETOOTH_ACTIVE);
     
     // go!
