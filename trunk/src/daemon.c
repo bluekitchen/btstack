@@ -203,6 +203,8 @@ int main (int argc, const char * argv[]){
 
     // handle CTRL-c
     signal(SIGINT, daemon_sigint_handler);
+
+    bluetooth_status_handler(BLUETOOTH_ACTIVE);
     
     // go!
     run_loop_execute();

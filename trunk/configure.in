@@ -72,14 +72,15 @@ if test "x$target" = xiphone; then
             echo "Cross-compiling for iPhone/iPod touch using Apple's iPhone SDK"
             echo "iPhone IP for install-iphone target: $IPHONE_IP"
             CC="$DEVELOPER_PATH/usr/bin/arm-apple-darwin9-gcc-$GCC_VERSION"
-            OBJC="$DEVELOPER_PATH/usr/bin/arm-apple-darwin9-gcc-$GCC_VERSION"
+            OBJC="$DEVELOPER_PATH/usr/bin/arm-apple-darwin9-g++-$GCC_VERSION"
             CFLAGS="$CFLAGS -g"
-            CFLAGS="$CFLAGS -I$SDK_PATH/usr/include"
-            CFLAGS="$CFLAGS -I$SDK_PATH/usr/lib/gcc/arm-apple-darwin9/$GCC_VERSION/include"
-            CFLAGS="$CFLAGS -F$SDK_PATH/System/Library/Frameworks"
-            LDFLAGS="$LDFLAGS -L$SDK_PATH/usr/lib -framework CoreFoundation"
+            CPPFLAGS="$CPPFLAGS -I$SDK_PATH/usr/include"
+            CPPFLAGS="$CPPFLAGS -I$SDK_PATH/usr/lib/gcc/arm-apple-darwin9/$GCC_VERSION/include"
+            CPPFLAGS="$CPPFLAGS -F$SDK_PATH/System/Library/Frameworks"
+            LDFLAGS="$LDFLAGS -F$SDK_PATH/System/Library/Frameworks"
+            LDFLAGS="$LDFLAGS -L$SDK_PATH/usr/lib -framework CoreFoundation -framework UIKit"
             LDFLAGS="$LDFLAGS -L$SDK_PATH/System/Library/Frameworks/IOKit.framework/Versions/A"
-            LDFLAGS="$LDFLAGS -lIOkit"
+            LDFLAGS="$LDFLAGS -lIOkit -lobjc"
 		   ;;
         *)
             AC_MSG_ERROR(Don't know how to compile without Apple's iPhone SDK, sorry.)
