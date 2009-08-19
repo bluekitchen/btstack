@@ -198,7 +198,8 @@ int main (int argc, const char * argv[]){
     // @TODO: make port and/or socket configurable per config.h
     
     // create server
-    socket_connection_create_tcp(BTSTACK_PORT);
+    // socket_connection_create_tcp(BTSTACK_PORT);
+    socket_connection_create_unix(BTSTACK_UNIX);
     socket_connection_register_packet_callback(daemon_client_handler);
 
     // handle CTRL-c

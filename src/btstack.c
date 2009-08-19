@@ -34,7 +34,7 @@ int bt_open(){
 
     // BTdaemon
     socket_connection_register_packet_callback(btstack_packet_handler);
-    btstack_connection = socket_connection_open_tcp();
+    btstack_connection = socket_connection_open_unix();
     if (!btstack_connection) return -1;
 
     return 0;

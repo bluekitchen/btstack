@@ -13,6 +13,9 @@
 /** TCP port for BTstack */
 #define BTSTACK_PORT            13333
 
+/** UNIX domain socket for BTstack */
+#define BTSTACK_UNIX            "/tmp/BTstack"
+
 /** opaque connection type */
 typedef struct connection connection_t;
 
@@ -22,19 +25,35 @@ typedef struct connection connection_t;
 int socket_connection_create_tcp(int port);
 
 /** 
- * create socket for incoming for unix domain connections
+ * create socket for incoming unix domain connections
  */
 int socket_connection_create_unix(char *path);
-
-/**
- * create socket connection to BTdaemon 
- */
-connection_t * socket_connection_open_tcp();
 
 /**
  * close socket connection to BTdaemon 
  */
 int socket_connection_close_tcp(connection_t *connection);
+
+/**
+ * create TCP socket connection to BTdaemon 
+ */
+connection_t * socket_connection_open_tcp();
+
+/**
+ * close TCP socket connection to BTdaemon 
+ */
+int socket_connection_close_tcp(connection_t *connection);
+
+/**
+ * create unix socket connection to BTdaemon 
+ */
+connection_t * socket_connection_open_unix();
+
+/**
+ * close unix connection to BTdaemon 
+ */
+int socket_connection_close_unix(connection_t *connection);
+
 
 /**
  * set packet handler for all auto-accepted connections 

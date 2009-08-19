@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <unistd.h>
 
 #define MAX_PENDING_CONNECTIONS 10
@@ -232,10 +233,48 @@ int socket_connection_create_tcp(int port){
 
 /** 
  * create socket data_source for unix domain socket
- *
- * @TODO: implement socket_connection_create_unix
- */
+ * */
 int socket_connection_create_unix(char *path){
+    
+    // create data_source_t
+    data_source_t *ds = malloc( sizeof(data_source_t));
+    if (ds == NULL) return -1;
+    ds->fd = 0;
+    ds->process = socket_connection_accept;
+    
+	// create tcp socket
+	if ((ds->fd = socket (AF_UNIX, SOCK_STREAM, 0)) < 0) {
+		printf ("Error creating socket ...(%s)\n", strerror(errno));
+		free(ds);
+        return -1;
+	}
+    
+	printf ("Socket created\n");
+	
+    struct sockaddr_un addr;
+    bzero(&addr, sizeof(addr));
+	addr.sun_family = AF_UNIX;
+    strcpy(addr.sun_path, path);
+    unlink(path);
+
+	const int y = 1;
+	setsockopt(ds->fd, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(int));
+    
+	if (bind ( ds->fd, (struct sockaddr *) &addr, sizeof (addr) ) ) {
+		printf ("Error on bind() ...(%s)\n", strerror(errno));
+		free(ds);
+        return -1;
+	}
+	
+	if (listen (ds->fd, MAX_PENDING_CONNECTIONS)) {
+		printf ("Error on listen() ...(%s)\n", strerror(errno));
+		free(ds);
+        return -1;
+	}
+    
+    run_loop_add_data_source(ds);
+    
+	printf ("Server up and running ...\n");
     return 0;
 }
 
@@ -311,3 +350,38 @@ int socket_connection_close_tcp(connection_t * connection){
     free( connection );
     return 0;
 }
+
+
+/**
+ * create socket connection to BTdaemon 
+ */
+connection_t * socket_connection_open_unix(){
+    
+    int btsocket = socket(AF_UNIX, SOCK_STREAM, 0);
+	if(btsocket == -1){
+		return NULL;
+	}
+
+    struct sockaddr_un server;
+    bzero(&server, sizeof(server));
+    server.sun_family = AF_UNIX;
+    strcpy(server.sun_path, BTSTACK_UNIX);
+    if (connect(btsocket, (struct sockaddr *)&server, sizeof (server)) == -1){
+        return NULL;
+    };
+    
+    return socket_connection_register_new_connection(btsocket);
+}
+
+
+/**
+ * close socket connection to BTdaemon 
+ */
+int socket_connection_close_unix(connection_t * connection){
+    if (!connection) return -1;
+    shutdown(connection->ds.fd, SHUT_RDWR);
+    run_loop_remove_data_source(&connection->ds);
+    free( connection );
+    return 0;
+}
+
