@@ -9,10 +9,14 @@
 	<key>Program</key>
 	<string>/usr/bin/BTdaemon</string>
 	<key>ServiceIPC</key>
+	<false/>
+	<key>Debug</key>
 	<true/>
 	<key>ProgramArguments</key>
 	<array/>
 	<key>StandardErrorPath</key>
+	<string>/var/log/BTstack.err</string>
+	<key>StandardOutPath</key>
 	<string>/var/log/BTstack.log</string>
 	<key>Sockets</key>
 	<dict>
