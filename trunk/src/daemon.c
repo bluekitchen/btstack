@@ -196,11 +196,11 @@ int main (int argc, const char * argv[]){
     timeout.process = daemon_no_connections_timeout;
     
     // @TODO: make choice of socket server configurable (TCP and/or Unix Domain Socket)
-    // @TODO: make port and/or socket configurable per config.h
     
     // create server
     // socket_connection_create_tcp(BTSTACK_PORT);
     socket_connection_create_unix(BTSTACK_UNIX);
+
     socket_connection_register_packet_callback(daemon_client_handler);
 
     // handle CTRL-c
@@ -209,9 +209,9 @@ int main (int argc, const char * argv[]){
     signal(SIGTERM, daemon_sigint_handler);
     // make stderr unbuffered
     setbuf(stderr, NULL);
-    
-    bluetooth_status_handler(BLUETOOTH_ACTIVE);
-    
+    setbuf(stdout, NULL);
+    printf("BTdaemon started - stdout\n");
+    fprintf(stderr,"BTdaemon started - stderr\n");
     // go!
     run_loop_execute();
 

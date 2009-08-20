@@ -91,7 +91,11 @@ void event_handler(uint8_t *packet, uint16_t size){
 }
 
 int main (int argc, const char * argv[]){
-	bt_open();
+	int err = bt_open();
+	if (err) {
+		printf("Failed to open connection to BTdaemon\n");
+		return err;
+	}
 	bt_register_event_packet_handler(event_handler);
 	bt_register_data_packet_handler(data_handler);
 	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
