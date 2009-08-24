@@ -21,6 +21,7 @@ static linked_list_t l2cap_channels = NULL;
 static uint8_t * acl_buffer = NULL;
 static void (*event_packet_handler) (uint8_t *packet, uint16_t size) = null_event_handler;
 static void (*data_packet_handler)  (uint16_t source_cid, uint8_t *packet, uint16_t size) = null_data_handler;
+static connection_t * capture_connection = NULL;
 
 void l2cap_init(){
     sig_buffer = malloc( 48 );
@@ -152,11 +153,10 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
             }
         }
         if (!used) {
-            hci_send_cmd(&hci_disconnect, handle, 0x13); // remote closd connection             
+            hci_send_cmd(&hci_disconnect, handle, 0x13); // remote closed connection             
         }
     }
     
-    // forward to higher layers
     (*event_packet_handler)(packet, size);
 }
 
@@ -264,6 +264,14 @@ void l2cap_emit_channel_closed(l2cap_channel_t *channel) {
 
 void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
     
+    // Capturing?
+    if (capture_connection) {
+        socket_connection_send_packet(capture_connection, HCI_ACL_DATA_PACKET, 0, packet, size);
+    }
+    
+    // forward to higher layers - not needed yet
+    // (*data_packet_handler)(channel_id, packet, size);
+    
     // Get Channel ID and command code 
     uint16_t channel_id = READ_L2CAP_CHANNEL_ID(packet); 
     uint8_t  code       = READ_L2CAP_SIGNALING_CODE( packet );
@@ -307,11 +315,8 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
     // Find channel for this channel_id and connection handle
     l2cap_channel_t * channel = l2cap_get_channel_for_source_cid(channel_id);
     if (channel) {
-        socket_connection_send_packet(channel->connection, HCI_ACL_DATA_PACKET, 0, packet, size);
+        socket_connection_send_packet(channel->connection, L2CAP_DATA_PACKET, 0, packet, size);
     }
-
-     // forward to higher layers
-    (*data_packet_handler)(channel_id, packet, size);
 }
 
 
@@ -334,4 +339,7 @@ void l2cap_send_internal(uint16_t source_cid, uint8_t *data, uint16_t len){
      }
 }
 
+void l2cap_set_capture_connection(connection_t * connection){
+    capture_connection = connection;
+}
 

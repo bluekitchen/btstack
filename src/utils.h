@@ -53,7 +53,8 @@ void bt_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 void bt_flip_addr(bd_addr_t dest, bd_addr_t src);
 
 void hexdump(void *data, int size);
-void print_bd_addr( bd_addr_t addr);
+void print_bd_addr(bd_addr_t addr);
+int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr);
 
 #define BD_ADDR_CMP(a,b) memcmp(a,b, BD_ADDR_LEN)
 #define BD_ADDR_COPY(dest,src) memcpy(dest,src,BD_ADDR_LEN)

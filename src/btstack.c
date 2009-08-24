@@ -61,7 +61,9 @@ int btstack_packet_handler(connection_t *connection, uint16_t packet_type, uint1
         case HCI_EVENT_PACKET:
             (*event_packet_handler)(data, size);
             break;
+        // TODO use different handler, or use packet type parameter
         case HCI_ACL_DATA_PACKET:
+        case L2CAP_DATA_PACKET:
             (*acl_packet_handler)(data, size);
             break;
         default:
@@ -87,3 +89,7 @@ void l2cap_send(uint16_t source_cid, uint8_t *data, uint16_t len){
     socket_connection_send_packet(btstack_connection, L2CAP_DATA_PACKET, source_cid, data, len);
 }
 
+void bt_send_acl_packet(uint8_t * data, uint16_t len){
+    // send
+    socket_connection_send_packet(btstack_connection, HCI_ACL_DATA_PACKET, 0, data, len);
+}
