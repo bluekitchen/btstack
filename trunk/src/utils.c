@@ -8,6 +8,7 @@
 
 #include "utils.h"
 #include <stdio.h>
+#include <strings.h>
 
 void bt_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
     buffer[pos++] = value;
@@ -46,3 +47,19 @@ void print_bd_addr( bd_addr_t addr){
     printf("%02X", ((uint8_t *)addr)[i]);
 }
 
+int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr){
+	int bd_addr_buffer[BD_ADDR_LEN];  //for sscanf, integer needed
+	// reset result buffer
+	int i;
+    bzero(bd_addr_buffer, sizeof(bd_addr_buffer));
+	// parse
+    int result = sscanf( (char *) addr_string, "%2x:%2x:%2x:%2x:%2x:%2x", &bd_addr_buffer[0], &bd_addr_buffer[1], &bd_addr_buffer[2],
+						&bd_addr_buffer[3], &bd_addr_buffer[4], &bd_addr_buffer[5]);
+	// store
+	if (result == 6){
+		for (i = 0; i < BD_ADDR_LEN; i++) {
+			addr[i] = (uint8_t) bd_addr_buffer[i];
+		}
+	}
+	return (result == 6);
+}

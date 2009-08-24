@@ -38,11 +38,14 @@
 // set power mode: @param HCI_POWER_MODE
 #define HCI_BTSTACK_SET_POWER_MODE                         0x02
 
+// set capture mode: @param on
+#define HCI_BTSTACK_SET_ACL_CAPTURE_MODE                   0x03
+
 // create l2cap channel: @param bd_addr(48), psm (16)
-#define L2CAP_CREATE_CHANNEL                               0x03
+#define L2CAP_CREATE_CHANNEL                               0x20
 
 // disconnect l2cap disconnect, @param channel(16), reason(8)
-#define L2CAP_DISCONNECT                                   0x04
+#define L2CAP_DISCONNECT                                   0x21
 
 // Events from host controller to host
 #define HCI_EVENT_INQUIRY_COMPLETE				           0x01
@@ -74,6 +77,7 @@
 #define HCI_EVENT_READ_CLOCK_OFFSET_COMPLETE               0x1C
 #define HCI_EVENT_PACKET_TYPE_CHANGED                      0x1D
 #define HCI_EVENT_INQUIRY_RESULT_WITH_RSSI		      	   0x22
+#define HCI_EVENT_EXTENDED_INQUIRY_RESPONSE                0x2F
 #define HCI_EVENT_VENDOR_SPECIFIC				           0xFF
 
 // events from BTstack for application/client lib
@@ -164,5 +168,6 @@ extern hci_cmd_t hci_write_simple_pairing_mode;
 // BTSTACK client/server commands - see hci.c for info on parameters
 extern hci_cmd_t btstack_get_state;
 extern hci_cmd_t btstack_set_power_mode;
+extern hci_cmd_t btstack_set_acl_capture_mode;
 extern hci_cmd_t l2cap_create_channel;
 extern hci_cmd_t l2cap_disconnect;

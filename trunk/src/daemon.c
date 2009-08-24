@@ -72,6 +72,13 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case HCI_BTSTACK_SET_POWER_MODE:
             hci_power_control(packet[3]);
             break;
+        case HCI_BTSTACK_SET_ACL_CAPTURE_MODE:
+            if (packet[3]) {
+                l2cap_set_capture_connection(connection);
+            } else {
+                l2cap_set_capture_connection(NULL);
+            }
+            break;
         case L2CAP_CREATE_CHANNEL:
             bt_flip_addr(addr, &packet[3]);
             psm = READ_BT_16(packet, 9);
@@ -100,6 +107,9 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                 // BTstack command
                 btstack_command_handler(connection, data, length);
             }
+            break;
+        case HCI_ACL_DATA_PACKET:
+            hci_send_acl_packet(data, length);
             break;
         case L2CAP_DATA_PACKET:
             // process l2cap packet...
@@ -184,7 +194,7 @@ int main (int argc, const char * argv[]){
     // @TODO: allow configuration per HCI CMD
     
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-    // hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
     // hci_dump_open(NULL, HCI_DUMP_STDOUT);
                   
     // init HCI

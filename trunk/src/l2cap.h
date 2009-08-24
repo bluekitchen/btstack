@@ -55,6 +55,8 @@ void l2cap_send_internal(uint16_t source_cid, uint8_t *data, uint16_t len);
 void l2cap_acl_handler( uint8_t *packet, uint16_t size );
 void l2cap_event_handler( uint8_t *packet, uint16_t size );
 
+void l2cap_set_capture_connection(connection_t * connection);
+
 void l2cap_finialize_channel_close(l2cap_channel_t *channel);
 void l2cap_close_channels_for_connection(connection_t *connection);
 
