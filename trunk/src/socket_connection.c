@@ -24,6 +24,11 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#ifdef USE_LAUNCHD
+#include <sys/event.h>
+#include <launch.h> 
+#endif
+
 #define MAX_PENDING_CONNECTIONS 10
 
 /** prototypes */
@@ -31,6 +36,9 @@ static int socket_connection_hci_process(struct data_source *ds);
 static int socket_connection_dummy_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t length);
 
 /** globals */
+#ifdef USE_LAUNCHD
+static struct kevent kev_init, kev_listener;
+#endif
 
 /** packet header used over socket connections, in front of the HCI packet */
 typedef struct packet_header {
@@ -168,7 +176,12 @@ int socket_connection_hci_process(struct data_source *ds) {
 static int socket_connection_accept(struct data_source *socket_ds) {
     
 	/* New connection coming in! */
+#ifdef USE_LAUNCHD
+    int fd = kevent(socket_ds->fd, NULL, 0, &kev_listener, 1, NULL);
+    fd = accept(kev_listener.ident, NULL, NULL);
+#else
 	int fd = accept(socket_ds->fd, NULL, NULL);
+#endif
 	if (fd < 0) {
 		perror("accept");
         return 0;
@@ -243,7 +256,77 @@ int socket_connection_create_unix(char *path){
     ds->fd = 0;
     ds->process = socket_connection_accept;
     
-	// create tcp socket
+#ifdef USE_LAUNCHD
+    // values gotten from launchd data query functions
+    launch_data_t message = NULL, configDict = NULL;
+    
+    // make the checkin message
+    message = launch_data_new_string (LAUNCH_KEY_CHECKIN);
+    
+    // and check in with launchd
+    if ((configDict = launch_msg(message)) == NULL) {
+        fprintf (stderr, "launch_msg(\"" LAUNCH_KEY_CHECKIN "\") IPC failure: %m");
+        free (ds);
+        return -1;
+    }
+    
+    // see if launchd returned an errno.  If you get "permission denied"
+    // make sure you have ServiceIPC=true in your plist
+    if (launch_data_get_type(configDict) == LAUNCH_DATA_ERRNO) {
+        errno = launch_data_get_errno (configDict);
+        fprintf(stderr, "Check-in failed: %d", errno);
+        free (ds);
+        return -1;
+    }
+    
+    // get the socket(s) configured
+    launch_data_t sockets;
+    sockets = launch_data_dict_lookup (configDict, LAUNCH_JOBKEY_SOCKETS);
+    if (sockets == NULL) {
+        fprintf(stderr, "No sockets found to answer requests on!");
+        free (ds);
+        return -1;
+    }
+
+    // dig into the Sockets dictionary to get the SampleListeners
+    // dictionary
+    launch_data_t listeners;
+    listeners = launch_data_dict_lookup (sockets, "Listeners");
+    if (listeners == NULL) {
+        fprintf (stderr, "No known sockets found to answer requests on!");
+        free (ds);
+        return -1;
+    }
+    
+    // make a queue we'll use to get new connection fd's from launchd
+    if ((ds->fd = kqueue()) == -1) {
+        fprintf(stderr , "kqueue(): %m");
+        free (ds);
+        return -1;
+    }
+    
+    // register a read event with the kqueue
+    size_t i;
+    for (i = 0; i < launch_data_array_get_count (listeners); i++) {
+        launch_data_t tempi = launch_data_array_get_index (listeners, i);
+        
+        EV_SET (&kev_init,      // struct to fill in
+                launch_data_get_fd(tempi),  // identifier
+                EVFILT_READ,  // filter
+                EV_ADD,       // action flags
+                0,            // filter flags
+                0,            // filter data
+                NULL);        // context
+        
+        if (kevent(ds->fd, &kev_init, 1, NULL, 0, NULL) == -1) {
+            fprintf (stderr, "kevent()");
+            free (ds);
+            return -1;
+        }
+        launch_data_free (tempi);
+    }
+#else
+	// create unix socket
 	if ((ds->fd = socket (AF_UNIX, SOCK_STREAM, 0)) < 0) {
 		printf ("Error creating socket ...(%s)\n", strerror(errno));
 		free(ds);
@@ -257,7 +340,7 @@ int socket_connection_create_unix(char *path){
 	addr.sun_family = AF_UNIX;
     strcpy(addr.sun_path, path);
     unlink(path);
-
+    
 	const int y = 1;
 	setsockopt(ds->fd, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(int));
     
@@ -272,6 +355,7 @@ int socket_connection_create_unix(char *path){
 		free(ds);
         return -1;
 	}
+#endif
     
     run_loop_add_data_source(ds);
     

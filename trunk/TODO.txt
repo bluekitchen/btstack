@@ -4,9 +4,9 @@ Last milestone reached: Restart client app without restarting BTdaemon possible
 
 NEXT:
 - autostart by launchd: ch.ringwald.BTstack.plist
+  - get it to work on mac, example:
+    - http://objccocoa.codefetch.com/example/pw/20-launchd/sampled.m?qy=hello+world
   - get it to work on iPhone
-  - read kevent docu in chapter 9
-  - follow Mac OS X Interal exampe of using kevent to accept connections
 - better deal with Apple stack
   - detect if it is running
   - figure out how to shut it down
