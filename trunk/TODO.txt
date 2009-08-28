@@ -36,6 +36,8 @@ NEXT:
   - error notification
   - flow control
   - reassembly/segmentation
+- autostart of BTdaemon (inetd? launchd?)
+- automatic disable of alternative Bluetooth Stack (e.g., BTServer on iPhone)
 - DEMOS:
   - BTstack-cmd
     - info
