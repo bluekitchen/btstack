@@ -11,6 +11,8 @@
 
 #include "hci.h"
 
+#include "../config.h"
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -23,7 +25,6 @@
 #include <unistd.h>
 
 #define MAX_PENDING_CONNECTIONS 10
-#define DATA_BUF_SIZE           80
 
 /** prototypes */
 static int socket_connection_hci_process(struct data_source *ds);
