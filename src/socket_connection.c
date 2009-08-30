@@ -26,7 +26,6 @@
 
 #ifdef USE_LAUNCHD
 #include <launch.h> 
-#include <asl.h>
 #endif
 
 #define MAX_PENDING_CONNECTIONS 10
@@ -248,87 +247,64 @@ int socket_connection_create_unix(char *path){
 	launch_data_t checkin_request;
     launch_data_t listening_fd_array;
 	size_t i;
-	aslclient asl = NULL;
-	aslmsg log_msg = NULL;
-	int retval = EXIT_SUCCESS;
     
-	/*
-	 * Create a new ASL log
-	 *
-	 */	 
-	asl = asl_open("SampleD", "Daemon", ASL_OPT_STDERR);
-	log_msg = asl_new(ASL_TYPE_MSG);
-	asl_set(log_msg, ASL_KEY_SENDER, "SampleD");
-	
 	/*
 	 * Register ourselves with launchd.
 	 * 
 	 */
 	if ((checkin_request = launch_data_new_string(LAUNCH_KEY_CHECKIN)) == NULL) {
-		asl_log(asl, log_msg, ASL_LEVEL_ERR, "launch_data_new_string(\"" LAUNCH_KEY_CHECKIN "\") Unable to create string.");
-		retval = EXIT_FAILURE;
-		exit(0);
+		printf("launch_data_new_string(\"" LAUNCH_KEY_CHECKIN "\") Unable to create string.");
+		return -1;
 	}
     
 	if ((checkin_response = launch_msg(checkin_request)) == NULL) {
-		asl_log(asl, log_msg, ASL_LEVEL_ERR, "launch_msg(\"" LAUNCH_KEY_CHECKIN "\") IPC failure: %m");
-		retval = EXIT_FAILURE;
-		exit(0);
+		printf("launch_msg(\"" LAUNCH_KEY_CHECKIN "\") IPC failure: %u", errno);
+		return -1;
 	}
     
 	if (LAUNCH_DATA_ERRNO == launch_data_get_type(checkin_response)) {
 		errno = launch_data_get_errno(checkin_response);
-		asl_log(asl, log_msg, ASL_LEVEL_ERR, "Check-in failed: %m");
-		retval = EXIT_FAILURE;
-		exit(0);
+		printf("Check-in failed: %u", errno);
+		return -1;
 	}
     
     launch_data_t the_label = launch_data_dict_lookup(checkin_response, LAUNCH_JOBKEY_LABEL);
 	if (NULL == the_label) {
-		asl_log(asl, log_msg, ASL_LEVEL_ERR, "No label found");
-		retval = EXIT_FAILURE;
-		exit(0);
+		printf("No label found");
+		return -1;
 	}
-    asl_log(asl, log_msg, ASL_LEVEL_NOTICE, "Label: %s", launch_data_get_string(the_label));
-    
 	
 	/*
 	 * Retrieve the dictionary of Socket entries in the config file
 	 */
 	sockets_dict = launch_data_dict_lookup(checkin_response, LAUNCH_JOBKEY_SOCKETS);
 	if (NULL == sockets_dict) {
-		asl_log(asl, log_msg, ASL_LEVEL_ERR, "No sockets found to answer requests on!");
-		retval = EXIT_FAILURE;
-		exit(0);
+		printf("No sockets found to answer requests on!");
+		return -1;
 	}
     
 	if (launch_data_dict_get_count(sockets_dict) > 1) {
-		asl_log(asl, log_msg, ASL_LEVEL_WARNING, "Some sockets will be ignored!");
+		printf("Some sockets will be ignored!");
 	}
     
 	/*
-	 * Get the dictionary value from the key "MyListenerSocket", as defined in the com.apple.dts.SampleD.plist file.
+	 * Get the dictionary value from the key "Listeners"
 	 */
 	listening_fd_array = launch_data_dict_lookup(sockets_dict, "Listeners");
 	if (NULL == listening_fd_array) {
-		asl_log(asl, log_msg, ASL_LEVEL_ERR, "No known sockets found to answer requests on!");
-		retval = EXIT_FAILURE;
-		exit(0);
+		printf("No known sockets found to answer requests on!");
+		return -1;
 	}
     
 	/*
-	 * Initialize a new kernel event.  This will trigger when
-	 * a connection occurs on our listener socket.
-	 *
+	 * Register listening sockets with our run loop
 	 */
-	int nr_fds = launch_data_array_get_count(listening_fd_array);
-	asl_log(asl, log_msg, ASL_LEVEL_NOTICE, "%u file descriptors", nr_fds);
-	for (i = 0; i < nr_fds; i++) {
+	for (i = 0; i < launch_data_array_get_count(listening_fd_array); i++) {
         // get fd
         launch_data_t tempi = launch_data_array_get_index (listening_fd_array, i);
-        int listening_fd = launch_data_get_fd(tempi);  // identifier
+        int listening_fd = launch_data_get_fd(tempi);
         launch_data_free (tempi);
-		asl_log(asl, log_msg, ASL_LEVEL_NOTICE, "%u. file descriptor = %u",(unsigned int) i, listening_fd);
+		printf("%u. file descriptor = %u",(unsigned int) i+1, listening_fd);
         
         // create data_source_t for fd
         data_source_t *ds = malloc( sizeof(data_source_t));
