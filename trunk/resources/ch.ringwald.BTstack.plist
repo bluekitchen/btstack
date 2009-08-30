@@ -7,11 +7,11 @@
 	<key>OnDemand</key>
 	<true/>
 	<key>Program</key>
-	<string>/usr/bin/BTdaemon</string>
+	<string>/usr/local/bin/BTdaemon</string>
 	<key>ServiceIPC</key>
-	<false/>
-	<key>Debug</key>
 	<true/>
+	<key>Debug</key>
+	<false/>
 	<key>ProgramArguments</key>
 	<array/>
 	<key>StandardErrorPath</key>

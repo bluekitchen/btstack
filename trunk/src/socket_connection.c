@@ -25,8 +25,8 @@
 #include <unistd.h>
 
 #ifdef USE_LAUNCHD
-#include <sys/event.h>
 #include <launch.h> 
+#include <asl.h>
 #endif
 
 #define MAX_PENDING_CONNECTIONS 10
@@ -36,9 +36,6 @@ static int socket_connection_hci_process(struct data_source *ds);
 static int socket_connection_dummy_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t length);
 
 /** globals */
-#ifdef USE_LAUNCHD
-static struct kevent kev_init, kev_listener;
-#endif
 
 /** packet header used over socket connections, in front of the HCI packet */
 typedef struct packet_header {
@@ -176,12 +173,7 @@ int socket_connection_hci_process(struct data_source *ds) {
 static int socket_connection_accept(struct data_source *socket_ds) {
     
 	/* New connection coming in! */
-#ifdef USE_LAUNCHD
-    int fd = kevent(socket_ds->fd, NULL, 0, &kev_listener, 1, NULL);
-    fd = accept(kev_listener.ident, NULL, NULL);
-#else
 	int fd = accept(socket_ds->fd, NULL, NULL);
-#endif
 	if (fd < 0) {
 		perror("accept");
         return 0;
@@ -250,82 +242,112 @@ int socket_connection_create_tcp(int port){
  * */
 int socket_connection_create_unix(char *path){
     
+#ifdef USE_LAUNCHD
+    
+    launch_data_t sockets_dict, checkin_response;
+	launch_data_t checkin_request;
+    launch_data_t listening_fd_array;
+	size_t i;
+	aslclient asl = NULL;
+	aslmsg log_msg = NULL;
+	int retval = EXIT_SUCCESS;
+    
+	/*
+	 * Create a new ASL log
+	 *
+	 */	 
+	asl = asl_open("SampleD", "Daemon", ASL_OPT_STDERR);
+	log_msg = asl_new(ASL_TYPE_MSG);
+	asl_set(log_msg, ASL_KEY_SENDER, "SampleD");
+	
+	/*
+	 * Register ourselves with launchd.
+	 * 
+	 */
+	if ((checkin_request = launch_data_new_string(LAUNCH_KEY_CHECKIN)) == NULL) {
+		asl_log(asl, log_msg, ASL_LEVEL_ERR, "launch_data_new_string(\"" LAUNCH_KEY_CHECKIN "\") Unable to create string.");
+		retval = EXIT_FAILURE;
+		exit(0);
+	}
+    
+	if ((checkin_response = launch_msg(checkin_request)) == NULL) {
+		asl_log(asl, log_msg, ASL_LEVEL_ERR, "launch_msg(\"" LAUNCH_KEY_CHECKIN "\") IPC failure: %m");
+		retval = EXIT_FAILURE;
+		exit(0);
+	}
+    
+	if (LAUNCH_DATA_ERRNO == launch_data_get_type(checkin_response)) {
+		errno = launch_data_get_errno(checkin_response);
+		asl_log(asl, log_msg, ASL_LEVEL_ERR, "Check-in failed: %m");
+		retval = EXIT_FAILURE;
+		exit(0);
+	}
+    
+    launch_data_t the_label = launch_data_dict_lookup(checkin_response, LAUNCH_JOBKEY_LABEL);
+	if (NULL == the_label) {
+		asl_log(asl, log_msg, ASL_LEVEL_ERR, "No label found");
+		retval = EXIT_FAILURE;
+		exit(0);
+	}
+    asl_log(asl, log_msg, ASL_LEVEL_NOTICE, "Label: %s", launch_data_get_string(the_label));
+    
+	
+	/*
+	 * Retrieve the dictionary of Socket entries in the config file
+	 */
+	sockets_dict = launch_data_dict_lookup(checkin_response, LAUNCH_JOBKEY_SOCKETS);
+	if (NULL == sockets_dict) {
+		asl_log(asl, log_msg, ASL_LEVEL_ERR, "No sockets found to answer requests on!");
+		retval = EXIT_FAILURE;
+		exit(0);
+	}
+    
+	if (launch_data_dict_get_count(sockets_dict) > 1) {
+		asl_log(asl, log_msg, ASL_LEVEL_WARNING, "Some sockets will be ignored!");
+	}
+    
+	/*
+	 * Get the dictionary value from the key "MyListenerSocket", as defined in the com.apple.dts.SampleD.plist file.
+	 */
+	listening_fd_array = launch_data_dict_lookup(sockets_dict, "Listeners");
+	if (NULL == listening_fd_array) {
+		asl_log(asl, log_msg, ASL_LEVEL_ERR, "No known sockets found to answer requests on!");
+		retval = EXIT_FAILURE;
+		exit(0);
+	}
+    
+	/*
+	 * Initialize a new kernel event.  This will trigger when
+	 * a connection occurs on our listener socket.
+	 *
+	 */
+	int nr_fds = launch_data_array_get_count(listening_fd_array);
+	asl_log(asl, log_msg, ASL_LEVEL_NOTICE, "%u file descriptors", nr_fds);
+	for (i = 0; i < nr_fds; i++) {
+        // get fd
+        launch_data_t tempi = launch_data_array_get_index (listening_fd_array, i);
+        int listening_fd = launch_data_get_fd(tempi);  // identifier
+        launch_data_free (tempi);
+		asl_log(asl, log_msg, ASL_LEVEL_NOTICE, "%u. file descriptor = %u",(unsigned int) i, listening_fd);
+        
+        // create data_source_t for fd
+        data_source_t *ds = malloc( sizeof(data_source_t));
+        if (ds == NULL) return -1;
+        ds->process = socket_connection_accept;
+        ds->fd = listening_fd;
+        run_loop_add_data_source(ds);
+	}
+    
+	launch_data_free(checkin_response);
+
+#else
+    
     // create data_source_t
     data_source_t *ds = malloc( sizeof(data_source_t));
     if (ds == NULL) return -1;
     ds->fd = 0;
     ds->process = socket_connection_accept;
-    
-#ifdef USE_LAUNCHD
-    // values gotten from launchd data query functions
-    launch_data_t message = NULL, configDict = NULL;
-    
-    // make the checkin message
-    message = launch_data_new_string (LAUNCH_KEY_CHECKIN);
-    
-    // and check in with launchd
-    if ((configDict = launch_msg(message)) == NULL) {
-        fprintf (stderr, "launch_msg(\"" LAUNCH_KEY_CHECKIN "\") IPC failure: %m");
-        free (ds);
-        return -1;
-    }
-    
-    // see if launchd returned an errno.  If you get "permission denied"
-    // make sure you have ServiceIPC=true in your plist
-    if (launch_data_get_type(configDict) == LAUNCH_DATA_ERRNO) {
-        errno = launch_data_get_errno (configDict);
-        fprintf(stderr, "Check-in failed: %d", errno);
-        free (ds);
-        return -1;
-    }
-    
-    // get the socket(s) configured
-    launch_data_t sockets;
-    sockets = launch_data_dict_lookup (configDict, LAUNCH_JOBKEY_SOCKETS);
-    if (sockets == NULL) {
-        fprintf(stderr, "No sockets found to answer requests on!");
-        free (ds);
-        return -1;
-    }
 
-    // dig into the Sockets dictionary to get the SampleListeners
-    // dictionary
-    launch_data_t listeners;
-    listeners = launch_data_dict_lookup (sockets, "Listeners");
-    if (listeners == NULL) {
-        fprintf (stderr, "No known sockets found to answer requests on!");
-        free (ds);
-        return -1;
-    }
-    
-    // make a queue we'll use to get new connection fd's from launchd
-    if ((ds->fd = kqueue()) == -1) {
-        fprintf(stderr , "kqueue(): %m");
-        free (ds);
-        return -1;
-    }
-    
-    // register a read event with the kqueue
-    size_t i;
-    for (i = 0; i < launch_data_array_get_count (listeners); i++) {
-        launch_data_t tempi = launch_data_array_get_index (listeners, i);
-        
-        EV_SET (&kev_init,      // struct to fill in
-                launch_data_get_fd(tempi),  // identifier
-                EVFILT_READ,  // filter
-                EV_ADD,       // action flags
-                0,            // filter flags
-                0,            // filter data
-                NULL);        // context
-        
-        if (kevent(ds->fd, &kev_init, 1, NULL, 0, NULL) == -1) {
-            fprintf (stderr, "kevent()");
-            free (ds);
-            return -1;
-        }
-        launch_data_free (tempi);
-    }
-#else
 	// create unix socket
 	if ((ds->fd = socket (AF_UNIX, SOCK_STREAM, 0)) < 0) {
 		printf ("Error creating socket ...(%s)\n", strerror(errno));
@@ -355,9 +377,10 @@ int socket_connection_create_unix(char *path){
 		free(ds);
         return -1;
 	}
-#endif
     
     run_loop_add_data_source(ds);
+
+#endif
     
 	printf ("Server up and running ...\n");
     return 0;
