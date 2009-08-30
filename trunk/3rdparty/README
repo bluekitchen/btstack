@@ -1,5 +1,4 @@
 
 This folder contains copies of open-source headers required to compile the BTstack.
 
- * launch.h is Copyright (c) 2005 Apple Computer, Inc. All rights reserved
-]
+ * launch.h is part of launchd (http://launchd.macosforge.org). It is Copyright (c) 2005 Apple Computer, Inc. All rights reserved
