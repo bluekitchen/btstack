@@ -25,7 +25,7 @@
 #include <unistd.h>
 
 #ifdef USE_LAUNCHD
-#include <launch.h> 
+#include "../3rdparty/launch.h"
 #endif
 
 #define MAX_PENDING_CONNECTIONS 10
