@@ -7,26 +7,26 @@ NEXT:
   - detect if it is running
   - return appropriate error events
 - create a SpringBoardAccess MobileSubstrate Extension
-  - put headers and lib into 3rdparty folder
+  - put MobileSubstrate header and lib into 3rdparty folder
   - control Status bar icons
   - show alerts/messages
 - Detect and handle iPhone sleep mode
-=== BTdaemon can run always
+== Release Version 0.1
+- implement rest of L2CAP state machine
+  - incoming connections
+    - list of supported PSM
+	- commands and events
 - better deal with Apple stack
   - figure out how to shut it down
   - user interface
 - CocoaTouch User Interface Components
   - Inquiry
   - Alerts and shutdown of Apple's stack
-- implement rest of L2CAP state machine
-  - incoming connections
-    - list of supported PSM
-	- commands and events
-=== Incoming L2CAP supported
+== Release 0.2 - Incoming L2CAP supported + UI Support
 - configuration: /etc/btstack
   - single Bluetooth module supported
   - transport type: H4, H5, USB
-  - h4/h5: usart name
+  - h4/h5: UART path
   - usb: product/vendor ID
   - logging mode: text, bluez, packetlogger
 - implement rest of L2CAP state machine
@@ -34,7 +34,6 @@ NEXT:
   - error notification
   - flow control
   - reassembly/segmentation
-- autostart of BTdaemon (inetd? launchd?)
 - automatic disable of alternative Bluetooth Stack (e.g., BTServer on iPhone)
 - DEMOS:
   - BTstack-cmd
@@ -44,12 +43,12 @@ NEXT:
 	- open/close l2cap connection
     - evtl. SDP browser
 
-== Release Version 0.1
+== Release Version 0.3
 - implement RFCOMM
 - implement SDP
 - implement PAN
 
-== Release Version 0.2
+== Release Version 0.4
 - naming conventions for various layers
   - if all control is done by pseudo hci commands, only bt_send_cmd(&cmd_name, ... ) is needed anyway
 - auto-generate code for sending commands from structured text input file
