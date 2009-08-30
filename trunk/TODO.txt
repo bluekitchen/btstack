@@ -1,25 +1,23 @@
 /* new todo file for BTstack */
 
-Last milestone reached: Restart client app without restarting BTdaemon possible
+Last milestone reached: BTdaemon automatically started by launchd on Mac and iPhone
 
 NEXT:
-- autostart by launchd: ch.ringwald.BTstack.plist
-  - get it to work on mac, example:
-    - http://objccocoa.codefetch.com/example/pw/20-launchd/sampled.m?qy=hello+world
-  - get it to work on iPhone
-- better deal with Apple stack
+- deal with Apple stack
   - detect if it is running
+  - return appropriate error events
+- create a SpringBoardAccess MobileSubstrate Extension
+  - put headers and lib into 3rdparty folder
+  - control Status bar icons
+  - show alerts/messages
+- Detect and handle iPhone sleep mode
+=== BTdaemon can run always
+- better deal with Apple stack
   - figure out how to shut it down
   - user interface
-- iPhone status icon support
-  - set BTstack SpringBoard icon from background deamon
-    - possible without MobileSubstrate
-	- MobileSubstrate used by veency
-- Detect and handle iPhone sleep mode
-- Cocoa User Interface Components
-  - Alert and shutdown of Apple's stack
+- CocoaTouch User Interface Components
   - Inquiry
-=== BTdaemon can run always
+  - Alerts and shutdown of Apple's stack
 - implement rest of L2CAP state machine
   - incoming connections
     - list of supported PSM
