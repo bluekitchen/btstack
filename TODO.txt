@@ -4,13 +4,17 @@ Last milestone reached: BTdaemon automatically started by launchd on Mac and iPh
 
 NEXT:
 - deal with Apple stack
-  - detect if it is running
-  - return appropriate error events
+  - detect if it is running and return appropriate error events
 - create a SpringBoardAccess MobileSubstrate Extension
   - put MobileSubstrate header and lib into 3rdparty folder
+  - in SpringBoard hook, start datagram Unix domain or mach port server
   - control Status bar icons
-  - show alerts/messages
-- Detect and handle iPhone sleep mode
+  - show alerts/messages, e.g. Bluetooth disconnected by remote device
+- add code to toggle status bar icons via the SpringBoardAcess extension
+- add code to notify about remote disconnets
+- create script to build APT package
+- create pgp key and sign APT package
+- provide test version at http://btstack.ringwald.ch
 == Release Version 0.1
 - implement rest of L2CAP state machine
   - incoming connections
@@ -19,6 +23,7 @@ NEXT:
 - better deal with Apple stack
   - figure out how to shut it down
   - user interface
+- Detect and handle iPhone sleep mode
 - CocoaTouch User Interface Components
   - Inquiry
   - Alerts and shutdown of Apple's stack
@@ -49,8 +54,6 @@ NEXT:
 - implement PAN
 
 == Release Version 0.4
-- naming conventions for various layers
-  - if all control is done by pseudo hci commands, only bt_send_cmd(&cmd_name, ... ) is needed anyway
 - auto-generate code for sending commands from structured text input file
 - devise concept for access to event data
   - auto-generate event struct getter? STRUCTURE_get_FIELD
