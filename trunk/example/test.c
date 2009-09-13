@@ -36,6 +36,12 @@ void data_handler(uint8_t *packet, uint16_t size){
 }
 
 void event_handler(uint8_t *packet, uint16_t size){
+	// handle HCI init failure
+	if (packet[0] == HCI_EVENT_POWERON_FAILED){
+		printf("HCI Init failed - make sure you have turned off Bluetooth in the System Settings\n");
+		exit(1);
+	}
+
     // bt stack activated, get started - set local name
     if (packet[0] == HCI_EVENT_BTSTACK_WORKING ||
 	   (packet[0] == HCI_EVENT_BTSTACK_STATE && packet[2] == HCI_STATE_WORKING)) {

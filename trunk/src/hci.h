@@ -122,3 +122,4 @@ void hci_emit_state();
 void hci_emit_connection_complete(hci_connection_t *conn);
 void hci_emit_l2cap_check_timeout(hci_connection_t *conn);
 void hci_emit_nr_connections_changed();
+void hci_emit_hci_open_failed();
