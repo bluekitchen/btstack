@@ -63,7 +63,7 @@ static int iphone_valid(void *config){
 	char * machine = get_machine_name();
 	if (!strncmp("iPhone",  machine, strlen("iPhone" ))) return 1;
 	if (!strncmp("iPod2,1", machine, strlen("iPod2,1"))) return 1;
-	if (!strncmp("iPod3,1", machine, strlen("iPod2,1"))) return 1;
+	if (!strncmp("iPod3,1", machine, strlen("iPod3,1"))) return 1;
 	return 0;
 }
 
@@ -249,12 +249,13 @@ static int iphone_write_initscript (void *config, int output){
 }
 
 static int iphone_on (void *config){
+    int err = 0;
 #if 0
     // use tmp file for testing
     int output = open("/tmp/bt.init", O_WRONLY | O_CREAT | O_TRUNC);
     iphone_write_initscript(config, output);
     close(output);
-    system ("BlueTool < /tmp/bt.init");
+    err = system ("BlueTool < /tmp/bt.init");
 #else
     // modify original script on the fly
     FILE * outputFile = popen("BlueTool", "r+");
@@ -270,12 +271,12 @@ static int iphone_on (void *config){
         if (singlechar == EOF) break;
         printf("%c", singlechar);
     };
-    pclose(outputFile);
+    err = pclose(outputFile);
         
 #endif
     // if we sleep for about 3 seconds, we miss a strage packet... but we don't care
     // sleep(3); 
-    return 0;
+    return err;
 }
 
 static int iphone_off (void *config){

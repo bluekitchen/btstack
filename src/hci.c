@@ -265,18 +265,27 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control){
 int hci_power_control(HCI_POWER_MODE power_mode){
     if (power_mode == HCI_POWER_ON && hci_stack.state == HCI_STATE_OFF) {
         
+        // power on
+        int err = hci_stack.control->on(hci_stack.config);
+        if (err){
+            fprintf(stderr, "POWER_ON failed");
+            hci_emit_hci_open_failed();
+            return err;
+        }
+        
+        // open low-level device
+        err = hci_stack.hci_transport->open(hci_stack.config);
+        if (err){
+            fprintf(stderr, "HCI_INIT failed, turning Bluetooth off again");
+            hci_stack.control->off(hci_stack.config);
+            hci_emit_hci_open_failed();
+            return err;
+        }
+        
         // set up state machine
         hci_stack.num_cmd_packets = 1; // assume that one cmd can be sent
         hci_stack.state = HCI_STATE_INITIALIZING;
         hci_stack.substate = 0;
-        
-        // power on
-        hci_stack.control->on(hci_stack.config);
-        
-        // open low-level device
-        hci_stack.hci_transport->open(hci_stack.config);
-        
-        // create internal event
         
     } else if (power_mode == HCI_POWER_OFF && hci_stack.state == HCI_STATE_WORKING){
         
@@ -290,6 +299,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
         hci_stack.state = HCI_STATE_OFF;
     }
     
+    // create internal event
 	hci_emit_state();
     
 	// trigger next/first action
@@ -433,6 +443,14 @@ void hci_emit_nr_connections_changed(){
     event[0] = HCI_EVENT_NR_CONNECTIONS_CHANGED;
     event[1] = 1;
     event[2] = nr_hci_connections();
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
+    hci_stack.event_packet_handler(event, len);
+}
+
+void hci_emit_hci_open_failed(){
+    uint8_t len = 1; 
+    uint8_t event[len];
+    event[0] = HCI_EVENT_POWERON_FAILED;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
     hci_stack.event_packet_handler(event, len);
 }

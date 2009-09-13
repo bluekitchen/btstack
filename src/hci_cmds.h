@@ -96,6 +96,9 @@
 // data: event(8), len(8), nr hci connections
 #define HCI_EVENT_NR_CONNECTIONS_CHANGED                   0x85
 
+// data: none
+#define HCI_EVENT_POWERON_FAILED                           0x86
+
 // data: event(8)
 #define DAEMON_CONNECTION_CLOSED                           0xc0
 
