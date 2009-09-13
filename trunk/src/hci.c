@@ -268,7 +268,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
         // power on
         int err = hci_stack.control->on(hci_stack.config);
         if (err){
-            fprintf(stderr, "POWER_ON failed");
+            fprintf(stderr, "POWER_ON failed\n");
             hci_emit_hci_open_failed();
             return err;
         }
@@ -276,7 +276,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
         // open low-level device
         err = hci_stack.hci_transport->open(hci_stack.config);
         if (err){
-            fprintf(stderr, "HCI_INIT failed, turning Bluetooth off again");
+            fprintf(stderr, "HCI_INIT failed, turning Bluetooth off again\n");
             hci_stack.control->off(hci_stack.config);
             hci_emit_hci_open_failed();
             return err;

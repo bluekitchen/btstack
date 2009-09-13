@@ -95,10 +95,7 @@ static void iphone_set_pskey(int fd, int key, int value){
     write(fd, buffer, 21);
 }
 
-static int iphone_write_initscript (void *config, int output){
-    
-    // get uart config 
-    hci_uart_config_t * uart_config = (hci_uart_config_t *) config;
+static int iphone_write_initscript (hci_uart_config_t *uart_config, int output){
     
     // calculate baud rate (assume rate is multiply of 100)
     uint32_t baud_key = (4096 * (uart_config->baudrate/100) + 4999) / 10000;
@@ -248,12 +245,23 @@ static int iphone_write_initscript (void *config, int output){
     return 0;
 }
 
-static int iphone_on (void *config){
+static int iphone_on (void *transport_config){
+    
+    // quick test if Bluetooth UART can be opened
+    hci_uart_config_t * hci_uart_config = (hci_uart_config_t*) transport_config;
+    int fd = open(hci_uart_config->device_name, O_RDWR | O_NOCTTY | O_NDELAY);
+    if (fd == -1)  {
+        perror("init_serialport: Unable to open port ");
+        perror(hci_uart_config->device_name);
+        return 1;
+    }
+    close(fd);
+    
     int err = 0;
 #if 0
     // use tmp file for testing
     int output = open("/tmp/bt.init", O_WRONLY | O_CREAT | O_TRUNC);
-    iphone_write_initscript(config, output);
+    iphone_write_initscript(hci_uart_config, output);
     close(output);
     err = system ("BlueTool < /tmp/bt.init");
 #else
@@ -261,7 +269,7 @@ static int iphone_on (void *config){
     FILE * outputFile = popen("BlueTool", "r+");
     setvbuf(outputFile, NULL, _IONBF, 0);
     int output = fileno(outputFile);
-    iphone_write_initscript(config, output);
+    iphone_write_initscript(hci_uart_config, output);
     
     // log output
     fflush(outputFile);
