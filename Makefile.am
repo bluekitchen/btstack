@@ -1,5 +1,9 @@
+if USE_SPRINGBOARD
+    springboardaccess = SpringBoardAccess
+endif
+
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = src example
+SUBDIRS = src example $(springboardaccess)
 
 iphone_ip=@IPHONE_IP@
 install-iphone: src/BTdaemon

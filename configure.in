@@ -59,7 +59,6 @@ fi
 AM_CONDITIONAL(HAVE_LIBUSB, [test "x$HAVE_LIBUSB" == "xyes"])
 
 
-
 echo
 echo "BTstack configured for HCI $HCI_TRANSPORT Transport"
 
@@ -107,6 +106,7 @@ else
         UART_DEVICE=/dev/ttyS0
     fi
 fi
+AM_CONDITIONAL(USE_SPRINGBOARD, [test "x$USE_SPRINGBOARD" == "xyes"])
 
 # summary
 if test "x$HCI_TRANSPORT" = xUSB; then
@@ -143,4 +143,4 @@ fi
 
 AC_SUBST(IPHONE_IP)
 AC_SUBST(HAVE_LIBUSB)
-AC_OUTPUT(Makefile src/Makefile example/Makefile)
+AC_OUTPUT(Makefile src/Makefile example/Makefile SpringBoardAccess/Makefile)

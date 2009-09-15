@@ -65,6 +65,7 @@
 		9C46FC380FA906F700ABEF05 /* hci_transport.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci_transport.h; path = src/hci_transport.h; sourceTree = "<group>"; };
 		9C6459DE1037554B0081A00B /* platform_iphone.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = platform_iphone.h; path = src/platform_iphone.h; sourceTree = "<group>"; };
 		9C6459DF1037554B0081A00B /* platform_iphone.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = platform_iphone.m; path = src/platform_iphone.m; sourceTree = "<group>"; };
+		9C77E2761060327200F39DCF /* SpringBoardAccess.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SpringBoardAccess.m; path = SpringBoardAccess/SpringBoardAccess.m; sourceTree = "<group>"; };
 		9C78A04A103C6734003B2950 /* Default_BTstack.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Default_BTstack.png; path = resources/Default_BTstack.png; sourceTree = "<group>"; };
 		9C78A04B103C6734003B2950 /* Default_BTstackActive.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Default_BTstackActive.png; path = resources/Default_BTstackActive.png; sourceTree = "<group>"; };
 		9C78A04C103C6734003B2950 /* FSO_BTstack.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = FSO_BTstack.png; path = resources/FSO_BTstack.png; sourceTree = "<group>"; };
@@ -113,6 +114,7 @@
 				9C78A049103C671D003B2950 /* Resources */,
 				9C7B5B81100D04520065D87E /* Example */,
 				08FB7795FE84155DC02AAC07 /* Source */,
+				9C77E2751060322300F39DCF /* SpringBoardAccess */,
 				C6A0FF2B0290797F04C91782 /* Documentation */,
 				1AB674ADFE9D54B511CA2CBB /* Products */,
 				9CC152C61009052100223347 /* config.h */,
@@ -167,6 +169,14 @@
 				9C7B5CF6100FC96A0065D87E /* clientTest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		9C77E2751060322300F39DCF /* SpringBoardAccess */ = {
+			isa = PBXGroup;
+			children = (
+				9C77E2761060327200F39DCF /* SpringBoardAccess.m */,
+			);
+			name = SpringBoardAccess;
 			sourceTree = "<group>";
 		};
 		9C78A049103C671D003B2950 /* Resources */ = {
