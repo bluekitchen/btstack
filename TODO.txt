@@ -4,7 +4,6 @@ Last milestone reached: BTdaemon automatically started by launchd on Mac and iPh
 
 NEXT:
 - create a SpringBoardAccess MobileSubstrate Extension
-  - put MobileSubstrate header and lib into 3rdparty folder
   - in SpringBoard hook, start datagram Unix domain or mach port server
   - control Status bar icons
   - show alerts/messages, e.g. Bluetooth disconnected by remote device
@@ -13,6 +12,7 @@ NEXT:
 - create script to build APT package
 - create pgp key and sign APT package
 - provide test version at http://btstack.ringwald.ch
+- clean up debug output: seperate messages from errors
 - decide on error reporting
   - command_status_event with custom errors
   - hci open failed 

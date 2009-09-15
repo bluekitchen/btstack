@@ -3,6 +3,7 @@
 
 AC_PREREQ(2.60)
 AC_INIT(BTstack, 0.1)
+AC_CONFIG_AUX_DIR(config)
 AM_INIT_AUTOMAKE(BTstack,0.1)
 
 AC_ARG_WITH(hci-transport, [AS_HELP_STRING([--with-hci-transport=transportType], [Specify BT type to use: h4, usb (not supported yet])], HCI_TRANSPORT=$withval, HCI_TRANSPORT="h4")  
