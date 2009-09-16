@@ -10,6 +10,14 @@
 #import "../3rdparty/substrate.h"
 #import "../3rdparty/SpringBoard.h"
 
+@interface UIApplication (privateStatusBarIconAPI)
+- (void)addStatusBarImageNamed:(id)fp8 removeOnAbnormalExit:(BOOL)fp12;
+- (void)addStatusBarImageNamed:(id)fp8;
+- (void)removeStatusBarImageNamed:(id)fp8;
+// iPhoneOS >= 2.2
+- (void)addStatusBarImageNamed:(id)fp8 removeOnExit:(BOOL)fp12;
+@end
+
 #define HOOK(class, name, type, args...) \
 static type (*_ ## class ## $ ## name)(class *self, SEL sel, ## args); \
 static type $ ## class ## $ ## name(class *self, SEL sel, ## args)
@@ -21,7 +29,8 @@ _ ## class ## $ ## name(self, sel, ## args)
 CFDataRef myCallBack(CFMessagePortRef local, SInt32 msgid, CFDataRef data, void *info) {
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 
-	
+	UIApplication *theApp = [UIApplication sharedApplication];
+    [theApp addStatusBarImageNamed:@"BluetoothActive"];
 	
 	char *message = "Thanks for calling!";
 	CFDataRef returnData = CFDataCreate(NULL, (const UInt8 *) message, strlen(message)+1);
