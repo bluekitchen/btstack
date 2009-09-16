@@ -1,20 +1,26 @@
 NAME = SpringBoardAccess
 
+CC = @CC@
 OBJC     = @OBJC@
 LDFLAGS  = @LDFLAGS@
 CPPFLAGS = @CPPFLAGS@
 
-LDFLAGS += -lobjc \
-		  -multiply_defined suppress \
-		  -framework CoreFoundation \
-		  -framework Foundation \
-		  -framework UIKit \
-		  -L../3rdparty -lsubstrate
+LIB_LDFLAGS = -lobjc \
+              -multiply_defined suppress \
+			  -framework CoreFoundation \
+			  -framework Foundation \
+			  -framework UIKit \
+			  -L../3rdparty -lsubstrate
 
-all: $(NAME).dylib
+APP_LDFLAGS = -framework CoreFoundation
+
+all: $(NAME).dylib $(NAME)-test
 
 clean:
 	rm -f $(NAME).dylib
 	
-$(NAME).dylib: $(NAME).m
-	$(OBJC) $(CPPFLAGS) -dynamiclib -o $@ $(NAME).m -init _$(NAME)Initialize $(LDFLAGS)
+$(NAME).dylib: $(NAME).mm
+	$(OBJC) $(CPPFLAGS) -dynamiclib -o $@ $(NAME).mm -init _$(NAME)Initialize $(LDFLAGS) $(LIB_LDFLAGS)
+
+$(NAME)-test: $(NAME)-test.c
+	$(OBJC) $(CPPFLAGS) -o $@ $(NAME)-test.c $(LDFLAGS) $(APP_LDFLAGS)
