@@ -98,7 +98,7 @@ static hci_connection_t * connection_for_address(bd_addr_t address){
  * count connections
  */
 static int nr_hci_connections(){
-    int count;
+    int count = 0;
     linked_item_t *it;
     for (it = (linked_item_t *) hci_stack.connections; it ; it = it->next, count++);
     return count;

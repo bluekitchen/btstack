@@ -3,9 +3,9 @@
 Last milestone reached: BTdaemon automatically started by launchd on Mac and iPhone
 
 NEXT:
-- add code to toggle status bar icons via the SpringBoardAcess extension
-- clean up debug output: seperate messages from errors
-- decide on error reporting
+- check why test.c does not start up instantly when Bluetooth is already turned on
+- clean up debug output: messages to stdou, errors to stderr
+- decide on error reporting from BTdaemon
   - command_status_event with custom errors
   - hci open failed 
   - btstack error
