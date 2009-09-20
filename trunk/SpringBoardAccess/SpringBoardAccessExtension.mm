@@ -15,11 +15,8 @@
 class SpringBoard;
 
 @interface UIApplication (privateStatusBarIconAPI)
-- (void)addStatusBarImageNamed:(id)fp8 removeOnAbnormalExit:(BOOL)fp12;
 - (void)addStatusBarImageNamed:(id)fp8;
 - (void)removeStatusBarImageNamed:(id)fp8;
-// iPhoneOS >= 2.2
-- (void)addStatusBarImageNamed:(id)fp8 removeOnExit:(BOOL)fp12;
 @end
 
 #define HOOK(class, name, type, args...) \
@@ -62,7 +59,7 @@ HOOK(SpringBoard, applicationDidFinishLaunching$, void, id app) {
 
     CALL_ORIG(SpringBoard, applicationDidFinishLaunching$, app);
 	
-	CFMessagePortRef local = CFMessagePortCreateLocal(NULL, CFSTR("SpringBoardAccess"), myCallBack, NULL, false);
+	CFMessagePortRef local = CFMessagePortCreateLocal(NULL, CFSTR(SBA_MessagePortName), myCallBack, NULL, false);
 	CFRunLoopSourceRef source = CFMessagePortCreateRunLoopSource(NULL, local, 0);
 	CFRunLoopAddSource(CFRunLoopGetCurrent(), source, kCFRunLoopDefaultMode);
 	
@@ -73,11 +70,6 @@ HOOK(SpringBoard, applicationDidFinishLaunching$, void, id app) {
 extern "C" void SpringBoardAccessInitialize(){
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	
-    // NOTE: This library should only be loaded for SpringBoard
-    NSString *identifier = [[NSBundle mainBundle] bundleIdentifier];
-    if (![identifier isEqualToString:@"com.apple.springboard"])
-        return;
-
 	NSLog(@"SpringBoardAccessInitialize called for SpringBoard!");
 	
     // Setup hooks
