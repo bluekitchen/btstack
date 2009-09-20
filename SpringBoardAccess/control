@@ -1,0 +1,10 @@
+Package:  ch.ringwald.springboardaccess
+Name: SpringBoardAccess
+Version: 0.1
+Description: Controls status bar icons from daemons
+Section: Networking
+Architecture: iphoneos-arm
+Depends: mobilesubstrate (>= 0.9.2966-1)
+Maintainer: Matthias Ringwald <iphone@ringwald.ch>
+Author: Matthias Ringwald <iphone@ringwald.ch>
+Section: Development
