@@ -3,9 +3,6 @@
 Last milestone reached: BTdaemon automatically started by launchd on Mac and iPhone
 
 NEXT:
-- create a SpringBoardAccess MobileSubstrate Extension
-  - in SpringBoard hook, start datagram Unix domain or mach port server
-  - control Status bar icons
 - add code to toggle status bar icons via the SpringBoardAcess extension
 - clean up debug output: seperate messages from errors
 - decide on error reporting
@@ -15,6 +12,7 @@ NEXT:
 - create script to build APT package
 - create new pgp key for gmail account and sign APT package
 - provide test version by setting up APT repository within BTstack SVN
+
 == Release Version 0.1
 - implement rest of L2CAP state machine
   - incoming connections
