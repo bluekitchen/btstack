@@ -6,9 +6,11 @@
 
 #import <Foundation/Foundation.h>
 #import <CoreFoundation/CoreFoundation.h>
+#import <UIKit/UIKit.h>
 
 #import "../3rdparty/substrate.h"
-#import "../3rdparty/SpringBoard.h"
+
+class SpringBoard;
 
 @interface UIApplication (privateStatusBarIconAPI)
 - (void)addStatusBarImageNamed:(id)fp8 removeOnAbnormalExit:(BOOL)fp12;

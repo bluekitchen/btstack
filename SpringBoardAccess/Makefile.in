@@ -17,7 +17,7 @@ APP_LDFLAGS = -framework CoreFoundation
 all: $(NAME).dylib $(NAME)-test
 
 clean:
-	rm -f $(NAME).dylib
+	rm -f $(NAME).dylib $(NAME)-test
 	
 $(NAME).dylib: $(NAME).mm
 	$(OBJC) $(CPPFLAGS) -dynamiclib -o $@ $(NAME).mm -init _$(NAME)Initialize $(LDFLAGS) $(LIB_LDFLAGS)
