@@ -1,26 +1,29 @@
 //
-//  SpringBoardAccess.m
+//  SpringBoardAccess-test.c
 //
 //  Created by Matthias Ringwald on 9/15/09.
 //
+#include "SpringBoardAccess.h"
 
-#import <CoreFoundation/CoreFoundation.h>
+#include <string.h>
+#include <stdio.h>
 
-main() {
-	CFMessagePortRef remote = CFMessagePortCreateRemote(NULL, CFSTR("SpringBoardAccess"));
-	if (!remote) {
-		printf("Failed to get remote port\n");
-		exit(10);
+int main(int argc, char *argv[]) {
+	int usage = 1;
+	
+	if (argc == 3) {
+		if (strcmp("add", argv[1]) == 0) {
+			SBA_addStatusBarImage(argv[2]);
+			usage = 0;
+		} else if (strcmp("remove", argv[1]) == 0) {
+			SBA_removeStatusBarImage(argv[2]);
+			usage = 0;
+		}
 	}
-	char *message = "Hello, world!";
-	CFDataRef data, returnData = NULL;
-	data = CFDataCreate(NULL, (const UInt8 *)message, strlen(message)+1);
-	if (kCFMessagePortSuccess == CFMessagePortSendRequest(remote, 0, data, 1, 1, kCFRunLoopDefaultMode, &returnData) && NULL != returnData) {
-		printf("here is our return data: %s\n", 
-			   CFDataGetBytePtr(returnData));
-		CFRelease(returnData);
-	}
-	CFRelease(data);
-	CFRelease(remote);
+
+	if (usage) {
+		printf("Usage: %s add/remove StatuBarImageName", argv[0]);
+		return -1;
+	} 
 }
 

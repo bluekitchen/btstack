@@ -19,8 +19,8 @@ all: $(NAME).dylib $(NAME)-test
 clean:
 	rm -f $(NAME).dylib $(NAME)-test
 	
-$(NAME).dylib: $(NAME).mm
-	$(OBJC) $(CPPFLAGS) -dynamiclib -o $@ $(NAME).mm -init _$(NAME)Initialize $(LDFLAGS) $(LIB_LDFLAGS)
+$(NAME).dylib: $(NAME)Extension.mm
+	$(OBJC) $(CPPFLAGS) -dynamiclib -o $@ $(NAME)Extension.mm -init _$(NAME)Initialize $(LDFLAGS) $(LIB_LDFLAGS)
 
-$(NAME)-test: $(NAME)-test.c
-	$(OBJC) $(CPPFLAGS) -o $@ $(NAME)-test.c $(LDFLAGS) $(APP_LDFLAGS)
+$(NAME)-test: $(NAME)-test.c $(NAME).c
+	$(OBJC) $(CPPFLAGS) -o $@  $(NAME).c $(NAME)-test.c $(LDFLAGS) $(APP_LDFLAGS)

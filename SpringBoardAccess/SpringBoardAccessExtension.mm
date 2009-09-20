@@ -10,6 +10,8 @@
 
 #import "../3rdparty/substrate.h"
 
+#include "SpringBoardAccess.h"
+
 class SpringBoard;
 
 @interface UIApplication (privateStatusBarIconAPI)
@@ -28,19 +30,29 @@ static type $ ## class ## $ ## name(class *self, SEL sel, ## args)
 _ ## class ## $ ## name(self, sel, ## args)
 
 
-CFDataRef myCallBack(CFMessagePortRef local, SInt32 msgid, CFDataRef data, void *info) {
+CFDataRef myCallBack(CFMessagePortRef local, SInt32 msgid, CFDataRef cfData, void *info) {
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 
 	UIApplication *theApp = [UIApplication sharedApplication];
-    [theApp addStatusBarImageNamed:@"BluetoothActive"];
-	
-	char *message = "Thanks for calling!";
-	CFDataRef returnData = CFDataCreate(NULL, (const UInt8 *) message, strlen(message)+1);
-	NSLog(@"here is our received data: %s\n", CFDataGetBytePtr(data));
-	
-	[pool release]; 
 
-	return returnData;  // as stated in header, both data and returnData will be released for us after callback returns
+	const char *data = (const char *) CFDataGetBytePtr(cfData);
+	UInt16 dataLen = CFDataGetLength(cfData);
+	
+	if (dataLen > 1 && data) {
+		NSString * name = [[NSString stringWithCString:&data[1] encoding:NSASCIIStringEncoding] autorelease];
+		switch (data[0]){
+			case SBAC_addStatusBarImage:
+				[theApp addStatusBarImageNamed:name];
+				break;
+			case SBAC_removeStatusBarImage:
+				[theApp removeStatusBarImageNamed:name];
+				break;
+			default:
+				NSLog(@"Unknown command %u, len %u", data[0], dataLen); 
+		}
+	}
+	[pool release]; 
+	return NULL;  // as stated in header, both data and returnData will be released for us after callback returns
 }
 
 //______________________________________________________________________________
