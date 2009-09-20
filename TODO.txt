@@ -4,7 +4,7 @@ Last milestone reached: BTdaemon automatically started by launchd on Mac and iPh
 
 NEXT:
 - check why test.c does not start up instantly when Bluetooth is already turned on
-- clean up debug output: messages to stdou, errors to stderr
+- clean up debug output: messages to stdout, errors to stderr
 - decide on error reporting from BTdaemon
   - command_status_event with custom errors
   - hci open failed 
@@ -12,7 +12,6 @@ NEXT:
 - create script to build APT package
 - create new pgp key for gmail account and sign APT package
 - provide test version by setting up APT repository within BTstack SVN
-
 == Release Version 0.1
 - implement rest of L2CAP state machine
   - incoming connections
