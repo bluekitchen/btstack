@@ -20,7 +20,6 @@ AC_ARG_WITH(product-id, [AS_HELP_STRING([--with-product-id=productID], [Specify 
 # BUILD/HOST/TARGET
 AC_CANONICAL_HOST
 
-
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_CPP
@@ -98,6 +97,7 @@ if test "x$target" = xiphone; then
     if test "x$USE_SPRINGBOARD" = xDEFAULT ; then
         USE_SPRINGBOARD="yes"
         echo "USE_SPRINGBOARD: $USE_SPRINGBOARD"
+        SPRINGBOARD_ACCESS_SOURCES="../SpringBoardAccess/SpringBoardAccess.c"
     fi
     echo "USE_LAUNCHD:     $USE_LAUNCHD"
     
@@ -143,4 +143,5 @@ fi
 
 AC_SUBST(IPHONE_IP)
 AC_SUBST(HAVE_LIBUSB)
+AC_SUBST(SPRINGBOARD_ACCESS_SOURCES)
 AC_OUTPUT(Makefile src/Makefile example/Makefile SpringBoardAccess/Makefile)

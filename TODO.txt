@@ -4,13 +4,18 @@ Last milestone reached: BTdaemon uses SpringBoardAccess to show status bar icons
 
 NEXT:
 
+- replace Makefile.am in example and . by Makefile.in and drop automake
+
+- sign iPhone binaries
+  - add option to use ldid on the linked binaries
+  - autodetect ldid on host
+
 - decide on error reporting from BTdaemon
   - command_status_event with custom errors
   - hci open failed 
   - btstack error
-
+  
 - add svn revision to package.sh tool for SpringBoardAccess
-- create dylib of client library
 - create script to build APT package for BTdeamon, Resources, and BTstack client library
 - create new pgp key for gmail account and sign APT package
 - provide test version by setting up APT repository within BTstack SVN
