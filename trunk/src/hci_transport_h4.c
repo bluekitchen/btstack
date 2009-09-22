@@ -189,7 +189,6 @@ static int    h4_process(struct data_source *ds) {
     if (bytes_read < 0) {
         return bytes_read;
     }
-    // printf("Bytes read: %u\n", bytes_read);
     bytes_to_read -= bytes_read;
     read_pos      += bytes_read;
     if (bytes_to_read > 0) {

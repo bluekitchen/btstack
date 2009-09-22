@@ -203,12 +203,12 @@ int socket_connection_create_tcp(int port){
     
 	// create tcp socket
 	if ((ds->fd = socket (PF_INET, SOCK_STREAM, 0)) < 0) {
-		printf ("Error creating socket ...(%s)\n", strerror(errno));
+		fprintf (stderr, "Error creating socket ...(%s)\n", strerror(errno));
 		free(ds);
         return -1;
 	}
     
-	printf ("Socket created\n");
+	printf ("Socket created for port %u\n", port);
 	
     struct sockaddr_in addr;
 	addr.sin_family = AF_INET;
@@ -219,13 +219,13 @@ int socket_connection_create_tcp(int port){
 	setsockopt(ds->fd, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(int));
 	
 	if (bind ( ds->fd, (struct sockaddr *) &addr, sizeof (addr) ) ) {
-		printf ("Error on bind() ...(%s)\n", strerror(errno));
+		fprintf(stderr, "Error on bind() ...(%s)\n", strerror(errno));
 		free(ds);
         return -1;
 	}
 	
 	if (listen (ds->fd, MAX_PENDING_CONNECTIONS)) {
-		printf ("Error on listen() ...(%s)\n", strerror(errno));
+		fprintf (stderr, "Error on listen() ...(%s)\n", strerror(errno));
 		free(ds);
         return -1;
 	}
@@ -253,24 +253,24 @@ int socket_connection_create_unix(char *path){
 	 * 
 	 */
 	if ((checkin_request = launch_data_new_string(LAUNCH_KEY_CHECKIN)) == NULL) {
-		printf("launch_data_new_string(\"" LAUNCH_KEY_CHECKIN "\") Unable to create string.");
+		fprintf(stderr, "launch_data_new_string(\"" LAUNCH_KEY_CHECKIN "\") Unable to create string.");
 		return -1;
 	}
     
 	if ((checkin_response = launch_msg(checkin_request)) == NULL) {
-		printf("launch_msg(\"" LAUNCH_KEY_CHECKIN "\") IPC failure: %u", errno);
+		fprintf(stderr, "launch_msg(\"" LAUNCH_KEY_CHECKIN "\") IPC failure: %u", errno);
 		return -1;
 	}
     
 	if (LAUNCH_DATA_ERRNO == launch_data_get_type(checkin_response)) {
 		errno = launch_data_get_errno(checkin_response);
-		printf("Check-in failed: %u", errno);
+		fprintf(stderr, "Check-in failed: %u", errno);
 		return -1;
 	}
     
     launch_data_t the_label = launch_data_dict_lookup(checkin_response, LAUNCH_JOBKEY_LABEL);
 	if (NULL == the_label) {
-		printf("No label found");
+		fprintf(stderr, "No label found");
 		return -1;
 	}
 	
@@ -279,12 +279,12 @@ int socket_connection_create_unix(char *path){
 	 */
 	sockets_dict = launch_data_dict_lookup(checkin_response, LAUNCH_JOBKEY_SOCKETS);
 	if (NULL == sockets_dict) {
-		printf("No sockets found to answer requests on!");
+		fprintf(stderr,"No sockets found to answer requests on!");
 		return -1;
 	}
     
 	if (launch_data_dict_get_count(sockets_dict) > 1) {
-		printf("Some sockets will be ignored!");
+		fprintf(stderr,"Some sockets will be ignored!");
 	}
     
 	/*
@@ -292,7 +292,7 @@ int socket_connection_create_unix(char *path){
 	 */
 	listening_fd_array = launch_data_dict_lookup(sockets_dict, "Listeners");
 	if (NULL == listening_fd_array) {
-		printf("No known sockets found to answer requests on!");
+		fprintf(stderr,"No known sockets found to answer requests on!");
 		return -1;
 	}
     
@@ -326,7 +326,7 @@ int socket_connection_create_unix(char *path){
 
 	// create unix socket
 	if ((ds->fd = socket (AF_UNIX, SOCK_STREAM, 0)) < 0) {
-		printf ("Error creating socket ...(%s)\n", strerror(errno));
+		fprintf(stderr, "Error creating socket ...(%s)\n", strerror(errno));
 		free(ds);
         return -1;
 	}
@@ -343,13 +343,13 @@ int socket_connection_create_unix(char *path){
 	setsockopt(ds->fd, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(int));
     
 	if (bind ( ds->fd, (struct sockaddr *) &addr, sizeof (addr) ) ) {
-		printf ("Error on bind() ...(%s)\n", strerror(errno));
+		fprintf(stderr, "Error on bind() ...(%s)\n", strerror(errno));
 		free(ds);
         return -1;
 	}
 	
 	if (listen (ds->fd, MAX_PENDING_CONNECTIONS)) {
-		printf ("Error on listen() ...(%s)\n", strerror(errno));
+		fprintf(stderr, "Error on listen() ...(%s)\n", strerror(errno));
 		free(ds);
         return -1;
 	}
