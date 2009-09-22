@@ -99,7 +99,6 @@ static int iphone_write_initscript (hci_uart_config_t *uart_config, int output){
     
     // calculate baud rate (assume rate is multiply of 100)
     uint32_t baud_key = (4096 * (uart_config->baudrate/100) + 4999) / 10000;
-    // printf("Baud key %u\n", baud_key);
     
     // construct script path from device name
     strcpy(buffer, "/etc/bluetool/");

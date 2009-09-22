@@ -96,7 +96,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         default:
             //@TODO: log into hci dump as vendor specific "event"
-            printf("Error: command %u not implemented\n:", READ_CMD_OCF(packet));
+            fprintf(stderr, "Error: command %u not implemented\n:", READ_CMD_OCF(packet));
             break;
     }
     return 0;
@@ -126,7 +126,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                     l2cap_close_channels_for_connection(connection);
                     break;
                 case DAEMON_NR_CONNECTIONS_CHANGED:
-                    // printf("Nr Connections changed, new %u\n", data[1]);
+                    printf("Nr Connections changed, new %u\n", data[1]);
                     if (data[1]) {
                         run_loop_remove_timer(&timeout);
                     } else {

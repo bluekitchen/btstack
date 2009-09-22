@@ -1,34 +1,39 @@
 /* new todo file for BTstack */
 
-Last milestone reached: BTdaemon automatically started by launchd on Mac and iPhone
+Last milestone reached: BTdaemon uses SpringBoardAccess to show status bar icons
 
 NEXT:
-- check why test.c does not start up instantly when Bluetooth is already turned on
-- clean up debug output: messages to stdout, errors to stderr
+
 - decide on error reporting from BTdaemon
   - command_status_event with custom errors
   - hci open failed 
   - btstack error
-- create script to build APT package
+
+- add svn revision to package.sh tool for SpringBoardAccess
+- create dylib of client library
+- create script to build APT package for BTdeamon, Resources, and BTstack client library
 - create new pgp key for gmail account and sign APT package
 - provide test version by setting up APT repository within BTstack SVN
+  - instructions: http://www.saurik.com/id/7
 == Release Version 0.1
 - implement rest of L2CAP state machine
   - incoming connections
     - list of supported PSM
 	- commands and events
+- detect and handle iPhone sleep mode
+  - see iPhone imnsomnia project at http://code.google.com/p/iphone-insomnia/
+  - can we get willGoToSleep event, should we should down?
+  - would be nice, if we could get woken up by Bluetooth data
+- CocoaTouch User Interface Components
+  - Inquiry
+  - Alerts and shutdown of Apple's stack
+== Release 0.2 - Incoming L2CAP supported + UI Support
 - better deal with Apple stack
   - figure out how to shut it down
   - user interface
 - extend SpringBoard feedback
   - show alerts/messages using SpringBoardAcccess, e.g. Bluetooth disconnected by remote device
   - add code to notify about remote disconnets
-- Detect and handle iPhone sleep mode
-  - see iPhone imnsomnia project at http://code.google.com/p/iphone-insomnia/
-- CocoaTouch User Interface Components
-  - Inquiry
-  - Alerts and shutdown of Apple's stack
-== Release 0.2 - Incoming L2CAP supported + UI Support
 - configuration: /etc/btstack
   - single Bluetooth module supported
   - transport type: H4, H5, USB
