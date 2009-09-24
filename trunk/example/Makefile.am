@@ -1,17 +1,10 @@
-bin_PROGRAMS =  test mitm
+bin_PROGRAMS =  test mitm rfcomm
 
-test_SOURCES =  test.c                     \
-                ../src/btstack.c           \
-                ../src/hci_cmds.c          \
-                ../src/linked_list.c       \
-                ../src/run_loop.c          \
-                ../src/socket_connection.c \
-                ../src/utils.c
+test_SOURCES =  test.c
+test_LDADD = -lBTstack -L../BTstack.Framework
 
-mitm_SOURCES =  mitm.c                     \
-                ../src/btstack.c           \
-                ../src/hci_cmds.c          \
-                ../src/linked_list.c       \
-                ../src/run_loop.c          \
-                ../src/socket_connection.c \
-                ../src/utils.c
+mitm_SOURCES =  mitm.c
+mitm_LDADD = -lBTstack -L../BTstack.Framework
+
+rfcomm_SOURCES =  rfcomm.c
+rfcomm_LDADD = -lBTstack -L../BTstack.Framework
