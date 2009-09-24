@@ -211,13 +211,7 @@ static void event_handler(uint8_t *packet, int size){
         hci_send_cmd(&hci_link_key_request_negative_reply, &addr);
         return;
     }
-    
-    // pin code request
-    if (packet[0] == HCI_EVENT_PIN_CODE_REQUEST){
-        bt_flip_addr(addr, &packet[2]); 
-        hci_send_cmd(&hci_pin_code_request_reply, &addr, 4, "1234");
-    }
-    
+        
     hci_stack.event_packet_handler(packet, size);
 	
 	// execute main loop
