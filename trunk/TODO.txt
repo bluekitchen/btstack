@@ -8,11 +8,10 @@ NEXT:
   - command_status_event with custom errors
   - hci open failed 
   - btstack error
-- provide test version by setting up APT repository within BTstack SVN
-  - instructions: http://www.saurik.com/id/7
-- create new GPG key for gmail account and sign APT package
 - bug: Status bar icon in wrong state (on instead of connected) with WiiMoteDemo 
 - bug: debug BlueTool's "I'm not a Bluetooth stack" error message
+- provide test version by setting up APT repository within BTstack SVN
+  - instructions: http://www.saurik.com/id/7
 
 == Release Version 0.1
 
@@ -27,6 +26,7 @@ NEXT:
 - CocoaTouch User Interface Components
   - Inquiry
   - Alerts and shutdown of Apple's stack
+- create new GPG key for gmail account and sign APT package
   
 == Release 0.2 - Incoming L2CAP supported + UI Support
 
