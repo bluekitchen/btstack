@@ -10,9 +10,6 @@
 #include <strings.h>
 
 #include <btstack/btstack.h>
-#include <btstack/run_loop.h>
-#include <btstack/hci_cmds.h>
-#include <btstack/utils.h>
 
 #define NAME "BTstack-in-the-Middle"
 #define EIR_LEN 240
