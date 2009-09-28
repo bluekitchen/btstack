@@ -1,18 +1,13 @@
 /* new todo file for BTstack */
 
-Last milestone reached: BTdaemon uses SpringBoardAccess to show status bar icons
+Last milestone reached: ldid can be used (--enable-ldid) to sign binaries
 
 NEXT:
-
-- replace Makefile.am in example and . by Makefile.in and drop automake
-- sign iPhone binaries
-  - add option to use ldid on the linked binaries
 
 - decide on error reporting from BTdaemon
   - command_status_event with custom errors
   - hci open failed 
   - btstack error
-
 - organize headers: e.g. use <btstack/btstack.h> instead of "btstack.h"
 - add SVN revision to package.sh tool for SpringBoardAccess
 - create script to build APT package for BTdeamon, Resources, and BTstack client library
