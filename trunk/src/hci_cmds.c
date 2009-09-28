@@ -4,7 +4,7 @@
  *  Created by Matthias Ringwald on 7/23/09.
  */
 
-#include "hci_cmds.h"
+#include <btstack/hci_cmds.h>
 
 /**
  * construct HCI Command based on template

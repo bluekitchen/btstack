@@ -10,7 +10,7 @@
 
 #include "hci.h"
 #include "l2cap_signaling.h"
-#include "utils.h"
+#include <btstack/utils.h>
 #include "socket_connection.h"
 
 #define L2CAP_SIG_ID_INVALID 0

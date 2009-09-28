@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "hci_cmds.h"
-#include "utils.h"
+#include <btstack/hci_cmds.h>
+#include <btstack/utils.h>
 #include "hci_transport.h"
 #include "bt_control.h"
 

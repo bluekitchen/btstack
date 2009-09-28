@@ -7,8 +7,8 @@
 #pragma once
 
 #include <stdint.h>
-#include "utils.h"
-#include "hci_cmds.h"
+#include <btstack/utils.h>
+#include <btstack/hci_cmds.h>
 
 typedef enum {
     COMMAND_REJECT = 1,

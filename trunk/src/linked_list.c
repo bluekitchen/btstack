@@ -4,7 +4,7 @@
  *  Created by Matthias Ringwald on 7/13/09.
  */
 
-#include "linked_list.h"
+#include <btstack/linked_list.h>
 
 /**
  * linked_list_add

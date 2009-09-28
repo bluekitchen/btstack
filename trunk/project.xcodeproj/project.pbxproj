@@ -47,15 +47,12 @@
 		8DD76FB20486AB0100D96B5E /* project */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = project; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C00F7301017ACC3008DAB17 /* socket_connection.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = socket_connection.c; path = src/socket_connection.c; sourceTree = "<group>"; };
 		9C00F7311017ACC3008DAB17 /* socket_connection.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = socket_connection.h; path = src/socket_connection.h; sourceTree = "<group>"; };
-		9C00F7D51019082F008DAB17 /* hci_cmds.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = hci_cmds.h; path = src/hci_cmds.h; sourceTree = "<group>"; };
 		9C00F7D61019082F008DAB17 /* hci_cmds.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = hci_cmds.c; path = src/hci_cmds.c; sourceTree = "<group>"; };
 		9C00F86210191097008DAB17 /* utils.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = utils.c; path = src/utils.c; sourceTree = "<group>"; };
-		9C00F86310191097008DAB17 /* utils.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = utils.h; path = src/utils.h; sourceTree = "<group>"; };
 		9C00F87110191130008DAB17 /* l2cap_signaling.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = l2cap_signaling.h; path = src/l2cap_signaling.h; sourceTree = "<group>"; };
 		9C00F87210191130008DAB17 /* l2cap_signaling.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = l2cap_signaling.c; path = src/l2cap_signaling.c; sourceTree = "<group>"; };
 		9C1813F71042FCCA00C68F09 /* mitm.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = mitm.c; path = example/mitm.c; sourceTree = "<group>"; };
 		9C1F0E980FDAE023008F472F /* run_loop.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = run_loop.c; path = src/run_loop.c; sourceTree = "<group>"; };
-		9C1F0E990FDAE023008F472F /* run_loop.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = run_loop.h; path = src/run_loop.h; sourceTree = "<group>"; };
 		9C2071F210014D3200A07EA4 /* hci_transport_usb.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci_transport_usb.c; path = src/hci_transport_usb.c; sourceTree = "<group>"; };
 		9C46FC340FA906F700ABEF05 /* hci.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci.c; path = src/hci.c; sourceTree = "<group>"; };
 		9C46FC350FA906F700ABEF05 /* hci.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci.h; path = src/hci.h; sourceTree = "<group>"; };
@@ -79,7 +76,6 @@
 		9C78A04C103C6734003B2950 /* FSO_BTstack.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = FSO_BTstack.png; path = resources/FSO_BTstack.png; sourceTree = "<group>"; };
 		9C78A04D103C6734003B2950 /* FSO_BTstackActive.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = FSO_BTstackActive.png; path = resources/FSO_BTstackActive.png; sourceTree = "<group>"; };
 		9C78A0BB103C9DEE003B2950 /* ch.ringwald.BTstack.plist */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text.plist.xml; name = ch.ringwald.BTstack.plist; path = resources/ch.ringwald.BTstack.plist; sourceTree = "<group>"; };
-		9C7B5ABE100BD3340065D87E /* linked_list.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = linked_list.h; path = src/linked_list.h; sourceTree = "<group>"; };
 		9C7B5ABF100BD3340065D87E /* linked_list.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = linked_list.c; path = src/linked_list.c; sourceTree = "<group>"; };
 		9C7B5B7E100D04450065D87E /* test.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = test.c; path = example/test.c; sourceTree = "<group>"; };
 		9C7B5CF6100FC96A0065D87E /* clientTest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = clientTest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -93,11 +89,15 @@
 		9C994B8E106BEEB700C70311 /* rfcomm.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = rfcomm.c; path = example/rfcomm.c; sourceTree = "<group>"; };
 		9CA3C0900FB8B3C4005F48DE /* TODO.txt */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = TODO.txt; sourceTree = "<group>"; };
 		9CC152C61009052100223347 /* config.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
-		9CC813A00FFC0774002816F9 /* btstack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = btstack.h; path = src/btstack.h; sourceTree = "<group>"; };
 		9CC813A10FFC0774002816F9 /* btstack.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = btstack.c; path = src/btstack.c; sourceTree = "<group>"; };
 		9CC813A40FFC0A51002816F9 /* daemon.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = daemon.c; path = src/daemon.c; sourceTree = "<group>"; };
 		9CEB22DC1005345400FA2B98 /* hci_transport_usb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = hci_transport_usb.h; path = src/hci_transport_usb.h; sourceTree = "<group>"; };
 		9CEB4B62107118E800DD5720 /* Makefile.in */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; name = Makefile.in; path = src/Makefile.in; sourceTree = "<group>"; };
+		9CEB4B7910715DE400DD5720 /* btstack.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = btstack.h; path = include/btstack/btstack.h; sourceTree = "<group>"; };
+		9CEB4B7A10715DE400DD5720 /* run_loop.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = run_loop.h; path = include/btstack/run_loop.h; sourceTree = "<group>"; };
+		9CEB4B7F10715EB000DD5720 /* hci_cmds.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci_cmds.h; path = include/btstack/hci_cmds.h; sourceTree = "<group>"; };
+		9CEB4B8010715EB000DD5720 /* linked_list.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = linked_list.h; path = include/btstack/linked_list.h; sourceTree = "<group>"; };
+		9CEB4B8110715EB000DD5720 /* utils.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = utils.h; path = include/btstack/utils.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -121,6 +121,7 @@
 		08FB7794FE84155DC02AAC07 /* project */ = {
 			isa = PBXGroup;
 			children = (
+				9CEB4B7510715DC200DD5720 /* include */,
 				9C77E4AD10634E3100F39DCF /* 3rdparty */,
 				9C78A049103C671D003B2950 /* Resources */,
 				9C7B5B81100D04520065D87E /* Example */,
@@ -141,12 +142,10 @@
 				9C7ECB810FCC85650085DAC5 /* bt_control.h */,
 				9C7ECB820FCC85650085DAC5 /* bt_control_iphone.c */,
 				9C7ECB830FCC85650085DAC5 /* bt_control_iphone.h */,
-				9CC813A00FFC0774002816F9 /* btstack.h */,
 				9CC813A10FFC0774002816F9 /* btstack.c */,
 				9CC813A40FFC0A51002816F9 /* daemon.c */,
 				9C46FC350FA906F700ABEF05 /* hci.h */,
 				9C46FC340FA906F700ABEF05 /* hci.c */,
-				9C00F7D51019082F008DAB17 /* hci_cmds.h */,
 				9C00F7D61019082F008DAB17 /* hci_cmds.c */,
 				9C7ECBB30FCC95DD0085DAC5 /* hci_dump.h */,
 				9C7ECBB40FCC95DD0085DAC5 /* hci_dump.c */,
@@ -159,14 +158,11 @@
 				9C88500D0FBF6702004980E4 /* l2cap.h */,
 				9C00F87110191130008DAB17 /* l2cap_signaling.h */,
 				9C00F87210191130008DAB17 /* l2cap_signaling.c */,
-				9C7B5ABE100BD3340065D87E /* linked_list.h */,
 				9C7B5ABF100BD3340065D87E /* linked_list.c */,
-				9C1F0E990FDAE023008F472F /* run_loop.h */,
 				9C1F0E980FDAE023008F472F /* run_loop.c */,
 				9C00F7301017ACC3008DAB17 /* socket_connection.c */,
 				9C00F7311017ACC3008DAB17 /* socket_connection.h */,
 				9C00F86210191097008DAB17 /* utils.c */,
-				9C00F86310191097008DAB17 /* utils.h */,
 				9C77E79110667F0600F39DCF /* platform_iphone.c */,
 				9C6459DE1037554B0081A00B /* platform_iphone.h */,
 			);
@@ -227,6 +223,18 @@
 				9C7B5B7E100D04450065D87E /* test.c */,
 			);
 			name = Example;
+			sourceTree = "<group>";
+		};
+		9CEB4B7510715DC200DD5720 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				9CEB4B7F10715EB000DD5720 /* hci_cmds.h */,
+				9CEB4B8010715EB000DD5720 /* linked_list.h */,
+				9CEB4B8110715EB000DD5720 /* utils.h */,
+				9CEB4B7910715DE400DD5720 /* btstack.h */,
+				9CEB4B7A10715DE400DD5720 /* run_loop.h */,
+			);
+			name = include;
 			sourceTree = "<group>";
 		};
 		C6A0FF2B0290797F04C91782 /* Documentation */ = {
