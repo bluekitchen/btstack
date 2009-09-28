@@ -1,19 +1,26 @@
 #!/bin/sh
 
-echo Creating SpringBoardAccess package
-rm -rf SpringBoardAccess
+PACKAGE=SpringBoardAccess
 
-mkdir -p SpringBoardAccess/DEBIAN
-cp control SpringBoardAccess/DEBIAN
+VERSION=0.1
+REVISION=`svn info | grep Revision | cut -d " " -f 2`
+ARCHIVE=$PACKAGE-$VERSION-$REVISION.deb
 
-mkdir -p SpringBoardAccess/usr/local/bin
-cp SpringBoardAccess-test SpringBoardAccess/usr/local/bin
+echo Creating $PACKAGE package version $VERSION revision $REVISION
+rm -rf $PACKAGE
 
-mkdir -p SpringBoardAccess/Library/MobileSubstrate/DynamicLibraries
-cp SpringBoardAccess.dylib SpringBoardAccess.plist SpringBoardAccess/Library/MobileSubstrate/DynamicLibraries
+mkdir -p $PACKAGE/DEBIAN
+cp control $PACKAGE/DEBIAN
+echo "Version: $VERSION-$REVISION" >> $PACKAGE/DEBIAN/control
 
-echo Packaging SpringBoardAccess
+mkdir -p $PACKAGE/usr/local/bin
+cp SpringBoardAccess-test $PACKAGE/usr/local/bin
+
+mkdir -p $PACKAGE/Library/MobileSubstrate/DynamicLibraries
+cp SpringBoardAccess.dylib SpringBoardAccess.plist $PACKAGE/Library/MobileSubstrate/DynamicLibraries
+
+echo Packaging $PACKAGE
 export COPYFILE_DISABLE
 export COPY_EXTENDED_ATTRIBUTES_DISABLE
-dpkg-deb -b SpringBoardAccess
-ls -la SpringBoardAccess.deb
+dpkg-deb -b $PACKAGE $ARCHIVE
+dpkg-deb --info $ARCHIVE
