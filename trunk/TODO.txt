@@ -1,10 +1,9 @@
 /* new todo file for BTstack */
 
-Last milestone reached: organize headers: e.g. use <btstack/btstack.h> instead of "btstack.h"
+Last milestone reached: added SVN revision to package.sh tool for SpringBoardAccess
+
 
 NEXT:
-
-- add SVN revision to package.sh tool for SpringBoardAccess
 - create script to build APT package for BTdeamon, Resources, and BTstack client library
 - decide on error reporting from BTdaemon
   - command_status_event with custom errors
