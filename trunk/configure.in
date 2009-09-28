@@ -70,6 +70,7 @@ if test "x$target" = xiphone; then
     case "$host_os" in
         darwin*)
             echo "Cross-compiling for iPhone/iPod touch using Apple's iPhone SDK"
+            # echo "iPhone staging dir: $prefix"
             echo "iPhone IP for install-iphone target: $IPHONE_IP"
             CC="$DEVELOPER_PATH/usr/bin/arm-apple-darwin9-gcc-$GCC_VERSION"
             OBJC="$DEVELOPER_PATH/usr/bin/arm-apple-darwin9-g++-$GCC_VERSION"
