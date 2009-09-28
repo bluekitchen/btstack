@@ -4,6 +4,7 @@ CC = @CC@
 OBJC     = @OBJC@
 LDFLAGS  = @LDFLAGS@
 CPPFLAGS = @CPPFLAGS@
+prefix = @prefix@
 
 LIB_LDFLAGS = -lobjc \
               -multiply_defined suppress \
@@ -24,3 +25,6 @@ $(NAME).dylib: $(NAME)Extension.mm
 
 $(NAME)-test: $(NAME)-test.c $(NAME).c
 	$(OBJC) $(CPPFLAGS) -o $@  $(NAME).c $(NAME)-test.c $(LDFLAGS) $(APP_LDFLAGS)
+
+install:
+	echo "SpringBoardAccess is not installed. Use .deb package"
