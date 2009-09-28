@@ -26,8 +26,7 @@
 bd_addr_t addr = {0x00,0x1c,0x4d,0x02,0x1a,0x77};  // WiiMote
 
 hci_con_handle_t con_handle;
-uint16_t source_cid_interrupt;
-uint16_t source_cid_control;
+uint16_t source_cid;
 
 void data_handler(uint8_t *packet, uint16_t size){
 	// just dump data for now
@@ -36,7 +35,9 @@ void data_handler(uint8_t *packet, uint16_t size){
     // 	received 1. message BT_RF_COMM_UA
     if (size == 12 && packet[9] == BT_RFCOMM_UA){
         printf("Received RFCOMM unnumbered acknowledgement - mutliplexer working.. sorry, this hacks stop here\n");
-        exit(0);
+        // send SABM command on dlci 0
+        _bt_rfcomm_send_sabm(source_cid, 1, 1);
+        // exit(0);
     }
 }
 
@@ -89,7 +90,7 @@ void event_handler(uint8_t *packet, uint16_t size){
 		bd_addr_t addr;
 		bt_flip_addr(addr, &packet[2]);
 		uint16_t psm = READ_BT_16(packet, 10); 
-		uint16_t source_cid = READ_BT_16(packet, 12); 
+		source_cid = READ_BT_16(packet, 12); 
 		con_handle = READ_BT_16(packet, 8);
 		printf("Channel successfully opened: ");
 		print_bd_addr(addr);
