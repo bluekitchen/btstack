@@ -6,7 +6,7 @@
  *  Created by Matthias Ringwald on 7/23/09.
  */
 
-#include "utils.h"
+#include <btstack/utils.h>
 #include <stdio.h>
 #include <strings.h>
 

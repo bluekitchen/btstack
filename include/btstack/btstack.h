@@ -9,8 +9,8 @@
 
 #pragma once
 
-#include "hci.h"
-#include "l2cap.h"
+#include <btstack/hci_cmds.h>
+// #include "l2cap.h"
 
 #include <stdint.h>
 

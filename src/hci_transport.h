@@ -9,7 +9,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "run_loop.h"
+#include <btstack/run_loop.h>
 
 /* HCI packet types */
 

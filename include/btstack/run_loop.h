@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "linked_list.h"
+#include <btstack/linked_list.h>
 
 #include <sys/time.h>
 

@@ -1,20 +1,20 @@
 /* new todo file for BTstack */
 
-Last milestone reached: ldid can be used (--enable-ldid) to sign binaries
+Last milestone reached: organize headers: e.g. use <btstack/btstack.h> instead of "btstack.h"
 
 NEXT:
 
+- add SVN revision to package.sh tool for SpringBoardAccess
+- create script to build APT package for BTdeamon, Resources, and BTstack client library
 - decide on error reporting from BTdaemon
   - command_status_event with custom errors
   - hci open failed 
   - btstack error
-- organize headers: e.g. use <btstack/btstack.h> instead of "btstack.h"
-- add SVN revision to package.sh tool for SpringBoardAccess
-- create script to build APT package for BTdeamon, Resources, and BTstack client library
-- create new GPG key for gmail account and sign APT package
 - provide test version by setting up APT repository within BTstack SVN
   - instructions: http://www.saurik.com/id/7
+- create new GPG key for gmail account and sign APT package
 - bug: Status bar icon in wrong state (on instead of connected) with WiiMoteDemo 
+- bug: debug BlueTool's "I'm not a Bluetooth stack" error message
 
 == Release Version 0.1
 
