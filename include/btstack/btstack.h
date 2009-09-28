@@ -10,7 +10,8 @@
 #pragma once
 
 #include <btstack/hci_cmds.h>
-// #include "l2cap.h"
+#include <btstack/run_loop.h>
+#include <btstack/utils.h>
 
 #include <stdint.h>
 
