@@ -10,18 +10,11 @@
 #include <stdarg.h>
 #include <string.h>
 
-// packet header lenghts
-#define HCI_CMD_DATA_PKT_HDR	  0x03
-#define HCI_ACL_DATA_PKT_HDR	  0x04
-#define HCI_SCO_DATA_PKT_HDR	  0x03
-#define HCI_EVENT_PKT_HDR         0x02
-
 // calculate combined ogf/ocf value
 #define OPCODE(ogf, ocf) (ocf | ogf << 10)
 
-// get HCI CMD OGF
-#define READ_CMD_OGF(buffer) (buffer[1] >> 2)
-#define READ_CMD_OCF(buffer) ((buffer[1] & 0x03) << 8 | buffer[0])
+// check if command complete event for given command
+#define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && READ_BT_16(event,3) == cmd.opcode)
 
 // OGFs
 #define OGF_LINK_CONTROL 0x01
@@ -29,23 +22,6 @@
 #define OGF_INFORMATIONAL_PARAMETERS 0x04
 #define OGF_BTSTACK 0x3d
 #define OGF_VENDOR  0x3f
-
-// cmds for BTstack 
-
-// get state: @returns HCI_STATE
-#define HCI_BTSTACK_GET_STATE                              0x01
-
-// set power mode: @param HCI_POWER_MODE
-#define HCI_BTSTACK_SET_POWER_MODE                         0x02
-
-// set capture mode: @param on
-#define HCI_BTSTACK_SET_ACL_CAPTURE_MODE                   0x03
-
-// create l2cap channel: @param bd_addr(48), psm (16)
-#define L2CAP_CREATE_CHANNEL                               0x20
-
-// disconnect l2cap disconnect, @param channel(16), reason(8)
-#define L2CAP_DISCONNECT                                   0x21
 
 // Events from host controller to host
 #define HCI_EVENT_INQUIRY_COMPLETE				           0x01
@@ -80,34 +56,33 @@
 #define HCI_EVENT_EXTENDED_INQUIRY_RESPONSE                0x2F
 #define HCI_EVENT_VENDOR_SPECIFIC				           0xFF
 
+// last used HCI_EVENT in 2.1 is 0x3d
+
 // events from BTstack for application/client lib
-#define HCI_EVENT_BTSTACK_WORKING                          0x80
-#define HCI_EVENT_BTSTACK_STATE                            0x81
-
-// data: event (8), len(8), address(48), handle (16), psm (16), source_cid(16), dest_cid (16) 
-#define HCI_EVENT_L2CAP_CHANNEL_OPENED                     0x82
-
-// data: event (8), len(8), channel (16)
-#define HCI_EVENT_L2CAP_CHANNEL_CLOSED                     0x83
-
-// data: event(8), len(8), handle(16)
-#define HCI_EVENT_L2CAP_TIMEOUT_CHECK                      0x84
+#define BTSTACK_EVENT_WORKING                              0x60
+#define BTSTACK_EVENT_STATE                                0x61
 
 // data: event(8), len(8), nr hci connections
-#define HCI_EVENT_NR_CONNECTIONS_CHANGED                   0x85
+#define BTSTACK_EVENT_NR_CONNECTIONS_CHANGED               0x62
 
 // data: none
-#define HCI_EVENT_POWERON_FAILED                           0x86
+#define BTSTACK_EVENT_POWERON_FAILED                       0x63
 
 // data: event(8)
-#define DAEMON_CONNECTION_CLOSED                           0xc0
+#define DAEMON_CONNECTION_CLOSED                           0x70
 
 // data: event(8), nr_connections(8)
-#define DAEMON_NR_CONNECTIONS_CHANGED                      0xc1
+#define DAEMON_NR_CONNECTIONS_CHANGED                      0x71
 
-#define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && READ_BT_16(event,3) == cmd.opcode)
 
-#define IS_COMMAND(packet, command) (READ_BT_16(packet,0) == command.opcode)
+// data: event (8), len(8), address(48), handle (16), psm (16), source_cid(16), dest_cid (16) 
+#define L2CAP_EVENT_CHANNEL_OPENED                         0x80
+
+// data: event (8), len(8), channel (16)
+#define L2CAP_EVENT_CHANNEL_CLOSED                         0x81
+
+// data: event(8), len(8), handle(16)
+#define L2CAP_EVENT_TIMEOUT_CHECK                          0x82
 
 /**
  * Default INQ Mode

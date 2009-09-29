@@ -16,6 +16,32 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+// packet header lenghts
+#define HCI_CMD_DATA_PKT_HDR	  0x03
+#define HCI_ACL_DATA_PKT_HDR	  0x04
+#define HCI_SCO_DATA_PKT_HDR	  0x03
+#define HCI_EVENT_PKT_HDR         0x02
+
+
+// cmds for BTstack 
+// get state: @returns HCI_STATE
+#define BTSTACK_GET_STATE                                  0x01
+
+// set power mode: @param HCI_POWER_MODE
+#define BTSTACK_SET_POWER_MODE                             0x02
+
+// set capture mode: @param on
+#define BTSTACK_SET_ACL_CAPTURE_MODE                       0x03
+
+// create l2cap channel: @param bd_addr(48), psm (16)
+#define L2CAP_CREATE_CHANNEL                               0x20
+
+// disconnect l2cap disconnect, @param channel(16), reason(8)
+#define L2CAP_DISCONNECT                                   0x21
+
+// 
+#define IS_COMMAND(packet, command) (READ_BT_16(packet,0) == command.opcode)
+
 /**
  * Connection State 
  */

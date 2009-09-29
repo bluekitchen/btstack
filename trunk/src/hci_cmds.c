@@ -5,6 +5,7 @@
  */
 
 #include <btstack/hci_cmds.h>
+#include "hci.h"
 
 /**
  * construct HCI Command based on template
@@ -206,17 +207,17 @@ OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x09), ""
 // BTstack commands
 
 hci_cmd_t btstack_get_state = {
-OPCODE(OGF_BTSTACK, HCI_BTSTACK_GET_STATE), ""
+OPCODE(OGF_BTSTACK, BTSTACK_GET_STATE), ""
 // no params -> 
 };
 
 hci_cmd_t btstack_set_power_mode = {
-OPCODE(OGF_BTSTACK, HCI_BTSTACK_SET_POWER_MODE), "1"
+OPCODE(OGF_BTSTACK, BTSTACK_SET_POWER_MODE), "1"
 // mode: 0 = off, 1 = on
 };
 
 hci_cmd_t btstack_set_acl_capture_mode = {
-OPCODE(OGF_BTSTACK, HCI_BTSTACK_SET_ACL_CAPTURE_MODE), "1"
+OPCODE(OGF_BTSTACK, BTSTACK_SET_ACL_CAPTURE_MODE), "1"
 // mode: 0 = off, 1 = on
 };
 

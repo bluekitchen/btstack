@@ -35,14 +35,14 @@ void data_handler(uint8_t *packet, uint16_t size){
 
 void event_handler(uint8_t *packet, uint16_t size){
 	// handle HCI init failure
-	if (packet[0] == HCI_EVENT_POWERON_FAILED){
+	if (packet[0] == BTSTACK_EVENT_POWERON_FAILED){
 		printf("HCI Init failed - make sure you have turned off Bluetooth in the System Settings\n");
 		exit(1);
 	}
 
     // bt stack activated, get started - set local name
-    if (packet[0] == HCI_EVENT_BTSTACK_WORKING ||
-	   (packet[0] == HCI_EVENT_BTSTACK_STATE && packet[2] == HCI_STATE_WORKING)) {
+    if (packet[0] == BTSTACK_EVENT_WORKING ||
+	   (packet[0] == BTSTACK_EVENT_STATE && packet[2] == HCI_STATE_WORKING)) {
         bt_send_cmd(&hci_write_local_name, "BTstack-Test");
     }
     
@@ -64,7 +64,7 @@ void event_handler(uint8_t *packet, uint16_t size){
 	}
 	
 	// inform about new l2cap connection
-	if (packet[0] == HCI_EVENT_L2CAP_CHANNEL_OPENED){
+	if (packet[0] == L2CAP_EVENT_CHANNEL_OPENED){
 		bd_addr_t addr;
 		bt_flip_addr(addr, &packet[2]);
 		uint16_t psm = READ_BT_16(packet, 10); 

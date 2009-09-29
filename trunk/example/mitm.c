@@ -53,8 +53,8 @@ void data_handler(uint8_t *packet, uint16_t size){
 
 void event_handler(uint8_t *packet, uint16_t size){
 	// bt stack activated, get started - set local name
-	if (packet[0] == HCI_EVENT_BTSTACK_WORKING ||
-	   (packet[0] == HCI_EVENT_BTSTACK_STATE && packet[2] == HCI_STATE_WORKING)) {
+	if (packet[0] == BTSTACK_EVENT_WORKING ||
+	   (packet[0] == BTSTACK_EVENT_STATE && packet[2] == HCI_STATE_WORKING)) {
 		bt_send_cmd(&hci_write_local_name, NAME);
 	}
 	if ( COMMAND_COMPLETE_EVENT(packet, hci_write_local_name) ) {

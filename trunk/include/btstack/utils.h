@@ -32,6 +32,10 @@ typedef uint8_t link_key_t[LINK_KEY_LEN];
 #define READ_BT_24( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[pos+1]) << 8) | (((uint32_t)buffer[pos+2]) << 16))
 #define READ_BT_32( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[pos+1]) << 8) | (((uint32_t)buffer[pos+2]) << 16) | (((uint32_t) buffer[pos+3])) << 24)
 
+// HCI CMD OGF/OCF
+#define READ_CMD_OGF(buffer) (buffer[1] >> 2)
+#define READ_CMD_OCF(buffer) ((buffer[1] & 0x03) << 8 | buffer[0])
+
 // ACL Packet
 #define READ_ACL_CONNECTION_HANDLE( buffer ) ( READ_BT_16(buffer,0) & 0x0fff)
 #define READ_ACL_FLAGS( buffer )      ( buffer[1] >> 4 )

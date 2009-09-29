@@ -331,7 +331,7 @@ void hci_run(){
                 case 4:
                     // done.
                     hci_stack.state = HCI_STATE_WORKING;
-                    micro_packet = HCI_EVENT_BTSTACK_WORKING;
+                    micro_packet = BTSTACK_EVENT_WORKING;
                     hci_stack.event_packet_handler(&micro_packet, 1);
                     break;
                 default:
@@ -401,7 +401,7 @@ int hci_send_cmd(hci_cmd_t *cmd, ...){
 void hci_emit_state(){
     uint8_t len = 3; 
     uint8_t event[len];
-    event[0] = HCI_EVENT_BTSTACK_STATE;
+    event[0] = BTSTACK_EVENT_STATE;
     event[1] = 1;
     event[2] = hci_stack.state;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
@@ -424,7 +424,7 @@ void hci_emit_connection_complete(hci_connection_t *conn){
 void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
     uint8_t len = 4; 
     uint8_t event[len];
-    event[0] = HCI_EVENT_L2CAP_TIMEOUT_CHECK;
+    event[0] = L2CAP_EVENT_TIMEOUT_CHECK;
     event[1] = 2;
     bt_store_16(event, 2, conn->con_handle);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
@@ -434,7 +434,7 @@ void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
 void hci_emit_nr_connections_changed(){
     uint8_t len = 3; 
     uint8_t event[len];
-    event[0] = HCI_EVENT_NR_CONNECTIONS_CHANGED;
+    event[0] = BTSTACK_EVENT_NR_CONNECTIONS_CHANGED;
     event[1] = 1;
     event[2] = nr_hci_connections();
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
@@ -444,7 +444,7 @@ void hci_emit_nr_connections_changed(){
 void hci_emit_hci_open_failed(){
     uint8_t len = 1; 
     uint8_t event[len];
-    event[0] = HCI_EVENT_POWERON_FAILED;
+    event[0] = BTSTACK_EVENT_POWERON_FAILED;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
     hci_stack.event_packet_handler(event, len);
 }
