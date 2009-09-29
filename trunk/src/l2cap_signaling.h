@@ -7,6 +7,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdarg.h>
 #include <btstack/utils.h>
 #include <btstack/hci_cmds.h>
 
