@@ -6,6 +6,10 @@
 
 #include <btstack/hci_cmds.h>
 #include "hci.h"
+#include <string.h>
+
+// calculate combined ogf/ocf value
+#define OPCODE(ogf, ocf) (ocf | ogf << 10)
 
 /**
  * construct HCI Command based on template

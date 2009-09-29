@@ -8,20 +8,9 @@
 
 #include <stdint.h>
 #include <stdarg.h>
-#include <string.h>
-
-// calculate combined ogf/ocf value
-#define OPCODE(ogf, ocf) (ocf | ogf << 10)
 
 // check if command complete event for given command
 #define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && READ_BT_16(event,3) == cmd.opcode)
-
-// OGFs
-#define OGF_LINK_CONTROL 0x01
-#define OGF_CONTROLLER_BASEBAND 0x03
-#define OGF_INFORMATIONAL_PARAMETERS 0x04
-#define OGF_BTSTACK 0x3d
-#define OGF_VENDOR  0x3f
 
 // Events from host controller to host
 #define HCI_EVENT_INQUIRY_COMPLETE				           0x01
@@ -58,6 +47,8 @@
 
 // last used HCI_EVENT in 2.1 is 0x3d
 
+// events 0x50-0x5f are used internally
+
 // events from BTstack for application/client lib
 #define BTSTACK_EVENT_WORKING                              0x60
 #define BTSTACK_EVENT_STATE                                0x61
@@ -68,21 +59,14 @@
 // data: none
 #define BTSTACK_EVENT_POWERON_FAILED                       0x63
 
-// data: event(8)
-#define DAEMON_CONNECTION_CLOSED                           0x70
-
-// data: event(8), nr_connections(8)
-#define DAEMON_NR_CONNECTIONS_CHANGED                      0x71
-
-
 // data: event (8), len(8), address(48), handle (16), psm (16), source_cid(16), dest_cid (16) 
-#define L2CAP_EVENT_CHANNEL_OPENED                         0x80
+#define L2CAP_EVENT_CHANNEL_OPENED                         0x70
 
 // data: event (8), len(8), channel (16)
-#define L2CAP_EVENT_CHANNEL_CLOSED                         0x81
+#define L2CAP_EVENT_CHANNEL_CLOSED                         0x71
 
 // data: event(8), len(8), handle(16)
-#define L2CAP_EVENT_TIMEOUT_CHECK                          0x82
+#define L2CAP_EVENT_TIMEOUT_CHECK                          0x72
 
 /**
  * Default INQ Mode
@@ -114,10 +98,6 @@ typedef enum {
     const char *format;
 } hci_cmd_t;
 
-// create and send hci command packets based on a template and a list of parameters
-uint16_t hci_create_cmd(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, ...);
-uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, va_list argptr);
-
 
 // HCI Commands - see hci_cmds.c for info on parameters
 extern hci_cmd_t hci_inquiry;
@@ -147,5 +127,6 @@ extern hci_cmd_t hci_write_simple_pairing_mode;
 extern hci_cmd_t btstack_get_state;
 extern hci_cmd_t btstack_set_power_mode;
 extern hci_cmd_t btstack_set_acl_capture_mode;
+// L2CAP client/server commands - see l2cap.c for info on parameters
 extern hci_cmd_t l2cap_create_channel;
 extern hci_cmd_t l2cap_disconnect;

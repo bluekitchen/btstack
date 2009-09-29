@@ -122,7 +122,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
             break;
         case DAEMON_EVENT_PACKET:
             switch (data[0]) {
-                case DAEMON_CONNECTION_CLOSED:
+                case DAEMON_EVENT_CONNECTION_CLOSED:
                     l2cap_close_channels_for_connection(connection);
                     break;
                 case DAEMON_NR_CONNECTIONS_CHANGED:

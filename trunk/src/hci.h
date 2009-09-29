@@ -22,6 +22,12 @@
 #define HCI_SCO_DATA_PKT_HDR	  0x03
 #define HCI_EVENT_PKT_HDR         0x02
 
+// OGFs
+#define OGF_LINK_CONTROL 0x01
+#define OGF_CONTROLLER_BASEBAND 0x03
+#define OGF_INFORMATIONAL_PARAMETERS 0x04
+#define OGF_BTSTACK 0x3d
+#define OGF_VENDOR  0x3f
 
 // cmds for BTstack 
 // get state: @returns HCI_STATE
@@ -41,6 +47,13 @@
 
 // 
 #define IS_COMMAND(packet, command) (READ_BT_16(packet,0) == command.opcode)
+
+// data: event(8)
+#define DAEMON_EVENT_CONNECTION_CLOSED                     0x70
+
+// data: event(8), nr_connections(8)
+#define DAEMON_NR_CONNECTIONS_CHANGED                      0x71
+
 
 /**
  * Connection State 
@@ -118,6 +131,10 @@ typedef struct {
     uint8_t   cmds_ready;
     
 } hci_stack_t;
+
+// create and send hci command packets based on a template and a list of parameters
+uint16_t hci_create_cmd(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, ...);
+uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, va_list argptr);
 
 // set up HCI
 void hci_init(hci_transport_t *transport, void *config, bt_control_t *control);

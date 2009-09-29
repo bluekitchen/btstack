@@ -138,7 +138,7 @@ int socket_connection_hci_process(struct data_source *ds) {
     if (bytes_read <= 0){
         // connection broken (no particular channel, no date yet)
         uint8_t event[1];
-        event[0] = DAEMON_CONNECTION_CLOSED;
+        event[0] = DAEMON_EVENT_CONNECTION_CLOSED;
         (*socket_connection_packet_callback)(conn, DAEMON_EVENT_PACKET, 0, (uint8_t *) &event, 1);
         
         // free connection
