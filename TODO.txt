@@ -1,6 +1,7 @@
 /* new todo file for BTstack */
 
 Last milestone reached: create script to build APT package for BTdeamon, Resources, and BTstack client library
+Last change: clean up names and headers
 
 
 NEXT:
@@ -10,6 +11,7 @@ NEXT:
   - btstack error
 - bug: Status bar icon in wrong state (on instead of connected) with WiiMoteDemo 
 - bug: debug BlueTool's "I'm not a Bluetooth stack" error message
+- check that iPhone sleep mode is handled somehow
 - provide test version by setting up APT repository within BTstack SVN
   - instructions: http://www.saurik.com/id/7
 

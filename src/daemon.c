@@ -71,13 +71,13 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
     uint8_t reason;
     // BTstack internal commands - 16 Bit OpCode, 8 Bit ParamLen, Params...
     switch (READ_CMD_OCF(packet)){
-        case HCI_BTSTACK_GET_STATE:
+        case BTSTACK_GET_STATE:
             hci_emit_state();
             break;
-        case HCI_BTSTACK_SET_POWER_MODE:
+        case BTSTACK_SET_POWER_MODE:
             hci_power_control(packet[3]);
             break;
-        case HCI_BTSTACK_SET_ACL_CAPTURE_MODE:
+        case BTSTACK_SET_ACL_CAPTURE_MODE:
             if (packet[3]) {
                 l2cap_set_capture_connection(connection);
             } else {
@@ -143,10 +143,10 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
 
 static void daemon_event_handler(uint8_t *packet, uint16_t size){
     // handle state event
-    if (packet[0] == HCI_EVENT_BTSTACK_WORKING){
+    if (packet[0] == BTSTACK_EVENT_WORKING){
         bluetooth_status_handler(BLUETOOTH_ON);
     }
-    if (packet[0] == HCI_EVENT_BTSTACK_STATE){
+    if (packet[0] == BTSTACK_EVENT_STATE){
         if (packet[2] == HCI_STATE_WORKING) {
             bluetooth_status_handler(BLUETOOTH_ON);
         }
@@ -154,7 +154,7 @@ static void daemon_event_handler(uint8_t *packet, uint16_t size){
             bluetooth_status_handler(BLUETOOTH_OFF);
         }
     }
-    if (packet[0] == HCI_EVENT_NR_CONNECTIONS_CHANGED){
+    if (packet[0] == BTSTACK_EVENT_NR_CONNECTIONS_CHANGED){
         if (packet[2]) {
             bluetooth_status_handler(BLUETOOTH_ACTIVE);
         } else {
