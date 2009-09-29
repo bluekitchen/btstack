@@ -36,6 +36,9 @@ typedef uint8_t link_key_t[LINK_KEY_LEN];
 #define READ_CMD_OGF(buffer) (buffer[1] >> 2)
 #define READ_CMD_OCF(buffer) ((buffer[1] & 0x03) << 8 | buffer[0])
 
+// check if command complete event for given command
+#define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && READ_BT_16(event,3) == cmd.opcode)
+
 // ACL Packet
 #define READ_ACL_CONNECTION_HANDLE( buffer ) ( READ_BT_16(buffer,0) & 0x0fff)
 #define READ_ACL_FLAGS( buffer )      ( buffer[1] >> 4 )

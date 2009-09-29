@@ -6,8 +6,6 @@
 
 #include "l2cap_signaling.h"
 
-#include <stdarg.h>
-
 static char *l2cap_signaling_commands_format[] = {
 "D",    // 0x01 command reject: reason {cmd not understood (0), sig MTU exceeded (2:max sig MTU), invalid CID (4:req CID)}, data len, data
 "22",   // 0x02 connection request: PSM, Source CID

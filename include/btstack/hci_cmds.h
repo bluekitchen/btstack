@@ -7,10 +7,6 @@
 #pragma once
 
 #include <stdint.h>
-#include <stdarg.h>
-
-// check if command complete event for given command
-#define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && READ_BT_16(event,3) == cmd.opcode)
 
 // Events from host controller to host
 #define HCI_EVENT_INQUIRY_COMPLETE				           0x01
