@@ -1,14 +1,10 @@
 /* new todo file for BTstack */
 
 Last milestone reached: create script to build APT package for BTdeamon, Resources, and BTstack client library
-Last change: clean up names and headers
+Last change: clean up command names and headers
 
 
 NEXT:
-- decide on error reporting from BTdaemon
-  - command_status_event with custom errors
-  - hci open failed 
-  - btstack error
 - bug: Status bar icon in wrong state (on instead of connected) with WiiMoteDemo 
 - bug: debug BlueTool's "I'm not a Bluetooth stack" error message
 - check that iPhone sleep mode is handled somehow
@@ -64,6 +60,10 @@ NEXT:
 - implement PAN
 
 == Release Version 0.4
+- unify packet generation
+  - btstack events
+  - cmd packets
+  - l2cap commands
 - auto-generate code for sending commands from structured text input file
 - devise concept for access to event data
   - auto-generate event struct getter? STRUCTURE_get_FIELD
