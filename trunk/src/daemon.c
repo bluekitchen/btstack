@@ -143,9 +143,6 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
 
 static void daemon_event_handler(uint8_t *packet, uint16_t size){
     // handle state event
-    if (packet[0] == BTSTACK_EVENT_WORKING){
-        bluetooth_status_handler(BLUETOOTH_ON);
-    }
     if (packet[0] == BTSTACK_EVENT_STATE){
         if (packet[2] == HCI_STATE_WORKING) {
             bluetooth_status_handler(BLUETOOTH_ON);

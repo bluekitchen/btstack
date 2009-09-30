@@ -46,14 +46,13 @@
 // events 0x50-0x5f are used internally
 
 // events from BTstack for application/client lib
-#define BTSTACK_EVENT_WORKING                              0x60
-#define BTSTACK_EVENT_STATE                                0x61
+#define BTSTACK_EVENT_STATE                                0x60
 
 // data: event(8), len(8), nr hci connections
-#define BTSTACK_EVENT_NR_CONNECTIONS_CHANGED               0x62
+#define BTSTACK_EVENT_NR_CONNECTIONS_CHANGED               0x61
 
 // data: none
-#define BTSTACK_EVENT_POWERON_FAILED                       0x63
+#define BTSTACK_EVENT_POWERON_FAILED                       0x62
 
 // data: event (8), len(8), address(48), handle (16), psm (16), source_cid(16), dest_cid (16) 
 #define L2CAP_EVENT_CHANNEL_OPENED                         0x70
