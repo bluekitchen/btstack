@@ -142,20 +142,36 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
 }
 
 static void daemon_event_handler(uint8_t *packet, uint16_t size){
+    // local cache
+    static HCI_STATE hci_state = HCI_STATE_OFF;
+    static int num_connections = 0;
+    
+    uint8_t update_status = 0;
+    
     // handle state event
-    if (packet[0] == BTSTACK_EVENT_STATE){
-        if (packet[2] == HCI_STATE_WORKING) {
-            bluetooth_status_handler(BLUETOOTH_ON);
-        }
-        if (packet[2] == HCI_STATE_OFF) {
-            bluetooth_status_handler(BLUETOOTH_OFF);
-        }
+    switch (packet[0]) {
+        case BTSTACK_EVENT_STATE:
+            hci_state = packet[2];
+            update_status = 1;
+            break;
+        case BTSTACK_EVENT_NR_CONNECTIONS_CHANGED:
+            num_connections = packet[2];
+            update_status = 1;
+            break;
+        default:
+            break;
     }
-    if (packet[0] == BTSTACK_EVENT_NR_CONNECTIONS_CHANGED){
-        if (packet[2]) {
-            bluetooth_status_handler(BLUETOOTH_ACTIVE);
+    
+    // choose full bluetooth state 
+    if (update_status) {
+        if (hci_state != HCI_STATE_WORKING) {
+            bluetooth_status_handler(BLUETOOTH_OFF);
         } else {
-            bluetooth_status_handler(BLUETOOTH_ON);
+            if (num_connections) {
+                bluetooth_status_handler(BLUETOOTH_ACTIVE);
+            } else {
+                bluetooth_status_handler(BLUETOOTH_ON);
+            }
         }
     }
     
