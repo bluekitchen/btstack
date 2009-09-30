@@ -200,7 +200,7 @@ int main (int argc, const char * argv[]){
     
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
     // hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
-    hci_dump_open(NULL, HCI_DUMP_STDOUT);
+    // hci_dump_open(NULL, HCI_DUMP_STDOUT);
                   
     // init HCI
     hci_init(transport, &config, control);
