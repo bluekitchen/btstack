@@ -28,15 +28,13 @@ _ ## class ## $ ## name(self, sel, ## args)
 
 
 CFDataRef myCallBack(CFMessagePortRef local, SInt32 msgid, CFDataRef cfData, void *info) {
-	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-
 	UIApplication *theApp = [UIApplication sharedApplication];
 
 	const char *data = (const char *) CFDataGetBytePtr(cfData);
 	UInt16 dataLen = CFDataGetLength(cfData);
 	
 	if (dataLen > 1 && data) {
-		NSString * name = [[NSString stringWithCString:&data[1] encoding:NSASCIIStringEncoding] autorelease];
+		NSString * name = [NSString stringWithCString:&data[1] encoding:NSASCIIStringEncoding];
 		switch (data[0]){
 			case SBAC_addStatusBarImage:
 				[theApp addStatusBarImageNamed:name];
@@ -48,7 +46,6 @@ CFDataRef myCallBack(CFMessagePortRef local, SInt32 msgid, CFDataRef cfData, voi
 				NSLog(@"Unknown command %u, len %u", data[0], dataLen); 
 		}
 	}
-	[pool release]; 
 	return NULL;  // as stated in header, both data and returnData will be released for us after callback returns
 }
 
