@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	if (usage) {
-		printf("Usage: %s add/remove StatuBarImageName", argv[0]);
+		printf("Usage: %s add/remove StatuBarImageName\n", argv[0]);
 		return -1;
 	} 
 }
