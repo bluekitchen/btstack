@@ -1,11 +1,13 @@
 /* new todo file for BTstack */
 
 Last milestone reached: create script to build APT package for BTdeamon, Resources, and BTstack client library
-Last change: fix doulbe free in SpringBoardAccess
+Last change: status bar icon updates
 
 
 NEXT:
-- bug: Status bar icon in wrong state (on instead of connected) with WiiMoteDemo 
+- bug: hci_state gets confused.
+  - BlueTool used although hci state should be on (right after quitting example/test)
+  - BlueTool not used although stack not working  
 - bug: debug BlueTool's "I'm not a Bluetooth stack" error message
 - check that iPhone sleep mode is handled somehow
 - provide test version by setting up APT repository within BTstack SVN

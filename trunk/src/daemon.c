@@ -152,10 +152,12 @@ static void daemon_event_handler(uint8_t *packet, uint16_t size){
     switch (packet[0]) {
         case BTSTACK_EVENT_STATE:
             hci_state = packet[2];
+            printf("New state: %u\n", hci_state);
             update_status = 1;
             break;
         case BTSTACK_EVENT_NR_CONNECTIONS_CHANGED:
             num_connections = packet[2];
+            printf("New nr connections: %u\n", num_connections);
             update_status = 1;
             break;
         default:
