@@ -1,0 +1,25 @@
+CC = @CC@
+LDFLAGS  = @LDFLAGS@ -lBTstack -L../src
+CPPFLAGS = @CPPFLAGS@ -I../include
+prefix = @prefix@
+
+all: test mitm rfcomm
+
+test: test.c
+	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
+	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
+
+mitm: mitm.c
+	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
+	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
+
+rfcomm: rfcomm.c
+	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
+	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
+
+clean:
+	rm test mitm rfcomm
+	
+install:    
+	echo "nothing to be done"
+
