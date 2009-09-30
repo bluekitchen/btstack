@@ -304,7 +304,7 @@ int socket_connection_create_unix(char *path){
         launch_data_t tempi = launch_data_array_get_index (listening_fd_array, i);
         int listening_fd = launch_data_get_fd(tempi);
         launch_data_free (tempi);
-		printf("%u. file descriptor = %u",(unsigned int) i+1, listening_fd);
+		printf("%u. file descriptor = %u\n",(unsigned int) i+1, listening_fd);
         
         // create data_source_t for fd
         data_source_t *ds = malloc( sizeof(data_source_t));
