@@ -331,8 +331,7 @@ void hci_run(){
                 case 4:
                     // done.
                     hci_stack.state = HCI_STATE_WORKING;
-                    micro_packet = BTSTACK_EVENT_WORKING;
-                    hci_stack.event_packet_handler(&micro_packet, 1);
+                    hci_emit_state();
                     break;
                 default:
                     break;
