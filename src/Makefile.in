@@ -5,7 +5,7 @@ prefix = @prefix@
 
 springboard_access_sources = @SPRINGBOARD_ACCESS_SOURCES@
 
-libBTstack_SOURCES = btstack.c hci_cmds.c linked_list.c run_loop.c socket_connection.c utils.c
+libBTstack_SOURCES = btstack.c hci_cmds.c linked_list.c run_loop_posix.c socket_connection.c utils.c
 			  
 BTdaemon_SOURCES =  $(libBTstack_SOURCES) \
     bt_control_iphone.c     \
