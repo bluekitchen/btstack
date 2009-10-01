@@ -5,14 +5,19 @@ Last change: status bar icon updates
 
 
 NEXT:
-- bug: hci_state gets confused.
-  - BlueTool used although hci state should be on (right after quitting example/test)
-  - BlueTool not used although stack not working  
-- bug: debug BlueTool's "I'm not a Bluetooth stack" error message
-- check that iPhone sleep mode is handled somehow
+
+- support Cocao CFRunLoop in addition to POSIX select run loop
+  - define struct run_loop_t
+  - run_loop_posix.c: run_loop_t * BTstack_run_loop = run_loop_posix;
+  - convert all run_loop calls to use (*BTstack_run_loop->functionX)(..)
+  - new btstack_open(RUN_LOOP_MODE mode) allows to choose between both
+  - implement missing functions in run_loop_cocoa: remove data source and timer functions
+- prepare WiiMoteDemo for release
+  - update to current stack version
+  - add inquiry code
 - provide test version by setting up APT repository within BTstack SVN
   - instructions: http://www.saurik.com/id/7
-
+  
 == Release Version 0.1
 
 - implement rest of L2CAP state machine
@@ -27,6 +32,11 @@ NEXT:
   - Inquiry
   - Alerts and shutdown of Apple's stack
 - create new GPG key for gmail account and sign APT package
+- non-reproducible bug: hci_state gets confused.
+  - BlueTool used although hci state should be on (right after quitting example/test)
+  - BlueTool not used although stack not working
+    - more log messages
+- non-reproducible bug: debug BlueTool's "I'm not a Bluetooth stack" error message
   
 == Release 0.2 - Incoming L2CAP supported + UI Support
 
