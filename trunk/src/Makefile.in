@@ -35,7 +35,6 @@ BTdaemon: $(BTdaemon_SOURCES)
 
 clean:
 	rm -f libBTstack* BTdaemon *.o
-	rm -rf ../BTstack.Framework
 	
 install:    
 	echo "installing BTdaemon in $(prefix)"
