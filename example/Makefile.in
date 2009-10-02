@@ -18,7 +18,7 @@ rfcomm: rfcomm.c
 	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
 clean:
-	rm test mitm rfcomm
+	rm -f test mitm rfcomm
 	
 install:    
 	echo "nothing to be done"
