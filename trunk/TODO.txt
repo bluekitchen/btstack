@@ -1,15 +1,11 @@
 /* new todo file for BTstack */
 
 Last milestone reached: create script to build APT package for BTdeamon, Resources, and BTstack client library
-Last change: move packet types to hci_cmds.h
+Last change: use single packet handler on client side
 
 
 NEXT:
 
-- use single packet handler on client side
-  - add packet type to callback type
-  - change API
-  - don't dispatch on type in btstack.c
 - support Cocoa CFRunLoop in addition to POSIX select run loop
   - define struct run_loop_t
   - run_loop_posix.c: run_loop_t * BTstack_run_loop = run_loop_posix;
