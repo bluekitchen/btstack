@@ -12,33 +12,6 @@
 #include <btstack/run_loop.h>
 
 /* HCI packet types */
-
-/**
- * Indicates (first byte) that this pkt to the bluetooth module is a command pkt. The
- * module will send a #HCI_EVENT_PACKET for response.
- */
-#define HCI_COMMAND_DATA_PACKET	0x01
-
-/**
- * Indicates (first byte) that this pkt is a acl pkt. Will be sent to and from the module.
- */
-#define HCI_ACL_DATA_PACKET	    0x02
-
-/**
- * Indicates (first byte) that this pkt is a sco pkt. Will be sent to and from the module.
- */
-#define HCI_SCO_DATA_PACKET	    0x03
-
-/**
- * Indicates (first byte) that this pkt is an event pkt. Only sent by the bluetooth module.
- */
-#define HCI_EVENT_PACKET	    0x04
-
-// extension for client/server communication
-#define L2CAP_DATA_PACKET      0x05
-
-#define DAEMON_EVENT_PACKET    0x06
-
 typedef struct {
     int    (*open)(void *transport_config);
     int    (*close)();
