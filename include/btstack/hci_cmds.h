@@ -8,6 +8,24 @@
 
 #include <stdint.h>
 
+/**
+ * packet types - used in BTstack and over the H4 UART interface
+ */
+#define HCI_COMMAND_DATA_PACKET	0x01
+#define HCI_ACL_DATA_PACKET	    0x02
+#define HCI_SCO_DATA_PACKET	    0x03
+#define HCI_EVENT_PACKET	    0x04
+
+// extension for client/server communication
+#define DAEMON_EVENT_PACKET     0x05
+
+// L2CAP data
+#define L2CAP_DATA_PACKET       0x06
+
+// RFCOMM data
+#define RFCOMM_DATA_PACKET       0x07
+
+
 // Events from host controller to host
 #define HCI_EVENT_INQUIRY_COMPLETE				           0x01
 #define HCI_EVENT_INQUIRY_RESULT				           0x02
