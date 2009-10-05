@@ -40,4 +40,4 @@ install:
 	echo "installing BTdaemon in $(prefix)"
 	mkdir -p $(prefix)/lib $(prefix)/include
 	cp libBTstack.a libBTstack.dylib $(prefix)/lib/
-	cp btstack.h run_loop.h hci.h    $(prefix)/include
+	cp -r ../include/btstack $(prefix)/include

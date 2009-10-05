@@ -24,9 +24,9 @@ int bt_close();
 // send hci cmd packet
 int bt_send_cmd(hci_cmd_t *cmd, ...);
 
-// register packet and event handler
-void bt_register_event_packet_handler(void (*handler)(uint8_t *packet, uint16_t size));
-void bt_register_data_packet_handler  (void (*handler)(uint8_t *packet, uint16_t size));
+// register packet handler
+void bt_register_packet_handler (void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
 
-void bt_send_acl_packet(uint8_t * data, uint16_t len);
-void l2cap_send(uint16_t source_cid, uint8_t *data, uint16_t len);
+void bt_send_acl(uint8_t * data, uint16_t len);
+
+void bt_send_l2cap(uint16_t source_cid, uint8_t *data, uint16_t len);

@@ -17,17 +17,17 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-uint8_t hci_cmd_buffer[3+255];
+static uint8_t hci_cmd_buffer[3+255];
 
 static connection_t *btstack_connection = NULL;
 
-/** prototypes */
-static void dummy_handler(uint8_t *packet, uint16_t size);
-int btstack_packet_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t size);
+/** prototypes & dummy functions */
+static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){};
+static int btstack_packet_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t size);
 
-/* callback to L2CAP layer */
-static void (*event_packet_handler)(uint8_t *packet, uint16_t size) = dummy_handler;
-static void (*acl_packet_handler)  (uint8_t *packet, uint16_t size) = dummy_handler;
+/** local globals :) */
+static void (*client_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
+
 
 // init BTstack library
 int bt_open(){
@@ -55,41 +55,22 @@ int bt_send_cmd(hci_cmd_t *cmd, ...){
     return 0;
 }
 
-//@TODO: merge handler?
 int btstack_packet_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t size){
-    switch (packet_type){
-        case HCI_EVENT_PACKET:
-            (*event_packet_handler)(data, size);
-            break;
-        // TODO use different handler, or use packet type parameter
-        case HCI_ACL_DATA_PACKET:
-        case L2CAP_DATA_PACKET:
-            (*acl_packet_handler)(data, size);
-            break;
-        default:
-            break;
-    }
+    (*client_packet_handler)(packet_type, data, size);
     return 0;
 }
 
-static void dummy_handler(uint8_t *packet, uint16_t size){
+// register packet handler
+void bt_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+    client_packet_handler = handler;
 }
 
-// register packet and event handler
-void bt_register_event_packet_handler(void (*handler)(uint8_t *packet, uint16_t size)){
-    event_packet_handler = handler;
-}
-
-void bt_register_data_packet_handler  (void (*handler)(uint8_t *packet, uint16_t size)){
-    acl_packet_handler = handler;
-}
-
-void l2cap_send(uint16_t source_cid, uint8_t *data, uint16_t len){
+void bt_send_l2cap(uint16_t source_cid, uint8_t *data, uint16_t len){
     // send
     socket_connection_send_packet(btstack_connection, L2CAP_DATA_PACKET, source_cid, data, len);
 }
 
-void bt_send_acl_packet(uint8_t * data, uint16_t len){
+void bt_send_acl(uint8_t * data, uint16_t len){
     // send
     socket_connection_send_packet(btstack_connection, HCI_ACL_DATA_PACKET, 0, data, len);
 }
