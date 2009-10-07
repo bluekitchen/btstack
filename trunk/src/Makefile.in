@@ -5,7 +5,7 @@ prefix = @prefix@
 
 springboard_access_sources = @SPRINGBOARD_ACCESS_SOURCES@
 
-libBTstack_SOURCES = btstack.c hci_cmds.c linked_list.c run_loop_posix.c socket_connection.c utils.c
+libBTstack_SOURCES = btstack.c hci_cmds.c linked_list.c run_loop.c run_loop_posix.c run_loop_cocoa.m socket_connection.c utils.c
 			  
 BTdaemon_SOURCES =  $(libBTstack_SOURCES) \
     bt_control_iphone.c     \
@@ -37,7 +37,8 @@ clean:
 	rm -f libBTstack* BTdaemon *.o
 	
 install:    
-	echo "installing BTdaemon in $(prefix)"
+	echo "installing BTdaemon in $(prefix)..."
 	mkdir -p $(prefix)/lib $(prefix)/include
 	cp libBTstack.a libBTstack.dylib $(prefix)/lib/
+	cp BTdaemon $(prefix)/bin/
 	cp -r ../include/btstack $(prefix)/include

@@ -222,6 +222,7 @@ int main (int argc, const char * argv[]){
 	}
 	
 	// start stack
+	run_loop_init(RUN_LOOP_POSIX);
 	int err = bt_open();
 	if (err) {
 		printf("Failed to open connection to BTdaemon\n");

@@ -15,7 +15,7 @@
 // temp
 #include "l2cap.h"
 
-#define HCI_CONNECTION_TIMEOUT 10
+#define HCI_CONNECTION_TIMEOUT 10000
 
 // the STACK is here
 static hci_stack_t       hci_stack;
@@ -303,7 +303,6 @@ int hci_power_control(HCI_POWER_MODE power_mode){
 }
 
 void hci_run(){
-    uint8_t micro_packet;
     switch (hci_stack.state){
         case HCI_STATE_INITIALIZING:
             if (hci_stack.substate % 2) {

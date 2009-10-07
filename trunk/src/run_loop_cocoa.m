@@ -9,6 +9,9 @@
 #import <Foundation/Foundation.h>
 #import <CoreFoundation/CoreFoundation.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+
 static void socketDataCallback (
 						 CFSocketRef s,
 						 CFSocketCallBackType callbackType,
@@ -20,7 +23,7 @@ static void socketDataCallback (
 	ds->process(ds);
 }
 
-void run_loop_add_data_source(data_source_t *dataSource){
+void cocoa_add_data_source(data_source_t *dataSource){
 
 	// add fd as CF "socket"
 	
@@ -43,8 +46,49 @@ void run_loop_add_data_source(data_source_t *dataSource){
 	CFRunLoopAddSource( CFRunLoopGetCurrent(), socketRunLoop, kCFRunLoopDefaultMode);
 }
 
-int  run_loop_remove_data_source(data_source_t *dataSource){
+int  cocoa_remove_data_source(data_source_t *dataSource){
 	// not needed yet
+    fprintf(stderr, "WARNING: run_loop_remove_data_source not implemented yet!");
+    // warning never the less
 	return 0;
 }
+void  cocoa_add_timer(timer_t * ts){
+	// not needed yet
+   fprintf(stderr, "WARNING: run_loop_add_timer not implemented yet!");
+    // warning never the less
+}
+
+int  cocoa_remove_timer(timer_t * ts){
+	// not needed yet
+    fprintf(stderr, "WARNING: run_loop_remove_timer not implemented yet!");
+    // warning never the less
+	return 0;
+}
+
+void cocoa_init(){
+}
+
+void cocoa_execute(){
+	// not needed yet
+    fprintf(stderr, "WARNING: execute not available for RUN_LOOP_COCOA!");
+    // warning never the less
+	exit(10);
+}
+
+void cocoa_dump_timer(){
+	// not needed yet
+    fprintf(stderr, "WARNING: run_loop_dump_timer not implemented yet!");
+    // warning never the less
+	return;
+}
+
+const run_loop_t run_loop_cocoa = {
+    &cocoa_init,
+    &cocoa_add_data_source,
+    &cocoa_remove_data_source,
+    &cocoa_add_timer,
+    &cocoa_remove_timer,
+    &cocoa_execute,
+    &cocoa_dump_timer
+};
 

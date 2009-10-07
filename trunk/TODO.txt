@@ -5,13 +5,6 @@ Last change: use single packet handler on client side
 
 
 NEXT:
-
-- support Cocoa CFRunLoop in addition to POSIX select run loop
-  - define struct run_loop_t
-  - run_loop_posix.c: run_loop_t * BTstack_run_loop = run_loop_posix;
-  - convert all run_loop calls to use (*BTstack_run_loop->functionX)(..)
-  - new btstack_open(RUN_LOOP_MODE mode) allows to choose between both
-  - implement missing functions in run_loop_cocoa: remove data source and timer functions
 - prepare WiiMoteDemo for release
   - update to current stack version
   - add inquiry code
