@@ -12,67 +12,27 @@
 #include <stdio.h>
 
 // the run loop
-static linked_list_t data_sources = NULL;
-static linked_list_t timers = NULL;
-
-// set timer
-void run_loop_set_timer(timer_t *a, int timeout_in_seconds){
-    gettimeofday(&a->timeout, NULL);
-    a->timeout.tv_sec += timeout_in_seconds;
-}
-
-// compare timers - NULL is assumed to be before the Big Bang
-// pre: 0 <= tv_usec < 1000000
-int run_loop_timeval_compare(struct timeval *a, struct timeval *b){
-    if (!a || !b) return 0;
-    if (!a) return -1;
-    if (!b) return 1;
-    
-    if (a->tv_sec < b->tv_sec) {
-        return -1;
-    }
-    if (a->tv_sec > b->tv_sec) {
-        return 1;
-    }
-    
-    if (a->tv_usec < b->tv_usec) {
-        return -1;
-    }
-    if (a->tv_usec > b->tv_usec) {
-        return 1;
-    }
-    
-    return 0;
-    
-}
-
-// compare timers - NULL is assumed to be before the Big Bang
-// pre: 0 <= tv_usec < 1000000
-int run_loop_timer_compare(timer_t *a, timer_t *b){
-    if (!a || !b) return 0;
-    if (!a) return -1;
-    if (!b) return 1;
-    return run_loop_timeval_compare(&a->timeout, &b->timeout);
-}
+static linked_list_t data_sources;
+static linked_list_t timers;
 
 /**
  * Add data_source to run_loop
  */
-void run_loop_add_data_source(data_source_t *ds){
+void posix_add_data_source(data_source_t *ds){
     linked_list_add(&data_sources, (linked_item_t *) ds);
 }
 
 /**
  * Remove data_source from run loop
  */
-int run_loop_remove_data_source(data_source_t *ds){
+int posix_remove_data_source(data_source_t *ds){
     return linked_list_remove(&data_sources, (linked_item_t *) ds);
 }
 
 /**
  * Add timer to run_loop (keep list sorted)
  */
-void run_loop_add_timer(timer_t *ts){
+void posix_add_timer(timer_t *ts){
     linked_item_t *it;
     for (it = (linked_item_t *) &timers; it ; it = it->next){
         if ( run_loop_timer_compare( (timer_t *) it->next, ts) >= 0) {
@@ -86,23 +46,23 @@ void run_loop_add_timer(timer_t *ts){
 /**
  * Remove timer from run loop
  */
-int run_loop_remove_timer(timer_t *ts){
+int posix_remove_timer(timer_t *ts){
     return linked_list_remove(&timers, (linked_item_t *) ts);
 }
 
-void run_loop_timer_dump(){
+void posix_dump_timer(){
     linked_item_t *it;
     int i = 0;
     for (it = (linked_item_t *) timers; it ; it = it->next){
         timer_t *ts = (timer_t*) it;
-        printf("timer %u, timeout %u\n", i, ts->timeout.tv_sec);
+        printf("timer %u, timeout %u\n", i, (unsigned int) ts->timeout.tv_sec);
     }
 }
 
 /**
  * Execute run_loop
  */
-void run_loop_execute() {
+void posix_execute() {
     fd_set descriptors;
     data_source_t *ds;
     timer_t       *ts;
@@ -166,5 +126,17 @@ void run_loop_execute() {
     }
 }
 
+void posix_init(){
+    data_sources = NULL;
+    timers = NULL;
+}
 
-
+const run_loop_t run_loop_posix = {
+    &posix_init,
+    &posix_add_data_source,
+    &posix_remove_data_source,
+    &posix_add_timer,
+    &posix_remove_timer,
+    &posix_execute,
+    &posix_dump_timer
+};

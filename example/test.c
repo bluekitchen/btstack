@@ -117,6 +117,7 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 int main (int argc, const char * argv[]){
+	run_loop_init(RUN_LOOP_POSIX);
 	int err = bt_open();
 	if (err) {
 		printf("Failed to open connection to BTdaemon\n");

@@ -39,7 +39,7 @@
 #include "hci_transport_usb.h"
 #endif
 
-#define DAEMON_NO_CONNECTION_TIMEOUT 60
+#define DAEMON_NO_CONNECTION_TIMEOUT 60000
 
 static hci_transport_t * transport;
 static hci_uart_config_t config;
@@ -210,6 +210,8 @@ int main (int argc, const char * argv[]){
 #ifdef USE_SPRINGBOARD
     bluetooth_status_handler = platform_iphone_status_handler;
 #endif
+    
+    run_loop_init(RUN_LOOP_POSIX);
     
     // @TODO: allow configuration per HCI CMD
     
