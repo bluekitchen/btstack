@@ -10,20 +10,23 @@
 @implementation BTInquiryViewController
 
 @synthesize devices;
-@synthesize bluetoothState;
-@synthesize inquiryState;
 
-#define MOCKUP
+// #define MOCKUP
 
 int mock_state = 0;
 
 - (id) init {
 	self = [super initWithStyle:UITableViewStyleGrouped];
-	bluetoothState = kBluetoothStateUnknown;
+	bluetoothState = HCI_STATE_OFF;
 	inquiryState = kInquiryInactive;
+
+	macAddressFont = [UIFont fontWithName:@"Courier New" size:[UIFont labelFontSize]];
+	deviceNameFont = [UIFont boldSystemFontOfSize:[UIFont labelFontSize]];
 	
 	deviceActivity = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
 	[deviceActivity startAnimating];
+	bluetoothActivity = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+	[bluetoothActivity startAnimating];
 	return self;
 }
 
@@ -89,7 +92,7 @@ int mock_state = 0;
 // Customize the number of rows in the table view.
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
 	int rows = 1;  // 1 for status line 
-	if (bluetoothState == kBluetoothStateOn) {
+	if (bluetoothState == HCI_STATE_WORKING) {
 		rows += [devices count];
 	}
 	return rows;
@@ -103,17 +106,17 @@ int mock_state = 0;
     
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
     if (cell == nil) {
-        cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier] autorelease];
+        cell = [[[UITableViewCell alloc] initWithStyle:/* UITableViewCellStyleDefault = */0 reuseIdentifier:CellIdentifier] autorelease];
 		// cell.selectionStyle = UITableViewCellSelectionStyleNone;
     }
     
     // Set up the cell...
 	NSString *label = nil;
 	int idx = [indexPath indexAtPosition:1];
-	if (bluetoothState != kBluetoothStateOn || idx >= [devices count]) {
-		if (bluetoothState == kBluetoothStateInitializing){
+	if (bluetoothState != HCI_STATE_WORKING || idx >= [devices count]) {
+		if (bluetoothState == HCI_STATE_INITIALIZING){
 			label = @"Activating BTstack...";
-			cell.accessoryView = deviceActivity;
+			cell.accessoryView = bluetoothActivity;
 		} else {
 			switch (inquiryState){
 				case kInquiryInactive:
@@ -126,17 +129,22 @@ int mock_state = 0;
 					break;
 				case kInquiryActive:
 					label = @"Searching...";
-					cell.accessoryView = deviceActivity;
+					cell.accessoryView = bluetoothActivity;
 					break;
 				case kInquiryRemoteName:
 					label = @"Query device names...";
-					cell.accessoryView = deviceActivity;
+					cell.accessoryView = bluetoothActivity;
 					break;
 			}
 		}
 	} else {
 		BTDevice *dev = [devices objectAtIndex:idx];
 		label = [dev nameOrAddress];
+		if ([dev name]){
+			cell.font = deviceNameFont;
+		} else {
+			cell.font = macAddressFont;
+		}
 		switch ([dev connectionState]) {
 			case kBluetoothConnectionNotConnected:
 			case kBluetoothConnectionConnected:
@@ -148,7 +156,7 @@ int mock_state = 0;
 				break;
 		}
 	}
-	[cell.textLabel setText:label];
+	cell.text = label;
     return cell;
 }
 
@@ -159,11 +167,12 @@ int mock_state = 0;
 	// AnotherViewController *anotherViewController = [[AnotherViewController alloc] initWithNibName:@"AnotherView" bundle:nil];
 	// [self.navigationController pushViewController:anotherViewController];
 	// [anotherViewController release];
+
 #ifdef MOCKUP
 	switch (mock_state) {
 
 		case 0:
-			bluetoothState = kBluetoothStateOn;
+			bluetoothState = HCI_STATE_WORKING;
 			[tableView reloadData];
 			mock_state++;
 			break;
@@ -176,7 +185,8 @@ int mock_state = 0;
 		case 2:
 		case 3: {
 			BTDevice * dev = [[BTDevice alloc] init];
-			[dev setAddress:[NSString stringWithFormat:@"%02x:%02x:%02x:%02x:%02x:%02x:", mock_state, mock_state, mock_state, mock_state, mock_state, mock_state]];
+			bd_addr_t addr = { mock_state, mock_state, mock_state, mock_state, mock_state, mock_state};
+			[dev setAddress:&addr];
 			[devices addObject:dev];
 			[tableView reloadData];
 			mock_state++;
@@ -214,7 +224,24 @@ int mock_state = 0;
 		}
 	}
 #endif
+	
 }
+
+- (void) setBluetoothState:(HCI_STATE)state {
+	bluetoothState = state;
+	[[self tableView] reloadData];
+}
+- (void) setInquiryState:(InquiryState)state {
+	inquiryState = state;
+	[[self tableView] reloadData];
+}
+- (InquiryState) inquiryState {
+	return inquiryState;
+}
+- (HCI_STATE) bluetoothState {
+	return bluetoothState;
+}
+
 
 
 - (void)dealloc {

@@ -6,13 +6,7 @@
 
 #import <UIKit/UIKit.h>
 
-typedef enum  {
-	kBluetoothStateUnknown,
-	kBluetoothStateOn,
-	kBluetoothStateOff,
-	kBluetoothStateInitializing,
-	kBluetoothStateStopping
-} BluetoothState;
+#include <btstack/hci_cmds.h> // for HCI_STATE
 
 typedef enum {
 	kInquiryInactive,
@@ -22,11 +16,16 @@ typedef enum {
 
 @interface BTInquiryViewController : UITableViewController {
 	NSMutableArray *devices; 
-	BluetoothState bluetoothState;
+	HCI_STATE bluetoothState;
 	InquiryState   inquiryState;
 	UIActivityIndicatorView *deviceActivity;
+	UIActivityIndicatorView *bluetoothActivity;
+	UIFont * deviceNameFont;
+	UIFont * macAddressFont;
 }
+- (void) setBluetoothState:(HCI_STATE)state;
+- (void) setInquiryState:(InquiryState)state;
+- (InquiryState) inquiryState;
+- (HCI_STATE) bluetoothState;
 @property (nonatomic, retain) NSMutableArray *devices;
-@property (nonatomic, assign) BluetoothState bluetoothState;
-@property (nonatomic, assign) InquiryState   inquiryState;
 @end

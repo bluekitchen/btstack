@@ -9,21 +9,36 @@
 @implementation BTDevice
 
 @synthesize name;
-@synthesize address;
 @synthesize classOfDevice;
 @synthesize connectionState;
+@synthesize pageScanRepetitionMode;
+@synthesize clockOffset;
 
 - (BTDevice *)init {
 	name = NULL;
-	address = @"00:00:00:00:00:00";
+	bzero(&address, 6);
 	classOfDevice = kCODInvalid;
 	connectionState = kBluetoothConnectionNotConnected;
 	return self;
 }
 
+- (void) setAddress:(bd_addr_t *)newAddr{
+	BD_ADDR_COPY( &address, newAddr);
+}
+
+- (bd_addr_t *) address{
+	return &address;
+}
+
++ (NSString *) stringForAddress:(bd_addr_t *) address {
+	uint8_t * addr = (uint8_t*) address;
+	return [NSString stringWithFormat:@"%02x:%02x:%02x:%02x:%02x:%02x", addr[0], addr[1], addr[2],
+			addr[4], addr[5], addr[6]];
+}
+
 - (NSString *) nameOrAddress{
 	if (name) return name;
-	return address;
+	return [BTDevice stringForAddress:&address];
 }
 
 - (BluetoothDeviceType) deviceType{
@@ -36,10 +51,12 @@
 			return kBluetoothDeviceTypeGeneric;
 	}
 }
+- (NSString *) toString{
+	return [NSString stringWithFormat:@"Device addr %@ name %@ COD %x", [BTDevice stringForAddress:&address], name, classOfDevice];
+}
 
 - (void)dealloc {
 	[name release];
-	[address release];
 	[super dealloc];
 }
 

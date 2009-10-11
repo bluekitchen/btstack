@@ -1,9 +1,7 @@
 //
 //  main.m
-//  BTstackCocoa
 //
 //  Created by Matthias Ringwald on 10/8/09.
-//  Copyright Dybuster AG 2009. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
