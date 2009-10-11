@@ -1,18 +1,25 @@
 //
 //  BTstackCocoaAppDelegate.h
-//  BTstackCocoa
 //
 //  Created by Matthias Ringwald on 10/8/09.
-//  Copyright Dybuster AG 2009. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
 
+#import "BTInquiryViewController.h"
+
 @interface BTstackCocoaAppDelegate : NSObject <UIApplicationDelegate> {
     UIWindow *window;
+	BTInquiryViewController *inqView;
+	bool inqActive;
+	NSMutableArray *devices;
+	uint8_t remoteNameIndex;
 }
 
-@property (nonatomic, retain) IBOutlet UIWindow *window;
+- (void) handlePacketWithType:(uint8_t) packetType data:(uint8_t*)data len:(uint16_t)len;
+- (void) startInquiry;
+
+@property (nonatomic, retain) UIWindow *window;
 
 @end
 
