@@ -1,12 +1,13 @@
 /* new todo file for BTstack */
 
 Last milestone reached: create script to build APT package for BTdeamon, Resources, and BTstack client library
-Last change: use single packet handler on client side
-
+Last change: added Cocoa CFRunLoop support
 
 NEXT:
+- CocoaTouch User Interface Components
+  - Inquiry
+  - Alerts
 - prepare WiiMoteDemo for release
-  - update to current stack version
   - add inquiry code
 - provide test version by setting up APT repository within BTstack SVN
   - instructions: http://www.saurik.com/id/7
@@ -22,7 +23,6 @@ NEXT:
   - can we get willGoToSleep event, should we should down?
   - would be nice, if we could get woken up by Bluetooth data
 - CocoaTouch User Interface Components
-  - Inquiry
   - Alerts and shutdown of Apple's stack
 - create new GPG key for gmail account and sign APT package
 - non-reproducible bug: hci_state gets confused.

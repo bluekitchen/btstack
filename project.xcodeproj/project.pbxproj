@@ -55,6 +55,7 @@
 		9C00F87210191130008DAB17 /* l2cap_signaling.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = l2cap_signaling.c; path = src/l2cap_signaling.c; sourceTree = "<group>"; };
 		9C04B825107D1CED002A63D0 /* run_loop.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = run_loop.c; path = src/run_loop.c; sourceTree = "<group>"; };
 		9C04B879107D2BA7002A63D0 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = /System/Library/Frameworks/CoreFoundation.framework; sourceTree = "<absolute>"; };
+		9C04BD3110826575002A63D0 /* logo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = logo.png; path = resources/logo.png; sourceTree = "<group>"; };
 		9C1813F71042FCCA00C68F09 /* mitm.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = mitm.c; path = example/mitm.c; sourceTree = "<group>"; };
 		9C2071F210014D3200A07EA4 /* hci_transport_usb.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci_transport_usb.c; path = src/hci_transport_usb.c; sourceTree = "<group>"; };
 		9C46FC340FA906F700ABEF05 /* hci.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci.c; path = src/hci.c; sourceTree = "<group>"; };
@@ -215,6 +216,7 @@
 		9C78A049103C671D003B2950 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				9C04BD3110826575002A63D0 /* logo.png */,
 				9C78A0BB103C9DEE003B2950 /* ch.ringwald.BTstack.plist */,
 				9C78A04A103C6734003B2950 /* Default_BTstack.png */,
 				9C78A04B103C6734003B2950 /* Default_BTstackActive.png */,
