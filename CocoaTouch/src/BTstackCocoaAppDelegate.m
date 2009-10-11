@@ -169,7 +169,6 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 	
 	// create BTInquiryView
 	inqView = [[BTInquiryViewController alloc] init];
-	[inqView setBluetoothState:HCI_STATE_OFF];
 	devices = [[NSMutableArray alloc] init];
 	[inqView setDevices:devices];
 	
@@ -179,6 +178,7 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 	[window makeKeyAndVisible];
 	
 	// start Bluetooth
+	[inqView setBluetoothState:HCI_STATE_INITIALIZING];
 	run_loop_init(RUN_LOOP_COCOA);
 	bt_open();
 	bt_register_packet_handler(packet_handler);
