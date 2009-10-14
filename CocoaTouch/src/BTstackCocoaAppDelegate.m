@@ -114,7 +114,7 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 					break;
 					
 				case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
-					{
+					if (data[2] == 0) {
 						bt_flip_addr(event_addr, &data[3]);
 						BTDevice *dev = [self getDeviceForAddress:&event_addr];
 						if (!dev) break;
