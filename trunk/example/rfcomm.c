@@ -44,7 +44,11 @@
 #define BT_RFCOMM_CRC_CHECK_LEN     3
 #define BT_RFCOMM_UIHCRC_CHECK_LEN  2
 
-bd_addr_t addr = {0x00,0x1c,0x4d,0x02,0x1a,0x77};  // WiiMote
+bd_addr_t addr = {0x00,0x1c,0x4d,0x02,0x1a,0x77};  // Zeemote
+// bd_addr_t addr = {0x00,0x16,0xcb,0x09,0x94,0xa9};  // sh-mac
+// bd_addr_t addr = {0x00,0x0b,0x24,0x37,0xd6,0x80};  // cl800bt
+
+#define RFCOMM_CHANNEL_ID 1
 
 hci_con_handle_t con_handle;
 uint16_t source_cid;
@@ -77,17 +81,31 @@ void _bt_rfcomm_send_uih_msc_cmd(uint16_t source_cid, uint8_t initiator, uint8_t
     bt_send_l2cap( source_cid, payload, sizeof(payload));
 }
 
-
+void _bt_rfcomm_send_uih_data(uint16_t source_cid, uint8_t initiator, uint8_t channel, uint8_t *data, uint16_t len) {
+	uint8_t payload[len+4];
+	payload[0] = (1 << 0) | (initiator << 1) |  (initiator << 1) | (channel << 3); 
+	payload[1] = BT_RFCOMM_UIH;         // control field
+	payload[2] = (len<<1) | 1;          // len
+	memcpy(&payload[3], data, len);
+	payload[3+len] = crc8_calc(payload, 2); // calc fcs
+	bt_send_l2cap( source_cid, payload, sizeof(payload));
+}	
+	
 void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 	bd_addr_t event_addr;
 
 	static uint8_t msc_resp_send = 0;
 	static uint8_t msc_resp_received = 0;
 	static uint8_t credits_used = 0;
+	static uint8_t credits_free = 0;
 	uint8_t packet_processed = 0;
 	switch (packet_type) {
 			
 		case L2CAP_DATA_PACKET:
+			// rfcomm: data[8] = addr
+			// rfcomm: data[9] = command
+			// 
+			
 			
 			// 	received 1. message BT_RF_COMM_UA
 			if (size == 12 && packet[9] == BT_RFCOMM_UA && packet[8] == 0x03){
@@ -97,7 +115,7 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 				// _bt_rfcomm_send_sabm(source_cid, 1, 1);
 				uint8_t payload[14];
 				uint8_t initiator = 1;
-				uint8_t channel = 1;
+				uint8_t channel = RFCOMM_CHANNEL_ID;
 				payload[0] = (1 << 0) | (initiator << 1); // EA and C/R bit set - always server channel 0
 				payload[1] = BT_RFCOMM_UIH;        // control field
 				payload[2] = 10 << 1 | 1;		   // len
@@ -105,7 +123,7 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 				payload[3] = BT_RFCOMM_PN_CMD;
 				payload[4] = 8 << 1 | 1;  // len
 				
-				payload[5] = channel << 1; // channel << 1
+				payload[5] = channel << 1;
 				payload[6] = 0xf0; // pre defined for Bluetooth, see 5.5.3 of TS 07.10 Adaption for RFCOMM
 				payload[7] = 0; // priority
 				payload[8] = 0; // max 60 seconds ack
@@ -128,7 +146,7 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 			
 			
 			// 	received 2. message BT_RF_COMM_UA
-			if (size == 12 && packet[9] == BT_RFCOMM_UA && packet[8] == 0x0b ){
+			if (size == 12 && packet[9] == BT_RFCOMM_UA && packet[8] == ((RFCOMM_CHANNEL_ID << 3) | 3) ){
 				packet_processed++;
 				printf("Received RFCOMM unnumbered acknowledgement for channel 1 - channel opened\n");
 				printf("Sending MSC  'I'm ready'\n");
@@ -156,8 +174,15 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 				msc_resp_received = 1;
 			}
 
-			if (packet[9] == BT_RFCOMM_UIH && packet[8] == 9){
+			if (packet[9] == BT_RFCOMM_UIH && packet[8] == ((RFCOMM_CHANNEL_ID<<3)|1)){
 				credits_used++;
+			}
+			
+			if (packet[9] == BT_RFCOMM_UIH_PF && packet[8] == ((RFCOMM_CHANNEL_ID<<3)|1)){
+				if (!credits_free) {
+					printf("Got %u credits, can send!\n", packet[10]);
+				}
+				credits_free = packet[10];
 			}
 			
 			uint8_t send_credits_packet = 0;
@@ -177,7 +202,7 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 			
 			if (send_credits_packet) {
 				uint8_t initiator = 1;
-				uint8_t channel = 1;
+				uint8_t channel = RFCOMM_CHANNEL_ID;
 				uint8_t payload[5];
 				payload[0] = (1 << 0) | (initiator << 1) |  (initiator << 1) | (channel << 3); 
 				payload[1] = BT_RFCOMM_UIH_PF;      // control field
