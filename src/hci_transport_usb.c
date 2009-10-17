@@ -17,8 +17,6 @@
 // ACL Data  0 0 0x82 Bulk (IN) 32/64 
 // ACL Data  0 0 0x02 Bulk (OUT) 32/64 
 
-#ifdef HAVE_TRANSPORT_USB
-
 #include <stdio.h>
 #include <strings.h>
 #include <unistd.h>   /* UNIX standard function definitions */
@@ -118,7 +116,7 @@ static void event_callback(struct libusb_transfer *transfer)
 	}
 }
 
-static int usb_process(struct data_source *ds, int ready) {
+static int usb_process(struct data_source *ds) {
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
     struct timeval tv;
     bzero(&tv, sizeof(struct timeval));
@@ -173,7 +171,7 @@ static int usb_open(void *transport_config){
     libusb_state = LIB_USB_KERNEL_DETACHED;
 
     // reserve access to device
-	printf("claimed interface 0\n");
+	printf("claiming interface 0...\n");
 	libusb_claim_interface(handle, 0);
 	if (r < 0) {
 		fprintf(stderr, "usb_claim_interface error %d\n", r);
@@ -196,6 +194,7 @@ static int usb_open(void *transport_config){
 		printf("endpoint %x, attributes %x\n", endpoint->bEndpointAddress, endpoint->bmAttributes);
 	}
 #endif	
+	libusb_set_debug(0,3);
     
 	// allocation
 	control_transfer   = libusb_alloc_transfer(0); // 0 isochronous transfers CMDs
@@ -221,8 +220,8 @@ static int usb_open(void *transport_config){
         data_source_t *ds = malloc(sizeof(data_source_t));
         ds->fd = pollfd[r]->fd;
         ds->process = usb_process;
-        run_loop_add(ds);
-        printf("%u: %x fd: %u, events %x\n", r, pollfd[r], pollfd[r]->fd, pollfd[r]->events);
+        run_loop_add_data_source(ds);
+        printf("%u: %x fd: %u, events %x\n", r, (unsigned int) pollfd[r], pollfd[r]->fd, pollfd[r]->events);
     }
 
     // init state machine
@@ -340,5 +339,3 @@ hci_transport_t * hci_transport_usb_instance() {
     }
     return hci_transport_usb;
 }
-
-#endif

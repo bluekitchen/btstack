@@ -151,6 +151,7 @@ echo
 # create config.h
 echo "// config.h created by configure for BTstack " `date`> config.h
 if test "x$HCI_TRANSPORT" = xUSB; then
+    USB_SOURCES=hci_transport_usb.c
     echo "#define HAVE_TRANSPORT_USB" >> config.h
     echo "#define USB_PRODUCT_ID $USB_PRODUCT_ID" >> config.h
     echo "#define USB_VENDOR_ID $USB_VENDOR_ID" >> config.h
@@ -176,6 +177,7 @@ fi
 AC_SUBST(IPHONE_IP)
 AC_SUBST(HAVE_LIBUSB)
 AC_SUBST(USE_LDID)
+AC_SUBST(USB_SOURCES)
 AC_SUBST(SPRINGBOARD_ACCESS_SOURCES)
 AC_SUBST(RUN_LOOP_SOURCES)
 AC_OUTPUT(Makefile src/Makefile example/Makefile SpringBoardAccess/Makefile)

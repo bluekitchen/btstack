@@ -4,6 +4,7 @@ CPPFLAGS = @CPPFLAGS@ -I../include
 prefix = @prefix@
 
 springboard_access_sources = @SPRINGBOARD_ACCESS_SOURCES@
+usb_sources = @USB_SOURCES@
 
 libBTstack_SOURCES = btstack.c hci_cmds.c linked_list.c run_loop.c run_loop_posix.c run_loop_cocoa.m socket_connection.c utils.c
 			  
@@ -13,7 +14,7 @@ BTdaemon_SOURCES =  $(libBTstack_SOURCES) \
     hci.c                   \
     hci_dump.c              \
     hci_transport_h4.c      \
-    $(usb_support)          \
+    $(usb_sources)          \
     l2cap.c                 \
     l2cap_signaling.c       \
     platform_iphone.c       \
@@ -34,7 +35,7 @@ BTdaemon: $(BTdaemon_SOURCES)
 		@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
 clean:
-	rm -f libBTstack* BTdaemon *.o
+	rm -rf libBTstack* BTdaemon *.o
 	
 install:    
 	echo "installing BTdaemon in $(prefix)..."
