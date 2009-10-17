@@ -46,51 +46,94 @@
 
 bd_addr_t addr = {0x00,0x1c,0x4d,0x02,0x1a,0x77};  // Zeemote
 // bd_addr_t addr = {0x00,0x16,0xcb,0x09,0x94,0xa9};  // sh-mac
-// bd_addr_t addr = {0x00,0x0b,0x24,0x37,0xd6,0x80};  // cl800bt
+// bd_addr_t addr = {0x00,0x0b,0x24,0x37,0xd6,0x80};  // smart card reader
+// bd_addr_t addr = {0x00,0x80,0x25,0x07,0x2b,0x5f};  // cl800bt
 
 #define RFCOMM_CHANNEL_ID 1
 
 hci_con_handle_t con_handle;
 uint16_t source_cid;
 
+// used to assemble rfcomm packets
+uint8_t rfcomm_out_buffer[1000];
+
+/**
+ * @param credits - only used for RFCOMM flow control in UIH wiht P/F = 1
+ */
+void rfcomm_send_packet(uint16_t source_cid, uint8_t address, uint8_t control, uint8_t credits, uint8_t *data, uint16_t len){
+
+	uint16_t pos = 0;
+	uint8_t crc_fields = 3;
+	
+	rfcomm_out_buffer[pos++] = address;
+	rfcomm_out_buffer[pos++] = control;
+	
+	// length field can be 1 or 2 octets
+	if (len < 128){
+		rfcomm_out_buffer[pos++] = (len << 1)| 1;     // bits 0-6
+	} else {
+		rfcomm_out_buffer[pos++] = (len & 0x7f) << 1; // bits 0-6
+		rfcomm_out_buffer[pos++] = len >> 7;          // bits 7-14
+		crc_fields++;
+	}
+
+	// add credits for UIH frames when PF bit is set
+	if (control == BT_RFCOMM_UIH_PF){
+		rfcomm_out_buffer[pos++] = credits;
+	}
+	
+	// copy actual data
+	memcpy(&rfcomm_out_buffer[pos], data, len);
+	pos += len;
+	
+	// UIH frames only calc FCS over address + control (5.1.1)
+	if ((control & 0xef) == BT_RFCOMM_UIH){
+		crc_fields = 2;
+	}
+	rfcomm_out_buffer[pos++] =  crc8_calc(rfcomm_out_buffer, crc_fields); // calc fcs
+    bt_send_l2cap( source_cid, rfcomm_out_buffer, pos);
+}
+
 void _bt_rfcomm_send_sabm(uint16_t source_cid, uint8_t initiator, uint8_t channel)
 {
-	uint8_t payload[4];
-	payload[0] = (1 << 0) | (initiator << 1) |  (initiator << 1) | (channel << 3); 
-	payload[1] = BT_RFCOMM_SABM;        // control field
-	payload[2] = (0 << 2) | 1;          // set EA bit to 1 to indicate 7 bit length field
-	payload[3] = crc8_calc(payload, 3); // calc fcs
-    bt_send_l2cap( source_cid, payload, sizeof(payload));
+	uint8_t address = (1 << 0) | (initiator << 1) |  (initiator << 1) | (channel << 3); 
+	rfcomm_send_packet(source_cid, address, BT_RFCOMM_SABM, 0, NULL, 0);
 }
 
 void _bt_rfcomm_send_uih_msc_cmd(uint16_t source_cid, uint8_t initiator, uint8_t channel, uint8_t signals)
 {
-	uint8_t payload[8];
-	
-	// This is a command
-	payload[0] = (1 << 0) | (initiator << 1); // EA and C/R bit set - always server channel 0
-	payload[1] = BT_RFCOMM_UIH;        // control field
-	payload[2] = 4 << 1 | 1;		   // len
-	
-	payload[3] = BT_RFCOMM_MSC_CMD;
-	payload[4] = 2 << 1 | 1;  // len
-	payload[5] = (1 << 0) | (1 << 1) | (0 << 2) | (channel << 3); // shouldn't D = initiator = 1 ?
-	payload[6] = signals;
-
-	payload[7] = crc8_calc(payload, 2);   // calc fcs, 3 bytes to be send...
-    bt_send_l2cap( source_cid, payload, sizeof(payload));
+	uint8_t address = (1 << 0) | (initiator << 1); // EA and C/R bit set - always server channel 0
+	uint8_t payload[4]; 
+	uint8_t pos = 0;
+	payload[pos++] = BT_RFCOMM_MSC_CMD;
+	payload[pos++] = 2 << 1 | 1;  // len
+	payload[pos++] = (1 << 0) | (1 << 1) | (0 << 2) | (channel << 3); // shouldn't D = initiator = 1 ?
+	payload[pos++] = signals;
+	rfcomm_send_packet(source_cid, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
 
 void _bt_rfcomm_send_uih_data(uint16_t source_cid, uint8_t initiator, uint8_t channel, uint8_t *data, uint16_t len) {
-	uint8_t payload[len+4];
-	payload[0] = (1 << 0) | (initiator << 1) |  (initiator << 1) | (channel << 3); 
-	payload[1] = BT_RFCOMM_UIH;         // control field
-	payload[2] = (len<<1) | 1;          // len
-	memcpy(&payload[3], data, len);
-	payload[3+len] = crc8_calc(payload, 2); // calc fcs
-	bt_send_l2cap( source_cid, payload, sizeof(payload));
+	uint8_t address = (1 << 0) | (initiator << 1) |  (initiator << 1) | (channel << 3); 
+	rfcomm_send_packet(source_cid, address, BT_RFCOMM_UIH, 0, data, len);
 }	
-	
+
+void _bt_rfcomm_send_uih_pn_command(uint16_t source_cid, uint8_t initiator, uint8_t channel, uint16_t max_frame_size){
+	uint8_t payload[10];
+	uint8_t address = (1 << 0) | (initiator << 1); // EA and C/R bit set - always server channel 0
+	uint8_t pos = 0;
+	payload[pos++] = BT_RFCOMM_PN_CMD;
+	payload[pos++] = 8 << 1 | 1;  // len
+	payload[pos++] = channel << 1;
+	payload[pos++] = 0xf0; // pre defined for Bluetooth, see 5.5.3 of TS 07.10 Adaption for RFCOMM
+	payload[pos++] = 0; // priority
+	payload[pos++] = 0; // max 60 seconds ack
+	payload[pos++] = max_frame_size & 0xff; // max framesize low
+	payload[pos++] = max_frame_size >> 8;   // max framesize high
+	payload[pos++] = 0x00; // number of retransmissions
+	payload[pos++] = 0x00; // unused error recovery window
+	rfcomm_send_packet(source_cid, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
+}
+
 void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 	bd_addr_t event_addr;
 
@@ -104,36 +147,13 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 		case L2CAP_DATA_PACKET:
 			// rfcomm: data[8] = addr
 			// rfcomm: data[9] = command
-			// 
-			
 			
 			// 	received 1. message BT_RF_COMM_UA
 			if (size == 12 && packet[9] == BT_RFCOMM_UA && packet[8] == 0x03){
 				packet_processed++;
 				printf("Received RFCOMM unnumbered acknowledgement for channel 0 - multiplexer working\n");
 				printf("Sending UIH Parameter Negotiation Command\n");
-				// _bt_rfcomm_send_sabm(source_cid, 1, 1);
-				uint8_t payload[14];
-				uint8_t initiator = 1;
-				uint8_t channel = RFCOMM_CHANNEL_ID;
-				payload[0] = (1 << 0) | (initiator << 1); // EA and C/R bit set - always server channel 0
-				payload[1] = BT_RFCOMM_UIH;        // control field
-				payload[2] = 10 << 1 | 1;		   // len
-				
-				payload[3] = BT_RFCOMM_PN_CMD;
-				payload[4] = 8 << 1 | 1;  // len
-				
-				payload[5] = channel << 1;
-				payload[6] = 0xf0; // pre defined for Bluetooth, see 5.5.3 of TS 07.10 Adaption for RFCOMM
-				payload[7] = 0; // priority
-				payload[8] = 0; // max 60 seconds ack
-				payload[9] =   0x96; // max framesize low
-				payload[10] =  0x06; // max framesize high
-				payload[11] =  0x00; // number of retransmissions
-				payload[12] =  0x00; // unused error recovery window
-				
-				payload[13] = crc8_calc(payload, 2 );   // calc fcs, 3 bytes to be send...
-				bt_send_l2cap( source_cid, payload, sizeof(payload));
+				_bt_rfcomm_send_uih_pn_command(source_cid, 1, RFCOMM_CHANNEL_ID, 100);
 			}
 		
 			//  received UIH Parameter Negotiation Response
@@ -143,7 +163,6 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 				printf("Sending SABM #1\n");
 				_bt_rfcomm_send_sabm(source_cid, 1, 1);
 			}
-			
 			
 			// 	received 2. message BT_RF_COMM_UA
 			if (size == 12 && packet[9] == BT_RFCOMM_UA && packet[8] == ((RFCOMM_CHANNEL_ID << 3) | 3) ){
@@ -160,11 +179,9 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 				printf("Responding to 'I'm ready'\n");
 				// fine with this
 				uint8_t * payload = &packet[8];
-				payload[0] |= 2; // response
-				payload[3]  = BT_RFCOMM_MSC_RSP;
-				payload[7] = crc8_calc(payload, 2); 
-				bt_send_l2cap( source_cid, payload, 8);
-				// 
+				uint8_t address = payload[0] | 2; // set response 
+				payload[3]  = BT_RFCOMM_MSC_RSP;  //  "      "
+				rfcomm_send_packet(source_cid, address, BT_RFCOMM_UIH_PF, 0x30, payload, 8);
 				msc_resp_send = 1;
 			}
 			
@@ -201,15 +218,10 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 			}
 			
 			if (send_credits_packet) {
+				// send 0x30 credits
 				uint8_t initiator = 1;
-				uint8_t channel = RFCOMM_CHANNEL_ID;
-				uint8_t payload[5];
-				payload[0] = (1 << 0) | (initiator << 1) |  (initiator << 1) | (channel << 3); 
-				payload[1] = BT_RFCOMM_UIH_PF;      // control field
-				payload[2] = (0<<1) | 1;            // len
-				payload[3] = 0x30;					 // credits
-				payload[4] = crc8_calc(payload, 2); // calc fcs
-				bt_send_l2cap( source_cid, payload, sizeof(payload));
+				uint8_t address = (1 << 0) | (initiator << 1) |  (initiator << 1) | (RFCOMM_CHANNEL_ID << 3); 
+				rfcomm_send_packet(source_cid, address, BT_RFCOMM_UIH_PF, 0x30, NULL, 0);
 			}
 			
 			if (!packet_processed){
