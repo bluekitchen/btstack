@@ -130,16 +130,16 @@ void showAlert(NSString *title, NSString *message){
 					break;
 					
 				case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
+					bt_flip_addr(event_addr, &data[3]);
+					BTDevice *dev = [self getDeviceForAddress:&event_addr];
+					if (!dev) break;
+					[dev setConnectionState:kBluetoothConnectionNotConnected];
 					if (data[2] == 0) {
-						bt_flip_addr(event_addr, &data[3]);
-						BTDevice *dev = [self getDeviceForAddress:&event_addr];
-						if (!dev) break;
-						[dev setConnectionState:kBluetoothConnectionNotConnected];
 						[dev setName:[NSString stringWithUTF8String:(const char *) &data[9]]];
-						[[inqView tableView] reloadData];
-						remoteNameIndex++;
-						[self getNextRemoteName];
 					}
+					[[inqView tableView] reloadData];
+					remoteNameIndex++;
+					[self getNextRemoteName];
 					break;
 					
 				case L2CAP_EVENT_CHANNEL_OPENED:
@@ -187,6 +187,7 @@ void showAlert(NSString *title, NSString *message){
 	inqView = [[BTInquiryViewController alloc] init];
 	devices = [[NSMutableArray alloc] init];
 	[inqView setDevices:devices];
+	[inqView setDelegate:self];
 	
 	[window addSubview:[inqView view]];
 
@@ -201,12 +202,17 @@ void showAlert(NSString *title, NSString *message){
 	if (res){
 		[inqView setBluetoothState:HCI_STATE_OFF];
 		showAlert(@"Bluetooth not accessible!",
-				  @"The connection to BTstack failed!\n"
+				  @"Connection to BTstack failed!\n"
 				   "Please make sure that BTstack is installed correctly.");
 	} else {
 		bt_register_packet_handler(packet_handler);
 		bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
 	}
+}
+
+/** BTInquiryDelegate */
+-(void) deviceChoosen:(BTInquiryViewController *) inqView device:(BTDevice*) device{
+	NSLog(@"deviceChoosen %@", [device toString]);
 }
 
 - (void)dealloc {

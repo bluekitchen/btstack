@@ -10,8 +10,7 @@
 @implementation BTInquiryViewController
 
 @synthesize devices;
-
-// #define MOCKUP
+@synthesize delegate;
 
 int mock_state = 0;
 
@@ -170,63 +169,17 @@ int mock_state = 0;
 	// AnotherViewController *anotherViewController = [[AnotherViewController alloc] initWithNibName:@"AnotherView" bundle:nil];
 	// [self.navigationController pushViewController:anotherViewController];
 	// [anotherViewController release];
-
-#ifdef MOCKUP
-	switch (mock_state) {
-
-		case 0:
-			bluetoothState = HCI_STATE_WORKING;
-			[tableView reloadData];
-			mock_state++;
-			break;
-
-		case 1:
-			inquiryState = kInquiryActive;
-			[tableView reloadData];
-			mock_state++;
-			
-		case 2:
-		case 3: {
-			BTDevice * dev = [[BTDevice alloc] init];
-			bd_addr_t addr = { mock_state, mock_state, mock_state, mock_state, mock_state, mock_state};
-			[dev setAddress:&addr];
-			[devices addObject:dev];
-			[tableView reloadData];
-			mock_state++;
-			break;
+	
+	// valid selection?
+	int idx = [indexPath indexAtPosition:1];
+	if (bluetoothState == HCI_STATE_WORKING && inquiryState == kInquiryInactive && idx < [devices count]){
+		if (delegate && [delegate respondsToSelector:@selector(deviceChoosen:device:)]){
+			NSLog(@"delegate would respond");
+			[delegate deviceChoosen:self device:[devices objectAtIndex:idx]];
 		}
-		case 4: {
-			inquiryState = kInquiryRemoteName;
-			BTDevice * dev;
-			dev = [devices objectAtIndex:0];
-			// [dev setConnectionState:kBluetoothConnectionRemoteName];
-			dev = [devices objectAtIndex:1];
-			// [dev setConnectionState:kBluetoothConnectionRemoteName];
-			[tableView reloadData];
-			mock_state++;
-			break;
-		}
-		case 5: {
-			BTDevice * dev;
-			dev = [devices objectAtIndex:0];
-			[dev setName:@"Fake Device 1"];
-			[dev setConnectionState:kBluetoothConnectionNotConnected];
-			[tableView reloadData];
-			mock_state++;
-			break;
-		}
-		case 6: {
-			inquiryState = kInquiryInactive;
-			BTDevice * dev;
-			dev = [devices objectAtIndex:1];
-			[dev setConnectionState:kBluetoothConnectionNotConnected];
-			[dev setName:@"Fake Device 2"];
-			[tableView reloadData];
-			mock_state = 1;
-			break;
-		}
+	} else {
+		[tableView deselectRowAtIndexPath:indexPath animated:TRUE];
 	}
-#endif
 	
 }
 
