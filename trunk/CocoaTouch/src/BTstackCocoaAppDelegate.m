@@ -22,6 +22,15 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 	[ ((BTstackCocoaAppDelegate *)[[UIApplication sharedApplication] delegate]) handlePacketWithType:packet_type data:packet len:size];
 }
 
+void showAlert(NSString *title, NSString *message){
+	NSLog(@"Alert: %@ - %@", title, message);
+	UIAlertView* alertView = [[UIAlertView alloc] init];
+	alertView.title = title;
+	alertView.message = message;
+	[alertView addButtonWithTitle:@"Dismiss"];
+	[alertView show];
+}
+
 @implementation BTstackCocoaAppDelegate
 
 @synthesize window;
@@ -88,6 +97,13 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 					}
 					break;
 
+				case BTSTACK_EVENT_POWERON_FAILED:
+					[inqView setBluetoothState:HCI_STATE_OFF];
+					showAlert(@"Bluetooth not accessible!",
+							  @"Hardware initialization failed!\n"
+							  "Make sure you have turned off Bluetooth in the System Settings.");
+					break;
+					
 				case HCI_EVENT_INQUIRY_RESULT:
 				case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
 					{
@@ -183,19 +199,10 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 
 	int res = bt_open();
 	if (res){
-		NSString * error = @"Connecting to BTdaemon failed!\n"
-						  "Please make sure it is\n"
-						  "a) stalled and\n"
-			              "b) that it's either running or can that it can be started by launchd.";
-		NSLog(@"%@", error);
 		[inqView setBluetoothState:HCI_STATE_OFF];
-		
-		UIAlertView* alertView = [[UIAlertView alloc] init];
-		alertView.title = @"BTstack not accessible!";
-		alertView.message = error;
-		[alertView addButtonWithTitle:@"Dismiss"];
-		[alertView show];
-		
+		showAlert(@"Bluetooth not accessible!",
+				  @"The connection to BTstack failed!\n"
+				   "Please make sure that BTstack is installed correctly.");
 	} else {
 		bt_register_packet_handler(packet_handler);
 		bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );

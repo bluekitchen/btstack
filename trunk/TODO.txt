@@ -5,7 +5,6 @@ Last change: don't set name to empty string on error in CocoaTouch
 
 NEXT:
 - CocoaTouch User Interface Components
-  - Show alert when BTstack init fails because of other stack
   - define delegate interface for select events
 - prepare WiiMoteDemo for release
   - integrate new inquiry code
