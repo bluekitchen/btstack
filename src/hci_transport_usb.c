@@ -249,7 +249,7 @@ static int usb_open(void *transport_config){
 
     // bulk in (= ACL packets) handler
 	libusb_fill_bulk_transfer(bulk_in_transfer, handle, 0x82, hci_acl_in, 400, bulk_in_callback, NULL, 3000) ;	
-	// bulk_in_transfer->flags = LIBUSB_TRANSFER_SHORT_NOT_OK;
+	bulk_in_transfer->flags = LIBUSB_TRANSFER_SHORT_NOT_OK;
 	r = libusb_submit_transfer(bulk_in_transfer);
 	if (r) {
 		printf("Error submitting bulk in transfer %d\n", r);
