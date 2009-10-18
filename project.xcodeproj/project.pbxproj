@@ -17,6 +17,7 @@
 		9C04B876107D2B7C002A63D0 /* run_loop_cocoa.m in Sources */ = {isa = PBXBuildFile; fileRef = 9CEB4DAA10753B4B00DD5720 /* run_loop_cocoa.m */; };
 		9C04B87A107D2BA7002A63D0 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C04B879107D2BA7002A63D0 /* CoreFoundation.framework */; };
 		9C05FC971020D3F300255261 /* socket_connection.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C00F7301017ACC3008DAB17 /* socket_connection.c */; };
+		9C18015C108BAA7200824BE7 /* libusb-1.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C18015B108BAA7200824BE7 /* libusb-1.0.dylib */; };
 		9C2071F310014D3200A07EA4 /* hci_transport_usb.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C2071F210014D3200A07EA4 /* hci_transport_usb.c */; };
 		9C46FC3A0FA906F700ABEF05 /* hci_transport_h4.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */; };
 		9C77E79210667F0600F39DCF /* platform_iphone.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C77E79110667F0600F39DCF /* platform_iphone.c */; };
@@ -56,6 +57,7 @@
 		9C04B825107D1CED002A63D0 /* run_loop.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = run_loop.c; path = src/run_loop.c; sourceTree = "<group>"; };
 		9C04B879107D2BA7002A63D0 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = /System/Library/Frameworks/CoreFoundation.framework; sourceTree = "<absolute>"; };
 		9C04BD3110826575002A63D0 /* logo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = logo.png; path = resources/logo.png; sourceTree = "<group>"; };
+		9C18015B108BAA7200824BE7 /* libusb-1.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.dylib"; path = "/usr/local/lib/libusb-1.0.dylib"; sourceTree = "<absolute>"; };
 		9C1813F71042FCCA00C68F09 /* mitm.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = mitm.c; path = example/mitm.c; sourceTree = "<group>"; };
 		9C2071F210014D3200A07EA4 /* hci_transport_usb.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci_transport_usb.c; path = src/hci_transport_usb.c; sourceTree = "<group>"; };
 		9C46FC340FA906F700ABEF05 /* hci.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci.c; path = src/hci.c; sourceTree = "<group>"; };
@@ -112,6 +114,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9C04B87A107D2BA7002A63D0 /* CoreFoundation.framework in Frameworks */,
+				9C18015C108BAA7200824BE7 /* libusb-1.0.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -205,6 +208,7 @@
 		9C77E4AD10634E3100F39DCF /* 3rdparty */ = {
 			isa = PBXGroup;
 			children = (
+				9C18015B108BAA7200824BE7 /* libusb-1.0.dylib */,
 				9C77E4AE10634E3100F39DCF /* launch.h */,
 				9C77E4AF10634E3100F39DCF /* libsubstrate.dylib */,
 				9C77E4B010634E3100F39DCF /* README */,
