@@ -76,3 +76,7 @@ NEXT:
 - devise concept for access to event data
   - auto-generate event struct getter? STRUCTURE_get_FIELD
 - Bluetooth low-power modes useful
+
+== USB Support ==
+- Store array of data sources to be able to remove them on usb_close
+-

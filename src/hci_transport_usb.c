@@ -122,7 +122,7 @@ static void event_callback(struct libusb_transfer *transfer)
         hci_dump_packet( HCI_EVENT_PACKET, 1, transfer->buffer, transfer->actual_length);
         event_packet_handler(transfer->buffer, transfer->actual_length);
     }
-	int r = libusb_submit_transfer(interrupt_transfer);
+	int r = libusb_submit_transfer(transfer);
 	if (r) {
 		printf("Error submitting interrupt transfer %d\n", r);
 	}
@@ -130,7 +130,7 @@ static void event_callback(struct libusb_transfer *transfer)
 
 static void bulk_in_callback(struct libusb_transfer *transfer)
 {
-    printf("bulk_in_callback length=%d actual_length=%d: ",
+    printf("bulk_in_callback length=%d actual_length=%d: \n",
            transfer->length, transfer->actual_length);
 	if (transfer->status == LIBUSB_TRANSFER_COMPLETED) {
         int i;
@@ -140,7 +140,7 @@ static void bulk_in_callback(struct libusb_transfer *transfer)
         hci_dump_packet( HCI_EVENT_PACKET, 1, transfer->buffer, transfer->actual_length);
         acl_packet_handler(transfer->buffer, transfer->actual_length);
     }
-	int r = libusb_submit_transfer(bulk_in_transfer);
+	int r = libusb_submit_transfer(transfer);
 	if (r) {
 		printf("Error submitting bulk in transfer %d\n", r);
 	}
@@ -249,7 +249,7 @@ static int usb_open(void *transport_config){
 
     // bulk in (= ACL packets) handler
 	libusb_fill_bulk_transfer(bulk_in_transfer, handle, 0x82, hci_acl_in, 400, bulk_in_callback, NULL, 3000) ;	
-	bulk_in_transfer->flags = LIBUSB_TRANSFER_SHORT_NOT_OK;
+	// bulk_in_transfer->flags = LIBUSB_TRANSFER_SHORT_NOT_OK;
 	r = libusb_submit_transfer(bulk_in_transfer);
 	if (r) {
 		printf("Error submitting bulk in transfer %d\n", r);
@@ -278,6 +278,8 @@ static int usb_close(){
 
     switch (libusb_state){
         case LIB_USB_TRANSFERS_ALLOCATED:
+            libusb_free_transfer(bulk_in_transfer);
+            libusb_free_transfer(bulk_out_transfer);
             libusb_free_transfer(control_transfer);
             libusb_free_transfer(interrupt_transfer);
         case LIB_USB_INTERFACE_CLAIMED:
@@ -321,7 +323,7 @@ static int usb_send_acl_packet(uint8_t *packet, int size){
 	
     hci_dump_packet( HCI_ACL_DATA_PACKET, 0, packet, size);
     
-    // send packet over USB
+#if 1  // send packet over USB
 	libusb_fill_bulk_transfer(bulk_out_transfer, handle, 0x02, packet, size, bulk_out_callback, NULL, 1000);
 	bulk_out_transfer->flags = LIBUSB_TRANSFER_SHORT_NOT_OK;
 	int r = libusb_submit_transfer(bulk_out_transfer);
@@ -329,6 +331,15 @@ static int usb_send_acl_packet(uint8_t *packet, int size){
 		printf("Error submitting control transfer %d\n", r);
         return r;
 	}
+#else
+    int transferred;
+    int ret = libusb_bulk_transfer (handle, 0x02, packet, size, &transferred, 5000);
+    if(ret>=0){
+        printf("acl data transfer succeeded");
+    }else{
+        printf("acl data transfer failed");
+    }
+#endif
     return 0;
 }
 
