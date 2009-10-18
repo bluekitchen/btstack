@@ -5,10 +5,9 @@ Last change: don't set name to empty string on error in CocoaTouch
 
 NEXT:
 - CocoaTouch User Interface Components
-  - define delegate interface for select events
+  - move all inquiry related code from BTstackCocoaAppDelegate into BTInquiryViewController
 - prepare WiiMoteDemo for release
   - integrate new inquiry code
-  
 - figure out why stack doesn't shut Bluetooth off when in sleep for a while/after wakeup
 - provide test version by setting up APT repository within BTstack SVN
   - instructions: http://www.saurik.com/id/7
