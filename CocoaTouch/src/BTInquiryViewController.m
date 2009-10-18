@@ -118,7 +118,7 @@ int mock_state = 0;
 			label = @"Activating BTstack...";
 			cell.accessoryView = bluetoothActivity;
 		} else if (bluetoothState == HCI_STATE_OFF){
-			label = @"BTstack not accessible!";
+			label = @"Bluetooth not accessible!";
 			cell.accessoryView = nil;
 		} else {
 			switch (inquiryState){
