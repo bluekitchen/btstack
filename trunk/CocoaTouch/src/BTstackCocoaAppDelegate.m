@@ -180,9 +180,26 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 	// start Bluetooth
 	[inqView setBluetoothState:HCI_STATE_INITIALIZING];
 	run_loop_init(RUN_LOOP_COCOA);
-	bt_open();
-	bt_register_packet_handler(packet_handler);
-	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
+
+	int res = bt_open();
+	if (res){
+		NSString * error = @"Connecting to BTdaemon failed!\n"
+						  "Please make sure it is\n"
+						  "a) stalled and\n"
+			              "b) that it's either running or can that it can be started by launchd.";
+		NSLog(@"%@", error);
+		[inqView setBluetoothState:HCI_STATE_OFF];
+		
+		UIAlertView* alertView = [[UIAlertView alloc] init];
+		alertView.title = @"BTstack not accessible!";
+		alertView.message = error;
+		[alertView addButtonWithTitle:@"Dismiss"];
+		[alertView show];
+		
+	} else {
+		bt_register_packet_handler(packet_handler);
+		bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
+	}
 }
 
 - (void)dealloc {

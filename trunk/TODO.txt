@@ -5,14 +5,15 @@ Last change: don't set name to empty string on error in CocoaTouch
 
 NEXT:
 - CocoaTouch User Interface Components
-  - Show alert when BTstack open fails because of no BTdaemon
   - Show alert when BTstack init fails because of other stack
   - define delegate interface for select events
 - prepare WiiMoteDemo for release
   - integrate new inquiry code
-- figure out why stack doesn't shut Bluetooth off when in sleep for a while
+  
+- figure out why stack doesn't shut Bluetooth off when in sleep for a while/after wakeup
 - provide test version by setting up APT repository within BTstack SVN
   - instructions: http://www.saurik.com/id/7
+- prepend all source files with 'new BSD' copyright header
   
 == Release Version 0.1
 
@@ -20,8 +21,10 @@ NEXT:
   - incoming connections
     - list of supported PSM
 	- commands and events
+- RFCOMM implementation
+  - use switch on RFCOMM control field in rfcomm.c packet handler
 - detect and handle iPhone sleep mode
-  - see iPhone imnsomnia project at http://code.google.com/p/iphone-insomnia/
+  - see iPhone imsomnia project at http://code.google.com/p/iphone-insomnia/
   - can we get willGoToSleep event, should we turn off Bluetooth?
   - would be nice, if we could get woken up by Bluetooth data
 - CocoaTouch User Interface Components

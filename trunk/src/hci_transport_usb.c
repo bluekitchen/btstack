@@ -170,9 +170,21 @@ static int usb_open(void *transport_config){
 #endif
     libusb_state = LIB_USB_KERNEL_DETACHED;
 
+	libusb_set_debug(0,3);
+
+#if 0
+    int config = -1;
+    r = libusb_get_configuration(handle, &config);
+    printf("Get configuration %i (%i)\n", config, r);
+    // if (config != 1) {
+    //    r= libusb_set_configuration(handle,0);
+    // }
+    printf("Set configuration = %u\n", r);
+#endif
+    
     // reserve access to device
 	printf("claiming interface 0...\n");
-	libusb_claim_interface(handle, 0);
+	r = libusb_claim_interface(handle, 0);
 	if (r < 0) {
 		fprintf(stderr, "usb_claim_interface error %d\n", r);
         usb_close();
@@ -181,11 +193,10 @@ static int usb_open(void *transport_config){
     libusb_state = LIB_USB_INTERFACE_CLAIMED;
 	printf("claimed interface 0\n");
 	
-#if 0
-    // get endpoints - broken on OS X (libusb 1.0.2)
+    // get endpoints - broken on OS X until libusb 1.0.3
 	struct libusb_config_descriptor *config_descriptor;
 	r = libusb_get_active_config_descriptor(dev, &config_descriptor);
-	printf("configuration: %u interfacs\n", config_descriptor->bNumInterfaces);
+	printf("configuration: %u interfaces\n", config_descriptor->bNumInterfaces);
 	const struct libusb_interface *interface = config_descriptor->interface;
 	const struct libusb_interface_descriptor * interface0descriptor = interface->altsetting;
 	printf("interface 0: %u endpoints\n", interface0descriptor->bNumEndpoints);
@@ -193,8 +204,6 @@ static int usb_open(void *transport_config){
 	for (r=0;r<interface0descriptor->bNumEndpoints;r++,endpoint++){
 		printf("endpoint %x, attributes %x\n", endpoint->bEndpointAddress, endpoint->bmAttributes);
 	}
-#endif	
-	libusb_set_debug(0,3);
     
 	// allocation
 	control_transfer   = libusb_alloc_transfer(0); // 0 isochronous transfers CMDs
@@ -204,6 +213,28 @@ static int usb_open(void *transport_config){
         return LIBUSB_ERROR_NO_MEM;
     }
     libusb_state = LIB_USB_TRANSFERS_ALLOCATED;
+    
+    
+#if 0
+    // data transfer
+	// get answer
+	
+	// control
+	uint8_t hci_reset[] = { 0x03, 0x0c, 0x00 };
+	
+	// synchronous
+	r = libusb_control_transfer (handle, LIBUSB_REQUEST_TYPE_CLASS,
+								 0, 0, 0, 
+								 hci_reset, sizeof (hci_reset),
+								 0);
+    
+	 int length = -1;
+     r = libusb_interrupt_transfer(handle, 0x81, hci_event_buffer, 100, &length, 0);
+     printf("received data len %u, r= %d\n", length, r);
+     for (r=0;r<length; r++) printf("0x%.x ", hci_event_buffer[r]);
+     printf("\n");
+#endif
+    
     
     // interrupt (= HCI event) handler
 	libusb_fill_interrupt_transfer(interrupt_transfer, handle, 0x81, hci_event_buffer, 260, event_callback, NULL, 3000) ;	
@@ -231,32 +262,6 @@ static int usb_open(void *transport_config){
     
     return 0;
 }
-
-#if 0
- // data transfer
-	// get answer
-	
-	// control
-	uint8_t hci_reset[] = { 0x03, 0x0c, 0x00 };
-	
-	// synchronous
-	// r = libusb_control_transfer (handle, LIBUSB_REQUEST_TYPE_CLASS,
-	//							 0, 0, 0, 
-	//							 hci_reset, sizeof (hci_reset),
-	//							 0);
-    
-	// int length = -1;
-	// r = libusb_interrupt_transfer(handle, 0x81, buffer, 100, &length, 0);
-    
-    /*	r = libusb_interrupt_transfer(handle, 0x81, buffer, 100, &length, 0);
-     printf("received data len %u, r= %d\n", length, r);
-     for (r=0;r<length; r++) printf("0x%.x ", buffer[r]);
-     printf("\n");
-     */
-
-    // 
-#endif
-
 static int usb_close(){
     // @TODO: remove all run loops!
 
