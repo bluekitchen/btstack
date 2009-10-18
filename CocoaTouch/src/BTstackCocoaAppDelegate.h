@@ -8,7 +8,7 @@
 
 #import "BTInquiryViewController.h"
 
-@interface BTstackCocoaAppDelegate : NSObject <UIApplicationDelegate> {
+@interface BTstackCocoaAppDelegate : NSObject <UIApplicationDelegate,BTInquiryDelegate> {
     UIWindow *window;
 	BTInquiryViewController *inqView;
 	bool inqActive;
