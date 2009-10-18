@@ -100,6 +100,11 @@ void _bt_rfcomm_send_sabm(uint16_t source_cid, uint8_t initiator, uint8_t channe
 	rfcomm_send_packet(source_cid, address, BT_RFCOMM_SABM, 0, NULL, 0);
 }
 
+void _bt_rfcomm_send_uih_data(uint16_t source_cid, uint8_t initiator, uint8_t channel, uint8_t *data, uint16_t len) {
+	uint8_t address = (1 << 0) | (initiator << 1) |  (initiator << 1) | (channel << 3); 
+	rfcomm_send_packet(source_cid, address, BT_RFCOMM_UIH, 0, data, len);
+}	
+
 void _bt_rfcomm_send_uih_msc_cmd(uint16_t source_cid, uint8_t initiator, uint8_t channel, uint8_t signals)
 {
 	uint8_t address = (1 << 0) | (initiator << 1); // EA and C/R bit set - always server channel 0
@@ -111,11 +116,6 @@ void _bt_rfcomm_send_uih_msc_cmd(uint16_t source_cid, uint8_t initiator, uint8_t
 	payload[pos++] = signals;
 	rfcomm_send_packet(source_cid, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
-
-void _bt_rfcomm_send_uih_data(uint16_t source_cid, uint8_t initiator, uint8_t channel, uint8_t *data, uint16_t len) {
-	uint8_t address = (1 << 0) | (initiator << 1) |  (initiator << 1) | (channel << 3); 
-	rfcomm_send_packet(source_cid, address, BT_RFCOMM_UIH, 0, data, len);
-}	
 
 void _bt_rfcomm_send_uih_pn_command(uint16_t source_cid, uint8_t initiator, uint8_t channel, uint16_t max_frame_size){
 	uint8_t payload[10];
