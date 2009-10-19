@@ -106,7 +106,7 @@ void l2cap_disconnect_internal(uint16_t source_cid, uint8_t reason){
 
 void l2cap_event_handler( uint8_t *packet, uint16_t size ){
     // handle connection complete events
-    if (packet[0] == HCI_EVENT_CONNECTION_COMPLETE && packet[2] == 0){
+    if (packet[0] == HCI_EVENT_CONNECTION_COMPLETE) {
         bd_addr_t address;
         bt_flip_addr(address, &packet[5]);
         
@@ -115,13 +115,17 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
             l2cap_channel_t * chan = (l2cap_channel_t *) it;
             if ( ! BD_ADDR_CMP( chan->address, address) ){
                 if (chan->state == L2CAP_STATE_CLOSED) {
-                    chan->handle = READ_BT_16(packet, 3);
-                    chan->sig_id = l2cap_next_sig_id();
-                    chan->source_cid = l2cap_next_source_cid();
-                    
-                    l2cap_send_signaling_packet( chan->handle, CONNECTION_REQUEST, chan->sig_id, chan->psm, chan->source_cid);                   
-                    
-                    chan->state = L2CAP_STATE_WAIT_CONNECT_RSP;
+                    if (packet[2] == 0){
+                        chan->handle = READ_BT_16(packet, 3);
+                        chan->sig_id = l2cap_next_sig_id();
+                        chan->source_cid = l2cap_next_source_cid();
+                        
+                        l2cap_send_signaling_packet( chan->handle, CONNECTION_REQUEST, chan->sig_id, chan->psm, chan->source_cid);                   
+                        
+                        chan->state = L2CAP_STATE_WAIT_CONNECT_RSP;
+                    } else {
+                        l2cap_emit_channel_opened(chan, packet[2]);  // failure, forward error code
+                    }
                 }
             }
         }
@@ -179,7 +183,8 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
                         l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->dest_cid, 0, 4, &config_options);
                         channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP;
                     } else {
-                        //@TODO: implement failed
+                        //@TODO use separate error codes
+                        l2cap_emit_channel_opened(channel, READ_BT_16 (packet, L2CAP_SIGNALING_DATA_OFFSET+3));  // failure, forward error code
                     }
                     break;
                     //@TODO: implement other signaling packets
@@ -202,7 +207,7 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
                     l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, identifier, channel->dest_cid, 0, 0, size - 16, &packet[16]);
                     
                     channel->state = L2CAP_STATE_OPEN;
-                    l2cap_emit_channel_opened(channel);
+                    l2cap_emit_channel_opened(channel, 0);  // success
                     break;
             }
             break;
@@ -242,15 +247,16 @@ void l2cap_close_channels_for_connection(connection_t *connection){
 }
 
 //  notify client
-void l2cap_emit_channel_opened(l2cap_channel_t *channel) {
-    uint8_t event[16];
+void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
+    uint8_t event[17];
     event[0] = L2CAP_EVENT_CHANNEL_OPENED;
     event[1] = sizeof(event) - 2;
-    bt_flip_addr(&event[2], channel->address);
-    bt_store_16(event,  8, channel->handle);
-    bt_store_16(event, 10, channel->psm);
-    bt_store_16(event, 12, channel->source_cid);
-    bt_store_16(event, 14, channel->dest_cid);
+    event[2] = status;
+    bt_flip_addr(&event[3], channel->address);
+    bt_store_16(event,  9, channel->handle);
+    bt_store_16(event, 11, channel->psm);
+    bt_store_16(event, 13, channel->source_cid);
+    bt_store_16(event, 15, channel->dest_cid);
     socket_connection_send_packet(channel->connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 

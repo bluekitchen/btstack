@@ -60,5 +60,5 @@ void l2cap_set_capture_connection(connection_t * connection);
 void l2cap_finialize_channel_close(l2cap_channel_t *channel);
 void l2cap_close_channels_for_connection(connection_t *connection);
 
-void l2cap_emit_channel_opened(l2cap_channel_t *channel);
+void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
 void l2cap_emit_channel_closed(l2cap_channel_t *channel);

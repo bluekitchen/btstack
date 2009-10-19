@@ -4,6 +4,8 @@ Last milestone reached: create script to build APT package for BTdeamon, Resourc
 Last change: don't set name to empty string on error in CocoaTouch
 
 NEXT:
+- forward channel ID to client packet handler
+  - change BTstack.h, BTstack.c and all example apps
 - CocoaTouch User Interface Components
   - move all inquiry related code from BTstackCocoaAppDelegate into BTInquiryViewController
 - prepare WiiMoteDemo for release

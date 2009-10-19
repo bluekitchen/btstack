@@ -257,18 +257,25 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 			
 				case L2CAP_EVENT_CHANNEL_OPENED:
 					// inform about new l2cap connection
-					bt_flip_addr(event_addr, &packet[2]);
-					uint16_t psm = READ_BT_16(packet, 10); 
-					source_cid = READ_BT_16(packet, 12); 
-					con_handle = READ_BT_16(packet, 8);
-					printf("Channel successfully opened: ");
-					print_bd_addr(event_addr);
-					printf(", handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x\n",
-						   con_handle, psm, source_cid,  READ_BT_16(packet, 14));
-					
-					// send SABM command on dlci 0
-					printf("Sending SABM #0\n");
-					_bt_rfcomm_send_sabm(source_cid, 1, 0);
+					bt_flip_addr(event_addr, &packet[3]);
+					uint16_t psm = READ_BT_16(packet, 11); 
+					source_cid = READ_BT_16(packet, 13); 
+					con_handle = READ_BT_16(packet, 9);
+					if (packet[2] == 0) {
+						printf("Channel successfully opened: ");
+						print_bd_addr(event_addr);
+						printf(", handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x\n",
+							   con_handle, psm, source_cid,  READ_BT_16(packet, 15));
+						
+						// send SABM command on dlci 0
+						printf("Sending SABM #0\n");
+						_bt_rfcomm_send_sabm(source_cid, 1, 0);
+					} else {
+						printf("L2CAP connection to device ");
+						print_bd_addr(event_addr);
+						printf(" failed. status code %u\n", packet[2]);
+						exit(1);
+					}
 					break;
 			
 				case HCI_EVENT_DISCONNECTION_COMPLETE:
