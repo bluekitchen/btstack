@@ -61,27 +61,35 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 
 				case L2CAP_EVENT_CHANNEL_OPENED:
 					// inform about new l2cap connection
-					bt_flip_addr(event_addr, &packet[2]);
-					uint16_t psm = READ_BT_16(packet, 10); 
-					uint16_t source_cid = READ_BT_16(packet, 12); 
-					con_handle = READ_BT_16(packet, 8);
-					printf("Channel successfully opened: ");
-					print_bd_addr(event_addr);
-					printf(", handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x\n",
-						   con_handle, psm, source_cid,  READ_BT_16(packet, 14));
-					
-					if (psm == 0x13) {
-						source_cid_interrupt = source_cid;
-						// interupt channel openedn succesfully, now open control channel, too.
-						bt_send_cmd(&l2cap_create_channel, event_addr, 0x11);
+					// inform about new l2cap connection
+					bt_flip_addr(event_addr, &packet[3]);
+					uint16_t psm = READ_BT_16(packet, 11); 
+					uint16_t source_cid = READ_BT_16(packet, 13); 
+					con_handle = READ_BT_16(packet, 9);
+					if (packet[2] == 0) {
+						printf("Channel successfully opened: ");
+						print_bd_addr(event_addr);
+						printf(", handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x\n",
+							   con_handle, psm, source_cid,  READ_BT_16(packet, 15));
+						
+						if (psm == 0x13) {
+							source_cid_interrupt = source_cid;
+							// interupt channel openedn succesfully, now open control channel, too.
+							bt_send_cmd(&l2cap_create_channel, event_addr, 0x11);
+						} else {
+							source_cid_control = source_cid;
+							// request acceleration data..
+							uint8_t setMode31[] = { 0x52, 0x12, 0x00, 0x31 };
+							bt_send_l2cap( source_cid, setMode31, sizeof(setMode31));
+							// stop blinking
+							uint8_t setLEDs[] = { 0x52, 0x11, 0x10 };
+							bt_send_l2cap( source_cid, setLEDs, sizeof(setLEDs));
+						}
 					} else {
-						source_cid_control = source_cid;
-						// request acceleration data..
-						uint8_t setMode31[] = { 0x52, 0x12, 0x00, 0x31 };
-						bt_send_l2cap( source_cid, setMode31, sizeof(setMode31));
-						// stop blinking
-						uint8_t setLEDs[] = { 0x52, 0x11, 0x10 };
-                        bt_send_l2cap( source_cid, setLEDs, sizeof(setLEDs));
+						printf("L2CAP connection to device ");
+						print_bd_addr(event_addr);
+						printf(" failed. status code %u\n", packet[2]);
+						exit(1);
 					}
 					break;
 					
