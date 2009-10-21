@@ -1,7 +1,6 @@
 /* new todo file for BTstack */
 
 NEXT:
-- map l2cap errors to general status code starting from 0x80
 - CocoaTouch User Interface Components
   - move all inquiry related code from BTstackCocoaAppDelegate into BTInquiryViewController
 - figure out why stack doesn't shut Bluetooth off when in sleep for a while/after wakeup
