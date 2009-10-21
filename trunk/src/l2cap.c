@@ -13,6 +13,9 @@
 
 #include <stdio.h>
 
+// size of HCI ACL + L2CAP Header for regular data packets
+#define COMPLETE_L2CAP_HEADER 8
+
 static void null_event_handler(uint8_t *packet, uint16_t size);
 static void null_data_handler(uint16_t source_cid, uint8_t *packet, uint16_t size);
 
@@ -321,7 +324,8 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
     // Find channel for this channel_id and connection handle
     l2cap_channel_t * channel = l2cap_get_channel_for_source_cid(channel_id);
     if (channel) {
-        socket_connection_send_packet(channel->connection, L2CAP_DATA_PACKET, 0, packet, size);
+        socket_connection_send_packet(channel->connection, L2CAP_DATA_PACKET, channel_id,
+                                      &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
     }
 }
 

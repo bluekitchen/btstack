@@ -1,11 +1,7 @@
 /* new todo file for BTstack */
 
 NEXT:
-- forward channel ID to client packet handler
-  - change BTstack.h, BTstack.c and all example apps
 - map l2cap errors to general status code starting from 0x80
-- create <btstack/errors.h>
-- add timeouts to cocoa run loop
 - CocoaTouch User Interface Components
   - move all inquiry related code from BTstackCocoaAppDelegate into BTInquiryViewController
 - figure out why stack doesn't shut Bluetooth off when in sleep for a while/after wakeup
@@ -17,6 +13,8 @@ NEXT:
   
 == Release Version 0.1
 
+- create <btstack/errors.h>
+- add timeouts to cocoa run loop
 - implement rest of L2CAP state machine
   - incoming connections
     - list of supported PSM

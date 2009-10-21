@@ -22,11 +22,11 @@ static uint8_t hci_cmd_buffer[3+255];
 static connection_t *btstack_connection = NULL;
 
 /** prototypes & dummy functions */
-static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){};
+static void dummy_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){};
 static int btstack_packet_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t size);
 
 /** local globals :) */
-static void (*client_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
+static void (*client_packet_handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = dummy_handler;
 
 
 // init BTstack library
@@ -57,12 +57,12 @@ int bt_send_cmd(hci_cmd_t *cmd, ...){
 
 int btstack_packet_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t size){
     // printf("BTstack client handler: packet type %u, data[0] %x\n", packet_type, data[0]);
-    (*client_packet_handler)(packet_type, data, size);
+    (*client_packet_handler)(packet_type, channel, data, size);
     return 0;
 }
 
 // register packet handler
-void bt_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+void bt_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
     client_packet_handler = handler;
 }
 
