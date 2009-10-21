@@ -186,8 +186,9 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
                         l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->dest_cid, 0, 4, &config_options);
                         channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP;
                     } else {
-                        //@TODO use separate error codes
-                        l2cap_emit_channel_opened(channel, READ_BT_16 (packet, L2CAP_SIGNALING_DATA_OFFSET+3));  // failure, forward error code
+                        // map l2cap connection response result to BTstack status enumeration
+                        l2cap_emit_channel_opened(channel, L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL
+                                                          + READ_BT_16 (packet, L2CAP_SIGNALING_DATA_OFFSET+3));
                     }
                     break;
                     //@TODO: implement other signaling packets
