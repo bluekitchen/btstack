@@ -24,8 +24,8 @@ int bt_close();
 // send hci cmd packet
 int bt_send_cmd(hci_cmd_t *cmd, ...);
 
-// register packet handler
-void bt_register_packet_handler (void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
+// register packet handler -- channel only valid for l2cap and rfcomm packets
+void bt_register_packet_handler (void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
 
 void bt_send_acl(uint8_t * data, uint16_t len);
 

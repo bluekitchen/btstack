@@ -18,19 +18,20 @@ hci_con_handle_t con_handle;
 uint16_t source_cid_interrupt;
 uint16_t source_cid_control;
 
-void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	bd_addr_t event_addr;
 
 	switch (packet_type) {
 			
 		case L2CAP_DATA_PACKET:
 			// just dump data for now
+			printf("source cid %x -- ", channel);
 			hexdump( packet, size );
 	
 			// HOME => disconnect
-			if (packet[8] == 0xA1) {							// Status report
-				if (packet[9] == 0x30 || packet[9] == 0x31) {   // type 0x30 or 0x31
-					if (packet[11] & 0x080) {                   // homne button pressed
+			if (packet[0] == 0xA1) {							// Status report
+				if (packet[1] == 0x30 || packet[1] == 0x31) {   // type 0x30 or 0x31
+					if (packet[3] & 0x080) {                   // homne button pressed
 						printf("Disconnect baseband\n");
 						bt_send_cmd(&hci_disconnect, con_handle, 0x13); // remote closed connection
 					}

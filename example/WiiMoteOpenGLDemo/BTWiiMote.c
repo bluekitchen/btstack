@@ -20,16 +20,14 @@ bd_addr_t addr = {0x00, 0x19, 0x1d, 0x90, 0x44, 0x68 };  // WiiMote
 static void (*data_cb)(uint8_t x, uint8_t y, uint8_t z);
 static void (*state_cb)(char *text);
 
-void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	bd_addr_t event_addr;
 	
 	switch (packet_type) {
 			
 		case L2CAP_DATA_PACKET:
-			// just dump data for now
-			// hexdump( packet, size );
-			if (packet[8] == 0xa1 && packet[9] == 0x31){
-				(*data_cb)(packet[12], packet[13], packet[14]);
+			if (packet[0] == 0xa1 && packet[1] == 0x31){
+				(*data_cb)(packet[4], packet[5], packet[6]);
 			}
 			break;
 			
@@ -52,14 +50,13 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 					
 				case L2CAP_EVENT_CHANNEL_OPENED:
 					// inform about new l2cap connection
-					bt_flip_addr(event_addr, &packet[2]);
-					uint16_t psm = READ_BT_16(packet, 10); 
-					uint16_t source_cid = READ_BT_16(packet, 12); 
+					bt_flip_addr(event_addr, &packet[3]);
+					uint16_t psm = READ_BT_16(packet, 11); 
+					uint16_t source_cid = READ_BT_16(packet, 13); 
 					printf("Channel successfully opened: ");
 					print_bd_addr(event_addr);
 					printf(", handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x\n",
-						   READ_BT_16(packet, 8), psm, source_cid,  READ_BT_16(packet, 14));
-					
+						   READ_BT_16(packet, 9), psm, source_cid,  READ_BT_16(packet, 15));
 					if (psm == 0x13) {
 						// interupt channel openedn succesfully, now open control channel, too.
 						bt_send_cmd(&l2cap_create_channel, event_addr, 0x11);

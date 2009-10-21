@@ -134,7 +134,7 @@ void _bt_rfcomm_send_uih_pn_command(uint16_t source_cid, uint8_t initiator, uint
 	rfcomm_send_packet(source_cid, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
 
-void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	bd_addr_t event_addr;
 
 	static uint8_t msc_resp_send = 0;
@@ -142,6 +142,7 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 	static uint8_t credits_used = 0;
 	static uint8_t credits_free = 0;
 	uint8_t packet_processed = 0;
+	
 	switch (packet_type) {
 			
 		case L2CAP_DATA_PACKET:
@@ -149,7 +150,7 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 			// rfcomm: data[9] = command
 			
 			// 	received 1. message BT_RF_COMM_UA
-			if (size == 12 && packet[9] == BT_RFCOMM_UA && packet[8] == 0x03){
+			if (size == 4 && packet[1] == BT_RFCOMM_UA && packet[0] == 0x03){
 				packet_processed++;
 				printf("Received RFCOMM unnumbered acknowledgement for channel 0 - multiplexer working\n");
 				printf("Sending UIH Parameter Negotiation Command\n");
@@ -157,7 +158,7 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 			}
 		
 			//  received UIH Parameter Negotiation Response
-			if (size == 22 && packet[9] == BT_RFCOMM_UIH && packet[11] == BT_RFCOMM_PN_RSP){
+			if (size == 14 && packet[1] == BT_RFCOMM_UIH && packet[3] == BT_RFCOMM_PN_RSP){
 				packet_processed++;
 				printf("UIH Parameter Negotiation Response\n");
 				printf("Sending SABM #1\n");
@@ -165,7 +166,7 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 			}
 			
 			// 	received 2. message BT_RF_COMM_UA
-			if (size == 12 && packet[9] == BT_RFCOMM_UA && packet[8] == ((RFCOMM_CHANNEL_ID << 3) | 3) ){
+			if (size == 4 && packet[1] == BT_RFCOMM_UA && packet[0] == ((RFCOMM_CHANNEL_ID << 3) | 3) ){
 				packet_processed++;
 				printf("Received RFCOMM unnumbered acknowledgement for channel 1 - channel opened\n");
 				printf("Sending MSC  'I'm ready'\n");
@@ -173,33 +174,32 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 			}
 			
 			// received BT_RFCOMM_MSC_CMD
-			if (size == 16 && packet[9] == BT_RFCOMM_UIH && packet[11] == BT_RFCOMM_MSC_CMD){
+			if (size == 8 && packet[1] == BT_RFCOMM_UIH && packet[3] == BT_RFCOMM_MSC_CMD){
 				packet_processed++;
 				printf("Received BT_RFCOMM_MSC_CMD\n");
 				printf("Responding to 'I'm ready'\n");
 				// fine with this
-				uint8_t * payload = &packet[8];
-				uint8_t address = payload[0] | 2; // set response 
-				payload[3]  = BT_RFCOMM_MSC_RSP;  //  "      "
-				rfcomm_send_packet(source_cid, address, BT_RFCOMM_UIH_PF, 0x30, payload, 8);
+				uint8_t address = packet[0] | 2; // set response 
+				packet[3]  = BT_RFCOMM_MSC_RSP;  //  "      "
+				rfcomm_send_packet(source_cid, address, BT_RFCOMM_UIH_PF, 0x30, packet, 8);
 				msc_resp_send = 1;
 			}
 			
 			// received BT_RFCOMM_MSC_RSP
-			if (size == 16 && packet[9] == BT_RFCOMM_UIH && packet[11] == BT_RFCOMM_MSC_RSP){
+			if (size == 8 && packet[1] == BT_RFCOMM_UIH && packet[3] == BT_RFCOMM_MSC_RSP){
 				packet_processed++;
 				msc_resp_received = 1;
 			}
 
-			if (packet[9] == BT_RFCOMM_UIH && packet[8] == ((RFCOMM_CHANNEL_ID<<3)|1)){
+			if (packet[1] == BT_RFCOMM_UIH && packet[0] == ((RFCOMM_CHANNEL_ID<<3)|1)){
 				credits_used++;
 			}
 			
-			if (packet[9] == BT_RFCOMM_UIH_PF && packet[8] == ((RFCOMM_CHANNEL_ID<<3)|1)){
+			if (packet[1] == BT_RFCOMM_UIH_PF && packet[0] == ((RFCOMM_CHANNEL_ID<<3)|1)){
 				if (!credits_free) {
-					printf("Got %u credits, can send!\n", packet[10]);
+					printf("Got %u credits, can send!\n", packet[2]);
 				}
-				credits_free = packet[10];
+				credits_free = packet[2];
 			}
 			
 			uint8_t send_credits_packet = 0;
