@@ -63,7 +63,9 @@ int btstack_packet_handler(connection_t *connection, uint16_t packet_type, uint1
 
 // register packet handler
 btstack_packet_handler_t bt_register_packet_handler(btstack_packet_handler_t handler){
+    btstack_packet_handler_t old_handler = client_packet_handler;
     client_packet_handler = handler;
+    return old_handler;
 }
 
 void bt_send_l2cap(uint16_t source_cid, uint8_t *data, uint16_t len){
