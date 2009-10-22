@@ -36,18 +36,13 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 			switch (packet[0]){
 				
 				case BTSTACK_EVENT_STATE:
-					// bt stack activated, get started - set local name
+					// bt stack activated, get started - // use pairing yes/no
 					if (packet[2] == HCI_STATE_WORKING) {
-						bt_send_cmd(&hci_write_local_name, "BTstack-Test");
+						bt_send_cmd(&hci_write_authentication_enable, 0);
 						(*state_cb)("BT running");
 					}
 					break;
 				
-				case HCI_EVENT_PIN_CODE_REQUEST:
-					// inform about pin code request
-					printf("Please enter PIN 1234 on remote device\n");
-					break;
-					
 				case L2CAP_EVENT_CHANNEL_OPENED:
 					// inform about new l2cap connection
 					bt_flip_addr(event_addr, &packet[3]);
@@ -70,11 +65,6 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					}
 
 				case HCI_EVENT_COMMAND_COMPLETE:
-					// use pairing yes/no
-					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_local_name) ) {
-						bt_send_cmd(&hci_write_authentication_enable, 0);
-					}
-					
 					// connect to HID device (PSM 0x13) at addr
 					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable) ) {
 						(*state_cb)("Connecting to WiiMote");
