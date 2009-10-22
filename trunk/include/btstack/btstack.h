@@ -15,6 +15,10 @@
 
 #include <stdint.h>
 
+// packet handler
+typedef void (*btstack_packet_handler_t) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
+
 // init BTstack library
 int bt_open();
 
@@ -25,7 +29,7 @@ int bt_close();
 int bt_send_cmd(hci_cmd_t *cmd, ...);
 
 // register packet handler -- channel only valid for l2cap and rfcomm packets
-void bt_register_packet_handler (void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
+btstack_packet_handler_t bt_register_packet_handler(btstack_packet_handler_t handler);
 
 void bt_send_acl(uint8_t * data, uint16_t len);
 

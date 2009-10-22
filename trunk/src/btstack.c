@@ -62,7 +62,7 @@ int btstack_packet_handler(connection_t *connection, uint16_t packet_type, uint1
 }
 
 // register packet handler
-void bt_register_packet_handler(void (*handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
+btstack_packet_handler_t bt_register_packet_handler(btstack_packet_handler_t handler){
     client_packet_handler = handler;
 }
 
