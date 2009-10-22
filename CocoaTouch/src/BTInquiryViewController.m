@@ -7,12 +7,176 @@
 #import "BTInquiryViewController.h"
 #import "BTDevice.h"
 
+#include <btstack/btstack.h>
+
+static BTInquiryViewController *inqView; 
+static btstack_packet_handler_t clientHandler;
+static uint8_t remoteNameIndex;
+
+@interface BTInquiryViewController (private) 
+- (void) handlePacket:(uint8_t) packet_type channel:(uint16_t) channel packet:(uint8_t*) packet size:(uint16_t) size;
+- (BTDevice *) getDeviceForAddress:(bd_addr_t *)addr;
+- (bool) getNextRemoteName;
+- (void) startInquiry;
+@end
+
+static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+	if (inqView) {
+		[inqView handlePacket:packet_type channel:channel packet:packet size:size];
+	}
+}
+
 @implementation BTInquiryViewController
 
 @synthesize devices;
 @synthesize delegate;
 
-int mock_state = 0;
+- (void) handlePacket:(uint8_t) packet_type channel:(uint16_t) channel packet:(uint8_t*) packet size:(uint16_t) size {
+	static bool inquiryDone = 0;
+	bd_addr_t event_addr;
+	switch (packet_type) {
+			
+		case HCI_EVENT_PACKET:
+			
+			switch (packet[0]){
+					
+				case BTSTACK_EVENT_STATE:
+					// bt stack activated
+					bluetoothState = packet[2];
+					[[self tableView] reloadData];
+					
+					// set BT state
+					if (!inquiryDone && packet[2] == HCI_STATE_WORKING) {
+						inquiryDone = true;
+						if (inquiryState != kInquiryInactive) {
+							NSLog(@"Inquiry already active");
+							return;
+						}
+						NSLog(@"Inquiry started");
+						inquiryState = kInquiryActive;
+						[[self tableView] reloadData];
+						bt_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, 15, 0);
+					}
+					break;
+					
+				case BTSTACK_EVENT_POWERON_FAILED:
+					bluetoothState = HCI_STATE_OFF;
+					[[self tableView] reloadData];
+					
+					UIAlertView* alertView = [[UIAlertView alloc] init];
+					alertView.title = @"Bluetooth not accessible!";
+					alertView.message = @"Hardware initialization failed!\n"
+					"Make sure you have turned off Bluetooth in the System Settings.";
+					NSLog(@"Alert: %@ - %@", alertView.title, alertView.message);
+					[alertView addButtonWithTitle:@"Dismiss"];
+					[alertView show];
+					break;
+					
+				case HCI_EVENT_INQUIRY_RESULT:
+				case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+				{
+					int numResponses = packet[2];
+					int i;
+					for (i=0; i<numResponses;i++){
+						bd_addr_t addr;
+						bt_flip_addr(addr, &packet[3+i*6]);
+						if ([inqView getDeviceForAddress:&addr]) {
+							NSLog(@"Device %@ already in list", [BTDevice stringForAddress:&addr]);
+							continue;
+						}
+						BTDevice *dev = [[BTDevice alloc] init];
+						[dev setAddress:&addr];
+						[dev setPageScanRepetitionMode:packet[3 + numResponses*6 + i]];
+						[dev setClassOfDevice:READ_BT_24(packet, 3 + numResponses*(6+1+1+1) + i*3)];
+						[dev setClockOffset:(READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff)];
+						hexdump(packet, size);
+						NSLog(@"adding %@", [dev toString] );
+						[devices addObject:dev];
+					}
+				}
+					[[inqView tableView] reloadData];
+					break;
+					
+				case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
+					bt_flip_addr(event_addr, &packet[3]);
+					BTDevice *dev = [inqView getDeviceForAddress:&event_addr];
+					if (!dev) break;
+					[dev setConnectionState:kBluetoothConnectionNotConnected];
+					if (packet[2] == 0) {
+						[dev setName:[NSString stringWithUTF8String:(const char *) &packet[9]]];
+					}
+					[[self tableView] reloadData];
+					remoteNameIndex++;
+					[self getNextRemoteName];
+					break;
+					
+				case L2CAP_EVENT_CHANNEL_OPENED:
+					// inform about new l2cap connection
+					bt_flip_addr(event_addr, &packet[2]);
+					uint16_t psm = READ_BT_16(packet, 10); 
+					uint16_t source_cid = READ_BT_16(packet, 12); 
+					printf("Channel successfully opened: ");
+					print_bd_addr(event_addr);
+					printf(", handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x\n",
+						   READ_BT_16(packet, 8), psm, source_cid,  READ_BT_16(packet, 14));
+					break;
+					
+				case HCI_EVENT_COMMAND_COMPLETE:
+					break;
+					
+				default:
+					// Inquiry done
+					if (packet[0] == HCI_EVENT_INQUIRY_COMPLETE || COMMAND_COMPLETE_EVENT(packet, hci_inquiry_cancel)){
+						NSLog(@"Inquiry stopped");
+						if (inquiryState == kInquiryActive){
+							remoteNameIndex = 0;
+							[self getNextRemoteName];
+						}
+						break;
+					}
+					
+					hexdump(packet, size);
+					break;
+			}
+			
+		default:
+			break;
+	}
+	// forward to client app
+	(*clientHandler)(packet_type, channel, packet, size);
+}
+
+- (BTDevice *) getDeviceForAddress:(bd_addr_t *)addr {
+	uint8_t j;
+	for (j=0; j<[devices count]; j++){
+		BTDevice *dev = [devices objectAtIndex:j];
+		if (BD_ADDR_CMP(addr, [dev address]) == 0){
+			return dev;
+		}
+	}
+	return nil;
+}
+
+- (bool) getNextRemoteName{
+	BTDevice *remoteDev = nil;
+	for (remoteNameIndex = 0; remoteNameIndex < [devices count] ; remoteNameIndex++){
+		BTDevice *dev = [devices objectAtIndex:remoteNameIndex];
+		if (![dev name]){
+			remoteDev = dev;
+			break;
+		}
+	}
+	if (remoteDev) {
+		inquiryState = kInquiryRemoteName;
+		[remoteDev setConnectionState:kBluetoothConnectionRemoteName];
+		bt_send_cmd(&hci_remote_name_request, [remoteDev address], [remoteDev pageScanRepetitionMode], 0, [remoteDev clockOffset] | 0x8000);
+	} else  {
+		inquiryState = kInquiryInactive;
+		[[self tableView] reloadData];
+		// inquiry done.
+	}
+	return remoteDev;
+}
 
 - (id) init {
 	self = [super initWithStyle:UITableViewStyleGrouped];
@@ -26,7 +190,20 @@ int mock_state = 0;
 	[deviceActivity startAnimating];
 	bluetoothActivity = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
 	[bluetoothActivity startAnimating];
+
+	devices = [[NSMutableArray alloc] init];
+	inqView = self;
 	return self;
+}
+
+- (void) startInquiry {
+	// put into loop
+
+	clientHandler = bt_register_packet_handler(packet_handler);
+
+	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
+	bluetoothState = HCI_STATE_INITIALIZING;
+	[[self tableView] reloadData];
 }
 
 /*
@@ -74,6 +251,13 @@ int mock_state = 0;
 - (void)viewDidUnload {
 	// Release any retained subviews of the main view.
 	// e.g. self.myOutlet = nil;
+}
+
+- (void)dealloc {
+	// unregister self
+	bt_register_packet_handler(clientHandler);
+	// done
+    [super dealloc];
 }
 
 
@@ -173,8 +357,7 @@ int mock_state = 0;
 	// valid selection?
 	int idx = [indexPath indexAtPosition:1];
 	if (bluetoothState == HCI_STATE_WORKING && inquiryState == kInquiryInactive && idx < [devices count]){
-		if (delegate && [delegate respondsToSelector:@selector(deviceChoosen:device:)]){
-			NSLog(@"delegate would respond");
+		if (delegate && [delegate respondsTo:@selector(deviceChoosen:device:)]){
 			[delegate deviceChoosen:self device:[devices objectAtIndex:idx]];
 		}
 	} else {
@@ -182,28 +365,6 @@ int mock_state = 0;
 	}
 	
 }
-
-- (void) setBluetoothState:(HCI_STATE)state {
-	bluetoothState = state;
-	[[self tableView] reloadData];
-}
-- (void) setInquiryState:(InquiryState)state {
-	inquiryState = state;
-	[[self tableView] reloadData];
-}
-- (InquiryState) inquiryState {
-	return inquiryState;
-}
-- (HCI_STATE) bluetoothState {
-	return bluetoothState;
-}
-
-
-
-- (void)dealloc {
-    [super dealloc];
-}
-
 
 @end
 

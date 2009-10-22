@@ -17,7 +17,8 @@ typedef enum {
 	kInquiryRemoteName
 } InquiryState;
 
-@interface BTInquiryViewController : UITableViewController {
+@interface BTInquiryViewController : UITableViewController 
+{
 	NSMutableArray *devices; 
 	HCI_STATE bluetoothState;
 	InquiryState   inquiryState;
@@ -27,14 +28,11 @@ typedef enum {
 	UIFont * macAddressFont;
 	id<BTInquiryDelegate> delegate;
 }
-- (void) setBluetoothState:(HCI_STATE)state;
-- (void) setInquiryState:(InquiryState)state;
-- (InquiryState) inquiryState;
-- (HCI_STATE) bluetoothState;
+- (void) startInquiry;
 @property (nonatomic, retain) NSMutableArray *devices;
 @property (nonatomic, retain) id<BTInquiryDelegate> delegate;
 @end
 
 @protocol BTInquiryDelegate
--(void) deviceChoosen:(BTInquiryViewController *) inqView device:(BTDevice*) device;
+- (void) deviceChoosen:(BTInquiryViewController *) inqView device:(BTDevice*) device;
 @end
