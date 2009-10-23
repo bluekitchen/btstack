@@ -109,18 +109,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					remoteNameIndex++;
 					[self getNextRemoteName];
 					break;
-					
-				case L2CAP_EVENT_CHANNEL_OPENED:
-					// inform about new l2cap connection
-					bt_flip_addr(event_addr, &packet[2]);
-					uint16_t psm = READ_BT_16(packet, 10); 
-					uint16_t source_cid = READ_BT_16(packet, 12); 
-					printf("Channel successfully opened: ");
-					print_bd_addr(event_addr);
-					printf(", handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x\n",
-						   READ_BT_16(packet, 8), psm, source_cid,  READ_BT_16(packet, 14));
-					break;
-					
+										
 				case HCI_EVENT_COMMAND_COMPLETE:
 					break;
 					
@@ -357,8 +346,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	// valid selection?
 	int idx = [indexPath indexAtPosition:1];
 	if (bluetoothState == HCI_STATE_WORKING && inquiryState == kInquiryInactive && idx < [devices count]){
-		if (delegate && [delegate respondsTo:@selector(deviceChoosen:device:)]){
-			[delegate deviceChoosen:self device:[devices objectAtIndex:idx]];
+//		if (delegate && [delegate conformsTo:@protocol(BTInquiryDelegate)]){
+	if (delegate) {
+		[delegate deviceChoosen:self device:[devices objectAtIndex:idx]];
 		}
 	} else {
 		[tableView deselectRowAtIndexPath:indexPath animated:TRUE];

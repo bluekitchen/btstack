@@ -18,9 +18,13 @@
 	UILabel  *status;
 }
 
+- (void)startDemo:(id) arg;
+
+
 @property (nonatomic, retain) UIWindow *window;
 @property (nonatomic, retain) UINavigationController *navControl;
 @property (nonatomic, retain) UIViewController *glViewControl;
+@property (nonatomic, retain) BTInquiryViewController *inqViewControl;
 @property (nonatomic, retain) EAGLView *glView;
 
 @end
