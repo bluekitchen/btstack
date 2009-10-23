@@ -6,8 +6,6 @@
 
 #import <UIKit/UIKit.h>
 
-#define USE_BLUETOOTH
-
 @class EAGLView;
 
 @interface WiiMoteOpenGLDemoAppDelegate : NSObject <UIApplicationDelegate> {
