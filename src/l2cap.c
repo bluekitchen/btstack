@@ -171,27 +171,37 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
     
     static uint8_t config_options[] = { 1, 2, 150, 0}; // mtu = 48 
     
-    uint8_t code       = READ_L2CAP_SIGNALING_CODE( packet );
-    uint8_t identifier = READ_L2CAP_SIGNALING_IDENTIFIER( packet );
+    uint8_t  code       = READ_L2CAP_SIGNALING_CODE( packet );
+    uint8_t  identifier = READ_L2CAP_SIGNALING_IDENTIFIER( packet );
+    uint16_t result = 0;
     
     switch (channel->state) {
             
         case L2CAP_STATE_WAIT_CONNECT_RSP:
             switch (code){
                 case CONNECTION_RESPONSE:
-                    if ( READ_BT_16 (packet, L2CAP_SIGNALING_DATA_OFFSET+3) == 0){
-                        // successfull connection
-                        channel->dest_cid = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET + 0);
-                        channel->sig_id = l2cap_next_sig_id();
-                        l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->dest_cid, 0, 4, &config_options);
-                        channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP;
-                    } else {
-                        // map l2cap connection response result to BTstack status enumeration
-                        l2cap_emit_channel_opened(channel, L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL
-                                                          + READ_BT_16 (packet, L2CAP_SIGNALING_DATA_OFFSET+3));
+                    result = READ_BT_16 (packet, L2CAP_SIGNALING_DATA_OFFSET+3);
+                    switch (result) {
+                        case 0:
+                            // successfull connection
+                            channel->dest_cid = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET + 0);
+                            channel->sig_id = l2cap_next_sig_id();
+                            l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->dest_cid, 0, 4, &config_options);
+                            channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP;
+                            break;
+                        case 1:
+                            // connection pending. get some coffee
+                            break;
+                        default:
+                            // map l2cap connection response result to BTstack status enumeration
+                            l2cap_emit_channel_opened(channel, L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL + result);
+                            break;
                     }
                     break;
+
+                default:
                     //@TODO: implement other signaling packets
+                    break;
             }
             break;
             
