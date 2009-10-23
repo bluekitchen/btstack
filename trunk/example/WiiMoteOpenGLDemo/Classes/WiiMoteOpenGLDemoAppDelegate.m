@@ -14,8 +14,6 @@
 #import <btstack/run_loop.h>
 #import <btstack/hci_cmds.h>
 
-#define USE_BLUETOOTH
-
 BTDevice *device;
 
 WiiMoteOpenGLDemoAppDelegate * theMainApp;
@@ -96,14 +94,8 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						uint8_t setLEDs[] = { 0x52, 0x11, 0x10 };
 						bt_send_l2cap( source_cid, setLEDs, sizeof(setLEDs));
 
-						// start GL demo
-						// [device setConnectionState:kBluetoothConnectionConnected];
-						// [[[theMainApp inqViewControl] tableView] reloadData];
-						
-						// do perform on main thread stuff
-						// [[theMainApp navControl] pushViewController:[theMainApp glViewControl] animated:YES];
-						[theMainApp performSelectorOnMainThread:@selector(startDemo:)
-																				withObject:nil waitUntilDone:false];
+						// start demo
+						[theMainApp startDemo];
 					}
 					break;
 					
@@ -115,8 +107,14 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 			break;
 	}
 }
-- (void)startDemo:(id) arg {
+- (void)startDemo {
 	NSLog(@"startDemo");
+	
+	// stop connection icon
+	[device setConnectionState:kBluetoothConnectionConnected];
+	
+	// push glViewControl on stack
+	[[[theMainApp inqViewControl] tableView] reloadData];
 	[navControl pushViewController:glViewControl animated:YES];
 }
 
