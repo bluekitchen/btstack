@@ -180,11 +180,11 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
         case L2CAP_STATE_WAIT_CONNECT_RSP:
             switch (code){
                 case CONNECTION_RESPONSE:
-                    result = READ_BT_16 (packet, L2CAP_SIGNALING_DATA_OFFSET+3);
+                    result = READ_BT_16 (packet, L2CAP_SIGNALING_DATA_OFFSET+8);
                     switch (result) {
                         case 0:
                             // successfull connection
-                            channel->dest_cid = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET + 0);
+                            channel->dest_cid = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET);
                             channel->sig_id = l2cap_next_sig_id();
                             l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->dest_cid, 0, 4, &config_options);
                             channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP;
