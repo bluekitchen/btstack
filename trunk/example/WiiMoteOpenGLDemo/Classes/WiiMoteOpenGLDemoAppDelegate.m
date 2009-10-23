@@ -8,6 +8,8 @@
 #import "EAGLView.h"
 #include "../BTWiiMote.h"
 
+// #define USE_BLUETOOTH
+
 WiiMoteOpenGLDemoAppDelegate * theMainApp;
 
 @implementation WiiMoteOpenGLDemoAppDelegate
@@ -58,9 +60,17 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 }
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application {
+	NSLog(@"Started");
+	// create window
+	window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+	[window setBackgroundColor:[UIColor blueColor]];
 	
-    [status setText:@"This is my text"];
+	// add view to window
+	glView = [[EAGLView alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
+	[window addSubview:glView];
 
+	//  status = [[UILabel alloc] init];
+	// [status setText:@"This is my text"];
 	theMainApp = self;
 	
 #ifdef USE_BLUETOOTH
@@ -71,6 +81,8 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 	
 	glView.animationInterval = 1.0 / 60.0;
 	[glView startAnimation];
+
+	[window makeKeyAndVisible];	 
 }
 
 
