@@ -16,7 +16,7 @@
 
 #define USE_BLUETOOTH
 
-bd_addr_t addr = {0x00, 0x19, 0x1d, 0x90, 0x44, 0x68 };  // WiiMote
+BTDevice *device;
 
 WiiMoteOpenGLDemoAppDelegate * theMainApp;
 
@@ -26,6 +26,7 @@ WiiMoteOpenGLDemoAppDelegate * theMainApp;
 @synthesize glView;
 @synthesize navControl;
 @synthesize glViewControl;
+@synthesize inqViewControl;
 
 #define SIZE  5
 static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
@@ -88,13 +89,23 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						// interupt channel openedn succesfully, now open control channel, too.
 						bt_send_cmd(&l2cap_create_channel, event_addr, 0x11);
 					} else {
+
 						// request acceleration data.. probably has to be sent to control channel 0x11 instead of 0x13
 						uint8_t setMode31[] = { 0x52, 0x12, 0x00, 0x31 };
 						bt_send_l2cap( source_cid, setMode31, sizeof(setMode31));
 						uint8_t setLEDs[] = { 0x52, 0x11, 0x10 };
 						bt_send_l2cap( source_cid, setLEDs, sizeof(setLEDs));
-						// (*state_cb)("WiiMote connected");
+
+						// start GL demo
+						// [device setConnectionState:kBluetoothConnectionConnected];
+						// [[[theMainApp inqViewControl] tableView] reloadData];
+						
+						// do perform on main thread stuff
+						// [[theMainApp navControl] pushViewController:[theMainApp glViewControl] animated:YES];
+						[theMainApp performSelectorOnMainThread:@selector(startDemo:)
+																				withObject:nil waitUntilDone:false];
 					}
+					break;
 					
 				default:
 					break;
@@ -103,6 +114,10 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 		default:
 			break;
 	}
+}
+- (void)startDemo:(id) arg {
+	NSLog(@"startDemo");
+	[navControl pushViewController:glViewControl animated:YES];
 }
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application {
@@ -154,10 +169,13 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	glView.animationInterval = 1.0 / 60.0;
 }
 
--(void) deviceChoosen:(BTInquiryViewController *) inqView device:(BTDevice*) device{
+-(void) deviceChoosen:(BTInquiryViewController *) inqView device:(BTDevice*) selectedDevice{
 	NSLog(@"deviceChoosen %@", [device toString]);
 	
-	[navControl pushViewController:glViewControl animated:YES];
+	device = selectedDevice;
+	[device setConnectionState:kBluetoothConnectionConnecting];
+	[[inqView tableView] reloadData];
+	bt_send_cmd(&l2cap_create_channel, [device address], 0x13);
 }
 
 

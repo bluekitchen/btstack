@@ -180,7 +180,7 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
         case L2CAP_STATE_WAIT_CONNECT_RSP:
             switch (code){
                 case CONNECTION_RESPONSE:
-                    result = READ_BT_16 (packet, L2CAP_SIGNALING_DATA_OFFSET+8);
+                    result = READ_BT_16 (packet, L2CAP_SIGNALING_DATA_OFFSET+4);
                     switch (result) {
                         case 0:
                             // successfull connection
