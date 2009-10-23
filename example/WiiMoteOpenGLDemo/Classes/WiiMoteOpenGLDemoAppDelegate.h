@@ -18,7 +18,7 @@
 	UILabel  *status;
 }
 
-- (void)startDemo:(id) arg;
+- (void)startDemo;
 
 
 @property (nonatomic, retain) UIWindow *window;

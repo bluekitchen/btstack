@@ -5,9 +5,9 @@ NEXT:
   - on device select:
     - if name != WiiMote
 	  - show alert: need wiimote
-	- stop inquiry
-	- set flag to connecting for wiimote
+	- set flag to connecting for WiiMote
 	- on connect, switch view
+	- on back button, disconnect device
 - improve user experience of BTstack Inquiry View
   - shorter inquiry interval
   - repeat inquiry while BT on
