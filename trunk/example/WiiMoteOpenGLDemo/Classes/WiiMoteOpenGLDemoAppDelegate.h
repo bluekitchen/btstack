@@ -5,18 +5,23 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "BTInquiryViewController.h"
 
 @class EAGLView;
 
-@interface WiiMoteOpenGLDemoAppDelegate : NSObject <UIApplicationDelegate> {
+@interface WiiMoteOpenGLDemoAppDelegate : NSObject <UIApplicationDelegate, BTInquiryDelegate> {
     UIWindow *window;
+	UIViewController *glViewControl;
+	BTInquiryViewController *inqViewControl;
+	UINavigationController *navControl;
     EAGLView *glView;
 	UILabel  *status;
 }
 
-@property (nonatomic, retain) IBOutlet UIWindow *window;
-@property (nonatomic, retain) IBOutlet EAGLView *glView;
-@property (nonatomic, retain) IBOutlet UILabel  *status;
+@property (nonatomic, retain) UIWindow *window;
+@property (nonatomic, retain) UINavigationController *navControl;
+@property (nonatomic, retain) UIViewController *glViewControl;
+@property (nonatomic, retain) EAGLView *glView;
 
 @end
 
