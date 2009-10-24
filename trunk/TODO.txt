@@ -1,13 +1,10 @@
 /* new todo file for BTstack */
 
 NEXT:
+- on applicationWillResignActive: just disconnect, power off and push "Not clear yet"
 - improve user experience of BTstack Inquiry View
   - shorter inquiry interval
   - repeat inquiry while BT on
-
-- CocoaTouch user interface
-  - on iPhone sleep, just turn off Bluetooth and disconnect all connections
-- and figure out why stack doesn't shut Bluetooth off when in sleep for a while/after wakeup
 
 - prepend all source files with 'new BSD' copyright header
 - provide test version by setting up APT repository within BTstack SVN
