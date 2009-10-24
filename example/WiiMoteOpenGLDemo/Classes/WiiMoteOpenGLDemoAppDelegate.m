@@ -152,6 +152,18 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	[inqViewControl setTitle:@"BTstack Device Selector"];
 	[inqViewControl setAllowSelection:NO];
 	
+	// UILabel *footer = [[UILabel alloc] initWithFrame:CGRectMake(10,0,300,30)];
+	// footer.text = @"Please press the 1+2 buttons\nof your WiiMote at the same time\nto make it discoverable";
+	UITextView *footer = [[UITextView alloc] initWithFrame:CGRectMake(10,00,300,85)];
+	footer.text = @"Please make your WiiMote discoverable by pressing the 1+2 buttons at the same time";
+	footer.textColor = [UIColor blackColor];
+	footer.font = [UIFont fontWithName:@"Arial" size:18];
+	// footer.textAlignment = UITextAlignmentCenter;
+	footer.backgroundColor = [UIColor whiteColor];
+	footer.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+	footer.editable = false;
+	[[inqViewControl tableView] setTableFooterView:footer];
+	
 	// create nav view controller
 	navControl = [[UINavigationController alloc] initWithRootViewController:inqViewControl];
 	
