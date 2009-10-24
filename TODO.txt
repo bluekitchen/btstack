@@ -1,6 +1,8 @@
 /* new todo file for BTstack */
 
 NEXT:
+- timeout for remote name request shorter e.g. 5 seconds
+- make package script for WiiMote demo
 - prepend all source files with 'new BSD' copyright header
 - provide test version by setting up APT repository within BTstack SVN
   - instructions: http://www.saurik.com/id/7
