@@ -2,13 +2,10 @@
 
 NEXT:
 - prepare WiiMoteDemo for release
-  - auto-select Wiimote with name "Nintendo RVL-CNT-01"
-  - disable selection button
-  - disable back button in GL view somehow
+  - update text shown during connect
 - improve user experience of BTstack Inquiry View
   - shorter inquiry interval
   - repeat inquiry while BT on
-  - allow to select device and stop inquiry
 - CocoaTouch user interface
   - add bluetooth on/off toggle
   - on iPhone sleep, just turn off Bluetooth and disconnect all connections
