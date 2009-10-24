@@ -20,6 +20,7 @@
 		9C6BB62E1027911E00A0BCB0 /* wiimote_texture.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C6BB62D1027911E00A0BCB0 /* wiimote_texture.png */; };
 		9CB96E9810278945002663D0 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9CB96E9710278945002663D0 /* CoreGraphics.framework */; };
 		9CB96EEF10278D8D002663D0 /* EAGLView.m in Sources */ = {isa = PBXBuildFile; fileRef = 28FD14FD0DC6FC130079059D /* EAGLView.m */; };
+		9CC8B5E51093727700BCBA1F /* wiimote_logo_55px.png in Resources */ = {isa = PBXBuildFile; fileRef = 9CC8B5E41093727700BCBA1F /* wiimote_logo_55px.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -49,6 +50,7 @@
 		9C180041108B95B000824BE7 /* libBTstack.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libBTstack.dylib; path = ../../src/libBTstack.dylib; sourceTree = SOURCE_ROOT; };
 		9C6BB62D1027911E00A0BCB0 /* wiimote_texture.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = wiimote_texture.png; sourceTree = "<group>"; };
 		9CB96E9710278945002663D0 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		9CC8B5E41093727700BCBA1F /* wiimote_logo_55px.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = wiimote_logo_55px.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -116,6 +118,7 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				9CC8B5E41093727700BCBA1F /* wiimote_logo_55px.png */,
 				9C6BB62D1027911E00A0BCB0 /* wiimote_texture.png */,
 				8D1107310486CEB800E47090 /* Info.plist */,
 			);
@@ -201,6 +204,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9C6BB62E1027911E00A0BCB0 /* wiimote_texture.png in Resources */,
+				9CC8B5E51093727700BCBA1F /* wiimote_logo_55px.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
