@@ -2,17 +2,18 @@
 
 NEXT:
 - prepare WiiMoteDemo for release
-  - update text shown during connect
+  - disconnect connection to wiimote on exit -- just enforce it
 - improve user experience of BTstack Inquiry View
   - shorter inquiry interval
   - repeat inquiry while BT on
+
 - CocoaTouch user interface
-  - add bluetooth on/off toggle
   - on iPhone sleep, just turn off Bluetooth and disconnect all connections
 - and figure out why stack doesn't shut Bluetooth off when in sleep for a while/after wakeup
+
+- prepend all source files with 'new BSD' copyright header
 - provide test version by setting up APT repository within BTstack SVN
   - instructions: http://www.saurik.com/id/7
-- prepend all source files with 'new BSD' copyright header
   
 == Release Version 0.1
 

@@ -180,6 +180,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 		NSLog(@"WiiMote found with address %@", [BTDevice stringForAddress:[selectedDevice address]]);
 		device = selectedDevice;
 		[inqViewControl stopInquiry];
+		[inqViewControl showConnecting:device];
 
 		// connect to device
 		[device setConnectionState:kBluetoothConnectionConnecting];
