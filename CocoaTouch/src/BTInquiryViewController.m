@@ -9,6 +9,8 @@
 
 #include <btstack/btstack.h>
 
+#define INQUIRY_INTERVAL 3
+
 static BTInquiryViewController *inqView; 
 static btstack_packet_handler_t clientHandler;
 static uint8_t remoteNameIndex;
@@ -52,8 +54,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	return self;
 }
 
+- (void) myStartInquiry{
+	if (inquiryState != kInquiryInactive) {
+		NSLog(@"Inquiry already active");
+		return;
+	}
+	NSLog(@"Inquiry started");
+	inquiryState = kInquiryActive;
+	[[self tableView] reloadData];
+	
+	bt_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
+}
+
 - (void) handlePacket:(uint8_t) packet_type channel:(uint16_t) channel packet:(uint8_t*) packet size:(uint16_t) size {
-	static bool inquiryDone = 0;
 	bd_addr_t event_addr;
 	switch (packet_type) {
 			
@@ -67,16 +80,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					[[self tableView] reloadData];
 					
 					// set BT state
-					if (!inquiryDone && packet[2] == HCI_STATE_WORKING) {
-						inquiryDone = true;
-						if (inquiryState != kInquiryInactive) {
-							NSLog(@"Inquiry already active");
-							return;
-						}
-						NSLog(@"Inquiry started");
-						inquiryState = kInquiryActive;
-						[[self tableView] reloadData];
-						bt_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, 15, 0);
+					if (bluetoothState == HCI_STATE_WORKING) {
+						[self myStartInquiry];
 					}
 					break;
 					
@@ -192,6 +197,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	} else  {
 		inquiryState = kInquiryInactive;
 		// inquiry done.
+		
+		[self myStartInquiry];
+
 	}
 	[[self tableView] reloadData];
 	
