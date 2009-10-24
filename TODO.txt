@@ -1,8 +1,6 @@
 /* new todo file for BTstack */
 
 NEXT:
-- prepare WiiMoteDemo for release
-  - disconnect connection to wiimote on exit -- just enforce it
 - improve user experience of BTstack Inquiry View
   - shorter inquiry interval
   - repeat inquiry while BT on
