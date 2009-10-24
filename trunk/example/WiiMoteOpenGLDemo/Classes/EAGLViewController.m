@@ -15,7 +15,10 @@
     self.view = view;
     [view release];
 	
-	self.title = @"WiiMote";
+	self.title = @"BTstack WiiMote Demo";
+
+	// disable back button
+	self.navigationItem.hidesBackButton = TRUE; 
 }
 // Override to allow orientations other than the default portrait orientation.
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
