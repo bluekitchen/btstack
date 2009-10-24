@@ -29,11 +29,15 @@ typedef enum {
 	id<BTInquiryDelegate> delegate;
 	bool allowSelection;
 	
-	// hack
+	// hacks
 	bool stopRemoteNameGathering;
+	BTDevice *remoteDevice;
 }
+
 - (void) startInquiry;
 - (void) stopInquiry;
+
+- (void) showConnecting:(BTDevice *) device;
 
 @property (nonatomic, assign) bool allowSelection;
 @property (nonatomic, retain) NSMutableArray *devices;

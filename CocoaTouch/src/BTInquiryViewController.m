@@ -37,6 +37,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	bluetoothState = HCI_STATE_OFF;
 	inquiryState = kInquiryInactive;
 	allowSelection = false;
+	remoteDevice = nil;
 	
 	macAddressFont = [UIFont fontWithName:@"Courier New" size:[UIFont labelFontSize]];
 	deviceNameFont = [UIFont boldSystemFontOfSize:[UIFont labelFontSize]];
@@ -226,6 +227,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	}
 }
 
+- (void) showConnecting:(BTDevice *) device {
+	remoteDevice = device;
+	[[self tableView] reloadData];
+}
+
 /*
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -324,23 +330,28 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			label = @"Bluetooth not accessible!";
 			cell.accessoryView = nil;
 		} else {
-			switch (inquiryState){
-				case kInquiryInactive:
-					if ([devices count] > 0){
-						label = @"Find more devices...";
-					} else {
-						label = @"Find devices...";
-					}
-					cell.accessoryView = nil;
-					break;
-				case kInquiryActive:
-					label = @"Searching...";
-					cell.accessoryView = bluetoothActivity;
-					break;
-				case kInquiryRemoteName:
-					label = @"Query device names...";
-					cell.accessoryView = bluetoothActivity;
-					break;
+			if (remoteDevice) {
+				label = @"Connecting...";
+				cell.accessoryView = bluetoothActivity;
+			} else {
+				switch (inquiryState){
+					case kInquiryInactive:
+						if ([devices count] > 0){
+							label = @"Find more devices...";
+						} else {
+							label = @"Find devices...";
+						}
+						cell.accessoryView = nil;
+						break;
+					case kInquiryActive:
+						label = @"Searching...";
+						cell.accessoryView = bluetoothActivity;
+						break;
+					case kInquiryRemoteName:
+						label = @"Query device names...";
+						cell.accessoryView = bluetoothActivity;
+						break;
+				}
 			}
 		}
 	} else {
