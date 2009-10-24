@@ -30,6 +30,26 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 @synthesize devices;
 @synthesize delegate;
+@synthesize allowSelection;
+
+- (id) init {
+	self = [super initWithStyle:UITableViewStyleGrouped];
+	bluetoothState = HCI_STATE_OFF;
+	inquiryState = kInquiryInactive;
+	allowSelection = false;
+	
+	macAddressFont = [UIFont fontWithName:@"Courier New" size:[UIFont labelFontSize]];
+	deviceNameFont = [UIFont boldSystemFontOfSize:[UIFont labelFontSize]];
+	
+	deviceActivity = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+	[deviceActivity startAnimating];
+	bluetoothActivity = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+	[bluetoothActivity startAnimating];
+	
+	devices = [[NSMutableArray alloc] init];
+	inqView = self;
+	return self;
+}
 
 - (void) handlePacket:(uint8_t) packet_type channel:(uint16_t) channel packet:(uint8_t*) packet size:(uint16_t) size {
 	static bool inquiryDone = 0;
@@ -92,6 +112,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						hexdump(packet, size);
 						NSLog(@"adding %@", [dev toString] );
 						[devices addObject:dev];
+						
+						if (delegate) {
+							[delegate deviceDetected:self device:dev];
+						}
 					}
 				}
 					[[inqView tableView] reloadData];
@@ -104,6 +128,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					[dev setConnectionState:kBluetoothConnectionNotConnected];
 					if (packet[2] == 0) {
 						[dev setName:[NSString stringWithUTF8String:(const char *) &packet[9]]];
+						if (delegate) {
+							[delegate deviceDetected:self device:dev];
+						}
 					}
 					[[self tableView] reloadData];
 					remoteNameIndex++;
@@ -119,6 +146,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						NSLog(@"Inquiry stopped");
 						if (inquiryState == kInquiryActive){
 							remoteNameIndex = 0;
+							stopRemoteNameGathering = false;
 							[self getNextRemoteName];
 						}
 						break;
@@ -148,7 +176,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 - (bool) getNextRemoteName{
 	BTDevice *remoteDev = nil;
-	for (remoteNameIndex = 0; remoteNameIndex < [devices count] ; remoteNameIndex++){
+		
+	for (remoteNameIndex = 0; !stopRemoteNameGathering && remoteNameIndex < [devices count]; remoteNameIndex++){
 		BTDevice *dev = [devices objectAtIndex:remoteNameIndex];
 		if (![dev name]){
 			remoteDev = dev;
@@ -161,38 +190,40 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		bt_send_cmd(&hci_remote_name_request, [remoteDev address], [remoteDev pageScanRepetitionMode], 0, [remoteDev clockOffset] | 0x8000);
 	} else  {
 		inquiryState = kInquiryInactive;
-		[[self tableView] reloadData];
 		// inquiry done.
 	}
-	return remoteDev;
-}
-
-- (id) init {
-	self = [super initWithStyle:UITableViewStyleGrouped];
-	bluetoothState = HCI_STATE_OFF;
-	inquiryState = kInquiryInactive;
-
-	macAddressFont = [UIFont fontWithName:@"Courier New" size:[UIFont labelFontSize]];
-	deviceNameFont = [UIFont boldSystemFontOfSize:[UIFont labelFontSize]];
+	[[self tableView] reloadData];
 	
-	deviceActivity = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
-	[deviceActivity startAnimating];
-	bluetoothActivity = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
-	[bluetoothActivity startAnimating];
-
-	devices = [[NSMutableArray alloc] init];
-	inqView = self;
-	return self;
+	return remoteDev;
 }
 
 - (void) startInquiry {
 	// put into loop
 
+	// @TODO: cannot be called a second time!
 	clientHandler = bt_register_packet_handler(packet_handler);
 
-	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
 	bluetoothState = HCI_STATE_INITIALIZING;
 	[[self tableView] reloadData];
+
+	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
+}
+
+- (void) stopInquiry {
+	switch (inquiryState) {
+		case kInquiryActive:
+			// just stop inquiry 
+			bt_send_cmd(&hci_inquiry_cancel);
+			break;
+		case kInquiryInactive:
+			NSLog(@"stop inquiry called although inquiry inactive?");
+			break;
+		case kInquiryRemoteName:
+			stopRemoteNameGathering = true;
+			break;
+		default:
+			break;
+	}
 }
 
 /*
@@ -354,6 +385,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		[tableView deselectRowAtIndexPath:indexPath animated:TRUE];
 	}
 	
+}
+- (NSIndexPath *)tableView:(UITableView *)tableView willSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+	if (allowSelection) {
+		return indexPath;
+	}
+	return nil;
 }
 
 @end

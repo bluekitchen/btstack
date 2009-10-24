@@ -102,6 +102,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 				default:
 					break;
 			}
+			break;
 			
 		default:
 			break;
@@ -137,6 +138,8 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	// create inq controller
 	inqViewControl = [[BTInquiryViewController alloc] init];
 	[inqViewControl setTitle:@"BTstack Device Selector"];
+	[inqViewControl setAllowSelection:NO];
+	
 	// create nav view controller
 	navControl = [[UINavigationController alloc] initWithRootViewController:inqViewControl];
 	
@@ -169,13 +172,21 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 
 -(void) deviceChoosen:(BTInquiryViewController *) inqView device:(BTDevice*) selectedDevice{
 	NSLog(@"deviceChoosen %@", [device toString]);
-	
-	device = selectedDevice;
-	[device setConnectionState:kBluetoothConnectionConnecting];
-	[[inqView tableView] reloadData];
-	bt_send_cmd(&l2cap_create_channel, [device address], 0x13);
 }
 
+- (void) deviceDetected:(BTInquiryViewController *) inqView device:(BTDevice*) selectedDevice {
+	NSLog(@"deviceDetected %@", [device toString]);
+	if ([selectedDevice name] && [[selectedDevice name] caseInsensitiveCompare:@"Nintendo RVL-CNT-01"] == NSOrderedSame){
+		NSLog(@"WiiMote found with address %@", [BTDevice stringForAddress:[selectedDevice address]]);
+		device = selectedDevice;
+		[inqViewControl stopInquiry];
+
+		// connect to device
+		[device setConnectionState:kBluetoothConnectionConnecting];
+		[[[theMainApp inqViewControl] tableView] reloadData];
+		bt_send_cmd(&l2cap_create_channel, [device address], 0x13);
+	}
+}
 
 - (void)dealloc {
 	[window release];

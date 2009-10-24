@@ -20,7 +20,6 @@
 
 - (void)startDemo;
 
-
 @property (nonatomic, retain) UIWindow *window;
 @property (nonatomic, retain) UINavigationController *navControl;
 @property (nonatomic, retain) UIViewController *glViewControl;

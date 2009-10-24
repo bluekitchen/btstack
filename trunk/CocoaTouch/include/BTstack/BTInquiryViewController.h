@@ -27,12 +27,20 @@ typedef enum {
 	UIFont * deviceNameFont;
 	UIFont * macAddressFont;
 	id<BTInquiryDelegate> delegate;
+	bool allowSelection;
+	
+	// hack
+	bool stopRemoteNameGathering;
 }
 - (void) startInquiry;
+- (void) stopInquiry;
+
+@property (nonatomic, assign) bool allowSelection;
 @property (nonatomic, retain) NSMutableArray *devices;
 @property (nonatomic, retain) id<BTInquiryDelegate> delegate;
 @end
 
 @protocol BTInquiryDelegate
 - (void) deviceChoosen:(BTInquiryViewController *) inqView device:(BTDevice*) device;
+- (void) deviceDetected:(BTInquiryViewController *) inqView device:(BTDevice*) device;
 @end
