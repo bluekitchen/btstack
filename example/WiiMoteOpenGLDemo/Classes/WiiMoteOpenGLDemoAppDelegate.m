@@ -122,11 +122,22 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application {
 	NSLog(@"Started");
-
+	bool btOK = false;
+	
 #ifdef USE_BLUETOOTH
 	run_loop_init(RUN_LOOP_COCOA);
-	bt_open();
-	bt_register_packet_handler(packet_handler);
+	if ( bt_open() ){
+		UIAlertView* alertView = [[UIAlertView alloc] init];
+		alertView.title = @"Bluetooth not accessible!";
+		alertView.message = @"Connection to BTstack failed!\n"
+		"Please make sure that BTstack is installed correctly.";
+		NSLog(@"Alert: %@ - %@", alertView.title, alertView.message);
+		[alertView addButtonWithTitle:@"Dismiss"];
+		[alertView show];
+	} else {
+		bt_register_packet_handler(packet_handler);
+		btOK = true;
+	}
 #endif
 
 	// create window
@@ -149,10 +160,10 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 
 	theMainApp = self;
 
-#ifdef USE_BLUETOOTH
-	[inqViewControl setDelegate:self];
-	[inqViewControl startInquiry];
-#endif
+	if (btOK) {
+		[inqViewControl setDelegate:self];
+		[inqViewControl startInquiry];
+	}
 	
 	glView = (EAGLView *) [glViewControl view];
 	glView.animationInterval = 1.0 / 60.0;
