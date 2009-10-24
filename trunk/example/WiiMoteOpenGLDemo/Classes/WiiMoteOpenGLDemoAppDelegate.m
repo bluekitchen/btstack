@@ -15,7 +15,7 @@
 #import <btstack/hci_cmds.h>
 
 BTDevice *device;
-
+uint16_t wiiMoteConHandle = 0;
 WiiMoteOpenGLDemoAppDelegate * theMainApp;
 
 @implementation WiiMoteOpenGLDemoAppDelegate
@@ -81,8 +81,9 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					uint16_t source_cid = READ_BT_16(packet, 13); 
 					printf("Channel successfully opened: ");
 					print_bd_addr(event_addr);
+					wiiMoteConHandle = READ_BT_16(packet, 9);
 					printf(", handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x\n",
-						   READ_BT_16(packet, 9), psm, source_cid,  READ_BT_16(packet, 15));
+						   wiiMoteConHandle, psm, source_cid,  READ_BT_16(packet, 15));
 					if (psm == 0x13) {
 						// interupt channel openedn succesfully, now open control channel, too.
 						bt_send_cmd(&l2cap_create_channel, event_addr, 0x11);
@@ -189,7 +190,15 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	}
 }
 
+- (void)applicationWillTerminate:(UIApplication *)application {
+	// disconnect
+	if (wiiMoteConHandle) {
+		bt_send_cmd(&hci_disconnect, wiiMoteConHandle, 0x13); // remote closed connection             
+	}
+}
+
 - (void)dealloc {
+	
 	[window release];
 	[glView release];
 	[super dealloc];
