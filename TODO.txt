@@ -1,14 +1,14 @@
 /* new todo file for BTstack */
 
 NEXT:
-- on applicationWillResignActive: just disconnect, power off and push "Not clear yet"
-
 - prepend all source files with 'new BSD' copyright header
 - provide test version by setting up APT repository within BTstack SVN
   - instructions: http://www.saurik.com/id/7
   
 == Release Version 0.1
 
+- figure out how to receive iPhone System Power IONotifications to detect,
+  when phone gets locked
 - create <btstack/errors.h>
 - add timeouts to cocoa run loop
 - implement rest of L2CAP state machine

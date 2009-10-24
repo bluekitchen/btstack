@@ -151,18 +151,18 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	inqViewControl = [[BTInquiryViewController alloc] init];
 	[inqViewControl setTitle:@"BTstack Device Selector"];
 	[inqViewControl setAllowSelection:NO];
-	
-	// UILabel *footer = [[UILabel alloc] initWithFrame:CGRectMake(10,0,300,30)];
-	// footer.text = @"Please press the 1+2 buttons\nof your WiiMote at the same time\nto make it discoverable";
-	UITextView *footer = [[UITextView alloc] initWithFrame:CGRectMake(10,00,300,85)];
-	footer.text = @"Please make your WiiMote discoverable by pressing the 1+2 buttons at the same time";
-	footer.textColor = [UIColor blackColor];
-	footer.font = [UIFont fontWithName:@"Arial" size:18];
-	// footer.textAlignment = UITextAlignmentCenter;
-	footer.backgroundColor = [UIColor whiteColor];
-	footer.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-	footer.editable = false;
-	[[inqViewControl tableView] setTableFooterView:footer];
+
+	if (btOK) {
+		UITextView *footer = [[UITextView alloc] initWithFrame:CGRectMake(10,00,300,85)];
+		footer.text = @"Please make your WiiMote discoverable by pressing the 1+2 buttons at the same time.";
+		footer.textColor = [UIColor blackColor];
+		footer.font = [UIFont fontWithName:@"Arial" size:18];
+		// footer.textAlignment = UITextAlignmentCenter;
+		footer.backgroundColor = [UIColor whiteColor];
+		footer.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+		footer.editable = false;
+		[[inqViewControl tableView] setTableFooterView:footer];
+	}
 	
 	// create nav view controller
 	navControl = [[UINavigationController alloc] initWithRootViewController:inqViewControl];
@@ -186,7 +186,21 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 
 
 - (void)applicationWillResignActive:(UIApplication *)application {
-	glView.animationInterval = 1.0 / 5.0;
+	// glView.animationInterval = 1.0 / 5.0;
+
+	// if (wiiMoteConHandle) {
+	// 	bt_send_cmd(&hci_disconnect, wiiMoteConHandle, 0x13); // remote closed connection             
+	// }
+	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_OFF );
+	
+	UIAlertView* alertView = [[UIAlertView alloc] init];
+	alertView.title = @"Power Management ?";
+	alertView.message = @"Don't know yet, what to do when\n"
+	"phone gets locked.\n"
+	"Turning Bluetooth off for now. :)\n";
+	NSLog(@"Alert: %@ - %@", alertView.title, alertView.message);
+	// [alertView addButtonWithTitle:@"Dismiss"];
+	[alertView show];
 }
 
 
