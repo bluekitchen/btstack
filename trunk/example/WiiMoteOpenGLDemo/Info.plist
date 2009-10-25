@@ -11,7 +11,7 @@
 	<key>CFBundleIconFile</key>
 	<string>wiimote_logo_55px.png</string>
 	<key>CFBundleIdentifier</key>
-	<string>ch.ringwald.btstack.wiimote</string>
+	<string>ch.ringwald.wiimoteopengldemo</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

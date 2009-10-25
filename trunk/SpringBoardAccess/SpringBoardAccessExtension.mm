@@ -33,9 +33,9 @@ CFDataRef myCallBack(CFMessagePortRef local, SInt32 msgid, CFDataRef cfData, voi
 	const char *data = (const char *) CFDataGetBytePtr(cfData);
 	UInt16 dataLen = CFDataGetLength(cfData);
 	
-	if (dataLen > 1 && data) {
-		NSString * name = [NSString stringWithCString:&data[1] encoding:NSASCIIStringEncoding];
-		switch (data[0]){
+	if (dataLen > 0 && data) {
+		NSString * name = [NSString stringWithCString:data encoding:NSASCIIStringEncoding];
+		switch (msgid){
 			case SBAC_addStatusBarImage:
 				[theApp addStatusBarImageNamed:name];
 				break;
