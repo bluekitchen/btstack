@@ -191,7 +191,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 		bt_send_cmd(&hci_disconnect, wiiMoteConHandle, 0x13); // remote closed connection             
 		wiiMoteConHandle = 0;
 	}
-	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_OFF );
+	// bt_send_cmd(&btstack_set_power_mode, HCI_POWER_OFF );
 	bt_close();
 
 	UIAlertView* alertView = [[UIAlertView alloc] init];
@@ -233,7 +233,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	if (wiiMoteConHandle) {
 		bt_send_cmd(&hci_disconnect, wiiMoteConHandle, 0x13); // remote closed connection             
 	}
-	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_OFF );
+	// bt_send_cmd(&btstack_set_power_mode, HCI_POWER_OFF );
 
 	bt_close();
 }

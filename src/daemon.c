@@ -39,7 +39,7 @@
 #include "hci_transport_usb.h"
 #endif
 
-#define DAEMON_NO_CONNECTION_TIMEOUT 60000
+#define DAEMON_NO_CONNECTION_TIMEOUT 20000
 
 static hci_transport_t * transport;
 static hci_uart_config_t config;
@@ -188,6 +188,10 @@ static void daemon_sigint_handler(int param){
     exit(0);
 }
 
+static void daemon_sigpipe_handler(int param){
+    printf(" <= SIGPIPE received.. trying to ignore..\n");    
+}
+
 int main (int argc, const char * argv[]){
     
     bt_control_t * control = NULL;
@@ -239,9 +243,17 @@ int main (int argc, const char * argv[]){
     signal(SIGINT, daemon_sigint_handler);
     // handle SIGTERM - suggested for launchd
     signal(SIGTERM, daemon_sigint_handler);
+#if 0
     // avoid crashing on closed socket
-    signal(SIGPIPE, SIG_IGN);
-    
+    signal(SIGPIPE, daemon_sigpipe_handler);
+#else  0
+    struct sigaction act;
+    act.sa_handler = SIG_IGN;
+    sigemptyset (&act.sa_mask);
+    act.sa_flags = 0;
+    sigaction (SIGPIPE, &act, NULL);
+#endif
+
     // make stderr unbuffered
     setbuf(stderr, NULL);
     setbuf(stdout, NULL);
