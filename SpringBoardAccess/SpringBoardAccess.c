@@ -19,13 +19,9 @@ static int SBA_sendMessage(UInt8 cmd, UInt16 dataLen, UInt8 *data){
 	if (!springBoardAccessMessagePort) {
 		return kCFMessagePortIsInvalid;
 	}
-	// create message
-	int messageLen = 1 + dataLen;
-	UInt8 message[messageLen];
-	message[0] = cmd;
-	memcpy(&message[1], data, dataLen);
-	CFDataRef cfData = CFDataCreate(NULL, message, messageLen);
-	int result = CFMessagePortSendRequest(springBoardAccessMessagePort, 0, cfData, 1, 1, NULL, NULL);
+	// create and send message
+	CFDataRef cfData = CFDataCreate(NULL, data, dataLen);
+	int result = CFMessagePortSendRequest(springBoardAccessMessagePort, cmd, cfData, 1, 1, NULL, NULL);
 	CFRelease(cfData);
 	return result;
 }
