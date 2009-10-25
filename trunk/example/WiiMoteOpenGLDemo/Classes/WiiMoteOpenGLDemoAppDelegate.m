@@ -75,28 +75,28 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 			switch (packet[0]){
 					
 				case L2CAP_EVENT_CHANNEL_OPENED:
-					// inform about new l2cap connection
-					bt_flip_addr(event_addr, &packet[3]);
-					uint16_t psm = READ_BT_16(packet, 11); 
-					uint16_t source_cid = READ_BT_16(packet, 13); 
-					printf("Channel successfully opened: ");
-					print_bd_addr(event_addr);
-					wiiMoteConHandle = READ_BT_16(packet, 9);
-					printf(", handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x\n",
-						   wiiMoteConHandle, psm, source_cid,  READ_BT_16(packet, 15));
-					if (psm == 0x13) {
-						// interupt channel openedn succesfully, now open control channel, too.
-						bt_send_cmd(&l2cap_create_channel, event_addr, 0x11);
-					} else {
+					if (packet[2] == 0) {
+						// inform about new l2cap connection
+						bt_flip_addr(event_addr, &packet[3]);
+						uint16_t psm = READ_BT_16(packet, 11); 
+						uint16_t source_cid = READ_BT_16(packet, 13); 
+						wiiMoteConHandle = READ_BT_16(packet, 9);
+						NSLog(@"Channel successfully opened: handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x",
+							   wiiMoteConHandle, psm, source_cid,  READ_BT_16(packet, 15));
+						if (psm == 0x13) {
+							// interupt channel openedn succesfully, now open control channel, too.
+							bt_send_cmd(&l2cap_create_channel, event_addr, 0x11);
+						} else {
 
-						// request acceleration data.. probably has to be sent to control channel 0x11 instead of 0x13
-						uint8_t setMode31[] = { 0x52, 0x12, 0x00, 0x31 };
-						bt_send_l2cap( source_cid, setMode31, sizeof(setMode31));
-						uint8_t setLEDs[] = { 0x52, 0x11, 0x10 };
-						bt_send_l2cap( source_cid, setLEDs, sizeof(setLEDs));
+							// request acceleration data.. probably has to be sent to control channel 0x11 instead of 0x13
+							uint8_t setMode31[] = { 0x52, 0x12, 0x00, 0x31 };
+							bt_send_l2cap( source_cid, setMode31, sizeof(setMode31));
+							uint8_t setLEDs[] = { 0x52, 0x11, 0x10 };
+							bt_send_l2cap( source_cid, setLEDs, sizeof(setLEDs));
 
-						// start demo
-						[theMainApp startDemo];
+							// start demo
+							[theMainApp startDemo];
+						}
 					}
 					break;
 					
@@ -116,6 +116,10 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	[device setConnectionState:kBluetoothConnectionConnected];
 	
 	// push glViewControl on stack
+	glView = (EAGLView *) [glViewControl view];
+	glView.animationInterval = 1.0 / 60.0;
+	[glView startAnimation];
+	
 	[[[theMainApp inqViewControl] tableView] reloadData];
 	[navControl pushViewController:glViewControl animated:YES];
 }
@@ -176,11 +180,6 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 		[inqViewControl setDelegate:self];
 		[inqViewControl startInquiry];
 	}
-	
-	glView = (EAGLView *) [glViewControl view];
-	glView.animationInterval = 1.0 / 60.0;
-	[glView startAnimation];
-
 	[window makeKeyAndVisible];	 
 }
 
@@ -188,11 +187,13 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 - (void)applicationWillResignActive:(UIApplication *)application {
 	// glView.animationInterval = 1.0 / 5.0;
 
-	// if (wiiMoteConHandle) {
-	// 	bt_send_cmd(&hci_disconnect, wiiMoteConHandle, 0x13); // remote closed connection             
-	// }
+	if (wiiMoteConHandle) {
+		bt_send_cmd(&hci_disconnect, wiiMoteConHandle, 0x13); // remote closed connection             
+		wiiMoteConHandle = 0;
+	}
 	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_OFF );
-	
+	bt_close();
+
 	UIAlertView* alertView = [[UIAlertView alloc] init];
 	alertView.title = @"Power Management ?";
 	alertView.message = @"Don't know yet, what to do when\n"
@@ -232,6 +233,9 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	if (wiiMoteConHandle) {
 		bt_send_cmd(&hci_disconnect, wiiMoteConHandle, 0x13); // remote closed connection             
 	}
+	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_OFF );
+
+	bt_close();
 }
 
 - (void)dealloc {

@@ -115,7 +115,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						[dev setPageScanRepetitionMode:packet[3 + numResponses*6 + i]];
 						[dev setClassOfDevice:READ_BT_24(packet, 3 + numResponses*(6+1+1+1) + i*3)];
 						[dev setClockOffset:(READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff)];
-						hexdump(packet, size);
+						// hexdump(packet, size);
 						NSLog(@"adding %@", [dev toString] );
 						[devices addObject:dev];
 						
@@ -158,7 +158,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						break;
 					}
 					
-					hexdump(packet, size);
+					// hexdump(packet, size);
 					break;
 			}
 			
