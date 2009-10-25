@@ -239,6 +239,9 @@ int main (int argc, const char * argv[]){
     signal(SIGINT, daemon_sigint_handler);
     // handle SIGTERM - suggested for launchd
     signal(SIGTERM, daemon_sigint_handler);
+    // avoid crashing on closed socket
+    signal(SIGPIPE, SIG_IGN);
+    
     // make stderr unbuffered
     setbuf(stderr, NULL);
     setbuf(stdout, NULL);
