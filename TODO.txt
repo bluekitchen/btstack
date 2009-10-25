@@ -1,13 +1,16 @@
 /* new todo file for BTstack */
 
 NEXT:
-- fix BTstack crash when quitting WiiMote Demo app
+- implement cocoa_remove_data_source
+- fix BTstack and/or WiiMote Demo crash when quitting app
 - prepend all source files with 'new BSD' copyright header
   
 == Release Version 0.1
 
-- figure out how to receive iPhone System Power IONotifications to detect,
+- figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect,
   when phone gets locked
+  - some trick
+  - use Cocoa run loop for background app?
 - create <btstack/errors.h>
 - add timeouts to cocoa run loop
 - implement rest of L2CAP state machine
@@ -21,6 +24,7 @@ NEXT:
   - can we get willGoToSleep event, should we turn off Bluetooth?
   - would be nice, if we could get woken up by Bluetooth data
 - CocoaTouch User Interface Components
+  - Provide BTstack class
   - Warning and shutdown of Apple's stack
 - create new GPG key for gmail account and sign APT package
 - non-reproducible bug: hci_state gets confused.
