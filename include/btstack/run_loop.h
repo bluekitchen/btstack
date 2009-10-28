@@ -24,7 +24,7 @@ typedef struct data_source {
 typedef struct timer {
     linked_item_t item; 
     struct timeval timeout;                             // <-- next timeout
-    void  (*process)(struct timer *ts);                  // <-- do processing
+    void  (*process)(struct timer *ts);                 // <-- do processing
 } timer_t;
 
 // init must be called before any other run_loop call
