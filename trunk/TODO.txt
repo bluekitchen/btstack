@@ -1,6 +1,7 @@
 /* new todo file for BTstack */
 
 NEXT:
+- try to have BTdaemon use 0% cpu time when idle, after disconnect
 - implement cocoa_remove_data_source
 - fix BTstack and/or WiiMote Demo crash when quitting app
 - prepend all source files with 'new BSD' copyright header
