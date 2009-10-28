@@ -94,11 +94,9 @@ void posix_execute() {
                 tv.tv_usec += 1000000;
                 tv.tv_sec--;
             }
-            if (tv.tv_sec < 0){
-                tv.tv_sec =  0;
-                tv.tv_usec = 0;
+            if (tv.tv_sec > 0 || (tv.tv_sec == 0 && tv.tv_usec > 0)){
+                timeout = &tv;
             }
-            timeout = &tv;
         }
                 
         // wait for ready FDs
