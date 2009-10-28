@@ -2,6 +2,7 @@
 
 NEXT:
 - prepend all source files with 'new BSD' copyright header
+- figure out how to add BTstack logo to Cydia repository list
   
 == Release Version 0.1
 
@@ -9,6 +10,9 @@ NEXT:
   when phone gets locked
   - some trick
   - use Cocoa run loop for background app?
+  - see iPhone imsomnia project at http://code.google.com/p/iphone-insomnia/
+  - can we get willGoToSleep event, should we turn off Bluetooth?
+  - would be nice, if we could get woken up by Bluetooth data
 - create <btstack/errors.h>
 - add timeouts to cocoa run loop
 - implement rest of L2CAP state machine
@@ -17,10 +21,6 @@ NEXT:
 	- commands and events
 - RFCOMM implementation
   - use switch on RFCOMM control field in rfcomm.c packet handler
-- detect and handle iPhone sleep mode
-  - see iPhone imsomnia project at http://code.google.com/p/iphone-insomnia/
-  - can we get willGoToSleep event, should we turn off Bluetooth?
-  - would be nice, if we could get woken up by Bluetooth data
 - CocoaTouch User Interface Components
   - Provide BTstack class
   - Warning and shutdown of Apple's stack

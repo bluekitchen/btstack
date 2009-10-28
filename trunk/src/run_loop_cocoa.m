@@ -40,16 +40,19 @@ void cocoa_add_data_source(data_source_t *dataSource){
 										  socketDataCallback,
 										  &socketContext
     );
-    // hack: store CFSocketRef in next pointer of linked_item
-    dataSource->item.next = (void *) socket;
     
-	// create run loop source and add to run loop
+	// create run loop source
 	CFRunLoopSourceRef socketRunLoop = CFSocketCreateRunLoopSource ( kCFAllocatorDefault, socket, 0);
+    
+    // hack: store CFSocketRef in next pointer of linked_item
+    dataSource->item.next = (void *) socketRunLoop;
+
+    // add to run loop
 	CFRunLoopAddSource( CFRunLoopGetCurrent(), socketRunLoop, kCFRunLoopDefaultMode);
 }
 
 int  cocoa_remove_data_source(data_source_t *dataSource){
-    CFRunLoopRemoveSource( CFRunLoopGetCurrent(), dataSource->item.next, kCFRunLoopCommonModes);
+    CFRunLoopRemoveSource( CFRunLoopGetCurrent(), (CFRunLoopSourceRef) dataSource->item.next, kCFRunLoopCommonModes);
 	return 0;
 }
 
