@@ -181,7 +181,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 				// fine with this
 				uint8_t address = packet[0] | 2; // set response 
 				packet[3]  = BT_RFCOMM_MSC_RSP;  //  "      "
-				rfcomm_send_packet(source_cid, address, BT_RFCOMM_UIH_PF, 0x30, packet, 8);
+				rfcomm_send_packet(source_cid, address, BT_RFCOMM_UIH, 0x30, (uint8_t*)&packet[3], 4);
 				msc_resp_send = 1;
 			}
 			
