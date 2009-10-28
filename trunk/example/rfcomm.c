@@ -192,14 +192,21 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 			}
 
 			if (packet[1] == BT_RFCOMM_UIH && packet[0] == ((RFCOMM_CHANNEL_ID<<3)|1)){
+				packet_processed++;
 				credits_used++;
+				printf("RX: address %02x, control %02x: ", packet[0], packet[1]);
+				hexdump( (uint8_t*) &packet[3], size-4);
 			}
 			
 			if (packet[1] == BT_RFCOMM_UIH_PF && packet[0] == ((RFCOMM_CHANNEL_ID<<3)|1)){
+				packet_processed++;
+				credits_used++;
 				if (!credits_free) {
 					printf("Got %u credits, can send!\n", packet[2]);
 				}
 				credits_free = packet[2];
+				printf("RX: address %02x, control %02x: ", packet[0], packet[1]);
+				hexdump( (uint8_t *) &packet[4], size-5);
 			}
 			
 			uint8_t send_credits_packet = 0;
@@ -226,6 +233,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 			
 			if (!packet_processed){
 				// just dump data for now
+				printf("??: address %02x, control %02x: ", packet[0], packet[1]);
 				hexdump( packet, size );
 			}
 			
