@@ -25,6 +25,13 @@ cp resources/*.png $PACKAGE/System/Library/CoreServices/
 mkdir -p $PACKAGE/Library/LaunchDaemons/
 cp resources/ch.ringwald.BTstack.plist $PACKAGE/Library/LaunchDaemons/
 
+echo "#!/bin/sh" >  $PACKAGE/DEBIAN/postinst
+echo "/bin/launchctl load /Library/LaunchDaemons/ch.ringwald.BTstack.plist" >> $PACKAGE/DEBIAN/postinst
+chmod +x $PACKAGE/DEBIAN/postinst
+echo "#!/bin/sh" >  $PACKAGE/DEBIAN/prerm
+echo "/bin/launchctl unload /Library/LaunchDaemons/ch.ringwald.BTstack.plist" >> $PACKAGE/DEBIAN/prerm
+chmod +x $PACKAGE/DEBIAN/prerm
+
 # set ownership to root:root
 sudo chown -R 0:0 $PACKAGE
 
