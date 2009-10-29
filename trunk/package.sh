@@ -26,7 +26,8 @@ mkdir -p $PACKAGE/Library/LaunchDaemons/
 cp resources/ch.ringwald.BTstack.plist $PACKAGE/Library/LaunchDaemons/
 
 echo "#!/bin/sh" >  $PACKAGE/DEBIAN/postinst
-echo "/bin/launchctl load /Library/LaunchDaemons/ch.ringwald.BTstack.plist" >> $PACKAGE/DEBIAN/postinst
+echo "/bin/launchctl unload /Library/LaunchDaemons/ch.ringwald.BTstack.plist" >> $PACKAGE/DEBIAN/postinst
+echo "/bin/launchctl load   /Library/LaunchDaemons/ch.ringwald.BTstack.plist" >> $PACKAGE/DEBIAN/postinst
 chmod +x $PACKAGE/DEBIAN/postinst
 echo "#!/bin/sh" >  $PACKAGE/DEBIAN/prerm
 echo "/bin/launchctl unload /Library/LaunchDaemons/ch.ringwald.BTstack.plist" >> $PACKAGE/DEBIAN/prerm
