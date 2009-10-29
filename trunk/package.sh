@@ -7,7 +7,7 @@ REVISION=`svn info | grep Revision | cut -d " " -f 2`
 ARCHIVE=$PACKAGE-$VERSION-$REVISION.deb
 
 echo Creating $PACKAGE package version $VERSION revision $REVISION
-rm -rf $PACKAGE
+sudo rm -rf $PACKAGE
 
 mkdir -p $PACKAGE/DEBIAN
 cp resources/control $PACKAGE/DEBIAN
