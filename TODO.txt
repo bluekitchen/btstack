@@ -2,6 +2,7 @@
 
 NEXT:
 - prepend all source files with 'new BSD' copyright header
+- sign BTstack repository
 - figure out how to add BTstack logo to Cydia repository list
   
 == Release Version 0.1

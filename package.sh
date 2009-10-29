@@ -25,6 +25,8 @@ cp resources/*.png $PACKAGE/System/Library/CoreServices/
 mkdir -p $PACKAGE/Library/LaunchDaemons/
 cp resources/ch.ringwald.BTstack.plist $PACKAGE/Library/LaunchDaemons/
 
+# set ownership to root:root
+sudo chown -R 0:0 $PACKAGE
 
 echo Packaging $PACKAGE
 export COPYFILE_DISABLE

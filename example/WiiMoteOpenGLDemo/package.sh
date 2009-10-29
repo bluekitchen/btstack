@@ -18,6 +18,9 @@ cp -r build/Debug-iphoneos/WiiMoteOpenGLDemo.app $PACKAGE/Applications
 export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate
 ldid -S $PACKAGE/Applications/WiiMoteOpenGLDemo.app/WiiMoteOpenGLDemo
 
+# set ownership to root:root
+sudo chown -R 0:0 $PACKAGE
+
 echo Packaging $PACKAGE
 export COPYFILE_DISABLE
 export COPY_EXTENDED_ATTRIBUTES_DISABLE
