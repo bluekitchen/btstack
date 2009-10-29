@@ -5,7 +5,8 @@ NEXT:
 - check why BT does not shut off after a while of inactivity on iPhone
 - sign BTstack repository
 - figure out how to add BTstack logo to Cydia repository list
-  
+- WiiMote Demo: upside down is not shown correctly
+
 == Release Version 0.1
 
 - figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect,
