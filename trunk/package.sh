@@ -19,8 +19,8 @@ cp src/BTdaemon $PACKAGE/usr/local/bin
 mkdir -p $PACKAGE/usr/local/lib
 cp src/libBTstack.dylib $PACKAGE/usr/local/lib
 
-mkdir -p $PACKAGE/System/Library/CoreServices/SpringBoard.app/
-cp resources/*.png $PACKAGE/System/Library/CoreServices/
+mkdir -p $PACKAGE/System/Library/CoreServices/SpringBoard.app
+cp resources/*.png $PACKAGE/System/Library/CoreServices/SpringBoard.app
 
 mkdir -p $PACKAGE/Library/LaunchDaemons/
 cp resources/ch.ringwald.BTstack.plist $PACKAGE/Library/LaunchDaemons/
