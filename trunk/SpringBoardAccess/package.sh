@@ -19,6 +19,9 @@ cp SpringBoardAccess-test $PACKAGE/usr/local/bin
 mkdir -p $PACKAGE/Library/MobileSubstrate/DynamicLibraries
 cp SpringBoardAccess.dylib SpringBoardAccess.plist $PACKAGE/Library/MobileSubstrate/DynamicLibraries
 
+# set ownership to root:root
+sudo chown -R 0:0 $PACKAGE
+
 echo Packaging $PACKAGE
 export COPYFILE_DISABLE
 export COPY_EXTENDED_ATTRIBUTES_DISABLE
