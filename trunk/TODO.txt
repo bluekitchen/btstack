@@ -1,7 +1,8 @@
 /* new todo file for BTstack */
 
 NEXT:
-- prepend all source files with 'new BSD' copyright header
+- redo status bar icon. it's too dark.
+- check why BT does not shut off after a while of inactivity on iPhone
 - sign BTstack repository
 - figure out how to add BTstack logo to Cydia repository list
   
