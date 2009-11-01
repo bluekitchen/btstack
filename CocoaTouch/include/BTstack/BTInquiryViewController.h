@@ -62,6 +62,7 @@ typedef enum {
 	
 	// hacks
 	bool stopRemoteNameGathering;
+	bool restartInquiry;
 	BTDevice *remoteDevice;
 }
 
