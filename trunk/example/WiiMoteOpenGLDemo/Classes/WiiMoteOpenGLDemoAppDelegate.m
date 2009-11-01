@@ -66,6 +66,11 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 	float az = z - 128;
 	int roll  = atan2(ax, sqrt(ay*ay+az*az)) * 180 / M_PI; 
 	int pitch = atan2(ay, sqrt(ax*ax+az*az)) * 180 / M_PI;
+	if (az < 0) {
+		// roll  = 180 - roll;
+		// pitch = 180 - pitch;
+	}
+	NSLog(@"BT data: %f %f %f: pitch %i, roll %i", ax , ay ,az, pitch, roll);
 
 #if 1
 	// moving average of size SIZE

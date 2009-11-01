@@ -3,9 +3,11 @@
 NEXT:
 - redo status bar icon. it's too dark.
 - check why BT does not shut off after a while of inactivity on iPhone
-- sign BTstack repository
+- WiiMote Demo
+  - upside down is not shown correctly
+- check/fix BTstack for iPhone 2G
 - figure out how to add BTstack logo to Cydia repository list
-- WiiMote Demo: upside down is not shown correctly
+- sign BTstack repository
 
 == Release Version 0.1
 

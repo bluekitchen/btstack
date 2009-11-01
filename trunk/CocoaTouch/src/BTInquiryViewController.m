@@ -71,6 +71,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	inquiryState = kInquiryInactive;
 	allowSelection = false;
 	remoteDevice = nil;
+	restartInquiry = true;
 	
 	macAddressFont = [UIFont fontWithName:@"Courier New" size:[UIFont labelFontSize]];
 	deviceNameFont = [UIFont boldSystemFontOfSize:[UIFont labelFontSize]];
@@ -228,9 +229,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	} else  {
 		inquiryState = kInquiryInactive;
 		// inquiry done.
-		
-		[self myStartInquiry];
-
+		if (restartInquiry) {
+			[self myStartInquiry];
+		}
 	}
 	[[self tableView] reloadData];
 	
@@ -260,6 +261,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			break;
 		case kInquiryRemoteName:
 			stopRemoteNameGathering = true;
+			restartInquiry = false;
 			break;
 		default:
 			break;
