@@ -66,20 +66,44 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 	float ay = y - 128;
 	float az = z - 128;
 	
-#if 0
-	// normalize
-	float sum = ax + ay + az;
-	ax /= sum;
-	ay /= sum;
-	az /= sum;
+	// mini calib
+	az /= 2;
+	
+#if 1
+	// normalize vector
+	float length = sqrt( ax*ax + ay*ay + az*az);
+	ax /= length;
+	ay /= length;
+	az /= length;
 #endif
 	
+	// cross product between A and (0,0,1) 
+	float crossX = ay;
+	float crossY = -ax;
+	float crossZ = 0;
+	float omega = acos( az );
+
+	// normalize quat
+	float quatSum = crossX * crossX + crossY * crossY + omega * omega;
+	crossX /= quatSum;
+	crossY /= quatSum;
+	crossZ /= quatSum;
+	omega  /= quatSum;
+	
+	//
+	int pitch = atan2( 2*(omega*crossX), omega*omega - crossX*crossX - crossY*crossY)* 180 / M_PI;
+	int roll  = atan2( 2*(crossX * crossY), omega*omega + crossX*crossX - crossY*crossY) * 180 / M_PI;
+	int theta = 0;
+	
+#if 0	
 	int roll  = atan2(ax, sqrt(ay*ay+az*az)) * 180 / M_PI; 
 	int pitch = atan2(ay, sqrt(ax*ax+az*az)) * 180 / M_PI;
 	int theta = atan2(sqrt(ax*ax+ay*ay), az) * 180 / M_PI;
 	if (az < 0) {
 	 	pitch  = 180 - pitch;
 	}
+#endif
+	
 	if ( (++counter & 15) == 0)
 		NSLog(@"BT data: %f %f %f: pitch %i, roll %i, yaw %i", ax , ay ,az, pitch, roll, theta);
 

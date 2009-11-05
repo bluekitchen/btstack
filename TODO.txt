@@ -1,7 +1,6 @@
 /* new todo file for BTstack */
 
 NEXT:
-- check why BT does not shut off after a while of inactivity on iPhone
 - WiiMote Demo
   - upside down is not shown correctly
 - check/fix BTstack for iPhone 2G
