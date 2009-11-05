@@ -141,7 +141,7 @@ void run_loop_set_timer(timer_t *a, int timeout_in_ms){
 // compare timers - NULL is assumed to be before the Big Bang
 // pre: 0 <= tv_usec < 1000000
 int run_loop_timeval_compare(struct timeval *a, struct timeval *b){
-    if (!a || !b) return 0;
+    if (!a && !b) return 0;
     if (!a) return -1;
     if (!b) return 1;
     
@@ -166,7 +166,7 @@ int run_loop_timeval_compare(struct timeval *a, struct timeval *b){
 // compare timers - NULL is assumed to be before the Big Bang
 // pre: 0 <= tv_usec < 1000000
 int run_loop_timer_compare(timer_t *a, timer_t *b){
-    if (!a || !b) return 0;
+    if (!a && !b) return 0;
     if (!a) return -1;
     if (!b) return 1;
     return run_loop_timeval_compare(&a->timeout, &b->timeout);

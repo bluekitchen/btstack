@@ -58,28 +58,41 @@ WiiMoteOpenGLDemoAppDelegate * theMainApp;
 @synthesize inqViewControl;
 
 #define SIZE  5
+int counter;
 static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 	// NSLog(@"BT data: %u %u %u", x , y ,z);
 	// [[theMainApp status] setText:[NSString stringWithFormat:@"X:%03u Y:%03u Z:%03u", x, y, z]];
 	float ax = x - 128;
 	float ay = y - 128;
 	float az = z - 128;
+	
+#if 0
+	// normalize
+	float sum = ax + ay + az;
+	ax /= sum;
+	ay /= sum;
+	az /= sum;
+#endif
+	
 	int roll  = atan2(ax, sqrt(ay*ay+az*az)) * 180 / M_PI; 
 	int pitch = atan2(ay, sqrt(ax*ax+az*az)) * 180 / M_PI;
+	int theta = atan2(sqrt(ax*ax+ay*ay), az) * 180 / M_PI;
 	if (az < 0) {
-		// roll  = 180 - roll;
-		// pitch = 180 - pitch;
+	 	pitch  = 180 - pitch;
 	}
-	NSLog(@"BT data: %f %f %f: pitch %i, roll %i", ax , ay ,az, pitch, roll);
+	if ( (++counter & 15) == 0)
+		NSLog(@"BT data: %f %f %f: pitch %i, roll %i, yaw %i", ax , ay ,az, pitch, roll, theta);
 
 #if 1
 	// moving average of size SIZE
 	static int pos = 0;
 	static int historyRoll[SIZE];
 	static int historyPitch[SIZE];
+	static int historyTheta[SIZE];
 	
 	historyRoll[pos] = roll;
 	historyPitch[pos] = pitch;
+	historyTheta[pos] = theta;
 	pos++;
 	if (pos==SIZE) pos = 0;
 	
@@ -88,9 +101,11 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 	for (i=0;i<SIZE;i++){
 		roll  += historyRoll[i];
 		pitch += historyPitch[i];
+		theta += historyTheta[i];
 	}
 	roll = roll / SIZE;
 	pitch = pitch / SIZE;
+	theta = theta / SIZE;
 #endif	
 	[[theMainApp glView] setRotationX:-pitch Y:roll Z:0];
 }
