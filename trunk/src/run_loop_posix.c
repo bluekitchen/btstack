@@ -65,19 +65,22 @@ int posix_remove_data_source(data_source_t *ds){
  */
 void posix_add_timer(timer_t *ts){
     linked_item_t *it;
-    for (it = (linked_item_t *) &timers; it ; it = it->next){
-        if ( run_loop_timer_compare( (timer_t *) it->next, ts) >= 0) {
-            ts->item.next = it->next;
-            it->next = (linked_item_t *) ts;
-            return;
+    for (it = (linked_item_t *) &timers; it->next ; it = it->next){
+        if (run_loop_timer_compare( (timer_t *) it->next, ts) >= 0) {
+            break;
         }
     }
+    ts->item.next = it->next;
+    it->next = (linked_item_t *) ts;
+    // printf("Added timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
+    // posix_dump_timer();
 }
 
 /**
  * Remove timer from run loop
  */
 int posix_remove_timer(timer_t *ts){
+    // printf("Removed timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
     return linked_list_remove(&timers, (linked_item_t *) ts);
 }
 
@@ -97,7 +100,8 @@ void posix_execute() {
     fd_set descriptors;
     data_source_t *ds;
     timer_t       *ts;
-    struct timeval tv;
+    struct timeval current_tv;
+    struct timeval next_tv;
     struct timeval *timeout;
     
     while (1) {
@@ -117,17 +121,19 @@ void posix_execute() {
         // pre: 0 <= tv_usec < 1000000
         timeout = NULL;
         if (timers) {
-            gettimeofday(&tv, NULL);
+            gettimeofday(&current_tv, NULL);
             ts = (timer_t *) timers;
-            tv.tv_sec  -= ts->timeout.tv_sec;
-            tv.tv_usec -= ts->timeout.tv_usec;
-            if (tv.tv_usec < 0){
-                tv.tv_usec += 1000000;
-                tv.tv_sec--;
+            next_tv.tv_usec = ts->timeout.tv_usec - current_tv.tv_usec;
+            next_tv.tv_sec  = ts->timeout.tv_sec  - current_tv.tv_sec;
+            while (next_tv.tv_usec < 0){
+                next_tv.tv_usec += 1000000;
+                next_tv.tv_sec--;
             }
-            if (tv.tv_sec > 0 || (tv.tv_sec == 0 && tv.tv_usec > 0)){
-                timeout = &tv;
+            if (next_tv.tv_sec < 0 || (next_tv.tv_sec == 0 && next_tv.tv_usec < 0)){
+                next_tv.tv_sec  = 0; 
+                next_tv.tv_usec = 0;
             }
+            timeout = &next_tv;
         }
                 
         // wait for ready FDs
@@ -145,10 +151,10 @@ void posix_execute() {
         // process timers
         // pre: 0 <= tv_usec < 1000000
         while (timers) {
-            gettimeofday(&tv, NULL);
+            gettimeofday(&current_tv, NULL);
             ts = (timer_t *) timers;
-            if (ts->timeout.tv_sec  > tv.tv_sec) break;
-            if (ts->timeout.tv_sec == tv.tv_sec && ts->timeout.tv_usec > tv.tv_usec) break;
+            if (ts->timeout.tv_sec  > current_tv.tv_sec) break;
+            if (ts->timeout.tv_sec == current_tv.tv_sec && ts->timeout.tv_usec > current_tv.tv_usec) break;
             run_loop_remove_timer(ts);
             ts->process(ts);
         }
