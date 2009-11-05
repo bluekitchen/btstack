@@ -46,7 +46,7 @@
 // temp
 #include "l2cap.h"
 
-#define HCI_CONNECTION_TIMEOUT 10000
+#define HCI_CONNECTION_TIMEOUT_MS 5000
 
 // the STACK is here
 static hci_stack_t       hci_stack;
@@ -70,13 +70,13 @@ static void hci_connection_timeout_handler(timer_t *timer){
     hci_connection_t * connection = linked_item_get_user(&timer->item);
     struct timeval tv;
     gettimeofday(&tv, NULL);
-    if (tv.tv_sec > connection->timestamp.tv_sec + HCI_CONNECTION_TIMEOUT) {
+    if (tv.tv_sec >= connection->timestamp.tv_sec + HCI_CONNECTION_TIMEOUT_MS/1000) {
         // connections might be timed out
         hci_emit_l2cap_check_timeout(connection);
-        run_loop_set_timer(timer, HCI_CONNECTION_TIMEOUT);
+        run_loop_set_timer(timer, HCI_CONNECTION_TIMEOUT_MS);
     } else {
         // next timeout check at
-        timer->timeout.tv_sec = connection->timestamp.tv_sec + HCI_CONNECTION_TIMEOUT;
+        timer->timeout.tv_sec = connection->timestamp.tv_sec + HCI_CONNECTION_TIMEOUT_MS/1000;
     }
     run_loop_add_timer(timer);
 }
@@ -193,7 +193,7 @@ static void event_handler(uint8_t *packet, int size){
                 conn->flags = 0;
                 
                 gettimeofday(&conn->timestamp, NULL);
-                run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT);
+                run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
                 run_loop_add_timer(&conn->timeout);
                 
                 printf("New connection: handle %u, ", conn->con_handle);
