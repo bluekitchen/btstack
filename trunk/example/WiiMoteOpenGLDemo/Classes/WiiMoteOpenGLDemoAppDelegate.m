@@ -67,16 +67,17 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 	float az = z - 128;
 	
 	// mini calib
-	az /= 2;
+	// az /= 2;
 	
-#if 1
+#if 0
 	// normalize vector
 	float length = sqrt( ax*ax + ay*ay + az*az);
 	ax /= length;
 	ay /= length;
 	az /= length;
 #endif
-	
+
+#if 0
 	// cross product between A and (0,0,1) 
 	float crossX = ay;
 	float crossY = -ax;
@@ -94,7 +95,7 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 	int pitch = atan2( 2*(omega*crossX), omega*omega - crossX*crossX - crossY*crossY)* 180 / M_PI;
 	int roll  = atan2( 2*(crossX * crossY), omega*omega + crossX*crossX - crossY*crossY) * 180 / M_PI;
 	int theta = 0;
-	
+#endif	
 #if 0	
 	int roll  = atan2(ax, sqrt(ay*ay+az*az)) * 180 / M_PI; 
 	int pitch = atan2(ay, sqrt(ax*ax+az*az)) * 180 / M_PI;
@@ -104,15 +105,36 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 	}
 #endif
 	
-	if ( (++counter & 15) == 0)
+	// sort axes
+	float h = az;
+	az = -ay;
+	ay = h;
+
+	// calc
+	int roll =  0;
+	int pitch = atan2(ay, az) * 180 / M_PI;
+	int theta = 0;
+	
+	// if ( (++counter & 15) == 0)
 		NSLog(@"BT data: %f %f %f: pitch %i, roll %i, yaw %i", ax , ay ,az, pitch, roll, theta);
 
 #if 1
+	static int lastPitch;
+
+	if (abs(lastPitch - pitch) > 180) {
+		if (pitch > lastPitch) {
+			pitch -= 360;
+		} else {
+			pitch += 360;
+		}
+	}
+	
 	// moving average of size SIZE
 	static int pos = 0;
 	static int historyRoll[SIZE];
 	static int historyPitch[SIZE];
 	static int historyTheta[SIZE];
+	
 	
 	historyRoll[pos] = roll;
 	historyPitch[pos] = pitch;
@@ -130,8 +152,11 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 	roll = roll / SIZE;
 	pitch = pitch / SIZE;
 	theta = theta / SIZE;
+	
+	lastPitch = pitch;
 #endif	
-	[[theMainApp glView] setRotationX:-pitch Y:roll Z:0];
+	// hack 
+	[[theMainApp glView] setRotationX:(-pitch+90) Y:roll Z:0];
 }
 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
