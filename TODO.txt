@@ -2,10 +2,17 @@
 
 NEXT:
 - WiiMote Demo
-  - upside down is not shown correctly
+  - implement roll
+  - video for YouTube
+
 - check/fix BTstack for iPhone 2G
+
 - figure out how to add BTstack logo to Cydia repository list
 - sign BTstack repository
+
+- add news coverage on wiki
+- release notes (features and limits)
+- install instructions with Cydia usage screenshots
 
 == Release Version 0.1
 
