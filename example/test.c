@@ -50,6 +50,7 @@ uint16_t source_cid_interrupt;
 uint16_t source_cid_control;
 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+	
 	bd_addr_t event_addr;
 
 	switch (packet_type) {

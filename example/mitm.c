@@ -60,7 +60,7 @@ hci_con_handle_t alice_handle = 0;
 bd_addr_t temp_addr;
 uint8_t  inquiry_done = 0;
 
-void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
 	hci_con_handle_t acl_in;
 	hci_con_handle_t acl_out;

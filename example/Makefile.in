@@ -3,7 +3,7 @@ LDFLAGS  = @LDFLAGS@ -lBTstack -L../src
 CPPFLAGS = @CPPFLAGS@ -I../include
 prefix = @prefix@
 
-all: test mitm rfcomm
+all: test mitm rfcomm inquiry
 
 test: test.c
 	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
@@ -13,12 +13,16 @@ mitm: mitm.c
 	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
 	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
+inquiry: inquiry.c
+	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
+	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
+
 rfcomm: rfcomm.c
 	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
 	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
 clean:
-	rm -f test mitm rfcomm
+	rm -f test mitm rfcomm inquiry
 	
 install:    
 	echo "nothing to be done"
