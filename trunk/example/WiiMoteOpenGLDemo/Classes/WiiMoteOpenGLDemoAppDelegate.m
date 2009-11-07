@@ -111,21 +111,36 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 	ay = h;
 
 	// calc
-	int roll =  0;
+	int roll =  atan2(ax, ay) * 180 / M_PI;
 	int pitch = atan2(ay, az) * 180 / M_PI;
 	int theta = 0;
 	
+#if 0
+	if (roll >= 90 || roll <= -90) {
+		pitch = 360 - pitch;
+	}
 	// if ( (++counter & 15) == 0)
-		NSLog(@"BT data: %f %f %f: pitch %i, roll %i, yaw %i", ax , ay ,az, pitch, roll, theta);
-
+	// NSLog(@"BT data: %f %f %f: pitch %i, roll %i, yaw %i", ax , ay ,az, pitch, roll, theta);
+#endif
+	pitch = 0;
+	
 #if 1
 	static int lastPitch;
+	static int lastRoll;
 
 	if (abs(lastPitch - pitch) > 180) {
 		if (pitch > lastPitch) {
 			pitch -= 360;
 		} else {
 			pitch += 360;
+		}
+	}
+
+	if (abs(lastRoll - roll) > 180) {
+		if (roll > lastRoll) {
+			roll -= 360;
+		} else {
+			roll += 360;
 		}
 	}
 	
@@ -154,9 +169,10 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 	theta = theta / SIZE;
 	
 	lastPitch = pitch;
+	lastRoll  = roll;
 #endif	
 	// hack 
-	[[theMainApp glView] setRotationX:(-pitch+90) Y:roll Z:0];
+	[[theMainApp glView] setRotationX:(-pitch) Y:roll Z:0];
 }
 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
