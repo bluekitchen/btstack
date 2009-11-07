@@ -67,27 +67,18 @@ int getDeviceIndexForAddress( bd_addr_t addr){
 }
 
 void next(){
+	int i;
+	int found = 0;
+	
 	switch (state) {
-		int i;
-		int found = 0;
 
 		case 0:
 			printf("Starting inquiry scan..\n");
 			bt_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
-			state++;
+			state = 1;
 			break;
 
 		case 1:
-			printf("Inquiry scan done.\n");
-			for (i=0;i<MAX_DEVICES;i++) {
-				// retry remote name request
-				if (devices[i].state == 2) devices[i].state = 1;
-			}
-			state++;
-			next();
-			break;
-
-		case 2:
 			for (i=0;i<deviceCount;i++) {
 				// remote name request
 				if (devices[i].state == 1){
@@ -102,6 +93,7 @@ void next(){
 				}
 			}
 			if (!found) {
+				printf("Queried all devices, restart.\n");
 				state = 0;
 				next();
 			}
@@ -114,6 +106,8 @@ void next(){
 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	bd_addr_t addr;
+	int i;
+	int numResponses;
 	
 	switch (packet_type){
 
@@ -130,9 +124,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					
 				case HCI_EVENT_INQUIRY_RESULT:
 				case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
-				{
-					int numResponses = packet[2];
-					int i;
+					numResponses = packet[2];
 					for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
 						bt_flip_addr(addr, &packet[3+i*6]);
 						int index = getDeviceIndexForAddress(addr);
@@ -149,7 +141,6 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						deviceCount++;
 					}
 					break;
-				}
 					
 				case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
 					bt_flip_addr(addr, &packet[3]);
@@ -166,6 +157,12 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					break;
 					
 				case HCI_EVENT_INQUIRY_COMPLETE:
+					printf("Inquiry scan done.\n");
+					for (i=0;i<deviceCount;i++) {
+						// retry remote name request
+						if (devices[i].state == 2)
+							devices[i].state = 1;
+					}
 					next();
 					break;
 					
