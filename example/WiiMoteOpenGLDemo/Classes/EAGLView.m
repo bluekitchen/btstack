@@ -163,6 +163,7 @@
 	glRotatef(rotateX, 1.0f, 0.0f, 0.0f);
 	glRotatef(rotateY, 0.0f, 1.0f, 0.0f);
 	glRotatef(rotateZ, 0.0f, 0.0f, 1.0f);
+	// glRotatef(1.0f, rotateX, rotateY, rotateZ);
 #else
 	rota += 1;
 	glRotatef(rota, 0.0, 0.5, 0.0);
