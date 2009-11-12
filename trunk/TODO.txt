@@ -1,21 +1,10 @@
 /* new todo file for BTstack */
 
+2009-11-08: Release 0.1
+
 NEXT:
-- WiiMote Demo
-  - implement roll
-  - video for YouTube
-
-- check/fix BTstack for iPhone 2G
-
 - figure out how to add BTstack logo to Cydia repository list
 - sign BTstack repository
-
-- add news coverage on wiki
-- release notes (features and limits)
-- install instructions with Cydia usage screenshots
-
-== Release Version 0.1
-
 - figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect,
   when phone gets locked
   - some trick

@@ -28,6 +28,7 @@
 		9C7ECB840FCC85650085DAC5 /* bt_control_iphone.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7ECB820FCC85650085DAC5 /* bt_control_iphone.c */; };
 		9C7ECBB50FCC95DD0085DAC5 /* hci_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7ECBB40FCC95DD0085DAC5 /* hci_dump.c */; };
 		9C88500E0FBF6702004980E4 /* l2cap.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C88500C0FBF6702004980E4 /* l2cap.c */; };
+		9CAA573710A5D87400D0E1A9 /* inquiry.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CAA573610A5D87400D0E1A9 /* inquiry.c */; };
 		9CC813A20FFC0774002816F9 /* btstack.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CC813A10FFC0774002816F9 /* btstack.c */; };
 		9CC813A50FFC0A51002816F9 /* daemon.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CC813A40FFC0A51002816F9 /* daemon.c */; };
 		9CCE6CEA1025BD0000FCE9F4 /* hci.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC340FA906F700ABEF05 /* hci.c */; };
@@ -94,6 +95,7 @@
 		9C88500D0FBF6702004980E4 /* l2cap.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = l2cap.h; path = src/l2cap.h; sourceTree = "<group>"; };
 		9C994B8E106BEEB700C70311 /* rfcomm.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = rfcomm.c; path = example/rfcomm.c; sourceTree = "<group>"; };
 		9CA3C0900FB8B3C4005F48DE /* TODO.txt */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = TODO.txt; sourceTree = "<group>"; };
+		9CAA573610A5D87400D0E1A9 /* inquiry.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = inquiry.c; path = example/inquiry.c; sourceTree = "<group>"; };
 		9CBE154810A354FF00597802 /* package.sh */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text.script.sh; path = package.sh; sourceTree = "<group>"; };
 		9CC152C61009052100223347 /* config.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
 		9CC813A10FFC0774002816F9 /* btstack.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = btstack.c; path = src/btstack.c; sourceTree = "<group>"; };
@@ -235,6 +237,7 @@
 		9C7B5B81100D04520065D87E /* Example */ = {
 			isa = PBXGroup;
 			children = (
+				9CAA573610A5D87400D0E1A9 /* inquiry.c */,
 				9C994B8E106BEEB700C70311 /* rfcomm.c */,
 				9C1813F71042FCCA00C68F09 /* mitm.c */,
 				9C7B5B7E100D04450065D87E /* test.c */,
@@ -338,6 +341,7 @@
 				9CEB4F17107AAAEF00DD5720 /* run_loop_posix.c in Sources */,
 				9C04B826107D1CED002A63D0 /* run_loop.c in Sources */,
 				9C04B876107D2B7C002A63D0 /* run_loop_cocoa.m in Sources */,
+				9CAA573710A5D87400D0E1A9 /* inquiry.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

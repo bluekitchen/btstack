@@ -16,7 +16,7 @@
 		9C0D06391091035200FC3BBA /* BTDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C0D06361091035200FC3BBA /* BTDevice.m */; };
 		9C0D063A1091035200FC3BBA /* BTInquiryViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C0D06381091035200FC3BBA /* BTInquiryViewController.m */; };
 		9C0D070D1092316D00FC3BBA /* EAGLViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C0D070C1092316D00FC3BBA /* EAGLViewController.m */; };
-		9C180042108B95B000824BE7 /* libBTstack.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C180041108B95B000824BE7 /* libBTstack.dylib */; };
+		9C3BBA8310ACAEE9003464E1 /* libBTstack.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C3BBA8210ACAEE9003464E1 /* libBTstack.dylib */; };
 		9C6BB62E1027911E00A0BCB0 /* wiimote_texture.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C6BB62D1027911E00A0BCB0 /* wiimote_texture.png */; };
 		9CB96E9810278945002663D0 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9CB96E9710278945002663D0 /* CoreGraphics.framework */; };
 		9CB96EEF10278D8D002663D0 /* EAGLView.m in Sources */ = {isa = PBXBuildFile; fileRef = 28FD14FD0DC6FC130079059D /* EAGLView.m */; };
@@ -47,7 +47,7 @@
 		9C18001D108B94FB00824BE7 /* linked_list.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; path = linked_list.h; sourceTree = "<group>"; };
 		9C18001E108B94FB00824BE7 /* run_loop.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; path = run_loop.h; sourceTree = "<group>"; };
 		9C18001F108B94FB00824BE7 /* utils.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; path = utils.h; sourceTree = "<group>"; };
-		9C180041108B95B000824BE7 /* libBTstack.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libBTstack.dylib; path = ../../src/libBTstack.dylib; sourceTree = SOURCE_ROOT; };
+		9C3BBA8210ACAEE9003464E1 /* libBTstack.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libBTstack.dylib; path = /usr/local/lib/libBTstack.dylib; sourceTree = "<absolute>"; };
 		9C6BB62D1027911E00A0BCB0 /* wiimote_texture.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = wiimote_texture.png; sourceTree = "<group>"; };
 		9CB96E9710278945002663D0 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		9CC8B5E41093727700BCBA1F /* wiimote_logo_55px.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = wiimote_logo_55px.png; sourceTree = "<group>"; };
@@ -63,7 +63,7 @@
 				28FD15000DC6FC520079059D /* OpenGLES.framework in Frameworks */,
 				28FD15080DC6FC5B0079059D /* QuartzCore.framework in Frameworks */,
 				9CB96E9810278945002663D0 /* CoreGraphics.framework in Frameworks */,
-				9C180042108B95B000824BE7 /* libBTstack.dylib in Frameworks */,
+				9C3BBA8310ACAEE9003464E1 /* libBTstack.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -94,7 +94,7 @@
 		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
 			isa = PBXGroup;
 			children = (
-				9C180041108B95B000824BE7 /* libBTstack.dylib */,
+				9C3BBA8210ACAEE9003464E1 /* libBTstack.dylib */,
 				9C18001A108B94FB00824BE7 /* btstack */,
 				9CCE6DC71025E0A600FCE9F4 /* BTstack */,
 				080E96DDFE201D6D7F000001 /* Classes */,
@@ -241,11 +241,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = WiiMoteOpenGLDemo_Prefix.pch;
 				INFOPLIST_FILE = Info.plist;
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SRCROOT)/../btstack/src\"",
-					"\"$(SRCROOT)/../../src\"",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				PRODUCT_NAME = WiiMoteOpenGLDemo;
 			};
 			name = Debug;
@@ -282,6 +278,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "-I/Projects/iPhone/btstack/include";
 				OTHER_CPLUSPLUSFLAGS = "";
+				OTHER_LDFLAGS = "-L/usr/local/lib";
 				PREBINDING = NO;
 				SDKROOT = iphoneos2.0;
 				USER_HEADER_SEARCH_PATHS = "";
@@ -298,6 +295,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				OTHER_CFLAGS = "-I/Projects/iPhone/btstack/include";
 				OTHER_CPLUSPLUSFLAGS = "";
+				OTHER_LDFLAGS = "-L/usr/local/lib";
 				PREBINDING = NO;
 				SDKROOT = iphoneos2.0;
 				USER_HEADER_SEARCH_PATHS = "";
