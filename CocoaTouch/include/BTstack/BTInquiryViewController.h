@@ -63,7 +63,9 @@ typedef enum {
 	// hacks
 	bool stopRemoteNameGathering;
 	bool restartInquiry;
+	BTDevice *remoteNameDevice; // device for which remote name request is pending
 	BTDevice *remoteDevice;
+	bool notifyDelegateOnInquiryStopped;
 }
 
 - (void) startInquiry;
@@ -79,4 +81,5 @@ typedef enum {
 @protocol BTInquiryDelegate
 - (void) deviceChoosen:(BTInquiryViewController *) inqView device:(BTDevice*) device;
 - (void) deviceDetected:(BTInquiryViewController *) inqView device:(BTDevice*) device;
+- (void) inquiryStopped;
 @end

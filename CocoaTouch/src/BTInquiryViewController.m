@@ -49,7 +49,7 @@ static uint8_t remoteNameIndex;
 @interface BTInquiryViewController (private) 
 - (void) handlePacket:(uint8_t) packet_type channel:(uint16_t) channel packet:(uint8_t*) packet size:(uint16_t) size;
 - (BTDevice *) getDeviceForAddress:(bd_addr_t *)addr;
-- (bool) getNextRemoteName;
+- (void) getNextRemoteName;
 - (void) startInquiry;
 @end
 
@@ -72,6 +72,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	allowSelection = false;
 	remoteDevice = nil;
 	restartInquiry = true;
+	notifyDelegateOnInquiryStopped = false;
 	
 	macAddressFont = [UIFont fontWithName:@"Courier New" size:[UIFont labelFontSize]];
 	deviceNameFont = [UIFont boldSystemFontOfSize:[UIFont labelFontSize]];
@@ -176,19 +177,42 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					break;
 										
 				case HCI_EVENT_COMMAND_COMPLETE:
+					if (COMMAND_COMPLETE_EVENT(packet, hci_inquiry_cancel)){
+						// inquiry canceled
+						NSLog(@"Inquiry cancelled successfully");
+						inquiryState = kInquiryInactive;
+						[[self tableView] reloadData];
+						if (notifyDelegateOnInquiryStopped){
+							notifyDelegateOnInquiryStopped = false;
+							if (delegate) {
+								[delegate inquiryStopped];
+							}
+						}
+					}
+					if (COMMAND_COMPLETE_EVENT(packet, hci_remote_name_request_cancel)){
+						// inquiry canceled
+						NSLog(@"Remote name request cancelled successfully");
+						inquiryState = kInquiryInactive;
+						[[self tableView] reloadData];
+						if (notifyDelegateOnInquiryStopped){
+							notifyDelegateOnInquiryStopped = false;
+							if (delegate) {
+								[delegate inquiryStopped];
+							}
+						}
+					}
+					
+					break;
+					
+				case HCI_EVENT_INQUIRY_COMPLETE:
+					NSLog(@"Inquiry complete");
+					// reset name check
+					remoteNameIndex = 0;
+					[self getNextRemoteName];
 					break;
 					
 				default:
-					// Inquiry done
-					if (packet[0] == HCI_EVENT_INQUIRY_COMPLETE || COMMAND_COMPLETE_EVENT(packet, hci_inquiry_cancel)){
-						NSLog(@"Inquiry stopped");
-						if (inquiryState == kInquiryActive){
-							remoteNameIndex = 0;
-							stopRemoteNameGathering = false;
-							[self getNextRemoteName];
-						}
-						break;
-					}
+					break;
 					
 					// hexdump(packet, size);
 					break;
@@ -212,20 +236,35 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	return nil;
 }
 
-- (bool) getNextRemoteName{
-	BTDevice *remoteDev = nil;
+- (void) getNextRemoteName{
+	
+	// stopped?
+	if (stopRemoteNameGathering) {
+		inquiryState = kInquiryInactive;
+		[[self tableView] reloadData];
 		
-	for (remoteNameIndex = 0; !stopRemoteNameGathering && remoteNameIndex < [devices count]; remoteNameIndex++){
+		if (notifyDelegateOnInquiryStopped){
+			notifyDelegateOnInquiryStopped = false;
+			if (delegate) {
+				[delegate inquiryStopped];
+			}
+		}
+		return;
+	}
+	
+	remoteNameDevice = nil;
+		
+	for (remoteNameIndex = 0; remoteNameIndex < [devices count]; remoteNameIndex++){
 		BTDevice *dev = [devices objectAtIndex:remoteNameIndex];
 		if (![dev name]){
-			remoteDev = dev;
+			remoteNameDevice = dev;
 			break;
 		}
 	}
-	if (remoteDev) {
+	if (remoteNameDevice) {
 		inquiryState = kInquiryRemoteName;
-		[remoteDev setConnectionState:kBluetoothConnectionRemoteName];
-		bt_send_cmd(&hci_remote_name_request, [remoteDev address], [remoteDev pageScanRepetitionMode], 0, [remoteDev clockOffset] | 0x8000);
+		[remoteNameDevice setConnectionState:kBluetoothConnectionRemoteName];
+		bt_send_cmd(&hci_remote_name_request, [remoteNameDevice address], [remoteNameDevice pageScanRepetitionMode], 0, [remoteNameDevice clockOffset] | 0x8000);
 	} else  {
 		inquiryState = kInquiryInactive;
 		// inquiry done.
@@ -234,8 +273,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		}
 	}
 	[[self tableView] reloadData];
-	
-	return remoteDev;
 }
 
 - (void) startInquiry {
@@ -247,24 +284,42 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	bluetoothState = HCI_STATE_INITIALIZING;
 	[[self tableView] reloadData];
 
+	stopRemoteNameGathering = false;
+	restartInquiry = true;
+	
 	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
 }
 
 - (void) stopInquiry {
+	
+	NSLog(@"stop inquiry called, state %u", inquiryState);
+	restartInquiry = false;
+	stopRemoteNameGathering = true;
+	bool immediateNotify = true;
+	
 	switch (inquiryState) {
 		case kInquiryActive:
 			// just stop inquiry 
+			immediateNotify = false;
 			bt_send_cmd(&hci_inquiry_cancel);
 			break;
 		case kInquiryInactive:
 			NSLog(@"stop inquiry called although inquiry inactive?");
 			break;
 		case kInquiryRemoteName:
-			stopRemoteNameGathering = true;
-			restartInquiry = false;
+			if (remoteNameDevice) {
+				// just stop remote name request 
+				immediateNotify = false;
+				bt_send_cmd(&hci_remote_name_request_cancel, [remoteNameDevice address]);
+			}
 			break;
 		default:
 			break;
+	}
+	if (immediateNotify && delegate){
+		[delegate inquiryStopped];
+	} else {
+		notifyDelegateOnInquiryStopped = true;
 	}
 }
 
@@ -429,8 +484,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	
 	// valid selection?
 	int idx = [indexPath indexAtPosition:1];
-	if (bluetoothState == HCI_STATE_WORKING && inquiryState == kInquiryInactive && idx < [devices count]){
-//		if (delegate && [delegate conformsTo:@protocol(BTInquiryDelegate)]){
+	if (bluetoothState == HCI_STATE_WORKING && idx < [devices count]){
 	if (delegate) {
 		[delegate deviceChoosen:self device:[devices objectAtIndex:idx]];
 		}
