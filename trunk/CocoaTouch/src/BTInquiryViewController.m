@@ -64,12 +64,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 @synthesize devices;
 @synthesize delegate;
 @synthesize allowSelection;
+@synthesize showIcons;
 
 - (id) init {
 	self = [super initWithStyle:UITableViewStyleGrouped];
 	bluetoothState = HCI_STATE_OFF;
 	inquiryState = kInquiryInactive;
 	allowSelection = false;
+	showIcons = false;
 	remoteDevice = nil;
 	restartInquiry = true;
 	notifyDelegateOnInquiryStopped = false;
@@ -470,6 +472,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			cell.font = deviceNameFont;
 		} else {
 			cell.font = macAddressFont;
+		}
+		// pick an icon for the devices
+		if (showIcons) {
+			int major = ([dev classOfDevice] & 0x1f00) >> 8;
+			if (major == 0x01) {
+				cell.image = [UIImage imageNamed:@"computer.png"];
+			} else if (major == 0x02) {
+				cell.image = [UIImage imageNamed:@"smartphone.png"];
+			} else if ( major == 0x05 && ([dev classOfDevice] & 0xff) == 0x40){ 
+				cell.image = [UIImage imageNamed:@"keyboard.png"];
+			} else {
+				cell.image = [UIImage imageNamed:@"bluetooth.png"];
+			}
 		}
 		switch ([dev connectionState]) {
 			case kBluetoothConnectionNotConnected:
