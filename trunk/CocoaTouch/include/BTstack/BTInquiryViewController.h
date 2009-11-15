@@ -64,7 +64,8 @@ typedef enum {
 	bool stopRemoteNameGathering;
 	bool restartInquiry;
 	BTDevice *remoteNameDevice; // device for which remote name request is pending
-	BTDevice *remoteDevice;
+	BTDevice *remoteDevice;     // device for which connection is pending
+	BTDevice *connectedDevice;  // device to which we're connected
 	bool notifyDelegateOnInquiryStopped;
 }
 
@@ -72,6 +73,7 @@ typedef enum {
 - (void) stopInquiry;
 
 - (void) showConnecting:(BTDevice *) device;
+- (void) showConnected:(BTDevice *) device;
 
 @property (nonatomic, assign) bool allowSelection;
 @property (nonatomic, retain) NSMutableArray *devices;
@@ -81,5 +83,6 @@ typedef enum {
 @protocol BTInquiryDelegate
 - (void) deviceChoosen:(BTInquiryViewController *) inqView device:(BTDevice*) device;
 - (void) deviceDetected:(BTInquiryViewController *) inqView device:(BTDevice*) device;
+- (void) disconnectDevice:(BTInquiryViewController *) inqView device:(BTDevice*) device;
 - (void) inquiryStopped;
 @end

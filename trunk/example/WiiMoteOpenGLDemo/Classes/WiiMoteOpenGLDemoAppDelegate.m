@@ -348,6 +348,9 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	NSLog(@"inquiryStopped");
 }
 
+- (void) disconnectDevice:(BTInquiryViewController *) inqView device:(BTDevice*) selectedDevice {
+}
+
 - (void)applicationWillTerminate:(UIApplication *)application {
 	// disconnect
 	if (wiiMoteConHandle) {
