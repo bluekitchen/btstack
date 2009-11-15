@@ -93,6 +93,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		return;
 	}
 	NSLog(@"Inquiry started");
+
+	stopRemoteNameGathering = false;
+	restartInquiry = true;
+
 	inquiryState = kInquiryActive;
 	[[self tableView] reloadData];
 	
@@ -328,6 +332,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	[[self tableView] reloadData];
 }
 
+- (void) showConnected:(BTDevice *) device {
+	connectedDevice = device;
+	[[self tableView] reloadData];
+}
+
 /*
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -427,7 +436,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			label = @"Bluetooth not accessible!";
 			cell.accessoryView = nil;
 		} else {
-			if (remoteDevice) {
+			if (connectedDevice) {
+				label = @"Disconnect";
+				cell.accessoryView = nil;
+			} else if (remoteDevice) {
 				label = @"Connecting...";
 				cell.accessoryView = bluetoothActivity;
 			} else {
@@ -484,9 +496,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	
 	// valid selection?
 	int idx = [indexPath indexAtPosition:1];
-	if (bluetoothState == HCI_STATE_WORKING && idx < [devices count]){
-	if (delegate) {
-		[delegate deviceChoosen:self device:[devices objectAtIndex:idx]];
+	if (bluetoothState == HCI_STATE_WORKING) {
+		if (delegate) {
+			if (idx < [devices count]){
+				[delegate deviceChoosen:self device:[devices objectAtIndex:idx]];
+			} else if (idx == [devices count]) {
+				if (connectedDevice) {
+					// DISCONNECT button 
+					[delegate disconnectDevice:self device:connectedDevice];
+				} else {
+					// Find more devices
+					[self myStartInquiry];
+				}
+			}
 		}
 	} else {
 		[tableView deselectRowAtIndexPath:indexPath animated:TRUE];
