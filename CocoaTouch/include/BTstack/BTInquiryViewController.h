@@ -59,6 +59,7 @@ typedef enum {
 	UIFont * macAddressFont;
 	id<BTInquiryDelegate> delegate;
 	bool allowSelection;
+	bool showIcons;
 	
 	// hacks
 	bool stopRemoteNameGathering;
@@ -76,6 +77,7 @@ typedef enum {
 - (void) showConnected:(BTDevice *) device;
 
 @property (nonatomic, assign) bool allowSelection;
+@property (nonatomic, assign) bool showIcons;
 @property (nonatomic, retain) NSMutableArray *devices;
 @property (nonatomic, retain) id<BTInquiryDelegate> delegate;
 @end
