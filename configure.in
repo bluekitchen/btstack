@@ -67,9 +67,13 @@ case "$host_os" in
         RUN_LOOP_SOURCES="$RUN_LOOP_SOURCES run_loop_cocoa.m"
         LDFLAGS="$LDFLAGS -framework CoreFoundation"
         USE_COCOA_RUN_LOOP="yes"
+        BTSTACK_LIB_LDFLAGS="-dynamiclib -install_name \$(prefix)/lib/libBTstack.dylib"
+        BTSTACK_LIB_EXTENSION="dylib"
         ;;
     *)
         USE_COCOA_RUN_LOOP="no"
+        BTSTACK_LIB_LDFLAGS="-shared -Wl,-rpath,\$(prefix)/lib"
+        BTSTACK_LIB_EXTENSION="so"
     ;;
 esac
         
@@ -180,4 +184,6 @@ AC_SUBST(USE_LDID)
 AC_SUBST(USB_SOURCES)
 AC_SUBST(SPRINGBOARD_ACCESS_SOURCES)
 AC_SUBST(RUN_LOOP_SOURCES)
+AC_SUBST(BTSTACK_LIB_LDFLAGS)
+AC_SUBST(BTSTACK_LIB_EXTENSION)
 AC_OUTPUT(Makefile src/Makefile example/Makefile SpringBoardAccess/Makefile)

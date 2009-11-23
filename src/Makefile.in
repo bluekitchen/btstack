@@ -1,7 +1,10 @@
+prefix =   @prefix@
+
 CC = @CC@
 LDFLAGS  = @LDFLAGS@
 CPPFLAGS = @CPPFLAGS@ -I../include
-prefix = @prefix@
+BTSTACK_LIB_LDFLAGS = @BTSTACK_LIB_LDFLAGS@
+BTSTACK_LIB_EXTENSION = @BTSTACK_LIB_EXTENSION@
 
 springboard_access_sources = @SPRINGBOARD_ACCESS_SOURCES@
 usb_sources = @USB_SOURCES@
@@ -21,10 +24,10 @@ BTdaemon_SOURCES =  $(libBTstack_SOURCES) \
     platform_iphone.c       \
     $(springboard_access_sources)
 
-all: libBTstack.dylib libBTstack.a BTdaemon
+all: libBTstack.$(BTSTACK_LIB_EXTENSION) libBTstack.a BTdaemon
 
-libBTstack.dylib: $(libBTstack_SOURCES)
-		$(CC) $(CPPFLAGS) -dynamiclib -install_name $(prefix)/lib/$@ -o $@ $(libBTstack_SOURCES) $(LDFLAGS)
+libBTstack.$(BTSTACK_LIB_EXTENSION): $(libBTstack_SOURCES)
+		$(CC) $(CPPFLAGS) $(BTSTACK_LIB_LDFLAGS) -o $@ $(libBTstack_SOURCES) $(LDFLAGS)
 		@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
 libBTstack.a: $(libBTstack_SOURCES:.c=.o)
