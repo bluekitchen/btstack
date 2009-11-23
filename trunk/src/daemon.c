@@ -274,16 +274,12 @@ int main (int argc, const char * argv[]){
     signal(SIGINT, daemon_sigint_handler);
     // handle SIGTERM - suggested for launchd
     signal(SIGTERM, daemon_sigint_handler);
-#if 0
-    // avoid crashing on closed socket
-    signal(SIGPIPE, daemon_sigpipe_handler);
-#else  0
+    // handle SIGPIPE
     struct sigaction act;
     act.sa_handler = SIG_IGN;
     sigemptyset (&act.sa_mask);
     act.sa_flags = 0;
     sigaction (SIGPIPE, &act, NULL);
-#endif
 
     // make stderr unbuffered
     setbuf(stderr, NULL);
