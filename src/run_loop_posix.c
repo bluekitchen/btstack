@@ -63,10 +63,10 @@ int posix_remove_data_source(data_source_t *ds){
 /**
  * Add timer to run_loop (keep list sorted)
  */
-void posix_add_timer(timer_t *ts){
+void posix_add_timer(timer_source_t *ts){
     linked_item_t *it;
     for (it = (linked_item_t *) &timers; it->next ; it = it->next){
-        if (run_loop_timer_compare( (timer_t *) it->next, ts) >= 0) {
+        if (run_loop_timer_compare( (timer_source_t *) it->next, ts) >= 0) {
             break;
         }
     }
@@ -79,7 +79,7 @@ void posix_add_timer(timer_t *ts){
 /**
  * Remove timer from run loop
  */
-int posix_remove_timer(timer_t *ts){
+int posix_remove_timer(timer_source_t *ts){
     // printf("Removed timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
     return linked_list_remove(&timers, (linked_item_t *) ts);
 }
@@ -88,7 +88,7 @@ void posix_dump_timer(){
     linked_item_t *it;
     int i = 0;
     for (it = (linked_item_t *) timers; it ; it = it->next){
-        timer_t *ts = (timer_t*) it;
+        timer_source_t *ts = (timer_source_t*) it;
         printf("timer %u, timeout %u\n", i, (unsigned int) ts->timeout.tv_sec);
     }
 }
@@ -99,7 +99,7 @@ void posix_dump_timer(){
 void posix_execute() {
     fd_set descriptors;
     data_source_t *ds;
-    timer_t       *ts;
+    timer_source_t       *ts;
     struct timeval current_tv;
     struct timeval next_tv;
     struct timeval *timeout;
@@ -122,7 +122,7 @@ void posix_execute() {
         timeout = NULL;
         if (timers) {
             gettimeofday(&current_tv, NULL);
-            ts = (timer_t *) timers;
+            ts = (timer_source_t *) timers;
             next_tv.tv_usec = ts->timeout.tv_usec - current_tv.tv_usec;
             next_tv.tv_sec  = ts->timeout.tv_sec  - current_tv.tv_sec;
             while (next_tv.tv_usec < 0){
@@ -152,7 +152,7 @@ void posix_execute() {
         // pre: 0 <= tv_usec < 1000000
         while (timers) {
             gettimeofday(&current_tv, NULL);
-            ts = (timer_t *) timers;
+            ts = (timer_source_t *) timers;
             if (ts->timeout.tv_sec  > current_tv.tv_sec) break;
             if (ts->timeout.tv_sec == current_tv.tv_sec && ts->timeout.tv_usec > current_tv.tv_usec) break;
             run_loop_remove_timer(ts);

@@ -56,23 +56,23 @@ typedef struct timer {
     linked_item_t item; 
     struct timeval timeout;                             // <-- next timeout
     void  (*process)(struct timer *ts);                 // <-- do processing
-} timer_t;
+} timer_source_t;
 
 // init must be called before any other run_loop call
 void run_loop_init(RUN_LOOP_TYPE type);
 
 // set timer based on current time
-void run_loop_set_timer(timer_t *a, int timeout_in_ms);
+void run_loop_set_timer(timer_source_t *a, int timeout_in_ms);
 
 // compare timeval or timers - NULL is assumed to be before the Big Bang
 int run_loop_timeval_compare(struct timeval *a, struct timeval *b);
-int run_loop_timer_compare(timer_t *a, timer_t *b);
+int run_loop_timer_compare(timer_source_t *a, timer_source_t *b);
 
 void run_loop_add_data_source(data_source_t *dataSource);     // <-- add DataSource to RunLoop
 int  run_loop_remove_data_source(data_source_t *dataSource);  // <-- remove DataSource from RunLoop
 
-void run_loop_add_timer(timer_t *timer);                // <-- add Timer to RunLoop
-int  run_loop_remove_timer(timer_t *timer);             // <-- remove Timer from RunLoop
+void run_loop_add_timer(timer_source_t *timer);                // <-- add Timer to RunLoop
+int  run_loop_remove_timer(timer_source_t *timer);             // <-- remove Timer from RunLoop
 
 void run_loop_execute();                                // <-- execute configured RunLoop
 
@@ -84,8 +84,8 @@ typedef struct {
 	void (*init)();
 	void (*add_data_source)(data_source_t *dataSource);
 	int  (*remove_data_source)(data_source_t *dataSource);
-	void (*add_timer)(timer_t *timer);
-	int  (*remove_timer)(timer_t *timer); 
+	void (*add_timer)(timer_source_t *timer);
+	int  (*remove_timer)(timer_source_t *timer); 
 	void (*execute)();
 	void (*dump_timer)();
 } run_loop_t;

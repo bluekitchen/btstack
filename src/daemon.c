@@ -75,7 +75,7 @@
 static hci_transport_t * transport;
 static hci_uart_config_t config;
 
-static timer_t timeout;
+static timer_source_t timeout;
 
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
     printf("Bluetooth status: %u\n", state);
