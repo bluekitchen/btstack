@@ -126,7 +126,7 @@ typedef struct {
     hci_connection_flags_t flags;
     
     // timer
-    timer_t timeout;
+    timer_source_t timeout;
     struct timeval timestamp;
 
 } hci_connection_t;

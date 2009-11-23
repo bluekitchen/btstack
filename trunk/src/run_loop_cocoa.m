@@ -87,13 +87,13 @@ int  cocoa_remove_data_source(data_source_t *dataSource){
 	return 0;
 }
 
-void  cocoa_add_timer(timer_t * ts){
+void  cocoa_add_timer(timer_source_t * ts){
 	// not needed yet
    fprintf(stderr, "WARNING: run_loop_add_timer not implemented yet!");
     // warning never the less
 }
 
-int  cocoa_remove_timer(timer_t * ts){
+int  cocoa_remove_timer(timer_source_t * ts){
 	// not needed yet
     fprintf(stderr, "WARNING: run_loop_remove_timer not implemented yet!");
     // warning never the less

@@ -66,7 +66,7 @@ static hci_connection_t * connection_for_handle(hci_con_handle_t con_handle){
     return NULL;
 }
 
-static void hci_connection_timeout_handler(timer_t *timer){
+static void hci_connection_timeout_handler(timer_source_t *timer){
     hci_connection_t * connection = linked_item_get_user(&timer->item);
     struct timeval tv;
     gettimeofday(&tv, NULL);

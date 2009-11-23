@@ -78,7 +78,7 @@ int run_loop_remove_data_source(data_source_t *ds){
 /**
  * Add timer to run_loop (keep list sorted)
  */
-void run_loop_add_timer(timer_t *ts){
+void run_loop_add_timer(timer_source_t *ts){
     run_loop_assert();
     the_run_loop->add_timer(ts);
 }
@@ -86,7 +86,7 @@ void run_loop_add_timer(timer_t *ts){
 /**
  * Remove timer from run loop
  */
-int run_loop_remove_timer(timer_t *ts){
+int run_loop_remove_timer(timer_source_t *ts){
     run_loop_assert();
     return the_run_loop->remove_timer(ts);
 }
@@ -128,7 +128,7 @@ void run_loop_init(RUN_LOOP_TYPE type){
 }
 
 // set timer
-void run_loop_set_timer(timer_t *a, int timeout_in_ms){
+void run_loop_set_timer(timer_source_t *a, int timeout_in_ms){
     gettimeofday(&a->timeout, NULL);
     a->timeout.tv_sec  += timeout_in_ms / 1000;
     a->timeout.tv_usec += (timeout_in_ms % 1000) * 1000;
@@ -165,7 +165,7 @@ int run_loop_timeval_compare(struct timeval *a, struct timeval *b){
 
 // compare timers - NULL is assumed to be before the Big Bang
 // pre: 0 <= tv_usec < 1000000
-int run_loop_timer_compare(timer_t *a, timer_t *b){
+int run_loop_timer_compare(timer_source_t *a, timer_source_t *b){
     if (!a && !b) return 0;
     if (!a) return -1;
     if (!b) return 1;
