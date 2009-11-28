@@ -218,7 +218,7 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
                             channel->dest_cid = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET);
                             channel->sig_id = l2cap_next_sig_id();
                             l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->dest_cid, 0, 4, &config_options);
-                            channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP;
+                            channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ;
                             break;
                         case 1:
                             // connection pending. get some coffee
@@ -235,11 +235,19 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
                     break;
             }
             break;
-            
-        case L2CAP_STATE_WAIT_CONFIG_REQ_RSP:
+
+        case L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ:
             switch (code) {
                 case CONFIGURE_RESPONSE:
                     channel->state = L2CAP_STATE_WAIT_CONFIG_REQ;
+                    break;
+                case CONFIGURE_REQUEST:
+                    // accept the other's configuration options
+                    l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, identifier, channel->dest_cid, 0, 0, size - 16, &packet[16]);
+                    channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP;
+                    break;
+                default:
+                    //@TODO: implement other signaling packets
                     break;
             }
             break;
@@ -247,12 +255,25 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
         case L2CAP_STATE_WAIT_CONFIG_REQ:
             switch (code) {
                 case CONFIGURE_REQUEST:
-                    
                     // accept the other's configuration options
                     l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, identifier, channel->dest_cid, 0, 0, size - 16, &packet[16]);
-                    
                     channel->state = L2CAP_STATE_OPEN;
                     l2cap_emit_channel_opened(channel, 0);  // success
+                    break;
+                default:
+                    //@TODO: implement other signaling packets
+                    break;
+            }
+            break;
+            
+        case L2CAP_STATE_WAIT_CONFIG_REQ_RSP:
+            switch (code) {
+                case CONFIGURE_RESPONSE:
+                    channel->state = L2CAP_STATE_OPEN;
+                    l2cap_emit_channel_opened(channel, 0);  // success
+                    break;
+                default:
+                    //@TODO: implement other signaling packets
                     break;
             }
             break;
@@ -262,7 +283,13 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
                 case DISCONNECTION_RESPONSE:
                     l2cap_finialize_channel_close(channel);
                     break;
+                default:
+                    //@TODO: implement other signaling packets
+                    break;
             }
+            break;
+        default:
+            //@TODO: implement other signaling packets
             break;
     }
 }
