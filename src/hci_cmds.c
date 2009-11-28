@@ -170,6 +170,10 @@ hci_cmd_t hci_pin_code_request_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x0d), "B1P"
 // BD_ADDR, pin length, PIN: c-string
 };
+hci_cmd_t hci_authentication_requested = {
+OPCODE(OGF_LINK_CONTROL, 0x11), "H"
+// Handle
+};
 hci_cmd_t hci_remote_name_request = {
 OPCODE(OGF_LINK_CONTROL, 0x19), "B112"
 // BD_ADDR, Page_Scan_Repetition_Mode, Reserved, Clock_Offset

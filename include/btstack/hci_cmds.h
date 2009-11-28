@@ -165,6 +165,7 @@ extern hci_cmd_t hci_inquiry;
 extern hci_cmd_t hci_inquiry_cancel;
 extern hci_cmd_t hci_link_key_request_negative_reply;
 extern hci_cmd_t hci_pin_code_request_reply;
+extern hci_cmd_t hci_authentication_requested;
 extern hci_cmd_t hci_set_event_mask;
 extern hci_cmd_t hci_reset;
 extern hci_cmd_t hci_create_connection;
