@@ -198,6 +198,11 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
     (*event_packet_handler)(packet, size);
 }
 
+static l2cap_handle_disconnect_request(l2cap_channel_t *channel, uint16_t identifier){
+    l2cap_send_signaling_packet( channel->handle, DISCONNECTION_RESPONSE, identifier, channel->dest_cid, channel->source_cid);   
+    l2cap_finialize_channel_close(channel);
+}
+
 void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t size){
     
     static uint8_t config_options[] = { 1, 2, 150, 0}; // mtu = 48 
@@ -229,7 +234,11 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
                             break;
                     }
                     break;
-
+                    
+                case DISCONNECTION_REQUEST:
+                    l2cap_handle_disconnect_request(channel, identifier);
+                    break;
+                    
                 default:
                     //@TODO: implement other signaling packets
                     break;
@@ -246,6 +255,9 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
                     l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, identifier, channel->dest_cid, 0, 0, size - 16, &packet[16]);
                     channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP;
                     break;
+                case DISCONNECTION_REQUEST:
+                    l2cap_handle_disconnect_request(channel, identifier);
+                    break;
                 default:
                     //@TODO: implement other signaling packets
                     break;
@@ -260,6 +272,9 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
                     channel->state = L2CAP_STATE_OPEN;
                     l2cap_emit_channel_opened(channel, 0);  // success
                     break;
+                case DISCONNECTION_REQUEST:
+                    l2cap_handle_disconnect_request(channel, identifier);
+                    break;
                 default:
                     //@TODO: implement other signaling packets
                     break;
@@ -272,6 +287,9 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
                     channel->state = L2CAP_STATE_OPEN;
                     l2cap_emit_channel_opened(channel, 0);  // success
                     break;
+                case DISCONNECTION_REQUEST:
+                    l2cap_handle_disconnect_request(channel, identifier);
+                    break;
                 default:
                     //@TODO: implement other signaling packets
                     break;
@@ -283,13 +301,28 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
                 case DISCONNECTION_RESPONSE:
                     l2cap_finialize_channel_close(channel);
                     break;
+                case DISCONNECTION_REQUEST:
+                    l2cap_handle_disconnect_request(channel, identifier);
+                    break;
                 default:
                     //@TODO: implement other signaling packets
                     break;
             }
             break;
-        default:
-            //@TODO: implement other signaling packets
+            
+        case L2CAP_STATE_CLOSED:
+            // @TODO handle incoming requests
+            break;
+            
+        case L2CAP_STATE_OPEN:
+            switch (code) {
+                case DISCONNECTION_REQUEST:
+                    l2cap_handle_disconnect_request(channel, identifier);
+                    break;
+                default:
+                    //@TODO: implement other signaling packets, e.g. re-configure
+                    break;
+            }
             break;
     }
 }
