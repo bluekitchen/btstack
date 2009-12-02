@@ -48,7 +48,6 @@
 
 typedef enum {
     L2CAP_STATE_CLOSED,           // no baseband
-    L2CAP_STATE_WAIT_CONNECT,     // from application
     L2CAP_STATE_WAIT_CONNECT_RSP, // from peer
     L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ,
     L2CAP_STATE_WAIT_CONFIG_REQ_RSP,
