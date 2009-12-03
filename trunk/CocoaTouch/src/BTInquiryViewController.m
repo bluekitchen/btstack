@@ -162,9 +162,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 							[delegate deviceDetected:self device:dev];
 						}
 					}
-				}
 					[[inqView tableView] reloadData];
 					break;
+				}
 					
 				case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
 					bt_flip_addr(event_addr, &packet[3]);
