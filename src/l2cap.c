@@ -179,7 +179,7 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
     }
     
     // HCI Connection Timeouts
-    if (packet[0] == L2CAP_EVENT_TIMEOUT_CHECK){
+    if (packet[0] == L2CAP_EVENT_TIMEOUT_CHECK && !capture_connection){
         hci_con_handle_t handle = READ_BT_16(packet, 2);
         linked_item_t *it;
         l2cap_channel_t * channel;
@@ -378,6 +378,7 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
     // Capturing?
     if (capture_connection) {
         socket_connection_send_packet(capture_connection, HCI_ACL_DATA_PACKET, 0, packet, size);
+        return;
     }
     
     // forward to higher layers - not needed yet
