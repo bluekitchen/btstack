@@ -183,11 +183,11 @@ static void event_handler(uint8_t *packet, int size){
 
     // Connection management
     if (packet[0] == HCI_EVENT_CONNECTION_COMPLETE) {
-        if (!packet[2]){
-            bt_flip_addr(addr, &packet[5]);
-            printf("Connection_complete "); print_bd_addr(addr); printf("\n");
-            hci_connection_t * conn = connection_for_address(addr);
-            if (conn) {
+        bt_flip_addr(addr, &packet[5]);
+        printf("Connection_complete (status=%u)", packet[2]); print_bd_addr(addr); printf("\n");
+        hci_connection_t * conn = connection_for_address(addr);
+        if (conn) {
+            if (!packet[2]){
                 conn->state = OPEN;
                 conn->con_handle = READ_BT_16(packet, 3);
                 conn->flags = 0;
@@ -201,6 +201,10 @@ static void event_handler(uint8_t *packet, int size){
                 printf("\n");
                 
                 hci_emit_nr_connections_changed();
+            } else {
+                // connection failed, remove entry
+                linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
+                free( conn );
             }
         }
     }
