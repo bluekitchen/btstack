@@ -175,56 +175,62 @@ static void event_handler(uint8_t *packet, int size){
     bd_addr_t addr;
     hci_con_handle_t handle;
     
-    // Get Num_HCI_Command_Packets
-    if (packet[0] == HCI_EVENT_COMMAND_COMPLETE ||
-        packet[0] == HCI_EVENT_COMMAND_STATUS){
-        hci_stack.num_cmd_packets = packet[2];
+    switch (packet[0]) {
+            
+        case HCI_EVENT_COMMAND_COMPLETE:
+        case HCI_EVENT_COMMAND_STATUS:
+            // Get Num_HCI_Command_Packets
+            hci_stack.num_cmd_packets = packet[2];
+            break;
+        
+        case HCI_EVENT_CONNECTION_COMPLETE:
+            // Connection management
+            bt_flip_addr(addr, &packet[5]);
+            printf("Connection_complete (status=%u)", packet[2]); print_bd_addr(addr); printf("\n");
+            hci_connection_t * conn = connection_for_address(addr);
+            if (conn) {
+                if (!packet[2]){
+                    conn->state = OPEN;
+                    conn->con_handle = READ_BT_16(packet, 3);
+                    conn->flags = 0;
+                    
+                    gettimeofday(&conn->timestamp, NULL);
+                    run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
+                    run_loop_add_timer(&conn->timeout);
+                    
+                    printf("New connection: handle %u, ", conn->con_handle);
+                    print_bd_addr( conn->address );
+                    printf("\n");
+                    
+                    hci_emit_nr_connections_changed();
+                } else {
+                    // connection failed, remove entry
+                    linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
+                    free( conn );
+                }
+            }
+            break;
+
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            if (!packet[2]){
+                handle = READ_BT_16(packet, 3);
+                hci_connection_t * conn = connection_for_handle(handle);
+                if (conn) {
+                    printf("Connection closed: handle %u, ", conn->con_handle);
+                    print_bd_addr( conn->address );
+                    printf("\n");
+                    run_loop_remove_timer(&conn->timeout);
+                    linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
+                    free( conn );
+                    hci_emit_nr_connections_changed();
+                }
+            }
+            break;
+            
+        default:
+            break;
     }
 
-    // Connection management
-    if (packet[0] == HCI_EVENT_CONNECTION_COMPLETE) {
-        bt_flip_addr(addr, &packet[5]);
-        printf("Connection_complete (status=%u)", packet[2]); print_bd_addr(addr); printf("\n");
-        hci_connection_t * conn = connection_for_address(addr);
-        if (conn) {
-            if (!packet[2]){
-                conn->state = OPEN;
-                conn->con_handle = READ_BT_16(packet, 3);
-                conn->flags = 0;
-                
-                gettimeofday(&conn->timestamp, NULL);
-                run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
-                run_loop_add_timer(&conn->timeout);
-                
-                printf("New connection: handle %u, ", conn->con_handle);
-                print_bd_addr( conn->address );
-                printf("\n");
-                
-                hci_emit_nr_connections_changed();
-            } else {
-                // connection failed, remove entry
-                linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
-                free( conn );
-            }
-        }
-    }
-    
-    if (packet[0] == HCI_EVENT_DISCONNECTION_COMPLETE) {
-        if (!packet[2]){
-            handle = READ_BT_16(packet, 3);
-            hci_connection_t * conn = connection_for_handle(handle);
-            if (conn) {
-                printf("Connection closed: handle %u, ", conn->con_handle);
-                print_bd_addr( conn->address );
-                printf("\n");
-                run_loop_remove_timer(&conn->timeout);
-                linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
-                free( conn );
-                hci_emit_nr_connections_changed();
-            }
-        }
-    }
-    
     // handle BT initialization
     if (hci_stack.state == HCI_STATE_INITIALIZING){
         // handle H4 synchronization loss on restart
@@ -238,13 +244,6 @@ static void event_handler(uint8_t *packet, int size){
                 hci_stack.substate++;
             }
         }
-    }
-
-    // link key request
-    if (packet[0] == HCI_EVENT_LINK_KEY_REQUEST){
-        bt_flip_addr(addr, &packet[2]); 
-        hci_send_cmd(&hci_link_key_request_negative_reply, &addr);
-        return;
     }
         
     hci_stack.event_packet_handler(packet, size);

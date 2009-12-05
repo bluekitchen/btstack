@@ -3,10 +3,11 @@
 2009-11-08: Release 0.1
 
 NEXT:
-- figure out how to add BTstack logo to Cydia repository list
-- sign BTstack repository
-- figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect,
-  when phone gets locked
+- implement rest of L2CAP state machine
+  - incoming connections
+    - list of supported PSM
+	- commands and events-
+- figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect, when phone gets locked
   - some trick
   - use Cocoa run loop for background app?
   - see iPhone imsomnia project at http://code.google.com/p/iphone-insomnia/
@@ -14,10 +15,6 @@ NEXT:
   - would be nice, if we could get woken up by Bluetooth data
 - create <btstack/errors.h>
 - add timeouts to cocoa run loop
-- implement rest of L2CAP state machine
-  - incoming connections
-    - list of supported PSM
-	- commands and events
 - RFCOMM implementation
   - use switch on RFCOMM control field in rfcomm.c packet handler
 - CocoaTouch User Interface Components

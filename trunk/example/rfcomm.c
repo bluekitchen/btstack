@@ -286,6 +286,12 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						bt_send_cmd(&hci_write_local_name, "BTstack-Test");
 					}
 					break;
+
+				case HCI_EVENT_LINK_KEY_REQUEST:
+					// link key request
+					bt_flip_addr(event_addr, &packet[2]); 
+					bt_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
+					break;
 					
 				case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
