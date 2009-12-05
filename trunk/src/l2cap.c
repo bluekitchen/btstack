@@ -146,19 +146,23 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
         
         linked_item_t *it;
         for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-            l2cap_channel_t * chan = (l2cap_channel_t *) it;
-            if ( ! BD_ADDR_CMP( chan->address, address) ){
-                if (chan->state == L2CAP_STATE_CLOSED) {
+            l2cap_channel_t * channel = (l2cap_channel_t *) it;
+            if ( ! BD_ADDR_CMP( channel->address, address) ){
+                if (channel->state == L2CAP_STATE_CLOSED) {
                     if (packet[2] == 0){
-                        chan->handle = READ_BT_16(packet, 3);
-                        chan->sig_id = l2cap_next_sig_id();
-                        chan->source_cid = l2cap_next_source_cid();
-                        
-                        l2cap_send_signaling_packet( chan->handle, CONNECTION_REQUEST, chan->sig_id, chan->psm, chan->source_cid);                   
-                        
-                        chan->state = L2CAP_STATE_WAIT_CONNECT_RSP;
+                        // success, start l2cap handshake
+                        channel->handle = READ_BT_16(packet, 3);
+                        channel->sig_id = l2cap_next_sig_id();
+                        channel->source_cid = l2cap_next_source_cid();
+                        channel->state = L2CAP_STATE_WAIT_CONNECT_RSP;
+                        l2cap_send_signaling_packet( channel->handle, CONNECTION_REQUEST, channel->sig_id, channel->psm, channel->source_cid);                   
                     } else {
-                        l2cap_emit_channel_opened(chan, packet[2]);  // failure, forward error code
+                        // failure, forward error code
+                        l2cap_emit_channel_opened(channel, packet[2]);
+                        // discard channel
+                        linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
+                        free (channel);
+                        
                     }
                 }
             }
@@ -406,17 +410,17 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
         // Find channel for this sig_id and connection handle
         linked_item_t *it;
         for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-            l2cap_channel_t * chan = (l2cap_channel_t *) it;
-            if (chan->handle == handle) {
+            l2cap_channel_t * channel = (l2cap_channel_t *) it;
+            if (channel->handle == handle) {
                 if (code & 1) {
                     // match odd commands by previous signaling identifier 
-                    if (chan->sig_id == sig_id) {
-                        l2cap_signaling_handler( chan, packet, size);
+                    if (channel->sig_id == sig_id) {
+                        l2cap_signaling_handler( channel, packet, size);
                     }
                 } else {
                     // match even commands by source channel id
-                    if (chan->source_cid == dest_cid) {
-                        l2cap_signaling_handler( chan, packet, size);
+                    if (channel->source_cid == dest_cid) {
+                        l2cap_signaling_handler( channel, packet, size);
                     }
                 }
             }
@@ -456,3 +460,4 @@ void l2cap_set_capture_connection(connection_t * connection){
     capture_connection = connection;
 }
 
+    
