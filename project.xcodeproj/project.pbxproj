@@ -28,11 +28,34 @@
 		9C7ECB840FCC85650085DAC5 /* bt_control_iphone.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7ECB820FCC85650085DAC5 /* bt_control_iphone.c */; };
 		9C7ECBB50FCC95DD0085DAC5 /* hci_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7ECBB40FCC95DD0085DAC5 /* hci_dump.c */; };
 		9C88500E0FBF6702004980E4 /* l2cap.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C88500C0FBF6702004980E4 /* l2cap.c */; };
+		9C88A1E010C7DE310003DF36 /* BTDevice.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C88A1AE10C7DE310003DF36 /* BTDevice.o */; };
+		9C88A1E110C7DE310003DF36 /* BTInquiryViewController.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C88A1AF10C7DE310003DF36 /* BTInquiryViewController.o */; };
+		9C88A1E210C7DE310003DF36 /* main.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C88A1B110C7DE310003DF36 /* main.o */; };
+		9C88A1E310C7DE310003DF36 /* BTDevice.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C88A1BF10C7DE310003DF36 /* BTDevice.o */; };
+		9C88A1E410C7DE310003DF36 /* BTInquiryViewController.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C88A1C010C7DE310003DF36 /* BTInquiryViewController.o */; };
+		9C88A1E510C7DE310003DF36 /* BTInquiryViewController.o~$ in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C88A1C110C7DE310003DF36 /* BTInquiryViewController.o~$ */; };
+		9C88A1E610C7DE310003DF36 /* BTstackCocoaAppDelegate.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C88A1C510C7DE310003DF36 /* BTstackCocoaAppDelegate.o */; };
+		9C88A1E710C7DE310003DF36 /* BTstackCocoaAppDelegate.o~$ in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C88A1C610C7DE310003DF36 /* BTstackCocoaAppDelegate.o~$ */; };
+		9C88A1E810C7DE310003DF36 /* main.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C88A1C810C7DE310003DF36 /* main.o */; };
+		9C88A1E910C7DE310003DF36 /* BTDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C88A1DB10C7DE310003DF36 /* BTDevice.m */; };
+		9C88A1EA10C7DE310003DF36 /* BTInquiryViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C88A1DC10C7DE310003DF36 /* BTInquiryViewController.m */; };
+		9C88A1EB10C7DE310003DF36 /* BTstackCocoaAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C88A1DE10C7DE310003DF36 /* BTstackCocoaAppDelegate.m */; };
+		9C88A1EC10C7DE310003DF36 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C88A1DF10C7DE310003DF36 /* main.m */; };
 		9CC813A20FFC0774002816F9 /* btstack.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CC813A10FFC0774002816F9 /* btstack.c */; };
 		9CC813A50FFC0A51002816F9 /* daemon.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CC813A40FFC0A51002816F9 /* daemon.c */; };
 		9CCE6CEA1025BD0000FCE9F4 /* hci.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC340FA906F700ABEF05 /* hci.c */; };
 		9CEB4F17107AAAEF00DD5720 /* run_loop_posix.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CEB4DAC10753BE600DD5720 /* run_loop_posix.c */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		9C88A1F310C7DE320003DF36 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9C88A18D10C7DE310003DF36 /* BTstackCocoa.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 1D6058910D05DD3D006BFB54;
+			remoteInfo = BTstackCocoa;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		8DD76FAF0486AB0100D96B5E /* CopyFiles */ = {
@@ -56,7 +79,6 @@
 		9C00F87210191130008DAB17 /* l2cap_signaling.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = l2cap_signaling.c; path = src/l2cap_signaling.c; sourceTree = "<group>"; };
 		9C04B825107D1CED002A63D0 /* run_loop.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = run_loop.c; path = src/run_loop.c; sourceTree = "<group>"; };
 		9C04B879107D2BA7002A63D0 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = /System/Library/Frameworks/CoreFoundation.framework; sourceTree = "<absolute>"; };
-		9C04BD3110826575002A63D0 /* logo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = logo.png; path = resources/logo.png; sourceTree = "<group>"; };
 		9C18015B108BAA7200824BE7 /* libusb-1.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.dylib"; path = "/usr/local/lib/libusb-1.0.dylib"; sourceTree = "<absolute>"; };
 		9C1813F71042FCCA00C68F09 /* mitm.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = mitm.c; path = example/mitm.c; sourceTree = "<group>"; };
 		9C2071F210014D3200A07EA4 /* hci_transport_usb.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci_transport_usb.c; path = src/hci_transport_usb.c; sourceTree = "<group>"; };
@@ -92,6 +114,70 @@
 		9C7ECBB40FCC95DD0085DAC5 /* hci_dump.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = hci_dump.c; path = src/hci_dump.c; sourceTree = "<group>"; };
 		9C88500C0FBF6702004980E4 /* l2cap.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = l2cap.c; path = src/l2cap.c; sourceTree = "<group>"; };
 		9C88500D0FBF6702004980E4 /* l2cap.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = l2cap.h; path = src/l2cap.h; sourceTree = "<group>"; };
+		9C88A18C10C7DE310003DF36 /* BTstackCocoa-Info.plist */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text.plist.xml; path = "BTstackCocoa-Info.plist"; sourceTree = "<group>"; };
+		9C88A18D10C7DE310003DF36 /* BTstackCocoa.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = BTstackCocoa.xcodeproj; sourceTree = "<group>"; };
+		9C88A19010C7DE310003DF36 /* BTstackCocoa_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; path = BTstackCocoa_Prefix.pch; sourceTree = "<group>"; };
+		9C88A19410C7DE310003DF36 /* categories.pbxbtree */ = {isa = PBXFileReference; lastKnownFileType = file; path = categories.pbxbtree; sourceTree = "<group>"; };
+		9C88A19510C7DE310003DF36 /* cdecls.pbxbtree */ = {isa = PBXFileReference; lastKnownFileType = file; path = cdecls.pbxbtree; sourceTree = "<group>"; };
+		9C88A19610C7DE310003DF36 /* decls.pbxbtree */ = {isa = PBXFileReference; lastKnownFileType = file; path = decls.pbxbtree; sourceTree = "<group>"; };
+		9C88A19710C7DE310003DF36 /* files.pbxbtree */ = {isa = PBXFileReference; lastKnownFileType = file; path = files.pbxbtree; sourceTree = "<group>"; };
+		9C88A19810C7DE310003DF36 /* imports.pbxbtree */ = {isa = PBXFileReference; lastKnownFileType = file; path = imports.pbxbtree; sourceTree = "<group>"; };
+		9C88A19910C7DE310003DF36 /* pbxindex.header */ = {isa = PBXFileReference; lastKnownFileType = file; path = pbxindex.header; sourceTree = "<group>"; };
+		9C88A19A10C7DE310003DF36 /* protocols.pbxbtree */ = {isa = PBXFileReference; lastKnownFileType = file; path = protocols.pbxbtree; sourceTree = "<group>"; };
+		9C88A19B10C7DE310003DF36 /* refs.pbxbtree */ = {isa = PBXFileReference; lastKnownFileType = file; path = refs.pbxbtree; sourceTree = "<group>"; };
+		9C88A19D10C7DE310003DF36 /* control */ = {isa = PBXFileReference; lastKnownFileType = file; path = control; sourceTree = "<group>"; };
+		9C88A19E10C7DE310003DF36 /* strings */ = {isa = PBXFileReference; lastKnownFileType = file; path = strings; sourceTree = "<group>"; };
+		9C88A19F10C7DE310003DF36 /* subclasses.pbxbtree */ = {isa = PBXFileReference; lastKnownFileType = file; path = subclasses.pbxbtree; sourceTree = "<group>"; };
+		9C88A1A010C7DE310003DF36 /* symbols0.pbxsymbols */ = {isa = PBXFileReference; lastKnownFileType = file; path = symbols0.pbxsymbols; sourceTree = "<group>"; };
+		9C88A1A310C7DE310003DF36 /* BTstackCocoa-all-target-headers.hmap */ = {isa = PBXFileReference; lastKnownFileType = file; path = "BTstackCocoa-all-target-headers.hmap"; sourceTree = "<group>"; };
+		9C88A1A410C7DE310003DF36 /* BTstackCocoa-generated-files.hmap */ = {isa = PBXFileReference; lastKnownFileType = file; path = "BTstackCocoa-generated-files.hmap"; sourceTree = "<group>"; };
+		9C88A1A510C7DE310003DF36 /* BTstackCocoa-own-target-headers.hmap */ = {isa = PBXFileReference; lastKnownFileType = file; path = "BTstackCocoa-own-target-headers.hmap"; sourceTree = "<group>"; };
+		9C88A1A610C7DE310003DF36 /* BTstackCocoa-project-headers.hmap */ = {isa = PBXFileReference; lastKnownFileType = file; path = "BTstackCocoa-project-headers.hmap"; sourceTree = "<group>"; };
+		9C88A1A710C7DE310003DF36 /* BTstackCocoa.dep */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = BTstackCocoa.dep; sourceTree = "<group>"; };
+		9C88A1A810C7DE310003DF36 /* BTstackCocoa.hmap */ = {isa = PBXFileReference; lastKnownFileType = file; path = BTstackCocoa.hmap; sourceTree = "<group>"; };
+		9C88A1A910C7DE310003DF36 /* BTstackCocoa~.dep */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = "BTstackCocoa~.dep"; sourceTree = "<group>"; };
+		9C88A1AA10C7DE310003DF36 /* build-state.dat */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = "build-state.dat"; sourceTree = "<group>"; };
+		9C88A1AB10C7DE310003DF36 /* build-state~.dat */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = "build-state~.dat"; sourceTree = "<group>"; };
+		9C88A1AE10C7DE310003DF36 /* BTDevice.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = BTDevice.o; sourceTree = "<group>"; };
+		9C88A1AF10C7DE310003DF36 /* BTInquiryViewController.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = BTInquiryViewController.o; sourceTree = "<group>"; };
+		9C88A1B010C7DE310003DF36 /* BTstackCocoa.LinkFileList */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = BTstackCocoa.LinkFileList; sourceTree = "<group>"; };
+		9C88A1B110C7DE310003DF36 /* main.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = main.o; sourceTree = "<group>"; };
+		9C88A1B410C7DE310003DF36 /* BTstackCocoa-all-target-headers.hmap */ = {isa = PBXFileReference; lastKnownFileType = file; path = "BTstackCocoa-all-target-headers.hmap"; sourceTree = "<group>"; };
+		9C88A1B510C7DE310003DF36 /* BTstackCocoa-generated-files.hmap */ = {isa = PBXFileReference; lastKnownFileType = file; path = "BTstackCocoa-generated-files.hmap"; sourceTree = "<group>"; };
+		9C88A1B610C7DE310003DF36 /* BTstackCocoa-own-target-headers.hmap */ = {isa = PBXFileReference; lastKnownFileType = file; path = "BTstackCocoa-own-target-headers.hmap"; sourceTree = "<group>"; };
+		9C88A1B710C7DE310003DF36 /* BTstackCocoa-project-headers.hmap */ = {isa = PBXFileReference; lastKnownFileType = file; path = "BTstackCocoa-project-headers.hmap"; sourceTree = "<group>"; };
+		9C88A1B810C7DE310003DF36 /* BTstackCocoa.dep */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = BTstackCocoa.dep; sourceTree = "<group>"; };
+		9C88A1B910C7DE310003DF36 /* BTstackCocoa.hmap */ = {isa = PBXFileReference; lastKnownFileType = file; path = BTstackCocoa.hmap; sourceTree = "<group>"; };
+		9C88A1BA10C7DE310003DF36 /* BTstackCocoa~.dep */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = "BTstackCocoa~.dep"; sourceTree = "<group>"; };
+		9C88A1BB10C7DE310003DF36 /* build-state.dat */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = "build-state.dat"; sourceTree = "<group>"; };
+		9C88A1BC10C7DE310003DF36 /* build-state~.dat */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = "build-state~.dat"; sourceTree = "<group>"; };
+		9C88A1BF10C7DE310003DF36 /* BTDevice.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = BTDevice.o; sourceTree = "<group>"; };
+		9C88A1C010C7DE310003DF36 /* BTInquiryViewController.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = BTInquiryViewController.o; sourceTree = "<group>"; };
+		9C88A1C110C7DE310003DF36 /* BTInquiryViewController.o~$ */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = "BTInquiryViewController.o~$"; sourceTree = "<group>"; };
+		9C88A1C210C7DE310003DF36 /* BTInquiryViewController.o~> */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = "BTInquiryViewController.o~>"; sourceTree = "<group>"; };
+		9C88A1C310C7DE310003DF36 /* BTInquiryViewController.o~? */ = {isa = PBXFileReference; lastKnownFileType = file; path = "BTInquiryViewController.o~?"; sourceTree = "<group>"; };
+		9C88A1C410C7DE310003DF36 /* BTstackCocoa.LinkFileList */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = BTstackCocoa.LinkFileList; sourceTree = "<group>"; };
+		9C88A1C510C7DE310003DF36 /* BTstackCocoaAppDelegate.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = BTstackCocoaAppDelegate.o; sourceTree = "<group>"; };
+		9C88A1C610C7DE310003DF36 /* BTstackCocoaAppDelegate.o~$ */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = "BTstackCocoaAppDelegate.o~$"; sourceTree = "<group>"; };
+		9C88A1C710C7DE310003DF36 /* BTstackCocoaAppDelegate.o~> */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = "BTstackCocoaAppDelegate.o~>"; sourceTree = "<group>"; };
+		9C88A1C810C7DE310003DF36 /* main.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; path = main.o; sourceTree = "<group>"; };
+		9C88A1CA10C7DE310003DF36 /* BTstackCocoa.app */ = {isa = PBXFileReference; lastKnownFileType = wrapper.application; path = BTstackCocoa.app; sourceTree = "<group>"; };
+		9C88A1CB10C7DE310003DF36 /* BTstackCocoa.app.dSYM */ = {isa = PBXFileReference; lastKnownFileType = wrapper.dsym; path = BTstackCocoa.app.dSYM; sourceTree = "<group>"; };
+		9C88A1CD10C7DE310003DF36 /* BTstackCocoa.app */ = {isa = PBXFileReference; lastKnownFileType = wrapper.application; path = BTstackCocoa.app; sourceTree = "<group>"; };
+		9C88A1CE10C7DE310003DF36 /* BTstackCocoa.app.dSYM */ = {isa = PBXFileReference; lastKnownFileType = wrapper.dsym; path = BTstackCocoa.app.dSYM; sourceTree = "<group>"; };
+		9C88A1D010C7DE310003DF36 /* bluetooth.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = bluetooth.png; sourceTree = "<group>"; };
+		9C88A1D110C7DE310003DF36 /* computer.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = computer.png; sourceTree = "<group>"; };
+		9C88A1D210C7DE310003DF36 /* keyboard.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = keyboard.png; sourceTree = "<group>"; };
+		9C88A1D310C7DE310003DF36 /* LICENSE.txt */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = LICENSE.txt; sourceTree = "<group>"; };
+		9C88A1D410C7DE310003DF36 /* smartphone.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = smartphone.png; sourceTree = "<group>"; };
+		9C88A1D510C7DE310003DF36 /* Untitled.txt */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = Untitled.txt; sourceTree = "<group>"; };
+		9C88A1D810C7DE310003DF36 /* BTDevice.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; path = BTDevice.h; sourceTree = "<group>"; };
+		9C88A1D910C7DE310003DF36 /* BTInquiryViewController.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; path = BTInquiryViewController.h; sourceTree = "<group>"; };
+		9C88A1DB10C7DE310003DF36 /* BTDevice.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; path = BTDevice.m; sourceTree = "<group>"; };
+		9C88A1DC10C7DE310003DF36 /* BTInquiryViewController.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; path = BTInquiryViewController.m; sourceTree = "<group>"; };
+		9C88A1DD10C7DE310003DF36 /* BTstackCocoaAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; path = BTstackCocoaAppDelegate.h; sourceTree = "<group>"; };
+		9C88A1DE10C7DE310003DF36 /* BTstackCocoaAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; path = BTstackCocoaAppDelegate.m; sourceTree = "<group>"; };
+		9C88A1DF10C7DE310003DF36 /* main.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		9C994B8E106BEEB700C70311 /* rfcomm.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = rfcomm.c; path = example/rfcomm.c; sourceTree = "<group>"; };
 		9CA3C0900FB8B3C4005F48DE /* TODO.txt */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = TODO.txt; sourceTree = "<group>"; };
 		9CAA573610A5D87400D0E1A9 /* inquiry.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = inquiry.c; path = example/inquiry.c; sourceTree = "<group>"; };
@@ -117,6 +203,15 @@
 			files = (
 				9C04B87A107D2BA7002A63D0 /* CoreFoundation.framework in Frameworks */,
 				9C18015C108BAA7200824BE7 /* libusb-1.0.dylib in Frameworks */,
+				9C88A1E010C7DE310003DF36 /* BTDevice.o in Frameworks */,
+				9C88A1E110C7DE310003DF36 /* BTInquiryViewController.o in Frameworks */,
+				9C88A1E210C7DE310003DF36 /* main.o in Frameworks */,
+				9C88A1E310C7DE310003DF36 /* BTDevice.o in Frameworks */,
+				9C88A1E410C7DE310003DF36 /* BTInquiryViewController.o in Frameworks */,
+				9C88A1E510C7DE310003DF36 /* BTInquiryViewController.o~$ in Frameworks */,
+				9C88A1E610C7DE310003DF36 /* BTstackCocoaAppDelegate.o in Frameworks */,
+				9C88A1E710C7DE310003DF36 /* BTstackCocoaAppDelegate.o~$ in Frameworks */,
+				9C88A1E810C7DE310003DF36 /* main.o in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -138,6 +233,7 @@
 				9C77E4AD10634E3100F39DCF /* 3rdparty */,
 				9C78A049103C671D003B2950 /* Resources */,
 				9C7B5B81100D04520065D87E /* Example */,
+				9C88A18B10C7DE300003DF36 /* CocoaTouch */,
 				08FB7795FE84155DC02AAC07 /* Source */,
 				9C77E2751060322300F39DCF /* SpringBoardAccess */,
 				C6A0FF2B0290797F04C91782 /* Documentation */,
@@ -223,7 +319,6 @@
 		9C78A049103C671D003B2950 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				9C04BD3110826575002A63D0 /* logo.png */,
 				9C78A0BB103C9DEE003B2950 /* ch.ringwald.BTstack.plist */,
 				9C78A04A103C6734003B2950 /* Default_BTstack.png */,
 				9C78A04B103C6734003B2950 /* Default_BTstackActive.png */,
@@ -242,6 +337,229 @@
 				9C7B5B7E100D04450065D87E /* test.c */,
 			);
 			name = Example;
+			sourceTree = "<group>";
+		};
+		9C88A18B10C7DE300003DF36 /* CocoaTouch */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A18C10C7DE310003DF36 /* BTstackCocoa-Info.plist */,
+				9C88A18D10C7DE310003DF36 /* BTstackCocoa.xcodeproj */,
+				9C88A19010C7DE310003DF36 /* BTstackCocoa_Prefix.pch */,
+				9C88A19110C7DE310003DF36 /* build */,
+				9C88A1CF10C7DE310003DF36 /* icons */,
+				9C88A1D610C7DE310003DF36 /* include */,
+				9C88A1DA10C7DE310003DF36 /* src */,
+			);
+			path = CocoaTouch;
+			sourceTree = "<group>";
+		};
+		9C88A18E10C7DE310003DF36 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A1F410C7DE320003DF36 /* BTstackCocoa.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		9C88A19110C7DE310003DF36 /* build */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A19210C7DE310003DF36 /* BTstackCocoa.build */,
+				9C88A1C910C7DE310003DF36 /* Debug-iphoneos */,
+				9C88A1CC10C7DE310003DF36 /* Debug-iphonesimulator */,
+			);
+			path = build;
+			sourceTree = "<group>";
+		};
+		9C88A19210C7DE310003DF36 /* BTstackCocoa.build */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A19310C7DE310003DF36 /* BTstackCocoa.pbxindex */,
+				9C88A1A110C7DE310003DF36 /* Debug-iphoneos */,
+				9C88A1B210C7DE310003DF36 /* Debug-iphonesimulator */,
+			);
+			path = BTstackCocoa.build;
+			sourceTree = "<group>";
+		};
+		9C88A19310C7DE310003DF36 /* BTstackCocoa.pbxindex */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A19410C7DE310003DF36 /* categories.pbxbtree */,
+				9C88A19510C7DE310003DF36 /* cdecls.pbxbtree */,
+				9C88A19610C7DE310003DF36 /* decls.pbxbtree */,
+				9C88A19710C7DE310003DF36 /* files.pbxbtree */,
+				9C88A19810C7DE310003DF36 /* imports.pbxbtree */,
+				9C88A19910C7DE310003DF36 /* pbxindex.header */,
+				9C88A19A10C7DE310003DF36 /* protocols.pbxbtree */,
+				9C88A19B10C7DE310003DF36 /* refs.pbxbtree */,
+				9C88A19C10C7DE310003DF36 /* strings.pbxstrings */,
+				9C88A19F10C7DE310003DF36 /* subclasses.pbxbtree */,
+				9C88A1A010C7DE310003DF36 /* symbols0.pbxsymbols */,
+			);
+			path = BTstackCocoa.pbxindex;
+			sourceTree = "<group>";
+		};
+		9C88A19C10C7DE310003DF36 /* strings.pbxstrings */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A19D10C7DE310003DF36 /* control */,
+				9C88A19E10C7DE310003DF36 /* strings */,
+			);
+			path = strings.pbxstrings;
+			sourceTree = "<group>";
+		};
+		9C88A1A110C7DE310003DF36 /* Debug-iphoneos */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A1A210C7DE310003DF36 /* BTstackCocoa.build */,
+			);
+			path = "Debug-iphoneos";
+			sourceTree = "<group>";
+		};
+		9C88A1A210C7DE310003DF36 /* BTstackCocoa.build */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A1A310C7DE310003DF36 /* BTstackCocoa-all-target-headers.hmap */,
+				9C88A1A410C7DE310003DF36 /* BTstackCocoa-generated-files.hmap */,
+				9C88A1A510C7DE310003DF36 /* BTstackCocoa-own-target-headers.hmap */,
+				9C88A1A610C7DE310003DF36 /* BTstackCocoa-project-headers.hmap */,
+				9C88A1A710C7DE310003DF36 /* BTstackCocoa.dep */,
+				9C88A1A810C7DE310003DF36 /* BTstackCocoa.hmap */,
+				9C88A1A910C7DE310003DF36 /* BTstackCocoa~.dep */,
+				9C88A1AA10C7DE310003DF36 /* build-state.dat */,
+				9C88A1AB10C7DE310003DF36 /* build-state~.dat */,
+				9C88A1AC10C7DE310003DF36 /* Objects-normal */,
+			);
+			path = BTstackCocoa.build;
+			sourceTree = "<group>";
+		};
+		9C88A1AC10C7DE310003DF36 /* Objects-normal */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A1AD10C7DE310003DF36 /* armv6 */,
+			);
+			path = "Objects-normal";
+			sourceTree = "<group>";
+		};
+		9C88A1AD10C7DE310003DF36 /* armv6 */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A1AE10C7DE310003DF36 /* BTDevice.o */,
+				9C88A1AF10C7DE310003DF36 /* BTInquiryViewController.o */,
+				9C88A1B010C7DE310003DF36 /* BTstackCocoa.LinkFileList */,
+				9C88A1B110C7DE310003DF36 /* main.o */,
+			);
+			path = armv6;
+			sourceTree = "<group>";
+		};
+		9C88A1B210C7DE310003DF36 /* Debug-iphonesimulator */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A1B310C7DE310003DF36 /* BTstackCocoa.build */,
+			);
+			path = "Debug-iphonesimulator";
+			sourceTree = "<group>";
+		};
+		9C88A1B310C7DE310003DF36 /* BTstackCocoa.build */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A1B410C7DE310003DF36 /* BTstackCocoa-all-target-headers.hmap */,
+				9C88A1B510C7DE310003DF36 /* BTstackCocoa-generated-files.hmap */,
+				9C88A1B610C7DE310003DF36 /* BTstackCocoa-own-target-headers.hmap */,
+				9C88A1B710C7DE310003DF36 /* BTstackCocoa-project-headers.hmap */,
+				9C88A1B810C7DE310003DF36 /* BTstackCocoa.dep */,
+				9C88A1B910C7DE310003DF36 /* BTstackCocoa.hmap */,
+				9C88A1BA10C7DE310003DF36 /* BTstackCocoa~.dep */,
+				9C88A1BB10C7DE310003DF36 /* build-state.dat */,
+				9C88A1BC10C7DE310003DF36 /* build-state~.dat */,
+				9C88A1BD10C7DE310003DF36 /* Objects-normal */,
+			);
+			path = BTstackCocoa.build;
+			sourceTree = "<group>";
+		};
+		9C88A1BD10C7DE310003DF36 /* Objects-normal */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A1BE10C7DE310003DF36 /* i386 */,
+			);
+			path = "Objects-normal";
+			sourceTree = "<group>";
+		};
+		9C88A1BE10C7DE310003DF36 /* i386 */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A1BF10C7DE310003DF36 /* BTDevice.o */,
+				9C88A1C010C7DE310003DF36 /* BTInquiryViewController.o */,
+				9C88A1C110C7DE310003DF36 /* BTInquiryViewController.o~$ */,
+				9C88A1C210C7DE310003DF36 /* BTInquiryViewController.o~> */,
+				9C88A1C310C7DE310003DF36 /* BTInquiryViewController.o~? */,
+				9C88A1C410C7DE310003DF36 /* BTstackCocoa.LinkFileList */,
+				9C88A1C510C7DE310003DF36 /* BTstackCocoaAppDelegate.o */,
+				9C88A1C610C7DE310003DF36 /* BTstackCocoaAppDelegate.o~$ */,
+				9C88A1C710C7DE310003DF36 /* BTstackCocoaAppDelegate.o~> */,
+				9C88A1C810C7DE310003DF36 /* main.o */,
+			);
+			path = i386;
+			sourceTree = "<group>";
+		};
+		9C88A1C910C7DE310003DF36 /* Debug-iphoneos */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A1CA10C7DE310003DF36 /* BTstackCocoa.app */,
+				9C88A1CB10C7DE310003DF36 /* BTstackCocoa.app.dSYM */,
+			);
+			path = "Debug-iphoneos";
+			sourceTree = "<group>";
+		};
+		9C88A1CC10C7DE310003DF36 /* Debug-iphonesimulator */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A1CD10C7DE310003DF36 /* BTstackCocoa.app */,
+				9C88A1CE10C7DE310003DF36 /* BTstackCocoa.app.dSYM */,
+			);
+			path = "Debug-iphonesimulator";
+			sourceTree = "<group>";
+		};
+		9C88A1CF10C7DE310003DF36 /* icons */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A1D010C7DE310003DF36 /* bluetooth.png */,
+				9C88A1D110C7DE310003DF36 /* computer.png */,
+				9C88A1D210C7DE310003DF36 /* keyboard.png */,
+				9C88A1D310C7DE310003DF36 /* LICENSE.txt */,
+				9C88A1D410C7DE310003DF36 /* smartphone.png */,
+				9C88A1D510C7DE310003DF36 /* Untitled.txt */,
+			);
+			path = icons;
+			sourceTree = "<group>";
+		};
+		9C88A1D610C7DE310003DF36 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A1D710C7DE310003DF36 /* BTstack */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+		9C88A1D710C7DE310003DF36 /* BTstack */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A1D810C7DE310003DF36 /* BTDevice.h */,
+				9C88A1D910C7DE310003DF36 /* BTInquiryViewController.h */,
+			);
+			path = BTstack;
+			sourceTree = "<group>";
+		};
+		9C88A1DA10C7DE310003DF36 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				9C88A1DB10C7DE310003DF36 /* BTDevice.m */,
+				9C88A1DC10C7DE310003DF36 /* BTInquiryViewController.m */,
+				9C88A1DD10C7DE310003DF36 /* BTstackCocoaAppDelegate.h */,
+				9C88A1DE10C7DE310003DF36 /* BTstackCocoaAppDelegate.m */,
+				9C88A1DF10C7DE310003DF36 /* main.m */,
+			);
+			path = src;
 			sourceTree = "<group>";
 		};
 		9CEB4B7510715DC200DD5720 /* include */ = {
@@ -310,6 +628,12 @@
 			hasScannedForEncodings = 1;
 			mainGroup = 08FB7794FE84155DC02AAC07 /* project */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = 9C88A18E10C7DE310003DF36 /* Products */;
+					ProjectRef = 9C88A18D10C7DE310003DF36 /* BTstackCocoa.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				8DD76FA90486AB0100D96B5E /* BTdaemon */,
@@ -317,6 +641,16 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		9C88A1F410C7DE320003DF36 /* BTstackCocoa.app */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.application;
+			path = BTstackCocoa.app;
+			remoteRef = 9C88A1F310C7DE320003DF36 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
 
 /* Begin PBXSourcesBuildPhase section */
 		8DD76FAB0486AB0100D96B5E /* Sources */ = {
@@ -340,6 +674,10 @@
 				9CEB4F17107AAAEF00DD5720 /* run_loop_posix.c in Sources */,
 				9C04B826107D1CED002A63D0 /* run_loop.c in Sources */,
 				9C04B876107D2B7C002A63D0 /* run_loop_cocoa.m in Sources */,
+				9C88A1E910C7DE310003DF36 /* BTDevice.m in Sources */,
+				9C88A1EA10C7DE310003DF36 /* BTInquiryViewController.m in Sources */,
+				9C88A1EB10C7DE310003DF36 /* BTstackCocoaAppDelegate.m in Sources */,
+				9C88A1EC10C7DE310003DF36 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
