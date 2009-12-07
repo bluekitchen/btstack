@@ -457,12 +457,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
     if (cell == nil) {
-		if(onSDK20){
-			// @TODO 2.0 fix this:
-			// cell = [[UITableViewCell alloc] initWithFrame:(CGRect)frame reuseIdentifier:(NSString *)reuseIdentifier;
-		} else {
-			cell = [[[UITableViewCell alloc] initWithStyle:/* UITableViewCellStyleDefault = */0 reuseIdentifier:CellIdentifier] autorelease];
-		}
+#if __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_3_0
+		cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier] autorelease];
+#else
+		cell = [[UITableViewCell alloc] initWithFrame:(CGRect)frame reuseIdentifier:(NSString *)reuseIdentifier;
+#endif
     }
     
     // Set up the cell...
