@@ -59,12 +59,16 @@ typedef enum {
 } BluetoothConnectionState;
 
 @interface BTDevice : NSObject {
-	bd_addr_t address;
+
+	bd_addr_t address; // potential key
+	
 	NSString * name;
+	uint32_t   classOfDevice;
+	
 	uint8_t    pageScanRepetitionMode;
 	uint16_t   clockOffset;
-	uint32_t   classOfDevice;
-	BluetoothConnectionState  connectionState;
+
+	BluetoothConnectionState  connectionState; 
 }
 
 - (void) setAddress:(bd_addr_t *)addr;
