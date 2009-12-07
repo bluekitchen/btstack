@@ -460,7 +460,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 #if __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_3_0
 		cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier] autorelease];
 #else
-		cell = [[UITableViewCell alloc] initWithFrame:(CGRect)frame reuseIdentifier:(NSString *)reuseIdentifier;
+		cell = [[[UITableViewCell alloc] initWithFrame:CGRectNull reuseIdentifier:(NSString *)CellIdentifier] autorelease];
 #endif
     }
     
