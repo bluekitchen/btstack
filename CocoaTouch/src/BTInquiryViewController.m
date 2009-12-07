@@ -39,8 +39,17 @@
 #import "BTDevice.h"
 
 #include <btstack/btstack.h>
-
+#include <dlfcn.h>
 #define INQUIRY_INTERVAL 3
+
+#ifndef __IPHONE_3_0
+#define __IPHONE_3_0 30000
+// SDK 30 defines missing in SDK 20
+@interface UITableViewCell (NewIn30) 
+- (id)initWithStyle:(int)style reuseIdentifier:(NSString *)reuseIdentifier;
+@end
+
+#endif
 
 static BTInquiryViewController *inqView; 
 static btstack_packet_handler_t clientHandler;
@@ -62,6 +71,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 @implementation BTInquiryViewController
 
 @synthesize devices;
+// @synthesize deviceInfo;
 @synthesize delegate;
 @synthesize allowSelection;
 @synthesize showIcons;
@@ -86,6 +96,24 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	
 	devices = [[NSMutableArray alloc] init];
 	inqView = self;
+	
+	// create suite preferences
+	//CFStringRef testValue = CFSTR("TEST!!!");
+	//CFPreferencesSetAppValue (CFSTR(PREFS_DEVICES), testValue, CFSTR(PREFS_DEVICES));
+	//CFPreferencesAppSynchronize (CFSTR(PREFS_SHARED_SUITE));	
+	
+	
+	// preferences
+	/* NSMutableDictionary *emptyDeviceInfo    = [NSMutableDictionary dictionary];
+	NSMutableDictionary *defaultValues = [NSMutableDictionary dictionary];
+	[defaultValues setObject:emptyDeviceInfo forKey:@PREFS_DEVICES];
+	[[NSUserDefaults standardUserDefaults] registerDefaults:defaultValues];
+	[[NSUserDefaults standardUserDefaults] addSuiteNamed:@PREFS_SHARED_SUITE];
+	[self setDeviceInfo:[[NSUserDefaults standardUserDefaults] objectForKey:@PREFS_DEVICES] ];
+	 */
+	
+	// check for the one missing method
+	onSDK20 = [UITableViewCell instancesRespondToSelector:@selector(initWithFrame:reuseIdentifier:)];
 	return self;
 }
 
@@ -216,6 +244,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					remoteNameIndex = 0;
 					[self getNextRemoteName];
 					break;
+					
+				case HCI_EVENT_LINK_KEY_REQUEST:
+					// link key request
+					bt_flip_addr(event_addr, &packet[2]); 
+					bt_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
+					break;	
 					
 				default:
 					break;
@@ -423,69 +457,83 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
     if (cell == nil) {
-        cell = [[[UITableViewCell alloc] initWithStyle:/* UITableViewCellStyleDefault = */0 reuseIdentifier:CellIdentifier] autorelease];
-		// cell.selectionStyle = UITableViewCellSelectionStyleNone;
+		if(onSDK20){
+			// @TODO 2.0 fix this:
+			// cell = [[UITableViewCell alloc] initWithFrame:(CGRect)frame reuseIdentifier:(NSString *)reuseIdentifier;
+		} else {
+			cell = [[[UITableViewCell alloc] initWithStyle:/* UITableViewCellStyleDefault = */0 reuseIdentifier:CellIdentifier] autorelease];
+		}
     }
     
     // Set up the cell...
-	NSString *label = nil;
+	NSString *theLabel = nil;
+	UIImage *theImage = nil;
+	UIFont *theFont = nil;
+
 	int idx = [indexPath indexAtPosition:1];
 	if (bluetoothState != HCI_STATE_WORKING || idx >= [devices count]) {
 		if (bluetoothState == HCI_STATE_INITIALIZING){
-			label = @"Activating BTstack...";
+			theLabel = @"Activating BTstack...";
 			cell.accessoryView = bluetoothActivity;
 		} else if (bluetoothState == HCI_STATE_OFF){
-			label = @"Bluetooth not accessible!";
+			theLabel = @"Bluetooth not accessible!";
 			cell.accessoryView = nil;
 		} else {
 			if (connectedDevice) {
-				label = @"Disconnect";
+				theLabel = @"Disconnect";
 				cell.accessoryView = nil;
 			} else if (remoteDevice) {
-				label = @"Connecting...";
+				theLabel = @"Connecting...";
 				cell.accessoryView = bluetoothActivity;
 			} else {
 				switch (inquiryState){
 					case kInquiryInactive:
 						if ([devices count] > 0){
-							label = @"Find more devices...";
+							theLabel = @"Find more devices...";
 						} else {
-							label = @"Find devices...";
+							theLabel = @"Find devices...";
 						}
 						cell.accessoryView = nil;
 						break;
 					case kInquiryActive:
-						label = @"Searching...";
+						theLabel = @"Searching...";
 						cell.accessoryView = bluetoothActivity;
 						break;
 					case kInquiryRemoteName:
-						label = @"Query device names...";
+						theLabel = @"Query device names...";
 						cell.accessoryView = bluetoothActivity;
 						break;
 				}
 			}
 		}
 	} else {
+		
 		BTDevice *dev = [devices objectAtIndex:idx];
-		label = [dev nameOrAddress];
+
+		// pick font
+		theLabel = [dev nameOrAddress];
 		if ([dev name]){
-			cell.font = deviceNameFont;
+			theFont = deviceNameFont;
 		} else {
-			cell.font = macAddressFont;
+			theFont = macAddressFont;
 		}
+		
 		// pick an icon for the devices
 		if (showIcons) {
 			int major = ([dev classOfDevice] & 0x1f00) >> 8;
 			if (major == 0x01) {
-				cell.image = [UIImage imageNamed:@"computer.png"];
+				theImage = [UIImage imageNamed:@"computer.png"];
 			} else if (major == 0x02) {
-				cell.image = [UIImage imageNamed:@"smartphone.png"];
+				theImage = [UIImage imageNamed:@"smartphone.png"];
 			} else if ( major == 0x05 && ([dev classOfDevice] & 0xff) == 0x40){ 
-				cell.image = [UIImage imageNamed:@"keyboard.png"];
+				theImage = [UIImage imageNamed:@"keyboard.png"];
 			} else {
-				cell.image = [UIImage imageNamed:@"bluetooth.png"];
+				theImage = [UIImage imageNamed:@"bluetooth.png"];
 			}
+			
 		}
+		
+		// set accessory view
 		switch ([dev connectionState]) {
 			case kBluetoothConnectionNotConnected:
 			case kBluetoothConnectionConnected:
@@ -497,7 +545,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 				break;
 		}
 	}
-	cell.text = label;
+#if __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_3_0
+	if (theLabel) cell.textLabel.text =  theLabel;
+	if (theFont)  cell.textLabel.font =  theFont;
+	if (theImage) cell.imageView.image = theImage; 
+#else
+	if (theLabel) cell.text  = theLabel;
+	if (theFont)  cell.font  = theFont;
+	if (theImage) cell.image = theImage; 
+#endif
     return cell;
 }
 
