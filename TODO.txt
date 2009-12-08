@@ -3,6 +3,7 @@
 2009-11-08: Release 0.1
 
 NEXT:
+- fix SDK 2.0 detection
 - implement rest of L2CAP state machine
   - incoming connections
     - list of supported PSM

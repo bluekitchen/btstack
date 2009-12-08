@@ -42,13 +42,16 @@
 #include <dlfcn.h>
 #define INQUIRY_INTERVAL 3
 
+// fix compare for 3.0
 #ifndef __IPHONE_3_0
 #define __IPHONE_3_0 30000
+#endif
+
+#if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_3_0
 // SDK 30 defines missing in SDK 20
 @interface UITableViewCell (NewIn30) 
 - (id)initWithStyle:(int)style reuseIdentifier:(NSString *)reuseIdentifier;
 @end
-
 #endif
 
 static BTInquiryViewController *inqView; 
@@ -113,7 +116,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	 */
 	
 	// check for the one missing method
-	onSDK20 = [UITableViewCell instancesRespondToSelector:@selector(initWithFrame:reuseIdentifier:)];
+	onSDK20 = 0;
+	// [UITableViewCell instancesRespondToSelector:@selector(initWithFrame:reuseIdentifier:)];
+	NSLog(@"onSDK20 = %u", onSDK20);
 	return self;
 }
 
