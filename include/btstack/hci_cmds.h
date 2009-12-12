@@ -163,6 +163,7 @@ typedef enum {
 // HCI Commands - see hci_cmds.c for info on parameters
 extern hci_cmd_t hci_inquiry;
 extern hci_cmd_t hci_inquiry_cancel;
+extern hci_cmd_t hci_link_key_request_reply;
 extern hci_cmd_t hci_link_key_request_negative_reply;
 extern hci_cmd_t hci_pin_code_request_reply;
 extern hci_cmd_t hci_authentication_requested;
