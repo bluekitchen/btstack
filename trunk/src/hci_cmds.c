@@ -98,7 +98,7 @@ uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, va_lis
                 hci_cmd_buffer[pos++] = ptr[1];
                 hci_cmd_buffer[pos++] = ptr[0];
                 break;
-            case 'P': // c string passed as pascal string with leading 1-byte len
+            case 'P': // 16 byte PIN code or link key
                 ptr = va_arg(argptr, uint8_t *);
                 memcpy(&hci_cmd_buffer[pos], ptr, 16);
                 pos += 16;
@@ -161,6 +161,10 @@ OPCODE(OGF_LINK_CONTROL, 0x06), "H1"
 hci_cmd_t hci_accept_connection_request = {
 OPCODE(OGF_LINK_CONTROL, 0x09), "B1"
 // BD_ADDR, Role: become master, stay slave
+};
+hci_cmd_t hci_link_key_request_reply = {
+OPCODE(OGF_LINK_CONTROL, 0x0b), "BP"
+// BD_ADDR, LINK_KEY
 };
 hci_cmd_t hci_link_key_request_negative_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x0c), "B"
