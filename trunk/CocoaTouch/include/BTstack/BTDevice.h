@@ -74,6 +74,7 @@ typedef enum {
 - (void) setAddress:(bd_addr_t *)addr;
 - (bd_addr_t *) address;
 - (NSString *) toString;
+- (NSString *) addressString;
 + (NSString *) stringForAddress:(bd_addr_t *) address;
 
 @property (readonly)          BluetoothDeviceType deviceType;

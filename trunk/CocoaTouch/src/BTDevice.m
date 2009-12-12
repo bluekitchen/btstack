@@ -69,6 +69,10 @@
 
 - (NSString *) nameOrAddress{
 	if (name) return name;
+	return [self addressString];
+}
+
+- (NSString *) addressString{
 	return [BTDevice stringForAddress:&address];
 }
 
