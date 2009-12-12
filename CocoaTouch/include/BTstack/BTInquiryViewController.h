@@ -39,10 +39,8 @@
 
 #include <btstack/hci_cmds.h> // for HCI_STATE
 
-#define PREFS_SHARED_SUITE "ch.ringwald.BTstack"
-#define PREFS_DEVICES      "Devices"
-#define PREFS_NAME         "Name"
-#define PREFS_LINK_KEY     "LinkKey"
+#define PREFS_REMOTE_NAME  @"RemoteName"
+#define PREFS_LINK_KEY     @"LinkKey"
 
 @class BTDevice;
 @protocol BTInquiryDelegate;
@@ -66,8 +64,8 @@ typedef enum {
 	bool allowSelection;
 	bool showIcons;
 	
-	// used to store link keys and remote names (soon :)
-	// NSMutableDictionary *deviceInfo;
+	// used to store link keys and remote names
+	NSMutableDictionary *deviceInfo;
     
 	// hacks
 	bool stopRemoteNameGathering;
@@ -91,7 +89,7 @@ typedef enum {
 @property (nonatomic, assign) bool showIcons;
 @property (nonatomic, retain) NSMutableArray *devices;
 @property (nonatomic, retain) id<BTInquiryDelegate> delegate;
-// @property (nonatomic, retain) NSMutableDictionary *deviceInfo;
+@property (nonatomic, retain) NSMutableDictionary *deviceInfo;
 @end
 
 @protocol BTInquiryDelegate

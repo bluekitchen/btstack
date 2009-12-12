@@ -74,7 +74,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 @implementation BTInquiryViewController
 
 @synthesize devices;
-// @synthesize deviceInfo;
+@synthesize deviceInfo;
 @synthesize delegate;
 @synthesize allowSelection;
 @synthesize showIcons;
@@ -99,22 +99,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	
 	devices = [[NSMutableArray alloc] init];
 	inqView = self;
-	
-	// create suite preferences
-	//CFStringRef testValue = CFSTR("TEST!!!");
-	//CFPreferencesSetAppValue (CFSTR(PREFS_DEVICES), testValue, CFSTR(PREFS_DEVICES));
-	//CFPreferencesAppSynchronize (CFSTR(PREFS_SHARED_SUITE));	
-	
-	
-	// preferences
-	/* NSMutableDictionary *emptyDeviceInfo    = [NSMutableDictionary dictionary];
-	NSMutableDictionary *defaultValues = [NSMutableDictionary dictionary];
-	[defaultValues setObject:emptyDeviceInfo forKey:@PREFS_DEVICES];
-	[[NSUserDefaults standardUserDefaults] registerDefaults:defaultValues];
-	[[NSUserDefaults standardUserDefaults] addSuiteNamed:@PREFS_SHARED_SUITE];
-	[self setDeviceInfo:[[NSUserDefaults standardUserDefaults] objectForKey:@PREFS_DEVICES] ];
-	 */
-	
+		
 	// check for the one missing method
 	onSDK20 = 0;
 	// [UITableViewCell instancesRespondToSelector:@selector(initWithFrame:reuseIdentifier:)];
@@ -188,6 +173,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						[dev setClassOfDevice:READ_BT_24(packet, 3 + numResponses*(6+1+1+1) + i*3)];
 						[dev setClockOffset:(READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff)];
 						// hexdump(packet, size);
+						
+						// get name from deviceInfo
+						if (deviceInfo) {
+							NSMutableDictionary * deviceDict = [deviceInfo objectForKey:[dev addressString]];
+							if (deviceDict){
+								dev.name = [deviceDict objectForKey:PREFS_REMOTE_NAME];
+							}
+						}
+						
 						NSLog(@"adding %@", [dev toString] );
 						[devices addObject:dev];
 						
@@ -205,7 +199,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					if (!dev) break;
 					[dev setConnectionState:kBluetoothConnectionNotConnected];
 					if (packet[2] == 0) {
-						[dev setName:[NSString stringWithUTF8String:(const char *) &packet[9]]];
+						NSString *remoteName = [NSString stringWithUTF8String:(const char *) &packet[9]]; 
+						[dev setName:remoteName];
+						if (deviceInfo) {
+							NSMutableDictionary *deviceDict = [deviceInfo objectForKey:[dev addressString]];
+							if (!deviceDict){
+								deviceDict = [NSMutableDictionary dictionaryWithCapacity:3];
+								[deviceInfo setObject:deviceDict forKey:[dev addressString]];
+							}
+							[deviceDict setObject:remoteName forKey:PREFS_REMOTE_NAME];
+						}
 						if (delegate) {
 							[delegate deviceDetected:self device:dev];
 						}
@@ -244,27 +247,55 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					break;
 					
 				case HCI_EVENT_INQUIRY_COMPLETE:
-					NSLog(@"Inquiry complete");
 					// reset name check
 					remoteNameIndex = 0;
 					[self getNextRemoteName];
 					break;
+
+				case HCI_EVENT_LINK_KEY_NOTIFICATION:
+					if (deviceInfo) {
+						bt_flip_addr(event_addr, &packet[2]); 
+						NSString *devAddress = [BTDevice stringForAddress:&event_addr];
+						NSData *linkKey = [NSData dataWithBytes:&packet[8] length:16];
+						NSMutableDictionary * deviceDict = [deviceInfo objectForKey:devAddress];
+						if (!deviceDict){
+							deviceDict = [NSMutableDictionary dictionaryWithCapacity:3];
+							[deviceInfo setObject:deviceDict forKey:[dev addressString]];
+						}
+						[deviceDict setObject:linkKey forKey:PREFS_LINK_KEY];
+						NSLog(@"Adding link key for %@, value %@", devAddress, linkKey);
+					}
+					break;
 					
-				case HCI_EVENT_LINK_KEY_REQUEST:
+				case HCI_EVENT_LINK_KEY_REQUEST: {
 					// link key request
+					NSData *linkKey = nil;
 					bt_flip_addr(event_addr, &packet[2]); 
-					bt_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
-					break;	
+					// get link key from deviceInfo
+					if (deviceInfo) {
+						NSString *devAddress = [BTDevice stringForAddress:&event_addr];
+						NSMutableDictionary * deviceDict = [deviceInfo objectForKey:devAddress];
+						if (deviceDict){
+							linkKey = [deviceDict objectForKey:PREFS_LINK_KEY];
+						}
+					}
+					if (linkKey) {
+						bt_send_cmd(&hci_link_key_request_reply, &event_addr, [linkKey bytes]);
+					} else {
+						bt_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
+					}
+					break;
+				}
 					
 				default:
 					break;
-					
-					// hexdump(packet, size);
-					break;
 			}
+			
+			break;
 			
 		default:
 			break;
+			
 	}
 	// forward to client app
 	(*clientHandler)(packet_type, channel, packet, size);
