@@ -15,6 +15,7 @@ echo "Version: $VERSION-$REVISION" >> $PACKAGE/DEBIAN/control
 
 mkdir -p $PACKAGE/usr/local/bin
 cp src/BTdaemon $PACKAGE/usr/local/bin
+cp example/inquiry $PACKAGE/usr/local/bin
 
 mkdir -p $PACKAGE/usr/local/lib
 cp src/libBTstack.dylib $PACKAGE/usr/local/lib

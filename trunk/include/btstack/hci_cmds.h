@@ -171,6 +171,7 @@ extern hci_cmd_t hci_set_event_mask;
 extern hci_cmd_t hci_reset;
 extern hci_cmd_t hci_create_connection;
 extern hci_cmd_t hci_disconnect;
+extern hci_cmd_t hci_create_connection_cancel;
 extern hci_cmd_t hci_host_buffer_size;
 extern hci_cmd_t hci_write_authentication_enable;
 extern hci_cmd_t hci_write_local_name;

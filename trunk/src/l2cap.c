@@ -137,72 +137,109 @@ void l2cap_disconnect_internal(uint16_t source_cid, uint8_t reason){
     }
 }
 
+static void l2cap_handle_connection_failed_for_addr(bd_addr_t address, uint8_t status){
+    linked_item_t *it;
+    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+        l2cap_channel_t * channel = (l2cap_channel_t *) it;
+        if ( ! BD_ADDR_CMP( channel->address, address) ){
+            if (channel->state == L2CAP_STATE_CLOSED) {
+                // failure, forward error code
+                l2cap_emit_channel_opened(channel, status);
+                // discard channel
+                linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
+                free (channel);
+            }
+        }
+    }
+}
+
+static void l2cap_handle_connection_success_for_addr(bd_addr_t address, hci_con_handle_t handle){
+    linked_item_t *it;
+    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+        l2cap_channel_t * channel = (l2cap_channel_t *) it;
+        if ( ! BD_ADDR_CMP( channel->address, address) ){
+            if (channel->state == L2CAP_STATE_CLOSED) {
+                // success, start l2cap handshake
+                channel->handle = handle;
+                channel->sig_id = l2cap_next_sig_id();
+                channel->source_cid = l2cap_next_source_cid();
+                channel->state = L2CAP_STATE_WAIT_CONNECT_RSP;
+                l2cap_send_signaling_packet( channel->handle, CONNECTION_REQUEST, channel->sig_id, channel->psm, channel->source_cid);                   
+            }
+        }
+    }
+}
 
 void l2cap_event_handler( uint8_t *packet, uint16_t size ){
-    // handle connection complete events
-    if (packet[0] == HCI_EVENT_CONNECTION_COMPLETE) {
-        bd_addr_t address;
-        bt_flip_addr(address, &packet[5]);
-        
-        linked_item_t *it;
-        for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-            l2cap_channel_t * channel = (l2cap_channel_t *) it;
-            if ( ! BD_ADDR_CMP( channel->address, address) ){
-                if (channel->state == L2CAP_STATE_CLOSED) {
-                    if (packet[2] == 0){
-                        // success, start l2cap handshake
-                        channel->handle = READ_BT_16(packet, 3);
-                        channel->sig_id = l2cap_next_sig_id();
-                        channel->source_cid = l2cap_next_source_cid();
-                        channel->state = L2CAP_STATE_WAIT_CONNECT_RSP;
-                        l2cap_send_signaling_packet( channel->handle, CONNECTION_REQUEST, channel->sig_id, channel->psm, channel->source_cid);                   
-                    } else {
-                        // failure, forward error code
-                        l2cap_emit_channel_opened(channel, packet[2]);
-                        // discard channel
-                        linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
-                        free (channel);
-                        
-                    }
+    
+    bd_addr_t address;
+    hci_con_handle_t handle;
+    
+    switch(packet[0]){
+            
+        // handle connection complete events
+        case HCI_EVENT_CONNECTION_COMPLETE:
+            bt_flip_addr(address, &packet[5]);
+            if (packet[2] == 0){
+                handle = READ_BT_16(packet, 3);
+                l2cap_handle_connection_success_for_addr(address, handle);
+            } else {
+                l2cap_handle_connection_failed_for_addr(address, packet[2]);
+            }
+            break;
+            
+        // handle successful create connection cancel command
+        case HCI_EVENT_COMMAND_COMPLETE:
+            if ( COMMAND_COMPLETE_EVENT(packet, hci_create_connection_cancel) ) {
+                if (packet[5] == 0){
+                    bt_flip_addr(address, &packet[6]);
+                    // CONNECTION TERMINATED BY LOCAL HOST (0X16)
+                    l2cap_handle_connection_failed_for_addr(address, 0x16);
                 }
             }
-        }
-    }
-    
-    // handle disconnection complete events
-    if (packet[0] == HCI_EVENT_DISCONNECTION_COMPLETE) {
-        // send l2cap disconnect events for all channels on this handle
-        hci_con_handle_t handle = READ_BT_16(packet, 3);
-        linked_item_t *it;
-        for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-            l2cap_channel_t * channel = (l2cap_channel_t *) it;
-            if ( channel->handle == handle ){
-                l2cap_finialize_channel_close(channel);
+            break;
+            
+        // handle disconnection complete events
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            // send l2cap disconnect events for all channels on this handle
+            handle = READ_BT_16(packet, 3);
+            linked_item_t *it;
+            for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+                l2cap_channel_t * channel = (l2cap_channel_t *) it;
+                if ( channel->handle == handle ){
+                    l2cap_finialize_channel_close(channel);
+                }
             }
-        }
-    }
-    
-    // HCI Connection Timeouts
-    if (packet[0] == L2CAP_EVENT_TIMEOUT_CHECK && !capture_connection){
-        hci_con_handle_t handle = READ_BT_16(packet, 2);
-        linked_item_t *it;
-        l2cap_channel_t * channel;
-        int used = 0;
-        for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-            channel = (l2cap_channel_t *) it;
-            if (channel->handle == handle) {
-                used = 1;
+            break;
+            
+        // HCI Connection Timeouts
+        case L2CAP_EVENT_TIMEOUT_CHECK:
+            if (!capture_connection){
+                hci_con_handle_t handle = READ_BT_16(packet, 2);
+                linked_item_t *it;
+                l2cap_channel_t * channel;
+                int used = 0;
+                for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+                    channel = (l2cap_channel_t *) it;
+                    if (channel->handle == handle) {
+                        used = 1;
+                    }
+                }
+                if (!used) {
+                    hci_send_cmd(&hci_disconnect, handle, 0x13); // remote closed connection             
+                }
             }
-        }
-        if (!used) {
-            hci_send_cmd(&hci_disconnect, handle, 0x13); // remote closed connection             
-        }
+            break;
+            
+        default:
+            break;
     }
     
+    // pass on
     (*event_packet_handler)(packet, size);
 }
 
-static l2cap_handle_disconnect_request(l2cap_channel_t *channel, uint16_t identifier){
+static void l2cap_handle_disconnect_request(l2cap_channel_t *channel, uint16_t identifier){
     l2cap_send_signaling_packet( channel->handle, DISCONNECTION_RESPONSE, identifier, channel->dest_cid, channel->source_cid);   
     l2cap_finialize_channel_close(channel);
 }

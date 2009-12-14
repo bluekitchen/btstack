@@ -157,7 +157,10 @@ OPCODE(OGF_LINK_CONTROL, 0x06), "H1"
 // Handle, Reason: 0x05, 0x13-0x15, 0x1a, 0x29
 // see Errors Codes in BT Spec Part D
 };
-
+hci_cmd_t hci_create_connection_cancel = {
+OPCODE(OGF_LINK_CONTROL, 0x08), "B"
+// BD_ADDR
+};
 hci_cmd_t hci_accept_connection_request = {
 OPCODE(OGF_LINK_CONTROL, 0x09), "B1"
 // BD_ADDR, Role: become master, stay slave
