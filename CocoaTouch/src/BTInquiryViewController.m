@@ -99,11 +99,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	
 	devices = [[NSMutableArray alloc] init];
 	inqView = self;
-		
-	// check for the one missing method
-	onSDK20 = 0;
-	// [UITableViewCell instancesRespondToSelector:@selector(initWithFrame:reuseIdentifier:)];
-	NSLog(@"onSDK20 = %u", onSDK20);
+	
 	return self;
 }
 
