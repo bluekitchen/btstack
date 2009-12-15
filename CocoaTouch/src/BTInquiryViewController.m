@@ -266,16 +266,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 				case HCI_EVENT_LINK_KEY_REQUEST: {
 					// link key request
 					NSData *linkKey = nil;
-					bt_flip_addr(event_addr, &packet[2]); 
+					bt_flip_addr(event_addr, &packet[2]);
+					NSString *devAddress = nil;
 					// get link key from deviceInfo
 					if (deviceInfo) {
-						NSString *devAddress = [BTDevice stringForAddress:&event_addr];
+						devAddress = [BTDevice stringForAddress:&event_addr];
 						NSMutableDictionary * deviceDict = [deviceInfo objectForKey:devAddress];
 						if (deviceDict){
 							linkKey = [deviceDict objectForKey:PREFS_LINK_KEY];
 						}
 					}
 					if (linkKey) {
+						NSLog(@"Sending link key for %@, value %@", devAddress, linkKey);
 						bt_send_cmd(&hci_link_key_request_reply, &event_addr, [linkKey bytes]);
 					} else {
 						bt_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
@@ -404,36 +406,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	connectedDevice = device;
 	[[self tableView] reloadData];
 }
-
-/*
-- (void)viewDidLoad {
-    [super viewDidLoad];
-
-    // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
-    // self.navigationItem.rightBarButtonItem = self.editButtonItem;
-}
-*/
-
-/*
-- (void)viewWillAppear:(BOOL)animated {
-    [super viewWillAppear:animated];
-}
-*/
-/*
-- (void)viewDidAppear:(BOOL)animated {
-    [super viewDidAppear:animated];
-}
-*/
-/*
-- (void)viewWillDisappear:(BOOL)animated {
-	[super viewWillDisappear:animated];
-}
-*/
-/*
-- (void)viewDidDisappear:(BOOL)animated {
-	[super viewDidDisappear:animated];
-}
-*/
 
 // Override to allow orientations other than the default portrait orientation.
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
