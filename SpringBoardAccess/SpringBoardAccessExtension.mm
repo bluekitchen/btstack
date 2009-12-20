@@ -98,7 +98,7 @@ HOOK(SpringBoard, applicationDidFinishLaunching$, void, id app) {
 extern "C" void SpringBoardAccessInitialize(){
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	
-	NSLog(@"SpringBoardAccessInitialize called for SpringBoard!");
+	// NSLog(@"SpringBoardAccessInitialize called for SpringBoard!");
 	
     // Setup hooks
     Class $SpringBoard(objc_getClass("SpringBoard"));
