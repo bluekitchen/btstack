@@ -3,7 +3,11 @@
 2009-11-08: Release 0.1
 
 NEXT:
-- fix SDK 2.0 detection
+- Add BluetoothToggle (shutdown of Apple's stack)
+- Add improved RFCOMM user-client
+  - use switch on RFCOMM control field in rfcomm.c packet handler
+- BUG: bt_close crashes when used in CocoaTouch app
+- BUG: BTdaemon crashes on iPhone when CocoaTouch app is closed (sometimes)
 - implement rest of L2CAP state machine
   - incoming connections
     - list of supported PSM
@@ -16,13 +20,10 @@ NEXT:
   - would be nice, if we could get woken up by Bluetooth data
 - create <btstack/errors.h>
 - add timeouts to cocoa run loop
-- RFCOMM implementation
-  - use switch on RFCOMM control field in rfcomm.c packet handler
 - CocoaTouch User Interface Components
   - Provide BTstack class
   - Warning and shutdown of Apple's stack
-- create new GPG key for gmail account and sign APT package
-- non-reproducible bug: hci_state gets confused.
+- BUG (non-reproducible): hci_state gets confused.
   - BlueTool used although hci state should be on (right after quitting example/test)
   - BlueTool not used although stack not working
     - more log messages
@@ -30,9 +31,6 @@ NEXT:
   
 == Release 0.2 - Incoming L2CAP supported + UI Support
 
-- better deal with Apple stack
-  - figure out how to shut it down
-  - user interface
 - extend SpringBoard feedback
   - show alerts/messages using SpringBoardAcccess, e.g. Bluetooth disconnected by remote device
   - add code to notify about remote disconnets
@@ -47,14 +45,6 @@ NEXT:
   - error notification
   - flow control
   - reassembly/segmentation
-- automatic disable of alternative Bluetooth Stack (e.g., BTServer on iPhone)
-- DEMOS:
-  - BTstack-cmd
-    - info
-	- inquiry
-	- remote name
-	- open/close l2cap connection
-    - evtl. SDP browser
 
 == Release Version 0.3
 - implement RFCOMM

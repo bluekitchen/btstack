@@ -105,10 +105,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 - (void) myStartInquiry{
 	if (inquiryState != kInquiryInactive) {
-		NSLog(@"Inquiry already active");
+		// NSLog(@"Inquiry already active");
 		return;
 	}
-	NSLog(@"Inquiry started");
+	// NSLog(@"Inquiry started");
 
 	stopRemoteNameGathering = false;
 	restartInquiry = true;
@@ -160,7 +160,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						bd_addr_t addr;
 						bt_flip_addr(addr, &packet[3+i*6]);
 						if ([inqView getDeviceForAddress:&addr]) {
-							NSLog(@"Device %@ already in list", [BTDevice stringForAddress:&addr]);
+							// NSLog(@"Device %@ already in list", [BTDevice stringForAddress:&addr]);
 							continue;
 						}
 						BTDevice *dev = [[BTDevice alloc] init];
@@ -178,7 +178,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 							}
 						}
 						
-						NSLog(@"adding %@", [dev toString] );
+						// NSLog(@"adding %@", [dev toString] );
 						[devices addObject:dev];
 						
 						if (delegate) {
@@ -217,7 +217,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 				case HCI_EVENT_COMMAND_COMPLETE:
 					if (COMMAND_COMPLETE_EVENT(packet, hci_inquiry_cancel)){
 						// inquiry canceled
-						NSLog(@"Inquiry cancelled successfully");
+						// NSLog(@"Inquiry cancelled successfully");
 						inquiryState = kInquiryInactive;
 						[[self tableView] reloadData];
 						if (notifyDelegateOnInquiryStopped){
@@ -229,7 +229,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					}
 					if (COMMAND_COMPLETE_EVENT(packet, hci_remote_name_request_cancel)){
 						// inquiry canceled
-						NSLog(@"Remote name request cancelled successfully");
+						// NSLog(@"Remote name request cancelled successfully");
 						inquiryState = kInquiryInactive;
 						[[self tableView] reloadData];
 						if (notifyDelegateOnInquiryStopped){
@@ -259,7 +259,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 							[deviceInfo setObject:deviceDict forKey:[dev addressString]];
 						}
 						[deviceDict setObject:linkKey forKey:PREFS_LINK_KEY];
-						NSLog(@"Adding link key for %@, value %@", devAddress, linkKey);
+						// NSLog(@"Adding link key for %@, value %@", devAddress, linkKey);
 					}
 					break;
 					
@@ -277,7 +277,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						}
 					}
 					if (linkKey) {
-						NSLog(@"Sending link key for %@, value %@", devAddress, linkKey);
+						// NSLog(@"Sending link key for %@, value %@", devAddress, linkKey);
 						bt_send_cmd(&hci_link_key_request_reply, &event_addr, [linkKey bytes]);
 					} else {
 						bt_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
@@ -378,7 +378,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			bt_send_cmd(&hci_inquiry_cancel);
 			break;
 		case kInquiryInactive:
-			NSLog(@"stop inquiry called although inquiry inactive?");
+			// NSLog(@"stop inquiry called although inquiry inactive?");
 			break;
 		case kInquiryRemoteName:
 			if (remoteNameDevice) {
@@ -562,7 +562,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-	NSLog(@"didSelectRowAtIndexPath %@", indexPath);
+	// NSLog(@"didSelectRowAtIndexPath %@", indexPath);
+	
+	// pro-actively deselect row
+	[tableView deselectRowAtIndexPath:indexPath animated:NO];
+	
     // Navigation logic may go here. Create and push another view controller.
 	// AnotherViewController *anotherViewController = [[AnotherViewController alloc] initWithNibName:@"AnotherView" bundle:nil];
 	// [self.navigationController pushViewController:anotherViewController];
