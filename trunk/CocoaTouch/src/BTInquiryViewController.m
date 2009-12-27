@@ -146,7 +146,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					alertView.title = @"Bluetooth not accessible!";
 					alertView.message = @"Hardware initialization failed!\n"
 					"Make sure you have turned off Bluetooth in the System Settings.";
-					NSLog(@"Alert: %@ - %@", alertView.title, alertView.message);
+					// NSLog(@"Alert: %@ - %@", alertView.title, alertView.message);
 					[alertView addButtonWithTitle:@"Dismiss"];
 					[alertView show];
 					break;
@@ -256,7 +256,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						NSMutableDictionary * deviceDict = [deviceInfo objectForKey:devAddress];
 						if (!deviceDict){
 							deviceDict = [NSMutableDictionary dictionaryWithCapacity:3];
-							[deviceInfo setObject:deviceDict forKey:[dev addressString]];
+							[deviceInfo setObject:deviceDict forKey:devAddress];
 						}
 						[deviceDict setObject:linkKey forKey:PREFS_LINK_KEY];
 						// NSLog(@"Adding link key for %@, value %@", devAddress, linkKey);
@@ -366,7 +366,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 - (void) stopInquiry {
 	
-	NSLog(@"stop inquiry called, state %u", inquiryState);
+	// NSLog(@"stop inquiry called, state %u", inquiryState);
 	restartInquiry = false;
 	stopRemoteNameGathering = true;
 	bool immediateNotify = true;
