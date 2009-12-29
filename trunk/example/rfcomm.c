@@ -309,6 +309,12 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					}
 					break;
 					
+				case HCI_EVENT_LINK_KEY_REQUEST:
+					// link key request
+					bt_flip_addr(event_addr, &packet[2]); 
+					bt_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
+					break;
+					
 				case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
 					bt_flip_addr(event_addr, &packet[2]); 
@@ -370,40 +376,47 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	}
 }
 
-void usage(void){
-	fprintf(stderr, "Usage : RFComm [-a|--address aa:bb:cc:dd:ee:ff] [-c|--channel n] [-p|--pin nnnn]\n");
+void usage(const char *name){
+	fprintf(stderr, "Usage : %s [-a|--address aa:bb:cc:dd:ee:ff] [-c|--channel n] [-p|--pin nnnn]\n", name);
 }
 
 #define FIFO_NAME "/tmp/rfcomm0"
 int main (int argc, const char * argv[]){
+	
 	int arg = 1;
+	
+	if (argc == 1){
+		usage(argv[0]);
+		return 1;	}
+	
 	while (arg < argc) {
 		if(!strcmp(argv[arg], "-a") || !strcmp(argv[arg], "--address")){
 			arg++;
 			if(arg >= argc || !sscan_bd_addr((uint8_t *)argv[arg], addr)){
-				usage();
+				usage(argv[0]);
 				return 1;
 			}
 		} else if (!strcmp(argv[arg], "-c") || !strcmp(argv[arg], "--channel")) {
 			arg++;
 			if(arg >= argc || !sscanf(argv[arg], "%d", &RFCOMM_CHANNEL_ID)){
-				usage();
+				usage(argv[0]);
 				return 1;
 			}
 		} else if (!strcmp(argv[arg], "-p") || !strcmp(argv[arg], "--pin")) {
 			arg++;
 			int pin1,pin2,pin3,pin4;
 			if(arg >= argc || sscanf(argv[arg], "%1d%1d%1d%1d", &pin1, &pin2, &pin3, &pin4) != 4){
-				usage();
+				usage(argv[0]);
 				return 1;
 			}
 			snprintf(PIN, 5, "%01d%01d%01d%01d", pin1, pin2, pin3, pin4);
 		} else {
-			usage();
+			usage(argv[0]);
 			return 1;
 		}
 		arg++;
 	}
+	printf("Waiting for client to open %s...\n", FIFO_NAME);
 	int err = mknod(FIFO_NAME, S_IFIFO | 0666, 0);
 	if(err >= 0 || errno == EEXIST){
 		fifo_fd = open(FIFO_NAME, O_WRONLY);

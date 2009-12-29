@@ -43,12 +43,17 @@
 #include <btstack/btstack.h>
 
 // bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };  // Think Outside Keyboard
-bd_addr_t addr = {0x00, 0x19, 0x1d, 0x90, 0x44, 0x68 };  // WiiMote
+// bd_addr_t addr = {0x00, 0x19, 0x1d, 0x90, 0x44, 0x68 };  // WiiMote
+bd_addr_t addr = {0xd4, 0x9a, 0x20, 0x7e, 0x69, 0xcc };  // Magic Mouse
 
 hci_con_handle_t con_handle;
 uint16_t source_cid_interrupt;
 uint16_t source_cid_control;
 
+float xCoord = 0;
+float yCoord = 0;
+float speed = 0.2;
+ 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	
 	bd_addr_t event_addr;
@@ -57,17 +62,27 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 			
 		case L2CAP_DATA_PACKET:
 			// just dump data for now
-			printf("source cid %x -- ", channel);
-			hexdump( packet, size );
+			// printf("source cid %x -- ", channel);
+			// hexdump( packet, size );
 	
 			// HOME => disconnect
-			if (packet[0] == 0xA1) {							// Status report
-				if (packet[1] == 0x30 || packet[1] == 0x31) {   // type 0x30 or 0x31
-					if (packet[3] & 0x080) {                   // homne button pressed
-						printf("Disconnect baseband\n");
-						bt_send_cmd(&hci_disconnect, con_handle, 0x13); // remote closed connection
-					}
-				}
+			if (packet[0] == 0xA1 && packet[1] == 0x10) {
+				int16_t moveX = READ_BT_16(packet, 3);
+				int16_t moveY = READ_BT_16(packet, 5);
+				
+				xCoord+=moveX * speed;
+				yCoord+=moveY * speed;
+				
+				xCoord = xCoord<0   ? 0:xCoord;
+				xCoord = xCoord>320 ? 320:xCoord;
+				
+				yCoord = yCoord<0   ? 0:yCoord;
+				yCoord = yCoord>480 ? 480:yCoord;
+				
+				printf("%3d %3d (delta %d %d) ", (int)xCoord, (int)yCoord, moveX, moveY);
+				if (packet[2] & 1) printf("Left ");
+				if (packet[2] & 2) printf("Right ");
+				printf("\n");
 			}
 			break;
 			
@@ -89,9 +104,17 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					
 				case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
-					printf("Please enter PIN 1234 on remote device\n");
+					printf("HCI_EVENT_PIN_CODE_REQUEST\n");
+					bt_flip_addr(event_addr, &packet[2]);
+					bt_send_cmd(&hci_pin_code_request_reply, event_addr, 4, "0000");
 					break;
 
+				case HCI_EVENT_LINK_KEY_REQUEST:
+					// link key request
+					bt_flip_addr(event_addr, &packet[2]); 
+					bt_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
+					break;
+				
 				case L2CAP_EVENT_CHANNEL_OPENED:
 					// inform about new l2cap connection
 					// inform about new l2cap connection
@@ -113,10 +136,10 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 							source_cid_control = source_cid;
 							// request acceleration data..
 							uint8_t setMode31[] = { 0x52, 0x12, 0x00, 0x31 };
-							bt_send_l2cap( source_cid, setMode31, sizeof(setMode31));
+							// bt_send_l2cap( source_cid, setMode31, sizeof(setMode31));
 							// stop blinking
 							uint8_t setLEDs[] = { 0x52, 0x11, 0x10 };
-							bt_send_l2cap( source_cid, setLEDs, sizeof(setLEDs));
+							// bt_send_l2cap( source_cid, setLEDs, sizeof(setLEDs));
 						}
 					} else {
 						printf("L2CAP connection to device ");
