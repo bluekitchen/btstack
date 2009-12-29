@@ -32,7 +32,9 @@
 /*
  *  test.c
  * 
- *  Created by Matthias Ringwald on 7/14/09.
+ *  Command line parsing and debug option
+ *  added by Vladimir Vyskocil <vladimir.vyskocil@gmail.com>
+ *
  */
 
 #include <unistd.h>
