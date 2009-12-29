@@ -40,7 +40,12 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
+#include <errno.h>
 #include <string.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <btstack/btstack.h>
 
@@ -77,15 +82,15 @@
 #define BT_RFCOMM_CRC_CHECK_LEN     3
 #define BT_RFCOMM_UIHCRC_CHECK_LEN  2
 
-bd_addr_t addr = {0x00,0x1c,0x4d,0x02,0x1a,0x77};  // Zeemote
-// bd_addr_t addr = {0x00,0x16,0xcb,0x09,0x94,0xa9};  // sh-mac
-// bd_addr_t addr = {0x00,0x0b,0x24,0x37,0xd6,0x80};  // smart card reader
-// bd_addr_t addr = {0x00,0x80,0x25,0x07,0x2b,0x5f};  // cl800bt
+bd_addr_t addr = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; 
+int RFCOMM_CHANNEL_ID = 1;
+char PIN[] = "0000";
 
-#define RFCOMM_CHANNEL_ID 1
+int DEBUG = 0;
 
 hci_con_handle_t con_handle;
 uint16_t source_cid;
+int fifo_fd;
 
 // used to assemble rfcomm packets
 uint8_t rfcomm_out_buffer[1000];
@@ -94,7 +99,7 @@ uint8_t rfcomm_out_buffer[1000];
  * @param credits - only used for RFCOMM flow control in UIH wiht P/F = 1
  */
 void rfcomm_send_packet(uint16_t source_cid, uint8_t address, uint8_t control, uint8_t credits, uint8_t *data, uint16_t len){
-
+	
 	uint16_t pos = 0;
 	uint8_t crc_fields = 3;
 	
@@ -109,7 +114,7 @@ void rfcomm_send_packet(uint16_t source_cid, uint8_t address, uint8_t control, u
 		rfcomm_out_buffer[pos++] = len >> 7;          // bits 7-14
 		crc_fields++;
 	}
-
+	
 	// add credits for UIH frames when PF bit is set
 	if (control == BT_RFCOMM_UIH_PF){
 		rfcomm_out_buffer[pos++] = credits;
@@ -169,7 +174,7 @@ void _bt_rfcomm_send_uih_pn_command(uint16_t source_cid, uint8_t initiator, uint
 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	bd_addr_t event_addr;
-
+	
 	static uint8_t msc_resp_send = 0;
 	static uint8_t msc_resp_received = 0;
 	static uint8_t credits_used = 0;
@@ -189,7 +194,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 				printf("Sending UIH Parameter Negotiation Command\n");
 				_bt_rfcomm_send_uih_pn_command(source_cid, 1, RFCOMM_CHANNEL_ID, 100);
 			}
-		
+			
 			//  received UIH Parameter Negotiation Response
 			if (size == 14 && packet[1] == BT_RFCOMM_UIH && packet[3] == BT_RFCOMM_PN_RSP){
 				packet_processed++;
@@ -223,12 +228,25 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 				packet_processed++;
 				msc_resp_received = 1;
 			}
-
+			
 			if (packet[1] == BT_RFCOMM_UIH && packet[0] == ((RFCOMM_CHANNEL_ID<<3)|1)){
 				packet_processed++;
 				credits_used++;
-				printf("RX: address %02x, control %02x: ", packet[0], packet[1]);
-				hexdump( (uint8_t*) &packet[3], size-4);
+				if(DEBUG){
+					printf("RX: address %02x, control %02x: ", packet[0], packet[1]);
+					hexdump( (uint8_t*) &packet[3], size-4);
+				}
+				int written = 0;
+				int length = size-4;
+				int start_of_data = 3;
+				//write data to fifo
+				while (length) {
+					if ((written = write(fifo_fd, &packet[start_of_data], length)) == -1) {
+						printf("Error writing to FIFO\n");
+					} else {
+						length -= written;
+					}
+				}
 			}
 			
 			if (packet[1] == BT_RFCOMM_UIH_PF && packet[0] == ((RFCOMM_CHANNEL_ID<<3)|1)){
@@ -238,12 +256,14 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					printf("Got %u credits, can send!\n", packet[2]);
 				}
 				credits_free = packet[2];
-				printf("RX: address %02x, control %02x: ", packet[0], packet[1]);
-				hexdump( (uint8_t *) &packet[4], size-5);
+				if(DEBUG){
+					printf("RX: address %02x, control %02x: ", packet[0], packet[1]);
+					hexdump( (uint8_t *) &packet[4], size-5);				
+				}
 			}
 			
 			uint8_t send_credits_packet = 0;
-
+			
 			
 			if (credits_used > 40 ) {
 				send_credits_packet = 1;
@@ -285,23 +305,17 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 				case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started - set local name
 					if (packet[2] == HCI_STATE_WORKING) {
-						bt_send_cmd(&hci_write_local_name, "BTstack-Test");
+						bt_send_cmd(&hci_write_local_name, "BTstack");
 					}
-					break;
-
-				case HCI_EVENT_LINK_KEY_REQUEST:
-					// link key request
-					bt_flip_addr(event_addr, &packet[2]); 
-					bt_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
 					break;
 					
 				case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
 					bt_flip_addr(event_addr, &packet[2]); 
-					bt_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
-					printf("Please enter PIN 0000 on remote device\n");
+					bt_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, PIN);
+					printf("Please enter PIN %s on remote device\n", PIN);
 					break;
-			
+					
 				case L2CAP_EVENT_CHANNEL_OPENED:
 					// inform about new l2cap connection
 					bt_flip_addr(event_addr, &packet[3]);
@@ -324,45 +338,92 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						exit(1);
 					}
 					break;
-			
+					
 				case HCI_EVENT_DISCONNECTION_COMPLETE:
 					// connection closed -> quit test app
 					printf("Basebank connection closed, exit.\n");
 					exit(0);
 					break;
-				
+					
 				case HCI_EVENT_COMMAND_COMPLETE:
 					// use pairing yes/no
 					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_local_name) ) {
 						bt_send_cmd(&hci_write_authentication_enable, 1);
 					}
-			
+					
 					// connect to RFCOMM device (PSM 0x03) at addr
 					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable) ) {
 						bt_send_cmd(&l2cap_create_channel, addr, 0x03);
-						printf("Turn on the Zeemote\n");
 					}
 					break;
 					
 				default:
 					// unhandled event
+					if(DEBUG) printf("unhandled event : %02x\n", packet[0]);
 					break;
 			}
+			break;
 		default:
 			// unhandled packet type
+			if(DEBUG) printf("unhandled packet type : %02x\n", packet_type);
 			break;
 	}
 }
 
+void usage(void){
+	fprintf(stderr, "Usage : RFComm [-a|--address aa:bb:cc:dd:ee:ff] [-c|--channel n] [-p|--pin nnnn]\n");
+}
+
+#define FIFO_NAME "/tmp/rfcomm0"
 int main (int argc, const char * argv[]){
-	run_loop_init(RUN_LOOP_POSIX);
-	int err = bt_open();
-	if (err) {
-		printf("Failed to open connection to BTdaemon\n");
-		return err;
+	int arg = 1;
+	while (arg < argc) {
+		if(!strcmp(argv[arg], "-a") || !strcmp(argv[arg], "--address")){
+			arg++;
+			if(arg >= argc || !sscan_bd_addr((uint8_t *)argv[arg], addr)){
+				usage();
+				return 1;
+			}
+		} else if (!strcmp(argv[arg], "-c") || !strcmp(argv[arg], "--channel")) {
+			arg++;
+			if(arg >= argc || !sscanf(argv[arg], "%d", &RFCOMM_CHANNEL_ID)){
+				usage();
+				return 1;
+			}
+		} else if (!strcmp(argv[arg], "-p") || !strcmp(argv[arg], "--pin")) {
+			arg++;
+			int pin1,pin2,pin3,pin4;
+			if(arg >= argc || sscanf(argv[arg], "%1d%1d%1d%1d", &pin1, &pin2, &pin3, &pin4) != 4){
+				usage();
+				return 1;
+			}
+			snprintf(PIN, 5, "%01d%01d%01d%01d", pin1, pin2, pin3, pin4);
+		} else {
+			usage();
+			return 1;
+		}
+		arg++;
 	}
-	bt_register_packet_handler(packet_handler);
-	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
-	run_loop_execute();
-	bt_close();
+	int err = mknod(FIFO_NAME, S_IFIFO | 0666, 0);
+	if(err >= 0 || errno == EEXIST){
+		fifo_fd = open(FIFO_NAME, O_WRONLY);
+		run_loop_init(RUN_LOOP_POSIX);
+		err = bt_open();
+		if (err) {
+			fprintf(stderr,"Failed to open connection to BTdaemon, err %d\n",err);
+			return 1;
+		}
+		printf("Trying connection to ");
+		print_bd_addr(addr);
+		printf(" channel %d\n", RFCOMM_CHANNEL_ID);
+		bt_register_packet_handler(packet_handler);
+		bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
+		run_loop_execute();
+		bt_close();
+	} else {
+		fprintf(stderr, "Failed mknod %s, errno %d\n", FIFO_NAME, errno);
+		return 1;
+	}
+
+    return 0;
 }
