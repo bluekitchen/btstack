@@ -42,6 +42,8 @@
 #include <dlfcn.h>
 #define INQUIRY_INTERVAL 3
 
+// #define LASER_KB
+
 // fix compare for 3.0
 #ifndef __IPHONE_3_0
 #define __IPHONE_3_0 30000
@@ -213,41 +215,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					remoteNameIndex++;
 					[self getNextRemoteName];
 					break;
-										
-				case HCI_EVENT_COMMAND_COMPLETE:
-					if (COMMAND_COMPLETE_EVENT(packet, hci_inquiry_cancel)){
-						// inquiry canceled
-						// NSLog(@"Inquiry cancelled successfully");
-						inquiryState = kInquiryInactive;
-						[[self tableView] reloadData];
-						if (notifyDelegateOnInquiryStopped){
-							notifyDelegateOnInquiryStopped = false;
-							if (delegate) {
-								[delegate inquiryStopped];
-							}
-						}
-					}
-					if (COMMAND_COMPLETE_EVENT(packet, hci_remote_name_request_cancel)){
-						// inquiry canceled
-						// NSLog(@"Remote name request cancelled successfully");
-						inquiryState = kInquiryInactive;
-						[[self tableView] reloadData];
-						if (notifyDelegateOnInquiryStopped){
-							notifyDelegateOnInquiryStopped = false;
-							if (delegate) {
-								[delegate inquiryStopped];
-							}
-						}
-					}
-					
-					break;
-					
-				case HCI_EVENT_INQUIRY_COMPLETE:
-					// reset name check
-					remoteNameIndex = 0;
-					[self getNextRemoteName];
-					break;
-
 				case HCI_EVENT_LINK_KEY_NOTIFICATION:
 					if (deviceInfo) {
 						bt_flip_addr(event_addr, &packet[2]); 
@@ -285,6 +252,42 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					break;
 				}
 					
+					
+				case HCI_EVENT_COMMAND_COMPLETE:
+					if (COMMAND_COMPLETE_EVENT(packet, hci_inquiry_cancel)){
+						// inquiry canceled
+						// NSLog(@"Inquiry cancelled successfully");
+						inquiryState = kInquiryInactive;
+						[[self tableView] reloadData];
+						if (notifyDelegateOnInquiryStopped){
+							notifyDelegateOnInquiryStopped = false;
+							if (delegate) {
+								[delegate inquiryStopped];
+							}
+						}
+					}
+					if (COMMAND_COMPLETE_EVENT(packet, hci_remote_name_request_cancel)){
+						// inquiry canceled
+						// NSLog(@"Remote name request cancelled successfully");
+						inquiryState = kInquiryInactive;
+						[[self tableView] reloadData];
+						if (notifyDelegateOnInquiryStopped){
+							notifyDelegateOnInquiryStopped = false;
+							if (delegate) {
+								[delegate inquiryStopped];
+							}
+						}
+					}
+					
+					break;
+					
+				case HCI_EVENT_INQUIRY_COMPLETE:
+					// reset name check
+					remoteNameIndex = 0;
+					[self getNextRemoteName];
+					break;
+
+
 				default:
 					break;
 			}
@@ -328,7 +331,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	
 	remoteNameDevice = nil;
 		
-	for (remoteNameIndex = 0; remoteNameIndex < [devices count]; remoteNameIndex++){
+	for ( ; remoteNameIndex < [devices count]; remoteNameIndex++){
 		BTDevice *dev = [devices objectAtIndex:remoteNameIndex];
 		if (![dev name]){
 			remoteNameDevice = dev;
@@ -523,17 +526,41 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		
 		// pick an icon for the devices
 		if (showIcons) {
-			int major = ([dev classOfDevice] & 0x1f00) >> 8;
-			if (major == 0x01) {
-				theImage = [UIImage imageNamed:@"computer.png"];
-			} else if (major == 0x02) {
-				theImage = [UIImage imageNamed:@"smartphone.png"];
-			} else if ( major == 0x05 && ([dev classOfDevice] & 0xff) == 0x40){ 
-				theImage = [UIImage imageNamed:@"keyboard.png"];
-			} else {
-				theImage = [UIImage imageNamed:@"bluetooth.png"];
+			NSString *imageName = @"bluetooth.png";
+			// check major device class
+			switch (([dev classOfDevice] & 0x1f00) >> 8) {
+				case 0x01:
+					imageName = @"computer.png";
+					break;
+				case 0x02:
+					imageName = @"smartphone.png";
+#ifdef LASER_KB	
+					// Celluon CL800BT has COD 0x400210
+					if ([dev name] && [[dev name] isEqualToString:@"CL800BT"]){
+						imageName = @"keyboard.png";
+					}
+#endif
+					break;
+				case 0x05:
+					switch ([dev classOfDevice] & 0xff){
+						case 0x40:
+							imageName = @"keyboard.png";
+							break;
+						case 0x80:
+							imageName = @"mouse.png";
+							break;
+						default:
+							imageName = @"HID.png";
+							break;
+					}
 			}
-			
+#ifdef LASER_KB			
+			// Celluon CL800BT has COD 0x400210
+			if ([dev name] && [[dev name] isEqualToString:@"VKB Keyboard"]){
+				imageName = @"keyboard.png";
+			}
+#endif
+			theImage = [UIImage imageNamed:imageName];
 		}
 		
 		// set accessory view
