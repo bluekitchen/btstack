@@ -31,7 +31,6 @@
 
 //
 //  BTDevice.h
-//  BT-Keyboard
 //
 //  Created by Matthias Ringwald on 3/30/09.
 //
