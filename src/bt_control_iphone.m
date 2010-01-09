@@ -35,6 +35,8 @@
  *  control Bluetooth module using BlueTool
  *
  *  Created by Matthias Ringwald on 5/19/09.
+ *
+ *  Bluetooth Toggle by BigBoss
  */
 
 #include "../config.h"
@@ -70,6 +72,54 @@ kern_return_t IOObjectRelease(mach_port_t object);
 #endif
 #endif
 
+// minimal BluetoothManager swiped from BigBoss SBSettings Toggle
+#import <Foundation/Foundation.h>
+@class UIDevice;
+@interface BluetoothManager : NSObject
++ (BluetoothManager *) sharedInstance;
+- (void) setPowered:(BOOL)powered;
+- (void) setEnabled:(BOOL)enabled;
+- (BOOL) enabled;
+@end
+#define kAppBTServer CFSTR("com.apple.BTServer")
+#define kKeyBTPowered CFSTR("defaultPoweredState")
+#define kAppNetwork CFSTR("com.apple.preferences.network")
+#define kKeyBTNetwork CFSTR("bluetooth-network")
+
+int iphone_system_bt_enabled(){
+	if ([[BluetoothManager sharedInstance] enabled]) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+void iphone_system_bt_set_enabled(int enabled)
+{
+	/* Get a copy of the global bluetooth server */
+	BluetoothManager *bm = [BluetoothManager sharedInstance];
+    if ( [bm enabled] &&  enabled) return;
+    if (![bm enabled] && !enabled) return;
+    
+	if (enabled) {
+		/* Store into preferences that bluetooth should start on system boot */
+		CFPreferencesSetAppValue(kKeyBTNetwork, kCFBooleanTrue, kAppNetwork);
+        
+		/* Turn bluetooth on */
+		[bm setPowered:YES];
+	} else {
+		/* Store into preferences taht bluetooth should not start on system boot */
+		CFPreferencesSetAppValue(kKeyBTNetwork, kCFBooleanFalse, kAppNetwork);
+        
+		/* Turn bluetooth off */
+		[bm setEnabled:NO];
+	}
+	/* Synchronize to preferences, e.g. write to disk, bluetooth settings */
+	CFPreferencesAppSynchronize(kAppNetwork);
+}
+
+
+
 #define BUFF_LEN 80
 static char buffer[BUFF_LEN+1];
 
@@ -92,10 +142,9 @@ static char *get_machine_name(void){
  */
 static int iphone_valid(void *config){
 	char * machine = get_machine_name();
-	if (!strncmp("iPhone",  machine, strlen("iPhone" ))) return 1;
-	if (!strncmp("iPod2,1", machine, strlen("iPod2,1"))) return 1;
-	if (!strncmp("iPod3,1", machine, strlen("iPod3,1"))) return 1;
-	return 0;
+	if (!strncmp("iPhone",  machine, strlen("iPhone" ))) return 1; // iPhone OK
+	if (!strncmp("iPod1", machine, strlen("iPod1"))) return 0;     // 1st gen touch no BT
+    return 1;
 }
 
 static const char * iphone_name(void *config){
@@ -276,16 +325,24 @@ static int iphone_write_initscript (hci_uart_config_t *uart_config, int output){
 }
 
 static int iphone_on (void *transport_config){
-    
-    // quick test if Bluetooth UART can be opened
+
     hci_uart_config_t * hci_uart_config = (hci_uart_config_t*) transport_config;
+
+#if 0
+    // quick test if Bluetooth UART can be opened
     int fd = open(hci_uart_config->device_name, O_RDWR | O_NOCTTY | O_NDELAY);
     if (fd == -1)  {
-        perror("init_serialport: Unable to open port ");
+        perror("iphone_on: Unable to open port ");
         perror(hci_uart_config->device_name);
         return 1;
     }
     close(fd);
+#else
+    if (iphone_system_bt_enabled()){
+        perror("iphone_on: System Bluetooth enabled!");
+        return 1;
+    }
+#endif
     
     int err = 0;
 #if 0

@@ -118,6 +118,19 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case BTSTACK_GET_VERSION:
             hci_emit_btstack_version();
             break;   
+#ifdef USE_BLUETOOL
+        case BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED:
+            iphone_system_bt_set_enabled(packet[3]);
+            // fall through .. :)
+        case BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED:
+            hci_emit_system_bluetooth_enabled(iphone_system_bt_enabled());
+            break;
+#else
+        case BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED:
+        case BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED:
+            hci_emit_system_bluetooth_enabled(0);
+            break;
+#endif
         case L2CAP_CREATE_CHANNEL:
             bt_flip_addr(addr, &packet[3]);
             psm = READ_BT_16(packet, 9);
