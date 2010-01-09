@@ -82,6 +82,16 @@
 #define BT_RFCOMM_CRC_CHECK_LEN     3
 #define BT_RFCOMM_UIHCRC_CHECK_LEN  2
 
+
+struct celluon_state {
+	int len;	/* Expected length of current packet */
+	int count;	/* Number of bytes received */
+	int action;
+	int key;
+};
+static void celluon_decode( struct celluon_state *s, uint8_t c);
+
+
 bd_addr_t addr = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; 
 int RFCOMM_CHANNEL_ID = 1;
 char PIN[] = "0000";
@@ -94,6 +104,9 @@ int fifo_fd;
 
 // used to assemble rfcomm packets
 uint8_t rfcomm_out_buffer[1000];
+
+
+struct celluon_state cellState;
 
 /**
  * @param credits - only used for RFCOMM flow control in UIH wiht P/F = 1
@@ -236,8 +249,10 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					printf("RX: address %02x, control %02x: ", packet[0], packet[1]);
 					hexdump( (uint8_t*) &packet[3], size-4);
 				}
-				int written = 0;
 				int length = size-4;
+
+#if 0
+				int written = 0;
 				int start_of_data = 3;
 				//write data to fifo
 				while (length) {
@@ -247,6 +262,13 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						length -= written;
 					}
 				}
+#else
+				int i = 0;
+				for(i=0;i<length;i++){
+					celluon_decode(&cellState, packet[3+i]);
+				}
+#endif
+							   
 			}
 			
 			if (packet[1] == BT_RFCOMM_UIH_PF && packet[0] == ((RFCOMM_CHANNEL_ID<<3)|1)){
@@ -376,6 +398,134 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	}
 }
 
+static int celluon_xlate(int c)
+{
+	if (c >= '0' && c <= '9')
+		return c;
+	
+	if (c >= 'A' && c <= 'Z')
+		return c;
+	
+/*
+ switch (c) {
+		case 0x08:
+			return KEY_BACKSPACE;
+		case 0x09:
+			return KEY_TAB;
+		case 0x0d:
+			return KEY_ENTER;
+		case 0x11:
+			return KEY_LEFTCTRL;
+		case 0x14:
+			return KEY_CAPSLOCK;
+		case 0x20:
+			return KEY_SPACE;
+		case 0x25:
+			return KEY_LEFT;
+		case 0x26:
+			return KEY_UP;
+		case 0x27:
+			return KEY_RIGHT;
+		case 0x28:
+			return KEY_DOWN;
+		case 0x2e:
+			return KEY_DELETE;
+		case 0x5b:
+			return KEY_MENU;
+		case 0xa1:
+			return KEY_RIGHTSHIFT;
+		case 0xa0:
+			return KEY_LEFTSHIFT;
+		case 0xba:
+			return KEY_SEMICOLON;
+		case 0xbd:
+			return KEY_MINUS;
+		case 0xbc:
+			return KEY_COMMA;
+		case 0xbb:
+			return KEY_EQUAL;
+		case 0xbe:
+			return KEY_DOT;
+		case 0xbf:
+			return KEY_SLASH;
+		case 0xc0:
+			return KEY_GRAVE;
+		case 0xdb:
+			return KEY_LEFTBRACE;
+		case 0xdc:
+			return KEY_BACKSLASH;
+		case 0xdd:
+			return KEY_RIGHTBRACE;
+		case 0xde:
+			return KEY_APOSTROPHE;
+		case 0xff03:
+			return KEY_HOMEPAGE;
+		case 0xff04:
+			return KEY_TIME;
+		case 0xff06:
+			return KEY_OPEN;
+		case 0xff07:
+			return KEY_LIST;
+		case 0xff08:
+			return KEY_MAIL;
+		case 0xff30:
+			return KEY_CALC;
+		case 0xff1a: // Map FN to ALT 
+			return KEY_LEFTALT;
+		case 0xff2f:
+			return KEY_INFO;
+		default:
+			printf("Unknown key %x\n", c);
+			return c;
+	}
+	*/
+	return c;
+}
+
+static void celluon_decode( struct celluon_state *s, uint8_t c)
+{
+	if (s->count < 2 && c != 0xa5) {
+		/* Lost Sync */
+		s->count = 0;
+		return;
+	}
+	//printf("data %x, state %u\n", c, s->count);
+	switch (s->count) {
+		case 0:
+			/* New packet - Reset state */
+			s->len = 30;
+			s->key = 0;
+			break;
+		case 1:
+			break;
+		case 6:
+			s->action = c;
+			break;
+		case 28:
+			s->key = c;
+			if (c == 0xff)
+				s->len = 31;
+			break;
+		case 29:
+		case 30:
+			if (s->count == s->len - 1) {
+				/* TODO: Verify checksum */
+				if (s->action) {
+					printf("key %c (%u)\n", s->key, s->action);
+				}
+				s->count = -1;
+			} else {
+				s->key = (s->key << 8) | c;
+			}
+			break;
+	}
+	
+	s->count++;
+	
+	return;
+}
+
+
 void usage(const char *name){
 	fprintf(stderr, "Usage : %s [-a|--address aa:bb:cc:dd:ee:ff] [-c|--channel n] [-p|--pin nnnn]\n", name);
 }
@@ -416,12 +566,14 @@ int main (int argc, const char * argv[]){
 		}
 		arg++;
 	}
+
+	
 	printf("Waiting for client to open %s...\n", FIFO_NAME);
-	int err = mknod(FIFO_NAME, S_IFIFO | 0666, 0);
-	if(err >= 0 || errno == EEXIST){
-		fifo_fd = open(FIFO_NAME, O_WRONLY);
+//	int err = mknod(FIFO_NAME, S_IFIFO | 0666, 0);
+//	if(err >= 0 || errno == EEXIST){
+//		fifo_fd = open(FIFO_NAME, O_WRONLY);
 		run_loop_init(RUN_LOOP_POSIX);
-		err = bt_open();
+		int err = bt_open();
 		if (err) {
 			fprintf(stderr,"Failed to open connection to BTdaemon, err %d\n",err);
 			return 1;
@@ -433,10 +585,10 @@ int main (int argc, const char * argv[]){
 		bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
 		run_loop_execute();
 		bt_close();
-	} else {
-		fprintf(stderr, "Failed mknod %s, errno %d\n", FIFO_NAME, errno);
-		return 1;
-	}
+//	} else {
+//		fprintf(stderr, "Failed mknod %s, errno %d\n", FIFO_NAME, errno);
+//		return 1;
+//	}
 
     return 0;
 }
