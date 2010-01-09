@@ -115,6 +115,9 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
                 l2cap_set_capture_connection(NULL);
             }
             break;
+        case BTSTACK_GET_VERSION:
+            hci_emit_btstack_version();
+            break;   
         case L2CAP_CREATE_CHANNEL:
             bt_flip_addr(addr, &packet[3]);
             psm = READ_BT_16(packet, 9);

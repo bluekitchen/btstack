@@ -267,6 +267,10 @@ OPCODE(OGF_BTSTACK, BTSTACK_SET_ACL_CAPTURE_MODE), "1"
 // mode: 0 = off, 1 = on
 };
 
+hci_cmd_t btstack_get_version = {
+    OPCODE(OGF_BTSTACK, BTSTACK_GET_VERSION), ""
+};
+
 hci_cmd_t l2cap_create_channel = {
 OPCODE(OGF_BTSTACK, L2CAP_CREATE_CHANNEL), "B2"
 // @param bd_addr(48), psm (16)
