@@ -43,6 +43,8 @@
 #include "hci.h"
 #include "hci_dump.h"
 
+#include <btstack/version.h>
+
 // temp
 #include "l2cap.h"
 
@@ -434,7 +436,7 @@ void hci_emit_state(){
     uint8_t len = 3; 
     uint8_t event[len];
     event[0] = BTSTACK_EVENT_STATE;
-    event[1] = 1;
+    event[1] = len - 3;
     event[2] = hci_stack.state;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
     hci_stack.event_packet_handler(event, len);
@@ -444,6 +446,7 @@ void hci_emit_connection_complete(hci_connection_t *conn){
     uint8_t len = 13; 
     uint8_t event[len];
     event[0] = HCI_EVENT_CONNECTION_COMPLETE;
+    event[1] = len - 3;
     event[2] = 0; // status = OK
     bt_store_16(event, 3, conn->con_handle);
     bt_flip_addr(&event[5], conn->address);
@@ -457,7 +460,7 @@ void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
     uint8_t len = 4; 
     uint8_t event[len];
     event[0] = L2CAP_EVENT_TIMEOUT_CHECK;
-    event[1] = 2;
+    event[1] = len - 2;
     bt_store_16(event, 2, conn->con_handle);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
     hci_stack.event_packet_handler(event, len);
@@ -467,16 +470,31 @@ void hci_emit_nr_connections_changed(){
     uint8_t len = 3; 
     uint8_t event[len];
     event[0] = BTSTACK_EVENT_NR_CONNECTIONS_CHANGED;
-    event[1] = 1;
+    event[1] = len - 2;
     event[2] = nr_hci_connections();
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
     hci_stack.event_packet_handler(event, len);
 }
 
 void hci_emit_hci_open_failed(){
-    uint8_t len = 1; 
+    uint8_t len = 2; 
     uint8_t event[len];
     event[0] = BTSTACK_EVENT_POWERON_FAILED;
+    event[1] = len - 2;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
     hci_stack.event_packet_handler(event, len);
 }
+
+
+void hci_emit_btstack_version() {
+    uint8_t len = 6;
+    uint8_t event[len];
+    event[0] = BTSTACK_EVENT_VERSION;
+    event[1] = len - 2;
+    event[len++] = BTSTACK_MAJOR;
+    event[len++] = BTSTACK_MINOR;
+    bt_store_16(event, len, BTSTACK_REVISION);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
+    hci_stack.event_packet_handler(event, len);
+}
+

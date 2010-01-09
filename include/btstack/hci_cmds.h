@@ -103,6 +103,9 @@
 // data: none
 #define BTSTACK_EVENT_POWERON_FAILED                       0x62
 
+// data: majot (8), minor (8), revision(16)
+#define BTSTACK_EVENT_VERSION	        				   0x63
+
 // data: event (8), len(8), status (8), address(48), handle (16), psm (16), source_cid(16), dest_cid (16) 
 #define L2CAP_EVENT_CHANNEL_OPENED                         0x70
 
@@ -191,6 +194,8 @@ extern hci_cmd_t hci_write_simple_pairing_mode;
 extern hci_cmd_t btstack_get_state;
 extern hci_cmd_t btstack_set_power_mode;
 extern hci_cmd_t btstack_set_acl_capture_mode;
+extern hci_cmd_t btstack_get_version;
+
 // L2CAP client/server commands - see l2cap.c for info on parameters
 extern hci_cmd_t l2cap_create_channel;
 extern hci_cmd_t l2cap_disconnect;
