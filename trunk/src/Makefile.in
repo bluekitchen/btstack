@@ -13,7 +13,7 @@ run_loop_sources = @RUN_LOOP_SOURCES@
 libBTstack_SOURCES = btstack.c hci_cmds.c linked_list.c run_loop.c $(run_loop_sources) socket_connection.c utils.c
 			  
 BTdaemon_SOURCES =  $(libBTstack_SOURCES) \
-    bt_control_iphone.c     \
+    bt_control_iphone.m     \
     daemon.c                \
     hci.c                   \
     hci_dump.c              \
