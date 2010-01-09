@@ -73,6 +73,12 @@
 // get BTstack version
 #define BTSTACK_GET_VERSION                                0x04
 
+// get system Bluetooth state
+#define BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED               0x05
+
+// set system Bluetooth state
+#define BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED               0x06
+
 // create l2cap channel: @param bd_addr(48), psm (16)
 #define L2CAP_CREATE_CHANNEL                               0x20
 
@@ -201,4 +207,4 @@ void hci_emit_l2cap_check_timeout(hci_connection_t *conn);
 void hci_emit_nr_connections_changed();
 void hci_emit_hci_open_failed();
 void hci_emit_btstack_version();
-
+void hci_emit_system_bluetooth_enabled(uint8_t enabled);

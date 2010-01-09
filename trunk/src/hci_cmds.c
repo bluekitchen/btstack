@@ -268,7 +268,15 @@ OPCODE(OGF_BTSTACK, BTSTACK_SET_ACL_CAPTURE_MODE), "1"
 };
 
 hci_cmd_t btstack_get_version = {
-    OPCODE(OGF_BTSTACK, BTSTACK_GET_VERSION), ""
+OPCODE(OGF_BTSTACK, BTSTACK_GET_VERSION), ""
+};
+
+hci_cmd_t btstack_get_system_bluetooth_enabled = {
+OPCODE(OGF_BTSTACK, BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED), ""
+};
+
+hci_cmd_t btstack_set_system_bluetooth_enabled = {
+OPCODE(OGF_BTSTACK, BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED), "1"
 };
 
 hci_cmd_t l2cap_create_channel = {

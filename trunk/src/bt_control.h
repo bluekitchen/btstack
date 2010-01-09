@@ -43,6 +43,6 @@
 typedef struct {
     int          (*on)(void *config);     // <-- turn BT module on and configure
     int          (*off)(void *config);    // <-- turn BT module off
-    int          (*valid)(void *confif);  // <-- test if hardware can be supported
-    const char * (*name)(void *config);  // <-- return hardware name
+    int          (*valid)(void *config);  // <-- test if hardware can be supported
+    const char * (*name)(void *config);   // <-- return hardware name
 } bt_control_t;

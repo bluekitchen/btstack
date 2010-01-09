@@ -43,7 +43,8 @@
 #include "hci.h"
 #include "hci_dump.h"
 
-#include <btstack/version.h>
+#include "../include/btstack/hci_cmds.h"
+#include "../include/btstack/version.h"
 
 // temp
 #include "l2cap.h"
@@ -498,3 +499,12 @@ void hci_emit_btstack_version() {
     hci_stack.event_packet_handler(event, len);
 }
 
+void hci_emit_system_bluetooth_enabled(uint8_t enabled){
+    uint8_t len = 3; 
+    uint8_t event[len];
+    event[0] = BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED;
+    event[1] = len - 3;
+    event[2] = enabled;
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
+    hci_stack.event_packet_handler(event, len);
+}

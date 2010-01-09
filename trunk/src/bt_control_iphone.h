@@ -41,3 +41,6 @@
 
 extern bt_control_t bt_control_iphone;
 
+// control system Bluetooth
+int  iphone_system_bt_enabled();
+void iphone_system_bt_set_enabled(int enabled);
