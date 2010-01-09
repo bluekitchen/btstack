@@ -55,6 +55,8 @@
 #include <unistd.h>
 #include <errno.h>
 
+#ifdef USE_BLUETOOL
+
 // minimal IOKit
 #ifdef __APPLE__
 #include <Availability.h>
@@ -71,6 +73,7 @@ mach_port_t IOServiceGetMatchingService(mach_port_t masterPort, CFDictionaryRef 
 kern_return_t IOObjectRelease(mach_port_t object);
 #endif
 #endif
+
 
 // minimal BluetoothManager swiped from BigBoss SBSettings Toggle
 #import <Foundation/Foundation.h>
@@ -118,7 +121,7 @@ void iphone_system_bt_set_enabled(int enabled)
 	CFPreferencesAppSynchronize(kAppNetwork);
 }
 
-
+#endif
 
 #define BUFF_LEN 80
 static char buffer[BUFF_LEN+1];
@@ -328,7 +331,12 @@ static int iphone_on (void *transport_config){
 
     hci_uart_config_t * hci_uart_config = (hci_uart_config_t*) transport_config;
 
-#if 0
+#ifdef USE_BLUETOOL
+    if (iphone_system_bt_enabled()){
+        perror("iphone_on: System Bluetooth enabled!");
+        return 1;
+    }
+#else
     // quick test if Bluetooth UART can be opened
     int fd = open(hci_uart_config->device_name, O_RDWR | O_NOCTTY | O_NDELAY);
     if (fd == -1)  {
@@ -337,11 +345,6 @@ static int iphone_on (void *transport_config){
         return 1;
     }
     close(fd);
-#else
-    if (iphone_system_bt_enabled()){
-        perror("iphone_on: System Bluetooth enabled!");
-        return 1;
-    }
 #endif
     
     int err = 0;
