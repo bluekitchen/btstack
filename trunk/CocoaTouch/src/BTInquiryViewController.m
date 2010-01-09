@@ -215,6 +215,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					remoteNameIndex++;
 					[self getNextRemoteName];
 					break;
+					
 				case HCI_EVENT_LINK_KEY_NOTIFICATION:
 					if (deviceInfo) {
 						bt_flip_addr(event_addr, &packet[2]); 
@@ -548,6 +549,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 							break;
 						case 0x80:
 							imageName = @"mouse.png";
+							break;
+						case 0xc0:
+							imageName = @"keyboard.png";
 							break;
 						default:
 							imageName = @"HID.png";

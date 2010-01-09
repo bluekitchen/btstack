@@ -27,6 +27,7 @@ BTdaemon_SOURCES =  $(libBTstack_SOURCES) \
 all: libBTstack.$(BTSTACK_LIB_EXTENSION) libBTstack.a BTdaemon
 
 libBTstack.$(BTSTACK_LIB_EXTENSION): $(libBTstack_SOURCES)
+		./get_version.sh
 		$(CC) $(CPPFLAGS) $(BTSTACK_LIB_LDFLAGS) -o $@ $(libBTstack_SOURCES) $(LDFLAGS)
 		@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 

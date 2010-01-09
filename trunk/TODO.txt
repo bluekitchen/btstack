@@ -6,31 +6,29 @@ NEXT:
 - Add BluetoothToggle (shutdown of Apple's stack)
 - Add improved RFCOMM user-client
   - use switch on RFCOMM control field in rfcomm.c packet handler
-- BUG: bt_close crashes when used in CocoaTouch app
-- BUG: BTdaemon crashes on iPhone when CocoaTouch app is closed (sometimes)
+- get BD address on init, so it is in the dump 
+- create <btstack/errors.h>
 - implement rest of L2CAP state machine
   - incoming connections
     - list of supported PSM
 	- commands and events-
-- figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect, when phone gets locked
-  - some trick
-  - use Cocoa run loop for background app?
-  - see iPhone imsomnia project at http://code.google.com/p/iphone-insomnia/
-  - can we get willGoToSleep event, should we turn off Bluetooth?
-  - would be nice, if we could get woken up by Bluetooth data
-- create <btstack/errors.h>
-- add timeouts to cocoa run loop
-- CocoaTouch User Interface Components
-  - Provide BTstack class
-  - Warning and shutdown of Apple's stack
+- SpringBoard
+- BUG: bt_close crashes when used in CocoaTouch app
+- BUG: BTdaemon crashes on iPhone when CocoaTouch app is closed (sometimes)
 - BUG (non-reproducible): hci_state gets confused.
   - BlueTool used although hci state should be on (right after quitting example/test)
   - BlueTool not used although stack not working
     - more log messages
-- non-reproducible bug: debug BlueTool's "I'm not a Bluetooth stack" error message
+  - BlueTool's "I'm not a Bluetooth stack" error message
   
-== Release 0.2 - Incoming L2CAP supported + UI Support
-
+== Release 0.2 - Incoming L2CAP supported + improved Inq Dialog
+- CocoaTouch User Interface Components
+  - Provide BTstack class
+  - Warning and shutdown of Apple's stack
+- add timeouts to cocoa run loop
+- figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect, when phone gets locked
+  - some trick
+  - use Cocoa run loop for background app?
 - extend SpringBoard feedback
   - show alerts/messages using SpringBoardAcccess, e.g. Bluetooth disconnected by remote device
   - add code to notify about remote disconnets
@@ -63,4 +61,3 @@ NEXT:
 
 == USB Support ==
 - Store array of data sources to be able to remove them on usb_close
--
