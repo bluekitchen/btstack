@@ -97,6 +97,7 @@ if test "x$target" = xiphone; then
             LDFLAGS="$LDFLAGS -F$SDK_PATH/System/Library/Frameworks"
             LDFLAGS="$LDFLAGS -L$SDK_PATH/usr/lib -framework CoreFoundation -framework UIKit"
             LDFLAGS="$LDFLAGS -L$SDK_PATH/System/Library/Frameworks/IOKit.framework/Versions/A"
+            LDFLAGS="$LDFLAGS $SDK_PATH/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager"
             LDFLAGS="$LDFLAGS -lIOkit -lobjc"
 		   ;;
         *)
