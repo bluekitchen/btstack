@@ -67,6 +67,7 @@
 		9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci_transport_h4.c; path = src/hci_transport_h4.c; sourceTree = "<group>"; };
 		9C46FC370FA906F700ABEF05 /* hci_transport_h4.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci_transport_h4.h; path = src/hci_transport_h4.h; sourceTree = "<group>"; };
 		9C46FC380FA906F700ABEF05 /* hci_transport.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci_transport.h; path = src/hci_transport.h; sourceTree = "<group>"; };
+		9C5BA8A0110B756500D79BBE /* hci_cmds.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci_cmds.h; path = include/btstack/hci_cmds.h; sourceTree = "<group>"; };
 		9C6459DE1037554B0081A00B /* platform_iphone.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = platform_iphone.h; path = src/platform_iphone.h; sourceTree = "<group>"; };
 		9C77E36410618B1D00F39DCF /* Makefile.in */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; name = Makefile.in; path = SpringBoardAccess/Makefile.in; sourceTree = "<group>"; };
 		9C77E36710618C6500F39DCF /* SpringBoardAccess-test.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = "SpringBoardAccess-test.c"; path = "SpringBoardAccess/SpringBoardAccess-test.c"; sourceTree = "<group>"; };
@@ -104,7 +105,6 @@
 		9CEB4B62107118E800DD5720 /* Makefile.in */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; name = Makefile.in; path = src/Makefile.in; sourceTree = "<group>"; };
 		9CEB4B7910715DE400DD5720 /* btstack.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = btstack.h; path = include/btstack/btstack.h; sourceTree = "<group>"; };
 		9CEB4B7A10715DE400DD5720 /* run_loop.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = run_loop.h; path = include/btstack/run_loop.h; sourceTree = "<group>"; };
-		9CEB4B7F10715EB000DD5720 /* hci_cmds.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci_cmds.h; path = include/btstack/hci_cmds.h; sourceTree = "<group>"; };
 		9CEB4B8010715EB000DD5720 /* linked_list.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = linked_list.h; path = include/btstack/linked_list.h; sourceTree = "<group>"; };
 		9CEB4B8110715EB000DD5720 /* utils.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = utils.h; path = include/btstack/utils.h; sourceTree = "<group>"; };
 		9CEB4DAA10753B4B00DD5720 /* run_loop_cocoa.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = run_loop_cocoa.m; path = src/run_loop_cocoa.m; sourceTree = "<group>"; };
@@ -261,7 +261,7 @@
 		9CEB4B7510715DC200DD5720 /* include */ = {
 			isa = PBXGroup;
 			children = (
-				9CEB4B7F10715EB000DD5720 /* hci_cmds.h */,
+				9C5BA8A0110B756500D79BBE /* hci_cmds.h */,
 				9CEB4B8010715EB000DD5720 /* linked_list.h */,
 				9CEB4B8110715EB000DD5720 /* utils.h */,
 				9CEB4B7910715DE400DD5720 /* btstack.h */,
