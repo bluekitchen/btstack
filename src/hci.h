@@ -54,8 +54,9 @@
 #define HCI_EVENT_PKT_HDR         0x02
 
 // OGFs
-#define OGF_LINK_CONTROL 0x01
-#define OGF_CONTROLLER_BASEBAND 0x03
+#define OGF_LINK_CONTROL          0x01
+#define OGF_LINK_POLICY           0x02
+#define OGF_CONTROLLER_BASEBAND   0x03
 #define OGF_INFORMATIONAL_PARAMETERS 0x04
 #define OGF_BTSTACK 0x3d
 #define OGF_VENDOR  0x3f
