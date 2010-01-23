@@ -90,15 +90,21 @@ kern_return_t IOObjectRelease(mach_port_t object);
 #define kKeyBTNetwork CFSTR("bluetooth-network")
 
 int iphone_system_bt_enabled(){
+    NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+
 	if ([[BluetoothManager sharedInstance] enabled]) {
         return 1;
     } else {
         return 0;
     }
+    
+    [pool release];
 }
 
 void iphone_system_bt_set_enabled(int enabled)
 {
+    NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+
 	/* Get a copy of the global bluetooth server */
 	BluetoothManager *bm = [BluetoothManager sharedInstance];
     if ( [bm enabled] &&  enabled) return;
@@ -119,6 +125,8 @@ void iphone_system_bt_set_enabled(int enabled)
 	}
 	/* Synchronize to preferences, e.g. write to disk, bluetooth settings */
 	CFPreferencesAppSynchronize(kAppNetwork);
+    
+    [pool release];
 }
 
 #endif
