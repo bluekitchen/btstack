@@ -191,6 +191,23 @@ OPCODE(OGF_LINK_CONTROL, 0x1A), "B"
 };
 
 /**
+ *  Link Policy Commands 
+ */
+hci_cmd_t hci_qos_setup = {
+    OPCODE(OGF_LINK_POLICY, 0x07), "H114444"
+    // handle, flags, service_type, token rate (bytes/s), peak bandwith (bytes/s),
+    // latency (us), delay_variation (us)
+};
+hci_cmd_t hci_read_link_policy_settings = {
+    OPCODE(OGF_LINK_POLICY, 0x0c), "H"
+    // handle 
+};
+hci_cmd_t hci_write_link_policy_settings = {
+    OPCODE(OGF_LINK_POLICY, 0x0d), "H2"
+    // handlee, settings
+};
+
+/**
  *  Controller & Baseband Commands 
  */
 hci_cmd_t hci_set_event_mask = {
