@@ -167,6 +167,13 @@ typedef enum {
 
 
 // HCI Commands - see hci_cmds.c for info on parameters
+extern hci_cmd_t btstack_get_state;
+extern hci_cmd_t btstack_set_power_mode;
+extern hci_cmd_t btstack_set_acl_capture_mode;
+extern hci_cmd_t btstack_get_version;
+extern hci_cmd_t btstack_get_system_bluetooth_enabled;
+extern hci_cmd_t btstack_set_system_bluetooth_enabled;
+
 extern hci_cmd_t hci_accept_connection_request;
 extern hci_cmd_t hci_authentication_requested;
 extern hci_cmd_t hci_create_connection;
@@ -195,3 +202,6 @@ extern hci_cmd_t hci_write_local_name;
 extern hci_cmd_t hci_write_page_timeout;
 extern hci_cmd_t hci_write_scan_enable;
 extern hci_cmd_t hci_write_simple_pairing_mode;
+
+extern hci_cmd_t l2cap_create_channel;
+extern hci_cmd_t l2cap_disconnect;
