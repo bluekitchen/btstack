@@ -535,12 +535,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					break;
 				case 0x02:
 					imageName = @"smartphone.png";
-#ifdef LASER_KB	
-					// Celluon CL800BT has COD 0x400210
-					if ([dev name] && [[dev name] isEqualToString:@"CL800BT"]){
-						imageName = @"keyboard.png";
-					}
-#endif
 					break;
 				case 0x05:
 					switch ([dev classOfDevice] & 0xff){
@@ -558,9 +552,19 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 							break;
 					}
 			}
-#ifdef LASER_KB			
-			// Celluon CL800BT has COD 0x400210
-			if ([dev name] && [[dev name] isEqualToString:@"VKB Keyboard"]){
+			
+#ifdef LASER_KB
+			if ([dev name] && [[dev name] isEqualToString:@"CL800BT"]){
+				imageName = @"keyboard.png";
+			}
+
+			if ([dev name] && [[dev name] isEqualToString:@"CL850"]){
+				imageName = @"keyboard.png";
+			}
+
+			// Celluon CL800BT, CL850 have 00-0b-24-aa-bb-cc, COD 0x400210
+			uint8_t *addr = (uint8_t *) [dev address];
+			if (addr[0] == 0x00 && addr[1] == 0x0b && addr[2] == 0x24){
 				imageName = @"keyboard.png";
 			}
 #endif

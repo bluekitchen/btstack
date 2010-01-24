@@ -248,6 +248,7 @@ int main (int argc, const char * argv[]){
     config.device_name = UART_DEVICE;
     config.baudrate    = UART_SPEED;
     config.flowcontrol = 1;
+    // config.flowcontrol = 0;  // external Bluetooth!
 #endif
 
 #ifdef HAVE_TRANSPORT_USB
