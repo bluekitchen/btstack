@@ -251,7 +251,7 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x36), "H"
 // handle
 };
 hci_cmd_t hci_write_link_supervision_timeout = {
-OPCODE(OGF_CONTROLLER_BASEBAND, 0x33), "H2"
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x37), "H2"
 // handle, Range for N: 0x0001 – 0xFFFF Time (Range: 0.625ms – 40.9 sec)
 };
 hci_cmd_t hci_write_inquiry_mode = {
