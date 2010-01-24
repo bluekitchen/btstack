@@ -3,23 +3,15 @@
 2009-11-08: Release 0.1
 
 NEXT:
-- Add BluetoothToggle (shutdown of Apple's stack)
-- Add improved RFCOMM user-client
-  - use switch on RFCOMM control field in rfcomm.c packet handler
-- get BD address on init, so it is in the dump 
-- create <btstack/errors.h>
 - implement rest of L2CAP state machine
   - incoming connections
     - list of supported PSM
-	- commands and events-
-- SpringBoard
+	- commands and events-- Add improved RFCOMM user-client
+  - use switch on RFCOMM control field in rfcomm.c packet handler
+- add configure option for uart flowcontrol
+- create <btstack/errors.h>
 - BUG: bt_close crashes when used in CocoaTouch app
 - BUG: BTdaemon crashes on iPhone when CocoaTouch app is closed (sometimes)
-- BUG (non-reproducible): hci_state gets confused.
-  - BlueTool used although hci state should be on (right after quitting example/test)
-  - BlueTool not used although stack not working
-    - more log messages
-  - BlueTool's "I'm not a Bluetooth stack" error message
   
 == Release 0.2 - Incoming L2CAP supported + improved Inq Dialog
 - CocoaTouch User Interface Components

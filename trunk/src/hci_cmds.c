@@ -246,12 +246,18 @@ hci_cmd_t hci_host_buffer_size = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x33), "2122"
 // Host_ACL_Data_Packet_Length:, Host_Synchronous_Data_Packet_Length:, Host_Total_Num_ACL_Data_Packets:, Host_Total_Num_Synchronous_Data_Packets:
 };
-
+hci_cmd_t hci_read_link_supervision_timeout = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x36), "H"
+// handle
+};
+hci_cmd_t hci_write_link_supervision_timeout = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x33), "H2"
+// handle, Range for N: 0x0001 – 0xFFFF Time (Range: 0.625ms – 40.9 sec)
+};
 hci_cmd_t hci_write_inquiry_mode = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x45), "1"
 // Inquiry mode: 0x00 = standard, 0x01 = with RSSI, 0x02 = extended
 };
-
 hci_cmd_t hci_write_extended_inquiry_response = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x52), "1E"
 // FEC_Required, Exstended Inquiry Response
