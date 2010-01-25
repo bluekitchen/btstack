@@ -311,5 +311,21 @@ hci_cmd_t l2cap_disconnect = {
 OPCODE(OGF_BTSTACK, L2CAP_DISCONNECT), "21"
 // @param channel(16), reason(8)
 };
+hci_cmd_t l2cap_register_service = {
+OPCODE(OGF_BTSTACK, L2CAP_REGISTER_SERVICE), "22"
+// @param psm (16), mtu (16)
+};
+hci_cmd_t l2cap_unregister_service = {
+OPCODE(OGF_BTSTACK, L2CAP_UNREGISTER_SERVICE), "2"
+// @param psm (16)
+};
+hci_cmd_t l2cap_accept_connection = {
+OPCODE(OGF_BTSTACK, L2CAP_ACCEPT_CONNECTION), "B2"
+// @param bd_addr(48), dest cid (16)
+};
+hci_cmd_t l2cap_decline_connection = {
+    OPCODE(OGF_BTSTACK, L2CAP_DECLINE_CONNECTION), "B2"
+    // @param bd_addr(48), dest cid (16)
+};
 
 

@@ -392,7 +392,7 @@ l2cap_service_t * l2cap_get_service(uint16_t psm){
     return NULL;
 }
 
-void l2cap_register_service(connection_t *connection, uint16_t psm, uint16_t mtu){
+void l2cap_register_service_internal(connection_t *connection, uint16_t psm, uint16_t mtu){
     // check for alread registered psm // TODO: emit error event
     l2cap_service_t *service = l2cap_get_service(psm);
     if (service) return;
@@ -410,7 +410,7 @@ void l2cap_register_service(connection_t *connection, uint16_t psm, uint16_t mtu
     linked_list_add(&l2cap_services, (linked_item_t *) service);
 }
 
-void l2cap_unregister_service(connection_t *connection, uint16_t psm){
+void l2cap_unregister_service_internal(connection_t *connection, uint16_t psm){
     l2cap_service_t *service = l2cap_get_service(psm);
     if (service) return;
     linked_list_remove(&l2cap_services, (linked_item_t *) service);

@@ -86,6 +86,18 @@
 // disconnect l2cap disconnect, @param channel(16), reason(8)
 #define L2CAP_DISCONNECT                                   0x21
 
+// register l2cap service: @param psm(16), mtu (16)
+#define L2CAP_REGISTER_SERVICE                             0x22
+
+// unregister l2cap disconnect, @param psm(16)
+#define L2CAP_UNREGISTER_SERVICE                           0x23
+
+// accept connection @param bd_addr(48), dest cid (16)
+#define L2CAP_ACCEPT_CONNECTION                            0x24
+
+// decline l2cap disconnect,@param bd_addr(48), dest cid (16), reason(8)
+#define L2CAP_DECLINE_CONNECTION                           0x25
+
 // 
 #define IS_COMMAND(packet, command) (READ_BT_16(packet,0) == command.opcode)
 
