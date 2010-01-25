@@ -59,7 +59,7 @@ static hci_stack_t       hci_stack;
  *
  * @return connection OR NULL, if not found
  */
-static hci_connection_t * connection_for_handle(hci_con_handle_t con_handle){
+hci_connection_t * connection_for_handle(hci_con_handle_t con_handle){
     linked_item_t *it;
     for (it = (linked_item_t *) hci_stack.connections; it ; it = it->next){
         if ( ((hci_connection_t *) it)->con_handle == con_handle){

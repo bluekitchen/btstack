@@ -213,6 +213,8 @@ int hci_send_cmd_packet(uint8_t *packet, int size);
 // send ACL packet
 int hci_send_acl_packet(uint8_t *packet, int size);
 
+hci_connection_t * connection_for_handle(hci_con_handle_t con_handle);
+
 // 
 void hci_emit_state();
 void hci_emit_connection_complete(hci_connection_t *conn);
