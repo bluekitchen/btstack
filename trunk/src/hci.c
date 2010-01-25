@@ -188,15 +188,21 @@ static void event_handler(uint8_t *packet, int size){
             break;
         
         case HCI_EVENT_CONNECTION_REQUEST:
-            bt_flip_addr(addr, &packet[5]);
-            printf("Connection_incoming: "); print_bd_addr(addr); printf("\n");
-            conn = connection_for_address(addr);
-            if (!conn) {
-                conn = create_connection_for_addr(addr);
+            bt_flip_addr(addr, &packet[2]);
+            // TODO: eval COD 8-10
+            uint8_t link_type = packet[11];
+            printf("Connection_incoming: "); print_bd_addr(addr); printf(", type %u\n", link_type);
+            if (link_type == 1) { // ACL
+                conn = connection_for_address(addr);
+                if (!conn) {
+                    conn = create_connection_for_addr(addr);
+                }
+                // TODO: check for malloc failure
+                conn->state = ACCEPTED_CONNECTION_REQUEST;
+                hci_send_cmd(&hci_accept_connection_request, addr, 1);
+            } else {
+                // TODO: decline request
             }
-            // TODO: check for malloc failure
-            conn->state = ACCEPTED_CONNECTION_REQUEST;
-            hci_send_cmd(&hci_accept_connection_request, 1);
             break;
             
         case HCI_EVENT_CONNECTION_COMPLETE:

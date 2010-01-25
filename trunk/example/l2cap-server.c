@@ -118,7 +118,9 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_local_name) ) {
 						bt_send_cmd(&hci_write_authentication_enable, 0);
 					}
-
+					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable) ) {
+						bt_send_cmd(&hci_write_class_of_device, 0x2580);
+					}
 				default:
 					// other event
 					break;
