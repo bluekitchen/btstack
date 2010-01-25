@@ -52,6 +52,7 @@ static void null_data_handler(uint16_t source_cid, uint8_t *packet, uint16_t siz
 
 static uint8_t * sig_buffer = NULL;
 static linked_list_t l2cap_channels = NULL;
+static linked_list_t l2cap_services = NULL;
 static uint8_t * acl_buffer = NULL;
 static void (*event_packet_handler) (uint8_t *packet, uint16_t size) = null_event_handler;
 static void (*data_packet_handler)  (uint16_t source_cid, uint8_t *packet, uint16_t size) = null_data_handler;
@@ -378,9 +379,49 @@ void l2cap_finialize_channel_close(l2cap_channel_t *channel){
     free (channel);
 }
 
-//
-void l2cap_close_channels_for_connection(connection_t *connection){
+l2cap_service_t * l2cap_get_service(uint16_t psm){
     linked_item_t *it;
+    
+    // close open channels
+    for (it = (linked_item_t *) l2cap_services; it ; it = it->next){
+        l2cap_service_t * service = ((l2cap_service_t *) it);
+        if ( service->psm == psm){
+            return service;
+        };
+    }
+    return NULL;
+}
+
+void l2cap_register_service(connection_t *connection, uint16_t psm, uint16_t mtu){
+    // check for alread registered psm // TODO: emit error event
+    l2cap_service_t *service = l2cap_get_service(psm);
+    if (service) return;
+    
+    // alloc structure     // TODO: emit error event
+    service = malloc(sizeof(l2cap_service_t));
+    if (!service) return;
+    
+    // fill in 
+    service->psm = psm;
+    service->mtu = mtu;
+    service->connection = connection;
+
+    // add to services list
+    linked_list_add(&l2cap_services, (linked_item_t *) service);
+}
+
+void l2cap_unregister_service(connection_t *connection, uint16_t psm){
+    l2cap_service_t *service = l2cap_get_service(psm);
+    if (service) return;
+    linked_list_remove(&l2cap_services, (linked_item_t *) service);
+    free( service );
+}
+
+//
+void l2cap_close_connection(connection_t *connection){
+    linked_item_t *it;
+    
+    // close open channels
     l2cap_channel_t * channel;
     for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
         channel = (l2cap_channel_t *) it;
@@ -389,7 +430,10 @@ void l2cap_close_channels_for_connection(connection_t *connection){
             l2cap_send_signaling_packet( channel->handle, DISCONNECTION_REQUEST, channel->sig_id, channel->dest_cid, channel->source_cid);   
             channel->state = L2CAP_STATE_WAIT_DISCONNECT;
         }
-    }    
+    }   
+    
+    // TODO: INCOMING unregister services
+    
 }
 
 //  notify client

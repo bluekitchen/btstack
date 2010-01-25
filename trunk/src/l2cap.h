@@ -56,6 +56,7 @@ typedef enum {
     L2CAP_STATE_WAIT_DISCONNECT,  // from application
 } L2CAP_STATE;
 
+// info regarding an actual coneection
 typedef struct {
     // linked list - assert: first field
     linked_item_t    item;
@@ -74,8 +75,19 @@ typedef struct {
     // uint16_t flush_timeout_outgoing;
 } l2cap_channel_t;
 
+// info regarding potential connections
 typedef struct {
+    // linked list - assert: first field
+    linked_item_t    item;
+
+    // service id
+    uint16_t  psm;
     
+    // incoming MTU
+    uint16_t mtu;
+    
+    // provider for this server
+    connection_t *connection;    
 } l2cap_service_t;
 
 void l2cap_init();
@@ -89,7 +101,14 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size );
 void l2cap_set_capture_connection(connection_t * connection);
 
 void l2cap_finialize_channel_close(l2cap_channel_t *channel);
-void l2cap_close_channels_for_connection(connection_t *connection);
+void l2cap_close_connection(connection_t *connection);
+
+l2cap_service_t * l2cap_get_service(uint16_t psm);
+void l2cap_register_service(connection_t *connection, uint16_t psm, uint16_t);
+void l2cap_unregister_service(connection_t *connection, uint16_t psm);
+
+void l2cap_accept_connection(bd_addr_t address, uint16_t dest_cid);
+void l2cap_decline_connection(bd_addr_t address, uint16_t dest_cid, uint8_t reason);
 
 void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
 void l2cap_emit_channel_closed(l2cap_channel_t *channel);
