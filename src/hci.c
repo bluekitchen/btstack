@@ -177,6 +177,7 @@ static void acl_handler(uint8_t *packet, int size){
 static void event_handler(uint8_t *packet, int size){
     bd_addr_t addr;
     hci_con_handle_t handle;
+    hci_connection_t * conn;
     
     switch (packet[0]) {
             
@@ -186,11 +187,23 @@ static void event_handler(uint8_t *packet, int size){
             hci_stack.num_cmd_packets = packet[2];
             break;
         
+        case HCI_EVENT_CONNECTION_REQUEST:
+            bt_flip_addr(addr, &packet[5]);
+            printf("Connection_incoming: "); print_bd_addr(addr); printf("\n");
+            conn = connection_for_address(addr);
+            if (!conn) {
+                conn = create_connection_for_addr(addr);
+            }
+            // TODO: check for malloc failure
+            conn->state = ACCEPTED_CONNECTION_REQUEST;
+            hci_send_cmd(&hci_accept_connection_request, 1);
+            break;
+            
         case HCI_EVENT_CONNECTION_COMPLETE:
             // Connection management
             bt_flip_addr(addr, &packet[5]);
             printf("Connection_complete (status=%u)", packet[2]); print_bd_addr(addr); printf("\n");
-            hci_connection_t * conn = connection_for_address(addr);
+            conn = connection_for_address(addr);
             if (conn) {
                 if (!packet[2]){
                     conn->state = OPEN;
