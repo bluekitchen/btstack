@@ -436,6 +436,14 @@ void l2cap_close_connection(connection_t *connection){
     
 }
 
+void l2cap_accept_connection_internal(hci_con_handle_t handle,  uint16_t dest_cid){
+    printf("l2cap_accept_connection_internal called but not implemented yet 0x%x, 0x%x\n", handle, dest_cid);
+}
+
+void l2cap_decline_connection_internal(hci_con_handle_t handle, uint16_t dest_cid, uint8_t reason){
+    printf("l2cap_decline_connection_internal called but not implemented yet 0x%x, 0x%x, %u", handle, dest_cid,reason);
+}
+
 //  notify client
 void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     uint8_t event[17];

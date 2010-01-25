@@ -107,8 +107,8 @@ l2cap_service_t * l2cap_get_service(uint16_t psm);
 void l2cap_register_service_internal(connection_t *connection, uint16_t psm, uint16_t);
 void l2cap_unregister_service_internal(connection_t *connection, uint16_t psm);
 
-void l2cap_accept_connection(bd_addr_t address, uint16_t dest_cid);
-void l2cap_decline_connection(bd_addr_t address, uint16_t dest_cid, uint8_t reason);
+void l2cap_accept_connection_internal(hci_con_handle_t handle,  uint16_t dest_cid);
+void l2cap_decline_connection_internal(hci_con_handle_t handle, uint16_t dest_cid, uint8_t reason);
 
 void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
 void l2cap_emit_channel_closed(l2cap_channel_t *channel);

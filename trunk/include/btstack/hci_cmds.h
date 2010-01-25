@@ -115,8 +115,12 @@
 // data: event (8), len(8), channel (16)
 #define L2CAP_EVENT_CHANNEL_CLOSED                         0x71
 
+// data: event(8), len(8), address(48), handle (16),  psm (16), dest cid(16)
+#define L2CAP_EVENT_INCOMING_CONNECTION					   0x72
+
 // data: event(8), len(8), handle(16)
-#define L2CAP_EVENT_TIMEOUT_CHECK                          0x72
+#define L2CAP_EVENT_TIMEOUT_CHECK                          0x73
+
 
 // last HCI error is 0x3d
 // l2cap errors - enumeration by the command that created them
@@ -205,5 +209,9 @@ extern hci_cmd_t hci_write_page_timeout;
 extern hci_cmd_t hci_write_scan_enable;
 extern hci_cmd_t hci_write_simple_pairing_mode;
 
+extern hci_cmd_t l2cap_accept_connection;
 extern hci_cmd_t l2cap_create_channel;
+extern hci_cmd_t l2cap_decline_connection;
 extern hci_cmd_t l2cap_disconnect;
+extern hci_cmd_t l2cap_register_service;
+extern hci_cmd_t l2cap_unregister_service;

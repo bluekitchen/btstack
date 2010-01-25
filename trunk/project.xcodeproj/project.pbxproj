@@ -68,6 +68,7 @@
 		9C46FC370FA906F700ABEF05 /* hci_transport_h4.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci_transport_h4.h; path = src/hci_transport_h4.h; sourceTree = "<group>"; };
 		9C46FC380FA906F700ABEF05 /* hci_transport.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci_transport.h; path = src/hci_transport.h; sourceTree = "<group>"; };
 		9C5BA8A0110B756500D79BBE /* hci_cmds.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci_cmds.h; path = include/btstack/hci_cmds.h; sourceTree = "<group>"; };
+		9C5BABAF110E28E900D79BBE /* l2cap-server.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = "l2cap-server.c"; path = "example/l2cap-server.c"; sourceTree = "<group>"; };
 		9C6459DE1037554B0081A00B /* platform_iphone.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = platform_iphone.h; path = src/platform_iphone.h; sourceTree = "<group>"; };
 		9C77E36410618B1D00F39DCF /* Makefile.in */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; name = Makefile.in; path = SpringBoardAccess/Makefile.in; sourceTree = "<group>"; };
 		9C77E36710618C6500F39DCF /* SpringBoardAccess-test.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = "SpringBoardAccess-test.c"; path = "SpringBoardAccess/SpringBoardAccess-test.c"; sourceTree = "<group>"; };
@@ -249,6 +250,7 @@
 		9C7B5B81100D04520065D87E /* Example */ = {
 			isa = PBXGroup;
 			children = (
+				9C5BABAF110E28E900D79BBE /* l2cap-server.c */,
 				9CAA573610A5D87400D0E1A9 /* inquiry.c */,
 				9C13C9F610ECECE900B04243 /* mouse.c */,
 				9C994B8E106BEEB700C70311 /* rfcomm.c */,
