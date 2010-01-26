@@ -49,7 +49,7 @@
 // temp
 #include "l2cap.h"
 
-#define HCI_CONNECTION_TIMEOUT_MS 5000
+#define HCI_CONNECTION_TIMEOUT_MS 10000
 
 // the STACK is here
 static hci_stack_t       hci_stack;

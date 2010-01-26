@@ -59,6 +59,8 @@ static void (*event_packet_handler) (uint8_t *packet, uint16_t size) = null_even
 static void (*data_packet_handler)  (uint16_t source_cid, uint8_t *packet, uint16_t size) = null_data_handler;
 static connection_t * capture_connection = NULL;
 
+static uint8_t config_options[] = { 1, 2, 150, 0}; // mtu = 48 
+
 void l2cap_init(){
     sig_buffer = malloc( 48 );
     acl_buffer = malloc( 255 + 8 ); 
@@ -248,50 +250,52 @@ static void l2cap_handle_disconnect_request(l2cap_channel_t *channel, uint16_t i
 
 static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig_id, uint16_t psm, uint16_t dest_cid){
     
+    // printf("l2cap_handle_connection_request for handle %u, psm %u cid %u\n", handle, psm, dest_cid);
     l2cap_service_t *service = l2cap_get_service(psm);
     if (!service) {
         // 0x0002 PSM not supported
+        // printf("l2cap_handle_connection_request no PSM for psm %u/n", psm);
         l2cap_send_signaling_packet(handle, CONNECTION_RESPONSE, sig_id, 0, 0, 0x0002, 0);
         return;
     }
     
     hci_connection_t * hci_connection = connection_for_handle( handle );
     if (!hci_connection) {
-        printf("no hci_connection for handle %u", handle);
+        fprintf(stderr, "no hci_connection for handle %u\n", handle);
         // TODO: emit error
         return;
     }
     
     // alloc structure
-    l2cap_channel_t * chan = malloc(sizeof(l2cap_channel_t));
+    // printf("l2cap_handle_connection_request register channel\n");
+    l2cap_channel_t * channel = malloc(sizeof(l2cap_channel_t));
     // TODO: emit error event
-    if (!chan) return;
+    if (!channel) return;
     
     // fill in 
-    BD_ADDR_COPY(chan->address, hci_connection->address);
-    chan->psm = psm;
-    chan->handle = handle;
-    chan->connection = service->connection;
-    chan->source_cid = l2cap_next_source_cid();
-    chan->dest_cid   = dest_cid;
+    BD_ADDR_COPY(channel->address, hci_connection->address);
+    channel->psm = psm;
+    channel->handle = handle;
+    channel->connection = service->connection;
+    channel->source_cid = l2cap_next_source_cid();
+    channel->dest_cid   = dest_cid;
     
     // set initial state
-    chan->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ;
-    chan->sig_id = sig_id;
+    channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ;
+    channel->sig_id = l2cap_next_sig_id();
     
     // add to connections list
-    linked_list_add(&l2cap_channels, (linked_item_t *) chan);
+    linked_list_add(&l2cap_channels, (linked_item_t *) channel);
 
     // TODO: emit incoming connection request instead of answering directly
 
-    l2cap_send_signaling_packet(handle, CONNECTION_RESPONSE, sig_id, dest_cid, chan->source_cid, 0, 0);
+    l2cap_send_signaling_packet(handle, CONNECTION_RESPONSE, sig_id, dest_cid, channel->source_cid, 0, 0);
+    l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->dest_cid, 0, 4, &config_options);
     
 }
 
 void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t size){
-    
-    static uint8_t config_options[] = { 1, 2, 150, 0}; // mtu = 48 
-    
+        
     uint8_t  code       = READ_L2CAP_SIGNALING_CODE( packet );
     uint8_t  identifier = READ_L2CAP_SIGNALING_IDENTIFIER( packet );
     uint16_t result = 0;
@@ -304,7 +308,7 @@ void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t
                     result = READ_BT_16 (packet, L2CAP_SIGNALING_DATA_OFFSET+4);
                     switch (result) {
                         case 0:
-                            // successfull connection
+                            // successful connection
                             channel->dest_cid = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET);
                             channel->sig_id = l2cap_next_sig_id();
                             l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->dest_cid, 0, 4, &config_options);
@@ -534,11 +538,13 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
     // Get Connection
     hci_con_handle_t handle = READ_ACL_CONNECTION_HANDLE(packet);
     
+    // printf("l2cap_acl_handler channel %u, code %u\n", channel_id, code);
+    
     // Signaling Packet?
     if (channel_id == 1) {
         
-        if (code < 1 || code == 2 || code >= 8){
-            // not for a particular channel
+        if (code < 1 || code >= 8){
+            // not for a particular channel, and not CONNECTION_REQUEST 
             return;
         }
         
