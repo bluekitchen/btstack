@@ -265,7 +265,6 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
         // TODO: emit error
         return;
     }
-    
     // alloc structure
     // printf("l2cap_handle_connection_request register channel\n");
     l2cap_channel_t * channel = malloc(sizeof(l2cap_channel_t));
@@ -279,19 +278,47 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     channel->connection = service->connection;
     channel->source_cid = l2cap_next_source_cid();
     channel->dest_cid   = dest_cid;
-    
+        
     // set initial state
-    channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ;
-    channel->sig_id = l2cap_next_sig_id();
+    channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+    
+    // temp. store req sig id
+    channel->sig_id = sig_id; 
     
     // add to connections list
     linked_list_add(&l2cap_channels, (linked_item_t *) channel);
-
-    // TODO: emit incoming connection request instead of answering directly
-
-    l2cap_send_signaling_packet(handle, CONNECTION_RESPONSE, sig_id, dest_cid, channel->source_cid, 0, 0);
-    l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->dest_cid, 0, 4, &config_options);
     
+    // emit incoming connection request
+    l2cap_emit_connection_request(channel);
+}
+
+void l2cap_accept_connection_internal(uint16_t source_cid){
+    l2cap_channel_t * channel = l2cap_get_channel_for_source_cid(source_cid);
+    if (!channel) {
+        fprintf(stderr, "l2cap_accept_connection_internal called but source_cid 0x%x not found", source_cid);
+        return;
+    }
+
+    // accept connection
+    l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->sig_id, channel->dest_cid, channel->source_cid, 0, 0);
+
+    // set real sig and state and start config
+    channel->sig_id = l2cap_next_sig_id();
+    channel->state  = L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ;
+    l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->dest_cid, 0, 4, &config_options);
+}
+
+void l2cap_decline_connection_internal(uint16_t source_cid, uint8_t reason){
+    l2cap_channel_t * channel = l2cap_get_channel_for_source_cid( source_cid);
+    if (!channel) {
+        fprintf(stderr, "l2cap_decline_connection_internal called but source_cid 0x%x not found", source_cid,reason);
+        return;
+    }
+    l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->sig_id, 0, 0, reason, 0);
+
+    // discard channel
+    linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
+    free (channel);
 }
 
 void l2cap_signaling_handler(l2cap_channel_t *channel, uint8_t *packet, uint16_t size){
@@ -490,14 +517,6 @@ void l2cap_close_connection(connection_t *connection){
     }
 }
 
-void l2cap_accept_connection_internal(hci_con_handle_t handle,  uint16_t dest_cid){
-    printf("l2cap_accept_connection_internal called but not implemented yet 0x%x, 0x%x\n", handle, dest_cid);
-}
-
-void l2cap_decline_connection_internal(hci_con_handle_t handle, uint16_t dest_cid, uint8_t reason){
-    printf("l2cap_decline_connection_internal called but not implemented yet 0x%x, 0x%x, %u", handle, dest_cid,reason);
-}
-
 //  notify client
 void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     uint8_t event[17];
@@ -520,6 +539,17 @@ void l2cap_emit_channel_closed(l2cap_channel_t *channel) {
     socket_connection_send_packet(channel->connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+void l2cap_emit_connection_request(l2cap_channel_t *channel) {
+    uint8_t event[16];
+    event[0] = L2CAP_EVENT_INCOMING_CONNECTION;
+    event[1] = sizeof(event) - 2;
+    bt_flip_addr(&event[2], channel->address);
+    bt_store_16(event,  8, channel->handle);
+    bt_store_16(event, 10, channel->psm);
+    bt_store_16(event, 12, channel->source_cid);
+    bt_store_16(event, 14, channel->dest_cid);
+    socket_connection_send_packet(channel->connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
 void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
     
     // Capturing?

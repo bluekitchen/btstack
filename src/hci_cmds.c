@@ -320,12 +320,12 @@ OPCODE(OGF_BTSTACK, L2CAP_UNREGISTER_SERVICE), "2"
 // @param psm (16)
 };
 hci_cmd_t l2cap_accept_connection = {
-OPCODE(OGF_BTSTACK, L2CAP_ACCEPT_CONNECTION), "22"
-// @param handle(16), dest cid (16)
+OPCODE(OGF_BTSTACK, L2CAP_ACCEPT_CONNECTION), "2"
+// @param source cid (16)
 };
 hci_cmd_t l2cap_decline_connection = {
-OPCODE(OGF_BTSTACK, L2CAP_DECLINE_CONNECTION), "221"
-// @param handle(16), dest cid (16), reason(8)
+OPCODE(OGF_BTSTACK, L2CAP_DECLINE_CONNECTION), "21"
+// @param source cid (16), reason(8)
 };
 
 

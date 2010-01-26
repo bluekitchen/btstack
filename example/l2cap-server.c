@@ -78,14 +78,19 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					break;
 					
 				case L2CAP_EVENT_INCOMING_CONNECTION:
-					// data: event(8), len(8), address(48), handle (16),  psm (16), dest cid(16)
+					// data: event(8), len(8), address(48), handle (16),  psm (16), source cid(16) dest cid(16)
 					bt_flip_addr(event_addr, &packet[2]);
-					handle   = READ_BT_16(packet, 8); 
-					psm      = READ_BT_16(packet, 10); 
-					dest_cid = READ_BT_16(packet, 13); 
+					handle     = READ_BT_16(packet, 8); 
+					psm        = READ_BT_16(packet, 10); 
+					source_cid = READ_BT_16(packet, 12); 
+					dest_cid   = READ_BT_16(packet, 14); 
 					printf("L2CAP_EVENT_INCOMING_CONNECTION ");
 					print_bd_addr(event_addr);
-					printf(", handle 0x%02x, psm 0x%02x, dest cid 0x%02x\n", handle, psm, dest_cid);
+					printf(", handle 0x%02x, psm 0x%02x, src cid 0x%02x, dest cid 0x%02x\n",
+						   handle, psm, source_cid, dest_cid);
+
+					// accept
+					bt_send_cmd(&l2cap_accept_connection, source_cid);
 					break;
 					
 				case L2CAP_EVENT_CHANNEL_OPENED:
