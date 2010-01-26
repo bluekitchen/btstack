@@ -153,15 +153,13 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             l2cap_unregister_service_internal(connection, psm);
             break;
         case L2CAP_ACCEPT_CONNECTION:
-            handle = READ_BT_16(packet, 3);
-            cid    = READ_BT_16(packet, 5);
-            l2cap_accept_connection_internal(handle, cid);
+            cid    = READ_BT_16(packet, 3);
+            l2cap_accept_connection_internal(cid);
             break;
         case L2CAP_DECLINE_CONNECTION:
-            handle = READ_BT_16(packet, 3);
-            cid    = READ_BT_16(packet, 5);
+            cid    = READ_BT_16(packet, 3);
             reason = packet[7];
-            l2cap_decline_connection_internal(handle, cid, reason);
+            l2cap_decline_connection_internal(cid, reason);
             break;
         default:
             //@TODO: log into hci dump as vendor specific "event"

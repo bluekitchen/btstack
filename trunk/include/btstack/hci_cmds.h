@@ -115,7 +115,7 @@
 // data: event (8), len(8), channel (16)
 #define L2CAP_EVENT_CHANNEL_CLOSED                         0x71
 
-// data: event(8), len(8), address(48), handle (16),  psm (16), dest cid(16)
+// data: event(8), len(8), address(48), handle (16),  psm (16), source_cid(16), dest cid(16)
 #define L2CAP_EVENT_INCOMING_CONNECTION					   0x72
 
 // data: event(8), len(8), handle(16)

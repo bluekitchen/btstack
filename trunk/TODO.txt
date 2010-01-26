@@ -3,16 +3,6 @@
 2009-11-08: Release 0.1
 
 NEXT:
-- implement rest of L2CAP state machine
-  - incoming connections
-    - manage list of supported PSM
-	- new commands
-	  - l2cap_register_service(psm, mtu)
-	  - l2cap_unregister_service(psm)
-	  - l2cap_accept_connection_internal( bd_addr_t, dest cid )
-	  - l2cap_deny_connection( bd_addr_t, dest cid, reason )
-	- events
-	  - l2cap_incoming_connection(psm, handle, dest cid)
 - Add improved RFCOMM user-client
   - use switch on RFCOMM control field in rfcomm.c packet handler
 - add configure option for uart flowcontrol
