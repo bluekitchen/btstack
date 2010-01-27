@@ -139,7 +139,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						memcpy(devices[deviceCount].address, addr, 6);
 						devices[deviceCount].pageScanRepetitionMode =   packet [3 + numResponses*(6)         + i*1];
 						devices[deviceCount].classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1+1)   + i*3);
-						devices[deviceCount].clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+1+2) + i*2) & 0x7fff;
+						devices[deviceCount].clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff;
 						devices[deviceCount].rssi  = 0;
 						devices[deviceCount].state = 1;
 						printf("Device found: "); 
