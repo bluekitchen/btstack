@@ -48,6 +48,7 @@ struct device {
 	uint16_t   clockOffset;
 	uint32_t   classOfDevice;
 	uint8_t	   pageScanRepetitionMode;
+	uint8_t    rssi;
 	uint8_t    state; // 0 empty, 1 found, 2 remote name tried, 3 remote name found
 };
 
@@ -118,11 +119,37 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 				case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started - set local name
 					if (packet[2] == HCI_STATE_WORKING) {
+						bt_send_cmd(&hci_write_inquiry_mode, 0x01); // with RSSI
+						next();
+					}
+					break;
+
+				case HCI_EVENT_COMMAND_COMPLETE:
+					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_inquiry_mode) ) {
 						next();
 					}
 					break;
 					
 				case HCI_EVENT_INQUIRY_RESULT:
+					numResponses = packet[2];
+					for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
+						bt_flip_addr(addr, &packet[3+i*6]);
+						int index = getDeviceIndexForAddress(addr);
+						if (index >= 0) continue;
+						memcpy(devices[deviceCount].address, addr, 6);
+						devices[deviceCount].pageScanRepetitionMode =   packet [3 + numResponses*(6)         + i*1];
+						devices[deviceCount].classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1+1)   + i*3);
+						devices[deviceCount].clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+1+2) + i*2) & 0x7fff;
+						devices[deviceCount].rssi  = 0;
+						devices[deviceCount].state = 1;
+						printf("Device found: "); 
+						print_bd_addr(addr);
+						printf(" with COD: 0x%06x, pageScan %u, clock offset 0x%04x\n", devices[deviceCount].classOfDevice,
+								devices[deviceCount].pageScanRepetitionMode,  devices[deviceCount].clockOffset);
+						deviceCount++;
+					}
+					break;
+					
 				case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
 					numResponses = packet[2];
 					for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
@@ -130,14 +157,15 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						int index = getDeviceIndexForAddress(addr);
 						if (index >= 0) continue;
 						memcpy(devices[deviceCount].address, addr, 6);
-						devices[deviceCount].classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1+1) + i*3);
-						devices[deviceCount].pageScanRepetitionMode = packet[3 + numResponses*6 + i];
-						devices[deviceCount].clockOffset = READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff;
+						devices[deviceCount].pageScanRepetitionMode =   packet [3 + numResponses*(6)         + i*1];
+						devices[deviceCount].classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1)     + i*3);
+						devices[deviceCount].clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+3)   + i*2) & 0x7fff;
+						devices[deviceCount].rssi  =                    packet [3 + numResponses*(6+1+1+3+2) + i*1];
 						devices[deviceCount].state = 1;
 						printf("Device found: "); 
 						print_bd_addr(addr);
-						printf(" with COD: 0x%06x, pageScan %u, clock offset 0x%04x\n", devices[deviceCount].classOfDevice,
-								devices[deviceCount].pageScanRepetitionMode,  devices[deviceCount].clockOffset);
+						printf(" with COD: 0x%06x, pageScan %u, clock offset 0x%04x, rssi 0x%02x\n", devices[deviceCount].classOfDevice,
+							   devices[deviceCount].pageScanRepetitionMode,  devices[deviceCount].clockOffset, devices[deviceCount].rssi);
 						deviceCount++;
 					}
 					break;
