@@ -3,21 +3,22 @@
 2009-11-08: Release 0.1
 
 NEXT:
-- Add improved RFCOMM user-client
-  - use switch on RFCOMM control field in rfcomm.c packet handler
-- add configure option for uart flowcontrol
-- create <btstack/errors.h>
-- BUG: bt_close crashes when used in CocoaTouch app
-- BUG: BTdaemon crashes on iPhone when CocoaTouch app is closed (sometimes)
-  
-== Release 0.2 - Incoming L2CAP supported + improved Inq Dialog
-- CocoaTouch User Interface Components
-  - Provide BTstack class
-  - Warning and shutdown of Apple's stack
-- add timeouts to cocoa run loop
+
 - figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect, when phone gets locked
   - some trick
   - use Cocoa run loop for background app?
+- Add improved RFCOMM user-client
+  - use switch on RFCOMM control field in rfcomm.c packet handler
+- move RFCOMM code into BTdaemon
+- Provide BTstack Objective-C class
+- CocoaTouch 
+  - Warning and shutdown of Apple's stack
+- add timeouts to cocoa run loop
+- BUG: bt_close crashes when used in CocoaTouch app
+- BUG: BTdaemon crashes on iPhone when CocoaTouch app is closed (sometimes)
+
+== Release 0.2 - Incoming L2CAP supported + improved Inq Dialog
+
 - extend SpringBoard feedback
   - show alerts/messages using SpringBoardAcccess, e.g. Bluetooth disconnected by remote device
   - add code to notify about remote disconnets
@@ -32,9 +33,11 @@ NEXT:
   - error notification
   - flow control
   - reassembly/segmentation
+- add configure option for uart flowcontrol
+- create <btstack/errors.h>
 
 == Release Version 0.3
-- implement RFCOMM
+- implement RFCOMM server
 - implement SDP
 - implement PAN
 
