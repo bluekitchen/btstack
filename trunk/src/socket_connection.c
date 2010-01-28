@@ -73,7 +73,7 @@ typedef struct packet_header {
     uint16_t channel;
     uint16_t length;
     uint8_t  data[0];
-} packet_header_t;
+} packet_header_t;  // 6
 
 typedef enum {
     SOCKET_W4_HEADER,
@@ -86,7 +86,7 @@ struct connection {
     SOCKET_STATE state;
     uint16_t bytes_read;
     uint16_t bytes_to_read;
-    uint8_t  buffer[3+3+255]; // max HCI CMD + packet_header
+    uint8_t  buffer[360]; // packet_header(6) + max packet: DH5 = header(4) + payload (339)
 };
 
 /** list of socket connections */
