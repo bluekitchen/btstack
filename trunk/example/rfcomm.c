@@ -199,16 +199,16 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 			if (size == 14 && packet[1] == BT_RFCOMM_UIH && packet[3] == BT_RFCOMM_PN_RSP){
 				packet_processed++;
 				printf("UIH Parameter Negotiation Response\n");
-				printf("Sending SABM #1\n");
-				_bt_rfcomm_send_sabm(source_cid, 1, 1);
+				printf("Sending SABM #%u\n", RFCOMM_CHANNEL_ID);
+				_bt_rfcomm_send_sabm(source_cid, 1, RFCOMM_CHANNEL_ID);
 			}
 			
 			// 	received 2. message BT_RF_COMM_UA
 			if (size == 4 && packet[1] == BT_RFCOMM_UA && packet[0] == ((RFCOMM_CHANNEL_ID << 3) | 3) ){
 				packet_processed++;
-				printf("Received RFCOMM unnumbered acknowledgement for channel 1 - channel opened\n");
+				printf("Received RFCOMM unnumbered acknowledgement for channel %u - channel opened\n", RFCOMM_CHANNEL_ID);
 				printf("Sending MSC  'I'm ready'\n");
-				_bt_rfcomm_send_uih_msc_cmd(source_cid, 1, 1, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+				_bt_rfcomm_send_uih_msc_cmd(source_cid, 1, RFCOMM_CHANNEL_ID, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
 			}
 			
 			// received BT_RFCOMM_MSC_CMD
