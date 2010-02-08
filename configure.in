@@ -98,7 +98,7 @@ if test "x$target" = xiphone; then
             LDFLAGS="$LDFLAGS -L$SDK_PATH/usr/lib -framework Foundation -framework CoreFoundation -framework UIKit"
             LDFLAGS="$LDFLAGS -L$SDK_PATH/System/Library/Frameworks/IOKit.framework/Versions/A"
             LDFLAGS="$LDFLAGS $SDK_PATH/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager"
-            LDFLAGS="$LDFLAGS -lIOkit -lobjc"
+            LDFLAGS="$LDFLAGS -lIOKit -lobjc"
 		   ;;
         *)
             AC_MSG_ERROR(Don't know how to compile without Apple's iPhone SDK, sorry.)
