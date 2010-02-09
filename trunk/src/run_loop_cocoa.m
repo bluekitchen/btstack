@@ -50,8 +50,10 @@ static void socketDataCallback (
 						 const void *data,
 						 void *info)
 {
-	data_source_t *ds = (data_source_t *) info;
-	ds->process(ds);
+    if (callbackType == kCFSocketReadCallBack && info) {
+        data_source_t *ds = (data_source_t *) info;
+        ds->process(ds);
+    }
 }
 
 void cocoa_add_data_source(data_source_t *dataSource){
