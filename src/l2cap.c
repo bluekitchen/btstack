@@ -528,6 +528,7 @@ void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     bt_store_16(event, 11, channel->psm);
     bt_store_16(event, 13, channel->source_cid);
     bt_store_16(event, 15, channel->dest_cid);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     socket_connection_send_packet(channel->connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -536,6 +537,7 @@ void l2cap_emit_channel_closed(l2cap_channel_t *channel) {
     event[0] = L2CAP_EVENT_CHANNEL_CLOSED;
     event[1] = sizeof(event) - 2;
     bt_store_16(event, 2, channel->source_cid);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     socket_connection_send_packet(channel->connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -548,8 +550,10 @@ void l2cap_emit_connection_request(l2cap_channel_t *channel) {
     bt_store_16(event, 10, channel->psm);
     bt_store_16(event, 12, channel->source_cid);
     bt_store_16(event, 14, channel->dest_cid);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     socket_connection_send_packet(channel->connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
+
 void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
     
     // Capturing?
