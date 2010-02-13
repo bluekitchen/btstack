@@ -2,15 +2,18 @@
 
 2009-11-08: Release 0.1
 
+
 NEXT:
 
+- Provide BTstack Objective-C class
 - figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect, when phone gets locked
   - some trick
   - use Cocoa run loop for background app?
 - Add improved RFCOMM user-client
   - use switch on RFCOMM control field in rfcomm.c packet handler
 - move RFCOMM code into BTdaemon
-- Provide BTstack Objective-C class
+- L2CAP 
+  - segmentation
 - CocoaTouch 
   - Warning and shutdown of Apple's stack
 - add timeouts to cocoa run loop
@@ -32,7 +35,6 @@ NEXT:
   - error handling
   - error notification
   - flow control
-  - reassembly/segmentation
 - add configure option for uart flowcontrol
 - create <btstack/errors.h>
 
