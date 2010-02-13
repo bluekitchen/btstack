@@ -260,14 +260,24 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					printf("RX: address %02x, control %02x: ", packet[0], packet[1]);
 					hexdump( (uint8_t *) &packet[4], size-5);				
 				}
+				int written = 0;
+				int length = size-5;
+				int start_of_data = 4;
+				//write data to fifo
+				while (length) {
+					if ((written = write(fifo_fd, &packet[start_of_data], length)) == -1) {
+						printf("Error writing to FIFO\n");
+					} else {
+						length -= written;
+					}
+				}
 			}
 			
 			uint8_t send_credits_packet = 0;
 			
-			
-			if (credits_used > 40 ) {
+			if (credits_used >= 0x30 ) {
 				send_credits_packet = 1;
-				credits_used = 0;
+				credits_used -= 0x30;
 			}
 			
 			if (msc_resp_send && msc_resp_received) {
