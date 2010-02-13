@@ -109,6 +109,7 @@ static hci_connection_t * create_connection_for_addr(bd_addr_t addr){
     linked_item_set_user(&conn->timeout.item, conn);
     conn->timeout.process = hci_connection_timeout_handler;
     hci_connection_timestamp(conn);
+    conn->acl_recombination_length = 0;
     linked_list_add(&hci_stack.connections, (linked_item_t *) conn);
     return conn;
 }
