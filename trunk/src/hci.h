@@ -153,6 +153,7 @@ typedef struct {
 
     // ACL packet recombination
     uint8_t  acl_recombination_buffer[350]; // max packet: DH5 = header(4) + payload (339)
+    uint16_t acl_recombination_pos;
     uint16_t acl_recombination_length;
     
 } hci_connection_t;
