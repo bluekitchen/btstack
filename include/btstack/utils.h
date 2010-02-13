@@ -73,7 +73,7 @@ typedef uint8_t link_key_t[LINK_KEY_LEN];
 // ACL Packet
 #define READ_ACL_CONNECTION_HANDLE( buffer ) ( READ_BT_16(buffer,0) & 0x0fff)
 #define READ_ACL_FLAGS( buffer )      ( buffer[1] >> 4 )
-#define READ_ACL_LENGTH( buffer )     (READ_BT_16(buffer, 2)
+#define READ_ACL_LENGTH( buffer )     (READ_BT_16(buffer, 2))
 
 // L2CAP Packet
 #define READ_L2CAP_LENGTH(buffer)     ( READ_BT_16(buffer, 4))
