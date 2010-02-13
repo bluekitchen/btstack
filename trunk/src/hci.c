@@ -88,13 +88,6 @@ static void hci_connection_timestamp(hci_connection_t *connection){
     gettimeofday(&connection->timestamp, NULL);
 }
 
-static void hci_connection_update_timestamp_for_acl(uint8_t *packet) {
-    // update timestamp
-    hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
-    hci_connection_t *connection = connection_for_handle( con_handle);
-    if (connection) hci_connection_timestamp(connection);
-}
-
 /**
  * create connection for given address
  *
@@ -110,6 +103,7 @@ static hci_connection_t * create_connection_for_addr(bd_addr_t addr){
     conn->timeout.process = hci_connection_timeout_handler;
     hci_connection_timestamp(conn);
     conn->acl_recombination_length = 0;
+    conn->acl_recombination_pos = 0;
     linked_list_add(&hci_stack.connections, (linked_item_t *) conn);
     return conn;
 }
@@ -163,13 +157,93 @@ static bt_control_t null_control = {
 
 
 int hci_send_acl_packet(uint8_t *packet, int size){
-    hci_connection_update_timestamp_for_acl(packet);
+
+    // update idle timestamp
+    hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
+    hci_connection_t *connection = connection_for_handle( con_handle);
+    if (connection) hci_connection_timestamp(connection);
+    
+    // send packet
     return hci_stack.hci_transport->send_acl_packet(packet, size);
 }
 
 static void acl_handler(uint8_t *packet, int size){
-    hci_connection_update_timestamp_for_acl(packet);
-    hci_stack.acl_packet_handler(packet, size);
+
+    // get info
+    hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
+    hci_connection_t *conn      = connection_for_handle(con_handle);
+    uint8_t  acl_flags          = READ_ACL_FLAGS(packet);
+    uint16_t acl_length         = READ_ACL_LENGTH(packet);
+
+    // ignore non-registered handle
+    if (!conn){
+        fprintf(stderr, "hci.c: acl_handler called with non-registered handle %u!\n" , con_handle);
+        return;
+    }
+    
+    // update idle timestamp
+    hci_connection_timestamp(conn);
+    
+    // handle different packet types
+    switch (acl_flags & 0x03) {
+            
+        case 0x01: // continuation fragment
+            
+            // sanity check
+            if (conn->acl_recombination_pos == 0) {
+                fprintf(stderr, "ACL Cont Fragment but no first fragment for handle 0x%02x\n", con_handle);
+                return;
+            }
+            
+            // append fragment payload (header already stored)
+            memcpy(&conn->acl_recombination_buffer[conn->acl_recombination_pos], &packet[4], acl_length );
+            conn->acl_recombination_pos += acl_length;
+            
+            // fprintf(stderr, "ACL Cont Fragment: acl_len %u, combined_len %u, l2cap_len %u\n",
+            //        acl_length, connection->acl_recombination_pos, connection->acl_recombination_length);  
+            
+            // forward complete L2CAP packet if complete. 
+            if (conn->acl_recombination_pos >= conn->acl_recombination_length + 4 + 4){ // pos already incl. ACL header
+                
+                hci_stack.acl_packet_handler(conn->acl_recombination_buffer, conn->acl_recombination_pos);
+                // reset recombination buffer
+                conn->acl_recombination_length = 0;
+                conn->acl_recombination_pos = 0;
+            }
+            break;
+            
+        case 0x02: { // first fragment
+            
+            // sanity check
+            if (conn->acl_recombination_pos) {
+                fprintf(stderr, "ACL First Fragment but data in buffer for handle 0x%02x\n", con_handle);
+                return;
+            }
+            
+            // peek into L2CAP packet!
+            uint16_t l2cap_length = READ_L2CAP_LENGTH( packet );
+
+            // compare fragment size to L2CAP packet size
+            if (acl_length >= l2cap_length + 4){
+                
+                // forward fragment as L2CAP packet
+                hci_stack.acl_packet_handler(packet, acl_length + 4);
+            
+            } else {
+                // store first fragment and tweak acl length for complete package
+                memcpy(conn->acl_recombination_buffer, packet, acl_length + 4);
+                conn->acl_recombination_pos    = acl_length + 4;
+                conn->acl_recombination_length = l2cap_length;
+                bt_store_16(conn->acl_recombination_buffer, 2, acl_length +4);
+                // fprintf(stderr, "ACL First Fragment: acl_len %u, l2cap_len %u\n", acl_length, l2cap_length);
+            }
+            break;
+            
+        } 
+        default:
+            fprintf(stderr, "hci.c: acl_handler called with invalid packet boundary flags %u\n", acl_flags & 0x03);
+            return;
+    }
     
     // execute main loop
     hci_run();
