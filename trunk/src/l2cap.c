@@ -39,6 +39,7 @@
 
 #include "l2cap.h"
 #include "hci.h"
+#include "hci_dump.h"
 
 #include <stdarg.h>
 #include <string.h>
