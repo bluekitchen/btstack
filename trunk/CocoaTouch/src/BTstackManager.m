@@ -78,7 +78,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 }
 
 -(void) enableRFCOMM {
-	rfcomm_register_packet_handler(packet_handler);
+	// rfcomm_register_packet_handler(packet_handler);
 }
 
 - (void) handlePacketWithType:(uint8_t)packet_type forChannel:(uint16_t)channel andData:(uint8_t *)packet withLen:(uint16_t) size {
