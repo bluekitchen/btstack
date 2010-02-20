@@ -34,7 +34,7 @@
 #import <btstack/btstack.h>
 #import "../../RFCOMM/rfcomm.h"
 
-static BTstackManager * btstackManager = NULL;
+static BTstackManager * btstackManager = nil;
 
 @interface BTstackManager (privat)
 - (void) handlePacketWithType:(uint8_t) packet_type
@@ -52,12 +52,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 @implementation BTstackManager
 
+@synthesize delegate = _delegate;
+
 -(BTstackManager *) init {
+	self = [super init];
+	if (!self) return self;
+	
 	// Cocoa compatible run loop
 	run_loop_init(RUN_LOOP_COCOA);
 	
 	// our packet handler
 	bt_register_packet_handler(packet_handler);
+	
 	return self;
 }
 
@@ -66,10 +72,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		btstackManager = [[BTstackManager alloc] init];
 	}
 	return btstackManager;
-}
-
--(void) setDelegate:(id<BTstackManagerDelegate>) newDelegate {
-	delegate = newDelegate;
 }
 
 -(void) activate {

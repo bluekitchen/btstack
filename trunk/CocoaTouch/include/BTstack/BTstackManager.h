@@ -38,7 +38,8 @@
 @class BTDevice;
 
 /*
- * Information on devices is stored in a system-wide plist and maintained by BTstackManager
+ * Information on devices is stored in a system-wide plist
+ * it is maintained by BTstackManager
  * this includes the link keys
  */
 
@@ -48,14 +49,11 @@ typedef int BTstackError;
 @protocol BTstackManagerDelegate;
 
 @interface BTstackManager : NSObject {
-	id<BTstackManagerDelegate> delegate;
+	id<BTstackManagerDelegate> _delegate;
 }
 
 // shared instance
 +(BTstackManager *) sharedInstance;
-
-// BTstackManagerDelegate protocol implemented by application
--(void) setDelegate:(id<BTstackManagerDelegate>) delegate;
 
 // Activation
 -(void) activate;
@@ -77,10 +75,15 @@ typedef int BTstackError;
 -(void) sendRFCOMMPacketForChannelID:(uint16_t)connectionID;
 
 // TODO add l2cap and rfcomm incoming commands
+
+@property (nonatomic, assign) id<BTstackManagerDelegate> delegate;
 @end
 
 
 @protocol BTstackManagerDelegate
+
+// Everything is optional but you should implement all methods of a group 
+@optional
 
 // Activation events
 -(void) activated;
