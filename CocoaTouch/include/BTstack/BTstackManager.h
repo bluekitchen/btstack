@@ -75,44 +75,48 @@ typedef int BTstackError;
 -(void) createRFCOMMConnectionAtAddress:(bd_addr_t) address withChannel:(uint16_t)psm authenticated:(BOOL)authentication;
 -(void) closeRFCOMMConnectionWithID:(uint16_t) connectionID;
 -(void) sendRFCOMMPacketForChannelID:(uint16_t)connectionID;
+
+// TODO add l2cap and rfcomm incoming commands
 @end
 
 
 @protocol BTstackManagerDelegate
--(void) btstackManager:(BTstackManager *)btstackManager
-		  handlePacketWithType:(uint8_t) packet_type
-					forChannel:(uint16_t) channel
-					   andData:(uint8_t *)packet
-					   withLen:(uint16_t) size;
 
 // Activation events
--(void) activated:(BTstackManager *)btstackManager;
--(void) activationFailed:(BTstackError)error btstackManager:(BTstackManager *)btstackManager ;
--(void) deactivated:(BTstackManager *)btstackManager;
+-(void) activated;
+-(void) activationFailed:(BTstackError)error;
+-(void) deactivated;
 
 // Activation callbacks
--(BOOL) disableSystemBluetooth:(BTstackManager *)btstackManager ; // default: YES
+-(BOOL) disableSystemBluetooth; // default: YES
 
 // Discovery events: general
--(void) deviceInfo:(BTDevice*)device btstackManager:(BTstackManager *)btstackManager;
--(void) discoveryStopped:(BTstackManager *)btstackManager ;
+-(void) deviceInfo:(BTDevice*)device;
+-(void) discoveryStopped;
 
 // Discovery events: UI
--(void) discoveryInquiry:(BTstackManager *)btstackManager ;
--(void) discoveryQueryRemoteName:(int)deviceIndex btstackManager:(BTstackManager *)btstackManager;
+-(void) discoveryInquiry;
+-(void) discoveryQueryRemoteName:(int)deviceIndex;
 
 // Connection events
--(NSString*) btstackManager:(BTstackManager *)btstackManager pinForAddress:(bd_addr_t)addr;
+-(NSString*) pinForAddress:(bd_addr_t)addr; // default: "0000"
 
--(void) l2capChannelCreatedAtAddress:(bd_addr_t)addr withPSM:(uint16_t)psm asID:(uint16_t)channelID btstackManager:(BTstackManager *)btstackManager;
--(void) l2capChannelCreateFailedAtAddress:(bd_addr_t)addr withPSM:(uint16_t)psm error:(BTstackError)error btstackManager:(BTstackManager *)btstackManager;
--(void) l2capChannelClosedForChannelID:(uint16_t)channelID btstackManager:(BTstackManager *)btstackManager;
--(void) l2capDataReceivedForChannelID:(uint16_t)channelID withData:(uint8_t *)packet andOfLen:(uint16_t) size btstackManager:(BTstackManager *)btstackManager;
+-(void) l2capChannelCreatedAtAddress:(bd_addr_t)addr withPSM:(uint16_t)psm asID:(uint16_t)channelID;
+-(void) l2capChannelCreateFailedAtAddress:(bd_addr_t)addr withPSM:(uint16_t)psm error:(BTstackError)error;
+-(void) l2capChannelClosedForChannelID:(uint16_t)channelID;
+-(void) l2capDataReceivedForChannelID:(uint16_t)channelID withData:(uint8_t *)packet ofLen:(uint16_t)size;
 
--(void) rfcommConnectionCreatedAtAddress:(bd_addr_t)addr forChannel:(uint16_t)channel asID:(uint16_t)connectionID btstackManager:(BTstackManager *)btstackManager;
--(void) rfcommConnectionCreateFailedAtAddress:(bd_addr_t)addr forChannel:(uint16_t)channel error:(BTstackError)error btstackManager:(BTstackManager *)btstackManager;
--(void) rfcommConnectionClosedForConnectionID:(uint16_t)connectionID btstackManager:(BTstackManager *)btstackManager;
--(void) rfcommDataReceivedForConnectionID:(uint16_t)connectionID withData:(uint8_t *)packet andOfLen:(uint16_t) size btstackManager:(BTstackManager *)btstackManager;
+-(void) rfcommConnectionCreatedAtAddress:(bd_addr_t)addr forChannel:(uint16_t)channel asID:(uint16_t)connectionID;
+-(void) rfcommConnectionCreateFailedAtAddress:(bd_addr_t)addr forChannel:(uint16_t)channel error:(BTstackError)error;
+-(void) rfcommConnectionClosedForConnectionID:(uint16_t)connectionID;
+-(void) rfcommDataReceivedForConnectionID:(uint16_t)connectionID withData:(uint8_t *)packet ofLen:(uint16_t)size;
 
+// TODO add l2cap and rfcomm incoming events
+
+// direct access
+-(void) handlePacketWithType:(uint8_t) packet_type
+				  forChannel:(uint16_t) channel
+					 andData:(uint8_t *)packet
+					 withLen:(uint16_t) size;
 @end
 
