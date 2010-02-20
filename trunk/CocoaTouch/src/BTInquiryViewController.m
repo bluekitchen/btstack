@@ -42,7 +42,7 @@
 #include <dlfcn.h>
 #define INQUIRY_INTERVAL 3
 
-// #define LASER_KB
+#define LASER_KB
 
 // fix compare for 3.0
 #ifndef __IPHONE_3_0
