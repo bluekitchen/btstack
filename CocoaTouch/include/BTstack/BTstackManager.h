@@ -46,18 +46,31 @@
 // TODO enumerate BTstackError type
 typedef int BTstackError;
 
+typedef enum {
+	kDeactivated = 1,
+	kW4SysBTState,
+	kW4SysBTDisabled,
+	kW4Activated,
+	kActivated,
+	kW4Deactivated
+} ManagerState;
+
 @protocol BTstackManagerDelegate;
 
 @interface BTstackManager : NSObject {
+@private
 	id<BTstackManagerDelegate> _delegate;
+	NSMutableDictionary *deviceInfo;
+	BOOL connectedToDaemon;
+	ManagerState state;
 }
 
 // shared instance
 +(BTstackManager *) sharedInstance;
 
 // Activation
--(void) activate;
--(void) deactivate;
+-(BTstackError) activate;
+-(BTstackError) deactivate;
 
 // Discovery
 -(BTstackError) startDiscovery;
@@ -66,13 +79,13 @@ typedef int BTstackError;
 -(BTDevice*) deviceAtIndex:(int)index;
 
 // Connections
--(void) createL2CAPChannelAtAddress:(bd_addr_t) address withPSM:(uint16_t)psm authenticated:(BOOL)authentication;
--(void) closeL2CAPChannelWithID:(uint16_t) channelID;
--(void) sendL2CAPPacketForChannelID:(uint16_t)channelID;
+-(BTstackError) createL2CAPChannelAtAddress:(bd_addr_t) address withPSM:(uint16_t)psm authenticated:(BOOL)authentication;
+-(BTstackError) closeL2CAPChannelWithID:(uint16_t) channelID;
+-(BTstackError) sendL2CAPPacketForChannelID:(uint16_t)channelID;
 
--(void) createRFCOMMConnectionAtAddress:(bd_addr_t) address withChannel:(uint16_t)psm authenticated:(BOOL)authentication;
--(void) closeRFCOMMConnectionWithID:(uint16_t) connectionID;
--(void) sendRFCOMMPacketForChannelID:(uint16_t)connectionID;
+-(BTstackError) createRFCOMMConnectionAtAddress:(bd_addr_t) address withChannel:(uint16_t)psm authenticated:(BOOL)authentication;
+-(BTstackError) closeRFCOMMConnectionWithID:(uint16_t) connectionID;
+-(BTstackError) sendRFCOMMPacketForChannelID:(uint16_t)connectionID;
 
 // TODO add l2cap and rfcomm incoming commands
 
