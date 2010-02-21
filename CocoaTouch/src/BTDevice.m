@@ -44,25 +44,26 @@
 @synthesize connectionState;
 @synthesize pageScanRepetitionMode;
 @synthesize clockOffset;
+@synthesize rssi;
 
 - (BTDevice *)init {
 	name = NULL;
-	bzero(&address, 6);
+	bzero(&_address, 6);
 	classOfDevice = kCODInvalid;
 	connectionState = kBluetoothConnectionNotConnected;
 	return self;
 }
 
-- (void) setAddress:(bd_addr_t *)newAddr{
-	BD_ADDR_COPY( &address, newAddr);
+- (void) setAddress:(bd_addr_t*)newAddr{
+	BD_ADDR_COPY( &_address, newAddr);
 }
 
-- (bd_addr_t *) address{
-	return &address;
+- (bd_addr_t*) address{
+	return &_address;
 }
 
-+ (NSString *) stringForAddress:(bd_addr_t *) address {
-	uint8_t * addr = (uint8_t*) address;
++ (NSString *) stringForAddress:(bd_addr_t*) address {
+	uint8_t *addr = (uint8_t*) *address;
 	return [NSString stringWithFormat:@"%02x:%02x:%02x:%02x:%02x:%02x", addr[0], addr[1], addr[2],
 			addr[3], addr[4], addr[5]];
 }
@@ -73,7 +74,7 @@
 }
 
 - (NSString *) addressString{
-	return [BTDevice stringForAddress:&address];
+	return [BTDevice stringForAddress:&_address];
 }
 
 - (BluetoothDeviceType) deviceType{
@@ -87,7 +88,7 @@
 	}
 }
 - (NSString *) toString{
-	return [NSString stringWithFormat:@"Device addr %@ name %@ COD %x", [BTDevice stringForAddress:&address], name, classOfDevice];
+	return [NSString stringWithFormat:@"Device addr %@ name %@ COD %x", [BTDevice stringForAddress:&_address], name, classOfDevice];
 }
 
 - (void)dealloc {

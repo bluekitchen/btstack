@@ -5,7 +5,15 @@
 
 NEXT:
 
-- Provide BTstack Objective-C class
+- Provide BTstackManager Objective-C class
+  - set remote names in deviceInfo
+  - store deviceInfo on dealloc 
+  - add discard discovered devices
+  - create new device discovery view: BTDiscoveryViewController
+  - implement l2cap code
+  - implement rfcomm code
+
+  
 - figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect, when phone gets locked
   - some trick
   - use Cocoa run loop for background app?
@@ -14,11 +22,10 @@ NEXT:
 - move RFCOMM code into BTdaemon
 - L2CAP 
   - segmentation
-- CocoaTouch 
-  - Warning and shutdown of Apple's stack
 - add timeouts to cocoa run loop
 - BUG: bt_close crashes when used in CocoaTouch app
 - BUG: BTdaemon crashes on iPhone when CocoaTouch app is closed (sometimes)
+- BUG: malloc warning when BTdaemon is started by launchd
 
 == Release 0.2 - Incoming L2CAP supported + improved Inq Dialog
 
