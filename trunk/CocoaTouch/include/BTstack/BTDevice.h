@@ -59,7 +59,7 @@ typedef enum {
 
 @interface BTDevice : NSObject {
 
-	bd_addr_t address; // potential key
+	bd_addr_t  _address;
 	
 	NSString * name;
 	uint32_t   classOfDevice;
@@ -67,14 +67,17 @@ typedef enum {
 	uint8_t    pageScanRepetitionMode;
 	uint16_t   clockOffset;
 
+	uint8_t    rssi;
+	
+	// deprecated
 	BluetoothConnectionState  connectionState; 
 }
 
-- (void) setAddress:(bd_addr_t *)addr;
-- (bd_addr_t *) address;
+- (void) setAddress:(bd_addr_t*)addr;
+- (bd_addr_t*) address;
 - (NSString *) toString;
 - (NSString *) addressString;
-+ (NSString *) stringForAddress:(bd_addr_t *) address;
++ (NSString *) stringForAddress:(bd_addr_t*) address;
 
 @property (readonly)          BluetoothDeviceType deviceType;
 @property (readonly)          NSString *          nameOrAddress;
@@ -82,6 +85,7 @@ typedef enum {
 @property (nonatomic, assign) uint32_t            classOfDevice;
 @property (nonatomic, assign) uint16_t            clockOffset;
 @property (nonatomic, assign) uint8_t             pageScanRepetitionMode;
+@property (nonatomic, assign) uint8_t             rssi;
 @property (nonatomic, assign) BluetoothConnectionState connectionState;
 
 @end

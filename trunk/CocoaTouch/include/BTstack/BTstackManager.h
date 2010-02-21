@@ -55,14 +55,24 @@ typedef enum {
 	kW4Deactivated
 } ManagerState;
 
+typedef enum {
+	kInactive = 1,
+	kW4InquiryMode,
+	kInquiry,
+	kRemoteName,
+} DiscoveryState;
+
 @protocol BTstackManagerDelegate;
 
 @interface BTstackManager : NSObject {
 @private
 	id<BTstackManagerDelegate> _delegate;
 	NSMutableDictionary *deviceInfo;
+	NSMutableArray *discoveredDevices; 
 	BOOL connectedToDaemon;
 	ManagerState state;
+	DiscoveryState discoveryState;
+	int discoveryDeviceIndex;
 }
 
 // shared instance

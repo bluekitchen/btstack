@@ -19,6 +19,7 @@
 		9C05FC971020D3F300255261 /* socket_connection.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C00F7301017ACC3008DAB17 /* socket_connection.c */; };
 		9C18015C108BAA7200824BE7 /* libusb-1.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C18015B108BAA7200824BE7 /* libusb-1.0.dylib */; };
 		9C46FC3A0FA906F700ABEF05 /* hci_transport_h4.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */; };
+		9C50953A112744AA00A30986 /* BTstackManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C509539112744AA00A30986 /* BTstackManager.m */; };
 		9C77E79210667F0600F39DCF /* platform_iphone.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C77E79110667F0600F39DCF /* platform_iphone.c */; };
 		9C7B5AC0100BD3340065D87E /* linked_list.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7B5ABF100BD3340065D87E /* linked_list.c */; };
 		9C7B5D01100FC9AE0065D87E /* btstack.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CC813A10FFC0774002816F9 /* btstack.c */; };
@@ -30,6 +31,10 @@
 		9CCE6CEA1025BD0000FCE9F4 /* hci.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC340FA906F700ABEF05 /* hci.c */; };
 		9CEB4F17107AAAEF00DD5720 /* run_loop_posix.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CEB4DAC10753BE600DD5720 /* run_loop_posix.c */; };
 		9CF13C1610F8A1C6004C4EEE /* bt_control_iphone.m in Sources */ = {isa = PBXBuildFile; fileRef = 9CF13C1510F8A1C6004C4EEE /* bt_control_iphone.m */; };
+		9CF3F776112F241600D081C9 /* BTstackManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C509539112744AA00A30986 /* BTstackManager.m */; };
+		9CF3F782112F244C00D081C9 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9CF3F781112F244B00D081C9 /* UIKit.framework */; };
+		9CF3F95311306FFB00D081C9 /* TestBTstackManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 9CF3F95211306FFB00D081C9 /* TestBTstackManager.m */; };
+		9CF3F99F113083F100D081C9 /* BTDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C13C9FC10ECED6300B04243 /* BTDevice.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -45,7 +50,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		8DD76FB20486AB0100D96B5E /* project */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = project; sourceTree = BUILT_PRODUCTS_DIR; };
+		8DD76FB20486AB0100D96B5E /* project */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "compiled.mach-o.executable"; path = project; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C00F7301017ACC3008DAB17 /* socket_connection.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = socket_connection.c; path = src/socket_connection.c; sourceTree = "<group>"; };
 		9C00F7311017ACC3008DAB17 /* socket_connection.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = socket_connection.h; path = src/socket_connection.h; sourceTree = "<group>"; };
 		9C00F7D61019082F008DAB17 /* hci_cmds.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = hci_cmds.c; path = src/hci_cmds.c; sourceTree = "<group>"; };
@@ -67,6 +72,8 @@
 		9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci_transport_h4.c; path = src/hci_transport_h4.c; sourceTree = "<group>"; };
 		9C46FC370FA906F700ABEF05 /* hci_transport_h4.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci_transport_h4.h; path = src/hci_transport_h4.h; sourceTree = "<group>"; };
 		9C46FC380FA906F700ABEF05 /* hci_transport.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci_transport.h; path = src/hci_transport.h; sourceTree = "<group>"; };
+		9C509539112744AA00A30986 /* BTstackManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = BTstackManager.m; path = CocoaTouch/src/BTstackManager.m; sourceTree = "<group>"; };
+		9C50953B112744CD00A30986 /* BTstackManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BTstackManager.h; path = CocoaTouch/include/BTstack/BTstackManager.h; sourceTree = "<group>"; };
 		9C5BA8A0110B756500D79BBE /* hci_cmds.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci_cmds.h; path = include/btstack/hci_cmds.h; sourceTree = "<group>"; };
 		9C5BABAF110E28E900D79BBE /* l2cap-server.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = "l2cap-server.c"; path = "example/l2cap-server.c"; sourceTree = "<group>"; };
 		9C6459DE1037554B0081A00B /* platform_iphone.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = platform_iphone.h; path = src/platform_iphone.h; sourceTree = "<group>"; };
@@ -88,7 +95,7 @@
 		9C78A0BB103C9DEE003B2950 /* ch.ringwald.BTstack.plist */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text.plist.xml; name = ch.ringwald.BTstack.plist; path = resources/ch.ringwald.BTstack.plist; sourceTree = "<group>"; };
 		9C7B5ABF100BD3340065D87E /* linked_list.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = linked_list.c; path = src/linked_list.c; sourceTree = "<group>"; };
 		9C7B5B7E100D04450065D87E /* test.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = test.c; path = example/test.c; sourceTree = "<group>"; };
-		9C7B5CF6100FC96A0065D87E /* clientTest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = clientTest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9C7B5CF6100FC96A0065D87E /* clientTest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "compiled.mach-o.executable"; path = clientTest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C7ECB810FCC85650085DAC5 /* bt_control.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = bt_control.h; path = src/bt_control.h; sourceTree = "<group>"; };
 		9C7ECB830FCC85650085DAC5 /* bt_control_iphone.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = bt_control_iphone.h; path = src/bt_control_iphone.h; sourceTree = "<group>"; };
 		9C7ECBB30FCC95DD0085DAC5 /* hci_dump.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = hci_dump.h; path = src/hci_dump.h; sourceTree = "<group>"; };
@@ -111,6 +118,13 @@
 		9CEB4DAA10753B4B00DD5720 /* run_loop_cocoa.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = run_loop_cocoa.m; path = src/run_loop_cocoa.m; sourceTree = "<group>"; };
 		9CEB4DAC10753BE600DD5720 /* run_loop_posix.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = run_loop_posix.c; path = src/run_loop_posix.c; sourceTree = "<group>"; };
 		9CF13C1510F8A1C6004C4EEE /* bt_control_iphone.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = bt_control_iphone.m; path = src/bt_control_iphone.m; sourceTree = "<group>"; };
+		9CF3F74C112F201600D081C9 /* BTstackCocoaAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = BTstackCocoaAppDelegate.h; path = CocoaTouch/src/BTstackCocoaAppDelegate.h; sourceTree = "<group>"; };
+		9CF3F74D112F201600D081C9 /* BTstackCocoaAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = BTstackCocoaAppDelegate.m; path = CocoaTouch/src/BTstackCocoaAppDelegate.m; sourceTree = "<group>"; };
+		9CF3F75F112F239B00D081C9 /* TestBTstackManager.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestBTstackManager.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9CF3F781112F244B00D081C9 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		9CF3F95111306FFB00D081C9 /* TestBTstackManager.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = TestBTstackManager.h; path = CocoaTouch/src/TestBTstackManager.h; sourceTree = "<group>"; };
+		9CF3F95211306FFB00D081C9 /* TestBTstackManager.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = TestBTstackManager.m; path = CocoaTouch/src/TestBTstackManager.m; sourceTree = "<group>"; };
+		9CF3F95A1130702D00D081C9 /* TestBTstackManager-Info.plist */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text.plist.xml; name = "TestBTstackManager-Info.plist"; path = "CocoaTouch/TestBTstackManager-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -127,6 +141,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9CF3F75D112F239B00D081C9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9CF3F782112F244C00D081C9 /* UIKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -195,6 +217,7 @@
 			children = (
 				8DD76FB20486AB0100D96B5E /* project */,
 				9C7B5CF6100FC96A0065D87E /* clientTest */,
+				9CF3F75F112F239B00D081C9 /* TestBTstackManager.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -202,10 +225,18 @@
 		9C13C9FA10ECED6300B04243 /* CocoaTouch */ = {
 			isa = PBXGroup;
 			children = (
+				9CF3F74C112F201600D081C9 /* BTstackCocoaAppDelegate.h */,
+				9CF3F74D112F201600D081C9 /* BTstackCocoaAppDelegate.m */,
 				9C13C9FB10ECED6300B04243 /* BTDevice.h */,
 				9C13C9FC10ECED6300B04243 /* BTDevice.m */,
 				9C13C9FD10ECED6300B04243 /* BTInquiryViewController.h */,
 				9C13C9FE10ECED6300B04243 /* BTInquiryViewController.m */,
+				9C509539112744AA00A30986 /* BTstackManager.m */,
+				9C50953B112744CD00A30986 /* BTstackManager.h */,
+				9CF3F95111306FFB00D081C9 /* TestBTstackManager.h */,
+				9CF3F95211306FFB00D081C9 /* TestBTstackManager.m */,
+				9CF3F95A1130702D00D081C9 /* TestBTstackManager-Info.plist */,
+				9CF3F781112F244B00D081C9 /* UIKit.framework */,
 			);
 			name = CocoaTouch;
 			sourceTree = "<group>";
@@ -316,6 +347,23 @@
 			productReference = 9C7B5CF6100FC96A0065D87E /* clientTest */;
 			productType = "com.apple.product-type.tool";
 		};
+		9CF3F75E112F239B00D081C9 /* TestBTstackManager */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9CF3F765112F239C00D081C9 /* Build configuration list for PBXNativeTarget "TestBTstackManager" */;
+			buildPhases = (
+				9CF3F75B112F239B00D081C9 /* Resources */,
+				9CF3F75C112F239B00D081C9 /* Sources */,
+				9CF3F75D112F239B00D081C9 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TestBTstackManager;
+			productName = TestBTstackManager;
+			productReference = 9CF3F75F112F239B00D081C9 /* TestBTstackManager.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -330,9 +378,20 @@
 			targets = (
 				8DD76FA90486AB0100D96B5E /* BTdaemon */,
 				9C7B5CF5100FC96A0065D87E /* clientTest */,
+				9CF3F75E112F239B00D081C9 /* TestBTstackManager */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		9CF3F75B112F239B00D081C9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		8DD76FAB0486AB0100D96B5E /* Sources */ = {
@@ -354,6 +413,7 @@
 				9C04B826107D1CED002A63D0 /* run_loop.c in Sources */,
 				9C04B876107D2B7C002A63D0 /* run_loop_cocoa.m in Sources */,
 				9CF13C1610F8A1C6004C4EEE /* bt_control_iphone.m in Sources */,
+				9C50953A112744AA00A30986 /* BTstackManager.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -367,6 +427,16 @@
 				9C00F7D81019082F008DAB17 /* hci_cmds.c in Sources */,
 				9C00F86410191097008DAB17 /* utils.c in Sources */,
 				9C05FC971020D3F300255261 /* socket_connection.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9CF3F75C112F239B00D081C9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9CF3F776112F241600D081C9 /* BTstackManager.m in Sources */,
+				9CF3F95311306FFB00D081C9 /* TestBTstackManager.m in Sources */,
+				9CF3F99F113083F100D081C9 /* BTDevice.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -510,6 +580,97 @@
 			};
 			name = "Debug iPhone";
 		};
+		9CF3F762112F239C00D081C9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_IDENTITY = "Don't Code Sign";
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/UIKit.framework/Headers/UIKit.h";
+				INFOPLIST_FILE = "CocoaTouch/TestBTstackManager-Info.plist";
+				INSTALL_PATH = "$(HOME)/Applications";
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = (
+					"-I/Projects/iPhone/btstack/CocoaTouch/include",
+					"-I/Projects/iPhone/btstack/include",
+				);
+				OTHER_LDFLAGS = (
+					"-L/usr/local/lib",
+					"-lbtstack",
+					"-framework",
+					Foundation,
+					"-framework",
+					UIKit,
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = TestBTstackManager;
+				SDKROOT = iphonesimulator3.1.2;
+			};
+			name = Debug;
+		};
+		9CF3F763112F239C00D081C9 /* Debug iPhone */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/UIKit.framework/Headers/UIKit.h";
+				INFOPLIST_FILE = "CocoaTouch/TestBTstackManager-Info.plist";
+				INSTALL_PATH = "$(HOME)/Applications";
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = (
+					"-I/Projects/iPhone/btstack/CocoaTouch/include",
+					"-I/Projects/iPhone/btstack/include",
+				);
+				OTHER_LDFLAGS = (
+					"-L/usr/local/lib",
+					"-lbtstack",
+					"-framework",
+					Foundation,
+					"-framework",
+					UIKit,
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = TestBTstackManager;
+				SDKROOT = iphonesimulator3.1.2;
+			};
+			name = "Debug iPhone";
+		};
+		9CF3F764112F239C00D081C9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "$(SYSTEM_LIBRARY_DIR)/Frameworks/UIKit.framework/Headers/UIKit.h";
+				INFOPLIST_FILE = "CocoaTouch/TestBTstackManager-Info.plist";
+				INSTALL_PATH = "$(HOME)/Applications";
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = (
+					"-I/Projects/iPhone/btstack/CocoaTouch/include",
+					"-I/Projects/iPhone/btstack/include",
+				);
+				OTHER_LDFLAGS = (
+					"-L/usr/local/lib",
+					"-lbtstack",
+					"-framework",
+					Foundation,
+					"-framework",
+					UIKit,
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = TestBTstackManager;
+				SDKROOT = iphonesimulator3.1.2;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -539,6 +700,16 @@
 				9C7B5CF8100FC96E0065D87E /* Debug */,
 				9C7B5CF9100FC96E0065D87E /* Debug iPhone */,
 				9C7B5CFA100FC96E0065D87E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9CF3F765112F239C00D081C9 /* Build configuration list for PBXNativeTarget "TestBTstackManager" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9CF3F762112F239C00D081C9 /* Debug */,
+				9CF3F763112F239C00D081C9 /* Debug iPhone */,
+				9CF3F764112F239C00D081C9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
