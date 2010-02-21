@@ -115,6 +115,9 @@ typedef enum {
 -(void)storeDeviceInfo;
 
 @property (nonatomic, assign) id<BTstackManagerDelegate> delegate;
+@property (nonatomic, retain) NSMutableDictionary *deviceInfo;
+@property (nonatomic, retain) NSMutableArray *discoveredDevices;
+@property (nonatomic, retain) NSMutableSet *listeners;
 @end
 
 
