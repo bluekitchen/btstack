@@ -6,14 +6,10 @@
 NEXT:
 
 - Provide BTstackManager Objective-C class
-  - set remote names in deviceInfo
-  - store deviceInfo on dealloc 
-  - add discard discovered devices
   - create new device discovery view: BTDiscoveryViewController
   - implement l2cap code
   - implement rfcomm code
 
-  
 - figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect, when phone gets locked
   - some trick
   - use Cocoa run loop for background app?
