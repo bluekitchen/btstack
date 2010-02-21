@@ -6,7 +6,8 @@
 NEXT:
 
 - Provide BTstackManager Objective-C class
-  - create new device discovery view: BTDiscoveryViewController
+  - cache device names - working but crashes somehow
+  - support visualization of connections in BTDiscoveryViewController
   - implement l2cap code
   - implement rfcomm code
 
