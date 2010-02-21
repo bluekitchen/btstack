@@ -8,9 +8,10 @@
 #import <BTstack/BTstackManager.h>
 
 @class BTstackManager;
-
-@interface TestBTstackManager : NSObject<BTstackManagerDelegate>{
+@class BTDiscoveryViewController;
+@interface TestBTstackManager : NSObject<BTstackManagerDelegate,BTstackManagerListener>{
 	BTstackManager *bt;
+	BTDiscoveryViewController* discoveryView;
 }
 
 @end

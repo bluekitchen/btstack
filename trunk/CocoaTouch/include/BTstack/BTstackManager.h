@@ -67,12 +67,14 @@ typedef enum {
 } DiscoveryState;
 
 @protocol BTstackManagerDelegate;
+@protocol BTstackManagerListener;
 
 @interface BTstackManager : NSObject {
 @private
 	id<BTstackManagerDelegate> _delegate;
 	NSMutableDictionary *deviceInfo;
-	NSMutableArray *discoveredDevices; 
+	NSMutableArray *discoveredDevices;
+	NSMutableSet *listeners;
 	BOOL connectedToDaemon;
 	ManagerState state;
 	DiscoveryState discoveryState;
@@ -82,9 +84,15 @@ typedef enum {
 // shared instance
 +(BTstackManager *) sharedInstance;
 
+// listeners
+-(void) addListener:(id<BTstackManagerListener>)listener;
+-(void) removeListener:(id<BTstackManagerListener>)listener;
+
 // Activation
 -(BTstackError) activate;
 -(BTstackError) deactivate;
+-(BOOL) isActivating;
+-(BOOL) isActive;
 
 // Discovery
 -(BTstackError) startDiscovery;
@@ -111,8 +119,23 @@ typedef enum {
 
 
 @protocol BTstackManagerDelegate
+@optional
 
-// Everything is optional but you should implement all methods of a group 
+// Activation callbacks
+-(BOOL) disableSystemBluetooth; // default: YES
+
+// Connection events
+-(NSString*) pinForAddress:(bd_addr_t)addr; // default: "0000"
+
+// direct access
+-(void) handlePacketWithType:(uint8_t) packet_type
+				  forChannel:(uint16_t) channel
+					 andData:(uint8_t *)packet
+					 withLen:(uint16_t) size;
+@end
+
+
+@protocol BTstackManagerListener
 @optional
 
 // Activation events
@@ -120,19 +143,12 @@ typedef enum {
 -(void) activationFailed:(BTstackError)error;
 -(void) deactivated;
 
-// Activation callbacks
--(BOOL) disableSystemBluetooth; // default: YES
-
 // Discovery events: general
 -(void) deviceInfo:(BTDevice*)device;
 -(void) discoveryStopped;
-
-// Discovery events: UI
 -(void) discoveryInquiry;
 -(void) discoveryQueryRemoteName:(int)deviceIndex;
 
-// Connection events
--(NSString*) pinForAddress:(bd_addr_t)addr; // default: "0000"
 
 -(void) l2capChannelCreatedAtAddress:(bd_addr_t)addr withPSM:(uint16_t)psm asID:(uint16_t)channelID;
 -(void) l2capChannelCreateFailedAtAddress:(bd_addr_t)addr withPSM:(uint16_t)psm error:(BTstackError)error;
@@ -145,11 +161,4 @@ typedef enum {
 -(void) rfcommDataReceivedForConnectionID:(uint16_t)connectionID withData:(uint8_t *)packet ofLen:(uint16_t)size;
 
 // TODO add l2cap and rfcomm incoming events
-
-// direct access
--(void) handlePacketWithType:(uint8_t) packet_type
-				  forChannel:(uint16_t) channel
-					 andData:(uint8_t *)packet
-					 withLen:(uint16_t) size;
 @end
-
