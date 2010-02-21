@@ -122,7 +122,14 @@
 #define L2CAP_EVENT_TIMEOUT_CHECK                          0x73
 
 
-// last HCI error is 0x3d
+// last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
+
+#define BTSTACK_CONNECTION_TO_BTDAEMON_FAILED              0x50
+#define BTSTACK_ACTIVATION_FAILED_SYSTEM_BLUETOOTH		   0x51
+#define BTSTACK_ACTIVATION_POWERON_FAILED       		   0x52
+#define BTSTACK_ACTIVATION_FAILED_UNKNOWN       		   0x53
+#define BTSTACK_NOT_ACTIVATED							   0x54
+
 // l2cap errors - enumeration by the command that created them
 #define L2CAP_COMMAND_REJECT_REASON_COMMAND_NOT_UNDERSTOOD 0x60
 #define L2CAP_COMMAND_REJECT_REASON_SIGNALING_MTU_EXCEEDED 0x61
