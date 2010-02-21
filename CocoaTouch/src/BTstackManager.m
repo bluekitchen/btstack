@@ -79,6 +79,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 @implementation BTstackManager
 
 @synthesize delegate = _delegate;
+@synthesize deviceInfo;
+@synthesize listeners;
+@synthesize discoveredDevices;
 
 -(BTstackManager *) init {
 	self = [super init];
@@ -89,14 +92,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	connectedToDaemon = NO;
 	
 	// device discovery
-	discoveredDevices = [[NSMutableArray alloc] init];
+	[self setDiscoveredDevices: [[NSMutableArray alloc] init]];
 	
 	// delegate and listener
 	_delegate = nil;
-	listeners = [[NSMutableArray alloc] init];
+	[self setListeners:[[NSMutableArray alloc] init]];
 	
 	// read device database
 	[self readDeviceInfo];
+	[self storeDeviceInfo];
 	
 	// Use Cocoa run loop
 	run_loop_init(RUN_LOOP_COCOA);
@@ -341,7 +345,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						device.classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1+1)   + i*3);
 						device.clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff;
 						device.rssi  = 0;
-#if 0
+#if 1
 						// get name from deviceInfo
 						NSString *addrString = [[device addressString] retain];
 						NSMutableDictionary * deviceDict = [deviceInfo objectForKey:addrString];
@@ -370,7 +374,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						device.classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1)     + i*3);
 						device.clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+3)   + i*2) & 0x7fff;
 						device.rssi  =                    packet [3 + numResponses*(6+1+1+3+2) + i*1];
-#if 0
+#if 1
 						// get name from deviceInfo
 						NSString *addrString = [[device addressString] retain];
 						NSMutableDictionary * deviceDict = [deviceInfo objectForKey:addrString];
@@ -407,7 +411,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						while (nameLen < 248 && packet[9+nameLen]) nameLen++;
 						NSString *name = [[NSString alloc] initWithBytes:&packet[9] length:nameLen encoding:NSUTF8StringEncoding];
  						device.name = name;
-#if 0
+#if 1
 						// set in device info
 						NSString *addrString = [[device addressString] retain];
 						NSMutableDictionary * deviceDict = [deviceInfo objectForKey:addrString];
@@ -462,7 +466,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 -(void)readDeviceInfo {
 	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 	NSDictionary * dict = [defaults persistentDomainForName:BTstackManagerID];
-	deviceInfo = [NSMutableDictionary dictionaryWithCapacity:([dict count]+5)];
+	[self setDeviceInfo:[NSMutableDictionary dictionaryWithCapacity:([dict count]+5)]];
 	
 	// copy entries
 	for (id key in dict) {
@@ -471,15 +475,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		[deviceEntry addEntriesFromDictionary:value];
 		[deviceInfo setObject:deviceEntry forKey:key];
 	}
-	// NSLog(@"store prefs %@", deviceInfo );
+	// NSLog(@"read prefs %@", deviceInfo );
 }
 
 -(void)storeDeviceInfo{
 	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults setPersistentDomain:deviceInfo forName:BTstackManagerID];
     [defaults synchronize];
-	// NSLog(@"store prefs %@", deviceInfo );
-	// NSLog(@"prefs name %@", prefsName);
+	// NSLog(@"store prefs %@", deviceInfo);
 	// NSLog(@"Persistence Domain names %@", [defaults persistentDomainNames]);
 }
 

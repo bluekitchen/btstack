@@ -19,7 +19,7 @@
 };
 -(void) discoveryInquiry{
 	NSLog(@"discoveryInquiry!");
-	// [bt storeDeviceInfo];
+	[bt storeDeviceInfo];
 }
 -(void) discoveryQueryRemoteName:(int)deviceIndex{
 	NSLog(@"discoveryQueryRemoteName %u/%u!", deviceIndex+1, [bt numberOfDevicesFound]);
@@ -44,7 +44,6 @@
 	
 	BTstackError err = [bt activate];
 	if (err) NSLog(@"activate err 0x%02x!", err);
-	
 }
 @end
 
