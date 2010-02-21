@@ -35,7 +35,6 @@
 #import <btstack/BTDevice.h>
 #import "../../RFCOMM/rfcomm.h"
 
-#define BTstackManagerID @"ch.ringwald.btstack"
 #define INQUIRY_INTERVAL 3
 
 static BTstackManager * btstackManager = nil;
@@ -305,6 +304,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						device.classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1+1)   + i*3);
 						device.clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff;
 						device.rssi  = 0;
+						// get name from deviceInfo
+						NSMutableDictionary * deviceDict = [deviceInfo objectForKey:[device addressString]];
+						if (deviceDict){
+							device.name = [deviceDict objectForKey:PREFS_REMOTE_NAME];
+						}
 						[discoveredDevices addObject:device];
 						
 						[_delegate deviceInfo:device];
@@ -324,6 +328,11 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						device.classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1)     + i*3);
 						device.clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+3)   + i*2) & 0x7fff;
 						device.rssi  =                    packet [3 + numResponses*(6+1+1+3+2) + i*1];
+						// get name from deviceInfo
+						NSMutableDictionary * deviceDict = [deviceInfo objectForKey:[device addressString]];
+						if (deviceDict){
+							device.name = [deviceDict objectForKey:PREFS_REMOTE_NAME];
+						}
 						[discoveredDevices addObject:device];
 						
 						[_delegate deviceInfo:device];
@@ -349,7 +358,15 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						// get lenght: first null byte or max 248 chars
 						int nameLen = 0;
 						while (nameLen < 248 && packet[9+nameLen]) nameLen++;
- 						device.name = [[NSString alloc] initWithBytes:&packet[9] length:nameLen encoding:NSUTF8StringEncoding];
+						NSString *name = [[NSString alloc] initWithBytes:&packet[9] length:nameLen encoding:NSUTF8StringEncoding];
+ 						device.name = name;
+						// set in device info
+						NSMutableDictionary *deviceDict = [deviceInfo objectForKey:[device addressString]];
+						if (!deviceDict){
+							deviceDict = [NSMutableDictionary dictionaryWithCapacity:3];
+							[deviceInfo setObject:deviceDict forKey:[device addressString]];
+						}
+						[deviceDict setObject:name forKey:PREFS_REMOTE_NAME];						
 					}
 					[_delegate deviceInfo:device];
 					discoveryDeviceIndex++;

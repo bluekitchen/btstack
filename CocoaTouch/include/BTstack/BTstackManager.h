@@ -35,6 +35,10 @@
 #import <stdint.h>
 #import <btstack/btstack.h>
 
+#define PREFS_REMOTE_NAME  @"RemoteName"
+#define PREFS_LINK_KEY     @"LinkKey"
+#define BTstackManagerID   @"ch.ringwald.btstack"
+
 @class BTDevice;
 
 /*
@@ -98,6 +102,9 @@ typedef enum {
 -(BTstackError) sendRFCOMMPacketForChannelID:(uint16_t)connectionID;
 
 // TODO add l2cap and rfcomm incoming commands
+
+// store remote names and link keys
+-(void)storeDeviceInfo;
 
 @property (nonatomic, assign) id<BTstackManagerDelegate> delegate;
 @end

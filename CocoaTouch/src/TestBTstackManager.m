@@ -27,6 +27,7 @@
 
 -(void) discoveryInquiry{
 	NSLog(@"discoveryInquiry!");
+	[bt storeDeviceInfo];
 }
 -(void) discoveryQueryRemoteName:(int)deviceIndex{
 	NSLog(@"discoveryQueryRemoteName %u/%u!", deviceIndex+1, [bt numberOfDevicesFound]);
