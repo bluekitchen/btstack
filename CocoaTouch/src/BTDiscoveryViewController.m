@@ -46,12 +46,14 @@
 
 @implementation BTDiscoveryViewController
 @synthesize showIcons;
+@synthesize delegate = _delegate;
 
 - (id) init {
 	self = [super initWithStyle:UITableViewStyleGrouped];
 	macAddressFont = [UIFont fontWithName:@"Courier New" size:[UIFont labelFontSize]];
 	deviceNameFont = [UIFont boldSystemFontOfSize:[UIFont labelFontSize]];
 	inquiryState = kInquiryInactive;
+	connectingIndex = -1;
 	
 	deviceActivity = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
 	[deviceActivity startAnimating];
@@ -59,7 +61,7 @@
 	[bluetoothActivity startAnimating];
 	
 	bt = [BTstackManager sharedInstance];
-	
+	_delegate = nil;
 	return self;
 }
 
@@ -127,6 +129,7 @@
     // e.g. self.myOutlet = nil;
 }
 
+// BTstackManagerListenerDelegate
 -(void) activated{
 	[self reload];
 }
@@ -146,6 +149,10 @@
 	[self reload];
 }
 
+-(void) markConnecting:(int)index; {
+	connectingIndex = index;
+	[self reload];
+}
 
 #pragma mark Table view methods
 
@@ -191,35 +198,37 @@
 			theLabel = @"Bluetooth not accessible!";
 			cell.accessoryView = nil;
 		} else {
+			
 #if 0
 			if (connectedDevice) {
 				theLabel = @"Disconnect";
 				cell.accessoryView = nil;
-			} else if (remoteDevice) {
+			}
+#endif
+			
+			if (connectingIndex >= 0) {
 				theLabel = @"Connecting...";
 				cell.accessoryView = bluetoothActivity;
 			} else {
-#endif
-				
-			switch (inquiryState){
-				case kInquiryInactive:
-					if ([bt numberOfDevicesFound] > 0){
-						theLabel = @"Find more devices...";
-					} else {
-						theLabel = @"Find devices...";
-					}
-					cell.accessoryView = nil;
-					break;
-				case kInquiryActive:
-					theLabel = @"Searching...";
-					cell.accessoryView = bluetoothActivity;
-					break;
-				case kInquiryRemoteName:
-					theLabel = @"Query device names...";
-					cell.accessoryView = bluetoothActivity;
-					break;
+				switch (inquiryState){
+					case kInquiryInactive:
+						if ([bt numberOfDevicesFound] > 0){
+							theLabel = @"Find more devices...";
+						} else {
+							theLabel = @"Find devices...";
+						}
+						cell.accessoryView = nil;
+						break;
+					case kInquiryActive:
+						theLabel = @"Searching...";
+						cell.accessoryView = bluetoothActivity;
+						break;
+					case kInquiryRemoteName:
+						theLabel = @"Query device names...";
+						cell.accessoryView = bluetoothActivity;
+						break;
+				}
 			}
-//			}
 		}
 	} else {
 		
@@ -280,15 +289,10 @@
 		}
 		
 		// set accessory view
-		switch ([dev connectionState]) {
-			case kBluetoothConnectionNotConnected:
-			case kBluetoothConnectionConnected:
-				cell.accessoryView = nil;
-				break;
-			case kBluetoothConnectionConnecting:
-			case kBluetoothConnectionRemoteName:
-				cell.accessoryView = deviceActivity;
-				break;
+		if (idx == connectingIndex){
+			cell.accessoryView = deviceActivity;
+		} else {
+			cell.accessoryView = nil;
 		}
 	}
 #if __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_3_0
@@ -303,18 +307,19 @@
     return cell;
 }
 
-
-- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    // Navigation logic may go here. Create and push another view controller.
-    // AnotherViewController *anotherViewController = [[AnotherViewController alloc] initWithNibName:@"AnotherView" bundle:nil];
-    // [self.navigationController pushViewController:anotherViewController];
-    // [anotherViewController release];
-}
 	
 - (NSIndexPath *)tableView:(UITableView *)tableView willSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-	// if (allowSelection) {
-	//	return indexPath;
-	//}
+	if (!_delegate) return nil;
+	int index = [indexPath indexAtPosition:1];
+	if (index >= [bt numberOfDevicesFound]){
+		if ([_delegate respondsToSelector:@selector(statusCellSelected)]){
+			[_delegate statusCellSelected];
+			return nil;
+		}
+	}
+		if ([_delegate respondsToSelector:@selector(willSelectDeviceAtIndex:)] && [_delegate willSelectDeviceAtIndex:index]){
+		return indexPath;
+	}
 	return nil;
 }
 

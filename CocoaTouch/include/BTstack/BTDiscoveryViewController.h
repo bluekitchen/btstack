@@ -32,6 +32,7 @@
 #import <BTstack/BTstackManager.h>
 
 @class BTstackManager;
+@protocol BTDiscoveryDelegate;
 
 typedef enum {
 	kInquiryInactive,
@@ -42,6 +43,7 @@ typedef enum {
 @interface BTDiscoveryViewController : UITableViewController<BTstackManagerListener>
 {
 	BTstackManager *bt;
+	NSObject<BTDiscoveryDelegate> * _delegate;
 	UIActivityIndicatorView *deviceActivity;
 	UIActivityIndicatorView *bluetoothActivity;
 	UIFont * deviceNameFont;
@@ -49,6 +51,15 @@ typedef enum {
 	InquiryState inquiryState;
 	int remoteNameIndex;
 	BOOL showIcons;
+	int connectingIndex;
 }
+-(void) markConnecting:(int)index; // use -1 for no connection active
+@property (nonatomic, assign) NSObject<BTDiscoveryDelegate> * delegate;
 @property (nonatomic, assign) BOOL showIcons;
+@end
+
+@protocol BTDiscoveryDelegate
+@optional
+-(BOOL)willSelectDeviceAtIndex:(int)deviceIndex; // returns NO to ignore selection
+-(void)statusCellSelected;
 @end
