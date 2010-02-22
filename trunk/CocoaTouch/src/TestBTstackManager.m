@@ -6,7 +6,7 @@
 
 #import "TestBTstackManager.h"
 #import <BTstack/BTDevice.h>
-#import <BTstack/BTDiscoveryViewController.h>
+
 
 @implementation TestBTstackManager
 
@@ -27,10 +27,19 @@
 -(void) deviceInfo:(BTDevice*)device {
 	NSLog(@"Device Info: addr %@ name %@ COD 0x%06x", [device addressString], [device name], [device classOfDevice] ); 
 }
+- (BOOL)willSelectDeviceAtIndex:(int)deviceIndex {
+	BTDevice *device = [bt deviceAtIndex:deviceIndex];
+	NSLog(@"Device selected: addr %@ name %@ COD 0x%06x", [device addressString], [device name], [device classOfDevice] ); 
+	return NO;
+}
+-(void)statusCellSelected{
+	NSLog(@"statusCellSelected!");
+}
 - (void)applicationDidFinishLaunching:(UIApplication *)application {	
 	
 	// create discovery controller
 	discoveryView = [[BTDiscoveryViewController alloc] init];
+	[discoveryView setDelegate:self];
 	UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:discoveryView];
 	UIWindow *window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
 	[window addSubview:nav.view];

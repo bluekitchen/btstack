@@ -5,7 +5,6 @@
 
 NEXT:
 - Provide BTstackManager Objective-C class
-  - support visualization of connections in BTDiscoveryViewController
   - implement l2cap code
   - implement rfcomm code
 

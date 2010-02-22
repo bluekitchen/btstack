@@ -6,10 +6,11 @@
 
 #import <Foundation/Foundation.h>
 #import <BTstack/BTstackManager.h>
+#import <BTstack/BTDiscoveryViewController.h>
 
 @class BTstackManager;
 @class BTDiscoveryViewController;
-@interface TestBTstackManager : NSObject<BTstackManagerDelegate,BTstackManagerListener>{
+@interface TestBTstackManager : NSObject<BTstackManagerDelegate,BTstackManagerListener,BTDiscoveryDelegate>{
 	BTstackManager *bt;
 	BTDiscoveryViewController* discoveryView;
 }
