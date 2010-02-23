@@ -7,7 +7,6 @@ NEXT:
 - Provide BTstackManager Objective-C class
   - implement l2cap code
   - implement rfcomm code
-
 - figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect, when phone gets locked
   - some trick
   - use Cocoa run loop for background app?

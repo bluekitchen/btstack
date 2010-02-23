@@ -12,7 +12,7 @@
 
 -(void) activated{
 	NSLog(@"activated!");
-	[bt startDiscovery];
+	// [bt startDiscovery];
 }
 -(void) activationFailed:(BTstackError)error{
 	NSLog(@"activationFailed error 0x%02x!", error);
@@ -21,6 +21,9 @@
 	NSLog(@"discoveryInquiry!");
 	[bt storeDeviceInfo];
 }
+-(void) discoveryStopped{
+	NSLog(@"discoveryStopped!");
+}
 -(void) discoveryQueryRemoteName:(int)deviceIndex{
 	NSLog(@"discoveryQueryRemoteName %u/%u!", deviceIndex+1, [bt numberOfDevicesFound]);
 }
@@ -28,14 +31,23 @@
 	NSLog(@"Device Info: addr %@ name %@ COD 0x%06x", [device addressString], [device name], [device classOfDevice] ); 
 }
 - (BOOL)willSelectDeviceAtIndex:(int)deviceIndex {
-	BTDevice *device = [bt deviceAtIndex:deviceIndex];
+	if (selectedDevice) return NO;
+	selectedDevice = [bt deviceAtIndex:deviceIndex];
+	BTDevice *device = selectedDevice;
 	NSLog(@"Device selected: addr %@ name %@ COD 0x%06x", [device addressString], [device name], [device classOfDevice] ); 
+	[bt stopDiscovery];
 	return NO;
 }
 -(void)statusCellSelected{
+	if (![bt isDiscoveryActive]) {
+		selectedDevice = nil;
+		[bt startDiscovery];
+	}
 	NSLog(@"statusCellSelected!");
 }
 - (void)applicationDidFinishLaunching:(UIApplication *)application {	
+	
+	selectedDevice = nil;
 	
 	// create discovery controller
 	discoveryView = [[BTDiscoveryViewController alloc] init];
