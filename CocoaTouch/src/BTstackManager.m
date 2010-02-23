@@ -158,6 +158,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 -(BOOL) isActivating {
 	return state == kW4Activated;
 }
+-(BOOL) isDiscoveryActive {
+	return state == kActivated && (discoveryState != kInactive);
+}
 
 // Discovery
 -(BTstackError) startDiscovery {
@@ -166,7 +169,36 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	bt_send_cmd(&hci_write_inquiry_mode, 0x01); // with RSSI
 	return 0;
 };
+-(void) sendDiscoveryStoppedEvent {
+	for (id<BTstackManagerListener> listener in listeners) {
+		[listener discoveryStopped];
+	}
+}
 -(BTstackError) stopDiscovery{
+	if (state != kActivated) return BTSTACK_NOT_ACTIVATED;
+	switch (discoveryState){
+		case kInactive:
+			state = kDeactivated;
+			[self sendDiscoveryStoppedEvent];
+			break;
+		case kW4InquiryMode:
+			discoveryState = kW4InquiryModeBeforeStop;
+			break;
+		case kInquiry:
+			discoveryState = kW4InquiryStop;
+			bt_send_cmd(&hci_inquiry_cancel);
+			break;
+		case kRemoteName: {
+			discoveryState = kW4RemoteNameBeforeStop;
+			BTDevice *device = [discoveredDevices objectAtIndex:discoveryDeviceIndex];
+			bt_send_cmd(&hci_remote_name_request_cancel, [device address]);
+			break;
+		}
+		default:
+			NSLog(@"[BTstackManager stopDiscovery] invalid discoveryState %u", discoveryState);
+			[self sendDiscoveryStoppedEvent];
+			break;
+	}
 	return 0;
 };
 
@@ -431,7 +463,30 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 				}
 			}
 			break;
-				
+			
+		case kW4InquiryModeBeforeStop:
+			if (packet[0] == HCI_EVENT_COMMAND_COMPLETE && COMMAND_COMPLETE_EVENT(packet, hci_write_inquiry_mode) ) {
+				discoveryState = kInactive;
+				[self sendDiscoveryStoppedEvent];
+			}
+			break;
+			
+		case kW4InquiryStop:
+			if (packet[0] == HCI_EVENT_INQUIRY_COMPLETE
+			||	packet[0] == HCI_EVENT_COMMAND_COMPLETE && COMMAND_COMPLETE_EVENT(packet, hci_inquiry_cancel)) {
+				discoveryState = kInactive;
+				[self sendDiscoveryStoppedEvent];
+			}
+			break;
+			
+		case kW4RemoteNameBeforeStop:
+			if (packet[0] == HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
+			||  packet[0] == HCI_EVENT_COMMAND_COMPLETE && COMMAND_COMPLETE_EVENT(packet, hci_remote_name_request_cancel)){
+				discoveryState = kInactive;
+				[self sendDiscoveryStoppedEvent];
+			}
+			break;
+			
 		default:
 			break;
 	}
@@ -455,7 +510,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		case kActivated:
 			if (packet_type == HCI_EVENT_PACKET) [self discoveryHandleEvent:packet withLen:size];
 			break;
-			
+		
 		default:
 			break;
 	}

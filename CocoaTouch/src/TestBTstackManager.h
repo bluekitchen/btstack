@@ -13,6 +13,7 @@
 @interface TestBTstackManager : NSObject<BTstackManagerDelegate,BTstackManagerListener,BTDiscoveryDelegate>{
 	BTstackManager *bt;
 	BTDiscoveryViewController* discoveryView;
+	BTDevice *selectedDevice;
 }
 
 @end

@@ -145,6 +145,10 @@
 	remoteNameIndex = deviceIndex;
 	[self reload];
 }
+-(void) discoveryStopped {
+	inquiryState = kInquiryInactive;
+	[self reload];
+}
 -(void) deviceInfo:(BTDevice*)device {
 	[self reload];
 }

@@ -64,6 +64,10 @@ typedef enum {
 	kW4InquiryMode,
 	kInquiry,
 	kRemoteName,
+	// stopping
+	kW4InquiryModeBeforeStop,
+	kW4InquiryStop,
+	kW4RemoteNameBeforeStop,
 } DiscoveryState;
 
 @protocol BTstackManagerDelegate;
@@ -99,6 +103,7 @@ typedef enum {
 -(BTstackError) stopDiscovery;
 -(int) numberOfDevicesFound;
 -(BTDevice*) deviceAtIndex:(int)index;
+-(BOOL) isDiscoveryActive;
 
 // Connections
 -(BTstackError) createL2CAPChannelAtAddress:(bd_addr_t) address withPSM:(uint16_t)psm authenticated:(BOOL)authentication;
