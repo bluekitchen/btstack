@@ -129,6 +129,7 @@
 #define BTSTACK_ACTIVATION_POWERON_FAILED       		   0x52
 #define BTSTACK_ACTIVATION_FAILED_UNKNOWN       		   0x53
 #define BTSTACK_NOT_ACTIVATED							   0x54
+#define BTSTACK_BUSY									   0x55
 
 // l2cap errors - enumeration by the command that created them
 #define L2CAP_COMMAND_REJECT_REASON_COMMAND_NOT_UNDERSTOOD 0x60
