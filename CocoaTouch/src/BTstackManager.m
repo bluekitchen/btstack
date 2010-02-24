@@ -100,7 +100,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	
 	// read device database
 	[self readDeviceInfo];
-	[self storeDeviceInfo];
 	
 	// Use Cocoa run loop
 	run_loop_init(RUN_LOOP_COCOA);
@@ -126,6 +125,31 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 -(void) removeListener:(id<BTstackManagerListener>)listener{
 	[listeners removeObject:listener];
 }
+
+// Device info
+-(void)readDeviceInfo {
+	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+	NSDictionary * dict = [defaults persistentDomainForName:BTstackManagerID];
+	[self setDeviceInfo:[NSMutableDictionary dictionaryWithCapacity:([dict count]+5)]];
+	
+	// copy entries
+	for (id key in dict) {
+		NSDictionary *value = [dict objectForKey:key];
+		NSMutableDictionary *deviceEntry = [NSMutableDictionary dictionaryWithCapacity:[value count]];
+		[deviceEntry addEntriesFromDictionary:value];
+		[deviceInfo setObject:deviceEntry forKey:key];
+	}
+	// NSLog(@"read prefs %@", deviceInfo );
+}
+
+-(void)storeDeviceInfo{
+	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setPersistentDomain:deviceInfo forName:BTstackManagerID];
+    [defaults synchronize];
+	// NSLog(@"store prefs %@", deviceInfo);
+	// NSLog(@"Persistence Domain names %@", [defaults persistentDomainNames]);
+}
+
 
 // Activation
 -(BTstackError) activate {
@@ -164,7 +188,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 // Discovery
 -(BTstackError) startDiscovery {
-	if (state != kActivated) return BTSTACK_NOT_ACTIVATED;
+	if (state < kActivated) return BTSTACK_NOT_ACTIVATED;
 	discoveryState = kW4InquiryMode;
 	bt_send_cmd(&hci_write_inquiry_mode, 0x01); // with RSSI
 	return 0;
@@ -175,7 +199,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	}
 }
 -(BTstackError) stopDiscovery{
-	if (state != kActivated) return BTSTACK_NOT_ACTIVATED;
+	if (state < kActivated) return BTSTACK_NOT_ACTIVATED;
 	switch (discoveryState){
 		case kInactive:
 			state = kDeactivated;
@@ -219,27 +243,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	}
 	return nil;
 }
-
-// Connections
--(BTstackError) createL2CAPChannelAtAddress:(bd_addr_t) address withPSM:(uint16_t)psm authenticated:(BOOL)authentication {
-	return 0;
-};
--(BTstackError) closeL2CAPChannelWithID:(uint16_t) channelID {
-	return 0;
-};
--(BTstackError) sendL2CAPPacketForChannelID:(uint16_t)channelID {
-	return 0;
-};
-
--(BTstackError) createRFCOMMConnectionAtAddress:(bd_addr_t) address withChannel:(uint16_t)psm authenticated:(BOOL)authentication {
-	return 0;
-};
--(BTstackError) closeRFCOMMConnectionWithID:(uint16_t) connectionID {
-	return 0;
-};
--(BTstackError) sendRFCOMMPacketForChannelID:(uint16_t)connectionID {
-	return 0;
-};
 
 - (void) activationHandleEvent:(uint8_t *)packet withLen:(uint16_t) size {
 	switch (state) {
@@ -463,7 +466,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 				}
 			}
 			break;
-			
+
 		case kW4InquiryModeBeforeStop:
 			if (packet[0] == HCI_EVENT_COMMAND_COMPLETE && COMMAND_COMPLETE_EVENT(packet, hci_write_inquiry_mode) ) {
 				discoveryState = kInactive;
@@ -517,28 +520,52 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	[_delegate handlePacketWithType:packet_type forChannel:channel andData:packet withLen:size];
 }
 
-
--(void)readDeviceInfo {
-	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-	NSDictionary * dict = [defaults persistentDomainForName:BTstackManagerID];
-	[self setDeviceInfo:[NSMutableDictionary dictionaryWithCapacity:([dict count]+5)]];
+// Connections
+-(BTstackError) createL2CAPChannelAtAddress:(bd_addr_t*) address withPSM:(uint16_t)psm authenticated:(BOOL)authentication {
+	if (state < kActivated) return BTSTACK_NOT_ACTIVATED;
+	if (state != kActivated) return BTSTACK_BUSY;
+#if 0
+	// ...f (state 
+	// store params
+	connType = 0;
+	BD_ADDR_COPY(&connAddr, address);
+	connPSM = psm;
+	connAuth = authentication;
 	
-	// copy entries
-	for (id key in dict) {
-		NSDictionary *value = [dict objectForKey:key];
-		NSMutableDictionary *deviceEntry = [NSMutableDictionary dictionaryWithCapacity:[value count]];
-		[deviceEntry addEntriesFromDictionary:value];
-		[deviceInfo setObject:deviceEntry forKey:key];
-	}
-	// NSLog(@"read prefs %@", deviceInfo );
-}
+	// send write authentication enabled
+	bt_send_cmd(&hci_write_authentication_enable, authentication);	
+	state = kW4AuthenticationEnableCommand;
+#endif
+	return 0;
+};
+-(BTstackError) sendL2CAPPacketForChannelID:(uint16_t)channelID {
+	if (state < kActivated) return BTSTACK_NOT_ACTIVATED;
+	return 0;
+};
+-(BTstackError) closeL2CAPChannelWithID:(uint16_t) channelID {
+	if (state < kActivated) return BTSTACK_NOT_ACTIVATED;
+	return 0;
+};
 
--(void)storeDeviceInfo{
-	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setPersistentDomain:deviceInfo forName:BTstackManagerID];
-    [defaults synchronize];
-	// NSLog(@"store prefs %@", deviceInfo);
-	// NSLog(@"Persistence Domain names %@", [defaults persistentDomainNames]);
-}
+-(BTstackError) createRFCOMMConnectionAtAddress:(bd_addr_t*) address withChannel:(uint16_t)channel authenticated:(BOOL)authentication {
+	if (state < kActivated) return BTSTACK_NOT_ACTIVATED;
+	if (state != kActivated) return BTSTACK_BUSY;
+#if 0
+	// store params
+	connType = 1;
+	BD_ADDR_COPY(&connAddr, address);
+	connChan = channel;
+	connAuth = authentication;
+#endif
+	return 0;
+};
+-(BTstackError) sendRFCOMMPacketForChannelID:(uint16_t)connectionID {
+	if (state < kActivated) return BTSTACK_NOT_ACTIVATED;
+	return 0;
+};
+-(BTstackError) closeRFCOMMConnectionWithID:(uint16_t) connectionID {
+	if (state <kActivated) return BTSTACK_NOT_ACTIVATED;
+	return 0;
+};
 
 @end
