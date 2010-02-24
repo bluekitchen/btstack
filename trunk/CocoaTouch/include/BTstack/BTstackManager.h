@@ -35,7 +35,7 @@
 #import <stdint.h>
 #import <btstack/btstack.h>
 
-#define PREFS_REMOTE_NAME  @"RemoteName"
+		#define PREFS_REMOTE_NAME  @"RemoteName"
 #define PREFS_LINK_KEY     @"LinkKey"
 #define BTstackManagerID   @"ch.ringwald.btstack"
 
@@ -56,7 +56,11 @@ typedef enum {
 	kW4SysBTDisabled,
 	kW4Activated,
 	kActivated,
-	kW4Deactivated
+	kW4Deactivated,
+#if 0
+	kW4DisoveryStopped,
+	kW4AuthenticationEnableCommand
+#endif
 } ManagerState;
 
 typedef enum {
@@ -83,6 +87,14 @@ typedef enum {
 	ManagerState state;
 	DiscoveryState discoveryState;
 	int discoveryDeviceIndex;
+#if 0
+	// current connection - kind a ugly
+	uint8_t   connType; // 0 = L2CAP, 1 = RFCOMM
+	bd_addr_t connAddr;
+	uint16_t  connPSM;
+	uint16_t  connChan;
+	uint8_t   connAuth;
+#endif
 }
 
 // shared instance
@@ -106,11 +118,11 @@ typedef enum {
 -(BOOL) isDiscoveryActive;
 
 // Connections
--(BTstackError) createL2CAPChannelAtAddress:(bd_addr_t) address withPSM:(uint16_t)psm authenticated:(BOOL)authentication;
+-(BTstackError) createL2CAPChannelAtAddress:(bd_addr_t*) address withPSM:(uint16_t)psm authenticated:(BOOL)authentication;
 -(BTstackError) closeL2CAPChannelWithID:(uint16_t) channelID;
 -(BTstackError) sendL2CAPPacketForChannelID:(uint16_t)channelID;
 
--(BTstackError) createRFCOMMConnectionAtAddress:(bd_addr_t) address withChannel:(uint16_t)psm authenticated:(BOOL)authentication;
+-(BTstackError) createRFCOMMConnectionAtAddress:(bd_addr_t*) address withChannel:(uint16_t)channel authenticated:(BOOL)authentication;
 -(BTstackError) closeRFCOMMConnectionWithID:(uint16_t) connectionID;
 -(BTstackError) sendRFCOMMPacketForChannelID:(uint16_t)connectionID;
 
