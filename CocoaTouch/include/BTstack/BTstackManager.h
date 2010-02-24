@@ -35,7 +35,7 @@
 #import <stdint.h>
 #import <btstack/btstack.h>
 
-		#define PREFS_REMOTE_NAME  @"RemoteName"
+#define PREFS_REMOTE_NAME  @"RemoteName"
 #define PREFS_LINK_KEY     @"LinkKey"
 #define BTstackManagerID   @"ch.ringwald.btstack"
 
@@ -79,7 +79,7 @@ typedef enum {
 
 @interface BTstackManager : NSObject {
 @private
-	id<BTstackManagerDelegate> _delegate;
+	NSObject<BTstackManagerDelegate>* _delegate;
 	NSMutableDictionary *deviceInfo;
 	NSMutableArray *discoveredDevices;
 	NSMutableSet *listeners;
@@ -131,7 +131,7 @@ typedef enum {
 // store remote names and link keys
 -(void)storeDeviceInfo;
 
-@property (nonatomic, assign) id<BTstackManagerDelegate> delegate;
+@property (nonatomic, assign) NSObject<BTstackManagerDelegate>* delegate;
 @property (nonatomic, retain) NSMutableDictionary *deviceInfo;
 @property (nonatomic, retain) NSMutableArray *discoveredDevices;
 @property (nonatomic, retain) NSMutableSet *listeners;
