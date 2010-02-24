@@ -50,32 +50,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	[btstackManager handlePacketWithType:packet_type forChannel:channel andData:packet withLen:size];
 }
 
-// dummy implementation of BTstackManagerListener and Delegate protocol to avoid respondsToSelector call
-@implementation NSObject (BTstackManagerDummy)
-// BTstackManagerDelegate
--(NSString*) pinForAddress:(bd_addr_t)addr { return @"0000"; }; // default: "0000"
--(BOOL) disableSystemBluetooth { return YES; }; // default: YES
-//  BTstackManagerListener
--(void) activated {};
--(void) activationFailed:(BTstackError)error {};
--(void) deactivated {};
--(void) deviceInfo:(BTDevice*)device {};
--(void) discoveryStopped {};
--(void) discoveryInquiry{};
--(void) discoveryQueryRemoteName:(int)deviceIndex{};
--(void) l2capChannelCreatedAtAddress:(bd_addr_t)addr withPSM:(uint16_t)psm asID:(uint16_t)channelID {};
--(void) l2capChannelCreateFailedAtAddress:(bd_addr_t)addr withPSM:(uint16_t)psm error:(BTstackError)error{};
--(void) l2capChannelClosedForChannelID:(uint16_t)channelID{};
--(void) l2capDataReceivedForChannelID:(uint16_t)channelID withData:(uint8_t *)packet ofLen:(uint16_t)size{};
--(void) rfcommConnectionCreatedAtAddress:(bd_addr_t)addr forChannel:(uint16_t)channel asID:(uint16_t)connectionID{};
--(void) rfcommConnectionCreateFailedAtAddress:(bd_addr_t)addr forChannel:(uint16_t)channel error:(BTstackError)error{};
--(void) rfcommConnectionClosedForConnectionID:(uint16_t)connectionID{};
--(void) rfcommDataReceivedForConnectionID:(uint16_t)connectionID withData:(uint8_t *)packet ofLen:(uint16_t)size{};
-// TODO add l2cap and rfcomm incoming events
--(void) handlePacketWithType:(uint8_t) packet_type forChannel:(uint16_t) channel andData:(uint8_t *)packet withLen:(uint16_t) size{};
-@end
-
-
 @implementation BTstackManager
 
 @synthesize delegate = _delegate;
@@ -150,6 +124,57 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	// NSLog(@"Persistence Domain names %@", [defaults persistentDomainNames]);
 }
 
+// send events
+-(void) sendActivated {
+	for (NSObject<BTstackManagerListener>* listener in listeners) {
+		if ([listener respondsToSelector:@selector(activated)]){
+			[listener activated];
+		}
+	}
+}
+-(void) sendActivationFailed:(BTstackError)error {
+	for (NSObject<BTstackManagerListener>* listener in listeners) {
+		if ([listener respondsToSelector:@selector(activationFailed:)]){
+			[listener activationFailed:error];
+		}
+	}
+}
+-(void) sendDeactivated {
+	for (NSObject<BTstackManagerListener>* listener in listeners) {
+		if ([listener respondsToSelector:@selector(deactivated)]){
+			[listener deactivated];
+		}
+	}
+}
+-(void) sendDiscoveryStoppedEvent {
+	for (NSObject<BTstackManagerListener>* listener in listeners) {
+		if ([listener respondsToSelector:@selector(discoveryStopped)]){
+			[listener discoveryStopped];
+		}
+	}
+}
+-(void) sendDiscoveryInquiry{
+	for (NSObject<BTstackManagerListener>* listener in listeners) {
+		if ([listener respondsToSelector:@selector(discoveryInquiry)]){
+			[listener discoveryInquiry];
+		}
+	}
+}
+-(void) sendDiscoveryQueryRemoteName:(int)index {
+	for (NSObject<BTstackManagerListener>* listener in listeners) {
+		if ([listener respondsToSelector:@selector(discoveryQueryRemoteName:)]){
+			[listener discoveryQueryRemoteName:index];
+		}
+	}
+}
+-(void) sendDeviceInfo:(BTDevice*) device{
+	for (NSObject<BTstackManagerListener>* listener in listeners) {
+		if ([listener respondsToSelector:@selector(deviceInfo:)]){
+			[listener deviceInfo:device];
+		}
+	}
+}
+
 
 // Activation
 -(BTstackError) activate {
@@ -193,11 +218,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	bt_send_cmd(&hci_write_inquiry_mode, 0x01); // with RSSI
 	return 0;
 };
--(void) sendDiscoveryStoppedEvent {
-	for (id<BTstackManagerListener> listener in listeners) {
-		[listener discoveryStopped];
-	}
-}
+
 -(BTstackError) stopDiscovery{
 	if (state < kActivated) return BTSTACK_NOT_ACTIVATED;
 	switch (discoveryState){
@@ -255,20 +276,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 				if (packet[2]){
 					// system bt on - first time try to disable it
 					if ( state == kW4SysBTState) {
-						if (_delegate == nil || [_delegate disableSystemBluetooth]){
+						if (_delegate == nil
+						|| ![_delegate respondsToSelector:@selector(disableSystemBluetooth)]
+						|| [_delegate disableSystemBluetooth]){
 							state = kW4SysBTDisabled;
 							bt_send_cmd(&btstack_set_system_bluetooth_enabled, 0);
 						} else {
 							state = kDeactivated;
-							for (id<BTstackManagerListener> listener in listeners) {
-								[listener activationFailed:BTSTACK_ACTIVATION_FAILED_SYSTEM_BLUETOOTH];
-							}
+							[self sendActivationFailed:BTSTACK_ACTIVATION_FAILED_SYSTEM_BLUETOOTH];
 						}
 					} else {
 						state = kDeactivated;
-						for (id<BTstackManagerListener> listener in listeners) {
-							[listener activationFailed:BTSTACK_ACTIVATION_FAILED_UNKNOWN];
-						}
+						[self sendActivationFailed:BTSTACK_ACTIVATION_FAILED_UNKNOWN];
 					}
 				} else {
 					state = kW4Activated;
@@ -280,19 +299,16 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		case kW4Activated:
 			switch (packet[0]){
 				case BTSTACK_EVENT_STATE:
-					if (packet[2] == HCI_STATE_WORKING){
+					if (packet[2] == HCI_STATE_WORKING) {
 						state = kActivated;
-						for (id<BTstackManagerListener> listener in listeners) {
-							[listener activated];
-						}
+						[self sendActivated];
 					}
 					break;
 				case BTSTACK_EVENT_POWERON_FAILED:
 					state = kDeactivated;
-					for (id<BTstackManagerListener> listener in listeners) {
-						[listener activationFailed:BTSTACK_ACTIVATION_POWERON_FAILED];
-					}
+					[self sendActivationFailed:BTSTACK_ACTIVATION_POWERON_FAILED];
 					break;
+					
 				default:
 					break;
 			}
@@ -302,9 +318,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			if (packet[0] == BTSTACK_EVENT_STATE){
 				if (packet[2] == HCI_STATE_OFF){
 					state = kDeactivated;
-					for (id<BTstackManagerListener> listener in listeners) {
-						[listener deactivated];
-					}
+					[self sendDeactivated];
 				}
 			}
 			break;
@@ -322,15 +336,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			discoveryDeviceIndex ++;
 			continue;
 		}
-		bd_addr_t *addr = [device address];
-		
-		// BD_ADDR_COPY(&addr, device.address);
-		// NSLog(@"Get remote name of %@", [BTDevice stringForAddress:addr]);
-		bt_send_cmd(&hci_remote_name_request, addr,
-					device.pageScanRepetitionMode, 0, device.clockOffset | 0x8000);
-		for (id<BTstackManagerListener> listener in listeners) {
-			[listener discoveryQueryRemoteName:discoveryDeviceIndex];
-		}
+		bt_send_cmd(&hci_remote_name_request, [device address], device.pageScanRepetitionMode,
+					0, device.clockOffset | 0x8000);
+		[self sendDiscoveryQueryRemoteName:discoveryDeviceIndex];
 		found = YES;
 		break;
 	}
@@ -338,9 +346,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		// printf("Queried all devices, restart.\n");
 		discoveryState = kInquiry;
 		bt_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
-		for (id<BTstackManagerListener> listener in listeners) {
-			[listener discoveryInquiry];
-		}
+		[self sendDiscoveryInquiry];
 	}
 }
 
@@ -358,9 +364,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			if (packet[0] == HCI_EVENT_COMMAND_COMPLETE && COMMAND_COMPLETE_EVENT(packet, hci_write_inquiry_mode) ) {
 				discoveryState = kInquiry;
 				bt_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
-				for (id<BTstackManagerListener> listener in listeners) {
-					[listener discoveryInquiry];
-				}
+				[self sendDiscoveryInquiry];
 			}
 			break;
 		
@@ -373,26 +377,24 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						bt_flip_addr(addr, &packet[3+i*6]);
 						// NSLog(@"found %@", [BTDevice stringForAddress:&addr]);
 						BTDevice* device = [self deviceForAddress:&addr];
-						if (device) continue;
-						device = [[BTDevice alloc] init];
-						[device setAddress:&addr];
+						if (!device) {
+							device = [[BTDevice alloc] init];
+							[discoveredDevices addObject:device];
+							[device setAddress:&addr];
+							// get name from deviceInfo
+							NSString *addrString = [[device addressString] retain];
+							NSMutableDictionary * deviceDict = [deviceInfo objectForKey:addrString];
+							[addrString release];
+							if (deviceDict){
+								device.name = [deviceDict objectForKey:PREFS_REMOTE_NAME];
+							}
+						}
+						// update
 						device.pageScanRepetitionMode =   packet [3 + numResponses*(6)         + i*1];
 						device.classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1+1)   + i*3);
 						device.clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff;
 						device.rssi  = 0;
-#if 1
-						// get name from deviceInfo
-						NSString *addrString = [[device addressString] retain];
-						NSMutableDictionary * deviceDict = [deviceInfo objectForKey:addrString];
-						[addrString release];
-						if (deviceDict){
-							device.name = [deviceDict objectForKey:PREFS_REMOTE_NAME];
-						}
-#endif
-						[discoveredDevices addObject:device];
-						for (id<BTstackManagerListener> listener in listeners) {
-							[listener deviceInfo:device];
-						}
+						[self sendDeviceInfo:device];
 					}
 					break;
 					
@@ -402,26 +404,23 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						bt_flip_addr(addr, &packet[3+i*6]);
 						// NSLog(@"found %@", [BTDevice stringForAddress:&addr]);
 						BTDevice* device = [self deviceForAddress:&addr];
-						if (device) continue;
-						device = [[BTDevice alloc] init];
-						[device setAddress:&addr];
+						if (!device) {
+							device = [[BTDevice alloc] init];
+							[discoveredDevices addObject:device];
+							[device setAddress:&addr];
+							// get name from deviceInfo
+							NSString *addrString = [[device addressString] retain];
+							NSMutableDictionary * deviceDict = [deviceInfo objectForKey:addrString];
+							[addrString release];
+							if (deviceDict){
+								device.name = [deviceDict objectForKey:PREFS_REMOTE_NAME];
+							}
+						}
 						device.pageScanRepetitionMode =   packet [3 + numResponses*(6)         + i*1];
 						device.classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1)     + i*3);
 						device.clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+3)   + i*2) & 0x7fff;
 						device.rssi  =                    packet [3 + numResponses*(6+1+1+3+2) + i*1];
-#if 1
-						// get name from deviceInfo
-						NSString *addrString = [[device addressString] retain];
-						NSMutableDictionary * deviceDict = [deviceInfo objectForKey:addrString];
-						[addrString release];
-						if (deviceDict){
-							device.name = [deviceDict objectForKey:PREFS_REMOTE_NAME];
-						}
-#endif
-						[discoveredDevices addObject:device];
-						for (id<BTstackManagerListener> listener in listeners) {
-							[listener deviceInfo:device];
-						}
+						[self sendDeviceInfo:device];
 					}
 					break;
 
@@ -446,7 +445,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						while (nameLen < 248 && packet[9+nameLen]) nameLen++;
 						NSString *name = [[NSString alloc] initWithBytes:&packet[9] length:nameLen encoding:NSUTF8StringEncoding];
  						device.name = name;
-#if 1
 						// set in device info
 						NSString *addrString = [[device addressString] retain];
 						NSMutableDictionary * deviceDict = [deviceInfo objectForKey:addrString];
@@ -456,10 +454,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						}
 						[deviceDict setObject:name forKey:PREFS_REMOTE_NAME];						
 						[addrString release];
-#endif
-						for (id<BTstackManagerListener> listener in listeners) {
-							[listener deviceInfo:device];
-						}
+						[self sendDeviceInfo:device];
 					}
 					discoveryDeviceIndex++;
 					[self discoveryRemoteName];
@@ -517,7 +512,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		default:
 			break;
 	}
-	[_delegate handlePacketWithType:packet_type forChannel:channel andData:packet withLen:size];
+	if ([_delegate respondsToSelector:@selector(handlePacketWithType:forChannel:andData:withLen:)]){
+		[_delegate handlePacketWithType:packet_type forChannel:channel andData:packet withLen:size];
+	}
 }
 
 // Connections
