@@ -46,6 +46,8 @@
 #include <strings.h>
 #include <unistd.h>
 
+#include <getopt.h>
+
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
@@ -260,7 +262,49 @@ static void daemon_sigpipe_handler(int param){
     printf(" <= SIGPIPE received.. trying to ignore..\n");    
 }
 
-int main (int argc, const char * argv[]){
+static void usage(const char * name) {
+    printf("%s, BTstack background daemon\n", name);
+    printf("usage: %s [-h|--help] [--tcp]\n", name);
+    printf("    -h|--help  display this usage\n");
+    printf("    --tcp      use TCP server socket instead of local unix socket\n");
+}
+
+int main (int argc,  char * const * argv){
+    
+    static int tcp_flag = 0;
+    
+    while (1) {
+        static struct option long_options[] = {
+            { "tcp", no_argument, &tcp_flag, 1 },
+            { "help", no_argument, 0, 0 },
+            { 0,0,0,0 } // This is a filler for -1
+        };
+        
+        int c;
+        int option_index = -1;
+        
+        c = getopt_long(argc, argv, "h", long_options, &option_index);
+        
+        if (c == -1) break; // no more option
+        
+        // treat long parameter first
+        if (option_index == -1) {
+            switch (c) {
+                case '?':
+                case 'h':
+                    usage(argv[0]);
+                    return 0;
+                    break;
+            }
+        } else {
+            switch (option_index) {
+                case 1:
+                    usage(argv[0]);
+                    return 0;
+                    break;
+            }
+        }
+    }
     
     bt_control_t * control = NULL;
 
@@ -300,11 +344,12 @@ int main (int argc, const char * argv[]){
     l2cap_register_event_packet_handler(daemon_event_handler);
     timeout.process = daemon_no_connections_timeout;
     
-    // @TODO: make choice of socket server configurable (TCP and/or Unix Domain Socket)
-    
     // create server
-    // socket_connection_create_tcp(BTSTACK_PORT);
-    socket_connection_create_unix(BTSTACK_UNIX);
+    if (tcp_flag) {
+        socket_connection_create_tcp(BTSTACK_PORT);
+    } else {
+        socket_connection_create_unix(BTSTACK_UNIX);
+    }
 
     socket_connection_register_packet_callback(daemon_client_handler);
 
@@ -324,8 +369,8 @@ int main (int argc, const char * argv[]){
     setbuf(stdout, NULL);
     printf("BTdaemon started - stdout\n");
     fprintf(stderr,"BTdaemon started - stderr\n");
+    
     // go!
     run_loop_execute();
-
     return 0;
 }
