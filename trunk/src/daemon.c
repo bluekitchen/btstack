@@ -49,6 +49,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
+#include <btstack/btstack.h>
 #include <btstack/linked_list.h>
 #include <btstack/run_loop.h>
 #include "socket_connection.h"

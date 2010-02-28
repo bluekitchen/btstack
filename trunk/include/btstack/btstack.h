@@ -46,9 +46,17 @@
 
 #include <stdint.h>
 
+// Default TCP port for BTstack daemon
+#define BTSTACK_PORT            13333
+
+// UNIX domain socket for BTstack */
+#define BTSTACK_UNIX            "/tmp/BTstack"
+
 // packet handler
 typedef void (*btstack_packet_handler_t) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
+// optional: if called before bt_open, TCP socket is used instead of local unix socket
+void bt_use_tcp(const char * address, uint16_t port); 
 
 // init BTstack library
 int bt_open();
