@@ -63,7 +63,7 @@ int socket_connection_close_tcp(connection_t *connection);
 /**
  * create TCP socket connection to BTdaemon 
  */
-connection_t * socket_connection_open_tcp();
+connection_t * socket_connection_open_tcp(const char *address, uint16_t port);
 
 /**
  * close TCP socket connection to BTdaemon 

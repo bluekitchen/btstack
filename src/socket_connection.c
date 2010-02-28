@@ -430,7 +430,7 @@ void socket_connection_send_packet_all(uint16_t type, uint16_t channel, uint8_t 
 /**
  * create socket connection to BTdaemon 
  */
-connection_t * socket_connection_open_tcp(){
+connection_t * socket_connection_open_tcp(const char *address, uint16_t port){
     // TCP
     struct protoent* tcp = getprotobyname("tcp");
     
@@ -441,8 +441,8 @@ connection_t * socket_connection_open_tcp(){
     // localhost
 	struct sockaddr_in btdaemon_address;
 	btdaemon_address.sin_family = AF_INET;
-	btdaemon_address.sin_port = htons(BTSTACK_PORT);
-	struct hostent* localhost = gethostbyname("localhost");
+	btdaemon_address.sin_port = htons(port);
+	struct hostent* localhost = gethostbyname(address);
 	if(!localhost){
 		return NULL;
 	}
