@@ -364,7 +364,7 @@ int socket_connection_create_unix(char *path){
         return -1;
 	}
     
-	printf ("Socket created\n");
+	printf ("Socket created at %s\n", path);
 	
     struct sockaddr_un addr;
     bzero(&addr, sizeof(addr));
