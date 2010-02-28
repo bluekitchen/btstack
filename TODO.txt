@@ -4,6 +4,9 @@
 
 
 NEXT:
+- BUG: bt_close crashes when used in CocoaTouch app
+- BUG: BTdaemon crashes on iPhone when CocoaTouch app is closed (sometimes)
+- BUG: malloc warning when BTdaemon is started by launchd
 - Provide BTstackManager Objective-C class
   - implement l2cap code
   - implement rfcomm code
@@ -16,9 +19,6 @@ NEXT:
 - L2CAP 
   - segmentation
 - add timeouts to cocoa run loop
-- BUG: bt_close crashes when used in CocoaTouch app
-- BUG: BTdaemon crashes on iPhone when CocoaTouch app is closed (sometimes)
-- BUG: malloc warning when BTdaemon is started by launchd
 
 == Release 0.2 - Incoming L2CAP supported + improved Inq Dialog
 

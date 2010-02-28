@@ -41,11 +41,6 @@
 
 #include <stdint.h>
 
-/** TCP port for BTstack */
-#define BTSTACK_PORT            13333
-
-/** UNIX domain socket for BTstack */
-#define BTSTACK_UNIX            "/tmp/BTstack"
 
 /** opaque connection type */
 typedef struct connection connection_t;
