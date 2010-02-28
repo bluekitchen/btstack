@@ -59,13 +59,27 @@ static int btstack_packet_handler(connection_t *connection, uint16_t packet_type
 /** local globals :) */
 static void (*client_packet_handler)(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = dummy_handler;
 
+static const char * daemon_tcp_address = NULL;
+static uint16_t     daemon_tcp_port    = BTSTACK_PORT;
+
+// optional: if called before bt_open, TCP socket is used instead of local unix socket
+//           note: address is not copied and must be valid during bt_open
+void bt_use_tcp(const char * address, uint16_t port){
+    daemon_tcp_address = address;
+    daemon_tcp_port    = port;
+}
 
 // init BTstack library
 int bt_open(){
 
-    // BTdaemon
     socket_connection_register_packet_callback(btstack_packet_handler);
-    btstack_connection = socket_connection_open_unix();
+
+    // BTdaemon
+    if (daemon_tcp_address) {
+        btstack_connection = socket_connection_open_tcp(daemon_tcp_address,daemon_tcp_port);
+    } else {
+        btstack_connection = socket_connection_open_unix();
+    }
     if (!btstack_connection) return -1;
 
     return 0;
