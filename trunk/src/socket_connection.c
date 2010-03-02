@@ -203,9 +203,11 @@ int socket_connection_hci_process(struct data_source *ds) {
 }
 
 static int socket_connection_accept(struct data_source *socket_ds) {
-    
+    struct sockaddr_storage ss;
+    socklen_t slen = sizeof(ss);
+
 	/* New connection coming in! */
-	int fd = accept(socket_ds->fd, NULL, NULL);
+	int fd = accept(socket_ds->fd, (struct sockaddr *)&ss, &slen);
 	if (fd < 0) {
 		perror("accept");
         return 0;
@@ -269,10 +271,32 @@ int socket_connection_create_tcp(int port){
     return 0;
 }
 
+#ifdef USE_LAUNCHD
+
+/*
+ * Register listening sockets with our run loop
+ */
+void socket_connection_launchd_register_fd_array(launch_data_t listening_fd_array){
+	int i;
+    for (i = 0; i < launch_data_array_get_count(listening_fd_array); i++) {
+        // get fd
+        launch_data_t tempi = launch_data_array_get_index (listening_fd_array, i);
+        int listening_fd = launch_data_get_fd(tempi);
+        launch_data_free (tempi);
+		printf("file descriptor = %u\n",(unsigned int) i+1, listening_fd);
+        
+        // create data_source_t for fd
+        data_source_t *ds = malloc( sizeof(data_source_t));
+        if (ds == NULL) return;
+        ds->process = socket_connection_accept;
+        ds->fd = listening_fd;
+        run_loop_add_data_source(ds);
+	}
+}
+
 /** 
  * create socket data_source for socket specified by launchd configuration
  */
-#ifdef USE_LAUNCHD
 int socket_connection_create_launchd(){
     
     launch_data_t sockets_dict, checkin_response;
@@ -315,38 +339,30 @@ int socket_connection_create_launchd(){
 		return -1;
 	}
     
-	if (launch_data_dict_get_count(sockets_dict) > 1) {
-		fprintf(stderr,"Some sockets will be ignored!");
-	}
+	// if (launch_data_dict_get_count(sockets_dict) > 1) {
+	// 	fprintf(stderr,"Some sockets will be ignored!");
+	// }
     
 	/*
 	 * Get the dictionary value from the key "Listeners"
 	 */
 	listening_fd_array = launch_data_dict_lookup(sockets_dict, "Listeners");
-	if (NULL == listening_fd_array) {
-		fprintf(stderr,"No known sockets found to answer requests on!");
-		return -1;
-	}
+	if (listening_fd_array) {
+        // fprintf(stderr,"Listeners...\n");
+        socket_connection_launchd_register_fd_array( listening_fd_array );
+    }
     
 	/*
-	 * Register listening sockets with our run loop
+	 * Get the dictionary value from the key "Listeners"
 	 */
-	for (i = 0; i < launch_data_array_get_count(listening_fd_array); i++) {
-        // get fd
-        launch_data_t tempi = launch_data_array_get_index (listening_fd_array, i);
-        int listening_fd = launch_data_get_fd(tempi);
-        launch_data_free (tempi);
-		printf("%u. file descriptor = %u\n",(unsigned int) i+1, listening_fd);
-        
-        // create data_source_t for fd
-        data_source_t *ds = malloc( sizeof(data_source_t));
-        if (ds == NULL) return -1;
-        ds->process = socket_connection_accept;
-        ds->fd = listening_fd;
-        run_loop_add_data_source(ds);
-	}
+	listening_fd_array = launch_data_dict_lookup(sockets_dict, "Listeners2");
+	if (listening_fd_array) {
+        // fprintf(stderr,"Listeners2...\n");
+        socket_connection_launchd_register_fd_array( listening_fd_array );
+    }
     
-	launch_data_free(checkin_response);
+    // although used in Apple examples, it creates a malloc warning
+	// launch_data_free(checkin_response);
 }
 #endif
 
