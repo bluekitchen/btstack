@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>ch.ringwald.BTstack</string>
+	<key>OnDemand</key>
+	<true/>
+	<key>Program</key>
+	<string>/usr/local/bin/BTdaemon</string>
+	<key>ServiceIPC</key>
+	<true/>
+	<key>Debug</key>
+	<false/>
+	<key>ProgramArguments</key>
+	<array/>
+	<key>StandardErrorPath</key>
+	<string>/var/log/BTstack.err</string>
+	<key>StandardOutPath</key>
+	<string>/var/log/BTstack.log</string>
+	<key>Sockets</key>
+	<dict>
+		<key>Listeners2</key>
+		<dict>
+			<key>SockFamiliy</key>
+			<string>IPv4</string>
+			<key>SockType</key>
+			<string>Stream</string>
+			<key>SockServiceName</key>
+			<string>13333</string>
+			<key>SockPathMode</key>
+			<integer>438</integer>
+		</dict>
+		<key>Listeners</key>
+		<dict>
+			<key>SockFamiliy</key>
+			<string>Unix</string>
+			<key>SockType</key>
+			<string>Stream</string>
+			<key>SockPathName</key>
+			<string>/tmp/BTstack</string>
+			<key>SockPathMode</key>
+			<integer>438</integer>
+		</dict>
+	</dict>
+</dict>
+</plist>
