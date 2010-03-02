@@ -5,9 +5,7 @@
 
 NEXT:
 - BUG: bt_close crashes when used in CocoaTouch app
-- BUG: BTdaemon crashes on iPhone when CocoaTouch app is closed (sometimes)
-- BUG: malloc warning when BTdaemon is started by launchd
-- Support TCP socket server on 13333 via launchd in addition to the unix socket
+- BUG: BTdaemon crashes on iPhone when CocoaTouch app is closed
 - Provide BTstackManager Objective-C class
   - implement l2cap code
   - implement rfcomm code

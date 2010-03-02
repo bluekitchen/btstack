@@ -103,6 +103,7 @@
 		9C7ECBB40FCC95DD0085DAC5 /* hci_dump.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = hci_dump.c; path = src/hci_dump.c; sourceTree = "<group>"; };
 		9C88500C0FBF6702004980E4 /* l2cap.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = l2cap.c; path = src/l2cap.c; sourceTree = "<group>"; };
 		9C88500D0FBF6702004980E4 /* l2cap.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = l2cap.h; path = src/l2cap.h; sourceTree = "<group>"; };
+		9C978672113DC04900380B3E /* ch.ringwald.BTstackTCP.plist */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text.plist.xml; name = ch.ringwald.BTstackTCP.plist; path = resources/ch.ringwald.BTstackTCP.plist; sourceTree = "<group>"; };
 		9C994B8E106BEEB700C70311 /* rfcomm.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = rfcomm.c; path = example/rfcomm.c; sourceTree = "<group>"; };
 		9CA3C0900FB8B3C4005F48DE /* TODO.txt */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = TODO.txt; sourceTree = "<group>"; };
 		9CAA573610A5D87400D0E1A9 /* inquiry.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = inquiry.c; path = example/inquiry.c; sourceTree = "<group>"; };
@@ -276,6 +277,7 @@
 			children = (
 				9C78A04A103C6734003B2950 /* Default_BTstack.png */,
 				9C78A0BB103C9DEE003B2950 /* ch.ringwald.BTstack.plist */,
+				9C978672113DC04900380B3E /* ch.ringwald.BTstackTCP.plist */,
 				9C78A04B103C6734003B2950 /* Default_BTstackActive.png */,
 				9C78A04C103C6734003B2950 /* FSO_BTstack.png */,
 				9C78A04D103C6734003B2950 /* FSO_BTstackActive.png */,
