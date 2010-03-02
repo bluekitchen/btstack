@@ -150,6 +150,12 @@ if test "x$target" = xiphone; then
         echo "USE_LDID:        no"
     fi 
 else
+    case "$host_os" in
+        darwin*)
+            # on Mac, create universal - helps to build 32-bit iPhone Simulator apps on 64-bit machines
+            LDFLAGS="$LDFLAGS -arch ppc -arch i386 -arch x86_64 -framework CoreFoundation"
+            ;;
+    esac	  
     USE_LDID="#"
     if test "x$UART_DEVICE" = xDEFAULT ; then
         UART_DEVICE=/dev/ttyS0
