@@ -270,11 +270,10 @@ int socket_connection_create_tcp(int port){
 }
 
 /** 
- * create socket data_source for unix domain socket
- * */
-int socket_connection_create_unix(char *path){
-    
+ * create socket data_source for socket specified by launchd configuration
+ */
 #ifdef USE_LAUNCHD
+int socket_connection_create_launchd(){
     
     launch_data_t sockets_dict, checkin_response;
 	launch_data_t checkin_request;
@@ -348,9 +347,14 @@ int socket_connection_create_unix(char *path){
 	}
     
 	launch_data_free(checkin_response);
+}
+#endif
 
-#else
-    
+/** 
+ * create socket data_source for unix domain socket
+ */
+int socket_connection_create_unix(char *path){
+        
     // create data_source_t
     data_source_t *ds = malloc( sizeof(data_source_t));
     if (ds == NULL) return -1;
@@ -389,8 +393,6 @@ int socket_connection_create_unix(char *path){
     
     run_loop_add_data_source(ds);
 
-#endif
-    
 	printf ("Server up and running ...\n");
     return 0;
 }

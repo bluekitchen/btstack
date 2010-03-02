@@ -343,14 +343,17 @@ int main (int argc,  char * const * argv){
     l2cap_init();
     l2cap_register_event_packet_handler(daemon_event_handler);
     timeout.process = daemon_no_connections_timeout;
-    
+
+#ifdef USE_LAUNCHD
+    socket_connection_create_launchd();
+#else
     // create server
     if (tcp_flag) {
         socket_connection_create_tcp(BTSTACK_PORT);
     } else {
         socket_connection_create_unix(BTSTACK_UNIX);
     }
-
+#endif
     socket_connection_register_packet_callback(daemon_client_handler);
 
     // handle CTRL-c

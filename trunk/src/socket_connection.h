@@ -46,6 +46,11 @@
 typedef struct connection connection_t;
 
 /** 
+ * create socket data_source for socket specified by launchd configuration
+ */
+int socket_connection_create_launchd();
+
+/** 
  * create socket for incoming tcp connections
  */
 int socket_connection_create_tcp(int port);
