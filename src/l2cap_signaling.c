@@ -65,7 +65,7 @@ uint8_t l2cap_next_sig_id(void){
     return sig_seq_nr;
 }
 
-uint16_t l2cap_next_source_cid(void){
+uint16_t l2cap_next_local_cid(void){
     return source_cid++;
 }
 

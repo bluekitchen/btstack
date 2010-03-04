@@ -82,12 +82,12 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					bt_flip_addr(event_addr, &packet[2]);
 					handle     = READ_BT_16(packet, 8); 
 					psm        = READ_BT_16(packet, 10); 
-					source_cid = READ_BT_16(packet, 12); 
-					dest_cid   = READ_BT_16(packet, 14); 
+					local_cid  = READ_BT_16(packet, 12); 
+					remote_cid = READ_BT_16(packet, 14); 
 					printf("L2CAP_EVENT_INCOMING_CONNECTION ");
 					print_bd_addr(event_addr);
-					printf(", handle 0x%02x, psm 0x%02x, src cid 0x%02x, dest cid 0x%02x\n",
-						   handle, psm, source_cid, dest_cid);
+					printf(", handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+						   handle, psm, local_cid, remote_cid);
 
 					// accept
 					bt_send_cmd(&l2cap_accept_connection, source_cid);
@@ -97,13 +97,13 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					// inform about new l2cap connection
 					bt_flip_addr(event_addr, &packet[3]);
 					psm = READ_BT_16(packet, 11); 
-					source_cid = READ_BT_16(packet, 13); 
+					local_cid = READ_BT_16(packet, 13); 
 					handle = READ_BT_16(packet, 9);
 					if (packet[2] == 0) {
 						printf("Channel successfully opened: ");
 						print_bd_addr(event_addr);
-						printf(", handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x\n",
-							   handle, psm, source_cid,  READ_BT_16(packet, 15));
+						printf(", handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+							   handle, psm, local_cid,  READ_BT_16(packet, 15));
 					} else {
 						printf("L2CAP connection to device ");
 						print_bd_addr(event_addr);

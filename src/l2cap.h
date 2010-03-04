@@ -47,7 +47,7 @@
 #define L2CAP_SIG_ID_INVALID 0
 
 typedef enum {
-    L2CAP_STATE_CLOSED,           // no baseband
+    L2CAP_STATE_CLOSED = 1,           // no baseband
     L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT,
     L2CAP_STATE_WAIT_CONNECT_RSP, // from peer
     L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ,
@@ -64,8 +64,8 @@ typedef struct {
 
     L2CAP_STATE state;
     uint8_t   sig_id;  // other sig for conn requests
-    uint16_t  source_cid;
-    uint16_t  dest_cid;
+    uint16_t  local_cid;
+    uint16_t  remote_cid;
     bd_addr_t address;
     uint16_t  psm;
     hci_con_handle_t handle;
@@ -94,8 +94,8 @@ typedef struct {
 void l2cap_init();
 void l2cap_register_event_packet_handler(void (*handler)(uint8_t *packet, uint16_t size));
 void l2cap_create_channel_internal(connection_t * connection, bd_addr_t address, uint16_t psm);
-void l2cap_disconnect_internal(uint16_t source_cid, uint8_t reason);
-void l2cap_send_internal(uint16_t source_cid, uint8_t *data, uint16_t len);
+void l2cap_disconnect_internal(uint16_t local_cid, uint8_t reason);
+void l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len);
 void l2cap_acl_handler( uint8_t *packet, uint16_t size );
 void l2cap_event_handler( uint8_t *packet, uint16_t size );
 
@@ -108,8 +108,8 @@ l2cap_service_t * l2cap_get_service(uint16_t psm);
 void l2cap_register_service_internal(connection_t *connection, uint16_t psm, uint16_t);
 void l2cap_unregister_service_internal(connection_t *connection, uint16_t psm);
 
-void l2cap_accept_connection_internal(uint16_t source_cid);
-void l2cap_decline_connection_internal(uint16_t source_cid, uint8_t reason);
+void l2cap_accept_connection_internal(uint16_t local_cid);
+void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason);
 
 void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
 void l2cap_emit_channel_closed(l2cap_channel_t *channel);
