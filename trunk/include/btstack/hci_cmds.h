@@ -56,9 +56,11 @@
 // RFCOMM data
 #define RFCOMM_DATA_PACKET       0x07
 
-// Fixed PSM nuumbers
+// Fixed PSM numbers
 #define PSM_SDP    0x01
 #define PSM_RFCOMM 0x03
+#define PSM_HID_CONTROL 0x11
+#define PSM_HID_INTERRUPT 0x13
 
 // Events from host controller to host
 #define HCI_EVENT_INQUIRY_COMPLETE				           0x01

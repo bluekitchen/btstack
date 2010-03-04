@@ -45,13 +45,16 @@
 
 hci_con_handle_t con_handle;
 
+uint16_t hid_control = 0;
+uint16_t hid_interrupt = 0;
+
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	
 	bd_addr_t event_addr;
 	uint16_t handle;
 	uint16_t psm;
-	uint16_t source_cid;
-	uint16_t dest_cid;
+	uint16_t local_cid;
+	uint16_t remote_cid;
 	
 	switch (packet_type) {
 			
@@ -90,7 +93,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						   handle, psm, local_cid, remote_cid);
 
 					// accept
-					bt_send_cmd(&l2cap_accept_connection, source_cid);
+					bt_send_cmd(&l2cap_accept_connection, local_cid);
 					break;
 					
 				case L2CAP_EVENT_CHANNEL_OPENED:
@@ -104,6 +107,18 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						print_bd_addr(event_addr);
 						printf(", handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
 							   handle, psm, local_cid,  READ_BT_16(packet, 15));
+						
+						if (psm == PSM_HID_CONTROL){
+							hid_control = local_cid;
+						}
+						if (psm == PSM_HID_INTERRUPT){
+							hid_interrupt = local_cid;
+						}
+						if (hid_control && hid_interrupt){
+							//HID Control: 0x06 bytes - SET_FEATURE_REPORT [ 53 F4 42 03 00 00 ]
+							// uint8_t set_feature_report[] = { 0x53, 0xf4, 0x42, 0x03, 0x00, 0x00}; 
+							// bt_send_l2cap(hid_control, (uint8_t*) &set_feature_report, sizeof(set_feature_report));
+						}
 					} else {
 						printf("L2CAP connection to device ");
 						print_bd_addr(event_addr);
