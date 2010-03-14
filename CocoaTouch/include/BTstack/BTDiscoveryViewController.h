@@ -60,6 +60,6 @@ typedef enum {
 
 @protocol BTDiscoveryDelegate
 @optional
--(BOOL)willSelectDeviceAtIndex:(int)deviceIndex; // returns NO to ignore selection
--(void)statusCellSelected;
+-(BOOL) discoveryView:(BTDiscoveryViewController*)discoveryView willSelectDeviceAtIndex:(int)deviceIndex; // returns NO to ignore selection
+-(void) statusCellSelectedDiscoveryView:(BTDiscoveryViewController*)discoveryView;
 @end

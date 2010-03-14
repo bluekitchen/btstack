@@ -130,26 +130,26 @@
 }
 
 // BTstackManagerListenerDelegate
--(void) activated{
+-(void) activatedBTstackManager:(BTstackManager*) manager{
 	[self reload];
 }
--(void) activationFailed:(BTstackError)error{
+-(void) btstackManager:(BTstackManager*)manager activationFailed:(BTstackError)error {
 	[self reload];
-};
--(void) discoveryInquiry {
+}
+-(void) discoveryInquiryBTstackManager:(BTstackManager*) manager {
 	inquiryState = kInquiryActive;
 	[self reload];
 }
--(void) discoveryQueryRemoteName:(int)deviceIndex {
+-(void) btstackManager:(BTstackManager*)manager discoveryQueryRemoteName:(int)deviceIndex {
 	inquiryState = kInquiryRemoteName;
 	remoteNameIndex = deviceIndex;
 	[self reload];
 }
--(void) discoveryStopped {
+-(void) discoveryStoppedBTstackManager:(BTstackManager*) manager {
 	inquiryState = kInquiryInactive;
 	[self reload];
 }
--(void) deviceInfo:(BTDevice*)device {
+-(void) btstackManager:(BTstackManager*)manager deviceInfo:(BTDevice*)device {
 	[self reload];
 }
 
@@ -316,12 +316,12 @@
 	if (!_delegate) return nil;
 	int index = [indexPath indexAtPosition:1];
 	if (index >= [bt numberOfDevicesFound]){
-		if ([_delegate respondsToSelector:@selector(statusCellSelected)]){
-			[_delegate statusCellSelected];
+		if ([_delegate respondsToSelector:@selector(statusCellSelectedDiscoveryView:)]){
+			[_delegate statusCellSelectedDiscoveryView:self];
 			return nil;
 		}
 	}
-		if ([_delegate respondsToSelector:@selector(willSelectDeviceAtIndex:)] && [_delegate willSelectDeviceAtIndex:index]){
+	if ([_delegate respondsToSelector:@selector(discoveryView:willSelectDeviceAtIndex:)] && [_delegate discoveryView:self willSelectDeviceAtIndex:index]){
 		return indexPath;
 	}
 	return nil;
