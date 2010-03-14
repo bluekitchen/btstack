@@ -495,7 +495,7 @@ void l2cap_unregister_service_internal(connection_t *connection, uint16_t psm){
     l2cap_service_t *service = l2cap_get_service(psm);
     if (service) return;
     linked_list_remove(&l2cap_services, (linked_item_t *) service);
-    free( service );
+    free(service);
 }
 
 //
@@ -515,11 +515,13 @@ void l2cap_close_connection(connection_t *connection){
     
     // unregister services
     l2cap_service_t *service;
-    for (it = (linked_item_t *) &l2cap_services; it ; it = it->next){
-        channel = (l2cap_channel_t *) it->next;
+    for (it = (linked_item_t *) l2cap_services; it ; ){
+        service = (l2cap_service_t *) it->next;
         if (service->connection == connection){
-            it->next = it->next->next;
-            return;
+            it->next = service->item.next;
+            free(service);
+        } else {
+            it = it->next;
         }
     }
 }
