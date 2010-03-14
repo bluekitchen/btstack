@@ -127,50 +127,50 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 // send events
 -(void) sendActivated {
 	for (NSObject<BTstackManagerListener>* listener in listeners) {
-		if ([listener respondsToSelector:@selector(activated)]){
-			[listener activated];
+		if ([listener respondsToSelector:@selector(activatedBTstackManager:)]){
+			[listener activatedBTstackManager:self];
 		}
 	}
 }
 -(void) sendActivationFailed:(BTstackError)error {
 	for (NSObject<BTstackManagerListener>* listener in listeners) {
-		if ([listener respondsToSelector:@selector(activationFailed:)]){
-			[listener activationFailed:error];
+		if ([listener respondsToSelector:@selector(btstackManager:activationFailed:)]){
+			[listener btstackManager:self activationFailed:error];
 		}
 	}
 }
 -(void) sendDeactivated {
 	for (NSObject<BTstackManagerListener>* listener in listeners) {
-		if ([listener respondsToSelector:@selector(deactivated)]){
-			[listener deactivated];
+		if ([listener respondsToSelector:@selector(deactivatedBTstackManager:)]){
+			[listener deactivatedBTstackManager:self];
 		}
 	}
 }
 -(void) sendDiscoveryStoppedEvent {
 	for (NSObject<BTstackManagerListener>* listener in listeners) {
-		if ([listener respondsToSelector:@selector(discoveryStopped)]){
-			[listener discoveryStopped];
+		if ([listener respondsToSelector:@selector(discoveryStoppedBTstackManager:)]){
+			[listener discoveryStoppedBTstackManager:self];
 		}
 	}
 }
 -(void) sendDiscoveryInquiry{
 	for (NSObject<BTstackManagerListener>* listener in listeners) {
-		if ([listener respondsToSelector:@selector(discoveryInquiry)]){
-			[listener discoveryInquiry];
+		if ([listener respondsToSelector:@selector(discoveryInquiryBTstackManager:)]){
+			[listener discoveryInquiryBTstackManager:self];
 		}
 	}
 }
 -(void) sendDiscoveryQueryRemoteName:(int)index {
 	for (NSObject<BTstackManagerListener>* listener in listeners) {
-		if ([listener respondsToSelector:@selector(discoveryQueryRemoteName:)]){
-			[listener discoveryQueryRemoteName:index];
+		if ([listener respondsToSelector:@selector(btstackManager:discoveryQueryRemoteName:)]){
+			[listener btstackManager:self discoveryQueryRemoteName:index];
 		}
 	}
 }
 -(void) sendDeviceInfo:(BTDevice*) device{
 	for (NSObject<BTstackManagerListener>* listener in listeners) {
-		if ([listener respondsToSelector:@selector(deviceInfo:)]){
-			[listener deviceInfo:device];
+		if ([listener respondsToSelector:@selector(btstackManager:deviceInfo:)]){
+			[listener btstackManager:self deviceInfo:device];
 		}
 	}
 }
@@ -277,8 +277,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					// system bt on - first time try to disable it
 					if ( state == kW4SysBTState) {
 						if (_delegate == nil
-						|| ![_delegate respondsToSelector:@selector(disableSystemBluetooth)]
-						|| [_delegate disableSystemBluetooth]){
+						|| ![_delegate respondsToSelector:@selector(disableSystemBluetoothBTstackManager)]
+						|| [_delegate disableSystemBluetoothBTstackManager]){
 							state = kW4SysBTDisabled;
 							bt_send_cmd(&btstack_set_system_bluetooth_enabled, 0);
 						} else {
@@ -512,8 +512,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		default:
 			break;
 	}
-	if ([_delegate respondsToSelector:@selector(handlePacketWithType:forChannel:andData:withLen:)]){
-		[_delegate handlePacketWithType:packet_type forChannel:channel andData:packet withLen:size];
+	if ([_delegate respondsToSelector:@selector(btstackManager:handlePacketWithType:forChannel:andData:withLen:)]){
+		[_delegate btstackManager:self handlePacketWithType:packet_type forChannel:channel andData:packet withLen:size];
 	}
 }
 

@@ -142,16 +142,17 @@ typedef enum {
 @optional
 
 // Activation callbacks
--(BOOL) disableSystemBluetooth; // default: YES
+-(BOOL) disableSystemBluetoothBTstackManager:(BTstackManager*) manager; // default: YES
 
 // Connection events
--(NSString*) pinForAddress:(bd_addr_t)addr; // default: "0000"
+-(NSString*) btstackManager:(BTstackManager*) manager pinForAddress:(bd_addr_t)addr; // default: "0000"
 
 // direct access
--(void) handlePacketWithType:(uint8_t) packet_type
-				  forChannel:(uint16_t) channel
-					 andData:(uint8_t *)packet
-					 withLen:(uint16_t) size;
+-(void) btstackManager:(BTstackManager*) manager
+  handlePacketWithType:(uint8_t) packet_type
+			forChannel:(uint16_t) channel
+			   andData:(uint8_t *)packet
+			   withLen:(uint16_t) size;
 @end
 
 
@@ -159,17 +160,17 @@ typedef enum {
 @optional
 
 // Activation events
--(void) activated;
--(void) activationFailed:(BTstackError)error;
--(void) deactivated;
+-(void) activatedBTstackManager:(BTstackManager*) manager;
+-(void) btstackManager:(BTstackManager*)manager activationFailed:(BTstackError)error;
+-(void) deactivatedBTstackManager:(BTstackManager*) manager;
 
 // Discovery events: general
--(void) deviceInfo:(BTDevice*)device;
--(void) discoveryStopped;
--(void) discoveryInquiry;
--(void) discoveryQueryRemoteName:(int)deviceIndex;
+-(void) btstackManager:(BTstackManager*)manager deviceInfo:(BTDevice*)device;
+-(void) btstackManager:(BTstackManager*)manager discoveryQueryRemoteName:(int)deviceIndex;
+-(void) discoveryStoppedBTstackManager:(BTstackManager*) manager;
+-(void) discoveryInquiryBTstackManager:(BTstackManager*) manager;
 
-
+// Connection
 -(void) l2capChannelCreatedAtAddress:(bd_addr_t)addr withPSM:(uint16_t)psm asID:(uint16_t)channelID;
 -(void) l2capChannelCreateFailedAtAddress:(bd_addr_t)addr withPSM:(uint16_t)psm error:(BTstackError)error;
 -(void) l2capChannelClosedForChannelID:(uint16_t)channelID;
