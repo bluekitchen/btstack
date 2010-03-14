@@ -2,12 +2,10 @@
 
 2009-11-08: Release 0.1
 
-DONE:
-- BTstackManager activated/deactivated/discovery
-
 NEXT:
 - BUG: bt_close crashes when used in CocoaTouch app
-- BUG: BTdaemon crashes on iPhone when CocoaTouch app is closed
+- add extern "C" to bstack methods
+  - see: http://stackoverflow.com/questions/376966/using-c-c-static-libraries-from-iphone-objectivec-apps
 - Provide BTstackManager Objective-C class
   - move connection methods to BTdevice (get more object oriented)
     - initWithAddress:(bd_addr_t *)addr
@@ -17,15 +15,12 @@ NEXT:
 - figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect, when phone gets locked
   - some trick
   - use Cocoa run loop for background app?
-- Add improved RFCOMM user-client
-  - use switch on RFCOMM control field in rfcomm.c packet handler
 - move RFCOMM code into BTdaemon
+- add timeouts to cocoa run loop
 - L2CAP 
   - segmentation
-- add timeouts to cocoa run loop
 
 == Release 0.2 - Incoming L2CAP supported + improved Inq Dialog
-
 - extend SpringBoard feedback
   - show alerts/messages using SpringBoardAcccess, e.g. Bluetooth disconnected by remote device
   - add code to notify about remote disconnets
