@@ -151,7 +151,6 @@ hci_cmd_t hci_create_connection = {
 OPCODE(OGF_LINK_CONTROL, 0x05), "B21121"
 // BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
 };
-
 hci_cmd_t hci_disconnect = {
 OPCODE(OGF_LINK_CONTROL, 0x06), "H1"
 // Handle, Reason: 0x05, 0x13-0x15, 0x1a, 0x29
@@ -194,17 +193,25 @@ OPCODE(OGF_LINK_CONTROL, 0x1A), "B"
  *  Link Policy Commands 
  */
 hci_cmd_t hci_qos_setup = {
-    OPCODE(OGF_LINK_POLICY, 0x07), "H114444"
-    // handle, flags, service_type, token rate (bytes/s), peak bandwith (bytes/s),
-    // latency (us), delay_variation (us)
+OPCODE(OGF_LINK_POLICY, 0x07), "H114444"
+// handle, flags, service_type, token rate (bytes/s), peak bandwith (bytes/s),
+// latency (us), delay_variation (us)
+};
+hci_cmd_t hci_role_discovery = {
+OPCODE(OGF_LINK_POLICY, 0x09), "H"
+// handle
+};
+hci_cmd_t hci_switch_role_command= {
+OPCODE(OGF_LINK_POLICY, 0x0b), "B1"
+// handle, role: {0=master,1=slave}
 };
 hci_cmd_t hci_read_link_policy_settings = {
-    OPCODE(OGF_LINK_POLICY, 0x0c), "H"
-    // handle 
+OPCODE(OGF_LINK_POLICY, 0x0c), "H"
+// handle 
 };
 hci_cmd_t hci_write_link_policy_settings = {
-    OPCODE(OGF_LINK_POLICY, 0x0d), "H2"
-    // handlee, settings
+OPCODE(OGF_LINK_POLICY, 0x0d), "H2"
+// handlee, settings
 };
 
 /**
