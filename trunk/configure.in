@@ -124,6 +124,11 @@ if test "x$target" = xiphone; then
             LDFLAGS="$LDFLAGS -L$SDK_PATH/System/Library/Frameworks/IOKit.framework/Versions/A"
             LDFLAGS="$LDFLAGS $SDK_PATH/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager"
             LDFLAGS="$LDFLAGS -lIOKit -lobjc"
+            # handle sdk written in lower case for people that followed:
+            # http://code.google.com/p/iphonedevonlinux/wiki/Installation
+            if test -e "$DEVELOPER_PATH/sdks/iPhoneOS$SDK_VERSION.sdk" ; then
+                SDK_PATH="$DEVELOPER_PATH/sdks/iPhoneOS$SDK_VERSION.sdk"
+            fi
 		   ;;
         *)
             AC_MSG_ERROR(Don't know how to compile without Apple's iPhone SDK, sorry.)
