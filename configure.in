@@ -113,6 +113,13 @@ if test "x$target" = xiphone; then
             echo "SDK path: $SDK_PATH"
             # echo "iPhone staging dir: $prefix"
             echo "iPhone IP for install-iphone target: $IPHONE_IP"
+
+            # handle sdk written in lower case for people that followed:
+            # http://code.google.com/p/iphonedevonlinux/wiki/Installation
+            if test -e "$DEVELOPER_PATH/sdks/iPhoneOS$SDK_VERSION.sdk" ; then
+                SDK_PATH="$DEVELOPER_PATH/sdks/iPhoneOS$SDK_VERSION.sdk"
+            fi
+
             CC="$DEVELOPER_PATH/pre/bin/arm-apple-darwin9-gcc-$GCC_VERSION"
             OBJC="$DEVELOPER_PATH/pre/bin/arm-apple-darwin9-g++"
             CFLAGS="$CFLAGS -g"
@@ -124,11 +131,6 @@ if test "x$target" = xiphone; then
             LDFLAGS="$LDFLAGS -L$SDK_PATH/System/Library/Frameworks/IOKit.framework/Versions/A"
             LDFLAGS="$LDFLAGS $SDK_PATH/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager"
             LDFLAGS="$LDFLAGS -lIOKit -lobjc"
-            # handle sdk written in lower case for people that followed:
-            # http://code.google.com/p/iphonedevonlinux/wiki/Installation
-            if test -e "$DEVELOPER_PATH/sdks/iPhoneOS$SDK_VERSION.sdk" ; then
-                SDK_PATH="$DEVELOPER_PATH/sdks/iPhoneOS$SDK_VERSION.sdk"
-            fi
 		   ;;
         *)
             AC_MSG_ERROR(Don't know how to compile without Apple's iPhone SDK, sorry.)
