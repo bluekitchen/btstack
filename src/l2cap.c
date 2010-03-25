@@ -493,7 +493,7 @@ void l2cap_register_service_internal(connection_t *connection, uint16_t psm, uin
 
 void l2cap_unregister_service_internal(connection_t *connection, uint16_t psm){
     l2cap_service_t *service = l2cap_get_service(psm);
-    if (service) return;
+    if (!service) return;
     linked_list_remove(&l2cap_services, (linked_item_t *) service);
     free(service);
 }
