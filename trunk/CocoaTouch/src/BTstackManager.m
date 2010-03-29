@@ -277,8 +277,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					// system bt on - first time try to disable it
 					if ( state == kW4SysBTState) {
 						if (_delegate == nil
-						|| ![_delegate respondsToSelector:@selector(disableSystemBluetoothBTstackManager)]
-						|| [_delegate disableSystemBluetoothBTstackManager]){
+							|| ![_delegate respondsToSelector:@selector(disableSystemBluetoothBTstackManager:)]
+							|| [_delegate disableSystemBluetoothBTstackManager:self]){
 							state = kW4SysBTDisabled;
 							bt_send_cmd(&btstack_set_system_bluetooth_enabled, 0);
 						} else {
