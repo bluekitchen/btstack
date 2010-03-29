@@ -137,6 +137,9 @@ if test "x$target" = xiphone; then
             ;;
     esac	        
     
+    # treat warnings seriously
+    CPPFLAGS="$CPPFLAGS -Werror"
+    
     if test "x$UART_DEVICE" = xDEFAULT ; then
         UART_DEVICE=/dev/tty.bluetooth
     fi
