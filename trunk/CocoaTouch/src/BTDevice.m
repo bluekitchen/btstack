@@ -35,7 +35,7 @@
 //  Created by Matthias Ringwald on 3/30/09.
 //
 
-#import "BTDevice.h"
+#import "btstack/BTDevice.h"
 
 @implementation BTDevice
 

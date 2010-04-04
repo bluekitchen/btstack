@@ -3,6 +3,10 @@
 2009-11-08: Release 0.1
 
 NEXT:
+- clean up control flow
+  - l2cap directly sends data over socket: good/bad?
+  - split daemon into stack parts
+  - should there be STACK API/interface?
 - BUG: bt_close crashes when used in CocoaTouch app
 - add extern "C" to bstack methods
   - see: http://stackoverflow.com/questions/376966/using-c-c-static-libraries-from-iphone-objectivec-apps
