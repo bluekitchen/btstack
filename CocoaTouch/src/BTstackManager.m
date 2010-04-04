@@ -205,7 +205,14 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 }
 
 -(BOOL) isActivating {
-	return state == kW4Activated;
+	switch (state){
+		case kW4SysBTState:
+		case kW4SysBTDisabled:
+		case kW4Activated:
+			return YES;
+		default:
+			return NO;
+	}
 }
 -(BOOL) isDiscoveryActive {
 	return state == kActivated && (discoveryState != kInactive);
@@ -223,7 +230,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	if (state < kActivated) return BTSTACK_NOT_ACTIVATED;
 	switch (discoveryState){
 		case kInactive:
-			state = kDeactivated;
 			[self sendDiscoveryStoppedEvent];
 			break;
 		case kW4InquiryMode:
