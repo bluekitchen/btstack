@@ -49,15 +49,15 @@
 // size of HCI ACL + L2CAP Header for regular data packets
 #define COMPLETE_L2CAP_HEADER 8
 
-static void null_event_handler(uint8_t *packet, uint16_t size);
-static void null_data_handler(uint16_t local_cid, uint8_t *packet, uint16_t size);
+static void null_event_handler(connection_t * connection, uint8_t *packet, uint16_t size);
+static void null_data_handler(connection_t * connection, uint16_t local_cid, uint8_t *packet, uint16_t size);
 
 static uint8_t * sig_buffer = NULL;
 static linked_list_t l2cap_channels = NULL;
 static linked_list_t l2cap_services = NULL;
 static uint8_t * acl_buffer = NULL;
-static void (*event_packet_handler) (uint8_t *packet, uint16_t size) = null_event_handler;
-static void (*data_packet_handler)  (uint16_t local_cid, uint8_t *packet, uint16_t size) = null_data_handler;
+static void (*event_packet_handler) (connection_t * connection, uint8_t *packet, uint16_t size) = null_event_handler;
+static void (*data_packet_handler)  (connection_t * connection, uint16_t local_cid, uint8_t *packet, uint16_t size) = null_data_handler;
 static connection_t * capture_connection = NULL;
 
 static uint8_t config_options[] = { 1, 2, 150, 0}; // mtu = 48 
@@ -75,14 +75,14 @@ void l2cap_init(){
 
 
 /** Register L2CAP packet handlers */
-static void null_event_handler(uint8_t *packet, uint16_t size){
+static void null_event_handler(connection_t * connection, uint8_t *packet, uint16_t size){
 }
-static void null_data_handler(uint16_t  local_cid, uint8_t *packet, uint16_t size){
+static void null_data_handler(connection_t * connection, uint16_t  local_cid, uint8_t *packet, uint16_t size){
 }
-void l2cap_register_event_packet_handler(void (*handler)(uint8_t *packet, uint16_t size)){
+void l2cap_register_event_packet_handler(void (*handler)(connection_t * connection, uint8_t *packet, uint16_t size)){
     event_packet_handler = handler;
 }
-void l2cap_register_data_packet_handler  (void (*handler)(uint16_t local_cid, uint8_t *packet, uint16_t size)){
+void l2cap_register_data_packet_handler  (void (*handler)(connection_t * connection, uint16_t local_cid, uint8_t *packet, uint16_t size)){
     data_packet_handler = handler;
 }
 
@@ -242,7 +242,7 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
     }
     
     // pass on
-    (*event_packet_handler)(packet, size);
+    (*event_packet_handler)(NULL, packet, size);
 }
 
 static void l2cap_handle_disconnect_request(l2cap_channel_t *channel, uint16_t identifier){
@@ -538,7 +538,7 @@ void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     bt_store_16(event, 13, channel->local_cid);
     bt_store_16(event, 15, channel->remote_cid);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    socket_connection_send_packet(channel->connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*event_packet_handler)(channel->connection, event, sizeof(event));
 }
 
 void l2cap_emit_channel_closed(l2cap_channel_t *channel) {
@@ -547,7 +547,7 @@ void l2cap_emit_channel_closed(l2cap_channel_t *channel) {
     event[1] = sizeof(event) - 2;
     bt_store_16(event, 2, channel->local_cid);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    socket_connection_send_packet(channel->connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*event_packet_handler)(channel->connection, event, sizeof(event));
 }
 
 void l2cap_emit_connection_request(l2cap_channel_t *channel) {
@@ -560,19 +560,16 @@ void l2cap_emit_connection_request(l2cap_channel_t *channel) {
     bt_store_16(event, 12, channel->local_cid);
     bt_store_16(event, 14, channel->remote_cid);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    socket_connection_send_packet(channel->connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*event_packet_handler)(channel->connection, event, sizeof(event));
 }
 
 void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
     
     // Capturing?
     if (capture_connection) {
-        socket_connection_send_packet(capture_connection, HCI_ACL_DATA_PACKET, 0, packet, size);
+        (*data_packet_handler)(capture_connection, 0, packet, size);
         return;
     }
-    
-    // forward to higher layers - not needed yet
-    // (*data_packet_handler)(channel_id, packet, size);
     
     // Get Channel ID and command code 
     uint16_t channel_id = READ_L2CAP_CHANNEL_ID(packet); 
@@ -629,8 +626,7 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
     // Find channel for this channel_id and connection handle
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(channel_id);
     if (channel) {
-        socket_connection_send_packet(channel->connection, L2CAP_DATA_PACKET, channel_id,
-                                      &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
+        (*data_packet_handler)(channel->connection, channel_id, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
     }
 }
 

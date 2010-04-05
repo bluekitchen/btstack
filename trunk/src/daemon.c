@@ -211,7 +211,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
     return 0;
 }
 
-static void daemon_event_handler(uint8_t *packet, uint16_t size){
+static void daemon_event_handler(connection_t *connection, uint8_t *packet, uint16_t size){
     // local cache
     static HCI_STATE hci_state = HCI_STATE_OFF;
     static int num_connections = 0;
@@ -247,8 +247,16 @@ static void daemon_event_handler(uint8_t *packet, uint16_t size){
         }
     }
     
-    // forward event to clients
-    socket_connection_send_packet_all(HCI_EVENT_PACKET, 0, packet, size);
+    // forward event to client(s)
+    if (connection) {
+        socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, packet, size);
+    } else {
+        socket_connection_send_packet_all(HCI_EVENT_PACKET, 0, packet, size);
+    }
+}
+
+static void daemon_data_handler(connection_t * connection, uint16_t local_cid, uint8_t *packet, uint16_t size){
+   socket_connection_send_packet(connection, L2CAP_DATA_PACKET, local_cid, packet, size); 
 }
 
 static void daemon_sigint_handler(int param){
@@ -341,6 +349,7 @@ int main (int argc,  char * const * argv){
     
     // init L2CAP
     l2cap_init();
+    l2cap_register_data_packet_handler(daemon_data_handler);
     l2cap_register_event_packet_handler(daemon_event_handler);
     timeout.process = daemon_no_connections_timeout;
 
