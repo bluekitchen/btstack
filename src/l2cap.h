@@ -92,7 +92,8 @@ typedef struct {
 } l2cap_service_t;
 
 void l2cap_init();
-void l2cap_register_event_packet_handler(void (*handler)(uint8_t *packet, uint16_t size));
+void l2cap_register_event_packet_handler(void (*handler)(connection_t * connection, uint8_t *packet, uint16_t size));
+void l2cap_register_data_packet_handler(void (*handler)(connection_t * connection, uint16_t local_cid, uint8_t *packet, uint16_t size));
 void l2cap_create_channel_internal(connection_t * connection, bd_addr_t address, uint16_t psm);
 void l2cap_disconnect_internal(uint16_t local_cid, uint8_t reason);
 void l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len);
