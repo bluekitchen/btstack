@@ -90,8 +90,8 @@ void h5_slip_process( h5_slip_t * sm, uint8_t input, uint8_t in){
 				case 0xc0:
 					// packet done
 					type = sm->data[1] & 0x0f;
-					if (type >= 1 && type <= 4){
-						hci_dump_packet( type, in, sm->data, sm->length);
+					if (type >= 1 && type <= 4 && sm->length >= 4){
+						hci_dump_packet( type, in, &sm->data[4], sm->length-4);
 					}
 					sm->state = unknown;
 					break;
@@ -148,7 +148,7 @@ MSHook(int, socket, int domain, int type, int protocol){
 	if (domain == 0x20 && type == 0x01 && protocol == 0x02){
 		printf("Opening BT device\n");
 		bt_filedesc = res;
-		hci_dump_open( "/tmp/BTServer.pklg", HCI_DUMP_RAW);
+		hci_dump_open( "/tmp/BTServer.pklg", HCI_DUMP_PACKETLOGGER);
 		h5_slip_init(&read_sm);
 		h5_slip_init(&write_sm);
 	}
@@ -265,7 +265,8 @@ static void hci_dump_open(char *filename, hci_dump_format_t format){
     if (dump_format == HCI_DUMP_STDOUT) {
         dump_file = fileno(stdout);
     } else {
-        dump_file =  open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+        // dump_file =  open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+        dump_file =  open(filename, O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     }
 }
 
