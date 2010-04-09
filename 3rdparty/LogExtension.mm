@@ -44,6 +44,7 @@
 typedef enum {
     HCI_DUMP_BLUEZ = 0,
     HCI_DUMP_PACKETLOGGER,
+	HCI_DUMP_RAW,
     HCI_DUMP_STDOUT
 } hci_dump_format_t;
 
@@ -147,7 +148,9 @@ MSHook(int, socket, int domain, int type, int protocol){
 	if (domain == 0x20 && type == 0x01 && protocol == 0x02){
 		printf("Opening BT device\n");
 		bt_filedesc = res;
-		hci_dump_open( "/tmp/BTServer.pklg", HCI_DUMP_PACKETLOGGER);
+		hci_dump_open( "/tmp/BTServer.pklg", HCI_DUMP_RAW);
+		h5_slip_init(&read_sm);
+		h5_slip_init(&write_sm);
 	}
 	return res;
 }
@@ -246,6 +249,17 @@ static void hexdump(void *data, int size){
     printf("\n");
 }
 
+static void hexdump2(void *data, int size){
+    int i;
+	char buf[10];
+	buf[2] = ' ';
+    for (i=0; i<size;i++){
+        sprintf(buf, "%02X ", ((uint8_t *)data)[i]);
+		_write(dump_file, buf, 3);
+    }
+    _write(dump_file, "\n", 1);
+}
+
 static void hci_dump_open(char *filename, hci_dump_format_t format){
     dump_format = format;
     if (dump_format == HCI_DUMP_STDOUT) {
@@ -262,8 +276,21 @@ static void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, ui
     struct timeval curr_time;
     struct tm* ptm;
     gettimeofday(&curr_time, NULL);
-    
+    char type = '0'+packet_type;
+	
     switch (dump_format){
+			
+		case HCI_DUMP_RAW:
+			if (in) {
+				_write (dump_file, "READ: ", 6);
+			} else {
+				_write (dump_file, "WRITE: ", 7);
+			}
+			_write(dump_file, &type, 1);
+			_write(dump_file, " ", 1);
+			hexdump2(packet, len);
+			break;
+			
         case HCI_DUMP_STDOUT:
             /* Obtain the time of day, and convert it to a tm struct. */
             ptm = localtime (&curr_time.tv_sec);
@@ -291,6 +318,7 @@ static void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, ui
             }
             hexdump(packet, len);
             break;
+			
         case HCI_DUMP_BLUEZ:
             bt_store_16( (uint8_t *) &header_bluez.len, 0, 1 + len);
             header_bluez.in  = in;
@@ -301,6 +329,7 @@ static void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, ui
             _write (dump_file, &header_bluez, sizeof(hcidump_hdr) );
             _write (dump_file, packet, len );
             break;
+			
         case HCI_DUMP_PACKETLOGGER:
             header_packetlogger.len = htonl( sizeof(pktlog_hdr) - 4 + len);
             header_packetlogger.ts_sec =  htonl(curr_time.tv_sec);
