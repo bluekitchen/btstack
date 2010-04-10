@@ -90,8 +90,8 @@ void h5_slip_process( h5_slip_t * sm, uint8_t input, uint8_t in){
 				case 0xc0:
 					// packet done
 					type = sm->data[1] & 0x0f;
-					if (type >= 1 && type <= 4 && sm->length >= 4){
-						hci_dump_packet( type, in, &sm->data[4], sm->length-4);
+					if (type >= 1 && type <= 4 && sm->length >= 6){
+						hci_dump_packet( type, in, &sm->data[4], sm->length-4-2); // -4 header, -2 crc for reliable
 					}
 					sm->state = unknown;
 					break;
