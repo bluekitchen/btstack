@@ -82,26 +82,8 @@ void h5_slip_process( h5_slip_t * sm, uint8_t input, uint8_t in){
 	switch (sm->state) {
 		case unknown:
 			if (input == 0xc0){
-				sm->state = x_c0;
-			}
-			break;
-		case decoding:
-			switch (input ){
-				case 0xc0:
-					// packet done
-					type = sm->data[1] & 0x0f;
-					if (type >= 1 && type <= 4 && sm->length >= 6){
-						hci_dump_packet( type, in, &sm->data[4], sm->length-4-2); // -4 header, -2 crc for reliable
-					}
-					sm->state = unknown;
-					break;
-				case 0xdb:
-					sm->state = x_db;
-					break;
-				default:
-					sm->data[sm->length] = input;
-					++sm->length;
-					break;
+				sm->length = 0;
+				sm->state  = x_c0;
 			}
 			break;
 		case x_c0:
@@ -112,9 +94,28 @@ void h5_slip_process( h5_slip_t * sm, uint8_t input, uint8_t in){
 					sm->state = x_db;
 					break;
 				default:
-					sm->data[0] =input;
-					sm->length  = 1;
+					sm->data[sm->length] = input;
+					++sm->length;
 					sm->state   = decoding;
+					break;
+			}
+			break;
+		case decoding:
+			switch (input ){
+				case 0xc0:
+					sm->state = unknown;
+					// packet done - check if valid HCI packet
+					if (sm->length < 6) break;
+					type = sm->data[1] & 0x0f;
+					if (type < 1 || type > 4) break;
+					hci_dump_packet( type, in, &sm->data[4], sm->length-4-2); // -4 header, -2 crc for reliable
+					break;
+				case 0xdb:
+					sm->state = x_db;
+					break;
+				default:
+					sm->data[sm->length] = input;
+					++sm->length;
 					break;
 			}
 			break;
