@@ -115,9 +115,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 							hid_interrupt = local_cid;
 						}
 						if (hid_control && hid_interrupt){
-							//HID Control: 0x06 bytes - SET_FEATURE_REPORT [ 53 F4 42 03 00 00 ]
-							// uint8_t set_feature_report[] = { 0x53, 0xf4, 0x42, 0x03, 0x00, 0x00}; 
-							// bt_send_l2cap(hid_control, (uint8_t*) &set_feature_report, sizeof(set_feature_report));
+							bt_send_cmd(&hci_switch_role_command, &event_addr, 0);
 						}
 					} else {
 						printf("L2CAP connection to device ");
@@ -126,7 +124,14 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						exit(1);
 					}
 					break;
-					
+				
+				case HCI_EVENT_ROLE_CHANGE: {
+					//HID Control: 0x06 bytes - SET_FEATURE_REPORT [ 53 F4 42 03 00 00 ]
+					uint8_t set_feature_report[] = { 0x53, 0xf4, 0x42, 0x03, 0x00, 0x00}; 
+					bt_send_l2cap(hid_control, (uint8_t*) &set_feature_report, sizeof(set_feature_report));
+					break;
+				}
+										
 				case HCI_EVENT_DISCONNECTION_COMPLETE:
 					// connection closed -> quit tes app
 					printf("Basebank connection closed, exit.\n");
