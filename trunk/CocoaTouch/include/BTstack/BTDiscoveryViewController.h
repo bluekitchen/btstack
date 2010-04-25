@@ -52,10 +52,12 @@ typedef enum {
 	int remoteNameIndex;
 	BOOL showIcons;
 	int connectingIndex;
+	NSString *customActivityText;
 }
 -(void) markConnecting:(int)index; // use -1 for no connection active
 @property (nonatomic, assign) NSObject<BTDiscoveryDelegate> * delegate;
 @property (nonatomic, assign) BOOL showIcons;
+@property (nonatomic, retain) NSString *customActivityText;
 @end
 
 @protocol BTDiscoveryDelegate
