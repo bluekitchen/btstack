@@ -159,6 +159,13 @@
 	[self reload];
 }
 
+-(void) setCustomActivityText:(NSString*) text{
+	[text retain];
+	[customActivityText release];
+	customActivityText = text;
+	[self reload];
+}
+
 #pragma mark Table view methods
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section{
