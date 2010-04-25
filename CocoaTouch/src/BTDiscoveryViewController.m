@@ -47,6 +47,7 @@
 @implementation BTDiscoveryViewController
 @synthesize showIcons;
 @synthesize delegate = _delegate;
+@synthesize customActivityText;
 
 - (id) init {
 	self = [super initWithStyle:UITableViewStyleGrouped];
@@ -195,7 +196,10 @@
 	
 	int idx = [indexPath indexAtPosition:1];
 	if (idx >= [bt numberOfDevicesFound]) {
-		if ([bt isActivating]){
+		if (customActivityText) {
+			theLabel = customActivityText;
+			cell.accessoryView = bluetoothActivity;
+		} else if ([bt isActivating]){
 			theLabel = @"Activating BTstack...";
 			cell.accessoryView = bluetoothActivity;
 		} else if (![bt isActive]){
