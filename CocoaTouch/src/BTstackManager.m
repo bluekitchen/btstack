@@ -496,6 +496,45 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	}
 }
 
+-(void) handleLinkKeyRequestEvent:(uint8_t *)packet withLen:(uint16_t) len {
+	bd_addr_t event_addr;
+	bt_flip_addr(event_addr, &packet[2]);
+	// get link key from deviceInfo
+	NSString *devAddress = devAddress = [BTDevice stringForAddress:&event_addr];
+	NSMutableDictionary * deviceDict = [deviceInfo objectForKey:devAddress];
+	NSData *linkKey = nil;
+	if (deviceDict){
+		linkKey = [deviceDict objectForKey:PREFS_LINK_KEY];
+	}
+	if (linkKey) {
+		NSLog(@"Sending link key for %@, value %@", devAddress, linkKey);
+		bt_send_cmd(&hci_link_key_request_reply, &event_addr, [linkKey bytes]);
+	} else {
+		bt_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
+	}
+}
+
+-(void) handleLinkKeyNotificationEvent:(uint8_t *)packet withLen:(uint16_t) len {
+	bd_addr_t event_addr;
+	bt_flip_addr(event_addr, &packet[2]); 
+	NSString *devAddress = [BTDevice stringForAddress:&event_addr];
+	NSData *linkKey = [NSData dataWithBytes:&packet[8] length:16];
+	NSMutableDictionary * deviceDict = [deviceInfo objectForKey:devAddress];
+	if (!deviceDict){
+		deviceDict = [NSMutableDictionary dictionaryWithCapacity:3];
+		[deviceInfo setObject:deviceDict forKey:devAddress];
+	}
+	[deviceDict setObject:linkKey forKey:PREFS_LINK_KEY];
+	NSLog(@"Adding link key for %@, value %@", devAddress, linkKey);
+}
+
+-(void) dropLinkKeyForAddress:(bd_addr_t*) address {
+	NSString *devAddress = [BTDevice stringForAddress:address];
+	NSMutableDictionary * deviceDict = [deviceInfo objectForKey:devAddress];
+	[deviceDict removeObjectForKey:PREFS_LINK_KEY];
+	NSLog(@"Removing link key for %@", devAddress);
+}
+
 -(void) handlePacketWithType:(uint8_t)packet_type forChannel:(uint16_t)channel andData:(uint8_t *)packet withLen:(uint16_t) size {
 	switch (state) {
 			
@@ -507,12 +546,24 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		case kW4SysBTDisabled:
 		case kW4Activated:
 		case kW4Deactivated:
-			if (packet_type == HCI_EVENT_PACKET) [self activationHandleEvent:packet withLen:size];
+			if (packet_type != HCI_EVENT_PACKET) break;
+			[self activationHandleEvent:packet withLen:size];
 			break;
 		
-		// Discovery
+		// Pairing + Discovery
 		case kActivated:
-			if (packet_type == HCI_EVENT_PACKET) [self discoveryHandleEvent:packet withLen:size];
+			if (packet_type != HCI_EVENT_PACKET) break;
+			switch (packet[0]){
+				case HCI_EVENT_LINK_KEY_REQUEST:
+					[self handleLinkKeyRequestEvent:packet withLen:size];
+					break;
+				case HCI_EVENT_LINK_KEY_NOTIFICATION:
+					[self handleLinkKeyNotificationEvent:packet withLen:size];
+					break;
+				default:
+					break;
+			}
+			[self discoveryHandleEvent:packet withLen:size];
 			break;
 		
 		default:
