@@ -203,6 +203,7 @@ extern hci_cmd_t hci_inquiry_cancel;
 extern hci_cmd_t hci_link_key_request_negative_reply;
 extern hci_cmd_t hci_link_key_request_reply;
 extern hci_cmd_t hci_pin_code_request_reply;
+extern hci_cmd_t hci_pin_code_request_negative_reply;
 extern hci_cmd_t hci_qos_setup;
 extern hci_cmd_t hci_read_bd_addr;
 extern hci_cmd_t hci_read_link_policy_settings;

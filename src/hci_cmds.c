@@ -176,6 +176,10 @@ hci_cmd_t hci_pin_code_request_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x0d), "B1P"
 // BD_ADDR, pin length, PIN: c-string
 };
+hci_cmd_t hci_pin_code_request_negative_reply = {
+OPCODE(OGF_LINK_CONTROL, 0x0e), "B"
+// BD_ADDR
+};
 hci_cmd_t hci_authentication_requested = {
 OPCODE(OGF_LINK_CONTROL, 0x11), "H"
 // Handle
