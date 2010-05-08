@@ -35,8 +35,8 @@
 //  Created by Matthias Ringwald on 10/8/09.
 //
 
-#import "BTInquiryViewController.h"
-#import "BTDevice.h"
+#import <BTstack/BTInquiryViewController.h>
+#import <BTstack/BTDevice.h>
 
 #include <btstack/btstack.h>
 #include <dlfcn.h>
@@ -413,8 +413,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 // Override to allow orientations other than the default portrait orientation.
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
-	// return YES;
-	return NO;
+	return YES;
+	// return NO;
 }
 
 - (void)didReceiveMemoryWarning {
@@ -634,6 +634,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	}
 	return nil;
 }
+
 
 @end
 
