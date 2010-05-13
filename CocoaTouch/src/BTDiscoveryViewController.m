@@ -43,6 +43,9 @@
 - (id)initWithStyle:(int)style reuseIdentifier:(NSString *)reuseIdentifier;
 @end
 #endif
+@interface UIDevice (privateAPI)
+-(BOOL) isWildcat;
+@end
 
 @implementation BTDiscoveryViewController
 @synthesize showIcons;
@@ -115,7 +118,6 @@
     // Return YES for supported orientations
     return (interfaceOrientation == UIInterfaceOrientationPortrait);
 }
-*/
 
 - (void)didReceiveMemoryWarning {
     // Releases the view if it doesn't have a superview.
@@ -123,12 +125,8 @@
     
     // Release any cached data, images, etc that aren't in use.
 }
+ */
 
-- (void)viewDidUnload {
-    [super viewDidUnload];
-    // Release any retained subviews of the main view.
-    // e.g. self.myOutlet = nil;
-}
 
 // BTstackManagerListenerDelegate
 -(void) activatedBTstackManager:(BTstackManager*) manager{
@@ -340,8 +338,8 @@
 
 // Override to allow orientations other than the default portrait orientation.
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
-	return YES;
-	// return NO;
+	UIDevice * uiDevice = [UIDevice currentDevice];
+	return [uiDevice respondsToSelector:@selector(isWildcat)] && [uiDevice isWildcat];
 }
 
 - (void)dealloc {
