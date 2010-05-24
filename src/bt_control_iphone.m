@@ -386,10 +386,16 @@ static int iphone_on (void *transport_config){
 }
 
 static int iphone_off (void *config){
+	
 	char *machine = get_machine_name();
-	if (strncmp(machine, "iPad", strlen("iPad,")) == 0) {
-		// put iPad into deep sleep
+	
+	if (strncmp(machine, "iPad", strlen("iPad")) == 0) {
+		// put iPad Bluetooth into deep sleep
 		system ("echo \"wake off\n quit\" | BlueTool");
+		
+		// kill Apple BTServer as it gets confused and fails to start anyway
+		system("killall BTServer");
+		
 	} else {
 		// power off for iPhone and iPod
 		system ("echo \"power off\n quit\" | BlueTool");
