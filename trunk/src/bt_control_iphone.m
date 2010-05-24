@@ -386,8 +386,14 @@ static int iphone_on (void *transport_config){
 }
 
 static int iphone_off (void *config){
-    // power off 
-    system ("echo \"power off\n quit\" | BlueTool");
+	char *machine = get_machine_name();
+	if (strncmp(machine, "iPad", strlen("iPad,")) == 0) {
+		// put iPad into deep sleep
+		system ("echo \"wake off\n quit\" | BlueTool");
+	} else {
+		// power off for iPhone and iPod
+		system ("echo \"power off\n quit\" | BlueTool");
+	}
     return 0;
 }
 
