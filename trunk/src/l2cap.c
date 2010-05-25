@@ -583,20 +583,49 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
     // Signaling Packet?
     if (channel_id == 1) {
         
-        if (code < 1 || code >= 8){
-            // not for a particular channel, and not CONNECTION_REQUEST 
+        if (code < 1 || code == ECHO_RESPONSE || code > INFORMATION_REQUEST){
+            // not for a particular channel, and not CONNECTION_REQUEST, ECHO_[REQUEST|RESPONSE], INFORMATION_REQUEST 
             return;
         }
         
         // Get Signaling Identifier
         uint8_t sig_id    = READ_L2CAP_SIGNALING_IDENTIFIER(packet);
 
-        // CONNECTION_REQUEST
-        if (code == CONNECTION_REQUEST){
-            uint16_t psm =      READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET);
-            uint16_t source_cid = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET+2);
-            l2cap_handle_connection_request(handle, sig_id, psm, source_cid);
-            return;
+        // handle general requests
+        switch(code) {
+
+            case CONNECTION_REQUEST: {
+                uint16_t psm =        READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET);
+                uint16_t source_cid = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET+2);
+                l2cap_handle_connection_request(handle, sig_id, psm, source_cid);
+                return;
+            }
+            
+            case ECHO_REQUEST: {
+                // send back packet
+                uint16_t len = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET);
+                l2cap_send_signaling_packet(handle, ECHO_RESPONSE, sig_id,
+                                            size - L2CAP_SIGNALING_DATA_OFFSET,
+                                            &packet[L2CAP_SIGNALING_DATA_OFFSET]);
+                return;
+            }
+                
+            case INFORMATION_REQUEST: {
+                // we neither support connectionless L2CAP data nor support any flow control modes yet
+                uint16_t infoType = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET);
+                if (infoType == 2) {
+                    uint32_t features = 0;
+                    // extended features request supported, however no features present
+                    l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, 4, &features);
+                } else {
+                    // all other types are not supported
+                    l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 1, 0, NULL);
+                }
+                return;
+            }
+        
+            default:
+                break;
         }
         
         // Get potential destination CID
