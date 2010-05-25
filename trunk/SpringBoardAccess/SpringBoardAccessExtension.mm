@@ -58,26 +58,90 @@ static type $ ## class ## $ ## name(class *self, SEL sel, ## args)
 _ ## class ## $ ## name(self, sel, ## args)
 
 
+// minimal BluetoothManager swiped from BigBoss SBSettings Toggle
+#import <Foundation/Foundation.h>
+@class UIDevice;
+@interface BluetoothManager : NSObject
++ (BluetoothManager *) sharedInstance;
+- (void) setPowered:(BOOL)powered;
+- (void) setEnabled:(BOOL)enabled;
+- (BOOL) enabled;
+@end
+#define kAppBTServer CFSTR("com.apple.BTServer")
+#define kKeyBTPowered CFSTR("defaultPoweredState")
+#define kAppNetwork CFSTR("com.apple.preferences.network")
+#define kKeyBTNetwork CFSTR("bluetooth-network")
+
+int iphone_system_bt_enabled(){
+	if ([[BluetoothManager sharedInstance] enabled]) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+void iphone_system_bt_set_enabled(int enabled)
+{
+	/* Get a copy of the global bluetooth server */
+	BluetoothManager *bm = [BluetoothManager sharedInstance];
+    if ( [bm enabled] &&  enabled) return;
+    if (![bm enabled] && !enabled) return;
+    
+	if (enabled) {
+		/* Store into preferences that bluetooth should start on system boot */
+		CFPreferencesSetAppValue(kKeyBTNetwork, kCFBooleanTrue, kAppNetwork);
+        
+		/* Turn bluetooth on */
+		[bm setPowered:YES];
+	} else {
+		/* Store into preferences taht bluetooth should not start on system boot */
+		CFPreferencesSetAppValue(kKeyBTNetwork, kCFBooleanFalse, kAppNetwork);
+        
+		/* Turn bluetooth off */
+		[bm setEnabled:NO];
+	}
+	/* Synchronize to preferences, e.g. write to disk, bluetooth settings */
+	CFPreferencesAppSynchronize(kAppNetwork);
+}
+
 CFDataRef myCallBack(CFMessagePortRef local, SInt32 msgid, CFDataRef cfData, void *info) {
 	UIApplication *theApp = [UIApplication sharedApplication];
 
 	const char *data = (const char *) CFDataGetBytePtr(cfData);
 	UInt16 dataLen = CFDataGetLength(cfData);
-	
-	if (dataLen > 0 && data) {
-		NSString * name = [NSString stringWithCString:data encoding:NSASCIIStringEncoding];
-		switch (msgid){
-			case SBAC_addStatusBarImage:
-				[theApp addStatusBarImageNamed:name];
-				break;
-			case SBAC_removeStatusBarImage:
-				[theApp removeStatusBarImageNamed:name];
-				break;
-			default:
-				NSLog(@"Unknown command %u, len %u", data[0], dataLen); 
+	CFDataRef returnData = NULL;
+	if (!data) return NULL;
+
+	switch (msgid){
+		case SBAC_addStatusBarImage: {
+			if (!dataLen) return NULL;
+			NSString * name = [NSString stringWithCString:data encoding:NSASCIIStringEncoding];
+			[theApp addStatusBarImageNamed:name];
+			break;
 		}
+		case SBAC_removeStatusBarImage: {
+			if (!dataLen) return NULL;
+			NSString * name = [NSString stringWithCString:data encoding:NSASCIIStringEncoding];
+			[theApp removeStatusBarImageNamed:name];
+			break;
+		}
+			
+		case SBAC_getBluetoothEnabled:
+			// use single byte to avoid endianess issues for the boolean
+			uint8_t enabled = iphone_system_bt_enabled();
+			returnData = CFDataCreate(kCFAllocatorDefault, (const UInt8 *) &enabled, 1);
+			break;
+
+		case SBAC_setBluetoothEnabled:
+			if (dataLen < 1) return NULL;
+			iphone_system_bt_set_enabled( data[0]);
+			break;
+
+		default:
+			NSLog(@"Unknown command %u, len %u", data[0], dataLen); 
 	}
-	return NULL;  // as stated in header, both data and returnData will be released for us after callback returns
+	// as stated in header, both data and returnData will be released for us after callback returns
+	return returnData;
 }
 
 //______________________________________________________________________________

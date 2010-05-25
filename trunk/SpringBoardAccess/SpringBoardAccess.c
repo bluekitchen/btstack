@@ -42,7 +42,7 @@
 
 static CFMessagePortRef springBoardAccessMessagePort = 0;
 
-static int SBA_sendMessage(UInt8 cmd, UInt16 dataLen, UInt8 *data){
+static int SBA_sendMessage(UInt8 cmd, UInt16 dataLen, UInt8 *data, CFDataRef *resultData){
 	// check for port
 	if (!springBoardAccessMessagePort) {
 		springBoardAccessMessagePort = CFMessagePortCreateRemote(NULL, CFSTR(SBA_MessagePortName));
@@ -52,16 +52,47 @@ static int SBA_sendMessage(UInt8 cmd, UInt16 dataLen, UInt8 *data){
 	}
 	// create and send message
 	CFDataRef cfData = CFDataCreate(NULL, data, dataLen);
-	int result = CFMessagePortSendRequest(springBoardAccessMessagePort, cmd, cfData, 1, 1, NULL, NULL);
+	CFStringRef replyMode = NULL;
+	if (resultData) {
+		replyMode = kCFRunLoopDefaultMode;
+	}
+	int result = CFMessagePortSendRequest(springBoardAccessMessagePort, cmd, cfData, 1, 1, replyMode, resultData);
 	CFRelease(cfData);
 	return result;
 }
 
 int SBA_addStatusBarImage(char *name){
-	return SBA_sendMessage(SBAC_addStatusBarImage, strlen(name), (UInt8*) name);
+	return SBA_sendMessage(SBAC_addStatusBarImage, strlen(name), (UInt8*) name, NULL);
 }
 
 int SBA_removeStatusBarImage(char *name){
-	return SBA_sendMessage(SBAC_removeStatusBarImage, strlen(name), (UInt8*) name);
+	return SBA_sendMessage(SBAC_removeStatusBarImage, strlen(name), (UInt8*) name, NULL);
 }
+
+int SBA_getBluetoothEnabled() {
+	CFDataRef cfData;
+	int result = SBA_sendMessage(SBAC_getBluetoothEnabled, 0, NULL, &cfData);
+	printf("result %d", result);
+	if (result == 0){
+		printf("looking at result\n");
+		const uint8_t *data = CFDataGetBytePtr(cfData);
+		UInt16 dataLen = CFDataGetLength(cfData);
+		printf("datalen %u\n", dataLen);
+		if (!dataLen) return -10;
+		if (data[0]) {
+			result = 1;
+		} else {
+			result = 0;
+		}
+		CFRelease(cfData);
+	}
+	return result;
+}
+
+int SBA_setBluetoothEnabled(int on){
+	uint8_t enabled = 0;
+	if (on) enabled = 1;
+	return SBA_sendMessage(SBAC_setBluetoothEnabled, 1, (UInt8*) &enabled, NULL);
+}
+
 
