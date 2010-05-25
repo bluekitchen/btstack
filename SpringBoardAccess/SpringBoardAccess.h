@@ -48,6 +48,8 @@
 #define SBAC_nop
 #define SBAC_addStatusBarImage 1
 #define SBAC_removeStatusBarImage 2
+#define SBAC_getBluetoothEnabled 3
+#define SBAC_setBluetoothEnabled 4
 
 /**
  * Enables named status bar icon in Springboard
@@ -60,3 +62,15 @@ int SBA_addStatusBarImage(char *name);
  * @returns CFMessagePortSendRequest error: 0 = ok
  */
 int SBA_removeStatusBarImage(char *name);
+
+/**
+ * Get Bluetoot enabled property
+ * @returns < 0 error: 0 = OFF, 1 = ON
+ */
+int SBA_getBluetoothEnabled();
+
+/**
+ * Set Bluetooth enable property: 0 for OFF, otherwise on
+ * @returns CFMessagePortSendRequest error: 0 = ok
+ */
+int SBA_setBluetoothEnabled(int on);
