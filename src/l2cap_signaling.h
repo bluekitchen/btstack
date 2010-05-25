@@ -52,8 +52,8 @@ typedef enum {
     DISCONNECTION_RESPONSE,
     ECHO_REQUEST,
     ECHO_RESPONSE,
-    INFORMATIONAL_REQUEST,
-    INFORMATIONAL_RESPONSE
+    INFORMATION_REQUEST,
+    INFORMATION_RESPONSE
 } L2CAP_SIGNALING_COMMANDS;
 
 uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer,hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr);
