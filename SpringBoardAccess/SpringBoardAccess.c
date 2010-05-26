@@ -72,12 +72,9 @@ int SBA_removeStatusBarImage(char *name){
 int SBA_getBluetoothEnabled() {
 	CFDataRef cfData;
 	int result = SBA_sendMessage(SBAC_getBluetoothEnabled, 0, NULL, &cfData);
-	printf("result %d", result);
 	if (result == 0){
-		printf("looking at result\n");
 		const uint8_t *data = CFDataGetBytePtr(cfData);
 		UInt16 dataLen = CFDataGetLength(cfData);
-		printf("datalen %u\n", dataLen);
 		if (!dataLen) return -10;
 		if (data[0]) {
 			result = 1;
