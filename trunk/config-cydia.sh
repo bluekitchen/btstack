@@ -1,1 +1,1 @@
-./configure --target=iphone --enable-launchd --enable-ldid
+./configure --target=iphone --enable-launchd --enable-ldid --with-uart-speed=230400
