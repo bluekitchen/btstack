@@ -42,22 +42,22 @@
 int main(int argc, char *argv[]) {
 	int usage = 1;
 	
-	if (argc == 3) {
-		if (strcmp("add", argv[1]) == 0) {
+	if (argc > 1) {
+		if (argc == 3 && strcmp("add", argv[1]) == 0) {
 			SBA_addStatusBarImage(argv[2]);
 			usage = 0;
-		} else if (strcmp("remove", argv[1]) == 0) {
+		} else if (argc == 3 && strcmp("remove", argv[1]) == 0) {
 			SBA_removeStatusBarImage(argv[2]);
 			usage = 0;
-		} else if (strcmp("btstate", argv[1]) == 0) {
+		} else if (argc == 2 && strcmp("btstate", argv[1]) == 0) {
 			int enabled = SBA_getBluetoothEnabled();
 			printf("Bluetoot enabled: %u\n", enabled);
 			usage = 0;
-		} else if (strcmp("bton", argv[1]) == 0) {
+		} else if (argc == 2 && strcmp("bton", argv[1]) == 0) {
 			SBA_setBluetoothEnabled(1);
 			printf("Set Bluetooth enabled: YES");
 			usage = 0;
-		} else if (strcmp("btoff", argv[1]) == 0) {
+		} else if (argc == 2 && strcmp("btoff", argv[1]) == 0) {
 			SBA_setBluetoothEnabled(0);
 			printf("Set Bluetooth enabled: NO");
 			usage = 0;
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
 	}
 	
 	if (usage) {
-		printf("Usage: %s add/remove StatuBarImageName\n", argv[0]);
+		printf("Usage: %s [ btstate | bton | btoff | add StatuBarImageName | remove StatuBarImageName]\n", argv[0]);
 		return -1;
 	} 
 }
