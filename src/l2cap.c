@@ -563,6 +563,83 @@ void l2cap_emit_connection_request(l2cap_channel_t *channel) {
     (*event_packet_handler)(channel->connection, event, sizeof(event));
 }
 
+
+void l2cap_primary_signaling_handler( uint8_t * packet, uint16_t size){
+    
+    // Get Connection
+    hci_con_handle_t handle = READ_ACL_CONNECTION_HANDLE(packet);
+
+    // Get command code 
+    uint8_t  code       = READ_L2CAP_SIGNALING_CODE( packet );
+    
+    if (code < 1 || code == ECHO_RESPONSE || code > INFORMATION_REQUEST){
+        // not for a particular channel, and not CONNECTION_REQUEST, ECHO_[REQUEST|RESPONSE], INFORMATION_REQUEST 
+        return;
+    }
+    
+    // Get Signaling Identifier
+    uint8_t sig_id    = READ_L2CAP_SIGNALING_IDENTIFIER(packet);
+    
+    // handle general requests
+    switch(code) {
+            
+        case CONNECTION_REQUEST: {
+            uint16_t psm =        READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET);
+            uint16_t source_cid = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET+2);
+            l2cap_handle_connection_request(handle, sig_id, psm, source_cid);
+            return;
+        }
+            
+        case ECHO_REQUEST: {
+            // send back packet
+            uint16_t len = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET);
+            l2cap_send_signaling_packet(handle, ECHO_RESPONSE, sig_id,
+                                        size - L2CAP_SIGNALING_DATA_OFFSET,
+                                        &packet[L2CAP_SIGNALING_DATA_OFFSET]);
+            return;
+        }
+            
+        case INFORMATION_REQUEST: {
+            // we neither support connectionless L2CAP data nor support any flow control modes yet
+            uint16_t infoType = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET);
+            if (infoType == 2) {
+                uint32_t features = 0;
+                // extended features request supported, however no features present
+                l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, 4, &features);
+            } else {
+                // all other types are not supported
+                l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 1, 0, NULL);
+            }
+            return;
+        }
+            
+        default:
+            break;
+    }
+    
+    // Get potential destination CID
+    uint16_t dest_cid = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET);
+    
+    // Find channel for this sig_id and connection handle
+    linked_item_t *it;
+    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+        l2cap_channel_t * channel = (l2cap_channel_t *) it;
+        if (channel->handle == handle) {
+            if (code & 1) {
+                // match odd commands by previous signaling identifier 
+                if (channel->sig_id == sig_id) {
+                    l2cap_signaling_handler( channel, packet, size);
+                }
+            } else {
+                // match even commands by source channel id
+                if (channel->local_cid == dest_cid) {
+                    l2cap_signaling_handler( channel, packet, size);
+                }
+            }
+        }
+    }
+}
+
 void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
     
     // Capturing?
@@ -571,9 +648,8 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
         return;
     }
     
-    // Get Channel ID and command code 
+    // Get Channel ID
     uint16_t channel_id = READ_L2CAP_CHANNEL_ID(packet); 
-    uint8_t  code       = READ_L2CAP_SIGNALING_CODE( packet );
     
     // Get Connection
     hci_con_handle_t handle = READ_ACL_CONNECTION_HANDLE(packet);
@@ -582,73 +658,7 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
     
     // Signaling Packet?
     if (channel_id == 1) {
-        
-        if (code < 1 || code == ECHO_RESPONSE || code > INFORMATION_REQUEST){
-            // not for a particular channel, and not CONNECTION_REQUEST, ECHO_[REQUEST|RESPONSE], INFORMATION_REQUEST 
-            return;
-        }
-        
-        // Get Signaling Identifier
-        uint8_t sig_id    = READ_L2CAP_SIGNALING_IDENTIFIER(packet);
-
-        // handle general requests
-        switch(code) {
-
-            case CONNECTION_REQUEST: {
-                uint16_t psm =        READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET);
-                uint16_t source_cid = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET+2);
-                l2cap_handle_connection_request(handle, sig_id, psm, source_cid);
-                return;
-            }
-            
-            case ECHO_REQUEST: {
-                // send back packet
-                uint16_t len = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET);
-                l2cap_send_signaling_packet(handle, ECHO_RESPONSE, sig_id,
-                                            size - L2CAP_SIGNALING_DATA_OFFSET,
-                                            &packet[L2CAP_SIGNALING_DATA_OFFSET]);
-                return;
-            }
-                
-            case INFORMATION_REQUEST: {
-                // we neither support connectionless L2CAP data nor support any flow control modes yet
-                uint16_t infoType = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET);
-                if (infoType == 2) {
-                    uint32_t features = 0;
-                    // extended features request supported, however no features present
-                    l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, 4, &features);
-                } else {
-                    // all other types are not supported
-                    l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 1, 0, NULL);
-                }
-                return;
-            }
-        
-            default:
-                break;
-        }
-        
-        // Get potential destination CID
-        uint16_t dest_cid = READ_BT_16(packet, L2CAP_SIGNALING_DATA_OFFSET);
-
-        // Find channel for this sig_id and connection handle
-        linked_item_t *it;
-        for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-            l2cap_channel_t * channel = (l2cap_channel_t *) it;
-            if (channel->handle == handle) {
-                if (code & 1) {
-                    // match odd commands by previous signaling identifier 
-                    if (channel->sig_id == sig_id) {
-                        l2cap_signaling_handler( channel, packet, size);
-                    }
-                } else {
-                    // match even commands by source channel id
-                    if (channel->local_cid == dest_cid) {
-                        l2cap_signaling_handler( channel, packet, size);
-                    }
-                }
-            }
-        }
+        l2cap_primary_signaling_handler(packet, size);
         return;
     }
     
