@@ -55,11 +55,11 @@ int main(int argc, char *argv[]) {
 			usage = 0;
 		} else if (argc == 2 && strcmp("bton", argv[1]) == 0) {
 			SBA_setBluetoothEnabled(1);
-			printf("Set Bluetooth enabled: YES");
+			printf("Set Bluetooth enabled: YES\n");
 			usage = 0;
 		} else if (argc == 2 && strcmp("btoff", argv[1]) == 0) {
 			SBA_setBluetoothEnabled(0);
-			printf("Set Bluetooth enabled: NO");
+			printf("Set Bluetooth enabled: NO\n");
 			usage = 0;
 		}
 	}
