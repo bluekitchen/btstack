@@ -3,7 +3,7 @@ Name: BTstack
 Description: Portable User-Space Bluetooth Stack
 Section: Networking
 Architecture: iphoneos-arm
-Depends: ch.ringwald.springboardaccess
+Depends: ch.ringwald.springboardaccess (>= 0.2-639)
 Maintainer: Matthias Ringwald <iphone@ringwald.ch>
 Author: Matthias Ringwald <iphone@ringwald.ch>
 Section: Development
