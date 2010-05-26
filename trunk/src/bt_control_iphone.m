@@ -81,6 +81,7 @@ int iphone_system_bt_enabled(){
 void iphone_system_bt_set_enabled(int enabled)
 {
     SBA_setBluetoothEnabled(enabled);
+    sleep(2); // give change a chance
 }
 
 #endif
