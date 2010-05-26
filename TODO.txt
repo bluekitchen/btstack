@@ -3,19 +3,26 @@
 2009-11-08: Release 0.1
 
 NEXT:
+- suport multiple signaling commands in single ACL packet
+  - have l2cap_primary_signaling_handler use offsets relative to start of commands (byte 8) instead of start of packet
+  - call l2cap_primary_signaling_handler for each command
+- add extern "C" to bstack methods
+  - see: http://stackoverflow.com/questions/376966/using-c-c-static-libraries-from-iphone-objectivec-apps
 - clean up control flow
   - l2cap directly sends data over socket: good/bad?
   - split daemon into stack parts
   - should there be STACK API/interface?
 - BUG: bt_close crashes when used in CocoaTouch app
-- add extern "C" to bstack methods
-  - see: http://stackoverflow.com/questions/376966/using-c-c-static-libraries-from-iphone-objectivec-apps
 - Provide BTstackManager Objective-C class
   - move connection methods to BTdevice (get more object oriented)
     - initWithAddress:(bd_addr_t *)addr
 	- setters private
   - implement l2cap code
   - implement rfcomm code
+  - animate discovery dialog:
+      * use indexPathsForVisibleRows and cellForRowAtIndexPath: when you want to refresh just the cells that are on the screen
+      * use insertRowsAtIndexPaths:withRowAnimation: to add rows
+      * use deleteRowsAtIndexPaths:withRowAnimation: to remove them-
 - figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect, when phone gets locked
   - some trick
   - use Cocoa run loop for background app?
@@ -24,7 +31,6 @@ NEXT:
 - L2CAP 
   - segmentation
 
-== Release 0.2 - Incoming L2CAP supported + improved Inq Dialog
 - extend SpringBoard feedback
   - show alerts/messages using SpringBoardAcccess, e.g. Bluetooth disconnected by remote device
   - add code to notify about remote disconnets
