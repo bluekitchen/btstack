@@ -197,7 +197,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					if (!dev) break;
 					[dev setConnectionState:kBluetoothConnectionNotConnected];
 					if (packet[2] == 0) {
+						// assert max lengh
+						packet[9+255] = 0;
+						
+						// Bluetooth specification mandates UTF-8 encoding...
 						NSString *remoteName = [NSString stringWithUTF8String:(const char *) &packet[9]]; 
+						
+						// but fallback to latin-1 for non-standard products like old Microsoft Wireless Presenter 
+						if (!remoteName){
+							 remoteName = [NSString stringWithCString:(const char *) &packet[9]
+															 encoding:NSISOLatin1StringEncoding];
+						}
+						
 						[dev setName:remoteName];
 						if (deviceInfo) {
 							NSMutableDictionary *deviceDict = [deviceInfo objectForKey:[dev addressString]];
