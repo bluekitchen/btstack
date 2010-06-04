@@ -65,6 +65,7 @@ typedef struct {
 
 // inline various hci_transport_X.h files
 extern hci_transport_t * hci_transport_h4_instance();
+extern hci_transport_t * hci_transport_h5_instance();
 extern hci_transport_t * hci_transport_usb_instance();
 
 
