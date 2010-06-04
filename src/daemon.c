@@ -65,7 +65,7 @@
 #endif
 
 #ifdef HAVE_TRANSPORT_H4
-#include "hci_transport_h4.h"
+#include "hci_transport.h"
 #endif
 
 #ifdef HAVE_TRANSPORT_USB

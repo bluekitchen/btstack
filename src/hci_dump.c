@@ -43,7 +43,7 @@
 
 #include "hci_dump.h"
 #include "hci.h"
-#include "hci_transport_h4.h"
+#include "hci_transport.h"
 
 #include <fcntl.h>        // open
 #include <arpa/inet.h>    // hton..

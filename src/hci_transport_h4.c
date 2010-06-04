@@ -43,7 +43,7 @@
 #include <string.h>
 
 #include "hci.h"
-#include "hci_transport_h4.h"
+#include "hci_transport.h"
 #include "hci_dump.h"
 
 typedef enum {

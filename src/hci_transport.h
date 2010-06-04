@@ -62,3 +62,8 @@ typedef struct {
 typedef struct {
     // unique usb device identifier
 } hci_libusb_config_t;
+
+// inline hci_transport_h4.h
+extern hci_transport_t * hci_transport_h4_instance();
+
+
