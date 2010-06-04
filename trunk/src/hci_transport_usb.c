@@ -56,7 +56,7 @@
 #include <libusb-1.0/libusb.h>
 
 #include "hci.h"
-#include "hci_transport_usb.h"
+#include "hci_transport.h"
 #include "hci_dump.h"
 
 // prototypes
