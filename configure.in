@@ -176,6 +176,7 @@ else
 fi
 
 AM_CONDITIONAL(USE_SPRINGBOARD, [test "x$USE_SPRINGBOARD" == "xyes"])
+AM_CONDITIONAL(USE_BLUETOOL,    [test "x$USE_BLUETOOL" == "xyes"])
 
 # summary
 if test "x$HCI_TRANSPORT" = xUSB; then
@@ -228,4 +229,4 @@ AC_SUBST(SPRINGBOARD_ACCESS_SOURCES)
 AC_SUBST(RUN_LOOP_SOURCES)
 AC_SUBST(BTSTACK_LIB_LDFLAGS)
 AC_SUBST(BTSTACK_LIB_EXTENSION)
-AC_OUTPUT(Makefile src/Makefile example/Makefile SpringBoardAccess/Makefile)
+AC_OUTPUT(Makefile src/Makefile example/Makefile PatchBlueTool/Makefile SpringBoardAccess/Makefile)
