@@ -36,6 +36,7 @@ echo "/bin/launchctl load   /Library/LaunchDaemons/ch.ringwald.BTstack.plist" >>
 chmod +x $PACKAGE/DEBIAN/postinst
 echo "#!/bin/sh" >  $PACKAGE/DEBIAN/prerm
 echo "/bin/launchctl unload /Library/LaunchDaemons/ch.ringwald.BTstack.plist" >> $PACKAGE/DEBIAN/prerm
+echo "rm -f /usr/sbin/BlueToolNoH5" >> $PACKAGE/DEBIAN/prerm
 chmod +x $PACKAGE/DEBIAN/prerm
 
 # set ownership to root:root
