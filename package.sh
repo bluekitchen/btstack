@@ -36,36 +36,30 @@ chmod +x $PACKAGE/DEBIAN/preinst
 
 # regular install
 
-# extrainst_ (cydia only): patch BlueTool
+# extrainst_ (cydia only): patch BlueTool and install as /usr/local/bin/BlueToolH4
 echo "#!/bin/sh" >  $PACKAGE/DEBIAN/extrainst_
-echo "rm -f /tmp/BlueToolH4 /usr/local/bin/BlueToolH4" >> $PACKAGE/DEBIAN/postinst
-echo "cp /usr/sbin/BlueTool /tmp/BlueToolH4"           >> $PACKAGE/DEBIAN/postinst
-echo "/usr/local/bin/PatchBlueTool /tmp/BlueToolH4"    >> $PACKAGE/DEBIAN/postinst
-echo "ldid -s /tmp/BlueToolH4"                         >> $PACKAGE/DEBIAN/postinst
-echo "cp -f /tmp/BlueToolH4 /usr/local/bin"            >> $PACKAGE/DEBIAN/postinst
-echo "rm -f /tmp/BlueToolH4"                           >> $PACKAGE/DEBIAN/postinst
+echo "rm -f /tmp/BlueToolH4 /usr/local/bin/BlueToolH4"                >> $PACKAGE/DEBIAN/extrainst_
+echo "cp /usr/sbin/BlueTool /tmp/BlueToolH4"                          >> $PACKAGE/DEBIAN/extrainst_
+echo "/usr/local/bin/PatchBlueTool /tmp/BlueToolH4  2&> /dev/null"    >> $PACKAGE/DEBIAN/extrainst_
+echo "ldid -s /tmp/BlueToolH4"                                        >> $PACKAGE/DEBIAN/extrainst_
+echo "cp -f /tmp/BlueToolH4 /usr/local/bin"                           >> $PACKAGE/DEBIAN/extrainst_
+echo "rm -f /tmp/BlueToolH4"                                          >> $PACKAGE/DEBIAN/extrainst_
+chmod +x $PACKAGE/DEBIAN/extrainst_
 
 # postinst: startup daemon
 echo "#!/bin/sh" >  $PACKAGE/DEBIAN/postinst
-echo "/bin/launchctl load   /Library/LaunchDaemons/ch.ringwald.BTstack.plist" >> $PACKAGE/DEBIAN/postinst
+echo "/bin/launchctl load   /Library/LaunchDaemons/ch.ringwald.BTstack.plist 2&> /dev/null" >> $PACKAGE/DEBIAN/postinst
 chmod +x $PACKAGE/DEBIAN/postinst
 
-# prerm: stop deamon
+# prerm: stop daemon and get rid of BlueToolH4 
+# note: cannot delete in postrm as it would delete the tool just created by extrainst_
 echo "#!/bin/sh" >  $PACKAGE/DEBIAN/prerm
-echo "/bin/launchctl unload /Library/LaunchDaemons/ch.ringwald.BTstack.plist" >> $PACKAGE/DEBIAN/prerm
+echo "/bin/launchctl unload /Library/LaunchDaemons/ch.ringwald.BTstack.plist 2&> /dev/null" >> $PACKAGE/DEBIAN/prerm
+echo "rm -f /usr/local/bin/BlueToolH4" >> $PACKAGE/DEBIAN/prerm
 chmod +x $PACKAGE/DEBIAN/prerm
-
-# postrm: get rid of custom BlueToolH4
-echo "#!/bin/sh" >  $PACKAGE/DEBIAN/postrm
-echo "rm -f /usr/local/bin/BlueToolH4" >> $PACKAGE/DEBIAN/postrm
-chmod +x $PACKAGE/DEBIAN/postrm
-
 
 # set ownership to root:root
 sudo chown -R 0:0 $PACKAGE
-
-# set suid for InstallBlueToolH4
-# sudo chmod 4755 $PACKAGE/usr/local/bin/InstallBlueToolH4.sh
 
 echo Packaging $PACKAGE
 export COPYFILE_DISABLE
