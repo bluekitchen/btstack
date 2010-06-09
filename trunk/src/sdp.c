@@ -69,7 +69,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 	uint16_t local_cid;
 	uint16_t remote_cid;
 	uint16_t transaction_id;
-    uint8_t  pdu_id;
+    SDP_PDU_ID_t pdu_id;
     uint16_t param_len;
     
     
@@ -81,9 +81,44 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             param_len = READ_NET_16(packet, 3);
             printf("SDP Request: type %u, transaction id %u, len %u\n", pdu_id, transaction_id, param_len);
             switch (pdu_id){
-                case 6: // handle SDP_ServiceSearchAttributeRequest
+                    
+                case SDP_ServiceSearchRequest:
                     // header
-                    sdp_response_buffer[0] = 7;
+                    sdp_response_buffer[0] = SDP_ServiceSearchResponse;
+                    net_store_16(sdp_response_buffer, 1, transaction_id);
+                    net_store_16(sdp_response_buffer, 3, 5); // empty list
+                    
+                    // TotalServiceRecordCount:
+                    net_store_16(sdp_response_buffer, 5, 0); // none
+                    // CurrentServiceRecordCount:
+                    net_store_16(sdp_response_buffer, 7, 0); // none
+                    // ServiceRecordHandleList:
+                    // empty
+                    // Continuation State: none
+                    sdp_response_buffer[9] = 0;
+                    l2cap_send_internal(channel, sdp_response_buffer, 5 + 5);
+                    break;
+                    
+                case SDP_ServiceAttributeRequest:
+                    // header
+                    sdp_response_buffer[0] = SDP_ServiceAttributeResponse;
+                    net_store_16(sdp_response_buffer, 1, transaction_id);
+                    net_store_16(sdp_response_buffer, 3, 5); // empty list
+                    
+                    // AttributeListByteCount::
+                    net_store_16(sdp_response_buffer, 5, 2); // 2 bytes in DES with 1 byte len
+                    // AttributeLists
+                    sdp_response_buffer[7] = 0x35; 
+                    sdp_response_buffer[8] = 0;
+                    // Continuation State: none
+                    sdp_response_buffer[9] = 0;
+                    l2cap_send_internal(channel, sdp_response_buffer, 5 + 5);
+                    break;
+                    
+
+                case SDP_ServiceSearchAttributeRequest:
+                    // header
+                    sdp_response_buffer[0] = SDP_ServiceSearchAttributeResponse;
                     net_store_16(sdp_response_buffer, 1, transaction_id);
                     net_store_16(sdp_response_buffer, 3, 5); // empty list
                     
@@ -96,10 +131,12 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     sdp_response_buffer[9] = 0;
                     l2cap_send_internal(channel, sdp_response_buffer, 5 + 5);
                     break;
+                    
                 default:
                     // just dump data for now
-                    printf("source cid %x -- ", channel);
+                    printf("Unknown SDP Request: ");
                     hexdump( packet, size );
+                    printf("\n");
                     break;
             }
 			break;

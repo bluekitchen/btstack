@@ -32,6 +32,16 @@
 
 #include <stdint.h>
 
+typedef enum {
+	SDP_ErrorResponse = 1,
+	SDP_ServiceSearchRequest,
+	SDP_ServiceSearchResponse,
+	SDP_ServiceAttributeRequest,
+	SDP_ServiceAttributeResponse,
+	SDP_ServiceSearchAttributeRequest,
+	SDP_ServiceSearchAttributeResponse
+} SDP_PDU_ID_t;
+
 void sdp_init();
 
 // register service record internally
