@@ -53,6 +53,18 @@ void bt_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
     buffer[pos++] = value >> 24;
 }
 
+void net_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
+    buffer[pos++] = value >> 8;
+    buffer[pos++] = value;
+}
+
+void net_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
+    buffer[pos++] = value >> 24;
+    buffer[pos++] = value >> 16;
+    buffer[pos++] = value >> 8;
+    buffer[pos++] = value;
+}
+
 void bt_flip_addr(bd_addr_t dest, bd_addr_t src){
     dest[0] = src[5];
     dest[1] = src[4];
