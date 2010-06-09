@@ -88,10 +88,12 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     net_store_16(sdp_response_buffer, 3, 5); // empty list
                     
                     // AttributeListsByteCount
-                    net_store_16(sdp_response_buffer, 5, 2); // should be 3, but I see 2 used for empty list
+                    net_store_16(sdp_response_buffer, 5, 2); // 2 bytes in DES with 1 byte len
                     // AttributeLists
                     sdp_response_buffer[7] = 0x35; 
-                    net_store_16(sdp_response_buffer, 8, 0); // DES len = 0
+                    sdp_response_buffer[8] = 0;
+                    // Continuation State: none
+                    sdp_response_buffer[9] = 0;
                     l2cap_send_internal(channel, sdp_response_buffer, 5 + 5);
                     break;
                 default:
