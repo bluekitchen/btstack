@@ -33,7 +33,8 @@
  *  sdp_util.c
  */
 
-#include "sdp_util.h"
+#include <btstack/sdp_util.h>
+#include <btstack/utils.h>
 
 #include <arpa/inet.h>
 #include <stdio.h>
@@ -88,33 +89,6 @@ static uint32_t sdp_next_service_record_handle = maxReservedServiceRecordHandle 
 // helper for SDP big endian format
 #define READ_NET_16( buffer, pos) ( ((uint16_t) buffer[pos+1]) | (((uint16_t)buffer[pos  ]) << 8))
 #define READ_NET_32( buffer, pos) ( ((uint32_t) buffer[pos+3]) | (((uint32_t)buffer[pos+2]) << 8) | (((uint32_t)buffer[pos+1]) << 16) | (((uint32_t) buffer[pos])) << 24)
-
-void net_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
-    buffer[pos++] = value >> 8;
-    buffer[pos++] = value;
-}
-
-void net_store_32(uint8_t *buffer, uint16_t pos, uint32_t value){
-    buffer[pos++] = value >> 24;
-    buffer[pos++] = value >> 16;
-    buffer[pos++] = value >> 8;
-    buffer[pos++] = value;
-}
-
-// temp cop from utils.c
-void hexdump(void *data, int size){
-    int i;
-    for (i=0; i<size;i++){
-        printf("%02X ", ((uint8_t *)data)[i]);
-    }
-    printf("\n");
-}
-
-void printUUID(uint8_t *uuid) {
-    printf("%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-           uuid[0], uuid[1], uuid[2], uuid[3], uuid[4], uuid[5], uuid[6], uuid[7],
-           uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15]);
-}
 
 void sdp_normalize_uuid(uint8_t *uuid, uint32_t shortUUID){
     memcpy(uuid, sdp_bluetooth_base_uuid, 16);
@@ -564,6 +538,8 @@ int sdp_get_record_handles_for_service_search_pattern(uint8_t * searchServicePat
     return 0;
 }
 
+#if 0
+
 uint8_t buffer[100];
 uint8_t record[100];
 uint8_t attributes[100];
@@ -667,3 +643,4 @@ int main(){
     printf("new handle %08x \n", handle);
 }
 
+#endif

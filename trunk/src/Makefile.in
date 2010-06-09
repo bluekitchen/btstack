@@ -22,6 +22,8 @@ BTdaemon_SOURCES =  $(libBTstack_SOURCES) \
     l2cap.c                 \
     l2cap_signaling.c       \
     platform_iphone.c       \
+    sdp.c                   \
+    sdp_util.c              \
     $(springboard_access_sources)
 
 all: libBTstack.$(BTSTACK_LIB_EXTENSION) libBTstack.a BTdaemon
