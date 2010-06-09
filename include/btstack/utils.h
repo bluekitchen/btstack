@@ -91,6 +91,7 @@ void net_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
 void net_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 
 void hexdump(void *data, int size);
+void printUUID(uint8_t *uuid);
 void print_bd_addr(bd_addr_t addr);
 int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr);
 
