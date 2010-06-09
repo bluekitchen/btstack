@@ -707,7 +707,7 @@ void l2cap_close_connection(connection_t *connection){
     
     // unregister services
     l2cap_service_t *service;
-    for (it = (linked_item_t *) l2cap_services; it ; ){
+    for (it = (linked_item_t *) &l2cap_services; it ; ){
         service = (l2cap_service_t *) it->next;
         if (service->connection == connection){
             it->next = service->item.next;
