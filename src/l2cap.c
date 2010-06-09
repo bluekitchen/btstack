@@ -648,7 +648,7 @@ void l2cap_close_connection(connection_t *connection){
 //  notify client/protocol handler
 void l2cap_dispatch(l2cap_channel_t *channel, uint8_t type, uint8_t * data, uint16_t size){
     if (channel->packet_handler) {
-        
+        (* (channel->packet_handler))(type, 0, data, size);
     } else {
         (*event_packet_handler)(channel->connection, data, size);
     }
