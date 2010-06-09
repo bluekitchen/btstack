@@ -18,7 +18,7 @@ echo "Version: $VERSION-$REVISION" >> $PACKAGE/DEBIAN/control
 mkdir -p $PACKAGE/usr/local/bin
 cp src/BTdaemon $PACKAGE/usr/local/bin
 cp PatchBlueTool/PatchBlueTool $PACKAGE/usr/local/bin
-cp resources/InstallBlueToolNoH5.sh $PACKAGE/usr/local/bin
+cp resources/InstallBlueToolH4.sh $PACKAGE/usr/local/bin
 cp example/inquiry $PACKAGE/usr/local/bin
 
 mkdir -p $PACKAGE/usr/local/lib
@@ -36,14 +36,14 @@ echo "/bin/launchctl load   /Library/LaunchDaemons/ch.ringwald.BTstack.plist" >>
 chmod +x $PACKAGE/DEBIAN/postinst
 echo "#!/bin/sh" >  $PACKAGE/DEBIAN/prerm
 echo "/bin/launchctl unload /Library/LaunchDaemons/ch.ringwald.BTstack.plist" >> $PACKAGE/DEBIAN/prerm
-echo "rm -f /usr/sbin/BlueToolNoH5" >> $PACKAGE/DEBIAN/prerm
+echo "rm -f /usr/sbin/BlueToolH4" >> $PACKAGE/DEBIAN/prerm
 chmod +x $PACKAGE/DEBIAN/prerm
 
 # set ownership to root:root
 sudo chown -R 0:0 $PACKAGE
 
-# set suid for InstallBlueToolNoH5
-sudo chmod 4755 $PACKAGE/usr/local/bin/InstallBlueToolNoH5.sh
+# set suid for InstallBlueToolH4
+sudo chmod 4755 $PACKAGE/usr/local/bin/InstallBlueToolH4.sh
 
 echo Packaging $PACKAGE
 export COPYFILE_DISABLE
