@@ -42,6 +42,7 @@
 #include "hci.h"
 #include "l2cap_signaling.h"
 #include <btstack/utils.h>
+#include <btstack/btstack.h>
 #include "socket_connection.h"
 
 #define L2CAP_SIG_ID_INVALID 0
@@ -69,11 +70,18 @@ typedef struct {
     bd_addr_t address;
     uint16_t  psm;
     hci_con_handle_t handle;
-    connection_t *connection;
+    
     // uint16_t mtu_incoming;
     // uint16_t mtu_outgoing;
     // uint16_t flush_timeout_incoming;
     // uint16_t flush_timeout_outgoing;
+
+    // client connection
+    connection_t * connection;
+    
+    // internal connection
+    btstack_packet_handler_t * packet_handler;
+    
 } l2cap_channel_t;
 
 // info regarding potential connections
@@ -87,8 +95,12 @@ typedef struct {
     // incoming MTU
     uint16_t mtu;
     
-    // provider for this server
+    // client connection
     connection_t *connection;    
+    
+    // internal connection
+    btstack_packet_handler_t * packet_handler;
+    
 } l2cap_service_t;
 
 void l2cap_init();

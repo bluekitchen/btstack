@@ -126,6 +126,7 @@ void l2cap_create_channel_internal(connection_t * connection, bd_addr_t address,
     chan->psm = psm;
     chan->handle = 0;
     chan->connection = connection;
+    chan->packet_handler = NULL;
     
     // set initial state
     chan->state = L2CAP_STATE_CLOSED;
@@ -286,7 +287,8 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     channel->connection = service->connection;
     channel->local_cid  = l2cap_next_local_cid();
     channel->remote_cid = source_cid;
-        
+    channel->packet_handler = NULL;
+
     // set initial state
     channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
     
@@ -601,6 +603,8 @@ void l2cap_register_service_internal(connection_t *connection, uint16_t psm, uin
     service->psm = psm;
     service->mtu = mtu;
     service->connection = connection;
+    service->packet_handler = NULL;
+
 
     // add to services list
     linked_list_add(&l2cap_services, (linked_item_t *) service);
@@ -641,7 +645,15 @@ void l2cap_close_connection(connection_t *connection){
     }
 }
 
-//  notify client
+//  notify client/protocol handler
+void l2cap_dispatch(l2cap_channel_t *channel, uint8_t type, uint8_t * data, uint16_t size){
+    if (channel->packet_handler) {
+        
+    } else {
+        (*event_packet_handler)(channel->connection, data, size);
+    }
+}
+
 void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     uint8_t event[17];
     event[0] = L2CAP_EVENT_CHANNEL_OPENED;
@@ -653,7 +665,7 @@ void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     bt_store_16(event, 13, channel->local_cid);
     bt_store_16(event, 15, channel->remote_cid);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    (*event_packet_handler)(channel->connection, event, sizeof(event));
+    l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
 void l2cap_emit_channel_closed(l2cap_channel_t *channel) {
@@ -662,7 +674,7 @@ void l2cap_emit_channel_closed(l2cap_channel_t *channel) {
     event[1] = sizeof(event) - 2;
     bt_store_16(event, 2, channel->local_cid);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    (*event_packet_handler)(channel->connection, event, sizeof(event));
+    l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
 void l2cap_emit_connection_request(l2cap_channel_t *channel) {
@@ -675,7 +687,7 @@ void l2cap_emit_connection_request(l2cap_channel_t *channel) {
     bt_store_16(event, 12, channel->local_cid);
     bt_store_16(event, 14, channel->remote_cid);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    (*event_packet_handler)(channel->connection, event, sizeof(event));
+    l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
 void l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
