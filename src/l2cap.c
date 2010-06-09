@@ -590,7 +590,7 @@ l2cap_service_t * l2cap_get_service(uint16_t psm){
     return NULL;
 }
 
-void l2cap_register_service_internal(connection_t *connection, uint16_t psm, uint16_t mtu){
+void l2cap_register_service_internal(connection_t *connection, btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu){
     // check for alread registered psm // TODO: emit error event
     l2cap_service_t *service = l2cap_get_service(psm);
     if (service) return;
@@ -603,8 +603,7 @@ void l2cap_register_service_internal(connection_t *connection, uint16_t psm, uin
     service->psm = psm;
     service->mtu = mtu;
     service->connection = connection;
-    service->packet_handler = NULL;
-
+    service->packet_handler = packet_handler;
 
     // add to services list
     linked_list_add(&l2cap_services, (linked_item_t *) service);

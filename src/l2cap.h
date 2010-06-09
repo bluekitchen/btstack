@@ -80,7 +80,7 @@ typedef struct {
     connection_t * connection;
     
     // internal connection
-    btstack_packet_handler_t * packet_handler;
+    btstack_packet_handler_t packet_handler;
     
 } l2cap_channel_t;
 
@@ -99,7 +99,7 @@ typedef struct {
     connection_t *connection;    
     
     // internal connection
-    btstack_packet_handler_t * packet_handler;
+    btstack_packet_handler_t packet_handler;
     
 } l2cap_service_t;
 
@@ -118,7 +118,7 @@ void l2cap_finialize_channel_close(l2cap_channel_t *channel);
 void l2cap_close_connection(connection_t *connection);
 
 l2cap_service_t * l2cap_get_service(uint16_t psm);
-void l2cap_register_service_internal(connection_t *connection, uint16_t psm, uint16_t);
+void l2cap_register_service_internal(connection_t *connection, btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu);
 void l2cap_unregister_service_internal(connection_t *connection, uint16_t psm);
 
 void l2cap_accept_connection_internal(uint16_t local_cid);
