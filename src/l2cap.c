@@ -285,9 +285,9 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     channel->psm = psm;
     channel->handle = handle;
     channel->connection = service->connection;
+    channel->packet_handler = service->packet_handler;
     channel->local_cid  = l2cap_next_local_cid();
     channel->remote_cid = source_cid;
-    channel->packet_handler = NULL;
 
     // set initial state
     channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
@@ -647,7 +647,7 @@ void l2cap_close_connection(connection_t *connection){
 //  notify client/protocol handler
 void l2cap_dispatch(l2cap_channel_t *channel, uint8_t type, uint8_t * data, uint16_t size){
     if (channel->packet_handler) {
-        (* (channel->packet_handler))(type, 0, data, size);
+        (* (channel->packet_handler))(type, channel->local_cid, data, size);
     } else {
         (*event_packet_handler)(channel->connection, data, size);
     }
