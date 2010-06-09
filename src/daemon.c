@@ -149,7 +149,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case L2CAP_REGISTER_SERVICE:
             psm = READ_BT_16(packet, 3);
             mtu = READ_BT_16(packet, 5);
-            l2cap_register_service_internal(connection, psm, mtu);
+            l2cap_register_service_internal(connection, NULL, psm, mtu);
             break;
         case L2CAP_UNREGISTER_SERVICE:
             psm = READ_BT_16(packet, 3);
@@ -353,6 +353,9 @@ int main (int argc,  char * const * argv){
     l2cap_register_event_packet_handler(daemon_event_handler);
     timeout.process = daemon_no_connections_timeout;
 
+    // init SDP
+    sdp_init();
+    
 #ifdef USE_LAUNCHD
     socket_connection_create_launchd();
 #else
