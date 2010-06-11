@@ -189,7 +189,6 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     // header
                     sdp_response_buffer[0] = SDP_ServiceSearchResponse;
                     net_store_16(sdp_response_buffer, 1, transaction_id);
-                    net_store_16(sdp_response_buffer, 3, 5); // empty list
                     
                     // TotalServiceRecordCount:
                     net_store_16(sdp_response_buffer, 5, 0); // none
@@ -199,6 +198,10 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     // empty
                     // Continuation State: none
                     sdp_response_buffer[9] = 0;
+                    
+                    // update len info
+                    net_store_16(sdp_response_buffer, 3, 5); // empty list
+                    
                     l2cap_send_internal(channel, sdp_response_buffer, 5 + 5);
                     break;
                     
@@ -206,7 +209,6 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     // header
                     sdp_response_buffer[0] = SDP_ServiceAttributeResponse;
                     net_store_16(sdp_response_buffer, 1, transaction_id);
-                    net_store_16(sdp_response_buffer, 3, 5); // empty list
                     
                     // AttributeListByteCount::
                     net_store_16(sdp_response_buffer, 5, 2); // 2 bytes in DES with 1 byte len
@@ -215,6 +217,10 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     sdp_response_buffer[8] = 0;
                     // Continuation State: none
                     sdp_response_buffer[9] = 0;
+                    
+                    // update len info
+                    net_store_16(sdp_response_buffer, 3, 5); // empty list
+
                     l2cap_send_internal(channel, sdp_response_buffer, 5 + 5);
                     break;
                     
@@ -223,7 +229,6 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     // header
                     sdp_response_buffer[0] = SDP_ServiceSearchAttributeResponse;
                     net_store_16(sdp_response_buffer, 1, transaction_id);
-                    net_store_16(sdp_response_buffer, 3, 5); // empty list
                     
                     // AttributeListsByteCount
                     net_store_16(sdp_response_buffer, 5, 2); // 2 bytes in DES with 1 byte len
@@ -232,6 +237,10 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     sdp_response_buffer[8] = 0;
                     // Continuation State: none
                     sdp_response_buffer[9] = 0;
+                    
+                    // update len info
+                    net_store_16(sdp_response_buffer, 3, 5); // empty list
+
                     l2cap_send_internal(channel, sdp_response_buffer, 5 + 5);
                     break;
                     
