@@ -172,21 +172,43 @@ static uint8_t sdp_response_buffer[250];
 
 int sdp_handle_service_search_attribute_request(uint8_t * packet){
     
-    uint16_t transaction_id = READ_NET_16(packet, 1);
-    uint16_t param_len = READ_NET_16(packet, 3);
-    uint16_t pos = 5;
+    // get request details
+    uint16_t  transaction_id = READ_NET_16(packet, 1);
+    uint16_t  param_len = READ_NET_16(packet, 3);
+    uint8_t * serviceSearchPattern = &packet[5];
+    uint16_t  serviceSearchPatternLen = de_get_len(serviceSearchPattern);
+    uint16_t  maximumAttributeByteCount = READ_NET_16(packet, 5 + serviceSearchPatternLen);
+    uint8_t * attributeIDList = &packet[5+serviceSearchPatternLen+2];
+    uint16_t  attributeIDListLen = de_get_len(attributeIDList);
+    uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2+attributeIDListLen];
     
     // header
     sdp_response_buffer[0] = SDP_ServiceSearchAttributeResponse;
     net_store_16(sdp_response_buffer, 1, transaction_id);
     
-    // AttributeListsByteCount
-    net_store_16(sdp_response_buffer, pos, 2); // 2 bytes in DES with 1 byte len
-    pos += 2;
-    // AttributeLists
-    sdp_response_buffer[pos++] = 0x35; 
-    sdp_response_buffer[pos++] = 0;
+    // AttributeLists - starts at offset 7
+    uint16_t pos = 7;
+    uint8_t *attributeLists = &sdp_response_buffer[pos];
+    de_create_sequence(attributeLists);
+    
+    // for all service records that match
+    linked_item_t *it;
+    for (it = (linked_item_t *) sdp_service_records; it ; it = it->next){
+        service_record_item_t * item = (service_record_item_t *) it;
+        if (sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)){
+            // copy specified attributes
+            uint8_t * attributes = de_push_sequence(attributeLists);
+            sdp_append_attributes_in_attributeIDList(item->service_record, attributeIDList, attributes, maximumAttributeByteCount);
+            de_pop_sequence(attributeLists, attributes);
+        }
+    }
+    pos += de_get_len(attributeLists);
+
+    // AttributeListsByteCount - at offset 5
+    net_store_16(sdp_response_buffer, 5, de_get_len(attributeLists)); 
+
     // Continuation State: none
+    // @TODO send correct continuation state
     sdp_response_buffer[pos++] = 0;
     
     // update len info
