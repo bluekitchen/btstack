@@ -29,14 +29,14 @@ cp resources/*.png $PACKAGE/System/Library/CoreServices/SpringBoard.app
 mkdir -p $PACKAGE/Library/LaunchDaemons/
 cp resources/ch.ringwald.BTstack.plist $PACKAGE/Library/LaunchDaemons/
 
-# preinst: stop daemon
-echo "#!/bin/sh" >  $PACKAGE/DEBIAN/preinst
-echo "/bin/launchctl unload /Library/LaunchDaemons/ch.ringwald.BTstack.plist 2&> /dev/null" >> $PACKAGE/DEBIAN/preinst
-chmod +x $PACKAGE/DEBIAN/preinst
-
-# regular install
+# prerm: called on remove and upgrade - stop daemon and get rid of BlueToolH4 
+echo "#!/bin/sh" >  $PACKAGE/DEBIAN/prerm
+echo "/bin/launchctl unload /Library/LaunchDaemons/ch.ringwald.BTstack.plist 2&> /dev/null" >> $PACKAGE/DEBIAN/prerm
+echo "rm -f /usr/local/bin/BlueToolH4" >> $PACKAGE/DEBIAN/prerm
+chmod +x $PACKAGE/DEBIAN/prerm
 
 # extrainst_ (cydia only): patch BlueTool and install as /usr/local/bin/BlueToolH4
+# note: cannot delete BlueToolH4 in postrm as it would delete the tool just created by extrainst_
 echo "#!/bin/sh" >  $PACKAGE/DEBIAN/extrainst_
 echo "rm -f /tmp/BlueToolH4 /usr/local/bin/BlueToolH4"                >> $PACKAGE/DEBIAN/extrainst_
 echo "cp /usr/sbin/BlueTool /tmp/BlueToolH4"                          >> $PACKAGE/DEBIAN/extrainst_
@@ -51,12 +51,6 @@ echo "#!/bin/sh" >  $PACKAGE/DEBIAN/postinst
 echo "/bin/launchctl load   /Library/LaunchDaemons/ch.ringwald.BTstack.plist 2&> /dev/null" >> $PACKAGE/DEBIAN/postinst
 chmod +x $PACKAGE/DEBIAN/postinst
 
-# prerm: stop daemon and get rid of BlueToolH4 
-# note: cannot delete in postrm as it would delete the tool just created by extrainst_
-echo "#!/bin/sh" >  $PACKAGE/DEBIAN/prerm
-echo "/bin/launchctl unload /Library/LaunchDaemons/ch.ringwald.BTstack.plist 2&> /dev/null" >> $PACKAGE/DEBIAN/prerm
-echo "rm -f /usr/local/bin/BlueToolH4" >> $PACKAGE/DEBIAN/prerm
-chmod +x $PACKAGE/DEBIAN/prerm
 
 # set ownership to root:root
 sudo chown -R 0:0 $PACKAGE
