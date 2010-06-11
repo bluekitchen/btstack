@@ -38,32 +38,8 @@
 
 #include <arpa/inet.h>
 #include <stdio.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-
-typedef enum {
-    DE_NIL = 0,
-    DE_UINT,
-    DE_INT,
-    DE_UUID,
-    DE_STRING,
-    DE_BOOL,
-    DE_DES,
-    DE_DEA,
-    DE_URL
-} de_type_t;
-
-typedef enum {
-    DE_SIZE_8 = 0,
-    DE_SIZE_16,
-    DE_SIZE_32,
-    DE_SIZE_64,
-    DE_SIZE_128,
-    DE_SIZE_VAR_8,
-    DE_SIZE_VAR_16,
-    DE_SIZE_VAR_32
-} de_size_t;
 
 // date element type names
 const char *type_names[] = { "NIL", "UINT", "INT", "UUID", "STRING", "BOOL", "DES", "DEA", "URL"};
@@ -72,30 +48,10 @@ const char *type_names[] = { "NIL", "UINT", "INT", "UUID", "STRING", "BOOL", "DE
 const uint8_t sdp_bluetooth_base_uuid[] = { 0x00, 0x00, 0x00, 0x00, /* - */ 0x00, 0x00, /* - */ 0x10, 0x00, /* - */
     0x80, 0x00, /* - */ 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB };
 
-// AttributeIDList used to remove ServiceRecordHandle
-const uint8_t removeServiceRecordHandleAttributeIDList[] = { 0x36, 0x00, 0x05, 0x0A, 0x00, 0x01, 0xFF, 0xFF };
-
-// max reserved ServiceRecordHandle
-#define maxReservedServiceRecordHandle 0xffff
-
-// our handles start after the reserve range
-static uint32_t sdp_next_service_record_handle = maxReservedServiceRecordHandle + 1;
-
-/** list of service records */
-// static linked_list_t sdp_records = NULL;
-
-// temp copy & paste from util.h/c 
-
-// helper for SDP big endian format
-#define READ_NET_16( buffer, pos) ( ((uint16_t) buffer[pos+1]) | (((uint16_t)buffer[pos  ]) << 8))
-#define READ_NET_32( buffer, pos) ( ((uint32_t) buffer[pos+3]) | (((uint32_t)buffer[pos+2]) << 8) | (((uint32_t)buffer[pos+1]) << 16) | (((uint32_t) buffer[pos])) << 24)
-
 void sdp_normalize_uuid(uint8_t *uuid, uint32_t shortUUID){
     memcpy(uuid, sdp_bluetooth_base_uuid, 16);
     net_store_32(uuid, 0, shortUUID);
 }
-
-static int de_dump_data_element(uint8_t * record);
 
 #pragma mark DataElement getter
 de_size_t de_get_size_type(uint8_t *header){
@@ -106,7 +62,7 @@ de_type_t de_get_element_type(uint8_t *header){
     return header[0] >> 3;
 }
 
-static int de_get_header_size(uint8_t * header){
+int de_get_header_size(uint8_t * header){
     de_size_t de_size = de_get_size_type(header);
     if (de_size <= DE_SIZE_128) {
         return 1;
@@ -114,7 +70,7 @@ static int de_get_header_size(uint8_t * header){
     return 1 + (1 << (de_size-DE_SIZE_VAR_8));
 }
 
-static int de_get_data_size(uint8_t * header){
+int de_get_data_size(uint8_t * header){
     uint32_t result = 0;
     de_type_t de_type = de_get_element_type(header);
     de_size_t de_size = de_get_size_type(header);
@@ -136,7 +92,7 @@ static int de_get_data_size(uint8_t * header){
     return result;    
 }
 
-static int de_get_len(uint8_t *header){
+int de_get_len(uint8_t *header){
     return de_get_header_size(header) + de_get_data_size(header); 
 }
 
@@ -247,7 +203,7 @@ void de_add_uuid128(uint8_t * seq, uint8_t * uuid){
 }
 
 #pragma mark DataElementSequence traversal
-typedef (*de_traversal_callback_t)(uint8_t * element, de_type_t type, de_size_t size, void *context);
+typedef int (*de_traversal_callback_t)(uint8_t * element, de_type_t type, de_size_t size, void *context);
 static void de_traverse_sequence(uint8_t * element, de_traversal_callback_t handler, void *context){
     de_type_t type = de_get_element_type(element);
     if (type != DE_DES) return;
@@ -365,6 +321,7 @@ static int sdp_traversal_attribute_by_id(uint8_t * element, de_type_t attributeT
     }
     return 0;
 }
+
 uint8_t * sdp_get_attribute_value_for_attribute_id(uint8_t * record, uint16_t attributeID){
     struct sdp_context_attribute_by_id context;
     context.attributeValue = NULL;
@@ -384,7 +341,6 @@ int sdp_record_contains_UUID128(uint8_t *record, uint8_t *uuid128);
 static int sdp_traversal_contains_UUID128(uint8_t * element, de_type_t type, de_size_t size, void *my_context){
     struct sdp_context_contains_uuid128 * context = (struct sdp_context_contains_uuid128 *) my_context;
     uint8_t normalizedUUID[16];
-    uint32_t uuid;
     if (type == DE_UUID){
         uint8_t uuidOK = de_get_normalized_uuid(normalizedUUID, element);
         context->result = uuidOK && memcmp(context->uuid128, normalizedUUID, 16) == 0;
@@ -413,7 +369,7 @@ int sdp_traversal_match_pattern(uint8_t * element, de_type_t attributeType, de_s
     struct sdp_context_match_pattern * context = (struct sdp_context_match_pattern *) my_context;
     uint8_t normalizedUUID[16];
     uint8_t uuidOK = de_get_normalized_uuid(normalizedUUID, element);
-    if (!sdp_record_contains_UUID128(context->record, normalizedUUID)){
+    if (!uuidOK || !sdp_record_contains_UUID128(context->record, normalizedUUID)){
         context->result = 0;
         return 1;
     }
@@ -465,77 +421,12 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
     }
     return 0;
 }
-int de_dump_data_element(uint8_t * record){
+void de_dump_data_element(uint8_t * record){
     int indent = 0;
     // hack to get root DES, too.
     de_type_t type = de_get_element_type(record);
     de_size_t size = de_get_size_type(record);
     de_traversal_dump_data(record, type, size, (void*) &indent);
-}
-
-
-uint32_t sdp_get_service_record_handle(uint8_t * record){
-    uint8_t * serviceRecordHandleAttribute = sdp_get_attribute_value_for_attribute_id(record, 0x0000);
-    if (!serviceRecordHandleAttribute) return 0;
-    if (de_get_element_type(serviceRecordHandleAttribute) != DE_UINT) return 0;
-    if (de_get_size_type(serviceRecordHandleAttribute) != DE_SIZE_32) return 0;
-    return READ_NET_32(serviceRecordHandleAttribute, 1); 
-}
-
-uint32_t sdp_create_service_record_handle(){
-    return sdp_next_service_record_handle++;
-}
-
-// pre: AttributeIDs are in ascencding order => ServiceRecordHandle is first attribute if present
-// returns: new service record handle or 0
-uint32_t sdp_add_service_record(uint8_t * record){
-    
-    // size of new record
-    uint16_t recordSize = de_get_len(record);
-
-    // get user record handle
-    uint32_t record_handle = sdp_get_service_record_handle(record);
-
-    // increase by ServiceRecordHandle attribute (DES UINT16 UINT32) if not set
-    if (!record_handle) recordSize += 3 + 3 + 5;
-    
-    // alloc memory for new record
-    uint8_t * newRecord = malloc(recordSize);
-    if (!newRecord) return 0;
-    
-    // create DES for new record
-    de_create_sequence(newRecord);
-
-    // validate service record handle is not in reserved range
-    if (record_handle <= maxReservedServiceRecordHandle) record_handle = 0;
-
-    // @TODO check that it's not already in use
-    
-    // get new handle if needed
-    if (!record_handle){
-        record_handle = sdp_create_service_record_handle();
-    }
-    
-    // set service record handle
-    uint8_t * serviceRecordHandleAttribute = de_push_sequence(newRecord);
-    de_add_number(serviceRecordHandleAttribute, DE_UINT, DE_SIZE_16, 0);
-    de_add_number(serviceRecordHandleAttribute, DE_UINT, DE_SIZE_32, record_handle);
-    de_pop_sequence(newRecord, serviceRecordHandleAttribute);
-    
-    // add other attributes
-    sdp_append_attributes_in_attributeIDList(record, (uint8_t *) removeServiceRecordHandleAttributeIDList, newRecord, recordSize);
- 
-    // dump for now
-    de_dump_data_element(newRecord);
-    printf("calculated size %u, actual size %u\n", recordSize, de_get_len(newRecord));
-    
-    // add to linked list
-    
-    return record_handle;
-}
-
-int sdp_get_record_handles_for_service_search_pattern(uint8_t * searchServicePattern, uint16_t maxRecordCount){
-    return 0;
 }
 
 #if 0

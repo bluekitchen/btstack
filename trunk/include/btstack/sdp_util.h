@@ -35,5 +35,45 @@
 
 #pragma once
 
+#include <stdint.h>
 
+typedef enum {
+    DE_NIL = 0,
+    DE_UINT,
+    DE_INT,
+    DE_UUID,
+    DE_STRING,
+    DE_BOOL,
+    DE_DES,
+    DE_DEA,
+    DE_URL
+} de_type_t;
+
+typedef enum {
+    DE_SIZE_8 = 0,
+    DE_SIZE_16,
+    DE_SIZE_32,
+    DE_SIZE_64,
+    DE_SIZE_128,
+    DE_SIZE_VAR_8,
+    DE_SIZE_VAR_16,
+    DE_SIZE_VAR_32
+} de_size_t;
+
+#pragma mark DateElement
+void de_dump_data_element(uint8_t * record);
+int de_get_len(uint8_t *header);
+de_size_t de_get_size_type(uint8_t *header);
+de_type_t de_get_element_type(uint8_t *header);
+void de_create_sequence(uint8_t *header);
+uint8_t * de_push_sequence(uint8_t *header);
+void de_pop_sequence(uint8_t * parent, uint8_t * child);
+void de_add_number(uint8_t *seq, de_type_t type, de_size_t size, uint32_t value);
+
+
+int de_get_data_size(uint8_t * header);
+
+#pragma mark SDP
+void sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint8_t *buffer, uint16_t maxBytes);
+uint8_t * sdp_get_attribute_value_for_attribute_id(uint8_t * record, uint16_t attributeID);
 
