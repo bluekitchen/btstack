@@ -174,7 +174,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 	uint16_t transaction_id;
     SDP_PDU_ID_t pdu_id;
     uint16_t param_len;
-    
+    int pos = 5;
     
 	switch (packet_type) {
 			
@@ -191,18 +191,20 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     net_store_16(sdp_response_buffer, 1, transaction_id);
                     
                     // TotalServiceRecordCount:
-                    net_store_16(sdp_response_buffer, 5, 0); // none
+                    net_store_16(sdp_response_buffer, pos, 0); // none
+                    pos += 2;
                     // CurrentServiceRecordCount:
-                    net_store_16(sdp_response_buffer, 7, 0); // none
+                    net_store_16(sdp_response_buffer, pos, 0); // none
+                    pos += 2;
                     // ServiceRecordHandleList:
                     // empty
                     // Continuation State: none
-                    sdp_response_buffer[9] = 0;
+                    sdp_response_buffer[pos++] = 0;
                     
                     // update len info
-                    net_store_16(sdp_response_buffer, 3, 5); // empty list
+                    net_store_16(sdp_response_buffer, 3, pos - 5); // empty list
                     
-                    l2cap_send_internal(channel, sdp_response_buffer, 5 + 5);
+                    l2cap_send_internal(channel, sdp_response_buffer, pos);
                     break;
                     
                 case SDP_ServiceAttributeRequest:
@@ -211,17 +213,18 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     net_store_16(sdp_response_buffer, 1, transaction_id);
                     
                     // AttributeListByteCount::
-                    net_store_16(sdp_response_buffer, 5, 2); // 2 bytes in DES with 1 byte len
+                    net_store_16(sdp_response_buffer, pos, 2); // 2 bytes in DES with 1 byte len
+                    pos += 2;
                     // AttributeLists
-                    sdp_response_buffer[7] = 0x35; 
-                    sdp_response_buffer[8] = 0;
+                    sdp_response_buffer[pos++] = 0x35; 
+                    sdp_response_buffer[pos++] = 0;
                     // Continuation State: none
-                    sdp_response_buffer[9] = 0;
+                    sdp_response_buffer[pos++] = 0;
                     
                     // update len info
-                    net_store_16(sdp_response_buffer, 3, 5); // empty list
+                    net_store_16(sdp_response_buffer, 3, pos - 5); // empty list
 
-                    l2cap_send_internal(channel, sdp_response_buffer, 5 + 5);
+                    l2cap_send_internal(channel, sdp_response_buffer, pos);
                     break;
                     
 
@@ -231,17 +234,18 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     net_store_16(sdp_response_buffer, 1, transaction_id);
                     
                     // AttributeListsByteCount
-                    net_store_16(sdp_response_buffer, 5, 2); // 2 bytes in DES with 1 byte len
+                    net_store_16(sdp_response_buffer, pos, 2); // 2 bytes in DES with 1 byte len
+                    pos += 2;
                     // AttributeLists
-                    sdp_response_buffer[7] = 0x35; 
-                    sdp_response_buffer[8] = 0;
+                    sdp_response_buffer[pos++] = 0x35; 
+                    sdp_response_buffer[pos++] = 0;
                     // Continuation State: none
-                    sdp_response_buffer[9] = 0;
+                    sdp_response_buffer[pos++] = 0;
                     
                     // update len info
-                    net_store_16(sdp_response_buffer, 3, 5); // empty list
+                    net_store_16(sdp_response_buffer, 3, pos - 5); // empty list
 
-                    l2cap_send_internal(channel, sdp_response_buffer, 5 + 5);
+                    l2cap_send_internal(channel, sdp_response_buffer, pos);
                     break;
                     
                 default:
