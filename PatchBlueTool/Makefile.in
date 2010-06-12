@@ -1,0 +1,17 @@
+CC = @CC@
+LDFLAGS  = @LDFLAGS@
+CPPFLAGS = @CPPFLAGS@
+prefix = @prefix@
+
+all: PatchBlueTool
+
+PatchBlueTool: PatchBlueTool.c
+	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
+	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
+
+clean:
+	rm -f PatchBlueTool
+	
+install:    
+	echo "nothing to be done"
+
