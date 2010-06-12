@@ -98,6 +98,14 @@
 // decline l2cap disconnect,@param bd_addr(48), dest cid (16), reason(8)
 #define L2CAP_DECLINE_CONNECTION                           0x25
 
+// register SDP Service Record: service record (size)
+#define SDP_REGISTER_SERVICE_RECORD                        0x30
+
+// unregister SDP Service Record
+#define SDP_UNREGISTER_SERVICE_RECORD                      0x31
+
+
+
 // 
 #define IS_COMMAND(packet, command) (READ_BT_16(packet,0) == command.opcode)
 
