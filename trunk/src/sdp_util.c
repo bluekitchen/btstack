@@ -74,8 +74,8 @@ int de_get_data_size(uint8_t * header){
     uint32_t result = 0;
     de_type_t de_type = de_get_element_type(header);
     de_size_t de_size = de_get_size_type(header);
-    if (de_size <= DE_BOOL){
-        if (de_type == 0) return 0;
+    if (de_size <= DE_SIZE_128){
+        if (de_type == DE_NIL) return 0;
         return 1 << de_size;
     }
     switch (de_size){
