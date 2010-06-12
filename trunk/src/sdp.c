@@ -119,14 +119,12 @@ uint32_t sdp_register_service_internal(uint8_t * record){
         record_handle = sdp_create_service_record_handle();
     }
     
-    // calculate size of new service_record_item_t: DES (2 byte) + size of existing attributes
-    uint16_t recordSize = sizeof(service_record_item_t) + 3 + de_get_data_size(record);
-    
-    // plus ServiceRecordHandle attribute (DES UINT16 UINT32) if not set
-    if (!record_handle) recordSize += 3 + 3 + 5;
-    
+    // calculate size of new service record: DES (2 byte len) 
+    // + ServiceRecordHandle attribute (DES UINT16 UINT32) + size of existing attributes
+    uint16_t recordSize =  3 + (3 + 3 + 5) + de_get_data_size(record);
+        
     // alloc memory for new service_record_item
-    service_record_item_t * newRecordItem = (service_record_item_t *) malloc(recordSize);
+    service_record_item_t * newRecordItem = (service_record_item_t *) malloc(recordSize + sizeof(service_record_item_t));
     if (!newRecordItem) return 0;
     
     // set new handle
@@ -149,7 +147,7 @@ uint32_t sdp_register_service_internal(uint8_t * record){
     
     // dump for now
     de_dump_data_element(newRecord);
-    printf("calculated size %u, actual size %u\n", recordSize, de_get_len(newRecord));
+    printf("reserved size %u, actual size %u\n", recordSize, de_get_len(newRecord));
     
     // add to linked list
     linked_list_add(&sdp_service_records, (linked_item_t *) newRecordItem);
@@ -190,6 +188,9 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet){
     uint16_t pos = 7;
     uint8_t *attributeLists = &sdp_response_buffer[pos];
     de_create_sequence(attributeLists);
+    
+    // dump
+    de_dump_data_element(serviceSearchPattern);
     
     // for all service records that match
     linked_item_t *it;
