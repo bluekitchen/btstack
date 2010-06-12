@@ -49,4 +49,4 @@ void sdp_init();
 uint32_t sdp_register_service_internal(uint8_t * service_record);
 
 // unregister service record internally
-void sdp_unregister_service(uint32_t service_record_handle);
+void sdp_unregister_service_internal(uint32_t service_record_handle);
