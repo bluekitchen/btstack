@@ -36,6 +36,7 @@
  */
 
 #include <btstack/hci_cmds.h>
+#include <btstack/sdp_util.h>
 #include "hci.h"
 #include <string.h>
 
@@ -49,9 +50,10 @@
  *   1,2,3,4: one to four byte value
  *   H: HCI connection handle
  *   B: Bluetooth Baseband Address (BD_ADDR)
- *   P: 16 byte Pairing code
- *   N: Name up to 248 chars 
  *   E: Extended Inquiry Result
+ *   N: Name up to 248 chars 
+ *   P: 16 byte Pairing code
+ *   S: Service Record (Data Element Sequence)
  */
 uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, va_list argptr){
     
@@ -98,21 +100,28 @@ uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, va_lis
                 hci_cmd_buffer[pos++] = ptr[1];
                 hci_cmd_buffer[pos++] = ptr[0];
                 break;
-            case 'P': // 16 byte PIN code or link key
+            case 'E': // Extended Inquiry Information 240 octets
                 ptr = va_arg(argptr, uint8_t *);
-                memcpy(&hci_cmd_buffer[pos], ptr, 16);
-                pos += 16;
+                memcpy(&hci_cmd_buffer[pos], ptr, 240);
+                pos += 240;
                 break;
             case 'N': // UTF-8 string, null terminated
                 ptr = va_arg(argptr, uint8_t *);
                 memcpy(&hci_cmd_buffer[pos], ptr, 248);
                 pos += 248;
                 break;
-            case 'E': // Extended Inquiry Information 240 octets
+            case 'P': // 16 byte PIN code or link key
                 ptr = va_arg(argptr, uint8_t *);
-                memcpy(&hci_cmd_buffer[pos], ptr, 240);
-                pos += 240;
+                memcpy(&hci_cmd_buffer[pos], ptr, 16);
+                pos += 16;
                 break;
+            case 'S': { // Service Record (Data Element Sequence)
+                ptr = va_arg(argptr, uint8_t *);
+                uint16_t len = de_get_len(ptr);
+                memcpy(&hci_cmd_buffer[pos], ptr, len);
+                pos += 16;
+                break;
+            }
             default:
                 break;
         }
@@ -338,5 +347,12 @@ hci_cmd_t l2cap_decline_connection = {
 OPCODE(OGF_BTSTACK, L2CAP_DECLINE_CONNECTION), "21"
 // @param source cid (16), reason(8)
 };
-
+hci_cmd_t sdp_register_service_record = {
+OPCODE(OGF_BTSTACK, SDP_REGISTER_SERVICE_RECORD), "S"
+// @param service record handle (DES)
+};
+hci_cmd_t sdp_unregister_service_record = {
+OPCODE(OGF_BTSTACK, SDP_UNREGISTER_SERVICE_RECORD), "4"
+// @param service record handle (32)
+};
 

@@ -126,6 +126,9 @@
 // data: event(8), len(8), handle(16)
 #define L2CAP_EVENT_TIMEOUT_CHECK                          0x73
 
+// data: event(8), len(8), service_record_handle(32)
+#define SDP_SERVICE_REGISTERED                             0x80
+
 
 // last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
 
@@ -231,3 +234,8 @@ extern hci_cmd_t l2cap_decline_connection;
 extern hci_cmd_t l2cap_disconnect;
 extern hci_cmd_t l2cap_register_service;
 extern hci_cmd_t l2cap_unregister_service;
+
+extern hci_cmd_t sdp_register_service_record;
+extern hci_cmd_t sdp_unregister_service_record;
+
+
