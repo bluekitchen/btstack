@@ -54,6 +54,7 @@
 #include <btstack/btstack.h>
 #include <btstack/linked_list.h>
 #include <btstack/run_loop.h>
+#include <btstack/sdp.h>
 #include "socket_connection.h"
 
 #ifdef USE_BLUETOOL
@@ -103,8 +104,9 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
     uint16_t cid;
     uint16_t psm;
     uint16_t mtu;
-    uint16_t handle;
     uint8_t  reason;
+    uint32_t service_record_handle;
+    
     // BTstack internal commands - 16 Bit OpCode, 8 Bit ParamLen, Params...
     switch (READ_CMD_OCF(packet)){
         case BTSTACK_GET_STATE:
@@ -163,6 +165,14 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             cid    = READ_BT_16(packet, 3);
             reason = packet[7];
             l2cap_decline_connection_internal(cid, reason);
+            break;
+        case SDP_REGISTER_SERVICE_RECORD:
+            printf("SDP_REGISTER_SERVICE_RECORD size %u\n", size);
+            sdp_register_service_internal(&packet[3]);
+            break;
+        case SDP_UNREGISTER_SERVICE_RECORD:
+            service_record_handle = READ_BT_32(packet, 3);
+            sdp_unregister_service_internal(service_record_handle);
             break;
         default:
             //@TODO: log into hci dump as vendor specific "event"
