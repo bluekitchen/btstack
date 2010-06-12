@@ -119,7 +119,7 @@ uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, va_lis
                 ptr = va_arg(argptr, uint8_t *);
                 uint16_t len = de_get_len(ptr);
                 memcpy(&hci_cmd_buffer[pos], ptr, len);
-                pos += 16;
+                pos += len;
                 break;
             }
             default:
