@@ -105,6 +105,10 @@ uint32_t sdp_create_service_record_handle(){
 // @returns ServiceRecordHandle or 0 if registration failed
 uint32_t sdp_register_service_internal(uint8_t * record){
 
+    // dump for now
+    printf("Register service record\n");
+    de_dump_data_element(record);
+    
     // get user record handle
     uint32_t record_handle = sdp_get_service_record_handle(record);
 
@@ -156,7 +160,7 @@ uint32_t sdp_register_service_internal(uint8_t * record){
 }
 
 // unregister service record internally
-void sdp_unregister_service(uint32_t service_record_handle){
+void sdp_unregister_service_internal(uint32_t service_record_handle){
     service_record_item_t * record_item = sdp_get_record_for_handle(service_record_handle);
     if (record_item) {
         linked_list_remove(&sdp_service_records, (linked_item_t *) record_item);
