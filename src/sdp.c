@@ -168,6 +168,14 @@ void sdp_unregister_service(uint32_t service_record_handle){
 
 static uint8_t sdp_response_buffer[250];
 
+int sdp_create_error_response(uint16_t transaction_id, uint16_t error_code){
+    sdp_response_buffer[0] = SDP_ErrorResponse;
+    net_store_16(sdp_response_buffer, 1, transaction_id);
+    net_store_16(sdp_response_buffer, 3, 2);
+    net_store_16(sdp_response_buffer, 5, error_code); // invalid syntax
+    return 7;
+}
+
 int sdp_handle_service_search_request(uint8_t * packet){
     
     // get request details
@@ -225,6 +233,13 @@ int sdp_handle_service_attribute_request(uint8_t * packet){
     // not used yet - uint16_t  attributeIDListLen = de_get_len(attributeIDList);
     // not used yet - uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2+attributeIDListLen];
     
+    // get service record
+    service_record_item_t * item = sdp_get_record_for_handle(serviceRecordHandle);
+    if (!item){
+        // service record handle doesn't exist
+        return sdp_create_error_response(transaction_id, 0x0002); /// invalid Service Record Handle
+    }
+    
     // header
     sdp_response_buffer[0] = SDP_ServiceAttributeResponse;
     net_store_16(sdp_response_buffer, 1, transaction_id);
@@ -233,12 +248,8 @@ int sdp_handle_service_attribute_request(uint8_t * packet){
     uint16_t pos = 7;
     uint8_t *attributeList = &sdp_response_buffer[pos];
     de_create_sequence(attributeList);
-
-    service_record_item_t * item = sdp_get_record_for_handle(serviceRecordHandle);
-    if (item){
-        // copy specified attributes
-        sdp_append_attributes_in_attributeIDList(item->service_record, attributeIDList, attributeList, maximumAttributeByteCount);
-    }
+    // copy specified attributes
+    sdp_append_attributes_in_attributeIDList(item->service_record, attributeIDList, attributeList, maximumAttributeByteCount);
     pos += de_get_len(attributeList);
     
     // AttributeListByteCount - at offset 5
@@ -320,27 +331,21 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     
                 case SDP_ServiceSearchRequest:
                     pos = sdp_handle_service_search_attribute_request(packet);
-                    l2cap_send_internal(channel, sdp_response_buffer, pos);
                     break;
                                         
                 case SDP_ServiceAttributeRequest:
                     pos = sdp_handle_service_attribute_request(packet);
-                    l2cap_send_internal(channel, sdp_response_buffer, pos);
                     break;
                     
                 case SDP_ServiceSearchAttributeRequest:
                     pos = sdp_handle_service_search_attribute_request(packet);
-                    l2cap_send_internal(channel, sdp_response_buffer, pos);
                     break;
                     
                 default:
-                    sdp_response_buffer[0] = SDP_ErrorResponse;
-                    net_store_16(sdp_response_buffer, 1, transaction_id);
-                    net_store_16(sdp_response_buffer, 3, 2);
-                    net_store_16(sdp_response_buffer, 5, 0x0003); // invalid syntax
-                    l2cap_send_internal(channel, sdp_response_buffer, 7);
+                    pos = sdp_create_error_response(transaction_id, 0x0003); // invalid syntax
                     break;
             }
+            l2cap_send_internal(channel, sdp_response_buffer, 7);
 			break;
 			
 		case HCI_EVENT_PACKET:
