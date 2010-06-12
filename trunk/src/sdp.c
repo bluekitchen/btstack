@@ -190,12 +190,15 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet){
     de_create_sequence(attributeLists);
     
     // dump
-    de_dump_data_element(serviceSearchPattern);
+    // printf("ServiceSearchPattern:\n");
+    // de_dump_data_element(serviceSearchPattern);
     
     // for all service records that match
     linked_item_t *it;
     for (it = (linked_item_t *) sdp_service_records; it ; it = it->next){
         service_record_item_t * item = (service_record_item_t *) it;
+        // printf("ServiceRecord:\n");
+        // de_dump_data_element(item->service_record);
         if (sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)){
             // copy specified attributes
             uint8_t * attributes = de_push_sequence(attributeLists);

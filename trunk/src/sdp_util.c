@@ -379,7 +379,7 @@ int sdp_record_matches_service_search_pattern(uint8_t *record, uint8_t *serviceS
     struct sdp_context_match_pattern context;
     context.record = record;
     context.result = 1;
-    de_traverse_sequence(record, sdp_traversal_match_pattern, &context);
+    de_traverse_sequence(serviceSearchPattern, sdp_traversal_match_pattern, &context);
     return context.result;
 }
 
