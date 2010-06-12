@@ -168,17 +168,63 @@ void sdp_unregister_service(uint32_t service_record_handle){
 
 static uint8_t sdp_response_buffer[250];
 
+int sdp_handle_service_search_request(uint8_t * packet){
+    
+    // get request details
+    uint16_t  transaction_id = READ_NET_16(packet, 1);
+    // not used yet - uint16_t  param_len = READ_NET_16(packet, 3);
+    uint8_t * serviceSearchPattern = &packet[5];
+    // not used yet - uint16_t  serviceSearchPatternLen = de_get_len(serviceSearchPattern);
+    // not used yet - uint16_t  maximumServiceRecordCount = READ_NET_16(packet, 5 + serviceSearchPatternLen);
+    // not used yet - uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2];
+    
+    // header
+    sdp_response_buffer[0] = SDP_ServiceSearchResponse;
+    net_store_16(sdp_response_buffer, 1, transaction_id);
+    
+    // ServiceRecordHandleList at 9
+    uint16_t pos = 9;
+    uint16_t service_count = 0;
+    
+    // for all service records that match
+    linked_item_t *it;
+    for (it = (linked_item_t *) sdp_service_records; it ; it = it->next){
+        service_record_item_t * item = (service_record_item_t *) it;
+        if (sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)){
+            net_store_32(sdp_response_buffer, pos, item->service_record_handle);
+            pos += 4;
+            service_count++;
+        }
+    }
+    
+    // TotalServiceRecordCount at 5
+    net_store_16(sdp_response_buffer, 5, service_count);
+    
+    // CurrentServiceRecordCount at 7
+    net_store_16(sdp_response_buffer, 7, service_count);
+
+    // Continuation State: none
+    // @TODO send correct continuation state
+    sdp_response_buffer[pos++] = 0;
+    
+    
+    // update len info
+    net_store_16(sdp_response_buffer, 3, pos - 5); // empty list
+    
+    return pos;
+}
+
 int sdp_handle_service_search_attribute_request(uint8_t * packet){
     
     // get request details
     uint16_t  transaction_id = READ_NET_16(packet, 1);
-    uint16_t  param_len = READ_NET_16(packet, 3);
+    // not used yet - uint16_t  param_len = READ_NET_16(packet, 3);
     uint8_t * serviceSearchPattern = &packet[5];
     uint16_t  serviceSearchPatternLen = de_get_len(serviceSearchPattern);
     uint16_t  maximumAttributeByteCount = READ_NET_16(packet, 5 + serviceSearchPatternLen);
     uint8_t * attributeIDList = &packet[5+serviceSearchPatternLen+2];
-    uint16_t  attributeIDListLen = de_get_len(attributeIDList);
-    uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2+attributeIDListLen];
+    // not used yet - uint16_t  attributeIDListLen = de_get_len(attributeIDList);
+    // not used yet - uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2+attributeIDListLen];
     
     // header
     sdp_response_buffer[0] = SDP_ServiceSearchAttributeResponse;
@@ -237,27 +283,10 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             switch (pdu_id){
                     
                 case SDP_ServiceSearchRequest:
-                    // header
-                    sdp_response_buffer[0] = SDP_ServiceSearchResponse;
-                    net_store_16(sdp_response_buffer, 1, transaction_id);
-                    
-                    // TotalServiceRecordCount:
-                    net_store_16(sdp_response_buffer, pos, 0); // none
-                    pos += 2;
-                    // CurrentServiceRecordCount:
-                    net_store_16(sdp_response_buffer, pos, 0); // none
-                    pos += 2;
-                    // ServiceRecordHandleList:
-                    // empty
-                    // Continuation State: none
-                    sdp_response_buffer[pos++] = 0;
-                    
-                    // update len info
-                    net_store_16(sdp_response_buffer, 3, pos - 5); // empty list
-                    
+                    pos = sdp_handle_service_search_attribute_request(packet);
                     l2cap_send_internal(channel, sdp_response_buffer, pos);
                     break;
-                    
+                                        
                 case SDP_ServiceAttributeRequest:
                     // header
                     sdp_response_buffer[0] = SDP_ServiceAttributeResponse;
