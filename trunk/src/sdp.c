@@ -214,6 +214,46 @@ int sdp_handle_service_search_request(uint8_t * packet){
     return pos;
 }
 
+int sdp_handle_service_attribute_request(uint8_t * packet){
+    
+    // get request details
+    uint16_t  transaction_id = READ_NET_16(packet, 1);
+    // not used yet - uint16_t  param_len = READ_NET_16(packet, 3);
+    uint32_t  serviceRecordHandle = READ_NET_32(packet, 5);
+    uint16_t  maximumAttributeByteCount = READ_NET_16(packet, 9);
+    uint8_t * attributeIDList = &packet[11];
+    // not used yet - uint16_t  attributeIDListLen = de_get_len(attributeIDList);
+    // not used yet - uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2+attributeIDListLen];
+    
+    // header
+    sdp_response_buffer[0] = SDP_ServiceAttributeResponse;
+    net_store_16(sdp_response_buffer, 1, transaction_id);
+    
+    // AttributeList - starts at offset 7
+    uint16_t pos = 7;
+    uint8_t *attributeList = &sdp_response_buffer[pos];
+    de_create_sequence(attributeList);
+
+    service_record_item_t * item = sdp_get_record_for_handle(serviceRecordHandle);
+    if (item){
+        // copy specified attributes
+        sdp_append_attributes_in_attributeIDList(item->service_record, attributeIDList, attributeList, maximumAttributeByteCount);
+    }
+    pos += de_get_len(attributeList);
+    
+    // AttributeListByteCount - at offset 5
+    net_store_16(sdp_response_buffer, 5, de_get_len(attributeList)); 
+    
+    // Continuation State: none
+    // @TODO send correct continuation state
+    sdp_response_buffer[pos++] = 0;
+    
+    // update len info
+    net_store_16(sdp_response_buffer, 3, pos - 5); // empty list
+    
+    return pos;
+}
+
 int sdp_handle_service_search_attribute_request(uint8_t * packet){
     
     // get request details
@@ -234,10 +274,6 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet){
     uint16_t pos = 7;
     uint8_t *attributeLists = &sdp_response_buffer[pos];
     de_create_sequence(attributeLists);
-    
-    // dump
-    // printf("ServiceSearchPattern:\n");
-    // de_dump_data_element(serviceSearchPattern);
     
     // for all service records that match
     linked_item_t *it;
@@ -288,26 +324,10 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     break;
                                         
                 case SDP_ServiceAttributeRequest:
-                    // header
-                    sdp_response_buffer[0] = SDP_ServiceAttributeResponse;
-                    net_store_16(sdp_response_buffer, 1, transaction_id);
-                    
-                    // AttributeListByteCount::
-                    net_store_16(sdp_response_buffer, pos, 2); // 2 bytes in DES with 1 byte len
-                    pos += 2;
-                    // AttributeLists
-                    sdp_response_buffer[pos++] = 0x35; 
-                    sdp_response_buffer[pos++] = 0;
-                    // Continuation State: none
-                    sdp_response_buffer[pos++] = 0;
-                    
-                    // update len info
-                    net_store_16(sdp_response_buffer, 3, pos - 5); // empty list
-
+                    pos = sdp_handle_service_attribute_request(packet);
                     l2cap_send_internal(channel, sdp_response_buffer, pos);
                     break;
                     
-
                 case SDP_ServiceSearchAttributeRequest:
                     pos = sdp_handle_service_search_attribute_request(packet);
                     l2cap_send_internal(channel, sdp_response_buffer, pos);
