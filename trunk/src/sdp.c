@@ -120,7 +120,11 @@ uint32_t sdp_register_service_internal(connection_t *connection, uint8_t * recor
     if (record_handle <= maxReservedServiceRecordHandle) record_handle = 0;
     
     // check if already in use
-    if (sdp_get_record_for_handle(record_handle)) record_handle = 0;
+    if (record_handle) {
+        if (sdp_get_record_for_handle(record_handle)) {
+            record_handle = 0;
+        }
+    }
     
     // create new handle if needed
     if (!record_handle){
@@ -162,7 +166,6 @@ uint32_t sdp_register_service_internal(connection_t *connection, uint8_t * recor
     
     // add to linked list
     linked_list_add(&sdp_service_records, (linked_item_t *) newRecordItem);
-    
     return record_handle;
 }
 
@@ -181,9 +184,10 @@ void sdp_unregister_service_internal(connection_t *connection, uint32_t service_
 void sdp_unregister_services_for_connection(connection_t *connection){
     linked_item_t *it = (linked_item_t *) &sdp_service_records;
     while (it->next){
-        if (((service_record_item_t *)it->next)->connection == connection){
+        if (((service_record_item_t *)(it->next))->connection == connection){
+            linked_item_t *toDelete = it->next;
             it->next = it->next->next;
-            free(it->next);
+            free(toDelete);
         } else {
             it = it->next;
         }
