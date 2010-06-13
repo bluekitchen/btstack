@@ -74,6 +74,6 @@ void de_add_data( uint8_t *seq, de_type_t type, uint16_t size, uint8_t *data);
 int de_get_data_size(uint8_t * header);
 
 #pragma mark SDP
-uint16_t sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startIndex, uint16_t maxBytes, uint8_t *buffer);
+int sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startIndex, uint16_t maxBytes, uint8_t *buffer);
 uint8_t * sdp_get_attribute_value_for_attribute_id(uint8_t * record, uint16_t attributeID);
 int sdp_record_matches_service_search_pattern(uint8_t *record, uint8_t *serviceSearchPattern);
