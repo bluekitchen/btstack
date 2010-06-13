@@ -48,13 +48,14 @@
 
 #include <getopt.h>
 
-#include "hci.h"
-#include "hci_dump.h"
-#include "l2cap.h"
 #include <btstack/btstack.h>
 #include <btstack/linked_list.h>
 #include <btstack/run_loop.h>
-#include <btstack/sdp.h>
+
+#include "hci.h"
+#include "hci_dump.h"
+#include "l2cap.h"
+#include "sdp.h"
 #include "socket_connection.h"
 
 #ifdef USE_BLUETOOL
@@ -168,11 +169,11 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case SDP_REGISTER_SERVICE_RECORD:
             printf("SDP_REGISTER_SERVICE_RECORD size %u\n", size);
-            sdp_register_service_internal(&packet[3]);
+            sdp_register_service_internal(connection, &packet[3]);
             break;
         case SDP_UNREGISTER_SERVICE_RECORD:
             service_record_handle = READ_BT_32(packet, 3);
-            sdp_unregister_service_internal(service_record_handle);
+            sdp_unregister_service_internal(connection, service_record_handle);
             break;
         default:
             //@TODO: log into hci dump as vendor specific "event"
@@ -203,6 +204,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
         case DAEMON_EVENT_PACKET:
             switch (data[0]) {
                 case DAEMON_EVENT_CONNECTION_CLOSED:
+                    sdp_unregister_services_for_connection(connection);
                     l2cap_close_connection(connection);
                     break;
                 case DAEMON_NR_CONNECTIONS_CHANGED:

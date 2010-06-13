@@ -33,7 +33,7 @@
  * Implementation of the Service Discovery Protocol Server 
  */
 
-#include <btstack/sdp.h>
+#include "sdp.h"
 
 #include <stdio.h>
 
@@ -61,7 +61,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 linked_list_t sdp_service_records;
 
 // our handles start after the reserved range
-static uint32_t sdp_next_service_record_handle = maxReservedServiceRecordHandle + 1;
+static uint32_t sdp_next_service_record_handle = maxReservedServiceRecordHandle + 2;
 
 // AttributeIDList used to remove ServiceRecordHandle
 const uint8_t removeServiceRecordHandleAttributeIDList[] = { 0x36, 0x00, 0x05, 0x0A, 0x00, 0x01, 0xFF, 0xFF };
@@ -103,7 +103,7 @@ uint32_t sdp_create_service_record_handle(){
 // register service record internally
 // pre: AttributeIDs are in ascending order => ServiceRecordHandle is first attribute if present
 // @returns ServiceRecordHandle or 0 if registration failed
-uint32_t sdp_register_service_internal(uint8_t * record){
+uint32_t sdp_register_service_internal(connection_t *connection, uint8_t * record){
 
     // dump for now
     printf("Register service record\n");
@@ -160,11 +160,15 @@ uint32_t sdp_register_service_internal(uint8_t * record){
 }
 
 // unregister service record internally
-void sdp_unregister_service_internal(uint32_t service_record_handle){
+void sdp_unregister_service_internal(connection_t *connection, uint32_t service_record_handle){
     service_record_item_t * record_item = sdp_get_record_for_handle(service_record_handle);
     if (record_item) {
         linked_list_remove(&sdp_service_records, (linked_item_t *) record_item);
     }
+}
+
+// remove all service record for a client
+void sdp_unregister_services_for_connection(connection_t *connectino){
 }
 
 // PDU
