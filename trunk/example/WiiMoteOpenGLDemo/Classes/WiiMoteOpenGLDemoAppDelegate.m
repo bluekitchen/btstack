@@ -48,7 +48,7 @@
 // quaternion rotation library
 float norm(float *vector, int dim);
 void normalizeVector(float *vector, int dim);
-void getRotationMatrixFromVectors(float vin[3], float vout[3], float matrix[3][3]);
+void getRotationMatrixFromVectors(float vin[3], float vout[3], float matrix[4][4]);
 
 BTDevice *device;
 uint16_t wiiMoteConHandle = 0;
@@ -92,7 +92,9 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 	accData[1] = addToHistory( histY, 1 * (y - 128));
 	accData[2] = addToHistory( histZ, 1 * (z - 128));
 
-	float rotationMatrix[3][3];
+	printf("%f, %f, %f\n", accData[0], accData[1], accData[2]);
+	
+	float rotationMatrix[4][4];
 	getRotationMatrixFromVectors(restPosition, accData, rotationMatrix);
 	
 	[[theMainApp glView] setRotationMatrix:rotationMatrix];

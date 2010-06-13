@@ -128,7 +128,7 @@ void getRotationMatrixFromQuartenion(float q[4], float m[4][4]){
 }
 
 
-void getRotationMatrixFromVectors(float vin[3], float vout[3], float matrix[3][3]){
+void getRotationMatrixFromVectors(float vin[3], float vout[3], float matrix[4][4]){
     normalizeVector(vout,3);
     
     float q[4] = {0,0,0,0};
@@ -147,7 +147,7 @@ void getRotationMatrixFromVectors(float vin[3], float vout[3], float matrix[3][3
     q[0] = sqrt(vin_length * vout_length) + dotprod;
     q[1] = -1*(vin[1]*vout[2] - vin[2]*vout[1]);
     q[2] = -1*(vin[2]*vout[0] - vin[0]*vout[2]);
-    q[3] = -1*(vin[0]*vout[1] - vin[1]*vout[0]);
+    q[3] = 0;//-1*(vin[0]*vout[1] - vin[1]*vout[0]);
     
     normalizeVector(q,4);
     

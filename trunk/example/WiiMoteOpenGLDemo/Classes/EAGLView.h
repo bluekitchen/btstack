@@ -61,7 +61,7 @@ Note that setting the view non-opaque will only work if the EAGL surface has an 
 - (void)setupView;
 - (void)checkGLError:(BOOL)visibleCheck;
 
-- (void)setRotationMatrix:(float[3][3]) matrix;
+- (void)setRotationMatrix:(float[4][4]) matrix;
 - (void)setRotationX:(int)X Y:(int)Y Z:(int)Z;
 - (void)loadTexture;
 
