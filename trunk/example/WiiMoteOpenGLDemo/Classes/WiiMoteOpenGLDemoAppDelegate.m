@@ -45,6 +45,11 @@
 #import <btstack/run_loop.h>
 #import <btstack/hci_cmds.h>
 
+// quaternion rotation library
+float norm(float *vector, int dim);
+void normalizeVector(float *vector, int dim);
+void getRotationMatrixFromVectors(float vin[3], float vout[3], float matrix[3][3]);
+
 BTDevice *device;
 uint16_t wiiMoteConHandle = 0;
 WiiMoteOpenGLDemoAppDelegate * theMainApp;
@@ -59,120 +64,38 @@ WiiMoteOpenGLDemoAppDelegate * theMainApp;
 
 #define SIZE  5
 int counter;
+
+// define the rest position 
+static float restPosition[3] = {0,0,1};
+#define histSize 5
+int histX[histSize];
+int histY[histSize];
+int histZ[histSize];
+
+static float addToHistory(int history[histSize], int value){
+	int i;
+	float sum = 0;
+	for (i=0; i<histSize-1;i++){
+		history[i] = history[i+1];
+		sum += history[i];
+	}
+	history[histSize-1] = value;
+	return sum/histSize;
+}
+
 static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
+	
 	// NSLog(@"BT data: %u %u %u", x , y ,z);
 	// [[theMainApp status] setText:[NSString stringWithFormat:@"X:%03u Y:%03u Z:%03u", x, y, z]];
-	float ax = x - 128;
-	float ay = y - 128;
-	float az = z - 128;
-	
-	// mini calib
-	// az /= 2;
-	
-#if 0
-	// normalize vector
-	float length = sqrt( ax*ax + ay*ay + az*az);
-	ax /= length;
-	ay /= length;
-	az /= length;
-#endif
+	float accData[3];
+	accData[0] = addToHistory( histX, 1 * (x - 128));
+	accData[1] = addToHistory( histY, 1 * (y - 128));
+	accData[2] = addToHistory( histZ, 1 * (z - 128));
 
-#if 0
-	// cross product between A and (0,0,1) 
-	float crossX = ay;
-	float crossY = -ax;
-	float crossZ = 0;
-	float omega = acos( az );
-
-	// normalize quat
-	float quatSum = crossX * crossX + crossY * crossY + omega * omega;
-	crossX /= quatSum;
-	crossY /= quatSum;
-	crossZ /= quatSum;
-	omega  /= quatSum;
+	float rotationMatrix[3][3];
+	getRotationMatrixFromVectors(restPosition, accData, rotationMatrix);
 	
-	//
-	int pitch = atan2( 2*(omega*crossX), omega*omega - crossX*crossX - crossY*crossY)* 180 / M_PI;
-	int roll  = atan2( 2*(crossX * crossY), omega*omega + crossX*crossX - crossY*crossY) * 180 / M_PI;
-	int theta = 0;
-#endif	
-#if 0	
-	int roll  = atan2(ax, sqrt(ay*ay+az*az)) * 180 / M_PI; 
-	int pitch = atan2(ay, sqrt(ax*ax+az*az)) * 180 / M_PI;
-	int theta = atan2(sqrt(ax*ax+ay*ay), az) * 180 / M_PI;
-	if (az < 0) {
-	 	pitch  = 180 - pitch;
-	}
-#endif
-	
-	// sort axes
-	float h = az;
-	az = -ay;
-	ay = h;
-
-	// calc
-	int roll =  atan2(ax, ay) * 180 / M_PI;
-	int pitch = atan2(ay, az) * 180 / M_PI;
-	int theta = 0;
-	
-#if 0
-	if (roll >= 90 || roll <= -90) {
-		pitch = 360 - pitch;
-	}
-	// if ( (++counter & 15) == 0)
-	// NSLog(@"BT data: %f %f %f: pitch %i, roll %i, yaw %i", ax , ay ,az, pitch, roll, theta);
-#endif
-	pitch = 0;
-	
-#if 1
-	static int lastPitch;
-	static int lastRoll;
-
-	if (abs(lastPitch - pitch) > 180) {
-		if (pitch > lastPitch) {
-			pitch -= 360;
-		} else {
-			pitch += 360;
-		}
-	}
-
-	if (abs(lastRoll - roll) > 180) {
-		if (roll > lastRoll) {
-			roll -= 360;
-		} else {
-			roll += 360;
-		}
-	}
-	
-	// moving average of size SIZE
-	static int pos = 0;
-	static int historyRoll[SIZE];
-	static int historyPitch[SIZE];
-	static int historyTheta[SIZE];
-	
-	
-	historyRoll[pos] = roll;
-	historyPitch[pos] = pitch;
-	historyTheta[pos] = theta;
-	pos++;
-	if (pos==SIZE) pos = 0;
-	
-	pitch = roll = 0;
-	int i;
-	for (i=0;i<SIZE;i++){
-		roll  += historyRoll[i];
-		pitch += historyPitch[i];
-		theta += historyTheta[i];
-	}
-	roll = roll / SIZE;
-	pitch = pitch / SIZE;
-	theta = theta / SIZE;
-	
-	lastPitch = pitch;
-	lastRoll  = roll;
-#endif	
-	// hack 
-	[[theMainApp glView] setRotationX:(-pitch) Y:roll Z:0];
+	[[theMainApp glView] setRotationMatrix:rotationMatrix];
 }
 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -203,8 +126,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 							// interupt channel openedn succesfully, now open control channel, too.
 							bt_send_cmd(&l2cap_create_channel, event_addr, 0x11);
 						} else {
-
-							// request acceleration data.. probably has to be sent to control channel 0x11 instead of 0x13
+							// request acceleration data.. 
 							uint8_t setMode31[] = { 0x52, 0x12, 0x00, 0x31 };
 							bt_send_l2cap( source_cid, setMode31, sizeof(setMode31));
 							uint8_t setLEDs[] = { 0x52, 0x11, 0x10 };

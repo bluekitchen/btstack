@@ -34,7 +34,7 @@
 @synthesize context;
 @synthesize animationTimer;
 @synthesize animationInterval;
-
+@synthesize useRotationMatrix;
 
 // You must implement this method
 + (Class)layerClass {
@@ -160,15 +160,20 @@
     glTranslatef(0.0, 0.0, -2.0);
 	
 #ifdef USE_BLUETOOTH
-	glRotatef(rotateX, 1.0f, 0.0f, 0.0f);
-	glRotatef(rotateY, 0.0f, 1.0f, 0.0f);
-	glRotatef(rotateZ, 0.0f, 0.0f, 1.0f);
-	// glRotatef(1.0f, rotateX, rotateY, rotateZ);
+	if (self.useRotationMatrix) {
+		glMultMatrixf(rotationMatrix);
+	} else {
+		glRotatef(rotateX, 1.0f, 0.0f, 0.0f);
+		glRotatef(rotateY, 0.0f, 1.0f, 0.0f);
+		glRotatef(rotateZ, 0.0f, 0.0f, 1.0f);
+		// glRotatef(1.0f, rotateX, rotateY, rotateZ);
+	}
 #else
 	rota += 1;
 	glRotatef(rota, 0.0, 0.5, 0.0);
 	glRotatef(rota, 0.0, 0.0, 1.0);
 #endif
+	
 	glVertexPointer(3, GL_FLOAT, 0, cubeVertices);
     glEnableClientState(GL_VERTEX_ARRAY);
 
@@ -357,8 +362,35 @@
     }
 }
 
+- (void)setRotationMatrix:(float[3][3]) matrix{
+	useRotationMatrix = YES;
+	
+	// extend 3 by 3 matrix to 4 by 4
+	int pos = 0;
+	rotationMatrix[pos++] = matrix[0][0];
+	rotationMatrix[pos++] = matrix[0][1];
+	rotationMatrix[pos++] = matrix[0][2];
+	rotationMatrix[pos++] = 0;
+
+	rotationMatrix[pos++] = matrix[1][0];
+	rotationMatrix[pos++] = matrix[1][1];
+	rotationMatrix[pos++] = matrix[1][2];
+	rotationMatrix[pos++] = 0;
+
+	rotationMatrix[pos++] = matrix[2][0];
+	rotationMatrix[pos++] = matrix[2][1];
+	rotationMatrix[pos++] = matrix[2][2];
+	rotationMatrix[pos++] = 0;
+
+	rotationMatrix[pos++] = 0;
+	rotationMatrix[pos++] = 0;
+	rotationMatrix[pos++] = 0;
+	rotationMatrix[pos++] = 1;
+}
 
 - (void)setRotationX:(int)x Y:(int)y Z:(int)z{
+	useRotationMatrix = NO;
+
 	// NSLog(@"BT data: %u %u %u", x , y ,z);
 	rotateX = x;
 	rotateY = y;

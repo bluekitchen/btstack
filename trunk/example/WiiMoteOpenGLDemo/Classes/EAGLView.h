@@ -39,13 +39,20 @@ Note that setting the view non-opaque will only work if the EAGL surface has an 
 	
 	GLuint textures[1];
 	GLfloat rota;
+
+	BOOL useRotationMatrix;
 	
+	// use rotation matrix
+	GLfloat rotationMatrix[16];
+	
+	// use euler angles
 	int rotateX;
 	int rotateY;
 	int rotateZ;
 }
 
 @property NSTimeInterval animationInterval;
+@property BOOL useRotationMatrix;
 
 - (void)startAnimation;
 - (void)stopAnimation;
@@ -54,6 +61,7 @@ Note that setting the view non-opaque will only work if the EAGL surface has an 
 - (void)setupView;
 - (void)checkGLError:(BOOL)visibleCheck;
 
+- (void)setRotationMatrix:(float[3][3]) matrix;
 - (void)setRotationX:(int)X Y:(int)Y Z:(int)Z;
 - (void)loadTexture;
 
