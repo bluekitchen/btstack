@@ -1,0 +1,82 @@
+SDP for BTstack
+
+General:
+ * Protocol: request/response, half-duplex
+ * Endianess = BIG/Network! not little endian as usual
+ * Server maintains a list of service records
+ * service (record) is instance of a service class
+ * a service record = list of service attributes
+ * service attribute = { attribute ID, attribute value }
+ * service record handle: 32 bit number (used internally)
+ * service record handle 
+   * 0x00000000 used for SDP server, 
+   * 0x00000001-0x0000FFFF reserved
+ * attribute ID: 16 bit (pre-defined), data element
+ * attribute value: var length field, data element
+ * service class: UUID (128 bit) stored as ServiceClassIDList attribute
+ * service classes form an inheritance tree, which each subclass specifying more attributes
+ * Bluetooth Base UUID: 00000000-0000-1000-8000- 00805F9B34FB
+ * 16 bit UUID => Bluetooth Base UUID + 16_bit_value * 2^96
+ * 32 bit UUID => Bluetooth Base UUID + 32_bit_value * 2^96
+ * Service Search Pattern: list of UUIDs required in a service record to be present for a match
+ * Browse Group UUID: all top-level services contain browse group UUID in the BrowseGroupList attribute
+ * Service Browsing Hierarchy is possible - not supported by BTstack for now
+ * Data representation: like XML
+ * PDU: PDU ID(1), Transaction ID(2), Param length(2), params*
+   * ServiceSearchRequest/ServiceSearchResponse: list of UUIDs to be matched by service record -> list of service record handles
+   * ServiceAttributeRequest/ServiceAttributeResponse: get list of attributes for a given service record handle
+   * Service SearchAttributeRequest/SearchAtrributeResponse: for all service records that match ServiceSearchPattern: return list of attributes that match AttributeIDList
+   * Transaction ID of response = ID of request
+   * param lengh in bytes
+ * Continuation state parameter: send to client to denote further data (max 16 bytes)
+ * To get RFCOMM channel, we use SDP_ServiceSearchAttributeRequest(RFCOMM service, RFCOMM type)
+
+Implementation:
+ * DataElement creation API - no extra memory
+ * helper functions:
+   * attribute ID in AttributeIDList
+   * get attributes specified by AttributeIDList
+   * service record contains UUID
+   * does service search pattern matches record
+   * get attribute value (DE) for attribute ID
+   * create service record handle (incl. ServiceRecordHandle management)
+ * visitor pattern for DES traversal
+   * call handler on every element: int handle_element(uint8_t element, void *context) - done?
+ * Dispatch packets for protocols implemented by BTdaemon
+   * add packet_handler to l2cap_service_t and l2cap_channel_t
+     * pass acl/event handler to l2cap_register_service_internal
+     * copy acl/event handler to l2cap_channel_t
+     * if specified, call custom packet_handler instead of general one 
+   * acl -> l2cap -> l2cap_channel -> acl/event handler OR daemon
+ * LinkedList of service records
+   * alloc { linked_list_item_t ; ServiceRecord }
+   * add service record: service record -> service record handle or 0
+   * remove service record: service record handle (32bit)
+ * SDP as part of stack itself
+   * Register SDP PSM=0x0001
+   * Accept incoming connections
+   * Define all SDP requests/response PDU-IDs
+   * Handle all three SDP requests by denying
+     * ServiceSearchRequest
+     * ServiceAttributeRequest
+     * ServiceSearchAttributeRequest
+   * Dynamically create denial
+   * Handle ServiceSearchAttributeRequest
+   * Handle ServiceSearchRequest
+   * Handle ServiceAttributeRequest
+   * Extract sdp_create_error_response
+   * call sdp_create_error_response when service record handle is invalid
+ * Define and implement client commands & events for SDP registry
+ * Store client connection in service record item
+ * Unregister service when client disconnects 
+ * Send SDP_ErrorResponse for invalid records
+ * Implement Continuation: limited nr of ServiceRecordHandles or AttributeList(s)ByteCount
+   * ServiceSearchRequest: Iterate over all records - use record index as cont.
+   * ServiceAttributeRequest: Iterate over all attributes - use attribute index as cont.
+   * ServiceSearchAttributeRequest: Iterate over all records and attributes. Use {record, attribute} index
+ * Test continuation for all three commands
+   * add 2 records, get all data back with limited result size
+ * sdp_handle_service_search_attribute_request
+
+ * Why do I don't get any services using sdptool "sdptool get --raw --bdaddr 00:80:37:16:a2:52 0x10001" ?
+   * ServiceSearchAttributeRequest public browse group 0x0000-0xffff
