@@ -143,20 +143,24 @@ void getRotationMatrixFromVectors(float vin[3], float vout[3], float matrix[4][4
         vout_length+= vout[i]*vout[i];
         dotprod += vin[i]*vout[i];
     }
-    
-    //q[0] = sqrt(vin_length * vout_length) + dotprod;
-    
+
+#if 1 //mila
+    q[0] = sqrt(vin_length * vout_length) + dotprod;
+    q[1] = -1*(vin[1]*vout[2] - vin[2]*vout[1]);
+    q[2] = -1*(vin[2]*vout[0] - vin[0]*vout[2]);
+    q[3] = -1*(vin[0]*vout[1] - vin[1]*vout[0]);
+#else    
     float axis[3] = {0,0,0};
-    a[0] = -1*(vin[1]*vout[2] - vin[2]*vout[1]);
-    a[1] = -1*(vin[2]*vout[0] - vin[0]*vout[2]);
-    a[2] = -1*(vin[0]*vout[1] - vin[1]*vout[0]);
+    axis[0] = -1*(vin[1]*vout[2] - vin[2]*vout[1]);
+    axis[1] = -1*(vin[2]*vout[0] - vin[0]*vout[2]);
+    axis[2] = -1*(vin[0]*vout[1] - vin[1]*vout[0]);
     normalizeVector(axis,3);
     
     float angle = acos(vin[0]*vout[0]+vin[1]*vout[1]+vin[2]*vout[2]);
-
-    quaternionFromAxis(angle, axis[3], q);
-    normalizeVector(q,4);
-    
+    quaternionFromAxis(angle, axis, q);
+#endif    
+	
+	normalizeVector(q,4);
     getRotationMatrixFromQuartenion(q,matrix);
 
 }
