@@ -3,34 +3,17 @@
 2009-11-08: Release 0.1
 
 NEXT:
-- suport multiple signaling commands in single ACL packet
-  - have l2cap_primary_signaling_handler use offsets relative to start of commands (byte 8) instead of start of packet
-  - call l2cap_primary_signaling_handler for each command
+- implement SDP
+- test SDP implementation against Mac/Linux Service Discovery
+
+== Release Version 0.2
+- move RFCOMM code into BTdaemon
 - add extern "C" to bstack methods
   - see: http://stackoverflow.com/questions/376966/using-c-c-static-libraries-from-iphone-objectivec-apps
-- clean up control flow
-  - l2cap directly sends data over socket: good/bad?
-  - split daemon into stack parts
-  - should there be STACK API/interface?
-- BUG: bt_close crashes when used in CocoaTouch app
-- Provide BTstackManager Objective-C class
-  - move connection methods to BTdevice (get more object oriented)
-    - initWithAddress:(bd_addr_t *)addr
-	- setters private
-  - implement l2cap code
-  - implement rfcomm code
-  - animate discovery dialog:
-      * use indexPathsForVisibleRows and cellForRowAtIndexPath: when you want to refresh just the cells that are on the screen
-      * use insertRowsAtIndexPaths:withRowAnimation: to add rows
-      * use deleteRowsAtIndexPaths:withRowAnimation: to remove them-
 - figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect, when phone gets locked
-  - some trick
-  - use Cocoa run loop for background app?
-- move RFCOMM code into BTdaemon
 - add timeouts to cocoa run loop
 - L2CAP 
   - segmentation
-
 - extend SpringBoard feedback
   - show alerts/messages using SpringBoardAcccess, e.g. Bluetooth disconnected by remote device
   - add code to notify about remote disconnets
@@ -46,13 +29,32 @@ NEXT:
   - flow control
 - add configure option for uart flowcontrol
 - create <btstack/errors.h>
+- Bluetooth low-power modes useful
 
-== Release Version 0.3
-- implement RFCOMM server
-- implement SDP
-- implement PAN
+== USB Support ==
+- Store array of data sources to be able to remove them on usb_close
 
-== Release Version 0.4
+== Objective-C Interface ==
+- move connection methods to BTdevice (get more object oriented)
+  - initWithAddress:(bd_addr_t *)addr
+  - setters private
+- implement l2cap code
+- implement rfcomm code
+- animate discovery dialog:
+  * use indexPathsForVisibleRows and cellForRowAtIndexPath: when you want to refresh just the cells that are on the screen
+  * use insertRowsAtIndexPaths:withRowAnimation: to add rows
+  * use deleteRowsAtIndexPaths:withRowAnimation: to remove them-
+
+== Refactor/Improve Architecture ==
+- use single standard packet handler for acl & events 
+  - hci_transport -> hci
+  - hci -> l2cap
+  - l2cap -> daemon 
+- add linked_list_iterator that can remove elements (used by l2cap_close_connection and sdp_unregister_services_for_connection
+- clean up control flow
+  - l2cap directly sends data over socket: good/bad?
+  - split daemon into stack parts
+  - should there be STACK API/interface?
 - unify packet generation
   - btstack events
   - cmd packets
@@ -60,7 +62,3 @@ NEXT:
 - auto-generate code for sending commands from structured text input file
 - devise concept for access to event data
   - auto-generate event struct getter? STRUCTURE_get_FIELD
-- Bluetooth low-power modes useful
-
-== USB Support ==
-- Store array of data sources to be able to remove them on usb_close
