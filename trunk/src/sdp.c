@@ -50,6 +50,9 @@ typedef struct {
     // linked list - assert: first field
     linked_item_t   item;
 
+    // client connection
+    connection_t *  connection;
+    
     // data is contained in same memory
     uint32_t        service_record_handle;
     uint8_t         service_record[0];
@@ -130,6 +133,9 @@ uint32_t sdp_register_service_internal(connection_t *connection, uint8_t * recor
     // alloc memory for new service_record_item
     service_record_item_t * newRecordItem = (service_record_item_t *) malloc(recordSize + sizeof(service_record_item_t));
     if (!newRecordItem) return 0;
+
+    // link new service item to client connection
+    newRecordItem->connection = connection;
     
     // set new handle
     newRecordItem->service_record_handle = record_handle;
@@ -160,15 +166,27 @@ uint32_t sdp_register_service_internal(connection_t *connection, uint8_t * recor
 }
 
 // unregister service record internally
+// 
+// makes sure one client cannot remove service records of other clients
+//
 void sdp_unregister_service_internal(connection_t *connection, uint32_t service_record_handle){
     service_record_item_t * record_item = sdp_get_record_for_handle(service_record_handle);
-    if (record_item) {
+    if (record_item && record_item->connection == connection) {
         linked_list_remove(&sdp_service_records, (linked_item_t *) record_item);
     }
 }
 
-// remove all service record for a client
-void sdp_unregister_services_for_connection(connection_t *connectino){
+// remove all service record for a client connection
+void sdp_unregister_services_for_connection(connection_t *connection){
+    linked_item_t *it = (linked_item_t *) &sdp_service_records;
+    while (it->next){
+        if (((service_record_item_t *)it->next)->connection == connection){
+            it->next = it->next->next;
+            free(it);
+        } else {
+            it = it->next;
+        }
+    }
 }
 
 // PDU
