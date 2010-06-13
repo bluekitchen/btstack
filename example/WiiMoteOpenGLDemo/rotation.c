@@ -159,7 +159,13 @@ void getRotationMatrixFromVectors(float vin[3], float vout[3], float matrix[4][4
     float angle = acos(vin[0]*vout[0]+vin[1]*vout[1]+vin[2]*vout[2]);
     quaternionFromAxis(angle, axis, q);
 #endif    
+
+
+    float v0[4] = {0, vin[0], vin[1], vin[2]};
+    float v1[4] = {0, vout[0], vout[1], vout[2]};
+	slerp(v0, v1, 0.5, q);
 	
+
 	normalizeVector(q,4);
     getRotationMatrixFromQuartenion(q,matrix);
 
@@ -167,6 +173,45 @@ void getRotationMatrixFromVectors(float vin[3], float vout[3], float matrix[4][4
 
 float getRotationAngle(float matrix[4][4]){
     return acos( (matrix[0][0]+matrix[1][1]+matrix[2][2]-1) * 0.5);
+}
+
+void slerp(float v0[4], float v1[4], double t, float result[4]) {
+    int i;
+    // http://number-none.com/product/Understanding%20Slerp,%20Then%20Not%20Using%20It/
+    // v0 and v1 should be unit length or else
+    // something broken will happen.
+    normalizeVector(v0,4);
+    normalizeVector(v1,4);
+    
+    // Compute the cosine of the angle between the two vectors.
+    double dot = v0[0]*v1[0] + v0[1]*v1[1] + v0[2]*v1[2] + v0[3]*v1[3];
+
+    const double DOT_THRESHOLD = 0.9995;
+    if (dot > DOT_THRESHOLD) {
+        // If the inputs are too close for comfort, linearly interpolate
+        // and normalize the result.
+        for (i=0; i<4; i++){
+            result[i] = v0[i] + t*(v1[i] Ð v0[i]);
+        }
+        normalizeVector(result,4);
+        return result;
+    }
+
+    if (dot<-1) dot = -1;
+    if (dot>1 ) dot = 1;           // Robustness: Stay within domain of acos()
+    double theta_0 = acos(dot);  // theta_0 = angle between input vectors
+    double theta = theta_0*t;    // theta = angle between v0 and result 
+    
+    float v2[4] = {0,0,0,0};
+    for (i=0; i<4; i++){
+        v2[i] = v1[i] Ð v0[i]*dot;
+    }
+    normalizeVector(v2,4);             // { v0, v2 } is now an orthonormal basis
+
+    for (i=0; i<4; i++){
+        result[i] = v0[i]*cos(theta) + v2[i]*sin(theta);
+    }
+    return result;
 }
 
 #if 0
