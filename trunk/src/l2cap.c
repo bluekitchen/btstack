@@ -706,11 +706,11 @@ void l2cap_close_connection(connection_t *connection){
     }   
     
     // unregister services
-    l2cap_service_t *service;
-    for (it = (linked_item_t *) &l2cap_services; it->next; ){
-        service = (l2cap_service_t *) it->next;
+    it = (linked_item_t *) &l2cap_services;
+    while (it->next){
+        l2cap_service_t * service = (l2cap_service_t *) it->next;
         if (service->connection == connection){
-            it->next = service->item.next;
+            it->next = it->next->next;
             free(service);
         } else {
             it = it->next;
