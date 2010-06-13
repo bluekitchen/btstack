@@ -128,49 +128,6 @@ void getRotationMatrixFromQuartenion(float q[4], float m[4][4]){
 }
 
 
-void getRotationMatrixFromVectors(float vin[3], float vout[3], float matrix[4][4]){
-    normalizeVector(vout,3);
-    
-    float q[4] = {0,0,0,0};
-    
-    float vin_length = 0;
-    float vout_length = 0;
-    float dotprod = 0;
-    
-    int i;
-    for (i=0; i<3; i++){
-        vin_length += vin[i]*vin[i];
-        vout_length+= vout[i]*vout[i];
-        dotprod += vin[i]*vout[i];
-    }
-
-#if 1 //mila
-    q[0] = sqrt(vin_length * vout_length) + dotprod;
-    q[1] = -1*(vin[1]*vout[2] - vin[2]*vout[1]);
-    q[2] = -1*(vin[2]*vout[0] - vin[0]*vout[2]);
-    q[3] = -1*(vin[0]*vout[1] - vin[1]*vout[0]);
-#else    
-    float axis[3] = {0,0,0};
-    axis[0] = -1*(vin[1]*vout[2] - vin[2]*vout[1]);
-    axis[1] = -1*(vin[2]*vout[0] - vin[0]*vout[2]);
-    axis[2] = -1*(vin[0]*vout[1] - vin[1]*vout[0]);
-    normalizeVector(axis,3);
-    
-    float angle = acos(vin[0]*vout[0]+vin[1]*vout[1]+vin[2]*vout[2]);
-    quaternionFromAxis(angle, axis, q);
-#endif    
-
-
-    float v0[4] = {0, vin[0], vin[1], vin[2]};
-    float v1[4] = {0, vout[0], vout[1], vout[2]};
-	slerp(v0, v1, 0.5, q);
-	
-
-	normalizeVector(q,4);
-    getRotationMatrixFromQuartenion(q,matrix);
-
-}
-
 float getRotationAngle(float matrix[4][4]){
     return acos( (matrix[0][0]+matrix[1][1]+matrix[2][2]-1) * 0.5);
 }
@@ -191,10 +148,10 @@ void slerp(float v0[4], float v1[4], double t, float result[4]) {
         // If the inputs are too close for comfort, linearly interpolate
         // and normalize the result.
         for (i=0; i<4; i++){
-            result[i] = v0[i] + t*(v1[i] Ð v0[i]);
+            result[i] = v0[i] + t*(v1[i] - v0[i]);
         }
         normalizeVector(result,4);
-        return result;
+        return;
     }
 
     if (dot<-1) dot = -1;
@@ -204,14 +161,52 @@ void slerp(float v0[4], float v1[4], double t, float result[4]) {
     
     float v2[4] = {0,0,0,0};
     for (i=0; i<4; i++){
-        v2[i] = v1[i] Ð v0[i]*dot;
+        v2[i] = v1[i] - v0[i]*dot;
     }
     normalizeVector(v2,4);             // { v0, v2 } is now an orthonormal basis
 
     for (i=0; i<4; i++){
         result[i] = v0[i]*cos(theta) + v2[i]*sin(theta);
     }
-    return result;
+    return;
+}
+
+
+
+void getRotationMatrixFromVectors(float vin[3], float vout[3], float matrix[4][4]){
+    normalizeVector(vout,3);
+    
+    float q[4] = {0,0,0,0};
+    
+    float vin_length = 0;
+    float vout_length = 0;
+    float dotprod = 0;
+    
+    int i;
+    for (i=0; i<3; i++){
+        vin_length += vin[i]*vin[i];
+        vout_length+= vout[i]*vout[i];
+        dotprod += vin[i]*vout[i];
+    }
+	
+#if 1 //mila
+    q[0] = sqrt(vin_length * vout_length) + dotprod;
+    q[1] = -1*(vin[1]*vout[2] - vin[2]*vout[1]);
+    q[2] = -1*(vin[2]*vout[0] - vin[0]*vout[2]);
+    q[3] = -1*(vin[0]*vout[1] - vin[1]*vout[0]);
+#else    
+    float axis[3] = {0,0,0};
+    axis[0] = -1*(vin[1]*vout[2] - vin[2]*vout[1]);
+    axis[1] = -1*(vin[2]*vout[0] - vin[0]*vout[2]);
+    axis[2] = -1*(vin[0]*vout[1] - vin[1]*vout[0]);
+    normalizeVector(axis,3);
+    
+    float angle = acos(vin[0]*vout[0]+vin[1]*vout[1]+vin[2]*vout[2]);
+    quaternionFromAxis(angle, axis, q);
+#endif    
+		
+	normalizeVector(q,4);
+    getRotationMatrixFromQuartenion(q,matrix);
 }
 
 #if 0
