@@ -162,12 +162,10 @@
 #ifdef USE_BLUETOOTH
 	if (self.useRotationMatrix) {
 		glMultMatrixf(rotationMatrix);
-	} else {
-		glRotatef(rotateX, 1.0f, 0.0f, 0.0f);
-		glRotatef(rotateY, 0.0f, 1.0f, 0.0f);
-		glRotatef(rotateZ, 0.0f, 0.0f, 1.0f);
-		// glRotatef(1.0f, rotateX, rotateY, rotateZ);
 	}
+	glRotatef(rotateX, 1.0f, 0.0f, 0.0f);
+	glRotatef(rotateY, 0.0f, 1.0f, 0.0f);
+	glRotatef(rotateZ, 0.0f, 0.0f, 1.0f);
 #else
 	rota += 1;
 	glRotatef(rota, 0.0, 0.5, 0.0);
@@ -373,7 +371,6 @@
 }
 
 - (void)setRotationX:(int)x Y:(int)y Z:(int)z{
-	useRotationMatrix = NO;
 
 	// NSLog(@"BT data: %u %u %u", x , y ,z);
 	rotateX = x;
