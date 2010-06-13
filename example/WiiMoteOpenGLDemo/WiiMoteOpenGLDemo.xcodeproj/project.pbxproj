@@ -21,6 +21,7 @@
 		9CB96EEF10278D8D002663D0 /* EAGLView.m in Sources */ = {isa = PBXBuildFile; fileRef = 28FD14FD0DC6FC130079059D /* EAGLView.m */; };
 		9CC8B5E51093727700BCBA1F /* wiimote_logo_55px.png in Resources */ = {isa = PBXBuildFile; fileRef = 9CC8B5E41093727700BCBA1F /* wiimote_logo_55px.png */; };
 		9CD1C867117E2F6900C7A4F4 /* libBTstack.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9CD1C866117E2F6900C7A4F4 /* libBTstack.dylib */; };
+		9CFFD60E11C5484300A37038 /* rotation.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CFFD60D11C5484300A37038 /* rotation.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -51,6 +52,7 @@
 		9CB96E9710278945002663D0 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		9CC8B5E41093727700BCBA1F /* wiimote_logo_55px.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = wiimote_logo_55px.png; sourceTree = "<group>"; };
 		9CD1C866117E2F6900C7A4F4 /* libBTstack.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libBTstack.dylib; path = ../../src/libBTstack.dylib; sourceTree = SOURCE_ROOT; };
+		9CFFD60D11C5484300A37038 /* rotation.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; path = rotation.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -109,6 +111,7 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
+				9CFFD60D11C5484300A37038 /* rotation.c */,
 				32CA4F630368D1EE00C91783 /* WiiMoteOpenGLDemo_Prefix.pch */,
 				29B97316FDCFA39411CA2CEA /* main.m */,
 			);
@@ -221,6 +224,7 @@
 				9C0D06391091035200FC3BBA /* BTDevice.m in Sources */,
 				9C0D063A1091035200FC3BBA /* BTInquiryViewController.m in Sources */,
 				9C0D070D1092316D00FC3BBA /* EAGLViewController.m in Sources */,
+				9CFFD60E11C5484300A37038 /* rotation.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -274,7 +278,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Don't Code Sign";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: Milanka Ringwald (Y4MWH89GZ9)";
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
@@ -286,6 +290,7 @@
 				OTHER_CPLUSPLUSFLAGS = "";
 				OTHER_LDFLAGS = "";
 				PREBINDING = NO;
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "86D3FD5B-5B72-4D87-88B3-0737B204F98E";
 				SDKROOT = iphoneos2.0;
 				USER_HEADER_SEARCH_PATHS = "";
 			};
@@ -295,7 +300,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Don't Code Sign";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: Milanka Ringwald (Y4MWH89GZ9)";
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
@@ -306,6 +311,7 @@
 				OTHER_CPLUSPLUSFLAGS = "";
 				OTHER_LDFLAGS = "";
 				PREBINDING = NO;
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "86D3FD5B-5B72-4D87-88B3-0737B204F98E";
 				SDKROOT = iphoneos2.0;
 				USER_HEADER_SEARCH_PATHS = "";
 			};
