@@ -277,7 +277,7 @@ static int sdp_traversal_append_attributes(uint8_t * element, de_type_t type, de
         if (attributeIDSize == DE_SIZE_16) {
             uint16_t attributeID = READ_NET_16(element, attributeIDPos+1);
             if ( sdp_attribute_list_constains_id(context->attributeIDList, attributeID)){
-                if (context->dataSize + attributeLen <= context->maxBytes) {
+                if (3 + context->dataSize + attributeLen <= context->maxBytes) {
                     // copy Attribute
                     memcpy( context->buffer + 3 + context->dataSize, element, attributeLen);
                     context->dataSize += attributeLen;
@@ -293,10 +293,11 @@ static int sdp_traversal_append_attributes(uint8_t * element, de_type_t type, de
     return 0;
 }
 // returns index of the next attribute index to process, if not all could be passed on, -1 = all processed
+// maxBytes: maximal size of data element sequence
 int sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startIndex, uint16_t maxBytes, uint8_t *buffer){
     struct sdp_context_append_attributes context;
     context.buffer = buffer;
-    context.dataSize = 0;
+    context.dataSize = READ_NET_16(buffer, 1);
     context.maxBytes = maxBytes;
     context.attributeIndex = 0;
     context.startIndex = startIndex;
