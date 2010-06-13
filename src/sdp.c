@@ -184,10 +184,10 @@ void sdp_unregister_service_internal(connection_t *connection, uint32_t service_
 void sdp_unregister_services_for_connection(connection_t *connection){
     linked_item_t *it = (linked_item_t *) &sdp_service_records;
     while (it->next){
-        if (((service_record_item_t *)(it->next))->connection == connection){
-            linked_item_t *toDelete = it->next;
+        service_record_item_t *record_item = (service_record_item_t *) it->next;
+        if (record_item->connection == connection){
             it->next = it->next->next;
-            free(toDelete);
+            free(record_item);
         } else {
             it = it->next;
         }
