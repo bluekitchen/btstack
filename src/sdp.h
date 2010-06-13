@@ -54,3 +54,7 @@ void sdp_unregister_service_internal(connection_t *connection, uint32_t service_
 
 //
 void sdp_unregister_services_for_connection(connection_t *connection);
+
+//
+void sdp_test();
+
