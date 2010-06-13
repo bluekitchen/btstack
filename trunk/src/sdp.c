@@ -36,6 +36,7 @@
 #include "sdp.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #include <btstack/linked_list.h>
 #include <btstack/sdp_util.h>
@@ -109,8 +110,8 @@ uint32_t sdp_create_service_record_handle(){
 uint32_t sdp_register_service_internal(connection_t *connection, uint8_t * record){
 
     // dump for now
-    printf("Register service record\n");
-    de_dump_data_element(record);
+    // printf("Register service record\n");
+    // de_dump_data_element(record);
     
     // get user record handle
     uint32_t record_handle = sdp_get_service_record_handle(record);
@@ -156,8 +157,8 @@ uint32_t sdp_register_service_internal(connection_t *connection, uint8_t * recor
     sdp_append_attributes_in_attributeIDList(record, (uint8_t *) removeServiceRecordHandleAttributeIDList, 0, recordSize, newRecord);
     
     // dump for now
-    de_dump_data_element(newRecord);
-    printf("reserved size %u, actual size %u\n", recordSize, de_get_len(newRecord));
+    // de_dump_data_element(newRecord);
+    // printf("reserved size %u, actual size %u\n", recordSize, de_get_len(newRecord));
     
     // add to linked list
     linked_list_add(&sdp_service_records, (linked_item_t *) newRecordItem);
@@ -213,6 +214,7 @@ int sdp_handle_service_search_request(uint8_t * packet){
     uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2];
     
     // continuation state contains index of next service record to examine
+    int      continuation = 0;
     uint16_t continuation_index = 0;
     if (continuationState[0] == 2){
         continuation_index = READ_NET_16(continuationState, 1);
@@ -237,24 +239,27 @@ int sdp_handle_service_search_request(uint8_t * packet){
             total_service_count++;
             
             // add to list if index higher than last continuation index and space left
-            if (current_service_index >= continuation_index && current_service_count < maximumServiceRecordCount) {
-                net_store_32(sdp_response_buffer, pos, item->service_record_handle);
-                current_service_count++;
-                pos += 4;
-                
-                // this is processed, next one could be checked next time
-                continuation_index == current_service_index+1;
+            if (current_service_index >= continuation_index && !continuation) {
+                if ( current_service_count < maximumServiceRecordCount) {
+                    net_store_32(sdp_response_buffer, pos, item->service_record_handle);
+                    current_service_count++;
+                    pos += 4;
+                } else {
+                    // next time start with this one
+                    continuation = 1;
+                    continuation_index = current_service_index;
+                }
             }
         }
     }
     
-    // Continuation State
-    if (total_service_count == current_service_count) {
-        sdp_response_buffer[pos++] = 0;
-    } else {
+    // Store continuation state
+    if (continuation) {
         sdp_response_buffer[pos++] = 2;
         net_store_16(sdp_response_buffer, pos, continuation_index);
         pos += 2;
+    } else {
+        sdp_response_buffer[pos++] = 0;
     }
 
     // update header info
@@ -455,5 +460,94 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 	}
 }
 
+#if 1
+static uint8_t record[100];
+static uint8_t request[100];
 
+static void dump_service_search_response(){
+    uint16_t nr_services = READ_NET_16(sdp_response_buffer, 7);
+    int i;
+    printf("Nr service handles: %u\n", nr_services);
+    for (i=0; i<nr_services;i++){
+        printf("ServiceHandle %x\n", READ_NET_32(sdp_response_buffer, 9+i*4));
+    }
+    if (sdp_response_buffer[9 + nr_services * 4]){
+        printf("Continuation index %u\n", READ_NET_16(sdp_response_buffer, 9+nr_services*4+1));
+    } else {
+        printf("Continuation: NO\n");
+    }
+}
 
+void sdp_test(){
+
+    // create two records with 2 attributes each
+    uint8_t *attribute;
+    
+    de_create_sequence(record);
+    attribute = de_push_sequence(record);
+    {
+        de_add_number(attribute, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle); 
+        de_add_number(attribute, DE_UINT, DE_SIZE_32, 0x10001);
+    }
+    de_pop_sequence(record, attribute);
+    attribute = de_push_sequence(record);
+    {
+        de_add_number(attribute, DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);
+        de_add_number(attribute, DE_UUID, DE_SIZE_16, 0x0001);
+    }
+    de_pop_sequence(record, attribute);
+    attribute = de_push_sequence(record);
+    {   
+        de_add_number(attribute, DE_UINT, DE_SIZE_16, SDP_BrowseGroupList);
+        de_add_number(attribute, DE_UUID, DE_SIZE_16, 0x0001);
+    }
+    de_pop_sequence(record, attribute);
+    
+    uint32_t handle_1 = sdp_register_service_internal(NULL, record);
+    
+    attribute = de_push_sequence(record); 
+    {
+        de_add_number(attribute, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle);
+        de_add_number(attribute, DE_UINT, DE_SIZE_32, 0x10002);
+    }
+    de_pop_sequence(record, attribute);
+    attribute = de_push_sequence(record);
+    {
+        de_add_number(attribute, DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);
+        de_add_number(attribute, DE_UUID, DE_SIZE_16, 0x0002);
+    
+    }
+    de_pop_sequence(record, attribute);
+    attribute = de_push_sequence(record);
+    {
+        de_add_number(attribute, DE_UINT, DE_SIZE_16, SDP_BrowseGroupList);
+        de_add_number(attribute, DE_UUID, DE_SIZE_16, 0x0001);
+    }
+    de_pop_sequence(record, attribute);
+    uint32_t handle_2 = sdp_register_service_internal(NULL, record);
+
+    // sdp_handle_service_search_request
+    uint16_t transactionID = 1;
+    uint16_t nr_services = 1;
+    request[0] = SDP_ServiceSearchRequest;
+    net_store_16(request, 1, transactionID++); // transaction ID
+    // param len
+    uint8_t * serviceSearchPattern = &request[5];
+    de_create_sequence(serviceSearchPattern);
+    {
+        de_add_number(serviceSearchPattern, DE_UUID, DE_SIZE_16, 0x0001);
+    }
+    uint16_t serviceSearchPatternLen = de_get_len(serviceSearchPattern);
+    net_store_16(request, 5 + serviceSearchPatternLen, 1);
+    request[5 + serviceSearchPatternLen + 2] = 0;
+    sdp_handle_service_search_request(request);
+    dump_service_search_response();
+    memcpy(request + 5 + serviceSearchPatternLen + 2, sdp_response_buffer + 9 + nr_services*4, 3); 
+    sdp_handle_service_search_request(request);
+    dump_service_search_response();
+
+    // sdp_handle_service_attribute_request
+    
+    // sdp_handle_service_search_attribute_request
+}
+#endif
