@@ -153,7 +153,7 @@ uint32_t sdp_register_service_internal(connection_t *connection, uint8_t * recor
     de_pop_sequence(newRecord, serviceRecordHandleAttribute);
     
     // add other attributes
-    sdp_append_attributes_in_attributeIDList(record, (uint8_t *) removeServiceRecordHandleAttributeIDList, newRecord, recordSize);
+    sdp_append_attributes_in_attributeIDList(record, (uint8_t *) removeServiceRecordHandleAttributeIDList, 0, recordSize, newRecord);
     
     // dump for now
     de_dump_data_element(newRecord);
@@ -273,8 +273,14 @@ int sdp_handle_service_attribute_request(uint8_t * packet){
     uint32_t  serviceRecordHandle = READ_NET_32(packet, 5);
     uint16_t  maximumAttributeByteCount = READ_NET_16(packet, 9);
     uint8_t * attributeIDList = &packet[11];
-    // not used yet - uint16_t  attributeIDListLen = de_get_len(attributeIDList);
-    // not used yet - uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2+attributeIDListLen];
+    uint16_t  attributeIDListLen = de_get_len(attributeIDList);
+    uint8_t * continuationState = &packet[11+attributeIDListLen];
+    
+    // continuation state contains index of next attribute to examine
+    uint16_t continuation_index = 0;
+    if (continuationState[0] == 2){
+        continuation_index = READ_NET_16(continuationState, 1);
+    }
     
     // get service record
     service_record_item_t * item = sdp_get_record_for_handle(serviceRecordHandle);
@@ -292,18 +298,21 @@ int sdp_handle_service_attribute_request(uint8_t * packet){
     uint8_t *attributeList = &sdp_response_buffer[pos];
     de_create_sequence(attributeList);
     // copy specified attributes
-    sdp_append_attributes_in_attributeIDList(item->service_record, attributeIDList, attributeList, maximumAttributeByteCount);
+    continuation_index = sdp_append_attributes_in_attributeIDList(item->service_record, attributeIDList, continuation_index, maximumAttributeByteCount, attributeList);
     pos += de_get_len(attributeList);
     
-    // AttributeListByteCount - at offset 5
-    net_store_16(sdp_response_buffer, 5, de_get_len(attributeList)); 
-    
-    // Continuation State: none
-    // @TODO send correct continuation state
-    sdp_response_buffer[pos++] = 0;
-    
-    // update len info
+    // Continuation State
+    if (continuation_index) {
+        sdp_response_buffer[pos++] = 2;
+        net_store_16(sdp_response_buffer, pos, continuation_index);
+        pos += 2;
+    } else {
+        sdp_response_buffer[pos++] = 0;
+    }
+
+    // update header
     net_store_16(sdp_response_buffer, 3, pos - 5); // empty list
+    net_store_16(sdp_response_buffer, 5, de_get_len(attributeList)); 
     
     return pos;
 }
@@ -338,7 +347,7 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet){
         if (sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)){
             // copy specified attributes
             uint8_t * attributes = de_push_sequence(attributeLists);
-            sdp_append_attributes_in_attributeIDList(item->service_record, attributeIDList, attributes, maximumAttributeByteCount);
+            sdp_append_attributes_in_attributeIDList(item->service_record, attributeIDList, 0, maximumAttributeByteCount, attributes);
             de_pop_sequence(attributeLists, attributes);
         }
     }
