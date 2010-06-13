@@ -208,9 +208,15 @@ int sdp_handle_service_search_request(uint8_t * packet){
     uint16_t  transaction_id = READ_NET_16(packet, 1);
     // not used yet - uint16_t  param_len = READ_NET_16(packet, 3);
     uint8_t * serviceSearchPattern = &packet[5];
-    // not used yet - uint16_t  serviceSearchPatternLen = de_get_len(serviceSearchPattern);
-    // not used yet - uint16_t  maximumServiceRecordCount = READ_NET_16(packet, 5 + serviceSearchPatternLen);
-    // not used yet - uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2];
+    uint16_t  serviceSearchPatternLen = de_get_len(serviceSearchPattern);
+    uint16_t  maximumServiceRecordCount = READ_NET_16(packet, 5 + serviceSearchPatternLen);
+    uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2];
+    
+    // continuation state contains index of next service record to examine
+    uint16_t continuation_index = 0;
+    if (continuationState[0] == 2){
+        continuation_index = READ_NET_16(continuationState, 1);
+    }
     
     // header
     sdp_response_buffer[0] = SDP_ServiceSearchResponse;
@@ -218,32 +224,43 @@ int sdp_handle_service_search_request(uint8_t * packet){
     
     // ServiceRecordHandleList at 9
     uint16_t pos = 9;
-    uint16_t service_count = 0;
-    
+    uint16_t total_service_count   = 0;
+    uint16_t current_service_count = 0;
+    uint16_t current_service_index = 0;
     // for all service records that match
     linked_item_t *it;
-    for (it = (linked_item_t *) sdp_service_records; it ; it = it->next){
+    for (it = (linked_item_t *) sdp_service_records; it ; it = it->next, ++current_service_index){
         service_record_item_t * item = (service_record_item_t *) it;
         if (sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)){
-            net_store_32(sdp_response_buffer, pos, item->service_record_handle);
-            pos += 4;
-            service_count++;
+
+            // get total count
+            total_service_count++;
+            
+            // add to list if index higher than last continuation index and space left
+            if (current_service_index >= continuation_index && current_service_count < maximumServiceRecordCount) {
+                net_store_32(sdp_response_buffer, pos, item->service_record_handle);
+                current_service_count++;
+                pos += 4;
+                
+                // this is processed, next one could be checked next time
+                continuation_index == current_service_index+1;
+            }
         }
     }
     
-    // TotalServiceRecordCount at 5
-    net_store_16(sdp_response_buffer, 5, service_count);
-    
-    // CurrentServiceRecordCount at 7
-    net_store_16(sdp_response_buffer, 7, service_count);
+    // Continuation State
+    if (total_service_count == current_service_count) {
+        sdp_response_buffer[pos++] = 0;
+    } else {
+        sdp_response_buffer[pos++] = 2;
+        net_store_16(sdp_response_buffer, pos, continuation_index);
+        pos += 2;
+    }
 
-    // Continuation State: none
-    // @TODO send correct continuation state
-    sdp_response_buffer[pos++] = 0;
-    
-    
-    // update len info
-    net_store_16(sdp_response_buffer, 3, pos - 5); // empty list
+    // update header info
+    net_store_16(sdp_response_buffer, 3, pos - 5); // size of variable payload
+    net_store_16(sdp_response_buffer, 5, total_service_count);
+    net_store_16(sdp_response_buffer, 7, current_service_count);
     
     return pos;
 }
