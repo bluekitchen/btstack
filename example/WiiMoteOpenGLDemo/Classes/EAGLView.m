@@ -362,30 +362,14 @@
     }
 }
 
-- (void)setRotationMatrix:(float[3][3]) matrix{
+- (void)setRotationMatrix:(float[4][4]) matrix{
 	useRotationMatrix = YES;
-	
-	// extend 3 by 3 matrix to 4 by 4
+	// copy and linearize matrix
+	int i,j;
 	int pos = 0;
-	rotationMatrix[pos++] = matrix[0][0];
-	rotationMatrix[pos++] = matrix[0][1];
-	rotationMatrix[pos++] = matrix[0][2];
-	rotationMatrix[pos++] = 0;
-
-	rotationMatrix[pos++] = matrix[1][0];
-	rotationMatrix[pos++] = matrix[1][1];
-	rotationMatrix[pos++] = matrix[1][2];
-	rotationMatrix[pos++] = 0;
-
-	rotationMatrix[pos++] = matrix[2][0];
-	rotationMatrix[pos++] = matrix[2][1];
-	rotationMatrix[pos++] = matrix[2][2];
-	rotationMatrix[pos++] = 0;
-
-	rotationMatrix[pos++] = 0;
-	rotationMatrix[pos++] = 0;
-	rotationMatrix[pos++] = 0;
-	rotationMatrix[pos++] = 1;
+	for (i=0;i<4;i++)
+		for (j=0; j<4; j++)
+			rotationMatrix[pos++] = matrix[i][j];
 }
 
 - (void)setRotationX:(int)x Y:(int)y Z:(int)z{

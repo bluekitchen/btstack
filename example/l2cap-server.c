@@ -42,6 +42,7 @@
 
 #include <btstack/btstack.h>
 #include <btstack/hci_cmds.h>
+#include <btstack/sdp_util.h>
 
 hci_con_handle_t con_handle;
 
@@ -55,6 +56,8 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	uint16_t psm;
 	uint16_t local_cid;
 	uint16_t remote_cid;
+	char pin[20];
+	int i;
 	
 	switch (packet_type) {
 			
@@ -96,6 +99,25 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					bt_send_cmd(&l2cap_accept_connection, local_cid);
 					break;
 					
+				case HCI_EVENT_LINK_KEY_REQUEST:
+					// link key request
+					bt_flip_addr(event_addr, &packet[2]); 
+					bt_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
+					break;
+					
+				case HCI_EVENT_PIN_CODE_REQUEST:
+					// inform about pin code request
+					printf("Please enter PIN here: ");
+					fgets(pin, 20, stdin);
+					i = strlen(pin)-1;
+					if( pin[i] == '\n') { 
+						pin[i] = '\0';
+					}
+					printf("PIN = '%s'\n", pin);
+					bt_flip_addr(event_addr, &packet[2]); 
+					bt_send_cmd(&hci_pin_code_request_reply, &event_addr, strlen(pin), pin);
+					break;
+					
 				case L2CAP_EVENT_CHANNEL_OPENED:
 					// inform about new l2cap connection
 					bt_flip_addr(event_addr, &packet[3]);
@@ -134,8 +156,9 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 										
 				case HCI_EVENT_DISCONNECTION_COMPLETE:
 					// connection closed -> quit tes app
-					printf("Basebank connection closed, exit.\n");
-					exit(0);
+					printf("Basebank connection closed\n");
+					
+					// exit(0);
 					break;
 					
 				case HCI_EVENT_COMMAND_COMPLETE:
@@ -144,7 +167,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						bt_send_cmd(&hci_write_authentication_enable, 0);
 					}
 					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable) ) {
-						bt_send_cmd(&hci_write_class_of_device, 0x2580);
+						bt_send_cmd(&hci_write_class_of_device, 0x2540);
 					}
 				default:
 					// other event
@@ -158,6 +181,139 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	}
 }
 
+void create_serial_port_service(uint8_t * service){
+	
+	// create RFCOMM service: UUID 0x1101, attributes serviceClass
+    de_create_sequence(service);
+    
+    // 0x0001 
+    uint8_t *serviceClassIDList = de_push_sequence(service);
+    de_add_number(serviceClassIDList,  DE_UINT, DE_SIZE_16, 0x0001);
+	uint8_t *serviceClasses = de_push_sequence(serviceClassIDList);
+	de_add_number(serviceClasses,  DE_UUID, DE_SIZE_16, 0x1101);
+	de_pop_sequence(serviceClassIDList, serviceClasses);
+    de_pop_sequence(service, serviceClassIDList);
+    
+    // 0x0004
+    uint8_t *protocolDescriptorList = de_push_sequence(service);
+	de_add_number(protocolDescriptorList,  DE_UINT, DE_SIZE_16, 0x0004);
+	uint8_t * protocolStack = de_push_sequence(protocolDescriptorList);
+	uint8_t * l2cpProtocol = de_push_sequence(protocolStack);
+	de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, 0x0100);
+	de_pop_sequence(protocolStack, l2cpProtocol);
+	uint8_t * rfcommChannel = de_push_sequence(protocolStack);
+	de_add_number(rfcommChannel,  DE_UUID, DE_SIZE_16, 0x0003);
+	de_add_number(rfcommChannel,  DE_UINT, DE_SIZE_8, 0x0001);
+	de_pop_sequence(protocolStack, rfcommChannel);
+	de_pop_sequence(protocolDescriptorList, protocolStack);
+    de_pop_sequence(service, protocolDescriptorList);
+	
+    // 0x0005
+    uint8_t *browseGroupList = de_push_sequence(service);
+	de_add_number(browseGroupList,  DE_UINT, DE_SIZE_16, 0x0005);
+	uint8_t *groupList = de_push_sequence(browseGroupList);
+	de_add_number(groupList,  DE_UUID, DE_SIZE_16, 0x1002);
+	de_pop_sequence(browseGroupList, groupList);
+    de_pop_sequence(service, browseGroupList);
+    
+    // 0x0006
+    uint8_t *languageBaseAttributeIDList = de_push_sequence(service);
+	de_add_number(languageBaseAttributeIDList,  DE_UINT, DE_SIZE_16, 0x0006);
+	uint8_t *languageAttributes = de_push_sequence(languageBaseAttributeIDList);
+	de_add_number(languageAttributes, DE_UINT, DE_SIZE_16, 0x656e);
+	de_add_number(languageAttributes, DE_UINT, DE_SIZE_16, 0x006a);
+	de_add_number(languageAttributes, DE_UINT, DE_SIZE_16, 0x0100);
+	de_pop_sequence(languageBaseAttributeIDList, languageAttributes);
+    de_pop_sequence(service, languageBaseAttributeIDList);
+    
+    // 0x0100
+    uint8_t *serviceName = de_push_sequence(service);
+    de_add_number(serviceName,  DE_UINT, DE_SIZE_16, 0x0100);
+    de_add_data(serviceName, DE_STRING, 6, (uint8_t *) "RFCOMM");
+    de_pop_sequence(service, serviceName);
+}
+
+void create_hid_service(uint8_t * service){
+	
+	// create HID service
+    de_create_sequence(service);
+    
+
+	 // 0x0001 
+    uint8_t *serviceClassIDList = de_push_sequence(service);
+    de_add_number(serviceClassIDList,  DE_UINT, DE_SIZE_16, 0x0001);
+	uint8_t *serviceClasses = de_push_sequence(serviceClassIDList);
+	de_add_number(serviceClasses,  DE_UUID, DE_SIZE_16, 0x1124);
+	de_pop_sequence(serviceClassIDList, serviceClasses);
+    de_pop_sequence(service, serviceClassIDList);
+
+	// 0x0004
+    uint8_t *protocolDescriptorList = de_push_sequence(service);
+	de_add_number(protocolDescriptorList,  DE_UINT, DE_SIZE_16, 0x0004);
+	uint8_t * protocolStack = de_push_sequence(protocolDescriptorList);
+	uint8_t * l2cpProtocol = de_push_sequence(protocolStack);
+	de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, 0x0100);
+	de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, 0x0011);
+	de_pop_sequence(protocolStack, l2cpProtocol);
+	uint8_t * hidp = de_push_sequence(protocolStack);
+	de_add_number(hidp,  DE_UUID, DE_SIZE_16, 0x0011);
+	de_pop_sequence(protocolStack, hidp);
+	de_pop_sequence(protocolDescriptorList, protocolStack);
+    de_pop_sequence(service, protocolDescriptorList);
+
+    // 0x0005
+    uint8_t *browseGroupList = de_push_sequence(service);
+	de_add_number(browseGroupList,  DE_UINT, DE_SIZE_16, 0x0005);
+	uint8_t *groupList = de_push_sequence(browseGroupList);
+	de_add_number(groupList,  DE_UUID, DE_SIZE_16, 0x1002);
+	de_pop_sequence(browseGroupList, groupList);
+    de_pop_sequence(service, browseGroupList);
+	
+    // 0x0006
+    uint8_t *languageBaseAttributeIDList = de_push_sequence(service);
+	de_add_number(languageBaseAttributeIDList,  DE_UINT, DE_SIZE_16, 0x0006);
+	uint8_t *languageAttributes = de_push_sequence(languageBaseAttributeIDList);
+	de_add_number(languageAttributes, DE_UINT, DE_SIZE_16, 0x656e);
+	de_add_number(languageAttributes, DE_UINT, DE_SIZE_16, 0x006a);
+	de_add_number(languageAttributes, DE_UINT, DE_SIZE_16, 0x0100);
+	de_pop_sequence(languageBaseAttributeIDList, languageAttributes);
+    de_pop_sequence(service, languageBaseAttributeIDList);
+    
+	 // 0x0009
+    uint8_t *bluetoothProfileDescriptorList = de_push_sequence(service);
+	de_add_number(bluetoothProfileDescriptorList,  DE_UINT, DE_SIZE_16, 0x0009);
+	uint8_t * profileDescriptors = de_push_sequence(bluetoothProfileDescriptorList);
+	uint8_t * hidProtocol = de_push_sequence(profileDescriptors);
+	de_add_number(hidProtocol,  DE_UUID, DE_SIZE_16, 0x1124);
+	de_add_number(hidProtocol,  DE_UINT, DE_SIZE_16, 0x0100);
+	de_pop_sequence(profileDescriptors, hidProtocol);
+    de_pop_sequence(bluetoothProfileDescriptorList, profileDescriptors);
+    de_pop_sequence(service, bluetoothProfileDescriptorList);
+
+	// 0x000d
+    uint8_t *additionalProtocolDescriptorLists = de_push_sequence(service);
+	de_add_number(additionalProtocolDescriptorLists,  DE_UINT, DE_SIZE_16, 0x000d);
+	protocolDescriptorList = de_push_sequence(additionalProtocolDescriptorLists);
+	protocolStack = de_push_sequence(protocolDescriptorList);
+	l2cpProtocol = de_push_sequence(protocolStack);
+	de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, 0x0100);
+	de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, 0x0013);
+	de_pop_sequence(protocolStack, l2cpProtocol);
+	hidp = de_push_sequence(protocolStack);
+	de_add_number(hidp,  DE_UUID, DE_SIZE_16, 0x0011);
+	de_pop_sequence(protocolStack, hidp);
+	de_pop_sequence(protocolDescriptorList, protocolStack);
+    de_pop_sequence(additionalProtocolDescriptorLists, protocolDescriptorList);
+    de_pop_sequence(service, additionalProtocolDescriptorLists);
+	
+    // 0x0100
+    uint8_t *serviceName = de_push_sequence(service);
+    de_add_number(serviceName,  DE_UINT, DE_SIZE_16, 0x0100);
+    de_add_data(serviceName, DE_STRING, 16, (uint8_t *) "BTstack Keyboard");
+    de_pop_sequence(service, serviceName);
+}
+
+
 int main (int argc, const char * argv[]){
 	run_loop_init(RUN_LOOP_POSIX);
 	int err = bt_open();
@@ -168,6 +324,14 @@ int main (int argc, const char * argv[]){
 	bt_register_packet_handler(packet_handler);
 	bt_send_cmd(&l2cap_register_service, 0x11, 250);
 	bt_send_cmd(&l2cap_register_service, 0x13, 250);
+	
+    // done
+    uint8_t service[200];
+    create_hid_service(service);
+	de_dump_data_element(service);
+	
+    bt_send_cmd(&sdp_register_service_record, service);
+	
 	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
 	run_loop_execute();
 	bt_close();
