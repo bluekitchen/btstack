@@ -174,6 +174,7 @@ void slerp(float v0[4], float v1[4], double t, float result[4]) {
 
 void eulerFromQuaternion(float q[4], float euler[3]){
 	// heading, attitude, bank
+	float w2 = q[0]*q[0];
 	float x2 = q[1]*q[1];
 	float y2 = q[2]*q[2];
 	float z2 = q[3]*q[3];
@@ -203,7 +204,7 @@ void eulerFromQuaternion(float q[4], float euler[3]){
 	} else { 
 		euler[0] = atan2(2*q[2]*q[0]-2*q[1]*q[3], w2+x2-y2-z2);
 		euler[1] = asin(2*test/unit);
-		euler[2] = atan2(2*qx*qw-2*qy*qz , w2-x2+y2-z2);
+		euler[2] = atan2(2*q[1]*q[0]-2*q[2]*q[3] , w2-x2+y2-z2);
 	}	
 #endif
 }
