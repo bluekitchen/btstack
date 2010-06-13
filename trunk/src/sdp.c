@@ -531,7 +531,6 @@ void sdp_test(){
     uint16_t nr_services = 1;
     request[0] = SDP_ServiceSearchRequest;
     net_store_16(request, 1, transactionID++); // transaction ID
-    // param len
     uint8_t * serviceSearchPattern = &request[5];
     de_create_sequence(serviceSearchPattern);
     {
@@ -547,6 +546,30 @@ void sdp_test(){
     dump_service_search_response();
 
     // sdp_handle_service_attribute_request
+    uint16_t attributeListLen;
+    request[0] = SDP_ServiceAttributeRequest;
+    net_store_16(request, 1, transactionID++); // transaction ID
+    net_store_32(request, 5, 0x10001); // record handle
+    net_store_16(request, 9, 15); // max bytes
+    uint8_t * attributeIDList = request + 11;
+    de_create_sequence(attributeIDList);
+    de_add_number(attributeIDList, DE_UINT, DE_SIZE_32, 0x0000ffff);
+    uint16_t attributeIDListLen = de_get_len(attributeIDList);
+    request[11+attributeIDListLen] = 0;
+    sdp_handle_service_attribute_request(request);
+    de_dump_data_element(sdp_response_buffer+7);
+    attributeListLen = de_get_len(sdp_response_buffer+7);
+    printf("Continuation %u\n", sdp_response_buffer[7+attributeListLen]);
+    memcpy(request+11+attributeIDListLen, sdp_response_buffer+7+attributeListLen, 3);
+    sdp_handle_service_attribute_request(request);
+    de_dump_data_element(sdp_response_buffer+7);
+    attributeListLen = de_get_len(sdp_response_buffer+7);
+    printf("Continuation %u\n", sdp_response_buffer[7+attributeListLen]);
+    memcpy(request+11+attributeIDListLen, sdp_response_buffer+7+attributeListLen, 3);
+    sdp_handle_service_attribute_request(request);
+    de_dump_data_element(sdp_response_buffer+7);
+    attributeListLen = de_get_len(sdp_response_buffer+7);
+    printf("Continuation %u\n", sdp_response_buffer[7+attributeListLen]);
     
     // sdp_handle_service_search_attribute_request
 }
