@@ -96,7 +96,7 @@ static void getAccellerometerData(float radrotationAngleX, float radrotationAngl
 /****** END OF TEST FUNCTIONS THAT CREATE ACC_DATA ******/
 
 
-void getRotationMatrixFromQuartenion(float q[4], float m[3][3]){
+void getRotationMatrixFromQuartenion(float q[4], float m[4][4]){
     float w = q[0];
     float x = q[1];
     float y = q[2];
@@ -109,14 +109,22 @@ void getRotationMatrixFromQuartenion(float q[4], float m[3][3]){
     m[0][0] = 1-2*y2-2*z2;
     m[0][1] = 2*x*y-2*w*z;
     m[0][2] = 2*x*z+2*w*y;
+    m[0][3] = 0;
     
     m[1][0] = 2*x*y+2*w*z;
     m[1][1] = 1-2*x2-2*z2;
     m[1][2] = 2*y*z-2*w*x;
+    m[1][3] = 0;
     
     m[2][0] = 2*x*z-2*w*y;
     m[2][1] = 2*y*z+2*w*x;
     m[2][2] = 1-2*x2-2*y2;
+    m[2][3] = 0;
+    
+    m[3][0] = 0;
+    m[3][1] = 0;
+    m[3][2] = 0;
+    m[3][3] = 1;
 }
 
 
@@ -150,7 +158,7 @@ void getRotationMatrixFromVectors(float vin[3], float vout[3], float matrix[3][3
 int main(void)
 {
     float accData[3] = {1,0,0};
-    float rotationMatrix[3][3];
+    float rotationMatrix[4][4];
     
     normalizeVector(restPosition,3);
     
