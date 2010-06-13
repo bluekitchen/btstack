@@ -172,6 +172,41 @@ void slerp(float v0[4], float v1[4], double t, float result[4]) {
 }
 
 
+void eulerFromQuaternion(float q[4], float euler[3]){
+	// heading, attitude, bank
+	float x2 = q[1]*q[1];
+	float y2 = q[2]*q[2];
+	float z2 = q[3]*q[3];
+	
+#if 0
+	euler[0] = atan2(2*(q[0]*q[1]-q[2]*q[3]),1-2*(x2+y2));
+    euler[1] = asin( 2*(q[0]*q[2]+q[1]*q[3]));
+    euler[2] = atan2(2*(q[0]*q[3]-q[1]*q[2]),1-2*(y2+z2));
+    
+    if (euler[1] <= -M_PI || euler[1] >= M_PI){
+        euler[2] = 0;
+		euler[0] = atan2(q[1],q[0]);
+	}
+    
+#else
+	float unit = w2+x2+y2+z2; // if normalised is one, otherwise is correction factor
+	float test = q[1]*q[2] + q[3]*q[0];
+	
+	if (test > 0.499*unit){ // singularity at north pole
+		euler[0] = 2 * atan2(q[1],q[0]);
+		euler[1] = M_PI/2;
+		euler[2] = 0;
+	} else if (test < -0.499*unit){ // singularity at south pole
+		euler[0] = -2 * atan2(q[1],q[0]);
+		euler[1] = -M_PI/2;
+		euler[2] = 0;
+	} else { 
+		euler[0] = atan2(2*q[2]*q[0]-2*q[1]*q[3], w2+x2-y2-z2);
+		euler[1] = asin(2*test/unit);
+		euler[2] = atan2(2*qx*qw-2*qy*qz , w2-x2+y2-z2);
+	}	
+#endif
+}
 
 void getRotationMatrixFromVectors(float vin[3], float vout[3], float matrix[4][4]){
     normalizeVector(vout,3);
@@ -204,8 +239,10 @@ void getRotationMatrixFromVectors(float vin[3], float vout[3], float matrix[4][4
     float angle = acos(vin[0]*vout[0]+vin[1]*vout[1]+vin[2]*vout[2]);
     quaternionFromAxis(angle, axis, q);
 #endif    
-		
 	normalizeVector(q,4);
+	
+	float attitude = asin( 2*(q[0]*q[2]+q[1]*q[3]));
+	
     getRotationMatrixFromQuartenion(q,matrix);
 }
 
