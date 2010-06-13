@@ -154,6 +154,10 @@ void getRotationMatrixFromVectors(float vin[3], float vout[3], float matrix[4][4
     getRotationMatrixFromQuartenion(q,matrix);
 }
 
+void getRotationAngle(float matrix[4][4], float angle){
+    angle = acos( (matrix[0][0]+matrix[1][1]+matrix[2][2]-1) * 0.5);
+}
+
 #if 0
 int main(void)
 {
