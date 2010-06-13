@@ -60,6 +60,28 @@ typedef enum {
     DE_SIZE_VAR_32
 } de_size_t;
 
+// UNIVERSAL ATTRIBUTE DEFINITIONS
+#define SDP_ServiceRecordHandle     0x0000
+#define SDP_ServiceClassIDList      0x0001
+#define SDP_ServiceRecordState      0x0002
+#define SDP_ServiceID               0x0003
+#define SDP_ProtocolDescriptorList  0x0004
+#define SDP_BrowseGroupList		    0x0005
+#define SDP_LanguageBaseAttributeIDList 0x0006
+#define SDP_ServiceInfoTimeToLive	0x0007
+#define SDP_ServiceAvailability		0x0008
+#define SDP_BluetoothProfileDescriptorList 0x0009
+#define SDP_DocumentationURL		0x000a
+#define SDP_ClientExecutableURL     0x000b
+#define SDP_IconURL                 0x000c
+#define SDP_AdditionalProtocolDescriptorList 0x000d
+
+// OFFSETS FOR LOCALIZED ATTRIBUTES - SDP_LanguageBaseAttributeIDList
+#define SDP_Offest_ServiceName      0x0000
+#define SDP_Offest_ServiceDescription 0x0001
+#define SDP_Offest_ProviderName     0x0002
+
+
 #pragma mark DateElement
 void de_dump_data_element(uint8_t * record);
 int de_get_len(uint8_t *header);
