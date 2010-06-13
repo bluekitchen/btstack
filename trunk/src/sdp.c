@@ -183,7 +183,7 @@ void sdp_unregister_services_for_connection(connection_t *connection){
     while (it->next){
         if (((service_record_item_t *)it->next)->connection == connection){
             it->next = it->next->next;
-            free(it);
+            free(it->next);
         } else {
             it = it->next;
         }
