@@ -76,7 +76,7 @@ void sdp_init(){
 }
 
 uint32_t sdp_get_service_record_handle(uint8_t * record){
-    uint8_t * serviceRecordHandleAttribute = sdp_get_attribute_value_for_attribute_id(record, 0x0000);
+    uint8_t * serviceRecordHandleAttribute = sdp_get_attribute_value_for_attribute_id(record, SDP_ServiceRecordHandle);
     if (!serviceRecordHandleAttribute) return 0;
     if (de_get_element_type(serviceRecordHandleAttribute) != DE_UINT) return 0;
     if (de_get_size_type(serviceRecordHandleAttribute) != DE_SIZE_32) return 0;
@@ -132,8 +132,8 @@ uint32_t sdp_register_service_internal(connection_t *connection, uint8_t * recor
     }
     
     // calculate size of new service record: DES (2 byte len) 
-    // + ServiceRecordHandle attribute (DES UINT16 UINT32) + size of existing attributes
-    uint16_t recordSize =  3 + (3 + 3 + 5) + de_get_data_size(record);
+    // + ServiceRecordHandle attribute (UINT16 UINT32) + size of existing attributes
+    uint16_t recordSize =  3 + (3 + 5) + de_get_data_size(record);
         
     // alloc memory for new service_record_item
     service_record_item_t * newRecordItem = (service_record_item_t *) malloc(recordSize + sizeof(service_record_item_t));
@@ -152,16 +152,14 @@ uint32_t sdp_register_service_internal(connection_t *connection, uint8_t * recor
     de_create_sequence(newRecord);
     
     // set service record handle
-    uint8_t * serviceRecordHandleAttribute = de_push_sequence(newRecord);
-    de_add_number(serviceRecordHandleAttribute, DE_UINT, DE_SIZE_16, 0);
-    de_add_number(serviceRecordHandleAttribute, DE_UINT, DE_SIZE_32, record_handle);
-    de_pop_sequence(newRecord, serviceRecordHandleAttribute);
+    de_add_number(newRecord, DE_UINT, DE_SIZE_16, 0);
+    de_add_number(newRecord, DE_UINT, DE_SIZE_32, record_handle);
     
     // add other attributes
     sdp_append_attributes_in_attributeIDList(record, (uint8_t *) removeServiceRecordHandleAttributeIDList, 0, recordSize, newRecord);
     
     // dump for now
-    // de_dump_data_element(newRecord);
+    de_dump_data_element(newRecord);
     // printf("reserved size %u, actual size %u\n", recordSize, de_get_len(newRecord));
     
     // add to linked list
@@ -369,6 +367,7 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet){
                 uint16_t attributeListsSize = de_get_len(attributeLists);
                 if (attributeListsSize + 3 > maximumAttributeByteCount) {
                     continuation = 1;
+                    continuation_service_index   = current_service_index;
                     continuation_attribute_index = 0;
                     break;
                 }
@@ -382,12 +381,13 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet){
                 // no space left?
                 if (result >= 0){
                     continuation = 1;
+                    continuation_service_index   = current_service_index;
                     continuation_attribute_index = (uint16_t) result;
                     break;
                 }
             }
         }
-        
+        current_service_index++;
     }
     pos += de_get_len(attributeLists);
 
@@ -486,49 +486,22 @@ static void dump_service_search_response(){
 void sdp_test(){
 
     // create two records with 2 attributes each
-    uint8_t *attribute;
-    
     de_create_sequence(record);
-    attribute = de_push_sequence(record);
-    {
-        de_add_number(attribute, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle); 
-        de_add_number(attribute, DE_UINT, DE_SIZE_32, 0x10001);
-    }
-    de_pop_sequence(record, attribute);
-    attribute = de_push_sequence(record);
-    {
-        de_add_number(attribute, DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);
-        de_add_number(attribute, DE_UUID, DE_SIZE_16, 0x0001);
-    }
-    de_pop_sequence(record, attribute);
-    attribute = de_push_sequence(record);
-    {   
-        de_add_number(attribute, DE_UINT, DE_SIZE_16, SDP_BrowseGroupList);
-        de_add_number(attribute, DE_UUID, DE_SIZE_16, 0x0001);
-    }
-    de_pop_sequence(record, attribute);
-    
+    de_add_number(record, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle); 
+    de_add_number(record, DE_UINT, DE_SIZE_32, 0x10001);
+    de_add_number(record, DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);
+    de_add_number(record, DE_UUID, DE_SIZE_16, 0x0001);
+    de_add_number(record, DE_UINT, DE_SIZE_16, SDP_BrowseGroupList);
+    de_add_number(record, DE_UUID, DE_SIZE_16, 0x0001);
     uint32_t handle_1 = sdp_register_service_internal(NULL, record);
     
-    attribute = de_push_sequence(record); 
-    {
-        de_add_number(attribute, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle);
-        de_add_number(attribute, DE_UINT, DE_SIZE_32, 0x10002);
-    }
-    de_pop_sequence(record, attribute);
-    attribute = de_push_sequence(record);
-    {
-        de_add_number(attribute, DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);
-        de_add_number(attribute, DE_UUID, DE_SIZE_16, 0x0002);
-    
-    }
-    de_pop_sequence(record, attribute);
-    attribute = de_push_sequence(record);
-    {
-        de_add_number(attribute, DE_UINT, DE_SIZE_16, SDP_BrowseGroupList);
-        de_add_number(attribute, DE_UUID, DE_SIZE_16, 0x0001);
-    }
-    de_pop_sequence(record, attribute);
+    de_create_sequence(record);
+    de_add_number(record, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle);
+    de_add_number(record, DE_UINT, DE_SIZE_32, 0x10002);
+    de_add_number(record, DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);
+    de_add_number(record, DE_UUID, DE_SIZE_16, 0x0002);
+    de_add_number(record, DE_UINT, DE_SIZE_16, SDP_BrowseGroupList);
+    de_add_number(record, DE_UUID, DE_SIZE_16, 0x0001);
     uint32_t handle_2 = sdp_register_service_internal(NULL, record);
 
     // sdp_handle_service_search_request
@@ -555,7 +528,7 @@ void sdp_test(){
     request[0] = SDP_ServiceAttributeRequest;
     net_store_16(request, 1, transactionID++); // transaction ID
     net_store_32(request, 5, handle_1); // record handle
-    net_store_16(request, 9, 15); // max bytes
+    net_store_16(request, 9, 200); // max bytes
     uint8_t * attributeIDList = request + 11;
     de_create_sequence(attributeIDList);
     de_add_number(attributeIDList, DE_UINT, DE_SIZE_32, 0x0000ffff);
