@@ -202,6 +202,9 @@ void de_add_uuid128(uint8_t * seq, uint8_t * uuid){
     net_store_16(seq, 1, data_size+1+16);
 }
 
+void sdp_add_attribute(uint8_t *seq, uint16_t attributeID, uint8_t attributeValue){
+}
+
 #pragma mark DataElementSequence traversal
 typedef int (*de_traversal_callback_t)(uint8_t * element, de_type_t type, de_size_t size, void *context);
 static void de_traverse_sequence(uint8_t * element, de_traversal_callback_t handler, void *context){
@@ -259,31 +262,40 @@ int sdp_attribute_list_constains_id(uint8_t *attributeIDList, uint16_t attribute
 // pre: buffer contains DES with 2 byte length field
 struct sdp_context_append_attributes {
     uint8_t * buffer;
-    uint16_t dataSize;
     uint16_t startIndex; // index of first to examine
     uint16_t attributeIndex;    // index over list
     uint16_t maxBytes;
     uint8_t *attributeIDList;
+    uint8_t  currentAttributeID;
+    uint8_t  copyAttributeValue;
     uint8_t  moreData;          // extra data: attributeIndex has to be examined next
 };
 static int sdp_traversal_append_attributes(uint8_t * element, de_type_t type, de_size_t size, void *my_context){
     struct sdp_context_append_attributes * context = (struct sdp_context_append_attributes *) my_context;
-    // check each Attribute in root DES
-    int attributeLen        = de_get_len(element);
-    // Attribute must be DES with more than sizeof(UINT16 element) and index at least continuation index
-    if (type == DE_DES && context->attributeIndex >= context->startIndex){
-        int attributeIDPos        = de_get_header_size(element);
-        de_size_t attributeIDSize = de_get_size_type(element+attributeIDPos);
-        if (attributeIDSize == DE_SIZE_16) {
-            uint16_t attributeID = READ_NET_16(element, attributeIDPos+1);
-            if ( sdp_attribute_list_constains_id(context->attributeIDList, attributeID)){
-                if (3 + context->dataSize + attributeLen <= context->maxBytes) {
+    if (context->attributeIndex >= context->startIndex) {
+        // handle odd/even attribute index: even is AttributeID, odd is AttributeValue
+        if ( (context->attributeIndex & 1) == 0){
+            if (type == DE_UINT && size == DE_SIZE_16){
+                context->currentAttributeID = READ_NET_16(element, 1);
+                context->copyAttributeValue = sdp_attribute_list_constains_id(context->attributeIDList, context->currentAttributeID);
+            } else {
+                context->copyAttributeValue = 0;
+            }
+        } else {
+            // DES_HEADER(3) + DES_DATA + (UINT16(3) + attribute)
+            if (context->copyAttributeValue) {
+                uint16_t data_size = READ_NET_16(context->buffer, 1);
+                int attribute_len = de_get_len(element);
+                if (3 + data_size + (3 + attribute_len) <= context->maxBytes) {
                     // copy Attribute
-                    memcpy( context->buffer + 3 + context->dataSize, element, attributeLen);
-                    context->dataSize += attributeLen;
+                    de_add_number(context->buffer, DE_UINT, DE_SIZE_16, context->currentAttributeID);   
+                    data_size += 3; // 3 bytes
+                    memcpy(context->buffer + 3 + data_size, element, attribute_len);
+                    net_store_16(context->buffer,1,data_size+attribute_len);
                 } else {
-                    // not enought space left -> continuation
+                    // not enought space left -> continue with previous element
                     context->moreData = 1;
+                    context->attributeIndex--;
                     return 1;
                 }
             }
@@ -297,14 +309,12 @@ static int sdp_traversal_append_attributes(uint8_t * element, de_type_t type, de
 int sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startIndex, uint16_t maxBytes, uint8_t *buffer){
     struct sdp_context_append_attributes context;
     context.buffer = buffer;
-    context.dataSize = READ_NET_16(buffer, 1);
     context.maxBytes = maxBytes;
     context.attributeIndex = 0;
     context.startIndex = startIndex;
     context.moreData = 0;
     context.attributeIDList = attributeIDList;
     de_traverse_sequence(record, sdp_traversal_append_attributes, &context);
-    net_store_16(buffer, 1, context.dataSize);
     if (context.moreData) {
         return context.attributeIndex;
     }
@@ -317,25 +327,24 @@ int sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attribute
 struct sdp_context_attribute_by_id {
     uint16_t attributeID;
     uint8_t * attributeValue;
+    uint8_t attributeFound;
+    uint16_t index; 
 };
 static int sdp_traversal_attribute_by_id(uint8_t * element, de_type_t attributeType, de_size_t size, void *my_context){
     struct sdp_context_attribute_by_id * context = (struct sdp_context_attribute_by_id *) my_context;
-
-    // check each Attribute in root DES
-    int attributeDataSize   = de_get_data_size(element);
-    int attributeLen        = de_get_len(element);
-    // Attribute must be DES with more than sizeof(UINT16 element)
-    if (attributeType == DE_DES && attributeDataSize >= 3){
-        int attributeIDPos        = de_get_header_size(element);
-        de_size_t attributeIDSize = de_get_size_type(element+attributeIDPos);
-        if (attributeIDSize == DE_SIZE_16) {
-            uint16_t attributeID = READ_NET_16(element,attributeIDPos+1);
-            if (context->attributeID == attributeID && attributeIDPos < attributeLen){
-                context->attributeValue = element + attributeIDPos+3;
-                return 1;
+    if ((context->index & 1) == 0) {
+        if (attributeType == DE_UINT && size == DE_SIZE_16){
+            if (READ_NET_16(element, 1) == context->attributeID){
+                context->attributeFound = 1;
             }
         }
+    } else {
+        if (context->attributeFound) {
+            context->attributeValue = element;
+            return 1;
+        }
     }
+    context->index++;
     return 0;
 }
 
@@ -343,6 +352,8 @@ uint8_t * sdp_get_attribute_value_for_attribute_id(uint8_t * record, uint16_t at
     struct sdp_context_attribute_by_id context;
     context.attributeValue = NULL;
     context.attributeID = attributeID;
+    context.attributeFound = 0;
+    context.index = 0;
     de_traverse_sequence(record, sdp_traversal_attribute_by_id, &context);
     return context.attributeValue;
 }
