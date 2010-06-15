@@ -266,7 +266,7 @@ struct sdp_context_append_attributes {
     uint16_t attributeIndex;    // index over list
     uint16_t maxBytes;
     uint8_t *attributeIDList;
-    uint8_t  currentAttributeID;
+    uint16_t currentAttributeID;
     uint8_t  copyAttributeValue;
     uint8_t  moreData;          // extra data: attributeIndex has to be examined next
 };
