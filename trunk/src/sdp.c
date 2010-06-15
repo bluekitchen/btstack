@@ -159,7 +159,7 @@ uint32_t sdp_register_service_internal(connection_t *connection, uint8_t * recor
     sdp_append_attributes_in_attributeIDList(record, (uint8_t *) removeServiceRecordHandleAttributeIDList, 0, recordSize, newRecord);
     
     // dump for now
-    de_dump_data_element(newRecord);
+    // de_dump_data_element(newRecord);
     // printf("reserved size %u, actual size %u\n", recordSize, de_get_len(newRecord));
     
     // add to linked list
@@ -362,6 +362,9 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet){
         service_record_item_t * item = (service_record_item_t *) it;
         if (current_service_index >= continuation_service_index ) {
             if (sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)){
+                
+                // record found
+                // de_dump_data_element(item->service_record);
                 
                 // check if DES header fits in
                 uint16_t attributeListsSize = de_get_len(attributeLists);
