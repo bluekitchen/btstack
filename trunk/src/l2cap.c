@@ -327,7 +327,7 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
 }
 
 static void l2cap_handle_disconnect_request(l2cap_channel_t *channel, uint16_t identifier){
-    l2cap_send_signaling_packet( channel->handle, DISCONNECTION_RESPONSE, identifier, channel->remote_cid, channel->local_cid);   
+    l2cap_send_signaling_packet( channel->handle, DISCONNECTION_RESPONSE, identifier, channel->local_cid, channel->remote_cid);   
     l2cap_finialize_channel_close(channel);
 }
 
