@@ -336,6 +336,8 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet){
     uint16_t  attributeIDListLen = de_get_len(attributeIDList);
     uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2+attributeIDListLen];
 
+    // testing: maximumAttributeByteCount = 150;
+    
     // continuation state contains index of next service record to examine
     // continuation state contains index of next attribute to examine
     uint16_t continuation_service_index   = 0;
@@ -429,7 +431,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             switch (pdu_id){
                     
                 case SDP_ServiceSearchRequest:
-                    pos = sdp_handle_service_search_attribute_request(packet);
+                    pos = sdp_handle_service_search_request(packet);
                     break;
                                         
                 case SDP_ServiceAttributeRequest:
