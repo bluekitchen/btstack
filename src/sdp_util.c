@@ -339,17 +339,13 @@ int sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attribute
 struct sdp_context_attribute_by_id {
     uint16_t  attributeID;
     uint8_t * attributeValue;
-    uint8_t   attributeFound;
-    uint16_t  index; 
 };
 static int sdp_traversal_attribute_by_id(uint16_t attributeID, uint8_t * attributeValue, de_type_t attributeType, de_size_t size, void *my_context){
     struct sdp_context_attribute_by_id * context = (struct sdp_context_attribute_by_id *) my_context;
     if (attributeID == context->attributeID) {
-        context->attributeFound = 1;
         context->attributeValue = attributeValue;
         return 1;
     }
-    context->index++;
     return 0;
 }
 
@@ -357,8 +353,6 @@ uint8_t * sdp_get_attribute_value_for_attribute_id(uint8_t * record, uint16_t at
     struct sdp_context_attribute_by_id context;
     context.attributeValue = NULL;
     context.attributeID = attributeID;
-    context.attributeFound = 0;
-    context.index = 0;
     sdp_attribute_list_traverse_sequence(record, sdp_traversal_attribute_by_id, &context);
     return context.attributeValue;
 }
