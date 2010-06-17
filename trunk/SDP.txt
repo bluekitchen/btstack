@@ -77,6 +77,13 @@ Implementation:
  * Test continuation for all three commands
    * add 2 records, get all data back with limited result size
  * sdp_handle_service_search_attribute_request
+* implement SDP_sequence_traversal -> simplify traversing
+ 
+ * keep track of remote incoming MTU during l2cap establishment
+ * segment l2cap packets according to MTU size
 
- * Why do I don't get any services using sdptool "sdptool get --raw --bdaddr 00:80:37:16:a2:52 0x10001" ?
-   * ServiceSearchAttributeRequest public browse group 0x0000-0xffff
+ * Packet for HID is shortened - bluez uses 0x0096 as MTU - segment packets
+ * String Handling in Linux SDP/sdptool probably buggy
+ 
+ 
+ 
