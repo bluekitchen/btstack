@@ -195,7 +195,7 @@ void sdp_unregister_services_for_connection(connection_t *connection){
 // PDU
 // PDU ID (1), Transaction ID (2), Param Length (2), Param 1, Param 2, ..
 
-static uint8_t sdp_response_buffer[250];
+static uint8_t sdp_response_buffer[400];
 
 int sdp_create_error_response(uint16_t transaction_id, uint16_t error_code){
     sdp_response_buffer[0] = SDP_ErrorResponse;
@@ -336,7 +336,7 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet){
     uint16_t  attributeIDListLen = de_get_len(attributeIDList);
     uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2+attributeIDListLen];
 
-    // testing: maximumAttributeByteCount = 150;
+    testing: maximumAttributeByteCount = 130;
     
     // continuation state contains index of next service record to examine
     // continuation state contains index of next attribute to examine
