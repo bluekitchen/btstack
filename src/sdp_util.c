@@ -336,26 +336,18 @@ int sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attribute
 
 #pragma mark Get AttributeValue for AttributeID
 // find attribute (ELEMENT) by ID
-// context { attribute ptr, attributeQueryID }
 struct sdp_context_attribute_by_id {
-    uint16_t attributeID;
+    uint16_t  attributeID;
     uint8_t * attributeValue;
-    uint8_t attributeFound;
-    uint16_t index; 
+    uint8_t   attributeFound;
+    uint16_t  index; 
 };
-static int sdp_traversal_attribute_by_id(uint8_t * element, de_type_t attributeType, de_size_t size, void *my_context){
+static int sdp_traversal_attribute_by_id(uint16_t attributeID, uint8_t * attributeValue, de_type_t attributeType, de_size_t size, void *my_context){
     struct sdp_context_attribute_by_id * context = (struct sdp_context_attribute_by_id *) my_context;
-    if ((context->index & 1) == 0) {
-        if (attributeType == DE_UINT && size == DE_SIZE_16){
-            if (READ_NET_16(element, 1) == context->attributeID){
-                context->attributeFound = 1;
-            }
-        }
-    } else {
-        if (context->attributeFound) {
-            context->attributeValue = element;
-            return 1;
-        }
+    if (attributeID == context->attributeID) {
+        context->attributeFound = 1;
+        context->attributeValue = attributeValue;
+        return 1;
     }
     context->index++;
     return 0;
@@ -367,7 +359,7 @@ uint8_t * sdp_get_attribute_value_for_attribute_id(uint8_t * record, uint16_t at
     context.attributeID = attributeID;
     context.attributeFound = 0;
     context.index = 0;
-    de_traverse_sequence(record, sdp_traversal_attribute_by_id, &context);
+    sdp_attribute_list_traverse_sequence(record, sdp_traversal_attribute_by_id, &context);
     return context.attributeValue;
 }
 
