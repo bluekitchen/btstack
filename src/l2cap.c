@@ -51,6 +51,7 @@
 
 // minimum signaling MTU
 #define L2CAP_MINIMAL_MTU 48
+#define L2CAP_DEFAULT_MTU 672
 
 // offsets for L2CAP SIGNALING COMMANDS
 #define L2CAP_SIGNALING_COMMAND_CODE_OFFSET   0
@@ -416,8 +417,21 @@ void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason){
 void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t *command){
     // accept the other's configuration options
     uint16_t len       = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
+    uint16_t pos = 4;
+    while (pos < len){
+        uint8_t type   = command[pos++];
+        uint8_t length = command[pos++];
+        // MTU { type(8): 1, len(8):2, MTU(16) }
+        if ((type & 0x7f) == 1 && length == 2){
+            channel->remote_mtu = READ_BT_16(command, pos);
+        }
+        pos += length;
+    }
     uint8_t identifier = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
-    l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, identifier, channel->remote_cid, 0, 0, len-4, &command[8]);
+    // send back received options
+    // l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, identifier, channel->remote_cid, 0, 0, len-4, &command[8]);
+    // send back OK
+    l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, identifier, channel->remote_cid, 0, 0, 0, NULL);
 }
 
 void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command){
