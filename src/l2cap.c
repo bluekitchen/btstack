@@ -164,6 +164,14 @@ l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
     return NULL;
 }
 
+uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid){
+    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
+    if (channel) {
+        return channel->remote_mtu;
+    } 
+    return 0;
+}
+
 int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...){
     // printf("l2cap_send_signaling_packet type %u\n", cmd);
     va_list argptr;
