@@ -424,14 +424,15 @@ void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason){
 
 void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t *command){
     // accept the other's configuration options
-    uint16_t len       = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
-    uint16_t pos = 4;
-    while (pos < len){
+    uint16_t end_pos = 4 + READ_BT_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
+    uint16_t pos     = 8;
+    while (pos < end_pos){
         uint8_t type   = command[pos++];
         uint8_t length = command[pos++];
         // MTU { type(8): 1, len(8):2, MTU(16) }
         if ((type & 0x7f) == 1 && length == 2){
             channel->remote_mtu = READ_BT_16(command, pos);
+            // printf("l2cap cid %u, remote mtu %u\n", channel->local_cid, channel->remote_mtu);
         }
         pos += length;
     }
