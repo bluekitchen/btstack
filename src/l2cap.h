@@ -64,15 +64,18 @@ typedef struct {
     linked_item_t    item;
 
     L2CAP_STATE state;
+
+    bd_addr_t address;
+    hci_con_handle_t handle;
+
     uint8_t   sig_id;  // other sig for conn requests
     uint16_t  local_cid;
     uint16_t  remote_cid;
-    bd_addr_t address;
+    uint16_t  remote_mtu;
+
     uint16_t  psm;
-    hci_con_handle_t handle;
     
-    // uint16_t mtu_incoming;
-    // uint16_t mtu_outgoing;
+    // uint16_t local_mtu;
     // uint16_t flush_timeout_incoming;
     // uint16_t flush_timeout_outgoing;
 

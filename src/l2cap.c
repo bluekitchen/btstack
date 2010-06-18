@@ -49,6 +49,9 @@
 // size of HCI ACL + L2CAP Header for regular data packets
 #define COMPLETE_L2CAP_HEADER 8
 
+// minimum signaling MTU
+#define L2CAP_MINIMAL_MTU 48
+
 // offsets for L2CAP SIGNALING COMMANDS
 #define L2CAP_SIGNALING_COMMAND_CODE_OFFSET   0
 #define L2CAP_SIGNALING_COMMAND_SIGID_OFFSET  1
@@ -69,8 +72,9 @@ static connection_t * capture_connection = NULL;
 static uint8_t config_options[] = { 1, 2, 150, 0}; // mtu = 48 
 
 void l2cap_init(){
-    sig_buffer = malloc( 48 );
-    acl_buffer = malloc( 255 + 8 ); 
+    sig_buffer = malloc( L2CAP_MINIMAL_MTU );
+    // acl_buffer = malloc( 255 + 8 ); 
+    acl_buffer = malloc( 400 + 8 ); 
 
     // 
     // register callbacks with HCI
@@ -201,6 +205,7 @@ void l2cap_create_channel_internal(connection_t * connection, bd_addr_t address,
     chan->handle = 0;
     chan->connection = connection;
     chan->packet_handler = NULL;
+    chan->remote_mtu = L2CAP_MINIMAL_MTU;
     
     // set initial state
     chan->state = L2CAP_STATE_CLOSED;
@@ -362,6 +367,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     channel->packet_handler = service->packet_handler;
     channel->local_cid  = l2cap_next_local_cid();
     channel->remote_cid = source_cid;
+    channel->remote_mtu = L2CAP_MINIMAL_MTU;
 
     // set initial state
     channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
@@ -407,11 +413,17 @@ void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason){
     free (channel);
 }
 
+void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t *command){
+    // accept the other's configuration options
+    uint16_t len       = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
+    uint8_t identifier = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
+    l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, identifier, channel->remote_cid, 0, 0, len-4, &command[8]);
+}
+
 void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command){
 
     uint8_t code       = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
     uint8_t identifier = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
-    uint16_t len       = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
     uint16_t result = 0;
 
     // printf("signaling handler code %u\n", code);
@@ -456,8 +468,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                     channel->state = L2CAP_STATE_WAIT_CONFIG_REQ;
                     break;
                 case CONFIGURE_REQUEST:
-                    // accept the other's configuration options
-                    l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, identifier, channel->remote_cid, 0, 0, len-4, &command[8]);
+                    l2cap_signaling_handle_configure_request(channel, command);
                     channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP;
                     break;
                 case DISCONNECTION_REQUEST:
@@ -472,8 +483,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
         case L2CAP_STATE_WAIT_CONFIG_REQ:
             switch (code) {
                 case CONFIGURE_REQUEST:
-                    // accept the other's configuration options
-                    l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, identifier, channel->remote_cid, 0, 0, len-4, &command[8]);
+                    l2cap_signaling_handle_configure_request(channel, command);
                     channel->state = L2CAP_STATE_OPEN;
                     l2cap_emit_channel_opened(channel, 0);  // success
                     break;
