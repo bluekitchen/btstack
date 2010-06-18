@@ -205,7 +205,7 @@ int sdp_create_error_response(uint16_t transaction_id, uint16_t error_code){
     return 7;
 }
 
-int sdp_handle_service_search_request(uint8_t * packet){
+int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu){
     
     // get request details
     uint16_t  transaction_id = READ_NET_16(packet, 1);
@@ -214,6 +214,12 @@ int sdp_handle_service_search_request(uint8_t * packet){
     uint16_t  serviceSearchPatternLen = de_get_len(serviceSearchPattern);
     uint16_t  maximumServiceRecordCount = READ_NET_16(packet, 5 + serviceSearchPatternLen);
     uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2];
+    
+    // calc maxumumServiceRecordCount based on remote MTU
+    uint16_t maximumServiceRecordCount2 = (remote_mtu - (9+3))/4;
+    if (maximumServiceRecordCount2 < maximumServiceRecordCount) {
+        maximumServiceRecordCount = maximumServiceRecordCount2;
+    }
     
     // continuation state contains index of next service record to examine
     int      continuation = 0;
@@ -272,7 +278,7 @@ int sdp_handle_service_search_request(uint8_t * packet){
     return pos;
 }
 
-int sdp_handle_service_attribute_request(uint8_t * packet){
+int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu){
     
     // get request details
     uint16_t  transaction_id = READ_NET_16(packet, 1);
@@ -282,6 +288,12 @@ int sdp_handle_service_attribute_request(uint8_t * packet){
     uint8_t * attributeIDList = &packet[11];
     uint16_t  attributeIDListLen = de_get_len(attributeIDList);
     uint8_t * continuationState = &packet[11+attributeIDListLen];
+    
+    // calc maximumAttributeByteCount based on remote MTU
+    uint16_t maximumAttributeByteCount2 = remote_mtu - (7+3);
+    if (maximumAttributeByteCount2 < maximumAttributeByteCount) {
+        maximumAttributeByteCount = maximumAttributeByteCount2;
+    }
     
     // continuation state contains index of next attribute to examine
     uint16_t continuation_index = 0;
@@ -324,7 +336,7 @@ int sdp_handle_service_attribute_request(uint8_t * packet){
     return pos;
 }
 
-int sdp_handle_service_search_attribute_request(uint8_t * packet){
+int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remote_mtu){
     
     // get request details
     uint16_t  transaction_id = READ_NET_16(packet, 1);
@@ -335,8 +347,12 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet){
     uint8_t * attributeIDList = &packet[5+serviceSearchPatternLen+2];
     uint16_t  attributeIDListLen = de_get_len(attributeIDList);
     uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2+attributeIDListLen];
-
-    testing: maximumAttributeByteCount = 130;
+    
+    // calc maximumAttributeByteCount based on remote MTU
+    uint16_t maximumAttributeByteCount2 = remote_mtu - (7+5);
+    if (maximumAttributeByteCount2 < maximumAttributeByteCount) {
+        maximumAttributeByteCount = maximumAttributeByteCount2;
+    }
     
     // continuation state contains index of next service record to examine
     // continuation state contains index of next attribute to examine
@@ -419,6 +435,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 	uint16_t transaction_id;
     SDP_PDU_ID_t pdu_id;
     uint16_t param_len;
+    uint16_t remote_mtu;
     int pos = 5;
     
 	switch (packet_type) {
@@ -427,19 +444,20 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             pdu_id = packet[0];
             transaction_id = READ_NET_16(packet, 1);
             param_len = READ_NET_16(packet, 3);
+            remote_mtu = l2cap_get_remote_mtu_for_local_cid(channel);
             printf("SDP Request: type %u, transaction id %u, len %u\n", pdu_id, transaction_id, param_len);
             switch (pdu_id){
                     
                 case SDP_ServiceSearchRequest:
-                    pos = sdp_handle_service_search_request(packet);
+                    pos = sdp_handle_service_search_request(packet, remote_mtu);
                     break;
                                         
                 case SDP_ServiceAttributeRequest:
-                    pos = sdp_handle_service_attribute_request(packet);
+                    pos = sdp_handle_service_attribute_request(packet, remote_mtu);
                     break;
                     
                 case SDP_ServiceSearchAttributeRequest:
-                    pos = sdp_handle_service_search_attribute_request(packet);
+                    pos = sdp_handle_service_search_attribute_request(packet, remote_mtu);
                     break;
                     
                 default:
@@ -473,7 +491,6 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 #if 1
 static uint8_t record[100];
 static uint8_t request[100];
-
 static void dump_service_search_response(){
     uint16_t nr_services = READ_NET_16(sdp_response_buffer, 7);
     int i;
@@ -489,6 +506,7 @@ static void dump_service_search_response(){
 }
 
 void sdp_test(){
+    const uint16_t remote_mtu = 150;
 
     // create two records with 2 attributes each
     de_create_sequence(record);
@@ -522,10 +540,10 @@ void sdp_test(){
     uint16_t serviceSearchPatternLen = de_get_len(serviceSearchPattern);
     net_store_16(request, 5 + serviceSearchPatternLen, 1);
     request[5 + serviceSearchPatternLen + 2] = 0;
-    sdp_handle_service_search_request(request);
+    sdp_handle_service_search_request(request, remote_mtu);
     dump_service_search_response();
     memcpy(request + 5 + serviceSearchPatternLen + 2, sdp_response_buffer + 9 + nr_services*4, 3); 
-    sdp_handle_service_search_request(request);
+    sdp_handle_service_search_request(request, remote_mtu);
     dump_service_search_response();
 
     // sdp_handle_service_attribute_request
@@ -540,7 +558,7 @@ void sdp_test(){
     uint16_t attributeIDListLen = de_get_len(attributeIDList);
     request[11+attributeIDListLen] = 0;
     while(1) {
-        sdp_handle_service_attribute_request(request);
+        sdp_handle_service_attribute_request(request, remote_mtu);
         de_dump_data_element(sdp_response_buffer+7);
         attributeListLen = de_get_len(sdp_response_buffer+7);
         printf("Continuation %u\n", sdp_response_buffer[7+attributeListLen]);
@@ -563,7 +581,7 @@ void sdp_test(){
     attributeIDListLen = de_get_len(attributeIDList);
     request[5 + serviceSearchPatternLen + 2 + attributeIDListLen] = 0;
     while (1) {
-        sdp_handle_service_search_attribute_request(request);
+        sdp_handle_service_search_attribute_request(request, remote_mtu);
         de_dump_data_element(sdp_response_buffer+7);
         attributeListLen = de_get_len(sdp_response_buffer+7);
         printf("Continuation %u\n", sdp_response_buffer[7+attributeListLen]);
