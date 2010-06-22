@@ -445,7 +445,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             transaction_id = READ_NET_16(packet, 1);
             param_len = READ_NET_16(packet, 3);
             remote_mtu = l2cap_get_remote_mtu_for_local_cid(channel);
-            printf("SDP Request: type %u, transaction id %u, len %u\n", pdu_id, transaction_id, param_len);
+            // printf("SDP Request: type %u, transaction id %u, len %u, mtu %u\n", pdu_id, transaction_id, param_len, remote_mtu);
             switch (pdu_id){
                     
                 case SDP_ServiceSearchRequest:
