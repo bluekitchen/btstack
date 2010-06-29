@@ -1,12 +1,16 @@
 /* new todo file for BTstack */
 
 2009-11-08: Release 0.1
+2010-06-20: Release 0.2 - SDP + iOS 4 support
 
 NEXT:
-- implement SDP
 - test SDP implementation against Mac/Linux Service Discovery
+- HCI CMD packet is limited to 255 bytes payload. SDP records can be larger than that. Options:
+  - handle SDP records in client library
+  - provide a way to transer SDP records in segments
+  - ignore HCI command lenght on socket connection and directly stream data without buffer
+  - use simple SDP_PACKET for client/server communication
 
-== Release Version 0.2
 - move RFCOMM code into BTdaemon
 - add extern "C" to bstack methods
   - see: http://stackoverflow.com/questions/376966/using-c-c-static-libraries-from-iphone-objectivec-apps
