@@ -38,6 +38,8 @@
 #include <btstack/run_loop.h>
 #include <btstack/linked_list.h>
 
+#include "run_loop_private.h"
+
 #include <sys/select.h>
 #include <stdlib.h>
 #include <stdio.h>

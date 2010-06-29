@@ -30,48 +30,31 @@
  */
 
 /*
- *  run_loop.h
+ *  run_loop_private.h
  *
  *  Created by Matthias Ringwald on 6/6/09.
  */
 
 #pragma once
 
-#include <btstack/linked_list.h>
+#include <btstack/run_loop.h>
 
 #include <sys/time.h>
 
-typedef enum {
-	RUN_LOOP_POSIX = 1,
-	RUN_LOOP_COCOA,
-	RUN_LOOP_EMBEDDED
-} RUN_LOOP_TYPE;
+// compare timeval or timers - NULL is assumed to be before the Big Bang
+int run_loop_timeval_compare(struct timeval *a, struct timeval *b);
+int run_loop_timer_compare(timer_source_t *a, timer_source_t *b);
 
-typedef struct data_source {
-    linked_item_t item;
-    int  fd;                                            // <-- file descriptors to watch or 0
-    int  (*process)(struct data_source *ds);            // <-- do processing
-} data_source_t;
+// 
+void run_loop_timer_dump();
 
-typedef struct timer {
-    linked_item_t item; 
-    struct timeval timeout;                             // <-- next timeout
-    void  (*process)(struct timer *ts);                 // <-- do processing
-} timer_source_t;
-
-// init must be called before any other run_loop call
-void run_loop_init(RUN_LOOP_TYPE type);
-
-// set timer based on current time
-void run_loop_set_timer(timer_source_t *a, int timeout_in_ms);
-
-// add/remove data_source
-void run_loop_add_data_source(data_source_t *dataSource);
-int  run_loop_remove_data_source(data_source_t *dataSource);
-
-// add/remove timer_source
-void run_loop_add_timer(timer_source_t *timer); 
-int  run_loop_remove_timer(timer_source_t *timer);
-
-// execute configured run_loop
-void run_loop_execute();
+// internal use only
+typedef struct {
+	void (*init)();
+	void (*add_data_source)(data_source_t *dataSource);
+	int  (*remove_data_source)(data_source_t *dataSource);
+	void (*add_timer)(timer_source_t *timer);
+	int  (*remove_timer)(timer_source_t *timer); 
+	void (*execute)();
+	void (*dump_timer)();
+} run_loop_t;
