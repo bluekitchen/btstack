@@ -41,6 +41,10 @@
 
 #include <sys/time.h>
 
+// flags for data_source
+#define DS_FLAG_ACTIVE 1
+#define DS_FLAG_POLL   2
+
 typedef enum {
 	RUN_LOOP_POSIX = 1,
 	RUN_LOOP_COCOA,
@@ -49,14 +53,15 @@ typedef enum {
 
 typedef struct data_source {
     linked_item_t item;
-    int  fd;                                            // <-- file descriptors to watch or 0
-    int  (*process)(struct data_source *ds);            // <-- do processing
+    int  fd;                                 // <-- file descriptors to watch or 0
+    int  (*process)(struct data_source *ds); // <-- do processing
+	int  flags;								 // <-- RL_FLAG
 } data_source_t;
 
 typedef struct timer {
     linked_item_t item; 
-    struct timeval timeout;                             // <-- next timeout
-    void  (*process)(struct timer *ts);                 // <-- do processing
+    struct timeval timeout;                  // <-- next timeout
+    void  (*process)(struct timer *ts);      // <-- do processing
 } timer_source_t;
 
 // init must be called before any other run_loop call
