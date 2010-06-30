@@ -40,6 +40,7 @@
 #include <stdio.h>
 #include <stdlib.h>  // exit()
 
+#include "run_loop_private.h"
 
 #include "../config.h"
 
