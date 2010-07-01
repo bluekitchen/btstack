@@ -126,16 +126,18 @@ CFDataRef myCallBack(CFMessagePortRef local, SInt32 msgid, CFDataRef cfData, voi
 			break;
 		}
 			
-		case SBAC_getBluetoothEnabled:
+		case SBAC_getBluetoothEnabled: {
 			// use single byte to avoid endianess issues for the boolean
 			uint8_t enabled = iphone_system_bt_enabled();
 			returnData = CFDataCreate(kCFAllocatorDefault, (const UInt8 *) &enabled, 1);
 			break;
+    }
 
-		case SBAC_setBluetoothEnabled:
+		case SBAC_setBluetoothEnabled: {
 			if (dataLen < 1) return NULL;
 			iphone_system_bt_set_enabled( data[0]);
 			break;
+    }
 
 		default:
 			NSLog(@"Unknown command %u, len %u", data[0], dataLen); 
