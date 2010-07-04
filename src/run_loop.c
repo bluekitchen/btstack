@@ -47,6 +47,7 @@
 static run_loop_t * the_run_loop = NULL;
 
 extern run_loop_t run_loop_posix;
+extern run_loop_t run_loop_embedded;
 
 #ifdef USE_COCOA_RUN_LOOP
 extern run_loop_t run_loop_cocoa;
@@ -114,6 +115,9 @@ void run_loop_init(RUN_LOOP_TYPE type){
     switch (type) {
         case RUN_LOOP_POSIX:
             the_run_loop = &run_loop_posix;
+            break;
+        case RUN_LOOP_EMBEDDED:
+            the_run_loop = &run_loop_embedded;
             break;
 #ifdef USE_COCOA_RUN_LOOP
         case RUN_LOOP_COCOA:
