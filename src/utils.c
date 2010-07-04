@@ -97,10 +97,11 @@ void print_bd_addr( bd_addr_t addr){
 }
 
 int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr){
-	int bd_addr_buffer[BD_ADDR_LEN];  //for sscanf, integer needed
+	unsigned int bd_addr_buffer[BD_ADDR_LEN];  //for sscanf, integer needed
 	// reset result buffer
 	int i;
     bzero(bd_addr_buffer, sizeof(bd_addr_buffer));
+    
 	// parse
     int result = sscanf( (char *) addr_string, "%2x:%2x:%2x:%2x:%2x:%2x", &bd_addr_buffer[0], &bd_addr_buffer[1], &bd_addr_buffer[2],
 						&bd_addr_buffer[3], &bd_addr_buffer[4], &bd_addr_buffer[5]);
