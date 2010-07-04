@@ -36,11 +36,14 @@
  *
  */
 
+#include "hci.h"
+
 #include <unistd.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
-#include "hci.h"
+
+#include "debug.h"
 #include "hci_dump.h"
 
 #include "../include/btstack/hci_cmds.h"
@@ -177,7 +180,7 @@ static void acl_handler(uint8_t *packet, int size){
 
     // ignore non-registered handle
     if (!conn){
-        fprintf(stderr, "hci.c: acl_handler called with non-registered handle %u!\n" , con_handle);
+        log_err( "hci.c: acl_handler called with non-registered handle %u!\n" , con_handle);
         return;
     }
     
@@ -191,7 +194,7 @@ static void acl_handler(uint8_t *packet, int size){
             
             // sanity check
             if (conn->acl_recombination_pos == 0) {
-                fprintf(stderr, "ACL Cont Fragment but no first fragment for handle 0x%02x\n", con_handle);
+                log_err( "ACL Cont Fragment but no first fragment for handle 0x%02x\n", con_handle);
                 return;
             }
             
@@ -199,7 +202,7 @@ static void acl_handler(uint8_t *packet, int size){
             memcpy(&conn->acl_recombination_buffer[conn->acl_recombination_pos], &packet[4], acl_length );
             conn->acl_recombination_pos += acl_length;
             
-            // fprintf(stderr, "ACL Cont Fragment: acl_len %u, combined_len %u, l2cap_len %u\n",
+            // log_err( "ACL Cont Fragment: acl_len %u, combined_len %u, l2cap_len %u\n",
             //        acl_length, connection->acl_recombination_pos, connection->acl_recombination_length);  
             
             // forward complete L2CAP packet if complete. 
@@ -216,7 +219,7 @@ static void acl_handler(uint8_t *packet, int size){
             
             // sanity check
             if (conn->acl_recombination_pos) {
-                fprintf(stderr, "ACL First Fragment but data in buffer for handle 0x%02x\n", con_handle);
+                log_err( "ACL First Fragment but data in buffer for handle 0x%02x\n", con_handle);
                 return;
             }
             
@@ -235,13 +238,13 @@ static void acl_handler(uint8_t *packet, int size){
                 conn->acl_recombination_pos    = acl_length + 4;
                 conn->acl_recombination_length = l2cap_length;
                 bt_store_16(conn->acl_recombination_buffer, 2, acl_length +4);
-                // fprintf(stderr, "ACL First Fragment: acl_len %u, l2cap_len %u\n", acl_length, l2cap_length);
+                // log_err( "ACL First Fragment: acl_len %u, l2cap_len %u\n", acl_length, l2cap_length);
             }
             break;
             
         } 
         default:
-            fprintf(stderr, "hci.c: acl_handler called with invalid packet boundary flags %u\n", acl_flags & 0x03);
+            log_err( "hci.c: acl_handler called with invalid packet boundary flags %u\n", acl_flags & 0x03);
             return;
     }
     
@@ -393,7 +396,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
         // power on
         int err = hci_stack.control->on(hci_stack.config);
         if (err){
-            fprintf(stderr, "POWER_ON failed\n");
+            log_err( "POWER_ON failed\n");
             hci_emit_hci_open_failed();
             return err;
         }
@@ -401,7 +404,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
         // open low-level device
         err = hci_stack.hci_transport->open(hci_stack.config);
         if (err){
-            fprintf(stderr, "HCI_INIT failed, turning Bluetooth off again\n");
+            log_err( "HCI_INIT failed, turning Bluetooth off again\n");
             hci_stack.control->off(hci_stack.config);
             hci_emit_hci_open_failed();
             return err;
