@@ -412,7 +412,7 @@ void l2cap_accept_connection_internal(uint16_t local_cid){
 void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid( local_cid);
     if (!channel) {
-        fprintf(stderr, "l2cap_decline_connection_internal called but local_cid 0x%x not found", local_cid,reason);
+        fprintf(stderr, "l2cap_decline_connection_internal called but local_cid 0x%x not found", local_cid);
         return;
     }
     l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->sig_id, 0, 0, reason, 0);
