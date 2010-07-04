@@ -113,12 +113,14 @@ void run_loop_init(RUN_LOOP_TYPE type){
         exit(10);
     }
     switch (type) {
-        case RUN_LOOP_POSIX:
-            the_run_loop = &run_loop_posix;
-            break;
         case RUN_LOOP_EMBEDDED:
             the_run_loop = &run_loop_embedded;
             break;
+#ifdef USE_POSIX_RUN_LOOP
+        case RUN_LOOP_POSIX:
+            the_run_loop = &run_loop_posix;
+            break;
+#endif
 #ifdef USE_COCOA_RUN_LOOP
         case RUN_LOOP_COCOA:
             the_run_loop = &run_loop_cocoa;
