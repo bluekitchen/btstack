@@ -94,7 +94,7 @@ int run_loop_remove_timer(timer_source_t *ts){
 
 void run_loop_timer_dump(){
     run_loop_assert();
-    return the_run_loop->dump_timer();
+    the_run_loop->dump_timer();
 }
 
 /**
