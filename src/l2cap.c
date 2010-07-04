@@ -562,6 +562,8 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                     break;
             }
             break;
+        default:
+            break;
     }
     // printf("new state %u\n", channel->state);
 }
