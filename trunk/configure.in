@@ -227,6 +227,7 @@ if test "x$USE_COCOA_RUN_LOOP" = xyes; then
     echo "#define USE_COCOA_RUN_LOOP" >> config.h
 fi
 echo "#define USE_POSIX_RUN_LOOP" >> config.h
+echo "#define HAVE_SDP" >> config.h
 
 AC_SUBST(IPHONE_IP)
 AC_SUBST(HAVE_LIBUSB)

@@ -115,6 +115,7 @@ uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, va_lis
                 memcpy(&hci_cmd_buffer[pos], ptr, 16);
                 pos += 16;
                 break;
+#ifdef HAVE_SDP
             case 'S': { // Service Record (Data Element Sequence)
                 ptr = va_arg(argptr, uint8_t *);
                 uint16_t len = de_get_len(ptr);
@@ -122,6 +123,7 @@ uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, va_lis
                 pos += len;
                 break;
             }
+#endif
             default:
                 break;
         }
