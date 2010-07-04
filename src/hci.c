@@ -269,7 +269,7 @@ static void event_handler(uint8_t *packet, int size){
             bt_flip_addr(addr, &packet[2]);
             // TODO: eval COD 8-10
             uint8_t link_type = packet[11];
-            printf("Connection_incoming: "); print_bd_addr(addr); printf(", type %u\n", link_type);
+            log_dbg("Connection_incoming: "); print_bd_addr(addr); log_dbg(", type %u\n", link_type);
             if (link_type == 1) { // ACL
                 conn = connection_for_address(addr);
                 if (!conn) {
@@ -286,7 +286,7 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_CONNECTION_COMPLETE:
             // Connection management
             bt_flip_addr(addr, &packet[5]);
-            printf("Connection_complete (status=%u)", packet[2]); print_bd_addr(addr); printf("\n");
+            log_dbg("Connection_complete (status=%u)", packet[2]); print_bd_addr(addr); log_dbg("\n");
             conn = connection_for_address(addr);
             if (conn) {
                 if (!packet[2]){
@@ -298,9 +298,9 @@ static void event_handler(uint8_t *packet, int size){
                     run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
                     run_loop_add_timer(&conn->timeout);
                     
-                    printf("New connection: handle %u, ", conn->con_handle);
+                    log_dbg("New connection: handle %u, ", conn->con_handle);
                     print_bd_addr( conn->address );
-                    printf("\n");
+                    log_dbg("\n");
                     
                     hci_emit_nr_connections_changed();
                 } else {
@@ -316,9 +316,9 @@ static void event_handler(uint8_t *packet, int size){
                 handle = READ_BT_16(packet, 3);
                 hci_connection_t * conn = connection_for_handle(handle);
                 if (conn) {
-                    printf("Connection closed: handle %u, ", conn->con_handle);
+                    log_dbg("Connection closed: handle %u, ", conn->con_handle);
                     print_bd_addr( conn->address );
-                    printf("\n");
+                    log_dbg("\n");
                     run_loop_remove_timer(&conn->timeout);
                     linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
                     free( conn );
@@ -484,7 +484,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     // create_connection?
     if (IS_COMMAND(packet, hci_create_connection)){
         bt_flip_addr(addr, &packet[3]);
-        printf("Create_connection to "); print_bd_addr(addr); printf("\n");
+        log_dbg("Create_connection to "); print_bd_addr(addr); log_dbg("\n");
         conn = connection_for_address(addr);
         if (conn) {
             // if connection exists
