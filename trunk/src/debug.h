@@ -37,7 +37,7 @@
 
 #include "../config.h"
 
-#ifdef EMBEEDED
+#ifdef EMBEDDED
 
 #define log_dbg(format, ...)
 #define log_err(format, ...)
