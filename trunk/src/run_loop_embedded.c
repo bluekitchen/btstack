@@ -44,6 +44,8 @@
 
 #include "run_loop_private.h"
 
+// #define HAVE_TIME
+
 // the run loop
 static linked_list_t data_sources;
 static linked_list_t timers;
@@ -102,7 +104,7 @@ void embedded_dump_timer(){
  */
 void embedded_execute() {
     data_source_t *ds;
-#ifdef TIMERS
+#ifdef HAVE_TIME
     timer_source_t       *ts;
     struct timeval current_tv;
     struct timeval next_tv;
@@ -111,27 +113,6 @@ void embedded_execute() {
     
     while (1) {
 
-#ifdef TIMERS
-        // get next timeout
-        // pre: 0 <= tv_usec < 1000000
-        timeout = NULL;
-        if (timers) {
-            gettimeofday(&current_tv, NULL);
-            ts = (timer_source_t *) timers;
-            next_tv.tv_usec = ts->timeout.tv_usec - current_tv.tv_usec;
-            next_tv.tv_sec  = ts->timeout.tv_sec  - current_tv.tv_sec;
-            while (next_tv.tv_usec < 0){
-                next_tv.tv_usec += 1000000;
-                next_tv.tv_sec--;
-            }
-            if (next_tv.tv_sec < 0 || (next_tv.tv_sec == 0 && next_tv.tv_usec < 0)){
-                next_tv.tv_sec  = 0; 
-                next_tv.tv_usec = 0;
-            }
-            timeout = &next_tv;
-        }
-#endif
-        
         // process data sources
         data_source_t *next;
         for (ds = (data_source_t *) data_sources; ds != NULL ; ds = next){
@@ -139,7 +120,7 @@ void embedded_execute() {
             ds->process(ds);
         }
         
-#if TIMERS
+#ifdef HAVE_TIME
         // process timers
         // pre: 0 <= tv_usec < 1000000
         while (timers) {
