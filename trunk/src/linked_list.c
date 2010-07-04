@@ -72,13 +72,12 @@ int  linked_list_remove(linked_list_t * list, linked_item_t *item){    // <-- re
 void linked_item_set_user(linked_item_t *item, void *user_data){
     item->next = (void *) 0;
     item->user_data = user_data;
-};
+}
 
 void * linked_item_get_user(linked_item_t *item) {
     return item->user_data;
-};
+}
 
-#include <strings.h>
 void test_linked_list(){
     linked_list_t testList = 0;
     linked_item_t itemA;
