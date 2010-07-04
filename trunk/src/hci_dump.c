@@ -45,6 +45,7 @@
 #include "hci.h"
 #include "hci_transport.h"
 
+#ifndef EMBEDDED
 #include <fcntl.h>        // open
 #include <arpa/inet.h>    // hton..
 #include <strings.h>      // bzero
@@ -53,6 +54,7 @@
 #include <time.h>
 #include <sys/time.h>     // for timestamps
 #include <sys/stat.h>     // for mode flags
+#endif
 
 // BLUEZ hcidump
 typedef struct {
@@ -72,22 +74,28 @@ typedef struct {
 	uint8_t		type;
 } __attribute__ ((packed)) pktlog_hdr;
 
+#ifndef EMBEDDED
 static int dump_file = -1;
 static int dump_format;
 static hcidump_hdr header_bluez;
 static pktlog_hdr  header_packetlogger;
 static char time_string[40];
+#endif
 
 void hci_dump_open(char *filename, hci_dump_format_t format){
+#ifndef EMBEDDED
     dump_format = format;
     if (dump_format == HCI_DUMP_STDOUT) {
         dump_file = fileno(stdout);
     } else {
         dump_file =  open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     }
+#endif
 }
 
 void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {
+#ifndef EMBEDDED
+
     if (dump_file < 0) return; // not activated yet
     
     // get time
@@ -157,10 +165,13 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
             write (dump_file, &header_packetlogger, sizeof(pktlog_hdr) );
             write (dump_file, packet, len );
     }
+#endif
 }
 
 void hci_dump_close(){
+#ifndef EMBEDDED
     close(dump_file);
     dump_file = -1;
+#endif
 }
 
