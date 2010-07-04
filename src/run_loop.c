@@ -55,10 +55,12 @@ extern run_loop_t run_loop_cocoa;
 
 // assert run loop initialized
 void run_loop_assert(){
+#ifndef EMBEDDED
     if (!the_run_loop){
         fprintf(stderr, "ERROR: run_loop function called before run_loop_init!\n");
         exit(10);
     }
+#endif
 }
 
 /**
@@ -108,10 +110,12 @@ void run_loop_execute() {
 
 // init must be called before any other run_loop call
 void run_loop_init(RUN_LOOP_TYPE type){
+#ifndef EMBEDDED
     if (the_run_loop){
         fprintf(stderr, "ERROR: run loop initialized twice!\n");
         exit(10);
     }
+#endif
     switch (type) {
         case RUN_LOOP_EMBEDDED:
             the_run_loop = &run_loop_embedded;
@@ -127,8 +131,10 @@ void run_loop_init(RUN_LOOP_TYPE type){
             break;
 #endif
         default:
+#ifndef EMBEDDED
             fprintf(stderr, "ERROR: invalid run loop type %u selected!\n", type);
             exit(10);
+#endif
             break;
     }
     the_run_loop->init();
