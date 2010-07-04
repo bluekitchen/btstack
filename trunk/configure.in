@@ -64,7 +64,7 @@ AM_CONDITIONAL(HAVE_LIBUSB, [test "x$HAVE_LIBUSB" == "xyes"])
 echo
 echo "BTstack configured for HCI $HCI_TRANSPORT Transport"
 
-RUN_LOOP_SOURCES=run_loop_posix.c
+RUN_LOOP_SOURCES="run_loop_posix.c run_loop_embedded.c"
 case "$host_os" in
     darwin*)
         RUN_LOOP_SOURCES="$RUN_LOOP_SOURCES run_loop_cocoa.m"
