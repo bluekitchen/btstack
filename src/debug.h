@@ -44,6 +44,8 @@
 
 #else
 
+#include <stdio.h>
+
 #define log_dbg(format, ...) fprintf(stderr, format,  ## __VA_ARGS__)
 #define log_err(format, ...)  printf(format,  ## __VA_ARGS__)
 

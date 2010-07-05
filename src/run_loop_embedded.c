@@ -43,6 +43,7 @@
 #include <btstack/linked_list.h>
 
 #include "run_loop_private.h"
+#include "debug.h"
 
 // #define HAVE_TIME
 
