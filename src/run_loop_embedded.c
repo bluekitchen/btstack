@@ -76,7 +76,7 @@ void embedded_add_timer(timer_source_t *ts){
     }
     ts->item.next = it->next;
     it->next = (linked_item_t *) ts;
-    // printf("Added timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
+    // log_dbg("Added timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
     // embedded_dump_timer();
 }
 
@@ -84,19 +84,17 @@ void embedded_add_timer(timer_source_t *ts){
  * Remove timer from run loop
  */
 int embedded_remove_timer(timer_source_t *ts){
-    // printf("Removed timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
+    // log_dbg("Removed timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
     return linked_list_remove(&timers, (linked_item_t *) ts);
 }
 
 void embedded_dump_timer(){
-#if 0
     linked_item_t *it;
     int i = 0;
     for (it = (linked_item_t *) timers; it ; it = it->next){
         timer_source_t *ts = (timer_source_t*) it;
-        // printf("timer %u, timeout %u\n", i, (unsigned int) ts->timeout.tv_sec);
+        log_dbg("timer %u, timeout %u\n", i, (unsigned int) ts->timeout.tv_sec);
     }
-#endif
 }
 
 /**
