@@ -36,9 +36,12 @@
  */
 
 #include <btstack/hci_cmds.h>
-#include <btstack/sdp_util.h>
-#include "hci.h"
+
 #include <string.h>
+
+#include <btstack/sdp_util.h>
+#include "config.h"
+#include "hci.h"
 
 // calculate combined ogf/ocf value
 #define OPCODE(ogf, ocf) (ocf | ogf << 10)
