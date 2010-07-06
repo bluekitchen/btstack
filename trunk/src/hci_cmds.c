@@ -54,7 +54,7 @@
  *   H: HCI connection handle
  *   B: Bluetooth Baseband Address (BD_ADDR)
  *   E: Extended Inquiry Result
- *   N: Name up to 248 chars 
+ *   N: Name up to 248 chars, \0 terminated
  *   P: 16 byte Pairing code
  *   S: Service Record (Data Element Sequence)
  */
@@ -108,11 +108,20 @@ uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, va_lis
                 memcpy(&hci_cmd_buffer[pos], ptr, 240);
                 pos += 240;
                 break;
-            case 'N': // UTF-8 string, null terminated
+            case 'N': { // UTF-8 string, null terminated
                 ptr = va_arg(argptr, uint8_t *);
-                memcpy(&hci_cmd_buffer[pos], ptr, 248);
+                uint16_t len = strlen(ptr);
+                if (len > 248) {
+                    len = 248;
+                }
+                memcpy(&hci_cmd_buffer[pos], ptr, len);
+                if (len < 248) {
+                    // fill remaining space with zeroes
+                    bzero(&hci_cmd_buffer[pos+len], 248-len);
+                }
                 pos += 248;
                 break;
+            }
             case 'P': // 16 byte PIN code or link key
                 ptr = va_arg(argptr, uint8_t *);
                 memcpy(&hci_cmd_buffer[pos], ptr, 16);
