@@ -78,13 +78,30 @@ void * linked_item_get_user(linked_item_t *item) {
     return item->user_data;
 }
 
+#if 0
+#include <stdio.h>
 void test_linked_list(){
     linked_list_t testList = 0;
     linked_item_t itemA;
     linked_item_t itemB;
+    linked_item_t itemC;
     linked_item_set_user(&itemA, (void *) 0);
     linked_item_set_user(&itemB, (void *) 0);
     linked_list_add(&testList, &itemA);
     linked_list_add(&testList, &itemB);
-    linked_list_remove(&testList, &itemB);
+    linked_list_add(&testList, &itemC);
+    // linked_list_remove(&testList, &itemB);
+    linked_item_t *it;
+    for (it = (linked_item_t *) &testList; it ; it = it->next){
+        if (it->next == &itemA) printf("Item A");
+        if (it->next == &itemB) printf("Item B");
+        if (it->next == &itemC) printf("Item C");
+        if (it->next == &itemB){
+            it->next =  it->next;
+            printf(" remove\n");
+        } else {
+            printf(" keep\n");
+        }
+    }
 }
+#endif
