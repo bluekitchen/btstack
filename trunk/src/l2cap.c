@@ -306,7 +306,7 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
             handle = READ_BT_16(packet, 3);
             linked_item_t *it;
             // only access next element to allows for removal
-            for (it = (linked_item_t *) &l2cap_channels; it ; it = it->next){
+            for (it = (linked_item_t *) &l2cap_channels; it->next ; it = it->next){
                 l2cap_channel_t * channel = (l2cap_channel_t *) it->next;
                 if ( channel->handle == handle ){
                     // update prev item before free'ing next element
