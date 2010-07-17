@@ -305,9 +305,12 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
             // send l2cap disconnect events for all channels on this handle
             handle = READ_BT_16(packet, 3);
             linked_item_t *it;
-            for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-                l2cap_channel_t * channel = (l2cap_channel_t *) it;
+            // only access next element to allows for removal
+            for (it = (linked_item_t *) &l2cap_channels; it ; it = it->next){
+                l2cap_channel_t * channel = (l2cap_channel_t *) it->next;
                 if ( channel->handle == handle ){
+                    // update prev item before free'ing next element
+                    it->next = it->next->next;
                     l2cap_finialize_channel_close(channel);
                 }
             }
