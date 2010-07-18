@@ -139,7 +139,7 @@ static int nr_hci_connections(){
 /** 
  * Dummy handler called by HCI
  */
-static void dummy_handler(uint8_t *packet, uint16_t size){
+static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 /**
@@ -208,7 +208,7 @@ static void acl_handler(uint8_t *packet, int size){
             // forward complete L2CAP packet if complete. 
             if (conn->acl_recombination_pos >= conn->acl_recombination_length + 4 + 4){ // pos already incl. ACL header
                 
-                hci_stack.acl_packet_handler(conn->acl_recombination_buffer, conn->acl_recombination_pos);
+                hci_stack.packet_handler(HCI_ACL_DATA_PACKET, conn->acl_recombination_buffer, conn->acl_recombination_pos);
                 // reset recombination buffer
                 conn->acl_recombination_length = 0;
                 conn->acl_recombination_pos = 0;
@@ -230,7 +230,7 @@ static void acl_handler(uint8_t *packet, int size){
             if (acl_length >= l2cap_length + 4){
                 
                 // forward fragment as L2CAP packet
-                hci_stack.acl_packet_handler(packet, acl_length + 4);
+                hci_stack.packet_handler(HCI_ACL_DATA_PACKET, packet, acl_length + 4);
             
             } else {
                 // store first fragment and tweak acl length for complete package
@@ -346,7 +346,7 @@ static void event_handler(uint8_t *packet, int size){
         }
     }
         
-    hci_stack.event_packet_handler(packet, size);
+    hci_stack.packet_handler(HCI_EVENT_PACKET, packet, size);
 	
 	// execute main loop
 	hci_run();
@@ -366,11 +366,8 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 /** Register HCI packet handlers */
-void hci_register_event_packet_handler(void (*handler)(uint8_t *packet, uint16_t size)){
-    hci_stack.event_packet_handler = handler;
-}
-void hci_register_acl_packet_handler  (void (*handler)(uint8_t *packet, uint16_t size)){
-    hci_stack.acl_packet_handler = handler;
+void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+    hci_stack.packet_handler = handler;
 }
 
 void hci_init(hci_transport_t *transport, void *config, bt_control_t *control){
@@ -395,8 +392,7 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control){
     hci_stack.hci_cmd_buffer = malloc(3+255);
 
     // higher level handler
-    hci_stack.event_packet_handler = dummy_handler;
-    hci_stack.acl_packet_handler = dummy_handler;
+    hci_stack.packet_handler = dummy_handler;
 
     // register packet handlers with transport
     transport->register_packet_handler(&packet_handler);
@@ -549,7 +545,7 @@ void hci_emit_state(){
     event[1] = len - 3;
     event[2] = hci_stack.state;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
-    hci_stack.event_packet_handler(event, len);
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
 }
 
 void hci_emit_connection_complete(hci_connection_t *conn){
@@ -563,7 +559,7 @@ void hci_emit_connection_complete(hci_connection_t *conn){
     event[11] = 1; // ACL connection
     event[12] = 0; // encryption disabled
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
-    hci_stack.event_packet_handler(event, len);
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
 }
 
 void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
@@ -573,7 +569,7 @@ void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
     event[1] = len - 2;
     bt_store_16(event, 2, conn->con_handle);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
-    hci_stack.event_packet_handler(event, len);
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
 }
 
 void hci_emit_nr_connections_changed(){
@@ -583,7 +579,7 @@ void hci_emit_nr_connections_changed(){
     event[1] = len - 2;
     event[2] = nr_hci_connections();
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
-    hci_stack.event_packet_handler(event, len);
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
 }
 
 void hci_emit_hci_open_failed(){
@@ -592,7 +588,7 @@ void hci_emit_hci_open_failed(){
     event[0] = BTSTACK_EVENT_POWERON_FAILED;
     event[1] = len - 2;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
-    hci_stack.event_packet_handler(event, len);
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
 }
 
 
@@ -605,7 +601,7 @@ void hci_emit_btstack_version() {
     event[len++] = BTSTACK_MINOR;
     bt_store_16(event, len, BTSTACK_REVISION);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
-    hci_stack.event_packet_handler(event, len);
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
 }
 
 void hci_emit_system_bluetooth_enabled(uint8_t enabled){
@@ -615,5 +611,5 @@ void hci_emit_system_bluetooth_enabled(uint8_t enabled){
     event[1] = len - 2;
     event[2] = enabled;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
-    hci_stack.event_packet_handler(event, len);
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
 }
