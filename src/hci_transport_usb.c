@@ -75,8 +75,7 @@ enum {
 // single instance
 static hci_transport_t * hci_transport_usb = NULL;
 
-static  void (*event_packet_handler)(uint8_t *packet, int size) = dummy_handler;
-static  void (*acl_packet_handler)  (uint8_t *packet, int size) = dummy_handler;
+static  void (*packet_handler)(uint8_t *packet, int size) = dummy_handler;
 
 static uint8_t hci_cmd_out[400];      // bigger than largest packet
 static uint8_t hci_event_buffer[400]; // bigger than largest packet
@@ -374,20 +373,15 @@ static int usb_send_acl_packet(uint8_t *packet, int size){
     return 0;
 }
 
-static void usb_register_event_packet_handler(void (*handler)(uint8_t *packet, int size)){
+static void usb_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, int size)){
     event_packet_handler = handler;
 }
-
-static void usb_register_acl_packet_handler  (void (*handler)(uint8_t *packet, int size)){
-    acl_packet_handler = handler;
-}
-
 
 static const char * usb_get_transport_name(){
     return "USB";
 }
 
-static void dummy_handler(uint8_t *packet, int size){
+static void dummy_handler(uint8_t packet_type, uint8_t *packet, int size){
 }
 
 // get usb singleton
@@ -398,8 +392,7 @@ hci_transport_t * hci_transport_usb_instance() {
         hci_transport_usb->close                         = usb_close;
         hci_transport_usb->send_cmd_packet               = usb_send_cmd_packet;
         hci_transport_usb->send_acl_packet               = usb_send_acl_packet;
-        hci_transport_usb->register_event_packet_handler = usb_register_event_packet_handler;
-        hci_transport_usb->register_acl_packet_handler   = usb_register_acl_packet_handler;
+        hci_transport_usb->register_packet_handler = usb_register_packet_handler;
         hci_transport_usb->get_transport_name            = usb_get_transport_name;
     }
     return hci_transport_usb;

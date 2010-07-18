@@ -48,8 +48,7 @@ typedef struct {
     int    (*close)();
     int    (*send_cmd_packet)(uint8_t *packet, int size);
     int    (*send_acl_packet)(uint8_t *packet, int size);
-    void   (*register_event_packet_handler)(void (*handler)(uint8_t *packet, int size));
-    void   (*register_acl_packet_handler)  (void (*handler)(uint8_t *packet, int size));
+    void   (*register_packet_handler)(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
     const char * (*get_transport_name)();
 } hci_transport_t;
 

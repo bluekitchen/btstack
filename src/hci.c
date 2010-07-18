@@ -352,6 +352,19 @@ static void event_handler(uint8_t *packet, int size){
 	hci_run();
 }
 
+void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            event_handler(packet, size);
+            break;
+        case HCI_ACL_DATA_PACKET:
+            acl_handler(packet, size);
+            break;
+        default:
+            break;
+    }
+}
+
 /** Register HCI packet handlers */
 void hci_register_event_packet_handler(void (*handler)(uint8_t *packet, uint16_t size)){
     hci_stack.event_packet_handler = handler;
@@ -386,8 +399,7 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control){
     hci_stack.acl_packet_handler = dummy_handler;
 
     // register packet handlers with transport
-    transport->register_event_packet_handler( event_handler);
-    transport->register_acl_packet_handler( acl_handler);
+    transport->register_packet_handler(&packet_handler);
 }
 
 int hci_power_control(HCI_POWER_MODE power_mode){
