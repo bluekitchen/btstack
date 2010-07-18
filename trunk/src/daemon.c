@@ -223,7 +223,8 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
     return 0;
 }
 
-static void daemon_event_handler(connection_t *connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void deamon_status_event_handler(uint8_t *packet, uint16_t size){
+    
     // local cache
     static HCI_STATE hci_state = HCI_STATE_OFF;
     static int num_connections = 0;
@@ -258,26 +259,21 @@ static void daemon_event_handler(connection_t *connection, uint8_t packet_type, 
             }
         }
     }
-    
-    // forward event to client(s)
-    if (connection) {
-        socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, packet, size);
-    } else {
-        socket_connection_send_packet_all(HCI_EVENT_PACKET, 0, packet, size);
-    }
-}
-
-static void daemon_data_handler(connection_t * connection, uint8_t packet_type, uint16_t local_cid, uint8_t *packet, uint16_t size){
-   socket_connection_send_packet(connection, L2CAP_DATA_PACKET, local_cid, packet, size); 
 }
 
 static void daemon_packet_handler(connection_t * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet_type) {
         case HCI_EVENT_PACKET:
-            daemon_event_handler(connection, packet_type, channel, packet, size);
+            deamon_status_event_handler(packet, size);
+            // forward event to client(s)
+            if (connection) {
+                socket_connection_send_packet(connection, packet_type, 0, packet, size);
+            } else {
+                socket_connection_send_packet_all(packet_type, 0, packet, size);
+            }
             break;
         case L2CAP_DATA_PACKET:
-            daemon_data_handler(connection, packet_type, channel, packet, size);
+            socket_connection_send_packet(connection, L2CAP_DATA_PACKET, channel, packet, size); 
             break;
         default:
             break;
