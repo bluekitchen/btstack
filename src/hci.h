@@ -188,8 +188,7 @@ typedef struct {
     uint8_t  num_acl_packets;
 
     /* callback to L2CAP layer */
-    void (*event_packet_handler)(uint8_t *packet, uint16_t size);
-    void (*acl_packet_handler)  (uint8_t *packet, uint16_t size);
+    void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
     /* hci state machine */
     HCI_STATE state;
@@ -204,10 +203,7 @@ uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, va_lis
 
 // set up HCI
 void hci_init(hci_transport_t *transport, void *config, bt_control_t *control);
-
-void hci_register_event_packet_handler(void (*handler)(uint8_t *packet, uint16_t size));
-
-void hci_register_acl_packet_handler  (void (*handler)(uint8_t *packet, uint16_t size));
+void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
     
 // power control
 int hci_power_control(HCI_POWER_MODE mode);

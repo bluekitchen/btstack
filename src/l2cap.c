@@ -61,13 +61,14 @@
 
 static void null_event_handler(connection_t * connection, uint8_t *packet, uint16_t size);
 static void null_data_handler(connection_t * connection, uint16_t local_cid, uint8_t *packet, uint16_t size);
+static void l2cap_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size );
 
 static uint8_t * sig_buffer = NULL;
 static linked_list_t l2cap_channels = NULL;
 static linked_list_t l2cap_services = NULL;
 static uint8_t * acl_buffer = NULL;
 static void (*event_packet_handler) (connection_t * connection, uint8_t *packet, uint16_t size) = null_event_handler;
-static void (*data_packet_handler)  (connection_t * connection, uint16_t local_cid, uint8_t *packet, uint16_t size) = null_data_handler;
+static void (*data_packet_handler) (connection_t * connection, uint16_t local_cid, uint8_t *packet, uint16_t size) = null_data_handler;
 static connection_t * capture_connection = NULL;
 
 static uint8_t config_options[] = { 1, 2, 150, 0}; // mtu = 48 
@@ -78,10 +79,9 @@ void l2cap_init(){
     acl_buffer = malloc( 400 + 8 ); 
 
     // 
-    // register callbacks with HCI
+    // register callback with HCI
     //
-    hci_register_event_packet_handler(&l2cap_event_handler);
-    hci_register_acl_packet_handler(&l2cap_acl_handler);
+    hci_register_packet_handler(&l2cap_packet_handler);
 }
 
 
@@ -678,6 +678,18 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
     }
 }
 
+static void l2cap_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            l2cap_event_handler(packet, size);
+            break;
+        case HCI_ACL_DATA_PACKET:
+            l2cap_acl_handler(packet, size);
+            break;
+        default:
+            break;
+    }
+}
 
 // finalize closed channel
 void l2cap_finialize_channel_close(l2cap_channel_t *channel){

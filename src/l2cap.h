@@ -112,8 +112,6 @@ void l2cap_register_data_packet_handler(void (*handler)(connection_t * connectio
 void l2cap_create_channel_internal(connection_t * connection, bd_addr_t address, uint16_t psm);
 void l2cap_disconnect_internal(uint16_t local_cid, uint8_t reason);
 void l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len);
-void l2cap_acl_handler( uint8_t *packet, uint16_t size );
-void l2cap_event_handler( uint8_t *packet, uint16_t size );
 uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid);
 
 void l2cap_set_capture_connection(connection_t * connection);
