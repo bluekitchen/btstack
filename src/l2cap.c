@@ -59,16 +59,14 @@
 #define L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET 2
 #define L2CAP_SIGNALING_COMMAND_DATA_OFFSET   4
 
-static void null_event_handler(connection_t * connection, uint8_t *packet, uint16_t size);
-static void null_data_handler(connection_t * connection, uint16_t local_cid, uint8_t *packet, uint16_t size);
-static void l2cap_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size );
+static void null_packet_handler(connection_t * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void l2cap_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 static uint8_t * sig_buffer = NULL;
 static linked_list_t l2cap_channels = NULL;
 static linked_list_t l2cap_services = NULL;
 static uint8_t * acl_buffer = NULL;
-static void (*event_packet_handler) (connection_t * connection, uint8_t *packet, uint16_t size) = null_event_handler;
-static void (*data_packet_handler) (connection_t * connection, uint16_t local_cid, uint8_t *packet, uint16_t size) = null_data_handler;
+static void (*packet_handler) (connection_t * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = null_packet_handler;
 static connection_t * capture_connection = NULL;
 
 static uint8_t config_options[] = { 1, 2, 150, 0}; // mtu = 48 
@@ -86,15 +84,10 @@ void l2cap_init(){
 
 
 /** Register L2CAP packet handlers */
-static void null_event_handler(connection_t * connection, uint8_t *packet, uint16_t size){
+static void null_packet_handler(connection_t * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 }
-static void null_data_handler(connection_t * connection, uint16_t  local_cid, uint8_t *packet, uint16_t size){
-}
-void l2cap_register_event_packet_handler(void (*handler)(connection_t * connection, uint8_t *packet, uint16_t size)){
-    event_packet_handler = handler;
-}
-void l2cap_register_data_packet_handler  (void (*handler)(connection_t * connection, uint16_t local_cid, uint8_t *packet, uint16_t size)){
-    data_packet_handler = handler;
+void l2cap_register_packet_handler(void (*handler)(connection_t * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
+    packet_handler = handler;
 }
 
 //  notify client/protocol handler
@@ -104,10 +97,10 @@ void l2cap_dispatch(l2cap_channel_t *channel, uint8_t type, uint8_t * data, uint
     } else {
         switch (type){
             case HCI_EVENT_PACKET:
-                (*event_packet_handler)(channel->connection, data, size);
+                (*packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, data, size);
                 break; 
             case L2CAP_DATA_PACKET:
-                (*data_packet_handler)(channel->connection, channel->local_cid, data, size);
+                (*packet_handler)(channel->connection, L2CAP_DATA_PACKET, channel->local_cid, data, size);
                 break;
             default:
                 // ??
@@ -340,7 +333,7 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
     }
     
     // pass on
-    (*event_packet_handler)(NULL, packet, size);
+    (*packet_handler)(NULL, HCI_EVENT_PACKET, 0, packet, size);
 }
 
 static void l2cap_handle_disconnect_request(l2cap_channel_t *channel, uint16_t identifier){
@@ -646,7 +639,7 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
     
     // Capturing?
     if (capture_connection) {
-        (*data_packet_handler)(capture_connection, 0, packet, size);
+        (*packet_handler)(capture_connection, HCI_ACL_DATA_PACKET, 0, packet, size);
         return;
     }
     
