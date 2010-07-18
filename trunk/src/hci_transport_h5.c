@@ -76,11 +76,10 @@ static int bt_filedesc = 0;
 static hci_transport_h5_t * hci_transport_h5 = NULL;
 
 static int  h5_process(struct data_source *ds);
-static void dummy_handler(uint8_t *packet, int size); 
+static void dummy_handler(uint8_t packet_type, uint8_t *packet, int size); 
 static      hci_uart_config_t *hci_uart_config;
 
-static  void (*event_packet_handler)(uint8_t *packet, int size) = dummy_handler;
-static  void (*acl_packet_handler)  (uint8_t *packet, int size) = dummy_handler;
+static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, int size) = dummy_handler;
 
 // prototypes
 static int    h5_open(void *transport_config){
@@ -209,12 +208,8 @@ static int    h5_send_acl_packet(uint8_t *packet, int size){
     return 0;
 }
 
-static void   h5_register_event_packet_handler(void (*handler)(uint8_t *packet, int size)){
-    event_packet_handler = handler;
-}
-
-static void   h5_register_acl_packet_handler  (void (*handler)(uint8_t *packet, int size)){
-    acl_packet_handler = handler;
+static void   h5_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, int size)){
+    packet_handler = handler;
 }
 
 static void h5_slip_init( h5_slip_t * sm){
@@ -325,8 +320,7 @@ hci_transport_t * hci_transport_h5_instance() {
         hci_transport_h5->transport.close                         = h5_close;
         hci_transport_h5->transport.send_cmd_packet               = h5_send_cmd_packet;
         hci_transport_h5->transport.send_acl_packet               = h5_send_acl_packet;
-        hci_transport_h5->transport.register_event_packet_handler = h5_register_event_packet_handler;
-        hci_transport_h5->transport.register_acl_packet_handler   = h5_register_acl_packet_handler;
+        hci_transport_h5->transport.register_packet_handler = h5_register_event_packet_handler;
         hci_transport_h5->transport.get_transport_name            = h5_get_transport_name;
     }
     return (hci_transport_t *) hci_transport_h5;

@@ -63,11 +63,10 @@ typedef struct hci_transport_h4 {
 static hci_transport_h4_t * hci_transport_h4 = NULL;
 
 static int  h4_process(struct data_source *ds);
-static void dummy_handler(uint8_t *packet, int size); 
+static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
 static      hci_uart_config_t *hci_uart_config;
 
-static  void (*event_packet_handler)(uint8_t *packet, int size) = dummy_handler;
-static  void (*acl_packet_handler)  (uint8_t *packet, int size) = dummy_handler;
+static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
 // packet reader state machine
 static  H4_STATE h4_state;
@@ -229,12 +228,8 @@ static int    h4_send_acl_packet(uint8_t *packet, int size){
     return 0;
 }
 
-static void   h4_register_event_packet_handler(void (*handler)(uint8_t *packet, int size)){
-    event_packet_handler = handler;
-}
-
-static void   h4_register_acl_packet_handler  (void (*handler)(uint8_t *packet, int size)){
-    acl_packet_handler = handler;
+static void   h4_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+    packet_handler = handler;
 }
 
 static int    h4_process(struct data_source *ds) {
@@ -285,7 +280,7 @@ static int    h4_process(struct data_source *ds) {
             }
 #endif            
 			hci_dump_packet( HCI_EVENT_PACKET, 1, hci_packet, read_pos);
-            event_packet_handler(hci_packet, read_pos);
+            packet_handler(HCI_EVENT_PACKET, hci_packet, read_pos);
             h4_state = H4_W4_PACKET_TYPE;
             read_pos = 0;
             bytes_to_read = 1;
@@ -298,7 +293,7 @@ static int    h4_process(struct data_source *ds) {
             
         case H4_W4_ACL_PAYLOAD:
             hci_dump_packet( HCI_ACL_DATA_PACKET, 1, hci_packet, read_pos);
-            acl_packet_handler(hci_packet, read_pos);
+            packet_handler(HCI_ACL_DATA_PACKET, hci_packet, read_pos);
             h4_state = H4_W4_PACKET_TYPE;
             read_pos = 0;
             bytes_to_read = 1;
@@ -311,7 +306,7 @@ static const char * h4_get_transport_name(){
     return "H4";
 }
 
-static void dummy_handler(uint8_t *packet, int size){
+static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 // get h4 singleton
@@ -323,8 +318,7 @@ hci_transport_t * hci_transport_h4_instance() {
         hci_transport_h4->transport.close                         = h4_close;
         hci_transport_h4->transport.send_cmd_packet               = h4_send_cmd_packet;
         hci_transport_h4->transport.send_acl_packet               = h4_send_acl_packet;
-        hci_transport_h4->transport.register_event_packet_handler = h4_register_event_packet_handler;
-        hci_transport_h4->transport.register_acl_packet_handler   = h4_register_acl_packet_handler;
+        hci_transport_h4->transport.register_packet_handler       = h4_register_packet_handler;
         hci_transport_h4->transport.get_transport_name            = h4_get_transport_name;
     }
     return (hci_transport_t *) hci_transport_h4;
