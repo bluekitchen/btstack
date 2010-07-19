@@ -135,7 +135,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case L2CAP_CREATE_CHANNEL:
             bt_flip_addr(addr, &packet[3]);
             psm = READ_BT_16(packet, 9);
-            l2cap_create_channel_internal( connection, addr, psm );
+            l2cap_create_channel_internal( connection, NULL, addr, psm );
             break;
         case L2CAP_DISCONNECT:
             cid = READ_BT_16(packet, 3);
