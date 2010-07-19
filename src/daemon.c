@@ -116,13 +116,6 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case BTSTACK_SET_POWER_MODE:
             hci_power_control(packet[3]);
             break;
-        case BTSTACK_SET_ACL_CAPTURE_MODE:
-            if (packet[3]) {
-                l2cap_set_capture_connection(connection);
-            } else {
-                l2cap_set_capture_connection(NULL);
-            }
-            break;
         case BTSTACK_GET_VERSION:
             hci_emit_btstack_version();
             break;   
@@ -261,7 +254,7 @@ static void deamon_status_event_handler(uint8_t *packet, uint16_t size){
     }
 }
 
-static void daemon_packet_handler(connection_t * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             deamon_status_event_handler(packet, size);
