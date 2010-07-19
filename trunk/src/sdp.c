@@ -52,7 +52,7 @@ typedef struct {
     linked_item_t   item;
 
     // client connection
-    connection_t *  connection;
+    void *  connection;
     
     // data is contained in same memory
     uint32_t        service_record_handle;
@@ -107,11 +107,11 @@ uint32_t sdp_create_service_record_handle(){
 // register service record internally
 // pre: AttributeIDs are in ascending order => ServiceRecordHandle is first attribute if present
 // @returns ServiceRecordHandle or 0 if registration failed
-uint32_t sdp_register_service_internal(connection_t *connection, uint8_t * record){
+uint32_t sdp_register_service_internal(void *connection, uint8_t * record){
 
     // dump for now
-    // printf("Register service record\n");
-    // de_dump_data_element(record);
+    printf("Register service record\n");
+    de_dump_data_element(record);
     
     // get user record handle
     uint32_t record_handle = sdp_get_service_record_handle(record);
@@ -159,8 +159,8 @@ uint32_t sdp_register_service_internal(connection_t *connection, uint8_t * recor
     sdp_append_attributes_in_attributeIDList(record, (uint8_t *) removeServiceRecordHandleAttributeIDList, 0, recordSize, newRecord);
     
     // dump for now
-    // de_dump_data_element(newRecord);
-    // printf("reserved size %u, actual size %u\n", recordSize, de_get_len(newRecord));
+    de_dump_data_element(newRecord);
+    printf("reserved size %u, actual size %u\n", recordSize, de_get_len(newRecord));
     
     // add to linked list
     linked_list_add(&sdp_service_records, (linked_item_t *) newRecordItem);
@@ -171,7 +171,7 @@ uint32_t sdp_register_service_internal(connection_t *connection, uint8_t * recor
 // 
 // makes sure one client cannot remove service records of other clients
 //
-void sdp_unregister_service_internal(connection_t *connection, uint32_t service_record_handle){
+void sdp_unregister_service_internal(void *connection, uint32_t service_record_handle){
     service_record_item_t * record_item = sdp_get_record_for_handle(service_record_handle);
     if (record_item && record_item->connection == connection) {
         linked_list_remove(&sdp_service_records, (linked_item_t *) record_item);
@@ -179,7 +179,7 @@ void sdp_unregister_service_internal(connection_t *connection, uint32_t service_
 }
 
 // remove all service record for a client connection
-void sdp_unregister_services_for_connection(connection_t *connection){
+void sdp_unregister_services_for_connection(void *connection){
     linked_item_t *it = (linked_item_t *) &sdp_service_records;
     while (it->next){
         service_record_item_t *record_item = (service_record_item_t *) it->next;
