@@ -59,15 +59,14 @@
 #define L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET 2
 #define L2CAP_SIGNALING_COMMAND_DATA_OFFSET   4
 
-static void null_packet_handler(connection_t * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void null_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void l2cap_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 static uint8_t * sig_buffer = NULL;
 static linked_list_t l2cap_channels = NULL;
 static linked_list_t l2cap_services = NULL;
 static uint8_t * acl_buffer = NULL;
-static void (*packet_handler) (connection_t * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = null_packet_handler;
-static connection_t * capture_connection = NULL;
+static void (*packet_handler) (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = null_packet_handler;
 
 static uint8_t config_options[] = { 1, 2, 150, 0}; // mtu = 48 
 
@@ -84,9 +83,9 @@ void l2cap_init(){
 
 
 /** Register L2CAP packet handlers */
-static void null_packet_handler(connection_t * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void null_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 }
-void l2cap_register_packet_handler(void (*handler)(connection_t * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
+void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
     packet_handler = handler;
 }
 
@@ -95,17 +94,7 @@ void l2cap_dispatch(l2cap_channel_t *channel, uint8_t type, uint8_t * data, uint
     if (channel->packet_handler) {
         (* (channel->packet_handler))(type, channel->local_cid, data, size);
     } else {
-        switch (type){
-            case HCI_EVENT_PACKET:
-                (*packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, data, size);
-                break; 
-            case L2CAP_DATA_PACKET:
-                (*packet_handler)(channel->connection, L2CAP_DATA_PACKET, channel->local_cid, data, size);
-                break;
-            default:
-                // ??
-                break;
-        }
+        (*packet_handler)(channel->connection, type, channel->local_cid, data, size);
     }
 }
 
@@ -194,7 +183,7 @@ void l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
 }
             
 // open outgoing L2CAP channel
-void l2cap_create_channel_internal(connection_t * connection, bd_addr_t address, uint16_t psm){
+void l2cap_create_channel_internal(void * connection, bd_addr_t address, uint16_t psm){
     
     // alloc structure
     l2cap_channel_t * chan = malloc(sizeof(l2cap_channel_t));
@@ -268,7 +257,8 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
     
     bd_addr_t address;
     hci_con_handle_t handle;
-    
+    linked_item_t *it;
+
     switch(packet[0]){
             
         // handle connection complete events
@@ -297,7 +287,6 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             // send l2cap disconnect events for all channels on this handle
             handle = READ_BT_16(packet, 3);
-            linked_item_t *it;
             // only access next element to allows for removal
             for (it = (linked_item_t *) &l2cap_channels; it->next ; it = it->next){
                 l2cap_channel_t * channel = (l2cap_channel_t *) it->next;
@@ -311,20 +300,17 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
             
         // HCI Connection Timeouts
         case L2CAP_EVENT_TIMEOUT_CHECK:
-            if (!capture_connection){
-                hci_con_handle_t handle = READ_BT_16(packet, 2);
-                linked_item_t *it;
-                l2cap_channel_t * channel;
-                int used = 0;
-                for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-                    channel = (l2cap_channel_t *) it;
-                    if (channel->handle == handle) {
-                        used = 1;
-                    }
+            handle = READ_BT_16(packet, 2);
+            l2cap_channel_t * channel;
+            int used = 0;
+            for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+                channel = (l2cap_channel_t *) it;
+                if (channel->handle == handle) {
+                    used = 1;
                 }
-                if (!used) {
-                    hci_send_cmd(&hci_disconnect, handle, 0x13); // remote closed connection             
-                }
+            }
+            if (!used) {
+                hci_send_cmd(&hci_disconnect, handle, 0x13); // remote closed connection             
             }
             break;
             
@@ -636,13 +622,7 @@ void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t * comman
 }
 
 void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
-    
-    // Capturing?
-    if (capture_connection) {
-        (*packet_handler)(capture_connection, HCI_ACL_DATA_PACKET, 0, packet, size);
-        return;
-    }
-    
+        
     // Get Channel ID
     uint16_t channel_id = READ_L2CAP_CHANNEL_ID(packet); 
     
@@ -707,7 +687,7 @@ l2cap_service_t * l2cap_get_service(uint16_t psm){
     return NULL;
 }
 
-void l2cap_register_service_internal(connection_t *connection, btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu){
+void l2cap_register_service_internal(void *connection, btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu){
     // check for alread registered psm // TODO: emit error event
     l2cap_service_t *service = l2cap_get_service(psm);
     if (service) return;
@@ -726,7 +706,7 @@ void l2cap_register_service_internal(connection_t *connection, btstack_packet_ha
     linked_list_add(&l2cap_services, (linked_item_t *) service);
 }
 
-void l2cap_unregister_service_internal(connection_t *connection, uint16_t psm){
+void l2cap_unregister_service_internal(void *connection, uint16_t psm){
     l2cap_service_t *service = l2cap_get_service(psm);
     if (!service) return;
     linked_list_remove(&l2cap_services, (linked_item_t *) service);
@@ -734,7 +714,7 @@ void l2cap_unregister_service_internal(connection_t *connection, uint16_t psm){
 }
 
 //
-void l2cap_close_connection(connection_t *connection){
+void l2cap_close_connection(void *connection){
     linked_item_t *it;
     
     // close open channels
@@ -760,10 +740,4 @@ void l2cap_close_connection(connection_t *connection){
         }
     }
 }
-
-
-void l2cap_set_capture_connection(connection_t * connection){
-    capture_connection = connection;
-}
-
     
