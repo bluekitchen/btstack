@@ -31,7 +31,6 @@
 #pragma mark once
 
 #include <stdint.h>
-#include "socket_connection.h"
 
 typedef enum {
 	SDP_ErrorResponse = 1,
@@ -47,13 +46,13 @@ void sdp_init();
 
 // register service record internally
 // @returns ServiceRecordHandle or 0 if registration failed
-uint32_t sdp_register_service_internal(connection_t *connection, uint8_t * service_record);
+uint32_t sdp_register_service_internal(void *connection, uint8_t * service_record);
 
 // unregister service record internally
-void sdp_unregister_service_internal(connection_t *connection, uint32_t service_record_handle);
+void sdp_unregister_service_internal(void *connection, uint32_t service_record_handle);
 
 //
-void sdp_unregister_services_for_connection(connection_t *connection);
+void sdp_unregister_services_for_connection(void *connection);
 
 //
 void sdp_test();
