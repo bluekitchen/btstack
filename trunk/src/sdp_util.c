@@ -427,6 +427,20 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
         printf(", value: ");
         printUUID(element+1);
         printf("\n");
+    } else if (de_type == DE_STRING) {
+        int len = 0;
+        switch (de_size){
+            case DE_SIZE_VAR_8:
+                len = element[1];
+                break;
+            case DE_SIZE_VAR_16:
+                len = READ_NET_16(element, 1);
+                break;
+            default:
+                break;
+        }
+        printf("len %u (0x%02x)\n", len, len);
+        hexdump(&element[pos], len);
     } else {
         uint32_t value = 0;
         switch (de_size) {
