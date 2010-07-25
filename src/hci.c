@@ -257,12 +257,24 @@ static void event_handler(uint8_t *packet, int size){
     hci_con_handle_t handle;
     hci_connection_t * conn;
     
+    // get num_cmd_packets
+    if (packet[0] == HCI_EVENT_COMMAND_COMPLETE || packet[0] == HCI_EVENT_COMMAND_STATUS){
+        // Get Num_HCI_Command_Packets
+        hci_stack.num_cmd_packets = packet[2];
+    }
+    
     switch (packet[0]) {
             
         case HCI_EVENT_COMMAND_COMPLETE:
-        case HCI_EVENT_COMMAND_STATUS:
-            // Get Num_HCI_Command_Packets
-            hci_stack.num_cmd_packets = packet[2];
+            if (COMMAND_COMPLETE_EVENT(packet, hci_read_buffer_size)){
+                // from offset 5
+                // status 
+                hci_stack.acl_data_packet_length = READ_BT_16(packet, 6);
+                // SCO data packet len (8)
+                hci_stack.total_num_acl_packets  = packet[9];
+                // total num SCO packets
+                log_dbg("hci_read_buffer_size: size %u, count %u\n", hci_stack.acl_data_packet_length, hci_stack.total_num_acl_packets); 
+            }
             break;
         
         case HCI_EVENT_CONNECTION_REQUEST:
@@ -462,14 +474,17 @@ void hci_run(){
 				case 1:
 					hci_send_cmd(&hci_read_bd_addr);
 					break;
-                case 2:
+				case 2:
+					hci_send_cmd(&hci_read_buffer_size);
+					break;
+                case 3:
                     // ca. 15 sec
                     hci_send_cmd(&hci_write_page_timeout, 0x6000);
                     break;
-				case 3:
+				case 4:
 					hci_send_cmd(&hci_write_scan_enable, 3); // 3 inq scan + page scan
 					break;
-                case 4:
+                case 5:
                     // done.
                     hci_stack.state = HCI_STATE_WORKING;
                     hci_emit_state();

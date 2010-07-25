@@ -238,7 +238,7 @@ OPCODE(OGF_LINK_POLICY, 0x0c), "H"
 };
 hci_cmd_t hci_write_link_policy_settings = {
 OPCODE(OGF_LINK_POLICY, 0x0d), "H2"
-// handlee, settings
+// handle, settings
 };
 
 /**
@@ -296,19 +296,24 @@ hci_cmd_t hci_write_extended_inquiry_response = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x52), "1E"
 // FEC_Required, Exstended Inquiry Response
 };
-
 hci_cmd_t hci_write_simple_pairing_mode = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x56), "1"
 // mode: 0 = off, 1 = on
 };
 
+/**
+ * Informational Parameters
+ */
+hci_cmd_t hci_read_buffer_size = {
+OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x05), ""
+// no params
+};
 hci_cmd_t hci_read_bd_addr = {
 OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x09), ""
 // no params
 };
 
 // BTstack commands
-
 hci_cmd_t btstack_get_state = {
 OPCODE(OGF_BTSTACK, BTSTACK_GET_STATE), ""
 // no params -> 

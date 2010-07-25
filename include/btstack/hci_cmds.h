@@ -209,6 +209,7 @@ extern hci_cmd_t hci_pin_code_request_reply;
 extern hci_cmd_t hci_pin_code_request_negative_reply;
 extern hci_cmd_t hci_qos_setup;
 extern hci_cmd_t hci_read_bd_addr;
+extern hci_cmd_t hci_read_buffer_size;
 extern hci_cmd_t hci_read_link_policy_settings;
 extern hci_cmd_t hci_read_link_supervision_timeout;
 extern hci_cmd_t hci_remote_name_request;

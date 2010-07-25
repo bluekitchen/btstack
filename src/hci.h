@@ -189,7 +189,9 @@ typedef struct {
     
     /* host to controller flow control */
     uint8_t  num_cmd_packets;
-    uint8_t  num_acl_packets;
+    // uint8_t  total_num_cmd_packets;
+    uint8_t  total_num_acl_packets;
+    uint16_t acl_data_packet_length;
 
     /* callback to L2CAP layer */
     void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
