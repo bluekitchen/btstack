@@ -107,6 +107,7 @@ static hci_connection_t * create_connection_for_addr(bd_addr_t addr){
     hci_connection_timestamp(conn);
     conn->acl_recombination_length = 0;
     conn->acl_recombination_pos = 0;
+    conn->num_acl_packets_sent = 0;
     linked_list_add(&hci_stack.connections, (linked_item_t *) conn);
     return conn;
 }
@@ -164,8 +165,13 @@ int hci_send_acl_packet(uint8_t *packet, int size){
     // update idle timestamp
     hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
     hci_connection_t *connection = connection_for_handle( con_handle);
-    if (connection) hci_connection_timestamp(connection);
+    if (!connection) return 0;
+    hci_connection_timestamp(connection);
     
+    // count packet
+    connection->num_acl_packets_sent++;
+    // log_dbg("hci_send_acl_packet - handle %u, sent %u\n", connection->con_handle, connection->num_acl_packets_sent);
+
     // send packet
     return hci_stack.hci_transport->send_acl_packet(packet, size);
 }
@@ -256,6 +262,7 @@ static void event_handler(uint8_t *packet, int size){
     bd_addr_t addr;
     hci_con_handle_t handle;
     hci_connection_t * conn;
+    int i;
     
     // get num_cmd_packets
     if (packet[0] == HCI_EVENT_COMMAND_COMPLETE || packet[0] == HCI_EVENT_COMMAND_STATUS){
@@ -270,13 +277,29 @@ static void event_handler(uint8_t *packet, int size){
                 // from offset 5
                 // status 
                 hci_stack.acl_data_packet_length = READ_BT_16(packet, 6);
-                // SCO data packet len (8)
+                // ignore: SCO data packet len (8)
                 hci_stack.total_num_acl_packets  = packet[9];
-                // total num SCO packets
-                log_dbg("hci_read_buffer_size: size %u, count %u\n", hci_stack.acl_data_packet_length, hci_stack.total_num_acl_packets); 
+                // ignore: total num SCO packets
+                if (hci_stack.state == HCI_STATE_INITIALIZING){
+                    log_dbg("hci_read_buffer_size: size %u, count %u\n", hci_stack.acl_data_packet_length, hci_stack.total_num_acl_packets); 
+                }
             }
             break;
-        
+            
+        case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
+            for (i=0; i<packet[2];i++){
+                handle = READ_BT_16(packet, 3 + 2*i);
+                uint16_t num_packets = READ_BT_16(packet, 3 + packet[2]*2 + 2*i);
+                conn = connection_for_handle(handle);
+                if (!conn){
+                    log_err("hci_number_completed_packet lists unused con handle %u\n", handle);
+                    continue;
+                }
+                conn->num_acl_packets_sent -= num_packets;
+                // log_dbg("hci_number_completed_packet %u processed for handle %u, outstanding %u\n", num_packets, handle, conn->num_acl_packets_sent);
+            }
+            break;
+            
         case HCI_EVENT_CONNECTION_REQUEST:
             bt_flip_addr(addr, &packet[2]);
             // TODO: eval COD 8-10
