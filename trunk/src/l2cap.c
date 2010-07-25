@@ -72,8 +72,7 @@ static uint8_t config_options[] = { 1, 2, 150, 0}; // mtu = 48
 
 void l2cap_init(){
     sig_buffer = malloc( L2CAP_MINIMAL_MTU );
-    // acl_buffer = malloc( 255 + 8 ); 
-    acl_buffer = malloc( 400 + 8 ); 
+    acl_buffer = malloc( HCI_ACL_3DH5_SIZE); 
 
     // 
     // register callback with HCI
