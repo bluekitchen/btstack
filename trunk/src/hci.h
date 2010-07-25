@@ -168,6 +168,9 @@ typedef struct {
     uint16_t acl_recombination_pos;
     uint16_t acl_recombination_length;
     
+    // number ACL packets sent to controller
+    uint8_t num_acl_packets_sent;
+    
 } hci_connection_t;
 
 /**
