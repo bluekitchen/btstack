@@ -53,6 +53,10 @@
 #define HCI_SCO_DATA_PKT_HDR	  0x03
 #define HCI_EVENT_PKT_HDR         0x02
 
+// packet sizes
+#define HCI_ACL_3DH5_SIZE         1021
+#define HCI_ACL_DH5_SIZE           339
+
 // OGFs
 #define OGF_LINK_CONTROL          0x01
 #define OGF_LINK_POLICY           0x02

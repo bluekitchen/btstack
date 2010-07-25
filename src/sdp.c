@@ -70,6 +70,10 @@ static uint32_t sdp_next_service_record_handle = maxReservedServiceRecordHandle 
 // AttributeIDList used to remove ServiceRecordHandle
 const uint8_t removeServiceRecordHandleAttributeIDList[] = { 0x36, 0x00, 0x05, 0x0A, 0x00, 0x01, 0xFF, 0xFF };
 
+#define SDP_RESPONSE_BUFFER_SIZE HCI_ACL_3DH5_SIZE
+static uint8_t sdp_response_buffer[SDP_RESPONSE_BUFFER_SIZE];
+
+
 void sdp_init(){
     // register with l2cap psm sevices
     l2cap_register_service_internal(NULL, sdp_packet_handler, PSM_SDP, 250);
@@ -194,8 +198,6 @@ void sdp_unregister_services_for_connection(void *connection){
 
 // PDU
 // PDU ID (1), Transaction ID (2), Param Length (2), Param 1, Param 2, ..
-
-static uint8_t sdp_response_buffer[400];
 
 int sdp_create_error_response(uint16_t transaction_id, uint16_t error_code){
     sdp_response_buffer[0] = SDP_ErrorResponse;
@@ -445,6 +447,11 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             transaction_id = READ_NET_16(packet, 1);
             param_len = READ_NET_16(packet, 3);
             remote_mtu = l2cap_get_remote_mtu_for_local_cid(channel);
+            // account for our buffer
+            if (remote_mtu > SDP_RESPONSE_BUFFER_SIZE){
+                remote_mtu = SDP_RESPONSE_BUFFER_SIZE;
+            }
+            
             // printf("SDP Request: type %u, transaction id %u, len %u, mtu %u\n", pdu_id, transaction_id, param_len, remote_mtu);
             switch (pdu_id){
                     

@@ -64,7 +64,7 @@ typedef enum {
 typedef struct h5_slip {
 	state_t state;
 	uint16_t length;
-	uint8_t data[400];
+	uint8_t data[HCI_ACL_3DH5_SIZE];
 } h5_slip_t;
 
 // Global State

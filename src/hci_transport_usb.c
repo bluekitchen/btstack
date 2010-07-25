@@ -77,9 +77,9 @@ static hci_transport_t * hci_transport_usb = NULL;
 
 static  void (*packet_handler)(uint8_t *packet, int size) = dummy_handler;
 
-static uint8_t hci_cmd_out[400];      // bigger than largest packet
-static uint8_t hci_event_buffer[400]; // bigger than largest packet
-static uint8_t hci_acl_in[400];       // bigger than largest packet
+static uint8_t hci_cmd_out[HCI_ACL_3DH5_SIZE];      // bigger than largest packet
+static uint8_t hci_event_buffer[HCI_ACL_3DH5_SIZE]; // bigger than largest packet
+static uint8_t hci_acl_in[HCI_ACL_3DH5_SIZE];       // bigger than largest packet
 
 // libusb
 static struct libusb_device_descriptor desc;
@@ -278,7 +278,7 @@ static int usb_open(void *transport_config){
 	
 
     // bulk in (= ACL packets) handler
-	libusb_fill_bulk_transfer(bulk_in_transfer, handle, 0x82, hci_acl_in, 400, bulk_in_callback, NULL, 3000) ;	
+	libusb_fill_bulk_transfer(bulk_in_transfer, handle, 0x82, hci_acl_in, HCI_ACL_3DH5_SIZE, bulk_in_callback, NULL, 3000) ;	
 	// bulk_in_transfer->flags = LIBUSB_TRANSFER_SHORT_NOT_OK;
 	r = libusb_submit_transfer(bulk_in_transfer);
 	if (r) {
