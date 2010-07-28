@@ -159,6 +159,32 @@ static bt_control_t null_control = {
     null_control_name
 }; 
 
+uint8_t hci_number_outgoing_packets(hci_con_handle_t handle){
+    hci_connection_t * connection = connection_for_handle(handle);
+    if (!connection) {
+        log_err("hci_number_outgoing_packets connectino for handle %u does not exist!\n", handle);
+        return 0;
+    }
+    return connection->num_acl_packets_sent;
+}
+
+uint8_t hci_number_free_acl_slots(){
+    uint8_t free_slots = hci_stack.total_num_acl_packets;
+    linked_item_t *it;
+    for (it = (linked_item_t *) hci_stack.connections; it ; it = it->next){
+        hci_connection_t * connection = (hci_connection_t *) it;
+        if (free_slots < connection->num_acl_packets_sent) {
+            log_err("hci_number_free_acl_slots: sum of outgoing packets > total acl packets!\n");
+            return 0;
+        }
+        free_slots -= connection->num_acl_packets_sent;
+    }
+    return free_slots;
+}
+
+int hci_ready_to_send(hci_con_handle_t handle){
+    return hci_number_free_acl_slots() && hci_number_outgoing_packets(handle) < 2;
+}
 
 int hci_send_acl_packet(uint8_t *packet, int size){
 
@@ -170,7 +196,7 @@ int hci_send_acl_packet(uint8_t *packet, int size){
     
     // count packet
     connection->num_acl_packets_sent++;
-    // log_dbg("hci_send_acl_packet - handle %u, sent %u\n", connection->con_handle, connection->num_acl_packets_sent);
+    log_dbg("hci_send_acl_packet - handle %u, sent %u\n", connection->con_handle, connection->num_acl_packets_sent);
 
     // send packet
     return hci_stack.hci_transport->send_acl_packet(packet, size);
@@ -296,7 +322,7 @@ static void event_handler(uint8_t *packet, int size){
                     continue;
                 }
                 conn->num_acl_packets_sent -= num_packets;
-                // log_dbg("hci_number_completed_packet %u processed for handle %u, outstanding %u\n", num_packets, handle, conn->num_acl_packets_sent);
+                log_dbg("hci_number_completed_packet (hci) %u processed for handle %u, outstanding %u\n", num_packets, handle, conn->num_acl_packets_sent);
             }
             break;
             
