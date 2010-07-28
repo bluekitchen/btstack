@@ -79,7 +79,7 @@ typedef struct packet_header {
 
 typedef enum {
     SOCKET_W4_HEADER,
-    SOCKET_W4_DATA,
+    SOCKET_W4_DATA
 } SOCKET_STATE;
 
 struct connection {
@@ -167,6 +167,7 @@ void static socket_connection_emit_nr_connections(){
 
 int socket_connection_hci_process(struct data_source *ds) {
     connection_t *conn = (connection_t *) ds;
+    
     int bytes_read = read(ds->fd, &conn->buffer[conn->bytes_read], conn->bytes_to_read);
     if (bytes_read <= 0){
         // connection broken (no particular channel, no date yet)
@@ -186,6 +187,8 @@ int socket_connection_hci_process(struct data_source *ds) {
     if (conn->bytes_to_read > 0) {
         return 0;
     }
+    
+    int dispatch_err;
     switch (conn->state){
         case SOCKET_W4_HEADER:
             conn->state = SOCKET_W4_DATA;
@@ -193,8 +196,12 @@ int socket_connection_hci_process(struct data_source *ds) {
             break;
         case SOCKET_W4_DATA:
             // dispatch packet !!! connection, type, channel, data, size
-            (*socket_connection_packet_callback)(conn, READ_BT_16( conn->buffer, 0), READ_BT_16( conn->buffer, 2),
+            dispatch_err = (*socket_connection_packet_callback)(conn, READ_BT_16( conn->buffer, 0), READ_BT_16( conn->buffer, 2),
                                     &conn->buffer[sizeof(packet_header_t)], READ_BT_16( conn->buffer, 4));
+            
+            if (dispatch_err) {
+                // conn->state = SOCKET_W4_DISPATCH;
+            }
             // reset state machine
             socket_connection_init_statemachine(conn);
             break;
@@ -302,7 +309,6 @@ int socket_connection_create_launchd(){
     launch_data_t sockets_dict, checkin_response;
 	launch_data_t checkin_request;
     launch_data_t listening_fd_array;
-	size_t i;
     
 	/*
 	 * Register ourselves with launchd.
@@ -363,6 +369,7 @@ int socket_connection_create_launchd(){
     
     // although used in Apple examples, it creates a malloc warning
 	// launch_data_free(checkin_response);
+    return 0;
 }
 #endif
 
@@ -518,5 +525,19 @@ int socket_connection_close_unix(connection_t * connection){
     run_loop_remove_data_source(&connection->ds);
     free( connection );
     return 0;
+}
+
+/**
+ * try to dispatch packet for all "parked" connections. start at random point for fairness
+ * if dispatch is successful, a connection is added again to run loop
+ */
+void socket_connection_retry_parked_random(){
+    // re-try dispatching packet
+    // int dispatch_err = (*socket_connection_packet_callback)(conn, READ_BT_16( conn->buffer, 0), READ_BT_16( conn->buffer, 2),
+    //                                                &conn->buffer[sizeof(packet_header_t)], READ_BT_16( conn->buffer, 4));
+    // if (dispatch_err) return 0;
+    // 
+    // add this socket to the run_loop again
+    // run_loop_add_data_source( &conn->ds );
 }
 
