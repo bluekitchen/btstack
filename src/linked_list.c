@@ -53,6 +53,18 @@ void linked_list_add(linked_list_t * list, linked_item_t *item){        // <-- a
     *list = item;
 }
 
+void linked_list_add_tail(linked_list_t * list, linked_item_t *item){   // <-- add item to list as last element
+    // check if already in list
+    linked_item_t *it;
+    for (it = (linked_item_t *) list; it->next ; it = it->next){
+        if (it->next == item) {
+            return;
+        }
+    }
+    item->next = (void*) 0;
+    it->next = item;
+}
+
 /**
  * Remove data_source from run loop
  *
@@ -89,19 +101,20 @@ void test_linked_list(){
     linked_item_set_user(&itemB, (void *) 0);
     linked_list_add(&testList, &itemA);
     linked_list_add(&testList, &itemB);
-    linked_list_add(&testList, &itemC);
+    linked_list_add_tail(&testList, &itemC);
     // linked_list_remove(&testList, &itemB);
     linked_item_t *it;
     for (it = (linked_item_t *) &testList; it ; it = it->next){
-        if (it->next == &itemA) printf("Item A");
-        if (it->next == &itemB) printf("Item B");
-        if (it->next == &itemC) printf("Item C");
-        if (it->next == &itemB){
+        if (it->next == &itemA) printf("Item A\n");
+        if (it->next == &itemB) printf("Item B\n");
+        if (it->next == &itemC) printf("Item C\n");
+        /* if (it->next == &itemB){
             it->next =  it->next;
             printf(" remove\n");
         } else {
             printf(" keep\n");
-        }
+        
+         */
     }
 }
 #endif
