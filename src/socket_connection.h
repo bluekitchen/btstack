@@ -102,7 +102,7 @@ void socket_connection_send_packet(connection_t *connection, uint16_t packet_typ
 void socket_connection_send_packet_all(uint16_t type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 /**
- * try to dispatch packet for all "parked" connections. start at random point for fairness
+ * try to dispatch packet for all "parked" connections.
  * if dispatch is successful, a connection is added again to run loop
  */
-void socket_connection_retry_parked_random();
+void socket_connection_retry_parked();
