@@ -215,6 +215,31 @@ int socket_connection_hci_process(struct data_source *ds) {
 	return 0;
 }
 
+/**
+ * try to dispatch packet for all "parked" connections. 
+ * if dispatch is successful, a connection is added again to run loop
+ * pre: connections get parked iff packet was dispatched but could not be sent
+ */
+void socket_connection_retry_parked(){
+    linked_item_t *next;
+    linked_item_t *it;
+    for (it = (linked_item_t *) parked; it ; it = next){
+        next = it->next; // cache pointer to next connection_t to allow for removal
+        connection_t * conn = (connection_t *) it;
+        
+        // dispatch packet !!! connection, type, channel, data, size
+        int dispatch_err = (*socket_connection_packet_callback)(conn, READ_BT_16( conn->buffer, 0), READ_BT_16( conn->buffer, 2),
+                                                            &conn->buffer[sizeof(packet_header_t)], READ_BT_16( conn->buffer, 4));
+        // "un-park" if successful
+        if (!dispatch_err) {
+            log_dbg("socket_connection_hci_process dispatch succeeded -> un-park connection\n");
+            linked_list_remove(&parked, it);
+            run_loop_add_data_source( (data_source_t *) conn);
+        }
+    }
+}
+
+
 static int socket_connection_accept(struct data_source *socket_ds) {
     struct sockaddr_storage ss;
     socklen_t slen = sizeof(ss);
@@ -452,7 +477,7 @@ void socket_connection_send_packet(connection_t *conn, uint16_t type, uint16_t c
 void socket_connection_send_packet_all(uint16_t type, uint16_t channel, uint8_t *packet, uint16_t size){
     linked_item_t *next;
     linked_item_t *it;
-    for (it = (linked_item_t *) connections; it != NULL ; it = next){
+    for (it = (linked_item_t *) connections; it ; it = next){
         next = it->next; // cache pointer to next connection_t to allow for removal
         socket_connection_send_packet( (connection_t *) linked_item_get_user(it), type, channel, packet, size);
     }
@@ -531,19 +556,5 @@ int socket_connection_close_unix(connection_t * connection){
     run_loop_remove_data_source(&connection->ds);
     free( connection );
     return 0;
-}
-
-/**
- * try to dispatch packet for all "parked" connections. 
- * if dispatch is successful, a connection is added again to run loop
- */
-void socket_connection_retry_parked(){
-    // re-try dispatching packet
-    // int dispatch_err = (*socket_connection_packet_callback)(conn, READ_BT_16( conn->buffer, 0), READ_BT_16( conn->buffer, 2),
-    //                                                &conn->buffer[sizeof(packet_header_t)], READ_BT_16( conn->buffer, 4));
-    // if (dispatch_err) return 0;
-    // 
-    // add this socket to the run_loop again
-    // run_loop_add_data_source( &conn->ds );
 }
 
