@@ -38,6 +38,13 @@
 #include <btstack/linked_list.h>
 
 /**
+ * tests if list is empty
+ */
+int  linked_list_empty(linked_list_t * list){
+    return *list == (void *) 0;
+}
+
+/**
  * linked_list_add
  */
 void linked_list_add(linked_list_t * list, linked_item_t *item){        // <-- add item to list
