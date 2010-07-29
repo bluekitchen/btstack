@@ -177,6 +177,9 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
 }
 
 static int daemon_client_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t length){
+    
+    int err = 0;
+    
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
             if (READ_CMD_OGF(data) != OGF_BTSTACK) { 
@@ -188,11 +191,11 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
             }
             break;
         case HCI_ACL_DATA_PACKET:
-            hci_send_acl_packet(data, length);
+            err = hci_send_acl_packet(data, length);
             break;
         case L2CAP_DATA_PACKET:
             // process l2cap packet...
-            l2cap_send_internal(channel, data, length);
+            err = l2cap_send_internal(channel, data, length);
             break;
         case DAEMON_EVENT_PACKET:
             switch (data[0]) {
@@ -213,7 +216,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
             }
             break;
     }
-    return 0;
+    return err;
 }
 
 static void deamon_status_event_handler(uint8_t *packet, uint16_t size){
