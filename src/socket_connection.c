@@ -41,6 +41,7 @@
 #include "socket_connection.h"
 
 #include "hci.h"
+#include "debug.h"
 
 #include "../config.h"
 
@@ -200,11 +201,15 @@ int socket_connection_hci_process(struct data_source *ds) {
             dispatch_err = (*socket_connection_packet_callback)(conn, READ_BT_16( conn->buffer, 0), READ_BT_16( conn->buffer, 2),
                                     &conn->buffer[sizeof(packet_header_t)], READ_BT_16( conn->buffer, 4));
             
-            if (dispatch_err) {
-                // conn->state = SOCKET_W4_DISPATCH;
-            }
             // reset state machine
             socket_connection_init_statemachine(conn);
+
+            // "park" if dispatch failed
+            if (dispatch_err) {
+                log_dbg("socket_connection_hci_process dispatch failed -> park connection\n");
+                run_loop_remove_data_source(ds);
+                linked_list_add_tail(&parked, (linked_item_t *) ds);
+            }
             break;
     }
 	return 0;
