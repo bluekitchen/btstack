@@ -93,6 +93,7 @@ struct connection {
 
 /** list of socket connections */
 static linked_list_t connections = NULL;
+static linked_list_t parked = NULL;
 
 
 /** client packet handler */
@@ -528,10 +529,10 @@ int socket_connection_close_unix(connection_t * connection){
 }
 
 /**
- * try to dispatch packet for all "parked" connections. start at random point for fairness
+ * try to dispatch packet for all "parked" connections. 
  * if dispatch is successful, a connection is added again to run loop
  */
-void socket_connection_retry_parked_random(){
+void socket_connection_retry_parked(){
     // re-try dispatching packet
     // int dispatch_err = (*socket_connection_packet_callback)(conn, READ_BT_16( conn->buffer, 0), READ_BT_16( conn->buffer, 2),
     //                                                &conn->buffer[sizeof(packet_header_t)], READ_BT_16( conn->buffer, 4));
