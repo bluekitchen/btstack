@@ -126,6 +126,9 @@
 // data: event(8), len(8), handle(16)
 #define L2CAP_EVENT_TIMEOUT_CHECK                          0x73
 
+// data: event(8), len(8), handle(16)
+#define L2CAP_EVENT_CREDITS								   0x74
+
 // data: event(8), len(8), service_record_handle(32)
 #define SDP_SERVICE_REGISTERED                             0x80
 

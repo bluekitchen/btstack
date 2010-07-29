@@ -188,7 +188,9 @@ int hci_ready_to_send(hci_con_handle_t handle){
 
 int hci_send_acl_packet(uint8_t *packet, int size){
 
-    // update idle timestamp
+    // check for free places on BT module
+    if (!hci_number_free_acl_slots()) return -1;
+    
     hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
     hci_connection_t *connection = connection_for_handle( con_handle);
     if (!connection) return 0;
@@ -198,8 +200,10 @@ int hci_send_acl_packet(uint8_t *packet, int size){
     connection->num_acl_packets_sent++;
     log_dbg("hci_send_acl_packet - handle %u, sent %u\n", connection->con_handle, connection->num_acl_packets_sent);
 
-    // send packet
-    return hci_stack.hci_transport->send_acl_packet(packet, size);
+    // send packet - ignore errors
+    hci_stack.hci_transport->send_acl_packet(packet, size);
+
+    return 0;
 }
 
 static void acl_handler(uint8_t *packet, int size){

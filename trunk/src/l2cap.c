@@ -40,6 +40,7 @@
 #include "l2cap.h"
 #include "hci.h"
 #include "hci_dump.h"
+#include "debug.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -73,7 +74,7 @@ static uint8_t config_options[] = { 1, 2, 150, 0}; // mtu = 48
 void l2cap_init(){
     sig_buffer = malloc( L2CAP_MINIMAL_MTU );
     acl_buffer = malloc( HCI_ACL_3DH5_SIZE); 
-
+    
     // 
     // register callback with HCI
     //
@@ -133,6 +134,25 @@ void l2cap_emit_connection_request(l2cap_channel_t *channel) {
     l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
+void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
+    // first check if we should hand out credits
+
+    if (!hci_number_free_acl_slots() || hci_number_outgoing_packets(channel->handle) >= 2){
+        return; // not yet
+    }    
+    // track credits
+    channel->packets_granted += credits;
+    log_dbg("l2cap_emit_credits for cid %u, credits now: %u (+%u)\n", channel->local_cid, channel->packets_granted, credits);
+    
+    uint8_t event[5];
+    event[0] = L2CAP_EVENT_CREDITS;
+    event[1] = sizeof(event) - 2;
+    bt_store_16(event, 2, channel->local_cid);
+    event[4] = credits;
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
+}
+
 l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
     linked_item_t *it;
     l2cap_channel_t * channel;
@@ -162,10 +182,26 @@ int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMAND
     return hci_send_acl_packet(sig_buffer, len);
 }
 
-void l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
+int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
+
+    // check for free places on BT module
+    if (!hci_number_free_acl_slots()) return -1;
+
+    int err = 0;
+    
     // find channel for local_cid, construct l2cap packet and send
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (channel) {
+        // track sending
+        ++channel->packets_outgoing;
+        if (channel->packets_granted > 0){
+            --channel->packets_granted;
+        } else {
+            log_err("l2cap_send_internal cid %u, no credits!\n", local_cid);
+        }
+        log_dbg("l2cap_send_internal cid %u, 1 credit used, credits left %u; outgoing count %u\n",
+                local_cid, channel->packets_granted, channel->packets_outgoing);
+        
         // 0 - Connection handle : PB=10 : BC=00 
         bt_store_16(acl_buffer, 0, channel->handle | (2 << 12) | (0 << 14));
         // 2 - ACL length
@@ -176,9 +212,11 @@ void l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
         bt_store_16(acl_buffer, 6, channel->remote_cid);
         // 8 - data
         memcpy(&acl_buffer[8], data, len);
+        
         // send
-        hci_send_acl_packet(acl_buffer, len+8);
+        err = hci_send_acl_packet(acl_buffer, len+8);
     }
+    return err;
 }
             
 // open outgoing L2CAP channel
@@ -196,6 +234,10 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     chan->connection = connection;
     chan->packet_handler = packet_handler;
     chan->remote_mtu = L2CAP_MINIMAL_MTU;
+    
+    // flow control
+    chan->packets_granted = 0;
+    chan->packets_outgoing = 0;
     
     // set initial state
     chan->state = L2CAP_STATE_CLOSED;
@@ -257,7 +299,8 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
     bd_addr_t address;
     hci_con_handle_t handle;
     linked_item_t *it;
-
+    int i;
+    
     switch(packet[0]){
             
         // handle connection complete events
@@ -295,6 +338,34 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
                     l2cap_finialize_channel_close(channel);
                 }
             }
+            break;
+            
+        case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
+            for (i=0; i<packet[2];i++){
+                handle = READ_BT_16(packet, 3 + 2*i);
+                uint16_t num_packets = READ_BT_16(packet, 3 + packet[2]*2 + 2*i);
+                while (num_packets) {
+                    num_packets--;
+                    // pick some slot
+                    l2cap_channel_t * oldest_channel = NULL;
+                    for (it = (linked_item_t *) &l2cap_channels; it->next ; it = it->next){
+                        l2cap_channel_t * channel = (l2cap_channel_t *) it->next;
+                        if (channel->packets_outgoing){
+                            oldest_channel   = channel;
+                        }
+                    }
+                    // decrease packets and grant new credits
+                    if (oldest_channel) {
+                        oldest_channel->packets_outgoing--;
+                        
+                        log_dbg("hci_number_completed_packet (l2cap) for cid %u, outgoing count %u\n",
+                                oldest_channel->local_cid, oldest_channel->packets_outgoing);
+
+                    } else {
+                        log_err("hci_number_completed_packet but no outgoing packet in records\n");
+                    }
+                }
+            }            
             break;
             
         // HCI Connection Timeouts
@@ -490,6 +561,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                     l2cap_signaling_handle_configure_request(channel, command);
                     channel->state = L2CAP_STATE_OPEN;
                     l2cap_emit_channel_opened(channel, 0);  // success
+                    l2cap_emit_credits(channel, 1);
                     break;
                 case DISCONNECTION_REQUEST:
                     l2cap_handle_disconnect_request(channel, identifier);
@@ -505,6 +577,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                 case CONFIGURE_RESPONSE:
                     channel->state = L2CAP_STATE_OPEN;
                     l2cap_emit_channel_opened(channel, 0);  // success
+                    l2cap_emit_credits(channel, 1);
                     break;
                 case DISCONNECTION_REQUEST:
                     l2cap_handle_disconnect_request(channel, identifier);
