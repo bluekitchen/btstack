@@ -135,11 +135,6 @@ void l2cap_emit_connection_request(l2cap_channel_t *channel) {
 }
 
 void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
-    // first check if we should hand out credits
-
-    if (!hci_number_free_acl_slots() || hci_number_outgoing_packets(channel->handle) >= 2){
-        return; // not yet
-    }    
     // track credits
     channel->packets_granted += credits;
     log_dbg("l2cap_emit_credits for cid %u, credits now: %u (+%u)\n", channel->local_cid, channel->packets_granted, credits);
@@ -153,11 +148,21 @@ void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
     l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
+void l2cap_hand_out_credits(){
+    linked_item_t *it;
+    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+        if (!hci_number_free_acl_slots()) return;
+        l2cap_channel_t * channel = (l2cap_channel_t *) it;
+        if (hci_number_outgoing_packets(channel->handle) < 2 && channel->packets_granted == 0) {
+            l2cap_emit_credits(channel, 1);
+        }
+    }
+}
+
 l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
     linked_item_t *it;
-    l2cap_channel_t * channel;
     for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-        channel = (l2cap_channel_t *) it;
+        l2cap_channel_t * channel = (l2cap_channel_t *) it;
         if ( channel->local_cid == local_cid) {
             return channel;
         }
@@ -345,27 +350,32 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
                 handle = READ_BT_16(packet, 3 + 2*i);
                 uint16_t num_packets = READ_BT_16(packet, 3 + packet[2]*2 + 2*i);
                 while (num_packets) {
-                    num_packets--;
-                    // pick some slot
-                    l2cap_channel_t * oldest_channel = NULL;
+                    
+                    // find channels with max nr of pending outgoing packets
+                    l2cap_channel_t * fullest_channel = NULL;
+                    int max_nr_pending = 0;
                     for (it = (linked_item_t *) &l2cap_channels; it->next ; it = it->next){
                         l2cap_channel_t * channel = (l2cap_channel_t *) it->next;
-                        if (channel->packets_outgoing){
-                            oldest_channel   = channel;
+                        if (channel->packets_outgoing > max_nr_pending){
+                            fullest_channel = channel;
+                            max_nr_pending  = channel->packets_outgoing;
                         }
                     }
-                    // decrease packets and grant new credits
-                    if (oldest_channel) {
-                        oldest_channel->packets_outgoing--;
-                        
+                    
+                    // decrease packets
+                    if (fullest_channel) {
+                        fullest_channel->packets_outgoing--;
                         log_dbg("hci_number_completed_packet (l2cap) for cid %u, outgoing count %u\n",
-                                oldest_channel->local_cid, oldest_channel->packets_outgoing);
-
+                                fullest_channel->local_cid, fullest_channel->packets_outgoing);
                     } else {
                         log_err("hci_number_completed_packet but no outgoing packet in records\n");
                     }
+                    
+                    // handled!
+                    num_packets--;
                 }
-            }            
+            }
+            l2cap_hand_out_credits();
             break;
             
         // HCI Connection Timeouts
