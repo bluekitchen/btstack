@@ -152,6 +152,7 @@ void l2cap_hand_out_credits(){
     linked_item_t *it;
     for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
         if (!hci_number_free_acl_slots()) return;
+        if (channel->state != L2CAP_STATE_OPEN) continue;
         l2cap_channel_t * channel = (l2cap_channel_t *) it;
         if (hci_number_outgoing_packets(channel->handle) < 2 && channel->packets_granted == 0) {
             l2cap_emit_credits(channel, 1);
