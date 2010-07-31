@@ -43,7 +43,25 @@
 #include <btstack/btstack.h>
 #include <btstack/hci_cmds.h>
 
+#define PSM_TEST 0xdead
+#define PACKET_SIZE 1000
+
 int serverMode = 1;
+bd_addr_t addr = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; 
+uint8_t packet[PACKET_SIZE];
+uint32_t counter = 0;
+
+void update_packet(){
+    net_store_32( packet, 0, counter++);
+}
+
+void prepare_packet(){
+    int i;
+    counter = 0;
+    net_store_32( packet, 0, 0);
+    for (i=4;i<PACKET_SIZE;i++)
+        packet[i] = i-4;
+}
 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	
@@ -72,11 +90,25 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					
 				case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started
-	                if (packet[2] == HCI_STATE_WORKING && serverMode) {
-				        printf("Waiting for incoming L2CAP connection on PSM 0xdead...\n");
+	                if (packet[2] == HCI_STATE_WORKING) {
+	                   if (serverMode) {
+				            printf("Waiting for incoming L2CAP connection on PSM %04x...\n", PSM_TEST);
+				        } else {
+				        	bt_send_cmd(&hci_write_authentication_enable, 0);
+				        }
 					}
 					break;
-					
+                
+                case HCI_EVENT_COMMAND_COMPLETE:
+					// use pairing yes/no
+					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable) ) {
+    				    bt_send_cmd(&hci_write_class_of_device, 0x38010c);
+					}
+					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_class_of_device) ) {
+    				    bt_send_cmd(&l2cap_create_channel, addr, PSM_TEST);
+					}
+					break;
+
 				case L2CAP_EVENT_INCOMING_CONNECTION:
 					// data: event(8), len(8), address(48), handle (16),  psm (16), source cid(16) dest cid(16)
 					bt_flip_addr(event_addr, &packet[2]);
@@ -132,7 +164,14 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 				case HCI_EVENT_DISCONNECTION_COMPLETE:
 					printf("Basebank connection closed\n");
 					break;
-										
+					
+				case L2CAP_EVENT_CREDITS:
+				    // can send! (assuming single credits are handet out)
+				    update_packet();
+				    local_cid = READ_BT_16(packet, 2);
+				    bt_send_l2cap( local_cid, packet, 300); 
+				    break;
+				    	
 				default:
 					// other event
 					break;
@@ -145,6 +184,14 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	}
 }
 int main (int argc, const char * argv[]){
+    // handle remote addr
+    if (argc > 1){
+        if (sscan_bd_addr((uint8_t *)argv[1], addr)){
+            serverMode = 0;
+            prepare_packet();
+        }
+    }
+
 	run_loop_init(RUN_LOOP_POSIX);
 	int err = bt_open();
 	if (err) {
@@ -157,7 +204,9 @@ int main (int argc, const char * argv[]){
 	
 	// banner
 	printf("L2CAP Throughput Test (compatible with Apple's Bluetooth Explorer)\n");
-	printf(" * Running in Server mode. For client mode, specify remote addr 11:22:33:44:55:66\n");
+	if (serverMode) {
+	   printf(" * Running in Server mode. For client mode, specify remote addr 11:22:33:44:55:66\n");
+    }
     printf(" * MTU: 1000 bytes\n");
 	
 	run_loop_execute();
