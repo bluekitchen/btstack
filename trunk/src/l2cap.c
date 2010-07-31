@@ -191,8 +191,10 @@ int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMAND
 int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
 
     // check for free places on BT module
-    if (!hci_number_free_acl_slots()) return -1;
-
+    if (!hci_number_free_acl_slots()) {
+        log_dbg("l2cap_send_internal cid %u, BT module full <-----\n", local_cid);
+        return -1;
+    }
     int err = 0;
     
     // find channel for local_cid, construct l2cap packet and send
@@ -202,11 +204,11 @@ int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
         ++channel->packets_outgoing;
         if (channel->packets_granted > 0){
             --channel->packets_granted;
+            // log_dbg("l2cap_send_internal cid %u, 1 credit used, credits left %u; outgoing count %u\n",
+            //        local_cid, channel->packets_granted, channel->packets_outgoing);
         } else {
             log_err("l2cap_send_internal cid %u, no credits!\n", local_cid);
         }
-        log_dbg("l2cap_send_internal cid %u, 1 credit used, credits left %u; outgoing count %u\n",
-                local_cid, channel->packets_granted, channel->packets_outgoing);
         
         // 0 - Connection handle : PB=10 : BC=00 
         bt_store_16(acl_buffer, 0, channel->handle | (2 << 12) | (0 << 14));
@@ -366,8 +368,8 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
                     // decrease packets
                     if (fullest_channel) {
                         fullest_channel->packets_outgoing--;
-                        log_dbg("hci_number_completed_packet (l2cap) for cid %u, outgoing count %u\n",
-                                fullest_channel->local_cid, fullest_channel->packets_outgoing);
+                        // log_dbg("hci_number_completed_packet (l2cap) for cid %u, outgoing count %u\n",
+                        //        fullest_channel->local_cid, fullest_channel->packets_outgoing);
                     } else {
                         log_err("hci_number_completed_packet but no outgoing packet in records\n");
                     }

@@ -221,6 +221,7 @@ int socket_connection_hci_process(struct data_source *ds) {
  * pre: connections get parked iff packet was dispatched but could not be sent
  */
 void socket_connection_retry_parked(){
+    // log_dbg("socket_connection_hci_process retry parked\n");
     linked_item_t *next;
     linked_item_t *it;
     for (it = (linked_item_t *) parked; it ; it = next){
@@ -228,6 +229,7 @@ void socket_connection_retry_parked(){
         connection_t * conn = (connection_t *) it;
         
         // dispatch packet !!! connection, type, channel, data, size
+        log_dbg("socket_connection_hci_process retry parked #0\n");
         int dispatch_err = (*socket_connection_packet_callback)(conn, READ_BT_16( conn->buffer, 0), READ_BT_16( conn->buffer, 2),
                                                             &conn->buffer[sizeof(packet_header_t)], READ_BT_16( conn->buffer, 4));
         // "un-park" if successful

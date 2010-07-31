@@ -216,6 +216,9 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
             }
             break;
     }
+    if (err) {
+        printf("Daemon Handler: err %d\n", err);
+    }
     return err;
 }
 
@@ -258,21 +261,16 @@ static void deamon_status_event_handler(uint8_t *packet, uint16_t size){
 }
 
 static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    switch (packet_type) {
-        case HCI_EVENT_PACKET:
-            deamon_status_event_handler(packet, size);
-            // forward event to client(s)
-            if (connection) {
-                socket_connection_send_packet(connection, packet_type, 0, packet, size);
-            } else {
-                socket_connection_send_packet_all(packet_type, 0, packet, size);
-            }
-            break;
-        case L2CAP_DATA_PACKET:
-            socket_connection_send_packet(connection, L2CAP_DATA_PACKET, channel, packet, size); 
-            break;
-        default:
-            break;
+    if (packet_type == HCI_EVENT_PACKET) {
+        deamon_status_event_handler(packet, size);
+        if (packet[0] == HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS) {
+            socket_connection_retry_parked();
+        }
+    }
+    if (connection) {
+        socket_connection_send_packet(connection, packet_type, channel, packet, size);
+    } else {
+        socket_connection_send_packet_all(packet_type, channel, packet, size);
     }
 }
 
