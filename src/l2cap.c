@@ -137,7 +137,7 @@ void l2cap_emit_connection_request(l2cap_channel_t *channel) {
 void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
     // track credits
     channel->packets_granted += credits;
-    log_dbg("l2cap_emit_credits for cid %u, credits now: %u (+%u)\n", channel->local_cid, channel->packets_granted, credits);
+    // log_dbg("l2cap_emit_credits for cid %u, credits now: %u (+%u)\n", channel->local_cid, channel->packets_granted, credits);
     
     uint8_t event[5];
     event[0] = L2CAP_EVENT_CREDITS;
