@@ -198,7 +198,7 @@ int hci_send_acl_packet(uint8_t *packet, int size){
     
     // count packet
     connection->num_acl_packets_sent++;
-    log_dbg("hci_send_acl_packet - handle %u, sent %u\n", connection->con_handle, connection->num_acl_packets_sent);
+    // log_dbg("hci_send_acl_packet - handle %u, sent %u\n", connection->con_handle, connection->num_acl_packets_sent);
 
     // send packet - ignore errors
     hci_stack.hci_transport->send_acl_packet(packet, size);
@@ -326,7 +326,7 @@ static void event_handler(uint8_t *packet, int size){
                     continue;
                 }
                 conn->num_acl_packets_sent -= num_packets;
-                log_dbg("hci_number_completed_packet (hci) %u processed for handle %u, outstanding %u\n", num_packets, handle, conn->num_acl_packets_sent);
+                // log_dbg("hci_number_completed_packet %u processed for handle %u, outstanding %u\n", num_packets, handle, conn->num_acl_packets_sent);
             }
             break;
             
