@@ -224,6 +224,9 @@ int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
         // send
         err = hci_send_acl_packet(acl_buffer, len+8);
     }
+    
+    l2cap_hand_out_credits();
+    
     return err;
 }
             
