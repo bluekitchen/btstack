@@ -176,3 +176,12 @@ uint8_t crc8_calc(uint8_t *data, uint16_t len)
     /* Ones complement */
     return 0xFF - crc8(data, len);
 }
+
+/*-----------------------------------------------------------------------------------*/
+// ad-hoc implemenation for embedded targets
+void bzero(void *s, uint32_t n){
+    uint8_t * data = (uint8_t *) s;
+    while (n--){
+        *data++ = 0;
+    }
+}
