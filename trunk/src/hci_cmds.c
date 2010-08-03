@@ -41,6 +41,7 @@
 
 #include <btstack/sdp_util.h>
 #include "../config.h"
+#include <btstack/utils.h> // for bzero on embedded
 #include "hci.h"
 
 // calculate combined ogf/ocf value
