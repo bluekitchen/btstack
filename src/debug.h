@@ -39,14 +39,14 @@
 
 #ifdef EMBEDDED
 
-#define log_dbg(format, ...)
-#define log_err(format, ...)
+#define log_dbg(...)
+#define log_err(...)
 
 #else
 
 #include <stdio.h>
 
-#define log_dbg(format, ...) fprintf(stderr, format,  ## __VA_ARGS__)
-#define log_err(format, ...)  printf(format,  ## __VA_ARGS__)
+#define log_dbg(format, ...)  printf(format,  ## __VA_ARGS__)
+#define log_err(format, ...) fprintf(stderr, format,  ## __VA_ARGS__)
 
 #endif
