@@ -518,25 +518,24 @@ void hci_run(){
                         if (cmd) {
                             int size = 3 + cmd[2];
                             hci_stack.hci_transport->send_cmd_packet(cmd, size);
+                            hci_stack.substate = 0; // more init commands
                             break;
                         }
                     }
-                    // @NOTE fall through, if no command to send anymore
-                    hci_stack.substate += 2;
-				case 2:
+                    // otherwise continue
 					hci_send_cmd(&hci_read_bd_addr);
 					break;
-				case 3:
+				case 2:
 					hci_send_cmd(&hci_read_buffer_size);
 					break;
-                case 4:
+                case 3:
                     // ca. 15 sec
                     hci_send_cmd(&hci_write_page_timeout, 0x6000);
                     break;
-				case 5:
+				case 4:
 					hci_send_cmd(&hci_write_scan_enable, 3); // 3 inq scan + page scan
 					break;
-                case 6:
+                case 5:
                     // done.
                     hci_stack.state = HCI_STATE_WORKING;
                     hci_emit_state();
