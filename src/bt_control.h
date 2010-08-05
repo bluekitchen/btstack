@@ -51,6 +51,6 @@ typedef struct {
     /** support custom init sequences after RESET command
       * @return pointer do next command packet used during init
       */
-    uint8_t      (*next_command)(void *config); 
+    uint8_t *    (*next_command)(void *config); 
 
 } bt_control_t;
