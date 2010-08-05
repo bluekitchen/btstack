@@ -40,9 +40,17 @@
 
 #pragma once
 
+#include <stdint.h>
+
 typedef struct {
     int          (*on)(void *config);     // <-- turn BT module on and configure
     int          (*off)(void *config);    // <-- turn BT module off
     int          (*valid)(void *config);  // <-- test if hardware can be supported
     const char * (*name)(void *config);   // <-- return hardware name
+
+    /** support custom init sequences after RESET command
+      * @return pointer do next command packet used during init
+      */
+    uint8_t      (*next_command)(void *config); 
+
 } bt_control_t;
