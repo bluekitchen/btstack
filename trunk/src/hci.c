@@ -143,22 +143,6 @@ static int nr_hci_connections(){
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
-/**
- * Dummy control handler
- */
-static int null_control_function(void *config){
-    return 0;
-}
-static const char * null_control_name(void *config){
-    return "Hardware unknown";
-}
-static bt_control_t null_control = {
-    null_control_function,
-    null_control_function,
-    null_control_function,
-    null_control_name
-}; 
-
 uint8_t hci_number_outgoing_packets(hci_con_handle_t handle){
     hci_connection_t * connection = connection_for_handle(handle);
     if (!connection) {
@@ -441,11 +425,7 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control){
     hci_stack.hci_transport = transport;
     
     // references to used control implementation
-    if (control) {
-        hci_stack.control = control;
-    } else {
-        hci_stack.control = &null_control;
-    }
+    hci_stack.control = control;
     
     // reference to used config
     hci_stack.config = config;
@@ -467,7 +447,10 @@ int hci_power_control(HCI_POWER_MODE power_mode){
     if (power_mode == HCI_POWER_ON && hci_stack.state == HCI_STATE_OFF) {
         
         // power on
-        int err = hci_stack.control->on(hci_stack.config);
+        int err = 0;
+        if (hci_stack.control && hci_stack.control->on){
+            err = (*hci_stack.control->on)(hci_stack.config);
+        }
         if (err){
             log_err( "POWER_ON failed\n");
             hci_emit_hci_open_failed();
@@ -478,7 +461,9 @@ int hci_power_control(HCI_POWER_MODE power_mode){
         err = hci_stack.hci_transport->open(hci_stack.config);
         if (err){
             log_err( "HCI_INIT failed, turning Bluetooth off again\n");
-            hci_stack.control->off(hci_stack.config);
+            if (hci_stack.control && hci_stack.control->off){
+                (*hci_stack.control->off)(hci_stack.config);
+            }
             hci_emit_hci_open_failed();
             return err;
         }
@@ -494,8 +479,10 @@ int hci_power_control(HCI_POWER_MODE power_mode){
         hci_stack.hci_transport->close(hci_stack.config);
 
         // power off
-        hci_stack.control->off(hci_stack.config);
-
+        if (hci_stack.control && hci_stack.control->off){
+            (*hci_stack.control->off)(hci_stack.config);
+        }
+        
         // we're off now
         hci_stack.state = HCI_STATE_OFF;
     }
