@@ -46,6 +46,10 @@
 
 #include <stdint.h>
 
+#if defined __cplusplus
+extern "C" {
+#endif
+	
 // Default TCP port for BTstack daemon
 #define BTSTACK_PORT            13333
 
@@ -66,7 +70,7 @@ int bt_open();
 int bt_close();
 
 // send hci cmd packet
-int bt_send_cmd(hci_cmd_t *cmd, ...);
+int bt_send_cmd(const hci_cmd_t *cmd, ...);
 
 // register packet handler -- channel only valid for l2cap and rfcomm packets
 // @returns old packet handler
@@ -75,3 +79,7 @@ btstack_packet_handler_t bt_register_packet_handler(btstack_packet_handler_t han
 void bt_send_acl(uint8_t * data, uint16_t len);
 
 void bt_send_l2cap(uint16_t local_cid, uint8_t *data, uint16_t len);
+
+#if defined __cplusplus
+}
+#endif

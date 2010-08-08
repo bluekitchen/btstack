@@ -37,6 +37,10 @@
 
 #pragma once
 
+#if defined __cplusplus
+extern "C" {
+#endif
+	
 typedef struct linked_item {
     struct linked_item *next; // <-- next element in list, or NULL
     void *user_data;          // <-- pointer to struct base
@@ -52,3 +56,7 @@ void linked_list_add_tail(linked_list_t * list, linked_item_t *item);   // <-- a
 int  linked_list_remove(linked_list_t * list, linked_item_t *item);     // <-- remove item from list
 
 void test_linked_list();
+
+#if defined __cplusplus
+}
+#endif

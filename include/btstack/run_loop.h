@@ -41,6 +41,10 @@
 
 #include <sys/time.h>
 
+#if defined __cplusplus
+extern "C" {
+#endif
+	
 typedef enum {
 	RUN_LOOP_POSIX = 1,
 	RUN_LOOP_COCOA,
@@ -75,3 +79,8 @@ int  run_loop_remove_timer(timer_source_t *timer);
 
 // execute configured run_loop
 void run_loop_execute();
+
+#if defined __cplusplus
+}
+#endif
+
