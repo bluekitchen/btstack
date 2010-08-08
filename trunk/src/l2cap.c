@@ -180,7 +180,7 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid){
 }
 
 int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...){
-    // printf("l2cap_send_signaling_packet type %u\n", cmd);
+    // log_dbg("l2cap_send_signaling_packet type %u\n", cmd);
     va_list argptr;
     va_start(argptr, identifier);
     uint16_t len = l2cap_create_signaling_internal(sig_buffer, handle, cmd, identifier, argptr);
@@ -415,23 +415,23 @@ static void l2cap_handle_disconnect_request(l2cap_channel_t *channel, uint16_t i
 
 static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig_id, uint16_t psm, uint16_t source_cid){
     
-    // printf("l2cap_handle_connection_request for handle %u, psm %u cid %u\n", handle, psm, source_cid);
+    // log_dbg("l2cap_handle_connection_request for handle %u, psm %u cid %u\n", handle, psm, source_cid);
     l2cap_service_t *service = l2cap_get_service(psm);
     if (!service) {
         // 0x0002 PSM not supported
-        // printf("l2cap_handle_connection_request no PSM for psm %u/n", psm);
+        // log_dbg("l2cap_handle_connection_request no PSM for psm %u/n", psm);
         l2cap_send_signaling_packet(handle, CONNECTION_RESPONSE, sig_id, 0, 0, 0x0002, 0);
         return;
     }
     
     hci_connection_t * hci_connection = connection_for_handle( handle );
     if (!hci_connection) {
-        fprintf(stderr, "no hci_connection for handle %u\n", handle);
+        log_err("no hci_connection for handle %u\n", handle);
         // TODO: emit error
         return;
     }
     // alloc structure
-    // printf("l2cap_handle_connection_request register channel\n");
+    // log_dbg("l2cap_handle_connection_request register channel\n");
     l2cap_channel_t * channel = malloc(sizeof(l2cap_channel_t));
     // TODO: emit error event
     if (!channel) return;
@@ -462,7 +462,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
 void l2cap_accept_connection_internal(uint16_t local_cid){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
-        fprintf(stderr, "l2cap_accept_connection_internal called but local_cid 0x%x not found", local_cid);
+        log_err("l2cap_accept_connection_internal called but local_cid 0x%x not found", local_cid);
         return;
     }
 
@@ -474,13 +474,13 @@ void l2cap_accept_connection_internal(uint16_t local_cid){
     channel->state  = L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ;
     l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->remote_cid, 0, 4, &config_options);
 
-    // printf("new state %u\n", channel->state);
+    // log_dbg("new state %u\n", channel->state);
 }
 
 void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid( local_cid);
     if (!channel) {
-        fprintf(stderr, "l2cap_decline_connection_internal called but local_cid 0x%x not found", local_cid);
+        log_err( "l2cap_decline_connection_internal called but local_cid 0x%x not found", local_cid);
         return;
     }
     l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->sig_id, 0, 0, reason, 0);
@@ -500,7 +500,7 @@ void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t 
         // MTU { type(8): 1, len(8):2, MTU(16) }
         if ((type & 0x7f) == 1 && length == 2){
             channel->remote_mtu = READ_BT_16(command, pos);
-            // printf("l2cap cid %u, remote mtu %u\n", channel->local_cid, channel->remote_mtu);
+            // log_dbg("l2cap cid %u, remote mtu %u\n", channel->local_cid, channel->remote_mtu);
         }
         pos += length;
     }
@@ -517,7 +517,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
     uint8_t identifier = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
     uint16_t result = 0;
 
-    // printf("signaling handler code %u\n", code);
+    // log_dbg("signaling handler code %u\n", code);
     
     switch (channel->state) {
             
@@ -635,7 +635,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
         default:
             break;
     }
-    // printf("new state %u\n", channel->state);
+    // log_dbg("new state %u\n", channel->state);
 }
 
 
