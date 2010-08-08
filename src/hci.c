@@ -592,7 +592,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
 /**
  * pre: numcmds >= 0 - it's allowed to send a command to the controller
  */
-int hci_send_cmd(hci_cmd_t *cmd, ...){
+int hci_send_cmd(const hci_cmd_t *cmd, ...){
     va_list argptr;
     va_start(argptr, cmd);
     uint8_t * hci_cmd_buffer = hci_stack.hci_cmd_buffer;
