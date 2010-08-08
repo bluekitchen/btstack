@@ -208,7 +208,7 @@ typedef struct {
 
 // create and send hci command packets based on a template and a list of parameters
 uint16_t hci_create_cmd(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, ...);
-uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, va_list argptr);
+uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, va_list argptr);
 
 // set up HCI
 void hci_init(hci_transport_t *transport, void *config, bt_control_t *control);
@@ -223,7 +223,7 @@ int hci_power_control(HCI_POWER_MODE mode);
 void hci_run();
 
 // create and send hci command packets based on a template and a list of parameters
-int hci_send_cmd(hci_cmd_t *cmd, ...);
+int hci_send_cmd(const hci_cmd_t *cmd, ...);
 
 // send complete CMD packet
 int hci_send_cmd_packet(uint8_t *packet, int size);

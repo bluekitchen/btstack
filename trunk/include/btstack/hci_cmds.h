@@ -39,6 +39,10 @@
 
 #include <stdint.h>
 
+#if defined __cplusplus
+extern "C" {
+#endif
+	
 /**
  * packet types - used in BTstack and over the H4 UART interface
  */
@@ -243,3 +247,6 @@ extern const hci_cmd_t sdp_register_service_record;
 extern const hci_cmd_t sdp_unregister_service_record;
 
 
+#if defined __cplusplus
+}
+#endif

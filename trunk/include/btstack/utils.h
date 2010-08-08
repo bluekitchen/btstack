@@ -41,6 +41,10 @@
 
 #include <stdint.h>
 
+#if defined __cplusplus
+extern "C" {
+#endif
+	
 /**
  * @brief hci connection handle type
  */
@@ -104,3 +108,8 @@ uint8_t crc8_calc(uint8_t *data, uint16_t len);
 #ifdef EMBEDDED
 void bzero(void *s, uint32_t n);
 #endif
+	
+#if defined __cplusplus
+}
+#endif
+		

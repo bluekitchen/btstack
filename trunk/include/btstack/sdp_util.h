@@ -37,6 +37,10 @@
 
 #include <stdint.h>
 
+#if defined __cplusplus
+extern "C" {
+#endif
+	
 typedef enum {
     DE_NIL = 0,
     DE_UINT,
@@ -99,3 +103,7 @@ int de_get_data_size(uint8_t * header);
 int sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startIndex, uint16_t maxBytes, uint8_t *buffer);
 uint8_t * sdp_get_attribute_value_for_attribute_id(uint8_t * record, uint16_t attributeID);
 int sdp_record_matches_service_search_pattern(uint8_t *record, uint8_t *serviceSearchPattern);
+
+#if defined __cplusplus
+}
+#endif

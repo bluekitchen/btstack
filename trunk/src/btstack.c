@@ -92,7 +92,7 @@ int bt_close(){
 }
 
 // send hci cmd packet
-int bt_send_cmd(hci_cmd_t *cmd, ...){
+int bt_send_cmd(const hci_cmd_t *cmd, ...){
     va_list argptr;
     va_start(argptr, cmd);
     uint16_t len = hci_create_cmd_internal(hci_cmd_buffer, cmd, argptr);
