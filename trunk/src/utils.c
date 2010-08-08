@@ -177,6 +177,7 @@ uint8_t crc8_calc(uint8_t *data, uint16_t len)
     return 0xFF - crc8(data, len);
 }
 
+#ifdef EMBEDDED
 /*-----------------------------------------------------------------------------------*/
 // ad-hoc implemenation for embedded targets
 void bzero(void *s, uint32_t n){
@@ -185,3 +186,4 @@ void bzero(void *s, uint32_t n){
         *data++ = 0;
     }
 }
+#endif
