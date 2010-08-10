@@ -166,10 +166,12 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					break;
 					
 				case L2CAP_EVENT_CREDITS:
-				    // can send! (assuming single credits are handet out)
-				    update_packet();
-				    local_cid = READ_BT_16(packet, 2);
-				    bt_send_l2cap( local_cid, packet, 300); 
+					if (!serverMode) {
+						// can send! (assuming single credits are handet out)
+						update_packet();
+						local_cid = READ_BT_16(packet, 2);
+						bt_send_l2cap( local_cid, packet, PACKET_SIZE); 
+					}
 				    break;
 				    	
 				default:
