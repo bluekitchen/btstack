@@ -259,7 +259,7 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     
     // send connection request
     // BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
-    hci_send_cmd(&hci_create_connection, address, 0x18, 0, 0, 0, 0); 
+    hci_send_cmd(&hci_create_connection, address, 0xcc18, 0, 0, 0, 0); 
 }
 
 void l2cap_disconnect_internal(uint16_t local_cid, uint8_t reason){
