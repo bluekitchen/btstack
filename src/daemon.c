@@ -132,10 +132,16 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             hci_emit_system_bluetooth_enabled(0);
             break;
 #endif
+        case L2CAP_CREATE_CHANNEL_MTU:
+            bt_flip_addr(addr, &packet[3]);
+            psm = READ_BT_16(packet, 9);
+            mtu = READ_BT_16(packet, 11);
+            l2cap_create_channel_internal( connection, NULL, addr, psm, mtu);
+            break;
         case L2CAP_CREATE_CHANNEL:
             bt_flip_addr(addr, &packet[3]);
             psm = READ_BT_16(packet, 9);
-            l2cap_create_channel_internal( connection, NULL, addr, psm );
+            l2cap_create_channel_internal( connection, NULL, addr, psm, 150);   // until r865
             break;
         case L2CAP_DISCONNECT:
             cid = READ_BT_16(packet, 3);

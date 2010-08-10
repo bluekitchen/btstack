@@ -229,7 +229,8 @@ int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
 }
             
 // open outgoing L2CAP channel
-void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm){
+void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t packet_handler,
+                                   bd_addr_t address, uint16_t psm, uint16_t mtu){
     
     // alloc structure
     l2cap_channel_t * chan = malloc(sizeof(l2cap_channel_t));
@@ -243,7 +244,7 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     chan->connection = connection;
     chan->packet_handler = packet_handler;
     chan->remote_mtu = L2CAP_MINIMAL_MTU;
-    chan->local_mtu = 150;  // TODO allow to specify this
+    chan->local_mtu = mtu;
     
     // flow control
     chan->packets_granted = 0;

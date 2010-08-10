@@ -102,6 +102,9 @@
 // decline l2cap disconnect,@param bd_addr(48), dest cid (16), reason(8)
 #define L2CAP_DECLINE_CONNECTION                           0x25
 
+// create l2cap channel: @param bd_addr(48), psm (16), mtu (16)
+#define L2CAP_CREATE_CHANNEL_MTU                           0x26
+
 // register SDP Service Record: service record (size)
 #define SDP_REGISTER_SERVICE_RECORD                        0x30
 
