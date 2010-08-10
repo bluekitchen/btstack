@@ -347,7 +347,7 @@ OPCODE(OGF_BTSTACK, L2CAP_CREATE_CHANNEL), "B2"
 // @param bd_addr(48), psm (16)
 };
 const hci_cmd_t l2cap_create_channel_mtu = {
-OPCODE(OGF_BTSTACK, L2CAP_CREATE_CHANNEL), "B22"
+OPCODE(OGF_BTSTACK, L2CAP_CREATE_CHANNEL_MTU), "B22"
 // @param bd_addr(48), psm (16), mtu (16)
 };
 const hci_cmd_t l2cap_disconnect = {
