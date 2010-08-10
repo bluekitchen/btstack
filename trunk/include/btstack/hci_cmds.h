@@ -238,6 +238,7 @@ extern const hci_cmd_t hci_write_simple_pairing_mode;
 
 extern const hci_cmd_t l2cap_accept_connection;
 extern const hci_cmd_t l2cap_create_channel;
+extern const hci_cmd_t l2cap_create_channel_mtu;
 extern const hci_cmd_t l2cap_decline_connection;
 extern const hci_cmd_t l2cap_disconnect;
 extern const hci_cmd_t l2cap_register_service;

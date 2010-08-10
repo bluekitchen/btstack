@@ -346,7 +346,10 @@ const hci_cmd_t l2cap_create_channel = {
 OPCODE(OGF_BTSTACK, L2CAP_CREATE_CHANNEL), "B2"
 // @param bd_addr(48), psm (16)
 };
-
+const hci_cmd_t l2cap_create_channel_mtu = {
+OPCODE(OGF_BTSTACK, L2CAP_CREATE_CHANNEL), "B22"
+// @param bd_addr(48), psm (16), mtu (16)
+};
 const hci_cmd_t l2cap_disconnect = {
 OPCODE(OGF_BTSTACK, L2CAP_DISCONNECT), "21"
 // @param channel(16), reason(8)
