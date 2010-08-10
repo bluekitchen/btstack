@@ -68,8 +68,11 @@ typedef struct {
     hci_con_handle_t handle;
 
     uint8_t   sig_id;  // other sig for conn requests
+
     uint16_t  local_cid;
     uint16_t  remote_cid;
+
+    uint16_t  local_mtu;
     uint16_t  remote_mtu;
 
     uint16_t  psm;
@@ -77,7 +80,6 @@ typedef struct {
     uint8_t   packets_granted;    // number of L2CAP/ACL packets client is allowed to send
     uint8_t   packets_outgoing;   // number of L2CAP/ACL packets send to BT module
     
-    // uint16_t local_mtu;
     // uint16_t flush_timeout_incoming;
     // uint16_t flush_timeout_outgoing;
 

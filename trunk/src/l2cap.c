@@ -69,8 +69,6 @@ static linked_list_t l2cap_services = NULL;
 static uint8_t * acl_buffer = NULL;
 static void (*packet_handler) (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = null_packet_handler;
 
-static uint8_t config_options[] = { 1, 2, 150, 0}; // mtu = 48 
-
 void l2cap_init(){
     sig_buffer = malloc( L2CAP_MINIMAL_MTU );
     acl_buffer = malloc( HCI_ACL_3DH5_SIZE); 
@@ -245,6 +243,7 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     chan->connection = connection;
     chan->packet_handler = packet_handler;
     chan->remote_mtu = L2CAP_MINIMAL_MTU;
+    chan->local_mtu = 150;  // TODO allow to specify this
     
     // flow control
     chan->packets_granted = 0;
@@ -444,6 +443,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     channel->packet_handler = service->packet_handler;
     channel->local_cid  = l2cap_next_local_cid();
     channel->remote_cid = source_cid;
+    channel->local_mtu  = service->mtu;
     channel->remote_mtu = L2CAP_MINIMAL_MTU;
 
     // set initial state
@@ -472,6 +472,10 @@ void l2cap_accept_connection_internal(uint16_t local_cid){
     // set real sig and state and start config
     channel->sig_id = l2cap_next_sig_id();
     channel->state  = L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ;
+    uint8_t config_options[4];
+    config_options[0] = 1; // MTU
+    config_options[1] = 2; // len param
+    bt_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
     l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->remote_cid, 0, 4, &config_options);
 
     // log_dbg("new state %u\n", channel->state);
@@ -513,10 +517,11 @@ void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t 
 
 void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command){
 
-    uint8_t code       = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
-    uint8_t identifier = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
+    uint8_t  code       = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
+    uint8_t  identifier = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
     uint16_t result = 0;
-
+    uint8_t  config_options[4];
+    
     // log_dbg("signaling handler code %u\n", code);
     
     switch (channel->state) {
@@ -530,6 +535,9 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                             // successful connection
                             channel->remote_cid = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
                             channel->sig_id = l2cap_next_sig_id();
+                            config_options[0] = 1; // MTU
+                            config_options[1] = 2; // len param
+                            bt_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
                             l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->remote_cid, 0, 4, &config_options);
                             channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ;
                             break;
