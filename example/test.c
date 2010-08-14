@@ -89,11 +89,20 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					}
 					break;
 					
+				case HCI_EVENT_LINK_KEY_REQUEST:
+					printf("HCI_EVENT_LINK_KEY_REQUEST \n");
+					// link key request
+					bt_flip_addr(event_addr, &packet[2]); 
+					bt_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
+					break;
+					
 				case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
-					printf("Please enter PIN 1234 on remote device\n");
+					printf("Please enter PIN 0000 on remote device\n");
+					bt_flip_addr(event_addr, &packet[2]); 
+					bt_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
 					break;
-
+					
 				case L2CAP_EVENT_CHANNEL_OPENED:
 					// inform about new l2cap connection
 					// inform about new l2cap connection
