@@ -54,6 +54,9 @@
 #define L2CAP_MINIMAL_MTU 48
 #define L2CAP_DEFAULT_MTU 672
 
+// nr of buffered acl packets in outgoing queue to get max performance 
+#define NR_BUFFERED_ACL_PACKETS 3
+
 // offsets for L2CAP SIGNALING COMMANDS
 #define L2CAP_SIGNALING_COMMAND_CODE_OFFSET   0
 #define L2CAP_SIGNALING_COMMAND_SIGID_OFFSET  1
@@ -152,7 +155,7 @@ void l2cap_hand_out_credits(){
         if (!hci_number_free_acl_slots()) return;
         l2cap_channel_t * channel = (l2cap_channel_t *) it;
         if (channel->state != L2CAP_STATE_OPEN) continue;
-        if (hci_number_outgoing_packets(channel->handle) < 2 && channel->packets_granted == 0) {
+        if (hci_number_outgoing_packets(channel->handle) < NR_BUFFERED_ACL_PACKETS && channel->packets_granted == 0) {
             l2cap_emit_credits(channel, 1);
         }
     }
