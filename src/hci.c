@@ -185,8 +185,8 @@ int hci_send_acl_packet(uint8_t *packet, int size){
     // log_dbg("hci_send_acl_packet - handle %u, sent %u\n", connection->con_handle, connection->num_acl_packets_sent);
 
     // send packet - ignore errors
-    hci_stack.hci_transport->send_acl_packet(packet, size);
-
+    hci_stack.hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
+    
     return 0;
 }
 
@@ -517,7 +517,7 @@ void hci_run(){
                         uint8_t * cmd = (*hci_stack.control->next_command)(hci_stack.config);
                         if (cmd) {
                             int size = 3 + cmd[2];
-                            hci_stack.hci_transport->send_cmd_packet(cmd, size);
+                            hci_stack.hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, cmd, size);
                             hci_stack.substate = 0; // more init commands
                             break;
                         }
@@ -586,7 +586,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
       // set state = SENT_DISCONNECT 
     
     hci_stack.num_cmd_packets--;
-    return hci_stack.hci_transport->send_cmd_packet(packet, size);
+    return hci_stack.hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
 }
 
 /**
