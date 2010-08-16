@@ -168,31 +168,10 @@ static int    h5_close(){
     return 0;
 }
 
-static int    h5_send_cmd_packet(uint8_t *packet, int size){
+static int    h5_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     if (hci_transport_h5->ds == NULL) return -1;
     if (hci_transport_h5->ds->fd == 0) return -1;
     char *data = (char*) packet;
-    char packet_type = HCI_COMMAND_DATA_PACKET;
-
-    hci_dump_packet( (uint8_t) packet_type, 0, packet, size);
-    
-    write(hci_transport_h5->ds->fd, &packet_type, 1);
-    while (size > 0) {
-        int bytes_written = write(hci_transport_h5->ds->fd, data, size);
-        if (bytes_written < 0) {
-            return bytes_written;
-        }
-        data += bytes_written;
-        size -= bytes_written;
-    }
-    return 0;
-}
-
-static int    h5_send_acl_packet(uint8_t *packet, int size){
-    if (hci_transport_h5->ds->fd == 0) return -1;
-	
-    char *data = (char*) packet;
-    char packet_type = HCI_ACL_DATA_PACKET;
 
     hci_dump_packet( (uint8_t) packet_type, 0, packet, size);
     
@@ -318,9 +297,8 @@ hci_transport_t * hci_transport_h5_instance() {
         hci_transport_h5->ds                                      = NULL;
         hci_transport_h5->transport.open                          = h5_open;
         hci_transport_h5->transport.close                         = h5_close;
-        hci_transport_h5->transport.send_cmd_packet               = h5_send_cmd_packet;
-        hci_transport_h5->transport.send_acl_packet               = h5_send_acl_packet;
-        hci_transport_h5->transport.register_packet_handler = h5_register_event_packet_handler;
+        hci_transport_h5->transport.send_packet                   = h5_send_packet;
+        hci_transport_h5->transport.register_packet_handler       = h5_register_event_packet_handler;
         hci_transport_h5->transport.get_transport_name            = h5_get_transport_name;
     }
     return (hci_transport_t *) hci_transport_h5;

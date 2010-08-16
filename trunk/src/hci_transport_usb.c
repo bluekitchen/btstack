@@ -373,6 +373,17 @@ static int usb_send_acl_packet(uint8_t *packet, int size){
     return 0;
 }
 
+static int usb_send_packet(uint8_t packet_type, uint8_8 * packet, int size){
+    switch (packet_type){
+        case HCI_COMMAND_DATA_PACKET:
+            return usb_send_cmd_packet(packet, size);
+        case HCI_ACL_DATA_PACKET:
+            return usb_send_acl_packet(packet, size);
+        default:
+            return -1;
+    }
+}
+
 static void usb_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, int size)){
     event_packet_handler = handler;
 }
