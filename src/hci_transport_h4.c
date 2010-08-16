@@ -197,7 +197,8 @@ static int h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
     while (size > 0) {
         int bytes_written = write(hci_transport_h4->ds->fd, data, size);
         if (bytes_written < 0) {
-            return bytes_written;
+            usleep(5000);
+            continue;
         }
         data += bytes_written;
         size -= bytes_written;
