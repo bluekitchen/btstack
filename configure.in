@@ -90,12 +90,12 @@ esac
 # iPhone/iPod touch cross-compilation for darwin
 SDK_PATH="$DEVELOPER_PATH/SDKs/iPhoneOS$SDK_VERSION.sdk"
 if test "x$target" = xiphone; then
-# Default DARWIN compiler version
-darwin_v='9'
-# Set up check for newest compiler:
-if test -e "$DEVELOPER_PATH/usr/bin/arm-apple-darwin10-gcc-$GCC_VERSION"; then
-	darwin_v='10'
-fi
+    # Default DARWIN compiler version
+    darwin_v='9'
+    # Set up check for newest compiler:
+    if test -e "$DEVELOPER_PATH/usr/bin/arm-apple-darwin10-gcc-$GCC_VERSION"; then
+	   darwin_v='10'
+    fi
     case "$host_os" in
         darwin*)
             echo "Cross-compiling for iPhone/iPod touch using Apple's iPhone SDK $SDK_VERSION, GCC $GCC_VERSION"
@@ -147,7 +147,7 @@ fi
     CPPFLAGS="$CPPFLAGS -Werror"
     
     if test "x$UART_DEVICE" = xDEFAULT ; then
-        UART_DEVICE=/dev/tty.bluetooth
+        UART_DEVICE=/dev/uart.bluetooth
     fi
     if test "x$USE_BLUETOOL" = xDEFAULT ; then
         USE_BLUETOOL="yes"
