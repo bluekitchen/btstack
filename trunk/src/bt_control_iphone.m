@@ -92,10 +92,9 @@ void iphone_system_bt_set_enabled(int enabled)
 #define BUFF_LEN 80
 static char buffer[BUFF_LEN+1];
 
-// bd addr from iphone/ipod IORegistry
-// the Broadcom chipsets done store a BD_ADDR and the one on the iPhone
-// is different to the one reported by About in the Settings app
-static bd_addr_t ioRegAddr;
+// local mac address and default transport speed from IORegistry
+static bd_addr_t local_mac_address;
+static uint32_t  transport_speed;
 
 /** 
  * get machine name
@@ -120,20 +119,34 @@ static const char * iphone_name(void *config){
 }
 
 // Get BD_ADDR from IORegistry
-static void ioregistry_get_bd_addr() {
+static void ioregistry_get_info() {
 #ifdef IOKIT
     mach_port_t mp;
     IOMasterPort(MACH_PORT_NULL,&mp);
     CFMutableDictionaryRef bt_matching = IOServiceNameMatching("bluetooth");
     mach_port_t bt_service = IOServiceGetMatchingService(mp, bt_matching);
-    CFTypeRef bt_typeref = IORegistryEntrySearchCFProperty(bt_service,"IODevicTree",CFSTR("local-mac-address"), kCFAllocatorDefault, 1);
-    CFDataGetBytes(bt_typeref,CFRangeMake(0,CFDataGetLength(bt_typeref)),ioRegAddr); // buffer needs to be unsigned char
+
+    // local-mac-address
+    CFTypeRef local_mac_address_ref = IORegistryEntrySearchCFProperty(bt_service,"IODeviceTree",CFSTR("local-mac-address"), kCFAllocatorDefault, 1);
+    int local_mac_address_len = CFDataGetLength(local_mac_address_ref);
+    CFDataGetBytes(local_mac_address_ref,CFRangeMake(0,CFDataGetLength(local_mac_address_ref)),local_mac_address); // buffer needs to be unsigned char
+
+    // transport-speed
+    CFTypeRef transport_speed_ref = IORegistryEntrySearchCFProperty(bt_service,"IODeviceTree",CFSTR("transport-speed"), kCFAllocatorDefault, 1);
+    int transport_speed_len = CFDataGetLength(transport_speed_ref);
+    CFDataGetBytes(transport_speed_ref,CFRangeMake(0,transport_speed_len), (uint8_t*) &transport_speed); // buffer needs to be unsigned char
+
     IOObjectRelease(bt_service);
+    
+    // dump info
+    printf("local-mac-address: ");
+    hexdump(local_mac_address, local_mac_address_len);
+    printf("\ntransport-speed:  %u\n", transport_speed);
 #else
     // use dummy addr if not on iphone/ipod touch
     int i = 0;
     for (i=0;i<6;i++) {
-        ioRegAddr[i] = i;
+        local_mac_address[i] = i;
     }
 #endif
 }
@@ -159,7 +172,7 @@ static void iphone_csr_set_pskey(int fd, int key, int value){
 
 static void iphone_csr_set_bd_addr(int fd){
     int len = sprintf(buffer,"\ncsr -p 0x0001=0x00%.2x,0x%.2x%.2x,0x00%.2x,0x%.2x%.2x\n",
-            ioRegAddr[3], ioRegAddr[4], ioRegAddr[5], ioRegAddr[2], ioRegAddr[0], ioRegAddr[1]);
+            local_mac_address[3], local_mac_address[4], local_mac_address[5], local_mac_address[2], local_mac_address[0], local_mac_address[1]);
     write(fd, buffer, len);
 }
 
@@ -170,8 +183,8 @@ static void iphone_csr_set_baud(int fd, int baud){
 }
 
 static void iphone_bcm_set_bd_addr(int fd){
-    int len = sprintf(buffer, "bcm -a %.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n", ioRegAddr[0], ioRegAddr[1],
-            ioRegAddr[2], ioRegAddr[3], ioRegAddr[4], ioRegAddr[5]);
+    int len = sprintf(buffer, "bcm -a %.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n", local_mac_address[0], local_mac_address[1],
+            local_mac_address[2], local_mac_address[3], local_mac_address[4], local_mac_address[5]);
     write(fd, buffer, len);
 }
 
@@ -337,9 +350,14 @@ static int iphone_on (void *transport_config){
 
     hci_uart_config_t * hci_uart_config = (hci_uart_config_t*) transport_config;
 
-    // get bd_addr from IORegistry 
-	ioregistry_get_bd_addr();
+    // get local0-mac-addr and transport-speed from IORegistry 
+	ioregistry_get_info();
 
+    // if baud == 0 use system default
+    if (hci_uart_config->baudrate == 0) {
+        hci_uart_config->baudrate = transport_speed;
+    }
+    
 #ifdef USE_BLUETOOL
     if (iphone_system_bt_enabled()){
         perror("iphone_on: System Bluetooth enabled!");
@@ -374,28 +392,30 @@ static int iphone_on (void *transport_config){
         system(buffer);
     }
     
-    // advanced config
-    FILE * outputFile = popen(bluetool, "r+");
-    setvbuf(outputFile, NULL, _IONBF, 0);
-    int output = fileno(outputFile);
-    
-    if (os4x) {
-        // 4.x - send custom config
-        iphone_write_configscript(output, hci_uart_config->baudrate);
-    } else {
-        // 3.x - modify original script on the fly
-        iphone_write_initscript(output, hci_uart_config->baudrate);
+    // advanced config - use custom baud rate
+    if (hci_uart_config->baudrate != transport_speed) {
+        FILE * outputFile = popen(bluetool, "r+");
+        setvbuf(outputFile, NULL, _IONBF, 0);
+        int output = fileno(outputFile);
+        
+        if (os4x) {
+            // 4.x - send custom config
+            iphone_write_configscript(output, hci_uart_config->baudrate);
+        } else {
+            // 3.x - modify original script on the fly
+            iphone_write_initscript(output, hci_uart_config->baudrate);
+        }
+        
+        // log output
+        fflush(outputFile);
+        int singlechar;
+        while (1) {
+            singlechar = fgetc(outputFile);
+            if (singlechar == EOF) break;
+            printf("%c", singlechar);
+        };
+        err = pclose(outputFile);
     }
-    
-    // log output
-    fflush(outputFile);
-    int singlechar;
-    while (1) {
-        singlechar = fgetc(outputFile);
-        if (singlechar == EOF) break;
-        printf("%c", singlechar);
-    };
-    err = pclose(outputFile);
     
 #endif
     
