@@ -287,7 +287,8 @@ static int    h4_process(struct data_source *ds) {
     return 0;
 }
 
-static int    h4_reader_process(struct data_source *ds) {
+#ifdef USE_HCI_READER_THREAD
+static int h4_reader_process(struct data_source *ds) {
     // get token
     char token;
     read(hci_transport_h4->pipe_fds[0], &token, 1);
@@ -302,7 +303,6 @@ static int    h4_reader_process(struct data_source *ds) {
     return 0;
 }
 
-#ifdef USE_HCI_READER_THREAD
 static void *h4_reader(void *context){
 	while(1){
         // read up to bytes_to_read data in
