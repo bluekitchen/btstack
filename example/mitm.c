@@ -93,9 +93,9 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 			switch(packet[0]){
 					
 				case BTSTACK_EVENT_STATE:
-					// bt stack activated, get started - set local name
+					// bt stack activated, get started - set COD
 					if (packet[2] == HCI_STATE_WORKING) {
-						bt_send_cmd(&hci_write_local_name, NAME);
+						bt_send_cmd(&hci_write_class_of_device, 0x7A020C);  // used on iPhone
 					}
 					break;
 					
@@ -176,10 +176,6 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					break;
 
 				case HCI_EVENT_COMMAND_COMPLETE:
-					
-					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_local_name) ) {
-						bt_send_cmd(&hci_write_class_of_device, 0x7A020C);  // used on iPhone
-					}
 					
 					// use pairing yes/no
 					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_class_of_device) ) {

@@ -313,9 +313,9 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					break;		
 					
 				case BTSTACK_EVENT_STATE:
-					// bt stack activated, get started - set local name
+					// bt stack activated, get started - use authentication yes/no
 					if (packet[2] == HCI_STATE_WORKING) {
-						bt_send_cmd(&hci_write_local_name, "BTstack");
+						bt_send_cmd(&hci_write_authentication_enable, 1);
 					}
 					break;
 					
@@ -362,11 +362,6 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					break;
 					
 				case HCI_EVENT_COMMAND_COMPLETE:
-					// use pairing yes/no
-					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_local_name) ) {
-						bt_send_cmd(&hci_write_authentication_enable, 1);
-					}
-					
 					// connect to RFCOMM device (PSM 0x03) at addr
 					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable) ) {
 						bt_send_cmd(&l2cap_create_channel, addr, 0x03);

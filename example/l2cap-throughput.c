@@ -51,6 +51,8 @@ bd_addr_t addr = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 uint8_t packet[PACKET_SIZE];
 uint32_t counter = 0;
 
+timer_source_t timer;
+
 void update_packet(){
     net_store_32( packet, 0, counter++);
 }
@@ -62,6 +64,11 @@ void prepare_packet(){
     for (i=4;i<PACKET_SIZE;i++)
         packet[i] = i-4;
 }
+void  timer_handler(struct timer *ts){
+	bt_send_cmd(&hci_read_bd_addr);
+	run_loop_set_timer(&timer, 3000);
+	run_loop_add_timer(&timer);
+};
 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	
@@ -92,7 +99,10 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					// bt stack activated, get started
 	                if (packet[2] == HCI_STATE_WORKING) {
 	                   if (serverMode) {
-				            printf("Waiting for incoming L2CAP connection on PSM %04x...\n", PSM_TEST);
+						   printf("Waiting for incoming L2CAP connection on PSM %04x...\n", PSM_TEST);
+						   timer.process = timer_handler;
+						   run_loop_set_timer(&timer, 3000);
+						   // run_loop_add_timer(&timer);
 				        } else {
 				        	bt_send_cmd(&hci_write_authentication_enable, 0);
 				        }
@@ -105,7 +115,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
     				    bt_send_cmd(&hci_write_class_of_device, 0x38010c);
 					}
 					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_class_of_device) ) {
-    				    bt_send_cmd(&l2cap_create_channel, addr, PSM_TEST);
+    				    bt_send_cmd(&l2cap_create_channel_mtu, addr, PSM_TEST, PACKET_SIZE);
 					}
 					break;
 
@@ -201,7 +211,7 @@ int main (int argc, const char * argv[]){
 		return err;
 	}
 	bt_register_packet_handler(packet_handler);
-	bt_send_cmd(&l2cap_register_service, 0xdead, 250);
+	bt_send_cmd(&l2cap_register_service, PSM_TEST, PACKET_SIZE);
 	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
 	
 	// banner
