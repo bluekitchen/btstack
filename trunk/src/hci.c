@@ -497,6 +497,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
 }
 
 void hci_run(){
+    
     switch (hci_stack.state){
         case HCI_STATE_INITIALIZING:
             if (hci_stack.substate % 2) {
@@ -536,6 +537,16 @@ void hci_run(){
 					hci_send_cmd(&hci_write_scan_enable, 3); // 3 inq scan + page scan
 					break;
                 case 5:
+#ifndef EMBEDDED
+                {
+                    char hostname[30];
+                    gethostname(hostname, 30);
+                    hostname[29] = '\0';
+                    hci_send_cmd(&hci_write_local_name, hostname);
+                    break;
+                }
+                case 6:
+#endif
                     // done.
                     hci_stack.state = HCI_STATE_WORKING;
                     hci_emit_state();
