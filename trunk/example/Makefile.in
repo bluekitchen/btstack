@@ -30,7 +30,7 @@ rfcomm: rfcomm.c
 	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
 clean:
-	rm -f test mitm rfcomm inquiry l2cap-server obex
+	rm -f test mitm rfcomm inquiry l2cap-server l2cap-throughput obex
 	
 install:    
 	echo "nothing to be done"
