@@ -350,7 +350,7 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
                 l2cap_channel_t * channel = (l2cap_channel_t *) it->next;
                 if ( channel->handle == handle ){
                     // update prev item before free'ing next element - don't call l2cap_finalize_channel_close
-                    it->next->next = it->next;
+                    it->next = it->next->next;
                     l2cap_emit_channel_closed(channel);
                     free (channel);
                 } else {
