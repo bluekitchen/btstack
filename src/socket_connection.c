@@ -116,6 +116,11 @@ int socket_connection_set_non_blocking(int fd)
     return err;
 }
 
+void socket_connection_set_no_sigpipe(int fd){
+    int set = 1;
+    setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, (void *)&set, sizeof(int));
+}
+
 void socket_connection_free_connection(connection_t *conn){
     // remove from run_loop 
     run_loop_remove_data_source(&conn->ds);
@@ -256,7 +261,10 @@ static int socket_connection_accept(struct data_source *socket_ds) {
 	}
     // non-blocking ?
 	// socket_connection_set_non_blocking(ds->fd);
-        
+     
+    // no sigpipe
+    socket_connection_set_no_sigpipe(fd);
+    
     printf("socket_connection_accept new connection %u\n", fd);
     
     socket_connection_register_new_connection(fd);
