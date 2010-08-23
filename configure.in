@@ -147,7 +147,7 @@ if test "x$target" = xiphone; then
     CPPFLAGS="$CPPFLAGS -Werror"
     
     if test "x$UART_DEVICE" = xDEFAULT ; then
-        UART_DEVICE=/dev/uart.bluetooth
+        UART_DEVICE=/dev/tty.bluetooth
     fi
     if test "x$USE_BLUETOOL" = xDEFAULT ; then
         USE_BLUETOOL="yes"
