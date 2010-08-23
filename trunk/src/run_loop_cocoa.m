@@ -84,10 +84,12 @@ void cocoa_add_data_source(data_source_t *dataSource){
     dataSource->item.next = (void *) socketRunLoop;
 
     // add to run loop
-	CFRunLoopAddSource( CFRunLoopGetCurrent(), socketRunLoop, kCFRunLoopDefaultMode);
+	CFRunLoopAddSource( CFRunLoopGetCurrent(), socketRunLoop, kCFRunLoopCommonModes);
+    // printf("cocoa_add_data_source %x, socketRunLoop %x, runLoop %x\n", (int) dataSource, (int) socketRunLoop, (int) CFRunLoopGetCurrent());
 }
 
 int  cocoa_remove_data_source(data_source_t *dataSource){
+    // printf("cocoa_remove_data_source socketRunLoop %x, runLoop %x\n", (int) dataSource->item.next, CFRunLoopGetCurrent());
     CFRunLoopRemoveSource( CFRunLoopGetCurrent(), (CFRunLoopSourceRef) dataSource->item.next, kCFRunLoopCommonModes);
 	return 0;
 }
