@@ -225,7 +225,7 @@ int socket_connection_hci_process(struct data_source *ds) {
 void socket_connection_retry_parked(){
     // log_dbg("socket_connection_hci_process retry parked\n");
     linked_item_t *it = (linked_item_t *) &parked;
-    wile (it->next) {
+    while (it->next) {
         connection_t * conn = (connection_t *) it->next;
         
         // dispatch packet !!! connection, type, channel, data, size
