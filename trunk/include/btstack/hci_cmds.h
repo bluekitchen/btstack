@@ -130,7 +130,7 @@ extern "C" {
 // data: event(8), len(8), handle(16)
 #define L2CAP_EVENT_TIMEOUT_CHECK                          0x73
 
-// data: event(8), len(8), handle(16)
+// data: event(8), len(8), local_cid(16), credits(8)
 #define L2CAP_EVENT_CREDITS								   0x74
 
 // data: event(8), len(8), service_record_handle(32)
@@ -247,6 +247,12 @@ extern const hci_cmd_t l2cap_unregister_service;
 extern const hci_cmd_t sdp_register_service_record;
 extern const hci_cmd_t sdp_unregister_service_record;
 
+extern const hci_cmd_t rfcomm_accept_connection;
+extern const hci_cmd_t rfcomm_create_channel;
+extern const hci_cmd_t rfcomm_decline_connection;
+extern const hci_cmd_t rfcomm_disconnect;
+extern const hci_cmd_t rfcomm_register_service;
+extern const  hci_cmd_t rfcomm_unregister_service;
 
 #if defined __cplusplus
 }
