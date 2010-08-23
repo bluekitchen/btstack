@@ -276,17 +276,19 @@ void l2cap_disconnect_internal(uint16_t local_cid, uint8_t reason){
 }
 
 static void l2cap_handle_connection_failed_for_addr(bd_addr_t address, uint8_t status){
-    linked_item_t *it;
-    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-        l2cap_channel_t * channel = (l2cap_channel_t *) it;
+    linked_item_t *it = (linked_item_t *) &l2cap_channels;
+    while (it->next){
+        l2cap_channel_t * channel = (l2cap_channel_t *) it->next;
         if ( ! BD_ADDR_CMP( channel->address, address) ){
             if (channel->state == L2CAP_STATE_CLOSED) {
                 // failure, forward error code
                 l2cap_emit_channel_opened(channel, status);
                 // discard channel
-                linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
+                it->next = it->next->next;
                 free (channel);
             }
+        } else {
+            it = it->next;
         }
     }
 }
@@ -343,13 +345,16 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             // send l2cap disconnect events for all channels on this handle
             handle = READ_BT_16(packet, 3);
-            // only access next element to allows for removal
-            for (it = (linked_item_t *) &l2cap_channels; it->next ; it = it->next){
+            it = (linked_item_t *) &l2cap_channels;
+            while (it->next){
                 l2cap_channel_t * channel = (l2cap_channel_t *) it->next;
                 if ( channel->handle == handle ){
-                    // update prev item before free'ing next element
-                    it->next = it->next->next;
-                    l2cap_finialize_channel_close(channel);
+                    // update prev item before free'ing next element - don't call l2cap_finalize_channel_close
+                    it->next->next = it->next;
+                    l2cap_emit_channel_closed(channel);
+                    free (channel);
+                } else {
+                    it = it->next;
                 }
             }
             break;
@@ -764,11 +769,10 @@ static void l2cap_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t 
     }
 }
 
-// finalize closed channel
+// finalize closed channel - l2cap_handle_disconnect_request & DISCONNECTION_RESPONSE
 void l2cap_finialize_channel_close(l2cap_channel_t *channel){
     channel->state = L2CAP_STATE_CLOSED;
     l2cap_emit_channel_closed(channel);
-    
     // discard channel
     linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
     free (channel);
@@ -830,7 +834,7 @@ void l2cap_close_connection(void *connection){
     
     // unregister services
     it = (linked_item_t *) &l2cap_services;
-    while (it->next){
+    while (it->next) {
         l2cap_service_t * service = (l2cap_service_t *) it->next;
         if (service->connection == connection){
             it->next = it->next->next;
