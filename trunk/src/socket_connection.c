@@ -172,6 +172,8 @@ int socket_connection_hci_process(struct data_source *ds) {
     
     int bytes_read = read(ds->fd, &conn->buffer[conn->bytes_read], conn->bytes_to_read);
     if (bytes_read <= 0){
+        fprintf(stderr, "socket_connection_hci_process read bytes %d\n", bytes_read);
+
         // connection broken (no particular channel, no date yet)
         uint8_t event[1];
         event[0] = DAEMON_EVENT_CONNECTION_CLOSED;
@@ -185,7 +187,7 @@ int socket_connection_hci_process(struct data_source *ds) {
     }
     conn->bytes_read += bytes_read;
     conn->bytes_to_read -= bytes_read;
-    // hexdump( conn->buffer, conn->bytes_read);
+
     if (conn->bytes_to_read > 0) {
         return 0;
     }
@@ -222,11 +224,9 @@ int socket_connection_hci_process(struct data_source *ds) {
  */
 void socket_connection_retry_parked(){
     // log_dbg("socket_connection_hci_process retry parked\n");
-    linked_item_t *next;
-    linked_item_t *it;
-    for (it = (linked_item_t *) parked; it ; it = next){
-        next = it->next; // cache pointer to next connection_t to allow for removal
-        connection_t * conn = (connection_t *) it;
+    linked_item_t *it = (linked_item_t *) &parked;
+    wile (it->next) {
+        connection_t * conn = (connection_t *) it->next;
         
         // dispatch packet !!! connection, type, channel, data, size
         log_dbg("socket_connection_hci_process retry parked #0\n");
@@ -235,8 +235,10 @@ void socket_connection_retry_parked(){
         // "un-park" if successful
         if (!dispatch_err) {
             log_dbg("socket_connection_hci_process dispatch succeeded -> un-park connection\n");
-            linked_list_remove(&parked, it);
+            it->next = it->next->next;
             run_loop_add_data_source( (data_source_t *) conn);
+        } else {
+            it = it->next;
         }
     }
 }
@@ -464,7 +466,6 @@ void socket_connection_register_packet_callback( int (*packet_callback)(connecti
  * send HCI packet to single connection
  */
 void socket_connection_send_packet(connection_t *conn, uint16_t type, uint16_t channel, uint8_t *packet, uint16_t size){
-
     uint8_t header[sizeof(packet_header_t)];
     bt_store_16(header, 0, type);
     bt_store_16(header, 2, channel);
