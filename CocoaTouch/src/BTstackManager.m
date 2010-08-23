@@ -33,7 +33,6 @@
 
 #import <btstack/btstack.h>
 #import <btstack/BTDevice.h>
-#import "../../RFCOMM/rfcomm.h"
 
 #define INQUIRY_INTERVAL 3
 
@@ -514,6 +513,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	if (deviceDict){
 		linkKey = [deviceDict objectForKey:PREFS_LINK_KEY];
 	}
+	
 	if (linkKey) {
 		// NSLog(@"Sending link key for %@, value %@", devAddress, linkKey);
 		bt_send_cmd(&hci_link_key_request_reply, &event_addr, [linkKey bytes]);
