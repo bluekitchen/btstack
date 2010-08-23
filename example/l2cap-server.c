@@ -185,8 +185,8 @@ int main (int argc, const char * argv[]){
 		return err;
 	}
 	bt_register_packet_handler(packet_handler);
-	bt_send_cmd(&l2cap_register_service, 0x11, 250);
-	bt_send_cmd(&l2cap_register_service, 0x13, 250);
+	bt_send_cmd(&l2cap_register_service, PSM_HID_CONTROL, 250);
+	bt_send_cmd(&l2cap_register_service, PSM_HID_INTERRUPT, 250);
 	
 	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
 	run_loop_execute();
