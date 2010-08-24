@@ -45,7 +45,7 @@ clean:
 	
 install:    
 	echo "installing BTdaemon in $(prefix)..."
-	mkdir -p $(prefix)/lib $(prefix)/include
+	mkdir -p $(prefix)/bin $(prefix)/lib $(prefix)/include
 	cp libBTstack.a libBTstack.dylib $(prefix)/lib/
 	cp BTdaemon $(prefix)/bin/
 	cp -r ../include/btstack $(prefix)/include
