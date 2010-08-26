@@ -395,7 +395,6 @@ static void event_handler(uint8_t *packet, int size){
             break;
             
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_REQUEST);
             if (!packet[2]){
                 handle = READ_BT_16(packet, 3);
                 hci_connection_t * conn = connection_for_handle(handle);
