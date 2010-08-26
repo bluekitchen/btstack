@@ -128,7 +128,7 @@ static hci_connection_t * connection_for_address(bd_addr_t address){
 }
 
 /**
- * add authentication flags
+ * add authentication flags and reset timer
  */
 static void hci_add_connection_flags_for_flipped_bd_addr(uint8_t *bd_addr, hci_authentication_flags_t flags){
     bd_addr_t addr;
@@ -136,7 +136,17 @@ static void hci_add_connection_flags_for_flipped_bd_addr(uint8_t *bd_addr, hci_a
     hci_connection_t * conn = connection_for_address(addr);
     if (conn) {
         conn->authentication_flags |= flags;
+        hci_connection_timestamp(conn);
     }
+}
+
+int  hci_authentication_active_for_handle(hci_con_handle_t handle){
+    hci_connection_t * conn = connection_for_handle(handle);
+    if (!conn) return 0;
+    if (!conn->authentication_flags) return 0;
+    if (conn->authentication_flags & SENT_LINK_KEY_REPLY) return 0;
+    if (conn->authentication_flags & RECV_LINK_KEY_NOTIFICATION) return 0;
+    return 1;
 }
 
 

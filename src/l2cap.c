@@ -395,6 +395,7 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
         // HCI Connection Timeouts
         case L2CAP_EVENT_TIMEOUT_CHECK:
             handle = READ_BT_16(packet, 2);
+            if (hci_authentication_active_for_handle(handle)) break;
             l2cap_channel_t * channel;
             int used = 0;
             for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
