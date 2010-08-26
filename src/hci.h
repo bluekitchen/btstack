@@ -127,9 +127,14 @@
  * Connection State 
  */
 typedef enum {
-    SEND_NEGATIVE_LINK_KEY_REQUEST = 1 << 0,
-    SEND_PIN_CODE_RESPONSE = 1 << 1
-} hci_connection_flags_t;
+    RECV_LINK_KEY_REQUEST          = 0x01,
+    SENT_LINK_KEY_REPLY            = 0x02,
+    SENT_LINK_KEY_NEGATIVE_REQUEST = 0x04,
+    RECV_LINK_KEY_NOTIFICATION     = 0x08,
+    RECV_PIN_CODE_REQUEST          = 0x10,
+    SENT_PIN_CODE_REPLY            = 0x20, 
+    SENT_PIN_CODE_NEGATIVE_REPLY   = 0x40 
+} hci_authentication_flags_t;
 
 typedef enum {
     SENT_CREATE_CONNECTION = 1,
@@ -160,7 +165,7 @@ typedef struct {
     CONNECTION_STATE state;
     
     // errands
-    hci_connection_flags_t flags;
+    hci_authentication_flags_t authentication_flags;
     
     // timer
     timer_source_t timeout;
