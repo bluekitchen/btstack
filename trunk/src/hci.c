@@ -101,7 +101,7 @@ static hci_connection_t * create_connection_for_addr(bd_addr_t addr){
     if (!conn) return NULL;
     BD_ADDR_COPY(conn->address, addr);
     conn->con_handle = 0xffff;
-    conn->flags = 0;
+    conn->authentication_flags = 0;
     linked_item_set_user(&conn->timeout.item, conn);
     conn->timeout.process = hci_connection_timeout_handler;
     hci_connection_timestamp(conn);
@@ -126,6 +126,19 @@ static hci_connection_t * connection_for_address(bd_addr_t address){
     }
     return NULL;
 }
+
+/**
+ * add authentication flags
+ */
+static void hci_add_connection_flags_for_flipped_bd_addr(uint8_t *bd_addr, hci_authentication_flags_t flags){
+    bd_addr_t addr;
+    bt_flip_addr(addr, *(bd_addr_t *) bd_addr);
+    hci_connection_t * conn = connection_for_address(addr);
+    if (conn) {
+        conn->authentication_flags |= flags;
+    }
+}
+
 
 /**
  * count connections
@@ -341,7 +354,6 @@ static void event_handler(uint8_t *packet, int size){
                 if (!packet[2]){
                     conn->state = OPEN;
                     conn->con_handle = READ_BT_16(packet, 3);
-                    conn->flags = 0;
                     
                     gettimeofday(&conn->timestamp, NULL);
                     run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
@@ -360,7 +372,20 @@ static void event_handler(uint8_t *packet, int size){
             }
             break;
 
+        case HCI_EVENT_LINK_KEY_REQUEST:
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_REQUEST);
+            break;
+            
+        case HCI_EVENT_LINK_KEY_NOTIFICATION:
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_NOTIFICATION);
+            break;
+            
+        case HCI_EVENT_PIN_CODE_REQUEST:
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_PIN_CODE_REQUEST);
+            break;
+            
         case HCI_EVENT_DISCONNECTION_COMPLETE:
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_REQUEST);
             if (!packet[2]){
                 handle = READ_BT_16(packet, 3);
                 hci_connection_t * conn = connection_for_handle(handle);
@@ -587,6 +612,19 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
                 conn->state = SENT_CREATE_CONNECTION;
             }
         }
+    }
+    
+    if (IS_COMMAND(packet, hci_link_key_request_reply)){
+        hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_LINK_KEY_REPLY);
+    }
+    if (IS_COMMAND(packet, hci_link_key_request_negative_reply)){
+        hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_LINK_KEY_NEGATIVE_REQUEST);
+    }
+    if (IS_COMMAND(packet, hci_pin_code_request_reply)){
+        hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_PIN_CODE_REPLY);
+    }
+    if (IS_COMMAND(packet, hci_pin_code_request_negative_reply)){
+        hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_PIN_CODE_NEGATIVE_REPLY);
     }
     
     // accept connection
