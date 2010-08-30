@@ -164,7 +164,11 @@ if test "x$target" = xiphone; then
     else
         USE_LDID="#"
         echo "USE_LDID:        no"
-    fi 
+    fi
+    
+    LINK_KEY_DB_SOURCES="link_key_db_iphone.m"
+    LINK_KEY_DB="link_key_db_iphone"
+    
 else
     case "$host_os" in
         darwin*)
@@ -198,6 +202,7 @@ fi
 echo "USE_LAUNCHD:         $USE_LAUNCHD"
 echo "USE_SPRINGBOARD:     $USE_SPRINGBOARD"
 echo "USE_COCOA_RUN_LOOP:  $USE_COCOA_RUN_LOOP"
+echo "LINK_KEY_DB:         $LINK_KEY_DB"
 echo
 echo
 
@@ -228,10 +233,14 @@ if test "x$USE_COCOA_RUN_LOOP" = xyes; then
 fi
 echo "#define USE_POSIX_RUN_LOOP" >> config.h
 echo "#define HAVE_SDP" >> config.h
-
+if test -z "$USB_VENDOR_ID" ; then 
+    echo "#define LINK_KEY_DB $LINK_KEY_DB" >> config.h
+fi
+    
 AC_SUBST(IPHONE_IP)
 AC_SUBST(HAVE_LIBUSB)
 AC_SUBST(USE_LDID)
+AC_SUBST(LINK_KEY_DB_SOURCES)
 AC_SUBST(USB_SOURCES)
 AC_SUBST(SPRINGBOARD_ACCESS_SOURCES)
 AC_SUBST(RUN_LOOP_SOURCES)
