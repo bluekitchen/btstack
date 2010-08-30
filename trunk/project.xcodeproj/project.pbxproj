@@ -19,7 +19,7 @@
 		9C05FC971020D3F300255261 /* socket_connection.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C00F7301017ACC3008DAB17 /* socket_connection.c */; };
 		9C18015C108BAA7200824BE7 /* libusb-1.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C18015B108BAA7200824BE7 /* libusb-1.0.dylib */; };
 		9C255D4A11E0C59900CDD689 /* run_loop_embedded.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C255D4911E0C59900CDD689 /* run_loop_embedded.c */; };
-		9C3AED88122C201C008046F4 /* link_key_db_iphone.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C3AED87122C201C008046F4 /* link_key_db_iphone.m */; };
+		9C3AED88122C201C008046F4 /* remote_device_db_iphone.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C3AED87122C201C008046F4 /* remote_device_db_iphone.m */; };
 		9C46FC3A0FA906F700ABEF05 /* hci_transport_h4.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */; };
 		9C77E79210667F0600F39DCF /* platform_iphone.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C77E79110667F0600F39DCF /* platform_iphone.c */; };
 		9C7B5AC0100BD3340065D87E /* linked_list.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7B5ABF100BD3340065D87E /* linked_list.c */; };
@@ -74,8 +74,8 @@
 		9C255D4911E0C59900CDD689 /* run_loop_embedded.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = run_loop_embedded.c; path = src/run_loop_embedded.c; sourceTree = "<group>"; };
 		9C255D7611E0DD2C00CDD689 /* hci_transport_h4_stellaris.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci_transport_h4_stellaris.c; path = "../../TI/Stellarware/boards/dk-lm3s9b96/bt_init/hci_transport_h4_stellaris.c"; sourceTree = SOURCE_ROOT; };
 		9C255DB511E10AEB00CDD689 /* debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = debug.h; path = src/debug.h; sourceTree = "<group>"; };
-		9C3AED86122C201C008046F4 /* link_key_db.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = link_key_db.h; path = src/link_key_db.h; sourceTree = "<group>"; };
-		9C3AED87122C201C008046F4 /* link_key_db_iphone.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = link_key_db_iphone.m; path = src/link_key_db_iphone.m; sourceTree = "<group>"; };
+		9C3AED86122C201C008046F4 /* remote_device_db.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = remote_device_db.h; path = src/remote_device_db.h; sourceTree = "<group>"; };
+		9C3AED87122C201C008046F4 /* remote_device_db_iphone.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = remote_device_db_iphone.m; path = src/remote_device_db_iphone.m; sourceTree = "<group>"; };
 		9C46FC340FA906F700ABEF05 /* hci.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci.c; path = src/hci.c; sourceTree = "<group>"; };
 		9C46FC350FA906F700ABEF05 /* hci.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci.h; path = src/hci.h; sourceTree = "<group>"; };
 		9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci_transport_h4.c; path = src/hci_transport_h4.c; sourceTree = "<group>"; };
@@ -229,8 +229,8 @@
 				9CB9846A11BC32A800A2F346 /* sdp_util.c */,
 				9CE7CDD711BFF5470096F5B1 /* sdp.c */,
 				9CFFD48C11C4CD0100A37038 /* sdp.h */,
-				9C3AED86122C201C008046F4 /* link_key_db.h */,
-				9C3AED87122C201C008046F4 /* link_key_db_iphone.m */,
+				9C3AED86122C201C008046F4 /* remote_device_db.h */,
+				9C3AED87122C201C008046F4 /* remote_device_db_iphone.m */,
 			);
 			name = Source;
 			sourceTree = "<group>";
@@ -444,7 +444,7 @@
 				9CB9846B11BC32A800A2F346 /* sdp_util.c in Sources */,
 				9CE7CDD811BFF5470096F5B1 /* sdp.c in Sources */,
 				9C255D4A11E0C59900CDD689 /* run_loop_embedded.c in Sources */,
-				9C3AED88122C201C008046F4 /* link_key_db_iphone.m in Sources */,
+				9C3AED88122C201C008046F4 /* remote_device_db_iphone.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

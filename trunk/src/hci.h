@@ -42,6 +42,7 @@
 #include <btstack/utils.h>
 #include "hci_transport.h"
 #include "bt_control.h"
+#include "remote_device_db.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -207,6 +208,9 @@ typedef struct {
     /* callback to L2CAP layer */
     void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
+    /* remote device db */
+    remote_device_db_t *remote_device_db;
+    
     /* hci state machine */
     HCI_STATE state;
     uint8_t   substate;

@@ -62,6 +62,13 @@ typedef uint8_t bd_addr_t[BD_ADDR_LEN];
 #define LINK_KEY_LEN 16
 typedef uint8_t link_key_t[LINK_KEY_LEN]; 
 
+/**
+ * @brief The device name type
+ */
+#define DEVICE_NAME_LEN 248
+typedef uint8_t device_name_t[DEVICE_NAME_LEN+1]; 
+	
+	
 // helper for BT little endian format
 #define READ_BT_16( buffer, pos) ( ((uint16_t) buffer[pos]) | (((uint16_t)buffer[pos+1]) << 8))
 #define READ_BT_24( buffer, pos) ( ((uint32_t) buffer[pos]) | (((uint32_t)buffer[pos+1]) << 8) | (((uint32_t)buffer[pos+2]) << 16))
