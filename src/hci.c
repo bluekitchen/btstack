@@ -149,6 +149,12 @@ int  hci_authentication_active_for_handle(hci_con_handle_t handle){
     return 1;
 }
 
+void hci_drop_link_key_for_bd_addr(bd_addr_t *addr){
+    if (hci_stack.remote_device_db) {
+        hci_stack.remote_device_db->delete_link_key(addr);
+    }
+}
+
 
 /**
  * count connections
@@ -376,12 +382,15 @@ static void event_handler(uint8_t *packet, int size){
                     
                     hci_emit_nr_connections_changed();
                 } else {
+                    
                     // connection failed, remove entry
-                    if (hci_stack.remote_device_db) {
-                        hci_stack.remote_device_db->delete_link_key(&addr);
-                    }
                     linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
                     free( conn );
+                    
+                    // if authentication error, also delete link key
+                    if (packet[2] == 0x05) {
+                        hci_drop_link_key_for_bd_addr(&addr);
+                    }
                 }
             }
             break;

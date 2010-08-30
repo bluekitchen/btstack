@@ -248,6 +248,7 @@ uint8_t hci_number_outgoing_packets(hci_con_handle_t handle);
 uint8_t hci_number_free_acl_slots();
 int     hci_ready_to_send(hci_con_handle_t handle);
 int     hci_authentication_active_for_handle(hci_con_handle_t handle);
+void    hci_drop_link_key_for_bd_addr(bd_addr_t *addr);
 
 // 
 void hci_emit_state();
