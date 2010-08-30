@@ -481,7 +481,7 @@ void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *p
     hci_stack.packet_handler = handler;
 }
 
-void hci_init(hci_transport_t *transport, void *config, bt_control_t *control){
+void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, remote_device_db_t * remote_device_db){
     
     // reference to use transport layer implementation
     hci_stack.hci_transport = transport;
@@ -501,11 +501,21 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control){
     // higher level handler
     hci_stack.packet_handler = dummy_handler;
 
-    // no link key db yet
-    hci_stack.remote_device_db = NULL;
+    // store and open remote device db
+    hci_stack.remote_device_db = remote_device_db;
+    if (hci_stack.remote_device_db) {
+        hci_stack.remote_device_db->open();
+    }
     
     // register packet handlers with transport
     transport->register_packet_handler(&packet_handler);
+}
+
+void hci_close(){
+    // close remote device db
+    if (hci_stack.remote_device_db) {
+        hci_stack.remote_device_db->close();
+    }
 }
 
 int hci_power_control(HCI_POWER_MODE power_mode){
