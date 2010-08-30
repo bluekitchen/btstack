@@ -39,6 +39,7 @@ static NSMutableDictionary *remote_devices = nil;
 
 // Device info
 static void db_open(){
+	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 	NSDictionary * dict = [defaults persistentDomainForName:BTdaemonID];
 	remote_devices = [NSMutableDictionary dictionaryWithCapacity:([dict count]+5)];
@@ -51,9 +52,11 @@ static void db_open(){
 		[remote_devices setObject:deviceEntry forKey:key];
 	}
 	NSLog(@"read prefs %@", remote_devices );
+    [pool release];
 }
 
 static void db_close(){ 
+	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	NSLog(@"store prefs %@", remote_devices );
     
 	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
@@ -62,6 +65,7 @@ static void db_close(){
     
     [remote_devices release];
     remote_devices = nil;
+    [pool release];
 }
 
 static NSString * stringForAddress(bd_addr_t* address) {
@@ -71,23 +75,27 @@ static NSString * stringForAddress(bd_addr_t* address) {
 }
                                 
 static int  get_link_key(bd_addr_t *bd_addr, link_key_t *link_key) {
+	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
     // get link key from deviceInfo
 	NSString *devAddress = stringForAddress(bd_addr);
 	NSMutableDictionary * deviceDict = [remote_devices objectForKey:devAddress];
 	NSData *linkKey = nil;
+    BOOL found = NO;
 	if (deviceDict){
 		linkKey = [deviceDict objectForKey:PREFS_LINK_KEY];
         if ([linkKey length] == LINK_KEY_LEN){
             NSLog(@"Link key for %@, value %@", devAddress, linkKey);
             memcpy(link_key, [linkKey bytes], LINK_KEY_LEN);
-            return 1;
+            found = YES;
         }
 	}
     NSLog(@"Link key for %@ not found", devAddress);
-    return 0;
+    [pool release];
+    return found;
 }
 
 static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key){
+	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	NSString *devAddress = stringForAddress(bd_addr);
 	NSMutableDictionary * deviceDict = [remote_devices objectForKey:devAddress];
 	NSData *linkKey = [NSData dataWithBytes:link_key length:16];
@@ -97,13 +105,16 @@ static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key){
 	}
 	[deviceDict setObject:linkKey forKey:PREFS_LINK_KEY];
 	NSLog(@"Adding link key for %@, value %@", devAddress, linkKey);
+    [pool release];
 }
 
 static void delete_link_key(bd_addr_t *bd_addr){
+	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	NSString *devAddress = stringForAddress(bd_addr);
 	NSMutableDictionary * deviceDict = [remote_devices objectForKey:devAddress];
 	[deviceDict removeObjectForKey:PREFS_LINK_KEY];
 	NSLog(@"Removing link key for %@", devAddress);
+    [pool release];
 }
 
 static int  get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
