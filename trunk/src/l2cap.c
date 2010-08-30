@@ -555,8 +555,20 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                             // connection pending. get some coffee
                             break;
                         default:
+                            // channel closed
+                            channel->state = L2CAP_STATE_CLOSED;
+
                             // map l2cap connection response result to BTstack status enumeration
                             l2cap_emit_channel_opened(channel, L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL + result);
+                            
+                            // drop link key if security block
+                            if (L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL + result == L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY){
+                                hci_drop_link_key_for_bd_addr(&channel->address);
+                            }
+                            
+                            // discard channel
+                            linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
+                            free (channel);
                             break;
                     }
                     break;
