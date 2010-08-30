@@ -91,6 +91,7 @@ static void daemon_no_connections_timeout(){
 #ifdef USE_LAUNCHD
     printf("No connection for %u seconds -> POWER OFF and quit\n", DAEMON_NO_CONNECTION_TIMEOUT);
     hci_power_control( HCI_POWER_OFF);
+    hci_close();
     exit(0);
 #else
     printf("No connection for %u seconds -> POWER OFF\n", DAEMON_NO_CONNECTION_TIMEOUT);
@@ -283,6 +284,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
 static void daemon_sigint_handler(int param){
     printf(" <= SIGINT received, shutting down..\n");    
     hci_power_control( HCI_POWER_OFF);
+    hci_close();
     printf("Good bye, see you.\n");    
     exit(0);
 }
@@ -336,7 +338,8 @@ int main (int argc,  char * const * argv){
     }
     
     bt_control_t * control = NULL;
-
+    remote_device_db_t * remote_device_db = NULL;
+    
 #ifdef HAVE_TRANSPORT_H4
     transport = hci_transport_h4_instance();
     config.device_name = UART_DEVICE;
@@ -357,6 +360,10 @@ int main (int argc,  char * const * argv){
     bluetooth_status_handler = platform_iphone_status_handler;
 #endif
     
+#ifdef REMOTE_DEVICE_DB
+    remote_device_db = &REMOTE_DEVICE_DB;
+#endif
+    
     run_loop_init(RUN_LOOP_POSIX);
     
     // @TODO: allow configuration per HCI CMD
@@ -366,7 +373,7 @@ int main (int argc,  char * const * argv){
     // hci_dump_open(NULL, HCI_DUMP_STDOUT);
                   
     // init HCI
-    hci_init(transport, &config, control);
+    hci_init(transport, &config, control, remote_device_db);
     
     // init L2CAP
     l2cap_init();
@@ -375,7 +382,7 @@ int main (int argc,  char * const * argv){
 
     // init SDP
     sdp_init();
-    
+        
 #ifdef USE_LAUNCHD
     socket_connection_create_launchd();
 #else
