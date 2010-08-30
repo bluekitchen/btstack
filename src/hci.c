@@ -300,6 +300,7 @@ static void event_handler(uint8_t *packet, int size){
     hci_con_handle_t handle;
     hci_connection_t * conn;
     int i;
+    link_key_t link_key;
     
     // get num_cmd_packets
     if (packet[0] == HCI_EVENT_COMMAND_COMPLETE || packet[0] == HCI_EVENT_COMMAND_STATUS){
@@ -376,6 +377,9 @@ static void event_handler(uint8_t *packet, int size){
                     hci_emit_nr_connections_changed();
                 } else {
                     // connection failed, remove entry
+                    if (hci_stack.remote_device_db) {
+                        hci_stack.remote_device_db->delete_link_key(&addr);
+                    }
                     linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
                     free( conn );
                 }
@@ -384,10 +388,25 @@ static void event_handler(uint8_t *packet, int size){
 
         case HCI_EVENT_LINK_KEY_REQUEST:
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_REQUEST);
+            if (hci_stack.remote_device_db) {
+                bt_flip_addr(addr, &packet[2]);
+                if ( hci_stack.remote_device_db->get_link_key( &addr, &link_key)){
+                    hci_send_cmd(&hci_link_key_request_reply, &addr, &link_key);
+                } else {
+                    hci_send_cmd(&hci_link_key_request_negative_reply, &addr);
+                }
+                // request already answered
+                return;
+            }
             break;
             
         case HCI_EVENT_LINK_KEY_NOTIFICATION:
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_NOTIFICATION);
+            if (hci_stack.remote_device_db) {
+                bt_flip_addr(addr, &packet[2]);
+                hci_stack.remote_device_db->put_link_key(&addr, &link_key);
+            }
+            // still forward event to allow dismiss of pairing dialog
             break;
             
         case HCI_EVENT_PIN_CODE_REQUEST:
@@ -473,6 +492,9 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control){
     // higher level handler
     hci_stack.packet_handler = dummy_handler;
 
+    // no link key db yet
+    hci_stack.remote_device_db = NULL;
+    
     // register packet handlers with transport
     transport->register_packet_handler(&packet_handler);
 }

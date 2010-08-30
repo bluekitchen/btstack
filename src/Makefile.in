@@ -6,7 +6,7 @@ CPPFLAGS = @CPPFLAGS@ -I../include
 BTSTACK_LIB_LDFLAGS = @BTSTACK_LIB_LDFLAGS@
 BTSTACK_LIB_EXTENSION = @BTSTACK_LIB_EXTENSION@
 
-link_key_db_sources = @LINK_KEY_DB_SOURCES@
+remote_device_db_sources = @REMOTE_DEVICE_DB_SOURCES@
 run_loop_sources = @RUN_LOOP_SOURCES@
 springboard_access_sources = @SPRINGBOARD_ACCESS_SOURCES@
 usb_sources = @USB_SOURCES@
@@ -22,7 +22,7 @@ BTdaemon_SOURCES =  $(libBTstack_SOURCES) \
     $(usb_sources)          \
     l2cap.c                 \
     l2cap_signaling.c       \
-    $(link_key_db_sources)  \
+    $(remote_device_db_sources)  \
     platform_iphone.c       \
     sdp.c                   \
     $(springboard_access_sources)

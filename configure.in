@@ -166,8 +166,8 @@ if test "x$target" = xiphone; then
         echo "USE_LDID:        no"
     fi
     
-    LINK_KEY_DB_SOURCES="link_key_db_iphone.m"
-    LINK_KEY_DB="link_key_db_iphone"
+    REMOTE_DEVICE_DB_SOURCES="remote_device_db_iphone.m"
+    REMOTE_DEVICE_DB="remote_device_db_iphone"
     
 else
     case "$host_os" in
@@ -202,7 +202,7 @@ fi
 echo "USE_LAUNCHD:         $USE_LAUNCHD"
 echo "USE_SPRINGBOARD:     $USE_SPRINGBOARD"
 echo "USE_COCOA_RUN_LOOP:  $USE_COCOA_RUN_LOOP"
-echo "LINK_KEY_DB:         $LINK_KEY_DB"
+echo "REMOTE_DEVICE_DB:    $REMOTE_DEVICE_DB"
 echo
 echo
 
@@ -240,7 +240,7 @@ fi
 AC_SUBST(IPHONE_IP)
 AC_SUBST(HAVE_LIBUSB)
 AC_SUBST(USE_LDID)
-AC_SUBST(LINK_KEY_DB_SOURCES)
+AC_SUBST(REMOTE_DEVICE_DB_SOURCES)
 AC_SUBST(USB_SOURCES)
 AC_SUBST(SPRINGBOARD_ACCESS_SOURCES)
 AC_SUBST(RUN_LOOP_SOURCES)

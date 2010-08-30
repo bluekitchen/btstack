@@ -30,15 +30,21 @@
  */
 
 /**
- * interface to provide link key storage
+ * interface to provide link key and remote name storage
  */
 
 #include <btstack/utils.h>
 
 typedef struct {
-    int  (*get_link_key)(link_key_t *link_key, bd_addr_t *bd_addr);
-    void (*put_link_key)(link_key_t *key, bd_addr_t *bd_addr);
+    // link key
+    int  (*get_link_key)(bd_addr_t *bd_addr, link_key_t *link_key);
+    void (*put_link_key)(bd_addr_t *bd_addr, link_key_t *key);
     void (*delete_link_key)(bd_addr_t *bd_addr);
-} link_key_db_t;
+    
+    // remove name
+    int  (*get_name)(bd_addr_t *bd_addr, device_name_t *device_name);
+    void (*put_name)(bd_addr_t *bd_addr, device_name_t *device_name);
+    void (*delete_name)(bd_addr_t *bd_addr);
+} remote_device_db_t;
 
-extern link_key_db_t link_key_db_iphone;
+extern remote_device_db_t remote_device_db_iphone;

@@ -28,5 +28,26 @@
  * SUCH DAMAGE.
  *
  */
-#include "link_key_db.h"
+#include "remote_device_db.h"
+
+static int  get_link_key(bd_addr_t *bd_addr, link_key_t *link_key) {
+    return 0;
+}
+static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key){
+}
+static void delete_link_key(bd_addr_t *bd_addr){
+}
+
+static int  get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
+    return 0;
+}
+static void put_name(bd_addr_t *bd_addr, device_name_t *device_name){
+}
+static void delete_name(bd_addr_t *bd_addr){
+}
+
+remote_device_db_t remote_device_db_iphone = {
+    get_link_key, put_link_key, delete_link_key,
+    get_name,     put_name,     delete_name
+};
 
