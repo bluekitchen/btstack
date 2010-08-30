@@ -42,7 +42,7 @@ static void db_open(){
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 	NSDictionary * dict = [defaults persistentDomainForName:BTdaemonID];
-	remote_devices = [NSMutableDictionary dictionaryWithCapacity:([dict count]+5)];
+	remote_devices = [[NSMutableDictionary alloc] initWithCapacity:([dict count]+5)];
 	
 	// copy entries
 	for (id key in dict) {
@@ -51,7 +51,7 @@ static void db_open(){
 		[deviceEntry addEntriesFromDictionary:value];
 		[remote_devices setObject:deviceEntry forKey:key];
 	}
-	NSLog(@"read prefs %@", remote_devices );
+	NSLog(@"read prefs (retain %u) %@", remote_devices );
     [pool release];
 }
 
@@ -89,7 +89,7 @@ static int  get_link_key(bd_addr_t *bd_addr, link_key_t *link_key) {
             found = YES;
         }
 	}
-    NSLog(@"Link key for %@ not found", devAddress);
+    if (!found) NSLog(@"Link key for %@ not found", devAddress);
     [pool release];
     return found;
 }
