@@ -170,6 +170,13 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					}
 					break;
 					
+				case BTSTACK_EVENT_REMOTE_NAME_CACHED:
+					bt_flip_addr(addr, &packet[2]);
+					printf("Cached remote name for ");
+					print_bd_addr(addr);
+					printf(": %s\n", &packet[8]);
+					break;
+
 				case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
 					bt_flip_addr(addr, &packet[3]);
 					int index = getDeviceIndexForAddress(addr);
