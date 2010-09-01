@@ -51,7 +51,7 @@ static void db_open(){
 		[deviceEntry addEntriesFromDictionary:value];
 		[remote_devices setObject:deviceEntry forKey:key];
 	}
-	NSLog(@"read prefs (retain %u) %@", remote_devices );
+	NSLog(@"read prefs (retain %u) %@", [remote_devices retainCount], remote_devices );
     [pool release];
 }
 
@@ -87,14 +87,14 @@ static void set_value(bd_addr_t *bd_addr, NSString *key, id value){
 static void delete_value(bd_addr_t *bd_addr, NSString *key){
 	NSString *devAddress = stringForAddress(bd_addr);
 	NSMutableDictionary * deviceDict = [remote_devices objectForKey:devAddress];
-	[deviceDict removeObjectForKey:PREFS_LINK_KEY];
+	[deviceDict removeObjectForKey:key];
 }
 
 static id get_value(bd_addr_t *bd_addr, NSString *key){
 	NSString *devAddress = stringForAddress(bd_addr);
 	NSMutableDictionary * deviceDict = [remote_devices objectForKey:devAddress];
     if (!deviceDict) return nil;
-    return [deviceDict objectForKey:PREFS_LINK_KEY];
+    return [deviceDict objectForKey:key];
 }
 
 static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key) {
