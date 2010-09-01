@@ -301,6 +301,8 @@ static void acl_handler(uint8_t *packet, int size){
     hci_run();
 }
 
+// avoid huge local variables
+static device_name_t device_name;
 static void event_handler(uint8_t *packet, int size){
     bd_addr_t addr;
     hci_con_handle_t handle;
@@ -382,7 +384,6 @@ static void event_handler(uint8_t *packet, int size){
                     
                     hci_emit_nr_connections_changed();
                 } else {
-                    
                     // connection failed, remove entry
                     linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
                     free( conn );
@@ -397,24 +398,21 @@ static void event_handler(uint8_t *packet, int size){
 
         case HCI_EVENT_LINK_KEY_REQUEST:
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_REQUEST);
-            if (hci_stack.remote_device_db) {
-                bt_flip_addr(addr, &packet[2]);
-                if ( hci_stack.remote_device_db->get_link_key( &addr, &link_key)){
-                    hci_send_cmd(&hci_link_key_request_reply, &addr, &link_key);
-                } else {
-                    hci_send_cmd(&hci_link_key_request_negative_reply, &addr);
-                }
-                // request already answered
-                return;
+            if (!hci_stack.remote_device_db) break;
+            bt_flip_addr(addr, &packet[2]);
+            if ( hci_stack.remote_device_db->get_link_key( &addr, &link_key)){
+                hci_send_cmd(&hci_link_key_request_reply, &addr, &link_key);
+            } else {
+                hci_send_cmd(&hci_link_key_request_negative_reply, &addr);
             }
-            break;
+            // request already answered
+            return;
             
         case HCI_EVENT_LINK_KEY_NOTIFICATION:
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_NOTIFICATION);
-            if (hci_stack.remote_device_db) {
-                bt_flip_addr(addr, &packet[2]);
-                hci_stack.remote_device_db->put_link_key(&addr, &link_key);
-            }
+            if (!hci_stack.remote_device_db) break;
+            bt_flip_addr(addr, &packet[2]);
+            hci_stack.remote_device_db->put_link_key(&addr, &link_key);
             // still forward event to allow dismiss of pairing dialog
             break;
             
@@ -422,6 +420,29 @@ static void event_handler(uint8_t *packet, int size){
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_PIN_CODE_REQUEST);
             break;
             
+        case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
+            if (!hci_stack.remote_device_db) break;
+            if (packet[2]) break; // status not ok
+            bt_flip_addr(addr, &packet[3]);
+            bzero(&device_name, sizeof(device_name_t));
+            strncpy((char*) device_name, (char*) &packet[9], 248);
+            hci_stack.remote_device_db->put_name(&addr, &device_name);
+            break;
+            
+        case HCI_EVENT_INQUIRY_RESULT:
+        case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+            if (!hci_stack.remote_device_db) break;
+            // first send inq result packet
+            hci_stack.packet_handler(HCI_EVENT_PACKET, packet, size);
+            // then send cached remote names
+            for (i=0; i<packet[2];i++){
+                bt_flip_addr(addr, &packet[3+i*6]);
+                if (hci_stack.remote_device_db->get_name(&addr, &device_name)){
+                    hci_emit_remote_name_cached(&addr, &device_name);
+                }
+            }
+            return;
+                        
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             if (!packet[2]){
                 handle = READ_BT_16(packet, 3);
