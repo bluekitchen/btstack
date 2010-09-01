@@ -118,6 +118,9 @@ extern "C" {
 // data: system bluetooth on/off (bool)
 #define BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED			   0x64
 
+// data: event (8), len(8), address (48), name (1984 = 248 bytes)
+#define BTSTACK_EVENT_REMOTE_NAME_CACHED	     		   0x65
+
 // data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16) 
 #define L2CAP_EVENT_CHANNEL_OPENED                         0x70
 

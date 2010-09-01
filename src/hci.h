@@ -259,3 +259,4 @@ void hci_emit_nr_connections_changed();
 void hci_emit_hci_open_failed();
 void hci_emit_btstack_version();
 void hci_emit_system_bluetooth_enabled(uint8_t enabled);
+void hci_emit_remote_name_cached(bd_addr_t *addr, device_name_t *name);
