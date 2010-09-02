@@ -698,12 +698,12 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
         hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_PIN_CODE_NEGATIVE_REPLY);
     }
     
-    // accept connection
-    
-    // reject connection
-    
-    // close_connection?
-      // set state = SENT_DISCONNECT 
+    if (IS_COMMAND(packet, hci_delete_stored_link_key)){
+        if (hci_stack.remote_device_db){
+            bt_flip_addr(addr, &packet[3]);
+            hci_stack.remote_device_db->delete_link_key(&addr);
+        }
+    }
     
     hci_stack.num_cmd_packets--;
     return hci_stack.hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
