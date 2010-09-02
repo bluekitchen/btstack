@@ -801,12 +801,13 @@ void hci_emit_system_bluetooth_enabled(uint8_t enabled){
 }
 
 void hci_emit_remote_name_cached(bd_addr_t *addr, device_name_t *name){
-    uint16_t len = 2+6+248; 
+    uint16_t len = 2+1+6+248; 
     uint8_t event[len];
     event[0] = BTSTACK_EVENT_REMOTE_NAME_CACHED;
     event[1] = len - 2;
-    BD_ADDR_COPY(&event[2], addr);
-    memcpy(&event[8], name, 248);
+    event[2] = 0;   // just to be compatible with HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
+    BD_ADDR_COPY(&event[3], addr);
+    memcpy(&event[9], name, 248);
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, len);
     hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
 }
