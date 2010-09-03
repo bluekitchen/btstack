@@ -412,7 +412,7 @@ static void event_handler(uint8_t *packet, int size){
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_NOTIFICATION);
             if (!hci_stack.remote_device_db) break;
             bt_flip_addr(addr, &packet[2]);
-            hci_stack.remote_device_db->put_link_key(&addr, &link_key);
+            hci_stack.remote_device_db->put_link_key(&addr, &packet[8]);
             // still forward event to allow dismiss of pairing dialog
             break;
             
