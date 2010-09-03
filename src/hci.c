@@ -195,6 +195,10 @@ uint8_t hci_number_free_acl_slots(){
     return free_slots;
 }
 
+uint16_t hci_max_acl_data_packet_length(){
+    return hci_stack.acl_data_packet_length;
+}
+
 int hci_ready_to_send(hci_con_handle_t handle){
     return hci_number_free_acl_slots() && hci_number_outgoing_packets(handle) < 2;
 }
