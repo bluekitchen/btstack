@@ -240,6 +240,11 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     // TODO: emit error event
     if (!chan) return;
     
+    // validate mtu
+    if (hci_max_acl_data_packet_length() < mtu) {
+        mtu = hci_max_acl_data_packet_length();
+    }
+    
     // fill in 
     BD_ADDR_COPY(chan->address, address);
     chan->psm = psm;
@@ -456,6 +461,11 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     channel->local_mtu  = service->mtu;
     channel->remote_mtu = L2CAP_MINIMAL_MTU;
 
+    // validate mtu
+    if (hci_max_acl_data_packet_length() < channel->local_mtu) {
+        channel->local_mtu = hci_max_acl_data_packet_length();
+    }
+    
     // set initial state
     channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
     
