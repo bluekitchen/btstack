@@ -95,7 +95,7 @@ void print_bd_addr( bd_addr_t addr){
 #ifndef EMBEDDED
     int i;
     for (i=0; i<BD_ADDR_LEN-1;i++){
-        printf("%02X-", ((uint8_t *)addr)[i]);
+        printf("%02X:", ((uint8_t *)addr)[i]);
     }
     printf("%02X", ((uint8_t *)addr)[i]);
 #endif
