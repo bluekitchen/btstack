@@ -82,6 +82,8 @@
 #define BT_RFCOMM_CRC_CHECK_LEN     3
 #define BT_RFCOMM_UIHCRC_CHECK_LEN  2
 
+#define NR_CREDITS 0x30
+
 bd_addr_t addr = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; 
 int RFCOMM_CHANNEL_ID = 1;
 char PIN[] = "0000";
@@ -275,9 +277,9 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 			
 			uint8_t send_credits_packet = 0;
 			
-			if (credits_used >= 0x30 ) {
+			if (credits_used >= NR_CREDITS ) {
 				send_credits_packet = 1;
-				credits_used -= 0x30;
+				credits_used -= NR_CREDITS;
 			}
 			
 			if (msc_resp_send && msc_resp_received) {
@@ -291,7 +293,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 				// send 0x30 credits
 				uint8_t initiator = 1;
 				uint8_t address = (1 << 0) | (initiator << 1) |  (initiator << 1) | (RFCOMM_CHANNEL_ID << 3); 
-				rfcomm_send_packet(source_cid, address, BT_RFCOMM_UIH_PF, 0x30, NULL, 0);
+				rfcomm_send_packet(source_cid, address, BT_RFCOMM_UIH_PF, NR_CREDITS, NULL, 0);
 			}
 			
 			if (!packet_processed){
