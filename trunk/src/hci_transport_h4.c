@@ -204,8 +204,12 @@ static int h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
     if (hci_transport_h4->ds == NULL) return -1;
     if (hci_transport_h4->uart_fd == 0) return -1;
     hci_dump_packet( (uint8_t) packet_type, 0, packet, size);
-    write(hci_transport_h4->uart_fd, &packet_type, 1);
     char *data = (char*) packet;
+    int bytes_written = write(hci_transport_h4->uart_fd, &packet_type, 1);
+    while (bytes_written < 1) {
+        usleep(5000);
+        bytes_written = write(hci_transport_h4->uart_fd, &packet_type, 1);
+    };
     while (size > 0) {
         int bytes_written = write(hci_transport_h4->uart_fd, data, size);
         if (bytes_written < 0) {
