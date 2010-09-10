@@ -846,7 +846,7 @@ void l2cap_unregister_service_internal(void *connection, uint16_t psm){
 void l2cap_close_connection(void *connection){
     linked_item_t *it;
     
-    // close open channels
+    // close open channels - note to myself: no channel is freed, so no new for fancy iterator tricks
     l2cap_channel_t * channel;
     for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
         channel = (l2cap_channel_t *) it;
