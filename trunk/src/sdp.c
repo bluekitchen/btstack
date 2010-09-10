@@ -297,10 +297,10 @@ int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu){
         maximumAttributeByteCount = maximumAttributeByteCount2;
     }
     
-    // continuation state contains index of next attribute to examine
-    uint16_t continuation_index = 0;
+    // continuation state contains the offset into the complete response
+    uint16_t continuation_offset = 0;
     if (continuationState[0] == 2){
-        continuation_index = READ_NET_16(continuationState, 1);
+        continuation_offset = READ_NET_16(continuationState, 1);
     }
     
     // get service record
@@ -318,22 +318,33 @@ int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu){
     uint16_t pos = 7;
     uint8_t *attributeList = &sdp_response_buffer[pos];
     de_create_sequence(attributeList);
-    // copy specified attributes
-    int result = sdp_append_attributes_in_attributeIDList(item->service_record, attributeIDList, continuation_index, maximumAttributeByteCount, attributeList);
+    // copy ALL specified attributes
+    sdp_append_attributes_in_attributeIDList(item->service_record, attributeIDList, 0, SDP_RESPONSE_BUFFER_SIZE-7-3, attributeList);
     pos += de_get_len(attributeList);
+
+    // handle continuation
+    if (continuation_offset){
+        memmove(&sdp_response_buffer[7], &sdp_response_buffer[7+continuation_offset], maximumAttributeByteCount);
+        pos -= continuation_offset;    
+    }
+    
+    uint16_t attributeListByteCount = pos - 7;
     
     // Continuation State
-    if (result >= 0) {
-        sdp_response_buffer[pos++] = 2;
-        net_store_16(sdp_response_buffer, pos, (uint16_t) result);
-        pos += 2;
-    } else {
+    if (pos <= 7 + maximumAttributeByteCount) {
+        // complete
         sdp_response_buffer[pos++] = 0;
+    } else {
+        pos = 7 + maximumAttributeByteCount;
+        continuation_offset += maximumAttributeByteCount;
+        sdp_response_buffer[pos++] = 2;
+        net_store_16(sdp_response_buffer, pos, (uint16_t) continuation_offset);
+        pos += 2;
     }
 
     // update header
     net_store_16(sdp_response_buffer, 3, pos - 5);  // size of variable payload
-    net_store_16(sdp_response_buffer, 5, de_get_len(attributeList)); 
+    net_store_16(sdp_response_buffer, 5, attributeListByteCount); 
     
     return pos;
 }
