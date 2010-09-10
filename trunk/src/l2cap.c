@@ -738,11 +738,13 @@ void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t * comman
                 // match odd commands by previous signaling identifier 
                 if (channel->sig_id == sig_id) {
                     l2cap_signaling_handler_channel(channel, command);
+                    break;
                 }
             } else {
                 // match even commands by local channel id
                 if (channel->local_cid == dest_cid) {
                     l2cap_signaling_handler_channel(channel, command);
+                    break;
                 }
             }
         }
