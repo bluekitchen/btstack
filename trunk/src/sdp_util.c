@@ -124,7 +124,7 @@ static void de_store_descriptor(uint8_t * header, de_type_t type, de_size_t size
     header[0] = (type << 3) | size; 
 }
 
-static void de_store_descriptor_with_len(uint8_t * header, de_type_t type, de_size_t size, uint32_t len){
+void de_store_descriptor_with_len(uint8_t * header, de_type_t type, de_size_t size, uint32_t len){
     header[0] = (type << 3) | size; 
     switch (size){
         case DE_SIZE_VAR_8:
