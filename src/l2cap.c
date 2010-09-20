@@ -267,7 +267,7 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     
     // send connection request
     // BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
-    hci_send_cmd(&hci_create_connection, address, 0xcc18, 0, 0, 0, 0); 
+    hci_send_cmd(&hci_create_connection, address, 0xcc18, 0, 0, 0, 1); 
 }
 
 void l2cap_disconnect_internal(uint16_t local_cid, uint8_t reason){
@@ -560,6 +560,12 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                             bt_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
                             l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->remote_cid, 0, 4, &config_options);
                             channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ;
+                    
+#if 0
+    channel->state = L2CAP_STATE_OPEN;
+    l2cap_emit_channel_opened(channel, 0);  // success
+    l2cap_emit_credits(channel, 1);
+#endif
                             break;
                         case 1:
                             // connection pending. get some coffee
