@@ -60,7 +60,7 @@
 #include "hci_dump.h"
 
 // prototypes
-static void dummy_handler(uint8_t *packet, int size); 
+static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
 static int usb_close();
     
 enum {
@@ -75,7 +75,7 @@ enum {
 // single instance
 static hci_transport_t * hci_transport_usb = NULL;
 
-static  void (*packet_handler)(uint8_t *packet, int size) = dummy_handler;
+static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
 static uint8_t hci_cmd_out[HCI_ACL_3DH5_SIZE];      // bigger than largest packet
 static uint8_t hci_event_buffer[HCI_ACL_3DH5_SIZE]; // bigger than largest packet
@@ -150,7 +150,7 @@ static void event_callback(struct libusb_transfer *transfer)
         printf("\n");
 
         hci_dump_packet( HCI_EVENT_PACKET, 1, transfer->buffer, transfer->actual_length);
-        event_packet_handler(transfer->buffer, transfer->actual_length);
+        packet_handler(HCI_EVENT_PACKET, transfer->buffer, transfer->actual_length);
     }
 	int r = libusb_submit_transfer(transfer);
 	if (r) {
@@ -168,7 +168,7 @@ static void bulk_in_callback(struct libusb_transfer *transfer)
         printf("\n");
         
         hci_dump_packet( HCI_EVENT_PACKET, 1, transfer->buffer, transfer->actual_length);
-        acl_packet_handler(transfer->buffer, transfer->actual_length);
+        packet_handler(HCI_EVENT_PACKET, transfer->buffer, transfer->actual_length);
     }
 	int r = libusb_submit_transfer(transfer);
 	if (r) {
@@ -373,7 +373,7 @@ static int usb_send_acl_packet(uint8_t *packet, int size){
     return 0;
 }
 
-static int usb_send_packet(uint8_t packet_type, uint8_8 * packet, int size){
+static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
             return usb_send_cmd_packet(packet, size);
@@ -384,15 +384,15 @@ static int usb_send_packet(uint8_t packet_type, uint8_8 * packet, int size){
     }
 }
 
-static void usb_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, int size)){
-    event_packet_handler = handler;
+static void usb_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+    packet_handler = handler;
 }
 
 static const char * usb_get_transport_name(){
     return "USB";
 }
 
-static void dummy_handler(uint8_t packet_type, uint8_t *packet, int size){
+static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 // get usb singleton
@@ -401,9 +401,8 @@ hci_transport_t * hci_transport_usb_instance() {
         hci_transport_usb = malloc( sizeof(hci_transport_t));
         hci_transport_usb->open                          = usb_open;
         hci_transport_usb->close                         = usb_close;
-        hci_transport_usb->send_cmd_packet               = usb_send_cmd_packet;
-        hci_transport_usb->send_acl_packet               = usb_send_acl_packet;
-        hci_transport_usb->register_packet_handler = usb_register_packet_handler;
+        hci_transport_usb->send_packet                   = usb_send_packet;
+        hci_transport_usb->register_packet_handler       = usb_register_packet_handler;
         hci_transport_usb->get_transport_name            = usb_get_transport_name;
     }
     return hci_transport_usb;
