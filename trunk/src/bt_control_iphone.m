@@ -82,8 +82,7 @@ kern_return_t IOObjectRelease(mach_port_t object);
 #endif
 
 int iphone_system_bt_enabled(){
-    // return SBA_getBluetoothEnabled();
-    return false;
+    return SBA_getBluetoothEnabled();
 }
 
 void iphone_system_bt_set_enabled(int enabled)
