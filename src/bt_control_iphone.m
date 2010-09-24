@@ -63,6 +63,11 @@
 #include <Foundation/Foundation.h>
 #include <CoreFoundation/CoreFoundation.h>
 #if __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_2_0
+// compile issue fix
+#undef NSEC_PER_USEC
+#undef USEC_PER_SEC
+#undef NSEC_PER_SEC
+// end of fix
 #include <mach/mach.h>
 #define IOKIT
 #include <device/device_types.h>
