@@ -3,17 +3,14 @@
 2009-11-08: Release 0.1
 2010-06-20: Release 0.2 - SDP + iOS 4 support
 
+RELEASE NOTES:
+- fixed bug that prevented automatic disable of Apple Bluetooth stack
+  
 NEXT:
-- test SDP implementation against Mac/Linux Service Discovery
-- HCI CMD packet is limited to 255 bytes payload. SDP records can be larger than that. Options:
-  - handle SDP records in client library
-  - provide a way to transer SDP records in segments
-  - ignore HCI command lenght on socket connection and directly stream data without buffer
-  - use simple SDP_PACKET for client/server communication
-
 - move RFCOMM code into BTdaemon
-- add extern "C" to bstack methods
-  - see: http://stackoverflow.com/questions/376966/using-c-c-static-libraries-from-iphone-objectivec-apps
+- HCI CMD packet is limited to 1024 bytes payload. SDP records could be larger than that. Options:
+  - provide a way to transfer SDP records in segments
+  - ignore HCI command lenght on socket connection and directly stream data without buffer
 - figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect, when phone gets locked
 - add timeouts to cocoa run loop
 - L2CAP 
@@ -30,7 +27,6 @@ NEXT:
 - implement rest of L2CAP state machine
   - error handling
   - error notification
-  - flow control
 - add configure option for uart flowcontrol
 - create <btstack/errors.h>
 - Bluetooth low-power modes useful
@@ -50,10 +46,6 @@ NEXT:
   * use deleteRowsAtIndexPaths:withRowAnimation: to remove them-
 
 == Refactor/Improve Architecture ==
-- use single standard packet handler for acl & events 
-  - hci_transport -> hci
-  - hci -> l2cap
-  - l2cap -> daemon 
 - add linked_list_iterator that can remove elements (used by l2cap_close_connection and sdp_unregister_services_for_connection
 - clean up control flow
   - l2cap directly sends data over socket: good/bad?
