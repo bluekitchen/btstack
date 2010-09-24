@@ -54,6 +54,7 @@
 
 #include "hci.h"
 #include "hci_dump.h"
+#include "hci_transport.h"
 #include "l2cap.h"
 #include "sdp.h"
 #include "socket_connection.h"
@@ -66,13 +67,8 @@
 #include "platform_iphone.h"
 #endif
 
-#ifdef HAVE_TRANSPORT_H4
-#include "hci_transport.h"
-#endif
-
 #ifdef HAVE_TRANSPORT_USB
 #include <libusb-1.0/libusb.h>
-#include "hci_transport_usb.h"
 #endif
 
 #define DAEMON_NO_CONNECTION_TIMEOUT 20000
@@ -382,6 +378,7 @@ int main (int argc,  char * const * argv){
 
     // init SDP
     sdp_init();
+    // sdp_test();
         
 #ifdef USE_LAUNCHD
     socket_connection_create_launchd();
