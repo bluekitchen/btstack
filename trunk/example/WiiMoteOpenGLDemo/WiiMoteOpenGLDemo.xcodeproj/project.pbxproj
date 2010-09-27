@@ -284,11 +284,14 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
-					"-I/Projects/iPhone/btstack/CocoaTouch/include",
-					"-I/Projects/iPhone/btstack/include",
+					"-I../../CocoaTouch/include",
+					"-I../../include",
 				);
 				OTHER_CPLUSPLUSFLAGS = "";
-				OTHER_LDFLAGS = "";
+				OTHER_LDFLAGS = (
+					"-L../../src/",
+					"-lbtstack",
+				);
 				PREBINDING = NO;
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "86D3FD5B-5B72-4D87-88B3-0737B204F98E";
 				SDKROOT = iphoneos2.0;
@@ -305,11 +308,14 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				OTHER_CFLAGS = (
-					"-I/Projects/iPhone/btstack/CocoaTouch/include",
-					"-I/Projects/iPhone/btstack/include",
+					"-I../../CocoaTouch/include",
+					"-I../../include",
 				);
 				OTHER_CPLUSPLUSFLAGS = "";
-				OTHER_LDFLAGS = "";
+				OTHER_LDFLAGS = (
+					"-L../../src/",
+					"-lbtstack",
+				);
 				PREBINDING = NO;
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "86D3FD5B-5B72-4D87-88B3-0737B204F98E";
 				SDKROOT = iphoneos2.0;
