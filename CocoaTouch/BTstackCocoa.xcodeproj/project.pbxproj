@@ -14,7 +14,6 @@
 		9C04BB17107E9AD8002A63D0 /* BTInquiryViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C04BB13107E9AD8002A63D0 /* BTInquiryViewController.m */; };
 		9C04BB18107E9AD8002A63D0 /* BTstackCocoaAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C04BB15107E9AD8002A63D0 /* BTstackCocoaAppDelegate.m */; };
 		9C04BB1F107E9B05002A63D0 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C04BB1E107E9B05002A63D0 /* main.m */; };
-		9C04BB2B107E9BF1002A63D0 /* logo.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C04BB2A107E9BF1002A63D0 /* logo.png */; };
 		9C04BBFF10824CDD002A63D0 /* libBTstack.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C04BBFE10824CDD002A63D0 /* libBTstack.dylib */; };
 /* End PBXBuildFile section */
 
@@ -32,7 +31,6 @@
 		9C04BB19107E9AEF002A63D0 /* BTDevice.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = BTDevice.h; path = include/BTstack/BTDevice.h; sourceTree = "<group>"; };
 		9C04BB1A107E9AEF002A63D0 /* BTInquiryViewController.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = BTInquiryViewController.h; path = include/BTstack/BTInquiryViewController.h; sourceTree = "<group>"; };
 		9C04BB1E107E9B05002A63D0 /* main.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = main.m; path = src/main.m; sourceTree = "<group>"; };
-		9C04BB2A107E9BF1002A63D0 /* logo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = logo.png; path = ../resources/logo.png; sourceTree = SOURCE_ROOT; };
 		9C04BBFE10824CDD002A63D0 /* libBTstack.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libBTstack.dylib; path = ../src/libBTstack.dylib; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -84,7 +82,6 @@
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				9C04BB2A107E9BF1002A63D0 /* logo.png */,
 				8D1107310486CEB800E47090 /* BTstackCocoa-Info.plist */,
 			);
 			name = Resources;
@@ -155,7 +152,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9C04BB2B107E9BF1002A63D0 /* logo.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -219,6 +215,10 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = /Projects/iPhone/btstack/include;
+				OTHER_CFLAGS = (
+					"-I../CocoaTouch/include",
+					"-I../include",
+				);
 				PREBINDING = NO;
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
 				SDKROOT = iphoneos2.0;
@@ -234,6 +234,10 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				HEADER_SEARCH_PATHS = /Projects/iPhone/btstack/include;
+				OTHER_CFLAGS = (
+					"-I../CocoaTouch/include",
+					"-I../include",
+				);
 				PREBINDING = NO;
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
 				SDKROOT = iphoneos2.0;
