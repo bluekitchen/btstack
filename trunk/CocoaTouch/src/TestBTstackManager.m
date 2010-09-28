@@ -52,7 +52,7 @@
 -(void) btstackManager:(BTstackManager*)manager discoveryQueryRemoteName:(int)deviceIndex {
 	NSLog(@"discoveryQueryRemoteName %u/%u!", deviceIndex+1, [bt numberOfDevicesFound]);
 }
--(void) btstackManager:(BTstackManager*)manager deviceInfo:(BTDevice*)device;
+-(void) btstackManager:(BTstackManager*)manager deviceInfo:(BTDevice*)device {
 	NSLog(@"Device Info: addr %@ name %@ COD 0x%06x", [device addressString], [device name], [device classOfDevice] ); 
 }
 -(BOOL) discoveryView:(BTDiscoveryViewController*)discoveryView willSelectDeviceAtIndex:(int)deviceIndex {
