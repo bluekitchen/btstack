@@ -11,10 +11,10 @@
 		1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
 		288765FD0DF74451002DB57D /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 288765FC0DF74451002DB57D /* CoreGraphics.framework */; };
 		9C04BB16107E9AD8002A63D0 /* BTDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C04BB12107E9AD8002A63D0 /* BTDevice.m */; };
-		9C04BB17107E9AD8002A63D0 /* BTInquiryViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C04BB13107E9AD8002A63D0 /* BTInquiryViewController.m */; };
-		9C04BB18107E9AD8002A63D0 /* BTstackCocoaAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C04BB15107E9AD8002A63D0 /* BTstackCocoaAppDelegate.m */; };
-		9C04BB1F107E9B05002A63D0 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C04BB1E107E9B05002A63D0 /* main.m */; };
 		9C04BBFF10824CDD002A63D0 /* libBTstack.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C04BBFE10824CDD002A63D0 /* libBTstack.dylib */; };
+		9C9AB4F412525E65008B4D52 /* BTDiscoveryViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C9AB4F112525E65008B4D52 /* BTDiscoveryViewController.m */; };
+		9C9AB4F512525E65008B4D52 /* BTstackManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C9AB4F212525E65008B4D52 /* BTstackManager.m */; };
+		9C9AB4F612525E65008B4D52 /* TestBTstackManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C9AB4F312525E65008B4D52 /* TestBTstackManager.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,13 +25,11 @@
 		32CA4F630368D1EE00C91783 /* BTstackCocoa_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BTstackCocoa_Prefix.pch; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* BTstackCocoa-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "BTstackCocoa-Info.plist"; plistStructureDefinitionIdentifier = "com.apple.xcode.plist.structure-definition.iphone.info-plist"; sourceTree = "<group>"; };
 		9C04BB12107E9AD8002A63D0 /* BTDevice.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = BTDevice.m; path = src/BTDevice.m; sourceTree = "<group>"; };
-		9C04BB13107E9AD8002A63D0 /* BTInquiryViewController.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = BTInquiryViewController.m; path = src/BTInquiryViewController.m; sourceTree = "<group>"; };
-		9C04BB14107E9AD8002A63D0 /* BTstackCocoaAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = BTstackCocoaAppDelegate.h; path = src/BTstackCocoaAppDelegate.h; sourceTree = "<group>"; };
-		9C04BB15107E9AD8002A63D0 /* BTstackCocoaAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = BTstackCocoaAppDelegate.m; path = src/BTstackCocoaAppDelegate.m; sourceTree = "<group>"; };
 		9C04BB19107E9AEF002A63D0 /* BTDevice.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = BTDevice.h; path = include/BTstack/BTDevice.h; sourceTree = "<group>"; };
-		9C04BB1A107E9AEF002A63D0 /* BTInquiryViewController.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = BTInquiryViewController.h; path = include/BTstack/BTInquiryViewController.h; sourceTree = "<group>"; };
-		9C04BB1E107E9B05002A63D0 /* main.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = main.m; path = src/main.m; sourceTree = "<group>"; };
 		9C04BBFE10824CDD002A63D0 /* libBTstack.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libBTstack.dylib; path = ../src/libBTstack.dylib; sourceTree = SOURCE_ROOT; };
+		9C9AB4F112525E65008B4D52 /* BTDiscoveryViewController.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = BTDiscoveryViewController.m; path = src/BTDiscoveryViewController.m; sourceTree = "<group>"; };
+		9C9AB4F212525E65008B4D52 /* BTstackManager.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = BTstackManager.m; path = src/BTstackManager.m; sourceTree = "<group>"; };
+		9C9AB4F312525E65008B4D52 /* TestBTstackManager.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = TestBTstackManager.m; path = src/TestBTstackManager.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,7 +71,6 @@
 		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
 			isa = PBXGroup;
 			children = (
-				9C04BB1E107E9B05002A63D0 /* main.m */,
 				32CA4F630368D1EE00C91783 /* BTstackCocoa_Prefix.pch */,
 			);
 			name = "Other Sources";
@@ -101,11 +98,10 @@
 			isa = PBXGroup;
 			children = (
 				9C04BB19107E9AEF002A63D0 /* BTDevice.h */,
-				9C04BB1A107E9AEF002A63D0 /* BTInquiryViewController.h */,
 				9C04BB12107E9AD8002A63D0 /* BTDevice.m */,
-				9C04BB13107E9AD8002A63D0 /* BTInquiryViewController.m */,
-				9C04BB14107E9AD8002A63D0 /* BTstackCocoaAppDelegate.h */,
-				9C04BB15107E9AD8002A63D0 /* BTstackCocoaAppDelegate.m */,
+				9C9AB4F112525E65008B4D52 /* BTDiscoveryViewController.m */,
+				9C9AB4F212525E65008B4D52 /* BTstackManager.m */,
+				9C9AB4F312525E65008B4D52 /* TestBTstackManager.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -163,9 +159,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				9C04BB16107E9AD8002A63D0 /* BTDevice.m in Sources */,
-				9C04BB17107E9AD8002A63D0 /* BTInquiryViewController.m in Sources */,
-				9C04BB18107E9AD8002A63D0 /* BTstackCocoaAppDelegate.m in Sources */,
-				9C04BB1F107E9B05002A63D0 /* main.m in Sources */,
+				9C9AB4F412525E65008B4D52 /* BTDiscoveryViewController.m in Sources */,
+				9C9AB4F512525E65008B4D52 /* BTstackManager.m in Sources */,
+				9C9AB4F612525E65008B4D52 /* TestBTstackManager.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
