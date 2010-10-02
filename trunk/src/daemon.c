@@ -376,10 +376,12 @@ int main (int argc,  char * const * argv){
     l2cap_register_packet_handler(daemon_packet_handler);
     timeout.process = daemon_no_connections_timeout;
 
+#ifdef HAVE_SDP
     // init SDP
     sdp_init();
     // sdp_test();
-        
+#endif
+    
 #ifdef USE_LAUNCHD
     socket_connection_create_launchd();
 #else
