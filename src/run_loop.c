@@ -46,8 +46,11 @@
 
 static run_loop_t * the_run_loop = NULL;
 
-extern run_loop_t run_loop_posix;
 extern run_loop_t run_loop_embedded;
+
+#ifdef USE_POSIX_RUN_LOOP
+extern run_loop_t run_loop_posix;
+#endif
 
 #ifdef USE_COCOA_RUN_LOOP
 extern run_loop_t run_loop_cocoa;
