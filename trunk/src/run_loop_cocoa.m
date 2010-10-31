@@ -46,14 +46,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static void theCFRunLoopTimerCallBack (CFRunLoopTimerRef timer,void *info){
+    timer_source_t * ts = (timer_source_t*)info;
+    ts->process(ts);
+}
+
 static void socketDataCallback (
 						 CFSocketRef s,
 						 CFSocketCallBackType callbackType,
 						 CFDataRef address,
 						 const void *data,
-						 void *info)
-{
-    if (callbackType == kCFSocketReadCallBack && info) {
+						 void *info) {
+	
+    if (callbackType == kCFSocketReadCallBack && info){
         data_source_t *ds = (data_source_t *) info;
         ds->process(ds);
     }
@@ -94,27 +99,31 @@ int  cocoa_remove_data_source(data_source_t *dataSource){
 	return 0;
 }
 
-void  cocoa_add_timer(timer_source_t * ts){
-	// not needed yet
-   fprintf(stderr, "WARNING: run_loop_add_timer not implemented yet!");
-    // warning never the less
+void  cocoa_add_timer(timer_source_t * ts)
+{
+    
+    CFAbsoluteTime now = CFAbsoluteTimeGetCurrent();
+    CFTimeInterval fireDate = ((double)ts->timeout.tv_sec) + (((double)ts->timeout.tv_usec)/1000000.0);
+    
+    CFRunLoopTimerRef timerRef = CFRunLoopTimerCreate (kCFAllocatorDefault,now+fireDate,fireDate,0,0,theCFRunLoopTimerCallBack,(void*)ts);
+    
+    // hack: store CFRunLoopTimerRef in next pointer of linked_item
+    ts->item.next = (void *)timerRef;
+    
+    CFRunLoopAddTimer(CFRunLoopGetCurrent(), timerRef, kCFRunLoopCommonModes);
 }
 
 int  cocoa_remove_timer(timer_source_t * ts){
-	// not needed yet
-    fprintf(stderr, "WARNING: run_loop_remove_timer not implemented yet!");
-    // warning never the less
+    CFRunLoopRemoveTimer(CFRunLoopGetCurrent(), (CFRunLoopTimerRef) ts->item.next, kCFRunLoopCommonModes);
 	return 0;
 }
 
 void cocoa_init(){
 }
 
-void cocoa_execute(){
-	// not needed yet
-    fprintf(stderr, "WARNING: execute not available for RUN_LOOP_COCOA!");
-    // warning never the less
-	exit(10);
+void cocoa_execute()
+{
+    CFRunLoopRun();
 }
 
 void cocoa_dump_timer(){
