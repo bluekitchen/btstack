@@ -48,6 +48,10 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
+#if defined __cplusplus
+extern "C" {
+#endif
+    
 // packet header lenghts
 #define HCI_CMD_DATA_PKT_HDR	  0x03
 #define HCI_ACL_DATA_PKT_HDR	  0x04
@@ -261,3 +265,7 @@ void hci_emit_hci_open_failed();
 void hci_emit_btstack_version();
 void hci_emit_system_bluetooth_enabled(uint8_t enabled);
 void hci_emit_remote_name_cached(bd_addr_t *addr, device_name_t *name);
+
+#if defined __cplusplus
+}
+#endif

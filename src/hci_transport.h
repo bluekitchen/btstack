@@ -42,6 +42,10 @@
 #include <stdint.h>
 #include <btstack/run_loop.h>
 
+#if defined __cplusplus
+extern "C" {
+#endif
+    
 /* HCI packet types */
 typedef struct {
     int    (*open)(void *transport_config);
@@ -69,4 +73,7 @@ extern hci_transport_t * hci_transport_h4_instance();
 extern hci_transport_t * hci_transport_h5_instance();
 extern hci_transport_t * hci_transport_usb_instance();
 
+#if defined __cplusplus
+}
+#endif
 
