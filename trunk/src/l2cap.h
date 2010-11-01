@@ -44,6 +44,10 @@
 #include <btstack/utils.h>
 #include <btstack/btstack.h>
 
+#if defined __cplusplus
+extern "C" {
+#endif
+    
 #define L2CAP_SIG_ID_INVALID 0
 
 typedef enum {
@@ -130,3 +134,7 @@ void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason);
 void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
 void l2cap_emit_channel_closed(l2cap_channel_t *channel);
 void l2cap_emit_connection_request(l2cap_channel_t *channel);
+
+#if defined __cplusplus
+}
+#endif
