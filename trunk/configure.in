@@ -19,7 +19,7 @@ AC_ARG_ENABLE(ldid, [AS_HELP_STRING([--enable-ldid], [Code sign binaries with ld
 AC_ARG_WITH(developer-path, [AS_HELP_STRING([--with-developer-path=path],
 [Specify toolchain path])], DEVELOPER_PATH=$withval, DEVELOPER_PATH="/Developer/Platforms/iPhoneOS.platform/Developer")  
 AC_ARG_WITH(sdk-version, [AS_HELP_STRING([--with-sdk-version=2.0], [Specify SDK version])], SDK_VERSION=$withval, SDK_VERSION="2.0")  
-AC_ARG_WITH(gcc-version, [AS_HELP_STRING([--with-gcc-version=4.0.1], [Specify GCC version])], GCC_VERSION=$withval, GCC_VERSION="4.0.1")  
+AC_ARG_WITH(gcc-version, [AS_HELP_STRING([--with-gcc-version=4.2.1], [Specify GCC version])], GCC_VERSION=$withval, GCC_VERSION="4.2.1")  
 
 # BUILD/HOST/TARGET
 AC_CANONICAL_HOST
