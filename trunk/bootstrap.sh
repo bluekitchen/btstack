@@ -1,5 +1,5 @@
 #!/bin/sh
 mkdir -p config
-aclocal -I config
+aclocal -Im4
 autoconf
 automake --add-missing
