@@ -82,6 +82,10 @@ int SBA_getBluetoothEnabled() {
 			result = 0;
 		}
 		CFRelease(cfData);
+	} else {
+		// error talking to SpringBoardAccess
+		// well, assume it's off and hope for the best
+		result = 0;
 	}
 	return result;
 }
