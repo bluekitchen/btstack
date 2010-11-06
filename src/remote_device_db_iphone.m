@@ -29,21 +29,33 @@
  *
  */
 #include "remote_device_db.h"
+#include "debug.h"
+
 #import <Foundation/Foundation.h>
 
-#define BTdaemonID         @"ch.ringwald.btdaemon"
+#define BTdaemonID         "ch.ringwald.btdaemon"
+#define BTDaemonPrefsPath  "Library/Preferences/ch.ringwald.btdaemon.plist"
+#define DEVICES_KEY        "devices"
 #define PREFS_REMOTE_NAME  @"RemoteName"
 #define PREFS_LINK_KEY     @"LinkKey"
+
+static void put_name(bd_addr_t *bd_addr, device_name_t *device_name);
 
 static NSMutableDictionary *remote_devices = nil;
 
 // Device info
 static void db_open(){
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-	NSDictionary * dict = [defaults persistentDomainForName:BTdaemonID];
-	remote_devices = [[NSMutableDictionary alloc] initWithCapacity:([dict count]+5)];
+    
+    // NSUserDefaults didn't work
+    // 
+	// NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+	// NSDictionary * dict = [defaults persistentDomainForName:BTdaemonID];
 	
+    // NSDictionary * dict = (NSDictionary*) CFPreferencesCopyAppValue(CFSTR(DEVICES_KEY), CFSTR(BTdaemonID));
+    NSDictionary * dict = (NSDictionary*) CFPreferencesCopyAppValue(CFSTR(DEVICES_KEY), CFSTR(BTdaemonID));
+    remote_devices = [[NSMutableDictionary alloc] initWithCapacity:([dict count]+5)];
+    
 	// copy entries
 	for (id key in dict) {
 		NSDictionary *value = [dict objectForKey:key];
@@ -51,17 +63,28 @@ static void db_open(){
 		[deviceEntry addEntriesFromDictionary:value];
 		[remote_devices setObject:deviceEntry forKey:key];
 	}
-	NSLog(@"read prefs (retain %u) %@", [remote_devices retainCount], remote_devices );
+    
+    log_dbg("read prefs for %u devices\n", [dict count]);
+    
     [pool release];
 }
 
 static void db_close(){ 
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-	NSLog(@"store prefs %@", remote_devices );
+
+    log_dbg("stored prefs for %u devices\n", [remote_devices count]);
     
-	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setPersistentDomain:remote_devices forName:BTdaemonID];
-    [defaults synchronize];
+    // 3 different ways
+    
+    // Core Foundation
+    CFPreferencesSetValue(CFSTR(DEVICES_KEY), (CFPropertyListRef) remote_devices, CFSTR(BTdaemonID), kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+    CFPreferencesSynchronize(CFSTR(BTdaemonID), kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+    
+    // NSUserDefaults didn't work
+    // 
+	// NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    // [defaults setPersistentDomain:remote_devices forName:BTdaemonID];
+    // [defaults synchronize];
     
     [remote_devices release];
     remote_devices = nil;
