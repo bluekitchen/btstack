@@ -46,7 +46,7 @@
 #include "hci.h"
 
 #include <sys/utsname.h>  // uname
-#include <stdlib.h>       // system
+#include <stdlib.h>       // system, random, srandom
 #include <stdio.h>        // sscanf, printf
 #include <fcntl.h>        // open
 #include <string.h>       // strcpy, strcat, strncmp
@@ -144,7 +144,7 @@ static void ioregistry_get_info() {
     
     // dump info
     printf("local-mac-address: ");
-    hexdump(local_mac_address, local_mac_address_len);
+    print_bd_addr(local_mac_address);
     printf("\ntransport-speed:  %u\n", transport_speed);
 #else
     // use dummy addr if not on iphone/ipod touch
@@ -357,6 +357,21 @@ static int iphone_on (void *transport_config){
     // get local0-mac-addr and transport-speed from IORegistry 
 	ioregistry_get_info();
 
+#ifdef USE_RANDOM_BD_ADDR
+    // While developing an app that emulates a Bluetooth HID keyboard, we've learnt
+    // that in (some versions/driver combinations of) Windows XP, information about
+    // a device with incorrect SDP descriptions are stored forever.
+    // 
+    // To continue development, this option was added that picks a random BD_ADDR
+    // on start to trick windows in giving us a fresh start on each try.
+    //
+    // Use with caution!
+    
+    srandom(time(NULL));
+    bt_store_32(local_mac_address, 0, random());
+    bt_store_16(local_mac_address, 4, random());
+#endif
+    
     // if baud == 0 use system default
     if (hci_uart_config->baudrate == 0) {
         hci_uart_config->baudrate = transport_speed;
