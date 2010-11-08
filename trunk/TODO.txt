@@ -5,14 +5,17 @@
 
 RELEASE NOTES:
 - fixed bug that prevented automatic disable of Apple Bluetooth stack
-  
+- added timeouts to cocoa run loop (thanks todd)
+   
 NEXT:
+- limit size of /tmp/hci_dump.pklg
+  - e.g. delete hci_dump.old.pklg, mv hci_dump.pkg->hci_dump.old.pklg
+- have a look at External Accessory interface by Apple - it's quite similar
 - move RFCOMM code into BTdaemon
 - HCI CMD packet is limited to 1024 bytes payload. SDP records could be larger than that. Options:
   - provide a way to transfer SDP records in segments
   - ignore HCI command lenght on socket connection and directly stream data without buffer
 - figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect, when phone gets locked
-- add timeouts to cocoa run loop
 - L2CAP 
   - segmentation
 - extend SpringBoard feedback
