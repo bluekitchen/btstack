@@ -190,9 +190,18 @@ void de_add_number(uint8_t *seq, de_type_t type, de_size_t size, uint32_t value)
 /* add a single block of data, e.g. as DE_STRING, DE_URL */
 void de_add_data( uint8_t *seq, de_type_t type, uint16_t size, uint8_t *data){
     int data_size   = READ_NET_16(seq,1);
-    de_store_descriptor_with_len(seq+3+data_size, type, DE_SIZE_VAR_16, size); 
-    memcpy( seq + 6 + data_size, data, size);
-    net_store_16(seq, 1, data_size+1+2+size);
+    if (size > 0xff) {
+        // use 16-bit lengh information (3 byte header)
+        de_store_descriptor_with_len(seq+3+data_size, type, DE_SIZE_VAR_16, size); 
+        data_size += 3;
+    } else {
+        // use 8-bit lengh information (2 byte header)
+        de_store_descriptor_with_len(seq+3+data_size, type, DE_SIZE_VAR_8, size); 
+        data_size += 2;
+    }
+    memcpy( seq + 3 + data_size, data, size);
+    data_size += size;
+    net_store_16(seq, 1, data_size);
 }
 
 void de_add_uuid128(uint8_t * seq, uint8_t * uuid){
