@@ -39,11 +39,14 @@
  *
  */
 
+
 #include <btstack/run_loop.h>
 #include <btstack/linked_list.h>
 
 #include "run_loop_private.h"
 #include "debug.h"
+
+#include <stddef.h> // NULL
 
 // #define HAVE_TIME
 
