@@ -231,7 +231,7 @@ OPCODE(OGF_LINK_POLICY, 0x09), "H"
 };
 const hci_cmd_t hci_switch_role_command= {
 OPCODE(OGF_LINK_POLICY, 0x0b), "B1"
-// handle, role: {0=master,1=slave}
+// BD_ADDR, role: {0=master,1=slave}
 };
 const hci_cmd_t hci_read_link_policy_settings = {
 OPCODE(OGF_LINK_POLICY, 0x0c), "H"
