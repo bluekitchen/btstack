@@ -106,8 +106,7 @@ static int socket_connection_dummy_handler(connection_t *connection, uint16_t pa
 }
 
 
-int socket_connection_set_non_blocking(int fd)
-{
+int socket_connection_set_non_blocking(int fd) {
     int err;
     int flags;
     // According to the man page, F_GETFL can't error!
@@ -177,8 +176,6 @@ int socket_connection_hci_process(struct data_source *ds) {
     
     int bytes_read = read(ds->fd, &conn->buffer[conn->bytes_read], conn->bytes_to_read);
     if (bytes_read <= 0){
-        fprintf(stderr, "socket_connection_hci_process read bytes %d\n", bytes_read);
-
         // connection broken (no particular channel, no date yet)
         uint8_t event[1];
         event[0] = DAEMON_EVENT_CONNECTION_CLOSED;
@@ -192,32 +189,41 @@ int socket_connection_hci_process(struct data_source *ds) {
     }
     conn->bytes_read += bytes_read;
     conn->bytes_to_read -= bytes_read;
-
+    // hexdump( conn->buffer, conn->bytes_read);
     if (conn->bytes_to_read > 0) {
         return 0;
     }
     
-    int dispatch_err;
+    int dispatch = 0;
     switch (conn->state){
         case SOCKET_W4_HEADER:
             conn->state = SOCKET_W4_DATA;
             conn->bytes_to_read = READ_BT_16( conn->buffer, 4);
-            break;
-        case SOCKET_W4_DATA:
-            // dispatch packet !!! connection, type, channel, data, size
-            dispatch_err = (*socket_connection_packet_callback)(conn, READ_BT_16( conn->buffer, 0), READ_BT_16( conn->buffer, 2),
-                                    &conn->buffer[sizeof(packet_header_t)], READ_BT_16( conn->buffer, 4));
-            
-            // reset state machine
-            socket_connection_init_statemachine(conn);
-
-            // "park" if dispatch failed
-            if (dispatch_err) {
-                log_dbg("socket_connection_hci_process dispatch failed -> park connection\n");
-                run_loop_remove_data_source(ds);
-                linked_list_add_tail(&parked, (linked_item_t *) ds);
+            if (conn->bytes_to_read == 0){
+                dispatch = 1;
             }
             break;
+        case SOCKET_W4_DATA:
+            dispatch = 1;
+            break;
+        default:
+            break;
+    }
+    
+    if (dispatch){
+        // dispatch packet !!! connection, type, channel, data, size
+        int dispatch_err = (*socket_connection_packet_callback)(conn, READ_BT_16( conn->buffer, 0), READ_BT_16( conn->buffer, 2),
+                                                            &conn->buffer[sizeof(packet_header_t)], READ_BT_16( conn->buffer, 4));
+        
+        // reset state machine
+        socket_connection_init_statemachine(conn);
+        
+        // "park" if dispatch failed
+        if (dispatch_err) {
+            log_dbg("socket_connection_hci_process dispatch failed -> park connection\n");
+            run_loop_remove_data_source(ds);
+            linked_list_add_tail(&parked, (linked_item_t *) ds);
+        }
     }
 	return 0;
 }
@@ -261,7 +267,7 @@ static int socket_connection_accept(struct data_source *socket_ds) {
 	}
     // non-blocking ?
 	// socket_connection_set_non_blocking(ds->fd);
-     
+        
     // no sigpipe
     socket_connection_set_no_sigpipe(fd);
     
