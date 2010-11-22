@@ -459,7 +459,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     channel->local_cid  = l2cap_next_local_cid();
     channel->remote_cid = source_cid;
     channel->local_mtu  = service->mtu;
-    channel->remote_mtu = L2CAP_MINIMAL_MTU;
+    channel->remote_mtu = L2CAP_DEFAULT_MTU;
 
     // validate mtu
     if (hci_max_acl_data_packet_length() < channel->local_mtu) {
