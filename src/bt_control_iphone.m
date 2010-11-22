@@ -399,12 +399,40 @@ static int iphone_on (void *transport_config){
     if ([systemVersion hasPrefix:@"3."]) os4x = 0;
     // NSLog(@"OS Version: %@, ox4x = %u", systemVersion, os4x);
     [pool release];
-    
-    // OS 4.0
+
+    // set correct BlueTool version, BlueToolH4 on OS 4.0+
     char * bluetool = os3xBlueTool;
     if (os4x) {
         bluetool = os4xBlueTool;
-        // basic config
+    }
+    
+    // quick test if Bluetooth UART can be opened - and try to start cleanly
+    int fd = open(hci_uart_config->device_name, O_RDWR | O_NOCTTY | O_NDELAY);
+    if (fd > 0)  {
+        // everything's fine
+        close(fd);
+    } else {
+        // no way!
+        fprintf(stderr, "bt_control.c:iphone_on(): Failed to open '%s', trying killall %s\n", hci_uart_config->device_name, bluetool);
+        sprintf(buffer, "killall %s", bluetool);
+        system(buffer);
+        sleep(3); 
+        
+        // try again
+        fd = open(hci_uart_config->device_name, O_RDWR | O_NOCTTY | O_NDELAY);
+        if (fd > 0){
+            close(fd);
+        } else {
+            fprintf(stderr, "bt_control.c:iphone_on(): Failed to open '%s' again, trying killall BTServer and killall %s\n", hci_uart_config->device_name, bluetool);
+            system("killall BTServer");
+            sprintf(buffer, "killall %s", bluetool);
+            system(buffer);
+            sleep(3); 
+        }
+    }
+    
+    // basic config on 4.0+
+    if (os4x) {
         sprintf(buffer, "%s -F boot", bluetool);
         system(buffer);
         sprintf(buffer, "%s -F init", bluetool);
