@@ -484,7 +484,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			
 		case kW4InquiryStop:
 			if (packet[0] == HCI_EVENT_INQUIRY_COMPLETE
-			||	packet[0] == HCI_EVENT_COMMAND_COMPLETE && COMMAND_COMPLETE_EVENT(packet, hci_inquiry_cancel)) {
+			||	COMMAND_COMPLETE_EVENT(packet, hci_inquiry_cancel)) {
 				discoveryState = kInactive;
 				[self sendDiscoveryStoppedEvent];
 			}
@@ -492,7 +492,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			
 		case kW4RemoteNameBeforeStop:
 			if (packet[0] == HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
-			||  packet[0] == HCI_EVENT_COMMAND_COMPLETE && COMMAND_COMPLETE_EVENT(packet, hci_remote_name_request_cancel)){
+			||  COMMAND_COMPLETE_EVENT(packet, hci_remote_name_request_cancel)){
 				discoveryState = kInactive;
 				[self sendDiscoveryStoppedEvent];
 			}
