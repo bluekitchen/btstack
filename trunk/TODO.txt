@@ -2,22 +2,27 @@
 
 2009-11-08: Release 0.1
 2010-06-20: Release 0.2 - SDP + iOS 4 support
-
-RELEASE NOTES:
-- fixed bug that prevented automatic disable of Apple Bluetooth stack
-- added timeouts to cocoa run loop (thanks todd)
+2010-11-2x: Release 0.2 - revsion 973 for WeBe++
+- fix regression bug in 0.2-899 that prevented disabling of Apple Bluetooth stack, less crashes
+- Startup: send kill signal to BlueTool and BTServer, if necessary
+- Connection establishment: don't close baseband during authentication,
+- Remote Device DB: automatic link key handling in BTdaemon, provide cached remote names during inquiry
+- SDP: use 1000 bytes MTU, fix partial responses, fix an incompatibility with Windows native statck
+- Cocoa run_loop: added timeouts, include in libBTstack.dylib build
    
 NEXT:
+- figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect, when phone gets locked
 - limit size of /tmp/hci_dump.pklg
-  - e.g. delete hci_dump.old.pklg, mv hci_dump.pkg->hci_dump.old.pklg
+  - e.g. rm hci_dump.old.pklg, mv hci_dump.pkg->hci_dump.old.pklg
 - have a look at External Accessory interface by Apple - it's quite similar
 - move RFCOMM code into BTdaemon
 - HCI CMD packet is limited to 1024 bytes payload. SDP records could be larger than that. Options:
   - provide a way to transfer SDP records in segments
   - ignore HCI command lenght on socket connection and directly stream data without buffer
-- figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect, when phone gets locked
 - L2CAP 
   - segmentation
+- Link Key storage in Bluetooth module
+  - store link keys in Bluetooth module. requires algorithm to evict old one but unclear how to implement that
 - extend SpringBoard feedback
   - show alerts/messages using SpringBoardAcccess, e.g. Bluetooth disconnected by remote device
   - add code to notify about remote disconnets
@@ -27,17 +32,16 @@ NEXT:
   - h4/h5: UART path
   - usb: product/vendor ID
   - logging mode: text, bluez, packetlogger
-- implement rest of L2CAP state machine
-  - error handling
-  - error notification
 - add configure option for uart flowcontrol
 - create <btstack/errors.h>
 - Bluetooth low-power modes useful
 
 == USB Support ==
 - Store array of data sources to be able to remove them on usb_close
+- create little "reserve Bluetooth module on Mac OS X" tool
 
 == Objective-C Interface ==
+- have a look at External Accessory interface by Apple - it's quite similar
 - move connection methods to BTdevice (get more object oriented)
   - initWithAddress:(bd_addr_t *)addr
   - setters private
