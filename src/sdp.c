@@ -76,7 +76,7 @@ static uint8_t sdp_response_buffer[SDP_RESPONSE_BUFFER_SIZE];
 
 void sdp_init(){
     // register with l2cap psm sevices
-    l2cap_register_service_internal(NULL, sdp_packet_handler, PSM_SDP, 250);
+    l2cap_register_service_internal(NULL, sdp_packet_handler, PSM_SDP, 1000);
 }
 
 uint32_t sdp_get_service_record_handle(uint8_t * record){
@@ -114,8 +114,8 @@ uint32_t sdp_create_service_record_handle(){
 uint32_t sdp_register_service_internal(void *connection, uint8_t * record){
 
     // dump for now
-    printf("Register service record\n");
-    de_dump_data_element(record);
+    // printf("Register service record\n");
+    // de_dump_data_element(record);
     
     // get user record handle
     uint32_t record_handle = sdp_get_service_record_handle(record);
@@ -163,8 +163,8 @@ uint32_t sdp_register_service_internal(void *connection, uint8_t * record){
     sdp_append_attributes_in_attributeIDList(record, (uint8_t *) removeServiceRecordHandleAttributeIDList, 0, recordSize, newRecord);
     
     // dump for now
-    de_dump_data_element(newRecord);
-    printf("reserved size %u, actual size %u\n", recordSize, de_get_len(newRecord));
+    // de_dump_data_element(newRecord);
+    // printf("reserved size %u, actual size %u\n", recordSize, de_get_len(newRecord));
     
     // add to linked list
     linked_list_add(&sdp_service_records, (linked_item_t *) newRecordItem);
@@ -551,7 +551,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 	}
 }
 
-#if 1
+#if 0
 static uint8_t record[100];
 static uint8_t request[100];
 static uint8_t response[100];
