@@ -3,7 +3,7 @@ Name: SpringBoardAccess
 Description: Controls status bar icons from daemons
 Section: Networking
 Architecture: iphoneos-arm
-Depends: mobilesubstrate (>= 0.9.3209-1), firmware (<< 4.0) | libstatusbar
+Depends: mobilesubstrate (>= 0.9.3367-1), firmware (<< 4.0) | libstatusbar (>= 0.9.1)
 Maintainer: Matthias Ringwald <iphone@ringwald.ch>
 Author: Matthias Ringwald <iphone@ringwald.ch>
 Section: Development
