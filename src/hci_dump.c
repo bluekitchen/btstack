@@ -80,6 +80,8 @@ static int dump_format;
 static hcidump_hdr header_bluez;
 static pktlog_hdr  header_packetlogger;
 static char time_string[40];
+static int max_nr_packets = -1;
+static int nr_packets = 0;
 #endif
 
 void hci_dump_open(char *filename, hci_dump_format_t format){
@@ -88,16 +90,30 @@ void hci_dump_open(char *filename, hci_dump_format_t format){
     if (dump_format == HCI_DUMP_STDOUT) {
         dump_file = fileno(stdout);
     } else {
-        dump_file =  open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+        dump_file = open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     }
 #endif
+}
+
+void hci_dump_set_max_packets(int packets){
+    max_nr_packets = packets;
 }
 
 void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {
 #ifndef EMBEDDED
 
     if (dump_file < 0) return; // not activated yet
-    
+
+    // don't grow bigger than max_nr_packets
+    if (dump_format != HCI_DUMP_STDOUT && max_nr_packets > 0){
+        if (nr_packets >= max_nr_packets){
+            lseek(dump_file, 0, SEEK_SET);
+            ftruncate(dump_file, 0);
+            nr_packets = 0;
+        }
+        nr_packets++;
+    }
+
     // get time
     struct timeval curr_time;
     struct tm* ptm;
