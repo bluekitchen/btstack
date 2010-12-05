@@ -3,17 +3,18 @@
 2009-11-08: Release 0.1
 2010-06-20: Release 0.2 - SDP + iOS 4 support
 2010-11-2x: Release 0.2 - revsion 973 for WeBe++
-- fix regression bug in 0.2-899 that prevented disabling of Apple Bluetooth stack, less crashes
+- Fix for regression bug in 0.2-899 that prevented automatic disabling of Apple Bluetooth stack, less crashes
 - Startup: send kill signal to BlueTool and BTServer, if necessary
-- Connection establishment: don't close baseband during authentication,
+- Connection setup: don't close baseband during authentication
 - Remote Device DB: automatic link key handling in BTdaemon, provide cached remote names during inquiry
 - SDP: use 1000 bytes MTU, fix partial responses, fix an incompatibility with Windows native statck
 - Cocoa run_loop: added timeouts, include in libBTstack.dylib build
+2010-xxxx: Release 0.2 - revions xxx
+- limit size of /tmp/hci_dump.pklg to 1000 packets (max 1 MB)
+
    
 NEXT:
 - figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect, when phone gets locked
-- limit size of /tmp/hci_dump.pklg
-  - e.g. rm hci_dump.old.pklg, mv hci_dump.pkg->hci_dump.old.pklg
 - have a look at External Accessory interface by Apple - it's quite similar
 - move RFCOMM code into BTdaemon
 - HCI CMD packet is limited to 1024 bytes payload. SDP records could be larger than that. Options:

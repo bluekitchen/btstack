@@ -366,6 +366,7 @@ int main (int argc,  char * const * argv){
     
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+    hci_dump_set_max_packets(1000);
     // hci_dump_open(NULL, HCI_DUMP_STDOUT);
                   
     // init HCI
