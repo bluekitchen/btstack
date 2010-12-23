@@ -146,9 +146,9 @@ void run_loop_init(RUN_LOOP_TYPE type){
 // set timer
 void run_loop_set_timer(timer_source_t *a, int timeout_in_ms){
     gettimeofday(&a->timeout, NULL);
-    a->timeout.tv_sec  += timeout_in_ms / 1000;
+    a->timeout.tv_sec  +=  timeout_in_ms / 1000;
     a->timeout.tv_usec += (timeout_in_ms % 1000) * 1000;
-    if (a->timeout.tv_usec > 1000000) {
+    if (a->timeout.tv_usec  > 1000000) {
         a->timeout.tv_usec -= 1000000;
         a->timeout.tv_sec++;
     }
@@ -187,5 +187,4 @@ int run_loop_timer_compare(timer_source_t *a, timer_source_t *b){
     if (!b) return 1;
     return run_loop_timeval_compare(&a->timeout, &b->timeout);
 }
-
 
