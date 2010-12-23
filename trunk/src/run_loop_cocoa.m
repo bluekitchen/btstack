@@ -110,10 +110,15 @@ void  cocoa_add_timer(timer_source_t * ts)
     // hack: store CFRunLoopTimerRef in next pointer of linked_item
     ts->item.next = (void *)timerRef;
     
+    // printf("cocoa_add_timer ref %x\n", (int) timerRef);
+    
     CFRunLoopAddTimer(CFRunLoopGetCurrent(), timerRef, kCFRunLoopCommonModes);
 }
 
 int  cocoa_remove_timer(timer_source_t * ts){
+
+    // printf("cocoa_remove_timer ref %x\n", (int) ts->item.next);
+
     CFRunLoopRemoveTimer(CFRunLoopGetCurrent(), (CFRunLoopTimerRef) ts->item.next, kCFRunLoopCommonModes);
 	return 0;
 }
@@ -127,9 +132,7 @@ void cocoa_execute()
 }
 
 void cocoa_dump_timer(){
-	// not needed yet
     fprintf(stderr, "WARNING: run_loop_dump_timer not implemented yet!");
-    // warning never the less
 	return;
 }
 
