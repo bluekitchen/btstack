@@ -77,6 +77,7 @@ static hci_transport_t * transport;
 static hci_uart_config_t config;
 
 static timer_source_t timeout;
+static uint8_t timeout_active = 0;
 
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
     printf("Bluetooth status: %u\n", state);
@@ -208,11 +209,13 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                     break;
                 case DAEMON_NR_CONNECTIONS_CHANGED:
                     printf("Nr Connections changed, new %u\n", data[1]);
-                    if (data[1]) {
+                    if (timeout_active) {
                         run_loop_remove_timer(&timeout);
-                    } else {
+                    }
+                    if (!data[1]) {
                         run_loop_set_timer(&timeout, DAEMON_NO_CONNECTION_TIMEOUT);
                         run_loop_add_timer(&timeout);
+                        timeout_active = 1;
                     }
                 default:
                     break;
@@ -333,6 +336,24 @@ int main (int argc,  char * const * argv){
         }
     }
     
+    // make stderr/stdout unbuffered
+    setbuf(stderr, NULL);
+    setbuf(stdout, NULL);
+    printf("BTdaemon started - stdout\n");
+    fprintf(stderr,"BTdaemon started - stderr\n");
+
+    // handle CTRL-c
+    signal(SIGINT, daemon_sigint_handler);
+    // handle SIGTERM - suggested for launchd
+    signal(SIGTERM, daemon_sigint_handler);
+    // handle SIGPIPE
+    struct sigaction act;
+    act.sa_handler = SIG_IGN;
+    sigemptyset (&act.sa_mask);
+    act.sa_flags = 0;
+    sigaction (SIGPIPE, &act, NULL);
+    
+    
     bt_control_t * control = NULL;
     remote_device_db_t * remote_device_db = NULL;
     
@@ -361,6 +382,7 @@ int main (int argc,  char * const * argv){
 #endif
     
     run_loop_init(RUN_LOOP_POSIX);
+    // run_loop_init(RUN_LOOP_COCOA);
     
     // @TODO: allow configuration per HCI CMD
     
@@ -394,23 +416,6 @@ int main (int argc,  char * const * argv){
     }
 #endif
     socket_connection_register_packet_callback(daemon_client_handler);
-
-    // handle CTRL-c
-    signal(SIGINT, daemon_sigint_handler);
-    // handle SIGTERM - suggested for launchd
-    signal(SIGTERM, daemon_sigint_handler);
-    // handle SIGPIPE
-    struct sigaction act;
-    act.sa_handler = SIG_IGN;
-    sigemptyset (&act.sa_mask);
-    act.sa_flags = 0;
-    sigaction (SIGPIPE, &act, NULL);
-
-    // make stderr unbuffered
-    setbuf(stderr, NULL);
-    setbuf(stdout, NULL);
-    printf("BTdaemon started - stdout\n");
-    fprintf(stderr,"BTdaemon started - stderr\n");
     
     // go!
     run_loop_execute();
