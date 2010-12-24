@@ -73,6 +73,129 @@
 
 #define DAEMON_NO_CONNECTION_TIMEOUT 20000
 
+#define HANDLE_POWER_NOTIFICATIONS
+
+#ifdef HANDLE_POWER_NOTIFICATIONS
+
+#include <CoreFoundation/CoreFoundation.h>
+
+// minimal IOKit
+#include <Availability.h>
+#if __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_2_0
+#include <mach/mach.h>
+#define IOKIT
+#include <device/device_types.h>
+
+// costants
+#define sys_iokit                          err_system(0x38)
+#define sub_iokit_common                   err_sub(0)
+
+#define iokit_common_msg(message)          (UInt32)(sys_iokit|sub_iokit_common|message)
+
+#define kIOMessageCanDevicePowerOff        iokit_common_msg(0x200)
+#define kIOMessageDeviceWillPowerOff       iokit_common_msg(0x210)
+#define kIOMessageDeviceWillNotPowerOff    iokit_common_msg(0x220)
+#define kIOMessageDeviceHasPoweredOn       iokit_common_msg(0x230)
+#define kIOMessageCanSystemPowerOff        iokit_common_msg(0x240)
+#define kIOMessageSystemWillPowerOff       iokit_common_msg(0x250)
+#define kIOMessageSystemWillNotPowerOff    iokit_common_msg(0x260)
+#define kIOMessageCanSystemSleep           iokit_common_msg(0x270)
+#define kIOMessageSystemWillSleep          iokit_common_msg(0x280)
+#define kIOMessageSystemWillNotSleep       iokit_common_msg(0x290)
+#define kIOMessageSystemHasPoweredOn       iokit_common_msg(0x300)
+#define kIOMessageSystemWillRestart        iokit_common_msg(0x310)
+#define kIOMessageSystemWillPowerOn        iokit_common_msg(0x320)
+
+// types
+typedef io_object_t io_connect_t;
+typedef io_object_t	io_service_t;
+typedef	kern_return_t		IOReturn;
+
+typedef struct IONotificationPort * IONotificationPortRef;
+typedef void
+(*IOServiceInterestCallback)(
+							 void *			refcon,
+							 io_service_t	service,
+							 uint32_t		messageType,
+							 void *			messageArgument );
+
+
+io_connect_t IORegisterForSystemPower (void * refcon,
+									   IONotificationPortRef * thePortRef,
+									   IOServiceInterestCallback callback,
+									   io_object_t * notifier );
+CFRunLoopSourceRef IONotificationPortGetRunLoopSource(IONotificationPortRef	notify );
+IOReturn IOAllowPowerChange ( io_connect_t kernelPort, long notificationID );
+IOReturn IOCancelPowerChange ( io_connect_t kernelPort, long notificationID );
+
+io_connect_t root_port;
+io_object_t notifier;
+
+#endif
+
+io_connect_t  root_port; // a reference to the Root Power Domain IOService
+
+void
+MySleepCallBack( void * refCon, io_service_t service, natural_t messageType, void * messageArgument )
+{
+	static int cancelCounter = 3;
+
+    printf( "messageType %08lx, arg %08lx, counter %u\n",
+		   (long unsigned int)messageType,
+		   (long unsigned int)messageArgument, cancelCounter );
+	
+	
+    switch ( messageType )
+    {
+			
+        case kIOMessageCanSystemSleep:
+            /* Idle sleep is about to kick in. This message will not be sent for forced sleep.
+			 Applications have a chance to prevent sleep by calling IOCancelPowerChange.
+			 Most applications should not prevent idle sleep.
+			 
+			 Power Management waits up to 30 seconds for you to either allow or deny idle sleep.
+			 If you don't acknowledge this power change by calling either IOAllowPowerChange
+			 or IOCancelPowerChange, the system will wait 30 seconds then go to sleep.
+			 */
+			
+            //Uncomment to cancel idle sleep
+            if (cancelCounter) {
+				cancelCounter--;
+				IOCancelPowerChange( root_port, (long)messageArgument );
+            } else {
+				// we will allow idle sleep
+				IOAllowPowerChange( root_port, (long)messageArgument );
+            }
+			break;
+			
+        case kIOMessageSystemWillSleep:
+            /* The system WILL go to sleep. If you do not call IOAllowPowerChange or
+			 IOCancelPowerChange to acknowledge this message, sleep will be
+			 delayed by 30 seconds.
+			 
+			 NOTE: If you call IOCancelPowerChange to deny sleep it returns kIOReturnSuccess,
+			 however the system WILL still go to sleep. 
+			 */
+			
+            IOAllowPowerChange( root_port, (long)messageArgument );
+            break;
+			
+        case kIOMessageSystemWillPowerOn:
+            //System has started the wake up process...
+            break;
+			
+        case kIOMessageSystemHasPoweredOn:
+            //System has finished waking up...
+			break;
+			
+        default:
+            break;
+			
+    }
+}
+#endif
+
+
 static hci_transport_t * transport;
 static hci_uart_config_t config;
 
@@ -85,6 +208,7 @@ static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
 static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth_status_handler;
 
 static void daemon_no_connections_timeout(){
+#if 1  
 #ifdef USE_LAUNCHD
     printf("No connection for %u seconds -> POWER OFF and quit\n", DAEMON_NO_CONNECTION_TIMEOUT/1000);
     hci_power_control( HCI_POWER_OFF);
@@ -93,6 +217,7 @@ static void daemon_no_connections_timeout(){
 #else
     printf("No connection for %u seconds -> POWER OFF\n", DAEMON_NO_CONNECTION_TIMEOUT/1000);
     hci_power_control( HCI_POWER_OFF);
+#endif
 #endif
 }
 
@@ -211,6 +336,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                     printf("Nr Connections changed, new %u\n", data[1]);
                     if (timeout_active) {
                         run_loop_remove_timer(&timeout);
+                        timeout_active = 0;
                     }
                     if (!data[1]) {
                         run_loop_set_timer(&timeout, DAEMON_NO_CONNECTION_TIMEOUT);
@@ -416,6 +542,25 @@ int main (int argc,  char * const * argv){
     }
 #endif
     socket_connection_register_packet_callback(daemon_client_handler);
+    
+#ifdef HANDLE_POWER_NOTIFICATIONS
+    IONotificationPortRef  notifyPortRef; // notification port allocated by IORegisterForSystemPower
+    io_object_t            notifierObject; // notifier object, used to deregister later
+    void*                  refCon = NULL; // this parameter is passed to the callback
+	
+    // register to receive system sleep notifications
+	
+    root_port = IORegisterForSystemPower( refCon, &notifyPortRef, MySleepCallBack, &notifierObject );
+    if ( root_port == 0 )
+    {
+        printf("IORegisterForSystemPower failed\n");
+        return 1;
+    }
+	
+    // add the notification port to the application runloop
+    CFRunLoopAddSource(CFRunLoopGetCurrent(),
+					   IONotificationPortGetRunLoopSource(notifyPortRef), kCFRunLoopCommonModes ); 
+#endif
     
     // go!
     run_loop_execute();
