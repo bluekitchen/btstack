@@ -101,14 +101,14 @@ int  cocoa_remove_data_source(data_source_t *dataSource){
 
 void  cocoa_add_timer(timer_source_t * ts)
 {
+    // printf("cocoa_add_timer %x\n", (int) ts);
     CFTimeInterval fireDate = ((double)ts->timeout.tv_sec) + (((double)ts->timeout.tv_usec)/1000000.0);
-    CFRunLoopTimerRef timerRef = CFRunLoopTimerCreate (kCFAllocatorDefault,fireDate,0,0,0,theCFRunLoopTimerCallBack,(void*)ts);
-    
+    CFRunLoopTimerContext timerContext = {0, ts, NULL, NULL, NULL};
+    CFRunLoopTimerRef timerRef = CFRunLoopTimerCreate (kCFAllocatorDefault,fireDate,0,0,0,theCFRunLoopTimerCallBack,&timerContext);
+
     // hack: store CFRunLoopTimerRef in next pointer of linked_item
     ts->item.next = (void *)timerRef;
-    
-    // printf("cocoa_add_timer ref %x\n", (int) timerRef);
-    
+        
     CFRunLoopAddTimer(CFRunLoopGetCurrent(), timerRef, kCFRunLoopCommonModes);
 }
 
