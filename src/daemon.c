@@ -73,7 +73,7 @@
 
 #define DAEMON_NO_CONNECTION_TIMEOUT 20000
 
-#define HANDLE_POWER_NOTIFICATIONS
+// #define HANDLE_POWER_NOTIFICATIONS
 
 #ifdef HANDLE_POWER_NOTIFICATIONS
 
@@ -82,6 +82,11 @@
 // minimal IOKit
 #include <Availability.h>
 #if __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_2_0
+// compile issue fix with 4.2 headers
+#undef NSEC_PER_USEC
+#undef USEC_PER_SEC
+#undef NSEC_PER_SEC
+// end of fix
 #include <mach/mach.h>
 #define IOKIT
 #include <device/device_types.h>
@@ -130,8 +135,6 @@ IOReturn IOCancelPowerChange ( io_connect_t kernelPort, long notificationID );
 
 io_connect_t root_port;
 io_object_t notifier;
-
-#endif
 
 io_connect_t  root_port; // a reference to the Root Power Domain IOService
 
@@ -193,6 +196,7 @@ MySleepCallBack( void * refCon, io_service_t service, natural_t messageType, voi
 			
     }
 }
+#endif
 #endif
 
 
