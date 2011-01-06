@@ -305,6 +305,16 @@ static void acl_handler(uint8_t *packet, int size){
     hci_run();
 }
 
+static hci_shutdown_connection(hci_connection_t *conn){
+    log_dbg("Connection closed: handle %u, ", conn->con_handle);
+    print_bd_addr( conn->address );
+    log_dbg("\n");
+    run_loop_remove_timer(&conn->timeout);
+    linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
+    free( conn );
+    hci_emit_nr_connections_changed();
+}
+
 // avoid huge local variables
 static device_name_t device_name;
 static void event_handler(uint8_t *packet, int size){
@@ -452,13 +462,7 @@ static void event_handler(uint8_t *packet, int size){
                 handle = READ_BT_16(packet, 3);
                 hci_connection_t * conn = connection_for_handle(handle);
                 if (conn) {
-                    log_dbg("Connection closed: handle %u, ", conn->con_handle);
-                    print_bd_addr( conn->address );
-                    log_dbg("\n");
-                    run_loop_remove_timer(&conn->timeout);
-                    linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
-                    free( conn );
-                    hci_emit_nr_connections_changed();
+                    hci_shutdown_connection(conn);
                 }
             }
             break;
@@ -543,6 +547,18 @@ void hci_close(){
     }
 }
 
+static void hci_power_control_off(){
+    // close all open connections
+    
+    // close low-level device
+    hci_stack.hci_transport->close(hci_stack.config);
+    
+    // power off
+    if (hci_stack.control && hci_stack.control->off){
+        (*hci_stack.control->off)(hci_stack.config);
+    }
+}
+
 int hci_power_control(HCI_POWER_MODE power_mode){
     if (power_mode == HCI_POWER_ON && hci_stack.state == HCI_STATE_OFF) {
         
@@ -575,16 +591,9 @@ int hci_power_control(HCI_POWER_MODE power_mode){
         
     } else if (power_mode == HCI_POWER_OFF && hci_stack.state == HCI_STATE_WORKING){
         
-        // close low-level device
-        hci_stack.hci_transport->close(hci_stack.config);
-
-        // power off
-        if (hci_stack.control && hci_stack.control->off){
-            (*hci_stack.control->off)(hci_stack.config);
-        }
+        // see hci_run
+        hci_stack.state = HCI_STATE_HALTING;
         
-        // we're off now
-        hci_stack.state = HCI_STATE_OFF;
     }
     
     // create internal event
@@ -598,14 +607,17 @@ int hci_power_control(HCI_POWER_MODE power_mode){
 
 void hci_run(){
     
+    if (hci_stack.num_cmd_packets == 0) {
+        // cannot send command yet
+        return;
+    }
+
+    hci_connection_t * connection;
+    
     switch (hci_stack.state){
         case HCI_STATE_INITIALIZING:
             if (hci_stack.substate % 2) {
                 // odd: waiting for command completion
-                return;
-            }
-            if (hci_stack.num_cmd_packets == 0) {
-                // cannot send command yet
                 return;
             }
             switch (hci_stack.substate >> 1){
@@ -656,6 +668,30 @@ void hci_run(){
             }
             hci_stack.substate++;
             break;
+            
+        case HCI_STATE_HALTING:
+
+            // close all open connections
+            connection =  (hci_connection_t *) hci_stack.connections;
+            if (connection){
+                // send disconnect
+                bt_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
+                
+                // send disconnected event right away - causes higher layer connections to get closed, too.
+                hci_shutdown_connection(connection);
+
+                // remove from table
+                hci_stack.connections = connection->item.next;
+                return;
+            }
+            
+            hci_power_control_off();
+            
+            // we're off now
+            hci_stack.state = HCI_STATE_OFF;
+            hci_emit_state();
+            break;
+            
         default:
             break;
     }
