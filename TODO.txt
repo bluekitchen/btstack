@@ -26,6 +26,7 @@ NEXT:
   - decide on configure flags
   - clean up components
 
+- store HCI_POWER_ON/HCI_POWER_OFF per client, and only turn off when all are turned off
 - decide what to do with the CocoaTouch code.
   - do nothing
   - add it to libBTstack.dylib

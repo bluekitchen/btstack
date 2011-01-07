@@ -611,7 +611,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                     // do nothing
                     break;  
                 case HCI_POWER_SLEEP:
-                    // TODO ...
+                    // do nothing (with SLEEP == OFF)
                     break;
             }
             break;
@@ -627,7 +627,9 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                     hci_stack.state = HCI_STATE_OFF;
                     break;  
                 case HCI_POWER_SLEEP:
-                    // TODO ...
+                    // no connections yet, just turn it off
+                    hci_power_control_off();
+                    hci_stack.state = HCI_STATE_SLEEPING;
                     break;
             }
             break;
@@ -642,7 +644,8 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                     hci_stack.state = HCI_STATE_HALTING;
                     break;  
                 case HCI_POWER_SLEEP:
-                    // TODO ...
+                    // see hci_run
+                    hci_stack.state = HCI_STATE_FALLING_ASLEEP;
                     break;
             }
             break;
@@ -658,7 +661,8 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                     // do nothing
                     break;  
                 case HCI_POWER_SLEEP:
-                    // TODO ...
+                    // see hci_run
+                    hci_stack.state = HCI_STATE_FALLING_ASLEEP;
                     break;
             }
             break;
@@ -666,13 +670,17 @@ int hci_power_control(HCI_POWER_MODE power_mode){
         case HCI_STATE_FALLING_ASLEEP:
             switch (power_mode){
                 case HCI_POWER_ON:
-                    // TODO ...
+                    // set up state machine
+                    hci_stack.num_cmd_packets = 1; // assume that one cmd can be sent
+                    hci_stack.state = HCI_STATE_INITIALIZING;
+                    hci_stack.substate = 0;
                     break;
                 case HCI_POWER_OFF:
-                    // TODO ...
+                    // see hci_run
+                    hci_stack.state = HCI_STATE_HALTING;
                     break;  
                 case HCI_POWER_SLEEP:
-                    // TODO ...
+                    // do nothing
                     break;
             }
             break;
@@ -680,13 +688,16 @@ int hci_power_control(HCI_POWER_MODE power_mode){
         case HCI_STATE_SLEEPING:
             switch (power_mode){
                 case HCI_POWER_ON:
-                    // TODO ...
+                    // set up state machine
+                    hci_stack.num_cmd_packets = 1; // assume that one cmd can be sent
+                    hci_stack.state = HCI_STATE_INITIALIZING;
+                    hci_stack.substate = 0;
                     break;
                 case HCI_POWER_OFF:
-                    // TODO ...
+                    hci_stack.state = HCI_STATE_OFF;
                     break;  
                 case HCI_POWER_SLEEP:
-                    // TODO ...
+                    // do nothing
                     break;
             }
             break;
