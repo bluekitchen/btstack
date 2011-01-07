@@ -101,8 +101,10 @@ int  cocoa_remove_data_source(data_source_t *dataSource){
 
 void  cocoa_add_timer(timer_source_t * ts)
 {
-    // printf("cocoa_add_timer %x\n", (int) ts);
-    CFTimeInterval fireDate = ((double)ts->timeout.tv_sec) + (((double)ts->timeout.tv_usec)/1000000.0);
+    // note: ts uses unix time: seconds since Jan 1st 1970, CF uses Jan 1st 2001 as reference date
+    // printf("kCFAbsoluteTimeIntervalSince1970 = %f\n", kCFAbsoluteTimeIntervalSince1970);
+    CFAbsoluteTime fireDate = ((double)ts->timeout.tv_sec) + (((double)ts->timeout.tv_usec)/1000000.0) - kCFAbsoluteTimeIntervalSince1970; // unix time - since Jan 1st 1970
+    // printf("cocoa_add_timer %x, now %f, then %f\n", (int) ts, CFAbsoluteTimeGetCurrent(),fireDate);
     CFRunLoopTimerContext timerContext = {0, ts, NULL, NULL, NULL};
     CFRunLoopTimerRef timerRef = CFRunLoopTimerCreate (kCFAllocatorDefault,fireDate,0,0,0,theCFRunLoopTimerCallBack,&timerContext);
 
@@ -113,9 +115,7 @@ void  cocoa_add_timer(timer_source_t * ts)
 }
 
 int  cocoa_remove_timer(timer_source_t * ts){
-
     // printf("cocoa_remove_timer ref %x\n", (int) ts->item.next);
-
     CFRunLoopRemoveTimer(CFRunLoopGetCurrent(), (CFRunLoopTimerRef) ts->item.next, kCFRunLoopCommonModes);
 	return 0;
 }
