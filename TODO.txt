@@ -17,8 +17,11 @@ NEXT:
 - power handling
   - DONE: figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect, when phone gets locked and wakes up 
   - DONE: introduce HCI states SLEEPING and FALLING_ASLEEP
-  - DONE: introduce HCI power mode command SLEEP
-  - stop all baseband connections on HCI_POWER_OFF and HCI_POWER_SLEEP
+  - DONE: introduce HCI power mode command SLEEPING
+  - DONE: stop all baseband connections on HCI_POWER_OFF
+  - DONE: handle HCI_POWER_ON and HCI_POWER_OFF in existing 4 states
+  - stop all baseband connections on HCI_POWER_SLEEP
+  - handle power-off and power-on for states SLEEPING and FALLING_ASLEEP
   - for now, treat sleep/wake the same as power off/on
   - decide on configure flags
   - clean up components

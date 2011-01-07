@@ -547,8 +547,42 @@ void hci_close(){
     }
 }
 
+// State-Module-Driver overview
+// state                    module  low-level 
+// HCI_STATE_OFF             off      close
+// HCI_STATE_INITIALIZING,   on       open
+// HCI_STATE_WORKING,        on       open
+// HCI_STATE_HALTING,        on       open
+// HCI_STATE_SLEEPING,       ??        ??
+// HCI_STATE_FALLING_ASLEEP  ??        ??
+
+static int hci_power_control_on(){
+    
+    // power on
+    int err = 0;
+    if (hci_stack.control && hci_stack.control->on){
+        err = (*hci_stack.control->on)(hci_stack.config);
+    }
+    if (err){
+        log_err( "POWER_ON failed\n");
+        hci_emit_hci_open_failed();
+        return err;
+    }
+    
+    // open low-level device
+    err = hci_stack.hci_transport->open(hci_stack.config);
+    if (err){
+        log_err( "HCI_INIT failed, turning Bluetooth off again\n");
+        if (hci_stack.control && hci_stack.control->off){
+            (*hci_stack.control->off)(hci_stack.config);
+        }
+        hci_emit_hci_open_failed();
+        return err;
+    }
+    return 0;
+}
+
 static void hci_power_control_off(){
-    // close all open connections
     
     // close low-level device
     hci_stack.hci_transport->close(hci_stack.config);
@@ -560,42 +594,104 @@ static void hci_power_control_off(){
 }
 
 int hci_power_control(HCI_POWER_MODE power_mode){
-    if (power_mode == HCI_POWER_ON && hci_stack.state == HCI_STATE_OFF) {
-        
-        // power on
-        int err = 0;
-        if (hci_stack.control && hci_stack.control->on){
-            err = (*hci_stack.control->on)(hci_stack.config);
-        }
-        if (err){
-            log_err( "POWER_ON failed\n");
-            hci_emit_hci_open_failed();
-            return err;
-        }
-        
-        // open low-level device
-        err = hci_stack.hci_transport->open(hci_stack.config);
-        if (err){
-            log_err( "HCI_INIT failed, turning Bluetooth off again\n");
-            if (hci_stack.control && hci_stack.control->off){
-                (*hci_stack.control->off)(hci_stack.config);
+    int err = 0;
+    switch (hci_stack.state){
+            
+        case HCI_STATE_OFF:
+            switch (power_mode){
+                case HCI_POWER_ON:
+                    err = hci_power_control_on();
+                    if (err) return err;
+                    // set up state machine
+                    hci_stack.num_cmd_packets = 1; // assume that one cmd can be sent
+                    hci_stack.state = HCI_STATE_INITIALIZING;
+                    hci_stack.substate = 0;
+                    break;
+                case HCI_POWER_OFF:
+                    // do nothing
+                    break;  
+                case HCI_POWER_SLEEP:
+                    // TODO ...
+                    break;
             }
-            hci_emit_hci_open_failed();
-            return err;
-        }
-        
-        // set up state machine
-        hci_stack.num_cmd_packets = 1; // assume that one cmd can be sent
-        hci_stack.state = HCI_STATE_INITIALIZING;
-        hci_stack.substate = 0;
-        
-    } else if (power_mode == HCI_POWER_OFF && hci_stack.state == HCI_STATE_WORKING){
-        
-        // see hci_run
-        hci_stack.state = HCI_STATE_HALTING;
-        
+            break;
+            
+        case HCI_STATE_INITIALIZING:
+            switch (power_mode){
+                case HCI_POWER_ON:
+                    // do nothing
+                    break;
+                case HCI_POWER_OFF:
+                    // no connections yet, just turn it off
+                    hci_power_control_off();
+                    hci_stack.state = HCI_STATE_OFF;
+                    break;  
+                case HCI_POWER_SLEEP:
+                    // TODO ...
+                    break;
+            }
+            break;
+            
+        case HCI_STATE_WORKING:
+            switch (power_mode){
+                case HCI_POWER_ON:
+                    // do nothing
+                    break;
+                case HCI_POWER_OFF:
+                    // see hci_run
+                    hci_stack.state = HCI_STATE_HALTING;
+                    break;  
+                case HCI_POWER_SLEEP:
+                    // TODO ...
+                    break;
+            }
+            break;
+            
+        case HCI_STATE_HALTING:
+            switch (power_mode){
+                case HCI_POWER_ON:
+                    // set up state machine
+                    hci_stack.state = HCI_STATE_INITIALIZING;
+                    hci_stack.substate = 0;
+                    break;
+                case HCI_POWER_OFF:
+                    // do nothing
+                    break;  
+                case HCI_POWER_SLEEP:
+                    // TODO ...
+                    break;
+            }
+            break;
+            
+        case HCI_STATE_FALLING_ASLEEP:
+            switch (power_mode){
+                case HCI_POWER_ON:
+                    // TODO ...
+                    break;
+                case HCI_POWER_OFF:
+                    // TODO ...
+                    break;  
+                case HCI_POWER_SLEEP:
+                    // TODO ...
+                    break;
+            }
+            break;
+            
+        case HCI_STATE_SLEEPING:
+            switch (power_mode){
+                case HCI_POWER_ON:
+                    // TODO ...
+                    break;
+                case HCI_POWER_OFF:
+                    // TODO ...
+                    break;  
+                case HCI_POWER_SLEEP:
+                    // TODO ...
+                    break;
+            }
+            break;
     }
-    
+
     // create internal event
 	hci_emit_state();
     
