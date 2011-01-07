@@ -553,8 +553,8 @@ void hci_close(){
 // HCI_STATE_INITIALIZING,   on       open
 // HCI_STATE_WORKING,        on       open
 // HCI_STATE_HALTING,        on       open
-// HCI_STATE_SLEEPING,       ??        ??
-// HCI_STATE_FALLING_ASLEEP  ??        ??
+// HCI_STATE_SLEEPING,    off/sleep   close
+// HCI_STATE_FALLING_ASLEEP  on       open
 
 static int hci_power_control_on(){
     
@@ -594,6 +594,9 @@ static void hci_power_control_off(){
 }
 
 int hci_power_control(HCI_POWER_MODE power_mode){
+    
+    log_dbg("hci_power_control: %u\n", power_mode);
+    
     int err = 0;
     switch (hci_stack.state){
             
