@@ -69,9 +69,7 @@ static void db_open(){
     [pool release];
 }
 
-static void db_close(){ 
-	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-
+static void db_synchronize(){
     log_dbg("stored prefs for %u devices\n", [remote_devices count]);
     
     // 3 different ways
@@ -85,6 +83,12 @@ static void db_close(){
 	// NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     // [defaults setPersistentDomain:remote_devices forName:BTdaemonID];
     // [defaults synchronize];
+}
+
+static void db_close(){ 
+	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+
+    db_synchronize();
     
     [remote_devices release];
     remote_devices = nil;
@@ -105,12 +109,15 @@ static void set_value(bd_addr_t *bd_addr, NSString *key, id value){
 		[remote_devices setObject:deviceDict forKey:devAddress];
 	}
     [deviceDict setObject:value forKey:key];
+    db_synchronize();
 }
 
 static void delete_value(bd_addr_t *bd_addr, NSString *key){
 	NSString *devAddress = stringForAddress(bd_addr);
 	NSMutableDictionary * deviceDict = [remote_devices objectForKey:devAddress];
 	[deviceDict removeObjectForKey:key];
+    db_synchronize();
+
 }
 
 static id get_value(bd_addr_t *bd_addr, NSString *key){
