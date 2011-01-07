@@ -20,9 +20,8 @@ NEXT:
   - DONE: introduce HCI power mode command SLEEPING
   - DONE: stop all baseband connections on HCI_POWER_OFF
   - DONE: handle HCI_POWER_ON and HCI_POWER_OFF in existing 4 states
-  - stop all baseband connections on HCI_POWER_SLEEP
-  - handle power-off and power-on for states SLEEPING and FALLING_ASLEEP
-  - for now, treat sleep/wake the same as power off/on
+  - DONE: store data of remote db on every change
+  - don't stop BTdaemon on power down/client disconnect
   - decide on configure flags
   - clean up components
 
