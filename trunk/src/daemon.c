@@ -141,12 +141,7 @@ io_connect_t  root_port; // a reference to the Root Power Domain IOService
 void
 MySleepCallBack( void * refCon, io_service_t service, natural_t messageType, void * messageArgument )
 {
-	static int cancelCounter = 3;
-
-    printf( "messageType %08lx, arg %08lx, counter %u\n",
-		   (long unsigned int)messageType,
-		   (long unsigned int)messageArgument, cancelCounter );
-	
+    printf( "messageType %08lx, arg %08lx, counter %u\n", (long unsigned int)messageType, (long unsigned int)messageArgument);
 	
     switch ( messageType )
     {
@@ -161,14 +156,10 @@ MySleepCallBack( void * refCon, io_service_t service, natural_t messageType, voi
 			 or IOCancelPowerChange, the system will wait 30 seconds then go to sleep.
 			 */
 			
-            //Uncomment to cancel idle sleep
-            if (cancelCounter) {
-				cancelCounter--;
-				IOCancelPowerChange( root_port, (long)messageArgument );
-            } else {
-				// we will allow idle sleep
-				IOAllowPowerChange( root_port, (long)messageArgument );
-            }
+            // Uncomment to cancel idle sleep
+			// IOCancelPowerChange( root_port, (long)messageArgument );
+            // we will allow idle sleep
+            IOAllowPowerChange( root_port, (long)messageArgument );
 			break;
 			
         case kIOMessageSystemWillSleep:
@@ -180,11 +171,21 @@ MySleepCallBack( void * refCon, io_service_t service, natural_t messageType, voi
 			 however the system WILL still go to sleep. 
 			 */
 			
-            IOAllowPowerChange( root_port, (long)messageArgument );
+            // let's sleep
+            hci_power_control(HCI_POWER_SLEEP);
+            
+            // power control only starts falling asleep, count on the 30 second delay 
+            // IOAllowPowerChange( root_port, (long)messageArgument );
             break;
 			
         case kIOMessageSystemWillPowerOn:
+            
             //System has started the wake up process...
+            
+            // assume that all clients use Bluetooth -> if connection, start Bluetooth
+            if (num_client_connections) {
+                hci_power_control(HCI_POWER_ON);
+            }
             break;
 			
         case kIOMessageSystemHasPoweredOn:
@@ -205,6 +206,8 @@ static hci_uart_config_t config;
 
 static timer_source_t timeout;
 static uint8_t timeout_active = 0;
+
+static int num_client_connections = 0;
 
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
     printf("Bluetooth status: %u\n", state);
@@ -328,12 +331,13 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                     l2cap_close_connection(connection);
                     break;
                 case DAEMON_NR_CONNECTIONS_CHANGED:
-                    printf("Nr Connections changed, new %u\n", data[1]);
+                    num_client_connections = data[1];
+                    printf("Nr Connections changed, new %u\n",num_client_connections);
                     if (timeout_active) {
                         run_loop_remove_timer(&timeout);
                         timeout_active = 0;
                     }
-                    if (!data[1]) {
+                    if (!num_client_connections) {
                         run_loop_set_timer(&timeout, DAEMON_NO_CONNECTION_TIMEOUT);
                         run_loop_add_timer(&timeout);
                         timeout_active = 1;

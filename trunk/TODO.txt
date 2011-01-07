@@ -22,7 +22,8 @@ NEXT:
   - DONE: handle HCI_POWER_ON and HCI_POWER_OFF in existing 4 states
   - DONE: store data of remote db on every change
   - DONE: don't stop BTdaemon on power down/client disconnect
-  - handle transition for HCI_POWER_SLEEP and all HCI state transitions
+  - DONE: handle transition for HCI_POWER_SLEEP and all HCI state transitions
+  - DONE: power down Bluetooth on sleep notifcation / turn on, if clients are connected
   - decide on configure flags
   - clean up components
 
