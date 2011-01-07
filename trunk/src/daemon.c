@@ -71,7 +71,7 @@
 #include <libusb-1.0/libusb.h>
 #endif
 
-#define DAEMON_NO_CONNECTION_TIMEOUT 20000
+#define DAEMON_NO_CONNECTION_TIMEOUT 10000
 
 #define HANDLE_POWER_NOTIFICATIONS
 
@@ -212,7 +212,7 @@ static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
 
 static void daemon_no_connections_timeout(){
     printf("No connection for %u seconds -> POWER OFF\n", DAEMON_NO_CONNECTION_TIMEOUT/1000);
-    hci_power_control( HCI_POWER_OFF);
+    hci_power_control(HCI_POWER_OFF);
 }
 
 static int btstack_command_handler(connection_t *connection, uint8_t *packet, uint16_t size){
@@ -503,9 +503,9 @@ int main (int argc,  char * const * argv){
 #endif
     
 #ifdef USE_COCOA_RUN_LOOP 
-    run_loop_init(RUN_LOOP_POSIX);
-#else
     run_loop_init(RUN_LOOP_COCOA);
+#else
+    run_loop_init(RUN_LOOP_POSIX);
 #endif
     
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
