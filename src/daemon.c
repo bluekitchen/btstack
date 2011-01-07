@@ -73,7 +73,21 @@
 
 #define DAEMON_NO_CONNECTION_TIMEOUT 20000
 
-// #define HANDLE_POWER_NOTIFICATIONS
+#define HANDLE_POWER_NOTIFICATIONS
+
+
+static hci_transport_t * transport;
+static hci_uart_config_t config;
+
+static timer_source_t timeout;
+static uint8_t timeout_active = 0;
+
+static int num_client_connections = 0;
+
+static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state);
+static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth_status_handler;
+
+
 
 #ifdef HANDLE_POWER_NOTIFICATIONS
 
@@ -123,8 +137,6 @@ typedef void
 							 io_service_t	service,
 							 uint32_t		messageType,
 							 void *			messageArgument );
-
-
 io_connect_t IORegisterForSystemPower (void * refcon,
 									   IONotificationPortRef * thePortRef,
 									   IOServiceInterestCallback callback,
@@ -135,17 +147,11 @@ IOReturn IOCancelPowerChange ( io_connect_t kernelPort, long notificationID );
 
 io_connect_t root_port;
 io_object_t notifier;
-
 io_connect_t  root_port; // a reference to the Root Power Domain IOService
 
-void
-MySleepCallBack( void * refCon, io_service_t service, natural_t messageType, void * messageArgument )
-{
-    printf( "messageType %08lx, arg %08lx, counter %u\n", (long unsigned int)messageType, (long unsigned int)messageArgument);
-	
-    switch ( messageType )
-    {
-			
+void MySleepCallBack( void * refCon, io_service_t service, natural_t messageType, void * messageArgument ) {
+    printf( "messageType %08lx, arg %08lx\n", (long unsigned int)messageType, (long unsigned int)messageArgument);
+    switch ( messageType ) {
         case kIOMessageCanSystemSleep:
             /* Idle sleep is about to kick in. This message will not be sent for forced sleep.
 			 Applications have a chance to prevent sleep by calling IOCancelPowerChange.
@@ -200,19 +206,9 @@ MySleepCallBack( void * refCon, io_service_t service, natural_t messageType, voi
 #endif
 #endif
 
-
-static hci_transport_t * transport;
-static hci_uart_config_t config;
-
-static timer_source_t timeout;
-static uint8_t timeout_active = 0;
-
-static int num_client_connections = 0;
-
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
     printf("Bluetooth status: %u\n", state);
 };
-static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth_status_handler;
 
 static void daemon_no_connections_timeout(){
     printf("No connection for %u seconds -> POWER OFF\n", DAEMON_NO_CONNECTION_TIMEOUT/1000);
@@ -506,10 +502,11 @@ int main (int argc,  char * const * argv){
     remote_device_db = &REMOTE_DEVICE_DB;
 #endif
     
+#ifdef USE_COCOA_RUN_LOOP 
     run_loop_init(RUN_LOOP_POSIX);
-    // run_loop_init(RUN_LOOP_COCOA);
-    
-    // @TODO: allow configuration per HCI CMD
+#else
+    run_loop_init(RUN_LOOP_COCOA);
+#endif
     
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
@@ -543,22 +540,20 @@ int main (int argc,  char * const * argv){
     socket_connection_register_packet_callback(daemon_client_handler);
     
 #ifdef HANDLE_POWER_NOTIFICATIONS
-    IONotificationPortRef  notifyPortRef; // notification port allocated by IORegisterForSystemPower
+    IONotificationPortRef  notifyPortRef;  // notification port allocated by IORegisterForSystemPower
     io_object_t            notifierObject; // notifier object, used to deregister later
-    void*                  refCon = NULL; // this parameter is passed to the callback
+    void*                  refCon = NULL;  // this parameter is passed to the callback
 	
     // register to receive system sleep notifications
-	
     root_port = IORegisterForSystemPower( refCon, &notifyPortRef, MySleepCallBack, &notifierObject );
-    if ( root_port == 0 )
+    if (!root_port)
     {
         printf("IORegisterForSystemPower failed\n");
         return 1;
     }
 	
     // add the notification port to the application runloop
-    CFRunLoopAddSource(CFRunLoopGetCurrent(),
-					   IONotificationPortGetRunLoopSource(notifyPortRef), kCFRunLoopCommonModes ); 
+    CFRunLoopAddSource(CFRunLoopGetCurrent(), IONotificationPortGetRunLoopSource(notifyPortRef), kCFRunLoopCommonModes); 
 #endif
     
     // go!

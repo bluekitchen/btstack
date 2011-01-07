@@ -11,8 +11,8 @@
 - Cocoa run_loop: added timeouts, include in libBTstack.dylib build
 2010-xxxx: Release 0.2 - revions xxx
 - limit size of /tmp/hci_dump.pklg to 1000 packets (max 1 MB)
-- power handling: receive power notifications
-   
+- power handling: handle power changes in all states, receive and handle power notifications
+
 NEXT:
 - power handling
   - DONE: figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect, when phone gets locked and wakes up 
