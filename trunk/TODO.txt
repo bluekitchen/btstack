@@ -26,8 +26,8 @@ NEXT:
   - DONE: power down Bluetooth on sleep notifcation / turn on, if clients are connected
   - DONE: keep list of clients that requested Blueooth to be active
   - DONE: Bluetooth is on iff at least one client did request it. delay off by 10 seconds
-  - add enum POWER_EVENTS {POWER_WILL_SLEEP, POWER_WILL_WAKE_UP);
-  - add register_for_power_management_notifictations( void (*callback)(POWER_EVENTS event)); to bt_control.h
+  - DONE: add enum POWER_EVENTS {POWER_WILL_SLEEP, POWER_WILL_WAKE_UP);
+  - DONE: add register_for_power_management_notifictations( void (*callback)(POWER_EVENTS event)); to bt_control.h
   - move core foundation power event code to bt_control_iphone.m
   - add sleep() to bt_control.h (assumption: no off -> sleep transition)
 

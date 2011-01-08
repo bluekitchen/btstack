@@ -500,12 +500,17 @@ static int iphone_off (void *config){
     return 0;
 }
 
+static int iphone_sleep(void *config){
+    return iphone_off(config);
+}
 
 // single instance
 bt_control_t bt_control_iphone = {
     iphone_on,
     iphone_off,
+    iphone_sleep,
     iphone_valid,
     iphone_name,
-    NULL
+    NULL,   // custom init sequence
+    NULL    // register_for_power_notifications
 };
