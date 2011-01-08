@@ -591,6 +591,19 @@ static void hci_power_control_off(){
     if (hci_stack.control && hci_stack.control->off){
         (*hci_stack.control->off)(hci_stack.config);
     }
+    hci_stack.state = HCI_STATE_OFF;
+}
+
+static void hci_power_control_sleep(){
+    
+    // close low-level device
+    hci_stack.hci_transport->close(hci_stack.config);
+    
+    // sleep mode
+    if (hci_stack.control && hci_stack.control->off){
+        (*hci_stack.control->sleep)(hci_stack.config);
+    }
+    hci_stack.state = HCI_STATE_SLEEPING;
 }
 
 int hci_power_control(HCI_POWER_MODE power_mode){
@@ -627,12 +640,10 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                 case HCI_POWER_OFF:
                     // no connections yet, just turn it off
                     hci_power_control_off();
-                    hci_stack.state = HCI_STATE_OFF;
                     break;  
                 case HCI_POWER_SLEEP:
                     // no connections yet, just turn it off
-                    hci_power_control_off();
-                    hci_stack.state = HCI_STATE_SLEEPING;
+                    hci_power_control_sleep();
                     break;
             }
             break;
@@ -786,19 +797,37 @@ void hci_run(){
             if (connection){
                 // send disconnect
                 bt_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
-                
+
                 // send disconnected event right away - causes higher layer connections to get closed, too.
                 hci_shutdown_connection(connection);
-
+                
                 // remove from table
                 hci_stack.connections = connection->item.next;
                 return;
             }
             
+            // switch mode
             hci_power_control_off();
+            hci_emit_state();
+            break;
             
-            // we're off now
-            hci_stack.state = HCI_STATE_OFF;
+        case HCI_STATE_FALLING_ASLEEP:
+            // close all open connections
+            connection =  (hci_connection_t *) hci_stack.connections;
+            if (connection){
+                // send disconnect
+                bt_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
+                
+                // send disconnected event right away - causes higher layer connections to get closed, too.
+                hci_shutdown_connection(connection);
+                
+                // remove from table
+                hci_stack.connections = connection->item.next;
+                return;
+            }
+            
+            // switch mode
+            hci_power_control_sleep();
             hci_emit_state();
             break;
             
