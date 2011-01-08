@@ -42,9 +42,15 @@
 
 #include <stdint.h>
 
+typedef enum {
+    POWER_WILL_SLEEP = 1,
+    POWER_WILL_WAKE_UP
+} POWER_NOTIFICATION_t;
+
 typedef struct {
     int          (*on)(void *config);     // <-- turn BT module on and configure
     int          (*off)(void *config);    // <-- turn BT module off
+    int          (*sleep)(void *config);   // <-- put BT module to sleep - only to be called after ON
     int          (*valid)(void *config);  // <-- test if hardware can be supported
     const char * (*name)(void *config);   // <-- return hardware name
 
@@ -52,5 +58,7 @@ typedef struct {
       * @return pointer do next command packet used during init
       */
     uint8_t *    (*next_command)(void *config); 
+
+    void         (*register_for_power_notifications)(void (*cb)(POWER_NOTIFICATION_t event));
 
 } bt_control_t;
