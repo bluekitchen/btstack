@@ -71,7 +71,7 @@
 #include <libusb-1.0/libusb.h>
 #endif
 
-#define DAEMON_NO_CONNECTION_TIMEOUT 10000
+#define DAEMON_NO_ACTIVE_CLIENT_TIMEOUT 10000
 
 #define HANDLE_POWER_NOTIFICATIONS
 
@@ -82,12 +82,17 @@ static hci_uart_config_t config;
 static timer_source_t timeout;
 static uint8_t timeout_active = 0;
 
-static int num_client_connections = 0;
+static int power_management_sleep = 0;
 
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state);
 static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth_status_handler;
 
-
+static linked_list_t active_clients = NULL; // list of clients that requested Bluetooth to be active
+static int           active_clients_empty();
+static void          active_clients_remove(connection_t *connection);
+static void          active_clients_add(connection_t *connection);
+static void          active_clients_start_power_off_timer();
+static void          active_clients_stop_power_off_timer();
 
 #ifdef HANDLE_POWER_NOTIFICATIONS
 
@@ -178,6 +183,7 @@ void MySleepCallBack( void * refCon, io_service_t service, natural_t messageType
 			 */
 			
             // let's sleep
+            power_management_sleep = 1;
             hci_power_control(HCI_POWER_SLEEP);
             
             // power control only starts falling asleep, count on the 30 second delay 
@@ -189,7 +195,8 @@ void MySleepCallBack( void * refCon, io_service_t service, natural_t messageType
             //System has started the wake up process...
             
             // assume that all clients use Bluetooth -> if connection, start Bluetooth
-            if (num_client_connections) {
+            power_management_sleep = 0;
+            if (!active_clients_empty()) {
                 hci_power_control(HCI_POWER_ON);
             }
             break;
@@ -211,7 +218,8 @@ static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
 };
 
 static void daemon_no_connections_timeout(){
-    printf("No connection for %u seconds -> POWER OFF\n", DAEMON_NO_CONNECTION_TIMEOUT/1000);
+    if (!active_clients_empty()) return;    // false alarm :)
+    printf("No active client connection for %u seconds -> POWER OFF\n", DAEMON_NO_ACTIVE_CLIENT_TIMEOUT/1000);
     hci_power_control(HCI_POWER_OFF);
 }
 
@@ -231,7 +239,24 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             hci_emit_state();
             break;
         case BTSTACK_SET_POWER_MODE:
-            hci_power_control(packet[3]);
+            // track client power requests
+            switch (packet[3]) {
+                case HCI_POWER_ON: 
+                    active_clients_add(connection);
+                    break;
+                case HCI_POWER_OFF:
+                    active_clients_remove(connection);
+                    break;
+                default:
+                    break;
+            }
+            // handle merged state
+            if (active_clients_empty()){
+                active_clients_start_power_off_timer();
+            } else if (!power_management_sleep) {
+                active_clients_stop_power_off_timer();
+                hci_power_control(HCI_POWER_ON);
+            }
             break;
         case BTSTACK_GET_VERSION:
             hci_emit_btstack_version();
@@ -325,19 +350,15 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                 case DAEMON_EVENT_CONNECTION_CLOSED:
                     sdp_unregister_services_for_connection(connection);
                     l2cap_close_connection(connection);
+                    active_clients_remove(connection);
+                    printf("Client connection closed. active_clients_empty()=%u\n",active_clients_empty());
+                    if (active_clients_empty()){
+                        active_clients_start_power_off_timer();
+                    }
                     break;
                 case DAEMON_NR_CONNECTIONS_CHANGED:
-                    num_client_connections = data[1];
-                    printf("Nr Connections changed, new %u\n",num_client_connections);
-                    if (timeout_active) {
-                        run_loop_remove_timer(&timeout);
-                        timeout_active = 0;
-                    }
-                    if (!num_client_connections) {
-                        run_loop_set_timer(&timeout, DAEMON_NO_CONNECTION_TIMEOUT);
-                        run_loop_add_timer(&timeout);
-                        timeout_active = 1;
-                    }
+                    printf("Nr Connections changed, new %u\n",data[1]);
+                    break;
                 default:
                     break;
             }
@@ -559,4 +580,51 @@ int main (int argc,  char * const * argv){
     // go!
     run_loop_execute();
     return 0;
+}
+
+#pragma mark manage list of active clients
+static int active_clients_empty(){
+    return linked_list_empty(&active_clients);
+}
+
+static void active_clients_add(connection_t *connection){
+    // check if exists -> done
+    linked_item_t *it;
+    for (it = (linked_item_t *) active_clients; it ; it = it->next){
+        if (it->user_data == connection) {
+            return;
+        }
+    }
+    // otherwise add new item
+    linked_item_t *item = malloc(sizeof(linked_item_t));
+    if (!item) return;
+    item->user_data = connection;
+    linked_list_add(&active_clients, item);
+}
+
+static void active_clients_remove(connection_t *connection){
+    // iterate over list and remove item for connection
+    linked_item_t *it;
+    for (it = (linked_item_t *) &active_clients; it ; it = it->next){
+        linked_item_t *next = it->next;
+        if (next && next->user_data == connection){
+            it->next = next->next;
+            free(next); // free item
+            return;
+        }
+    }
+}
+
+static void active_clients_stop_power_off_timer(){
+    if (timeout_active) {
+        run_loop_remove_timer(&timeout);
+        timeout_active = 0;
+    }
+}
+
+static void active_clients_start_power_off_timer(){
+    active_clients_stop_power_off_timer();
+    run_loop_set_timer(&timeout, DAEMON_NO_ACTIVE_CLIENT_TIMEOUT);
+    run_loop_add_timer(&timeout);
+    timeout_active = 1;
 }

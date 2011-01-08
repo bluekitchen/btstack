@@ -24,10 +24,20 @@ NEXT:
   - DONE: don't stop BTdaemon on power down/client disconnect
   - DONE: handle transition for HCI_POWER_SLEEP and all HCI state transitions
   - DONE: power down Bluetooth on sleep notifcation / turn on, if clients are connected
-  - decide on configure flags
-  - clean up components
+  - DONE: keep list of clients that requested Blueooth to be active
+  - DONE: Bluetooth is on iff at least one client did request it. delay off by 10 seconds
+  - add enum POWER_EVENTS {POWER_WILL_SLEEP, POWER_WILL_WAKE_UP);
+  - add register_for_power_management_notifictations( void (*callback)(POWER_EVENTS event)); to bt_control.h
+  - move core foundation power event code to bt_control_iphone.m
+  - add sleep() to bt_control.h (assumption: no off -> sleep transition)
 
-- store HCI_POWER_ON/HCI_POWER_OFF per client, and only turn off when all are turned off
+- clean up components
+  - consolidate ios code in port_ios.m (bt_control_iphone.m, platform_iphone.m)
+  - consolidate cocoa/corefoundation code in port_corefoundation.c (remote_device_db)
+  - rename bt_control.h -> power_management.h
+  - add control of status bar icon to bt_control.h, too.
+  - decide on configure flags
+  CFMessagePortCreateRemote
 - decide what to do with the CocoaTouch code.
   - do nothing
   - add it to libBTstack.dylib
