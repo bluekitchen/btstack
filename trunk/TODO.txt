@@ -28,9 +28,10 @@ NEXT:
   - DONE: Bluetooth is on iff at least one client did request it. delay off by 10 seconds
   - DONE: add enum POWER_EVENTS {POWER_WILL_SLEEP, POWER_WILL_WAKE_UP);
   - DONE: add register_for_power_management_notifictations( void (*callback)(POWER_EVENTS event)); to bt_control.h
-  - move core foundation power event code to bt_control_iphone.m
-  - add sleep() to bt_control.h (assumption: no off -> sleep transition)
-
+  - DONE: move core foundation power event code to bt_control_iphone.m
+  - DONE: add sleep() to bt_control.h (assumption: no off -> sleep transition)
+  - call control->sleep() instead of control->off()
+  
 - clean up components
   - consolidate ios code in port_ios.m (bt_control_iphone.m, platform_iphone.m)
   - consolidate cocoa/corefoundation code in port_corefoundation.c (remote_device_db)

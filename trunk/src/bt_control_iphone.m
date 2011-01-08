@@ -72,14 +72,56 @@
 #define IOKIT
 #include <device/device_types.h>
 #include <UIKit/UIKit.h>
+
+// costants
+#define sys_iokit                          err_system(0x38)
+#define sub_iokit_common                   err_sub(0)
+
+#define iokit_common_msg(message)          (UInt32)(sys_iokit|sub_iokit_common|message)
+
+#define kIOMessageCanDevicePowerOff        iokit_common_msg(0x200)
+#define kIOMessageDeviceWillPowerOff       iokit_common_msg(0x210)
+#define kIOMessageDeviceWillNotPowerOff    iokit_common_msg(0x220)
+#define kIOMessageDeviceHasPoweredOn       iokit_common_msg(0x230)
+#define kIOMessageCanSystemPowerOff        iokit_common_msg(0x240)
+#define kIOMessageSystemWillPowerOff       iokit_common_msg(0x250)
+#define kIOMessageSystemWillNotPowerOff    iokit_common_msg(0x260)
+#define kIOMessageCanSystemSleep           iokit_common_msg(0x270)
+#define kIOMessageSystemWillSleep          iokit_common_msg(0x280)
+#define kIOMessageSystemWillNotSleep       iokit_common_msg(0x290)
+#define kIOMessageSystemHasPoweredOn       iokit_common_msg(0x300)
+#define kIOMessageSystemWillRestart        iokit_common_msg(0x310)
+#define kIOMessageSystemWillPowerOn        iokit_common_msg(0x320)
+
+// types
+typedef io_object_t io_connect_t;
+typedef io_object_t	io_service_t;
+typedef	kern_return_t	IOReturn;
+typedef struct IONotificationPort * IONotificationPortRef;
+
+// prototypes
 kern_return_t IOMasterPort( mach_port_t	bootstrapPort, mach_port_t * masterPort );
 CFMutableDictionaryRef IOServiceNameMatching(const char * name );
 CFTypeRef IORegistryEntrySearchCFProperty(mach_port_t entry, const io_name_t plane,
                                           CFStringRef key, CFAllocatorRef allocator, UInt32 options );
 mach_port_t IOServiceGetMatchingService(mach_port_t masterPort, CFDictionaryRef matching );
 kern_return_t IOObjectRelease(mach_port_t object);
+
+typedef void (*IOServiceInterestCallback)(void * refcon, io_service_t service, uint32_t messageType, void * messageArgument);
+io_connect_t IORegisterForSystemPower (void * refcon, IONotificationPortRef * thePortRef,
+                                       IOServiceInterestCallback callback, io_object_t * notifier );
+IOReturn IODeregisterForSystemPower (io_object_t *notifier); 
+CFRunLoopSourceRef IONotificationPortGetRunLoopSource(IONotificationPortRef	notify );
+IOReturn IOAllowPowerChange ( io_connect_t kernelPort, long notificationID );
+IOReturn IOCancelPowerChange ( io_connect_t kernelPort, long notificationID );
+
+// local globals
+static io_object_t   notifier;
+static io_connect_t  root_port = 0; // a reference to the Root Power Domain IOService
+
 #endif
 #endif
+
 
 int iphone_system_bt_enabled(){
     return SBA_getBluetoothEnabled();
@@ -92,6 +134,8 @@ void iphone_system_bt_set_enabled(int enabled)
 }
 
 #endif
+
+static void (*power_notification_callback)(POWER_NOTIFICATION_t event) = NULL;
 
 #define BUFF_LEN 80
 static char buffer[BUFF_LEN+1];
@@ -504,6 +548,103 @@ static int iphone_sleep(void *config){
     return iphone_off(config);
 }
 
+#ifdef IOKIT
+static void MySleepCallBack( void * refCon, io_service_t service, natural_t messageType, void * messageArgument ) {
+    printf( "messageType %08lx, arg %08lx\n", (long unsigned int)messageType, (long unsigned int)messageArgument);
+    switch ( messageType ) {
+        case kIOMessageCanSystemSleep:
+            /* Idle sleep is about to kick in. This message will not be sent for forced sleep.
+			 Applications have a chance to prevent sleep by calling IOCancelPowerChange.
+			 Most applications should not prevent idle sleep.
+			 
+			 Power Management waits up to 30 seconds for you to either allow or deny idle sleep.
+			 If you don't acknowledge this power change by calling either IOAllowPowerChange
+			 or IOCancelPowerChange, the system will wait 30 seconds then go to sleep.
+			 */
+			
+            // Uncomment to cancel idle sleep
+			// IOCancelPowerChange( root_port, (long)messageArgument );
+            // we will allow idle sleep
+            IOAllowPowerChange( root_port, (long)messageArgument );
+			break;
+			
+        case kIOMessageSystemWillSleep:
+            /* The system WILL go to sleep. If you do not call IOAllowPowerChange or
+			 IOCancelPowerChange to acknowledge this message, sleep will be
+			 delayed by 30 seconds.
+			 
+			 NOTE: If you call IOCancelPowerChange to deny sleep it returns kIOReturnSuccess,
+			 however the system WILL still go to sleep. 
+			 */
+			
+            if (power_notification_callback){
+                (*power_notification_callback)(POWER_WILL_SLEEP);
+            }
+                 
+            // don't allow power change to get the 30 second delay 
+            // IOAllowPowerChange( root_port, (long)messageArgument );
+                 
+            break;
+			
+        case kIOMessageSystemWillPowerOn:
+            
+            // System has started the wake up process...
+            if (power_notification_callback){
+                (*power_notification_callback)(POWER_WILL_WAKE_UP);
+            }
+            break;
+			
+        case kIOMessageSystemHasPoweredOn:
+            //System has finished waking up...
+			break;
+			
+        default:
+            break;
+			
+    }
+}
+
+/** handle IOKIT power notifications - http://developer.apple.com/library/mac/#qa/qa2004/qa1340.html */
+void iphone_register_for_power_notifications(void (*cb)(POWER_NOTIFICATION_t event)){
+    static IONotificationPortRef  notifyPortRef =  NULL; // notification port allocated by IORegisterForSystemPower
+    static io_object_t            notifierObject = 0;    // notifier object, used to deregister later
+
+    if (cb) {
+        if (!root_port) {
+            // register to receive system sleep notifications
+            root_port = IORegisterForSystemPower(NULL, &notifyPortRef, MySleepCallBack, &notifierObject);
+            if (!root_port) {
+                printf("IORegisterForSystemPower failed\n");
+            }
+        
+            // add the notification port to the application runloop
+            CFRunLoopAddSource(CFRunLoopGetCurrent(), IONotificationPortGetRunLoopSource(notifyPortRef), kCFRunLoopCommonModes); 
+        }
+        power_notification_callback = cb;
+    } else {
+        if (root_port) {
+            // we no longer want sleep notifications:
+            
+            // remove the sleep notification port from the application runloop
+            CFRunLoopRemoveSource(CFRunLoopGetCurrent(), IONotificationPortGetRunLoopSource(notifyPortRef), kCFRunLoopCommonModes);
+            
+            // deregister for system sleep notifications
+            IODeregisterForSystemPower(&notifierObject);
+            
+            // IORegisterForSystemPower implicitly opens the Root Power Domain IOService
+            // so we close it here
+            IOServiceClose(root_port);
+            
+            // destroy the notification port allocated by IORegisterForSystemPower
+            IONotificationPortDestroy(notifyPortRef);
+            
+            root_port = 0;
+        }
+        power_notification_callback = NULL;
+    }
+}
+#endif
+
 // single instance
 bt_control_t bt_control_iphone = {
     iphone_on,
@@ -512,5 +653,9 @@ bt_control_t bt_control_iphone = {
     iphone_valid,
     iphone_name,
     NULL,   // custom init sequence
+#ifdef IOKIT
+    iphone_register_for_power_notifications
+#else
     NULL    // register_for_power_notifications
+#endif
 };
