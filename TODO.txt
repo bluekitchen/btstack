@@ -11,38 +11,39 @@
 - Cocoa run_loop: added timeouts, include in libBTstack.dylib build
 2010-xxxx: Release 0.2 - revions xxx
 - limit size of /tmp/hci_dump.pklg to 1000 packets (max 1 MB)
-- power handling: handle power changes in all states, receive and handle power notifications
+- power handling: handle power changes in all states, receive and handle power notifications, keep track of individual clients
 
 NEXT:
-- power handling
-  - DONE: figure out how to receive iPhone System Power IONotifications (in BTdaemon) to detect, when phone gets locked and wakes up 
-  - DONE: introduce HCI states SLEEPING and FALLING_ASLEEP
-  - DONE: introduce HCI power mode command SLEEPING
-  - DONE: stop all baseband connections on HCI_POWER_OFF
-  - DONE: handle HCI_POWER_ON and HCI_POWER_OFF in existing 4 states
-  - DONE: store data of remote db on every change
-  - DONE: don't stop BTdaemon on power down/client disconnect
-  - DONE: handle transition for HCI_POWER_SLEEP and all HCI state transitions
-  - DONE: power down Bluetooth on sleep notifcation / turn on, if clients are connected
-  - DONE: keep list of clients that requested Blueooth to be active
-  - DONE: Bluetooth is on iff at least one client did request it. delay off by 10 seconds
-  - DONE: add enum POWER_EVENTS {POWER_WILL_SLEEP, POWER_WILL_WAKE_UP);
-  - DONE: add register_for_power_management_notifictations( void (*callback)(POWER_EVENTS event)); to bt_control.h
-  - DONE: move core foundation power event code to bt_control_iphone.m
-  - DONE: add sleep() to bt_control.h (assumption: no off -> sleep transition)
-  - call control->sleep() instead of control->off()
-  
+- check apps for sleep mode compatibility
+  - Keyboard
+  - Mouse
+  - WeBe++
+  - WiiMote example
+  - BTstackManager
+
 - clean up components
   - consolidate ios code in port_ios.m (bt_control_iphone.m, platform_iphone.m)
   - consolidate cocoa/corefoundation code in port_corefoundation.c (remote_device_db)
   - rename bt_control.h -> power_management.h
   - add control of status bar icon to bt_control.h, too.
   - decide on configure flags
-  CFMessagePortCreateRemote
+  
 - decide what to do with the CocoaTouch code.
   - do nothing
   - add it to libBTstack.dylib
   - provide a libBTstackCocoaTouch.dylib?  
+- power handling
+  - check if Bluetooth module can be woken up instantly with BlueTool on both CSR and Broadcom chipsets
+  
+- extend per client information
+  - connection
+  - power mode
+  - discovery
+
+- automate scan enable management
+  - keep track of inquiry scan enable per client
+  - keep track of page sacn enable -> active if l2cap services exist
+
   
 - move RFCOMM code into BTdaemon
 - have a look at External Accessory interface by Apple - it's quite similar in function to BTstack
