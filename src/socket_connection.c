@@ -85,7 +85,7 @@ typedef enum {
 
 struct connection {
     data_source_t ds;       // used for run loop
-    linked_item_t item;     // used for connection list
+    linked_item_t item;     // used for connection list, user_data points to connection_t base
     SOCKET_STATE state;
     uint16_t bytes_read;
     uint16_t bytes_to_read;
@@ -142,7 +142,6 @@ connection_t * socket_connection_register_new_connection(int fd){
     // create connection objec 
     connection_t * conn = malloc( sizeof(connection_t));
     if (conn == NULL) return 0;
-    linked_item_set_user( &conn->ds.item, conn);
     linked_item_set_user( &conn->item, conn);
     conn->ds.fd = fd;
     conn->ds.process = socket_connection_hci_process;
@@ -192,7 +191,7 @@ int socket_connection_hci_process(struct data_source *ds) {
         socket_connection_emit_connection_closed(conn);
         
         // free connection
-        socket_connection_free_connection(linked_item_get_user(&ds->item));
+        socket_connection_free_connection(linked_item_get_user(&conn->item));
         
         socket_connection_emit_nr_connections();
         return 0;
