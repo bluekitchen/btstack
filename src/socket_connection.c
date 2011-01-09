@@ -159,6 +159,18 @@ connection_t * socket_connection_register_new_connection(int fd){
     return conn;
 }
 
+void static socket_connection_emit_connection_opened(connection_t *connection){
+    uint8_t event[1];
+    event[0] = DAEMON_EVENT_CONNECTION_OPENED;
+    (*socket_connection_packet_callback)(connection, DAEMON_EVENT_PACKET, 0, (uint8_t *) &event, 1);
+}
+
+void static socket_connection_emit_connection_closed(connection_t *connection){
+    uint8_t event[1];
+    event[0] = DAEMON_EVENT_CONNECTION_CLOSED;
+    (*socket_connection_packet_callback)(connection, DAEMON_EVENT_PACKET, 0, (uint8_t *) &event, 1);
+}
+
 void static socket_connection_emit_nr_connections(){
     linked_item_t *it;
     uint8_t nr_connections = 0;
@@ -177,9 +189,7 @@ int socket_connection_hci_process(struct data_source *ds) {
     int bytes_read = read(ds->fd, &conn->buffer[conn->bytes_read], conn->bytes_to_read);
     if (bytes_read <= 0){
         // connection broken (no particular channel, no date yet)
-        uint8_t event[1];
-        event[0] = DAEMON_EVENT_CONNECTION_CLOSED;
-        (*socket_connection_packet_callback)(conn, DAEMON_EVENT_PACKET, 0, (uint8_t *) &event, 1);
+        socket_connection_emit_connection_closed(conn);
         
         // free connection
         socket_connection_free_connection(linked_item_get_user(&ds->item));
@@ -273,7 +283,8 @@ static int socket_connection_accept(struct data_source *socket_ds) {
     
     printf("socket_connection_accept new connection %u\n", fd);
     
-    socket_connection_register_new_connection(fd);
+    connection_t * connection = socket_connection_register_new_connection(fd);
+    socket_connection_emit_connection_opened(connection);
     socket_connection_emit_nr_connections();
     
     return 0;
