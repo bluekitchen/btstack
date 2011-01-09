@@ -117,15 +117,18 @@ extern "C" {
 #define SDP_UNREGISTER_SERVICE_RECORD                      0x31
 
 
-
 // 
 #define IS_COMMAND(packet, command) (READ_BT_16(packet,0) == command.opcode)
 
 // data: event(8)
-#define DAEMON_EVENT_CONNECTION_CLOSED                     0x70
+#define DAEMON_EVENT_CONNECTION_OPENED                     0x70
+
+// data: event(8)
+#define DAEMON_EVENT_CONNECTION_CLOSED                     0x71
 
 // data: event(8), nr_connections(8)
-#define DAEMON_NR_CONNECTIONS_CHANGED                      0x71
+#define DAEMON_NR_CONNECTIONS_CHANGED                      0x72
+
 
 
 /**
