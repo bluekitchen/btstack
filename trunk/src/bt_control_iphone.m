@@ -548,6 +548,10 @@ static int iphone_sleep(void *config){
     return iphone_off(config);
 }
 
+static int iphone_wake(void *config){
+    return iphone_on(config);
+}
+
 #ifdef IOKIT
 static void MySleepCallBack( void * refCon, io_service_t service, natural_t messageType, void * messageArgument ) {
     printf( "messageType %08lx, arg %08lx\n", (long unsigned int)messageType, (long unsigned int)messageArgument);
@@ -650,6 +654,7 @@ bt_control_t bt_control_iphone = {
     iphone_on,
     iphone_off,
     iphone_sleep,
+    iphone_wake,
     iphone_valid,
     iphone_name,
     NULL,   // custom init sequence

@@ -17,14 +17,14 @@ NEXT:
 - DONE: provide per client information: connection, power mode
 
 - power handling
+  - DONE: add wake() to bt_control.h: OFF<->ON<->SLEEP (SLEEP -> OFF is possible)
+  - check if Bluetooth module can be woken up instantly with BlueTool on both CSR and Broadcom chipsets
   - check apps for sleep mode compatibility - see what happens on ACTIVATED event
 	- Keyboard
 	- Mouse
 	- WeBe++
 	- WiiMote example
 	- BTstackManager
-  - add wake() to bt_control.h: OFF<->ON<->SLEEP (SLEEP -> OFF is possible)
-  - check if Bluetooth module can be woken up instantly with BlueTool on both CSR and Broadcom chipsets
 
 - automate scan enable management
   - provide new "set discoverable (on/off)" command and store in per client information
