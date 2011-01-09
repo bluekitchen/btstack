@@ -59,14 +59,15 @@ static void socketDataCallback (
 						 void *info) {
 	
     if (callbackType == kCFSocketReadCallBack && info){
-        data_source_t *ds = (data_source_t *) info;
-        ds->process(ds);
+        data_source_t *dataSource = (data_source_t *) info;
+        // printf("cocoa_data_source %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) dataSource, dataSource->fd, (int) s, (int) dataSource->item.next);
+        dataSource->process(dataSource);
     }
 }
 
 void cocoa_add_data_source(data_source_t *dataSource){
 
-	// add fd as CF "socket"
+	// add fd as CFSocket
 	
 	// store our dataSource in socket context
 	CFSocketContext socketContext;
@@ -82,20 +83,28 @@ void cocoa_add_data_source(data_source_t *dataSource){
 										  &socketContext
     );
     
+    // don't close native fd on CFSocketInvalidate
+    CFSocketSetSocketFlags(socket, CFSocketGetSocketFlags(socket) & ~kCFSocketCloseOnInvalidate);
+    
 	// create run loop source
 	CFRunLoopSourceRef socketRunLoop = CFSocketCreateRunLoopSource ( kCFAllocatorDefault, socket, 0);
     
-    // hack: store CFSocketRef in next pointer of linked_item
-    dataSource->item.next = (void *) socketRunLoop;
+    // hack: store CFSocketRef in "next" and CFRunLoopSourceRef in "user_data" of linked_item_t
+    dataSource->item.next      = (void *) socket;
+    dataSource->item.user_data = (void *) socketRunLoop;
 
     // add to run loop
 	CFRunLoopAddSource( CFRunLoopGetCurrent(), socketRunLoop, kCFRunLoopCommonModes);
-    // printf("cocoa_add_data_source %x, socketRunLoop %x, runLoop %x\n", (int) dataSource, (int) socketRunLoop, (int) CFRunLoopGetCurrent());
+    // printf("cocoa_add_data_source    %x - fd %u - CFSocket %x, CFRunLoopSource %x\n", (int) dataSource, dataSource->fd, (int) socket, (int) socketRunLoop);
+    
 }
 
 int  cocoa_remove_data_source(data_source_t *dataSource){
-    // printf("cocoa_remove_data_source socketRunLoop %x, runLoop %x\n", (int) dataSource->item.next, CFRunLoopGetCurrent());
-    CFRunLoopRemoveSource( CFRunLoopGetCurrent(), (CFRunLoopSourceRef) dataSource->item.next, kCFRunLoopCommonModes);
+    // printf("cocoa_remove_data_source %x - fd %u, CFSocket %x, CFRunLoopSource %x\n", (int) dataSource, dataSource->fd, (int) dataSource->item.next, (int) dataSource->item.user_data);
+    CFRunLoopRemoveSource( CFRunLoopGetCurrent(), (CFRunLoopSourceRef) dataSource->item.user_data, kCFRunLoopCommonModes);
+    CFRelease(dataSource->item.user_data);
+    CFSocketInvalidate((CFSocketRef) dataSource->item.next);
+    CFRelease(dataSource->item.next);
 	return 0;
 }
 
@@ -110,13 +119,15 @@ void  cocoa_add_timer(timer_source_t * ts)
 
     // hack: store CFRunLoopTimerRef in next pointer of linked_item
     ts->item.next = (void *)timerRef;
-        
+    // printf("cocoa_add_timer ref %x\n", (int) ts->item.next);
     CFRunLoopAddTimer(CFRunLoopGetCurrent(), timerRef, kCFRunLoopCommonModes);
 }
 
 int  cocoa_remove_timer(timer_source_t * ts){
     // printf("cocoa_remove_timer ref %x\n", (int) ts->item.next);
-    CFRunLoopRemoveTimer(CFRunLoopGetCurrent(), (CFRunLoopTimerRef) ts->item.next, kCFRunLoopCommonModes);
+    // CFRunLoopRemoveTimer(CFRunLoopGetCurrent(), (CFRunLoopTimerRef) ts->item.next, kCFRunLoopCommonModes);
+    CFRunLoopTimerInvalidate((CFRunLoopTimerRef) ts->item.next);    // also removes timer from run loops
+    CFRelease((CFRunLoopTimerRef) ts->item.next);
 	return 0;
 }
 
