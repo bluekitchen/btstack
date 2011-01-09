@@ -15,10 +15,12 @@
 
 NEXT:
 - DONE: provide per client information: connection, power mode
+- DONE: fix bug with run_loop_cocoa, after client disconnects
 
 - power handling
   - DONE: add wake() to bt_control.h: OFF<->ON<->SLEEP (SLEEP -> OFF is possible)
-  - check if Bluetooth module can be woken up instantly with BlueTool on both CSR and Broadcom chipsets
+  - DONE: check if Bluetooth module can be woken up instantly with BlueTool on Broadcom chipsets -> yes
+  - check if Bluetooth module can be woken up instantly with BlueTool on CSR chipsets
   - check apps for sleep mode compatibility - see what happens on ACTIVATED event
 	- Keyboard
 	- Mouse
