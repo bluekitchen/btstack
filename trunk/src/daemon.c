@@ -492,18 +492,26 @@ int main (int argc,  char * const * argv){
 
 #pragma mark manage power off timer
 
+#define USE_POWER_OFF_TIMER
+
 static void stop_power_off_timer(){
+#ifdef USE_POWER_OFF_TIMER
     if (timeout_active) {
         run_loop_remove_timer(&timeout);
         timeout_active = 0;
     }
+#endif
 }
 
 static void start_power_off_timer(){
+#ifdef USE_POWER_OFF_TIMER    
     stop_power_off_timer();
     run_loop_set_timer(&timeout, DAEMON_NO_ACTIVE_CLIENT_TIMEOUT);
     run_loop_add_timer(&timeout);
     timeout_active = 1;
+#else
+    hci_power_control(HCI_POWER_OFF);
+#endif
 }
 
 #pragma mark manage list of clients
