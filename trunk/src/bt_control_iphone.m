@@ -529,27 +529,39 @@ static int iphone_on (void *transport_config){
 
 static int iphone_off (void *config){
 	
-	char *machine = get_machine_name();
-	
-	if (strncmp(machine, "iPad", strlen("iPad")) == 0) {
+/*
+    char *machine = get_machine_name();
+    if (strncmp(machine, "iPad", strlen("iPad")) == 0) {
 		// put iPad Bluetooth into deep sleep
 		system ("echo \"wake off\n quit\" | BlueTool");
 	} else {
 		// power off for iPhone and iPod
 		system ("echo \"power off\n quit\" | BlueTool");
 	}
-	
+*/	
+    // power off (all models)
+    system ("echo \"power off\nquit\" | BlueTool");
+    
+    
     // kill Apple BTServer as it gets confused and fails to start anyway
     system("killall BTServer");
     return 0;
 }
 
 static int iphone_sleep(void *config){
-    return iphone_off(config);
+    // put Bluetooth into deep sleep
+    system ("echo \"wake off\nquit\" | BlueTool");
+    
+    // return iphone_off(config);
+    return 0;
 }
 
 static int iphone_wake(void *config){
-    return iphone_on(config);
+    // put Bluetooth into deep sleep
+    system ("echo \"wake on\nquit\" | BlueTool");
+    
+    // return iphone_on(config);
+    return 0;
 }
 
 #ifdef IOKIT
