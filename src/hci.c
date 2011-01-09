@@ -582,6 +582,34 @@ static int hci_power_control_on(){
     return 0;
 }
 
+static int hci_power_control_wake(){
+    
+    log_dbg("hci_power_control_wake");
+
+    // wake on
+    int err = 0;
+    if (hci_stack.control && hci_stack.control->wake){
+        err = (*hci_stack.control->wake)(hci_stack.config);
+    }
+    if (err){
+        log_err( "WAKE_ON failed\n");
+        hci_emit_hci_open_failed();
+        return err;
+    }
+    
+    // open low-level device
+    err = hci_stack.hci_transport->open(hci_stack.config);
+    if (err){
+        log_err( "HCI_INIT failed, turning Bluetooth off again\n");
+        if (hci_stack.control && hci_stack.control->off){
+            (*hci_stack.control->off)(hci_stack.config);
+        }
+        hci_emit_hci_open_failed();
+        return err;
+    }
+    return 0;
+}
+
 static void hci_power_control_off(){
     
     // close low-level device
@@ -595,12 +623,14 @@ static void hci_power_control_off(){
 }
 
 static void hci_power_control_sleep(){
-    
+
+    log_dbg("hci_power_control_sleep");
+
     // close low-level device
     hci_stack.hci_transport->close(hci_stack.config);
     
     // sleep mode
-    if (hci_stack.control && hci_stack.control->off){
+    if (hci_stack.control && hci_stack.control->sleep){
         (*hci_stack.control->sleep)(hci_stack.config);
     }
     hci_stack.state = HCI_STATE_SLEEPING;
@@ -702,6 +732,8 @@ int hci_power_control(HCI_POWER_MODE power_mode){
         case HCI_STATE_SLEEPING:
             switch (power_mode){
                 case HCI_POWER_ON:
+                    err = hci_power_control_wake();
+                    if (err) return err;
                     // set up state machine
                     hci_stack.num_cmd_packets = 1; // assume that one cmd can be sent
                     hci_stack.state = HCI_STATE_INITIALIZING;
@@ -792,9 +824,11 @@ void hci_run(){
             
         case HCI_STATE_HALTING:
 
+            log_dbg("HCI_STATE_HALTING\n");
             // close all open connections
             connection =  (hci_connection_t *) hci_stack.connections;
             if (connection){
+                log_dbg("HCI_STATE_HALTING, connection %u, handle %u\n", (int) connection, connection->con_handle);
                 // send disconnect
                 bt_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
 
@@ -805,10 +839,12 @@ void hci_run(){
                 hci_stack.connections = connection->item.next;
                 return;
             }
+            log_dbg("HCI_STATE_HALTING, calling off\n");
             
             // switch mode
             hci_power_control_off();
             hci_emit_state();
+            log_dbg("HCI_STATE_HALTING, done\n");
             break;
             
         case HCI_STATE_FALLING_ASLEEP:
