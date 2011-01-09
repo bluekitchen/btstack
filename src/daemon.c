@@ -74,6 +74,20 @@
 #define DAEMON_NO_ACTIVE_CLIENT_TIMEOUT 10000
 
 
+typedef struct {
+    // linked list - assert: first field
+    linked_item_t    item;
+    
+    // connection
+    connection_t * connection;
+    
+    // power mode
+    HCI_POWER_MODE power_mode;
+    
+    // discoverable
+    uint8_t        discoverable;
+    
+} client_state_t;
 
 static hci_transport_t * transport;
 static hci_uart_config_t config;
@@ -86,32 +100,34 @@ static int power_management_sleep = 0;
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state);
 static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth_status_handler;
 
-static linked_list_t active_clients = NULL; // list of clients that requested Bluetooth to be active
-static int           active_clients_empty();
-static void          active_clients_remove(connection_t *connection);
-static void          active_clients_add(connection_t *connection);
-static void          active_clients_start_power_off_timer();
-static void          active_clients_stop_power_off_timer();
+static linked_list_t    clients = NULL; // list of connected clients 
+static client_state_t * client_for_connection(connection_t *connection);
+static int              clients_requires_power_on();
+
+static void start_power_off_timer();
+static void stop_power_off_timer();
 
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
     printf("Bluetooth status: %u\n", state);
 };
 
 static void daemon_no_connections_timeout(){
-    if (!active_clients_empty()) return;    // false alarm :)
+    if (clients_requires_power_on()) return;    // false alarm :)
     printf("No active client connection for %u seconds -> POWER OFF\n", DAEMON_NO_ACTIVE_CLIENT_TIMEOUT/1000);
     hci_power_control(HCI_POWER_OFF);
 }
 
 static int btstack_command_handler(connection_t *connection, uint8_t *packet, uint16_t size){
-    // BTstack Commands
+
     hci_dump_packet( HCI_COMMAND_DATA_PACKET, 1, packet, size);
+    
     bd_addr_t addr;
     uint16_t cid;
     uint16_t psm;
     uint16_t mtu;
     uint8_t  reason;
     uint32_t service_record_handle;
+    client_state_t *client;
     
     // BTstack internal commands - 16 Bit OpCode, 8 Bit ParamLen, Params...
     switch (READ_CMD_OCF(packet)){
@@ -120,21 +136,14 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case BTSTACK_SET_POWER_MODE:
             // track client power requests
-            switch (packet[3]) {
-                case HCI_POWER_ON: 
-                    active_clients_add(connection);
-                    break;
-                case HCI_POWER_OFF:
-                    active_clients_remove(connection);
-                    break;
-                default:
-                    break;
-            }
+            client = client_for_connection(connection);
+            if (!client) break;
+            client->power_mode = packet[3];
             // handle merged state
-            if (active_clients_empty()){
-                active_clients_start_power_off_timer();
+            if (!clients_requires_power_on()){
+                start_power_off_timer();
             } else if (!power_management_sleep) {
-                active_clients_stop_power_off_timer();
+                stop_power_off_timer();
                 hci_power_control(HCI_POWER_ON);
             }
             break;
@@ -207,6 +216,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
 static int daemon_client_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t length){
     
     int err = 0;
+    client_state_t * client;
     
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
@@ -227,13 +237,24 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
             break;
         case DAEMON_EVENT_PACKET:
             switch (data[0]) {
+                case DAEMON_EVENT_CONNECTION_OPENED:
+                    client = malloc(sizeof(client_state_t));
+                    if (!client) break; // fail
+                    client->connection   = connection;
+                    client->power_mode   = HCI_POWER_OFF;
+                    client->discoverable = 0;
+                    linked_list_add(&clients, (linked_item_t *) client);
+                    break;
                 case DAEMON_EVENT_CONNECTION_CLOSED:
                     sdp_unregister_services_for_connection(connection);
                     l2cap_close_connection(connection);
-                    active_clients_remove(connection);
-                    printf("Client connection closed. active_clients_empty()=%u\n",active_clients_empty());
-                    if (active_clients_empty()){
-                        active_clients_start_power_off_timer();
+                    client = client_for_connection(connection);
+                    if (!client) break;
+                    linked_list_remove(&clients, (linked_item_t *) client);
+                    free(client);
+                    printf("Client connection closed. clients_requires_power_on()=%u\n",clients_requires_power_on());
+                    if (!clients_requires_power_on()){
+                        start_power_off_timer();
                     }
                     break;
                 case DAEMON_NR_CONNECTIONS_CHANGED:
@@ -312,7 +333,7 @@ static void power_notification_callback(POWER_NOTIFICATION_t notification){
         case POWER_WILL_WAKE_UP:
             // assume that all clients use Bluetooth -> if connection, start Bluetooth
             power_management_sleep = 0;
-            if (!active_clients_empty()) {
+            if (clients_requires_power_on()) {
                 hci_power_control(HCI_POWER_ON);
             }
             break;
@@ -468,49 +489,44 @@ int main (int argc,  char * const * argv){
     return 0;
 }
 
-#pragma mark manage list of active clients
-static int active_clients_empty(){
-    return linked_list_empty(&active_clients);
-}
 
-static void active_clients_add(connection_t *connection){
-    // check if exists -> done
-    linked_item_t *it;
-    for (it = (linked_item_t *) active_clients; it ; it = it->next){
-        if (it->user_data == connection) {
-            return;
-        }
-    }
-    // otherwise add new item
-    linked_item_t *item = malloc(sizeof(linked_item_t));
-    if (!item) return;
-    item->user_data = connection;
-    linked_list_add(&active_clients, item);
-}
+#pragma mark manage power off timer
 
-static void active_clients_remove(connection_t *connection){
-    // iterate over list and remove item for connection
-    linked_item_t *it;
-    for (it = (linked_item_t *) &active_clients; it ; it = it->next){
-        linked_item_t *next = it->next;
-        if (next && next->user_data == connection){
-            it->next = next->next;
-            free(next); // free item
-            return;
-        }
-    }
-}
-
-static void active_clients_stop_power_off_timer(){
+static void stop_power_off_timer(){
     if (timeout_active) {
         run_loop_remove_timer(&timeout);
         timeout_active = 0;
     }
 }
 
-static void active_clients_start_power_off_timer(){
-    active_clients_stop_power_off_timer();
+static void start_power_off_timer(){
+    stop_power_off_timer();
     run_loop_set_timer(&timeout, DAEMON_NO_ACTIVE_CLIENT_TIMEOUT);
     run_loop_add_timer(&timeout);
     timeout_active = 1;
+}
+
+#pragma mark manage list of clients
+
+
+static client_state_t * client_for_connection(connection_t *connection) {
+    linked_item_t *it;
+    for (it = (linked_item_t *) clients; it ; it = it->next){
+        client_state_t * client_state = (client_state_t *) it;
+        if (client_state->connection == connection) {
+            return client_state;
+        }
+    }
+    return NULL;
+}
+
+static int clients_requires_power_on(){
+    linked_item_t *it;
+    for (it = (linked_item_t *) clients; it ; it = it->next){
+        client_state_t * client_state = (client_state_t *) it;
+        if (client_state->power_mode == HCI_POWER_ON) {
+            return 1;
+        }
+    }
+    return 0;
 }
