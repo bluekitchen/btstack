@@ -193,9 +193,9 @@ static int    h4_close(){
     
     // close device 
     close(hci_transport_h4->ds->fd);
-    free(hci_transport_h4->ds);
     
     // free struct
+    free(hci_transport_h4->ds);
     hci_transport_h4->ds = NULL;
     return 0;
 }
