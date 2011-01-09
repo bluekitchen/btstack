@@ -50,7 +50,8 @@ typedef enum {
 typedef struct {
     int          (*on)(void *config);     // <-- turn BT module on and configure
     int          (*off)(void *config);    // <-- turn BT module off
-    int          (*sleep)(void *config);   // <-- put BT module to sleep - only to be called after ON
+    int          (*sleep)(void *config);  // <-- put BT module to sleep    - only to be called after ON
+    int          (*wake)(void *config);   // <-- wake BT module from sleep - only to be called after SLEEP
     int          (*valid)(void *config);  // <-- test if hardware can be supported
     const char * (*name)(void *config);   // <-- return hardware name
 
