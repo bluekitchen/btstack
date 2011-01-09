@@ -14,37 +14,36 @@
 - power handling: handle power changes in all states, receive and handle power notifications, keep track of individual clients
 
 NEXT:
-- check apps for sleep mode compatibility
-  - Keyboard
-  - Mouse
-  - WeBe++
-  - WiiMote example
-  - BTstackManager
+- DONE: provide per client information: connection, power mode
+
+- power handling
+  - check apps for sleep mode compatibility - see what happens on ACTIVATED event
+	- Keyboard
+	- Mouse
+	- WeBe++
+	- WiiMote example
+	- BTstackManager
+  - add wake() to bt_control.h: OFF<->ON<->SLEEP (SLEEP -> OFF is possible)
+  - check if Bluetooth module can be woken up instantly with BlueTool on both CSR and Broadcom chipsets
+
+- automate scan enable management
+  - provide new "set discoverable (on/off)" command and store in per client information
+  - keep track of page scan enable -> active if l2cap services exist
 
 - clean up components
-  - consolidate ios code in port_ios.m (bt_control_iphone.m, platform_iphone.m)
+  - consolidate iOS code in port_ios.m (bt_control_iphone.m, platform_iphone.m)
   - consolidate cocoa/corefoundation code in port_corefoundation.c (remote_device_db)
   - rename bt_control.h -> power_management.h
   - add control of status bar icon to bt_control.h, too.
   - decide on configure flags
-  
-- decide what to do with the CocoaTouch code.
-  - do nothing
+  - dynamic link BTdaemon against libBTstack.dylist
+     
+- decide what to do with the CocoaTouch code. Options:
+  - do nothing (potential problem with multiple dylibs in same process)
   - add it to libBTstack.dylib
-  - provide a libBTstackCocoaTouch.dylib?  
-- power handling
-  - check if Bluetooth module can be woken up instantly with BlueTool on both CSR and Broadcom chipsets
+  - provide a libBTstackCocoaTouch.dylib (less memory usage)
   
-- extend per client information
-  - connection
-  - power mode
-  - discovery
 
-- automate scan enable management
-  - keep track of inquiry scan enable per client
-  - keep track of page sacn enable -> active if l2cap services exist
-
-  
 - move RFCOMM code into BTdaemon
 - have a look at External Accessory interface by Apple - it's quite similar in function to BTstack
 
@@ -66,7 +65,6 @@ NEXT:
   - logging mode: text, bluez, packetlogger
 - add configure option for uart flowcontrol
 - create <btstack/errors.h>
-- Bluetooth low-power modes useful
 
 == USB Support ==
 - Store array of data sources to be able to remove them on usb_close
