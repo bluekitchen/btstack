@@ -12,25 +12,16 @@
 2010-xxxx: Release 0.2 - revions xxx
 - limit size of /tmp/hci_dump.pklg to 1000 packets (max 1 MB)
 - power handling: handle power changes in all states, receive and handle power notifications, keep track of individual clients
+- fixed bugs in cocoa run loop implementation
+- automate scan enable management: hci_set_discoverable(bool) sets inquiry scan, page scan is always active
 
 NEXT:
-- DONE: provide per client information: connection, power mode
-- DONE: fix bug with run_loop_cocoa, after client disconnects
-
-- power handling
-  - DONE: add wake() to bt_control.h: OFF<->ON<->SLEEP (SLEEP -> OFF is possible)
-  - DONE: check if Bluetooth module can be woken up instantly with BlueTool on Broadcom chipsets -> yes
-  - check if Bluetooth module can be woken up instantly with BlueTool on CSR chipsets
-  - check apps for sleep mode compatibility - see what happens on ACTIVATED event
-	- Keyboard
-	- Mouse
-	- WeBe++
-	- WiiMote example
-	- BTstackManager
-
-- automate scan enable management
-  - provide new "set discoverable (on/off)" command and store in per client information
-  - keep track of page scan enable -> active if l2cap services exist
+- check apps for sleep mode/reactivated compatibility - see what happens on ACTIVATED event
+  - WiiMote example
+  - BTstackManager
+  - Keyboard
+  - Mouse
+  - WeBe++
 
 - clean up components
   - consolidate iOS code in port_ios.m (bt_control_iphone.m, platform_iphone.m)
@@ -39,15 +30,13 @@ NEXT:
   - add control of status bar icon to bt_control.h, too.
   - decide on configure flags
   - dynamic link BTdaemon against libBTstack.dylist
-     
+
 - decide what to do with the CocoaTouch code. Options:
   - do nothing (potential problem with multiple dylibs in same process)
   - add it to libBTstack.dylib
   - provide a libBTstackCocoaTouch.dylib (less memory usage)
-  
 
 - move RFCOMM code into BTdaemon
-- have a look at External Accessory interface by Apple - it's quite similar in function to BTstack
 
 - HCI CMD packet is limited to 1024 bytes payload. SDP records could be larger than that. Options:
   - provide a way to transfer SDP records in segments

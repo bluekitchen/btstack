@@ -89,6 +89,9 @@ extern "C" {
 // set system Bluetooth state
 #define BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED               0x06
 
+// enable inquiry scan for this client
+#define BTSTACK_SET_DISCOVERABLE                           0x07
+
 // create l2cap channel: @param bd_addr(48), psm (16)
 #define L2CAP_CREATE_CHANNEL                               0x20
 
@@ -223,6 +226,9 @@ typedef struct {
     uint8_t   substate;
     uint8_t   cmds_ready;
     
+    /* */
+    uint8_t   discoverable;
+    
 } hci_stack_t;
 
 // create and send hci command packets based on a template and a list of parameters
@@ -268,6 +274,7 @@ void hci_emit_hci_open_failed();
 void hci_emit_btstack_version();
 void hci_emit_system_bluetooth_enabled(uint8_t enabled);
 void hci_emit_remote_name_cached(bd_addr_t *addr, device_name_t *name);
+void hci_emit_discoverable_enabled(uint8_t enabled);
 
 #if defined __cplusplus
 }
