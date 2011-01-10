@@ -145,6 +145,20 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		}
 	}
 }
+-(void) sendSleepEnter {
+	for (NSObject<BTstackManagerListener>* listener in listeners) {
+		if ([listener respondsToSelector:@selector(sleepModeEnterBTstackManager:)]){
+			[listener sleepModeEnterBTstackManager:self];
+		}
+	}
+}
+-(void) sendSleepExit {
+	for (NSObject<BTstackManagerListener>* listener in listeners) {
+		if ([listener respondsToSelector:@selector(sleepModeExtitBTstackManager:)]){
+			[listener sleepModeExtitBTstackManager:self];
+		}
+	}
+}
 -(void) sendDiscoveryStoppedEvent {
 	for (NSObject<BTstackManagerListener>* listener in listeners) {
 		if ([listener respondsToSelector:@selector(discoveryStoppedBTstackManager:)]){
@@ -320,11 +334,23 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			break;
 			
 		case kW4Deactivated:
-			if (packet[0] == BTSTACK_EVENT_STATE){
-				if (packet[2] == HCI_STATE_OFF){
-					state = kDeactivated;
-					[self sendDeactivated];
-				}
+			if (packet[0] != BTSTACK_EVENT_STATE && packet[2] == HCI_STATE_OFF){
+				state = kDeactivated;
+				[self sendDeactivated];
+			}
+			break;
+		
+		case kActivated:
+			if (packet[0] != BTSTACK_EVENT_STATE && packet[2] == HCI_STATE_FALLING_ASLEEP){
+				state = kSleeping;
+				[self sendSleepEnter];
+			}
+			break;
+			
+		case kSleeping:
+			if (packet[0] != BTSTACK_EVENT_STATE && packet[2] == HCI_STATE_WORKING){
+				state = kActivated;
+				[self sendSleepExit];
 			}
 			break;
 			
@@ -554,6 +580,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		case kW4SysBTDisabled:
 		case kW4Activated:
 		case kW4Deactivated:
+		case kSleeping:
 			if (packet_type != HCI_EVENT_PACKET) break;
 			[self activationHandleEvent:packet withLen:size];
 			break;
@@ -562,6 +589,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		case kActivated:
 			if (packet_type != HCI_EVENT_PACKET) break;
 			switch (packet[0]){
+				case BTSTACK_EVENT_STATE:
+					[self activationHandleEvent:packet withLen:size];
+					break;
 				case HCI_EVENT_LINK_KEY_REQUEST:
 					[self handleLinkKeyRequestEvent:packet withLen:size];
 					break;

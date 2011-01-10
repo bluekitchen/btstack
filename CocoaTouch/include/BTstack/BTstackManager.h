@@ -57,6 +57,7 @@ typedef enum {
 	kW4Activated,
 	kActivated,
 	kW4Deactivated,
+	kSleeping,
 #if 0
 	kW4DisoveryStopped,
 	kW4AuthenticationEnableCommand
@@ -168,6 +169,10 @@ typedef enum {
 -(void) activatedBTstackManager:(BTstackManager*) manager;
 -(void) btstackManager:(BTstackManager*)manager activationFailed:(BTstackError)error;
 -(void) deactivatedBTstackManager:(BTstackManager*) manager;
+
+// Power management events
+-(void) sleepModeEnterBTstackManager:(BTstackManager*) manager;
+-(void) sleepModeExtitBTstackManager:(BTstackManager*) manager;
 
 // Discovery events: general
 -(void) btstackManager:(BTstackManager*)manager deviceInfo:(BTDevice*)device;
