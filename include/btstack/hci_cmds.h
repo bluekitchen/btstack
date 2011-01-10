@@ -206,7 +206,8 @@ extern const hci_cmd_t btstack_set_acl_capture_mode;
 extern const hci_cmd_t btstack_get_version;
 extern const hci_cmd_t btstack_get_system_bluetooth_enabled;
 extern const hci_cmd_t btstack_set_system_bluetooth_enabled;
-
+extern const hci_cmd_t btstack_set_discoverable;
+	
 extern const hci_cmd_t hci_accept_connection_request;
 extern const hci_cmd_t hci_authentication_requested;
 extern const hci_cmd_t hci_create_connection;
@@ -258,7 +259,7 @@ extern const hci_cmd_t rfcomm_create_channel;
 extern const hci_cmd_t rfcomm_decline_connection;
 extern const hci_cmd_t rfcomm_disconnect;
 extern const hci_cmd_t rfcomm_register_service;
-extern const  hci_cmd_t rfcomm_unregister_service;
+extern const hci_cmd_t rfcomm_unregister_service;
 
 #if defined __cplusplus
 }

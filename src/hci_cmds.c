@@ -342,6 +342,12 @@ const hci_cmd_t btstack_set_system_bluetooth_enabled = {
 OPCODE(OGF_BTSTACK, BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED), "1"
 };
 
+const hci_cmd_t btstack_set_discoverable = {
+OPCODE(OGF_BTSTACK, BTSTACK_SET_DISCOVERABLE), "1"
+};
+
+
+
 const hci_cmd_t l2cap_create_channel = {
 OPCODE(OGF_BTSTACK, L2CAP_CREATE_CHANNEL), "B2"
 // @param bd_addr(48), psm (16)
