@@ -17,11 +17,25 @@
 
 NEXT:
 - check apps for sleep mode/reactivated compatibility - see what happens on ACTIVATED event
-  - WiiMote example
   - BTstackManager
+  - WiiMote example
   - Keyboard
   - Mouse
   - WeBe++
+
+- BTstackManager & new remote_db
+  - don't keep device info
+  - don't hanle link keys
+  
+- create Retina status bar icons
+
+- bugs:
+  - verify: if (hic?) disconnect fails, l2cap channels are never discarded
+
+- get rid of BTInquireViewController
+  - update WiiMoteExample to use BTstackManager
+  - Update/rewrite BTstack Keyboard
+  - delete BTInquireViewController
 
 - clean up components
   - consolidate iOS code in port_ios.m (bt_control_iphone.m, platform_iphone.m)
@@ -30,11 +44,6 @@ NEXT:
   - add control of status bar icon to bt_control.h, too.
   - decide on configure flags
   - dynamic link BTdaemon against libBTstack.dylist
-
-- decide what to do with the CocoaTouch code. Options:
-  - do nothing (potential problem with multiple dylibs in same process)
-  - add it to libBTstack.dylib
-  - provide a libBTstackCocoaTouch.dylib (less memory usage)
 
 - move RFCOMM code into BTdaemon
 
@@ -63,6 +72,10 @@ NEXT:
 
 == Objective-C Interface ==
 - have a look at External Accessory interface by Apple - it's quite similar
+- decide what to do with the CocoaTouch code. Options:
+  - do nothing (potential problem with multiple dylibs in same process)
+  - add it to libBTstack.dylib
+  - provide a libBTstackCocoaTouch.dylib (less memory usage)
 - move connection methods to BTdevice (get more object oriented)
   - initWithAddress:(bd_addr_t *)addr
   - setters private
