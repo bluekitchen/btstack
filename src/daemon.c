@@ -89,30 +89,30 @@ typedef struct {
     
 } client_state_t;
 
-static hci_transport_t * transport;
-static hci_uart_config_t config;
-
-static timer_source_t timeout;
-static uint8_t timeout_active = 0;
-
-static int power_management_sleep = 0;
-
+#pragma mark prototypes
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state);
-static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth_status_handler;
-
-static linked_list_t    clients = NULL; // list of connected clients 
 static client_state_t * client_for_connection(connection_t *connection);
-static int              clients_requires_power_on();
-
+static int              clients_require_power_on();
+static int              clients_require_discoverable();
 static void start_power_off_timer();
 static void stop_power_off_timer();
+
+#pragma mark globals
+static hci_transport_t * transport;
+static hci_uart_config_t config;
+static timer_source_t timeout;
+static uint8_t timeout_active = 0;
+static int power_management_sleep = 0;
+static linked_list_t    clients = NULL; // list of connected clients 
+static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth_status_handler;
+
 
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
     printf("Bluetooth status: %u\n", state);
 };
 
 static void daemon_no_connections_timeout(){
-    if (clients_requires_power_on()) return;    // false alarm :)
+    if (clients_require_power_on()) return;    // false alarm :)
     printf("No active client connection for %u seconds -> POWER OFF\n", DAEMON_NO_ACTIVE_CLIENT_TIMEOUT/1000);
     hci_power_control(HCI_POWER_OFF);
 }
@@ -140,7 +140,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             if (!client) break;
             client->power_mode = packet[3];
             // handle merged state
-            if (!clients_requires_power_on()){
+            if (!clients_require_power_on()){
                 start_power_off_timer();
             } else if (!power_management_sleep) {
                 stop_power_off_timer();
@@ -153,7 +153,9 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
 #ifdef USE_BLUETOOL
         case BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED:
             iphone_system_bt_set_enabled(packet[3]);
-            // fall through .. :)
+            hci_emit_system_bluetooth_enabled(iphone_system_bt_enabled());
+            break;
+            
         case BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED:
             hci_emit_system_bluetooth_enabled(iphone_system_bt_enabled());
             break;
@@ -163,6 +165,14 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             hci_emit_system_bluetooth_enabled(0);
             break;
 #endif
+        case BTSTACK_SET_DISCOVERABLE:
+            // track client discoverable requests
+            client = client_for_connection(connection);
+            if (!client) break;
+            client->discoverable = packet[3];
+            // merge state
+            hci_discoverable_control(clients_require_discoverable());
+            break;
         case L2CAP_CREATE_CHANNEL_MTU:
             bt_flip_addr(addr, &packet[3]);
             psm = READ_BT_16(packet, 9);
@@ -252,8 +262,10 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                     if (!client) break;
                     linked_list_remove(&clients, (linked_item_t *) client);
                     free(client);
-                    printf("Client connection closed. clients_requires_power_on()=%u\n",clients_requires_power_on());
-                    if (!clients_requires_power_on()){
+                    // update discoverable mode
+                    hci_discoverable_control(clients_require_discoverable());
+                    // start power off, if last active client
+                    if (!clients_require_power_on()){
                         start_power_off_timer();
                     }
                     break;
@@ -333,7 +345,7 @@ static void power_notification_callback(POWER_NOTIFICATION_t notification){
         case POWER_WILL_WAKE_UP:
             // assume that all clients use Bluetooth -> if connection, start Bluetooth
             power_management_sleep = 0;
-            if (clients_requires_power_on()) {
+            if (clients_require_power_on()) {
                 hci_power_control(HCI_POWER_ON);
             }
             break;
@@ -528,11 +540,22 @@ static client_state_t * client_for_connection(connection_t *connection) {
     return NULL;
 }
 
-static int clients_requires_power_on(){
+static int clients_require_power_on(){
     linked_item_t *it;
     for (it = (linked_item_t *) clients; it ; it = it->next){
         client_state_t * client_state = (client_state_t *) it;
         if (client_state->power_mode == HCI_POWER_ON) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int clients_require_discoverable(){
+    linked_item_t *it;
+    for (it = (linked_item_t *) clients; it ; it = it->next){
+        client_state_t * client_state = (client_state_t *) it;
+        if (client_state->discoverable) {
             return 1;
         }
     }

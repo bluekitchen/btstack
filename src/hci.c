@@ -344,6 +344,9 @@ static void event_handler(uint8_t *packet, int size){
                     log_dbg("hci_read_buffer_size: size %u, count %u\n", hci_stack.acl_data_packet_length, hci_stack.total_num_acl_packets); 
                 }
             }
+            if (COMMAND_COMPLETE_EVENT(packet, hci_write_scan_enable)){
+                hci_emit_discoverable_enabled(hci_stack.discoverable);
+            }
             break;
             
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
@@ -758,6 +761,18 @@ int hci_power_control(HCI_POWER_MODE power_mode){
     return 0;
 }
 
+void hci_discoverable_control(uint8_t enable){
+    if (enable) enable = 1; // normalize argument
+    
+    if (hci_stack.discoverable == enable){
+        hci_emit_discoverable_enabled(hci_stack.discoverable);
+        return;
+    }
+    
+    hci_send_cmd(&hci_write_scan_enable, 2 | enable); // 1 = inq scan, 2 = page scan
+    hci_stack.discoverable = enable;
+}
+
 void hci_run(){
     
     if (hci_stack.num_cmd_packets == 0) {
@@ -1024,5 +1039,15 @@ void hci_emit_remote_name_cached(bd_addr_t *addr, device_name_t *name){
     bt_flip_addr(&event[3], *addr);
     memcpy(&event[9], name, 248);
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, len);
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
+}
+
+void hci_emit_discoverable_enabled(uint8_t enabled){
+    uint8_t len = 3; 
+    uint8_t event[len];
+    event[0] = BTSTACK_EVENT_DISCOVERABLE_ENABLED;
+    event[1] = len - 2;
+    event[2] = enabled;
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
     hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
 }
