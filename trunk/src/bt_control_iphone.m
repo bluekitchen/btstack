@@ -458,8 +458,8 @@ static int iphone_on (void *transport_config){
     } else {
         // no way!
         fprintf(stderr, "bt_control.c:iphone_on(): Failed to open '%s', trying killall %s\n", hci_uart_config->device_name, bluetool);
-        sprintf(buffer, "killall %s", bluetool);
-        system(buffer);
+        system("killall -9 BlueToolH4");
+        system("killall -9 BlueTool");
         sleep(3); 
         
         // try again
@@ -468,9 +468,9 @@ static int iphone_on (void *transport_config){
             close(fd);
         } else {
             fprintf(stderr, "bt_control.c:iphone_on(): Failed to open '%s' again, trying killall BTServer and killall %s\n", hci_uart_config->device_name, bluetool);
-            system("killall BTServer");
-            sprintf(buffer, "killall %s", bluetool);
-            system(buffer);
+            system("killall -9 BTServer");
+            system("killall -9 BlueToolH4");
+            system("killall -9 BlueTool");
             sleep(3); 
         }
     }
@@ -551,16 +551,12 @@ static int iphone_off (void *config){
 static int iphone_sleep(void *config){
     // put Bluetooth into deep sleep
     system ("echo \"wake off\nquit\" | BlueTool");
-    
-    // return iphone_off(config);
     return 0;
 }
 
 static int iphone_wake(void *config){
-    // put Bluetooth into deep sleep
+    // wake up Bluetooth module
     system ("echo \"wake on\nquit\" | BlueTool");
-    
-    // return iphone_on(config);
     return 0;
 }
 
