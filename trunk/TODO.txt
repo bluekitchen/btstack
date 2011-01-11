@@ -16,22 +16,19 @@
 - automate scan enable management: hci_set_discoverable(bool) sets inquiry scan, page scan is always active
 
 NEXT:
-- check apps for sleep mode/reactivated compatibility - see what happens on ACTIVATED event
-  - BTstackManager
-  - WiiMote example
-  - Keyboard
-  - Mouse
-  - WeBe++
+- check apps for sleep/wake mode compatibility - see what happens on ACTIVATED event
+  - update WiiMote example to use BTstackManager
 
 - BTstackManager & new remote_db
   - don't keep device info
-  - don't hanle link keys
-  
+  - don't handle link keys
+  - react to remote_name_cached event
+    
 - create Retina status bar icons
 
 - bugs:
   - verify: if (hic?) disconnect fails, l2cap channels are never discarded
-
+  - verify: TestBTstackManager can do an inquiry, with 0 or more devices in the list
 - get rid of BTInquireViewController
   - update WiiMoteExample to use BTstackManager
   - Update/rewrite BTstack Keyboard

@@ -585,34 +585,6 @@ static int hci_power_control_on(){
     return 0;
 }
 
-static int hci_power_control_wake(){
-    
-    log_dbg("hci_power_control_wake");
-
-    // wake on
-    int err = 0;
-    if (hci_stack.control && hci_stack.control->wake){
-        err = (*hci_stack.control->wake)(hci_stack.config);
-    }
-    if (err){
-        log_err( "WAKE_ON failed\n");
-        hci_emit_hci_open_failed();
-        return err;
-    }
-    
-    // open low-level device
-    err = hci_stack.hci_transport->open(hci_stack.config);
-    if (err){
-        log_err( "HCI_INIT failed, turning Bluetooth off again\n");
-        if (hci_stack.control && hci_stack.control->off){
-            (*hci_stack.control->off)(hci_stack.config);
-        }
-        hci_emit_hci_open_failed();
-        return err;
-    }
-    return 0;
-}
-
 static void hci_power_control_off(){
     
     // close low-level device
@@ -626,18 +598,49 @@ static void hci_power_control_off(){
 }
 
 static void hci_power_control_sleep(){
-
+    
     log_dbg("hci_power_control_sleep");
-
+    
+#if 0
+    // don't close serial port during sleep
+    
     // close low-level device
     hci_stack.hci_transport->close(hci_stack.config);
+#endif
     
     // sleep mode
     if (hci_stack.control && hci_stack.control->sleep){
         (*hci_stack.control->sleep)(hci_stack.config);
     }
+    
     hci_stack.state = HCI_STATE_SLEEPING;
 }
+
+static int hci_power_control_wake(){
+    
+    log_dbg("hci_power_control_wake");
+
+    // wake on
+    if (hci_stack.control && hci_stack.control->wake){
+        (*hci_stack.control->wake)(hci_stack.config);
+    }
+    
+#if 0
+    // open low-level device
+    int err = hci_stack.hci_transport->open(hci_stack.config);
+    if (err){
+        log_err( "HCI_INIT failed, turning Bluetooth off again\n");
+        if (hci_stack.control && hci_stack.control->off){
+            (*hci_stack.control->off)(hci_stack.config);
+        }
+        hci_emit_hci_open_failed();
+        return err;
+    }
+#endif
+    
+    return 0;
+}
+
 
 int hci_power_control(HCI_POWER_MODE power_mode){
     
