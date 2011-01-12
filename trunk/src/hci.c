@@ -305,7 +305,7 @@ static void acl_handler(uint8_t *packet, int size){
     hci_run();
 }
 
-static hci_shutdown_connection(hci_connection_t *conn){
+static void hci_shutdown_connection(hci_connection_t *conn){
     log_dbg("Connection closed: handle %u, ", conn->con_handle);
     print_bd_addr( conn->address );
     log_dbg("\n");
