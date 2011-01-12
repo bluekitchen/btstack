@@ -91,8 +91,7 @@ static struct libusb_transfer *bulk_in_transfer;
 static struct libusb_transfer *bulk_out_transfer;
 
 
-int find_bt(libusb_device **devs)
-{
+static libusb_device * find_bt(libusb_device **devs) {
 	int i = 0;
 	while ((dev = devs[i++]) != NULL) {
 		int r = libusb_get_device_descriptor(dev, &desc);
@@ -113,10 +112,10 @@ int find_bt(libusb_device **devs)
 		if (desc.bDeviceClass == 0xe0 && desc.bDeviceSubClass == 0x01 && desc.bDeviceProtocol == 0x01){
 		// if (desc.idVendor == 0x0a12 && desc.idProduct == 0x0001){
 			printf("BT Dongle found.\n");
-			return 1;
+			return dev;
 		}
 	}
-	return 0;
+	return NULL;
 }
 
 static void control_callback(struct libusb_transfer *transfer){
@@ -192,31 +191,33 @@ static int usb_open(void *transport_config){
 	
 	// USB init
     r = libusb_init(NULL);
-	if (r < 0) {
-		return r;
-    }
+	if (r < 0) return -1;
     libusb_state = LIB_USB_OPENED;
     
 	// Get Devices 
     cnt = libusb_get_device_list(NULL, &devs);
 	if (cnt < 0) {
 		usb_close();
-        return (int) cnt;
+        return -1;
     }	
 	// Find BT modul
-    r = find_bt(devs);
-	if (r) {
-		r = libusb_open(dev, &handle);
-		printf("libusb open %d, handle %xu\n", r, (int) handle);
-        libusb_state = LIB_USB_OPENED;
-	}
+    libusb_device * aDev  = find_bt(devs);
+    if (!aDev){
+        libusb_free_device_list(devs, 1);
+        usb_close();
+        return -1;
+    }
+    dev = aDev;
+    r = libusb_open(dev, &handle);
+    printf("libusb open %d, handle %xu\n", r, (int) handle);
+    libusb_state = LIB_USB_OPENED;
 	libusb_free_device_list(devs, 1);
 	if (r < 0) {
         usb_close();
         return r;
 	}
 	
-	// libusb_set_debug(0,3);
+	libusb_set_debug(0,3);
     
     // Detach OS driver (not possible for OS X)
 #ifndef __APPLE__
