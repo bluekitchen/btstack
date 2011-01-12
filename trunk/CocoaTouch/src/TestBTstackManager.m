@@ -37,14 +37,13 @@
 
 -(void) activatedBTstackManager:(BTstackManager*) manager {
 	NSLog(@"activated!");
-	// [bt startDiscovery];
+	[bt startDiscovery];
 }
 -(void) btstackManager:(BTstackManager*)manager activationFailed:(BTstackError)error {
 	NSLog(@"activationFailed error 0x%02x!", error);
 };
 -(void) discoveryInquiryBTstackManager:(BTstackManager*) manager {
 	NSLog(@"discoveryInquiry!");
-	[bt storeDeviceInfo];
 }
 -(void) discoveryStoppedBTstackManager:(BTstackManager*) manager {
 	NSLog(@"discoveryStopped!");

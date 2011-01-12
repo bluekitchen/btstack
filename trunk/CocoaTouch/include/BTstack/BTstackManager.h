@@ -121,9 +121,6 @@ typedef enum {
 // Link Key Management
 -(void) dropLinkKeyForAddress:(bd_addr_t*) address;
 
-// store remote names and link keys
--(void)storeDeviceInfo;
-
 // Connections
 -(BTstackError) createL2CAPChannelAtAddress:(bd_addr_t*) address withPSM:(uint16_t)psm authenticated:(BOOL)authentication;
 -(BTstackError) closeL2CAPChannelWithID:(uint16_t) channelID;
@@ -135,8 +132,6 @@ typedef enum {
 
 
 // TODO add l2cap and rfcomm incoming commands
-
-
 @property (nonatomic, assign) NSObject<BTstackManagerDelegate>* delegate;
 @property (nonatomic, retain) NSMutableDictionary *deviceInfo;
 @property (nonatomic, retain) NSMutableArray *discoveredDevices;
