@@ -848,7 +848,7 @@ void hci_run(){
             if (connection){
                 log_dbg("HCI_STATE_HALTING, connection %u, handle %u\n", (int) connection, connection->con_handle);
                 // send disconnect
-                bt_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
+                hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
 
                 // send disconnected event right away - causes higher layer connections to get closed, too.
                 hci_shutdown_connection(connection);
@@ -870,7 +870,7 @@ void hci_run(){
             connection =  (hci_connection_t *) hci_stack.connections;
             if (connection){
                 // send disconnect
-                bt_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
+                hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
                 
                 // send disconnected event right away - causes higher layer connections to get closed, too.
                 hci_shutdown_connection(connection);
