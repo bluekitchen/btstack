@@ -109,8 +109,8 @@ static libusb_device * find_bt(libusb_device **devs) {
 		// The class code (bDeviceClass) is 0xE0 – Wireless Controller. 
 		// The SubClass code (bDeviceSubClass) is 0x01 – RF Controller. 
 		// The Protocol code (bDeviceProtocol) is 0x01 – Bluetooth programming.
-		if (desc.bDeviceClass == 0xe0 && desc.bDeviceSubClass == 0x01 && desc.bDeviceProtocol == 0x01){
-		// if (desc.idVendor == 0x0a12 && desc.idProduct == 0x0001){
+		// if (desc.bDeviceClass == 0xe0 && desc.bDeviceSubClass == 0x01 && desc.bDeviceProtocol == 0x01){
+		if (desc.idVendor == USB_VENDOR_ID && desc.idProduct == USB_PRODUCT_ID){
 			printf("BT Dongle found.\n");
 			return dev;
 		}
