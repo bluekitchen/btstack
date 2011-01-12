@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D30AB110D05D00D00671497 /* Foundation.framework */; };
 		1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
-		288765FD0DF74451002DB57D /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 288765FC0DF74451002DB57D /* CoreGraphics.framework */; };
 		9C04BB16107E9AD8002A63D0 /* BTDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C04BB12107E9AD8002A63D0 /* BTDevice.m */; };
 		9C04BBFF10824CDD002A63D0 /* libBTstack.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C04BBFE10824CDD002A63D0 /* libBTstack.dylib */; };
 		9C9AB4F412525E65008B4D52 /* BTDiscoveryViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C9AB4F112525E65008B4D52 /* BTDiscoveryViewController.m */; };
@@ -21,12 +20,13 @@
 		1D30AB110D05D00D00671497 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		1D6058910D05DD3D006BFB54 /* BTstackCocoa.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BTstackCocoa.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1DF5F4DF0D08C38300B7A737 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
-		288765FC0DF74451002DB57D /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		32CA4F630368D1EE00C91783 /* BTstackCocoa_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BTstackCocoa_Prefix.pch; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* BTstackCocoa-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "BTstackCocoa-Info.plist"; plistStructureDefinitionIdentifier = "com.apple.xcode.plist.structure-definition.iphone.info-plist"; sourceTree = "<group>"; };
 		9C04BB12107E9AD8002A63D0 /* BTDevice.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = BTDevice.m; path = src/BTDevice.m; sourceTree = "<group>"; };
 		9C04BB19107E9AEF002A63D0 /* BTDevice.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = BTDevice.h; path = include/BTstack/BTDevice.h; sourceTree = "<group>"; };
 		9C04BBFE10824CDD002A63D0 /* libBTstack.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libBTstack.dylib; path = ../src/libBTstack.dylib; sourceTree = SOURCE_ROOT; };
+		9C5E109512DE4FD80013EF2C /* BTDiscoveryViewController.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = BTDiscoveryViewController.h; path = include/BTstack/BTDiscoveryViewController.h; sourceTree = "<group>"; };
+		9C5E109612DE4FD80013EF2C /* BTstackManager.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = BTstackManager.h; path = include/BTstack/BTstackManager.h; sourceTree = "<group>"; };
 		9C9AB4F112525E65008B4D52 /* BTDiscoveryViewController.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = BTDiscoveryViewController.m; path = src/BTDiscoveryViewController.m; sourceTree = "<group>"; };
 		9C9AB4F212525E65008B4D52 /* BTstackManager.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = BTstackManager.m; path = src/BTstackManager.m; sourceTree = "<group>"; };
 		9C9AB4F312525E65008B4D52 /* TestBTstackManager.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = TestBTstackManager.m; path = src/TestBTstackManager.m; sourceTree = "<group>"; };
@@ -39,7 +39,6 @@
 			files = (
 				1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */,
 				1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */,
-				288765FD0DF74451002DB57D /* CoreGraphics.framework in Frameworks */,
 				9C04BBFF10824CDD002A63D0 /* libBTstack.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -89,7 +88,6 @@
 			children = (
 				1DF5F4DF0D08C38300B7A737 /* UIKit.framework */,
 				1D30AB110D05D00D00671497 /* Foundation.framework */,
-				288765FC0DF74451002DB57D /* CoreGraphics.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -97,6 +95,8 @@
 		9C04BB11107E9AC0002A63D0 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				9C5E109512DE4FD80013EF2C /* BTDiscoveryViewController.h */,
+				9C5E109612DE4FD80013EF2C /* BTstackManager.h */,
 				9C04BB19107E9AEF002A63D0 /* BTDevice.h */,
 				9C04BB12107E9AD8002A63D0 /* BTDevice.m */,
 				9C9AB4F112525E65008B4D52 /* BTDiscoveryViewController.m */,
@@ -133,7 +133,14 @@
 			isa = PBXProject;
 			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "BTstackCocoa" */;
 			compatibilityVersion = "Xcode 3.1";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* CustomTemplate */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -217,7 +224,7 @@
 				);
 				PREBINDING = NO;
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
-				SDKROOT = iphoneos2.0;
+				SDKROOT = iphonesimulator4.0;
 			};
 			name = Debug;
 		};
@@ -236,7 +243,7 @@
 				);
 				PREBINDING = NO;
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
-				SDKROOT = iphoneos2.0;
+				SDKROOT = iphonesimulator4.0;
 			};
 			name = Release;
 		};
