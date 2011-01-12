@@ -71,9 +71,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	_delegate = nil;
 	[self setListeners:[[NSMutableArray alloc] init]];
 	
-	// read device database
-	[self readDeviceInfo];
-	
 	// Use Cocoa run loop
 	run_loop_init(RUN_LOOP_COCOA);
 	
@@ -97,30 +94,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 -(void) removeListener:(id<BTstackManagerListener>)listener{
 	[listeners removeObject:listener];
-}
-
-// Device info
--(void)readDeviceInfo {
-	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-	NSDictionary * dict = [defaults persistentDomainForName:BTstackManagerID];
-	[self setDeviceInfo:[NSMutableDictionary dictionaryWithCapacity:([dict count]+5)]];
-	
-	// copy entries
-	for (id key in dict) {
-		NSDictionary *value = [dict objectForKey:key];
-		NSMutableDictionary *deviceEntry = [NSMutableDictionary dictionaryWithCapacity:[value count]];
-		[deviceEntry addEntriesFromDictionary:value];
-		[deviceInfo setObject:deviceEntry forKey:key];
-	}
-	// NSLog(@"read prefs %@", deviceInfo );
-}
-
--(void)storeDeviceInfo{
-	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setPersistentDomain:deviceInfo forName:BTstackManagerID];
-    [defaults synchronize];
-	// NSLog(@"store prefs %@", deviceInfo);
-	// NSLog(@"Persistence Domain names %@", [defaults persistentDomainNames]);
 }
 
 // send events
@@ -234,6 +207,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 // Discovery
 -(BTstackError) startDiscovery {
 	if (state < kActivated) return BTSTACK_NOT_ACTIVATED;
+	
 	discoveryState = kW4InquiryMode;
 	bt_send_cmd(&hci_write_inquiry_mode, 0x01); // with RSSI
 	return 0;
@@ -381,6 +355,42 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	}
 }
 
+- (void) handleRemoteName: (uint8_t *) packet {
+	bd_addr_t addr;
+	bt_flip_addr(addr, &packet[3]);
+	// NSLog(@"Get remote name done for %@", [BTDevice stringForAddress:&addr]);
+	BTDevice* device = [self deviceForAddress:&addr];
+	if (device) {
+		if (packet[2] == 0) {
+			// get lenght: first null byte or max 248 chars
+			int nameLen = 0;
+			while (nameLen < 248 && packet[9+nameLen]) nameLen++;
+			// Bluetooth specification mandates UTF-8 encoding...
+			NSString *name = [[NSString alloc] initWithBytes:&packet[9] length:nameLen encoding:NSUTF8StringEncoding];
+			// but fallback to latin-1 for non-standard products like old Microsoft Wireless Presenter 
+			if (!name){
+				name = [[NSString alloc] initWithBytes:&packet[9] length:nameLen encoding:NSISOLatin1StringEncoding];
+			}
+			// check again
+			if (name){
+				device.name = name;
+				// set in device info
+				NSString *addrString = [[device addressString] retain];
+				NSMutableDictionary * deviceDict = [deviceInfo objectForKey:addrString];
+				if (!deviceDict){
+					deviceDict = [NSMutableDictionary dictionaryWithCapacity:3];
+					[deviceInfo setObject:deviceDict forKey:addrString];
+				}
+				[deviceDict setObject:name forKey:PREFS_REMOTE_NAME];						
+				[addrString release];
+				[self sendDeviceInfo:device];
+			}
+		}
+		discoveryDeviceIndex++;
+		[self discoveryRemoteName];
+	}
+}
+
 -(void) discoveryHandleEvent:(uint8_t *)packet withLen:(uint16_t) size {
 	bd_addr_t addr;
 	int i;
@@ -455,6 +465,10 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					}
 					break;
 
+				case BTSTACK_EVENT_REMOTE_NAME_CACHED:
+					[self handleRemoteName:packet];
+					break;
+					
 				case HCI_EVENT_INQUIRY_COMPLETE:
 					// printf("Inquiry scan done.\n");
 					discoveryState = kRemoteName;
@@ -466,38 +480,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			
 		case kRemoteName:
 			if (packet[0] == HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE){
-				bt_flip_addr(addr, &packet[3]);
-				// NSLog(@"Get remote name done for %@", [BTDevice stringForAddress:&addr]);
-				BTDevice* device = [self deviceForAddress:&addr];
-				if (device) {
-					if (packet[2] == 0) {
-						// get lenght: first null byte or max 248 chars
-						int nameLen = 0;
-						while (nameLen < 248 && packet[9+nameLen]) nameLen++;
-						// Bluetooth specification mandates UTF-8 encoding...
-						NSString *name = [[NSString alloc] initWithBytes:&packet[9] length:nameLen encoding:NSUTF8StringEncoding];
-						// but fallback to latin-1 for non-standard products like old Microsoft Wireless Presenter 
-						if (!name){
-							name = [[NSString alloc] initWithBytes:&packet[9] length:nameLen encoding:NSISOLatin1StringEncoding];
-						}
-						// check again
-						if (name){
-							device.name = name;
-							// set in device info
-							NSString *addrString = [[device addressString] retain];
-							NSMutableDictionary * deviceDict = [deviceInfo objectForKey:addrString];
-							if (!deviceDict){
-								deviceDict = [NSMutableDictionary dictionaryWithCapacity:3];
-								[deviceInfo setObject:deviceDict forKey:addrString];
-							}
-							[deviceDict setObject:name forKey:PREFS_REMOTE_NAME];						
-							[addrString release];
-							[self sendDeviceInfo:device];
-						}
-					}
-					discoveryDeviceIndex++;
-					[self discoveryRemoteName];
-				}
+				[self handleRemoteName:packet];
 			}
 			break;
 
@@ -529,39 +512,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	}
 }
 
--(void) handleLinkKeyRequestEvent:(uint8_t *)packet withLen:(uint16_t) len {
-	bd_addr_t event_addr;
-	bt_flip_addr(event_addr, &packet[2]);
-	// get link key from deviceInfo
-	NSString *devAddress = devAddress = [BTDevice stringForAddress:&event_addr];
-	NSMutableDictionary * deviceDict = [deviceInfo objectForKey:devAddress];
-	NSData *linkKey = nil;
-	if (deviceDict){
-		linkKey = [deviceDict objectForKey:PREFS_LINK_KEY];
-	}
-	
-	if (linkKey) {
-		// NSLog(@"Sending link key for %@, value %@", devAddress, linkKey);
-		bt_send_cmd(&hci_link_key_request_reply, &event_addr, [linkKey bytes]);
-	} else {
-		bt_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
-	}
-}
-
--(void) handleLinkKeyNotificationEvent:(uint8_t *)packet withLen:(uint16_t) len {
-	bd_addr_t event_addr;
-	bt_flip_addr(event_addr, &packet[2]); 
-	NSString *devAddress = [BTDevice stringForAddress:&event_addr];
-	NSData *linkKey = [NSData dataWithBytes:&packet[8] length:16];
-	NSMutableDictionary * deviceDict = [deviceInfo objectForKey:devAddress];
-	if (!deviceDict){
-		deviceDict = [NSMutableDictionary dictionaryWithCapacity:3];
-		[deviceInfo setObject:deviceDict forKey:devAddress];
-	}
-	[deviceDict setObject:linkKey forKey:PREFS_LINK_KEY];
-	// NSLog(@"Adding link key for %@, value %@", devAddress, linkKey);
-}
-
 -(void) dropLinkKeyForAddress:(bd_addr_t*) address {
 	NSString *devAddress = [BTDevice stringForAddress:address];
 	NSMutableDictionary * deviceDict = [deviceInfo objectForKey:devAddress];
@@ -591,12 +541,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 			switch (packet[0]){
 				case BTSTACK_EVENT_STATE:
 					[self activationHandleEvent:packet withLen:size];
-					break;
-				case HCI_EVENT_LINK_KEY_REQUEST:
-					[self handleLinkKeyRequestEvent:packet withLen:size];
-					break;
-				case HCI_EVENT_LINK_KEY_NOTIFICATION:
-					[self handleLinkKeyNotificationEvent:packet withLen:size];
 					break;
 				default:
 					break;
