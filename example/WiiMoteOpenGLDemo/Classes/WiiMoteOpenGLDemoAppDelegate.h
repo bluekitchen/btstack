@@ -36,14 +36,19 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "BTInquiryViewController.h"
+#import <BTstack/BTstackManager.h>
+#import <BTstack/BTDiscoveryViewController.h>
 
 @class EAGLView;
+@class BTstackManager;
+@class BTDiscoveryViewController;
 
-@interface WiiMoteOpenGLDemoAppDelegate : NSObject <UIApplicationDelegate, BTInquiryDelegate> {
+@interface WiiMoteOpenGLDemoAppDelegate :
+		   NSObject<UIApplicationDelegate, BTstackManagerDelegate, BTstackManagerListener,BTDiscoveryDelegate>{
+
     UIWindow *window;
 	UIViewController *glViewControl;
-	BTInquiryViewController *inqViewControl;
+	BTDiscoveryViewController* discoveryView;
 	UINavigationController *navControl;
     EAGLView *glView;
 	UILabel  *status;
@@ -54,7 +59,6 @@
 @property (nonatomic, retain) UIWindow *window;
 @property (nonatomic, retain) UINavigationController *navControl;
 @property (nonatomic, retain) UIViewController *glViewControl;
-@property (nonatomic, retain) BTInquiryViewController *inqViewControl;
 @property (nonatomic, retain) EAGLView *glView;
 
 @end

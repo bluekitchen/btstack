@@ -36,10 +36,9 @@
 //
 
 #import "WiiMoteOpenGLDemoAppDelegate.h"
-#import "BTDevice.h"
+#import "BTstack/BTDevice.h"
 #import "EAGLView.h"
 #import "EAGLViewController.h"
-#import "BTInquiryViewController.h"
 
 #import <btstack/btstack.h>
 #import <btstack/run_loop.h>
@@ -61,14 +60,13 @@ WiiMoteOpenGLDemoAppDelegate * theMainApp;
 @synthesize glView;
 @synthesize navControl;
 @synthesize glViewControl;
-@synthesize inqViewControl;
 
 #define SIZE  5
 int counter;
 
 // define the rest position 
 static float restPosition[3] = {0,0,1};
-static float restPosition2[3] = {0,0,-1};
+// static float restPosition2[3] = {0,0,-1};
 #define histSize 5
 int histX[histSize];
 int histY[histSize];
@@ -122,7 +120,13 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 	[[theMainApp glView] setRotationMatrix:rotationMatrix];
 }
 
-void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+// direct access
+-(void) btstackManager:(BTstackManager*) manager
+  handlePacketWithType:(uint8_t) packet_type
+			forChannel:(uint16_t) channel
+			   andData:(uint8_t *)packet
+			   withLen:(uint16_t) size
+{
 	bd_addr_t event_addr;
 	
 	switch (packet_type) {
@@ -145,7 +149,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						uint16_t source_cid = READ_BT_16(packet, 13); 
 						wiiMoteConHandle = READ_BT_16(packet, 9);
 						NSLog(@"Channel successfully opened: handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x",
-							   wiiMoteConHandle, psm, source_cid,  READ_BT_16(packet, 15));
+							  wiiMoteConHandle, psm, source_cid,  READ_BT_16(packet, 15));
 						if (psm == 0x13) {
 							// interupt channel openedn succesfully, now open control channel, too.
 							bt_send_cmd(&l2cap_create_channel, event_addr, 0x11);
@@ -155,9 +159,9 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 							bt_send_l2cap( source_cid, setMode31, sizeof(setMode31));
 							uint8_t setLEDs[] = { 0x52, 0x11, 0x10 };
 							bt_send_l2cap( source_cid, setLEDs, sizeof(setLEDs));
-
+							
 							// start demo
-							[theMainApp startDemo];
+							[self startDemo];
 						}
 					}
 					break;
@@ -170,7 +174,9 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 		default:
 			break;
 	}
+	
 }
+
 - (void)startDemo {
 	NSLog(@"startDemo");
 	
@@ -182,133 +188,61 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	glView.animationInterval = 1.0 / 60.0;
 	[glView startAnimation];
 	
-	[[[theMainApp inqViewControl] tableView] reloadData];
 	[navControl pushViewController:glViewControl animated:YES];
 }
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application {
-	NSLog(@"Started");
-	bool btOK = false;
-	
-#ifdef USE_BLUETOOTH
-	run_loop_init(RUN_LOOP_COCOA);
-	if ( bt_open() ){
-		UIAlertView* alertView = [[UIAlertView alloc] init];
-		alertView.title = @"Bluetooth not accessible!";
-		alertView.message = @"Connection to BTstack failed!\n"
-		"Please make sure that BTstack is installed correctly.";
-		NSLog(@"Alert: %@ - %@", alertView.title, alertView.message);
-		[alertView addButtonWithTitle:@"Dismiss"];
-		[alertView show];
-	} else {
-		bt_register_packet_handler(packet_handler);
-		btOK = true;
-	}
-#endif
 
-	// create window
+	// create discovery controller
+	discoveryView = [[BTDiscoveryViewController alloc] init];
+	[discoveryView setDelegate:self];
+	
+	// TODO fix
+	// [discoveryView setAllowSelection:NO];
+
+	UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:discoveryView];
 	window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-	[window setBackgroundColor:[UIColor blueColor]];
+	[window addSubview:nav.view];
+	[window makeKeyAndVisible];
+
+	// BTstack
+	BTstackManager * bt = [BTstackManager sharedInstance];
+	[bt setDelegate:self];
+	[bt addListener:self];
+	[bt addListener:discoveryView];
+
+	BTstackError err = [bt activate];
+	if (err) NSLog(@"activate err 0x%02x!", err);
+	
+	// extra -- not handled yet
 	
 	// create view controller
 	glViewControl = [[EAGLViewController alloc] init];
-	
-	// create inq controller
-	inqViewControl = [[BTInquiryViewController alloc] init];
-	[inqViewControl setTitle:@"BTstack Device Selector"];
-	[inqViewControl setAllowSelection:NO];
 
-	if (btOK) {
-		UITextView *footer = [[UITextView alloc] initWithFrame:CGRectMake(10,00,300,85)];
-		footer.text = @"Please make your WiiMote discoverable by pressing the 1+2 buttons at the same time.";
-		footer.textColor = [UIColor blackColor];
-		footer.font = [UIFont fontWithName:@"Arial" size:18];
-		// footer.textAlignment = UITextAlignmentCenter;
-		footer.backgroundColor = [UIColor whiteColor];
-		footer.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-		footer.editable = false;
-		[[inqViewControl tableView] setTableFooterView:footer];
-	}
-	
-	// create nav view controller
-	navControl = [[UINavigationController alloc] initWithRootViewController:inqViewControl];
-	
-	// add view to window
-	[window addSubview:[navControl view]];
-
-	theMainApp = self;
-
-	if (btOK) {
-		[inqViewControl setDelegate:self];
-		[inqViewControl startInquiry];
-	}
-	[window makeKeyAndVisible];	 
 }
 
-
-- (void)applicationWillResignActive:(UIApplication *)application {
-	// glView.animationInterval = 1.0 / 5.0;
-
-	if (wiiMoteConHandle) {
-		bt_send_cmd(&hci_disconnect, wiiMoteConHandle, 0x13); // remote closed connection             
-		wiiMoteConHandle = 0;
-	}
-	// bt_send_cmd(&btstack_set_power_mode, HCI_POWER_OFF );
-	bt_close();
-
-	UIAlertView* alertView = [[UIAlertView alloc] init];
-	alertView.title = @"Power Management ?";
-	alertView.message = @"Don't know yet, what to do when\n"
-	"phone gets locked.\n"
-	"Turning Bluetooth off for now. :)\n";
-	NSLog(@"Alert: %@ - %@", alertView.title, alertView.message);
-	// [alertView addButtonWithTitle:@"Dismiss"];
-	[alertView show];
+// new
+-(void) activatedBTstackManager:(BTstackManager*) manager {
+	NSLog(@"activated!");
+	[[BTstackManager sharedInstance] startDiscovery];
 }
 
-
-- (void)applicationDidBecomeActive:(UIApplication *)application {
-	glView.animationInterval = 1.0 / 60.0;
-}
-
--(void) deviceChoosen:(BTInquiryViewController *) inqView device:(BTDevice*) selectedDevice{
-	NSLog(@"deviceChoosen %@", [device toString]);
-}
-
-- (void) deviceDetected:(BTInquiryViewController *) inqView device:(BTDevice*) selectedDevice {
-	NSLog(@"deviceDetected %@", [device toString]);
-	if ([selectedDevice name] && [[selectedDevice name] caseInsensitiveCompare:@"Nintendo RVL-CNT-01"] == NSOrderedSame){
-		NSLog(@"WiiMote found with address %@", [BTDevice stringForAddress:[selectedDevice address]]);
-		device = selectedDevice;
-		[inqViewControl stopInquiry];
-		[inqViewControl showConnecting:device];
-
-		// connect to device
-		[device setConnectionState:kBluetoothConnectionConnecting];
-		[[[theMainApp inqViewControl] tableView] reloadData];
-		bt_send_cmd(&l2cap_create_channel, [device address], 0x13);
+-(void) btstackManager:(BTstackManager*)manager deviceInfo:(BTDevice*)newDevice {
+	NSLog(@"Device Info: addr %@ name %@ COD 0x%06x", [newDevice addressString], [newDevice name], [newDevice classOfDevice] ); 
+	if ([newDevice name] && [[newDevice name] caseInsensitiveCompare:@"Nintendo RVL-CNT-01"] == NSOrderedSame){
+		NSLog(@"WiiMote found with address %@", [newDevice addressString]);
+		device = newDevice;
+		[[BTstackManager sharedInstance] stopDiscovery];
 	}
 }
 
-- (void) inquiryStopped{
-	NSLog(@"inquiryStopped");
-}
-
-- (void) disconnectDevice:(BTInquiryViewController *) inqView device:(BTDevice*) selectedDevice {
-}
-
-- (void)applicationWillTerminate:(UIApplication *)application {
-	// disconnect
-	if (wiiMoteConHandle) {
-		bt_send_cmd(&hci_disconnect, wiiMoteConHandle, 0x13); // remote closed connection             
-	}
-	// bt_send_cmd(&btstack_set_power_mode, HCI_POWER_OFF );
-
-	bt_close();
+-(void) discoveryStoppedBTstackManager:(BTstackManager*) manager {
+	NSLog(@"discoveryStopped!");
+	// connect to device
+	bt_send_cmd(&l2cap_create_channel, [device address], 0x13);
 }
 
 - (void)dealloc {
-	
 	[window release];
 	[glView release];
 	[super dealloc];

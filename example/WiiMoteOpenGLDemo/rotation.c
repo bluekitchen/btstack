@@ -6,7 +6,7 @@
 #define deg 180.0/M_PI
 
 // define the rest position 
-static float restPosition[3] = {1,0,0};
+// static float restPosition[3] = {1,0,0};
 
 float norm(float *vector, int dim){
     float result = 0;
@@ -30,6 +30,7 @@ void normalizeVector(float *vector, int dim){
 
 /****** START OF TEST FUNCTIONS THAT CREATE ACC_DATA ******/
 
+#if 0
 // define X and Y axes 
 static float rotationAxisX[3] = {0,0,-1};
 static float rotationAxisY[3] = {1,0,0};
@@ -45,7 +46,6 @@ static void quaternionFromAxis(float angle, float axis[3], float quaternion[4]){
     quaternion[2] = axis[1]*sinQAngle;
     quaternion[3] = axis[2]*sinQAngle;
 }
-
 
 static void multiplyQuaternions(float qy[4], float qx[4], float result[4]){
     // p0*q2 - p*q + p0*q + q0*p + pxq
@@ -80,18 +80,7 @@ static void rotateVectorWithQuaternion(float restPosition[3], float qrot[4], flo
     qaxis[1] = result[2];
     qaxis[2] = result[3];
 }
-    
-static void getAccellerometerData(float radrotationAngleX, float radrotationAngleY, float qaxis[3]){
-    float qx[4] = {0,0,0,0};
-    float qy[4] = {0,0,0,0};
-    float qrot[4] = {0,0,0,0};
-    
-    quaternionFromAxis(radrotationAngleX,rotationAxisX,qx);
-    quaternionFromAxis(radrotationAngleY,rotationAxisY,qy);
-    
-    multiplyQuaternions(qy,qx,qrot);
-    rotateVectorWithQuaternion(restPosition,qrot,qaxis);
-} 
+#endif    
 
 /****** END OF TEST FUNCTIONS THAT CREATE ACC_DATA ******/
 
@@ -242,12 +231,24 @@ void getRotationMatrixFromVectors(float vin[3], float vout[3], float matrix[4][4
 #endif    
 	normalizeVector(q,4);
 	
-	float attitude = asin( 2*(q[0]*q[2]+q[1]*q[3]));
+	// float attitude = asin( 2*(q[0]*q[2]+q[1]*q[3]));
 	
     getRotationMatrixFromQuartenion(q,matrix);
 }
 
 #if 0
+static void getAccellerometerData(float radrotationAngleX, float radrotationAngleY, float qaxis[3]){
+    float qx[4] = {0,0,0,0};
+    float qy[4] = {0,0,0,0};
+    float qrot[4] = {0,0,0,0};
+    
+    quaternionFromAxis(radrotationAngleX,rotationAxisX,qx);
+    quaternionFromAxis(radrotationAngleY,rotationAxisY,qy);
+    
+    multiplyQuaternions(qy,qx,qrot);
+    rotateVectorWithQuaternion(restPosition,qrot,qaxis);
+} 
+
 int main(void)
 {
     float accData[3] = {1,0,0};
