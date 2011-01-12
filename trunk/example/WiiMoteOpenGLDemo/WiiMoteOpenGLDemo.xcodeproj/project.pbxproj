@@ -9,38 +9,32 @@
 /* Begin PBXBuildFile section */
 		1D3623260D0F684500981E51 /* WiiMoteOpenGLDemoAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 1D3623250D0F684500981E51 /* WiiMoteOpenGLDemoAppDelegate.m */; };
 		1D60589B0D05DD56006BFB54 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; };
-		1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D30AB110D05D00D00671497 /* Foundation.framework */; };
-		1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
-		28FD15000DC6FC520079059D /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 28FD14FF0DC6FC520079059D /* OpenGLES.framework */; };
-		28FD15080DC6FC5B0079059D /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 28FD15070DC6FC5B0079059D /* QuartzCore.framework */; };
 		9C0D06391091035200FC3BBA /* BTDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C0D06361091035200FC3BBA /* BTDevice.m */; };
-		9C0D063A1091035200FC3BBA /* BTInquiryViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C0D06381091035200FC3BBA /* BTInquiryViewController.m */; };
 		9C0D070D1092316D00FC3BBA /* EAGLViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C0D070C1092316D00FC3BBA /* EAGLViewController.m */; };
+		9C5E121612DE55B80013EF2C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C5E121512DE55B80013EF2C /* Foundation.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		9C5E127112DE59E30013EF2C /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C5E127012DE59E30013EF2C /* UIKit.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		9C5E127312DE59EB0013EF2C /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C5E127212DE59EB0013EF2C /* CoreGraphics.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		9C5E127712DE59FA0013EF2C /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C5E127612DE59FA0013EF2C /* OpenGLES.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		9C6BB62E1027911E00A0BCB0 /* wiimote_texture.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C6BB62D1027911E00A0BCB0 /* wiimote_texture.png */; };
-		9CB96E9810278945002663D0 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9CB96E9710278945002663D0 /* CoreGraphics.framework */; };
+		9C8B71C712DBB9FE00E3FD8A /* BTstackManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C8B71C412DBB9FE00E3FD8A /* BTstackManager.m */; };
+		9C8B71C812DBB9FE00E3FD8A /* BTDiscoveryViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C8B71C612DBB9FE00E3FD8A /* BTDiscoveryViewController.m */; };
 		9CB96EEF10278D8D002663D0 /* EAGLView.m in Sources */ = {isa = PBXBuildFile; fileRef = 28FD14FD0DC6FC130079059D /* EAGLView.m */; };
 		9CC8B5E51093727700BCBA1F /* wiimote_logo_55px.png in Resources */ = {isa = PBXBuildFile; fileRef = 9CC8B5E41093727700BCBA1F /* wiimote_logo_55px.png */; };
-		9CD1C867117E2F6900C7A4F4 /* libBTstack.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9CD1C866117E2F6900C7A4F4 /* libBTstack.dylib */; };
+		9CD1C867117E2F6900C7A4F4 /* libBTstack.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9CD1C866117E2F6900C7A4F4 /* libBTstack.dylib */; settings = {ATTRIBUTES = (Weak, ); }; };
 		9CFFD60E11C5484300A37038 /* rotation.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CFFD60D11C5484300A37038 /* rotation.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		1D30AB110D05D00D00671497 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		1D3623240D0F684500981E51 /* WiiMoteOpenGLDemoAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WiiMoteOpenGLDemoAppDelegate.h; sourceTree = "<group>"; };
 		1D3623250D0F684500981E51 /* WiiMoteOpenGLDemoAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WiiMoteOpenGLDemoAppDelegate.m; sourceTree = "<group>"; };
 		1D6058910D05DD3D006BFB54 /* WiiMoteOpenGLDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WiiMoteOpenGLDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		1DF5F4DF0D08C38300B7A737 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 		28FD14FC0DC6FC130079059D /* EAGLView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EAGLView.h; sourceTree = "<group>"; };
 		28FD14FD0DC6FC130079059D /* EAGLView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EAGLView.m; sourceTree = "<group>"; };
-		28FD14FF0DC6FC520079059D /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
-		28FD15070DC6FC5B0079059D /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		32CA4F630368D1EE00C91783 /* WiiMoteOpenGLDemo_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WiiMoteOpenGLDemo_Prefix.pch; sourceTree = "<group>"; };
 		8D1107310486CEB800E47090 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9C0D06351091035200FC3BBA /* BTDevice.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = BTDevice.h; path = ../../CocoaTouch/include/BTstack/BTDevice.h; sourceTree = SOURCE_ROOT; };
 		9C0D06361091035200FC3BBA /* BTDevice.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = BTDevice.m; path = ../../CocoaTouch/src/BTDevice.m; sourceTree = SOURCE_ROOT; };
-		9C0D06371091035200FC3BBA /* BTInquiryViewController.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = BTInquiryViewController.h; path = ../../CocoaTouch/include/BTstack/BTInquiryViewController.h; sourceTree = SOURCE_ROOT; };
-		9C0D06381091035200FC3BBA /* BTInquiryViewController.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = BTInquiryViewController.m; path = ../../CocoaTouch/src/BTInquiryViewController.m; sourceTree = SOURCE_ROOT; };
 		9C0D070B1092316D00FC3BBA /* EAGLViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EAGLViewController.h; sourceTree = "<group>"; };
 		9C0D070C1092316D00FC3BBA /* EAGLViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EAGLViewController.m; sourceTree = "<group>"; };
 		9C18001B108B94FB00824BE7 /* btstack.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; path = btstack.h; sourceTree = "<group>"; };
@@ -48,8 +42,15 @@
 		9C18001D108B94FB00824BE7 /* linked_list.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; path = linked_list.h; sourceTree = "<group>"; };
 		9C18001E108B94FB00824BE7 /* run_loop.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; path = run_loop.h; sourceTree = "<group>"; };
 		9C18001F108B94FB00824BE7 /* utils.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; path = utils.h; sourceTree = "<group>"; };
+		9C5E121512DE55B80013EF2C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		9C5E127012DE59E30013EF2C /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		9C5E127212DE59EB0013EF2C /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		9C5E127612DE59FA0013EF2C /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
 		9C6BB62D1027911E00A0BCB0 /* wiimote_texture.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = wiimote_texture.png; sourceTree = "<group>"; };
-		9CB96E9710278945002663D0 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		9C8B71C312DBB9FE00E3FD8A /* BTstackManager.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = BTstackManager.h; path = ../../CocoaTouch/include/BTstack/BTstackManager.h; sourceTree = SOURCE_ROOT; };
+		9C8B71C412DBB9FE00E3FD8A /* BTstackManager.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = BTstackManager.m; path = ../../CocoaTouch/src/BTstackManager.m; sourceTree = SOURCE_ROOT; };
+		9C8B71C512DBB9FE00E3FD8A /* BTDiscoveryViewController.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = BTDiscoveryViewController.h; path = ../../CocoaTouch/include/BTstack/BTDiscoveryViewController.h; sourceTree = SOURCE_ROOT; };
+		9C8B71C612DBB9FE00E3FD8A /* BTDiscoveryViewController.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = BTDiscoveryViewController.m; path = ../../CocoaTouch/src/BTDiscoveryViewController.m; sourceTree = SOURCE_ROOT; };
 		9CC8B5E41093727700BCBA1F /* wiimote_logo_55px.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = wiimote_logo_55px.png; sourceTree = "<group>"; };
 		9CD1C866117E2F6900C7A4F4 /* libBTstack.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libBTstack.dylib; path = ../../src/libBTstack.dylib; sourceTree = SOURCE_ROOT; };
 		9CFFD60D11C5484300A37038 /* rotation.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; path = rotation.c; sourceTree = "<group>"; };
@@ -60,12 +61,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */,
-				1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */,
-				28FD15000DC6FC520079059D /* OpenGLES.framework in Frameworks */,
-				28FD15080DC6FC5B0079059D /* QuartzCore.framework in Frameworks */,
-				9CB96E9810278945002663D0 /* CoreGraphics.framework in Frameworks */,
 				9CD1C867117E2F6900C7A4F4 /* libBTstack.dylib in Frameworks */,
+				9C5E121612DE55B80013EF2C /* Foundation.framework in Frameworks */,
+				9C5E127112DE59E30013EF2C /* UIKit.framework in Frameworks */,
+				9C5E127312DE59EB0013EF2C /* CoreGraphics.framework in Frameworks */,
+				9C5E127712DE59FA0013EF2C /* OpenGLES.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -131,11 +131,10 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				9CB96E9710278945002663D0 /* CoreGraphics.framework */,
-				28FD15070DC6FC5B0079059D /* QuartzCore.framework */,
-				28FD14FF0DC6FC520079059D /* OpenGLES.framework */,
-				1DF5F4DF0D08C38300B7A737 /* UIKit.framework */,
-				1D30AB110D05D00D00671497 /* Foundation.framework */,
+				9C5E121512DE55B80013EF2C /* Foundation.framework */,
+				9C5E127012DE59E30013EF2C /* UIKit.framework */,
+				9C5E127212DE59EB0013EF2C /* CoreGraphics.framework */,
+				9C5E127612DE59FA0013EF2C /* OpenGLES.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -158,8 +157,10 @@
 			children = (
 				9C0D06351091035200FC3BBA /* BTDevice.h */,
 				9C0D06361091035200FC3BBA /* BTDevice.m */,
-				9C0D06371091035200FC3BBA /* BTInquiryViewController.h */,
-				9C0D06381091035200FC3BBA /* BTInquiryViewController.m */,
+				9C8B71C312DBB9FE00E3FD8A /* BTstackManager.h */,
+				9C8B71C412DBB9FE00E3FD8A /* BTstackManager.m */,
+				9C8B71C512DBB9FE00E3FD8A /* BTDiscoveryViewController.h */,
+				9C8B71C612DBB9FE00E3FD8A /* BTDiscoveryViewController.m */,
 			);
 			name = BTstack;
 			sourceTree = "<group>";
@@ -191,7 +192,14 @@
 			isa = PBXProject;
 			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "WiiMoteOpenGLDemo" */;
 			compatibilityVersion = "Xcode 3.1";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* CustomTemplate */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -222,9 +230,10 @@
 				1D3623260D0F684500981E51 /* WiiMoteOpenGLDemoAppDelegate.m in Sources */,
 				9CB96EEF10278D8D002663D0 /* EAGLView.m in Sources */,
 				9C0D06391091035200FC3BBA /* BTDevice.m in Sources */,
-				9C0D063A1091035200FC3BBA /* BTInquiryViewController.m in Sources */,
 				9C0D070D1092316D00FC3BBA /* EAGLViewController.m in Sources */,
 				9CFFD60E11C5484300A37038 /* rotation.c in Sources */,
+				9C8B71C712DBB9FE00E3FD8A /* BTstackManager.m in Sources */,
+				9C8B71C812DBB9FE00E3FD8A /* BTDiscoveryViewController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -236,10 +245,6 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				COPY_PHASE_STRIP = NO;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(DEVELOPER_DIR)-SDK3.0-final/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS2.2.1.sdk/System/Library/Frameworks\"",
-				);
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -258,10 +263,6 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				COPY_PHASE_STRIP = YES;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(DEVELOPER_DIR)-SDK3.0-final/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS2.2.1.sdk/System/Library/Frameworks\"",
-				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = WiiMoteOpenGLDemo_Prefix.pch;
 				INFOPLIST_FILE = Info.plist;
@@ -294,7 +295,7 @@
 				);
 				PREBINDING = NO;
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "86D3FD5B-5B72-4D87-88B3-0737B204F98E";
-				SDKROOT = iphoneos2.0;
+				SDKROOT = iphonesimulator3.0;
 				USER_HEADER_SEARCH_PATHS = "";
 			};
 			name = Debug;
@@ -307,6 +308,7 @@
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = (
 					"-I../../CocoaTouch/include",
 					"-I../../include",
@@ -318,7 +320,7 @@
 				);
 				PREBINDING = NO;
 				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "86D3FD5B-5B72-4D87-88B3-0737B204F98E";
-				SDKROOT = iphoneos2.0;
+				SDKROOT = iphonesimulator3.0;
 				USER_HEADER_SEARCH_PATHS = "";
 			};
 			name = Release;

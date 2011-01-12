@@ -10,3 +10,4 @@ Homepage: http://code.google.com/p/btstack/
 Depends: ch.ringwald.btstack
 Maintainer: Matthias Ringwald <iphone@ringwald.ch>
 Author: Matthias Ringwald <iphone@ringwald.ch>
+Version: 1.0
