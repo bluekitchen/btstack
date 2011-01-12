@@ -462,7 +462,7 @@ int main (int argc,  char * const * argv){
 #endif
     
     // init power management notifications
-    if (control->register_for_power_notifications){
+    if (control && control->register_for_power_notifications){
         control->register_for_power_notifications(power_notification_callback);
     }
 
