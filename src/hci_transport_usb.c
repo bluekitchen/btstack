@@ -55,6 +55,8 @@
 
 #include <libusb-1.0/libusb.h>
 
+#include "../config.h"
+
 #include "hci.h"
 #include "hci_transport.h"
 #include "hci_dump.h"
