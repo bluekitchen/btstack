@@ -323,16 +323,14 @@ static void event_handler(uint8_t *packet, int size){
     hci_connection_t * conn;
     int i;
     link_key_t link_key;
-    
-    // get num_cmd_packets
-    if (packet[0] == HCI_EVENT_COMMAND_COMPLETE || packet[0] == HCI_EVENT_COMMAND_STATUS){
-        // Get Num_HCI_Command_Packets
-        hci_stack.num_cmd_packets = packet[2];
-    }
-    
+        
     switch (packet[0]) {
-            
+                        
         case HCI_EVENT_COMMAND_COMPLETE:
+            // get num cmd packets
+            // log_dbg("HCI_EVENT_COMMAND_COMPLETE cmds old %u - new %u\n", hci_stack.num_cmd_packets, packet[2]);
+            hci_stack.num_cmd_packets = packet[2];
+            
             if (COMMAND_COMPLETE_EVENT(packet, hci_read_buffer_size)){
                 // from offset 5
                 // status 
@@ -347,6 +345,12 @@ static void event_handler(uint8_t *packet, int size){
             if (COMMAND_COMPLETE_EVENT(packet, hci_write_scan_enable)){
                 hci_emit_discoverable_enabled(hci_stack.discoverable);
             }
+            break;
+            
+        case HCI_EVENT_COMMAND_STATUS:
+            // get num cmd packets
+            // log_dbg("HCI_EVENT_COMMAND_STATUS cmds - old %u - new %u\n", hci_stack.num_cmd_packets, packet[3]);
+            hci_stack.num_cmd_packets = packet[3];
             break;
             
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
@@ -651,7 +655,7 @@ static int hci_power_control_wake(){
 
 int hci_power_control(HCI_POWER_MODE power_mode){
     
-    log_dbg("hci_power_control: %u\n", power_mode);
+    log_dbg("hci_power_control: %u, current mode %u\n", power_mode, hci_stack.state);
     
     int err = 0;
     switch (hci_stack.state){
@@ -786,7 +790,7 @@ void hci_discoverable_control(uint8_t enable){
 }
 
 void hci_run(){
-    
+        
     if (hci_stack.num_cmd_packets == 0) {
         // cannot send command yet
         return;
