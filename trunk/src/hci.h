@@ -240,8 +240,9 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
 void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
 void hci_close();
 
-// power control
+// power and inquriy scan control
 int hci_power_control(HCI_POWER_MODE mode);
+void hci_discoverable_control(uint8_t enable);
 
 /**
  * run the hci control loop once
