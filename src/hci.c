@@ -488,7 +488,14 @@ static void event_handler(uint8_t *packet, int size){
             }
         }
     }
-        
+    
+    // help with BT sleep
+    if (hci_stack.state == HCI_STATE_FALLING_ASLEEP
+        && hci_stack.substate == 1
+        && COMMAND_COMPLETE_EVENT(packet, hci_write_scan_enable)){
+        hci_stack.substate++;
+    }
+    
     hci_stack.packet_handler(HCI_EVENT_PACKET, packet, size);
 	
 	// execute main loop
@@ -696,6 +703,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                 case HCI_POWER_SLEEP:
                     // see hci_run
                     hci_stack.state = HCI_STATE_FALLING_ASLEEP;
+                    hci_stack.substate = 0;
                     break;
             }
             break;
@@ -713,6 +721,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                 case HCI_POWER_SLEEP:
                     // see hci_run
                     hci_stack.state = HCI_STATE_FALLING_ASLEEP;
+                    hci_stack.substate = 0;
                     break;
             }
             break;
@@ -817,7 +826,7 @@ void hci_run(){
                     hci_send_cmd(&hci_write_page_timeout, 0x6000);
                     break;
 				case 4:
-					hci_send_cmd(&hci_write_scan_enable, 3); // 3 inq scan + page scan
+					hci_send_cmd(&hci_write_scan_enable, 2); // page scan
 					break;
                 case 5:
 #ifndef EMBEDDED
@@ -866,23 +875,43 @@ void hci_run(){
             break;
             
         case HCI_STATE_FALLING_ASLEEP:
-            // close all open connections
-            connection =  (hci_connection_t *) hci_stack.connections;
-            if (connection){
-                // send disconnect
-                hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
-                
-                // send disconnected event right away - causes higher layer connections to get closed, too.
-                hci_shutdown_connection(connection);
-                
-                // remove from table
-                hci_stack.connections = connection->item.next;
-                return;
+            switch(hci_stack.substate) {
+                case 0:
+                    log_dbg("HCI_STATE_FALLING_ASLEEP\n");
+                    // close all open connections
+                    connection =  (hci_connection_t *) hci_stack.connections;
+                    if (connection){
+                        log_dbg("HCI_STATE_FALLING_ASLEEP, connection %u, handle %u\n", (int) connection, connection->con_handle);
+                        // send disconnect
+                        hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
+                        
+                        // send disconnected event right away - causes higher layer connections to get closed, too.
+                        hci_shutdown_connection(connection);
+                        
+                        // remove from table
+                        hci_stack.connections = connection->item.next;
+                        return;
+                    }
+                    
+                    log_dbg("HCI_STATE_HALTING, disabling inq & page scans\n");
+
+                    // disable page and inquiry scan
+                    hci_send_cmd(&hci_write_scan_enable, 0); // none
+                    
+                    // continue in next sub state
+                    hci_stack.substate++;
+                    break;
+                case 1:
+                    // wait for command complete "hci_write_scan_enable" in event_handler();
+                    break;
+                case 2:
+                    log_dbg("HCI_STATE_HALTING, calling sleep\n");
+                    // switch mode
+                    hci_power_control_sleep();  // changes hci_stack.state to SLEEP
+                    hci_emit_state();
+                default:
+                    break;
             }
-            
-            // switch mode
-            hci_power_control_sleep();
-            hci_emit_state();
             break;
             
         default:
