@@ -43,10 +43,17 @@
 static CFMessagePortRef springBoardAccessMessagePort = 0;
 
 static int SBA_sendMessage(UInt8 cmd, UInt16 dataLen, UInt8 *data, CFDataRef *resultData){
-	// check for port
+		
+	// still valid
+	if (springBoardAccessMessagePort && !CFMessagePortIsValid(springBoardAccessMessagePort)){
+		CFRelease(springBoardAccessMessagePort);
+		springBoardAccessMessagePort = NULL;
+	}
+	// create new one
 	if (!springBoardAccessMessagePort) {
 		springBoardAccessMessagePort = CFMessagePortCreateRemote(NULL, CFSTR(SBA_MessagePortName));
 	}
+	// well, won't work
 	if (!springBoardAccessMessagePort) {
 		return kCFMessagePortIsInvalid;
 	}
