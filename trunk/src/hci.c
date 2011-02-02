@@ -759,7 +759,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                     hci_stack.substate = 0;
                     break;
                 case HCI_POWER_OFF:
-                    hci_stack.state = HCI_STATE_OFF;
+                    hci_stack.state = HCI_STATE_HALTING;
                     break;  
                 case HCI_POWER_SLEEP:
                     // do nothing
