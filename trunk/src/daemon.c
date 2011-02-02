@@ -283,11 +283,22 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
     return err;
 }
 
+// local cache used to manage UI status
+static HCI_STATE hci_state = HCI_STATE_OFF;
+static int num_connections = 0;
+static void update_ui_status(){
+    if (hci_state != HCI_STATE_WORKING) {
+        bluetooth_status_handler(BLUETOOTH_OFF);
+    } else {
+        if (num_connections) {
+            bluetooth_status_handler(BLUETOOTH_ACTIVE);
+        } else {
+            bluetooth_status_handler(BLUETOOTH_ON);
+        }
+    }
+}
 static void deamon_status_event_handler(uint8_t *packet, uint16_t size){
     
-    // local cache
-    static HCI_STATE hci_state = HCI_STATE_OFF;
-    static int num_connections = 0;
     
     uint8_t update_status = 0;
     
@@ -309,15 +320,7 @@ static void deamon_status_event_handler(uint8_t *packet, uint16_t size){
     
     // choose full bluetooth state 
     if (update_status) {
-        if (hci_state != HCI_STATE_WORKING) {
-            bluetooth_status_handler(BLUETOOTH_OFF);
-        } else {
-            if (num_connections) {
-                bluetooth_status_handler(BLUETOOTH_ACTIVE);
-            } else {
-                bluetooth_status_handler(BLUETOOTH_ON);
-            }
-        }
+        update_ui_status();
     }
 }
 
@@ -334,6 +337,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
         socket_connection_send_packet_all(packet_type, channel, packet, size);
     }
 }
+
 
 static void power_notification_callback(POWER_NOTIFICATION_t notification){
     switch (notification) {
@@ -449,6 +453,7 @@ int main (int argc,  char * const * argv){
     
 #ifdef USE_SPRINGBOARD
     bluetooth_status_handler = platform_iphone_status_handler;
+    platform_iphone_register_window_manager_restart(update_ui_status);
 #endif
     
 #ifdef REMOTE_DEVICE_DB

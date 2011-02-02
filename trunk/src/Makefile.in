@@ -23,7 +23,7 @@ BTdaemon_SOURCES =  $(libBTstack_SOURCES) \
     l2cap.c                 \
     l2cap_signaling.c       \
     $(remote_device_db_sources)  \
-    platform_iphone.c       \
+    platform_iphone.m       \
     sdp.c                   \
     $(springboard_access_sources)
 

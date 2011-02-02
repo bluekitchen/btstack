@@ -14,21 +14,21 @@
 - power handling: handle power changes in all states, receive and handle power notifications, keep track of individual clients
 - fixed bugs in cocoa run loop implementation
 - automate scan enable management: hci_set_discoverable(bool) sets inquiry scan, page scan is always active
+- removed link key and name caching from BTstackManager, honor BTSTACK_EVENT_REMOTE_NAME_CACHED
+- check if connection to SpringBoardAcccess server gets broken on respring
+- detect respring to refresh SpringBoard status bar icons
 
 NEXT:
+- update WiiMote example to use BTstackManager
 - check apps for sleep/wake mode compatibility - see what happens on ACTIVATED event
-  - update WiiMote example to use BTstackManager
+- fix broken host detection in configure.in (make it compile on linux)
 
-- BTstackManager & new remote_db
-  - don't keep device info
-  - don't handle link keys
-  - react to remote_name_cached event
-    
 - create Retina status bar icons
 
 - bugs:
-  - verify: if (hic?) disconnect fails, l2cap channels are never discarded
+  - verify: if (hci?) disconnect fails, l2cap channels are never discarded
   - verify: TestBTstackManager can do an inquiry, with 0 or more devices in the list
+  
 - get rid of BTInquireViewController
   - update WiiMoteExample to use BTstackManager
   - Update/rewrite BTstack Keyboard
