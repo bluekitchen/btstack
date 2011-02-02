@@ -74,3 +74,8 @@ int SBA_getBluetoothEnabled();
  * @returns CFMessagePortSendRequest error: 0 = ok
  */
 int SBA_setBluetoothEnabled(int on);
+
+/**
+ * Tests if SpringBoardAccess server is available
+ */
+int SBA_available();
