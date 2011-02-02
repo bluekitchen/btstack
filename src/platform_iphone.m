@@ -43,6 +43,7 @@
 #include <stdio.h>
 
 #ifdef USE_SPRINGBOARD
+#include <CoreFoundation/CoreFoundation.h>
 
 // update SpringBoard icons
 void platform_iphone_status_handler(BLUETOOTH_STATE state){
@@ -65,6 +66,33 @@ void platform_iphone_status_handler(BLUETOOTH_STATE state){
         default:
             break;
     }
+}
+
+static void (*window_manager_restart_callback)() = NULL;
+static void springBoardDidLaunch(){
+    printf("springBoardDidLaunch!\n");
+    if (window_manager_restart_callback) {
+        int timer;
+        for (timer = 0 ; timer < 10 ; timer++){
+            printf("ping SBA %u\n", timer);
+            if (SBA_available()){
+                printf("pong from SBA!\n");
+                break;
+            }
+            sleep(1);
+        }
+        (*window_manager_restart_callback)();
+    }
+}
+void platform_iphone_register_window_manager_restart(void (*callback)() ){
+    static int registered = 0;
+    if (!registered) {
+        // register for launch notification
+        CFNotificationCenterRef darwin = CFNotificationCenterGetDarwinNotifyCenter();
+        CFNotificationCenterAddObserver(darwin, NULL, (CFNotificationCallback) springBoardDidLaunch,
+                                        (CFStringRef) @"SBSpringBoardDidLaunchNotification", NULL, 0);
+    }
+    window_manager_restart_callback = callback;
 }
 
 #endif
