@@ -537,6 +537,7 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
     
     // no connections yet
     hci_stack.connections = NULL;
+    hci_stack.discoverable = 0;
     
     // empty cmd buffer
     hci_stack.hci_cmd_buffer = malloc(3+255);
@@ -830,7 +831,7 @@ void hci_run(){
                     hci_send_cmd(&hci_write_page_timeout, 0x6000);
                     break;
 				case 4:
-					hci_send_cmd(&hci_write_scan_enable, 2); // page scan
+					hci_send_cmd(&hci_write_scan_enable, 2 | hci_stack.discoverable); // page scan
 					break;
                 case 5:
 #ifndef EMBEDDED
