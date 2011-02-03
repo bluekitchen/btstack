@@ -20,20 +20,14 @@
 - bug in transition from Sleep to Off
 
 NEXT:
-- update WiiMote example to use BTstackManager
-- check apps for sleep/wake mode compatibility - see what happens on ACTIVATED event
-
 - create Retina status bar icons
 
-- check: on falling asleep, all baseband connections are disconnected. If client also disconnects, what happens?
-
-
-- fix broken host detection in configure.in (make it compile on linux)
-
-- bugs:
+AFTER:  
+- bugs?:
   - verify: if (hci?) disconnect fails, l2cap channels are never discarded
   - verify: TestBTstackManager can do an inquiry, with 0 or more devices in the list
-  
+- fix broken host detection in configure.in (make it compile on linux)
+- update WiiMote example to use BTstackManager
 - get rid of BTInquireViewController
   - update WiiMoteExample to use BTstackManager
   - Update/rewrite BTstack Keyboard
