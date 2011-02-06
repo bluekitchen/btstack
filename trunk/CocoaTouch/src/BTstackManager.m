@@ -355,40 +355,60 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	}
 }
 
+- (NSString *) createRemoteNameFromRemoteNameEvent:(uint8_t *) packet {
+    // get lenght: first null byte or max 248 chars
+    int nameLen = 0;
+    while (nameLen < 248 && packet[9+nameLen]) nameLen++;
+    // Bluetooth specification mandates UTF-8 encoding...
+    NSString *name = [[NSString alloc] initWithBytes:&packet[9] length:nameLen encoding:NSUTF8StringEncoding];
+    // but fallback to latin-1 for non-standard products like old Microsoft Wireless Presenter 
+    if (!name){
+        name = [[NSString alloc] initWithBytes:&packet[9] length:nameLen encoding:NSISOLatin1StringEncoding];
+    }
+    return name;
+}
+
+- (void) updateBTDevice:(BTDevice *) device fromRemoteNameEvent:(uint8_t *) packet {
+
+    NSString *name = [self createRemoteNameFromRemoteNameEvent:packet];
+
+    if (!name) return;
+    
+    device.name = name;
+    // set in device info
+    NSString *addrString = [[device addressString] retain];
+    NSMutableDictionary * deviceDict = [deviceInfo objectForKey:addrString];
+    if (!deviceDict){
+        deviceDict = [NSMutableDictionary dictionaryWithCapacity:3];
+        [deviceInfo setObject:deviceDict forKey:addrString];
+    }
+    [deviceDict setObject:name forKey:PREFS_REMOTE_NAME];						
+    [addrString release];
+}
+
+- (void) handleRemoteNameCached: (uint8_t *) packet {
+	bd_addr_t addr;
+	bt_flip_addr(addr, &packet[3]);
+	// NSLog(@"Get remote name done for %@", [BTDevice stringForAddress:&addr]);
+	BTDevice* device = [self deviceForAddress:&addr];
+    if (!device) return;
+    
+    [self updateBTDevice:device fromRemoteNameEvent:packet];
+    [self sendDeviceInfo:device];
+}
+
 - (void) handleRemoteName: (uint8_t *) packet {
 	bd_addr_t addr;
 	bt_flip_addr(addr, &packet[3]);
 	// NSLog(@"Get remote name done for %@", [BTDevice stringForAddress:&addr]);
 	BTDevice* device = [self deviceForAddress:&addr];
-	if (device) {
-		if (packet[2] == 0) {
-			// get lenght: first null byte or max 248 chars
-			int nameLen = 0;
-			while (nameLen < 248 && packet[9+nameLen]) nameLen++;
-			// Bluetooth specification mandates UTF-8 encoding...
-			NSString *name = [[NSString alloc] initWithBytes:&packet[9] length:nameLen encoding:NSUTF8StringEncoding];
-			// but fallback to latin-1 for non-standard products like old Microsoft Wireless Presenter 
-			if (!name){
-				name = [[NSString alloc] initWithBytes:&packet[9] length:nameLen encoding:NSISOLatin1StringEncoding];
-			}
-			// check again
-			if (name){
-				device.name = name;
-				// set in device info
-				NSString *addrString = [[device addressString] retain];
-				NSMutableDictionary * deviceDict = [deviceInfo objectForKey:addrString];
-				if (!deviceDict){
-					deviceDict = [NSMutableDictionary dictionaryWithCapacity:3];
-					[deviceInfo setObject:deviceDict forKey:addrString];
-				}
-				[deviceDict setObject:name forKey:PREFS_REMOTE_NAME];						
-				[addrString release];
-				[self sendDeviceInfo:device];
-			}
-		}
-		discoveryDeviceIndex++;
-		[self discoveryRemoteName];
-	}
+    if (!device) return;
+
+    [self updateBTDevice:device fromRemoteNameEvent:packet];
+    [self sendDeviceInfo:device];
+    
+    discoveryDeviceIndex++;
+    [self discoveryRemoteName];
 }
 
 -(void) discoveryHandleEvent:(uint8_t *)packet withLen:(uint16_t) size {
@@ -466,7 +486,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					break;
 
 				case BTSTACK_EVENT_REMOTE_NAME_CACHED:
-					[self handleRemoteName:packet];
+                    [self handleRemoteNameCached:packet];
 					break;
 					
 				case HCI_EVENT_INQUIRY_COMPLETE:
