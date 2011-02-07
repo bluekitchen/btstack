@@ -24,7 +24,12 @@ mkdir -p $PACKAGE/usr/local/lib
 cp src/libBTstack.dylib $PACKAGE/usr/local/lib
 
 mkdir -p $PACKAGE/System/Library/CoreServices/SpringBoard.app
-cp resources/*.png $PACKAGE/System/Library/CoreServices/SpringBoard.app
+cp resources/FSO*.png $PACKAGE/System/Library/CoreServices/SpringBoard.app
+cp resources/Default*.png $PACKAGE/System/Library/CoreServices/SpringBoard.app
+
+mkdir -p $PACKAGE/System/Library/Frameworks/UIKit.framework
+cp resources/Black*.png $PACKAGE/System/Library/Frameworks/UIKit.framework/
+cp resources/Silver*.png $PACKAGE/System/Library/Frameworks/UIKit.framework/
 
 mkdir -p $PACKAGE/Library/LaunchDaemons/
 cp resources/ch.ringwald.BTstack.plist $PACKAGE/Library/LaunchDaemons/

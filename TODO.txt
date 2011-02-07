@@ -16,15 +16,16 @@
 - automate scan enable management: hci_set_discoverable(bool) sets inquiry scan, page scan is always active
 - fixed bugs in cocoa run loop implementation
 - removed link key and name caching from BTstackManager, honor BTSTACK_EVENT_REMOTE_NAME_CACHED
+- Retina icons!
 
 NEXT:
 - create Retina status bar icons
 
 AFTER:  
-- bugs?:
-  - verify: if (hci?) disconnect fails, l2cap channels are never discarded
-  - verify: TestBTstackManager can do an inquiry, with 0 or more devices in the list
 - fix broken host detection in configure.in (make it compile on linux)
+- bug: if hci disconnect fails, l2cap channels are never discarded (only fails on old Ericsson module)
+
+- verify: TestBTstackManager can do an inquiry, with 0 or more devices in the list
 - update WiiMote example to use BTstackManager
 - get rid of BTInquireViewController
   - update WiiMoteExample to use BTstackManager
