@@ -7,3 +7,4 @@ Depends: ch.ringwald.springboardaccess (>= 0.2-974), firmware (<< 4.0) | ldid
 Maintainer: Matthias Ringwald <iphone@ringwald.ch>
 Author: Matthias Ringwald <iphone@ringwald.ch>
 Section: Development
+Tag: role::developer
