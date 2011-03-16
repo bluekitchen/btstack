@@ -427,6 +427,9 @@ static int iphone_on (void *transport_config){
         return 1;
     }
     
+    // unload BTServer
+    err = system ("launchctl unload /System/Library/LaunchDaemons/com.apple.BTServer.plist");
+    
 #if 0
     // use tmp file for testing on os 3.x
     int output = open("/tmp/bt.init", O_WRONLY | O_CREAT | O_TRUNC);
@@ -444,7 +447,7 @@ static int iphone_on (void *transport_config){
     // NSLog(@"OS Version: %@, ox4x = %u", systemVersion, os4x);
     [pool release];
 
-    // set correct BlueTool version, BlueToolH4 on OS 4.0+
+    // OS 4.0
     char * bluetool = os3xBlueTool;
     if (os4x) {
         bluetool = os4xBlueTool;
@@ -542,9 +545,12 @@ static int iphone_off (void *config){
     // power off (all models)
     system ("echo \"power off\nquit\" | BlueTool");
     
-    
     // kill Apple BTServer as it gets confused and fails to start anyway
-    system("killall BTServer");
+    // system("killall BTServer");
+    
+    // reload BTServer
+    system ("launchctl load /System/Library/LaunchDaemons/com.apple.BTServer.plist");
+
     return 0;
 }
 
