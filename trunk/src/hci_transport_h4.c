@@ -278,9 +278,13 @@ static int    h4_process(struct data_source *ds) {
 
     // read up to bytes_to_read data in
     int bytes_read = read(hci_transport_h4->uart_fd, &hci_packet[read_pos], bytes_to_read);
+    // printf("h4_process: bytes read %u\n", bytes_read);
     if (bytes_read < 0) {
         return bytes_read;
     }
+    
+    // hexdump(&hci_packet[read_pos], bytes_read);
+    
     bytes_to_read -= bytes_read;
     read_pos      += bytes_read;
     if (bytes_to_read > 0) {
@@ -295,7 +299,10 @@ static int    h4_process(struct data_source *ds) {
 static int h4_reader_process(struct data_source *ds) {
     // get token
     char token;
-    read(hci_transport_h4->pipe_fds[0], &token, 1);
+    int tokens_read = read(hci_transport_h4->pipe_fds[0], &token, 1);
+    if (tokens_read < 1) {
+        return 0;
+    }
     
     // hci_reader received complete packet, just pick it up
     h4_deliver_packet();
