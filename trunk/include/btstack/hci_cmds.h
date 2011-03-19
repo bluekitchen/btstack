@@ -103,6 +103,8 @@ extern "C" {
 
 // events 0x50-0x5f are used internally
 
+// BTSTACK DAEMON EVENTS
+
 // events from BTstack for application/client lib
 #define BTSTACK_EVENT_STATE                                0x60
 
@@ -124,6 +126,8 @@ extern "C" {
 // data: discoverable enabled (bool)
 #define BTSTACK_EVENT_DISCOVERABLE_ENABLED			       0x66
 
+// L2CAP EVENTS
+	
 // data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16) 
 #define L2CAP_EVENT_CHANNEL_OPENED                         0x70
 
@@ -140,9 +144,9 @@ extern "C" {
 #define L2CAP_EVENT_CREDITS								   0x74
 
 // data: event(8), len(8), service_record_handle(32)
-#define SDP_SERVICE_REGISTERED                             0x80
+#define SDP_SERVICE_REGISTERED                             0x90
 
-
+	
 // last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
 
 #define BTSTACK_CONNECTION_TO_BTDAEMON_FAILED              0x50
@@ -151,6 +155,7 @@ extern "C" {
 #define BTSTACK_ACTIVATION_FAILED_UNKNOWN       		   0x53
 #define BTSTACK_NOT_ACTIVATED							   0x54
 #define BTSTACK_BUSY									   0x55
+#define BTSTACK_MEMORY_ALLOC_FAILED                        0x56
 
 // l2cap errors - enumeration by the command that created them
 #define L2CAP_COMMAND_REJECT_REASON_COMMAND_NOT_UNDERSTOOD 0x60
@@ -213,7 +218,6 @@ extern const hci_cmd_t btstack_set_discoverable;
 	
 extern const hci_cmd_t hci_accept_connection_request;
 extern const hci_cmd_t hci_authentication_requested;
-extern const hci_cmd_t hci_set_connection_encryption;
 extern const hci_cmd_t hci_change_connection_link_key;
 extern const hci_cmd_t hci_create_connection;
 extern const hci_cmd_t hci_create_connection_cancel;
@@ -236,6 +240,7 @@ extern const hci_cmd_t hci_remote_name_request_cancel;
 extern const hci_cmd_t hci_reset;
 extern const hci_cmd_t hci_role_discovery;
 extern const hci_cmd_t hci_set_event_mask;
+extern const hci_cmd_t hci_set_connection_encryption;
 extern const hci_cmd_t hci_switch_role_command;
 extern const hci_cmd_t hci_write_authentication_enable;
 extern const hci_cmd_t hci_write_class_of_device;
