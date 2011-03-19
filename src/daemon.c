@@ -460,11 +460,7 @@ int main (int argc,  char * const * argv){
     remote_device_db = &REMOTE_DEVICE_DB;
 #endif
     
-#ifdef USE_COCOA_RUN_LOOP 
-    run_loop_init(RUN_LOOP_COCOA);
-#else
     run_loop_init(RUN_LOOP_POSIX);
-#endif
     
     // init power management notifications
     if (control && control->register_for_power_notifications){
