@@ -208,6 +208,14 @@ const hci_cmd_t hci_authentication_requested = {
 OPCODE(OGF_LINK_CONTROL, 0x11), "H"
 // Handle
 };
+const hci_cmd_t hci_set_connection_encryption = {
+OPCODE(OGF_LINK_CONTROL, 0x13), "H1"
+// Handle, Encryption_Enable
+};
+const hci_cmd_t hci_change_connection_link_key = {
+OPCODE(OGF_LINK_CONTROL, 0x15), "H"
+// Handle
+};
 const hci_cmd_t hci_remote_name_request = {
 OPCODE(OGF_LINK_CONTROL, 0x19), "B112"
 // BD_ADDR, Page_Scan_Repetition_Mode, Reserved, Clock_Offset

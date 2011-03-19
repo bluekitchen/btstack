@@ -74,7 +74,7 @@ extern "C" {
 #define HCI_EVENT_DISCONNECTION_COMPLETE		      	   0x05
 #define HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT            0x06
 #define HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE	           0x07
-#define HCI_EVENT_ENCRIPTION_CHANGE                        0x08
+#define HCI_EVENT_ENCRYPTION_CHANGE                        0x08
 #define HCI_EVENT_CHANGE_CONNECTION_LINK_KEY_COMPLETE      0x09
 #define HCI_EVENT_MASTER_LINK_KEY_COMPLETE                 0x0A
 #define HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE  0x0B
@@ -213,6 +213,8 @@ extern const hci_cmd_t btstack_set_discoverable;
 	
 extern const hci_cmd_t hci_accept_connection_request;
 extern const hci_cmd_t hci_authentication_requested;
+extern const hci_cmd_t hci_set_connection_encryption;
+extern const hci_cmd_t hci_change_connection_link_key;
 extern const hci_cmd_t hci_create_connection;
 extern const hci_cmd_t hci_create_connection_cancel;
 extern const hci_cmd_t hci_delete_stored_link_key;
