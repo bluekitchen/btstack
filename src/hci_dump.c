@@ -56,6 +56,8 @@
 #include <sys/stat.h>     // for mode flags
 #endif
 
+// #define HCI_DUMP_FULL_LOG
+
 // BLUEZ hcidump
 typedef struct {
 	uint16_t	len;
@@ -104,6 +106,7 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
 
     if (dump_file < 0) return; // not activated yet
 
+#ifndef HCI_DUMP_FULL_LOG
     // don't grow bigger than max_nr_packets
     if (dump_format != HCI_DUMP_STDOUT && max_nr_packets > 0){
         if (nr_packets >= max_nr_packets){
@@ -113,7 +116,8 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
         }
         nr_packets++;
     }
-
+#endif
+    
     // get time
     struct timeval curr_time;
     struct tm* ptm;
