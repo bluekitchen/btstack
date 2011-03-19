@@ -118,6 +118,8 @@ IOReturn IOCancelPowerChange ( io_connect_t kernelPort, long notificationID );
 // local globals
 static io_object_t   notifier;
 static io_connect_t  root_port = 0; // a reference to the Root Power Domain IOService
+static int power_notification_pipe_fds[2];
+static data_source_t power_notification_ds;
 
 #endif
 #endif
@@ -568,6 +570,8 @@ static int iphone_wake(void *config){
 
 #ifdef IOKIT
 static void MySleepCallBack( void * refCon, io_service_t service, natural_t messageType, void * messageArgument ) {
+    
+    char data;
     printf( "messageType %08lx, arg %08lx\n", (long unsigned int)messageType, (long unsigned int)messageArgument);
     switch ( messageType ) {
         case kIOMessageCanSystemSleep:
@@ -595,10 +599,10 @@ static void MySleepCallBack( void * refCon, io_service_t service, natural_t mess
 			 however the system WILL still go to sleep. 
 			 */
 			
-            if (power_notification_callback){
-                (*power_notification_callback)(POWER_WILL_SLEEP);
-            }
-                 
+            // notify main thread
+            data = POWER_WILL_SLEEP;
+            write(power_notification_pipe_fds[1], &data, 1);
+
             // don't allow power change to get the 30 second delay 
             // IOAllowPowerChange( root_port, (long)messageArgument );
                  
@@ -606,10 +610,8 @@ static void MySleepCallBack( void * refCon, io_service_t service, natural_t mess
 			
         case kIOMessageSystemWillPowerOn:
             
-            // System has started the wake up process...
-            if (power_notification_callback){
-                (*power_notification_callback)(POWER_WILL_WAKE_UP);
-            }
+            data = POWER_WILL_WAKE_UP;
+            write(power_notification_pipe_fds[1], &data, 1);
             break;
 			
         case kIOMessageSystemHasPoweredOn:
@@ -622,44 +624,59 @@ static void MySleepCallBack( void * refCon, io_service_t service, natural_t mess
     }
 }
 
-/** handle IOKIT power notifications - http://developer.apple.com/library/mac/#qa/qa2004/qa1340.html */
-void iphone_register_for_power_notifications(void (*cb)(POWER_NOTIFICATION_t event)){
-    static IONotificationPortRef  notifyPortRef =  NULL; // notification port allocated by IORegisterForSystemPower
-    static io_object_t            notifierObject = 0;    // notifier object, used to deregister later
+static int  power_notification_process(struct data_source *ds) {
 
-    if (cb) {
-        if (!root_port) {
-            // register to receive system sleep notifications
-            root_port = IORegisterForSystemPower(NULL, &notifyPortRef, MySleepCallBack, &notifierObject);
-            if (!root_port) {
-                printf("IORegisterForSystemPower failed\n");
-            }
+    if (!power_notification_callback) return;
+
+    // get token
+    char token;
+    int bytes_read = read(power_notification_pipe_fds[0], &token, 1);
+    if (bytes_read != 1) return;
         
-            // add the notification port to the application runloop
-            CFRunLoopAddSource(CFRunLoopGetCurrent(), IONotificationPortGetRunLoopSource(notifyPortRef), kCFRunLoopCommonModes); 
-        }
-        power_notification_callback = cb;
-    } else {
-        if (root_port) {
-            // we no longer want sleep notifications:
-            
-            // remove the sleep notification port from the application runloop
-            CFRunLoopRemoveSource(CFRunLoopGetCurrent(), IONotificationPortGetRunLoopSource(notifyPortRef), kCFRunLoopCommonModes);
-            
-            // deregister for system sleep notifications
-            IODeregisterForSystemPower(&notifierObject);
-            
-            // IORegisterForSystemPower implicitly opens the Root Power Domain IOService
-            // so we close it here
-            IOServiceClose(root_port);
-            
-            // destroy the notification port allocated by IORegisterForSystemPower
-            IONotificationPortDestroy(notifyPortRef);
-            
-            root_port = 0;
-        }
-        power_notification_callback = NULL;
+    printf("power_notification_process: %u\n", token);
+    
+    power_notification_callback( (POWER_NOTIFICATION_t) token );
+}
+
+/** handle IOKIT power notifications - http://developer.apple.com/library/mac/#qa/qa2004/qa1340.html */
+static void power_notification_run(void *context){
+    IONotificationPortRef  notifyPortRef =  NULL; // notification port allocated by IORegisterForSystemPower
+    io_object_t            notifierObject = 0;    // notifier object, used to deregister later
+    
+    // register to receive system sleep notifications
+    root_port = IORegisterForSystemPower(NULL, &notifyPortRef, MySleepCallBack, &notifierObject);
+    if (!root_port) {
+        printf("IORegisterForSystemPower failed\n");
+        return;
     }
+    
+    // add the notification port to this thread's runloop
+    CFRunLoopAddSource(CFRunLoopGetCurrent(), IONotificationPortGetRunLoopSource(notifyPortRef), kCFRunLoopCommonModes);
+    
+    // and wait for events
+    CFRunLoopRun();
+}
+
+
+/**
+ * assumption: called only once, cb != null
+ */
+void iphone_register_for_power_notifications(void (*cb)(POWER_NOTIFICATION_t event)){
+
+    // 
+    power_notification_callback = cb;
+
+ 	// create pipe to deliver power notification to main run loop
+	pipe(power_notification_pipe_fds);
+   
+    // spawn thread to run cocoa run loop
+	pthread_t power_notification_thread;
+	pthread_create(&power_notification_thread, NULL, &power_notification_run, NULL);
+
+    // set up data source handler
+    power_notification_ds.fd =      power_notification_pipe_fds[0];
+    power_notification_ds.process = power_notification_process;
+    run_loop_add_data_source(&power_notification_ds);  
 }
 #endif
 
