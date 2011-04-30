@@ -238,6 +238,7 @@ if test "x$USE_COCOA_RUN_LOOP" = xyes; then
 fi
 echo "#define USE_POSIX_RUN_LOOP" >> config.h
 echo "#define HAVE_SDP" >> config.h
+echo "#define HAVE_RFCOMM" >> config.h
 if test ! -z "$REMOTE_DEVICE_DB" ; then 
     echo "#define REMOTE_DEVICE_DB $REMOTE_DEVICE_DB" >> config.h
 fi

@@ -11,10 +11,11 @@
 		1D60589B0D05DD56006BFB54 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; };
 		9C0D06391091035200FC3BBA /* BTDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C0D06361091035200FC3BBA /* BTDevice.m */; };
 		9C0D070D1092316D00FC3BBA /* EAGLViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C0D070C1092316D00FC3BBA /* EAGLViewController.m */; };
-		9C5E121612DE55B80013EF2C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C5E121512DE55B80013EF2C /* Foundation.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
-		9C5E127112DE59E30013EF2C /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C5E127012DE59E30013EF2C /* UIKit.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
-		9C5E127312DE59EB0013EF2C /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C5E127212DE59EB0013EF2C /* CoreGraphics.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
-		9C5E127712DE59FA0013EF2C /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C5E127612DE59FA0013EF2C /* OpenGLES.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		9C5E139612DE6C7B0013EF2C /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C5E139512DE6C7B0013EF2C /* OpenGLES.framework */; };
+		9C5E139A12DE6C8A0013EF2C /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C5E139912DE6C8A0013EF2C /* CoreGraphics.framework */; };
+		9C5E139E12DE6C960013EF2C /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C5E139D12DE6C960013EF2C /* UIKit.framework */; };
+		9C5E13A212DE6CAA0013EF2C /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C5E13A112DE6CAA0013EF2C /* CoreFoundation.framework */; };
+		9C5E13A812DE6CB30013EF2C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C5E13A712DE6CB30013EF2C /* Foundation.framework */; };
 		9C6BB62E1027911E00A0BCB0 /* wiimote_texture.png in Resources */ = {isa = PBXBuildFile; fileRef = 9C6BB62D1027911E00A0BCB0 /* wiimote_texture.png */; };
 		9C8B71C712DBB9FE00E3FD8A /* BTstackManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C8B71C412DBB9FE00E3FD8A /* BTstackManager.m */; };
 		9C8B71C812DBB9FE00E3FD8A /* BTDiscoveryViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C8B71C612DBB9FE00E3FD8A /* BTDiscoveryViewController.m */; };
@@ -42,10 +43,11 @@
 		9C18001D108B94FB00824BE7 /* linked_list.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; path = linked_list.h; sourceTree = "<group>"; };
 		9C18001E108B94FB00824BE7 /* run_loop.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; path = run_loop.h; sourceTree = "<group>"; };
 		9C18001F108B94FB00824BE7 /* utils.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; path = utils.h; sourceTree = "<group>"; };
-		9C5E121512DE55B80013EF2C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
-		9C5E127012DE59E30013EF2C /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
-		9C5E127212DE59EB0013EF2C /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
-		9C5E127612DE59FA0013EF2C /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
+		9C5E139512DE6C7B0013EF2C /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
+		9C5E139912DE6C8A0013EF2C /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		9C5E139D12DE6C960013EF2C /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		9C5E13A112DE6CAA0013EF2C /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
+		9C5E13A712DE6CB30013EF2C /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		9C6BB62D1027911E00A0BCB0 /* wiimote_texture.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = wiimote_texture.png; sourceTree = "<group>"; };
 		9C8B71C312DBB9FE00E3FD8A /* BTstackManager.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = BTstackManager.h; path = ../../CocoaTouch/include/BTstack/BTstackManager.h; sourceTree = SOURCE_ROOT; };
 		9C8B71C412DBB9FE00E3FD8A /* BTstackManager.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = BTstackManager.m; path = ../../CocoaTouch/src/BTstackManager.m; sourceTree = SOURCE_ROOT; };
@@ -62,10 +64,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				9CD1C867117E2F6900C7A4F4 /* libBTstack.dylib in Frameworks */,
-				9C5E121612DE55B80013EF2C /* Foundation.framework in Frameworks */,
-				9C5E127112DE59E30013EF2C /* UIKit.framework in Frameworks */,
-				9C5E127312DE59EB0013EF2C /* CoreGraphics.framework in Frameworks */,
-				9C5E127712DE59FA0013EF2C /* OpenGLES.framework in Frameworks */,
+				9C5E139612DE6C7B0013EF2C /* OpenGLES.framework in Frameworks */,
+				9C5E139A12DE6C8A0013EF2C /* CoreGraphics.framework in Frameworks */,
+				9C5E139E12DE6C960013EF2C /* UIKit.framework in Frameworks */,
+				9C5E13A212DE6CAA0013EF2C /* CoreFoundation.framework in Frameworks */,
+				9C5E13A812DE6CB30013EF2C /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -131,10 +134,11 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				9C5E121512DE55B80013EF2C /* Foundation.framework */,
-				9C5E127012DE59E30013EF2C /* UIKit.framework */,
-				9C5E127212DE59EB0013EF2C /* CoreGraphics.framework */,
-				9C5E127612DE59FA0013EF2C /* OpenGLES.framework */,
+				9C5E139512DE6C7B0013EF2C /* OpenGLES.framework */,
+				9C5E139912DE6C8A0013EF2C /* CoreGraphics.framework */,
+				9C5E139D12DE6C960013EF2C /* UIKit.framework */,
+				9C5E13A112DE6CAA0013EF2C /* CoreFoundation.framework */,
+				9C5E13A712DE6CB30013EF2C /* Foundation.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -279,8 +283,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: Milanka Ringwald (Y4MWH89GZ9)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Don't Code Sign";
 				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_VERSION = 4.2;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -294,8 +299,7 @@
 					"-lbtstack",
 				);
 				PREBINDING = NO;
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "86D3FD5B-5B72-4D87-88B3-0737B204F98E";
-				SDKROOT = iphonesimulator3.0;
+				SDKROOT = iphoneos3.0;
 				USER_HEADER_SEARCH_PATHS = "";
 			};
 			name = Debug;
@@ -304,8 +308,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: Milanka Ringwald (Y4MWH89GZ9)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Don't Code Sign";
 				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_VERSION = 4.2;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -319,8 +324,7 @@
 					"-lbtstack",
 				);
 				PREBINDING = NO;
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "86D3FD5B-5B72-4D87-88B3-0737B204F98E";
-				SDKROOT = iphonesimulator3.0;
+				SDKROOT = iphoneos3.0;
 				USER_HEADER_SEARCH_PATHS = "";
 			};
 			name = Release;

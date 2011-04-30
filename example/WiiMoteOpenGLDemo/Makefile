@@ -2,8 +2,6 @@
 # http://bit.ly/af0Evu
 # http://hwtt.net/ths
 
-export TARGET_STRIP_FLAGS=
-
 include $(THEOS)/makefiles/common.mk
 
 APPLICATION_NAME = WiiMoteOpenGLDemo
@@ -13,6 +11,6 @@ WiiMoteOpenGLDemo_FILES += ../../CocoaTouch/src/BTstackManager.m ../../CocoaTouc
 WiiMoteOpenGLDemo_CFLAGS = -I . -I Classes -I ../../include -I ../../CocoaTouch/include
 WiiMoteOpenGLDemo_LDFLAGS = -L../../src -lbtstack
 WiiMoteOpenGLDemo_FRAMEWORKS = Foundation UIKit CoreGraphics  OpenGLES QuartzCore
-WiiMoteOpenGLDemo_RESOURCE_FILES = wiimote_logo_55px.png wiimote_texture.png Info.plist
+WiiMoteOpenGLDemo_RESOURCE_FILES = wiimote_logo_55px.png wiimote_texture.png
 
 include $(FW_MAKEDIR)/application.mk

@@ -51,6 +51,7 @@
 #include <btstack/btstack.h>
 #include <btstack/linked_list.h>
 #include <btstack/run_loop.h>
+#include <btstack/rfcomm.h>
 
 #include "hci.h"
 #include "hci_dump.h"
@@ -127,8 +128,11 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
     bd_addr_t addr;
     uint16_t cid;
     uint16_t psm;
+    uint16_t service_channel;
+    uint16_t registration_id;
     uint16_t mtu;
     uint8_t  reason;
+    uint8_t  rfcomm_channel;
     uint32_t service_record_handle;
     client_state_t *client;
     
@@ -223,6 +227,36 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             reason = packet[7];
             l2cap_decline_connection_internal(cid, reason);
             break;
+            
+        case RFCOMM_CREATE_CHANNEL:
+            bt_flip_addr(addr, &packet[3]);
+            rfcomm_channel = packet[9];
+            rfcomm_create_channel_internal( connection, &addr, rfcomm_channel );
+            break;
+        case RFCOMM_DISCONNECT:
+            cid = READ_BT_16(packet, 3);
+            reason = packet[5];
+            rfcomm_disconnect_internal(cid);
+            break;
+        case RFCOMM_REGISTER_SERVICE:
+            registration_id = READ_BT_16(packet, 3);
+            mtu = READ_BT_16(packet, 5);
+            rfcomm_register_service_internal(connection, registration_id, mtu);
+            break;
+        case RFCOMM_UNREGISTER_SERVICE:
+            service_channel = READ_BT_16(packet, 3);
+            rfcomm_unregister_service_internal(service_channel);
+            break;
+        case RFCOMM_ACCEPT_CONNECTION:
+            cid    = READ_BT_16(packet, 3);
+            rfcomm_accept_connection_internal(cid);
+            break;
+        case RFCOMM_DECLINE_CONNECTION:
+            cid    = READ_BT_16(packet, 3);
+            reason = packet[7];
+            rfcomm_decline_connection_internal(cid);
+            break;            
+            
         case SDP_REGISTER_SERVICE_RECORD:
             printf("SDP_REGISTER_SERVICE_RECORD size %u\n", size);
             sdp_register_service_internal(connection, &packet[3]);
@@ -260,6 +294,10 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
         case L2CAP_DATA_PACKET:
             // process l2cap packet...
             err = l2cap_send_internal(channel, data, length);
+            break;
+        case RFCOMM_DATA_PACKET:
+            // process l2cap packet...
+            err = rfcomm_send_internal(channel, data, length);
             break;
         case DAEMON_EVENT_PACKET:
             switch (data[0]) {
@@ -501,8 +539,13 @@ int main (int argc,  char * const * argv){
     l2cap_register_packet_handler(daemon_packet_handler);
     timeout.process = daemon_no_connections_timeout;
 
+#ifdef HAVE_RFCOMM
+    printf("config.h: HAVE_RFCOMM\n");
+    rfcomm_init();
+    rfcomm_register_packet_handler(daemon_packet_handler);
+#endif
+    
 #ifdef HAVE_SDP
-    // init SDP
     sdp_init();
     // sdp_test();
 #endif
