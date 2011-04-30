@@ -1,1 +1,1 @@
-./configure --target=iphone --enable-launchd --enable-ldid --with-uart-speed=921600
+./configure --target=iphone --enable-launchd --enable-ldid --with-prefsbundle --with-uart-speed=921600

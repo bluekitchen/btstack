@@ -309,9 +309,15 @@ static void hci_shutdown_connection(hci_connection_t *conn){
     log_dbg("Connection closed: handle %u, ", conn->con_handle);
     print_bd_addr( conn->address );
     log_dbg("\n");
+
+    // cancel all l2cap connections
+    hci_emit_disconnection_complete(conn->con_handle, 0x16);    // terminated by local host
+
     run_loop_remove_timer(&conn->timeout);
     linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
     free( conn );
+    
+    // now it's gone
     hci_emit_nr_connections_changed();
 }
 
@@ -843,6 +849,12 @@ void hci_run(){
                     break;
                 }
                 case 6:
+#ifdef USE_BLUETOOL
+                    hci_send_cmd(&hci_write_class_of_device, 0x007a020c); // Smartphone
+                    break;
+                    
+                case 7:
+#endif
 #endif
                     // done.
                     hci_stack.state = HCI_STATE_WORKING;
@@ -866,9 +878,6 @@ void hci_run(){
 
                 // send disconnected event right away - causes higher layer connections to get closed, too.
                 hci_shutdown_connection(connection);
-                
-                // remove from table
-                hci_stack.connections = connection->item.next;
                 return;
             }
             log_dbg("HCI_STATE_HALTING, calling off\n");
@@ -892,9 +901,6 @@ void hci_run(){
                         
                         // send disconnected event right away - causes higher layer connections to get closed, too.
                         hci_shutdown_connection(connection);
-                        
-                        // remove from table
-                        hci_stack.connections = connection->item.next;
                         return;
                     }
                     
@@ -1011,6 +1017,18 @@ void hci_emit_connection_complete(hci_connection_t *conn){
     bt_flip_addr(&event[5], conn->address);
     event[11] = 1; // ACL connection
     event[12] = 0; // encryption disabled
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
+}
+
+void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
+    uint8_t len = 6; 
+    uint8_t event[len];
+    event[0] = HCI_EVENT_DISCONNECTION_COMPLETE;
+    event[1] = len - 3;
+    event[2] = 0; // status = OK
+    bt_store_16(event, 3, handle);
+    event[5] = reason;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
     hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
 }

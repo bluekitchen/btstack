@@ -295,7 +295,7 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x36), "H"
 };
 const hci_cmd_t hci_write_link_supervision_timeout = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x37), "H2"
-// handle, Range for N: 0x0001 â€“ 0xFFFF Time (Range: 0.625ms â€“ 40.9 sec)
+// handle, Range for N: 0x0001 Ð 0xFFFF Time (Range: 0.625ms Ð 40.9 sec)
 };
 const hci_cmd_t hci_write_inquiry_mode = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x45), "1"
@@ -354,7 +354,10 @@ const hci_cmd_t btstack_set_discoverable = {
 OPCODE(OGF_BTSTACK, BTSTACK_SET_DISCOVERABLE), "1"
 };
 
-
+const hci_cmd_t btstack_set_bluetooth_enabled = {
+// only used by btstack config
+OPCODE(OGF_BTSTACK, BTSTACK_SET_BLUETOOTH_ENABLED), "1"
+};
 
 const hci_cmd_t l2cap_create_channel = {
 OPCODE(OGF_BTSTACK, L2CAP_CREATE_CHANNEL), "B2"

@@ -92,6 +92,9 @@ extern "C" {
 // enable inquiry scan for this client
 #define BTSTACK_SET_DISCOVERABLE                           0x07
 
+// set global Bluetooth state
+#define BTSTACK_SET_BLUETOOTH_ENABLED                      0x08
+
 // create l2cap channel: @param bd_addr(48), psm (16)
 #define L2CAP_CREATE_CHANNEL                               0x20
 
@@ -270,6 +273,7 @@ uint16_t hci_max_acl_data_packet_length();
 void hci_emit_state();
 void hci_emit_connection_complete(hci_connection_t *conn);
 void hci_emit_l2cap_check_timeout(hci_connection_t *conn);
+void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason);
 void hci_emit_nr_connections_changed();
 void hci_emit_hci_open_failed();
 void hci_emit_btstack_version();

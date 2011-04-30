@@ -276,8 +276,13 @@ static void h4_statemachine(){
 static int    h4_process(struct data_source *ds) {
     if (hci_transport_h4->uart_fd == 0) return -1;
 
+    int read_now = bytes_to_read;
+    //    if (read_now > 100) {
+    //        read_now = 100;
+    //    }
+    
     // read up to bytes_to_read data in
-    int bytes_read = read(hci_transport_h4->uart_fd, &hci_packet[read_pos], bytes_to_read);
+    ssize_t bytes_read = read(hci_transport_h4->uart_fd, &hci_packet[read_pos], read_now);
     // printf("h4_process: bytes read %u\n", bytes_read);
     if (bytes_read < 0) {
         return bytes_read;
