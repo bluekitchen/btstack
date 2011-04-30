@@ -45,8 +45,7 @@
 
 // bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };  // Think Outside Keyboard
 // bd_addr_t addr = {0x00, 0x19, 0x1d, 0x90, 0x44, 0x68 };  // WiiMote
-// bd_addr_t addr = {0x76, 0x6d, 0x62, 0xdb, 0xca, 0x73 };  // iPad
-bd_addr_t addr = {0x00, 0x06, 0x66, 0x42, 0x16, 0xf5 }; // iControlPad-16f5
+bd_addr_t addr = {0x76, 0x6d, 0x62, 0xdb, 0xca, 0x73 };  // iPad
 
 hci_con_handle_t con_handle;
 uint16_t source_cid_interrupt;
@@ -62,6 +61,16 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 			// just dump data for now
 			printf("source cid %x -- ", channel);
 			hexdump( packet, size );
+	
+			// HOME => disconnect
+			if (packet[0] == 0xA1) {							// Status report
+				if (packet[1] == 0x30 || packet[1] == 0x31) {   // type 0x30 or 0x31
+					if (packet[3] & 0x080) {                   // homne button pressed
+						printf("Disconnect baseband\n");
+						bt_send_cmd(&hci_disconnect, con_handle, 0x13); // remote closed connection
+					}
+				}
+			}
 			break;
 			
 		case HCI_EVENT_PACKET:
@@ -76,7 +85,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 				case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started - disable pairing
 					if (packet[2] == HCI_STATE_WORKING) {
-						bt_send_cmd(&hci_write_authentication_enable, 1);
+						bt_send_cmd(&hci_write_authentication_enable, 0);
 					}
 					break;
 					
@@ -91,7 +100,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					// inform about pin code request
 					printf("Please enter PIN 0000 on remote device\n");
 					bt_flip_addr(event_addr, &packet[2]); 
-					bt_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "1234");
+					bt_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
 					break;
 					
 				case L2CAP_EVENT_CHANNEL_OPENED:
@@ -109,6 +118,8 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						
 						if (psm == 0x13) {
 							source_cid_interrupt = source_cid;
+							// interupt channel openedn succesfully, now open control channel, too.
+							bt_send_cmd(&l2cap_create_channel, event_addr, 0x11);
 						} else {
 							source_cid_control = source_cid;
 							// request acceleration data..
@@ -117,7 +128,6 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 							// stop blinking
 							// uint8_t setLEDs[] = { 0x52, 0x11, 0x10 };
 							// bt_send_l2cap( source_cid, setLEDs, sizeof(setLEDs));
-							bt_send_cmd(&l2cap_create_channel, event_addr, 0x13);
 						}
 					} else {
 						printf("L2CAP connection to device ");
@@ -136,7 +146,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 				case HCI_EVENT_COMMAND_COMPLETE:
 					// connect to HID device (PSM 0x13) at addr
 					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable) ) {
-						bt_send_cmd(&l2cap_create_channel, addr, 0x11);
+						bt_send_cmd(&l2cap_create_channel, addr, 0x13);
 						printf("Press 1+2 on WiiMote to make it discoverable - Press HOME to disconnect later :)\n");
 					}
 					break;
