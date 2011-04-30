@@ -61,6 +61,7 @@
 
 #ifdef USE_BLUETOOL
 #include "bt_control_iphone.h"
+#include <notify.h>
 #endif
 
 #ifdef USE_SPRINGBOARD
@@ -94,6 +95,7 @@ static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state);
 static client_state_t * client_for_connection(connection_t *connection);
 static int              clients_require_power_on();
 static int              clients_require_discoverable();
+static int              clients_clear_power_request();
 static void start_power_off_timer();
 static void stop_power_off_timer();
 
@@ -106,6 +108,7 @@ static int power_management_sleep = 0;
 static linked_list_t    clients = NULL; // list of connected clients 
 static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth_status_handler;
 
+static int global_enable = 0;
 
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
     printf("Bluetooth status: %u\n", state);
@@ -172,6 +175,19 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             client->discoverable = packet[3];
             // merge state
             hci_discoverable_control(clients_require_discoverable());
+            break;
+        case BTSTACK_SET_BLUETOOTH_ENABLED:
+            printf("BTSTACK_SET_BLUETOOTH_ENABLED: %u\n", packet[3]);
+
+            if (packet[3]) {
+                // global enable
+                global_enable = 1;
+                hci_power_control(HCI_POWER_ON);
+            } else {
+                global_enable = 0;
+                clients_clear_power_request();
+                hci_power_control(HCI_POWER_OFF);
+            }
             break;
         case L2CAP_CREATE_CHANNEL_MTU:
             bt_flip_addr(addr, &packet[3]);
@@ -359,6 +375,12 @@ static void power_notification_callback(POWER_NOTIFICATION_t notification){
 }
 
 static void daemon_sigint_handler(int param){
+
+#ifdef USE_BLUETOOL
+    // hack for celeste
+    notify_post("ch.ringwald.btstack.stopped");
+#endif
+    
     printf(" <= SIGINT received, shutting down..\n");    
     hci_power_control( HCI_POWER_OFF);
     hci_close();
@@ -497,6 +519,11 @@ int main (int argc,  char * const * argv){
 #endif
     socket_connection_register_packet_callback(daemon_client_handler);
         
+#ifdef USE_BLUETOOL 
+    // hack for celeste
+    notify_post("ch.ringwald.btstack.started");
+#endif
+    
     // go!
     run_loop_execute();
     return 0;
@@ -541,7 +568,18 @@ static client_state_t * client_for_connection(connection_t *connection) {
     return NULL;
 }
 
+static int clients_clear_power_request(){
+    linked_item_t *it;
+    for (it = (linked_item_t *) clients; it ; it = it->next){
+        client_state_t * client_state = (client_state_t *) it;
+        client_state->power_mode = HCI_POWER_OFF;
+    }
+}
+
 static int clients_require_power_on(){
+
+    if (global_enable) return 1;
+
     linked_item_t *it;
     for (it = (linked_item_t *) clients; it ; it = it->next){
         client_state_t * client_state = (client_state_t *) it;

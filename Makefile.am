@@ -6,8 +6,12 @@ if USE_BLUETOOL
     patchbluetool = PatchBlueTool
 endif
 
+if USE_PREFSBUNDLE
+    patchbluetool = PrefsBundle
+endif
+
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = src example $(springboardaccess) $(patchbluetool)
+SUBDIRS = src example $(springboardaccess) $(prefsbundle) $(patchbluetool)
 
 iphone_ip=@IPHONE_IP@
 install-iphone: src/BTdaemon

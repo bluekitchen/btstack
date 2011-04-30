@@ -79,12 +79,33 @@ typedef enum {
 #define SDP_ClientExecutableURL     0x000b
 #define SDP_IconURL                 0x000c
 #define SDP_AdditionalProtocolDescriptorList 0x000d
+#define SDP_SupportedFormatsList    0x0303
+
+// SERVICE CLASSES
+#define SDP_OBEXObjectPush    0x1105
+#define SDP_OBEXFileTransfer  0x1106
+#define SDP_PublicBrowseGroup 0x1002
+
+// PROTOCOLS
+#define SDP_SDPProtocol       0x0001
+#define SDP_UDPProtocol       0x0002
+#define SDP_RFCOMMProtocol    0x0003
+#define SDP_OBEXProtocol      0x0008
+#define SDP_L2CAPProtocol     0x0100
 
 // OFFSETS FOR LOCALIZED ATTRIBUTES - SDP_LanguageBaseAttributeIDList
 #define SDP_Offest_ServiceName      0x0000
 #define SDP_Offest_ServiceDescription 0x0001
 #define SDP_Offest_ProviderName     0x0002
 
+// OBEX
+#define SDP_vCard_2_1       0x01
+#define SDP_vCard_3_0       0x02
+#define SDP_vCal_1_0        0x03
+#define SDP_iCal_2_0        0x04
+#define SDP_vNote           0x05
+#define SDP_vMessage        0x06
+#define SDP_OBEXFileTypeAny 0xFF
 
 #pragma mark DateElement
 void de_dump_data_element(uint8_t * record);

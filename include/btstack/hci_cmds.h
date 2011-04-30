@@ -215,6 +215,7 @@ extern const hci_cmd_t btstack_get_version;
 extern const hci_cmd_t btstack_get_system_bluetooth_enabled;
 extern const hci_cmd_t btstack_set_system_bluetooth_enabled;
 extern const hci_cmd_t btstack_set_discoverable;
+extern const hci_cmd_t btstack_set_bluetooth_enabled;    // only used by btstack config
 	
 extern const hci_cmd_t hci_accept_connection_request;
 extern const hci_cmd_t hci_authentication_requested;
