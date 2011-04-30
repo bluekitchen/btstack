@@ -17,17 +17,18 @@
 		9C04B876107D2B7C002A63D0 /* run_loop_cocoa.m in Sources */ = {isa = PBXBuildFile; fileRef = 9CEB4DAA10753B4B00DD5720 /* run_loop_cocoa.m */; };
 		9C04B87A107D2BA7002A63D0 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C04B879107D2BA7002A63D0 /* CoreFoundation.framework */; };
 		9C05FC971020D3F300255261 /* socket_connection.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C00F7301017ACC3008DAB17 /* socket_connection.c */; };
-		9C18015C108BAA7200824BE7 /* libusb-1.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C18015B108BAA7200824BE7 /* libusb-1.0.dylib */; };
+		9C2169D212F9FB7000072B00 /* platform_iphone.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C2169D112F9FB7000072B00 /* platform_iphone.m */; };
 		9C255D4A11E0C59900CDD689 /* run_loop_embedded.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C255D4911E0C59900CDD689 /* run_loop_embedded.c */; };
 		9C3AED88122C201C008046F4 /* remote_device_db_iphone.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C3AED87122C201C008046F4 /* remote_device_db_iphone.m */; };
 		9C46FC3A0FA906F700ABEF05 /* hci_transport_h4.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */; };
-		9C77E79210667F0600F39DCF /* platform_iphone.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C77E79110667F0600F39DCF /* platform_iphone.c */; };
+		9C5E0F0E12DE39250013EF2C /* hci_transport_usb.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C2071F210014D3200A07EA4 /* hci_transport_usb.c */; };
 		9C7B5AC0100BD3340065D87E /* linked_list.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7B5ABF100BD3340065D87E /* linked_list.c */; };
 		9C7B5D01100FC9AE0065D87E /* btstack.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CC813A10FFC0774002816F9 /* btstack.c */; };
 		9C7B5D03100FC9BB0065D87E /* test.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7B5B7E100D04450065D87E /* test.c */; };
 		9C7B5D0D100FC9CE0065D87E /* linked_list.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7B5ABF100BD3340065D87E /* linked_list.c */; };
 		9C7ECBB50FCC95DD0085DAC5 /* hci_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7ECBB40FCC95DD0085DAC5 /* hci_dump.c */; };
 		9C88500E0FBF6702004980E4 /* l2cap.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C88500C0FBF6702004980E4 /* l2cap.c */; };
+		9C9F1A3D122F02DD004E21AC /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C9F1A3C122F02DD004E21AC /* Foundation.framework */; };
 		9CB9846B11BC32A800A2F346 /* sdp_util.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CB9846A11BC32A800A2F346 /* sdp_util.c */; };
 		9CC813A50FFC0A51002816F9 /* daemon.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CC813A40FFC0A51002816F9 /* daemon.c */; };
 		9CCE6CEA1025BD0000FCE9F4 /* hci.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC340FA906F700ABEF05 /* hci.c */; };
@@ -68,9 +69,9 @@
 		9C13C9FC10ECED6300B04243 /* BTDevice.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = BTDevice.m; path = CocoaTouch/src/BTDevice.m; sourceTree = "<group>"; };
 		9C13C9FD10ECED6300B04243 /* BTInquiryViewController.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = BTInquiryViewController.h; path = CocoaTouch/include/BTstack/BTInquiryViewController.h; sourceTree = "<group>"; };
 		9C13C9FE10ECED6300B04243 /* BTInquiryViewController.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = BTInquiryViewController.m; path = CocoaTouch/src/BTInquiryViewController.m; sourceTree = "<group>"; };
-		9C18015B108BAA7200824BE7 /* libusb-1.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libusb-1.0.dylib"; path = "/usr/local/lib/libusb-1.0.dylib"; sourceTree = "<absolute>"; };
 		9C1813F71042FCCA00C68F09 /* mitm.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = mitm.c; path = example/mitm.c; sourceTree = "<group>"; };
 		9C2071F210014D3200A07EA4 /* hci_transport_usb.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci_transport_usb.c; path = src/hci_transport_usb.c; sourceTree = "<group>"; };
+		9C2169D112F9FB7000072B00 /* platform_iphone.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = platform_iphone.m; path = src/platform_iphone.m; sourceTree = "<group>"; };
 		9C255D4911E0C59900CDD689 /* run_loop_embedded.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = run_loop_embedded.c; path = src/run_loop_embedded.c; sourceTree = "<group>"; };
 		9C255D7611E0DD2C00CDD689 /* hci_transport_h4_stellaris.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci_transport_h4_stellaris.c; path = "../../TI/Stellarware/boards/dk-lm3s9b96/bt_init/hci_transport_h4_stellaris.c"; sourceTree = SOURCE_ROOT; };
 		9C255DB511E10AEB00CDD689 /* debug.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = debug.h; path = src/debug.h; sourceTree = "<group>"; };
@@ -95,7 +96,6 @@
 		9C77E7501066680800F39DCF /* SpringBoardAccessExtension.mm */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.cpp.objcpp; name = SpringBoardAccessExtension.mm; path = SpringBoardAccess/SpringBoardAccessExtension.mm; sourceTree = "<group>"; };
 		9C77E75310666B5D00F39DCF /* SpringBoardAccess.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = SpringBoardAccess.c; path = SpringBoardAccess/SpringBoardAccess.c; sourceTree = "<group>"; };
 		9C77E75410666B5D00F39DCF /* SpringBoardAccess.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = SpringBoardAccess.h; path = SpringBoardAccess/SpringBoardAccess.h; sourceTree = "<group>"; };
-		9C77E79110667F0600F39DCF /* platform_iphone.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = platform_iphone.c; path = src/platform_iphone.c; sourceTree = "<group>"; };
 		9C77E7BC1066AC4100F39DCF /* control */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; name = control; path = SpringBoardAccess/control; sourceTree = "<group>"; };
 		9C78A04A103C6734003B2950 /* Default_BTstack.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Default_BTstack.png; path = resources/Default_BTstack.png; sourceTree = "<group>"; };
 		9C78A04B103C6734003B2950 /* Default_BTstackActive.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Default_BTstackActive.png; path = resources/Default_BTstackActive.png; sourceTree = "<group>"; };
@@ -114,6 +114,7 @@
 		9C9485C41211D58300B66EF1 /* l2cap-throughput.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = "l2cap-throughput.c"; path = "example/l2cap-throughput.c"; sourceTree = "<group>"; };
 		9C978672113DC04900380B3E /* ch.ringwald.BTstackTCP.plist */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text.plist.xml; name = ch.ringwald.BTstackTCP.plist; path = resources/ch.ringwald.BTstackTCP.plist; sourceTree = "<group>"; };
 		9C994B8E106BEEB700C70311 /* rfcomm.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = rfcomm.c; path = example/rfcomm.c; sourceTree = "<group>"; };
+		9C9F1A3C122F02DD004E21AC /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		9CA3C0900FB8B3C4005F48DE /* TODO.txt */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = TODO.txt; sourceTree = "<group>"; };
 		9CAA573610A5D87400D0E1A9 /* inquiry.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = inquiry.c; path = example/inquiry.c; sourceTree = "<group>"; };
 		9CB9846A11BC32A800A2F346 /* sdp_util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sdp_util.c; path = src/sdp_util.c; sourceTree = "<group>"; };
@@ -149,7 +150,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9C04B87A107D2BA7002A63D0 /* CoreFoundation.framework in Frameworks */,
-				9C18015C108BAA7200824BE7 /* libusb-1.0.dylib in Frameworks */,
+				9C9F1A3D122F02DD004E21AC /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -175,6 +176,7 @@
 			isa = PBXGroup;
 			children = (
 				9CBE154810A354FF00597802 /* package.sh */,
+				9CA3C0900FB8B3C4005F48DE /* TODO.txt */,
 				9CEB4B7510715DC200DD5720 /* include */,
 				9C77E4AD10634E3100F39DCF /* 3rdparty */,
 				9C78A049103C671D003B2950 /* Resources */,
@@ -185,8 +187,8 @@
 				C6A0FF2B0290797F04C91782 /* Documentation */,
 				1AB674ADFE9D54B511CA2CBB /* Products */,
 				9CC152C61009052100223347 /* config.h */,
-				9CA3C0900FB8B3C4005F48DE /* TODO.txt */,
 				9C04B879107D2BA7002A63D0 /* CoreFoundation.framework */,
+				9C9F1A3C122F02DD004E21AC /* Foundation.framework */,
 			);
 			name = project;
 			sourceTree = "<group>";
@@ -224,8 +226,8 @@
 				9C00F7301017ACC3008DAB17 /* socket_connection.c */,
 				9C00F7311017ACC3008DAB17 /* socket_connection.h */,
 				9C00F86210191097008DAB17 /* utils.c */,
-				9C77E79110667F0600F39DCF /* platform_iphone.c */,
 				9C6459DE1037554B0081A00B /* platform_iphone.h */,
+				9C2169D112F9FB7000072B00 /* platform_iphone.m */,
 				9CB9846A11BC32A800A2F346 /* sdp_util.c */,
 				9CE7CDD711BFF5470096F5B1 /* sdp.c */,
 				9CFFD48C11C4CD0100A37038 /* sdp.h */,
@@ -283,7 +285,6 @@
 		9C77E4AD10634E3100F39DCF /* 3rdparty */ = {
 			isa = PBXGroup;
 			children = (
-				9C18015B108BAA7200824BE7 /* libusb-1.0.dylib */,
 				9C77E4AE10634E3100F39DCF /* launch.h */,
 				9C77E4AF10634E3100F39DCF /* libsubstrate.dylib */,
 				9C77E4B010634E3100F39DCF /* README */,
@@ -400,7 +401,14 @@
 			isa = PBXProject;
 			buildConfigurationList = 1DEB928908733DD80010E9CD /* Build configuration list for PBXProject "project" */;
 			compatibilityVersion = "Xcode 3.1";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
 			mainGroup = 08FB7794FE84155DC02AAC07 /* project */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -437,7 +445,6 @@
 				9C00F86510191097008DAB17 /* utils.c in Sources */,
 				9C00F87410191130008DAB17 /* l2cap_signaling.c in Sources */,
 				9CCE6CEA1025BD0000FCE9F4 /* hci.c in Sources */,
-				9C77E79210667F0600F39DCF /* platform_iphone.c in Sources */,
 				9CEB4F17107AAAEF00DD5720 /* run_loop_posix.c in Sources */,
 				9C04B826107D1CED002A63D0 /* run_loop.c in Sources */,
 				9C04B876107D2B7C002A63D0 /* run_loop_cocoa.m in Sources */,
@@ -445,6 +452,8 @@
 				9CE7CDD811BFF5470096F5B1 /* sdp.c in Sources */,
 				9C255D4A11E0C59900CDD689 /* run_loop_embedded.c in Sources */,
 				9C3AED88122C201C008046F4 /* remote_device_db_iphone.m in Sources */,
+				9C5E0F0E12DE39250013EF2C /* hci_transport_usb.c in Sources */,
+				9C2169D212F9FB7000072B00 /* platform_iphone.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -521,6 +530,11 @@
 					/sw/include,
 				);
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = "-I/usr/local/include";
+				OTHER_LDFLAGS = (
+					"-L/usr/local/lib",
+					"-lusb-1.0",
+				);
 				PREBINDING = NO;
 				SDKROOT = macosx10.5;
 			};
@@ -533,6 +547,11 @@
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				OTHER_CFLAGS = "-I/usr/local/include";
+				OTHER_LDFLAGS = (
+					"-L/usr/local/lib",
+					"-lusb-1.0",
+				);
 				PREBINDING = NO;
 				SDKROOT = macosx10.5;
 			};
@@ -589,6 +608,11 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = "-I/usr/local/include";
+				OTHER_LDFLAGS = (
+					"-L/usr/local/lib",
+					"-lusb-1.0",
+				);
 				PREBINDING = NO;
 				SDKROOT = iphoneos2.0;
 			};

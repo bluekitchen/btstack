@@ -4,7 +4,7 @@ PACKAGE=BTstack
 
 svn update
 
-VERSION=0.2
+VERSION=0.3
 REVISION=`svn info | grep Revision | cut -d " " -f 2`
 ARCHIVE=$PACKAGE-$VERSION-$REVISION.deb
 
@@ -34,6 +34,10 @@ cp resources/Silver*.png $PACKAGE/System/Library/Frameworks/UIKit.framework/
 mkdir -p $PACKAGE/Library/LaunchDaemons/
 cp resources/ch.ringwald.BTstack.plist $PACKAGE/Library/LaunchDaemons/
 
+# PrefsBundle
+pushd PrefsBundle ; make package ; popd
+cp -r PrefsBundle/_/* $PACKAGE
+
 # prerm: called on remove and upgrade - stop daemon and get rid of BlueToolH4 
 echo "#!/bin/sh" >  $PACKAGE/DEBIAN/prerm
 echo "/bin/launchctl unload /Library/LaunchDaemons/ch.ringwald.BTstack.plist 2&> /dev/null" >> $PACKAGE/DEBIAN/prerm
@@ -55,7 +59,6 @@ chmod +x $PACKAGE/DEBIAN/extrainst_
 echo "#!/bin/sh" >  $PACKAGE/DEBIAN/postinst
 echo "/bin/launchctl load   /Library/LaunchDaemons/ch.ringwald.BTstack.plist 2&> /dev/null" >> $PACKAGE/DEBIAN/postinst
 chmod +x $PACKAGE/DEBIAN/postinst
-
 
 # set ownership to root:root
 sudo chown -R 0:0 $PACKAGE

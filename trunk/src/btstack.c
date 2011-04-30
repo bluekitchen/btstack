@@ -119,6 +119,11 @@ void bt_send_l2cap(uint16_t source_cid, uint8_t *data, uint16_t len){
     socket_connection_send_packet(btstack_connection, L2CAP_DATA_PACKET, source_cid, data, len);
 }
 
+void bt_send_rfcomm(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
+    // send
+    socket_connection_send_packet(btstack_connection, RFCOMM_DATA_PACKET, rfcomm_cid, data, len);
+}
+
 void bt_send_acl(uint8_t * data, uint16_t len){
     // send
     socket_connection_send_packet(btstack_connection, HCI_ACL_DATA_PACKET, 0, data, len);

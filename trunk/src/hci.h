@@ -122,6 +122,13 @@ extern "C" {
 // unregister SDP Service Record
 #define SDP_UNREGISTER_SERVICE_RECORD                      0x31
 
+// RFCOMM "HCI" Commands
+#define RFCOMM_CREATE_CHANNEL       0x40
+#define RFCOMM_DISCONNECT			0x41
+#define RFCOMM_REGISTER_SERVICE     0x42
+#define RFCOMM_UNREGISTER_SERVICE   0x43
+#define RFCOMM_ACCEPT_CONNECTION    0x44
+#define RFCOMM_DECLINE_CONNECTION   0x45
 
 // 
 #define IS_COMMAND(packet, command) (READ_BT_16(packet,0) == command.opcode)

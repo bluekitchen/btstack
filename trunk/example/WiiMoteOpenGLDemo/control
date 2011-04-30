@@ -1,4 +1,5 @@
-Package:  ch.ringwald.wiimoteopengldemo
+Package: ch.ringwald.wiimoteopengldemo
+Version: 1.0
 Name: WiiMote OpenGL-ES Demo
 Description: BTstack Demo
  This demo shows how a virtual WiiMote can mirror
@@ -10,4 +11,3 @@ Homepage: http://code.google.com/p/btstack/
 Depends: ch.ringwald.btstack
 Maintainer: Matthias Ringwald <iphone@ringwald.ch>
 Author: Matthias Ringwald <iphone@ringwald.ch>
-Version: 1.0

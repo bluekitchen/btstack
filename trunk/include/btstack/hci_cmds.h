@@ -143,6 +143,30 @@ extern "C" {
 // data: event(8), len(8), local_cid(16), credits(8)
 #define L2CAP_EVENT_CREDITS								   0x74
 
+
+// RFCOMM EVENTS
+	
+// data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
+// status: 0 = OK
+#define RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE                 0x80
+	
+// data: event(8), len(8), channelID(8)
+// status: 0 = OK
+#define RFCOMM_EVENT_CHANNEL_CLOSED                        0x81
+	
+// data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
+#define RFCOMM_EVENT_INCOMING_CONNECTION                   0x82
+	
+// data: event (8), len(8), rfcommid (16), ...
+#define RFCOMM_EVENT_REMOTE_LINE_STATUS                    0x83
+	
+// data: event(8), len(8), local_cid(16), credits(8)
+#define RFCOMM_EVENT_CREDITS			                   0x84
+	
+// data: event(8), len(8), status (8), registration id(16), rfcomm server channel id (8) 
+#define RFCOMM_EVENT_SERVICE_REGISTERED                    0x85
+    
+
 // data: event(8), len(8), service_record_handle(32)
 #define SDP_SERVICE_REGISTERED                             0x90
 
@@ -173,6 +197,8 @@ extern "C" {
 #define L2CAP_CONFIG_RESPONSE_RESULT_REJECTED              0x68
 #define L2CAP_CONFIG_RESPONSE_RESULT_UNKNOWN_OPTIONS       0x69
 
+#define RFCOMM_MULTIPLEXER_STOPPED                         0x70
+    
 /**
  * Default INQ Mode
  */

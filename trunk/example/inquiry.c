@@ -120,7 +120,6 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					// bt stack activated, get started - set local name
 					if (packet[2] == HCI_STATE_WORKING) {
 						bt_send_cmd(&hci_write_inquiry_mode, 0x01); // with RSSI
-						next();
 					}
 					break;
 
