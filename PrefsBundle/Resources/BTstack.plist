@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>items</key>
+	<array>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>footerText</key>
+			<string>Enabling iOS Bluetooth after BTstack was used can take up to 30 seconds. Please be patient.</string>
+			<key>label</key>
+			<string>Bluetooth Stack</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkListCell</string>
+			<key>detail</key>
+			<string>PSListItemsController</string>
+			<key>shortTitles</key>
+			<array>
+				<array>
+					<string>None</string>
+					<string>iOS</string>
+					<string>BTstack</string>
+				</array>
+				<string>None</string>
+				<string>iOS</string>
+			</array>
+			<key>validTitles</key>
+			<array>
+				<string>None</string>
+				<string>iOS</string>
+				<string>BTstack</string>
+			</array>
+			<key>validValues</key>
+			<array>
+				<string>None</string>
+				<string>iOS</string>
+				<string>BTstack</string>
+			</array>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>footerText</key>
+			<string>Incoming file transfers are not enabled by default. Please enable this option to receive incoming files.</string>
+			<key>label</key>
+			<string>Transfers</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>co.cocoanuts.celeste</string>
+			<key>key</key>
+			<string>ReceiveEnabled</string>
+			<key>label</key>
+			<string>Receive</string>
+			<key>PostNotification</key>
+			<string>co.cocoanuts.celeste.receive.enabled</string>
+		</dict>
+	</array>
+	<key>title</key>
+	<string>BTstack</string>
+</dict>
+</plist>
