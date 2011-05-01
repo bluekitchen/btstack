@@ -3,7 +3,7 @@ LDFLAGS  = @LDFLAGS@ -lBTstack -L../src
 CPPFLAGS = @CPPFLAGS@ -I../include
 prefix = @prefix@
 
-all: test mitm rfcomm inquiry l2cap-server l2cap-throughput
+all: test mitm rfcomm-cat inquiry l2cap-server l2cap-throughput
 
 test: test.c
 	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
@@ -25,12 +25,16 @@ inquiry: inquiry.c
 	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
 	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
-rfcomm: rfcomm.c
+rfcomm-cat: rfcomm-cat.c
+	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
+	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
+
+rfcomm-echo: rfcomm-echo.c
 	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
 	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
 clean:
-	rm -f test mitm rfcomm inquiry l2cap-server l2cap-throughput obex
+	rm -f test mitm rfcomm-cat rfcomm-echo inquiry l2cap-server l2cap-throughput obex
 	
 install:    
 	echo "nothing to be done"
