@@ -146,7 +146,12 @@ extern "C" {
 
 // RFCOMM EVENTS
 	
+// The current BTstack-0.3-50x in Cydia uses
 // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
+
+// The SVN version and the next update will use
+// data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
+    
 // status: 0 = OK
 #define RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE                 0x80
 	
