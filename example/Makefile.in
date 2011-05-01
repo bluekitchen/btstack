@@ -3,7 +3,7 @@ LDFLAGS  = @LDFLAGS@ -lBTstack -L../src
 CPPFLAGS = @CPPFLAGS@ -I../include
 prefix = @prefix@
 
-all: test mitm rfcomm-cat inquiry l2cap-server l2cap-throughput
+all: test mitm rfcomm-cat rfcomm-echo inquiry l2cap-server l2cap-throughput
 
 test: test.c
 	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)

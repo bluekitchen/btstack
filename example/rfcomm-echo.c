@@ -30,11 +30,7 @@
  */
 
 /*
- *  rfcomm.c
- * 
- *  Command line parsing and debug option
- *  added by Vladimir Vyskocil <vladimir.vyskocil@gmail.com>
- *
+ *  rfcomm-echo.c
  */
 
 #include <unistd.h>
@@ -71,6 +67,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 		case RFCOMM_DATA_PACKET:
 			printf("Received RFCOMM data on channel id %u, size %u\n", channel, size);
 			hexdump(packet, size);
+            bt_send_rfcomm(channel, packet, size);
 			break;
 			
 		case HCI_EVENT_PACKET:
@@ -81,11 +78,11 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					printf("HCI Init failed - make sure you have turned off Bluetooth in the System Settings\n");
 					exit(1);
 					break;		
-					
+                    
 				case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started
                     if (packet[2] == HCI_STATE_WORKING) {
-						bt_send_cmd(&rfcomm_create_channel, addr, rfcomm_channel);
+						bt_send_cmd(&btstack_set_discoverable, 1);
 					}
 					break;
 					
@@ -95,7 +92,18 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					bt_flip_addr(event_addr, &packet[2]); 
 					bt_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
 					break;
-										
+					
+				case RFCOMM_EVENT_INCOMING_CONNECTION:
+					// data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
+					bt_flip_addr(event_addr, &packet[2]); 
+					rfcomm_channel_nr = packet[8];
+					rfcomm_channel_id = READ_BT_16(packet, 9);
+					printf("RFCOMM channel %u requested for ", rfcomm_channel_nr);
+					print_bd_addr(event_addr);
+					printf("\n");
+					bt_send_cmd(&rfcomm_accept_connection, rfcomm_channel_id);
+					break;
+					
 				case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
 					// data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
 					if (packet[2]) {
@@ -123,47 +131,77 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	}
 }
 
-void usage(const char *name){
-	fprintf(stderr, "Usage : %s [-a|--address aa:bb:cc:dd:ee:ff] [-c|--channel n] [-p|--pin nnnn]\n", name);
+uint8_t service_buffer[100];
+void create_spp_service(uint8_t *service){
+	
+	uint8_t* attribute;
+	de_create_sequence(service);
+	
+	// 0x0001 "Service Class ID List"
+	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0001);
+	attribute = de_push_sequence(service);
+	{
+		de_add_number(attribute,  DE_UUID, DE_SIZE_16, 0x1101 );
+	}
+	de_pop_sequence(service, attribute);
+	
+	// 0x0004 "Protocol Descriptor List"
+	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0004);
+	attribute = de_push_sequence(service);
+	{
+		uint8_t* l2cpProtocol = de_push_sequence(attribute);
+		{
+			de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, 0x0100);
+		}
+		de_pop_sequence(attribute, l2cpProtocol);
+		
+		uint8_t* rfcomm = de_push_sequence(attribute);
+		{
+			de_add_number(rfcomm,  DE_UUID, DE_SIZE_16, 0x0003);  // rfcomm_service
+			de_add_number(rfcomm,  DE_UINT, DE_SIZE_8,  0x0001);  // rfcomm channel
+		}
+		de_pop_sequence(attribute, rfcomm);
+	}
+	de_pop_sequence(service, attribute);
+	
+	// 0x0005 "Public Browse Group"
+	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0005); // public browse group
+	attribute = de_push_sequence(service);
+	{
+		de_add_number(attribute,  DE_UUID, DE_SIZE_16, 0x1002 );
+	}
+	de_pop_sequence(service, attribute);
+	
+	// 0x0006
+	de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_LanguageBaseAttributeIDList);
+	attribute = de_push_sequence(service);
+	{
+		de_add_number(attribute, DE_UINT, DE_SIZE_16, 0x656e);
+		de_add_number(attribute, DE_UINT, DE_SIZE_16, 0x006a);
+		de_add_number(attribute, DE_UINT, DE_SIZE_16, 0x0100);
+	}
+	de_pop_sequence(service, attribute);
+	
+	// 0x0009 "Bluetooth Profile Descriptor List"
+	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0009);
+	attribute = de_push_sequence(service);
+	{
+		uint8_t *sppProfile = de_push_sequence(attribute);
+		{
+			de_add_number(sppProfile,  DE_UUID, DE_SIZE_16, 0x1101);
+			de_add_number(sppProfile,  DE_UINT, DE_SIZE_16, 0x0100);
+		}
+		de_pop_sequence(attribute, sppProfile);
+	}
+	de_pop_sequence(service, attribute);
+	
+	// 0x0100 "ServiceName"
+	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
+	de_add_data(service,  DE_STRING, 3, (uint8_t *) "SPP ECHO");
 }
 
 int main (int argc, const char * argv[]){
 	
-	int arg = 1;
-	
-	if (argc == 1){
-		usage(argv[0]);
-		return 1;	}
-	
-	while (arg < argc) {
-		if(!strcmp(argv[arg], "-a") || !strcmp(argv[arg], "--address")){
-			arg++;
-			if(arg >= argc || !sscan_bd_addr((uint8_t *)argv[arg], addr)){
-				usage(argv[0]);
-				return 1;
-			}
-		} else if (!strcmp(argv[arg], "-c") || !strcmp(argv[arg], "--channel")) {
-			arg++;
-			if(arg >= argc || !sscanf(argv[arg], "%d", &rfcomm_channel)){
-				usage(argv[0]);
-				return 1;
-			}
-		} else if (!strcmp(argv[arg], "-p") || !strcmp(argv[arg], "--pin")) {
-			arg++;
-			int pin1,pin2,pin3,pin4;
-			if(arg >= argc) {
-				usage(argv[0]);
-				return 1;
-			}
-			strncpy(pin, argv[arg], 16);
-			pin[16] = 0;
-		} else {
-			usage(argv[0]);
-			return 1;
-		}
-		arg++;
-	}
-		
 	run_loop_init(RUN_LOOP_POSIX);
 	int err = bt_open();
 	if (err) {
@@ -172,10 +210,13 @@ int main (int argc, const char * argv[]){
 	}
 	bt_register_packet_handler(packet_handler);
 
-	printf("Trying connection to ");
-	print_bd_addr(addr);
-	printf(" channel %d\n", rfcomm_channel);
-			
+	// register RFCOM channel
+	bt_send_cmd(&rfcomm_register_service, 1, 100);
+	
+	// register SDP for our SPP
+	create_spp_service(service_buffer);
+	bt_send_cmd(&sdp_register_service_record, service_buffer);
+	
 	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
 	run_loop_execute();
 	bt_close();
