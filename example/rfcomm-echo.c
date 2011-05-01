@@ -118,7 +118,7 @@ void create_spp_service(uint8_t *service, int service_id){
 	
 	// 0x0100 "ServiceName"
 	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-	de_add_data(service,  DE_STRING, 3, (uint8_t *) "SPP ECHO");
+	de_add_data(service,  DE_STRING, 8, (uint8_t *) "SPP ECHO");
 }
 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
