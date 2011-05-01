@@ -36,6 +36,7 @@ cp resources/ch.ringwald.BTstack.plist $PACKAGE/Library/LaunchDaemons/
 
 # PrefsBundle
 pushd PrefsBundle ; make package ; popd
+rm -r PrefsBundle/_/DEBIAN
 cp -r PrefsBundle/_/* $PACKAGE
 
 # prerm: called on remove and upgrade - stop daemon and get rid of BlueToolH4 
