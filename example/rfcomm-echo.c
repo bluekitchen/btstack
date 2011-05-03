@@ -125,8 +125,8 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	bd_addr_t event_addr;
 	uint16_t mtu;
 	uint16_t psm;
+	uint8_t  rfcomm_channel_nr;
 	uint16_t rfcomm_channel_id;
-	uint16_t rfcomm_channel_nr;
 	uint8_t  credits;
 	static uint32_t packet_counter = 0;
 	static char packet_info[30]; // "packets: 1234567890"
@@ -151,21 +151,31 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 				case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started
                     if (packet[2] == HCI_STATE_WORKING) {
-                        // register RFCOMM channel
-                        bt_send_cmd(&rfcomm_register_service, 0x4711, 100); // random registration ID
-					}
+                        // get persistent RFCOMM channel
+                        printf("HCI_STATE_WORKING\n");
+                        bt_send_cmd(&rfcomm_persistent_channel_for_service, "ch.ringwald.btstack.rfcomm-echo2");
+                  	}
 					break;
                     
-                case RFCOMM_EVENT_SERVICE_REGISTERED:
-                    rfcomm_channel_nr = packet[5];
+                case RFCOMM_EVENT_PERSISTENT_CHANNEL:
+                    rfcomm_channel_nr = packet[3];
                     printf("RFCOMM channel %u was assigned by BTdaemon\n", rfcomm_channel_nr);
+                    bt_send_cmd(&rfcomm_register_service, rfcomm_channel_nr, 100);  // reserved channel, mtu=100
+                    break;
+                    
+                case RFCOMM_EVENT_SERVICE_REGISTERED:
+                    printf("RFCOMM_EVENT_SERVICE_REGISTERED\n");
+                    rfcomm_channel_nr = packet[3];
                     // register SDP for our SPP
                     create_spp_service(service_buffer, rfcomm_channel_nr);
                     bt_send_cmd(&sdp_register_service_record, service_buffer);
+                    bt_send_cmd(&btstack_set_discoverable, 1);
                     break;
                 
                 case SDP_SERVICE_REGISTERED:
-                    bt_send_cmd(&btstack_set_discoverable, 1);
+                    // event not sent yet
+                    // printf("SDP_SERVICE_REGISTERED\n");
+                    // bt_send_cmd(&btstack_set_discoverable, 1);
                     break;
 
 				case HCI_EVENT_PIN_CODE_REQUEST:

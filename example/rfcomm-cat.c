@@ -97,12 +97,12 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					break;
 										
 				case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
-					// data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
+					// data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
 					if (packet[2]) {
 						printf("RFCOMM channel open failed, status %u\n", packet[2]);
 					} else {
-						rfcomm_channel_id = READ_BT_16(packet, 10);
-						mtu = READ_BT_16(packet, 12);
+						rfcomm_channel_id = READ_BT_16(packet, 12);
+						mtu = READ_BT_16(packet, 14);
 						printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_channel_id, mtu);
 						uint8_t message[] = "Hello World from BTstack!\n";
 						// bt_send_rfcomm(rfcomm_channel_id, message, sizeof(message));

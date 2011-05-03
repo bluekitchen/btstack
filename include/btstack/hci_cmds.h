@@ -168,9 +168,11 @@ extern "C" {
 // data: event(8), len(8), local_cid(16), credits(8)
 #define RFCOMM_EVENT_CREDITS			                   0x84
 	
-// data: event(8), len(8), status (8), registration id(16), rfcomm server channel id (8) 
+// data: event(8), len(8), status (8), rfcomm server channel id (8) 
 #define RFCOMM_EVENT_SERVICE_REGISTERED                    0x85
     
+// data: event(8), len(8), status (8), rfcomm server channel id (8) 
+#define RFCOMM_EVENT_PERSISTENT_CHANNEL                    0x86
 
 // data: event(8), len(8), service_record_handle(32)
 #define SDP_SERVICE_REGISTERED                             0x90
@@ -203,6 +205,7 @@ extern "C" {
 #define L2CAP_CONFIG_RESPONSE_RESULT_UNKNOWN_OPTIONS       0x69
 
 #define RFCOMM_MULTIPLEXER_STOPPED                         0x70
+#define RFCOMM_CHANNEL_ALREADY_REGISTERED                  0x71
     
 /**
  * Default INQ Mode
@@ -296,13 +299,21 @@ extern const hci_cmd_t l2cap_unregister_service;
 extern const hci_cmd_t sdp_register_service_record;
 extern const hci_cmd_t sdp_unregister_service_record;
 
+// accept connection @param bd_addr(48), rfcomm_cid (16)
 extern const hci_cmd_t rfcomm_accept_connection;
+// create rfcomm channel: @param bd_addr(48), channel (8)
 extern const hci_cmd_t rfcomm_create_channel;
+// decline rfcomm disconnect,@param bd_addr(48), rfcomm cid (16), reason(8)
 extern const hci_cmd_t rfcomm_decline_connection;
+// disconnect rfcomm disconnect, @param rfcomm_cid(8), reason(8)
 extern const hci_cmd_t rfcomm_disconnect;
+// register rfcomm service: @param channel(8), mtu (16)
 extern const hci_cmd_t rfcomm_register_service;
+// unregister rfcomm service, @param service_channel(16)
 extern const hci_cmd_t rfcomm_unregister_service;
-
+// request persisten rfcomm channel for service name: serive name (char*) 
+extern const hci_cmd_t rfcomm_persistent_channel_for_service;
+    
 #if defined __cplusplus
 }
 #endif

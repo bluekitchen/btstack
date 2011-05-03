@@ -111,6 +111,9 @@ static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth
 
 static int global_enable = 0;
 
+static remote_device_db_t * remote_device_db = NULL;
+static rfcomm_channel_generator = 1;
+
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
     printf("Bluetooth status: %u\n", state);
 };
@@ -239,9 +242,9 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             rfcomm_disconnect_internal(cid);
             break;
         case RFCOMM_REGISTER_SERVICE:
-            registration_id = READ_BT_16(packet, 3);
-            mtu = READ_BT_16(packet, 5);
-            rfcomm_register_service_internal(connection, registration_id, mtu);
+            rfcomm_channel = packet[3];
+            mtu = READ_BT_16(packet, 4);
+            rfcomm_register_service_internal(connection, rfcomm_channel, mtu);
             break;
         case RFCOMM_UNREGISTER_SERVICE:
             service_channel = READ_BT_16(packet, 3);
@@ -256,6 +259,24 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             reason = packet[7];
             rfcomm_decline_connection_internal(cid);
             break;            
+        case RFCOMM_PERSISTENT_CHANNEL: {
+            if (remote_device_db) {
+                // enforce \0
+                packet[3+248] = 0;
+                rfcomm_channel = remote_device_db->persistent_rfcomm_channel(&packet[3]);
+            } else {
+                // NOTE: hack for non-iOS platforms
+                rfcomm_channel = rfcomm_channel_generator++;
+            }
+            uint8_t event[4];
+            event[0] = RFCOMM_EVENT_PERSISTENT_CHANNEL;
+            event[1] = sizeof(event) - 2;
+            event[2] = 0;
+            event[3] = rfcomm_channel;
+            hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
+            socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+            break;
+        }
             
         case SDP_REGISTER_SERVICE_RECORD:
             printf("SDP_REGISTER_SERVICE_RECORD size %u\n", size);
@@ -493,7 +514,6 @@ int main (int argc,  char * const * argv){
     
     
     bt_control_t * control = NULL;
-    remote_device_db_t * remote_device_db = NULL;
     
 #ifdef HAVE_TRANSPORT_H4
     transport = hci_transport_h4_instance();
