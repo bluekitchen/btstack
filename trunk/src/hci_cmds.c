@@ -404,21 +404,24 @@ const hci_cmd_t rfcomm_create_channel = {
 const  hci_cmd_t rfcomm_disconnect = {
 	OPCODE(OGF_BTSTACK, RFCOMM_DISCONNECT), "21"
 };
-// register rfcomm service: @param registration id(16), mtu (16)
+
+// register rfcomm service: @param channel(8), mtu (16)
 const hci_cmd_t rfcomm_register_service = {
-    OPCODE(OGF_BTSTACK, RFCOMM_REGISTER_SERVICE), "22"
+    OPCODE(OGF_BTSTACK, RFCOMM_REGISTER_SERVICE), "12"
 };
 // unregister rfcomm service, @param service_channel(16)
 const hci_cmd_t rfcomm_unregister_service = {
     OPCODE(OGF_BTSTACK, RFCOMM_UNREGISTER_SERVICE), "2"
 };
-// accept connection @param bd_addr(48), rfcomm_cid (16)
+// accept connection @param source cid (16)
 const hci_cmd_t rfcomm_accept_connection = {
     OPCODE(OGF_BTSTACK, RFCOMM_ACCEPT_CONNECTION), "2"
-    // @param source cid (16)
 };
-// decline rfcomm disconnect,@param bd_addr(48), rfcomm cid (16), reason(8)
+// decline connection @param source cid (16)
 const hci_cmd_t rfcomm_decline_connection = {
     OPCODE(OGF_BTSTACK, RFCOMM_DECLINE_CONNECTION), "21"
-    // @param source cid (16), reason(8)
+};
+// request persisten rfcomm channel number for named service
+const hci_cmd_t rfcomm_persistent_channel_for_service = {
+    OPCODE(OGF_BTSTACK, RFCOMM_PERSISTENT_CHANNEL), "N"
 };

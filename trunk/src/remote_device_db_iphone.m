@@ -35,13 +35,21 @@
 
 #define BTdaemonID         "ch.ringwald.btdaemon"
 #define BTDaemonPrefsPath  "Library/Preferences/ch.ringwald.btdaemon.plist"
+
 #define DEVICES_KEY        "devices"
 #define PREFS_REMOTE_NAME  @"RemoteName"
 #define PREFS_LINK_KEY     @"LinkKey"
 
+#define MAX_RFCOMM_CHANNEL_NR 30
+
+#define RFCOMM_SERVICES_KEY "rfcommServices"
+#define PREFS_CHANNEL      @"channel"
+#define PREFS_LAST_USED    @"lastUsed"
+
 static void put_name(bd_addr_t *bd_addr, device_name_t *device_name);
 
-static NSMutableDictionary *remote_devices = nil;
+static NSMutableDictionary *remote_devices  = nil;
+static NSMutableDictionary *rfcomm_services = nil;
 
 // Device info
 static void db_open(){
@@ -53,7 +61,8 @@ static void db_open(){
 	// NSDictionary * dict = [defaults persistentDomainForName:BTdaemonID];
 	
     // NSDictionary * dict = (NSDictionary*) CFPreferencesCopyAppValue(CFSTR(DEVICES_KEY), CFSTR(BTdaemonID));
-    NSDictionary * dict = (NSDictionary*) CFPreferencesCopyAppValue(CFSTR(DEVICES_KEY), CFSTR(BTdaemonID));
+    NSDictionary * dict;
+    dict = (NSDictionary*) CFPreferencesCopyAppValue(CFSTR(DEVICES_KEY), CFSTR(BTdaemonID));
     remote_devices = [[NSMutableDictionary alloc] initWithCapacity:([dict count]+5)];
     
 	// copy entries
@@ -62,6 +71,17 @@ static void db_open(){
 		NSMutableDictionary *deviceEntry = [NSMutableDictionary dictionaryWithCapacity:[value count]];
 		[deviceEntry addEntriesFromDictionary:value];
 		[remote_devices setObject:deviceEntry forKey:key];
+	}
+    
+    dict = (NSDictionary*) CFPreferencesCopyAppValue(CFSTR(RFCOMM_SERVICES_KEY), CFSTR(BTdaemonID));
+    rfcomm_services = [[NSMutableDictionary alloc] initWithCapacity:([dict count]+5)];
+    
+	// copy entries
+	for (id key in dict) {
+		NSDictionary *value = [dict objectForKey:key];
+		NSMutableDictionary *serviceEntry = [NSMutableDictionary dictionaryWithCapacity:[value count]];
+		[serviceEntry addEntriesFromDictionary:value];
+		[rfcomm_services setObject:serviceEntry forKey:key];
 	}
     
     log_dbg("read prefs for %u devices\n", [dict count]);
@@ -76,6 +96,7 @@ static void db_synchronize(){
     
     // Core Foundation
     CFPreferencesSetValue(CFSTR(DEVICES_KEY), (CFPropertyListRef) remote_devices, CFSTR(BTdaemonID), kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+    CFPreferencesSetValue(CFSTR(RFCOMM_SERVICES_KEY), (CFPropertyListRef) rfcomm_services, CFSTR(BTdaemonID), kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
     CFPreferencesSynchronize(CFSTR(BTdaemonID), kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
     
     // NSUserDefaults didn't work
@@ -174,6 +195,76 @@ static int  get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
     return (remoteName != nil);
 }
 
+#pragma mark PERSISTENT RFCOMM CHANNEL ALLOCATION
+
+static int firstFreeChannelNr(){
+    BOOL channelUsed[MAX_RFCOMM_CHANNEL_NR+1];
+    int i;
+    for (i=0; i<=MAX_RFCOMM_CHANNEL_NR ; i++) channelUsed[i] = NO;
+    channelUsed[0] = YES;
+    channelUsed[1] = YES; // preserve channel #1 for testing
+    for (NSDictionary * serviceEntry in [rfcomm_services allValues]){
+        int channel = [(NSNumber *) [serviceEntry objectForKey:PREFS_CHANNEL] intValue];
+        channelUsed[channel] = YES;
+    }
+    for (i=0;i<=MAX_RFCOMM_CHANNEL_NR;i++) {
+        if (channelUsed[i] == NO) return i;
+    }
+    return -1;
+}
+
+static void deleteLeastUsed(){
+    NSString * leastUsedName = nil;
+    NSDate *   leastUsedDate = nil;
+    for (NSString * serviceName in [rfcomm_services allKeys]){
+        NSDictionary *service = [rfcomm_services objectForKey:serviceName];
+        NSDate *serviceDate = [service objectForKey:PREFS_LAST_USED];
+        if (leastUsedName == nil || [leastUsedDate compare:serviceDate] == NSOrderedDescending) {
+            leastUsedName = serviceName;
+            leastUsedDate = serviceDate;
+            continue;
+        }
+    }
+    if (leastUsedName){
+        // NSLog(@"removing %@", leastUsedName);
+        [rfcomm_services removeObjectForKey:leastUsedName];
+    }
+}
+
+static void addService(NSString * serviceName, int channel){
+    NSMutableDictionary * serviceEntry = [NSMutableDictionary dictionaryWithCapacity:2];
+    [serviceEntry setObject:[NSNumber numberWithInt:channel] forKey:PREFS_CHANNEL];
+    [serviceEntry setObject:[NSDate date] forKey:PREFS_LAST_USED];
+    [rfcomm_services setObject:serviceEntry forKey:serviceName];
+}
+
+static uint8_t persistent_rfcomm_channel(char *serviceName){
+    // find existing entry
+    NSString *serviceString = [NSString stringWithUTF8String:serviceName];
+    NSMutableDictionary *serviceEntry = [rfcomm_services objectForKey:serviceString];
+    if (serviceEntry){
+        // update timestamp
+        [serviceEntry setObject:[NSDate date] forKey:PREFS_LAST_USED];
+        
+        db_synchronize();
+        
+        return [(NSNumber *) [serviceEntry objectForKey:PREFS_CHANNEL] intValue];
+    }
+    // free channel exist?
+    int channel = firstFreeChannelNr();
+    if (channel < 0){
+        // free channel
+        deleteLeastUsed();
+        channel = firstFreeChannelNr();
+    }
+    addService(serviceString, channel);
+
+    db_synchronize();
+
+    return channel;
+}
+
+
 remote_device_db_t remote_device_db_iphone = {
     db_open,
     db_close,
@@ -182,6 +273,7 @@ remote_device_db_t remote_device_db_iphone = {
     delete_link_key,
     get_name,
     put_name,
-    delete_name
+    delete_name,
+    persistent_rfcomm_channel
 };
 

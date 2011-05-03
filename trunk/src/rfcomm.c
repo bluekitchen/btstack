@@ -119,7 +119,7 @@ typedef struct {
     linked_item_t    item;
 	
     // server channel
-    uint16_t server_channel;
+    uint8_t server_channel;
     
     // incoming max frame size
     uint16_t max_frame_size;
@@ -195,7 +195,6 @@ typedef struct {
 
 // global rfcomm data
 static uint16_t      rfcomm_client_cid_generator;  // used for client channel IDs
-static uint8_t       rfcomm_server_cid_generator; // used for service registration
 
 // linked lists for all
 static linked_list_t rfcomm_multiplexers = NULL;
@@ -274,7 +273,7 @@ static void rfcomm_dump_channels(){
 }
 
 static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiplexer_t *multiplexer, 
-                               rfcomm_service_t *service, uint16_t server_channel){
+                               rfcomm_service_t *service, uint8_t server_channel){
     
     // don't use 0 as channel id
     if (rfcomm_client_cid_generator == 0) ++rfcomm_client_cid_generator;
@@ -301,7 +300,7 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
 
 // service == NULL -> outgoing channel
 static rfcomm_channel_t * rfcomm_channel_create(rfcomm_multiplexer_t * multiplexer,
-                                                rfcomm_service_t * service, uint16_t server_channel){
+                                                rfcomm_service_t * service, uint8_t server_channel){
 
     log_dbg("rfcomm_channel_create for service %p, channel %u --- begin\n", service, server_channel);
     rfcomm_dump_channels();
@@ -341,7 +340,7 @@ static rfcomm_channel_t * rfcomm_channel_for_multiplexer_and_dlci(rfcomm_multipl
     return NULL;
 }
 
-static rfcomm_service_t * rfcomm_service_for_channel(uint16_t server_channel){
+static rfcomm_service_t * rfcomm_service_for_channel(uint8_t server_channel){
     linked_item_t *it;
     for (it = (linked_item_t *) rfcomm_services; it ; it = it->next){
         rfcomm_service_t * service = ((rfcomm_service_t *) it);
@@ -507,7 +506,7 @@ static void rfcomm_emit_channel_opened(rfcomm_channel_t *channel, uint8_t status
     event[pos++] = sizeof(event) - 2;
     event[pos++] = status;
     bt_flip_addr(&event[pos], channel->multiplexer->remote_addr); pos += 6;
-    // bt_store_16(event,  pos, channel->multiplexer->con_handle);   pos += 2;
+    bt_store_16(event,  pos, channel->multiplexer->con_handle);   pos += 2;
 	event[pos++] = channel->dlci >> 1;
 	bt_store_16(event, pos, channel->rfcomm_cid); pos += 2;       // channel ID
 	bt_store_16(event, pos, channel->max_frame_size); pos += 2;   // max frame size
@@ -537,13 +536,12 @@ static void rfcomm_emit_credits(rfcomm_channel_t * channel, uint8_t credits) {
 	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
-static void rfcomm_emit_service_registered(void *connection, uint8_t status, uint16_t registration_id, uint16_t rfcomm_channel_id){
-    uint8_t event[6];
+static void rfcomm_emit_service_registered(void *connection, uint8_t status, uint8_t channel){
+    uint8_t event[4];
     event[0] = RFCOMM_EVENT_SERVICE_REGISTERED;
     event[1] = sizeof(event) - 2;
     event[2] = status;
-    bt_store_16(event, 3, registration_id);
-    event[5] = rfcomm_channel_id;
+    event[3] = channel;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(*app_packet_handler)(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
@@ -1217,7 +1215,6 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 void rfcomm_init(){
     rfcomm_client_cid_generator = 0;
-    rfcomm_server_cid_generator = 0;
     rfcomm_multiplexers = NULL;
     rfcomm_services     = NULL;
     rfcomm_channels     = NULL;
@@ -1320,12 +1317,19 @@ void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
     }
 }
 
-void rfcomm_register_service_internal(void * connection, uint16_t registration_id, uint16_t max_frame_size){
+void rfcomm_register_service_internal(void * connection, uint8_t channel, uint16_t max_frame_size){
+    
+    // check if already registered
+    rfcomm_service_t * service = rfcomm_service_for_channel(channel);
+    if (service){
+        rfcomm_emit_service_registered(service->connection, RFCOMM_CHANNEL_ALREADY_REGISTERED, channel);
+        return;
+    }
     
     // alloc structure
-    rfcomm_service_t * service = malloc(sizeof(rfcomm_service_t));
+    service = malloc(sizeof(rfcomm_service_t));
     if (!service) {
-        rfcomm_emit_service_registered(service->connection, BTSTACK_MEMORY_ALLOC_FAILED, registration_id, 0);
+        rfcomm_emit_service_registered(service->connection, BTSTACK_MEMORY_ALLOC_FAILED, channel);
         return;
     }
 
@@ -1336,14 +1340,14 @@ void rfcomm_register_service_internal(void * connection, uint16_t registration_i
 
     // fill in 
     service->connection     = connection;
-    service->server_channel = ++rfcomm_server_cid_generator;
+    service->server_channel = channel;
     service->max_frame_size = max_frame_size;
     
     // add to services list
     linked_list_add(&rfcomm_services, (linked_item_t *) service);
     
     // done
-    rfcomm_emit_service_registered(service->connection, 0, registration_id, service->server_channel);
+    rfcomm_emit_service_registered(service->connection, 0, channel);
 }
 
 void rfcomm_unregister_service_internal(uint8_t service_channel){

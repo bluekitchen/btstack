@@ -48,7 +48,7 @@ void rfcomm_register_packet_handler(void (*handler)(void * connection, uint8_t p
 // BTstack Internal RFCOMM API
 void rfcomm_create_channel_internal(void * connectio, bd_addr_t *addr, uint8_t channel);
 void rfcomm_disconnect_internal(uint16_t rfcomm_cid);
-void rfcomm_register_service_internal(void * connection, uint16_t registration_id, uint16_t max_frame_size);
+void rfcomm_register_service_internal(void * connection, uint8_t channel, uint16_t max_frame_size);
 void rfcomm_unregister_service_internal(uint8_t service_channel);
 void rfcomm_accept_connection_internal(uint16_t rfcomm_cid);
 void rfcomm_decline_connection_internal(uint16_t rfcomm_cid);
