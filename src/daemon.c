@@ -52,6 +52,7 @@
 #include <btstack/linked_list.h>
 #include <btstack/run_loop.h>
 
+#include "debug.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "hci_transport.h"
@@ -115,12 +116,12 @@ static remote_device_db_t * remote_device_db = NULL;
 static rfcomm_channel_generator = 1;
 
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
-    printf("Bluetooth status: %u\n", state);
+    log_dbg("Bluetooth status: %u\n", state);
 };
 
 static void daemon_no_connections_timeout(){
     if (clients_require_power_on()) return;    // false alarm :)
-    printf("No active client connection for %u seconds -> POWER OFF\n", DAEMON_NO_ACTIVE_CLIENT_TIMEOUT/1000);
+    log_dbg("No active client connection for %u seconds -> POWER OFF\n", DAEMON_NO_ACTIVE_CLIENT_TIMEOUT/1000);
     hci_power_control(HCI_POWER_OFF);
 }
 
@@ -184,7 +185,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             hci_discoverable_control(clients_require_discoverable());
             break;
         case BTSTACK_SET_BLUETOOTH_ENABLED:
-            printf("BTSTACK_SET_BLUETOOTH_ENABLED: %u\n", packet[3]);
+            log_dbg("BTSTACK_SET_BLUETOOTH_ENABLED: %u\n", packet[3]);
 
             if (packet[3]) {
                 // global enable
@@ -279,7 +280,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         }
             
         case SDP_REGISTER_SERVICE_RECORD:
-            printf("SDP_REGISTER_SERVICE_RECORD size %u\n", size);
+            log_dbg("SDP_REGISTER_SERVICE_RECORD size %u\n", size);
             sdp_register_service_internal(connection, &packet[3]);
             break;
         case SDP_UNREGISTER_SERVICE_RECORD:
@@ -288,7 +289,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         default:
             //@TODO: log into hci dump as vendor specific "event"
-            fprintf(stderr, "Error: command %u not implemented\n:", READ_CMD_OCF(packet));
+            log_err("Error: command %u not implemented\n:", READ_CMD_OCF(packet));
             break;
     }
     return 0;
@@ -345,7 +346,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                     }
                     break;
                 case DAEMON_NR_CONNECTIONS_CHANGED:
-                    printf("Nr Connections changed, new %u\n",data[1]);
+                    log_dbg("Nr Connections changed, new %u\n",data[1]);
                     break;
                 default:
                     break;
@@ -353,7 +354,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
             break;
     }
     if (err) {
-        printf("Daemon Handler: err %d\n", err);
+        log_dbg("Daemon Handler: err %d\n", err);
     }
     return err;
 }
@@ -381,12 +382,12 @@ static void deamon_status_event_handler(uint8_t *packet, uint16_t size){
     switch (packet[0]) {
         case BTSTACK_EVENT_STATE:
             hci_state = packet[2];
-            printf("New state: %u\n", hci_state);
+            log_dbg("New state: %u\n", hci_state);
             update_status = 1;
             break;
         case BTSTACK_EVENT_NR_CONNECTIONS_CHANGED:
             num_connections = packet[2];
-            printf("New nr connections: %u\n", num_connections);
+            log_dbg("New nr connections: %u\n", num_connections);
             update_status = 1;
             break;
         default:
@@ -440,22 +441,22 @@ static void daemon_sigint_handler(int param){
     notify_post("ch.ringwald.btstack.stopped");
 #endif
     
-    printf(" <= SIGINT received, shutting down..\n");    
+    log_dbg(" <= SIGINT received, shutting down..\n");    
     hci_power_control( HCI_POWER_OFF);
     hci_close();
-    printf("Good bye, see you.\n");    
+    log_dbg("Good bye, see you.\n");    
     exit(0);
 }
 
 static void daemon_sigpipe_handler(int param){
-    printf(" <= SIGPIPE received.. trying to ignore..\n");    
+    log_dbg(" <= SIGPIPE received.. trying to ignore..\n");    
 }
 
 static void usage(const char * name) {
-    printf("%s, BTstack background daemon\n", name);
-    printf("usage: %s [-h|--help] [--tcp]\n", name);
-    printf("    -h|--help  display this usage\n");
-    printf("    --tcp      use TCP server socket instead of local unix socket\n");
+    log_dbg("%s, BTstack background daemon\n", name);
+    log_dbg("usage: %s [-h|--help] [--tcp]\n", name);
+    log_dbg("    -h|--help  display this usage\n");
+    log_dbg("    --tcp      use TCP server socket instead of local unix socket\n");
 }
 
 int main (int argc,  char * const * argv){
@@ -498,8 +499,8 @@ int main (int argc,  char * const * argv){
     // make stderr/stdout unbuffered
     setbuf(stderr, NULL);
     setbuf(stdout, NULL);
-    printf("BTdaemon started - stdout\n");
-    fprintf(stderr,"BTdaemon started - stderr\n");
+    log_dbg("BTdaemon started - stdout\n");
+    log_err("BTdaemon started - stderr\n");
 
     // handle CTRL-c
     signal(SIGINT, daemon_sigint_handler);
@@ -560,7 +561,7 @@ int main (int argc,  char * const * argv){
     timeout.process = daemon_no_connections_timeout;
 
 #ifdef HAVE_RFCOMM
-    printf("config.h: HAVE_RFCOMM\n");
+    log_dbg("config.h: HAVE_RFCOMM\n");
     rfcomm_init();
     rfcomm_register_packet_handler(daemon_packet_handler);
 #endif
