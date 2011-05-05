@@ -31,6 +31,7 @@
 #pragma mark once
 
 #include <stdint.h>
+#include <btstack/linked_list.h>
 
 typedef enum {
 	SDP_ErrorResponse = 1,
@@ -42,11 +43,36 @@ typedef enum {
 	SDP_ServiceSearchAttributeResponse
 } SDP_PDU_ID_t;
 
+// service record
+// -- uses user_data field for actual
+typedef struct {
+    // linked list - assert: first field
+    linked_item_t   item;
+    
+    // client connection
+    void *  connection;
+    
+    // data is contained in same memory
+    uint32_t        service_record_handle;
+    uint8_t         service_record[0];
+} service_record_item_t;
+
+
 void sdp_init();
 
-// register service record internally
+#ifdef EMBEDDED
+// register service record internally - the normal version creates a copy of the record
+// pre: AttributeIDs are in ascending order => ServiceRecordHandle is first attribute if present
+// @returns ServiceRecordHandle or 0 if registration failed
+uint32_t sdp_register_service_internal(void *connection, service_record_item_t * record_item);
+#else
+// register service record internally - this special version doesn't copy the record, it cannot be freeed
+// pre: AttributeIDs are in ascending order
+// pre: ServiceRecordHandle is first attribute and valid
+// pre: record
 // @returns ServiceRecordHandle or 0 if registration failed
 uint32_t sdp_register_service_internal(void *connection, uint8_t * service_record);
+#endif
 
 // unregister service record internally
 void sdp_unregister_service_internal(void *connection, uint32_t service_record_handle);
