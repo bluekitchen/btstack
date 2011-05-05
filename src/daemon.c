@@ -333,6 +333,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                     break;
                 case DAEMON_EVENT_CONNECTION_CLOSED:
                     sdp_unregister_services_for_connection(connection);
+                    rfcomm_close_connection(connection);
                     l2cap_close_connection(connection);
                     client = client_for_connection(connection);
                     if (!client) break;

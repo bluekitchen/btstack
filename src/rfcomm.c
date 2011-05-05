@@ -562,9 +562,6 @@ static void rfcomm_hand_out_credits(){
     }        
 }
 
-// data: event(8), len(8), registration id(16), rfcomm channel id
-#define RFCOMM_EVENT_SERVICE_REGISTERED                    0x85
-
 // sends UIH PN CMD to first channel with RFCOMM_CHANNEL_W4_MULTIPLEXER
 // this can then called after connection open/fail to handle all outgoing requests
 static void rfcomm_multiplexer_start_connecting(rfcomm_multiplexer_t * multiplexer) {
@@ -1208,6 +1205,32 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         default:
             log_err("Received unknown RFCOMM message type %x\n", packet[1]);
             break;
+    }
+}
+
+//
+void rfcomm_close_connection(void *connection){
+    linked_item_t *it;
+
+    // close open channels 
+    rfcomm_channel_t * channel;
+    for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
+        channel = (rfcomm_channel_t *) it;
+        if (channel->connection == connection) {
+            // TODO: shut down channels immediately - if items are freed, while loop is necessary
+        }
+    }   
+    
+    // unregister services
+    it = (linked_item_t *) &rfcomm_services;
+    while (it->next) {
+        rfcomm_service_t * service = (rfcomm_service_t *) it->next;
+        if (service->connection == connection){
+            it->next = it->next->next;
+            free(service);
+        } else {
+            it = it->next;
+        }
     }
 }
 
