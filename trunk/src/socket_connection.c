@@ -179,7 +179,7 @@ void static socket_connection_emit_nr_connections(){
     event[0] = DAEMON_NR_CONNECTIONS_CHANGED;
     event[1] = nr_connections;
     (*socket_connection_packet_callback)(NULL, DAEMON_EVENT_PACKET, 0, (uint8_t *) &event, 2);
-    // printf("Nr connections changed,.. new %u\n", nr_connections); 
+    // log_dbg("Nr connections changed,.. new %u\n", nr_connections); 
 }
 
 int socket_connection_hci_process(struct data_source *ds) {
@@ -280,7 +280,7 @@ static int socket_connection_accept(struct data_source *socket_ds) {
     // no sigpipe
     socket_connection_set_no_sigpipe(fd);
     
-    printf("socket_connection_accept new connection %u\n", fd);
+    log_dbg("socket_connection_accept new connection %u\n", fd);
     
     connection_t * connection = socket_connection_register_new_connection(fd);
     socket_connection_emit_connection_opened(connection);
@@ -304,12 +304,12 @@ int socket_connection_create_tcp(int port){
     
 	// create tcp socket
 	if ((ds->fd = socket (PF_INET, SOCK_STREAM, 0)) < 0) {
-		fprintf (stderr, "Error creating socket ...(%s)\n", strerror(errno));
+		log_err("Error creating socket ...(%s)\n", strerror(errno));
 		free(ds);
         return -1;
 	}
     
-	printf ("Socket created for port %u\n", port);
+	log_dbg ("Socket created for port %u\n", port);
 	
     struct sockaddr_in addr;
 	addr.sin_family = AF_INET;
@@ -320,20 +320,20 @@ int socket_connection_create_tcp(int port){
 	setsockopt(ds->fd, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(int));
 	
 	if (bind ( ds->fd, (struct sockaddr *) &addr, sizeof (addr) ) ) {
-		fprintf(stderr, "Error on bind() ...(%s)\n", strerror(errno));
+		log_err("Error on bind() ...(%s)\n", strerror(errno));
 		free(ds);
         return -1;
 	}
 	
 	if (listen (ds->fd, MAX_PENDING_CONNECTIONS)) {
-		fprintf (stderr, "Error on listen() ...(%s)\n", strerror(errno));
+		log_err("Error on listen() ...(%s)\n", strerror(errno));
 		free(ds);
         return -1;
 	}
     
     run_loop_add_data_source(ds);
     
-	printf ("Server up and running ...\n");
+	log_dbg ("Server up and running ...\n");
     return 0;
 }
 
@@ -349,7 +349,7 @@ void socket_connection_launchd_register_fd_array(launch_data_t listening_fd_arra
         launch_data_t tempi = launch_data_array_get_index (listening_fd_array, i);
         int listening_fd = launch_data_get_fd(tempi);
         launch_data_free (tempi);
-		printf("file descriptor = %u\n",(unsigned int) i+1, listening_fd);
+		log_dbg("file descriptor = %u\n",(unsigned int) i+1, listening_fd);
         
         // create data_source_t for fd
         data_source_t *ds = malloc( sizeof(data_source_t));
@@ -374,24 +374,24 @@ int socket_connection_create_launchd(){
 	 * 
 	 */
 	if ((checkin_request = launch_data_new_string(LAUNCH_KEY_CHECKIN)) == NULL) {
-		fprintf(stderr, "launch_data_new_string(\"" LAUNCH_KEY_CHECKIN "\") Unable to create string.");
+		log_err( "launch_data_new_string(\"" LAUNCH_KEY_CHECKIN "\") Unable to create string.");
 		return -1;
 	}
     
 	if ((checkin_response = launch_msg(checkin_request)) == NULL) {
-		fprintf(stderr, "launch_msg(\"" LAUNCH_KEY_CHECKIN "\") IPC failure: %u", errno);
+		log_err( "launch_msg(\"" LAUNCH_KEY_CHECKIN "\") IPC failure: %u", errno);
 		return -1;
 	}
     
 	if (LAUNCH_DATA_ERRNO == launch_data_get_type(checkin_response)) {
 		errno = launch_data_get_errno(checkin_response);
-		fprintf(stderr, "Check-in failed: %u", errno);
+		log_err( "Check-in failed: %u", errno);
 		return -1;
 	}
     
     launch_data_t the_label = launch_data_dict_lookup(checkin_response, LAUNCH_JOBKEY_LABEL);
 	if (NULL == the_label) {
-		fprintf(stderr, "No label found");
+		log_err( "No label found");
 		return -1;
 	}
 	
@@ -400,12 +400,12 @@ int socket_connection_create_launchd(){
 	 */
 	sockets_dict = launch_data_dict_lookup(checkin_response, LAUNCH_JOBKEY_SOCKETS);
 	if (NULL == sockets_dict) {
-		fprintf(stderr,"No sockets found to answer requests on!");
+		log_err("No sockets found to answer requests on!");
 		return -1;
 	}
     
 	// if (launch_data_dict_get_count(sockets_dict) > 1) {
-	// 	fprintf(stderr,"Some sockets will be ignored!");
+	// 	log_err("Some sockets will be ignored!");
 	// }
     
 	/*
@@ -413,7 +413,7 @@ int socket_connection_create_launchd(){
 	 */
 	listening_fd_array = launch_data_dict_lookup(sockets_dict, "Listeners");
 	if (listening_fd_array) {
-        // fprintf(stderr,"Listeners...\n");
+        // log_err("Listeners...\n");
         socket_connection_launchd_register_fd_array( listening_fd_array );
     }
     
@@ -422,7 +422,7 @@ int socket_connection_create_launchd(){
 	 */
 	listening_fd_array = launch_data_dict_lookup(sockets_dict, "Listeners2");
 	if (listening_fd_array) {
-        // fprintf(stderr,"Listeners2...\n");
+        // log_err("Listeners2...\n");
         socket_connection_launchd_register_fd_array( listening_fd_array );
     }
     
@@ -445,12 +445,12 @@ int socket_connection_create_unix(char *path){
 
 	// create unix socket
 	if ((ds->fd = socket (AF_UNIX, SOCK_STREAM, 0)) < 0) {
-		fprintf(stderr, "Error creating socket ...(%s)\n", strerror(errno));
+		log_err( "Error creating socket ...(%s)\n", strerror(errno));
 		free(ds);
         return -1;
 	}
     
-	printf ("Socket created at %s\n", path);
+	log_dbg ("Socket created at %s\n", path);
 	
     struct sockaddr_un addr;
     bzero(&addr, sizeof(addr));
@@ -462,20 +462,20 @@ int socket_connection_create_unix(char *path){
 	setsockopt(ds->fd, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(int));
     
 	if (bind ( ds->fd, (struct sockaddr *) &addr, sizeof (addr) ) ) {
-		fprintf(stderr, "Error on bind() ...(%s)\n", strerror(errno));
+		log_err( "Error on bind() ...(%s)\n", strerror(errno));
 		free(ds);
         return -1;
 	}
 	
 	if (listen (ds->fd, MAX_PENDING_CONNECTIONS)) {
-		fprintf(stderr, "Error on listen() ...(%s)\n", strerror(errno));
+		log_err( "Error on listen() ...(%s)\n", strerror(errno));
 		free(ds);
         return -1;
 	}
     
     run_loop_add_data_source(ds);
 
-	printf ("Server up and running ...\n");
+	log_dbg ("Server up and running ...\n");
     return 0;
 }
 

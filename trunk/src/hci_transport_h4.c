@@ -43,6 +43,7 @@
 #include <string.h>
 #include <pthread.h> 
 
+#include "debug.h"
 #include "hci.h"
 #include "hci_transport.h"
 #include "hci_dump.h"
@@ -247,7 +248,7 @@ static void h4_statemachine(){
                 bytes_to_read = HCI_ACL_DATA_PKT_HDR;
                 h4_state = H4_W4_ACL_HEADER;
             } else {
-                fprintf(stderr, "h4_process: invalid packet type 0x%02x\n", hci_packet[0]);
+                log_err("h4_process: invalid packet type 0x%02x\n", hci_packet[0]);
                 read_pos = 0;
                 bytes_to_read = 1;
             }

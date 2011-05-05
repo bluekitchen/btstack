@@ -44,6 +44,7 @@
 #include "bt_control_iphone.h"
 #include "hci_transport.h"
 #include "hci.h"
+#include "debug.h"
 
 #include <sys/utsname.h>  // uname
 #include <stdlib.h>       // system, random, srandom
@@ -189,9 +190,9 @@ static void ioregistry_get_info() {
     IOObjectRelease(bt_service);
     
     // dump info
-    printf("local-mac-address: ");
+    log_dbg("local-mac-address: ");
     print_bd_addr(local_mac_address);
-    printf("\ntransport-speed:  %u\n", transport_speed);
+    log_dbg("\ntransport-speed:  %u\n", transport_speed);
 #else
     // use dummy addr if not on iphone/ipod touch
     int i = 0;
@@ -462,7 +463,7 @@ static int iphone_on (void *transport_config){
         close(fd);
     } else {
         // no way!
-        fprintf(stderr, "bt_control.c:iphone_on(): Failed to open '%s', trying killall %s\n", hci_uart_config->device_name, bluetool);
+        log_err( "bt_control.c:iphone_on(): Failed to open '%s', trying killall %s\n", hci_uart_config->device_name, bluetool);
         system("killall -9 BlueToolH4");
         system("killall -9 BlueTool");
         sleep(3); 
@@ -472,7 +473,7 @@ static int iphone_on (void *transport_config){
         if (fd > 0){
             close(fd);
         } else {
-            fprintf(stderr, "bt_control.c:iphone_on(): Failed to open '%s' again, trying killall BTServer and killall %s\n", hci_uart_config->device_name, bluetool);
+            log_err( "bt_control.c:iphone_on(): Failed to open '%s' again, trying killall BTServer and killall %s\n", hci_uart_config->device_name, bluetool);
             system("killall -9 BTServer");
             system("killall -9 BlueToolH4");
             system("killall -9 BlueTool");
@@ -508,7 +509,7 @@ static int iphone_on (void *transport_config){
         while (1) {
             singlechar = fgetc(outputFile);
             if (singlechar == EOF) break;
-            printf("%c", singlechar);
+            log_dbg("%c", singlechar);
         };
         err = pclose(outputFile);
     }
@@ -572,7 +573,7 @@ static int iphone_wake(void *config){
 static void MySleepCallBack( void * refCon, io_service_t service, natural_t messageType, void * messageArgument ) {
     
     char data;
-    printf( "messageType %08lx, arg %08lx\n", (long unsigned int)messageType, (long unsigned int)messageArgument);
+    log_dbg( "messageType %08lx, arg %08lx\n", (long unsigned int)messageType, (long unsigned int)messageArgument);
     switch ( messageType ) {
         case kIOMessageCanSystemSleep:
             /* Idle sleep is about to kick in. This message will not be sent for forced sleep.
@@ -633,7 +634,7 @@ static int  power_notification_process(struct data_source *ds) {
     int bytes_read = read(power_notification_pipe_fds[0], &token, 1);
     if (bytes_read != 1) return;
         
-    printf("power_notification_process: %u\n", token);
+    log_dbg("power_notification_process: %u\n", token);
     
     power_notification_callback( (POWER_NOTIFICATION_t) token );
 }
@@ -646,7 +647,7 @@ static void power_notification_run(void *context){
     // register to receive system sleep notifications
     root_port = IORegisterForSystemPower(NULL, &notifyPortRef, MySleepCallBack, &notifierObject);
     if (!root_port) {
-        printf("IORegisterForSystemPower failed\n");
+        log_dbg("IORegisterForSystemPower failed\n");
         return;
     }
     

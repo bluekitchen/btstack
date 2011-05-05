@@ -1122,7 +1122,7 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 // TODO: don't send 2 packets without getting a "done" from stack
 
                                 // also start our negotiation
-                                fprintf(stderr,"-> Sending MSC CMD for #%u (but should wait for l2cap credits)\n", message_dlci);
+                                log_err("-> Sending MSC CMD for #%u (but should wait for l2cap credits)\n", message_dlci);
                                 rfcomm_send_uih_msc_cmd(multiplexer, message_dlci, 0x8d); // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
                                 rfChannel->state = RFCOMM_CHANNEL_W4_MSC_RSP;
                                 

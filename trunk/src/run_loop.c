@@ -42,6 +42,7 @@
 
 #include "run_loop_private.h"
 
+#include "debug.h"
 #include "../config.h"
 
 static run_loop_t * the_run_loop = NULL;
@@ -60,7 +61,7 @@ extern run_loop_t run_loop_cocoa;
 void run_loop_assert(){
 #ifndef EMBEDDED
     if (!the_run_loop){
-        fprintf(stderr, "ERROR: run_loop function called before run_loop_init!\n");
+        log_err("ERROR: run_loop function called before run_loop_init!\n");
         exit(10);
     }
 #endif
@@ -115,7 +116,7 @@ void run_loop_execute() {
 void run_loop_init(RUN_LOOP_TYPE type){
 #ifndef EMBEDDED
     if (the_run_loop){
-        fprintf(stderr, "ERROR: run loop initialized twice!\n");
+        log_err("ERROR: run loop initialized twice!\n");
         exit(10);
     }
 #endif
@@ -135,7 +136,7 @@ void run_loop_init(RUN_LOOP_TYPE type){
 #endif
         default:
 #ifndef EMBEDDED
-            fprintf(stderr, "ERROR: invalid run loop type %u selected!\n", type);
+            log_err("ERROR: invalid run loop type %u selected!\n", type);
             exit(10);
 #endif
             break;
