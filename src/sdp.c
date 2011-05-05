@@ -38,26 +38,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <btstack/linked_list.h>
 #include <btstack/sdp_util.h>
 #include "l2cap.h"
 
 // max reserved ServiceRecordHandle
 #define maxReservedServiceRecordHandle 0xffff
-
-// service record
-// -- uses user_data field for actual
-typedef struct {
-    // linked list - assert: first field
-    linked_item_t   item;
-
-    // client connection
-    void *  connection;
-    
-    // data is contained in same memory
-    uint32_t        service_record_handle;
-    uint8_t         service_record[0];
-} service_record_item_t;
 
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -108,7 +93,30 @@ uint32_t sdp_create_service_record_handle(){
     return handle;
 }
 
-// register service record internally
+#ifdef EMBEDDED
+
+// register service record internally - this special version doesn't copy the record, it cannot be freeed
+// pre: AttributeIDs are in ascending order
+// pre: ServiceRecordHandle is first attribute and valid
+// pre: record
+// @returns ServiceRecordHandle or 0 if registration failed
+uint32_t sdp_register_service_internal(void *connection, service_record_item_t * record_item){
+    // get user record handle
+    uint32_t record_handle = record_itme->service_record_handle;
+    // validate service record handle is not in reserved range
+    if (record_handle <= maxReservedServiceRecordHandle) record_handle = 0;
+    // check if already registered
+    if (sdp_get_record_for_handle(record_handle)) {
+        return 0;
+    }
+    // add to linked list
+    linked_list_add(&sdp_service_records, (linked_item_t *) record_item);
+    return record_handle;
+}
+
+#else
+
+// register service record internally - the normal version creates a copy of the record
 // pre: AttributeIDs are in ascending order => ServiceRecordHandle is first attribute if present
 // @returns ServiceRecordHandle or 0 if registration failed
 uint32_t sdp_register_service_internal(void *connection, uint8_t * record){
@@ -170,6 +178,8 @@ uint32_t sdp_register_service_internal(void *connection, uint8_t * record){
     linked_list_add(&sdp_service_records, (linked_item_t *) newRecordItem);
     return record_handle;
 }
+
+#endif
 
 // unregister service record internally
 // 
