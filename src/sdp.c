@@ -115,21 +115,39 @@ uint32_t sdp_create_service_record_handle(){
 
 #ifdef EMBEDDED
 
-// register service record internally - this special version doesn't copy the record, it cannot be freeed
+// register service record internally - this special version doesn't copy the record, it should not be freeed
 // pre: AttributeIDs are in ascending order
 // pre: ServiceRecordHandle is first attribute and valid
 // pre: record
 // @returns ServiceRecordHandle or 0 if registration failed
 uint32_t sdp_register_service_internal(void *connection, service_record_item_t * record_item){
     // get user record handle
-    uint32_t record_handle = record_itme->service_record_handle;
-    // validate service record handle is not in reserved range
-    if (record_handle <= maxReservedServiceRecordHandle) record_handle = 0;
-    // check if already registered
-    if (sdp_get_record_for_handle(record_handle)) {
-        sdp_emit_service_registered(connection, 0, SDP_HANDLE_ALREADY_REGISTERED);
+    uint32_t record_handle = record_item->service_record_handle;
+    
+    // check for ServiceRecordHandle attribute, returns pointer or null
+    uint8_t * req_record_handle = sdp_get_attribute_value_for_attribute_id(record, SDP_ServiceRecordHandle);
+    if (!req_record_handle) {
+        log_err("SDP Error - record does not contain ServiceRecordHandle attribute\n");
         return 0;
     }
+    
+    // validate service record handle is not in reserved range
+    if (record_handle <= maxReservedServiceRecordHandle) record_handle = 0;
+    
+    // check if already in use
+    if (record_handle) {
+        if (sdp_get_record_for_handle(record_handle)) {
+            record_handle = 0;
+        }
+    }
+    
+    // create new handle if needed
+    if (!record_handle){
+        record_handle = sdp_create_service_record_handle();
+        // Write the handle back into the record too
+        sdp_set_attribute_value_for_attribute_id(record, SDP_ServiceRecordHandle, record_handle);
+    }
+    
     // add to linked list
     linked_list_add(&sdp_service_records, (linked_item_t *) record_item);
     
@@ -228,7 +246,9 @@ void sdp_unregister_services_for_connection(void *connection){
         service_record_item_t *record_item = (service_record_item_t *) it->next;
         if (record_item->connection == connection){
             it->next = it->next->next;
+#ifndef EMBEDDED
             free(record_item);
+#endif
         } else {
             it = it->next;
         }
