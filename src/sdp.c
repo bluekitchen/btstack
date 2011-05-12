@@ -47,7 +47,7 @@
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 // registered service records
-linked_list_t sdp_service_records;
+static linked_list_t sdp_service_records = NULL;
 
 // our handles start after the reserved range
 static uint32_t sdp_next_service_record_handle = maxReservedServiceRecordHandle + 2;
