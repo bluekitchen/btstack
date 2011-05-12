@@ -174,7 +174,7 @@ extern "C" {
 // data: event(8), len(8), status (8), rfcomm server channel id (8) 
 #define RFCOMM_EVENT_PERSISTENT_CHANNEL                    0x86
 
-// data: event(8), len(8), service_record_handle(32)
+// data: event(8), len(8), status(8), service_record_handle(32)
 #define SDP_SERVICE_REGISTERED                             0x90
 
 	
@@ -206,7 +206,9 @@ extern "C" {
 
 #define RFCOMM_MULTIPLEXER_STOPPED                         0x70
 #define RFCOMM_CHANNEL_ALREADY_REGISTERED                  0x71
-    
+
+#define SDP_HANDLE_ALREADY_REGISTERED                      0x80
+ 
 /**
  * Default INQ Mode
  */
