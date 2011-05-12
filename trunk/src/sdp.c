@@ -58,10 +58,18 @@ const uint8_t removeServiceRecordHandleAttributeIDList[] = { 0x36, 0x00, 0x05, 0
 #define SDP_RESPONSE_BUFFER_SIZE HCI_ACL_3DH5_SIZE
 static uint8_t sdp_response_buffer[SDP_RESPONSE_BUFFER_SIZE];
 
+static void (*app_packet_handler)(void * connection, uint8_t packet_type,
+                                  uint16_t channel, uint8_t *packet, uint16_t size) = NULL;
 
 void sdp_init(){
     // register with l2cap psm sevices
     l2cap_register_service_internal(NULL, sdp_packet_handler, PSM_SDP, 1000);
+}
+
+// register packet handler
+void sdp_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type,
+                                                 uint16_t channel, uint8_t *packet, uint16_t size)){
+	app_packet_handler = handler;
 }
 
 uint32_t sdp_get_service_record_handle(uint8_t * record){
@@ -70,6 +78,18 @@ uint32_t sdp_get_service_record_handle(uint8_t * record){
     if (de_get_element_type(serviceRecordHandleAttribute) != DE_UINT) return 0;
     if (de_get_size_type(serviceRecordHandleAttribute) != DE_SIZE_32) return 0;
     return READ_NET_32(serviceRecordHandleAttribute, 1); 
+}
+
+// data: event(8), len(8), status(8), service_record_handle(32)
+static void sdp_emit_service_registered(void *connection, uint32_t handle, uint8_t status) {
+    if (!app_packet_handler) return;
+    uint8_t event[7];
+    event[0] = SDP_SERVICE_REGISTERED;
+    event[1] = sizeof(event) - 2;
+    event[2] = status;
+    bt_store_32(event, 3, handle);
+    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
+	(*app_packet_handler)(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
 service_record_item_t * sdp_get_record_for_handle(uint32_t handle){
@@ -107,10 +127,14 @@ uint32_t sdp_register_service_internal(void *connection, service_record_item_t *
     if (record_handle <= maxReservedServiceRecordHandle) record_handle = 0;
     // check if already registered
     if (sdp_get_record_for_handle(record_handle)) {
+        sdp_emit_service_registered(connection, 0, SDP_HANDLE_ALREADY_REGISTERED);
         return 0;
     }
     // add to linked list
     linked_list_add(&sdp_service_records, (linked_item_t *) record_item);
+    
+    sdp_emit_service_registered(connection, 0, record_item->service_record_handle);
+    
     return record_handle;
 }
 
@@ -149,8 +173,10 @@ uint32_t sdp_register_service_internal(void *connection, uint8_t * record){
         
     // alloc memory for new service_record_item
     service_record_item_t * newRecordItem = (service_record_item_t *) malloc(recordSize + sizeof(service_record_item_t));
-    if (!newRecordItem) return 0;
-
+    if (!newRecordItem) {
+        sdp_emit_service_registered(connection, 0, BTSTACK_MEMORY_ALLOC_FAILED);
+        return 0;
+    }
     // link new service item to client connection
     newRecordItem->connection = connection;
     
@@ -176,6 +202,9 @@ uint32_t sdp_register_service_internal(void *connection, uint8_t * record){
     
     // add to linked list
     linked_list_add(&sdp_service_records, (linked_item_t *) newRecordItem);
+    
+    sdp_emit_service_registered(connection, 0, newRecordItem->service_record_handle);
+
     return record_handle;
 }
 

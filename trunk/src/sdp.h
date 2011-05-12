@@ -60,6 +60,9 @@ typedef struct {
 
 void sdp_init();
 
+void sdp_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type,
+                                                 uint16_t channel, uint8_t *packet, uint16_t size));
+
 #ifdef EMBEDDED
 // register service record internally - the normal version creates a copy of the record
 // pre: AttributeIDs are in ascending order => ServiceRecordHandle is first attribute if present
