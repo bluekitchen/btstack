@@ -1213,13 +1213,29 @@ void rfcomm_close_connection(void *connection){
     linked_item_t *it;
 
     // close open channels 
-    rfcomm_channel_t * channel;
-    for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
-        channel = (rfcomm_channel_t *) it;
-        if (channel->connection == connection) {
-            // TODO: shut down channels immediately - if items are freed, while loop is necessary
+    it = (linked_item_t *) &rfcomm_channels;
+    while (it->next){
+        rfcomm_channel_t * channel = (rfcomm_channel_t *) it->next;
+        if (channel->connection == connection){
+            
+            // signal client
+            rfcomm_emit_channel_closed(channel);
+            
+            // signal close
+            rfcomm_multiplexer_t * multiplexer = channel->multiplexer;
+            rfcomm_send_disc(multiplexer, channel->dlci);
+            
+            // remove from list
+            it->next = it->next->next;
+            free(channel);
+            
+            // update multiplexer timeout after channel was removed from list
+            rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+            
+        } else {
+            it = it->next;
         }
-    }   
+    }
     
     // unregister services
     it = (linked_item_t *) &rfcomm_services;
@@ -1328,14 +1344,17 @@ void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
     // TODO: be less drastic
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (channel) {
-        rfcomm_multiplexer_t * multiplexer = channel->multiplexer;
-        // signal close
-        rfcomm_send_disc(multiplexer, channel->dlci);
         // signal client
         rfcomm_emit_channel_closed(channel);
-        // discard channel
+
+        // signal close
+        rfcomm_multiplexer_t * multiplexer = channel->multiplexer;
+        rfcomm_send_disc(multiplexer, channel->dlci);
+
+        // remove from list
         linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
         free(channel);
+        
         rfcomm_multiplexer_prepare_idle_timer(multiplexer);
     }
 }
