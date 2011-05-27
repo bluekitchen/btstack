@@ -28,6 +28,10 @@
  * SUCH DAMAGE.
  *
  */
+
+#include <string.h>
+#include <stdlib.h>
+
 #include "remote_device_db.h"
 #include "debug.h"
 
@@ -43,16 +47,18 @@ typedef struct {
     // linked list - assert: first field
     linked_item_t    item;
 
-    // Device's BD_ADDR
     bd_addr_t bd_addr;
-
-    // Link Key
     link_key_t link_key;
-
-    // Device's Name, with maximum length
     char device_name[MAX_NAME_LEN];
-
 } db_mem_devices_t;
+
+typedef struct {
+    // linked list - assert: first field
+    linked_item_t    item;
+
+    char service_name[MAX_NAME_LEN];
+    uint8_t channel;
+} db_mem_services_t;
 
 // Device info
 static void db_open(){
@@ -65,10 +71,8 @@ static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key) {
     linked_item_t *it;
     for (it = (linked_item_t *) db_mem_devices; it ; it = it->next){
         db_mem_devices_t * item = (db_mem_devices_t *) it;
-        print_bd_addr(item->bd_addr);
-        if (cmp_bd_addr(item->bd_addr, *bd_addr)) {
+        if (BD_ADDR_CMP(item->bd_addr, *bd_addr) == 0) {
             memcpy(link_key, item->link_key, LINK_KEY_LEN);
-            print_bd_addr(link_key);
             return 1;
         }
     }
@@ -115,7 +119,7 @@ static void put_name(bd_addr_t *bd_addr, device_name_t *device_name){
         db_mem_devices_t * item = (db_mem_devices_t *) it;
         if (item->bd_addr == *bd_addr){
             // Found record, ammend it
-            strncpy(item->device_name, device_name, MAX_NAME_LEN);
+            strncpy(item->device_name, (const char*) device_name, MAX_NAME_LEN);
             return;
         }
     }
@@ -125,7 +129,7 @@ static void put_name(bd_addr_t *bd_addr, device_name_t *device_name){
 
     if (newItem) {
         memcpy(newItem->bd_addr, bd_addr, sizeof(bd_addr_t));
-        strncpy(newItem->device_name, device_name, MAX_NAME_LEN);
+        strncpy(newItem->device_name, (const char*) device_name, MAX_NAME_LEN);
         memset(newItem->link_key, 0, LINK_KEY_LEN);
 
 	linked_list_add(&db_mem_devices, (linked_item_t *) newItem);
@@ -150,7 +154,7 @@ static int  get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
     for (it = (linked_item_t *) db_mem_devices; it ; it = it->next){
         db_mem_devices_t * item = (db_mem_devices_t *) it;
         if (item->bd_addr == *bd_addr){
-            strncpy(device_name, item->device_name, MAX_NAME_LEN);
+            strncpy((char*)device_name, item->device_name, MAX_NAME_LEN);
             return 1;
         }
     }
@@ -160,8 +164,32 @@ static int  get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
 #pragma mark PERSISTENT RFCOMM CHANNEL ALLOCATION
 
 static uint8_t persistent_rfcomm_channel(char *serviceName){
-    // Fake
-    return 1;
+    linked_item_t *it;
+    db_mem_services_t * item;
+    uint8_t max_channel = 1;
+
+    for (it = (linked_item_t *) db_mem_services; it ; it = it->next){
+        item = (db_mem_services_t *) it;
+        if (strncmp(item->service_name, serviceName, MAX_NAME_LEN) == 0) {
+            // Match found
+            return item->channel;
+        }
+
+        // TODO prevent overflow
+        if (item->channel >= max_channel) max_channel = item->channel + 1;
+    }
+
+    // Allocate new persistant channel
+    db_mem_services_t * newItem = (db_mem_services_t *) malloc(sizeof(db_mem_services_t));
+
+    if (newItem) {
+        strncpy(newItem->service_name, serviceName, MAX_NAME_LEN);
+        newItem->channel = max_channel;
+        linked_list_add(&db_mem_services, (linked_item_t *) newItem);
+        return max_channel;
+    }
+
+    return 0;
 }
 
 
