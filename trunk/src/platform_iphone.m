@@ -41,6 +41,7 @@
 #include "../SpringBoardAccess/SpringBoardAccess.h"
 
 #include <stdio.h>
+#include <unistd.h>
 
 #ifdef USE_SPRINGBOARD
 #include <CoreFoundation/CoreFoundation.h>
