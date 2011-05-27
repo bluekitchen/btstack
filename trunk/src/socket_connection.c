@@ -349,7 +349,7 @@ void socket_connection_launchd_register_fd_array(launch_data_t listening_fd_arra
         launch_data_t tempi = launch_data_array_get_index (listening_fd_array, i);
         int listening_fd = launch_data_get_fd(tempi);
         launch_data_free (tempi);
-		log_dbg("file descriptor = %u\n",(unsigned int) i+1, listening_fd);
+		log_dbg("file descriptor = %u\n", listening_fd);
         
         // create data_source_t for fd
         data_source_t *ds = malloc( sizeof(data_source_t));
