@@ -75,10 +75,14 @@ typedef struct hci_transport_h4 {
 static hci_transport_h4_t * hci_transport_h4 = NULL;
 
 static int  h4_process(struct data_source *ds);
-static void *h4_reader(void *context);
-static int  h4_reader_process(struct data_source *ds);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
 static      hci_uart_config_t *hci_uart_config;
+
+#ifdef USE_HCI_READER_THREAD
+static void *h4_reader(void *context);
+static int  h4_reader_process(struct data_source *ds);
+#endif
+
 
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
@@ -270,6 +274,8 @@ static void h4_statemachine(){
 #else
             h4_deliver_packet();
 #endif
+            break;
+        default:
             break;
     }
 }
