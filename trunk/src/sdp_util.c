@@ -74,10 +74,6 @@ int de_get_data_size(uint8_t * header){
     uint32_t result = 0;
     de_type_t de_type = de_get_element_type(header);
     de_size_t de_size = de_get_size_type(header);
-    if (de_size <= DE_SIZE_128){
-        if (de_type == DE_NIL) return 0;
-        return 1 << de_size;
-    }
     switch (de_size){
         case DE_SIZE_VAR_8:
             result = header[1];
@@ -88,6 +84,14 @@ int de_get_data_size(uint8_t * header){
         case DE_SIZE_VAR_32:
             result = READ_NET_32(header,1);
             break;
+        default:
+        // case DE_SIZE_8:
+        // case DE_SIZE_16:
+        // case DE_SIZE_32:
+        // case DE_SIZE_64:
+        // case DE_SIZE_128:
+            if (de_type == DE_NIL) return 0;
+            return 1 << de_size;
     }
     return result;    
 }
