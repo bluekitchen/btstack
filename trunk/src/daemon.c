@@ -97,7 +97,7 @@ static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state);
 static client_state_t * client_for_connection(connection_t *connection);
 static int              clients_require_power_on();
 static int              clients_require_discoverable();
-static int              clients_clear_power_request();
+static void              clients_clear_power_request();
 static void start_power_off_timer();
 static void stop_power_off_timer();
 
@@ -113,7 +113,7 @@ static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth
 static int global_enable = 0;
 
 static remote_device_db_t * remote_device_db = NULL;
-static rfcomm_channel_generator = 1;
+static int rfcomm_channel_generator = 1;
 
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
     log_dbg("Bluetooth status: %u\n", state);
@@ -133,7 +133,6 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
     uint16_t cid;
     uint16_t psm;
     uint16_t service_channel;
-    uint16_t registration_id;
     uint16_t mtu;
     uint8_t  reason;
     uint8_t  rfcomm_channel;
@@ -264,7 +263,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             if (remote_device_db) {
                 // enforce \0
                 packet[3+248] = 0;
-                rfcomm_channel = remote_device_db->persistent_rfcomm_channel(&packet[3]);
+                rfcomm_channel = remote_device_db->persistent_rfcomm_channel((char*)&packet[3]);
             } else {
                 // NOTE: hack for non-iOS platforms
                 rfcomm_channel = rfcomm_channel_generator++;
@@ -449,10 +448,6 @@ static void daemon_sigint_handler(int param){
     exit(0);
 }
 
-static void daemon_sigpipe_handler(int param){
-    log_dbg(" <= SIGPIPE received.. trying to ignore..\n");    
-}
-
 static void usage(const char * name) {
     log_dbg("%s, BTstack background daemon\n", name);
     log_dbg("usage: %s [-h|--help] [--tcp]\n", name);
@@ -633,7 +628,7 @@ static client_state_t * client_for_connection(connection_t *connection) {
     return NULL;
 }
 
-static int clients_clear_power_request(){
+static void clients_clear_power_request(){
     linked_item_t *it;
     for (it = (linked_item_t *) clients; it ; it = it->next){
         client_state_t * client_state = (client_state_t *) it;
