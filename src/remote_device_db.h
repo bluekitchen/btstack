@@ -33,6 +33,8 @@
  * interface to provide link key and remote name storage
  */
 
+#pragma once
+
 #include <btstack/utils.h>
 
 typedef struct {
