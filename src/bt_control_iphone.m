@@ -55,8 +55,11 @@
 #include <sys/uio.h>
 #include <unistd.h>
 #include <errno.h>
+#include <pthread.h>
 
 #ifdef USE_BLUETOOL
+
+#include "../SpringBoardAccess/SpringBoardAccess.h"
 
 // minimal IOKit
 #ifdef __APPLE__
@@ -117,7 +120,6 @@ IOReturn IOAllowPowerChange ( io_connect_t kernelPort, long notificationID );
 IOReturn IOCancelPowerChange ( io_connect_t kernelPort, long notificationID );
 
 // local globals
-static io_object_t   notifier;
 static io_connect_t  root_port = 0; // a reference to the Root Power Domain IOService
 static int power_notification_pipe_fds[2];
 static data_source_t power_notification_ds;
@@ -179,7 +181,6 @@ static void ioregistry_get_info() {
 
     // local-mac-address
     CFTypeRef local_mac_address_ref = IORegistryEntrySearchCFProperty(bt_service,"IODeviceTree",CFSTR("local-mac-address"), kCFAllocatorDefault, 1);
-    int local_mac_address_len = CFDataGetLength(local_mac_address_ref);
     CFDataGetBytes(local_mac_address_ref,CFRangeMake(0,CFDataGetLength(local_mac_address_ref)),local_mac_address); // buffer needs to be unsigned char
 
     // transport-speed
@@ -627,20 +628,22 @@ static void MySleepCallBack( void * refCon, io_service_t service, natural_t mess
 
 static int  power_notification_process(struct data_source *ds) {
 
-    if (!power_notification_callback) return;
+    if (!power_notification_callback) return -1;
 
     // get token
     char token;
     int bytes_read = read(power_notification_pipe_fds[0], &token, 1);
-    if (bytes_read != 1) return;
+    if (bytes_read != 1) return -1;
         
     log_dbg("power_notification_process: %u\n", token);
     
     power_notification_callback( (POWER_NOTIFICATION_t) token );
+    
+    return 0;
 }
 
 /** handle IOKIT power notifications - http://developer.apple.com/library/mac/#qa/qa2004/qa1340.html */
-static void power_notification_run(void *context){
+static void * power_notification_run(void *context){
     IONotificationPortRef  notifyPortRef =  NULL; // notification port allocated by IORegisterForSystemPower
     io_object_t            notifierObject = 0;    // notifier object, used to deregister later
     
@@ -648,7 +651,7 @@ static void power_notification_run(void *context){
     root_port = IORegisterForSystemPower(NULL, &notifyPortRef, MySleepCallBack, &notifierObject);
     if (!root_port) {
         log_dbg("IORegisterForSystemPower failed\n");
-        return;
+        return NULL;
     }
     
     // add the notification port to this thread's runloop
@@ -656,6 +659,8 @@ static void power_notification_run(void *context){
     
     // and wait for events
     CFRunLoopRun();
+    
+    return NULL;
 }
 
 
