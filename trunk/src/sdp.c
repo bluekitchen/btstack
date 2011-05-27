@@ -35,10 +35,13 @@
 
 #include "sdp.h"
 
+
 #include <stdio.h>
 #include <string.h>
 
 #include <btstack/sdp_util.h>
+
+#include "hci_dump.h"
 #include "l2cap.h"
 
 // max reserved ServiceRecordHandle
