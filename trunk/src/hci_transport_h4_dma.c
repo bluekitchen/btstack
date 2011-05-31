@@ -38,12 +38,8 @@
  */
 
 
-#include <stdio.h>
-#include <string.h>
-
 #include "debug.h"
 #include "hci.h"
-#include "hci_dump.h"
 #include "hci_transport.h"
 
 #include <btstack/hal_uart_dma.h>
@@ -102,7 +98,7 @@ static void h4_block_received(void){
                     bytes_to_read = HCI_EVENT_PKT_HDR;
                     break;
                 default:
-                    printf("h4_process: invalid packet type 0x%02x\r\n", hci_packet[0]);
+                    log_err("h4_process: invalid packet type 0x%02x\r\n", hci_packet[0]);
                     read_pos = 0;
                     h4_state = H4_W4_PACKET_TYPE;
                     bytes_to_read = 1;
@@ -181,19 +177,9 @@ static int    h4_close(){
 
 extern void UARTDumpHexBuffer(const unsigned char *pucBuffer, unsigned long ulCount);
 
-int dumpCmds = 0;
-int dumpEvts = 0;
-
 static int h4_send_packet(uint8_t packet_type, uint8_t *packet, int size){
-    if (dumpCmds) {
-        if (packet_type == HCI_COMMAND_DATA_PACKET){
-            printf("CMD> ");
-        } else {
-            printf("ACL> ");
-        }
-        UARTDumpHexBuffer(packet, size);
-        printf("\n\r");
-    }
+    
+    // log packet
     
 	// h4 packet type + actual packet
 	hal_uart_dma_send_byte(packet_type);
@@ -206,21 +192,11 @@ void   h4_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *
     packet_handler = handler;
 }
 
-static void dump_received_packet(void){
-    if (hci_packet[0] == HCI_EVENT_PACKET){
-        printf("EVT< ");
-    } else {
-        printf("ACL< ");
-    }
-    UARTDumpHexBuffer(&hci_packet[1], read_pos-1);
-    printf("\n\r");
-}
-
 static int h4_process(struct data_source *ds) {
     
     if (h4_state == H4_PACKET_RECEIVED) {
         
-        if (dumpEvts) dump_received_packet();
+        // log packet
         
         packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
         
@@ -231,7 +207,7 @@ static int h4_process(struct data_source *ds) {
 }
 
 static const char * h4_get_transport_name(){
-    return "H4_MSP430";
+    return "H4_DMA";
 }
 
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
