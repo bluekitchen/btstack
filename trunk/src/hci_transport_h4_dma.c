@@ -175,8 +175,6 @@ static int    h4_close(){
     return 0;
 }
 
-extern void UARTDumpHexBuffer(const unsigned char *pucBuffer, unsigned long ulCount);
-
 static int h4_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     
     // log packet
