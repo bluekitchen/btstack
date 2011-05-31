@@ -30,7 +30,7 @@
  */
 
 /*
- *  hci_h4_transport_msp430.c
+ *  hci_h4_transport_dma.c
  *
  *  HCI Transport implementation for basic H4 protocol for blocking UART write and IRQ-driven blockwise RX
  *
@@ -212,7 +212,7 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 // get h4 singleton
-hci_transport_t * hci_transport_h4_instance() { 
+hci_transport_t * hci_transport_h4_dma_instance() { 
     if (hci_transport_h4 == NULL) {
         hci_transport_h4 = malloc(sizeof(hci_transport_h4_t));
         hci_transport_h4->ds                                      = NULL;
