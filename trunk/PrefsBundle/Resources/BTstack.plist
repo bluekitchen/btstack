@@ -40,28 +40,6 @@
 				<string>BTstack</string>
 			</array>
 		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSGroupCell</string>
-			<key>footerText</key>
-			<string>Incoming file transfers are not enabled by default. Please enable this option to receive incoming files.</string>
-			<key>label</key>
-			<string>Transfers</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
-			<key>defaults</key>
-			<string>co.cocoanuts.celeste</string>
-			<key>key</key>
-			<string>ReceiveEnabled</string>
-			<key>label</key>
-			<string>Receive</string>
-			<key>PostNotification</key>
-			<string>co.cocoanuts.celeste.receive.enabled</string>
-		</dict>
 	</array>
 	<key>title</key>
 	<string>BTstack</string>
