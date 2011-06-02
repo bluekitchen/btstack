@@ -2,7 +2,7 @@
 	entry = {
 		bundle = BTstack;
 		cell = PSLinkCell;
-		detail = "PrefsViewController.m";
+		detail = "BluetoothPSViewController";
 		icon = "BTstack.png";
 		isController = 1;
 		label = BTstack;
