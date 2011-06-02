@@ -23,6 +23,6 @@
 	<key>MinimumOSVersion</key>
 	<string>3.0</string>
 	<key>NSPrincipalClass</key>
-	<string>prefsListController</string>
+	<string>BluetoothPSViewController</string>
 </dict>
 </plist>
