@@ -40,6 +40,7 @@
 
 #include "../config.h"
 
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,6 +63,7 @@
 #include "socket_connection.h"
 
 #ifdef USE_BLUETOOL
+#include <CoreFoundation/CoreFoundation.h>
 #include "bt_control_iphone.h"
 #include <notify.h>
 #endif
@@ -435,16 +437,19 @@ static void power_notification_callback(POWER_NOTIFICATION_t notification){
 }
 
 static void daemon_sigint_handler(int param){
-
+    
 #ifdef USE_BLUETOOL
-    // hack for celeste
+    // notify daemons
     notify_post("ch.ringwald.btstack.stopped");
 #endif
     
     log_dbg(" <= SIGINT received, shutting down..\n");    
+
     hci_power_control( HCI_POWER_OFF);
     hci_close();
+    
     log_dbg("Good bye, see you.\n");    
+    
     exit(0);
 }
 
@@ -453,6 +458,11 @@ static void usage(const char * name) {
     log_dbg("usage: %s [-h|--help] [--tcp]\n", name);
     log_dbg("    -h|--help  display this usage\n");
     log_dbg("    --tcp      use TCP server socket instead of local unix socket\n");
+}
+
+static void * run_loop_thread(void *context){
+    run_loop_execute();
+    return NULL;
 }
 
 int main (int argc,  char * const * argv){
@@ -580,8 +590,15 @@ int main (int argc,  char * const * argv){
     socket_connection_register_packet_callback(daemon_client_handler);
         
 #ifdef USE_BLUETOOL 
-    // hack for celeste
+    // notify daemons
     notify_post("ch.ringwald.btstack.started");
+
+    // spawn thread to have BTstack run loop on new thread, while main thread is used to keep CFRunLoop
+    pthread_t run_loop;
+    pthread_create(&run_loop, NULL, &run_loop_thread, NULL);
+
+    // needed to receive notifications
+    CFRunLoopRun();
 #endif
     
     // go!
