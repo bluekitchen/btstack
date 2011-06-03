@@ -605,19 +605,26 @@ static int hci_power_control_on(){
 
 static void hci_power_control_off(){
     
+    log_dbg("hci_power_control_off\n");
+
     // close low-level device
     hci_stack.hci_transport->close(hci_stack.config);
+
+    log_dbg("hci_power_control_off - hci_transport closed\n");
     
     // power off
     if (hci_stack.control && hci_stack.control->off){
         (*hci_stack.control->off)(hci_stack.config);
     }
+    
+    log_dbg("hci_power_control_off - control closed\n");
+
     hci_stack.state = HCI_STATE_OFF;
 }
 
 static void hci_power_control_sleep(){
     
-    log_dbg("hci_power_control_sleep");
+    log_dbg("hci_power_control_sleep\n");
     
 #if 0
     // don't close serial port during sleep
@@ -636,7 +643,7 @@ static void hci_power_control_sleep(){
 
 static int hci_power_control_wake(){
     
-    log_dbg("hci_power_control_wake");
+    log_dbg("hci_power_control_wake\n");
 
     // wake on
     if (hci_stack.control && hci_stack.control->wake){
@@ -884,6 +891,8 @@ void hci_run(){
             
             // switch mode
             hci_power_control_off();
+            
+            log_dbg("HCI_STATE_HALTING, emitting state\n");
             hci_emit_state();
             log_dbg("HCI_STATE_HALTING, done\n");
             break;
