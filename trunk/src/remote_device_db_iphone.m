@@ -239,6 +239,11 @@ static void addService(NSString * serviceName, int channel){
 }
 
 static uint8_t persistent_rfcomm_channel(char *serviceName){
+
+    NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+
+    NSLog(@"persistent_rfcomm_channel for %s", serviceName);
+
     // find existing entry
     NSString *serviceString = [NSString stringWithUTF8String:serviceName];
     NSMutableDictionary *serviceEntry = [rfcomm_services objectForKey:serviceString];
@@ -261,6 +266,8 @@ static uint8_t persistent_rfcomm_channel(char *serviceName){
 
     db_synchronize();
 
+    [pool release];
+    
     return channel;
 }
 
