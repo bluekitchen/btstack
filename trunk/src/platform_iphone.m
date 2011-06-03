@@ -52,17 +52,17 @@ void platform_iphone_status_handler(BLUETOOTH_STATE state){
         case BLUETOOTH_OFF:
             SBA_removeStatusBarImage("BTstack");
             SBA_removeStatusBarImage("BTstackActive");
-            printf("Bluetooth status: OFF\n");
+            NSLog(@"Bluetooth status: OFF");
             break;
         case BLUETOOTH_ON:
             SBA_removeStatusBarImage("BTstackActive");
             SBA_addStatusBarImage("BTstack");
-            printf("Bluetooth status: ON\n");
+            NSLog(@"Bluetooth status: ON");
             break;
         case BLUETOOTH_ACTIVE:
             SBA_removeStatusBarImage("BTstack");
             SBA_addStatusBarImage("BTstackActive");
-            printf("Bluetooth status: ACTIVE\n");
+            NSLog(@"Bluetooth status: ACTIVE");
             break;
         default:
             break;
@@ -71,13 +71,13 @@ void platform_iphone_status_handler(BLUETOOTH_STATE state){
 
 static void (*window_manager_restart_callback)() = NULL;
 static void springBoardDidLaunch(){
-    printf("springBoardDidLaunch!\n");
+    NSLog(@"springBoardDidLaunch!\n");
     if (window_manager_restart_callback) {
         int timer;
         for (timer = 0 ; timer < 10 ; timer++){
-            printf("ping SBA %u\n", timer);
+            NSLog(@"ping SBA %u", timer);
             if (SBA_available()){
-                printf("pong from SBA!\n");
+                NSLog(@"pong from SBA!");
                 break;
             }
             sleep(1);
