@@ -44,6 +44,7 @@
 #include <unistd.h>
 
 #ifdef USE_SPRINGBOARD
+#include <Foundation/Foundation.h>
 #include <CoreFoundation/CoreFoundation.h>
 
 // update SpringBoard icons
