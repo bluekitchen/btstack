@@ -46,16 +46,15 @@
 #include "hci.h"
 #include "debug.h"
 
-#include <sys/utsname.h>  // uname
+#include <errno.h>
+#include <fcntl.h>        // open
 #include <stdlib.h>       // system, random, srandom
 #include <stdio.h>        // sscanf, printf
-#include <fcntl.h>        // open
 #include <string.h>       // strcpy, strcat, strncmp
+#include <sys/utsname.h>  // uname
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
-#include <errno.h>
-#include <pthread.h>
 
 #ifdef USE_BLUETOOL
 
@@ -398,6 +397,8 @@ static char *os4xBlueTool = "/usr/local/bin/BlueToolH4";
 
 static int iphone_on (void *transport_config){
 
+    log_dbg("iphone_on: entered\n");
+
     int err = 0;
 
     hci_uart_config_t * hci_uart_config = (hci_uart_config_t*) transport_config;
@@ -432,6 +433,7 @@ static int iphone_on (void *transport_config){
     }
     
     // unload BTServer
+    log_dbg("iphone_on: unload BTServer\n");
     err = system ("launchctl unload /System/Library/LaunchDaemons/com.apple.BTServer.plist");
     
 #if 0
@@ -547,13 +549,16 @@ static int iphone_off (void *config){
 	}
 */	
     // power off (all models)
+    log_dbg("iphone_off: turn off using BlueTool\n");
     system ("echo \"power off\nquit\" | BlueTool");
     
     // kill Apple BTServer as it gets confused and fails to start anyway
     // system("killall BTServer");
     
     // reload BTServer
+    log_dbg("iphone_off: reload BTServer\n");
     system ("launchctl load /System/Library/LaunchDaemons/com.apple.BTServer.plist");
+    log_dbg("iphone_off: done\n");
 
     return 0;
 }
@@ -642,42 +647,28 @@ static int  power_notification_process(struct data_source *ds) {
     return 0;
 }
 
-/** handle IOKIT power notifications - http://developer.apple.com/library/mac/#qa/qa2004/qa1340.html */
-static void * power_notification_run(void *context){
-    IONotificationPortRef  notifyPortRef =  NULL; // notification port allocated by IORegisterForSystemPower
-    io_object_t            notifierObject = 0;    // notifier object, used to deregister later
-    
-    // register to receive system sleep notifications
-    root_port = IORegisterForSystemPower(NULL, &notifyPortRef, MySleepCallBack, &notifierObject);
-    if (!root_port) {
-        log_dbg("IORegisterForSystemPower failed\n");
-        return NULL;
-    }
-    
-    // add the notification port to this thread's runloop
-    CFRunLoopAddSource(CFRunLoopGetCurrent(), IONotificationPortGetRunLoopSource(notifyPortRef), kCFRunLoopCommonModes);
-    
-    // and wait for events
-    CFRunLoopRun();
-    
-    return NULL;
-}
-
-
 /**
  * assumption: called only once, cb != null
  */
 void iphone_register_for_power_notifications(void (*cb)(POWER_NOTIFICATION_t event)){
 
+    // handle IOKIT power notifications - http://developer.apple.com/library/mac/#qa/qa2004/qa1340.html
+    IONotificationPortRef  notifyPortRef =  NULL; // notification port allocated by IORegisterForSystemPower
+    io_object_t            notifierObject = 0;    // notifier object, used to deregister later
+    root_port = IORegisterForSystemPower(NULL, &notifyPortRef, MySleepCallBack, &notifierObject);
+    if (!root_port) {
+        log_dbg("IORegisterForSystemPower failed\n");
+        return;
+    }
+    
+    // add the notification port to this thread's runloop
+    CFRunLoopAddSource(CFRunLoopGetCurrent(), IONotificationPortGetRunLoopSource(notifyPortRef), kCFRunLoopCommonModes);
+    
     // 
     power_notification_callback = cb;
-
+    
  	// create pipe to deliver power notification to main run loop
 	pipe(power_notification_pipe_fds);
-   
-    // spawn thread to run cocoa run loop
-	pthread_t power_notification_thread;
-	pthread_create(&power_notification_thread, NULL, &power_notification_run, NULL);
 
     // set up data source handler
     power_notification_ds.fd =      power_notification_pipe_fds[0];
