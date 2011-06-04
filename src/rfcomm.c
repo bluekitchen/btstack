@@ -36,6 +36,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h> // memcpy
 #include <strings.h>
 #include <pthread.h>
 
