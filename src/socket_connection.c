@@ -116,8 +116,10 @@ int socket_connection_set_non_blocking(int fd) {
 }
 
 void socket_connection_set_no_sigpipe(int fd){
+#ifdef HAVE_SO_NOSIGPIPE    
     int set = 1;
     setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, (void *)&set, sizeof(int));
+#endif
 }
 
 void socket_connection_free_connection(connection_t *conn){
@@ -494,8 +496,15 @@ void socket_connection_send_packet(connection_t *conn, uint16_t type, uint16_t c
     bt_store_16(header, 0, type);
     bt_store_16(header, 2, channel);
     bt_store_16(header, 4, size);
+#ifdef HAVE_SO_NOSIGPIPE
+    // BSD Variants like Darwin and iOS
     write(conn->ds.fd, header, 6);
     write(conn->ds.fd, packet, size);
+#else
+    // Linux
+    send(conn->ds.fd, header,    6, MSG_NOSIGNAL);
+    send(conn->ds.fd, packet, size, MSG_NOSIGNAL);
+#endif
 }
 
 /**
