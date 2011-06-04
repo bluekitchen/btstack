@@ -65,6 +65,8 @@ AM_CONDITIONAL(HAVE_LIBUSB, [test "x$HAVE_LIBUSB" == "xyes"])
 echo
 echo "BTstack configured for HCI $HCI_TRANSPORT Transport"
 
+HAVE_SO_NOSIGPIPE="no"
+
 RUN_LOOP_SOURCES="run_loop_posix.c run_loop_embedded.c"
 case "$host_os" in
     darwin*)
@@ -75,6 +77,7 @@ case "$host_os" in
         BTSTACK_LIB_EXTENSION="dylib"
         REMOTE_DEVICE_DB_SOURCES="remote_device_db_iphone.m"
         REMOTE_DEVICE_DB="remote_device_db_iphone"
+        HAVE_SO_NOSIGPIPE="yes";
         ;;
     *)
         USE_COCOA_RUN_LOOP="no"
@@ -98,6 +101,7 @@ if test "x$target" = xiphone; then
     REMOTE_DEVICE_DB_SOURCES="remote_device_db_iphone.m"
     REMOTE_DEVICE_DB="remote_device_db_iphone"
     USE_COCOA_RUN_LOOP="yes"
+    HAVE_SO_NOSIGPIPE="yes";
 
     case "$host_os" in
         darwin*)
@@ -213,6 +217,7 @@ echo "USE_SPRINGBOARD:     $USE_SPRINGBOARD"
 echo "USE_PREFSBUNDLE:     $USE_PREFSBUNDLE"
 echo "USE_COCOA_RUN_LOOP:  $USE_COCOA_RUN_LOOP"
 echo "REMOTE_DEVICE_DB:    $REMOTE_DEVICE_DB"
+echo "HAVE_SO_NOSIGPIPE:   $HAVE_SO_NOSIGPIPE"
 echo
 echo
 
@@ -246,6 +251,9 @@ echo "#define HAVE_SDP" >> config.h
 echo "#define HAVE_RFCOMM" >> config.h
 if test ! -z "$REMOTE_DEVICE_DB" ; then 
     echo "#define REMOTE_DEVICE_DB $REMOTE_DEVICE_DB" >> config.h
+fi
+if test "x$HAVE_SO_NOSIGPIPE" == xyes ; then
+    echo "#define HAVE_SO_NOSIGPIPE" >> config.h
 fi
     
 AC_SUBST(IPHONE_IP)
