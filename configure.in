@@ -102,6 +102,7 @@ if test "x$target" = xiphone; then
     REMOTE_DEVICE_DB="remote_device_db_iphone"
     USE_COCOA_RUN_LOOP="yes"
     HAVE_SO_NOSIGPIPE="yes";
+    PLATFORM_SOURCES="bt_control_iphone.m platform_iphone.m"
 
     case "$host_os" in
         darwin*)
@@ -177,10 +178,7 @@ if test "x$target" = xiphone; then
         USE_LDID="#"
         echo "USE_LDID:        no"
     fi
-    
-    REMOTE_DEVICE_DB_SOURCES="remote_device_db_iphone.m"
-    REMOTE_DEVICE_DB="remote_device_db_iphone"
-    
+        
 else
     case "$host_os" in
         darwin*)
@@ -212,6 +210,7 @@ else
     echo "UART_SPEED:          $UART_SPEED"
 fi
 
+echo "PLATFORM_SOURCES:    $PLATFORM_SOURCES"
 echo "USE_LAUNCHD:         $USE_LAUNCHD"
 echo "USE_SPRINGBOARD:     $USE_SPRINGBOARD"
 echo "USE_PREFSBUNDLE:     $USE_PREFSBUNDLE"
@@ -261,6 +260,7 @@ AC_SUBST(HAVE_LIBUSB)
 AC_SUBST(USE_LDID)
 AC_SUBST(REMOTE_DEVICE_DB_SOURCES)
 AC_SUBST(USB_SOURCES)
+AC_SUBST(PLATFORM_SOURCES)
 AC_SUBST(SPRINGBOARD_ACCESS_SOURCES)
 AC_SUBST(RUN_LOOP_SOURCES)
 AC_SUBST(BTSTACK_LIB_LDFLAGS)
