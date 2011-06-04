@@ -10,11 +10,12 @@ remote_device_db_sources = @REMOTE_DEVICE_DB_SOURCES@
 run_loop_sources = @RUN_LOOP_SOURCES@
 springboard_access_sources = @SPRINGBOARD_ACCESS_SOURCES@
 usb_sources = @USB_SOURCES@
+platform_sources = @PLATFORM_SOURCES@
 
 libBTstack_SOURCES = btstack.c hci_cmds.c linked_list.c run_loop.c $(run_loop_sources) sdp_util.c socket_connection.c utils.c
 			  
 BTdaemon_SOURCES =  $(libBTstack_SOURCES) \
-    bt_control_iphone.m     \
+	$(platform_sources)     \
     daemon.c                \
     hci.c                   \
     hci_dump.c              \
@@ -23,7 +24,6 @@ BTdaemon_SOURCES =  $(libBTstack_SOURCES) \
     l2cap.c                 \
     l2cap_signaling.c       \
     $(remote_device_db_sources)  \
-    platform_iphone.m       \
     rfcomm.c                \
     sdp.c                   \
     $(springboard_access_sources)
