@@ -546,8 +546,7 @@ connection_t * socket_connection_open_tcp(const char *address, uint16_t port){
 int socket_connection_close_tcp(connection_t * connection){
     if (!connection) return -1;
     shutdown(connection->ds.fd, SHUT_RDWR);
-    run_loop_remove_data_source(&connection->ds);
-    free( connection );
+    socket_connection_free_connection(connection);
     return 0;
 }
 
@@ -580,8 +579,7 @@ connection_t * socket_connection_open_unix(){
 int socket_connection_close_unix(connection_t * connection){
     if (!connection) return -1;
     shutdown(connection->ds.fd, SHUT_RDWR);
-    run_loop_remove_data_source(&connection->ds);
-    free( connection );
+    socket_connection_free_connection(connection);
     return 0;
 }
 
