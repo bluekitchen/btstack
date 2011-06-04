@@ -76,13 +76,6 @@ case "$host_os" in
         REMOTE_DEVICE_DB_SOURCES="remote_device_db_iphone.m"
         REMOTE_DEVICE_DB="remote_device_db_iphone"
         ;;
-    linux-*)
-        RUN_LOOP_SOURCES="$RUN_LOOP_SOURCES run_loop_cocoa.m"
-        LDFLAGS="$LDFLAGS -framework CoreFoundation"
-        USE_COCOA_RUN_LOOP="yes"
-        BTSTACK_LIB_LDFLAGS="-dynamiclib -install_name \$(prefix)/lib/libBTstack.dylib"
-        BTSTACK_LIB_EXTENSION="dylib"
-        ;;
     *)
         USE_COCOA_RUN_LOOP="no"
         BTSTACK_LIB_LDFLAGS="-shared -Wl,-rpath,\$(prefix)/lib"
@@ -99,12 +92,17 @@ if test "x$target" = xiphone; then
     if test -e "$DEVELOPER_PATH/usr/bin/arm-apple-darwin10-gcc-$GCC_VERSION"; then
 	   darwin_v='10'
     fi
+    
+    REMOTE_DEVICE_DB_SOURCES="remote_device_db_iphone.m"
+    REMOTE_DEVICE_DB="remote_device_db_iphone"
+    USE_COCOA_RUN_LOOP="yes"
+
     case "$host_os" in
         darwin*)
             echo "Cross-compiling for iPhone/iPod touch using Apple's iPhone SDK $SDK_VERSION, GCC $GCC_VERSION"
             echo "SDK path: $SDK_PATH"
-            # echo "iPhone staging dir: $prefix"
             echo "iPhone IP for install-iphone target: $IPHONE_IP"
+            
             CC="$DEVELOPER_PATH/usr/bin/arm-apple-darwin$darwin_v-gcc-$GCC_VERSION"
             OBJC="$DEVELOPER_PATH/usr/bin/arm-apple-darwin$darwin_v-g++-$GCC_VERSION"
             CFLAGS="$CFLAGS -g"
@@ -120,9 +118,11 @@ if test "x$target" = xiphone; then
         linux*)
             echo "Cross-compiling for iPhone/iPod touch using Apple's iPhone SDK $SDK_VERSION, GCC $GCC_VERSION"
             echo "SDK path: $SDK_PATH"
-            # echo "iPhone staging dir: $prefix"
             echo "iPhone IP for install-iphone target: $IPHONE_IP"
 
+            # also have cocoa run loop
+            RUN_LOOP_SOURCES="$RUN_LOOP_SOURCES run_loop_cocoa.m"
+            
             # handle sdk written in lower case for people that followed:
             # http://code.google.com/p/iphonedevonlinux/wiki/Installation
             if test -e "$DEVELOPER_PATH/sdks/iPhoneOS$SDK_VERSION.sdk" ; then
@@ -140,6 +140,9 @@ if test "x$target" = xiphone; then
             LDFLAGS="$LDFLAGS -L$SDK_PATH/System/Library/Frameworks/IOKit.framework/Versions/A"
             LDFLAGS="$LDFLAGS $SDK_PATH/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager"
             LDFLAGS="$LDFLAGS -lIOKit -lobjc"
+
+            BTSTACK_LIB_LDFLAGS="-dynamiclib -install_name \$(prefix)/lib/libBTstack.dylib"
+            BTSTACK_LIB_EXTENSION="dylib"
 		   ;;
         *)
             AC_MSG_ERROR(Don't know how to compile without Apple's iPhone SDK, sorry.)
