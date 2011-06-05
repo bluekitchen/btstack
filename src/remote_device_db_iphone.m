@@ -84,13 +84,13 @@ static void db_open(){
 		[rfcomm_services setObject:serviceEntry forKey:key];
 	}
     
-    log_dbg("read prefs for %u devices\n", [dict count]);
+    log_dbg("read prefs for %u devices\n", (unsigned int) [dict count]);
     
     [pool release];
 }
 
 static void db_synchronize(){
-    log_dbg("stored prefs for %u devices\n", [remote_devices count]);
+    log_dbg("stored prefs for %u devices\n", (unsigned int) [remote_devices count]);
     
     // 3 different ways
     
