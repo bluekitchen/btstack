@@ -189,9 +189,11 @@ typedef struct {
     // errands
     hci_authentication_flags_t authentication_flags;
     
+#ifdef HAVE_TIME
     // timer
     timer_source_t timeout;
     struct timeval timestamp;
+#endif
 
     // ACL packet recombination
     uint8_t  acl_recombination_buffer[HCI_ACL_3DH5_SIZE]; // max packet: DH5 = header(4) + payload (339)
