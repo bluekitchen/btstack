@@ -37,6 +37,7 @@
  *  Created by Matthias Ringwald on 7/23/09.
  */
 
+#include "../config.h"
 #include <btstack/utils.h>
 #include <stdio.h>
 #include "debug.h"
@@ -96,6 +97,7 @@ void print_bd_addr( bd_addr_t addr){
     log_dbg("%02X", ((uint8_t *)addr)[i]);
 }
 
+#ifndef EMBEDDED
 int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr){
 	unsigned int bd_addr_buffer[BD_ADDR_LEN];  //for sscanf, integer needed
 	// reset result buffer
@@ -115,6 +117,7 @@ int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr){
 	}
 	return (result == 6);
 }
+#endif
 
 /*  
  * CRC (reversed crc) lookup table as calculated by the table generator in ETSI TS 101 369 V6.3.0.
