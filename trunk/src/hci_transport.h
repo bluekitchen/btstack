@@ -53,11 +53,14 @@ typedef struct {
     int    (*send_packet)(uint8_t packet_type, uint8_t *packet, int size);
     void   (*register_packet_handler)(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
     const char * (*get_transport_name)();
+    // custom extension for UART transport implementations
+    int    (*set_baudrate)(uint32_t baudrate);
 } hci_transport_t;
 
 typedef struct {
     const char *device_name;
-    uint32_t   baudrate;
+    uint32_t   baudrate_init; // initial baud rate
+    uint32_t   baudrate_main; // = 0: same as initial baudrate
     int   flowcontrol; // 
 } hci_uart_config_t;
 
