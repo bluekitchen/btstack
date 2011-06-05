@@ -33,12 +33,9 @@
  *  rfcomm.c
  */
 
-#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> // memcpy
-#include <strings.h>
-#include <pthread.h>
 
 #include <btstack/btstack.h>
 #include <btstack/hci_cmds.h>
