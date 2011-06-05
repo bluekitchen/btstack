@@ -113,8 +113,8 @@ static int    h4_open(void *transport_config){
         perror("init_serialport: Couldn't get term attributes");
         return -1;
     }
-    speed_t brate = hci_uart_config->baudrate; // let you override switch below if needed
-    switch(hci_uart_config->baudrate) {
+    speed_t brate = hci_uart_config->baudrate_init; // let you override switch below if needed
+    switch(hci_uart_config->baudrate_init) {
         case 57600:  brate=B57600;  break;
         case 115200: brate=B115200; break;
 #ifdef B230400
