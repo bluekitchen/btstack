@@ -201,8 +201,16 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					if (packet[2]) {
 						printf("RFCOMM channel open failed, status %u\n", packet[2]);
 					} else {
+                        // API Change: BTstack-0.3.50x uses
+                        // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
 						rfcomm_channel_id = READ_BT_16(packet, 10);
 						mtu = READ_BT_16(packet, 12);
+                        // next Cydia release will use SVN version of this
+                        // data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
+						// rfcomm_channel_id = READ_BT_16(packet, 12);
+						// mtu = READ_BT_16(packet, 14);
+                        // 
+                        
 						printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_channel_id, mtu);
 						uint8_t message[] = "Hello World from BTstack!\n";
 						// bt_send_rfcomm(rfcomm_channel_id, message, sizeof(message));
