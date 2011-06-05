@@ -37,9 +37,13 @@
 
 #pragma once
 
+#include "../config.h"
+
 #include <btstack/linked_list.h>
 
+#ifdef HAVE_TIME
 #include <sys/time.h>
+#endif
 
 #if defined __cplusplus
 extern "C" {
@@ -59,9 +63,19 @@ typedef struct data_source {
 
 typedef struct timer {
     linked_item_t item; 
+#ifdef HAVE_TIME
     struct timeval timeout;                  // <-- next timeout
+#endif
     void  (*process)(struct timer *ts);      // <-- do processing
 } timer_source_t;
+
+
+// set timer based on current time
+void run_loop_set_timer(timer_source_t *a, int timeout_in_ms);
+
+// add/remove timer_source
+void run_loop_add_timer(timer_source_t *timer); 
+int  run_loop_remove_timer(timer_source_t *timer);
 
 // init must be called before any other run_loop call
 void run_loop_init(RUN_LOOP_TYPE type);
@@ -70,12 +84,6 @@ void run_loop_init(RUN_LOOP_TYPE type);
 void run_loop_add_data_source(data_source_t *dataSource);
 int  run_loop_remove_data_source(data_source_t *dataSource);
 
-// set timer based on current time
-void run_loop_set_timer(timer_source_t *a, int timeout_in_ms);
-
-// add/remove timer_source
-void run_loop_add_timer(timer_source_t *timer); 
-int  run_loop_remove_timer(timer_source_t *timer);
 
 // execute configured run_loop
 void run_loop_execute();
