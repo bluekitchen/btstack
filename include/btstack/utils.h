@@ -39,14 +39,15 @@
 
 #pragma once
 
-#include <stdint.h>
-
-#include "../config.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
-	
+
+#include <stdint.h>
+
+#include "../config.h"	
+
 /**
  * @brief hci connection handle type
  */
