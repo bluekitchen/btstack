@@ -44,6 +44,7 @@
 #include "hci_dump.h"
 #include "hci.h"
 #include "hci_transport.h"
+#include "../config.h"
 
 #ifndef EMBEDDED
 #include <fcntl.h>        // open
@@ -97,9 +98,11 @@ void hci_dump_open(char *filename, hci_dump_format_t format){
 #endif
 }
 
+#ifndef EMBEDDED
 void hci_dump_set_max_packets(int packets){
     max_nr_packets = packets;
 }
+#endif
 
 void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {
 #ifndef EMBEDDED
