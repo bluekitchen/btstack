@@ -38,8 +38,12 @@
  */
 
 
+#include <stdio.h>
+#include <string.h>
+
 #include "debug.h"
 #include "hci.h"
+#include "hci_dump.h"
 #include "hci_transport.h"
 
 #include <btstack/hal_uart_dma.h>
@@ -180,7 +184,7 @@ static int h4_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     // log packet
     
 	// h4 packet type + actual packet
-	hal_uart_dma_send_byte(packet_type);
+	hal_uart_dma_send_block(&packet_type, 1);
     hal_uart_dma_send_block(packet, size);
     return 0;
 }
@@ -204,6 +208,11 @@ static int h4_process(struct data_source *ds) {
     return 0;
 }
 
+static int h4_set_baudrate(uint32_t baudrate){
+    printf("h4_set_baudrate - set baud %lu\n\r", baudrate);
+    return hal_uart_dma_set_baud(baudrate);
+}
+
 static const char * h4_get_transport_name(){
     return "H4_DMA";
 }
@@ -221,6 +230,7 @@ hci_transport_t * hci_transport_h4_dma_instance() {
         hci_transport_h4->transport.send_packet                   = h4_send_packet;
         hci_transport_h4->transport.register_packet_handler       = h4_register_packet_handler;
         hci_transport_h4->transport.get_transport_name            = h4_get_transport_name;
+        hci_transport_h4->transport.set_baudrate                  = h4_set_baudrate;
     }
     return (hci_transport_t *) hci_transport_h4;
 }
