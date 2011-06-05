@@ -254,7 +254,11 @@ fi
 if test "x$HAVE_SO_NOSIGPIPE" == xyes ; then
     echo "#define HAVE_SO_NOSIGPIPE" >> config.h
 fi
-    
+
+# often not present for embedded
+echo "#define HAVE_TIME" >> config.h
+echo "#define HAVE_BZERO" >> config.h
+
 AC_SUBST(IPHONE_IP)
 AC_SUBST(HAVE_LIBUSB)
 AC_SUBST(USE_LDID)
