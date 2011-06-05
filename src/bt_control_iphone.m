@@ -422,8 +422,8 @@ static int iphone_on (void *transport_config){
 #endif
     
     // if baud == 0 use system default
-    if (hci_uart_config->baudrate == 0) {
-        hci_uart_config->baudrate = transport_speed;
+    if (hci_uart_config->baudrate_init == 0) {
+        hci_uart_config->baudrate_init = transport_speed;
     }
     
 #ifdef USE_BLUETOOL
@@ -493,17 +493,17 @@ static int iphone_on (void *transport_config){
     }
     
     // advanced config - use custom baud rate
-    if (hci_uart_config->baudrate != transport_speed) {
+    if (hci_uart_config->baudrate_init != transport_speed) {
         FILE * outputFile = popen(bluetool, "r+");
         setvbuf(outputFile, NULL, _IONBF, 0);
         int output = fileno(outputFile);
         
         if (os4x) {
             // 4.x - send custom config
-            iphone_write_configscript(output, hci_uart_config->baudrate);
+            iphone_write_configscript(output, hci_uart_config->baudrate_init);
         } else {
             // 3.x - modify original script on the fly
-            iphone_write_initscript(output, hci_uart_config->baudrate);
+            iphone_write_initscript(output, hci_uart_config->baudrate_init);
         }
         
         // log output
@@ -679,15 +679,14 @@ void iphone_register_for_power_notifications(void (*cb)(POWER_NOTIFICATION_t eve
 
 // single instance
 bt_control_t bt_control_iphone = {
-    iphone_on,
-    iphone_off,
-    iphone_sleep,
-    iphone_wake,
-    iphone_valid,
-    iphone_name,
-    NULL,   // custom init sequence
+    .on     = iphone_on,
+    .off    = iphone_off,
+    .sleep  = iphone_sleep,
+    .wake   = iphone_wake,
+    .valid  = iphone_valid,
+    .name   = iphone_name,
 #ifdef IOKIT
-    iphone_register_for_power_notifications
+    .register_for_power_notifications = iphone_register_for_power_notifications
 #else
     NULL    // register_for_power_notifications
 #endif
