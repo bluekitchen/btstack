@@ -524,10 +524,10 @@ int main (int argc,  char * const * argv){
     
 #ifdef HAVE_TRANSPORT_H4
     transport = hci_transport_h4_instance();
-    config.device_name = UART_DEVICE;
-    config.baudrate    = UART_SPEED;
+    config.device_name   = UART_DEVICE;
+    config.baudrate_init = UART_SPEED;
+    config.baudrate_main = 0;
     config.flowcontrol = 1;
-    // config.flowcontrol = 0;  // external Bluetooth!
 #endif
 
 #ifdef HAVE_TRANSPORT_USB
