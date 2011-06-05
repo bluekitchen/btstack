@@ -44,6 +44,8 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 
+#include "debug.h"
+
 // max reserved ServiceRecordHandle
 #define maxReservedServiceRecordHandle 0xffff
 
@@ -126,6 +128,8 @@ uint32_t sdp_create_service_record_handle(){
 uint32_t sdp_register_service_internal(void *connection, service_record_item_t * record_item){
     // get user record handle
     uint32_t record_handle = record_item->service_record_handle;
+    // get actual record
+    uint8_t *record = record_item->service_record;
     
     // check for ServiceRecordHandle attribute, returns pointer or null
     uint8_t * req_record_handle = sdp_get_attribute_value_for_attribute_id(record, SDP_ServiceRecordHandle);
