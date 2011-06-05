@@ -55,6 +55,9 @@ typedef struct {
     int          (*valid)(void *config);  // <-- test if hardware can be supported
     const char * (*name)(void *config);   // <-- return hardware name
 
+    /** support for UART baud rate changes */
+    int          (*baudrate_cmd)(void * config, uint32_t baudrate, uint8_t *hci_cmd_buffer); 
+    
     /** support custom init sequences after RESET command
       * @return pointer do next command packet used during init
       */
