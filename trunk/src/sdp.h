@@ -33,6 +33,8 @@
 #include <stdint.h>
 #include <btstack/linked_list.h>
 
+#include "../config.h"
+
 typedef enum {
 	SDP_ErrorResponse = 1,
 	SDP_ServiceSearchRequest,
