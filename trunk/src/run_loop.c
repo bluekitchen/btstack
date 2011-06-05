@@ -146,6 +146,7 @@ void run_loop_init(RUN_LOOP_TYPE type){
 
 // set timer
 void run_loop_set_timer(timer_source_t *a, int timeout_in_ms){
+#ifdef HAVE_TIME
     gettimeofday(&a->timeout, NULL);
     a->timeout.tv_sec  +=  timeout_in_ms / 1000;
     a->timeout.tv_usec += (timeout_in_ms % 1000) * 1000;
@@ -153,8 +154,10 @@ void run_loop_set_timer(timer_source_t *a, int timeout_in_ms){
         a->timeout.tv_usec -= 1000000;
         a->timeout.tv_sec++;
     }
+#endif
 }
 
+#ifdef HAVE_TIME
 // compare timers - NULL is assumed to be before the Big Bang
 // pre: 0 <= tv_usec < 1000000
 int run_loop_timeval_compare(struct timeval *a, struct timeval *b){
@@ -188,4 +191,5 @@ int run_loop_timer_compare(timer_source_t *a, timer_source_t *b){
     if (!b) return 1;
     return run_loop_timeval_compare(&a->timeout, &b->timeout);
 }
+#endif
 
