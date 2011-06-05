@@ -38,7 +38,6 @@
 
 #include "hci.h"
 
-#include <unistd.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
@@ -73,6 +72,7 @@ hci_connection_t * connection_for_handle(hci_con_handle_t con_handle){
 }
 
 static void hci_connection_timeout_handler(timer_source_t *timer){
+#ifdef HAVE_TIME
     hci_connection_t * connection = linked_item_get_user(&timer->item);
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -85,10 +85,13 @@ static void hci_connection_timeout_handler(timer_source_t *timer){
         timer->timeout.tv_sec = connection->timestamp.tv_sec + HCI_CONNECTION_TIMEOUT_MS/1000;
     }
     run_loop_add_timer(timer);
+#endif
 }
 
 static void hci_connection_timestamp(hci_connection_t *connection){
+#ifdef HAVE_TIME
     gettimeofday(&connection->timestamp, NULL);
+#endif
 }
 
 /**
@@ -102,9 +105,11 @@ static hci_connection_t * create_connection_for_addr(bd_addr_t addr){
     BD_ADDR_COPY(conn->address, addr);
     conn->con_handle = 0xffff;
     conn->authentication_flags = 0;
+#ifdef HAVE_TIME
     linked_item_set_user(&conn->timeout.item, conn);
     conn->timeout.process = hci_connection_timeout_handler;
     hci_connection_timestamp(conn);
+#endif
     conn->acl_recombination_length = 0;
     conn->acl_recombination_pos = 0;
     conn->num_acl_packets_sent = 0;
@@ -313,7 +318,9 @@ static void hci_shutdown_connection(hci_connection_t *conn){
     // cancel all l2cap connections
     hci_emit_disconnection_complete(conn->con_handle, 0x16);    // terminated by local host
 
+#ifdef HAVE_TIME
     run_loop_remove_timer(&conn->timeout);
+#endif
     linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
     free( conn );
     
@@ -401,10 +408,11 @@ static void event_handler(uint8_t *packet, int size){
                     conn->state = OPEN;
                     conn->con_handle = READ_BT_16(packet, 3);
                     
+#ifdef HAVE_TIME
                     gettimeofday(&conn->timestamp, NULL);
                     run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
                     run_loop_add_timer(&conn->timeout);
-                    
+#endif                    
                     log_dbg("New connection: handle %u, ", conn->con_handle);
                     print_bd_addr( conn->address );
                     log_dbg("\n");
@@ -819,34 +827,48 @@ void hci_run(){
                 return;
             }
             switch (hci_stack.substate >> 1){
-                case 0:
+                case 0: // RESET
                     hci_send_cmd(&hci_reset);
+                    if (hci_stack.config == 0 || ((hci_uart_config_t *)hci_stack.config)->baudrate_main == 0){
+                        // skip baud change
+                        hci_stack.substate = 4; // >> 1 = 2
+                    }
                     break;
-                case 1:
+                case 1: // SEND BAUD CHANGE
+                    hci_stack.control->baudrate_cmd(hci_stack.config, ((hci_uart_config_t *)hci_stack.config)->baudrate_main, hci_stack.hci_cmd_buffer);
+                    hci_send_cmd_packet(hci_stack.hci_cmd_buffer, 3 + hci_stack.hci_cmd_buffer[2]);
+                    break;
+                case 2: // LOCAL BAUD CHANGE
+                    hci_stack.hci_transport->set_baudrate(((hci_uart_config_t *)hci_stack.config)->baudrate_main);
+                    hci_stack.substate += 2;
+                    // break missing here for fall through
+                    
+                case 3:
                     // custom initialization
                     if (hci_stack.control && hci_stack.control->next_command){
                         uint8_t * cmd = (*hci_stack.control->next_command)(hci_stack.config);
                         if (cmd) {
                             int size = 3 + cmd[2];
                             hci_stack.hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, cmd, size);
-                            hci_stack.substate = 0; // more init commands
+                            hci_stack.substate = 4; // more init commands
                             break;
                         }
+                        printf("hci_run: init script done\n\r");
                     }
                     // otherwise continue
 					hci_send_cmd(&hci_read_bd_addr);
 					break;
-				case 2:
+				case 4:
 					hci_send_cmd(&hci_read_buffer_size);
 					break;
-                case 3:
+                case 5:
                     // ca. 15 sec
                     hci_send_cmd(&hci_write_page_timeout, 0x6000);
                     break;
-				case 4:
+				case 6:
 					hci_send_cmd(&hci_write_scan_enable, 2 | hci_stack.discoverable); // page scan
 					break;
-                case 5:
+                case 7:
 #ifndef EMBEDDED
                 {
                     char hostname[30];
@@ -855,12 +877,12 @@ void hci_run(){
                     hci_send_cmd(&hci_write_local_name, hostname);
                     break;
                 }
-                case 6:
+                case 8:
 #ifdef USE_BLUETOOL
                     hci_send_cmd(&hci_write_class_of_device, 0x007a020c); // Smartphone
                     break;
                     
-                case 7:
+                case 9:
 #endif
 #endif
                     // done.
@@ -879,7 +901,7 @@ void hci_run(){
             // close all open connections
             connection =  (hci_connection_t *) hci_stack.connections;
             if (connection){
-                log_dbg("HCI_STATE_HALTING, connection %u, handle %u\n", (int) connection, connection->con_handle);
+                log_dbg("HCI_STATE_HALTING, connection %lu, handle %u\n", (uintptr_t) connection, connection->con_handle);
                 // send disconnect
                 hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
 
@@ -904,7 +926,7 @@ void hci_run(){
                     // close all open connections
                     connection =  (hci_connection_t *) hci_stack.connections;
                     if (connection){
-                        log_dbg("HCI_STATE_FALLING_ASLEEP, connection %u, handle %u\n", (int) connection, connection->con_handle);
+                        log_dbg("HCI_STATE_FALLING_ASLEEP, connection %lu, handle %u\n", (uintptr_t) connection, connection->con_handle);
                         // send disconnect
                         hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
                         
