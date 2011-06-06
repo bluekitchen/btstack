@@ -156,9 +156,6 @@ if test "x$target" = xiphone; then
             ;;
     esac	        
     
-    # treat warnings seriously
-    CPPFLAGS="$CPPFLAGS -Werror"
-    
     if test "x$UART_DEVICE" = xDEFAULT ; then
         UART_DEVICE=/dev/tty.bluetooth
     fi
@@ -195,11 +192,19 @@ else
     fi
 fi
 
+# treat warnings seriously
+CPPFLAGS="$CPPFLAGS -Werror -Wall -Wpointer-arith -Wstrict-prototypes"
+    
 AM_CONDITIONAL(USE_SPRINGBOARD, [test "x$USE_SPRINGBOARD" == "xyes"])
 AM_CONDITIONAL(USE_BLUETOOL,    [test "x$USE_BLUETOOL" == "xyes"])
 AM_CONDITIONAL(USE_PREFSBUNDLE, [test "x$USE_PREFSBUNDLE" == "xyes"])
 
 # summary
+
+# echo "CFLAGS:              $CFLAGS"
+echo "CPPFLAGS:            $CPPFLAGS"
+echo "LDFLAGS:             $LDFLAGS"
+
 if test "x$HCI_TRANSPORT" = xUSB; then
     echo "USB_PRODUCT_ID:      $USB_PRODUCT_ID"
     echo "USB_VENDOR_ID:       $USB_VENDOR_ID"
@@ -209,6 +214,7 @@ else
     echo "UART_DEVICE:         $UART_DEVICE"
     echo "UART_SPEED:          $UART_SPEED"
 fi
+
 
 echo "PLATFORM_SOURCES:    $PLATFORM_SOURCES"
 echo "USE_LAUNCHD:         $USE_LAUNCHD"
@@ -267,6 +273,8 @@ AC_SUBST(USB_SOURCES)
 AC_SUBST(PLATFORM_SOURCES)
 AC_SUBST(SPRINGBOARD_ACCESS_SOURCES)
 AC_SUBST(RUN_LOOP_SOURCES)
+AC_SUBST(CFLAGS)
+AC_SUBST(CPPFLAGS)
 AC_SUBST(BTSTACK_LIB_LDFLAGS)
 AC_SUBST(BTSTACK_LIB_EXTENSION)
 AC_OUTPUT(Makefile src/Makefile example/Makefile PatchBlueTool/Makefile SpringBoardAccess/Makefile)
