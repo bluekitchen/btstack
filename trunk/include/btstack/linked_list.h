@@ -55,7 +55,7 @@ void linked_list_add(linked_list_t * list, linked_item_t *item);        // <-- a
 void linked_list_add_tail(linked_list_t * list, linked_item_t *item);   // <-- add item to list as last element
 int  linked_list_remove(linked_list_t * list, linked_item_t *item);     // <-- remove item from list
 
-void test_linked_list();
+void test_linked_list(void);
 
 #if defined __cplusplus
 }

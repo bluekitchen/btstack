@@ -251,7 +251,7 @@ uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, 
 // set up HCI
 void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, remote_device_db_t * remote_device_db);
 void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
-void hci_close();
+void hci_close(void);
 
 // power and inquriy scan control
 int hci_power_control(HCI_POWER_MODE mode);
@@ -260,7 +260,7 @@ void hci_discoverable_control(uint8_t enable);
 /**
  * run the hci control loop once
  */
-void hci_run();
+void hci_run(void);
 
 // create and send hci command packets based on a template and a list of parameters
 int hci_send_cmd(const hci_cmd_t *cmd, ...);
@@ -273,20 +273,20 @@ int hci_send_acl_packet(uint8_t *packet, int size);
 
 hci_connection_t * connection_for_handle(hci_con_handle_t con_handle);
 uint8_t hci_number_outgoing_packets(hci_con_handle_t handle);
-uint8_t hci_number_free_acl_slots();
+uint8_t hci_number_free_acl_slots(void);
 int     hci_ready_to_send(hci_con_handle_t handle);
 int     hci_authentication_active_for_handle(hci_con_handle_t handle);
 void    hci_drop_link_key_for_bd_addr(bd_addr_t *addr);
-uint16_t hci_max_acl_data_packet_length();
+uint16_t hci_max_acl_data_packet_length(void);
 
 // 
-void hci_emit_state();
+void hci_emit_state(void);
 void hci_emit_connection_complete(hci_connection_t *conn);
 void hci_emit_l2cap_check_timeout(hci_connection_t *conn);
 void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason);
-void hci_emit_nr_connections_changed();
-void hci_emit_hci_open_failed();
-void hci_emit_btstack_version();
+void hci_emit_nr_connections_changed(void);
+void hci_emit_hci_open_failed(void);
+void hci_emit_btstack_version(void);
 void hci_emit_system_bluetooth_enabled(uint8_t enabled);
 void hci_emit_remote_name_cached(bd_addr_t *addr, device_name_t *name);
 void hci_emit_discoverable_enabled(uint8_t enabled);

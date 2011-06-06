@@ -48,7 +48,7 @@ typedef struct connection connection_t;
 /** 
  * create socket data_source for socket specified by launchd configuration
  */
-int socket_connection_create_launchd();
+int socket_connection_create_launchd(void);
 
 /** 
  * create socket for incoming tcp connections
@@ -78,7 +78,7 @@ int socket_connection_close_tcp(connection_t *connection);
 /**
  * create unix socket connection to BTdaemon 
  */
-connection_t * socket_connection_open_unix();
+connection_t * socket_connection_open_unix(void);
 
 /**
  * close unix connection to BTdaemon 
@@ -105,4 +105,4 @@ void socket_connection_send_packet_all(uint16_t type, uint16_t channel, uint8_t 
  * try to dispatch packet for all "parked" connections.
  * if dispatch is successful, a connection is added again to run loop
  */
-void socket_connection_retry_parked();
+void socket_connection_retry_parked(void);

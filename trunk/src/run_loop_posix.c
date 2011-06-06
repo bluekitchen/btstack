@@ -45,7 +45,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-void posix_dump_timer();
+void posix_dump_timer(void);
 
 // the run loop
 static linked_list_t data_sources;
@@ -99,7 +99,7 @@ int posix_remove_timer(timer_source_t *ts){
     return linked_list_remove(&timers, (linked_item_t *) ts);
 }
 
-void posix_dump_timer(){
+void posix_dump_timer(void){
     linked_item_t *it;
     int i = 0;
     for (it = (linked_item_t *) timers; it ; it = it->next){
@@ -111,7 +111,7 @@ void posix_dump_timer(){
 /**
  * Execute run_loop
  */
-void posix_execute() {
+void posix_execute(void) {
     fd_set descriptors;
     data_source_t *ds;
     timer_source_t       *ts;
@@ -184,7 +184,7 @@ void posix_execute() {
     }
 }
 
-void posix_init(){
+void posix_init(void){
     data_sources = NULL;
     timers = NULL;
 }
