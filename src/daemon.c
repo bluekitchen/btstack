@@ -121,7 +121,7 @@ static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
     log_dbg("Bluetooth status: %u\n", state);
 };
 
-static void daemon_no_connections_timeout(void){
+static void daemon_no_connections_timeout(struct timer *ts){
     if (clients_require_power_on()) return;    // false alarm :)
     log_dbg("No active client connection for %u seconds -> POWER OFF\n", DAEMON_NO_ACTIVE_CLIENT_TIMEOUT/1000);
     hci_power_control(HCI_POWER_OFF);
@@ -460,10 +460,12 @@ static void usage(const char * name) {
     log_dbg("    --tcp      use TCP server socket instead of local unix socket\n");
 }
 
+#ifdef USE_BLUETOOL 
 static void * run_loop_thread(void *context){
     run_loop_execute();
     return NULL;
 }
+#endif
 
 int main (int argc,  char * const * argv){
     

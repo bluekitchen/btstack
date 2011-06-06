@@ -191,4 +191,5 @@ int main (int argc, const char * argv[]){
 	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
 	run_loop_execute();
 	bt_close();
+	return 0;
 }

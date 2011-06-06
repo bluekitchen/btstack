@@ -124,12 +124,8 @@ void create_spp_service(uint8_t *service, int service_id){
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	bd_addr_t event_addr;
 	uint16_t mtu;
-	uint16_t psm;
-	uint8_t  rfcomm_channel_nr;
+	uint16_t rfcomm_channel_nr;
 	uint16_t rfcomm_channel_id;
-	uint8_t  credits;
-	static uint32_t packet_counter = 0;
-	static char packet_info[30]; // "packets: 1234567890"
 	
 	switch (packet_type) {
 			
@@ -213,7 +209,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
                         
 						printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_channel_id, mtu);
 						uint8_t message[] = "Hello World from BTstack!\n";
-						// bt_send_rfcomm(rfcomm_channel_id, message, sizeof(message));
+						bt_send_rfcomm(rfcomm_channel_id, message, sizeof(message));
 					}
 					break;
 					
