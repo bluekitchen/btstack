@@ -132,15 +132,15 @@ int  cocoa_remove_timer(timer_source_t * ts){
 	return 0;
 }
 
-void cocoa_init(){
+void cocoa_init(void){
 }
 
-void cocoa_execute()
+void cocoa_execute(void)
 {
     CFRunLoopRun();
 }
 
-void cocoa_dump_timer(){
+void cocoa_dump_timer(void){
     fprintf(stderr, "WARNING: run_loop_dump_timer not implemented yet!");
 	return;
 }

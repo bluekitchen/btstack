@@ -86,7 +86,7 @@ int  run_loop_remove_data_source(data_source_t *dataSource);
 
 
 // execute configured run_loop
-void run_loop_execute();
+void run_loop_execute(void);
 
 #if defined __cplusplus
 }

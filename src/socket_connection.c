@@ -172,7 +172,7 @@ void static socket_connection_emit_connection_closed(connection_t *connection){
     (*socket_connection_packet_callback)(connection, DAEMON_EVENT_PACKET, 0, (uint8_t *) &event, 1);
 }
 
-void static socket_connection_emit_nr_connections(){
+void static socket_connection_emit_nr_connections(void){
     linked_item_t *it;
     uint8_t nr_connections = 0;
     for (it = (linked_item_t *) connections; it != NULL ; it = it->next, nr_connections++);

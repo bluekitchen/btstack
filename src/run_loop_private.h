@@ -49,15 +49,15 @@ int run_loop_timer_compare(timer_source_t *a, timer_source_t *b);
 #endif
 
 // 
-void run_loop_timer_dump();
+void run_loop_timer_dump(void);
 
 // internal use only
 typedef struct {
-	void (*init)();
+	void (*init)(void);
 	void (*add_data_source)(data_source_t *dataSource);
 	int  (*remove_data_source)(data_source_t *dataSource);
 	void (*add_timer)(timer_source_t *timer);
 	int  (*remove_timer)(timer_source_t *timer); 
-	void (*execute)();
-	void (*dump_timer)();
+	void (*execute)(void);
+	void (*dump_timer)(void);
 } run_loop_t;

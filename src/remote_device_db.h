@@ -40,8 +40,8 @@
 typedef struct {
 
     // management
-    void (*open)();
-    void (*close)();
+    void (*open)(void);
+    void (*close)(void);
     
     // link key
     int  (*get_link_key)(bd_addr_t *bd_addr, link_key_t *link_key);
