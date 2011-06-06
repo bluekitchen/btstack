@@ -164,7 +164,7 @@ void hci_drop_link_key_for_bd_addr(bd_addr_t *addr){
 /**
  * count connections
  */
-static int nr_hci_connections(){
+static int nr_hci_connections(void){
     int count = 0;
     linked_item_t *it;
     for (it = (linked_item_t *) hci_stack.connections; it ; it = it->next, count++);
@@ -585,7 +585,7 @@ void hci_close(){
 // HCI_STATE_SLEEPING,    off/sleep   close
 // HCI_STATE_FALLING_ASLEEP  on       open
 
-static int hci_power_control_on(){
+static int hci_power_control_on(void){
     
     // power on
     int err = 0;
@@ -611,7 +611,7 @@ static int hci_power_control_on(){
     return 0;
 }
 
-static void hci_power_control_off(){
+static void hci_power_control_off(void){
     
     log_dbg("hci_power_control_off\n");
 
@@ -630,7 +630,7 @@ static void hci_power_control_off(){
     hci_stack.state = HCI_STATE_OFF;
 }
 
-static void hci_power_control_sleep(){
+static void hci_power_control_sleep(void){
     
     log_dbg("hci_power_control_sleep\n");
     
@@ -649,7 +649,7 @@ static void hci_power_control_sleep(){
     hci_stack.state = HCI_STATE_SLEEPING;
 }
 
-static int hci_power_control_wake(){
+static int hci_power_control_wake(void){
     
     log_dbg("hci_power_control_wake\n");
 

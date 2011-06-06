@@ -97,11 +97,11 @@ typedef struct {
 #pragma mark prototypes
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state);
 static client_state_t * client_for_connection(connection_t *connection);
-static int              clients_require_power_on();
-static int              clients_require_discoverable();
-static void              clients_clear_power_request();
-static void start_power_off_timer();
-static void stop_power_off_timer();
+static int              clients_require_power_on(void);
+static int              clients_require_discoverable(void);
+static void              clients_clear_power_request(void);
+static void start_power_off_timer(void);
+static void stop_power_off_timer(void);
 
 #pragma mark globals
 static hci_transport_t * transport;
@@ -121,7 +121,7 @@ static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
     log_dbg("Bluetooth status: %u\n", state);
 };
 
-static void daemon_no_connections_timeout(){
+static void daemon_no_connections_timeout(void){
     if (clients_require_power_on()) return;    // false alarm :)
     log_dbg("No active client connection for %u seconds -> POWER OFF\n", DAEMON_NO_ACTIVE_CLIENT_TIMEOUT/1000);
     hci_power_control(HCI_POWER_OFF);
@@ -364,7 +364,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
 // local cache used to manage UI status
 static HCI_STATE hci_state = HCI_STATE_OFF;
 static int num_connections = 0;
-static void update_ui_status(){
+static void update_ui_status(void){
     if (hci_state != HCI_STATE_WORKING) {
         bluetooth_status_handler(BLUETOOTH_OFF);
     } else {
@@ -611,7 +611,7 @@ int main (int argc,  char * const * argv){
 
 #define USE_POWER_OFF_TIMER
 
-static void stop_power_off_timer(){
+static void stop_power_off_timer(void){
 #ifdef USE_POWER_OFF_TIMER
     if (timeout_active) {
         run_loop_remove_timer(&timeout);
@@ -620,7 +620,7 @@ static void stop_power_off_timer(){
 #endif
 }
 
-static void start_power_off_timer(){
+static void start_power_off_timer(void){
 #ifdef USE_POWER_OFF_TIMER    
     stop_power_off_timer();
     run_loop_set_timer(&timeout, DAEMON_NO_ACTIVE_CLIENT_TIMEOUT);
@@ -645,7 +645,7 @@ static client_state_t * client_for_connection(connection_t *connection) {
     return NULL;
 }
 
-static void clients_clear_power_request(){
+static void clients_clear_power_request(void){
     linked_item_t *it;
     for (it = (linked_item_t *) clients; it ; it = it->next){
         client_state_t * client_state = (client_state_t *) it;
@@ -653,7 +653,7 @@ static void clients_clear_power_request(){
     }
 }
 
-static int clients_require_power_on(){
+static int clients_require_power_on(void){
 
     if (global_enable) return 1;
 
@@ -667,7 +667,7 @@ static int clients_require_power_on(){
     return 0;
 }
 
-static int clients_require_discoverable(){
+static int clients_require_discoverable(void){
     linked_item_t *it;
     for (it = (linked_item_t *) clients; it ; it = it->next){
         client_state_t * client_state = (client_state_t *) it;

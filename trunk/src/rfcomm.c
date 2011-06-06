@@ -261,7 +261,7 @@ static int rfcomm_multiplexer_has_channels(rfcomm_multiplexer_t * multiplexer){
     return 0;
 }
 
-static void rfcomm_dump_channels(){
+static void rfcomm_dump_channels(void){
     linked_item_t * it;
     int channels = 0;
     for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
@@ -544,7 +544,7 @@ static void rfcomm_emit_service_registered(void *connection, uint8_t status, uin
 	(*app_packet_handler)(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
-static void rfcomm_hand_out_credits(){
+static void rfcomm_hand_out_credits(void){
     linked_item_t * it;
     for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
         rfcomm_channel_t * channel = (rfcomm_channel_t *) it;
@@ -1250,7 +1250,7 @@ void rfcomm_close_connection(void *connection){
 
 #pragma mark RFCOMM BTstack API
 
-void rfcomm_init(){
+void rfcomm_init(void){
     rfcomm_client_cid_generator = 0;
     rfcomm_multiplexers = NULL;
     rfcomm_services     = NULL;

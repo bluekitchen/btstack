@@ -38,7 +38,7 @@
 
 #include <stdint.h>
 
-void rfcomm_init();
+void rfcomm_init(void);
 
 // register packet handler
 void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
