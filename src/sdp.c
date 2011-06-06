@@ -109,7 +109,7 @@ service_record_item_t * sdp_get_record_for_handle(uint32_t handle){
 }
 
 // get next free, unregistered service record handle
-uint32_t sdp_create_service_record_handle(){
+uint32_t sdp_create_service_record_handle(void){
     uint32_t handle = 0;
     do {
         handle = sdp_next_service_record_handle++;

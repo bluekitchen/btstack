@@ -192,7 +192,7 @@ static int    h4_open(void *transport_config){
     return 0;
 }
 
-static int    h4_close(){
+static int    h4_close(void){
     // first remove run loop handler
 	run_loop_remove_data_source(hci_transport_h4->ds);
     
@@ -231,7 +231,7 @@ static void   h4_register_packet_handler(void (*handler)(uint8_t packet_type, ui
     packet_handler = handler;
 }
 
-static void   h4_deliver_packet(){
+static void   h4_deliver_packet(void){
     if (read_pos < 3) return; // sanity check
     hci_dump_packet( hci_packet[0], 1, &hci_packet[1], read_pos-1);
     packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
@@ -241,7 +241,7 @@ static void   h4_deliver_packet(){
     bytes_to_read = 1;
 }
 
-static void h4_statemachine(){
+static void h4_statemachine(void){
     switch (h4_state) {
             
         case H4_W4_PACKET_TYPE:
@@ -359,7 +359,7 @@ static void *h4_reader(void *context){
 }
 #endif
 
-static const char * h4_get_transport_name(){
+static const char * h4_get_transport_name(void){
     return "H4";
 }
 

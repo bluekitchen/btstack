@@ -149,7 +149,7 @@ void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
     l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-void l2cap_hand_out_credits(){
+void l2cap_hand_out_credits(void){
     linked_item_t *it;
     for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
         if (!hci_number_free_acl_slots()) return;

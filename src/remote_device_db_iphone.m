@@ -52,7 +52,7 @@ static NSMutableDictionary *remote_devices  = nil;
 static NSMutableDictionary *rfcomm_services = nil;
 
 // Device info
-static void db_open(){
+static void db_open(void){
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
     
     // NSUserDefaults didn't work
@@ -89,7 +89,7 @@ static void db_open(){
     [pool release];
 }
 
-static void db_synchronize(){
+static void db_synchronize(void){
     log_dbg("stored prefs for %u devices\n", (unsigned int) [remote_devices count]);
     
     // 3 different ways
@@ -106,7 +106,7 @@ static void db_synchronize(){
     // [defaults synchronize];
 }
 
-static void db_close(){ 
+static void db_close(void){ 
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 
     db_synchronize();
@@ -197,7 +197,7 @@ static int  get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
 
 #pragma mark PERSISTENT RFCOMM CHANNEL ALLOCATION
 
-static int firstFreeChannelNr(){
+static int firstFreeChannelNr(void){
     BOOL channelUsed[MAX_RFCOMM_CHANNEL_NR+1];
     int i;
     for (i=0; i<=MAX_RFCOMM_CHANNEL_NR ; i++) channelUsed[i] = NO;
@@ -213,7 +213,7 @@ static int firstFreeChannelNr(){
     return -1;
 }
 
-static void deleteLeastUsed(){
+static void deleteLeastUsed(void){
     NSString * leastUsedName = nil;
     NSDate *   leastUsedDate = nil;
     for (NSString * serviceName in [rfcomm_services allKeys]){

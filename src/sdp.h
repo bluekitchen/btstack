@@ -60,7 +60,7 @@ typedef struct {
 } service_record_item_t;
 
 
-void sdp_init();
+void sdp_init(void);
 
 void sdp_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type,
                                                  uint16_t channel, uint8_t *packet, uint16_t size));
@@ -86,5 +86,5 @@ void sdp_unregister_service_internal(void *connection, uint32_t service_record_h
 void sdp_unregister_services_for_connection(void *connection);
 
 //
-void sdp_test();
+void sdp_test(void);
 
