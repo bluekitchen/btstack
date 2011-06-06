@@ -3,7 +3,7 @@ LDFLAGS  = @LDFLAGS@ -lBTstack -L../src
 CPPFLAGS = @CPPFLAGS@ -I../include
 prefix = @prefix@
 
-all: test mitm rfcomm-cat rfcomm-echo inquiry l2cap-server l2cap-throughput
+all: test rfcomm-cat rfcomm-echo inquiry l2cap-server l2cap-throughput
 
 test: test.c
 	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
@@ -14,10 +14,6 @@ l2cap-server: l2cap-server.c
 	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
 l2cap-throughput: l2cap-throughput.c
-	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
-	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
-
-mitm: mitm.c
 	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
 	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
