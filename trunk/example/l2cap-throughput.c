@@ -53,11 +53,11 @@ uint32_t counter = 0;
 
 timer_source_t timer;
 
-void update_packet(){
+void update_packet(void){
     net_store_32( packet, 0, counter++);
 }
 
-void prepare_packet(){
+void prepare_packet(void){
     int i;
     counter = 0;
     net_store_32( packet, 0, 0);
@@ -223,4 +223,5 @@ int main (int argc, const char * argv[]){
 	
 	run_loop_execute();
 	bt_close();
+	return 0;
 }

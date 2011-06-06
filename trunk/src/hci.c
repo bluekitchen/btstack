@@ -42,6 +42,10 @@
 #include <string.h>
 #include <stdio.h>
 
+#ifndef EMBEDDED
+#include <unistd.h> // gethostbyname
+#endif
+
 #include "debug.h"
 #include "hci_dump.h"
 

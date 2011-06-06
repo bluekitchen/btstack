@@ -67,7 +67,7 @@ int getDeviceIndexForAddress( bd_addr_t addr){
 	return -1;
 }
 
-void next(){
+void next(void){
 	int i;
 	int found = 0;
 	
@@ -226,4 +226,5 @@ int main (int argc, const char * argv[]){
 	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
 	run_loop_execute();
 	bt_close();
+	return 0;
 }

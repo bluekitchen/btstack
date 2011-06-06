@@ -192,7 +192,7 @@ static int    h4_open(void *transport_config){
     return 0;
 }
 
-static int    h4_close(void){
+static int    h4_close(void *transport_config){
     // first remove run loop handler
 	run_loop_remove_data_source(hci_transport_h4->ds);
     
