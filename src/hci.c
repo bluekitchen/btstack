@@ -492,6 +492,12 @@ static void event_handler(uint8_t *packet, int size){
             }
             break;
             
+        case HCI_EVENT_HARDWARE_ERROR:
+            if(hci_stack.control->hw_error){
+                (*hci_stack.control->hw_error)();
+            }
+            break;
+
         default:
             break;
     }
