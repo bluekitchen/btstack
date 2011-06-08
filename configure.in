@@ -177,6 +177,9 @@ if test "x$target" = xiphone; then
     fi
         
 else
+    # cannot compile for iOS with strict-prototypes because of warnings in SDK 2.0
+    CPPFLAGS="$CPPFLAGS -Wstrict-prototypes"
+
     case "$host_os" in
         darwin*)
             # on Mac, create universal - helps to build 32-bit iPhone Simulator apps on 64-bit machines
@@ -193,7 +196,7 @@ else
 fi
 
 # treat warnings seriously
-CPPFLAGS="$CPPFLAGS -Werror -Wall -Wpointer-arith -Wstrict-prototypes"
+CPPFLAGS="$CPPFLAGS -Werror -Wall -Wpointer-arith"
     
 AM_CONDITIONAL(USE_SPRINGBOARD, [test "x$USE_SPRINGBOARD" == "xyes"])
 AM_CONDITIONAL(USE_BLUETOOL,    [test "x$USE_BLUETOOL" == "xyes"])
