@@ -65,4 +65,5 @@ typedef struct {
 
     void         (*register_for_power_notifications)(void (*cb)(POWER_NOTIFICATION_t event));
 
+    void         (*hw_error)(void); 
 } bt_control_t;
