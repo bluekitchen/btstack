@@ -128,7 +128,7 @@ extern "C" {
 
 // L2CAP EVENTS
 	
-// data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16) 
+// data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16), local_mtu(16), remote_mtu(16) 
 #define L2CAP_EVENT_CHANNEL_OPENED                         0x70
 
 // data: event (8), len(8), channel (16)
