@@ -75,7 +75,6 @@
 #define BT_RFCOMM_TEST_RSP   0x21
 
 #define RFCOMM_L2CAP_MTU 1021
-#define RFCOMM_DEFAULT_FRAME_SIZE    950
 #define RFCOMM_MULIPLEXER_TIMEOUT_MS 60000
 
 // FCS calc 
@@ -212,6 +211,9 @@ static void rfcomm_multiplexer_initialize(rfcomm_multiplexer_t *multiplexer){
     bzero(multiplexer, sizeof(rfcomm_multiplexer_t));
     multiplexer->state = RFCOMM_MULTIPLEXER_CLOSED;
     multiplexer->l2cap_credits = 0;
+    // - Max RFCOMM header has 6 bytes (P/F bit is set, payload length >= 128)
+    // - therefore, we set RFCOMM max frame size <= Local L2CAP MTU - 6
+    multiplexer->max_frame_size = RFCOMM_L2CAP_MTU - 6; // max
 }
 
 static rfcomm_multiplexer_t * rfcomm_multiplexer_create_for_addr(bd_addr_t *addr){
