@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2010 by Matthias Ringwald
- *
+ * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -152,6 +152,8 @@ typedef struct {
     // hack to deal with authentication failure only observed by remote side
     uint8_t   at_least_one_connection;
     
+    uint16_t max_frame_size;
+
 } rfcomm_multiplexer_t;
 
 // info regarding an actual coneection
@@ -281,7 +283,8 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
     channel->multiplexer      = multiplexer;
     channel->service          = service;
     channel->rfcomm_cid       = rfcomm_client_cid_generator++;
-    channel->max_frame_size   = RFCOMM_DEFAULT_FRAME_SIZE; // us
+    channel->max_frame_size   = multiplexer->max_frame_size;
+
     channel->credits_incoming = 0;
     channel->credits_outgoing = 0;
     channel->packets_granted  = 0;
@@ -731,10 +734,13 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             }
             log_dbg("L2CAP_EVENT_CHANNEL_OPENED: create incoming multiplexer for channel %02x\n", l2cap_cid);
             // create and inititialize new multiplexer instance (incoming)
+            // - Max RFCOMM header has 6 bytes (P/F bit is set, payload length >= 128)
+            // - therefore, we set RFCOMM max frame size <= Local L2CAP MTU - 6
             multiplexer = rfcomm_multiplexer_create_for_addr(&event_addr);
             multiplexer->con_handle = con_handle;
             multiplexer->l2cap_cid = l2cap_cid;
             multiplexer->state = RFCOMM_MULTIPLEXER_W4_SABM_0;
+            multiplexer->max_frame_size = READ_BT_16(packet, 17) - 6;
             return 1;
             
             // l2cap disconnect -> state = RFCOMM_MULTIPLEXER_CLOSED;
@@ -1034,6 +1040,9 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             // priority of client request
                             rfChannel->pn_priority = packet[payload_offset+4];
                             // negotiate max frame size
+                            if (rfChannel->max_frame_size > multiplexer->max_frame_size) {
+                                rfChannel->max_frame_size = multiplexer->max_frame_size;
+                            }
                             if (rfChannel->max_frame_size > max_frame_size) {
                                 rfChannel->max_frame_size = max_frame_size;
                             }
@@ -1246,9 +1255,9 @@ void rfcomm_close_connection(void *connection){
             it = it->next;
         }
     }
-}
-
 #pragma mark RFCOMM BTstack API
+
+//#pragma mark RFCOMM BTstack API
 
 void rfcomm_init(void){
     rfcomm_client_cid_generator = 0;
