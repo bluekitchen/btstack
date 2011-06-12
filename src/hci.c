@@ -351,6 +351,7 @@ static void event_handler(uint8_t *packet, int size){
             if (COMMAND_COMPLETE_EVENT(packet, hci_read_buffer_size)){
                 // from offset 5
                 // status 
+                // "The HC_ACL_Data_Packet_Length return parameter will be used to determine the size of the L2CAP segments contained in ACL Data Packets"
                 hci_stack.acl_data_packet_length = READ_BT_16(packet, 6);
                 // ignore: SCO data packet len (8)
                 hci_stack.total_num_acl_packets  = packet[9];
