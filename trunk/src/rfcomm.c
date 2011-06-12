@@ -1255,9 +1255,9 @@ void rfcomm_close_connection(void *connection){
             it = it->next;
         }
     }
-#pragma mark RFCOMM BTstack API
+}
 
-//#pragma mark RFCOMM BTstack API
+#pragma mark RFCOMM BTstack API
 
 void rfcomm_init(void){
     rfcomm_client_cid_generator = 0;
