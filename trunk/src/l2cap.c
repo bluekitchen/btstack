@@ -100,7 +100,7 @@ void l2cap_dispatch(l2cap_channel_t *channel, uint8_t type, uint8_t * data, uint
 }
 
 void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
-    uint8_t event[17];
+    uint8_t event[21];
     event[0] = L2CAP_EVENT_CHANNEL_OPENED;
     event[1] = sizeof(event) - 2;
     event[2] = status;
