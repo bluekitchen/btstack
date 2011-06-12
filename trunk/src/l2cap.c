@@ -109,6 +109,8 @@ void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status) {
     bt_store_16(event, 11, channel->psm);
     bt_store_16(event, 13, channel->local_cid);
     bt_store_16(event, 15, channel->remote_cid);
+    bt_store_16(event, 17, channel->local_mtu);
+    bt_store_16(event, 19, channel->remote_mtu); 
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
