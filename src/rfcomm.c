@@ -1283,28 +1283,47 @@ int rfcomm_send_internal(uint8_t rfcomm_cid, uint8_t *data, uint16_t len){
     }
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     int result = 0;
-    if (channel){
-        log_dbg("rfcomm_send_internal: ... outgoing credits %u\n", channel->credits_outgoing);
-
-        if (!channel->credits_outgoing){
-            log_err("rfcomm_send_internal cid %u, no rfcomm outgoing credits!\n", rfcomm_cid);
-            return -1;
-        }
-        channel->credits_outgoing--;
-        
-        if (channel->packets_granted > 0){
-            --channel->packets_granted;
-        } else {
-            log_err("rfcomm_send_internal cid %u, no rfcomm credits granted!\n", rfcomm_cid);
-        }
-        if (channel->multiplexer->l2cap_credits){
-            channel->multiplexer->l2cap_credits--;
-        } else {
-            log_err("rfcomm_send_internal cid %u, no l2cap credits!\n", rfcomm_cid);
-        }
-        result = rfcomm_send_uih_data(channel->multiplexer, channel->dlci, data, len);
+    if (!channel){
+        log_err("rfcomm_send_internal cid %u doesn't exist!\n", rfcomm_cid);
+        return 0;
     }
+    
+    log_dbg("rfcomm_send_internal: ... outgoing credits %u\n", channel->credits_outgoing);
+
+    if (!channel->credits_outgoing){
+        log_err("rfcomm_send_internal cid %u, no rfcomm outgoing credits!\n", rfcomm_cid);
+        return -1;
+    }
+    
+    // TODO: this code should be only executed after a successful send. However,
+    //        if moving below rfcomm_send_uih_data Celeste stops working
+    //        rfcomm_send_internally emits l2cap credits. by decrementing it first
+    //        (and failing), we get a new credit
+    //
+    if (channel->multiplexer->l2cap_credits){
+        channel->multiplexer->l2cap_credits--;
+    } else {
+        log_err("rfcomm_send_internal cid %u, no l2cap credits!\n", rfcomm_cid);
+    }
+    //
+    
+    result = rfcomm_send_uih_data(channel->multiplexer, channel->dlci, data, len);
+    
+    if (result != 0) {
+        log_dbg("rfcomm_send_internal: error %d\n", result);
+        return result;
+    }
+    
+    channel->credits_outgoing--;
+
+    if (channel->packets_granted > 0){
+        --channel->packets_granted;
+    } else {
+        log_err("rfcomm_send_internal cid %u, no rfcomm credits granted!\n", rfcomm_cid);
+    }
+    
     rfcomm_hand_out_credits();
+    
     return result;
 }
 
