@@ -82,7 +82,6 @@ typedef struct {
     uint16_t  psm;
 
     uint8_t   packets_granted;    // number of L2CAP/ACL packets client is allowed to send
-    uint8_t   packets_outgoing;   // number of L2CAP/ACL packets send to BT module
     
     // uint16_t flush_timeout_incoming;
     // uint16_t flush_timeout_outgoing;

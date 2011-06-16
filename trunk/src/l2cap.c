@@ -203,12 +203,10 @@ int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
     // find channel for local_cid, construct l2cap packet and send
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (channel) {
-        // track sending
-        ++channel->packets_outgoing;
         if (channel->packets_granted > 0){
             --channel->packets_granted;
-            // log_dbg("l2cap_send_internal cid %u, 1 credit used, credits left %u; outgoing count %u\n",
-            //        local_cid, channel->packets_granted, channel->packets_outgoing);
+            // log_dbg("l2cap_send_internal cid %u, 1 credit used, credits left %u;\n",
+            //        local_cid, channel->packets_granted);
         } else {
             log_err("l2cap_send_internal cid %u, no credits!\n", local_cid);
         }
@@ -258,7 +256,6 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     
     // flow control
     chan->packets_granted = 0;
-    chan->packets_outgoing = 0;
     
     // set initial state
     chan->state = L2CAP_STATE_CLOSED;
@@ -322,7 +319,6 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
     bd_addr_t address;
     hci_con_handle_t handle;
     linked_item_t *it;
-    int i;
     
     switch(packet[0]){
             
@@ -367,35 +363,6 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
             break;
             
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
-            for (i=0; i<packet[2];i++){
-                handle = READ_BT_16(packet, 3 + 2*i);
-                uint16_t num_packets = READ_BT_16(packet, 3 + packet[2]*2 + 2*i);
-                while (num_packets) {
-                    
-                    // find channels with max nr of pending outgoing packets
-                    l2cap_channel_t * fullest_channel = NULL;
-                    int max_nr_pending = 0;
-                    for (it = (linked_item_t *) &l2cap_channels; it->next ; it = it->next){
-                        l2cap_channel_t * channel = (l2cap_channel_t *) it->next;
-                        if (channel->packets_outgoing > max_nr_pending){
-                            fullest_channel = channel;
-                            max_nr_pending  = channel->packets_outgoing;
-                        }
-                    }
-                    
-                    // decrease packets
-                    if (fullest_channel) {
-                        fullest_channel->packets_outgoing--;
-                        // log_dbg("hci_number_completed_packet (l2cap) for cid %u, outgoing count %u\n",
-                        //        fullest_channel->local_cid, fullest_channel->packets_outgoing);
-                    } else {
-                        log_err("hci_number_completed_packet but no outgoing packet in records\n");
-                    }
-                    
-                    // handled!
-                    num_packets--;
-                }
-            }
             l2cap_hand_out_credits();
             break;
             
