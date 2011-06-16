@@ -184,6 +184,51 @@ void posix_execute(void) {
     }
 }
 
+// set timer
+void run_loop_set_timer(timer_source_t *a, int timeout_in_ms){
+    gettimeofday(&a->timeout, NULL);
+    a->timeout.tv_sec  +=  timeout_in_ms / 1000;
+    a->timeout.tv_usec += (timeout_in_ms % 1000) * 1000;
+    if (a->timeout.tv_usec  > 1000000) {
+        a->timeout.tv_usec -= 1000000;
+        a->timeout.tv_sec++;
+    }
+}
+
+// compare timers - NULL is assumed to be before the Big Bang
+// pre: 0 <= tv_usec < 1000000
+int run_loop_timeval_compare(struct timeval *a, struct timeval *b){
+    if (!a && !b) return 0;
+    if (!a) return -1;
+    if (!b) return 1;
+    
+    if (a->tv_sec < b->tv_sec) {
+        return -1;
+    }
+    if (a->tv_sec > b->tv_sec) {
+        return 1;
+    }
+    
+    if (a->tv_usec < b->tv_usec) {
+        return -1;
+    }
+    if (a->tv_usec > b->tv_usec) {
+        return 1;
+    }
+    
+    return 0;
+    
+}
+
+// compare timers - NULL is assumed to be before the Big Bang
+// pre: 0 <= tv_usec < 1000000
+int run_loop_timer_compare(timer_source_t *a, timer_source_t *b){
+    if (!a && !b) return 0;
+    if (!a) return -1;
+    if (!b) return 1;
+    return run_loop_timeval_compare(&a->timeout, &b->timeout);
+}
+
 void posix_init(void){
     data_sources = NULL;
     timers = NULL;

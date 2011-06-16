@@ -42,17 +42,20 @@
 
 #include <btstack/run_loop.h>
 #include <btstack/linked_list.h>
+#include <btstack/hal_tick.h>
 
 #include "run_loop_private.h"
 #include "debug.h"
 
 #include <stddef.h> // NULL
 
-// #define HAVE_TIME
-
 // the run loop
 static linked_list_t data_sources;
+
+#ifdef EMBEDDED
 static linked_list_t timers;
+static uint32_t system_ticks;
+#endif
 
 /**
  * Add data_source to run_loop
@@ -72,10 +75,10 @@ int embedded_remove_data_source(data_source_t *ds){
  * Add timer to run_loop (keep list sorted)
  */
 void embedded_add_timer(timer_source_t *ts){
-#ifdef HAVE_TIME
+#ifdef EMBEDDED
     linked_item_t *it;
     for (it = (linked_item_t *) &timers; it->next ; it = it->next){
-        if (run_loop_timer_compare( (timer_source_t *) it->next, ts) >= 0) {
+        if (ts->timeout < ((timer_source_t *) it->next)->timeout) {
             break;
         }
     }
@@ -90,14 +93,16 @@ void embedded_add_timer(timer_source_t *ts){
  * Remove timer from run loop
  */
 int embedded_remove_timer(timer_source_t *ts){
-#ifdef HAVE_TIME
+#ifdef EMBEDDED    
     // log_dbg("Removed timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
     return linked_list_remove(&timers, (linked_item_t *) ts);
+#else
+    return 0;
 #endif
 }
 
-void embedded_dump_timer(void){
-#ifndef EMBEDDED
+void embedded_dump_timer(){
+#if 0
     linked_item_t *it;
     int i = 0;
     for (it = (linked_item_t *) timers; it ; it = it->next){
@@ -110,13 +115,9 @@ void embedded_dump_timer(void){
 /**
  * Execute run_loop
  */
-void embedded_execute(void) {
+void embedded_execute() {
     data_source_t *ds;
-#ifdef HAVE_TIME
-    timer_source_t       *ts;
-    struct timeval current_tv;
-#endif
-    
+
     while (1) {
 
         // process data sources
@@ -126,14 +127,11 @@ void embedded_execute(void) {
             ds->process(ds);
         }
         
-#ifdef HAVE_TIME
+#ifdef EMBEDDED
         // process timers
-        // pre: 0 <= tv_usec < 1000000
         while (timers) {
-            gettimeofday(&current_tv, NULL);
-            ts = (timer_source_t *) timers;
-            if (ts->timeout.tv_sec  > current_tv.tv_sec) break;
-            if (ts->timeout.tv_sec == current_tv.tv_sec && ts->timeout.tv_usec > current_tv.tv_usec) break;
+            timer_source_t *ts = (timer_source_t *) timers;
+            if (ts->timeout > system_ticks) break;
             run_loop_remove_timer(ts);
             ts->process(ts);
         }
@@ -142,9 +140,29 @@ void embedded_execute(void) {
     }
 }
 
-void embedded_init(void){
+#ifdef EMBEDDED
+static void embedded_tick_handler(void){
+    system_ticks++;
+}
+
+// set timer
+void run_loop_set_timer(timer_source_t *ts, int timeout_in_ms){
+    int ticks = timeout_in_ms / hal_tick_get_tick_period_in_ms();
+    if (ticks == 0) ticks++;
+    ts->timeout = system_ticks + ticks; 
+}
+#endif
+
+void embedded_init(){
+
     data_sources = NULL;
+
+#ifdef EMBEDDED
     timers = NULL;
+    system_ticks = 0;
+    hal_tick_init();
+    hal_tick_set_handler(&embedded_tick_handler);
+#endif
 }
 
 const run_loop_t run_loop_embedded = {

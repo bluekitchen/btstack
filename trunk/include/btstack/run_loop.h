@@ -41,6 +41,8 @@
 
 #include <btstack/linked_list.h>
 
+#include <stdint.h>
+
 #ifdef HAVE_TIME
 #include <sys/time.h>
 #endif
@@ -65,6 +67,9 @@ typedef struct timer {
     linked_item_t item; 
 #ifdef HAVE_TIME
     struct timeval timeout;                  // <-- next timeout
+#endif
+#ifdef EMBEDDED
+    uint32_t timeout;                       // timeout in system ticks
 #endif
     void  (*process)(struct timer *ts);      // <-- do processing
 } timer_source_t;
