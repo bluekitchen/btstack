@@ -1444,6 +1444,8 @@ void rfcomm_decline_connection_internal(uint16_t rfcomm_cid){
         case RFCOMM_CHANNEL_W4_CLIENT_AFTER_PN_CMD:
             log_dbg("-> Sending DM_PF for #%u\n", channel->dlci);
             rfcomm_send_dm_pf(channel->multiplexer, channel->dlci);
+            // remove from list
+            linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
             // free channel
             free(channel);
             rfcomm_multiplexer_prepare_idle_timer(multiplexer);
