@@ -863,30 +863,30 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     const uint8_t payload_offset = 3 + length_offset + credit_offset;
 
     rfcomm_channel_t * rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
-    if (rfChannel) {
-        if (packet[1] == BT_RFCOMM_UIH_PF) {
-            // handle new credits
-            uint16_t new_credits = packet[3+length_offset];
-            rfChannel->credits_outgoing += new_credits;
-        
-            if (rfChannel->state == RFCOMM_CHANNEL_W4_CREDITS){
-                log_dbg("BT_RFCOMM_UIH_PF for #%u, Got %u credits => can send!\n", frame_dlci, new_credits);
-                rfcomm_channel_opened(rfChannel);
-            }
+    if (!rfChannel) return;
+    
+    if (packet[1] == BT_RFCOMM_UIH_PF) {
+        // handle new credits
+        uint16_t new_credits = packet[3+length_offset];
+        rfChannel->credits_outgoing += new_credits;
+    
+        if (rfChannel->state == RFCOMM_CHANNEL_W4_CREDITS){
+            log_dbg("BT_RFCOMM_UIH_PF for #%u, Got %u credits => can send!\n", frame_dlci, new_credits);
+            rfcomm_channel_opened(rfChannel);
         }
-        if (rfChannel->credits_incoming > 0){
-            rfChannel->credits_incoming--;
-        }
-        rfcomm_channel_provide_credits(rfChannel);
-        
-        if (size > payload_offset - 1){ // don't send empty frames, -1 for header checksum at end
-            // log_dbg( "RFCOMM data UIH_PF, size %u, channel %x\n", size-payload_offset, (int) rfChannel->connection);
-            (*app_packet_handler)(rfChannel->connection, RFCOMM_DATA_PACKET, rfChannel->rfcomm_cid,
-                                  &packet[payload_offset], size-payload_offset-1);
-        }
-        // we received new RFCOMM credits, hand them out if possible
-        rfcomm_hand_out_credits();
     }
+    if (rfChannel->credits_incoming > 0){
+        rfChannel->credits_incoming--;
+    }
+    rfcomm_channel_provide_credits(rfChannel);
+    
+    if (size - 1 > payload_offset){ // don't send empty frames, -1 for header checksum at end
+        log_dbg( "RFCOMM data UIH_PF, size %u, channel %x\n", size-payload_offset-1, (int) rfChannel->connection);
+        (*app_packet_handler)(rfChannel->connection, RFCOMM_DATA_PACKET, rfChannel->rfcomm_cid,
+                              &packet[payload_offset], size-payload_offset-1);
+    }
+    // we received new RFCOMM credits, hand them out if possible
+    rfcomm_hand_out_credits();
 }
 
 void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -1288,7 +1288,7 @@ int rfcomm_send_internal(uint8_t rfcomm_cid, uint8_t *data, uint16_t len){
         return 0;
     }
     
-    log_dbg("rfcomm_send_internal: ... outgoing credits %u\n", channel->credits_outgoing);
+    log_dbg("rfcomm_send_internal: len %u... outgoing credits %u\n", len, channel->credits_outgoing);
 
     if (!channel->credits_outgoing){
         log_err("rfcomm_send_internal cid %u, no rfcomm outgoing credits!\n", rfcomm_cid);
