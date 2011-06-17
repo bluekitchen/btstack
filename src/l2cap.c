@@ -136,7 +136,6 @@ void l2cap_emit_connection_request(l2cap_channel_t *channel) {
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
-
 void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
     // track credits
     channel->packets_granted += credits;
@@ -429,7 +428,8 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     channel->remote_cid = source_cid;
     channel->local_mtu  = service->mtu;
     channel->remote_mtu = L2CAP_DEFAULT_MTU;
-
+    channel->packets_granted = 0;
+    
     // limit local mtu to max acl packet length
     if (channel->local_mtu > hci_max_acl_data_packet_length()) {
         channel->local_mtu = hci_max_acl_data_packet_length();
