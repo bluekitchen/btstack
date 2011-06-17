@@ -469,7 +469,7 @@ static void event_handler(uint8_t *packet, int size){
                 if (packet[9+i] == 0xff){
                     packet[9+i] = 0;
                     break;
-                }|
+                }
             }
             bzero(&device_name, sizeof(device_name_t));
             strncpy((char*) device_name, (char*) &packet[9], 248);
