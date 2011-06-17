@@ -174,7 +174,12 @@ static void delete_link_key(bd_addr_t *bd_addr){
 static void put_name(bd_addr_t *bd_addr, device_name_t *device_name){
     NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	NSString *remoteName = [NSString stringWithUTF8String:(char*)device_name];
-    set_value(bd_addr, PREFS_REMOTE_NAME, remoteName);
+	if (!remoteName){
+        remoteName2 = [NSString stringWithCString:(char*)packet encoding:NSISOLatin1StringEncoding];
+    }
+    if (remoteName) {
+        set_value(bd_addr, PREFS_REMOTE_NAME, remoteName);
+    }
     [pool release];
 }
 
