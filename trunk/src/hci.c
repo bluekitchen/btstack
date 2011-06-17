@@ -464,6 +464,13 @@ static void event_handler(uint8_t *packet, int size){
             if (!hci_stack.remote_device_db) break;
             if (packet[2]) break; // status not ok
             bt_flip_addr(addr, &packet[3]);
+            // fix for invalid remote names - terminate on 0xff
+            for (i=0; i<248;i++){
+                if (packet[9+i] == 0xff){
+                    packet[9+i] = 0;
+                    break;
+                }|
+            }
             bzero(&device_name, sizeof(device_name_t));
             strncpy((char*) device_name, (char*) &packet[9], 248);
             hci_stack.remote_device_db->put_name(&addr, &device_name);
@@ -482,7 +489,7 @@ static void event_handler(uint8_t *packet, int size){
                 }
             }
             return;
-                        
+            
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             if (!packet[2]){
                 handle = READ_BT_16(packet, 3);
