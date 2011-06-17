@@ -175,7 +175,7 @@ static void put_name(bd_addr_t *bd_addr, device_name_t *device_name){
     NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	NSString *remoteName = [NSString stringWithUTF8String:(char*)device_name];
 	if (!remoteName){
-        remoteName2 = [NSString stringWithCString:(char*)packet encoding:NSISOLatin1StringEncoding];
+        remoteName = [NSString stringWithCString:(char*)device_name encoding:NSISOLatin1StringEncoding];
     }
     if (remoteName) {
         set_value(bd_addr, PREFS_REMOTE_NAME, remoteName);
