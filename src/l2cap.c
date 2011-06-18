@@ -71,11 +71,14 @@ static linked_list_t l2cap_channels = NULL;
 static linked_list_t l2cap_services = NULL;
 static uint8_t * acl_buffer = NULL;
 static void (*packet_handler) (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = null_packet_handler;
+static int new_credits_blocked = 0;
 
 void l2cap_init(){
     sig_buffer = malloc( L2CAP_MINIMAL_MTU );
     acl_buffer = malloc( HCI_ACL_3DH5_SIZE); 
-    
+
+    new_credits_blocked = 0;
+
     // 
     // register callback with HCI
     //
@@ -136,10 +139,11 @@ void l2cap_emit_connection_request(l2cap_channel_t *channel) {
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
+
 void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
     // track credits
     channel->packets_granted += credits;
-    // log_dbg("l2cap_emit_credits for cid %u, credits now: %u (+%u)\n", channel->local_cid, channel->packets_granted, credits);
+    // log_dbg("l2cap_emit_credits for cid %u, credits given: %u (+%u)\n", channel->local_cid, channel->packets_granted, credits);
     
     uint8_t event[5];
     event[0] = L2CAP_EVENT_CREDITS;
@@ -150,7 +154,14 @@ void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
     l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
+void l2cap_block_new_credits(uint8_t blocked){
+    new_credits_blocked = blocked;
+}
+
 void l2cap_hand_out_credits(void){
+
+    if (new_credits_blocked) return;    // we're told not to. used by daemon
+    
     linked_item_t *it;
     for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
         if (!hci_number_free_acl_slots()) return;
@@ -187,6 +198,7 @@ int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMAND
     va_start(argptr, identifier);
     uint16_t len = l2cap_create_signaling_internal(sig_buffer, handle, cmd, identifier, argptr);
     va_end(argptr);
+    // log_dbg("l2cap_send_signaling_packet con %u!\n", handle);
     return hci_send_acl_packet(sig_buffer, len);
 }
 
@@ -195,7 +207,7 @@ int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
     // check for free places on BT module
     if (!hci_number_free_acl_slots()) {
         log_dbg("l2cap_send_internal cid %u, BT module full <-----\n", local_cid);
-        return -1;
+        return BTSTACK_ACL_BUFFERS_FULL;
     }
     int err = 0;
     
@@ -204,8 +216,8 @@ int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
     if (channel) {
         if (channel->packets_granted > 0){
             --channel->packets_granted;
-            // log_dbg("l2cap_send_internal cid %u, 1 credit used, credits left %u;\n",
-            //        local_cid, channel->packets_granted);
+            // log_dbg("l2cap_send_internal cid %u, handle %u, 1 credit used, credits left %u;\n",
+            //        local_cid, channel->handle, channel->packets_granted);
         } else {
             log_err("l2cap_send_internal cid %u, no credits!\n", local_cid);
         }
@@ -252,8 +264,6 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     chan->packet_handler = packet_handler;
     chan->remote_mtu = L2CAP_MINIMAL_MTU;
     chan->local_mtu = mtu;
-    
-    // flow control
     chan->packets_granted = 0;
     
     // set initial state
@@ -429,7 +439,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     channel->local_mtu  = service->mtu;
     channel->remote_mtu = L2CAP_DEFAULT_MTU;
     channel->packets_granted = 0;
-    
+
     // limit local mtu to max acl packet length
     if (channel->local_mtu > hci_max_acl_data_packet_length()) {
         channel->local_mtu = hci_max_acl_data_packet_length();
