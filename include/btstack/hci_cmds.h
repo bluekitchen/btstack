@@ -187,6 +187,7 @@ extern "C" {
 #define BTSTACK_NOT_ACTIVATED							   0x54
 #define BTSTACK_BUSY									   0x55
 #define BTSTACK_MEMORY_ALLOC_FAILED                        0x56
+#define BTSTACK_ACL_BUFFERS_FULL                           0x57
 
 // l2cap errors - enumeration by the command that created them
 #define L2CAP_COMMAND_REJECT_REASON_COMMAND_NOT_UNDERSTOOD 0x60
@@ -206,6 +207,7 @@ extern "C" {
 
 #define RFCOMM_MULTIPLEXER_STOPPED                         0x70
 #define RFCOMM_CHANNEL_ALREADY_REGISTERED                  0x71
+#define RFCOMM_NO_OUTGOING_CREDITS                         0x72
 
 #define SDP_HANDLE_ALREADY_REGISTERED                      0x80
  
