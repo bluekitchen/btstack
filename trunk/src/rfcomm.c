@@ -1279,7 +1279,7 @@ int rfcomm_send_internal(uint8_t rfcomm_cid, uint8_t *data, uint16_t len){
     // check for space on BT module
     if (!hci_number_free_acl_slots()) {
         log_dbg("rfcomm_send_internal: BT module full\n");
-        return -1;
+        return BTSTACK_ACL_BUFFERS_FULL;
     }
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     int result = 0;
@@ -1292,7 +1292,7 @@ int rfcomm_send_internal(uint8_t rfcomm_cid, uint8_t *data, uint16_t len){
 
     if (!channel->credits_outgoing){
         log_err("rfcomm_send_internal cid %u, no rfcomm outgoing credits!\n", rfcomm_cid);
-        return -1;
+        return RFCOMM_NO_OUTGOING_CREDITS;
     }
     
     // TODO: this code should be only executed after a successful send. However,
