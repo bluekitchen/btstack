@@ -774,7 +774,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             multiplexer = rfcomm_multiplexer_for_l2cap_cid(l2cap_cid);
             if (!multiplexer) break;
             multiplexer->l2cap_credits += packet[4];
-            log_dbg("L2CAP_EVENT_CREDITS: %u (now %u)\n", packet[4], multiplexer->l2cap_credits);
+            // log_dbg("L2CAP_EVENT_CREDITS: %u (now %u)\n", packet[4], multiplexer->l2cap_credits);
             if (multiplexer->state != RFCOMM_MULTIPLEXER_OPEN) break;
             rfcomm_hand_out_credits();
             break;
@@ -1311,19 +1311,13 @@ int rfcomm_send_internal(uint8_t rfcomm_cid, uint8_t *data, uint16_t len){
     }
     
     if (!channel->credits_outgoing){
-        // log_err("rfcomm_send_internal cid %u, no rfcomm outgoing credits!\n", rfcomm_cid);
         log_dbg("rfcomm_send_internal cid %u, no rfcomm outgoing credits!\n", rfcomm_cid);
-        return RFCOMM_NO_OUTGOING_CREDITS;
+        // return RFCOMM_NO_OUTGOING_CREDITS;
     }
 
     if (!channel->packets_granted){
         log_dbg("rfcomm_send_internal cid %u, no rfcomm credits granted!\n", rfcomm_cid);
         // return RFCOMM_NO_OUTGOING_CREDITS;
-    }
-
-    if (!channel->multiplexer->l2cap_credits){
-        log_dbg("rfcomm_send_internal cid %u, no l2cap credits!\n", rfcomm_cid);
-        // return BTSTACK_ACL_BUFFERS_FULL;
     }
     
     // log_dbg("rfcomm_send_internal: len %u... outgoing credits %u, l2cap credit %us, granted %u\n",
@@ -1337,18 +1331,12 @@ int rfcomm_send_internal(uint8_t rfcomm_cid, uint8_t *data, uint16_t len){
         channel->packets_granted--;
         packets_granted_decreased++;
     }
-    int l2cap_credits_decreased = 0;
-    if (channel->multiplexer->l2cap_credits){
-        channel->multiplexer->l2cap_credits--;
-        l2cap_credits_decreased++;
-    }
     
     int result = rfcomm_send_uih_data(channel->multiplexer, channel->dlci, data, len);
     
     if (result != 0) {
         channel->credits_outgoing++;
         channel->packets_granted += packets_granted_decreased;
-        channel->multiplexer->l2cap_credits += l2cap_credits_decreased;
         log_dbg("rfcomm_send_internal: error %d\n", result);
         return result;
     }
