@@ -317,10 +317,16 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
         case L2CAP_DATA_PACKET:
             // process l2cap packet...
             err = l2cap_send_internal(channel, data, length);
+            if (err == BTSTACK_ACL_BUFFERS_FULL) {
+                l2cap_block_new_credits(1);
+            }
             break;
         case RFCOMM_DATA_PACKET:
             // process l2cap packet...
             err = rfcomm_send_internal(channel, data, length);
+            if (err == BTSTACK_ACL_BUFFERS_FULL) {
+                l2cap_block_new_credits(1);
+            }
             break;
         case DAEMON_EVENT_PACKET:
             switch (data[0]) {
@@ -407,6 +413,9 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
         deamon_status_event_handler(packet, size);
         if (packet[0] == HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS) {
             socket_connection_retry_parked();
+            if (!socket_connection_has_parked_connections()){
+                l2cap_block_new_credits(0);
+            }
         }
     }
     if (connection) {
