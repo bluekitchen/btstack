@@ -357,7 +357,7 @@ static rfcomm_service_t * rfcomm_service_for_channel(uint8_t server_channel){
 /**
  * @param credits - only used for RFCOMM flow control in UIH wiht P/F = 1
  */
-static int rfcomm_send_packet(uint16_t source_cid, uint8_t address, uint8_t control, uint8_t credits, uint8_t *data, uint16_t len){
+static int rfcomm_send_packet_for_multiplexer(rfcomm_multiplexer_t *multiplexer, uint8_t address, uint8_t control, uint8_t credits, uint8_t *data, uint16_t len){
 
 	uint16_t pos = 0;
 	uint8_t crc_fields = 3;
@@ -390,9 +390,22 @@ static int rfcomm_send_packet(uint16_t source_cid, uint8_t address, uint8_t cont
 		crc_fields = 2;
 	}
 	rfcomm_out_buffer[pos++] =  crc8_calc(rfcomm_out_buffer, crc_fields); // calc fcs
-	// log_dbg( "rfcomm_send_packet addr %02x, ctrl %02x size %u\n", address, control, pos);
-    // bt_send_l2cap( source_cid, rfcomm_out_buffer, pos);
-    return l2cap_send_internal(source_cid, rfcomm_out_buffer, pos);
+
+    int credits_taken = 0;
+    if (multiplexer->l2cap_credits){
+        credits_taken++;
+        multiplexer->l2cap_credits--;
+    } else {
+        log_dbg( "rfcomm_send_packet addr %02x, ctrl %02x size %u without l2cap credits\n", address, control, pos);
+    }
+    
+    int err = l2cap_send_internal(multiplexer->l2cap_cid, rfcomm_out_buffer, pos);
+    
+    if (err) {
+        // undo credit counting
+        multiplexer->l2cap_credits += credits_taken;
+    }
+    return err;
 }
 
 // C/R Flag in Address
@@ -411,33 +424,33 @@ static int rfcomm_send_packet(uint16_t source_cid, uint8_t address, uint8_t cont
 // temp/old messge construction
 
 // new object oriented version
-static void rfcomm_send_sabm(rfcomm_multiplexer_t *multiplexer, uint8_t dlci){
+static int rfcomm_send_sabm(rfcomm_multiplexer_t *multiplexer, uint8_t dlci){
 	uint8_t address = (1 << 0) | (multiplexer->outgoing << 1) | (dlci << 2);   // command
-    rfcomm_send_packet(multiplexer->l2cap_cid, address, BT_RFCOMM_SABM, 0, NULL, 0);
+    return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_SABM, 0, NULL, 0);
 }
 
-static void rfcomm_send_disc(rfcomm_multiplexer_t *multiplexer, uint8_t dlci){
+static int rfcomm_send_disc(rfcomm_multiplexer_t *multiplexer, uint8_t dlci){
 	uint8_t address = (1 << 0) | (multiplexer->outgoing << 1) | (dlci << 2); // command
-    rfcomm_send_packet(multiplexer->l2cap_cid, address, BT_RFCOMM_DISC, 0, NULL, 0);
+    return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_DISC, 0, NULL, 0);
 }
 
-static void rfcomm_send_ua(rfcomm_multiplexer_t *multiplexer, uint8_t dlci){
+static int rfcomm_send_ua(rfcomm_multiplexer_t *multiplexer, uint8_t dlci){
 	uint8_t address = (1 << 0) | ((multiplexer->outgoing ^ 1) << 1) | (dlci << 2); // response
-    rfcomm_send_packet(multiplexer->l2cap_cid, address, BT_RFCOMM_UA, 0, NULL, 0);
+    return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UA, 0, NULL, 0);
 }
 
-static void rfcomm_send_dm_pf(rfcomm_multiplexer_t *multiplexer, uint8_t dlci){
+static int rfcomm_send_dm_pf(rfcomm_multiplexer_t *multiplexer, uint8_t dlci){
 	uint8_t address = (1 << 0) | ((multiplexer->outgoing ^ 1) << 1) | (dlci << 2); // response
-    rfcomm_send_packet(multiplexer->l2cap_cid, address, BT_RFCOMM_DM_PF, 0, NULL, 0);
+    return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_DM_PF, 0, NULL, 0);
 }
 
 
 static int rfcomm_send_uih_data(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, uint8_t *data, uint16_t len){
 	uint8_t address = (1 << 0) | (multiplexer->outgoing << 1) | (dlci << 2); 
-    return rfcomm_send_packet(multiplexer->l2cap_cid, address, BT_RFCOMM_UIH, 0, data, len);
+    return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, data, len);
 }
 
-static void rfcomm_send_uih_msc_cmd(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, uint8_t signals) {
+static int rfcomm_send_uih_msc_cmd(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, uint8_t signals) {
 	uint8_t address = (1 << 0) | (multiplexer->outgoing << 1);
 	uint8_t payload[4]; 
 	uint8_t pos = 0;
@@ -445,10 +458,10 @@ static void rfcomm_send_uih_msc_cmd(rfcomm_multiplexer_t *multiplexer, uint8_t d
 	payload[pos++] = 2 << 1 | 1;  // len
 	payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
 	payload[pos++] = signals;
-	rfcomm_send_packet(multiplexer->l2cap_cid, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
+	return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
 
-static void rfcomm_send_uih_pn_command(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, uint16_t max_frame_size){
+static int rfcomm_send_uih_pn_command(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, uint16_t max_frame_size){
 	uint8_t payload[10];
 	uint8_t address = (1 << 0) | (multiplexer->outgoing << 1); 
 	uint8_t pos = 0;
@@ -462,11 +475,11 @@ static void rfcomm_send_uih_pn_command(rfcomm_multiplexer_t *multiplexer, uint8_
 	payload[pos++] = max_frame_size >> 8;   // max framesize high
 	payload[pos++] = 0x00; // number of retransmissions
 	payload[pos++] = 0x00; // (unused error recovery window) initial number of credits
-	rfcomm_send_packet(multiplexer->l2cap_cid, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
+	return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
 
 // "The response may not change the DLCI, the priority, the convergence layer, or the timer value." RFCOMM-tutorial.pdf
-static void rfcomm_send_uih_pn_response(rfcomm_multiplexer_t *multiplexer, uint8_t dlci,
+static int rfcomm_send_uih_pn_response(rfcomm_multiplexer_t *multiplexer, uint8_t dlci,
                                             uint8_t priority, uint16_t max_frame_size){
 	uint8_t payload[10];
 	uint8_t address = (1 << 0) | (multiplexer->outgoing << 1); 
@@ -481,7 +494,7 @@ static void rfcomm_send_uih_pn_response(rfcomm_multiplexer_t *multiplexer, uint8
 	payload[pos++] = max_frame_size >> 8;   // max framesize high
 	payload[pos++] = 0x00; // number of retransmissions
 	payload[pos++] = 0x00; // (unused error recovery window) initial number of credits
-	rfcomm_send_packet(multiplexer->l2cap_cid, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
+	return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
 
 
@@ -528,8 +541,6 @@ static void rfcomm_emit_channel_closed(rfcomm_channel_t * channel) {
 }
 
 static void rfcomm_emit_credits(rfcomm_channel_t * channel, uint8_t credits) {
-    channel->packets_granted += credits;
-    
     uint8_t event[5];
     event[0] = RFCOMM_EVENT_CREDITS;
     event[1] = sizeof(event) - 2;
@@ -553,14 +564,25 @@ static void rfcomm_hand_out_credits(void){
     linked_item_t * it;
     for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
         rfcomm_channel_t * channel = (rfcomm_channel_t *) it;
-        if (!hci_number_free_acl_slots()) return;
-        if (channel->state != RFCOMM_CHANNEL_OPEN) continue;
-        if (channel->packets_granted) continue;
-        if (!channel->credits_outgoing) continue;
-        if (!channel->multiplexer->l2cap_credits) continue;
+        if (channel->state != RFCOMM_CHANNEL_OPEN) {
+            // log_dbg("RFCOMM_EVENT_CREDITS: multiplexer not open\n");
+            continue;
+        }
+        if (channel->packets_granted) {
+            // log_dbg("RFCOMM_EVENT_CREDITS: already packets granted\n");
+            continue;
+        }
+        if (!channel->credits_outgoing) {
+            // log_dbg("RFCOMM_EVENT_CREDITS: no outgoing credits\n");
+            continue;
+        }
+        if (!channel->multiplexer->l2cap_credits){
+            // log_dbg("RFCOMM_EVENT_CREDITS: no l2cap credits\n");
+            continue;
+        }
         // channel open, multiplexer has l2cap credits and we didn't hand out credit before -> go!
-        channel->multiplexer->l2cap_credits--;
-        log_dbg("RFCOMM_EVENT_CREDITS: 1\n");
+        // log_dbg("RFCOMM_EVENT_CREDITS: 1\n");
+        channel->packets_granted += 1;
         rfcomm_emit_credits(channel, 1);
     }        
 }
@@ -647,9 +669,8 @@ static void rfcomm_channel_provide_credits(rfcomm_channel_t *channel){
         case RFCOMM_CHANNEL_W4_CREDITS:
         case RFCOMM_CHANNEL_OPEN:
             if (channel->credits_incoming < 5){
-				// send 0x30 credits
 				uint8_t address = (1 << 0) | (channel->multiplexer->outgoing << 1) |  (channel->dlci << 2); 
-				rfcomm_send_packet(channel->multiplexer->l2cap_cid, address, BT_RFCOMM_UIH_PF, credits, NULL, 0);
+				rfcomm_send_packet_for_multiplexer(channel->multiplexer, address, BT_RFCOMM_UIH_PF, credits, NULL, 0);
                 channel->credits_incoming += credits;
             }
             break;
@@ -752,9 +773,9 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             l2cap_cid = READ_BT_16(packet, 2);
             multiplexer = rfcomm_multiplexer_for_l2cap_cid(l2cap_cid);
             if (!multiplexer) break;
-            if (multiplexer->state != RFCOMM_MULTIPLEXER_OPEN) break;
             multiplexer->l2cap_credits += packet[4];
-            log_dbg("L2CAP_EVENT_CREDITS: %u\n", packet[4]);
+            log_dbg("L2CAP_EVENT_CREDITS: %u (now %u)\n", packet[4], multiplexer->l2cap_credits);
+            if (multiplexer->state != RFCOMM_MULTIPLEXER_OPEN) break;
             rfcomm_hand_out_credits();
             break;
             
@@ -869,7 +890,13 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
         // handle new credits
         uint16_t new_credits = packet[3+length_offset];
         rfChannel->credits_outgoing += new_credits;
-    
+        log_dbg( "RFCOMM data UIH_PF, new credits: %u, now %u\n", new_credits, rfChannel->credits_outgoing);
+
+        // notify daemon -> might trigger re-try of parked connections
+        uint8_t event[1];
+        event[0] = DAEMON_EVENT_NEW_RFCOMM_CREDITS;
+        (*app_packet_handler)(rfChannel->connection, DAEMON_EVENT_PACKET, rfChannel->rfcomm_cid, event, sizeof(event));
+        
         if (rfChannel->state == RFCOMM_CHANNEL_W4_CREDITS){
             log_dbg("BT_RFCOMM_UIH_PF for #%u, Got %u credits => can send!\n", frame_dlci, new_credits);
             rfcomm_channel_opened(rfChannel);
@@ -881,7 +908,7 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     rfcomm_channel_provide_credits(rfChannel);
     
     if (size - 1 > payload_offset){ // don't send empty frames, -1 for header checksum at end
-        log_dbg( "RFCOMM data UIH_PF, size %u, channel %x\n", size-payload_offset-1, (int) rfChannel->connection);
+        // log_dbg( "RFCOMM data UIH_PF, size %u, channel %x\n", size-payload_offset-1, (int) rfChannel->connection);
         (*app_packet_handler)(rfChannel->connection, RFCOMM_DATA_PACKET, rfChannel->rfcomm_cid,
                               &packet[payload_offset], size-payload_offset-1);
     }
@@ -1115,7 +1142,7 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         packet[payload_offset]  = BT_RFCOMM_MSC_RSP;  //  "      "
                         // fine with this
                         log_dbg("-> Sending MSC RSP for #%u\n", message_dlci);
-                        rfcomm_send_packet(channel, address, BT_RFCOMM_UIH, 0x30, (uint8_t*)&packet[payload_offset], 4);
+                        rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0x30, (uint8_t*)&packet[payload_offset], 4);
                         
                         switch (rfChannel->state) {
                             case RFCOMM_CHANNEL_W4_MSC_CMD_OR_MSC_RSP:
@@ -1128,7 +1155,7 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 // TODO: don't send 2 packets without getting a "done" from stack
 
                                 // also start our negotiation
-                                log_err("-> Sending MSC CMD for #%u (but should wait for l2cap credits)\n", message_dlci);
+                                log_dbg("-> Sending MSC CMD for #%u (but should wait for l2cap credits)\n", message_dlci);
                                 rfcomm_send_uih_msc_cmd(multiplexer, message_dlci, 0x8d); // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
                                 rfChannel->state = RFCOMM_CHANNEL_W4_MSC_RSP;
                                 
@@ -1192,14 +1219,14 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 							// request for (dummy) parameters
 							log_dbg("Received Remote Port Negotiation (Info) for #%u\n", message_dlci);
 							log_dbg("-> Sending Remote Port Negotiation RSP for #%u\n", message_dlci);
-							rfcomm_send_packet(channel, packet[0] ^ 2, BT_RFCOMM_UIH, 0x00, (uint8_t*)default_rpn_psp, sizeof(default_rpn_psp));
+							rfcomm_send_packet_for_multiplexer(multiplexer, packet[0] ^ 2, BT_RFCOMM_UIH, 0x00, (uint8_t*)default_rpn_psp, sizeof(default_rpn_psp));
 							break;
 						case 8:
 							// control port parameters
 							packet[payload_offset]  = BT_RFCOMM_RPN_RSP; 
 							log_dbg("Received Remote Port Negotiation for #%u\n", message_dlci);
 							log_dbg("-> Sending Remote Port Negotiation RSP for #%u\n", message_dlci);
-							rfcomm_send_packet(channel, packet[0] ^ 2, BT_RFCOMM_UIH, 0x00, (uint8_t*)&packet[payload_offset], 10);
+							rfcomm_send_packet_for_multiplexer(multiplexer, packet[0] ^ 2, BT_RFCOMM_UIH, 0x00, (uint8_t*)&packet[payload_offset], 10);
 							break;
 						default:
 							break;
@@ -1276,52 +1303,59 @@ void rfcomm_register_packet_handler(void (*handler)(void * connection, uint8_t p
 
 // send packet over specific channel
 int rfcomm_send_internal(uint8_t rfcomm_cid, uint8_t *data, uint16_t len){
-    // check for space on BT module
-    if (!hci_number_free_acl_slots()) {
-        log_dbg("rfcomm_send_internal: BT module full\n");
-        return BTSTACK_ACL_BUFFERS_FULL;
-    }
+
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
-    int result = 0;
     if (!channel){
         log_err("rfcomm_send_internal cid %u doesn't exist!\n", rfcomm_cid);
         return 0;
     }
     
-    log_dbg("rfcomm_send_internal: len %u... outgoing credits %u\n", len, channel->credits_outgoing);
-
     if (!channel->credits_outgoing){
-        log_err("rfcomm_send_internal cid %u, no rfcomm outgoing credits!\n", rfcomm_cid);
+        // log_err("rfcomm_send_internal cid %u, no rfcomm outgoing credits!\n", rfcomm_cid);
+        log_dbg("rfcomm_send_internal cid %u, no rfcomm outgoing credits!\n", rfcomm_cid);
         return RFCOMM_NO_OUTGOING_CREDITS;
     }
+
+    if (!channel->packets_granted){
+        log_dbg("rfcomm_send_internal cid %u, no rfcomm credits granted!\n", rfcomm_cid);
+        // return RFCOMM_NO_OUTGOING_CREDITS;
+    }
+
+    if (!channel->multiplexer->l2cap_credits){
+        log_dbg("rfcomm_send_internal cid %u, no l2cap credits!\n", rfcomm_cid);
+        // return BTSTACK_ACL_BUFFERS_FULL;
+    }
     
-    // TODO: this code should be only executed after a successful send. However,
-    //        if moving below rfcomm_send_uih_data Celeste stops working
-    //        rfcomm_send_internally emits l2cap credits. by decrementing it first
-    //        (and failing), we get a new credit
-    //
+    // log_dbg("rfcomm_send_internal: len %u... outgoing credits %u, l2cap credit %us, granted %u\n",
+    //        len, channel->credits_outgoing, channel->multiplexer->l2cap_credits, channel->packets_granted);
+    
+
+    // send might cause l2cap to emit new credits, update counters first
+    channel->credits_outgoing--;
+    int packets_granted_decreased = 0;
+    if (channel->packets_granted) {
+        channel->packets_granted--;
+        packets_granted_decreased++;
+    }
+    int l2cap_credits_decreased = 0;
     if (channel->multiplexer->l2cap_credits){
         channel->multiplexer->l2cap_credits--;
-    } else {
-        log_err("rfcomm_send_internal cid %u, no l2cap credits!\n", rfcomm_cid);
+        l2cap_credits_decreased++;
     }
-    //
     
-    result = rfcomm_send_uih_data(channel->multiplexer, channel->dlci, data, len);
+    int result = rfcomm_send_uih_data(channel->multiplexer, channel->dlci, data, len);
     
     if (result != 0) {
+        channel->credits_outgoing++;
+        channel->packets_granted += packets_granted_decreased;
+        channel->multiplexer->l2cap_credits += l2cap_credits_decreased;
         log_dbg("rfcomm_send_internal: error %d\n", result);
         return result;
     }
     
-    channel->credits_outgoing--;
+    // log_dbg("rfcomm_send_internal: now outgoing credits %u, l2cap credit %us, granted %u\n",
+    //        channel->credits_outgoing, channel->multiplexer->l2cap_credits, channel->packets_granted);
 
-    if (channel->packets_granted > 0){
-        --channel->packets_granted;
-    } else {
-        log_err("rfcomm_send_internal cid %u, no rfcomm credits granted!\n", rfcomm_cid);
-    }
-    
     rfcomm_hand_out_credits();
     
     return result;
