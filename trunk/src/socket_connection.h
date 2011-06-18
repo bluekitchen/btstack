@@ -111,5 +111,5 @@ void socket_connection_retry_parked(void);
 /**
  * query if at least one connection had to be parked
  */
-int  sockket_connection_has_parked_connections(void);
+int  socket_connection_has_parked_connections(void);
 
