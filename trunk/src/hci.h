@@ -143,7 +143,8 @@ extern "C" {
 // data: event(8), nr_connections(8)
 #define DAEMON_NR_CONNECTIONS_CHANGED                      0x72
 
-
+// data: event(8)
+#define DAEMON_EVENT_NEW_RFCOMM_CREDITS                    0x73
 
 /**
  * Connection State 
