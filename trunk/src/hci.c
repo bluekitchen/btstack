@@ -215,7 +215,7 @@ int hci_ready_to_send(hci_con_handle_t handle){
 int hci_send_acl_packet(uint8_t *packet, int size){
 
     // check for free places on BT module
-    if (!hci_number_free_acl_slots()) return -1;
+    if (!hci_number_free_acl_slots()) return BTSTACK_ACL_BUFFERS_FULL;
     
     hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
     hci_connection_t *connection = connection_for_handle( con_handle);
