@@ -1312,7 +1312,7 @@ int rfcomm_send_internal(uint8_t rfcomm_cid, uint8_t *data, uint16_t len){
     
     if (!channel->credits_outgoing){
         log_dbg("rfcomm_send_internal cid %u, no rfcomm outgoing credits!\n", rfcomm_cid);
-        // return RFCOMM_NO_OUTGOING_CREDITS;
+        return RFCOMM_NO_OUTGOING_CREDITS;
     }
 
     if (!channel->packets_granted){
