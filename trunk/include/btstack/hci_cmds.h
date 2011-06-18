@@ -146,17 +146,10 @@ extern "C" {
 
 // RFCOMM EVENTS
 	
-// The current BTstack-0.3-50x in Cydia uses
-// data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
-
-// The SVN version and the next update will use
 // data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
-    
-// status: 0 = OK
 #define RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE                 0x80
 	
-// data: event(8), len(8), channelID(8)
-// status: 0 = OK
+// data: event(8), len(8), rfcomm_cid(16)
 #define RFCOMM_EVENT_CHANNEL_CLOSED                        0x81
 	
 // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
@@ -165,7 +158,7 @@ extern "C" {
 // data: event (8), len(8), rfcommid (16), ...
 #define RFCOMM_EVENT_REMOTE_LINE_STATUS                    0x83
 	
-// data: event(8), len(8), local_cid(16), credits(8)
+// data: event(8), len(8), rfcomm_cid(16), credits(8)
 #define RFCOMM_EVENT_CREDITS			                   0x84
 	
 // data: event(8), len(8), status (8), rfcomm server channel id (8) 
@@ -173,7 +166,8 @@ extern "C" {
     
 // data: event(8), len(8), status (8), rfcomm server channel id (8) 
 #define RFCOMM_EVENT_PERSISTENT_CHANNEL                    0x86
-
+    
+    
 // data: event(8), len(8), status(8), service_record_handle(32)
 #define SDP_SERVICE_REGISTERED                             0x90
 
