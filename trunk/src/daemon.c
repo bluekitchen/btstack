@@ -411,11 +411,18 @@ static void deamon_status_event_handler(uint8_t *packet, uint16_t size){
 static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type == HCI_EVENT_PACKET) {
         deamon_status_event_handler(packet, size);
-        if (packet[0] == HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS) {
-            socket_connection_retry_parked();
-            if (!socket_connection_has_parked_connections()){
-                l2cap_block_new_credits(0);
-            }
+        switch (packet[0]){
+            // ACL buffer freed...
+            case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
+            // RFCOMM CREDITS received...
+            case RFCOMM_EVENT_CREDITS:
+                // ... try sending again  
+                socket_connection_retry_parked();
+                if (!socket_connection_has_parked_connections()){
+                    l2cap_block_new_credits(0);
+                }
+            default:
+                break;
         }
     }
     if (connection) {
