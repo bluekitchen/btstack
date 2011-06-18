@@ -106,3 +106,10 @@ void socket_connection_send_packet_all(uint16_t type, uint16_t channel, uint8_t 
  * if dispatch is successful, a connection is added again to run loop
  */
 void socket_connection_retry_parked(void);
+
+
+/**
+ * query if at least one connection had to be parked
+ */
+int  sockket_connection_has_parked_connections(void);
+
