@@ -120,6 +120,8 @@ void l2cap_disconnect_internal(uint16_t local_cid, uint8_t reason);
 int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len);
 uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid);
 
+void l2cap_block_new_credits(uint8_t blocked);
+    
 void l2cap_finialize_channel_close(l2cap_channel_t *channel);
 void l2cap_close_connection(void *connection);
 
