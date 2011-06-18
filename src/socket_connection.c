@@ -265,6 +265,9 @@ void socket_connection_retry_parked(){
     }
 }
 
+int  socket_connection_has_parked_connections(void){
+    return parked != NULL;
+}
 
 static int socket_connection_accept(struct data_source *socket_ds) {
     struct sockaddr_storage ss;
