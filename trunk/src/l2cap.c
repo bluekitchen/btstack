@@ -241,7 +241,28 @@ int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
     
     return err;
 }
-            
+ 
+// process outstanding signaling tasks
+void l2cap_run(void){
+    linked_item_t *it;
+    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+        
+        // can send?
+        
+        l2cap_channel_t * channel = (l2cap_channel_t *) it;
+        switch (channel->state){
+
+            case L2CAP_STATE_WILL_SEND_DISCONNECT:
+                l2cap_send_signaling_packet( channel->handle, DISCONNECTION_REQUEST, channel->sig_id, channel->remote_cid, channel->local_cid);   
+                channel->state = L2CAP_STATE_WAIT_DISCONNECT;
+                break;
+                
+            default:
+                break;
+        }
+    }
+}
+
 // open outgoing L2CAP channel
 void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t packet_handler,
                                    bd_addr_t address, uint16_t psm, uint16_t mtu){
@@ -282,10 +303,10 @@ void l2cap_disconnect_internal(uint16_t local_cid, uint8_t reason){
     // find channel for local_cid
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (channel) {
-        channel->sig_id = l2cap_next_sig_id();
-        l2cap_send_signaling_packet( channel->handle, DISCONNECTION_REQUEST, channel->sig_id, channel->remote_cid, channel->local_cid);   
-        channel->state = L2CAP_STATE_WAIT_DISCONNECT;
+        channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT;
     }
+    // process
+    l2cap_run();
 }
 
 static void l2cap_handle_connection_failed_for_addr(bd_addr_t address, uint8_t status){

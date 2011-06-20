@@ -59,6 +59,8 @@ typedef enum {
     L2CAP_STATE_WAIT_CONFIG_REQ,
     L2CAP_STATE_OPEN,
     L2CAP_STATE_WAIT_DISCONNECT,  // from application
+    L2CAP_STATE_WILL_SEND_DISCONNECT,
+    
 } L2CAP_STATE;
 
 // info regarding an actual coneection
