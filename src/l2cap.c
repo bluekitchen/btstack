@@ -570,6 +570,8 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                         case 0:
                             // successful connection
                             channel->remote_cid = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+                            
+                            
                             channel->sig_id = l2cap_next_sig_id();
                             config_options[0] = 1; // MTU
                             config_options[1] = 2; // len param
@@ -873,9 +875,7 @@ void l2cap_close_connection(void *connection){
     for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
         channel = (l2cap_channel_t *) it;
         if (channel->connection == connection) {
-            channel->sig_id = l2cap_next_sig_id();
-            l2cap_send_signaling_packet( channel->handle, DISCONNECTION_REQUEST, channel->sig_id, channel->remote_cid, channel->local_cid);   
-            channel->state = L2CAP_STATE_WAIT_DISCONNECT;
+            channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
         }
     }   
     
@@ -890,5 +890,8 @@ void l2cap_close_connection(void *connection){
             it = it->next;
         }
     }
+    
+    // process
+    l2cap_run();
 }
     
