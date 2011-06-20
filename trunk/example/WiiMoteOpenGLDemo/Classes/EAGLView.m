@@ -372,7 +372,7 @@
 
 - (void)setRotationX:(int)x Y:(int)y Z:(int)z{
 
-	// NSLog(@"BT data: %u %u %u", x , y ,z);
+	NSLog(@"BT data: %u %u %u", x , y ,z);
 	rotateX = x;
 	rotateY = y;
 	rotateZ = z;
