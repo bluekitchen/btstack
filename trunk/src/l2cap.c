@@ -254,68 +254,68 @@ void l2cap_run(void){
         switch (channel->state){
 
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE:
-                l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->sig_id, 0, 0, channel->reason, 0);
+                l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, 0, 0, channel->reason, 0);
                 // discard channel - l2cap_finialize_channel_close without sending l2cap close event
                 linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
                 free (channel);
                 break;
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT:
-                l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->sig_id, channel->local_cid, channel->remote_cid, 0, 0);
+                l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, 0, 0);
                 channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_OR_SEND_CONFIG_REQ;
                 break;
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST:
                 // success, start l2cap handshake
-                channel->sig_id = l2cap_next_sig_id();
-                l2cap_send_signaling_packet( channel->handle, CONNECTION_REQUEST, channel->sig_id, channel->psm, channel->local_cid);                   
+                channel->local_sig_id = l2cap_next_sig_id();
+                l2cap_send_signaling_packet( channel->handle, CONNECTION_REQUEST, channel->local_sig_id, channel->psm, channel->local_cid);                   
                 channel->state = L2CAP_STATE_WAIT_CONNECT_RSP;
                 break;
                 
             case L2CAP_STATE_WAIT_CONFIG_REQ_OR_SEND_CONFIG_REQ:
                 // after connection response was received
-                channel->sig_id = l2cap_next_sig_id();
+                channel->local_sig_id = l2cap_next_sig_id();
                 config_options[0] = 1; // MTU
                 config_options[1] = 2; // len param
                 bt_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
-                l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->remote_cid, 0, 4, &config_options);
+                l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->local_sig_id, channel->remote_cid, 0, 4, &config_options);
                 channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ;
                 break;
 
+            case L2CAP_STATE_WILL_SEND_CONFIG_REQ:
+                channel->local_sig_id = l2cap_next_sig_id();
+                config_options[0] = 1; // MTU
+                config_options[1] = 2; // len param
+                bt_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
+                l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->local_sig_id, channel->remote_cid, 0, 4, &config_options);
+                channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP;
+                break;
+
             case L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_WILL_SEND_CONFIG_REQ_RSP:
-                l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, channel->sig_id, channel->remote_cid, 0, 0, 0, NULL);
+                l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, 0, 0, 0, NULL);
                 channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP;
                 break;
 
             case L2CAP_STATE_WILL_SEND_CONFIG_REQ_RSP:
-                l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, channel->sig_id, channel->remote_cid, 0, 0, 0, NULL);
+                l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, 0, 0, 0, NULL);
                 channel->state = L2CAP_STATE_OPEN;
                 l2cap_emit_channel_opened(channel, 0);  // success
                 l2cap_emit_credits(channel, 1);
                 break;
                 
             case L2CAP_STATE_WILL_SEND_CONFIG_REQ_AND_CONFIG_REQ_RSP:
-                l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, channel->sig_id, channel->remote_cid, 0, 0, 0, NULL);
+                l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, 0, 0, 0, NULL);
                 channel->state = L2CAP_STATE_WILL_SEND_CONFIG_REQ;
                 break;
-                
-            case L2CAP_STATE_WILL_SEND_CONFIG_REQ:
-                channel->sig_id = l2cap_next_sig_id();
-                config_options[0] = 1; // MTU
-                config_options[1] = 2; // len param
-                bt_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
-                l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->remote_cid, 0, 4, &config_options);
-                channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP;
-                break;
-          
+                          
             case L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE:
-                l2cap_send_signaling_packet( channel->handle, DISCONNECTION_RESPONSE, channel->sig_id, channel->local_cid, channel->remote_cid);   
+                l2cap_send_signaling_packet( channel->handle, DISCONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid);   
                 l2cap_finialize_channel_close(channel);
                 break;
                 
             case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST:
-                channel->sig_id = l2cap_next_sig_id();
-                l2cap_send_signaling_packet( channel->handle, DISCONNECTION_REQUEST, channel->sig_id, channel->remote_cid, channel->local_cid);   
+                channel->local_sig_id = l2cap_next_sig_id();
+                l2cap_send_signaling_packet( channel->handle, DISCONNECTION_REQUEST, channel->local_sig_id, channel->remote_cid, channel->local_cid);   
                 channel->state = L2CAP_STATE_WAIT_DISCONNECT;
                 break;
             default:
@@ -350,7 +350,8 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     
     // set initial state
     chan->state = L2CAP_STATE_CLOSED;
-    chan->sig_id = L2CAP_SIG_ID_INVALID;
+    chan->remote_sig_id = L2CAP_SIG_ID_INVALID;
+    chan->local_sig_id = L2CAP_SIG_ID_INVALID;
     
     // add to connections list
     linked_list_add(&l2cap_channels, (linked_item_t *) chan);
@@ -483,7 +484,7 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
 }
 
 static void l2cap_handle_disconnect_request(l2cap_channel_t *channel, uint16_t identifier){
-    channel->sig_id = identifier;
+    channel->remote_sig_id = identifier;
     channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE;
     l2cap_run();
 }
@@ -522,6 +523,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     channel->local_mtu  = service->mtu;
     channel->remote_mtu = L2CAP_DEFAULT_MTU;
     channel->packets_granted = 0;
+    channel->remote_sig_id = sig_id; 
 
     // limit local mtu to max acl packet length
     if (channel->local_mtu > hci_max_acl_data_packet_length()) {
@@ -530,9 +532,6 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     
     // set initial state
     channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
-    
-    // temp. store req sig id
-    channel->sig_id = sig_id; 
     
     // add to connections list
     linked_list_add(&l2cap_channels, (linked_item_t *) channel);
@@ -566,6 +565,9 @@ void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason){
 }
 
 void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t *command){
+
+    channel->remote_sig_id = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
+
     // accept the other's configuration options
     uint16_t end_pos = 4 + READ_BT_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
     uint16_t pos     = 8;
@@ -579,8 +581,6 @@ void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t 
         }
         pos += length;
     }
-    uint8_t identifier = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
-    channel->sig_id = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
 }
 
 void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command){
@@ -795,13 +795,13 @@ void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t * comman
         l2cap_channel_t * channel = (l2cap_channel_t *) it;
         if (channel->handle == handle) {
             if (code & 1) {
-                // match odd commands by previous signaling identifier 
-                if (channel->sig_id == sig_id) {
+                // match odd commands (responses) by previous signaling identifier 
+                if (channel->local_sig_id == sig_id) {
                     l2cap_signaling_handler_channel(channel, command);
                     break;
                 }
             } else {
-                // match even commands by local channel id
+                // match even commands (requests) by local channel id
                 if (channel->local_cid == dest_cid) {
                     l2cap_signaling_handler_channel(channel, command);
                     break;
