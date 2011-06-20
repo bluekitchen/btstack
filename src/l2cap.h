@@ -60,7 +60,9 @@ typedef enum {
     L2CAP_STATE_OPEN,
     L2CAP_STATE_WAIT_DISCONNECT,  // from application
     L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST,
-    L2CAP_STATE_WILL_SEND_DISCONNECT,
+    L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST,
+    L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE,
+    L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE,
     
 } L2CAP_STATE;
 
@@ -85,6 +87,8 @@ typedef struct {
     uint16_t  psm;
 
     uint8_t   packets_granted;    // number of L2CAP/ACL packets client is allowed to send
+    
+    uint8_t   reason; // used in decline internal
     
     // uint16_t flush_timeout_incoming;
     // uint16_t flush_timeout_outgoing;
