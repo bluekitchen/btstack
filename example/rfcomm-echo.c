@@ -184,12 +184,6 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
                     bt_send_rfcomm(rfcomm_channel_id, test_data, mtu);
                     break;
                     
-                case SDP_SERVICE_REGISTERED:
-                    // event not sent yet
-                    // printf("SDP_SERVICE_REGISTERED\n");
-                    // bt_send_cmd(&btstack_set_discoverable, 1);
-                    break;
-
 				case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
 					printf("Using PIN 0000\n");
@@ -209,12 +203,10 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					break;
 					
 				case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
-					// data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
+					// data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
 					if (packet[2]) {
 						printf("RFCOMM channel open failed, status %u\n", packet[2]);
 					} else {
-                        // next Cydia release will use SVN version of this
-                        // data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
 						rfcomm_channel_id = READ_BT_16(packet, 12);
 						mtu = READ_BT_16(packet, 14);
 						printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_channel_id, mtu);
