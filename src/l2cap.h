@@ -81,7 +81,8 @@ typedef struct {
     bd_addr_t address;
     hci_con_handle_t handle;
 
-    uint8_t   sig_id;  // other sig for conn requests
+    uint8_t   remote_sig_id;    // used by other side, needed for delayed response
+    uint8_t   local_sig_id;     // own signaling identifier
 
     uint16_t  local_cid;
     uint16_t  remote_cid;
