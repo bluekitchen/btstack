@@ -252,14 +252,26 @@ void l2cap_run(void){
         l2cap_channel_t * channel = (l2cap_channel_t *) it;
         switch (channel->state){
 
+            case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE:
+                l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->sig_id, 0, 0, channel->reason, 0);
+                // discard channel - l2cap_finialize_channel_close without sending l2cap close event
+                linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
+                free (channel);
+                break;
+                
             case L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST:
                 // success, start l2cap handshake
                 channel->sig_id = l2cap_next_sig_id();
                 l2cap_send_signaling_packet( channel->handle, CONNECTION_REQUEST, channel->sig_id, channel->psm, channel->local_cid);                   
                 channel->state = L2CAP_STATE_WAIT_CONNECT_RSP;
                 break;
+
+            case L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE:
+                l2cap_send_signaling_packet( channel->handle, DISCONNECTION_RESPONSE, channel->sig_id, channel->local_cid, channel->remote_cid);   
+                l2cap_finialize_channel_close(channel);
+                break;
                 
-            case L2CAP_STATE_WILL_SEND_DISCONNECT:
+            case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST:
                 channel->sig_id = l2cap_next_sig_id();
                 l2cap_send_signaling_packet( channel->handle, DISCONNECTION_REQUEST, channel->sig_id, channel->remote_cid, channel->local_cid);   
                 channel->state = L2CAP_STATE_WAIT_DISCONNECT;
@@ -310,7 +322,7 @@ void l2cap_disconnect_internal(uint16_t local_cid, uint8_t reason){
     // find channel for local_cid
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (channel) {
-        channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT;
+        channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
     }
     // process
     l2cap_run();
@@ -429,8 +441,9 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
 }
 
 static void l2cap_handle_disconnect_request(l2cap_channel_t *channel, uint16_t identifier){
-    l2cap_send_signaling_packet( channel->handle, DISCONNECTION_RESPONSE, identifier, channel->local_cid, channel->remote_cid);   
-    l2cap_finialize_channel_close(channel);
+    channel->sig_id = identifier;
+    channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE;
+    l2cap_run();
 }
 
 static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig_id, uint16_t psm, uint16_t source_cid){
@@ -514,11 +527,9 @@ void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason){
         log_err( "l2cap_decline_connection_internal called but local_cid 0x%x not found", local_cid);
         return;
     }
-    l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->sig_id, 0, 0, reason, 0);
-
-    // discard channel
-    linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
-    free (channel);
+    channel->state  = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
+    channel->reason = reason;
+    l2cap_run();
 }
 
 void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t *command){
