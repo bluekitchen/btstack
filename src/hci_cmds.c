@@ -228,6 +228,10 @@ OPCODE(OGF_LINK_CONTROL, 0x1A), "B"
 /**
  *  Link Policy Commands 
  */
+const hci_cmd_t hci_sniff_mode = {
+OPCODE(OGF_LINK_POLICY, 0x03), "H2222"
+// handle, Sniff_Max_Interval, Sniff_Min_Interval, Sniff_Attempt, Sniff_Timeout:
+};
 const hci_cmd_t hci_qos_setup = {
 OPCODE(OGF_LINK_POLICY, 0x07), "H114444"
 // handle, flags, service_type, token rate (bytes/s), peak bandwith (bytes/s),
