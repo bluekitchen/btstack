@@ -252,12 +252,18 @@ void l2cap_run(void){
         l2cap_channel_t * channel = (l2cap_channel_t *) it;
         switch (channel->state){
 
+            case L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST:
+                // success, start l2cap handshake
+                channel->sig_id = l2cap_next_sig_id();
+                l2cap_send_signaling_packet( channel->handle, CONNECTION_REQUEST, channel->sig_id, channel->psm, channel->local_cid);                   
+                channel->state = L2CAP_STATE_WAIT_CONNECT_RSP;
+                break;
+                
             case L2CAP_STATE_WILL_SEND_DISCONNECT:
                 channel->sig_id = l2cap_next_sig_id();
                 l2cap_send_signaling_packet( channel->handle, DISCONNECTION_REQUEST, channel->sig_id, channel->remote_cid, channel->local_cid);   
                 channel->state = L2CAP_STATE_WAIT_DISCONNECT;
                 break;
-                
             default:
                 break;
         }
@@ -335,14 +341,14 @@ static void l2cap_handle_connection_success_for_addr(bd_addr_t address, hci_con_
         if ( ! BD_ADDR_CMP( channel->address, address) ){
             if (channel->state == L2CAP_STATE_CLOSED) {
                 // success, start l2cap handshake
+                channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
                 channel->handle = handle;
-                channel->sig_id = l2cap_next_sig_id();
                 channel->local_cid = l2cap_next_local_cid();
-                channel->state = L2CAP_STATE_WAIT_CONNECT_RSP;
-                l2cap_send_signaling_packet( channel->handle, CONNECTION_REQUEST, channel->sig_id, channel->psm, channel->local_cid);                   
             }
         }
     }
+    // process
+    l2cap_run();
 }
 
 void l2cap_event_handler( uint8_t *packet, uint16_t size ){
