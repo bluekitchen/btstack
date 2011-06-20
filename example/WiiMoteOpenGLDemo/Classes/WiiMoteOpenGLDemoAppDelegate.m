@@ -95,23 +95,24 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 
 	float rotationAngle = getRotationAngle(rotationMatrix) * 180/M_PI;
 	
-#if 0
+#if 1
 	if (rotationAngle >= 90){
-		getRotationMatrixFromVectors(restPosition2, accData, rotationMatrix);
+		getRotationMatrixFromVectors(restPosition, accData, rotationMatrix);
 		[[theMainApp glView] setRotationX:0 Y:180 Z:0];
 	} else {
 		[[theMainApp glView] setRotationX:0 Y:0 Z:0];
 	}
 #endif
-#if 1
+#if 0
 	// float frontV[3] ={ 1, 0, 0};
 	float projectectFrontV[3];
 	projectectFrontV[0] = rotationMatrix[0][0];
 	projectectFrontV[1] = rotationMatrix[1][0];
 	projectectFrontV[2] = rotationMatrix[2][0];
 	float correctionZ = atan2(projectectFrontV[1], projectectFrontV[0]) * 180/M_PI;
-	printf("%f, %f, %f - angle %f - dir %f, %f=> %f\n", accData[0], accData[1], accData[2], rotationAngle,
+	NSLog(@"%f, %f, %f - angle %f - dir %f, %f=> %f\n", accData[0], accData[1], accData[2], rotationAngle,
 		   projectectFrontV[0], projectectFrontV[1], correctionZ);
+
 	// if (rotationAngle >= 90){
 	// [[theMainApp glView] setRotationX:0 Y:0 Z:-correctionZ];
 	// }
@@ -182,13 +183,16 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 	
 	// stop connection icon
 	[device setConnectionState:kBluetoothConnectionConnected];
-	
-	// push glViewControl on stack
+
+    // prepare glView
 	glView = (EAGLView *) [glViewControl view];
 	glView.animationInterval = 1.0 / 60.0;
-	[glView startAnimation];
-	
-	[navControl pushViewController:glViewControl animated:YES];
+
+    // push glViewControl on stack
+    [navControl pushViewController:glViewControl animated:YES];
+    
+    // let's go
+    [glView startAnimation];
 }
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application {
@@ -200,9 +204,12 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 	// TODO fix
 	// [discoveryView setAllowSelection:NO];
 
-	UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:discoveryView];
+	// create view controller
+	glViewControl = [[EAGLViewController alloc] init];
+
+	navControl = [[UINavigationController alloc] initWithRootViewController:discoveryView];
 	window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-	[window addSubview:nav.view];
+	[window addSubview:navControl.view];
 	[window makeKeyAndVisible];
 
 	// BTstack
@@ -213,12 +220,6 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 
 	BTstackError err = [bt activate];
 	if (err) NSLog(@"activate err 0x%02x!", err);
-	
-	// extra -- not handled yet
-	
-	// create view controller
-	glViewControl = [[EAGLViewController alloc] init];
-
 }
 
 // new
