@@ -49,17 +49,17 @@
 // input from command line arguments
 bd_addr_t addr = { };
 uint16_t con_handle;
-uint16_t mtu;
 char pin[17];
 int counter = 0;
 uint16_t rfcomm_channel_nr;
 uint16_t rfcomm_channel_id;
-
+uint8_t service_buffer[100];
 uint8_t test_data[1021];
+
 void create_test_data(void){
     int x,y;
     for (y=0;y<25;y++){
-        for (x=0;x<78;y++){
+        for (x=0;x<78;x++){
             test_data[y*80+x] = '0' + (x % 10);
         }
         test_data[y*80+78] = '\n';
@@ -67,7 +67,6 @@ void create_test_data(void){
     }
 }
 
-uint8_t service_buffer[100];
 void create_spp_service(uint8_t *service, int service_id){
 	
 	uint8_t* attribute;
@@ -138,15 +137,19 @@ void create_spp_service(uint8_t *service, int service_id){
 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	bd_addr_t event_addr;
+	uint16_t mtu;
+	uint16_t rfcomm_channel_nr;
+	uint16_t rfcomm_channel_id;
 	
 	switch (packet_type) {
 			
+#if 0
 		case RFCOMM_DATA_PACKET:
 			printf("Received RFCOMM data on channel id %u, size %u\n", channel, size);
 			hexdump(packet, size);
             bt_send_rfcomm(channel, packet, size);
 			break;
-			
+#endif	
 		case HCI_EVENT_PACKET:
 			switch (packet[0]) {
 					
@@ -168,21 +171,23 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
                 case RFCOMM_EVENT_PERSISTENT_CHANNEL:
                     rfcomm_channel_nr = packet[3];
                     printf("RFCOMM channel %u was assigned by BTdaemon\n", rfcomm_channel_nr);
-                    bt_send_cmd(&rfcomm_register_service, rfcomm_channel_nr, 100);  // reserved channel, mtu=100
+                    bt_send_cmd(&rfcomm_register_service, rfcomm_channel_nr, 1000);  // reserved channel, mtu=100
                     break;
                     
                 case RFCOMM_EVENT_SERVICE_REGISTERED:
                     printf("RFCOMM_EVENT_SERVICE_REGISTERED\n");
+                    rfcomm_channel_nr = packet[3];
                     // register SDP for our SPP
                     create_spp_service(service_buffer, rfcomm_channel_nr);
                     bt_send_cmd(&sdp_register_service_record, service_buffer);
                     bt_send_cmd(&btstack_set_discoverable, 1);
                     break;
-                
+
                 case RFCOMM_EVENT_CREDITS:
-                    sprintf((char*)test_data, "-> %09u <- ", counter++);
+                    sprintf((char*)test_data, "\n\r\n\r-> %09u <- ", counter++);
                     bt_send_rfcomm(rfcomm_channel_id, test_data, mtu);
                     break;
+                    
                     
                 case SDP_SERVICE_REGISTERED:
                     // event not sent yet
@@ -213,12 +218,12 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					if (packet[2]) {
 						printf("RFCOMM channel open failed, status %u\n", packet[2]);
 					} else {
-                        // next Cydia release will use SVN version of this
                         // data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
 						rfcomm_channel_id = READ_BT_16(packet, 12);
 						mtu = READ_BT_16(packet, 14);
+                        
 						printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_channel_id, mtu);
-					}
+                    }
 					break;
 					
 				case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -239,6 +244,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 int main (int argc, const char * argv[]){
 	
     create_test_data();
+    printf("created test data: \n%s\n", test_data);
     
 	run_loop_init(RUN_LOOP_POSIX);
 	int err = bt_open();
