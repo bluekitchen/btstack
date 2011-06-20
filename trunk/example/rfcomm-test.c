@@ -132,7 +132,7 @@ void create_spp_service(uint8_t *service, int service_id){
 	
 	// 0x0100 "ServiceName"
 	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-	de_add_data(service,  DE_STRING, 8, (uint8_t *) "SPP ECHO");
+	de_add_data(service,  DE_STRING, 8, (uint8_t *) "SPP TEST");
 }
 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -143,13 +143,12 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	
 	switch (packet_type) {
 			
-#if 0
 		case RFCOMM_DATA_PACKET:
 			printf("Received RFCOMM data on channel id %u, size %u\n", channel, size);
 			hexdump(packet, size);
             bt_send_rfcomm(channel, packet, size);
 			break;
-#endif	
+			
 		case HCI_EVENT_PACKET:
 			switch (packet[0]) {
 					
@@ -164,7 +163,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
                     if (packet[2] == HCI_STATE_WORKING) {
                         // get persistent RFCOMM channel
                         printf("HCI_STATE_WORKING\n");
-                        bt_send_cmd(&rfcomm_persistent_channel_for_service, "ch.ringwald.btstack.rfcomm-echo2");
+                        bt_send_cmd(&rfcomm_persistent_channel_for_service, "ch.ringwald.btstack.rfcomm-test");
                   	}
 					break;
                     
@@ -188,13 +187,6 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
                     bt_send_rfcomm(rfcomm_channel_id, test_data, mtu);
                     break;
                     
-                    
-                case SDP_SERVICE_REGISTERED:
-                    // event not sent yet
-                    // printf("SDP_SERVICE_REGISTERED\n");
-                    // bt_send_cmd(&btstack_set_discoverable, 1);
-                    break;
-
 				case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
 					printf("Using PIN 0000\n");
@@ -214,7 +206,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					break;
 					
 				case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
-					// data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
+					// data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
 					if (packet[2]) {
 						printf("RFCOMM channel open failed, status %u\n", packet[2]);
 					} else {
