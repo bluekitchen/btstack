@@ -244,6 +244,7 @@ int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
  
 // process outstanding signaling tasks
 void l2cap_run(void){
+    uint8_t  config_options[4];
     linked_item_t *it;
     for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
         
@@ -264,6 +265,25 @@ void l2cap_run(void){
                 channel->sig_id = l2cap_next_sig_id();
                 l2cap_send_signaling_packet( channel->handle, CONNECTION_REQUEST, channel->sig_id, channel->psm, channel->local_cid);                   
                 channel->state = L2CAP_STATE_WAIT_CONNECT_RSP;
+                break;
+                
+            case L2CAP_STATE_WAIT_CONFIG_REQ_OR_SEND_CONFIG_REQ:
+                // after connection response was received
+                channel->sig_id = l2cap_next_sig_id();
+                config_options[0] = 1; // MTU
+                config_options[1] = 2; // len param
+                bt_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
+                l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->remote_cid, 0, 4, &config_options);
+                channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ;
+                break;
+
+            case L2CAP_STATE_WILL_SEND_CONFIG_REQ_AND_CONFIG_REQ_RSP:
+                channel->sig_id = l2cap_next_sig_id();
+                config_options[0] = 1; // MTU
+                config_options[1] = 2; // len param
+                bt_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
+                l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->remote_cid, 0, 4, &config_options);
+                channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP;
                 break;
 
             case L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE:
@@ -556,7 +576,6 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
     uint8_t  code       = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
     uint8_t  identifier = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
     uint16_t result = 0;
-    uint8_t  config_options[4];
     
     // log_dbg("signaling handler code %u\n", code);
     
@@ -570,15 +589,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                         case 0:
                             // successful connection
                             channel->remote_cid = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
-                            
-                            
-                            channel->sig_id = l2cap_next_sig_id();
-                            config_options[0] = 1; // MTU
-                            config_options[1] = 2; // len param
-                            bt_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
-                            l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->sig_id, channel->remote_cid, 0, 4, &config_options);
-                            channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ;
-                    
+                            channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_OR_SEND_CONFIG_REQ;
 #if 0
     channel->state = L2CAP_STATE_OPEN;
     l2cap_emit_channel_opened(channel, 0);  // success
@@ -617,6 +628,21 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
             }
             break;
 
+        case L2CAP_STATE_WAIT_CONFIG_REQ_OR_SEND_CONFIG_REQ:
+            switch (code) {
+                case CONFIGURE_REQUEST:
+                    l2cap_signaling_handle_configure_request(channel, command);
+                    channel->state = L2CAP_STATE_WILL_SEND_CONFIG_REQ_AND_CONFIG_REQ_RSP;
+                    break;
+                case DISCONNECTION_REQUEST:
+                    l2cap_handle_disconnect_request(channel, identifier);
+                    break;
+                default:
+                    //@TODO: implement other signaling packets
+                    break;
+            }
+            break;
+            
         case L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ:
             switch (code) {
                 case CONFIGURE_RESPONSE:
