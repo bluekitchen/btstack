@@ -253,6 +253,7 @@ void l2cap_run(void){
         switch (channel->state){
 
             case L2CAP_STATE_WILL_SEND_DISCONNECT:
+                channel->sig_id = l2cap_next_sig_id();
                 l2cap_send_signaling_packet( channel->handle, DISCONNECTION_REQUEST, channel->sig_id, channel->remote_cid, channel->local_cid);   
                 channel->state = L2CAP_STATE_WAIT_DISCONNECT;
                 break;
