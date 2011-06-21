@@ -443,9 +443,11 @@ static void event_handler(uint8_t *packet, int size){
             break;
 
         case HCI_EVENT_LINK_KEY_REQUEST:
+            log_dbg("HCI_EVENT_LINK_KEY_REQUEST\n");
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_REQUEST);
             if (!hci_stack.remote_device_db) break;
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], HANDLE_LINK_KEY_REQUEST);
+            hci_run();
             // request already answered
             return;
             
@@ -839,10 +841,11 @@ void hci_run(){
     for (it = (linked_item_t *) hci_stack.connections; it ; it = it->next){
 
         connection = (hci_connection_t *) it;
-        
+
         if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
         
         if (connection->state == RECEIVED_CONNECTION_REQUEST){
+            log_dbg("sending hci_accept_connection_request\n");
             hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
             connection->state = ACCEPTED_CONNECTION_REQUEST;
         }
@@ -851,6 +854,7 @@ void hci_run(){
         
         if (connection->authentication_flags & HANDLE_LINK_KEY_REQUEST){
             link_key_t link_key;
+            log_dbg("responding to link key request\n");
             if ( hci_stack.remote_device_db->get_link_key( &connection->address, &link_key)){
                hci_send_cmd(&hci_link_key_request_reply, connection->address, &link_key);
             } else {
