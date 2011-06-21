@@ -151,12 +151,13 @@ extern "C" {
  */
 typedef enum {
     RECV_LINK_KEY_REQUEST          = 0x01,
-    SENT_LINK_KEY_REPLY            = 0x02,
-    SENT_LINK_KEY_NEGATIVE_REQUEST = 0x04,
-    RECV_LINK_KEY_NOTIFICATION     = 0x08,
-    RECV_PIN_CODE_REQUEST          = 0x10,
-    SENT_PIN_CODE_REPLY            = 0x20, 
-    SENT_PIN_CODE_NEGATIVE_REPLY   = 0x40 
+    HANDLE_LINK_KEY_REQUEST        = 0x02,
+    SENT_LINK_KEY_REPLY            = 0x04,
+    SENT_LINK_KEY_NEGATIVE_REQUEST = 0x08,
+    RECV_LINK_KEY_NOTIFICATION     = 0x10,
+    RECV_PIN_CODE_REQUEST          = 0x20,
+    SENT_PIN_CODE_REPLY            = 0x40, 
+    SENT_PIN_CODE_NEGATIVE_REPLY   = 0x80 
 } hci_authentication_flags_t;
 
 typedef enum {

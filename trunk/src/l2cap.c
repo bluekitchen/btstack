@@ -527,9 +527,9 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
                     used = 1;
                 }
             }
-            if (!used) {
-                hci_send_cmd(&hci_disconnect, handle, 0x13); // remote closed connection             
-            }
+            if (used) break;
+            if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) break;
+            hci_send_cmd(&hci_disconnect, handle, 0x13); // remote closed connection             
             break;
             
         default:

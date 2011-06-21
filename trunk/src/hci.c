@@ -346,7 +346,6 @@ static void event_handler(uint8_t *packet, int size){
     hci_con_handle_t handle;
     hci_connection_t * conn;
     int i;
-    link_key_t link_key;
         
     switch (packet[0]) {
                         
@@ -403,8 +402,8 @@ static void event_handler(uint8_t *packet, int size){
                     conn = create_connection_for_addr(addr);
                 }
                 // TODO: check for malloc failure
-                conn->state = ACCEPTED_CONNECTION_REQUEST;
-                hci_send_cmd(&hci_accept_connection_request, addr, 1);
+                conn->state = RECEIVED_CONNECTION_REQUEST;
+                hci_run();
             } else {
                 // TODO: decline request
             }
@@ -446,12 +445,7 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_LINK_KEY_REQUEST:
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_REQUEST);
             if (!hci_stack.remote_device_db) break;
-            bt_flip_addr(addr, &packet[2]);
-            if ( hci_stack.remote_device_db->get_link_key( &addr, &link_key)){
-                hci_send_cmd(&hci_link_key_request_reply, &addr, &link_key);
-            } else {
-                hci_send_cmd(&hci_link_key_request_negative_reply, &addr);
-            }
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], HANDLE_LINK_KEY_REQUEST);
             // request already answered
             return;
             
@@ -838,13 +832,36 @@ void hci_discoverable_control(uint8_t enable){
 
 void hci_run(){
         
-    if (hci_stack.num_cmd_packets == 0) {
-        // cannot send command yet
-        return;
+    hci_connection_t * connection;
+    linked_item_t * it;
+    
+    // send pending HCI commands
+    for (it = (linked_item_t *) hci_stack.connections; it ; it = it->next){
+
+        connection = (hci_connection_t *) it;
+        
+        if (hci_stack.num_cmd_packets == 0) return;
+        
+        if (connection->state == RECEIVED_CONNECTION_REQUEST){
+            hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
+            connection->state = ACCEPTED_CONNECTION_REQUEST;
+        }
+
+        if (hci_stack.num_cmd_packets == 0) return;
+        
+        if (connection->authentication_flags & HANDLE_LINK_KEY_REQUEST){
+            link_key_t link_key;
+            if ( hci_stack.remote_device_db->get_link_key( &connection->address, &link_key)){
+               hci_send_cmd(&hci_link_key_request_reply, connection->address, &link_key);
+            } else {
+               hci_send_cmd(&hci_link_key_request_negative_reply, connection->address);
+            }
+            connection->authentication_flags &= ~HANDLE_LINK_KEY_REQUEST;
+        }
     }
 
-    hci_connection_t * connection;
-    
+    if (hci_stack.num_cmd_packets == 0) return;
+        
     switch (hci_stack.state){
         case HCI_STATE_INITIALIZING:
             if (hci_stack.substate % 2) {
@@ -926,8 +943,11 @@ void hci_run(){
             // close all open connections
             connection =  (hci_connection_t *) hci_stack.connections;
             if (connection){
-                log_dbg("HCI_STATE_HALTING, connection %lu, handle %u\n", (uintptr_t) connection, connection->con_handle);
+                
                 // send disconnect
+                if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
+                
+                log_dbg("HCI_STATE_HALTING, connection %lu, handle %u\n", (uintptr_t) connection, connection->con_handle);
                 hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
 
                 // send disconnected event right away - causes higher layer connections to get closed, too.
@@ -951,8 +971,11 @@ void hci_run(){
                     // close all open connections
                     connection =  (hci_connection_t *) hci_stack.connections;
                     if (connection){
-                        log_dbg("HCI_STATE_FALLING_ASLEEP, connection %lu, handle %u\n", (uintptr_t) connection, connection->con_handle);
+                        
                         // send disconnect
+                        if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
+
+                        log_dbg("HCI_STATE_FALLING_ASLEEP, connection %lu, handle %u\n", (uintptr_t) connection, connection->con_handle);
                         hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
                         
                         // send disconnected event right away - causes higher layer connections to get closed, too.
@@ -960,9 +983,10 @@ void hci_run(){
                         return;
                     }
                     
-                    log_dbg("HCI_STATE_HALTING, disabling inq & page scans\n");
-
                     // disable page and inquiry scan
+                    if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
+                    
+                    log_dbg("HCI_STATE_HALTING, disabling inq & page scans\n");
                     hci_send_cmd(&hci_write_scan_enable, 0); // none
                     
                     // continue in next sub state
