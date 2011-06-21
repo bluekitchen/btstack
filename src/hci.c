@@ -208,6 +208,17 @@ uint16_t hci_max_acl_data_packet_length(){
     return hci_stack.acl_data_packet_length;
 }
 
+int hci_can_send_packet_now(uint8_t packet_type){
+    switch (packet_type) {
+        case HCI_ACL_DATA_PACKET:
+            return hci_number_free_acl_slots();
+        case HCI_COMMAND_DATA_PACKET:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
 int hci_send_acl_packet(uint8_t *packet, int size){
 
     // check for free places on BT module
