@@ -66,6 +66,17 @@
 static void null_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void l2cap_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
+// used to cache l2cap rejects, echo, and informational requests
+#define NR_PENDING_SIGNALING_RESPONSES 10
+typedef struct l2cap_signaling_response {
+    hci_con_handle_t handle;
+    uint8_t  sig_id;
+    uint8_t  code;
+    uint16_t infoType;
+} l2cap_signaling_response_t;
+static l2cap_signaling_response_t signaling_responses[NR_PENDING_SIGNALING_RESPONSES];
+static int signaling_responses_pending;
+
 static uint8_t * sig_buffer = NULL;
 static linked_list_t l2cap_channels = NULL;
 static linked_list_t l2cap_services = NULL;
@@ -78,7 +89,8 @@ void l2cap_init(){
     acl_buffer = malloc( HCI_ACL_3DH5_SIZE); 
 
     new_credits_blocked = 0;
-
+    signaling_responses_pending = 0;
+    
     // 
     // register callback with HCI
     //
@@ -244,6 +256,44 @@ int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
  
 // process outstanding signaling tasks
 void l2cap_run(void){
+    
+    
+    // check pending signaling responses
+    while (signaling_responses_pending){
+        
+        // can send?
+        
+        hci_con_handle_t handle = signaling_responses[0].handle;
+        uint8_t sig_id = signaling_responses[0].sig_id;
+        uint8_t infoType = signaling_responses[0].infoType;
+        
+        switch (signaling_responses[0].code){
+            case ECHO_REQUEST:
+                l2cap_send_signaling_packet(handle, ECHO_RESPONSE, sig_id, 0, NULL);
+                break;
+            case INFORMATION_REQUEST:
+                if (infoType == 2) {
+                    uint32_t features = 0;
+                    // extended features request supported, however no features present
+                    l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, 4, &features);
+                } else {
+                    // all other types are not supported
+                    l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 1, 0, NULL);
+                }
+                break;
+            default:
+                // should not happen
+                break;
+        }
+        
+        // remove first item
+        signaling_responses_pending--;
+        int i;
+        for (i=0; i < signaling_responses_pending; i++){
+            signaling_responses[i] = signaling_responses[i+1];
+        }
+    }
+    
     uint8_t  config_options[4];
     linked_item_t *it;
     for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
@@ -595,15 +645,15 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
     if (code == DISCONNECTION_REQUEST){
         switch (channel->state){
             case L2CAP_STATE_WAIT_CONFIG_REQ_OR_SEND_CONFIG_REQ:
-            case L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_WILL_SEND_CONFIG_REQ_RSP,
+            case L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_WILL_SEND_CONFIG_REQ_RSP:
             case L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ:
             case L2CAP_STATE_WAIT_CONFIG_REQ:
             case L2CAP_STATE_WAIT_CONFIG_REQ_RSP:
-            case L2CAP_STATE_WILL_SEND_CONFIG_REQ,
-            case L2CAP_STATE_WILL_SEND_CONFIG_REQ_RSP,
-            case L2CAP_STATE_WILL_SEND_CONFIG_REQ_AND_CONFIG_REQ_RSP,
+            case L2CAP_STATE_WILL_SEND_CONFIG_REQ:
+            case L2CAP_STATE_WILL_SEND_CONFIG_REQ_RSP:
+            case L2CAP_STATE_WILL_SEND_CONFIG_REQ_AND_CONFIG_REQ_RSP:
             case L2CAP_STATE_OPEN:
-            case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST,
+            case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST:
             case L2CAP_STATE_WAIT_DISCONNECT:
                 l2cap_handle_disconnect_request(channel, identifier);
                 break;
@@ -742,7 +792,6 @@ void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t * comman
     // get code, signalind identifier and command len
     uint8_t code   = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
     uint8_t sig_id = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
-    uint16_t len   = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
     
     // not for a particular channel, and not CONNECTION_REQUEST, ECHO_[REQUEST|RESPONSE], INFORMATION_REQUEST 
     if (code < 1 || code == ECHO_RESPONSE || code > INFORMATION_REQUEST){
@@ -756,27 +805,32 @@ void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t * comman
             uint16_t psm =        READ_BT_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
             uint16_t source_cid = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+2);
             l2cap_handle_connection_request(handle, sig_id, psm, source_cid);
-            break;
+            return;
         }
             
         case ECHO_REQUEST: {
-            // send back packet
-            l2cap_send_signaling_packet(handle, ECHO_RESPONSE, sig_id, len, &command[L2CAP_SIGNALING_COMMAND_DATA_OFFSET]);
-            break;
+            if (signaling_responses_pending < NR_PENDING_SIGNALING_RESPONSES) {
+                signaling_responses[signaling_responses_pending].handle = handle;
+                signaling_responses[signaling_responses_pending].code = code;
+                signaling_responses[signaling_responses_pending].sig_id = sig_id;
+                signaling_responses_pending++;
+            }
+            l2cap_run();
+            return;
         }
             
         case INFORMATION_REQUEST: {
-            // we neither support connectionless L2CAP data nor support any flow control modes yet
-            uint16_t infoType = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
-            if (infoType == 2) {
-                uint32_t features = 0;
-                // extended features request supported, however no features present
-                l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, 4, &features);
-            } else {
-                // all other types are not supported
-                l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 1, 0, NULL);
+            if (signaling_responses_pending < NR_PENDING_SIGNALING_RESPONSES) {
+                // we neither support connectionless L2CAP data nor support any flow control modes yet
+                uint16_t infoType = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+                signaling_responses[signaling_responses_pending].handle = handle;
+                signaling_responses[signaling_responses_pending].code = code;
+                signaling_responses[signaling_responses_pending].sig_id = sig_id;
+                signaling_responses[signaling_responses_pending].infoType = infoType;
+                signaling_responses_pending++;
             }
-            break;;
+            l2cap_run();
+            return;
         }
             
         default:
