@@ -305,10 +305,10 @@ void l2cap_run(void){
         switch (channel->state){
 
             case L2CAP_STATE_WILL_SEND_CREATE_CONNECTION:
-                // send connection request
+                // send connection request - set state first
+                channel->state = L2CAP_STATE_WAIT_CONNECTION_COMPLETE;
                 // BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
                 hci_send_cmd(&hci_create_connection, channel->address, 0xcc18, 0, 0, 0, 1); 
-                channel->state = L2CAP_STATE_WAIT_CONNECTION_COMPLETE;
                 break;
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE:
@@ -646,7 +646,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
     uint8_t  identifier = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
     uint16_t result = 0;
     
-    // log_dbg("signaling handler code %u\n", code);
+    log_dbg("signaling handler code %u, state %u\n", code, channel->state);
     
     // handle DISCONNECT REQUESTS seperately
     if (code == DISCONNECTION_REQUEST){
@@ -890,6 +890,9 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
             // increment command_offset
             command_offset += L2CAP_SIGNALING_COMMAND_DATA_OFFSET + READ_BT_16(packet, command_offset + L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
         }
+        
+        l2cap_run();
+        
         return;
     }
     
