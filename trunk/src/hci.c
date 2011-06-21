@@ -213,7 +213,7 @@ int hci_can_send_packet_now(uint8_t packet_type){
         case HCI_ACL_DATA_PACKET:
             return hci_number_free_acl_slots();
         case HCI_COMMAND_DATA_PACKET:
-            return 1;
+            return hci_stack.num_cmd_packets;
         default:
             return 0;
     }
@@ -840,14 +840,14 @@ void hci_run(){
 
         connection = (hci_connection_t *) it;
         
-        if (hci_stack.num_cmd_packets == 0) return;
+        if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
         
         if (connection->state == RECEIVED_CONNECTION_REQUEST){
             hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
             connection->state = ACCEPTED_CONNECTION_REQUEST;
         }
 
-        if (hci_stack.num_cmd_packets == 0) return;
+        if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
         
         if (connection->authentication_flags & HANDLE_LINK_KEY_REQUEST){
             link_key_t link_key;
@@ -860,7 +860,7 @@ void hci_run(){
         }
     }
 
-    if (hci_stack.num_cmd_packets == 0) return;
+    if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
         
     switch (hci_stack.state){
         case HCI_STATE_INITIALIZING:
