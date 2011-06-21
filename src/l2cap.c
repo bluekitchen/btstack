@@ -261,7 +261,7 @@ void l2cap_run(void){
     // check pending signaling responses
     while (signaling_responses_pending){
         
-        if (hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) break;
+        if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) break;
         
         hci_con_handle_t handle = signaling_responses[0].handle;
         uint8_t sig_id = signaling_responses[0].sig_id;
@@ -298,11 +298,19 @@ void l2cap_run(void){
     linked_item_t *it;
     for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
         
-        if (hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) break;
+        if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) break;
+        if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) break;
         
         l2cap_channel_t * channel = (l2cap_channel_t *) it;
         switch (channel->state){
 
+            case L2CAP_STATE_WILL_SEND_CREATE_CONNECTION:
+                // send connection request
+                // BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
+                hci_send_cmd(&hci_create_connection, channel->address, 0xcc18, 0, 0, 0, 1); 
+                channel->state = L2CAP_STATE_WAIT_CONNECTION_COMPLETE;
+                break;
+                
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE:
                 l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, 0, 0, channel->reason, 0);
                 // discard channel - l2cap_finialize_channel_close without sending l2cap close event
@@ -399,16 +407,14 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     chan->packets_granted = 0;
     
     // set initial state
-    chan->state = L2CAP_STATE_CLOSED;
+    chan->state = L2CAP_STATE_WILL_SEND_CREATE_CONNECTION;
     chan->remote_sig_id = L2CAP_SIG_ID_INVALID;
     chan->local_sig_id = L2CAP_SIG_ID_INVALID;
     
     // add to connections list
     linked_list_add(&l2cap_channels, (linked_item_t *) chan);
     
-    // send connection request
-    // BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
-    hci_send_cmd(&hci_create_connection, address, 0xcc18, 0, 0, 0, 1); 
+    l2cap_run();
 }
 
 void l2cap_disconnect_internal(uint16_t local_cid, uint8_t reason){
@@ -426,7 +432,7 @@ static void l2cap_handle_connection_failed_for_addr(bd_addr_t address, uint8_t s
     while (it->next){
         l2cap_channel_t * channel = (l2cap_channel_t *) it->next;
         if ( ! BD_ADDR_CMP( channel->address, address) ){
-            if (channel->state == L2CAP_STATE_CLOSED) {
+            if (channel->state == L2CAP_STATE_WAIT_CONNECTION_COMPLETE || channel->state == L2CAP_STATE_WILL_SEND_CREATE_CONNECTION) {
                 // failure, forward error code
                 l2cap_emit_channel_opened(channel, status);
                 // discard channel
@@ -444,7 +450,7 @@ static void l2cap_handle_connection_success_for_addr(bd_addr_t address, hci_con_
     for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
         l2cap_channel_t * channel = (l2cap_channel_t *) it;
         if ( ! BD_ADDR_CMP( channel->address, address) ){
-            if (channel->state == L2CAP_STATE_CLOSED) {
+            if (channel->state == L2CAP_STATE_WAIT_CONNECTION_COMPLETE || channel->state == L2CAP_STATE_WILL_SEND_CREATE_CONNECTION) {
                 // success, start l2cap handshake
                 channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
                 channel->handle = handle;
@@ -461,7 +467,7 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
     bd_addr_t address;
     hci_con_handle_t handle;
     linked_item_t *it;
-    
+        
     switch(packet[0]){
             
         // handle connection complete events
@@ -505,6 +511,7 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
             break;
             
         case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
+            l2cap_run();    // try sending signaling packets first
             l2cap_hand_out_credits();
             break;
             
