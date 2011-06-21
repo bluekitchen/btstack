@@ -591,6 +591,30 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
     
     // log_dbg("signaling handler code %u\n", code);
     
+    // handle DISCONNECT REQUESTS seperately
+    if (code == DISCONNECTION_REQUEST){
+        switch (channel->state){
+            case L2CAP_STATE_WAIT_CONFIG_REQ_OR_SEND_CONFIG_REQ:
+            case L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_WILL_SEND_CONFIG_REQ_RSP,
+            case L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ:
+            case L2CAP_STATE_WAIT_CONFIG_REQ:
+            case L2CAP_STATE_WAIT_CONFIG_REQ_RSP:
+            case L2CAP_STATE_WILL_SEND_CONFIG_REQ,
+            case L2CAP_STATE_WILL_SEND_CONFIG_REQ_RSP,
+            case L2CAP_STATE_WILL_SEND_CONFIG_REQ_AND_CONFIG_REQ_RSP,
+            case L2CAP_STATE_OPEN:
+            case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST,
+            case L2CAP_STATE_WAIT_DISCONNECT:
+                l2cap_handle_disconnect_request(channel, identifier);
+                break;
+
+            default:
+                // ignore in other states
+                break;
+        }
+        return;
+    }
+    
     switch (channel->state) {
             
         case L2CAP_STATE_WAIT_CONNECT_RSP:
@@ -630,10 +654,6 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                     }
                     break;
                     
-                case DISCONNECTION_REQUEST:
-                    l2cap_handle_disconnect_request(channel, identifier);
-                    break;
-                    
                 default:
                     //@TODO: implement other signaling packets
                     break;
@@ -645,9 +665,6 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                 case CONFIGURE_REQUEST:
                     l2cap_signaling_handle_configure_request(channel, command);
                     channel->state = L2CAP_STATE_WILL_SEND_CONFIG_REQ_AND_CONFIG_REQ_RSP;
-                    break;
-                case DISCONNECTION_REQUEST:
-                    l2cap_handle_disconnect_request(channel, identifier);
                     break;
                 default:
                     //@TODO: implement other signaling packets
@@ -664,9 +681,6 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                     l2cap_signaling_handle_configure_request(channel, command);
                     channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_WILL_SEND_CONFIG_REQ_RSP;
                     break;
-                case DISCONNECTION_REQUEST:
-                    l2cap_handle_disconnect_request(channel, identifier);
-                    break;
                 default:
                     //@TODO: implement other signaling packets
                     break;
@@ -678,9 +692,6 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                 case CONFIGURE_REQUEST:
                     l2cap_signaling_handle_configure_request(channel, command);
                     channel->state = L2CAP_STATE_WILL_SEND_CONFIG_REQ_RSP;
-                    break;
-                case DISCONNECTION_REQUEST:
-                    l2cap_handle_disconnect_request(channel, identifier);
                     break;
                 default:
                     //@TODO: implement other signaling packets
@@ -695,9 +706,6 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                     l2cap_emit_channel_opened(channel, 0);  // success
                     l2cap_emit_credits(channel, 1);
                     break;
-                case DISCONNECTION_REQUEST:
-                    l2cap_handle_disconnect_request(channel, identifier);
-                    break;
                 default:
                     //@TODO: implement other signaling packets
                     break;
@@ -708,9 +716,6 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
             switch (code) {
                 case DISCONNECTION_RESPONSE:
                     l2cap_finialize_channel_close(channel);
-                    break;
-                case DISCONNECTION_REQUEST:
-                    l2cap_handle_disconnect_request(channel, identifier);
                     break;
                 default:
                     //@TODO: implement other signaling packets
@@ -723,14 +728,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
             break;
             
         case L2CAP_STATE_OPEN:
-            switch (code) {
-                case DISCONNECTION_REQUEST:
-                    l2cap_handle_disconnect_request(channel, identifier);
-                    break;
-                default:
-                    //@TODO: implement other signaling packets, e.g. re-configure
-                    break;
-            }
+            //@TODO: implement other signaling packets, e.g. re-configure
             break;
         default:
             break;
