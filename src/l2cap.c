@@ -261,7 +261,7 @@ void l2cap_run(void){
     // check pending signaling responses
     while (signaling_responses_pending){
         
-        // can send?
+        if (hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) break;
         
         hci_con_handle_t handle = signaling_responses[0].handle;
         uint8_t sig_id = signaling_responses[0].sig_id;
@@ -298,7 +298,7 @@ void l2cap_run(void){
     linked_item_t *it;
     for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
         
-        // can send?
+        if (hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) break;
         
         l2cap_channel_t * channel = (l2cap_channel_t *) it;
         switch (channel->state){
