@@ -490,6 +490,11 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
                     l2cap_handle_connection_failed_for_addr(address, 0x16);
                 }
             }
+            l2cap_run();    // try sending signaling packets first
+            break;
+            
+        case HCI_EVENT_COMMAND_STATUS:
+            l2cap_run();    // try sending signaling packets first
             break;
             
         // handle disconnection complete events
