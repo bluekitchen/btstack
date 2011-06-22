@@ -1,0 +1,54 @@
+digraph rfcomm_channel {
+	// rankdir=LR;
+	size="8,5"
+    // orientation=landscape;
+    // rotate = 90;
+
+    CLOSED  [shape=doublecircle];
+	OPEN  [shape=doublecircle];
+
+    // DISC #x or DM
+    // W4_SABM_OR_PN_CMD->CLOSED    [label = "RECV DISC#x / SEND UA#x"];
+    // W4_MSC_CMD->CLOSED           [label = "RECV DISC#x / SEND UA#x"];
+    // W4_CLIENT_AFTER_SABM->CLOSED [label = "RECV DISC#x / SEND UA#x"];
+    // W4_SABM_OR_PN_CMD->CLOSED    [label = "RECV DM"];
+    // W4_MSC_CMD->CLOSED           [label = "RECV DM"];
+    // W4_CLIENT_AFTER_SABM->CLOSED [label = "RECV DM"];
+
+    // rfcomm_create_channel_internal
+    CLOSED->W4_MULTIPLEXER [label = "create channel"];
+    
+    // rfcomm_multiplexer_start_connecting
+    W4_MULTIPLEXER->W4_PN_RSP[ label = "Multiplexer open/SEND UIH PN"];    
+    
+    // rfcomm_multiplexer_l2cap_packet_handler
+    
+    // rfcomm_packet_handler
+    W4_SABM_OR_PN_CMD->W4_MSC_CMD [label = "RECV SABM#x / SEND UA#x"];
+    CLOSED->W4_CLIENT_AFTER_SABM  [label = "RECV SABM#x / inform client"];
+    W4_UA->W4_MSC_CMD_OR_MSC_RSP  [label = "RECV UA#x/ SEND UIH MSC CMD"];
+
+    CLOSED->W4_CLIENT_AFTER_PN_CMD [label = "RECV UIH PN CMD/ inform client"];
+    W4_SABM_OR_PN_CMD->W4_SABM_OR_PN_CMD [label = "RECV UIH PN CMD / SEND UIH PN RSP"];
+
+    W4_PN_RSP->W4_UA [ label = "RECV UIH PN RSP / SEND SABM#x" ];
+
+    W4_MSC_CMD_OR_MSC_RSP -> W4_MSC_RSP [label = "RECV MSC CMD / SEND MSP RSP"];
+    W4_MSC_CMD -> OPEN [label = "RECV MSC CMD / SEND MSP RSP + MSC CMD"];
+    W4_MSC_CMD -> W4_CREDITS [label = "RECV MSC CMD / SEND MSP RSP + MSC CMD"];
+   
+    W4_MSC_CMD_OR_MSC_RSP-> W4_MSC_CMD [label = "RECV MSP RSP"];
+    W4_MSC_RSP -> W4_CREDITS [label = "RECV MSP RSP"];
+    W4_MSC_RSP -> OPEN [label = "RECV MSP RSP"];
+     
+    W4_CREDITS -> OPEN [label = "RECV UIH P/F credits > 0"];
+    
+    // rfcomm_accept_connection_internal
+    W4_CLIENT_AFTER_SABM->W4_MSC_CMD [label = "accept connection / SEND UA #x"];
+    W4_CLIENT_AFTER_PN_CMD->W4_SABM_OR_PN_CMD [label = "accept connection / SEND UIH PN RSP"];
+    
+    // rfcomm_decline_connection_internal
+    W4_CLIENT_AFTER_SABM->CLOSED [label = "decline connection / SEND DM"];
+    W4_CLIENT_AFTER_PN_CMD->CLOSED [label = "decline connection / SEND DM"];
+    
+}

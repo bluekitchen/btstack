@@ -1,0 +1,19 @@
+digraph rfcomm_multiplexer {
+	// rankdir=LR;
+	size="8,5"
+    // orientation=landscape;
+    // rotate = 90;
+
+    CLOSED  [shape=doublecircle];
+	OPEN  [shape=doublecircle];
+	
+	CLOSED->W4_CONNECT [label = "create_channel outgoing"];
+    W4_CONNECT->W4_UA_0 [label = "l2cap channel open/SEND SABM"];
+    W4_UA_0->OPEN [label = "UA #0"];
+    
+    CLOSED -> W4_SABM_0 [label = "l2cap channel open incoming"];
+    W4_SABM_0->OPEN [label = "SABM #0/SEND UA#0"];
+
+    OPEN->CLOSED [label = "RECV DISC#0 OR DM/SEND UA#0"];
+    
+}
