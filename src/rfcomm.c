@@ -207,6 +207,8 @@ uint8_t rfcomm_out_buffer[RFCOMM_MAX_PAYLOAD];
 static void (*app_packet_handler)(void * connection, uint8_t packet_type,
                                   uint16_t channel, uint8_t *packet, uint16_t size);
 
+static void rfcomm_run(void);
+
 static void rfcomm_multiplexer_initialize(rfcomm_multiplexer_t *multiplexer){
     bzero(multiplexer, sizeof(rfcomm_multiplexer_t));
     multiplexer->state = RFCOMM_MULTIPLEXER_CLOSED;
@@ -587,20 +589,6 @@ static void rfcomm_hand_out_credits(void){
     }        
 }
 
-// sends UIH PN CMD to first channel with RFCOMM_CHANNEL_W4_MULTIPLEXER
-// this can then called after connection open/fail to handle all outgoing requests
-static void rfcomm_multiplexer_start_connecting(rfcomm_multiplexer_t * multiplexer) {
-    linked_item_t *it;
-    for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
-        rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
-        if (channel->outgoing && channel->state == RFCOMM_CHANNEL_W4_MULTIPLEXER) {
-            log_dbg("-> Sending UIH Parameter Negotiation Command for #%u\n", channel->dlci );
-            rfcomm_send_uih_pn_command(channel->multiplexer, channel->dlci, channel->max_frame_size);
-            channel->state = RFCOMM_CHANNEL_W4_PN_RSP;
-        }
-    }
-}
-
 static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
     
     // remove (potential) timer
@@ -694,7 +682,7 @@ static void rfcomm_channel_opened(rfcomm_channel_t *rfChannel){
     multiplexer->at_least_one_connection = 1;
     
     // start next connection request if pending
-    rfcomm_multiplexer_start_connecting(multiplexer);
+    rfcomm_run();
 }
 
 /**
@@ -774,6 +762,10 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             multiplexer = rfcomm_multiplexer_for_l2cap_cid(l2cap_cid);
             if (!multiplexer) break;
             multiplexer->l2cap_credits += packet[4];
+            
+            // new credits, continue with signaling
+            rfcomm_run();
+            
             // log_dbg("L2CAP_EVENT_CREDITS: %u (now %u)\n", packet[4], multiplexer->l2cap_credits);
             if (multiplexer->state != RFCOMM_MULTIPLEXER_OPEN) break;
             rfcomm_hand_out_credits();
@@ -834,7 +826,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                 // UA #0 -> send UA #0, state = RFCOMM_MULTIPLEXER_OPEN
                 log_dbg("Received UA #0 - Multiplexer up and running\n");
                 multiplexer->state = RFCOMM_MULTIPLEXER_OPEN;
-                rfcomm_multiplexer_start_connecting(multiplexer);
+                rfcomm_run();
                 rfcomm_multiplexer_prepare_idle_timer(multiplexer);
                 return 1;
             }
@@ -1286,6 +1278,29 @@ void rfcomm_close_connection(void *connection){
     }
 }
 
+
+// process outstanding signaling tasks
+// MARK: RFCOMM RUN
+void rfcomm_run(void){
+    
+    linked_item_t *it;
+    for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
+        rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
+        
+        if (!l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid)) continue;
+        
+        // sends UIH PN CMD to first channel with RFCOMM_CHANNEL_W4_MULTIPLEXER
+        // this can then called after connection open/fail to handle all outgoing requests
+
+        if (channel->outgoing && channel->state == RFCOMM_CHANNEL_W4_MULTIPLEXER && channel->multiplexer->state == RFCOMM_MULTIPLEXER_OPEN) {
+            int err = rfcomm_send_uih_pn_command(channel->multiplexer, channel->dlci, channel->max_frame_size);
+            if (err) return;
+            log_dbg("-> Sending UIH Parameter Negotiation Command for #%u\n", channel->dlci );
+            channel->state = RFCOMM_CHANNEL_W4_PN_RSP;
+        }
+    }
+}
+
 // MARK: RFCOMM BTstack API
 
 void rfcomm_init(void){
@@ -1381,11 +1396,12 @@ void rfcomm_create_channel_internal(void * connection, bd_addr_t *addr, uint8_t 
 
     // start connecting, if multiplexer is already up and running
     if (multiplexer->state == RFCOMM_MULTIPLEXER_OPEN){
-        rfcomm_multiplexer_start_connecting(multiplexer);
+        rfcomm_run();
     }
     
     // go!
     if (send_l2cap_create_channel) {
+        // doesn't block
         l2cap_create_channel_internal(connection, rfcomm_packet_handler, *addr, PSM_RFCOMM, RFCOMM_L2CAP_MTU);
     }
 }
