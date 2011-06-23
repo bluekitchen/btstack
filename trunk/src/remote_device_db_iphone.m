@@ -200,7 +200,7 @@ static int  get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
     return (remoteName != nil);
 }
 
-#pragma mark PERSISTENT RFCOMM CHANNEL ALLOCATION
+// MARK: PERSISTENT RFCOMM CHANNEL ALLOCATION
 
 static int firstFreeChannelNr(void){
     BOOL channelUsed[MAX_RFCOMM_CHANNEL_NR+1];

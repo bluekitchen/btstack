@@ -52,7 +52,7 @@ void sdp_normalize_uuid(uint8_t *uuid, uint32_t shortUUID){
     net_store_32(uuid, 0, shortUUID);
 }
 
-#pragma mark DataElement getter
+// MARK: DataElement getter
 de_size_t de_get_size_type(uint8_t *header){
     return header[0] & 7;
 }
@@ -144,7 +144,8 @@ void de_store_descriptor_with_len(uint8_t * header, de_type_t type, de_size_t si
     }
 }
 
-#pragma mark DataElement creation
+// MARK: DataElement creation
+
 /* starts a new sequence in empty buffer - first call */
 void de_create_sequence(uint8_t *header){
     de_store_descriptor_with_len( header, DE_DES, DE_SIZE_VAR_16, 0); // DES, 2 Byte Length
@@ -217,7 +218,7 @@ void de_add_uuid128(uint8_t * seq, uint8_t * uuid){
 void sdp_add_attribute(uint8_t *seq, uint16_t attributeID, uint8_t attributeValue){
 }
 
-#pragma mark DataElementSequence traversal
+// MARK: DataElementSequence traversal
 typedef int (*de_traversal_callback_t)(uint8_t * element, de_type_t type, de_size_t size, void *context);
 static void de_traverse_sequence(uint8_t * element, de_traversal_callback_t handler, void *context){
     de_type_t type = de_get_element_type(element);
@@ -233,7 +234,7 @@ static void de_traverse_sequence(uint8_t * element, de_traversal_callback_t hand
     }
 }
 
-#pragma mark AttributeList traversal
+// MARK: AttributeList traversal
 typedef int (*sdp_attribute_list_traversal_callback_t)(uint16_t attributeID, uint8_t * attributeValue, de_type_t type, de_size_t size, void *context);
 static void sdp_attribute_list_traverse_sequence(uint8_t * element, sdp_attribute_list_traversal_callback_t handler, void *context){
     de_type_t type = de_get_element_type(element);
@@ -255,7 +256,7 @@ static void sdp_attribute_list_traverse_sequence(uint8_t * element, sdp_attribut
     }
 }
 
-#pragma mark AttributeID in AttributeIDList 
+// MARK: AttributeID in AttributeIDList 
 // attribute ID in AttributeIDList
 // context { result, attributeID }
 struct sdp_context_attributeID_search {
@@ -292,7 +293,7 @@ int sdp_attribute_list_constains_id(uint8_t *attributeIDList, uint16_t attribute
     return attributeID_search.result;
 }
 
-#pragma mark Append Attributes for AttributeIDList
+// MARK: Append Attributes for AttributeIDList
 // pre: buffer contains DES with 2 byte length field
 struct sdp_context_append_attributes {
     uint8_t * buffer;
@@ -346,7 +347,7 @@ int sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attribute
     return -1;
 }
 
-#pragma mark Get AttributeValue for AttributeID
+// MARK: Get AttributeValue for AttributeID
 // find attribute (ELEMENT) by ID
 struct sdp_context_attribute_by_id {
     uint16_t  attributeID;
@@ -369,7 +370,7 @@ uint8_t * sdp_get_attribute_value_for_attribute_id(uint8_t * record, uint16_t at
     return context.attributeValue;
 }
 
-#pragma mark Set AttributeValue for AttributeID
+// MARK: Set AttributeValue for AttributeID
 struct sdp_context_set_attribute_for_id {
     uint16_t  attributeID;
     uint32_t  attributeValue;
@@ -408,7 +409,7 @@ uint8_t sdp_set_attribute_value_for_attribute_id(uint8_t * record, uint16_t attr
     return context.attributeFound;
 }
 
-#pragma mark ServiceRecord contains UUID
+// MARK: ServiceRecord contains UUID
 // service record contains UUID
 // context { normalizedUUID }
 struct sdp_context_contains_uuid128 {
@@ -436,7 +437,7 @@ int sdp_record_contains_UUID128(uint8_t *record, uint8_t *uuid128){
     return context.result;
 }
     
-#pragma mark ServiceRecord matches SearchServicePattern
+// MARK: ServiceRecord matches SearchServicePattern
 // if UUID in searchServicePattern is not found in record => false
 // context { result, record }
 struct sdp_context_match_pattern {
@@ -461,7 +462,7 @@ int sdp_record_matches_service_search_pattern(uint8_t *record, uint8_t *serviceS
     return context.result;
 }
 
-#pragma mark Dump DataElement
+// MARK: Dump DataElement
 // context { indent }
 static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_t de_size, void *my_context){
     int indent = *(int*) my_context;
