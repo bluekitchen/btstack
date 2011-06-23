@@ -28,7 +28,7 @@
  * SUCH DAMAGE.
  *
  */
-#pragma mark once
+#pragma once
 
 #include <stdint.h>
 #include <btstack/linked_list.h>

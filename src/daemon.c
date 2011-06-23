@@ -94,7 +94,7 @@ typedef struct {
     
 } client_state_t;
 
-#pragma mark prototypes
+// MARK: prototypes
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state);
 static client_state_t * client_for_connection(connection_t *connection);
 static int              clients_require_power_on(void);
@@ -103,7 +103,7 @@ static void              clients_clear_power_request(void);
 static void start_power_off_timer(void);
 static void stop_power_off_timer(void);
 
-#pragma mark globals
+// MARK: globals
 static hci_transport_t * transport;
 static hci_uart_config_t config;
 static timer_source_t timeout;
@@ -643,7 +643,7 @@ int main (int argc,  char * const * argv){
 }
 
 
-#pragma mark manage power off timer
+// MARK: manage power off timer
 
 #define USE_POWER_OFF_TIMER
 
@@ -667,7 +667,7 @@ static void start_power_off_timer(void){
 #endif
 }
 
-#pragma mark manage list of clients
+// MARK: manage list of clients
 
 
 static client_state_t * client_for_connection(connection_t *connection) {
