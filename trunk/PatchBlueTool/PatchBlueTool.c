@@ -1,4 +1,5 @@
 #include <fcntl.h>
+#include <unistd.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <stdint.h>
@@ -16,7 +17,7 @@ int main(int argc, char *argv[]) {
 
     struct stat sb;
 	int fd = open (argv[1], O_RDWR);
-	if (fd < 0) return;
+	if (fd < 0) return 10;
 	if (fstat (fd, &sb) == -1) {
 		close(fd);
 		return 10;
@@ -52,5 +53,5 @@ int main(int argc, char *argv[]) {
 	close(fd);
     
     printf("Done, replaced %s %u times\n", pattern, count);
-
+    return 0;
 }
