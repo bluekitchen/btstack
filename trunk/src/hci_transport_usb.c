@@ -48,6 +48,7 @@
 
 #include <stdio.h>
 #include <strings.h>
+#include <string.h>
 #include <unistd.h>   /* UNIX standard function definitions */
 #include <sys/types.h>
 
@@ -55,6 +56,7 @@
 
 #include "../config.h"
 
+#include "debug.h"
 #include "hci.h"
 #include "hci_transport.h"
 #include "hci_dump.h"
@@ -64,7 +66,7 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size);
 static int usb_close();
     
 enum {
-    LIB_USB_CLOSED,
+    LIB_USB_CLOSED = 0,
     LIB_USB_OPENED,
     LIB_USB_DEVICE_OPENDED,
     LIB_USB_KERNEL_DETACHED,
@@ -77,315 +79,444 @@ static hci_transport_t * hci_transport_usb = NULL;
 
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
-static uint8_t hci_cmd_out[HCI_ACL_3DH5_SIZE];      // bigger than largest packet
-static uint8_t hci_event_buffer[HCI_ACL_3DH5_SIZE]; // bigger than largest packet
-static uint8_t hci_acl_in[HCI_ACL_3DH5_SIZE];       // bigger than largest packet
-
 // libusb
 static struct libusb_device_descriptor desc;
 static libusb_device        * dev;
 static libusb_device_handle * handle;
-static struct libusb_transfer *interrupt_transfer;
-static struct libusb_transfer *control_transfer;
-static struct libusb_transfer *bulk_in_transfer;
-static struct libusb_transfer *bulk_out_transfer;
+
+#define ASYNC_BUFFERS 4
+
+static struct libusb_transfer *event_in_transfer[ASYNC_BUFFERS];
+static struct libusb_transfer *bulk_in_transfer[ASYNC_BUFFERS];
+
+static uint8_t hci_event_in_buffer[ASYNC_BUFFERS][HCI_ACL_3DH5_SIZE]; // bigger than largest packet
+static uint8_t hci_bulk_in_buffer[ASYNC_BUFFERS][HCI_ACL_3DH5_SIZE];  // bigger than largest packet
+
+// For (ab)use as a linked list of received packets
+static struct libusb_transfer *handle_packet;
+
+static int doing_pollfds;
+static timer_source_t usb_timer;
+static int usb_timer_active;
 
 // endpoint addresses
 static int event_in_addr;
 static int acl_in_addr;
 static int acl_out_addr;
 
-static libusb_device * find_bt(libusb_device **devs) {
-	int i = 0;
-	while ((dev = devs[i++]) != NULL) {
-		int r = libusb_get_device_descriptor(dev, &desc);
-		if (r < 0) {
-			fprintf(stderr, "failed to get device descriptor");
-			return 0;
-		}
-		
-		printf("%04x:%04x (bus %d, device %d) - class %x subclass %x protocol %x \n",
-			   desc.idVendor, desc.idProduct,
-			   libusb_get_bus_number(dev), libusb_get_device_address(dev),
-			   desc.bDeviceClass, desc.bDeviceSubClass, desc.bDeviceProtocol);
-		
-		// @TODO: detect BT USB Dongle based on character and not by id
-		// The class code (bDeviceClass) is 0xE0 – Wireless Controller. 
-		// The SubClass code (bDeviceSubClass) is 0x01 – RF Controller. 
-		// The Protocol code (bDeviceProtocol) is 0x01 – Bluetooth programming.
-		// if (desc.bDeviceClass == 0xe0 && desc.bDeviceSubClass == 0x01 && desc.bDeviceProtocol == 0x01){
-		if (desc.idVendor == USB_VENDOR_ID && desc.idProduct == USB_PRODUCT_ID){
-			printf("BT Dongle found.\n");
-			return dev;
-		}
-	}
-	return NULL;
-}
+#if !USB_VENDOR_ID || !USB_PRODUCT_ID
+void scan_for_bt_endpoints() {
+    int r;
 
-static void control_callback(struct libusb_transfer *transfer){
-	if (transfer->status != LIBUSB_TRANSFER_COMPLETED) {
-		fprintf(stderr, "control_callback not completed!\n");
-        return;
-	}
-	// printf("control_callback length=%d actual_length=%d\n", transfer->length, transfer->actual_length);
-}
+    // get endpoints from interface descriptor
+    struct libusb_config_descriptor *config_descriptor;
+    r = libusb_get_active_config_descriptor(dev, &config_descriptor);
+    log_dbg("configuration: %u interfaces\n", config_descriptor->bNumInterfaces);
 
-static void bulk_out_callback(struct libusb_transfer *transfer){
-	if (transfer->status != LIBUSB_TRANSFER_COMPLETED) {
-		fprintf(stderr, "bulk_out_callback not completed!\n");
-        return;
-	}
-	// printf("bulk_out_callback length=%d actual_length=%d\n", transfer->length, transfer->actual_length);
-}
+    const struct libusb_interface *interface = config_descriptor->interface;
+    const struct libusb_interface_descriptor * interface0descriptor = interface->altsetting;
+    log_dbg("interface 0: %u endpoints\n", interface0descriptor->bNumEndpoints);
 
+    const struct libusb_endpoint_descriptor *endpoint = interface0descriptor->endpoint;
 
-static void event_callback(struct libusb_transfer *transfer)
-{
-    // printf("event_callback length=%d actual_length=%d: ", transfer->length, transfer->actual_length);
-	if (transfer->status == LIBUSB_TRANSFER_COMPLETED) {
-        // int i;
-        // for (i=0;i<transfer->actual_length; i++) printf("0x%02x ", transfer->buffer[i]);
-        // printf("\n");
+    for (r=0;r<interface0descriptor->bNumEndpoints;r++,endpoint++){
+        log_dbg("endpoint %x, attributes %x\n", endpoint->bEndpointAddress, endpoint->bmAttributes);
 
-        hci_dump_packet( HCI_EVENT_PACKET, 1, transfer->buffer, transfer->actual_length);
-        packet_handler(HCI_EVENT_PACKET, transfer->buffer, transfer->actual_length);
+        if ((endpoint->bmAttributes & 0x3) == LIBUSB_TRANSFER_TYPE_INTERRUPT){
+            event_in_addr = endpoint->bEndpointAddress;
+            log_dbg("Using 0x%2.2X for HCI Events\n", event_in_addr);
+        }
+        if ((endpoint->bmAttributes & 0x3) == LIBUSB_TRANSFER_TYPE_BULK){
+            if (endpoint->bEndpointAddress & 0x80) {
+                acl_in_addr = endpoint->bEndpointAddress;
+                log_dbg("Using 0x%2.2X for ACL Data In\n", acl_in_addr);
+            } else {
+                acl_out_addr = endpoint->bEndpointAddress;
+                log_dbg("Using 0x%2.2X for ACL Data Out\n", acl_out_addr);
+            }
+        }
     }
-	int r = libusb_submit_transfer(transfer);
-	if (r) {
-		printf("Error submitting interrupt transfer %d\n", r);
-	}
 }
 
-static void bulk_in_callback(struct libusb_transfer *transfer)
-{
-    // printf("bulk_in_callback length=%d actual_length=%d: \n", transfer->length, transfer->actual_length);
-	if (transfer->status == LIBUSB_TRANSFER_COMPLETED) {
-        // int i;
-        // for (i=0;i<transfer->actual_length; i++) printf("0x%02x ", transfer->buffer[i]);
-        // printf("\n");
+static libusb_device * scan_for_bt_device(libusb_device **devs) {
+    int i = 0;
+    while ((dev = devs[i++]) != NULL) {
+        int r = libusb_get_device_descriptor(dev, &desc);
+        if (r < 0) {
+            log_err(stderr, "failed to get device descriptor");
+            return 0;
+        }
         
-        hci_dump_packet( HCI_EVENT_PACKET, 1, transfer->buffer, transfer->actual_length);
-        packet_handler(HCI_EVENT_PACKET, transfer->buffer, transfer->actual_length);
+        log_dbg("%04x:%04x (bus %d, device %d) - class %x subclass %x protocol %x \n",
+               desc.idVendor, desc.idProduct,
+               libusb_get_bus_number(dev), libusb_get_device_address(dev),
+               desc.bDeviceClass, desc.bDeviceSubClass, desc.bDeviceProtocol);
+        
+        // @TODO: detect BT USB Dongle based on character and not by id
+        // The class code (bDeviceClass) is 0xE0 – Wireless Controller. 
+        // The SubClass code (bDeviceSubClass) is 0x01 – RF Controller. 
+        // The Protocol code (bDeviceProtocol) is 0x01 – Bluetooth programming.
+        // if (desc.bDeviceClass == 0xe0 && desc.bDeviceSubClass == 0x01 && desc.bDeviceProtocol == 0x01){
+        if (desc.bDeviceClass == 0xE0 && desc.bDeviceSubClass == 0x01
+                && desc.bDeviceProtocol == 0x01) {
+            log_dbg("BT Dongle found.\n");
+            return dev;
+        }
     }
-	int r = libusb_submit_transfer(transfer);
-	if (r) {
-		printf("Error submitting bulk in transfer %d\n", r);
-	}
+    return NULL;
+}
+#endif
+
+static void async_callback(struct libusb_transfer *transfer)
+{
+    int r;
+    //log_dbg("in async_callback %d\n", transfer->endpoint);
+
+    if (transfer->status == LIBUSB_TRANSFER_COMPLETED ||
+            (transfer->status == LIBUSB_TRANSFER_TIMED_OUT && transfer->actual_length > 0)) {
+        if (handle_packet == NULL) {
+            handle_packet = transfer;
+        } else {
+            // Walk to end of list and add current packet there
+            struct libusb_transfer *temp = handle_packet;
+
+            while (temp->user_data) {
+                temp = temp->user_data;
+            }
+            temp->user_data = transfer;
+        }
+    } else {
+        // No usable data, just resubmit packet
+        if (libusb_state == LIB_USB_TRANSFERS_ALLOCATED) {
+            r = libusb_submit_transfer(transfer);
+
+            if (r) {
+                log_err(stderr, "Error re-submitting transfer %d\n", r);
+            }
+        }
+    }
 }
 
-static int usb_process(struct data_source *ds) {
-    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
+static int usb_process_ds(struct data_source *ds) {
     struct timeval tv;
+    int r;
+
+    //log_dbg("in usb_process_ds\n");
+
+    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
+
+    // always handling an event as we're called when data is ready
     bzero(&tv, sizeof(struct timeval));
     libusb_handle_events_timeout(NULL, &tv);
+
+    // Handle any packet in the order that they were received
+    while (handle_packet) {
+        void * next = handle_packet->user_data;
+        //log_dbg("handle packet %x, endpoint", handle_packet, handle_packet->endpoint);
+
+        if (handle_packet->endpoint == event_in_addr) {
+                hci_dump_packet( HCI_EVENT_PACKET, 1, handle_packet-> buffer,
+                    handle_packet->actual_length);
+                packet_handler(HCI_EVENT_PACKET, handle_packet-> buffer,
+                    handle_packet->actual_length);
+        }
+
+        if (handle_packet->endpoint == acl_in_addr) {
+                hci_dump_packet( HCI_ACL_DATA_PACKET, 1, handle_packet-> buffer,
+                    handle_packet->actual_length);
+                packet_handler(HCI_ACL_DATA_PACKET, handle_packet-> buffer,
+                    handle_packet->actual_length);
+        }
+
+        // Re-submit transfer 
+        if (libusb_state == LIB_USB_TRANSFERS_ALLOCATED) {
+            handle_packet->user_data = NULL;
+            r = libusb_submit_transfer(handle_packet);
+
+            if (r) {
+                log_err(stderr, "Error re-submitting transfer %d\n", r);
+            }
+        }
+
+        // Move to next in the list of packets to handle
+        if (next) {
+            handle_packet = next;
+        } else {
+            handle_packet = NULL;
+        }
+    }
+
     return 0;
 }
 
+void usb_process_ts(timer_source_t *timer) {
+    struct timeval tv, now;
+    long msec;
+
+    //log_dbg("in usb_process_ts\n");
+
+    // Deactivate timer
+    run_loop_remove_timer(&usb_timer);
+    usb_timer_active = 0;
+
+    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return;
+
+    // actuall handled the packet in the pollfds function
+    usb_process_ds((struct data_source *) NULL);
+
+    // Compute the amount of time until next event is due
+    gettimeofday(&now, NULL);
+    msec = (now.tv_sec - tv.tv_sec) * 1000;
+    msec = (now.tv_usec - tv.tv_usec) / 1000;
+
+    // Maximum wait time, async packet can come in earlier than timeout
+    if (msec > 10) msec = 10;
+
+    // Activate timer
+    run_loop_set_timer(&usb_timer, msec);
+    run_loop_add_timer(&usb_timer);
+    usb_timer_active = 1;
+
+    return;
+}
+
 static int usb_open(void *transport_config){
-   
+    libusb_device * aDev;
     libusb_device **devs;
-	int r;
-	ssize_t cnt;
-	
-	// USB init
+    int r,c;
+    ssize_t cnt;
+
+    handle_packet = NULL;
+
+    // default endpoint addresses
+    event_in_addr = 0x81; // EP1, IN interrupt
+    acl_in_addr =   0x82; // EP2, IN bulk
+    acl_out_addr =  0x02; // EP2, OUT bulk
+
+    // USB init
     r = libusb_init(NULL);
-	if (r < 0) return -1;
+    if (r < 0) return -1;
+
     libusb_state = LIB_USB_OPENED;
+
+    // configure debug level
+    libusb_set_debug(0,3);
     
-	// Get Devices 
-    cnt = libusb_get_device_list(NULL, &devs);
-	if (cnt < 0) {
-		usb_close();
+#if USB_VENDOR_ID && USB_PRODUCT_ID
+    // Use a specified device
+    handle = libusb_open_device_with_vid_pid(NULL, USB_VENDOR_ID, USB_PRODUCT_ID);
+
+    if (!handle){
+        usb_close();
         return -1;
-    }	
-	// Find BT modul
-    libusb_device * aDev  = find_bt(devs);
+    }
+#else
+    // Scan system for an appropriate device
+    log_dbg("Scanning for a device");
+    cnt = libusb_get_device_list(NULL, &devs);
+    if (cnt < 0) {
+        usb_close();
+        return -1;
+    }
+    // Find BT modul
+    aDev  = scan_for_bt_device(devs);
     if (!aDev){
         libusb_free_device_list(devs, 1);
         usb_close();
         return -1;
     }
+
     dev = aDev;
     r = libusb_open(dev, &handle);
-    printf("libusb open %d, handle %xu\n", r, (int) handle);
-    libusb_state = LIB_USB_OPENED;
-	libusb_free_device_list(devs, 1);
-	if (r < 0) {
+
+    libusb_free_device_list(devs, 1);
+
+    if (r < 0) {
         usb_close();
         return r;
-	}
-	
-	// libusb_set_debug(0,3);
-    
+    }
+#endif
+
+    log_dbg("libusb open %d, handle %xu\n", r, (int) handle);
+    libusb_state = LIB_USB_OPENED;
+
     // Detach OS driver (not possible for OS X)
 #ifndef __APPLE__
-	r = libusb_detach_kernel_driver (handle, 0);
-	if (r < 0) {
-		fprintf(stderr, "libusb_detach_kernel_driver error %d\n", r);
+    r = libusb_kernel_driver_active(handle, 0);
+    if (r < 0) {
+        log_err(stderr, "libusb_kernel_driver_active error %d\n", r);
         usb_close();
         return r;
-	}
-	printf("libusb_detach_kernel_driver\n");
+    }
+
+    if (r == 1) {
+        r = libusb_detach_kernel_driver(handle, 0);
+        if (r < 0) {
+            log_err(stderr, "libusb_detach_kernel_driver error %d\n", r);
+            usb_close();
+            return r;
+        }
+    }
+    log_dbg("libusb_detach_kernel_driver\n");
 #endif
     libusb_state = LIB_USB_KERNEL_DETACHED;
 
-	// libusb_set_debug(0,3);
-    
     // reserve access to device
-	printf("claiming interface 0...\n");
-	r = libusb_claim_interface(handle, 0);
-	if (r < 0) {
-		fprintf(stderr, "usb_claim_interface error %d\n", r);
+    log_dbg("claiming interface 0...\n");
+    r = libusb_claim_interface(handle, 0);
+    if (r < 0) {
+        log_err(stderr, "Error claiming interface %d\n", r);
         usb_close();
         return r;
-	}
+    }
+
     libusb_state = LIB_USB_INTERFACE_CLAIMED;
-	printf("claimed interface 0\n");
-	    
-    // default endpoint addresses
-    event_in_addr = 0x81;
-    acl_in_addr =   0x82;
-    acl_out_addr =  0x02;
-
-    // get endpoints from interface descriptor
-	struct libusb_config_descriptor *config_descriptor;
-	r = libusb_get_active_config_descriptor(dev, &config_descriptor);
-	printf("configuration: %u interfaces\n", config_descriptor->bNumInterfaces);
-	const struct libusb_interface *interface = config_descriptor->interface;
-	const struct libusb_interface_descriptor * interface0descriptor = interface->altsetting;
-	printf("interface 0: %u endpoints\n", interface0descriptor->bNumEndpoints);
-	const struct libusb_endpoint_descriptor *endpoint = interface0descriptor->endpoint;
-	for (r=0;r<interface0descriptor->bNumEndpoints;r++,endpoint++){
-		printf("endpoint %x, attributes %x\n", endpoint->bEndpointAddress, endpoint->bmAttributes);
-        if ((endpoint->bmAttributes & 0x3) == LIBUSB_TRANSFER_TYPE_INTERRUPT){
-            event_in_addr = endpoint->bEndpointAddress;
-            printf("Using for HCI Events\n");
-        }
-        if ((endpoint->bmAttributes & 0x3) == LIBUSB_TRANSFER_TYPE_BULK){
-            if (endpoint->bEndpointAddress & 0x80) {
-                acl_in_addr = endpoint->bEndpointAddress;
-                printf("Using for ACL Data In\n");
-            } else {
-                acl_out_addr = endpoint->bEndpointAddress;
-                printf("Using for ACL Data Out\n");
-            }
-        }
-	}
+    log_dbg("claimed interface 0\n");
     
-	// allocation
-	control_transfer   = libusb_alloc_transfer(0); // 0 isochronous transfers CMDs
-	interrupt_transfer = libusb_alloc_transfer(0); // 0 isochronous transfers Events
-	bulk_in_transfer   = libusb_alloc_transfer(0); // 0 isochronous transfers ACL in
-	bulk_out_transfer  = libusb_alloc_transfer(0); // 0 isochronous transfers ACL in
-	if (!control_transfer || !interrupt_transfer || !bulk_in_transfer || !bulk_out_transfer){
-        usb_close();
-        return LIBUSB_ERROR_NO_MEM;
+#if !USB_VENDOR_ID || !USB_PRODUCT_ID
+    scan_for_bt_endpoints();
+#endif
+
+    // allocate transfer handlers
+    for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
+        event_in_transfer[c] = libusb_alloc_transfer(0); // 0 isochronous transfers Events
+        bulk_in_transfer[c]  = libusb_alloc_transfer(0); // 0 isochronous transfers ACL in
+ 
+        if ( !event_in_transfer[c] || !bulk_in_transfer[c] ) {
+            usb_close();
+            return LIBUSB_ERROR_NO_MEM;
+        }
     }
+
     libusb_state = LIB_USB_TRANSFERS_ALLOCATED;
-    
-    // interrupt (= HCI event) handler
-	libusb_fill_interrupt_transfer(interrupt_transfer, handle, event_in_addr, hci_event_buffer, 260, event_callback, NULL, 3000) ;	
-	// interrupt_transfer->flags = LIBUSB_TRANSFER_SHORT_NOT_OK;
-	r = libusb_submit_transfer(interrupt_transfer);
-	if (r) {
-		printf("Error submitting interrupt transfer %d\n", r);
-	}
-	printf("interrupt started\n");
-	
 
-    // bulk in (= ACL packets) handler
-	libusb_fill_bulk_transfer(bulk_in_transfer, handle, acl_in_addr, hci_acl_in, HCI_ACL_3DH5_SIZE, bulk_in_callback, NULL, 3000) ;	
-	// bulk_in_transfer->flags = LIBUSB_TRANSFER_SHORT_NOT_OK;
-	r = libusb_submit_transfer(bulk_in_transfer);
-	if (r) {
-		printf("Error submitting bulk in transfer %d\n", r);
-	}
-	printf("bulk in started\n");
-
-    // set up data_sources
-    const struct libusb_pollfd ** pollfd = libusb_get_pollfds(NULL);
-    for (r = 0 ; pollfd[r] ; r++) {
-        data_source_t *ds = malloc(sizeof(data_source_t));
-        ds->fd = pollfd[r]->fd;
-        ds->process = usb_process;
-        run_loop_add_data_source(ds);
-        printf("%u: %x fd: %u, events %x\n", r, (unsigned int) pollfd[r], pollfd[r]->fd, pollfd[r]->events);
+    for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
+        // configure event_in handlers
+        libusb_fill_interrupt_transfer(event_in_transfer[c], handle, event_in_addr, 
+                hci_event_in_buffer[c], HCI_ACL_3DH5_SIZE, async_callback, NULL, 2000) ;
+ 
+        r = libusb_submit_transfer(event_in_transfer[c]);
+        if (r) {
+            log_err(stderr, "Error submitting interrupt transfer %d\n", r);
+            usb_close();
+            return r;
+        }
+ 
+        // configure bulk_in handlers
+        libusb_fill_bulk_transfer(bulk_in_transfer[c], handle, acl_in_addr, 
+                hci_bulk_in_buffer[c], HCI_ACL_3DH5_SIZE, async_callback, NULL, 2000) ;
+ 
+        r = libusb_submit_transfer(bulk_in_transfer[c]);
+        if (r) {
+            log_err(stderr, "Error submitting bulk in transfer %d\n", r);
+            usb_close();
+            return r;
+        }
     }
 
-    // init state machine
-    // bytes_to_read = 1;
-    // usb_state = USB_W4_PACKET_TYPE;
-    // read_pos = 0;
+    // Check for pollfds functionality
+    doing_pollfds = libusb_pollfds_handle_timeouts(NULL);
     
+    if (doing_pollfds) {
+        log_dbg("Async using pollfds:\n");
+
+        const struct libusb_pollfd ** pollfd = libusb_get_pollfds(NULL);
+        for (r = 0 ; pollfd[r] ; r++) {
+            data_source_t *ds = malloc(sizeof(data_source_t));
+            ds->fd = pollfd[r]->fd;
+            ds->process = usb_process_ds;
+            run_loop_add_data_source(ds);
+            log_dbg("%u: %x fd: %u, events %x\n", r, (unsigned int) pollfd[r], pollfd[r]->fd, pollfd[r]->events);
+        }
+    } else {
+        log_dbg("Async using timers:\n");
+
+        usb_timer.process = usb_process_ts;
+        run_loop_set_timer(&usb_timer, 100);
+        run_loop_add_timer(&usb_timer);
+        usb_timer_active = 1;
+    }
+
     return 0;
 }
 static int usb_close(){
+    int c;
     // @TODO: remove all run loops!
 
     switch (libusb_state){
         case LIB_USB_TRANSFERS_ALLOCATED:
-            libusb_free_transfer(bulk_in_transfer);
-            libusb_free_transfer(bulk_out_transfer);
-            libusb_free_transfer(control_transfer);
-            libusb_free_transfer(interrupt_transfer);
+            libusb_state = LIB_USB_INTERFACE_CLAIMED;
+
+            if(usb_timer_active) {
+                run_loop_remove_timer(&usb_timer);
+                usb_timer_active = 0;
+            }
+
+            // Cancel any asynchronous transfers
+            for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
+                libusb_cancel_transfer(event_in_transfer[c]);
+                libusb_cancel_transfer(bulk_in_transfer[c]);
+            }
+
+            /* TODO - find a better way to ensure that all transfers have completed */
+            struct timeval tv;
+            bzero(&tv, sizeof(struct timeval));
+            libusb_handle_events_timeout(NULL, &tv);
+
         case LIB_USB_INTERFACE_CLAIMED:
-            libusb_release_interface(handle, 0);	
+            for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
+                if (event_in_transfer[c]) libusb_free_transfer(event_in_transfer[c]);
+                if (bulk_in_transfer[c])  libusb_free_transfer(bulk_in_transfer[c]);
+            }
+
+            libusb_release_interface(handle, 0);
+
         case LIB_USB_KERNEL_DETACHED:
 #ifndef __APPLE__
             libusb_attach_kernel_driver (handle, 0);
 #endif
         case LIB_USB_DEVICE_OPENDED:
             libusb_close(handle);
+
         case LIB_USB_OPENED:
             libusb_exit(NULL);
     }
     return 0;
 }
 
-static int    usb_send_cmd_packet(uint8_t *packet, int size){
+static int usb_send_cmd_packet(uint8_t *packet, int size){
+    int r;
 
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
     
     hci_dump_packet( HCI_COMMAND_DATA_PACKET, 0, packet, size);
-    // printf("send HCI packet, len %u\n", size);
     
-    // send packet over USB
-	libusb_fill_control_setup(hci_cmd_out, LIBUSB_REQUEST_TYPE_CLASS, 0, 0, 0, size);
-    memcpy(&hci_cmd_out[LIBUSB_CONTROL_SETUP_SIZE], packet, size);
-	libusb_fill_control_transfer(control_transfer, handle, hci_cmd_out, control_callback, NULL, 1000);
-	control_transfer->flags = LIBUSB_TRANSFER_SHORT_NOT_OK;
-	int r = libusb_submit_transfer(control_transfer);
-	if (r) {
-		printf("Error submitting control transfer %d\n", r);
+    // Use synchronous call to sent out command
+    r = libusb_control_transfer(handle, 
+        LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
+        0, 0, 0, packet, size, 2000);
+
+    if (r < 0 || r !=size ) {
+        log_err(stderr, "Error submitting control transfer %d\n", r);
         return r;
-	}
+    }
     
     return 0;
 }
 
 static int usb_send_acl_packet(uint8_t *packet, int size){
+    int r, t;
     
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
-	
+    
     hci_dump_packet( HCI_ACL_DATA_PACKET, 0, packet, size);
     
-#if 1  // send packet over USB
-	libusb_fill_bulk_transfer(bulk_out_transfer, handle, acl_out_addr, packet, size, bulk_out_callback, NULL, 1000);
-	bulk_out_transfer->flags = LIBUSB_TRANSFER_SHORT_NOT_OK;
-	int r = libusb_submit_transfer(bulk_out_transfer);
-	if (r) {
-		printf("Error submitting control transfer %d\n", r);
-        return r;
-	}
-#else
-    int transferred;
-    int ret = libusb_bulk_transfer (handle, acl_out_addr, packet, size, &transferred, 5000);
-    if(ret>=0){
-        printf("acl data transfer succeeded");
-    }else{
-        printf("acl data transfer failed");
+    // Use synchronous call to sent out data
+    r = libusb_bulk_transfer(handle, acl_out_addr, packet, size, &t, 1000);
+    if(r < 0){
+        log_err(stderr, "Error submitting data transfer");
     }
-#endif
+
     return 0;
 }
 
@@ -401,6 +532,7 @@ static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
 }
 
 static void usb_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+    log_dbg("registering packet handler\n");
     packet_handler = handler;
 }
 
