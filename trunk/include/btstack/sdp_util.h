@@ -107,7 +107,7 @@ typedef enum {
 #define SDP_vMessage        0x06
 #define SDP_OBEXFileTypeAny 0xFF
 
-#pragma mark DateElement
+// MARK: DateElement
 void de_dump_data_element(uint8_t * record);
 int de_get_len(uint8_t *header);
 de_size_t de_get_size_type(uint8_t *header);
@@ -122,7 +122,7 @@ void de_add_data( uint8_t *seq, de_type_t type, uint16_t size, uint8_t *data);
 
 int de_get_data_size(uint8_t * header);
 
-#pragma mark SDP
+// MARK: SDP
 int sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startIndex, uint16_t maxBytes, uint8_t *buffer);
 uint8_t * sdp_get_attribute_value_for_attribute_id(uint8_t * record, uint16_t attributeID);
     uint8_t sdp_set_attribute_value_for_attribute_id(uint8_t * record, uint16_t attributeID, uint32_t value);
