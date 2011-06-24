@@ -104,10 +104,15 @@ typedef enum {
 	RFCOMM_CHANNEL_W4_SABM_OR_PN_CMD,
 	RFCOMM_CHANNEL_SEND_SABM_W4_UA,
 	RFCOMM_CHANNEL_W4_UA,
+    RFCOMM_CHANNEL_SEND_MSC_CMD_W4_MSC_CMD_OR_MSC_RSP,
 	RFCOMM_CHANNEL_W4_MSC_CMD_OR_MSC_RSP,   // outgoing, sent MSC_CMD
+	RFCOMM_CHANNEL_SEND_MSC_RSP_MSC_CMD_W4_CREDITS,
 	RFCOMM_CHANNEL_W4_MSC_CMD,
+	RFCOMM_CHANNEL_SEND_MSC_RSP_W4_MSC_RSP,
 	RFCOMM_CHANNEL_W4_MSC_RSP,
 	RFCOMM_CHANNEL_W4_CREDITS,
+    RFCOMM_CHANNEL_SEND_MSC_CMD_SEND_CREDITS,
+    RFCOMM_CHANNEL_SEND_CREDITS,
 	RFCOMM_CHANNEL_OPEN
 } RFCOMM_CHANNEL_STATE;
 
@@ -442,6 +447,7 @@ static int rfcomm_send_ua(rfcomm_multiplexer_t *multiplexer, uint8_t dlci){
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UA, 0, NULL, 0);
 }
 
+// DM: Disconnected Mode (response to a command when disconnected)
 static int rfcomm_send_dm_pf(rfcomm_multiplexer_t *multiplexer, uint8_t dlci){
 	uint8_t address = (1 << 0) | ((multiplexer->outgoing ^ 1) << 1) | (dlci << 2); // response
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_DM_PF, 0, NULL, 0);
@@ -458,6 +464,17 @@ static int rfcomm_send_uih_msc_cmd(rfcomm_multiplexer_t *multiplexer, uint8_t dl
 	uint8_t payload[4]; 
 	uint8_t pos = 0;
 	payload[pos++] = BT_RFCOMM_MSC_CMD;
+	payload[pos++] = 2 << 1 | 1;  // len
+	payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
+	payload[pos++] = signals;
+	return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
+}
+
+static int rfcomm_send_uih_msc_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, uint8_t signals) {
+	uint8_t address = (1 << 0) | ((multiplexer->outgoing ^ 1) << 1);
+	uint8_t payload[4]; 
+	uint8_t pos = 0;
+	payload[pos++] = BT_RFCOMM_MSC_RSP;
 	payload[pos++] = 2 << 1 | 1;  // len
 	payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
 	payload[pos++] = signals;
@@ -1005,9 +1022,7 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
             if (rfChannel && rfChannel->state == RFCOMM_CHANNEL_W4_UA){
                 log_dbg("Received RFCOMM unnumbered acknowledgement for #%u - channel opened\n", frame_dlci);
-                log_dbg("-> Sending MSC CMD for #%u (RFCOMM_CHANNEL_W4_MSC_CMD_OR_MSC_RSP)\n", frame_dlci);
-                rfcomm_send_uih_msc_cmd(multiplexer, frame_dlci , 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
-                rfChannel->state = RFCOMM_CHANNEL_W4_MSC_CMD_OR_MSC_RSP;
+                rfChannel->state = RFCOMM_CHANNEL_SEND_MSC_CMD_W4_MSC_CMD_OR_MSC_RSP;
             }
             break;
             
@@ -1129,36 +1144,13 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, message_dlci);
                     log_dbg("Received MSC CMD for #%u, \n", message_dlci);
                     if (rfChannel) {
-                        uint8_t address = packet[0] ^ 2; // set response 
-                        packet[payload_offset]  = BT_RFCOMM_MSC_RSP;  //  "      "
-                        // fine with this
-                        log_dbg("-> Sending MSC RSP for #%u\n", message_dlci);
-                        rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0x30, (uint8_t*)&packet[payload_offset], 4);
-                        
                         switch (rfChannel->state) {
                             case RFCOMM_CHANNEL_W4_MSC_CMD_OR_MSC_RSP:
-                                // outgoing channel
-                                rfChannel->state = RFCOMM_CHANNEL_W4_MSC_RSP;
+                                rfChannel->state = RFCOMM_CHANNEL_SEND_MSC_RSP_W4_MSC_RSP;
                                 break;
+                                
                             case RFCOMM_CHANNEL_W4_MSC_CMD:
-                                // incoming channel
-                                
-                                // TODO: don't send 2 packets without getting a "done" from stack
-
-                                // also start our negotiation
-                                log_dbg("-> Sending MSC CMD for #%u (but should wait for l2cap credits)\n", message_dlci);
-                                rfcomm_send_uih_msc_cmd(multiplexer, message_dlci, 0x8d); // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
-                                rfChannel->state = RFCOMM_CHANNEL_W4_MSC_RSP;
-                                
-                                if (rfChannel->credits_outgoing){
-                                    // we already got credits
-                                    rfcomm_channel_opened(rfChannel);
-                                } else {
-                                    rfChannel->state = RFCOMM_CHANNEL_W4_CREDITS;
-                                    log_dbg("Waiting for credits for #%u\n", message_dlci);
-                                }
-                                log_dbg("-> Providing credits for #%u\n", message_dlci);
-                                rfcomm_channel_provide_credits(rfChannel);
+                                rfChannel->state = RFCOMM_CHANNEL_SEND_MSC_RSP_MSC_CMD_W4_CREDITS;
                                 break;
                             default:
                                 log_err("WRONG STATE %u for BT_RFCOMM_MSC_CMD\n", rfChannel->state); 
@@ -1180,15 +1172,7 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 break;
                             case RFCOMM_CHANNEL_W4_MSC_RSP:
                                 // incoming channel
-                                log_dbg("-> Providing credits for #%u\n", message_dlci);
-                                rfChannel->state = RFCOMM_CHANNEL_W4_CREDITS;
-                                rfcomm_channel_provide_credits(rfChannel);
-                                if (rfChannel->credits_outgoing){
-                                    // we already got credits
-                                    rfcomm_channel_opened(rfChannel);
-                                } else {
-                                    log_dbg("Waiting for credits for #%u\n", message_dlci);
-                                }
+                                rfChannel->state = RFCOMM_CHANNEL_SEND_CREDITS;
                                 break;
                             default:
                                 break;
@@ -1304,9 +1288,49 @@ void rfcomm_run(void){
                 log_dbg("Sending SABM #%u\n", channel->dlci);
                 rfcomm_send_sabm(channel->multiplexer, channel->dlci);
                 channel->state = RFCOMM_CHANNEL_W4_UA;
-                continue;
                 break;
-            
+                
+            case RFCOMM_CHANNEL_SEND_MSC_CMD_W4_MSC_CMD_OR_MSC_RSP:
+                log_dbg("Sending MSC CMD for #%u (RFCOMM_CHANNEL_W4_MSC_CMD_OR_MSC_RSP)\n", channel->dlci);
+                rfcomm_send_uih_msc_cmd(channel->multiplexer, channel->dlci , 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+                channel->state = RFCOMM_CHANNEL_W4_MSC_CMD_OR_MSC_RSP;
+                break;
+                
+            case RFCOMM_CHANNEL_SEND_MSC_RSP_W4_MSC_RSP:
+                // outgoing channel
+                log_dbg("Sending MSC RSP for #%u\n", channel->dlci);
+                rfcomm_send_uih_msc_rsp(channel->multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+                channel->state = RFCOMM_CHANNEL_W4_MSC_RSP;
+                break;
+                
+            case RFCOMM_CHANNEL_SEND_MSC_RSP_MSC_CMD_W4_CREDITS:
+                // incoming channel
+                log_dbg("-> Sending MSC RSP for #%u\n", channel->dlci);
+                rfcomm_send_uih_msc_rsp(channel->multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+                channel->state = RFCOMM_CHANNEL_SEND_MSC_CMD_SEND_CREDITS;
+                break;
+                
+            case RFCOMM_CHANNEL_SEND_MSC_CMD_SEND_CREDITS:
+                // start our negotiation
+                log_dbg("Sending MSC CMD for #%u (but should wait for l2cap credits)\n", channel->dlci);
+                rfcomm_send_uih_msc_cmd(channel->multiplexer, channel->dlci, 0x8d); // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+                channel->state = RFCOMM_CHANNEL_SEND_CREDITS;
+                break;
+                
+            case RFCOMM_CHANNEL_SEND_CREDITS:
+
+                log_dbg("Providing credits for #%u\n", channel->dlci);
+                rfcomm_channel_provide_credits(channel);
+                
+                if (channel->credits_outgoing){
+                    // we already got credits - state == OPEN
+                    rfcomm_channel_opened(channel);
+                } else {
+                    channel->state = RFCOMM_CHANNEL_W4_CREDITS;
+                    log_dbg("Waiting for credits for #%u\n", channel->dlci);
+                }
+                break;
+                                
             default:
                 break;
         }
