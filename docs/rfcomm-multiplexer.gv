@@ -8,12 +8,14 @@ digraph rfcomm_multiplexer {
 	OPEN  [shape=doublecircle];
 	
 	CLOSED->W4_CONNECT [label = "create_channel outgoing"];
-    W4_CONNECT->W4_UA_0 [label = "l2cap channel open/SEND SABM"];
-    W4_UA_0->OPEN [label = "UA #0"];
-    
+    W4_CONNECT->SEND_SABM_0 [label = "l2cap channel open"];
+    SEND_SABM_0->W4_UA_0 [label = "SEND SABM"];
+    W4_UA_0->OPEN [label = "RECV UA#0"];
     CLOSED -> W4_SABM_0 [label = "l2cap channel open incoming"];
-    W4_SABM_0->OPEN [label = "SABM #0/SEND UA#0"];
+    W4_SABM_0->SEND_UA_0 [label = "RECV SABM #0"];
+    SEND_UA_0->OPEN [label = "SEND UA#0"];
 
-    OPEN->CLOSED [label = "RECV DISC#0 OR DM/SEND UA#0"];
-    
+    OPEN->SEND_UA_0_AND_DISC [label = "RECV DISC#0"];
+    SEND_UA_0_AND_DISC->CLOSED [label = "SEND UA#0"];
+    OPEN->CLOSED [label = "RECV DM#0"];
 }
