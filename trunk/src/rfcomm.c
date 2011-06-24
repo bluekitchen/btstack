@@ -95,12 +95,15 @@ typedef enum {
 
 typedef enum {
 	RFCOMM_CHANNEL_CLOSED = 1,
+    RFCOMM_CHANNEL_SEND_DM,
 	RFCOMM_CHANNEL_W4_MULTIPLEXER,
     RFCOMM_CHANNEL_W4_CLIENT_AFTER_SABM,   // received SABM
+    RFCOMM_CHANNEL_SEND_UA,
     RFCOMM_CHANNEL_W4_CLIENT_AFTER_PN_CMD, // received PN_CMD
 	RFCOMM_CHANNEL_W4_PN_BEFORE_OPEN,
 	RFCOMM_CHANNEL_W4_PN_AFTER_OPEN,
     RFCOMM_CHANNEL_W4_PN_RSP,
+	RFCOMM_CHANNEL_SEND_PN_RSP_W4_SABM_OR_PN_CMD,
 	RFCOMM_CHANNEL_W4_SABM_OR_PN_CMD,
 	RFCOMM_CHANNEL_SEND_SABM_W4_UA,
 	RFCOMM_CHANNEL_W4_UA,
@@ -991,10 +994,8 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 
                 // channel already prepared by incoming PN_CMD
                 if (rfChannel && rfChannel->state == RFCOMM_CHANNEL_W4_SABM_OR_PN_CMD){
-                    // confirm
-                    log_dbg("-> Sending UA #%u\n", frame_dlci);
-                    rfcomm_send_ua(multiplexer, frame_dlci);
-                    rfChannel->state = RFCOMM_CHANNEL_W4_MSC_CMD;
+                    rfChannel->state = RFCOMM_CHANNEL_SEND_UA;
+                    break;
                 }
                 
                 // new channel
@@ -1010,6 +1011,8 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     rfcomm_emit_connection_request(rfChannel);
                     
                     // TODO: if client max frame size is smaller than RFCOMM_DEFAULT_SIZE, send PN
+
+                    break;
                     
                 }
             } else {
@@ -1269,8 +1272,9 @@ void rfcomm_run(void){
     linked_item_t *it;
     for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
         rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
+        rfcomm_multiplexer_t * multiplexer = channel->multiplexer;
         
-        if (!l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid)) continue;
+        if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) continue;
      
         switch (channel->state){
                 
@@ -1279,46 +1283,45 @@ void rfcomm_run(void){
                 // this can then called after connection open/fail to handle all outgoing requests
                 if (channel->outgoing && channel->multiplexer->state == RFCOMM_MULTIPLEXER_OPEN) {
                     log_dbg("Sending UIH Parameter Negotiation Command for #%u\n", channel->dlci );
-                    rfcomm_send_uih_pn_command(channel->multiplexer, channel->dlci, channel->max_frame_size);
+                    rfcomm_send_uih_pn_command(multiplexer, channel->dlci, channel->max_frame_size);
                     channel->state = RFCOMM_CHANNEL_W4_PN_RSP;
                 }
                 break;
 
             case RFCOMM_CHANNEL_SEND_SABM_W4_UA:
                 log_dbg("Sending SABM #%u\n", channel->dlci);
-                rfcomm_send_sabm(channel->multiplexer, channel->dlci);
+                rfcomm_send_sabm(multiplexer, channel->dlci);
                 channel->state = RFCOMM_CHANNEL_W4_UA;
                 break;
                 
             case RFCOMM_CHANNEL_SEND_MSC_CMD_W4_MSC_CMD_OR_MSC_RSP:
                 log_dbg("Sending MSC CMD for #%u (RFCOMM_CHANNEL_W4_MSC_CMD_OR_MSC_RSP)\n", channel->dlci);
-                rfcomm_send_uih_msc_cmd(channel->multiplexer, channel->dlci , 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+                rfcomm_send_uih_msc_cmd(multiplexer, channel->dlci , 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
                 channel->state = RFCOMM_CHANNEL_W4_MSC_CMD_OR_MSC_RSP;
                 break;
                 
             case RFCOMM_CHANNEL_SEND_MSC_RSP_W4_MSC_RSP:
                 // outgoing channel
                 log_dbg("Sending MSC RSP for #%u\n", channel->dlci);
-                rfcomm_send_uih_msc_rsp(channel->multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+                rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
                 channel->state = RFCOMM_CHANNEL_W4_MSC_RSP;
                 break;
                 
             case RFCOMM_CHANNEL_SEND_MSC_RSP_MSC_CMD_W4_CREDITS:
                 // incoming channel
                 log_dbg("-> Sending MSC RSP for #%u\n", channel->dlci);
-                rfcomm_send_uih_msc_rsp(channel->multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+                rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
                 channel->state = RFCOMM_CHANNEL_SEND_MSC_CMD_SEND_CREDITS;
                 break;
                 
             case RFCOMM_CHANNEL_SEND_MSC_CMD_SEND_CREDITS:
                 // start our negotiation
                 log_dbg("Sending MSC CMD for #%u (but should wait for l2cap credits)\n", channel->dlci);
-                rfcomm_send_uih_msc_cmd(channel->multiplexer, channel->dlci, 0x8d); // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+                rfcomm_send_uih_msc_cmd(multiplexer, channel->dlci, 0x8d); // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
                 channel->state = RFCOMM_CHANNEL_SEND_CREDITS;
                 break;
                 
             case RFCOMM_CHANNEL_SEND_CREDITS:
-
                 log_dbg("Providing credits for #%u\n", channel->dlci);
                 rfcomm_channel_provide_credits(channel);
                 
@@ -1330,7 +1333,30 @@ void rfcomm_run(void){
                     log_dbg("Waiting for credits for #%u\n", channel->dlci);
                 }
                 break;
-                                
+                
+            case RFCOMM_CHANNEL_SEND_DM:
+                log_dbg("Sending DM_PF for #%u\n", channel->dlci);
+                rfcomm_send_dm_pf(multiplexer, channel->dlci);
+                // remove from list
+                linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
+                // free channel
+                free(channel);
+                rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+                break;
+                
+            case RFCOMM_CHANNEL_SEND_UA:
+                log_dbg("Sending UA #%u\n", channel->dlci);
+                rfcomm_send_ua(multiplexer, channel->dlci);
+                channel->state = RFCOMM_CHANNEL_W4_MSC_CMD;
+                break;
+                
+            case RFCOMM_CHANNEL_SEND_PN_RSP_W4_SABM_OR_PN_CMD:
+                log_dbg("Sending UIH Parameter Negotiation Respond for #%u\n", channel->dlci);
+                rfcomm_send_uih_pn_response(multiplexer, channel->dlci, channel->pn_priority, channel->max_frame_size);
+                // wait for SABM #channel or other UIH PN
+                channel->state = RFCOMM_CHANNEL_W4_SABM_OR_PN_CMD;
+                break;
+
             default:
                 break;
         }
@@ -1513,15 +1539,11 @@ void rfcomm_accept_connection_internal(uint16_t rfcomm_cid){
     if (!channel) return;
     switch (channel->state) {
         case RFCOMM_CHANNEL_W4_CLIENT_AFTER_SABM:
-            channel->state = RFCOMM_CHANNEL_W4_MSC_CMD;
-            log_dbg("-> Sending UA #%u\n", channel->dlci);
-            rfcomm_send_ua(channel->multiplexer, channel->dlci);
+            channel->state = RFCOMM_CHANNEL_SEND_UA;
             break;
         case RFCOMM_CHANNEL_W4_CLIENT_AFTER_PN_CMD:
-            log_dbg("-> Sending UIH Parameter Negotiation Respond for #%u\n", channel->dlci);
-            rfcomm_send_uih_pn_response(channel->multiplexer, channel->dlci, channel->pn_priority, channel->max_frame_size);
-            // wait for SABM #channel or other UIH PN
-            channel->state = RFCOMM_CHANNEL_W4_SABM_OR_PN_CMD;
+            channel->state = RFCOMM_CHANNEL_SEND_PN_RSP_W4_SABM_OR_PN_CMD;
+            break;
         default:
             break;
     }
@@ -1531,17 +1553,11 @@ void rfcomm_decline_connection_internal(uint16_t rfcomm_cid){
     log_dbg("Received Decline Connction\n");
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel) return;
-    rfcomm_multiplexer_t * multiplexer = channel->multiplexer;
     switch (channel->state) {
         case RFCOMM_CHANNEL_W4_CLIENT_AFTER_SABM:
         case RFCOMM_CHANNEL_W4_CLIENT_AFTER_PN_CMD:
-            log_dbg("-> Sending DM_PF for #%u\n", channel->dlci);
-            rfcomm_send_dm_pf(channel->multiplexer, channel->dlci);
-            // remove from list
-            linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
-            // free channel
-            free(channel);
-            rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+            channel->state = RFCOMM_CHANNEL_SEND_DM;
+            break;
         default:
             break;
     }
