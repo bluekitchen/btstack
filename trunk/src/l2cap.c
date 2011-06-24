@@ -260,10 +260,10 @@ int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
     
     return err;
 }
- 
+
+// MARK: L2CAP_RUN
 // process outstanding signaling tasks
 void l2cap_run(void){
-    
     
     // check pending signaling responses
     while (signaling_responses_pending){

@@ -102,6 +102,7 @@ typedef enum {
 	RFCOMM_CHANNEL_W4_PN_AFTER_OPEN,
     RFCOMM_CHANNEL_W4_PN_RSP,
 	RFCOMM_CHANNEL_W4_SABM_OR_PN_CMD,
+	RFCOMM_CHANNEL_SEND_SABM_W4_UA,
 	RFCOMM_CHANNEL_W4_UA,
 	RFCOMM_CHANNEL_W4_MSC_CMD_OR_MSC_RSP,   // outgoing, sent MSC_CMD
 	RFCOMM_CHANNEL_W4_MSC_CMD,
@@ -1119,9 +1120,7 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         log_dbg("UIH Parameter Negotiation Response max frame %u, credits %u\n",
                                 max_frame_size, rfChannel->credits_outgoing);
                         
-                        log_dbg("Sending SABM #%u\n", message_dlci);
-                        rfcomm_send_sabm(multiplexer, message_dlci);
-                        rfChannel->state = RFCOMM_CHANNEL_W4_UA;
+                        rfChannel->state = RFCOMM_CHANNEL_SEND_SABM_W4_UA;
                     }
                     break;
                     
@@ -1288,15 +1287,28 @@ void rfcomm_run(void){
         rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
         
         if (!l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid)) continue;
-        
-        // sends UIH PN CMD to first channel with RFCOMM_CHANNEL_W4_MULTIPLEXER
-        // this can then called after connection open/fail to handle all outgoing requests
+     
+        switch (channel->state){
+                
+            case RFCOMM_CHANNEL_W4_MULTIPLEXER:
+                // sends UIH PN CMD to first channel with RFCOMM_CHANNEL_W4_MULTIPLEXER
+                // this can then called after connection open/fail to handle all outgoing requests
+                if (channel->outgoing && channel->multiplexer->state == RFCOMM_MULTIPLEXER_OPEN) {
+                    log_dbg("Sending UIH Parameter Negotiation Command for #%u\n", channel->dlci );
+                    rfcomm_send_uih_pn_command(channel->multiplexer, channel->dlci, channel->max_frame_size);
+                    channel->state = RFCOMM_CHANNEL_W4_PN_RSP;
+                }
+                break;
 
-        if (channel->outgoing && channel->state == RFCOMM_CHANNEL_W4_MULTIPLEXER && channel->multiplexer->state == RFCOMM_MULTIPLEXER_OPEN) {
-            int err = rfcomm_send_uih_pn_command(channel->multiplexer, channel->dlci, channel->max_frame_size);
-            if (err) return;
-            log_dbg("-> Sending UIH Parameter Negotiation Command for #%u\n", channel->dlci );
-            channel->state = RFCOMM_CHANNEL_W4_PN_RSP;
+            case RFCOMM_CHANNEL_SEND_SABM_W4_UA:
+                log_dbg("Sending SABM #%u\n", channel->dlci);
+                rfcomm_send_sabm(channel->multiplexer, channel->dlci);
+                channel->state = RFCOMM_CHANNEL_W4_UA;
+                continue;
+                break;
+            
+            default:
+                break;
         }
     }
 }
