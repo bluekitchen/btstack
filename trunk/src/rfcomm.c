@@ -88,9 +88,12 @@
 typedef enum {
 	RFCOMM_MULTIPLEXER_CLOSED = 1,
 	RFCOMM_MULTIPLEXER_W4_CONNECT,  // outgoing
+	RFCOMM_MULTIPLEXER_SEND_SABM_0,     //    "
 	RFCOMM_MULTIPLEXER_W4_UA_0,     //    "
 	RFCOMM_MULTIPLEXER_W4_SABM_0,   // incoming
+    RFCOMM_MULTIPLEXER_SEND_UA_0,
 	RFCOMM_MULTIPLEXER_OPEN,
+    RFCOMM_MULTIPLEXER_SEND_UA_0_AND_DISC
 } RFCOMM_MULTIPLEXER_STATE;
 
 typedef enum {
@@ -116,6 +119,8 @@ typedef enum {
 	RFCOMM_CHANNEL_W4_CREDITS,
     RFCOMM_CHANNEL_SEND_MSC_CMD_SEND_CREDITS,
     RFCOMM_CHANNEL_SEND_CREDITS,
+    RFCOMM_CHANNEL_SEND_DISC,
+    RFCOMM_CHANNEL_SEND_UA_AND_DISC,
 	RFCOMM_CHANNEL_OPEN
 } RFCOMM_CHANNEL_STATE;
 
@@ -673,7 +678,10 @@ static void rfcomm_multiplexer_prepare_idle_timer(rfcomm_multiplexer_t * multipl
 }
 
 static void rfcomm_channel_provide_credits(rfcomm_channel_t *channel){
-    const uint16_t credits = 0x30;
+
+    if (!l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid)) return;
+
+    int credits = 0x30;
     switch (channel->state) {
         case RFCOMM_CHANNEL_W4_CREDITS:
         case RFCOMM_CHANNEL_OPEN:
@@ -755,9 +763,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
                     multiplexer->l2cap_cid = l2cap_cid;
                     multiplexer->con_handle = con_handle;
                     // send SABM #0
-                    log_dbg("-> Sending SABM #0\n");
-                    rfcomm_send_sabm(multiplexer, 0);
-                    multiplexer->state = RFCOMM_MULTIPLEXER_W4_UA_0;
+                    multiplexer->state = RFCOMM_MULTIPLEXER_SEND_SABM_0;
                     return 1;
                 } 
                 log_dbg("L2CAP_EVENT_CHANNEL_OPENED: multiplexer already exists\n");
@@ -832,12 +838,9 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
             
         case BT_RFCOMM_SABM:
             if (multiplexer->state == RFCOMM_MULTIPLEXER_W4_SABM_0){
-                // SABM #0 -> send UA #0, state = RFCOMM_MULTIPLEXER_OPEN
-                log_dbg("Received SABM #0 - Multiplexer up and running\n");
-                log_dbg("-> Sending UA #0\n");
-                rfcomm_send_ua(multiplexer, 0);
-                multiplexer->state = RFCOMM_MULTIPLEXER_OPEN;
+                log_dbg("Received SABM #0\n");
                 multiplexer->outgoing = 0;
+                multiplexer->state = RFCOMM_MULTIPLEXER_SEND_UA_0;
                 return 1;
             }
             break;
@@ -856,14 +859,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
         case BT_RFCOMM_DISC:
             // DISC #0 -> send UA #0, close multiplexer
             log_dbg("Received DISC #0, (ougoing = %u)\n", multiplexer->outgoing);
-            log_dbg("-> Sending UA #0\n");
-            log_dbg("-> Closing down multiplexer\n");
-            rfcomm_send_ua(multiplexer, 0);
-            rfcomm_multiplexer_finalize(multiplexer);
-            // try to detect authentication errors: drop link key if multiplexer closed before first channel got opened
-            if (!multiplexer->at_least_one_connection){
-                hci_send_cmd(&hci_delete_stored_link_key, multiplexer->remote_addr);
-            }
+            multiplexer->state = RFCOMM_MULTIPLEXER_SEND_UA_0_AND_DISC;
             return 1;
             
         case BT_RFCOMM_DM:
@@ -1013,7 +1009,6 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     // TODO: if client max frame size is smaller than RFCOMM_DEFAULT_SIZE, send PN
 
                     break;
-                    
                 }
             } else {
                 // discard request by sending disconnected mode
@@ -1031,19 +1026,11 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             
         case BT_RFCOMM_DISC:
             log_dbg("Received DISC command for #%u\n", frame_dlci);
-            log_dbg("-> Sending UA for #%u\n", frame_dlci);
-            rfcomm_send_ua(multiplexer, frame_dlci);
             rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
             if (rfChannel) {
-                // signal client
-                rfcomm_emit_channel_closed(rfChannel);
-                // discard channel
-                linked_list_remove( &rfcomm_channels, (linked_item_t *) rfChannel);
-                free(rfChannel);
-                rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+                rfChannel->state = RFCOMM_CHANNEL_SEND_UA_AND_DISC;
             }
             break;
-
             
         case BT_RFCOMM_DM:
         case BT_RFCOMM_DM_PF:
@@ -1108,12 +1095,9 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         
                         // new credits
                         rfChannel->credits_outgoing = packet[payload_offset+9];
+                        rfChannel->state = RFCOMM_CHANNEL_SEND_PN_RSP_W4_SABM_OR_PN_CMD;
+                        break;
                         
-                        log_dbg("-> Sending UIH Parameter Negotiation Respond for #%u\n", message_dlci);
-                        rfcomm_send_uih_pn_response(multiplexer, message_dlci, rfChannel->pn_priority, max_frame_size);
-                        
-                        // wait for SABM #channel or other UIH PN
-                        rfChannel->state = RFCOMM_CHANNEL_W4_SABM_OR_PN_CMD;
                     } else {
                         // discard request by sending disconnected mode
                         rfcomm_send_dm_pf(multiplexer, message_dlci);
@@ -1227,30 +1211,10 @@ void rfcomm_close_connection(void *connection){
     linked_item_t *it;
 
     // close open channels 
-    it = (linked_item_t *) &rfcomm_channels;
-    while (it->next){
-        rfcomm_channel_t * channel = (rfcomm_channel_t *) it->next;
-        if (channel->connection == connection){
-            
-            // signal client
-            rfcomm_emit_channel_closed(channel);
-            
-            // signal close
-            rfcomm_multiplexer_t * multiplexer = channel->multiplexer;
-            rfcomm_send_disc(multiplexer, channel->dlci);
-            
-            // remove from list
-            it->next = it->next->next;
-            free(channel);
-            
-            // update multiplexer timeout after channel was removed from list
-            rfcomm_multiplexer_prepare_idle_timer(multiplexer);
-            
-        } else {
-            it = it->next;
-        }
+    for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
+        ((rfcomm_channel_t *)it)->state = RFCOMM_CHANNEL_SEND_DISC;
     }
-    
+        
     // unregister services
     it = (linked_item_t *) &rfcomm_services;
     while (it->next) {
@@ -1270,6 +1234,39 @@ void rfcomm_close_connection(void *connection){
 void rfcomm_run(void){
     
     linked_item_t *it;
+    for (it = (linked_item_t *) rfcomm_multiplexers; it ; it = it->next){
+        rfcomm_multiplexer_t * multiplexer = ((rfcomm_multiplexer_t *) it);
+        
+        if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) continue;
+
+        switch (multiplexer->state) {
+            case RFCOMM_MULTIPLEXER_SEND_SABM_0:
+                log_dbg("Sending SABM #0\n");
+                rfcomm_send_sabm(multiplexer, 0);
+                multiplexer->state = RFCOMM_MULTIPLEXER_W4_UA_0;
+                break;
+            case RFCOMM_MULTIPLEXER_W4_SABM_0:
+                // SABM #0 -> send UA #0, state = RFCOMM_MULTIPLEXER_OPEN
+                log_dbg("-> Sending UA #0\n");
+                rfcomm_send_ua(multiplexer, 0);
+                multiplexer->state = RFCOMM_MULTIPLEXER_OPEN;
+                break;
+                
+            case RFCOMM_MULTIPLEXER_SEND_UA_0_AND_DISC:
+                log_dbg("-> Sending UA #0\n");
+                log_dbg("-> Closing down multiplexer\n");
+                rfcomm_send_ua(multiplexer, 0);
+                rfcomm_multiplexer_finalize(multiplexer);
+                // try to detect authentication errors: drop link key if multiplexer closed before first channel got opened
+                if (!multiplexer->at_least_one_connection){
+                    hci_send_cmd(&hci_delete_stored_link_key, multiplexer->remote_addr);
+                }
+                
+            default:
+                break;
+        }
+    }
+    
     for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
         rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
         rfcomm_multiplexer_t * multiplexer = channel->multiplexer;
@@ -1335,11 +1332,42 @@ void rfcomm_run(void){
                 break;
                 
             case RFCOMM_CHANNEL_SEND_DM:
+
+                // !!!: cannot remove item when iterating over list
+
                 log_dbg("Sending DM_PF for #%u\n", channel->dlci);
                 rfcomm_send_dm_pf(multiplexer, channel->dlci);
                 // remove from list
                 linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
                 // free channel
+                free(channel);
+                rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+                break;
+
+            case RFCOMM_CHANNEL_SEND_DISC:
+                
+                // !!!: cannot remove item when iterating over list
+
+                // signal close
+                rfcomm_send_disc(multiplexer, channel->dlci);
+                // remove from list
+                linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
+                // free channel
+                free(channel);
+                // update multiplexer timeout after channel was removed from list
+                rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+                break;
+                
+            case RFCOMM_CHANNEL_SEND_UA_AND_DISC:
+
+                // !!!: cannot remove item when iterating over list
+
+                log_dbg("-> Sending UA for #%u\n", channel->dlci);
+                rfcomm_send_ua(multiplexer, channel->dlci);
+                // signal client
+                rfcomm_emit_channel_closed(channel);
+                // discard channel
+                linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
                 free(channel);
                 rfcomm_multiplexer_prepare_idle_timer(multiplexer);
                 break;
@@ -1356,7 +1384,7 @@ void rfcomm_run(void){
                 // wait for SABM #channel or other UIH PN
                 channel->state = RFCOMM_CHANNEL_W4_SABM_OR_PN_CMD;
                 break;
-
+                
             default:
                 break;
         }
@@ -1469,21 +1497,9 @@ void rfcomm_create_channel_internal(void * connection, bd_addr_t *addr, uint8_t 
 }
 
 void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
-    // TODO: be less drastic
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (channel) {
-        // signal client
-        rfcomm_emit_channel_closed(channel);
-
-        // signal close
-        rfcomm_multiplexer_t * multiplexer = channel->multiplexer;
-        rfcomm_send_disc(multiplexer, channel->dlci);
-
-        // remove from list
-        linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
-        free(channel);
-        
-        rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+        channel->state = RFCOMM_CHANNEL_SEND_DISC;
     }
 }
 
