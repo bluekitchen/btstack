@@ -100,6 +100,7 @@ typedef enum {
 	RFCOMM_CHANNEL_CLOSED = 1,
     RFCOMM_CHANNEL_SEND_DM,
 	RFCOMM_CHANNEL_W4_MULTIPLEXER,
+	RFCOMM_CHANNEL_SEND_UIH_PN,
     RFCOMM_CHANNEL_W4_CLIENT_AFTER_SABM,   // received SABM
     RFCOMM_CHANNEL_SEND_UA,
     RFCOMM_CHANNEL_W4_CLIENT_AFTER_PN_CMD, // received PN_CMD
@@ -684,6 +685,31 @@ static void rfcomm_multiplexer_prepare_idle_timer(rfcomm_multiplexer_t * multipl
     }
 }
 
+static void rfcomm_multiplexer_opened(rfcomm_multiplexer_t *multiplexer){
+    log_dbg("Multiplexer up and running\n");
+    multiplexer->state = RFCOMM_MULTIPLEXER_OPEN;
+    
+    // transition of channels that wait for multiplexer 
+    linked_item_t *it;
+    for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
+        rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
+
+        if (channel->multiplexer != multiplexer) continue;
+        
+        switch (channel->state) {
+            case RFCOMM_CHANNEL_W4_MULTIPLEXER:
+                channel->state = RFCOMM_CHANNEL_SEND_UIH_PN;
+                break;
+            default:
+                break;
+        }
+    }        
+    
+    rfcomm_run();
+    rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+}
+
+
 static void rfcomm_channel_provide_credits(rfcomm_channel_t *channel){
 
     if (!l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid)) return;
@@ -856,10 +882,8 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
         case BT_RFCOMM_UA:
             if (multiplexer->state == RFCOMM_MULTIPLEXER_W4_UA_0) {
                 // UA #0 -> send UA #0, state = RFCOMM_MULTIPLEXER_OPEN
-                log_dbg("Received UA #0 - Multiplexer up and running\n");
-                multiplexer->state = RFCOMM_MULTIPLEXER_OPEN;
-                rfcomm_run();
-                rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+                log_dbg("Received UA #0 \n");
+                rfcomm_multiplexer_opened(multiplexer);
                 return 1;
             }
             break;
@@ -1257,9 +1281,8 @@ void rfcomm_run(void){
                 // SABM #0 -> send UA #0, state = RFCOMM_MULTIPLEXER_OPEN
                 log_dbg("-> Sending UA #0\n");
                 rfcomm_send_ua(multiplexer, 0);
-                multiplexer->state = RFCOMM_MULTIPLEXER_OPEN;
+                rfcomm_multiplexer_opened(multiplexer);
                 break;
-                
             case RFCOMM_MULTIPLEXER_SEND_UA_0_AND_DISC:
                 log_dbg("-> Sending UA #0\n");
                 log_dbg("-> Closing down multiplexer\n");
@@ -1283,16 +1306,13 @@ void rfcomm_run(void){
      
         switch (channel->state){
                 
-            case RFCOMM_CHANNEL_W4_MULTIPLEXER:
-                // sends UIH PN CMD to first channel with RFCOMM_CHANNEL_W4_MULTIPLEXER
-                // this can then called after connection open/fail to handle all outgoing requests
-                if (channel->outgoing && channel->multiplexer->state == RFCOMM_MULTIPLEXER_OPEN) {
-                    log_dbg("Sending UIH Parameter Negotiation Command for #%u\n", channel->dlci );
-                    rfcomm_send_uih_pn_command(multiplexer, channel->dlci, channel->max_frame_size);
-                    channel->state = RFCOMM_CHANNEL_W4_PN_RSP;
-                }
+            case RFCOMM_CHANNEL_SEND_UIH_PN:
+                log_dbg("Sending UIH Parameter Negotiation Command for #%u\n", channel->dlci );
+                rfcomm_send_uih_pn_command(multiplexer, channel->dlci, channel->max_frame_size);
+                channel->state = RFCOMM_CHANNEL_W4_PN_RSP;
                 break;
-
+                
+                
             case RFCOMM_CHANNEL_SEND_SABM_W4_UA:
                 log_dbg("Sending SABM #%u\n", channel->dlci);
                 rfcomm_send_sabm(multiplexer, channel->dlci);
@@ -1464,44 +1484,37 @@ int rfcomm_send_internal(uint8_t rfcomm_cid, uint8_t *data, uint16_t len){
 
 void rfcomm_create_channel_internal(void * connection, bd_addr_t *addr, uint8_t server_channel){
 
-    int send_l2cap_create_channel = 0;
-    
     log_dbg("rfcomm_create_channel_internal to ");
     print_bd_addr(*addr);
     log_dbg(" at channel #%02x\n", server_channel);
-    rfcomm_dump_channels();
 
+    
     // create new multiplexer if necessary
     rfcomm_multiplexer_t * multiplexer = rfcomm_multiplexer_for_addr(addr);
     if (!multiplexer) {
-        
-        // start multiplexer setup
         multiplexer = rfcomm_multiplexer_create_for_addr(addr);
         multiplexer->outgoing = 1;
         multiplexer->state = RFCOMM_MULTIPLEXER_W4_CONNECT;
-        
-        // create l2cap channel for multiplexer
-        send_l2cap_create_channel = 1;
     }
-
-
+        
     // prepare channel
     rfcomm_channel_t * channel = rfcomm_channel_create(multiplexer, 0, server_channel);
     channel->connection = connection;
-    channel->state = RFCOMM_CHANNEL_W4_MULTIPLEXER;
 
-    rfcomm_dump_channels();
-
-    // start connecting, if multiplexer is already up and running
-    if (multiplexer->state == RFCOMM_MULTIPLEXER_OPEN){
-        rfcomm_run();
-    }
-    
-    // go!
-    if (send_l2cap_create_channel) {
-        // doesn't block
+    // start multiplexer setup
+    if (multiplexer->state != RFCOMM_MULTIPLEXER_OPEN) {
+        
+        channel->state = RFCOMM_CHANNEL_W4_MULTIPLEXER;
+        
         l2cap_create_channel_internal(connection, rfcomm_packet_handler, *addr, PSM_RFCOMM, RFCOMM_L2CAP_MTU);
+
+        return;
     }
+
+    channel->state = RFCOMM_CHANNEL_SEND_UIH_PN;
+    
+    // start connecting, if multiplexer is already up and running
+    rfcomm_run();
 }
 
 void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
