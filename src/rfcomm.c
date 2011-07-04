@@ -223,6 +223,72 @@ static void (*app_packet_handler)(void * connection, uint8_t packet_type,
 
 static void rfcomm_run(void);
 
+
+// MARK: RFCOMM CLIENT EVENTS
+
+// data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
+static void rfcomm_emit_connection_request(rfcomm_channel_t *channel) {
+    uint8_t event[11];
+    event[0] = RFCOMM_EVENT_INCOMING_CONNECTION;
+    event[1] = sizeof(event) - 2;
+    bt_flip_addr(&event[2], channel->multiplexer->remote_addr);
+    event[8] = channel->dlci >> 1;
+    bt_store_16(event, 9, channel->rfcomm_cid);
+    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
+	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+}
+
+// API Change: BTstack-0.3.50x uses
+// data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
+// next Cydia release will use SVN version of this
+// data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
+static void rfcomm_emit_channel_opened(rfcomm_channel_t *channel, uint8_t status) {
+    uint8_t event[16];
+    uint8_t pos = 0;
+    event[pos++] = RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = status;
+    bt_flip_addr(&event[pos], channel->multiplexer->remote_addr); pos += 6;
+    bt_store_16(event,  pos, channel->multiplexer->con_handle);   pos += 2;
+	event[pos++] = channel->dlci >> 1;
+	bt_store_16(event, pos, channel->rfcomm_cid); pos += 2;       // channel ID
+	bt_store_16(event, pos, channel->max_frame_size); pos += 2;   // max frame size
+    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
+	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, pos);
+}
+
+// data: event(8), len(8), rfcomm_cid(16)
+static void rfcomm_emit_channel_closed(rfcomm_channel_t * channel) {
+    uint8_t event[4];
+    event[0] = RFCOMM_EVENT_CHANNEL_CLOSED;
+    event[1] = sizeof(event) - 2;
+    bt_store_16(event, 2, channel->rfcomm_cid);
+    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
+	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+}
+
+static void rfcomm_emit_credits(rfcomm_channel_t * channel, uint8_t credits) {
+    uint8_t event[5];
+    event[0] = RFCOMM_EVENT_CREDITS;
+    event[1] = sizeof(event) - 2;
+    bt_store_16(event, 2, channel->rfcomm_cid);
+    event[4] = credits;
+    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
+	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+}
+
+static void rfcomm_emit_service_registered(void *connection, uint8_t status, uint8_t channel){
+    uint8_t event[4];
+    event[0] = RFCOMM_EVENT_SERVICE_REGISTERED;
+    event[1] = sizeof(event) - 2;
+    event[2] = status;
+    event[3] = channel;
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+	(*app_packet_handler)(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+}
+
+// MARK: RFCOMM MULTIPLEXER HELPER
+
 static void rfcomm_multiplexer_initialize(rfcomm_multiplexer_t *multiplexer){
     bzero(multiplexer, sizeof(rfcomm_multiplexer_t));
     multiplexer->state = RFCOMM_MULTIPLEXER_CLOSED;
@@ -280,6 +346,8 @@ static int rfcomm_multiplexer_has_channels(rfcomm_multiplexer_t * multiplexer){
     }
     return 0;
 }
+
+// MARK: RFCOMM CHANNEL HELPER
 
 static void rfcomm_dump_channels(void){
     linked_item_t * it;
@@ -369,6 +437,8 @@ static rfcomm_service_t * rfcomm_service_for_channel(uint8_t server_channel){
     }
     return NULL;
 }
+
+// MARK: RFCOMM SEND
 
 /**
  * @param credits - only used for RFCOMM flow control in UIH wiht P/F = 1
@@ -525,69 +595,6 @@ static int rfcomm_send_uih_pn_response(rfcomm_multiplexer_t *multiplexer, uint8_
 	return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
 
-
-// data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
-static void rfcomm_emit_connection_request(rfcomm_channel_t *channel) {
-    uint8_t event[11];
-    event[0] = RFCOMM_EVENT_INCOMING_CONNECTION;
-    event[1] = sizeof(event) - 2;
-    bt_flip_addr(&event[2], channel->multiplexer->remote_addr);
-    event[8] = channel->dlci >> 1;
-    bt_store_16(event, 9, channel->rfcomm_cid);
-    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
-}
-
-
-// API Change: BTstack-0.3.50x uses
-// data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
-// next Cydia release will use SVN version of this
-// data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
-static void rfcomm_emit_channel_opened(rfcomm_channel_t *channel, uint8_t status) {
-    uint8_t event[16];
-    uint8_t pos = 0;
-    event[pos++] = RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE;
-    event[pos++] = sizeof(event) - 2;
-    event[pos++] = status;
-    bt_flip_addr(&event[pos], channel->multiplexer->remote_addr); pos += 6;
-    bt_store_16(event,  pos, channel->multiplexer->con_handle);   pos += 2;
-	event[pos++] = channel->dlci >> 1;
-	bt_store_16(event, pos, channel->rfcomm_cid); pos += 2;       // channel ID
-	bt_store_16(event, pos, channel->max_frame_size); pos += 2;   // max frame size
-    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, pos);
-}
-
-// data: event(8), len(8), rfcomm_cid(16)
-static void rfcomm_emit_channel_closed(rfcomm_channel_t * channel) {
-    uint8_t event[4];
-    event[0] = RFCOMM_EVENT_CHANNEL_CLOSED;
-    event[1] = sizeof(event) - 2;
-    bt_store_16(event, 2, channel->rfcomm_cid);
-    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
-}
-
-static void rfcomm_emit_credits(rfcomm_channel_t * channel, uint8_t credits) {
-    uint8_t event[5];
-    event[0] = RFCOMM_EVENT_CREDITS;
-    event[1] = sizeof(event) - 2;
-    bt_store_16(event, 2, channel->rfcomm_cid);
-    event[4] = credits;
-    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
-}
-
-static void rfcomm_emit_service_registered(void *connection, uint8_t status, uint8_t channel){
-    uint8_t event[4];
-    event[0] = RFCOMM_EVENT_SERVICE_REGISTERED;
-    event[1] = sizeof(event) - 2;
-    event[2] = status;
-    event[3] = channel;
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
-}
-
 static void rfcomm_hand_out_credits(void){
     linked_item_t * it;
     for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
@@ -684,6 +691,7 @@ static void rfcomm_channel_provide_credits(rfcomm_channel_t *channel){
     int credits = 0x30;
     switch (channel->state) {
         case RFCOMM_CHANNEL_W4_CREDITS:
+        case RFCOMM_CHANNEL_SEND_CREDITS:
         case RFCOMM_CHANNEL_OPEN:
             if (channel->credits_incoming < 5){
 				uint8_t address = (1 << 0) | (channel->multiplexer->outgoing << 1) |  (channel->dlci << 2); 
