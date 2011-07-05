@@ -1052,28 +1052,35 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 // get channel
                 rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
                 
-                // channel already prepared by incoming PN_CMD
-                if (rfChannel && rfChannel->state == RFCOMM_CHANNEL_W4_SABM_OR_PN_CMD){
-                    rfChannel->state = RFCOMM_CHANNEL_SEND_UA;
-                    break;
-                }
-                
                 // new channel
                 if (!rfChannel) {
-                    
-                    // setup channel
+                    // setup incoming channel
                     rfChannel = rfcomm_channel_create(multiplexer, rfService, frame_dlci >> 1);
                     if (!rfChannel) break;
                     rfChannel->connection = rfService->connection;
-                    rfChannel->state = RFCOMM_CHANNEL_W4_CLIENT_AFTER_SABM;
-                    // notify client and wait for confirm
-                    log_dbg("-> Inform app\n");
-                    rfcomm_emit_connection_request(rfChannel);
-                    
-                    // TODO: if client max frame size is smaller than RFCOMM_DEFAULT_SIZE, send PN
-
-                    break;
                 }
+                
+                // TODO: if client max frame size is smaller than RFCOMM_DEFAULT_SIZE, send PN
+                
+                switch (rfChannel->state){
+                        
+                    case RFCOMM_CHANNEL_CLOSED:
+                        // notify client and wait for confirm
+                        log_dbg("-> Inform app\n");
+                        rfcomm_emit_connection_request(rfChannel);
+                        
+                        rfChannel->state = RFCOMM_CHANNEL_W4_CLIENT_AFTER_SABM;
+                        
+                        break;
+                    case RFCOMM_CHANNEL_W4_SABM_OR_PN_CMD:
+                        rfChannel->state = RFCOMM_CHANNEL_SEND_UA;
+                        break;
+                        
+                    default:
+                        break;
+                }
+                break;
+                
             } else {
                 // discard request by sending disconnected mode
                 rfcomm_send_dm_pf(multiplexer, frame_dlci);
