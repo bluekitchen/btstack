@@ -1348,8 +1348,6 @@ void rfcomm_run(void){
                 
             case RFCOMM_CHANNEL_INCOMING_SETUP:
                 
-                if ((channel->state_var & STATE_VAR_CLIENT_ACCEPTED) == 0) break;
-                
                 if (channel->state_var & STATE_VAR_SEND_PN_RSP){
                     log_dbg("Sending UIH Parameter Negotiation Respond for #%u\n", channel->dlci);
                     rfcomm_send_uih_pn_response(multiplexer, channel->dlci, channel->pn_priority, channel->max_frame_size);
@@ -1363,7 +1361,10 @@ void rfcomm_run(void){
                     channel->state_var &= ~STATE_VAR_SEND_UA;
                     break;
                 }
-                channel->state = RFCOMM_CHANNEL_W4_MSC_CMD;
+                
+                if ((channel->state_var & STATE_VAR_CLIENT_ACCEPTED) && (channel->state_var & STATE_VAR_RCVD_SABM)) {
+                    channel->state = RFCOMM_CHANNEL_W4_MSC_CMD;
+                } 
                 break;
                 
             case RFCOMM_CHANNEL_SEND_UIH_PN:
@@ -1625,11 +1626,9 @@ void rfcomm_accept_connection_internal(uint16_t rfcomm_cid){
         case RFCOMM_CHANNEL_INCOMING_SETUP:
             channel->state_var |= STATE_VAR_CLIENT_ACCEPTED;
             if (channel->state_var & STATE_VAR_RCVD_PN){
-                channel->state_var &= ~STATE_VAR_RCVD_PN;
                 channel->state_var |= STATE_VAR_SEND_PN_RSP;
             }
             if (channel->state_var & STATE_VAR_RCVD_SABM){
-                channel->state_var &= ~STATE_VAR_RCVD_SABM;
                 channel->state_var |= STATE_VAR_SEND_UA;
             }
             break;
