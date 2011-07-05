@@ -1073,7 +1073,11 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         break;
                         
                     case RFCOMM_CHANNEL_INCOMING_SETUP:
-                        rfChannel->state_var |= STATE_VAR_RCVD_SABM;
+                        if (rfChannel->state_var & STATE_VAR_CLIENT_ACCEPTED) {
+                            rfChannel->state_var |= STATE_VAR_SEND_UA;
+                        } else {
+                            rfChannel->state_var |= STATE_VAR_RCVD_SABM;
+                        }
                         break;
                                                 
                     default:
