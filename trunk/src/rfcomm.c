@@ -137,6 +137,9 @@ typedef enum {
     CH_EVT_RCVD_UA,
     CH_EVT_RCVD_PN,
     CH_EVT_RCVD_PN_RSP,
+    CH_EVT_RCVD_DISC,
+    CH_EVT_RCVD_DM,
+    
 } RFCOMM_CHANNEL_EVENT;
 
 typedef struct rfcomm_channel_event {
@@ -1007,6 +1010,28 @@ static void rfcomm_channel_accept_pn(rfcomm_channel_t *channel, rfcomm_channel_e
 }
 
 static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_channel_event_t *event){
+    
+    rfcomm_multiplexer_t *multiplexer = channel->multiplexer;
+
+    // TODO: integrate
+    if (event->type == CH_EVT_RCVD_DISC){
+        channel->state = RFCOMM_CHANNEL_SEND_UA_AND_DISC;
+        return;
+    }
+
+    // TODO: integrate
+    if (event->type == CH_EVT_RCVD_DM){
+        log_dbg("Received DM message for #%u\n", channel->dlci);
+        log_dbg("-> Closing channel locally for #%u\n", channel->dlci);
+        rfcomm_emit_channel_closed(channel);
+        linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
+        free(channel);
+        rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+        return;
+    }
+    
+    rfcomm_channel_event_pn_t * event_pn = (rfcomm_channel_event_pn_t*) event;
+    
     switch (channel->state) {
         case RFCOMM_CHANNEL_CLOSED:
             switch (event->type){
@@ -1017,7 +1042,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                     channel->state = RFCOMM_CHANNEL_INCOMING_SETUP;
                     break;
                 case CH_EVT_RCVD_PN:
-                    rfcomm_channel_accept_pn(channel, (rfcomm_channel_event_pn_t*) event);
+                    rfcomm_channel_accept_pn(channel, event_pn);
                     log_dbg("-> Inform app\n");
                     rfcomm_emit_connection_request(channel);
                     channel->state_var |= STATE_VAR_RCVD_PN;
@@ -1038,12 +1063,41 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                     }
                     break;
                 case CH_EVT_RCVD_PN:
-                    rfcomm_channel_accept_pn(channel, (rfcomm_channel_event_pn_t*) event);
+                    rfcomm_channel_accept_pn(channel, event_pn);
                     channel->state_var |= STATE_VAR_RCVD_PN;
                     break;
                 default:
                     break;
             }
+            break;
+            
+        case RFCOMM_CHANNEL_W4_UA:
+            switch (event->type){
+                case CH_EVT_RCVD_UA:
+                    log_dbg("Received RFCOMM unnumbered acknowledgement for #%u - channel opened\n", channel->dlci);
+                    channel->state = RFCOMM_CHANNEL_SEND_MSC_CMD_W4_MSC_CMD_OR_MSC_RSP;
+                    break;
+                default:
+                    break;
+            }
+            
+        case RFCOMM_CHANNEL_W4_PN_RSP:
+            switch (event->type){
+                case CH_EVT_RCVD_PN_RSP:
+                    log_dbg("UIH Parameter Negotiation Response max frame %u, credits %u\n",
+                            event_pn->max_frame_size, event_pn->credits_outgoing);
+                    // update max frame size
+                    if (channel->max_frame_size > event_pn->max_frame_size) {
+                        channel->max_frame_size = event_pn->max_frame_size;
+                    }
+                    // new credits
+                    channel->credits_outgoing = event_pn->credits_outgoing;
+                    channel->state = RFCOMM_CHANNEL_SEND_SABM_W4_UA;
+                    break;
+                default:
+                    break;
+            }
+            
         default:
             break;
     }
@@ -1098,7 +1152,7 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     
     rfcomm_channel_t * rfChannel = NULL;
     rfcomm_service_t * rfService = NULL;
-	uint16_t max_frame_size;
+    rfcomm_channel_event_t event;
 
     // switch by rfcomm message type
     switch(packet[1]) {
@@ -1108,10 +1162,8 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             if (rfService) {
                log_dbg("Received SABM #%u\n", frame_dlci);
  
-                // get channel
+                // get or create channel
                 rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
-                
-                // new channel
                 if (!rfChannel) {
                     // setup incoming channel
                     rfChannel = rfcomm_channel_create(multiplexer, rfService, frame_dlci >> 1);
@@ -1119,7 +1171,7 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     rfChannel->connection = rfService->connection;
                 }
                 
-                rfcomm_channel_event_t event;
+                // create event and send to sm
                 event.type = CH_EVT_RCVD_SABM;
                 rfcomm_channel_state_machine(rfChannel, &event);
                 
@@ -1128,39 +1180,36 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                 
             } else {
                 // discard request by sending disconnected mode
+                // TODO: store "send DM for #x" in multiplexer struct
                 rfcomm_send_dm_pf(multiplexer, frame_dlci);
             }
             break;
             
         case BT_RFCOMM_UA:
             rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
-            if (rfChannel && rfChannel->state == RFCOMM_CHANNEL_W4_UA){
-                log_dbg("Received RFCOMM unnumbered acknowledgement for #%u - channel opened\n", frame_dlci);
-                rfChannel->state = RFCOMM_CHANNEL_SEND_MSC_CMD_W4_MSC_CMD_OR_MSC_RSP;
-            }
+            if (!rfChannel) break;
+            // create event and send to sm
+            event.type = CH_EVT_RCVD_UA;
+            rfcomm_channel_state_machine(rfChannel, &event);
             break;
             
         case BT_RFCOMM_DISC:
-            log_dbg("Received DISC command for #%u\n", frame_dlci);
             rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
-            if (rfChannel) {
-                rfChannel->state = RFCOMM_CHANNEL_SEND_UA_AND_DISC;
-            }
+            if (!rfChannel) break;
+            // create event and send to sm
+            event.type = CH_EVT_RCVD_DISC;
+            rfcomm_channel_state_machine(rfChannel, &event);
             break;
             
         case BT_RFCOMM_DM:
         case BT_RFCOMM_DM_PF:
-            log_dbg("Received DM message for #%u\n", frame_dlci);
-            log_dbg("-> Closing channel locally for #%u\n", frame_dlci);
             rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
-            if (rfChannel) {
-                rfcomm_emit_channel_closed(rfChannel);
-                linked_list_remove( &rfcomm_channels, (linked_item_t *) rfChannel);
-                free(rfChannel);
-                rfcomm_multiplexer_prepare_idle_timer(multiplexer);
-            }
+            if (!rfChannel) break;
+            // create event and send to sm
+            event.type = CH_EVT_RCVD_DISC;
+            rfcomm_channel_state_machine(rfChannel, &event);
             break;
-
+            
         case BT_RFCOMM_UIH_PF:
         case BT_RFCOMM_UIH:
             switch (packet[payload_offset]) {
@@ -1171,56 +1220,42 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         
                         log_dbg("Received UIH Parameter Negotiation Command for #%u\n", message_dlci);
                         
-                        max_frame_size = READ_BT_16(packet, payload_offset+6);
-                        uint8_t priority = packet[payload_offset+4];
-                        uint8_t credits_outgoing = packet[payload_offset+9];
-                        
                         rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, message_dlci);
                         if (!rfChannel){
-
-                            // setup incoming channel
+                            // setup incoming channel => state = RFCOMM_CHANNEL_CLOSED
                             rfChannel = rfcomm_channel_create(multiplexer, rfService, message_dlci >> 1);
                             if (!rfChannel) break;
                             rfChannel->connection = rfService->connection;
-                            
-                            // => state = RFCOMM_CHANNEL_CLOSED
                         }
                         
                         rfcomm_channel_event_pn_t event;
                         event.super.type = CH_EVT_RCVD_PN;
-                        event.priority = priority;
-                        event.max_frame_size = max_frame_size;
-                        event.credits_outgoing = credits_outgoing;
+                        event.priority = packet[payload_offset+4];
+                        event.max_frame_size = READ_BT_16(packet, payload_offset+6);
+                        event.credits_outgoing = packet[payload_offset+9];
                         rfcomm_channel_state_machine(rfChannel, (rfcomm_channel_event_t *) &event);
-                   
                         break;
                         
                     } else {
                         // discard request by sending disconnected mode
+                        // TODO: store "send DM for #x" in multiplexer struct
                         rfcomm_send_dm_pf(multiplexer, message_dlci);
                     }
                     break;
                     
                 case BT_RFCOMM_PN_RSP:
                     message_dlci = packet[payload_offset+2];
-                    log_dbg("Received UIH Parameter Negotiation Response for #%u\n", message_dlci);
                     rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, message_dlci);
-                    if (rfChannel &&  rfChannel->state == RFCOMM_CHANNEL_W4_PN_RSP){
+                    if (!rfChannel) break;
                         
-                        //  received UIH Parameter Negotiation Response
-                        max_frame_size = READ_BT_16(packet, payload_offset+6);
-                        if (rfChannel->max_frame_size > max_frame_size) {
-                            rfChannel->max_frame_size = max_frame_size;
-                        }
-                        
-                        // new credits
-                        rfChannel->credits_outgoing = packet[payload_offset+9];
-                        
-                        log_dbg("UIH Parameter Negotiation Response max frame %u, credits %u\n",
-                                max_frame_size, rfChannel->credits_outgoing);
-                        
-                        rfChannel->state = RFCOMM_CHANNEL_SEND_SABM_W4_UA;
-                    }
+                    log_dbg("Received UIH Parameter Negotiation Response for #%u\n", message_dlci);
+                    
+                    rfcomm_channel_event_pn_t event;
+                    event.super.type = CH_EVT_RCVD_PN_RSP;
+                    event.priority = packet[payload_offset+4];
+                    event.max_frame_size = READ_BT_16(packet, payload_offset+6);
+                    event.credits_outgoing = packet[payload_offset+9];
+                    rfcomm_channel_state_machine(rfChannel, (rfcomm_channel_event_t *) &event);
                     break;
                     
                 case BT_RFCOMM_MSC_CMD: 
@@ -1232,7 +1267,6 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             case RFCOMM_CHANNEL_W4_MSC_CMD_OR_MSC_RSP:
                                 rfChannel->state = RFCOMM_CHANNEL_SEND_MSC_RSP_W4_MSC_RSP;
                                 break;
-                                
                             case RFCOMM_CHANNEL_W4_MSC_CMD:
                                 rfChannel->state = RFCOMM_CHANNEL_SEND_MSC_RSP_MSC_CMD_W4_CREDITS;
                                 break;
