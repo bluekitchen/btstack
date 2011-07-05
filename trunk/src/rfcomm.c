@@ -132,6 +132,24 @@ typedef enum {
     STATE_VAR_SEND_UA         = 1 << 6,
 } RFCOMM_CHANNEL_STATE_VAR;
 
+typedef enum {
+    CH_EVT_RCVD_SABM = 1,
+    CH_EVT_RCVD_UA,
+    CH_EVT_RCVD_PN,
+    CH_EVT_RCVD_PN_RSP,
+} RFCOMM_CHANNEL_EVENT;
+
+typedef struct rfcomm_channel_event {
+    RFCOMM_CHANNEL_EVENT type;
+} rfcomm_channel_event_t;
+
+typedef struct rfcomm_channel_event_pn {
+    rfcomm_channel_event_t super;
+    uint16_t max_frame_size;
+    uint8_t  priority;
+    uint8_t  credits_outgoing;
+} rfcomm_channel_event_pn_t;
+
 // info regarding potential connections
 typedef struct {
     // linked list - assert: first field
@@ -971,20 +989,63 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     rfcomm_hand_out_credits();
 }
 
-static void rfcomm_channel_handle_pn(rfcomm_channel_t *channel, uint8_t priority, uint16_t max_frame_size, uint8_t credits_outgoing){
-    
+static void rfcomm_channel_accept_pn(rfcomm_channel_t *channel, rfcomm_channel_event_pn_t *event){
     // priority of client request
-    channel->pn_priority = priority;
-
+    channel->pn_priority = event->priority;
+    
     // new credits
-    channel->credits_outgoing = credits_outgoing;
-
+    channel->credits_outgoing = event->credits_outgoing;
+    
     // negotiate max frame size
     if (channel->max_frame_size > channel->multiplexer->max_frame_size) {
         channel->max_frame_size = channel->multiplexer->max_frame_size;
     }
-    if (channel->max_frame_size > max_frame_size) {
-        channel->max_frame_size = max_frame_size;
+    if (channel->max_frame_size > event->max_frame_size) {
+        channel->max_frame_size = event->max_frame_size;
+    }
+    
+}
+
+static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_channel_event_t *event){
+    switch (channel->state) {
+        case RFCOMM_CHANNEL_CLOSED:
+            switch (event->type){
+                case CH_EVT_RCVD_SABM:
+                    log_dbg("-> Inform app\n");
+                    rfcomm_emit_connection_request(channel);
+                    channel->state_var |= STATE_VAR_RCVD_SABM;
+                    channel->state = RFCOMM_CHANNEL_INCOMING_SETUP;
+                    break;
+                case CH_EVT_RCVD_PN:
+                    rfcomm_channel_accept_pn(channel, (rfcomm_channel_event_pn_t*) event);
+                    log_dbg("-> Inform app\n");
+                    rfcomm_emit_connection_request(channel);
+                    channel->state_var |= STATE_VAR_RCVD_PN;
+                    channel->state = RFCOMM_CHANNEL_INCOMING_SETUP;
+                    break;
+                default:
+                    break;
+            }
+            break;
+            
+        case RFCOMM_CHANNEL_INCOMING_SETUP:
+            switch (event->type){
+                case CH_EVT_RCVD_SABM:
+                    if (channel->state_var & STATE_VAR_CLIENT_ACCEPTED) {
+                        channel->state_var |= STATE_VAR_SEND_UA;
+                    } else {
+                        channel->state_var |= STATE_VAR_RCVD_SABM;
+                    }
+                    break;
+                case CH_EVT_RCVD_PN:
+                    rfcomm_channel_accept_pn(channel, (rfcomm_channel_event_pn_t*) event);
+                    channel->state_var |= STATE_VAR_RCVD_PN;
+                    break;
+                default:
+                    break;
+            }
+        default:
+            break;
     }
 }
 
@@ -1043,7 +1104,6 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     switch(packet[1]) {
             
         case BT_RFCOMM_SABM:
-            // with or without earlier UIH PN
             rfService = rfcomm_service_for_channel(frame_dlci >> 1);
             if (rfService) {
                log_dbg("Received SABM #%u\n", frame_dlci);
@@ -1059,30 +1119,11 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     rfChannel->connection = rfService->connection;
                 }
                 
-                // TODO: if client max frame size is smaller than RFCOMM_DEFAULT_SIZE, send PN
+                rfcomm_channel_event_t event;
+                event.type = CH_EVT_RCVD_SABM;
+                rfcomm_channel_state_machine(rfChannel, &event);
                 
-                switch (rfChannel->state){
-                        
-                    case RFCOMM_CHANNEL_CLOSED:
-                        // notify client and wait for confirm
-                        log_dbg("-> Inform app\n");
-                        rfcomm_emit_connection_request(rfChannel);
-                        
-                        rfChannel->state_var |= STATE_VAR_RCVD_SABM;
-                        rfChannel->state = RFCOMM_CHANNEL_INCOMING_SETUP;
-                        break;
-                        
-                    case RFCOMM_CHANNEL_INCOMING_SETUP:
-                        if (rfChannel->state_var & STATE_VAR_CLIENT_ACCEPTED) {
-                            rfChannel->state_var |= STATE_VAR_SEND_UA;
-                        } else {
-                            rfChannel->state_var |= STATE_VAR_RCVD_SABM;
-                        }
-                        break;
-                                                
-                    default:
-                        break;
-                }
+                // TODO: if client max frame size is smaller than RFCOMM_DEFAULT_SIZE, send PN
                 break;
                 
             } else {
@@ -1131,6 +1172,9 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         log_dbg("Received UIH Parameter Negotiation Command for #%u\n", message_dlci);
                         
                         max_frame_size = READ_BT_16(packet, payload_offset+6);
+                        uint8_t priority = packet[payload_offset+4];
+                        uint8_t credits_outgoing = packet[payload_offset+9];
+                        
                         rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, message_dlci);
                         if (!rfChannel){
 
@@ -1142,32 +1186,13 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             // => state = RFCOMM_CHANNEL_CLOSED
                         }
                         
-                        switch (rfChannel->state){
-                                
-                            case RFCOMM_CHANNEL_CLOSED:
-                                // .., priority, max_frame_size, credits_outgoing
-                                rfcomm_channel_handle_pn(rfChannel, packet[payload_offset+4], max_frame_size, packet[payload_offset+9]);
-                                
-                                // notify client and wait for confirm
-                                log_dbg("-> Inform app\n");
-                                rfcomm_emit_connection_request(rfChannel);
-                                
-                                rfChannel->state_var |= STATE_VAR_RCVD_PN;
-                                rfChannel->state = RFCOMM_CHANNEL_INCOMING_SETUP;
-                                
-                                break;
-                                
-                            case RFCOMM_CHANNEL_INCOMING_SETUP:
-                                // .., priority, max_frame_size, credits_outgoing
-                                rfcomm_channel_handle_pn(rfChannel, packet[payload_offset+4], max_frame_size, packet[payload_offset+9]);
-                                
-                                rfChannel->state_var |= STATE_VAR_RCVD_PN;
-                                
-                                break;
-                                
-                            default:
-                                break;
-                        }
+                        rfcomm_channel_event_pn_t event;
+                        event.super.type = CH_EVT_RCVD_PN;
+                        event.priority = priority;
+                        event.max_frame_size = max_frame_size;
+                        event.credits_outgoing = credits_outgoing;
+                        rfcomm_channel_state_machine(rfChannel, (rfcomm_channel_event_t *) &event);
+                   
                         break;
                         
                     } else {
