@@ -125,6 +125,13 @@ typedef enum {
 	RFCOMM_CHANNEL_OPEN
 } RFCOMM_CHANNEL_STATE;
 
+typedef enum {
+    STATE_VAR_CLIENT_ACCEPTED = 1 << 0,
+    STATE_VAR_SEND_PN         = 1 << 1,
+    STATE_VAR_SEND_RPN        = 1 << 2,
+    STATE_VAR_SEND_UA         = 1 << 3,
+} RFCOMM_CHANNEL_STATE_VAR;
+
 // info regarding potential connections
 typedef struct {
     // linked list - assert: first field
@@ -175,7 +182,6 @@ typedef struct {
     // linked list - assert: first field
     linked_item_t    item;
 	
-    RFCOMM_CHANNEL_STATE state;
 	rfcomm_multiplexer_t *multiplexer;
 	uint16_t rfcomm_cid;
     uint8_t  outgoing;
@@ -190,6 +196,12 @@ typedef struct {
     // credits for incoming traffic
     uint8_t credits_incoming;
     
+    // channel state
+    RFCOMM_CHANNEL_STATE state;
+
+    // state variables used in RFCOMM_CHANNEL_INCOMING
+    RFCOMM_CHANNEL_STATE_VAR state_var;
+
     // priority set by incoming side in PN
     uint8_t pn_priority;
     
@@ -367,6 +379,10 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
     
     // setup channel
     bzero(channel, sizeof(rfcomm_channel_t));
+    
+    channel->state             = 0;
+    channel->state_var         = 0;
+    
     channel->multiplexer      = multiplexer;
     channel->service          = service;
     channel->rfcomm_cid       = rfcomm_client_cid_generator++;
@@ -375,6 +391,7 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
     channel->credits_incoming = 0;
     channel->credits_outgoing = 0;
     channel->packets_granted  = 0;
+
 	if (service) {
 		// incoming connection
 		channel->outgoing = 0;
