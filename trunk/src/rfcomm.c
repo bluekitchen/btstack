@@ -102,14 +102,11 @@ typedef enum {
 	RFCOMM_CHANNEL_W4_MULTIPLEXER,
 	RFCOMM_CHANNEL_SEND_UIH_PN,
     RFCOMM_CHANNEL_INCOMING_SETUP,
-    RFCOMM_CHANNEL_W4_CLIENT_AFTER_SABM,   // received SABM
     RFCOMM_CHANNEL_SEND_UA,
-    RFCOMM_CHANNEL_W4_CLIENT_AFTER_PN_CMD, // received PN_CMD
 	RFCOMM_CHANNEL_W4_PN_BEFORE_OPEN,
 	RFCOMM_CHANNEL_W4_PN_AFTER_OPEN,
     RFCOMM_CHANNEL_W4_PN_RSP,
 	RFCOMM_CHANNEL_SEND_PN_RSP_W4_SABM_OR_PN_CMD,
-	RFCOMM_CHANNEL_W4_SABM_OR_PN_CMD,
 	RFCOMM_CHANNEL_SEND_SABM_W4_UA,
 	RFCOMM_CHANNEL_W4_UA,
     RFCOMM_CHANNEL_SEND_MSC_CMD_W4_MSC_CMD_OR_MSC_RSP,
@@ -128,9 +125,12 @@ typedef enum {
 
 typedef enum {
     STATE_VAR_CLIENT_ACCEPTED = 1 << 0,
-    STATE_VAR_SEND_PN         = 1 << 1,
-    STATE_VAR_SEND_RPN        = 1 << 2,
-    STATE_VAR_SEND_UA         = 1 << 3,
+    STATE_VAR_RCVD_PN         = 1 << 1,
+    STATE_VAR_RCVD_RPN        = 1 << 2,
+    STATE_VAR_RCVD_SABM       = 1 << 3,
+    STATE_VAR_SEND_PN_RSP     = 1 << 4,
+    STATE_VAR_SEND_RPN        = 1 << 5,
+    STATE_VAR_SEND_UA         = 1 << 6,
 } RFCOMM_CHANNEL_STATE_VAR;
 
 // info regarding potential connections
@@ -1069,13 +1069,14 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         log_dbg("-> Inform app\n");
                         rfcomm_emit_connection_request(rfChannel);
                         
-                        rfChannel->state = RFCOMM_CHANNEL_W4_CLIENT_AFTER_SABM;
-                        
-                        break;
-                    case RFCOMM_CHANNEL_W4_SABM_OR_PN_CMD:
-                        rfChannel->state = RFCOMM_CHANNEL_SEND_UA;
+                        rfChannel->state_var |= STATE_VAR_RCVD_SABM;
+                        rfChannel->state = RFCOMM_CHANNEL_INCOMING_SETUP;
                         break;
                         
+                    case RFCOMM_CHANNEL_INCOMING_SETUP:
+                        rfChannel->state_var |= STATE_VAR_RCVD_SABM;
+                        break;
+                                                
                     default:
                         break;
                 }
@@ -1148,16 +1149,17 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                                 log_dbg("-> Inform app\n");
                                 rfcomm_emit_connection_request(rfChannel);
                                 
-                                rfChannel->state = RFCOMM_CHANNEL_W4_CLIENT_AFTER_PN_CMD;
-
+                                rfChannel->state_var |= STATE_VAR_RCVD_PN;
+                                rfChannel->state = RFCOMM_CHANNEL_INCOMING_SETUP;
+                                
                                 break;
                                 
-                            case RFCOMM_CHANNEL_W4_SABM_OR_PN_CMD:
+                            case RFCOMM_CHANNEL_INCOMING_SETUP:
                                 // .., priority, max_frame_size, credits_outgoing
                                 rfcomm_channel_handle_pn(rfChannel, packet[payload_offset+4], max_frame_size, packet[payload_offset+9]);
-
-                                rfChannel->state = RFCOMM_CHANNEL_SEND_PN_RSP_W4_SABM_OR_PN_CMD;
-
+                                
+                                rfChannel->state_var |= STATE_VAR_RCVD_PN;
+                                
                                 break;
                                 
                             default:
@@ -1341,6 +1343,26 @@ void rfcomm_run(void){
      
         switch (channel->state){
                 
+            case RFCOMM_CHANNEL_INCOMING_SETUP:
+                
+                if ((channel->state_var & STATE_VAR_CLIENT_ACCEPTED) == 0) break;
+                
+                if (channel->state_var & STATE_VAR_SEND_PN_RSP){
+                    log_dbg("Sending UIH Parameter Negotiation Respond for #%u\n", channel->dlci);
+                    rfcomm_send_uih_pn_response(multiplexer, channel->dlci, channel->pn_priority, channel->max_frame_size);
+                    channel->state_var &= ~STATE_VAR_SEND_PN_RSP;
+                    break;
+                }
+                
+                if (channel->state_var & STATE_VAR_SEND_UA){
+                    log_dbg("Sending UA #%u\n", channel->dlci);
+                    rfcomm_send_ua(multiplexer, channel->dlci);
+                    channel->state_var &= ~STATE_VAR_SEND_UA;
+                    break;
+                }
+                channel->state = RFCOMM_CHANNEL_W4_MSC_CMD;
+                break;
+                
             case RFCOMM_CHANNEL_SEND_UIH_PN:
                 log_dbg("Sending UIH Parameter Negotiation Command for #%u\n", channel->dlci );
                 rfcomm_send_uih_pn_command(multiplexer, channel->dlci, channel->max_frame_size);
@@ -1440,14 +1462,7 @@ void rfcomm_run(void){
                 rfcomm_send_ua(multiplexer, channel->dlci);
                 channel->state = RFCOMM_CHANNEL_W4_MSC_CMD;
                 break;
-                
-            case RFCOMM_CHANNEL_SEND_PN_RSP_W4_SABM_OR_PN_CMD:
-                log_dbg("Sending UIH Parameter Negotiation Respond for #%u\n", channel->dlci);
-                rfcomm_send_uih_pn_response(multiplexer, channel->dlci, channel->pn_priority, channel->max_frame_size);
-                // wait for SABM #channel or other UIH PN
-                channel->state = RFCOMM_CHANNEL_W4_SABM_OR_PN_CMD;
-                break;
-                
+                                
             default:
                 break;
         }
@@ -1610,11 +1625,16 @@ void rfcomm_accept_connection_internal(uint16_t rfcomm_cid){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel) return;
     switch (channel->state) {
-        case RFCOMM_CHANNEL_W4_CLIENT_AFTER_SABM:
-            channel->state = RFCOMM_CHANNEL_SEND_UA;
-            break;
-        case RFCOMM_CHANNEL_W4_CLIENT_AFTER_PN_CMD:
-            channel->state = RFCOMM_CHANNEL_SEND_PN_RSP_W4_SABM_OR_PN_CMD;
+        case RFCOMM_CHANNEL_INCOMING_SETUP:
+            channel->state_var |= STATE_VAR_CLIENT_ACCEPTED;
+            if (channel->state_var & STATE_VAR_RCVD_PN){
+                channel->state_var &= ~STATE_VAR_RCVD_PN;
+                channel->state_var |= STATE_VAR_SEND_PN_RSP;
+            }
+            if (channel->state_var & STATE_VAR_RCVD_SABM){
+                channel->state_var &= ~STATE_VAR_RCVD_SABM;
+                channel->state_var |= STATE_VAR_SEND_UA;
+            }
             break;
         default:
             break;
@@ -1626,8 +1646,7 @@ void rfcomm_decline_connection_internal(uint16_t rfcomm_cid){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel) return;
     switch (channel->state) {
-        case RFCOMM_CHANNEL_W4_CLIENT_AFTER_SABM:
-        case RFCOMM_CHANNEL_W4_CLIENT_AFTER_PN_CMD:
+        case RFCOMM_CHANNEL_INCOMING_SETUP:
             channel->state = RFCOMM_CHANNEL_SEND_DM;
             break;
         default:
