@@ -102,7 +102,6 @@ typedef enum {
 	RFCOMM_CHANNEL_W4_MULTIPLEXER,
 	RFCOMM_CHANNEL_SEND_UIH_PN,
     RFCOMM_CHANNEL_INCOMING_SETUP,
-    RFCOMM_CHANNEL_SEND_UA,
 	RFCOMM_CHANNEL_W4_PN_BEFORE_OPEN,
 	RFCOMM_CHANNEL_W4_PN_AFTER_OPEN,
     RFCOMM_CHANNEL_W4_PN_RSP,
@@ -1456,13 +1455,7 @@ void rfcomm_run(void){
                 free(channel);
                 rfcomm_multiplexer_prepare_idle_timer(multiplexer);
                 break;
-                
-            case RFCOMM_CHANNEL_SEND_UA:
-                log_dbg("Sending UA #%u\n", channel->dlci);
-                rfcomm_send_ua(multiplexer, channel->dlci);
-                channel->state = RFCOMM_CHANNEL_W4_MSC_CMD;
-                break;
-                                
+                                                
             default:
                 break;
         }
