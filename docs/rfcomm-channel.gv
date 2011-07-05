@@ -18,11 +18,8 @@ digraph rfcomm_channel {
     // rfcomm_multiplexer_l2cap_packet_handler
     
     // rfcomm_packet_handler
-    CLOSED->W4_CLIENT_AFTER_SABM  [label = "RECV SABM#x / inform client"];
-
-    CLOSED->W4_CLIENT_AFTER_PN_CMD [label = "RECV UIH PN CMD/ inform client"];
-    W4_SABM_OR_PN_CMD->W4_SABM_OR_PN_CMD [label = "RECV UIH PN CMD / SEND UIH PN RSP"];
-    W4_SABM_OR_PN_CMD->SEND_UA [label ="RECV SAMB"];
+    CLOSED->INCOMING_SETUP  [label = "RECV SABM#x / inform client, set RCVD_SABM"];
+    CLOSED->INCOMING_SETUP  [label = "RECV UIH PN CMD / inform client, set RCVD_PN"];
     
     W4_MSC_CMD_OR_MSC_RSP-> W4_MSC_CMD [label = "RECV MSP RSP"];
     W4_MSC_RSP -> W4_CREDITS [label = "RECV MSP RSP"];
@@ -31,8 +28,10 @@ digraph rfcomm_channel {
     W4_CREDITS -> OPEN [label = "RECV UIH P/F credits > 0"];
         
     // rfcomm_decline_connection_internal
-    W4_CLIENT_AFTER_SABM->CLOSED [label = "decline connection / SEND DM"];
-    W4_CLIENT_AFTER_PN_CMD->CLOSED [label = "decline connection / SEND DM"];
+    INCOMING_SETUP->SEND_DM [label = "decline connection"];
+    
+    // rfcomm_disconnect_internal
+    OPEN->SEND_DISC [label="disconnect"];
     
     // rfcomm_run
     SEND_MSC_CMD_W4_MSC_CMD_OR_MSC_RSP->W4_MSC_CMD_OR_MSC_RSP [label="SEND MSC CMD"];
@@ -43,16 +42,13 @@ digraph rfcomm_channel {
     SEND_DM->CLOSED [label="SEND DM_PF"];
     SEND_DISC->CLOSED [label="SEND DISC"];
     SEND_UA->W4_MSC_CMD [label="SEND UA"];
-    SEND_PN_RSP_W4_SABM_OR_PN_CMD->W4_SABM_OR_PN_CMD[label="SEND PN RSP"];
 
-    // rfcomm_decline_connection_internal
-    W4_CLIENT_AFTER_SABM->SEND_DM[label="decline connection"];
-    W4_CLIENT_AFTER_PN_CMD->SEND_DM[label="decline connection"];
-
-    // 
-    W4_CLIENT_AFTER_SABM->SEND_UA[label="accept connection"];
-    W4_CLIENT_AFTER_PN_CMD->SEND_PN_RSP_W4_SABM_OR_PN_CMD[label="accept connection"];
-    
+    // rfcomm_accept_connection_internal
+    INCOMING_SETUP->INCOMING_SETUP [label="accept connection / set CLIENT_ACCEPTED, set SEND_PN_RSP if RCVD_PN, set SEND_UA if RCVD_SAMBA"];
+    INCOMING_SETUP->INCOMING_SETUP [label="-[CAN_SEND && SEND_UA] / SEND PN_RSP, clear SEND_PN_RSP"];     
+    INCOMING_SETUP->W4_MSC_CMD [label="-[CAN_SEND && SEND_UA] / SEND UA, clear SEND_UA"];
+    INCOMING_SETUP->INCOMING_SETUP [label = "RECV SABM [CLIENT_ACCEPTED]/ set RECV_SABM"];
+    INCOMING_SETUP->INCOMING_SETUP [label = "RECV SABM [!CLIENT_ACCEPTED]/ set SEND_UA"];
     W4_PN_RSP->SEND_SABM_W4_UA [label="RECV PN RSP"];
     SEND_SABM_W4_UA->W4_UA[label="SEND SABM"];
     W4_UA->SEND_MSC_CMD_W4_MSC_CMD_OR_MSC_RSP[label="RECV UA"];
