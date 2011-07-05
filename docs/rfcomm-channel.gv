@@ -41,7 +41,6 @@ digraph rfcomm_channel {
     SEND_CREDITS->W4_CREDITS [label="SEND CREDITS#0 && NO CREDITS"];
     SEND_DM->CLOSED [label="SEND DM_PF"];
     SEND_DISC->CLOSED [label="SEND DISC"];
-    SEND_UA->W4_MSC_CMD [label="SEND UA"];
 
     // rfcomm_accept_connection_internal
     INCOMING_SETUP->INCOMING_SETUP [label="accept connection / set CLIENT_ACCEPTED, set SEND_PN_RSP if RCVD_PN, set SEND_UA if RCVD_SAMBA"];
