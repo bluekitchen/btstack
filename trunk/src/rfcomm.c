@@ -101,6 +101,7 @@ typedef enum {
     RFCOMM_CHANNEL_SEND_DM,
 	RFCOMM_CHANNEL_W4_MULTIPLEXER,
 	RFCOMM_CHANNEL_SEND_UIH_PN,
+    RFCOMM_CHANNEL_INCOMING_SETUP,
     RFCOMM_CHANNEL_W4_CLIENT_AFTER_SABM,   // received SABM
     RFCOMM_CHANNEL_SEND_UA,
     RFCOMM_CHANNEL_W4_CLIENT_AFTER_PN_CMD, // received PN_CMD
@@ -380,7 +381,7 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
     // setup channel
     bzero(channel, sizeof(rfcomm_channel_t));
     
-    channel->state             = 0;
+    channel->state             = RFCOMM_CHANNEL_CLOSED;
     channel->state_var         = 0;
     
     channel->multiplexer      = multiplexer;
@@ -872,11 +873,8 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
 
 static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *packet, uint16_t size){
 
-    // tricky part: get or create a multiplexer for a certain device
-    rfcomm_multiplexer_t *multiplexer = NULL;
-    
-    // done with event handling - only l2cap data packets for multiplexer follow
-    multiplexer = rfcomm_multiplexer_for_l2cap_cid(channel);
+    // get or create a multiplexer for a certain device
+    rfcomm_multiplexer_t *multiplexer = rfcomm_multiplexer_for_l2cap_cid(channel);
     if (!multiplexer) return 0;
 
 	// but only care for multiplexer control channel
@@ -972,6 +970,23 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     }
     // we received new RFCOMM credits, hand them out if possible
     rfcomm_hand_out_credits();
+}
+
+static void rfcomm_channel_handle_pn(rfcomm_channel_t *channel, uint8_t priority, uint16_t max_frame_size, uint8_t credits_outgoing){
+    
+    // priority of client request
+    channel->pn_priority = priority;
+
+    // new credits
+    channel->credits_outgoing = credits_outgoing;
+
+    // negotiate max frame size
+    if (channel->max_frame_size > channel->multiplexer->max_frame_size) {
+        channel->max_frame_size = channel->multiplexer->max_frame_size;
+    }
+    if (channel->max_frame_size > max_frame_size) {
+        channel->max_frame_size = max_frame_size;
+    }
 }
 
 void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -1107,44 +1122,40 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         max_frame_size = READ_BT_16(packet, payload_offset+6);
                         rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, message_dlci);
                         if (!rfChannel){
-                            // setup channel
+
+                            // setup incoming channel
                             rfChannel = rfcomm_channel_create(multiplexer, rfService, message_dlci >> 1);
                             if (!rfChannel) break;
                             rfChannel->connection = rfService->connection;
-                            rfChannel->max_frame_size = rfService->max_frame_size;
-                            rfChannel->state = RFCOMM_CHANNEL_W4_CLIENT_AFTER_PN_CMD;
-                            // priority of client request
-                            rfChannel->pn_priority = packet[payload_offset+4];
-                            // negotiate max frame size
-                            if (rfChannel->max_frame_size > multiplexer->max_frame_size) {
-                                rfChannel->max_frame_size = multiplexer->max_frame_size;
-                            }
-                            if (rfChannel->max_frame_size > max_frame_size) {
-                                rfChannel->max_frame_size = max_frame_size;
-                            }
                             
-                            // new credits
-                            rfChannel->credits_outgoing = packet[payload_offset+9];
-                            
-                            // notify client and wait for confirm
-                            log_dbg("-> Inform app\n");
-                            rfcomm_emit_connection_request(rfChannel);
-                            break;
+                            // => state = RFCOMM_CHANNEL_CLOSED
                         }
                         
-                        if (rfChannel->state != RFCOMM_CHANNEL_W4_SABM_OR_PN_CMD) break;
-                        
-                        // priority of client request
-                        rfChannel->pn_priority = packet[payload_offset+4];
-                        
-                        // mfs of client request
-                        if (max_frame_size > rfChannel->max_frame_size) {
-                            max_frame_size = rfChannel->max_frame_size;
+                        switch (rfChannel->state){
+                                
+                            case RFCOMM_CHANNEL_CLOSED:
+                                // .., priority, max_frame_size, credits_outgoing
+                                rfcomm_channel_handle_pn(rfChannel, packet[payload_offset+4], max_frame_size, packet[payload_offset+9]);
+                                
+                                // notify client and wait for confirm
+                                log_dbg("-> Inform app\n");
+                                rfcomm_emit_connection_request(rfChannel);
+                                
+                                rfChannel->state = RFCOMM_CHANNEL_W4_CLIENT_AFTER_PN_CMD;
+
+                                break;
+                                
+                            case RFCOMM_CHANNEL_W4_SABM_OR_PN_CMD:
+                                // .., priority, max_frame_size, credits_outgoing
+                                rfcomm_channel_handle_pn(rfChannel, packet[payload_offset+4], max_frame_size, packet[payload_offset+9]);
+
+                                rfChannel->state = RFCOMM_CHANNEL_SEND_PN_RSP_W4_SABM_OR_PN_CMD;
+
+                                break;
+                                
+                            default:
+                                break;
                         }
-                        
-                        // new credits
-                        rfChannel->credits_outgoing = packet[payload_offset+9];
-                        rfChannel->state = RFCOMM_CHANNEL_SEND_PN_RSP_W4_SABM_OR_PN_CMD;
                         break;
                         
                     } else {
