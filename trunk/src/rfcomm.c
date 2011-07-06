@@ -1278,9 +1278,12 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
             
         case BT_RFCOMM_UIH_PF:
         case BT_RFCOMM_UIH:
+
+            message_len  = packet[payload_offset+1] >> 1;
+            message_dlci = packet[payload_offset+2] >> 2;
+
             switch (packet[payload_offset]) {
                 case BT_RFCOMM_PN_CMD:
-                    message_dlci = packet[payload_offset+2];
                     rfService = rfcomm_service_for_channel(message_dlci >> 1);
                     if (rfService){
                         
@@ -1310,7 +1313,6 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     break;
                     
                 case BT_RFCOMM_PN_RSP:
-                    message_dlci = packet[payload_offset+2];
                     rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, message_dlci);
                     if (!rfChannel) break;
                     
@@ -1327,7 +1329,6 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     break;
                     
                 case BT_RFCOMM_MSC_CMD: 
-                    message_dlci = packet[payload_offset+2] >> 2;
                     rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, message_dlci);
                     if (!rfChannel) break;
                     
@@ -1337,7 +1338,6 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     break;
                     
                 case BT_RFCOMM_MSC_RSP:
-                    message_dlci = packet[payload_offset+2] >> 2;
                     log_dbg("Received MSC RSP for #%u\n", message_dlci);
                     rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, message_dlci);
                     if (!rfChannel) break;
@@ -1353,8 +1353,6 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     // "The RPN command is specified as optional in TS 07.10, but it is mandatory to recognize and respond to it in RFCOMM. 
                     //   (Although the handling of individual settings are implementation-dependent.)"
                     //
-                    message_dlci = packet[payload_offset+2] >> 2;
-					message_len  = packet[payload_offset+1] >> 1;
                     
                     rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, message_dlci);
                     if (!rfChannel){
