@@ -274,6 +274,7 @@ static void (*app_packet_handler)(void * connection, uint8_t packet_type,
                                   uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void rfcomm_run(void);
+static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, uint8_t dlci, rfcomm_channel_event_t *event);
 
 
 // MARK: RFCOMM CLIENT EVENTS
@@ -669,32 +670,7 @@ static int rfcomm_send_uih_rpn_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t dl
 	return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
 
-static void rfcomm_hand_out_credits(void){
-    linked_item_t * it;
-    for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
-        rfcomm_channel_t * channel = (rfcomm_channel_t *) it;
-        if (channel->state != RFCOMM_CHANNEL_OPEN) {
-            // log_dbg("RFCOMM_EVENT_CREDITS: multiplexer not open\n");
-            continue;
-        }
-        if (channel->packets_granted) {
-            // log_dbg("RFCOMM_EVENT_CREDITS: already packets granted\n");
-            continue;
-        }
-        if (!channel->credits_outgoing) {
-            // log_dbg("RFCOMM_EVENT_CREDITS: no outgoing credits\n");
-            continue;
-        }
-        if (!channel->multiplexer->l2cap_credits){
-            // log_dbg("RFCOMM_EVENT_CREDITS: no l2cap credits\n");
-            continue;
-        }
-        // channel open, multiplexer has l2cap credits and we didn't hand out credit before -> go!
-        // log_dbg("RFCOMM_EVENT_CREDITS: 1\n");
-        channel->packets_granted += 1;
-        rfcomm_emit_credits(channel, 1);
-    }        
-}
+// MARK: RFCOMM MULTIPLEXER
 
 static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
     
@@ -782,44 +758,6 @@ static void rfcomm_multiplexer_opened(rfcomm_multiplexer_t *multiplexer){
     rfcomm_multiplexer_prepare_idle_timer(multiplexer);
 }
 
-
-static void rfcomm_channel_provide_credits(rfcomm_channel_t *channel){
-
-    if (!l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid)) return;
-
-    int credits = 0x30;
-    switch (channel->state) {
-        case RFCOMM_CHANNEL_W4_CREDITS:
-        case RFCOMM_CHANNEL_SEND_CREDITS:
-        case RFCOMM_CHANNEL_OPEN:
-            if (channel->credits_incoming < 5){
-				uint8_t address = (1 << 0) | (channel->multiplexer->outgoing << 1) |  (channel->dlci << 2); 
-				rfcomm_send_packet_for_multiplexer(channel->multiplexer, address, BT_RFCOMM_UIH_PF, credits, NULL, 0);
-                channel->credits_incoming += credits;
-            }
-            break;
-        default:
-            break;
-    }
-}
-
-static void rfcomm_channel_opened(rfcomm_channel_t *rfChannel){
-    rfChannel->state = RFCOMM_CHANNEL_OPEN;
-    rfcomm_emit_channel_opened(rfChannel, 0);
-    rfcomm_hand_out_credits();
-
-    // remove (potential) timer
-    rfcomm_multiplexer_t *multiplexer = rfChannel->multiplexer;
-    if (multiplexer->timer_active) {
-        run_loop_remove_timer(&multiplexer->timer);
-        multiplexer->timer_active = 0;
-    }
-    // hack for problem detecting authentication failure
-    multiplexer->at_least_one_connection = 1;
-    
-    // start next connection request if pending
-    rfcomm_run();
-}
 
 /**
  * @return handled packet
@@ -927,11 +865,11 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
 }
 
 static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *packet, uint16_t size){
-
+    
     // get or create a multiplexer for a certain device
     rfcomm_multiplexer_t *multiplexer = rfcomm_multiplexer_for_l2cap_cid(channel);
     if (!multiplexer) return 0;
-
+    
 	// but only care for multiplexer control channel
     uint8_t frame_dlci = packet[0] >> 2;
     if (frame_dlci) return 0;
@@ -986,6 +924,74 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
             
     }
     return 0;
+}
+
+// MARK: RFCOMM CHANNEL
+
+static void rfcomm_hand_out_credits(void){
+    linked_item_t * it;
+    for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
+        rfcomm_channel_t * channel = (rfcomm_channel_t *) it;
+        if (channel->state != RFCOMM_CHANNEL_OPEN) {
+            // log_dbg("RFCOMM_EVENT_CREDITS: multiplexer not open\n");
+            continue;
+        }
+        if (channel->packets_granted) {
+            // log_dbg("RFCOMM_EVENT_CREDITS: already packets granted\n");
+            continue;
+        }
+        if (!channel->credits_outgoing) {
+            // log_dbg("RFCOMM_EVENT_CREDITS: no outgoing credits\n");
+            continue;
+        }
+        if (!channel->multiplexer->l2cap_credits){
+            // log_dbg("RFCOMM_EVENT_CREDITS: no l2cap credits\n");
+            continue;
+        }
+        // channel open, multiplexer has l2cap credits and we didn't hand out credit before -> go!
+        // log_dbg("RFCOMM_EVENT_CREDITS: 1\n");
+        channel->packets_granted += 1;
+        rfcomm_emit_credits(channel, 1);
+    }        
+}
+
+
+static void rfcomm_channel_provide_credits(rfcomm_channel_t *channel){
+
+    if (!l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid)) return;
+
+    int credits = 0x30;
+    switch (channel->state) {
+        case RFCOMM_CHANNEL_W4_CREDITS:
+        case RFCOMM_CHANNEL_SEND_CREDITS:
+        case RFCOMM_CHANNEL_OPEN:
+            if (channel->credits_incoming < 5){
+				uint8_t address = (1 << 0) | (channel->multiplexer->outgoing << 1) |  (channel->dlci << 2); 
+				rfcomm_send_packet_for_multiplexer(channel->multiplexer, address, BT_RFCOMM_UIH_PF, credits, NULL, 0);
+                channel->credits_incoming += credits;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+static void rfcomm_channel_opened(rfcomm_channel_t *rfChannel){
+    rfChannel->state = RFCOMM_CHANNEL_OPEN;
+    rfcomm_emit_channel_opened(rfChannel, 0);
+    rfcomm_hand_out_credits();
+
+    // remove (potential) timer
+    rfcomm_multiplexer_t *multiplexer = rfChannel->multiplexer;
+    if (multiplexer->timer_active) {
+        run_loop_remove_timer(&multiplexer->timer);
+        multiplexer->timer_active = 0;
+    }
+    // hack for problem detecting authentication failure
+    multiplexer->at_least_one_connection = 1;
+    
+    // start next connection request if pending
+    rfcomm_run();
 }
 
 static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer, uint8_t * packet, uint16_t size){
@@ -1064,6 +1070,13 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
         rfcomm_multiplexer_prepare_idle_timer(multiplexer);
         return;
     }
+    
+    // remote port negotiation command - just accept everything for now
+    //
+    // "The RPN command can be used before a new DLC is opened and should be used whenever the port settings change."
+    // "The RPN command is specified as optional in TS 07.10, but it is mandatory to recognize and respond to it in RFCOMM. 
+    //   (Although the handling of individual settings are implementation-dependent.)"
+    //
     
     // TODO: schedule in channel struct
     if (event->type == CH_EVT_RCVD_RPN_CMD){
@@ -1201,47 +1214,44 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
 
 static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, uint8_t dlci, rfcomm_channel_event_t *event){
 
-    rfcomm_channel_t * rfChannel = NULL;
-    rfcomm_service_t * rfService = NULL;
+    // TODO: if client max frame size is smaller than RFCOMM_DEFAULT_SIZE, send PN
+
+    // lookup existing channel
+    rfcomm_channel_t * channel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, dlci);
+    if (channel) {
+        rfcomm_channel_state_machine(channel, event);
+        return;
+    }
     
+    // service registered?
+    rfcomm_service_t * service = rfcomm_service_for_channel(dlci >> 1);
+    if (!service) {
+        // discard request by sending disconnected mode
+        // TODO: store "send DM for #x" in multiplexer struct
+        rfcomm_send_dm_pf(multiplexer, dlci);
+    }
+
+    // create channel for some events
     switch (event->type) {
         case CH_EVT_RCVD_SABM:
-            // ???: why isn't the multiplexer used as param to rfcomm_service_for_channel
-            rfService = rfcomm_service_for_channel(dlci >> 1);
-            if (rfService) {
-                
-                // get or create channel
-                rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, dlci);
-                if (!rfChannel) {
-                    // setup incoming channel
-                    rfChannel = rfcomm_channel_create(multiplexer, rfService, dlci >> 1);
-                    if (!rfChannel) break;
-                    rfChannel->connection = rfService->connection;
-                }
-                
-                // TODO: if client max frame size is smaller than RFCOMM_DEFAULT_SIZE, send PN
-                break;
-                
-            } else {
-                // discard request by sending disconnected mode
-                // TODO: store "send DM for #x" in multiplexer struct
-                rfcomm_send_dm_pf(multiplexer, dlci);
-            }
+        case CH_EVT_RCVD_PN:
+        case CH_EVT_RCVD_RPN_REQ:
+        case CH_EVT_RCVD_RPN_CMD:
+            // setup incoming channel
+            channel = rfcomm_channel_create(multiplexer, service, dlci >> 1);
             break;
-            
-        case CH_EVT_RCVD_UA:
-        case CH_EVT_RCVD_DISC:
-        case CH_EVT_RCVD_DM:
-            rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, dlci);
-            break;
-            
         default:
             break;
     }
-    
-    if (!rfChannel) return;
-    rfcomm_channel_state_machine(rfChannel, event);
-    
+
+    if (!channel) {
+        // discard request by sending disconnected mode
+        // TODO: store "send DM for #x" in multiplexer struct
+        rfcomm_send_dm_pf(multiplexer, dlci);
+        return;
+    }
+    channel->connection = service->connection;
+    rfcomm_channel_state_machine(channel, event);
 }
 
 void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t *packet, uint16_t size){
@@ -1260,22 +1270,22 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
     // rfcomm: (3+length_offest+credits_offset)
     const uint8_t payload_offset = 3 + length_offset + credit_offset;
     
-    rfcomm_channel_t * rfChannel = NULL;
-    rfcomm_service_t * rfService = NULL;
     rfcomm_channel_event_t event;
-    
+    rfcomm_channel_event_pn_t event_pn;
+    rfcomm_channel_event_rpn_t event_rpn;
+
     // switch by rfcomm message type
     switch(packet[1]) {
             
         case BT_RFCOMM_SABM:
-            log_dbg("Received SABM #%u\n", frame_dlci);
             event.type = CH_EVT_RCVD_SABM;
+            log_dbg("Received SABM #%u\n", frame_dlci);
             rfcomm_channel_state_machine_2(multiplexer, frame_dlci, &event);
             break;
             
         case BT_RFCOMM_UA:
-            log_dbg("Received RFCOMM unnumbered acknowledgement for #%u - channel opened\n",frame_dlci);
             event.type = CH_EVT_RCVD_UA;
+            log_dbg("Received RFCOMM unnumbered acknowledgement for #%u - channel opened\n",frame_dlci);
             rfcomm_channel_state_machine_2(multiplexer, frame_dlci, &event);
             break;
             
@@ -1298,103 +1308,55 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
 
             switch (packet[payload_offset]) {
                 case BT_RFCOMM_PN_CMD:
-                    rfService = rfcomm_service_for_channel(message_dlci >> 1);
-                    if (rfService){
-                        
-                        log_dbg("Received UIH Parameter Negotiation Command for #%u\n", message_dlci);
-                        
-                        rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, message_dlci);
-                        if (!rfChannel){
-                            // setup incoming channel => state = RFCOMM_CHANNEL_CLOSED
-                            rfChannel = rfcomm_channel_create(multiplexer, rfService, message_dlci >> 1);
-                            if (!rfChannel) break;
-                            rfChannel->connection = rfService->connection;
-                        }
-                        
-                        rfcomm_channel_event_pn_t event;
-                        event.super.type = CH_EVT_RCVD_PN;
-                        event.priority = packet[payload_offset+4];
-                        event.max_frame_size = READ_BT_16(packet, payload_offset+6);
-                        event.credits_outgoing = packet[payload_offset+9];
-                        rfcomm_channel_state_machine(rfChannel, (rfcomm_channel_event_t *) &event);
-                        break;
-                        
-                    } else {
-                        // discard request by sending disconnected mode
-                        // TODO: store "send DM for #x" in multiplexer struct
-                        rfcomm_send_dm_pf(multiplexer, message_dlci);
-                    }
+                    event_pn.super.type = CH_EVT_RCVD_PN;
+                    event_pn.priority = packet[payload_offset+4];
+                    event_pn.max_frame_size = READ_BT_16(packet, payload_offset+6);
+                    event_pn.credits_outgoing = packet[payload_offset+9];
+                    log_dbg("Received UIH Parameter Negotiation Command for #%u\n", message_dlci);
+                    rfcomm_channel_state_machine_2(multiplexer, message_dlci, &event);
                     break;
                     
                 case BT_RFCOMM_PN_RSP:
-                    rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, message_dlci);
-                    if (!rfChannel) break;
-                    
-                    rfcomm_channel_event_pn_t event_pn;
                     event_pn.super.type = CH_EVT_RCVD_PN_RSP;
                     event_pn.priority = packet[payload_offset+4];
                     event_pn.max_frame_size = READ_BT_16(packet, payload_offset+6);
                     event_pn.credits_outgoing = packet[payload_offset+9];
-                    
                     log_dbg("UIH Parameter Negotiation Response max frame %u, credits %u\n",
                             event_pn.max_frame_size, event_pn.credits_outgoing);
-                    
-                    rfcomm_channel_state_machine(rfChannel, (rfcomm_channel_event_t *) &event_pn);
+                    rfcomm_channel_state_machine_2(multiplexer, message_dlci, (rfcomm_channel_event_t*) &event_pn);
                     break;
                     
                 case BT_RFCOMM_MSC_CMD: 
-                    rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, message_dlci);
-                    if (!rfChannel) break;
-                    
-                    log_dbg("Received MSC CMD for #%u, \n", message_dlci);
                     event.type = CH_EVT_RCVD_MSC_CMD;
-                    rfcomm_channel_state_machine(rfChannel, &event);
+                    log_dbg("Received MSC CMD for #%u, \n", message_dlci);
+                    rfcomm_channel_state_machine_2(multiplexer, message_dlci, &event);
                     break;
                     
                 case BT_RFCOMM_MSC_RSP:
-                    log_dbg("Received MSC RSP for #%u\n", message_dlci);
-                    
-                    rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, message_dlci);
-                    if (!rfChannel) break;
-                    
                     event.type = CH_EVT_RCVD_MSC_RSP;
-                    rfcomm_channel_state_machine(rfChannel, &event);
+                    log_dbg("Received MSC RSP for #%u\n", message_dlci);
+                    rfcomm_channel_state_machine_2(multiplexer, message_dlci, &event);
                     break;
                     
                 case BT_RFCOMM_RPN_CMD:
-                    // port negotiation command - just accept everything for now
-                    //
-                    // "The RPN command can be used before a new DLC is opened and should be used whenever the port settings change."
-                    // "The RPN command is specified as optional in TS 07.10, but it is mandatory to recognize and respond to it in RFCOMM. 
-                    //   (Although the handling of individual settings are implementation-dependent.)"
-                    //
-                    
-                    rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, message_dlci);
-                    if (!rfChannel){
-                        // setup incoming channel => state = RFCOMM_CHANNEL_CLOSED
-                        rfChannel = rfcomm_channel_create(multiplexer, rfService, message_dlci >> 1);
-                        if (!rfChannel) break;
-                        rfChannel->connection = rfService->connection;
-                    }
-                    
-                    if (message_len == 1) {
-                        event.type = CH_EVT_RCVD_RPN_REQ;
-                        rfcomm_channel_state_machine(rfChannel, &event);
-                        break;
-                    }
-                    
-                    if (message_len == 8){
-                        rfcomm_channel_event_rpn_t event_rpn;
-                        event_rpn.super.type = CH_EVT_RCVD_RPN_CMD;
-                        event_rpn.data.baud_rate = packet[payload_offset+3];
-                        event_rpn.data.flags = packet[payload_offset+4];
-                        event_rpn.data.flow_control = packet[payload_offset+5];
-                        event_rpn.data.xon  = packet[payload_offset+6];
-                        event_rpn.data.xoff = packet[payload_offset+7];
-                        event_rpn.data.parameter_mask_0 = packet[payload_offset+8];
-                        event_rpn.data.parameter_mask_1 = packet[payload_offset+9];
-                        rfcomm_channel_state_machine(rfChannel, &event);
-                        break;
+                    switch (message_len){
+                        case 1:
+                            event.type = CH_EVT_RCVD_RPN_REQ;
+                            rfcomm_channel_state_machine_2(multiplexer, message_dlci, &event);
+                            break;
+                        case 8:
+                            event_rpn.super.type = CH_EVT_RCVD_RPN_CMD;
+                            event_rpn.data.baud_rate = packet[payload_offset+3];
+                            event_rpn.data.flags = packet[payload_offset+4];
+                            event_rpn.data.flow_control = packet[payload_offset+5];
+                            event_rpn.data.xon  = packet[payload_offset+6];
+                            event_rpn.data.xoff = packet[payload_offset+7];
+                            event_rpn.data.parameter_mask_0 = packet[payload_offset+8];
+                            event_rpn.data.parameter_mask_1 = packet[payload_offset+9];
+                            rfcomm_channel_state_machine_2(multiplexer, message_dlci, (rfcomm_channel_event_t*) &event_pn);
+                            break;
+                        default:
+                            break;
                     }
                     break;
                     
