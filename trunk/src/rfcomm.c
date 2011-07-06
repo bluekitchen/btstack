@@ -143,6 +143,7 @@ typedef enum {
     CH_EVT_RCVD_MSC_RSP,
     CH_EVT_RCVD_RPN_CMD,
     CH_EVT_RCVD_RPN_REQ,
+    CH_EVT_MULTIPLEXER_READY,
 } RFCOMM_CHANNEL_EVENT;
 
 typedef struct rfcomm_channel_event {
@@ -274,6 +275,8 @@ static void (*app_packet_handler)(void * connection, uint8_t packet_type,
                                   uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void rfcomm_run(void);
+static void rfcomm_hand_out_credits(void);
+static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_channel_event_t *event);
 static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, uint8_t dlci, rfcomm_channel_event_t *event);
 
 
@@ -738,20 +741,15 @@ static void rfcomm_multiplexer_opened(rfcomm_multiplexer_t *multiplexer){
     log_dbg("Multiplexer up and running\n");
     multiplexer->state = RFCOMM_MULTIPLEXER_OPEN;
     
+    rfcomm_channel_event_t event;
+    event.type = CH_EVT_MULTIPLEXER_READY;
+    
     // transition of channels that wait for multiplexer 
     linked_item_t *it;
     for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
         rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
-
         if (channel->multiplexer != multiplexer) continue;
-        
-        switch (channel->state) {
-            case RFCOMM_CHANNEL_W4_MULTIPLEXER:
-                channel->state = RFCOMM_CHANNEL_SEND_UIH_PN;
-                break;
-            default:
-                break;
-        }
+        rfcomm_channel_state_machine(channel, &event);
     }        
     
     rfcomm_run();
@@ -1050,167 +1048,6 @@ static void rfcomm_channel_accept_pn(rfcomm_channel_t *channel, rfcomm_channel_e
     
 }
 
-static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_channel_event_t *event){
-    
-    rfcomm_multiplexer_t *multiplexer = channel->multiplexer;
-
-    // TODO: integrate in common switch
-    if (event->type == CH_EVT_RCVD_DISC){
-        channel->state = RFCOMM_CHANNEL_SEND_UA_AND_DISC;
-        return;
-    }
-
-    // TODO: integrate in common swich
-    if (event->type == CH_EVT_RCVD_DM){
-        log_dbg("Received DM message for #%u\n", channel->dlci);
-        log_dbg("-> Closing channel locally for #%u\n", channel->dlci);
-        rfcomm_emit_channel_closed(channel);
-        linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
-        free(channel);
-        rfcomm_multiplexer_prepare_idle_timer(multiplexer);
-        return;
-    }
-    
-    // remote port negotiation command - just accept everything for now
-    //
-    // "The RPN command can be used before a new DLC is opened and should be used whenever the port settings change."
-    // "The RPN command is specified as optional in TS 07.10, but it is mandatory to recognize and respond to it in RFCOMM. 
-    //   (Although the handling of individual settings are implementation-dependent.)"
-    //
-    
-    // TODO: schedule in channel struct
-    if (event->type == CH_EVT_RCVD_RPN_CMD){
-        
-        rfcomm_channel_event_rpn_t *event_rpn = (rfcomm_channel_event_rpn_t*) event;
-        // control port parameters
-        log_dbg("Received Remote Port Negotiation for #%u\n", channel->dlci);
-        log_dbg("-> Sending Remote Port Negotiation RSP for #%u\n", channel->dlci);
-        rfcomm_send_uih_rpn_rsp(multiplexer, channel->dlci, &event_rpn->data);
-        return;
-    }
-
-    // TODO: schedule in channel struct
-    if (event->type == CH_EVT_RCVD_RPN_REQ){
-        
-        log_dbg("Received Remote Port Negotiation (Info) for #%u\n", channel->dlci);
-        log_dbg("-> Sending Remote Port Negotiation (info) RSP for #%u\n", channel->dlci);
-
-        // default rpn rsp
-        rfcomm_rpn_data_t rpn_data;
-        rpn_data.baud_rate = 0xa0;        /* 9600 bps */
-        rpn_data.flags = 0x03;            /* 8-n-1 */
-        rpn_data.flow_control = 0;        /* no flow control */
-        rpn_data.xon  = 0xd1;             /* XON */
-        rpn_data.xoff = 0xd3;             /* XOFF */
-        rpn_data.parameter_mask_0 = 0x7f; /* parameter mask, all values set */
-        rpn_data.parameter_mask_0 = 0x3f; /* parameter mask, all values set */
-        rfcomm_send_uih_rpn_rsp(multiplexer, channel->dlci, &rpn_data);
-        return;
-    }
-
-    rfcomm_channel_event_pn_t * event_pn = (rfcomm_channel_event_pn_t*) event;
-    
-    switch (channel->state) {
-        case RFCOMM_CHANNEL_CLOSED:
-            switch (event->type){
-                case CH_EVT_RCVD_SABM:
-                    log_dbg("-> Inform app\n");
-                    rfcomm_emit_connection_request(channel);
-                    channel->state_var |= STATE_VAR_RCVD_SABM;
-                    channel->state = RFCOMM_CHANNEL_INCOMING_SETUP;
-                    break;
-                case CH_EVT_RCVD_PN:
-                    rfcomm_channel_accept_pn(channel, event_pn);
-                    log_dbg("-> Inform app\n");
-                    rfcomm_emit_connection_request(channel);
-                    channel->state_var |= STATE_VAR_RCVD_PN;
-                    channel->state = RFCOMM_CHANNEL_INCOMING_SETUP;
-                    break;
-                default:
-                    break;
-            }
-            break;
-            
-        case RFCOMM_CHANNEL_INCOMING_SETUP:
-            switch (event->type){
-                case CH_EVT_RCVD_SABM:
-                    if (channel->state_var & STATE_VAR_CLIENT_ACCEPTED) {
-                        channel->state_var |= STATE_VAR_SEND_UA;
-                    } else {
-                        channel->state_var |= STATE_VAR_RCVD_SABM;
-                    }
-                    break;
-                case CH_EVT_RCVD_PN:
-                    rfcomm_channel_accept_pn(channel, event_pn);
-                    channel->state_var |= STATE_VAR_RCVD_PN;
-                    break;
-                default:
-                    break;
-            }
-            break;
-            
-        case RFCOMM_CHANNEL_W4_UA:
-            switch (event->type){
-                case CH_EVT_RCVD_UA:
-                    channel->state = RFCOMM_CHANNEL_SEND_MSC_CMD_W4_MSC_CMD_OR_MSC_RSP;
-                    break;
-                default:
-                    break;
-            }
-            
-        case RFCOMM_CHANNEL_W4_PN_RSP:
-            switch (event->type){
-                case CH_EVT_RCVD_PN_RSP:
-                    // update max frame size
-                    if (channel->max_frame_size > event_pn->max_frame_size) {
-                        channel->max_frame_size = event_pn->max_frame_size;
-                    }
-                    // new credits
-                    channel->credits_outgoing = event_pn->credits_outgoing;
-                    channel->state = RFCOMM_CHANNEL_SEND_SABM_W4_UA;
-                    break;
-                default:
-                    break;
-            }
-            break;
-
-        case RFCOMM_CHANNEL_W4_MSC_CMD_OR_MSC_RSP:
-            switch (event->type){
-                case CH_EVT_RCVD_MSC_CMD:
-                    channel->state = RFCOMM_CHANNEL_SEND_MSC_RSP_W4_MSC_RSP;
-                    break;
-                case CH_EVT_RCVD_MSC_RSP:
-                    channel->state = RFCOMM_CHANNEL_W4_MSC_CMD;
-                    break;
-                default:
-                    break;
-            }
-            break;
-
-        case RFCOMM_CHANNEL_W4_MSC_CMD:
-            switch (event->type){
-                case CH_EVT_RCVD_MSC_CMD:
-                    channel->state = RFCOMM_CHANNEL_SEND_MSC_RSP_MSC_CMD_W4_CREDITS;
-                    break;
-                default:
-                    break;
-            }
-            break;
-
-        case RFCOMM_CHANNEL_W4_MSC_RSP:
-            switch (event->type){
-                case CH_EVT_RCVD_MSC_RSP:
-                    channel->state = RFCOMM_CHANNEL_SEND_CREDITS;
-                    break;
-                default:
-                    break;
-            }
-            break;
-
-        default:
-            break;
-    }
-}
 
 static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, uint8_t dlci, rfcomm_channel_event_t *event){
 
@@ -1433,8 +1270,179 @@ void rfcomm_close_connection(void *connection){
 }
 
 
-// process outstanding signaling tasks
+static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_channel_event_t *event){
+    
+    rfcomm_multiplexer_t *multiplexer = channel->multiplexer;
+    
+    // TODO: integrate in common switch
+    if (event->type == CH_EVT_RCVD_DISC){
+        channel->state = RFCOMM_CHANNEL_SEND_UA_AND_DISC;
+        return;
+    }
+    
+    // TODO: integrate in common swich
+    if (event->type == CH_EVT_RCVD_DM){
+        log_dbg("Received DM message for #%u\n", channel->dlci);
+        log_dbg("-> Closing channel locally for #%u\n", channel->dlci);
+        rfcomm_emit_channel_closed(channel);
+        linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
+        free(channel);
+        rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+        return;
+    }
+    
+    // remote port negotiation command - just accept everything for now
+    //
+    // "The RPN command can be used before a new DLC is opened and should be used whenever the port settings change."
+    // "The RPN command is specified as optional in TS 07.10, but it is mandatory to recognize and respond to it in RFCOMM. 
+    //   (Although the handling of individual settings are implementation-dependent.)"
+    //
+    
+    // TODO: schedule in channel struct
+    if (event->type == CH_EVT_RCVD_RPN_CMD){
+        
+        rfcomm_channel_event_rpn_t *event_rpn = (rfcomm_channel_event_rpn_t*) event;
+        // control port parameters
+        log_dbg("Received Remote Port Negotiation for #%u\n", channel->dlci);
+        log_dbg("-> Sending Remote Port Negotiation RSP for #%u\n", channel->dlci);
+        rfcomm_send_uih_rpn_rsp(multiplexer, channel->dlci, &event_rpn->data);
+        return;
+    }
+    
+    // TODO: schedule in channel struct
+    if (event->type == CH_EVT_RCVD_RPN_REQ){
+        
+        log_dbg("Received Remote Port Negotiation (Info) for #%u\n", channel->dlci);
+        log_dbg("-> Sending Remote Port Negotiation (info) RSP for #%u\n", channel->dlci);
+        
+        // default rpn rsp
+        rfcomm_rpn_data_t rpn_data;
+        rpn_data.baud_rate = 0xa0;        /* 9600 bps */
+        rpn_data.flags = 0x03;            /* 8-n-1 */
+        rpn_data.flow_control = 0;        /* no flow control */
+        rpn_data.xon  = 0xd1;             /* XON */
+        rpn_data.xoff = 0xd3;             /* XOFF */
+        rpn_data.parameter_mask_0 = 0x7f; /* parameter mask, all values set */
+        rpn_data.parameter_mask_0 = 0x3f; /* parameter mask, all values set */
+        rfcomm_send_uih_rpn_rsp(multiplexer, channel->dlci, &rpn_data);
+        return;
+    }
+    
+    rfcomm_channel_event_pn_t * event_pn = (rfcomm_channel_event_pn_t*) event;
+    
+    switch (channel->state) {
+        case RFCOMM_CHANNEL_CLOSED:
+            switch (event->type){
+                case CH_EVT_RCVD_SABM:
+                    log_dbg("-> Inform app\n");
+                    rfcomm_emit_connection_request(channel);
+                    channel->state_var |= STATE_VAR_RCVD_SABM;
+                    channel->state = RFCOMM_CHANNEL_INCOMING_SETUP;
+                    break;
+                case CH_EVT_RCVD_PN:
+                    rfcomm_channel_accept_pn(channel, event_pn);
+                    log_dbg("-> Inform app\n");
+                    rfcomm_emit_connection_request(channel);
+                    channel->state_var |= STATE_VAR_RCVD_PN;
+                    channel->state = RFCOMM_CHANNEL_INCOMING_SETUP;
+                    break;
+                default:
+                    break;
+            }
+            break;
+            
+        case RFCOMM_CHANNEL_INCOMING_SETUP:
+            switch (event->type){
+                case CH_EVT_RCVD_SABM:
+                    if (channel->state_var & STATE_VAR_CLIENT_ACCEPTED) {
+                        channel->state_var |= STATE_VAR_SEND_UA;
+                    } else {
+                        channel->state_var |= STATE_VAR_RCVD_SABM;
+                    }
+                    break;
+                case CH_EVT_RCVD_PN:
+                    rfcomm_channel_accept_pn(channel, event_pn);
+                    channel->state_var |= STATE_VAR_RCVD_PN;
+                    break;
+                default:
+                    break;
+            }
+            break;
+            
+        case RFCOMM_CHANNEL_W4_MULTIPLEXER:
+            switch (event->type) {
+                case CH_EVT_MULTIPLEXER_READY:
+                    channel->state = RFCOMM_CHANNEL_SEND_UIH_PN;
+                    break;
+                default:
+                    break;
+            }
+            
+        case RFCOMM_CHANNEL_W4_UA:
+            switch (event->type){
+                case CH_EVT_RCVD_UA:
+                    channel->state = RFCOMM_CHANNEL_SEND_MSC_CMD_W4_MSC_CMD_OR_MSC_RSP;
+                    break;
+                default:
+                    break;
+            }
+            
+        case RFCOMM_CHANNEL_W4_PN_RSP:
+            switch (event->type){
+                case CH_EVT_RCVD_PN_RSP:
+                    // update max frame size
+                    if (channel->max_frame_size > event_pn->max_frame_size) {
+                        channel->max_frame_size = event_pn->max_frame_size;
+                    }
+                    // new credits
+                    channel->credits_outgoing = event_pn->credits_outgoing;
+                    channel->state = RFCOMM_CHANNEL_SEND_SABM_W4_UA;
+                    break;
+                default:
+                    break;
+            }
+            break;
+            
+        case RFCOMM_CHANNEL_W4_MSC_CMD_OR_MSC_RSP:
+            switch (event->type){
+                case CH_EVT_RCVD_MSC_CMD:
+                    channel->state = RFCOMM_CHANNEL_SEND_MSC_RSP_W4_MSC_RSP;
+                    break;
+                case CH_EVT_RCVD_MSC_RSP:
+                    channel->state = RFCOMM_CHANNEL_W4_MSC_CMD;
+                    break;
+                default:
+                    break;
+            }
+            break;
+            
+        case RFCOMM_CHANNEL_W4_MSC_CMD:
+            switch (event->type){
+                case CH_EVT_RCVD_MSC_CMD:
+                    channel->state = RFCOMM_CHANNEL_SEND_MSC_RSP_MSC_CMD_W4_CREDITS;
+                    break;
+                default:
+                    break;
+            }
+            break;
+            
+        case RFCOMM_CHANNEL_W4_MSC_RSP:
+            switch (event->type){
+                case CH_EVT_RCVD_MSC_RSP:
+                    channel->state = RFCOMM_CHANNEL_SEND_CREDITS;
+                    break;
+                default:
+                    break;
+            }
+            break;
+            
+        default:
+            break;
+    }
+}
+
 // MARK: RFCOMM RUN
+// process outstanding signaling tasks
 void rfcomm_run(void){
     
     linked_item_t *it;
