@@ -1199,6 +1199,43 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
     }
 }
 
+static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, uint8_t dlci, rfcomm_channel_event_t *event){
+
+    rfcomm_channel_t * rfChannel = NULL;
+    rfcomm_service_t * rfService = NULL;
+    
+    switch (event->type) {
+        case BT_RFCOMM_SABM:
+            // ???: why isn't the multiplexer used as param to rfcomm_service_for_channel
+            rfService = rfcomm_service_for_channel(dlci >> 1);
+            if (rfService) {
+                
+                // get or create channel
+                rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, dlci);
+                if (!rfChannel) {
+                    // setup incoming channel
+                    rfChannel = rfcomm_channel_create(multiplexer, rfService, dlci >> 1);
+                    if (!rfChannel) break;
+                    rfChannel->connection = rfService->connection;
+                }
+                
+                // TODO: if client max frame size is smaller than RFCOMM_DEFAULT_SIZE, send PN
+
+                rfcomm_channel_state_machine(rfChannel, event);
+
+                break;
+                
+            } else {
+                // discard request by sending disconnected mode
+                // TODO: store "send DM for #x" in multiplexer struct
+                rfcomm_send_dm_pf(multiplexer, dlci);
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t *packet, uint16_t size){
     
     // rfcomm: (0) addr [76543 server channel] [2 direction: initiator uses 1] [1 C/R: CMD by initiator = 1] [0 EA=1]
@@ -1223,31 +1260,10 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
     switch(packet[1]) {
             
         case BT_RFCOMM_SABM:
-            rfService = rfcomm_service_for_channel(frame_dlci >> 1);
-            if (rfService) {
-                log_dbg("Received SABM #%u\n", frame_dlci);
-                
-                // get or create channel
-                rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
-                if (!rfChannel) {
-                    // setup incoming channel
-                    rfChannel = rfcomm_channel_create(multiplexer, rfService, frame_dlci >> 1);
-                    if (!rfChannel) break;
-                    rfChannel->connection = rfService->connection;
-                }
-                
-                // create event and send to sm
-                event.type = CH_EVT_RCVD_SABM;
-                rfcomm_channel_state_machine(rfChannel, &event);
-                
-                // TODO: if client max frame size is smaller than RFCOMM_DEFAULT_SIZE, send PN
-                break;
-                
-            } else {
-                // discard request by sending disconnected mode
-                // TODO: store "send DM for #x" in multiplexer struct
-                rfcomm_send_dm_pf(multiplexer, frame_dlci);
-            }
+            // create event and send to sm
+            log_dbg("Received SABM #%u\n", frame_dlci);
+            event.type = CH_EVT_RCVD_SABM;
+            rfcomm_channel_state_machine_2(multiplexer, frame_dlci, &event);
             break;
             
         case BT_RFCOMM_UA:
@@ -1339,6 +1355,7 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     
                 case BT_RFCOMM_MSC_RSP:
                     log_dbg("Received MSC RSP for #%u\n", message_dlci);
+                    
                     rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, message_dlci);
                     if (!rfChannel) break;
                     
