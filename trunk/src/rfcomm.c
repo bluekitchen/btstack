@@ -1199,45 +1199,12 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
     }
 }
 
-void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    
-    // multiplexer handler
-    int handled = 0;
-    switch (packet_type) {
-        case HCI_EVENT_PACKET:
-            handled = rfcomm_multiplexer_hci_event_handler(packet, size);
-            break;
-        case L2CAP_DATA_PACKET:
-            handled = rfcomm_multiplexer_l2cap_packet_handler(channel, packet, size);
-            break;
-        default:
-            break;
-    }
-    if (handled) return;
-    
-    // we only handle l2cap packet over open multiplexer channel now
-    if (packet_type != L2CAP_DATA_PACKET) {
-        (*app_packet_handler)(NULL, packet_type, channel, packet, size);
-        return;
-    }
-    rfcomm_multiplexer_t * multiplexer = rfcomm_multiplexer_for_l2cap_cid(channel);
-    if (!multiplexer || multiplexer->state != RFCOMM_MULTIPLEXER_OPEN) {
-        (*app_packet_handler)(NULL, packet_type, channel, packet, size);
-        return;
-    }
+void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t *packet, uint16_t size){
     
     // rfcomm: (0) addr [76543 server channel] [2 direction: initiator uses 1] [1 C/R: CMD by initiator = 1] [0 EA=1]
     const uint8_t frame_dlci = packet[0] >> 2;
     uint8_t message_dlci; // used by commands in UIH(_PF) packets 
 	uint8_t message_len;  //   "
-	
-    // channel data
-    if (frame_dlci && (packet[1] == BT_RFCOMM_UIH || packet[1] == BT_RFCOMM_UIH_PF)) {
-        rfcomm_channel_packet_handler_uih(multiplexer, packet, size);
-        return;
-    }
-     
-    
     
     // rfcomm: (1) command/control
     // -- credits_offset = 1 if command == BT_RFCOMM_UIH_PF
@@ -1251,15 +1218,15 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     rfcomm_channel_t * rfChannel = NULL;
     rfcomm_service_t * rfService = NULL;
     rfcomm_channel_event_t event;
-
+    
     // switch by rfcomm message type
     switch(packet[1]) {
             
         case BT_RFCOMM_SABM:
             rfService = rfcomm_service_for_channel(frame_dlci >> 1);
             if (rfService) {
-               log_dbg("Received SABM #%u\n", frame_dlci);
- 
+                log_dbg("Received SABM #%u\n", frame_dlci);
+                
                 // get or create channel
                 rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
                 if (!rfChannel) {
@@ -1352,10 +1319,10 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     event_pn.priority = packet[payload_offset+4];
                     event_pn.max_frame_size = READ_BT_16(packet, payload_offset+6);
                     event_pn.credits_outgoing = packet[payload_offset+9];
-
+                    
                     log_dbg("UIH Parameter Negotiation Response max frame %u, credits %u\n",
                             event_pn.max_frame_size, event_pn.credits_outgoing);
-                   
+                    
                     rfcomm_channel_state_machine(rfChannel, (rfcomm_channel_event_t *) &event_pn);
                     break;
                     
@@ -1368,7 +1335,7 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     event.type = CH_EVT_RCVD_MSC_CMD;
                     rfcomm_channel_state_machine(rfChannel, &event);
                     break;
-                                        
+                    
                 case BT_RFCOMM_MSC_RSP:
                     message_dlci = packet[payload_offset+2] >> 2;
                     log_dbg("Received MSC RSP for #%u\n", message_dlci);
@@ -1417,7 +1384,7 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                         break;
                     }
                     break;
-             
+                    
                 default:
                     break;
             }
@@ -1427,6 +1394,45 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
             log_err("Received unknown RFCOMM message type %x\n", packet[1]);
             break;
     }
+}
+
+void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    
+    // multiplexer handler
+    int handled = 0;
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            handled = rfcomm_multiplexer_hci_event_handler(packet, size);
+            break;
+        case L2CAP_DATA_PACKET:
+            handled = rfcomm_multiplexer_l2cap_packet_handler(channel, packet, size);
+            break;
+        default:
+            break;
+    }
+    if (handled) return;
+    
+    // we only handle l2cap packet over open multiplexer channel now
+    if (packet_type != L2CAP_DATA_PACKET) {
+        (*app_packet_handler)(NULL, packet_type, channel, packet, size);
+        return;
+    }
+    rfcomm_multiplexer_t * multiplexer = rfcomm_multiplexer_for_l2cap_cid(channel);
+    if (!multiplexer || multiplexer->state != RFCOMM_MULTIPLEXER_OPEN) {
+        (*app_packet_handler)(NULL, packet_type, channel, packet, size);
+        return;
+    }
+    
+    // channel data ?
+    // rfcomm: (0) addr [76543 server channel] [2 direction: initiator uses 1] [1 C/R: CMD by initiator = 1] [0 EA=1]
+    const uint8_t frame_dlci = packet[0] >> 2;
+	
+    if (frame_dlci && (packet[1] == BT_RFCOMM_UIH || packet[1] == BT_RFCOMM_UIH_PF)) {
+        rfcomm_channel_packet_handler_uih(multiplexer, packet, size);
+        return;
+    }
+     
+    rfcomm_channel_packet_handler(multiplexer, packet, size);
 }
 
 //
