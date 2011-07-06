@@ -98,18 +98,18 @@ typedef enum {
 
 typedef enum {
 	RFCOMM_CHANNEL_CLOSED = 1,
-    RFCOMM_CHANNEL_SEND_DM,
+    // outgoing
 	RFCOMM_CHANNEL_W4_MULTIPLEXER,
 	RFCOMM_CHANNEL_SEND_UIH_PN,
-    RFCOMM_CHANNEL_INCOMING_SETUP,
-	RFCOMM_CHANNEL_W4_PN_BEFORE_OPEN,
-	RFCOMM_CHANNEL_W4_PN_AFTER_OPEN,
     RFCOMM_CHANNEL_W4_PN_RSP,
-	RFCOMM_CHANNEL_SEND_PN_RSP_W4_SABM_OR_PN_CMD,
 	RFCOMM_CHANNEL_SEND_SABM_W4_UA,
 	RFCOMM_CHANNEL_W4_UA,
+    // incoming
+    RFCOMM_CHANNEL_INCOMING_SETUP,
+    // merged into DLC_SETUP
+    RFCOMM_CHANNEL_DLC_SETUP,
     RFCOMM_CHANNEL_SEND_MSC_CMD_W4_MSC_CMD_OR_MSC_RSP,
-	RFCOMM_CHANNEL_W4_MSC_CMD_OR_MSC_RSP,   // outgoing, sent MSC_CMD
+	RFCOMM_CHANNEL_W4_MSC_CMD_OR_MSC_RSP, 
 	RFCOMM_CHANNEL_SEND_MSC_RSP_MSC_CMD_W4_CREDITS,
 	RFCOMM_CHANNEL_W4_MSC_CMD,
 	RFCOMM_CHANNEL_SEND_MSC_RSP_W4_MSC_RSP,
@@ -117,9 +117,12 @@ typedef enum {
 	RFCOMM_CHANNEL_W4_CREDITS,
     RFCOMM_CHANNEL_SEND_MSC_CMD_SEND_CREDITS,
     RFCOMM_CHANNEL_SEND_CREDITS,
-    RFCOMM_CHANNEL_SEND_DISC,
+    // other
+	RFCOMM_CHANNEL_OPEN,
     RFCOMM_CHANNEL_SEND_UA_AND_DISC,
-	RFCOMM_CHANNEL_OPEN
+    RFCOMM_CHANNEL_SEND_DISC,
+    RFCOMM_CHANNEL_SEND_DM,
+
 } RFCOMM_CHANNEL_STATE;
 
 typedef enum {
@@ -127,9 +130,16 @@ typedef enum {
     STATE_VAR_RCVD_PN         = 1 << 1,
     STATE_VAR_RCVD_RPN        = 1 << 2,
     STATE_VAR_RCVD_SABM       = 1 << 3,
-    STATE_VAR_SEND_PN_RSP     = 1 << 4,
-    STATE_VAR_SEND_RPN        = 1 << 5,
-    STATE_VAR_SEND_UA         = 1 << 6,
+    STATE_VAR_RCVD_MSC_CMD    = 1 << 4,
+    STATE_VAR_RCVD_MSC_RSP    = 1 << 5,
+    STATE_VAR_SEND_PN_RSP     = 1 << 6,
+    STATE_VAR_SEND_RPN_INFO   = 1 << 7,
+    STATE_VAR_SEND_RPN_RSP    = 1 << 8,
+    STATE_VAR_SEND_UA         = 1 << 9,
+    STATE_VAR_SEND_MSC_CMD    = 1 << 10,
+    STATE_VAR_SEND_MSC_RSP    = 1 << 11,
+    STATE_VAR_SENT_MSC_CMD    = 1 << 12,
+    STATE_VAR_SENT_MSC_RSP    = 1 << 13,
 } RFCOMM_CHANNEL_STATE_VAR;
 
 typedef enum {
@@ -1047,7 +1057,6 @@ static void rfcomm_channel_accept_pn(rfcomm_channel_t *channel, rfcomm_channel_e
     }
     
 }
-
 
 static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, uint8_t dlci, rfcomm_channel_event_t *event){
 
