@@ -1205,7 +1205,7 @@ static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, u
     rfcomm_service_t * rfService = NULL;
     
     switch (event->type) {
-        case BT_RFCOMM_SABM:
+        case CH_EVT_RCVD_SABM:
             // ???: why isn't the multiplexer used as param to rfcomm_service_for_channel
             rfService = rfcomm_service_for_channel(dlci >> 1);
             if (rfService) {
@@ -1220,9 +1220,6 @@ static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, u
                 }
                 
                 // TODO: if client max frame size is smaller than RFCOMM_DEFAULT_SIZE, send PN
-
-                rfcomm_channel_state_machine(rfChannel, event);
-
                 break;
                 
             } else {
@@ -1231,9 +1228,20 @@ static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, u
                 rfcomm_send_dm_pf(multiplexer, dlci);
             }
             break;
+            
+        case CH_EVT_RCVD_UA:
+        case CH_EVT_RCVD_DISC:
+        case CH_EVT_RCVD_DM:
+            rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, dlci);
+            break;
+            
         default:
             break;
     }
+    
+    if (!rfChannel) return;
+    rfcomm_channel_state_machine(rfChannel, event);
+    
 }
 
 void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t *packet, uint16_t size){
@@ -1260,36 +1268,26 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
     switch(packet[1]) {
             
         case BT_RFCOMM_SABM:
-            // create event and send to sm
             log_dbg("Received SABM #%u\n", frame_dlci);
             event.type = CH_EVT_RCVD_SABM;
             rfcomm_channel_state_machine_2(multiplexer, frame_dlci, &event);
             break;
             
         case BT_RFCOMM_UA:
-            rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
-            if (!rfChannel) break;
-            log_dbg("Received RFCOMM unnumbered acknowledgement for #%u - channel opened\n", rfChannel->dlci);
-            // create event and send to sm
+            log_dbg("Received RFCOMM unnumbered acknowledgement for #%u - channel opened\n",frame_dlci);
             event.type = CH_EVT_RCVD_UA;
-            rfcomm_channel_state_machine(rfChannel, &event);
+            rfcomm_channel_state_machine_2(multiplexer, frame_dlci, &event);
             break;
             
         case BT_RFCOMM_DISC:
-            rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
-            if (!rfChannel) break;
-            // create event and send to sm
             event.type = CH_EVT_RCVD_DISC;
-            rfcomm_channel_state_machine(rfChannel, &event);
+            rfcomm_channel_state_machine_2(multiplexer, frame_dlci, &event);
             break;
             
         case BT_RFCOMM_DM:
         case BT_RFCOMM_DM_PF:
-            rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
-            if (!rfChannel) break;
-            // create event and send to sm
-            event.type = CH_EVT_RCVD_DISC;
-            rfcomm_channel_state_machine(rfChannel, &event);
+            event.type = CH_EVT_RCVD_DM;
+            rfcomm_channel_state_machine_2(multiplexer, frame_dlci, &event);
             break;
             
         case BT_RFCOMM_UIH_PF:
