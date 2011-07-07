@@ -271,8 +271,8 @@ static void acl_handler(uint8_t *packet, int size){
             memcpy(&conn->acl_recombination_buffer[conn->acl_recombination_pos], &packet[4], acl_length );
             conn->acl_recombination_pos += acl_length;
             
-            // log_err( "ACL Cont Fragment: acl_len %u, combined_len %u, l2cap_len %u\n",
-            //        acl_length, connection->acl_recombination_pos, connection->acl_recombination_length);  
+            // log_err( "ACL Cont Fragment: acl_len %u, combined_len %u, l2cap_len %u\n", acl_length,
+            //        conn->acl_recombination_pos, conn->acl_recombination_length);  
             
             // forward complete L2CAP packet if complete. 
             if (conn->acl_recombination_pos >= conn->acl_recombination_length + 4 + 4){ // pos already incl. ACL header
@@ -291,9 +291,11 @@ static void acl_handler(uint8_t *packet, int size){
                 log_err( "ACL First Fragment but data in buffer for handle 0x%02x\n", con_handle);
                 return;
             }
-            
+
             // peek into L2CAP packet!
             uint16_t l2cap_length = READ_L2CAP_LENGTH( packet );
+
+            // log_err( "ACL First Fragment: acl_len %u, l2cap_len %u\n", acl_length, l2cap_length);
 
             // compare fragment size to L2CAP packet size
             if (acl_length >= l2cap_length + 4){
@@ -306,8 +308,7 @@ static void acl_handler(uint8_t *packet, int size){
                 memcpy(conn->acl_recombination_buffer, packet, acl_length + 4);
                 conn->acl_recombination_pos    = acl_length + 4;
                 conn->acl_recombination_length = l2cap_length;
-                bt_store_16(conn->acl_recombination_buffer, 2, acl_length +4);
-                // log_err( "ACL First Fragment: acl_len %u, l2cap_len %u\n", acl_length, l2cap_length);
+                bt_store_16(conn->acl_recombination_buffer, 2, l2cap_length +4);
             }
             break;
             
