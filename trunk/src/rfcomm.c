@@ -144,6 +144,7 @@ typedef enum {
     CH_EVT_RCVD_RPN_CMD,
     CH_EVT_RCVD_RPN_REQ,
     CH_EVT_MULTIPLEXER_READY,
+    CH_EVT_READY_TO_SEND,
 } RFCOMM_CHANNEL_EVENT;
 
 typedef struct rfcomm_channel_event {
@@ -1442,7 +1443,7 @@ static void rfcomm_run(void){
     for (it = (linked_item_t *) rfcomm_multiplexers; it ; it = it->next){
         rfcomm_multiplexer_t * multiplexer = ((rfcomm_multiplexer_t *) it);
         
-        if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) continue;
+        if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) return;
 
         switch (multiplexer->state) {
             case RFCOMM_MULTIPLEXER_SEND_SABM_0:
@@ -1474,8 +1475,14 @@ static void rfcomm_run(void){
         rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
         rfcomm_multiplexer_t * multiplexer = channel->multiplexer;
         
-        if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) continue;
+        if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) return;
      
+        rfcomm_channel_event_t event;
+        event.type = CH_EVT_READY_TO_SEND;
+        rfcomm_channel_state_machine(channel, &event);
+
+        if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) return;
+        
         switch (channel->state){
                 
             case RFCOMM_CHANNEL_INCOMING_SETUP:
