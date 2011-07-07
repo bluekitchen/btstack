@@ -253,6 +253,9 @@ typedef struct {
 	// negotiated frame size
     uint16_t max_frame_size;
 	
+    // rpn data
+    rfcomm_rpn_data_t rpn_data;
+    
 	// server channel (see rfcomm_service_t) - NULL => outgoing channel
 	rfcomm_service_t * service;
     
@@ -1363,18 +1366,18 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
     //   (Although the handling of individual settings are implementation-dependent.)"
     //
     
-    // TODO: schedule in channel struct
+    // TODO: integrate in common swich
     if (event->type == CH_EVT_RCVD_RPN_CMD){
         
         rfcomm_channel_event_rpn_t *event_rpn = (rfcomm_channel_event_rpn_t*) event;
         // control port parameters
         log_dbg("Received Remote Port Negotiation for #%u\n", channel->dlci);
-        log_dbg("Sending Remote Port Negotiation RSP for #%u\n", channel->dlci);
-        rfcomm_send_uih_rpn_rsp(multiplexer, channel->dlci, &event_rpn->data);
+        memcpy(&channel->rpn_data, &event_rpn->data, sizeof(rfcomm_rpn_data_t));
+        channel->state_var |= STATE_VAR_SEND_RPN_RSP;
         return;
     }
     
-    // TODO: schedule in channel struct
+    // TODO: integrate in common swich
     if (event->type == CH_EVT_RCVD_RPN_REQ){
         
         log_dbg("Received Remote Port Negotiation (Info) for #%u\n", channel->dlci);
@@ -1389,8 +1392,19 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
         rpn_data.xoff = 0xd3;             /* XOFF */
         rpn_data.parameter_mask_0 = 0x7f; /* parameter mask, all values set */
         rpn_data.parameter_mask_0 = 0x3f; /* parameter mask, all values set */
-        rfcomm_send_uih_rpn_rsp(multiplexer, channel->dlci, &rpn_data);
+        memcpy(&channel->rpn_data, &rpn_data, sizeof(rfcomm_rpn_data_t));
+        channel->state_var |= STATE_VAR_SEND_RPN_RSP;
         return;
+    }
+    
+    // TODO: integrate in common swich
+    if (event->type == CH_EVT_READY_TO_SEND){
+        if (channel->state_var & STATE_VAR_SEND_RPN_RSP){
+            log_dbg("Sending Remote Port Negotiation RSP for #%u\n", channel->dlci);
+            channel->state_var &= ~STATE_VAR_SEND_RPN_RSP;
+            rfcomm_send_uih_rpn_rsp(multiplexer, channel->dlci, &channel->rpn_data);
+            return;
+        }
     }
     
     rfcomm_channel_event_pn_t * event_pn = (rfcomm_channel_event_pn_t*) event;
