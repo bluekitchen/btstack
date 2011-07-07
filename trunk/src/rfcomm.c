@@ -1365,6 +1365,23 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                     rfcomm_channel_accept_pn(channel, event_pn);
                     channel->state_var |= STATE_VAR_RCVD_PN;
                     break;
+                case CH_EVT_READY_TO_SEND:
+                    if (channel->state_var & STATE_VAR_SEND_PN_RSP){
+                        log_dbg("Sending UIH Parameter Negotiation Respond for #%u\n", channel->dlci);
+                        rfcomm_send_uih_pn_response(multiplexer, channel->dlci, channel->pn_priority, channel->max_frame_size);
+                        channel->state_var &= ~STATE_VAR_SEND_PN_RSP;
+                    }
+                    else if (channel->state_var & STATE_VAR_SEND_UA){
+                        log_dbg("Sending UA #%u\n", channel->dlci);
+                        rfcomm_send_ua(multiplexer, channel->dlci);
+                        channel->state_var &= ~STATE_VAR_SEND_UA;
+                    }
+                    if ((channel->state_var & STATE_VAR_CLIENT_ACCEPTED) && (channel->state_var & STATE_VAR_RCVD_SABM)) {
+                        channel->state_var |= STATE_VAR_SEND_MSC_CMD;
+                        channel->state = RFCOMM_CHANNEL_DLC_SETUP;
+                    } 
+                    break;
+                    
                 default:
                     break;
             }
@@ -1378,6 +1395,30 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                 default:
                     break;
             }
+            
+        case RFCOMM_CHANNEL_SEND_UIH_PN:
+            switch (event->type) {
+                case CH_EVT_READY_TO_SEND:
+                    log_dbg("Sending UIH Parameter Negotiation Command for #%u\n", channel->dlci );
+                    rfcomm_send_uih_pn_command(multiplexer, channel->dlci, channel->max_frame_size);
+                    channel->state = RFCOMM_CHANNEL_W4_PN_RSP;
+                    break;
+                default:
+                    break;
+            }
+            break;
+            
+        case RFCOMM_CHANNEL_SEND_SABM_W4_UA:
+            switch (event->type) {
+                case CH_EVT_READY_TO_SEND:
+                    log_dbg("Sending SABM #%u\n", channel->dlci);
+                    rfcomm_send_sabm(multiplexer, channel->dlci);
+                    channel->state = RFCOMM_CHANNEL_W4_UA;
+                    break;
+                default:
+                    break;
+            }
+            break;
             
         case RFCOMM_CHANNEL_W4_PN_RSP:
             switch (event->type){
@@ -1415,10 +1456,91 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                 case CH_EVT_RCVD_MSC_RSP:
                     channel->state_var |= STATE_VAR_RCVD_MSC_RSP;
                     break;
+                case CH_EVT_READY_TO_SEND:
+                    if (channel->state_var & STATE_VAR_SEND_MSC_CMD){
+                        log_dbg("Sending MSC CMD for #%u\n", channel->dlci);
+                        rfcomm_send_uih_msc_cmd(multiplexer, channel->dlci , 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+                        channel->state_var &= ~STATE_VAR_SEND_MSC_CMD;
+                        channel->state_var |= STATE_VAR_SENT_MSC_CMD;
+                    }
+                    else if (channel->state_var & STATE_VAR_SEND_MSC_RSP){
+                        log_dbg("Sending MSC RSP for #%u\n", channel->dlci);
+                        rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+                        channel->state_var &= ~STATE_VAR_SEND_MSC_RSP;
+                        channel->state_var |= STATE_VAR_SENT_MSC_RSP;
+                    }
+                    else if (channel->state_var & STATE_VAR_SEND_CREDITS){
+                        log_dbg("Providing credits for #%u\n", channel->dlci);
+                        rfcomm_channel_provide_credits(channel);
+                        channel->state_var &= ~STATE_VAR_SEND_CREDITS;
+                        channel->state_var |= STATE_VAR_SENT_CREDITS;
+                    }
+                    // finally done?
+                    if (rfcomm_channel_ready_for_open(channel)){
+                        channel->state = RFCOMM_CHANNEL_OPEN;
+                        rfcomm_channel_opened(channel);
+                    }
+                    break;
                 default:
                     break;
             }
             break;
+            
+        case RFCOMM_CHANNEL_SEND_DM:
+            switch (event->type) {
+                case CH_EVT_READY_TO_SEND:
+
+                    // !!!: cannot remove item when iterating over list
+                    
+                    log_dbg("Sending DM_PF for #%u\n", channel->dlci);
+                    rfcomm_send_dm_pf(multiplexer, channel->dlci);
+                    // remove from list
+                    linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
+                    // free channel
+                    free(channel);
+                    rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+                    break;
+                default:
+                    break;
+            }
+            
+        case RFCOMM_CHANNEL_SEND_DISC:
+            switch (event->type) {
+                case CH_EVT_READY_TO_SEND:
+                    
+                    // !!!: cannot remove item when iterating over list
+                    
+                    // signal close
+                    rfcomm_send_disc(multiplexer, channel->dlci);
+                    // remove from list
+                    linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
+                    // free channel
+                    free(channel);
+                    // update multiplexer timeout after channel was removed from list
+                    rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+                    break;
+                default:
+                    break;
+            }
+            
+        case RFCOMM_CHANNEL_SEND_UA_AND_DISC:
+            switch (event->type) {
+                case CH_EVT_READY_TO_SEND:
+
+                    // !!!: cannot remove item when iterating over list
+                    
+                    log_dbg("-> Sending UA for #%u\n", channel->dlci);
+                    rfcomm_send_ua(multiplexer, channel->dlci);
+                    // signal client
+                    rfcomm_emit_channel_closed(channel);
+                    // discard channel
+                    linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
+                    free(channel);
+                    rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+                    break;
+                default:
+                    break;
+            }
             
         default:
             break;
@@ -1480,118 +1602,6 @@ static void rfcomm_run(void){
         rfcomm_channel_event_t event;
         event.type = CH_EVT_READY_TO_SEND;
         rfcomm_channel_state_machine(channel, &event);
-
-        if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) return;
-        
-        switch (channel->state){
-                
-            case RFCOMM_CHANNEL_INCOMING_SETUP:
-                
-                if (channel->state_var & STATE_VAR_SEND_PN_RSP){
-                    log_dbg("Sending UIH Parameter Negotiation Respond for #%u\n", channel->dlci);
-                    rfcomm_send_uih_pn_response(multiplexer, channel->dlci, channel->pn_priority, channel->max_frame_size);
-                    channel->state_var &= ~STATE_VAR_SEND_PN_RSP;
-                    break;
-                }
-                
-                if (channel->state_var & STATE_VAR_SEND_UA){
-                    log_dbg("Sending UA #%u\n", channel->dlci);
-                    rfcomm_send_ua(multiplexer, channel->dlci);
-                    channel->state_var &= ~STATE_VAR_SEND_UA;
-                    break;
-                }
-                
-                if ((channel->state_var & STATE_VAR_CLIENT_ACCEPTED) && (channel->state_var & STATE_VAR_RCVD_SABM)) {
-                    channel->state_var |= STATE_VAR_SEND_MSC_CMD;
-                    channel->state = RFCOMM_CHANNEL_DLC_SETUP;
-                } 
-                break;
-                
-            // outgoing
-            case RFCOMM_CHANNEL_SEND_UIH_PN:
-                log_dbg("Sending UIH Parameter Negotiation Command for #%u\n", channel->dlci );
-                rfcomm_send_uih_pn_command(multiplexer, channel->dlci, channel->max_frame_size);
-                channel->state = RFCOMM_CHANNEL_W4_PN_RSP;
-                break;
-                
-                
-            case RFCOMM_CHANNEL_SEND_SABM_W4_UA:
-                log_dbg("Sending SABM #%u\n", channel->dlci);
-                rfcomm_send_sabm(multiplexer, channel->dlci);
-                channel->state = RFCOMM_CHANNEL_W4_UA;
-                break;
-            
-            // DLC Setup
-            case RFCOMM_CHANNEL_DLC_SETUP:
-                if (channel->state_var & STATE_VAR_SEND_MSC_CMD){
-                    log_dbg("Sending MSC CMD for #%u\n", channel->dlci);
-                    rfcomm_send_uih_msc_cmd(multiplexer, channel->dlci , 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
-                    channel->state_var &= ~STATE_VAR_SEND_MSC_CMD;
-                    channel->state_var |= STATE_VAR_SENT_MSC_CMD;
-                }
-                else if (channel->state_var & STATE_VAR_SEND_MSC_RSP){
-                    log_dbg("Sending MSC RSP for #%u\n", channel->dlci);
-                    rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
-                    channel->state_var &= ~STATE_VAR_SEND_MSC_RSP;
-                    channel->state_var |= STATE_VAR_SENT_MSC_RSP;
-                }
-                else if (channel->state_var & STATE_VAR_SEND_CREDITS){
-                    log_dbg("Providing credits for #%u\n", channel->dlci);
-                    rfcomm_channel_provide_credits(channel);
-                    channel->state_var &= ~STATE_VAR_SEND_CREDITS;
-                    channel->state_var |= STATE_VAR_SENT_CREDITS;
-                }
-                // finally done?
-                if (rfcomm_channel_ready_for_open(channel)){
-                    channel->state = RFCOMM_CHANNEL_OPEN;
-                    rfcomm_channel_opened(channel);
-                }
-                break;
-                
-            case RFCOMM_CHANNEL_SEND_DM:
-
-                // !!!: cannot remove item when iterating over list
-
-                log_dbg("Sending DM_PF for #%u\n", channel->dlci);
-                rfcomm_send_dm_pf(multiplexer, channel->dlci);
-                // remove from list
-                linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
-                // free channel
-                free(channel);
-                rfcomm_multiplexer_prepare_idle_timer(multiplexer);
-                break;
-
-            case RFCOMM_CHANNEL_SEND_DISC:
-                
-                // !!!: cannot remove item when iterating over list
-
-                // signal close
-                rfcomm_send_disc(multiplexer, channel->dlci);
-                // remove from list
-                linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
-                // free channel
-                free(channel);
-                // update multiplexer timeout after channel was removed from list
-                rfcomm_multiplexer_prepare_idle_timer(multiplexer);
-                break;
-                
-            case RFCOMM_CHANNEL_SEND_UA_AND_DISC:
-
-                // !!!: cannot remove item when iterating over list
-
-                log_dbg("-> Sending UA for #%u\n", channel->dlci);
-                rfcomm_send_ua(multiplexer, channel->dlci);
-                // signal client
-                rfcomm_emit_channel_closed(channel);
-                // discard channel
-                linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
-                free(channel);
-                rfcomm_multiplexer_prepare_idle_timer(multiplexer);
-                break;
-                                                
-            default:
-                break;
-        }
     }
 }
 
