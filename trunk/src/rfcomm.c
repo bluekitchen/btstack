@@ -98,7 +98,6 @@ typedef enum {
 
 typedef enum {
 	RFCOMM_CHANNEL_CLOSED = 1,
-    // outgoing
 	RFCOMM_CHANNEL_W4_MULTIPLEXER,
 	RFCOMM_CHANNEL_SEND_UIH_PN,
     RFCOMM_CHANNEL_W4_PN_RSP,
@@ -1068,8 +1067,12 @@ static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, u
 
     // TODO: if client max frame size is smaller than RFCOMM_DEFAULT_SIZE, send PN
 
+    
     // lookup existing channel
     rfcomm_channel_t * channel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, dlci);
+
+    log_dbg("rfcomm_channel_state_machine_2 lookup dlci #%u = 0x%08x - event %u\n", dlci, (int) channel, event->type);
+
     if (channel) {
         rfcomm_channel_state_machine(channel, event);
         return;
@@ -1077,10 +1080,12 @@ static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, u
     
     // service registered?
     rfcomm_service_t * service = rfcomm_service_for_channel(dlci >> 1);
+    log_dbg("rfcomm_channel_state_machine_2 service dlci #%u = 0x%08x\n", dlci, (int) service);
     if (!service) {
         // discard request by sending disconnected mode
         // TODO: store "send DM for #x" in multiplexer struct
         rfcomm_send_dm_pf(multiplexer, dlci);
+        return;
     }
 
     // create channel for some events
@@ -1137,7 +1142,7 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
             
         case BT_RFCOMM_UA:
             event.type = CH_EVT_RCVD_UA;
-            log_dbg("Received RFCOMM unnumbered acknowledgement for #%u - channel opened\n",frame_dlci);
+            log_dbg("Received UA #%u - channel opened\n",frame_dlci);
             rfcomm_channel_state_machine_2(multiplexer, frame_dlci, &event);
             break;
             
@@ -1156,19 +1161,20 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
         case BT_RFCOMM_UIH:
 
             message_len  = packet[payload_offset+1] >> 1;
-            message_dlci = packet[payload_offset+2] >> 2;
 
             switch (packet[payload_offset]) {
                 case BT_RFCOMM_PN_CMD:
+                    message_dlci = packet[payload_offset+2];
                     event_pn.super.type = CH_EVT_RCVD_PN;
                     event_pn.priority = packet[payload_offset+4];
                     event_pn.max_frame_size = READ_BT_16(packet, payload_offset+6);
                     event_pn.credits_outgoing = packet[payload_offset+9];
                     log_dbg("Received UIH Parameter Negotiation Command for #%u\n", message_dlci);
-                    rfcomm_channel_state_machine_2(multiplexer, message_dlci, &event);
+                    rfcomm_channel_state_machine_2(multiplexer, message_dlci, (rfcomm_channel_event_t*) &event_pn);
                     break;
                     
                 case BT_RFCOMM_PN_RSP:
+                    message_dlci = packet[payload_offset+2];
                     event_pn.super.type = CH_EVT_RCVD_PN_RSP;
                     event_pn.priority = packet[payload_offset+4];
                     event_pn.max_frame_size = READ_BT_16(packet, payload_offset+6);
@@ -1179,18 +1185,21 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     break;
                     
                 case BT_RFCOMM_MSC_CMD: 
+                    message_dlci = packet[payload_offset+2] >> 2;
                     event.type = CH_EVT_RCVD_MSC_CMD;
                     log_dbg("Received MSC CMD for #%u, \n", message_dlci);
                     rfcomm_channel_state_machine_2(multiplexer, message_dlci, &event);
                     break;
                     
                 case BT_RFCOMM_MSC_RSP:
+                    message_dlci = packet[payload_offset+2] >> 2;
                     event.type = CH_EVT_RCVD_MSC_RSP;
                     log_dbg("Received MSC RSP for #%u\n", message_dlci);
                     rfcomm_channel_state_machine_2(multiplexer, message_dlci, &event);
                     break;
                     
                 case BT_RFCOMM_RPN_CMD:
+                    message_dlci = packet[payload_offset+2] >> 2;
                     switch (message_len){
                         case 1:
                             event.type = CH_EVT_RCVD_RPN_REQ;
@@ -1221,6 +1230,9 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
             log_err("Received unknown RFCOMM message type %x\n", packet[1]);
             break;
     }
+    
+    // trigger next action - example W4_PN_RSP: transition to SEND_SABM which only depends on "can send"
+    rfcomm_run();
 }
 
 void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -1237,7 +1249,11 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
         default:
             break;
     }
-    if (handled) return;
+    
+    if (handled) {
+        rfcomm_run();
+        return;
+    }
     
     // we only handle l2cap packet over open multiplexer channel now
     if (packet_type != L2CAP_DATA_PACKET) {
@@ -1287,6 +1303,8 @@ void rfcomm_close_connection(void *connection){
 
 static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_channel_event_t *event){
     
+    log_dbg("rfcomm_channel_state_machine: state %u, event %u\n", channel->state, event->type);
+    
     rfcomm_multiplexer_t *multiplexer = channel->multiplexer;
     
     // TODO: integrate in common switch
@@ -1317,7 +1335,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
         rfcomm_channel_event_rpn_t *event_rpn = (rfcomm_channel_event_rpn_t*) event;
         // control port parameters
         log_dbg("Received Remote Port Negotiation for #%u\n", channel->dlci);
-        log_dbg("-> Sending Remote Port Negotiation RSP for #%u\n", channel->dlci);
+        log_dbg("Sending Remote Port Negotiation RSP for #%u\n", channel->dlci);
         rfcomm_send_uih_rpn_rsp(multiplexer, channel->dlci, &event_rpn->data);
         return;
     }
@@ -1326,7 +1344,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
     if (event->type == CH_EVT_RCVD_RPN_REQ){
         
         log_dbg("Received Remote Port Negotiation (Info) for #%u\n", channel->dlci);
-        log_dbg("-> Sending Remote Port Negotiation (info) RSP for #%u\n", channel->dlci);
+        log_dbg("Sending Remote Port Negotiation (info) RSP for #%u\n", channel->dlci);
         
         // default rpn rsp
         rfcomm_rpn_data_t rpn_data;
@@ -1367,29 +1385,32 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
         case RFCOMM_CHANNEL_INCOMING_SETUP:
             switch (event->type){
                 case CH_EVT_RCVD_SABM:
+                    channel->state_var |= STATE_VAR_RCVD_SABM;
                     if (channel->state_var & STATE_VAR_CLIENT_ACCEPTED) {
                         channel->state_var |= STATE_VAR_SEND_UA;
-                    } else {
-                        channel->state_var |= STATE_VAR_RCVD_SABM;
                     }
                     break;
                 case CH_EVT_RCVD_PN:
                     rfcomm_channel_accept_pn(channel, event_pn);
                     channel->state_var |= STATE_VAR_RCVD_PN;
+                    if (channel->state_var & STATE_VAR_CLIENT_ACCEPTED) {
+                        channel->state_var |= STATE_VAR_SEND_PN_RSP;
+                    }
                     break;
                 case CH_EVT_READY_TO_SEND:
                     if (channel->state_var & STATE_VAR_SEND_PN_RSP){
                         log_dbg("Sending UIH Parameter Negotiation Respond for #%u\n", channel->dlci);
-                        rfcomm_send_uih_pn_response(multiplexer, channel->dlci, channel->pn_priority, channel->max_frame_size);
                         channel->state_var &= ~STATE_VAR_SEND_PN_RSP;
+                        rfcomm_send_uih_pn_response(multiplexer, channel->dlci, channel->pn_priority, channel->max_frame_size);
                     }
                     else if (channel->state_var & STATE_VAR_SEND_UA){
                         log_dbg("Sending UA #%u\n", channel->dlci);
-                        rfcomm_send_ua(multiplexer, channel->dlci);
                         channel->state_var &= ~STATE_VAR_SEND_UA;
+                        rfcomm_send_ua(multiplexer, channel->dlci);
                     }
                     if ((channel->state_var & STATE_VAR_CLIENT_ACCEPTED) && (channel->state_var & STATE_VAR_RCVD_SABM)) {
                         channel->state_var |= STATE_VAR_SEND_MSC_CMD;
+                        channel->state_var |= STATE_VAR_SEND_CREDITS;
                         channel->state = RFCOMM_CHANNEL_DLC_SETUP;
                     } 
                     break;
@@ -1402,30 +1423,20 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
         case RFCOMM_CHANNEL_W4_MULTIPLEXER:
             switch (event->type) {
                 case CH_EVT_MULTIPLEXER_READY:
+                    log_dbg("Muliplexer opened, sending UIH PN next\n");
                     channel->state = RFCOMM_CHANNEL_SEND_UIH_PN;
-                    break;
-                default:
-                    break;
-            }
-            
-        case RFCOMM_CHANNEL_SEND_UIH_PN:
-            switch (event->type) {
-                case CH_EVT_READY_TO_SEND:
-                    log_dbg("Sending UIH Parameter Negotiation Command for #%u\n", channel->dlci );
-                    rfcomm_send_uih_pn_command(multiplexer, channel->dlci, channel->max_frame_size);
-                    channel->state = RFCOMM_CHANNEL_W4_PN_RSP;
                     break;
                 default:
                     break;
             }
             break;
             
-        case RFCOMM_CHANNEL_SEND_SABM_W4_UA:
+        case RFCOMM_CHANNEL_SEND_UIH_PN:
             switch (event->type) {
                 case CH_EVT_READY_TO_SEND:
-                    log_dbg("Sending SABM #%u\n", channel->dlci);
-                    rfcomm_send_sabm(multiplexer, channel->dlci);
-                    channel->state = RFCOMM_CHANNEL_W4_UA;
+                    log_dbg("Sending UIH Parameter Negotiation Command for #%u (channel 0x%08x\n", channel->dlci, (int) channel );
+                    channel->state = RFCOMM_CHANNEL_W4_PN_RSP;
+                    rfcomm_send_uih_pn_command(multiplexer, channel->dlci, channel->max_frame_size);
                     break;
                 default:
                     break;
@@ -1447,12 +1458,25 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                     break;
             }
             break;
+
+        case RFCOMM_CHANNEL_SEND_SABM_W4_UA:
+            switch (event->type) {
+                case CH_EVT_READY_TO_SEND:
+                    log_dbg("Sending SABM #%u\n", channel->dlci);
+                    channel->state = RFCOMM_CHANNEL_W4_UA;
+                    rfcomm_send_sabm(multiplexer, channel->dlci);
+                    break;
+                default:
+                    break;
+            }
+            break;
             
         case RFCOMM_CHANNEL_W4_UA:
             switch (event->type){
                 case CH_EVT_RCVD_UA:
                     channel->state = RFCOMM_CHANNEL_DLC_SETUP;
                     channel->state_var |= STATE_VAR_SEND_MSC_CMD;
+                    channel->state_var |= STATE_VAR_SEND_CREDITS;
                     break;
                 default:
                     break;
@@ -1471,21 +1495,21 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                 case CH_EVT_READY_TO_SEND:
                     if (channel->state_var & STATE_VAR_SEND_MSC_CMD){
                         log_dbg("Sending MSC CMD for #%u\n", channel->dlci);
-                        rfcomm_send_uih_msc_cmd(multiplexer, channel->dlci , 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
                         channel->state_var &= ~STATE_VAR_SEND_MSC_CMD;
                         channel->state_var |= STATE_VAR_SENT_MSC_CMD;
+                        rfcomm_send_uih_msc_cmd(multiplexer, channel->dlci , 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
                     }
                     else if (channel->state_var & STATE_VAR_SEND_MSC_RSP){
                         log_dbg("Sending MSC RSP for #%u\n", channel->dlci);
-                        rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
                         channel->state_var &= ~STATE_VAR_SEND_MSC_RSP;
                         channel->state_var |= STATE_VAR_SENT_MSC_RSP;
+                        rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
                     }
                     else if (channel->state_var & STATE_VAR_SEND_CREDITS){
                         log_dbg("Providing credits for #%u\n", channel->dlci);
-                        rfcomm_channel_provide_credits(channel);
                         channel->state_var &= ~STATE_VAR_SEND_CREDITS;
                         channel->state_var |= STATE_VAR_SENT_CREDITS;
+                        rfcomm_channel_provide_credits(channel);
                     }
                     // finally done?
                     if (rfcomm_channel_ready_for_open(channel)){
@@ -1503,16 +1527,19 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                 case CH_EVT_READY_TO_SEND:
                     log_dbg("Sending DM_PF for #%u\n", channel->dlci);
                     // don't emit channel closed - channel was never open
+                    channel->state = RFCOMM_CHANNEL_CLOSED;
                     rfcomm_send_dm_pf(multiplexer, channel->dlci);
                     rfcomm_channel_finalize(channel);
                     break;
                 default:
                     break;
             }
+            break;
             
         case RFCOMM_CHANNEL_SEND_DISC:
             switch (event->type) {
                 case CH_EVT_READY_TO_SEND:
+                    channel->state = RFCOMM_CHANNEL_CLOSED;
                     rfcomm_send_disc(multiplexer, channel->dlci);
                     rfcomm_emit_channel_closed(channel);
                     rfcomm_channel_finalize(channel);
@@ -1520,11 +1547,13 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                 default:
                     break;
             }
+            break;
             
         case RFCOMM_CHANNEL_SEND_UA_AFTER_DISC:
             switch (event->type) {
                 case CH_EVT_READY_TO_SEND:
                     log_dbg("-> Confirm DISC by sending UA for #%u\n", channel->dlci);
+                    channel->state = RFCOMM_CHANNEL_CLOSED;
                     rfcomm_send_ua(multiplexer, channel->dlci);
                     rfcomm_emit_channel_closed(channel);
                     rfcomm_channel_finalize(channel);
@@ -1532,6 +1561,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                 default:
                     break;
             }
+            break;
             
         default:
             break;
@@ -1557,22 +1587,24 @@ static void rfcomm_run(void){
         rfcomm_multiplexer_t * multiplexer = ((rfcomm_multiplexer_t *) it);
         
         if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) return;
+        log_dbg("rfcomm_run: multi 0x%08x, state %u\n", (int) multiplexer, multiplexer->state);
 
         switch (multiplexer->state) {
             case RFCOMM_MULTIPLEXER_SEND_SABM_0:
-                log_dbg("Sending SABM #0\n");
-                rfcomm_send_sabm(multiplexer, 0);
+                log_dbg("Sending SABM #0 - (multi 0x%08x)\n", (int) multiplexer);
                 multiplexer->state = RFCOMM_MULTIPLEXER_W4_UA_0;
+                rfcomm_send_sabm(multiplexer, 0);
                 break;
-            case RFCOMM_MULTIPLEXER_W4_SABM_0:
-                // SABM #0 -> send UA #0, state = RFCOMM_MULTIPLEXER_OPEN
-                log_dbg("-> Sending UA #0\n");
+            case RFCOMM_MULTIPLEXER_SEND_UA_0:
+                log_dbg("Sending UA #0\n");
+                multiplexer->state = RFCOMM_MULTIPLEXER_OPEN;
                 rfcomm_send_ua(multiplexer, 0);
                 rfcomm_multiplexer_opened(multiplexer);
                 break;
             case RFCOMM_MULTIPLEXER_SEND_UA_0_AND_DISC:
-                log_dbg("-> Sending UA #0\n");
-                log_dbg("-> Closing down multiplexer\n");
+                log_dbg("Sending UA #0\n");
+                log_dbg("Closing down multiplexer\n");
+                multiplexer->state = RFCOMM_MULTIPLEXER_CLOSED;
                 rfcomm_send_ua(multiplexer, 0);
                 rfcomm_multiplexer_finalize(multiplexer);
                 // try to detect authentication errors: drop link key if multiplexer closed before first channel got opened
@@ -1768,6 +1800,7 @@ void rfcomm_accept_connection_internal(uint16_t rfcomm_cid){
         default:
             break;
     }
+    rfcomm_run();
 }
 
 void rfcomm_decline_connection_internal(uint16_t rfcomm_cid){
@@ -1781,6 +1814,7 @@ void rfcomm_decline_connection_internal(uint16_t rfcomm_cid){
         default:
             break;
     }
+    rfcomm_run();
 }
 
 
