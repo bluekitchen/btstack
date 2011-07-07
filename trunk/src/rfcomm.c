@@ -968,6 +968,7 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
                 default:
                     break;
             }
+            break;
         case RFCOMM_MULTIPLEXER_SEND_UA_0_AND_DISC:
             switch (event) {
                 case MULT_EV_READY_TO_SEND:
@@ -983,6 +984,7 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
                 default:
                     break;
             }
+            break;
         default:
             break;
     }
