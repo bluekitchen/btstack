@@ -97,6 +97,11 @@ typedef enum {
 } RFCOMM_MULTIPLEXER_STATE;
 
 typedef enum {
+    MULT_EV_READY_TO_SEND = 1,
+    
+} RFCOMM_MULTIPLEXER_EVENT;
+
+typedef enum {
 	RFCOMM_CHANNEL_CLOSED = 1,
 	RFCOMM_CHANNEL_W4_MULTIPLEXER,
 	RFCOMM_CHANNEL_SEND_UIH_PN,
@@ -1578,45 +1583,70 @@ static int rfcomm_channel_ready_for_open(rfcomm_channel_t *channel){
     return 1;
 }
 
+static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer, RFCOMM_MULTIPLEXER_EVENT event){
+    switch (multiplexer->state) {
+        case RFCOMM_MULTIPLEXER_SEND_SABM_0:
+            switch (event) {
+                case MULT_EV_READY_TO_SEND:
+                    log_dbg("Sending SABM #0 - (multi 0x%08x)\n", (int) multiplexer);
+                    multiplexer->state = RFCOMM_MULTIPLEXER_W4_UA_0;
+                    rfcomm_send_sabm(multiplexer, 0);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case RFCOMM_MULTIPLEXER_SEND_UA_0:
+            switch (event) {
+                case MULT_EV_READY_TO_SEND:
+                    log_dbg("Sending UA #0\n");
+                    multiplexer->state = RFCOMM_MULTIPLEXER_OPEN;
+                    rfcomm_send_ua(multiplexer, 0);
+                    rfcomm_multiplexer_opened(multiplexer);
+                    break;
+                default:
+                    break;
+            }
+        case RFCOMM_MULTIPLEXER_SEND_UA_0_AND_DISC:
+            switch (event) {
+                case MULT_EV_READY_TO_SEND:
+                    log_dbg("Sending UA #0\n");
+                    log_dbg("Closing down multiplexer\n");
+                    multiplexer->state = RFCOMM_MULTIPLEXER_CLOSED;
+                    rfcomm_send_ua(multiplexer, 0);
+                    rfcomm_multiplexer_finalize(multiplexer);
+                    // try to detect authentication errors: drop link key if multiplexer closed before first channel got opened
+                    if (!multiplexer->at_least_one_connection){
+                        hci_send_cmd(&hci_delete_stored_link_key, multiplexer->remote_addr);
+                    }
+                default:
+                    break;
+            }
+        default:
+            break;
+    }
+}
+
 // MARK: RFCOMM RUN
 // process outstanding signaling tasks
 static void rfcomm_run(void){
     
     linked_item_t *it;
-    for (it = (linked_item_t *) rfcomm_multiplexers; it ; it = it->next){
+    linked_item_t *next;
+    
+    for (it = (linked_item_t *) rfcomm_multiplexers; it ; it = next){
+
+        next = it->next;    // be prepared for removal of channel in state machine
+        
         rfcomm_multiplexer_t * multiplexer = ((rfcomm_multiplexer_t *) it);
         
         if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) return;
-        log_dbg("rfcomm_run: multi 0x%08x, state %u\n", (int) multiplexer, multiplexer->state);
+        
+        // log_dbg("rfcomm_run: multi 0x%08x, state %u\n", (int) multiplexer, multiplexer->state);
 
-        switch (multiplexer->state) {
-            case RFCOMM_MULTIPLEXER_SEND_SABM_0:
-                log_dbg("Sending SABM #0 - (multi 0x%08x)\n", (int) multiplexer);
-                multiplexer->state = RFCOMM_MULTIPLEXER_W4_UA_0;
-                rfcomm_send_sabm(multiplexer, 0);
-                break;
-            case RFCOMM_MULTIPLEXER_SEND_UA_0:
-                log_dbg("Sending UA #0\n");
-                multiplexer->state = RFCOMM_MULTIPLEXER_OPEN;
-                rfcomm_send_ua(multiplexer, 0);
-                rfcomm_multiplexer_opened(multiplexer);
-                break;
-            case RFCOMM_MULTIPLEXER_SEND_UA_0_AND_DISC:
-                log_dbg("Sending UA #0\n");
-                log_dbg("Closing down multiplexer\n");
-                multiplexer->state = RFCOMM_MULTIPLEXER_CLOSED;
-                rfcomm_send_ua(multiplexer, 0);
-                rfcomm_multiplexer_finalize(multiplexer);
-                // try to detect authentication errors: drop link key if multiplexer closed before first channel got opened
-                if (!multiplexer->at_least_one_connection){
-                    hci_send_cmd(&hci_delete_stored_link_key, multiplexer->remote_addr);
-                }
-            default:
-                break;
-        }
+        rfcomm_multiplexer_state_machine(multiplexer, MULT_EV_READY_TO_SEND);
     }
 
-    linked_item_t *next;
     for (it = (linked_item_t *) rfcomm_channels; it ; it = next){
 
         next = it->next;    // be prepared for removal of channel in state machine
