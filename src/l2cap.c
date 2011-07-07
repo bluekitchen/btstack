@@ -389,6 +389,10 @@ void l2cap_run(void){
     }
 }
 
+static uint16_t l2cap_max_l2cap_mtu(void){
+    return hci_max_acl_data_packet_length()-4;  // 4 bytes for L2CAP header
+}
+
 // open outgoing L2CAP channel
 void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t packet_handler,
                                    bd_addr_t address, uint16_t psm, uint16_t mtu){
@@ -399,8 +403,8 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     if (!chan) return;
     
     // limit local mtu to max acl packet length
-    if (mtu > hci_max_acl_data_packet_length()) {
-        mtu = hci_max_acl_data_packet_length();
+    if (mtu > l2cap_max_l2cap_mtu()) {
+        mtu = l2cap_max_l2cap_mtu();
     }
         
     // fill in 
@@ -595,8 +599,8 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     channel->remote_sig_id = sig_id; 
 
     // limit local mtu to max acl packet length
-    if (channel->local_mtu > hci_max_acl_data_packet_length()) {
-        channel->local_mtu = hci_max_acl_data_packet_length();
+    if (channel->local_mtu > l2cap_max_l2cap_mtu()) {
+        channel->local_mtu = l2cap_max_l2cap_mtu();
     }
     
     // set initial state
