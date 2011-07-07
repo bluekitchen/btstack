@@ -1136,7 +1136,7 @@ static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, u
     // lookup existing channel
     rfcomm_channel_t * channel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, dlci);
 
-    log_dbg("rfcomm_channel_state_machine_2 lookup dlci #%u = 0x%08x - event %u\n", dlci, (int) channel, event->type);
+    // log_dbg("rfcomm_channel_state_machine_2 lookup dlci #%u = 0x%08x - event %u\n", dlci, (int) channel, event->type);
 
     if (channel) {
         rfcomm_channel_state_machine(channel, event);
@@ -1145,7 +1145,7 @@ static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, u
     
     // service registered?
     rfcomm_service_t * service = rfcomm_service_for_channel(dlci >> 1);
-    log_dbg("rfcomm_channel_state_machine_2 service dlci #%u = 0x%08x\n", dlci, (int) service);
+    // log_dbg("rfcomm_channel_state_machine_2 service dlci #%u = 0x%08x\n", dlci, (int) service);
     if (!service) {
         // discard request by sending disconnected mode
         multiplexer->send_dm_for_dlci = dlci;
@@ -1352,7 +1352,7 @@ static int rfcomm_channel_ready_for_open(rfcomm_channel_t *channel){
 
 static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_channel_event_t *event){
     
-    log_dbg("rfcomm_channel_state_machine: state %u, event %u\n", channel->state, event->type);
+    // log_dbg("rfcomm_channel_state_machine: state %u, event %u\n", channel->state, event->type);
     
     rfcomm_multiplexer_t *multiplexer = channel->multiplexer;
     
