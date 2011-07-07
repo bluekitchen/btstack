@@ -14,19 +14,16 @@ digraph rfcomm_channel {
     CLOSED->SEND_UIH_PN [label = "create channel [multiplexer==open]"];
     W4_MULTIPLEXER->SEND_UIH_PN [label = "multiplexere opened"];
     SEND_UIH_PN->W4_PN_RSP [label="SEND UIH PN"];
-        
+    W4_PN_RSP->SEND_SABM_W4_UA [label="RECV PN RSP"];
+    SEND_SABM_W4_UA->W4_UA[label="SEND SABM"];
+         
     // rfcomm_multiplexer_l2cap_packet_handler
     
     // rfcomm_packet_handler
-    CLOSED->INCOMING_SETUP  [label = "RECV SABM#x / inform client, set RCVD_SABM"];
-    CLOSED->INCOMING_SETUP  [label = "RECV UIH PN CMD / inform client, set RCVD_PN"];
-    
-    W4_MSC_CMD_OR_MSC_RSP-> W4_MSC_CMD [label = "RECV MSP RSP"];
-    W4_MSC_RSP -> W4_CREDITS [label = "RECV MSP RSP"];
-    W4_MSC_RSP -> OPEN [label = "RECV MSP RSP"];
-     
-    W4_CREDITS -> OPEN [label = "RECV UIH P/F credits > 0"];
-        
+    CLOSED->INCOMING_SETUP  [label = "RECV SABM#x / inform client"];
+    CLOSED->INCOMING_SETUP  [label = "RECV UIH PN CMD / inform client"];
+    CLOSED->INCOMING_SETUP  [label = "RECV UIH RPN CMD / inform client"];
+         
     // rfcomm_decline_connection_internal
     INCOMING_SETUP->SEND_DM [label = "decline connection"];
     
@@ -34,26 +31,14 @@ digraph rfcomm_channel {
     OPEN->SEND_DISC [label="disconnect"];
     
     // rfcomm_run
-    SEND_MSC_CMD_W4_MSC_CMD_OR_MSC_RSP->W4_MSC_CMD_OR_MSC_RSP [label="SEND MSC CMD"];
-    SEND_MSC_RSP_W4_MSC_RSP->W4_MSC_RSP [label="SEND MSC RSP"];
-    SEND_MSC_CMD_SEND_CREDITS->SEND_CREDITS [label="SEND MSC CMD"];
-    SEND_CREDITS->OPEN [label="SEND CREDITS#0 && HAVE CREDITS"];
-    SEND_CREDITS->W4_CREDITS [label="SEND CREDITS#0 && NO CREDITS"];
     SEND_DM->CLOSED [label="SEND DM_PF"];
     SEND_DISC->CLOSED [label="SEND DISC"];
 
     // rfcomm_accept_connection_internal
-    INCOMING_SETUP->INCOMING_SETUP [label="accept connection / set CLIENT_ACCEPTED, set SEND_PN_RSP if RCVD_PN, set SEND_UA if RCVD_SAMBA"];
-    INCOMING_SETUP->INCOMING_SETUP [label="-[CAN_SEND && SEND_UA] / SEND PN_RSP, clear SEND_PN_RSP"];     
-    INCOMING_SETUP->W4_MSC_CMD [label="-[CAN_SEND && SEND_UA] / SEND UA, clear SEND_UA"];
-    INCOMING_SETUP->INCOMING_SETUP [label = "RECV SABM [CLIENT_ACCEPTED]/ set RECV_SABM"];
-    INCOMING_SETUP->INCOMING_SETUP [label = "RECV SABM [!CLIENT_ACCEPTED]/ set SEND_UA"];
-    W4_PN_RSP->SEND_SABM_W4_UA [label="RECV PN RSP"];
-    SEND_SABM_W4_UA->W4_UA[label="SEND SABM"];
-    W4_UA->SEND_MSC_CMD_W4_MSC_CMD_OR_MSC_RSP[label="RECV UA"];
-    W4_MSC_CMD_OR_MSC_RSP->SEND_MSC_RSP_W4_MSC_RSP[label="RECV MSC CMD"];
-    SEND_MSC_RSP_MSC_CMD_W4_CREDITS->SEND_MSC_CMD_SEND_CREDITS [label="SEND MSP RSP"];
-    W4_MSC_CMD->SEND_MSC_RSP_MSC_CMD_W4_CREDITS [label="RECV MSC CMD"];
+    INCOMING_SETUP->INCOMING_SETUP [label="accept connection/confirm"];
+    INCOMING_SETUP->DLC_SETUP [label="-[CAN SEND] / SEND UA"];
+    W4_UA->DLC_SETUP[label="RECV UA"];
+    DLC_SETUP->OPEN [label="exchanged MSC & credits > 0"];
 }
 
 
