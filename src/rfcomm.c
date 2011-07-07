@@ -74,7 +74,7 @@
 #define BT_RFCOMM_TEST_CMD   0x23
 #define BT_RFCOMM_TEST_RSP   0x21
 
-#define RFCOMM_L2CAP_MTU 1021
+#define RFCOMM_L2CAP_MTU     (HCI_ACL_3DH5_SIZE-4)   // 1021 is max ACL payload -> 1017 max l2cap packet size
 #define RFCOMM_MULIPLEXER_TIMEOUT_MS 60000
 
 // FCS calc 
