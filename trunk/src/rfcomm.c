@@ -107,7 +107,7 @@ typedef enum {
     RFCOMM_CHANNEL_INCOMING_SETUP,
     RFCOMM_CHANNEL_DLC_SETUP,
 	RFCOMM_CHANNEL_OPEN,
-    RFCOMM_CHANNEL_SEND_UA_AND_DISC,
+    RFCOMM_CHANNEL_SEND_UA_AFTER_DISC,
     RFCOMM_CHANNEL_SEND_DISC,
     RFCOMM_CHANNEL_SEND_DM,
 
@@ -1050,6 +1050,20 @@ static void rfcomm_channel_accept_pn(rfcomm_channel_t *channel, rfcomm_channel_e
     
 }
 
+static void rfcomm_channel_finalize(rfcomm_channel_t *channel){
+
+    rfcomm_multiplexer_t *multiplexer = channel->multiplexer;
+
+    // remove from list
+    linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
+
+    // free channel
+    free(channel);
+    
+    // update multiplexer timeout after channel was removed from list
+    rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+}
+
 static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, uint8_t dlci, rfcomm_channel_event_t *event){
 
     // TODO: if client max frame size is smaller than RFCOMM_DEFAULT_SIZE, send PN
@@ -1277,7 +1291,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
     
     // TODO: integrate in common switch
     if (event->type == CH_EVT_RCVD_DISC){
-        channel->state = RFCOMM_CHANNEL_SEND_UA_AND_DISC;
+        channel->state = RFCOMM_CHANNEL_SEND_UA_AFTER_DISC;
         return;
     }
     
@@ -1286,9 +1300,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
         log_dbg("Received DM message for #%u\n", channel->dlci);
         log_dbg("-> Closing channel locally for #%u\n", channel->dlci);
         rfcomm_emit_channel_closed(channel);
-        linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
-        free(channel);
-        rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+        rfcomm_channel_finalize(channel);
         return;
     }
     
@@ -1489,16 +1501,10 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
         case RFCOMM_CHANNEL_SEND_DM:
             switch (event->type) {
                 case CH_EVT_READY_TO_SEND:
-
-                    // !!!: cannot remove item when iterating over list
-                    
                     log_dbg("Sending DM_PF for #%u\n", channel->dlci);
+                    // don't emit channel closed - channel was never open
                     rfcomm_send_dm_pf(multiplexer, channel->dlci);
-                    // remove from list
-                    linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
-                    // free channel
-                    free(channel);
-                    rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+                    rfcomm_channel_finalize(channel);
                     break;
                 default:
                     break;
@@ -1507,36 +1513,21 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
         case RFCOMM_CHANNEL_SEND_DISC:
             switch (event->type) {
                 case CH_EVT_READY_TO_SEND:
-                    
-                    // !!!: cannot remove item when iterating over list
-                    
-                    // signal close
                     rfcomm_send_disc(multiplexer, channel->dlci);
-                    // remove from list
-                    linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
-                    // free channel
-                    free(channel);
-                    // update multiplexer timeout after channel was removed from list
-                    rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+                    rfcomm_emit_channel_closed(channel);
+                    rfcomm_channel_finalize(channel);
                     break;
                 default:
                     break;
             }
             
-        case RFCOMM_CHANNEL_SEND_UA_AND_DISC:
+        case RFCOMM_CHANNEL_SEND_UA_AFTER_DISC:
             switch (event->type) {
                 case CH_EVT_READY_TO_SEND:
-
-                    // !!!: cannot remove item when iterating over list
-                    
-                    log_dbg("-> Sending UA for #%u\n", channel->dlci);
+                    log_dbg("-> Confirm DISC by sending UA for #%u\n", channel->dlci);
                     rfcomm_send_ua(multiplexer, channel->dlci);
-                    // signal client
                     rfcomm_emit_channel_closed(channel);
-                    // discard channel
-                    linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
-                    free(channel);
-                    rfcomm_multiplexer_prepare_idle_timer(multiplexer);
+                    rfcomm_channel_finalize(channel);
                     break;
                 default:
                     break;
@@ -1592,8 +1583,12 @@ static void rfcomm_run(void){
                 break;
         }
     }
-    
-    for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
+
+    linked_item_t *next;
+    for (it = (linked_item_t *) rfcomm_channels; it ; it = next){
+
+        next = it->next;    // be prepared for removal of channel in state machine
+
         rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
         rfcomm_multiplexer_t * multiplexer = channel->multiplexer;
         
