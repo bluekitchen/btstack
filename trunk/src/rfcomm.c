@@ -104,20 +104,8 @@ typedef enum {
     RFCOMM_CHANNEL_W4_PN_RSP,
 	RFCOMM_CHANNEL_SEND_SABM_W4_UA,
 	RFCOMM_CHANNEL_W4_UA,
-    // incoming
     RFCOMM_CHANNEL_INCOMING_SETUP,
-    // merged into DLC_SETUP
     RFCOMM_CHANNEL_DLC_SETUP,
-    RFCOMM_CHANNEL_SEND_MSC_CMD_W4_MSC_CMD_OR_MSC_RSP,
-	RFCOMM_CHANNEL_W4_MSC_CMD_OR_MSC_RSP, 
-	RFCOMM_CHANNEL_SEND_MSC_RSP_MSC_CMD_W4_CREDITS,
-	RFCOMM_CHANNEL_W4_MSC_CMD,
-	RFCOMM_CHANNEL_SEND_MSC_RSP_W4_MSC_RSP,
-	RFCOMM_CHANNEL_W4_MSC_RSP,
-	RFCOMM_CHANNEL_W4_CREDITS,
-    RFCOMM_CHANNEL_SEND_MSC_CMD_SEND_CREDITS,
-    RFCOMM_CHANNEL_SEND_CREDITS,
-    // other
 	RFCOMM_CHANNEL_OPEN,
     RFCOMM_CHANNEL_SEND_UA_AND_DISC,
     RFCOMM_CHANNEL_SEND_DISC,
@@ -138,8 +126,10 @@ typedef enum {
     STATE_VAR_SEND_UA         = 1 << 9,
     STATE_VAR_SEND_MSC_CMD    = 1 << 10,
     STATE_VAR_SEND_MSC_RSP    = 1 << 11,
-    STATE_VAR_SENT_MSC_CMD    = 1 << 12,
-    STATE_VAR_SENT_MSC_RSP    = 1 << 13,
+    STATE_VAR_SEND_CREDITS    = 1 << 12,
+    STATE_VAR_SENT_MSC_CMD    = 1 << 13,
+    STATE_VAR_SENT_MSC_RSP    = 1 << 14,
+    STATE_VAR_SENT_CREDITS    = 1 << 15,
 } RFCOMM_CHANNEL_STATE_VAR;
 
 typedef enum {
@@ -288,6 +278,7 @@ static void rfcomm_run(void);
 static void rfcomm_hand_out_credits(void);
 static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_channel_event_t *event);
 static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, uint8_t dlci, rfcomm_channel_event_t *event);
+static int rfcomm_channel_ready_for_open(rfcomm_channel_t *channel);
 
 
 // MARK: RFCOMM CLIENT EVENTS
@@ -970,8 +961,7 @@ static void rfcomm_channel_provide_credits(rfcomm_channel_t *channel){
 
     int credits = 0x30;
     switch (channel->state) {
-        case RFCOMM_CHANNEL_W4_CREDITS:
-        case RFCOMM_CHANNEL_SEND_CREDITS:
+        case RFCOMM_CHANNEL_DLC_SETUP:
         case RFCOMM_CHANNEL_OPEN:
             if (channel->credits_incoming < 5){
 				uint8_t address = (1 << 0) | (channel->multiplexer->outgoing << 1) |  (channel->dlci << 2); 
@@ -1022,8 +1012,9 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
         event[0] = DAEMON_EVENT_NEW_RFCOMM_CREDITS;
         (*app_packet_handler)(rfChannel->connection, DAEMON_EVENT_PACKET, rfChannel->rfcomm_cid, event, sizeof(event));
         
-        if (rfChannel->state == RFCOMM_CHANNEL_W4_CREDITS){
+        if (rfChannel->state == RFCOMM_CHANNEL_DLC_SETUP && rfcomm_channel_ready_for_open(rfChannel)) {
             log_dbg("BT_RFCOMM_UIH_PF for #%u, Got %u credits => can send!\n", frame_dlci, new_credits);
+            rfChannel->state = RFCOMM_CHANNEL_OPEN;
             rfcomm_channel_opened(rfChannel);
         }
     }
@@ -1387,15 +1378,6 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                     break;
             }
             
-        case RFCOMM_CHANNEL_W4_UA:
-            switch (event->type){
-                case CH_EVT_RCVD_UA:
-                    channel->state = RFCOMM_CHANNEL_SEND_MSC_CMD_W4_MSC_CMD_OR_MSC_RSP;
-                    break;
-                default:
-                    break;
-            }
-            
         case RFCOMM_CHANNEL_W4_PN_RSP:
             switch (event->type){
                 case CH_EVT_RCVD_PN_RSP:
@@ -1412,33 +1394,25 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
             }
             break;
             
-        case RFCOMM_CHANNEL_W4_MSC_CMD_OR_MSC_RSP:
+        case RFCOMM_CHANNEL_W4_UA:
             switch (event->type){
-                case CH_EVT_RCVD_MSC_CMD:
-                    channel->state = RFCOMM_CHANNEL_SEND_MSC_RSP_W4_MSC_RSP;
-                    break;
-                case CH_EVT_RCVD_MSC_RSP:
-                    channel->state = RFCOMM_CHANNEL_W4_MSC_CMD;
+                case CH_EVT_RCVD_UA:
+                    channel->state = RFCOMM_CHANNEL_DLC_SETUP;
+                    channel->state_var |= STATE_VAR_SEND_MSC_CMD;
                     break;
                 default:
                     break;
             }
             break;
             
-        case RFCOMM_CHANNEL_W4_MSC_CMD:
+        case RFCOMM_CHANNEL_DLC_SETUP:
             switch (event->type){
                 case CH_EVT_RCVD_MSC_CMD:
-                    channel->state = RFCOMM_CHANNEL_SEND_MSC_RSP_MSC_CMD_W4_CREDITS;
+                    channel->state_var |= STATE_VAR_RCVD_MSC_CMD;
+                    channel->state_var |= STATE_VAR_SEND_MSC_RSP;
                     break;
-                default:
-                    break;
-            }
-            break;
-            
-        case RFCOMM_CHANNEL_W4_MSC_RSP:
-            switch (event->type){
                 case CH_EVT_RCVD_MSC_RSP:
-                    channel->state = RFCOMM_CHANNEL_SEND_CREDITS;
+                    channel->state_var |= STATE_VAR_RCVD_MSC_RSP;
                     break;
                 default:
                     break;
@@ -1450,9 +1424,19 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
     }
 }
 
+
+static int rfcomm_channel_ready_for_open(rfcomm_channel_t *channel){
+    if ((channel->state_var & STATE_VAR_RCVD_MSC_RSP) == 0) return 0;
+    if ((channel->state_var & STATE_VAR_SENT_MSC_RSP) == 0) return 0;
+    if ((channel->state_var & STATE_VAR_SENT_CREDITS) == 0) return 0;
+    if (channel->credits_outgoing == 0) return 0;
+
+    return 1;
+}
+
 // MARK: RFCOMM RUN
 // process outstanding signaling tasks
-void rfcomm_run(void){
+static void rfcomm_run(void){
     
     linked_item_t *it;
     for (it = (linked_item_t *) rfcomm_multiplexers; it ; it = it->next){
@@ -1481,7 +1465,6 @@ void rfcomm_run(void){
                 if (!multiplexer->at_least_one_connection){
                     hci_send_cmd(&hci_delete_stored_link_key, multiplexer->remote_addr);
                 }
-                
             default:
                 break;
         }
@@ -1512,10 +1495,12 @@ void rfcomm_run(void){
                 }
                 
                 if ((channel->state_var & STATE_VAR_CLIENT_ACCEPTED) && (channel->state_var & STATE_VAR_RCVD_SABM)) {
-                    channel->state = RFCOMM_CHANNEL_W4_MSC_CMD;
+                    channel->state_var |= STATE_VAR_SEND_MSC_CMD;
+                    channel->state = RFCOMM_CHANNEL_DLC_SETUP;
                 } 
                 break;
                 
+            // outgoing
             case RFCOMM_CHANNEL_SEND_UIH_PN:
                 log_dbg("Sending UIH Parameter Negotiation Command for #%u\n", channel->dlci );
                 rfcomm_send_uih_pn_command(multiplexer, channel->dlci, channel->max_frame_size);
@@ -1528,44 +1513,31 @@ void rfcomm_run(void){
                 rfcomm_send_sabm(multiplexer, channel->dlci);
                 channel->state = RFCOMM_CHANNEL_W4_UA;
                 break;
-                
-            case RFCOMM_CHANNEL_SEND_MSC_CMD_W4_MSC_CMD_OR_MSC_RSP:
-                log_dbg("Sending MSC CMD for #%u (RFCOMM_CHANNEL_W4_MSC_CMD_OR_MSC_RSP)\n", channel->dlci);
-                rfcomm_send_uih_msc_cmd(multiplexer, channel->dlci , 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
-                channel->state = RFCOMM_CHANNEL_W4_MSC_CMD_OR_MSC_RSP;
-                break;
-                
-            case RFCOMM_CHANNEL_SEND_MSC_RSP_W4_MSC_RSP:
-                // outgoing channel
-                log_dbg("Sending MSC RSP for #%u\n", channel->dlci);
-                rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
-                channel->state = RFCOMM_CHANNEL_W4_MSC_RSP;
-                break;
-                
-            case RFCOMM_CHANNEL_SEND_MSC_RSP_MSC_CMD_W4_CREDITS:
-                // incoming channel
-                log_dbg("-> Sending MSC RSP for #%u\n", channel->dlci);
-                rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
-                channel->state = RFCOMM_CHANNEL_SEND_MSC_CMD_SEND_CREDITS;
-                break;
-                
-            case RFCOMM_CHANNEL_SEND_MSC_CMD_SEND_CREDITS:
-                // start our negotiation
-                log_dbg("Sending MSC CMD for #%u (but should wait for l2cap credits)\n", channel->dlci);
-                rfcomm_send_uih_msc_cmd(multiplexer, channel->dlci, 0x8d); // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
-                channel->state = RFCOMM_CHANNEL_SEND_CREDITS;
-                break;
-                
-            case RFCOMM_CHANNEL_SEND_CREDITS:
-                log_dbg("Providing credits for #%u\n", channel->dlci);
-                rfcomm_channel_provide_credits(channel);
-                
-                if (channel->credits_outgoing){
-                    // we already got credits - state == OPEN
+            
+            // DLC Setup
+            case RFCOMM_CHANNEL_DLC_SETUP:
+                if (channel->state_var & STATE_VAR_SEND_MSC_CMD){
+                    log_dbg("Sending MSC CMD for #%u\n", channel->dlci);
+                    rfcomm_send_uih_msc_cmd(multiplexer, channel->dlci , 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+                    channel->state_var &= ~STATE_VAR_SEND_MSC_CMD;
+                    channel->state_var |= STATE_VAR_SENT_MSC_CMD;
+                }
+                else if (channel->state_var & STATE_VAR_SEND_MSC_RSP){
+                    log_dbg("Sending MSC RSP for #%u\n", channel->dlci);
+                    rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+                    channel->state_var &= ~STATE_VAR_SEND_MSC_RSP;
+                    channel->state_var |= STATE_VAR_SENT_MSC_RSP;
+                }
+                else if (channel->state_var & STATE_VAR_SEND_CREDITS){
+                    log_dbg("Providing credits for #%u\n", channel->dlci);
+                    rfcomm_channel_provide_credits(channel);
+                    channel->state_var &= ~STATE_VAR_SEND_CREDITS;
+                    channel->state_var |= STATE_VAR_SENT_CREDITS;
+                }
+                // finally done?
+                if (rfcomm_channel_ready_for_open(channel)){
+                    channel->state = RFCOMM_CHANNEL_OPEN;
                     rfcomm_channel_opened(channel);
-                } else {
-                    channel->state = RFCOMM_CHANNEL_W4_CREDITS;
-                    log_dbg("Waiting for credits for #%u\n", channel->dlci);
                 }
                 break;
                 
