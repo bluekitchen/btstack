@@ -219,6 +219,9 @@ typedef struct {
     uint8_t   at_least_one_connection;
     
     uint16_t max_frame_size;
+    
+    // send DM for DLCI != 0
+    uint8_t send_dm_for_dlci;
 
 } rfcomm_multiplexer_t;
 
@@ -357,6 +360,8 @@ static void rfcomm_multiplexer_initialize(rfcomm_multiplexer_t *multiplexer){
     bzero(multiplexer, sizeof(rfcomm_multiplexer_t));
     multiplexer->state = RFCOMM_MULTIPLEXER_CLOSED;
     multiplexer->l2cap_credits = 0;
+    multiplexer->send_dm_for_dlci = 0;
+    
     // - Max RFCOMM header has 6 bytes (P/F bit is set, payload length >= 128)
     // - therefore, we set RFCOMM max frame size <= Local L2CAP MTU - 6
     multiplexer->max_frame_size = RFCOMM_MAX_PAYLOAD - 6; // max
@@ -933,6 +938,13 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
 }
 
 static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer, RFCOMM_MULTIPLEXER_EVENT event){
+    
+    // process stored DM responses
+    if (multiplexer->send_dm_for_dlci){
+        rfcomm_send_dm_pf(multiplexer, multiplexer->send_dm_for_dlci);
+        multiplexer->send_dm_for_dlci = 0;
+    }
+
     switch (multiplexer->state) {
         case RFCOMM_MULTIPLEXER_SEND_SABM_0:
             switch (event) {
@@ -1134,8 +1146,7 @@ static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, u
     log_dbg("rfcomm_channel_state_machine_2 service dlci #%u = 0x%08x\n", dlci, (int) service);
     if (!service) {
         // discard request by sending disconnected mode
-        // TODO: store "send DM for #x" in multiplexer struct
-        rfcomm_send_dm_pf(multiplexer, dlci);
+        multiplexer->send_dm_for_dlci = dlci;
         return;
     }
 
@@ -1154,8 +1165,7 @@ static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, u
 
     if (!channel) {
         // discard request by sending disconnected mode
-        // TODO: store "send DM for #x" in multiplexer struct
-        rfcomm_send_dm_pf(multiplexer, dlci);
+        multiplexer->send_dm_for_dlci = dlci;
         return;
     }
     channel->connection = service->connection;
