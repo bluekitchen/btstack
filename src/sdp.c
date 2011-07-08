@@ -49,6 +49,9 @@
 // max reserved ServiceRecordHandle
 #define maxReservedServiceRecordHandle 0xffff
 
+// max SDP response
+#define SDP_RESPONSE_BUFFER_SIZE (HCI_ACL_3DH5_SIZE-HCI_ACL_DATA_PKT_HDR)
+
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 // registered service records
@@ -58,13 +61,15 @@ static linked_list_t sdp_service_records = NULL;
 static uint32_t sdp_next_service_record_handle = maxReservedServiceRecordHandle + 2;
 
 // AttributeIDList used to remove ServiceRecordHandle
-const uint8_t removeServiceRecordHandleAttributeIDList[] = { 0x36, 0x00, 0x05, 0x0A, 0x00, 0x01, 0xFF, 0xFF };
+static const uint8_t removeServiceRecordHandleAttributeIDList[] = { 0x36, 0x00, 0x05, 0x0A, 0x00, 0x01, 0xFF, 0xFF };
 
-#define SDP_RESPONSE_BUFFER_SIZE HCI_ACL_3DH5_SIZE
 static uint8_t sdp_response_buffer[SDP_RESPONSE_BUFFER_SIZE];
 
 static void (*app_packet_handler)(void * connection, uint8_t packet_type,
                                   uint16_t channel, uint8_t *packet, uint16_t size) = NULL;
+
+static uint16_t l2cap_cid = 0;
+static uint16_t sdp_response_size = 0;
 
 void sdp_init(){
     // register with l2cap psm sevices
@@ -75,6 +80,7 @@ void sdp_init(){
 void sdp_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type,
                                                  uint16_t channel, uint8_t *packet, uint16_t size)){
 	app_packet_handler = handler;
+    l2cap_cid = 0;
 }
 
 uint32_t sdp_get_service_record_handle(uint8_t * record){
@@ -555,12 +561,21 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
     return pos;
 }
 
+static void sdp_try_respond(void){
+    if (!sdp_response_size ) return;
+    if (!l2cap_cid) return;
+    if (!l2cap_can_send_packet_now(l2cap_cid)) return;
+    
+    l2cap_send_internal(l2cap_cid, sdp_response_buffer, sdp_response_size);
+    sdp_response_size = 0;
+}
+
+// we assume that we don't get two requests in a row
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	uint16_t transaction_id;
     SDP_PDU_ID_t pdu_id;
     uint16_t param_len;
     uint16_t remote_mtu;
-    int pos = 5;
     
 	switch (packet_type) {
 			
@@ -578,22 +593,24 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             switch (pdu_id){
                     
                 case SDP_ServiceSearchRequest:
-                    pos = sdp_handle_service_search_request(packet, remote_mtu);
+                    sdp_response_size = sdp_handle_service_search_request(packet, remote_mtu);
                     break;
                                         
                 case SDP_ServiceAttributeRequest:
-                    pos = sdp_handle_service_attribute_request(packet, remote_mtu);
+                    sdp_response_size = sdp_handle_service_attribute_request(packet, remote_mtu);
                     break;
                     
                 case SDP_ServiceSearchAttributeRequest:
-                    pos = sdp_handle_service_search_attribute_request(packet, remote_mtu);
+                    sdp_response_size = sdp_handle_service_search_attribute_request(packet, remote_mtu);
                     break;
                     
                 default:
-                    pos = sdp_create_error_response(transaction_id, 0x0003); // invalid syntax
+                    sdp_response_size = sdp_create_error_response(transaction_id, 0x0003); // invalid syntax
                     break;
             }
-            l2cap_send_internal(channel, sdp_response_buffer, pos);
+            
+            sdp_try_respond();
+            
 			break;
 			
 		case HCI_EVENT_PACKET:
@@ -601,9 +618,34 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 			switch (packet[0]) {
                     					
 				case L2CAP_EVENT_INCOMING_CONNECTION:
-					// accept
+                    if (l2cap_cid) {
+                        // CONNECTION REJECTED DUE TO LIMITED RESOURCES 
+                        l2cap_decline_connection_internal(channel, 0x0d);
+                        break;
+                    }
+                    // accept
+                    l2cap_cid = channel;
+                    sdp_response_size = 0;
                     l2cap_accept_connection_internal(channel);
 					break;
+                    
+                case L2CAP_EVENT_CHANNEL_OPENED:
+                    if (packet[2]) {
+                        // open failed -> reset
+                        l2cap_cid = 0;
+                    }
+                    break;
+
+                case L2CAP_EVENT_CREDITS:
+                    sdp_try_respond();
+                    break;
+                
+                case L2CAP_EVENT_CHANNEL_CLOSED:
+                    if (channel == l2cap_cid){
+                        // reset
+                        l2cap_cid = 0;
+                    }
+                    break;
 					                    
 				default:
 					// other event
