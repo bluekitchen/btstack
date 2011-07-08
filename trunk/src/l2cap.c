@@ -72,22 +72,24 @@ typedef enum {
     L2CAP_STATE_WAIT_CONNECTION_COMPLETE,
     L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT,
     L2CAP_STATE_WAIT_CONNECT_RSP, // from peer
-    L2CAP_STATE_WAIT_CONFIG_REQ_OR_SEND_CONFIG_REQ,
-    L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ,
-    L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_WILL_SEND_CONFIG_REQ_RSP,
-    L2CAP_STATE_WAIT_CONFIG_REQ_RSP,
-    L2CAP_STATE_WAIT_CONFIG_REQ,
+    L2CAP_STATE_CONFIG,
     L2CAP_STATE_OPEN,
     L2CAP_STATE_WAIT_DISCONNECT,  // from application
     L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST,
     L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE,
     L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT,   
-    L2CAP_STATE_WILL_SEND_CONFIG_REQ,
-    L2CAP_STATE_WILL_SEND_CONFIG_REQ_RSP,
-    L2CAP_STATE_WILL_SEND_CONFIG_REQ_AND_CONFIG_REQ_RSP,
     L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST,
     L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE,
 } L2CAP_STATE;
+
+typedef enum {
+    STATE_VAR_RCVD_CONF_REQ = 1 << 0,
+    STATE_VAR_RCVD_CONF_RSP = 1 << 1,
+    STATE_VAR_SEND_CONF_REQ = 1 << 2,
+    STATE_VAR_SEND_CONF_RSP = 1 << 3,
+    STATE_VAR_SENT_CONF_REQ = 1 << 4,
+    STATE_VAR_SENT_CONF_RSP = 1 << 5,
+} L2CAP_CHANNEL_STATE_VAR;
 
 // info regarding an actual coneection
 typedef struct {
@@ -95,6 +97,7 @@ typedef struct {
     linked_item_t    item;
     
     L2CAP_STATE state;
+    L2CAP_CHANNEL_STATE_VAR state_var;
     
     bd_addr_t address;
     hci_con_handle_t handle;
@@ -165,11 +168,12 @@ static int new_credits_blocked = 0;
 
 
 // prototypes
-void l2cap_finialize_channel_close(l2cap_channel_t *channel);
-l2cap_service_t * l2cap_get_service(uint16_t psm);
-void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
-void l2cap_emit_channel_closed(l2cap_channel_t *channel);
-void l2cap_emit_connection_request(l2cap_channel_t *channel);
+static void l2cap_finialize_channel_close(l2cap_channel_t *channel);
+static l2cap_service_t * l2cap_get_service(uint16_t psm);
+static void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
+static void l2cap_emit_channel_closed(l2cap_channel_t *channel);
+static void l2cap_emit_connection_request(l2cap_channel_t *channel);
+static int l2cap_channel_ready_for_open(l2cap_channel_t *channel);
 
 
 void l2cap_init(){
@@ -415,7 +419,8 @@ void l2cap_run(void){
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT:
                 l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, 0, 0);
-                channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_OR_SEND_CONFIG_REQ;
+                channel->state = L2CAP_STATE_CONFIG;
+                channel->state_var |= STATE_VAR_SEND_CONF_REQ;
                 break;
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST:
@@ -424,43 +429,29 @@ void l2cap_run(void){
                 l2cap_send_signaling_packet( channel->handle, CONNECTION_REQUEST, channel->local_sig_id, channel->psm, channel->local_cid);                   
                 channel->state = L2CAP_STATE_WAIT_CONNECT_RSP;
                 break;
-                
-            case L2CAP_STATE_WAIT_CONFIG_REQ_OR_SEND_CONFIG_REQ:
-                // after connection response was received
-                channel->local_sig_id = l2cap_next_sig_id();
-                config_options[0] = 1; // MTU
-                config_options[1] = 2; // len param
-                bt_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
-                l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->local_sig_id, channel->remote_cid, 0, 4, &config_options);
-                channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ;
+            
+            case L2CAP_STATE_CONFIG:
+                if (channel->state_var & STATE_VAR_SEND_CONF_RSP){
+                    channel->state_var &= ~STATE_VAR_SEND_CONF_RSP;
+                    channel->state_var |= STATE_VAR_SENT_CONF_RSP;
+                    l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, 0, 0, 0, NULL);
+                }
+                else if (channel->state_var & STATE_VAR_SEND_CONF_REQ){
+                    channel->state_var &= ~STATE_VAR_SEND_CONF_REQ;
+                    channel->state_var |= ~STATE_VAR_SENT_CONF_REQ;
+                    channel->local_sig_id = l2cap_next_sig_id();
+                    config_options[0] = 1; // MTU
+                    config_options[1] = 2; // len param
+                    bt_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
+                    l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->local_sig_id, channel->remote_cid, 0, 4, &config_options);
+                }
+                if (l2cap_channel_ready_for_open(channel)){
+                    channel->state = L2CAP_STATE_OPEN;
+                    l2cap_emit_channel_opened(channel, 0);  // success
+                    l2cap_emit_credits(channel, 1);
+                }
                 break;
 
-            case L2CAP_STATE_WILL_SEND_CONFIG_REQ:
-                channel->local_sig_id = l2cap_next_sig_id();
-                config_options[0] = 1; // MTU
-                config_options[1] = 2; // len param
-                bt_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
-                l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->local_sig_id, channel->remote_cid, 0, 4, &config_options);
-                channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP;
-                break;
-
-            case L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_WILL_SEND_CONFIG_REQ_RSP:
-                l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, 0, 0, 0, NULL);
-                channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP;
-                break;
-
-            case L2CAP_STATE_WILL_SEND_CONFIG_REQ_RSP:
-                l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, 0, 0, 0, NULL);
-                channel->state = L2CAP_STATE_OPEN;
-                l2cap_emit_channel_opened(channel, 0);  // success
-                l2cap_emit_credits(channel, 1);
-                break;
-                
-            case L2CAP_STATE_WILL_SEND_CONFIG_REQ_AND_CONFIG_REQ_RSP:
-                l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, 0, 0, 0, NULL);
-                channel->state = L2CAP_STATE_WILL_SEND_CONFIG_REQ;
-                break;
-                          
             case L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE:
                 l2cap_send_signaling_packet( channel->handle, DISCONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid);   
                 l2cap_finialize_channel_close(channel);
@@ -507,6 +498,7 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     
     // set initial state
     chan->state = L2CAP_STATE_WILL_SEND_CREATE_CONNECTION;
+    chan->state_var = 0;
     chan->remote_sig_id = L2CAP_SIG_ID_INVALID;
     chan->local_sig_id = L2CAP_SIG_ID_INVALID;
     
@@ -693,6 +685,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     
     // set initial state
     channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+    channel->state_var = 0;
     
     // add to connections list
     linked_list_add(&l2cap_channels, (linked_item_t *) channel);
@@ -744,6 +737,13 @@ void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t 
     }
 }
 
+static int l2cap_channel_ready_for_open(l2cap_channel_t *channel){
+    if ((channel->state_var & STATE_VAR_RCVD_CONF_RSP) == 0) return 0;
+    if ((channel->state_var & STATE_VAR_SENT_CONF_RSP) == 0) return 0;
+    return 1;
+}
+
+
 void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command){
 
     uint8_t  code       = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
@@ -755,14 +755,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
     // handle DISCONNECT REQUESTS seperately
     if (code == DISCONNECTION_REQUEST){
         switch (channel->state){
-            case L2CAP_STATE_WAIT_CONFIG_REQ_OR_SEND_CONFIG_REQ:
-            case L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_WILL_SEND_CONFIG_REQ_RSP:
-            case L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ:
-            case L2CAP_STATE_WAIT_CONFIG_REQ:
-            case L2CAP_STATE_WAIT_CONFIG_REQ_RSP:
-            case L2CAP_STATE_WILL_SEND_CONFIG_REQ:
-            case L2CAP_STATE_WILL_SEND_CONFIG_REQ_RSP:
-            case L2CAP_STATE_WILL_SEND_CONFIG_REQ_AND_CONFIG_REQ_RSP:
+            case L2CAP_STATE_CONFIG:
             case L2CAP_STATE_OPEN:
             case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST:
             case L2CAP_STATE_WAIT_DISCONNECT:
@@ -786,11 +779,13 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                         case 0:
                             // successful connection
                             channel->remote_cid = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
-                            channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_OR_SEND_CONFIG_REQ;
+                            channel->state = L2CAP_STATE_CONFIG;
+                            channel->state_var |= STATE_VAR_SEND_CONF_REQ;
+                            
 #if 0
-    channel->state = L2CAP_STATE_OPEN;
-    l2cap_emit_channel_opened(channel, 0);  // success
-    l2cap_emit_credits(channel, 1);
+                            channel->state = L2CAP_STATE_OPEN;
+                            l2cap_emit_channel_opened(channel, 0);  // success
+                            l2cap_emit_credits(channel, 1);
 #endif
                             break;
                         case 1:
@@ -821,55 +816,24 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
             }
             break;
 
-        case L2CAP_STATE_WAIT_CONFIG_REQ_OR_SEND_CONFIG_REQ:
+        case L2CAP_STATE_CONFIG:
             switch (code) {
                 case CONFIGURE_REQUEST:
+                    channel->state_var |= STATE_VAR_RCVD_CONF_REQ;
+                    channel->state_var |= STATE_VAR_SEND_CONF_RSP;
                     l2cap_signaling_handle_configure_request(channel, command);
-                    channel->state = L2CAP_STATE_WILL_SEND_CONFIG_REQ_AND_CONFIG_REQ_RSP;
                     break;
-                default:
-                    //@TODO: implement other signaling packets
-                    break;
-            }
-            break;
-            
-        case L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ:
-            switch (code) {
                 case CONFIGURE_RESPONSE:
-                    channel->state = L2CAP_STATE_WAIT_CONFIG_REQ;
-                    break;
-                case CONFIGURE_REQUEST:
-                    l2cap_signaling_handle_configure_request(channel, command);
-                    channel->state = L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_WILL_SEND_CONFIG_REQ_RSP;
+                    channel->state_var |= STATE_VAR_RCVD_CONF_RSP;
                     break;
                 default:
-                    //@TODO: implement other signaling packets
                     break;
             }
-            break;
-            
-        case L2CAP_STATE_WAIT_CONFIG_REQ:
-            switch (code) {
-                case CONFIGURE_REQUEST:
-                    l2cap_signaling_handle_configure_request(channel, command);
-                    channel->state = L2CAP_STATE_WILL_SEND_CONFIG_REQ_RSP;
-                    break;
-                default:
-                    //@TODO: implement other signaling packets
-                    break;
-            }
-            break;
-            
-        case L2CAP_STATE_WAIT_CONFIG_REQ_RSP:
-            switch (code) {
-                case CONFIGURE_RESPONSE:
-                    channel->state = L2CAP_STATE_OPEN;
-                    l2cap_emit_channel_opened(channel, 0);  // success
-                    l2cap_emit_credits(channel, 1);
-                    break;
-                default:
-                    //@TODO: implement other signaling packets
-                    break;
+            if (l2cap_channel_ready_for_open(channel)){
+                // for open:
+                channel->state = L2CAP_STATE_OPEN;
+                l2cap_emit_channel_opened(channel, 0);
+                l2cap_emit_credits(channel, 1);
             }
             break;
             
