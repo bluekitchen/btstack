@@ -401,6 +401,7 @@ void l2cap_run(void){
         if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) break;
         
         l2cap_channel_t * channel = (l2cap_channel_t *) it;
+        // log_dbg("l2cap_run: state %u, var 0x%02x\n", channel->state, channel->state_var);
         switch (channel->state){
 
             case L2CAP_STATE_WILL_SEND_CREATE_CONNECTION:
@@ -438,7 +439,7 @@ void l2cap_run(void){
                 }
                 else if (channel->state_var & STATE_VAR_SEND_CONF_REQ){
                     channel->state_var &= ~STATE_VAR_SEND_CONF_REQ;
-                    channel->state_var |= ~STATE_VAR_SENT_CONF_REQ;
+                    channel->state_var |= STATE_VAR_SENT_CONF_REQ;
                     channel->local_sig_id = l2cap_next_sig_id();
                     config_options[0] = 1; // MTU
                     config_options[1] = 2; // len param
@@ -738,6 +739,7 @@ void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t 
 }
 
 static int l2cap_channel_ready_for_open(l2cap_channel_t *channel){
+    // log_dbg("l2cap_channel_ready_for_open 0x%02x\n", channel->state_var);
     if ((channel->state_var & STATE_VAR_RCVD_CONF_RSP) == 0) return 0;
     if ((channel->state_var & STATE_VAR_SENT_CONF_RSP) == 0) return 0;
     return 1;
@@ -750,7 +752,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
     uint8_t  identifier = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
     uint16_t result = 0;
     
-    log_dbg("signaling handler code %u, state %u\n", code, channel->state);
+    // log_dbg("signaling handler code %u, state %u\n", code, channel->state);
     
     // handle DISCONNECT REQUESTS seperately
     if (code == DISCONNECTION_REQUEST){
@@ -781,12 +783,6 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                             channel->remote_cid = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
                             channel->state = L2CAP_STATE_CONFIG;
                             channel->state_var |= STATE_VAR_SEND_CONF_REQ;
-                            
-#if 0
-                            channel->state = L2CAP_STATE_OPEN;
-                            l2cap_emit_channel_opened(channel, 0);  // success
-                            l2cap_emit_credits(channel, 1);
-#endif
                             break;
                         case 1:
                             // connection pending. get some coffee
