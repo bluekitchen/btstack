@@ -25,11 +25,8 @@
 - Darwin notification on BTdaemon start/stop
 
 AFTER:  
-- fix broken host detection in configure.in (make it compile on linux)
 - bug: if hci disconnect fails, l2cap channels are never discarded (only fails on old Ericsson module)
-
 - verify: TestBTstackManager can do an inquiry, with 0 or more devices in the list
-- update WiiMote example to use BTstackManager
 - get rid of BTInquireViewController
   - update WiiMoteExample to use BTstackManager
   - Update/rewrite BTstack Keyboard
@@ -48,8 +45,6 @@ AFTER:
   - ignore HCI command lenght on socket connection and directly stream data without buffer
 - L2CAP 
   - segmentation
-- Link Key storage in Bluetooth module
-  - store link keys in Bluetooth module. requires algorithm to evict old one but unclear how to implement that
 - extend SpringBoard feedback
   - show alerts/messages using SpringBoardAcccess, e.g. Bluetooth disconnected by remote device
   - add code to notify about remote disconnets
@@ -59,7 +54,6 @@ AFTER:
   - h4/h5: UART path
   - usb: product/vendor ID
   - logging mode: text, bluez, packetlogger
-- add configure option for uart flowcontrol
 - create <btstack/errors.h>
 
 == USB Support ==
