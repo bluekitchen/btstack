@@ -50,84 +50,6 @@ extern "C" {
     
 #define L2CAP_SIG_ID_INVALID 0
 
-typedef enum {
-    L2CAP_STATE_CLOSED = 1,           // no baseband
-    L2CAP_STATE_WILL_SEND_CREATE_CONNECTION,
-    L2CAP_STATE_WAIT_CONNECTION_COMPLETE,
-    L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT,
-    L2CAP_STATE_WAIT_CONNECT_RSP, // from peer
-    L2CAP_STATE_WAIT_CONFIG_REQ_OR_SEND_CONFIG_REQ,
-    L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_CONFIG_REQ,
-    L2CAP_STATE_WAIT_CONFIG_REQ_RSP_OR_WILL_SEND_CONFIG_REQ_RSP,
-    L2CAP_STATE_WAIT_CONFIG_REQ_RSP,
-    L2CAP_STATE_WAIT_CONFIG_REQ,
-    L2CAP_STATE_OPEN,
-    L2CAP_STATE_WAIT_DISCONNECT,  // from application
-    L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST,
-    L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE,
-    L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT,   
-    L2CAP_STATE_WILL_SEND_CONFIG_REQ,
-    L2CAP_STATE_WILL_SEND_CONFIG_REQ_RSP,
-    L2CAP_STATE_WILL_SEND_CONFIG_REQ_AND_CONFIG_REQ_RSP,
-    L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST,
-    L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE,
-} L2CAP_STATE;
-
-// info regarding an actual coneection
-typedef struct {
-    // linked list - assert: first field
-    linked_item_t    item;
-
-    L2CAP_STATE state;
-
-    bd_addr_t address;
-    hci_con_handle_t handle;
-
-    uint8_t   remote_sig_id;    // used by other side, needed for delayed response
-    uint8_t   local_sig_id;     // own signaling identifier
-
-    uint16_t  local_cid;
-    uint16_t  remote_cid;
-
-    uint16_t  local_mtu;
-    uint16_t  remote_mtu;
-
-    uint16_t  psm;
-
-    uint8_t   packets_granted;    // number of L2CAP/ACL packets client is allowed to send
-    
-    uint8_t   reason; // used in decline internal
-    
-    // uint16_t flush_timeout_incoming;
-    // uint16_t flush_timeout_outgoing;
-
-    // client connection
-    void * connection;
-    
-    // internal connection
-    btstack_packet_handler_t packet_handler;
-    
-} l2cap_channel_t;
-
-// info regarding potential connections
-typedef struct {
-    // linked list - assert: first field
-    linked_item_t    item;
-
-    // service id
-    uint16_t  psm;
-    
-    // incoming MTU
-    uint16_t mtu;
-    
-    // client connection
-    void *connection;    
-    
-    // internal connection
-    btstack_packet_handler_t packet_handler;
-    
-} l2cap_service_t;
-
 void l2cap_init(void);
 void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
 void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu);
@@ -138,19 +60,13 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid);
 void l2cap_block_new_credits(uint8_t blocked);
 int  l2cap_can_send_packet_now(uint16_t local_cid);    // non-blocking UART write
     
-void l2cap_finialize_channel_close(l2cap_channel_t *channel);
 void l2cap_close_connection(void *connection);
 
-l2cap_service_t * l2cap_get_service(uint16_t psm);
 void l2cap_register_service_internal(void *connection, btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu);
 void l2cap_unregister_service_internal(void *connection, uint16_t psm);
 
 void l2cap_accept_connection_internal(uint16_t local_cid);
 void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason);
-
-void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
-void l2cap_emit_channel_closed(l2cap_channel_t *channel);
-void l2cap_emit_connection_request(l2cap_channel_t *channel);
 
 #if defined __cplusplus
 }
