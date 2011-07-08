@@ -13,7 +13,7 @@ digraph rfcomm_channel {
     CLOSED->W4_MULTIPLEXER [label = "create channel [multiplexer==closed]"];
     CLOSED->SEND_UIH_PN [label = "create channel [multiplexer==open]"];
     W4_MULTIPLEXER->SEND_UIH_PN [label = "multiplexere opened"];
-    SEND_UIH_PN->W4_PN_RSP [label="SEND UIH PN"];
+    SEND_UIH_PN->W4_PN_RSP [label="SEND PN CMD"];
     W4_PN_RSP->SEND_SABM_W4_UA [label="RECV PN RSP"];
     SEND_SABM_W4_UA->W4_UA[label="SEND SABM"];
          
@@ -21,8 +21,8 @@ digraph rfcomm_channel {
     
     // rfcomm_packet_handler
     CLOSED->INCOMING_SETUP  [label = "RECV SABM#x / inform client"];
-    CLOSED->INCOMING_SETUP  [label = "RECV UIH PN CMD / inform client"];
-    CLOSED->INCOMING_SETUP  [label = "RECV UIH RPN CMD / inform client"];
+    CLOSED->INCOMING_SETUP  [label = "RECV PN CMD / inform client"];
+    CLOSED->INCOMING_SETUP  [label = "RECV RPN CMD / inform client"];
          
     // rfcomm_decline_connection_internal
     INCOMING_SETUP->SEND_DM [label = "decline connection"];
