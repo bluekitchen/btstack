@@ -1406,7 +1406,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
         rpn_data.xon  = 0xd1;             /* XON */
         rpn_data.xoff = 0xd3;             /* XOFF */
         rpn_data.parameter_mask_0 = 0x7f; /* parameter mask, all values set */
-        rpn_data.parameter_mask_0 = 0x3f; /* parameter mask, all values set */
+        rpn_data.parameter_mask_1 = 0x3f; /* parameter mask, all values set */
         memcpy(&channel->rpn_data, &rpn_data, sizeof(rfcomm_rpn_data_t));
         channel->state_var |= STATE_VAR_SEND_RPN_RSP;
         return;
