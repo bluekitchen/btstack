@@ -419,12 +419,15 @@ static int rfcomm_multiplexer_has_channels(rfcomm_multiplexer_t * multiplexer){
 // MARK: RFCOMM CHANNEL HELPER
 
 static void rfcomm_dump_channels(void){
+#ifndef EMBEDDED
     linked_item_t * it;
     int channels = 0;
     for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
         rfcomm_channel_t * channel = (rfcomm_channel_t *) it;
-        log_dbg("Channel #%u: addr %p, state %u\n", channels++, channel, channel->state);
-    }        
+        log_dbg("Channel #%u: addr %p, state %u\n", channels, channel, channel->state);
+        channels++;
+    }
+#endif
 }
 
 static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiplexer_t *multiplexer, 
