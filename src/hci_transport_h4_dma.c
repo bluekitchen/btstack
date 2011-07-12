@@ -248,6 +248,11 @@ static int h4_set_baudrate(uint32_t baudrate){
     return hal_uart_dma_set_baud(baudrate);
 }
 
+static int h4_can_send_packet_now(uint8_t packet_type){
+    return tx_state == TX_IDLE;
+
+}
+
 static const char * h4_get_transport_name(){
     return "H4_DMA";
 }
@@ -266,7 +271,7 @@ hci_transport_t * hci_transport_h4_dma_instance() {
         hci_transport_h4->transport.register_packet_handler       = h4_register_packet_handler;
         hci_transport_h4->transport.get_transport_name            = h4_get_transport_name;
         hci_transport_h4->transport.set_baudrate                  = h4_set_baudrate;
-        hci_transport_h4->transport.can_send_packet_now           = NULL;
+        hci_transport_h4->transport.can_send_packet_now           = h4_can_send_packet_now;
     }
     return (hci_transport_t *) hci_transport_h4;
 }
