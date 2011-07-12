@@ -75,8 +75,8 @@ hci_connection_t * connection_for_handle(hci_con_handle_t con_handle){
     return NULL;
 }
 
-static void hci_connection_timeout_handler(timer_source_t *timer){
 #ifdef HAVE_TIME
+static void hci_connection_timeout_handler(timer_source_t *timer){
     hci_connection_t * connection = linked_item_get_user(&timer->item);
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -89,8 +89,8 @@ static void hci_connection_timeout_handler(timer_source_t *timer){
         timer->timeout.tv_sec = connection->timestamp.tv_sec + HCI_CONNECTION_TIMEOUT_MS/1000;
     }
     run_loop_add_timer(timer);
-#endif
 }
+#endif
 
 static void hci_connection_timestamp(hci_connection_t *connection){
 #ifdef HAVE_TIME
@@ -209,6 +209,15 @@ uint16_t hci_max_acl_data_packet_length(){
 }
 
 int hci_can_send_packet_now(uint8_t packet_type){
+
+    // check for async hci transport implementations
+    if (hci_stack.hci_transport->can_send_packet_now){
+        if (!hci_stack.hci_transport->can_send_packet_now(packet_type)){
+            return 0;
+        }
+    }
+    
+    // check regular Bluetooth flow control
     switch (packet_type) {
         case HCI_ACL_DATA_PACKET:
             return hci_number_free_acl_slots();
