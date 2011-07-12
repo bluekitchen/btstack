@@ -49,8 +49,8 @@
 #include "debug.h"
 #include "hci_dump.h"
 
-#include "../include/btstack/hci_cmds.h"
-#include "../include/btstack/version.h"
+#include <btstack/hci_cmds.h>
+#include <btstack/version.h>
 
 // temp
 #include "l2cap.h"
