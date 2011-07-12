@@ -49,12 +49,18 @@
 #include <btstack/hal_uart_dma.h>
 
 typedef enum {
-    H4_W4_PACKET_TYPE,
+    H4_W4_PACKET_TYPE = 1,
     H4_W4_EVENT_HEADER,
     H4_W4_ACL_HEADER,
     H4_W4_PAYLOAD,
     H4_PACKET_RECEIVED
 } H4_STATE;
+
+typedef enum {
+    TX_IDLE = 1,
+    TX_W4_HEADER_SENT,
+    TX_W4_PACKET_SENT
+} TX_STATE;
 
 typedef struct hci_transport_h4 {
     hci_transport_t transport;
@@ -76,6 +82,11 @@ static int read_pos;
 static int bytes_to_read;
 static uint8_t hci_packet[HCI_ACL_3DH5_SIZE]; // bigger than largest packet
 
+// tx state
+static TX_STATE tx_state;
+static uint8_t *tx_data;
+static uint16_t tx_len;
+
 static void h4_init_sm(void){
     h4_state = H4_W4_PACKET_TYPE;
     read_pos = 0;
@@ -84,11 +95,50 @@ static void h4_init_sm(void){
 }
 
 // prototypes
+static void h4_block_received(void);
+static void h4_block_sent(void);
+
+static int h4_open(void *transport_config){
+
+    hci_uart_config = (hci_uart_config_t*) transport_config;
+	
+	// open uart
+	hal_uart_dma_init();
+    hal_uart_dma_set_block_received(h4_block_received);
+    hal_uart_dma_set_block_sent(h4_block_sent);
+    
+	// set up data_source
+    hci_transport_h4->ds = malloc(sizeof(data_source_t));
+    if (!hci_transport_h4) return -1;
+    // hci_transport_h4->ds->fd = fd;
+    hci_transport_h4->ds->process = h4_process;
+    run_loop_add_data_source(hci_transport_h4->ds);
+    
+    //
+    h4_init_sm();
+    tx_state = TX_IDLE;
+
+    return 0;
+}
+
+static int h4_close(){
+    // first remove run loop handler
+	run_loop_remove_data_source(hci_transport_h4->ds);
+    
+    // close device 
+    // ...
+    
+    // free struct
+    free(hci_transport_h4->ds);
+    
+    hci_transport_h4->ds = NULL;
+    return 0;
+}
 
 static void h4_block_received(void){
-
+    
     read_pos += bytes_to_read;
-
+    
     // act
     switch (h4_state) {
         case H4_W4_PACKET_TYPE:
@@ -144,67 +194,52 @@ static void h4_block_received(void){
     }
 }
 
-static int    h4_open(void *transport_config){
-
-    hci_uart_config = (hci_uart_config_t*) transport_config;
-	
-	// open uart
-	hal_uart_dma_init();
-    hal_uart_dma_set_block_received(h4_block_received);
-    
-	// set up data_source
-    hci_transport_h4->ds = malloc(sizeof(data_source_t));
-    if (!hci_transport_h4) return -1;
-    // hci_transport_h4->ds->fd = fd;
-    hci_transport_h4->ds->process = h4_process;
-    run_loop_add_data_source(hci_transport_h4->ds);
-    
-    //
-    h4_init_sm();
-
-    return 0;
+static void h4_block_sent(void){
+    switch (tx_state){
+        case TX_W4_HEADER_SENT:
+            tx_state = TX_W4_PACKET_SENT;
+            // h4 packet type + actual packet
+            hal_uart_dma_send_block(tx_data, tx_len);
+            break;
+        case TX_W4_PACKET_SENT:
+            tx_state = TX_IDLE;
+            break;
+        default:
+            break;
+    }
 }
 
-static int    h4_close(){
-    // first remove run loop handler
-	run_loop_remove_data_source(hci_transport_h4->ds);
-    
-    // close device 
-    // ...
-    
-    // free struct
-    free(hci_transport_h4->ds);
-    
-    hci_transport_h4->ds = NULL;
-    return 0;
-}
-
-static int h4_send_packet(uint8_t packet_type, uint8_t *packet, int size){
-    
-    // log packet
-    
-	// h4 packet type + actual packet
-	hal_uart_dma_send_block(&packet_type, 1);
-    hal_uart_dma_send_block(packet, size);
-    return 0;
-}
-
-// static
-void   h4_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+static void h4_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
     packet_handler = handler;
 }
 
 static int h4_process(struct data_source *ds) {
     
-    if (h4_state == H4_PACKET_RECEIVED) {
+    if (h4_state != H4_PACKET_RECEIVED) return 0;
         
-        // log packet
-        
-        packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
-        
-        h4_init_sm();
-    }
+    // log packet
+    
+    packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
+    
+    h4_init_sm();
                                 
+    return 0;
+}
+
+static int h4_send_packet(uint8_t packet_type, uint8_t *packet, int size){
+    
+    // write in progress
+    if (tx_state != TX_IDLE) {
+        log_err("h4_send_packet with tx_state = %u\n", tx_state);
+        return -1;
+    }
+    
+    tx_data = packet;
+    tx_len  = size;
+    
+    tx_state = TX_W4_HEADER_SENT;
+	hal_uart_dma_send_block(&packet_type, 1);
+    
     return 0;
 }
 
