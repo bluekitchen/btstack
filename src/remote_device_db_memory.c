@@ -161,7 +161,7 @@ static int  get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
     return 0;
 }
 
-#pragma mark PERSISTENT RFCOMM CHANNEL ALLOCATION
+// MARK: PERSISTENT RFCOMM CHANNEL ALLOCATION
 
 static uint8_t persistent_rfcomm_channel(char *serviceName){
     linked_item_t *it;
