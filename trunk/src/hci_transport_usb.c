@@ -552,6 +552,8 @@ hci_transport_t * hci_transport_usb_instance() {
         hci_transport_usb->send_packet                   = usb_send_packet;
         hci_transport_usb->register_packet_handler       = usb_register_packet_handler;
         hci_transport_usb->get_transport_name            = usb_get_transport_name;
+        hci_transport_usb->set_baudrate                  = NULL;
+        hci_transport_usb->can_send_packet_now           = NULL;
     }
     return hci_transport_usb;
 }
