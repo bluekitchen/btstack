@@ -301,6 +301,8 @@ hci_transport_t * hci_transport_h5_instance() {
         hci_transport_h5->transport.send_packet                   = h5_send_packet;
         hci_transport_h5->transport.register_packet_handler       = h5_register_event_packet_handler;
         hci_transport_h5->transport.get_transport_name            = h5_get_transport_name;
+        hci_transport_h5->transport.set_baudrate                  = NULL;
+        hci_transport_h5->transport.can_send_packet_now           = NULL;
     }
     return (hci_transport_t *) hci_transport_h5;
 }

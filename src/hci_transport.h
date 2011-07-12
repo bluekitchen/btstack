@@ -55,6 +55,8 @@ typedef struct {
     const char * (*get_transport_name)(void);
     // custom extension for UART transport implementations
     int    (*set_baudrate)(uint32_t baudrate);
+    // support async transport layers, e.g. IRQ driven without buffers
+    int    (*can_send_packet_now)(uint8_t packet_type);
 } hci_transport_t;
 
 typedef struct {
