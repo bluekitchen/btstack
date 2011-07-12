@@ -42,6 +42,7 @@
 
 void hal_uart_dma_init(void);
 void hal_uart_dma_set_block_received( void (*block_handler)(void));
+void hal_uart_dma_set_block_sent( void (*block_handler)(void));
 int  hal_uart_dma_set_baud(uint32_t baud);
 void hal_uart_dma_send_block(uint8_t *buffer, uint16_t length);
 void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len);
