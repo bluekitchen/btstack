@@ -852,7 +852,10 @@ void hci_run(){
 
         connection = (hci_connection_t *) it;
 
-        if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
+        if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) {
+            // log_dbg("hci_init: cannot send command packet\n");
+            return;
+        }
         
         if (connection->state == RECEIVED_CONNECTION_REQUEST){
             log_dbg("sending hci_accept_connection_request\n");
@@ -878,6 +881,7 @@ void hci_run(){
         
     switch (hci_stack.state){
         case HCI_STATE_INITIALIZING:
+            // log_dbg("hci_init: substate %u\n", hci_stack.substate);
             if (hci_stack.substate % 2) {
                 // odd: waiting for command completion
                 return;
