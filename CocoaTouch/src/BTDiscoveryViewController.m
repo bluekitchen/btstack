@@ -164,7 +164,7 @@
 	[self reload];
 }
 
-#pragma mark Table view methods
+// MARK: Table view methods
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section{
 	return @"Devices";
