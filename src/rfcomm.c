@@ -1381,18 +1381,18 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
     //   (Although the handling of individual settings are implementation-dependent.)"
     //
     
-    // TODO: integrate in common swich
+    // TODO: integrate in common switch
     if (event->type == CH_EVT_RCVD_RPN_CMD){
         
-        rfcomm_channel_event_rpn_t *event_rpn = (rfcomm_channel_event_rpn_t*) event;
         // control port parameters
+        rfcomm_channel_event_rpn_t *event_rpn = (rfcomm_channel_event_rpn_t*) event;
         log_dbg("Received Remote Port Negotiation for #%u\n", channel->dlci);
         memcpy(&channel->rpn_data, &event_rpn->data, sizeof(rfcomm_rpn_data_t));
         channel->state_var |= STATE_VAR_SEND_RPN_RSP;
         return;
     }
     
-    // TODO: integrate in common swich
+    // TODO: integrate in common switch
     if (event->type == CH_EVT_RCVD_RPN_REQ){
         
         log_dbg("Received Remote Port Negotiation (Info) for #%u\n", channel->dlci);
@@ -1429,16 +1429,16 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
             switch (event->type){
                 case CH_EVT_RCVD_SABM:
                     log_dbg("-> Inform app\n");
-                    rfcomm_emit_connection_request(channel);
                     channel->state_var |= STATE_VAR_RCVD_SABM;
                     channel->state = RFCOMM_CHANNEL_INCOMING_SETUP;
+                    rfcomm_emit_connection_request(channel);
                     break;
                 case CH_EVT_RCVD_PN:
                     rfcomm_channel_accept_pn(channel, event_pn);
                     log_dbg("-> Inform app\n");
-                    rfcomm_emit_connection_request(channel);
                     channel->state_var |= STATE_VAR_RCVD_PN;
                     channel->state = RFCOMM_CHANNEL_INCOMING_SETUP;
+                    rfcomm_emit_connection_request(channel);
                     break;
                 default:
                     break;

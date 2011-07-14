@@ -419,16 +419,16 @@ void l2cap_run(void){
                 break;
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT:
-                l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, 0, 0);
                 channel->state = L2CAP_STATE_CONFIG;
                 channel->state_var |= STATE_VAR_SEND_CONF_REQ;
+                l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, 0, 0);
                 break;
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST:
                 // success, start l2cap handshake
                 channel->local_sig_id = l2cap_next_sig_id();
-                l2cap_send_signaling_packet( channel->handle, CONNECTION_REQUEST, channel->local_sig_id, channel->psm, channel->local_cid);                   
                 channel->state = L2CAP_STATE_WAIT_CONNECT_RSP;
+                l2cap_send_signaling_packet( channel->handle, CONNECTION_REQUEST, channel->local_sig_id, channel->psm, channel->local_cid);                   
                 break;
             
             case L2CAP_STATE_CONFIG:
@@ -460,8 +460,8 @@ void l2cap_run(void){
                 
             case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST:
                 channel->local_sig_id = l2cap_next_sig_id();
-                l2cap_send_signaling_packet( channel->handle, DISCONNECTION_REQUEST, channel->local_sig_id, channel->remote_cid, channel->local_cid);   
                 channel->state = L2CAP_STATE_WAIT_DISCONNECT;
+                l2cap_send_signaling_packet( channel->handle, DISCONNECTION_REQUEST, channel->local_sig_id, channel->remote_cid, channel->local_cid);   
                 break;
             default:
                 break;
