@@ -76,7 +76,7 @@ typedef struct timer {
 
 
 // set timer based on current time
-void run_loop_set_timer(timer_source_t *a, int timeout_in_ms);
+void run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms);
 
 // add/remove timer_source
 void run_loop_add_timer(timer_source_t *timer); 

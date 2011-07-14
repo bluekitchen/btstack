@@ -146,8 +146,8 @@ static void embedded_tick_handler(void){
 }
 
 // set timer
-void run_loop_set_timer(timer_source_t *ts, int timeout_in_ms){
-    int ticks = timeout_in_ms / hal_tick_get_tick_period_in_ms();
+void run_loop_set_timer(timer_source_t *ts, uint32_t timeout_in_ms){
+    uint32_t ticks = timeout_in_ms / hal_tick_get_tick_period_in_ms();
     if (ticks == 0) ticks++;
     ts->timeout = system_ticks + ticks; 
 }
