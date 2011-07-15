@@ -122,14 +122,17 @@ typedef enum {
     STATE_VAR_RCVD_PN         = 1 << 1,
     STATE_VAR_RCVD_RPN        = 1 << 2,
     STATE_VAR_RCVD_SABM       = 1 << 3,
+    
     STATE_VAR_RCVD_MSC_CMD    = 1 << 4,
     STATE_VAR_RCVD_MSC_RSP    = 1 << 5,
     STATE_VAR_SEND_PN_RSP     = 1 << 6,
     STATE_VAR_SEND_RPN_INFO   = 1 << 7,
+
     STATE_VAR_SEND_RPN_RSP    = 1 << 8,
     STATE_VAR_SEND_UA         = 1 << 9,
     STATE_VAR_SEND_MSC_CMD    = 1 << 10,
     STATE_VAR_SEND_MSC_RSP    = 1 << 11,
+    
     STATE_VAR_SEND_CREDITS    = 1 << 12,
     STATE_VAR_SENT_MSC_CMD    = 1 << 13,
     STATE_VAR_SENT_MSC_RSP    = 1 << 14,
@@ -1556,33 +1559,39 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                 case CH_EVT_RCVD_MSC_RSP:
                     channel->state_var |= STATE_VAR_RCVD_MSC_RSP;
                     break;
+                    
                 case CH_EVT_READY_TO_SEND:
                     if (channel->state_var & STATE_VAR_SEND_MSC_CMD){
                         log_dbg("Sending MSC CMD for #%u\n", channel->dlci);
                         channel->state_var &= ~STATE_VAR_SEND_MSC_CMD;
                         channel->state_var |= STATE_VAR_SENT_MSC_CMD;
                         rfcomm_send_uih_msc_cmd(multiplexer, channel->dlci , 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+                        break;
                     }
-                    else if (channel->state_var & STATE_VAR_SEND_MSC_RSP){
+                    if (channel->state_var & STATE_VAR_SEND_MSC_RSP){
                         log_dbg("Sending MSC RSP for #%u\n", channel->dlci);
                         channel->state_var &= ~STATE_VAR_SEND_MSC_RSP;
                         channel->state_var |= STATE_VAR_SENT_MSC_RSP;
                         rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+                        break;
+
                     }
-                    else if (channel->state_var & STATE_VAR_SEND_CREDITS){
+                    if (channel->state_var & STATE_VAR_SEND_CREDITS){
                         log_dbg("Providing credits for #%u\n", channel->dlci);
                         channel->state_var &= ~STATE_VAR_SEND_CREDITS;
                         channel->state_var |= STATE_VAR_SENT_CREDITS;
                         rfcomm_channel_provide_credits(channel);
-                    }
-                    // finally done?
-                    if (rfcomm_channel_ready_for_open(channel)){
-                        channel->state = RFCOMM_CHANNEL_OPEN;
-                        rfcomm_channel_opened(channel);
+                        break;
+
                     }
                     break;
                 default:
                     break;
+            }
+            // finally done?
+            if (rfcomm_channel_ready_for_open(channel)){
+                channel->state = RFCOMM_CHANNEL_OPEN;
+                rfcomm_channel_opened(channel);
             }
             break;
             
