@@ -982,7 +982,8 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
                     rfcomm_multiplexer_finalize(multiplexer);
                     // try to detect authentication errors: drop link key if multiplexer closed before first channel got opened
                     if (!multiplexer->at_least_one_connection){
-                        hci_send_cmd(&hci_delete_stored_link_key, multiplexer->remote_addr);
+                        log_dbg("TODO: no connections established - delete link key prophylactically\n");
+                        // hci_send_cmd(&hci_delete_stored_link_key, multiplexer->remote_addr);
                     }
                 default:
                     break;
