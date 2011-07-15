@@ -1047,6 +1047,9 @@ static void rfcomm_channel_provide_credits(rfcomm_channel_t *channel){
 }
 
 static void rfcomm_channel_opened(rfcomm_channel_t *rfChannel){
+    
+    log_dbg("rfcomm_channel_opened!\n");
+    
     rfChannel->state = RFCOMM_CHANNEL_OPEN;
     rfcomm_emit_channel_opened(rfChannel, 0);
     rfcomm_hand_out_credits();
@@ -1085,7 +1088,6 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
         (*app_packet_handler)(rfChannel->connection, DAEMON_EVENT_PACKET, rfChannel->rfcomm_cid, event, sizeof(event));
         
         if (rfChannel->state == RFCOMM_CHANNEL_DLC_SETUP && rfcomm_channel_ready_for_open(rfChannel)) {
-            log_dbg("BT_RFCOMM_UIH_PF for #%u, Got %u credits => can send!\n", frame_dlci, new_credits);
             rfChannel->state = RFCOMM_CHANNEL_OPEN;
             rfcomm_channel_opened(rfChannel);
         }
