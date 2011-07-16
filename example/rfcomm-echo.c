@@ -59,7 +59,7 @@ uint8_t test_data[1021];
 void create_test_data(void){
     int x,y;
     for (y=0;y<25;y++){
-        for (x=0;x<78;y++){
+        for (x=0;x<78;x++){
             test_data[y*80+x] = '0' + (x % 10);
         }
         test_data[y*80+78] = '\n';
