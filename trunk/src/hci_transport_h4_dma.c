@@ -59,7 +59,8 @@ typedef enum {
 typedef enum {
     TX_IDLE = 1,
     TX_W4_HEADER_SENT,
-    TX_W4_PACKET_SENT
+    TX_W4_PACKET_SENT,
+    TX_DONE
 } TX_STATE;
 
 typedef struct hci_transport_h4 {
@@ -202,7 +203,7 @@ static void h4_block_sent(void){
             hal_uart_dma_send_block(tx_data, tx_len);
             break;
         case TX_W4_PACKET_SENT:
-            tx_state = TX_IDLE;
+            tx_state = TX_DONE;
             break;
         default:
             break;
@@ -215,6 +216,14 @@ static void h4_register_packet_handler(void (*handler)(uint8_t packet_type, uint
 
 static int h4_process(struct data_source *ds) {
     
+    // notify about packet sent
+    if (tx_state == TX_DONE){
+        // reset state
+        tx_state = TX_IDLE;
+        uint8_t event = DAEMON_EVENT_HCI_PACKET_SENT;
+        packet_handler(HCI_EVENT_PACKET, &event, 1);
+    }
+
     if (h4_state != H4_PACKET_RECEIVED) return 0;
         
     // log packet
@@ -230,7 +239,7 @@ static int h4_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     
     // write in progress
     if (tx_state != TX_IDLE) {
-        log_err("h4_send_packet with tx_state = %u\n", tx_state);
+        log_err("h4_send_packet with tx_state = %u, type %u, data %02x %02x %02x", tx_state, packet_type, packet[0], packet[1], packet[2]);
         return -1;
     }
     
