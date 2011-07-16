@@ -853,7 +853,7 @@ void hci_run(){
         connection = (hci_connection_t *) it;
 
         if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) {
-            // log_dbg("hci_init: cannot send command packet\n");
+            // log_dbg("hci_run: cannot send command packet\n");
             return;
         }
         
