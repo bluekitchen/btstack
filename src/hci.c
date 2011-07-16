@@ -1096,111 +1096,101 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...){
 // TODO: generalize, use table similar to hci_create_command
 
 void hci_emit_state(){
-    uint8_t len = 3; 
-    uint8_t event[len];
+    uint8_t event[3];
     event[0] = BTSTACK_EVENT_STATE;
-    event[1] = len - 3;
+    event[1] = sizeof(event) - 2;
     event[2] = hci_stack.state;
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
-    hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
 void hci_emit_connection_complete(hci_connection_t *conn){
-    uint8_t len = 13; 
-    uint8_t event[len];
+    uint8_t event[13];
     event[0] = HCI_EVENT_CONNECTION_COMPLETE;
-    event[1] = len - 3;
+    event[1] = sizeof(event) - 2;
     event[2] = 0; // status = OK
     bt_store_16(event, 3, conn->con_handle);
     bt_flip_addr(&event[5], conn->address);
     event[11] = 1; // ACL connection
     event[12] = 0; // encryption disabled
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
-    hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
 void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
-    uint8_t len = 6; 
-    uint8_t event[len];
+    uint8_t event[6];
     event[0] = HCI_EVENT_DISCONNECTION_COMPLETE;
-    event[1] = len - 3;
+    event[1] = sizeof(event) - 3;
     event[2] = 0; // status = OK
     bt_store_16(event, 3, handle);
     event[5] = reason;
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
-    hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
 void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
-    uint8_t len = 4; 
-    uint8_t event[len];
+    uint8_t event[4];
     event[0] = L2CAP_EVENT_TIMEOUT_CHECK;
-    event[1] = len - 2;
+    event[1] = sizeof(event) - 2;
     bt_store_16(event, 2, conn->con_handle);
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
-    hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
 void hci_emit_nr_connections_changed(){
-    uint8_t len = 3; 
-    uint8_t event[len];
+    uint8_t event[3];
     event[0] = BTSTACK_EVENT_NR_CONNECTIONS_CHANGED;
-    event[1] = len - 2;
+    event[1] = sizeof(event) - 2;
     event[2] = nr_hci_connections();
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
-    hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
 void hci_emit_hci_open_failed(){
-    uint8_t len = 2; 
-    uint8_t event[len];
+    uint8_t event[2];
     event[0] = BTSTACK_EVENT_POWERON_FAILED;
-    event[1] = len - 2;
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
-    hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
+    event[1] = sizeof(event) - 2;
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
 
 void hci_emit_btstack_version() {
-    uint8_t len = 6;
-    uint8_t event[len];
+    uint8_t event[6];
     event[0] = BTSTACK_EVENT_VERSION;
-    event[1] = len - 2;
-    event[len++] = BTSTACK_MAJOR;
-    event[len++] = BTSTACK_MINOR;
-    bt_store_16(event, len, BTSTACK_REVISION);
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
-    hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
+    event[1] = sizeof(event) - 2;
+    event[2] = BTSTACK_MAJOR;
+    event[3] = BTSTACK_MINOR;
+    bt_store_16(event, 4, BTSTACK_REVISION);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
 void hci_emit_system_bluetooth_enabled(uint8_t enabled){
-    uint8_t len = 3; 
-    uint8_t event[len];
+    uint8_t event[3];
     event[0] = BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED;
-    event[1] = len - 2;
+    event[1] = sizeof(event) - 2;
     event[2] = enabled;
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
 }
 
 void hci_emit_remote_name_cached(bd_addr_t *addr, device_name_t *name){
-    uint16_t len = 2+1+6+248; 
-    uint8_t event[len];
+    uint8_t event[2+1+6+248];
     event[0] = BTSTACK_EVENT_REMOTE_NAME_CACHED;
-    event[1] = len - 2;
+    event[1] = sizeof(event) - 2;
     event[2] = 0;   // just to be compatible with HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
     bt_flip_addr(&event[3], *addr);
     memcpy(&event[9], name, 248);
-    hci_dump_packet(HCI_EVENT_PACKET, 0, event, len);
-    hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
+    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
 void hci_emit_discoverable_enabled(uint8_t enabled){
-    uint8_t len = 3; 
-    uint8_t event[len];
+    uint8_t event[3];
     event[0] = BTSTACK_EVENT_DISCOVERABLE_ENABLED;
-    event[1] = len - 2;
+    event[1] = sizeof(event) - 2;
     event[2] = enabled;
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, len);
-    hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
