@@ -1361,7 +1361,7 @@ static int rfcomm_channel_ready_for_open(rfcomm_channel_t *channel){
 
 static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_channel_event_t *event){
     
-    // log_dbg("rfcomm_channel_state_machine: state %u, event %u\n", channel->state, event->type);
+    // log_dbg("rfcomm_channel_state_machine: state %u, state_var %04x, event %u\n", channel->state, channel->state_var ,event->type);
     
     rfcomm_multiplexer_t *multiplexer = channel->multiplexer;
     
