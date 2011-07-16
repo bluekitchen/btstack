@@ -135,17 +135,20 @@ extern "C" {
 #define IS_COMMAND(packet, command) (READ_BT_16(packet,0) == command.opcode)
 
 // data: event(8)
-#define DAEMON_EVENT_CONNECTION_OPENED                     0x70
+#define DAEMON_EVENT_CONNECTION_OPENED                     0x50
 
 // data: event(8)
-#define DAEMON_EVENT_CONNECTION_CLOSED                     0x71
+#define DAEMON_EVENT_CONNECTION_CLOSED                     0x51
 
 // data: event(8), nr_connections(8)
-#define DAEMON_NR_CONNECTIONS_CHANGED                      0x72
+#define DAEMON_NR_CONNECTIONS_CHANGED                      0x52
 
 // data: event(8)
-#define DAEMON_EVENT_NEW_RFCOMM_CREDITS                    0x73
+#define DAEMON_EVENT_NEW_RFCOMM_CREDITS                    0x53
 
+// data: event()
+#define DAEMON_EVENT_HCI_PACKET_SENT                       0x54
+    
 /**
  * Connection State 
  */
