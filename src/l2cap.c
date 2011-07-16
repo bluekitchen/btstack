@@ -401,7 +401,9 @@ void l2cap_run(void){
         if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) break;
         
         l2cap_channel_t * channel = (l2cap_channel_t *) it;
-        // log_dbg("l2cap_run: state %u, var 0x%02x\n", channel->state, channel->state_var);
+        
+        log_dbg("l2cap_run: state %u, var 0x%02x\n", channel->state, channel->state_var);
+        
         switch (channel->state){
 
             case L2CAP_STATE_WILL_SEND_CREATE_CONNECTION:
@@ -558,6 +560,7 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
     
     bd_addr_t address;
     hci_con_handle_t handle;
+    l2cap_channel_t * channel;
     linked_item_t *it;
         
     switch(packet[0]){
@@ -616,7 +619,6 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
         case L2CAP_EVENT_TIMEOUT_CHECK:
             handle = READ_BT_16(packet, 2);
             if (hci_authentication_active_for_handle(handle)) break;
-            l2cap_channel_t * channel;
             int used = 0;
             for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
                 channel = (l2cap_channel_t *) it;
@@ -628,7 +630,16 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
             if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) break;
             hci_send_cmd(&hci_disconnect, handle, 0x13); // remote closed connection             
             break;
-            
+
+        case DAEMON_EVENT_HCI_PACKET_SENT:
+            for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+                channel = (l2cap_channel_t *) it;
+                if (channel->packet_handler) {
+                    (* (channel->packet_handler))(HCI_EVENT_PACKET, channel->local_cid, packet, size);
+                } 
+            }
+            break;
+             
         default:
             break;
     }
@@ -752,7 +763,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
     uint8_t  identifier = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
     uint16_t result = 0;
     
-    // log_dbg("signaling handler code %u, state %u\n", code, channel->state);
+    log_dbg("signaling handler code %u, state %u\n", code, channel->state);
     
     // handle DISCONNECT REQUESTS seperately
     if (code == DISCONNECTION_REQUEST){
