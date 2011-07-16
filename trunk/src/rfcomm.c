@@ -852,12 +852,18 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             if (!multiplexer) break;
             multiplexer->l2cap_credits += packet[4];
             
+            // log_dbg("L2CAP_EVENT_CREDITS: %u (now %u)\n", packet[4], multiplexer->l2cap_credits);
+
             // new credits, continue with signaling
             rfcomm_run();
             
-            // log_dbg("L2CAP_EVENT_CREDITS: %u (now %u)\n", packet[4], multiplexer->l2cap_credits);
             if (multiplexer->state != RFCOMM_MULTIPLEXER_OPEN) break;
             rfcomm_hand_out_credits();
+            break;
+        
+        case DAEMON_EVENT_HCI_PACKET_SENT:
+            // testing DMA done code
+            rfcomm_run();
             break;
             
         case L2CAP_EVENT_CHANNEL_CLOSED:
@@ -1351,6 +1357,7 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 }
 
 static int rfcomm_channel_ready_for_open(rfcomm_channel_t *channel){
+    // log_dbg("rfcomm_channel_ready_for_open state %u, flags needed %04x, current %04x, rf credits %u, l2cap credits %u \n", channel->state, STATE_VAR_RCVD_MSC_RSP|STATE_VAR_SENT_MSC_RSP|STATE_VAR_SENT_CREDITS, channel->state_var, channel->credits_outgoing, channel->multiplexer->l2cap_credits);
     if ((channel->state_var & STATE_VAR_RCVD_MSC_RSP) == 0) return 0;
     if ((channel->state_var & STATE_VAR_SENT_MSC_RSP) == 0) return 0;
     if ((channel->state_var & STATE_VAR_SENT_CREDITS) == 0) return 0;
@@ -1576,7 +1583,6 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                         channel->state_var |= STATE_VAR_SENT_MSC_RSP;
                         rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
                         break;
-
                     }
                     if (channel->state_var & STATE_VAR_SEND_CREDITS){
                         log_dbg("Providing credits for #%u\n", channel->dlci);
@@ -1657,8 +1663,10 @@ static void rfcomm_run(void){
         
         rfcomm_multiplexer_t * multiplexer = ((rfcomm_multiplexer_t *) it);
         
-        if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) return;
-        
+        if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) {
+            // log_dbg("rfcomm_run cannot send l2cap packet for #%u, credits %u\n", multiplexer->l2cap_cid, multiplexer->l2cap_credits);
+            continue;
+        }
         // log_dbg("rfcomm_run: multi 0x%08x, state %u\n", (int) multiplexer, multiplexer->state);
 
         rfcomm_multiplexer_state_machine(multiplexer, MULT_EV_READY_TO_SEND);
@@ -1671,7 +1679,7 @@ static void rfcomm_run(void){
         rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
         rfcomm_multiplexer_t * multiplexer = channel->multiplexer;
         
-        if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) return;
+        if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) continue;
      
         rfcomm_channel_event_t event;
         event.type = CH_EVT_READY_TO_SEND;
