@@ -1120,7 +1120,7 @@ void hci_emit_connection_complete(hci_connection_t *conn){
 void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
     uint8_t event[6];
     event[0] = HCI_EVENT_DISCONNECTION_COMPLETE;
-    event[1] = sizeof(event) - 3;
+    event[1] = sizeof(event) - 2;
     event[2] = 0; // status = OK
     bt_store_16(event, 3, handle);
     event[5] = reason;
@@ -1172,7 +1172,7 @@ void hci_emit_system_bluetooth_enabled(uint8_t enabled){
     event[1] = sizeof(event) - 2;
     event[2] = enabled;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    hci_stack.packet_handler(HCI_EVENT_PACKET, event, len);
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
 void hci_emit_remote_name_cached(bd_addr_t *addr, device_name_t *name){
