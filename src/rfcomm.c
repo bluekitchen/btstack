@@ -1378,7 +1378,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
         return;
     }
     
-    // TODO: integrate in common swich
+    // TODO: integrate in common switch
     if (event->type == CH_EVT_RCVD_DM){
         log_dbg("Received DM message for #%u\n", channel->dlci);
         log_dbg("-> Closing channel locally for #%u\n", channel->dlci);
@@ -1409,7 +1409,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
     if (event->type == CH_EVT_RCVD_RPN_REQ){
         
         log_dbg("Received Remote Port Negotiation (Info) for #%u\n", channel->dlci);
-        log_dbg("Sending Remote Port Negotiation (info) RSP for #%u\n", channel->dlci);
+        log_dbg("Sending Remote Port Negotiation (Info) RSP for #%u\n", channel->dlci);
         
         // default rpn rsp
         rfcomm_rpn_data_t rpn_data;
@@ -1600,6 +1600,26 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
             if (rfcomm_channel_ready_for_open(channel)){
                 channel->state = RFCOMM_CHANNEL_OPEN;
                 rfcomm_channel_opened(channel);
+            }
+            break;
+        
+        case RFCOMM_CHANNEL_OPEN:
+            switch (event->type){
+                case CH_EVT_RCVD_MSC_CMD:
+                    channel->state_var |= STATE_VAR_RCVD_MSC_CMD;
+                    channel->state_var |= STATE_VAR_SEND_MSC_RSP;
+                    break;
+                case CH_EVT_READY_TO_SEND:
+                    if (channel->state_var & STATE_VAR_SEND_MSC_RSP){
+                        log_dbg("Sending MSC RSP for #%u\n", channel->dlci);
+                        channel->state_var &= ~STATE_VAR_SEND_MSC_RSP;
+                        channel->state_var |= STATE_VAR_SENT_MSC_RSP;
+                        rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+                        break;
+                    }
+                    break;
+                default:
+                    break;
             }
             break;
             
