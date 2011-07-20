@@ -575,9 +575,11 @@ static int rfcomm_send_packet_for_multiplexer(rfcomm_multiplexer_t *multiplexer,
 }
 
 // C/R Flag in Address
+// - terms: initiator = station that creates multiplexer with SABM
+// - terms: responder = station that responds to multiplexer setup with UA
 // "For SABM, UA, DM and DISC frames C/R bit is set according to Table 1 in GSM 07.10, section 5.2.1.2"
-//    - command initiator = 1 /response responder = 0
-//    - command responer  = 0 /response initiator = 1
+//    - command initiator = 1 /response responder = 1
+//    - command responder = 0 /response initiator = 0
 // "For UIH frames, the C/R bit is always set according to section 5.4.3.1 in GSM 07.10. 
 //  This applies independently of what is contained wthin the UIH frames, either data or control messages."
 //    - c/r = 1 for frames by initiating station, 0 = for frames by responding station
@@ -596,7 +598,7 @@ static int rfcomm_send_sabm(rfcomm_multiplexer_t *multiplexer, uint8_t dlci){
 }
 
 static int rfcomm_send_disc(rfcomm_multiplexer_t *multiplexer, uint8_t dlci){
-	uint8_t address = (1 << 0) | (multiplexer->outgoing << 1) | (dlci << 2); // command
+	uint8_t address = (1 << 0) | (multiplexer->outgoing << 1) | (dlci << 2);  // command
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_DISC, 0, NULL, 0);
 }
 
@@ -605,16 +607,9 @@ static int rfcomm_send_ua(rfcomm_multiplexer_t *multiplexer, uint8_t dlci){
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UA, 0, NULL, 0);
 }
 
-// DM: Disconnected Mode (response to a command when disconnected)
 static int rfcomm_send_dm_pf(rfcomm_multiplexer_t *multiplexer, uint8_t dlci){
 	uint8_t address = (1 << 0) | ((multiplexer->outgoing ^ 1) << 1) | (dlci << 2); // response
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_DM_PF, 0, NULL, 0);
-}
-
-
-static int rfcomm_send_uih_data(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, uint8_t *data, uint16_t len){
-	uint8_t address = (1 << 0) | (multiplexer->outgoing << 1) | (dlci << 2); 
-    return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, data, len);
 }
 
 static int rfcomm_send_uih_msc_cmd(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, uint8_t signals) {
@@ -629,7 +624,7 @@ static int rfcomm_send_uih_msc_cmd(rfcomm_multiplexer_t *multiplexer, uint8_t dl
 }
 
 static int rfcomm_send_uih_msc_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, uint8_t signals) {
-	uint8_t address = (1 << 0) | ((multiplexer->outgoing) << 1);
+	uint8_t address = (1 << 0) | (multiplexer->outgoing<< 1);
 	uint8_t payload[4]; 
 	uint8_t pos = 0;
 	payload[pos++] = BT_RFCOMM_MSC_RSP;
@@ -658,7 +653,7 @@ static int rfcomm_send_uih_pn_command(rfcomm_multiplexer_t *multiplexer, uint8_t
 
 // "The response may not change the DLCI, the priority, the convergence layer, or the timer value." RFCOMM-tutorial.pdf
 static int rfcomm_send_uih_pn_response(rfcomm_multiplexer_t *multiplexer, uint8_t dlci,
-                                            uint8_t priority, uint16_t max_frame_size){
+                                       uint8_t priority, uint16_t max_frame_size){
 	uint8_t payload[10];
 	uint8_t address = (1 << 0) | (multiplexer->outgoing << 1); 
 	uint8_t pos = 0;
@@ -681,7 +676,7 @@ static int rfcomm_send_uih_rpn_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t dl
 	uint8_t pos = 0;
 	payload[pos++] = BT_RFCOMM_RPN_RSP;
 	payload[pos++] = 8 << 1 | 1;  // len
-	payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
+	payload[pos++] = dlci;
 	payload[pos++] = rpn_data->baud_rate;
 	payload[pos++] = rpn_data->flags;
 	payload[pos++] = rpn_data->flow_control;
@@ -690,6 +685,11 @@ static int rfcomm_send_uih_rpn_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t dl
 	payload[pos++] = rpn_data->parameter_mask_0;
 	payload[pos++] = rpn_data->parameter_mask_1;
 	return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
+}
+
+static int rfcomm_send_uih_data(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, uint8_t *data, uint16_t len){
+	uint8_t address = (1 << 0) | (multiplexer->outgoing << 1) | (dlci << 2); 
+    return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, data, len);
 }
 
 // MARK: RFCOMM MULTIPLEXER
