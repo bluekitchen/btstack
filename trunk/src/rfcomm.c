@@ -1377,6 +1377,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
     
     // TODO: integrate in common switch
     if (event->type == CH_EVT_RCVD_DISC){
+        rfcomm_emit_channel_closed(channel);
         channel->state = RFCOMM_CHANNEL_SEND_UA_AFTER_DISC;
         return;
     }
@@ -1648,10 +1649,9 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
         case RFCOMM_CHANNEL_SEND_UA_AFTER_DISC:
             switch (event->type) {
                 case CH_EVT_READY_TO_SEND:
-                    log_dbg("-> Confirm DISC by sending UA for #%u\n", channel->dlci);
+                    log_dbg("Sending UA after DISC for #%u\n", channel->dlci);
                     channel->state = RFCOMM_CHANNEL_CLOSED;
                     rfcomm_send_ua(multiplexer, channel->dlci);
-                    rfcomm_emit_channel_closed(channel);
                     rfcomm_channel_finalize(channel);
                     break;
                 default:
