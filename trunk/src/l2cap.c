@@ -402,7 +402,7 @@ void l2cap_run(void){
         
         l2cap_channel_t * channel = (l2cap_channel_t *) it;
         
-        log_dbg("l2cap_run: state %u, var 0x%02x\n", channel->state, channel->state_var);
+        // log_dbg("l2cap_run: state %u, var 0x%02x\n", channel->state, channel->state_var);
         
         switch (channel->state){
 
