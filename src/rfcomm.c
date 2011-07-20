@@ -629,7 +629,7 @@ static int rfcomm_send_uih_msc_cmd(rfcomm_multiplexer_t *multiplexer, uint8_t dl
 }
 
 static int rfcomm_send_uih_msc_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, uint8_t signals) {
-	uint8_t address = (1 << 0) | ((multiplexer->outgoing ^ 1) << 1);
+	uint8_t address = (1 << 0) | ((multiplexer->outgoing) << 1);
 	uint8_t payload[4]; 
 	uint8_t pos = 0;
 	payload[pos++] = BT_RFCOMM_MSC_RSP;
@@ -681,7 +681,7 @@ static int rfcomm_send_uih_rpn_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t dl
 	uint8_t pos = 0;
 	payload[pos++] = BT_RFCOMM_RPN_RSP;
 	payload[pos++] = 8 << 1 | 1;  // len
-	payload[pos++] = dlci;
+	payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
 	payload[pos++] = rpn_data->baud_rate;
 	payload[pos++] = rpn_data->flags;
 	payload[pos++] = rpn_data->flow_control;
@@ -1280,10 +1280,12 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     message_dlci = packet[payload_offset+2] >> 2;
                     switch (message_len){
                         case 1:
+                            log_dbg("Received Remote Port Negotiation for #%u\n", message_dlci);
                             event.type = CH_EVT_RCVD_RPN_REQ;
                             rfcomm_channel_state_machine_2(multiplexer, message_dlci, &event);
                             break;
                         case 8:
+                            log_dbg("Received Remote Port Negotiation (Info) for #%u\n", message_dlci);
                             event_rpn.super.type = CH_EVT_RCVD_RPN_CMD;
                             event_rpn.data.baud_rate = packet[payload_offset+3];
                             event_rpn.data.flags = packet[payload_offset+4];
@@ -1292,7 +1294,7 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                             event_rpn.data.xoff = packet[payload_offset+7];
                             event_rpn.data.parameter_mask_0 = packet[payload_offset+8];
                             event_rpn.data.parameter_mask_1 = packet[payload_offset+9];
-                            rfcomm_channel_state_machine_2(multiplexer, message_dlci, (rfcomm_channel_event_t*) &event_pn);
+                            rfcomm_channel_state_machine_2(multiplexer, message_dlci, (rfcomm_channel_event_t*) &event_rpn);
                             break;
                         default:
                             break;
@@ -1300,6 +1302,7 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     break;
                     
                 default:
+                    log_err("Received unknown UIH packet - 0x%02x\n", packet[payload_offset]); 
                     break;
             }
             break;
@@ -1396,10 +1399,8 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
     
     // TODO: integrate in common switch
     if (event->type == CH_EVT_RCVD_RPN_CMD){
-        
         // control port parameters
         rfcomm_channel_event_rpn_t *event_rpn = (rfcomm_channel_event_rpn_t*) event;
-        log_dbg("Received Remote Port Negotiation for #%u\n", channel->dlci);
         memcpy(&channel->rpn_data, &event_rpn->data, sizeof(rfcomm_rpn_data_t));
         channel->state_var |= STATE_VAR_SEND_RPN_RSP;
         return;
@@ -1407,10 +1408,6 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
     
     // TODO: integrate in common switch
     if (event->type == CH_EVT_RCVD_RPN_REQ){
-        
-        log_dbg("Received Remote Port Negotiation (Info) for #%u\n", channel->dlci);
-        log_dbg("Sending Remote Port Negotiation (Info) RSP for #%u\n", channel->dlci);
-        
         // default rpn rsp
         rfcomm_rpn_data_t rpn_data;
         rpn_data.baud_rate = 0xa0;        /* 9600 bps */
@@ -1606,14 +1603,12 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
         case RFCOMM_CHANNEL_OPEN:
             switch (event->type){
                 case CH_EVT_RCVD_MSC_CMD:
-                    channel->state_var |= STATE_VAR_RCVD_MSC_CMD;
                     channel->state_var |= STATE_VAR_SEND_MSC_RSP;
                     break;
                 case CH_EVT_READY_TO_SEND:
                     if (channel->state_var & STATE_VAR_SEND_MSC_RSP){
                         log_dbg("Sending MSC RSP for #%u\n", channel->dlci);
                         channel->state_var &= ~STATE_VAR_SEND_MSC_RSP;
-                        channel->state_var |= STATE_VAR_SENT_MSC_RSP;
                         rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
                         break;
                     }
