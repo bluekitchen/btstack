@@ -566,8 +566,10 @@ static void sdp_try_respond(void){
     if (!l2cap_cid) return;
     if (!l2cap_can_send_packet_now(l2cap_cid)) return;
     
-    l2cap_send_internal(l2cap_cid, sdp_response_buffer, sdp_response_size);
+    // update state before sending packet (avoid getting called when new l2cap credit gets emitted)
+    uint16_t size = sdp_response_size;
     sdp_response_size = 0;
+    l2cap_send_internal(l2cap_cid, sdp_response_buffer, size);
 }
 
 // we assume that we don't get two requests in a row
