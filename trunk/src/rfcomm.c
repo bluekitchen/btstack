@@ -676,7 +676,7 @@ static int rfcomm_send_uih_rpn_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t dl
 	uint8_t pos = 0;
 	payload[pos++] = BT_RFCOMM_RPN_RSP;
 	payload[pos++] = 8 << 1 | 1;  // len
-	payload[pos++] = dlci;
+	payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
 	payload[pos++] = rpn_data->baud_rate;
 	payload[pos++] = rpn_data->flags;
 	payload[pos++] = rpn_data->flow_control;
