@@ -445,14 +445,9 @@ static int iphone_on (void *transport_config){
 #else
     
     // check for os version >= 4.0
-    int os4x = 1;
-    NSAutoreleasePool * pool =[[NSAutoreleasePool alloc] init];
-    NSString * systemVersion = [[UIDevice currentDevice] systemVersion];
-    if ([systemVersion hasPrefix:@"2."]) os4x = 0;
-    if ([systemVersion hasPrefix:@"3."]) os4x = 0;
-    // NSLog(@"OS Version: %@, ox4x = %u", systemVersion, os4x);
-    [pool release];
-
+    int os4x = kCFCoreFoundationVersionNumber >= 550.32;
+    log_dbg("CFVersion %f, >= 4.0 %u\n", kCFCoreFoundationVersionNumber, os4x);
+    
     // OS 4.0
     char * bluetool = os3xBlueTool;
     if (os4x) {
