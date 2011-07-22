@@ -165,7 +165,7 @@ void embedded_init(){
 #endif
 }
 
-const run_loop_t run_loop_embedded = {
+run_loop_t run_loop_embedded = {
     &embedded_init,
     &embedded_add_data_source,
     &embedded_remove_data_source,
