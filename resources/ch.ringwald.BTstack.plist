@@ -14,8 +14,6 @@
 	<array>
 		<string>/usr/local/bin/BTdaemon</string>
 	</array>
-	<key>StandardErrorPath</key>
-	<string>/var/log/BTstack.err</string>
 	<key>StandardOutPath</key>
 	<string>/var/log/BTstack.log</string>
 	<key>Sockets</key>
