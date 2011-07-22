@@ -190,9 +190,9 @@ static void ioregistry_get_info() {
     IOObjectRelease(bt_service);
     
     // dump info
-    log_dbg("local-mac-address: ");
+    log_info("local-mac-address: ");
     print_bd_addr(local_mac_address);
-    log_dbg("\ntransport-speed:  %u\n", transport_speed);
+    log_info("\ntransport-speed:  %u\n", transport_speed);
 #else
     // use dummy addr if not on iphone/ipod touch
     int i = 0;
@@ -397,7 +397,7 @@ static char *os4xBlueTool = "/usr/local/bin/BlueToolH4";
 
 static int iphone_on (void *transport_config){
 
-    log_dbg("iphone_on: entered\n");
+    log_info("iphone_on: entered\n");
 
     int err = 0;
 
@@ -433,7 +433,7 @@ static int iphone_on (void *transport_config){
     }
     
     // unload BTServer
-    log_dbg("iphone_on: unload BTServer\n");
+    log_info("iphone_on: unload BTServer\n");
     err = system ("launchctl unload /System/Library/LaunchDaemons/com.apple.BTServer.plist");
     
 #if 0
@@ -446,7 +446,7 @@ static int iphone_on (void *transport_config){
     
     // check for os version >= 4.0
     int os4x = kCFCoreFoundationVersionNumber >= 550.32;
-    log_dbg("CFVersion %f, >= 4.0 %u\n", kCFCoreFoundationVersionNumber, os4x);
+    log_info("CFVersion %f, >= 4.0 %u\n", kCFCoreFoundationVersionNumber, os4x);
     
     // OS 4.0
     char * bluetool = os3xBlueTool;
@@ -507,7 +507,7 @@ static int iphone_on (void *transport_config){
         while (1) {
             singlechar = fgetc(outputFile);
             if (singlechar == EOF) break;
-            log_dbg("%c", singlechar);
+            log_info("%c", singlechar);
         };
         err = pclose(outputFile);
     }
@@ -544,16 +544,16 @@ static int iphone_off (void *config){
 	}
 */	
     // power off (all models)
-    log_dbg("iphone_off: turn off using BlueTool\n");
+    log_info("iphone_off: turn off using BlueTool\n");
     system ("echo \"power off\nquit\" | BlueTool");
     
     // kill Apple BTServer as it gets confused and fails to start anyway
     // system("killall BTServer");
     
     // reload BTServer
-    log_dbg("iphone_off: reload BTServer\n");
+    log_info("iphone_off: reload BTServer\n");
     system ("launchctl load /System/Library/LaunchDaemons/com.apple.BTServer.plist");
-    log_dbg("iphone_off: done\n");
+    log_info("iphone_off: done\n");
 
     return 0;
 }
@@ -574,7 +574,7 @@ static int iphone_wake(void *config){
 static void MySleepCallBack( void * refCon, io_service_t service, natural_t messageType, void * messageArgument ) {
     
     char data;
-    log_dbg( "messageType %08lx, arg %08lx\n", (long unsigned int)messageType, (long unsigned int)messageArgument);
+    log_info( "messageType %08lx, arg %08lx\n", (long unsigned int)messageType, (long unsigned int)messageArgument);
     switch ( messageType ) {
         case kIOMessageCanSystemSleep:
             /* Idle sleep is about to kick in. This message will not be sent for forced sleep.
@@ -635,7 +635,7 @@ static int  power_notification_process(struct data_source *ds) {
     int bytes_read = read(power_notification_pipe_fds[0], &token, 1);
     if (bytes_read != 1) return -1;
         
-    log_dbg("power_notification_process: %u\n", token);
+    log_info("power_notification_process: %u\n", token);
     
     power_notification_callback( (POWER_NOTIFICATION_t) token );
     
@@ -652,7 +652,7 @@ void iphone_register_for_power_notifications(void (*cb)(POWER_NOTIFICATION_t eve
     io_object_t            notifierObject = 0;    // notifier object, used to deregister later
     root_port = IORegisterForSystemPower(NULL, &notifyPortRef, MySleepCallBack, &notifierObject);
     if (!root_port) {
-        log_dbg("IORegisterForSystemPower failed\n");
+        log_info("IORegisterForSystemPower failed\n");
         return;
     }
     

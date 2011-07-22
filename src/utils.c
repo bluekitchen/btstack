@@ -78,13 +78,13 @@ void bt_flip_addr(bd_addr_t dest, bd_addr_t src){
 void hexdump(void *data, int size){
     int i;
     for (i=0; i<size;i++){
-        log_dbg("%02X ", ((uint8_t *)data)[i]);
+        log_info("%02X ", ((uint8_t *)data)[i]);
     }
-    log_dbg("\n");
+    log_info("\n");
 }
 
 void printUUID(uint8_t *uuid) {
-    log_dbg("%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+    log_info("%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
            uuid[0], uuid[1], uuid[2], uuid[3], uuid[4], uuid[5], uuid[6], uuid[7],
            uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15]);
 }
@@ -92,9 +92,9 @@ void printUUID(uint8_t *uuid) {
 void print_bd_addr( bd_addr_t addr){
     int i;
     for (i=0; i<BD_ADDR_LEN-1;i++){
-        log_dbg("%02X:", ((uint8_t *)addr)[i]);
+        log_info("%02X:", ((uint8_t *)addr)[i]);
     }
-    log_dbg("%02X", ((uint8_t *)addr)[i]);
+    log_info("%02X", ((uint8_t *)addr)[i]);
 }
 
 #ifndef EMBEDDED

@@ -57,7 +57,7 @@ static linked_list_t timers;
  */
 void posix_add_data_source(data_source_t *ds){
     data_sources_modified = 1;
-    // log_dbg("posix_add_data_source %x with fd %u\n", (int) ds, ds->fd);
+    // log_info("posix_add_data_source %x with fd %u\n", (int) ds, ds->fd);
     linked_list_add(&data_sources, (linked_item_t *) ds);
 }
 
@@ -66,7 +66,7 @@ void posix_add_data_source(data_source_t *ds){
  */
 int posix_remove_data_source(data_source_t *ds){
     data_sources_modified = 1;
-    // log_dbg("posix_remove_data_source %x\n", (int) ds);
+    // log_info("posix_remove_data_source %x\n", (int) ds);
     return linked_list_remove(&data_sources, (linked_item_t *) ds);
 }
 
@@ -86,7 +86,7 @@ void posix_add_timer(timer_source_t *ts){
     }
     ts->item.next = it->next;
     it->next = (linked_item_t *) ts;
-    // log_dbg("Added timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
+    // log_info("Added timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
     // posix_dump_timer();
 }
 
@@ -94,7 +94,7 @@ void posix_add_timer(timer_source_t *ts){
  * Remove timer from run loop
  */
 int posix_remove_timer(timer_source_t *ts){
-    // log_dbg("Removed timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
+    // log_info("Removed timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
     // posix_dump_timer();
     return linked_list_remove(&timers, (linked_item_t *) ts);
 }
@@ -104,7 +104,7 @@ void posix_dump_timer(void){
     int i = 0;
     for (it = (linked_item_t *) timers; it ; it = it->next){
         timer_source_t *ts = (timer_source_t*) it;
-        log_dbg("timer %u, timeout %u\n", i, (unsigned int) ts->timeout.tv_sec);
+        log_info("timer %u, timeout %u\n", i, (unsigned int) ts->timeout.tv_sec);
     }
 }
 
@@ -157,16 +157,16 @@ void posix_execute(void) {
         // process data sources very carefully
         // bt_control.close() triggered from a client can remove a different data source
         
-        // log_dbg("posix_execute: before ds check\n");
+        // log_info("posix_execute: before ds check\n");
         data_sources_modified = 0;
         for (ds = (data_source_t *) data_sources; !data_sources_modified && ds != NULL;  ds = (data_source_t *) ds->item.next){
-            // log_dbg("posix_execute: check %x with fd %u\n", (int) ds, ds->fd);
+            // log_info("posix_execute: check %x with fd %u\n", (int) ds, ds->fd);
             if (FD_ISSET(ds->fd, &descriptors)) {
-                // log_dbg("posix_execute: process %x with fd %u\n", (int) ds, ds->fd);
+                // log_info("posix_execute: process %x with fd %u\n", (int) ds, ds->fd);
                 ds->process(ds);
             }
         }
-        // log_dbg("posix_execute: after ds check\n");
+        // log_info("posix_execute: after ds check\n");
         
         // process timers
         // pre: 0 <= tv_usec < 1000000
@@ -175,7 +175,7 @@ void posix_execute(void) {
             ts = (timer_source_t *) timers;
             if (ts->timeout.tv_sec  > current_tv.tv_sec) break;
             if (ts->timeout.tv_sec == current_tv.tv_sec && ts->timeout.tv_usec > current_tv.tv_usec) break;
-            // log_dbg("posix_execute: process times %x\n", (int) ts);
+            // log_info("posix_execute: process times %x\n", (int) ts);
             
             // remove timer before processing it to allow handler to re-register with run loop
             run_loop_remove_timer(ts);
