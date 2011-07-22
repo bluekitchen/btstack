@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 // date element type names
 const char *type_names[] = { "NIL", "UINT", "INT", "UUID", "STRING", "BOOL", "DES", "DEA", "URL"};
@@ -510,7 +511,7 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
             default:
                 break;
         }
-        printf(", value: 0x%08x\n", value);
+        printf(", value: 0x%08" PRIx32 "\n", value);
     }
     return 0;
 }
