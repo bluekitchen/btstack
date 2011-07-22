@@ -585,9 +585,6 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
     hci_stack.connections = NULL;
     hci_stack.discoverable = 0;
     
-    // empty cmd buffer
-    hci_stack.hci_cmd_buffer = malloc(3+255);
-
     // higher level handler
     hci_stack.packet_handler = dummy_handler;
 
@@ -1087,10 +1084,9 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
 int hci_send_cmd(const hci_cmd_t *cmd, ...){
     va_list argptr;
     va_start(argptr, cmd);
-    uint8_t * hci_cmd_buffer = hci_stack.hci_cmd_buffer;
     uint16_t size = hci_create_cmd_internal(hci_stack.hci_cmd_buffer, cmd, argptr);
     va_end(argptr);
-    return hci_send_cmd_packet(hci_cmd_buffer, size);
+    return hci_send_cmd_packet(hci_stack.hci_cmd_buffer, size);
 }
 
 // Create various non-HCI events. 

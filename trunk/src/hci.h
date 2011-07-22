@@ -226,7 +226,7 @@ typedef struct {
     linked_list_t     connections;
 
     // single buffer for HCI Command assembly
-    uint8_t          * hci_cmd_buffer;
+    uint8_t          hci_cmd_buffer[3+255]; // opcode (16), len(8)
     
     /* host to controller flow control */
     uint8_t  num_cmd_packets;
