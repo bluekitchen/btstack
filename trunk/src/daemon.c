@@ -290,7 +290,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         default:
             //@TODO: log into hci dump as vendor specific "event"
-            log_err("Error: command %u not implemented\n:", READ_CMD_OCF(packet));
+            log_error("Error: command %u not implemented\n:", READ_CMD_OCF(packet));
             break;
     }
     return 0;
@@ -613,7 +613,7 @@ int main (int argc,  char * const * argv){
     
     // make stdout unbuffered
     setbuf(stdout, NULL);
-    log_err("BTdaemon started\n");
+    log_error("BTdaemon started\n");
 
     // handle CTRL-c
     signal(SIGINT, daemon_sigint_handler);

@@ -150,7 +150,7 @@ static void h4_block_received(void){
                     bytes_to_read = HCI_EVENT_PKT_HDR;
                     break;
                 default:
-                    log_err("h4_process: invalid packet type 0x%02x\r\n", hci_packet[0]);
+                    log_error("h4_process: invalid packet type 0x%02x\r\n", hci_packet[0]);
                     read_pos = 0;
                     h4_state = H4_W4_PACKET_TYPE;
                     bytes_to_read = 1;
@@ -252,7 +252,7 @@ static int h4_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     
     // write in progress
     if (tx_state != TX_IDLE) {
-        log_err("h4_send_packet with tx_state = %u, type %u, data %02x %02x %02x", tx_state, packet_type, packet[0], packet[1], packet[2]);
+        log_error("h4_send_packet with tx_state = %u, type %u, data %02x %02x %02x", tx_state, packet_type, packet[0], packet[1], packet[2]);
         return -1;
     }
     

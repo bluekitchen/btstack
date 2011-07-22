@@ -184,7 +184,7 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 uint8_t hci_number_outgoing_packets(hci_con_handle_t handle){
     hci_connection_t * connection = connection_for_handle(handle);
     if (!connection) {
-        log_err("hci_number_outgoing_packets connectino for handle %u does not exist!\n", handle);
+        log_error("hci_number_outgoing_packets connectino for handle %u does not exist!\n", handle);
         return 0;
     }
     return connection->num_acl_packets_sent;
@@ -196,7 +196,7 @@ uint8_t hci_number_free_acl_slots(){
     for (it = (linked_item_t *) hci_stack.connections; it ; it = it->next){
         hci_connection_t * connection = (hci_connection_t *) it;
         if (free_slots < connection->num_acl_packets_sent) {
-            log_err("hci_number_free_acl_slots: sum of outgoing packets > total acl packets!\n");
+            log_error("hci_number_free_acl_slots: sum of outgoing packets > total acl packets!\n");
             return 0;
         }
         free_slots -= connection->num_acl_packets_sent;
@@ -258,7 +258,7 @@ static void acl_handler(uint8_t *packet, int size){
 
     // ignore non-registered handle
     if (!conn){
-        log_err( "hci.c: acl_handler called with non-registered handle %u!\n" , con_handle);
+        log_error( "hci.c: acl_handler called with non-registered handle %u!\n" , con_handle);
         return;
     }
     
@@ -272,7 +272,7 @@ static void acl_handler(uint8_t *packet, int size){
             
             // sanity check
             if (conn->acl_recombination_pos == 0) {
-                log_err( "ACL Cont Fragment but no first fragment for handle 0x%02x\n", con_handle);
+                log_error( "ACL Cont Fragment but no first fragment for handle 0x%02x\n", con_handle);
                 return;
             }
             
@@ -280,7 +280,7 @@ static void acl_handler(uint8_t *packet, int size){
             memcpy(&conn->acl_recombination_buffer[conn->acl_recombination_pos], &packet[4], acl_length );
             conn->acl_recombination_pos += acl_length;
             
-            // log_err( "ACL Cont Fragment: acl_len %u, combined_len %u, l2cap_len %u\n", acl_length,
+            // log_error( "ACL Cont Fragment: acl_len %u, combined_len %u, l2cap_len %u\n", acl_length,
             //        conn->acl_recombination_pos, conn->acl_recombination_length);  
             
             // forward complete L2CAP packet if complete. 
@@ -297,14 +297,14 @@ static void acl_handler(uint8_t *packet, int size){
             
             // sanity check
             if (conn->acl_recombination_pos) {
-                log_err( "ACL First Fragment but data in buffer for handle 0x%02x\n", con_handle);
+                log_error( "ACL First Fragment but data in buffer for handle 0x%02x\n", con_handle);
                 return;
             }
 
             // peek into L2CAP packet!
             uint16_t l2cap_length = READ_L2CAP_LENGTH( packet );
 
-            // log_err( "ACL First Fragment: acl_len %u, l2cap_len %u\n", acl_length, l2cap_length);
+            // log_error( "ACL First Fragment: acl_len %u, l2cap_len %u\n", acl_length, l2cap_length);
 
             // compare fragment size to L2CAP packet size
             if (acl_length >= l2cap_length + 4){
@@ -323,7 +323,7 @@ static void acl_handler(uint8_t *packet, int size){
             
         } 
         default:
-            log_err( "hci.c: acl_handler called with invalid packet boundary flags %u\n", acl_flags & 0x03);
+            log_error( "hci.c: acl_handler called with invalid packet boundary flags %u\n", acl_flags & 0x03);
             return;
     }
     
@@ -394,7 +394,7 @@ static void event_handler(uint8_t *packet, int size){
                 uint16_t num_packets = READ_BT_16(packet, 3 + packet[2]*2 + 2*i);
                 conn = connection_for_handle(handle);
                 if (!conn){
-                    log_err("hci_number_completed_packet lists unused con handle %u\n", handle);
+                    log_error("hci_number_completed_packet lists unused con handle %u\n", handle);
                     continue;
                 }
                 conn->num_acl_packets_sent -= num_packets;
@@ -625,7 +625,7 @@ static int hci_power_control_on(void){
         err = (*hci_stack.control->on)(hci_stack.config);
     }
     if (err){
-        log_err( "POWER_ON failed\n");
+        log_error( "POWER_ON failed\n");
         hci_emit_hci_open_failed();
         return err;
     }
@@ -633,7 +633,7 @@ static int hci_power_control_on(void){
     // open low-level device
     err = hci_stack.hci_transport->open(hci_stack.config);
     if (err){
-        log_err( "HCI_INIT failed, turning Bluetooth off again\n");
+        log_error( "HCI_INIT failed, turning Bluetooth off again\n");
         if (hci_stack.control && hci_stack.control->off){
             (*hci_stack.control->off)(hci_stack.config);
         }
@@ -694,7 +694,7 @@ static int hci_power_control_wake(void){
     // open low-level device
     int err = hci_stack.hci_transport->open(hci_stack.config);
     if (err){
-        log_err( "HCI_INIT failed, turning Bluetooth off again\n");
+        log_error( "HCI_INIT failed, turning Bluetooth off again\n");
         if (hci_stack.control && hci_stack.control->off){
             (*hci_stack.control->off)(hci_stack.config);
         }

@@ -331,7 +331,7 @@ int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
             // log_info("l2cap_send_internal cid %u, handle %u, 1 credit used, credits left %u;\n",
             //        local_cid, channel->handle, channel->packets_granted);
         } else {
-            log_err("l2cap_send_internal cid %u, no credits!\n", local_cid);
+            log_error("l2cap_send_internal cid %u, no credits!\n", local_cid);
         }
         
         // 0 - Connection handle : PB=10 : BC=00 
@@ -669,7 +669,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     
     hci_connection_t * hci_connection = connection_for_handle( handle );
     if (!hci_connection) {
-        log_err("no hci_connection for handle %u\n", handle);
+        log_error("no hci_connection for handle %u\n", handle);
         // TODO: emit error
         return;
     }
@@ -711,7 +711,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
 void l2cap_accept_connection_internal(uint16_t local_cid){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
-        log_err("l2cap_accept_connection_internal called but local_cid 0x%x not found", local_cid);
+        log_error("l2cap_accept_connection_internal called but local_cid 0x%x not found", local_cid);
         return;
     }
 
@@ -724,7 +724,7 @@ void l2cap_accept_connection_internal(uint16_t local_cid){
 void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason){
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid( local_cid);
     if (!channel) {
-        log_err( "l2cap_decline_connection_internal called but local_cid 0x%x not found", local_cid);
+        log_error( "l2cap_decline_connection_internal called but local_cid 0x%x not found", local_cid);
         return;
     }
     channel->state  = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;

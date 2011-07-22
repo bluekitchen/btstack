@@ -40,7 +40,7 @@
 #ifdef EMBEDDED
 
 #define log_info(...)
-#define log_err(...)
+#define log_error(...)
 #define log_info(...)
 
 #else
@@ -49,6 +49,6 @@
 
 #define log_info(format, ...)  printf(format,  ## __VA_ARGS__)
 #define log_info(format, ...) printf(format,  ## __VA_ARGS__)
-#define log_err(format, ...)  printf(format,  ## __VA_ARGS__)
+#define log_error(format, ...)  printf(format,  ## __VA_ARGS__)
 
 #endif

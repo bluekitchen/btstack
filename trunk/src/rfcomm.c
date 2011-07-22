@@ -1303,13 +1303,13 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     break;
                     
                 default:
-                    log_err("Received unknown UIH packet - 0x%02x\n", packet[payload_offset]); 
+                    log_error("Received unknown UIH packet - 0x%02x\n", packet[payload_offset]); 
                     break;
             }
             break;
             
         default:
-            log_err("Received unknown RFCOMM message type %x\n", packet[1]);
+            log_error("Received unknown RFCOMM message type %x\n", packet[1]);
             break;
     }
     
@@ -1723,7 +1723,7 @@ int rfcomm_send_internal(uint8_t rfcomm_cid, uint8_t *data, uint16_t len){
 
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
-        log_err("rfcomm_send_internal cid %u doesn't exist!\n", rfcomm_cid);
+        log_error("rfcomm_send_internal cid %u doesn't exist!\n", rfcomm_cid);
         return 0;
     }
     

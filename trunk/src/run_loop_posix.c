@@ -77,7 +77,7 @@ void posix_add_timer(timer_source_t *ts){
     linked_item_t *it;
     for (it = (linked_item_t *) &timers; it->next ; it = it->next){
         if ((timer_source_t *) it->next == ts){
-            log_err( "run_loop_timer_add error: timer to add already in list!\n");
+            log_error( "run_loop_timer_add error: timer to add already in list!\n");
             return;
         }
         if (run_loop_timer_compare( (timer_source_t *) it->next, ts) > 0) {

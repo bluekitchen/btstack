@@ -309,7 +309,7 @@ int socket_connection_create_tcp(int port){
     
 	// create tcp socket
 	if ((ds->fd = socket (PF_INET, SOCK_STREAM, 0)) < 0) {
-		log_err("Error creating socket ...(%s)\n", strerror(errno));
+		log_error("Error creating socket ...(%s)\n", strerror(errno));
 		free(ds);
         return -1;
 	}
@@ -325,13 +325,13 @@ int socket_connection_create_tcp(int port){
 	setsockopt(ds->fd, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(int));
 	
 	if (bind ( ds->fd, (struct sockaddr *) &addr, sizeof (addr) ) ) {
-		log_err("Error on bind() ...(%s)\n", strerror(errno));
+		log_error("Error on bind() ...(%s)\n", strerror(errno));
 		free(ds);
         return -1;
 	}
 	
 	if (listen (ds->fd, MAX_PENDING_CONNECTIONS)) {
-		log_err("Error on listen() ...(%s)\n", strerror(errno));
+		log_error("Error on listen() ...(%s)\n", strerror(errno));
 		free(ds);
         return -1;
 	}
@@ -379,24 +379,24 @@ int socket_connection_create_launchd(){
 	 * 
 	 */
 	if ((checkin_request = launch_data_new_string(LAUNCH_KEY_CHECKIN)) == NULL) {
-		log_err( "launch_data_new_string(\"" LAUNCH_KEY_CHECKIN "\") Unable to create string.");
+		log_error( "launch_data_new_string(\"" LAUNCH_KEY_CHECKIN "\") Unable to create string.");
 		return -1;
 	}
     
 	if ((checkin_response = launch_msg(checkin_request)) == NULL) {
-		log_err( "launch_msg(\"" LAUNCH_KEY_CHECKIN "\") IPC failure: %u", errno);
+		log_error( "launch_msg(\"" LAUNCH_KEY_CHECKIN "\") IPC failure: %u", errno);
 		return -1;
 	}
     
 	if (LAUNCH_DATA_ERRNO == launch_data_get_type(checkin_response)) {
 		errno = launch_data_get_errno(checkin_response);
-		log_err( "Check-in failed: %u", errno);
+		log_error( "Check-in failed: %u", errno);
 		return -1;
 	}
     
     launch_data_t the_label = launch_data_dict_lookup(checkin_response, LAUNCH_JOBKEY_LABEL);
 	if (NULL == the_label) {
-		log_err( "No label found");
+		log_error( "No label found");
 		return -1;
 	}
 	
@@ -405,12 +405,12 @@ int socket_connection_create_launchd(){
 	 */
 	sockets_dict = launch_data_dict_lookup(checkin_response, LAUNCH_JOBKEY_SOCKETS);
 	if (NULL == sockets_dict) {
-		log_err("No sockets found to answer requests on!");
+		log_error("No sockets found to answer requests on!");
 		return -1;
 	}
     
 	// if (launch_data_dict_get_count(sockets_dict) > 1) {
-	// 	log_err("Some sockets will be ignored!");
+	// 	log_error("Some sockets will be ignored!");
 	// }
     
 	/*
@@ -418,7 +418,7 @@ int socket_connection_create_launchd(){
 	 */
 	listening_fd_array = launch_data_dict_lookup(sockets_dict, "Listeners");
 	if (listening_fd_array) {
-        // log_err("Listeners...\n");
+        // log_error("Listeners...\n");
         socket_connection_launchd_register_fd_array( listening_fd_array );
     }
     
@@ -427,7 +427,7 @@ int socket_connection_create_launchd(){
 	 */
 	listening_fd_array = launch_data_dict_lookup(sockets_dict, "Listeners2");
 	if (listening_fd_array) {
-        // log_err("Listeners2...\n");
+        // log_error("Listeners2...\n");
         socket_connection_launchd_register_fd_array( listening_fd_array );
     }
     
@@ -450,7 +450,7 @@ int socket_connection_create_unix(char *path){
 
 	// create unix socket
 	if ((ds->fd = socket (AF_UNIX, SOCK_STREAM, 0)) < 0) {
-		log_err( "Error creating socket ...(%s)\n", strerror(errno));
+		log_error( "Error creating socket ...(%s)\n", strerror(errno));
 		free(ds);
         return -1;
 	}
@@ -467,13 +467,13 @@ int socket_connection_create_unix(char *path){
 	setsockopt(ds->fd, SOL_SOCKET, SO_REUSEADDR, &y, sizeof(int));
     
 	if (bind ( ds->fd, (struct sockaddr *) &addr, sizeof (addr) ) ) {
-		log_err( "Error on bind() ...(%s)\n", strerror(errno));
+		log_error( "Error on bind() ...(%s)\n", strerror(errno));
 		free(ds);
         return -1;
 	}
 	
 	if (listen (ds->fd, MAX_PENDING_CONNECTIONS)) {
-		log_err( "Error on listen() ...(%s)\n", strerror(errno));
+		log_error( "Error on listen() ...(%s)\n", strerror(errno));
 		free(ds);
         return -1;
 	}
