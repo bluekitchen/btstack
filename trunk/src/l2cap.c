@@ -563,7 +563,8 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
     hci_con_handle_t handle;
     l2cap_channel_t * channel;
     linked_item_t *it;
-        
+    int hci_con_used;
+    
     switch(packet[0]){
             
         // handle connection complete events
@@ -620,14 +621,14 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
         case L2CAP_EVENT_TIMEOUT_CHECK:
             handle = READ_BT_16(packet, 2);
             if (hci_authentication_active_for_handle(handle)) break;
-            int used = 0;
+            hci_con_used = 0;
             for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
                 channel = (l2cap_channel_t *) it;
                 if (channel->handle == handle) {
-                    used = 1;
+                    hci_con_used = 1;
                 }
             }
-            if (used) break;
+            if (hci_con_used) break;
             if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) break;
             hci_send_cmd(&hci_disconnect, handle, 0x13); // remote closed connection             
             break;

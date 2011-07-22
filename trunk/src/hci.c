@@ -353,6 +353,7 @@ static void hci_shutdown_connection(hci_connection_t *conn){
 static device_name_t device_name;
 static void event_handler(uint8_t *packet, int size){
     bd_addr_t addr;
+    uint8_t link_type;
     hci_con_handle_t handle;
     hci_connection_t * conn;
     int i;
@@ -404,7 +405,7 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_CONNECTION_REQUEST:
             bt_flip_addr(addr, &packet[2]);
             // TODO: eval COD 8-10
-            uint8_t link_type = packet[11];
+            link_type = packet[11];
             log_dbg("Connection_incoming: "); print_bd_addr(addr); log_dbg(", type %u\n", link_type);
             if (link_type == 1) { // ACL
                 conn = connection_for_address(addr);
