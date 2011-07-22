@@ -60,9 +60,6 @@ static linked_list_t sdp_service_records = NULL;
 // our handles start after the reserved range
 static uint32_t sdp_next_service_record_handle = maxReservedServiceRecordHandle + 2;
 
-// AttributeIDList used to remove ServiceRecordHandle
-static const uint8_t removeServiceRecordHandleAttributeIDList[] = { 0x36, 0x00, 0x05, 0x0A, 0x00, 0x01, 0xFF, 0xFF };
-
 static uint8_t sdp_response_buffer[SDP_RESPONSE_BUFFER_SIZE];
 
 static void (*app_packet_handler)(void * connection, uint8_t packet_type,
@@ -170,6 +167,9 @@ uint32_t sdp_register_service_internal(void *connection, service_record_item_t *
 }
 
 #else
+
+// AttributeIDList used to remove ServiceRecordHandle
+static const uint8_t removeServiceRecordHandleAttributeIDList[] = { 0x36, 0x00, 0x05, 0x0A, 0x00, 0x01, 0xFF, 0xFF };
 
 // register service record internally - the normal version creates a copy of the record
 // pre: AttributeIDs are in ascending order => ServiceRecordHandle is first attribute if present
@@ -576,15 +576,15 @@ static void sdp_try_respond(void){
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	uint16_t transaction_id;
     SDP_PDU_ID_t pdu_id;
-    uint16_t param_len;
     uint16_t remote_mtu;
+    // uint16_t param_len;
     
 	switch (packet_type) {
 			
 		case L2CAP_DATA_PACKET:
             pdu_id = (SDP_PDU_ID_t) packet[0];
             transaction_id = READ_NET_16(packet, 1);
-            param_len = READ_NET_16(packet, 3);
+            // param_len = READ_NET_16(packet, 3);
             remote_mtu = l2cap_get_remote_mtu_for_local_cid(channel);
             // account for our buffer
             if (remote_mtu > SDP_RESPONSE_BUFFER_SIZE){

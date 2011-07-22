@@ -73,7 +73,6 @@ static hci_transport_h4_t * hci_transport_h4 = NULL;
 
 static int  h4_process(struct data_source *ds);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
-static      hci_uart_config_t *hci_uart_config;
 
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
@@ -101,8 +100,6 @@ static void h4_block_sent(void);
 
 static int h4_open(void *transport_config){
 
-    hci_uart_config = (hci_uart_config_t*) transport_config;
-	
 	// open uart
 	hal_uart_dma_init();
     hal_uart_dma_set_block_received(h4_block_received);
