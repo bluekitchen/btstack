@@ -108,7 +108,7 @@ static hci_connection_t * create_connection_for_addr(bd_addr_t addr){
     if (!conn) return NULL;
     BD_ADDR_COPY(conn->address, addr);
     conn->con_handle = 0xffff;
-    conn->authentication_flags = 0;
+    conn->authentication_flags = AUTH_FLAGS_NONE;
 #ifdef HAVE_TIME
     linked_item_set_user(&conn->timeout.item, conn);
     conn->timeout.process = hci_connection_timeout_handler;

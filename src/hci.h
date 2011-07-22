@@ -153,6 +153,7 @@ extern "C" {
  * Connection State 
  */
 typedef enum {
+    AUTH_FLAGS_NONE                = 0x00,
     RECV_LINK_KEY_REQUEST          = 0x01,
     HANDLE_LINK_KEY_REQUEST        = 0x02,
     SENT_LINK_KEY_REPLY            = 0x04,

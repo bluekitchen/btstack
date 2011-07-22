@@ -118,6 +118,7 @@ typedef enum {
 } RFCOMM_CHANNEL_STATE;
 
 typedef enum {
+    STATE_VAR_NONE            = 0,
     STATE_VAR_CLIENT_ACCEPTED = 1 << 0,
     STATE_VAR_RCVD_PN         = 1 << 1,
     STATE_VAR_RCVD_RPN        = 1 << 2,
@@ -443,7 +444,7 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
     bzero(channel, sizeof(rfcomm_channel_t));
     
     channel->state             = RFCOMM_CHANNEL_CLOSED;
-    channel->state_var         = 0;
+    channel->state_var         = STATE_VAR_NONE;
     
     channel->multiplexer      = multiplexer;
     channel->service          = service;
