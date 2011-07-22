@@ -41,12 +41,14 @@
 
 #define log_dbg(...)
 #define log_err(...)
+#define log_info(...)
 
 #else
 
 #include <stdio.h>
 
 #define log_dbg(format, ...)  printf(format,  ## __VA_ARGS__)
-#define log_err(format, ...) fprintf(stderr, format,  ## __VA_ARGS__)
+#define log_info(format, ...) printf(format,  ## __VA_ARGS__)
+#define log_err(format, ...)  printf(format,  ## __VA_ARGS__)
 
 #endif
