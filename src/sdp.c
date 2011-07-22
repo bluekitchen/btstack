@@ -137,7 +137,7 @@ uint32_t sdp_register_service_internal(void *connection, service_record_item_t *
     // check for ServiceRecordHandle attribute, returns pointer or null
     uint8_t * req_record_handle = sdp_get_attribute_value_for_attribute_id(record, SDP_ServiceRecordHandle);
     if (!req_record_handle) {
-        log_err("SDP Error - record does not contain ServiceRecordHandle attribute\n");
+        log_error("SDP Error - record does not contain ServiceRecordHandle attribute\n");
         return 0;
     }
     

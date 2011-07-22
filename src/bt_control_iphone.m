@@ -461,7 +461,7 @@ static int iphone_on (void *transport_config){
         close(fd);
     } else {
         // no way!
-        log_err( "bt_control.c:iphone_on(): Failed to open '%s', trying killall %s\n", hci_uart_config->device_name, bluetool);
+        log_error( "bt_control.c:iphone_on(): Failed to open '%s', trying killall %s\n", hci_uart_config->device_name, bluetool);
         system("killall -9 BlueToolH4");
         system("killall -9 BlueTool");
         sleep(3); 
@@ -471,7 +471,7 @@ static int iphone_on (void *transport_config){
         if (fd > 0){
             close(fd);
         } else {
-            log_err( "bt_control.c:iphone_on(): Failed to open '%s' again, trying killall BTServer and killall %s\n", hci_uart_config->device_name, bluetool);
+            log_error( "bt_control.c:iphone_on(): Failed to open '%s' again, trying killall BTServer and killall %s\n", hci_uart_config->device_name, bluetool);
             system("killall -9 BTServer");
             system("killall -9 BlueToolH4");
             system("killall -9 BlueTool");
