@@ -54,11 +54,11 @@ void sdp_normalize_uuid(uint8_t *uuid, uint32_t shortUUID){
 
 // MARK: DataElement getter
 de_size_t de_get_size_type(uint8_t *header){
-    return header[0] & 7;
+    return (de_size_t) (header[0] & 7);
 }
 
 de_type_t de_get_element_type(uint8_t *header){
-    return header[0] >> 3;
+    return (de_type_t) (header[0] >> 3);
 }
 
 int de_get_header_size(uint8_t * header){

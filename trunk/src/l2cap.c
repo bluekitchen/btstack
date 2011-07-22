@@ -83,6 +83,7 @@ typedef enum {
 } L2CAP_STATE;
 
 typedef enum {
+    STATE_VAR_NONE          = 0,
     STATE_VAR_RCVD_CONF_REQ = 1 << 0,
     STATE_VAR_RCVD_CONF_RSP = 1 << 1,
     STATE_VAR_SEND_CONF_REQ = 1 << 2,
@@ -501,7 +502,7 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     
     // set initial state
     chan->state = L2CAP_STATE_WILL_SEND_CREATE_CONNECTION;
-    chan->state_var = 0;
+    chan->state_var = STATE_VAR_NONE;
     chan->remote_sig_id = L2CAP_SIG_ID_INVALID;
     chan->local_sig_id = L2CAP_SIG_ID_INVALID;
     
@@ -697,7 +698,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     
     // set initial state
     channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
-    channel->state_var = 0;
+    channel->state_var = STATE_VAR_NONE;
     
     // add to connections list
     linked_list_add(&l2cap_channels, (linked_item_t *) channel);

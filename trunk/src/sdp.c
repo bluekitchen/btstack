@@ -582,7 +582,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 	switch (packet_type) {
 			
 		case L2CAP_DATA_PACKET:
-            pdu_id = packet[0];
+            pdu_id = (SDP_PDU_ID_t) packet[0];
             transaction_id = READ_NET_16(packet, 1);
             param_len = READ_NET_16(packet, 3);
             remote_mtu = l2cap_get_remote_mtu_for_local_cid(channel);
