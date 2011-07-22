@@ -487,6 +487,79 @@ static void daemon_sigint_handler(int param){
     exit(0);
 }
 
+
+
+// MARK: manage power off timer
+
+#define USE_POWER_OFF_TIMER
+
+static void stop_power_off_timer(void){
+#ifdef USE_POWER_OFF_TIMER
+    if (timeout_active) {
+        run_loop_remove_timer(&timeout);
+        timeout_active = 0;
+    }
+#endif
+}
+
+static void start_power_off_timer(void){
+#ifdef USE_POWER_OFF_TIMER    
+    stop_power_off_timer();
+    run_loop_set_timer(&timeout, DAEMON_NO_ACTIVE_CLIENT_TIMEOUT);
+    run_loop_add_timer(&timeout);
+    timeout_active = 1;
+#else
+    hci_power_control(HCI_POWER_OFF);
+#endif
+}
+
+// MARK: manage list of clients
+
+
+static client_state_t * client_for_connection(connection_t *connection) {
+    linked_item_t *it;
+    for (it = (linked_item_t *) clients; it ; it = it->next){
+        client_state_t * client_state = (client_state_t *) it;
+        if (client_state->connection == connection) {
+            return client_state;
+        }
+    }
+    return NULL;
+}
+
+static void clients_clear_power_request(void){
+    linked_item_t *it;
+    for (it = (linked_item_t *) clients; it ; it = it->next){
+        client_state_t * client_state = (client_state_t *) it;
+        client_state->power_mode = HCI_POWER_OFF;
+    }
+}
+
+static int clients_require_power_on(void){
+    
+    if (global_enable) return 1;
+    
+    linked_item_t *it;
+    for (it = (linked_item_t *) clients; it ; it = it->next){
+        client_state_t * client_state = (client_state_t *) it;
+        if (client_state->power_mode == HCI_POWER_ON) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static int clients_require_discoverable(void){
+    linked_item_t *it;
+    for (it = (linked_item_t *) clients; it ; it = it->next){
+        client_state_t * client_state = (client_state_t *) it;
+        if (client_state->discoverable) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 static void usage(const char * name) {
     log_dbg("%s, BTstack background daemon\n", name);
     log_dbg("usage: %s [-h|--help] [--tcp]\n", name);
@@ -538,11 +611,9 @@ int main (int argc,  char * const * argv){
         }
     }
     
-    // make stderr/stdout unbuffered
-    setbuf(stderr, NULL);
+    // make stdout unbuffered
     setbuf(stdout, NULL);
-    log_dbg("BTdaemon started - stdout\n");
-    log_err("BTdaemon started - stderr\n");
+    log_err("BTdaemon started\n");
 
     // handle CTRL-c
     signal(SIGINT, daemon_sigint_handler);
@@ -554,7 +625,6 @@ int main (int argc,  char * const * argv){
     sigemptyset (&act.sa_mask);
     act.sa_flags = 0;
     sigaction (SIGPIPE, &act, NULL);
-    
     
     bt_control_t * control = NULL;
     
@@ -639,77 +709,5 @@ int main (int argc,  char * const * argv){
     
     // go!
     run_loop_execute();
-    return 0;
-}
-
-
-// MARK: manage power off timer
-
-#define USE_POWER_OFF_TIMER
-
-static void stop_power_off_timer(void){
-#ifdef USE_POWER_OFF_TIMER
-    if (timeout_active) {
-        run_loop_remove_timer(&timeout);
-        timeout_active = 0;
-    }
-#endif
-}
-
-static void start_power_off_timer(void){
-#ifdef USE_POWER_OFF_TIMER    
-    stop_power_off_timer();
-    run_loop_set_timer(&timeout, DAEMON_NO_ACTIVE_CLIENT_TIMEOUT);
-    run_loop_add_timer(&timeout);
-    timeout_active = 1;
-#else
-    hci_power_control(HCI_POWER_OFF);
-#endif
-}
-
-// MARK: manage list of clients
-
-
-static client_state_t * client_for_connection(connection_t *connection) {
-    linked_item_t *it;
-    for (it = (linked_item_t *) clients; it ; it = it->next){
-        client_state_t * client_state = (client_state_t *) it;
-        if (client_state->connection == connection) {
-            return client_state;
-        }
-    }
-    return NULL;
-}
-
-static void clients_clear_power_request(void){
-    linked_item_t *it;
-    for (it = (linked_item_t *) clients; it ; it = it->next){
-        client_state_t * client_state = (client_state_t *) it;
-        client_state->power_mode = HCI_POWER_OFF;
-    }
-}
-
-static int clients_require_power_on(void){
-
-    if (global_enable) return 1;
-
-    linked_item_t *it;
-    for (it = (linked_item_t *) clients; it ; it = it->next){
-        client_state_t * client_state = (client_state_t *) it;
-        if (client_state->power_mode == HCI_POWER_ON) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
-static int clients_require_discoverable(void){
-    linked_item_t *it;
-    for (it = (linked_item_t *) clients; it ; it = it->next){
-        client_state_t * client_state = (client_state_t *) it;
-        if (client_state->discoverable) {
-            return 1;
-        }
-    }
     return 0;
 }
