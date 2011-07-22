@@ -248,7 +248,7 @@ void l2cap_emit_connection_request(l2cap_channel_t *channel) {
 void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
     // track credits
     channel->packets_granted += credits;
-    // log_dbg("l2cap_emit_credits for cid %u, credits given: %u (+%u)\n", channel->local_cid, channel->packets_granted, credits);
+    // log_info("l2cap_emit_credits for cid %u, credits given: %u (+%u)\n", channel->local_cid, channel->packets_granted, credits);
     
     uint8_t event[5];
     event[0] = L2CAP_EVENT_CREDITS;
@@ -305,12 +305,12 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid){
 }
 
 int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...){
-    // log_dbg("l2cap_send_signaling_packet type %u\n", cmd);
+    // log_info("l2cap_send_signaling_packet type %u\n", cmd);
     va_list argptr;
     va_start(argptr, identifier);
     uint16_t len = l2cap_create_signaling_internal(sig_buffer, handle, cmd, identifier, argptr);
     va_end(argptr);
-    // log_dbg("l2cap_send_signaling_packet con %u!\n", handle);
+    // log_info("l2cap_send_signaling_packet con %u!\n", handle);
     return hci_send_acl_packet(sig_buffer, len);
 }
 
@@ -318,7 +318,7 @@ int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
 
     // check for free places on BT module
     if (!hci_number_free_acl_slots()) {
-        log_dbg("l2cap_send_internal cid %u, BT module full <-----\n", local_cid);
+        log_info("l2cap_send_internal cid %u, BT module full <-----\n", local_cid);
         return BTSTACK_ACL_BUFFERS_FULL;
     }
     int err = 0;
@@ -328,7 +328,7 @@ int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
     if (channel) {
         if (channel->packets_granted > 0){
             --channel->packets_granted;
-            // log_dbg("l2cap_send_internal cid %u, handle %u, 1 credit used, credits left %u;\n",
+            // log_info("l2cap_send_internal cid %u, handle %u, 1 credit used, credits left %u;\n",
             //        local_cid, channel->handle, channel->packets_granted);
         } else {
             log_err("l2cap_send_internal cid %u, no credits!\n", local_cid);
@@ -403,7 +403,7 @@ void l2cap_run(void){
         
         l2cap_channel_t * channel = (l2cap_channel_t *) it;
         
-        // log_dbg("l2cap_run: state %u, var 0x%02x\n", channel->state, channel->state_var);
+        // log_info("l2cap_run: state %u, var 0x%02x\n", channel->state, channel->state_var);
         
         switch (channel->state){
 
@@ -658,11 +658,11 @@ static void l2cap_handle_disconnect_request(l2cap_channel_t *channel, uint16_t i
 
 static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig_id, uint16_t psm, uint16_t source_cid){
     
-    // log_dbg("l2cap_handle_connection_request for handle %u, psm %u cid %u\n", handle, psm, source_cid);
+    // log_info("l2cap_handle_connection_request for handle %u, psm %u cid %u\n", handle, psm, source_cid);
     l2cap_service_t *service = l2cap_get_service(psm);
     if (!service) {
         // 0x0002 PSM not supported
-        // log_dbg("l2cap_handle_connection_request no PSM for psm %u/n", psm);
+        // log_info("l2cap_handle_connection_request no PSM for psm %u/n", psm);
         l2cap_send_signaling_packet(handle, CONNECTION_RESPONSE, sig_id, 0, 0, 0x0002, 0);
         return;
     }
@@ -674,7 +674,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
         return;
     }
     // alloc structure
-    // log_dbg("l2cap_handle_connection_request register channel\n");
+    // log_info("l2cap_handle_connection_request register channel\n");
     l2cap_channel_t * channel = malloc(sizeof(l2cap_channel_t));
     // TODO: emit error event
     if (!channel) return;
@@ -745,14 +745,14 @@ void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t 
         // MTU { type(8): 1, len(8):2, MTU(16) }
         if ((type & 0x7f) == 1 && length == 2){
             channel->remote_mtu = READ_BT_16(command, pos);
-            // log_dbg("l2cap cid %u, remote mtu %u\n", channel->local_cid, channel->remote_mtu);
+            // log_info("l2cap cid %u, remote mtu %u\n", channel->local_cid, channel->remote_mtu);
         }
         pos += length;
     }
 }
 
 static int l2cap_channel_ready_for_open(l2cap_channel_t *channel){
-    // log_dbg("l2cap_channel_ready_for_open 0x%02x\n", channel->state_var);
+    // log_info("l2cap_channel_ready_for_open 0x%02x\n", channel->state_var);
     if ((channel->state_var & STATE_VAR_RCVD_CONF_RSP) == 0) return 0;
     if ((channel->state_var & STATE_VAR_SENT_CONF_RSP) == 0) return 0;
     return 1;
@@ -765,7 +765,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
     uint8_t  identifier = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
     uint16_t result = 0;
     
-    log_dbg("signaling handler code %u, state %u\n", code, channel->state);
+    log_info("signaling handler code %u, state %u\n", code, channel->state);
     
     // handle DISCONNECT REQUESTS seperately
     if (code == DISCONNECTION_REQUEST){
@@ -867,7 +867,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
         default:
             break;
     }
-    // log_dbg("new state %u\n", channel->state);
+    // log_info("new state %u\n", channel->state);
 }
 
 

@@ -111,28 +111,28 @@ void scan_for_bt_endpoints() {
     // get endpoints from interface descriptor
     struct libusb_config_descriptor *config_descriptor;
     r = libusb_get_active_config_descriptor(dev, &config_descriptor);
-    log_dbg("configuration: %u interfaces\n", config_descriptor->bNumInterfaces);
+    log_info("configuration: %u interfaces\n", config_descriptor->bNumInterfaces);
 
     const struct libusb_interface *interface = config_descriptor->interface;
     const struct libusb_interface_descriptor * interface0descriptor = interface->altsetting;
-    log_dbg("interface 0: %u endpoints\n", interface0descriptor->bNumEndpoints);
+    log_info("interface 0: %u endpoints\n", interface0descriptor->bNumEndpoints);
 
     const struct libusb_endpoint_descriptor *endpoint = interface0descriptor->endpoint;
 
     for (r=0;r<interface0descriptor->bNumEndpoints;r++,endpoint++){
-        log_dbg("endpoint %x, attributes %x\n", endpoint->bEndpointAddress, endpoint->bmAttributes);
+        log_info("endpoint %x, attributes %x\n", endpoint->bEndpointAddress, endpoint->bmAttributes);
 
         if ((endpoint->bmAttributes & 0x3) == LIBUSB_TRANSFER_TYPE_INTERRUPT){
             event_in_addr = endpoint->bEndpointAddress;
-            log_dbg("Using 0x%2.2X for HCI Events\n", event_in_addr);
+            log_info("Using 0x%2.2X for HCI Events\n", event_in_addr);
         }
         if ((endpoint->bmAttributes & 0x3) == LIBUSB_TRANSFER_TYPE_BULK){
             if (endpoint->bEndpointAddress & 0x80) {
                 acl_in_addr = endpoint->bEndpointAddress;
-                log_dbg("Using 0x%2.2X for ACL Data In\n", acl_in_addr);
+                log_info("Using 0x%2.2X for ACL Data In\n", acl_in_addr);
             } else {
                 acl_out_addr = endpoint->bEndpointAddress;
-                log_dbg("Using 0x%2.2X for ACL Data Out\n", acl_out_addr);
+                log_info("Using 0x%2.2X for ACL Data Out\n", acl_out_addr);
             }
         }
     }
@@ -147,7 +147,7 @@ static libusb_device * scan_for_bt_device(libusb_device **devs) {
             return 0;
         }
         
-        log_dbg("%04x:%04x (bus %d, device %d) - class %x subclass %x protocol %x \n",
+        log_info("%04x:%04x (bus %d, device %d) - class %x subclass %x protocol %x \n",
                desc.idVendor, desc.idProduct,
                libusb_get_bus_number(dev), libusb_get_device_address(dev),
                desc.bDeviceClass, desc.bDeviceSubClass, desc.bDeviceProtocol);
@@ -159,7 +159,7 @@ static libusb_device * scan_for_bt_device(libusb_device **devs) {
         // if (desc.bDeviceClass == 0xe0 && desc.bDeviceSubClass == 0x01 && desc.bDeviceProtocol == 0x01){
         if (desc.bDeviceClass == 0xE0 && desc.bDeviceSubClass == 0x01
                 && desc.bDeviceProtocol == 0x01) {
-            log_dbg("BT Dongle found.\n");
+            log_info("BT Dongle found.\n");
             return dev;
         }
     }
@@ -170,7 +170,7 @@ static libusb_device * scan_for_bt_device(libusb_device **devs) {
 static void async_callback(struct libusb_transfer *transfer)
 {
     int r;
-    //log_dbg("in async_callback %d\n", transfer->endpoint);
+    //log_info("in async_callback %d\n", transfer->endpoint);
 
     if (transfer->status == LIBUSB_TRANSFER_COMPLETED ||
             (transfer->status == LIBUSB_TRANSFER_TIMED_OUT && transfer->actual_length > 0)) {
@@ -201,7 +201,7 @@ static int usb_process_ds(struct data_source *ds) {
     struct timeval tv;
     int r;
 
-    //log_dbg("in usb_process_ds\n");
+    //log_info("in usb_process_ds\n");
 
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
 
@@ -212,7 +212,7 @@ static int usb_process_ds(struct data_source *ds) {
     // Handle any packet in the order that they were received
     while (handle_packet) {
         void * next = handle_packet->user_data;
-        //log_dbg("handle packet %x, endpoint", handle_packet, handle_packet->endpoint);
+        //log_info("handle packet %x, endpoint", handle_packet, handle_packet->endpoint);
 
         if (handle_packet->endpoint == event_in_addr) {
                 hci_dump_packet( HCI_EVENT_PACKET, 1, handle_packet-> buffer,
@@ -253,7 +253,7 @@ void usb_process_ts(timer_source_t *timer) {
     struct timeval tv, now;
     long msec;
 
-    //log_dbg("in usb_process_ts\n");
+    //log_info("in usb_process_ts\n");
 
     // Deactivate timer
     run_loop_remove_timer(&usb_timer);
@@ -312,7 +312,7 @@ static int usb_open(void *transport_config){
     }
 #else
     // Scan system for an appropriate device
-    log_dbg("Scanning for a device");
+    log_info("Scanning for a device");
     cnt = libusb_get_device_list(NULL, &devs);
     if (cnt < 0) {
         usb_close();
@@ -337,7 +337,7 @@ static int usb_open(void *transport_config){
     }
 #endif
 
-    log_dbg("libusb open %d, handle %xu\n", r, (int) handle);
+    log_info("libusb open %d, handle %xu\n", r, (int) handle);
     libusb_state = LIB_USB_OPENED;
 
     // Detach OS driver (not possible for OS X)
@@ -357,12 +357,12 @@ static int usb_open(void *transport_config){
             return r;
         }
     }
-    log_dbg("libusb_detach_kernel_driver\n");
+    log_info("libusb_detach_kernel_driver\n");
 #endif
     libusb_state = LIB_USB_KERNEL_DETACHED;
 
     // reserve access to device
-    log_dbg("claiming interface 0...\n");
+    log_info("claiming interface 0...\n");
     r = libusb_claim_interface(handle, 0);
     if (r < 0) {
         log_err(stderr, "Error claiming interface %d\n", r);
@@ -371,7 +371,7 @@ static int usb_open(void *transport_config){
     }
 
     libusb_state = LIB_USB_INTERFACE_CLAIMED;
-    log_dbg("claimed interface 0\n");
+    log_info("claimed interface 0\n");
     
 #if !USB_VENDOR_ID || !USB_PRODUCT_ID
     scan_for_bt_endpoints();
@@ -418,7 +418,7 @@ static int usb_open(void *transport_config){
     doing_pollfds = libusb_pollfds_handle_timeouts(NULL);
     
     if (doing_pollfds) {
-        log_dbg("Async using pollfds:\n");
+        log_info("Async using pollfds:\n");
 
         const struct libusb_pollfd ** pollfd = libusb_get_pollfds(NULL);
         for (r = 0 ; pollfd[r] ; r++) {
@@ -426,10 +426,10 @@ static int usb_open(void *transport_config){
             ds->fd = pollfd[r]->fd;
             ds->process = usb_process_ds;
             run_loop_add_data_source(ds);
-            log_dbg("%u: %x fd: %u, events %x\n", r, (unsigned int) pollfd[r], pollfd[r]->fd, pollfd[r]->events);
+            log_info("%u: %x fd: %u, events %x\n", r, (unsigned int) pollfd[r], pollfd[r]->fd, pollfd[r]->events);
         }
     } else {
-        log_dbg("Async using timers:\n");
+        log_info("Async using timers:\n");
 
         usb_timer.process = usb_process_ts;
         run_loop_set_timer(&usb_timer, 100);
@@ -532,7 +532,7 @@ static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
 }
 
 static void usb_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
-    log_dbg("registering packet handler\n");
+    log_info("registering packet handler\n");
     packet_handler = handler;
 }
 

@@ -118,12 +118,12 @@ static remote_device_db_t * remote_device_db = NULL;
 static int rfcomm_channel_generator = 1;
 
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
-    log_dbg("Bluetooth status: %u\n", state);
+    log_info("Bluetooth status: %u\n", state);
 };
 
 static void daemon_no_connections_timeout(struct timer *ts){
     if (clients_require_power_on()) return;    // false alarm :)
-    log_dbg("No active client connection for %u seconds -> POWER OFF\n", DAEMON_NO_ACTIVE_CLIENT_TIMEOUT/1000);
+    log_info("No active client connection for %u seconds -> POWER OFF\n", DAEMON_NO_ACTIVE_CLIENT_TIMEOUT/1000);
     hci_power_control(HCI_POWER_OFF);
 }
 
@@ -186,7 +186,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             hci_discoverable_control(clients_require_discoverable());
             break;
         case BTSTACK_SET_BLUETOOTH_ENABLED:
-            log_dbg("BTSTACK_SET_BLUETOOTH_ENABLED: %u\n", packet[3]);
+            log_info("BTSTACK_SET_BLUETOOTH_ENABLED: %u\n", packet[3]);
 
             if (packet[3]) {
                 // global enable
@@ -281,7 +281,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         }
             
         case SDP_REGISTER_SERVICE_RECORD:
-            log_dbg("SDP_REGISTER_SERVICE_RECORD size %u\n", size);
+            log_info("SDP_REGISTER_SERVICE_RECORD size %u\n", size);
             sdp_register_service_internal(connection, &packet[3]);
             break;
         case SDP_UNREGISTER_SERVICE_RECORD:
@@ -354,7 +354,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                     }
                     break;
                 case DAEMON_NR_CONNECTIONS_CHANGED:
-                    log_dbg("Nr Connections changed, new %u\n",data[1]);
+                    log_info("Nr Connections changed, new %u\n",data[1]);
                     break;
                 default:
                     break;
@@ -362,7 +362,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
             break;
     }
     if (err) {
-        log_dbg("Daemon Handler: err %d\n", err);
+        log_info("Daemon Handler: err %d\n", err);
     }
     return err;
 }
@@ -390,12 +390,12 @@ static void deamon_status_event_handler(uint8_t *packet, uint16_t size){
     switch (packet[0]) {
         case BTSTACK_EVENT_STATE:
             hci_state = packet[2];
-            log_dbg("New state: %u\n", hci_state);
+            log_info("New state: %u\n", hci_state);
             update_status = 1;
             break;
         case BTSTACK_EVENT_NR_CONNECTIONS_CHANGED:
             num_connections = packet[2];
-            log_dbg("New nr connections: %u\n", num_connections);
+            log_info("New nr connections: %u\n", num_connections);
             update_status = 1;
             break;
         default:
@@ -477,12 +477,12 @@ static void daemon_sigint_handler(int param){
     notify_post("ch.ringwald.btstack.stopped");
 #endif
     
-    log_dbg(" <= SIGINT received, shutting down..\n");    
+    log_info(" <= SIGINT received, shutting down..\n");    
 
     hci_power_control( HCI_POWER_OFF);
     hci_close();
     
-    log_dbg("Good bye, see you.\n");    
+    log_info("Good bye, see you.\n");    
     
     exit(0);
 }
@@ -561,10 +561,10 @@ static int clients_require_discoverable(void){
 }
 
 static void usage(const char * name) {
-    log_dbg("%s, BTstack background daemon\n", name);
-    log_dbg("usage: %s [-h|--help] [--tcp]\n", name);
-    log_dbg("    -h|--help  display this usage\n");
-    log_dbg("    --tcp      use TCP server socket instead of local unix socket\n");
+    log_info("%s, BTstack background daemon\n", name);
+    log_info("usage: %s [-h|--help] [--tcp]\n", name);
+    log_info("    -h|--help  display this usage\n");
+    log_info("    --tcp      use TCP server socket instead of local unix socket\n");
 }
 
 #ifdef USE_BLUETOOL 
@@ -673,7 +673,7 @@ int main (int argc,  char * const * argv){
     timeout.process = daemon_no_connections_timeout;
 
 #ifdef HAVE_RFCOMM
-    log_dbg("config.h: HAVE_RFCOMM\n");
+    log_info("config.h: HAVE_RFCOMM\n");
     rfcomm_init();
     rfcomm_register_packet_handler(daemon_packet_handler);
 #endif
