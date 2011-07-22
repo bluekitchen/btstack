@@ -259,6 +259,8 @@ fi
 # often not present for embedded
 echo "#define HAVE_TIME" >> config.h
 echo "#define HAVE_BZERO" >> config.h
+echo "#define ENABLE_LOG_INFO " >> config.h
+echo "#define ENABLE_LOG_ERROR" >> config.h
 
 AC_SUBST(IPHONE_IP)
 AC_SUBST(HAVE_LIBUSB)
