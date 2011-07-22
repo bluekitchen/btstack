@@ -37,18 +37,22 @@
 
 #include "../config.h"
 
-#ifdef EMBEDDED
-
-#define log_info(...)
-#define log_error(...)
-#define log_info(...)
-
-#else
-
 #include <stdio.h>
 
-#define log_info(format, ...)  printf(format,  ## __VA_ARGS__)
-#define log_info(format, ...) printf(format,  ## __VA_ARGS__)
-#define log_error(format, ...)  printf(format,  ## __VA_ARGS__)
+#ifdef ENABLE_LOG_DEBUG
+#define log_debug(format, ...)  printf(format,  ## __VA_ARGS__)
+#else
+#define log_debug(...)
+#endif
 
+#ifdef ENABLE_LOG_INFO
+#define log_info(format, ...)  printf(format,  ## __VA_ARGS__)
+#else
+#define log_info(...)
+#endif
+
+#ifdef ENABLE_LOG_ERROR
+#define log_error(format, ...)  printf(format,  ## __VA_ARGS__)
+#else
+#define log_error(...)
 #endif
