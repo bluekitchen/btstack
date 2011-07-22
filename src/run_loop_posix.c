@@ -234,7 +234,7 @@ void posix_init(void){
     timers = NULL;
 }
 
-const run_loop_t run_loop_posix = {
+run_loop_t run_loop_posix = {
     &posix_init,
     &posix_add_data_source,
     &posix_remove_data_source,

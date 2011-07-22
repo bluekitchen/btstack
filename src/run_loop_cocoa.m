@@ -145,7 +145,7 @@ void cocoa_dump_timer(void){
 	return;
 }
 
-const run_loop_t run_loop_cocoa = {
+run_loop_t run_loop_cocoa = {
     &cocoa_init,
     &cocoa_add_data_source,
     &cocoa_remove_data_source,
