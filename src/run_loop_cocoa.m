@@ -141,7 +141,7 @@ void cocoa_execute(void)
 }
 
 void cocoa_dump_timer(void){
-    fprintf(stderr, "WARNING: run_loop_dump_timer not implemented yet!");
+    log_err("WARNING: run_loop_dump_timer not implemented!");
 	return;
 }
 
