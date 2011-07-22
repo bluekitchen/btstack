@@ -511,7 +511,7 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
             default:
                 break;
         }
-        printf(", value: 0x%08" PRIx32 "\n", value);
+        printf(", value: 0x%08x\n", value);
     }
     return 0;
 }
