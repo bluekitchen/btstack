@@ -52,10 +52,9 @@ void memory_pool_create(memory_pool_t *pool, void * storage, int count, int bloc
     
     // create singly linked list of all available blocks
     free_blocks->next = NULL;
-    for (i = 0 ; i < count ; i++, mem_ptr += block_size){
-        node_t * node      = (node_t*) mem_ptr;
-        node->next         = free_blocks->next;
-        free_blocks->next  = node;
+    for (i = 0 ; i < count ; i++){
+        memory_pool_free(pool, mem_ptr);
+        mem_ptr += block_size;
     }
 }
 
