@@ -23,6 +23,7 @@ BTdaemon_SOURCES =  $(libBTstack_SOURCES) \
     $(usb_sources)          \
     l2cap.c                 \
     l2cap_signaling.c       \
+    memory_pool.c           \
     $(remote_device_db_sources)  \
     rfcomm.c                \
     sdp.c                   \
