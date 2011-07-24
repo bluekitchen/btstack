@@ -42,6 +42,7 @@
 #include <btstack/utils.h>
 
 #include <btstack/utils.h>
+#include "btstack_memory.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "debug.h"
@@ -185,7 +186,7 @@ static void rfcomm_multiplexer_initialize(rfcomm_multiplexer_t *multiplexer){
 static rfcomm_multiplexer_t * rfcomm_multiplexer_create_for_addr(bd_addr_t *addr){
     
     // alloc structure 
-    rfcomm_multiplexer_t * multiplexer = malloc(sizeof(rfcomm_multiplexer_t));
+    rfcomm_multiplexer_t * multiplexer = btstack_memory_rfcomm_multiplexer_get();
     if (!multiplexer) return NULL;
     
     // fill in 
@@ -285,7 +286,7 @@ static rfcomm_channel_t * rfcomm_channel_create(rfcomm_multiplexer_t * multiplex
     rfcomm_dump_channels();
 
     // alloc structure 
-    rfcomm_channel_t * channel = malloc(sizeof(rfcomm_channel_t));
+    rfcomm_channel_t * channel = btstack_memory_rfcomm_channel_get();
     if (!channel) return NULL;
     
     // fill in 
@@ -528,7 +529,7 @@ static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
             // remove from list
             it->next = it->next->next;
             // free channel struct
-            free(channel);
+            btstack_memory_rfcomm_channel_free(channel);
         } else {
             it = it->next;
         }
@@ -539,7 +540,7 @@ static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
     
     // remove mutliplexer
     linked_list_remove( &rfcomm_multiplexers, (linked_item_t *) multiplexer);
-    free(multiplexer);
+    btstack_memory_rfcomm_multiplexer_free(multiplexer);
     
     // close l2cap multiplexer channel, too
     l2cap_disconnect_internal(l2cap_cid, 0x13);
@@ -949,7 +950,7 @@ static void rfcomm_channel_finalize(rfcomm_channel_t *channel){
     linked_list_remove( &rfcomm_channels, (linked_item_t *) channel);
 
     // free channel
-    free(channel);
+    btstack_memory_rfcomm_channel_free(channel);
     
     // update multiplexer timeout after channel was removed from list
     rfcomm_multiplexer_prepare_idle_timer(multiplexer);
@@ -1629,7 +1630,7 @@ void rfcomm_register_service_internal(void * connection, uint8_t channel, uint16
     }
     
     // alloc structure
-    service = malloc(sizeof(rfcomm_service_t));
+    service = btstack_memory_rfcomm_service_get();
     if (!service) {
         rfcomm_emit_service_registered(service->connection, BTSTACK_MEMORY_ALLOC_FAILED, channel);
         return;
@@ -1656,7 +1657,7 @@ void rfcomm_unregister_service_internal(uint8_t service_channel){
     rfcomm_service_t *service = rfcomm_service_for_channel(service_channel);
     if (!service) return;
     linked_list_remove(&rfcomm_services, (linked_item_t *) service);
-    free(service);
+    btstack_memory_rfcomm_service_free(service);
     
     // unregister if no services active
     if (linked_list_empty(&rfcomm_services)){
@@ -1714,7 +1715,7 @@ void rfcomm_close_connection(void *connection){
         rfcomm_service_t * service = (rfcomm_service_t *) it->next;
         if (service->connection == connection){
             it->next = it->next->next;
-            free(service);
+            btstack_memory_rfcomm_service_free(service);
         } else {
             it = it->next;
         }
