@@ -41,6 +41,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "debug.h"
+#include "btstack_memory.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -73,13 +74,14 @@ static void l2cap_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t 
 static l2cap_signaling_response_t signaling_responses[NR_PENDING_SIGNALING_RESPONSES];
 static int signaling_responses_pending;
 
-static uint8_t * sig_buffer = NULL;
+// static buffers
+static uint8_t sig_buffer[L2CAP_MINIMAL_MTU];
+static uint8_t acl_buffer[HCI_ACL_3DH5_SIZE];
+
 static linked_list_t l2cap_channels = NULL;
 static linked_list_t l2cap_services = NULL;
-static uint8_t * acl_buffer = NULL;
 static void (*packet_handler) (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = null_packet_handler;
 static int new_credits_blocked = 0;
-
 
 // prototypes
 static void l2cap_finialize_channel_close(l2cap_channel_t *channel);
@@ -91,9 +93,7 @@ static int l2cap_channel_ready_for_open(l2cap_channel_t *channel);
 
 
 void l2cap_init(){
-    sig_buffer = malloc( L2CAP_MINIMAL_MTU );
-    acl_buffer = malloc( HCI_ACL_3DH5_SIZE); 
-
+    
     new_credits_blocked = 0;
     signaling_responses_pending = 0;
     
@@ -331,7 +331,7 @@ void l2cap_run(void){
                 l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, 0, 0, channel->reason, 0);
                 // discard channel - l2cap_finialize_channel_close without sending l2cap close event
                 linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
-                free (channel);
+                btstack_memory_l2cap_channel_free(channel);
                 break;
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT:
@@ -394,7 +394,7 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
                                    bd_addr_t address, uint16_t psm, uint16_t mtu){
     
     // alloc structure
-    l2cap_channel_t * chan = malloc(sizeof(l2cap_channel_t));
+    l2cap_channel_t * chan = btstack_memory_l2cap_channel_get();
     // TODO: emit error event
     if (!chan) return;
     
@@ -445,7 +445,7 @@ static void l2cap_handle_connection_failed_for_addr(bd_addr_t address, uint8_t s
                 l2cap_emit_channel_opened(channel, status);
                 // discard channel
                 it->next = it->next->next;
-                free (channel);
+                btstack_memory_l2cap_channel_free(channel);
             }
         } else {
             it = it->next;
@@ -518,7 +518,7 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
                     // update prev item before free'ing next element - don't call l2cap_finalize_channel_close
                     it->next = it->next->next;
                     l2cap_emit_channel_closed(channel);
-                    free (channel);
+                    btstack_memory_l2cap_channel_free(channel);
                 } else {
                     it = it->next;
                 }
@@ -588,7 +588,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     }
     // alloc structure
     // log_info("l2cap_handle_connection_request register channel\n");
-    l2cap_channel_t * channel = malloc(sizeof(l2cap_channel_t));
+    l2cap_channel_t * channel = btstack_memory_l2cap_channel_get();
     // TODO: emit error event
     if (!channel) return;
     
@@ -727,7 +727,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                             
                             // discard channel
                             linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
-                            free (channel);
+                            btstack_memory_l2cap_channel_free(channel);
                             break;
                     }
                     break;
@@ -912,7 +912,7 @@ void l2cap_finialize_channel_close(l2cap_channel_t *channel){
     l2cap_emit_channel_closed(channel);
     // discard channel
     linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
-    free (channel);
+    btstack_memory_l2cap_channel_free(channel);
 }
 
 l2cap_service_t * l2cap_get_service(uint16_t psm){
@@ -934,7 +934,7 @@ void l2cap_register_service_internal(void *connection, btstack_packet_handler_t 
     if (service) return;
     
     // alloc structure     // TODO: emit error event
-    service = malloc(sizeof(l2cap_service_t));
+    service = btstack_memory_l2cap_service_get();
     if (!service) return;
     
     // fill in 
@@ -951,7 +951,7 @@ void l2cap_unregister_service_internal(void *connection, uint16_t psm){
     l2cap_service_t *service = l2cap_get_service(psm);
     if (!service) return;
     linked_list_remove(&l2cap_services, (linked_item_t *) service);
-    free(service);
+    btstack_memory_l2cap_service_free(service);
 }
 
 //
@@ -973,7 +973,7 @@ void l2cap_close_connection(void *connection){
         l2cap_service_t * service = (l2cap_service_t *) it->next;
         if (service->connection == connection){
             it->next = it->next->next;
-            free(service);
+            btstack_memory_l2cap_service_free(service);
         } else {
             it = it->next;
         }
