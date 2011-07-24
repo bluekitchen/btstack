@@ -38,6 +38,10 @@
 
 #include <stdint.h>
 
+#if defined __cplusplus
+extern "C" {
+#endif
+    
 void rfcomm_init(void);
 
 // register packet handler
@@ -56,4 +60,197 @@ int  rfcomm_send_internal(uint8_t rfcomm_cid, uint8_t *data, uint16_t len);
 void rfcomm_close_connection(void *connection);
 
 
+// private structs
+typedef enum {
+	RFCOMM_MULTIPLEXER_CLOSED = 1,
+	RFCOMM_MULTIPLEXER_W4_CONNECT,  // outgoing
+	RFCOMM_MULTIPLEXER_SEND_SABM_0,     //    "
+	RFCOMM_MULTIPLEXER_W4_UA_0,     //    "
+	RFCOMM_MULTIPLEXER_W4_SABM_0,   // incoming
+    RFCOMM_MULTIPLEXER_SEND_UA_0,
+	RFCOMM_MULTIPLEXER_OPEN,
+    RFCOMM_MULTIPLEXER_SEND_UA_0_AND_DISC
+} RFCOMM_MULTIPLEXER_STATE;
 
+typedef enum {
+    MULT_EV_READY_TO_SEND = 1,
+    
+} RFCOMM_MULTIPLEXER_EVENT;
+
+typedef enum {
+	RFCOMM_CHANNEL_CLOSED = 1,
+	RFCOMM_CHANNEL_W4_MULTIPLEXER,
+	RFCOMM_CHANNEL_SEND_UIH_PN,
+    RFCOMM_CHANNEL_W4_PN_RSP,
+	RFCOMM_CHANNEL_SEND_SABM_W4_UA,
+	RFCOMM_CHANNEL_W4_UA,
+    RFCOMM_CHANNEL_INCOMING_SETUP,
+    RFCOMM_CHANNEL_DLC_SETUP,
+	RFCOMM_CHANNEL_OPEN,
+    RFCOMM_CHANNEL_SEND_UA_AFTER_DISC,
+    RFCOMM_CHANNEL_SEND_DISC,
+    RFCOMM_CHANNEL_SEND_DM,
+    
+} RFCOMM_CHANNEL_STATE;
+
+typedef enum {
+    RFCOMM_CHANNEL_STATE_VAR_NONE            = 0,
+    RFCOMM_CHANNEL_STATE_VAR_CLIENT_ACCEPTED = 1 << 0,
+    RFCOMM_CHANNEL_STATE_VAR_RCVD_PN         = 1 << 1,
+    RFCOMM_CHANNEL_STATE_VAR_RCVD_RPN        = 1 << 2,
+    RFCOMM_CHANNEL_STATE_VAR_RCVD_SABM       = 1 << 3,
+    
+    RFCOMM_CHANNEL_STATE_VAR_RCVD_MSC_CMD    = 1 << 4,
+    RFCOMM_CHANNEL_STATE_VAR_RCVD_MSC_RSP    = 1 << 5,
+    RFCOMM_CHANNEL_STATE_VAR_SEND_PN_RSP     = 1 << 6,
+    RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_INFO   = 1 << 7,
+    
+    RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP    = 1 << 8,
+    RFCOMM_CHANNEL_STATE_VAR_SEND_UA         = 1 << 9,
+    RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD    = 1 << 10,
+    RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP    = 1 << 11,
+    
+    RFCOMM_CHANNEL_STATE_VAR_SEND_CREDITS    = 1 << 12,
+    RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_CMD    = 1 << 13,
+    RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_RSP    = 1 << 14,
+    RFCOMM_CHANNEL_STATE_VAR_SENT_CREDITS    = 1 << 15,
+} RFCOMM_CHANNEL_STATE_VAR;
+
+typedef enum {
+    CH_EVT_RCVD_SABM = 1,
+    CH_EVT_RCVD_UA,
+    CH_EVT_RCVD_PN,
+    CH_EVT_RCVD_PN_RSP,
+    CH_EVT_RCVD_DISC,
+    CH_EVT_RCVD_DM,
+    CH_EVT_RCVD_MSC_CMD,
+    CH_EVT_RCVD_MSC_RSP,
+    CH_EVT_RCVD_RPN_CMD,
+    CH_EVT_RCVD_RPN_REQ,
+    CH_EVT_MULTIPLEXER_READY,
+    CH_EVT_READY_TO_SEND,
+} RFCOMM_CHANNEL_EVENT;
+
+typedef struct rfcomm_channel_event {
+    RFCOMM_CHANNEL_EVENT type;
+} rfcomm_channel_event_t;
+
+typedef struct rfcomm_channel_event_pn {
+    rfcomm_channel_event_t super;
+    uint16_t max_frame_size;
+    uint8_t  priority;
+    uint8_t  credits_outgoing;
+} rfcomm_channel_event_pn_t;
+
+typedef struct rfcomm_rpn_data {
+    uint8_t baud_rate;
+    uint8_t flags;
+    uint8_t flow_control;
+    uint8_t xon;
+    uint8_t xoff;
+    uint8_t parameter_mask_0;   // first byte
+    uint8_t parameter_mask_1;   // second byte
+} rfcomm_rpn_data_t;
+
+typedef struct rfcomm_channel_event_rpn {
+    rfcomm_channel_event_t super;
+    rfcomm_rpn_data_t data;
+} rfcomm_channel_event_rpn_t;
+
+// info regarding potential connections
+typedef struct {
+    // linked list - assert: first field
+    linked_item_t    item;
+	
+    // server channel
+    uint8_t server_channel;
+    
+    // incoming max frame size
+    uint16_t max_frame_size;
+    
+    // client connection
+    void *connection;    
+    
+    // internal connection
+    btstack_packet_handler_t packet_handler;
+    
+} rfcomm_service_t;
+
+// info regarding multiplexer
+// note: spec mandates single multplexer per device combination
+typedef struct {
+    // linked list - assert: first field
+    linked_item_t    item;
+    
+    timer_source_t   timer;
+    int              timer_active;
+    
+	RFCOMM_MULTIPLEXER_STATE state;	
+    
+    uint16_t  l2cap_cid;
+    uint8_t   l2cap_credits;
+    
+	bd_addr_t remote_addr;
+    hci_con_handle_t con_handle;
+    
+	uint8_t   outgoing;
+    
+    // hack to deal with authentication failure only observed by remote side
+    uint8_t   at_least_one_connection;
+    
+    uint16_t max_frame_size;
+    
+    // send DM for DLCI != 0
+    uint8_t send_dm_for_dlci;
+    
+} rfcomm_multiplexer_t;
+
+// info regarding an actual coneection
+typedef struct {
+    // linked list - assert: first field
+    linked_item_t    item;
+	
+	rfcomm_multiplexer_t *multiplexer;
+	uint16_t rfcomm_cid;
+    uint8_t  outgoing;
+    uint8_t  dlci; 
+    
+    // credits for outgoing traffic
+    uint8_t credits_outgoing;
+    
+    // number of packets granted to client
+    uint8_t packets_granted;
+    
+    // credits for incoming traffic
+    uint8_t credits_incoming;
+    
+    // channel state
+    RFCOMM_CHANNEL_STATE state;
+    
+    // state variables used in RFCOMM_CHANNEL_INCOMING
+    RFCOMM_CHANNEL_STATE_VAR state_var;
+    
+    // priority set by incoming side in PN
+    uint8_t pn_priority;
+    
+	// negotiated frame size
+    uint16_t max_frame_size;
+	
+    // rpn data
+    rfcomm_rpn_data_t rpn_data;
+    
+	// server channel (see rfcomm_service_t) - NULL => outgoing channel
+	rfcomm_service_t * service;
+    
+    // internal connection
+    btstack_packet_handler_t packet_handler;
+    
+    // client connection
+    void * connection;
+    
+} rfcomm_channel_t;
+
+
+#if defined __cplusplus
+}
+#endif
