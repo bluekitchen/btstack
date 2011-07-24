@@ -46,13 +46,14 @@
 #include <unistd.h> // gethostbyname
 #endif
 
+#include "btstack_memory.h"
 #include "debug.h"
 #include "hci_dump.h"
 
 #include <btstack/hci_cmds.h>
 #include <btstack/version.h>
 
-// temp
+// tmpe
 #include "l2cap.h"
 
 #define HCI_CONNECTION_TIMEOUT_MS 10000
@@ -104,7 +105,7 @@ static void hci_connection_timestamp(hci_connection_t *connection){
  * @return connection OR NULL, if not found
  */
 static hci_connection_t * create_connection_for_addr(bd_addr_t addr){
-    hci_connection_t * conn = malloc( sizeof(hci_connection_t) );
+    hci_connection_t * conn = btstack_memory_hci_connection_get();
     if (!conn) return NULL;
     BD_ADDR_COPY(conn->address, addr);
     conn->con_handle = 0xffff;
@@ -343,7 +344,7 @@ static void hci_shutdown_connection(hci_connection_t *conn){
     run_loop_remove_timer(&conn->timeout);
 #endif
     linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
-    free( conn );
+    btstack_memory_hci_connection_free( conn );
     
     // now it's gone
     hci_emit_nr_connections_changed();
@@ -443,7 +444,7 @@ static void event_handler(uint8_t *packet, int size){
                 } else {
                     // connection failed, remove entry
                     linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
-                    free( conn );
+                    btstack_memory_hci_connection_free( conn );
                     
                     // if authentication error, also delete link key
                     if (packet[2] == 0x05) {

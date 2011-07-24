@@ -16,6 +16,7 @@ libBTstack_SOURCES = btstack.c hci_cmds.c linked_list.c run_loop.c $(run_loop_so
 			  
 BTdaemon_SOURCES =  $(libBTstack_SOURCES) \
 	$(platform_sources)     \
+    btstack_memory.c        \
     daemon.c                \
     hci.c                   \
     hci_dump.c              \
