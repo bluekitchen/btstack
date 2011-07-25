@@ -600,7 +600,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
     rfcomm_multiplexer_t *multiplexer = NULL;
     switch (packet[0]) {
             
-            // accept incoming PSM_RFCOMM connection if no multiplexer exists yet
+        // accept incoming PSM_RFCOMM connection if no multiplexer exists yet
         case L2CAP_EVENT_INCOMING_CONNECTION:
             // data: event(8), len(8), address(48), handle (16),  psm (16), source cid(16) dest cid(16)
             bt_flip_addr(event_addr, &packet[2]);
@@ -608,20 +608,30 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             if (psm != PSM_RFCOMM) break;
             l2cap_cid  = READ_BT_16(packet, 12); 
             multiplexer = rfcomm_multiplexer_for_addr(&event_addr);
-            log_info("L2CAP_EVENT_INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_RFCOMM from ", l2cap_cid);
             
             if (multiplexer) {
-                log_info(" => decline\n");
-                // bt_send_cmd(&l2cap_decline_connection, l2cap_cid);
-                l2cap_decline_connection_internal(l2cap_cid,  0x13);
-            } else {
-                log_info(" => accept\n");
-                // bt_send_cmd(&l2cap_accept_connection, l2cap_cid);
-                l2cap_accept_connection_internal(l2cap_cid);
+                log_info("INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_RFCOMM => decline - multiplexer already exists", l2cap_cid);
+                l2cap_decline_connection_internal(l2cap_cid,  0x04);    // no resources available
+                return 1;
             }
-            break;
             
-            // l2cap connection opened -> store l2cap_cid, remote_addr
+            // create and inititialize new multiplexer instance (incoming)
+            multiplexer = rfcomm_multiplexer_create_for_addr(&event_addr);
+            if (!multiplexer){
+                log_info("INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_RFCOMM => decline - no memory left", l2cap_cid);
+                l2cap_decline_connection_internal(l2cap_cid,  0x04);    // no resources available
+                return 1;
+            }
+            
+            multiplexer->con_handle = con_handle;
+            multiplexer->l2cap_cid = l2cap_cid;
+            multiplexer->state = RFCOMM_MULTIPLEXER_W4_SABM_0;
+            
+            log_info("L2CAP_EVENT_INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_RFCOMM => accept", l2cap_cid);
+            l2cap_accept_connection_internal(l2cap_cid);
+            return 1;
+            
+        // l2cap connection opened -> store l2cap_cid, remote_addr
         case L2CAP_EVENT_CHANNEL_OPENED: 
             if (READ_BT_16(packet, 11) != PSM_RFCOMM) break;
             log_info("L2CAP_EVENT_CHANNEL_OPENED for PSM_RFCOMM\n");
@@ -630,30 +640,26 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             l2cap_cid = READ_BT_16(packet, 13);
             bt_flip_addr(event_addr, &packet[3]);
             multiplexer = rfcomm_multiplexer_for_addr(&event_addr);
-            if (multiplexer) {
-                if (multiplexer->state == RFCOMM_MULTIPLEXER_W4_CONNECT) {
-                    log_info("L2CAP_EVENT_CHANNEL_OPENED: outgoing connection A\n");
-                    // wrong remote addr
-                    if (BD_ADDR_CMP(event_addr, multiplexer->remote_addr)) break;
-                    multiplexer->l2cap_cid = l2cap_cid;
-                    multiplexer->con_handle = con_handle;
-                    // send SABM #0
-                    multiplexer->state = RFCOMM_MULTIPLEXER_SEND_SABM_0;
-                    return 1;
-                } 
-                log_info("L2CAP_EVENT_CHANNEL_OPENED: multiplexer already exists\n");
-                // single multiplexer per baseband connection
-                break;
+            if (!multiplexer) {
+                log_error("L2CAP_EVENT_CHANNEL_OPENED but no multiplexer prepared\n");
+                return 1;
             }
-            log_info("L2CAP_EVENT_CHANNEL_OPENED: create incoming multiplexer for channel %02x\n", l2cap_cid);
-            // create and inititialize new multiplexer instance (incoming)
-            // - Max RFCOMM header has 6 bytes (P/F bit is set, payload length >= 128)
-            // - therefore, we set RFCOMM max frame size <= Local L2CAP MTU - 6
-            multiplexer = rfcomm_multiplexer_create_for_addr(&event_addr);
-            multiplexer->con_handle = con_handle;
-            multiplexer->l2cap_cid = l2cap_cid;
-            multiplexer->state = RFCOMM_MULTIPLEXER_W4_SABM_0;
-            multiplexer->max_frame_size = READ_BT_16(packet, 17) - 6;
+            if (multiplexer->state == RFCOMM_MULTIPLEXER_W4_CONNECT) {
+                log_info("L2CAP_EVENT_CHANNEL_OPENED: outgoing connection\n");
+                // wrong remote addr
+                if (BD_ADDR_CMP(event_addr, multiplexer->remote_addr)) break;
+                multiplexer->l2cap_cid = l2cap_cid;
+                multiplexer->con_handle = con_handle;
+                // send SABM #0
+                multiplexer->state = RFCOMM_MULTIPLEXER_SEND_SABM_0;
+            } else {
+                // multiplexer->state == RFCOMM_MULTIPLEXER_W4_SABM_0
+                //
+                // get max frame size from l2cap MTU
+                // - Max RFCOMM header has 6 bytes (P/F bit is set, payload length >= 128)
+                // - therefore, we set RFCOMM max frame size <= Local L2CAP MTU - 6
+                multiplexer->max_frame_size = READ_BT_16(packet, 17) - 6;
+            }
             return 1;
             
             // l2cap disconnect -> state = RFCOMM_MULTIPLEXER_CLOSED;
