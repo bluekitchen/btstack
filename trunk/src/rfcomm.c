@@ -1009,6 +1009,10 @@ static void rfcomm_channel_state_machine_2(rfcomm_multiplexer_t * multiplexer, u
         case CH_EVT_RCVD_RPN_CMD:
             // setup incoming channel
             channel = rfcomm_channel_create(multiplexer, service, dlci >> 1);
+            if (!channel){
+                // discard request by sending disconnected mode
+                multiplexer->send_dm_for_dlci = dlci;
+            }
             break;
         default:
             break;
