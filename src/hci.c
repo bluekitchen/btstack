@@ -102,7 +102,7 @@ static void hci_connection_timestamp(hci_connection_t *connection){
 /**
  * create connection for given address
  *
- * @return connection OR NULL, if not found
+ * @return connection OR NULL, if no memory left
  */
 static hci_connection_t * create_connection_for_addr(bd_addr_t addr){
     hci_connection_t * conn = btstack_memory_hci_connection_get();
@@ -1040,19 +1040,21 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
         if (conn) {
             // if connection exists
             if (conn->state == OPEN) {
-                // if OPEN, emit connection complete command
-                hci_emit_connection_complete(conn);
+                // and OPEN, emit connection complete command
+                hci_emit_connection_complete(conn, 0);
             }
-            //    otherwise, just ignore
+            //    otherwise, just ignore as it is already in the open process
             return 0; // don't sent packet to controller
             
-        } else{
-            conn = create_connection_for_addr(addr);
-            if (conn){
-                //    create connection struct and register, state = SENT_CREATE_CONNECTION
-                conn->state = SENT_CREATE_CONNECTION;
-            }
         }
+        // create connection struct and register, state = SENT_CREATE_CONNECTION
+        conn = create_connection_for_addr(addr);
+        if (!conn){
+            // notify client that alloc failed
+            hci_emit_connection_complete(conn, BTSTACK_MEMORY_ALLOC_FAILED);
+            return 0; // don't sent packet to controller
+        }
+        conn->state = SENT_CREATE_CONNECTION;
     }
     
     if (IS_COMMAND(packet, hci_link_key_request_reply)){
@@ -1102,11 +1104,11 @@ void hci_emit_state(){
     hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-void hci_emit_connection_complete(hci_connection_t *conn){
+void hci_emit_connection_complete(hci_connection_t *conn, uint8_t status){
     uint8_t event[13];
     event[0] = HCI_EVENT_CONNECTION_COMPLETE;
     event[1] = sizeof(event) - 2;
-    event[2] = 0; // status = OK
+    event[2] = status;
     bt_store_16(event, 3, conn->con_handle);
     bt_flip_addr(&event[5], conn->address);
     event[11] = 1; // ACL connection
