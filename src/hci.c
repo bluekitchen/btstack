@@ -413,11 +413,18 @@ static void event_handler(uint8_t *packet, int size){
                 if (!conn) {
                     conn = create_connection_for_addr(addr);
                 }
-                // TODO: check for malloc failure
+                if (!conn) {
+                    // CONNECTION REJECTED DUE TO LIMITED RESOURCES (0X0D)
+                    hci_stack.decline_reason = 0x0d;
+                    BD_ADDR_COPY(hci_stack.decline_addr, addr);
+                    break;
+                }
                 conn->state = RECEIVED_CONNECTION_REQUEST;
                 hci_run();
             } else {
-                // TODO: decline request
+                // SYNCHRONOUS CONNECTION LIMIT TO A DEVICE EXCEEDED (0X0A)
+                hci_stack.decline_reason = 0x0a;
+                BD_ADDR_COPY(hci_stack.decline_addr, addr);
             }
             break;
             
@@ -845,6 +852,15 @@ void hci_run(){
         
     hci_connection_t * connection;
     linked_item_t * it;
+    
+    if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
+
+    // global/non-connection oriented commands - decline incoming connections
+    if (hci_stack.decline_reason){
+        uint8_t reason = hci_stack.decline_reason;
+        hci_stack.decline_reason = 0;
+        hci_send_cmd(&hci_reject_connection_request, hci_stack.decline_addr, reason);
+    }
     
     // send pending HCI commands
     for (it = (linked_item_t *) hci_stack.connections; it ; it = it->next){
