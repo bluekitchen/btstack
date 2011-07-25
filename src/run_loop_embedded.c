@@ -145,9 +145,17 @@ static void embedded_tick_handler(void){
     system_ticks++;
 }
 
+uint32_t embedded_get_ticks(void){
+    return system_ticks;
+}
+
+uint32_t embedded_ticks_for_ms(uint32_t time_in_ms){
+    return delta_ms / hal_tick_get_tick_period_in_ms()
+}
+
 // set timer
 void run_loop_set_timer(timer_source_t *ts, uint32_t timeout_in_ms){
-    uint32_t ticks = timeout_in_ms / hal_tick_get_tick_period_in_ms();
+    uint32_t ticks = embedded_ticks_for_ms(timeout_in_ms);
     if (ticks == 0) ticks++;
     ts->timeout = system_ticks + ticks; 
 }
