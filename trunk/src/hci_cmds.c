@@ -188,6 +188,10 @@ const hci_cmd_t hci_accept_connection_request = {
 OPCODE(OGF_LINK_CONTROL, 0x09), "B1"
 // BD_ADDR, Role: become master, stay slave
 };
+const hci_cmd_t hci_reject_connection_request = {
+OPCODE(OGF_LINK_CONTROL, 0x0a), "B1"
+// BD_ADDR, reason e.g. CONNECTION REJECTED DUE TO LIMITED RESOURCES (0x0d)
+};
 const hci_cmd_t hci_link_key_request_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x0b), "BP"
 // BD_ADDR, LINK_KEY
