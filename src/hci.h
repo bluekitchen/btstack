@@ -247,6 +247,10 @@ typedef struct {
     
     /* */
     uint8_t   discoverable;
+
+    // buffer for single connection decline
+    uint8_t   decline_reason;
+    bd_addr_t decline_addr;
     
 } hci_stack_t;
 
