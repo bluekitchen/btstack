@@ -936,14 +936,16 @@ l2cap_service_t * l2cap_get_service(uint16_t psm){
 }
 
 void l2cap_register_service_internal(void *connection, btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu){
-    // check for alread registered psm // TODO: emit error event
+    // check for alread registered psm 
+    // TODO: emit error event
     l2cap_service_t *service = l2cap_get_service(psm);
     if (service) {
         log_error("l2cap_register_service_internal: PSM %u already registered\n", psm);
         return;
     }
     
-    // alloc structure     // TODO: emit error event
+    // alloc structure
+    // TODO: emit error event
     service = btstack_memory_l2cap_service_get();
     if (!service) {
         log_error("l2cap_register_service_internal: no memory for l2cap_service_t\n");
