@@ -140,6 +140,21 @@ static void rfcomm_emit_channel_opened(rfcomm_channel_t *channel, uint8_t status
 	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, pos);
 }
 
+static void rfcomm_emit_channel_open_failed_outgoing_memory(void * connection, bd_addr_t *addr, uint8_t server_channel){
+    uint8_t event[16];
+    uint8_t pos = 0;
+    event[pos++] = RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = BTSTACK_MEMORY_ALLOC_FAILED;
+    bt_flip_addr(&event[pos], *addr); pos += 6;
+    bt_store_16(event,  pos, 0);   pos += 2;
+	event[pos++] = server_channel;
+	bt_store_16(event, pos, 0); pos += 2;   // channel ID
+	bt_store_16(event, pos, 0); pos += 2;   // max frame size
+    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
+	(*app_packet_handler)(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, pos);
+}
+
 // data: event(8), len(8), rfcomm_cid(16)
 static void rfcomm_emit_channel_closed(rfcomm_channel_t * channel) {
     uint8_t event[4];
@@ -1595,12 +1610,20 @@ void rfcomm_create_channel_internal(void * connection, bd_addr_t *addr, uint8_t 
     rfcomm_multiplexer_t * multiplexer = rfcomm_multiplexer_for_addr(addr);
     if (!multiplexer) {
         multiplexer = rfcomm_multiplexer_create_for_addr(addr);
+        if (!multiplexer){
+            rfcomm_emit_channel_open_failed_outgoing_memory(connection, addr, server_channel);
+            return;
+        }
         multiplexer->outgoing = 1;
         multiplexer->state = RFCOMM_MULTIPLEXER_W4_CONNECT;
     }
         
     // prepare channel
     rfcomm_channel_t * channel = rfcomm_channel_create(multiplexer, 0, server_channel);
+    if (!channel){
+        rfcomm_emit_channel_open_failed_outgoing_memory(connection, addr, server_channel);
+        return;
+    }
     channel->connection = connection;
 
     // start multiplexer setup
