@@ -93,6 +93,12 @@ int  run_loop_remove_data_source(data_source_t *dataSource);
 // execute configured run_loop
 void run_loop_execute(void);
 
+// hack to fix HCI timer handling
+#ifdef EMBEDDED
+uint32_t embedded_get_ticks(void);
+uint32_t embedded_ticks_for_ms(uint32_t time_in_ms);
+#endif
+    
 #if defined __cplusplus
 }
 #endif

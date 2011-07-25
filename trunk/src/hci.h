@@ -194,13 +194,17 @@ typedef struct {
     
     // errands
     hci_authentication_flags_t authentication_flags;
+
+    timer_source_t timeout;
     
 #ifdef HAVE_TIME
     // timer
-    timer_source_t timeout;
     struct timeval timestamp;
 #endif
-
+#ifdef EMBEDDED
+    uint32_t timeout; // timeout in system ticks
+#endif
+    
     // ACL packet recombination
     uint8_t  acl_recombination_buffer[4 + HCI_ACL_3DH5_SIZE];
     uint16_t acl_recombination_pos;

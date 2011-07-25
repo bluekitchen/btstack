@@ -76,26 +76,32 @@ hci_connection_t * connection_for_handle(hci_con_handle_t con_handle){
     return NULL;
 }
 
-#ifdef HAVE_TIME
 static void hci_connection_timeout_handler(timer_source_t *timer){
     hci_connection_t * connection = linked_item_get_user(&timer->item);
+#ifdef HAVE_TIME
     struct timeval tv;
     gettimeofday(&tv, NULL);
     if (tv.tv_sec >= connection->timestamp.tv_sec + HCI_CONNECTION_TIMEOUT_MS/1000) {
         // connections might be timed out
         hci_emit_l2cap_check_timeout(connection);
-        run_loop_set_timer(timer, HCI_CONNECTION_TIMEOUT_MS);
-    } else {
-        // next timeout check at
-        timer->timeout.tv_sec = connection->timestamp.tv_sec + HCI_CONNECTION_TIMEOUT_MS/1000;
     }
+#endif
+#ifdef EMBEDDED
+    if (embedded_get_ticks() > connection->timestamp + embedded_ticks_for_ms(HCI_CONNECTION_TIMEOUT_MS)){
+        // connections might be timed out
+        hci_emit_l2cap_check_timeout(connection);
+    }
+#endif
+    run_loop_set_timer(timer, HCI_CONNECTION_TIMEOUT_MS);
     run_loop_add_timer(timer);
 }
-#endif
 
 static void hci_connection_timestamp(hci_connection_t *connection){
 #ifdef HAVE_TIME
     gettimeofday(&connection->timestamp, NULL);
+#endif
+#ifdef EMBEDDED
+    connection->timestamp = embedded_get_ticks();
 #endif
 }
 
@@ -110,11 +116,9 @@ static hci_connection_t * create_connection_for_addr(bd_addr_t addr){
     BD_ADDR_COPY(conn->address, addr);
     conn->con_handle = 0xffff;
     conn->authentication_flags = AUTH_FLAGS_NONE;
-#ifdef HAVE_TIME
     linked_item_set_user(&conn->timeout.item, conn);
     conn->timeout.process = hci_connection_timeout_handler;
     hci_connection_timestamp(conn);
-#endif
     conn->acl_recombination_length = 0;
     conn->acl_recombination_pos = 0;
     conn->num_acl_packets_sent = 0;
@@ -340,9 +344,8 @@ static void hci_shutdown_connection(hci_connection_t *conn){
     // cancel all l2cap connections
     hci_emit_disconnection_complete(conn->con_handle, 0x16);    // terminated by local host
 
-#ifdef HAVE_TIME
     run_loop_remove_timer(&conn->timeout);
-#endif
+    
     linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
     btstack_memory_hci_connection_free( conn );
     
@@ -438,11 +441,10 @@ static void event_handler(uint8_t *packet, int size){
                     conn->state = OPEN;
                     conn->con_handle = READ_BT_16(packet, 3);
                     
-#ifdef HAVE_TIME
-                    gettimeofday(&conn->timestamp, NULL);
+                    // restart timer
                     run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
                     run_loop_add_timer(&conn->timeout);
-#endif                    
+                    
                     log_info("New connection: handle %u, ", conn->con_handle);
                     print_bd_addr( conn->address );
                     log_info("\n");
