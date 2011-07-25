@@ -59,7 +59,7 @@
 #define NR_BUFFERED_ACL_PACKETS 3
 
 // used to cache l2cap rejects, echo, and informational requests
-#define NR_PENDING_SIGNALING_RESPONSES 10
+#define NR_PENDING_SIGNALING_RESPONSES 5
 
 // offsets for L2CAP SIGNALING COMMANDS
 #define L2CAP_SIGNALING_COMMAND_CODE_OFFSET   0
@@ -278,9 +278,13 @@ void l2cap_run(void){
         
         hci_con_handle_t handle = signaling_responses[0].handle;
         uint8_t sig_id = signaling_responses[0].sig_id;
-        uint8_t infoType = signaling_responses[0].infoType;
+        uint16_t infoType = signaling_responses[0].data;    // INFORMATION_REQUEST
+        uint16_t result   = signaling_responses[0].data;    // CONNECTION_REQUEST
         
         switch (signaling_responses[0].code){
+            case CONNECTION_REQUEST:
+                l2cap_send_signaling_packet(handle, CONNECTION_RESPONSE, sig_id, 0, 0, result, 0);
+                break;
             case ECHO_REQUEST:
                 l2cap_send_signaling_packet(handle, ECHO_RESPONSE, sig_id, 0, NULL);
                 break;
@@ -395,9 +399,14 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     
     // alloc structure
     l2cap_channel_t * chan = btstack_memory_l2cap_channel_get();
-    // TODO: emit error event
-    if (!chan) return;
-    
+    if (!chan) {
+        // emit error event
+        l2cap_channel_t dummy_channel;
+        BD_ADDR_COPY(dummy_channel.address, address);
+        dummy_channel.psm = psm;
+        l2cap_emit_channel_opened(&dummy_channel, BTSTACK_MEMORY_ALLOC_FAILED);
+        return;
+    }
     // limit local mtu to max acl packet length
     if (mtu > l2cap_max_l2cap_mtu()) {
         mtu = l2cap_max_l2cap_mtu();
@@ -569,28 +578,41 @@ static void l2cap_handle_disconnect_request(l2cap_channel_t *channel, uint16_t i
     l2cap_run();
 }
 
+static void l2cap_register_signaling_response(hci_con_handle_t handle, uint8_t code, uint8_t sig_id, uint16_t data){
+    if (signaling_responses_pending < NR_PENDING_SIGNALING_RESPONSES) {
+        signaling_responses[signaling_responses_pending].handle = handle;
+        signaling_responses[signaling_responses_pending].code = code;
+        signaling_responses[signaling_responses_pending].sig_id = sig_id;
+        signaling_responses[signaling_responses_pending].data = data;
+        signaling_responses_pending++;
+        l2cap_run();
+    }
+}
+
 static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig_id, uint16_t psm, uint16_t source_cid){
     
     // log_info("l2cap_handle_connection_request for handle %u, psm %u cid %u\n", handle, psm, source_cid);
     l2cap_service_t *service = l2cap_get_service(psm);
     if (!service) {
         // 0x0002 PSM not supported
-        // log_info("l2cap_handle_connection_request no PSM for psm %u/n", psm);
-        l2cap_send_signaling_packet(handle, CONNECTION_RESPONSE, sig_id, 0, 0, 0x0002, 0);
+        l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, 0x0002);
         return;
     }
     
     hci_connection_t * hci_connection = connection_for_handle( handle );
     if (!hci_connection) {
+        // 
         log_error("no hci_connection for handle %u\n", handle);
-        // TODO: emit error
         return;
     }
     // alloc structure
     // log_info("l2cap_handle_connection_request register channel\n");
     l2cap_channel_t * channel = btstack_memory_l2cap_channel_get();
-    // TODO: emit error event
-    if (!channel) return;
+    if (!channel){
+        // 0x0004 No resources available
+        l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, 0x0004);
+        return;
+    }
     
     // fill in 
     BD_ADDR_COPY(channel->address, hci_connection->address);
@@ -805,28 +827,13 @@ void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t * comman
             return;
         }
             
-        case ECHO_REQUEST: {
-            if (signaling_responses_pending < NR_PENDING_SIGNALING_RESPONSES) {
-                signaling_responses[signaling_responses_pending].handle = handle;
-                signaling_responses[signaling_responses_pending].code = code;
-                signaling_responses[signaling_responses_pending].sig_id = sig_id;
-                signaling_responses_pending++;
-            }
-            l2cap_run();
+        case ECHO_REQUEST:
+            l2cap_register_signaling_response(handle, code, sig_id, 0);
             return;
-        }
             
         case INFORMATION_REQUEST: {
-            if (signaling_responses_pending < NR_PENDING_SIGNALING_RESPONSES) {
-                // we neither support connectionless L2CAP data nor support any flow control modes yet
-                uint16_t infoType = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
-                signaling_responses[signaling_responses_pending].handle = handle;
-                signaling_responses[signaling_responses_pending].code = code;
-                signaling_responses[signaling_responses_pending].sig_id = sig_id;
-                signaling_responses[signaling_responses_pending].infoType = infoType;
-                signaling_responses_pending++;
-            }
-            l2cap_run();
+            uint16_t infoType = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
+            l2cap_register_signaling_response(handle, code, sig_id, infoType);
             return;
         }
             
