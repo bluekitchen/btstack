@@ -202,7 +202,7 @@ typedef struct {
     struct timeval timestamp;
 #endif
 #ifdef EMBEDDED
-    uint32_t timeout; // timeout in system ticks
+    uint32_t timestamp; // timeout in system ticks
 #endif
     
     // ACL packet recombination
