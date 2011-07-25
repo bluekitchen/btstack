@@ -210,7 +210,7 @@ static void h4_register_packet_handler(void (*handler)(uint8_t packet_type, uint
     packet_handler = handler;
 }
 
-#define DUMP
+// #define DUMP
 
 #ifdef DUMP
 static void dump(uint8_t *data, uint16_t len){
