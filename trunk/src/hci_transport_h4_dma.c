@@ -37,7 +37,6 @@
  *  Created by Matthias Ringwald on 4/29/09.
  */
 
-
 #include <stdio.h>
 #include <string.h>
 
@@ -211,6 +210,7 @@ static void h4_register_packet_handler(void (*handler)(uint8_t packet_type, uint
     packet_handler = handler;
 }
 
+#define DUMP
 
 #ifdef DUMP
 static void dump(uint8_t *data, uint16_t len){
@@ -235,14 +235,13 @@ static int h4_process(struct data_source *ds) {
     if (h4_state != H4_PACKET_RECEIVED) return 0;
         
     // log packet
-    
 #ifdef DUMP
     printf("RX: ");
     dump(hci_packet, read_pos);
 #endif
     
     packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
-    
+
     h4_init_sm();
                                 
     return 0;

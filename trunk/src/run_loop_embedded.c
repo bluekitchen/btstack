@@ -150,7 +150,7 @@ uint32_t embedded_get_ticks(void){
 }
 
 uint32_t embedded_ticks_for_ms(uint32_t time_in_ms){
-    return delta_ms / hal_tick_get_tick_period_in_ms()
+    return time_in_ms / hal_tick_get_tick_period_in_ms();
 }
 
 // set timer
