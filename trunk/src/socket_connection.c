@@ -89,7 +89,7 @@ struct connection {
     SOCKET_STATE state;
     uint16_t bytes_read;
     uint16_t bytes_to_read;
-    uint8_t  buffer[6+HCI_ACL_3DH5_SIZE]; // packet_header(6) + max packet: 3-DH5 = header(6) + payload (1021)
+    uint8_t  buffer[6+HCI_ACL_BUFFER_SIZE]; // packet_header(6) + max packet: 3-DH5 = header(6) + payload (1021)
 };
 
 /** list of socket connections */

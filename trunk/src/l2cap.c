@@ -76,7 +76,7 @@ static int signaling_responses_pending;
 
 // static buffers
 static uint8_t sig_buffer[L2CAP_MINIMAL_MTU];
-static uint8_t acl_buffer[HCI_ACL_3DH5_SIZE];
+static uint8_t acl_buffer[HCI_ACL_BUFFER_SIZE];
 
 static linked_list_t l2cap_channels = NULL;
 static linked_list_t l2cap_services = NULL;
@@ -328,7 +328,7 @@ void l2cap_run(void){
                 // send connection request - set state first
                 channel->state = L2CAP_STATE_WAIT_CONNECTION_COMPLETE;
                 // BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
-                hci_send_cmd(&hci_create_connection, channel->address, 0xcc18, 0, 0, 0, 1); 
+                hci_send_cmd(&hci_create_connection, channel->address, hci_usable_acl_packet_types(), 0, 0, 0, 1); 
                 break;
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE:

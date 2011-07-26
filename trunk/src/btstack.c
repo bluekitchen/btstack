@@ -49,7 +49,7 @@
 #include <stdio.h>
 
 // static uint8_t hci_cmd_buffer[3+255]; // HCI Command Header + max payload
-static uint8_t hci_cmd_buffer[HCI_ACL_3DH5_SIZE]; // BTstack command packets are not size restricted
+static uint8_t hci_cmd_buffer[HCI_ACL_BUFFER_SIZE]; // BTstack command packets are not size restricted
 
 static connection_t *btstack_connection = NULL;
 

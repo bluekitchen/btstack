@@ -353,6 +353,31 @@ static void hci_shutdown_connection(hci_connection_t *conn){
     hci_emit_nr_connections_changed();
 }
 
+static uint16_t packet_type_sizes[] = {
+    0, HCI_ACL_2DH1_SIZE, HCI_ACL_3DH1_SIZE, HCI_ACL_DM1_SIZE,
+    HCI_ACL_DH1_SIZE, 0, 0, 0,
+    HCI_ACL_2DH3_SIZE, HCI_ACL_3DH3_SIZE, HCI_ACL_DM3_SIZE, HCI_ACL_DH3_SIZE,
+    HCI_ACL_2DH5_SIZE, HCI_ACL_3DH5_SIZE, HCI_ACL_DM5_SIZE, HCI_ACL_DH5_SIZE
+};
+
+static uint16_t hci_acl_packet_types_for_buffer_size(uint16_t buffer_size){
+    uint16_t packet_types = 0;
+    int i;
+    for (i=0;i<16;i++){
+        if (packet_type_sizes[i] == 0) continue;
+        if (packet_type_sizes[i] <= buffer_size){
+            packet_types |= 1 << i;
+        }
+    }
+    // flip bits for "may not be used"
+    packet_types ^= 0x3306;
+    return packet_types;
+}
+
+uint16_t hci_usable_acl_packet_types(void){
+    return hci_stack.packet_types;
+}
+
 // avoid huge local variables
 static device_name_t device_name;
 static void event_handler(uint8_t *packet, int size){
@@ -378,7 +403,15 @@ static void event_handler(uint8_t *packet, int size){
                 hci_stack.total_num_acl_packets  = packet[9];
                 // ignore: total num SCO packets
                 if (hci_stack.state == HCI_STATE_INITIALIZING){
-                    log_info("hci_read_buffer_size: size %u, count %u\n", hci_stack.acl_data_packet_length, hci_stack.total_num_acl_packets); 
+                    // determine usable packet types
+                    uint16_t max_acl_payload = hci_stack.acl_data_packet_length;
+                    if (HCI_ACL_BUFFER_SIZE < max_acl_payload) {
+                        max_acl_payload = HCI_ACL_BUFFER_SIZE;
+                    }
+                    hci_stack.packet_types = hci_acl_packet_types_for_buffer_size(max_acl_payload);
+                    
+                    log_error("hci_read_buffer_size: size %u, count %u, packet types %04x\n",
+                             hci_stack.acl_data_packet_length, hci_stack.total_num_acl_packets, hci_stack.packet_types); 
                 }
             }
             if (COMMAND_COMPLETE_EVENT(packet, hci_write_scan_enable)){
@@ -573,27 +606,6 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
         default:
             break;
     }
-}
-
-static uint16_t packet_type_sizes[] = {
-    0, HCI_ACL_2DH1_SIZE, HCI_ACL_3DH1_SIZE, HCI_ACL_DM1_SIZE,
-    HCI_ACL_DH1_SIZE, 0, 0, 0,
-    HCI_ACL_2DH3_SIZE, HCI_ACL_3DH3_SIZE, HCI_ACL_DM3_SIZE, HCI_ACL_DH3_SIZE,
-    HCI_ACL_2DH5_SIZE, HCI_ACL_3DH5_SIZE, HCI_ACL_DM5_SIZE, HCI_ACL_DH5_SIZE
-};
-
-uint16_t hci_acl_packet_types_for_buffer_size(uint16_t buffer_size){
-    uint16_t packet_types = 0;
-    int i;
-    for (i=0;i<16;i++){
-        if (packet_type_sizes[i] == 0) continue;
-        if (packet_type_sizes[i] <= buffer_size){
-            packet_types |= 1 << i;
-        }
-    }
-    // flip bits for "may not be used"
-    packet_types ^= 0x3306;
-    return packet_types;
 }
 
 /** Register HCI packet handlers */
