@@ -91,7 +91,8 @@ static  H4_STATE h4_state;
 static int bytes_to_read;
 static int read_pos;
 // static uint8_t hci_event_buffer[255+2]; // maximal payload + 2 bytes header
-static uint8_t hci_packet[1+HCI_ACL_3DH5_SIZE]; // bigger than largest packet
+static uint8_t hci_packet[1+HCI_ACL_BUFFER_SIZE]; // bigger than largest packet - watch out when ACL payload is < 255
+
 
 
 // prototypes

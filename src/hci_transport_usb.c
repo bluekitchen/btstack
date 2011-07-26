@@ -89,8 +89,8 @@ static libusb_device_handle * handle;
 static struct libusb_transfer *event_in_transfer[ASYNC_BUFFERS];
 static struct libusb_transfer *bulk_in_transfer[ASYNC_BUFFERS];
 
-static uint8_t hci_event_in_buffer[ASYNC_BUFFERS][HCI_ACL_3DH5_SIZE]; // bigger than largest packet
-static uint8_t hci_bulk_in_buffer[ASYNC_BUFFERS][HCI_ACL_3DH5_SIZE];  // bigger than largest packet
+static uint8_t hci_event_in_buffer[ASYNC_BUFFERS][HCI_ACL_BUFFER_SIZE]; // bigger than largest packet
+static uint8_t hci_bulk_in_buffer[ASYNC_BUFFERS][HCI_ACL_BUFFER_SIZE];  // bigger than largest packet
 
 // For (ab)use as a linked list of received packets
 static struct libusb_transfer *handle_packet;
@@ -393,7 +393,7 @@ static int usb_open(void *transport_config){
     for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
         // configure event_in handlers
         libusb_fill_interrupt_transfer(event_in_transfer[c], handle, event_in_addr, 
-                hci_event_in_buffer[c], HCI_ACL_3DH5_SIZE, async_callback, NULL, 2000) ;
+                hci_event_in_buffer[c], HCI_ACL_BUFFER_SIZE, async_callback, NULL, 2000) ;
  
         r = libusb_submit_transfer(event_in_transfer[c]);
         if (r) {
@@ -404,7 +404,7 @@ static int usb_open(void *transport_config){
  
         // configure bulk_in handlers
         libusb_fill_bulk_transfer(bulk_in_transfer[c], handle, acl_in_addr, 
-                hci_bulk_in_buffer[c], HCI_ACL_3DH5_SIZE, async_callback, NULL, 2000) ;
+                hci_bulk_in_buffer[c], HCI_ACL_BUFFER_SIZE, async_callback, NULL, 2000) ;
  
         r = libusb_submit_transfer(bulk_in_transfer[c]);
         if (r) {

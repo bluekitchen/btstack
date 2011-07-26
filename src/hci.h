@@ -216,7 +216,7 @@ typedef struct {
 #endif
     
     // ACL packet recombination
-    uint8_t  acl_recombination_buffer[4 + HCI_ACL_3DH5_SIZE];
+    uint8_t  acl_recombination_buffer[4 + HCI_ACL_BUFFER_SIZE];
     uint16_t acl_recombination_pos;
     uint16_t acl_recombination_length;
     
@@ -248,6 +248,9 @@ typedef struct {
     uint8_t  total_num_acl_packets;
     uint16_t acl_data_packet_length;
 
+    // usable packet types given acl_data_packet_length and HCI_ACL_BUFFER_SIZE
+    uint16_t packet_types;
+    
     /* callback to L2CAP layer */
     void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
@@ -304,6 +307,7 @@ uint8_t hci_number_free_acl_slots(void);
 int     hci_authentication_active_for_handle(hci_con_handle_t handle);
 void    hci_drop_link_key_for_bd_addr(bd_addr_t *addr);
 uint16_t hci_max_acl_data_packet_length(void);
+uint16_t hci_usable_acl_packet_types(void);
 
 // 
 void hci_emit_state(void);
