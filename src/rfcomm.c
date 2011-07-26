@@ -619,9 +619,12 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
         case L2CAP_EVENT_INCOMING_CONNECTION:
             // data: event(8), len(8), address(48), handle (16),  psm (16), source cid(16) dest cid(16)
             bt_flip_addr(event_addr, &packet[2]);
+            con_handle = READ_BT_16(packet,  8);
             psm        = READ_BT_16(packet, 10); 
-            if (psm != PSM_RFCOMM) break;
             l2cap_cid  = READ_BT_16(packet, 12); 
+
+            if (psm != PSM_RFCOMM) break;
+
             multiplexer = rfcomm_multiplexer_for_addr(&event_addr);
             
             if (multiplexer) {
