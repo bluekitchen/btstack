@@ -58,10 +58,20 @@ extern "C" {
 #define HCI_SCO_DATA_PKT_HDR	  0x03
 #define HCI_EVENT_PKT_HDR         0x02
 
-// packet sizes
-#define HCI_ACL_3DH5_SIZE         1021
+// packet sizes (max payload)
+#define HCI_ACL_DM1_SIZE            17
+#define HCI_ACL_DH1_SIZE            27
+#define HCI_ACL_2DH1_SIZE           54
+#define HCI_ACL_3DH1_SIZE           83
+#define HCI_ACL_DM3_SIZE           121
+#define HCI_ACL_DH3_SIZE           183
+#define HCI_ACL_DM5_SIZE           224
 #define HCI_ACL_DH5_SIZE           339
-
+#define HCI_ACL_2DH3_SIZE          367
+#define HCI_ACL_3DH3_SIZE          552
+#define HCI_ACL_2HH5_SIZE          679
+#define HCI_ACL_3DH5_SIZE         1021
+    
 // OGFs
 #define OGF_LINK_CONTROL          0x01
 #define OGF_LINK_POLICY           0x02
