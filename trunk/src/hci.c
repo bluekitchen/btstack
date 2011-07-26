@@ -575,6 +575,27 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
     }
 }
 
+static uint16_t packet_type_sizes[] = {
+    0, HCI_ACL_2DH1_SIZE, HCI_ACL_3DH1_SIZE, HCI_ACL_DM1_SIZE,
+    HCI_ACL_DH1_SIZE, 0, 0, 0,
+    HCI_ACL_2DH3_SIZE, HCI_ACL_3DH3_SIZE, HCI_ACL_DM3_SIZE, HCI_ACL_DH3_SIZE,
+    HCI_ACL_2DH5_SIZE, HCI_ACL_3DH5_SIZE, HCI_ACL_DM5_SIZE, HCI_ACL_DH5_SIZE
+};
+
+uint16_t hci_acl_packet_types_for_buffer_size(uint16_t buffer_size){
+    uint16_t packet_types = 0;
+    int i;
+    for (i=0;i<16;i++){
+        if (packet_type_sizes[i] == 0) continue;
+        if (packet_type_sizes[i] <= buffer_size){
+            packet_types |= 1 << i;
+        }
+    }
+    // flip bits for "may not be used"
+    packet_types ^= 0x3306;
+    return packet_types;
+}
+
 /** Register HCI packet handlers */
 void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
     hci_stack.packet_handler = handler;

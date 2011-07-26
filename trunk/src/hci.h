@@ -69,7 +69,7 @@ extern "C" {
 #define HCI_ACL_DH5_SIZE           339
 #define HCI_ACL_2DH3_SIZE          367
 #define HCI_ACL_3DH3_SIZE          552
-#define HCI_ACL_2HH5_SIZE          679
+#define HCI_ACL_2DH5_SIZE          679
 #define HCI_ACL_3DH5_SIZE         1021
     
 // OGFs
