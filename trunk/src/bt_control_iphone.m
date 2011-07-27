@@ -190,9 +190,8 @@ static void ioregistry_get_info() {
     IOObjectRelease(bt_service);
     
     // dump info
-    log_info("local-mac-address: ");
-    print_bd_addr(local_mac_address);
-    log_info("\ntransport-speed:  %u\n", transport_speed);
+    log_info("local-mac-address: %s\n", bd_addr_to_str(local_mac_address));
+    log_info("transport-speed:   %u\n", transport_speed);
 #else
     // use dummy addr if not on iphone/ipod touch
     int i = 0;

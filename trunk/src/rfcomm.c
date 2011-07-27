@@ -1608,10 +1608,7 @@ int rfcomm_send_internal(uint8_t rfcomm_cid, uint8_t *data, uint16_t len){
 
 void rfcomm_create_channel_internal(void * connection, bd_addr_t *addr, uint8_t server_channel){
 
-    log_info("rfcomm_create_channel_internal to ");
-    print_bd_addr(*addr);
-    log_info(" at channel #%02x\n", server_channel);
-
+    log_info("rfcomm_create_channel_internal to %s, at channel #%02x\n",  bd_addr_to_str(*addr), server_channel);
     
     // create new multiplexer if necessary
     rfcomm_multiplexer_t * multiplexer = rfcomm_multiplexer_for_addr(addr);
