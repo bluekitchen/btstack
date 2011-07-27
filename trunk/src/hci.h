@@ -73,7 +73,7 @@ extern "C" {
 #define HCI_ACL_3DH5_SIZE         1021
        
 #define HCI_EVENT_PKT_SIZE         255
-    
+        
 // OGFs
 #define OGF_LINK_CONTROL          0x01
 #define OGF_LINK_POLICY           0x02

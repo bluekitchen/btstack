@@ -48,8 +48,10 @@
 
 #include <stdio.h>
 
-// size of HCI ACL + L2CAP Header for regular data packets
-#define COMPLETE_L2CAP_HEADER 8
+#define L2CAP_HEADER_SIZE 4
+
+// size of HCI ACL + L2CAP Header for regular data packets (8)
+#define COMPLETE_L2CAP_HEADER (HCI_ACL_DATA_PKT_HDR + L2CAP_HEADER_SIZE)
 
 // minimum signaling MTU
 #define L2CAP_MINIMAL_MTU 48
@@ -75,8 +77,8 @@ static l2cap_signaling_response_t signaling_responses[NR_PENDING_SIGNALING_RESPO
 static int signaling_responses_pending;
 
 // static buffers
-static uint8_t sig_buffer[L2CAP_MINIMAL_MTU];
-static uint8_t acl_buffer[HCI_ACL_BUFFER_SIZE];
+static uint8_t sig_buffer[HCI_ACL_DATA_PKT_HDR + L2CAP_HEADER_SIZE + L2CAP_MINIMAL_MTU];
+static uint8_t acl_buffer[HCI_ACL_DATA_PKT_HDR + HCI_ACL_BUFFER_SIZE];
 
 static linked_list_t l2cap_channels = NULL;
 static linked_list_t l2cap_services = NULL;
