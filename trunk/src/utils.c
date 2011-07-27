@@ -89,12 +89,16 @@ void printUUID(uint8_t *uuid) {
            uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15]);
 }
 
+static char uuid_to_str_buffer[];
+
+static char bd_addr_to_str_buffer[6*3];  // 12:45:78:01:34:67\0
+char * bd_addr_to_str(bd_addr_t addr){
+    sprintf(bd_addr_to_str_buffer, "%02x:%02x:%02x:%02x:%02x:%02x", addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
+    return (char *) bd_addr_to_str;
+}
+
 void print_bd_addr( bd_addr_t addr){
-    int i;
-    for (i=0; i<BD_ADDR_LEN-1;i++){
-        log_info("%02X:", ((uint8_t *)addr)[i]);
-    }
-    log_info("%02X", ((uint8_t *)addr)[i]);
+    log_info("%s", bd_addr_to_str(&addr));
 }
 
 #ifndef EMBEDDED
