@@ -75,7 +75,7 @@
 #define BT_RFCOMM_TEST_CMD   0x23
 #define BT_RFCOMM_TEST_RSP   0x21
 
-#define RFCOMM_MAX_PAYLOAD (HCI_ACL_BUFFER_SIZE-HCI_ACL_DATA_PKT_HDR)
+#define MAX_L2CAP_PAYLOAD (HCI_ACL_BUFFER_SIZE-L2CAP_HEADER_SIZE)
 #define RFCOMM_MULIPLEXER_TIMEOUT_MS 60000
 
 // FCS calc 
@@ -95,7 +95,7 @@ static linked_list_t rfcomm_channels = NULL;
 static linked_list_t rfcomm_services = NULL;
 
 // used to assemble rfcomm packets
-uint8_t rfcomm_out_buffer[RFCOMM_MAX_PAYLOAD];
+uint8_t rfcomm_out_buffer[MAX_L2CAP_PAYLOAD];
 
 static void (*app_packet_handler)(void * connection, uint8_t packet_type,
                                   uint16_t channel, uint8_t *packet, uint16_t size);
@@ -195,7 +195,7 @@ static void rfcomm_multiplexer_initialize(rfcomm_multiplexer_t *multiplexer){
     
     // - Max RFCOMM header has 6 bytes (P/F bit is set, payload length >= 128)
     // - therefore, we set RFCOMM max frame size <= Local L2CAP MTU - 6
-    multiplexer->max_frame_size = RFCOMM_MAX_PAYLOAD - 6; // max
+    multiplexer->max_frame_size = MAX_L2CAP_PAYLOAD - 6; // max
 }
 
 static rfcomm_multiplexer_t * rfcomm_multiplexer_create_for_addr(bd_addr_t *addr){
@@ -1638,7 +1638,7 @@ void rfcomm_create_channel_internal(void * connection, bd_addr_t *addr, uint8_t 
         
         channel->state = RFCOMM_CHANNEL_W4_MULTIPLEXER;
         
-        l2cap_create_channel_internal(connection, rfcomm_packet_handler, *addr, PSM_RFCOMM, RFCOMM_MAX_PAYLOAD);
+        l2cap_create_channel_internal(connection, rfcomm_packet_handler, *addr, PSM_RFCOMM, MAX_L2CAP_PAYLOAD);
 
         return;
     }
@@ -1674,7 +1674,7 @@ void rfcomm_register_service_internal(void * connection, uint8_t channel, uint16
 
     // register with l2cap if not registered before
     if (linked_list_empty(&rfcomm_services)){
-        l2cap_register_service_internal(NULL, rfcomm_packet_handler, PSM_RFCOMM, RFCOMM_MAX_PAYLOAD);
+        l2cap_register_service_internal(NULL, rfcomm_packet_handler, PSM_RFCOMM, MAX_L2CAP_PAYLOAD);
     }
 
     // fill in 

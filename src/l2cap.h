@@ -50,6 +50,8 @@ extern "C" {
     
 #define L2CAP_SIG_ID_INVALID 0
 
+#define L2CAP_HEADER_SIZE 4
+
 void l2cap_init(void);
 void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
 void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu);
