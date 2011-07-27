@@ -337,9 +337,7 @@ static void acl_handler(uint8_t *packet, int size){
 }
 
 static void hci_shutdown_connection(hci_connection_t *conn){
-    log_info("Connection closed: handle %u, ", conn->con_handle);
-    print_bd_addr( conn->address );
-    log_info("\n");
+    log_info("Connection closed: handle %u, %s\n", conn->con_handle, bd_addr_to_str(conn->address));
 
     // cancel all l2cap connections
     hci_emit_disconnection_complete(conn->con_handle, 0x16);    // terminated by local host
@@ -443,7 +441,7 @@ static void event_handler(uint8_t *packet, int size){
             bt_flip_addr(addr, &packet[2]);
             // TODO: eval COD 8-10
             link_type = packet[11];
-            log_info("Connection_incoming: "); print_bd_addr(addr); log_info(", type %u\n", link_type);
+            log_info("Connection_incoming: %s, type %u\n", bd_addr_to_str(addr), link_type);
             if (link_type == 1) { // ACL
                 conn = connection_for_address(addr);
                 if (!conn) {
@@ -467,7 +465,7 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_CONNECTION_COMPLETE:
             // Connection management
             bt_flip_addr(addr, &packet[5]);
-            log_info("Connection_complete (status=%u)", packet[2]); print_bd_addr(addr); log_info("\n");
+            log_info("Connection_complete (status=%u) %s\n", packet[2], bd_addr_to_str(addr));
             conn = connection_for_address(addr);
             if (conn) {
                 if (!packet[2]){
@@ -478,9 +476,7 @@ static void event_handler(uint8_t *packet, int size){
                     run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
                     run_loop_add_timer(&conn->timeout);
                     
-                    log_info("New connection: handle %u, ", conn->con_handle);
-                    print_bd_addr( conn->address );
-                    log_info("\n");
+                    log_info("New connection: handle %u, %s\n", conn->con_handle, bd_addr_to_str(conn->address));
                     
                     hci_emit_nr_connections_changed();
                 } else {
@@ -1086,7 +1082,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     // create_connection?
     if (IS_COMMAND(packet, hci_create_connection)){
         bt_flip_addr(addr, &packet[3]);
-        log_info("Create_connection to "); print_bd_addr(addr); log_info("\n");
+        log_info("Create_connection to %s\n", bd_addr_to_str(addr));
         conn = connection_for_address(addr);
         if (conn) {
             // if connection exists

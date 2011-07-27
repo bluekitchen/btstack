@@ -98,7 +98,7 @@ char * bd_addr_to_str(bd_addr_t addr){
 }
 
 void print_bd_addr( bd_addr_t addr){
-    log_info("%s", bd_addr_to_str(&addr));
+    log_info("%s", bd_addr_to_str(addr));
 }
 
 #ifndef EMBEDDED
