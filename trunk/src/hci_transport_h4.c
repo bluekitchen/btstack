@@ -48,6 +48,13 @@
 #include "hci_transport.h"
 #include "hci_dump.h"
 
+// determine sie of receive buffer
+#if (HCI_ACL_DATA_PKT_HDR + HCI_ACL_BUFFER_SIZE) > (HCI_EVENT_PKT_HDR + HCI_EVENT_PKT_SIZE)
+#define HCI_PACKET_BUFFER_SIZE (HCI_ACL_DATA_PKT_HDR + HCI_ACL_BUFFER_SIZE)
+#else
+#define HCI_PACKET_BUFFER_SIZE (HCI_EVENT_PKT_HDR + HCI_EVENT_PKT_SIZE)
+#endif
+
 // #define USE_HCI_READER_THREAD
 
 typedef enum {
@@ -90,10 +97,8 @@ static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t si
 static  H4_STATE h4_state;
 static int bytes_to_read;
 static int read_pos;
-// static uint8_t hci_event_buffer[255+2]; // maximal payload + 2 bytes header
-static uint8_t hci_packet[1+HCI_ACL_BUFFER_SIZE]; // bigger than largest packet - watch out when ACL payload is < 255
 
-
+static uint8_t hci_packet[1+HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
 
 // prototypes
 static int    h4_open(void *transport_config){
