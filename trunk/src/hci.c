@@ -403,11 +403,11 @@ static void event_handler(uint8_t *packet, int size){
                 hci_stack.total_num_acl_packets  = packet[9];
                 // ignore: total num SCO packets
                 if (hci_stack.state == HCI_STATE_INITIALIZING){
-                    // determine usable packet types
-                    uint16_t max_acl_payload = hci_stack.acl_data_packet_length;
-                    if (HCI_ACL_BUFFER_SIZE < max_acl_payload) {
-                        max_acl_payload = HCI_ACL_BUFFER_SIZE;
+                    // determine usable ACL payload size
+                    if (HCI_ACL_BUFFER_SIZE < hci_stack.acl_data_packet_length){
+                        hci_stack.acl_data_packet_length = HCI_ACL_BUFFER_SIZE;
                     }
+                    // determine usable ACL packet types
                     hci_stack.packet_types = hci_acl_packet_types_for_buffer_size(max_acl_payload);
                     
                     log_error("hci_read_buffer_size: size %u, count %u, packet types %04x\n",

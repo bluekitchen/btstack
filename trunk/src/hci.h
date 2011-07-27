@@ -215,7 +215,7 @@ typedef struct {
     uint32_t timestamp; // timeout in system ticks
 #endif
     
-    // ACL packet recombination
+    // ACL packet recombination - ACL Header + ACL payload
     uint8_t  acl_recombination_buffer[4 + HCI_ACL_BUFFER_SIZE];
     uint16_t acl_recombination_pos;
     uint16_t acl_recombination_length;
