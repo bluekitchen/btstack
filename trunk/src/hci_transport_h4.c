@@ -48,7 +48,7 @@
 #include "hci_transport.h"
 #include "hci_dump.h"
 
-// determine sie of receive buffer
+// determine size of receive buffer
 #if (HCI_ACL_DATA_PKT_HDR + HCI_ACL_BUFFER_SIZE) > (HCI_EVENT_PKT_HDR + HCI_EVENT_PKT_SIZE)
 #define HCI_PACKET_BUFFER_SIZE (HCI_ACL_DATA_PKT_HDR + HCI_ACL_BUFFER_SIZE)
 #else
