@@ -48,8 +48,6 @@
 
 #include <stdio.h>
 
-#define L2CAP_HEADER_SIZE 4
-
 // size of HCI ACL + L2CAP Header for regular data packets (8)
 #define COMPLETE_L2CAP_HEADER (HCI_ACL_DATA_PKT_HDR + L2CAP_HEADER_SIZE)
 
