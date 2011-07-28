@@ -48,20 +48,22 @@ typedef enum {
 } POWER_NOTIFICATION_t;
 
 typedef struct {
-    int          (*on)(void *config);     // <-- turn BT module on and configure
-    int          (*off)(void *config);    // <-- turn BT module off
+    int          (*on)   (void *config);  // <-- turn BT module on and configure
+    int          (*off)  (void *config);  // <-- turn BT module off
     int          (*sleep)(void *config);  // <-- put BT module to sleep    - only to be called after ON
-    int          (*wake)(void *config);   // <-- wake BT module from sleep - only to be called after SLEEP
+    int          (*wake) (void *config);  // <-- wake BT module from sleep - only to be called after SLEEP
     int          (*valid)(void *config);  // <-- test if hardware can be supported
-    const char * (*name)(void *config);   // <-- return hardware name
+    const char * (*name) (void *config);  // <-- return hardware name
 
-    /** support for UART baud rate changes */
+    /** support for UART baud rate changes - cmd has to be stored in hci_cmd_buffer
+     * @return have command
+     */
     int          (*baudrate_cmd)(void * config, uint32_t baudrate, uint8_t *hci_cmd_buffer); 
     
-    /** support custom init sequences after RESET command
-      * @return pointer do next command packet used during init
+    /** support custom init sequences after RESET command - cmd has to be stored in hci_cmd_buffer
+      * @return have command
       */
-    uint8_t *    (*next_command)(void *config); 
+    int          (*next_cmd)(void *config, uint8_t * hci_cmd_buffer); 
 
     void         (*register_for_power_notifications)(void (*cb)(POWER_NOTIFICATION_t event));
 
