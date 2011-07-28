@@ -48,10 +48,11 @@
 #include <btstack/hal_uart_dma.h>
 
 // determine size of receive buffer
-#if (HCI_ACL_DATA_PKT_HDR + HCI_ACL_BUFFER_SIZE) > (HCI_EVENT_PKT_HDR + HCI_EVENT_PKT_SIZE)
+// use one extra byte to guarantee zero terminated device name in remote name event
+#if (HCI_ACL_DATA_PKT_HDR + HCI_ACL_BUFFER_SIZE) > (HCI_EVENT_PKT_HDR + HCI_EVENT_PKT_SIZE + 1)
 #define HCI_PACKET_BUFFER_SIZE (HCI_ACL_DATA_PKT_HDR + HCI_ACL_BUFFER_SIZE)
 #else
-#define HCI_PACKET_BUFFER_SIZE (HCI_EVENT_PKT_HDR + HCI_EVENT_PKT_SIZE)
+#define HCI_PACKET_BUFFER_SIZE (HCI_EVENT_PKT_HDR + HCI_EVENT_PKT_SIZE + 1)
 #endif
 
 typedef enum {
