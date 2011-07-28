@@ -55,6 +55,14 @@
 #define L2CAP_MINIMAL_MTU 48
 #define L2CAP_DEFAULT_MTU 672
 
+// determine size of outgoing packet construction buffer - this includes ACL + L2CAP header
+#if (L2CAP_MINIMAL_MTU + L2CAP_HEADER_SIZE) > (HCI_ACL_BUFFER_SIZE)
+#define L2CAP_PACKET_BUFFER_SIZE (HCI_ACL_DATA_PKT_HDR + L2CAP_HEADER_SIZE + L2CAP_MINIMAL_MTU)
+#else
+#define L2CAP_PACKET_BUFFER_SIZE (HCI_ACL_DATA_PKT_HDR + HCI_ACL_BUFFER_SIZE)
+#endif
+
+
 // nr of buffered acl packets in outgoing queue to get max performance 
 #define NR_BUFFERED_ACL_PACKETS 3
 
@@ -75,8 +83,7 @@ static l2cap_signaling_response_t signaling_responses[NR_PENDING_SIGNALING_RESPO
 static int signaling_responses_pending;
 
 // static buffers
-static uint8_t sig_buffer[HCI_ACL_DATA_PKT_HDR + L2CAP_HEADER_SIZE + L2CAP_MINIMAL_MTU];
-static uint8_t acl_buffer[HCI_ACL_DATA_PKT_HDR + HCI_ACL_BUFFER_SIZE];
+static uint8_t acl_buffer[L2CAP_PACKET_BUFFER_SIZE];
 
 static linked_list_t l2cap_channels = NULL;
 static linked_list_t l2cap_services = NULL;
@@ -221,10 +228,10 @@ int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMAND
     // log_info("l2cap_send_signaling_packet type %u\n", cmd);
     va_list argptr;
     va_start(argptr, identifier);
-    uint16_t len = l2cap_create_signaling_internal(sig_buffer, handle, cmd, identifier, argptr);
+    uint16_t len = l2cap_create_signaling_internal(acl_buffer, handle, cmd, identifier, argptr);
     va_end(argptr);
     // log_info("l2cap_send_signaling_packet con %u!\n", handle);
-    return hci_send_acl_packet(sig_buffer, len);
+    return hci_send_acl_packet(acl_buffer, len);
 }
 
 int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
@@ -390,7 +397,7 @@ void l2cap_run(void){
 }
 
 static uint16_t l2cap_max_l2cap_mtu(void){
-    return hci_max_acl_data_packet_length()-4;  // 4 bytes for L2CAP header
+    return hci_max_acl_data_packet_length() - L2CAP_HEADER_SIZE;
 }
 
 // open outgoing L2CAP channel
