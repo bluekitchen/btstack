@@ -377,7 +377,9 @@ uint16_t hci_usable_acl_packet_types(void){
 }
 
 // avoid huge local variables
+#ifndef EMBEDDED
 static device_name_t device_name;
+#endif
 static void event_handler(uint8_t *packet, int size){
     bd_addr_t addr;
     uint8_t link_type;
@@ -513,6 +515,7 @@ static void event_handler(uint8_t *packet, int size){
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_PIN_CODE_REQUEST);
             break;
             
+#ifndef EMBEDDED
         case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
             if (!hci_stack.remote_device_db) break;
             if (packet[2]) break; // status not ok
@@ -542,6 +545,7 @@ static void event_handler(uint8_t *packet, int size){
                 }
             }
             return;
+#endif
             
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             if (!packet[2]){
