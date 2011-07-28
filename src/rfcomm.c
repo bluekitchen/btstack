@@ -95,7 +95,7 @@ static linked_list_t rfcomm_channels = NULL;
 static linked_list_t rfcomm_services = NULL;
 
 // used to assemble rfcomm packets
-uint8_t rfcomm_out_buffer[MAX_L2CAP_PAYLOAD];
+static uint8_t rfcomm_out_buffer[MAX_L2CAP_PAYLOAD];
 
 static void (*app_packet_handler)(void * connection, uint8_t packet_type,
                                   uint16_t channel, uint8_t *packet, uint16_t size);
