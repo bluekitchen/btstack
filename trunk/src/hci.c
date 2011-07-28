@@ -956,14 +956,14 @@ void hci_run(){
                 case 3:
                     // custom initialization
                     if (hci_stack.control && hci_stack.control->next_command){
-                        uint8_t * cmd = (*hci_stack.control->next_command)(hci_stack.config);
-                        if (cmd) {
-                            int size = 3 + cmd[2];
-                            hci_stack.hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, cmd, size);
+                        int valid_cmd = (*hci_stack.control->next_command)(hci_stack.config, hci_stack.hci_cmd_buffer);
+                        if (valid_cmd){
+                            int size = 3 + hci_stack.hci_cmd_buffer[2];
+                            hci_stack.hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, hci_stack.hci_cmd_buffer, size);
                             hci_stack.substate = 4; // more init commands
                             break;
                         }
-                        printf("hci_run: init script done\n\r");
+                        log_info("hci_run: init script done\n\r");
                     }
                     // otherwise continue
 					hci_send_cmd(&hci_read_bd_addr);
