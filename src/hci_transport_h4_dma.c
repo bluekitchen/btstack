@@ -47,14 +47,6 @@
 
 #include <btstack/hal_uart_dma.h>
 
-// determine size of receive buffer
-// use one extra byte to guarantee zero terminated device name in remote name event
-#if (HCI_ACL_DATA_PKT_HDR + HCI_ACL_BUFFER_SIZE) > (HCI_EVENT_PKT_HDR + HCI_EVENT_PKT_SIZE + 1)
-#define HCI_PACKET_BUFFER_SIZE (HCI_ACL_DATA_PKT_HDR + HCI_ACL_BUFFER_SIZE)
-#else
-#define HCI_PACKET_BUFFER_SIZE (HCI_EVENT_PKT_HDR + HCI_EVENT_PKT_SIZE + 1)
-#endif
-
 typedef enum {
     H4_W4_PACKET_TYPE = 1,
     H4_W4_EVENT_HEADER,
@@ -150,11 +142,11 @@ static void h4_block_received(void){
             switch (hci_packet[0]) {
                 case HCI_ACL_DATA_PACKET:
                     h4_state = H4_W4_ACL_HEADER;
-                    bytes_to_read = HCI_ACL_DATA_PKT_HDR;
+                    bytes_to_read = HCI_ACL_HEADER_SIZE;
                     break;
                 case HCI_EVENT_PACKET:
                     h4_state = H4_W4_EVENT_HEADER;
-                    bytes_to_read = HCI_EVENT_PKT_HDR;
+                    bytes_to_read = HCI_EVENT_HEADER_SIZE;
                     break;
                 default:
                     log_error("h4_process: invalid packet type 0x%02x\r\n", hci_packet[0]);

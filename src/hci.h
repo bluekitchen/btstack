@@ -38,6 +38,8 @@
 
 #pragma once
 
+#include "../config.h"
+
 #include <btstack/hci_cmds.h>
 #include <btstack/utils.h>
 #include "hci_transport.h"
@@ -52,11 +54,11 @@
 extern "C" {
 #endif
     
-// packet header lenghts
-#define HCI_CMD_DATA_PKT_HDR	  0x03
-#define HCI_ACL_DATA_PKT_HDR	  0x04
-#define HCI_SCO_DATA_PKT_HDR	  0x03
-#define HCI_EVENT_PKT_HDR         0x02
+// packet header sizes
+#define HCI_CMD_HEADER_SIZE          3
+#define HCI_ACL_HEADER_SIZE   	     4
+#define HCI_SCO_HEADER_SIZE  	     3
+#define HCI_EVENT_HEADER_SIZE        2
 
 // packet sizes (max payload)
 #define HCI_ACL_DM1_SIZE            17
@@ -72,8 +74,23 @@ extern "C" {
 #define HCI_ACL_2DH5_SIZE          679
 #define HCI_ACL_3DH5_SIZE         1021
        
-#define HCI_EVENT_PKT_SIZE         255
-        
+#define HCI_EVENT_PAYLOAD_SIZE     255
+#define HCI_CMD_PAYLOAD_SIZE       255
+    
+// packet buffer sizes
+// HCI_ACL_PAYLOAD_SIZE is configurable and defined in config.h
+#define HCI_EVENT_BUFFER_SIZE      (HCI_EVENT_HEADER_SIZE + HCI_EVENT_PAYLOAD_SIZE)
+#define HCI_CMD_BUFFER_SIZE        (HCI_CMD_HEADER_SIZE   + HCI_CMD_PAYLOAD_SIZE)
+#define HCI_ACL_BUFFER_SIZE        (HCI_ACL_HEADER_SIZE   + HCI_ACL_PAYLOAD_SIZE)
+    
+// size of hci buffers, big enough for command, event, or acl packet without H4 packet type
+// @note cmd buffer is bigger than event buffer
+#if HCI_ACL_BUFFER_SIZE > HCI_CMD_BUFFER_SIZE
+#define HCI_PACKET_BUFFER_SIZE HCI_ACL_BUFFER_SIZE
+#else
+#define HCI_PACKET_BUFFER_SIZE HCI_EVENT_BUFFER_SIZE
+#endif
+    
 // OGFs
 #define OGF_LINK_CONTROL          0x01
 #define OGF_LINK_POLICY           0x02
@@ -243,6 +260,7 @@ typedef struct {
 
     // single buffer for HCI Command assembly
     uint8_t          hci_cmd_buffer[3+255]; // opcode (16), len(8)
+    uint8_t          hci_packet_buffer[HCI_PACKET_BUFFER_SIZE]; // opcode (16), len(8)
     
     /* host to controller flow control */
     uint8_t  num_cmd_packets;

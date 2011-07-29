@@ -48,15 +48,6 @@
 #include "hci_transport.h"
 #include "hci_dump.h"
 
-
-// determine size of receive buffer
-// use one extra byte to guarantee zero terminated device name in remote name event
-#if (HCI_ACL_DATA_PKT_HDR + HCI_ACL_BUFFER_SIZE) > (HCI_EVENT_PKT_HDR + HCI_EVENT_PKT_SIZE + 1)
-#define HCI_PACKET_BUFFER_SIZE (HCI_ACL_DATA_PKT_HDR + HCI_ACL_BUFFER_SIZE)
-#else
-#define HCI_PACKET_BUFFER_SIZE (HCI_EVENT_PKT_HDR + HCI_EVENT_PKT_SIZE + 1)
-#endif
-
 // #define USE_HCI_READER_THREAD
 
 typedef enum {
