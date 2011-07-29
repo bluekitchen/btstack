@@ -209,10 +209,6 @@ uint8_t hci_number_free_acl_slots(){
     return free_slots;
 }
 
-uint16_t hci_max_acl_data_packet_length(){
-    return hci_stack.acl_data_packet_length;
-}
-
 int hci_can_send_packet_now(uint8_t packet_type){
 
     // check for async hci transport implementations
@@ -374,6 +370,15 @@ static uint16_t hci_acl_packet_types_for_buffer_size(uint16_t buffer_size){
 
 uint16_t hci_usable_acl_packet_types(void){
     return hci_stack.packet_types;
+}
+
+uint8_t* hci_get_outgoing_acl_packet_buffer(void){
+    // hci packet buffer is >= acl data packet length
+    return hci_stack.hci_packet_buffer;
+}
+
+uint16_t hci_max_acl_data_packet_length(){
+    return hci_stack.acl_data_packet_length;
 }
 
 // avoid huge local variables
@@ -945,8 +950,8 @@ void hci_run(){
                     }
                     break;
                 case 1: // SEND BAUD CHANGE
-                    hci_stack.control->baudrate_cmd(hci_stack.config, ((hci_uart_config_t *)hci_stack.config)->baudrate_main, hci_stack.hci_cmd_buffer);
-                    hci_send_cmd_packet(hci_stack.hci_cmd_buffer, 3 + hci_stack.hci_cmd_buffer[2]);
+                    hci_stack.control->baudrate_cmd(hci_stack.config, ((hci_uart_config_t *)hci_stack.config)->baudrate_main, hci_stack.hci_packet_buffer);
+                    hci_send_cmd_packet(hci_stack.hci_packet_buffer, 3 + hci_stack.hci_packet_buffer[2]);
                     break;
                 case 2: // LOCAL BAUD CHANGE
                     hci_stack.hci_transport->set_baudrate(((hci_uart_config_t *)hci_stack.config)->baudrate_main);
@@ -956,10 +961,10 @@ void hci_run(){
                 case 3:
                     // custom initialization
                     if (hci_stack.control && hci_stack.control->next_cmd){
-                        int valid_cmd = (*hci_stack.control->next_cmd)(hci_stack.config, hci_stack.hci_cmd_buffer);
+                        int valid_cmd = (*hci_stack.control->next_cmd)(hci_stack.config, hci_stack.hci_packet_buffer);
                         if (valid_cmd){
-                            int size = 3 + hci_stack.hci_cmd_buffer[2];
-                            hci_stack.hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, hci_stack.hci_cmd_buffer, size);
+                            int size = 3 + hci_stack.hci_packet_buffer[2];
+                            hci_stack.hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, hci_stack.hci_packet_buffer, size);
                             hci_stack.substate = 4; // more init commands
                             break;
                         }
@@ -1138,9 +1143,9 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
 int hci_send_cmd(const hci_cmd_t *cmd, ...){
     va_list argptr;
     va_start(argptr, cmd);
-    uint16_t size = hci_create_cmd_internal(hci_stack.hci_cmd_buffer, cmd, argptr);
+    uint16_t size = hci_create_cmd_internal(hci_stack.hci_packet_buffer, cmd, argptr);
     va_end(argptr);
-    return hci_send_cmd_packet(hci_stack.hci_cmd_buffer, size);
+    return hci_send_cmd_packet(hci_stack.hci_packet_buffer, size);
 }
 
 // Create various non-HCI events. 
