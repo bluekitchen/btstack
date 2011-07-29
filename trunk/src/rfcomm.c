@@ -94,9 +94,6 @@ static linked_list_t rfcomm_multiplexers = NULL;
 static linked_list_t rfcomm_channels = NULL;
 static linked_list_t rfcomm_services = NULL;
 
-// used to assemble rfcomm packets
-static uint8_t rfcomm_out_buffer[MAX_L2CAP_PAYLOAD];
-
 static void (*app_packet_handler)(void * connection, uint8_t packet_type,
                                   uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -353,6 +350,10 @@ static rfcomm_service_t * rfcomm_service_for_channel(uint8_t server_channel){
  */
 static int rfcomm_send_packet_for_multiplexer(rfcomm_multiplexer_t *multiplexer, uint8_t address, uint8_t control, uint8_t credits, uint8_t *data, uint16_t len){
 
+    if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) return BTSTACK_ACL_BUFFERS_FULL;
+    
+    uint8_t * rfcomm_out_buffer = l2cap_get_outgoing_buffer();
+    
 	uint16_t pos = 0;
 	uint8_t crc_fields = 3;
 	
@@ -393,7 +394,7 @@ static int rfcomm_send_packet_for_multiplexer(rfcomm_multiplexer_t *multiplexer,
         log_info( "rfcomm_send_packet addr %02x, ctrl %02x size %u without l2cap credits\n", address, control, pos);
     }
     
-    int err = l2cap_send_internal(multiplexer->l2cap_cid, rfcomm_out_buffer, pos);
+    int err = l2cap_send_prepared(multiplexer->l2cap_cid, pos);
     
     if (err) {
         // undo credit counting
