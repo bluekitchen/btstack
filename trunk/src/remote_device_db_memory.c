@@ -35,28 +35,7 @@
 #include "remote_device_db.h"
 #include "debug.h"
 
-#include <btstack/linked_list.h>
 #include <btstack/utils.h>
-
-#define MAX_NAME_LEN 32
-
-
-typedef struct {
-    // linked list - assert: first field
-    linked_item_t    item;
-
-    bd_addr_t bd_addr;
-    link_key_t link_key;
-    char device_name[MAX_NAME_LEN];
-} db_mem_device_t;
-
-typedef struct {
-    // linked list - assert: first field
-    linked_item_t    item;
-
-    char service_name[MAX_NAME_LEN];
-    uint8_t channel;
-} db_mem_service_t;
 
 static linked_list_t db_mem_devices;
 static linked_list_t db_mem_services;
