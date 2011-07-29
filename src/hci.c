@@ -955,8 +955,8 @@ void hci_run(){
                     
                 case 3:
                     // custom initialization
-                    if (hci_stack.control && hci_stack.control->next_command){
-                        int valid_cmd = (*hci_stack.control->next_command)(hci_stack.config, hci_stack.hci_cmd_buffer);
+                    if (hci_stack.control && hci_stack.control->next_cmd){
+                        int valid_cmd = (*hci_stack.control->next_cmd)(hci_stack.config, hci_stack.hci_cmd_buffer);
                         if (valid_cmd){
                             int size = 3 + hci_stack.hci_cmd_buffer[2];
                             hci_stack.hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, hci_stack.hci_cmd_buffer, size);
