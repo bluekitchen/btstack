@@ -259,7 +259,6 @@ typedef struct {
     linked_list_t     connections;
 
     // single buffer for HCI Command assembly
-    uint8_t          hci_cmd_buffer[3+255]; // opcode (16), len(8)
     uint8_t          hci_packet_buffer[HCI_PACKET_BUFFER_SIZE]; // opcode (16), len(8)
     
     /* host to controller flow control */
@@ -322,12 +321,13 @@ int hci_send_acl_packet(uint8_t *packet, int size);
 int hci_can_send_packet_now(uint8_t packet_type);
     
 hci_connection_t * connection_for_handle(hci_con_handle_t con_handle);
-uint8_t hci_number_outgoing_packets(hci_con_handle_t handle);
-uint8_t hci_number_free_acl_slots(void);
-int     hci_authentication_active_for_handle(hci_con_handle_t handle);
-void    hci_drop_link_key_for_bd_addr(bd_addr_t *addr);
+uint8_t  hci_number_outgoing_packets(hci_con_handle_t handle);
+uint8_t  hci_number_free_acl_slots(void);
+int      hci_authentication_active_for_handle(hci_con_handle_t handle);
+void     hci_drop_link_key_for_bd_addr(bd_addr_t *addr);
 uint16_t hci_max_acl_data_packet_length(void);
 uint16_t hci_usable_acl_packet_types(void);
+uint8_t* hci_get_outgoing_acl_packet_buffer(void);
 
 // 
 void hci_emit_state(void);
