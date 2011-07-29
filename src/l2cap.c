@@ -55,14 +55,6 @@
 #define L2CAP_MINIMAL_MTU 48
 #define L2CAP_DEFAULT_MTU 672
 
-// determine size of outgoing packet construction buffer - this includes ACL + L2CAP header
-#if (L2CAP_MINIMAL_MTU + L2CAP_HEADER_SIZE) > (HCI_ACL_BUFFER_SIZE)
-#define L2CAP_PACKET_BUFFER_SIZE (HCI_ACL_HEADER_SIZE + L2CAP_HEADER_SIZE + L2CAP_MINIMAL_MTU)
-#else
-#define L2CAP_PACKET_BUFFER_SIZE (HCI_ACL_HEADER_SIZE + HCI_ACL_BUFFER_SIZE)
-#endif
-
-
 // nr of buffered acl packets in outgoing queue to get max performance 
 #define NR_BUFFERED_ACL_PACKETS 3
 
@@ -81,9 +73,6 @@ static void l2cap_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t 
 // used to cache l2cap rejects, echo, and informational requests
 static l2cap_signaling_response_t signaling_responses[NR_PENDING_SIGNALING_RESPONSES];
 static int signaling_responses_pending;
-
-// static buffers
-static uint8_t acl_buffer[L2CAP_PACKET_BUFFER_SIZE];
 
 static linked_list_t l2cap_channels = NULL;
 static linked_list_t l2cap_services = NULL;
@@ -225,7 +214,14 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid){
 }
 
 int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...){
+
+    if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)){
+        log_info("l2cap_send_signaling_packet, cannot send\n");
+        return BTSTACK_ACL_BUFFERS_FULL;
+    }
+    
     // log_info("l2cap_send_signaling_packet type %u\n", cmd);
+    uint8_t *acl_buffer = hci_get_outgoing_acl_packet_buffer();
     va_list argptr;
     va_start(argptr, identifier);
     uint16_t len = l2cap_create_signaling_internal(acl_buffer, handle, cmd, identifier, argptr);
@@ -234,45 +230,65 @@ int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMAND
     return hci_send_acl_packet(acl_buffer, len);
 }
 
-int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
+uint8_t *l2cap_get_outgoing_buffer(void){
+    return hci_get_outgoing_acl_packet_buffer() + COMPLETE_L2CAP_HEADER; // 8 bytes
+}
 
-    // check for free places on BT module
-    if (!hci_number_free_acl_slots()) {
-        log_info("l2cap_send_internal cid %u, BT module full <-----\n", local_cid);
+int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
+    
+    if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)){
+        log_info("l2cap_send_internal cid %u, cannot send\n", local_cid);
         return BTSTACK_ACL_BUFFERS_FULL;
     }
-    int err = 0;
     
-    // find channel for local_cid, construct l2cap packet and send
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
-    if (channel) {
-        if (channel->packets_granted > 0){
-            --channel->packets_granted;
-            // log_info("l2cap_send_internal cid %u, handle %u, 1 credit used, credits left %u;\n",
-            //        local_cid, channel->handle, channel->packets_granted);
-        } else {
-            log_error("l2cap_send_internal cid %u, no credits!\n", local_cid);
-        }
-        
-        // 0 - Connection handle : PB=10 : BC=00 
-        bt_store_16(acl_buffer, 0, channel->handle | (2 << 12) | (0 << 14));
-        // 2 - ACL length
-        bt_store_16(acl_buffer, 2,  len + 4);
-        // 4 - L2CAP packet length
-        bt_store_16(acl_buffer, 4,  len + 0);
-        // 6 - L2CAP channel DEST
-        bt_store_16(acl_buffer, 6, channel->remote_cid);
-        // 8 - data
-        memcpy(&acl_buffer[8], data, len);
-        
-        // send
-        err = hci_send_acl_packet(acl_buffer, len+8);
+    if (!channel) {
+        log_error("l2cap_send_internal no channel for cid %u\n", local_cid);
+        return -1;   // TODO: define error
     }
+
+    if (channel->packets_granted == 0){
+        log_error("l2cap_send_internal cid %u, no credits!\n", local_cid);
+        return -1;  // TODO: define error
+    }
+    
+    --channel->packets_granted;
+
+    log_debug("l2cap_send_internal cid %u, handle %u, 1 credit used, credits left %u;\n",
+                  local_cid, channel->handle, channel->packets_granted);
+    
+    uint8_t *acl_buffer = hci_get_outgoing_acl_packet_buffer();
+
+    // 0 - Connection handle : PB=10 : BC=00 
+    bt_store_16(acl_buffer, 0, channel->handle | (2 << 12) | (0 << 14));
+    // 2 - ACL length
+    bt_store_16(acl_buffer, 2,  len + 4);
+    // 4 - L2CAP packet length
+    bt_store_16(acl_buffer, 4,  len + 0);
+    // 6 - L2CAP channel DEST
+    bt_store_16(acl_buffer, 6, channel->remote_cid);    
+    // send
+    int err = hci_send_acl_packet(acl_buffer, len+8);
     
     l2cap_hand_out_credits();
     
     return err;
 }
+
+int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
+
+    if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)){
+        log_info("l2cap_send_internal cid %u, cannot send\n", local_cid);
+        return BTSTACK_ACL_BUFFERS_FULL;
+    }
+
+    uint8_t *acl_buffer = hci_get_outgoing_acl_packet_buffer();
+
+    memcpy(&acl_buffer[8], data, len);
+
+    return l2cap_send_prepared(local_cid, len);
+}
+
 
 // MARK: L2CAP_RUN
 // process outstanding signaling tasks
