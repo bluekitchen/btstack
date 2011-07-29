@@ -33,6 +33,7 @@
 #include <stdlib.h>
 
 #include "remote_device_db.h"
+#include "btstack_memory.h"
 #include "debug.h"
 
 #include <btstack/utils.h>
@@ -70,14 +71,14 @@ static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key){
     }
 
     // Record not found, create new one for this device
-    db_mem_device_t * newItem = (db_mem_device_t *) malloc(sizeof(db_mem_device_t));
+    db_mem_device_t * newItem = btstack_memory_db_mem_device_get();
 
-    if (newItem) {
-        memcpy(newItem->bd_addr, bd_addr, sizeof(bd_addr_t));
-        strncpy(newItem->device_name, "", MAX_NAME_LEN);
-        memcpy(newItem->link_key, link_key, LINK_KEY_LEN);
-	linked_list_add(&db_mem_devices, (linked_item_t *) newItem);
-    }
+    if (!newItem) return;
+    
+    memcpy(newItem->bd_addr, bd_addr, sizeof(bd_addr_t));
+    strncpy(newItem->device_name, "", MAX_NAME_LEN);
+    memcpy(newItem->link_key, link_key, LINK_KEY_LEN);
+    linked_list_add(&db_mem_devices, (linked_item_t *) newItem);
 }
 
 static void delete_link_key(bd_addr_t *bd_addr){
@@ -87,7 +88,7 @@ static void delete_link_key(bd_addr_t *bd_addr){
         if (item->bd_addr == *bd_addr){
             // Found record, delete it
             linked_list_remove(&db_mem_devices, (linked_item_t *) item);
-            free(item);
+            btstack_memory_db_mem_device_free(item);
             return;
         }
     }
@@ -105,15 +106,15 @@ static void put_name(bd_addr_t *bd_addr, device_name_t *device_name){
     }
 
     // Record not found, create a new one for this device
-    db_mem_device_t * newItem = (db_mem_device_t *) malloc(sizeof(db_mem_device_t));
+    db_mem_device_t * newItem = btstack_memory_db_mem_device_get();
 
-    if (newItem) {
-        memcpy(newItem->bd_addr, bd_addr, sizeof(bd_addr_t));
-        strncpy(newItem->device_name, (const char*) device_name, MAX_NAME_LEN);
-        memset(newItem->link_key, 0, LINK_KEY_LEN);
+    if (!newItem) return;
+
+    memcpy(newItem->bd_addr, bd_addr, sizeof(bd_addr_t));
+    strncpy(newItem->device_name, (const char*) device_name, MAX_NAME_LEN);
+    memset(newItem->link_key, 0, LINK_KEY_LEN);
 
 	linked_list_add(&db_mem_devices, (linked_item_t *) newItem);
-    }
 }
 
 static void delete_name(bd_addr_t *bd_addr){
@@ -123,7 +124,7 @@ static void delete_name(bd_addr_t *bd_addr){
         if (item->bd_addr == *bd_addr){
             // Found record, delete it
             linked_list_remove(&db_mem_devices, (linked_item_t *) item);
-            free(item);
+            btstack_memory_db_mem_device_free(item);
             return;
         }
     }
@@ -160,16 +161,14 @@ static uint8_t persistent_rfcomm_channel(char *serviceName){
     }
 
     // Allocate new persistant channel
-    db_mem_service_t * newItem = (db_mem_service_t *) malloc(sizeof(db_mem_service_t));
+    db_mem_service_t * newItem = btstack_memory_db_mem_service_get();
 
-    if (newItem) {
-        strncpy(newItem->service_name, serviceName, MAX_NAME_LEN);
-        newItem->channel = max_channel;
-        linked_list_add(&db_mem_services, (linked_item_t *) newItem);
-        return max_channel;
-    }
-
-    return 0;
+    if (!newItem) return 0;
+    
+    strncpy(newItem->service_name, serviceName, MAX_NAME_LEN);
+    newItem->channel = max_channel;
+    linked_list_add(&db_mem_services, (linked_item_t *) newItem);
+    return max_channel;
 }
 
 
