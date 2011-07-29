@@ -60,3 +60,23 @@ typedef struct {
 
 extern remote_device_db_t remote_device_db_iphone;
 extern remote_device_db_t remote_device_db_memory;
+
+// MARK: non-persisten implementation
+#include <btstack/linked_list.h>
+#define MAX_NAME_LEN 32
+typedef struct {
+    // linked list - assert: first field
+    linked_item_t    item;
+    
+    bd_addr_t bd_addr;
+    link_key_t link_key;
+    char device_name[MAX_NAME_LEN];
+} db_mem_device_t;
+
+typedef struct {
+    // linked list - assert: first field
+    linked_item_t    item;
+    
+    char service_name[MAX_NAME_LEN];
+    uint8_t channel;
+} db_mem_service_t;
