@@ -40,8 +40,6 @@
 
 #define MAX_NAME_LEN 32
 
-linked_list_t db_mem_devices;
-linked_list_t db_mem_services;
 
 typedef struct {
     // linked list - assert: first field
@@ -50,7 +48,7 @@ typedef struct {
     bd_addr_t bd_addr;
     link_key_t link_key;
     char device_name[MAX_NAME_LEN];
-} db_mem_devices_t;
+} db_mem_device_t;
 
 typedef struct {
     // linked list - assert: first field
@@ -58,7 +56,10 @@ typedef struct {
 
     char service_name[MAX_NAME_LEN];
     uint8_t channel;
-} db_mem_services_t;
+} db_mem_service_t;
+
+static linked_list_t db_mem_devices;
+static linked_list_t db_mem_services;
 
 // Device info
 static void db_open(){
@@ -70,7 +71,7 @@ static void db_close(){
 static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key) {
     linked_item_t *it;
     for (it = (linked_item_t *) db_mem_devices; it ; it = it->next){
-        db_mem_devices_t * item = (db_mem_devices_t *) it;
+        db_mem_device_t * item = (db_mem_device_t *) it;
         if (BD_ADDR_CMP(item->bd_addr, *bd_addr) == 0) {
             memcpy(link_key, item->link_key, LINK_KEY_LEN);
             return 1;
@@ -82,7 +83,7 @@ static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key) {
 static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key){
     linked_item_t *it;
     for (it = (linked_item_t *) db_mem_devices; it ; it = it->next){
-        db_mem_devices_t * item = (db_mem_devices_t *) it;
+        db_mem_device_t * item = (db_mem_device_t *) it;
         if (item->bd_addr == *bd_addr){
             memcpy(item->link_key, link_key, LINK_KEY_LEN);
             return;
@@ -90,7 +91,7 @@ static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key){
     }
 
     // Record not found, create new one for this device
-    db_mem_devices_t * newItem = (db_mem_devices_t *) malloc(sizeof(db_mem_devices_t));
+    db_mem_device_t * newItem = (db_mem_device_t *) malloc(sizeof(db_mem_device_t));
 
     if (newItem) {
         memcpy(newItem->bd_addr, bd_addr, sizeof(bd_addr_t));
@@ -103,7 +104,7 @@ static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key){
 static void delete_link_key(bd_addr_t *bd_addr){
     linked_item_t *it;
     for (it = (linked_item_t *) db_mem_devices; it ; it = it->next){
-        db_mem_devices_t * item = (db_mem_devices_t *) it;
+        db_mem_device_t * item = (db_mem_device_t *) it;
         if (item->bd_addr == *bd_addr){
             // Found record, delete it
             linked_list_remove(&db_mem_devices, (linked_item_t *) item);
@@ -116,7 +117,7 @@ static void delete_link_key(bd_addr_t *bd_addr){
 static void put_name(bd_addr_t *bd_addr, device_name_t *device_name){
     linked_item_t *it;
     for (it = (linked_item_t *) db_mem_devices; it ; it = it->next){
-        db_mem_devices_t * item = (db_mem_devices_t *) it;
+        db_mem_device_t * item = (db_mem_device_t *) it;
         if (item->bd_addr == *bd_addr){
             // Found record, ammend it
             strncpy(item->device_name, (const char*) device_name, MAX_NAME_LEN);
@@ -125,7 +126,7 @@ static void put_name(bd_addr_t *bd_addr, device_name_t *device_name){
     }
 
     // Record not found, create a new one for this device
-    db_mem_devices_t * newItem = (db_mem_devices_t *) malloc(sizeof(db_mem_devices_t));
+    db_mem_device_t * newItem = (db_mem_device_t *) malloc(sizeof(db_mem_device_t));
 
     if (newItem) {
         memcpy(newItem->bd_addr, bd_addr, sizeof(bd_addr_t));
@@ -139,7 +140,7 @@ static void put_name(bd_addr_t *bd_addr, device_name_t *device_name){
 static void delete_name(bd_addr_t *bd_addr){
     linked_item_t *it;
     for (it = (linked_item_t *) db_mem_devices; it ; it = it->next){
-        db_mem_devices_t * item = (db_mem_devices_t *) it;
+        db_mem_device_t * item = (db_mem_device_t *) it;
         if (item->bd_addr == *bd_addr){
             // Found record, delete it
             linked_list_remove(&db_mem_devices, (linked_item_t *) item);
@@ -152,7 +153,7 @@ static void delete_name(bd_addr_t *bd_addr){
 static int  get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
     linked_item_t *it;
     for (it = (linked_item_t *) db_mem_devices; it ; it = it->next){
-        db_mem_devices_t * item = (db_mem_devices_t *) it;
+        db_mem_device_t * item = (db_mem_device_t *) it;
         if (item->bd_addr == *bd_addr){
             strncpy((char*)device_name, item->device_name, MAX_NAME_LEN);
             return 1;
@@ -165,11 +166,11 @@ static int  get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
 
 static uint8_t persistent_rfcomm_channel(char *serviceName){
     linked_item_t *it;
-    db_mem_services_t * item;
+    db_mem_service_t * item;
     uint8_t max_channel = 1;
 
     for (it = (linked_item_t *) db_mem_services; it ; it = it->next){
-        item = (db_mem_services_t *) it;
+        item = (db_mem_service_t *) it;
         if (strncmp(item->service_name, serviceName, MAX_NAME_LEN) == 0) {
             // Match found
             return item->channel;
@@ -180,7 +181,7 @@ static uint8_t persistent_rfcomm_channel(char *serviceName){
     }
 
     // Allocate new persistant channel
-    db_mem_services_t * newItem = (db_mem_services_t *) malloc(sizeof(db_mem_services_t));
+    db_mem_service_t * newItem = (db_mem_service_t *) malloc(sizeof(db_mem_service_t));
 
     if (newItem) {
         strncpy(newItem->service_name, serviceName, MAX_NAME_LEN);
