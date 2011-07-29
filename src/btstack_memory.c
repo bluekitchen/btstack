@@ -179,6 +179,46 @@ void  btstack_memory_rfcomm_channel_free(void *rfcomm_channel){
 #error BTstack needs at least one rfcomm_channel_t, but neither MAX_NO_RFCOMM_CHANNELS nor HAVE_MALLOC are defined
 #endif
 
+// MARK: db_mem_device_t
+#ifdef MAX_NO_DB_MEM_DEVICES
+static db_mem_device_t db_mem_device_storage[MAX_NO_DB_MEM_DEVICES];
+static memory_pool_t db_mem_device_pool;
+void * btstack_memory_db_mem_device_get(void){
+    return memory_pool_get(&db_mem_device_pool);
+}
+void   btstack_memory_db_mem_device_free(void *db_mem_device){
+    memory_pool_free(&db_mem_device_pool, db_mem_device);
+}
+#elif defined(HAVE_MALLOC)
+void * btstack_memory_db_mem_device_get(void){
+    return malloc(sizeof(db_mem_device_t));
+}
+void  btstack_memory_db_mem_device_free(void *db_mem_device){
+    free(db_mem_device);
+}
+#endif
+
+
+// MARK: db_mem_service_t
+#ifdef MAX_NO_DB_MEM_SERVICES
+static db_mem_service_t db_mem_service_storage[MAX_NO_DB_MEM_SERVICES];
+static memory_pool_t db_mem_service_pool;
+void * btstack_memory_db_mem_service_get(void){
+    return memory_pool_get(&db_mem_service_pool);
+}
+void   btstack_memory_db_mem_service_free(void *db_mem_service){
+    memory_pool_free(&db_mem_service_pool, db_mem_service);
+}
+#elif defined(HAVE_MALLOC)
+void * btstack_memory_db_mem_service_get(void){
+    return malloc(sizeof(db_mem_service_t));
+}
+void  btstack_memory_db_mem_service_free(void *db_mem_service){
+    free(db_mem_service);
+}
+#endif
+
+
 // init
 void btstack_memory_init(void){
 #ifdef MAX_NO_HCI_CONNECTIONS
@@ -198,5 +238,11 @@ void btstack_memory_init(void){
 #endif
 #ifdef MAX_NO_RFCOMM_CHANNELS
     memory_pool_create(&rfcomm_channel_pool, rfcomm_channel_storage, MAX_NO_RFCOMM_CHANNELS, sizeof(rfcomm_channel_t));
+#endif
+#ifdef MAX_NO_DB_MEM_DEVICES
+    memory_pool_create(&db_mem_device_pool, db_mem_device_storage, MAX_NO_DB_MEM_DEVICES, sizeof(db_mem_device_t));
+#endif
+#ifdef MAX_NO_DB_MEM_SERVICES
+    memory_pool_create(&db_mem_service_pool, db_mem_service_storage, MAX_NO_DB_MEM_SERVICES, sizeof(db_mem_service_t));
 #endif
 }
