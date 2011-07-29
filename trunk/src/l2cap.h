@@ -61,6 +61,11 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid);
 
 void l2cap_block_new_credits(uint8_t blocked);
 int  l2cap_can_send_packet_now(uint16_t local_cid);    // non-blocking UART write
+
+// get outgoing buffer and prepare data
+uint8_t *l2cap_get_outgoing_buffer(void);
+int l2cap_send_prepared(uint16_t local_cid, uint16_t len);
+
     
 void l2cap_close_connection(void *connection);
 
