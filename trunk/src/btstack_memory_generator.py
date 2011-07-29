@@ -21,8 +21,6 @@ void * btstack_memory_STRUCT_NAME_get(void){
 void  btstack_memory_STRUCT_NAME_free(void *STRUCT_NAME){
     free(STRUCT_NAME);
 }
-#else
-#error BTstack needs at least one STRUCT_TYPE, but neither POOL_COUNT nor HAVE_MALLOC are defined
 #endif
 """
 
@@ -37,7 +35,7 @@ def replacePlaceholder(template, struct_name):
     snippet = template.replace("STRUCT_TYPE", struct_type).replace("STRUCT_NAME", struct_name).replace("POOL_COUNT", pool_count)
     return snippet
     
-list_of_structs = [ "hci_connection", "l2cap_service", "l2cap_channel", "rfcomm_multiplexer", "rfcomm_service", "rfcomm_channel" ]
+list_of_structs = [ "hci_connection", "l2cap_service", "l2cap_channel", "rfcomm_multiplexer", "rfcomm_service", "rfcomm_channel", "db_mem_device", "db_mem_service"]
 
 print "// header file"
 for struct_name in list_of_structs:
