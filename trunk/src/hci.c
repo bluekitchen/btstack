@@ -409,13 +409,13 @@ static void event_handler(uint8_t *packet, int size){
                 // ignore: total num SCO packets
                 if (hci_stack.state == HCI_STATE_INITIALIZING){
                     // determine usable ACL payload size
-                    if (HCI_ACL_BUFFER_SIZE < hci_stack.acl_data_packet_length){
-                        hci_stack.acl_data_packet_length = HCI_ACL_BUFFER_SIZE;
+                    if (HCI_ACL_PAYLOAD_SIZE < hci_stack.acl_data_packet_length){
+                        hci_stack.acl_data_packet_length = HCI_ACL_PAYLOAD_SIZE;
                     }
                     // determine usable ACL packet types
                     hci_stack.packet_types = hci_acl_packet_types_for_buffer_size(hci_stack.acl_data_packet_length);
                     
-                    log_error("hci_read_buffer_size: size %u, count %u, packet types %04x\n",
+                    log_error("hci_read_buffer_size: used size %u, count %u, packet types %04x\n",
                              hci_stack.acl_data_packet_length, hci_stack.total_num_acl_packets, hci_stack.packet_types); 
                 }
             }
@@ -641,6 +641,9 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
     if (hci_stack.remote_device_db) {
         hci_stack.remote_device_db->open();
     }
+    
+    // max acl payload size defined in config.h
+    hci_stack.acl_data_packet_length = HCI_ACL_PAYLOAD_SIZE;
     
     // register packet handlers with transport
     transport->register_packet_handler(&packet_handler);
