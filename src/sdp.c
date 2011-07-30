@@ -69,8 +69,8 @@ static uint16_t l2cap_cid = 0;
 static uint16_t sdp_response_size = 0;
 
 void sdp_init(){
-    // register with l2cap psm sevices
-    l2cap_register_service_internal(NULL, sdp_packet_handler, PSM_SDP, 1000);
+    // register with l2cap psm sevices - max MTU
+    l2cap_register_service_internal(NULL, sdp_packet_handler, PSM_SDP, 0xffff);
 }
 
 // register packet handler
