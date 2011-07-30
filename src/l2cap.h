@@ -70,9 +70,11 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
 void l2cap_disconnect_internal(uint16_t local_cid, uint8_t reason);
 int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len);
 uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid);
+uint16_t l2cap_max_mtu(void);
 
 void l2cap_block_new_credits(uint8_t blocked);
 int  l2cap_can_send_packet_now(uint16_t local_cid);    // non-blocking UART write
+
 
 // get outgoing buffer and prepare data
 uint8_t *l2cap_get_outgoing_buffer(void);
