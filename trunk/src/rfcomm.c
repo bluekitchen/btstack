@@ -184,15 +184,27 @@ static void rfcomm_emit_service_registered(void *connection, uint8_t status, uin
 
 // MARK: RFCOMM MULTIPLEXER HELPER
 
+static uint16_t rfcomm_max_frame_size_for_l2cap_mtu(uint16_t l2cap_mtu){
+
+    // Assume RFCOMM header with credits and single byte length field
+    uint16_t max_frame_size = l2cap_mtu - 5;
+    
+    // single byte can denote len up to 127
+    if (max_frame_size > 127) {
+        max_frame_size--;
+    }
+    
+    return max_frame_size;
+}
+
 static void rfcomm_multiplexer_initialize(rfcomm_multiplexer_t *multiplexer){
+
     bzero(multiplexer, sizeof(rfcomm_multiplexer_t));
+
     multiplexer->state = RFCOMM_MULTIPLEXER_CLOSED;
     multiplexer->l2cap_credits = 0;
     multiplexer->send_dm_for_dlci = 0;
-    
-    // - Max RFCOMM header has 6 bytes (P/F bit is set, payload length >= 128)
-    // - therefore, we set RFCOMM max frame size <= Local L2CAP MTU - 6
-    multiplexer->max_frame_size = l2cap_max_mtu() - 6; // max
+    multiplexer->max_frame_size = rfcomm_max_frame_size_for_l2cap_mtu(l2cap_max_mtu());
 }
 
 static rfcomm_multiplexer_t * rfcomm_multiplexer_create_for_addr(bd_addr_t *addr){
