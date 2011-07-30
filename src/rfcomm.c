@@ -193,7 +193,8 @@ static uint16_t rfcomm_max_frame_size_for_l2cap_mtu(uint16_t l2cap_mtu){
     if (max_frame_size > 127) {
         max_frame_size--;
     }
-    
+
+    log_info("rfcomm_max_frame_size_for_l2cap_mtu:  %u -> %u\n", l2cap_mtu, max_frame_size);
     return max_frame_size;
 }
 
@@ -683,13 +684,10 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
                 multiplexer->con_handle = con_handle;
                 // send SABM #0
                 multiplexer->state = RFCOMM_MULTIPLEXER_SEND_SABM_0;
-            } else {
-                // multiplexer->state == RFCOMM_MULTIPLEXER_W4_SABM_0
-                //
-                // get max frame size from l2cap MTU
-                // - Max RFCOMM header has 6 bytes (P/F bit is set, payload length >= 128)
-                // - therefore, we set RFCOMM max frame size <= Local L2CAP MTU - 6
-                multiplexer->max_frame_size = READ_BT_16(packet, 17) - 6;
+            } else { // multiplexer->state == RFCOMM_MULTIPLEXER_W4_SABM_0
+                
+                // set max frame size based on l2cap MTU
+                multiplexer->max_frame_size = rfcomm_max_frame_size_for_l2cap_mtu(READ_BT_16(packet, 17));
             }
             return 1;
             
