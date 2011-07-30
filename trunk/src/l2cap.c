@@ -405,7 +405,7 @@ void l2cap_run(void){
     }
 }
 
-static uint16_t l2cap_max_mtu(void){
+uint16_t l2cap_max_mtu(void){
     return hci_max_acl_data_packet_length() - L2CAP_HEADER_SIZE;
 }
 
