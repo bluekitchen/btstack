@@ -1682,9 +1682,9 @@ void rfcomm_register_service_internal(void * connection, uint8_t channel, uint16
         return;
     }
 
-    // register with l2cap if not registered before
+    // register with l2cap if not registered before, max MTU
     if (linked_list_empty(&rfcomm_services)){
-        l2cap_register_service_internal(NULL, rfcomm_packet_handler, PSM_RFCOMM, l2cap_max_mtu());
+        l2cap_register_service_internal(NULL, rfcomm_packet_handler, PSM_RFCOMM, 0xffff);
     }
 
     // fill in 
