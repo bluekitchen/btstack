@@ -48,13 +48,6 @@
 
 #include <stdio.h>
 
-// size of HCI ACL + L2CAP Header for regular data packets (8)
-#define COMPLETE_L2CAP_HEADER (HCI_ACL_HEADER_SIZE + L2CAP_HEADER_SIZE)
-
-// minimum signaling MTU
-#define L2CAP_MINIMAL_MTU 48
-#define L2CAP_DEFAULT_MTU 672
-
 // nr of buffered acl packets in outgoing queue to get max performance 
 #define NR_BUFFERED_ACL_PACKETS 3
 
@@ -412,7 +405,7 @@ void l2cap_run(void){
     }
 }
 
-static uint16_t l2cap_max_l2cap_mtu(void){
+static uint16_t l2cap_max_mtu(void){
     return hci_max_acl_data_packet_length() - L2CAP_HEADER_SIZE;
 }
 
@@ -431,8 +424,8 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
         return;
     }
     // limit local mtu to max acl packet length
-    if (mtu > l2cap_max_l2cap_mtu()) {
-        mtu = l2cap_max_l2cap_mtu();
+    if (mtu > l2cap_max_mtu()) {
+        mtu = l2cap_max_mtu();
     }
         
     // fill in 
@@ -651,8 +644,8 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     channel->remote_sig_id = sig_id; 
 
     // limit local mtu to max acl packet length
-    if (channel->local_mtu > l2cap_max_l2cap_mtu()) {
-        channel->local_mtu = l2cap_max_l2cap_mtu();
+    if (channel->local_mtu > l2cap_max_mtu()) {
+        channel->local_mtu = l2cap_max_mtu();
     }
     
     // set initial state
