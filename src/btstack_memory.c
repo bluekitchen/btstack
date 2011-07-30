@@ -87,8 +87,6 @@ void * btstack_memory_l2cap_service_get(void){
 void  btstack_memory_l2cap_service_free(void *l2cap_service){
     free(l2cap_service);
 }
-#else
-#error BTstack needs at least one l2cap_service_t, but neither MAX_NO_L2CAP_SERVICES nor HAVE_MALLOC are defined
 #endif
 
 
@@ -131,8 +129,6 @@ void * btstack_memory_rfcomm_multiplexer_get(void){
 void  btstack_memory_rfcomm_multiplexer_free(void *rfcomm_multiplexer){
     free(rfcomm_multiplexer);
 }
-#else
-#error BTstack needs at least one rfcomm_multiplexer_t, but neither MAX_NO_RFCOMM_MULTIPLEXERS nor HAVE_MALLOC are defined
 #endif
 
 
@@ -153,8 +149,6 @@ void * btstack_memory_rfcomm_service_get(void){
 void  btstack_memory_rfcomm_service_free(void *rfcomm_service){
     free(rfcomm_service);
 }
-#else
-#error BTstack needs at least one rfcomm_service_t, but neither MAX_NO_RFCOMM_SERVICES nor HAVE_MALLOC are defined
 #endif
 
 
@@ -175,8 +169,6 @@ void * btstack_memory_rfcomm_channel_get(void){
 void  btstack_memory_rfcomm_channel_free(void *rfcomm_channel){
     free(rfcomm_channel);
 }
-#else
-#error BTstack needs at least one rfcomm_channel_t, but neither MAX_NO_RFCOMM_CHANNELS nor HAVE_MALLOC are defined
 #endif
 
 // MARK: db_mem_device_t
