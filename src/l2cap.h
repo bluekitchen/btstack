@@ -60,8 +60,8 @@ extern "C" {
 #define L2CAP_DEFAULT_MTU 672
     
 // check L2CAP MTU
-#if (L2CAP_MINIMAL_MTU + COMPLETE_L2CAP_HEADER) < HCI_PACKET_BUFFER_SIZE
-#warning "HCI_ACL_PAYLOAD_SIZE too small for minimal L2CAP MTU of 48 bytes"
+#if (L2CAP_MINIMAL_MTU + L2CAP_HEADER_SIZE) > HCI_ACL_PAYLOAD_SIZE
+#error "HCI_ACL_PAYLOAD_SIZE too small for minimal L2CAP MTU of 48 bytes"
 #endif    
     
 void l2cap_init(void);
