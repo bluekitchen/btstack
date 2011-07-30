@@ -44,6 +44,7 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "hci_transport.h"
+#include <btstack/run_loop.h>
 
 #include <btstack/hal_uart_dma.h>
 
@@ -67,13 +68,18 @@ typedef struct hci_transport_h4 {
     data_source_t *ds;
 } hci_transport_h4_t;
 
-// single instance
-static hci_transport_h4_t * hci_transport_h4 = NULL;
-
+// prototypes
 static int  h4_process(struct data_source *ds);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
-
-static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
+static void h4_block_received(void);
+static void h4_block_sent(void);
+static int h4_open(void *transport_config);
+static int h4_close();
+static void h4_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
+static int h4_send_packet(uint8_t packet_type, uint8_t *packet, int size);
+static const char * h4_get_transport_name();
+static int h4_set_baudrate(uint32_t baudrate);
+static int h4_can_send_packet_now(uint8_t packet_type);
 
 // packet reader state machine
 static  H4_STATE h4_state;
@@ -86,6 +92,24 @@ static TX_STATE tx_state;
 static uint8_t *tx_data;
 static uint16_t tx_len;
 
+// static hci_transport_h4_t * hci_transport_h4 = NULL;
+static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
+
+static data_source_t hci_transport_h4_dma_ds = {
+    .process = h4_process
+};
+
+static hci_transport_h4_t hci_transport_h4_dma = {
+    .ds                                      = &hci_transport_h4_dma_ds,
+    .transport.open                          = h4_open,
+    .transport.close                         = h4_close,
+    .transport.send_packet                   = h4_send_packet,
+    .transport.register_packet_handler       = h4_register_packet_handler,
+    .transport.get_transport_name            = h4_get_transport_name,
+    .transport.set_baudrate                  = h4_set_baudrate,
+    .transport.can_send_packet_now           = h4_can_send_packet_now
+};
+
 static void h4_init_sm(void){
     h4_state = H4_W4_PACKET_TYPE;
     read_pos = 0;
@@ -93,9 +117,6 @@ static void h4_init_sm(void){
     hal_uart_dma_receive_block(hci_packet, bytes_to_read);
 }
 
-// prototypes
-static void h4_block_received(void);
-static void h4_block_sent(void);
 
 static int h4_open(void *transport_config){
 
@@ -105,11 +126,7 @@ static int h4_open(void *transport_config){
     hal_uart_dma_set_block_sent(h4_block_sent);
     
 	// set up data_source
-    hci_transport_h4->ds = malloc(sizeof(data_source_t));
-    if (!hci_transport_h4) return -1;
-    // hci_transport_h4->ds->fd = fd;
-    hci_transport_h4->ds->process = h4_process;
-    run_loop_add_data_source(hci_transport_h4->ds);
+    run_loop_add_data_source(&hci_transport_h4_dma_ds);
     
     //
     h4_init_sm();
@@ -120,15 +137,10 @@ static int h4_open(void *transport_config){
 
 static int h4_close(){
     // first remove run loop handler
-	run_loop_remove_data_source(hci_transport_h4->ds);
+	run_loop_remove_data_source(&hci_transport_h4_dma_ds);
     
     // close device 
     // ...
-    
-    // free struct
-    free(hci_transport_h4->ds);
-    
-    hci_transport_h4->ds = NULL;
     return 0;
 }
 
@@ -288,16 +300,5 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 
 // get h4 singleton
 hci_transport_t * hci_transport_h4_dma_instance() { 
-    if (hci_transport_h4 == NULL) {
-        hci_transport_h4 = malloc(sizeof(hci_transport_h4_t));
-        hci_transport_h4->ds                                      = NULL;
-        hci_transport_h4->transport.open                          = h4_open;
-        hci_transport_h4->transport.close                         = h4_close;
-        hci_transport_h4->transport.send_packet                   = h4_send_packet;
-        hci_transport_h4->transport.register_packet_handler       = h4_register_packet_handler;
-        hci_transport_h4->transport.get_transport_name            = h4_get_transport_name;
-        hci_transport_h4->transport.set_baudrate                  = h4_set_baudrate;
-        hci_transport_h4->transport.can_send_packet_now           = h4_can_send_packet_now;
-    }
-    return (hci_transport_t *) hci_transport_h4;
+    return (hci_transport_t *) &hci_transport_h4_dma;
 }
