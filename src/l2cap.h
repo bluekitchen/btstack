@@ -52,6 +52,18 @@ extern "C" {
 
 #define L2CAP_HEADER_SIZE 4
 
+// size of HCI ACL + L2CAP Header for regular data packets (8)
+#define COMPLETE_L2CAP_HEADER (HCI_ACL_HEADER_SIZE + L2CAP_HEADER_SIZE)
+    
+// minimum signaling MTU
+#define L2CAP_MINIMAL_MTU 48
+#define L2CAP_DEFAULT_MTU 672
+    
+// check L2CAP MTU
+#if (L2CAP_MINIMAL_MTU + COMPLETE_L2CAP_HEADER) < HCI_PACKET_BUFFER_SIZE
+#warning "HCI_ACL_PAYLOAD_SIZE too small for minimal L2CAP MTU of 48 bytes"
+#endif    
+    
 void l2cap_init(void);
 void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
 void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu);
