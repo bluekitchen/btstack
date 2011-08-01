@@ -43,6 +43,9 @@
 #include <btstack/btstack.h>
 #include <btstack/hci_cmds.h>
 
+// until next BTstack Cydia update
+#include "compat-svn.c"
+
 // bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };  // Think Outside Keyboard
 // bd_addr_t addr = {0x00, 0x19, 0x1d, 0x90, 0x44, 0x68 };  // WiiMote
 bd_addr_t addr = {0x76, 0x6d, 0x62, 0xdb, 0xca, 0x73 };  // iPad
@@ -111,10 +114,8 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					uint16_t source_cid = READ_BT_16(packet, 13); 
 					con_handle = READ_BT_16(packet, 9);
 					if (packet[2] == 0) {
-						printf("Channel successfully opened: ");
-						print_bd_addr(event_addr);
-						printf(", handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x\n",
-							   con_handle, psm, source_cid,  READ_BT_16(packet, 15));
+						printf("Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x\n",
+							   bd_addr_to_str(event_addr), con_handle, psm, source_cid,  READ_BT_16(packet, 15));
 						
 						if (psm == 0x13) {
 							source_cid_interrupt = source_cid;
@@ -130,9 +131,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 							// bt_send_l2cap( source_cid, setLEDs, sizeof(setLEDs));
 						}
 					} else {
-						printf("L2CAP connection to device ");
-						print_bd_addr(event_addr);
-						printf(" failed. status code %u\n", packet[2]);
+						printf("L2CAP connection to device %s  failed. status code %u\n",  bd_addr_to_str(event_addr), packet[2]);
 						exit(1);
 					}
 					break;

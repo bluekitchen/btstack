@@ -42,6 +42,9 @@
 
 #include <btstack/btstack.h>
 
+// until next BTstack Cydia update
+#include "compat-svn.c"
+
 #define MAX_DEVICES 10
 struct device {
 	bd_addr_t  address;
@@ -85,9 +88,7 @@ void next(void){
 				if (devices[i].state == 1){
 					found = 1;
 					devices[i].state = 2;
-					printf("Get remote name of ");
-					print_bd_addr(devices[i].address);
-					printf("...\n");
+					printf("Get remote name of %s...\n", bd_addr_to_str(devices[i].address));
 					bt_send_cmd(&hci_remote_name_request, devices[i].address,
 								devices[i].pageScanRepetitionMode, 0, devices[i].clockOffset | 0x8000);
 					break;
@@ -141,10 +142,8 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						devices[deviceCount].clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff;
 						devices[deviceCount].rssi  = 0;
 						devices[deviceCount].state = 1;
-						printf("Device found: "); 
-						print_bd_addr(addr);
-						printf(" with COD: 0x%06x, pageScan %u, clock offset 0x%04x\n", devices[deviceCount].classOfDevice,
-								devices[deviceCount].pageScanRepetitionMode,  devices[deviceCount].clockOffset);
+						printf("Device found: %s with COD: %x, pageScan %u, clock offset %x\n", bd_addr_to_str(addr), devices[deviceCount].classOfDevice,
+				                devices[deviceCount].pageScanRepetitionMode,  devices[deviceCount].clockOffset);
 						deviceCount++;
 					}
 					break;
@@ -161,19 +160,16 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						devices[deviceCount].clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+3)   + i*2) & 0x7fff;
 						devices[deviceCount].rssi  =                    packet [3 + numResponses*(6+1+1+3+2) + i*1];
 						devices[deviceCount].state = 1;
-						printf("Device found: "); 
-						print_bd_addr(addr);
-						printf(" with COD: 0x%06x, pageScan %u, clock offset 0x%04x, rssi 0x%02x\n", devices[deviceCount].classOfDevice,
-							   devices[deviceCount].pageScanRepetitionMode,  devices[deviceCount].clockOffset, devices[deviceCount].rssi);
+						printf("Device found: %s with COD: 0x%06x, pageScan %u, clock offset 0x%04x, rssi 0x%02x\n", bd_addr_to_str(addr),
+				                devices[deviceCount].classOfDevice, devices[deviceCount].pageScanRepetitionMode,
+				                devices[deviceCount].clockOffset, devices[deviceCount].rssi);
 						deviceCount++;
 					}
 					break;
 					
 				case BTSTACK_EVENT_REMOTE_NAME_CACHED:
 					bt_flip_addr(addr, &packet[3]);
-					printf("Cached remote name for ");
-					print_bd_addr(addr);
-					printf(": %s\n", &packet[9]);
+					printf("Cached remote name for %s: '%s'\n", bd_addr_to_str(addr), &packet[9]);
 					break;
 
 				case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:

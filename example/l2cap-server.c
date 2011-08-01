@@ -44,6 +44,9 @@
 #include <btstack/hci_cmds.h>
 #include <btstack/sdp_util.h>
 
+// until next BTstack Cydia update
+#include "compat-svn.c"
+
 hci_con_handle_t con_handle;
 
 uint16_t hid_control = 0;
@@ -90,10 +93,8 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					psm        = READ_BT_16(packet, 10); 
 					local_cid  = READ_BT_16(packet, 12); 
 					remote_cid = READ_BT_16(packet, 14); 
-					printf("L2CAP_EVENT_INCOMING_CONNECTION ");
-					print_bd_addr(event_addr);
-					printf(", handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
-						   handle, psm, local_cid, remote_cid);
+					printf("L2CAP_EVENT_INCOMING_CONNECTION %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+					       bd_addr_to_str(event_addr), handle, psm, local_cid, remote_cid);
 
 					// accept
 					bt_send_cmd(&l2cap_accept_connection, local_cid);
@@ -125,10 +126,8 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					local_cid = READ_BT_16(packet, 13); 
 					handle = READ_BT_16(packet, 9);
 					if (packet[2] == 0) {
-						printf("Channel successfully opened: ");
-						print_bd_addr(event_addr);
-						printf(", handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
-							   handle, psm, local_cid,  READ_BT_16(packet, 15));
+						printf("Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+							   bd_addr_to_str(event_addr), handle, psm, local_cid,  READ_BT_16(packet, 15));
 						
 						if (psm == PSM_HID_CONTROL){
 							hid_control = local_cid;
@@ -140,9 +139,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 							bt_send_cmd(&hci_switch_role_command, &event_addr, 0);
 						}
 					} else {
-						printf("L2CAP connection to device ");
-						print_bd_addr(event_addr);
-						printf(" failed. status code %u\n", packet[2]);
+						printf("L2CAP connection to device %s failed. status code %u\n", bd_addr_to_str(event_addr), packet[2]);
 						exit(1);
 					}
 					break;
