@@ -245,10 +245,10 @@ static void h4_statemachine(void){
             
         case H4_W4_PACKET_TYPE:
             if (hci_packet[0] == HCI_EVENT_PACKET){
-                bytes_to_read = HCI_EVENT_PKT_HDR;
+                bytes_to_read = HCI_EVENT_HEADER_SIZE;
                 h4_state = H4_W4_EVENT_HEADER;
             } else if (hci_packet[0] == HCI_ACL_DATA_PACKET){
-                bytes_to_read = HCI_ACL_DATA_PKT_HDR;
+                bytes_to_read = HCI_ACL_HEADER_SIZE;
                 h4_state = H4_W4_ACL_HEADER;
             } else {
                 log_error("h4_process: invalid packet type 0x%02x\n", hci_packet[0]);
