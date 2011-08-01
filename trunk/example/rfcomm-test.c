@@ -46,6 +46,9 @@
 #include <btstack/btstack.h>
 #include <btstack/sdp_util.h>
 
+// until next BTstack Cydia update
+#include "compat-svn.c"
+
 // input from command line arguments
 bd_addr_t addr = { };
 uint16_t con_handle;
@@ -199,9 +202,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					bt_flip_addr(event_addr, &packet[2]); 
 					rfcomm_channel_nr = packet[8];
 					rfcomm_channel_id = READ_BT_16(packet, 9);
-					printf("RFCOMM channel %u requested for ", rfcomm_channel_nr);
-					print_bd_addr(event_addr);
-					printf("\n");
+					printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
 					bt_send_cmd(&rfcomm_accept_connection, rfcomm_channel_id);
 					break;
 					

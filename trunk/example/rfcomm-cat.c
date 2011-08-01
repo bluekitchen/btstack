@@ -50,6 +50,9 @@
 #include <btstack/btstack.h>
 #include <btstack/sdp_util.h>
 
+// until next BTstack Cydia update
+#include "compat-svn.c"
+
 // input from command line arguments
 bd_addr_t addr = { };
 uint16_t con_handle;
@@ -164,9 +167,7 @@ int main (int argc, const char * argv[]){
 	}
 	bt_register_packet_handler(packet_handler);
 
-	printf("Trying connection to ");
-	print_bd_addr(addr);
-	printf(" channel %d\n", rfcomm_channel);
+	printf("Trying to connect to %s, channel %d\n", bd_addr_to_str(addr), rfcomm_channel);
 			
 	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
 	run_loop_execute();
