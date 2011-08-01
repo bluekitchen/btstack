@@ -262,7 +262,7 @@ echo "#define HAVE_MALLOC" >> config.h
 echo "#define HAVE_BZERO" >> config.h
 echo "#define ENABLE_LOG_INFO " >> config.h
 echo "#define ENABLE_LOG_ERROR" >> config.h
-echo "#define HCI_ACL_BUFFER_SIZE 1021" >> config.h
+echo "#define HCI_ACL_PAYLOAD_SIZE 1021" >> config.h
 
 AC_SUBST(IPHONE_IP)
 AC_SUBST(HAVE_LIBUSB)
