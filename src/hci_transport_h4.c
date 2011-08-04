@@ -36,6 +36,14 @@
  *
  *  Created by Matthias Ringwald on 4/29/09.
  */
+
+#include "../config.h"
+
+#undef USE_NETGRAPH
+#undef USE_HCI_READER_THREAD
+// go back to sleep in 3s
+#define HCI_WAKE_TIMER_MS 3000
+
 #include <termios.h>  /* POSIX terminal control definitions */
 #include <fcntl.h>    /* File control definitions */
 #include <unistd.h>   /* UNIX standard function definitions */
@@ -48,7 +56,11 @@
 #include "hci_transport.h"
 #include "hci_dump.h"
 
-// #define USE_HCI_READER_THREAD
+#if defined (USE_BLUETOOL) && defined (USE_POWERMANAGEMENT)
+/* iPhone power management support */
+#define BT_WAKE_DEVICE  "/dev/btwake"
+static int fd_wake = 0;
+#endif
 
 typedef enum {
     H4_W4_PACKET_TYPE,
@@ -69,6 +81,9 @@ typedef struct hci_transport_h4 {
     pthread_mutex_t mutex;
     pthread_cond_t cond;
 #endif
+#if defined (USE_BLUETOOL) && defined (USE_POWERMANAGEMENT)
+    timer_source_t sleep_timer;
+#endif
 } hci_transport_h4_t;
 
 // single instance
@@ -82,7 +97,11 @@ static      hci_uart_config_t *hci_uart_config;
 static void *h4_reader(void *context);
 static int  h4_reader_process(struct data_source *ds);
 #endif
-
+#if defined (USE_BLUETOOL) && defined (USE_POWERMANAGEMENT)
+static void h4_wake_on(void);
+static void h4_wake_off(void);
+static void h4_wake_timeout(struct timer *ts);
+#endif
 
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
@@ -92,6 +111,38 @@ static int bytes_to_read;
 static int read_pos;
 
 static uint8_t hci_packet[1+HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
+
+#if defined (USE_BLUETOOL) && defined (USE_POWERMANAGEMENT)
+static void h4_wake_on(void)
+{
+    if (!fd_wake) {
+        fd_wake = open(BT_WAKE_DEVICE, O_RDWR);
+        usleep(10000);
+    }
+    run_loop_remove_timer(&hci_transport_h4->sleep_timer);
+    run_loop_set_timer(&hci_transport_h4->sleep_timer, HCI_WAKE_TIMER_MS);
+    hci_transport_h4->sleep_timer.process = h4_wake_timeout;
+    run_loop_add_timer(&hci_transport_h4->sleep_timer); 
+
+    return;
+}
+
+static void h4_wake_off(void)
+{
+    run_loop_remove_timer(&hci_transport_h4->sleep_timer);
+    if (fd_wake) {
+        close(fd_wake);
+        fd_wake = 0;
+    }
+    return;
+}
+
+static void h4_wake_timeout(struct timer *ts)
+{
+    h4_wake_off();
+}
+
+#endif  /* defined (USE_BLUETOOL) && defined (USE_POWERMANAGEMENT) */
 
 // prototypes
 static int    h4_open(void *transport_config){
@@ -191,13 +242,18 @@ static int    h4_open(void *transport_config){
     return 0;
 }
 
-static int    h4_close(void *transport_config){
+static int h4_close(void *transport_config){
     // first remove run loop handler
 	run_loop_remove_data_source(hci_transport_h4->ds);
     
     // close device 
     close(hci_transport_h4->ds->fd);
-    
+
+#if defined (USE_BLUETOOL) && defined (USE_POWERMANAGEMENT)
+    // let module sleep
+    h4_wake_off();
+#endif
+
     // free struct
     free(hci_transport_h4->ds);
     hci_transport_h4->ds = NULL;
@@ -207,6 +263,12 @@ static int    h4_close(void *transport_config){
 static int h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
     if (hci_transport_h4->ds == NULL) return -1;
     if (hci_transport_h4->uart_fd == 0) return -1;
+
+#if defined (USE_BLUETOOL) && defined (USE_POWERMANAGEMENT)
+    // wake Bluetooth module
+    h4_wake_on();
+#endif
+
     hci_dump_packet( (uint8_t) packet_type, 0, packet, size);
     char *data = (char*) packet;
     int bytes_written = write(hci_transport_h4->uart_fd, &packet_type, 1);
