@@ -9,6 +9,7 @@ AM_INIT_AUTOMAKE(BTstack,0.1)
 AC_ARG_WITH(hci-transport, [AS_HELP_STRING([--with-hci-transport=transportType], [Specify BT type to use: h4, usb (not supported yet])], HCI_TRANSPORT=$withval, HCI_TRANSPORT="h4")  
 AC_ARG_WITH(uart-device, [AS_HELP_STRING([--with-uart-device=uartDevice], [Specify BT UART device to use])], UART_DEVICE=$withval, UART_DEVICE="DEFAULT")  
 AC_ARG_WITH(uart-speed, [AS_HELP_STRING([--with-uart-speed=uartSpeed], [Specify BT UART speed to use])], UART_SPEED=$withval, UART_SPEED="115200")
+AC_ARG_ENABLE(powermanagement, [AS_HELP_STRING([--disable-powermanagement],[Disable powermanagement])], USE_POWERMANAGEMENT=$enableval, USE_POWERMANAGEMENT="yes")
 AC_ARG_ENABLE(bluetool, [AS_HELP_STRING([--disable-bluetool],[Disable init of Bluetooth module by BlueTool])], USE_BLUETOOL=$enableval, USE_BLUETOOL="DEFAULT")
 AC_ARG_ENABLE(springboard, [AS_HELP_STRING([--disable-springboard],[Disable display of BTstack status in SpringBoard])], USE_SPRINGBOARD=$enableval, USE_SPRINGBOARD="DEFAULT")
 AC_ARG_ENABLE(launchd, [AS_HELP_STRING([--enable-launchd],[Compiles BTdaemon for use by launchd])], USE_LAUNCHD=$enableval, USE_LAUNCHD="no")
@@ -155,7 +156,7 @@ if test "x$target" = xiphone; then
         USE_BLUETOOL="yes"
         echo "USE_BLUETOOL:    $USE_BLUETOOL"
     fi
-    
+
     if test "x$USE_SPRINGBOARD" = xDEFAULT ; then
         USE_SPRINGBOARD="yes"
     fi
@@ -192,6 +193,7 @@ CPPFLAGS="$CPPFLAGS -Werror -Wall -Wpointer-arith"
     
 AM_CONDITIONAL(USE_SPRINGBOARD, [test "x$USE_SPRINGBOARD" == "xyes"])
 AM_CONDITIONAL(USE_BLUETOOL,    [test "x$USE_BLUETOOL" == "xyes"])
+AM_CONDITIONAL(USE_POWERMANAGEMENT, [test "x$USE_POWERMANAGEMENT" == "xyes"])
 AM_CONDITIONAL(USE_PREFSBUNDLE, [test "x$USE_PREFSBUNDLE" == "xyes"])
 
 # summary
@@ -215,6 +217,7 @@ echo "PLATFORM_SOURCES:    $PLATFORM_SOURCES"
 echo "USE_LAUNCHD:         $USE_LAUNCHD"
 echo "USE_SPRINGBOARD:     $USE_SPRINGBOARD"
 echo "USE_PREFSBUNDLE:     $USE_PREFSBUNDLE"
+echo "USE_POWERMANAGEMENT: $USE_POWERMANAGEMENT"
 echo "USE_COCOA_RUN_LOOP:  $USE_COCOA_RUN_LOOP"
 echo "REMOTE_DEVICE_DB:    $REMOTE_DEVICE_DB"
 echo "HAVE_SO_NOSIGPIPE:   $HAVE_SO_NOSIGPIPE"
@@ -234,6 +237,9 @@ else
     echo "#define UART_SPEED $UART_SPEED" >> config.h
     if test "x$USE_BLUETOOL" = xyes; then
         echo "#define USE_BLUETOOL" >> config.h
+    fi
+    if test "x$USE_POWERMANAGEMENT" = xyes; then
+        echo "#define USE_POWERMANAGEMENT" >> config.h
     fi
 fi
 if test "x$USE_SPRINGBOARD" = xyes; then

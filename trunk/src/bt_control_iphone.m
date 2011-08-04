@@ -35,6 +35,7 @@
  *  control Bluetooth module using BlueTool
  *
  *  Created by Matthias Ringwald on 5/19/09.
+ *  PowerManagement implementation by Jens David, DG1KJD on 20110801.
  *
  *  Bluetooth Toggle by BigBoss
  */
@@ -126,7 +127,6 @@ static data_source_t power_notification_ds;
 #endif
 #endif
 
-
 int iphone_system_bt_enabled(){
     return SBA_getBluetoothEnabled();
 }
@@ -147,6 +147,10 @@ static char buffer[BUFF_LEN+1];
 // local mac address and default transport speed from IORegistry
 static bd_addr_t local_mac_address;
 static uint32_t  transport_speed;
+
+static int power_management_active = 0;
+static char *os3xBlueTool = "BlueTool";
+static char *os4xBlueTool = "/usr/local/bin/BlueToolH4";
 
 /** 
  * get machine name
@@ -373,6 +377,23 @@ static int iphone_write_initscript (int output, int baudrate){
     }
     // close input
     close(input);
+
+#ifdef USE_POWERMANAGEMENT
+    if (iphone_has_csr()) {
+        /* CSR BT module */
+        iphone_write_string(output, "msleep 50\n");
+        iphone_write_string(output, "csr -p 0x01ca=0x0031\n");
+        iphone_write_string(output, "msleep 50\n");
+        iphone_write_string(output, "csr -p 0x01c7=0x0001,0x01f4,0x0005,0x0020\n");
+        power_management_active = 1;
+    } else {
+        /* BCM BT module, deactivated since untested for now */
+        // iphone_write_string(output, "bcm -s 0x01,0x00,0x00,0x01,0x01,0x00,0x01,0x00,0x00,0x00,0x00,0x01\n");
+        // iphone_write_string(output, "msleep 50\n");
+        power_management_active = 0;
+    }
+#endif
+
     return 0;
 }
 
@@ -382,17 +403,26 @@ static void iphone_write_configscript(int fd, int baudrate){
         iphone_csr_set_baud(fd, baudrate);
         iphone_csr_set_bd_addr(fd);
         iphone_write_string(fd, "csr -r\n");
+#ifdef USE_POWERMANAGEMENT
+        iphone_write_string(fd, "msleep 50\n");
+        iphone_write_string(fd, "csr -p 0x01ca=0x0031\n");
+        iphone_write_string(fd, "msleep 50\n");
+        iphone_write_string(fd, "csr -p 0x01c7=0x0001,0x01f4,0x0005,0x0020\n");
+        power_management_active = 1;
+#endif
     } else {
         iphone_bcm_set_baud(fd, baudrate);
         iphone_write_string(fd, "msleep 200\n");
         iphone_bcm_set_bd_addr(fd);
         iphone_write_string(fd, "msleep 50\n");
+#ifdef USE_POWERMANAGEMENT
+        iphone_write_string(fd, "bcm -s 0x01,0x00,0x00,0x01,0x01,0x00,0x01,0x00,0x00,0x00,0x00,0x01\n");
+        iphone_write_string(fd, "msleep 50\n");
+        power_management_active = 1;
+#endif
     }
     iphone_write_string(fd, "quit\n");
 }
-
-static char *os3xBlueTool = "BlueTool";
-static char *os4xBlueTool = "/usr/local/bin/BlueToolH4";
 
 static int iphone_on (void *transport_config){
 
@@ -558,12 +588,20 @@ static int iphone_off (void *config){
 }
 
 static int iphone_sleep(void *config){
+
+    // will sleep by itself
+    if (power_management_active) return 0;
+    
     // put Bluetooth into deep sleep
     system ("echo \"wake off\nquit\" | BlueTool");
     return 0;
 }
 
 static int iphone_wake(void *config){
+
+    // will wake by itself
+    if (power_management_active) return 0;
+    
     // wake up Bluetooth module
     system ("echo \"wake on\nquit\" | BlueTool");
     return 0;
@@ -604,9 +642,11 @@ static void MySleepCallBack( void * refCon, io_service_t service, natural_t mess
             data = POWER_WILL_SLEEP;
             write(power_notification_pipe_fds[1], &data, 1);
 
-            // don't allow power change to get the 30 second delay 
-            // IOAllowPowerChange( root_port, (long)messageArgument );
-                 
+            // only allow power change when power management active (and BT goes to sleep alone)
+            if (!power_management_active) break;
+            
+            IOAllowPowerChange( root_port, (long)messageArgument );
+            
             break;
 			
         case kIOMessageSystemWillPowerOn:
@@ -635,8 +675,10 @@ static int  power_notification_process(struct data_source *ds) {
     if (bytes_read != 1) return -1;
         
     log_info("power_notification_process: %u\n", token);
+
+    if (power_management_active) return 0;
     
-    power_notification_callback( (POWER_NOTIFICATION_t) token );
+    power_notification_callback( (POWER_NOTIFICATION_t) token );    
     
     return 0;
 }
