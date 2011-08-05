@@ -98,7 +98,9 @@ void run_loop_execute(void);
 uint32_t embedded_get_ticks(void);
 uint32_t embedded_ticks_for_ms(uint32_t time_in_ms);
 #endif
-    
+#ifdef EMBEDDED
+void     embedded_trigger(void);    
+#endif
 #if defined __cplusplus
 }
 #endif
