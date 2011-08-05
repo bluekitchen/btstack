@@ -348,6 +348,28 @@ int sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attribute
     return -1;
 }
 
+// MARK: Get sum of attributes matching attribute list
+struct sdp_context_get_filtered_size {
+    uint8_t *attributeIDList;
+    uint16_t size;
+};
+
+static int sdp_traversal_get_filtered_size(uint16_t attributeID, uint8_t * attributeValue, de_type_t type, de_size_t size, void *my_context){
+    struct sdp_context_get_filtered_size * context = (struct sdp_context_get_filtered_size *) my_context;
+    if (sdp_attribute_list_constains_id(context->attributeIDList, attributeID)) {
+        context->size += size;
+    }
+    return 0;
+}
+
+int spd_get_filtered_size(uint8_t *record, uint8_t *attributeIDList){
+    struct sdp_context_get_filtered_size context;
+    context.size = 0;
+    context.attributeIDList = attributeIDList;
+    sdp_attribute_list_traverse_sequence(record, sdp_traversal_get_filtered_size, &context);
+    return context.size;
+}
+
 // MARK: Get AttributeValue for AttributeID
 // find attribute (ELEMENT) by ID
 struct sdp_context_attribute_by_id {
