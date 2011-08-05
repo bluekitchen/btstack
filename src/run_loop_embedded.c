@@ -50,6 +50,7 @@
 #include <btstack/run_loop.h>
 #include <btstack/linked_list.h>
 #include <btstack/hal_tick.h>
+#include <btstack/hal_cpu.h>
 
 #include "run_loop_private.h"
 #include "debug.h"
@@ -63,6 +64,15 @@ static linked_list_t data_sources;
 static linked_list_t timers;
 static uint32_t system_ticks;
 #endif
+
+static int trigger_event_received = 0;
+
+/**
+ * trigger run loop iteration
+ */
+void embedded_trigger(void){
+    trigger_event_received = 1;
+}
 
 /**
  * Add data_source to run_loop
@@ -109,7 +119,7 @@ int embedded_remove_timer(timer_source_t *ts){
 }
 
 void embedded_dump_timer(){
-#if 0
+#ifdef ENABLE_LOG_INFO 
     linked_item_t *it;
     int i = 0;
     for (it = (linked_item_t *) timers; it ; it = it->next){
@@ -143,13 +153,21 @@ void embedded_execute() {
             ts->process(ts);
         }
 #endif
-        // race condition.. poll data source, IRQ occurs -> data source gets ready -> IDLE hook makes MCU sleep?
+        
+        // disable IRQs and check if run loop iteration has been requested. if not, go to sleep
+        hal_cpu_disable_irqs();
+        if (trigger_event_received){
+            hal_cpu_enable_irqs_and_sleep();
+            continue;
+        }
+        hal_cpu_enable_irqs();
     }
 }
 
 #ifdef HAVE_TICK
 static void embedded_tick_handler(void){
     system_ticks++;
+    trigger_event_received = 1;
 }
 
 uint32_t embedded_get_ticks(void){
