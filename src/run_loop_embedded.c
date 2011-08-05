@@ -37,6 +37,13 @@
  *  individually. Calling ds->isReady() before calling ds->process() doesn't 
  *  make sense, so we just poll each data source round robin.
  *
+ *  To support an idle state, where an MCU could go to sleep, the process function
+ *  has to return if it has to called again as soon as possible
+ *
+ *  After calling process() on every data source and evaluating the pending timers,
+ *  the idle hook gets called if no data source did indicate that it needs to be
+ *  called right away.
+ *
  */
 
 
@@ -136,7 +143,7 @@ void embedded_execute() {
             ts->process(ts);
         }
 #endif
-        
+        // race condition.. poll data source, IRQ occurs -> data source gets ready -> IDLE hook makes MCU sleep?
     }
 }
 
