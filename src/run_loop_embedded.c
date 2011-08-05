@@ -52,7 +52,7 @@
 // the run loop
 static linked_list_t data_sources;
 
-#ifdef EMBEDDED
+#ifdef HAVE_TICK
 static linked_list_t timers;
 static uint32_t system_ticks;
 #endif
@@ -75,7 +75,7 @@ int embedded_remove_data_source(data_source_t *ds){
  * Add timer to run_loop (keep list sorted)
  */
 void embedded_add_timer(timer_source_t *ts){
-#ifdef EMBEDDED
+#ifdef HAVE_TICK
     linked_item_t *it;
     for (it = (linked_item_t *) &timers; it->next ; it = it->next){
         if (ts->timeout < ((timer_source_t *) it->next)->timeout) {
@@ -93,7 +93,7 @@ void embedded_add_timer(timer_source_t *ts){
  * Remove timer from run loop
  */
 int embedded_remove_timer(timer_source_t *ts){
-#ifdef EMBEDDED    
+#ifdef HAVE_TICK    
     // log_info("Removed timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
     return linked_list_remove(&timers, (linked_item_t *) ts);
 #else
@@ -127,7 +127,7 @@ void embedded_execute() {
             ds->process(ds);
         }
         
-#ifdef EMBEDDED
+#ifdef HAVE_TICK
         // process timers
         while (timers) {
             timer_source_t *ts = (timer_source_t *) timers;
@@ -140,7 +140,7 @@ void embedded_execute() {
     }
 }
 
-#ifdef EMBEDDED
+#ifdef HAVE_TICK
 static void embedded_tick_handler(void){
     system_ticks++;
 }
@@ -165,7 +165,7 @@ void embedded_init(){
 
     data_sources = NULL;
 
-#ifdef EMBEDDED
+#ifdef HAVE_TICK
     timers = NULL;
     system_ticks = 0;
     hal_tick_init();

@@ -68,7 +68,7 @@ typedef struct timer {
 #ifdef HAVE_TIME
     struct timeval timeout;                  // <-- next timeout
 #endif
-#ifdef EMBEDDED
+#ifdef HAVE_TICK
     uint32_t timeout;                       // timeout in system ticks
 #endif
     void  (*process)(struct timer *ts);      // <-- do processing
@@ -94,7 +94,7 @@ int  run_loop_remove_data_source(data_source_t *dataSource);
 void run_loop_execute(void);
 
 // hack to fix HCI timer handling
-#ifdef EMBEDDED
+#ifdef HAVE_TICK
 uint32_t embedded_get_ticks(void);
 uint32_t embedded_ticks_for_ms(uint32_t time_in_ms);
 #endif
