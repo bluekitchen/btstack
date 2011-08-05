@@ -33,7 +33,7 @@
  *  hal_cpu.h
  *
  *  Low power mode for MCU requires that IRQs can be first blocked 
- *  and then unbocked while entering low power mode atomically
+ *  and then unblocked while entering low power mode atomically
  */
  
 void hal_cpu_disable_irqs();
