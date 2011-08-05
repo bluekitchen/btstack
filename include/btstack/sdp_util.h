@@ -125,8 +125,9 @@ int de_get_data_size(uint8_t * header);
 // MARK: SDP
 int sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startIndex, uint16_t maxBytes, uint8_t *buffer);
 uint8_t * sdp_get_attribute_value_for_attribute_id(uint8_t * record, uint16_t attributeID);
-    uint8_t sdp_set_attribute_value_for_attribute_id(uint8_t * record, uint16_t attributeID, uint32_t value);
+uint8_t sdp_set_attribute_value_for_attribute_id(uint8_t * record, uint16_t attributeID, uint32_t value);
 int sdp_record_matches_service_search_pattern(uint8_t *record, uint8_t *serviceSearchPattern);
+int spd_get_filtered_size(uint8_t *record, uint8_t *attributeIDList);
 
 #if defined __cplusplus
 }
