@@ -230,7 +230,7 @@ typedef struct {
     // timer
     struct timeval timestamp;
 #endif
-#ifdef EMBEDDED
+#ifdef HAVE_TICK
     uint32_t timestamp; // timeout in system ticks
 #endif
     
