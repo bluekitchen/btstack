@@ -190,6 +190,8 @@ static void h4_block_received(void){
         case H4_W4_PAYLOAD:
             h4_state = H4_PACKET_RECEIVED;
             bytes_to_read = 0;
+            // trigger run loop
+            embedded_trigger();
             break;
             
         default:
@@ -212,6 +214,8 @@ static void h4_block_sent(void){
             break;
         case TX_W4_PACKET_SENT:
             tx_state = TX_DONE;
+            // trigger run loop
+            embedded_trigger();
             break;
         default:
             break;
