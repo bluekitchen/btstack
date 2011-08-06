@@ -121,9 +121,11 @@ void run_loop_init(RUN_LOOP_TYPE type){
     }
 #endif
     switch (type) {
+#ifdef EMBEDDED
         case RUN_LOOP_EMBEDDED:
             the_run_loop = &run_loop_embedded;
             break;
+#endif
 #ifdef USE_POSIX_RUN_LOOP
         case RUN_LOOP_POSIX:
             the_run_loop = &run_loop_posix;
