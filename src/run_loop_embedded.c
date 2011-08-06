@@ -60,8 +60,9 @@
 // the run loop
 static linked_list_t data_sources;
 
-#ifdef HAVE_TICK
 static linked_list_t timers;
+
+#ifdef HAVE_TICK
 static uint32_t system_ticks;
 #endif
 
@@ -118,7 +119,7 @@ int embedded_remove_timer(timer_source_t *ts){
 #endif
 }
 
-void embedded_dump_timer(){
+void embedded_dump_timer(void){
 #ifdef ENABLE_LOG_INFO 
     linked_item_t *it;
     int i = 0;
@@ -132,7 +133,7 @@ void embedded_dump_timer(){
 /**
  * Execute run_loop
  */
-void embedded_execute() {
+void embedded_execute(void) {
     data_source_t *ds;
 
     while (1) {
@@ -186,7 +187,7 @@ void run_loop_set_timer(timer_source_t *ts, uint32_t timeout_in_ms){
 }
 #endif
 
-void embedded_init(){
+void embedded_init(void){
 
     data_sources = NULL;
 
