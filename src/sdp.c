@@ -439,6 +439,9 @@ static uint16_t sdp_get_size_for_service_search_attribute_response(uint8_t * ser
 
 int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remote_mtu){
     
+    // SDP header before attribute sevice list: 7
+    // Continuation, worst case: 5
+    
     // get request details
     uint16_t  transaction_id = READ_NET_16(packet, 1);
     // not used yet - uint16_t  param_len = READ_NET_16(packet, 3);
@@ -449,107 +452,85 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
     uint16_t  attributeIDListLen = de_get_len(attributeIDList);
     uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2+attributeIDListLen];
     
-    // calc maximumAttributeByteCount based on remote MTU
-    uint16_t maximumAttributeByteCount2 = remote_mtu - (7+5);
+    // calc maximumAttributeByteCount based on remote MTU, SDP header and reserved Continuation block
+    uint16_t maximumAttributeByteCount2 = remote_mtu - 12;
     if (maximumAttributeByteCount2 < maximumAttributeByteCount) {
         maximumAttributeByteCount = maximumAttributeByteCount2;
     }
     
     // continuation state contains index of next service record to examine
     // continuation state contains the offset into this particular response
-    uint16_t continuation_service_index   = 0;
+    uint16_t continuation_service_index = 0;
     uint16_t continuation_offset = 0;
-    int      continuation = 0;
     if (continuationState[0] == 4){
-        continuation_service_index    = READ_NET_16(continuationState, 1);
+        continuation_service_index = READ_NET_16(continuationState, 1);
         continuation_offset = READ_NET_16(continuationState, 3);
     }
 
-    // get sum of all service attribute responses on first response
-    linked_item_t *it;
-    if (continuation_service_index == 0 && continuation_offset == 0){
-        uint16_t total_response_size = 3 + sdp_get_size_for_service_search_attribute_response(serviceSearchPattern, attributeIDList);
-        log_info("total response size %u, maximumAttributeByteCount %u \n", total_response_size, maximumAttributeByteCount);
-    }
+    printf("--> sdp_handle_service_search_attribute_request, cont %u/%u, max %u\n", continuation_service_index, continuation_offset, maximumAttributeByteCount);
     
-    // get highest index of matching record - to know when to stop
-    int highest_matching_record = -1;
-    uint16_t current_service_index = 0;
-    // for all service records that match
-    for (it = (linked_item_t *) sdp_service_records; it ; it = it->next, ++current_service_index){
-        service_record_item_t * item = (service_record_item_t *) it;
-        if (sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)){
-            highest_matching_record = current_service_index;
-        }
-    }
-
-    
-    
-    printf("-> sdp_handle_service_search_attribute_request: continuation (%u, %u)\n", continuation_service_index, continuation_offset);
-
     // AttributeLists - starts at offset 7
     uint16_t pos = 7;
-    int complete_response = 0;
-     
-    // and create DES header for it
-    // header
-    sdp_response_buffer[0] = SDP_ServiceSearchAttributeResponse;
-    net_store_16(sdp_response_buffer, 1, transaction_id);
     
-    // for all service records that match
-    current_service_index = 0;
-    for (it = (linked_item_t *) sdp_service_records; it ; it = it->next, ++current_service_index){
-        service_record_item_t * item = (service_record_item_t *) it;
-        if (current_service_index >= continuation_service_index ) {
-            if (sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)){
-                
-                // create sequence and copy specified attributes
-                uint8_t *attributeList = &sdp_response_buffer[pos];
-                de_create_sequence(attributeList);
-                sdp_append_attributes_in_attributeIDList(item->service_record, attributeIDList, 0,SDP_RESPONSE_BUFFER_SIZE-7-3, attributeList);
-                uint16_t listLen = de_get_len(attributeList);
-                
-                // handle continuation
-                if (continuation_offset){
-                    memmove(&sdp_response_buffer[pos], &sdp_response_buffer[pos+continuation_offset], maximumAttributeByteCount);
-                    listLen -= continuation_offset;    
-                }
-                pos += listLen;
-
-                // complete response from this record?
-                if (pos - 7 <= maximumAttributeByteCount){
-                    continuation_offset = 0;
-                    current_service_index++;
-                    if (current_service_index > highest_matching_record) {
-                        // done
-                        continuation = 0;
-                        break;
-                    } else {
-                        if (!complete_response){
-                            continuation = 1;
-                            break;
-                        }
-                    }
-                } else {
-                    continuation_offset += maximumAttributeByteCount;
-                    if (!continuation_service_index && continuation_offset == maximumAttributeByteCount){
-                        continuation_offset -= 3; // without initial header
-                    }
-                    complete_response = 0;
-                    continuation = 1;
-                    break;
-                }
-            }
-        }
+    // add DES with total size for first request
+    if (continuation_service_index == 0 && continuation_offset == 0){
+        uint16_t total_response_size = sdp_get_size_for_service_search_attribute_response(serviceSearchPattern, attributeIDList);
+        de_store_descriptor_with_len(&sdp_response_buffer[pos], DE_DES, DE_SIZE_VAR_16, total_response_size);
+        log_info("total response size %u\n", total_response_size);
+        pos += 3;
+        maximumAttributeByteCount -= 3;
     }
+    
+    // create attribute list
+    int      first_answer = 1;
+    int      continuation = 0;
+    uint16_t current_service_index = 0;
+    linked_item_t *it = (linked_item_t *) sdp_service_records;
+    for ( ; it ; it = it->next, ++current_service_index){
+        service_record_item_t * item = (service_record_item_t *) it;
+        
+        if (current_service_index < continuation_service_index ) continue;
+        if (!sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)) continue;
 
-    // Continuation State
-    uint16_t attributeListByteCount = pos - 7;
-    if (continuation){
-        if (pos > 7 + maximumAttributeByteCount) {
-            pos = 7 + maximumAttributeByteCount;
-            attributeListByteCount = maximumAttributeByteCount;
+        if (continuation_offset == 0){
+            
+            // get size of this record
+            uint16_t filtered_attributes_size = spd_get_filtered_size(item->service_record, attributeIDList);
+            
+            // stop if complete record doesn't fits into response but we already have a partial response
+            if ((filtered_attributes_size + 3 > maximumAttributeByteCount) && !first_answer) {
+                continuation = 1;
+                break;
+            }
+            
+            // store DES
+            de_store_descriptor_with_len(&sdp_response_buffer[pos], DE_DES, DE_SIZE_VAR_16, filtered_attributes_size);
+            maximumAttributeByteCount -= 3;
+            pos += 3;
         }
+        
+        first_answer = 0;
+    
+        // copy maximumAttributeByteCount from record
+        uint16_t bytes_used;
+        int complete = sdp_filter_attributes_in_attributeIDList(item->service_record, attributeIDList, continuation_offset, maximumAttributeByteCount, &bytes_used, &sdp_response_buffer[pos]);
+        pos += bytes_used;
+        
+        if (complete) {
+            continuation_offset = 0;
+            continue;
+        }
+        
+        continuation = 1;
+        continuation_offset += bytes_used;
+        break;
+            
+    }
+    
+    uint16_t attributeListsByteCount = pos - 7;
+    
+    // Continuation State
+    if (continuation){
         sdp_response_buffer[pos++] = 4;
         net_store_16(sdp_response_buffer, pos, (uint16_t) current_service_index);
         pos += 2;
@@ -560,9 +541,11 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
         sdp_response_buffer[pos++] = 0;
     }
         
-    // update header
+    // create SDP header
+    sdp_response_buffer[0] = SDP_ServiceSearchAttributeResponse;
+    net_store_16(sdp_response_buffer, 1, transaction_id);
     net_store_16(sdp_response_buffer, 3, pos - 5);  // size of variable payload
-    net_store_16(sdp_response_buffer, 5, attributeListByteCount);  // AttributeListsByteCount 
+    net_store_16(sdp_response_buffer, 5, attributeListsByteCount);
     
     return pos;
 }
@@ -687,7 +670,7 @@ static void dump_service_search_response(void){
 
 void sdp_test(){
     
-    const uint16_t remote_mtu = 48;
+    const uint16_t remote_mtu = 23;
     uint8_t allAttributeIDs[20];  //
     
     // create an attribute list
@@ -779,7 +762,7 @@ void sdp_test(){
         de_add_number(serviceSearchPattern, DE_UUID, DE_SIZE_16, 0x0001);
     }
     uint16_t serviceSearchPatternLen = de_get_len(serviceSearchPattern);
-    net_store_16(request, 5 + serviceSearchPatternLen, 46); // MaximumAttributeByteCount:
+    net_store_16(request, 5 + serviceSearchPatternLen, 1000); // MaximumAttributeByteCount:
     uint8_t * attributeIDList = request + 5 + serviceSearchPatternLen + 2;
     de_create_sequence(attributeIDList);
     de_add_number(attributeIDList, DE_UINT, DE_SIZE_32, 0x0000ffff);
