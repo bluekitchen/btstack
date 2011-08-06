@@ -36,8 +36,8 @@
  *  and then unblocked while entering low power mode atomically
  */
  
-void hal_cpu_disable_irqs();
-void hal_cpu_enable_irqs();
-void hal_cpu_enable_irqs_and_sleep();
+void hal_cpu_disable_irqs(void);
+void hal_cpu_enable_irqs(void);
+void hal_cpu_enable_irqs_and_sleep(void);
 
  
