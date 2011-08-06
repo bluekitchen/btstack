@@ -298,54 +298,42 @@ int sdp_attribute_list_constains_id(uint8_t *attributeIDList, uint16_t attribute
 // pre: buffer contains DES with 2 byte length field
 struct sdp_context_append_attributes {
     uint8_t * buffer;
-    uint16_t startIndex; // index of first to examine
-    uint16_t attributeIndex;    // index over list
+    uint16_t startOffset;     // offset of when to start copying
     uint16_t maxBytes;
+    uint16_t usedBytes;
     uint8_t *attributeIDList;
-    // uint16_t currentAttributeID;
-    // uint8_t  copyAttributeValue;
-    uint8_t  moreData;          // extra data: attributeIndex has to be examined next
 };
 
 static int sdp_traversal_append_attributes(uint16_t attributeID, uint8_t * attributeValue, de_type_t type, de_size_t size, void *my_context){
     struct sdp_context_append_attributes * context = (struct sdp_context_append_attributes *) my_context;
-    if (context->attributeIndex >= context->startIndex) {
-        if (sdp_attribute_list_constains_id(context->attributeIDList, attributeID)) {
-            // DES_HEADER(3) + DES_DATA + (UINT16(3) + attribute)
-            uint16_t data_size = READ_NET_16(context->buffer, 1);
-            int attribute_len = de_get_len(attributeValue);
-            if (3 + data_size + (3 + attribute_len) <= context->maxBytes) {
-                // copy Attribute
-                de_add_number(context->buffer, DE_UINT, DE_SIZE_16, attributeID);   
-                data_size += 3; // 3 bytes
-                memcpy(context->buffer + 3 + data_size, attributeValue, attribute_len);
-                net_store_16(context->buffer,1,data_size+attribute_len);
-            } else {
-                // not enought space left -> continue with previous element
-                context->moreData = 1;
-                return 1;
-            }
+    if (sdp_attribute_list_constains_id(context->attributeIDList, attributeID)) {
+        // DES_HEADER(3) + DES_DATA + (UINT16(3) + attribute)
+        uint16_t data_size = READ_NET_16(context->buffer, 1);
+        int attribute_len = de_get_len(attributeValue);
+        if (3 + data_size + (3 + attribute_len) <= context->maxBytes) {
+            // copy Attribute
+            de_add_number(context->buffer, DE_UINT, DE_SIZE_16, attributeID);   
+            data_size += 3; // 3 bytes
+            memcpy(context->buffer + 3 + data_size, attributeValue, attribute_len);
+            net_store_16(context->buffer,1,data_size+attribute_len);
+        } else {
+            // not enought space left -> continue with previous element
+            return 1;
         }
     }
-    context->attributeIndex++;
     return 0;
 }
 
-// returns index of the next attribute index to process, if not all could be passed on, -1 = all processed
 // maxBytes: maximal size of data element sequence
-int sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startIndex, uint16_t maxBytes, uint8_t *buffer){
+uint16_t sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startOffset, uint16_t maxBytes, uint8_t *buffer){
     struct sdp_context_append_attributes context;
     context.buffer = buffer;
     context.maxBytes = maxBytes;
-    context.attributeIndex = 0;
-    context.startIndex = startIndex;
-    context.moreData = 0;
+    context.usedBytes = 0;
+    context.startOffset = startOffset;
     context.attributeIDList = attributeIDList;
     sdp_attribute_list_traverse_sequence(record, sdp_traversal_append_attributes, &context);
-    if (context.moreData) {
-        return context.attributeIndex;
-    }
-    return -1;
+    return context.usedBytes;
 }
 
 // MARK: Get sum of attributes matching attribute list
@@ -357,7 +345,7 @@ struct sdp_context_get_filtered_size {
 static int sdp_traversal_get_filtered_size(uint16_t attributeID, uint8_t * attributeValue, de_type_t type, de_size_t size, void *my_context){
     struct sdp_context_get_filtered_size * context = (struct sdp_context_get_filtered_size *) my_context;
     if (sdp_attribute_list_constains_id(context->attributeIDList, attributeID)) {
-        context->size += size;
+        context->size += 3 + de_get_len(attributeValue);
     }
     return 0;
 }
@@ -537,6 +525,7 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
     }
     return 0;
 }
+
 void de_dump_data_element(uint8_t * record){
     int indent = 0;
     // hack to get root DES, too.
@@ -544,110 +533,3 @@ void de_dump_data_element(uint8_t * record){
     de_size_t size = de_get_size_type(record);
     de_traversal_dump_data(record, type, size, (void*) &indent);
 }
-
-#if 0
-
-uint8_t buffer[100];
-uint8_t record[100];
-uint8_t attributes[100];
-uint8_t serviceSearchPattern[100];
-uint8_t attributeIDList[100];
-int main(){
-
-    // add all kinds of elements
-    de_create_sequence(buffer);
-    de_add_number(buffer, DE_NIL,  DE_SIZE_8,  0);
-    de_add_number(buffer, DE_BOOL, DE_SIZE_8,  0);
-    de_add_number(buffer, DE_UINT, DE_SIZE_8,  1);
-    de_add_number(buffer, DE_UINT, DE_SIZE_16, 2);
-    de_add_number(buffer, DE_UINT, DE_SIZE_32, 3);
-    de_add_number(buffer, DE_INT,  DE_SIZE_8,  4);
-    de_add_number(buffer, DE_INT,  DE_SIZE_16, 5);
-    de_add_number(buffer, DE_INT,  DE_SIZE_32, 6);
-    de_add_number(buffer, DE_UUID, DE_SIZE_16,  7);
-    de_add_number(buffer, DE_UUID, DE_SIZE_32,  8);
-    uint8_t uuid[16] = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
-    de_add_uuid128(buffer, uuid);
-    uint8_t * seq2 = de_push_sequence(buffer);
-    de_add_number(seq2, DE_UINT, DE_SIZE_16, 9);
-    uint8_t * seq3 = de_push_sequence(seq2);
-    de_add_number(seq3, DE_UINT, DE_SIZE_16, 10);
-    de_add_number(seq3, DE_UUID, DE_SIZE_32, 11);
-    de_pop_sequence(seq2,seq3);
-    de_pop_sequence(buffer,seq2);
-    
-    de_dump_data_element(buffer);
-    
-    // test sdp_record_contains_UUID
-    uint8_t uuid128 [16];
-    sdp_normalize_uuid(uuid128, 7);
-    printf("Contains UUID %u: %u\n", 7, sdp_record_contains_UUID128(buffer, uuid128));
-    sdp_normalize_uuid(uuid128, 9);
-    printf("Contains UUID %u: %u\n", 9, sdp_record_contains_UUID128(buffer, uuid128));
-    sdp_normalize_uuid(uuid128, 11);
-    printf("Contains UUID %u: %u\n", 11, sdp_record_contains_UUID128(buffer, uuid128));
-    
-    // create attribute ID list
-    de_create_sequence(attributeIDList);
-    de_add_number(attributeIDList, DE_UINT, DE_SIZE_16, 10);
-    de_add_number(attributeIDList, DE_UINT, DE_SIZE_32, 15 << 16 | 20);
-    de_dump_data_element(attributeIDList);
-    
-    // test sdp_attribute_list_constains_id
-    printf("Contains ID %u: %u\n", 5,  sdp_attribute_list_constains_id(attributeIDList, 5));
-    printf("Contains ID %u: %u\n", 10, sdp_attribute_list_constains_id(attributeIDList, 10));
-    printf("Contains ID %u: %u\n", 17, sdp_attribute_list_constains_id(attributeIDList, 17));
-    
-    // create test service record/attribute list
-    de_create_sequence(record);
-    
-    seq2 = de_push_sequence(record);
-    de_add_number(seq2, DE_UINT, DE_SIZE_16, 1);
-    de_add_number(seq2, DE_UINT, DE_SIZE_32, 0x11111);
-    de_pop_sequence(record, seq2);
-
-    seq2 = de_push_sequence(record);
-    de_add_number(seq2, DE_UINT, DE_SIZE_16, 10);
-    de_add_number(seq2, DE_UUID, DE_SIZE_32, 12);
-    de_pop_sequence(record, seq2);
-
-    seq2 = de_push_sequence(record);
-    de_add_number(seq2, DE_UINT, DE_SIZE_16, 17);
-    de_add_number(seq2, DE_UUID, DE_SIZE_32, 13);
-    de_pop_sequence(record, seq2);
-
-    seq2 = de_push_sequence(record);
-    de_add_number(seq2, DE_UINT, DE_SIZE_16, 20);
-    de_add_number(seq2, DE_UUID, DE_SIZE_32, 14);
-    de_pop_sequence(record, seq2);
-
-    seq2 = de_push_sequence(record);
-    de_add_number(seq2, DE_UINT, DE_SIZE_16, 22);
-    de_add_number(seq2, DE_UUID, DE_SIZE_32, 15);
-    de_pop_sequence(record, seq2);
-
-    de_dump_data_element(record);
-    de_create_sequence(attributes);
-    sdp_append_attributes_in_attributeIDList(record, attributeIDList, attributes, sizeof(attributes));
-    de_dump_data_element(attributes);
-
-    // test sdp_get_service_record_handle
-    printf("Service Record Handle (att id 0) = %08x\n", sdp_get_service_record_handle(record));
-
-    // test sdp_record_matches_service_search_pattern
-    de_create_sequence(serviceSearchPattern);
-    de_add_number(serviceSearchPattern, DE_UUID, DE_SIZE_16, 12);
-    de_add_number(serviceSearchPattern, DE_UUID, DE_SIZE_32, 13);
-    de_dump_data_element(serviceSearchPattern);
-    printf("service search pattern matches: %u\n", sdp_record_matches_service_search_pattern(record, serviceSearchPattern)); 
-    de_add_number(serviceSearchPattern, DE_UUID, DE_SIZE_16, 66);
-    printf("service search pattern matches: %u\n", sdp_record_matches_service_search_pattern(record, serviceSearchPattern)); 
-    
-    // implement list of records
-    // test sdp_get_record_handles_for_service_search_pattern
-    
-    uint32_t handle = sdp_add_service_record(record);
-    printf("new handle %08x \n", handle);
-}
-
-#endif
