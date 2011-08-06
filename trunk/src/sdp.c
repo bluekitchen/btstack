@@ -649,7 +649,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 	}
 }
 
-#if 1
+#if 0
 static uint8_t record[100];
 static uint8_t request[100];
 static uint8_t response[100];
