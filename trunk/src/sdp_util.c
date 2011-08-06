@@ -336,6 +336,83 @@ uint16_t sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attr
     return context.usedBytes;
 }
 
+// MARK: Filter attributes that match attribute list from startOffset and a max nr bytes
+struct sdp_context_filter_attributes {
+    uint8_t * buffer;
+    uint16_t startOffset;     // offset of when to start copying
+    uint16_t maxBytes;
+    uint16_t usedBytes;
+    uint8_t *attributeIDList;
+    int      complete;
+};
+
+static int sdp_traversal_filter_attributes(uint16_t attributeID, uint8_t * attributeValue, de_type_t type, de_size_t size, void *my_context){
+    struct sdp_context_filter_attributes * context = (struct sdp_context_filter_attributes *) my_context;
+
+    if (!sdp_attribute_list_constains_id(context->attributeIDList, attributeID)) return 0;
+
+    // { Attribute ID (Descriptor, big endian 16-bit ID), AttributeValue (data)}
+
+    // handle Attribute ID
+    if (context->startOffset >= 3){
+        context->startOffset -= 3;
+    } else {
+        uint8_t idBuffer[3];
+        de_store_descriptor(idBuffer, DE_INT,  DE_SIZE_16);
+        net_store_16(idBuffer,1,attributeID);
+        int i;
+        for (i=0; i<3; i++){
+            if (!context->maxBytes) {
+                context->complete = 0;
+                return 1;
+            }
+            if (i < context->startOffset) continue;
+            *(context->buffer) = idBuffer[i];
+            context->usedBytes++;
+            context->maxBytes--;
+            context->buffer++;
+        }
+        context->startOffset = 0;
+    }
+    
+    // handle Attribute Value
+    int attribute_len = de_get_len(attributeValue);
+    if (context->startOffset >= attribute_len) {
+        context->startOffset -= attribute_len;
+        return 0;
+    }
+    
+    int done = 0;
+    uint16_t attribute_remainder_len = attribute_len - context->startOffset;
+    if (context->maxBytes < attribute_remainder_len){
+        attribute_remainder_len = context->maxBytes;
+        context->complete = 0;
+        done = 1;
+    }
+    memcpy(context->buffer, &attributeValue[context->startOffset], attribute_remainder_len);
+    context->startOffset = 0;
+    context->usedBytes += attribute_remainder_len;
+    context->buffer    += attribute_remainder_len;
+    context->maxBytes  -= attribute_remainder_len;
+    return done;
+}
+
+int sdp_filter_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startOffset, uint16_t maxBytes, uint16_t *usedBytes, uint8_t *buffer){
+
+    struct sdp_context_filter_attributes context;
+    context.buffer = buffer;
+    context.maxBytes = maxBytes;
+    context.usedBytes = 0;
+    context.startOffset = startOffset;
+    context.attributeIDList = attributeIDList;
+    context.complete = 1;
+
+    sdp_attribute_list_traverse_sequence(record, sdp_traversal_filter_attributes, &context);
+
+    *usedBytes = context.usedBytes;
+    return context.complete;
+}
+
 // MARK: Get sum of attributes matching attribute list
 struct sdp_context_get_filtered_size {
     uint8_t *attributeIDList;
