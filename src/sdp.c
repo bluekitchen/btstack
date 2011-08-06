@@ -290,10 +290,7 @@ int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu){
     uint8_t * continuationState = &packet[5+serviceSearchPatternLen+2];
     
     // calc maxumumServiceRecordCount based on remote MTU
-    uint16_t maximumServiceRecordCount2 = (remote_mtu - (9+3))/4;
-    if (maximumServiceRecordCount2 < maximumServiceRecordCount) {
-        maximumServiceRecordCount = maximumServiceRecordCount2;
-    }
+    uint16_t maxNrServiceRecordsPerResponse = (remote_mtu - (9+3))/4;
     
     // continuation state contains index of next service record to examine
     int      continuation = 0;
@@ -302,36 +299,41 @@ int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu){
         continuation_index = READ_NET_16(continuationState, 1);
     }
     
-    // header
-    sdp_response_buffer[0] = SDP_ServiceSearchResponse;
-    net_store_16(sdp_response_buffer, 1, transaction_id);
+    // get and limit total count
+    linked_item_t *it;
+    uint16_t total_service_count   = 0;
+    for (it = (linked_item_t *) sdp_service_records; it ; it = it->next){
+        service_record_item_t * item = (service_record_item_t *) it;
+        if (!sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)) continue;
+        total_service_count++;
+    }
+    if (total_service_count > maximumServiceRecordCount){
+        total_service_count = maximumServiceRecordCount;
+    }
     
     // ServiceRecordHandleList at 9
     uint16_t pos = 9;
-    uint16_t total_service_count   = 0;
-    uint16_t current_service_count = 0;
-    uint16_t current_service_index = 0;
-    // for all service records that match
-    linked_item_t *it;
+    uint16_t current_service_count  = 0;
+    uint16_t current_service_index  = 0;
+    uint16_t matching_service_count = 0;
     for (it = (linked_item_t *) sdp_service_records; it ; it = it->next, ++current_service_index){
         service_record_item_t * item = (service_record_item_t *) it;
-        if (sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)){
 
-            // get total count
-            total_service_count++;
-            
-            // add to list if index higher than last continuation index and space left
-            if (current_service_index >= continuation_index && !continuation) {
-                if ( current_service_count < maximumServiceRecordCount) {
-                    net_store_32(sdp_response_buffer, pos, item->service_record_handle);
-                    current_service_count++;
-                    pos += 4;
-                } else {
-                    // next time start with this one
-                    continuation = 1;
-                    continuation_index = current_service_index;
-                }
-            }
+        if (!sdp_record_matches_service_search_pattern(item->service_record, serviceSearchPattern)) continue;
+        matching_service_count++;
+        
+        if (current_service_index < continuation_index) continue;
+
+        net_store_32(sdp_response_buffer, pos, item->service_record_handle);
+        pos += 4;
+        current_service_count++;
+        
+        if (matching_service_count >= total_service_count) break;
+
+        if (current_service_count >= maxNrServiceRecordsPerResponse){
+            continuation = 1;
+            continuation_index = current_service_index + 1;
+            break;
         }
     }
     
@@ -344,7 +346,9 @@ int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu){
         sdp_response_buffer[pos++] = 0;
     }
 
-    // update header info
+    // header
+    sdp_response_buffer[0] = SDP_ServiceSearchResponse;
+    net_store_16(sdp_response_buffer, 1, transaction_id);
     net_store_16(sdp_response_buffer, 3, pos - 5); // size of variable payload
     net_store_16(sdp_response_buffer, 5, total_service_count);
     net_store_16(sdp_response_buffer, 7, current_service_count);
@@ -674,15 +678,7 @@ void sdp_test(){
     // create an attribute list
     de_create_sequence(allAttributeIDs);
     de_add_number(allAttributeIDs, DE_UINT, DE_SIZE_32, 0x0000ffff);
-    
-    // create a service search pattern
-    uint8_t serviceOneSearchPattern[20];
-    de_create_sequence(serviceOneSearchPattern);
-    {
-        de_add_number(serviceOneSearchPattern, DE_UUID, DE_SIZE_16, 0x0001);
-    }
-    uint16_t serviceOneSearchPatternLen = de_get_len(serviceOneSearchPattern);
-    
+        
     // create two records with 2 attributes each
     de_create_sequence(record);
     de_add_number(record, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle); 
@@ -711,16 +707,23 @@ void sdp_test(){
     uint8_t * attributeIDList;
     uint16_t attributeIDListLen;
     uint16_t response_pos;
+    uint8_t * serviceSearchPattern;
+    uint16_t serviceSearchPatternLen;
     
-#if 0
+#if 1
     // sdp_handle_service_search_request
     uint16_t nr_services = 1;
     request[0] = SDP_ServiceSearchRequest;
     net_store_16(request, 1, transactionID++); // transaction ID
-    uint16_t serviceSearchPatternLen = de_get_len(serviceSearchPattern);
-    net_store_16(request, 5 + serviceSearchPatternLen, 1);
-    request[5 + serviceSearchPatternLen + 2] = 0;
-    sdp_handle_service_search_request(request, remote_mtu);
+    serviceSearchPattern = &request[5];
+    de_create_sequence(serviceSearchPattern);
+    {
+        de_add_number(serviceSearchPattern, DE_UUID, DE_SIZE_16, 0x0001);
+    }
+    serviceSearchPatternLen = de_get_len(serviceSearchPattern);
+    net_store_16(request, 5 + serviceSearchPatternLen, 2);  // max 
+    request[5 + serviceSearchPatternLen + 2] = 0;   // cont
+    sdp_handle_service_search_request(request, 16);
     dump_service_search_response();
     memcpy(request + 5 + serviceSearchPatternLen + 2, sdp_response_buffer + 9 + nr_services*4, 3); 
     sdp_handle_service_search_request(request, remote_mtu);
@@ -759,12 +762,12 @@ void sdp_test(){
     // sdp_handle_service_search_attribute_request
     request[0] = SDP_ServiceSearchAttributeRequest;
     net_store_16(request, 1, transactionID++); // transaction ID
-    uint8_t * serviceSearchPattern = &request[5];
+    serviceSearchPattern = &request[5];
     de_create_sequence(serviceSearchPattern);
     {
         de_add_number(serviceSearchPattern, DE_UUID, DE_SIZE_16, 0x0001);
     }
-    uint16_t serviceSearchPatternLen = de_get_len(serviceSearchPattern);
+    serviceSearchPatternLen = de_get_len(serviceSearchPattern);
     net_store_16(request, 5 + serviceSearchPatternLen, 11); // MaximumAttributeByteCount:
     attributeIDList = request + 5 + serviceSearchPatternLen + 2;
     de_create_sequence(attributeIDList);
