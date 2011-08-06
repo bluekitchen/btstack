@@ -50,8 +50,7 @@
 #define maxReservedServiceRecordHandle 0xffff
 
 // max SDP response
-// #define SDP_RESPONSE_BUFFER_SIZE (HCI_ACL_BUFFER_SIZE-HCI_ACL_HEADER_SIZE)
-#define SDP_RESPONSE_BUFFER_SIZE 1000
+#define SDP_RESPONSE_BUFFER_SIZE (HCI_ACL_BUFFER_SIZE-HCI_ACL_HEADER_SIZE)
 
 static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
