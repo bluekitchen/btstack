@@ -346,6 +346,22 @@ struct sdp_context_filter_attributes {
     int      complete;
 };
 
+// copy data with given start offset and max bytes, returns OK if all data has been copied
+static int spd_append_range(struct sdp_context_filter_attributes* context, uint16_t len, uint8_t *data){
+    int ok = 1;
+    uint16_t remainder_len = len - context->startOffset;
+    if (context->maxBytes < remainder_len){
+        remainder_len = context->maxBytes;
+        ok = 0;
+    }
+    memcpy(context->buffer, &data[context->startOffset], remainder_len);
+    context->usedBytes += remainder_len;
+    context->buffer    += remainder_len;
+    context->maxBytes  -= remainder_len;
+    context->startOffset = 0;
+    return ok;
+}
+
 static int sdp_traversal_filter_attributes(uint16_t attributeID, uint8_t * attributeValue, de_type_t type, de_size_t size, void *my_context){
     struct sdp_context_filter_attributes * context = (struct sdp_context_filter_attributes *) my_context;
 
@@ -360,19 +376,12 @@ static int sdp_traversal_filter_attributes(uint16_t attributeID, uint8_t * attri
         uint8_t idBuffer[3];
         de_store_descriptor(idBuffer, DE_INT,  DE_SIZE_16);
         net_store_16(idBuffer,1,attributeID);
-        int i;
-        for (i=0; i<3; i++){
-            if (!context->maxBytes) {
-                context->complete = 0;
-                return 1;
-            }
-            if (i < context->startOffset) continue;
-            *(context->buffer) = idBuffer[i];
-            context->usedBytes++;
-            context->maxBytes--;
-            context->buffer++;
+        
+        int ok = spd_append_range(context, 3, idBuffer);
+        if (!ok) {
+            context->complete = 0;
+            return 1;
         }
-        context->startOffset = 0;
     }
     
     // handle Attribute Value
@@ -382,19 +391,12 @@ static int sdp_traversal_filter_attributes(uint16_t attributeID, uint8_t * attri
         return 0;
     }
     
-    int done = 0;
-    uint16_t attribute_remainder_len = attribute_len - context->startOffset;
-    if (context->maxBytes < attribute_remainder_len){
-        attribute_remainder_len = context->maxBytes;
+    int ok = spd_append_range(context, attribute_len, attributeValue);
+    if (!ok) {
         context->complete = 0;
-        done = 1;
+        return 1;
     }
-    memcpy(context->buffer, &attributeValue[context->startOffset], attribute_remainder_len);
-    context->startOffset = 0;
-    context->usedBytes += attribute_remainder_len;
-    context->buffer    += attribute_remainder_len;
-    context->maxBytes  -= attribute_remainder_len;
-    return done;
+    return 0;
 }
 
 int sdp_filter_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startOffset, uint16_t maxBytes, uint16_t *usedBytes, uint8_t *buffer){
