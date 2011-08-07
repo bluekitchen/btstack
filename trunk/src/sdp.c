@@ -461,8 +461,8 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
         maximumAttributeByteCount = maximumAttributeByteCount2;
     }
     
-    // continuation state contains index of next service record to examine
-    // continuation state contains the offset into this particular response
+    // continuation state contains: index of next service record to examine
+    // continuation state contains: byte offset into this service record
     uint16_t continuation_service_index = 0;
     uint16_t continuation_offset = 0;
     if (continuationState[0] == 4){
