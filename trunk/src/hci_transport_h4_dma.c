@@ -83,7 +83,7 @@ static int h4_can_send_packet_now(uint8_t packet_type);
 
 // externa prototyps, support for foo
 void foo_handle(uint8_t action);
-void foo_prepare_for_send(void);
+int  foo_can_send_now(uint8_t packet_type, uint8_t *packet, int size);
 
 // packet reader state machine
 static  H4_STATE h4_state;
@@ -166,7 +166,7 @@ static void h4_block_received(void){
                     break;
 
                 default:
-#ifdef HAVE_FOO:
+#ifdef HAVE_FOO
                     foo_handle(hci_packet[0]);
 #else
                     log_error("h4_process: invalid packet type 0x%02x\r\n", hci_packet[0]);
@@ -279,13 +279,13 @@ static int h4_send_packet(uint8_t packet_type, uint8_t *packet, int size){
         return -1;
     }
     
+#ifdef HAVE_FOO
+    if (!foo_can_send_now(packet_type, packet, size)) return 0;
+#endif
+
 #ifdef DUMP
     printf("TX: %02x ", packet_type);
     dump(packet, size);
-#endif
-
-#ifdef HAVE_FOO:
-    foo_prepare_for_send();
 #endif
     
     tx_data = packet;
