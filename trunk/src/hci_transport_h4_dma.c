@@ -81,10 +81,6 @@ static const char * h4_get_transport_name();
 static int h4_set_baudrate(uint32_t baudrate);
 static int h4_can_send_packet_now(uint8_t packet_type);
 
-// externa prototyps, support for foo
-void foo_handle(uint8_t action);
-int  foo_can_send_now(uint8_t packet_type, uint8_t *packet, int size);
-
 // packet reader state machine
 static  H4_STATE h4_state;
 static int read_pos;
@@ -164,14 +160,10 @@ static void h4_block_received(void){
                     h4_state = H4_W4_EVENT_HEADER;
                     bytes_to_read = HCI_EVENT_HEADER_SIZE;
                     break;
-
                 default:
-#ifdef HAVE_FOO
-                    foo_handle(hci_packet[0]);
-#else
                     log_error("h4_process: invalid packet type 0x%02x\r\n", hci_packet[0]);
-#endif
                     read_pos = 0;
+                    h4_state = H4_W4_PACKET_TYPE;
                     bytes_to_read = 1;
                     break;
             }
@@ -234,7 +226,7 @@ static void h4_register_packet_handler(void (*handler)(uint8_t packet_type, uint
     packet_handler = handler;
 }
 
-#define DUMP
+// #define DUMP
 
 #ifdef DUMP
 static void dump(uint8_t *data, uint16_t len){
@@ -279,10 +271,6 @@ static int h4_send_packet(uint8_t packet_type, uint8_t *packet, int size){
         return -1;
     }
     
-#ifdef HAVE_FOO
-    if (!foo_can_send_now(packet_type, packet, size)) return 0;
-#endif
-
 #ifdef DUMP
     printf("TX: %02x ", packet_type);
     dump(packet, size);
