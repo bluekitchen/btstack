@@ -347,7 +347,7 @@ static void hci_shutdown_connection(hci_connection_t *conn){
     hci_emit_nr_connections_changed();
 }
 
-static uint16_t packet_type_sizes[] = {
+static const uint16_t packet_type_sizes[] = {
     0, HCI_ACL_2DH1_SIZE, HCI_ACL_3DH1_SIZE, HCI_ACL_DM1_SIZE,
     HCI_ACL_DH1_SIZE, 0, 0, 0,
     HCI_ACL_2DH3_SIZE, HCI_ACL_3DH3_SIZE, HCI_ACL_DM3_SIZE, HCI_ACL_DH3_SIZE,
