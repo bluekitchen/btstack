@@ -296,6 +296,9 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
 		// incoming connection
 		channel->outgoing = 0;
 		channel->dlci = (server_channel << 1) |  multiplexer->outgoing;
+        if (channel->max_frame_size > service->max_frame_size) {
+            channel->max_frame_size = service->max_frame_size;
+        }
 	} else {
 		// outgoing connection
 		channel->outgoing = 1;
