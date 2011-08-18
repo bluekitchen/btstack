@@ -323,7 +323,7 @@ void l2cap_run(void){
         signaling_responses_pending--;
         int i;
         for (i=0; i < signaling_responses_pending; i++){
-            signaling_responses[i] = signaling_responses[i+1];
+            memcpy(&signaling_responses[i], &signaling_responses[i+1], sizeof(l2cap_signaling_response_t));
         }
     }
     
