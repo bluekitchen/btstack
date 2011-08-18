@@ -374,7 +374,7 @@ static int sdp_traversal_filter_attributes(uint16_t attributeID, uint8_t * attri
         context->startOffset -= 3;
     } else {
         uint8_t idBuffer[3];
-        de_store_descriptor(idBuffer, DE_INT,  DE_SIZE_16);
+        de_store_descriptor(idBuffer, DE_UINT,  DE_SIZE_16);
         net_store_16(idBuffer,1,attributeID);
         
         int ok = spd_append_range(context, 3, idBuffer);
