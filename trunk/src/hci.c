@@ -532,7 +532,7 @@ static void event_handler(uint8_t *packet, int size){
                     break;
                 }
             }
-            bzero(&device_name, sizeof(device_name_t));
+            memset(&device_name, 0, sizeof(device_name_t));
             strncpy((char*) device_name, (char*) &packet[9], 248);
             hci_stack.remote_device_db->put_name(&addr, &device_name);
             break;

@@ -49,7 +49,6 @@
 #ifndef EMBEDDED
 #include <fcntl.h>        // open
 #include <arpa/inet.h>    // hton..
-#include <strings.h>      // bzero
 #include <unistd.h>       // write 
 #include <stdio.h>
 #include <time.h>

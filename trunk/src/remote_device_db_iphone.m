@@ -193,7 +193,7 @@ static int  get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
     NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
     NSString *remoteName = get_value(bd_addr, PREFS_REMOTE_NAME);
     if (remoteName){
-        bzero(device_name, sizeof(device_name_t));
+        memset(device_name, 0, sizeof(device_name_t));
         strncpy((char*) device_name, [remoteName UTF8String], sizeof(device_name_t)-1);
     }
     [pool release];
