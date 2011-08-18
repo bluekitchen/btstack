@@ -42,10 +42,10 @@ static linked_list_t db_mem_devices;
 static linked_list_t db_mem_services;
 
 // Device info
-static void db_open(){
+static void db_open(void){
 }
 
-static void db_close(){ 
+static void db_close(void){ 
 }
 
 static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key) {
