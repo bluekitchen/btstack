@@ -206,7 +206,7 @@ static int usb_process_ds(struct data_source *ds) {
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
 
     // always handling an event as we're called when data is ready
-    bzero(&tv, sizeof(struct timeval));
+    memset(&tv, 0, sizeof(struct timeval));
     libusb_handle_events_timeout(NULL, &tv);
 
     // Handle any packet in the order that they were received
@@ -460,7 +460,7 @@ static int usb_close(){
 
             /* TODO - find a better way to ensure that all transfers have completed */
             struct timeval tv;
-            bzero(&tv, sizeof(struct timeval));
+            memset(&tv, 0, sizeof(struct timeval));
             libusb_handle_events_timeout(NULL, &tv);
 
         case LIB_USB_INTERFACE_CLAIMED:

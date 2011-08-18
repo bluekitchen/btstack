@@ -41,7 +41,6 @@
 
 #include <btstack/sdp_util.h>
 #include "../config.h"
-#include <btstack/utils.h> // for bzero on embedded
 #include "hci.h"
 
 // calculate combined ogf/ocf value
@@ -118,7 +117,7 @@ uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, 
                 memcpy(&hci_cmd_buffer[pos], ptr, len);
                 if (len < 248) {
                     // fill remaining space with zeroes
-                    bzero(&hci_cmd_buffer[pos+len], 248-len);
+                    memset(&hci_cmd_buffer[pos+len], 0, 248-len);
                 }
                 pos += 248;
                 break;

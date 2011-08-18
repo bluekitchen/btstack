@@ -458,7 +458,7 @@ int socket_connection_create_unix(char *path){
 	log_info ("Socket created at %s\n", path);
 	
     struct sockaddr_un addr;
-    bzero(&addr, sizeof(addr));
+    memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;
     strcpy(addr.sun_path, path);
     unlink(path);
@@ -574,7 +574,7 @@ connection_t * socket_connection_open_unix(){
 	}
 
     struct sockaddr_un server;
-    bzero(&server, sizeof(server));
+    memset(&server, 0, sizeof(server));
     server.sun_family = AF_UNIX;
     strcpy(server.sun_path, BTSTACK_UNIX);
     if (connect(btsocket, (struct sockaddr *)&server, sizeof (server)) == -1){

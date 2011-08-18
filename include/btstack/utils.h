@@ -119,10 +119,6 @@ uint8_t crc8_calc(uint8_t *data, uint16_t len);
 #define BD_ADDR_CMP(a,b) memcmp(a,b, BD_ADDR_LEN)
 #define BD_ADDR_COPY(dest,src) memcpy(dest,src,BD_ADDR_LEN)
 
-#ifndef HAVE_BZERO
-void bzero(void *s, uint32_t n);
-#endif
-	
 #if defined __cplusplus
 }
 #endif

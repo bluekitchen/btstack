@@ -72,7 +72,7 @@ void cocoa_add_data_source(data_source_t *dataSource){
 	
 	// store our dataSource in socket context
 	CFSocketContext socketContext;
-	bzero(&socketContext, sizeof(CFSocketContext));
+	memset(&socketContext, 0, sizeof(CFSocketContext));
 	socketContext.info = dataSource;
 
 	// create CFSocket from file descriptor

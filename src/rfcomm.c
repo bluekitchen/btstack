@@ -200,7 +200,7 @@ static uint16_t rfcomm_max_frame_size_for_l2cap_mtu(uint16_t l2cap_mtu){
 
 static void rfcomm_multiplexer_initialize(rfcomm_multiplexer_t *multiplexer){
 
-    bzero(multiplexer, sizeof(rfcomm_multiplexer_t));
+    memset(multiplexer, 0, sizeof(rfcomm_multiplexer_t));
 
     multiplexer->state = RFCOMM_MULTIPLEXER_CLOSED;
     multiplexer->l2cap_credits = 0;
@@ -278,7 +278,7 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
     if (rfcomm_client_cid_generator == 0) ++rfcomm_client_cid_generator;
     
     // setup channel
-    bzero(channel, sizeof(rfcomm_channel_t));
+    memset(channel, 0, sizeof(rfcomm_channel_t));
     
     channel->state             = RFCOMM_CHANNEL_CLOSED;
     channel->state_var         = RFCOMM_CHANNEL_STATE_VAR_NONE;
