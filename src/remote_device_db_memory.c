@@ -172,7 +172,7 @@ static uint8_t persistent_rfcomm_channel(char *serviceName){
 }
 
 
-remote_device_db_t remote_device_db_memory = {
+const remote_device_db_t remote_device_db_memory = {
     db_open,
     db_close,
     get_link_key,

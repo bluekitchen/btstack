@@ -59,7 +59,7 @@ typedef struct {
 } remote_device_db_t;
 
 extern remote_device_db_t remote_device_db_iphone;
-extern remote_device_db_t remote_device_db_memory;
+extern const remote_device_db_t remote_device_db_memory;
 
 // MARK: non-persisten implementation
 #include <btstack/linked_list.h>
