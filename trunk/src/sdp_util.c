@@ -42,7 +42,7 @@
 #include <inttypes.h>
 
 // date element type names
-const char *type_names[] = { "NIL", "UINT", "INT", "UUID", "STRING", "BOOL", "DES", "DEA", "URL"};
+const char * const type_names[] = { "NIL", "UINT", "INT", "UUID", "STRING", "BOOL", "DES", "DEA", "URL"};
 
 // Bluetooth Base UUID: 00000000-0000-1000-8000- 00805F9B34FB
 const uint8_t sdp_bluetooth_base_uuid[] = { 0x00, 0x00, 0x00, 0x00, /* - */ 0x00, 0x00, /* - */ 0x10, 0x00, /* - */
