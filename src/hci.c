@@ -633,6 +633,10 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
     hci_stack.connections = NULL;
     hci_stack.discoverable = 0;
     
+    // no pending cmds
+    hci_stack.decline_reason = 0;
+    hci_stack.new_scan_enable_value = 0xff;
+    
     // higher level handler
     hci_stack.packet_handler = dummy_handler;
 
@@ -887,8 +891,11 @@ void hci_discoverable_control(uint8_t enable){
         return;
     }
     
-    hci_send_cmd(&hci_write_scan_enable, 2 | enable); // 1 = inq scan, 2 = page scan
+    // store request to send command but accept in higher layer view
+    hci_stack.new_scan_enable_value = 2 | enable; // 1 = inq scan, 2 = page scan
     hci_stack.discoverable = enable;
+    
+    hci_run();
 }
 
 void hci_run(){
@@ -898,22 +905,29 @@ void hci_run(){
     
     if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
 
-    // global/non-connection oriented commands - decline incoming connections
+    // global/non-connection oriented commands
+    
+    // decline incoming connections
     if (hci_stack.decline_reason){
         uint8_t reason = hci_stack.decline_reason;
         hci_stack.decline_reason = 0;
         hci_send_cmd(&hci_reject_connection_request, hci_stack.decline_addr, reason);
     }
+
+    if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
+
+    // send scan enable
+    if (hci_stack.new_scan_enable_value){
+        hci_send_cmd(&hci_write_scan_enable, hci_stack.new_scan_enable_value);
+        hci_stack.new_scan_enable_value = 0xff;
+    }
     
     // send pending HCI commands
     for (it = (linked_item_t *) hci_stack.connections; it ; it = it->next){
 
-        connection = (hci_connection_t *) it;
+        if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
 
-        if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) {
-            // log_info("hci_run: cannot send command packet\n");
-            return;
-        }
+        connection = (hci_connection_t *) it;
         
         if (connection->state == RECEIVED_CONNECTION_REQUEST){
             log_info("sending hci_accept_connection_request\n");
