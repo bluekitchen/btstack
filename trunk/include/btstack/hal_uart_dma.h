@@ -32,7 +32,9 @@
 /*
  *  hal_uart_dma.h
  *
- *  Hardware abstraction layer for blockwise read (IRQ-driven) and write (polling)
+ *  Hardware abstraction layer that provides
+ *  - blockwise IRQ-driven read/write
+ *  - CSR IRQs
  *
  */
 
@@ -43,6 +45,8 @@
 void hal_uart_dma_init(void);
 void hal_uart_dma_set_block_received( void (*block_handler)(void));
 void hal_uart_dma_set_block_sent( void (*block_handler)(void));
+void hal_uart_dma_set_csr_irq_handler( void (*csr_irq_handler)(void));
 int  hal_uart_dma_set_baud(uint32_t baud);
-void hal_uart_dma_send_block(uint8_t *buffer, uint16_t length);
+void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t length);
 void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len);
+void hal_uart_dma_set_sleep(uint8_t sleep);
