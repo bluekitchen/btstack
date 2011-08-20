@@ -129,6 +129,9 @@ uint8_t   sdp_set_attribute_value_for_attribute_id(uint8_t * record, uint16_t at
 int       sdp_record_matches_service_search_pattern(uint8_t *record, uint8_t *serviceSearchPattern);
 int       spd_get_filtered_size(uint8_t *record, uint8_t *attributeIDList);
 int       sdp_filter_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startOffset, uint16_t maxBytes, uint16_t *usedBytes, uint8_t *buffer);  
+
+void      sdp_create_spp_service(uint8_t *service, int service_id, const char *name);
+
 #if defined __cplusplus
 }
 #endif
