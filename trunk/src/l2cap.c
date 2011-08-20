@@ -52,7 +52,7 @@
 #define NR_BUFFERED_ACL_PACKETS 3
 
 // used to cache l2cap rejects, echo, and informational requests
-#define NR_PENDING_SIGNALING_RESPONSES 5
+#define NR_PENDING_SIGNALING_RESPONSES 3
 
 // offsets for L2CAP SIGNALING COMMANDS
 #define L2CAP_SIGNALING_COMMAND_CODE_OFFSET   0
