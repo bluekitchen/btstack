@@ -612,3 +612,75 @@ void de_dump_data_element(uint8_t * record){
     de_size_t size = de_get_size_type(record);
     de_traversal_dump_data(record, type, size, (void*) &indent);
 }
+
+void sdp_create_spp_service(uint8_t *service, int service_id, const char *name){
+	
+	uint8_t* attribute;
+	de_create_sequence(service);
+    
+    // 0x0000 "Service Record Handle"
+	de_add_number(service, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle);
+	de_add_number(service, DE_UINT, DE_SIZE_32, 0x10001);
+    
+	// 0x0001 "Service Class ID List"
+	de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);
+	attribute = de_push_sequence(service);
+	{
+		de_add_number(attribute,  DE_UUID, DE_SIZE_16, 0x1101 );
+	}
+	de_pop_sequence(service, attribute);
+	
+	// 0x0004 "Protocol Descriptor List"
+	de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ProtocolDescriptorList);
+	attribute = de_push_sequence(service);
+	{
+		uint8_t* l2cpProtocol = de_push_sequence(attribute);
+		{
+			de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, 0x0100);
+		}
+		de_pop_sequence(attribute, l2cpProtocol);
+		
+		uint8_t* rfcomm = de_push_sequence(attribute);
+		{
+			de_add_number(rfcomm,  DE_UUID, DE_SIZE_16, 0x0003);  // rfcomm_service
+			de_add_number(rfcomm,  DE_UINT, DE_SIZE_8,  service_id);  // rfcomm channel
+		}
+		de_pop_sequence(attribute, rfcomm);
+	}
+	de_pop_sequence(service, attribute);
+	
+	// 0x0005 "Public Browse Group"
+	de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BrowseGroupList); // public browse group
+	attribute = de_push_sequence(service);
+	{
+		de_add_number(attribute,  DE_UUID, DE_SIZE_16, 0x1002 );
+	}
+	de_pop_sequence(service, attribute);
+	
+	// 0x0006
+	de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_LanguageBaseAttributeIDList);
+	attribute = de_push_sequence(service);
+	{
+		de_add_number(attribute, DE_UINT, DE_SIZE_16, 0x656e);
+		de_add_number(attribute, DE_UINT, DE_SIZE_16, 0x006a);
+		de_add_number(attribute, DE_UINT, DE_SIZE_16, 0x0100);
+	}
+	de_pop_sequence(service, attribute);
+	
+	// 0x0009 "Bluetooth Profile Descriptor List"
+	de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BluetoothProfileDescriptorList);
+	attribute = de_push_sequence(service);
+	{
+		uint8_t *sppProfile = de_push_sequence(attribute);
+		{
+			de_add_number(sppProfile,  DE_UUID, DE_SIZE_16, 0x1101);
+			de_add_number(sppProfile,  DE_UINT, DE_SIZE_16, 0x0100);
+		}
+		de_pop_sequence(attribute, sppProfile);
+	}
+	de_pop_sequence(service, attribute);
+	
+	// 0x0100 "ServiceName"
+	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
+	de_add_data(service,  DE_STRING, sizeof(name), (uint8_t *) name);
+}
