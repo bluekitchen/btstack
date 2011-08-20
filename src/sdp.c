@@ -155,6 +155,7 @@ uint32_t sdp_register_service_internal(void *connection, service_record_item_t *
     if (!record_handle){
         record_handle = sdp_create_service_record_handle();
         // Write the handle back into the record too
+        record_item->service_record_handle = record_handle;
         sdp_set_attribute_value_for_attribute_id(record, SDP_ServiceRecordHandle, record_handle);
     }
     
