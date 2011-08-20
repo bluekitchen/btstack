@@ -281,9 +281,11 @@ typedef struct {
     uint8_t   substate;
     uint8_t   cmds_ready;
     
-    /* */
     uint8_t   discoverable;
 
+    /* buffer for scan enable cmd - 0xff no change */
+    uint8_t   new_scan_enable_value;
+    
     // buffer for single connection decline
     uint8_t   decline_reason;
     bd_addr_t decline_addr;
@@ -295,7 +297,7 @@ uint16_t hci_create_cmd(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, ...);
 uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, va_list argptr);
 
 // set up HCI
-void hci_init(const hci_transport_t *transport, void *config, const bt_control_t *control, const remote_device_db_t * remote_device_db);
+void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, remote_device_db_t * remote_device_db);
 void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
 void hci_close(void);
 
