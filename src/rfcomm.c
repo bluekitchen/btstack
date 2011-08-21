@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> // memcpy
+#include <inttypes.h>
 
 #include <btstack/btstack.h>
 #include <btstack/hci_cmds.h>
@@ -47,6 +48,16 @@
 #include "hci_dump.h"
 #include "debug.h"
 #include "rfcomm.h"
+
+// workaround for missing PRIxPTR on mspgcc (16/20-bit MCU)
+#ifndef PRIxPTR
+#if defined(__MSP430X__)  &&  defined(__MSP430X_LARGE__)
+#define PRIxPTR "lx"
+#else
+#define PRIxPTR "x"
+#endif
+#endif
+
 
 // Control field values      bit no.       1 2 3 4 PF 6 7 8
 #define BT_RFCOMM_SABM       0x3F       // 1 1 1 1  1 1 0 0
@@ -812,7 +823,7 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
         case RFCOMM_MULTIPLEXER_SEND_SABM_0:
             switch (event) {
                 case MULT_EV_READY_TO_SEND:
-                    log_info("Sending SABM #0 - (multi 0x%08x)\n", (uintptr_t) multiplexer);
+                    log_info("Sending SABM #0 - (multi 0x%08"PRIxPTR")\n", (uintptr_t) multiplexer);
                     multiplexer->state = RFCOMM_MULTIPLEXER_W4_UA_0;
                     rfcomm_send_sabm(multiplexer, 0);
                     break;
@@ -1363,7 +1374,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
         case RFCOMM_CHANNEL_SEND_UIH_PN:
             switch (event->type) {
                 case CH_EVT_READY_TO_SEND:
-                    log_info("Sending UIH Parameter Negotiation Command for #%u (channel 0x%08x\n", channel->dlci, (uintptr_t) channel );
+                    log_info("Sending UIH Parameter Negotiation Command for #%u (channel 0x%08"PRIxPTR")\n", channel->dlci, (uintptr_t) channel );
                     channel->state = RFCOMM_CHANNEL_W4_PN_RSP;
                     rfcomm_send_uih_pn_command(multiplexer, channel->dlci, channel->max_frame_size);
                     break;
