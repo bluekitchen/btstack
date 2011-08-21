@@ -243,10 +243,10 @@ int hci_send_acl_packet(uint8_t *packet, int size){
     connection->num_acl_packets_sent++;
     // log_info("hci_send_acl_packet - handle %u, sent %u\n", connection->con_handle, connection->num_acl_packets_sent);
 
-    // send packet - ignore errors
-    hci_stack.hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
+    // send packet 
+    int err = hci_stack.hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
     
-    return 0;
+    return err;
 }
 
 static void acl_handler(uint8_t *packet, int size){
