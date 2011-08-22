@@ -66,7 +66,11 @@ typedef struct {
 	uint32_t	ts_sec;
 	uint32_t	ts_usec;
     uint8_t     packet_type;
-} __attribute__ ((packed)) hcidump_hdr;
+}
+#ifdef __GNUC__
+__attribute__ ((packed))
+#endif 
+hcidump_hdr;
 
 // APPLE PacketLogger
 typedef struct {
@@ -74,7 +78,11 @@ typedef struct {
 	uint32_t	ts_sec;
 	uint32_t	ts_usec;
 	uint8_t		type;
-} __attribute__ ((packed)) pktlog_hdr;
+}
+#ifdef __GNUC__
+__attribute__ ((packed))
+#endif
+pktlog_hdr;
 
 #ifndef EMBEDDED
 static int dump_file = -1;
