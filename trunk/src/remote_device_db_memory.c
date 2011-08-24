@@ -38,8 +38,8 @@
 
 #include <btstack/utils.h>
 
-static linked_list_t db_mem_devices;
-static linked_list_t db_mem_services;
+static linked_list_t db_mem_devices = NULL;
+static linked_list_t db_mem_services = NULL;
 
 // Device info
 static void db_open(void){
