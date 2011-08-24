@@ -64,7 +64,7 @@ static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key){
     linked_item_t *it;
     for (it = (linked_item_t *) db_mem_devices; it ; it = it->next){
         db_mem_device_t * item = (db_mem_device_t *) it;
-        if (item->bd_addr == *bd_addr){
+        if (BD_ADDR_CMP(item->bd_addr, *bd_addr) == 0) {
             memcpy(item->link_key, link_key, LINK_KEY_LEN);
             return;
         }
@@ -85,7 +85,7 @@ static void delete_link_key(bd_addr_t *bd_addr){
     linked_item_t *it;
     for (it = (linked_item_t *) db_mem_devices; it ; it = it->next){
         db_mem_device_t * item = (db_mem_device_t *) it;
-        if (item->bd_addr == *bd_addr){
+        if (BD_ADDR_CMP(item->bd_addr, *bd_addr) == 0) {
             // Found record, delete it
             linked_list_remove(&db_mem_devices, (linked_item_t *) item);
             btstack_memory_db_mem_device_free(item);
@@ -98,7 +98,7 @@ static void put_name(bd_addr_t *bd_addr, device_name_t *device_name){
     linked_item_t *it;
     for (it = (linked_item_t *) db_mem_devices; it ; it = it->next){
         db_mem_device_t * item = (db_mem_device_t *) it;
-        if (item->bd_addr == *bd_addr){
+        if (BD_ADDR_CMP(item->bd_addr, *bd_addr) == 0) {
             // Found record, ammend it
             strncpy(item->device_name, (const char*) device_name, MAX_NAME_LEN);
             return;
@@ -121,7 +121,7 @@ static void delete_name(bd_addr_t *bd_addr){
     linked_item_t *it;
     for (it = (linked_item_t *) db_mem_devices; it ; it = it->next){
         db_mem_device_t * item = (db_mem_device_t *) it;
-        if (item->bd_addr == *bd_addr){
+        if (BD_ADDR_CMP(item->bd_addr, *bd_addr) == 0) {
             // Found record, delete it
             linked_list_remove(&db_mem_devices, (linked_item_t *) item);
             btstack_memory_db_mem_device_free(item);
@@ -134,7 +134,7 @@ static int  get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
     linked_item_t *it;
     for (it = (linked_item_t *) db_mem_devices; it ; it = it->next){
         db_mem_device_t * item = (db_mem_device_t *) it;
-        if (item->bd_addr == *bd_addr){
+        if (BD_ADDR_CMP(item->bd_addr, *bd_addr) == 0) {
             strncpy((char*)device_name, item->device_name, MAX_NAME_LEN);
             return 1;
         }
