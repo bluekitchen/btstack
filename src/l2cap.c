@@ -338,6 +338,7 @@ void l2cap_run(void){
         
         // log_info("l2cap_run: state %u, var 0x%02x\n", channel->state, channel->state_var);
         
+        
         switch (channel->state){
 
             case L2CAP_STATE_WILL_SEND_CREATE_CONNECTION:
@@ -735,6 +736,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
         return;
     }
     
+    // @STATEMACHINE(l2cap)
     switch (channel->state) {
             
         case L2CAP_STATE_WAIT_CONNECT_RSP:
