@@ -48,7 +48,7 @@ static void db_open(void){
 static void db_close(void){ 
 }
 
-db_mem_device_t * _get_item(bd_addr_t *bd_addr) {
+static db_mem_device_t * get_item(bd_addr_t *bd_addr) {
     linked_item_t *it;
     for (it = (linked_item_t *) db_mem_devices; it ; it = it->next){
         db_mem_device_t * item = (db_mem_device_t *) it;
@@ -61,7 +61,7 @@ db_mem_device_t * _get_item(bd_addr_t *bd_addr) {
 
 static void delete_item(bd_addr_t *bd_addr){
     device_name_t device_name;
-    db_mem_device_t * item = _get_item(bd_addr);
+    db_mem_device_t * item = get_item(bd_addr);
     
     if (!item) return;
     
@@ -71,7 +71,7 @@ static void delete_item(bd_addr_t *bd_addr){
 
 
 static int get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
-    db_mem_device_t * item = _get_item(bd_addr);
+    db_mem_device_t * item = get_item(bd_addr);
     
     if (!item) return 0;
     
@@ -80,7 +80,7 @@ static int get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
 }
 
 static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key) {
-    db_mem_device_t * item = _get_item(bd_addr);
+    db_mem_device_t * item = get_item(bd_addr);
     
     if (!item) return 0;
     
