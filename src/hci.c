@@ -36,6 +36,8 @@
  *
  */
 
+#include "../config.h"
+
 #include "hci.h"
 
 #include <stdarg.h>
@@ -57,6 +59,10 @@
 #include "l2cap.h"
 
 #define HCI_CONNECTION_TIMEOUT_MS 10000
+
+#ifdef USE_BLUETOOL
+#include "bt_control_iphone.h"
+#endif
 
 // the STACK is here
 static hci_stack_t       hci_stack;
@@ -839,6 +845,13 @@ int hci_power_control(HCI_POWER_MODE power_mode){
         case HCI_STATE_FALLING_ASLEEP:
             switch (power_mode){
                 case HCI_POWER_ON:
+
+#if defined(USE_POWERMANAGEMENT) && defined(USE_BLUETOOL)
+                    // nothing to do, if H4 supports power management
+                    if (bt_control_iphone_power_management_enabled()){
+                        break;
+                    }
+#endif
                     // set up state machine
                     hci_stack.num_cmd_packets = 1; // assume that one cmd can be sent
                     hci_stack.state = HCI_STATE_INITIALIZING;
@@ -857,6 +870,13 @@ int hci_power_control(HCI_POWER_MODE power_mode){
         case HCI_STATE_SLEEPING:
             switch (power_mode){
                 case HCI_POWER_ON:
+                    
+#if defined(USE_POWERMANAGEMENT) && defined(USE_BLUETOOL)
+                    // nothing to do, if H4 supports power management
+                    if (bt_control_iphone_power_management_enabled()){
+                        break;
+                    }
+#endif
                     err = hci_power_control_wake();
                     if (err) return err;
                     // set up state machine
@@ -1061,7 +1081,7 @@ void hci_run(){
                     // close all open connections
                     connection =  (hci_connection_t *) hci_stack.connections;
 
-#if defined(USE_POWERMANAGEMENT) && defined(BLUETOOL)
+#if defined(USE_POWERMANAGEMENT) && defined(USE_BLUETOOL)
                     // don't close connections, if H4 supports power management
                     if (bt_control_iphone_power_management_enabled()){
                         connection = NULL;
@@ -1094,9 +1114,20 @@ void hci_run(){
                     break;
                 case 2:
                     log_info("HCI_STATE_HALTING, calling sleep\n");
+#if defined(USE_POWERMANAGEMENT) && defined(USE_BLUETOOL)
+                    // don't actually go to sleep, if H4 supports power management
+                    if (bt_control_iphone_power_management_enabled()){
+                        // SLEEP MODE reached
+                        hci_stack.state = HCI_STATE_SLEEPING; 
+                        hci_emit_state();
+                        break;
+                    }
+#endif
                     // switch mode
                     hci_power_control_sleep();  // changes hci_stack.state to SLEEP
                     hci_emit_state();
+                    break;
+                    
                 default:
                     break;
             }

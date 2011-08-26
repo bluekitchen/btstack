@@ -674,8 +674,6 @@ static int  power_notification_process(struct data_source *ds) {
         
     log_info("power_notification_process: %u\n", token);
 
-    if (power_management_active) return 0;
-    
     power_notification_callback( (POWER_NOTIFICATION_t) token );    
     
     return 0;
