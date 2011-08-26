@@ -247,6 +247,7 @@ static void iphone_bcm_set_baud(int fd, int baud){
     write(fd, buffer, len);
 }
 
+// OS 3.x
 static int iphone_write_initscript (int output, int baudrate){
         
     // construct script path from device name
@@ -380,12 +381,15 @@ static int iphone_write_initscript (int output, int baudrate){
 
 #ifdef USE_POWERMANAGEMENT
     if (iphone_has_csr()) {
-        /* CSR BT module */
-        iphone_write_string(output, "msleep 50\n");
-        iphone_write_string(output, "csr -p 0x01ca=0x0031\n");
-        iphone_write_string(output, "msleep 50\n");
-        iphone_write_string(output, "csr -p 0x01c7=0x0001,0x01f4,0x0005,0x0020\n");
-        power_management_active = 1;
+        /* CSR BT module: deactivated since it didn't work on iPhone 3G, 3.1.3
+           the first few packets didn't get received when iPhone is sleeping.
+           That's quite possible since Apple uses H5, but BTstack uses H4
+           H5's packet retransmission should take care of that */
+        // iphone_write_string(output, "msleep 50\n");
+        // iphone_write_string(output, "csr -p 0x01ca=0x0031\n");
+        // iphone_write_string(output, "msleep 50\n");
+        // iphone_write_string(output, "csr -p 0x01c7=0x0001,0x01f4,0x0005,0x0020\n");
+        power_management_active = 0;
     } else {
         /* BCM BT module, deactivated since untested for now */
         // iphone_write_string(output, "bcm -s 0x01,0x00,0x00,0x01,0x01,0x00,0x01,0x00,0x00,0x00,0x00,0x01\n");
@@ -404,11 +408,13 @@ static void iphone_write_configscript(int fd, int baudrate){
         iphone_csr_set_bd_addr(fd);
         iphone_write_string(fd, "csr -r\n");
 #ifdef USE_POWERMANAGEMENT
-        iphone_write_string(fd, "msleep 50\n");
-        iphone_write_string(fd, "csr -p 0x01ca=0x0031\n");
-        iphone_write_string(fd, "msleep 50\n");
-        iphone_write_string(fd, "csr -p 0x01c7=0x0001,0x01f4,0x0005,0x0020\n");
-        power_management_active = 1;
+        /* CSR BT module: deactivated since untested, but it most likely won't work
+           see comments in 3.x init sequence above */
+        // iphone_write_string(fd, "msleep 50\n");
+        // iphone_write_string(fd, "csr -p 0x01ca=0x0031\n");
+        // iphone_write_string(fd, "msleep 50\n");
+        // iphone_write_string(fd, "csr -p 0x01c7=0x0001,0x01f4,0x0005,0x0020\n");
+        power_management_active = 0;
 #endif
     } else {
         iphone_bcm_set_baud(fd, baudrate);
@@ -416,6 +422,7 @@ static void iphone_write_configscript(int fd, int baudrate){
         iphone_bcm_set_bd_addr(fd);
         iphone_write_string(fd, "msleep 50\n");
 #ifdef USE_POWERMANAGEMENT
+        // power management only active on 4.x with BCM (iPhone 3GS and higher, all iPads, iPod touch 3G and higher)
         iphone_write_string(fd, "bcm -s 0x01,0x00,0x00,0x01,0x01,0x00,0x01,0x00,0x00,0x00,0x00,0x01\n");
         iphone_write_string(fd, "msleep 50\n");
         power_management_active = 1;
@@ -464,15 +471,7 @@ static int iphone_on (void *transport_config){
     // unload BTServer
     log_info("iphone_on: unload BTServer\n");
     err = system ("launchctl unload /System/Library/LaunchDaemons/com.apple.BTServer.plist");
-    
-#if 0
-    // use tmp file for testing on os 3.x
-    int output = open("/tmp/bt.init", O_WRONLY | O_CREAT | O_TRUNC);
-    iphone_write_initscript(hci_uart_config, output);
-    close(output);
-    err = system ("BlueTool < /tmp/bt.init");
-#else
-    
+        
     // check for os version >= 4.0
     int os4x = kCFCoreFoundationVersionNumber >= 550.32;
     log_info("CFVersion %f, >= 4.0 %u\n", kCFCoreFoundationVersionNumber, os4x);
