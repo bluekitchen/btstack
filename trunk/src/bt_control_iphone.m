@@ -539,9 +539,7 @@ static int iphone_on (void *transport_config){
         };
         err = pclose(outputFile);
     }
-    
-#endif
-    
+        
     // if we sleep for about 3 seconds, we miss a strage packet... but we don't care
     // sleep(3); 
     
@@ -641,10 +639,11 @@ static void MySleepCallBack( void * refCon, io_service_t service, natural_t mess
             data = POWER_WILL_SLEEP;
             write(power_notification_pipe_fds[1], &data, 1);
 
-            // only allow power change when power management active (and BT goes to sleep alone)
-            if (!power_management_active) break;
-            
-            IOAllowPowerChange( root_port, (long)messageArgument );
+            // don't allow power change, even when power management is active
+            // BTstack needs to disable discovery mode during sleep to save power
+
+            // if (!power_management_active) break;
+            // IOAllowPowerChange( root_port, (long)messageArgument );
             
             break;
 			
@@ -726,3 +725,8 @@ bt_control_t bt_control_iphone = {
     NULL    // register_for_power_notifications
 #endif
 };
+
+// direct access
+int bt_control_iphone_power_management_enabled(void){
+    return power_management_active;
+}
