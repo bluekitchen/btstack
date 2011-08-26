@@ -849,6 +849,8 @@ int hci_power_control(HCI_POWER_MODE power_mode){
 #if defined(USE_POWERMANAGEMENT) && defined(USE_BLUETOOL)
                     // nothing to do, if H4 supports power management
                     if (bt_control_iphone_power_management_enabled()){
+                        hci_stack.state = HCI_STATE_INITIALIZING;
+                        hci_stack.substate = 6;
                         break;
                     }
 #endif
@@ -874,6 +876,8 @@ int hci_power_control(HCI_POWER_MODE power_mode){
 #if defined(USE_POWERMANAGEMENT) && defined(USE_BLUETOOL)
                     // nothing to do, if H4 supports power management
                     if (bt_control_iphone_power_management_enabled()){
+                        hci_stack.state = HCI_STATE_INITIALIZING;
+                        hci_stack.substate = 6;
                         break;
                     }
 #endif
