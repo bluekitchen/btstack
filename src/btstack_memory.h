@@ -52,9 +52,9 @@ void * btstack_memory_rfcomm_service_get(void);
 void   btstack_memory_rfcomm_service_free(void *rfcomm_service);
 void * btstack_memory_rfcomm_channel_get(void);
 void   btstack_memory_rfcomm_channel_free(void *rfcomm_channel);
-void * btstack_memory_db_mem_device_get(void);
-void   btstack_memory_db_mem_device_free(void *db_mem_device);
+void * btstack_memory_db_mem_device_name_get(void);
+void   btstack_memory_db_mem_device_name_free(void *db_mem_device_name);
+void * btstack_memory_db_mem_device_link_key_get(void);
+void   btstack_memory_db_mem_device_link_key_free(void *db_mem_device_link_key);
 void * btstack_memory_db_mem_service_get(void);
 void   btstack_memory_db_mem_service_free(void *db_mem_service);
-
-
