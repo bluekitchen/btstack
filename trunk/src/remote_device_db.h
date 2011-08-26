@@ -69,9 +69,17 @@ typedef struct {
     linked_item_t    item;
     
     bd_addr_t bd_addr;
-    link_key_t link_key;
-    char device_name[MAX_NAME_LEN];
 } db_mem_device_t;
+
+typedef struct {
+    db_mem_device_t device;
+    link_key_t link_key;
+} db_mem_device_link_key_t;
+
+typedef struct {
+    db_mem_device_t device;
+    char device_name[MAX_NAME_LEN];
+} db_mem_device_name_t;
 
 typedef struct {
     // linked list - assert: first field
