@@ -1060,6 +1060,13 @@ void hci_run(){
                     log_info("HCI_STATE_FALLING_ASLEEP\n");
                     // close all open connections
                     connection =  (hci_connection_t *) hci_stack.connections;
+
+#if defined(USE_POWERMANAGEMENT) && defined(BLUETOOL)
+                    // don't close connections, if H4 supports power management
+                    if (bt_control_iphone_power_management_enabled()){
+                        connection = NULL;
+                    }
+#endif
                     if (connection){
                         
                         // send disconnect
