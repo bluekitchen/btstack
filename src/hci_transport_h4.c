@@ -40,8 +40,8 @@
 #include "../config.h"
 
 #undef USE_NETGRAPH
-#undef USE_HCI_READER_THREAD
-// go back to sleep in 3s
+
+// don't enforce wake after 3s idle
 #define HCI_WAKE_TIMER_MS 3000
 
 #include <termios.h>  /* POSIX terminal control definitions */
@@ -56,8 +56,8 @@
 #include "hci_transport.h"
 #include "hci_dump.h"
 
+
 #if defined (USE_BLUETOOL) && defined (USE_POWERMANAGEMENT)
-/* iPhone power management support */
 #define BT_WAKE_DEVICE  "/dev/btwake"
 static int fd_wake = 0;
 #endif
@@ -67,21 +67,16 @@ typedef enum {
     H4_W4_EVENT_HEADER,
     H4_W4_ACL_HEADER,
     H4_W4_PAYLOAD,
-    H4_W4_PICKUP
 } H4_STATE;
 
 typedef struct hci_transport_h4 {
     hci_transport_t transport;
     data_source_t *ds;
     int uart_fd;    // different from ds->fd for HCI reader thread
-
-#ifdef USE_HCI_READER_THREAD
-    // synchronization facilities for dedicated reader thread
-    int pipe_fds[2];
-    pthread_mutex_t mutex;
-    pthread_cond_t cond;
-#endif
 #if defined (USE_BLUETOOL) && defined (USE_POWERMANAGEMENT)
+    /* iPhone power management support */
+    // static char * wake_device = NULL;
+    // static int    wake_fd = 0;
     timer_source_t sleep_timer;
 #endif
 } hci_transport_h4_t;
@@ -93,10 +88,6 @@ static int  h4_process(struct data_source *ds);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
 static      hci_uart_config_t *hci_uart_config;
 
-#ifdef USE_HCI_READER_THREAD
-static void *h4_reader(void *context);
-static int  h4_reader_process(struct data_source *ds);
-#endif
 #if defined (USE_BLUETOOL) && defined (USE_POWERMANAGEMENT)
 static void h4_wake_on(void);
 static void h4_wake_off(void);
@@ -149,9 +140,6 @@ static int    h4_open(void *transport_config){
     hci_uart_config = (hci_uart_config_t*) transport_config;
     struct termios toptions;
     int flags = O_RDWR | O_NOCTTY;
-#ifndef USE_HCI_READER_THREAD
-    flags |= O_NONBLOCK;
-#endif
     int fd = open(hci_uart_config->device_name, flags);
     if (fd == -1)  {
         perror("init_serialport: Unable to open port ");
@@ -213,25 +201,8 @@ static int    h4_open(void *transport_config){
     hci_transport_h4->ds = malloc(sizeof(data_source_t));
     if (!hci_transport_h4->ds) return -1;
     hci_transport_h4->uart_fd = fd;
-
-#ifdef USE_HCI_READER_THREAD
-    // init synchronization tools
-    pthread_mutex_init(&hci_transport_h4->mutex, NULL);
-    pthread_cond_init(&hci_transport_h4->cond, NULL);
-    
-	// create pipe
-	pipe(hci_transport_h4->pipe_fds);
-    
-	// create reader thread
-	pthread_t hci_reader_thread;
-	pthread_create(&hci_reader_thread, NULL, &h4_reader, NULL);
-    
-    hci_transport_h4->ds->fd = hci_transport_h4->pipe_fds[0];
-    hci_transport_h4->ds->process = h4_reader_process;
-#else
     hci_transport_h4->ds->fd = fd;
     hci_transport_h4->ds->process = h4_process;
-#endif
     run_loop_add_data_source(hci_transport_h4->ds);
     
     // init state machine
@@ -330,11 +301,7 @@ static void h4_statemachine(void){
             break;
             
         case H4_W4_PAYLOAD:
-#ifdef USE_HCI_READER_THREAD
-            h4_state = H4_W4_PICKUP;
-#else
             h4_deliver_packet();
-#endif
             break;
         default:
             break;
@@ -367,58 +334,6 @@ static int    h4_process(struct data_source *ds) {
     h4_statemachine();
     return 0;
 }
-
-#ifdef USE_HCI_READER_THREAD
-static int h4_reader_process(struct data_source *ds) {
-    // get token
-    char token;
-    int tokens_read = read(hci_transport_h4->pipe_fds[0], &token, 1);
-    if (tokens_read < 1) {
-        return 0;
-    }
-    
-    // hci_reader received complete packet, just pick it up
-    h4_deliver_packet();
-    
-    // un-block reader
-    pthread_mutex_lock(&hci_transport_h4->mutex);
-    pthread_cond_signal(&hci_transport_h4->cond);
-    pthread_mutex_unlock(&hci_transport_h4->mutex);
-    return 0;
-}
-
-static void *h4_reader(void *context){
-	while(1){
-        // read up to bytes_to_read data in
-        int bytes_read = read(hci_transport_h4->uart_fd, &hci_packet[read_pos], bytes_to_read);
-        // error
-        if (bytes_read < 0) {
-            h4_state = H4_W4_PACKET_TYPE;
-            read_pos = 0;
-            bytes_to_read = 1;
-            continue;
-        }
-        
-        bytes_to_read -= bytes_read;
-        read_pos      += bytes_read;
-
-        if (bytes_to_read > 0) continue;
-                    
-        h4_statemachine();
-
-        if (h4_state != H4_W4_PICKUP) continue;
-        
-		// notify main thread
-        char data = 'h';
-		write(hci_transport_h4->pipe_fds[1], &data, 1);
-		
-		// wait for response
-		pthread_mutex_lock(&hci_transport_h4->mutex);
-		pthread_cond_wait(&hci_transport_h4->cond,&hci_transport_h4->mutex);
-		pthread_mutex_unlock(&hci_transport_h4->mutex);
-	}
-}
-#endif
 
 static const char * h4_get_transport_name(void){
     return "H4";

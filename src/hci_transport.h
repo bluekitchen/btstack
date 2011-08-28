@@ -67,12 +67,6 @@ typedef struct {
 } hci_uart_config_t;
 
 
-#if 0
-typedef struct {
-    // unique usb device identifier
-} hci_libusb_config_t;
-#endif
-
 // inline various hci_transport_X.h files
 extern hci_transport_t * hci_transport_h4_instance(void);
 extern hci_transport_t * hci_transport_h4_dma_instance(void);
