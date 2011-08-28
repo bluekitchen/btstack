@@ -1599,7 +1599,7 @@ int rfcomm_send_internal(uint8_t rfcomm_cid, uint8_t *data, uint16_t len){
 
     if (!channel->packets_granted){
         log_info("rfcomm_send_internal cid %u, no rfcomm credits granted!\n", rfcomm_cid);
-        // return RFCOMM_NO_OUTGOING_CREDITS;
+        return RFCOMM_NO_OUTGOING_CREDITS;
     }
     
     // log_info("rfcomm_send_internal: len %u... outgoing credits %u, l2cap credit %us, granted %u\n",
