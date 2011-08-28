@@ -57,21 +57,19 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
-#ifdef USE_BLUETOOL
-
 #include "../SpringBoardAccess/SpringBoardAccess.h"
 
 // minimal IOKit
-#ifdef __APPLE__
 #include <Availability.h>
 #include <Foundation/Foundation.h>
 #include <CoreFoundation/CoreFoundation.h>
-#if __IPHONE_OS_VERSION_MIN_REQUIRED >= __IPHONE_2_0
+
 // compile issue fix
 #undef NSEC_PER_USEC
 #undef USEC_PER_SEC
 #undef NSEC_PER_SEC
 // end of fix
+
 #include <mach/mach.h>
 #define IOKIT
 #include <device/device_types.h>
@@ -124,9 +122,6 @@ static io_connect_t  root_port = 0; // a reference to the Root Power Domain IOSe
 static int power_notification_pipe_fds[2];
 static data_source_t power_notification_ds;
 
-#endif
-#endif
-
 int iphone_system_bt_enabled(){
     return SBA_getBluetoothEnabled();
 }
@@ -136,8 +131,6 @@ void iphone_system_bt_set_enabled(int enabled)
     SBA_setBluetoothEnabled(enabled);
     sleep(2); // give change a chance
 }
-
-#endif
 
 static void (*power_notification_callback)(POWER_NOTIFICATION_t event) = NULL;
 
@@ -183,7 +176,6 @@ static const char * iphone_name(void *config){
 
 // Get BD_ADDR from IORegistry
 static void ioregistry_get_info() {
-#ifdef IOKIT
     mach_port_t mp;
     IOMasterPort(MACH_PORT_NULL,&mp);
     CFMutableDictionaryRef bt_matching = IOServiceNameMatching("bluetooth");
@@ -203,13 +195,6 @@ static void ioregistry_get_info() {
     // dump info
     log_info("local-mac-address: %s\n", bd_addr_to_str(local_mac_address));
     log_info("transport-speed:   %u\n", transport_speed);
-#else
-    // use dummy addr if not on iphone/ipod touch
-    int i = 0;
-    for (i=0;i<6;i++) {
-        local_mac_address[i] = i;
-    }
-#endif
 }
 
 static int iphone_has_csr(){
@@ -469,7 +454,6 @@ static int iphone_on (void *transport_config){
         hci_uart_config->baudrate_init = transport_speed;
     }
     
-#ifdef USE_BLUETOOL
     if (iphone_system_bt_enabled()){
         perror("iphone_on: System Bluetooth enabled!");
         return 1;
@@ -548,18 +532,7 @@ static int iphone_on (void *transport_config){
         
     // if we sleep for about 3 seconds, we miss a strage packet... but we don't care
     // sleep(3); 
-    
-#else
-    // quick test if Bluetooth UART can be opened
-    int fd = open(hci_uart_config->device_name, O_RDWR | O_NOCTTY | O_NDELAY);
-    if (fd == -1)  {
-        perror("iphone_on: Unable to open port ");
-        perror(hci_uart_config->device_name);
-        return 1;
-    }
-    close(fd);
-#endif
-    
+        
     return err;
 }
 
@@ -610,7 +583,6 @@ static int iphone_wake(void *config){
     return 0;
 }
 
-#ifdef IOKIT
 static void MySleepCallBack( void * refCon, io_service_t service, natural_t messageType, void * messageArgument ) {
     
     char data;
@@ -713,7 +685,6 @@ void iphone_register_for_power_notifications(void (*cb)(POWER_NOTIFICATION_t eve
     power_notification_ds.process = power_notification_process;
     run_loop_add_data_source(&power_notification_ds);  
 }
-#endif
 
 int bt_control_iphone_power_management_supported(void){
     // only supported on Broadcom chipsets with iOS 4.0+
@@ -731,11 +702,7 @@ bt_control_t bt_control_iphone = {
     .wake   = iphone_wake,
     .valid  = iphone_valid,
     .name   = iphone_name,
-#ifdef IOKIT
     .register_for_power_notifications = iphone_register_for_power_notifications
-#else
-    NULL    // register_for_power_notifications
-#endif
 };
 
 // direct access
