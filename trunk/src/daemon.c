@@ -644,6 +644,12 @@ int main (int argc,  char * const * argv){
     control = &bt_control_iphone;
 #endif
     
+#if defined(USE_BLUETOOL) && defined(USE_POWERMANAGEMENT)
+    if (bt_control_iphone_power_management_supported()){
+        hci_transport_h4_set_enforce_wake_device("/dev/btwake");
+    }
+#endif
+
 #ifdef USE_SPRINGBOARD
     bluetooth_status_handler = platform_iphone_status_handler;
     platform_iphone_register_window_manager_restart(update_ui_status);
@@ -652,7 +658,7 @@ int main (int argc,  char * const * argv){
 #ifdef REMOTE_DEVICE_DB
     remote_device_db = &REMOTE_DEVICE_DB;
 #endif
-    
+
     run_loop_init(RUN_LOOP_POSIX);
     
     // init power management notifications
