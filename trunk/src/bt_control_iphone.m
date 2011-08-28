@@ -152,6 +152,13 @@ static int power_management_active = 0;
 static char *os3xBlueTool = "BlueTool";
 static char *os4xBlueTool = "/usr/local/bin/BlueToolH4";
 
+/**
+ * check OS version for >= 4.0
+ */
+static int iphone_os_at_least_40(){
+    return kCFCoreFoundationVersionNumber >= 550.32;
+}
+
 /** 
  * get machine name
  */
@@ -473,8 +480,7 @@ static int iphone_on (void *transport_config){
     err = system ("launchctl unload /System/Library/LaunchDaemons/com.apple.BTServer.plist");
         
     // check for os version >= 4.0
-    int os4x = kCFCoreFoundationVersionNumber >= 550.32;
-    log_info("CFVersion %f, >= 4.0 %u\n", kCFCoreFoundationVersionNumber, os4x);
+    int os4x = iphone_os_at_least_40();
     
     // OS 4.0
     char * bluetool = os3xBlueTool;
@@ -708,6 +714,14 @@ void iphone_register_for_power_notifications(void (*cb)(POWER_NOTIFICATION_t eve
     run_loop_add_data_source(&power_notification_ds);  
 }
 #endif
+
+int bt_control_iphone_power_management_supported(void){
+    // only supported on Broadcom chipsets with iOS 4.0+
+    if ( iphone_has_csr()) return 0;
+    if (!iphone_os_at_least_40()) return 0;
+    return 1;
+}
+
 
 // single instance
 bt_control_t bt_control_iphone = {
