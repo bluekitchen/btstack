@@ -39,8 +39,9 @@
 #include <btstack/utils.h>
 #include <btstack/linked_list.h>
 
-static linked_list_t db_mem_link_keys = NULL;
-static linked_list_t db_mem_names = NULL;
+// This lists should be only accessed by tests.
+linked_list_t db_mem_link_keys = NULL;
+linked_list_t db_mem_names = NULL;
 static linked_list_t db_mem_services = NULL;
 
 // Device info
@@ -67,7 +68,11 @@ static int get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
     if (!item) return 0;
     
     strncpy((char*)device_name, item->device_name, MAX_NAME_LEN);
-    return 1;
+    
+	linked_list_remove(&db_mem_names, (linked_item_t *) item);
+    linked_list_add(&db_mem_names, (linked_item_t *) item);
+	
+	return 1;
 }
 
 static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key) {
@@ -76,7 +81,11 @@ static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key) {
     if (!item) return 0;
     
     memcpy(link_key, item->link_key, LINK_KEY_LEN);
-    return 1;
+    
+	linked_list_remove(&db_mem_link_keys, (linked_item_t *) item);
+    linked_list_add(&db_mem_link_keys, (linked_item_t *) item);
+
+	return 1;
 }
 
 static void delete_link_key(bd_addr_t *bd_addr){
@@ -90,7 +99,7 @@ static void delete_link_key(bd_addr_t *bd_addr){
 
 
 static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key){
-    if ( get_link_key(bd_addr, link_key) ) return;
+	if ( get_link_key(bd_addr, link_key) ) return;
     
     // Record not found, create new one for this device
     db_mem_device_link_key_t * newItem = (db_mem_device_link_key_t *)btstack_memory_db_mem_device_link_key_get();
