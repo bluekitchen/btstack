@@ -40,8 +40,6 @@ static BTstackManager * btstackManager = nil;
 
 @interface BTstackManager (privat)
 - (void)handlePacketWithType:(uint8_t) packet_type forChannel:(uint16_t) channel andData:(uint8_t *)packet withLen:(uint16_t) size;
-- (void)readDeviceInfo;
-- (void)storeDeviceInfo;
 @end
 
 // needed for libBTstack
@@ -52,7 +50,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 @implementation BTstackManager
 
 @synthesize delegate = _delegate;
-@synthesize deviceInfo;
 @synthesize listeners;
 @synthesize discoveredDevices;
 
@@ -368,24 +365,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
     return name;
 }
 
-- (void) updateBTDevice:(BTDevice *) device fromRemoteNameEvent:(uint8_t *) packet {
-
-    NSString *name = [self createRemoteNameFromRemoteNameEvent:packet];
-
-    if (!name) return;
-    
-    device.name = name;
-    // set in device info
-    NSString *addrString = [[device addressString] retain];
-    NSMutableDictionary * deviceDict = [deviceInfo objectForKey:addrString];
-    if (!deviceDict){
-        deviceDict = [NSMutableDictionary dictionaryWithCapacity:3];
-        [deviceInfo setObject:deviceDict forKey:addrString];
-    }
-    [deviceDict setObject:name forKey:PREFS_REMOTE_NAME];						
-    [addrString release];
-}
-
 - (void) handleRemoteNameCached: (uint8_t *) packet {
 	bd_addr_t addr;
 	bt_flip_addr(addr, &packet[3]);
@@ -393,7 +372,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	BTDevice* device = [self deviceForAddress:&addr];
     if (!device) return;
     
-    [self updateBTDevice:device fromRemoteNameEvent:packet];
     [self sendDeviceInfo:device];
 }
 
@@ -404,7 +382,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	BTDevice* device = [self deviceForAddress:&addr];
     if (!device) return;
 
-    [self updateBTDevice:device fromRemoteNameEvent:packet];
     [self sendDeviceInfo:device];
     
     discoveryDeviceIndex++;
@@ -442,13 +419,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 							device = [[BTDevice alloc] init];
 							[discoveredDevices addObject:device];
 							[device setAddress:&addr];
-							// get name from deviceInfo
-							NSString *addrString = [[device addressString] retain];
-							NSMutableDictionary * deviceDict = [deviceInfo objectForKey:addrString];
-							[addrString release];
-							if (deviceDict){
-								device.name = [deviceDict objectForKey:PREFS_REMOTE_NAME];
-							}
 						}
 						// update
 						device.pageScanRepetitionMode =   packet [3 + numResponses*(6)         + i*1];
@@ -469,13 +439,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 							device = [[BTDevice alloc] init];
 							[discoveredDevices addObject:device];
 							[device setAddress:&addr];
-							// get name from deviceInfo
-							NSString *addrString = [[device addressString] retain];
-							NSMutableDictionary * deviceDict = [deviceInfo objectForKey:addrString];
-							[addrString release];
-							if (deviceDict){
-								device.name = [deviceDict objectForKey:PREFS_REMOTE_NAME];
-							}
 						}
 						device.pageScanRepetitionMode =   packet [3 + numResponses*(6)         + i*1];
 						device.classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1)     + i*3);
@@ -533,9 +496,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 }
 
 -(void) dropLinkKeyForAddress:(bd_addr_t*) address {
-	NSString *devAddress = [BTDevice stringForAddress:address];
-	NSMutableDictionary * deviceDict = [deviceInfo objectForKey:devAddress];
-	[deviceDict removeObjectForKey:PREFS_LINK_KEY];
+    // TODO: issue delete link key command
 	// NSLog(@"Removing link key for %@", devAddress);
 }
 

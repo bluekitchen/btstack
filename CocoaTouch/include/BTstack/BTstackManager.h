@@ -81,7 +81,6 @@ typedef enum {
 @interface BTstackManager : NSObject {
 @private
 	NSObject<BTstackManagerDelegate>* _delegate;
-	NSMutableDictionary *deviceInfo;
 	NSMutableArray *discoveredDevices;
 	NSMutableSet *listeners;
 	BOOL connectedToDaemon;
@@ -133,7 +132,6 @@ typedef enum {
 
 // TODO add l2cap and rfcomm incoming commands
 @property (nonatomic, assign) NSObject<BTstackManagerDelegate>* delegate;
-@property (nonatomic, retain) NSMutableDictionary *deviceInfo;
 @property (nonatomic, retain) NSMutableArray *discoveredDevices;
 @property (nonatomic, retain) NSMutableSet *listeners;
 @end
