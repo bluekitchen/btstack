@@ -496,7 +496,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 }
 
 -(void) dropLinkKeyForAddress:(bd_addr_t*) address {
-    // TODO: issue delete link key command
+    bt_send_cmd(&hci_delete_stored_link_key, address, 0);
 	// NSLog(@"Removing link key for %@", devAddress);
 }
 
