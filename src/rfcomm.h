@@ -59,6 +59,7 @@ void rfcomm_decline_connection_internal(uint16_t rfcomm_cid);
 int  rfcomm_send_internal(uint8_t rfcomm_cid, uint8_t *data, uint16_t len);
 void rfcomm_close_connection(void *connection);
 
+#define UNLIMITED_INCOMING_CREDITS 0xff
 
 // private structs
 typedef enum {
@@ -127,6 +128,7 @@ typedef enum {
     CH_EVT_RCVD_MSC_RSP,
     CH_EVT_RCVD_RPN_CMD,
     CH_EVT_RCVD_RPN_REQ,
+    CH_EVT_RCVD_CREDITS,
     CH_EVT_MULTIPLEXER_READY,
     CH_EVT_READY_TO_SEND,
 } RFCOMM_CHANNEL_EVENT;
@@ -215,14 +217,20 @@ typedef struct {
     uint8_t  outgoing;
     uint8_t  dlci; 
     
+    // number of packets granted to client
+    uint8_t packets_granted;
+
     // credits for outgoing traffic
     uint8_t credits_outgoing;
     
-    // number of packets granted to client
-    uint8_t packets_granted;
-    
+    // number of packets remote will be granted
+    uint8_t new_credits_incoming;
+
     // credits for incoming traffic
     uint8_t credits_incoming;
+    
+    // use incoming flow control
+    uint8_t incoming_flow_control;
     
     // channel state
     RFCOMM_CHANNEL_STATE state;
