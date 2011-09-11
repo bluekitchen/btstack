@@ -899,6 +899,10 @@ static void rfcomm_hand_out_credits(void){
     }        
 }
 
+static void rfcomm_channel_send_credits(rfcomm_channel_t *channel, uint8_t credits){
+    rfcomm_send_uih_credits(channel->multiplexer, channel->dlci, credits);
+    channel->credits_incoming += credits;
+}
 
 static void rfcomm_channel_provide_credits(rfcomm_channel_t *channel){
 
@@ -909,8 +913,7 @@ static void rfcomm_channel_provide_credits(rfcomm_channel_t *channel){
         case RFCOMM_CHANNEL_DLC_SETUP:
         case RFCOMM_CHANNEL_OPEN:
             if (channel->credits_incoming < 5){
-                rfcomm_send_uih_credits(channel->multiplexer, channel->dlci, credits);
-                channel->credits_incoming += credits;
+                rfcomm_channel_send_credits(channel, credits);
             }
             break;
         default:
