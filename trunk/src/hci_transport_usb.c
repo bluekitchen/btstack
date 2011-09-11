@@ -143,7 +143,7 @@ static libusb_device * scan_for_bt_device(libusb_device **devs) {
     while ((dev = devs[i++]) != NULL) {
         int r = libusb_get_device_descriptor(dev, &desc);
         if (r < 0) {
-            log_error(stderr, "failed to get device descriptor");
+            log_error("failed to get device descriptor");
             return 0;
         }
         
@@ -191,7 +191,7 @@ static void async_callback(struct libusb_transfer *transfer)
             r = libusb_submit_transfer(transfer);
 
             if (r) {
-                log_error(stderr, "Error re-submitting transfer %d\n", r);
+                log_error("Error re-submitting transfer %d\n", r);
             }
         }
     }
@@ -234,7 +234,7 @@ static int usb_process_ds(struct data_source *ds) {
             r = libusb_submit_transfer(handle_packet);
 
             if (r) {
-                log_error(stderr, "Error re-submitting transfer %d\n", r);
+                log_error("Error re-submitting transfer %d\n", r);
             }
         }
 
@@ -365,7 +365,7 @@ static int usb_open(void *transport_config){
     log_info("claiming interface 0...\n");
     r = libusb_claim_interface(handle, 0);
     if (r < 0) {
-        log_error(stderr, "Error claiming interface %d\n", r);
+        log_error("Error claiming interface %d\n", r);
         usb_close();
         return r;
     }
@@ -397,7 +397,7 @@ static int usb_open(void *transport_config){
  
         r = libusb_submit_transfer(event_in_transfer[c]);
         if (r) {
-            log_error(stderr, "Error submitting interrupt transfer %d\n", r);
+            log_error("Error submitting interrupt transfer %d\n", r);
             usb_close();
             return r;
         }
@@ -408,7 +408,7 @@ static int usb_open(void *transport_config){
  
         r = libusb_submit_transfer(bulk_in_transfer[c]);
         if (r) {
-            log_error(stderr, "Error submitting bulk in transfer %d\n", r);
+            log_error("Error submitting bulk in transfer %d\n", r);
             usb_close();
             return r;
         }
@@ -497,7 +497,7 @@ static int usb_send_cmd_packet(uint8_t *packet, int size){
         0, 0, 0, packet, size, 2000);
 
     if (r < 0 || r !=size ) {
-        log_error(stderr, "Error submitting control transfer %d\n", r);
+        log_error("Error submitting control transfer %d\n", r);
         return r;
     }
     
@@ -514,7 +514,7 @@ static int usb_send_acl_packet(uint8_t *packet, int size){
     // Use synchronous call to sent out data
     r = libusb_bulk_transfer(handle, acl_out_addr, packet, size, &t, 1000);
     if(r < 0){
-        log_error(stderr, "Error submitting data transfer");
+        log_error("Error submitting data transfer");
     }
 
     return 0;
