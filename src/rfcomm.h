@@ -50,12 +50,15 @@ void rfcomm_register_packet_handler(void (*handler)(void * connection, uint8_t p
 													uint16_t channel, uint8_t *packet, uint16_t size));
 
 // BTstack Internal RFCOMM API
-void rfcomm_create_channel_internal(void * connectio, bd_addr_t *addr, uint8_t channel);
+void rfcomm_create_channel_internal(void * connection, bd_addr_t *addr, uint8_t channel);
+void rfcomm_create_channel_with_initial_credits_internal(void * connection, bd_addr_t *addr, uint8_t server_channel, uint8_t initial_credits);
 void rfcomm_disconnect_internal(uint16_t rfcomm_cid);
 void rfcomm_register_service_internal(void * connection, uint8_t channel, uint16_t max_frame_size);
+void rfcomm_register_service_with_initial_credits_internal(void * connection, uint8_t channel, uint16_t max_frame_size, uint8_t initial_credits);
 void rfcomm_unregister_service_internal(uint8_t service_channel);
 void rfcomm_accept_connection_internal(uint16_t rfcomm_cid);
 void rfcomm_decline_connection_internal(uint16_t rfcomm_cid);
+void rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits);
 int  rfcomm_send_internal(uint8_t rfcomm_cid, uint8_t *data, uint16_t len);
 void rfcomm_close_connection(void *connection);
 
@@ -169,6 +172,12 @@ typedef struct {
     
     // incoming max frame size
     uint16_t max_frame_size;
+
+    // use incoming flow control
+    uint8_t incoming_flow_control;
+    
+    // initial incoming credits
+    uint8_t incoming_initial_credits;
     
     // client connection
     void *connection;    
