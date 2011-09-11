@@ -621,8 +621,7 @@ static void rfcomm_multiplexer_opened(rfcomm_multiplexer_t *multiplexer){
     log_info("Multiplexer up and running\n");
     multiplexer->state = RFCOMM_MULTIPLEXER_OPEN;
     
-    rfcomm_channel_event_t event;
-    event.type = CH_EVT_MULTIPLEXER_READY;
+    rfcomm_channel_event_t event = { CH_EVT_MULTIPLEXER_READY };
     
     // transition of channels that wait for multiplexer 
     linked_item_t *it;
@@ -951,22 +950,19 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     rfcomm_channel_t * rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
     if (!rfChannel) return;
     
+    // handle credits
     if (packet[1] == BT_RFCOMM_UIH_PF) {
-        // handle new credits
+        
+        // add them
         uint16_t new_credits = packet[3+length_offset];
         rfChannel->credits_outgoing += new_credits;
         log_info( "RFCOMM data UIH_PF, new credits: %u, now %u\n", new_credits, rfChannel->credits_outgoing);
 
-        // notify daemon -> might trigger re-try of parked connections
-        uint8_t event[1];
-        event[0] = DAEMON_EVENT_NEW_RFCOMM_CREDITS;
-        (*app_packet_handler)(rfChannel->connection, DAEMON_EVENT_PACKET, rfChannel->rfcomm_cid, event, sizeof(event));
-        
-        if (rfChannel->state == RFCOMM_CHANNEL_DLC_SETUP && rfcomm_channel_ready_for_open(rfChannel)) {
-            rfChannel->state = RFCOMM_CHANNEL_OPEN;
-            rfcomm_channel_opened(rfChannel);
-        }
+        // notify channel statemachine 
+        rfcomm_channel_event_t channel_event = { CH_EVT_RCVD_CREDITS };
+        rfcomm_channel_state_machine(rfChannel, &channel_event);
     }
+    
     if (rfChannel->credits_incoming > 0){
         rfChannel->credits_incoming--;
     }
@@ -1459,7 +1455,10 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                         log_info("Providing credits for #%u\n", channel->dlci);
                         channel->state_var &= ~RFCOMM_CHANNEL_STATE_VAR_SEND_CREDITS;
                         channel->state_var |= RFCOMM_CHANNEL_STATE_VAR_SENT_CREDITS;
-                        rfcomm_channel_provide_credits(channel);
+
+                        // TODO: handle client controlled credits
+                        rfcomm_channel_send_credits(channel, 0x30);
+                        // old: rfcomm_channel_provide_credits(channel);
                         break;
 
                     }
@@ -1487,6 +1486,12 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                         break;
                     }
                     break;
+                case CH_EVT_RCVD_CREDITS: {
+                    // notify daemon -> might trigger re-try of parked connections
+                    uint8_t event[1] = { DAEMON_EVENT_NEW_RFCOMM_CREDITS };
+                    (*app_packet_handler)(channel->connection, DAEMON_EVENT_PACKET, channel->rfcomm_cid, event, sizeof(event));
+                    break;
+                }  
                 default:
                     break;
             }
@@ -1569,8 +1574,7 @@ static void rfcomm_run(void){
         
         if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) continue;
      
-        rfcomm_channel_event_t event;
-        event.type = CH_EVT_READY_TO_SEND;
+        rfcomm_channel_event_t event = { CH_EVT_READY_TO_SEND };
         rfcomm_channel_state_machine(channel, &event);
     }
 }
