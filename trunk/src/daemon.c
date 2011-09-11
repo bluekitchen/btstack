@@ -138,6 +138,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
     uint16_t mtu;
     uint8_t  reason;
     uint8_t  rfcomm_channel;
+    uint8_t  rfcomm_credits;
     uint32_t service_record_handle;
     client_state_t *client;
     
@@ -232,11 +233,16 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             reason = packet[7];
             l2cap_decline_connection_internal(cid, reason);
             break;
-            
         case RFCOMM_CREATE_CHANNEL:
             bt_flip_addr(addr, &packet[3]);
             rfcomm_channel = packet[9];
             rfcomm_create_channel_internal( connection, &addr, rfcomm_channel );
+            break;
+        case RFCOMM_CREATE_CHANNEL_WITH_CREDITS:
+            bt_flip_addr(addr, &packet[3]);
+            rfcomm_channel = packet[9];
+            rfcomm_credits = packet[10];
+            rfcomm_create_channel_with_initial_credits_internal( connection, &addr, rfcomm_channel, rfcomm_credits );
             break;
         case RFCOMM_DISCONNECT:
             cid = READ_BT_16(packet, 3);
@@ -247,6 +253,12 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             rfcomm_channel = packet[3];
             mtu = READ_BT_16(packet, 4);
             rfcomm_register_service_internal(connection, rfcomm_channel, mtu);
+            break;
+        case RFCOMM_REGISTER_SERVICE_WITH_CREDITS:
+            rfcomm_channel = packet[3];
+            mtu = READ_BT_16(packet, 4);
+            rfcomm_credits = packet[6];
+            rfcomm_register_service_with_initial_credits_internal(connection, rfcomm_channel, mtu, rfcomm_credits);
             break;
         case RFCOMM_UNREGISTER_SERVICE:
             service_channel = READ_BT_16(packet, 3);
@@ -261,6 +273,11 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             reason = packet[7];
             rfcomm_decline_connection_internal(cid);
             break;            
+        case RFCOMM_GRANT_CREDITS:
+            cid    = READ_BT_16(packet, 3);
+            rfcomm_credits = packet[5];
+            rfcomm_grant_credits(cid, rfcomm_credits);
+            break;
         case RFCOMM_PERSISTENT_CHANNEL: {
             if (remote_device_db) {
                 // enforce \0
