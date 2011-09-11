@@ -314,6 +314,8 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
         if (channel->max_frame_size > service->max_frame_size) {
             channel->max_frame_size = service->max_frame_size;
         }
+        channel->incoming_flow_control = service->incoming_flow_control;
+        channel->new_credits_incoming  = service->incoming_initial_credits;
 	} else {
 		// outgoing connection
 		channel->outgoing = 1;
@@ -962,7 +964,7 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
                               &packet[payload_offset], size-payload_offset-1);
     }
     
-    // provide new credits to remote device, if no incoming flow control
+    // automatically provide new credits to remote device, if no incoming flow control
     if (!channel->incoming_flow_control && channel->credits_incoming < 5){
         channel->new_credits_incoming = 0x30;
     }    
@@ -1642,9 +1644,9 @@ int rfcomm_send_internal(uint8_t rfcomm_cid, uint8_t *data, uint16_t len){
     return result;
 }
 
-void rfcomm_create_channel_internal(void * connection, bd_addr_t *addr, uint8_t server_channel){
-
-    log_info("rfcomm_create_channel_internal to %s, at channel #%02x\n",  bd_addr_to_str(*addr), server_channel);
+void rfcomm_create_channel2(void * connection, bd_addr_t *addr, uint8_t server_channel, uint8_t incoming_flow_control, uint8_t initial_credits){
+    log_info("rfcomm_create_channel_internal to %s, at channel #%02x, flow control %u, init credits %u\n",  bd_addr_to_str(*addr), server_channel,
+             incoming_flow_control, initial_credits);
     
     // create new multiplexer if necessary
     rfcomm_multiplexer_t * multiplexer = rfcomm_multiplexer_for_addr(addr);
@@ -1657,29 +1659,39 @@ void rfcomm_create_channel_internal(void * connection, bd_addr_t *addr, uint8_t 
         multiplexer->outgoing = 1;
         multiplexer->state = RFCOMM_MULTIPLEXER_W4_CONNECT;
     }
-        
+    
     // prepare channel
-    rfcomm_channel_t * channel = rfcomm_channel_create(multiplexer, 0, server_channel);
+    rfcomm_channel_t * channel = rfcomm_channel_create(multiplexer, NULL, server_channel);
     if (!channel){
         rfcomm_emit_channel_open_failed_outgoing_memory(connection, addr, server_channel);
         return;
     }
     channel->connection = connection;
-
+    channel->incoming_flow_control = incoming_flow_control;
+    channel->new_credits_incoming  = initial_credits;
+    
     // start multiplexer setup
     if (multiplexer->state != RFCOMM_MULTIPLEXER_OPEN) {
         
         channel->state = RFCOMM_CHANNEL_W4_MULTIPLEXER;
         
         l2cap_create_channel_internal(connection, rfcomm_packet_handler, *addr, PSM_RFCOMM, l2cap_max_mtu());
-
+        
         return;
     }
-
+    
     channel->state = RFCOMM_CHANNEL_SEND_UIH_PN;
     
     // start connecting, if multiplexer is already up and running
     rfcomm_run();
+}
+
+void rfcomm_create_channel_with_initial_credits(void * connection, bd_addr_t *addr, uint8_t server_channel, uint8_t initial_credits){
+    rfcomm_create_channel2(connection, addr, server_channel, 1, initial_credits);
+}
+
+void rfcomm_create_channel_internal(void * connection, bd_addr_t *addr, uint8_t server_channel){
+    rfcomm_create_channel2(connection, addr, server_channel, 0, 0x30);
 }
 
 void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
@@ -1689,8 +1701,8 @@ void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
     }
 }
 
-void rfcomm_register_service_internal(void * connection, uint8_t channel, uint16_t max_frame_size){
-    
+
+void rfcomm_register_service2(void * connection, uint8_t channel, uint16_t max_frame_size, uint8_t incoming_flow_control, uint8_t initial_credits){
     // check if already registered
     rfcomm_service_t * service = rfcomm_service_for_channel(channel);
     if (service){
@@ -1704,22 +1716,32 @@ void rfcomm_register_service_internal(void * connection, uint8_t channel, uint16
         rfcomm_emit_service_registered(service->connection, BTSTACK_MEMORY_ALLOC_FAILED, channel);
         return;
     }
-
+    
     // register with l2cap if not registered before, max MTU
     if (linked_list_empty(&rfcomm_services)){
         l2cap_register_service_internal(NULL, rfcomm_packet_handler, PSM_RFCOMM, 0xffff);
     }
-
+    
     // fill in 
     service->connection     = connection;
     service->server_channel = channel;
     service->max_frame_size = max_frame_size;
+    service->incoming_flow_control = incoming_flow_control;
+    service->incoming_initial_credits = initial_credits;
     
     // add to services list
     linked_list_add(&rfcomm_services, (linked_item_t *) service);
     
     // done
     rfcomm_emit_service_registered(service->connection, 0, channel);
+}
+
+void rfcomm_register_service_with_initial_credits(void * connection, uint8_t channel, uint16_t max_frame_size, uint8_t initial_credits){
+    rfcomm_register_service2(connection, channel, max_frame_size, 1, initial_credits);
+}
+
+void rfcomm_register_service_internal(void * connection, uint8_t channel, uint16_t max_frame_size){
+    rfcomm_register_service2(connection, channel, max_frame_size, 0, 0x30);
 }
 
 void rfcomm_unregister_service_internal(uint8_t service_channel){
