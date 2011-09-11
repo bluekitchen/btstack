@@ -303,6 +303,10 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
     channel->credits_outgoing = 0;
     channel->packets_granted  = 0;
 
+    // incoming flow control not active
+    channel->new_credits_incoming  = 0x30;
+    channel->incoming_flow_control = 0;
+    
 	if (service) {
 		// incoming connection
 		channel->outgoing = 0;
@@ -903,23 +907,6 @@ static void rfcomm_channel_send_credits(rfcomm_channel_t *channel, uint8_t credi
     channel->credits_incoming += credits;
 }
 
-static void rfcomm_channel_provide_credits(rfcomm_channel_t *channel){
-
-    if (!l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid)) return;
-
-    int credits = 0x30;
-    switch (channel->state) {
-        case RFCOMM_CHANNEL_DLC_SETUP:
-        case RFCOMM_CHANNEL_OPEN:
-            if (channel->credits_incoming < 5){
-                rfcomm_channel_send_credits(channel, credits);
-            }
-            break;
-        default:
-            break;
-    }
-}
-
 static void rfcomm_channel_opened(rfcomm_channel_t *rfChannel){
     
     log_info("rfcomm_channel_opened!\n");
@@ -947,32 +934,39 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     const uint8_t credit_offset = ((packet[1] & BT_RFCOMM_UIH_PF) == BT_RFCOMM_UIH_PF) ? 1 : 0;   // credits for uih_pf frames
     const uint8_t payload_offset = 3 + length_offset + credit_offset;
 
-    rfcomm_channel_t * rfChannel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
-    if (!rfChannel) return;
+    rfcomm_channel_t * channel = rfcomm_channel_for_multiplexer_and_dlci(multiplexer, frame_dlci);
+    if (!channel) return;
     
-    // handle credits
+    // handle new outgoing credits
     if (packet[1] == BT_RFCOMM_UIH_PF) {
         
         // add them
         uint16_t new_credits = packet[3+length_offset];
-        rfChannel->credits_outgoing += new_credits;
-        log_info( "RFCOMM data UIH_PF, new credits: %u, now %u\n", new_credits, rfChannel->credits_outgoing);
+        channel->credits_outgoing += new_credits;
+        log_info( "RFCOMM data UIH_PF, new credits: %u, now %u\n", new_credits, channel->credits_outgoing);
 
         // notify channel statemachine 
         rfcomm_channel_event_t channel_event = { CH_EVT_RCVD_CREDITS };
-        rfcomm_channel_state_machine(rfChannel, &channel_event);
+        rfcomm_channel_state_machine(channel, &channel_event);
     }
     
-    if (rfChannel->credits_incoming > 0){
-        rfChannel->credits_incoming--;
+    // decrease incoming credit counter
+    if (channel->credits_incoming > 0){
+        channel->credits_incoming--;
     }
-    rfcomm_channel_provide_credits(rfChannel);
     
+    // deliver payload
     if (size - 1 > payload_offset){ // don't send empty frames, -1 for header checksum at end
         // log_info( "RFCOMM data UIH_PF, size %u, channel %x\n", size-payload_offset-1, (int) rfChannel->connection);
-        (*app_packet_handler)(rfChannel->connection, RFCOMM_DATA_PACKET, rfChannel->rfcomm_cid,
+        (*app_packet_handler)(channel->connection, RFCOMM_DATA_PACKET, channel->rfcomm_cid,
                               &packet[payload_offset], size-payload_offset-1);
     }
+    
+    // provide new credits to remote device, if no incoming flow control
+    if (!channel->incoming_flow_control && channel->credits_incoming < 5){
+        channel->new_credits_incoming = 0x30;
+    }    
+    
     // we received new RFCOMM credits, hand them out if possible
     rfcomm_hand_out_credits();
 }
@@ -1222,6 +1216,7 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	
     if (frame_dlci && (packet[1] == BT_RFCOMM_UIH || packet[1] == BT_RFCOMM_UIH_PF)) {
         rfcomm_channel_packet_handler_uih(multiplexer, packet, size);
+        rfcomm_run();
         return;
     }
      
@@ -1455,10 +1450,10 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                         log_info("Providing credits for #%u\n", channel->dlci);
                         channel->state_var &= ~RFCOMM_CHANNEL_STATE_VAR_SEND_CREDITS;
                         channel->state_var |= RFCOMM_CHANNEL_STATE_VAR_SENT_CREDITS;
-
-                        // TODO: handle client controlled credits
-                        rfcomm_channel_send_credits(channel, 0x30);
-                        // old: rfcomm_channel_provide_credits(channel);
+                        if (channel->new_credits_incoming) {
+                            rfcomm_channel_send_credits(channel, channel->new_credits_incoming);
+                            channel->new_credits_incoming = 0;
+                        }
                         break;
 
                     }
@@ -1483,6 +1478,11 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                         log_info("Sending MSC RSP for #%u\n", channel->dlci);
                         channel->state_var &= ~RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP;
                         rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+                        break;
+                    }
+                    if (channel->new_credits_incoming) {
+                        rfcomm_channel_send_credits(channel, channel->new_credits_incoming);
+                        channel->new_credits_incoming = 0;
                         break;
                     }
                     break;
@@ -1766,6 +1766,14 @@ void rfcomm_decline_connection_internal(uint16_t rfcomm_cid){
         default:
             break;
     }
+    rfcomm_run();
+}
+
+void rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits){
+    rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
+    if (!channel) return;
+    if (!channel->incoming_flow_control) return;
+    channel->new_credits_incoming += credits;
     rfcomm_run();
 }
 
