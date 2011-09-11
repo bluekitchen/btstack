@@ -548,6 +548,11 @@ static int rfcomm_send_uih_data(rfcomm_multiplexer_t *multiplexer, uint8_t dlci,
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, data, len);
 }
 
+static void rfcomm_send_uih_credits(rfcomm_multiplexer_t *multiplexer, uint8_t dlci,  uint8_t credits){
+    uint8_t address = (1 << 0) | (multiplexer->outgoing << 1) |  (dlci << 2); 
+    rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH_PF, credits, NULL, 0);
+}
+
 // MARK: RFCOMM MULTIPLEXER
 
 static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
@@ -904,8 +909,7 @@ static void rfcomm_channel_provide_credits(rfcomm_channel_t *channel){
         case RFCOMM_CHANNEL_DLC_SETUP:
         case RFCOMM_CHANNEL_OPEN:
             if (channel->credits_incoming < 5){
-				uint8_t address = (1 << 0) | (channel->multiplexer->outgoing << 1) |  (channel->dlci << 2); 
-				rfcomm_send_packet_for_multiplexer(channel->multiplexer, address, BT_RFCOMM_UIH_PF, credits, NULL, 0);
+                rfcomm_send_uih_credits(channel->multiplexer, channel->dlci, credits);
                 channel->credits_incoming += credits;
             }
             break;
