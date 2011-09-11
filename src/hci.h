@@ -159,6 +159,9 @@ extern "C" {
 #define RFCOMM_ACCEPT_CONNECTION    0x44
 #define RFCOMM_DECLINE_CONNECTION   0x45
 #define RFCOMM_PERSISTENT_CHANNEL   0x46
+#define RFCOMM_CREATE_CHANNEL_WITH_CREDITS   0x47
+#define RFCOMM_REGISTER_SERVICE_WITH_CREDITS 0x48
+#define RFCOMM_GRANT_CREDITS                 0x49
     
 // 
 #define IS_COMMAND(packet, command) (READ_BT_16(packet,0) == command.opcode)
