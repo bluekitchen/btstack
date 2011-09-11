@@ -407,7 +407,15 @@ OPCODE(OGF_BTSTACK, SDP_UNREGISTER_SERVICE_RECORD), "4"
 const hci_cmd_t rfcomm_create_channel = {
 	OPCODE(OGF_BTSTACK, RFCOMM_CREATE_CHANNEL), "B1"
 };
-// disconnect rfcomm disconnect, @param rfcomm_cid(8), reason(8)
+// create rfcomm channel: @param bd_addr(48), channel (8), mtu (16), credits (8)
+const hci_cmd_t rfcomm_create_channel_with_initial_credits = {
+	OPCODE(OGF_BTSTACK, RFCOMM_CREATE_CHANNEL_WITH_CREDITS), "B121"
+};
+// grant credits: @param rfcomm_cid(16), credits (8)
+const hci_cmd_t rfcomm_grants_credits= {
+	OPCODE(OGF_BTSTACK, RFCOMM_GRANT_CREDITS), "21"
+};
+// disconnect rfcomm disconnect, @param rfcomm_cid(16), reason(8)
 const  hci_cmd_t rfcomm_disconnect = {
 	OPCODE(OGF_BTSTACK, RFCOMM_DISCONNECT), "21"
 };
@@ -416,6 +424,11 @@ const  hci_cmd_t rfcomm_disconnect = {
 const hci_cmd_t rfcomm_register_service = {
     OPCODE(OGF_BTSTACK, RFCOMM_REGISTER_SERVICE), "12"
 };
+// register rfcomm service: @param channel(8), mtu (16), initial credits (8)
+const hci_cmd_t rfcomm_register_service_with_initial_credits = {
+    OPCODE(OGF_BTSTACK, RFCOMM_REGISTER_SERVICE_WITH_CREDITS), "121"
+};
+
 // unregister rfcomm service, @param service_channel(16)
 const hci_cmd_t rfcomm_unregister_service = {
     OPCODE(OGF_BTSTACK, RFCOMM_UNREGISTER_SERVICE), "2"
@@ -432,3 +445,7 @@ const hci_cmd_t rfcomm_decline_connection = {
 const hci_cmd_t rfcomm_persistent_channel_for_service = {
     OPCODE(OGF_BTSTACK, RFCOMM_PERSISTENT_CHANNEL), "N"
 };
+
+
+// register rfcomm service: @param channel(8), mtu (16), initial credits (8)
+extern const hci_cmd_t rfcomm_register_service_with_initial_credits;
