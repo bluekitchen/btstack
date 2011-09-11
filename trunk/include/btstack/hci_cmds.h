@@ -303,12 +303,16 @@ extern const hci_cmd_t sdp_unregister_service_record;
 extern const hci_cmd_t rfcomm_accept_connection;
 // create rfcomm channel: @param bd_addr(48), channel (8)
 extern const hci_cmd_t rfcomm_create_channel;
+// create rfcomm channel: @param bd_addr(48), channel (8), mtu (16), credits (8)
+extern const hci_cmd_t rfcomm_create_channel_with_initial_credits;
 // decline rfcomm disconnect,@param bd_addr(48), rfcomm cid (16), reason(8)
 extern const hci_cmd_t rfcomm_decline_connection;
 // disconnect rfcomm disconnect, @param rfcomm_cid(8), reason(8)
 extern const hci_cmd_t rfcomm_disconnect;
 // register rfcomm service: @param channel(8), mtu (16)
 extern const hci_cmd_t rfcomm_register_service;
+// register rfcomm service: @param channel(8), mtu (16), initial credits (8)
+extern const hci_cmd_t rfcomm_register_service_with_initial_credits;
 // unregister rfcomm service, @param service_channel(16)
 extern const hci_cmd_t rfcomm_unregister_service;
 // request persisten rfcomm channel for service name: serive name (char*) 
