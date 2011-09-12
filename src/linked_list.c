@@ -68,7 +68,7 @@ void linked_list_add_tail(linked_list_t * list, linked_item_t *item){   // <-- a
             return;
         }
     }
-    item->next = (void*) 0;
+    item->next = (linked_item_t*) 0;
     it->next = item;
 }
 
@@ -89,7 +89,7 @@ int  linked_list_remove(linked_list_t * list, linked_item_t *item){    // <-- re
 }
 
 void linked_item_set_user(linked_item_t *item, void *user_data){
-    item->next = (void *) 0;
+    item->next = (linked_item_t *) 0;
     item->user_data = user_data;
 }
 
