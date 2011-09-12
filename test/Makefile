@@ -1,7 +1,6 @@
 CC=g++
-CPPUTEST_HOME = /usr/local/cpputest
 
-CPPFLAGS=-I../include -I../src -I$(CPPUTEST_HOME)/include -g
+CPPFLAGS= -I../include -I../src -I$(CPPUTEST_HOME)/include -g
 LD_LIBRARIES = -L$(CPPUTEST_HOME)/lib -lCppUTest -lCppUTestExt
 
 VPATH=../src
@@ -13,5 +12,5 @@ remote-memory: $(OBJ)
 	$(CC) $(CPPFLAGS) -o $@ $^ $(LD_LIBRARIES)
 
 clean:
-	rm -f remote-memory *.o
+	rm -f remote-memory *.o ../src/*.o
 	
