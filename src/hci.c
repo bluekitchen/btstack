@@ -55,9 +55,6 @@
 #include <btstack/hci_cmds.h>
 #include <btstack/version.h>
 
-// tmpe
-#include "l2cap.h"
-
 #define HCI_CONNECTION_TIMEOUT_MS 10000
 
 #ifdef USE_BLUETOOL
