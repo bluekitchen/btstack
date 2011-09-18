@@ -663,9 +663,9 @@ void halLcdPrint( char String[], unsigned char TextStyle)
           BlockValue |= fonts[LookUpChar*(FONT_HEIGHT+1) +j]; 
 #else
       int offset = j;
-      while (LookUpChar) {
-	offset += FONT_HEIGHT + 1;
-        LookUpChar--;
+      int counter;
+      for (counter = 0 ; counter < LookUpChar ; counter++){
+	    offset = offset + FONT_HEIGHT + 1;
       }
       BlockValue |= fonts[offset];
 #endif
