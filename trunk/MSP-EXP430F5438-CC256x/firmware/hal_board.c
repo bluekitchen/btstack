@@ -5,7 +5,7 @@
 ******************************************************************************/
 #include "hal_board.h"
 
-#include "MSP430x54x.h"
+#include "msp430x54x.h"
 
 #include "hal_compat.h"
 #include "hal_adc.h"
