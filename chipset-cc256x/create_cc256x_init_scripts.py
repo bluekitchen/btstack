@@ -47,8 +47,10 @@ __attribute__((section (".fartext")))
         else:
 
             if line.find('};') >= 0 or line.find('} ;') >= 0:
+                if chipset == "cc2560":
+                    fout.write(",\n")
                 fout.write('// BTstack: add HCI_VS_Sleep_Mode_Configurations 0xFD0C template for eHCILL\n');
-                fout.write(', 0x01, 0x0c, 0xfd, 9 , 1, 0, 0,  0xff, 0xff, 0xff, 0xff, 100, 0\n');
+                fout.write('0x01, 0x0c, 0xfd, 9 , 1, 0, 0,  0xff, 0xff, 0xff, 0xff, 100, 0\n');
                 fout.write('};\n')
                 break;
 
