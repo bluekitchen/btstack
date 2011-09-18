@@ -46,6 +46,7 @@
 
 #ifndef EMBEDDED
 #include <unistd.h> // gethostbyname
+#include <btstack/version.h>
 #endif
 
 #include "btstack_memory.h"
@@ -53,7 +54,6 @@
 #include "hci_dump.h"
 
 #include <btstack/hci_cmds.h>
-#include <btstack/version.h>
 
 #define HCI_CONNECTION_TIMEOUT_MS 10000
 
@@ -1266,7 +1266,7 @@ void hci_emit_hci_open_failed(){
     hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-
+#ifndef EMBEDDED
 void hci_emit_btstack_version() {
     uint8_t event[6];
     event[0] = BTSTACK_EVENT_VERSION;
@@ -1277,6 +1277,7 @@ void hci_emit_btstack_version() {
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
+#endif
 
 void hci_emit_system_bluetooth_enabled(uint8_t enabled){
     uint8_t event[3];
