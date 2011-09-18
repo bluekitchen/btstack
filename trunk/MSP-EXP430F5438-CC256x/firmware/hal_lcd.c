@@ -623,8 +623,10 @@ void halLcdDrawTextBlock(unsigned int Value)
  *************************************************************************/
 void halLcdPrint( char String[], unsigned char TextStyle) 
 {
+  int Address;
+  int LCD_MEM_Add;
+  int ActualAddress;
   int i, j, Counter=0, BlockValue;
-  int Address, LCD_MEM_Add, ActualAddress;
   int temp;
   char LookUpChar;
   
@@ -646,6 +648,8 @@ void halLcdPrint( char String[], unsigned char TextStyle)
       
       BlockValue = LCD_MEM[ LCD_MEM_Add ];
       
+#if 0
+      // work around a mspgcc bug - fixed in LTS but not in 11.10 yet
       if (TextStyle & INVERT_TEXT)         
         if (TextStyle & OVERWRITE_TEXT)
           BlockValue = 0xFFFF - fonts[LookUpChar*13+j]; 
@@ -657,7 +661,14 @@ void halLcdPrint( char String[], unsigned char TextStyle)
           BlockValue = fonts[LookUpChar*(FONT_HEIGHT+1) +j]; 
         else
           BlockValue |= fonts[LookUpChar*(FONT_HEIGHT+1) +j]; 
-        
+#else
+      int offset = j;
+      while (LookUpChar) {
+	offset += FONT_HEIGHT + 1;
+        LookUpChar--;
+      }
+      BlockValue |= fonts[offset];
+#endif
       halLcdDrawBlock( Address, BlockValue);          
     }
     
