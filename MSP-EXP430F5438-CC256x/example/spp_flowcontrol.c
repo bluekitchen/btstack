@@ -158,7 +158,7 @@ int main(void)
 	hci_init(transport, config, control, remote_db);
 	
     // use eHCILL
-    // bt_control_cc256x_enable_ehcill(1);
+    bt_control_cc256x_enable_ehcill(1);
     
     // init L2CAP
     l2cap_init();
