@@ -237,8 +237,8 @@ int main(void) {
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
 	hci_init(transport, config, control, remote_db);
 	
-    // use ehciall
-    // bt_control_cc256x_enable_ehcill(1);
+    // use eHCILL
+    bt_control_cc256x_enable_ehcill(1);
 
     // init L2CAP
     l2cap_init();

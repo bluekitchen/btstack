@@ -9,7 +9,7 @@
 BTSTACK_ROOT = ../..
 
 CC      = msp430-gcc
-CFLAGS  = -mmcu=msp430x5438 -g -Os -Wall -I../src -I../firmware -I${BTSTACK_ROOT} -I${BTSTACK_ROOT}/chipset-cc256x -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include
+CFLAGS  = -mmcu=msp430x5438 -g -Os -Wall -I. -I../src -I../firmware -I${BTSTACK_ROOT} -I${BTSTACK_ROOT}/chipset-cc256x -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include
 LDFLAGS = -mmcu=msp430x5438
 
 CORE   = \
@@ -31,7 +31,7 @@ COMMON = \
     ${BTSTACK_ROOT}/src/hci.c			          \
     ${BTSTACK_ROOT}/src/hci_cmds.c		          \
     ${BTSTACK_ROOT}/src/hci_dump.c		          \
-    ${BTSTACK_ROOT}/src/hci_transport_h4_dma.c    \
+    ${BTSTACK_ROOT}/src/hci_transport_h4_ehcill_dma.c \
     ${BTSTACK_ROOT}/src/l2cap.c			          \
     ${BTSTACK_ROOT}/src/l2cap_signaling.c         \
 	${BTSTACK_ROOT}/src/remote_device_db_memory.c \
