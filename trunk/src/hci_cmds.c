@@ -127,6 +127,13 @@ uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, 
                 memcpy(&hci_cmd_buffer[pos], ptr, 16);
                 pos += 16;
                 break;
+#ifdef HAVE_BLE
+            case 'A': // 31 bytes advertising data
+                ptr = va_arg(argptr, uint8_t *);
+                memcpy(&hci_cmd_buffer[pos], ptr, 31);
+                pos += 31;
+                break;
+#endif
 #ifdef HAVE_SDP
             case 'S': { // Service Record (Data Element Sequence)
                 ptr = va_arg(argptr, uint8_t *);
@@ -329,6 +336,203 @@ OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x09), ""
 // no params
 };
 
+#ifdef HAVE_BLE
+#define OGF_LE_CONTROLLER 0x08
+/**
+ * Low Energy Commands
+ */
+const hci_cmd_t hci_le_set_event_mask = {
+OPCODE(OGF_LE_CONTROLLER, 0x01), "44"
+// params: event_mask lower 4 octets, higher 4 bytes
+// return: status
+};
+const hci_cmd_t hci_le_read_buffer_size = {
+OPCODE(OGF_LE_CONTROLLER, 0x02), ""
+// params: none
+// return: status, le acl data packet len (16), total num le acl data packets(8)
+};
+const hci_cmd_t hci_le_read_supported_features = {
+OPCODE(OGF_LE_CONTROLLER, 0x03), ""
+// params: none
+// return: LE_Features See [Vol 6] Part B, Section 4.6
+};
+const hci_cmd_t hci_le_set_random_address = {
+OPCODE(OGF_LE_CONTROLLER, 0x05), "B"
+// params: random device address
+// return: status
+};
+const hci_cmd_t hci_le_set_advertising_parameters = {
+OPCODE(OGF_LE_CONTROLLER, 0x06), "22111B11"
+// param: min advertising interval, [0x0020,0x4000], default: 0x0800, unit: 0.625 msec
+// param: max advertising interval, [0x0020,0x4000], default: 0x0800, unit: 0.625 msec
+// param: advertising type (enum from 0): ADV_IND, ADC_DIRECT_IND, ADV_SCAN_IND, ADV_NONCONN_IND
+// param: own address type (enum from 0): public device address, random device address
+// param: direct address type (enum from 0): public device address, random device address
+// param: direct address - public or random address of device to be connecteed
+// param: advertising channel map (flags): chan_37(1), chan_38(2), chan_39(4)
+// param: advertising filter policy (enum from 0): scan any conn any, scan whitelist, con any, scan any conn whitelist, scan whitelist, con whitelist
+// return: status
+};
+const hci_cmd_t hci_le_read_advertising_channel_tx_power = {
+OPCODE(OGF_LE_CONTROLLER, 0x07), ""
+// params: none
+// return: status, level [-20,10] signed int (8), units dBm
+};
+const hci_cmd_t hci_le_set_advertising_data= {
+OPCODE(OGF_LE_CONTROLLER, 0x08), "1A"
+// param: advertising data len
+// param: advertising data (31 bytes)
+// return: status
+};
+const hci_cmd_t hci_le_set_scan_response_data= {
+OPCODE(OGF_LE_CONTROLLER, 0x09), "1A"
+// param: scan response data len
+// param: scan response data (31 bytes)
+// return: status
+};
+const hci_cmd_t hci_le_set_advertise_enable = {
+OPCODE(OGF_LE_CONTROLLER, 0x0a), "1"
+// params: avertise enable: off (0), on (1)
+// return: status
+};
+const hci_cmd_t hci_le_set_scan_parameters = {
+OPCODE(OGF_LE_CONTROLLER, 0x0b), "12211"
+// param: le scan type: passive (0), active (1)
+// param: le scan interval [0x0004,0x4000], unit: 0.625 msec
+// param: le scan window   [0x0004,0x4000], unit: 0.625 msec
+// param: own address type: public (0), random (1)
+// param: scanning filter policy: any (0), only whitelist (1)
+// return: status
+};
+const hci_cmd_t hci_le_set_scan_enable = {
+OPCODE(OGF_LE_CONTROLLER, 0x0c), "11"
+// param: le scan enable:  disabled (0), enabled (1)
+// param: filter duplices: disabled (0), enabled (1)
+// return: status
+};
+const hci_cmd_t hci_le_create_connection= {
+OPCODE(OGF_LE_CONTROLLER, 0x0d), "2211B1222222"
+// param: le scan interval, [0x0004, 0x4000], unit: 0.625 msec
+// param: le scan window, [0x0004, 0x4000], unit: 0.625 msec
+// param: initiator filter policy: peer address type + peer address (0), whitelist (1)
+// param: peer address type: public (0), random (1)
+// param: peer address
+// param: own address type: public (0), random (1)
+// param: conn interval min, [0x0006, 0x0c80], unit: 1.25 msec
+// param: conn interval max, [0x0006, 0x0c80], unit: 1.25 msec
+// param: conn latency, number of connection events [0x0000, 0x01f4]
+// param: supervision timeout, [0x000a, 0x0c80], unit: 10 msec
+// param: minimum CE length, [0x0000, 0xffff], unit: 0.625 msec
+// return: none -> le create connection complete event
+};
+const hci_cmd_t hci_le_create_connection_cancel = {
+OPCODE(OGF_LE_CONTROLLER, 0x0e), ""
+// params: none
+// return: status
+};
+const hci_cmd_t hci_le_read_white_list_size = {
+OPCODE(OGF_LE_CONTROLLER, 0x0f), ""
+// params: none
+// return: status, number of entries in controller whitelist
+};
+const hci_cmd_t hci_le_clear_white_ list = {
+OPCODE(OGF_LE_CONTROLLER, 0x10), ""
+// params: none
+// return: status
+};
+const hci_cmd_t hci_le_add_device_to_whitelist = {
+OPCODE(OGF_LE_CONTROLLER, 0x11), "1B"
+// param: address type: public (0), random (1)
+// param: address
+// return: status
+};
+const hci_cmd_t hci_le_remove_device_from_whitelist = {
+OPCODE(OGF_LE_CONTROLLER, 0x12), "1B"
+// param: address type: public (0), random (1)
+// param: address
+// return: status
+};
+const hci_cmd_t hci_le_connection_update = {
+OPCODE(OGF_LE_CONTROLLER, 0x13), "H222222"
+// param: conn handle
+// param: conn interval min, [0x0006,0x0c80], unit: 1.25 msec
+// param: conn interval max, [0x0006,0x0c80], unit: 1.25 msec
+// param: conn latency, [0x0000,0x03e8], number of connection events
+// param: supervision timeout, [0x000a,0x0c80], unit: 10 msec
+// param: minimum CE length, [0x0000,0xffff], unit: 0.625 msec
+// param: maximum CE length, [0x0000,0xffff], unit: 0.625 msec
+// return: none -> le connection update complete event
+};
+const hci_cmd_t hci_le_set_host_channel_classification = {
+OPCODE(OGF_LE_CONTROLLER, 0x14), "41"
+// param: channel map 37 bit, split into first 32 and higher 5 bits
+// return: status
+};
+const hci_cmd_t hci_le_read_channel_map = {
+OPCODE(OGF_LE_CONTROLLER, 0x15), "H"
+// params: connection handle
+// return: status, connection handle, channel map (5 bytes, 37 used)
+};
+const hci_cmd_t hci_le_read_remote_used_features = {
+OPCODE(OGF_LE_CONTROLLER, 0x16), "H"
+// params: connection handle
+// return: none -> le read remote used features complete event
+};
+const hci_cmd_t hci_le_encrypt = {
+OPCODE(OGF_LE_CONTROLLER, 0x17), "PP"
+// param: key (128) for AES-128
+// param: plain text (128) 
+// return: status, encrypted data (128)
+};
+const hci_cmd_t hci_le_rand = {
+OPCODE(OGF_LE_CONTROLLER, 0x18), ""
+// params: none
+// return: status, random number (64)
+};
+const hci_cmd_t hci_le_start_encryption = {
+OPCODE(OGF_LE_CONTROLLER, 0x19), "H442P"
+// param: connection handle
+// param: 64 bit random number lower  32 bit
+// param: 64 bit random number higher 32 bit
+// param: encryption diversifier (16)
+// param: long term key (128)
+// return: none -> encryption changed or encryption key refresh complete event
+};
+const hci_cmd_t hci_le_long_term_key_request_reply = {
+OPCODE(OGF_LE_CONTROLLER, 0x1a), "HP"
+// param: connection handle
+// param: long term key (128)
+// return: status, connection handle
+};
+const hci_cmd_t hci_le_long_term_key_negative_reply = {
+OPCODE(OGF_LE_CONTROLLER, 0x1b), "H"
+// param: connection handle
+// return: status, connection handle
+};
+const hci_cmd_t hci_le_read_supported_states = {
+OPCODE(OGF_LE_CONTROLLER, 0x1c), "H"
+// param: none
+// return: status, LE states (64)
+};
+const hci_cmd_t hci_le_receiver_test = {
+OPCODE(OGF_LE_CONTROLLER, 0x1d), "1"
+// param: rx frequency, [0x00 0x27], frequency (MHz): 2420 + N*2
+// return: status
+};
+const hci_cmd_t hci_le_transmitter_test = {
+    OPCODE(OGF_LE_CONTROLLER, 0x1e), "111"
+    // param: tx frequency, [0x00 0x27], frequency (MHz): 2420 + N*2
+    // param: lengh of test payload [0x00,0x25]
+    // param: packet payload [0,7] different patterns
+    // return: status
+};
+const hci_cmd_t hci_le_test_end = {
+    OPCODE(OGF_LE_CONTROLLER, 0x1f), "1"
+    // params: none
+    // return: status, number of packets (8)
+};
+#endif
+
 // BTstack commands
 const hci_cmd_t btstack_get_state = {
 OPCODE(OGF_BTSTACK, BTSTACK_GET_STATE), ""
@@ -445,7 +649,6 @@ const hci_cmd_t rfcomm_decline_connection = {
 const hci_cmd_t rfcomm_persistent_channel_for_service = {
     OPCODE(OGF_BTSTACK, RFCOMM_PERSISTENT_CHANNEL), "N"
 };
-
 
 // register rfcomm service: @param channel(8), mtu (16), initial credits (8)
 extern const hci_cmd_t rfcomm_register_service_with_initial_credits;
