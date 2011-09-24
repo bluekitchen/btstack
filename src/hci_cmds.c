@@ -337,7 +337,6 @@ OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x09), ""
 };
 
 #ifdef HAVE_BLE
-#define OGF_LE_CONTROLLER 0x08
 /**
  * Low Energy Commands
  */
@@ -435,7 +434,7 @@ OPCODE(OGF_LE_CONTROLLER, 0x0f), ""
 // params: none
 // return: status, number of entries in controller whitelist
 };
-const hci_cmd_t hci_le_clear_white_ list = {
+const hci_cmd_t hci_le_clear_white_list = {
 OPCODE(OGF_LE_CONTROLLER, 0x10), ""
 // params: none
 // return: status
