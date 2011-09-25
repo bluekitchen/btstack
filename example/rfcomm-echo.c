@@ -182,11 +182,6 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
                     bt_send_cmd(&btstack_set_discoverable, 1);
                     break;
                 
-                case RFCOMM_EVENT_CREDITS:
-                    sprintf((char*)test_data, "-> %09u <- ", counter++);
-                    bt_send_rfcomm(rfcomm_channel_id, test_data, mtu);
-                    break;
-                    
 				case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
 					printf("Using PIN 0000\n");
