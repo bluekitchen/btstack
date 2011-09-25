@@ -46,8 +46,6 @@ extern "C" {
 
 #include <stdint.h>
 
-#include "../config.h"	
-
 /**
  * @brief hci connection handle type
  */
