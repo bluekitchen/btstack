@@ -18,7 +18,6 @@
 		9C04B87A107D2BA7002A63D0 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C04B879107D2BA7002A63D0 /* CoreFoundation.framework */; };
 		9C05FC971020D3F300255261 /* socket_connection.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C00F7301017ACC3008DAB17 /* socket_connection.c */; };
 		9C2169D212F9FB7000072B00 /* platform_iphone.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C2169D112F9FB7000072B00 /* platform_iphone.m */; };
-		9C255D4A11E0C59900CDD689 /* run_loop_embedded.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C255D4911E0C59900CDD689 /* run_loop_embedded.c */; };
 		9C3AED88122C201C008046F4 /* remote_device_db_iphone.m in Sources */ = {isa = PBXBuildFile; fileRef = 9C3AED87122C201C008046F4 /* remote_device_db_iphone.m */; };
 		9C46FC3A0FA906F700ABEF05 /* hci_transport_h4.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */; };
 		9C5E0F0E12DE39250013EF2C /* hci_transport_usb.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C2071F210014D3200A07EA4 /* hci_transport_usb.c */; };
@@ -28,11 +27,12 @@
 		9C7B5D0D100FC9CE0065D87E /* linked_list.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7B5ABF100BD3340065D87E /* linked_list.c */; };
 		9C7ECBB50FCC95DD0085DAC5 /* hci_dump.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C7ECBB40FCC95DD0085DAC5 /* hci_dump.c */; };
 		9C88500E0FBF6702004980E4 /* l2cap.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C88500C0FBF6702004980E4 /* l2cap.c */; };
+		9C9652C0142F6C75006409E8 /* remote_device_db_memory.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C9652BE142F6C75006409E8 /* remote_device_db_memory.c */; };
 		9C9F1A3D122F02DD004E21AC /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9C9F1A3C122F02DD004E21AC /* Foundation.framework */; };
 		9CB9846B11BC32A800A2F346 /* sdp_util.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CB9846A11BC32A800A2F346 /* sdp_util.c */; };
+		9CC2B40113DAEA2800D76693 /* memory_pool.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CC2B40013DAEA2800D76693 /* memory_pool.c */; };
+		9CC2B44A13DB481300D76693 /* btstack_memory.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CC2B44813DB481300D76693 /* btstack_memory.c */; };
 		9CC42185136D6C9400BC4229 /* rfcomm.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CC42183136D6C9400BC4229 /* rfcomm.c */; };
-		9CC42187136D76B500BC4229 /* rfcomm-cat.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CC42186136D76B500BC4229 /* rfcomm-cat.c */; };
-		9CC42189136D778700BC4229 /* rfcomm-echo.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CC42188136D778700BC4229 /* rfcomm-echo.c */; };
 		9CC813A50FFC0A51002816F9 /* daemon.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CC813A40FFC0A51002816F9 /* daemon.c */; };
 		9CCE6CEA1025BD0000FCE9F4 /* hci.c in Sources */ = {isa = PBXBuildFile; fileRef = 9C46FC340FA906F700ABEF05 /* hci.c */; };
 		9CE7CDD811BFF5470096F5B1 /* sdp.c in Sources */ = {isa = PBXBuildFile; fileRef = 9CE7CDD711BFF5470096F5B1 /* sdp.c */; };
@@ -72,7 +72,6 @@
 		9C13C9FC10ECED6300B04243 /* BTDevice.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = BTDevice.m; path = CocoaTouch/src/BTDevice.m; sourceTree = "<group>"; };
 		9C13C9FD10ECED6300B04243 /* BTInquiryViewController.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = BTInquiryViewController.h; path = CocoaTouch/include/BTstack/BTInquiryViewController.h; sourceTree = "<group>"; };
 		9C13C9FE10ECED6300B04243 /* BTInquiryViewController.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = BTInquiryViewController.m; path = CocoaTouch/src/BTInquiryViewController.m; sourceTree = "<group>"; };
-		9C1813F71042FCCA00C68F09 /* mitm.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = mitm.c; path = example/mitm.c; sourceTree = "<group>"; };
 		9C2071F210014D3200A07EA4 /* hci_transport_usb.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci_transport_usb.c; path = src/hci_transport_usb.c; sourceTree = "<group>"; };
 		9C2169D112F9FB7000072B00 /* platform_iphone.m */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.objc; name = platform_iphone.m; path = src/platform_iphone.m; sourceTree = "<group>"; };
 		9C255D4911E0C59900CDD689 /* run_loop_embedded.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = run_loop_embedded.c; path = src/run_loop_embedded.c; sourceTree = "<group>"; };
@@ -86,6 +85,7 @@
 		9C46FC380FA906F700ABEF05 /* hci_transport.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci_transport.h; path = src/hci_transport.h; sourceTree = "<group>"; };
 		9C509539112744AA00A30986 /* BTstackManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = BTstackManager.m; path = CocoaTouch/src/BTstackManager.m; sourceTree = "<group>"; };
 		9C50953B112744CD00A30986 /* BTstackManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = BTstackManager.h; path = CocoaTouch/include/BTstack/BTstackManager.h; sourceTree = "<group>"; };
+		9C5B851F13ABD4DB00796016 /* rfcomm-test.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = "rfcomm-test.c"; path = "example/rfcomm-test.c"; sourceTree = "<group>"; };
 		9C5BA8A0110B756500D79BBE /* hci_cmds.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hci_cmds.h; path = include/btstack/hci_cmds.h; sourceTree = "<group>"; };
 		9C5BABAF110E28E900D79BBE /* l2cap-server.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = "l2cap-server.c"; path = "example/l2cap-server.c"; sourceTree = "<group>"; };
 		9C6459DE1037554B0081A00B /* platform_iphone.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = platform_iphone.h; path = src/platform_iphone.h; sourceTree = "<group>"; };
@@ -105,6 +105,8 @@
 		9C78A04C103C6734003B2950 /* FSO_BTstack.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = FSO_BTstack.png; path = resources/FSO_BTstack.png; sourceTree = "<group>"; };
 		9C78A04D103C6734003B2950 /* FSO_BTstackActive.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = FSO_BTstackActive.png; path = resources/FSO_BTstackActive.png; sourceTree = "<group>"; };
 		9C78A0BB103C9DEE003B2950 /* ch.ringwald.BTstack.plist */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text.plist.xml; name = ch.ringwald.BTstack.plist; path = resources/ch.ringwald.BTstack.plist; sourceTree = "<group>"; };
+		9C79D4C113A7F27600F3F83B /* hal_uart_dma.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hal_uart_dma.h; path = include/btstack/hal_uart_dma.h; sourceTree = "<group>"; };
+		9C79D4C313A7F3DF00F3F83B /* hal_tick.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = hal_tick.h; path = include/btstack/hal_tick.h; sourceTree = "<group>"; };
 		9C7B5ABF100BD3340065D87E /* linked_list.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = linked_list.c; path = src/linked_list.c; sourceTree = "<group>"; };
 		9C7B5B7E100D04450065D87E /* test.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = test.c; path = example/test.c; sourceTree = "<group>"; };
 		9C7B5CF6100FC96A0065D87E /* clientTest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = clientTest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -115,13 +117,20 @@
 		9C88500C0FBF6702004980E4 /* l2cap.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = l2cap.c; path = src/l2cap.c; sourceTree = "<group>"; };
 		9C88500D0FBF6702004980E4 /* l2cap.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = l2cap.h; path = src/l2cap.h; sourceTree = "<group>"; };
 		9C9485C41211D58300B66EF1 /* l2cap-throughput.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = "l2cap-throughput.c"; path = "example/l2cap-throughput.c"; sourceTree = "<group>"; };
+		9C9652BD142F6C75006409E8 /* hci_transport_h4_ehcill_dma.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci_transport_h4_ehcill_dma.c; path = src/hci_transport_h4_ehcill_dma.c; sourceTree = "<group>"; };
+		9C9652BE142F6C75006409E8 /* remote_device_db_memory.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = remote_device_db_memory.c; path = src/remote_device_db_memory.c; sourceTree = "<group>"; };
 		9C978672113DC04900380B3E /* ch.ringwald.BTstackTCP.plist */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text.plist.xml; name = ch.ringwald.BTstackTCP.plist; path = resources/ch.ringwald.BTstackTCP.plist; sourceTree = "<group>"; };
 		9C9F1A3C122F02DD004E21AC /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		9CA3C0900FB8B3C4005F48DE /* TODO.txt */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text; path = TODO.txt; sourceTree = "<group>"; };
 		9CAA573610A5D87400D0E1A9 /* inquiry.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = inquiry.c; path = example/inquiry.c; sourceTree = "<group>"; };
+		9CAC0824139B882100F22A9C /* hci_transport_h4_dma.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = hci_transport_h4_dma.c; path = src/hci_transport_h4_dma.c; sourceTree = "<group>"; };
 		9CB9846A11BC32A800A2F346 /* sdp_util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sdp_util.c; path = src/sdp_util.c; sourceTree = "<group>"; };
 		9CBE154810A354FF00597802 /* package.sh */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = text.script.sh; path = package.sh; sourceTree = "<group>"; };
 		9CC152C61009052100223347 /* config.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
+		9CC2B3FF13DAEA1900D76693 /* memory_pool.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = memory_pool.h; path = include/btstack/memory_pool.h; sourceTree = "<group>"; };
+		9CC2B40013DAEA2800D76693 /* memory_pool.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = memory_pool.c; path = src/memory_pool.c; sourceTree = "<group>"; };
+		9CC2B44813DB481300D76693 /* btstack_memory.c */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.c; name = btstack_memory.c; path = src/btstack_memory.c; sourceTree = "<group>"; };
+		9CC2B44913DB481300D76693 /* btstack_memory.h */ = {isa = PBXFileReference; fileEncoding = 5; lastKnownFileType = sourcecode.c.h; name = btstack_memory.h; path = src/btstack_memory.h; sourceTree = "<group>"; };
 		9CC42183136D6C9400BC4229 /* rfcomm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = rfcomm.c; path = src/rfcomm.c; sourceTree = "<group>"; };
 		9CC42184136D6C9400BC4229 /* rfcomm.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rfcomm.h; path = src/rfcomm.h; sourceTree = "<group>"; };
 		9CC42186136D76B500BC4229 /* rfcomm-cat.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "rfcomm-cat.c"; path = "example/rfcomm-cat.c"; sourceTree = "<group>"; };
@@ -202,6 +211,10 @@
 		08FB7795FE84155DC02AAC07 /* Source */ = {
 			isa = PBXGroup;
 			children = (
+				9C9652BE142F6C75006409E8 /* remote_device_db_memory.c */,
+				9CC2B44813DB481300D76693 /* btstack_memory.c */,
+				9CC2B44913DB481300D76693 /* btstack_memory.h */,
+				9CC2B40013DAEA2800D76693 /* memory_pool.c */,
 				9CEB4B62107118E800DD5720 /* Makefile.in */,
 				9C7ECB810FCC85650085DAC5 /* bt_control.h */,
 				9C7ECB830FCC85650085DAC5 /* bt_control_iphone.h */,
@@ -217,6 +230,8 @@
 				9C46FC380FA906F700ABEF05 /* hci_transport.h */,
 				9C46FC360FA906F700ABEF05 /* hci_transport_h4.c */,
 				9C7559AB11B9798400156EF5 /* hci_transport_h5.c */,
+				9CAC0824139B882100F22A9C /* hci_transport_h4_dma.c */,
+				9C9652BD142F6C75006409E8 /* hci_transport_h4_ehcill_dma.c */,
 				9C255D7611E0DD2C00CDD689 /* hci_transport_h4_stellaris.c */,
 				9C2071F210014D3200A07EA4 /* hci_transport_usb.c */,
 				9C88500C0FBF6702004980E4 /* l2cap.c */,
@@ -317,13 +332,13 @@
 		9C7B5B81100D04520065D87E /* Example */ = {
 			isa = PBXGroup;
 			children = (
+				9C5B851F13ABD4DB00796016 /* rfcomm-test.c */,
 				9CC42186136D76B500BC4229 /* rfcomm-cat.c */,
 				9CC42188136D778700BC4229 /* rfcomm-echo.c */,
 				9C9485C41211D58300B66EF1 /* l2cap-throughput.c */,
 				9C5BABAF110E28E900D79BBE /* l2cap-server.c */,
 				9CAA573610A5D87400D0E1A9 /* inquiry.c */,
 				9C13C9F610ECECE900B04243 /* mouse.c */,
-				9C1813F71042FCCA00C68F09 /* mitm.c */,
 				9C7B5B7E100D04450065D87E /* test.c */,
 			);
 			name = Example;
@@ -334,8 +349,11 @@
 			children = (
 				9C5BA8A0110B756500D79BBE /* hci_cmds.h */,
 				9CEB4B8010715EB000DD5720 /* linked_list.h */,
+				9CC2B3FF13DAEA1900D76693 /* memory_pool.h */,
 				9CEB4B8110715EB000DD5720 /* utils.h */,
 				9CEB4B7910715DE400DD5720 /* btstack.h */,
+				9C79D4C113A7F27600F3F83B /* hal_uart_dma.h */,
+				9C79D4C313A7F3DF00F3F83B /* hal_tick.h */,
 				9CEB4B7A10715DE400DD5720 /* run_loop.h */,
 				9CE7CDDA11BFF5810096F5B1 /* sdp_util.h */,
 			);
@@ -459,13 +477,13 @@
 				9C04B876107D2B7C002A63D0 /* run_loop_cocoa.m in Sources */,
 				9CB9846B11BC32A800A2F346 /* sdp_util.c in Sources */,
 				9CE7CDD811BFF5470096F5B1 /* sdp.c in Sources */,
-				9C255D4A11E0C59900CDD689 /* run_loop_embedded.c in Sources */,
 				9C3AED88122C201C008046F4 /* remote_device_db_iphone.m in Sources */,
 				9C5E0F0E12DE39250013EF2C /* hci_transport_usb.c in Sources */,
 				9C2169D212F9FB7000072B00 /* platform_iphone.m in Sources */,
 				9CC42185136D6C9400BC4229 /* rfcomm.c in Sources */,
-				9CC42187136D76B500BC4229 /* rfcomm-cat.c in Sources */,
-				9CC42189136D778700BC4229 /* rfcomm-echo.c in Sources */,
+				9CC2B40113DAEA2800D76693 /* memory_pool.c in Sources */,
+				9CC2B44A13DB481300D76693 /* btstack_memory.c in Sources */,
+				9C9652C0142F6C75006409E8 /* remote_device_db_memory.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
