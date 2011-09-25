@@ -36,7 +36,7 @@
  *
  */
 
-#include "../config.h"
+#include "config.h"
 
 #include "hci.h"
 

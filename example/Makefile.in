@@ -1,6 +1,6 @@
 CC = @CC@
 LDFLAGS  = @LDFLAGS@ -lBTstack -L../src
-CPPFLAGS = @CPPFLAGS@ -I../include
+CPPFLAGS = @CPPFLAGS@ -I.. -I../include
 prefix = @prefix@
 
 all: test rfcomm-cat rfcomm-echo  rfcomm-test inquiry l2cap-server l2cap-throughput

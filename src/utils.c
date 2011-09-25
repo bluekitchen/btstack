@@ -37,7 +37,7 @@
  *  Created by Matthias Ringwald on 7/23/09.
  */
 
-#include "../config.h"
+#include "config.h"
 #include <btstack/utils.h>
 #include <stdio.h>
 #include "debug.h"

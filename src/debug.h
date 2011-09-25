@@ -35,7 +35,7 @@
  *  allow to funnel debug & error messages 
  */
 
-#include "../config.h"
+#include "config.h"
 
 #include <stdio.h>
 

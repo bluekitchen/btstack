@@ -44,7 +44,7 @@
 #include "hci_dump.h"
 #include "hci.h"
 #include "hci_transport.h"
-#include "../config.h"
+#include "config.h"
 
 #ifndef EMBEDDED
 #include <fcntl.h>        // open

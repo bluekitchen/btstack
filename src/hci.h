@@ -38,7 +38,7 @@
 
 #pragma once
 
-#include "../config.h"
+#include "config.h"
 
 #include <btstack/hci_cmds.h>
 #include <btstack/utils.h>
