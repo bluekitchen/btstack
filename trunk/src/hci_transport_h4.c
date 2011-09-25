@@ -38,7 +38,7 @@
  *  Created by Matthias Ringwald on 4/29/09.
  */
 
-#include "../config.h"
+#include "config.h"
 
 #undef USE_NETGRAPH
 
