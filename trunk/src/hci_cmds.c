@@ -323,6 +323,16 @@ const hci_cmd_t hci_write_simple_pairing_mode = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x56), "1"
 // mode: 0 = off, 1 = on
 };
+const hci_cmd_t hci_read_le_host_supported = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x6c), ""
+// params: none
+// return: status, le supported host, simultaneous le host
+};
+const hci_cmd_t hci_write_le_host_supported = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x6d), "11"
+// param: le supported host, simultaneous le host
+// return: status
+};
 
 /**
  * Informational Parameters
