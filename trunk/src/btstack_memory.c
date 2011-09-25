@@ -43,7 +43,7 @@
 
 #include <stdlib.h>
 
-#include "../config.h"
+#include "config.h"
 #include "hci.h"
 #include "l2cap.h"
 #include "rfcomm.h"

@@ -43,7 +43,7 @@
 #include "hci.h"
 #include "debug.h"
 
-#include "../config.h"
+#include "config.h"
 
 #include <btstack/btstack.h>
 

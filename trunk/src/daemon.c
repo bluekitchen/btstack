@@ -38,7 +38,7 @@
  *
  */
 
-#include "../config.h"
+#include "config.h"
 
 #include <pthread.h>
 #include <signal.h>
