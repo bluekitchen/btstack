@@ -61,7 +61,7 @@ void memory_pool_create(memory_pool_t *pool, void * storage, int count, int bloc
 void * memory_pool_get(memory_pool_t *pool){
     node_t *free_blocks = (node_t*) pool;
     
-    if (!free_blocks) return NULL;
+    if (!free_blocks->next) return NULL;
     
     // remove first
     node_t *node      = free_blocks->next;
