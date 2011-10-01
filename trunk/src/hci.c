@@ -395,6 +395,8 @@ static void event_handler(uint8_t *packet, int size){
     hci_connection_t * conn;
     int i;
         
+    // printf("HCI:EVENT:%02x\n", packet[0]);
+    
     switch (packet[0]) {
                         
         case HCI_EVENT_COMMAND_COMPLETE:
@@ -571,6 +573,56 @@ static void event_handler(uint8_t *packet, int size){
             }
             break;
 
+#ifdef HAVE_BLE
+        case HCI_EVENT_LE_META:
+            switch (packet[2]) {
+                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    // Connection management
+                    bt_flip_addr(addr, &packet[8]);
+                    log_info("LE Connection_complete (status=%u) %s\n", packet[3], bd_addr_to_str(addr));
+                    // LE connections are auto-accepted, so just create a connection if there isn't one already
+                    conn = connection_for_address(addr);
+                    if (packet[3]){
+                        if (conn){
+                            // outgoing connection failed, remove entry
+                            linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
+                            btstack_memory_hci_connection_free( conn );
+                            
+                        }
+                        // if authentication error, also delete link key
+                        if (packet[3] == 0x05) {
+                            hci_drop_link_key_for_bd_addr(&addr);
+                        }
+                        break;
+                    }
+                    if (!conn){
+                        conn = create_connection_for_addr(addr);
+                    }
+                    if (!conn){
+                        // no memory
+                        break;
+                    }
+                    
+                    conn->state = OPEN;
+                    conn->con_handle = READ_BT_16(packet, 4);
+                    
+                    // TODO: store - role, peer address type, conn_interval, conn_latency, supervision timeout, master clock
+
+                    // restart timer
+                    // run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
+                    // run_loop_add_timer(&conn->timeout);
+                    
+                    log_info("New connection: handle %u, %s\n", conn->con_handle, bd_addr_to_str(conn->address));
+                    
+                    hci_emit_nr_connections_changed();
+                    break;
+                    
+                default:
+                    break;
+            }
+            break;
+#endif            
+            
         default:
             break;
     }
