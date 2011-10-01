@@ -97,8 +97,15 @@ extern "C" {
 #define HCI_EVENT_PACKET_TYPE_CHANGED                      0x1D
 #define HCI_EVENT_INQUIRY_RESULT_WITH_RSSI		      	   0x22
 #define HCI_EVENT_EXTENDED_INQUIRY_RESPONSE                0x2F
+#define HCI_EVENT_LE_META                                  0x3E
 #define HCI_EVENT_VENDOR_SPECIFIC				           0xFF
 
+#define HCI_SUBEVENT_LE_CONNECTION_COMPLETE                0x01
+#define HCI_SUBEVENT_LE_ADVERTISING_REPORT                 0x02
+#define HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE         0x03
+#define HCI_SUBEVENT_LE_READ_REMOTE_USED_FEATURES_COMPLETE 0x04
+#define HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST              0x05
+    
 // last used HCI_EVENT in 2.1 is 0x3d
 
 // events 0x50-0x5f are used internally
