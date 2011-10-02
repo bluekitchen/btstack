@@ -64,7 +64,7 @@ hid_demo.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} hid_demo.o
 spp_accel.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} spp_accel.o ../firmware/hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} spp_counter.o ../firmware/hal_adc.o
+spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} spp_counter.o ../firmware/hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} spp_flowcontrol.o ../firmware/hal_adc.o
