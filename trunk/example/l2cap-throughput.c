@@ -128,7 +128,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					handle     = READ_BT_16(packet, 8); 
 					psm        = READ_BT_16(packet, 10); 
 					local_cid  = READ_BT_16(packet, 12); 
-					remote_cid = READ_BT_16(packet, 14); 
+					// remote_cid = READ_BT_16(packet, 14); 
 					printf("L2CAP_EVENT_INCOMING_CONNECTION %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x\n", bd_addr_to_str(event_addr), handle, psm, local_cid);
 					// accept
 					bt_send_cmd(&l2cap_accept_connection, local_cid);
