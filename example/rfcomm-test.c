@@ -54,8 +54,8 @@ bd_addr_t addr = { };
 uint16_t con_handle;
 char pin[17];
 int counter = 0;
-uint16_t rfcomm_channel_nr;
-uint16_t rfcomm_channel_id;
+uint16_t rfcomm_channel_id = 0;
+uint16_t mtu = 0;
 uint8_t service_buffer[100];
 uint8_t test_data[1021];
 
@@ -140,9 +140,7 @@ void create_spp_service(uint8_t *service, int service_id){
 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	bd_addr_t event_addr;
-	uint16_t mtu;
 	uint16_t rfcomm_channel_nr;
-	uint16_t rfcomm_channel_id;
 	
 	switch (packet_type) {
 			
