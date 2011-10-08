@@ -63,7 +63,7 @@
 
 // prototypes
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
-static int usb_close();
+static int usb_close(void *transport_config);
     
 enum {
     LIB_USB_CLOSED = 0,
@@ -80,8 +80,10 @@ static hci_transport_t * hci_transport_usb = NULL;
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
 // libusb
+#if !USB_VENDOR_ID || !USB_PRODUCT_ID
 static struct libusb_device_descriptor desc;
 static libusb_device        * dev;
+#endif
 static libusb_device_handle * handle;
 
 #define ASYNC_BUFFERS 4
@@ -105,7 +107,7 @@ static int acl_in_addr;
 static int acl_out_addr;
 
 #if !USB_VENDOR_ID || !USB_PRODUCT_ID
-void scan_for_bt_endpoints() {
+void scan_for_bt_endpoints(void) {
     int r;
 
     // get endpoints from interface descriptor
@@ -281,10 +283,12 @@ void usb_process_ts(timer_source_t *timer) {
 }
 
 static int usb_open(void *transport_config){
+    int r,c;
+#if !USB_VENDOR_ID || !USB_PRODUCT_ID
     libusb_device * aDev;
     libusb_device **devs;
-    int r,c;
     ssize_t cnt;
+#endif
 
     handle_packet = NULL;
 
@@ -307,7 +311,7 @@ static int usb_open(void *transport_config){
     handle = libusb_open_device_with_vid_pid(NULL, USB_VENDOR_ID, USB_PRODUCT_ID);
 
     if (!handle){
-        usb_close();
+        usb_close(handle);
         return -1;
     }
 #else
@@ -315,14 +319,14 @@ static int usb_open(void *transport_config){
     log_info("Scanning for a device");
     cnt = libusb_get_device_list(NULL, &devs);
     if (cnt < 0) {
-        usb_close();
+        usb_close(handle);
         return -1;
     }
     // Find BT modul
     aDev  = scan_for_bt_device(devs);
     if (!aDev){
         libusb_free_device_list(devs, 1);
-        usb_close();
+        usb_close(handle);
         return -1;
     }
 
@@ -332,7 +336,7 @@ static int usb_open(void *transport_config){
     libusb_free_device_list(devs, 1);
 
     if (r < 0) {
-        usb_close();
+        usb_close(handle);
         return r;
     }
 #endif
@@ -344,16 +348,16 @@ static int usb_open(void *transport_config){
 #ifndef __APPLE__
     r = libusb_kernel_driver_active(handle, 0);
     if (r < 0) {
-        log_error(stderr, "libusb_kernel_driver_active error %d\n", r);
-        usb_close();
+        log_error("libusb_kernel_driver_active error %d\n", r);
+        usb_close(handle);
         return r;
     }
 
     if (r == 1) {
         r = libusb_detach_kernel_driver(handle, 0);
         if (r < 0) {
-            log_error(stderr, "libusb_detach_kernel_driver error %d\n", r);
-            usb_close();
+            log_error("libusb_detach_kernel_driver error %d\n", r);
+            usb_close(handle);
             return r;
         }
     }
@@ -366,7 +370,7 @@ static int usb_open(void *transport_config){
     r = libusb_claim_interface(handle, 0);
     if (r < 0) {
         log_error("Error claiming interface %d\n", r);
-        usb_close();
+        usb_close(handle);
         return r;
     }
 
@@ -383,7 +387,7 @@ static int usb_open(void *transport_config){
         bulk_in_transfer[c]  = libusb_alloc_transfer(0); // 0 isochronous transfers ACL in
  
         if ( !event_in_transfer[c] || !bulk_in_transfer[c] ) {
-            usb_close();
+            usb_close(handle);
             return LIBUSB_ERROR_NO_MEM;
         }
     }
@@ -398,7 +402,7 @@ static int usb_open(void *transport_config){
         r = libusb_submit_transfer(event_in_transfer[c]);
         if (r) {
             log_error("Error submitting interrupt transfer %d\n", r);
-            usb_close();
+            usb_close(handle);
             return r;
         }
  
@@ -409,7 +413,7 @@ static int usb_open(void *transport_config){
         r = libusb_submit_transfer(bulk_in_transfer[c]);
         if (r) {
             log_error("Error submitting bulk in transfer %d\n", r);
-            usb_close();
+            usb_close(handle);
             return r;
         }
     }
@@ -439,11 +443,14 @@ static int usb_open(void *transport_config){
 
     return 0;
 }
-static int usb_close(){
+static int usb_close(void *handle){
     int c;
     // @TODO: remove all run loops!
 
     switch (libusb_state){
+        case LIB_USB_CLOSED:
+            break;
+
         case LIB_USB_TRANSFERS_ALLOCATED:
             libusb_state = LIB_USB_INTERFACE_CLAIMED;
 
@@ -536,7 +543,7 @@ static void usb_register_packet_handler(void (*handler)(uint8_t packet_type, uin
     packet_handler = handler;
 }
 
-static const char * usb_get_transport_name(){
+static const char * usb_get_transport_name(void){
     return "USB";
 }
 
