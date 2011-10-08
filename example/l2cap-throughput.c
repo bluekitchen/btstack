@@ -79,7 +79,6 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	uint16_t handle;
 	uint16_t psm;
 	uint16_t local_cid;
-	uint16_t remote_cid;
 	char pin[20];
 	int i;
 	
