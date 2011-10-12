@@ -1,0 +1,74 @@
+#==============================================================================
+# (C) Copyright Albis Technologies Ltd 2011
+#==============================================================================
+#                Example Code
+#==============================================================================
+# File name:     project.settings
+#
+# Notes:         -
+#==============================================================================
+
+# Choose evaluation board. Available:
+#   EVAL_BOARD=MICRIUM (UM0780)
+#   EVAL_BOARD=OLIMEX (STM32-P107)
+EVAL_BOARD=MICRIUM
+
+# Choose Bluetooth chipset. Available:
+#   BT_CHIPSET=CSR_BC4 (CSR BlueCore4)
+#   BT_CHIPSET=PAN1315 (Panasonic PAN1315)
+BT_CHIPSET=CSR_BC4
+
+# CSR BlueCore4 only : change to higher baud rate during initialisation.
+# Set 0 for no change.
+#   1 :  38400
+#   2 :  57600
+#   3 : 115200
+#   4 : 230400
+#   5 : 460800
+#   6 : 500000
+#   7 : 921600
+ifeq ($(BT_CHIPSET),CSR_BC4)
+  CSR_BC4_CHANGE_BAUDRATE_ID=6
+endif
+
+# Choose whether or not STM32 USART DMA in use [yes|no].
+STM32_USART_DMA=no
+
+# Notification LEDs.
+#
+#   Micrium STM32 evaluation board UM0780
+#     Green  : PD13
+#     Orange : PD14
+#     Red    : PD15
+#
+#   Olimex STM32 evaluation board STM32-P107
+#     Green  : PC6
+#     Orange : PC7
+#     Red    : none
+ifeq ($(EVAL_BOARD),MICRIUM)
+  LED_PORT=4
+  LED_GREEN_PRESENT=1
+  LED_GREEN=13
+  LED_ORANGE_PRESENT=1
+  LED_ORANGE=14
+  LED_RED_PRESENT=1
+  LED_RED=15
+endif
+
+ifeq ($(EVAL_BOARD),OLIMEX)
+  LED_PORT=3
+  LED_GREEN_PRESENT=1
+  LED_GREEN=6
+  LED_ORANGE_PRESENT=1
+  LED_ORANGE=7
+  LED_RED_PRESENT=0
+  LED_RED=0
+endif
+
+LED_DEFINES=-DLED_PORT=$(LED_PORT)
+LED_DEFINES+=-DLED_GREEN_PRESENT=$(LED_GREEN_PRESENT)
+LED_DEFINES+=-DLED_GREEN=$(LED_GREEN)
+LED_DEFINES+=-DLED_ORANGE_PRESENT=$(LED_ORANGE_PRESENT)
+LED_DEFINES+=-DLED_ORANGE=$(LED_ORANGE)
+LED_DEFINES+=-DLED_RED_PRESENT=$(LED_RED_PRESENT)
+LED_DEFINES+=-DLED_RED=$(LED_RED)
