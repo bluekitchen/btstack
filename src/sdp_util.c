@@ -39,7 +39,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h>
+#include <stdint.h>
 
 // workaround for missing PRIx32 on mspgcc (16-bit MCU)
 #ifndef PRIx32
@@ -687,5 +687,5 @@ void sdp_create_spp_service(uint8_t *service, int service_id, const char *name){
 	
 	// 0x0100 "ServiceName"
 	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-	de_add_data(service,  DE_STRING, sizeof(name), (uint8_t *) name);
+	de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
 }
