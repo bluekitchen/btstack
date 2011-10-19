@@ -1110,7 +1110,7 @@ void hci_run(){
                 // send disconnect
                 if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
                 
-                log_info("HCI_STATE_HALTING, connection %lu, handle %u\n", (uintptr_t) connection, (uint16_t)connection->con_handle);
+                log_info("HCI_STATE_HALTING, connection %p, handle %u\n", connection, (uint16_t)connection->con_handle);
                 hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
 
                 // send disconnected event right away - causes higher layer connections to get closed, too.
@@ -1145,7 +1145,7 @@ void hci_run(){
                         // send disconnect
                         if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
 
-                        log_info("HCI_STATE_FALLING_ASLEEP, connection %lu, handle %u\n", (uintptr_t) connection, (uint16_t)connection->con_handle);
+                        log_info("HCI_STATE_FALLING_ASLEEP, connection %p, handle %u\n", connection, (uint16_t)connection->con_handle);
                         hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
                         
                         // send disconnected event right away - causes higher layer connections to get closed, too.
