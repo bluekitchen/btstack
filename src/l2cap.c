@@ -82,9 +82,13 @@ static int l2cap_channel_ready_for_open(l2cap_channel_t *channel);
 
 
 void l2cap_init(){
-    
     new_credits_blocked = 0;
     signaling_responses_pending = 0;
+    
+    l2cap_channels = NULL;
+    l2cap_services = NULL;
+
+    packet_handler = null_packet_handler;
     
     // 
     // register callback with HCI
