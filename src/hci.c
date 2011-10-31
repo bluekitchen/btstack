@@ -512,7 +512,7 @@ static void event_handler(uint8_t *packet, int size){
             if (!hci_stack.remote_device_db) break;
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], HANDLE_LINK_KEY_REQUEST);
             hci_run();
-            // request already answered
+            // request handled by hci_run() as HANDLE_LINK_KEY_REQUEST gets set
             return;
             
         case HCI_EVENT_LINK_KEY_NOTIFICATION:
@@ -525,6 +525,10 @@ static void event_handler(uint8_t *packet, int size){
             
         case HCI_EVENT_PIN_CODE_REQUEST:
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_PIN_CODE_REQUEST);
+            // PIN CODE REQUEST means the link key request didn't succee -> delete stored link key
+            if (!hci_stack.remote_device_db) break;
+            bt_flip_addr(addr, &packet[2]);
+            hci_stack.remote_device_db->delete_link_key(&addr);
             break;
             
 #ifndef EMBEDDED
