@@ -689,9 +689,7 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
     // no connections yet
     hci_stack.connections = NULL;
     hci_stack.discoverable = 0;
-    
-    // enable page scan by until l2cap takes over control
-    hci_stack.connectable = 1;
+    hci_stack.connectable = 0;
     
     // no pending cmds
     hci_stack.decline_reason = 0;
