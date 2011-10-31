@@ -4,7 +4,7 @@ BUNDLE_NAME = BTstack
 BTstack_FILES = PrefsViewController.m BluetoothController.m BluetoothTableViewAdapter.m
 BTstack_INSTALL_PATH = /Library/PreferenceBundles
 BTstack_FRAMEWORKS = UIKit
-BTstack_CFLAGS = -I../include -g
+BTstack_CFLAGS = -I.. -I../include -g
 BTstack_LDFLAGS = -L../src -lbtstack
 BTstack_PRIVATE_FRAMEWORKS = Preferences
 
