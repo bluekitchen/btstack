@@ -286,7 +286,8 @@ typedef struct {
     uint8_t   cmds_ready;
     
     uint8_t   discoverable;
-
+    uint8_t   connectable;
+    
     /* buffer for scan enable cmd - 0xff no change */
     uint8_t   new_scan_enable_value;
     
@@ -306,8 +307,9 @@ void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *p
 void hci_close(void);
 
 // power and inquriy scan control
-int hci_power_control(HCI_POWER_MODE mode);
+int  hci_power_control(HCI_POWER_MODE mode);
 void hci_discoverable_control(uint8_t enable);
+void hci_connectable_control(uint8_t enable);
 
 /**
  * run the hci control loop once
