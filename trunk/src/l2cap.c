@@ -94,6 +94,7 @@ void l2cap_init(){
     // register callback with HCI
     //
     hci_register_packet_handler(&l2cap_packet_handler);
+    hci_connectable_control(0); // no services yet
 }
 
 
@@ -982,6 +983,9 @@ void l2cap_register_service_internal(void *connection, btstack_packet_handler_t 
 
     // add to services list
     linked_list_add(&l2cap_services, (linked_item_t *) service);
+    
+    // enable page scan
+    hci_connectable_control(1);
 }
 
 void l2cap_unregister_service_internal(void *connection, uint16_t psm){
@@ -989,6 +993,10 @@ void l2cap_unregister_service_internal(void *connection, uint16_t psm){
     if (!service) return;
     linked_list_remove(&l2cap_services, (linked_item_t *) service);
     btstack_memory_l2cap_service_free(service);
+    
+    // disable page scan when no services registered
+    if (!linked_list_empty(&l2cap_services)) return;
+    hci_connectable_control(0);
 }
 
 //
