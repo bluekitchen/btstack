@@ -98,6 +98,11 @@ if test "x$target" = xiphone; then
     if test -e "$DEVELOPER_PATH/usr/bin/arm-apple-darwin10-gcc-$GCC_VERSION"; then
 	   darwin_v='10'
     fi
+    # Set up check for even newer compiler:
+    if test -e "$DEVELOPER_PATH/usr/bin/arm-apple-darwin10-llvm-gcc-$GCC_VERSION"; then
+       compiler_prefix='-llvm'
+	   darwin_v='10'
+    fi
     
     REMOTE_DEVICE_DB_SOURCES="remote_device_db_iphone.m"
     REMOTE_DEVICE_DB="remote_device_db_iphone"
@@ -111,8 +116,8 @@ if test "x$target" = xiphone; then
             echo "SDK path: $SDK_PATH"
             echo "iPhone IP for install-iphone target: $IPHONE_IP"
             
-            CC="$DEVELOPER_PATH/usr/bin/arm-apple-darwin$darwin_v-gcc-$GCC_VERSION"
-            OBJC="$DEVELOPER_PATH/usr/bin/arm-apple-darwin$darwin_v-g++-$GCC_VERSION"
+            CC="$DEVELOPER_PATH/usr/bin/arm-apple-darwin$darwin_v$compiler_prefix-gcc-$GCC_VERSION"
+            OBJC="$DEVELOPER_PATH/usr/bin/arm-apple-darwin$darwin_v$compiler_prefix-g++-$GCC_VERSION"
             CFLAGS="$CFLAGS -g"
             CPPFLAGS="$CPPFLAGS -isysroot $SDK_PATH"
             LDFLAGS="$LDFLAGS -framework Foundation -framework CoreFoundation -framework UIKit -lobjc"
@@ -176,7 +181,7 @@ else
     case "$host_os" in
         darwin*)
             # on Mac, create universal - helps to build 32-bit iPhone Simulator apps on 64-bit machines
-            LDFLAGS="$LDFLAGS -arch ppc -arch i386 -arch x86_64 -framework CoreFoundation"
+            LDFLAGS="$LDFLAGS -framework CoreFoundation"
             ;;
     esac	  
     USE_LDID="#"
@@ -198,7 +203,7 @@ AM_CONDITIONAL(USE_PREFSBUNDLE, [test "x$USE_PREFSBUNDLE" == "xyes"])
 
 # summary
 
-# echo "CFLAGS:              $CFLAGS"
+echo "CC:                  $CC"
 echo "CPPFLAGS:            $CPPFLAGS"
 echo "LDFLAGS:             $LDFLAGS"
 
