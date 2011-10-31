@@ -40,6 +40,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <inttypes.h>   // PRIx32
 
 // workaround for missing PRIx32 on mspgcc (16-bit MCU)
 #ifndef PRIx32
