@@ -1453,8 +1453,9 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                         channel->state_var &= ~RFCOMM_CHANNEL_STATE_VAR_SEND_CREDITS;
                         channel->state_var |= RFCOMM_CHANNEL_STATE_VAR_SENT_CREDITS;
                         if (channel->new_credits_incoming) {
-                            rfcomm_channel_send_credits(channel, channel->new_credits_incoming);
+                            uint8_t new_credits = channel->new_credits_incoming;
                             channel->new_credits_incoming = 0;
+                            rfcomm_channel_send_credits(channel, new_credits);
                         }
                         break;
 
