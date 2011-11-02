@@ -341,9 +341,6 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
         case RFCOMM_DATA_PACKET:
             // process l2cap packet...
             err = rfcomm_send_internal(channel, data, length);
-            if (err == BTSTACK_ACL_BUFFERS_FULL) {
-                l2cap_block_new_credits(1);
-            }
             break;
         case DAEMON_EVENT_PACKET:
             switch (data[0]) {
