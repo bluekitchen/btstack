@@ -114,7 +114,7 @@ static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth
 
 static int global_enable = 0;
 
-static remote_device_db_t * remote_device_db = NULL;
+static remote_device_db_t const * remote_device_db = NULL;
 static int rfcomm_channel_generator = 1;
 
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
