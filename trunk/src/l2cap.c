@@ -1027,4 +1027,3 @@ void l2cap_close_connection(void *connection){
     // process
     l2cap_run();
 }
-    
