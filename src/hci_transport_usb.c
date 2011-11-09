@@ -169,7 +169,7 @@ static libusb_device * scan_for_bt_device(libusb_device **devs) {
 }
 #endif
 
-static void async_callback(struct libusb_transfer *transfer)
+static void LIBUSB_CALL async_callback(struct libusb_transfer *transfer)
 {
     int r;
     //log_info("in async_callback %d\n", transfer->endpoint);
@@ -308,9 +308,11 @@ static int usb_open(void *transport_config){
     
 #if USB_VENDOR_ID && USB_PRODUCT_ID
     // Use a specified device
+    log_info("Want vend: %04x, prod: %04x\n", USB_VENDOR_ID, USB_PRODUCT_ID);
     handle = libusb_open_device_with_vid_pid(NULL, USB_VENDOR_ID, USB_PRODUCT_ID);
 
     if (!handle){
+        log_error("libusb_open_device_with_vid_pid failed!\n");
         usb_close(handle);
         return -1;
     }
