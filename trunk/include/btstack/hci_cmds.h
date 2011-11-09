@@ -150,6 +150,9 @@ extern "C" {
 // data: event(8), len(8), local_cid(16), credits(8)
 #define L2CAP_EVENT_CREDITS								   0x74
 
+// data: event(8), len(8), status (8), psm (16)
+#define L2CAP_EVENT_SERVICE_REGISTERED                     0x75
+
 
 // RFCOMM EVENTS
 	
@@ -205,7 +208,8 @@ extern "C" {
 #define L2CAP_CONFIG_RESPONSE_RESULT_UNACCEPTABLE_PARAMS   0x67
 #define L2CAP_CONFIG_RESPONSE_RESULT_REJECTED              0x68
 #define L2CAP_CONFIG_RESPONSE_RESULT_UNKNOWN_OPTIONS       0x69
-
+#define L2CAP_SERVICE_ALREADY_REGISTERED                   0x6a
+    
 #define RFCOMM_MULTIPLEXER_STOPPED                         0x70
 #define RFCOMM_CHANNEL_ALREADY_REGISTERED                  0x71
 #define RFCOMM_NO_OUTGOING_CREDITS                         0x72
