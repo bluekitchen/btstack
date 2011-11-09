@@ -1707,14 +1707,14 @@ void rfcomm_register_service2(void * connection, uint8_t channel, uint16_t max_f
     // check if already registered
     rfcomm_service_t * service = rfcomm_service_for_channel(channel);
     if (service){
-        rfcomm_emit_service_registered(service->connection, RFCOMM_CHANNEL_ALREADY_REGISTERED, channel);
+        rfcomm_emit_service_registered(connection, RFCOMM_CHANNEL_ALREADY_REGISTERED, channel);
         return;
     }
     
     // alloc structure
     service = btstack_memory_rfcomm_service_get();
     if (!service) {
-        rfcomm_emit_service_registered(service->connection, BTSTACK_MEMORY_ALLOC_FAILED, channel);
+        rfcomm_emit_service_registered(connection, BTSTACK_MEMORY_ALLOC_FAILED, channel);
         return;
     }
     
@@ -1734,7 +1734,7 @@ void rfcomm_register_service2(void * connection, uint8_t channel, uint16_t max_f
     linked_list_add(&rfcomm_services, (linked_item_t *) service);
     
     // done
-    rfcomm_emit_service_registered(service->connection, 0, channel);
+    rfcomm_emit_service_registered(connection, 0, channel);
 }
 
 void rfcomm_register_service_with_initial_credits_internal(void * connection, uint8_t channel, uint16_t max_frame_size, uint8_t initial_credits){
