@@ -445,7 +445,7 @@ static int usb_open(void *transport_config){
 
     return 0;
 }
-static int usb_close(void *handle){
+static int usb_close(void *transport_config){
     int c;
     // @TODO: remove all run loops!
 
