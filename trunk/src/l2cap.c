@@ -976,7 +976,7 @@ void l2cap_register_service_internal(void *connection, btstack_packet_handler_t 
     l2cap_service_t *service = l2cap_get_service(psm);
     if (service) {
         log_error("l2cap_register_service_internal: PSM %u already registered\n", psm);
-        l2cap_emit_service_registered(connection, L2CAP_CHANNEL_ALREADY_REGISTERED, psm);
+        l2cap_emit_service_registered(connection, L2CAP_SERVICE_ALREADY_REGISTERED, psm);
         return;
     }
     
