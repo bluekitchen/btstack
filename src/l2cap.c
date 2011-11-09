@@ -344,8 +344,10 @@ void l2cap_run(void){
     
     uint8_t  config_options[4];
     linked_item_t *it;
-    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-        
+    linked_item_t *next;
+    for (it = (linked_item_t *) l2cap_channels; it ; it = next){
+        next = it->next;    // cache next item as current item might get freed
+
         if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) break;
         if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) break;
         
@@ -366,8 +368,8 @@ void l2cap_run(void){
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE:
                 l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, 0, 0, channel->reason, 0);
                 // discard channel - l2cap_finialize_channel_close without sending l2cap close event
-                linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
-                btstack_memory_l2cap_channel_free(channel);
+                linked_list_remove(&l2cap_channels, (linked_item_t *) channel); // -- remove from list
+                btstack_memory_l2cap_channel_free(channel); 
                 break;
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT:
@@ -407,7 +409,7 @@ void l2cap_run(void){
 
             case L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE:
                 l2cap_send_signaling_packet( channel->handle, DISCONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid);   
-                l2cap_finialize_channel_close(channel);
+                l2cap_finialize_channel_close(channel);  // -- remove from list
                 break;
                 
             case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST:
