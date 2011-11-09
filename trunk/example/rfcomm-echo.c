@@ -175,7 +175,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
                     break;
                     
                 case RFCOMM_EVENT_SERVICE_REGISTERED:
-                    printf("RFCOMM_EVENT_SERVICE_REGISTERED\n");
+                    printf("RFCOMM_EVENT_SERVICE_REGISTERED channel: %u, status: 0x%02x\n", packet[3], packet[2]);
                     // register SDP for our SPP
                     create_spp_service(service_buffer, rfcomm_channel_nr);
                     bt_send_cmd(&sdp_register_service_record, service_buffer);
