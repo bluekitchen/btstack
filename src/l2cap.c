@@ -152,6 +152,16 @@ void l2cap_emit_connection_request(l2cap_channel_t *channel) {
     l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
+static void l2cap_emit_service_registered(void *connection, uint8_t status, uint16_t psm){
+    uint8_t event[5];
+    event[0] = L2CAP_EVENT_SERVICE_REGISTERED;
+    event[1] = sizeof(event) - 2;
+    event[2] = status;
+    bt_store_16(event, 3, psm);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*packet_handler)(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
     // track credits
     channel->packets_granted += credits;
@@ -722,7 +732,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
     uint8_t  identifier = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
     uint16_t result = 0;
     
-    log_info("signaling handler code %u, state %u\n", code, channel->state);
+    log_info("L2CAP signaling handler code %u, state %u\n", code, channel->state);
     
     // handle DISCONNECT REQUESTS seperately
     if (code == DISCONNECTION_REQUEST){
@@ -964,6 +974,7 @@ void l2cap_register_service_internal(void *connection, btstack_packet_handler_t 
     l2cap_service_t *service = l2cap_get_service(psm);
     if (service) {
         log_error("l2cap_register_service_internal: PSM %u already registered\n", psm);
+        l2cap_emit_service_registered(connection, L2CAP_CHANNEL_ALREADY_REGISTERED, psm);
         return;
     }
     
@@ -972,6 +983,7 @@ void l2cap_register_service_internal(void *connection, btstack_packet_handler_t 
     service = btstack_memory_l2cap_service_get();
     if (!service) {
         log_error("l2cap_register_service_internal: no memory for l2cap_service_t\n");
+        l2cap_emit_service_registered(connection, BTSTACK_MEMORY_ALLOC_FAILED, psm);
         return;
     }
     
@@ -986,6 +998,9 @@ void l2cap_register_service_internal(void *connection, btstack_packet_handler_t 
     
     // enable page scan
     hci_connectable_control(1);
+
+    // done
+    l2cap_emit_service_registered(connection, 0, psm);
 }
 
 void l2cap_unregister_service_internal(void *connection, uint16_t psm){
