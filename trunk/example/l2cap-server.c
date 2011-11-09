@@ -47,6 +47,8 @@
 // until next BTstack Cydia update
 #include "compat-svn.c"
 
+int l2cap_reg_fail = 0;
+
 hci_con_handle_t con_handle;
 
 uint16_t hid_control = 0;
@@ -61,7 +63,9 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	uint16_t remote_cid;
 	char pin[20];
 	int i;
+	uint8_t status;
 	
+	//printf("packet_handler: pt: 0x%02x, packet[0]: 0x%02x\n", packet_type, packet[0]);
 	switch (packet_type) {
 			
 		case L2CAP_DATA_PACKET:
@@ -85,6 +89,20 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						bt_send_cmd(&hci_write_authentication_enable, 0);
 					}
 					break;
+
+				case L2CAP_EVENT_SERVICE_REGISTERED:
+					status = packet[2];
+					psm = READ_BT_16(packet, 3); 
+					printf("L2CAP_EVENT_SERVICE_REGISTERED psm: 0x%02x, status: 0x%02x\n", psm, status);
+					if (status) {
+						l2cap_reg_fail = 1;
+					} else {
+						if (psm == PSM_HID_INTERRUPT && !l2cap_reg_fail) { // The second of the two
+							bt_send_cmd(&btstack_set_discoverable, 1);
+							printf("Both PSMs registered.\n");
+						}
+					}
+					break;
 					
 				case L2CAP_EVENT_INCOMING_CONNECTION:
 					// data: event(8), len(8), address(48), handle (16),  psm (16), source cid(16) dest cid(16)
@@ -94,7 +112,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					local_cid  = READ_BT_16(packet, 12); 
 					remote_cid = READ_BT_16(packet, 14); 
 					printf("L2CAP_EVENT_INCOMING_CONNECTION %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
-					       bd_addr_to_str(event_addr), handle, psm, local_cid, remote_cid);
+						bd_addr_to_str(event_addr), handle, psm, local_cid, remote_cid);
 
 					// accept
 					bt_send_cmd(&l2cap_accept_connection, local_cid);
