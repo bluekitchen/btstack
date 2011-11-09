@@ -44,6 +44,7 @@
 
 // workaround for missing PRIx32 on mspgcc (16-bit MCU)
 #ifndef PRIx32
+#warning Using own: #define PRIx32 "lx"
 #define PRIx32 "lx"
 #endif
 
