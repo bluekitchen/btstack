@@ -679,7 +679,7 @@ void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *p
     hci_stack.packet_handler = handler;
 }
 
-void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, remote_device_db_t * remote_device_db){
+void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, remote_device_db_t const* remote_device_db){
     
     // reference to use transport layer implementation
     hci_stack.hci_transport = transport;
