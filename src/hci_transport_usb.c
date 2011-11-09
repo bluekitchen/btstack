@@ -343,7 +343,7 @@ static int usb_open(void *transport_config){
     }
 #endif
 
-    log_info("libusb open %d, handle %xu\n", r, (int) handle);
+    log_info("libusb open %d, handle %p\n", r, handle);
     libusb_state = LIB_USB_OPENED;
 
     // Detach OS driver (not possible for OS X)
@@ -432,7 +432,7 @@ static int usb_open(void *transport_config){
             ds->fd = pollfd[r]->fd;
             ds->process = usb_process_ds;
             run_loop_add_data_source(ds);
-            log_info("%u: %x fd: %u, events %x\n", r, (unsigned int) pollfd[r], pollfd[r]->fd, pollfd[r]->events);
+            log_info("%u: %p fd: %u, events %x\n", r, pollfd[r], pollfd[r]->fd, pollfd[r]->events);
         }
     } else {
         log_info("Async using timers:\n");
