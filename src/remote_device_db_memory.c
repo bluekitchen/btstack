@@ -105,7 +105,7 @@ static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key){
     db_mem_device_link_key_t * newItem = (db_mem_device_link_key_t*) btstack_memory_db_mem_device_link_key_get();
     
     if (!newItem){
-        return;//newItem = (db_mem_device_link_key_t*)linked_list_get_last_item(&db_mem_link_keys);
+        newItem = (db_mem_device_link_key_t*)linked_list_get_last_item(&db_mem_link_keys);
     }
     
     memcpy(newItem->device.bd_addr, bd_addr, sizeof(bd_addr_t));
