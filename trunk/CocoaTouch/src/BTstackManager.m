@@ -371,7 +371,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	// NSLog(@"Get remote name done for %@", [BTDevice stringForAddress:&addr]);
 	BTDevice* device = [self deviceForAddress:&addr];
     if (!device) return;
-    
+
+    [device setName:[self createRemoteNameFromRemoteNameEvent:packet]];
     [self sendDeviceInfo:device];
 }
 
@@ -382,6 +383,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	BTDevice* device = [self deviceForAddress:&addr];
     if (!device) return;
 
+    [device setName:[self createRemoteNameFromRemoteNameEvent:packet]];
     [self sendDeviceInfo:device];
     
     discoveryDeviceIndex++;
