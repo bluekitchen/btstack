@@ -111,6 +111,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	int i;
 	int numResponses;
 	
+	//printf("packet_handler: pt: 0x%02x, packet[0]: 0x%02x\n", packet_type, packet[0]);
 	switch (packet_type){
 
 		case HCI_EVENT_PACKET:
@@ -118,7 +119,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 			switch(packet[0]){
 					
 				case BTSTACK_EVENT_STATE:
-					// bt stack activated, get started - set local name
+					// bt stack activated, get started
 					if (packet[2] == HCI_STATE_WORKING) {
 						bt_send_cmd(&hci_write_inquiry_mode, 0x01); // with RSSI
 					}
@@ -129,6 +130,13 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						next();
 					}
 					break;
+					
+				case HCI_EVENT_COMMAND_STATUS:
+					if ( COMMAND_STATUS_EVENT(packet, hci_write_inquiry_mode) ) {
+						printf("Ignoring error (0x%x) from hci_write_inquiry_mode.\n", packet[2]);
+						next();
+					}
+                    break;
 					
 				case HCI_EVENT_INQUIRY_RESULT:
 					numResponses = packet[2];
