@@ -426,6 +426,13 @@ static void event_handler(uint8_t *packet, int size){
                              hci_stack.acl_data_packet_length, hci_stack.total_num_acl_packets, hci_stack.packet_types); 
                 }
             }
+            // Dump local address
+            if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)) {
+                bd_addr_t addr;
+                bt_flip_addr(addr, &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1]);
+                log_info("Local Address, Status: 0x%02x: Addr: %s\n",
+                    packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE], bd_addr_to_str(addr));
+            }
             if (COMMAND_COMPLETE_EVENT(packet, hci_write_scan_enable)){
                 hci_emit_discoverable_enabled(hci_stack.discoverable);
             }

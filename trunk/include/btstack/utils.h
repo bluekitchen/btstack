@@ -85,6 +85,10 @@ typedef uint8_t device_name_t[DEVICE_NAME_LEN+1];
 
 // check if command complete event for given command
 #define COMMAND_COMPLETE_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_COMPLETE && READ_BT_16(event,3) == cmd.opcode)
+#define COMMAND_STATUS_EVENT(event,cmd) ( event[0] == HCI_EVENT_COMMAND_STATUS && READ_BT_16(event,4) == cmd.opcode)
+
+// Code+Len=2, Pkts+Opcode=3; total=5
+#define OFFSET_OF_DATA_IN_COMMAND_COMPLETE 5
 
 // ACL Packet
 #define READ_ACL_CONNECTION_HANDLE( buffer ) ( READ_BT_16(buffer,0) & 0x0fff)
