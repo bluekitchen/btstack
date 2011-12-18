@@ -99,14 +99,20 @@ static void delete_link_key(bd_addr_t *bd_addr){
 
 
 static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key){
-    if ( get_link_key(bd_addr, link_key) ) return;
+    db_mem_device_link_key_t * existingRecord = (db_mem_device_link_key_t *) get_item(db_mem_link_keys, bd_addr);
+    
+    if (existingRecord){
+        memcpy(existingRecord->link_key, link_key, LINK_KEY_LEN);
+        return;
+    }
     
     // Record not found, create new one for this device
     db_mem_device_link_key_t * newItem = (db_mem_device_link_key_t*) btstack_memory_db_mem_device_link_key_get();
-    
     if (!newItem){
         newItem = (db_mem_device_link_key_t*)linked_list_get_last_item(&db_mem_link_keys);
     }
+    
+    if (!newItem) return;
     
     memcpy(newItem->device.bd_addr, bd_addr, sizeof(bd_addr_t));
     memcpy(newItem->link_key, link_key, LINK_KEY_LEN);
@@ -123,15 +129,21 @@ static void delete_name(bd_addr_t *bd_addr){
 }
 
 static void put_name(bd_addr_t *bd_addr, device_name_t *device_name){
-    if (get_name(bd_addr, device_name)) return;
+    db_mem_device_name_t * existingRecord = (db_mem_device_name_t *) get_item(db_mem_names, bd_addr);
+    
+    if (existingRecord){
+        strncpy(existingRecord->device_name, (const char*) device_name, MAX_NAME_LEN);
+        return;
+    }
     
     // Record not found, create a new one for this device
     db_mem_device_name_t * newItem = (db_mem_device_name_t *) btstack_memory_db_mem_device_name_get();
-
     if (!newItem) {
         newItem = (db_mem_device_name_t*)linked_list_get_last_item(&db_mem_names);
     };
 
+    if (!newItem) return;
+    
     memcpy(newItem->device.bd_addr, bd_addr, sizeof(bd_addr_t));
     strncpy(newItem->device_name, (const char*) device_name, MAX_NAME_LEN);
     linked_list_add(&db_mem_names, (linked_item_t *) newItem);
