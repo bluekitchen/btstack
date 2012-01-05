@@ -87,4 +87,6 @@ void sdp_unregister_services_for_connection(void *connection);
 
 //
 void sdp_test(void);
-
+int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu);
+int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu);
+int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remote_mtu);
