@@ -134,7 +134,7 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
     gettimeofday(&curr_time, NULL);
     
     switch (dump_format){
-        case HCI_DUMP_STDOUT:
+        case HCI_DUMP_STDOUT: {
             /* Obtain the time of day, and convert it to a tm struct. */
             ptm = localtime (&curr_time.tv_sec);
             /* Format the date and time, down to a single second. */
@@ -161,6 +161,7 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
             }
             hexdump(packet, len);
             break;
+        }
         case HCI_DUMP_BLUEZ:
             bt_store_16( (uint8_t *) &header_bluez.len, 0, 1 + len);
             header_bluez.in  = in;
