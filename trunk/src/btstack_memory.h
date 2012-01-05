@@ -38,6 +38,10 @@
 
 #pragma once
 
+#if defined __cplusplus
+extern "C" {
+#endif
+    
 void btstack_memory_init(void);
 
 void * btstack_memory_hci_connection_get(void);
@@ -58,3 +62,7 @@ void * btstack_memory_db_mem_device_link_key_get(void);
 void   btstack_memory_db_mem_device_link_key_free(void *db_mem_device_link_key);
 void * btstack_memory_db_mem_service_get(void);
 void   btstack_memory_db_mem_service_free(void *db_mem_service);
+
+#if defined __cplusplus
+}
+#endif
