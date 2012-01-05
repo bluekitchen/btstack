@@ -82,7 +82,7 @@ hci_connection_t * connection_for_handle(hci_con_handle_t con_handle){
 }
 
 static void hci_connection_timeout_handler(timer_source_t *timer){
-    hci_connection_t * connection = linked_item_get_user(&timer->item);
+    hci_connection_t * connection = (hci_connection_t *) linked_item_get_user(&timer->item);
 #ifdef HAVE_TIME
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -116,7 +116,7 @@ static void hci_connection_timestamp(hci_connection_t *connection){
  * @return connection OR NULL, if no memory left
  */
 static hci_connection_t * create_connection_for_addr(bd_addr_t addr){
-    hci_connection_t * conn = btstack_memory_hci_connection_get();
+    hci_connection_t * conn = (hci_connection_t *) btstack_memory_hci_connection_get();
     if (!conn) return NULL;
     BD_ADDR_COPY(conn->address, addr);
     conn->con_handle = 0xffff;
@@ -146,6 +146,15 @@ static hci_connection_t * connection_for_address(bd_addr_t address){
     return NULL;
 }
 
+inline static void connectionSetAuthenticationFlags(hci_connection_t * conn, hci_authentication_flags_t flags){
+    conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags | flags);
+}
+
+inline static void connectionClearAuthenticationFlags(hci_connection_t * conn, hci_authentication_flags_t flags){
+    conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags & ~flags);
+}
+
+
 /**
  * add authentication flags and reset timer
  */
@@ -154,7 +163,7 @@ static void hci_add_connection_flags_for_flipped_bd_addr(uint8_t *bd_addr, hci_a
     bt_flip_addr(addr, *(bd_addr_t *) bd_addr);
     hci_connection_t * conn = connection_for_address(addr);
     if (conn) {
-        conn->authentication_flags |= flags;
+        connectionSetAuthenticationFlags(conn, flags);
         hci_connection_timestamp(conn);
     }
 }
@@ -1052,7 +1061,7 @@ void hci_run(){
             } else {
                hci_send_cmd(&hci_link_key_request_negative_reply, connection->address);
             }
-            connection->authentication_flags &= ~HANDLE_LINK_KEY_REQUEST;
+            connectionClearAuthenticationFlags(connection, HANDLE_LINK_KEY_REQUEST);
         }
     }
 

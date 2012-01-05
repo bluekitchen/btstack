@@ -297,6 +297,15 @@ int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
     return l2cap_send_prepared(local_cid, len);
 }
 
+static inline void channelStateVarSetFlag(l2cap_channel_t *channel, L2CAP_CHANNEL_STATE_VAR flag){
+    channel->state_var = (L2CAP_CHANNEL_STATE_VAR) (channel->state_var | flag);
+}
+
+static inline void channelStateVarClearFlag(l2cap_channel_t *channel, L2CAP_CHANNEL_STATE_VAR flag){
+    channel->state_var = (L2CAP_CHANNEL_STATE_VAR) (channel->state_var & ~flag);
+}
+
+
 
 // MARK: L2CAP_RUN
 // process outstanding signaling tasks
@@ -374,7 +383,7 @@ void l2cap_run(void){
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT:
                 channel->state = L2CAP_STATE_CONFIG;
-                channel->state_var |= L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ;
+                channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ);
                 l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, 0, 0);
                 break;
                 
@@ -387,13 +396,13 @@ void l2cap_run(void){
             
             case L2CAP_STATE_CONFIG:
                 if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP){
-                    channel->state_var &= ~L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP;
-                    channel->state_var |= L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP;
+                    channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP);
+                    channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP);
                     l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, 0, 0, 0, NULL);
                 }
                 else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ){
-                    channel->state_var &= ~L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ;
-                    channel->state_var |= L2CAP_CHANNEL_STATE_VAR_SENT_CONF_REQ;
+                    channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ);
+                    channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_REQ);
                     channel->local_sig_id = l2cap_next_sig_id();
                     config_options[0] = 1; // MTU
                     config_options[1] = 2; // len param
@@ -432,7 +441,7 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
                                    bd_addr_t address, uint16_t psm, uint16_t mtu){
     
     // alloc structure
-    l2cap_channel_t * chan = btstack_memory_l2cap_channel_get();
+    l2cap_channel_t * chan = (l2cap_channel_t*) btstack_memory_l2cap_channel_get();
     if (!chan) {
         // emit error event
         l2cap_channel_t dummy_channel;
@@ -641,7 +650,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     }
     // alloc structure
     // log_info("l2cap_handle_connection_request register channel\n");
-    l2cap_channel_t * channel = btstack_memory_l2cap_channel_get();
+    l2cap_channel_t * channel = (l2cap_channel_t*) btstack_memory_l2cap_channel_get();
     if (!channel){
         // 0x0004 No resources available
         l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, 0x0004);
@@ -765,7 +774,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                             // successful connection
                             channel->remote_cid = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
                             channel->state = L2CAP_STATE_CONFIG;
-                            channel->state_var |= L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ;
+                            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ);
                             break;
                         case 1:
                             // connection pending. get some coffee
@@ -798,12 +807,12 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
         case L2CAP_STATE_CONFIG:
             switch (code) {
                 case CONFIGURE_REQUEST:
-                    channel->state_var |= L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_REQ;
-                    channel->state_var |= L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP;
+                    channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_REQ);
+                    channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP);
                     l2cap_signaling_handle_configure_request(channel, command);
                     break;
                 case CONFIGURE_RESPONSE:
-                    channel->state_var |= L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_RSP;
+                    channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_RSP);
                     break;
                 default:
                     break;
@@ -982,7 +991,7 @@ void l2cap_register_service_internal(void *connection, btstack_packet_handler_t 
     
     // alloc structure
     // TODO: emit error event
-    service = btstack_memory_l2cap_service_get();
+    service = (l2cap_service_t *) btstack_memory_l2cap_service_get();
     if (!service) {
         log_error("l2cap_register_service_internal: no memory for l2cap_service_t\n");
         l2cap_emit_service_registered(connection, BTSTACK_MEMORY_ALLOC_FAILED, psm);
