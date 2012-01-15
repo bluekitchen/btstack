@@ -299,6 +299,13 @@ const hci_cmd_t hci_write_class_of_device = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x24), "3"
 // Class of Device
 };
+const hci_cmd_t hci_read_num_broadcast_retransmissions = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x29), ""
+};
+const hci_cmd_t hci_write_num_broadcast_retransmissions = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x2a), "1"
+// Num broadcast retransmissions (e.g. 0 for a single broadcast)
+};
 const hci_cmd_t hci_host_buffer_size = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x33), "2122"
 // Host_ACL_Data_Packet_Length:, Host_Synchronous_Data_Packet_Length:, Host_Total_Num_ACL_Data_Packets:, Host_Total_Num_Synchronous_Data_Packets:

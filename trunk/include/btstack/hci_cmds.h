@@ -141,7 +141,7 @@ extern "C" {
 // data: event (8), len(8), channel (16)
 #define L2CAP_EVENT_CHANNEL_CLOSED                         0x71
 
-// data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16) 
+// data: event (8), len(8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16) 
 #define L2CAP_EVENT_INCOMING_CONNECTION					   0x72
 
 // data: event(8), len(8), handle(16)
@@ -281,6 +281,7 @@ extern const hci_cmd_t hci_read_le_host_supported;
 extern const hci_cmd_t hci_read_link_policy_settings;
 extern const hci_cmd_t hci_read_link_supervision_timeout;
 extern const hci_cmd_t hci_read_local_supported_features;
+extern const hci_cmd_t hci_read_num_broadcast_retransmissions;
 extern const hci_cmd_t hci_reject_connection_request;
 extern const hci_cmd_t hci_remote_name_request;
 extern const hci_cmd_t hci_remote_name_request_cancel;
@@ -298,6 +299,7 @@ extern const hci_cmd_t hci_write_le_host_supported;
 extern const hci_cmd_t hci_write_link_policy_settings;
 extern const hci_cmd_t hci_write_link_supervision_timeout;
 extern const hci_cmd_t hci_write_local_name;
+extern const hci_cmd_t hci_write_num_broadcast_retransmissions;
 extern const hci_cmd_t hci_write_page_timeout;
 extern const hci_cmd_t hci_write_scan_enable;
 extern const hci_cmd_t hci_write_simple_pairing_mode;
