@@ -6,7 +6,7 @@
 
 BTSTACK_ROOT = ../..
 
-MCU = msp430x5438
+MCU = msp430bt5190
 
 CC      = msp430-gcc
 CFLAGS  = -mmcu=${MCU} -g -Os -Wall -I. -I../src -I../firmware -I${BTSTACK_ROOT} -I${BTSTACK_ROOT}/chipset-cc256x -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include
