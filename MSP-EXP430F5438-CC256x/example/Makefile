@@ -71,7 +71,7 @@ spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} spp_flowcontrol.o ../f
 	${CC} $^ ${LDFLAGS} -o $@
 
 clean:
-	rm -f $ *.o *.out *.hex ../driver/*.o ../../src/*.o ../src/*.o
+	rm -f $ *.o *.out *.hex ../driver/*.o ../../src/*.o ../src/*.o ../firmware/*.o
 
 size: all
 	msp430-size ../firmware/*.o
