@@ -73,7 +73,6 @@
 #include <mach/mach.h>
 #define IOKIT
 #include <device/device_types.h>
-#include <UIKit/UIKit.h>
 
 // costants
 #define sys_iokit                          err_system(0x38)

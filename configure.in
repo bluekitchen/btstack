@@ -120,7 +120,7 @@ if test "x$target" = xiphone; then
             OBJC="$DEVELOPER_PATH/usr/bin/arm-apple-darwin$darwin_v$compiler_prefix-g++-$GCC_VERSION"
             CFLAGS="$CFLAGS -g"
             CPPFLAGS="$CPPFLAGS -isysroot $SDK_PATH"
-            LDFLAGS="$LDFLAGS -framework Foundation -framework CoreFoundation -framework UIKit -lobjc"
+            LDFLAGS="$LDFLAGS -framework Foundation -framework CoreFoundation -lobjc"
             LDFLAGS="$LDFLAGS -L$SDK_PATH/System/Library/Frameworks/IOKit.framework/Versions/A -lIOKit"
             LDFLAGS="$LDFLAGS $SDK_PATH/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager"
 		   ;;
