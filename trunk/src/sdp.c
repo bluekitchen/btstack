@@ -610,7 +610,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 		case HCI_EVENT_PACKET:
 			
 			switch (packet[0]) {
-                    					
+
 				case L2CAP_EVENT_INCOMING_CONNECTION:
                     if (l2cap_cid) {
                         // CONNECTION REJECTED DUE TO LIMITED RESOURCES 
@@ -631,6 +631,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
                     break;
 
                 case L2CAP_EVENT_CREDITS:
+                case DAEMON_EVENT_HCI_PACKET_SENT:
                     sdp_try_respond();
                     break;
                 
