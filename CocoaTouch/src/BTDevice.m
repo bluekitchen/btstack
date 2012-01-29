@@ -48,7 +48,7 @@
 
 - (BTDevice *)init {
 	name = NULL;
-	bzero(&_address, 6);
+	memset(&_address, 0, 6);
 	classOfDevice = kCODInvalid;
 	connectionState = kBluetoothConnectionNotConnected;
 	return self;
