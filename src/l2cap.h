@@ -64,6 +64,13 @@ extern "C" {
 #error "HCI_ACL_PAYLOAD_SIZE too small for minimal L2CAP MTU of 48 bytes"
 #endif    
     
+// L2CAP Fixed Channel IDs    
+#define L2CAP_CID_SIGNALING                 0x0001
+#define L2CAP_CID_CONNECTIONLESS_CHANNEL    0x0002
+#define L2CAP_CID_ATTRIBUTE_PROTOCOL        0x0004
+#define L2CAP_CID_SIGNALING_LE              0x0005
+#define L2CAP_CID_SECURITY_MANAGER_PROTOCOL 0x0006
+    
 void l2cap_init(void);
 void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
 void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu);
@@ -89,7 +96,9 @@ void l2cap_unregister_service_internal(void *connection, uint16_t psm);
 void l2cap_accept_connection_internal(uint16_t local_cid);
 void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason);
 
-
+// Bluetooth 4.0 - allows to register handler for Attribute Protocol and Security Manager Protocol
+void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id);
+    
 // private structs
 typedef enum {
     L2CAP_STATE_CLOSED = 1,           // no baseband
