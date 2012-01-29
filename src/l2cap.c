@@ -286,6 +286,33 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     return err;
 }
 
+int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){
+    
+    if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)){
+        log_info("l2cap_send_prepared_to_handle cid %u, cannot send\n", cid);
+        return BTSTACK_ACL_BUFFERS_FULL;
+    }
+    
+    log_debug("l2cap_send_prepared_to_handle cid %u, handle %u\n", cid, handle);
+    
+    uint8_t *acl_buffer = hci_get_outgoing_acl_packet_buffer();
+    
+    // 0 - Connection handle : PB=10 : BC=00 
+    bt_store_16(acl_buffer, 0, handle | (2 << 12) | (0 << 14));
+    // 2 - ACL length
+    bt_store_16(acl_buffer, 2,  len + 4);
+    // 4 - L2CAP packet length
+    bt_store_16(acl_buffer, 4,  len + 0);
+    // 6 - L2CAP channel DEST
+    bt_store_16(acl_buffer, 6, cid);    
+    // send
+    int err = hci_send_acl_packet(acl_buffer, len+8);
+    
+    l2cap_hand_out_credits();
+
+    return err;
+}
+
 int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
 
     if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)){
@@ -298,6 +325,20 @@ int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
     memcpy(&acl_buffer[8], data, len);
 
     return l2cap_send_prepared(local_cid, len);
+}
+
+int l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t *data, uint16_t len){
+    
+    if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)){
+        log_info("l2cap_send_internal cid %u, cannot send\n", cid);
+        return BTSTACK_ACL_BUFFERS_FULL;
+    }
+    
+    uint8_t *acl_buffer = hci_get_outgoing_acl_packet_buffer();
+    
+    memcpy(&acl_buffer[8], data, len);
+    
+    return l2cap_send_prepared_connectionless(handle, cid, len);
 }
 
 static inline void channelStateVarSetFlag(l2cap_channel_t *channel, L2CAP_CHANNEL_STATE_VAR flag){
