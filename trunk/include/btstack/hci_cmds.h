@@ -58,8 +58,15 @@ extern "C" {
 #define L2CAP_DATA_PACKET       0x06
 
 // RFCOMM data
-#define RFCOMM_DATA_PACKET       0x07
+#define RFCOMM_DATA_PACKET      0x07
 
+// Attribute protocol data
+#define ATT_DATA_PACKET         0x08
+
+// Security Manager protocol data
+#define SM_DATA_PACKET          0x09
+    
+    
 // Fixed PSM numbers
 #define PSM_SDP    0x01
 #define PSM_RFCOMM 0x03

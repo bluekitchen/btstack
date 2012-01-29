@@ -72,6 +72,9 @@ static linked_list_t l2cap_services = NULL;
 static void (*packet_handler) (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = null_packet_handler;
 static int new_credits_blocked = 0;
 
+static btstack_packet_handler_t attribute_protocol_packet_handler = NULL;
+static btstack_packet_handler_t security_protocol_packet_handler = NULL;
+
 // prototypes
 static void l2cap_finialize_channel_close(l2cap_channel_t *channel);
 static l2cap_service_t * l2cap_get_service(uint16_t psm);
@@ -605,8 +608,14 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
                     (* (channel->packet_handler))(HCI_EVENT_PACKET, channel->local_cid, packet, size);
                 } 
             }
+            if (attribute_protocol_packet_handler) {
+                (*attribute_protocol_packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
+            }
+            if (security_protocol_packet_handler) {
+                (*security_protocol_packet_handler)(SM_DATA_PACKET, 0, packet, size);
+            }
             break;
-             
+            
         default:
             break;
     }
@@ -915,33 +924,47 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
         
     // Get Channel ID
     uint16_t channel_id = READ_L2CAP_CHANNEL_ID(packet); 
+    hci_con_handle_t handle = READ_ACL_CONNECTION_HANDLE(packet);
     
-    // Signaling Packet?
-    if (channel_id == 1) {
-        
-        // Get Connection
-        hci_con_handle_t handle = READ_ACL_CONNECTION_HANDLE(packet);
-        
-        uint16_t command_offset = 8;
-        while (command_offset < size) {
+    switch (channel_id) {
             
-            // handle signaling commands
-            l2cap_signaling_handler_dispatch(handle, &packet[command_offset]);
-
-            // increment command_offset
-            command_offset += L2CAP_SIGNALING_COMMAND_DATA_OFFSET + READ_BT_16(packet, command_offset + L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
+        case L2CAP_CID_SIGNALING: {
+            
+            uint16_t command_offset = 8;
+            while (command_offset < size) {                
+                
+                // handle signaling commands
+                l2cap_signaling_handler_dispatch(handle, &packet[command_offset]);
+                
+                // increment command_offset
+                command_offset += L2CAP_SIGNALING_COMMAND_DATA_OFFSET + READ_BT_16(packet, command_offset + L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
+            }
+            break;
         }
-        
-        l2cap_run();
-        
-        return;
+            
+        case L2CAP_CID_ATTRIBUTE_PROTOCOL:
+            if (attribute_protocol_packet_handler) {
+                (*attribute_protocol_packet_handler)(ATT_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
+            }
+            break;
+
+        case L2CAP_CID_SECURITY_MANAGER_PROTOCOL:
+            if (security_protocol_packet_handler) {
+                (*security_protocol_packet_handler)(SM_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
+            }
+            break;
+            
+        default: {
+            // Find channel for this channel_id and connection handle
+            l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(channel_id);
+            if (channel) {
+                l2cap_dispatch(channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
+            }
+            break;
+        }
     }
     
-    // Find channel for this channel_id and connection handle
-    l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(channel_id);
-    if (channel) {
-        l2cap_dispatch(channel, L2CAP_DATA_PACKET, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
-    }
+    l2cap_run();
 }
 
 static void l2cap_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
@@ -1053,3 +1076,16 @@ void l2cap_close_connection(void *connection){
     // process
     l2cap_run();
 }
+
+// Bluetooth 4.0 - allows to register handler for Attribute Protocol and Security Manager Protocol
+void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id) {
+    switch(channel_id){
+        case L2CAP_CID_ATTRIBUTE_PROTOCOL:
+            attribute_protocol_packet_handler = packet_handler;
+            break;
+        case L2CAP_CID_SECURITY_MANAGER_PROTOCOL:
+            security_protocol_packet_handler = packet_handler;
+            break;
+    }
+}
+
