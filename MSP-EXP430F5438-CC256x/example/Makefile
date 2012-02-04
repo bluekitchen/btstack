@@ -1,7 +1,7 @@
 #
 # Makefile for MSP-EXP430F5438 demos with PAN1315, PAN1317, PAN1325, PAN1323, or PAN1327 Bluetooth modules
 #
-# For the PAN1315/25 modules, please use cc2560_init_scipt.c in COMMON below
+# For the PAN1315/25 modules, please use bluetooth_init_cc2560_2.42.c in COMMON below
 # 
 # mspgcc is used: http://sourceforge.net/apps/mediawiki/mspgcc/index.php?title=MSPGCC_Wiki
 #
@@ -27,7 +27,7 @@ CORE   = \
 COMMON = \
     ../src/hal_uart_dma.c                         \
 	${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
-	${BTSTACK_ROOT}/chipset-cc256x/cc2567_init_script.c  \
+	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2560A_1.7.c \
     ${BTSTACK_ROOT}/src/hci.c			          \
     ${BTSTACK_ROOT}/src/hci_cmds.c		          \
     ${BTSTACK_ROOT}/src/hci_dump.c		          \
@@ -71,7 +71,7 @@ spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} spp_flowcontrol.o ../f
 	${CC} $^ ${LDFLAGS} -o $@
 
 clean:
-	rm -f $ *.o *.out *.hex ../driver/*.o ../../src/*.o ../src/*.o ../firmware/*.o
+	rm -f $ *.o *.out *.hex ../driver/*.o ../../src/*.o ../src/*.o ../firmware/*.o ${BTSTACK_ROOT}/chipset-cc256x/*.o ${BTSTACK_ROOT}/src/*.o
 
 size: all
 	msp430-size ../firmware/*.o
