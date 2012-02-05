@@ -423,11 +423,23 @@ static void deamon_status_event_handler(uint8_t *packet, uint16_t size){
 }
 
 static void daemon_retry_parked(void){
+    
+    // socket_connection_retry_parked is not reentrant
+    static int retry_mutex = 0;
+
+    // lock mutex
+    if (retry_mutex) return;
+    retry_mutex = 1;
+    
     // ... try sending again  
     socket_connection_retry_parked();
+
     if (!socket_connection_has_parked_connections()){
         l2cap_block_new_credits(0);
     }
+
+    // unlock mutex
+    retry_mutex = 0;
 }
 
 static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
