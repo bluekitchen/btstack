@@ -43,3 +43,4 @@
 
 void platform_iphone_status_handler(BLUETOOTH_STATE state);
 void platform_iphone_register_window_manager_restart(void (*callback)());
+void platform_iphone_register_preferences_changed(void (*callback)());
