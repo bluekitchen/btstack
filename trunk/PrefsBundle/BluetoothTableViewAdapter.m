@@ -65,7 +65,7 @@
     CFPreferencesSetValue(CFSTR("Logging"), on, CFSTR("ch.ringwald.btstack"), kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
     CFPreferencesSynchronize(CFSTR(BTstackID), kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
     // send notification
-    notify_post("ch.ringwald.btstack.logging");
+    notify_post("ch.ringwald.btstack.preferences");
 }
 
 #pragma mark Table view delegate methods
