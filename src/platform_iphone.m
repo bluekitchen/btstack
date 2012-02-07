@@ -86,6 +86,7 @@ static void springBoardDidLaunch(){
         (*window_manager_restart_callback)();
     }
 }
+
 void platform_iphone_register_window_manager_restart(void (*callback)() ){
     static int registered = 0;
     if (!registered) {
@@ -95,6 +96,25 @@ void platform_iphone_register_window_manager_restart(void (*callback)() ){
                                         (CFStringRef) @"SBSpringBoardDidLaunchNotification", NULL, 0);
     }
     window_manager_restart_callback = callback;
+}
+
+static void (*preferences_changed_callback)() = NULL;
+static void preferencesDidChange(){
+    NSLog(@"ch.ringwald.btstack.preferences!\n");
+    if (preferences_changed_callback) {
+        (*preferences_changed_callback)();
+    }
+}
+
+void platform_iphone_register_preferences_changed(void (*callback)() ){
+    static int registered = 0;
+    if (!registered) {
+        // register for launch notification
+        CFNotificationCenterRef darwin = CFNotificationCenterGetDarwinNotifyCenter();
+        CFNotificationCenterAddObserver(darwin, NULL, (CFNotificationCallback) preferencesDidChange,
+                                        (CFStringRef) @"ch.ringwald.btstack.preferences", NULL, 0);
+    }
+    preferences_changed_callback = callback;
 }
 
 #endif
