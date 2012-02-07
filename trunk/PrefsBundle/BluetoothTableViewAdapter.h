@@ -37,7 +37,8 @@
 @interface BluetoothTableViewAdapter : NSObject<UITableViewDelegate, UITableViewDataSource, BluetoothControllerListener> {
 	UIActivityIndicatorView *bluetoothActivity;
     UITableView *_tableView;
-    UISwitch *discoverableSwitch;
+    UISwitch *loggingSwitch;
 }
 -(id) initWithTableView:(UITableView *) tableView;
+@property (nonatomic, retain)  UISwitch *loggingSwitch;
 @end
