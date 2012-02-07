@@ -30,13 +30,20 @@
  */
 
 #import "BluetoothTableViewAdapter.h"
+#include <notify.h>
+
+#define BTstackID "ch.ringwald.btstack"
 
 @implementation BluetoothTableViewAdapter
+@synthesize loggingSwitch;
 
 -(id) initWithTableView:(UITableView *) tableView {
 	bluetoothActivity = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
 	[bluetoothActivity startAnimating];
     _tableView = tableView;
+    CGRect dummy;
+    self.loggingSwitch = [[UISwitch alloc] initWithFrame:dummy];
+    [loggingSwitch addTarget:self action:@selector(loggingSwitchToggled) forControlEvents:UIControlEventValueChanged];
     return self;
 }
 
@@ -47,6 +54,19 @@
     [_tableView reloadData];
 }
 
+-(void) loggingSwitchToggled {
+    NSLog(@"Logging: %u", loggingSwitch.on);
+    CFPropertyListRef on;
+    if (loggingSwitch.on){
+        on = kCFBooleanTrue;
+    } else {
+        on = kCFBooleanFalse;
+    }
+    CFPreferencesSetValue(CFSTR("Logging"), on, CFSTR("ch.ringwald.btstack"), kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+    CFPreferencesSynchronize(CFSTR(BTstackID), kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+    // send notification
+    notify_post("ch.ringwald.btstack.logging");
+}
 
 #pragma mark Table view delegate methods
 
@@ -99,8 +119,8 @@
             }
             break;
         case 1:
-            theLabel = @"Discoverable";
-            cell.accessoryView = discoverableSwitch;
+            theLabel = @"Logging";
+            cell.accessoryView = loggingSwitch;
             break;
             
         default:
@@ -139,6 +159,10 @@
 
 #pragma mark Table view data source methods
 
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
+    return 2;
+}
+
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section{
     switch (section){
         case 0:
@@ -146,6 +170,8 @@
                 return @"Internal BTstack Error";
             }
             return @"Active Bluetooth Stack";
+        case 1:
+            return @"BTstack Config";
         default:
             return @"BTstack Config";
     }
@@ -156,17 +182,16 @@
         case 0:
             if (![[BluetoothController sharedInstance] isConnected]){
                 return @"Cannot connect to BTstack daemon.\n\nPlease re-install BTstack package and/or make "
-                "sure that /Library/LaunchDaemons/ is owned by user 'root' and group 'wheel' (root:wheel)!";
+                "sure that /Library/LaunchDaemons/ is owned by user 'root' and group 'wheel' (root:wheel).\n"
+                "If you're on 5.x, pleaes install latest version of 'Corona 5.0.1 Untether' package, reboot and try again.";
             }
             return @"Enabling iOS Bluetooth after BTstack was used can take up to 30 seconds. Please be patient.";
+        case 1:
+            return @"Turn on logging, if you experience problems with BTstack-based software and add /tmp/hci_dump.pklg to your support mail.";
         default:
             return nil;
             
     }
-}
-
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    return 1;   // without discoverable
 }
 
 // Customize the number of rows in the table view.
@@ -177,6 +202,8 @@
                 return 0;
             }
             return 3;
+        case 1:
+            return 1;
         default:
             return 1;
     }
