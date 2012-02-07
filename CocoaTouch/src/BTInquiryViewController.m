@@ -168,8 +168,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						BTDevice *dev = [[BTDevice alloc] init];
 						[dev setAddress:&addr];
 						[dev setPageScanRepetitionMode:packet[3 + numResponses*6 + i]];
-						[dev setClassOfDevice:READ_BT_24(packet, 3 + numResponses*(6+1+1+1) + i*3)];
-						[dev setClockOffset:(READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff)];
+                        switch (packet[0]) {
+                            case HCI_EVENT_INQUIRY_RESULT:
+                                [dev setClassOfDevice:READ_BT_24(packet, 3 + numResponses*(6+1+1+1)   + i*3)];
+                                [dev setClockOffset:( READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff)];
+                                break;
+                            case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+                                [dev setClassOfDevice:READ_BT_24(packet, 3 + numResponses*(6+1+1)   + i*3)];
+                                [dev setClockOffset:( READ_BT_16(packet, 3 + numResponses*(6+1+1+3) + i*2) & 0x7fff)];
+                                break;
+                            default:
+                                break;
+                        }
 						// hexdump(packet, size);
 						
 						// get name from deviceInfo
