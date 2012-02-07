@@ -89,7 +89,7 @@ static hcidump_hdr header_bluez;
 static pktlog_hdr  header_packetlogger;
 static char time_string[40];
 static int max_nr_packets = -1;
-// static int nr_packets = 0;
+static int nr_packets = 0;
 #endif
 
 void hci_dump_open(char *filename, hci_dump_format_t format){
