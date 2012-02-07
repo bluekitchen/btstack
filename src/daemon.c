@@ -117,6 +117,8 @@ static int global_enable = 0;
 static remote_device_db_t const * remote_device_db = NULL;
 static int rfcomm_channel_generator = 1;
 
+static int loggingEnabled;
+
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
     log_info("Bluetooth status: %u\n", state);
 };
@@ -381,6 +383,18 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
     return err;
 }
 
+
+static void daemon_set_logging_enabled(int enabled){
+    if (enabled && !loggingEnabled){
+        // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
+        hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+    }
+    if (!enabled && loggingEnabled){
+        hci_dump_close();
+    }
+    loggingEnabled = enabled;
+}
+
 // local cache used to manage UI status
 static HCI_STATE hci_state = HCI_STATE_OFF;
 static int num_connections = 0;
@@ -400,11 +414,11 @@ static void preferences_changed_callback(void){
 #ifdef USE_BLUETOOL
     int logging = platform_iphone_logging_enabled();
     log_info("Logging enabled: %u\n", logging);
+    daemon_set_logging_enabled(logging);
 #endif
 }
 
 static void deamon_status_event_handler(uint8_t *packet, uint16_t size){
-    
     
     uint8_t update_status = 0;
     
@@ -701,10 +715,15 @@ int main (int argc,  char * const * argv){
         control->register_for_power_notifications(power_notification_callback);
     }
 
-    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
-    hci_dump_set_max_packets(1000);
-                
+    // logging
+    loggingEnabled = 0;
+    int newLoggingEnabled = 1;
+#ifdef USE_BLUETOOL
+    // iPhone has toggle in Preferences.app
+    newLoggingEnabled = platform_iphone_logging_enabled();
+#endif
+    daemon_set_logging_enabled(newLoggingEnabled);
+    
     // init HCI
     hci_init(transport, &config, control, remote_device_db);
     
