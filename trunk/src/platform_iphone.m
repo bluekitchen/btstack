@@ -117,4 +117,16 @@ void platform_iphone_register_preferences_changed(void (*callback)() ){
     preferences_changed_callback = callback;
 }
 
+int platform_iphone_logging_enabled(void){
+    int result = 0;
+    NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+    NSDictionary * dict = [NSDictionary dictionaryWithContentsOfFile:@"/var/mobile/Library/Preferences/ch.ringwald.btstack.plist"];
+    NSNumber *loggingEnabled = [dict objectForKey:@"Logging"];
+    if (loggingEnabled){
+        result = [loggingEnabled boolValue];
+    }
+    [pool release];
+    return result;
+}
+
 #endif
