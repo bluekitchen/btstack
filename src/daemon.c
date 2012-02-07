@@ -395,6 +395,14 @@ static void update_ui_status(void){
         }
     }
 }
+
+static void preferences_changed_callback(void){
+#ifdef USE_BLUETOOL
+    int logging = platform_iphone_logging_enabled();
+    log_info("Logging enabled: %u\n", logging);
+#endif
+}
+
 static void deamon_status_event_handler(uint8_t *packet, uint16_t size){
     
     
@@ -679,6 +687,7 @@ int main (int argc,  char * const * argv){
 #ifdef USE_SPRINGBOARD
     bluetooth_status_handler = platform_iphone_status_handler;
     platform_iphone_register_window_manager_restart(update_ui_status);
+    platform_iphone_register_preferences_changed(preferences_changed_callback);
 #endif
     
 #ifdef REMOTE_DEVICE_DB
