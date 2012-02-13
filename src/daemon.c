@@ -677,11 +677,21 @@ int main (int argc,  char * const * argv){
     bt_control_t * control = NULL;
     
 #ifdef HAVE_TRANSPORT_H4
-    transport = hci_transport_h4_instance();
     config.device_name   = UART_DEVICE;
     config.baudrate_init = UART_SPEED;
     config.baudrate_main = 0;
     config.flowcontrol = 1;
+#if defined(USE_BLUETOOL) && defined(USE_POWERMANAGEMENT)
+    if (bt_control_iphone_power_management_supported()){
+        // use default (max) UART baudrate over netraph interface
+        config.baudrate_init = 0;
+        transport = hci_transport_h4_iphone_instance();
+    } else {
+        transport = hci_transport_h4_instance();
+    }
+#else
+    transport = hci_transport_h4_instance();
+#endif
 #endif
 
 #ifdef HAVE_TRANSPORT_USB
@@ -694,7 +704,7 @@ int main (int argc,  char * const * argv){
     
 #if defined(USE_BLUETOOL) && defined(USE_POWERMANAGEMENT)
     if (bt_control_iphone_power_management_supported()){
-        hci_transport_h4_set_enforce_wake_device("/dev/btwake");
+        hci_transport_h4_iphone_set_enforce_wake_device("/dev/btwake");
     }
 #endif
 
