@@ -70,11 +70,12 @@ typedef struct {
 // inline various hci_transport_X.h files
 extern hci_transport_t * hci_transport_h4_instance(void);
 extern hci_transport_t * hci_transport_h4_dma_instance(void);
+extern hci_transport_t * hci_transport_h4_iphone_instance(void);
 extern hci_transport_t * hci_transport_h5_instance(void);
 extern hci_transport_t * hci_transport_usb_instance(void);
 
 // support for "enforece wake device" in h4 - used by iOS power management
-extern void hci_transport_h4_set_enforce_wake_device(char *path);
+extern void hci_transport_h4_iphone_set_enforce_wake_device(char *path);
     
 #if defined __cplusplus
 }
