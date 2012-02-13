@@ -75,7 +75,7 @@ typedef struct {
 	uint32_t	len;
 	uint32_t	ts_sec;
 	uint32_t	ts_usec;
-	uint8_t		type;
+	uint8_t		type;   // 0xfc for note
 }
 #ifdef __GNUC__
 __attribute__ ((packed))
