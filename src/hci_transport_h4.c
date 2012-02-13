@@ -32,19 +32,12 @@
 /*
  *  hci_h4_transport.c
  *
- *  HCI Transport API implementation for basic H4 protocol
- *  with extension for "enforced wake device" used e.g. in iOS
+ *  HCI Transport API implementation for basic H4 protocol over POSIX
  *
  *  Created by Matthias Ringwald on 4/29/09.
  */
 
 #include "config.h"
-
-#undef USE_NETGRAPH
-
-// don't enforce wake after 3s idle
-#define HCI_WAKE_TIMER_MS 3000
-#define HCI_WAKE_DURATION 10000
 
 #include <termios.h>  /* POSIX terminal control definitions */
 #include <fcntl.h>    /* File control definitions */
@@ -61,10 +54,6 @@
 static int  h4_process(struct data_source *ds);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
 static      hci_uart_config_t *hci_uart_config;
-
-static void h4_enforce_wake_on(void);
-static void h4_enforce_wake_off(void);
-static void h4_enforce_wake_timeout(struct timer *ts);
 
 typedef enum {
     H4_W4_PACKET_TYPE,
@@ -85,10 +74,6 @@ typedef struct hci_transport_h4 {
 // single instance
 static hci_transport_h4_t * hci_transport_h4 = NULL;
 
-// enforced wake support
-static char * enforce_wake_device = NULL;
-static int    enforce_wake_fd = 0;
-
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
 // packet reader state machine
@@ -97,7 +82,6 @@ static int bytes_to_read;
 static int read_pos;
 
 static uint8_t hci_packet[1+HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
-
 
 static int    h4_open(void *transport_config){
     hci_uart_config = (hci_uart_config_t*) transport_config;
@@ -114,6 +98,7 @@ static int    h4_open(void *transport_config){
         perror("init_serialport: Couldn't get term attributes");
         return -1;
     }
+    
     speed_t brate = hci_uart_config->baudrate_init; // let you override switch below if needed
     switch(hci_uart_config->baudrate_init) {
         case 57600:  brate=B57600;  break;
@@ -128,8 +113,7 @@ static int    h4_open(void *transport_config){
         case 921600: brate=B921600; break;
 #endif
     }
-    cfsetispeed(&toptions, brate);
-    cfsetospeed(&toptions, brate);
+    cfsetspeed(&toptions, brate);
     
     // 8N1
     toptions.c_cflag &= ~PARENB;
@@ -183,9 +167,6 @@ static int h4_close(void *transport_config){
     // close device 
     close(hci_transport_h4->ds->fd);
 
-    // let module sleep
-    h4_enforce_wake_off();
-
     // free struct
     free(hci_transport_h4->ds);
     hci_transport_h4->ds = NULL;
@@ -195,9 +176,6 @@ static int h4_close(void *transport_config){
 static int h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
     if (hci_transport_h4->ds == NULL) return -1;
     if (hci_transport_h4->uart_fd == 0) return -1;
-
-    // wake Bluetooth module
-    h4_enforce_wake_on();
 
     hci_dump_packet( (uint8_t) packet_type, 0, packet, size);
     char *data = (char*) packet;
@@ -271,9 +249,6 @@ static int    h4_process(struct data_source *ds) {
     if (hci_transport_h4->uart_fd == 0) return -1;
 
     int read_now = bytes_to_read;
-    //    if (read_now > 100) {
-    //        read_now = 100;
-    //    }
     
     // read up to bytes_to_read data in
     ssize_t bytes_read = read(hci_transport_h4->uart_fd, &hci_packet[read_pos], read_now);
@@ -292,35 +267,6 @@ static int    h4_process(struct data_source *ds) {
     
     h4_statemachine();
     return 0;
-}
-
-static void h4_enforce_wake_on(void)
-{
-    if (!enforce_wake_device) return;
-    
-    if (!enforce_wake_fd) {
-        enforce_wake_fd = open(enforce_wake_device, O_RDWR);
-        usleep(HCI_WAKE_DURATION);  // wait until device is ready
-    }
-    run_loop_remove_timer(&hci_transport_h4->sleep_timer);
-    run_loop_set_timer(&hci_transport_h4->sleep_timer, HCI_WAKE_TIMER_MS);
-    hci_transport_h4->sleep_timer.process = h4_enforce_wake_timeout;
-    run_loop_add_timer(&hci_transport_h4->sleep_timer); 
-}
-
-static void h4_enforce_wake_off(void)
-{
-    run_loop_remove_timer(&hci_transport_h4->sleep_timer);
-    
-    if (enforce_wake_fd) {
-        close(enforce_wake_fd);
-        enforce_wake_fd = 0;
-    }
-}
-
-static void h4_enforce_wake_timeout(struct timer *ts)
-{
-    h4_enforce_wake_off();
 }
 
 static const char * h4_get_transport_name(void){
@@ -344,8 +290,4 @@ hci_transport_t * hci_transport_h4_instance() {
         hci_transport_h4->transport.can_send_packet_now           = NULL;
     }
     return (hci_transport_t *) hci_transport_h4;
-}
-
-void hci_transport_h4_set_enforce_wake_device(char *path){
-    enforce_wake_device = path;
 }
