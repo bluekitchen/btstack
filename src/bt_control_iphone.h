@@ -41,10 +41,13 @@
 
 extern bt_control_t bt_control_iphone;
 
-int bt_control_iphone_power_management_enabled(void);
-int bt_control_iphone_power_management_supported(void);
+int  bt_control_iphone_power_management_enabled(void);
+int  bt_control_iphone_power_management_supported(void);
 
-// control system Bluetooth
-int  iphone_system_bt_enabled();
+int  iphone_system_bt_enabled(void);
 void iphone_system_bt_set_enabled(int enabled);
+
+int  iphone_system_has_csr(void);
+
+
 

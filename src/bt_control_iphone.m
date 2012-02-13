@@ -121,16 +121,6 @@ static io_connect_t  root_port = 0; // a reference to the Root Power Domain IOSe
 static int power_notification_pipe_fds[2];
 static data_source_t power_notification_ds;
 
-int iphone_system_bt_enabled(){
-    return SBA_getBluetoothEnabled();
-}
-
-void iphone_system_bt_set_enabled(int enabled)
-{
-    SBA_setBluetoothEnabled(enabled);
-    sleep(2); // give change a chance
-}
-
 static void (*power_notification_callback)(POWER_NOTIFICATION_t event) = NULL;
 
 #define BUFF_LEN 80
@@ -692,6 +682,10 @@ int bt_control_iphone_power_management_supported(void){
     return 1;
 }
 
+// direct access
+int bt_control_iphone_power_management_enabled(void){
+    return power_management_active;
+}
 
 // single instance
 bt_control_t bt_control_iphone = {
@@ -704,7 +698,16 @@ bt_control_t bt_control_iphone = {
     .register_for_power_notifications = iphone_register_for_power_notifications
 };
 
-// direct access
-int bt_control_iphone_power_management_enabled(void){
-    return power_management_active;
+int iphone_system_bt_enabled(void){
+    return SBA_getBluetoothEnabled();
+}
+
+void iphone_system_bt_set_enabled(int enabled)
+{
+    SBA_setBluetoothEnabled(enabled);
+    sleep(2); // give change a chance
+}
+
+int iphone_system_has_csr(void){
+    return iphone_has_csr();
 }
