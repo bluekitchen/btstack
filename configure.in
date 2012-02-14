@@ -92,6 +92,10 @@ esac
 # iPhone/iPod touch cross-compilation for darwin
 SDK_PATH="$DEVELOPER_PATH/SDKs/iPhoneOS$SDK_VERSION.sdk"
 if test "x$target" = xiphone; then
+    if test "x$SDK_VERSION" = "x5.0"; then
+        GCC_VERSION="4.2"
+    fi
+
     # Default DARWIN compiler version
     darwin_v='9'
     # Set up check for newest compiler:
@@ -108,7 +112,7 @@ if test "x$target" = xiphone; then
     REMOTE_DEVICE_DB="remote_device_db_iphone"
     USE_COCOA_RUN_LOOP="yes"
     HAVE_SO_NOSIGPIPE="yes";
-    PLATFORM_SOURCES="bt_control_iphone.m platform_iphone.m"
+    PLATFORM_SOURCES="bt_control_iphone.m platform_iphone.m hci_transport_h4_iphone.c"
 
     case "$host_os" in
         darwin*)
