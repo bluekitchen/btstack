@@ -370,18 +370,17 @@ static int iphone_write_initscript (int output, int baudrate){
         // iphone_write_string(output, "csr -p 0x01ca=0x0031\n");
         // iphone_write_string(output, "msleep 50\n");
         // iphone_write_string(output, "csr -p 0x01c7=0x0001,0x01f4,0x0005,0x0020\n");
-        power_management_active = 0;
     } else {
         /* BCM BT module, deactivated since untested for now */
         // iphone_write_string(output, "bcm -s 0x01,0x00,0x00,0x01,0x01,0x00,0x01,0x00,0x00,0x00,0x00,0x01\n");
         // iphone_write_string(output, "msleep 50\n");
-        power_management_active = 0;
     }
 #endif
 
     return 0;
 }
 
+// OS 4.x and higher
 static void iphone_write_configscript(int fd, int baudrate){
     iphone_write_string(fd, "device -D -S\n");
     if (iphone_has_csr()) {
@@ -395,7 +394,6 @@ static void iphone_write_configscript(int fd, int baudrate){
         // iphone_write_string(fd, "csr -p 0x01ca=0x0031\n");
         // iphone_write_string(fd, "msleep 50\n");
         // iphone_write_string(fd, "csr -p 0x01c7=0x0001,0x01f4,0x0005,0x0020\n");
-        power_management_active = 0;
 #endif
     } else {
         iphone_bcm_set_baud(fd, baudrate);
@@ -406,7 +404,6 @@ static void iphone_write_configscript(int fd, int baudrate){
         // power management only active on 4.x with BCM (iPhone 3GS and higher, all iPads, iPod touch 3G and higher)
         iphone_write_string(fd, "bcm -s 0x01,0x00,0x00,0x01,0x01,0x00,0x01,0x00,0x00,0x00,0x00,0x01\n");
         iphone_write_string(fd, "msleep 50\n");
-        power_management_active = 1;
 #endif
     }
     iphone_write_string(fd, "quit\n");
@@ -518,7 +515,11 @@ static int iphone_on (void *transport_config){
         };
         err = pclose(outputFile);
     }
-        
+
+#ifdef USE_POWERMANAGEMENT
+    power_management_active = bt_control_iphone_power_management_supported();
+#endif
+    
     // if we sleep for about 3 seconds, we miss a strage packet... but we don't care
     // sleep(3); 
         
