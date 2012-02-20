@@ -42,7 +42,7 @@ libBTstack.a: $(libBTstack_SOURCES:.c=.o) $(libBTstack_SOURCES:.m=.o)
 		ranlib $@
 
 BTdaemon: $(BTdaemon_SOURCES)
-		$(CC) $(CPPFLAGS) -o $@ $(BTdaemon_SOURCES) $(LDFLAGS)
+		$(CC) $(CPPFLAGS) -DHAVE_HCI_DUMP -o $@ $(BTdaemon_SOURCES) $(LDFLAGS)
 		@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
 clean:
