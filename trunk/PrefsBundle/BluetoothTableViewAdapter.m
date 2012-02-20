@@ -44,6 +44,12 @@
     CGRect dummy;
     self.loggingSwitch = [[UISwitch alloc] initWithFrame:dummy];
     [loggingSwitch addTarget:self action:@selector(loggingSwitchToggled) forControlEvents:UIControlEventValueChanged];
+    
+    // get old value
+    Boolean valid;
+    Boolean loggingOn = CFPreferencesGetAppBooleanValue(CFSTR("Logging"), CFSTR("ch.ringwald.btstack"), &valid);
+    if (!valid) loggingOn = false;
+    loggingSwitch.on = loggingOn;
     return self;
 }
 
