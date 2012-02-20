@@ -154,10 +154,18 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
                         printf("ACL => ");
                     }
                     break;
+                case LOG_MESSAGE_PACKET:
+                    // assume buffer is big enough
+                    packet[len] = 0;
+                    printf("LOG -- %s\n", (char*) packet);
+                    return;
+                default:
+                    return;
             }
             hexdump(packet, len);
             break;
         }
+            
         case HCI_DUMP_BLUEZ:
             bt_store_16( (uint8_t *) &header_bluez.len, 0, 1 + len);
             header_bluez.in  = in;
@@ -168,6 +176,7 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
             write (dump_file, &header_bluez, sizeof(hcidump_hdr) );
             write (dump_file, packet, len );
             break;
+            
         case HCI_DUMP_PACKETLOGGER:
             header_packetlogger.len = htonl( sizeof(pktlog_hdr) - 4 + len);
             header_packetlogger.ts_sec =  htonl(curr_time.tv_sec);
@@ -186,11 +195,18 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
                 case HCI_EVENT_PACKET:
                     header_packetlogger.type = 0x01;
                     break;
+                case LOG_MESSAGE_PACKET:
+                    header_packetlogger.type = 0xfc;
+                    break;
                 default:
                     return;
             }
             write (dump_file, &header_packetlogger, sizeof(pktlog_hdr) );
             write (dump_file, packet, len );
+            break;
+            
+        default:
+            break;
     }
 #endif
 }
