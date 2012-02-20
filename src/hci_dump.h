@@ -32,10 +32,12 @@
 /*
  *  hci_dump.h
  *
- *  Dump HCI trace in BlueZ's hcidump format
+ *  Dump HCI trace as BlueZ's hcidump format, Apple's PacketLogger, or stdout
  * 
  *  Created by Matthias Ringwald on 5/26/09.
  */
+
+#pragma once
 
 #include <stdint.h>
 
@@ -48,4 +50,5 @@ typedef enum {
 void hci_dump_open(char *filename, hci_dump_format_t format);
 void hci_dump_set_max_packets(int packets); // -1 for unlimited
 void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len);
+void hci_dump_log(const char * format, ...);
 void hci_dump_close(void);
