@@ -36,23 +36,36 @@
  */
 
 #include "config.h"
+#include "hci_dump.h"
 
 #include <stdio.h>
 
 #ifdef ENABLE_LOG_DEBUG
+#ifdef HAVE_HCI_DUMP
+#define log_debug(format, ...)  hci_dump_log(format,  ## __VA_ARGS__)
+#else
 #define log_debug(format, ...)  printf(format,  ## __VA_ARGS__)
+#endif
 #else
 #define log_debug(...)
 #endif
 
 #ifdef ENABLE_LOG_INFO
+#ifdef HAVE_HCI_DUMP
+#define log_info(format, ...)  hci_dump_log(format,  ## __VA_ARGS__)
+#else
 #define log_info(format, ...)  printf(format,  ## __VA_ARGS__)
+#endif
 #else
 #define log_info(...)
 #endif
 
 #ifdef ENABLE_LOG_ERROR
+#ifdef HAVE_HCI_DUMP
+#define log_error(format, ...)  hci_dump_log(format,  ## __VA_ARGS__)
+#else
 #define log_error(format, ...)  printf(format,  ## __VA_ARGS__)
+#endif
 #else
 #define log_error(...)
 #endif
