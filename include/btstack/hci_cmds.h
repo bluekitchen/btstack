@@ -53,7 +53,7 @@ extern "C" {
 
 // extension for client/server communication
 #define DAEMON_EVENT_PACKET     0x05
-
+    
 // L2CAP data
 #define L2CAP_DATA_PACKET       0x06
 
@@ -66,6 +66,9 @@ extern "C" {
 // Security Manager protocol data
 #define SM_DATA_PACKET          0x09
     
+// debug log messages
+#define LOG_MESSAGE_PACKET      0xfc
+
     
 // Fixed PSM numbers
 #define PSM_SDP    0x01
