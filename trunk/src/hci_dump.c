@@ -41,10 +41,12 @@
  *  Created by Matthias Ringwald on 5/26/09.
  */
 
+#include "config.h"
+
 #include "hci_dump.h"
 #include "hci.h"
 #include "hci_transport.h"
-#include "config.h"
+#include <btstack/hci_cmds.h>
 
 #ifndef EMBEDDED
 #include <fcntl.h>        // open
@@ -54,6 +56,7 @@
 #include <time.h>
 #include <sys/time.h>     // for timestamps
 #include <sys/stat.h>     // for mode flags
+#include <stdarg.h>       // for va_list
 #endif
 
 // BLUEZ hcidump
@@ -88,8 +91,9 @@ static int dump_format;
 static hcidump_hdr header_bluez;
 static pktlog_hdr  header_packetlogger;
 static char time_string[40];
-static int max_nr_packets = -1;
-static int nr_packets = 0;
+static int  max_nr_packets = -1;
+static int  nr_packets = 0;
+static char log_message_buffer[256];
 #endif
 
 void hci_dump_open(char *filename, hci_dump_format_t format){
@@ -209,6 +213,16 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
             break;
     }
 #endif
+}
+
+void hci_dump_log(const char * format, ...){
+#ifndef EMBEDDED
+    va_list argptr;
+    va_start(argptr, format);
+    int len = vsnprintf(log_message_buffer, sizeof(log_message_buffer), format, argptr);
+    hci_dump_packet(LOG_MESSAGE_PACKET, 0, (uint8_t*) log_message_buffer, len);
+    va_end(argptr);
+#endif    
 }
 
 void hci_dump_close(){
