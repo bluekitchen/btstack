@@ -1621,7 +1621,7 @@ void rfcomm_register_packet_handler(void (*handler)(void * connection, uint8_t p
 }
 
 // send packet over specific channel
-int rfcomm_send_internal(uint8_t rfcomm_cid, uint8_t *data, uint16_t len){
+int rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
