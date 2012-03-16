@@ -509,8 +509,8 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
             
             // store DES
             de_store_descriptor_with_len(&sdp_response_buffer[pos], DE_DES, DE_SIZE_VAR_16, filtered_attributes_size);
-            maximumAttributeByteCount -= 3;
             pos += 3;
+            maximumAttributeByteCount -= 3;
         }
         
         first_answer = 0;
@@ -519,6 +519,7 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
         uint16_t bytes_used;
         int complete = sdp_filter_attributes_in_attributeIDList(item->service_record, attributeIDList, continuation_offset, maximumAttributeByteCount, &bytes_used, &sdp_response_buffer[pos]);
         pos += bytes_used;
+        maximumAttributeByteCount -= bytes_used;
         
         if (complete) {
             continuation_offset = 0;
