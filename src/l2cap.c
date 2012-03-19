@@ -653,7 +653,7 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
                 (*attribute_protocol_packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
             }
             if (security_protocol_packet_handler) {
-                (*security_protocol_packet_handler)(SM_DATA_PACKET, 0, packet, size);
+                (*security_protocol_packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
             }
             break;
             
