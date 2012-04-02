@@ -1826,9 +1826,11 @@ void rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits){
 void rfcomm_close_connection(void *connection){
     linked_item_t *it;
     
-    // close open channels 
+    // close open channels
     for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
-        ((rfcomm_channel_t *)it)->state = RFCOMM_CHANNEL_SEND_DISC;
+        rfcomm_channel_t * channel = (rfcomm_channel_t *)it;
+        if (channel->connection != connection) continue;
+        channel->state = RFCOMM_CHANNEL_SEND_DISC;
     }
     
     // unregister services
