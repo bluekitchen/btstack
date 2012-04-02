@@ -120,13 +120,15 @@ int embedded_remove_timer(timer_source_t *ts){
 }
 
 void embedded_dump_timer(void){
+#ifdef HAVE_TICK
 #ifdef ENABLE_LOG_INFO 
     linked_item_t *it;
     int i = 0;
     for (it = (linked_item_t *) timers; it ; it = it->next){
         timer_source_t *ts = (timer_source_t*) it;
-        log_info("timer %u, timeout %u\n", i, (unsigned int) ts->timeout.tv_sec);
+        log_info("timer %u, timeout %u\n", i, (unsigned int) ts->timeout);
     }
+#endif
 #endif
 }
 
