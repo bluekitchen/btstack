@@ -1,3 +1,4 @@
+export TARGET=iphone:latest:4.0
 include $(THEOS)/makefiles/common.mk
 
 BUNDLE_NAME = BTstack

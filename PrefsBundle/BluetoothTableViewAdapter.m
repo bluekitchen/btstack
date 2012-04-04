@@ -61,7 +61,7 @@
 }
 
 -(void) loggingSwitchToggled {
-    NSLog(@"Logging: %u", loggingSwitch.on);
+    // NSLog(@"Logging: %u", loggingSwitch.on);
     CFPropertyListRef on;
     if (loggingSwitch.on){
         on = kCFBooleanTrue;
@@ -98,7 +98,7 @@
     
     BluetoothType_t bluetoothType = [[BluetoothController sharedInstance] targetType];
     BOOL activity = [[BluetoothController sharedInstance] isActive];
-    NSLog(@"tableView update: type %u, active %u", bluetoothType, activity);
+    // NSLog(@"tableView update: type %u, active %u", bluetoothType, activity);
     
     switch ([indexPath section]) {
         case 0:
