@@ -52,15 +52,13 @@
     BluetoothController *bluetoothController;
     UIView *_wrapperView;   // for < 3.2
     UITableView *tableView;
-    BOOL initialized;
 @end
 
 @implementation BluetoothPSViewController
 
 - (id)initForContentSize:(CGSize)size
 {
-    NSLog(@"initForContentSize");
-    initialized = NO;
+    // NSLog(@"initForContentSize");
 	if ([PSViewController instancesRespondToSelector:@selector(initForContentSize:)]) {
 		if ((self = [super initForContentSize:size])) {
 			CGRect frame;
@@ -77,8 +75,9 @@
 
 - (void)dealloc
 {
-    NSLog(@"dealloc");
+    // NSLog(@"dealloc");
     
+    [[BluetoothController sharedInstance] close];
     [[BluetoothController sharedInstance] setListener:nil];
 
 	[tableViewAdapter release];
@@ -88,8 +87,6 @@
     
 	[_wrapperView release];
 
-    initialized = NO;
-
 	[super dealloc];
 }
  
@@ -98,18 +95,37 @@
 	return [super view] ? [super view] : _wrapperView;
 }
 
--(void)myInit{
-    
-    if (initialized) return;
-    
-    initialized = YES;
-    
-    NSLog(@"myInit");
+-(void)didEnterBackground:(id)object{
+    // NSLog(@"didEnterBackground");
+    // close connection to BTdaemon
+    [[BluetoothController sharedInstance] close];
+}
 
+-(void)willEnterForeground:(id)object{
+    // NSLog(@"willEnterForeground");
+    // open connection to BTdaemon
+    [[BluetoothController sharedInstance] open];
+}
+
+-(void)viewWillAppear:(BOOL)animated {
+    // NSLog(@"viewWillAppear");
+    // open connection to BTdaemon
+    [[BluetoothController sharedInstance] open];
+}
+
+-(void) viewDidDisappear:(BOOL)animated {
+    // NSLog(@"viewDidDisappear");
+    // close connection to BTdaemon
+    [[BluetoothController sharedInstance] close];
+}
+
+-(void)viewDidLoad {
+    // setup view
+    // NSLog(@"initialize");
+    
     ((UINavigationItem*)[super navigationItem]).title = @"BTstack";
     
     UIView *view = [self view];
-
     
     tableView = [[UITableView alloc] initWithFrame:view.bounds style:UITableViewStyleGrouped];
     tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -120,27 +136,21 @@
     
     [view addSubview:tableView];
     
+    // setup Bluetooth Controller
     [[BluetoothController sharedInstance] setListener:tableViewAdapter];
-    [[BluetoothController sharedInstance] open];
+    
+    // register for backrounding events
+    [[NSNotificationCenter defaultCenter] 
+     addObserver:self 
+     selector:@selector(didEnterBackground:) 
+     name:UIApplicationDidEnterBackgroundNotification
+     object:nil];
+
+    [[NSNotificationCenter defaultCenter] 
+     addObserver:self 
+     selector:@selector(willEnterForeground:) 
+     name:UIApplicationWillEnterForegroundNotification
+     object:nil];
 }
 
--(void)viewDidLoad
-{
-    NSLog(@"viewDidLoad");
-	[super viewDidLoad];
-    [self myInit];
-}
-
-- (void)viewWillBecomeVisible:(void *)source
-{
-    NSLog(@"viewWillBecomeVisible %@", source);
-    [self myInit];
-	[super viewWillBecomeVisible:source];
-}
-
-- (void)viewWillAppear:(BOOL)animated
-{
-    NSLog(@"viewWillAppear");
-    [self myInit];
-}
 @end

@@ -100,7 +100,7 @@ static BluetoothController* sharedInstance = nil;
             NSLog(@"Cannot connect to BTdaemon!");
             return NO;
         }
-        NSLog(@"Connected to BTdaemon!");
+        // NSLog(@"Connected to BTdaemon!");
         isConnected = YES;
     }
 
@@ -111,7 +111,7 @@ static BluetoothController* sharedInstance = nil;
 }
 
 -(void)connectionBroke {
-    NSLog(@"BTstack stopped");
+    // NSLog(@"BTstack stopped");
     [self resetState];
     [self open];
     [listener bluetoothStateChanged];
@@ -119,7 +119,7 @@ static BluetoothController* sharedInstance = nil;
 
 -(void)close{
     if (isConnected) {
-        NSLog(@"Disconnected from BTdaemon!");
+        // NSLog(@"Disconnected from BTdaemon!");
         bt_close();
     }
     [self resetState];
@@ -165,7 +165,7 @@ static BluetoothController* sharedInstance = nil;
         return;
     }
     
-    NSLog(@"bluetoothStateChanged %u", type);
+    // NSLog(@"bluetoothStateChanged %u", type);
     
     state = kIdle;
     
@@ -180,11 +180,11 @@ static BluetoothController* sharedInstance = nil;
     switch(packet[0]){
         case BTSTACK_EVENT_STATE:
             hci_state = packet[2];
-            NSLog(@"new BTSTACK_EVENT_STATE %u", hci_state);
+            // NSLog(@"new BTSTACK_EVENT_STATE %u", hci_state);
             break;
         case BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED:
             system_bluetooth = packet[2];
-            NSLog(@"new BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED %u", system_bluetooth);
+            // NSLog(@"new BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED %u", system_bluetooth);
             break;
         default:
             break;
@@ -214,16 +214,16 @@ static BluetoothController* sharedInstance = nil;
         case kW4BTstackOffToEnableSystem:
             if (packet[0] == BTSTACK_EVENT_STATE) {
                 if (hci_state == HCI_STATE_OFF) {
-                    NSLog(@"Sending set system bluetooth enable A");
+                    // NSLog(@"Sending set system bluetooth enable A");
                     bt_send_cmd(&btstack_set_system_bluetooth_enabled, 1);
                 }
             }
             if (packet[0] == BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED) {
                 if (system_bluetooth == 0){
-                    NSLog(@"Sending set system bluetooth enable B");
+                    // NSLog(@"Sending set system bluetooth enable B");
                     bt_send_cmd(&btstack_set_system_bluetooth_enabled, 1);
                 } else {
-                    NSLog(@"Sending set system bluetooth enable DONE");
+                    // NSLog(@"Sending set system bluetooth enable DONE");
                     state = kIdle;
                 }
             }
@@ -238,7 +238,7 @@ static BluetoothController* sharedInstance = nil;
 }
 
 -(void)requestType:(BluetoothType_t)bluetoothType{
-    NSLog(@"bluetoothChangeRequested: old %u, new %u", [self bluetoothType], bluetoothType);
+    // NSLog(@"bluetoothChangeRequested: old %u, new %u", [self bluetoothType], bluetoothType);
 
     // ignore taps during transition
     if (state != kIdle) {
