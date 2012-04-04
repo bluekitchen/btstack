@@ -746,7 +746,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             
             if (multiplexer->state != RFCOMM_MULTIPLEXER_OPEN) break;
             rfcomm_hand_out_credits();
-            break;
+            return 1;
         
         case DAEMON_EVENT_HCI_PACKET_SENT:
             // testing DMA done code
