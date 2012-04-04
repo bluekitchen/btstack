@@ -347,6 +347,8 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
         case DAEMON_EVENT_PACKET:
             switch (data[0]) {
                 case DAEMON_EVENT_CONNECTION_OPENED:
+                    log_info("DAEMON_EVENT_CONNECTION_OPENED %p\n",connection);
+
                     client = malloc(sizeof(client_state_t));
                     if (!client) break; // fail
                     client->connection   = connection;
@@ -355,6 +357,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                     linked_list_add(&clients, (linked_item_t *) client);
                     break;
                 case DAEMON_EVENT_CONNECTION_CLOSED:
+                    log_info("DAEMON_EVENT_CONNECTION_CLOSED %p\n",connection);
                     sdp_unregister_services_for_connection(connection);
                     rfcomm_close_connection(connection);
                     l2cap_close_connection(connection);
