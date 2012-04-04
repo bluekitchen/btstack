@@ -109,7 +109,9 @@ static void db_synchronize(void){
 static void db_close(void){ 
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 
-    db_synchronize();
+    // don't call db_synchronize();
+    // a) we're calling db_synchronize() after each change already
+    // b) db_close is called during the SIGINT handler which causes a corrupt prefs file
     
     [remote_devices release];
     remote_devices = nil;
