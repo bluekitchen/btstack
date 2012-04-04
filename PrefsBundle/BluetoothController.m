@@ -174,7 +174,7 @@ static BluetoothController* sharedInstance = nil;
 }
 
 -(void)eventPacketHandler:(uint8_t*) packet withSize:(uint16_t) size {
-    NSLog(@"bt_packet_handler event: %u, state %u", packet[0], state);
+    // NSLog(@"bt_packet_handler event: %u, state %u", packet[0], state);
     
     // update state
     switch(packet[0]){
