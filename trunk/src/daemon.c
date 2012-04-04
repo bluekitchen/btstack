@@ -308,7 +308,6 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             sdp_unregister_service_internal(connection, service_record_handle);
             break;
         default:
-            //@TODO: log into hci dump as vendor specific "event"
             log_error("Error: command %u not implemented\n:", READ_CMD_OCF(packet));
             break;
     }
@@ -475,7 +474,8 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                 case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
                     // ACL buffer freed...
                     daemon_retry_parked();
-                    break;
+                    // no need to tell clients
+                    return;
                 case RFCOMM_EVENT_CREDITS:
                     // RFCOMM CREDITS received...
                     daemon_retry_parked();
