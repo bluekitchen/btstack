@@ -66,7 +66,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	
 	// delegate and listener
 	_delegate = nil;
-	[self setListeners:[[NSMutableArray alloc] init]];
+	[self setListeners:[[NSMutableSet alloc] init]];
 	
 	// Use Cocoa run loop
 	run_loop_init(RUN_LOOP_COCOA);
