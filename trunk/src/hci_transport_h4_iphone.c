@@ -163,7 +163,7 @@ static int h4_open(void *transport_config)
         goto err_out3;
     }
     cfmakeraw(&toptions);
-    speed_t brate = 3000000;
+    speed_t brate = (speed_t) hci_uart_config->baudrate_init;
     cfsetspeed(&toptions, brate);    
     toptions.c_iflag |=  IGNPAR;
     toptions.c_cflag = 0x00038b00;
