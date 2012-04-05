@@ -341,7 +341,7 @@ static int iphone_write_initscript (int output, int baudrate){
                     case 0x01c1:    // Configure H5 mode
                         mirror = 0;
                         break;
-                    case 0x01be:    // PSKET_UART_BAUD_RATE
+                    case 0x01be:    // PSKEY_UART_BAUD_RATE
                         iphone_csr_set_baud(output, baudrate);
                         mirror = 0;
                         break;
@@ -384,8 +384,10 @@ static int iphone_write_initscript (int output, int baudrate){
 static void iphone_write_configscript(int fd, int baudrate){
     iphone_write_string(fd, "device -D -S\n");
     if (iphone_has_csr()) {
-        iphone_csr_set_baud(fd, baudrate);
         iphone_csr_set_bd_addr(fd);
+        if (baudrate) {
+            iphone_csr_set_baud(fd, baudrate);
+        }
         iphone_write_string(fd, "csr -r\n");
 #ifdef USE_POWERMANAGEMENT
         /* CSR BT module: deactivated since untested, but it most likely won't work
@@ -396,10 +398,11 @@ static void iphone_write_configscript(int fd, int baudrate){
         // iphone_write_string(fd, "csr -p 0x01c7=0x0001,0x01f4,0x0005,0x0020\n");
 #endif
     } else {
-        iphone_bcm_set_baud(fd, baudrate);
-        iphone_write_string(fd, "msleep 200\n");
         iphone_bcm_set_bd_addr(fd);
-        iphone_write_string(fd, "msleep 50\n");
+        if (baudrate) {
+            iphone_bcm_set_baud(fd, baudrate);
+            iphone_write_string(fd, "msleep 200\n");
+        }
 #ifdef USE_POWERMANAGEMENT
         // power management only active on 4.x with BCM (iPhone 3GS and higher, all iPads, iPod touch 3G and higher)
         iphone_write_string(fd, "bcm -s 0x01,0x00,0x00,0x01,0x01,0x00,0x01,0x00,0x00,0x00,0x00,0x01\n");
@@ -410,14 +413,15 @@ static void iphone_write_configscript(int fd, int baudrate){
 }
 
 static int iphone_on (void *transport_config){
-
+    // hci_uart_config->baudrate_init == 0, if using native speed    
+    
     log_info("iphone_on: entered\n");
 
     int err = 0;
 
     hci_uart_config_t * hci_uart_config = (hci_uart_config_t*) transport_config;
 
-    // get local0-mac-addr and transport-speed from IORegistry 
+    // get local-mac-addr and transport-speed from IORegistry 
 	ioregistry_get_info();
 
 #ifdef USE_RANDOM_BD_ADDR
@@ -434,12 +438,7 @@ static int iphone_on (void *transport_config){
     bt_store_32(local_mac_address, 0, random());
     bt_store_16(local_mac_address, 4, random());
 #endif
-    
-    // if baud == 0 use system default
-    if (hci_uart_config->baudrate_init == 0) {
-        hci_uart_config->baudrate_init = transport_speed;
-    }
-    
+        
     if (iphone_system_bt_enabled()){
         perror("iphone_on: System Bluetooth enabled!");
         return 1;
@@ -491,38 +490,51 @@ static int iphone_on (void *transport_config){
         system(buffer);
     }
     
-    // advanced config - use custom baud rate
-    if (hci_uart_config->baudrate_init != transport_speed) {
-        FILE * outputFile = popen(bluetool, "r+");
-        setvbuf(outputFile, NULL, _IONBF, 0);
-        int output = fileno(outputFile);
-        
-        if (os4x) {
-            // 4.x - send custom config
-            iphone_write_configscript(output, hci_uart_config->baudrate_init);
-        } else {
-            // 3.x - modify original script on the fly
-            iphone_write_initscript(output, hci_uart_config->baudrate_init);
-        }
-        
-        // log output
-        fflush(outputFile);
-        int singlechar;
-        while (1) {
-            singlechar = fgetc(outputFile);
-            if (singlechar == EOF) break;
-            log_info("%c", singlechar);
-        };
-        err = pclose(outputFile);
+    // advanced config - set bd addr, use custom baud rate, enable deep sleep
+    FILE * outputFile = popen(bluetool, "r+");
+    setvbuf(outputFile, NULL, _IONBF, 0);
+    int output = fileno(outputFile);
+    
+    if (os4x) {
+        // 4.x - send custom config
+        iphone_write_configscript(output, hci_uart_config->baudrate_init);
+    } else {
+        // 3.x - modify original script on the fly
+        iphone_write_initscript(output, hci_uart_config->baudrate_init);
     }
+    
+    // log output
+    fflush(outputFile);
+    int singlechar = 0;
+    char linebuf[80];
+    int pos = 0;
+    while (singlechar != EOF) {
+        singlechar   = fgetc(outputFile);
+        linebuf[pos] = singlechar;
+        if (singlechar != EOF && singlechar != '\n' && singlechar != '\r' && pos < 78) {
+            pos++;
+            continue;
+        };
+        linebuf[pos] = 0;
+        if (pos > 0) {
+            log_info("%s", linebuf);
+        }
+        pos = 0;
+    };
+    err = pclose(outputFile);
 
 #ifdef USE_POWERMANAGEMENT
     power_management_active = bt_control_iphone_power_management_supported();
+
+    // if baud == 0, we're using system default: set in transport config
+    if (hci_uart_config->baudrate_init == 0) {
+        hci_uart_config->baudrate_init = transport_speed;
+    }
 #endif
     
     // if we sleep for about 3 seconds, we miss a strage packet... but we don't care
     // sleep(3); 
-        
+
     return err;
 }
 
