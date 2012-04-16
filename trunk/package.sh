@@ -4,7 +4,7 @@ PACKAGE=BTstack
 
 svn update
 
-VERSION=0.4
+VERSION=0.5
 REVISION=`svn info | grep Revision | cut -d " " -f 2`
 ARCHIVE=$PACKAGE-$VERSION-$REVISION.deb
 
