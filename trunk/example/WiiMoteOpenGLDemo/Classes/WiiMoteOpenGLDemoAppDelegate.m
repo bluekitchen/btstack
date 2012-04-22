@@ -230,7 +230,7 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 
 -(void) btstackManager:(BTstackManager*)manager deviceInfo:(BTDevice*)newDevice {
 	NSLog(@"Device Info: addr %@ name %@ COD 0x%06x", [newDevice addressString], [newDevice name], [newDevice classOfDevice] ); 
-	if ([newDevice name] && [[newDevice name] caseInsensitiveCompare:@"Nintendo RVL-CNT-01"] == NSOrderedSame){
+	if ([newDevice name] && [[newDevice name] hasPrefix:@"Nintendo RVL-CNT-01"]){
 		NSLog(@"WiiMote found with address %@", [newDevice addressString]);
 		device = newDevice;
 		[[BTstackManager sharedInstance] stopDiscovery];
