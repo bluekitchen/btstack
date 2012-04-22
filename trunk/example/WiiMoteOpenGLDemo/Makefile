@@ -8,7 +8,7 @@ APPLICATION_NAME = WiiMoteOpenGLDemo
 
 WiiMoteOpenGLDemo_FILES = $(wildcard *.c) $(wildcard *.m) $(wildcard Classes/*.m)
 WiiMoteOpenGLDemo_FILES += ../../CocoaTouch/src/BTstackManager.m ../../CocoaTouch/src/BTDiscoveryViewController.m ../../CocoaTouch/src/BTDevice.m
-WiiMoteOpenGLDemo_CFLAGS = -I . -I Classes -I ../../include -I ../../CocoaTouch/include
+WiiMoteOpenGLDemo_CFLAGS = -I. -I../.. -I Classes -I ../../include -I ../../CocoaTouch/include
 WiiMoteOpenGLDemo_LDFLAGS = -L../../src -lbtstack
 WiiMoteOpenGLDemo_FRAMEWORKS = Foundation UIKit CoreGraphics  OpenGLES QuartzCore
 
