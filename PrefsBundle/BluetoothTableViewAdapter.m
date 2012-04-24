@@ -41,8 +41,7 @@
 	bluetoothActivity = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
 	[bluetoothActivity startAnimating];
     _tableView = tableView;
-    CGRect dummy;
-    self.loggingSwitch = [[UISwitch alloc] initWithFrame:dummy];
+    self.loggingSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(0,0, 100, 20)]; // size will be ignored anyway
     [loggingSwitch addTarget:self action:@selector(loggingSwitchToggled) forControlEvents:UIControlEventValueChanged];
     
     // get old value
