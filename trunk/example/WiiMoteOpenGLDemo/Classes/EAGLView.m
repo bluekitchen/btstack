@@ -17,6 +17,8 @@
 #define USE_DEPTH_BUFFER 1
 #define DEGREES_TO_RADIANS(__ANGLE) ((__ANGLE) / 180.0 * M_PI)
 
+#define USE_BLUETOOTH
+
 // A class extension to declare private methods
 @interface EAGLView ()
 
@@ -372,11 +374,12 @@
 
 - (void)setRotationX:(int)x Y:(int)y Z:(int)z{
 
-	NSLog(@"BT data: %u %u %u", x , y ,z);
+	// NSLog(@"BT data: %u %u %u", x , y ,z);
 	rotateX = x;
 	rotateY = y;
 	rotateZ = z;
 }
+
 - (void)dealloc {
     
     [self stopAnimation];
