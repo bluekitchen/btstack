@@ -52,20 +52,12 @@ float getRotationAngle(float matrix[4][4]);
 	
 BTDevice *device;
 uint16_t wiiMoteConHandle = 0;
-WiiMoteOpenGLDemoAppDelegate * theMainApp;
-
-@implementation WiiMoteOpenGLDemoAppDelegate
-
-@synthesize window;
-@synthesize glView;
-@synthesize navControl;
-@synthesize glViewControl;
 
 #define SIZE  5
 int counter;
 
 // define the rest position 
-static float restPosition[3] = {0,0,1};
+float restPosition[3] = {0,0,1};
 // static float restPosition2[3] = {0,0,-1};
 #define histSize 5
 int histX[histSize];
@@ -83,24 +75,40 @@ static float addToHistory(int history[histSize], int value){
 	return sum/histSize;
 }
 
-static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
+@implementation WiiMoteOpenGLDemoAppDelegate
+
+@synthesize window;
+@synthesize glView;
+@synthesize navControl;
+@synthesize glViewControl;
+
+-(void) handleBtDataWithX:(uint8_t) x andY:(uint8_t) y andZ:(uint8_t) z{
 	
+    // NSLog(@"Data 0x%02x, 0x%02x, 0x%02x", x, y, z);
+    
 	float accData[3];
 	accData[0] = addToHistory( histX, 1 * (x - 128));
 	accData[1] = addToHistory( histY, 1 * (y - 128));
 	accData[2] = addToHistory( histZ, 1 * (z - 128));
 	
+    [glView setRotationX:0 Y:(accData[0] * 5) Z:0];
+    // NSLog(@"Set Rotation: %f", accData[0]);
+    return;
+    
 	float rotationMatrix[4][4];
-	getRotationMatrixFromVectors(restPosition, accData, rotationMatrix);
+
+#if 0 
+	// fancy stuff to fololow 
+    getRotationMatrixFromVectors(restPosition, accData, rotationMatrix);
 
 	float rotationAngle = getRotationAngle(rotationMatrix) * 180/M_PI;
 	
 #if 1
 	if (rotationAngle >= 90){
 		getRotationMatrixFromVectors(restPosition, accData, rotationMatrix);
-		[[theMainApp glView] setRotationX:0 Y:180 Z:0];
+		[glView setRotationX:0 Y:180 Z:0];
 	} else {
-		[[theMainApp glView] setRotationX:0 Y:0 Z:0];
+		[glView setRotationX:0 Y:0 Z:0];
 	}
 #endif
 #if 0
@@ -118,7 +126,9 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 	// }
 	
 #endif
-	[[theMainApp glView] setRotationMatrix:rotationMatrix];
+#endif
+	[glView setRotationMatrix:rotationMatrix];
+    
 }
 
 // direct access
@@ -134,7 +144,7 @@ static void bt_data_cb(uint8_t x, uint8_t y, uint8_t z){
 			
 		case L2CAP_DATA_PACKET:
 			if (packet[0] == 0xa1 && packet[1] == 0x31){
-				bt_data_cb(packet[4], packet[5], packet[6]);
+				[self handleBtDataWithX:packet[4] andY:packet[5] andZ:packet[6]];
 			}
 			break;
 			
