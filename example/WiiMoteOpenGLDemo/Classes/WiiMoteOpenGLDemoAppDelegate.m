@@ -52,6 +52,8 @@ float getRotationAngle(float matrix[4][4]);
 	
 BTDevice *device;
 uint16_t wiiMoteConHandle = 0;
+uint16_t hidControl = 0;
+uint16_t hidInterrupt = 0;
 
 #define SIZE  5
 int counter;
@@ -161,15 +163,17 @@ static float addToHistory(int history[histSize], int value){
 						wiiMoteConHandle = READ_BT_16(packet, 9);
 						NSLog(@"Channel successfully opened: handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x",
 							  wiiMoteConHandle, psm, source_cid,  READ_BT_16(packet, 15));
-						if (psm == 0x13) {
-							// interupt channel openedn succesfully, now open control channel, too.
-							bt_send_cmd(&l2cap_create_channel, event_addr, 0x11);
+						if (psm == PSM_HID_CONTROL) {
+							// control channel openedn succesfully, now open interrupt channel, too.
+                            hidControl = source_cid;
+							bt_send_cmd(&l2cap_create_channel, event_addr, PSM_HID_INTERRUPT);
 						} else {
 							// request acceleration data.. 
+                            hidInterrupt = source_cid;
 							uint8_t setMode31[] = { 0x52, 0x12, 0x00, 0x31 };
-							bt_send_l2cap( source_cid, setMode31, sizeof(setMode31));
+							bt_send_l2cap( hidControl, setMode31, sizeof(setMode31));
 							uint8_t setLEDs[] = { 0x52, 0x11, 0x10 };
-							bt_send_l2cap( source_cid, setLEDs, sizeof(setLEDs));
+							bt_send_l2cap( hidControl, setLEDs, sizeof(setLEDs));
 							
 							// start demo
 							[self startDemo];
@@ -250,7 +254,7 @@ static float addToHistory(int history[histSize], int value){
 -(void) discoveryStoppedBTstackManager:(BTstackManager*) manager {
 	NSLog(@"discoveryStopped!");
 	// connect to device
-	bt_send_cmd(&l2cap_create_channel, [device address], 0x13);
+	bt_send_cmd(&l2cap_create_channel, [device address], PSM_HID_CONTROL);
 }
 
 - (void)dealloc {
