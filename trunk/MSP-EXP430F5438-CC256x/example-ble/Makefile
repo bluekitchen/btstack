@@ -7,7 +7,7 @@
 BTSTACK_ROOT = ../..
 
 CC      = msp430-gcc
-CFLAGS  = -mmcu=msp430f5438a -g -Os -Wall -I. -I../src -I../firmware -I${BTSTACK_ROOT} -I${BTSTACK_ROOT}/chipset-cc256x -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include
+CFLAGS  = -mmcu=msp430f5438a -Os -Wall -I. -I../src -I../firmware -I${BTSTACK_ROOT} -I${BTSTACK_ROOT}/chipset-cc256x -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include
 LDFLAGS = -mmcu=msp430f5438a
 
 CORE   = \
@@ -47,7 +47,6 @@ LCD_OBJ    = $(LCD:.c=.o)
 %.hex: %.out
 	msp430-objcopy -O ihex $< $@    
 
-
 # create firmware image from common objects and example source file
 all: ble_server.out
 	
@@ -55,7 +54,7 @@ all: ble_server.out
 profile.h: profile.gatt
 	${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
     
-ble_server.out: profile.h ble_server.o  ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} 
+ble_server.out: profile.h ble_server.o ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} 
 	${CC} $^ ${LDFLAGS} -o $@
 
 
