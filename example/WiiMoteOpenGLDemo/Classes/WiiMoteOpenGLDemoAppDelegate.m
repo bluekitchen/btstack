@@ -44,6 +44,10 @@
 #import <btstack/run_loop.h>
 #import <btstack/hci_cmds.h>
 
+@interface UIDevice (privateAPI)
+-(BOOL) isWildcat;
+@end
+
 // quaternion rotation library
 float norm(float *vector, int dim);
 void normalizeVector(float *vector, int dim);
@@ -232,7 +236,23 @@ static float addToHistory(int history[histSize], int value){
 	discoveryView = [[BTDiscoveryViewController alloc] init];
 	[discoveryView setDelegate:self];
 	
-	// TODO fix
+    // footer text
+    CGRect newFrame = CGRectMake(0.0, 0.0, discoveryView.tableView.bounds.size.width, 100);
+	UIView *footerView = [[UIView alloc] initWithFrame:newFrame];
+
+    UIDevice * uiDevice = [UIDevice currentDevice];
+	float margin = ([uiDevice respondsToSelector:@selector(isWildcat)] && [uiDevice isWildcat]) ? 50 : 20;
+
+    UITextView *footer = [[UITextView alloc] initWithFrame:CGRectMake(margin,10,discoveryView.tableView.bounds.size.width - 2 * margin ,85)];
+	footer.text = @"Please make your WiiMote discoverable by pressing the little RED SYNC button.";
+	footer.font = [UIFont fontWithName:@"Arial" size:18];
+	footer.backgroundColor = [UIColor groupTableViewBackgroundColor];
+	footer.editable = false;
+	[footerView addSubview:footer];
+	[[discoveryView tableView] setTableFooterView:footerView];
+    
+    
+    // TODO fix
 	// [discoveryView setAllowSelection:NO];
 
 	// create view controller
