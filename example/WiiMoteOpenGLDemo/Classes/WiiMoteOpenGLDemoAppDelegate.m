@@ -150,19 +150,37 @@ static float addToHistory(int history[histSize], int value){
 			}
 			break;
 			
+
 		case HCI_EVENT_PACKET:
 			
 			switch (packet[0]){
-					
+
+				case HCI_EVENT_COMMAND_COMPLETE:
+					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable) ) {
+                        // connect to device
+                        bt_send_cmd(&l2cap_create_channel, [device address], PSM_HID_CONTROL);
+					}
+					break;
+
+				case HCI_EVENT_PIN_CODE_REQUEST:
+					bt_flip_addr(event_addr, &packet[2]);
+					if (BD_ADDR_CMP([device address], event_addr)) break;
+                    
+					// inform about pin code request
+					NSLog(@"HCI_EVENT_PIN_CODE_REQUEST\n");
+					bt_send_cmd(&hci_pin_code_request_reply, event_addr, 6,  &packet[2]); // use inverse bd_addr as PIN
+					break;
+
 				case L2CAP_EVENT_CHANNEL_OPENED:
 					if (packet[2] == 0) {
 						// inform about new l2cap connection
 						bt_flip_addr(event_addr, &packet[3]);
 						uint16_t psm = READ_BT_16(packet, 11); 
 						uint16_t source_cid = READ_BT_16(packet, 13); 
+                        uint16_t dest_cid   = READ_BT_16(packet, 15);
 						wiiMoteConHandle = READ_BT_16(packet, 9);
 						NSLog(@"Channel successfully opened: handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x",
-							  wiiMoteConHandle, psm, source_cid,  READ_BT_16(packet, 15));
+							  wiiMoteConHandle, psm, source_cid, dest_cid);
 						if (psm == PSM_HID_CONTROL) {
 							// control channel openedn succesfully, now open interrupt channel, too.
                             hidControl = source_cid;
@@ -170,11 +188,10 @@ static float addToHistory(int history[histSize], int value){
 						} else {
 							// request acceleration data.. 
                             hidInterrupt = source_cid;
-							uint8_t setMode31[] = { 0x52, 0x12, 0x00, 0x31 };
-							bt_send_l2cap( hidControl, setMode31, sizeof(setMode31));
-							uint8_t setLEDs[] = { 0x52, 0x11, 0x10 };
-							bt_send_l2cap( hidControl, setLEDs, sizeof(setLEDs));
-							
+							uint8_t setMode31[] = { 0xa2, 0x12, 0x00, 0x31 };
+							bt_send_l2cap( hidInterrupt, setMode31, sizeof(setMode31));
+							uint8_t setLEDs[] = { 0xa2, 0x11, 0x10 };
+							bt_send_l2cap( hidInterrupt, setLEDs, sizeof(setLEDs));
 							// start demo
 							[self startDemo];
 						}
@@ -253,8 +270,7 @@ static float addToHistory(int history[histSize], int value){
 
 -(void) discoveryStoppedBTstackManager:(BTstackManager*) manager {
 	NSLog(@"discoveryStopped!");
-	// connect to device
-	bt_send_cmd(&l2cap_create_channel, [device address], PSM_HID_CONTROL);
+	bt_send_cmd(&hci_write_authentication_enable, 0);
 }
 
 - (void)dealloc {
