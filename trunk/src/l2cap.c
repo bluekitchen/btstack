@@ -677,6 +677,7 @@ static void l2cap_handle_disconnect_request(l2cap_channel_t *channel, uint16_t i
 }
 
 static void l2cap_register_signaling_response(hci_con_handle_t handle, uint8_t code, uint8_t sig_id, uint16_t data){
+    // Vol 3, Part A, 4.3: "The DCID and SCID fields shall be ignored when the result field indi- cates the connection was refused."
     if (signaling_responses_pending < NR_PENDING_SIGNALING_RESPONSES) {
         signaling_responses[signaling_responses_pending].handle = handle;
         signaling_responses[signaling_responses_pending].code = code;
