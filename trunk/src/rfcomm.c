@@ -1714,6 +1714,7 @@ void rfcomm_create_channel2(void * connection, bd_addr_t *addr, uint8_t server_c
     // start connecting, if multiplexer is already up and running
     rfcomm_run();
 }
+
 void rfcomm_create_channel_with_initial_credits_internal(void * connection, bd_addr_t *addr, uint8_t server_channel, uint8_t initial_credits){
     rfcomm_create_channel2(connection, addr, server_channel, 1, initial_credits);
 }
@@ -1727,6 +1728,9 @@ void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
     if (channel) {
         channel->state = RFCOMM_CHANNEL_SEND_DISC;
     }
+    
+    // process
+    rfcomm_run();
 }
 
 
@@ -1802,6 +1806,8 @@ void rfcomm_accept_connection_internal(uint16_t rfcomm_cid){
         default:
             break;
     }
+
+    // process
     rfcomm_run();
 }
 
@@ -1816,6 +1822,8 @@ void rfcomm_decline_connection_internal(uint16_t rfcomm_cid){
         default:
             break;
     }
+
+    // process
     rfcomm_run();
 }
 
@@ -1824,6 +1832,8 @@ void rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits){
     if (!channel) return;
     if (!channel->incoming_flow_control) return;
     channel->new_credits_incoming += credits;
+
+    // process
     rfcomm_run();
 }
 
@@ -1849,6 +1859,9 @@ void rfcomm_close_connection(void *connection){
             it = it->next;
         }
     }
+
+    // process
+    rfcomm_run();
 }
 
 
