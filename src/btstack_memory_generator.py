@@ -6,14 +6,22 @@ void   btstack_memory_STRUCT_NAME_free(void *STRUCT_NAME);"""
 code_template = """
 // MARK: STRUCT_TYPE
 #ifdef POOL_COUNT
+#if POOL_COUNT > 0
 static STRUCT_TYPE STRUCT_NAME_storage[POOL_COUNT];
 static memory_pool_t STRUCT_NAME_pool;
 void * btstack_memory_STRUCT_NAME_get(void){
     return memory_pool_get(&STRUCT_NAME_pool);
 }
-void   btstack_memory_STRUCT_NAME_free(void *STRUCT_NAME){
+void btstack_memory_STRUCT_NAME_free(void *STRUCT_NAME){
     memory_pool_free(&STRUCT_NAME_pool, STRUCT_NAME);
 }
+#else
+void * btstack_memory_STRUCT_NAME_get(void){
+    return NULL;
+}
+void btstack_memory_STRUCT_NAME_free(void *STRUCT_NAME){
+};
+#endif
 #elif defined(HAVE_MALLOC)
 void * btstack_memory_STRUCT_NAME_get(void){
     return malloc(sizeof(STRUCT_TYPE));
@@ -24,7 +32,7 @@ void  btstack_memory_STRUCT_NAME_free(void *STRUCT_NAME){
 #endif
 """
 
-init_template = """#ifdef POOL_COUNT
+init_template = """#if POOL_COUNT > 0
     memory_pool_create(&STRUCT_NAME_pool, STRUCT_NAME_storage, POOL_COUNT, sizeof(STRUCT_TYPE));
 #endif"""
 

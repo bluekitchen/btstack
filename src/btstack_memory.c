@@ -55,14 +55,22 @@
 
 // MARK: hci_connection_t
 #ifdef MAX_NO_HCI_CONNECTIONS
+#if MAX_NO_HCI_CONNECTIONS > 0
 static hci_connection_t hci_connection_storage[MAX_NO_HCI_CONNECTIONS];
 static memory_pool_t hci_connection_pool;
 void * btstack_memory_hci_connection_get(void){
     return memory_pool_get(&hci_connection_pool);
 }
-void   btstack_memory_hci_connection_free(void *hci_connection){
+void btstack_memory_hci_connection_free(void *hci_connection){
     memory_pool_free(&hci_connection_pool, hci_connection);
 }
+#else
+void * btstack_memory_hci_connection_get(void){
+    return NULL;
+}
+void btstack_memory_hci_connection_free(void *hci_connection){
+};
+#endif
 #elif defined(HAVE_MALLOC)
 void * btstack_memory_hci_connection_get(void){
     return malloc(sizeof(hci_connection_t));
@@ -75,14 +83,22 @@ void  btstack_memory_hci_connection_free(void *hci_connection){
 
 // MARK: l2cap_service_t
 #ifdef MAX_NO_L2CAP_SERVICES
+#if MAX_NO_L2CAP_SERVICES > 0
 static l2cap_service_t l2cap_service_storage[MAX_NO_L2CAP_SERVICES];
 static memory_pool_t l2cap_service_pool;
 void * btstack_memory_l2cap_service_get(void){
     return memory_pool_get(&l2cap_service_pool);
 }
-void   btstack_memory_l2cap_service_free(void *l2cap_service){
+void btstack_memory_l2cap_service_free(void *l2cap_service){
     memory_pool_free(&l2cap_service_pool, l2cap_service);
 }
+#else
+void * btstack_memory_l2cap_service_get(void){
+    return NULL;
+}
+void btstack_memory_l2cap_service_free(void *l2cap_service){
+};
+#endif
 #elif defined(HAVE_MALLOC)
 void * btstack_memory_l2cap_service_get(void){
     return malloc(sizeof(l2cap_service_t));
@@ -95,14 +111,22 @@ void  btstack_memory_l2cap_service_free(void *l2cap_service){
 
 // MARK: l2cap_channel_t
 #ifdef MAX_NO_L2CAP_CHANNELS
+#if MAX_NO_L2CAP_CHANNELS > 0
 static l2cap_channel_t l2cap_channel_storage[MAX_NO_L2CAP_CHANNELS];
 static memory_pool_t l2cap_channel_pool;
 void * btstack_memory_l2cap_channel_get(void){
     return memory_pool_get(&l2cap_channel_pool);
 }
-void   btstack_memory_l2cap_channel_free(void *l2cap_channel){
+void btstack_memory_l2cap_channel_free(void *l2cap_channel){
     memory_pool_free(&l2cap_channel_pool, l2cap_channel);
 }
+#else
+void * btstack_memory_l2cap_channel_get(void){
+    return NULL;
+}
+void btstack_memory_l2cap_channel_free(void *l2cap_channel){
+};
+#endif
 #elif defined(HAVE_MALLOC)
 void * btstack_memory_l2cap_channel_get(void){
     return malloc(sizeof(l2cap_channel_t));
@@ -115,14 +139,22 @@ void  btstack_memory_l2cap_channel_free(void *l2cap_channel){
 
 // MARK: rfcomm_multiplexer_t
 #ifdef MAX_NO_RFCOMM_MULTIPLEXERS
+#if MAX_NO_RFCOMM_MULTIPLEXERS > 0
 static rfcomm_multiplexer_t rfcomm_multiplexer_storage[MAX_NO_RFCOMM_MULTIPLEXERS];
 static memory_pool_t rfcomm_multiplexer_pool;
 void * btstack_memory_rfcomm_multiplexer_get(void){
     return memory_pool_get(&rfcomm_multiplexer_pool);
 }
-void   btstack_memory_rfcomm_multiplexer_free(void *rfcomm_multiplexer){
+void btstack_memory_rfcomm_multiplexer_free(void *rfcomm_multiplexer){
     memory_pool_free(&rfcomm_multiplexer_pool, rfcomm_multiplexer);
 }
+#else
+void * btstack_memory_rfcomm_multiplexer_get(void){
+    return NULL;
+}
+void btstack_memory_rfcomm_multiplexer_free(void *rfcomm_multiplexer){
+};
+#endif
 #elif defined(HAVE_MALLOC)
 void * btstack_memory_rfcomm_multiplexer_get(void){
     return malloc(sizeof(rfcomm_multiplexer_t));
@@ -135,14 +167,22 @@ void  btstack_memory_rfcomm_multiplexer_free(void *rfcomm_multiplexer){
 
 // MARK: rfcomm_service_t
 #ifdef MAX_NO_RFCOMM_SERVICES
+#if MAX_NO_RFCOMM_SERVICES > 0
 static rfcomm_service_t rfcomm_service_storage[MAX_NO_RFCOMM_SERVICES];
 static memory_pool_t rfcomm_service_pool;
 void * btstack_memory_rfcomm_service_get(void){
     return memory_pool_get(&rfcomm_service_pool);
 }
-void   btstack_memory_rfcomm_service_free(void *rfcomm_service){
+void btstack_memory_rfcomm_service_free(void *rfcomm_service){
     memory_pool_free(&rfcomm_service_pool, rfcomm_service);
 }
+#else
+void * btstack_memory_rfcomm_service_get(void){
+    return NULL;
+}
+void btstack_memory_rfcomm_service_free(void *rfcomm_service){
+};
+#endif
 #elif defined(HAVE_MALLOC)
 void * btstack_memory_rfcomm_service_get(void){
     return malloc(sizeof(rfcomm_service_t));
@@ -155,14 +195,22 @@ void  btstack_memory_rfcomm_service_free(void *rfcomm_service){
 
 // MARK: rfcomm_channel_t
 #ifdef MAX_NO_RFCOMM_CHANNELS
+#if MAX_NO_RFCOMM_CHANNELS > 0
 static rfcomm_channel_t rfcomm_channel_storage[MAX_NO_RFCOMM_CHANNELS];
 static memory_pool_t rfcomm_channel_pool;
 void * btstack_memory_rfcomm_channel_get(void){
     return memory_pool_get(&rfcomm_channel_pool);
 }
-void   btstack_memory_rfcomm_channel_free(void *rfcomm_channel){
+void btstack_memory_rfcomm_channel_free(void *rfcomm_channel){
     memory_pool_free(&rfcomm_channel_pool, rfcomm_channel);
 }
+#else
+void * btstack_memory_rfcomm_channel_get(void){
+    return NULL;
+}
+void btstack_memory_rfcomm_channel_free(void *rfcomm_channel){
+};
+#endif
 #elif defined(HAVE_MALLOC)
 void * btstack_memory_rfcomm_channel_get(void){
     return malloc(sizeof(rfcomm_channel_t));
@@ -175,14 +223,22 @@ void  btstack_memory_rfcomm_channel_free(void *rfcomm_channel){
 
 // MARK: db_mem_device_name_t
 #ifdef MAX_NO_DB_MEM_DEVICE_NAMES
+#if MAX_NO_DB_MEM_DEVICE_NAMES > 0
 static db_mem_device_name_t db_mem_device_name_storage[MAX_NO_DB_MEM_DEVICE_NAMES];
 static memory_pool_t db_mem_device_name_pool;
 void * btstack_memory_db_mem_device_name_get(void){
     return memory_pool_get(&db_mem_device_name_pool);
 }
-void   btstack_memory_db_mem_device_name_free(void *db_mem_device_name){
+void btstack_memory_db_mem_device_name_free(void *db_mem_device_name){
     memory_pool_free(&db_mem_device_name_pool, db_mem_device_name);
 }
+#else
+void * btstack_memory_db_mem_device_name_get(void){
+    return NULL;
+}
+void btstack_memory_db_mem_device_name_free(void *db_mem_device_name){
+};
+#endif
 #elif defined(HAVE_MALLOC)
 void * btstack_memory_db_mem_device_name_get(void){
     return malloc(sizeof(db_mem_device_name_t));
@@ -195,14 +251,22 @@ void  btstack_memory_db_mem_device_name_free(void *db_mem_device_name){
 
 // MARK: db_mem_device_link_key_t
 #ifdef MAX_NO_DB_MEM_DEVICE_LINK_KEYS
+#if MAX_NO_DB_MEM_DEVICE_LINK_KEYS > 0
 static db_mem_device_link_key_t db_mem_device_link_key_storage[MAX_NO_DB_MEM_DEVICE_LINK_KEYS];
 static memory_pool_t db_mem_device_link_key_pool;
 void * btstack_memory_db_mem_device_link_key_get(void){
     return memory_pool_get(&db_mem_device_link_key_pool);
 }
-void   btstack_memory_db_mem_device_link_key_free(void *db_mem_device_link_key){
+void btstack_memory_db_mem_device_link_key_free(void *db_mem_device_link_key){
     memory_pool_free(&db_mem_device_link_key_pool, db_mem_device_link_key);
 }
+#else
+void * btstack_memory_db_mem_device_link_key_get(void){
+    return NULL;
+}
+void btstack_memory_db_mem_device_link_key_free(void *db_mem_device_link_key){
+};
+#endif
 #elif defined(HAVE_MALLOC)
 void * btstack_memory_db_mem_device_link_key_get(void){
     return malloc(sizeof(db_mem_device_link_key_t));
@@ -215,14 +279,22 @@ void  btstack_memory_db_mem_device_link_key_free(void *db_mem_device_link_key){
 
 // MARK: db_mem_service_t
 #ifdef MAX_NO_DB_MEM_SERVICES
+#if MAX_NO_DB_MEM_SERVICES > 0
 static db_mem_service_t db_mem_service_storage[MAX_NO_DB_MEM_SERVICES];
 static memory_pool_t db_mem_service_pool;
 void * btstack_memory_db_mem_service_get(void){
     return memory_pool_get(&db_mem_service_pool);
 }
-void   btstack_memory_db_mem_service_free(void *db_mem_service){
+void btstack_memory_db_mem_service_free(void *db_mem_service){
     memory_pool_free(&db_mem_service_pool, db_mem_service);
 }
+#else
+void * btstack_memory_db_mem_service_get(void){
+    return NULL;
+}
+void btstack_memory_db_mem_service_free(void *db_mem_service){
+};
+#endif
 #elif defined(HAVE_MALLOC)
 void * btstack_memory_db_mem_service_get(void){
     return malloc(sizeof(db_mem_service_t));
@@ -234,31 +306,31 @@ void  btstack_memory_db_mem_service_free(void *db_mem_service){
 
 // init
 void btstack_memory_init(void){
-#ifdef MAX_NO_HCI_CONNECTIONS
+#if MAX_NO_HCI_CONNECTIONS > 0
     memory_pool_create(&hci_connection_pool, hci_connection_storage, MAX_NO_HCI_CONNECTIONS, sizeof(hci_connection_t));
 #endif
-#ifdef MAX_NO_L2CAP_SERVICES
+#if MAX_NO_L2CAP_SERVICES > 0
     memory_pool_create(&l2cap_service_pool, l2cap_service_storage, MAX_NO_L2CAP_SERVICES, sizeof(l2cap_service_t));
 #endif
-#ifdef MAX_NO_L2CAP_CHANNELS
+#if MAX_NO_L2CAP_CHANNELS > 0
     memory_pool_create(&l2cap_channel_pool, l2cap_channel_storage, MAX_NO_L2CAP_CHANNELS, sizeof(l2cap_channel_t));
 #endif
-#ifdef MAX_NO_RFCOMM_MULTIPLEXERS
+#if MAX_NO_RFCOMM_MULTIPLEXERS > 0
     memory_pool_create(&rfcomm_multiplexer_pool, rfcomm_multiplexer_storage, MAX_NO_RFCOMM_MULTIPLEXERS, sizeof(rfcomm_multiplexer_t));
 #endif
-#ifdef MAX_NO_RFCOMM_SERVICES
+#if MAX_NO_RFCOMM_SERVICES > 0
     memory_pool_create(&rfcomm_service_pool, rfcomm_service_storage, MAX_NO_RFCOMM_SERVICES, sizeof(rfcomm_service_t));
 #endif
-#ifdef MAX_NO_RFCOMM_CHANNELS
+#if MAX_NO_RFCOMM_CHANNELS > 0
     memory_pool_create(&rfcomm_channel_pool, rfcomm_channel_storage, MAX_NO_RFCOMM_CHANNELS, sizeof(rfcomm_channel_t));
 #endif
-#ifdef MAX_NO_DB_MEM_DEVICE_NAMES
+#if MAX_NO_DB_MEM_DEVICE_NAMES > 0
     memory_pool_create(&db_mem_device_name_pool, db_mem_device_name_storage, MAX_NO_DB_MEM_DEVICE_NAMES, sizeof(db_mem_device_name_t));
 #endif
-#ifdef MAX_NO_DB_MEM_DEVICE_LINK_KEYS
+#if MAX_NO_DB_MEM_DEVICE_LINK_KEYS > 0
     memory_pool_create(&db_mem_device_link_key_pool, db_mem_device_link_key_storage, MAX_NO_DB_MEM_DEVICE_LINK_KEYS, sizeof(db_mem_device_link_key_t));
 #endif
-#ifdef MAX_NO_DB_MEM_SERVICES
+#if MAX_NO_DB_MEM_SERVICES > 0
     memory_pool_create(&db_mem_service_pool, db_mem_service_storage, MAX_NO_DB_MEM_SERVICES, sizeof(db_mem_service_t));
 #endif
 }
