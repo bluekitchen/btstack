@@ -436,7 +436,7 @@ static void event_handler(uint8_t *packet, int size){
                     // determine usable ACL packet types
                     hci_stack.packet_types = hci_acl_packet_types_for_buffer_size(hci_stack.acl_data_packet_length);
                     
-                    log_error("hci_read_buffer_size: used size %u, count %u, packet types %04x\n",
+                    log_info("hci_read_buffer_size: used size %u, count %u, packet types %04x\n",
                              hci_stack.acl_data_packet_length, hci_stack.total_num_acl_packets, hci_stack.packet_types); 
                 }
             }
