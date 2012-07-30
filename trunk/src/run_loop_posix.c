@@ -129,7 +129,7 @@ void posix_execute(void) {
         FD_ZERO(&descriptors);
         int highest_fd = 0;
         for (ds = (data_source_t *) data_sources; ds ; ds = (data_source_t *) ds->item.next){
-            if (ds->fd) {
+            if (ds->fd >= 0) {
                 FD_SET(ds->fd, &descriptors);
                 if (ds->fd > highest_fd) {
                     highest_fd = ds->fd;
