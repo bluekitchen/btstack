@@ -1308,6 +1308,7 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...){
 // TODO: generalize, use table similar to hci_create_command
 
 void hci_emit_state(){
+    log_info("BTSTACK_EVENT_STATE %u", hci_stack.state);
     uint8_t event[3];
     event[0] = BTSTACK_EVENT_STATE;
     event[1] = sizeof(event) - 2;
@@ -1341,6 +1342,7 @@ void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
 }
 
 void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
+    log_info("L2CAP_EVENT_TIMEOUT_CHECK");
     uint8_t event[4];
     event[0] = L2CAP_EVENT_TIMEOUT_CHECK;
     event[1] = sizeof(event) - 2;
@@ -1350,6 +1352,7 @@ void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
 }
 
 void hci_emit_nr_connections_changed(){
+    log_info("BTSTACK_EVENT_NR_CONNECTIONS_CHANGED %u", nr_hci_connections());
     uint8_t event[3];
     event[0] = BTSTACK_EVENT_NR_CONNECTIONS_CHANGED;
     event[1] = sizeof(event) - 2;
@@ -1359,6 +1362,7 @@ void hci_emit_nr_connections_changed(){
 }
 
 void hci_emit_hci_open_failed(){
+    log_info("BTSTACK_EVENT_POWERON_FAILED");
     uint8_t event[2];
     event[0] = BTSTACK_EVENT_POWERON_FAILED;
     event[1] = sizeof(event) - 2;
@@ -1368,6 +1372,7 @@ void hci_emit_hci_open_failed(){
 
 #ifndef EMBEDDED
 void hci_emit_btstack_version() {
+    log_info("BTSTACK_EVENT_VERSION %u.%u", BTSTACK_MAJOR, BTSTACK_MINOR);
     uint8_t event[6];
     event[0] = BTSTACK_EVENT_VERSION;
     event[1] = sizeof(event) - 2;
@@ -1380,6 +1385,7 @@ void hci_emit_btstack_version() {
 #endif
 
 void hci_emit_system_bluetooth_enabled(uint8_t enabled){
+    log_info("BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED %u", enabled);
     uint8_t event[3];
     event[0] = BTSTACK_EVENT_SYSTEM_BLUETOOTH_ENABLED;
     event[1] = sizeof(event) - 2;
@@ -1389,17 +1395,22 @@ void hci_emit_system_bluetooth_enabled(uint8_t enabled){
 }
 
 void hci_emit_remote_name_cached(bd_addr_t *addr, device_name_t *name){
-    uint8_t event[2+1+6+248];
+    uint8_t event[2+1+6+248+1]; // +1 for \0 in log_info
     event[0] = BTSTACK_EVENT_REMOTE_NAME_CACHED;
-    event[1] = sizeof(event) - 2;
+    event[1] = sizeof(event) - 2 - 1;
     event[2] = 0;   // just to be compatible with HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
     bt_flip_addr(&event[3], *addr);
     memcpy(&event[9], name, 248);
-    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-    hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
+    
+    event[9+248] = 0;   // assert \0 for log_info
+    log_info("BTSTACK_EVENT_REMOTE_NAME_CACHED %s = '%s'", bd_addr_to_str(*addr), &event[9]);
+
+    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event)-1);
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event)-1);
 }
 
 void hci_emit_discoverable_enabled(uint8_t enabled){
+    log_info("BTSTACK_EVENT_DISCOVERABLE_ENABLED %u", enabled);
     uint8_t event[3];
     event[0] = BTSTACK_EVENT_DISCOVERABLE_ENABLED;
     event[1] = sizeof(event) - 2;
