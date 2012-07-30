@@ -32,11 +32,17 @@
 // adapted from Ryan Petrich's Activator preferences bundle
 // https://github.com/rpetrich/libactivator/blob/master/Preferences.m
 
-#import <Preferences/Preferences.h>
+
 #import <UIKit/UIKit.h>
 
 #import "BluetoothTableViewAdapter.h"
 #import "BluetoothController.h"
+
+// instead of #import <Preferences/Preferences.h>, minimal class definition
+@interface PSViewController : NSObject
+- (id)initForContentSize:(CGSize)size;
+- (id)navigationItem;
+@end
 
 @interface PSViewController (OS32)
 @property (nonatomic, retain) UIView *view;
