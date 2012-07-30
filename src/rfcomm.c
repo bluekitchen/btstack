@@ -126,6 +126,8 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
 
 // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
 static void rfcomm_emit_connection_request(rfcomm_channel_t *channel) {
+    log_info("RFCOMM_EVENT_INCOMING_CONNECTION addr %s channel #%u cid 0x%02x",
+             bd_addr_to_str(channel->multiplexer->remote_addr), channel->dlci>>1, channel->rfcomm_cid);
     uint8_t event[11];
     event[0] = RFCOMM_EVENT_INCOMING_CONNECTION;
     event[1] = sizeof(event) - 2;
@@ -141,6 +143,9 @@ static void rfcomm_emit_connection_request(rfcomm_channel_t *channel) {
 // next Cydia release will use SVN version of this
 // data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
 static void rfcomm_emit_channel_opened(rfcomm_channel_t *channel, uint8_t status) {
+    log_info("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE status 0x%x addr %s handle 0x%x channel #%u cid 0x%02x mtu %u",
+             status, bd_addr_to_str(channel->multiplexer->remote_addr), channel->multiplexer->con_handle,
+             channel->dlci>>1, channel->rfcomm_cid, channel->max_frame_size);
     uint8_t event[16];
     uint8_t pos = 0;
     event[pos++] = RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE;
@@ -156,6 +161,8 @@ static void rfcomm_emit_channel_opened(rfcomm_channel_t *channel, uint8_t status
 }
 
 static void rfcomm_emit_channel_open_failed_outgoing_memory(void * connection, bd_addr_t *addr, uint8_t server_channel){
+    log_info("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE BTSTACK_MEMORY_ALLOC_FAILED addr %s",
+             bd_addr_to_str(*addr));
     uint8_t event[16];
     uint8_t pos = 0;
     event[pos++] = RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE;
@@ -173,6 +180,7 @@ static void rfcomm_emit_channel_open_failed_outgoing_memory(void * connection, b
 // data: event(8), len(8), creidts incoming(8), new credits incoming(8), credits outgoing(8)
 static inline void rfcomm_emit_credit_status(rfcomm_channel_t * channel) {
 #ifdef RFCOMM_LOG_CREDITS
+    log_info("RFCOMM_LOG_CREDITS incoming %u new_incoming %u outgoing %u", channel->credits_incoming, channel->new_credits_incoming, channel->credits_outgoing);
     uint8_t event[5];
     event[0] = 0x88;
     event[1] = sizeof(event) - 2;
@@ -185,6 +193,7 @@ static inline void rfcomm_emit_credit_status(rfcomm_channel_t * channel) {
 
 // data: event(8), len(8), rfcomm_cid(16)
 static void rfcomm_emit_channel_closed(rfcomm_channel_t * channel) {
+    log_info("RFCOMM_EVENT_CHANNEL_CLOSED cid 0x%02x", channel->rfcomm_cid);
     uint8_t event[4];
     event[0] = RFCOMM_EVENT_CHANNEL_CLOSED;
     event[1] = sizeof(event) - 2;
@@ -194,6 +203,7 @@ static void rfcomm_emit_channel_closed(rfcomm_channel_t * channel) {
 }
 
 static void rfcomm_emit_credits(rfcomm_channel_t * channel, uint8_t credits) {
+    log_info("RFCOMM_EVENT_CREDITS cid 0x%02x credits %u", channel->rfcomm_cid, credits);
     uint8_t event[5];
     event[0] = RFCOMM_EVENT_CREDITS;
     event[1] = sizeof(event) - 2;
@@ -204,6 +214,7 @@ static void rfcomm_emit_credits(rfcomm_channel_t * channel, uint8_t credits) {
 }
 
 static void rfcomm_emit_service_registered(void *connection, uint8_t status, uint8_t channel){
+    log_info("RFCOMM_EVENT_SERVICE_REGISTERED status 0x%x channel #%u", status, channel);
     uint8_t event[4];
     event[0] = RFCOMM_EVENT_SERVICE_REGISTERED;
     event[1] = sizeof(event) - 2;
@@ -1667,17 +1678,17 @@ int rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
-        log_error("rfcomm_send_internal cid %u doesn't exist!\n", rfcomm_cid);
+        log_error("rfcomm_send_internal cid 0x%02x doesn't exist!\n", rfcomm_cid);
         return 0;
     }
     
     if (!channel->credits_outgoing){
-        log_info("rfcomm_send_internal cid %u, no rfcomm outgoing credits!\n", rfcomm_cid);
+        log_info("rfcomm_send_internal cid 0x%02x, no rfcomm outgoing credits!\n", rfcomm_cid);
         return RFCOMM_NO_OUTGOING_CREDITS;
     }
 
     if (!channel->packets_granted){
-        log_info("rfcomm_send_internal cid %u, no rfcomm credits granted!\n", rfcomm_cid);
+        log_info("rfcomm_send_internal cid 0x%02x, no rfcomm credits granted!\n", rfcomm_cid);
         return RFCOMM_NO_OUTGOING_CREDITS;
     }
     
@@ -1711,7 +1722,7 @@ int rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 }
 
 void rfcomm_create_channel2(void * connection, bd_addr_t *addr, uint8_t server_channel, uint8_t incoming_flow_control, uint8_t initial_credits){
-    log_info("rfcomm_create_channel_internal to %s, at channel #%02x, flow control %u, init credits %u\n",  bd_addr_to_str(*addr), server_channel,
+    log_info("RFCOMM_CREATE_CHANNEL addr %s channel #%u flow control %u init credits %u\n",  bd_addr_to_str(*addr), server_channel,
              incoming_flow_control, initial_credits);
     
     // create new multiplexer if necessary
@@ -1761,6 +1772,7 @@ void rfcomm_create_channel_internal(void * connection, bd_addr_t *addr, uint8_t 
 }
 
 void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
+    log_info("RFCOMM_DISCONNECT cid 0x%02x", rfcomm_cid);
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (channel) {
         channel->state = RFCOMM_CHANNEL_SEND_DISC;
@@ -1772,6 +1784,8 @@ void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
 
 
 void rfcomm_register_service2(void * connection, uint8_t channel, uint16_t max_frame_size, uint8_t incoming_flow_control, uint8_t initial_credits){
+    log_info("RFCOMM_REGISTER_SERVICE channel #%u mtu %u flow_control %u credits %u",
+             channel, max_frame_size, incoming_flow_control, initial_credits);
     // check if already registered
     rfcomm_service_t * service = rfcomm_service_for_channel(channel);
     if (service){
@@ -1814,6 +1828,7 @@ void rfcomm_register_service_internal(void * connection, uint8_t channel, uint16
 }
 
 void rfcomm_unregister_service_internal(uint8_t service_channel){
+    log_info("RFCOMM_UNREGISTER_SERVICE #%u", service_channel);
     rfcomm_service_t *service = rfcomm_service_for_channel(service_channel);
     if (!service) return;
     linked_list_remove(&rfcomm_services, (linked_item_t *) service);
@@ -1827,7 +1842,7 @@ void rfcomm_unregister_service_internal(uint8_t service_channel){
 }
 
 void rfcomm_accept_connection_internal(uint16_t rfcomm_cid){
-    log_info("Received Accept Connction\n");
+    log_info("RFCOMM_ACCEPT_CONNECTION cid 0x%02x", rfcomm_cid);
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel) return;
     switch (channel->state) {
@@ -1849,7 +1864,7 @@ void rfcomm_accept_connection_internal(uint16_t rfcomm_cid){
 }
 
 void rfcomm_decline_connection_internal(uint16_t rfcomm_cid){
-    log_info("Received Decline Connction\n");
+    log_info("RFCOMM_DECLINE_CONNECTION cid 0x%02x", rfcomm_cid);
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel) return;
     switch (channel->state) {
@@ -1865,6 +1880,7 @@ void rfcomm_decline_connection_internal(uint16_t rfcomm_cid){
 }
 
 void rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits){
+    log_info("RFCOMM_GRANT_CREDITS cid 0x%02x credits %u", rfcomm_cid, credits);
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel) return;
     if (!channel->incoming_flow_control) return;
