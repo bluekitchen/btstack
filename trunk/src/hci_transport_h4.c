@@ -91,7 +91,7 @@ static uint8_t hci_packet[1+HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl he
 static int    h4_open(void *transport_config){
     hci_uart_config = (hci_uart_config_t*) transport_config;
     struct termios toptions;
-    int flags = O_RDWR | O_NOCTTY;
+    int flags = O_RDWR | O_NOCTTY | O_NONBLOCK;
     int fd = open(hci_uart_config->device_name, flags);
     if (fd == -1)  {
         perror("init_serialport: Unable to open port ");
