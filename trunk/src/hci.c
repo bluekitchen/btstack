@@ -1038,7 +1038,7 @@ void hci_run(){
     if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
 
     // send scan enable
-    if (hci_stack.new_scan_enable_value != 0xff){
+    if (hci_stack.state == HCI_STATE_WORKING && hci_stack.new_scan_enable_value != 0xff){
         hci_send_cmd(&hci_write_scan_enable, hci_stack.new_scan_enable_value);
         hci_stack.new_scan_enable_value = 0xff;
     }
