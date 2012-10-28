@@ -72,6 +72,16 @@ void run_loop_assert(void){
 #endif
 }
 
+
+void run_loop_set_timer_handler(timer_source_t *ts, void (*process)(timer_source_t *_ts)){
+    ts->process = process;
+};
+
+void run_loop_set_data_source_handler(data_source_t *ds, int (*process)(data_source_t *_ds)){
+    ds->process = process;
+};
+
+
 /**
  * Add data_source to run_loop
  */

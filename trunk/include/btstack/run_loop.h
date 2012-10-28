@@ -78,12 +78,19 @@ typedef struct timer {
 // set timer based on current time
 void run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms);
 
+// set timeout callback
+void run_loop_set_timer_handler(timer_source_t *ts, void (*process)(timer_source_t *_ts));
+
 // add/remove timer_source
 void run_loop_add_timer(timer_source_t *timer); 
 int  run_loop_remove_timer(timer_source_t *timer);
 
 // init must be called before any other run_loop call
 void run_loop_init(RUN_LOOP_TYPE type);
+
+// set data-source callback
+void run_loop_set_data_source_handler(data_source_t *ds, int (*process)(data_source_t *_ds));
+
 
 // add/remove data_source
 void run_loop_add_data_source(data_source_t *dataSource);
