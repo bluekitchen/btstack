@@ -376,7 +376,7 @@ void l2cap_run(void){
         hci_con_handle_t handle = signaling_responses[0].handle;
         uint8_t sig_id = signaling_responses[0].sig_id;
         uint16_t infoType = signaling_responses[0].data;    // INFORMATION_REQUEST
-        uint16_t result   = signaling_responses[0].data;    // CONNECTION_REQUEST
+        uint16_t result   = signaling_responses[0].data;    // CONNECTION_REQUEST, COMMAND_REJECT
         
         switch (signaling_responses[0].code){
             case CONNECTION_REQUEST:
@@ -394,6 +394,9 @@ void l2cap_run(void){
                     // all other types are not supported
                     l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 1, 0, NULL);
                 }
+                break;
+            case COMMAND_REJECT:
+                l2cap_send_signaling_packet(handle, COMMAND_REJECT, sig_id, result);
                 break;
             default:
                 // should not happen
@@ -453,9 +456,25 @@ void l2cap_run(void){
             
             case L2CAP_STATE_CONFIG:
                 if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP){
+                    uint16_t flags = 0;
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP);
-                    channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP);
-                    l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, 0, 0, 0, NULL);
+                    if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_CONT) {
+                        flags = 1;
+                    } else {
+                        channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP);
+                    }
+                    if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID){
+                        l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, L2CAP_CONF_RESULT_UNKNOWN_OPTIONS, 0, NULL);
+                    } else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU){
+                        config_options[0] = 1; // MTU
+                        config_options[1] = 2; // len param
+                        bt_store_16( (uint8_t*)&config_options, 2, channel->remote_mtu);
+                        l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, 0, 4, &config_options);
+                        channelStateVarClearFlag(channel,L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
+                    } else {
+                        l2cap_send_signaling_packet(channel->handle, CONFIGURE_RESPONSE, channel->remote_sig_id, channel->remote_cid, flags, 0, 0, NULL);
+                    }
+                    channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_CONT);
                 }
                 else if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ){
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ);
@@ -783,16 +802,30 @@ void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t 
 
     channel->remote_sig_id = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
 
+    uint16_t flags = READ_BT_16(command, 6);
+    if (flags & 1) {
+        channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_CONT);
+    }
+
     // accept the other's configuration options
     uint16_t end_pos = 4 + READ_BT_16(command, L2CAP_SIGNALING_COMMAND_LENGTH_OFFSET);
     uint16_t pos     = 8;
     while (pos < end_pos){
-        uint8_t type   = command[pos++];
+        uint8_t option_hint = command[pos] >> 7;
+        uint8_t option_type = command[pos] & 0x7f;
+        log_info("l2cap cid %u, hint %u, type %u", channel->local_cid, option_hint, option_type);
+        pos++;
         uint8_t length = command[pos++];
         // MTU { type(8): 1, len(8):2, MTU(16) }
-        if ((type & 0x7f) == 1 && length == 2){
+        if (option_type == 1 && length == 2){
             channel->remote_mtu = READ_BT_16(command, pos);
             // log_info("l2cap cid 0x%02x, remote mtu %u\n", channel->local_cid, channel->remote_mtu);
+            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
+        }
+        // check for unknown options
+        if (option_hint == 0 && (option_type == 0 || option_type >= 0x07)){
+            log_info("l2cap cid %u, unknown options");
+            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
         }
         pos += length;
     }
@@ -876,9 +909,12 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
         case L2CAP_STATE_CONFIG:
             switch (code) {
                 case CONFIGURE_REQUEST:
-                    channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_REQ);
                     channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP);
                     l2cap_signaling_handle_configure_request(channel, command);
+                    if (!(channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_CONT)){
+                        // only done if continuation not set
+                        channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_REQ);
+                    }
                     break;
                 case CONFIGURE_RESPONSE:
                     channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_RSP);
@@ -927,6 +963,7 @@ void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t * comman
     
     // not for a particular channel, and not CONNECTION_REQUEST, ECHO_[REQUEST|RESPONSE], INFORMATION_REQUEST 
     if (code < 1 || code == ECHO_RESPONSE || code > INFORMATION_REQUEST){
+        l2cap_register_signaling_response(handle, COMMAND_REJECT, sig_id, L2CAP_REJ_CMD_UNKNOWN);
         return;
     }
 
