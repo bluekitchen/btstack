@@ -78,6 +78,7 @@ void * btstack_memory_hci_connection_get(void){
 void  btstack_memory_hci_connection_free(void *hci_connection){
     free(hci_connection);
 }
+#else error "The struct hci_connection has neither HAVE_MALLOC nor MAX_NO_HCI_CONNECTIONS defined. Please, edit the config file."
 #endif
 
 
@@ -106,6 +107,7 @@ void * btstack_memory_l2cap_service_get(void){
 void  btstack_memory_l2cap_service_free(void *l2cap_service){
     free(l2cap_service);
 }
+#else error "The struct l2cap_service has neither HAVE_MALLOC nor MAX_NO_L2CAP_SERVICES defined. Please, edit the config file."
 #endif
 
 
@@ -134,6 +136,7 @@ void * btstack_memory_l2cap_channel_get(void){
 void  btstack_memory_l2cap_channel_free(void *l2cap_channel){
     free(l2cap_channel);
 }
+#else error "The struct l2cap_channel has neither HAVE_MALLOC nor MAX_NO_L2CAP_CHANNELS defined. Please, edit the config file."
 #endif
 
 
@@ -162,6 +165,7 @@ void * btstack_memory_rfcomm_multiplexer_get(void){
 void  btstack_memory_rfcomm_multiplexer_free(void *rfcomm_multiplexer){
     free(rfcomm_multiplexer);
 }
+#else error "The struct rfcomm_multiplexer has neither HAVE_MALLOC nor MAX_NO_RFCOMM_MULTIPLEXERS defined. Please, edit the config file."
 #endif
 
 
@@ -190,6 +194,7 @@ void * btstack_memory_rfcomm_service_get(void){
 void  btstack_memory_rfcomm_service_free(void *rfcomm_service){
     free(rfcomm_service);
 }
+#else error "The struct rfcomm_service has neither HAVE_MALLOC nor MAX_NO_RFCOMM_SERVICES defined. Please, edit the config file."
 #endif
 
 
@@ -218,6 +223,7 @@ void * btstack_memory_rfcomm_channel_get(void){
 void  btstack_memory_rfcomm_channel_free(void *rfcomm_channel){
     free(rfcomm_channel);
 }
+#else error "The struct rfcomm_channel has neither HAVE_MALLOC nor MAX_NO_RFCOMM_CHANNELS defined. Please, edit the config file."
 #endif
 
 
@@ -246,6 +252,7 @@ void * btstack_memory_db_mem_device_name_get(void){
 void  btstack_memory_db_mem_device_name_free(void *db_mem_device_name){
     free(db_mem_device_name);
 }
+#else error "The struct db_mem_device_name has neither HAVE_MALLOC nor MAX_NO_DB_MEM_DEVICE_NAMES defined. Please, edit the config file."
 #endif
 
 
@@ -274,6 +281,7 @@ void * btstack_memory_db_mem_device_link_key_get(void){
 void  btstack_memory_db_mem_device_link_key_free(void *db_mem_device_link_key){
     free(db_mem_device_link_key);
 }
+#else error "The struct db_mem_device_link_key has neither HAVE_MALLOC nor MAX_NO_DB_MEM_DEVICE_LINK_KEYS defined. Please, edit the config file."
 #endif
 
 
@@ -302,7 +310,39 @@ void * btstack_memory_db_mem_service_get(void){
 void  btstack_memory_db_mem_service_free(void *db_mem_service){
     free(db_mem_service);
 }
+#else error "The struct db_mem_service has neither HAVE_MALLOC nor MAX_NO_DB_MEM_SERVICES defined. Please, edit the config file."
 #endif
+
+// init
+void btstack_memory_init(void){
+#if MAX_NO_HCI_CONNECTIONS > 0
+    memory_pool_create(&hci_connection_pool, hci_connection_storage, MAX_NO_HCI_CONNECTIONS, sizeof(hci_connection_t));
+#endif
+#if MAX_NO_L2CAP_SERVICES > 0
+    memory_pool_create(&l2cap_service_pool, l2cap_service_storage, MAX_NO_L2CAP_SERVICES, sizeof(l2cap_service_t));
+#endif
+#if MAX_NO_L2CAP_CHANNELS > 0
+    memory_pool_create(&l2cap_channel_pool, l2cap_channel_storage, MAX_NO_L2CAP_CHANNELS, sizeof(l2cap_channel_t));
+#endif
+#if MAX_NO_RFCOMM_MULTIPLEXERS > 0
+    memory_pool_create(&rfcomm_multiplexer_pool, rfcomm_multiplexer_storage, MAX_NO_RFCOMM_MULTIPLEXERS, sizeof(rfcomm_multiplexer_t));
+#endif
+#if MAX_NO_RFCOMM_SERVICES > 0
+    memory_pool_create(&rfcomm_service_pool, rfcomm_service_storage, MAX_NO_RFCOMM_SERVICES, sizeof(rfcomm_service_t));
+#endif
+#if MAX_NO_RFCOMM_CHANNELS > 0
+    memory_pool_create(&rfcomm_channel_pool, rfcomm_channel_storage, MAX_NO_RFCOMM_CHANNELS, sizeof(rfcomm_channel_t));
+#endif
+#if MAX_NO_DB_MEM_DEVICE_NAMES > 0
+    memory_pool_create(&db_mem_device_name_pool, db_mem_device_name_storage, MAX_NO_DB_MEM_DEVICE_NAMES, sizeof(db_mem_device_name_t));
+#endif
+#if MAX_NO_DB_MEM_DEVICE_LINK_KEYS > 0
+    memory_pool_create(&db_mem_device_link_key_pool, db_mem_device_link_key_storage, MAX_NO_DB_MEM_DEVICE_LINK_KEYS, sizeof(db_mem_device_link_key_t));
+#endif
+#if MAX_NO_DB_MEM_SERVICES > 0
+    memory_pool_create(&db_mem_service_pool, db_mem_service_storage, MAX_NO_DB_MEM_SERVICES, sizeof(db_mem_service_t));
+#endif
+}
 
 // init
 void btstack_memory_init(void){
