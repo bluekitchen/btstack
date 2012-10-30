@@ -75,6 +75,12 @@ extern "C" {
 #define L2CAP_CID_ATTRIBUTE_PROTOCOL        0x0004
 #define L2CAP_CID_SIGNALING_LE              0x0005
 #define L2CAP_CID_SECURITY_MANAGER_PROTOCOL 0x0006
+
+// L2CAP Configuration Result Codes
+#define L2CAP_CONF_RESULT_UNKNOWN_OPTIONS   0x0003
+
+// L2CAP Reject Result Codes
+#define L2CAP_REJ_CMD_UNKNOWN               0x0000
     
 void l2cap_init(void);
 void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
@@ -125,13 +131,17 @@ typedef enum {
 } L2CAP_STATE;
 
 typedef enum {
-    L2CAP_CHANNEL_STATE_VAR_NONE          = 0,
-    L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_REQ = 1 << 0,
-    L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_RSP = 1 << 1,
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ = 1 << 2,
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP = 1 << 3,
-    L2CAP_CHANNEL_STATE_VAR_SENT_CONF_REQ = 1 << 4,
-    L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP = 1 << 5,
+    L2CAP_CHANNEL_STATE_VAR_NONE                  = 0,
+    L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_REQ         = 1 << 0,
+    L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_RSP         = 1 << 1,
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ         = 1 << 2,
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP         = 1 << 3,
+    L2CAP_CHANNEL_STATE_VAR_SENT_CONF_REQ         = 1 << 4,
+    L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP         = 1 << 5,
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU     = 1 << 6,  // in CONF RSP, add MTU field
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_CONT    = 1 << 7,  // in CONF RSP, set CONTINUE flag
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID = 1 << 8,  // in CONF RSP, send UNKNOWN OPTIONS
+    L2CAP_CHANNEL_STATE_VAR_SEND_CMD_REJ_UNKNOWN  = 1 << 9,  // send CMD_REJ with reason unknown
 } L2CAP_CHANNEL_STATE_VAR;
 
 // info regarding an actual coneection
@@ -192,7 +202,7 @@ typedef struct l2cap_signaling_response {
     hci_con_handle_t handle;
     uint8_t  sig_id;
     uint8_t  code;
-    uint16_t data; // infoType for INFORMATION REQUEST, result for CONNECTION request
+    uint16_t data; // infoType for INFORMATION REQUEST, result for CONNECTION request and command unknown
 } l2cap_signaling_response_t;
     
     
