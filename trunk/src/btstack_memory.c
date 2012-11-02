@@ -343,34 +343,3 @@ void btstack_memory_init(void){
     memory_pool_create(&db_mem_service_pool, db_mem_service_storage, MAX_NO_DB_MEM_SERVICES, sizeof(db_mem_service_t));
 #endif
 }
-
-// init
-void btstack_memory_init(void){
-#if MAX_NO_HCI_CONNECTIONS > 0
-    memory_pool_create(&hci_connection_pool, hci_connection_storage, MAX_NO_HCI_CONNECTIONS, sizeof(hci_connection_t));
-#endif
-#if MAX_NO_L2CAP_SERVICES > 0
-    memory_pool_create(&l2cap_service_pool, l2cap_service_storage, MAX_NO_L2CAP_SERVICES, sizeof(l2cap_service_t));
-#endif
-#if MAX_NO_L2CAP_CHANNELS > 0
-    memory_pool_create(&l2cap_channel_pool, l2cap_channel_storage, MAX_NO_L2CAP_CHANNELS, sizeof(l2cap_channel_t));
-#endif
-#if MAX_NO_RFCOMM_MULTIPLEXERS > 0
-    memory_pool_create(&rfcomm_multiplexer_pool, rfcomm_multiplexer_storage, MAX_NO_RFCOMM_MULTIPLEXERS, sizeof(rfcomm_multiplexer_t));
-#endif
-#if MAX_NO_RFCOMM_SERVICES > 0
-    memory_pool_create(&rfcomm_service_pool, rfcomm_service_storage, MAX_NO_RFCOMM_SERVICES, sizeof(rfcomm_service_t));
-#endif
-#if MAX_NO_RFCOMM_CHANNELS > 0
-    memory_pool_create(&rfcomm_channel_pool, rfcomm_channel_storage, MAX_NO_RFCOMM_CHANNELS, sizeof(rfcomm_channel_t));
-#endif
-#if MAX_NO_DB_MEM_DEVICE_NAMES > 0
-    memory_pool_create(&db_mem_device_name_pool, db_mem_device_name_storage, MAX_NO_DB_MEM_DEVICE_NAMES, sizeof(db_mem_device_name_t));
-#endif
-#if MAX_NO_DB_MEM_DEVICE_LINK_KEYS > 0
-    memory_pool_create(&db_mem_device_link_key_pool, db_mem_device_link_key_storage, MAX_NO_DB_MEM_DEVICE_LINK_KEYS, sizeof(db_mem_device_link_key_t));
-#endif
-#if MAX_NO_DB_MEM_SERVICES > 0
-    memory_pool_create(&db_mem_service_pool, db_mem_service_storage, MAX_NO_DB_MEM_SERVICES, sizeof(db_mem_service_t));
-#endif
-}
