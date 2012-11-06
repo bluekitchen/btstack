@@ -108,6 +108,11 @@ uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, 
                 hci_cmd_buffer[pos++] = ptr[1];
                 hci_cmd_buffer[pos++] = ptr[0];
                 break;
+            case 'D': // 8 byte data block
+                ptr = va_arg(argptr, uint8_t *);
+                memcpy(&hci_cmd_buffer[pos], ptr, 8);
+                pos += 8;
+                break;
             case 'E': // Extended Inquiry Information 240 octets
                 ptr = va_arg(argptr, uint8_t *);
                 memcpy(&hci_cmd_buffer[pos], ptr, 240);
