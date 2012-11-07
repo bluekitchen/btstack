@@ -29,7 +29,8 @@ void * btstack_memory_STRUCT_NAME_get(void){
 void  btstack_memory_STRUCT_NAME_free(void *STRUCT_NAME){
     free(STRUCT_NAME);
 }
-#else error "The struct STRUCT_NAME has neither HAVE_MALLOC nor POOL_COUNT defined. Please, edit the config file."
+#else
+#error "The struct STRUCT_NAME has neither HAVE_MALLOC nor POOL_COUNT defined. Please, edit the config file."
 #endif
 """
 
