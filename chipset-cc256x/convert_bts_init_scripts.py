@@ -23,6 +23,7 @@ __attribute__((section (".fartext")))
 #endif
 '''
 
+data_indent = '    '
 
 def read_little_endian_16(f):
     low  = f.read(1)
@@ -38,11 +39,6 @@ def convert_bts(bts_file):
     
     with open(c_file, 'w') as fout:
     
-        fout.write( '// init script created from {0}\n'.format(bts_file))
-        fout.write( '#include <stdint.h>\n')
-        fout.write( fartext )
-        fout.write( 'const uint8_t {0}_init_script[] = {1}\n'.format(array_name, '{'))
-
         with open (bts_file, 'rb') as fin:
     
             print "Converting {0:32} to {1}".format(bts_file, c_file)
@@ -52,10 +48,13 @@ def convert_bts(bts_file):
                 print 'Error', bts_file, 'is not a valid .BTS file'
                 sys.exit(1)
 
-            second_part = False
-            size = 0
+            part_size = 0
             have_eHCILL = False
-            
+            parts = 0
+            str_list = []
+            part_strings = []
+            part_sizes   = []
+
             while True:
                 action_type = read_little_endian_16(fin)
                 action_size = read_little_endian_16(fin)
@@ -70,45 +69,91 @@ def convert_bts(bts_file):
                         have_eHCILL = True
                         
                     counter = 0
-                    fout.write("    ")
+                    str_list.append(data_indent)
                     for byte in action_data:
-                        fout.write("0x{0:02x}, ".format(ord(byte)))
+                        str_list.append("0x{0:02x}, ".format(ord(byte)))
                         counter = counter + 1
                         if (counter != 15):
                             continue
                         counter = 0
-                        fout.write("\n    ")
-                    fout.write("\n\n")
+                        str_list.append("\n")
+                        str_list.append(data_indent)
+                    str_list.append("\n\n")
                     
-                    size = size + action_size                               
-                    if second_part:
-                       continue
-                    if size < 20*1024:
+                    part_size = part_size + action_size
+
+                    # 30 kB chunks
+                    if part_size < 30 * 1024:
                         continue
-                        
-                    fout.write ('};\n')
-                    fout.write (fartext)
-                    fout.write ('const uint8_t {0}_init_script_2[] =\n'.format(array_name))
-                    fout.write ('{\n')
-                    second_part = True
+
+                    part_strings.append(''.join(str_list))
+                    part_sizes.append(part_size)
+                    parts += 1
+
+                    str_list = []
+                    part_size = 0
 
                 if (action_type == 6):  # comment
                     action_data = action_data.rstrip('\0')
-                    fout.write("    // " + action_data + "\n")
+                    str_list.append(data_indent)
+                    str_list.append("// " + action_data + "\n")
                     
                 if (action_type < 0):   # EOF
                     break;
                     
+
             if not have_eHCILL:
-                print "Adding eHCILL template"
-                fout.write('// BTstack: added HCI_VS_Sleep_Mode_Configurations 0xFD0C template for eHCILL\n');
-                fout.write('0x01, 0x0c, 0xfd, 9 , 1, 0, 0,  0xff, 0xff, 0xff, 0xff, 100, 0\n');
+                str_list.append('\n')
+                str_list.append(data_indent)
+                str_list.append('// BTstack: added HCI_VS_Sleep_Mode_Configurations 0xFD0C template for eHCILL\n');
+                str_list.append(data_indent)
+                str_list.append('0x01, 0x0c, 0xfd, 9 , 1, 0, 0,  0xff, 0xff, 0xff, 0xff, 100, 0\n');
                     
-            fout.write('};\n\n') 
-            if second_part:
-                fout.write('const uint32_t {0}_init_script_size = sizeof({0}_init_script) + sizeof({0}_init_script_2);\n'.format(array_name))
-            else:
-                fout.write('const uint32_t {0}_init_script_size = sizeof({0}_init_script);\n'.format(array_name))
+            part_strings.append(''.join(str_list))
+            part_sizes.append(part_size)
+            parts += 1
+
+            fout.write( '// init script created from {0}\n'.format(bts_file))
+            fout.write( '#include <stdint.h>\n')
+
+            part = 0
+            size = 0
+            for part_size in part_sizes:
+                part += 1
+                size += part_size
+                print "- part", part, "size", part_size
+
+            if not have_eHCILL:
+                print "- adding eHCILL template"
+
+            print '- total size', size
+
+            part = 0
+            for part_text in part_strings:
+                part += 1
+                suffix = ''
+                
+                if part == 1:
+                    fout.write( fartext )
+
+                if (part > 1):
+                    suffix = '_{0}'.format(part)
+                    fout.write('#if defined(__GNUC__) && (__MSP430X__ > 0)\n')
+                    fout.write('};\n')
+                    fout.write('__attribute__((section (".fartext")))\n')
+
+                fout.write('const uint8_t {0}_init_script{1}[] = {2}\n\n'.format(array_name, suffix, '{'))
+
+                if (part > 1):
+                    fout.write('#endif\n')
+
+                fout.write(part_text)
+
+            
+            fout.write('};\n\n')
+
+            fout.write('const uint32_t {0}_init_script_size = {1};\n\n'.format(array_name,size));
+            # fout.write('void main() {0} printf("size {1}\\n", {2}_init_script_size); {3}'.format('{', '%u', array_name,'}'));
 
 # get list of *.bts files
 files =  glob.glob('*.bts')
