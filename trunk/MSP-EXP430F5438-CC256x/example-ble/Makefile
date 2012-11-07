@@ -7,7 +7,7 @@
 BTSTACK_ROOT = ../..
 
 CC      = msp430-gcc
-CFLAGS  = -mmcu=msp430f5438a -Os -Wall -I. -I../src -I../firmware -I${BTSTACK_ROOT} -I${BTSTACK_ROOT}/chipset-cc256x -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include
+CFLAGS  = -mmcu=msp430f5438a -Os -Wall -fno-toplevel-reorder -I. -I../src -I../firmware -I${BTSTACK_ROOT} -I${BTSTACK_ROOT}/chipset-cc256x -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include
 LDFLAGS = -mmcu=msp430f5438a
 
 CORE   = \

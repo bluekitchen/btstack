@@ -9,7 +9,7 @@ BTSTACK_ROOT = ../..
 MCU = msp430bt5190
 
 CC      = msp430-gcc
-CFLAGS  = -mmcu=${MCU} -Os -Wall -I. -I../src -I../firmware -I${BTSTACK_ROOT} -I${BTSTACK_ROOT}/chipset-cc256x -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include
+CFLAGS  = -mmcu=${MCU} -Os -Wall -fno-toplevel-reorder  -I. -I../src -I../firmware -I${BTSTACK_ROOT} -I${BTSTACK_ROOT}/chipset-cc256x -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include
 LDFLAGS = -mmcu=${MCU}
 
 CORE   = \
@@ -27,7 +27,7 @@ CORE   = \
 COMMON = \
     ../src/hal_uart_dma.c                         \
 	${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
-	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2560_2.42.c \
+	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2564_2.5.c \
     ${BTSTACK_ROOT}/src/hci.c			          \
     ${BTSTACK_ROOT}/src/hci_cmds.c		          \
     ${BTSTACK_ROOT}/src/hci_dump.c		          \
