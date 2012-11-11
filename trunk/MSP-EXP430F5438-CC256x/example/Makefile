@@ -2,7 +2,8 @@
 # Makefile for MSP-EXP430F5438 demos with PAN1315, PAN1317, PAN1325, PAN1323, or PAN1327 Bluetooth modules
 #
 # For the PAN1315/25 modules, please use bluetooth_init_cc2560_2.42.c in COMMON below
-# 
+# Please check instructions at https://code.google.com/p/btstack/wiki/CC256x on where to download the init scripts and how to convert them to *.c files.
+#
 # mspgcc is used: http://sourceforge.net/apps/mediawiki/mspgcc/index.php?title=MSPGCC_Wiki
 #
 
@@ -53,7 +54,7 @@ LCD_OBJ    = $(LCD:.c=.o)
 
 # create firmware image from common objects and example source file
 
-all: hid_demo.hex led_counter.hex spp_accel.hex spp_counter.hex spp_flowcontrol.hex
+all: hid_demo.hex led_counter.hex spp_accel.hex spp_counter.hex spp_flowcontrol.hex gap_inquiry.hex
 
 led_counter.out: ${CORE_OBJ} led_counter.o 
 	${CC} $^ ${LDFLAGS} -o $@
@@ -68,6 +69,9 @@ spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} spp_counter.o ../firmware/hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} spp_flowcontrol.o ../firmware/hal_adc.o
+	${CC} $^ ${LDFLAGS} -o $@
+
+gap_inquiry.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} gap_inquiry.o ../firmware/hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 clean:
