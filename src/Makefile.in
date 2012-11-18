@@ -30,6 +30,10 @@ BTdaemon_SOURCES =  $(libBTstack_SOURCES) \
     sdp.c                   \
     $(springboard_access_sources)
 
+# use $(CC) for Objective-C files
+.m.o:
+	$(CC) $(CPPFLAGS) -c -o $@ $<
+
 all: libBTstack.$(BTSTACK_LIB_EXTENSION) libBTstack.a BTdaemon
 
 libBTstack.$(BTSTACK_LIB_EXTENSION): $(libBTstack_SOURCES)
