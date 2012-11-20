@@ -138,7 +138,7 @@ static void  timer_handler(timer_source_t *ts){
 static void timer_setup(){
     // set one-shot timer
     timer_source_t heartbeat;
-    heartbeat.process = &heartbeat_handler;
+    heartbeat.process = &timer_handler;
     run_loop_register_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
 }
 
