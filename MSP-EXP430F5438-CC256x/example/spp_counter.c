@@ -36,42 +36,36 @@ static uint8_t   rfcomm_channel_nr = 1;
 static uint16_t  rfcomm_channel_id;
 static uint8_t   spp_service_buffer[100];
 
+enum STATE {INIT, W4_LOCAL_NAME, W4_CONNECTION, W4_CHANNEL_COMPLETE, ACTIVE} ;
+enum STATE state = INIT;
+
 // Bluetooth logic
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
     bd_addr_t event_addr;
     uint8_t   rfcomm_channel_nr;
     uint16_t  mtu;
+    uint8_t event = packet[0];
     
-    switch (packet_type) {
-        case HCI_EVENT_PACKET:
-            switch (packet[0]) {
-                    
-                case BTSTACK_EVENT_STATE:
-                    // bt stack activated, get started - set local name
-                    if (packet[2] == HCI_STATE_WORKING) {
-                        hci_send_cmd(&hci_write_local_name, "BlueMSP-Demo");
-                    }
-                    break;
-                
-                case HCI_EVENT_COMMAND_COMPLETE:
-                    if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)){
-                        bt_flip_addr(event_addr, &packet[6]);
-                        printf("BD-ADDR: %s\n\r", bd_addr_to_str(event_addr));
-                        break;
-                    }
-                    if (COMMAND_COMPLETE_EVENT(packet, hci_write_local_name)){
-                        hci_discoverable_control(1);
-                        break;
-                    }
-                    break;
+    // handle events, ignore data
+    if (packet_type != HCI_EVENT_PACKET) return;
+    
+    switch(state){
+        case INIT:
+            // bt stack activated, get started - set local name
+            if (packet[2] == HCI_STATE_WORKING) {
+                hci_send_cmd(&hci_write_local_name, "BlueMSP-Demo");
+                state = W4_LOCAL_NAME;
+            }
+            break;
 
-                case HCI_EVENT_LINK_KEY_REQUEST:
-                    // deny link key request
-                    printf("Link key request\n\r");
-                    bt_flip_addr(event_addr, &packet[2]);
-                    hci_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
-                    break;
-                    
+        case W4_LOCAL_NAME:
+            if ( COMMAND_COMPLETE_EVENT(packet, hci_write_local_name) ) {
+                state = ACTIVE;
+            }
+            break;
+
+        case W4_CONNECTION:
+            switch (event) {
                 case HCI_EVENT_PIN_CODE_REQUEST:
                     // inform about pin code request
                     printf("Pin code request - using '0000'\n\r");
@@ -86,28 +80,33 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     rfcomm_channel_id = READ_BT_16(packet, 9);
                     printf("RFCOMM channel %u requested for %s\n\r", rfcomm_channel_nr, bd_addr_to_str(event_addr));
                     rfcomm_accept_connection_internal(rfcomm_channel_id);
+                    state = W4_CHANNEL_COMPLETE;
                     break;
-                    
-                case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
-                    // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
-                    if (packet[2]) {
-                        printf("RFCOMM channel open failed, status %u\n\r", packet[2]);
-                    } else {
-                        rfcomm_channel_id = READ_BT_16(packet, 12);
-                        mtu = READ_BT_16(packet, 14);
-                        printf("\n\rRFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n\r", rfcomm_channel_id, mtu);
-                    }
-                    break;
-                    
-                case RFCOMM_EVENT_CHANNEL_CLOSED:
-                    rfcomm_channel_id = 0;
-                    break;
-                
                 default:
                     break;
             }
+        
+        case W4_CHANNEL_COMPLETE:
+                if ( event != RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE ) break;
+                
+                // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
+                if (packet[2]) {
+                    printf("RFCOMM channel open failed, status %u\n\r", packet[2]);
+                } else {
+                    rfcomm_channel_id = READ_BT_16(packet, 12);
+                    mtu = READ_BT_16(packet, 14);
+                    printf("\n\rRFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n\r", rfcomm_channel_id, mtu);
+                    state = ACTIVE;
+                }
+                break;
+        
+        case ACTIVE:
+            if (event != RFCOMM_EVENT_CHANNEL_CLOSED) break;
+                
+            rfcomm_channel_id = 0;
+            state = W4_CONNECTION;
             break;
-                        
+
         default:
             break;
     }
@@ -207,7 +206,9 @@ int main(void){
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
-
+    // make discoverable
+    hci_discoverable_control(1);
+                    
     // go!
     run_loop_execute(); 
     
