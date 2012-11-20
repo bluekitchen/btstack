@@ -26,12 +26,12 @@
 
 #define MAX_DEVICES 10
 struct device {
-	bd_addr_t  address;
-	uint16_t   clockOffset;
-	uint32_t   classOfDevice;
-	uint8_t	   pageScanRepetitionMode;
-	uint8_t    rssi;
-	uint8_t    state; // 0 empty, 1 found, 2 remote name tried, 3 remote name found
+    bd_addr_t  address;
+    uint16_t   clockOffset;
+    uint32_t   classOfDevice;
+    uint8_t    pageScanRepetitionMode;
+    uint8_t    rssi;
+    uint8_t    state; // 0 empty, 1 found, 2 remote name tried, 3 remote name found
 };
 
 #define INQUIRY_INTERVAL 5
@@ -43,163 +43,163 @@ enum STATE state = INIT;
 
 
 int getDeviceIndexForAddress( bd_addr_t addr){
-	int j;
-	for (j=0; j< deviceCount; j++){
-		if (BD_ADDR_CMP(addr, devices[j].address) == 0){
-			return j;
-		}
-	}
-	return -1;
+    int j;
+    for (j=0; j< deviceCount; j++){
+        if (BD_ADDR_CMP(addr, devices[j].address) == 0){
+            return j;
+        }
+    }
+    return -1;
 }
 
 void start_scan(void){
-	printf("Starting inquiry scan..\n");
-	hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
+    printf("Starting inquiry scan..\n");
+    hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
 }
 
 int has_more_remote_name_requests(void){
-	int i;
-	for (i=0;i<deviceCount;i++) {
-		if (devices[i].state == REMOTE_NAME_REQUEST) return 1;
-	}
-	return 0;
+    int i;
+    for (i=0;i<deviceCount;i++) {
+        if (devices[i].state == REMOTE_NAME_REQUEST) return 1;
+    }
+    return 0;
 }
 
 void do_next_remote_name_request(void){
-	int i;
-	for (i=0;i<deviceCount;i++) {
-		// remote name request
-		if (devices[i].state == REMOTE_NAME_REQUEST){
-			devices[i].state = REMOTE_NAME_INQUIRED;
-			printf("Get remote name of %s...\n", bd_addr_to_str(devices[i].address));
-			hci_send_cmd(&hci_remote_name_request, devices[i].address,
-						devices[i].pageScanRepetitionMode, 0, devices[i].clockOffset | 0x8000);
-			return;
-		}
-	}
+    int i;
+    for (i=0;i<deviceCount;i++) {
+        // remote name request
+        if (devices[i].state == REMOTE_NAME_REQUEST){
+            devices[i].state = REMOTE_NAME_INQUIRED;
+            printf("Get remote name of %s...\n", bd_addr_to_str(devices[i].address));
+            hci_send_cmd(&hci_remote_name_request, devices[i].address,
+                        devices[i].pageScanRepetitionMode, 0, devices[i].clockOffset | 0x8000);
+            return;
+        }
+    }
 }
 
 static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
-	bd_addr_t addr;
-	int i;
-	int numResponses;
-	
-	// printf("packet_handler: pt: 0x%02x, packet[0]: 0x%02x\n", packet_type, packet[0]);
-	if (packet_type != HCI_EVENT_PACKET) return;
+    bd_addr_t addr;
+    int i;
+    int numResponses;
+    
+    // printf("packet_handler: pt: 0x%02x, packet[0]: 0x%02x\n", packet_type, packet[0]);
+    if (packet_type != HCI_EVENT_PACKET) return;
 
-	uint8_t event = packet[0];
+    uint8_t event = packet[0];
 
-	switch(state){
+    switch(state){
 
-		case INIT: 
-			if (packet[2] == HCI_STATE_WORKING) {
-				hci_send_cmd(&hci_write_inquiry_mode, 0x01); // with RSSI
-				state = W4_INQUIRY_MODE_COMPLETE;
-			}
-			break;
+        case INIT: 
+            if (packet[2] == HCI_STATE_WORKING) {
+                hci_send_cmd(&hci_write_inquiry_mode, 0x01); // with RSSI
+                state = W4_INQUIRY_MODE_COMPLETE;
+            }
+            break;
 
-		case W4_INQUIRY_MODE_COMPLETE:
-			switch(event){
-				case HCI_EVENT_COMMAND_COMPLETE:
-					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_inquiry_mode) ) {
-						start_scan();
-						state = ACTIVE;
-					}
-					break;
-				case HCI_EVENT_COMMAND_STATUS:
-					if ( COMMAND_STATUS_EVENT(packet, hci_write_inquiry_mode) ) {
-						printf("Ignoring error (0x%x) from hci_write_inquiry_mode.\n", packet[2]);
-						start_scan();
-						state = ACTIVE;
-					}
-					break;
-				default:
-					break;
-			}
+        case W4_INQUIRY_MODE_COMPLETE:
+            switch(event){
+                case HCI_EVENT_COMMAND_COMPLETE:
+                    if ( COMMAND_COMPLETE_EVENT(packet, hci_write_inquiry_mode) ) {
+                        start_scan();
+                        state = ACTIVE;
+                    }
+                    break;
+                case HCI_EVENT_COMMAND_STATUS:
+                    if ( COMMAND_STATUS_EVENT(packet, hci_write_inquiry_mode) ) {
+                        printf("Ignoring error (0x%x) from hci_write_inquiry_mode.\n", packet[2]);
+                        start_scan();
+                        state = ACTIVE;
+                    }
+                    break;
+                default:
+                    break;
+            }
 
-			break;
-			
-		case ACTIVE:
-			switch(event){
-				case HCI_EVENT_INQUIRY_RESULT:
-				case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
-					numResponses = packet[2];
-					for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
-						bt_flip_addr(addr, &packet[3+i*6]);
-						int index = getDeviceIndexForAddress(addr);
-						if (index >= 0) continue;
-						memcpy(devices[deviceCount].address, addr, 6);
-						devices[deviceCount].pageScanRepetitionMode =   packet [3 + numResponses*(6)         + i*1];
-						if (event == HCI_EVENT_INQUIRY_RESULT){
-							devices[deviceCount].classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1+1)   + i*3);
-							devices[deviceCount].clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff;
-							devices[deviceCount].rssi  = 0;
-						} else {
-							devices[deviceCount].classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1)     + i*3);
-							devices[deviceCount].clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+3)   + i*2) & 0x7fff;
-							devices[deviceCount].rssi  =                    packet [3 + numResponses*(6+1+1+3+2) + i*1];
-						}
-						devices[deviceCount].state = REMOTE_NAME_REQUEST;
-						printf("Device found: %s with COD: 0x%06x, pageScan %u, clock offset 0x%04x, rssi 0x%02x\n", bd_addr_to_str(addr),
-				                devices[deviceCount].classOfDevice, devices[deviceCount].pageScanRepetitionMode,
-				                devices[deviceCount].clockOffset, devices[deviceCount].rssi);
-						deviceCount++;
-					}
-					break;
-					
-				case HCI_EVENT_INQUIRY_COMPLETE:
-					for (i=0;i<deviceCount;i++) {
-						// retry remote name request
-						if (devices[i].state == REMOTE_NAME_INQUIRED)
-							devices[i].state = REMOTE_NAME_REQUEST;
-					}
-					if (has_more_remote_name_requests()){
-						do_next_remote_name_request();
-						break;
-					} 
-					start_scan();
-					break;
+            break;
+            
+        case ACTIVE:
+            switch(event){
+                case HCI_EVENT_INQUIRY_RESULT:
+                case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+                    numResponses = packet[2];
+                    for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
+                        bt_flip_addr(addr, &packet[3+i*6]);
+                        int index = getDeviceIndexForAddress(addr);
+                        if (index >= 0) continue;
+                        memcpy(devices[deviceCount].address, addr, 6);
+                        devices[deviceCount].pageScanRepetitionMode =   packet [3 + numResponses*(6)         + i*1];
+                        if (event == HCI_EVENT_INQUIRY_RESULT){
+                            devices[deviceCount].classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1+1)   + i*3);
+                            devices[deviceCount].clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff;
+                            devices[deviceCount].rssi  = 0;
+                        } else {
+                            devices[deviceCount].classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1)     + i*3);
+                            devices[deviceCount].clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+3)   + i*2) & 0x7fff;
+                            devices[deviceCount].rssi  =                    packet [3 + numResponses*(6+1+1+3+2) + i*1];
+                        }
+                        devices[deviceCount].state = REMOTE_NAME_REQUEST;
+                        printf("Device found: %s with COD: 0x%06x, pageScan %u, clock offset 0x%04x, rssi 0x%02x\n", bd_addr_to_str(addr),
+                                devices[deviceCount].classOfDevice, devices[deviceCount].pageScanRepetitionMode,
+                                devices[deviceCount].clockOffset, devices[deviceCount].rssi);
+                        deviceCount++;
+                    }
+                    break;
+                    
+                case HCI_EVENT_INQUIRY_COMPLETE:
+                    for (i=0;i<deviceCount;i++) {
+                        // retry remote name request
+                        if (devices[i].state == REMOTE_NAME_INQUIRED)
+                            devices[i].state = REMOTE_NAME_REQUEST;
+                    }
+                    if (has_more_remote_name_requests()){
+                        do_next_remote_name_request();
+                        break;
+                    } 
+                    start_scan();
+                    break;
 
-				case BTSTACK_EVENT_REMOTE_NAME_CACHED:
-					bt_flip_addr(addr, &packet[3]);
-					printf("Cached remote name for %s: '%s'\n", bd_addr_to_str(addr), &packet[9]);
-					break;
+                case BTSTACK_EVENT_REMOTE_NAME_CACHED:
+                    bt_flip_addr(addr, &packet[3]);
+                    printf("Cached remote name for %s: '%s'\n", bd_addr_to_str(addr), &packet[9]);
+                    break;
 
-				case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
-					bt_flip_addr(addr, &packet[3]);
-					int index = getDeviceIndexForAddress(addr);
-					if (index >= 0) {
-						if (packet[2] == 0) {
-							printf("Name: '%s'\n", &packet[9]);
-							devices[index].state = REMOTE_NAME_FETCHED;
-						} else {
-							printf("Failed to get name: page timeout\n");
-						}
-					}
-					if (has_more_remote_name_requests()){
-						do_next_remote_name_request();
-						break;
-					} 
-					start_scan();
-					break;
+                case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
+                    bt_flip_addr(addr, &packet[3]);
+                    int index = getDeviceIndexForAddress(addr);
+                    if (index >= 0) {
+                        if (packet[2] == 0) {
+                            printf("Name: '%s'\n", &packet[9]);
+                            devices[index].state = REMOTE_NAME_FETCHED;
+                        } else {
+                            printf("Failed to get name: page timeout\n");
+                        }
+                    }
+                    if (has_more_remote_name_requests()){
+                        do_next_remote_name_request();
+                        break;
+                    } 
+                    start_scan();
+                    break;
 
-				default:
-					break;
-			}
-			break;
-			
-		default:
-			break;
-	}
+                default:
+                    break;
+            }
+            break;
+            
+        default:
+            break;
+    }
 }
 
-void setup(void){
-	// stop watchdog timer
+static void hw_setup(void){
+    // stop watchdog timer
     WDTCTL = WDTPW + WDTHOLD;
 
     //Initialize clock and peripherals 
     halBoardInit();  
-    halBoardStartXT1();	
+    halBoardStartXT1(); 
     halBoardSetSystemClock(SYSCLK_16MHZ);
     
     // init debug UART
@@ -209,29 +209,36 @@ void setup(void){
     LED_PORT_OUT |= LED_1 | LED_2;
     LED_PORT_DIR |= LED_1 | LED_2;
     
-	/// GET STARTED with BTstack ///
-	btstack_memory_init();
+    // ready - enable irq used in h4 task
+    __enable_interrupt();   
+
+}
+
+static void btstack_setup(void){
+    btstack_memory_init();
     run_loop_init(RUN_LOOP_EMBEDDED);
-	
+    
     // init HCI
-	hci_transport_t    * transport = hci_transport_h4_dma_instance();
-	bt_control_t       * control   = bt_control_cc256x_instance();
+    hci_transport_t    * transport = hci_transport_h4_dma_instance();
+    bt_control_t       * control   = bt_control_cc256x_instance();
     hci_uart_config_t  * config    = hci_uart_config_cc256x_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-	hci_init(transport, config, control, remote_db);
-	hci_register_packet_handler(packet_handler);
+    hci_init(transport, config, control, remote_db);
+    hci_register_packet_handler(packet_handler);
 }
+
 
 // main == setup
 int main(void)
 {
-    setup();
-
+    hw_setup();
+    btstack_setup();
+    
     // turn on!
-	hci_power_control(HCI_POWER_ON);
-	
+    hci_power_control(HCI_POWER_ON);
+    
     // go!
-    run_loop_execute();	
+    run_loop_execute(); 
     
     // happy compiler!
     return 0;
