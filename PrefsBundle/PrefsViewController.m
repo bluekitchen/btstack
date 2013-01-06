@@ -32,8 +32,8 @@
 // adapted from Ryan Petrich's Activator preferences bundle
 // https://github.com/rpetrich/libactivator/blob/master/Preferences.m
 
-
 #import <UIKit/UIKit.h>
+#include <dlfcn.h>
 
 #import "BluetoothTableViewAdapter.h"
 #import "BluetoothController.h"
@@ -42,6 +42,9 @@
 @interface PSViewController : NSObject
 - (id)initForContentSize:(CGSize)size;
 - (id)navigationItem;
+- (void)viewWillBecomeVisible:(void *)source;
+- (void)viewWillAppear:(BOOL)animated;
+- (void)viewDidDisappear:(BOOL)animated;
 @end
 
 @interface PSViewController (OS32)
@@ -58,6 +61,7 @@
     BluetoothController *bluetoothController;
     UIView *_wrapperView;   // for < 3.2
     UITableView *tableView;
+    BOOL initialized;
 @end
 
 @implementation BluetoothPSViewController
@@ -65,6 +69,7 @@
 - (id)initForContentSize:(CGSize)size
 {
     // NSLog(@"initForContentSize");
+    initialized = NO;
 	if ([PSViewController instancesRespondToSelector:@selector(initForContentSize:)]) {
 		if ((self = [super initForContentSize:size])) {
 			CGRect frame;
@@ -93,12 +98,61 @@
     
 	[_wrapperView release];
 
+    initialized = NO;
+
 	[super dealloc];
 }
  
 - (UIView *)view
 {
 	return [super view] ? [super view] : _wrapperView;
+}
+
+-(void)myInit{
+    
+    if (initialized) return;
+    
+    initialized = YES;
+    
+    // NSLog(@"myInit");
+
+    ((UINavigationItem*)[super navigationItem]).title = @"BTstack";
+    
+    UIView *view = [self view];
+
+    tableView = [[UITableView alloc] initWithFrame:view.bounds style:UITableViewStyleGrouped];
+    tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    
+    tableViewAdapter = [[BluetoothTableViewAdapter alloc] initWithTableView:tableView];
+    tableView.dataSource = tableViewAdapter;
+    tableView.delegate   = tableViewAdapter;
+    
+    [view addSubview:tableView];
+    
+    [[BluetoothController sharedInstance] setListener:tableViewAdapter];
+    [[BluetoothController sharedInstance] open];
+
+    // register for backgrounding events on iOS 4+
+    NSString ** pUIApplicationDidEnterBackgroundNotification  = nil;
+    NSString ** pUIApplicationWillEnterForegroundNotification = nil;
+
+    pUIApplicationDidEnterBackgroundNotification  = dlsym(RTLD_DEFAULT, "UIApplicationDidEnterBackgroundNotification");
+    pUIApplicationWillEnterForegroundNotification = dlsym(RTLD_DEFAULT, "UIApplicationWillEnterForegroundNotification"); 
+
+    if (!pUIApplicationDidEnterBackgroundNotification)  return;
+    if (!pUIApplicationWillEnterForegroundNotification) return;
+
+    [[NSNotificationCenter defaultCenter] 
+         addObserver:self 
+         selector:@selector(didEnterBackground:) 
+         name:*pUIApplicationDidEnterBackgroundNotification
+         object:nil];
+
+    [[NSNotificationCenter defaultCenter] 
+         addObserver:self 
+         selector:@selector(willEnterForeground:) 
+         name:*pUIApplicationWillEnterForegroundNotification
+         object:nil];
 }
 
 -(void)didEnterBackground:(id)object{
@@ -110,53 +164,37 @@
 -(void)willEnterForeground:(id)object{
     // NSLog(@"willEnterForeground");
     // open connection to BTdaemon
+    [self myInit];
     [[BluetoothController sharedInstance] open];
 }
 
--(void)viewWillAppear:(BOOL)animated {
+
+- (void)viewWillAppear:(BOOL)animated
+{
     // NSLog(@"viewWillAppear");
-    // open connection to BTdaemon
+    [super viewWillAppear:animated];
+    [self myInit];
     [[BluetoothController sharedInstance] open];
 }
 
--(void) viewDidDisappear:(BOOL)animated {
+- (void)viewWillBecomeVisible:(void *)source
+{
+    // NSLog(@"viewWillBecomeVisible %@", source);
+    [super viewWillBecomeVisible:source];
+    [self myInit];
+}
+
+-(void)viewDidDisappear:(BOOL)animated {
     // NSLog(@"viewDidDisappear");
     // close connection to BTdaemon
     [[BluetoothController sharedInstance] close];
+    [super viewDidDisappear:animated];
 }
 
--(void)viewDidLoad {
-    // setup view
-    // NSLog(@"initialize");
-    
-    ((UINavigationItem*)[super navigationItem]).title = @"BTstack";
-    
-    UIView *view = [self view];
-    
-    tableView = [[UITableView alloc] initWithFrame:view.bounds style:UITableViewStyleGrouped];
-    tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    
-    tableViewAdapter = [[BluetoothTableViewAdapter alloc] initWithTableView:tableView];
-    tableView.dataSource = tableViewAdapter;
-    tableView.delegate   = tableViewAdapter;
-    
-    [view addSubview:tableView];
-    
-    // setup Bluetooth Controller
-    [[BluetoothController sharedInstance] setListener:tableViewAdapter];
-    
-    // register for backrounding events
-    [[NSNotificationCenter defaultCenter] 
-     addObserver:self 
-     selector:@selector(didEnterBackground:) 
-     name:UIApplicationDidEnterBackgroundNotification
-     object:nil];
-
-    [[NSNotificationCenter defaultCenter] 
-     addObserver:self 
-     selector:@selector(willEnterForeground:) 
-     name:UIApplicationWillEnterForegroundNotification
-     object:nil];
+-(void)viewDidLoad
+{
+    // NSLog(@"viewDidLoad");
+	[super viewDidLoad];
+    [self myInit];
 }
-
 @end
