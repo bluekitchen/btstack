@@ -100,12 +100,6 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
 
         case W4_INQUIRY_MODE_COMPLETE:
             switch(event){
-                case HCI_EVENT_COMMAND_COMPLETE:
-                    if ( COMMAND_COMPLETE_EVENT(packet, hci_write_inquiry_mode) ) {
-                        start_scan();
-                        state = ACTIVE;
-                    }
-                    break;
                 case HCI_EVENT_COMMAND_STATUS:
                     if ( COMMAND_STATUS_EVENT(packet, hci_write_inquiry_mode) ) {
                         printf("Ignoring error (0x%x) from hci_write_inquiry_mode.\n", packet[2]);
