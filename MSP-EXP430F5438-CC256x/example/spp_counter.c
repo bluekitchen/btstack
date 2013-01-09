@@ -36,7 +36,7 @@ static uint8_t   rfcomm_channel_nr = 1;
 static uint16_t  rfcomm_channel_id;
 static uint8_t   spp_service_buffer[100];
 
-enum STATE {INIT, W4_LOCAL_NAME, W4_CONNECTION, W4_CHANNEL_COMPLETE, ACTIVE} ;
+enum STATE {INIT, W4_CONNECTION, W4_CHANNEL_COMPLETE, ACTIVE} ;
 enum STATE state = INIT;
 
 // Bluetooth logic
@@ -54,13 +54,7 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
             // bt stack activated, get started - set local name
             if (packet[2] == HCI_STATE_WORKING) {
                 hci_send_cmd(&hci_write_local_name, "BlueMSP-Demo");
-                state = W4_LOCAL_NAME;
-            }
-            break;
-
-        case W4_LOCAL_NAME:
-            if ( COMMAND_COMPLETE_EVENT(packet, hci_write_local_name) ) {
-                state = ACTIVE;
+                state = W4_CONNECTION;
             }
             break;
 
