@@ -1,8 +1,10 @@
 //*****************************************************************************
 //
-// spp_counter demo - it provides a SPP and sends a counter every second
+// spp_flowcontrol demo - it provides a SPP that use sincoming flow control
+//                        Processing of data is simulated by granting the next
+//                        credit only every second in the heartbeat handler
 //
-// it doesn't use the LCD to get down to a minimal memory footpring
+// it doesn't use the LCD to get down to a minimal memory footprint
 //
 //*****************************************************************************
 
@@ -36,7 +38,8 @@ static uint8_t   rfcomm_channel_nr = 1;
 static uint16_t  rfcomm_channel_id;
 static uint8_t   rfcomm_send_credit = 0;
 static uint8_t   spp_service_buffer[100];
-
+static timer_source_t heartbeat;
+    
 enum STATE {INIT, W4_CONNECTION, W4_CHANNEL_COMPLETE, ACTIVE} ;
 enum STATE state = INIT;
 
@@ -72,12 +75,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)){
                         bt_flip_addr(event_addr, &packet[6]);
                         printf("BD-ADDR: %s\n\r", bd_addr_to_str(event_addr));
-                        break;
-                    }
-                    if (COMMAND_COMPLETE_EVENT(packet, hci_write_local_name)){
-                        hci_discoverable_control(1);
-                        state = W4_CONNECTION;
-                        break;
                     }
                     break;
                 default:
@@ -85,13 +82,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             }
         case W4_CONNECTION:
             switch(event){
-                case HCI_EVENT_LINK_KEY_REQUEST:
-                    // deny link key request
-                    printf("Link key request\n\r");
-                    bt_flip_addr(event_addr, &packet[2]);
-                    hci_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
-                    break;
-                    
                 case HCI_EVENT_PIN_CODE_REQUEST:
                     // inform about pin code request
                     printf("Pin code request - using '0000'\n\r");
@@ -137,14 +127,24 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
 }
 
+static void run_loop_register_timer(timer_source_t *timer, uint16_t period){
+    run_loop_set_timer(timer, period);
+    run_loop_add_timer(timer);
+}
+
 static void  heartbeat_handler(struct timer *ts){
     if (rfcomm_send_credit){
         rfcomm_grant_credits(rfcomm_channel_id, 1);
         rfcomm_send_credit = 0;
     }
-    run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
-    run_loop_add_timer(ts);
+    run_loop_register_timer(ts, HEARTBEAT_PERIOD_MS);
 } 
+
+static void timer_setup(){
+    // set one-shot timer
+    heartbeat.process = &heartbeat_handler;
+    run_loop_register_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
+}
 
 static void hw_setup(){
     // stop watchdog timer
@@ -161,14 +161,6 @@ static void hw_setup(){
     // init LEDs
     LED_PORT_OUT |= LED_1 | LED_2;
     LED_PORT_DIR |= LED_1 | LED_2;
-}
-
-static void timer_setup(){
-    // set one-shot timer
-    timer_source_t heartbeat;
-    heartbeat.process = &heartbeat_handler;
-    run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
-    run_loop_add_timer(&heartbeat);
 }
 
 static void btstack_setup(){
@@ -219,6 +211,9 @@ int main(void)
 
  	// turn on!
 	hci_power_control(HCI_POWER_ON);
+
+    // make discoverable
+    hci_discoverable_control(1);
 
     // go!
     run_loop_execute();	

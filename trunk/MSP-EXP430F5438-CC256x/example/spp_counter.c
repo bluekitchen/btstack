@@ -35,6 +35,8 @@
 static uint8_t   rfcomm_channel_nr = 1;
 static uint16_t  rfcomm_channel_id;
 static uint8_t   spp_service_buffer[100];
+static timer_source_t heartbeat;
+    
 
 enum STATE {INIT, W4_CONNECTION, W4_CHANNEL_COMPLETE, ACTIVE} ;
 enum STATE state = INIT;
@@ -130,7 +132,6 @@ static void  timer_handler(timer_source_t *ts){
 
 static void timer_setup(){
     // set one-shot timer
-    timer_source_t heartbeat;
     heartbeat.process = &timer_handler;
     run_loop_register_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
 }
