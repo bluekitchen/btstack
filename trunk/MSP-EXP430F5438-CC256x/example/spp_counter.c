@@ -33,13 +33,36 @@
 #define HEARTBEAT_PERIOD_MS 1000
 
 static uint8_t   rfcomm_channel_nr = 1;
-static uint16_t  rfcomm_channel_id;
+static uint16_t  rfcomm_channel_id = 0;
 static uint8_t   spp_service_buffer[100];
 static timer_source_t heartbeat;
     
+static int real_counter = 0;
+static int counter_to_send = 0;
 
 enum STATE {INIT, W4_CONNECTION, W4_CHANNEL_COMPLETE, ACTIVE} ;
 enum STATE state = INIT;
+
+static void tryToSend(void){
+    if (!rfcomm_channel_id) return;
+    if (real_counter < counter_to_send) return;
+                
+    char lineBuffer[30];
+    sprintf(lineBuffer, "BTstack counter %04u\n\r", counter_to_send);
+    printf(lineBuffer);
+    int err = rfcomm_send_internal(rfcomm_channel_id, (uint8_t*) lineBuffer, strlen(lineBuffer));
+
+    switch (err){
+        case 0:
+            counter_to_send++;
+            break;
+        case BTSTACK_ACL_BUFFERS_FULL:
+            break;
+        default:
+           printf("rfcomm_send_internal() -> err %d\n\r", err);
+        break;
+    }
+}
 
 // Bluetooth logic
 static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
@@ -97,16 +120,24 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
                 break;
         
         case ACTIVE:
-            if (event != RFCOMM_EVENT_CHANNEL_CLOSED) break;
-                
-            rfcomm_channel_id = 0;
-            state = W4_CONNECTION;
-            break;
-
+            switch(event){
+                case DAEMON_EVENT_HCI_PACKET_SENT:
+                case RFCOMM_EVENT_CREDITS:
+                    tryToSend();
+                    break;
+                case RFCOMM_EVENT_CHANNEL_CLOSED:
+                    rfcomm_channel_id = 0;
+                    state = W4_CONNECTION;
+                    break;
+                default:
+                    break;
+            }
+        
         default:
             break;
     }
 }
+
 
 static void run_loop_register_timer(timer_source_t *timer, uint16_t period){
     run_loop_set_timer(timer, period);
@@ -114,19 +145,8 @@ static void run_loop_register_timer(timer_source_t *timer, uint16_t period){
 }
 
 static void  timer_handler(timer_source_t *ts){
-
-    if (rfcomm_channel_id){
-        static int counter = 0;
-        char lineBuffer[30];
-        sprintf(lineBuffer, "BTstack counter %04u\n\r", ++counter);
-        printf(lineBuffer);
-        int err = rfcomm_send_internal(rfcomm_channel_id, (uint8_t*) lineBuffer, strlen(lineBuffer));
-        if (err) {
-            printf("rfcomm_send_internal -> error %d", err);
-        }
-    }
-
     // re-register timer
+    real_counter++;
     run_loop_register_timer(ts, HEARTBEAT_PERIOD_MS);
 } 
 
