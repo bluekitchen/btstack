@@ -25,20 +25,22 @@
 
 
 #define MAX_DEVICES 10
+enum DEVICE_STATE { REMOTE_NAME_REQUEST, REMOTE_NAME_INQUIRED, REMOTE_NAME_FETCHED };
 struct device {
     bd_addr_t  address;
     uint16_t   clockOffset;
     uint32_t   classOfDevice;
     uint8_t    pageScanRepetitionMode;
     uint8_t    rssi;
-    uint8_t    state; // 0 empty, 1 found, 2 remote name tried, 3 remote name found
+    enum DEVICE_STATE  state; 
 };
 
 #define INQUIRY_INTERVAL 5
 struct device devices[MAX_DEVICES];
 int deviceCount = 0;
 
-enum STATE {INIT, W4_INQUIRY_MODE_COMPLETE, ACTIVE, DEVICE_NAME, REMOTE_NAME_REQUEST, REMOTE_NAME_INQUIRED, REMOTE_NAME_FETCHED} ;
+
+enum STATE {INIT, W4_INQUIRY_MODE_COMPLETE, ACTIVE} ;
 enum STATE state = INIT;
 
 
@@ -79,6 +81,14 @@ void do_next_remote_name_request(void){
     }
 }
 
+static void continue_remote_names(){
+    if (has_more_remote_name_requests()){
+        do_next_remote_name_request();
+        return;
+    } 
+    start_scan();
+}
+
 static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
     bd_addr_t addr;
     int i;
@@ -99,18 +109,10 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
             break;
 
         case W4_INQUIRY_MODE_COMPLETE:
-            switch(event){
-                case HCI_EVENT_COMMAND_STATUS:
-                    if ( COMMAND_STATUS_EVENT(packet, hci_write_inquiry_mode) ) {
-                        printf("Ignoring error (0x%x) from hci_write_inquiry_mode.\n", packet[2]);
-                        start_scan();
-                        state = ACTIVE;
-                    }
-                    break;
-                default:
-                    break;
+            if ( COMMAND_COMPLETE_EVENT(packet, hci_write_inquiry_mode) ) {
+                start_scan();
+                state = ACTIVE;
             }
-
             break;
             
         case ACTIVE:
@@ -121,7 +123,8 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
                     for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
                         bt_flip_addr(addr, &packet[3+i*6]);
                         int index = getDeviceIndexForAddress(addr);
-                        if (index >= 0) continue;
+                        if (index >= 0) continue;   // already in our list
+
                         memcpy(devices[deviceCount].address, addr, 6);
                         devices[deviceCount].pageScanRepetitionMode =   packet [3 + numResponses*(6)         + i*1];
                         if (event == HCI_EVENT_INQUIRY_RESULT){
@@ -134,7 +137,7 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
                             devices[deviceCount].rssi  =                    packet [3 + numResponses*(6+1+1+3+2) + i*1];
                         }
                         devices[deviceCount].state = REMOTE_NAME_REQUEST;
-                        printf("Device found: %s with COD: 0x%06x, pageScan %u, clock offset 0x%04x, rssi 0x%02x\n", bd_addr_to_str(addr),
+                        printf("Device found: %s with COD: 0x%06x, pageScan %d, clock offset 0x%04x, rssi 0x%02x\n", bd_addr_to_str(addr),
                                 devices[deviceCount].classOfDevice, devices[deviceCount].pageScanRepetitionMode,
                                 devices[deviceCount].clockOffset, devices[deviceCount].rssi);
                         deviceCount++;
@@ -147,11 +150,7 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
                         if (devices[i].state == REMOTE_NAME_INQUIRED)
                             devices[i].state = REMOTE_NAME_REQUEST;
                     }
-                    if (has_more_remote_name_requests()){
-                        do_next_remote_name_request();
-                        break;
-                    } 
-                    start_scan();
+                    continue_remote_names();
                     break;
 
                 case BTSTACK_EVENT_REMOTE_NAME_CACHED:
@@ -170,11 +169,7 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
                             printf("Failed to get name: page timeout\n");
                         }
                     }
-                    if (has_more_remote_name_requests()){
-                        do_next_remote_name_request();
-                        break;
-                    } 
-                    start_scan();
+                    continue_remote_names();
                     break;
 
                 default:
