@@ -111,12 +111,13 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
                 // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
                 if (packet[2]) {
                     printf("RFCOMM channel open failed, status %u\n\r", packet[2]);
-                } else {
-                    rfcomm_channel_id = READ_BT_16(packet, 12);
-                    mtu = READ_BT_16(packet, 14);
-                    printf("\n\rRFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n\r", rfcomm_channel_id, mtu);
-                    state = ACTIVE;
-                }
+                    break;
+                } 
+                
+                rfcomm_channel_id = READ_BT_16(packet, 12);
+                mtu = READ_BT_16(packet, 14);
+                printf("\n\rRFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n\r", rfcomm_channel_id, mtu);
+                state = ACTIVE;
                 break;
         
         case ACTIVE:
@@ -172,9 +173,6 @@ static void hw_setup(){
     // init LEDs
     LED_PORT_OUT |= LED_1 | LED_2;
     LED_PORT_DIR |= LED_1 | LED_2;
-
-    // ready - enable irq used in h4 task
-    __enable_interrupt();  
 }
 
 static void btstack_setup(){
@@ -216,6 +214,9 @@ int main(void){
     hw_setup();
     btstack_setup();
     timer_setup();
+
+    // ready - enable irq used in h4 task
+    __enable_interrupt();   
     
     printf("Run...\n\r");
 

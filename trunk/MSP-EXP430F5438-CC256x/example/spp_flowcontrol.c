@@ -106,12 +106,13 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
             if (packet[2]) {
                 printf("RFCOMM channel open failed, status %u\n\r", packet[2]);
-            } else {
-                rfcomm_channel_id = READ_BT_16(packet, 12);
-                mtu = READ_BT_16(packet, 14);
-                printf("\n\rRFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n\r", rfcomm_channel_id, mtu);
-                state = ACTIVE;
-            }
+                break;
+            } 
+        
+            rfcomm_channel_id = READ_BT_16(packet, 12);
+            mtu = READ_BT_16(packet, 14);
+            printf("\n\rRFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n\r", rfcomm_channel_id, mtu);
+            state = ACTIVE;
             break;
             
         case ACTIVE:
