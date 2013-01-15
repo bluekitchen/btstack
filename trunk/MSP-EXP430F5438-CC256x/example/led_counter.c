@@ -22,30 +22,40 @@
 
 #define HEARTBEAT_PERIOD_MS 1000
 
-static void  heartbeat_handler(struct timer *ts){
+static int counter = 0;
+static timer_source_t heartbeat;
+    
+static void run_loop_register_timer(timer_source_t *timer, uint16_t period){
+    run_loop_set_timer(timer, period);
+    run_loop_add_timer(timer);
+}
 
+static void timer_handler(timer_source_t *ts){
     // increment counter
-    static int counter = 0;
     char lineBuffer[30];
     sprintf(lineBuffer, "BTstack counter %04u\n\r", ++counter);
     printf(lineBuffer);
     
     // toggle LED
     LED_PORT_OUT = LED_PORT_OUT ^ LED_2;
-    
-    run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
-    run_loop_add_timer(ts);
+
+    // re-register timer
+    run_loop_register_timer(ts, HEARTBEAT_PERIOD_MS);
 } 
 
-// main
-int main(void)
-{
+static void timer_setup(){
+    // set one-shot timer
+    heartbeat.process = &timer_handler;
+    run_loop_register_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
+}
+
+static void hw_setup(){
     // stop watchdog timer
     WDTCTL = WDTPW + WDTHOLD;
 
     //Initialize clock and peripherals 
     halBoardInit();  
-    halBoardStartXT1();	
+    halBoardStartXT1(); 
     halBoardSetSystemClock(SYSCLK_16MHZ);
     
     // init debug UART
@@ -54,16 +64,20 @@ int main(void)
     // init LEDs
     LED_PORT_OUT |= LED_1 | LED_2;
     LED_PORT_DIR |= LED_1 | LED_2;
-    
-	/// GET STARTED with BTstack ///
-	btstack_memory_init();
+}
+
+static void btstack_setup(){
+    /// GET STARTED with BTstack ///
+    btstack_memory_init();
     run_loop_init(RUN_LOOP_EMBEDDED);
-	    
-    // set one-shot timer
-    timer_source_t heartbeat;
-    heartbeat.process = &heartbeat_handler;
-    run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
-    run_loop_add_timer(&heartbeat);
+}
+
+// main
+int main(void)
+{
+    hw_setup();
+    btstack_setup();
+	timer_setup();
     
 	printf("Run...\n\r");
 
