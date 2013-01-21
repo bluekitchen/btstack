@@ -78,7 +78,7 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
         case INIT:
             // bt stack activated, get started - set local name
             if (packet[2] == HCI_STATE_WORKING) {
-                hci_send_cmd(&hci_write_local_name, "BlueMSP-Demo");
+                hci_send_cmd(&hci_write_local_name, "BTstack SPP Counter");
                 state = W4_CONNECTION;
             }
             break;
