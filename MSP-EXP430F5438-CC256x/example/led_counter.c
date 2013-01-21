@@ -30,7 +30,7 @@ static void run_loop_register_timer(timer_source_t *timer, uint16_t period){
     run_loop_add_timer(timer);
 }
 
-static void timer_handler(timer_source_t *ts){
+static void heartbeat_handler(timer_source_t *ts){
     // increment counter
     char lineBuffer[30];
     sprintf(lineBuffer, "BTstack counter %04u\n\r", ++counter);
@@ -45,7 +45,7 @@ static void timer_handler(timer_source_t *ts){
 
 static void timer_setup(){
     // set one-shot timer
-    heartbeat.process = &timer_handler;
+    heartbeat.process = &heartbeat_handler;
     run_loop_register_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
 }
 

@@ -145,7 +145,7 @@ static void run_loop_register_timer(timer_source_t *timer, uint16_t period){
     run_loop_add_timer(timer);
 }
 
-static void  timer_handler(timer_source_t *ts){
+static void  heartbeat_handler(timer_source_t *ts){
     // re-register timer
     real_counter++;
     run_loop_register_timer(ts, HEARTBEAT_PERIOD_MS);
@@ -153,7 +153,7 @@ static void  timer_handler(timer_source_t *ts){
 
 static void timer_setup(){
     // set one-shot timer
-    heartbeat.process = &timer_handler;
+    heartbeat.process = &heartbeat_handler;
     run_loop_register_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
 }
 
