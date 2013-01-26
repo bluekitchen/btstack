@@ -306,23 +306,13 @@ typedef struct {
 uint16_t hci_create_cmd(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, ...);
 uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, va_list argptr);
 
-// set up HCI
-void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, remote_device_db_t const* remote_device_db);
-void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
-void hci_close(void);
-
-// power and inquriy scan control
-int  hci_power_control(HCI_POWER_MODE mode);
-void hci_discoverable_control(uint8_t enable);
 void hci_connectable_control(uint8_t enable);
+void hci_close(void);
 
 /**
  * run the hci control loop once
  */
 void hci_run(void);
-
-// create and send hci command packets based on a template and a list of parameters
-int hci_send_cmd(const hci_cmd_t *cmd, ...);
 
 // send complete CMD packet
 int hci_send_cmd_packet(uint8_t *packet, int size);
@@ -337,7 +327,6 @@ hci_connection_t * connection_for_handle(hci_con_handle_t con_handle);
 uint8_t  hci_number_outgoing_packets(hci_con_handle_t handle);
 uint8_t  hci_number_free_acl_slots(void);
 int      hci_authentication_active_for_handle(hci_con_handle_t handle);
-void     hci_drop_link_key_for_bd_addr(bd_addr_t *addr);
 uint16_t hci_max_acl_data_packet_length(void);
 uint16_t hci_usable_acl_packet_types(void);
 uint8_t* hci_get_outgoing_acl_packet_buffer(void);
@@ -353,6 +342,30 @@ void hci_emit_btstack_version(void);
 void hci_emit_system_bluetooth_enabled(uint8_t enabled);
 void hci_emit_remote_name_cached(bd_addr_t *addr, device_name_t *name);
 void hci_emit_discoverable_enabled(uint8_t enabled);
+
+
+/** Embedded API **/
+
+// Set up HCI.
+void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, remote_device_db_t const* remote_device_db);
+
+// Registers a packet handler. Used if L2CAP is not used (rarely). 
+void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
+
+// Requests the change of BTstack power mode.
+int  hci_power_control(HCI_POWER_MODE mode);
+
+// Allows to control if device is dicoverable. OFF by default.
+void hci_discoverable_control(uint8_t enable);
+
+// Creates and sends hci command packets based on a template and 
+// a list of parameters. Will return error if outgoing data buffer 
+// is occupied. 
+int hci_send_cmd(const hci_cmd_t *cmd, ...);
+
+// Deletes link key for remote device with baseband address.
+void hci_drop_link_key_for_bd_addr(bd_addr_t *addr);
+
 
 #if defined __cplusplus
 }
