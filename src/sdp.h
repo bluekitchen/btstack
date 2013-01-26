@@ -75,10 +75,8 @@ int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu);
 int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remote_mtu);
 
 #ifndef EMBEDDED
-// register service record internally - this special version doesn't copy the record, it cannot be freeed
-// pre: AttributeIDs are in ascending order
-// pre: ServiceRecordHandle is first attribute and valid
-// pre: record
+// Register service record internally - this version creates a copy of the record
+// precondition: AttributeIDs are in ascending order => ServiceRecordHandle is first attribute if present
 // @returns ServiceRecordHandle or 0 if registration failed
 uint32_t sdp_register_service_internal(void *connection, uint8_t * service_record);
 #endif
@@ -88,15 +86,18 @@ void sdp_unregister_services_for_connection(void *connection);
 
 /** Embedded API **/
 
+// Set up SDP.
 void sdp_init(void);
 
 #ifdef EMBEDDED
-// register service record internally - the normal version creates a copy of the record
-// pre: AttributeIDs are in ascending order => ServiceRecordHandle is first attribute if present
-// @returns ServiceRecordHandle or 0 if registration failed
+// Register service record internally - this version doesn't copy the record therefore it must be forever accessible.
+// Preconditions:
+//     - AttributeIDs are in ascending order;
+//     - ServiceRecordHandle is first attribute and valid.
+// @returns ServiceRecordHandle or 0 if registration failed.
 uint32_t sdp_register_service_internal(void *connection, service_record_item_t * record_item);
 #endif
 
-// unregister service record internally
+// Unregister service record internally.
 void sdp_unregister_service_internal(void *connection, uint32_t service_record_handle);
 
