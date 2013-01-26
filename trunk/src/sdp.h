@@ -65,17 +65,16 @@ typedef struct {
 } service_record_item_t;
 
 
-void sdp_init(void);
-
 void sdp_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type,
                                                  uint16_t channel, uint8_t *packet, uint16_t size));
 
-#ifdef EMBEDDED
-// register service record internally - the normal version creates a copy of the record
-// pre: AttributeIDs are in ascending order => ServiceRecordHandle is first attribute if present
-// @returns ServiceRecordHandle or 0 if registration failed
-uint32_t sdp_register_service_internal(void *connection, service_record_item_t * record_item);
-#else
+
+//
+int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu);
+int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu);
+int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remote_mtu);
+
+#ifndef EMBEDDED
 // register service record internally - this special version doesn't copy the record, it cannot be freeed
 // pre: AttributeIDs are in ascending order
 // pre: ServiceRecordHandle is first attribute and valid
@@ -84,13 +83,20 @@ uint32_t sdp_register_service_internal(void *connection, service_record_item_t *
 uint32_t sdp_register_service_internal(void *connection, uint8_t * service_record);
 #endif
 
-// unregister service record internally
-void sdp_unregister_service_internal(void *connection, uint32_t service_record_handle);
-
 //
 void sdp_unregister_services_for_connection(void *connection);
 
-//
-int sdp_handle_service_search_request(uint8_t * packet, uint16_t remote_mtu);
-int sdp_handle_service_attribute_request(uint8_t * packet, uint16_t remote_mtu);
-int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remote_mtu);
+/** Embedded API **/
+
+void sdp_init(void);
+
+#ifdef EMBEDDED
+// register service record internally - the normal version creates a copy of the record
+// pre: AttributeIDs are in ascending order => ServiceRecordHandle is first attribute if present
+// @returns ServiceRecordHandle or 0 if registration failed
+uint32_t sdp_register_service_internal(void *connection, service_record_item_t * record_item);
+#endif
+
+// unregister service record internally
+void sdp_unregister_service_internal(void *connection, uint32_t service_record_handle);
+
