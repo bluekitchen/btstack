@@ -1,1 +1,1 @@
-./configure --target=iphone --enable-launchd --enable-ldid --with-prefsbundle --with-uart-speed=921600 --with-sdk-version=5.0 --with-gcc-version=4.2
+./configure --target=iphone --with-developer-path=/Applications/Xcode-4.4.1.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/ --enable-launchd --enable-ldid --with-prefsbundle --with-uart-speed=921600 --with-sdk-version=5.1 --with-gcc-version=4.2
