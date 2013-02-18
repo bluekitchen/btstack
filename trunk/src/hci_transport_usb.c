@@ -436,7 +436,7 @@ static int usb_open(void *transport_config){
         log_info("Async using timers:\n");
 
         usb_timer.process = usb_process_ts;
-        run_loop_set_timer(&usb_timer, 100);
+        run_loop_set_timer(&usb_timer, AYSNC_POLLING_INTERVAL_MS);
         run_loop_add_timer(&usb_timer);
         usb_timer_active = 1;
     }
