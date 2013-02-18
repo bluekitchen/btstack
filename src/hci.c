@@ -682,7 +682,7 @@ static void event_handler(uint8_t *packet, int size){
 	hci_run();
 }
 
-void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             event_handler(packet, size);
