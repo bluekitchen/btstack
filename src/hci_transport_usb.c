@@ -92,6 +92,7 @@ static libusb_device        * dev;
 static libusb_device_handle * handle;
 
 #define ASYNC_BUFFERS 4
+#define AYSNC_POLLING_INTERVAL_MS 10
 
 static struct libusb_transfer *event_in_transfer[ASYNC_BUFFERS];
 static struct libusb_transfer *bulk_in_transfer[ASYNC_BUFFERS];
@@ -110,6 +111,7 @@ static int usb_timer_active;
 static int event_in_addr;
 static int acl_in_addr;
 static int acl_out_addr;
+
 
 #if !USB_VENDOR_ID || !USB_PRODUCT_ID
 void scan_for_bt_endpoints(void) {
@@ -268,8 +270,8 @@ void usb_process_ts(timer_source_t *timer) {
     // actually handled the packet in the pollfds function
     usb_process_ds((struct data_source *) NULL);
 
-    // "Compute" the amount of time until next event is due
-    long msec = 10;
+    // Get the amount of time until next event is due
+    long msec = AYSNC_POLLING_INTERVAL_MS;
 
     // Activate timer
     run_loop_set_timer(&usb_timer, msec);
@@ -301,7 +303,7 @@ static int usb_open(void *transport_config){
     libusb_state = LIB_USB_OPENED;
 
     // configure debug level
-    libusb_set_debug(0,3);
+    // libusb_set_debug(0,3);
     
 #if USB_VENDOR_ID && USB_PRODUCT_ID
     // Use a specified device
