@@ -143,6 +143,7 @@ void scan_for_bt_endpoints(void) {
             }
         }
     }
+    libusb_free_config_descriptor(config_descriptor);
 }
 
 static libusb_device * scan_for_bt_device(libusb_device **devs) {
@@ -257,27 +258,18 @@ static int usb_process_ds(struct data_source *ds) {
 }
 
 void usb_process_ts(timer_source_t *timer) {
-    struct timeval tv, now;
-    long msec;
+    // log_info("in usb_process_ts\n");
 
-    //log_info("in usb_process_ts\n");
-
-    // Deactivate timer
-    run_loop_remove_timer(&usb_timer);
+    // timer is deactive, when timer callback gets called
     usb_timer_active = 0;
 
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return;
 
-    // actuall handled the packet in the pollfds function
+    // actually handled the packet in the pollfds function
     usb_process_ds((struct data_source *) NULL);
 
-    // Compute the amount of time until next event is due
-    gettimeofday(&now, NULL);
-    msec = (now.tv_sec - tv.tv_sec) * 1000;
-    msec = (now.tv_usec - tv.tv_usec) / 1000;
-
-    // Maximum wait time, async packet can come in earlier than timeout
-    if (msec > 10) msec = 10;
+    // "Compute" the amount of time until next event is due
+    long msec = 10;
 
     // Activate timer
     run_loop_set_timer(&usb_timer, msec);
@@ -349,7 +341,6 @@ static int usb_open(void *transport_config){
 #endif
 
     log_info("libusb open %d, handle %p\n", r, handle);
-    libusb_state = LIB_USB_OPENED;
 
     // Detach OS driver (not possible for OS X)
 #ifndef __APPLE__
