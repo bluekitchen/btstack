@@ -94,6 +94,7 @@ static uint8_t hci_packet[HCI_PACKET_BUFFER_SIZE]; // bigger than largest packet
 
 // tx state
 static TX_STATE tx_state;
+static uint8_t  tx_packet_type;
 static uint8_t *tx_data;
 static uint16_t tx_len;
 
@@ -281,11 +282,12 @@ static int h4_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     dump(packet, size);
 #endif
     
+    tx_packet_type = packet_type;
     tx_data = packet;
     tx_len  = size;
     
     tx_state = TX_W4_HEADER_SENT;
-	hal_uart_dma_send_block(&packet_type, 1);
+	hal_uart_dma_send_block(&tx_packet_type, 1);
     
     return 0;
 }
