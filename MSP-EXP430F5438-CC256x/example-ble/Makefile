@@ -24,18 +24,19 @@ CORE   = \
 
 COMMON = \
     ../src/hal_uart_dma.c                         \
-	${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
-	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2564_1.7.c \
-    ${BTSTACK_ROOT}/src/hci.c			          \
-    ${BTSTACK_ROOT}/src/hci_cmds.c		          \
     ${BTSTACK_ROOT}/src/hci_dump.c		          \
-    ${BTSTACK_ROOT}/src/hci_transport_h4_ehcill_dma.c \
-	${BTSTACK_ROOT}/src/remote_device_db_memory.c \
-    ${BTSTACK_ROOT}/src/utils.c			          \
+    ${BTSTACK_ROOT}/src/hci_transport_h4_dma.c    \
     ${BTSTACK_ROOT}/ble/att.c    	              \
+    ${BTSTACK_ROOT}/ble/hci_cmds_le.c		      \
+    ${BTSTACK_ROOT}/ble/hci_le.c			      \
     ${BTSTACK_ROOT}/ble/l2cap_le.c                \
-    ../firmware/hal_lcd.c                         \
-    ../firmware/hal_lcd_fonts.c	                  \
+    ${BTSTACK_ROOT}/ble/utils_le.c	              \
+
+#	${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
+#	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2567_2.4.c \
+#    ${BTSTACK_ROOT}/src/hci_transport_h4_ehcill_dma.c \
+#    ../firmware/hal_lcd.c                         \
+#    ../firmware/hal_lcd_fonts.c	                  \
 	
 LCD = ../firmware/hal_lcd.c ../firmware/hal_lcd_fonts.c
 
@@ -52,9 +53,9 @@ all: ble_server.out
 	
 # compile .ble description
 profile.h: profile.gatt
-	${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
+	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
     
-ble_server.out: profile.h ble_server.o ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} 
+ble_server.out: profile.h ble_server.o ${CORE_OBJ} ${COMMON_OBJ} 
 	${CC} $^ ${LDFLAGS} -o $@
 
 
@@ -64,7 +65,7 @@ clean:
 size: all
 	msp430-size ../firmware/*.o
 	msp430-size ../src/*.o
-	msp430-size ${BTSTACK_ROOT}/chipset-cc256x/*.o
+	# msp430-size ${BTSTACK_ROOT}/chipset-cc256x/*.o
 	msp430-size ${BTSTACK_ROOT}/src/*.o
 	msp430-size ${BTSTACK_ROOT}/ble/*.o
 	msp430-size *.o
