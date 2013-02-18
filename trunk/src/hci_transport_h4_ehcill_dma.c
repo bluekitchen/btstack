@@ -208,6 +208,9 @@ static int h4_close(){
     return 0;
 }
 
+// extern uint32_t hal_time_current(void);
+uint32_t h4_last_packet_timestamp;
+
 static void h4_block_received(void){
     
     read_pos += bytes_to_read;
@@ -219,6 +222,7 @@ static void h4_block_received(void){
                 case HCI_ACL_DATA_PACKET:
                     h4_state = H4_W4_ACL_HEADER;
                     bytes_to_read = HCI_ACL_HEADER_SIZE;
+                    // h4_last_packet_timestamp = hal_time_current();
                     break;
                 case HCI_EVENT_PACKET:
                     h4_state = H4_W4_EVENT_HEADER;
@@ -466,7 +470,7 @@ static int ehcill_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     
     if (!ehcill_sleep_mode_active()){
         tx_state = TX_W4_HEADER_SENT;
-        hal_uart_dma_send_block(&packet_type, 1);
+        hal_uart_dma_send_block(&tx_packet_type, 1);
         return 0;
     }
     
