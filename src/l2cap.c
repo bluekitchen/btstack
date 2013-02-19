@@ -824,7 +824,7 @@ void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t 
         }
         // check for unknown options
         if (option_hint == 0 && (option_type == 0 || option_type >= 0x07)){
-            log_info("l2cap cid %u, unknown options");
+            log_info("l2cap cid %u, unknown options", channel->local_cid);
             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID);
         }
         pos += length;
