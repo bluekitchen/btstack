@@ -1,0 +1,30 @@
+include $(THEOS)/makefiles/common.mk
+
+LIBRARY_NAME = libBTstack
+libBTstack_FILES  = btstack.c hci_cmds.c linked_list.c
+libBTstack_FILES += run_loop.c run_loop_cocoa.m run_loop_posix.c sdp_util.c socket_connection.c utils.c
+libBTstack_CFLAGS = -I../include -I..
+
+TOOL_NAME = BTdaemon
+BTdaemon_FILES = $(libBTstack_FILES)   \
+	bt_control_iphone.m     \
+	platform_iphone.m       \
+	hci_transport_h4_iphone.c \
+	btstack_memory.c        \
+	daemon.c                \
+	hci.c                   \
+	hci_dump.c              \
+	hci_transport_h4.c      \
+	$(usb_sources)          \
+	l2cap.c                 \
+	l2cap_signaling.c       \
+	memory_pool.c           \
+	remote_device_db_iphone.m  \
+	rfcomm.c                \
+	sdp.c                   \
+	../SpringBoardAccess/SpringBoardAccess.c
+BTdaemon_CFLAGS = -I../include -I..
+BTdaemon_FRAMEWORKS = IOKit
+
+include $(THEOS_MAKE_PATH)/library.mk
+include $(THEOS_MAKE_PATH)/tool.mk

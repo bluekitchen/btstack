@@ -1,0 +1,29 @@
+include $(THEOS)/makefiles/common.mk
+
+ADDITIONAL_CFLAGS = -I.. -I../include
+ADDITIONAL_LDFLAGS = -L../src/obj -lBTstack
+
+TOOL_NAME = inquiry
+inquiry_FILES = inquiry.c
+
+# Note: don't know how to build all the tools from a single Makefile
+
+# TOOL_NAME = test
+# test_FILES = test.c
+
+# TOOL_NAME = rfcomm_echo
+# rfcomm_echo_FILES = rfcomm_echo.c
+
+# TOOL_NAME = rfcomm-cat
+# rfcomm-cat_FILES = rfcomm-cat.c
+
+# TOOL_NAME = rfcomm-test
+# rfcomm-test_FILES = rfcomm-test.c
+
+# TOOL_NAME = l2cap-server
+# l2cap-server_FILES = l2cap-server.c
+
+# TOOL_NAME = l2cap-throughput
+# l2cap-throughput_FILES = l2cap-throughput.c
+
+include $(THEOS_MAKE_PATH)/tool.mk
