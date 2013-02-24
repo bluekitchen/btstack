@@ -92,7 +92,7 @@ static libusb_device        * dev;
 static libusb_device_handle * handle;
 
 #define ASYNC_BUFFERS 4
-#define AYSNC_POLLING_INTERVAL_MS 10
+#define AYSNC_POLLING_INTERVAL_MS 3
 
 static struct libusb_transfer *event_in_transfer[ASYNC_BUFFERS];
 static struct libusb_transfer *bulk_in_transfer[ASYNC_BUFFERS];
@@ -194,10 +194,10 @@ static void queue_completed_transfer(struct libusb_transfer *transfer){
     temp->user_data = transfer;
 }
 
-static void LIBUSB_CALL async_callback(struct libusb_transfer *transfer)
+static void async_callback(struct libusb_transfer *transfer)
 {
     int r;
-    log_info("begin async_callback endpoint %x, status %x, actual length %u", transfer->endpoint, transfer->status, transfer->actual_length );
+    // log_info("begin async_callback endpoint %x, status %x, actual length %u", transfer->endpoint, transfer->status, transfer->actual_length );
 
     if (transfer->status == LIBUSB_TRANSFER_COMPLETED ||
         (transfer->status == LIBUSB_TRANSFER_TIMED_OUT && transfer->actual_length > 0)) {
@@ -213,7 +213,7 @@ static void LIBUSB_CALL async_callback(struct libusb_transfer *transfer)
             }
         }
     }
-    log_info("end async_callback");
+    // log_info("end async_callback");
 }
 
 static int usb_process_ds(struct data_source *ds) {
@@ -418,7 +418,7 @@ static int usb_open(void *transport_config){
     for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
         // configure event_in handlers
         libusb_fill_interrupt_transfer(event_in_transfer[c], handle, event_in_addr, 
-                hci_event_in_buffer[c], HCI_ACL_BUFFER_SIZE, async_callback, NULL, 2000) ;
+                hci_event_in_buffer[c], HCI_ACL_BUFFER_SIZE, async_callback, NULL, 0) ;
  
         r = libusb_submit_transfer(event_in_transfer[c]);
         if (r) {
@@ -429,7 +429,7 @@ static int usb_open(void *transport_config){
  
         // configure bulk_in handlers
         libusb_fill_bulk_transfer(bulk_in_transfer[c], handle, acl_in_addr, 
-                hci_bulk_in_buffer[c], HCI_ACL_BUFFER_SIZE, async_callback, NULL, 2000) ;
+                hci_bulk_in_buffer[c], HCI_ACL_BUFFER_SIZE, async_callback, NULL, 0) ;
  
         r = libusb_submit_transfer(bulk_in_transfer[c]);
         if (r) {
