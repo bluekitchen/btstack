@@ -120,28 +120,28 @@ void scan_for_bt_endpoints(void) {
     // get endpoints from interface descriptor
     struct libusb_config_descriptor *config_descriptor;
     r = libusb_get_active_config_descriptor(dev, &config_descriptor);
-    log_info("configuration: %u interfaces\n", config_descriptor->bNumInterfaces);
+    log_info("configuration: %u interfaces", config_descriptor->bNumInterfaces);
 
     const struct libusb_interface *interface = config_descriptor->interface;
     const struct libusb_interface_descriptor * interface0descriptor = interface->altsetting;
-    log_info("interface 0: %u endpoints\n", interface0descriptor->bNumEndpoints);
+    log_info("interface 0: %u endpoints", interface0descriptor->bNumEndpoints);
 
     const struct libusb_endpoint_descriptor *endpoint = interface0descriptor->endpoint;
 
     for (r=0;r<interface0descriptor->bNumEndpoints;r++,endpoint++){
-        log_info("endpoint %x, attributes %x\n", endpoint->bEndpointAddress, endpoint->bmAttributes);
+        log_info("endpoint %x, attributes %x", endpoint->bEndpointAddress, endpoint->bmAttributes);
 
         if ((endpoint->bmAttributes & 0x3) == LIBUSB_TRANSFER_TYPE_INTERRUPT){
             event_in_addr = endpoint->bEndpointAddress;
-            log_info("Using 0x%2.2X for HCI Events\n", event_in_addr);
+            log_info("Using 0x%2.2X for HCI Events", event_in_addr);
         }
         if ((endpoint->bmAttributes & 0x3) == LIBUSB_TRANSFER_TYPE_BULK){
             if (endpoint->bEndpointAddress & 0x80) {
                 acl_in_addr = endpoint->bEndpointAddress;
-                log_info("Using 0x%2.2X for ACL Data In\n", acl_in_addr);
+                log_info("Using 0x%2.2X for ACL Data In", acl_in_addr);
             } else {
                 acl_out_addr = endpoint->bEndpointAddress;
-                log_info("Using 0x%2.2X for ACL Data Out\n", acl_out_addr);
+                log_info("Using 0x%2.2X for ACL Data Out", acl_out_addr);
             }
         }
     }
@@ -157,7 +157,7 @@ static libusb_device * scan_for_bt_device(libusb_device **devs) {
             return 0;
         }
         
-        log_info("%04x:%04x (bus %d, device %d) - class %x subclass %x protocol %x \n",
+        log_info("%04x:%04x (bus %d, device %d) - class %x subclass %x protocol %x ",
                desc.idVendor, desc.idProduct,
                libusb_get_bus_number(dev), libusb_get_device_address(dev),
                desc.bDeviceClass, desc.bDeviceSubClass, desc.bDeviceProtocol);
@@ -169,7 +169,7 @@ static libusb_device * scan_for_bt_device(libusb_device **devs) {
         // if (desc.bDeviceClass == 0xe0 && desc.bDeviceSubClass == 0x01 && desc.bDeviceProtocol == 0x01){
         if (desc.bDeviceClass == 0xE0 && desc.bDeviceSubClass == 0x01
                 && desc.bDeviceProtocol == 0x01) {
-            log_info("BT Dongle found.\n");
+            log_info("BT Dongle found.");
             return dev;
         }
     }
@@ -177,43 +177,53 @@ static libusb_device * scan_for_bt_device(libusb_device **devs) {
 }
 #endif
 
+static void queue_completed_transfer(struct libusb_transfer *transfer){
+    transfer->user_data = NULL;
+
+    // insert first element
+    if (handle_packet == NULL) {
+        handle_packet = transfer;
+        return;
+    }
+
+    // Walk to end of list and add current packet there
+    struct libusb_transfer *temp = handle_packet;
+    while (temp->user_data) {
+        temp = temp->user_data;
+    }
+    temp->user_data = transfer;
+}
+
 static void LIBUSB_CALL async_callback(struct libusb_transfer *transfer)
 {
     int r;
-    //log_info("in async_callback %d\n", transfer->endpoint);
+    log_info("begin async_callback endpoint %x, status %x, actual length %u", transfer->endpoint, transfer->status, transfer->actual_length );
 
     if (transfer->status == LIBUSB_TRANSFER_COMPLETED ||
-            (transfer->status == LIBUSB_TRANSFER_TIMED_OUT && transfer->actual_length > 0)) {
-        if (handle_packet == NULL) {
-            handle_packet = transfer;
-        } else {
-            // Walk to end of list and add current packet there
-            struct libusb_transfer *temp = handle_packet;
-
-            while (temp->user_data) {
-                temp = temp->user_data;
-            }
-            temp->user_data = transfer;
-        }
+        (transfer->status == LIBUSB_TRANSFER_TIMED_OUT && transfer->actual_length > 0)) {
+        queue_completed_transfer(transfer);
     } else {
+        log_info("async_callback resubmit transfer, endpoint %x, status %x, length %u", transfer->endpoint, transfer->status, transfer->actual_length);
         // No usable data, just resubmit packet
         if (libusb_state == LIB_USB_TRANSFERS_ALLOCATED) {
             r = libusb_submit_transfer(transfer);
 
             if (r) {
-                log_error("Error re-submitting transfer %d\n", r);
+                log_error("Error re-submitting transfer %d", r);
             }
         }
     }
+    log_info("end async_callback");
 }
 
 static int usb_process_ds(struct data_source *ds) {
+
+    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
+
     struct timeval tv;
     int r;
 
-    //log_info("in usb_process_ds\n");
-
-    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
+    // log_info("begin usb_process_ds");
 
     // always handling an event as we're called when data is ready
     memset(&tv, 0, sizeof(struct timeval));
@@ -221,31 +231,37 @@ static int usb_process_ds(struct data_source *ds) {
 
     // Handle any packet in the order that they were received
     while (handle_packet) {
+
+        // log_info("handle packet %p, endpoint %x", handle_packet, handle_packet->endpoint);
+
         void * next = handle_packet->user_data;
-        //log_info("handle packet %x, endpoint", handle_packet, handle_packet->endpoint);
 
         if (handle_packet->endpoint == event_in_addr) {
+                // log_info("-> event");
                 hci_dump_packet( HCI_EVENT_PACKET, 1, handle_packet-> buffer,
                     handle_packet->actual_length);
                 packet_handler(HCI_EVENT_PACKET, handle_packet-> buffer,
                     handle_packet->actual_length);
         }
 
-        if (handle_packet->endpoint == acl_in_addr) {
+        else if (handle_packet->endpoint == acl_in_addr) {
+                // log_info("-> acl");
                 hci_dump_packet( HCI_ACL_DATA_PACKET, 1, handle_packet-> buffer,
                     handle_packet->actual_length);
                 packet_handler(HCI_ACL_DATA_PACKET, handle_packet-> buffer,
                     handle_packet->actual_length);
         }
 
-        // Re-submit transfer 
-        if (libusb_state == LIB_USB_TRANSFERS_ALLOCATED) {
-            handle_packet->user_data = NULL;
-            r = libusb_submit_transfer(handle_packet);
+        else {
+            log_info("usb_process_ds endpoint unknown %x", handle_packet->endpoint);
+        }
 
-            if (r) {
-                log_error("Error re-submitting transfer %d\n", r);
-            }
+        // Re-submit transfer 
+        handle_packet->user_data = NULL;
+        r = libusb_submit_transfer(handle_packet);
+
+        if (r) {
+            log_error("Error re-submitting transfer %d", r);
         }
 
         // Move to next in the list of packets to handle
@@ -256,11 +272,13 @@ static int usb_process_ds(struct data_source *ds) {
         }
     }
 
+    // log_info("end usb_process_ds");
+
     return 0;
 }
 
 void usb_process_ts(timer_source_t *timer) {
-    // log_info("in usb_process_ts\n");
+    // log_info("in usb_process_ts");
 
     // timer is deactive, when timer callback gets called
     usb_timer_active = 0;
@@ -307,11 +325,11 @@ static int usb_open(void *transport_config){
     
 #if USB_VENDOR_ID && USB_PRODUCT_ID
     // Use a specified device
-    log_info("Want vend: %04x, prod: %04x\n", USB_VENDOR_ID, USB_PRODUCT_ID);
+    log_info("Want vend: %04x, prod: %04x", USB_VENDOR_ID, USB_PRODUCT_ID);
     handle = libusb_open_device_with_vid_pid(NULL, USB_VENDOR_ID, USB_PRODUCT_ID);
 
     if (!handle){
-        log_error("libusb_open_device_with_vid_pid failed!\n");
+        log_error("libusb_open_device_with_vid_pid failed!");
         usb_close(handle);
         return -1;
     }
@@ -334,6 +352,9 @@ static int usb_open(void *transport_config){
     dev = aDev;
     r = libusb_open(dev, &handle);
 
+    // reset device
+    libusb_reset_device(handle);
+
     libusb_free_device_list(devs, 1);
 
     if (r < 0) {
@@ -342,13 +363,13 @@ static int usb_open(void *transport_config){
     }
 #endif
 
-    log_info("libusb open %d, handle %p\n", r, handle);
+    log_info("libusb open %d, handle %p", r, handle);
 
     // Detach OS driver (not possible for OS X)
 #ifndef __APPLE__
     r = libusb_kernel_driver_active(handle, 0);
     if (r < 0) {
-        log_error("libusb_kernel_driver_active error %d\n", r);
+        log_error("libusb_kernel_driver_active error %d", r);
         usb_close(handle);
         return r;
     }
@@ -356,26 +377,26 @@ static int usb_open(void *transport_config){
     if (r == 1) {
         r = libusb_detach_kernel_driver(handle, 0);
         if (r < 0) {
-            log_error("libusb_detach_kernel_driver error %d\n", r);
+            log_error("libusb_detach_kernel_driver error %d", r);
             usb_close(handle);
             return r;
         }
     }
-    log_info("libusb_detach_kernel_driver\n");
+    log_info("libusb_detach_kernel_driver");
 #endif
     libusb_state = LIB_USB_KERNEL_DETACHED;
 
     // reserve access to device
-    log_info("claiming interface 0...\n");
+    log_info("claiming interface 0...");
     r = libusb_claim_interface(handle, 0);
     if (r < 0) {
-        log_error("Error claiming interface %d\n", r);
+        log_error("Error claiming interface %d", r);
         usb_close(handle);
         return r;
     }
 
     libusb_state = LIB_USB_INTERFACE_CLAIMED;
-    log_info("claimed interface 0\n");
+    log_info("claimed interface 0");
     
 #if !USB_VENDOR_ID || !USB_PRODUCT_ID
     scan_for_bt_endpoints();
@@ -401,7 +422,7 @@ static int usb_open(void *transport_config){
  
         r = libusb_submit_transfer(event_in_transfer[c]);
         if (r) {
-            log_error("Error submitting interrupt transfer %d\n", r);
+            log_error("Error submitting interrupt transfer %d", r);
             usb_close(handle);
             return r;
         }
@@ -412,7 +433,7 @@ static int usb_open(void *transport_config){
  
         r = libusb_submit_transfer(bulk_in_transfer[c]);
         if (r) {
-            log_error("Error submitting bulk in transfer %d\n", r);
+            log_error("Error submitting bulk in transfer %d", r);
             usb_close(handle);
             return r;
         }
@@ -422,7 +443,7 @@ static int usb_open(void *transport_config){
     doing_pollfds = libusb_pollfds_handle_timeouts(NULL);
     
     if (doing_pollfds) {
-        log_info("Async using pollfds:\n");
+        log_info("Async using pollfds:");
 
         const struct libusb_pollfd ** pollfd = libusb_get_pollfds(NULL);
         for (r = 0 ; pollfd[r] ; r++) {
@@ -430,10 +451,10 @@ static int usb_open(void *transport_config){
             ds->fd = pollfd[r]->fd;
             ds->process = usb_process_ds;
             run_loop_add_data_source(ds);
-            log_info("%u: %p fd: %u, events %x\n", r, pollfd[r], pollfd[r]->fd, pollfd[r]->events);
+            log_info("%u: %p fd: %u, events %x", r, pollfd[r], pollfd[r]->fd, pollfd[r]->events);
         }
     } else {
-        log_info("Async using timers:\n");
+        log_info("Async using timers:");
 
         usb_timer.process = usb_process_ts;
         run_loop_set_timer(&usb_timer, AYSNC_POLLING_INTERVAL_MS);
@@ -504,7 +525,7 @@ static int usb_send_cmd_packet(uint8_t *packet, int size){
         0, 0, 0, packet, size, 2000);
 
     if (r < 0 || r !=size ) {
-        log_error("Error submitting control transfer %d\n", r);
+        log_error("Error submitting control transfer %d", r);
         return r;
     }
     
@@ -539,7 +560,7 @@ static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
 }
 
 static void usb_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
-    log_info("registering packet handler\n");
+    log_info("registering packet handler");
     packet_handler = handler;
 }
 
