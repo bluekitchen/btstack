@@ -90,10 +90,12 @@ extern "C" {
     
 // size of hci buffers, big enough for command, event, or acl packet without H4 packet type
 // @note cmd buffer is bigger than event buffer
+#ifndef HCI_PACKET_BUFFER_SIZE
 #if HCI_ACL_BUFFER_SIZE > HCI_CMD_BUFFER_SIZE
 #define HCI_PACKET_BUFFER_SIZE HCI_ACL_BUFFER_SIZE
 #else
 #define HCI_PACKET_BUFFER_SIZE HCI_CMD_BUFFER_SIZE
+#endif
 #endif
     
 // OGFs
