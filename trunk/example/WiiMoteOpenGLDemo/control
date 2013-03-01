@@ -1,5 +1,5 @@
 Package: ch.ringwald.wiimoteopengldemo
-Version: 1.0
+Version: 1.1
 Name: WiiMote OpenGL-ES Demo
 Description: BTstack Demo
  This demo shows how a virtual WiiMote can mirror
