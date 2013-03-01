@@ -78,7 +78,8 @@ void * btstack_memory_hci_connection_get(void){
 void  btstack_memory_hci_connection_free(void *hci_connection){
     free(hci_connection);
 }
-#else error "The struct hci_connection has neither HAVE_MALLOC nor MAX_NO_HCI_CONNECTIONS defined. Please, edit the config file."
+#else
+#error "The struct hci_connection has neither HAVE_MALLOC nor MAX_NO_HCI_CONNECTIONS defined. Please, edit the config file."
 #endif
 
 
@@ -107,7 +108,8 @@ void * btstack_memory_l2cap_service_get(void){
 void  btstack_memory_l2cap_service_free(void *l2cap_service){
     free(l2cap_service);
 }
-#else error "The struct l2cap_service has neither HAVE_MALLOC nor MAX_NO_L2CAP_SERVICES defined. Please, edit the config file."
+#else
+#error "The struct l2cap_service has neither HAVE_MALLOC nor MAX_NO_L2CAP_SERVICES defined. Please, edit the config file."
 #endif
 
 
@@ -136,7 +138,8 @@ void * btstack_memory_l2cap_channel_get(void){
 void  btstack_memory_l2cap_channel_free(void *l2cap_channel){
     free(l2cap_channel);
 }
-#else error "The struct l2cap_channel has neither HAVE_MALLOC nor MAX_NO_L2CAP_CHANNELS defined. Please, edit the config file."
+#else
+#error "The struct l2cap_channel has neither HAVE_MALLOC nor MAX_NO_L2CAP_CHANNELS defined. Please, edit the config file."
 #endif
 
 
@@ -165,7 +168,8 @@ void * btstack_memory_rfcomm_multiplexer_get(void){
 void  btstack_memory_rfcomm_multiplexer_free(void *rfcomm_multiplexer){
     free(rfcomm_multiplexer);
 }
-#else error "The struct rfcomm_multiplexer has neither HAVE_MALLOC nor MAX_NO_RFCOMM_MULTIPLEXERS defined. Please, edit the config file."
+#else
+#error "The struct rfcomm_multiplexer has neither HAVE_MALLOC nor MAX_NO_RFCOMM_MULTIPLEXERS defined. Please, edit the config file."
 #endif
 
 
@@ -194,7 +198,8 @@ void * btstack_memory_rfcomm_service_get(void){
 void  btstack_memory_rfcomm_service_free(void *rfcomm_service){
     free(rfcomm_service);
 }
-#else error "The struct rfcomm_service has neither HAVE_MALLOC nor MAX_NO_RFCOMM_SERVICES defined. Please, edit the config file."
+#else
+#error "The struct rfcomm_service has neither HAVE_MALLOC nor MAX_NO_RFCOMM_SERVICES defined. Please, edit the config file."
 #endif
 
 
@@ -223,7 +228,8 @@ void * btstack_memory_rfcomm_channel_get(void){
 void  btstack_memory_rfcomm_channel_free(void *rfcomm_channel){
     free(rfcomm_channel);
 }
-#else error "The struct rfcomm_channel has neither HAVE_MALLOC nor MAX_NO_RFCOMM_CHANNELS defined. Please, edit the config file."
+#else
+#error "The struct rfcomm_channel has neither HAVE_MALLOC nor MAX_NO_RFCOMM_CHANNELS defined. Please, edit the config file."
 #endif
 
 
@@ -252,7 +258,8 @@ void * btstack_memory_db_mem_device_name_get(void){
 void  btstack_memory_db_mem_device_name_free(void *db_mem_device_name){
     free(db_mem_device_name);
 }
-#else error "The struct db_mem_device_name has neither HAVE_MALLOC nor MAX_NO_DB_MEM_DEVICE_NAMES defined. Please, edit the config file."
+#else
+#error "The struct db_mem_device_name has neither HAVE_MALLOC nor MAX_NO_DB_MEM_DEVICE_NAMES defined. Please, edit the config file."
 #endif
 
 
@@ -281,7 +288,8 @@ void * btstack_memory_db_mem_device_link_key_get(void){
 void  btstack_memory_db_mem_device_link_key_free(void *db_mem_device_link_key){
     free(db_mem_device_link_key);
 }
-#else error "The struct db_mem_device_link_key has neither HAVE_MALLOC nor MAX_NO_DB_MEM_DEVICE_LINK_KEYS defined. Please, edit the config file."
+#else
+#error "The struct db_mem_device_link_key has neither HAVE_MALLOC nor MAX_NO_DB_MEM_DEVICE_LINK_KEYS defined. Please, edit the config file."
 #endif
 
 
@@ -310,7 +318,8 @@ void * btstack_memory_db_mem_service_get(void){
 void  btstack_memory_db_mem_service_free(void *db_mem_service){
     free(db_mem_service);
 }
-#else error "The struct db_mem_service has neither HAVE_MALLOC nor MAX_NO_DB_MEM_SERVICES defined. Please, edit the config file."
+#else
+#error "The struct db_mem_service has neither HAVE_MALLOC nor MAX_NO_DB_MEM_SERVICES defined. Please, edit the config file."
 #endif
 
 // init
@@ -343,3 +352,4 @@ void btstack_memory_init(void){
     memory_pool_create(&db_mem_service_pool, db_mem_service_storage, MAX_NO_DB_MEM_SERVICES, sizeof(db_mem_service_t));
 #endif
 }
+
