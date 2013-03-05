@@ -178,6 +178,9 @@ static libusb_device * scan_for_bt_device(libusb_device **devs) {
 #endif
 
 static void queue_completed_transfer(struct libusb_transfer *transfer){
+
+    log_info("queue_completed_transfer %p, type %x size %u", transfer, transfer->endpoint, transfer->actual_length);
+
     transfer->user_data = NULL;
 
     // insert first element
@@ -199,8 +202,7 @@ static void async_callback(struct libusb_transfer *transfer)
     int r;
     // log_info("begin async_callback endpoint %x, status %x, actual length %u", transfer->endpoint, transfer->status, transfer->actual_length );
 
-    if (transfer->status == LIBUSB_TRANSFER_COMPLETED ||
-        (transfer->status == LIBUSB_TRANSFER_TIMED_OUT && transfer->actual_length > 0)) {
+    if (transfer->status == LIBUSB_TRANSFER_COMPLETED) {
         queue_completed_transfer(transfer);
     } else {
         log_info("async_callback resubmit transfer, endpoint %x, status %x, length %u", transfer->endpoint, transfer->status, transfer->actual_length);
@@ -232,7 +234,7 @@ static int usb_process_ds(struct data_source *ds) {
     // Handle any packet in the order that they were received
     while (handle_packet) {
 
-        // log_info("handle packet %p, endpoint %x", handle_packet, handle_packet->endpoint);
+        log_info("handle packet %p, endpoint %x", handle_packet, handle_packet->endpoint);
 
         void * next = handle_packet->user_data;
 
@@ -542,7 +544,7 @@ static int usb_send_acl_packet(uint8_t *packet, int size){
     // Use synchronous call to sent out data
     r = libusb_bulk_transfer(handle, acl_out_addr, packet, size, &t, 1000);
     if(r < 0){
-        log_error("Error submitting data transfer");
+        log_error("Error submitting data transfer, %d", r);
     }
 
     return 0;
