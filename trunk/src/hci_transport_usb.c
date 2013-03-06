@@ -111,6 +111,7 @@ static timer_source_t usb_timer;
 static int usb_timer_active;
 
 static int usb_acl_out_active = 0;
+static int usb_command_out_active = 0;
 
 // endpoint addresses
 static int event_in_addr;
@@ -212,7 +213,10 @@ static void async_callback(struct libusb_transfer *transfer)
         queue_completed_transfer(transfer);
     } else if (transfer->status == LIBUSB_TRANSFER_STALL){
         log_info("-> Transfer stalled, trying again");
-        libusb_clear_halt(handle, transfer->endpoint);
+        r = libusb_clear_halt(handle, transfer->endpoint);
+        if (r) {
+            log_error("Error rclearing halt %d", r);
+        }
         r = libusb_submit_transfer(transfer);
         if (r) {
             log_error("Error re-submitting transfer %d", r);
@@ -345,7 +349,7 @@ static int usb_open(void *transport_config){
     libusb_state = LIB_USB_OPENED;
 
     // configure debug level
-    libusb_set_debug(NULL,4);
+    libusb_set_debug(NULL,1);
     
 #if USB_VENDOR_ID && USB_PRODUCT_ID
     // Use a specified device
@@ -548,8 +552,6 @@ static int usb_send_cmd_packet(uint8_t *packet, int size){
 
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
     
-    hci_dump_packet( HCI_COMMAND_DATA_PACKET, 0, packet, size);
-    
     // Use synchronous call to sent out command
     r = libusb_control_transfer(handle, 
         LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
@@ -559,20 +561,19 @@ static int usb_send_cmd_packet(uint8_t *packet, int size){
         log_error("Error submitting control transfer %d", r);
         return r;
     }
+
+    hci_dump_packet( HCI_COMMAND_DATA_PACKET, 0, packet, size);
     
     return 0;
 }
 
 static int usb_send_acl_packet(uint8_t *packet, int size){
-    int r, t;
-    struct timeval tv;
+    int r;
 
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
 
-    log_info("usb_send_acl_packet enter");
+    // log_info("usb_send_acl_packet enter, size %u", size);
     
-    hci_dump_packet( HCI_ACL_DATA_PACKET, 0, packet, size);
-
     int completed = 0;
     libusb_fill_bulk_transfer(bulk_out_transfer, handle, acl_out_addr, packet, size,
         async_callback, &completed, 0);
@@ -581,19 +582,14 @@ static int usb_send_acl_packet(uint8_t *packet, int size){
     r = libusb_submit_transfer(bulk_out_transfer);
     if (r < 0) {
         log_error("Error submitting data transfer, %d", r);
-        // libusb_free_transfer(transfer);
-        // return r;
+        return -1;
     }
+
+    hci_dump_packet( HCI_ACL_DATA_PACKET, 0, packet, size);
 
     usb_acl_out_active = 1;
     
-    // // Use synchronous call to sent out data
-    // r = libusb_bulk_transfer(handle, acl_out_addr, packet, size, &t, 0);
-    // if(r < 0){
-    //     log_error("Error submitting data transfer, %d", r);
-    // }
-
-    log_info("usb_send_acl_packet exit");
+    // log_info("usb_send_acl_packet exit");
 
     return 0;
 }
