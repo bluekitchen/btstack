@@ -102,6 +102,7 @@ static struct libusb_transfer *command_out_transfer;
 
 static uint8_t hci_event_in_buffer[ASYNC_BUFFERS][HCI_ACL_BUFFER_SIZE]; // bigger than largest packet
 static uint8_t hci_bulk_in_buffer[ASYNC_BUFFERS][HCI_ACL_BUFFER_SIZE];  // bigger than largest packet
+static uint8_t hci_control_buffer[3 + 256 + LIBUSB_CONTROL_SETUP_SIZE];
 
 // For (ab)use as a linked list of received packets
 static struct libusb_transfer *handle_packet;
@@ -111,7 +112,7 @@ static timer_source_t usb_timer;
 static int usb_timer_active;
 
 static int usb_acl_out_active = 0;
-static int usb_command_out_active = 0;
+static int usb_command_active = 0;
 
 // endpoint addresses
 static int event_in_addr;
@@ -276,6 +277,11 @@ static int usb_process_ds(struct data_source *ds) {
         } else if (handle_packet->endpoint == acl_out_addr){
             log_info("acl out done");
             usb_acl_out_active = 0;
+
+            resubmit = 0;
+        } else if (handle_packet->endpoint == 0){
+            log_info("command done");
+            usb_command_active = 0;
 
             resubmit = 0;
         } else {
@@ -551,19 +557,30 @@ static int usb_send_cmd_packet(uint8_t *packet, int size){
     int r;
 
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
+
+    // async
+    libusb_fill_control_setup(hci_control_buffer, LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE, 0, 0, 0, size);
+    memcpy(hci_control_buffer + LIBUSB_CONTROL_SETUP_SIZE, packet, size);
+
+    int completed = 0;
+    libusb_fill_control_transfer(command_out_transfer, handle, hci_control_buffer, async_callback, &completed, 0);
+    command_out_transfer->flags = LIBUSB_TRANSFER_FREE_BUFFER;
+    r = libusb_submit_transfer(command_out_transfer);
     
-    // Use synchronous call to sent out command
-    r = libusb_control_transfer(handle, 
-        LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
-        0, 0, 0, packet, size, 0);
+    // // Use synchronous call to sent out command
+    // r = libusb_control_transfer(handle, 
+    //     LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
+    //     0, 0, 0, packet, size, 0);
 
     if (r < 0 || r !=size ) {
         log_error("Error submitting control transfer %d", r);
-        return r;
+        return -1;
     }
 
     hci_dump_packet( HCI_COMMAND_DATA_PACKET, 0, packet, size);
     
+    usb_command_active = 1;
+
     return 0;
 }
 
@@ -594,6 +611,17 @@ static int usb_send_acl_packet(uint8_t *packet, int size){
     return 0;
 }
 
+static int usb_can_send_packet_now(uint8_t packet_type){
+    switch (packet_type){
+        case HCI_COMMAND_DATA_PACKET:
+            return !usb_command_active;
+        case HCI_ACL_DATA_PACKET:
+            return !usb_acl_out_active;
+        default:
+            return 0;
+    }
+}
+
 static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
@@ -608,9 +636,6 @@ static int usb_send_packet(uint8_t packet_type, uint8_t * packet, int size){
 static void usb_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
     log_info("registering packet handler");
     packet_handler = handler;
-}
-static int usb_can_send_packet_now(uint8_t packet_type){
-    return !usb_acl_out_active;
 }
 
 static const char * usb_get_transport_name(void){
