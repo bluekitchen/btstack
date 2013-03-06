@@ -184,9 +184,9 @@ static libusb_device * scan_for_bt_device(libusb_device **devs) {
 }
 #endif
 
-static void queue_completed_transfer(struct libusb_transfer *transfer){
+static void queue_transfer(struct libusb_transfer *transfer){
 
-    log_info("queue_completed_transfer %p, endpoint %x size %u", transfer, transfer->endpoint, transfer->actual_length);
+    log_info("queue_transfer %p, endpoint %x size %u", transfer, transfer->endpoint, transfer->actual_length);
 
     transfer->user_data = NULL;
 
@@ -211,7 +211,7 @@ static void async_callback(struct libusb_transfer *transfer)
     // log_info("begin async_callback endpoint %x, status %x, actual length %u", transfer->endpoint, transfer->status, transfer->actual_length );
 
     if (transfer->status == LIBUSB_TRANSFER_COMPLETED) {
-        queue_completed_transfer(transfer);
+        queue_transfer(transfer);
     } else if (transfer->status == LIBUSB_TRANSFER_STALL){
         log_info("-> Transfer stalled, trying again");
         r = libusb_clear_halt(handle, transfer->endpoint);
@@ -233,71 +233,76 @@ static void async_callback(struct libusb_transfer *transfer)
     // log_info("end async_callback");
 }
 
+static void handle_completed_transfer(struct libusb_transfer *transfer){
+
+    int r;
+
+    int resubmit = 0;
+
+    if (transfer->endpoint == event_in_addr) {
+        // log_info("-> event");
+        hci_dump_packet( HCI_EVENT_PACKET, 1, transfer-> buffer,
+            transfer->actual_length);
+        packet_handler(HCI_EVENT_PACKET, transfer-> buffer,
+            transfer->actual_length);
+
+        resubmit = 1;
+    }
+
+    else if (transfer->endpoint == acl_in_addr) {
+        // log_info("-> acl");
+        hci_dump_packet( HCI_ACL_DATA_PACKET, 1, transfer-> buffer,
+            transfer->actual_length);
+        packet_handler(HCI_ACL_DATA_PACKET, transfer-> buffer,
+            transfer->actual_length);
+
+        resubmit = 1;
+    } else if (transfer->endpoint == acl_out_addr){
+        log_info("acl out done");
+        usb_acl_out_active = 0;
+
+        resubmit = 0;
+    } else if (transfer->endpoint == 0){
+        log_info("command done");
+        usb_command_active = 0;
+
+        resubmit = 0;
+    } else {
+
+        log_info("usb_process_ds endpoint unknown %x", transfer->endpoint);
+    }
+
+    if (resubmit){
+        // Re-submit transfer 
+        transfer->user_data = NULL;
+        r = libusb_submit_transfer(transfer);
+
+        if (r) {
+            log_error("Error re-submitting transfer %d", r);
+        }
+    }   
+}
+
 static int usb_process_ds(struct data_source *ds) {
 
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
 
-    struct timeval tv;
-    int r;
-
     log_info("begin usb_process_ds");
 
     // always handling an event as we're called when data is ready
+    struct timeval tv;
     memset(&tv, 0, sizeof(struct timeval));
     libusb_handle_events_timeout(NULL, &tv);
 
     // Handle any packet in the order that they were received
     while (handle_packet) {
 
-        log_info("handle packet %p, endpoint %x", handle_packet, handle_packet->endpoint);
+        log_info("handle packet %p, endpoint %x, status %x", handle_packet, handle_packet->endpoint, handle_packet->status);
 
         void * next = handle_packet->user_data;
 
-        int resubmit = 0;
-
-        if (handle_packet->endpoint == event_in_addr) {
-                // log_info("-> event");
-                hci_dump_packet( HCI_EVENT_PACKET, 1, handle_packet-> buffer,
-                    handle_packet->actual_length);
-                packet_handler(HCI_EVENT_PACKET, handle_packet-> buffer,
-                    handle_packet->actual_length);
-
-                resubmit = 1;
-        }
-
-        else if (handle_packet->endpoint == acl_in_addr) {
-                // log_info("-> acl");
-                hci_dump_packet( HCI_ACL_DATA_PACKET, 1, handle_packet-> buffer,
-                    handle_packet->actual_length);
-                packet_handler(HCI_ACL_DATA_PACKET, handle_packet-> buffer,
-                    handle_packet->actual_length);
-
-                resubmit = 1;
-
-        } else if (handle_packet->endpoint == acl_out_addr){
-            log_info("acl out done");
-            usb_acl_out_active = 0;
-
-            resubmit = 0;
-        } else if (handle_packet->endpoint == 0){
-            log_info("command done");
-            usb_command_active = 0;
-
-            resubmit = 0;
-        } else {
-
-            log_info("usb_process_ds endpoint unknown %x", handle_packet->endpoint);
-        }
-
-        if (resubmit){
-            // Re-submit transfer 
-            handle_packet->user_data = NULL;
-            r = libusb_submit_transfer(handle_packet);
-
-            if (r) {
-                log_error("Error re-submitting transfer %d", r);
-            }
-        }   
+        handle_completed_transfer(handle_packet);
+        
         // Move to next in the list of packets to handle
         if (next) {
             handle_packet = next;
