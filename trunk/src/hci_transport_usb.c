@@ -258,12 +258,12 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
 
         resubmit = 1;
     } else if (transfer->endpoint == acl_out_addr){
-        log_info("acl out done");
+        log_info("acl out done, size %u", transfer->actual_length);
         usb_acl_out_active = 0;
 
         resubmit = 0;
     } else if (transfer->endpoint == 0){
-        log_info("command done");
+        log_info("command done, size %u", transfer->actual_length);
         usb_command_active = 0;
 
         resubmit = 0;
