@@ -450,6 +450,14 @@ static void event_handler(uint8_t *packet, int size){
             if (COMMAND_COMPLETE_EVENT(packet, hci_write_scan_enable)){
                 hci_emit_discoverable_enabled(hci_stack.discoverable);
             }
+            if (COMMAND_COMPLETE_EVENT(packet, hci_read_local_supported_features)){
+                memcpy(hci_stack.local_supported_features, &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE], 8);
+                log_info("Local Supported Features: 0x%02x%02x%02x%02x%02x%02x%02x%02x",
+                    hci_stack.local_supported_features[0], hci_stack.local_supported_features[1],
+                    hci_stack.local_supported_features[2], hci_stack.local_supported_features[3],
+                    hci_stack.local_supported_features[4], hci_stack.local_supported_features[5],
+                    hci_stack.local_supported_features[6], hci_stack.local_supported_features[7]);
+            }
             break;
             
         case HCI_EVENT_COMMAND_STATUS:
@@ -1122,6 +1130,9 @@ void hci_run(){
 					hci_send_cmd(&hci_write_scan_enable, (hci_stack.connectable << 1) | hci_stack.discoverable); // page scan
 					break;
                 case 7:
+                    hci_send_cmd(&hci_read_local_supported_features);
+                    break;                
+                case 8:
 #ifndef EMBEDDED
                 {
                     char hostname[30];
@@ -1130,12 +1141,12 @@ void hci_run(){
                     hci_send_cmd(&hci_write_local_name, hostname);
                     break;
                 }
-                case 8:
+                case 9:
 #ifdef USE_BLUETOOL
                     hci_send_cmd(&hci_write_class_of_device, 0x007a020c); // Smartphone
                     break;
                     
-                case 9:
+                case 10:
 #endif
 #endif
                     // done.

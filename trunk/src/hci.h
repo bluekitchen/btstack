@@ -278,6 +278,9 @@ typedef struct {
     uint8_t  total_num_acl_packets;
     uint16_t acl_data_packet_length;
 
+    /* local supported features */
+    uint8_t local_supported_features[8];
+
     // usable packet types given acl_data_packet_length and HCI_ACL_BUFFER_SIZE
     uint16_t packet_types;
     
@@ -357,7 +360,7 @@ void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *p
 // Requests the change of BTstack power mode.
 int  hci_power_control(HCI_POWER_MODE mode);
 
-// Allows to control if device is dicoverable. OFF by default.
+// Allows to control if device is discoverable. OFF by default.
 void hci_discoverable_control(uint8_t enable);
 
 // Creates and sends hci command packets based on a template and 
