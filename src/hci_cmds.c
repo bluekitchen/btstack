@@ -224,6 +224,10 @@ const hci_cmd_t hci_pin_code_request_negative_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x0e), "B"
 // BD_ADDR
 };
+const hci_cmd_t hci_change_connection_packet_type = {
+OPCODE(OGF_LINK_CONTROL, 0x0f), "H2"
+// Handle
+};
 const hci_cmd_t hci_authentication_requested = {
 OPCODE(OGF_LINK_CONTROL, 0x11), "H"
 // Handle
