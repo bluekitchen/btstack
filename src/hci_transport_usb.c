@@ -577,7 +577,7 @@ static int usb_send_cmd_packet(uint8_t *packet, int size){
     //     LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
     //     0, 0, 0, packet, size, 0);
 
-    if (r < 0 || r !=size ) {
+    if (r < 0) {
         log_error("Error submitting control transfer %d", r);
         return -1;
     }
