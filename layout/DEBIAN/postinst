@@ -1,0 +1,2 @@
+#!/bin/sh
+/bin/launchctl load   /Library/LaunchDaemons/ch.ringwald.BTstack.plist 2&> /dev/null
