@@ -65,19 +65,24 @@ static void tryToSend(void){
 }
 
 // Bluetooth logic
-static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void packet_handler (void *context, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t event_addr;
     uint8_t   rfcomm_channel_nr;
     uint16_t  mtu;
     uint8_t event = packet[0];
     
+    // printf("packet_handler: packettype: 0x%02x, packet[0]: 0x%02x, state %u\n", packet_type, packet[0], state);
+
     // handle events, ignore data
     if (packet_type != HCI_EVENT_PACKET) return;
-    
+
     switch(state){
         case INIT:
+            if (event != BTSTACK_EVENT_STATE) break;
+            printf("INIT: bt stack activated, get started, hci.state=%u \r\n", packet[2]); 
             // bt stack activated, get started - set local name
             if (packet[2] == HCI_STATE_WORKING) {
+                printf("INIT: set local name - BTstack SPP Counter\r\n");
                 hci_send_cmd(&hci_write_local_name, "BTstack SPP Counter");
                 state = W4_CONNECTION;
             }
@@ -87,7 +92,7 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
             switch (event) {
                 case HCI_EVENT_PIN_CODE_REQUEST:
                     // inform about pin code request
-                    printf("Pin code request - using '0000'\n\r");
+                    printf("W4_CONNECTION: Pin code request - using '0000'\n\r");
                     bt_flip_addr(event_addr, &packet[2]);
                     hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
                     break;
@@ -97,7 +102,7 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
                     bt_flip_addr(event_addr, &packet[2]); 
                     rfcomm_channel_nr = packet[8];
                     rfcomm_channel_id = READ_BT_16(packet, 9);
-                    printf("RFCOMM channel %u requested for %s\n\r", rfcomm_channel_nr, bd_addr_to_str(event_addr));
+                    printf("W4_CONNECTION: RFCOMM channel %u requested for %s\n\r", rfcomm_channel_nr, bd_addr_to_str(event_addr));
                     rfcomm_accept_connection_internal(rfcomm_channel_id);
                     state = W4_CHANNEL_COMPLETE;
                     break;
@@ -110,13 +115,13 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
                 
                 // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
                 if (packet[2]) {
-                    printf("RFCOMM channel open failed, status %u\n\r", packet[2]);
+                    printf("W4_CHANNEL_COMPLETE: RFCOMM channel open failed, status %u\n\r", packet[2]);
                     break;
                 } 
                 
                 rfcomm_channel_id = READ_BT_16(packet, 12);
                 mtu = READ_BT_16(packet, 14);
-                printf("\n\rRFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n\r", rfcomm_channel_id, mtu);
+                printf("\n\rW4_CHANNEL_COMPLETE: RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n\r", rfcomm_channel_id, mtu);
                 state = ACTIVE;
                 break;
         
@@ -138,7 +143,6 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
             break;
     }
 }
-
 
 static void run_loop_register_timer(timer_source_t *timer, uint16_t period){
     run_loop_set_timer(timer, period);
