@@ -4,7 +4,8 @@ Description: Portable User-Space Bluetooth Stack
 Section: Networking
 Architecture: iphoneos-arm
 Breaks: co.cocoanuts.celeste (<= 0.90)
-Depends: ch.ringwald.springboardaccess (>= 0.2-974), preferenceloader (>= 2.0.2), firmware (>= 3.0), ldid
+Pre-Depends: ldid
+Depends: firmware (>= 3.0), ch.ringwald.springboardaccess (>= 0.2-974), preferenceloader (>= 2.0.2) 
 Maintainer: Matthias Ringwald <iphone@ringwald.ch>
 Author: Matthias Ringwald <iphone@ringwald.ch>
 Section: Development
