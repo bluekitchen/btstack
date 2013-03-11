@@ -619,7 +619,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
 				case L2CAP_EVENT_INCOMING_CONNECTION:
                     if (l2cap_cid) {
                         // CONNECTION REJECTED DUE TO LIMITED RESOURCES 
-                        l2cap_decline_connection_internal(channel, 0x0d);
+                        l2cap_decline_connection_internal(channel, 0x04);
                         break;
                     }
                     // accept
