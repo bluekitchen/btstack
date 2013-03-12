@@ -41,7 +41,7 @@ char lineBuffer[80];
 
 static uint8_t   rfcomm_channel_nr = 1;
 static uint16_t  rfcomm_channel_id;
-static uint8_t   spp_service_buffer[100];
+static uint8_t   spp_service_buffer[150];
 
 enum STATE {INIT, W4_CONNECTION, W4_CHANNEL_COMPLETE, ACTIVE} ;
 enum STATE state = INIT;
@@ -131,6 +131,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     switch(state){
         case INIT:
             // bt stack activated, get started - set local name
+            if (event != BTSTACK_EVENT_STATE) break;
+            
             if (packet[2] == HCI_STATE_WORKING) {
                 hci_send_cmd(&hci_write_local_name, "BTstack SPP Sensor");
                 state = W4_CONNECTION;
