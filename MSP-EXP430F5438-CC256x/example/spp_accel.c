@@ -1,7 +1,6 @@
 //*****************************************************************************
 //
-// accel_demo - provides a virtual serial port via SPP. On connect, it sends 
-//              the current accelerometer values as fast as possible.
+// accel_demo
 //
 //*****************************************************************************
 
@@ -33,8 +32,9 @@
 #include "sdp.h"
 #include "config.h"
 
+#define HEARTBEAT_PERIOD_MS 1000
 
-#define FONT_HEIGHT		12                    // Each character has 13 lines 
+#define FONT_HEIGHT     12                    // Each character has 13 lines 
 #define FONT_WIDTH       8
 static int row = 0;
 char lineBuffer[80];
@@ -42,9 +42,6 @@ char lineBuffer[80];
 static uint8_t   rfcomm_channel_nr = 1;
 static uint16_t  rfcomm_channel_id;
 static uint8_t   spp_service_buffer[150];
-
-enum STATE {INIT, W4_CONNECTION, W4_CHANNEL_COMPLETE, ACTIVE} ;
-enum STATE state = INIT;
 
 // LCD setup
 void doLCD(void){
@@ -101,48 +98,46 @@ static void  prepare_accel_packet(){
     printf("Accel: X: %04d, Y: %04d, Z: %04d\n\r", accl_x, accl_y, accl_z);
 } 
 
-static void tryToSend(void){
-    if (!rfcomm_channel_id) return;
-    // try send
-    int err = rfcomm_send_internal(rfcomm_channel_id, (uint8_t *)accel_buffer, sizeof(accel_buffer));
-    switch (err){
-        case 0:
-            prepare_accel_packet();
-            break;
-        case BTSTACK_ACL_BUFFERS_FULL:
-            break;
-        default:
-           printf("rfcomm_send_internal() -> err %d\n\r", err);
-        break;
-    }
-}
-
 // Bluetooth logic
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t event_addr;
     uint8_t   rfcomm_channel_nr;
     uint16_t  mtu;
+    int err;
     
-    uint8_t event = packet[0];
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            switch (packet[0]) {
+                    
+                case BTSTACK_EVENT_STATE:
+                    // bt stack activated, get started - set local name
+                    if (packet[2] == HCI_STATE_WORKING) {
+                        hci_send_cmd(&hci_write_local_name, "BTstack SPP Sensor");
+                    }
+                    break;
+                
+                case HCI_EVENT_COMMAND_COMPLETE:
+                    if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)){
+                        bt_flip_addr(event_addr, &packet[6]);
+                        printf("BD-ADDR: %s\n\r", bd_addr_to_str(event_addr));
+                        break;
+                    }
+                    if (COMMAND_COMPLETE_EVENT(packet, hci_write_local_name)){
+                        hci_discoverable_control(1);
+                        break;
+                    }
+                    break;
 
-    // handle events, ignore data
-    if (packet_type != HCI_EVENT_PACKET) return;
-
-    switch(state){
-        case INIT:
-            // bt stack activated, get started - set local name
-            if (event != BTSTACK_EVENT_STATE) break;
-            
-            if (packet[2] == HCI_STATE_WORKING) {
-                hci_send_cmd(&hci_write_local_name, "BTstack SPP Sensor");
-                state = W4_CONNECTION;
-            }
-            break;
-
-        case W4_CONNECTION:
-            switch (event) {
+                case HCI_EVENT_LINK_KEY_REQUEST:
+                    // deny link key request
+                    printf("Link key request\n\r");
+                    bt_flip_addr(event_addr, &packet[2]);
+                    hci_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
+                    break;
+                    
                 case HCI_EVENT_PIN_CODE_REQUEST:
                     // inform about pin code request
+                    printLine( "PIN = 0000");
                     printf("Pin code request - using '0000'\n\r");
                     bt_flip_addr(event_addr, &packet[2]);
                     hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
@@ -155,48 +150,54 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     rfcomm_channel_id = READ_BT_16(packet, 9);
                     printf("RFCOMM channel %u requested for %s\n\r", rfcomm_channel_nr, bd_addr_to_str(event_addr));
                     rfcomm_accept_connection_internal(rfcomm_channel_id);
-                    state = W4_CHANNEL_COMPLETE;
                     break;
-                default:
+                    
+                case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+                    // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
+                    if (packet[2]) {
+                        printf("RFCOMM channel open failed, status %u\n\r", packet[2]);
+                        printLine("Connection failed :(");
+                    } else {
+                        rfcomm_channel_id = READ_BT_16(packet, 12);
+                        mtu = READ_BT_16(packet, 14);
+                        printf("\n\rRFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n\r", rfcomm_channel_id, mtu);
+                    }
                     break;
-            }
-        
-        case W4_CHANNEL_COMPLETE:
-                if ( event != RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE ) break;
-                
-                // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
-                if (packet[2]) {
-                    printf("RFCOMM channel open failed, status %u\n\r", packet[2]);
-                    break;
-                } 
-
-                rfcomm_channel_id = READ_BT_16(packet, 12);
-                mtu = READ_BT_16(packet, 14);
-                printf("\n\rRFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n\r", rfcomm_channel_id, mtu);
-                prepare_accel_packet();
-                state = ACTIVE;
-                break;
-        
-        case ACTIVE:
-            switch(event){
+                    
                 case DAEMON_EVENT_HCI_PACKET_SENT:
                 case RFCOMM_EVENT_CREDITS:
-                    tryToSend();
+                    if (!rfcomm_channel_id) break;
+                    // try send
+                    err = rfcomm_send_internal(rfcomm_channel_id, (uint8_t *)accel_buffer, sizeof(accel_buffer));
+                    switch (err){
+                        case 0:
+                            prepare_accel_packet();
+                            break;
+                        case BTSTACK_ACL_BUFFERS_FULL:
+                            break;
+                        default:
+                           printf("rfcomm_send_internal() -> err %d\n\r", err);
+                        break;
+                    }
                     break;
+                    
                 case RFCOMM_EVENT_CHANNEL_CLOSED:
                     rfcomm_channel_id = 0;
-                    state = W4_CONNECTION;
                     break;
+                
                 default:
                     break;
             }
-        
+            break;
+                        
         default:
             break;
-    }   
+    }
 }
 
-static void hw_setup(){
+// main
+int main(void) {
+
     // stop watchdog timer
     WDTCTL = WDTPW + WDTHOLD;
 
@@ -217,11 +218,12 @@ static void hw_setup(){
     // init LEDs
     LED_PORT_OUT |= LED_1 | LED_2;
     LED_PORT_DIR |= LED_1 | LED_2;
+    
     // show off
     doLCD();
-}
+    
+    prepare_accel_packet();
 
-static void btstack_setup(){
     printf("Init BTstack...\n\r");
     
     /// GET STARTED ///
@@ -254,23 +256,17 @@ static void btstack_setup(){
     sdp_create_spp_service( (uint8_t*) &service_record_item->service_record, 1, "SPP Accel");
     printf("SDP service buffer size: %u\n\r", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
     sdp_register_service_internal(NULL, service_record_item);
-}
-
-// main
-int main(void) {
-    hw_setup();
-    btstack_setup();
-
+    
     // ready - enable irq used in h4 task
     __enable_interrupt();   
     
- 	// turn on!
-	hci_power_control(HCI_POWER_ON);
+    // turn on!
+    hci_power_control(HCI_POWER_ON);
     // make discoverable
     hci_discoverable_control(1);
-		
+        
     // go!
-    run_loop_execute();	
+    run_loop_execute(); 
     
     // happy compiler!
     return 0;
