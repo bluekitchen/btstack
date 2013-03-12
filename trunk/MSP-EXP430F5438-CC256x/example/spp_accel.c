@@ -266,6 +266,8 @@ int main(void) {
     
  	// turn on!
 	hci_power_control(HCI_POWER_ON);
+    // make discoverable
+    hci_discoverable_control(1);
 		
     // go!
     run_loop_execute();	
