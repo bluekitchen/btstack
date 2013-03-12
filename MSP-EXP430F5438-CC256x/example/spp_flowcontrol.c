@@ -38,32 +38,17 @@ static uint8_t   rfcomm_channel_nr = 1;
 static uint16_t  rfcomm_channel_id;
 static uint8_t   rfcomm_send_credit = 0;
 static uint8_t   spp_service_buffer[150];
-static timer_source_t heartbeat;
-    
-enum STATE {INIT, W4_CONNECTION, W4_CHANNEL_COMPLETE, ACTIVE} ;
-enum STATE state = INIT;
 
 // Bluetooth logic
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t event_addr;
     uint8_t   rfcomm_channel_nr;
     uint16_t  mtu;
-    uint8_t event = packet[0];
     
-    if (packet_type == RFCOMM_DATA_PACKET){
-        // hack: truncate data (we know that the packet is at least on byte bigger
-        packet[size] = 0;
-        puts( (const char *) packet);
-        rfcomm_send_credit = 1;
-        return;
-    }
-
-    // handle events, ignore data
-    if (packet_type != HCI_EVENT_PACKET) return;
-
-	switch(state){
-        case INIT:
-            switch(event){
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            switch (packet[0]) {
+                    
                 case BTSTACK_EVENT_STATE:
                     // bt stack activated, get started - set local name
                     if (packet[2] == HCI_STATE_WORKING) {
@@ -75,13 +60,21 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)){
                         bt_flip_addr(event_addr, &packet[6]);
                         printf("BD-ADDR: %s\n\r", bd_addr_to_str(event_addr));
+                        break;
+                    }
+                    if (COMMAND_COMPLETE_EVENT(packet, hci_write_local_name)){
+                        hci_discoverable_control(1);
+                        break;
                     }
                     break;
-                default:
+
+                case HCI_EVENT_LINK_KEY_REQUEST:
+                    // deny link key request
+                    printf("Link key request\n\r");
+                    bt_flip_addr(event_addr, &packet[2]);
+                    hci_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
                     break;
-            }
-        case W4_CONNECTION:
-            switch(event){
+                    
                 case HCI_EVENT_PIN_CODE_REQUEST:
                     // inform about pin code request
                     printf("Pin code request - using '0000'\n\r");
@@ -96,41 +89,36 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     rfcomm_channel_id = READ_BT_16(packet, 9);
                     printf("RFCOMM channel %u requested for %s\n\r", rfcomm_channel_nr, bd_addr_to_str(event_addr));
                     rfcomm_accept_connection_internal(rfcomm_channel_id);
-                    state = W4_CHANNEL_COMPLETE;
                     break;
+                    
+                case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+                    // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
+                    if (packet[2]) {
+                        printf("RFCOMM channel open failed, status %u\n\r", packet[2]);
+                    } else {
+                        rfcomm_channel_id = READ_BT_16(packet, 12);
+                        mtu = READ_BT_16(packet, 14);
+                        printf("\n\rRFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n\r", rfcomm_channel_id, mtu);
+                    }
+                    break;
+                    
+                case RFCOMM_EVENT_CHANNEL_CLOSED:
+                    rfcomm_channel_id = 0;
+                    break;
+                
                 default:
                     break;
             }
-        case W4_CHANNEL_COMPLETE:
-            if ( event != RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE ) break;
-            // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
-            if (packet[2]) {
-                printf("RFCOMM channel open failed, status %u\n\r", packet[2]);
-                break;
-            } 
-        
-            rfcomm_channel_id = READ_BT_16(packet, 12);
-            mtu = READ_BT_16(packet, 14);
-            printf("\n\rRFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n\r", rfcomm_channel_id, mtu);
-            state = ACTIVE;
             break;
             
-        case ACTIVE:
-            if (event != RFCOMM_EVENT_CHANNEL_CLOSED) break;
-                
-            rfcomm_channel_id = 0;
-            state = W4_CONNECTION;
-            break;
-
+        case RFCOMM_DATA_PACKET:
+            // hack: truncate data (we know that the packet is at least on byte bigger
+            packet[size] = 0;
+            puts( (const char *) packet);
+            rfcomm_send_credit = 1;
         default:
             break;
     }
-
-}
-
-static void run_loop_register_timer(timer_source_t *timer, uint16_t period){
-    run_loop_set_timer(timer, period);
-    run_loop_add_timer(timer);
 }
 
 static void  heartbeat_handler(struct timer *ts){
@@ -138,16 +126,13 @@ static void  heartbeat_handler(struct timer *ts){
         rfcomm_grant_credits(rfcomm_channel_id, 1);
         rfcomm_send_credit = 0;
     }
-    run_loop_register_timer(ts, HEARTBEAT_PERIOD_MS);
+    run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
+    run_loop_add_timer(ts);
 } 
 
-static void timer_setup(){
-    // set one-shot timer
-    heartbeat.process = &heartbeat_handler;
-    run_loop_register_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
-}
-
-static void hw_setup(){
+// main
+int main(void)
+{
     // stop watchdog timer
     WDTCTL = WDTPW + WDTHOLD;
 
@@ -162,9 +147,7 @@ static void hw_setup(){
     // init LEDs
     LED_PORT_OUT |= LED_1 | LED_2;
     LED_PORT_DIR |= LED_1 | LED_2;
-}
-
-static void btstack_setup(){
+    
     /// GET STARTED with BTstack ///
     btstack_memory_init();
     run_loop_init(RUN_LOOP_EMBEDDED);
@@ -195,31 +178,27 @@ static void btstack_setup(){
     sdp_create_spp_service( (uint8_t*) &service_record_item->service_record, 1, "SPP Counter");
     printf("SDP service buffer size: %u\n\r", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
     sdp_register_service_internal(NULL, service_record_item);
-}
-
-
-// main
-int main(void)
-{
-    hw_setup();
-    btstack_setup();
-	timer_setup();
-
+    
+    // set one-shot timer
+    timer_source_t heartbeat;
+    heartbeat.process = &heartbeat_handler;
+    run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
+    run_loop_add_timer(&heartbeat);
+    
+    
     puts("SPP FlowControl Demo: simulates processing on received data...\n\r");
 
     // ready - enable irq used in h4 task
     __enable_interrupt();   
 
- 	// turn on!
-	hci_power_control(HCI_POWER_ON);
-
-    // make discoverable
-    hci_discoverable_control(1);
+    // turn on!
+    hci_power_control(HCI_POWER_ON);
 
     // go!
-    run_loop_execute();	
+    run_loop_execute(); 
     
     // happy compiler!
     return 0;
 }
+
 
