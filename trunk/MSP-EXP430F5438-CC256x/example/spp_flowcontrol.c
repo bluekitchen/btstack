@@ -37,7 +37,7 @@
 static uint8_t   rfcomm_channel_nr = 1;
 static uint16_t  rfcomm_channel_id;
 static uint8_t   rfcomm_send_credit = 0;
-static uint8_t   spp_service_buffer[100];
+static uint8_t   spp_service_buffer[150];
 static timer_source_t heartbeat;
     
 enum STATE {INIT, W4_CONNECTION, W4_CHANNEL_COMPLETE, ACTIVE} ;
