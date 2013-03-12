@@ -40,6 +40,9 @@ static timer_source_t heartbeat;
 static int real_counter = 0;
 static int counter_to_send = 0;
 
+enum STATE {INIT, W4_CONNECTION, W4_CHANNEL_COMPLETE, ACTIVE} ;
+enum STATE state = INIT;
+
 static void tryToSend(void){
     if (!rfcomm_channel_id) return;
     if (real_counter <= counter_to_send) return;
@@ -66,80 +69,77 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     bd_addr_t event_addr;
     uint8_t   rfcomm_channel_nr;
     uint16_t  mtu;
-    
-    switch (packet_type) {
-        case HCI_EVENT_PACKET:
-            switch (packet[0]) {
-                    
-                case BTSTACK_EVENT_STATE:
-                    // bt stack activated, get started - set local name
-                    if (packet[2] == HCI_STATE_WORKING) {
-                        hci_send_cmd(&hci_write_local_name, "BTstack SPP Counter");
-                    }
-                    break;
-                
-                case HCI_EVENT_COMMAND_COMPLETE:
-                    if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)){
-                        bt_flip_addr(event_addr, &packet[6]);
-                        printf("BD-ADDR: %s\n\r", bd_addr_to_str(event_addr));
-                        break;
-                    }
-                    if (COMMAND_COMPLETE_EVENT(packet, hci_write_local_name)){
-                        hci_discoverable_control(1);
-                        break;
-                    }
-                    break;
+    uint8_t event = packet[0];
 
-                case HCI_EVENT_LINK_KEY_REQUEST:
-                    // deny link key request
-                    printf("Link key request\n\r");
-                    bt_flip_addr(event_addr, &packet[2]);
-                    hci_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
-                    break;
-                    
-                case HCI_EVENT_PIN_CODE_REQUEST:
-                    // inform about pin code request
-                    printf("Pin code request - using '0000'\n\r");
-                    bt_flip_addr(event_addr, &packet[2]);
-                    hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
-                    break;
-                
-                case RFCOMM_EVENT_INCOMING_CONNECTION:
-                    // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
-                    bt_flip_addr(event_addr, &packet[2]); 
-                    rfcomm_channel_nr = packet[8];
-                    rfcomm_channel_id = READ_BT_16(packet, 9);
-                    printf("RFCOMM channel %u requested for %s\n\r", rfcomm_channel_nr, bd_addr_to_str(event_addr));
-                    rfcomm_accept_connection_internal(rfcomm_channel_id);
-                    break;
-                    
-                case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
-                    // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
-                    if (packet[2]) {
-                        printf("RFCOMM channel open failed, status %u\n\r", packet[2]);
-                    } else {
-                        rfcomm_channel_id = READ_BT_16(packet, 12);
-                        mtu = READ_BT_16(packet, 14);
-                        printf("\n\rRFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n\r", rfcomm_channel_id, mtu);
-                    }
-                    break;
-                case DAEMON_EVENT_HCI_PACKET_SENT:
-                case RFCOMM_EVENT_CREDITS:
-                    tryToSend();
-                    break;
+    // handle events, ignore data
+    if (packet_type != HCI_EVENT_PACKET) return;
 
-                case RFCOMM_EVENT_CHANNEL_CLOSED:
-                    rfcomm_channel_id = 0;
-                    break;
-                
-                default:
-                    break;
+    switch (event) {
+        case BTSTACK_EVENT_STATE:
+            // bt stack activated, get started - set local name
+            if (packet[2] == HCI_STATE_WORKING) {
+                hci_send_cmd(&hci_write_local_name, "BTstack SPP Counter");
             }
             break;
-                        
+        
+        case HCI_EVENT_COMMAND_COMPLETE:
+            if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)){
+                bt_flip_addr(event_addr, &packet[6]);
+                printf("BD-ADDR: %s\n\r", bd_addr_to_str(event_addr));
+                break;
+            }
+            if (COMMAND_COMPLETE_EVENT(packet, hci_write_local_name)){
+                hci_discoverable_control(1);
+                break;
+            }
+            break;
+
+        case HCI_EVENT_LINK_KEY_REQUEST:
+            // deny link key request
+            printf("Link key request\n\r");
+            bt_flip_addr(event_addr, &packet[2]);
+            hci_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
+            break;
+            
+        case HCI_EVENT_PIN_CODE_REQUEST:
+            // inform about pin code request
+            printf("Pin code request - using '0000'\n\r");
+            bt_flip_addr(event_addr, &packet[2]);
+            hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
+            break;
+        
+        case RFCOMM_EVENT_INCOMING_CONNECTION:
+            // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
+            bt_flip_addr(event_addr, &packet[2]); 
+            rfcomm_channel_nr = packet[8];
+            rfcomm_channel_id = READ_BT_16(packet, 9);
+            printf("RFCOMM channel %u requested for %s\n\r", rfcomm_channel_nr, bd_addr_to_str(event_addr));
+            rfcomm_accept_connection_internal(rfcomm_channel_id);
+            break;
+            
+        case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+            // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
+            if (packet[2]) {
+                printf("RFCOMM channel open failed, status %u\n\r", packet[2]);
+            } else {
+                rfcomm_channel_id = READ_BT_16(packet, 12);
+                mtu = READ_BT_16(packet, 14);
+                printf("\n\rRFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n\r", rfcomm_channel_id, mtu);
+            }
+            break;
+        case DAEMON_EVENT_HCI_PACKET_SENT:
+        case RFCOMM_EVENT_CREDITS:
+            tryToSend();
+            break;
+
+        case RFCOMM_EVENT_CHANNEL_CLOSED:
+            rfcomm_channel_id = 0;
+            break;
+        
         default:
             break;
     }
+
 }
 
 static void run_loop_register_timer(timer_source_t *timer, uint16_t period){
