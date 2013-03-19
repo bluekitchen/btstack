@@ -6,7 +6,7 @@ BTstack_FILES = PrefsViewController.m BluetoothController.m BluetoothTableViewAd
 BTstack_INSTALL_PATH = /Library/PreferenceBundles
 BTstack_FRAMEWORKS = UIKit
 BTstack_CFLAGS = -I.. -I../include -g
-BTstack_LDFLAGS = -L../src -lBTstack
+BTstack_LDFLAGS = -L../src/obj -lBTstack
 BTstack_PRIVATE_FRAMEWORKS = Preferences
 
 include $(THEOS_MAKE_PATH)/bundle.mk
