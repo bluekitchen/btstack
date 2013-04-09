@@ -26,5 +26,12 @@ BTdaemon_FILES = $(libBTstack_FILES)   \
 BTdaemon_CFLAGS = -I../include -I..
 BTdaemon_FRAMEWORKS = IOKit
 
+after-BTdaemon-stage::
+	echo "current dir" `pwd`
+	mkdir -p ../_/usr/local/lib
+	mkdir -p ../_/usr/local/bin
+	ln -s /usr/lib/libBTstack.dylib ../_/usr/local/lib
+	ln -s /usr/bin/BTdaemon ../_/usr/local/bin/BTdaemon
+
 include $(THEOS_MAKE_PATH)/library.mk
 include $(THEOS_MAKE_PATH)/tool.mk
