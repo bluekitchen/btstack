@@ -65,6 +65,8 @@
 #include "l2cap.h"
 #include "rfcomm.h"
 #include "sdp.h"
+#include "sdp_client.h"
+#include "sdp_query_rfcomm.h"
 #include "socket_connection.h"
 
 #ifdef USE_BLUETOOL
@@ -100,6 +102,7 @@ typedef struct {
 } client_state_t;
 
 // MARK: prototypes
+static void handle_sdp_rfcomm_service_result(sdp_query_rfcomm_event_t * event, void * context);
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state);
 static client_state_t * client_for_connection(connection_t *connection);
 static int              clients_require_power_on(void);
@@ -317,6 +320,12 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             log_info("SDP_UNREGISTER_SERVICE_RECORD handle 0x%x ", service_record_handle);
             sdp_unregister_service_internal(connection, service_record_handle);
             break;
+        case SDP_CLIENT_QUERY_RFCOMM_SERVICES:
+            bt_flip_addr(addr, &packet[3]);
+            sdp_query_rfcomm_register_callback(handle_sdp_rfcomm_service_result, connection);
+            sdp_query_rfcomm_channel_and_name_for_service_with_service_search_pattern(addr, &packet[9]);
+            break;
+
         default:
             log_error("Error: command %u not implemented\n:", READ_CMD_OCF(packet));
             break;
@@ -515,6 +524,27 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
     }
 }
 
+static void handle_sdp_rfcomm_service_result(sdp_query_rfcomm_event_t * rfcomm_event, void * context){
+    switch (rfcomm_event->type){
+        case SDP_QUERY_RFCOMM_SERVICE: {
+            sdp_query_rfcomm_service_event_t * service_event = (sdp_query_rfcomm_service_event_t*) rfcomm_event;
+            int name_len = strlen((const char*)service_event);
+            int event_len = 3 + name_len; 
+            uint8_t event[event_len];
+            event[0] = rfcomm_event->type;
+            event[1] = 1 + name_len;
+            memcpy(&event[1], service_event->service_name, name_len);
+            socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, event, sizeof(event_len));
+            break;
+        }
+        case SDP_QUERY_COMPLETE: {
+            sdp_query_rfcomm_complete_event_t * complete_event = (sdp_query_rfcomm_complete_event_t*) rfcomm_event;
+            uint8_t event[] = { rfcomm_event->type, 1, complete_event->status};
+            socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, event, sizeof(event));
+            break;
+        }
+    }
+}
 
 static void power_notification_callback(POWER_NOTIFICATION_t notification){
     switch (notification) {
