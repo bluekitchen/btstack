@@ -632,12 +632,17 @@ const hci_cmd_t l2cap_decline_connection = {
 OPCODE(OGF_BTSTACK, L2CAP_DECLINE_CONNECTION), "21"
 // @param source cid (16), reason(8)
 };
+
 const hci_cmd_t sdp_register_service_record = {
 OPCODE(OGF_BTSTACK, SDP_REGISTER_SERVICE_RECORD), "S"
 // @param service record handle (DES)
 };
 const hci_cmd_t sdp_unregister_service_record = {
 OPCODE(OGF_BTSTACK, SDP_UNREGISTER_SERVICE_RECORD), "4"
+// @param service record handle (32)
+};
+const hci_cmd_t sdp_client_query_rfcomm_services = {
+OPCODE(OGF_BTSTACK, SDP_CLIENT_QUERY_RFCOMM_SERVICES), "BS"
 // @param service record handle (32)
 };
 

@@ -159,6 +159,9 @@ extern "C" {
 // unregister SDP Service Record
 #define SDP_UNREGISTER_SERVICE_RECORD                      0x31
 
+// Get remote RFCOMM services
+#define SDP_CLIENT_QUERY_RFCOMM_SERVICES                   0x32
+
 // RFCOMM "HCI" Commands
 #define RFCOMM_CREATE_CHANNEL       0x40
 #define RFCOMM_DISCONNECT			0x41
