@@ -533,7 +533,8 @@ static void handle_sdp_rfcomm_service_result(sdp_query_rfcomm_event_t * rfcomm_e
             uint8_t event[event_len];
             event[0] = rfcomm_event->type;
             event[1] = 1 + name_len;
-            memcpy(&event[1], service_event->service_name, name_len);
+            event[2] = service_event->channel_nr;
+            memcpy(&event[3], service_event->service_name, name_len);
             socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, event, sizeof(event_len));
             break;
         }
