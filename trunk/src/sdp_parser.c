@@ -1,0 +1,202 @@
+#include "sdp_parser.h"
+#include "debug.h"
+
+typedef enum { 
+    GET_LIST_LENGTH = 1,
+    GET_RECORD_LENGTH,
+    GET_ATTRIBUTE_ID_HEADER_LENGTH,
+    GET_ATTRIBUTE_ID,
+    GET_ATTRIBUTE_VALUE_LENGTH,
+    GET_ATTRIBUTE_VALUE
+} state_t;
+
+static state_t state = GET_LIST_LENGTH;
+static uint16_t attribute_id = 0;
+static uint32_t attribute_bytes_received = 0;
+static uint32_t attribute_bytes_delivered = 0;
+static int list_offset = 0;
+static int list_size;
+static int record_offset = 0;
+static int record_size;
+static int attribute_value_size;
+
+static int record_counter = 0;
+
+static void (*sdp_query_rfcomm_callback)(sdp_parser_event_t * event);
+
+// Low level parser
+static de_state_t de_header_state;
+
+
+void de_state_init(de_state_t * state){
+    state->in_state_GET_DE_HEADER_LENGTH = 1;
+    state->addon_header_bytes = 0;
+    state->de_size = 0;
+    state->de_offset = 0;
+}
+
+int de_state_size(uint8_t eventByte, de_state_t *de_state){
+    if (de_state->in_state_GET_DE_HEADER_LENGTH){
+        de_state->addon_header_bytes = de_get_header_size(&eventByte) - 1;
+        de_state->de_size = 0;
+        de_state->de_offset = 0;
+
+        if (de_state->addon_header_bytes == 0){
+            de_state->de_size = de_get_data_size(&eventByte);
+            if (de_state->de_size == 0) {
+                log_error("  ERROR: ID size is zero\n\r");
+            }
+            // printf("Data element payload is %d bytes.\n", de_state->de_size);
+            return 1;
+        }
+        de_state->in_state_GET_DE_HEADER_LENGTH = 0;
+        return 0;
+    }
+   
+    if (de_state->addon_header_bytes > 0){
+        de_state->de_size = (de_state->de_size << 8) | eventByte;
+        de_state->addon_header_bytes--;
+    } 
+    if (de_state->addon_header_bytes > 0) return 0;
+    // printf("Data element payload is %d bytes.\n", de_state->de_size);
+    de_state->in_state_GET_DE_HEADER_LENGTH = 1;
+    return 1;
+}
+
+void dummy_notify(sdp_parser_event_t* event){}
+
+void sdp_parser_register_callback(void (*sdp_callback)(sdp_parser_event_t* event)){
+    sdp_query_rfcomm_callback = dummy_notify;
+    if (sdp_callback != NULL){
+        sdp_query_rfcomm_callback = sdp_callback;
+    } 
+}
+
+void parse(uint8_t eventByte){
+    // count all bytes
+    list_offset++;
+    record_offset++;
+
+    // printf("BYTE_RECEIVED %02x\n", eventByte);
+    switch(state){
+        case GET_LIST_LENGTH:
+            if (!de_state_size(eventByte, &de_header_state)) break;
+            list_offset = de_header_state.de_offset;
+            list_size = de_header_state.de_size;
+            // printf("parser: List offset %u, list size %u\n", list_offset, list_size);
+            
+            record_counter = 0;
+            state = GET_RECORD_LENGTH;
+            break;
+
+        case GET_RECORD_LENGTH:
+            // check size
+            if (!de_state_size(eventByte, &de_header_state)) break;
+            // printf("parser: Record payload is %d bytes.\n", de_header_state.de_size);
+            record_offset = de_header_state.de_offset;
+            record_size = de_header_state.de_size;
+            state = GET_ATTRIBUTE_ID_HEADER_LENGTH;
+            break;
+
+        case GET_ATTRIBUTE_ID_HEADER_LENGTH:
+            if (!de_state_size(eventByte, &de_header_state)) break;
+            attribute_id = 0;
+            // printf("ID data is stored in %d bytes.\n", de_header_state.de_size);
+            state = GET_ATTRIBUTE_ID;
+            break;
+        
+        case GET_ATTRIBUTE_ID:
+            attribute_id = (attribute_id << 8) | eventByte;
+            de_header_state.de_size--;
+            if (de_header_state.de_size > 0) break;
+            // printf("parser: Attribute ID: %04x.\n", attribute_id);
+
+            state = GET_ATTRIBUTE_VALUE_LENGTH;
+            attribute_bytes_received  = 0;
+            attribute_bytes_delivered = 0;
+            attribute_value_size      = 0;
+            de_state_init(&de_header_state);
+            break;
+        
+        case GET_ATTRIBUTE_VALUE_LENGTH:
+            attribute_bytes_received++;
+            sdp_parser_attribute_value_event_t attribute_value_event = {
+                .type = SDP_PARSER_ATTRIBUTE_VALUE, 
+                .record_id = record_counter, 
+                .attribute_id = attribute_id, 
+                .attribute_length = attribute_value_size,
+                .data_offset = attribute_bytes_delivered++,
+                .data = eventByte
+            };
+            (*sdp_query_rfcomm_callback)((sdp_parser_event_t*)&attribute_value_event);
+
+            if (!de_state_size(eventByte, &de_header_state)) break;
+
+            attribute_value_size = de_header_state.de_size + attribute_bytes_received;
+
+            state = GET_ATTRIBUTE_VALUE;
+            break;
+        
+        case GET_ATTRIBUTE_VALUE:
+            attribute_bytes_received++;
+
+            sdp_parser_attribute_value_event_t attribute_value_event1 = {
+                .type = SDP_PARSER_ATTRIBUTE_VALUE, 
+                .record_id = record_counter, 
+                .attribute_id = attribute_id, 
+                .attribute_length = attribute_value_size,
+                .data_offset = attribute_bytes_delivered++,
+                .data = eventByte
+            };
+            (*sdp_query_rfcomm_callback)((sdp_parser_event_t*)&attribute_value_event1);
+            // printf("paser: attribute_bytes_received %u, attribute_value_size %u\n", attribute_bytes_received, attribute_value_size);
+
+            if (attribute_bytes_received < attribute_value_size) break;
+            // printf("parser: Record offset %u, record size %u\n", record_offset, record_size);
+            if (record_offset != record_size){
+                state = GET_ATTRIBUTE_ID_HEADER_LENGTH;
+                // printf("Get next attribute\n");
+                break;
+            } 
+            record_offset = 0;
+            // printf("parser: List offset %u, list size %u\n", list_offset, list_size);
+            if (list_offset != list_size){
+                record_counter++;
+                state = GET_RECORD_LENGTH;
+                // printf("parser: END_OF_RECORD\n\n");
+                break;
+            }
+            list_offset = 0;
+            de_state_init(&de_header_state);
+            state = GET_LIST_LENGTH;
+            record_counter = 0;
+            // printf("parser: END_OF_RECORD & DONE\n\n\n");
+            break;
+        default:
+            break;
+    }
+}
+
+void sdp_parser_init(void){
+    // init
+    de_state_init(&de_header_state);
+    state = GET_LIST_LENGTH;
+    list_offset = 0;
+    record_offset = 0;
+    record_counter = 0;
+}
+
+void sdp_parser_handle_chunk(uint8_t * data, uint16_t size){
+    int i;
+    for (i=0;i<size;i++){
+        parse(data[i]);
+    }
+}
+
+void sdp_parser_handle_done(uint8_t status){
+    sdp_parser_complete_event_t complete_event = {
+        .type = SDP_PARSER_COMPLETE, 
+        .status = status
+    };
+    (*sdp_query_rfcomm_callback)((sdp_parser_event_t*)&complete_event);
+}
