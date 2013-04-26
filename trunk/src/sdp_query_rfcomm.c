@@ -198,7 +198,7 @@ void handleServiceNameData(uint32_t attribute_value_length, uint32_t data_offset
         sdp_query_rfcomm_service_event_t value_event = {
             .type = SDP_QUERY_RFCOMM_SERVICE, 
             .service_name = (uint8_t *) sdp_service_name,
-            .rfcomm_channel_nr = sdp_rfcom_channel_nr
+            .channel_nr = sdp_rfcom_channel_nr
         };
         printf("Service found %s\n", sdp_service_name);
         (*sdp_app_callback)((sdp_query_rfcomm_event_t*)&value_event, sdp_app_context);
