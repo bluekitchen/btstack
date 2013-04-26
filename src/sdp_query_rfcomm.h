@@ -15,7 +15,7 @@ typedef struct sdp_query_rfcomm_event {
 
 typedef struct sdp_query_rfcomm_service_event {
     uint8_t type;
-    uint8_t rfcomm_channel_nr;
+    uint8_t channel_nr;
     uint8_t * service_name;
 } sdp_query_rfcomm_service_event_t;
 
