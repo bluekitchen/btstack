@@ -366,7 +366,7 @@ extern const hci_cmd_t l2cap_unregister_service;
 
 extern const hci_cmd_t sdp_register_service_record;
 extern const hci_cmd_t sdp_unregister_service_record;
-extern const hci_cmd_t sdp_query_rfcomm_services;
+extern const hci_cmd_t sdp_client_query_rfcomm_services;
 
 
 // accept connection @param bd_addr(48), rfcomm_cid (16)
