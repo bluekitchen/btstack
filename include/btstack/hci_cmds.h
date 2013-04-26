@@ -191,6 +191,15 @@ extern "C" {
 // data: event(8), len(8), status(8), service_record_handle(32)
 #define SDP_SERVICE_REGISTERED                             0x90
 
+// data: event(8), len(8), status(8)
+#define SDP_QUERY_COMPLETE                                 0x91 
+
+// data: event(8), len(8), rfcomm channel(8), name(var)
+#define SDP_QUERY_RFCOMM_SERVICE                           0x92
+
+// data: event(8), len(8), record nr(16), attribute id(16), attribute value(var)
+#define SDP_QUERY_ATTRIBUTE_VALUE                          0x93
+
 	
 // last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
 
@@ -225,6 +234,7 @@ extern "C" {
 #define RFCOMM_NO_OUTGOING_CREDITS                         0x72
 
 #define SDP_HANDLE_ALREADY_REGISTERED                      0x80
+#define SDP_QUERY_INCOMPLETE                               0x81
  
 /**
  * Default INQ Mode
@@ -356,6 +366,8 @@ extern const hci_cmd_t l2cap_unregister_service;
 
 extern const hci_cmd_t sdp_register_service_record;
 extern const hci_cmd_t sdp_unregister_service_record;
+extern const hci_cmd_t sdp_query_rfcomm_services;
+
 
 // accept connection @param bd_addr(48), rfcomm_cid (16)
 extern const hci_cmd_t rfcomm_accept_connection;
