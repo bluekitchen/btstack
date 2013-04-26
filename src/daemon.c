@@ -535,12 +535,14 @@ static void handle_sdp_rfcomm_service_result(sdp_query_rfcomm_event_t * rfcomm_e
             event[1] = 1 + name_len;
             event[2] = service_event->channel_nr;
             memcpy(&event[3], service_event->service_name, name_len);
-            socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, event, sizeof(event_len));
+            hci_dump_packet(HCI_EVENT_PACKET, 0, event, event_len);
+            socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, event, event_len);
             break;
         }
         case SDP_QUERY_COMPLETE: {
             sdp_query_rfcomm_complete_event_t * complete_event = (sdp_query_rfcomm_complete_event_t*) rfcomm_event;
             uint8_t event[] = { rfcomm_event->type, 1, complete_event->status};
+            hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
             socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, event, sizeof(event));
             break;
         }
