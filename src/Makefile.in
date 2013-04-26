@@ -28,6 +28,9 @@ BTdaemon_SOURCES =  $(libBTstack_SOURCES) \
     $(remote_device_db_sources)  \
     rfcomm.c                \
     sdp.c                   \
+    sdp_client.c            \
+    sdp_parser.c            \
+    sdp_query_rfcomm.c      \
     $(springboard_access_sources)
 
 # use $(CC) for Objective-C files

@@ -22,6 +22,9 @@ BTdaemon_FILES = $(libBTstack_FILES)   \
 	remote_device_db_iphone.m  \
 	rfcomm.c                \
 	sdp.c                   \
+    sdp_client.c            \
+    sdp_parser.c            \
+    sdp_query_rfcomm.c      \
 	../SpringBoardAccess/SpringBoardAccess.c
 BTdaemon_CFLAGS = -I../include -I..
 BTdaemon_FRAMEWORKS = IOKit
