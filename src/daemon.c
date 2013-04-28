@@ -102,7 +102,7 @@ typedef struct {
 } client_state_t;
 
 // MARK: prototypes
-static void handle_sdp_rfcomm_service_result(sdp_query_rfcomm_event_t * event, void * context);
+static void handle_sdp_rfcomm_service_result(sdp_query_event_t * event, void * context);
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state);
 static client_state_t * client_for_connection(connection_t *connection);
 static int              clients_require_power_on(void);
@@ -524,7 +524,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
     }
 }
 
-static void handle_sdp_rfcomm_service_result(sdp_query_rfcomm_event_t * rfcomm_event, void * context){
+static void handle_sdp_rfcomm_service_result(sdp_query_event_t * rfcomm_event, void * context){
     switch (rfcomm_event->type){
         case SDP_QUERY_RFCOMM_SERVICE: {
             sdp_query_rfcomm_service_event_t * service_event = (sdp_query_rfcomm_service_event_t*) rfcomm_event;
@@ -540,7 +540,7 @@ static void handle_sdp_rfcomm_service_result(sdp_query_rfcomm_event_t * rfcomm_e
             break;
         }
         case SDP_QUERY_COMPLETE: {
-            sdp_query_rfcomm_complete_event_t * complete_event = (sdp_query_rfcomm_complete_event_t*) rfcomm_event;
+            sdp_query_complete_event_t * complete_event = (sdp_query_complete_event_t*) rfcomm_event;
             uint8_t event[] = { rfcomm_event->type, 1, complete_event->status};
             hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
             socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, event, sizeof(event));
