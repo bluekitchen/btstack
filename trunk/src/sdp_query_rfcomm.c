@@ -1,9 +1,42 @@
+/*
+ * Copyright (C) 2009-2013 by Matthias Ringwald
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holders nor the names of
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ * 4. Any redistribution, use, or modification is done solely for
+ *    personal benefit and not for any commercial purpose or for
+ *    monetary gain.
+ *
+ * THIS SOFTWARE IS PROVIDED BY MATTHIAS RINGWALD AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
+ * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+ * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ * Please inquire about commercial licensing options at btstack@ringwald.ch
+ *
+ */
 
-//*****************************************************************************
-//
-// minimal setup for SDP client over USB or UART
-//
-//*****************************************************************************
+/*
+ *  sdp_rfcomm_query.c
+ */
 
 #include "sdp_query_rfcomm.h"
 
@@ -17,7 +50,7 @@
 
 #include "sdp_client.h"
 
-static void dummy_notify_app(sdp_query_rfcomm_event_t* event, void * context);
+static void dummy_notify_app(sdp_query_event_t* event, void * context);
 
 typedef enum { 
     GET_PROTOCOL_LIST_LENGTH = 1,
@@ -52,13 +85,13 @@ static de_state_t de_header_state;
 static de_state_t sn_de_header_state;
 
 static void *sdp_app_context;
-static void (*sdp_app_callback)(sdp_query_rfcomm_event_t * event, void * context) = dummy_notify_app;
+static void (*sdp_app_callback)(sdp_query_event_t * event, void * context) = dummy_notify_app;
 
 //
 
-static void dummy_notify_app(sdp_query_rfcomm_event_t* event, void * context){}
+static void dummy_notify_app(sdp_query_event_t* event, void * context){}
 
-void sdp_query_rfcomm_register_callback(void (*sdp_callback)(sdp_query_rfcomm_event_t* event, void * context), void * context){
+void sdp_query_rfcomm_register_callback(void (*sdp_callback)(sdp_query_event_t* event, void * context), void * context){
     sdp_app_callback = dummy_notify_app;
     if (sdp_callback != NULL){
         sdp_app_callback = sdp_callback;
@@ -201,7 +234,7 @@ void handleServiceNameData(uint32_t attribute_value_length, uint32_t data_offset
             .channel_nr = sdp_rfcom_channel_nr
         };
         printf("Service found %s\n", sdp_service_name);
-        (*sdp_app_callback)((sdp_query_rfcomm_event_t*)&value_event, sdp_app_context);
+        (*sdp_app_callback)((sdp_query_event_t*)&value_event, sdp_app_context);
         sdp_rfcom_channel_nr = 0;
     }
 }
@@ -233,11 +266,11 @@ static void handle_sdp_parser_event(sdp_parser_event_t * event){
             break;
         case SDP_PARSER_COMPLETE:
             ce = (sdp_parser_complete_event_t*) event;
-            sdp_query_rfcomm_complete_event_t c_event = {
+            sdp_query_complete_event_t c_event = {
                 .type = SDP_QUERY_COMPLETE, 
                 .status = ce->status
             };
-            (*sdp_app_callback)((sdp_query_rfcomm_event_t*)&c_event, sdp_app_context);
+            (*sdp_app_callback)((sdp_query_event_t*)&c_event, sdp_app_context);
             break;
     }
     // insert higher level code HERE
