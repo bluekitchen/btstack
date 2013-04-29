@@ -45,6 +45,7 @@
 
 #include <btstack/sdp_util.h>
 
+/* SDP Parser */
 
 // Data Element stream parser helper
 typedef struct de_state {
@@ -78,7 +79,7 @@ typedef struct sdp_parser_attribute_value_event {
     uint8_t data;
 } sdp_parser_attribute_value_event_t;
 
-// SDP Parser event to indicate that processing is complete
+// SDP Parser event to indicate that parsing is complete.
 typedef struct sdp_parser_complete_event {
     uint8_t type;
     uint8_t status; // 0 == OK
@@ -89,5 +90,5 @@ void sdp_parser_init();
 void sdp_parser_handle_chunk(uint8_t * data, uint16_t size);
 void sdp_parser_handle_done(uint8_t status);
 
-// Registers a callback to receive attribute value data and done event.
+// Registers a callback to receive attribute value data and parse complete event.
 void sdp_parser_register_callback(void (*sdp_callback)(sdp_parser_event_t* event));

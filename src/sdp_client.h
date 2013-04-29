@@ -40,6 +40,8 @@
 
 #include <btstack/utils.h>
 
+/* SDP Client */
+ 
 /* Queries the SDP service of the remote device given a service search pattern 
 and a list of attribute IDs. The remote data is handled by the SDP parser. The 
 SDP parser delivers attribute values and done event via a registered callback. */
