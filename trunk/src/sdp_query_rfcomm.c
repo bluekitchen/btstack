@@ -286,15 +286,15 @@ void sdp_query_rfcomm_init(){
 }
 
 
-void sdp_query_rfcomm_channel_and_name_for_service_with_service_search_pattern(bd_addr_t remote, uint8_t * serviceSearchPattern){
+void sdp_query_rfcomm_channel_and_name_for_search_pattern(bd_addr_t remote, uint8_t * serviceSearchPattern){
     sdp_parser_init();
     sdp_query_rfcomm_init();
     sdp_client_query(remote, serviceSearchPattern, (uint8_t*)&des_attributeIDList[0]);
 }
 
-void sdp_query_rfcomm_channel_and_name_for_service_with_uuid(bd_addr_t remote, uint16_t uuid){
+void sdp_query_rfcomm_channel_and_name_for_uuid(bd_addr_t remote, uint16_t uuid){
     net_store_16(des_serviceSearchPattern, 3, uuid);
-    sdp_query_rfcomm_channel_and_name_for_service_with_service_search_pattern(remote, (uint8_t*)des_serviceSearchPattern);
+    sdp_query_rfcomm_channel_and_name_for_search_pattern(remote, (uint8_t*)des_serviceSearchPattern);
 }
 
 

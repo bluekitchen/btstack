@@ -63,10 +63,10 @@ typedef struct sdp_query_rfcomm_service_event {
 void sdp_query_rfcomm_init(void);
 
 // Searches SDP records on a remote device for RFCOMM services with the given UUID.
-void sdp_query_rfcomm_channel_and_name_for_service_with_uuid(bd_addr_t remote, uint16_t uuid);
+void sdp_query_rfcomm_channel_and_name_for_uuid(bd_addr_t remote, uint16_t uuid);
 
 // Searches SDP records on a remote device for RFCOMM services with a given service search pattern.
-void sdp_query_rfcomm_channel_and_name_for_service_with_service_search_pattern(bd_addr_t remote, uint8_t * des_serviceSearchPattern);
+void sdp_query_rfcomm_channel_and_name_for_search_pattern(bd_addr_t remote, uint8_t * des_serviceSearchPattern);
 
 // Registers a callback to receive RFCOMM service and done event. 
 void sdp_query_rfcomm_register_callback(void(*sdp_app_callback)(sdp_query_event_t * event, void * context), void * context);
