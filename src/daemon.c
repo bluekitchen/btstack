@@ -323,7 +323,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case SDP_CLIENT_QUERY_RFCOMM_SERVICES:
             bt_flip_addr(addr, &packet[3]);
             sdp_query_rfcomm_register_callback(handle_sdp_rfcomm_service_result, connection);
-            sdp_query_rfcomm_channel_and_name_for_service_with_service_search_pattern(addr, &packet[9]);
+            sdp_query_rfcomm_channel_and_name_for_search_pattern(addr, &packet[9]);
             break;
 
         default:
