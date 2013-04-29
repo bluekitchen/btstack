@@ -41,6 +41,8 @@
 #include <btstack/utils.h>
 #include "sdp_parser.h"
 
+/* SDP Queries */
+
 // Basic SDP Query event type
 typedef struct sdp_query_event {
     uint8_t type;
@@ -52,7 +54,11 @@ typedef struct sdp_query_complete_event {
     uint8_t status; // 0 == OK
 } sdp_query_complete_event_t;
 
-// SDP Query RFCOMM event to deliver channel number and service name byte by byte.
+
+/* SDP Query for RFCOMM */
+
+// SDP Query RFCOMM event to deliver channel number and service name
+// byte by byte.
 typedef struct sdp_query_rfcomm_service_event {
     uint8_t type;
     uint8_t channel_nr;
@@ -62,11 +68,13 @@ typedef struct sdp_query_rfcomm_service_event {
 
 void sdp_query_rfcomm_init(void);
 
-// Searches SDP records on a remote device for RFCOMM services with the given UUID.
+// Searches SDP records on a remote device for RFCOMM services with
+// a given UUID.
 void sdp_query_rfcomm_channel_and_name_for_uuid(bd_addr_t remote, uint16_t uuid);
 
-// Searches SDP records on a remote device for RFCOMM services with a given service search pattern.
+// Searches SDP records on a remote device for RFCOMM services with
+// a given service search pattern.
 void sdp_query_rfcomm_channel_and_name_for_search_pattern(bd_addr_t remote, uint8_t * des_serviceSearchPattern);
 
-// Registers a callback to receive RFCOMM service and done event. 
+// Registers a callback to receive RFCOMM service and query complete event. 
 void sdp_query_rfcomm_register_callback(void(*sdp_app_callback)(sdp_query_event_t * event, void * context), void * context);
