@@ -165,10 +165,11 @@ void embedded_execute(void) {
         // disable IRQs and check if run loop iteration has been requested. if not, go to sleep
         hal_cpu_disable_irqs();
         if (trigger_event_received){
-            hal_cpu_enable_irqs_and_sleep();
+            trigger_event_received = 0;
+            hal_cpu_enable_irqs();
             continue;
         }
-        hal_cpu_enable_irqs();
+        hal_cpu_enable_irqs_and_sleep();
     }
 }
 
