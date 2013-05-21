@@ -201,7 +201,7 @@ static void queue_transfer(struct libusb_transfer *transfer){
     // Walk to end of list and add current packet there
     struct libusb_transfer *temp = handle_packet;
     while (temp->user_data) {
-        temp = temp->user_data;
+        temp = (libusb_transfer*)temp->user_data;
     }
     temp->user_data = transfer;
 }
@@ -307,7 +307,7 @@ static int usb_process_ds(struct data_source *ds) {
         
         // Move to next in the list of packets to handle
         if (next) {
-            handle_packet = next;
+            handle_packet = (libusb_transfer*)next;
         } else {
             handle_packet = NULL;
         }
@@ -493,7 +493,7 @@ static int usb_open(void *transport_config){
 
         const struct libusb_pollfd ** pollfd = libusb_get_pollfds(NULL);
         for (r = 0 ; pollfd[r] ; r++) {
-            data_source_t *ds = malloc(sizeof(data_source_t));
+            data_source_t *ds = (data_source_t*)malloc(sizeof(data_source_t));
             ds->fd = pollfd[r]->fd;
             ds->process = usb_process_ds;
             run_loop_add_data_source(ds);
@@ -655,7 +655,7 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 // get usb singleton
 hci_transport_t * hci_transport_usb_instance() {
     if (!hci_transport_usb) {
-        hci_transport_usb = malloc( sizeof(hci_transport_t));
+        hci_transport_usb = (hci_transport_t*) malloc( sizeof(hci_transport_t));
         hci_transport_usb->open                          = usb_open;
         hci_transport_usb->close                         = usb_close;
         hci_transport_usb->send_packet                   = usb_send_packet;
