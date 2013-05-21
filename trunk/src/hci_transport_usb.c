@@ -70,14 +70,16 @@
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
 static int usb_close(void *transport_config);
     
-enum {
+typedef enum {
     LIB_USB_CLOSED = 0,
     LIB_USB_OPENED,
     LIB_USB_DEVICE_OPENDED,
     LIB_USB_KERNEL_DETACHED,
     LIB_USB_INTERFACE_CLAIMED,
     LIB_USB_TRANSFERS_ALLOCATED
-} libusb_state = LIB_USB_CLOSED;
+} libusb_state_t;
+
+static libusb_state_t libusb_state = LIB_USB_CLOSED;
 
 // single instance
 static hci_transport_t * hci_transport_usb = NULL;
