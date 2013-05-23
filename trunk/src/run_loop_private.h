@@ -46,11 +46,16 @@
 
 #ifdef HAVE_TIME
 #include <sys/time.h>
+#endif
 
+#if defined __cplusplus
+extern "C" {
+#endif
+
+#ifdef HAVE_TIME
 // compare timeval or timers - NULL is assumed to be before the Big Bang
 int run_loop_timeval_compare(struct timeval *a, struct timeval *b);
 int run_loop_timer_compare(timer_source_t *a, timer_source_t *b);
-
 #endif
 
 // 
@@ -66,3 +71,8 @@ typedef struct {
 	void (*execute)(void);
 	void (*dump_timer)(void);
 } run_loop_t;
+
+#if defined __cplusplus
+}
+#endif
+

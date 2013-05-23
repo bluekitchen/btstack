@@ -38,7 +38,13 @@
  *  sdp_client.h
  */
 
+#pragma once
+
 #include <btstack/utils.h>
+
+#if defined __cplusplus
+extern "C" {
+#endif
 
 /* SDP Client */
  
@@ -47,3 +53,7 @@ and a list of attribute IDs. The remote data is handled by the SDP parser. The
 SDP parser delivers attribute values and done event via a registered callback. */
 
 void sdp_client_query(bd_addr_t remote, uint8_t * des_serviceSearchPattern, uint8_t * des_attributeIDList);
+
+#if defined __cplusplus
+}
+#endif

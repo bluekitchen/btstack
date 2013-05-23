@@ -46,8 +46,15 @@
 
 #include "hci.h"
 
+#if defined __cplusplus
+extern "C" {
+#endif
+
 void platform_iphone_status_handler(BLUETOOTH_STATE state);
 void platform_iphone_register_window_manager_restart(void (*callback)());
 void platform_iphone_register_preferences_changed(void (*callback)());
 int  platform_iphone_logging_enabled(void);
 
+#if defined __cplusplus
+}
+#endif

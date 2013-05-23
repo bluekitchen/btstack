@@ -38,12 +38,18 @@
  *  sdp_parser.h
  */
 
+#pragma once
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <btstack/sdp_util.h>
+
+#if defined __cplusplus
+extern "C" {
+#endif
 
 /* SDP Parser */
 
@@ -92,3 +98,9 @@ void sdp_parser_handle_done(uint8_t status);
 
 // Registers a callback to receive attribute value data and parse complete event.
 void sdp_parser_register_callback(void (*sdp_callback)(sdp_parser_event_t* event));
+
+
+#if defined __cplusplus
+}
+#endif
+

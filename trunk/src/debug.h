@@ -40,6 +40,8 @@
  *  allow to funnel debug & error messages 
  */
 
+#pragma once
+
 #include "config.h"
 #include "hci_dump.h"
 

@@ -40,6 +40,10 @@
 
 #include "config.h"
 
+#if defined __cplusplus
+extern "C" {
+#endif
+    
 typedef enum {
 	SDP_ErrorResponse = 1,
 	SDP_ServiceSearchRequest,
@@ -101,3 +105,6 @@ uint32_t sdp_register_service_internal(void *connection, service_record_item_t *
 // Unregister service record internally.
 void sdp_unregister_service_internal(void *connection, uint32_t service_record_handle);
 
+#if defined __cplusplus
+}
+#endif

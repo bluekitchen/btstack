@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 2009-2012 by Matthias Ringwald
  *
@@ -46,6 +47,9 @@
 
 #include <stdint.h>
 
+#if defined __cplusplus
+extern "C" {
+#endif
 
 /** opaque connection type */
 typedef struct connection connection_t;
@@ -118,3 +122,6 @@ void socket_connection_retry_parked(void);
  */
 int  socket_connection_has_parked_connections(void);
 
+#if defined __cplusplus
+}
+#endif
