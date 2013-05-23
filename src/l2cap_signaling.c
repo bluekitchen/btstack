@@ -44,7 +44,7 @@
 
 #include <string.h>
 
-static char *l2cap_signaling_commands_format[] = {
+static const char *l2cap_signaling_commands_format[] = {
 "D",    // 0x01 command reject: reason {cmd not understood (0), sig MTU exceeded (2:max sig MTU), invalid CID (4:req CID)}, data len, data
 "22",   // 0x02 connection request: PSM, Source CID
 "2222", // 0x03 connection response: Dest CID, Source CID, Result, Status
