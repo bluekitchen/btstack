@@ -41,8 +41,13 @@
  *
  *  Created by Matthias Ringwald on 5/19/09.
  */
-
+#pragma once
+ 
 #include "bt_control.h"
+
+#if defined __cplusplus
+extern "C" {
+#endif
 
 extern bt_control_t bt_control_iphone;
 
@@ -54,5 +59,7 @@ void iphone_system_bt_set_enabled(int enabled);
 
 int  iphone_system_has_csr(void);
 
-
+#if defined __cplusplus
+}
+#endif
 

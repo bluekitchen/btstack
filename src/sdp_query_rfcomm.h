@@ -38,8 +38,14 @@
  *  sdp_rfcomm_query.h
  */
 
+#pragma once
+
 #include <btstack/utils.h>
 #include "sdp_parser.h"
+
+#if defined __cplusplus
+extern "C" {
+#endif
 
 /* SDP Queries */
 
@@ -78,3 +84,7 @@ void sdp_query_rfcomm_channel_and_name_for_search_pattern(bd_addr_t remote, uint
 
 // Registers a callback to receive RFCOMM service and query complete event. 
 void sdp_query_rfcomm_register_callback(void(*sdp_app_callback)(sdp_query_event_t * event, void * context), void * context);
+
+#if defined __cplusplus
+}
+#endif

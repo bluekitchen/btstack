@@ -38,6 +38,8 @@
  *  RFCOMM.h
  */
 
+#pragma once
+ 
 #include <btstack/btstack.h>
 #include <btstack/utils.h>
 
