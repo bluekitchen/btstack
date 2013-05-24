@@ -7,8 +7,18 @@
 #include "remote_device_db.h"
 #include "btstack_memory.h"
 
+#include "config.h"
+
 extern linked_list_t db_mem_link_keys ;
 extern linked_list_t db_mem_names ;
+
+typedef struct teststruct{
+    int type;
+} teststruct_t;
+
+teststruct_t tr = {
+    type : 0
+};
 
 void dump(linked_list_t list){
     printf("dump:\n");
@@ -29,6 +39,9 @@ TEST_GROUP(RemoteDeviceDB){
     link_key_t link_key;
     
     void setup(){
+
+        btstack_memory_init();
+
         bd_addr_t addr_1 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x01 };
         bd_addr_t addr_2 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x02 };
         bd_addr_t addr_3 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x03 };
@@ -39,6 +52,12 @@ TEST_GROUP(RemoteDeviceDB){
     
     void teardown(){}
 };
+
+TEST(RemoteDeviceDB, MemoryPool){
+    CHECK(MAX_NO_DB_MEM_DEVICE_NAMES > 0);
+    void * item = btstack_memory_db_mem_device_name_get();
+    CHECK(item);
+}
 
 TEST(RemoteDeviceDB, SinglePutGetDeleteName){
     sprintf((char*)device_name, "%d", 100);
@@ -58,17 +77,16 @@ TEST(RemoteDeviceDB, SortByLastUsedName){
 	remote_device_db_memory.put_name(&addr3, &device_name);
     
     CHECK(remote_device_db_memory.get_name(&addr2, &device_name));
-    
     //get first element of the list
     db_mem_device_name_t * item = (db_mem_device_name_t *) db_mem_names;
     STRCMP_EQUAL((char*)item->device_name, "20"); 
 }
 
+
 TEST(RemoteDeviceDB, SinglePutGetDeleteKey){
 	sprintf((char*)link_key, "%d", 100);
-	printf("SinglePutGetDeleteKey test\n");
 	remote_device_db_memory.put_link_key(&addr1, &link_key);
-    dump(db_mem_link_keys);
+    // dump(db_mem_link_keys);
 
 	CHECK(remote_device_db_memory.get_link_key(&addr1, &link_key));
     
@@ -77,19 +95,18 @@ TEST(RemoteDeviceDB, SinglePutGetDeleteKey){
 }
 
 TEST(RemoteDeviceDB, SortByLastUsedKey){
-    printf("SortByLastUsedKey test\n");
-	sprintf((char*)link_key, "%d", 10);
+    sprintf((char*)link_key, "%d", 10);
 	remote_device_db_memory.put_link_key(&addr1, &link_key);
-    dump(db_mem_link_keys);
+    // dump(db_mem_link_keys);
     sprintf((char*)link_key, "%d", 20);
 	remote_device_db_memory.put_link_key(&addr2, &link_key);
-    dump(db_mem_link_keys);
+    // dump(db_mem_link_keys);
     sprintf((char*)link_key, "%d", 30);
 	remote_device_db_memory.put_link_key(&addr3, &link_key);
-    dump(db_mem_link_keys);
+    // dump(db_mem_link_keys);
 
     CHECK(remote_device_db_memory.get_link_key(&addr2, &link_key));
-    dump(db_mem_link_keys);
+    // dump(db_mem_link_keys);
     
     //get first element of the list
     db_mem_device_link_key_t * item = (db_mem_device_link_key_t *) db_mem_link_keys;
@@ -97,6 +114,5 @@ TEST(RemoteDeviceDB, SortByLastUsedKey){
 }
 
 int main (int argc, const char * argv[]){
-    btstack_memory_init();
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }
