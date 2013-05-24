@@ -43,6 +43,8 @@
 #include <btstack/utils.h>
 #include "sdp_parser.h"
 
+#define SDP_SERVICE_NAME_LEN 20
+
 #if defined __cplusplus
 extern "C" {
 #endif
