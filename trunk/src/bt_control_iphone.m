@@ -707,13 +707,16 @@ int bt_control_iphone_power_management_enabled(void){
 
 // single instance
 bt_control_t bt_control_iphone = {
-    .on     = iphone_on,
-    .off    = iphone_off,
-    .sleep  = iphone_sleep,
-    .wake   = iphone_wake,
-    .valid  = iphone_valid,
-    .name   = iphone_name,
-    .register_for_power_notifications = iphone_register_for_power_notifications
+    iphone_on,              // on
+    iphone_off,             // off
+    iphone_sleep,           // sleep
+    iphone_wake,            // wake
+    iphone_valid,           // valid
+    iphone_name,            // name
+    NULL,                   // baudrate_cmd
+    NULL,                   // next_cmd
+    iphone_register_for_power_notifications,   // register_for_power_notifications
+    NULL                    // hw_error
 };
 
 int iphone_system_bt_enabled(void){
