@@ -64,8 +64,6 @@ typedef enum {
 
 // higher layer query - get rfcomm channel and name
 
-#define SDP_SERVICE_NAME_LEN 20
-
 const uint8_t des_attributeIDList[]    = { 0x35, 0x05, 0x0A, 0x00, 0x01, 0x01, 0x00};  // Arribute: 0x0001 - 0x0100
 
 static uint8_t des_serviceSearchPattern[5] = {0x35, 0x03, 0x19, 0x00, 0x00};
@@ -220,12 +218,18 @@ void handleServiceNameData(uint32_t attribute_value_length, uint32_t data_offset
     if (name_pos < SDP_SERVICE_NAME_LEN){
         sdp_service_name[name_pos] = data;
         name_pos++;
+
+        // terminate if name complete
+        if (name_pos >= name_len){
+            sdp_service_name[name_pos] = 0;            
+        } 
+
+        // terminate if buffer full
+        if (name_pos == SDP_SERVICE_NAME_LEN){
+            sdp_service_name[name_pos] = 0;            
+        }
     }
 
-    // sdp_rfcom_channel_nr is stored in Attribute 0x0004 which is received before this 0x0100
-    if (name_pos >= SDP_SERVICE_NAME_LEN || name_pos >= name_len){
-        sdp_service_name[name_pos] = 0;
-    }
     // notify on last char
     if (data_offset == attribute_value_length - 1 && sdp_rfcom_channel_nr!=0){
         sdp_query_rfcomm_service_event_t value_event = {
@@ -233,7 +237,6 @@ void handleServiceNameData(uint32_t attribute_value_length, uint32_t data_offset
             sdp_rfcom_channel_nr,
             (uint8_t *) sdp_service_name
         };
-        printf("Service found %s\n", sdp_service_name);
         (*sdp_app_callback)((sdp_query_event_t*)&value_event, sdp_app_context);
         sdp_rfcom_channel_nr = 0;
     }
@@ -241,14 +244,13 @@ void handleServiceNameData(uint32_t attribute_value_length, uint32_t data_offset
 
 
 static void handle_sdp_parser_event(sdp_parser_event_t * event){
-   // printf("       CN - [ RID, AID, ALen, VOffset] : [%d, %04x, %u, %u, %u] BYTE %02x\n", 
-   //  record_id, attribute_id, attribute_length, data_offset, *src);
-   // return ;
     sdp_parser_attribute_value_event_t * ve;
     sdp_parser_complete_event_t * ce;
     switch (event->type){
         case SDP_PARSER_ATTRIBUTE_VALUE:
             ve = (sdp_parser_attribute_value_event_t*) event;
+           // printf("handle_sdp_parser_event [ AID, ALen, DOff, Data] : [%x, %u, %u] BYTE %02x\n", 
+           //          ve->attribute_id, ve->attribute_length, ve->data_offset, ve->data);
             
             switch (ve->attribute_id){
                 case SDP_ProtocolDescriptorList:
