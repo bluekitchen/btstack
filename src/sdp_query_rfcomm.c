@@ -229,9 +229,9 @@ void handleServiceNameData(uint32_t attribute_value_length, uint32_t data_offset
     // notify on last char
     if (data_offset == attribute_value_length - 1 && sdp_rfcom_channel_nr!=0){
         sdp_query_rfcomm_service_event_t value_event = {
-            .type = SDP_QUERY_RFCOMM_SERVICE, 
-            .service_name = (uint8_t *) sdp_service_name,
-            .channel_nr = sdp_rfcom_channel_nr
+            SDP_QUERY_RFCOMM_SERVICE, 
+            sdp_rfcom_channel_nr,
+            (uint8_t *) sdp_service_name
         };
         printf("Service found %s\n", sdp_service_name);
         (*sdp_app_callback)((sdp_query_event_t*)&value_event, sdp_app_context);
@@ -267,8 +267,8 @@ static void handle_sdp_parser_event(sdp_parser_event_t * event){
         case SDP_PARSER_COMPLETE:
             ce = (sdp_parser_complete_event_t*) event;
             sdp_query_complete_event_t c_event = {
-                .type = SDP_QUERY_COMPLETE, 
-                .status = ce->status
+                SDP_QUERY_COMPLETE, 
+                ce->status
             };
             (*sdp_app_callback)((sdp_query_event_t*)&c_event, sdp_app_context);
             break;

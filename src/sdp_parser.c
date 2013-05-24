@@ -160,35 +160,38 @@ void parse(uint8_t eventByte){
         
         case GET_ATTRIBUTE_VALUE_LENGTH:
             attribute_bytes_received++;
+            {
             sdp_parser_attribute_value_event_t attribute_value_event = {
-                .type = SDP_PARSER_ATTRIBUTE_VALUE, 
-                .record_id = record_counter, 
-                .attribute_id = attribute_id, 
-                .attribute_length = attribute_value_size,
-                .data_offset = attribute_bytes_delivered++,
-                .data = eventByte
+                SDP_PARSER_ATTRIBUTE_VALUE, 
+                record_counter, 
+                attribute_id, 
+                attribute_value_size,
+                attribute_bytes_delivered++,
+                eventByte
             };
             (*sdp_query_rfcomm_callback)((sdp_parser_event_t*)&attribute_value_event);
-
-            if (!de_state_size(eventByte, &de_header_state)) break;
+            }
+           if (!de_state_size(eventByte, &de_header_state)) break;
 
             attribute_value_size = de_header_state.de_size + attribute_bytes_received;
 
             state = GET_ATTRIBUTE_VALUE;
             break;
         
-        case GET_ATTRIBUTE_VALUE:
+        case GET_ATTRIBUTE_VALUE: 
             attribute_bytes_received++;
-
-            sdp_parser_attribute_value_event_t attribute_value_event1 = {
-                .type = SDP_PARSER_ATTRIBUTE_VALUE, 
-                .record_id = record_counter, 
-                .attribute_id = attribute_id, 
-                .attribute_length = attribute_value_size,
-                .data_offset = attribute_bytes_delivered++,
-                .data = eventByte
+            {
+            sdp_parser_attribute_value_event_t attribute_value_event = {
+                SDP_PARSER_ATTRIBUTE_VALUE, 
+                record_counter, 
+                attribute_id, 
+                attribute_value_size,
+                attribute_bytes_delivered++,
+                eventByte
             };
-            (*sdp_query_rfcomm_callback)((sdp_parser_event_t*)&attribute_value_event1);
+
+            (*sdp_query_rfcomm_callback)((sdp_parser_event_t*)&attribute_value_event);
+            }
             // printf("paser: attribute_bytes_received %u, attribute_value_size %u\n", attribute_bytes_received, attribute_value_size);
 
             if (attribute_bytes_received < attribute_value_size) break;
@@ -235,8 +238,8 @@ void sdp_parser_handle_chunk(uint8_t * data, uint16_t size){
 
 void sdp_parser_handle_done(uint8_t status){
     sdp_parser_complete_event_t complete_event = {
-        .type = SDP_PARSER_COMPLETE, 
-        .status = status
+        SDP_PARSER_COMPLETE, 
+        status
     };
     (*sdp_query_rfcomm_callback)((sdp_parser_event_t*)&complete_event);
 }
