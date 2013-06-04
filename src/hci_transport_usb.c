@@ -66,6 +66,10 @@
 #include "hci_transport.h"
 #include "hci_dump.h"
 
+#if (USB_VENDOR_ID != 0) && (USB_PRODUCT_ID != 0)
+#define HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
+#endif
+
 // prototypes
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
 static int usb_close(void *transport_config);
@@ -87,7 +91,7 @@ static hci_transport_t * hci_transport_usb = NULL;
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
 // libusb
-#if !USB_VENDOR_ID || !USB_PRODUCT_ID
+#ifndef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
 static struct libusb_device_descriptor desc;
 static libusb_device        * dev;
 #endif
@@ -122,7 +126,7 @@ static int acl_in_addr;
 static int acl_out_addr;
 
 
-#if !USB_VENDOR_ID || !USB_PRODUCT_ID
+#ifndef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
 void scan_for_bt_endpoints(void) {
     int r;
 
@@ -201,7 +205,7 @@ static void queue_transfer(struct libusb_transfer *transfer){
     // Walk to end of list and add current packet there
     struct libusb_transfer *temp = handle_packet;
     while (temp->user_data) {
-        temp = (libusb_transfer*)temp->user_data;
+        temp = (struct libusb_transfer*)temp->user_data;
     }
     temp->user_data = transfer;
 }
@@ -307,7 +311,7 @@ static int usb_process_ds(struct data_source *ds) {
         
         // Move to next in the list of packets to handle
         if (next) {
-            handle_packet = (libusb_transfer*)next;
+            handle_packet = (struct libusb_transfer*)next;
         } else {
             handle_packet = NULL;
         }
@@ -342,7 +346,7 @@ void usb_process_ts(timer_source_t *timer) {
 
 static int usb_open(void *transport_config){
     int r,c;
-#if !USB_VENDOR_ID || !USB_PRODUCT_ID
+#ifndef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
     libusb_device * aDev;
     libusb_device **devs;
     ssize_t cnt;
@@ -364,7 +368,7 @@ static int usb_open(void *transport_config){
     // configure debug level
     libusb_set_debug(NULL,1);
     
-#if USB_VENDOR_ID && USB_PRODUCT_ID
+#ifdef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
     // Use a specified device
     log_info("Want vend: %04x, prod: %04x", USB_VENDOR_ID, USB_PRODUCT_ID);
     handle = libusb_open_device_with_vid_pid(NULL, USB_VENDOR_ID, USB_PRODUCT_ID);
@@ -439,7 +443,7 @@ static int usb_open(void *transport_config){
     libusb_state = LIB_USB_INTERFACE_CLAIMED;
     log_info("claimed interface 0");
     
-#if !USB_VENDOR_ID || !USB_PRODUCT_ID
+#ifndef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
     scan_for_bt_endpoints();
 #endif
 
