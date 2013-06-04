@@ -92,7 +92,7 @@ typedef struct sdp_parser_complete_event {
 } sdp_parser_complete_event_t;
 
 
-void sdp_parser_init();
+void sdp_parser_init(void);
 void sdp_parser_handle_chunk(uint8_t * data, uint16_t size);
 void sdp_parser_handle_done(uint8_t status);
 
