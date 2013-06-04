@@ -52,12 +52,6 @@ if test "x$HCI_TRANSPORT" = xUSB; then
     if test "$HAVE_LIBUSB" == "no" ; then 
         AC_MSG_ERROR(USB Transport requested but libusb-1.0 not found using pkg-config. Please set PKG_CONFIG_PATH correctly and/or install libusb-1.0 from your distribution or from http://libusb.sourceforge.net/api-1.0/)
     fi
-    if test -z "$USB_VENDOR_ID" ; then 
-        AC_MSG_ERROR(USB Transport requested but USB_VENDOR_ID not set. Please specify vendor ID of your USB dongle using --with-vendor-id=0x1234)
-    fi
-    if test -z "$USB_PRODUCT_ID" ; then 
-        AC_MSG_ERROR(USB Transport requested but USB_PRODUCT_ID not set. Please specify product ID of your USB dongle using --with-product-id=0x1234)
-    fi
     CFLAGS="$CFLAGS $LIBUSB_CFLAGS"
     LDFLAGS="$LDFLAGS $LIBUSB_LIBS"
 fi
