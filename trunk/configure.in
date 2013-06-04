@@ -15,8 +15,8 @@ AC_ARG_ENABLE(springboard, [AS_HELP_STRING([--disable-springboard],[Disable disp
 AC_ARG_ENABLE(launchd, [AS_HELP_STRING([--enable-launchd],[Compiles BTdaemon for use by launchd])], USE_LAUNCHD=$enableval, USE_LAUNCHD="no")
 AC_ARG_WITH(prefsbundle, [AS_HELP_STRING([--with-prefsbundle],[Compiles iPhone Preferences Bundle])], USE_PREFSBUNDLE=$enableval, USE_PREFSBUNDLE="no")
 AC_ARG_WITH(iphone-ip, [AS_HELP_STRING([--with-iphone-ip=192.168.1.5], [Specify IP address used by iPhone for installation (not supported yet)])], IPHONE_IP=$withval, IPHONE_IP="")  
-AC_ARG_WITH(vendor-id, [AS_HELP_STRING([--with-vendor-id=vendorID], [Specify USB BT Dongle vendorID])], USB_VENDOR_ID=$withval, USB_VENDOR_ID="")  
-AC_ARG_WITH(product-id, [AS_HELP_STRING([--with-product-id=productID], [Specify USB BT Dongle productID])], USB_PRODUCT_ID=$withval, USB_PRODUCT_ID="") 
+AC_ARG_WITH(vendor-id, [AS_HELP_STRING([--with-vendor-id=vendorID], [Specify USB BT Dongle vendorID])], USB_VENDOR_ID=$withval, USB_VENDOR_ID="0")  
+AC_ARG_WITH(product-id, [AS_HELP_STRING([--with-product-id=productID], [Specify USB BT Dongle productID])], USB_PRODUCT_ID=$withval, USB_PRODUCT_ID="0") 
 AC_ARG_ENABLE(ldid, [AS_HELP_STRING([--enable-ldid], [Code sign binaries with ldid])], USE_LDID=$enableval, USE_LDID_ID="no")  
 AC_ARG_WITH(developer-path, [AS_HELP_STRING([--with-developer-path=path],
 [Specify toolchain path])], DEVELOPER_PATH=$withval, DEVELOPER_PATH="/Developer/Platforms/iPhoneOS.platform/Developer")  
