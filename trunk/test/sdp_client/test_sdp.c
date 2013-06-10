@@ -96,6 +96,7 @@ void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
             channel_nr[service_index] = ve->channel_nr;
             service_name[service_index] = (char*) malloc(SDP_SERVICE_NAME_LEN+1);
             strncpy(service_name[service_index], (char*) ve->service_name, SDP_SERVICE_NAME_LEN);
+            service_name[service_index][SDP_SERVICE_NAME_LEN] = 0;
             // printf("CALLBACK: Service name: '%s', RFCOMM port %u, service index %d\n", service_name[service_index], channel_nr[service_index], service_index);
             service_index++;
             break;
