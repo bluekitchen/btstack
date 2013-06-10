@@ -137,8 +137,6 @@ static void handle_general_sdp_parser_event(sdp_parser_event_t * event){
 
 
 TEST_GROUP(SDPClient){
-    uint8_t spp_buffer[sizeof(sdp_test_record_list)];
-
     void setup(){
         attribute_value_buffer_size = 1000;
         attribute_value = (uint8_t*) malloc(attribute_value_buffer_size);
