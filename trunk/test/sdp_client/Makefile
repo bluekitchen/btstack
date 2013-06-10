@@ -11,17 +11,19 @@ LDFLAGS += -L$(CPPUTEST_HOME) -lCppUTest -lCppUTestExt
 COMMON = \
     ${BTSTACK_ROOT}/src/sdp_util.c	              \
 	${BTSTACK_ROOT}/src/sdp_parser.c		      \
-    ${BTSTACK_ROOT}/src/sdp_query_rfcomm.c        \
     ${BTSTACK_ROOT}/src/utils.c			          \
  
 COMMON_OBJ = $(COMMON:.c=.o)
 
-all: test_sdp
+all: sdp_rfcomm_query general_sdp_query
 
-test_sdp: ${COMMON_OBJ} test_sdp.c
+sdp_rfcomm_query: ${COMMON_OBJ} ${BTSTACK_ROOT}/src/sdp_query_rfcomm.c sdp_rfcomm_query.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+general_sdp_query: ${COMMON_OBJ} general_sdp_query.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
-	rm -f test_sdp *.o ${BTSTACK_ROOT}/src/*.o
+	rm -f sdp_rfcomm_query general_sdp_query *.o ${BTSTACK_ROOT}/src/*.o
 	rm -rf *.dSYM
 	
