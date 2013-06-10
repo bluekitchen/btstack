@@ -16,12 +16,12 @@ COMMON = \
  
 COMMON_OBJ = $(COMMON:.c=.o)
 
-all: test-sdp
+all: test_sdp
 
-test-sdp: ${COMMON_OBJ} test_sdp.c
+test_sdp: ${COMMON_OBJ} test_sdp.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
-	rm -f test-sdp *.o ${BTSTACK_ROOT}/src/*.o
+	rm -f test_sdp *.o ${BTSTACK_ROOT}/src/*.o
 	rm -rf *.dSYM
 	
