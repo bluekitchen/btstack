@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "sdp_query_rfcomm.h"
+#include "sdp_parser.h"
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>
 
@@ -24,7 +24,6 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
-static uint8_t  service_index;
 
 static uint8_t  sdp_test_record_list[] = { 
                                                                   0x36, 0x03, 0xDE, 0x35, 0x62,
@@ -96,15 +95,12 @@ static uint8_t  sdp_test_record_list[] = {
 0x09, 0x03, 0x0A, 0x09, 0x00, 0x01, 0x09, 0x03, 0x0B, 0x09, 0x00, 0x05
 };
 
-// dummy function to allow compile without the stack
-extern "C" void sdp_client_query(bd_addr_t remote, uint8_t * des_serviceSearchPattern, uint8_t * des_attributeIDList){
-}
-
 
 uint16_t attribute_id = -1;
 uint16_t record_id = -1;
+
 uint8_t * attribute_value = NULL;
-int       attribute_value_buffer_size = 0;
+int       attribute_value_buffer_size = 1000;
 
 void assertBuffer(int size){
     if (size > attribute_value_buffer_size){
@@ -118,7 +114,6 @@ static void handle_general_sdp_parser_event(sdp_parser_event_t * event){
     sdp_parser_attribute_value_event_t * ve;
     sdp_parser_complete_event_t * ce;
 
-
     switch (event->type){
         case SDP_PARSER_ATTRIBUTE_VALUE:
             ve = (sdp_parser_attribute_value_event_t*) event;
@@ -126,20 +121,16 @@ static void handle_general_sdp_parser_event(sdp_parser_event_t * event){
             // handle new record
             if (ve->record_id != record_id){
                 record_id = ve->record_id;
-                // printf("\n---\nRecord nr. %u\n", record_id);
             }
 
+            // buffer data
             assertBuffer(ve->attribute_length);
-
             attribute_value[ve->data_offset] = ve->data;
-            // if ((uint16_t)(ve->data_offset+1) == ve->attribute_length){
-            //    printf("Attribute 0x%04x: ", ve->attribute_id);
-            //    de_dump_data_element(attribute_value);
-            //}
+            
             break;
         case SDP_PARSER_COMPLETE:
             ce = (sdp_parser_complete_event_t*) event;
-            printf("General query done with status %d\n", ce->status);
+            printf("General query done with status %d.\n", ce->status);
             break;
     }
 }
@@ -149,11 +140,9 @@ TEST_GROUP(SDPClient){
     uint8_t spp_buffer[sizeof(sdp_test_record_list)];
 
     void setup(){
-        
         attribute_value_buffer_size = 1000;
         attribute_value = (uint8_t*) malloc(attribute_value_buffer_size);
         record_id = -1;
-        service_index = 0;
         sdp_parser_init();
         sdp_parser_register_callback(handle_general_sdp_parser_event);
     }
@@ -163,11 +152,17 @@ TEST_GROUP(SDPClient){
 TEST(SDPClient, QueryRFCOMMWithMacOSXData){
     uint16_t expected_last_attribute_id = 0xffff;
     uint16_t expected_last_record_id = 8;
-    
+    uint8_t  expected_attribute_value[3] = {0x09, 0x00, 0x05};
+
     sdp_parser_handle_chunk(sdp_test_record_list, de_get_len(sdp_test_record_list));
     
     CHECK_EQUAL(expected_last_attribute_id, attribute_id);
     CHECK_EQUAL(expected_last_record_id, record_id);
+
+    uint16_t i;
+    for (i=0; i<sizeof(expected_attribute_value); i++){
+        CHECK_EQUAL(expected_attribute_value[i], attribute_value[i]);
+    }
 }
 
 
