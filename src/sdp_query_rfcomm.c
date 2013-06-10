@@ -73,7 +73,7 @@ static uint8_t sdp_rfcom_channel_nr = 0;
 static uint8_t sdp_service_name_header_size;
 
 static pdl_state_t pdl_state = GET_PROTOCOL_LIST_LENGTH;
-static uint32_t protocol_value_bytes_received = 0;
+static int protocol_value_bytes_received = 0;
 static uint16_t protocol_id = 0;
 static int protocol_offset;
 static int protocol_size;
