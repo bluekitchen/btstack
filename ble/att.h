@@ -38,6 +38,10 @@
 
 #include <stdint.h>
 
+#if defined __cplusplus
+extern "C" {
+#endif
+
 // MARK: Attribute PDU Opcodes 
 #define ATT_ERROR_RESPONSE              0x01
 
@@ -160,5 +164,6 @@ uint16_t att_prepare_handle_value_indication(att_connection_t * att_connection,
                                              uint16_t value_len, 
                                              uint8_t * response_buffer);
 
-    
-    
+#if defined __cplusplus
+}
+#endif
