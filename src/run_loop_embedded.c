@@ -138,38 +138,44 @@ void embedded_dump_timer(void){
 }
 
 /**
+ * Execute run_loop once
+ */
+void embedded_execute_once(void) {
+    data_source_t *ds;
+
+    // process data sources
+    data_source_t *next;
+    for (ds = (data_source_t *) data_sources; ds != NULL ; ds = next){
+        next = (data_source_t *) ds->item.next; // cache pointer to next data_source to allow data source to remove itself
+        ds->process(ds);
+    }
+    
+#ifdef HAVE_TICK
+    // process timers
+    while (timers) {
+        timer_source_t *ts = (timer_source_t *) timers;
+        if (ts->timeout > system_ticks) break;
+        run_loop_remove_timer(ts);
+        ts->process(ts);
+    }
+#endif
+    
+    // disable IRQs and check if run loop iteration has been requested. if not, go to sleep
+    hal_cpu_disable_irqs();
+    if (trigger_event_received){
+        trigger_event_received = 0;
+        hal_cpu_enable_irqs();
+    } else {
+        hal_cpu_enable_irqs_and_sleep();
+    }
+}
+
+/**
  * Execute run_loop
  */
 void embedded_execute(void) {
-    data_source_t *ds;
-
     while (1) {
-
-        // process data sources
-        data_source_t *next;
-        for (ds = (data_source_t *) data_sources; ds != NULL ; ds = next){
-            next = (data_source_t *) ds->item.next; // cache pointer to next data_source to allow data source to remove itself
-            ds->process(ds);
-        }
-        
-#ifdef HAVE_TICK
-        // process timers
-        while (timers) {
-            timer_source_t *ts = (timer_source_t *) timers;
-            if (ts->timeout > system_ticks) break;
-            run_loop_remove_timer(ts);
-            ts->process(ts);
-        }
-#endif
-        
-        // disable IRQs and check if run loop iteration has been requested. if not, go to sleep
-        hal_cpu_disable_irqs();
-        if (trigger_event_received){
-            trigger_event_received = 0;
-            hal_cpu_enable_irqs();
-            continue;
-        }
-        hal_cpu_enable_irqs_and_sleep();
+        embedded_execute_once();
     }
 }
 
