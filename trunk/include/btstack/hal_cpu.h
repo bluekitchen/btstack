@@ -35,9 +35,18 @@
  *  Low power mode for MCU requires that IRQs can be first blocked 
  *  and then unblocked while entering low power mode atomically
  */
+
+#pragma once
+
+#if defined __cplusplus
+extern "C" {
+#endif
  
 void hal_cpu_disable_irqs(void);
 void hal_cpu_enable_irqs(void);
 void hal_cpu_enable_irqs_and_sleep(void);
 
+#if defined __cplusplus
+}
+#endif
  
