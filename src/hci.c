@@ -671,7 +671,7 @@ static void event_handler(uint8_t *packet, int size){
         // handle normal init sequence
         if (hci_stack.substate % 2){
             // odd: waiting for event
-            if (packet[0] == HCI_EVENT_COMMAND_COMPLETE){
+            if (packet[0] == HCI_EVENT_COMMAND_COMPLETE || packet[0] == HCI_EVENT_COMMAND_STATUS){
                 hci_stack.substate++;
             }
         }
