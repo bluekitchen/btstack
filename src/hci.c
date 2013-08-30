@@ -62,7 +62,7 @@
 
 #define HCI_CONNECTION_TIMEOUT_MS 10000
 
-#define HCI_INTIALIZING_SUBSTATE_AFTER_SLEEP 9
+#define HCI_INTIALIZING_SUBSTATE_AFTER_SLEEP 10
 
 #ifdef USE_BLUETOOL
 #include "bt_control_iphone.h"
@@ -1155,9 +1155,12 @@ void hci_run(){
                     }
                     break;
                 case 9:
+                    hci_send_cmd(&hci_set_event_mask,0xffffffff, 0xFFFFFFFF); ///0x1DFFFFFF
+                    break;
+                case 10:
 					hci_send_cmd(&hci_write_scan_enable, (hci_stack.connectable << 1) | hci_stack.discoverable); // page scan
 					break;
-                case 10:
+                case 11:
                     // done.
                     hci_stack.state = HCI_STATE_WORKING;
                     hci_emit_state();
