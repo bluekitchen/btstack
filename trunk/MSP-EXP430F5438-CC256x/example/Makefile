@@ -28,7 +28,7 @@ CORE   = \
 COMMON = \
     ../src/hal_uart_dma.c                         \
 	${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
-	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2560A_2.1.c \
+	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2564_2.5.c   \
     ${BTSTACK_ROOT}/src/hci.c			          \
     ${BTSTACK_ROOT}/src/hci_cmds.c		          \
     ${BTSTACK_ROOT}/src/hci_dump.c		          \
@@ -40,6 +40,10 @@ COMMON = \
     ${BTSTACK_ROOT}/src/sdp.c			          \
     ${BTSTACK_ROOT}/src/sdp_util.c                \
     ${BTSTACK_ROOT}/src/utils.c			          \
+    ${BTSTACK_ROOT}/src/sdp_parser.c              \
+    ${BTSTACK_ROOT}/src/sdp_client.c              \
+    ${BTSTACK_ROOT}/src/sdp_query_rfcomm.c 		  \
+#	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2560A_2.1.c \
 
 LCD = ../firmware/hal_lcd.c ../firmware/hal_lcd_fonts.c
 
@@ -54,7 +58,7 @@ LCD_OBJ    = $(LCD:.c=.o)
 
 # create firmware image from common objects and example source file
 
-all: hid_demo.hex led_counter.hex spp_accel.hex spp_counter.hex spp_flowcontrol.hex gap_inquiry.hex
+all: hid_demo.hex led_counter.hex spp_accel.hex spp_counter.hex spp_flowcontrol.hex gap_inquiry.hex sdp_rfcomm_query.hex
 
 led_counter.out: ${CORE_OBJ} led_counter.o 
 	${CC} $^ ${LDFLAGS} -o $@
@@ -72,6 +76,9 @@ spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} spp_flowcontrol.o ../f
 	${CC} $^ ${LDFLAGS} -o $@
 
 gap_inquiry.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} gap_inquiry.o ../firmware/hal_adc.o
+	${CC} $^ ${LDFLAGS} -o $@
+
+sdp_rfcomm_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} sdp_rfcomm_query.o ../firmware/hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 clean:
