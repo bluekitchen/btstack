@@ -248,6 +248,35 @@ const hci_cmd_t hci_remote_name_request_cancel = {
 OPCODE(OGF_LINK_CONTROL, 0x1A), "B"
 // BD_ADDR
 };
+const hci_cmd_t hci_io_capability_request_reply = {
+OPCODE(OGF_LINK_CONTROL, 0x2b), "B111"
+// BD_ADDR, IO_Capability, OOB_Data_Present, Authentication_ Requirements
+};
+const hci_cmd_t hci_user_confirmation_request_reply = {
+OPCODE(OGF_LINK_CONTROL, 0x2c), "B"
+// BD_ADDR
+};
+const hci_cmd_t hci_user_confirmation_request_negative_reply = {
+OPCODE(OGF_LINK_CONTROL, 0x2d), "B"
+// BD_ADDR
+};
+const hci_cmd_t hci_user_passkey_request_reply = {
+OPCODE(OGF_LINK_CONTROL, 0x2e), "B4"
+// BD_ADDR, Numeric value (passkey) entered by user (decimal 000000 - 999999).
+};
+const hci_cmd_t hci_user_passkey_request_negative_reply = {
+OPCODE(OGF_LINK_CONTROL, 0x2f), "B"
+// BD_ADDR
+};
+const hci_cmd_t hci_remote_oob_data_request_negative_reply = {
+OPCODE(OGF_LINK_CONTROL, 0x33), "B"
+// BD_ADDR
+};
+const hci_cmd_t hci_io_capability_request_negative_reply = {
+OPCODE(OGF_LINK_CONTROL, 0x34), "B1"
+// BD_ADDR, Reason - Part D, Error codes
+};
+
 
 /**
  *  Link Policy Commands 
