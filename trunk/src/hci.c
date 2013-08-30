@@ -62,6 +62,8 @@
 
 #define HCI_CONNECTION_TIMEOUT_MS 10000
 
+#define HCI_INTIALIZING_SUBSTATE_AFTER_SLEEP 6
+
 #ifdef USE_BLUETOOL
 #include "bt_control_iphone.h"
 #endif
@@ -941,7 +943,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                     // nothing to do, if H4 supports power management
                     if (bt_control_iphone_power_management_enabled()){
                         hci_stack.state = HCI_STATE_INITIALIZING;
-                        hci_stack.substate = 6;
+                        hci_stack.substate = HCI_INTIALIZING_SUBSTATE_AFTER_SLEEP;
                         break;
                     }
 #endif
@@ -968,7 +970,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                     // nothing to do, if H4 supports power management
                     if (bt_control_iphone_power_management_enabled()){
                         hci_stack.state = HCI_STATE_INITIALIZING;
-                        hci_stack.substate = 6;
+                        hci_stack.substate = HCI_INTIALIZING_SUBSTATE_AFTER_SLEEP;
                         hci_update_scan_enable();
                         break;
                     }
