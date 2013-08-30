@@ -266,6 +266,11 @@ typedef struct {
     hci_transport_t  * hci_transport;
     void             * config;
     
+    // bsic configuration
+    char             * local_name;
+    uint32_t           class_of_device;
+    bd_addr_t          local_bd_addr;
+
     // hardware power controller
     bt_control_t     * control;
     
@@ -307,7 +312,7 @@ typedef struct {
     // buffer for single connection decline
     uint8_t   decline_reason;
     bd_addr_t decline_addr;
-    
+
 } hci_stack_t;
 
 // create and send hci command packets based on a template and a list of parameters
