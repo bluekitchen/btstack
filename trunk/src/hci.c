@@ -62,7 +62,7 @@
 
 #define HCI_CONNECTION_TIMEOUT_MS 10000
 
-#define HCI_INTIALIZING_SUBSTATE_AFTER_SLEEP 6
+#define HCI_INTIALIZING_SUBSTATE_AFTER_SLEEP 9
 
 #ifdef USE_BLUETOOL
 #include "bt_control_iphone.h"
@@ -444,10 +444,9 @@ static void event_handler(uint8_t *packet, int size){
             }
             // Dump local address
             if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)) {
-                bd_addr_t addr;
-                bt_flip_addr(addr, &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1]);
+                bt_flip_addr(hci_stack.local_bd_addr, &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1]);
                 log_info("Local Address, Status: 0x%02x: Addr: %s\n",
-                    packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE], bd_addr_to_str(addr));
+                    packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE], bd_addr_to_str(hci_stack.local_bd_addr));
             }
             if (COMMAND_COMPLETE_EVENT(packet, hci_write_scan_enable)){
                 hci_emit_discoverable_enabled(hci_stack.discoverable);
@@ -746,6 +745,9 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
     transport->register_packet_handler(&packet_handler);
 
     hci_stack.state = HCI_STATE_OFF;
+
+    // class of device
+    hci_stack.class_of_device = 0x007a020c; // Smartphone 
 }
 
 void hci_close(){
@@ -1128,29 +1130,34 @@ void hci_run(){
                     // ca. 15 sec
                     hci_send_cmd(&hci_write_page_timeout, 0x6000);
                     break;
-				case 6:
-					hci_send_cmd(&hci_write_scan_enable, (hci_stack.connectable << 1) | hci_stack.discoverable); // page scan
-					break;
-                case 7:
+                case 6:
                     hci_send_cmd(&hci_read_local_supported_features);
                     break;                
+                case 7:
+                    hci_send_cmd(&hci_write_class_of_device, hci_stack.class_of_device);
+                    break;
                 case 8:
-#ifndef EMBEDDED
-                {
-                    char hostname[30];
-                    gethostname(hostname, 30);
-                    hostname[29] = '\0';
-                    hci_send_cmd(&hci_write_local_name, hostname);
+                    if (hci_stack.local_name){
+                        hci_send_cmd(&hci_write_local_name, hci_stack.local_name);
+                    } else {
+                        char hostname[30];
+#ifdef EMBEDDED
+                        // BTstack-11:22:33:44:55:66
+                        strcpy(hostname, "BTstack ");
+                        strcat(hostname, bd_addr_to_str(hci_stack.local_bd_addr));
+                        printf("---> Name %s\n", hostname);
+#else
+                        // hostname for POSIX systems
+                        gethostname(hostname, 30);
+                        hostname[29] = '\0';
+#endif                        
+                        hci_send_cmd(&hci_write_local_name, hostname);
+                    }
                     break;
-                }
                 case 9:
-#ifdef USE_BLUETOOL
-                    hci_send_cmd(&hci_write_class_of_device, 0x007a020c); // Smartphone
-                    break;
-                    
+					hci_send_cmd(&hci_write_scan_enable, (hci_stack.connectable << 1) | hci_stack.discoverable); // page scan
+					break;
                 case 10:
-#endif
-#endif
                     // done.
                     hci_stack.state = HCI_STATE_WORKING;
                     hci_emit_state();
