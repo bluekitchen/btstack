@@ -561,6 +561,12 @@ static void event_handler(uint8_t *packet, int size){
             hci_stack.remote_device_db->delete_link_key(&addr);
             break;
             
+        case HCI_EVENT_IO_CAPABILITY_REQUEST:
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_IO_CAPABILITIES_REQUEST);
+            if (hci_stack.ssp_io_capability == SSP_IO_CAPABILITY_UNKNOWN) break;
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SENT_IO_CAPABILITIES_REPLY);
+            break;
+
 #ifndef EMBEDDED
         case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
             if (!hci_stack.remote_device_db) break;
@@ -1084,6 +1090,13 @@ void hci_run(){
                hci_send_cmd(&hci_link_key_request_negative_reply, connection->address);
             }
             connectionClearAuthenticationFlags(connection, HANDLE_LINK_KEY_REQUEST);
+        }
+
+        if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
+        
+        if (connection->authentication_flags & SENT_IO_CAPABILITIES_REPLY){
+            hci_send_cmd(&hci_io_capability_request_reply, hci_stack.ssp_io_capability, NULL, hci_stack.ssp_authentication_requirement);
+            connectionClearAuthenticationFlags(connection, SENT_IO_CAPABILITIES_REPLY);
         }
     }
 
