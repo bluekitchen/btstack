@@ -62,7 +62,7 @@
 
 #define HCI_CONNECTION_TIMEOUT_MS 10000
 
-#define HCI_INTIALIZING_SUBSTATE_AFTER_SLEEP 10
+#define HCI_INTIALIZING_SUBSTATE_AFTER_SLEEP 11
 
 #ifdef USE_BLUETOOL
 #include "bt_control_iphone.h"
@@ -748,6 +748,11 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
 
     // class of device
     hci_stack.class_of_device = 0x007a020c; // Smartphone 
+
+    // Secure Simple Pairing
+    hci_stack.ssp_enable = 0;
+    hci_stack.ssp_io_capability = SSP_IO_CAPABILITY_UNKNOWN;
+    hci_stack.ssp_authentication_requirement = 0;
 }
 
 void hci_close(){
@@ -1158,9 +1163,12 @@ void hci_run(){
                     hci_send_cmd(&hci_set_event_mask,0xffffffff, 0xFFFFFFFF); ///0x1DFFFFFF
                     break;
                 case 10:
+                    hci_send_cmd(&hci_write_simple_pairing_mode, hci_stack.ssp_enable);
+                    break;
+                case 11:
 					hci_send_cmd(&hci_write_scan_enable, (hci_stack.connectable << 1) | hci_stack.discoverable); // page scan
 					break;
-                case 11:
+                case 12:
                     // done.
                     hci_stack.state = HCI_STATE_WORKING;
                     hci_emit_state();
