@@ -204,7 +204,10 @@ typedef enum {
     RECV_LINK_KEY_NOTIFICATION     = 0x10,
     RECV_PIN_CODE_REQUEST          = 0x20,
     SENT_PIN_CODE_REPLY            = 0x40, 
-    SENT_PIN_CODE_NEGATIVE_REPLY   = 0x80 
+    SENT_PIN_CODE_NEGATIVE_REPLY   = 0x80,
+    // SSP
+    RECV_IO_CAPABILITIES_REQUEST   = 0x100;
+    SENT_IO_CAPABILITIES_REPLY     = 0x200;
 } hci_authentication_flags_t;
 
 typedef enum {
@@ -273,6 +276,7 @@ typedef struct {
     uint8_t            ssp_enable;
     uint8_t            ssp_io_capability;
     uint8_t            ssp_authentication_requirement;
+    uint8_t            ssp_auto_accept;
 
     // hardware power controller
     bt_control_t     * control;
