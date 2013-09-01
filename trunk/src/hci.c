@@ -564,7 +564,19 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_IO_CAPABILITY_REQUEST:
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_IO_CAPABILITIES_REQUEST);
             if (hci_stack.ssp_io_capability == SSP_IO_CAPABILITY_UNKNOWN) break;
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SENT_IO_CAPABILITIES_REPLY);
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_IO_CAPABILITIES_REPLY);
+            break;
+        
+        case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_USER_CONFIRM_REQUEST);
+            if (!hci_stack.ssp_auto_accept) break;
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_USER_CONFIRM_REPLY);
+            break;
+
+        case HCI_EVENT_USER_PASSKEY_REQUEST:
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_USER_PASSKEY_REQUEST);
+            if (!hci_stack.ssp_auto_accept) break;
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_USER_PASSKEY_REPLY);
             break;
 
 #ifndef EMBEDDED
@@ -1056,20 +1068,18 @@ void hci_run(){
         uint8_t reason = hci_stack.decline_reason;
         hci_stack.decline_reason = 0;
         hci_send_cmd(&hci_reject_connection_request, hci_stack.decline_addr, reason);
+        return;
     }
-
-    if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
 
     // send scan enable
     if (hci_stack.state == HCI_STATE_WORKING && hci_stack.new_scan_enable_value != 0xff){
         hci_send_cmd(&hci_write_scan_enable, hci_stack.new_scan_enable_value);
         hci_stack.new_scan_enable_value = 0xff;
+        return;
     }
     
     // send pending HCI commands
     for (it = (linked_item_t *) hci_stack.connections; it ; it = it->next){
-
-        if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
 
         connection = (hci_connection_t *) it;
         
@@ -1077,9 +1087,8 @@ void hci_run(){
             log_info("sending hci_accept_connection_request\n");
             hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
             connection->state = ACCEPTED_CONNECTION_REQUEST;
+            return;
         }
-
-        if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
         
         if (connection->authentication_flags & HANDLE_LINK_KEY_REQUEST){
             link_key_t link_key;
@@ -1090,18 +1099,28 @@ void hci_run(){
                hci_send_cmd(&hci_link_key_request_negative_reply, connection->address);
             }
             connectionClearAuthenticationFlags(connection, HANDLE_LINK_KEY_REQUEST);
+            return;
         }
 
-        if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
+        if (connection->authentication_flags & SEND_IO_CAPABILITIES_REPLY){
+            hci_send_cmd(&hci_io_capability_request_reply, &connection->address, hci_stack.ssp_io_capability, NULL, hci_stack.ssp_authentication_requirement);
+            connectionClearAuthenticationFlags(connection, SEND_IO_CAPABILITIES_REPLY);
+            return;
+        }
         
-        if (connection->authentication_flags & SENT_IO_CAPABILITIES_REPLY){
-            hci_send_cmd(&hci_io_capability_request_reply, hci_stack.ssp_io_capability, NULL, hci_stack.ssp_authentication_requirement);
-            connectionClearAuthenticationFlags(connection, SENT_IO_CAPABILITIES_REPLY);
+        if (connection->authentication_flags & SEND_USER_CONFIRM_REPLY){
+            hci_send_cmd(&hci_user_confirmation_request_reply, &connection->address);
+            connectionClearAuthenticationFlags(connection, SEND_USER_CONFIRM_REPLY);
+            return;
+        }
+
+        if (connection->authentication_flags & SEND_USER_PASSKEY_REPLY){
+            hci_send_cmd(&hci_user_passkey_request_reply, &connection->address, 000000);
+            connectionClearAuthenticationFlags(connection, SEND_USER_PASSKEY_REPLY);
+            return;
         }
     }
 
-    if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
-        
     switch (hci_stack.state){
         case HCI_STATE_INITIALIZING:
             // log_info("hci_init: substate %u\n", hci_stack.substate);
@@ -1335,6 +1354,26 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     
     hci_stack.num_cmd_packets--;
     return hci_stack.hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
+}
+
+// Configure Secure Simple Pairing
+
+// enable will enable SSP during init
+void hci_ssp_set_enable(int enable){
+    hci_stack.ssp_enable = enable;
+}
+
+// if set, BTstack will respond to io capability request using authentication requirement
+void hci_ssp_set_io_capability(int io_capability){
+    hci_stack.ssp_io_capability = io_capability;
+}
+void hci_ssp_set_authentication_requirement(int authentication_requirement){
+    hci_stack.ssp_authentication_requirement = authentication_requirement;
+}
+
+// if set, BTstack will confirm a numberic comparion and enter '000000' if requested
+void hci_ssp_set_auto_accept(int auto_accept){
+    hci_stack.ssp_auto_accept = auto_accept;
 }
 
 /**
