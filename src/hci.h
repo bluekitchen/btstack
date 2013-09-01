@@ -270,6 +270,9 @@ typedef struct {
     char             * local_name;
     uint32_t           class_of_device;
     bd_addr_t          local_bd_addr;
+    uint8_t            ssp_enable;
+    uint8_t            ssp_io_capability;
+    uint8_t            ssp_authentication_requirement;
 
     // hardware power controller
     bt_control_t     * control;
