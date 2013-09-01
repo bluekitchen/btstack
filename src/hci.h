@@ -196,18 +196,22 @@ extern "C" {
  * Connection State 
  */
 typedef enum {
-    AUTH_FLAGS_NONE                = 0x00,
-    RECV_LINK_KEY_REQUEST          = 0x01,
-    HANDLE_LINK_KEY_REQUEST        = 0x02,
-    SENT_LINK_KEY_REPLY            = 0x04,
-    SENT_LINK_KEY_NEGATIVE_REQUEST = 0x08,
-    RECV_LINK_KEY_NOTIFICATION     = 0x10,
-    RECV_PIN_CODE_REQUEST          = 0x20,
-    SENT_PIN_CODE_REPLY            = 0x40, 
-    SENT_PIN_CODE_NEGATIVE_REPLY   = 0x80,
+    AUTH_FLAGS_NONE                = 0x0000,
+    RECV_LINK_KEY_REQUEST          = 0x0001,
+    HANDLE_LINK_KEY_REQUEST        = 0x0002,
+    SENT_LINK_KEY_REPLY            = 0x0004,
+    SENT_LINK_KEY_NEGATIVE_REQUEST = 0x0008,
+    RECV_LINK_KEY_NOTIFICATION     = 0x0010,
+    RECV_PIN_CODE_REQUEST          = 0x0020,
+    SENT_PIN_CODE_REPLY            = 0x0040, 
+    SENT_PIN_CODE_NEGATIVE_REPLY   = 0x0080,
     // SSP
-    RECV_IO_CAPABILITIES_REQUEST   = 0x100;
-    SENT_IO_CAPABILITIES_REPLY     = 0x200;
+    RECV_IO_CAPABILITIES_REQUEST   = 0x0100,
+    SEND_IO_CAPABILITIES_REPLY     = 0x0200,
+    RECV_USER_CONFIRM_REQUEST      = 0x0400,
+    SEND_USER_CONFIRM_REPLY        = 0x0800,
+    RECV_USER_PASSKEY_REQUEST      = 0x1000,
+    SEND_USER_PASSKEY_REPLY        = 0x2000,
 } hci_authentication_flags_t;
 
 typedef enum {
@@ -378,7 +382,7 @@ int  hci_power_control(HCI_POWER_MODE mode);
 // Allows to control if device is discoverable. OFF by default.
 void hci_discoverable_control(uint8_t enable);
 
-// Creates and sends hci command packets based on a template and 
+// Creates and sends HCI command packets based on a template and 
 // a list of parameters. Will return error if outgoing data buffer 
 // is occupied. 
 int hci_send_cmd(const hci_cmd_t *cmd, ...);
@@ -386,6 +390,17 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...);
 // Deletes link key for remote device with baseband address.
 void hci_drop_link_key_for_bd_addr(bd_addr_t *addr);
 
+// Configure Secure Simple Pairing
+
+// enable will enable SSP during init
+void hci_ssp_set_enable(int enable);
+
+// if set, BTstack will respond to io capability request using authentication requirement
+void hci_ssp_set_io_capability(int ssp_io_capability);
+void hci_ssp_set_authentication_requirement(int authentication_requirement);
+
+// if set, BTstack will confirm a numberic comparion and enter '000000' if requested
+void hci_ssp_set_auto_accept(int auto_accept);
 
 #if defined __cplusplus
 }
