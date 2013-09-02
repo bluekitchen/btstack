@@ -810,7 +810,9 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             // data: event (8), len(8), channel (16)
             l2cap_cid = READ_BT_16(packet, 2);
             multiplexer = rfcomm_multiplexer_for_l2cap_cid(l2cap_cid);
+            log_info("L2CAP_EVENT_CHANNEL_CLOSED cid 0x%0x, mult %p", l2cap_cid, multiplexer);
             if (!multiplexer) break;
+            log_info("L2CAP_EVENT_CHANNEL_CLOSED state %u", multiplexer->state);
             switch (multiplexer->state) {
                 case RFCOMM_MULTIPLEXER_W4_SABM_0:
                 case RFCOMM_MULTIPLEXER_W4_UA_0:
@@ -1187,7 +1189,8 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     event_pn.priority = packet[payload_offset+4];
                     event_pn.max_frame_size = READ_BT_16(packet, payload_offset+6);
                     event_pn.credits_outgoing = packet[payload_offset+9];
-                    log_info("Received UIH Parameter Negotiation Command for #%u\n", message_dlci);
+                    log_info("Received UIH Parameter Negotiation Command for #%u, credits %u\n",
+                        message_dlci, event_pn.credits_outgoing);
                     rfcomm_channel_state_machine_2(multiplexer, message_dlci, (rfcomm_channel_event_t*) &event_pn);
                     break;
                     
@@ -1197,7 +1200,7 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     event_pn.priority = packet[payload_offset+4];
                     event_pn.max_frame_size = READ_BT_16(packet, payload_offset+6);
                     event_pn.credits_outgoing = packet[payload_offset+9];
-                    log_info("UIH Parameter Negotiation Response max frame %u, credits %u\n",
+                    log_info("Received UIH Parameter Negotiation Response max frame %u, credits %u\n",
                             event_pn.max_frame_size, event_pn.credits_outgoing);
                     rfcomm_channel_state_machine_2(multiplexer, message_dlci, (rfcomm_channel_event_t*) &event_pn);
                     break;
@@ -1431,6 +1434,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                         rfcomm_send_ua(multiplexer, channel->dlci);
                     }
                     if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_CLIENT_ACCEPTED) && (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_RCVD_SABM)) {
+                        log_info("Accepted, requesting send MSC CMD and send Credits");
                         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD);
                         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_CREDITS);
                         channel->state = RFCOMM_CHANNEL_DLC_SETUP;
@@ -1644,7 +1648,7 @@ static void rfcomm_run(void){
         rfcomm_multiplexer_t * multiplexer = ((rfcomm_multiplexer_t *) it);
         
         if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) {
-            // log_info("rfcomm_run cannot send l2cap packet for #%u, credits %u\n", multiplexer->l2cap_cid, multiplexer->l2cap_credits);
+            // log_info("rfcomm_run A cannot send l2cap packet for #%u, credits %u\n", multiplexer->l2cap_cid, multiplexer->l2cap_credits);
             continue;
         }
         // log_info("rfcomm_run: multi 0x%08x, state %u\n", (int) multiplexer, multiplexer->state);
@@ -1659,8 +1663,11 @@ static void rfcomm_run(void){
         rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
         rfcomm_multiplexer_t * multiplexer = channel->multiplexer;
         
-        if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) continue;
-     
+        if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) {
+            // log_info("rfcomm_run B cannot send l2cap packet for #%u, credits %u\n", multiplexer->l2cap_cid, multiplexer->l2cap_credits);
+            continue;
+        }
+
         rfcomm_channel_event_t event = { CH_EVT_READY_TO_SEND };
         rfcomm_channel_state_machine(channel, &event);
     }
