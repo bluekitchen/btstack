@@ -267,6 +267,10 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         // log_info("acl out done, size %u", transfer->actual_length);
         usb_acl_out_active = 0;
 
+        // notify upper stack that iit might be possible to send again
+        uint8_t event = DAEMON_EVENT_HCI_PACKET_SENT;
+        packet_handler(HCI_EVENT_PACKET, &event, 1);
+
         resubmit = 0;
     } else if (transfer->endpoint == 0){
         // log_info("command done, size %u", transfer->actual_length);
