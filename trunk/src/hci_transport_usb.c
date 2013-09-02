@@ -192,7 +192,7 @@ static libusb_device * scan_for_bt_device(libusb_device **devs) {
 
 static void queue_transfer(struct libusb_transfer *transfer){
 
-    log_info("queue_transfer %p, endpoint %x size %u", transfer, transfer->endpoint, transfer->actual_length);
+    // log_info("queue_transfer %p, endpoint %x size %u", transfer, transfer->endpoint, transfer->actual_length);
 
     transfer->user_data = NULL;
 
@@ -264,12 +264,12 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
 
         resubmit = 1;
     } else if (transfer->endpoint == acl_out_addr){
-        log_info("acl out done, size %u", transfer->actual_length);
+        // log_info("acl out done, size %u", transfer->actual_length);
         usb_acl_out_active = 0;
 
         resubmit = 0;
     } else if (transfer->endpoint == 0){
-        log_info("command done, size %u", transfer->actual_length);
+        // log_info("command done, size %u", transfer->actual_length);
         usb_command_active = 0;
 
         // notify upper stack that iit might be possible to send again
@@ -297,7 +297,7 @@ static int usb_process_ds(struct data_source *ds) {
 
     if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
 
-    log_info("begin usb_process_ds");
+    // log_info("begin usb_process_ds");
 
     // always handling an event as we're called when data is ready
     struct timeval tv;
@@ -307,7 +307,7 @@ static int usb_process_ds(struct data_source *ds) {
     // Handle any packet in the order that they were received
     while (handle_packet) {
 
-        log_info("handle packet %p, endpoint %x, status %x", handle_packet, handle_packet->endpoint, handle_packet->status);
+        // log_info("handle packet %p, endpoint %x, status %x", handle_packet, handle_packet->endpoint, handle_packet->status);
 
         void * next = handle_packet->user_data;
 
@@ -321,7 +321,7 @@ static int usb_process_ds(struct data_source *ds) {
         }
     }
 
-    log_info("end usb_process_ds");
+    // log_info("end usb_process_ds");
 
     return 0;
 }
