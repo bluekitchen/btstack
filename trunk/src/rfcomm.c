@@ -814,10 +814,10 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             if (!multiplexer) break;
             log_info("L2CAP_EVENT_CHANNEL_CLOSED state %u", multiplexer->state);
             switch (multiplexer->state) {
-                case RFCOMM_MULTIPLEXER_W4_CONNECT;
+                case RFCOMM_MULTIPLEXER_W4_CONNECT:
                 case RFCOMM_MULTIPLEXER_SEND_SABM_0:
                 case RFCOMM_MULTIPLEXER_W4_SABM_0:
-                case RFCOMM_MULTIPLEXER_SEND_UA_0,
+                case RFCOMM_MULTIPLEXER_SEND_UA_0:
                 case RFCOMM_MULTIPLEXER_W4_UA_0:
                 case RFCOMM_MULTIPLEXER_OPEN:
                     rfcomm_multiplexer_finalize(multiplexer);
