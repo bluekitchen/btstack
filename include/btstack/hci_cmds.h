@@ -246,6 +246,20 @@ extern "C" {
  * Default INQ Mode
  */
 #define HCI_INQUIRY_LAP 0x9E8B33L  // 0x9E8B33: General/Unlimited Inquiry Access Code (GIAC)
+
+/**
+ * SSP IO Capabilities - if capability is set, BTstack answers IO Capability Requests
+ */
+#define SSP_IO_CAPABILITY_DISPLAY_ONLY   0
+#define SSP_IO_CAPABILITY_DISPLAY_YES_NO 1
+#define SSP_IO_CAPABILITY_KEYBOARD_ONLY  2
+#define SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT 3
+#define SSP_IO_CAPABILITY_UNKNOWN 0xff
+
+/**
+ * SSP Authentication Requirements, see IO Capability Request Reply Commmand 
+ */
+
 /**
  *  Hardware state of Bluetooth controller 
  */
