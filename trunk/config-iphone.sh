@@ -1,6 +1,9 @@
 #!/bin/sh
 echo "Configure BTstack for use with iOS using the theos build system"
 
+# get version from svn
+cd src; ./get_version.sh; cd ..
+
 # check if $THEOS is set
 
 # remove autoconf created files
