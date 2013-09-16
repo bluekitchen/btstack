@@ -139,11 +139,27 @@ static int power_management_active = 0;
 static char *os3xBlueTool = "BlueTool";
 static char *os4xBlueTool = "/usr/local/bin/BlueToolH4";
 
+static NSTimeInterval lastPowerOffTime = 0.0;
+
+static NSTimeInterval getTime(void){
+    NSDate * now = [[NSDate alloc] init];
+    double result = [now timeIntervalSince1970];
+    [now release];
+    return result;
+}
+
 /**
  * check OS version for >= 4.0
  */
 static int iphone_os_at_least_40(){
     return kCFCoreFoundationVersionNumber >= 550.32;
+}
+
+/**
+ * check OS version for >= 6.0
+ */
+static int iphone_os_at_least_60(){
+    return kCFCoreFoundationVersionNumber >= 788.0;
 }
 
 /** 
@@ -387,7 +403,16 @@ static int iphone_write_initscript (int output, int baudrate){
 
 // OS 4.x and higher
 static void iphone_write_configscript(int fd, int baudrate){
+
+    // check for os version >= 6.0
+    int os6x = iphone_os_at_least_60();
+
     iphone_write_string(fd, "device -D -S\n");
+
+    if (os6x){
+        iphone_write_string(fd, "wake on\n");
+    }
+
     if (iphone_has_csr()) {
         iphone_csr_set_bd_addr(fd);
         if (baudrate) {
@@ -414,6 +439,11 @@ static void iphone_write_configscript(int fd, int baudrate){
         iphone_write_string(fd, "msleep 50\n");
 #endif
     }
+
+    if (os6x){
+        iphone_write_string(fd, "wake off\n");
+    }
+
     iphone_write_string(fd, "quit\n");
 }
 
@@ -443,22 +473,36 @@ static int iphone_on (void *transport_config){
     bt_store_32(local_mac_address, 0, random());
     bt_store_16(local_mac_address, 4, random());
 #endif
-        
+
     if (iphone_system_bt_enabled()){
         perror("iphone_on: System Bluetooth enabled!");
         return 1;
     }
     
-    // unload BTServer
+    // assert min 10 seconds time between power off and power on
+    if (iphone_os_at_least_60()) {
+        NSTimeInterval timeSinceLastPowerOff = getTime() - lastPowerOffTime;
+        if (timeSinceLastPowerOff < 10.0 ){
+            int delay = 10 - timeSinceLastPowerOff;
+            log_info("iphone_on: delay init for %u seconds", delay);
+            sleep(delay);
+        }
+    } 
+
+    // unload BTServer and BlueTool
     log_info("iphone_on: unload BTServer\n");
     err = system ("launchctl unload /System/Library/LaunchDaemons/com.apple.BTServer.plist");
         
+    if (iphone_os_at_least_60()) {
+        err = system ("launchctl unload /System/Library/LaunchDaemons/com.apple.BlueTool.plist");
+    }
+    
     // check for os version >= 4.0
     int os4x = iphone_os_at_least_40();
     
-    // OS 4.0
+    // Use patched BlueTool on iOS 4.0 with CSR chipset
     char * bluetool = os3xBlueTool;
-    if (os4x) {
+    if (iphone_has_csr() && os4x) {
         bluetool = os4xBlueTool;
     }
     
@@ -545,27 +589,30 @@ static int iphone_on (void *transport_config){
 
 static int iphone_off (void *config){
 	
-/*
-    char *machine = get_machine_name();
-    if (strncmp(machine, "iPad", strlen("iPad")) == 0) {
-		// put iPad Bluetooth into deep sleep
-		system ("echo \"wake off\n quit\" | BlueTool");
-	} else {
-		// power off for iPhone and iPod
-		system ("echo \"power off\n quit\" | BlueTool");
-	}
-*/	
     // power off (all models)
     log_info("iphone_off: turn off using BlueTool\n");
-    system ("echo \"power off\nquit\" | BlueTool");
     
-    // kill Apple BTServer as it gets confused and fails to start anyway
-    // system("killall BTServer");
-    
+    // power off (all models < IOS 6.0)
+    if (iphone_os_at_least_60()) {
+        log_info("Skipping BlueTool invocation to turn off module power since IOS >= 6.0");
+    } else {
+        log_info("iphone_off: turn off using BlueTool\n");
+        system ("echo \"power off\nquit\" | BlueTool");
+    }
+
+    // reload BlueTool
+    if (iphone_os_at_least_60()) {
+        log_info("iphone_off: reload BlueTool\n");
+        system ("launchctl load /System/Library/LaunchDaemons/com.apple.BlueTool.plist");
+        log_info("iphone_off: done\n");
+    }
+
     // reload BTServer
     log_info("iphone_off: reload BTServer\n");
     system ("launchctl load /System/Library/LaunchDaemons/com.apple.BTServer.plist");
     log_info("iphone_off: done\n");
+
+    lastPowerOffTime = getTime();
 
     return 0;
 }
@@ -707,16 +754,13 @@ int bt_control_iphone_power_management_enabled(void){
 
 // single instance
 bt_control_t bt_control_iphone = {
-    iphone_on,              // on
-    iphone_off,             // off
-    iphone_sleep,           // sleep
-    iphone_wake,            // wake
-    iphone_valid,           // valid
-    iphone_name,            // name
-    NULL,                   // baudrate_cmd
-    NULL,                   // next_cmd
-    iphone_register_for_power_notifications,   // register_for_power_notifications
-    NULL                    // hw_error
+    .on     = iphone_on,
+    .off    = iphone_off,
+    .sleep  = iphone_sleep,
+    .wake   = iphone_wake,
+    .valid  = iphone_valid,
+    .name   = iphone_name,
+    .register_for_power_notifications = iphone_register_for_power_notifications
 };
 
 int iphone_system_bt_enabled(void){
