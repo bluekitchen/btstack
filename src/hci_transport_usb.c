@@ -88,7 +88,7 @@ static libusb_state_t libusb_state = LIB_USB_CLOSED;
 // single instance
 static hci_transport_t * hci_transport_usb = NULL;
 
-static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
+static void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
 // libusb
 #ifndef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
@@ -125,9 +125,26 @@ static int event_in_addr;
 static int acl_in_addr;
 static int acl_out_addr;
 
-
 #ifndef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
-void scan_for_bt_endpoints(void) {
+
+// list of known devices, using ProductID/VendorID tuples
+static uint16_t known_bt_devices[] = {
+    // DeLOCK Bluetooth 4.0
+    0x0a5c, 0x21e8
+};
+static int num_known_devices = sizeof(known_bt_devices) / sizeof(uint16_t) / 2;
+
+static int is_known_bt_device(uint16_t vendor_id, uint16_t product_id){
+    int i;
+    for (i=0; i<num_known_devices; i++){
+        if (known_bt_devices[i*2] == vendor_id && known_bt_devices[i*2+1] == product_id){
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static void scan_for_bt_endpoints(void) {
     int r;
 
     // get endpoints from interface descriptor
@@ -175,7 +192,7 @@ static libusb_device * scan_for_bt_device(libusb_device **devs) {
                libusb_get_bus_number(dev), libusb_get_device_address(dev),
                desc.bDeviceClass, desc.bDeviceSubClass, desc.bDeviceProtocol);
         
-        // @TODO: detect BT USB Dongle based on character and not by id
+        // Detect USB Dongle based Class, Subclass, and Protocol
         // The class code (bDeviceClass) is 0xE0 – Wireless Controller. 
         // The SubClass code (bDeviceSubClass) is 0x01 – RF Controller. 
         // The Protocol code (bDeviceProtocol) is 0x01 – Bluetooth programming.
@@ -185,6 +202,9 @@ static libusb_device * scan_for_bt_device(libusb_device **devs) {
             log_info("BT Dongle found.");
             return dev;
         }
+
+        // Detect USB Dongle based on whitelist
+        if (is_known_bt_device(desc.idVendor, desc.idProduct)) return dev;
     }
     return NULL;
 }
@@ -397,11 +417,13 @@ static int usb_open(void *transport_config){
     // Find BT modul
     aDev  = scan_for_bt_device(devs);
     if (!aDev){
+        log_error("No USB Bluetooth device found");
         libusb_free_device_list(devs, 1);
         usb_close(handle);
         return -1;
     }
-
+    log_info("USB Bluetooth device found");
+    
     dev = aDev;
     r = libusb_open(dev, &handle);
 
