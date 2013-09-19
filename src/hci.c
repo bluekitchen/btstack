@@ -374,8 +374,25 @@ static const uint16_t packet_type_sizes[] = {
     HCI_ACL_2DH3_SIZE, HCI_ACL_3DH3_SIZE, HCI_ACL_DM3_SIZE, HCI_ACL_DH3_SIZE,
     HCI_ACL_2DH5_SIZE, HCI_ACL_3DH5_SIZE, HCI_ACL_DM5_SIZE, HCI_ACL_DH5_SIZE
 };
+static const uint8_t  packet_type_feature_requirement_bit[] = {
+     0, // 3 slot packets
+     1, // 5 slot packets
+    25, // EDR 2 mpbs
+    26, // EDR 3 mbps
+    39, // 3 slot EDR packts
+    40, // 5 slot EDR packet
+};
+static const uint16_t packet_type_feature_packet_mask[] = {
+    0x0f00, // 3 slot packets
+    0xf000, // 5 slot packets
+    0x1102, // EDR 2 mpbs
+    0x2204, // EDR 3 mbps
+    0x0300, // 3 slot EDR packts
+    0x3000, // 5 slot EDR packet
+};
 
-static uint16_t hci_acl_packet_types_for_buffer_size(uint16_t buffer_size){
+static uint16_t hci_acl_packet_types_for_buffer_size_and_local_features(uint16_t buffer_size, uint8_t * local_supported_features){
+    // enable packet types based on size
     uint16_t packet_types = 0;
     int i;
     for (i=0;i<16;i++){
@@ -383,6 +400,14 @@ static uint16_t hci_acl_packet_types_for_buffer_size(uint16_t buffer_size){
         if (packet_type_sizes[i] <= buffer_size){
             packet_types |= 1 << i;
         }
+    }
+    // disable packet types due to missing local supported features
+    for (i=0;i<sizeof(packet_type_feature_requirement_bit);i++){
+        int bit_idx = packet_type_feature_requirement_bit[i];
+        int feature_set = (local_supported_features[bit_idx >> 3] & (1<<(bit_idx & 7))) != 0;
+        if (feature_set) continue;
+        log_info("Features bit %02u is not set, removing packet types 0x%04x", bit_idx, packet_type_feature_packet_mask[i]);
+        packet_types &= ~packet_type_feature_packet_mask[i];
     }
     // flip bits for "may not be used"
     packet_types ^= 0x3306;
@@ -435,11 +460,8 @@ static void event_handler(uint8_t *packet, int size){
                     if (HCI_ACL_PAYLOAD_SIZE < hci_stack.acl_data_packet_length){
                         hci_stack.acl_data_packet_length = HCI_ACL_PAYLOAD_SIZE;
                     }
-                    // determine usable ACL packet types
-                    hci_stack.packet_types = hci_acl_packet_types_for_buffer_size(hci_stack.acl_data_packet_length);
-                    
-                    log_info("hci_read_buffer_size: used size %u, count %u, packet types %04x\n",
-                             hci_stack.acl_data_packet_length, hci_stack.total_num_acl_packets, hci_stack.packet_types); 
+                    log_info("hci_read_buffer_size: used size %u, count %u\n",
+                             hci_stack.acl_data_packet_length, hci_stack.total_num_acl_packets); 
                 }
             }
             // Dump local address
@@ -451,13 +473,18 @@ static void event_handler(uint8_t *packet, int size){
             if (COMMAND_COMPLETE_EVENT(packet, hci_write_scan_enable)){
                 hci_emit_discoverable_enabled(hci_stack.discoverable);
             }
+            // Note: HCI init checks 
             if (COMMAND_COMPLETE_EVENT(packet, hci_read_local_supported_features)){
-                memcpy(hci_stack.local_supported_features, &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE], 8);
+                memcpy(hci_stack.local_supported_features, &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1], 8);
                 log_info("Local Supported Features: 0x%02x%02x%02x%02x%02x%02x%02x%02x",
                     hci_stack.local_supported_features[0], hci_stack.local_supported_features[1],
                     hci_stack.local_supported_features[2], hci_stack.local_supported_features[3],
                     hci_stack.local_supported_features[4], hci_stack.local_supported_features[5],
                     hci_stack.local_supported_features[6], hci_stack.local_supported_features[7]);
+
+                // determine usable ACL packet types based buffer size and supported features
+                hci_stack.packet_types = hci_acl_packet_types_for_buffer_size_and_local_features(hci_stack.acl_data_packet_length, &hci_stack.local_supported_features[0]);
+                log_info("packet types %04x\n", hci_stack.packet_types); 
             }
             break;
             
@@ -1164,12 +1191,12 @@ void hci_run(){
 					hci_send_cmd(&hci_read_buffer_size);
 					break;
                 case 5:
+                    hci_send_cmd(&hci_read_local_supported_features);
+                    break;                
+                case 6:
                     // ca. 15 sec
                     hci_send_cmd(&hci_write_page_timeout, 0x6000);
                     break;
-                case 6:
-                    hci_send_cmd(&hci_read_local_supported_features);
-                    break;                
                 case 7:
                     hci_send_cmd(&hci_write_class_of_device, hci_stack.class_of_device);
                     break;
