@@ -1121,7 +1121,7 @@ void hci_run(){
     }
 
     // send scan enable
-    if (hci_stack.state == HCI_STATE_WORKING && hci_stack.new_scan_enable_value != 0xff){
+    if (hci_stack.state == HCI_STATE_WORKING && hci_stack.new_scan_enable_value != 0xff && hci_classic_supported()){
         hci_send_cmd(&hci_write_scan_enable, hci_stack.new_scan_enable_value);
         hci_stack.new_scan_enable_value = 0xff;
         return;
@@ -1322,18 +1322,19 @@ void hci_run(){
                         return;
                     }
                     
-                    // disable page and inquiry scan
-                    if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
-                    
-                    log_info("HCI_STATE_HALTING, disabling inq cans\n");
-                    hci_send_cmd(&hci_write_scan_enable, hci_stack.connectable << 1); // drop inquiry scan but keep page scan
-                    
-                    // continue in next sub state
-                    hci_stack.substate++;
-                    break;
-                case 1:
-                    // wait for command complete "hci_write_scan_enable" in event_handler();
-                    break;
+                    if (hci_classic_supported()){
+                        // disable page and inquiry scan
+                        if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
+                        
+                        log_info("HCI_STATE_HALTING, disabling inq scans\n");
+                        hci_send_cmd(&hci_write_scan_enable, hci_stack.connectable << 1); // drop inquiry scan but keep page scan
+                        
+                        // continue in next sub state
+                        hci_stack.substate++;
+                        break;
+                    }
+                    // fall through for ble-only chips
+
                 case 2:
                     log_info("HCI_STATE_HALTING, calling sleep\n");
 #if defined(USE_POWERMANAGEMENT) && defined(USE_BLUETOOL)
