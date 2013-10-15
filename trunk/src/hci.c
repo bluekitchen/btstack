@@ -423,8 +423,27 @@ uint8_t* hci_get_outgoing_acl_packet_buffer(void){
     return hci_stack.hci_packet_buffer;
 }
 
-uint16_t hci_max_acl_data_packet_length(){
+uint16_t hci_max_acl_data_packet_length(void){
     return hci_stack.acl_data_packet_length;
+}
+
+int hci_ssp_supported(void){
+    // No 51, byte 6, bit 3
+    return (hci_stack.local_supported_features[6] & (1 << 3)) != 0;
+}
+
+int hci_classic_supported(void){
+    // No 37, byte 4, bit 5, = No BR/EDR Support
+    return (hci_stack.local_supported_features[4] & (1 << 5)) == 0;
+}
+
+int hci_le_supported(void){
+    // No 37, byte 4, bit 6 = LE Supported (Controller)
+#ifdef HAVE_BLE
+    return (hci_stack.local_supported_features[4] & (1 << 6)) != 0;
+#else
+    return 0;
+#endif    
 }
 
 // avoid huge local variables
@@ -484,7 +503,10 @@ static void event_handler(uint8_t *packet, int size){
 
                 // determine usable ACL packet types based buffer size and supported features
                 hci_stack.packet_types = hci_acl_packet_types_for_buffer_size_and_local_features(hci_stack.acl_data_packet_length, &hci_stack.local_supported_features[0]);
-                log_info("packet types %04x\n", hci_stack.packet_types); 
+                log_info("packet types %04x", hci_stack.packet_types); 
+
+                // Classic/LE
+                log_info("BR/EDR support %u, LE support %u", hci_classic_supported(), hci_le_supported());
             }
             break;
             
@@ -1194,13 +1216,28 @@ void hci_run(){
                     hci_send_cmd(&hci_read_local_supported_features);
                     break;                
                 case 6:
+                    hci_send_cmd(&hci_set_event_mask,0xffffffff, 0xFFFFFFFF); ///0x1DFFFFFF
+
+                    // skip Classic init commands for LE only chipsets
+                    if (hci_classic_supported()){
+                        if (!hci_ssp_supported()){
+                            hci_stack.substate = 7 << 1; // skip hci_write_simple_pairing_mode
+                        }
+                    }   else {
+                        hci_stack.substate = 11 << 1;    // skip all classic command   
+                    }
+                    break;
+                case 7:
+                    hci_send_cmd(&hci_write_simple_pairing_mode, hci_stack.ssp_enable);
+                    break;
+                case 8:
                     // ca. 15 sec
                     hci_send_cmd(&hci_write_page_timeout, 0x6000);
                     break;
-                case 7:
+                case 9:
                     hci_send_cmd(&hci_write_class_of_device, hci_stack.class_of_device);
                     break;
-                case 8:
+                case 10:
                     if (hci_stack.local_name){
                         hci_send_cmd(&hci_write_local_name, hci_stack.local_name);
                     } else {
@@ -1217,12 +1254,6 @@ void hci_run(){
 #endif                        
                         hci_send_cmd(&hci_write_local_name, hostname);
                     }
-                    break;
-                case 9:
-                    hci_send_cmd(&hci_set_event_mask,0xffffffff, 0xFFFFFFFF); ///0x1DFFFFFF
-                    break;
-                case 10:
-                    hci_send_cmd(&hci_write_simple_pairing_mode, hci_stack.ssp_enable);
                     break;
                 case 11:
 					hci_send_cmd(&hci_write_scan_enable, (hci_stack.connectable << 1) | hci_stack.discoverable); // page scan
