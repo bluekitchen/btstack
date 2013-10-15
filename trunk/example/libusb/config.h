@@ -1,7 +1,6 @@
 // config.h created by configure for BTstack  Tue Jun 4 23:10:20 CEST 2013
 #define HAVE_TRANSPORT_USB
-#define USB_PRODUCT_ID 0
-#define USB_VENDOR_ID 0
+#define HAVE_BLE
 #define USE_POSIX_RUN_LOOP
 #define HAVE_SDP
 #define HAVE_RFCOMM

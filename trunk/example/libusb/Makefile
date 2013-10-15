@@ -2,8 +2,8 @@ BTSTACK_ROOT = ../..
 
 
 CFLAGS  = -g -Wall -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include -I${BTSTACK_ROOT}/chipset-cc256x
-CFLAGS += -I/sw/include -I../.. 
-LDFLAGS = -L/sw/lib -lusb-1.0
+CFLAGS += -I/usr/local/include -I../.. 
+LDFLAGS = -L/usr/local/lib -lusb-1.0
 
 CORE   = \
     ${BTSTACK_ROOT}/src/btstack_memory.c          \
