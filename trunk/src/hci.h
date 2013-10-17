@@ -162,6 +162,9 @@ extern "C" {
 // Get remote RFCOMM services
 #define SDP_CLIENT_QUERY_RFCOMM_SERVICES                   0x32
 
+// Get remote SDP services
+#define SDP_CLIENT_QUERY_SERVICES                          0x33
+
 // RFCOMM "HCI" Commands
 #define RFCOMM_CREATE_CHANNEL       0x40
 #define RFCOMM_DISCONNECT			0x41

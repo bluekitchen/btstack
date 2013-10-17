@@ -670,8 +670,14 @@ const hci_cmd_t sdp_unregister_service_record = {
 OPCODE(OGF_BTSTACK, SDP_UNREGISTER_SERVICE_RECORD), "4"
 // @param service record handle (32)
 };
+
 const hci_cmd_t sdp_client_query_rfcomm_services = {
 OPCODE(OGF_BTSTACK, SDP_CLIENT_QUERY_RFCOMM_SERVICES), "BS"
+// @param service record handle (32)
+};
+
+const hci_cmd_t sdp_client_query_services = {
+OPCODE(OGF_BTSTACK, SDP_CLIENT_QUERY_SERVICES), "BS"
 // @param service record handle (32)
 };
 
