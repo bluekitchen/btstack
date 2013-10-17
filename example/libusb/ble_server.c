@@ -103,7 +103,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					// bt stack activated, get started - set local name
 					if (packet[2] == HCI_STATE_WORKING) {
 					   printf("Working!\n");
-						hci_send_cmd(&hci_read_local_supported_features);
+                        hci_send_cmd(&hci_write_le_host_supported, 1, 1);
 					}
 					break;
                 
@@ -142,15 +142,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)){
     					bt_flip_addr(addr, &packet[6]);
 					    printf("BD ADDR: %s\n", bd_addr_to_str(addr));
-						break;
-					}
-					if (COMMAND_COMPLETE_EVENT(packet, hci_read_local_supported_features)){
-					    // printf("Local supported features: %04X%04X\n", READ_BT_32(packet, 10), READ_BT_32(packet, 6));
-                        hci_send_cmd(&hci_set_event_mask, 0xffffffff, 0x20001fff);
-						break;
-					}
-					if (COMMAND_COMPLETE_EVENT(packet, hci_set_event_mask)){
-                        hci_send_cmd(&hci_write_le_host_supported, 1, 1);
 						break;
 					}
 					if (COMMAND_COMPLETE_EVENT(packet, hci_write_le_host_supported)){
