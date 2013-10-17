@@ -142,8 +142,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started - set local name
 					if (packet[2] == HCI_STATE_WORKING) {
-					   printf("Working!\n");
-						hci_send_cmd(&hci_read_local_supported_features);
+                        printf("Working!\n");
+                        hci_send_cmd(&hci_le_set_advertising_parameters,  0x0400, 0x0800, 0, 0, 0, &addr, 0x07, 0);
 					}
 					break;
                 
@@ -183,32 +183,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     					bt_flip_addr(addr, &packet[6]);
 					    printf("BD ADDR: %s\n", bd_addr_to_str(addr));
 						break;
-					}
-					if (COMMAND_COMPLETE_EVENT(packet, hci_read_local_supported_features)){
-					    // printf("Local supported features: %04X%04X\n", READ_BT_32(packet, 10), READ_BT_32(packet, 6));
-                        hci_send_cmd(&hci_set_event_mask, 0xffffffff, 0x20001fff);
-						break;
-					}
-					if (COMMAND_COMPLETE_EVENT(packet, hci_set_event_mask)){
-                        hci_send_cmd(&hci_write_le_host_supported, 1, 1);
-						break;
-					}
-					if (COMMAND_COMPLETE_EVENT(packet, hci_write_le_host_supported)){
-				        hci_send_cmd(&hci_le_set_event_mask, 0xffffffff, 0xffffffff);
-                    	break;
-					}
-					if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_event_mask)){
-				        hci_send_cmd(&hci_le_read_buffer_size);
-                    	break;
-					}
-				    if (COMMAND_COMPLETE_EVENT(packet, hci_le_read_buffer_size)){
-					    printf("LE buffer size: %u, count %u\n", READ_BT_16(packet,6), packet[8]);
-					   hci_send_cmd(&hci_le_read_supported_states);
-					   break;
-					}
-				    if (COMMAND_COMPLETE_EVENT(packet, hci_le_read_supported_states)){
-					   hci_send_cmd(&hci_le_set_advertising_parameters,  0x0400, 0x0800, 0, 0, 0, &addr, 0x07, 0);
-					   break;
 					}
 				    if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_advertising_parameters)){
 					   hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);

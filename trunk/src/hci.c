@@ -1180,6 +1180,7 @@ void hci_run(){
             switch (hci_stack.substate >> 1){
                 case 0: // RESET
                     hci_send_cmd(&hci_reset);
+
                     if (hci_stack.config == 0 || ((hci_uart_config_t *)hci_stack.config)->baudrate_main == 0){
                         // skip baud change
                         hci_stack.substate = 4; // >> 1 = 2
@@ -1195,7 +1196,7 @@ void hci_run(){
                     // break missing here for fall through
                     
                 case 3:
-                    // custom initialization
+                    // Custom initialization
                     if (hci_stack.control && hci_stack.control->next_cmd){
                         int valid_cmd = (*hci_stack.control->next_cmd)(hci_stack.config, hci_stack.hci_packet_buffer);
                         if (valid_cmd){
@@ -1219,17 +1220,23 @@ void hci_run(){
                     hci_send_cmd(&hci_set_event_mask,0xffffffff, 0xFFFFFFFF); ///0x1DFFFFFF
 
                     // skip Classic init commands for LE only chipsets
-                    if (hci_classic_supported()){
-                        if (!hci_ssp_supported()){
-                            hci_stack.substate = 7 << 1; // skip hci_write_simple_pairing_mode
+                    if (!hci_classic_supported()){
+                        if (hci_le_supported()){
+                            hci_stack.substate = 11 << 1;    // skip all classic command
+                        } else {
+                            log_error("Neither BR/EDR nor LE supported");
+                            hci_stack.substate = 13 << 1;
                         }
-                    }   else {
-                        hci_stack.substate = 11 << 1;    // skip all classic command   
                     }
                     break;
                 case 7:
-                    hci_send_cmd(&hci_write_simple_pairing_mode, hci_stack.ssp_enable);
-                    break;
+                    if (hci_ssp_supported()){
+                        hci_send_cmd(&hci_write_simple_pairing_mode, hci_stack.ssp_enable);
+                        break;
+                    }
+                    hci_stack.substate += 2;
+                    // break missing here for fall through
+
                 case 8:
                     // ca. 15 sec
                     hci_send_cmd(&hci_write_page_timeout, 0x6000);
@@ -1257,8 +1264,24 @@ void hci_run(){
                     break;
                 case 11:
 					hci_send_cmd(&hci_write_scan_enable, (hci_stack.connectable << 1) | hci_stack.discoverable); // page scan
+                    if (!hci_le_supported()){
+                        // SKIP LE init for Classic only configuration
+                        hci_stack.substate = 13 << 1;
+                    }
 					break;
+
+                // LE INIT
                 case 12:
+                    hci_send_cmd(&hci_le_read_buffer_size);
+                    // printf("LE buffer size: %u, count %u\n", READ_BT_16(packet,6), packet[8]);
+                    break;
+                case 13:
+                    // LE Supported Host = 1, Simultaneous Host = 0
+                    hci_send_cmd(&hci_write_le_host_supported, 1, 0);
+                    break;
+
+                // DONE
+                case 14:
                     // done.
                     hci_stack.state = HCI_STATE_WORKING;
                     hci_emit_state();
