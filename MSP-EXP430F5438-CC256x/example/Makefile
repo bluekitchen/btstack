@@ -58,7 +58,7 @@ LCD_OBJ    = $(LCD:.c=.o)
 
 # create firmware image from common objects and example source file
 
-all: hid_demo.hex led_counter.hex spp_accel.hex spp_counter.hex spp_flowcontrol.hex gap_inquiry.hex sdp_rfcomm_query.hex
+all: hid_demo.hex led_counter.hex spp_accel.hex spp_counter.hex spp_flowcontrol.hex gap_inquiry.hex sdp_rfcomm_query.hex sdp_general_query.hex
 
 led_counter.out: ${CORE_OBJ} led_counter.o 
 	${CC} $^ ${LDFLAGS} -o $@
@@ -79,6 +79,9 @@ gap_inquiry.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} gap_inquiry.o ../firmware/
 	${CC} $^ ${LDFLAGS} -o $@
 
 sdp_rfcomm_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} sdp_rfcomm_query.o ../firmware/hal_adc.o
+	${CC} $^ ${LDFLAGS} -o $@
+
+sdp_general_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} sdp_general_query.o ../firmware/hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 clean:
