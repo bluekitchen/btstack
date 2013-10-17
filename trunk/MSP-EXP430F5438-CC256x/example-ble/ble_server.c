@@ -192,11 +192,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					   hci_send_cmd(&hci_le_set_advertise_enable, 1);
 					   break;
 					}
-				    if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_advertise_enable)){
-                        hci_discoverable_control(1);
-                        break;
-					}
-                    
 			}
 	}
 }
