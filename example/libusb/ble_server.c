@@ -140,11 +140,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     break;
                     
 				case HCI_EVENT_COMMAND_COMPLETE:
-					if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)){
-    					bt_flip_addr(addr, &packet[6]);
-					    printf("BD ADDR: %s\n", bd_addr_to_str(addr));
-						break;
-					}
 					if (COMMAND_COMPLETE_EVENT(packet, hci_write_le_host_supported)){
                         // into hci.c
 				        hci_send_cmd(&hci_le_set_event_mask, 0xffffffff, 0xffffffff);
@@ -155,7 +150,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 				        hci_send_cmd(&hci_le_read_buffer_size);
                     	break;
 					}
-                    
+
 				    if (COMMAND_COMPLETE_EVENT(packet, hci_le_read_buffer_size)){
                         printf("LE buffer size: %u, count %u\n", READ_BT_16(packet,6), packet[8]);
                         // only needed for BLE Peripheral, consider sending these as a default
