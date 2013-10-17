@@ -25,6 +25,7 @@ BTdaemon_FILES = $(libBTstack_FILES)   \
     sdp_client.c            \
     sdp_parser.c            \
     sdp_query_rfcomm.c      \
+    sdp_query_util.c        \
 	../SpringBoardAccess/SpringBoardAccess.c
 BTdaemon_CFLAGS = -I../include -I..
 BTdaemon_FRAMEWORKS = IOKit
