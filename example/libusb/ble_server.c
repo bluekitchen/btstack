@@ -122,14 +122,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             break;
                     }
                     break;
-
-                case BTSTACK_EVENT_NR_CONNECTIONS_CHANGED:
-				    if (packet[2]) {
-                        printf("CONNECTED\n");
-                    } else {
-				        printf("NOT CONNECTED\n");
-                    }
-                    break;
                     
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     att_response_handle =0;
