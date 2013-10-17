@@ -92,7 +92,6 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
 
 // enable LE, setup ADV data
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    bd_addr_t addr;
     uint8_t adv_data[] = { 02, 01, 05,   03, 02, 0xf0, 0xff }; 
     switch (packet_type) {
             
@@ -103,8 +102,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					// bt stack activated, get started - set local name
 					if (packet[2] == HCI_STATE_WORKING) {
                         printf("Working!\n");
-                        // only needed for BLE Peripheral, consider sending these as a default
-                        hci_send_cmd(&hci_le_set_advertising_parameters,  0x0400, 0x0800, 0, 0, 0, &addr, 0x07, 0);
+                        hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
 					}
 					break;
                 

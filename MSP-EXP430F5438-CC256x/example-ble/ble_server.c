@@ -143,7 +143,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					// bt stack activated, get started - set local name
 					if (packet[2] == HCI_STATE_WORKING) {
                         printf("Working!\n");
-                        hci_send_cmd(&hci_le_set_advertising_parameters,  0x0400, 0x0800, 0, 0, 0, &addr, 0x07, 0);
+                        hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
 					}
 					break;
                 
@@ -183,10 +183,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     					bt_flip_addr(addr, &packet[6]);
 					    printf("BD ADDR: %s\n", bd_addr_to_str(addr));
 						break;
-					}
-				    if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_advertising_parameters)){
-					   hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
-					   break;
 					}
 				    if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_advertising_data)){
 					   hci_send_cmd(&hci_le_set_scan_response_data, 10, adv_data);
