@@ -299,6 +299,8 @@ typedef struct {
     // uint8_t  total_num_cmd_packets;
     uint8_t  total_num_acl_packets;
     uint16_t acl_data_packet_length;
+    uint8_t  total_num_le_packets;
+    uint16_t le_data_packet_length;
 
     /* local supported features */
     uint8_t local_supported_features[8];

@@ -483,6 +483,13 @@ static void event_handler(uint8_t *packet, int size){
                              hci_stack.acl_data_packet_length, hci_stack.total_num_acl_packets); 
                 }
             }
+#ifdef HAVE_BLE
+            if (COMMAND_COMPLETE_EVENT(packet, hci_le_read_buffer_size)){
+                hci_stack.le_data_packet_length = READ_BT_16(packet, 6);
+                hci_stack.total_num_le_packets  = packet[8];
+                log_info("hci_le_read_buffer_size: size %u, count %u\n", hci_stack.le_data_packet_length, hci_stack.total_num_le_packets);
+            }            
+#endif
             // Dump local address
             if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)) {
                 bt_flip_addr(hci_stack.local_bd_addr, &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1]);
@@ -719,6 +726,8 @@ static void event_handler(uint8_t *packet, int size){
                     
                     hci_emit_nr_connections_changed();
                     break;
+
+            // printf("LE buffer size: %u, count %u\n", READ_BT_16(packet,6), packet[8]);
                     
                 default:
                     break;
@@ -1269,12 +1278,11 @@ void hci_run(){
                         hci_stack.substate = 13 << 1;
                     }
 					break;
-                    
+
 #ifdef HAVE_BLE
                 // LE INIT
                 case 12:
                     hci_send_cmd(&hci_le_read_buffer_size);
-                    // printf("LE buffer size: %u, count %u\n", READ_BT_16(packet,6), packet[8]);
                     break;
                 case 13:
                     // LE Supported Host = 1, Simultaneous Host = 0
