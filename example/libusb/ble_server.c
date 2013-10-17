@@ -142,14 +142,10 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 				case HCI_EVENT_COMMAND_COMPLETE:
 					if (COMMAND_COMPLETE_EVENT(packet, hci_write_le_host_supported)){
                         // into hci.c
-				        hci_send_cmd(&hci_le_set_event_mask, 0xffffffff, 0xffffffff);
-                    	break;
-					}
-					if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_event_mask)){
-                        // into hci.c
 				        hci_send_cmd(&hci_le_read_buffer_size);
                     	break;
 					}
+
 
 				    if (COMMAND_COMPLETE_EVENT(packet, hci_le_read_buffer_size)){
                         printf("LE buffer size: %u, count %u\n", READ_BT_16(packet,6), packet[8]);
