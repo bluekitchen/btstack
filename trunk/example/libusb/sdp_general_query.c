@@ -14,6 +14,7 @@
 
 #include "sdp_parser.h"
 #include "sdp_client.h"
+#include "sdp_query_util.h"
 
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>
@@ -22,19 +23,17 @@
 #include "btstack_memory.h"
 #include "hci_dump.h"
 #include "l2cap.h"
+#include "sdp_query_util.h"
+
+int record_id = -1;
+int attribute_id = -1;
+
+static uint8_t   attribute_value[1000];
+static const int attribute_value_buffer_size = sizeof(attribute_value);
 
 static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 
-static void handle_general_sdp_parser_event(sdp_parser_event_t * event);
-
-static const uint8_t des_attributeIDList[]       = {0x35, 0x05, 0x0A, 0x00, 0x01, 0xff, 0xff};  // Arribute: 0x0001 - 0xffff
-static const uint8_t des_serviceSearchPattern[] =  {0x35, 0x03, 0x19, 0x10, 0x02};
-
-static void general_query(bd_addr_t remote_dev){
-    sdp_parser_init();
-    sdp_parser_register_callback(handle_general_sdp_parser_event);
-    sdp_client_query(remote, (uint8_t*)&des_serviceSearchPattern, (uint8_t*)&des_attributeIDList[0]);
-}
+static void handle_sdp_client_query_result(sdp_parser_event_t * event);
 
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
@@ -46,7 +45,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
         case BTSTACK_EVENT_STATE:
             // bt stack activated, get started 
             if (packet[2] == HCI_STATE_WORKING){
-                general_query(remote);
+                sdp_general_query_for_uuid(remote, 0x1002);
             }
             break;
         default:
@@ -59,7 +58,7 @@ static void btstack_setup(){
     btstack_memory_init();
     run_loop_init(RUN_LOOP_POSIX);
     
-    hci_dump_open("/tmp/hci_dump_sdp_client.pklg", HCI_DUMP_PACKETLOGGER);
+    // hci_dump_open("/tmp/hci_dump_sdp_client.pklg", HCI_DUMP_PACKETLOGGER);
    
     hci_transport_t    * transport = hci_transport_usb_instance();
     hci_uart_config_t  * config = NULL;
@@ -77,20 +76,13 @@ static void btstack_setup(){
     hci_power_control(HCI_POWER_ON);
 }
 
-
-uint16_t attribute_id = -1;
-uint16_t record_id = -1;
-uint8_t * attribute_value = NULL;
-int       attribute_value_buffer_size = 0;
-
-void assertBuffer(int size){
+static void assertBuffer(int size){
     if (size > attribute_value_buffer_size){
-        attribute_value_buffer_size *= 2;
-        attribute_value = (uint8_t *) realloc(attribute_value, attribute_value_buffer_size);
+        printf("SDP attribute value buffer size exceeded: available %d, required %d", attribute_value_buffer_size, size);
     }
 }
 
-static void handle_general_sdp_parser_event(sdp_parser_event_t * event){
+static void handle_sdp_client_query_result(sdp_parser_event_t * event){
     sdp_parser_attribute_value_event_t * ve;
     sdp_parser_complete_event_t * ce;
 
@@ -119,13 +111,11 @@ static void handle_general_sdp_parser_event(sdp_parser_event_t * event){
     }
 }
 
+ 
 int main(void){
-    attribute_value_buffer_size = 1000;
-    attribute_value = (uint8_t*) malloc(attribute_value_buffer_size);
-    record_id = -1;
     sdp_parser_init();
-    sdp_parser_register_callback(handle_general_sdp_parser_event);
-
+    sdp_parser_register_callback(handle_sdp_client_query_result);
+            
     btstack_setup();
     // go!
     run_loop_execute(); 

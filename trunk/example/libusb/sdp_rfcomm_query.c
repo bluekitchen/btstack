@@ -12,7 +12,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "sdp_query_rfcomm.h"
 
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>
@@ -21,6 +20,7 @@
 #include "btstack_memory.h"
 #include "hci_dump.h"
 #include "l2cap.h"
+#include "sdp_query_rfcomm.h"
 
 static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 
