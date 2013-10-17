@@ -103,8 +103,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					// bt stack activated, get started - set local name
 					if (packet[2] == HCI_STATE_WORKING) {
                         printf("Working!\n");
-                        // into hci.c
-                        hci_send_cmd(&hci_write_le_host_supported, 1, 1);
+                        // only needed for BLE Peripheral, consider sending these as a default
+                        hci_send_cmd(&hci_le_set_advertising_parameters,  0x0400, 0x0800, 0, 0, 0, &addr, 0x07, 0);
 					}
 					break;
                 
@@ -132,19 +132,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     break;
                     
 				case HCI_EVENT_COMMAND_COMPLETE:
-					if (COMMAND_COMPLETE_EVENT(packet, hci_write_le_host_supported)){
-                        // into hci.c
-				        hci_send_cmd(&hci_le_read_buffer_size);
-                    	break;
-					}
-
-
-				    if (COMMAND_COMPLETE_EVENT(packet, hci_le_read_buffer_size)){
-                        printf("LE buffer size: %u, count %u\n", READ_BT_16(packet,6), packet[8]);
-                        // only needed for BLE Peripheral, consider sending these as a default
-                        hci_send_cmd(&hci_le_set_advertising_parameters,  0x0400, 0x0800, 0, 0, 0, &addr, 0x07, 0);
-                        break;
-					}
 				    if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_advertising_parameters)){
                         // only needed for BLE Peripheral
                         hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
