@@ -13,7 +13,8 @@
 #include <string.h>
 #include <msp430x54x.h>
 
-#include "sdp_query_rfcomm.h"
+#include "sdp_parser.h"
+#include "sdp_client.h"
 
 #include "bt_control_cc256x.h"
 #include "hal_adc.h"
@@ -29,14 +30,17 @@
 #include "btstack_memory.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "bt_control_cc256x.h"
 
 static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
+static const uint8_t des_attributeIDList[]       = {0x35, 0x05, 0x0A, 0x00, 0x01, 0xff, 0xff};  // Arribute: 0x0001 - 0xffff
+static const uint8_t des_serviceSearchPattern[] =  {0x35, 0x03, 0x19, 0x00, 0x00};
 
-static uint8_t  service_index = 0;
-static uint8_t  channel_nr[10];
-static char*    service_name[10];
+uint16_t attribute_id = -1;
+uint16_t record_id = -1;
+int      attribute_value_buffer_size = 1000;
+uint8_t  attribute_value[1000];
 
+static void handle_general_sdp_parser_event(sdp_parser_event_t * event);
 
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -46,7 +50,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
         case BTSTACK_EVENT_STATE:
             // bt stack activated, get started 
             if (packet[2] == HCI_STATE_WORKING){
-                sdp_query_rfcomm_channel_and_name_for_uuid(remote, 0x1002);
+                sdp_general_query_for_uuid(remote, 0x1002);
             }
             break;
         default:
@@ -54,40 +58,37 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     }
 }
 
-
-void store_found_service(uint8_t * name, uint8_t port){
-    printf("APP: Service name: '%s', RFCOMM port %u\n", name, port);
-    channel_nr[service_index] = port;
-    service_name[service_index] = (char*) malloc(SDP_SERVICE_NAME_LEN+1);
-    strncpy(service_name[service_index], (char*) name, SDP_SERVICE_NAME_LEN);
-    service_name[service_index][SDP_SERVICE_NAME_LEN] = 0;
-    service_index++;
-}
-
-void report_found_services(){
-    printf("\n *** Client query response done. ");
-    if (service_index == 0){
-        printf("No service found.\n\n");
-    } else {
-        printf("Found following %d services:\n", service_index);
+void assertBuffer(int size){
+    if (size > attribute_value_buffer_size){
+        printf("Buffer size exceeded: available %d, required %d", attribute_value_buffer_size, size);
     }
-    int i;
-    for (i=0; i<service_index; i++){
-        printf("     Service name %s, RFCOMM port %u\n", service_name[i], channel_nr[i]);
-    }    
-    printf(" ***\n\n");
 }
 
-void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
-    sdp_query_rfcomm_service_event_t * ve;
-            
+static void handle_general_sdp_parser_event(sdp_parser_event_t * event){
+    sdp_parser_attribute_value_event_t * ve;
+    sdp_parser_complete_event_t * ce;
+
     switch (event->type){
-        case SDP_QUERY_RFCOMM_SERVICE:
-            ve = (sdp_query_rfcomm_service_event_t*) event;
-            store_found_service(ve->service_name, ve->channel_nr);
+        case SDP_PARSER_ATTRIBUTE_VALUE:
+            ve = (sdp_parser_attribute_value_event_t*) event;
+            
+            // handle new record
+            if (ve->record_id != record_id){
+                record_id = ve->record_id;
+                printf("\n---\nRecord nr. %u\n", record_id);
+            }
+
+            assertBuffer(ve->attribute_length);
+
+            attribute_value[ve->data_offset] = ve->data;
+            if ((uint16_t)(ve->data_offset+1) == ve->attribute_length){
+               printf("Attribute 0x%04x, offset %u", ve->attribute_id, ve->data_offset);
+               hexdump(attribute_value, ve->attribute_length);
+            }
             break;
-        case SDP_QUERY_COMPLETE:
-            report_found_services();
+        case SDP_PARSER_COMPLETE:
+            ce = (sdp_parser_complete_event_t*) event;
+            printf("General query done with status %d.\n\n", ce->status);
             break;
     }
 }
@@ -132,13 +133,13 @@ static void btstack_setup(){
     l2cap_register_packet_handler(packet_handler);
 }
 
+
 int main(void){
-    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
+    sdp_parser_init();
+    sdp_parser_register_callback(handle_general_sdp_parser_event);
 
     hw_setup();
     btstack_setup();
-    
-    printf("Run...\n\r");
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
