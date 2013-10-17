@@ -65,7 +65,9 @@
 #include "l2cap.h"
 #include "rfcomm.h"
 #include "sdp.h"
+#include "sdp_parser.h"
 #include "sdp_client.h"
+#include "sdp_query_util.h"
 #include "sdp_query_rfcomm.h"
 #include "socket_connection.h"
 
@@ -103,6 +105,7 @@ typedef struct {
 
 // MARK: prototypes
 static void handle_sdp_rfcomm_service_result(sdp_query_event_t * event, void * context);
+static void handle_sdp_client_query_result(sdp_parser_event_t * event);
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state);
 static client_state_t * client_for_connection(connection_t *connection);
 static int              clients_require_power_on(void);
@@ -124,6 +127,9 @@ static int global_enable = 0;
 
 static remote_device_db_t const * remote_device_db = NULL;
 static int rfcomm_channel_generator = 1;
+
+static uint8_t   attribute_value[1000];
+static const int attribute_value_buffer_size = sizeof(attribute_value);
 
 static int loggingEnabled;
 
@@ -325,7 +331,12 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             sdp_query_rfcomm_register_callback(handle_sdp_rfcomm_service_result, connection);
             sdp_query_rfcomm_channel_and_name_for_search_pattern(addr, &packet[9]);
             break;
-
+        case SDP_CLIENT_QUERY_SERVICES:
+            bt_flip_addr(addr, &packet[3]);
+            sdp_parser_init();
+            sdp_parser_register_callback(handle_sdp_client_query_result);
+            sdp_general_query_for_uuid(addr, 0x1002);
+            break;
         default:
             log_error("Error: command %u not implemented\n:", READ_CMD_OCF(packet));
             break;
@@ -546,6 +557,50 @@ static void handle_sdp_rfcomm_service_result(sdp_query_event_t * rfcomm_event, v
             socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, event, sizeof(event));
             break;
         }
+    }
+}
+
+static void sdp_client_assert_buffer(int size){
+    if (size > attribute_value_buffer_size){
+        log_error("SDP attribute value buffer size exceeded: available %d, required %d", attribute_value_buffer_size, size);
+    }
+}
+
+// define new packet type SDP_CLIENT_PACKET
+static void handle_sdp_client_query_result(sdp_parser_event_t * event){
+    sdp_parser_attribute_value_event_t * ve;
+    sdp_parser_complete_event_t * complete_event;
+
+    switch (event->type){
+        case SDP_PARSER_ATTRIBUTE_VALUE:
+            ve = (sdp_parser_attribute_value_event_t*) event;
+            
+            sdp_client_assert_buffer(ve->attribute_length);
+
+            attribute_value[ve->data_offset] = ve->data;
+
+            if ((uint16_t)(ve->data_offset+1) == ve->attribute_length){
+                hexdump(attribute_value, ve->attribute_length);
+
+                int event_len = 1 + 3 * 2 + ve->attribute_length; 
+                uint8_t event[event_len];
+                event[0] = SDP_QUERY_ATTRIBUTE_VALUE;
+                event[1] = ve->record_id;
+                event[3] = ve->attribute_id;
+                event[5] = ve->attribute_length;
+
+                memcpy(&event[7], attribute_value, ve->attribute_length);
+                hci_dump_packet(SDP_CLIENT_PACKET, 0, event, event_len);
+                socket_connection_send_packet(NULL, SDP_CLIENT_PACKET, 0, event, event_len);
+            }
+
+            break;
+        case SDP_PARSER_COMPLETE:
+            complete_event = (sdp_parser_complete_event_t*) event;
+            uint8_t event[] = { SDP_QUERY_COMPLETE, 1, complete_event->status};
+            hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
+            socket_connection_send_packet(NULL, HCI_EVENT_PACKET, 0, event, sizeof(event));
+            break;
     }
 }
 
