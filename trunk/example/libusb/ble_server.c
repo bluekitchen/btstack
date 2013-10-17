@@ -191,12 +191,11 @@ void setup(void){
 
     // init HCI
     hci_transport_t    * transport = hci_transport_usb_instance();
-    hci_uart_config_t * config = NULL;
+    hci_uart_config_t  * config    = NULL;
     bt_control_t       * control   = NULL;
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
         
     hci_init(transport, config, control, remote_db);
-    hci_discoverable_control(1);
 
     // set up l2cap_le
     l2cap_init();
