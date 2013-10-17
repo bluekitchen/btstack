@@ -1269,7 +1269,8 @@ void hci_run(){
                         hci_stack.substate = 13 << 1;
                     }
 					break;
-
+                    
+#ifdef HAVE_BLE
                 // LE INIT
                 case 12:
                     hci_send_cmd(&hci_le_read_buffer_size);
@@ -1279,6 +1280,7 @@ void hci_run(){
                     // LE Supported Host = 1, Simultaneous Host = 0
                     hci_send_cmd(&hci_write_le_host_supported, 1, 0);
                     break;
+#endif
 
                 // DONE
                 case 14:
