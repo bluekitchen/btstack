@@ -31,6 +31,7 @@ BTdaemon_SOURCES =  $(libBTstack_SOURCES) \
     sdp_client.c            \
     sdp_parser.c            \
     sdp_query_rfcomm.c      \
+    sdp_query_util.c        \
     $(springboard_access_sources)
 
 # use $(CC) for Objective-C files
