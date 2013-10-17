@@ -155,13 +155,9 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 				        hci_send_cmd(&hci_le_read_buffer_size);
                     	break;
 					}
+                    
 				    if (COMMAND_COMPLETE_EVENT(packet, hci_le_read_buffer_size)){
                         printf("LE buffer size: %u, count %u\n", READ_BT_16(packet,6), packet[8]);
-                        // not needed
-                        hci_send_cmd(&hci_le_read_supported_states);
-                        break;
-					}
-				    if (COMMAND_COMPLETE_EVENT(packet, hci_le_read_supported_states)){
                         // only needed for BLE Peripheral, consider sending these as a default
                         hci_send_cmd(&hci_le_set_advertising_parameters,  0x0400, 0x0800, 0, 0, 0, &addr, 0x07, 0);
                         break;
