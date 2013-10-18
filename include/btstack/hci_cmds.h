@@ -65,7 +65,11 @@ extern "C" {
 
 // Security Manager protocol data
 #define SM_DATA_PACKET          0x09
-    
+
+// SDP query result
+// format: type (8), record_id (16), attribute_id (16), attribute_length (16), attribute_value (max 1k)
+#define SDP_CLIENT_PACKET       0x0a
+
 // debug log messages
 #define LOG_MESSAGE_PACKET      0xfc
 
@@ -205,7 +209,8 @@ extern "C" {
 
 // data: event(8), len(8), record nr(16), attribute id(16), attribute value(var)
 #define SDP_QUERY_ATTRIBUTE_VALUE                          0x93
-
+//#define SDP_PARSER_ATTRIBUTE_VALUE                         0x94
+//#define SDP_PARSER_COMPLETE                                0x95
 	
 // last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
 
@@ -394,6 +399,7 @@ extern const hci_cmd_t l2cap_unregister_service;
 extern const hci_cmd_t sdp_register_service_record;
 extern const hci_cmd_t sdp_unregister_service_record;
 extern const hci_cmd_t sdp_client_query_rfcomm_services;
+extern const hci_cmd_t sdp_client_query_services;
 
 
 // accept connection @param bd_addr(48), rfcomm_cid (16)

@@ -65,11 +65,6 @@ int  de_state_size(uint8_t eventByte, de_state_t *de_state);
 
 // SDP Parser
 
-// Basic SDP Parser event type
-typedef enum sdp_parser_event_type {
-    SDP_PARSER_ATTRIBUTE_VALUE = 1,
-    SDP_PARSER_COMPLETE,
-} sdp_parser_event_type_t;
 
 typedef struct sdp_parser_event {
     uint8_t type;

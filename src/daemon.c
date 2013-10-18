@@ -57,6 +57,7 @@
 #include <btstack/btstack.h>
 #include <btstack/linked_list.h>
 #include <btstack/run_loop.h>
+#include <btstack/hci_cmds.h>
 
 #include "debug.h"
 #include "hci.h"
@@ -569,10 +570,10 @@ static void sdp_client_assert_buffer(int size){
 // define new packet type SDP_CLIENT_PACKET
 static void handle_sdp_client_query_result(sdp_parser_event_t * event){
     sdp_parser_attribute_value_event_t * ve;
-    sdp_parser_complete_event_t * complete_event;
+    sdp_query_complete_event_t * complete_event;
 
     switch (event->type){
-        case SDP_PARSER_ATTRIBUTE_VALUE:
+        case SDP_QUERY_ATTRIBUTE_VALUE:
             ve = (sdp_parser_attribute_value_event_t*) event;
             
             sdp_client_assert_buffer(ve->attribute_length);
@@ -595,8 +596,8 @@ static void handle_sdp_client_query_result(sdp_parser_event_t * event){
             }
 
             break;
-        case SDP_PARSER_COMPLETE:
-            complete_event = (sdp_parser_complete_event_t*) event;
+        case SDP_QUERY_COMPLETE:
+            complete_event = (sdp_query_complete_event_t*) event;
             uint8_t event[] = { SDP_QUERY_COMPLETE, 1, complete_event->status};
             hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
             socket_connection_send_packet(NULL, HCI_EVENT_PACKET, 0, event, sizeof(event));
