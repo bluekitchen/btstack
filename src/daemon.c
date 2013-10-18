@@ -131,6 +131,9 @@ static int rfcomm_channel_generator = 1;
 
 static uint8_t   attribute_value[1000];
 static const int attribute_value_buffer_size = sizeof(attribute_value);
+static uint8_t serviceSearchPattern[200];
+static uint8_t attributeIDList[50];
+    
 
 static int loggingEnabled;
 
@@ -157,6 +160,9 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
     uint32_t service_record_handle;
     client_state_t *client;
     
+    uint16_t serviceSearchPatternLen;
+    uint16_t attributeIDListLen;
+
     // BTstack internal commands - 16 Bit OpCode, 8 Bit ParamLen, Params...
     switch (READ_CMD_OCF(packet)){
         case BTSTACK_GET_STATE:
@@ -327,16 +333,30 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             log_info("SDP_UNREGISTER_SERVICE_RECORD handle 0x%x ", service_record_handle);
             sdp_unregister_service_internal(connection, service_record_handle);
             break;
-        case SDP_CLIENT_QUERY_RFCOMM_SERVICES:
+        case SDP_CLIENT_QUERY_RFCOMM_SERVICES: 
             bt_flip_addr(addr, &packet[3]);
+
+            serviceSearchPatternLen = de_get_len(&packet[9]);
+            memcpy(serviceSearchPattern, &packet[9], serviceSearchPatternLen);
+
             sdp_query_rfcomm_register_callback(handle_sdp_rfcomm_service_result, connection);
-            sdp_query_rfcomm_channel_and_name_for_search_pattern(addr, &packet[9]);
+            sdp_query_rfcomm_channel_and_name_for_search_pattern(addr, serviceSearchPattern);
+
             break;
         case SDP_CLIENT_QUERY_SERVICES:
             bt_flip_addr(addr, &packet[3]);
             sdp_parser_init();
             sdp_parser_register_callback(handle_sdp_client_query_result);
-            sdp_general_query_for_uuid(addr, 0x1002);
+
+            serviceSearchPatternLen = de_get_len(&packet[9]);
+            memcpy(serviceSearchPattern, &packet[9], serviceSearchPatternLen);
+            
+            attributeIDListLen = de_get_len(&packet[9+serviceSearchPatternLen]); 
+            memcpy(attributeIDList, &packet[9+serviceSearchPatternLen], attributeIDListLen);
+            
+            sdp_client_query(addr, (uint8_t*)&serviceSearchPattern[0], (uint8_t*)&attributeIDList[0]);
+
+            // sdp_general_query_for_uuid(addr, 0x1002);
             break;
         default:
             log_error("Error: command %u not implemented\n:", READ_CMD_OCF(packet));
