@@ -37,7 +37,7 @@
 /*
  *  sdp_parser.c
  */
-
+#include <btstack/hci_cmds.h>
 #include "sdp_parser.h"
 #include "debug.h"
 
@@ -162,7 +162,7 @@ void parse(uint8_t eventByte){
             attribute_bytes_received++;
             {
             sdp_parser_attribute_value_event_t attribute_value_event = {
-                SDP_PARSER_ATTRIBUTE_VALUE, 
+                SDP_QUERY_ATTRIBUTE_VALUE, 
                 record_counter, 
                 attribute_id, 
                 attribute_value_size,
@@ -182,7 +182,7 @@ void parse(uint8_t eventByte){
             attribute_bytes_received++;
             {
             sdp_parser_attribute_value_event_t attribute_value_event = {
-                SDP_PARSER_ATTRIBUTE_VALUE, 
+                SDP_QUERY_ATTRIBUTE_VALUE, 
                 record_counter, 
                 attribute_id, 
                 attribute_value_size,
@@ -238,7 +238,7 @@ void sdp_parser_handle_chunk(uint8_t * data, uint16_t size){
 
 void sdp_parser_handle_done(uint8_t status){
     sdp_parser_complete_event_t complete_event = {
-        SDP_PARSER_COMPLETE, 
+        SDP_QUERY_COMPLETE, 
         status
     };
     (*sdp_query_rfcomm_callback)((sdp_parser_event_t*)&complete_event);

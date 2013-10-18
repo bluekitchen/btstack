@@ -245,9 +245,8 @@ void handleServiceNameData(uint32_t attribute_value_length, uint32_t data_offset
 
 static void handle_sdp_parser_event(sdp_parser_event_t * event){
     sdp_parser_attribute_value_event_t * ve;
-    sdp_parser_complete_event_t * ce;
     switch (event->type){
-        case SDP_PARSER_ATTRIBUTE_VALUE:
+        case SDP_QUERY_ATTRIBUTE_VALUE:
             ve = (sdp_parser_attribute_value_event_t*) event;
            // printf("handle_sdp_parser_event [ AID, ALen, DOff, Data] : [%x, %u, %u] BYTE %02x\n", 
            //          ve->attribute_id, ve->attribute_length, ve->data_offset, ve->data);
@@ -266,13 +265,8 @@ static void handle_sdp_parser_event(sdp_parser_event_t * event){
                     return;
             }
             break;
-        case SDP_PARSER_COMPLETE:
-            ce = (sdp_parser_complete_event_t*) event;
-            sdp_query_complete_event_t c_event = {
-                SDP_QUERY_COMPLETE, 
-                ce->status
-            };
-            (*sdp_app_callback)((sdp_query_event_t*)&c_event, sdp_app_context);
+        case SDP_QUERY_COMPLETE:
+            (*sdp_app_callback)((sdp_query_event_t*)&event, sdp_app_context);
             break;
     }
     // insert higher level code HERE

@@ -42,6 +42,7 @@
 
 #include <btstack/utils.h>
 #include "sdp_parser.h"
+#include "sdp_query_util.h"
 
 #define SDP_SERVICE_NAME_LEN 20
 
@@ -50,18 +51,6 @@ extern "C" {
 #endif
 
 /* SDP Queries */
-
-// Basic SDP Query event type
-typedef struct sdp_query_event {
-    uint8_t type;
-} sdp_query_event_t;
-
-// SDP Query event to indicate that query is complete.
-typedef struct sdp_query_complete_event {
-    uint8_t type;
-    uint8_t status; // 0 == OK
-} sdp_query_complete_event_t;
-
 
 /* SDP Query for RFCOMM */
 

@@ -66,10 +66,10 @@ void assertBuffer(int size){
 
 static void handle_general_sdp_parser_event(sdp_parser_event_t * event){
     sdp_parser_attribute_value_event_t * ve;
-    sdp_parser_complete_event_t * ce;
+    sdp_query_complete_event_t * ce;
 
     switch (event->type){
-        case SDP_PARSER_ATTRIBUTE_VALUE:
+        case SDP_QUERY_ATTRIBUTE_VALUE:
             ve = (sdp_parser_attribute_value_event_t*) event;
             
             // handle new record
@@ -86,8 +86,8 @@ static void handle_general_sdp_parser_event(sdp_parser_event_t * event){
                hexdump(attribute_value, ve->attribute_length);
             }
             break;
-        case SDP_PARSER_COMPLETE:
-            ce = (sdp_parser_complete_event_t*) event;
+        case SDP_QUERY_COMPLETE:
+            ce = (sdp_query_complete_event_t*) event;
             printf("General query done with status %d.\n\n", ce->status);
             break;
     }
