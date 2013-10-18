@@ -677,7 +677,7 @@ OPCODE(OGF_BTSTACK, SDP_CLIENT_QUERY_RFCOMM_SERVICES), "BS"
 };
 
 const hci_cmd_t sdp_client_query_services = {
-OPCODE(OGF_BTSTACK, SDP_CLIENT_QUERY_SERVICES), "BS"
+OPCODE(OGF_BTSTACK, SDP_CLIENT_QUERY_SERVICES), "BSS"
 // @param service record handle (32)
 };
 
