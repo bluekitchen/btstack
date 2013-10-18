@@ -23,7 +23,7 @@
 #include "btstack_memory.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "sdp_query_util.h"
+#include "sdp_parser.h"
 
 int record_id = -1;
 int attribute_id = -1;
@@ -33,7 +33,7 @@ static const int attribute_value_buffer_size = sizeof(attribute_value);
 
 static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 
-static void handle_sdp_client_query_result(sdp_parser_event_t * event);
+static void handle_sdp_client_query_result(sdp_query_event_t * event);
 
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
@@ -82,7 +82,7 @@ static void assertBuffer(int size){
     }
 }
 
-static void handle_sdp_client_query_result(sdp_parser_event_t * event){
+static void handle_sdp_client_query_result(sdp_query_event_t * event){
     sdp_parser_attribute_value_event_t * ve;
     sdp_query_complete_event_t * ce;
 

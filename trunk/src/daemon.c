@@ -106,7 +106,7 @@ typedef struct {
 
 // MARK: prototypes
 static void handle_sdp_rfcomm_service_result(sdp_query_event_t * event, void * context);
-static void handle_sdp_client_query_result(sdp_parser_event_t * event);
+static void handle_sdp_client_query_result(sdp_query_event_t * event);
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state);
 static client_state_t * client_for_connection(connection_t *connection);
 static int              clients_require_power_on(void);
@@ -568,13 +568,13 @@ static void sdp_client_assert_buffer(int size){
 }
 
 // define new packet type SDP_CLIENT_PACKET
-static void handle_sdp_client_query_result(sdp_parser_event_t * event){
-    sdp_parser_attribute_value_event_t * ve;
+static void handle_sdp_client_query_result(sdp_query_event_t * event){
+    sdp_query_attribute_value_event_t * ve;
     sdp_query_complete_event_t * complete_event;
 
     switch (event->type){
         case SDP_QUERY_ATTRIBUTE_VALUE:
-            ve = (sdp_parser_attribute_value_event_t*) event;
+            ve = (sdp_query_attribute_value_event_t*) event;
             
             sdp_client_assert_buffer(ve->attribute_length);
 
