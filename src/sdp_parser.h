@@ -64,11 +64,16 @@ void de_state_init(de_state_t * state);
 int  de_state_size(uint8_t eventByte, de_state_t *de_state);
 
 // SDP Parser
-
-
-typedef struct sdp_parser_event {
+// Basic SDP Query event type
+typedef struct sdp_query_event {
     uint8_t type;
-} sdp_parser_event_t;
+} sdp_query_event_t;
+
+// SDP Query event to indicate that query/parser is complete.
+typedef struct sdp_query_complete_event {
+    uint8_t type;
+    uint8_t status; // 0 == OK
+} sdp_query_complete_event_t;
 
 // SDP Parser event to deliver an attribute value byte by byte
 typedef struct sdp_parser_attribute_value_event {
@@ -78,13 +83,7 @@ typedef struct sdp_parser_attribute_value_event {
     uint32_t attribute_length;
     int data_offset;
     uint8_t data;
-} sdp_parser_attribute_value_event_t;
-
-// SDP Parser event to indicate that parsing is complete.
-typedef struct sdp_parser_complete_event {
-    uint8_t type;
-    uint8_t status; // 0 == OK
-} sdp_parser_complete_event_t;
+} sdp_query_attribute_value_event_t;
 
 
 void sdp_parser_init(void);
@@ -92,7 +91,7 @@ void sdp_parser_handle_chunk(uint8_t * data, uint16_t size);
 void sdp_parser_handle_done(uint8_t status);
 
 // Registers a callback to receive attribute value data and parse complete event.
-void sdp_parser_register_callback(void (*sdp_callback)(sdp_parser_event_t* event));
+void sdp_parser_register_callback(void (*sdp_callback)(sdp_query_event_t * event));
 
 
 #if defined __cplusplus

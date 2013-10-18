@@ -46,18 +46,6 @@ extern "C" {
 #endif
 
 
-// Basic SDP Query event type
-typedef struct sdp_query_event {
-    uint8_t type;
-} sdp_query_event_t;
-
-// SDP Query event to indicate that query is complete.
-typedef struct sdp_query_complete_event {
-    uint8_t type;
-    uint8_t status; // 0 == OK
-} sdp_query_complete_event_t;
-
-
 // Returns service search pattern for given UUID
 uint8_t* create_service_search_pattern_for_uuid(uint16_t uuid);
 

@@ -20,7 +20,6 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "sdp_parser.h"
-#include "sdp_query_util.h"
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
@@ -111,7 +110,7 @@ void assertBuffer(int size){
 }
 
 
-static void handle_general_sdp_parser_event(sdp_parser_event_t * event){
+static void handle_general_sdp_parser_event(sdp_query_event_t * event){
     sdp_parser_attribute_value_event_t * ve;
     sdp_query_complete_event_t * ce;
 

@@ -38,8 +38,6 @@
  *  sdp_rfcomm_query.c
  */
 
-#include "sdp_query_rfcomm.h"
-
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,6 +47,7 @@
 #include <btstack/sdp_util.h>
 
 #include "sdp_client.h"
+#include "sdp_query_rfcomm.h"
 
 static void dummy_notify_app(sdp_query_event_t* event, void * context);
 
@@ -243,11 +242,11 @@ void handleServiceNameData(uint32_t attribute_value_length, uint32_t data_offset
 }
 
 
-static void handle_sdp_parser_event(sdp_parser_event_t * event){
-    sdp_parser_attribute_value_event_t * ve;
+static void handle_sdp_parser_event(sdp_query_event_t * event){
+    sdp_query_attribute_value_event_t * ve;
     switch (event->type){
         case SDP_QUERY_ATTRIBUTE_VALUE:
-            ve = (sdp_parser_attribute_value_event_t*) event;
+            ve = (sdp_query_attribute_value_event_t*) event;
            // printf("handle_sdp_parser_event [ AID, ALen, DOff, Data] : [%x, %u, %u] BYTE %02x\n", 
            //          ve->attribute_id, ve->attribute_length, ve->data_offset, ve->data);
             
