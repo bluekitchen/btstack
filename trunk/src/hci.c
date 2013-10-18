@@ -1226,7 +1226,12 @@ void hci_run(){
                     hci_send_cmd(&hci_read_local_supported_features);
                     break;                
                 case 6:
-                    hci_send_cmd(&hci_set_event_mask,0xffffffff, 0xFFFFFFFF); ///0x1DFFFFFF
+                    if (hci_le_supported()){
+                        hci_send_cmd(&hci_set_event_mask,0xffffffff, 0x3FFFFFFF);
+                    } else {
+                        // Kensington Bluetoot 2.1 USB Dongle (CSR Chipset) returns an error for 0xffff... 
+                        hci_send_cmd(&hci_set_event_mask,0xffffffff, 0x1FFFFFFF);
+                    }
 
                     // skip Classic init commands for LE only chipsets
                     if (!hci_classic_supported()){
@@ -1234,7 +1239,7 @@ void hci_run(){
                             hci_stack.substate = 11 << 1;    // skip all classic command
                         } else {
                             log_error("Neither BR/EDR nor LE supported");
-                            hci_stack.substate = 13 << 1;
+                            hci_stack.substate = 13 << 1;    // skip all
                         }
                     }
                     break;
