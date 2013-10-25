@@ -43,38 +43,14 @@
 #include <btstack/btstack.h>
 #include <btstack/hci_cmds.h>
 
-// until next BTstack Cydia update
-#include "compat-svn.c"
-
 // bd_addr_t addr = {0x00, 0x03, 0xc9, 0x3d, 0x77, 0x43 };  // Think Outside Keyboard
 // bd_addr_t addr = {0x00, 0x19, 0x1d, 0x90, 0x44, 0x68 };  // WiiMote
-bd_addr_t addr = {0x76, 0x6d, 0x62, 0xdb, 0xca, 0x73 };  // iPad
-
-hci_con_handle_t con_handle;
-uint16_t source_cid_interrupt;
-uint16_t source_cid_control;
+// bd_addr_t addr = {0x76, 0x6d, 0x62, 0xdb, 0xca, 0x73 };  // iPad
+bd_addr_t addr = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};  // MBA
 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	
-	bd_addr_t event_addr;
-
 	switch (packet_type) {
-			
-		case L2CAP_DATA_PACKET:
-			// just dump data for now
-			printf("source cid %x -- ", channel);
-			hexdump( packet, size );
-	
-			// HOME => disconnect
-			if (packet[0] == 0xA1) {							// Status report
-				if (packet[1] == 0x30 || packet[1] == 0x31) {   // type 0x30 or 0x31
-					if (packet[3] & 0x080) {                   // homne button pressed
-						printf("Disconnect baseband\n");
-						bt_send_cmd(&hci_disconnect, con_handle, 0x13); // remote closed connection
-					}
-				}
-			}
-			break;
 			
 		case HCI_EVENT_PACKET:
 			
@@ -86,70 +62,23 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					break;
 					
 				case BTSTACK_EVENT_STATE:
-					// bt stack activated, get started - disable pairing
+					// bt stack activated, get started
 					if (packet[2] == HCI_STATE_WORKING) {
-						bt_send_cmd(&hci_write_authentication_enable, 0);
+						uint8_t des_serviceSearchPattern[5] = {0x35, 0x03, 0x19, 0x10, 0x02};
+						bt_send_cmd(&sdp_client_query_rfcomm_services, addr, des_serviceSearchPattern);
 					}
 					break;
-					
-				case HCI_EVENT_LINK_KEY_REQUEST:
-					printf("HCI_EVENT_LINK_KEY_REQUEST \n");
-					// link key request
-					bt_flip_addr(event_addr, &packet[2]); 
-					bt_send_cmd(&hci_link_key_request_negative_reply, &event_addr);
+
+				case SDP_QUERY_COMPLETE:
+					// data: event(8), len(8), status(8)
+					printf("SDP_QUERY_COMPLETE, status %u\n", packet[2]);
 					break;
-					
-				case HCI_EVENT_PIN_CODE_REQUEST:
-					// inform about pin code request
-					printf("Please enter PIN 0000 on remote device\n");
-					bt_flip_addr(event_addr, &packet[2]); 
-					bt_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
+
+				case SDP_QUERY_RFCOMM_SERVICE:
+					// data: event(8), len(8), rfcomm channel(8), name(var)
+					printf("SDP_QUERY_RFCOMM_SERVICE, rfcomm channel %u, name '%s'\n", packet[2], (const char*)&packet[3]);
 					break;
-					
-				case L2CAP_EVENT_CHANNEL_OPENED:
-					// inform about new l2cap connection
-					// inform about new l2cap connection
-					bt_flip_addr(event_addr, &packet[3]);
-					uint16_t psm = READ_BT_16(packet, 11); 
-					uint16_t source_cid = READ_BT_16(packet, 13); 
-					con_handle = READ_BT_16(packet, 9);
-					if (packet[2] == 0) {
-						printf("Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, source cid 0x%02x, dest cid 0x%02x\n",
-							   bd_addr_to_str(event_addr), con_handle, psm, source_cid,  READ_BT_16(packet, 15));
-						
-						if (psm == 0x13) {
-							source_cid_interrupt = source_cid;
-							// interupt channel openedn succesfully, now open control channel, too.
-							bt_send_cmd(&l2cap_create_channel, event_addr, 0x11);
-						} else {
-							source_cid_control = source_cid;
-							// request acceleration data..
-							// uint8_t setMode31[] = { 0x52, 0x12, 0x00, 0x31 };
-							// bt_send_l2cap( source_cid, setMode31, sizeof(setMode31));
-							// stop blinking
-							// uint8_t setLEDs[] = { 0x52, 0x11, 0x10 };
-							// bt_send_l2cap( source_cid, setLEDs, sizeof(setLEDs));
-						}
-					} else {
-						printf("L2CAP connection to device %s  failed. status code %u\n",  bd_addr_to_str(event_addr), packet[2]);
-						exit(1);
-					}
-					break;
-					
-				case HCI_EVENT_DISCONNECTION_COMPLETE:
-					// connection closed -> quit tes app
-					printf("Basebank connection closed, exit.\n");
-					exit(0);
-					break;
-					
-				case HCI_EVENT_COMMAND_COMPLETE:
-					// connect to HID device (PSM 0x13) at addr
-					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable) ) {
-						bt_send_cmd(&l2cap_create_channel, addr, 0x13);
-						printf("Press 1+2 on WiiMote to make it discoverable - Press HOME to disconnect later :)\n");
-					}
-					break;
-					
+
 				default:
 					// other event
 					break;

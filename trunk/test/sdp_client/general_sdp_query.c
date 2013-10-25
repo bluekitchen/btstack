@@ -111,12 +111,12 @@ void assertBuffer(int size){
 
 
 static void handle_general_sdp_parser_event(sdp_query_event_t * event){
-    sdp_parser_attribute_value_event_t * ve;
+    sdp_query_attribute_value_event_t * ve;
     sdp_query_complete_event_t * ce;
 
     switch (event->type){
         case SDP_QUERY_ATTRIBUTE_VALUE:
-            ve = (sdp_parser_attribute_value_event_t*) event;
+            ve = (sdp_query_attribute_value_event_t*) event;
             
             // handle new record
             if (ve->record_id != record_id){

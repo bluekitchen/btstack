@@ -42,7 +42,8 @@ COMMON = \
     ${BTSTACK_ROOT}/src/utils.c			          \
     ${BTSTACK_ROOT}/src/sdp_parser.c              \
     ${BTSTACK_ROOT}/src/sdp_client.c              \
-    ${BTSTACK_ROOT}/src/sdp_query_rfcomm.c 		  \
+    ${BTSTACK_ROOT}/src/sdp_query_util.c		  \
+	${BTSTACK_ROOT}/src/sdp_query_rfcomm.c 		  \
 #	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2560A_2.1.c \
 
 LCD = ../firmware/hal_lcd.c ../firmware/hal_lcd_fonts.c

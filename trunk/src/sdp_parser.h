@@ -76,7 +76,7 @@ typedef struct sdp_query_complete_event {
 } sdp_query_complete_event_t;
 
 // SDP Parser event to deliver an attribute value byte by byte
-typedef struct sdp_parser_attribute_value_event {
+typedef struct sdp_query_attribute_value_event {
     uint8_t type;
     int record_id;
     uint16_t attribute_id;
