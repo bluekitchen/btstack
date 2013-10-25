@@ -15,6 +15,7 @@
 
 #include "sdp_parser.h"
 #include "sdp_client.h"
+#include "sdp_query_util.h"
 
 #include "bt_control_cc256x.h"
 #include "hal_adc.h"
@@ -40,7 +41,7 @@ uint16_t record_id = -1;
 int      attribute_value_buffer_size = 1000;
 uint8_t  attribute_value[1000];
 
-static void handle_general_sdp_parser_event(sdp_parser_event_t * event);
+static void handle_general_sdp_parser_event(sdp_query_event_t * event);
 
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -58,19 +59,19 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     }
 }
 
-void assertBuffer(int size){
+static void assertBuffer(int size){
     if (size > attribute_value_buffer_size){
         printf("Buffer size exceeded: available %d, required %d", attribute_value_buffer_size, size);
     }
 }
 
-static void handle_general_sdp_parser_event(sdp_parser_event_t * event){
-    sdp_parser_attribute_value_event_t * ve;
+static void handle_general_sdp_parser_event(sdp_query_event_t * event){
+    sdp_query_attribute_value_event_t * ve;
     sdp_query_complete_event_t * ce;
 
     switch (event->type){
         case SDP_QUERY_ATTRIBUTE_VALUE:
-            ve = (sdp_parser_attribute_value_event_t*) event;
+            ve = (sdp_query_attribute_value_event_t*) event;
             
             // handle new record
             if (ve->record_id != record_id){
@@ -82,8 +83,8 @@ static void handle_general_sdp_parser_event(sdp_parser_event_t * event){
 
             attribute_value[ve->data_offset] = ve->data;
             if ((uint16_t)(ve->data_offset+1) == ve->attribute_length){
-               printf("Attribute 0x%04x, offset %u", ve->attribute_id, ve->data_offset);
-               hexdump(attribute_value, ve->attribute_length);
+               printf("Attribute 0x%04x: ", ve->attribute_id);
+               de_dump_data_element(attribute_value);
             }
             break;
         case SDP_QUERY_COMPLETE:
@@ -92,6 +93,7 @@ static void handle_general_sdp_parser_event(sdp_parser_event_t * event){
             break;
     }
 }
+
 
 static void hw_setup(){
     // stop watchdog timer
