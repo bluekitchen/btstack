@@ -28,7 +28,7 @@ BTdaemon_FILES = $(libBTstack_FILES)   \
     sdp_query_util.c        \
 	../SpringBoardAccess/SpringBoardAccess.c
 BTdaemon_CFLAGS = -I../include -I..
-BTdaemon_FRAMEWORKS = IOKit
+BTdaemon_LDFLAGS += $(SYSROOT)/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit
 
 after-BTdaemon-stage::
 	echo "current dir" `pwd`
