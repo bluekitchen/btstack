@@ -56,12 +56,13 @@
 - (BOOL)isWildcat;
 @end
 
-@interface BluetoothPSViewController : PSViewController
+@interface BluetoothPSViewController : PSViewController {
     BluetoothTableViewAdapter *tableViewAdapter;
     BluetoothController *bluetoothController;
     UIView *_wrapperView;   // for < 3.2
     UITableView *tableView;
     BOOL initialized;
+}
 @end
 
 @implementation BluetoothPSViewController

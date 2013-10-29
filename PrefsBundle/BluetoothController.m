@@ -46,11 +46,11 @@ static void bt_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t* pa
 }
 
 
+static BluetoothController* sharedInstance = nil;
+
 @implementation BluetoothController
 
 @synthesize listener;
-
-static BluetoothController* sharedInstance = nil;
 
 +(BluetoothController*) sharedInstance{
     if (!sharedInstance) {
