@@ -548,8 +548,8 @@ connection_t * socket_connection_open_tcp(const char *address, uint16_t port){
 	}
     // connect
 	char* addr = localhost->h_addr_list[0];
-	memcpy(&btdaemon_address.sin_addr.s_addr, addr, sizeof addr);
-	if(connect(btsocket, (struct sockaddr*)&btdaemon_address, sizeof btdaemon_address) == -1){
+	memcpy(&btdaemon_address.sin_addr.s_addr, addr, sizeof (struct in_addr));
+	if(connect(btsocket, (struct sockaddr*)&btdaemon_address, sizeof (btdaemon_address)) == -1){
 		return NULL;
 	}
     
