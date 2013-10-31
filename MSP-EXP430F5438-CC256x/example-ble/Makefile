@@ -32,7 +32,7 @@ COMMON = \
     ${BTSTACK_ROOT}/ble/att.c    	              \
     ${BTSTACK_ROOT}/ble/l2cap_le.c                \
 	${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
-	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2564_2.5.c \
+	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2564_2.10.c \
     ${BTSTACK_ROOT}/src/hci_transport_h4_ehcill_dma.c \
     ../firmware/hal_lcd.c                         \
     ../firmware/hal_lcd_fonts.c	                  \

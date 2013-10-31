@@ -1,7 +1,7 @@
 #
 # Makefile for MSP-EXP430F5438 demos with PAN1315, PAN1317, PAN1325, PAN1323, or PAN1327 Bluetooth modules
 #
-# For the PAN1315/25 modules, please use bluetooth_init_cc2560_2.42.c in COMMON below
+# For the PAN1315/25 modules, please use bluetooth_init_cc2560_*.c in COMMON below
 # Please check instructions at https://code.google.com/p/btstack/wiki/CC256x on where to download the init scripts and how to convert them to *.c files.
 #
 # mspgcc is used: http://sourceforge.net/apps/mediawiki/mspgcc/index.php?title=MSPGCC_Wiki
@@ -28,7 +28,7 @@ CORE   = \
 COMMON = \
     ../src/hal_uart_dma.c                         \
 	${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
-	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2564_2.5.c   \
+	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2564_2.10.c   \
     ${BTSTACK_ROOT}/src/hci.c			          \
     ${BTSTACK_ROOT}/src/hci_cmds.c		          \
     ${BTSTACK_ROOT}/src/hci_dump.c		          \
