@@ -862,7 +862,11 @@ int main (int argc,  char * const * argv){
     
     // init HCI
     hci_init(transport, &config, control, remote_device_db);
-    
+
+#ifdef USE_BLUETOOL
+    // iPhone doesn't use SSP yet as there's no UI for it yet and auto accept is not an option
+    hci_ssp_set_enable(0);
+#endif
     // init L2CAP
     l2cap_init();
     l2cap_register_packet_handler(daemon_packet_handler);
