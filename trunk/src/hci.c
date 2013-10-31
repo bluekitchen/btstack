@@ -825,10 +825,15 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
     // class of device
     hci_stack.class_of_device = 0x007a020c; // Smartphone 
 
-    // Secure Simple Pairing
-    hci_stack.ssp_enable = 0;
-    hci_stack.ssp_io_capability = SSP_IO_CAPABILITY_UNKNOWN;
+    hci_ssp_set_enable(1);
+    hci_ssp_set_io_capability(SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+    hci_ssp_set_auto_accept(1);
+
+    // Secure Simple Pairing default: enable, no I/O capabilities, auto accept 
+    hci_stack.ssp_enable = 1;
+    hci_stack.ssp_io_capability = SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
     hci_stack.ssp_authentication_requirement = 0;
+    hci_stack.ssp_auto_accept = 1;
 }
 
 void hci_close(){
