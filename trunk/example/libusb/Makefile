@@ -39,7 +39,7 @@ COMMON_OBJ = $(COMMON:.c=.o)
 
 # create firmware image from common objects and example source file
 
-all: sdp_rfcomm_query sdp_general_query spp_counter spp_counter_ssp ble_server
+all: sdp_rfcomm_query sdp_general_query spp_counter ble_server
 #spp-usb l2cap-server-usb l2cap-client-usb l2cap-server-uart l2cap-client-uart
 
 sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} sdp_rfcomm_query.c
@@ -51,15 +51,12 @@ sdp_general_query: ${CORE_OBJ} ${COMMON_OBJ} sdp_general_query.c
 spp_counter: ${CORE_OBJ} ${COMMON_OBJ} spp_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_counter_ssp: ${CORE_OBJ} ${COMMON_OBJ} spp_counter_ssp.c
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-
 # compile .ble description
 profile.h: profile.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 
-ble_server: ${CORE_OBJ} ${COMMON_OBJ} ble_server.c profile.h
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} ble_server.c ${CFLAGS} ${LDFLAGS} -o $@
+ble_server: ${CORE_OBJ} ${COMMON_OBJ} rijndael.c ble_server.c profile.h
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} rijndael.c ble_server.c ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
 	rm -f  spp_counter sdp_rfcomm_query sdp_general_query spp_counter_ssp *.o *.out *.hex ../driver/*.o ${BTSTACK_ROOT}/src/*.o
