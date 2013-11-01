@@ -80,12 +80,12 @@ void sdp_client_handle_done(uint8_t status){
     sdp_parser_handle_done(status);
 }
 
-void parse_ServiceRecordHandleList(uint8_t* packet, uint16_t total_count, uint16_t current_count){
+void parse_service_record_handle_list(uint8_t* packet, uint16_t total_count, uint16_t current_count){
     sdp_parser_handle_service_search(packet, total_count, current_count);
 }
 
 // TODO: inline if not needed (des(des))
-void parse_AttributeLists(uint8_t* packet, uint16_t length){
+void parse_attribute_lists(uint8_t* packet, uint16_t length){
     sdp_parser_handle_chunk(packet, length);
 }
 
@@ -132,7 +132,7 @@ void sdp_client_service_search(bd_addr_t remote, uint8_t * des_serviceSearchPatt
 }
 
 
-static void tryToSend(uint16_t channel){
+static void try_to_send(uint16_t channel){
 
     if (sdp_client_state != W2_SEND) return;
 
@@ -152,11 +152,11 @@ static void tryToSend(uint16_t channel){
             request_len = setup_ServiceSearchAttributeRequest(data);
             break;
         default:
-            log_info("SDP Client tryToSend :: PDU ID invalid. %u", PDU_ID);
+            log_info("SDP Client try_to_send :: PDU ID invalid. %u", PDU_ID);
             return;
     }
 
-    printf("tryToSend channel %x, size %u\n", channel, request_len);
+    printf("try_to_send channel %x, size %u\n", channel, request_len);
 
     int err = l2cap_send_prepared(channel, request_len);
     switch (err){
@@ -175,7 +175,7 @@ static void tryToSend(uint16_t channel){
     }
 }
 
-static void parse_ServiceSearchResponse(uint8_t* packet){
+static void parse_service_search_response(uint8_t* packet){
     uint16_t offset = 3;
     uint16_t parameterLength = READ_NET_16(packet,offset);
     offset+=2;
@@ -191,7 +191,7 @@ static void parse_ServiceSearchResponse(uint8_t* packet){
         return;
     }
     
-    parse_ServiceRecordHandleList(packet+offset, totalServiceRecordCount, currentServiceRecordCount);
+    parse_service_record_handle_list(packet+offset, totalServiceRecordCount, currentServiceRecordCount);
     offset+=(currentServiceRecordCount * 4);
 
 
@@ -210,7 +210,7 @@ static void parse_ServiceSearchResponse(uint8_t* packet){
     }
 }
 
-static void parse_ServiceAttributeResponse(uint8_t* packet){
+static void parse_service_attribute_response(uint8_t* packet){
     uint16_t offset = 3;
     uint16_t parameterLength = READ_NET_16(packet,offset);
     offset+=2;
@@ -225,7 +225,7 @@ static void parse_ServiceAttributeResponse(uint8_t* packet){
     }
 
     // AttributeLists
-    parse_AttributeLists(packet+offset, attributeListByteCount);
+    parse_attribute_lists(packet+offset, attributeListByteCount);
     offset+=attributeListByteCount;
 
     continuationStateLen = packet[offset];
@@ -244,7 +244,7 @@ static void parse_ServiceAttributeResponse(uint8_t* packet){
 }
 
 
-static void parse_ServiceSearchAttributeResponse(uint8_t* packet){
+static void parse_service_search_attribute_response(uint8_t* packet){
     uint16_t offset = 3;
     uint16_t parameterLength = READ_NET_16(packet,offset);
     offset+=2;
@@ -258,7 +258,7 @@ static void parse_ServiceSearchAttributeResponse(uint8_t* packet){
     }
 
     // AttributeLists
-    parse_AttributeLists(packet+offset, attributeListByteCount);
+    parse_attribute_lists(packet+offset, attributeListByteCount);
     offset+=attributeListByteCount;
 
     continuationStateLen = packet[offset];
@@ -276,7 +276,7 @@ static void parse_ServiceSearchAttributeResponse(uint8_t* packet){
     }
 }
 
-static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     uint16_t handle;
 
@@ -303,13 +303,13 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         log_info("SDP Client :: PDU ID. %u ,%u", PDU_ID, packet[0]);
         switch (PDU_ID){
             case SDP_ServiceSearchResponse:
-                parse_ServiceSearchResponse(packet);
+                parse_service_search_response(packet);
                 break;
             case SDP_ServiceAttributeResponse:
-                parse_ServiceAttributeResponse(packet);
+                parse_service_attribute_response(packet);
                 break;
             case SDP_ServiceSearchAttributeResponse:
-                parse_ServiceSearchAttributeResponse(packet);
+                parse_service_search_attribute_response(packet);
                 break;
             default:
                 log_error("SDP Client :: PDU ID invalid. %u ,%u", PDU_ID, packet[0]);
@@ -325,7 +325,7 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
         }
         // prepare next request and send
         sdp_client_state = W2_SEND;
-        tryToSend(sdp_cid);
+        try_to_send(sdp_cid);
     
         return;
     }
@@ -349,11 +349,11 @@ static void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *p
             printf("Connected, cid %x, mtu %u.\n\r", sdp_cid, mtu);
 
             sdp_client_state = W2_SEND;
-            tryToSend(sdp_cid);
+            try_to_send(sdp_cid);
             break;
         case L2CAP_EVENT_CREDITS:
         case DAEMON_EVENT_HCI_PACKET_SENT:
-            tryToSend(sdp_cid);
+            try_to_send(sdp_cid);
             break;
         case L2CAP_EVENT_CHANNEL_CLOSED:
             printf("Channel closed.\n\r");
