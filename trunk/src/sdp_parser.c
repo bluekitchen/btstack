@@ -62,7 +62,7 @@ static uint16_t attribute_value_size;
 static uint32_t record_handle;
 static int record_counter = 0;
 
-static void (*sdp_query_rfcomm_callback)(sdp_query_event_t * event);
+static void (*sdp_query_callback)(sdp_query_event_t * event);
 
 // Low level parser
 static de_state_t de_header_state;
@@ -106,9 +106,9 @@ int de_state_size(uint8_t eventByte, de_state_t *de_state){
 void dummy_notify(sdp_query_event_t* event){}
 
 void sdp_parser_register_callback(void (*sdp_callback)(sdp_query_event_t* event)){
-    sdp_query_rfcomm_callback = dummy_notify;
+    sdp_query_callback = dummy_notify;
     if (sdp_callback != NULL){
-        sdp_query_rfcomm_callback = sdp_callback;
+        sdp_query_callback = sdp_callback;
     } 
 }
 
@@ -116,10 +116,6 @@ void parse(uint8_t eventByte){
     // count all bytes
     list_offset++;
     record_offset++;
-
-    static int b = 0;
-    printf("0x%02x, ", eventByte);
-    if (++b==16) { printf("\n"); b = 0; }
 
     // printf(" parse BYTE_RECEIVED %02x\n", eventByte);
     switch(state){
@@ -131,8 +127,6 @@ void parse(uint8_t eventByte){
             
             record_counter = 0;
             state = GET_RECORD_LENGTH;
-
-            printf("\n -- new record starts --\n"); b = 0;
             break;
 
         case GET_RECORD_LENGTH:
@@ -175,7 +169,7 @@ void parse(uint8_t eventByte){
                 attribute_bytes_delivered++,
                 eventByte
             };
-            (*sdp_query_rfcomm_callback)((sdp_query_event_t*)&attribute_value_event);
+            (*sdp_query_callback)((sdp_query_event_t*)&attribute_value_event);
             }
            if (!de_state_size(eventByte, &de_header_state)) break;
 
@@ -196,7 +190,7 @@ void parse(uint8_t eventByte){
                 eventByte
             };
 
-            (*sdp_query_rfcomm_callback)((sdp_query_event_t*)&attribute_value_event);
+            (*sdp_query_callback)((sdp_query_event_t*)&attribute_value_event);
             }
             // printf("paser: attribute_bytes_received %u, attribute_value_size %u\n", attribute_bytes_received, attribute_value_size);
 
@@ -214,14 +208,13 @@ void parse(uint8_t eventByte){
                 record_counter++;
                 state = GET_RECORD_LENGTH;
                 // printf("parser: END_OF_RECORD\n\n");
-                printf("\n -- new record starts --\n %u %u %u", list_offset, list_size, record_offset); b = 0;
                 break;
             }
             list_offset = 0;
             de_state_init(&de_header_state);
             state = GET_LIST_LENGTH;
             record_counter = 0;
-            printf("parser: END_OF_RECORD & DONE\n\n\n");
+            // printf("parser: END_OF_RECORD & DONE\n\n\n");
             break;
         default:
             break;
@@ -262,14 +255,13 @@ void sdp_parser_handle_service_search(uint8_t * data, uint16_t total_count, uint
     for (i=0;i<record_handle_count;i++){
         record_handle = READ_NET_32(data, i*4);
         record_counter++;
-        printf("handle[%d/%d] = %d\n", i, record_handle_count, record_handle);
         sdp_query_service_record_handle_event_t service_record_handle_event = {
             SDP_QUERY_SERVICE_RECORD_HANDLE, 
             total_count, 
             record_counter, 
             record_handle
         };
-        (*sdp_query_rfcomm_callback)((sdp_query_event_t*)&service_record_handle_event);       
+        (*sdp_query_callback)((sdp_query_event_t*)&service_record_handle_event);       
     }        
 }
 
@@ -279,5 +271,5 @@ void sdp_parser_handle_done(uint8_t status){
         SDP_QUERY_COMPLETE, 
         status
     };
-    (*sdp_query_rfcomm_callback)((sdp_query_event_t*)&complete_event);
+    (*sdp_query_callback)((sdp_query_event_t*)&complete_event);
 }

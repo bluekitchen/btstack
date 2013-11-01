@@ -210,10 +210,8 @@ extern "C" {
 // data: event(8), len(8), record nr(16), attribute id(16), attribute value(var)
 #define SDP_QUERY_ATTRIBUTE_VALUE                          0x93
 
-// data: event(8), total nr(16), current nr(16), service record handle(32)
-#define SDP_QUERY_SERVICE_RECORD_HANDLE                     0x94
-//#define SDP_PARSER_ATTRIBUTE_VALUE                         0x94
-//#define SDP_PARSER_COMPLETE                                0x95
+// not provided by daemon, only used for internal testing
+#define SDP_QUERY_SERVICE_RECORD_HANDLE                    0x94
 	
 // last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
 
