@@ -62,7 +62,9 @@ ble_server: ${CORE_OBJ} ${COMMON_OBJ} rijndael.c ble_server.c profile.h
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} rijndael.c ble_server.c ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
-	rm -f  spp_counter sdp_rfcomm_query sdp_general_query spp_counter_ssp *.o *.out *.hex ../driver/*.o ${BTSTACK_ROOT}/src/*.o
+	rm -f  spp_counter sdp_rfcomm_query sdp_general_query spp_counter_ssp *.o *.out *.hex
+	rm -f  ${BTSTACK_ROOT}/src/*.o
+	rm -f  ${BTSTACK_ROOT}/ble/*.o
 	rm -f  ${BTSTACK_ROOT}/chipset-cc256x/*.o
 	rm -rf *.dSYM
 	
