@@ -156,21 +156,21 @@ static void try_to_send(uint16_t channel){
             return;
     }
 
-    printf("try_to_send channel %x, size %u\n", channel, request_len);
+    // printf("try_to_send channel %x, size %u\n", channel, request_len);
 
     int err = l2cap_send_prepared(channel, request_len);
     switch (err){
         case 0:
             // packet is sent prepare next one
-            printf("l2cap_send_internal() -> OK\n\r");
+            // printf("l2cap_send_internal() -> OK\n\r");
             PDU_ID = SDP_Invalid;
             sdp_client_state = W4_RESPONSE;
             break;
         case BTSTACK_ACL_BUFFERS_FULL:
-            printf("l2cap_send_internal() ->BTSTACK_ACL_BUFFERS_FULL\n\r");
+            log_info("l2cap_send_internal() ->BTSTACK_ACL_BUFFERS_FULL\n\r");
             break;
         default:
-            printf("l2cap_send_internal() -> err %d\n\r", err);
+            log_error("l2cap_send_internal() -> err %d\n\r", err);
             break;
     }
 }
@@ -277,24 +277,20 @@ static void parse_service_search_attribute_response(uint8_t* packet){
 }
 
 void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-
     uint16_t handle;
 
-    printf("SDP Client :: l2cap_packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
-
     if (packet_type == L2CAP_DATA_PACKET){
-        printf("SDP Client :: L2CAP_DATA_PACKET received\n");
 
         uint16_t responseTransactionID = READ_NET_16(packet,1);
         if ( responseTransactionID != transactionID){
-            printf("Missmatching transaction ID, expected %u, found %u.\n", transactionID, responseTransactionID);
+            log_error("Missmatching transaction ID, expected %u, found %u.\n", transactionID, responseTransactionID);
             return;
         } 
         
         if (packet[0] != SDP_ServiceSearchAttributeResponse 
             && packet[0] != SDP_ServiceSearchResponse
             && packet[0] != SDP_ServiceAttributeResponse){
-            printf("Not a valid PDU ID, expected %u, %u or %u, found %u.\n", SDP_ServiceSearchResponse, 
+            log_error("Not a valid PDU ID, expected %u, %u or %u, found %u.\n", SDP_ServiceSearchResponse, 
                                     SDP_ServiceAttributeResponse, SDP_ServiceSearchAttributeResponse, packet[0]);
             return;
         }
@@ -318,7 +314,7 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
 
         // continuation set or DONE?
         if (continuationStateLen == 0){
-            printf("DONE! All clients already notified.\n");
+            // printf("DONE! All clients already notified.\n");
             sdp_client_handle_done(0);
             sdp_client_state = INIT;
             return;
@@ -339,14 +335,14 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
 
             // data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16), local_mtu(16), remote_mtu(16) 
             if (packet[2]) {
-                printf("Connection failed.\n\r");
+                log_error("Connection failed.\n\r");
                 sdp_client_handle_done(packet[2]);
                 break;
             }
             sdp_cid = channel;
             mtu = READ_BT_16(packet, 17);
             handle = READ_BT_16(packet, 9);
-            printf("Connected, cid %x, mtu %u.\n\r", sdp_cid, mtu);
+            log_info("Connected, cid %x, mtu %u.\n\r", sdp_cid, mtu);
 
             sdp_client_state = W2_SEND;
             try_to_send(sdp_cid);
@@ -356,7 +352,7 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
             try_to_send(sdp_cid);
             break;
         case L2CAP_EVENT_CHANNEL_CLOSED:
-            printf("Channel closed.\n\r");
+            log_info("Channel closed.\n\r");
             if (sdp_client_state == INIT) break;
             sdp_client_handle_done(SDP_QUERY_INCOMPLETE);
             break;
