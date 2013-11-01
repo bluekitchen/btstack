@@ -38,7 +38,6 @@
 //*****************************************************************************
 
 // TODO: seperate BR/EDR from LE ACL buffers
-// TODO: move LE init into HCI
 // ..
 
 // NOTE: Supports only a single connection
@@ -88,6 +87,19 @@ typedef enum {
 
 typedef uint8_t key_t[16];
 
+typedef enum {
+    SM_STATE_IDLE,
+    SM_STATE_C1_GET_RANDOM_A,
+    SM_STATE_C1_W4_RANDOM_A,
+    SM_STATE_C1_GET_RANDOM_B,
+    SM_STATE_C1_W4_RANDOM_B,
+    SM_STATE_C1_GET_ENC_A,
+    SM_STATE_C1_W4_ENC_A,
+    SM_STATE_C1_GET_ENC_B,
+    SM_STATE_C1_W4_ENC_B,
+    SM_STATE_C1_SEND,
+} security_manager_state_t;
+
 static att_connection_t att_connection;
 static uint16_t         att_response_handle = 0;
 static uint16_t         att_response_size   = 0;
@@ -99,6 +111,8 @@ static uint8_t          sm_response_buffer[28];
 
 // defines which keys will be send  after connection is encrypted
 static int sm_key_distribution_set = 0;
+
+static security_manager_state_t sm_state_responding = SM_STATE_IDLE;
 
 static int sm_send_security_request = 0;
 static int sm_send_encryption_information = 0;
@@ -118,6 +132,9 @@ static key_t   sm_m_random;
 static key_t   sm_m_confirm;
 static uint8_t sm_preq[7];
 static uint8_t sm_pres[7];
+
+static key_t   sm_s_random;
+static key_t   sm_s_confirm;
 
 // key distribution, slave sends
 static key_t     sm_s_ltk;
@@ -173,7 +190,7 @@ static inline void swap56(uint8_t src[7], uint8_t dst[7]){
         dst[6 - i] = src[i];
 }
 
-void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, bd_addr_t ia, bd_addr_t ra, key_t c1){
+static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, bd_addr_t ia, bd_addr_t ra, key_t c1){
 
     // p1 = pres || preq || rat’ || iat’
     // "The octet of iat’ becomes the least significant octet of p1 and the most signifi-
@@ -265,7 +282,31 @@ static void sm_s1(key_t k, key_t r1, key_t r2, key_t s1){
 }
 
 static void sm_run(void){
+
+    // assert that we can send either one
+    if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
     if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) return;
+
+    switch (sm_state_responding){
+        case SM_STATE_C1_GET_RANDOM_A:
+        case SM_STATE_C1_GET_RANDOM_B:
+            hci_send_cmd(&hci_le_rand);
+            sm_state_responding++;
+            return;
+        case SM_STATE_C1_GET_ENC_A:
+        case SM_STATE_C1_GET_ENC_B:
+            break;
+        case SM_STATE_C1_SEND: {
+            uint8_t buffer[17];
+            buffer[0] = SM_CODE_PAIRING_CONFIRM;
+            memcpy(&buffer[1], sm_s_confirm, 16);
+            l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+            sm_state_responding = SM_STATE_IDLE;
+            return;
+        }
+        default:
+            break;
+    }
 
     // send security manager packet
     if (sm_response_size){
@@ -341,6 +382,10 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // for validate
             memcpy(sm_preq, packet, 7);
             
+            // TODO use provided IO capabilites
+            // TOOD use local MITM flag
+            // TODO provide callback to request OOB data
+
             memcpy(sm_response_buffer, packet, size);        
             sm_response_buffer[0] = SM_CODE_PAIRING_RESPONSE;
             // sm_response_buffer[1] = 0x00;   // io capability: DisplayOnly
@@ -359,10 +404,13 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
         case  SM_CODE_PAIRING_CONFIRM:
             // received confirm value
             memcpy(sm_m_confirm, &packet[1], 16);
-            sm_response_size = 17;
 
             // dummy
-            memcpy(sm_response_buffer, packet, size);        
+            sm_response_size = 17;
+            memcpy(sm_response_buffer, packet, size);
+
+            // for real
+            // sm_state_responding = SM_STATE_C1_GET_RANDOM_A;
             break;
 
         case SM_CODE_PAIRING_RANDOM:
@@ -409,6 +457,13 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
     sm_run();
 }
 
+void sm_reset_tk(){
+    int i;
+    for (i=0;i<16;i++){
+        sm_tk[i] = 0;
+    }
+}
+
 // END OF SM
 
 // enable LE, setup ADV data
@@ -423,7 +478,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 			switch (packet[0]) {
 				
                 case BTSTACK_EVENT_STATE:
-					// bt stack activated, get started - set local name
+					// bt stack activated, get started
 					if (packet[2] == HCI_STATE_WORKING) {
                         printf("Working!\n");
                         hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
@@ -438,7 +493,14 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             sm_response_handle = READ_BT_16(packet, 4);
-                            
+                            sm_m_addr_type = packet[7];
+                            BD_ADDR_COPY(sm_m_address, &packet[8]);
+                            // TODO use non-null TK if appropriate
+                            sm_reset_tk();
+                            // TODO support private addresses
+                            sm_s_addr_type = 0;
+                            BD_ADDR_COPY(sm_s_address, hci_local_bd_addr());
+
                             // request security
                             sm_send_security_request = 1;
 
@@ -455,8 +517,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             break;
                     }
                     break;
-                case HCI_EVENT_ENCRYPTION_CHANGE:
-                
+
+                case HCI_EVENT_ENCRYPTION_CHANGE:                
                     // distribute keys as requested by initiator
                     // TODO: handle initiator case here
                     if (sm_key_distribution_set & SM_KEYDIST_ENC_KEY)
@@ -470,7 +532,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    att_response_handle =0;
+                    att_response_handle = 0;
                     att_response_size = 0;
                     
                     // restart advertising
@@ -493,6 +555,26 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					   hci_send_cmd(&hci_le_set_advertise_enable, 1);
 					   break;
 					}
+                    if (COMMAND_COMPLETE_EVENT(packet, hci_le_rand)){
+                        switch (sm_state_responding){
+                            case SM_STATE_C1_W4_RANDOM_A:
+                                memcpy(&sm_s_random[0], &packet[6], 8);
+                                hci_send_cmd(&hci_le_rand);
+                                sm_state_responding++;
+                                break;
+                            case SM_STATE_C1_W4_RANDOM_B:
+                                memcpy(&sm_s_random[8], &packet[6], 8);
+
+                                // calculate s_confirm
+                                sm_c1(sm_tk, sm_s_random, sm_preq, sm_pres, sm_m_addr_type, sm_s_addr_type, sm_m_address, sm_s_address, sm_s_confirm);
+                                // send data
+                                sm_state_responding = SM_STATE_C1_SEND;
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    }
 			}
 	}
 
