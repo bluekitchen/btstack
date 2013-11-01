@@ -55,15 +55,17 @@ typedef enum {
 
 void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-static uint16_t setup_ServiceSearchRequest(uint8_t * data);
-static uint16_t setup_ServiceAttributeRequest(uint8_t * data);
-static uint16_t setup_ServiceSearchAttributeRequest(uint8_t * data);
+static uint16_t setup_service_search_attribute_request(uint8_t * data);
 
+#ifdef HAVE_SDP_EXTRA_QUERIES
+static uint16_t setup_service_search_request(uint8_t * data);
+static uint16_t setup_service_attribute_request(uint8_t * data);
+static uint32_t serviceRecordHandle;
+#endif
 
 // SDP Client Query
 static uint16_t  mtu;
 static uint16_t  sdp_cid = 0x40;
-static uint32_t serviceRecordHandle;
 static uint8_t * serviceSearchPattern;
 static uint8_t * attributeIDList;
 static uint16_t  transactionID = 0;
@@ -73,6 +75,8 @@ static uint8_t   continuationStateLen;
 static sdp_client_state_t sdp_client_state;
 static SDP_PDU_ID_t PDU_ID = SDP_Invalid;
 
+
+
 void sdp_client_handle_done(uint8_t status){
     if (status == 0){
         l2cap_disconnect_internal(sdp_cid, 0);
@@ -80,22 +84,9 @@ void sdp_client_handle_done(uint8_t status){
     sdp_parser_handle_done(status);
 }
 
-void parse_service_record_handle_list(uint8_t* packet, uint16_t total_count, uint16_t current_count){
-    sdp_parser_handle_service_search(packet, total_count, current_count);
-}
-
 // TODO: inline if not needed (des(des))
 void parse_attribute_lists(uint8_t* packet, uint16_t length){
     sdp_parser_handle_chunk(packet, length);
-}
-
-
-void hexdump2(void *data, int size){
-    int i;
-    for (i=0; i<size;i++){
-        printf("%02X ", ((uint8_t *)data)[i]);
-    }
-    printf("\n");
 }
 
 /* Queries the SDP service of the remote device given a service search pattern 
@@ -112,28 +103,8 @@ void sdp_client_query(bd_addr_t remote, uint8_t * des_serviceSearchPattern, uint
     l2cap_create_channel_internal(NULL, sdp_packet_handler, remote, PSM_SDP, l2cap_max_mtu());
 }
 
-void sdp_client_service_attribute_search(bd_addr_t remote, uint32_t search_serviceRecordHandle, uint8_t * des_attributeIDList){
-    serviceRecordHandle = search_serviceRecordHandle;
-    attributeIDList = des_attributeIDList;
-    continuationStateLen = 0;
-    PDU_ID = SDP_ServiceAttributeResponse;
-
-    sdp_client_state = W4_CONNECT;
-    l2cap_create_channel_internal(NULL, sdp_packet_handler, remote, PSM_SDP, l2cap_max_mtu());
-}
-
-void sdp_client_service_search(bd_addr_t remote, uint8_t * des_serviceSearchPattern){
-    serviceSearchPattern = des_serviceSearchPattern;
-    continuationStateLen = 0;
-    PDU_ID = SDP_ServiceSearchResponse;
-
-    sdp_client_state = W4_CONNECT;
-    l2cap_create_channel_internal(NULL, sdp_packet_handler, remote, PSM_SDP, l2cap_max_mtu());
-}
-
 
 static void try_to_send(uint16_t channel){
-
     if (sdp_client_state != W2_SEND) return;
 
     if (!l2cap_can_send_packet_now(channel)) return;
@@ -142,21 +113,21 @@ static void try_to_send(uint16_t channel){
     uint16_t request_len = 0;
 
     switch (PDU_ID){
+#ifdef HAVE_SDP_EXTRA_QUERIES
         case SDP_ServiceSearchResponse:
-            request_len = setup_ServiceSearchRequest(data);
+            request_len = setup_service_search_request(data);
             break;
         case SDP_ServiceAttributeResponse:
-            request_len = setup_ServiceAttributeRequest(data);
+            request_len = setup_service_attribute_request(data);
             break;
+#endif
         case SDP_ServiceSearchAttributeResponse:
-            request_len = setup_ServiceSearchAttributeRequest(data);
+            request_len = setup_service_search_attribute_request(data);
             break;
         default:
             log_info("SDP Client try_to_send :: PDU ID invalid. %u", PDU_ID);
             return;
     }
-
-    // printf("try_to_send channel %x, size %u\n", channel, request_len);
 
     int err = l2cap_send_prepared(channel, request_len);
     switch (err){
@@ -173,6 +144,246 @@ static void try_to_send(uint16_t channel){
             log_error("l2cap_send_internal() -> err %d\n\r", err);
             break;
     }
+}
+
+
+static void parse_service_search_attribute_response(uint8_t* packet){
+    uint16_t offset = 3;
+    uint16_t parameterLength = READ_NET_16(packet,offset);
+    offset+=2;
+    // AttributeListByteCount <= mtu
+    uint16_t attributeListByteCount = READ_NET_16(packet,offset);
+    offset+=2;
+
+    if (attributeListByteCount > mtu){
+        log_error("Error parsing ServiceSearchAttributeResponse: Number of bytes in found attribute list is larger then the MaximumAttributeByteCount.\n");
+        return;
+    }
+
+    // AttributeLists
+    parse_attribute_lists(packet+offset, attributeListByteCount);
+    offset+=attributeListByteCount;
+
+    continuationStateLen = packet[offset];
+    offset++;
+
+    if (continuationStateLen > 16){
+        log_error("Error parsing ServiceSearchAttributeResponse: Number of bytes in continuation state exceedes 16.\n");
+        return;
+    }
+    memcpy(continuationState, packet+offset, continuationStateLen);
+    offset+=continuationStateLen;
+
+    if (parameterLength != offset - 5){
+        log_error("Error parsing ServiceSearchAttributeResponse: wrong size of parameters, number of expected bytes%u, actual number %u.\n", parameterLength, offset);
+    }
+}
+
+void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    uint16_t handle;
+
+    if (packet_type == L2CAP_DATA_PACKET){
+
+        uint16_t responseTransactionID = READ_NET_16(packet,1);
+        if ( responseTransactionID != transactionID){
+            log_error("Missmatching transaction ID, expected %u, found %u.\n", transactionID, responseTransactionID);
+            return;
+        } 
+        
+        if (packet[0] != SDP_ServiceSearchAttributeResponse 
+            && packet[0] != SDP_ServiceSearchResponse
+            && packet[0] != SDP_ServiceAttributeResponse){
+            log_error("Not a valid PDU ID, expected %u, %u or %u, found %u.\n", SDP_ServiceSearchResponse, 
+                                    SDP_ServiceAttributeResponse, SDP_ServiceSearchAttributeResponse, packet[0]);
+            return;
+        }
+
+        PDU_ID = packet[0];
+        log_info("SDP Client :: PDU ID. %u ,%u", PDU_ID, packet[0]);
+        switch (PDU_ID){
+#ifdef HAVE_SDP_EXTRA_QUERIES
+            case SDP_ServiceSearchResponse:
+                parse_service_search_response(packet);
+                break;
+            case SDP_ServiceAttributeResponse:
+                parse_service_attribute_response(packet);
+                break;
+#endif
+            case SDP_ServiceSearchAttributeResponse:
+                parse_service_search_attribute_response(packet);
+                break;
+            default:
+                log_error("SDP Client :: PDU ID invalid. %u ,%u", PDU_ID, packet[0]);
+                return;
+        }
+
+        // continuation set or DONE?
+        if (continuationStateLen == 0){
+            // printf("DONE! All clients already notified.\n");
+            sdp_client_handle_done(0);
+            sdp_client_state = INIT;
+            return;
+        }
+        // prepare next request and send
+        sdp_client_state = W2_SEND;
+        try_to_send(sdp_cid);
+    
+        return;
+    }
+    
+    if (packet_type != HCI_EVENT_PACKET) return;
+    
+    switch(packet[0]){
+
+        case L2CAP_EVENT_CHANNEL_OPENED: 
+            if (sdp_client_state != W4_CONNECT) break;
+
+            // data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16), local_mtu(16), remote_mtu(16) 
+            if (packet[2]) {
+                log_error("Connection failed.\n\r");
+                sdp_client_handle_done(packet[2]);
+                break;
+            }
+            sdp_cid = channel;
+            mtu = READ_BT_16(packet, 17);
+            handle = READ_BT_16(packet, 9);
+            log_info("Connected, cid %x, mtu %u.\n\r", sdp_cid, mtu);
+
+            sdp_client_state = W2_SEND;
+            try_to_send(sdp_cid);
+            break;
+        case L2CAP_EVENT_CREDITS:
+        case DAEMON_EVENT_HCI_PACKET_SENT:
+            try_to_send(sdp_cid);
+            break;
+        case L2CAP_EVENT_CHANNEL_CLOSED:
+            log_info("Channel closed.\n\r");
+            if (sdp_client_state == INIT) break;
+            sdp_client_handle_done(SDP_QUERY_INCOMPLETE);
+            break;
+        default:
+            break;
+    }
+}
+
+
+static uint16_t setup_service_search_attribute_request(uint8_t * data){
+
+    uint16_t offset = 0;
+    transactionID++;
+    // uint8_t SDP_PDU_ID_t.SDP_ServiceSearchRequest;
+    data[offset++] = SDP_ServiceSearchAttributeRequest;
+    // uint16_t transactionID
+    net_store_16(data, offset, transactionID);
+    offset += 2;
+
+    // param legnth
+    offset += 2;
+
+    // parameters: 
+    //     ServiceSearchPattern - DES (min 1 UUID, max 12)
+    uint16_t serviceSearchPatternLen = de_get_len(serviceSearchPattern);
+    memcpy(data + offset, serviceSearchPattern, serviceSearchPatternLen);
+    offset += serviceSearchPatternLen;
+
+    //     MaximumAttributeByteCount - uint16_t  0x0007 - 0xffff -> mtu
+    net_store_16(data, offset, mtu);
+    offset += 2;
+
+    //     AttibuteIDList  
+    uint16_t attributeIDListLen = de_get_len(attributeIDList);
+    memcpy(data + offset, attributeIDList, attributeIDListLen);
+    offset += attributeIDListLen;
+
+    //     ContinuationState - uint8_t number of cont. bytes N<=16 
+    data[offset++] = continuationStateLen;
+    //                       - N-bytes previous response from server
+    memcpy(data + offset, continuationState, continuationStateLen);
+    offset += continuationStateLen;
+
+    // uint16_t paramLength 
+    net_store_16(data, 3, offset - 5);
+
+    return offset;
+}
+
+#ifdef HAVE_SDP_EXTRA_QUERIES
+void parse_service_record_handle_list(uint8_t* packet, uint16_t total_count, uint16_t current_count){
+    sdp_parser_handle_service_search(packet, total_count, current_count);
+}
+
+static uint16_t setup_service_search_request(uint8_t * data){
+    uint16_t offset = 0;
+    transactionID++;
+    // uint8_t SDP_PDU_ID_t.SDP_ServiceSearchRequest;
+    data[offset++] = SDP_ServiceSearchRequest;
+    // uint16_t transactionID
+    net_store_16(data, offset, transactionID);
+    offset += 2;
+
+    // param legnth
+    offset += 2;
+
+    // parameters: 
+    //     ServiceSearchPattern - DES (min 1 UUID, max 12)
+    uint16_t serviceSearchPatternLen = de_get_len(serviceSearchPattern);
+    memcpy(data + offset, serviceSearchPattern, serviceSearchPatternLen);
+    offset += serviceSearchPatternLen;
+
+    //     MaximumAttributeByteCount - uint16_t  0x0007 - 0xffff -> mtu
+    net_store_16(data, offset, mtu);
+    offset += 2;
+
+    //     ContinuationState - uint8_t number of cont. bytes N<=16 
+    data[offset++] = continuationStateLen;
+    //                       - N-bytes previous response from server
+    memcpy(data + offset, continuationState, continuationStateLen);
+    offset += continuationStateLen;
+
+    // uint16_t paramLength 
+    net_store_16(data, 3, offset - 5);
+
+    return offset;
+}
+
+
+static uint16_t setup_service_attribute_request(uint8_t * data){
+
+    uint16_t offset = 0;
+    transactionID++;
+    // uint8_t SDP_PDU_ID_t.SDP_ServiceSearchRequest;
+    data[offset++] = SDP_ServiceAttributeRequest;
+    // uint16_t transactionID
+    net_store_16(data, offset, transactionID);
+    offset += 2;
+
+    // param legnth
+    offset += 2;
+
+    // parameters: 
+    //     ServiceRecordHandle
+    net_store_32(data, offset, serviceRecordHandle);
+    offset += 4;
+
+    //     MaximumAttributeByteCount - uint16_t  0x0007 - 0xffff -> mtu
+    net_store_16(data, offset, mtu);
+    offset += 2;
+
+    //     AttibuteIDList  
+    uint16_t attributeIDListLen = de_get_len(attributeIDList);
+    memcpy(data + offset, attributeIDList, attributeIDListLen);
+    offset += attributeIDListLen;
+
+    //     ContinuationState - uint8_t number of cont. bytes N<=16 
+    data[offset++] = continuationStateLen;
+    //                       - N-bytes previous response from server
+    memcpy(data + offset, continuationState, continuationStateLen);
+    offset += continuationStateLen;
+
+    // uint16_t paramLength 
+    net_store_16(data, 3, offset - 5);
+
+    return offset;
 }
 
 static void parse_service_search_response(uint8_t* packet){
@@ -243,237 +454,23 @@ static void parse_service_attribute_response(uint8_t* packet){
     }
 }
 
+void sdp_client_service_attribute_search(bd_addr_t remote, uint32_t search_serviceRecordHandle, uint8_t * des_attributeIDList){
+    serviceRecordHandle = search_serviceRecordHandle;
+    attributeIDList = des_attributeIDList;
+    continuationStateLen = 0;
+    PDU_ID = SDP_ServiceAttributeResponse;
 
-static void parse_service_search_attribute_response(uint8_t* packet){
-    uint16_t offset = 3;
-    uint16_t parameterLength = READ_NET_16(packet,offset);
-    offset+=2;
-    // AttributeListByteCount <= mtu
-    uint16_t attributeListByteCount = READ_NET_16(packet,offset);
-    offset+=2;
-
-    if (attributeListByteCount > mtu){
-        log_error("Error parsing ServiceSearchAttributeResponse: Number of bytes in found attribute list is larger then the MaximumAttributeByteCount.\n");
-        return;
-    }
-
-    // AttributeLists
-    parse_attribute_lists(packet+offset, attributeListByteCount);
-    offset+=attributeListByteCount;
-
-    continuationStateLen = packet[offset];
-    offset++;
-
-    if (continuationStateLen > 16){
-        log_error("Error parsing ServiceSearchAttributeResponse: Number of bytes in continuation state exceedes 16.\n");
-        return;
-    }
-    memcpy(continuationState, packet+offset, continuationStateLen);
-    offset+=continuationStateLen;
-
-    if (parameterLength != offset - 5){
-        log_error("Error parsing ServiceSearchAttributeResponse: wrong size of parameters, number of expected bytes%u, actual number %u.\n", parameterLength, offset);
-    }
+    sdp_client_state = W4_CONNECT;
+    l2cap_create_channel_internal(NULL, sdp_packet_handler, remote, PSM_SDP, l2cap_max_mtu());
 }
 
-void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    uint16_t handle;
+void sdp_client_service_search(bd_addr_t remote, uint8_t * des_serviceSearchPattern){
+    serviceSearchPattern = des_serviceSearchPattern;
+    continuationStateLen = 0;
+    PDU_ID = SDP_ServiceSearchResponse;
 
-    if (packet_type == L2CAP_DATA_PACKET){
-
-        uint16_t responseTransactionID = READ_NET_16(packet,1);
-        if ( responseTransactionID != transactionID){
-            log_error("Missmatching transaction ID, expected %u, found %u.\n", transactionID, responseTransactionID);
-            return;
-        } 
-        
-        if (packet[0] != SDP_ServiceSearchAttributeResponse 
-            && packet[0] != SDP_ServiceSearchResponse
-            && packet[0] != SDP_ServiceAttributeResponse){
-            log_error("Not a valid PDU ID, expected %u, %u or %u, found %u.\n", SDP_ServiceSearchResponse, 
-                                    SDP_ServiceAttributeResponse, SDP_ServiceSearchAttributeResponse, packet[0]);
-            return;
-        }
-
-        PDU_ID = packet[0];
-        log_info("SDP Client :: PDU ID. %u ,%u", PDU_ID, packet[0]);
-        switch (PDU_ID){
-            case SDP_ServiceSearchResponse:
-                parse_service_search_response(packet);
-                break;
-            case SDP_ServiceAttributeResponse:
-                parse_service_attribute_response(packet);
-                break;
-            case SDP_ServiceSearchAttributeResponse:
-                parse_service_search_attribute_response(packet);
-                break;
-            default:
-                log_error("SDP Client :: PDU ID invalid. %u ,%u", PDU_ID, packet[0]);
-                return;
-        }
-
-        // continuation set or DONE?
-        if (continuationStateLen == 0){
-            // printf("DONE! All clients already notified.\n");
-            sdp_client_handle_done(0);
-            sdp_client_state = INIT;
-            return;
-        }
-        // prepare next request and send
-        sdp_client_state = W2_SEND;
-        try_to_send(sdp_cid);
-    
-        return;
-    }
-    
-    if (packet_type != HCI_EVENT_PACKET) return;
-    
-    switch(packet[0]){
-
-        case L2CAP_EVENT_CHANNEL_OPENED: 
-            if (sdp_client_state != W4_CONNECT) break;
-
-            // data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16), local_mtu(16), remote_mtu(16) 
-            if (packet[2]) {
-                log_error("Connection failed.\n\r");
-                sdp_client_handle_done(packet[2]);
-                break;
-            }
-            sdp_cid = channel;
-            mtu = READ_BT_16(packet, 17);
-            handle = READ_BT_16(packet, 9);
-            log_info("Connected, cid %x, mtu %u.\n\r", sdp_cid, mtu);
-
-            sdp_client_state = W2_SEND;
-            try_to_send(sdp_cid);
-            break;
-        case L2CAP_EVENT_CREDITS:
-        case DAEMON_EVENT_HCI_PACKET_SENT:
-            try_to_send(sdp_cid);
-            break;
-        case L2CAP_EVENT_CHANNEL_CLOSED:
-            log_info("Channel closed.\n\r");
-            if (sdp_client_state == INIT) break;
-            sdp_client_handle_done(SDP_QUERY_INCOMPLETE);
-            break;
-        default:
-            break;
-    }
+    sdp_client_state = W4_CONNECT;
+    l2cap_create_channel_internal(NULL, sdp_packet_handler, remote, PSM_SDP, l2cap_max_mtu());
 }
-
-static uint16_t setup_ServiceSearchRequest(uint8_t * data){
-
-    uint16_t offset = 0;
-    transactionID++;
-    // uint8_t SDP_PDU_ID_t.SDP_ServiceSearchRequest;
-    data[offset++] = SDP_ServiceSearchRequest;
-    // uint16_t transactionID
-    net_store_16(data, offset, transactionID);
-    offset += 2;
-
-    // param legnth
-    offset += 2;
-
-    // parameters: 
-    //     ServiceSearchPattern - DES (min 1 UUID, max 12)
-    uint16_t serviceSearchPatternLen = de_get_len(serviceSearchPattern);
-    memcpy(data + offset, serviceSearchPattern, serviceSearchPatternLen);
-    offset += serviceSearchPatternLen;
-
-    //     MaximumAttributeByteCount - uint16_t  0x0007 - 0xffff -> mtu
-    net_store_16(data, offset, mtu);
-    offset += 2;
-
-    //     ContinuationState - uint8_t number of cont. bytes N<=16 
-    data[offset++] = continuationStateLen;
-    //                       - N-bytes previous response from server
-    memcpy(data + offset, continuationState, continuationStateLen);
-    offset += continuationStateLen;
-
-    // uint16_t paramLength 
-    net_store_16(data, 3, offset - 5);
-
-    return offset;
-}
-
-
-static uint16_t setup_ServiceAttributeRequest(uint8_t * data){
-
-    uint16_t offset = 0;
-    transactionID++;
-    // uint8_t SDP_PDU_ID_t.SDP_ServiceSearchRequest;
-    data[offset++] = SDP_ServiceAttributeRequest;
-    // uint16_t transactionID
-    net_store_16(data, offset, transactionID);
-    offset += 2;
-
-    // param legnth
-    offset += 2;
-
-    // parameters: 
-    //     ServiceRecordHandle
-    net_store_32(data, offset, serviceRecordHandle);
-    offset += 4;
-
-    //     MaximumAttributeByteCount - uint16_t  0x0007 - 0xffff -> mtu
-    net_store_16(data, offset, mtu);
-    offset += 2;
-
-    //     AttibuteIDList  
-    uint16_t attributeIDListLen = de_get_len(attributeIDList);
-    memcpy(data + offset, attributeIDList, attributeIDListLen);
-    offset += attributeIDListLen;
-
-    //     ContinuationState - uint8_t number of cont. bytes N<=16 
-    data[offset++] = continuationStateLen;
-    //                       - N-bytes previous response from server
-    memcpy(data + offset, continuationState, continuationStateLen);
-    offset += continuationStateLen;
-
-    // uint16_t paramLength 
-    net_store_16(data, 3, offset - 5);
-
-    return offset;
-}
-
-static uint16_t setup_ServiceSearchAttributeRequest(uint8_t * data){
-
-    uint16_t offset = 0;
-    transactionID++;
-    // uint8_t SDP_PDU_ID_t.SDP_ServiceSearchRequest;
-    data[offset++] = SDP_ServiceSearchAttributeRequest;
-    // uint16_t transactionID
-    net_store_16(data, offset, transactionID);
-    offset += 2;
-
-    // param legnth
-    offset += 2;
-
-    // parameters: 
-    //     ServiceSearchPattern - DES (min 1 UUID, max 12)
-    uint16_t serviceSearchPatternLen = de_get_len(serviceSearchPattern);
-    memcpy(data + offset, serviceSearchPattern, serviceSearchPatternLen);
-    offset += serviceSearchPatternLen;
-
-    //     MaximumAttributeByteCount - uint16_t  0x0007 - 0xffff -> mtu
-    net_store_16(data, offset, mtu);
-    offset += 2;
-
-    //     AttibuteIDList  
-    uint16_t attributeIDListLen = de_get_len(attributeIDList);
-    memcpy(data + offset, attributeIDList, attributeIDListLen);
-    offset += attributeIDListLen;
-
-    //     ContinuationState - uint8_t number of cont. bytes N<=16 
-    data[offset++] = continuationStateLen;
-    //                       - N-bytes previous response from server
-    memcpy(data + offset, continuationState, continuationStateLen);
-    offset += continuationStateLen;
-
-    // uint16_t paramLength 
-    net_store_16(data, 3, offset - 5);
-
-    return offset;
-}
-
+#endif
 
