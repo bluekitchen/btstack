@@ -81,6 +81,11 @@ typedef enum {
 #define SM_AUTHREQ_BONDING 0x01
 #define SM_AUTHREQ_MITM_PROTECTION 0x02
 
+//Key distribution flags
+#define SM_KEYDIST_ENC_KEY 0X01
+#define SM_KEYDIST_ID_KEY  0x02
+#define SM_KEYDIST_SIGN    0x04
+
 typedef uint8_t key_t[16];
 
 static att_connection_t att_connection;
@@ -91,6 +96,9 @@ static uint8_t          att_response_buffer[28];
 static uint16_t         sm_response_handle = 0;
 static uint16_t         sm_response_size   = 0;
 static uint8_t          sm_response_buffer[28];
+
+// defines which keys will be send  after connection is encrypted
+static int sm_key_distribution_set = 0;
 
 static int sm_send_security_request = 0;
 static int sm_send_encryption_information = 0;
@@ -120,7 +128,7 @@ static bd_addr_t sm_s_address;
 static key_t     sm_s_csrk;
 static key_t     sm_s_irk;
 
-// key distribution, recevied from master
+// key distribution, received from master
 static key_t     sm_m_ltk;
 static uint16_t  sm_m_ediv;
 static uint8_t   sm_m_rand[8];
@@ -260,6 +268,10 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
     
     switch (packet[0]){
         case SM_CODE_PAIRING_REQUEST:
+            
+            // store key distribtion request
+            sm_key_distribution_set = packet[6];
+
             // for validate
             memcpy(sm_preq, packet, 7);
             
@@ -277,6 +289,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // for validate
             memcpy(sm_pres, sm_response_buffer, 7);
             break;
+
         case  SM_CODE_PAIRING_CONFIRM:
             // received confirm value
             memcpy(sm_m_confirm, &packet[1], 16);
@@ -285,6 +298,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // dummy
             memcpy(sm_response_buffer, packet, size);        
             break;
+
         case SM_CODE_PAIRING_RANDOM:
             // received confirm value
             memcpy(sm_m_random, &packet[1], 16);
@@ -360,7 +374,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             sm_response_handle = READ_BT_16(packet, 4);
                             
                             // request security
-                            // sm_send_security_request = 1;
+                            sm_send_security_request = 1;
 
                             // reset connection MTU
                             att_connection.mtu = 23;
@@ -377,16 +391,16 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     break;
                 case HCI_EVENT_ENCRYPTION_CHANGE:
                 
-                    // TODO: check state: 
-                
-                    // TODO: only send requested keys
-
-                    // distribute keys
-                    sm_send_encryption_information = 1;
+                    // distribute keys as requested by initiator
+                    // TODO: handle initiator case here
+                    if (sm_key_distribution_set & SM_KEYDIST_ENC_KEY)
+                        sm_send_encryption_information = 1;
                     sm_send_master_identification = 1;
-                    sm_send_identity_information = 1;
+                    if (sm_key_distribution_set & SM_KEYDIST_ID_KEY)
+                        sm_send_identity_information = 1;
                     sm_send_identity_address_information = 1;
-                    sm_send_signing_identification = 1;                
+                    if (sm_key_distribution_set & SM_KEYDIST_SIGN)
+                        sm_send_signing_identification = 1;                
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
