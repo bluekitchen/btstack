@@ -109,8 +109,41 @@ void assertBuffer(int size){
     }
 }
 
+static void test_attribute_value_event(sdp_query_attribute_value_event_t* event){
+    static int recordId = 0;
+    static int attributeId = 0;
+    static int attributeOffset = 0;
+    static int attributeLength = 0;
+
+    CHECK_EQUAL(event->type, 0x93);
+
+    // record ids are sequential
+    if (event->record_id != recordId){
+        recordId++;
+    }
+    CHECK_EQUAL(event->record_id, recordId);
+    
+    // is attribute value complete
+    if (event->attribute_id != attributeId ){
+        if (attributeLength > 0){
+            CHECK_EQUAL(attributeLength, attributeOffset+1);
+        }
+        attributeId = event->attribute_id;
+        attributeOffset = 0;
+    }
+
+    // count attribute value bytes
+    if (event->data_offset != attributeOffset){
+        attributeOffset++;
+    }
+    attributeLength = event->attribute_length;
+
+    CHECK_EQUAL(event->data_offset, attributeOffset);
+}
+
 
 static void handle_general_sdp_parser_event(sdp_query_event_t * event){
+
     sdp_query_attribute_value_event_t * ve;
     sdp_query_complete_event_t * ce;
 
@@ -118,11 +151,12 @@ static void handle_general_sdp_parser_event(sdp_query_event_t * event){
         case SDP_QUERY_ATTRIBUTE_VALUE:
             ve = (sdp_query_attribute_value_event_t*) event;
             
+            test_attribute_value_event(ve);
+            
             // handle new record
             if (ve->record_id != record_id){
                 record_id = ve->record_id;
             }
-
             // buffer data
             assertBuffer(ve->attribute_length);
             attribute_value[ve->data_offset] = ve->data;
@@ -159,7 +193,7 @@ TEST(SDPClient, QueryRFCOMMWithMacOSXData){
 
     uint16_t i;
     for (i=0; i<sizeof(expected_attribute_value); i++){
-        CHECK_EQUAL(expected_attribute_value[i], attribute_value[i]);
+       CHECK_EQUAL(expected_attribute_value[i], attribute_value[i]);
     }
 }
 
