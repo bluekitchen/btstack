@@ -15,7 +15,7 @@ COMMON = \
  
 COMMON_OBJ = $(COMMON:.c=.o)
 
-all: sdp_rfcomm_query general_sdp_query
+all: sdp_rfcomm_query general_sdp_query service_attribute_search_query service_search_query
 
 sdp_rfcomm_query: ${COMMON_OBJ} ${BTSTACK_ROOT}/src/sdp_query_rfcomm.c sdp_rfcomm_query.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
@@ -23,7 +23,13 @@ sdp_rfcomm_query: ${COMMON_OBJ} ${BTSTACK_ROOT}/src/sdp_query_rfcomm.c sdp_rfcom
 general_sdp_query: ${COMMON_OBJ} general_sdp_query.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
+service_attribute_search_query: ${COMMON_OBJ} service_attribute_search_query.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+service_search_query: ${COMMON_OBJ} service_search_query.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
 clean:
-	rm -f sdp_rfcomm_query general_sdp_query *.o ${BTSTACK_ROOT}/src/*.o
+	rm -f sdp_rfcomm_query general_sdp_query service_attribute_search_query service_search_query *.o ${BTSTACK_ROOT}/src/*.o
 	rm -rf *.dSYM
 	
