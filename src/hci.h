@@ -352,7 +352,8 @@ int hci_send_acl_packet(uint8_t *packet, int size);
 // non-blocking UART driver needs
 int hci_can_send_packet_now(uint8_t packet_type);
     
-hci_connection_t * connection_for_handle(hci_con_handle_t con_handle);
+bd_addr_t * hci_local_bd_addr(void);
+hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle);
 uint8_t  hci_number_outgoing_packets(hci_con_handle_t handle);
 uint8_t  hci_number_free_acl_slots(void);
 int      hci_authentication_active_for_handle(hci_con_handle_t handle);

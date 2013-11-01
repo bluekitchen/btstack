@@ -78,7 +78,7 @@ static hci_stack_t       hci_stack;
  *
  * @return connection OR NULL, if not found
  */
-hci_connection_t * connection_for_handle(hci_con_handle_t con_handle){
+hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
     linked_item_t *it;
     for (it = (linked_item_t *) hci_stack.connections; it ; it = it->next){
         if ( ((hci_connection_t *) it)->con_handle == con_handle){
@@ -176,7 +176,7 @@ static void hci_add_connection_flags_for_flipped_bd_addr(uint8_t *bd_addr, hci_a
 }
 
 int  hci_authentication_active_for_handle(hci_con_handle_t handle){
-    hci_connection_t * conn = connection_for_handle(handle);
+    hci_connection_t * conn = hci_connection_for_handle(handle);
     if (!conn) return 0;
     if (!conn->authentication_flags) return 0;
     if (conn->authentication_flags & SENT_LINK_KEY_REPLY) return 0;
@@ -208,7 +208,7 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 uint8_t hci_number_outgoing_packets(hci_con_handle_t handle){
-    hci_connection_t * connection = connection_for_handle(handle);
+    hci_connection_t * connection = hci_connection_for_handle(handle);
     if (!connection) {
         log_error("hci_number_outgoing_packets connectino for handle %u does not exist!\n", handle);
         return 0;
@@ -256,7 +256,7 @@ int hci_send_acl_packet(uint8_t *packet, int size){
     if (!hci_number_free_acl_slots()) return BTSTACK_ACL_BUFFERS_FULL;
     
     hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
-    hci_connection_t *connection = connection_for_handle( con_handle);
+    hci_connection_t *connection = hci_connection_for_handle( con_handle);
     if (!connection) return 0;
     hci_connection_timestamp(connection);
     
@@ -274,7 +274,7 @@ static void acl_handler(uint8_t *packet, int size){
 
     // get info
     hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
-    hci_connection_t *conn      = connection_for_handle(con_handle);
+    hci_connection_t *conn      = hci_connection_for_handle(con_handle);
     uint8_t  acl_flags          = READ_ACL_FLAGS(packet);
     uint16_t acl_length         = READ_ACL_LENGTH(packet);
 
@@ -527,7 +527,7 @@ static void event_handler(uint8_t *packet, int size){
             for (i=0; i<packet[2];i++){
                 handle = READ_BT_16(packet, 3 + 2*i);
                 uint16_t num_packets = READ_BT_16(packet, 3 + packet[2]*2 + 2*i);
-                conn = connection_for_handle(handle);
+                conn = hci_connection_for_handle(handle);
                 if (!conn){
                     log_error("hci_number_completed_packet lists unused con handle %u\n", handle);
                     continue;
@@ -670,7 +670,7 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             if (!packet[2]){
                 handle = READ_BT_16(packet, 3);
-                hci_connection_t * conn = connection_for_handle(handle);
+                hci_connection_t * conn = hci_connection_for_handle(handle);
                 if (conn) {
                     hci_shutdown_connection(conn);
                 }
@@ -1111,6 +1111,10 @@ void hci_connectable_control(uint8_t enable){
 
     hci_stack.connectable = enable;
     hci_update_scan_enable();
+}
+
+bd_addr_t * hci_local_bd_addr(void){
+    return &hci_stack.local_bd_addr;
 }
 
 void hci_run(){

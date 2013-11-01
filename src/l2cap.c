@@ -728,7 +728,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
         return;
     }
     
-    hci_connection_t * hci_connection = connection_for_handle( handle );
+    hci_connection_t * hci_connection = hci_connection_for_handle( handle );
     if (!hci_connection) {
         // 
         log_error("no hci_connection for handle %u\n", handle);
