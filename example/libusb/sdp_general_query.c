@@ -58,7 +58,7 @@ static void btstack_setup(){
     btstack_memory_init();
     run_loop_init(RUN_LOOP_POSIX);
     
-    // hci_dump_open("/tmp/hci_dump_sdp_client.pklg", HCI_DUMP_PACKETLOGGER);
+    hci_dump_open("/tmp/hci_dump_sdp_general_query.pklg", HCI_DUMP_PACKETLOGGER);
    
     hci_transport_t    * transport = hci_transport_usb_instance();
     hci_uart_config_t  * config = NULL;

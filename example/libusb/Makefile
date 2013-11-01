@@ -51,6 +51,9 @@ sdp_general_query: ${CORE_OBJ} ${COMMON_OBJ} sdp_general_query.c
 spp_counter: ${CORE_OBJ} ${COMMON_OBJ} spp_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
+spp_counter_ssp: ${CORE_OBJ} ${COMMON_OBJ} spp_counter_ssp.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
 # compile .ble description
 profile.h: profile.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
