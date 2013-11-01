@@ -173,6 +173,72 @@ static inline void swap56(uint8_t src[7], uint8_t dst[7]){
         dst[6 - i] = src[i];
 }
 
+void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, bd_addr_t ia, bd_addr_t ra, key_t c1){
+
+    // p1 = pres || preq || rat’ || iat’
+    // "The octet of iat’ becomes the least significant octet of p1 and the most signifi-
+    // cant octet of pres becomes the most significant octet of p1.
+    // For example, if the 8-bit iat’ is 0x01, the 8-bit rat’ is 0x00, the 56-bit preq
+    // is 0x07071000000101 and the 56 bit pres is 0x05000800000302 then
+    // p1 is 0x05000800000302070710000001010001."
+    
+    key_t p1_flipped;
+    swap56(pres, &p1_flipped[0]);
+    swap56(preq, &p1_flipped[7]);
+    p1_flipped[14] = rat;
+    p1_flipped[15] = iat;
+    printf("p1' "); hexdump(p1_flipped, 16);
+    
+    // p2 = padding || ia || ra
+    // "The least significant octet of ra becomes the least significant octet of p2 and
+    // the most significant octet of padding becomes the most significant octet of p2.
+    // For example, if 48-bit ia is 0xA1A2A3A4A5A6 and the 48-bit ra is
+    // 0xB1B2B3B4B5B6 then p2 is 0x00000000A1A2A3A4A5A6B1B2B3B4B5B6.
+    
+    key_t p2_flipped;
+    memset(p2_flipped, 0, 16);
+    memcpy(&p2_flipped[4],  ia, 6);
+    memcpy(&p2_flipped[10], ra, 6);
+    printf("p2' "); hexdump(p2_flipped, 16);
+    
+    // t1 = r xor p1
+    int i;
+    key_t t1_flipped;
+    for (i=0;i<16;i++){
+        t1_flipped[i] = r[15-i] ^ p1_flipped[i];
+    }
+    printf("t1' "); hexdump(t1_flipped, 16);
+    
+    key_t tk_flipped;
+    swap128(sm_tk, tk_flipped);
+    printf("tk' "); hexdump(tk_flipped, 16);
+    
+    // setup aes decryption
+    unsigned long rk[RKLENGTH(KEYBITS)];
+    int nrounds = rijndaelSetupEncrypt(rk, &tk_flipped[0], KEYBITS);
+    
+    // t2 = e(k, r_xor_p1)
+    key_t t2_flipped;
+    rijndaelEncrypt(rk, nrounds, t1_flipped, t2_flipped);
+    
+    printf("t2' "); hexdump(t2_flipped, 16);
+    
+    key_t t3_flipped;
+    for (i=0;i<16;i++){
+        t3_flipped[i] = t2_flipped[i] ^ p2_flipped[i];
+    }
+    printf("t3' "); hexdump(t3_flipped, 16);
+    
+    key_t c1_flipped;
+    rijndaelEncrypt(rk, nrounds, t3_flipped, c1_flipped);
+    
+    printf("c1' "); hexdump(c1_flipped, 16);
+    
+    swap128(c1_flipped, c1);
+    
+    printf("c1: "); hexdump(c1, 16);
+}
+
 static void sm_s1(key_t k, key_t r1, key_t r2, key_t s1){
     key_t r_prime;
     memcpy(&r_prime[0], r2, 8);
