@@ -142,7 +142,7 @@ static void test_attribute_value_event(sdp_query_attribute_value_event_t* event)
 }
 
 
-static void handle_general_sdp_parser_event(sdp_query_event_t * event){
+static void handle_sdp_parser_event(sdp_query_event_t * event){
 
     sdp_query_attribute_value_event_t * ve;
     sdp_query_complete_event_t * ce;
@@ -176,12 +176,12 @@ TEST_GROUP(SDPClient){
         attribute_value = (uint8_t*) malloc(attribute_value_buffer_size);
         record_id = -1;
         sdp_parser_init();
-        sdp_parser_register_callback(handle_general_sdp_parser_event);
+        sdp_parser_register_callback(handle_sdp_parser_event);
     }
 };
 
 
-TEST(SDPClient, QueryRFCOMMWithMacOSXData){
+TEST(SDPClient, QueryWithMacOSXData){
     uint16_t expected_last_attribute_id = 0xffff;
     uint16_t expected_last_record_id = 8;
     uint8_t  expected_attribute_value[3] = {0x09, 0x00, 0x05};

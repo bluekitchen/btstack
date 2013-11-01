@@ -53,6 +53,8 @@ and a list of attribute IDs. The remote data is handled by the SDP parser. The
 SDP parser delivers attribute values and done event via a registered callback. */
 
 void sdp_client_query(bd_addr_t remote, uint8_t * des_serviceSearchPattern, uint8_t * des_attributeIDList);
+void sdp_client_service_attribute_search(bd_addr_t remote, uint32_t search_serviceRecordHandle, uint8_t * des_attributeIDList);
+void sdp_client_service_search(bd_addr_t remote, uint8_t * des_serviceSearchPattern);
 
 #if defined __cplusplus
 }

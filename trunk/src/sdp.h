@@ -45,6 +45,7 @@ extern "C" {
 #endif
     
 typedef enum {
+    SDP_Invalid = 0,
 	SDP_ErrorResponse = 1,
 	SDP_ServiceSearchRequest,
 	SDP_ServiceSearchResponse,
