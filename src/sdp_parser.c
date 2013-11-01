@@ -59,8 +59,11 @@ static uint16_t list_size;
 static uint16_t record_offset = 0;
 static uint16_t record_size;
 static uint16_t attribute_value_size;
-static uint32_t record_handle;
 static int record_counter = 0;
+
+#ifdef HAVE_SDP_EXTRA_QUERIES
+static uint32_t record_handle;
+#endif
 
 static void (*sdp_query_callback)(sdp_query_event_t * event);
 
@@ -230,6 +233,14 @@ void sdp_parser_init(void){
     record_counter = 0;
 }
 
+void sdp_parser_handle_chunk(uint8_t * data, uint16_t size){
+    int i;
+    for (i=0;i<size;i++){
+        parse(data[i]);
+    }
+}
+
+#ifdef HAVE_SDP_EXTRA_QUERIES
 void sdp_parser_init_service_attribute_search(void){
     // init
     de_state_init(&de_header_state);
@@ -237,13 +248,6 @@ void sdp_parser_init_service_attribute_search(void){
     list_offset = 0;
     record_offset = 0;
     record_counter = 0;
-}
-
-void sdp_parser_handle_chunk(uint8_t * data, uint16_t size){
-    int i;
-    for (i=0;i<size;i++){
-        parse(data[i]);
-    }
 }
 
 void sdp_parser_init_service_search(void){
@@ -264,7 +268,7 @@ void sdp_parser_handle_service_search(uint8_t * data, uint16_t total_count, uint
         (*sdp_query_callback)((sdp_query_event_t*)&service_record_handle_event);       
     }        
 }
-
+#endif
 
 void sdp_parser_handle_done(uint8_t status){
     sdp_query_complete_event_t complete_event = {
