@@ -1,6 +1,5 @@
 BTSTACK_ROOT = ../..
 
-
 CFLAGS  = -g -Wall -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include -I${BTSTACK_ROOT}/chipset-cc256x
 CFLAGS += -I/sw/include -I../../ble -I../.. -I../.. 
 LDFLAGS = -L/sw/lib -lusb-1.0
@@ -39,8 +38,11 @@ COMMON_OBJ = $(COMMON:.c=.o)
 
 # create firmware image from common objects and example source file
 
-all: sdp_rfcomm_query sdp_general_query spp_counter ble_server
+all: ../../include/btstack/version.h sdp_rfcomm_query sdp_general_query spp_counter ble_server
 #spp-usb l2cap-server-usb l2cap-client-usb l2cap-server-uart l2cap-client-uart
+
+../../include/btstack/version.h:
+	cd ..; ../src/get_version.sh
 
 sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} sdp_rfcomm_query.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
