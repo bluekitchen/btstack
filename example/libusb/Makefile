@@ -38,7 +38,9 @@ COMMON_OBJ = $(COMMON:.c=.o)
 
 # create firmware image from common objects and example source file
 
-all: ../../include/btstack/version.h sdp_rfcomm_query sdp_general_query spp_counter ble_server
+all: ../../include/btstack/version.h ble_client
+#sdp_rfcomm_query sdp_general_query spp_counter ble_server ble_client
+
 #spp-usb l2cap-server-usb l2cap-client-usb l2cap-server-uart l2cap-client-uart
 
 ../../include/btstack/version.h:
@@ -63,8 +65,12 @@ profile.h: profile.gatt
 ble_server: ${CORE_OBJ} ${COMMON_OBJ} rijndael.c ble_server.c profile.h
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} rijndael.c ble_server.c ${CFLAGS} ${LDFLAGS} -o $@
 
+ble_client: ${CORE_OBJ} ${COMMON_OBJ} rijndael.c ble_client.c profile.h
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} rijndael.c ble_client.c ${CFLAGS} ${LDFLAGS} -o $@
+
 clean:
-	rm -f  spp_counter sdp_rfcomm_query sdp_general_query spp_counter_ssp *.o *.out *.hex
+	rm -f  spp_counter sdp_rfcomm_query sdp_general_query spp_counter_ssp ble_server ble_client 
+	rm -f  *.o *.out *.hex
 	rm -f  ${BTSTACK_ROOT}/src/*.o
 	rm -f  ${BTSTACK_ROOT}/ble/*.o
 	rm -f  ${BTSTACK_ROOT}/chipset-cc256x/*.o
