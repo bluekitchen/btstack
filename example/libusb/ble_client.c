@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2012 by Matthias Ringwald
+ * Copyright (C) 2011-2013 by Matthias Ringwald
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,9 +37,6 @@
 //
 //*****************************************************************************
 
-// TODO: seperate BR/EDR from LE ACL buffers
-// TODO: move LE init into HCI
-// ..
 
 // NOTE: Supports only a single connection
 
@@ -61,6 +58,23 @@
 #include "att.h"
 
 // API
+
+typedef struct gatt_client_event {
+    uint8_t   type;
+} gatt_client_event_t;
+
+typedef struct ad_event {
+    uint8_t   type;
+    uint8_t   event_type;
+    uint8_t   address_type;
+    bd_addr_t address;
+    uint8_t   rssi;
+    uint8_t   length;
+    uint8_t * data;
+} ad_event_t;
+
+
+void (*gatt_client_callback)(gatt_client_event_t * event);
 
 void gatt_client_init();
 void gatt_client_start_scan();
@@ -103,6 +117,21 @@ void gatt_client_stop_scan(){
     gatt_client_run();
 }
 
+
+static void hexdump2(void *data, int size){
+    int i;
+    for (i=0; i<size;i++){
+        printf("%02X ", ((uint8_t *)data)[i]);
+    }
+    printf("\n");
+}
+
+static void dump_ad_event(ad_event_t e){
+    printf("evt-type %u, addr-type %u, addr %s, rssi %u, length adv %u, data: ", e.event_type, 
+            e.address_type, bd_addr_to_str(e.address), e.rssi, e.length); 
+    hexdump2( e.data, e.length);                            
+}
+
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet_type) {
             
@@ -110,7 +139,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 			switch (packet[0]) {
 				
                 case BTSTACK_EVENT_STATE:
-					// bt stack activated, get started - set local name
+					// bt stack activated, get started
 					if (packet[2] == HCI_STATE_WORKING) {
                         printf("Working!\n");
                         gatt_client_start_scan();
@@ -122,13 +151,36 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                         scan_state = requested_scan_state;
                     }
                     break;
-                    
+
                 case HCI_EVENT_LE_META:
                     switch (packet[2]) {
-                        case HCI_SUBEVENT_LE_ADVERTISING_REPORT:
-                            // reset connection MTU
-                            printf("Received ad ...\n");
+                        case HCI_SUBEVENT_LE_ADVERTISING_REPORT: {
+                            int num_reports = packet[3];
+                            int i;
+                            int total_data_length = 0;
+                            int data_offset = 0;
+
+                            for (i=0; i<num_reports;i++){
+                                total_data_length += packet[4+num_reports*8+i];  
+                            }
+
+                            for (i=0; i<num_reports;i++){
+                                ad_event_t advertisement_event;
+                                advertisement_event.event_type = packet[4+i];
+                                advertisement_event.address_type = packet[4+num_reports+i];
+                                bt_flip_addr(advertisement_event.address, &packet[4+num_reports*2+i*6]);
+                                advertisement_event.length = packet[4+num_reports*8+i];
+                                advertisement_event.data = &packet[4+num_reports*9+data_offset];
+                                data_offset += advertisement_event.length;
+                                advertisement_event.rssi = packet[4+num_reports*9+total_data_length + i];
+                                
+                                // TODO add register callback
+                                // (*gatt_client_callback)((gatt_client_event_t*)&advertisement_event); 
+
+                                dump_ad_event(advertisement_event);
+                            }
                             break;
+                        }
                         default:
                             break;
                     }
