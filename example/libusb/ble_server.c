@@ -200,13 +200,25 @@ static inline void swap56(uint8_t src[7], uint8_t dst[7]){
         dst[6 - i] = src[i];
 }
 
+static void sm_d1(key_t k, uint16_t d, uint16_t r){
+    // d'= padding || r || d
+    key_t d1_prime;
+    memset(d1_prime, 0, 16);
+    net_store_16(d1_prime, 12, r);
+    net_store_16(d1_prime, 14, d);
+    // d1(k,d,r) = e(k, d'),
+    unsigned long rk[RKLENGTH(KEYBITS)];
+    int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
+    key_t d1;
+    rijndaelEncrypt(rk, nrounds, k, d1);
+}
+
 static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, bd_addr_t ia, bd_addr_t ra, key_t c1){
 
     printf("iat %u\n", iat);
     printf("rat %u\n", rat);
     print_bd_addr(ia);
     print_bd_addr(ra);
-
 
     // p1 = pres || preq || rat’ || iat’
     // "The octet of iat’ becomes the least significant octet of p1 and the most signifi-
