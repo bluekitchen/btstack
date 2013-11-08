@@ -38,8 +38,7 @@ COMMON_OBJ = $(COMMON:.c=.o)
 
 # create firmware image from common objects and example source file
 
-all: ../../include/btstack/version.h ble_client
-#sdp_rfcomm_query sdp_general_query spp_counter ble_server ble_client
+all: ../../include/btstack/version.h sdp_rfcomm_query sdp_general_query spp_counter ble_server ble_client
 
 #spp-usb l2cap-server-usb l2cap-client-usb l2cap-server-uart l2cap-client-uart
 
