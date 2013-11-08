@@ -82,6 +82,62 @@ void gatt_client_start_scan();
 // EVENT: type (8), addr_type (8), addr(48), rssi(8), ad_len(8), ad_data(ad_len*8)
 void gatt_client_stop_scan();
 
+/*
+
+typedef struct service_uuid{
+    uint8_t lenght;
+    uint8_t * uuid;
+} service_uuid_t;
+
+typedef struct peripheral{
+
+} peripheral_t;
+
+// Advertising Data Parser
+
+typedef struct ad_context {
+     uint8_t * data;
+     uint8_t   offset;
+     uint8_t   length;
+} ad_context_t;
+
+// iterator
+void ad_init(ad_context_t *context, uint8_t ad_len, uint8_t * ad_data);
+int  ad_has_more(ad_context_t * context);
+void ad_next(ad_context_t * context);
+
+// access functions
+uint8_t   ad_get_data_type(ad_context_t * context);
+uint8_t   ad_get_data_len(ad_context_t * context);
+uint8_t * ad_get_data(ad_context_t * context);
+
+// convenience function on complete advertisements
+int ad_data_contains_uuid16(uint8_t ad_len, uint8_t * ad_data, uint16_t uuid);
+int ad_data_contains_uuid128(uint8_t ad_len, uint8_t * ad_data, uint8_t * uuid128);
+
+// example use of Advertisment Data Parser
+void test_ad_parser(){
+    ad_context_t context;
+    for (ad_init(&context, len, data) ; ad_has_more(&context) ; ad_next(&context)){
+        uint8_t data_type = ad_get_data_type(&context);
+        uint8_t data_len  = ad_get_data_len(&context);
+        uint8_t * data    = ad_get_data(&context);
+    }
+}
+
+// GATT Client API
+
+void gatt_client_register_handler( btstack_packet_handler_t handler);
+
+uint16_t gatt_client_connect(bt_addr_t *dev);
+void gatt_client_cancel_connect(peripheral_id peripheral);
+
+void get_services_for_peripheral(peripheral_id peripheral);
+// EVENT: type (8), peripheral_id (16), service_id 
+
+void get_characteristics_for_service(peripheral_id, service_id);
+// EVENT: type (8), peripheral_id (16), service_id (16), ...
+*/
 // END API
 
 // gatt client state
