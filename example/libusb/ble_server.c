@@ -85,6 +85,15 @@ typedef enum {
 #define SM_KEYDIST_ID_KEY  0x02
 #define SM_KEYDIST_SIGN    0x04
 
+// Pairing Failed Reasons
+#define SM_REASON_RESERVED                     0x00
+#define SM_REASON_PASSKEYT_ENTRY_FAILED        0x01
+#define SM_REASON_OOB_NOT_AVAILABLE            0x02
+#define SM_REASON_AUTHENTHICATION_REQUIREMENTS 0x03
+#define SM_REASON_CONFIRM_VALUE_FAILED         0x04
+#define SM_REASON_PAIRING_NOT_SUPPORTED        0x05
+#define SM_REASON_ENCRYPTION_KEY_SIZE          0x06
+
 typedef uint8_t key_t[16];
 
 typedef enum {
@@ -120,6 +129,7 @@ static int sm_send_master_identification = 0;
 static int sm_send_identity_information = 0;
 static int sm_send_identity_address_information = 0;
 static int sm_send_signing_identification = 0;
+static int sm_send_pairing_failed = 0;
 
 static int sm_received_encryption_information = 0;
 static int sm_received_master_identification = 0;
@@ -135,6 +145,8 @@ static uint8_t sm_pres[7];
 
 static key_t   sm_s_random;
 static key_t   sm_s_confirm;
+
+static uint8_t sm_pairing_failed_reason = 0;
 
 // key distribution, slave sends
 static key_t     sm_s_ltk;
@@ -363,15 +375,16 @@ void sm_test2(){
     printf("Confirm value correct :%u\n", memcmp(c1_flipped, c1_true, 16) == 0);
 }
 
-static void sm_validate(void){
-    printf("sm_validate\n");
+static int sm_validate_m_confirm(void){
+    printf("sm_validate_m_confirm\n");
 
     key_t c1;
     sm_c1(sm_tk, sm_m_random, sm_preq, sm_pres, sm_m_addr_type, sm_s_addr_type, sm_m_address, sm_s_address, c1);
     printf("mc: "); hexdump(sm_m_confirm, 16);
 
     int m_confirm_valid = memcmp(c1, sm_m_confirm, 16) == 0;
-    printf("m_confirm_valid %u\n", m_confirm_valid);
+    printf("m_confirm_valid: %u\n", m_confirm_valid);
+    return m_confirm_valid;
 }
 
 static void sm_run(void){
@@ -458,6 +471,14 @@ static void sm_run(void){
         l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
         return;
     }
+    if (sm_send_pairing_failed){
+        sm_send_pairing_failed = 0;
+        uint8_t buffer[2];
+        buffer[0] = SM_CODE_PAIRING_FAILED;
+        buffer[1] = sm_pairing_failed_reason;
+        l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+        return;
+    }
 }
 
 static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
@@ -465,7 +486,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
     if (packet_type != SM_DATA_PACKET) return;
 
     printf("sm_packet_handler, request %0x\n", packet[0]);
-    
+
     switch (packet[0]){
         case SM_CODE_PAIRING_REQUEST:
             
@@ -509,14 +530,18 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
         case SM_CODE_PAIRING_RANDOM:
             // received confirm value
             memcpy(sm_m_random, &packet[1], 16);
-            sm_response_size = 17;
 
-            // validate 
-            sm_validate();
-            
-            //
+            // validate m confirm
+            if (!sm_validate_m_confirm()){
+                sm_send_pairing_failed = 1;
+                sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
+                break;
+            }
+
+            // TODO: send our own random
             memcpy(sm_response_buffer, packet, size);        
-            break;   
+            sm_response_size = 17;
+            break;
 
         case SM_CODE_ENCRYPTION_INFORMATION:
             sm_received_encryption_information = 1;
