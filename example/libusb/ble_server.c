@@ -130,6 +130,7 @@ static int sm_send_identity_information = 0;
 static int sm_send_identity_address_information = 0;
 static int sm_send_signing_identification = 0;
 static int sm_send_pairing_failed = 0;
+static int sm_send_s_random = 0;
 
 static int sm_received_encryption_information = 0;
 static int sm_received_master_identification = 0;
@@ -459,7 +460,7 @@ static void sm_run(void){
         uint8_t buffer[8];
         buffer[0] = SM_CODE_IDENTITY_ADDRESS_INFORMATION;
         buffer[1] = sm_s_addr_type;
-        BD_ADDR_COPY(&buffer[2], sm_s_address);
+        bt_flip_addr(&buffer[2], sm_s_address);
         l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
         return;
     }
@@ -476,6 +477,14 @@ static void sm_run(void){
         uint8_t buffer[2];
         buffer[0] = SM_CODE_PAIRING_FAILED;
         buffer[1] = sm_pairing_failed_reason;
+        l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+        return;
+    }
+    if (sm_send_s_random){
+        sm_send_s_random = 0;
+        uint8_t buffer[17];
+        buffer[0] = SM_CODE_PAIRING_RANDOM;
+        memcpy(&buffer[1], sm_s_random, 16);
         l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
         return;
     }
@@ -519,12 +528,8 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // received confirm value
             memcpy(sm_m_confirm, &packet[1], 16);
 
-            // dummy
-            sm_response_size = 17;
-            memcpy(sm_response_buffer, packet, size);
-
-            // for real
-            // sm_state_responding = SM_STATE_C1_GET_RANDOM_A;
+            // calculate and send s_confirm
+            sm_state_responding = SM_STATE_C1_GET_RANDOM_A;
             break;
 
         case SM_CODE_PAIRING_RANDOM:
@@ -537,10 +542,8 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                 sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
                 break;
             }
-
-            // TODO: send our own random
-            memcpy(sm_response_buffer, packet, size);        
-            sm_response_size = 17;
+            // send s_random
+            sm_send_s_random = 1;
             break;
 
         case SM_CODE_ENCRYPTION_INFORMATION:
@@ -686,7 +689,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
                                 // calculate s_confirm
                                 sm_c1(sm_tk, sm_s_random, sm_preq, sm_pres, sm_m_addr_type, sm_s_addr_type, sm_m_address, sm_s_address, sm_s_confirm);
-                                // send data
+                                // send s_confirm
                                 sm_state_responding = SM_STATE_C1_SEND;
                                 break;
                             default:
