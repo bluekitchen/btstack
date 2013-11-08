@@ -175,9 +175,6 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
 
 // SECURITY MANAGER (SM) MATERIALIZES HERE
 
-static void sm_validate(void){
-}
-
 static inline void swap128(uint8_t src[16], uint8_t dst[16]){
     int i;
     for (i = 0; i < 16; i++)
@@ -191,6 +188,12 @@ static inline void swap56(uint8_t src[7], uint8_t dst[7]){
 }
 
 static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, bd_addr_t ia, bd_addr_t ra, key_t c1){
+
+    printf("iat %u\n", iat);
+    printf("rat %u\n", rat);
+    print_bd_addr(ia);
+    print_bd_addr(ra);
+
 
     // p1 = pres || preq || rat’ || iat’
     // "The octet of iat’ becomes the least significant octet of p1 and the most signifi-
@@ -217,6 +220,8 @@ static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t ia
     memcpy(&p2_flipped[4],  ia, 6);
     memcpy(&p2_flipped[10], ra, 6);
     printf("p2' "); hexdump(p2_flipped, 16);
+
+    printf("r' "); hexdump(r, 16);
     
     // t1 = r xor p1
     int i;
@@ -227,7 +232,7 @@ static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t ia
     printf("t1' "); hexdump(t1_flipped, 16);
     
     key_t tk_flipped;
-    swap128(sm_tk, tk_flipped);
+    swap128(k, tk_flipped);
     printf("tk' "); hexdump(tk_flipped, 16);
     
     // setup aes decryption
@@ -279,6 +284,94 @@ static void sm_s1(key_t k, key_t r1, key_t r2, key_t s1){
     
     swap128(s1_flipped, s1);
     printf("s1: "); hexdump(s1, 16);
+}
+
+static void sm_test(){
+    
+    key_t k;
+    memset(k, 0, 16 );
+    printf("k:  "); hexdump(k, 16);
+
+    // c1
+    key_t r;
+    key_t r_flipped = { 0x57, 0x83, 0xD5, 0x21, 0x56, 0xAD, 0x6F, 0x0E, 0x63, 0x88, 0x27, 0x4E, 0xC6, 0x70, 0x2E, 0xE0 };
+    swap128(r_flipped, r);
+    printf("r:  "); hexdump(r, 16);
+
+    uint8_t preq[] = {0x01, 0x01, 0x00, 0x00, 0x10, 0x07, 0x07};
+    uint8_t pres[] = {0x02, 0x03, 0x00, 0x00, 0x08, 0x00, 0x05};
+    bd_addr_t ia = { 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6 };
+    bd_addr_t ra = { 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6 };
+    
+    key_t c1;
+    sm_c1(k, r, preq, pres, 1, 0, ia, ra, c1);
+    
+    // s1
+    
+    key_t r1, r2, s1;
+    key_t r1_flipped = { 0x00, 0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
+    key_t r2_flipped = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00};
+    swap128(r1_flipped, r1);
+    swap128(r2_flipped, r2);
+    sm_s1(k, r1, r2, s1);
+}
+
+void sm_test2(){
+    key_t k;
+    memset(k, 0, 16 );
+    printf("k:  "); hexdump(k, 16);
+
+    key_t r_be = { 0x55, 0x05, 0x1D, 0xF4, 0x7C, 0xC9, 0xBC, 0x97, 0x3C, 0x6A, 0x7D, 0x0D, 0x0F, 0x57, 0x0E, 0xC4 };
+    key_t r_le;
+    swap128(r_be, r_le);
+    printf("r_be:  "); hexdump(r_be, 16);
+    printf("r_le:  "); hexdump(r_le, 16);
+
+    // preq [ 01 04 00 01 10 07 07 ]
+    // pres [ 02 04 00 01 10 07 07 ]
+
+    uint8_t preq[] = {0x01, 0x04, 0x00, 0x01, 0x10, 0x07, 0x07};
+    uint8_t pres[] = {0x02, 0x04, 0x00, 0x01, 0x10, 0x07, 0x07};
+
+    uint8_t preq_flipped[7];
+    uint8_t pres_flipped[7];
+    swap56(preq, preq_flipped);
+    swap56(pres, pres_flipped);
+
+    // Initiator
+    // Peer_Address_Type: Random Device Address
+    // Peer_Address: 5C:49:F9:4F:1F:04
+
+    // Responder
+    // Peer_Address_Type: Public Device Address
+    // Peer_Address: 00:1B:DC:05:B5:DC
+    bd_addr_t ia = { 0x5c, 0x49, 0xf9, 0x4f, 0x1f, 0x04 };
+    bd_addr_t ra = { 0x00, 0x1b, 0xdc, 0x05, 0xB5, 0xdc };
+    
+    key_t c1;
+    key_t c1_true = { 0xFB, 0xAB, 0x63, 0x6F, 0xE4, 0xB4, 0xA5, 0x16, 0xAF, 0x8D, 0x88, 0xED, 0xBD, 0xB6, 0xA6, 0xFE };
+
+    bd_addr_t ia_le;
+    bd_addr_t ra_le;
+    bt_flip_addr(ia_le, ia);
+    bt_flip_addr(ra_le, ra);
+
+    sm_c1(k, r_le, preq, pres, 1, 0, ia, ra, c1);
+    key_t c1_flipped;
+    swap128(c1, c1_flipped);
+
+    printf("Confirm value correct :%u\n", memcmp(c1_flipped, c1_true, 16) == 0);
+}
+
+static void sm_validate(void){
+    printf("sm_validate\n");
+
+    key_t c1;
+    sm_c1(sm_tk, sm_m_random, sm_preq, sm_pres, sm_m_addr_type, sm_s_addr_type, sm_m_address, sm_s_address, c1);
+    printf("mc: "); hexdump(sm_m_confirm, 16);
+
+    int m_confirm_valid = memcmp(c1, sm_m_confirm, 16) == 0;
+    printf("m_confirm_valid %u\n", m_confirm_valid);
 }
 
 static void sm_run(void){
@@ -494,7 +587,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             sm_response_handle = READ_BT_16(packet, 4);
                             sm_m_addr_type = packet[7];
-                            BD_ADDR_COPY(sm_m_address, &packet[8]);
+                            bt_flip_addr(sm_m_address, &packet[8]);
                             // TODO use non-null TK if appropriate
                             sm_reset_tk();
                             // TODO support private addresses
@@ -509,8 +602,9 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             break;
 
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:
-                            sm_s1(sm_tk, sm_m_random, sm_m_random, sm_s_ltk);
-                            hci_send_cmd(&hci_le_long_term_key_request_reply, READ_BT_16(packet, 3), sm_s_ltk);
+                            // sm_s1(sm_tk, sm_m_random, sm_m_random, sm_s_ltk);
+                            // hci_send_cmd(&hci_le_long_term_key_request_reply, READ_BT_16(packet, 3), sm_s_ltk);
+                            hci_send_cmd(&hci_le_long_term_key_negative_reply, READ_BT_16(packet, 3));
                             break;
 
                         default:
@@ -627,9 +721,11 @@ void setup(void){
     att_connection.mtu = 27;
 }
 
-// main == setup
 int main(void)
 {
+    // sm_test2();
+    // exit(0);
+
     setup();
 
     // turn on!
