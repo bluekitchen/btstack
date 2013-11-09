@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2012 by Matthias Ringwald
+ * Copyright (C) 2011-2013 by Matthias Ringwald
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -294,11 +294,15 @@ static void sm_dhk(key_t ir, key_t dhk){
     sm_d1(ir, 3, 0, dhk);
 }
 
+
+// Endianess:
+// - preq, pres as found in SM PDUs, we flip it here
+// - everything else in big endian
 static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, bd_addr_t ia, bd_addr_t ra, key_t c1){
 
-    printf("iat %u\n", iat);
-    printf("rat %u\n", rat);
+    printf("iat %u: ia ", iat);
     print_bd_addr(ia);
+    printf("rat %u: ra ", rat);
     print_bd_addr(ra);
 
     // p1 = pres || preq || rat’ || iat’
@@ -308,12 +312,12 @@ static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t ia
     // is 0x07071000000101 and the 56 bit pres is 0x05000800000302 then
     // p1 is 0x05000800000302070710000001010001."
     
-    key_t p1_flipped;
-    swap56(pres, &p1_flipped[0]);
-    swap56(preq, &p1_flipped[7]);
-    p1_flipped[14] = rat;
-    p1_flipped[15] = iat;
-    printf("p1' "); hexdump(p1_flipped, 16);
+    key_t p1;
+    swap56(pres, &p1[0]);
+    swap56(preq, &p1[7]);
+    p1[14] = rat;
+    p1[15] = iat;
+    printf("p1  "); hexdump(p1, 16);
     
     // p2 = padding || ia || ra
     // "The least significant octet of ra becomes the least significant octet of p2 and
@@ -321,19 +325,22 @@ static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t ia
     // For example, if 48-bit ia is 0xA1A2A3A4A5A6 and the 48-bit ra is
     // 0xB1B2B3B4B5B6 then p2 is 0x00000000A1A2A3A4A5A6B1B2B3B4B5B6.
     
-    key_t p2_flipped;
-    memset(p2_flipped, 0, 16);
-    memcpy(&p2_flipped[4],  ia, 6);
-    memcpy(&p2_flipped[10], ra, 6);
-    printf("p2' "); hexdump(p2_flipped, 16);
+    key_t p2;
+    memset(p2, 0, 16);
+    memcpy(&p2[4],  ia, 6);
+    memcpy(&p2[10], ra, 6);
+    printf("p2  "); hexdump(p2, 16);
 
-    printf("r' "); hexdump(r, 16);
+    printf("r   "); hexdump(r, 16);
     
     // t1 = r xor p1
+    key_t r_flipped;
+    swap128(r, r_flipped);
+
     int i;
     key_t t1_flipped;
     for (i=0;i<16;i++){
-        t1_flipped[i] = r[15-i] ^ p1_flipped[i];
+        t1_flipped[i] = r_flipped[i] ^ p1[i];
     }
     printf("t1' "); hexdump(t1_flipped, 16);
     
@@ -353,7 +360,7 @@ static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t ia
     
     key_t t3_flipped;
     for (i=0;i<16;i++){
-        t3_flipped[i] = t2_flipped[i] ^ p2_flipped[i];
+        t3_flipped[i] = t2_flipped[i] ^ p2[i];
     }
     printf("t3' "); hexdump(t3_flipped, 16);
     
@@ -438,11 +445,6 @@ void sm_test2(){
 
     uint8_t preq[] = {0x01, 0x04, 0x00, 0x01, 0x10, 0x07, 0x07};
     uint8_t pres[] = {0x02, 0x04, 0x00, 0x01, 0x10, 0x07, 0x07};
-
-    uint8_t preq_flipped[7];
-    uint8_t pres_flipped[7];
-    swap56(preq, preq_flipped);
-    swap56(pres, pres_flipped);
 
     // Initiator
     // Peer_Address_Type: Random Device Address
@@ -915,6 +917,7 @@ void setup(void){
 
 int main(void)
 {
+    // sm_test();
     // sm_test2();
     // exit(0);
 
