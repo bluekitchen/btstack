@@ -46,7 +46,7 @@
 #include <string.h>
 #include <btstack/run_loop.h>
 
-#include "config.h"
+#include "ble_client.h"
 
 #include "debug.h"
 #include "btstack_memory.h"
@@ -56,89 +56,16 @@
 #include "l2cap.h"
 
 #include "att.h"
-
-// API
-
-typedef struct gatt_client_event {
-    uint8_t   type;
-} gatt_client_event_t;
-
-typedef struct ad_event {
-    uint8_t   type;
-    uint8_t   event_type;
-    uint8_t   address_type;
-    bd_addr_t address;
-    uint8_t   rssi;
-    uint8_t   length;
-    uint8_t * data;
-} ad_event_t;
+#include "ad_parser.h"
 
 
-void (*gatt_client_callback)(gatt_client_event_t * event);
-
-void gatt_client_init();
-void gatt_client_start_scan();
-// creates one event per found peripheral device
-// EVENT: type (8), addr_type (8), addr(48), rssi(8), ad_len(8), ad_data(ad_len*8)
-void gatt_client_stop_scan();
-
-/*
-
-typedef struct service_uuid{
-    uint8_t lenght;
-    uint8_t * uuid;
-} service_uuid_t;
-
-typedef struct peripheral{
-
-} peripheral_t;
-
-// Advertising Data Parser
-
-typedef struct ad_context {
-     uint8_t * data;
-     uint8_t   offset;
-     uint8_t   length;
-} ad_context_t;
-
-// iterator
-void ad_init(ad_context_t *context, uint8_t ad_len, uint8_t * ad_data);
-int  ad_has_more(ad_context_t * context);
-void ad_next(ad_context_t * context);
-
-// access functions
-uint8_t   ad_get_data_type(ad_context_t * context);
-uint8_t   ad_get_data_len(ad_context_t * context);
-uint8_t * ad_get_data(ad_context_t * context);
-
-// convenience function on complete advertisements
-int ad_data_contains_uuid16(uint8_t ad_len, uint8_t * ad_data, uint16_t uuid);
-int ad_data_contains_uuid128(uint8_t ad_len, uint8_t * ad_data, uint8_t * uuid128);
-
-// example use of Advertisment Data Parser
-void test_ad_parser(){
-    ad_context_t context;
-    for (ad_init(&context, len, data) ; ad_has_more(&context) ; ad_next(&context)){
-        uint8_t data_type = ad_get_data_type(&context);
-        uint8_t data_len  = ad_get_data_len(&context);
-        uint8_t * data    = ad_get_data(&context);
+static void hexdump2(void *data, int size){
+    int i;
+    for (i=0; i<size;i++){
+        printf("%02X ", ((uint8_t *)data)[i]);
     }
+    printf("\n");
 }
-
-// GATT Client API
-
-void gatt_client_register_handler( btstack_packet_handler_t handler);
-
-uint16_t gatt_client_connect(bt_addr_t *dev);
-void gatt_client_cancel_connect(peripheral_id peripheral);
-
-void get_services_for_peripheral(peripheral_id peripheral);
-// EVENT: type (8), peripheral_id (16), service_id 
-
-void get_characteristics_for_service(peripheral_id, service_id);
-// EVENT: type (8), peripheral_id (16), service_id (16), ...
-*/
-// END API
 
 // gatt client state
 static uint8_t requested_scan_state = 0;
@@ -173,14 +100,6 @@ void gatt_client_stop_scan(){
     gatt_client_run();
 }
 
-
-static void hexdump2(void *data, int size){
-    int i;
-    for (i=0; i<size;i++){
-        printf("%02X ", ((uint8_t *)data)[i]);
-    }
-    printf("\n");
-}
 
 static void dump_ad_event(ad_event_t e){
     printf("evt-type %u, addr-type %u, addr %s, rssi %u, length adv %u, data: ", e.event_type, 
