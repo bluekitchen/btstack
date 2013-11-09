@@ -93,11 +93,17 @@ typedef enum {
 #define SM_REASON_CONFIRM_VALUE_FAILED         0x04
 #define SM_REASON_PAIRING_NOT_SUPPORTED        0x05
 #define SM_REASON_ENCRYPTION_KEY_SIZE          0x06
+#define SM_REASON_COMMAND_NOT_SUPPORTED        0x07
+#define SM_REASON_UNSPECIFIED_REASON           0x08
+#define SM_REASON_REPEATED_ATTEMPTS            0x09
+// also, invalid parameters
+// and reserved
 
 typedef uint8_t key_t[16];
 
 typedef enum {
     SM_STATE_IDLE,
+
     SM_STATE_C1_GET_RANDOM_A,
     SM_STATE_C1_W4_RANDOM_A,
     SM_STATE_C1_GET_RANDOM_B,
@@ -107,6 +113,15 @@ typedef enum {
     SM_STATE_C1_GET_ENC_B,
     SM_STATE_C1_W4_ENC_B,
     SM_STATE_C1_SEND,
+
+    SM_STATE_W4_LTK_REQUEST,
+    SM_STATE_W4_CONNECTION_ENCRYPTED,
+
+    SM_STATE_PH3_GET_RANDOM,
+    SM_STATE_PH3_W4_RANDOM,
+    SM_STATE_PH3_GET_DIV,
+    SM_STATE_PH3_W4_DIV,
+
 } security_manager_state_t;
 
 static att_connection_t att_connection;
@@ -117,6 +132,13 @@ static uint8_t          att_response_buffer[28];
 // Security Manager Master Keys, please use sm_set_er(er) and sm_set_ir(ir) with your own 128 bit random values
 static key_t sm_persistent_er;
 static key_t sm_persistent_ir;
+
+// derived from sm_persistent_ir
+static key_t sm_persistent_dhk;
+static key_t sm_persistent_irk;
+
+// derived from sm_persistent_er
+
 
 static uint16_t         sm_response_handle = 0;
 static uint16_t         sm_response_size   = 0;
@@ -148,10 +170,13 @@ static key_t   sm_m_confirm;
 static uint8_t sm_preq[7];
 static uint8_t sm_pres[7];
 
+static key_t   sm_stk;
+
 static key_t   sm_s_random;
 static key_t   sm_s_confirm;
 
 static uint8_t sm_pairing_failed_reason = 0;
+static uint16_t  sm_s_div;
 
 // key distribution, slave sends
 static key_t     sm_s_ltk;
@@ -191,23 +216,6 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
 }
 
 // SECURITY MANAGER (SM) MATERIALIZES HERE
-
-void sm_init(){
-    // set some (BTstack default) ER and IR
-    int i;
-    for (i=0;i<16;i++){
-        sm_persistent_er[i] = 0x30 + i;
-        sm_persistent_ir[i] = 0x90 + i;
-    }
-}
-
-void sm_set_er(key_t er){
-    memcpy(sm_persistent_er, er, 16);
-}
-
-void sm_set_ir(key_t ir){
-    memcpy(sm_persistent_ir, ir, 16);
-}
 
 static inline void swap128(uint8_t src[16], uint8_t dst[16]){
     int i;
@@ -482,6 +490,8 @@ static void sm_run(void){
     switch (sm_state_responding){
         case SM_STATE_C1_GET_RANDOM_A:
         case SM_STATE_C1_GET_RANDOM_B:
+        case SM_STATE_PH3_GET_RANDOM:
+        case SM_STATE_PH3_GET_DIV:
             hci_send_cmd(&hci_le_rand);
             sm_state_responding++;
             return;
@@ -493,7 +503,7 @@ static void sm_run(void){
             buffer[0] = SM_CODE_PAIRING_CONFIRM;
             memcpy(&buffer[1], sm_s_confirm, 16);
             l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-            sm_state_responding = SM_STATE_IDLE;
+            sm_state_responding = SM_STATE_W4_LTK_REQUEST;
             return;
         }
         default:
@@ -670,6 +680,46 @@ void sm_reset_tk(){
     }
 }
 
+static void sm_distribute_keys(){
+
+    // TODO: handle initiator case here
+
+    // distribute keys as requested by initiator
+    if (sm_key_distribution_set & SM_KEYDIST_ENC_KEY)
+        sm_send_encryption_information = 1;
+    sm_send_master_identification = 1;
+    if (sm_key_distribution_set & SM_KEYDIST_ID_KEY)
+        sm_send_identity_information = 1;
+    sm_send_identity_address_information = 1;
+    if (sm_key_distribution_set & SM_KEYDIST_SIGN)
+        sm_send_signing_identification = 1;  
+}
+
+void sm_set_er(key_t er){
+    memcpy(sm_persistent_er, er, 16);
+}
+
+void sm_set_ir(key_t ir){
+    memcpy(sm_persistent_ir, ir, 16);
+    sm_dhk(sm_persistent_ir, sm_persistent_dhk);
+    sm_irk(sm_persistent_ir, sm_persistent_irk);
+}
+
+void sm_init(){
+    // set some (BTstack default) ER and IR
+    int i;
+    key_t er;
+    key_t ir;
+    for (i=0;i<16;i++){
+        er[i] = 0x30 + i;
+        ir[i] = 0x90 + i;
+    }
+    sm_set_er(er);
+    sm_set_ir(ir);
+    sm_state_responding = SM_STATE_IDLE;
+}
+
+
 // END OF SM
 
 // enable LE, setup ADV data
@@ -706,7 +756,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             // TODO support private addresses
                             sm_s_addr_type = 0;
                             BD_ADDR_COPY(sm_s_address, hci_local_bd_addr());
-
+                            printf("Incoming connection, own address ");
+                            print_bd_addr(sm_s_address);
                             // request security
                             sm_send_security_request = 1;
 
@@ -715,9 +766,23 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             break;
 
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:
-                            // sm_s1(sm_tk, sm_m_random, sm_m_random, sm_s_ltk);
-                            // hci_send_cmd(&hci_le_long_term_key_request_reply, READ_BT_16(packet, 3), sm_s_ltk);
-                            hci_send_cmd(&hci_le_long_term_key_negative_reply, READ_BT_16(packet, 3));
+                            log_info("LTK Request, state %u", sm_state_responding);
+                            if (sm_state_responding == SM_STATE_W4_LTK_REQUEST){
+                                // calculate STK
+                                log_info("calculating STK");
+                                sm_s1(sm_tk, sm_s_random, sm_m_random, sm_stk);
+                                hci_send_cmd(&hci_le_long_term_key_request_reply, READ_BT_16(packet, 3), sm_stk);
+                                sm_state_responding = SM_STATE_W4_CONNECTION_ENCRYPTED;
+                                break;
+                            }
+                            // re-establish previously used LTK using Rand and EDIV
+                            log_info("recalculating LTK");
+                            memcpy(sm_s_rand, &packet[5], 8);
+                            sm_s_ediv = READ_BT_16(packet, 13);
+                            sm_s_div  = sm_div(sm_persistent_dhk, sm_s_rand, sm_s_ediv);
+                            sm_ltk(sm_persistent_er, sm_s_div, sm_s_ltk);
+                            hci_send_cmd(&hci_le_long_term_key_request_reply, READ_BT_16(packet, 3), sm_s_ltk);
+                            sm_state_responding = SM_STATE_IDLE;
                             break;
 
                         default:
@@ -725,17 +790,11 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     }
                     break;
 
-                case HCI_EVENT_ENCRYPTION_CHANGE:                
-                    // distribute keys as requested by initiator
-                    // TODO: handle initiator case here
-                    if (sm_key_distribution_set & SM_KEYDIST_ENC_KEY)
-                        sm_send_encryption_information = 1;
-                    sm_send_master_identification = 1;
-                    if (sm_key_distribution_set & SM_KEYDIST_ID_KEY)
-                        sm_send_identity_information = 1;
-                    sm_send_identity_address_information = 1;
-                    if (sm_key_distribution_set & SM_KEYDIST_SIGN)
-                        sm_send_signing_identification = 1;                
+                case HCI_EVENT_ENCRYPTION_CHANGE: 
+                    log_info("Connection encrypted");
+                    if (sm_state_responding == SM_STATE_W4_CONNECTION_ENCRYPTED) {
+                        sm_state_responding = SM_STATE_PH3_GET_RANDOM;
+                    }
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -774,9 +833,29 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
                                 // calculate s_confirm
                                 sm_c1(sm_tk, sm_s_random, sm_preq, sm_pres, sm_m_addr_type, sm_s_addr_type, sm_m_address, sm_s_address, sm_s_confirm);
+                                
                                 // send s_confirm
                                 sm_state_responding = SM_STATE_C1_SEND;
                                 break;
+                            case SM_STATE_PH3_W4_RANDOM:
+                                memcpy(sm_s_rand, &packet[6], 8);
+                                sm_state_responding = SM_STATE_PH3_GET_DIV;
+                                break;
+                            case SM_STATE_PH3_W4_DIV:
+                                // use 16 bit from random value as div
+                                sm_s_div = READ_NET_16(packet, 6);
+
+                                // done
+                                sm_state_responding = SM_STATE_IDLE;
+
+                                // calculate EDIV and LTK
+                                sm_s_ediv = sm_ediv(sm_persistent_dhk, sm_s_rand, sm_s_div);
+                                sm_ltk(sm_persistent_er, sm_s_div, sm_s_ltk);
+
+                                // distribute keys
+                                sm_distribute_keys();
+                                break;
+
                             default:
                                 break;
                         }
