@@ -334,13 +334,10 @@ static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t ia
     printf("r   "); hexdump(r, 16);
     
     // t1 = r xor p1
-    key_t r_flipped;
-    swap128(r, r_flipped);
-
     int i;
     key_t t1_flipped;
     for (i=0;i<16;i++){
-        t1_flipped[i] = r_flipped[i] ^ p1[i];
+        t1_flipped[i] = r[i] ^ p1[i];
     }
     printf("t1' "); hexdump(t1_flipped, 16);
     
@@ -406,9 +403,7 @@ static void sm_test(){
     printf("k:  "); hexdump(k, 16);
 
     // c1
-    key_t r;
-    key_t r_flipped = { 0x57, 0x83, 0xD5, 0x21, 0x56, 0xAD, 0x6F, 0x0E, 0x63, 0x88, 0x27, 0x4E, 0xC6, 0x70, 0x2E, 0xE0 };
-    swap128(r_flipped, r);
+    key_t r = { 0x57, 0x83, 0xD5, 0x21, 0x56, 0xAD, 0x6F, 0x0E, 0x63, 0x88, 0x27, 0x4E, 0xC6, 0x70, 0x2E, 0xE0 };
     printf("r:  "); hexdump(r, 16);
 
     uint8_t preq[] = {0x01, 0x01, 0x00, 0x00, 0x10, 0x07, 0x07};
@@ -434,11 +429,8 @@ void sm_test2(){
     memset(k, 0, 16 );
     printf("k:  "); hexdump(k, 16);
 
-    key_t r_be = { 0x55, 0x05, 0x1D, 0xF4, 0x7C, 0xC9, 0xBC, 0x97, 0x3C, 0x6A, 0x7D, 0x0D, 0x0F, 0x57, 0x0E, 0xC4 };
-    key_t r_le;
-    swap128(r_be, r_le);
-    printf("r_be:  "); hexdump(r_be, 16);
-    printf("r_le:  "); hexdump(r_le, 16);
+    key_t r = { 0x55, 0x05, 0x1D, 0xF4, 0x7C, 0xC9, 0xBC, 0x97, 0x3C, 0x6A, 0x7D, 0x0D, 0x0F, 0x57, 0x0E, 0xC4 };
+    printf("r:  "); hexdump(r, 16);
 
     // preq [ 01 04 00 01 10 07 07 ]
     // pres [ 02 04 00 01 10 07 07 ]
@@ -464,7 +456,7 @@ void sm_test2(){
     bt_flip_addr(ia_le, ia);
     bt_flip_addr(ra_le, ra);
 
-    sm_c1(k, r_le, preq, pres, 1, 0, ia, ra, c1);
+    sm_c1(k, r, preq, pres, 1, 0, ia, ra, c1);
     key_t c1_flipped;
     swap128(c1, c1_flipped);
 
@@ -581,7 +573,7 @@ static void sm_run(void){
         sm_send_s_random = 0;
         uint8_t buffer[17];
         buffer[0] = SM_CODE_PAIRING_RANDOM;
-        memcpy(&buffer[1], sm_s_random, 16);
+        swap128(sm_s_random, &buffer[1]);
         l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
         return;
     }
@@ -630,8 +622,8 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             break;
 
         case SM_CODE_PAIRING_RANDOM:
-            // received confirm value
-            memcpy(sm_m_random, &packet[1], 16);
+            // received random value
+            swap128(&packet[1], sm_m_random);
 
             // validate m confirm
             if (!sm_validate_m_confirm()){
