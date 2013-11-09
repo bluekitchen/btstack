@@ -296,8 +296,8 @@ static void sm_dhk(key_t ir, key_t dhk){
 
 
 // Endianess:
-// - preq, pres as found in SM PDUs, we flip it here
-// - everything else in big endian
+// - preq, pres as found in SM PDUs (little endian), we flip it here
+// - everything else in big endian incl. result
 static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, bd_addr_t ia, bd_addr_t ra, key_t c1){
 
     printf("iat %u: ia ", iat);
@@ -335,49 +335,48 @@ static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t ia
     
     // t1 = r xor p1
     int i;
-    key_t t1_flipped;
+    key_t t1;
     for (i=0;i<16;i++){
-        t1_flipped[i] = r[i] ^ p1[i];
+        t1[i] = r[i] ^ p1[i];
     }
-    printf("t1' "); hexdump(t1_flipped, 16);
+    printf("t1' "); hexdump(t1, 16);
     
-    key_t tk_flipped;
-    swap128(k, tk_flipped);
-    printf("tk' "); hexdump(tk_flipped, 16);
+    printf("k   "); hexdump(k, 16);
     
     // setup aes decryption
     unsigned long rk[RKLENGTH(KEYBITS)];
-    int nrounds = rijndaelSetupEncrypt(rk, &tk_flipped[0], KEYBITS);
+    int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
     
     // t2 = e(k, r_xor_p1)
-    key_t t2_flipped;
-    rijndaelEncrypt(rk, nrounds, t1_flipped, t2_flipped);
+    key_t t2;
+    rijndaelEncrypt(rk, nrounds, t1, t2);
     
-    printf("t2' "); hexdump(t2_flipped, 16);
+    printf("t2' "); hexdump(t2, 16);
     
-    key_t t3_flipped;
+    key_t t3;
     for (i=0;i<16;i++){
-        t3_flipped[i] = t2_flipped[i] ^ p2[i];
+        t3[i] = t2[i] ^ p2[i];
     }
-    printf("t3' "); hexdump(t3_flipped, 16);
+    printf("t3' "); hexdump(t3, 16);
     
-    key_t c1_flipped;
-    rijndaelEncrypt(rk, nrounds, t3_flipped, c1_flipped);
+    rijndaelEncrypt(rk, nrounds, t3, c1);
     
-    printf("c1' "); hexdump(c1_flipped, 16);
-    
-    swap128(c1_flipped, c1);
-    
-    printf("c1: "); hexdump(c1, 16);
+    printf("c1' "); hexdump(c1, 16);
 }
 
 static void sm_s1(key_t k, key_t r1, key_t r2, key_t s1){
+    printf("sm_s1\n");
+    printf("r1: "); hexdump(r1, 16);
+    printf("r2: "); hexdump(r2, 16);
+
     key_t r_prime;
-    memcpy(&r_prime[0], r2, 8);
-    memcpy(&r_prime[8], r1, 8);
-    key_t r_flipped;
-    swap128(r_prime, r_flipped);
-    printf("r': "); hexdump(r_flipped, 16);
+    // memcpy(&r_prime[0], r2, 8);
+    // memcpy(&r_prime[8], r1, 8);
+    // key_t r_flipped;
+    // swap128(r_prime, r_flipped);
+    memcpy(&r_prime[8], &r2[8], 8);
+    memcpy(&r_prime[0], &r1[8], 8);
+    printf("r': "); hexdump(r_prime, 16);
     
     key_t tk_flipped;
     swap128(sm_tk, tk_flipped);
@@ -388,7 +387,7 @@ static void sm_s1(key_t k, key_t r1, key_t r2, key_t s1){
     int nrounds = rijndaelSetupEncrypt(rk, &tk_flipped[0], KEYBITS);
     
     key_t s1_flipped;
-    rijndaelEncrypt(rk, nrounds, r_flipped, s1_flipped);
+    rijndaelEncrypt(rk, nrounds, r_prime, s1_flipped);
 
     printf("s1' "); hexdump(s1_flipped, 16);
     
@@ -415,12 +414,9 @@ static void sm_test(){
     sm_c1(k, r, preq, pres, 1, 0, ia, ra, c1);
     
     // s1
-    
-    key_t r1, r2, s1;
-    key_t r1_flipped = { 0x00, 0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
-    key_t r2_flipped = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00};
-    swap128(r1_flipped, r1);
-    swap128(r2_flipped, r2);
+    key_t s1;
+    key_t r1 = { 0x00, 0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
+    key_t r2 = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00};
     sm_s1(k, r1, r2, s1);
 }
 
@@ -457,10 +453,7 @@ void sm_test2(){
     bt_flip_addr(ra_le, ra);
 
     sm_c1(k, r, preq, pres, 1, 0, ia, ra, c1);
-    key_t c1_flipped;
-    swap128(c1, c1_flipped);
-
-    printf("Confirm value correct :%u\n", memcmp(c1_flipped, c1_true, 16) == 0);
+    printf("Confirm value correct :%u\n", memcmp(c1, c1_true, 16) == 0);
 }
 
 static int sm_validate_m_confirm(void){
@@ -495,7 +488,7 @@ static void sm_run(void){
         case SM_STATE_C1_SEND: {
             uint8_t buffer[17];
             buffer[0] = SM_CODE_PAIRING_CONFIRM;
-            memcpy(&buffer[1], sm_s_confirm, 16);
+            swap128(sm_s_confirm, &buffer[1]);
             l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
             sm_state_responding = SM_STATE_W4_LTK_REQUEST;
             return;
@@ -615,7 +608,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
         case  SM_CODE_PAIRING_CONFIRM:
             // received confirm value
-            memcpy(sm_m_confirm, &packet[1], 16);
+            swap128(&packet[1], sm_m_confirm);
 
             // calculate and send s_confirm
             sm_state_responding = SM_STATE_C1_GET_RANDOM_A;
