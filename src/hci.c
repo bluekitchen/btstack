@@ -741,15 +741,13 @@ static void event_handler(uint8_t *packet, int size){
 
     // handle BT initialization
     if (hci_stack.state == HCI_STATE_INITIALIZING){
-        // handle H4 synchronization loss on restart
-        // if (hci_stack.substate == 1 && packet[0] == HCI_EVENT_HARDWARE_ERROR){
-        //    hci_stack.substate = 0;
-        // }
-        // handle normal init sequence
         if (hci_stack.substate % 2){
             // odd: waiting for event
             if (packet[0] == HCI_EVENT_COMMAND_COMPLETE || packet[0] == HCI_EVENT_COMMAND_STATUS){
-                hci_stack.substate++;
+                // wait for explicit COMMAND COMPLETE on RESET
+                if (hci_stack.substate > 1 || COMMAND_COMPLETE_EVENT(packet, hci_reset)) {
+                    hci_stack.substate++;
+                }
             }
         }
     }
