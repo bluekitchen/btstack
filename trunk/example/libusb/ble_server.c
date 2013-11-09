@@ -114,6 +114,10 @@ static uint16_t         att_response_handle = 0;
 static uint16_t         att_response_size   = 0;
 static uint8_t          att_response_buffer[28];
 
+// Security Manager Master Keys, please use sm_set_er(er) and sm_set_ir(ir) with your own 128 bit random values
+static key_t sm_persistent_er;
+static key_t sm_persistent_ir;
+
 static uint16_t         sm_response_handle = 0;
 static uint16_t         sm_response_size   = 0;
 static uint8_t          sm_response_buffer[28];
@@ -188,6 +192,23 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
 
 // SECURITY MANAGER (SM) MATERIALIZES HERE
 
+void sm_init(){
+    // set some (BTstack default) ER and IR
+    int i;
+    for (i=0;i<16;i++){
+        sm_persistent_er[i] = 0x30 + i;
+        sm_persistent_ir[i] = 0x90 + i;
+    }
+}
+
+void sm_set_er(key_t er){
+    memcpy(sm_persistent_er, er, 16);
+}
+
+void sm_set_ir(key_t ir){
+    memcpy(sm_persistent_ir, ir, 16);
+}
+
 static inline void swap128(uint8_t src[16], uint8_t dst[16]){
     int i;
     for (i = 0; i < 16; i++)
@@ -200,7 +221,7 @@ static inline void swap56(uint8_t src[7], uint8_t dst[7]){
         dst[6 - i] = src[i];
 }
 
-static void sm_d1(key_t k, uint16_t d, uint16_t r){
+static void sm_d1(key_t k, uint16_t d, uint16_t r, key_t d1){
     // d'= padding || r || d
     key_t d1_prime;
     memset(d1_prime, 0, 16);
@@ -209,8 +230,60 @@ static void sm_d1(key_t k, uint16_t d, uint16_t r){
     // d1(k,d,r) = e(k, d'),
     unsigned long rk[RKLENGTH(KEYBITS)];
     int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
-    key_t d1;
-    rijndaelEncrypt(rk, nrounds, k, d1);
+    rijndaelEncrypt(rk, nrounds, d1_prime, d1);
+}
+
+static uint16_t sm_dm(key_t k, uint8_t r[8]){
+    // r’ = padding || r
+    key_t r_prime;
+    memset(r_prime, 0, 16);
+    memcpy(&r_prime[8], r, 8);
+    // dm(k, r) = e(k, r’) dm(k, r) = e(k, r’) 
+    key_t dm128;
+    unsigned long rk[RKLENGTH(KEYBITS)];
+    int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
+    rijndaelEncrypt(rk, nrounds, r_prime, dm128);
+    uint16_t dm = READ_NET_16(dm128, 14);
+    return dm;
+}
+
+static uint16_t sm_y(key_t dhk, uint8_t rand[8]){
+    // Y = dm(DHK, Rand)
+    return sm_dm(dhk, rand);
+}
+
+static uint16_t sm_ediv(key_t dhk, uint8_t rand[8], uint16_t div){
+    // EDIV = Y xor DIV
+    uint16_t y = sm_y(dhk, rand);
+    uint16_t ediv = y ^ div;
+    return ediv; 
+}
+
+static uint16_t sm_div(key_t dhk, uint8_t rand[8], uint16_t ediv){
+    // DIV = Y xor EDIV
+    uint16_t y = sm_y(dhk, rand);
+    uint16_t div = y ^ ediv;
+    return div;
+}
+
+static void sm_ltk(key_t er, uint16_t div, key_t ltk){
+    // LTK = d1(ER, DIV, 0))
+    sm_d1(er, div, 0, ltk);
+}
+
+static void sm_csrk(key_t er, uint16_t div, key_t csrk){
+    // LTK = d1(ER, DIV, 0))
+    sm_d1(er, div, 1, csrk);
+}
+
+static void sm_irk(key_t ir, key_t irk){
+    // IRK = d1(IR, 1, 0)
+    sm_d1(ir, 1, 0, irk);
+}
+
+static void sm_dhk(key_t ir, key_t dhk){
+    // DHK = d1(IR, 3, 0)
+    sm_d1(ir, 3, 0, dhk);
 }
 
 static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, bd_addr_t ia, bd_addr_t ra, key_t c1){
