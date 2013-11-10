@@ -170,8 +170,6 @@ static key_t   sm_m_confirm;
 static uint8_t sm_preq[7];
 static uint8_t sm_pres[7];
 
-static key_t   sm_stk;
-
 static key_t   sm_s_random;
 static key_t   sm_s_confirm;
 
@@ -366,32 +364,19 @@ static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t ia
 
 static void sm_s1(key_t k, key_t r1, key_t r2, key_t s1){
     printf("sm_s1\n");
+    printf("k:  "); hexdump(k, 16);
     printf("r1: "); hexdump(r1, 16);
     printf("r2: "); hexdump(r2, 16);
 
     key_t r_prime;
-    // memcpy(&r_prime[0], r2, 8);
-    // memcpy(&r_prime[8], r1, 8);
-    // key_t r_flipped;
-    // swap128(r_prime, r_flipped);
     memcpy(&r_prime[8], &r2[8], 8);
     memcpy(&r_prime[0], &r1[8], 8);
     printf("r': "); hexdump(r_prime, 16);
     
-    key_t tk_flipped;
-    swap128(sm_tk, tk_flipped);
-    printf("tk' "); hexdump(tk_flipped, 16);
-    
     // setup aes decryption
     unsigned long rk[RKLENGTH(KEYBITS)];
-    int nrounds = rijndaelSetupEncrypt(rk, &tk_flipped[0], KEYBITS);
-    
-    key_t s1_flipped;
-    rijndaelEncrypt(rk, nrounds, r_prime, s1_flipped);
-
-    printf("s1' "); hexdump(s1_flipped, 16);
-    
-    swap128(s1_flipped, s1);
+    int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
+    rijndaelEncrypt(rk, nrounds, r_prime, s1);
     printf("s1: "); hexdump(s1, 16);
 }
 
@@ -757,8 +742,11 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             if (sm_state_responding == SM_STATE_W4_LTK_REQUEST){
                                 // calculate STK
                                 log_info("calculating STK");
+                                key_t sm_stk;
                                 sm_s1(sm_tk, sm_s_random, sm_m_random, sm_stk);
-                                hci_send_cmd(&hci_le_long_term_key_request_reply, READ_BT_16(packet, 3), sm_stk);
+                                key_t sm_stk_flipped;
+                                swap128(sm_stk, sm_stk_flipped);
+                                hci_send_cmd(&hci_le_long_term_key_request_reply, READ_BT_16(packet, 3), sm_stk_flipped);
                                 sm_state_responding = SM_STATE_W4_CONNECTION_ENCRYPTED;
                                 break;
                             }
