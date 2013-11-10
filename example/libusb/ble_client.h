@@ -51,9 +51,9 @@ extern "C" {
 #endif
 
 
-typedef struct gatt_client_event {
+typedef struct le_central_event {
     uint8_t   type;
-} gatt_client_event_t;
+} le_central_event_t;
 
 typedef struct ad_event {
     uint8_t   type;
@@ -66,42 +66,51 @@ typedef struct ad_event {
 } ad_event_t;
 
 
-void (*gatt_client_callback)(gatt_client_event_t * event);
+typedef struct le_peripheral{
+    linked_list_t next;
+    uint16_t handle;
+    // state...
+} le_peripheral_t;
 
-void gatt_client_init();
-void gatt_client_start_scan();
+typedef struct le_characteristic{
+    uint8_t  permision;
+    uint16_t characteristic_handle;
+    uint8_t  has_uuid128;
+    uint16_t uuid16;
+    uint8_t  uuid128[16];
+} le_characteristic_t;
+
+
+void (*le_central_callback)(le_central_event_t * event);
+
+void le_central_init();
+// void le_central_register_handler( btstack_packet_handler_t handler);
+
+void le_central_start_scan();
 // creates one event per found peripheral device
-// EVENT: type (8), addr_type (8), addr(48), rssi(8), ad_len(8), ad_data(ad_len*8)
-void gatt_client_stop_scan();
+// { type (8), addr_type (8), addr(48), rssi(8), ad_len(8), ad_data(ad_len*8) }
+void le_central_stop_scan();
 
+uint16_t le_central_connect(le_peripheral_t *context, uint8_t addr_type, bd_addr_t addr);
+void le_central_cancel_connect(le_peripheral_t *context);
 
-/*
+void le_central_get_services(le_peripheral_t *context);
+void le_central_get_services_with_uuid16(le_peripheral_t *context,  uint16_t  uuid16);
+void le_central_get_services_with_uuid128(le_peripheral_t *context, uint8_t * uuid128);
+// { type (8), le_peripheral_t *context, service_handle }
 
-typedef struct service_uuid{
-    uint8_t lenght;
-    uint8_t * uuid;
-} service_uuid_t;
+void le_central_get_characteristics_for_service(le_peripheral_t *context, uint16_t service_handle);
+void le_central_get_characteristics_for_service_with_uuid16(le_peripheral_t *context, uint16_t service_handle, uint16_t  uuid16);
+void le_central_get_characteristics_for_service_with_uuid128(le_peripheral_t *context, uint16_t service_handle, uint8_t * uuid128);
+// { type (8), le_peripheral_t *context, service_handle, le_characteristic *}
 
-typedef struct peripheral{
+void le_central_read_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);
+void le_central_write_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle, int length, uint8_t * data);
+void le_central_subscribe_to_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);
+void le_central_unsubscribe_from_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);
+// { read/write/subscribe/unsubscribe confirm/result}
 
-} peripheral_t;
-
-
-
-// GATT Client API
-
-void gatt_client_register_handler( btstack_packet_handler_t handler);
-
-uint16_t gatt_client_connect(bt_addr_t *dev);
-void gatt_client_cancel_connect(peripheral_id peripheral);
-
-void get_services_for_peripheral(peripheral_id peripheral);
-// EVENT: type (8), peripheral_id (16), service_id 
-
-void get_characteristics_for_service(peripheral_id, service_id);
-// EVENT: type (8), peripheral_id (16), service_id (16), ...
-*/
-
+// { type, le_peripheral *, characteristic handle, int len, uint8_t data[]?}
 
 #if defined __cplusplus
 }
