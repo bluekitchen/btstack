@@ -292,16 +292,8 @@ static void sm_dhk(key_t ir, key_t dhk){
     sm_d1(ir, 3, 0, dhk);
 }
 
-
-// Endianess:
-// - preq, pres as found in SM PDUs (little endian), we flip it here
-// - everything else in big endian incl. result
-static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, bd_addr_t ia, bd_addr_t ra, key_t c1){
-
-    printf("iat %u: ia ", iat);
-    print_bd_addr(ia);
-    printf("rat %u: ra ", rat);
-    print_bd_addr(ra);
+// calculate arguments for first AES128 operation in C1 function
+static void sm_c1_t1(key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, key_t t1){
 
     // p1 = pres || preq || rat’ || iat’
     // "The octet of iat’ becomes the least significant octet of p1 and the most signifi-
@@ -317,28 +309,29 @@ static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t ia
     p1[15] = iat;
     printf("p1  "); hexdump(p1, 16);
     
-    // p2 = padding || ia || ra
-    // "The least significant octet of ra becomes the least significant octet of p2 and
-    // the most significant octet of padding becomes the most significant octet of p2.
-    // For example, if 48-bit ia is 0xA1A2A3A4A5A6 and the 48-bit ra is
-    // 0xB1B2B3B4B5B6 then p2 is 0x00000000A1A2A3A4A5A6B1B2B3B4B5B6.
-    
-    key_t p2;
-    memset(p2, 0, 16);
-    memcpy(&p2[4],  ia, 6);
-    memcpy(&p2[10], ra, 6);
-    printf("p2  "); hexdump(p2, 16);
-
     printf("r   "); hexdump(r, 16);
     
     // t1 = r xor p1
     int i;
-    key_t t1;
     for (i=0;i<16;i++){
         t1[i] = r[i] ^ p1[i];
     }
-    printf("t1' "); hexdump(t1, 16);
-    
+    printf("t1' "); hexdump(t1, 16);    
+}
+
+// Endianess:
+// - preq, pres as found in SM PDUs (little endian), we flip it here
+// - everything else in big endian incl. result
+static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, bd_addr_t ia, bd_addr_t ra, key_t c1){
+
+    printf("iat %u: ia ", iat);
+    print_bd_addr(ia);
+    printf("rat %u: ra ", rat);
+    print_bd_addr(ra);
+
+    key_t t1;
+    sm_c1_t1(r, preq, pres, iat, rat, t1);
+
     printf("k   "); hexdump(k, 16);
     
     // setup aes decryption
@@ -351,7 +344,21 @@ static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t ia
     
     printf("t2' "); hexdump(t2, 16);
     
+    // p2 = padding || ia || ra
+    // "The least significant octet of ra becomes the least significant octet of p2 and
+    // the most significant octet of padding becomes the most significant octet of p2.
+    // For example, if 48-bit ia is 0xA1A2A3A4A5A6 and the 48-bit ra is
+    // 0xB1B2B3B4B5B6 then p2 is 0x00000000A1A2A3A4A5A6B1B2B3B4B5B6.
+    
+    key_t p2;
+    memset(p2, 0, 16);
+    memcpy(&p2[4],  ia, 6);
+    memcpy(&p2[10], ra, 6);
+    printf("p2  "); hexdump(p2, 16);
+
+    // c1 = e(k, t2_xor_p2)
     key_t t3;
+    int i;
     for (i=0;i<16;i++){
         t3[i] = t2[i] ^ p2[i];
     }
