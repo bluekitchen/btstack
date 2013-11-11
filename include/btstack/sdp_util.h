@@ -132,6 +132,7 @@ int       spd_get_filtered_size(uint8_t *record, uint8_t *attributeIDList);
 int       sdp_filter_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startOffset, uint16_t maxBytes, uint16_t *usedBytes, uint8_t *buffer);  
 
 void      sdp_create_spp_service(uint8_t *service, int service_id, const char *name);
+void      sdp_normalize_uuid(uint8_t *uuid, uint32_t shortUUID);
 
 #if defined __cplusplus
 }
