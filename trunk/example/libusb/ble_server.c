@@ -140,6 +140,11 @@ static key_t sm_persistent_irk;
 // derived from sm_persistent_er
 
 
+// data to send to aes128 crypto engine
+static key_t sm_aes128_key;
+static key_t sm_aes128_plaintext;
+
+//
 static uint16_t         sm_response_handle = 0;
 static uint16_t         sm_response_size   = 0;
 static uint8_t          sm_response_buffer[28];
@@ -374,6 +379,7 @@ static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t ia
     rijndaelEncrypt(rk, nrounds, t3, c1);
     
     printf("c1' "); hexdump(c1, 16);
+
 }
 
 static void sm_s1(key_t k, key_t r1, key_t r2, key_t s1){
@@ -483,6 +489,13 @@ static void sm_run(void){
             return;
         case SM_STATE_C1_GET_ENC_A:
         case SM_STATE_C1_GET_ENC_B:
+            {
+            key_t key_flipped, plaintext_flipped;
+            swap128(sm_aes128_key, key_flipped);
+            swap128(sm_aes128_plaintext, plaintext_flipped);
+            hci_send_cmd(&hci_le_encrypt, key_flipped, plaintext_flipped);
+            sm_state_responding++;
+            }
             break;
         case SM_STATE_C1_SEND: {
             uint8_t buffer[17];
@@ -810,6 +823,33 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					   hci_send_cmd(&hci_le_set_advertise_enable, 1);
 					   break;
 					}
+                    if (COMMAND_COMPLETE_EVENT(packet, hci_le_encrypt)){
+                        switch (sm_state_responding){
+                            case SM_STATE_C1_W4_ENC_A:
+                                {
+                                memcpy(sm_aes128_key, sm_tk, 16);
+                                key_t t2;
+                                swap128(&packet[6], t2);
+                                sm_c1_t3(t2, sm_m_address, sm_s_address, sm_aes128_plaintext);
+                                }
+                                sm_state_responding++;
+                                break;
+                            case SM_STATE_C1_W4_ENC_B:
+                                {
+                                swap128(&packet[6], sm_s_confirm);
+                                printf("c1! ");
+                                hexdump(sm_s_confirm, 16);
+                                sm_state_responding++;
+
+                                // HACK to avoid successful pairing
+                                // c1[0] = 023;
+
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    }
                     if (COMMAND_COMPLETE_EVENT(packet, hci_le_rand)){
                         switch (sm_state_responding){
                             case SM_STATE_C1_W4_RANDOM_A:
@@ -819,11 +859,15 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             case SM_STATE_C1_W4_RANDOM_B:
                                 memcpy(&sm_s_random[8], &packet[6], 8);
 
-                                // calculate s_confirm
-                                sm_c1(sm_tk, sm_s_random, sm_preq, sm_pres, sm_m_addr_type, sm_s_addr_type, sm_m_address, sm_s_address, sm_s_confirm);
-                                
+                                // calculate s_confirm manually
+                                // sm_c1(sm_tk, sm_s_random, sm_preq, sm_pres, sm_m_addr_type, sm_s_addr_type, sm_m_address, sm_s_address, sm_s_confirm);
                                 // send s_confirm
-                                sm_state_responding = SM_STATE_C1_SEND;
+                                // sm_state_responding = SM_STATE_C1_SEND;
+
+                                // calculate s_confirm using aes128 engine - step 1
+                                memcpy(sm_aes128_key, sm_tk, 16);
+                                sm_c1_t1(sm_s_random, sm_preq, sm_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
+                                sm_state_responding = SM_STATE_C1_GET_ENC_A;
                                 break;
                             case SM_STATE_PH3_W4_RANDOM:
                                 memcpy(sm_s_rand, &packet[6], 8);
