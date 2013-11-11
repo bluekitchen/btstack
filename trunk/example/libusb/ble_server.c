@@ -800,8 +800,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                         switch (sm_state_responding){
                             case SM_STATE_C1_W4_RANDOM_A:
                                 memcpy(&sm_s_random[0], &packet[6], 8);
-                                hci_send_cmd(&hci_le_rand);
-                                sm_state_responding++;
+                                sm_state_responding = SM_STATE_C1_GET_RANDOM_B;
                                 break;
                             case SM_STATE_C1_W4_RANDOM_B:
                                 memcpy(&sm_s_random[8], &packet[6], 8);
