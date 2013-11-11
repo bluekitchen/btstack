@@ -45,19 +45,30 @@
 #include <stdlib.h>
 #include <string.h>
 #include <btstack/run_loop.h>
+#include <btstack/hci_cmds.h>
+
+#include "config.h"
 
 #include "ble_client.h"
+#include "ad_parser.h"
 
 #include "debug.h"
 #include "btstack_memory.h"
 #include "hci.h"
 #include "hci_dump.h"
-
 #include "l2cap.h"
-
 #include "att.h"
-#include "ad_parser.h"
 
+void (*le_central_callback)(le_central_event_t * event);
+
+static void dummy_notify(le_central_event_t* event){}
+
+void le_central_register_handler(void (*le_callback)(le_central_event_t* event)){
+    le_central_callback = dummy_notify;
+    if (le_callback != NULL){
+        le_central_callback = le_callback;
+    } 
+}
 
 static void hexdump2(void *data, int size){
     int i;
@@ -100,6 +111,29 @@ void gatt_client_stop_scan(){
     gatt_client_run();
 }
 
+void le_central_connect(le_peripheral_t *context, uint8_t addr_type, bd_addr_t addr){
+    //TODO: add peripheral to list
+    if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
+    hci_send_cmd(&hci_le_create_connection, 
+                 1000,      // scan interval: 625 ms
+                 1000,      // scan interval: 625 ms
+                 0,         // don't use whitelist
+                 0,         // peer address type: public
+                 addr,      // remote bd addr
+                 addr_type, // random or public
+                 80,        // conn interval min
+                 80,        // conn interval max (3200 * 0.625)
+                 0,         // conn latency
+                 2000,      // supervision timeout
+                 0,         // min ce length
+                 1000       // max ce length
+                 );
+}
+
+/*
+void le_central_cancel_connect(le_peripheral_t *context){
+    hci_send_cmd(&hci_le_create_connection_cancel);
+}*/
 
 static void dump_ad_event(ad_event_t e){
     printf("evt-type %u, addr-type %u, addr %s, rssi %u, length adv %u, data: ", e.event_type, 

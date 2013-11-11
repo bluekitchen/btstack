@@ -81,17 +81,15 @@ typedef struct le_characteristic{
 } le_characteristic_t;
 
 
-void (*le_central_callback)(le_central_event_t * event);
-
 void le_central_init();
-// void le_central_register_handler( btstack_packet_handler_t handler);
+void le_central_register_handler(void (*le_callback)(le_central_event_t * event));
 
 void le_central_start_scan();
 // creates one event per found peripheral device
 // { type (8), addr_type (8), addr(48), rssi(8), ad_len(8), ad_data(ad_len*8) }
 void le_central_stop_scan();
 
-uint16_t le_central_connect(le_peripheral_t *context, uint8_t addr_type, bd_addr_t addr);
+void le_central_connect(le_peripheral_t *context, uint8_t addr_type, bd_addr_t addr);
 void le_central_cancel_connect(le_peripheral_t *context);
 
 void le_central_get_services(le_peripheral_t *context);
