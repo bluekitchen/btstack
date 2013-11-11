@@ -108,11 +108,17 @@ typedef enum {
     SM_STATE_C1_W4_RANDOM_A,
     SM_STATE_C1_GET_RANDOM_B,
     SM_STATE_C1_W4_RANDOM_B,
+
     SM_STATE_C1_GET_ENC_A,
     SM_STATE_C1_W4_ENC_A,
     SM_STATE_C1_GET_ENC_B,
     SM_STATE_C1_W4_ENC_B,
     SM_STATE_C1_SEND,
+
+    SM_STATE_C1_GET_ENC_C,
+    SM_STATE_C1_W4_ENC_C,
+    SM_STATE_C1_GET_ENC_D,
+    SM_STATE_C1_W4_ENC_D,
 
     SM_STATE_W4_LTK_REQUEST,
     SM_STATE_W4_CONNECTION_ENCRYPTED,
@@ -489,6 +495,8 @@ static void sm_run(void){
             return;
         case SM_STATE_C1_GET_ENC_A:
         case SM_STATE_C1_GET_ENC_B:
+        case SM_STATE_C1_GET_ENC_C:
+        case SM_STATE_C1_GET_ENC_D:
             {
             key_t key_flipped, plaintext_flipped;
             swap128(sm_aes128_key, key_flipped);
@@ -630,14 +638,20 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // received random value
             swap128(&packet[1], sm_m_random);
 
-            // validate m confirm
-            if (!sm_validate_m_confirm()){
-                sm_send_pairing_failed = 1;
-                sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
-                break;
-            }
-            // send s_random
-            sm_send_s_random = 1;
+            // // validate m confirm
+            // if (!sm_validate_m_confirm()){
+            //     sm_send_pairing_failed = 1;
+            //     sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
+            //     break;
+            // }
+            // // send s_random
+            // sm_send_s_random = 1;
+
+            // use aes128 engine
+            // calculate m_confirm using aes128 engine - step 1
+            memcpy(sm_aes128_key, sm_tk, 16);
+            sm_c1_t1(sm_m_random, sm_preq, sm_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
+            sm_state_responding = SM_STATE_C1_GET_ENC_C;
             break;
 
         case SM_CODE_ENCRYPTION_INFORMATION:
@@ -826,6 +840,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     if (COMMAND_COMPLETE_EVENT(packet, hci_le_encrypt)){
                         switch (sm_state_responding){
                             case SM_STATE_C1_W4_ENC_A:
+                            case SM_STATE_C1_W4_ENC_C:
                                 {
                                 memcpy(sm_aes128_key, sm_tk, 16);
                                 key_t t2;
@@ -835,15 +850,30 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 sm_state_responding++;
                                 break;
                             case SM_STATE_C1_W4_ENC_B:
-                                {
                                 swap128(&packet[6], sm_s_confirm);
                                 printf("c1! ");
                                 hexdump(sm_s_confirm, 16);
                                 sm_state_responding++;
 
-                                // HACK to avoid successful pairing
-                                // c1[0] = 023;
+                                break;
+                            case SM_STATE_C1_W4_ENC_D:
+                                {
+                                key_t m_confirm_test;
+                                swap128(&packet[6], m_confirm_test);
+                                printf("c1! ");
+                                hexdump(m_confirm_test, 16);
 
+                                if (memcmp(sm_m_confirm, m_confirm_test, 16) == 0){
+                                    // send s_random
+                                    sm_send_s_random = 1;
+                                    sm_state_responding = SM_STATE_W4_LTK_REQUEST;
+                                    break;
+                                }
+
+                                sm_send_pairing_failed = 1;
+                                sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
+
+                                break;                                
                                 }
                                 break;
                             default:
