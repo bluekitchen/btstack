@@ -319,32 +319,9 @@ static void sm_c1_t1(key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uin
     printf("t1' "); hexdump(t1, 16);    
 }
 
-// Endianess:
-// - preq, pres as found in SM PDUs (little endian), we flip it here
-// - everything else in big endian incl. result
-static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, bd_addr_t ia, bd_addr_t ra, key_t c1){
-
-    printf("iat %u: ia ", iat);
-    print_bd_addr(ia);
-    printf("rat %u: ra ", rat);
-    print_bd_addr(ra);
-
-    key_t t1;
-    sm_c1_t1(r, preq, pres, iat, rat, t1);
-
-    printf("k   "); hexdump(k, 16);
-    
-    // setup aes decryption
-    unsigned long rk[RKLENGTH(KEYBITS)];
-    int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
-    
-    // t2 = e(k, r_xor_p1)
-    key_t t2;
-    rijndaelEncrypt(rk, nrounds, t1, t2);
-    
-    printf("t2' "); hexdump(t2, 16);
-    
-    // p2 = padding || ia || ra
+// calculate arguments for second AES128 operation in C1 function
+static void sm_c1_t3(key_t t2, bd_addr_t ia, bd_addr_t ra, key_t t3){
+     // p2 = padding || ia || ra
     // "The least significant octet of ra becomes the least significant octet of p2 and
     // the most significant octet of padding becomes the most significant octet of p2.
     // For example, if 48-bit ia is 0xA1A2A3A4A5A6 and the 48-bit ra is
@@ -357,12 +334,42 @@ static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t ia
     printf("p2  "); hexdump(p2, 16);
 
     // c1 = e(k, t2_xor_p2)
-    key_t t3;
     int i;
     for (i=0;i<16;i++){
         t3[i] = t2[i] ^ p2[i];
     }
     printf("t3' "); hexdump(t3, 16);
+}
+
+// 
+// Endianess:
+// - preq, pres as found in SM PDUs (little endian), we flip it here
+// - everything else in big endian incl. result
+static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, bd_addr_t ia, bd_addr_t ra, key_t c1){
+
+    printf("iat %u: ia ", iat);
+    print_bd_addr(ia);
+    printf("rat %u: ra ", rat);
+    print_bd_addr(ra);
+
+    printf("k   "); hexdump(k, 16);
+
+    // first operation
+    key_t t1;
+    sm_c1_t1(r, preq, pres, iat, rat, t1);
+    
+    unsigned long rk[RKLENGTH(KEYBITS)];
+    int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
+    
+    // t2 = e(k, r_xor_p1)
+    key_t t2;
+    rijndaelEncrypt(rk, nrounds, t1, t2);
+    
+    printf("t2' "); hexdump(t2, 16);
+
+    // second operation
+    key_t t3;
+    sm_c1_t3(t2, ia, ra, t3);    
     
     rijndaelEncrypt(rk, nrounds, t3, c1);
     
