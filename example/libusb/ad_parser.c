@@ -42,6 +42,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <btstack/sdp_util.h>
+
 #include "ad_parser.h"
 
 typedef enum {
@@ -78,21 +80,38 @@ uint8_t * ad_iterator_get_data(ad_context_t * context){
     return &context->data[context->offset + 2];
 }
 
-int ad_data_contains_uuid16(uint8_t ad_len, uint8_t * ad_data, uint16_t uuid){
+static inline void swap128(uint8_t src[16], uint8_t dst[16]){
+    int i;
+    for (i = 0; i < 16; i++)
+        dst[15 - i] = src[i];
+}
+
+int ad_data_contains_uuid16(uint8_t ad_len, uint8_t * ad_data, uint16_t uuid16){
     ad_context_t context;
     for (ad_iterator_init(&context, ad_len, ad_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
         uint8_t data_type = ad_iterator_get_data_type(&context);
         uint8_t data_len  = ad_iterator_get_data_len(&context);
         uint8_t * data    = ad_iterator_get_data(&context);
         
+        int i;
+        uint8_t ad_uuid128[16], uuid128_bt[16];
+                
         switch (data_type){
             case IncompleteList16:
             case CompleteList16:
-                // ... iterate through list of uuids
+                for (i=0; i<data_len; i+=2){
+                    uint16_t uuid = READ_BT_16(data, i);
+                    if ( uuid == uuid16 ) return 1;
+                }
                 break;
             case IncompleteList128:
             case CompleteList128:
-                // ...
+                sdp_normalize_uuid(ad_uuid128, uuid16);
+                swap128(ad_uuid128, uuid128_bt);
+            
+                for (i=0; i<data_len; i+=16){
+                    if (memcmp(uuid128_bt, &data[i], 16) == 0) return 1;
+                }
                 break;
             default:
                 break;
@@ -108,14 +127,25 @@ int ad_data_contains_uuid128(uint8_t ad_len, uint8_t * ad_data, uint8_t * uuid12
         uint8_t data_len  = ad_iterator_get_data_len(&context);
         uint8_t * data    = ad_iterator_get_data(&context);
         
+        int i;
+        uint8_t ad_uuid128[16];
+                
         switch (data_type){
             case IncompleteList16:
             case CompleteList16:
-                // ...
+                for (i=0; i<data_len; i+=2){
+                    uint16_t uuid16 = READ_BT_16(data, i);
+                    sdp_normalize_uuid(ad_uuid128, uuid16);
+                    
+                    if (memcmp(ad_uuid128, uuid128, 16) == 0) return 1;
+                }
+
                 break;
             case IncompleteList128:
             case CompleteList128:
-                // ...
+                for (i=0; i<data_len; i+=16){
+                    if (memcmp(uuid128, &data[i], 16) == 0) return 1;
+                }
                 break;
             default:
                 break;
