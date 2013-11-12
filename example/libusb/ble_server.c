@@ -102,44 +102,51 @@ typedef enum {
 typedef uint8_t key_t[16];
 
 typedef enum {
+
     SM_STATE_IDLE,
 
+    // calculate confirm values for local and remote connection
     SM_STATE_C1_GET_RANDOM_A,
     SM_STATE_C1_W4_RANDOM_A,
     SM_STATE_C1_GET_RANDOM_B,
     SM_STATE_C1_W4_RANDOM_B,
-
     SM_STATE_C1_GET_ENC_A,
     SM_STATE_C1_W4_ENC_A,
     SM_STATE_C1_GET_ENC_B,
     SM_STATE_C1_W4_ENC_B,
     SM_STATE_C1_SEND,
-
     SM_STATE_C1_GET_ENC_C,
     SM_STATE_C1_W4_ENC_C,
     SM_STATE_C1_GET_ENC_D,
     SM_STATE_C1_W4_ENC_D,
 
+    // calc STK
     SM_STATE_CALC_STK,
     SM_STATE_W4_STK,
     SM_STATE_SEND_STK,
     SM_STATE_W4_LTK_REQUEST,
     SM_STATE_W4_CONNECTION_ENCRYPTED,
 
+    // Phase 3: calculate DHK, Y, EDIV, and LTK
     SM_STATE_PH3_GET_RANDOM,
     SM_STATE_PH3_W4_RANDOM,
     SM_STATE_PH3_GET_DIV,
     SM_STATE_PH3_W4_DIV,
-
     SM_STATE_PH3_DHK_GET_ENC,
     SM_STATE_PH3_DHK_W4_ENC,
-
     SM_STATE_PH3_Y_GET_ENC,
     SM_STATE_PH3_Y_W4_ENC,
-
     SM_STATE_PH3_LTK_GET_ENC,
     SM_STATE_PH3_LTK_W4_ENC,
 
+    // re establish previously distribued LTK
+    SM_STATE_PH4_DHK_GET_ENC,
+    SM_STATE_PH4_DHK_W4_ENC,
+    SM_STATE_PH4_Y_GET_ENC,
+    SM_STATE_PH4_Y_W4_ENC,
+    SM_STATE_PH4_LTK_GET_ENC,
+    SM_STATE_PH4_LTK_W4_ENC,
+    SM_STATE_PH4_SEND_LTK,
 
 } security_manager_state_t;
 
@@ -544,6 +551,9 @@ static void sm_run(void){
         case SM_STATE_PH3_DHK_GET_ENC:
         case SM_STATE_PH3_Y_GET_ENC:
         case SM_STATE_PH3_LTK_GET_ENC:
+        case SM_STATE_PH4_DHK_GET_ENC:
+        case SM_STATE_PH4_Y_GET_ENC:
+        case SM_STATE_PH4_LTK_GET_ENC:
             {
             key_t key_flipped, plaintext_flipped;
             swap128(sm_aes128_key, key_flipped);
@@ -551,7 +561,7 @@ static void sm_run(void){
             hci_send_cmd(&hci_le_encrypt, key_flipped, plaintext_flipped);
             sm_state_responding++;
             }
-            break;
+            return;
         case SM_STATE_C1_SEND: {
             uint8_t buffer[17];
             buffer[0] = SM_CODE_PAIRING_CONFIRM;
@@ -565,6 +575,14 @@ static void sm_run(void){
             swap128(sm_stk, stk_flipped);
             hci_send_cmd(&hci_le_long_term_key_request_reply, sm_response_handle, stk_flipped);
             sm_state_responding = SM_STATE_W4_CONNECTION_ENCRYPTED;
+            return;
+        }
+        case SM_STATE_PH4_SEND_LTK: {
+            key_t ltk_flipped;
+            swap128(sm_s_ltk, ltk_flipped);
+            hci_send_cmd(&hci_le_long_term_key_request_reply, sm_response_handle, ltk_flipped);
+            sm_state_responding = SM_STATE_IDLE;
+            return;
         }
 
         default:
@@ -590,7 +608,7 @@ static void sm_run(void){
         sm_send_encryption_information = 0;
         uint8_t buffer[17];
         buffer[0] = SM_CODE_ENCRYPTION_INFORMATION;
-        memcpy(&buffer[1], sm_s_ltk, 16);
+        swap128(sm_s_ltk, &buffer[1]);
         l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
         return;
     }
@@ -607,7 +625,7 @@ static void sm_run(void){
         sm_send_identity_information = 0;
         uint8_t buffer[17];
         buffer[0] = SM_CODE_IDENTITY_INFORMATION;
-        memcpy(&buffer[1], sm_s_irk, 16);
+        swap128(sm_s_irk, &buffer[1]);
         l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
         return;
     }
@@ -624,7 +642,7 @@ static void sm_run(void){
         sm_send_signing_identification = 0;
         uint8_t buffer[17];
         buffer[0] = SM_CODE_SIGNING_INFORMATION;
-        memcpy(&buffer[1], sm_s_csrk, 16);
+        swap128(sm_s_csrk, &buffer[1]);
         l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
         return;
     }
@@ -855,11 +873,16 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             // div = y xor ediv
                             // ltk = d1(ER, div, 0) - enc
 
+                            // DHK = d1(IR, 3, 0)
+                            sm_aes128_set_key(sm_persistent_ir);
+                            sm_d1_d_prime(3, 0, sm_aes128_plaintext);
+                            sm_state_responding = SM_STATE_PH4_DHK_GET_ENC;
+
                             // sm_div depends on sm_y, dhk, sm_dm, sm_dm_r_prime, sm_d1, ir, sm_d1_d_prime
                             sm_s_div  = sm_div(sm_persistent_dhk, sm_s_rand, sm_s_ediv);
                             sm_ltk(sm_persistent_er, sm_s_div, sm_s_ltk);
-                            hci_send_cmd(&hci_le_long_term_key_request_reply, READ_BT_16(packet, 3), sm_s_ltk);
-                            sm_state_responding = SM_STATE_IDLE;
+                            // hci_send_cmd(&hci_le_long_term_key_request_reply, READ_BT_16(packet, 3), sm_s_ltk);
+                            // sm_state_responding = SM_STATE_IDLE;
                             break;
 
                         default:
@@ -944,6 +967,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 sm_state_responding = SM_STATE_SEND_STK;
                                 break;
                             case SM_STATE_PH3_DHK_W4_ENC:
+                            case SM_STATE_PH4_DHK_W4_ENC:
                                 swap128(&packet[6], sm_persistent_dhk);
                                 printf("dhk ");
                                 hexdump(sm_persistent_dhk, 16);
@@ -951,7 +975,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 // Y = dm(DHK, Rand)
                                 sm_aes128_set_key(sm_persistent_dhk);
                                 sm_dm_r_prime(sm_s_rand, sm_aes128_plaintext);
-                                sm_state_responding = SM_STATE_PH3_Y_GET_ENC;
+                                sm_state_responding++;
                                 break;
                             case SM_STATE_PH3_Y_W4_ENC:{
                                 key_t y128;
@@ -968,6 +992,21 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 sm_state_responding = SM_STATE_PH3_LTK_GET_ENC;
                                 break;
                             }
+                            case SM_STATE_PH4_Y_W4_ENC:{
+                                key_t y128;
+                                swap128(&packet[6], y128);
+                                sm_s_y = READ_NET_16(y128, 14);
+                                printf("y 0x%04x\n", sm_s_y);
+                                // PH3B3 - calculate DIV
+                                sm_s_div = sm_s_y ^ sm_s_ediv;
+                                printf("div 0x%04x\n", sm_s_div);
+                                // PH3B4 - calculate LTK         - enc
+                                // LTK = d1(ER, DIV, 0))
+                                sm_aes128_set_key(sm_persistent_er);
+                                sm_d1_d_prime(sm_s_div, 0, sm_aes128_plaintext);
+                                sm_state_responding = SM_STATE_PH4_LTK_GET_ENC;
+                                break;
+                            }
                             case SM_STATE_PH3_LTK_W4_ENC:
                                 swap128(&packet[6], sm_s_ltk);
                                 printf("ltk ");
@@ -976,6 +1015,12 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 sm_distribute_keys();
                                 // done
                                 sm_state_responding = SM_STATE_IDLE;
+                                break;                                
+                            case SM_STATE_PH4_LTK_W4_ENC:
+                                swap128(&packet[6], sm_s_ltk);
+                                printf("ltk ");
+                                hexdump(sm_s_ltk, 16);
+                                sm_state_responding = SM_STATE_PH4_SEND_LTK;
                                 break;                                
                             default:
                                 break;
