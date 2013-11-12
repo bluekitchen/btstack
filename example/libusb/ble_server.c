@@ -299,57 +299,6 @@ static void sm_dm_r_prime(uint8_t r[8], key_t r_prime){
     memcpy(&r_prime[8], r, 8);
 }
 
-static uint16_t sm_dm(key_t k, uint8_t r[8]){
-    key_t r_prime;
-    sm_dm_r_prime(r, r_prime);
-    // dm(k, r) = e(k, r’) dm(k, r) = e(k, r’) 
-    key_t dm128;
-    unsigned long rk[RKLENGTH(KEYBITS)];
-    int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
-    rijndaelEncrypt(rk, nrounds, r_prime, dm128);
-
-    uint16_t dm = READ_NET_16(dm128, 14);
-    return dm;
-}
-
-static uint16_t sm_y(key_t dhk, uint8_t rand[8]){
-    // Y = dm(DHK, Rand)
-    return sm_dm(dhk, rand);
-}
-
-static uint16_t sm_ediv(key_t dhk, uint8_t rand[8], uint16_t div){
-    // EDIV = Y xor DIV
-    uint16_t y = sm_y(dhk, rand);
-    uint16_t ediv = y ^ div;
-    return ediv; 
-}
-
-static uint16_t sm_div(key_t dhk, uint8_t rand[8], uint16_t ediv){
-    // DIV = Y xor EDIV
-    uint16_t y = sm_y(dhk, rand);
-    uint16_t div = y ^ ediv;
-    return div;
-}
-
-static void sm_ltk(key_t er, uint16_t div, key_t ltk){
-    // LTK = d1(ER, DIV, 0))
-    sm_d1(er, div, 0, ltk);
-}
-
-static void sm_csrk(key_t er, uint16_t div, key_t csrk){
-    // LTK = d1(ER, DIV, 0))
-    sm_d1(er, div, 1, csrk);
-}
-
-static void sm_irk(key_t ir, key_t irk){
-    // IRK = d1(IR, 1, 0)
-    sm_d1(ir, 1, 0, irk);
-}
-
-static void sm_dhk(key_t ir, key_t dhk){
-    // DHK = d1(IR, 3, 0)
-    sm_d1(ir, 3, 0, dhk);
-}
 
 // calculate arguments for first AES128 operation in C1 function
 static void sm_c1_t1(key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, key_t t1){
@@ -366,16 +315,15 @@ static void sm_c1_t1(key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uin
     swap56(preq, &p1[7]);
     p1[14] = rat;
     p1[15] = iat;
-    printf("p1  "); hexdump(p1, 16);
-    
-    printf("r   "); hexdump(r, 16);
+    print_key("p1", p1);
+    print_key("r", r);
     
     // t1 = r xor p1
     int i;
     for (i=0;i<16;i++){
         t1[i] = r[i] ^ p1[i];
     }
-    printf("t1' "); hexdump(t1, 16);    
+    print_key("t1", t1);
 }
 
 // calculate arguments for second AES128 operation in C1 function
@@ -390,143 +338,21 @@ static void sm_c1_t3(key_t t2, bd_addr_t ia, bd_addr_t ra, key_t t3){
     memset(p2, 0, 16);
     memcpy(&p2[4],  ia, 6);
     memcpy(&p2[10], ra, 6);
-    printf("p2  "); hexdump(p2, 16);
+    print_key("p2", p2);
 
     // c1 = e(k, t2_xor_p2)
     int i;
     for (i=0;i<16;i++){
         t3[i] = t2[i] ^ p2[i];
     }
-    printf("t3' "); hexdump(t3, 16);
+    print_key("t3", t3);
 }
 
-// 
-// Endianess:
-// - preq, pres as found in SM PDUs (little endian), we flip it here
-// - everything else in big endian incl. result
-static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, bd_addr_t ia, bd_addr_t ra, key_t c1){
-
-    printf("iat %u: ia ", iat);
-    print_bd_addr(ia);
-    printf("rat %u: ra ", rat);
-    print_bd_addr(ra);
-
-    printf("k   "); hexdump(k, 16);
-
-    // first operation
-    key_t t1;
-    sm_c1_t1(r, preq, pres, iat, rat, t1);
-    
-    unsigned long rk[RKLENGTH(KEYBITS)];
-    int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
-    
-    // t2 = e(k, r_xor_p1)
-    key_t t2;
-    rijndaelEncrypt(rk, nrounds, t1, t2);
-    
-    printf("t2' "); hexdump(t2, 16);
-
-    // second operation
-    key_t t3;
-    sm_c1_t3(t2, ia, ra, t3);    
-    
-    rijndaelEncrypt(rk, nrounds, t3, c1);
-    
-    printf("c1' "); hexdump(c1, 16);
-
-}
 static void sm_s1_r_prime(key_t r1, key_t r2, key_t r_prime){
-    printf("r1: "); hexdump(r1, 16);
-    printf("r2: "); hexdump(r2, 16);
+    print_key("r1", r1);
+    print_key("r2", r2);
     memcpy(&r_prime[8], &r2[8], 8);
     memcpy(&r_prime[0], &r1[8], 8);
-}
-
-static void sm_s1(key_t k, key_t r1, key_t r2, key_t s1){
-    printf("sm_s1\n");
-    printf("k:  "); hexdump(k, 16);
-
-    key_t r_prime;
-    sm_s1_r_prime(r1, r2, r_prime);
-
-    // setup aes decryption
-    unsigned long rk[RKLENGTH(KEYBITS)];
-    int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
-    rijndaelEncrypt(rk, nrounds, r_prime, s1);
-    printf("s1: "); hexdump(s1, 16);
-}
-
-static void sm_test(){
-    
-    key_t k;
-    memset(k, 0, 16 );
-    printf("k:  "); hexdump(k, 16);
-
-    // c1
-    key_t r = { 0x57, 0x83, 0xD5, 0x21, 0x56, 0xAD, 0x6F, 0x0E, 0x63, 0x88, 0x27, 0x4E, 0xC6, 0x70, 0x2E, 0xE0 };
-    printf("r:  "); hexdump(r, 16);
-
-    uint8_t preq[] = {0x01, 0x01, 0x00, 0x00, 0x10, 0x07, 0x07};
-    uint8_t pres[] = {0x02, 0x03, 0x00, 0x00, 0x08, 0x00, 0x05};
-    bd_addr_t ia = { 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6 };
-    bd_addr_t ra = { 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6 };
-    
-    key_t c1;
-    sm_c1(k, r, preq, pres, 1, 0, ia, ra, c1);
-    
-    // s1
-    key_t s1;
-    key_t r1 = { 0x00, 0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
-    key_t r2 = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00};
-    sm_s1(k, r1, r2, s1);
-}
-
-void sm_test2(){
-    key_t k;
-    memset(k, 0, 16 );
-    printf("k:  "); hexdump(k, 16);
-
-    key_t r = { 0x55, 0x05, 0x1D, 0xF4, 0x7C, 0xC9, 0xBC, 0x97, 0x3C, 0x6A, 0x7D, 0x0D, 0x0F, 0x57, 0x0E, 0xC4 };
-    printf("r:  "); hexdump(r, 16);
-
-    // preq [ 01 04 00 01 10 07 07 ]
-    // pres [ 02 04 00 01 10 07 07 ]
-
-    uint8_t preq[] = {0x01, 0x04, 0x00, 0x01, 0x10, 0x07, 0x07};
-    uint8_t pres[] = {0x02, 0x04, 0x00, 0x01, 0x10, 0x07, 0x07};
-
-    // Initiator
-    // Peer_Address_Type: Random Device Address
-    // Peer_Address: 5C:49:F9:4F:1F:04
-
-    // Responder
-    // Peer_Address_Type: Public Device Address
-    // Peer_Address: 00:1B:DC:05:B5:DC
-    bd_addr_t ia = { 0x5c, 0x49, 0xf9, 0x4f, 0x1f, 0x04 };
-    bd_addr_t ra = { 0x00, 0x1b, 0xdc, 0x05, 0xB5, 0xdc };
-    
-    key_t c1;
-    key_t c1_true = { 0xFB, 0xAB, 0x63, 0x6F, 0xE4, 0xB4, 0xA5, 0x16, 0xAF, 0x8D, 0x88, 0xED, 0xBD, 0xB6, 0xA6, 0xFE };
-
-    bd_addr_t ia_le;
-    bd_addr_t ra_le;
-    bt_flip_addr(ia_le, ia);
-    bt_flip_addr(ra_le, ra);
-
-    sm_c1(k, r, preq, pres, 1, 0, ia, ra, c1);
-    printf("Confirm value correct :%u\n", memcmp(c1, c1_true, 16) == 0);
-}
-
-static int sm_validate_m_confirm(void){
-    printf("sm_validate_m_confirm\n");
-
-    key_t c1;
-    sm_c1(sm_tk, sm_m_random, sm_preq, sm_pres, sm_m_addr_type, sm_s_addr_type, sm_m_address, sm_s_address, c1);
-    printf("mc: "); hexdump(sm_m_confirm, 16);
-
-    int m_confirm_valid = memcmp(c1, sm_m_confirm, 16) == 0;
-    printf("m_confirm_valid: %u\n", m_confirm_valid);
-    return m_confirm_valid;
 }
 
 static void sm_run(void){
@@ -786,8 +612,8 @@ void sm_set_er(key_t er){
 
 void sm_set_ir(key_t ir){
     memcpy(sm_persistent_ir, ir, 16);
-    sm_dhk(sm_persistent_ir, sm_persistent_dhk);
-    sm_irk(sm_persistent_ir, sm_persistent_irk);
+    // sm_dhk(sm_persistent_ir, sm_persistent_dhk);
+    // sm_irk(sm_persistent_ir, sm_persistent_irk);
 }
 
 void sm_init(){
@@ -803,7 +629,6 @@ void sm_init(){
     sm_set_ir(ir);
     sm_state_responding = SM_STATE_IDLE;
 }
-
 
 // END OF SM
 
@@ -855,14 +680,14 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             if (sm_state_responding == SM_STATE_W4_LTK_REQUEST){
                                 // calculate STK
                                 log_info("calculating STK");
-                                key_t sm_stk;
-                                sm_s1(sm_tk, sm_s_random, sm_m_random, sm_stk);
-
+                                // key_t sm_stk;
+                                // sm_s1(sm_tk, sm_s_random, sm_m_random, sm_stk);
                                 sm_aes128_set_key(sm_tk);
                                 sm_s1_r_prime(sm_s_random, sm_m_random, sm_aes128_plaintext);
                                 sm_state_responding = SM_STATE_CALC_STK;
                                 break;
                             }
+
                             // re-establish previously used LTK using Rand and EDIV
                             log_info("recalculating LTK");
                             memcpy(sm_s_rand, &packet[5], 8);
@@ -878,11 +703,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             sm_d1_d_prime(3, 0, sm_aes128_plaintext);
                             sm_state_responding = SM_STATE_PH4_DHK_GET_ENC;
 
-                            // sm_div depends on sm_y, dhk, sm_dm, sm_dm_r_prime, sm_d1, ir, sm_d1_d_prime
-                            sm_s_div  = sm_div(sm_persistent_dhk, sm_s_rand, sm_s_ediv);
-                            sm_ltk(sm_persistent_er, sm_s_div, sm_s_ltk);
-                            // hci_send_cmd(&hci_le_long_term_key_request_reply, READ_BT_16(packet, 3), sm_s_ltk);
-                            // sm_state_responding = SM_STATE_IDLE;
+                            // sm_s_div = sm_div(sm_persistent_dhk, sm_s_rand, sm_s_ediv);
+                            // sm_ltk(sm_persistent_er, sm_s_div, sm_s_ltk);
                             break;
 
                         default:
@@ -935,42 +757,33 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 break;
                             case SM_STATE_C1_W4_ENC_B:
                                 swap128(&packet[6], sm_s_confirm);
-                                printf("c1! ");
-                                hexdump(sm_s_confirm, 16);
+                                print_key("c1!", sm_s_confirm);
                                 sm_state_responding++;
-
                                 break;
                             case SM_STATE_C1_W4_ENC_D:
                                 {
                                 key_t m_confirm_test;
                                 swap128(&packet[6], m_confirm_test);
-                                printf("c1! ");
-                                hexdump(m_confirm_test, 16);
-
+                                print_key("c1!", m_confirm_test);
                                 if (memcmp(sm_m_confirm, m_confirm_test, 16) == 0){
                                     // send s_random
                                     sm_send_s_random = 1;
                                     sm_state_responding = SM_STATE_W4_LTK_REQUEST;
                                     break;
                                 }
-
                                 sm_send_pairing_failed = 1;
                                 sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
-
-                                break;                                
                                 }
                                 break;
                             case SM_STATE_W4_STK:
                                 swap128(&packet[6], sm_stk);
-                                printf("stk ");
-                                hexdump(sm_stk, 16);
+                                print_key("stk", sm_stk);
                                 sm_state_responding = SM_STATE_SEND_STK;
                                 break;
                             case SM_STATE_PH3_DHK_W4_ENC:
                             case SM_STATE_PH4_DHK_W4_ENC:
                                 swap128(&packet[6], sm_persistent_dhk);
-                                printf("dhk ");
-                                hexdump(sm_persistent_dhk, 16);
+                                print_key("dhk", sm_persistent_dhk);
                                 // PH3B2 - calculate Y from      - enc
                                 // Y = dm(DHK, Rand)
                                 sm_aes128_set_key(sm_persistent_dhk);
@@ -981,10 +794,10 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 key_t y128;
                                 swap128(&packet[6], y128);
                                 sm_s_y = READ_NET_16(y128, 14);
-                                printf("y 0x%04x\n", sm_s_y);
+                                print_hex16("y", sm_s_y);
                                 // PH3B3 - calculate EDIV
                                 sm_s_ediv = sm_s_y ^ sm_s_div;
-                                printf("ediv 0x%04x\n", sm_s_ediv);
+                                print_hex16("ediv", sm_s_ediv);
                                 // PH3B4 - calculate LTK         - enc
                                 // LTK = d1(ER, DIV, 0))
                                 sm_aes128_set_key(sm_persistent_er);
@@ -996,10 +809,10 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 key_t y128;
                                 swap128(&packet[6], y128);
                                 sm_s_y = READ_NET_16(y128, 14);
-                                printf("y 0x%04x\n", sm_s_y);
+                                print_hex16("y", sm_s_y);
                                 // PH3B3 - calculate DIV
                                 sm_s_div = sm_s_y ^ sm_s_ediv;
-                                printf("div 0x%04x\n", sm_s_div);
+                                print_hex16("ediv", sm_s_ediv);
                                 // PH3B4 - calculate LTK         - enc
                                 // LTK = d1(ER, DIV, 0))
                                 sm_aes128_set_key(sm_persistent_er);
@@ -1009,8 +822,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             }
                             case SM_STATE_PH3_LTK_W4_ENC:
                                 swap128(&packet[6], sm_s_ltk);
-                                printf("ltk ");
-                                hexdump(sm_s_ltk, 16);
+                                print_key("ltk", sm_s_ltk);
                                 // distribute keys
                                 sm_distribute_keys();
                                 // done
@@ -1018,8 +830,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 break;                                
                             case SM_STATE_PH4_LTK_W4_ENC:
                                 swap128(&packet[6], sm_s_ltk);
-                                printf("ltk ");
-                                hexdump(sm_s_ltk, 16);
+                                print_key("ltk", sm_s_ltk);
                                 sm_state_responding = SM_STATE_PH4_SEND_LTK;
                                 break;                                
                             default:
@@ -1052,6 +863,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             case SM_STATE_PH3_W4_DIV:
                                 // use 16 bit from random value as div
                                 sm_s_div = READ_NET_16(packet, 6);
+                                print_hex16("div", sm_s_div);
 
                                 // PLAN
                                 // PH3B1 - calculate DHK from IR - enc
@@ -1065,10 +877,10 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 sm_state_responding = SM_STATE_PH3_DHK_GET_ENC;
 
                                 // // calculate EDIV and LTK
-                                sm_s_ediv = sm_ediv(sm_persistent_dhk, sm_s_rand, sm_s_div);
-                                sm_ltk(sm_persistent_er, sm_s_div, sm_s_ltk);
-                                print_key("ltk", sm_s_ltk);
-                                print_hex16("ediv", sm_s_ediv);
+                                // sm_s_ediv = sm_ediv(sm_persistent_dhk, sm_s_rand, sm_s_div);
+                                // sm_ltk(sm_persistent_er, sm_s_div, sm_s_ltk);
+                                // print_key("ltk", sm_s_ltk);
+                                // print_hex16("ediv", sm_s_ediv);
                                 // // distribute keys
                                 // sm_distribute_keys();
                                 // // done
@@ -1084,6 +896,182 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 	}
 
     sm_run();
+}
+
+// aes128 c implementation only code
+
+static uint16_t sm_dm(key_t k, uint8_t r[8]){
+    key_t r_prime;
+    sm_dm_r_prime(r, r_prime);
+    // dm(k, r) = e(k, r’) dm(k, r) = e(k, r’) 
+    key_t dm128;
+    unsigned long rk[RKLENGTH(KEYBITS)];
+    int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
+    rijndaelEncrypt(rk, nrounds, r_prime, dm128);
+
+    uint16_t dm = READ_NET_16(dm128, 14);
+    return dm;
+}
+
+static uint16_t sm_y(key_t dhk, uint8_t rand[8]){
+    // Y = dm(DHK, Rand)
+    return sm_dm(dhk, rand);
+}
+
+static uint16_t sm_ediv(key_t dhk, uint8_t rand[8], uint16_t div){
+    // EDIV = Y xor DIV
+    uint16_t y = sm_y(dhk, rand);
+    uint16_t ediv = y ^ div;
+    return ediv; 
+}
+
+static uint16_t sm_div(key_t dhk, uint8_t rand[8], uint16_t ediv){
+    // DIV = Y xor EDIV
+    uint16_t y = sm_y(dhk, rand);
+    uint16_t div = y ^ ediv;
+    return div;
+}
+
+static void sm_ltk(key_t er, uint16_t div, key_t ltk){
+    // LTK = d1(ER, DIV, 0))
+    sm_d1(er, div, 0, ltk);
+}
+
+static void sm_csrk(key_t er, uint16_t div, key_t csrk){
+    // LTK = d1(ER, DIV, 0))
+    sm_d1(er, div, 1, csrk);
+}
+
+static void sm_irk(key_t ir, key_t irk){
+    // IRK = d1(IR, 1, 0)
+    sm_d1(ir, 1, 0, irk);
+}
+
+static void sm_dhk(key_t ir, key_t dhk){
+    // DHK = d1(IR, 3, 0)
+    sm_d1(ir, 3, 0, dhk);
+}
+
+// 
+// Endianess:
+// - preq, pres as found in SM PDUs (little endian), we flip it here
+// - everything else in big endian incl. result
+static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, bd_addr_t ia, bd_addr_t ra, key_t c1){
+
+    printf("iat %u: ia ", iat);
+    print_bd_addr(ia);
+    printf("rat %u: ra ", rat);
+    print_bd_addr(ra);
+
+    print_key("k", k);
+
+    // first operation
+    key_t t1;
+    sm_c1_t1(r, preq, pres, iat, rat, t1);
+    
+    unsigned long rk[RKLENGTH(KEYBITS)];
+    int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
+    
+    // t2 = e(k, r_xor_p1)
+    key_t t2;
+    rijndaelEncrypt(rk, nrounds, t1, t2);
+    
+    print_key("t2", t2);
+
+    // second operation
+    key_t t3;
+    sm_c1_t3(t2, ia, ra, t3);    
+    
+    rijndaelEncrypt(rk, nrounds, t3, c1);
+    
+    print_key("c1", c1);
+}
+
+static void sm_s1(key_t k, key_t r1, key_t r2, key_t s1){
+    printf("sm_s1\n");
+    print_key("k", k);
+
+    key_t r_prime;
+    sm_s1_r_prime(r1, r2, r_prime);
+
+    // setup aes decryption
+    unsigned long rk[RKLENGTH(KEYBITS)];
+    int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
+    rijndaelEncrypt(rk, nrounds, r_prime, s1);
+    print_key("s1", s1);
+}
+
+// test code using aes128 c implementation
+static int sm_validate_m_confirm(void){
+    printf("sm_validate_m_confirm\n");
+
+    key_t c1;
+    sm_c1(sm_tk, sm_m_random, sm_preq, sm_pres, sm_m_addr_type, sm_s_addr_type, sm_m_address, sm_s_address, c1);
+    print_key("mc", sm_m_confirm);
+
+    int m_confirm_valid = memcmp(c1, sm_m_confirm, 16) == 0;
+    printf("m_confirm_valid: %u\n", m_confirm_valid);
+    return m_confirm_valid;
+}
+
+static void sm_test(){
+    key_t k;
+    memset(k, 0, 16 );
+    print_key("k", k);
+
+    // c1
+    key_t r = { 0x57, 0x83, 0xD5, 0x21, 0x56, 0xAD, 0x6F, 0x0E, 0x63, 0x88, 0x27, 0x4E, 0xC6, 0x70, 0x2E, 0xE0 };
+    print_key("r", r);
+
+    uint8_t preq[] = {0x01, 0x01, 0x00, 0x00, 0x10, 0x07, 0x07};
+    uint8_t pres[] = {0x02, 0x03, 0x00, 0x00, 0x08, 0x00, 0x05};
+    bd_addr_t ia = { 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6 };
+    bd_addr_t ra = { 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6 };
+    
+    key_t c1;
+    sm_c1(k, r, preq, pres, 1, 0, ia, ra, c1);
+    
+    // s1
+    key_t s1;
+    key_t r1 = { 0x00, 0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
+    key_t r2 = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00};
+    sm_s1(k, r1, r2, s1);
+}
+
+void sm_test2(){
+    key_t k;
+    memset(k, 0, 16 );
+    print_key("k", k);
+
+    key_t r = { 0x55, 0x05, 0x1D, 0xF4, 0x7C, 0xC9, 0xBC, 0x97, 0x3C, 0x6A, 0x7D, 0x0D, 0x0F, 0x57, 0x0E, 0xC4 };
+    print_key("r", r);
+
+    // preq [ 01 04 00 01 10 07 07 ]
+    // pres [ 02 04 00 01 10 07 07 ]
+
+    uint8_t preq[] = {0x01, 0x04, 0x00, 0x01, 0x10, 0x07, 0x07};
+    uint8_t pres[] = {0x02, 0x04, 0x00, 0x01, 0x10, 0x07, 0x07};
+
+    // Initiator
+    // Peer_Address_Type: Random Device Address
+    // Peer_Address: 5C:49:F9:4F:1F:04
+
+    // Responder
+    // Peer_Address_Type: Public Device Address
+    // Peer_Address: 00:1B:DC:05:B5:DC
+    bd_addr_t ia = { 0x5c, 0x49, 0xf9, 0x4f, 0x1f, 0x04 };
+    bd_addr_t ra = { 0x00, 0x1b, 0xdc, 0x05, 0xB5, 0xdc };
+    
+    key_t c1;
+    key_t c1_true = { 0xFB, 0xAB, 0x63, 0x6F, 0xE4, 0xB4, 0xA5, 0x16, 0xAF, 0x8D, 0x88, 0xED, 0xBD, 0xB6, 0xA6, 0xFE };
+
+    bd_addr_t ia_le;
+    bd_addr_t ra_le;
+    bt_flip_addr(ia_le, ia);
+    bt_flip_addr(ra_le, ra);
+
+    sm_c1(k, r, preq, pres, 1, 0, ia, ra, c1);
+    printf("Confirm value correct :%u\n", memcmp(c1, c1_true, 16) == 0);
 }
 
 // test profile
