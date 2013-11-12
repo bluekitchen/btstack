@@ -120,6 +120,9 @@ typedef enum {
     SM_STATE_C1_GET_ENC_D,
     SM_STATE_C1_W4_ENC_D,
 
+    SM_STATE_CALC_STK,
+    SM_STATE_W4_STK,
+    SM_STATE_SEND_STK,
     SM_STATE_W4_LTK_REQUEST,
     SM_STATE_W4_CONNECTION_ENCRYPTED,
 
@@ -151,9 +154,9 @@ static key_t sm_aes128_key;
 static key_t sm_aes128_plaintext;
 
 //
-static uint16_t         sm_response_handle = 0;
-static uint16_t         sm_response_size   = 0;
-static uint8_t          sm_response_buffer[28];
+static uint16_t sm_response_handle = 0;
+static uint16_t sm_response_size   = 0;
+static uint8_t  sm_response_buffer[28];
 
 // defines which keys will be send  after connection is encrypted
 static int sm_key_distribution_set = 0;
@@ -183,6 +186,7 @@ static uint8_t sm_pres[7];
 
 static key_t   sm_s_random;
 static key_t   sm_s_confirm;
+static key_t   sm_stk;
 
 static uint8_t sm_pairing_failed_reason = 0;
 static uint16_t  sm_s_div;
@@ -387,18 +391,20 @@ static void sm_c1(key_t k, key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t ia
     printf("c1' "); hexdump(c1, 16);
 
 }
+static void sm_s1_r_prime(key_t r1, key_t r2, key_t r_prime){
+    printf("r1: "); hexdump(r1, 16);
+    printf("r2: "); hexdump(r2, 16);
+    memcpy(&r_prime[8], &r2[8], 8);
+    memcpy(&r_prime[0], &r1[8], 8);
+}
 
 static void sm_s1(key_t k, key_t r1, key_t r2, key_t s1){
     printf("sm_s1\n");
     printf("k:  "); hexdump(k, 16);
-    printf("r1: "); hexdump(r1, 16);
-    printf("r2: "); hexdump(r2, 16);
 
     key_t r_prime;
-    memcpy(&r_prime[8], &r2[8], 8);
-    memcpy(&r_prime[0], &r1[8], 8);
-    printf("r': "); hexdump(r_prime, 16);
-    
+    sm_s1_r_prime(r1, r2, r_prime);
+
     // setup aes decryption
     unsigned long rk[RKLENGTH(KEYBITS)];
     int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
@@ -497,6 +503,7 @@ static void sm_run(void){
         case SM_STATE_C1_GET_ENC_B:
         case SM_STATE_C1_GET_ENC_C:
         case SM_STATE_C1_GET_ENC_D:
+        case SM_STATE_CALC_STK:
             {
             key_t key_flipped, plaintext_flipped;
             swap128(sm_aes128_key, key_flipped);
@@ -513,6 +520,13 @@ static void sm_run(void){
             sm_state_responding = SM_STATE_W4_LTK_REQUEST;
             return;
         }
+        case SM_STATE_SEND_STK: {
+            key_t stk_flipped;
+            swap128(sm_stk, stk_flipped);
+            hci_send_cmd(&hci_le_long_term_key_request_reply, sm_response_handle, stk_flipped);
+            sm_state_responding = SM_STATE_W4_CONNECTION_ENCRYPTED;
+        }
+
         default:
             break;
     }
@@ -785,10 +799,16 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 log_info("calculating STK");
                                 key_t sm_stk;
                                 sm_s1(sm_tk, sm_s_random, sm_m_random, sm_stk);
-                                key_t sm_stk_flipped;
-                                swap128(sm_stk, sm_stk_flipped);
-                                hci_send_cmd(&hci_le_long_term_key_request_reply, READ_BT_16(packet, 3), sm_stk_flipped);
-                                sm_state_responding = SM_STATE_W4_CONNECTION_ENCRYPTED;
+
+                                memcpy(sm_aes128_key, sm_tk, 16);
+                                sm_s1_r_prime(sm_s_random, sm_m_random, sm_aes128_plaintext);
+
+                                sm_state_responding = SM_STATE_CALC_STK;
+
+                                // key_t sm_stk_flipped;
+                                // swap128(sm_stk, sm_stk_flipped);
+                                // hci_send_cmd(&hci_le_long_term_key_request_reply, READ_BT_16(packet, 3), sm_stk_flipped);
+                                // sm_state_responding = SM_STATE_W4_CONNECTION_ENCRYPTED;
                                 break;
                             }
                             // re-establish previously used LTK using Rand and EDIV
@@ -875,6 +895,12 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
                                 break;                                
                                 }
+                                break;
+                            case SM_STATE_W4_STK:
+                                swap128(&packet[6], sm_stk);
+                                printf("stk ");
+                                hexdump(sm_stk, 16);
+                                sm_state_responding = SM_STATE_SEND_STK;
                                 break;
                             default:
                                 break;
