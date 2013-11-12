@@ -131,6 +131,16 @@ typedef enum {
     SM_STATE_PH3_GET_DIV,
     SM_STATE_PH3_W4_DIV,
 
+    SM_STATE_PH3_DHK_GET_ENC,
+    SM_STATE_PH3_DHK_W4_ENC,
+
+    SM_STATE_PH3_Y_GET_ENC,
+    SM_STATE_PH3_Y_W4_ENC,
+
+    SM_STATE_PH3_LTK_GET_ENC,
+    SM_STATE_PH3_LTK_W4_ENC,
+
+
 } security_manager_state_t;
 
 static att_connection_t att_connection;
@@ -149,7 +159,7 @@ static key_t sm_persistent_irk;
 // derived from sm_persistent_er
 
 
-// data to send to aes128 crypto engine
+// data to send to aes128 crypto engine, see sm_aes128_set_key and sm_aes128_set_plaintext
 static key_t sm_aes128_key;
 static key_t sm_aes128_plaintext;
 
@@ -188,8 +198,9 @@ static key_t   sm_s_random;
 static key_t   sm_s_confirm;
 static key_t   sm_stk;
 
-static uint8_t sm_pairing_failed_reason = 0;
+static uint8_t   sm_pairing_failed_reason = 0;
 static uint16_t  sm_s_div;
+static uint16_t  sm_s_y;
 
 // key distribution, slave sends
 static key_t     sm_s_ltk;
@@ -242,28 +253,54 @@ static inline void swap56(uint8_t src[7], uint8_t dst[7]){
         dst[6 - i] = src[i];
 }
 
-static void sm_d1(key_t k, uint16_t d, uint16_t r, key_t d1){
+static void print_key(const char * name, key_t key){
+    printf("%-6s ", name);
+    hexdump(key, 16);
+}
+
+static void print_hex16(const char * name, uint16_t value){
+    printf("%-6s 0x%04x\n", name, value);
+}
+
+static inline void sm_aes128_set_key(key_t key){
+    memcpy(sm_aes128_key, key, 16);
+} 
+
+static inline void sm_aes128_set_plaintext(key_t plaintext){
+    memcpy(sm_aes128_plaintext, plaintext, 16);
+} 
+
+static void sm_d1_d_prime(uint16_t d, uint16_t r, key_t d1_prime){
     // d'= padding || r || d
-    key_t d1_prime;
     memset(d1_prime, 0, 16);
     net_store_16(d1_prime, 12, r);
     net_store_16(d1_prime, 14, d);
+}
+
+static void sm_d1(key_t k, uint16_t d, uint16_t r, key_t d1){
+    key_t d1_prime;
+    sm_d1_d_prime(d, r, d1_prime);
     // d1(k,d,r) = e(k, d'),
     unsigned long rk[RKLENGTH(KEYBITS)];
     int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
     rijndaelEncrypt(rk, nrounds, d1_prime, d1);
 }
 
-static uint16_t sm_dm(key_t k, uint8_t r[8]){
+static void sm_dm_r_prime(uint8_t r[8], key_t r_prime){
     // r’ = padding || r
-    key_t r_prime;
     memset(r_prime, 0, 16);
     memcpy(&r_prime[8], r, 8);
+}
+
+static uint16_t sm_dm(key_t k, uint8_t r[8]){
+    key_t r_prime;
+    sm_dm_r_prime(r, r_prime);
     // dm(k, r) = e(k, r’) dm(k, r) = e(k, r’) 
     key_t dm128;
     unsigned long rk[RKLENGTH(KEYBITS)];
     int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
     rijndaelEncrypt(rk, nrounds, r_prime, dm128);
+
     uint16_t dm = READ_NET_16(dm128, 14);
     return dm;
 }
@@ -504,6 +541,9 @@ static void sm_run(void){
         case SM_STATE_C1_GET_ENC_C:
         case SM_STATE_C1_GET_ENC_D:
         case SM_STATE_CALC_STK:
+        case SM_STATE_PH3_DHK_GET_ENC:
+        case SM_STATE_PH3_Y_GET_ENC:
+        case SM_STATE_PH3_LTK_GET_ENC:
             {
             key_t key_flipped, plaintext_flipped;
             swap128(sm_aes128_key, key_flipped);
@@ -663,7 +703,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // use aes128 engine
             // calculate m_confirm using aes128 engine - step 1
-            memcpy(sm_aes128_key, sm_tk, 16);
+            sm_aes128_set_key(sm_tk);
             sm_c1_t1(sm_m_random, sm_preq, sm_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
             sm_state_responding = SM_STATE_C1_GET_ENC_C;
             break;
@@ -800,21 +840,22 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 key_t sm_stk;
                                 sm_s1(sm_tk, sm_s_random, sm_m_random, sm_stk);
 
-                                memcpy(sm_aes128_key, sm_tk, 16);
+                                sm_aes128_set_key(sm_tk);
                                 sm_s1_r_prime(sm_s_random, sm_m_random, sm_aes128_plaintext);
-
                                 sm_state_responding = SM_STATE_CALC_STK;
-
-                                // key_t sm_stk_flipped;
-                                // swap128(sm_stk, sm_stk_flipped);
-                                // hci_send_cmd(&hci_le_long_term_key_request_reply, READ_BT_16(packet, 3), sm_stk_flipped);
-                                // sm_state_responding = SM_STATE_W4_CONNECTION_ENCRYPTED;
                                 break;
                             }
                             // re-establish previously used LTK using Rand and EDIV
                             log_info("recalculating LTK");
                             memcpy(sm_s_rand, &packet[5], 8);
                             sm_s_ediv = READ_BT_16(packet, 13);
+
+                            // dhk = d1(IR, 1, 0) - enc
+                            // y   = dm(dhk, rand) - enc
+                            // div = y xor ediv
+                            // ltk = d1(ER, div, 0) - enc
+
+                            // sm_div depends on sm_y, dhk, sm_dm, sm_dm_r_prime, sm_d1, ir, sm_d1_d_prime
                             sm_s_div  = sm_div(sm_persistent_dhk, sm_s_rand, sm_s_ediv);
                             sm_ltk(sm_persistent_er, sm_s_div, sm_s_ltk);
                             hci_send_cmd(&hci_le_long_term_key_request_reply, READ_BT_16(packet, 3), sm_s_ltk);
@@ -862,7 +903,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             case SM_STATE_C1_W4_ENC_A:
                             case SM_STATE_C1_W4_ENC_C:
                                 {
-                                memcpy(sm_aes128_key, sm_tk, 16);
+                                sm_aes128_set_key(sm_tk);
                                 key_t t2;
                                 swap128(&packet[6], t2);
                                 sm_c1_t3(t2, sm_m_address, sm_s_address, sm_aes128_plaintext);
@@ -902,6 +943,40 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 hexdump(sm_stk, 16);
                                 sm_state_responding = SM_STATE_SEND_STK;
                                 break;
+                            case SM_STATE_PH3_DHK_W4_ENC:
+                                swap128(&packet[6], sm_persistent_dhk);
+                                printf("dhk ");
+                                hexdump(sm_persistent_dhk, 16);
+                                // PH3B2 - calculate Y from      - enc
+                                // Y = dm(DHK, Rand)
+                                sm_aes128_set_key(sm_persistent_dhk);
+                                sm_dm_r_prime(sm_s_rand, sm_aes128_plaintext);
+                                sm_state_responding = SM_STATE_PH3_Y_GET_ENC;
+                                break;
+                            case SM_STATE_PH3_Y_W4_ENC:{
+                                key_t y128;
+                                swap128(&packet[6], y128);
+                                sm_s_y = READ_NET_16(y128, 14);
+                                printf("y 0x%04x\n", sm_s_y);
+                                // PH3B3 - calculate EDIV
+                                sm_s_ediv = sm_s_y ^ sm_s_div;
+                                printf("ediv 0x%04x\n", sm_s_ediv);
+                                // PH3B4 - calculate LTK         - enc
+                                // LTK = d1(ER, DIV, 0))
+                                sm_aes128_set_key(sm_persistent_er);
+                                sm_d1_d_prime(sm_s_div, 0, sm_aes128_plaintext);
+                                sm_state_responding = SM_STATE_PH3_LTK_GET_ENC;
+                                break;
+                            }
+                            case SM_STATE_PH3_LTK_W4_ENC:
+                                swap128(&packet[6], sm_s_ltk);
+                                printf("ltk ");
+                                hexdump(sm_s_ltk, 16);
+                                // distribute keys
+                                sm_distribute_keys();
+                                // done
+                                sm_state_responding = SM_STATE_IDLE;
+                                break;                                
                             default:
                                 break;
                         }
@@ -921,7 +996,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 // sm_state_responding = SM_STATE_C1_SEND;
 
                                 // calculate s_confirm using aes128 engine - step 1
-                                memcpy(sm_aes128_key, sm_tk, 16);
+                                sm_aes128_set_key(sm_tk);
                                 sm_c1_t1(sm_s_random, sm_preq, sm_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
                                 sm_state_responding = SM_STATE_C1_GET_ENC_A;
                                 break;
@@ -933,15 +1008,26 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 // use 16 bit from random value as div
                                 sm_s_div = READ_NET_16(packet, 6);
 
-                                // done
-                                sm_state_responding = SM_STATE_IDLE;
+                                // PLAN
+                                // PH3B1 - calculate DHK from IR - enc
+                                // PH3B2 - calculate Y from      - enc
+                                // PH3B3 - calculate EDIV
+                                // PH3B4 - calculate LTK         - enc
 
-                                // calculate EDIV and LTK
+                                // DHK = d1(IR, 3, 0)
+                                sm_aes128_set_key(sm_persistent_ir);
+                                sm_d1_d_prime(3, 0, sm_aes128_plaintext);
+                                sm_state_responding = SM_STATE_PH3_DHK_GET_ENC;
+
+                                // // calculate EDIV and LTK
                                 sm_s_ediv = sm_ediv(sm_persistent_dhk, sm_s_rand, sm_s_div);
                                 sm_ltk(sm_persistent_er, sm_s_div, sm_s_ltk);
-
-                                // distribute keys
-                                sm_distribute_keys();
+                                print_key("ltk", sm_s_ltk);
+                                print_hex16("ediv", sm_s_ediv);
+                                // // distribute keys
+                                // sm_distribute_keys();
+                                // // done
+                                // sm_state_responding = SM_STATE_IDLE;
                                 break;
 
                             default:
@@ -999,6 +1085,9 @@ void setup(void){
     att_set_write_callback(att_write_callback);
     att_dump_attributes();
     att_connection.mtu = 27;
+
+    // setup SM
+    sm_init();
 }
 
 int main(void)
