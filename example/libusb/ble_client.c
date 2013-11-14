@@ -59,7 +59,34 @@
 #include "l2cap.h"
 #include "att.h"
 
+// gatt client state
+typedef enum {
+    W4_ON,
+    IDLE,
+    //
+    START_SCAN,
+    W4_SCAN_ACTIVE,
+    //
+    SCAN_ACTIVE,
+    //
+    STOP_SCAN,
+    W4_SCAN_STOPPED,
+    // IDLE,
+    W4_CONNECTED,
+    CONNECTED,
+    //
+    DISCONNECT,
+    W4_DISCONNECTED
+} state_t;
+
+
+static state_t state = W4_ON;
+static linked_list_t le_connections = NULL;
+
+
 void (*le_central_callback)(le_central_event_t * event);
+
+static void gatt_client_run();
 
 static void dummy_notify(le_central_event_t* event){}
 
@@ -78,43 +105,62 @@ static void hexdump2(void *data, int size){
     printf("\n");
 }
 
-// gatt client state
-static uint8_t requested_scan_state = 0;
-static uint8_t scan_state = 0;
-
 
 void gatt_client_init(){
-    requested_scan_state = 0;
-    scan_state = 0;
+    le_connections = NULL;
+    state = W4_ON;
 }
 
-static void gatt_client_run(){
-    if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
-    if (scan_state == requested_scan_state) return;
-    
-    if (requested_scan_state){
-        printf("Starting scan...\n");
-    } else {
-        printf("Stopping scan...\n");                
-    }
-
-    hci_send_cmd(&hci_le_set_scan_enable, requested_scan_state, 0);
-}
-
-void gatt_client_start_scan(){
-    requested_scan_state = 1;
+void le_central_start_scan(){
+    if (state != IDLE) return; 
+    state = START_SCAN;
     gatt_client_run();
 }
 
-void gatt_client_stop_scan(){
-    requested_scan_state = 0;
+void le_central_stop_scan(){
+    if (state != SCAN_ACTIVE) return;
+    state = STOP_SCAN;
     gatt_client_run();
+}
+
+static void le_peripheral_init(le_peripheral_t *context){
+    memset(context, 0, sizeof(le_peripheral_t));
+    context->state = P_IDLE;
 }
 
 void le_central_connect(le_peripheral_t *context, uint8_t addr_type, bd_addr_t addr){
-    //TODO: add peripheral to list
+    le_peripheral_init(context);
+    context->state = P_W2_CONNECT;
+    context->address_type = addr_type;
+    memcpy (context->address, addr, 6);
+    linked_list_add(&le_connections, (linked_item_t *) context);
+
+    gatt_client_run();
+}
+
+
+static void gatt_client_run(){
     if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
-    hci_send_cmd(&hci_le_create_connection, 
+    
+    // hadle peripherals list
+     
+    switch(state){
+        case START_SCAN:
+            state = W4_SCAN_ACTIVE;
+            hci_send_cmd(&hci_le_set_scan_enable, 1, 0);
+            break;
+        case STOP_SCAN:
+            state = W4_SCAN_STOPPED;
+            hci_send_cmd(&hci_le_set_scan_enable, 0, 0);
+            break;
+        default:
+            break;
+    }
+}
+
+
+/*
+hci_send_cmd(&hci_le_create_connection, 
                  1000,      // scan interval: 625 ms
                  1000,      // scan interval: 625 ms
                  0,         // don't use whitelist
@@ -128,8 +174,7 @@ void le_central_connect(le_peripheral_t *context, uint8_t addr_type, bd_addr_t a
                  0,         // min ce length
                  1000       // max ce length
                  );
-}
-
+        */
 /*
 void le_central_cancel_connect(le_peripheral_t *context){
     hci_send_cmd(&hci_le_create_connection_cancel);
@@ -151,19 +196,30 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					// bt stack activated, get started
 					if (packet[2] == HCI_STATE_WORKING) {
                         printf("Working!\n");
-                        gatt_client_start_scan();
+                        state = IDLE;
                     }
 					break;
                 
                 case HCI_EVENT_COMMAND_COMPLETE:
                     if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_scan_enable)){
-                        scan_state = requested_scan_state;
+                        switch(state){
+                            case W4_SCAN_ACTIVE:
+                                state = SCAN_ACTIVE;
+                                break;
+                            case W4_SCAN_STOPPED:
+                                state = IDLE;
+                                break;
+                            default:
+                                break;
+                        }
                     }
                     break;
 
                 case HCI_EVENT_LE_META:
                     switch (packet[2]) {
-                        case HCI_SUBEVENT_LE_ADVERTISING_REPORT: {
+                        case HCI_SUBEVENT_LE_ADVERTISING_REPORT: 
+                        if (state != SCAN_ACTIVE) break;
+                        {
                             int num_reports = packet[3];
                             int i;
                             int total_data_length = 0;

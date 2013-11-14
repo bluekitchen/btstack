@@ -65,11 +65,20 @@ typedef struct ad_event {
     uint8_t * data;
 } ad_event_t;
 
+typedef enum {
+    P_IDLE,
+    P_W2_CONNECT,
+    P_W4_CONNECTED,
+    P_CONNECTED
+} peripheral_state_t;
 
 typedef struct le_peripheral{
-    linked_list_t next;
+    linked_item_t    item;
+
+    peripheral_state_t state;
+    uint8_t   address_type;
+    bd_addr_t address;
     uint16_t handle;
-    // state...
 } le_peripheral_t;
 
 typedef struct le_characteristic{
