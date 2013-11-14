@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2013 by Matthias Ringwald
+ * Copyright (C) 2011-2013 by BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -69,7 +69,8 @@ typedef enum {
     P_IDLE,
     P_W2_CONNECT,
     P_W4_CONNECTED,
-    P_CONNECTED
+    P_CONNECTED,
+    P_W4_DISCONNECTED
 } peripheral_state_t;
 
 typedef struct le_peripheral{
@@ -80,6 +81,12 @@ typedef struct le_peripheral{
     bd_addr_t address;
     uint16_t handle;
 } le_peripheral_t;
+
+typedef struct le_peripheral_event{
+    uint8_t   type;
+    le_peripheral_t * device;
+    uint8_t status;
+} le_peripheral_event_t;
 
 typedef struct le_characteristic{
     uint8_t  permision;
