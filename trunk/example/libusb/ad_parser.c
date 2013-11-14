@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2013 by Matthias Ringwald
+ * Copyright (C) 2011-2013 by BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -43,7 +43,9 @@
 #include <string.h>
 
 #include <btstack/sdp_util.h>
+#include <btstack/hci_cmds.h>
 
+#include "hci.h"
 #include "ad_parser.h"
 
 typedef enum {

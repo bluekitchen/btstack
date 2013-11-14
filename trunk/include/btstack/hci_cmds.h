@@ -212,7 +212,12 @@ extern "C" {
 
 // not provided by daemon, only used for internal testing
 #define SDP_QUERY_SERVICE_RECORD_HANDLE                    0x94
-	
+
+// data: event(8), gatt subevent(8), address_type(8), address(6x8), rssi(8), len(8), data(len*8)
+#define GATT_ADVERTISEMENT								   0xA0
+
+#define GATT_CONNECTION_COMPLETE	 					   0xA1
+
 // last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
 
 #define BTSTACK_CONNECTION_TO_BTDAEMON_FAILED              0x50
