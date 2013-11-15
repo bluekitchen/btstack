@@ -69,6 +69,8 @@ typedef enum {
     P_IDLE,
     P_W2_CONNECT,
     P_W4_CONNECTED,
+    P_W2_EXCHANGE_MTU,
+    P_W4_EXCHANGE_MTU,
     P_CONNECTED,
     P_W4_DISCONNECTED
 } peripheral_state_t;
@@ -80,6 +82,7 @@ typedef struct le_peripheral{
     uint8_t   address_type;
     bd_addr_t address;
     uint16_t handle;
+    uint16_t mtu;
 } le_peripheral_t;
 
 typedef struct le_peripheral_event{

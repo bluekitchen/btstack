@@ -88,6 +88,17 @@ void (*le_central_callback)(le_central_event_t * event);
 
 static void gatt_client_run();
 
+
+// START Helper Functions - to be sorted
+static int l2cap_can_send_conectionless_packet_now(){
+    return hci_can_send_packet_now(HCI_ACL_DATA_PACKET);
+}
+
+static uint16_t l2cap_max_mtu_for_handle(uint16_t handle){
+    return l2cap_max_mtu();
+}
+// END Helper Functions
+
 static void dummy_notify(le_central_event_t* event){}
 
 void le_central_register_handler(void (*le_callback)(le_central_event_t* event)){
@@ -141,6 +152,17 @@ void le_central_connect(le_peripheral_t *context, uint8_t addr_type, bd_addr_t a
     gatt_client_run();
 }
 
+static le_peripheral_t * get_peripheral_for_handle(uint16_t handle){
+    linked_item_t *it;
+    for (it = (linked_item_t *) le_connections; it ; it = it->next){
+        le_peripheral_t * peripheral = (le_peripheral_t *) it;
+        if (peripheral->handle == handle){
+            return peripheral;
+        }
+    }
+    return NULL;
+}
+
 static le_peripheral_t * get_peripheral_with_state(peripheral_state_t p_state){
     linked_item_t *it;
     for (it = (linked_item_t *) le_connections; it ; it = it->next){
@@ -164,6 +186,11 @@ static inline le_peripheral_t * get_peripheral_w4_connected(){
     return get_peripheral_with_state(P_W4_CONNECTED);
 }
 
+static inline le_peripheral_t * get_peripheral_w2_exchange_MTU(){
+    return get_peripheral_with_state(P_W2_EXCHANGE_MTU);
+}
+
+
 void le_central_cancel_connect(le_peripheral_t *context){
     if (context->state == P_IDLE) return;
     
@@ -174,8 +201,11 @@ void le_central_cancel_connect(le_peripheral_t *context){
     state = DISCONNECT;
 }
 
+
 static void gatt_client_run(){
     if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
+    if (!l2cap_can_send_conectionless_packet_now()) return;
+
     le_peripheral_t * peripheral = NULL;
     // hadle peripherals list
     switch(state){
@@ -210,15 +240,29 @@ static void gatt_client_run(){
             state = W4_SCAN_STOPPED;
             hci_send_cmd(&hci_le_set_scan_enable, 0, 0);
             break;
+        case CONNECTED:{
+            le_peripheral_t * peripheral = get_peripheral_w2_exchange_MTU();
+            
+            if (!peripheral) break;
+
+            peripheral->state = P_W4_EXCHANGE_MTU;
+            uint16_t mtu = l2cap_max_mtu_for_handle(peripheral->handle);
+            
+            uint8_t request[3];
+            request[0] = ATT_EXCHANGE_MTU_REQUEST;
+            bt_store_16(request, 1, mtu);
+            l2cap_send_connectionless(peripheral->handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
+            break;
+        }
         case DISCONNECT:
             peripheral->state = P_W4_DISCONNECTED;
             state = W4_DISCONNECTED;
             hci_send_cmd(&hci_le_create_connection_cancel);
+            break;
         default:
             break;
     }
 }
-
 
 static void dump_ad_event(ad_event_t e){
     printf("evt-type %u, addr-type %u, addr %s, rssi %u, length adv %u, data: ", e.event_type, 
@@ -226,9 +270,36 @@ static void dump_ad_event(ad_event_t e){
     hexdump2( e.data, e.length);                            
 }
 
+
+static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
+    if (packet_type != ATT_DATA_PACKET) return;
+
+    switch (packet[0]){
+        case ATT_EXCHANGE_MTU_RESPONSE:
+        {
+            le_peripheral_t * peripheral = get_peripheral_for_handle(handle);
+         
+            uint16_t remote_rx_mtu = READ_BT_16(packet, 1);
+            uint16_t local_rx_mtu = l2cap_max_mtu_for_handle(handle);
+            peripheral->mtu = remote_rx_mtu < local_rx_mtu ? remote_rx_mtu : local_rx_mtu;
+
+            le_peripheral_event_t p_connected_event;
+            p_connected_event.type = GATT_CONNECTION_COMPLETE;
+            p_connected_event.device = peripheral;
+            p_connected_event.status = 0;
+            (*le_central_callback)((le_central_event_t*)&p_connected_event); 
+
+            peripheral->state = P_CONNECTED; 
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet_type) {
-            
 		case HCI_EVENT_PACKET:
 			switch (packet[0]) {
 				
@@ -288,22 +359,27 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                         }
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:{
                             switch (state){
-                                case W4_CONNECTED: {
+                                case W4_CONNECTED:{
                                     le_peripheral_t * peripheral = get_peripheral_w4_connected();
+
+                                    if (packet[3] != 0) {
+                                        le_peripheral_event_t p_connected_event;
+                                        p_connected_event.type = GATT_CONNECTION_COMPLETE;
+                                        p_connected_event.device = peripheral;
+                                        p_connected_event.status = packet[3];
+                                        (*le_central_callback)((le_central_event_t*)&p_connected_event); 
+                                        return;
+                                    }
+                                    
                                     state = CONNECTED;
-                                    peripheral->state = P_CONNECTED;
+                                    peripheral->state = P_W2_EXCHANGE_MTU;
+                                    
                                     peripheral->handle = READ_BT_16(packet, 4);
-
-                                    le_peripheral_event_t p_connected_event;
-                                    p_connected_event.type = GATT_CONNECTION_COMPLETE;
-                                    p_connected_event.device = peripheral;
-                                    p_connected_event.status = packet[3];
-
-                                    (*le_central_callback)((le_central_event_t*)&p_connected_event); 
 
                                     printf("Connected: handle 0x%04x!\n", peripheral->handle);
                                     break;
                                 }
+                                    
                                 case W4_DISCONNECTED: {
                                     le_peripheral_t * peripheral = get_peripheral_w4_disconnected();
                                     state = IDLE;
@@ -355,7 +431,7 @@ void setup(void){
     hci_init(transport, config, control, remote_db);
 
     l2cap_init();
-    //l2cap_register_fixed_channel(packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+    l2cap_register_fixed_channel(att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
     l2cap_register_packet_handler(packet_handler);
 }
 
