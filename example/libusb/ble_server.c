@@ -105,10 +105,13 @@ typedef enum {
 
     SM_STATE_IDLE,
 
+    SM_STATE_SEND_SECURITY_REQUEST,
+
     SM_STATE_SEND_PAIRING_RESPONSE,
     SM_STATE_W4_PAIRING_CONFIRM,
 
     SM_STATE_SEND_PAIRING_FAILED,
+    SM_STATE_SEND_PAIRING_RANDOM,
 
     // calculate confirm values for local and remote connection
     SM_STATE_C1_GET_RANDOM_A,
@@ -145,6 +148,9 @@ typedef enum {
     SM_STATE_PH3_LTK_W4_ENC,
     SM_STATE_PH3_IRK_GET_ENC,
     SM_STATE_PH3_IRK_W4_ENC,
+
+    //
+    SM_STATE_DISTRIBUTE_KEYS,
 
     // re establish previously distribued LTK
     SM_STATE_PH4_DHK_GET_ENC,
@@ -185,7 +191,6 @@ static int sm_key_distribution_set = 0;
 
 static security_manager_state_t sm_state_responding = SM_STATE_IDLE;
 
-static int sm_send_security_request = 0;
 static int sm_send_encryption_information = 0;
 static int sm_send_master_identification = 0;
 static int sm_send_identity_information = 0;
@@ -369,6 +374,15 @@ static void sm_run(void){
 
     switch (sm_state_responding){
 
+        case SM_STATE_SEND_SECURITY_REQUEST: {
+            uint8_t buffer[2];
+            buffer[0] = SM_CODE_SECURITY_REQUEST;
+            buffer[1] = SM_AUTHREQ_BONDING;
+            l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+            sm_state_responding = SM_STATE_IDLE;            
+            return;
+        }
+
         case SM_STATE_SEND_PAIRING_RESPONSE: {
             // TODO use provided IO capabilites
             // TOOD use local MITM flag
@@ -399,6 +413,15 @@ static void sm_run(void){
             buffer[1] = sm_pairing_failed_reason;
             l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
             sm_state_responding = SM_STATE_IDLE;
+            break;
+        }
+
+        case SM_STATE_SEND_PAIRING_RANDOM: {
+            uint8_t buffer[17];
+            buffer[0] = SM_CODE_PAIRING_RANDOM;
+            swap128(sm_s_random, &buffer[1]);
+            l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+            sm_state_responding = SM_STATE_W4_LTK_REQUEST;
             break;
         }
 
@@ -452,68 +475,62 @@ static void sm_run(void){
             return;
         }
 
+        case SM_STATE_DISTRIBUTE_KEYS:
+            if (sm_send_encryption_information){
+                sm_send_encryption_information = 0;
+                uint8_t buffer[17];
+                buffer[0] = SM_CODE_ENCRYPTION_INFORMATION;
+                swap128(sm_s_ltk, &buffer[1]);
+                l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                return;
+            }
+            if (sm_send_master_identification){
+                sm_send_master_identification = 0;
+                uint8_t buffer[11];
+                buffer[0] = SM_CODE_MASTER_IDENTIFICATION;
+                bt_store_16(buffer, 1, sm_s_ediv);
+                swap64(sm_s_rand, &buffer[3]);
+                l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                return;
+            }
+            if (sm_send_identity_information){
+                sm_send_identity_information = 0;
+                uint8_t buffer[17];
+                buffer[0] = SM_CODE_IDENTITY_INFORMATION;
+                swap128(sm_s_irk, &buffer[1]);
+                l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                return;
+            }
+            if (sm_send_identity_address_information ){
+                sm_send_identity_address_information = 0;
+                uint8_t buffer[8];
+                buffer[0] = SM_CODE_IDENTITY_ADDRESS_INFORMATION;
+                buffer[1] = sm_s_addr_type;
+                bt_flip_addr(&buffer[2], sm_s_address);
+                l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                return;
+            }
+            if (sm_send_signing_identification){
+                sm_send_signing_identification = 0;
+                uint8_t buffer[17];
+                buffer[0] = SM_CODE_SIGNING_INFORMATION;
+                swap128(sm_s_csrk, &buffer[1]);
+                l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                return;
+            }
+            if (sm_send_s_random){
+                sm_send_s_random = 0;
+                uint8_t buffer[17];
+                buffer[0] = SM_CODE_PAIRING_RANDOM;
+                swap128(sm_s_random, &buffer[1]);
+                l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                return;
+            }
+            sm_state_responding = SM_STATE_IDLE; 
+            break;
+
         default:
             break;
-    }
-
-    // send security request
-    if (sm_send_security_request){
-        sm_send_security_request = 0;
-        uint8_t buffer[2];
-        buffer[0] = SM_CODE_SECURITY_REQUEST;
-        buffer[1] = SM_AUTHREQ_BONDING;
-        l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-        return;
-    }
-    if (sm_send_encryption_information){
-        sm_send_encryption_information = 0;
-        uint8_t buffer[17];
-        buffer[0] = SM_CODE_ENCRYPTION_INFORMATION;
-        swap128(sm_s_ltk, &buffer[1]);
-        l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-        return;
-    }
-    if (sm_send_master_identification){
-        sm_send_master_identification = 0;
-        uint8_t buffer[11];
-        buffer[0] = SM_CODE_MASTER_IDENTIFICATION;
-        bt_store_16(buffer, 1, sm_s_ediv);
-        swap64(sm_s_rand, &buffer[3]);
-        l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-        return;
-    }
-    if (sm_send_identity_information){
-        sm_send_identity_information = 0;
-        uint8_t buffer[17];
-        buffer[0] = SM_CODE_IDENTITY_INFORMATION;
-        swap128(sm_s_irk, &buffer[1]);
-        l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-        return;
-    }
-    if (sm_send_identity_address_information ){
-        sm_send_identity_address_information = 0;
-        uint8_t buffer[8];
-        buffer[0] = SM_CODE_IDENTITY_ADDRESS_INFORMATION;
-        buffer[1] = sm_s_addr_type;
-        bt_flip_addr(&buffer[2], sm_s_address);
-        l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-        return;
-    }
-    if (sm_send_signing_identification){
-        sm_send_signing_identification = 0;
-        uint8_t buffer[17];
-        buffer[0] = SM_CODE_SIGNING_INFORMATION;
-        swap128(sm_s_csrk, &buffer[1]);
-        l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-        return;
-    }
-    if (sm_send_s_random){
-        sm_send_s_random = 0;
-        uint8_t buffer[17];
-        buffer[0] = SM_CODE_PAIRING_RANDOM;
-        swap128(sm_s_random, &buffer[1]);
-        l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-        return;
     }
 }
 
@@ -669,11 +686,12 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             BD_ADDR_COPY(sm_s_address, hci_local_bd_addr());
                             printf("Incoming connection, own address ");
                             print_bd_addr(sm_s_address);
-                            // request security
-                            sm_send_security_request = 1;
 
                             // reset connection MTU
                             att_connection.mtu = 23;
+
+                            // request security
+                            sm_state_responding = SM_STATE_SEND_SECURITY_REQUEST;
                             break;
 
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:
@@ -768,8 +786,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 print_key("c1!", m_confirm_test);
                                 if (memcmp(sm_m_confirm, m_confirm_test, 16) == 0){
                                     // send s_random
-                                    sm_send_s_random = 1;
-                                    sm_state_responding = SM_STATE_W4_LTK_REQUEST;
+                                    sm_state_responding = SM_STATE_SEND_PAIRING_RANDOM;
                                     break;
                                 }
                                 sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
