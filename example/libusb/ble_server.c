@@ -249,17 +249,19 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
 }
 
 // SECURITY MANAGER (SM) MATERIALIZES HERE
-
-static inline void swap128(uint8_t src[16], uint8_t dst[16]){
+static inline void swapX(uint8_t *src, uint8_t *dst, int len){
     int i;
-    for (i = 0; i < 16; i++)
-        dst[15 - i] = src[i];
+    for (i = 0; i < len; i++)
+        dst[len - 1 - i] = src[i];
 }
-
 static inline void swap56(uint8_t src[7], uint8_t dst[7]){
-    int i;
-    for (i = 0; i < 7; i++)
-        dst[6 - i] = src[i];
+    swapX(src, dst, 7);
+}
+static inline void swap64(uint8_t src[8], uint8_t dst[8]){
+    swapX(src, dst, 8);
+}
+static inline void swap128(uint8_t src[16], uint8_t dst[16]){
+    swapX(src, dst, 16);
 }
 
 static void print_key(const char * name, key_t key){
@@ -446,7 +448,7 @@ static void sm_run(void){
         uint8_t buffer[11];
         buffer[0] = SM_CODE_MASTER_IDENTIFICATION;
         bt_store_16(buffer, 1, sm_s_ediv);
-        memcpy(&buffer[3],sm_s_rand,8); 
+        swap64(sm_s_rand, &buffer[3]);
         l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
         return;
     }
@@ -557,18 +559,18 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
         case SM_CODE_ENCRYPTION_INFORMATION:
             sm_received_encryption_information = 1;
-            memcpy(sm_m_ltk, &packet[1], 16);
+            swap128(&packet[1], sm_m_ltk);
             break;
 
         case SM_CODE_MASTER_IDENTIFICATION:
             sm_received_master_identification = 1;
             sm_m_ediv = READ_BT_16(packet, 1);
-            memcpy(sm_m_rand, &packet[3],8);
+            swap64(&packet[3], sm_m_rand);
             break;
 
         case SM_CODE_IDENTITY_INFORMATION:
             sm_received_identity_information = 1;
-            memcpy(sm_m_irk, &packet[1], 16);
+            swap128(&packet[1], sm_m_irk);
             break;
 
         case SM_CODE_IDENTITY_ADDRESS_INFORMATION:
@@ -579,7 +581,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
         case SM_CODE_SIGNING_INFORMATION:
             sm_received_signing_identification = 1;
-            memcpy(sm_m_csrk, &packet[1], 16);
+            swap128(&packet[1], sm_m_csrk);
             break;
     }
 
@@ -693,7 +695,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
                             // re-establish previously used LTK using Rand and EDIV
                             log_info("recalculating LTK");
-                            memcpy(sm_s_rand, &packet[5], 8);
+                            swap64(&packet[5], sm_s_rand);
                             sm_s_ediv = READ_BT_16(packet, 13);
 
                             // dhk = d1(IR, 1, 0) - enc
@@ -851,11 +853,11 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     if (COMMAND_COMPLETE_EVENT(packet, hci_le_rand)){
                         switch (sm_state_responding){
                             case SM_STATE_C1_W4_RANDOM_A:
-                                memcpy(&sm_s_random[0], &packet[6], 8);
+                                memcpy(&sm_s_random[0], &packet[6], 8); // random endinaness
                                 sm_state_responding = SM_STATE_C1_GET_RANDOM_B;
                                 break;
                             case SM_STATE_C1_W4_RANDOM_B:
-                                memcpy(&sm_s_random[8], &packet[6], 8);
+                                memcpy(&sm_s_random[8], &packet[6], 8); // random endinaness
 
                                 // calculate s_confirm manually
                                 // sm_c1(sm_tk, sm_s_random, sm_preq, sm_pres, sm_m_addr_type, sm_s_addr_type, sm_m_address, sm_s_address, sm_s_confirm);
@@ -868,7 +870,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 sm_state_responding = SM_STATE_C1_GET_ENC_A;
                                 break;
                             case SM_STATE_PH3_W4_RANDOM:
-                                memcpy(sm_s_rand, &packet[6], 8);
+                                swap64(&packet[6], sm_s_rand);
                                 sm_state_responding = SM_STATE_PH3_GET_DIV;
                                 break;
                             case SM_STATE_PH3_W4_DIV:
