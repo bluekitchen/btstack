@@ -108,6 +108,8 @@ typedef enum {
     SM_STATE_SEND_PAIRING_RESPONSE,
     SM_STATE_W4_PAIRING_CONFIRM,
 
+    SM_STATE_SEND_PAIRING_FAILED,
+
     // calculate confirm values for local and remote connection
     SM_STATE_C1_GET_RANDOM_A,
     SM_STATE_C1_W4_RANDOM_A,
@@ -189,7 +191,6 @@ static int sm_send_master_identification = 0;
 static int sm_send_identity_information = 0;
 static int sm_send_identity_address_information = 0;
 static int sm_send_signing_identification = 0;
-static int sm_send_pairing_failed = 0;
 static int sm_send_s_random = 0;
 
 static int sm_received_encryption_information = 0;
@@ -392,6 +393,15 @@ static void sm_run(void){
             return;
         }
 
+        case SM_STATE_SEND_PAIRING_FAILED: {
+            uint8_t buffer[2];
+            buffer[0] = SM_CODE_PAIRING_FAILED;
+            buffer[1] = sm_pairing_failed_reason;
+            l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+            sm_state_responding = SM_STATE_IDLE;
+            break;
+        }
+
         case SM_STATE_C1_GET_RANDOM_A:
         case SM_STATE_C1_GET_RANDOM_B:
         case SM_STATE_PH3_GET_RANDOM:
@@ -497,14 +507,6 @@ static void sm_run(void){
         l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
         return;
     }
-    if (sm_send_pairing_failed){
-        sm_send_pairing_failed = 0;
-        uint8_t buffer[2];
-        buffer[0] = SM_CODE_PAIRING_FAILED;
-        buffer[1] = sm_pairing_failed_reason;
-        l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-        return;
-    }
     if (sm_send_s_random){
         sm_send_s_random = 0;
         uint8_t buffer[17];
@@ -543,15 +545,6 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
         case SM_CODE_PAIRING_RANDOM:
             // received random value
             swap128(&packet[1], sm_m_random);
-
-            // // validate m confirm
-            // if (!sm_validate_m_confirm()){
-            //     sm_send_pairing_failed = 1;
-            //     sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
-            //     break;
-            // }
-            // // send s_random
-            // sm_send_s_random = 1;
 
             // use aes128 engine
             // calculate m_confirm using aes128 engine - step 1
@@ -779,7 +772,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                     sm_state_responding = SM_STATE_W4_LTK_REQUEST;
                                     break;
                                 }
-                                sm_send_pairing_failed = 1;
+                                sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
                                 sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
                                 }
                                 break;
