@@ -138,6 +138,8 @@ typedef enum {
     SM_STATE_PH3_Y_W4_ENC,
     SM_STATE_PH3_LTK_GET_ENC,
     SM_STATE_PH3_LTK_W4_ENC,
+    SM_STATE_PH3_IRK_GET_ENC,
+    SM_STATE_PH3_IRK_W4_ENC,
 
     // re establish previously distribued LTK
     SM_STATE_PH4_DHK_GET_ENC,
@@ -377,6 +379,7 @@ static void sm_run(void){
         case SM_STATE_PH3_DHK_GET_ENC:
         case SM_STATE_PH3_Y_GET_ENC:
         case SM_STATE_PH3_LTK_GET_ENC:
+        case SM_STATE_PH3_IRK_GET_ENC:
         case SM_STATE_PH4_DHK_GET_ENC:
         case SM_STATE_PH4_Y_GET_ENC:
         case SM_STATE_PH4_LTK_GET_ENC:
@@ -823,6 +826,14 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             case SM_STATE_PH3_LTK_W4_ENC:
                                 swap128(&packet[6], sm_s_ltk);
                                 print_key("ltk", sm_s_ltk);
+                                // IRK = d1(IR, 1, 0)
+                                sm_aes128_set_key(sm_persistent_ir);
+                                sm_d1_d_prime(1, 0, sm_aes128_plaintext);
+                                sm_state_responding = SM_STATE_PH3_IRK_GET_ENC;
+                                break;
+                            case SM_STATE_PH3_IRK_W4_ENC:
+                                swap128(&packet[6], sm_persistent_irk);
+                                print_key("irk", sm_persistent_irk);
                                 // distribute keys
                                 sm_distribute_keys();
                                 // done
