@@ -105,6 +105,9 @@ typedef enum {
 
     SM_STATE_IDLE,
 
+    SM_STATE_SEND_PAIRING_RESPONSE,
+    SM_STATE_W4_PAIRING_CONFIRM,
+
     // calculate confirm values for local and remote connection
     SM_STATE_C1_GET_RANDOM_A,
     SM_STATE_C1_W4_RANDOM_A,
@@ -174,8 +177,6 @@ static key_t sm_aes128_plaintext;
 
 //
 static uint16_t sm_response_handle = 0;
-static uint16_t sm_response_size   = 0;
-static uint8_t  sm_response_buffer[28];
 
 // defines which keys will be send  after connection is encrypted
 static int sm_key_distribution_set = 0;
@@ -366,6 +367,31 @@ static void sm_run(void){
     if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) return;
 
     switch (sm_state_responding){
+
+        case SM_STATE_SEND_PAIRING_RESPONSE: {
+            // TODO use provided IO capabilites
+            // TOOD use local MITM flag
+            // TODO provide callback to request OOB data
+
+            uint8_t buffer[7];
+            memcpy(buffer, sm_preq, 7);        
+            buffer[0] = SM_CODE_PAIRING_RESPONSE;
+            // buffer[1] = 0x00;   // io capability: DisplayOnly
+            // buffer[1] = 0x02;   // io capability: KeyboardOnly
+            // buffer[1] = 0x03;   // io capability: NoInputNoOutput
+            buffer[1] = 0x04;   // io capability: KeyboardDisplay
+            buffer[2] = 0x00;   // no oob data available
+            buffer[3] = buffer[3] & 3;  // remove MITM flag
+            buffer[4] = 0x10;   // maxium encryption key size
+
+            // for validate
+            memcpy(sm_pres, buffer, 7);
+
+            l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+            sm_state_responding = SM_STATE_W4_PAIRING_CONFIRM;
+            return;
+        }
+
         case SM_STATE_C1_GET_RANDOM_A:
         case SM_STATE_C1_GET_RANDOM_B:
         case SM_STATE_PH3_GET_RANDOM:
@@ -420,12 +446,6 @@ static void sm_run(void){
             break;
     }
 
-    // send security manager packet
-    if (sm_response_size){
-        uint16_t size = sm_response_size;
-        sm_response_size = 0;
-        l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) sm_response_buffer, size);
-    }
     // send security request
     if (sm_send_security_request){
         sm_send_security_request = 0;
@@ -509,26 +529,9 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // for validate
             memcpy(sm_preq, packet, 7);
-            
-            // TODO use provided IO capabilites
-            // TOOD use local MITM flag
-            // TODO provide callback to request OOB data
-
-            memcpy(sm_response_buffer, packet, size);        
-            sm_response_buffer[0] = SM_CODE_PAIRING_RESPONSE;
-            // sm_response_buffer[1] = 0x00;   // io capability: DisplayOnly
-            // sm_response_buffer[1] = 0x02;   // io capability: KeyboardOnly
-            // sm_response_buffer[1] = 0x03;   // io capability: NoInputNoOutput
-            sm_response_buffer[1] = 0x04;   // io capability: KeyboardDisplay
-            sm_response_buffer[2] = 0x00;   // no oob data available
-            sm_response_buffer[3] = sm_response_buffer[3] & 3;  // remove MITM flag
-            sm_response_buffer[4] = 0x10;   // maxium encryption key size
-            sm_response_size = 7;
-
-            // for validate
-            memcpy(sm_pres, sm_response_buffer, 7);
+            sm_state_responding = SM_STATE_SEND_PAIRING_RESPONSE;
             break;
-
+            
         case  SM_CODE_PAIRING_CONFIRM:
             // received confirm value
             swap128(&packet[1], sm_m_confirm);
