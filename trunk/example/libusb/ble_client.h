@@ -66,14 +66,26 @@ typedef struct ad_event {
 } ad_event_t;
 
 typedef enum {
-    P_IDLE,
     P_W2_CONNECT,
     P_W4_CONNECTED,
+    
     P_W2_EXCHANGE_MTU,
     P_W4_EXCHANGE_MTU,
+    
     P_CONNECTED,
-    P_W4_DISCONNECTED
+
+    P_W2_CANCEL_CONNECT,
+    P_W4_CONNECT_CANCELLED,
+    P_W2_DISCONNECT,
+    P_W4_DISCONNECTED,
 } peripheral_state_t;
+
+typedef enum {
+    BLE_PERIPHERAL_OK = 0,
+    BLE_PERIPHERAL_IN_WRONG_STATE,
+    BLE_PERIPHERAL_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS
+} le_command_status_t;
+
 
 typedef struct le_peripheral{
     linked_item_t    item;
@@ -108,8 +120,8 @@ void le_central_start_scan();
 // { type (8), addr_type (8), addr(48), rssi(8), ad_len(8), ad_data(ad_len*8) }
 void le_central_stop_scan();
 
-void le_central_connect(le_peripheral_t *context, uint8_t addr_type, bd_addr_t addr);
-void le_central_cancel_connect(le_peripheral_t *context);
+le_command_status_t  le_central_connect(le_peripheral_t *context, uint8_t addr_type, bd_addr_t addr);
+le_command_status_t  le_central_disconnect(le_peripheral_t *context);
 
 void le_central_get_services(le_peripheral_t *context);
 void le_central_get_services_with_uuid16(le_peripheral_t *context,  uint16_t  uuid16);
