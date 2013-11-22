@@ -266,12 +266,10 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
     int resubmit = 0;
 
     if (transfer->endpoint == event_in_addr) {
-        // log_info("-> event");
         hci_dump_packet( HCI_EVENT_PACKET, 1, transfer-> buffer,
             transfer->actual_length);
         packet_handler(HCI_EVENT_PACKET, transfer-> buffer,
             transfer->actual_length);
-
         resubmit = 1;
     }
 
@@ -288,8 +286,8 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         usb_acl_out_active = 0;
 
         // notify upper stack that iit might be possible to send again
-        uint8_t event = DAEMON_EVENT_HCI_PACKET_SENT;
-        packet_handler(HCI_EVENT_PACKET, &event, 1);
+        uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0};
+        packet_handler(HCI_EVENT_PACKET, (uint8_t*) &event, 2);
 
         resubmit = 0;
     } else if (transfer->endpoint == 0){
@@ -297,8 +295,8 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         usb_command_active = 0;
 
         // notify upper stack that iit might be possible to send again
-        uint8_t event = DAEMON_EVENT_HCI_PACKET_SENT;
-        packet_handler(HCI_EVENT_PACKET, &event, 1);
+        uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0};
+        packet_handler(HCI_EVENT_PACKET, (uint8_t*) &event, 2);
         
         resubmit = 0;
     } else {
