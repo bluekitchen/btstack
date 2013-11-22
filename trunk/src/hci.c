@@ -272,6 +272,8 @@ int hci_send_acl_packet(uint8_t *packet, int size){
 
 static void acl_handler(uint8_t *packet, int size){
 
+    // log_info("acl_handler: size %u", size);
+
     // get info
     hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
     hci_connection_t *conn      = hci_connection_for_handle(con_handle);
@@ -283,7 +285,13 @@ static void acl_handler(uint8_t *packet, int size){
         log_error( "hci.c: acl_handler called with non-registered handle %u!\n" , con_handle);
         return;
     }
-    
+
+    // assert packet is complete    
+    if (acl_length != size + 4){
+        log_error("hci.c: acl_handler called with ACL packet of wrong size %u, expected %u => dropping packet", size, acl_length + 4);
+        return;
+    }
+
     // update idle timestamp
     hci_connection_timestamp(conn);
     
@@ -326,7 +334,7 @@ static void acl_handler(uint8_t *packet, int size){
             // peek into L2CAP packet!
             uint16_t l2cap_length = READ_L2CAP_LENGTH( packet );
 
-            // log_error( "ACL First Fragment: acl_len %u, l2cap_len %u\n", acl_length, l2cap_length);
+            // log_info( "ACL First Fragment: acl_len %u, l2cap_len %u\n", acl_length, l2cap_length);
 
             // compare fragment size to L2CAP packet size
             if (acl_length >= l2cap_length + 4){
@@ -451,6 +459,15 @@ int hci_le_supported(void){
 static device_name_t device_name;
 #endif
 static void event_handler(uint8_t *packet, int size){
+
+    uint16_t event_length = packet[1];
+
+    // assert packet is complete    
+    if (size != event_length + 2){
+        log_error("hci.c: event_handler called with event packet of wrong size %u, expected %u => dropping packet", size, event_length + 2);
+        return;
+    }
+
     bd_addr_t addr;
     uint8_t link_type;
     hci_con_handle_t handle;
