@@ -287,7 +287,7 @@ static void acl_handler(uint8_t *packet, int size){
     }
 
     // assert packet is complete    
-    if (acl_length != size + 4){
+    if (acl_length + 4 != size){
         log_error("hci.c: acl_handler called with ACL packet of wrong size %u, expected %u => dropping packet", size, acl_length + 4);
         return;
     }
