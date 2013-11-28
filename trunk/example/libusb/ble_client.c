@@ -60,6 +60,10 @@
 #include "l2cap.h"
 #include "att.h"
 
+#ifdef HAVE_UART_CC2564
+#include "bt_control_cc256x.h"
+#endif
+
 // gatt client state
 typedef enum {
     W4_ON,
@@ -196,18 +200,24 @@ static void handle_advertising_packet(uint8_t *packet){
 }
 
 static void handle_peripheral_list(){
+    printf("handle_peripheral_list 1\n");
     // only one connect is allowed, wait for result
     if (get_peripheral_w4_connected()) return;
+    printf("handle_peripheral_list 2\n");
     // only one cancel connect is allowed, wait for result
     if (get_peripheral_w4_connect_cancelled()) return;
+    printf("handle_peripheral_list 3\n");
 
     if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
+    printf("handle_peripheral_list 4\n");
     if (!l2cap_can_send_conectionless_packet_now()) return;
+    printf("handle_peripheral_list 5\n");
     
+    printf("handle_peripheral_list empty %u\n", linked_list_empty(&le_connections));
     linked_item_t *it;
     for (it = (linked_item_t *) le_connections; it ; it = it->next){
         le_peripheral_t * peripheral = (le_peripheral_t *) it;
-        
+        printf("handle_peripheral_list, status %u\n", peripheral->state);
         switch (peripheral->state){
             case P_W2_CONNECT:
                 peripheral->state = P_W4_CONNECTED;
@@ -256,16 +266,18 @@ static void handle_peripheral_list(){
 }
 
 
-void le_central_start_scan(){
-    if (state != IDLE) return; 
+le_command_status_t le_central_start_scan(){
+    if (state != IDLE) return BLE_PERIPHERAL_IN_WRONG_STATE; 
     state = START_SCAN;
     gatt_client_run();
+    return BLE_PERIPHERAL_OK;
 }
 
-void le_central_stop_scan(){
-    if (state != SCANNING) return;
+le_command_status_t le_central_stop_scan(){
+    if (state != SCANNING) return BLE_PERIPHERAL_IN_WRONG_STATE;
     state = STOP_SCAN;
     gatt_client_run();
+    return BLE_PERIPHERAL_OK;
 }
 
 static void le_peripheral_init(le_peripheral_t *context, uint8_t addr_type, bd_addr_t addr){
@@ -279,6 +291,7 @@ le_command_status_t le_central_connect(le_peripheral_t *context, uint8_t addr_ty
     //TODO: align with hci connection list capacity
     le_peripheral_t * peripheral = get_peripheral_with_address(addr_type, addr);
     if (!peripheral) {
+        printf("le_central_connect: new context, init\n");
         le_peripheral_init(context, addr_type, addr);
         linked_list_add(&le_connections, (linked_item_t *) context);
     } else if (peripheral == context) {
@@ -286,6 +299,9 @@ le_command_status_t le_central_connect(le_peripheral_t *context, uint8_t addr_ty
     } else {
         return BLE_PERIPHERAL_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS;
     }
+
+    printf("le_central_connect: connections is empty %u\n", linked_list_empty(&le_connections));
+
 
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
@@ -324,6 +340,7 @@ le_command_status_t le_central_disconnect(le_peripheral_t *context){
     return BLE_PERIPHERAL_OK;      
 }
 
+void test_client();
 
 static void gatt_client_run(){
     if (state == W4_ON) return;
@@ -348,12 +365,14 @@ static void gatt_client_run(){
         default:
             break;
     }
+    test_client();
 }
 
 
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     if (packet_type != HCI_EVENT_PACKET) return;
+    
 	switch (packet[0]) {
 		case BTSTACK_EVENT_STATE:
 			// BTstack activated, get started
@@ -375,7 +394,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     default:
                         break;
                 }
-                return;
+                break;
             }
 
             if (COMMAND_COMPLETE_EVENT(packet, hci_le_create_connection_cancel)){
@@ -447,6 +466,55 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     gatt_client_run();
 }
 
+static char * att_errors[] = {
+    "OK",
+    "Invalid Handle",
+    "Read Not Permitted",
+    "Write Not Permitted",
+    "Invalid PDU",
+    "Insufficient Authentication",
+    "Request Not Supported",
+    "Invalid Offset",
+    "Insufficient Authorization",
+    "Prepare Queue Full",
+    "Attribute Not Found",
+    "Attribute Not Long",
+    "Insufficient Encryption Key Size",
+    "Invalid Attribute Value Length",
+    "Unlikely Error",
+    "Insufficient Encryption",
+    "Unsupported Group Type",
+    "Insufficient Resources"
+};
+
+static void att_client_report_error(uint8_t * packet, uint16_t size){
+    
+    uint8_t error_code = packet[4];
+    char * error = "Unknown";
+    if (error_code <= 0x11){
+        error = att_errors[error_code];
+    }
+    uint16_t handle = READ_BT_16(packet, 2);
+    printf("ATT_ERROR_REPORT handle 0x%04x, error: %u - %s\n", handle, error_code, error);
+}
+
+
+void printUUID128(const uint8_t * uuid){
+    int i;
+    for (i=15; i >= 0 ; i--){
+        printf("%02X", uuid[i]);
+        switch (i){
+            case 4:
+            case 6:
+            case 8:
+            case 10:
+                printf("-");
+                break;
+            default:
+                break;
+        }
+    }
+}
 
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
     if (packet_type != ATT_DATA_PACKET) return;
@@ -466,13 +534,49 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             peripheral->state = P_CONNECTED; 
             break;
         }
+        case ATT_READ_BY_GROUP_TYPE_RESPONSE:
+            printf("att_packet_handler :: ATT_READ_BY_GROUP_TYPE_RESPONSE\n");
+            {
+                uint8_t attr_lenght = packet[1];
+                int i;
+                for (i = 2; i < size; i += attr_lenght){
+                    uint16_t attr_handle = READ_BT_16(packet,i);
+                    uint16_t end_group_handle = READ_BT_16(packet,i+2);
+                    uint8_t attr_value[attr_lenght - 4];
+                    memcpy( attr_value, &packet[i+4], attr_lenght - 4);
+                    
+                    printf("    attr_handle %02x, end_group_handle %02x, data size %d\n", attr_handle, end_group_handle, attr_lenght);
+                }
+            }
+            break;
+        case ATT_ERROR_RESPONSE:
+            att_client_report_error(packet, size);
+            break;
         default:
             break;
     }
     gatt_client_run();
 }
 
+le_command_status_t le_central_get_services(le_peripheral_t *peripheral){
+    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_NOT_CONNECTED;
+    if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
+    
+    uint8_t request[7];
+    request[0] = ATT_READ_BY_GROUP_TYPE_REQUEST;
+    uint16_t att_client_start_handle = 0x0001;
+    uint16_t att_client_end_handle = 0xffff;
+    uint16_t att_client_attribute_group_type = 0x2800;
 
+    bt_store_16(request, 1, att_client_start_handle);
+    bt_store_16(request, 3, att_client_end_handle);
+    bt_store_16(request, 5, att_client_attribute_group_type);
+    l2cap_send_connectionless(peripheral->handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
+    printf("le_central_get_services sent\n");
+    return BLE_PERIPHERAL_OK;
+}
+
+static hci_uart_config_t  config;
 void setup(void){
     /// GET STARTED with BTstack ///
     btstack_memory_init();
@@ -481,13 +585,21 @@ void setup(void){
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
     hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
-    // init HCI
-    hci_transport_t    * transport = hci_transport_usb_instance();
-    hci_uart_config_t  * config    = NULL;
-    bt_control_t       * control   = NULL;
+  // init HCI
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-        
-    hci_init(transport, config, control, remote_db);
+    bt_control_t       * control   = NULL;
+#ifndef  HAVE_UART_CC2564
+    hci_transport_t    * transport = hci_transport_usb_instance();
+#else
+    hci_transport_t    * transport = hci_transport_h4_instance();
+    control   = bt_control_cc256x_instance();
+    // config.device_name   = "/dev/tty.usbserial-A600eIDu";   // 5438
+    config.device_name   = "/dev/tty.usbserial-A800cGd0";   // 5529
+    config.baudrate_init = 115200;
+    config.baudrate_main = 0;
+    config.flowcontrol = 1;
+#endif        
+    hci_init(transport, &config, control, remote_db);
 
     l2cap_init();
     l2cap_register_fixed_channel(att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
@@ -495,27 +607,22 @@ void setup(void){
 }
 
 
-// main == setup
-int main(void)
-{
-    setup();
-    
-   /* test
-    le_central_init();
-    le_central_register_handler(handle_le_central_event);
-   */
-   
-    // turn on!
-    hci_power_control(HCI_POWER_ON);
-    
-    // go!
-    run_loop_execute(); 
-    
-    // happy compiler!
-    return 0;
+// TEST CODE
+
+
+static void hexdump2(void *data, int size){
+    int i;
+    for (i=0; i<size;i++){
+        printf("%02X ", ((uint8_t *)data)[i]);
+    }
+    printf("\n");
 }
 
-/* test 
+static void dump_ad_event(ad_event_t* e){
+    printf("evt-type %u, addr-type %u, addr %s, rssi %u, length adv %u, data: ", e->event_type, 
+            e->address_type, bd_addr_to_str(e->address), e->rssi, e->length); 
+    hexdump2( e->data, e->length);                            
+}
 
 static void dump_peripheral_state(peripheral_state_t p_state){
     switch(p_state) {
@@ -542,48 +649,67 @@ static void dump_state(){
         case STOP_SCAN: printf("STOP_SCAN"); break;
         case W4_SCAN_STOPPED: printf("W4_SCAN_STOPPED"); break;
     };
-    printf("\n");
-}
-
-static void hexdump2(void *data, int size){
-    int i;
-    for (i=0; i<size;i++){
-        printf("%02X ", ((uint8_t *)data)[i]);
-    }
-    printf("\n");
-}
-
-static void dump_ad_event(ad_event_t* e){
-    printf("evt-type %u, addr-type %u, addr %s, rssi %u, length adv %u, data: ", e->event_type, 
-            e->address_type, bd_addr_to_str(e->address), e->rssi, e->length); 
-    hexdump2( e->data, e->length);                            
+    printf(" : ");
 }
 
 le_peripheral_t test_device;
-
 static bd_addr_t test_device_addr = {0x1c, 0xba, 0x8c, 0x20, 0xc7, 0xf6};
 
+typedef enum {
+    TC_IDLE,
+    TC_W4_SCAN_RESULT,
+    TC_SCAN_ACTIVE,
+    TC_W2_CONNECT,
+    TC_W4_CONNECT,
+    TC_CONNECTED,
+    TC_W4_ACTION,
+    TC_W4_ACTION_RESULT,
+    TC_W4_DISCONNECT,
+    TC_DISCONNECTED
+
+} tc_state_t;
+
+tc_state_t tc_state = TC_IDLE;
 
 void test_client(){
-    static int i = 0;
-    
-    switch(i){
-        case 0:
-            le_central_start_scan();
-            printf("--- test_client::calling start scan \n");
+    le_command_status_t status;
+    dump_state();
+    dump_peripheral_state(test_device.state);
+
+    switch(tc_state){
+        case TC_IDLE: 
+            printf("test client - TC_IDLE\n");
+            status = le_central_start_scan(); 
+            if (status != BLE_PERIPHERAL_OK) return;
+            tc_state = TC_W4_SCAN_RESULT;
+            printf("test client - TC_W4_SCAN_RESULT\n");
             break;
-        case 20:
-            printf("--- test_client::calling connect peripheral: status %d\n", le_central_connect(&test_device, 0, test_device_addr));
+
+        case TC_SCAN_ACTIVE: 
+            printf("test client - TC_SCAN_ACTIVE\n");
+            status = le_central_stop_scan();
+            // if (status != BLE_PERIPHERAL_OK) return;
+            status = le_central_connect(&test_device, 0, test_device_addr);
+            printf("test client - status after connect %u, result %u\n", test_device.state, status);
+            if (status != BLE_PERIPHERAL_OK) return;
+            tc_state = TC_W4_CONNECT;
+            printf("test client - TC_W4_CONNECT\n");
             break;
-        case 40:
-            i=-1;
-            // le_central_stop_scan();
-            printf("--- test_client::calling dissconnect peripheral: status %d\n", le_central_disconnect(&test_device));
+        case TC_CONNECTED: 
+            printf("test client - TC_CONNECTED\n");
+            
+            status = le_central_get_services(&test_device);
+            if (status != BLE_PERIPHERAL_OK) return;
+            tc_state = TC_W4_ACTION_RESULT;
+            printf("test client - TC_W4_ACTION_RESULT\n");
+
+
             break;
-        default:
+        
+        default: 
             break;
+
     }
-    i++;
 }
 
 static void handle_le_central_event(le_central_event_t * event){
@@ -591,19 +717,53 @@ static void handle_le_central_event(le_central_event_t * event){
     le_peripheral_event_t * peripheral_event;
     switch (event->type){
         case GATT_ADVERTISEMENT:
+            if (tc_state != TC_W4_SCAN_RESULT) return;
+            
             advertisement_event = (ad_event_t*) event;
             dump_ad_event(advertisement_event);
+            tc_state = TC_SCAN_ACTIVE;
+            printf("test client - TC_SCAN_ACTIVE\n");
+            
             break;
         case GATT_CONNECTION_COMPLETE:
+            printf("test client - GATT_CONNECTION_COMPLETE\n");
+            // if (tc_state != TC_W4_CONNECT || tc_state != TC_W4_DISCONNECT) return;
+
             peripheral_event = (le_peripheral_event_t *) event;
             if (peripheral_event->status == 0){
                 printf("handle_le_central_event::device is connected\n");
+                tc_state = TC_CONNECTED;
+                printf("test client - TC_CONNECTED\n");
+                test_client();
             } else {
                 printf("handle_le_central_event::disconnected with status %02x \n", peripheral_event->status);
+                tc_state = TC_DISCONNECTED;
+                printf("test client - TC_DISCONNECTED\n");
             }
         default:
             break;
     }
-}*/
+}
+
+
+int main(void)
+{
+    setup();
+ 
+    le_central_init();
+    le_central_register_handler(handle_le_central_event);
+   
+    // turn on!
+    hci_power_control(HCI_POWER_ON);
+    
+    // go!
+    run_loop_execute(); 
+    
+    // happy compiler!
+    return 0;
+}
+
+
+
 
 
