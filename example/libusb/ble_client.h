@@ -73,7 +73,9 @@ typedef enum {
     P_W4_EXCHANGE_MTU,
     
     P_CONNECTED,
-
+    P_W2_SEND_SERVICE_QUERY,
+    P_W4_SERVICE_QUERY_RESULT,
+    
     P_W2_CANCEL_CONNECT,
     P_W4_CONNECT_CANCELLED,
     P_W2_DISCONNECT,
@@ -93,10 +95,14 @@ typedef struct le_peripheral{
     linked_item_t    item;
 
     peripheral_state_t state;
+
     uint8_t   address_type;
     bd_addr_t address;
     uint16_t handle;
     uint16_t mtu;
+
+    // for service discovery
+    uint16_t last_group_handle;
 } le_peripheral_t;
 
 typedef struct le_peripheral_event{
@@ -105,6 +111,19 @@ typedef struct le_peripheral_event{
     uint8_t status;
 } le_peripheral_event_t;
 
+typedef struct le_service_event{
+    uint8_t  type;
+    uint16_t start_group_handle;
+    uint16_t end_group_handle;
+    uint16_t uuid16; 
+    uint8_t  uuid128[16]; 
+} le_service_event_t;
+
+typedef struct le_query_complete_event{
+    uint8_t type;
+    le_peripheral_t * peripheral;
+} le_query_complete_event_t;
+
 typedef struct le_characteristic{
     uint8_t  permision;
     uint16_t characteristic_handle;
@@ -112,6 +131,7 @@ typedef struct le_characteristic{
     uint16_t uuid16;
     uint8_t  uuid128[16];
 } le_characteristic_t;
+
 
 
 void le_central_init();
