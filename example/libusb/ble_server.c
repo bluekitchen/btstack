@@ -164,6 +164,8 @@ typedef enum {
 } security_manager_state_t;
 
 static att_connection_t att_connection;
+static uint16_t         att_addr_type;
+static bd_addr_t        att_address;
 static uint16_t         att_response_handle = 0;
 static uint16_t         att_response_size   = 0;
 static uint8_t          att_response_buffer[28];
@@ -196,7 +198,6 @@ static int sm_send_master_identification = 0;
 static int sm_send_identity_information = 0;
 static int sm_send_identity_address_information = 0;
 static int sm_send_signing_identification = 0;
-static int sm_send_s_random = 0;
 
 static int sm_received_encryption_information = 0;
 static int sm_received_master_identification = 0;
@@ -235,6 +236,13 @@ static uint8_t   sm_m_addr_type;
 static bd_addr_t sm_m_address;
 static key_t     sm_m_csrk;
 static key_t     sm_m_irk;
+
+// @returns 1 if oob data is available
+// stores oob data in provided 16 byte buffer if not null
+static int (*sm_get_oob_data)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data) = NULL;
+void sm_register_oob_data_callback( (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data)){
+    sm_get_oob_data = get_oob_data_callback;
+}
 
 static void att_try_respond(void){
     if (!att_response_size) return;
@@ -395,7 +403,11 @@ static void sm_run(void){
             // buffer[1] = 0x02;   // io capability: KeyboardOnly
             // buffer[1] = 0x03;   // io capability: NoInputNoOutput
             buffer[1] = 0x04;   // io capability: KeyboardDisplay
-            buffer[2] = 0x00;   // no oob data available
+            if (sm_get_oob_data){
+                buffer[2] = sm_get_oob_data(att_addr_type, att_address, NULL);
+            } else {
+                buffer[2] = 0x00;   // no oob data available
+            }
             buffer[3] = buffer[3] & 3;  // remove MITM flag
             buffer[4] = 0x10;   // maxium encryption key size
 
@@ -515,14 +527,6 @@ static void sm_run(void){
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_SIGNING_INFORMATION;
                 swap128(sm_s_csrk, &buffer[1]);
-                l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-                return;
-            }
-            if (sm_send_s_random){
-                sm_send_s_random = 0;
-                uint8_t buffer[17];
-                buffer[0] = SM_CODE_PAIRING_RANDOM;
-                swap128(sm_s_random, &buffer[1]);
                 l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 return;
             }
@@ -697,6 +701,14 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:
                             log_info("LTK Request, state %u", sm_state_responding);
                             if (sm_state_responding == SM_STATE_W4_LTK_REQUEST){
+                                // use OOB data if available
+                                if ((*sm_get_oob_data)(att_addr_type, att_address, sm_stk)){
+                                    key_t stk_flipped;
+                                    swap128(sm_stk, stk_flipped);
+                                    hci_send_cmd(&hci_le_long_term_key_request_reply, sm_response_handle, stk_flipped);
+                                    sm_state_responding = SM_STATE_W4_CONNECTION_ENCRYPTED;
+                                    break;
+                                }
                                 // calculate STK
                                 log_info("calculating STK");
                                 // key_t sm_stk;
