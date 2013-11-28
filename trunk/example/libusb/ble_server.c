@@ -421,6 +421,10 @@ void sm_reset_tk(){
 // - OOB data availability
 static void sm_tk_setup(){
 
+    // default: just works
+    sm_stk_generation_method = JUST_WORKS;
+    sm_reset_tk();
+
     // If both devices have out of band authentication data, then the Authentication
     // Requirements Flags shall be ignored when selecting the pairing method and the
     // Out of Band pairing method shall be used.
@@ -433,8 +437,12 @@ static void sm_tk_setup(){
     // Flags, then the IO capabilities shall be ignored and the Just Works association
     // model shall be used. 
     if ((sm_s_auth_req & sm_m_auth_req & 0x04) == 0){
-        sm_stk_generation_method = JUST_WORKS;
-        sm_reset_tk();
+        return;
+    }
+
+    // Also use just works if unknown io capabilites
+    if ((sm_m_io_capabilities > 4) || (sm_m_io_capabilities > 4)){
+        return;
     }
 
     // Otherwise the IO capabilities of the devices shall be used to determine the
