@@ -47,6 +47,7 @@
 #include <btstack/run_loop.h>
 #include <btstack/hci_cmds.h>
 #include <btstack/utils.h>
+#include <btstack/sdp_util.h>
 
 #include "config.h"
 
@@ -81,14 +82,16 @@ typedef enum {
 
 static state_t state = W4_ON;
 static linked_list_t le_connections = NULL;
+static uint16_t att_client_start_handle = 0x0001;
+    
 
 void le_central_init(){
     state = W4_ON;
     le_connections = NULL;
+    att_client_start_handle = 0x0000;
 }
 
 void (*le_central_callback)(le_central_event_t * event);
-
 static void gatt_client_run();
 
 
@@ -119,6 +122,24 @@ static void send_gatt_connection_complete_event(le_peripheral_t * peripheral, ui
     event.device = peripheral;
     event.status = status;
     (*le_central_callback)((le_central_event_t*)&event); 
+}
+
+static le_command_status_t send_gatt_services_request(le_peripheral_t *peripheral){
+
+    if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
+
+    uint8_t request[7];
+    request[0] = ATT_READ_BY_GROUP_TYPE_REQUEST;
+    uint16_t att_client_end_handle = 0xffff;
+    uint16_t att_client_attribute_group_type = 0x2800;
+
+    bt_store_16(request, 1, peripheral->last_group_handle+1);
+    bt_store_16(request, 3, att_client_end_handle);
+    bt_store_16(request, 5, att_client_attribute_group_type);
+    l2cap_send_connectionless(peripheral->handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
+    printf("le_central_get_services sent\n");
+
+    return BLE_PERIPHERAL_OK;
 }
 
 static le_peripheral_t * get_peripheral_for_handle(uint16_t handle){
@@ -200,24 +221,25 @@ static void handle_advertising_packet(uint8_t *packet){
 }
 
 static void handle_peripheral_list(){
-    printf("handle_peripheral_list 1\n");
+    // printf("handle_peripheral_list 1\n");
     // only one connect is allowed, wait for result
     if (get_peripheral_w4_connected()) return;
-    printf("handle_peripheral_list 2\n");
+    // printf("handle_peripheral_list 2\n");
     // only one cancel connect is allowed, wait for result
     if (get_peripheral_w4_connect_cancelled()) return;
-    printf("handle_peripheral_list 3\n");
+    // printf("handle_peripheral_list 3\n");
 
     if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
-    printf("handle_peripheral_list 4\n");
+    // printf("handle_peripheral_list 4\n");
     if (!l2cap_can_send_conectionless_packet_now()) return;
-    printf("handle_peripheral_list 5\n");
+    // printf("handle_peripheral_list 5\n");
     
-    printf("handle_peripheral_list empty %u\n", linked_list_empty(&le_connections));
+    // printf("handle_peripheral_list empty %u\n", linked_list_empty(&le_connections));
+    le_command_status_t status;
     linked_item_t *it;
     for (it = (linked_item_t *) le_connections; it ; it = it->next){
         le_peripheral_t * peripheral = (le_peripheral_t *) it;
-        printf("handle_peripheral_list, status %u\n", peripheral->state);
+        // printf("handle_peripheral_list, status %u\n", peripheral->state);
         switch (peripheral->state){
             case P_W2_CONNECT:
                 peripheral->state = P_W4_CONNECTED;
@@ -251,7 +273,12 @@ static void handle_peripheral_list(){
                 l2cap_send_connectionless(peripheral->handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
                 return;
             }
+            case P_W2_SEND_SERVICE_QUERY:
+                status = send_gatt_services_request(peripheral);
+                if (status != BLE_PERIPHERAL_OK) break;
 
+                peripheral->state = P_W4_SERVICE_QUERY_RESULT;
+                break;
             case P_W2_DISCONNECT:
                 peripheral->state = P_W4_DISCONNECTED;
                 hci_send_cmd(&hci_disconnect, peripheral->handle,0x13);
@@ -329,6 +356,8 @@ le_command_status_t le_central_disconnect(le_peripheral_t *context){
         case P_W4_EXCHANGE_MTU:
         case P_CONNECTED:
         case P_W2_DISCONNECT:
+        case P_W2_SEND_SERVICE_QUERY:
+        case P_W4_SERVICE_QUERY_RESULT:
             // trigger disconnect
             context->state = P_W2_DISCONNECT;
             break;
@@ -338,6 +367,15 @@ le_command_status_t le_central_disconnect(le_peripheral_t *context){
     }  
     gatt_client_run();    
     return BLE_PERIPHERAL_OK;      
+}
+
+le_command_status_t le_central_get_services(le_peripheral_t *peripheral){
+    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
+    printf("le_central_get_services ready to send\n");
+    peripheral->last_group_handle = 0x0000;
+    peripheral->state = P_W2_SEND_SERVICE_QUERY;
+    gatt_client_run();
+    return BLE_PERIPHERAL_OK;
 }
 
 void test_client();
@@ -518,13 +556,13 @@ void printUUID128(const uint8_t * uuid){
 
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
     if (packet_type != ATT_DATA_PACKET) return;
+    printf("att_packet_handler ...\n");
+    le_peripheral_t * peripheral = get_peripheral_for_handle(handle);
+    if (!peripheral) return;
 
     switch (packet[0]){
         case ATT_EXCHANGE_MTU_RESPONSE:
         {
-            le_peripheral_t * peripheral = get_peripheral_for_handle(handle);
-            if (!peripheral) return;
-
             uint16_t remote_rx_mtu = READ_BT_16(packet, 1);
             uint16_t local_rx_mtu = l2cap_max_mtu_for_handle(handle);
             peripheral->mtu = remote_rx_mtu < local_rx_mtu ? remote_rx_mtu : local_rx_mtu;
@@ -535,46 +573,64 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             break;
         }
         case ATT_READ_BY_GROUP_TYPE_RESPONSE:
+        {
             printf("att_packet_handler :: ATT_READ_BY_GROUP_TYPE_RESPONSE\n");
-            {
-                uint8_t attr_lenght = packet[1];
-                int i;
-                for (i = 2; i < size; i += attr_lenght){
-                    uint16_t attr_handle = READ_BT_16(packet,i);
-                    uint16_t end_group_handle = READ_BT_16(packet,i+2);
-                    uint8_t attr_value[attr_lenght - 4];
-                    memcpy( attr_value, &packet[i+4], attr_lenght - 4);
-                    
-                    printf("    attr_handle %02x, end_group_handle %02x, data size %d\n", attr_handle, end_group_handle, attr_lenght);
+        
+            uint8_t attr_length = packet[1];
+            uint8_t uuid_length = attr_length - 4;
+
+            int i;
+            for (i = 2; i < size; i += attr_length){
+                le_service_event_t event;
+                event.type = GATT_SERVICE;
+                event.start_group_handle = READ_BT_16(packet,i);
+                event.end_group_handle = READ_BT_16(packet,i+2);
+                
+                if (uuid_length == 2){
+                    memcpy((uint8_t*) &event.uuid16, &packet[i+4], uuid_length);
+                    sdp_normalize_uuid((uint8_t*) &event.uuid128, event.uuid16);
+                } else {
+                    memcpy(event.uuid128, &packet[i+4], uuid_length);
+                }
+
+                (*le_central_callback)((le_central_event_t*)&event);
+                if (peripheral->last_group_handle < event.end_group_handle){
+                    peripheral->last_group_handle = event.end_group_handle;
                 }
             }
+
+            if (peripheral->last_group_handle != 0xffff){
+                peripheral->state = P_W2_SEND_SERVICE_QUERY;
+                break;
+            }
+            printf("att_packet_handler :: ATT_READ_BY_GROUP_TYPE_RESPONSE ---> DONE\n");
+            // DONE
+            peripheral->state = P_CONNECTED;
+            le_query_complete_event_t event;
+            event.type = GATT_SERVICE_QUERY_COMPLETE;
+            event.peripheral = peripheral;
+            (*le_central_callback)((le_central_event_t*)&event);
             break;
-        case ATT_ERROR_RESPONSE:
-            att_client_report_error(packet, size);
+        }
+        case ATT_ERROR_ATTRIBUTE_NOT_FOUND:
+            if (peripheral->state == P_W4_SERVICE_QUERY_RESULT){
+                // DONE
+                printf("att_packet_handler :: ATT_READ_BY_GROUP_TYPE_RESPONSE ---> DONE with error\n");
+                
+                peripheral->state = P_CONNECTED;
+                le_query_complete_event_t event;
+                event.type = GATT_SERVICE_QUERY_COMPLETE;
+                event.peripheral = peripheral;
+                (*le_central_callback)((le_central_event_t*)&event);
+            }
             break;
         default:
+            att_client_report_error(packet, size);
             break;
     }
     gatt_client_run();
 }
 
-le_command_status_t le_central_get_services(le_peripheral_t *peripheral){
-    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_NOT_CONNECTED;
-    if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
-    
-    uint8_t request[7];
-    request[0] = ATT_READ_BY_GROUP_TYPE_REQUEST;
-    uint16_t att_client_start_handle = 0x0001;
-    uint16_t att_client_end_handle = 0xffff;
-    uint16_t att_client_attribute_group_type = 0x2800;
-
-    bt_store_16(request, 1, att_client_start_handle);
-    bt_store_16(request, 3, att_client_end_handle);
-    bt_store_16(request, 5, att_client_attribute_group_type);
-    l2cap_send_connectionless(peripheral->handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
-    printf("le_central_get_services sent\n");
-    return BLE_PERIPHERAL_OK;
-}
 
 static hci_uart_config_t  config;
 void setup(void){
@@ -635,6 +691,8 @@ static void dump_peripheral_state(peripheral_state_t p_state){
         case P_W4_CONNECT_CANCELLED: printf("P_W4_CONNECT_CANCELLED"); break;
         case P_W2_DISCONNECT: printf("P_W2_DISCONNECT"); break;
         case P_W4_DISCONNECTED: printf("P_W4_DISCONNECTED"); break;
+        case P_W2_SEND_SERVICE_QUERY: printf("P_W2_SEND_SERVICE_QUERY"); break;
+        case P_W4_SERVICE_QUERY_RESULT:printf("P_W4_SERVICE_QUERY_RESULT"); break;
     };
     printf("\n");
 }
@@ -662,8 +720,7 @@ typedef enum {
     TC_W2_CONNECT,
     TC_W4_CONNECT,
     TC_CONNECTED,
-    TC_W4_ACTION,
-    TC_W4_ACTION_RESULT,
+    TC_W2_DISCONNECT,
     TC_W4_DISCONNECT,
     TC_DISCONNECTED
 
@@ -673,39 +730,42 @@ tc_state_t tc_state = TC_IDLE;
 
 void test_client(){
     le_command_status_t status;
-    dump_state();
-    dump_peripheral_state(test_device.state);
+    // dump_state();
+    // dump_peripheral_state(test_device.state);
 
     switch(tc_state){
         case TC_IDLE: 
-            printf("test client - TC_IDLE\n");
+            // printf("test client - TC_IDLE\n");
             status = le_central_start_scan(); 
             if (status != BLE_PERIPHERAL_OK) return;
             tc_state = TC_W4_SCAN_RESULT;
-            printf("test client - TC_W4_SCAN_RESULT\n");
+            // printf("test client - TC_W4_SCAN_RESULT\n");
             break;
 
         case TC_SCAN_ACTIVE: 
-            printf("test client - TC_SCAN_ACTIVE\n");
+            // printf("test client - TC_SCAN_ACTIVE\n");
             status = le_central_stop_scan();
             // if (status != BLE_PERIPHERAL_OK) return;
             status = le_central_connect(&test_device, 0, test_device_addr);
-            printf("test client - status after connect %u, result %u\n", test_device.state, status);
+            // printf("test client - status after connect %u, result %u\n", test_device.state, status);
             if (status != BLE_PERIPHERAL_OK) return;
             tc_state = TC_W4_CONNECT;
-            printf("test client - TC_W4_CONNECT\n");
+            // printf("test client - TC_W4_CONNECT\n");
             break;
+
         case TC_CONNECTED: 
-            printf("test client - TC_CONNECTED\n");
+            printf("test client - TC_CONNECTED, peripheral in state: ");
+            dump_peripheral_state(test_device.state);
             
             status = le_central_get_services(&test_device);
             if (status != BLE_PERIPHERAL_OK) return;
-            tc_state = TC_W4_ACTION_RESULT;
-            printf("test client - TC_W4_ACTION_RESULT\n");
-
-
+            printf("le_central_get_services requested\n");
             break;
-        
+
+        case TC_W2_DISCONNECT:
+            status = le_central_disconnect(&test_device);
+            if (status != BLE_PERIPHERAL_OK) return;
+            tc_state = TC_W4_DISCONNECT;
         default: 
             break;
 
@@ -715,6 +775,9 @@ void test_client(){
 static void handle_le_central_event(le_central_event_t * event){
     ad_event_t * advertisement_event;
     le_peripheral_event_t * peripheral_event;
+    le_service_event_t * service_event;
+    le_query_complete_event_t * query_event;
+
     switch (event->type){
         case GATT_ADVERTISEMENT:
             if (tc_state != TC_W4_SCAN_RESULT) return;
@@ -731,7 +794,7 @@ static void handle_le_central_event(le_central_event_t * event){
 
             peripheral_event = (le_peripheral_event_t *) event;
             if (peripheral_event->status == 0){
-                printf("handle_le_central_event::device is connected\n");
+                // printf("handle_le_central_event::device is connected\n");
                 tc_state = TC_CONNECTED;
                 printf("test client - TC_CONNECTED\n");
                 test_client();
@@ -740,6 +803,22 @@ static void handle_le_central_event(le_central_event_t * event){
                 tc_state = TC_DISCONNECTED;
                 printf("test client - TC_DISCONNECTED\n");
             }
+            break;
+
+        case GATT_SERVICE:
+            service_event = (le_service_event_t *) event;
+
+            printf("    *** service request *** start group handle %02x, end group handle %02x, uuid ", service_event->start_group_handle, service_event->end_group_handle);
+            printUUID128(service_event->uuid128);
+            printf("\n");
+            test_client();
+            break;
+        case GATT_SERVICE_QUERY_COMPLETE:
+            query_event = (le_query_complete_event_t*) event;
+
+            printf("get services query complete for device %s\n", bd_addr_to_str(query_event->peripheral->address));
+            tc_state = TC_W2_DISCONNECT;
+            break;
         default:
             break;
     }
