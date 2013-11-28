@@ -634,6 +634,11 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // received confirm value
             swap128(&packet[1], sm_m_confirm);
 
+            // notify client to hide shown passkey
+            if (sm_stk_generation_method == PK_INIT_INPUT){
+                printf("close passkey display\n");
+            }
+
             // calculate and send s_confirm
             sm_state_responding = SM_STATE_PH2_C1_GET_RANDOM_A;
             break;
@@ -948,7 +953,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 sm_reset_tk();
                                 net_store_32( sm_tk, 12, tk);
                                 // notify client to show passkey
-
+                                printf("show passkey %06u\n", tk);
                                 // continue with phase 1
                                 sm_state_responding = SM_STATE_PH1_SEND_PAIRING_RESPONSE;
                                 break;
