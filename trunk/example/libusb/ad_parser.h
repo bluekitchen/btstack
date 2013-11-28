@@ -41,8 +41,6 @@
 
 #include "config.h"
 
-#include <btstack/utils.h>
-
 #if defined __cplusplus
 extern "C" {
 #endif

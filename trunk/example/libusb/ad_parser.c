@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <btstack/utils.h>
 #include <btstack/sdp_util.h>
 #include <btstack/hci_cmds.h>
 
