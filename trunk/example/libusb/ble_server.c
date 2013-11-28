@@ -208,6 +208,7 @@ static int sm_received_signing_identification = 0;
 static key_t   sm_tk;
 static key_t   sm_m_random;
 static key_t   sm_m_confirm;
+static uint8_t sm_m_have_oob_data;
 static uint8_t sm_preq[7];
 static uint8_t sm_pres[7];
 
@@ -548,6 +549,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
         case SM_CODE_PAIRING_REQUEST:
             
             // store key distribtion request
+            sm_m_have_oob_data = packet[2];
             sm_key_distribution_set = packet[6];
 
             // for validate
@@ -702,7 +704,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             log_info("LTK Request, state %u", sm_state_responding);
                             if (sm_state_responding == SM_STATE_W4_LTK_REQUEST){
                                 // use OOB data if available
-                                if ((*sm_get_oob_data)(att_addr_type, att_address, sm_stk)){
+                                if (sm_m_have_oob_data && (*sm_get_oob_data)(att_addr_type, att_address, sm_stk)){
                                     key_t stk_flipped;
                                     swap128(sm_stk, stk_flipped);
                                     hci_send_cmd(&hci_le_long_term_key_request_reply, sm_response_handle, stk_flipped);
