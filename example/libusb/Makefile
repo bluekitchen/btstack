@@ -29,16 +29,19 @@ COMMON = \
     ${BTSTACK_ROOT}/src/sdp_query_util.c		  \
 	${BTSTACK_ROOT}/src/sdp_query_rfcomm.c		  \
     ${BTSTACK_ROOT}/ble/att.c 				 	  \
- #    ${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
- #	 ${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2560A_2.1.c \
+
+CC2564 = \
+    ${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
+ 	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2564_2.5.c \
 
 CORE_OBJ   = $(CORE:.c=.o)
 COMMON_OBJ = $(COMMON:.c=.o)
+CC2564_OBJ = $(CC2564:.c=.o)
 
 
 # create firmware image from common objects and example source file
 
-all: ../../include/btstack/version.h sdp_rfcomm_query sdp_general_query spp_counter ble_server ble_client
+all: ../../include/btstack/version.h ble_client ble_client_uart sdp_rfcomm_query sdp_general_query spp_counter ble_server ble_client
 
 #spp-usb l2cap-server-usb l2cap-client-usb l2cap-server-uart l2cap-client-uart
 
@@ -64,8 +67,11 @@ profile.h: profile.gatt
 ble_server: ${CORE_OBJ} ${COMMON_OBJ} rijndael.c ble_server.c profile.h
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} rijndael.c ble_server.c ${CFLAGS} ${LDFLAGS} -o $@
 
-ble_client: ${CORE_OBJ} ${COMMON_OBJ} rijndael.c ble_client.c profile.h
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} rijndael.c ble_client.c ${CFLAGS} ${LDFLAGS} -o $@
+ble_client: ${CORE_OBJ} ${COMMON_OBJ} rijndael.c ble_client.c ad_parser.c
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} ad_parser.c rijndael.c ble_client.c ${CFLAGS} ${LDFLAGS} -o $@
+
+ble_client_uart: ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} rijndael.c ble_client.c ad_parser.c
+	${CC} -DHAVE_UART_CC2564 ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ad_parser.c rijndael.c ble_client.c ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
 	rm -f  spp_counter sdp_rfcomm_query sdp_general_query spp_counter_ssp ble_server ble_client 

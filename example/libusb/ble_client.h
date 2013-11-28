@@ -83,7 +83,9 @@ typedef enum {
 typedef enum {
     BLE_PERIPHERAL_OK = 0,
     BLE_PERIPHERAL_IN_WRONG_STATE,
-    BLE_PERIPHERAL_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS
+    BLE_PERIPHERAL_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS,
+    BLE_PERIPHERAL_NOT_CONNECTED,
+    BLE_PERIPHERAL_BUSY
 } le_command_status_t;
 
 
@@ -115,17 +117,17 @@ typedef struct le_characteristic{
 void le_central_init();
 void le_central_register_handler(void (*le_callback)(le_central_event_t * event));
 
-void le_central_start_scan();
+le_command_status_t le_central_start_scan();
 // creates one event per found peripheral device
 // { type (8), addr_type (8), addr(48), rssi(8), ad_len(8), ad_data(ad_len*8) }
-void le_central_stop_scan();
+le_command_status_t le_central_stop_scan();
 
 le_command_status_t  le_central_connect(le_peripheral_t *context, uint8_t addr_type, bd_addr_t addr);
 le_command_status_t  le_central_disconnect(le_peripheral_t *context);
 
-void le_central_get_services(le_peripheral_t *context);
-void le_central_get_services_with_uuid16(le_peripheral_t *context,  uint16_t  uuid16);
-void le_central_get_services_with_uuid128(le_peripheral_t *context, uint8_t * uuid128);
+le_command_status_t le_central_get_services(le_peripheral_t *context);
+le_command_status_t le_central_get_services_with_uuid16(le_peripheral_t *context,  uint16_t  uuid16);
+le_command_status_t le_central_get_services_with_uuid128(le_peripheral_t *context, uint8_t * uuid128);
 // { type (8), le_peripheral_t *context, service_handle }
 
 void le_central_get_characteristics_for_service(le_peripheral_t *context, uint16_t service_handle);
