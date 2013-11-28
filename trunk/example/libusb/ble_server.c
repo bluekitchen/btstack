@@ -163,6 +163,24 @@ typedef enum {
 
 } security_manager_state_t;
 
+typedef enum {
+    JUST_WORKS,
+    PK_INIT_INPUT,  // Initiator displays PK, responder inputs PK
+    PK_RESP_INPUT,  // Responder displays PK, initiator inputs PK 
+    OK_BOTH_INPUT,  // Only input on both, both input PK
+    OOB             // OOB available on both sides
+} stk_generation_method_t;
+
+// horizontal: initiator capabilities
+// vertial:    responder capabilities
+static const stk_generation_method_t stk_generation_method[5][5] = {
+    { JUST_WORKS,      JUST_WORKS,       PK_INIT_INPUT,   JUST_WORKS,    PK_INIT_INPUT },
+    { JUST_WORKS,      JUST_WORKS,       PK_INIT_INPUT,   JUST_WORKS,    PK_INIT_INPUT },
+    { PK_RESP_INPUT,   PK_RESP_INPUT,    OK_BOTH_INPUT,   JUST_WORKS,    PK_RESP_INPUT },
+    { JUST_WORKS,      JUST_WORKS,       JUST_WORKS,      JUST_WORKS,    JUST_WORKS    },
+    { PK_RESP_INPUT,   PK_RESP_INPUT,    PK_INIT_INPUT,   JUST_WORKS,    PK_RESP_INPUT },
+};
+
 static att_connection_t att_connection;
 static uint16_t         att_addr_type;
 static bd_addr_t        att_address;
@@ -187,6 +205,7 @@ static key_t sm_aes128_plaintext;
 
 //
 static uint16_t sm_response_handle = 0;
+static stk_generation_method_t sm_stk_generation_method;
 
 // defines which keys will be send  after connection is encrypted
 static int sm_key_distribution_set = 0;
@@ -209,9 +228,13 @@ static key_t   sm_tk;
 static key_t   sm_m_random;
 static key_t   sm_m_confirm;
 static uint8_t sm_m_have_oob_data;
+static uint8_t sm_m_auth_req;
+static uint8_t sm_m_io_capabilities = 0;
 static uint8_t sm_preq[7];
 static uint8_t sm_pres[7];
 
+static uint8_t sm_s_auth_req = 0;
+static uint8_t sm_s_io_capabilities = 0;
 static key_t   sm_s_random;
 static key_t   sm_s_confirm;
 static key_t   sm_stk;
@@ -375,6 +398,40 @@ static void sm_s1_r_prime(key_t r1, key_t r2, key_t r_prime){
     memcpy(&r_prime[0], &r1[8], 8);
 }
 
+void sm_reset_tk(){
+    int i;
+    for (i=0;i<16;i++){
+        sm_tk[i] = 0;
+    }
+}
+
+// decide on stk generation based on
+// - pairing request
+// - io capabilities
+// - OOB data availability
+static void sm_tk_setup(){
+
+    // If both devices have out of band authentication data, then the Authentication
+    // Requirements Flags shall be ignored when selecting the pairing method and the
+    // Out of Band pairing method shall be used.
+    if (sm_m_have_oob_data && (*sm_get_oob_data)(att_addr_type, att_address, sm_tk)){
+        sm_stk_generation_method = OOB;
+        return;
+    }
+
+    // If both devices have not set the MITM option in the Authentication Requirements
+    // Flags, then the IO capabilities shall be ignored and the Just Works association
+    // model shall be used. 
+    if ((sm_s_auth_req & sm_m_auth_req & 0x04) == 0){
+        sm_stk_generation_method = JUST_WORKS;
+        sm_reset_tk();
+    }
+
+    // Otherwise the IO capabilities of the devices shall be used to determine the
+    // pairing method as defined in Table 2.4.
+    sm_stk_generation_method = stk_generation_method[sm_m_io_capabilities][sm_s_io_capabilities];
+}
+
 static void sm_run(void){
 
     // assert that we can send either one
@@ -393,29 +450,29 @@ static void sm_run(void){
         }
 
         case SM_STATE_SEND_PAIRING_RESPONSE: {
-            // TODO use provided IO capabilites
-            // TOOD use local MITM flag
-            // TODO provide callback to request OOB data
+
+            // TODO use locally defined max encryption key size
 
             uint8_t buffer[7];
             memcpy(buffer, sm_preq, 7);        
             buffer[0] = SM_CODE_PAIRING_RESPONSE;
-            // buffer[1] = 0x00;   // io capability: DisplayOnly
-            // buffer[1] = 0x02;   // io capability: KeyboardOnly
-            // buffer[1] = 0x03;   // io capability: NoInputNoOutput
-            buffer[1] = 0x04;   // io capability: KeyboardDisplay
+            buffer[1] = sm_s_io_capabilities;
             if (sm_get_oob_data){
                 buffer[2] = sm_get_oob_data(att_addr_type, att_address, NULL);
             } else {
                 buffer[2] = 0x00;   // no oob data available
             }
-            buffer[3] = buffer[3] & 3;  // remove MITM flag
+            buffer[3] = sm_s_auth_req;
             buffer[4] = 0x10;   // maxium encryption key size
 
             // for validate
             memcpy(sm_pres, buffer, 7);
 
             l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+
+            // decide on Passkey Entry pairing algorithm
+            sm_tk_setup();
+
             sm_state_responding = SM_STATE_W4_PAIRING_CONFIRM;
             return;
         }
@@ -549,7 +606,9 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
         case SM_CODE_PAIRING_REQUEST:
             
             // store key distribtion request
+            sm_m_io_capabilities = packet[1];
             sm_m_have_oob_data = packet[2];
+            sm_m_auth_req = packet[3];
             sm_key_distribution_set = packet[6];
 
             // for validate
@@ -606,13 +665,6 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
     // try to send preparared packet
     sm_run();
-}
-
-void sm_reset_tk(){
-    int i;
-    for (i=0;i<16;i++){
-        sm_tk[i] = 0;
-    }
 }
 
 static void sm_distribute_keys(){
