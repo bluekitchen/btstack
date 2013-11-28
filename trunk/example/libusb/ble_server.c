@@ -99,6 +99,15 @@ typedef enum {
 // also, invalid parameters
 // and reserved
 
+// IO Capability Values
+typedef enum {
+    IO_CAPABILITY_DISPLAY_ONLY = 0,
+    IO_CAPABILITY_DISPLAY_YES_NO,
+    IO_CAPABILITY_KEYBOARD_ONLY,
+    IO_CAPABILITY_NO_INPUT_NO_OUTPUT,
+    IO_CAPABILITY_KEYBOARD_DISPLAY
+} io_capability_t;
+
 typedef uint8_t key_t[16];
 
 typedef enum {
