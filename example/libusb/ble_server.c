@@ -763,6 +763,11 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
     if (packet_type != SM_DATA_PACKET) return;
 
+    if (handle != sm_response_handle){
+        printf("sm_packet_handler: packet from handle %u, but expecting from %u\n", handle, sm_response_handle);
+        return;
+    }
+
     printf("sm_packet_handler, request %0x\n", packet[0]);
 
     switch (packet[0]){
@@ -831,10 +836,9 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // use aes128 engine
             // calculate m_confirm using aes128 engine - step 1
             sm_aes128_set_key(sm_tk);
+            sm_c1_t1(sm_m_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
             sm_state_responding = SM_STATE_PH2_C1_GET_ENC_C;
             break;
-            sm_c1_t1(sm_m_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
-
 
         case SM_CODE_ENCRYPTION_INFORMATION:
             sm_key_distribution_received_set |= SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
@@ -921,10 +925,15 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 case HCI_EVENT_LE_META:
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                            // only single connection for peripheral
+                            if (sm_response_handle){
+                                printf("Already connected, ignoring incoming connection\n");
+                                return;
+                            }
+
                             sm_response_handle = READ_BT_16(packet, 4);
                             sm_m_addr_type = packet[7];
                             bt_flip_addr(sm_m_address, &packet[8]);
-                            // TODO use non-null TK if appropriate
                             sm_reset_tk();
                             // TODO support private addresses
                             sm_s_addr_type = 0;
@@ -1001,6 +1010,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     att_response_handle = 0;
                     att_response_size = 0;
 
+                    sm_response_handle = 0;
                     sm_state_responding = SM_STATE_IDLE;
                     break;
                     
@@ -1144,17 +1154,13 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 memcpy(&sm_s_random[8], &packet[6], 8); // random endinaness
 
                                 // calculate s_confirm manually
-
-                                // send s_confirm
-                                // sm_state_responding = SM_STATE_PH2_C1_SEND;
                                 // sm_c1(sm_tk, sm_s_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_m_address, sm_s_address, sm_s_confirm);
-
 
                                 // calculate s_confirm using aes128 engine - step 1
                                 sm_aes128_set_key(sm_tk);
+                                sm_c1_t1(sm_s_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
                                 sm_state_responding = SM_STATE_PH2_C1_GET_ENC_A;
                                 break;
-                                sm_c1_t1(sm_s_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
 
                             case SM_STATE_PH3_W4_RANDOM:
                                 swap64(&packet[6], sm_s_rand);
@@ -1492,6 +1498,7 @@ void setup(void){
 
     // setup SM
     sm_init();
+    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_set_request_security(1);
 }
 
