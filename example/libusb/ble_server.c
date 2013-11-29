@@ -227,7 +227,7 @@ typedef enum {
 } sm_user_response_t;
 
 //
-//
+// GLOBAL DATA
 //
 
 // Security Manager Master Keys, please use sm_set_er(er) and sm_set_ir(ir) with your own 128 bit random values
@@ -239,6 +239,18 @@ static key_t sm_persistent_dhk;
 static key_t sm_persistent_irk;
 
 // derived from sm_persistent_er
+// ..
+
+static uint8_t sm_s_auth_req = 0;
+static uint8_t sm_s_io_capabilities = IO_CAPABILITY_UNKNOWN;
+static uint8_t sm_s_request_security = 0;
+
+static uint8_t   sm_s_addr_type;
+static bd_addr_t sm_s_address;
+
+// PER INSTANCE DATA
+
+static security_manager_state_t sm_state_responding = SM_STATE_IDLE;
 
 // SM timeout
 static timer_source_t sm_timeout;
@@ -249,17 +261,14 @@ static key_t sm_aes128_plaintext;
 
 //
 static uint16_t sm_response_handle = 0;
+
+// generation method and temporary key for STK
 static stk_generation_method_t sm_stk_generation_method;
+static key_t   sm_tk;
 
 // defines which keys will be send  after connection is encrypted
-static int sm_key_distribution_set = 0;
-
-static security_manager_state_t sm_state_responding = SM_STATE_IDLE;
-
 static int sm_key_distribution_send_set;
 static int sm_key_distribution_received_set;
-
-static key_t   sm_tk;
 
 //
 // Volume 3, Part H, Chapter 24
@@ -267,35 +276,27 @@ static key_t   sm_tk;
 // The device in the slave role shall be the responding device."
 // -> master := initiator, slave := responder
 //
-static key_t   sm_m_random;
-static key_t   sm_m_confirm;
-static uint8_t sm_m_have_oob_data;
-static uint8_t sm_m_auth_req;
-static uint8_t sm_m_io_capabilities = 0;
-static uint8_t sm_preq[7];
-static uint8_t sm_pres[7];
+static key_t     sm_m_random;
+static key_t     sm_m_confirm;
+static uint8_t   sm_m_have_oob_data;
+static uint8_t   sm_m_auth_req;
+static uint8_t   sm_m_io_capabilities = 0;
+static uint8_t   sm_preq[7];
+static uint8_t   sm_pres[7];
 
-static uint8_t sm_s_auth_req = 0;
-static uint8_t sm_s_io_capabilities = IO_CAPABILITY_UNKNOWN;
-static uint8_t sm_s_request_security = 0;
-static key_t   sm_s_random;
-static key_t   sm_s_confirm;
-static key_t   sm_stk;
-
+static key_t     sm_s_random;
+static key_t     sm_s_confirm;
+static key_t     sm_stk;
 static uint8_t   sm_pairing_failed_reason = 0;
 static uint16_t  sm_s_div;
 static uint16_t  sm_s_y;
-
 static uint8_t   sm_user_response;
 
 // key distribution, slave sends
 static key_t     sm_s_ltk;
 static uint16_t  sm_s_ediv;
 static uint8_t   sm_s_rand[8];
-static uint8_t   sm_s_addr_type;
-static bd_addr_t sm_s_address;
 static key_t     sm_s_csrk;
-// static key_t     sm_s_irk; -> sm_persistent_irk
 
 // key distribution, received from master
 static key_t     sm_m_ltk;
@@ -534,6 +535,28 @@ static void sm_tk_setup(){
     sm_stk_generation_method = stk_generation_method[sm_m_io_capabilities][sm_s_io_capabilities];
 }
 
+
+static void sm_setup_key_distribution(uint8_t key_set){
+
+    // TODO: handle initiator case here
+
+    // distribute keys as requested by initiator
+    sm_key_distribution_send_set = 0;
+    sm_key_distribution_received_set = 0;
+    
+    if (key_set & SM_KEYDIST_ENC_KEY){
+        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
+        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;        
+    }
+    if (key_set & SM_KEYDIST_ID_KEY){
+        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
+        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;        
+    }
+    if (key_set & SM_KEYDIST_SIGN){
+        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
+    }
+}
+
 static void sm_run(void){
 
     // assert that we can send either one
@@ -678,8 +701,8 @@ static void sm_run(void){
         }
 
         case SM_STATE_DISTRIBUTE_KEYS:
-            if (sm_key_distribution_set &   SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION){
-                sm_key_distribution_set &= ~SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
+            if (sm_key_distribution_send_set &   SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION){
+                sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_ENCRYPTION_INFORMATION;
                 swap128(sm_s_ltk, &buffer[1]);
@@ -687,8 +710,8 @@ static void sm_run(void){
                 sm_timeout_reset();
                 return;
             }
-            if (sm_key_distribution_set &   SM_KEYDIST_FLAG_MASTER_IDENTIFICATION){
-                sm_key_distribution_set &= ~SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
+            if (sm_key_distribution_send_set &   SM_KEYDIST_FLAG_MASTER_IDENTIFICATION){
+                sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
                 uint8_t buffer[11];
                 buffer[0] = SM_CODE_MASTER_IDENTIFICATION;
                 bt_store_16(buffer, 1, sm_s_ediv);
@@ -697,8 +720,8 @@ static void sm_run(void){
                 sm_timeout_reset();
                 return;
             }
-            if (sm_key_distribution_set &   SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
-                sm_key_distribution_set &= ~SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
+            if (sm_key_distribution_send_set &   SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
+                sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_IDENTITY_INFORMATION;
                 swap128(sm_persistent_irk, &buffer[1]);
@@ -706,8 +729,8 @@ static void sm_run(void){
                 sm_timeout_reset();
                 return;
             }
-            if (sm_key_distribution_set &   SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION){
-                sm_key_distribution_set &= ~SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
+            if (sm_key_distribution_send_set &   SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION){
+                sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
                 uint8_t buffer[8];
                 buffer[0] = SM_CODE_IDENTITY_ADDRESS_INFORMATION;
                 buffer[1] = sm_s_addr_type;
@@ -716,8 +739,8 @@ static void sm_run(void){
                 sm_timeout_reset();
                 return;
             }
-            if (sm_key_distribution_set &   SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
-                sm_key_distribution_set &= ~SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
+            if (sm_key_distribution_send_set &   SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
+                sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_SIGNING_INFORMATION;
                 swap128(sm_s_csrk, &buffer[1]);
@@ -750,7 +773,9 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             sm_m_io_capabilities = packet[1];
             sm_m_have_oob_data = packet[2];
             sm_m_auth_req = packet[3];
-            sm_key_distribution_set = packet[6];
+
+            // setup key distribution
+            sm_setup_key_distribution(packet[6]);
 
             // for validate
             memcpy(sm_preq, packet, 7);
@@ -837,26 +862,6 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
     // try to send preparared packet
     sm_run();
-}
-
-static void sm_distribute_keys(){
-
-    // TODO: handle initiator case here
-
-    // distribute keys as requested by initiator
-    sm_key_distribution_send_set = 0;
-    sm_key_distribution_received_set = 0;
-    if (sm_key_distribution_set & SM_KEYDIST_ENC_KEY){
-        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
-        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;        
-    }
-    if (sm_key_distribution_set & SM_KEYDIST_ID_KEY){
-        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
-        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;        
-    }
-    if (sm_key_distribution_set & SM_KEYDIST_SIGN){
-        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
-    }
 }
 
 void sm_set_er(key_t er){
@@ -1101,8 +1106,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 swap128(&packet[6], sm_persistent_irk);
                                 print_key("irk", sm_persistent_irk);
                                 // distribute keys
-                                sm_distribute_keys();
-                                // done
                                 sm_state_responding = SM_STATE_DISTRIBUTE_KEYS;
                                 break;                                
                             case SM_STATE_PH4_LTK_W4_ENC:
