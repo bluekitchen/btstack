@@ -217,6 +217,11 @@ extern "C" {
 #define GATT_ADVERTISEMENT								   0xA0
 
 #define GATT_CONNECTION_COMPLETE	 					   0xA1
+#define GATT_SERVICE				 					   0xA2
+#define GATT_SERVICE_QUERY_COMPLETE    					   0xA3
+#define GATT_CHARACTERISTIC				 				   0xA4
+#define GATT_CHARACTERISTIC_QUERY_COMPLETE    			   0xA5
+
 
 // last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
 
