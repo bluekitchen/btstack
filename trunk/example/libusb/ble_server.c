@@ -263,6 +263,12 @@ static int sm_received_signing_identification = 0;
 
 static key_t   sm_tk;
 
+//
+// Volume 3, Part H, Chapter 24
+// "Security shall be initiated by the Security Manager in the device in the master role.
+// The device in the slave role shall be the responding device."
+// -> master := initiator, slave := responder
+//
 static key_t   sm_m_random;
 static key_t   sm_m_confirm;
 static uint8_t sm_m_have_oob_data;
