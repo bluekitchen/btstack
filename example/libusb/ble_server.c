@@ -270,7 +270,7 @@ static uint8_t   sm_s_rand[8];
 static uint8_t   sm_s_addr_type;
 static bd_addr_t sm_s_address;
 static key_t     sm_s_csrk;
-static key_t     sm_s_irk;
+// static key_t     sm_s_irk; -> sm_persistent_irk
 
 // key distribution, received from master
 static key_t     sm_m_ltk;
@@ -605,7 +605,7 @@ static void sm_run(void){
                 sm_send_identity_information = 0;
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_IDENTITY_INFORMATION;
-                swap128(sm_s_irk, &buffer[1]);
+                swap128(sm_persistent_irk, &buffer[1]);
                 l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 return;
             }
