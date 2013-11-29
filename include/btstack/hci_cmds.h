@@ -222,6 +222,13 @@ extern "C" {
 #define GATT_CHARACTERISTIC_QUERY_RESULT				   0xA4
 #define GATT_CHARACTERISTIC_QUERY_COMPLETE    			   0xA5
 
+// data: event(8), address_type(8), address (48), [number(32)]
+#define SM_JUST_WORKS_REQUEST							   0xb0
+#define SM_JUST_WORKS_CANCEL							   0xb1 
+#define SM_PASSKEY_DISPLAY_NUMBER						   0xb2
+#define SM_PASSKEY_DISPLAY_CANCEL  						   0xb3
+#define SM_PASSKEY_INPUT_NUMBER							   0xb1
+#define SM_PASSKEY_INPUT_CANCEL      					   0xb2
 
 // last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
 
