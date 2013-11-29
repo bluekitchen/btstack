@@ -846,12 +846,14 @@ static void sm_distribute_keys(){
     // TODO: handle initiator case here
 
     // distribute keys as requested by initiator
-    if (sm_key_distribution_set & SM_KEYDIST_ENC_KEY)
+    if (sm_key_distribution_set & SM_KEYDIST_ENC_KEY){
         sm_send_encryption_information = 1;
-    sm_send_master_identification = 1;
-    if (sm_key_distribution_set & SM_KEYDIST_ID_KEY)
+        sm_send_master_identification = 1;
+    }
+    if (sm_key_distribution_set & SM_KEYDIST_ID_KEY){
         sm_send_identity_information = 1;
-    sm_send_identity_address_information = 1;
+        sm_send_identity_address_information = 1;
+    }
     if (sm_key_distribution_set & SM_KEYDIST_SIGN)
         sm_send_signing_identification = 1;  
 }
