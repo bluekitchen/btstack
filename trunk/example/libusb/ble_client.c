@@ -114,6 +114,19 @@ void le_central_register_handler(void (*le_callback)(le_central_event_t* event))
     } 
 }
 
+static inline uint16_t end_group_handle_for_peripheral(le_peripheral_t * peripheral){
+    return peripheral->nodes[peripheral->depth].end_group_handle;
+}
+
+static inline uint16_t start_group_handle_for_peripheral(le_peripheral_t * peripheral){
+    return peripheral->nodes[peripheral->depth].start_group_handle;
+}
+
+static inline void set_node_for_peripheral(le_peripheral_t *peripheral, uint8_t depth, uint16_t start_handle, uint16_t end_handle){
+    peripheral->depth = depth;
+    peripheral->nodes[depth].start_group_handle = start_handle;
+    peripheral->nodes[depth].end_group_handle = end_handle;
+}
 
 
 static void send_gatt_connection_complete_event(le_peripheral_t * peripheral, uint8_t status){
@@ -124,12 +137,29 @@ static void send_gatt_connection_complete_event(le_peripheral_t * peripheral, ui
     (*le_central_callback)((le_central_event_t*)&event); 
 }
 
+static inline void send_gatt_complete_event(le_peripheral_t * peripheral, uint8_t type){
+    le_query_complete_event_t event;
+    event.type = type;
+    event.peripheral = peripheral;
+    (*le_central_callback)((le_central_event_t*)&event); 
+}
+
+static inline void handle_gatt_service_complete_event(le_peripheral_t * peripheral){
+    peripheral->state = P_CONNECTED;
+    send_gatt_complete_event(peripheral, GATT_SERVICE_QUERY_COMPLETE);
+}
+
+static inline void handle_gatt_characteristic_complete_event(le_peripheral_t * peripheral){
+    peripheral->state = P_CONNECTED;
+    send_gatt_complete_event(peripheral, GATT_CHARACTERISTIC_QUERY_COMPLETE);
+}
+
 static le_command_status_t send_gatt_characteristic_request(le_peripheral_t *peripheral){
     if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
     
     uint8_t request[7];
     request[0] = ATT_READ_BY_TYPE_REQUEST;
-    uint16_t att_client_end_handle = peripheral->end_group_handle;
+    uint16_t att_client_end_handle = end_group_handle_for_peripheral(peripheral);
     uint16_t att_client_attribute_group_type = GATT_CHARACTERISTICS_UUID;
 
     bt_store_16(request, 1, peripheral->last_group_handle+1);
@@ -400,8 +430,8 @@ if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     
     // send will increment last_group_handle, so substract in advance
     peripheral->last_group_handle = service->start_group_handle - 1; 
-    peripheral->end_group_handle =  service->end_group_handle;
-    
+    set_node_for_peripheral(peripheral, 0, service->start_group_handle, service->end_group_handle);
+
     peripheral->state = P_W2_SEND_CHARACTERISTIC_QUERY;
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
@@ -637,22 +667,10 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             }
             printf("att_packet_handler :: ATT_READ_BY_GROUP_TYPE_RESPONSE ---> DONE\n");
             // DONE
-            peripheral->state = P_CONNECTED;
-            le_query_complete_event_t event;
-            event.type = GATT_SERVICE_QUERY_COMPLETE;
-            event.peripheral = peripheral;
-            (*le_central_callback)((le_central_event_t*)&event);
+            handle_gatt_service_complete_event(peripheral);
             break;
         }
         case ATT_READ_BY_TYPE_RESPONSE:
-            // if (peripheral->state != P_W4_CHARACTERISTIC_QUERY_RESULT) return;
-        /*
-            uint8_t  permision;
-            uint16_t handle;
-            uint16_t uuid16;
-            uint8_t  uuid128[16];
-
-        */
         {
             uint8_t attr_length = packet[1];
             uint8_t uuid_length = attr_length - 5;
@@ -680,41 +698,29 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                 (*le_central_callback)((le_central_event_t*)&event);
             }
 
-            if (peripheral->last_group_handle < peripheral->end_group_handle){
+            if (peripheral->last_group_handle < end_group_handle_for_peripheral(peripheral)){
                 peripheral->state = P_W2_SEND_CHARACTERISTIC_QUERY;
                 break;
             }
 
             printf("att_packet_handler :: ATT_READ_BY_TYPE_RESPONSE ---> DONE\n");
             // DONE
-            peripheral->state = P_CONNECTED;
-            le_query_complete_event_t event;
-            event.type = GATT_CHARACTERISTIC_QUERY_COMPLETE;
-            event.peripheral = peripheral;
-            (*le_central_callback)((le_central_event_t*)&event);
+            handle_gatt_characteristic_complete_event(peripheral);
 
             break;
         }
         case ATT_ERROR_RESPONSE:
             switch (packet[4]){
                 case ATT_ERROR_ATTRIBUTE_NOT_FOUND: {
-                    le_query_complete_event_t event;
-                    event.peripheral = peripheral;
-
-                    event.type = 0;
                     switch(peripheral->state){
                         case P_W4_SERVICE_QUERY_RESULT:
-                            event.type = GATT_SERVICE_QUERY_COMPLETE;
+                            handle_gatt_service_complete_event(peripheral);
                             break;
                         case P_W4_CHARACTERISTIC_QUERY_RESULT:
-                            event.type = GATT_CHARACTERISTIC_QUERY_COMPLETE;
+                            handle_gatt_characteristic_complete_event(peripheral);
                             break;
                         default:
                             return;
-                    }
-                    peripheral->state = P_CONNECTED;
-                    if (event.type){
-                        (*le_central_callback)((le_central_event_t*)&event);
                     }
                     break;
                 }
