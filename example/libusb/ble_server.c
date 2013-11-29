@@ -107,6 +107,7 @@ typedef enum {
     IO_CAPABILITY_KEYBOARD_ONLY,
     IO_CAPABILITY_NO_INPUT_NO_OUTPUT,
     IO_CAPABILITY_KEYBOARD_DISPLAY, // not used by secure simple pairing
+    IO_CAPABILITY_UNKNOWN = 0xff
 } io_capability_t;
 
 //
@@ -137,6 +138,7 @@ typedef enum {
 
     SM_STATE_PH1_SEND_PAIRING_RESPONSE,
     SM_STATE_PH1_W4_PAIRING_CONFIRM,
+    SM_STATE_PH1_W4_USER_RESPONSE,
 
     SM_STATE_SEND_PAIRING_FAILED,
     SM_STATE_SEND_PAIRING_RANDOM,
@@ -270,7 +272,7 @@ static uint8_t sm_preq[7];
 static uint8_t sm_pres[7];
 
 static uint8_t sm_s_auth_req = 0;
-static uint8_t sm_s_io_capabilities = 0;
+static uint8_t sm_s_io_capabilities = IO_CAPABILITY_UNKNOWN;
 static key_t   sm_s_random;
 static key_t   sm_s_confirm;
 static key_t   sm_stk;
@@ -278,6 +280,15 @@ static key_t   sm_stk;
 static uint8_t   sm_pairing_failed_reason = 0;
 static uint16_t  sm_s_div;
 static uint16_t  sm_s_y;
+
+typedef enum {
+    SM_USER_RESPONSE_IDLE,
+    SM_USER_RESPONSE_PENDING,
+    SM_USER_RESPONSE_CONFIRM,
+    SM_USER_RESPONSE_PASSKEY,
+    SM_USER_RESPONSE_DECLINE
+} sm_user_response_t;
+static uint8_t   sm_user_response;
 
 // key distribution, slave sends
 static key_t     sm_s_ltk;
@@ -441,9 +452,16 @@ static void sm_s1_r_prime(key_t r1, key_t r2, key_t r_prime){
     memcpy(&r_prime[0], &r1[8], 8);
 }
 
-static void sm_notify_client(sm_event_t * event){
+static void sm_notify_client(uint8_t type, uint8_t addr_type, bd_addr_t address, uint32_t passkey){
+
+    sm_event_t event;
+    event.type = type;
+    event.addr_type = addr_type;
+    BD_ADDR_COPY(event.address, address);
+    event.passkey = passkey;
+
     // dummy implementation
-    printf("sm_notify_client: event 0x%02x, addres_type %u, address (), num '%06u'", event->type, event->addr_type, event->passkey);
+    printf("sm_notify_client: event 0x%02x, addres_type %u, address (), num '%06u'", event.type, event.addr_type, event.passkey);
 }
 
 void sm_reset_tk(){
@@ -521,6 +539,33 @@ static void sm_run(void){
             memcpy(sm_pres, buffer, 7);
 
             l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+
+            // notify client for: JUST WORKS confirm, PASSKEY display or input
+            sm_user_response = SM_USER_RESPONSE_IDLE;
+            switch (sm_stk_generation_method){
+                case PK_RESP_INPUT:
+                    sm_user_response = SM_USER_RESPONSE_PENDING;
+                    sm_notify_client(SM_PASSKEY_INPUT_NUMBER, sm_m_addr_type, sm_m_address, 0); 
+                    break;
+                case PK_INIT_INPUT:
+                    sm_notify_client(SM_PASSKEY_DISPLAY_NUMBER, sm_m_addr_type, sm_m_address, READ_NET_32(sm_tk, 12)); 
+                    break;
+                case JUST_WORKS:
+                    switch (sm_s_io_capabilities){
+                        case IO_CAPABILITY_KEYBOARD_DISPLAY:
+                        case IO_CAPABILITY_DISPLAY_YES_NO:
+                            sm_user_response = SM_USER_RESPONSE_PENDING;
+                            sm_notify_client(SM_JUST_WORKS_REQUEST, sm_m_addr_type, sm_m_address, READ_NET_32(sm_tk, 12));
+                            break;
+                        default:
+                            // cannot ask user
+                            break;  
+
+                    }
+                    break;
+                default:
+                    break;
+            }
 
             sm_state_responding = SM_STATE_PH1_W4_PAIRING_CONFIRM;
             return;
@@ -675,7 +720,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // generate random number first, if we need to show passkey
             if (sm_stk_generation_method == PK_INIT_INPUT){
                 sm_state_responding = SM_STATE_PH2_GET_RANDOM_TK;
-                break;;
+                break;
             }
 
             sm_state_responding = SM_STATE_PH1_SEND_PAIRING_RESPONSE;
@@ -687,7 +732,20 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // notify client to hide shown passkey
             if (sm_stk_generation_method == PK_INIT_INPUT){
-                printf("close passkey display\n");
+                sm_notify_client(SM_PASSKEY_DISPLAY_CANCEL, sm_m_addr_type, sm_m_address, 0);
+            }
+
+            // handle user cancel pairing?
+            if (sm_user_response == SM_USER_RESPONSE_DECLINE){
+                sm_pairing_failed_reason = SM_REASON_PASSKEYT_ENTRY_FAILED;
+                sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
+                break;
+            }
+
+            // wait for user action?
+            if (sm_user_response == SM_USER_RESPONSE_PENDING){
+                sm_state_responding = SM_STATE_PH1_W4_USER_RESPONSE;
+                break;
             }
 
             // calculate and send s_confirm
@@ -928,8 +986,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                     sm_state_responding = SM_STATE_SEND_PAIRING_RANDOM;
                                     break;
                                 }
-                                sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
                                 sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
+                                sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
                                 }
                                 break;
                             case SM_STATE_PH2_W4_STK:
@@ -1013,9 +1071,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                     tk = tk - 999999;
                                 } 
                                 sm_reset_tk();
-                                net_store_32( sm_tk, 12, tk);
-                                // notify client to show passkey
-                                printf("show passkey %06u\n", tk);
+                                net_store_32(sm_tk, 12, tk);
                                 // continue with phase 1
                                 sm_state_responding = SM_STATE_PH1_SEND_PAIRING_RESPONSE;
                                 break;
@@ -1263,6 +1319,43 @@ void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_
 
 void sm_set_io_capabilities(io_capability_t io_capability){
     sm_s_io_capabilities = io_capability;
+}
+
+
+int sm_get_connection(uint8_t addr_type, bd_addr_t address){
+    // TODO compare to current connection
+    return 1;
+}
+
+void sm_bonding_decline(uint8_t addr_type, bd_addr_t address){
+    if (!sm_get_connection(addr_type, address)) return; // wrong connection
+    sm_user_response = SM_USER_RESPONSE_DECLINE;
+
+    if (sm_state_responding == SM_STATE_PH1_W4_USER_RESPONSE){
+        sm_pairing_failed_reason = SM_REASON_PASSKEYT_ENTRY_FAILED;
+        sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
+    }
+    sm_run();
+}
+
+void sm_just_works_confirm(uint8_t addr_type, bd_addr_t address){
+    if (!sm_get_connection(addr_type, address)) return; // wrong connection
+    sm_user_response = SM_USER_RESPONSE_CONFIRM;
+    if (sm_state_responding == SM_STATE_PH1_W4_USER_RESPONSE){
+        sm_state_responding = SM_STATE_PH2_C1_GET_RANDOM_A;
+    }
+    sm_run();
+}
+
+void sm_passkey_input(uint8_t addr_type, bd_addr_t address, uint32_t passkey){
+    if (!sm_get_connection(addr_type, address)) return; // wrong connection
+    sm_reset_tk();
+    net_store_32(sm_tk, 12, passkey);
+    sm_user_response = SM_USER_RESPONSE_PASSKEY;
+    if (sm_state_responding == SM_STATE_PH1_W4_USER_RESPONSE){
+        sm_state_responding = SM_STATE_PH2_C1_GET_RANDOM_A;
+    }
+    sm_run();
 }
 
 // test profile
