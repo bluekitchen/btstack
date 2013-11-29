@@ -267,6 +267,7 @@ static int sm_received_identity_address_information = 0;
 static int sm_received_signing_identification = 0;
 
 static key_t   sm_tk;
+
 static key_t   sm_m_random;
 static key_t   sm_m_confirm;
 static uint8_t sm_m_have_oob_data;
@@ -277,6 +278,7 @@ static uint8_t sm_pres[7];
 
 static uint8_t sm_s_auth_req = 0;
 static uint8_t sm_s_io_capabilities = IO_CAPABILITY_UNKNOWN;
+static uint8_t sm_s_request_security = 0;
 static key_t   sm_s_random;
 static key_t   sm_s_confirm;
 static key_t   sm_stk;
@@ -928,7 +930,9 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             att_connection.mtu = 23;
 
                             // request security
-                            sm_state_responding = SM_STATE_SEND_SECURITY_REQUEST;
+                            if (sm_s_request_security){
+                                sm_state_responding = SM_STATE_SEND_SECURITY_REQUEST;
+                            }
                             break;
 
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:
@@ -1374,6 +1378,9 @@ void sm_set_io_capabilities(io_capability_t io_capability){
     sm_s_io_capabilities = io_capability;
 }
 
+void sm_set_request_security(int enable){
+    sm_s_request_security = enable;
+}
 
 int sm_get_connection(uint8_t addr_type, bd_addr_t address){
     // TODO compare to current connection
@@ -1458,6 +1465,7 @@ void setup(void){
 
     // setup SM
     sm_init();
+    sm_set_request_security(1);
 }
 
 int main(void)
