@@ -281,13 +281,10 @@ static bd_addr_t sm_m_address;
 static key_t     sm_m_csrk;
 static key_t     sm_m_irk;
 
-
 // @returns 1 if oob data is available
 // stores oob data in provided 16 byte buffer if not null
 static int (*sm_get_oob_data)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data) = NULL;
-void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data)){
-    sm_get_oob_data = get_oob_data_callback;
-}
+
 
 static void att_try_respond(void){
     if (!att_response_size) return;
@@ -1236,6 +1233,15 @@ void sm_test2(){
 
     sm_c1(k, r, preq, pres, 1, 0, ia, ra, c1);
     printf("Confirm value correct :%u\n", memcmp(c1, c1_true, 16) == 0);
+}
+
+// Security Manager Client API
+void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data)){
+    sm_get_oob_data = get_oob_data_callback;
+}
+
+void sm_set_io_capabilities(io_capability_t io_capability){
+    sm_s_io_capabilities = io_capability;
 }
 
 // test profile
