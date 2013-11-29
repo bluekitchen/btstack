@@ -107,6 +107,7 @@ typedef struct le_peripheral{
 
     // for service discovery
     uint16_t last_group_handle;
+    uint16_t end_group_handle;
 } le_peripheral_t;
 
 typedef struct le_peripheral_event{
@@ -133,14 +134,16 @@ typedef struct le_query_complete_event{
 } le_query_complete_event_t;
 
 typedef struct le_characteristic{
-    uint8_t  permision;
-    uint16_t characteristic_handle;
-    uint8_t  has_uuid128;
+    uint8_t  properties;
+    uint16_t value_handle;
     uint16_t uuid16;
     uint8_t  uuid128[16];
 } le_characteristic_t;
 
-
+typedef struct le_characteristic_event{
+    uint8_t  type;
+    le_characteristic_t characteristic; 
+} le_characteristic_event_t;
 
 void le_central_init();
 void le_central_register_handler(void (*le_callback)(le_central_event_t * event));
@@ -156,7 +159,7 @@ le_command_status_t  le_central_disconnect(le_peripheral_t *context);
 le_command_status_t le_central_get_services(le_peripheral_t *context);
 // { type (8), le_peripheral_t *context, service_handle }
 
-le_command_status_t le_central_get_characteristics_for_service(le_peripheral_t *context, le_service_t service);
+le_command_status_t le_central_get_characteristics_for_service(le_peripheral_t *context, le_service_t *service);
 // { type (8), le_peripheral_t *context, service_handle, le_characteristic *}
 
 le_command_status_t le_central_read_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);
@@ -170,8 +173,8 @@ le_command_status_t le_central_unsubscribe_from_characteristic(le_peripheral_t *
 // ADVANCED .. more convenience
 le_command_status_t le_central_get_services_with_uuid16 (le_peripheral_t *context,  uint16_t  uuid16);
 le_command_status_t le_central_get_services_with_uuid128(le_peripheral_t *context, uint8_t * uuid128);
-le_command_status_t le_central_get_characteristics_for_service_with_uuid16 (le_peripheral_t *context, le_service_t service, uint16_t  uuid16);
-le_command_status_t le_central_get_characteristics_for_service_with_uuid128(le_peripheral_t *context, le_service_t service, uint8_t * uuid128);
+le_command_status_t le_central_get_characteristics_for_service_with_uuid16 (le_peripheral_t *context, le_service_t *service, uint16_t  uuid16);
+le_command_status_t le_central_get_characteristics_for_service_with_uuid128(le_peripheral_t *context, le_service_t *service, uint8_t * uuid128);
 
 
 #if defined __cplusplus
