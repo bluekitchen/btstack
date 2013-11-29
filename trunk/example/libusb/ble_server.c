@@ -61,6 +61,7 @@
 
 #include "rijndael.h"
 
+// Bluetooth Spec definitions
 typedef enum {
     SM_CODE_PAIRING_REQUEST = 0X01,
     SM_CODE_PAIRING_RESPONSE,
@@ -105,8 +106,23 @@ typedef enum {
     IO_CAPABILITY_DISPLAY_YES_NO,
     IO_CAPABILITY_KEYBOARD_ONLY,
     IO_CAPABILITY_NO_INPUT_NO_OUTPUT,
-    IO_CAPABILITY_KEYBOARD_DISPLAY
+    IO_CAPABILITY_KEYBOARD_DISPLAY, // not used by secure simple pairing
 } io_capability_t;
+
+//
+// types used by client
+//
+
+typedef struct sm_event {
+    uint8_t   type;   // see <btstack/hci_cmds.h> SM_...
+    uint8_t   addr_type;
+    bd_addr_t address;
+    uint32_t  passkey;  // only used for SM_PASSKEY_DISPLAY_NUMBER 
+} sm_event_t;
+
+//
+// internal types and globals
+//
 
 typedef uint8_t key_t[16];
 
@@ -330,7 +346,6 @@ static int sm_is_null_random(uint8_t random[8]){
     return 1;
 }
 
-
 static void print_key(const char * name, key_t key){
     printf("%-6s ", name);
     hexdump(key, 16);
@@ -424,6 +439,11 @@ static void sm_s1_r_prime(key_t r1, key_t r2, key_t r_prime){
     print_key("r2", r2);
     memcpy(&r_prime[8], &r2[8], 8);
     memcpy(&r_prime[0], &r1[8], 8);
+}
+
+static void sm_notify_client(sm_event_t * event){
+    // dummy implementation
+    printf("sm_notify_client: event 0x%02x, addres_type %u, address (), num '%06u'", event->type, event->addr_type, event->passkey);
 }
 
 void sm_reset_tk(){
@@ -1236,6 +1256,7 @@ void sm_test2(){
 }
 
 // Security Manager Client API
+
 void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data)){
     sm_get_oob_data = get_oob_data_callback;
 }
