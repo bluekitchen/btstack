@@ -50,6 +50,7 @@
 extern "C" {
 #endif
 
+#define LE_CENTRAL_MAX_INCLUDE_DEPTH 3
 
 typedef struct le_central_event {
     uint8_t   type;
@@ -94,6 +95,10 @@ typedef enum {
     BLE_PERIPHERAL_BUSY
 } le_command_status_t;
 
+typedef struct le_service_node{
+    uint16_t start_group_handle;
+    uint16_t end_group_handle;
+} le_service_node_t;
 
 typedef struct le_peripheral{
     linked_item_t    item;
@@ -107,7 +112,9 @@ typedef struct le_peripheral{
 
     // for service discovery
     uint16_t last_group_handle;
-    uint16_t end_group_handle;
+    le_service_node_t nodes[LE_CENTRAL_MAX_INCLUDE_DEPTH];
+
+    uint8_t  depth;
 } le_peripheral_t;
 
 typedef struct le_peripheral_event{
@@ -115,6 +122,12 @@ typedef struct le_peripheral_event{
     le_peripheral_t * device;
     uint8_t status;
 } le_peripheral_event_t;
+
+// TODO replace with peripheral event
+typedef struct le_query_complete_event{
+    uint8_t   type;
+    le_peripheral_t * peripheral;
+} le_query_complete_event_t;
 
 typedef struct le_service{
     uint16_t start_group_handle;
@@ -127,11 +140,6 @@ typedef struct le_service_event{
     uint8_t  type;
     le_service_t service; 
 } le_service_event_t;
-
-typedef struct le_query_complete_event{
-    uint8_t type;
-    le_peripheral_t * peripheral;
-} le_query_complete_event_t;
 
 typedef struct le_characteristic{
     uint8_t  properties;
