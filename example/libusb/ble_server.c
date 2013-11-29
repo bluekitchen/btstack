@@ -251,6 +251,8 @@ static bd_addr_t sm_s_address;
 // PER INSTANCE DATA
 
 static security_manager_state_t sm_state_responding = SM_STATE_IDLE;
+static uint16_t sm_response_handle = 0;
+static uint8_t  sm_pairing_failed_reason = 0;
 
 // SM timeout
 static timer_source_t sm_timeout;
@@ -259,12 +261,12 @@ static timer_source_t sm_timeout;
 static key_t sm_aes128_key;
 static key_t sm_aes128_plaintext;
 
-//
-static uint16_t sm_response_handle = 0;
-
-// generation method and temporary key for STK
+// generation method and temporary key for STK - STK is stored in sm_s_ltk
 static stk_generation_method_t sm_stk_generation_method;
-static key_t   sm_tk;
+static key_t sm_tk;
+
+// user response
+static uint8_t   sm_user_response;
 
 // defines which keys will be send  after connection is encrypted
 static int sm_key_distribution_send_set;
@@ -276,24 +278,22 @@ static int sm_key_distribution_received_set;
 // The device in the slave role shall be the responding device."
 // -> master := initiator, slave := responder
 //
+
 static key_t     sm_m_random;
 static key_t     sm_m_confirm;
 static uint8_t   sm_m_have_oob_data;
 static uint8_t   sm_m_auth_req;
-static uint8_t   sm_m_io_capabilities = 0;
-static uint8_t   sm_preq[7];
-static uint8_t   sm_pres[7];
+static uint8_t   sm_m_io_capabilities;
+static uint8_t   sm_m_preq[7];
 
 static key_t     sm_s_random;
 static key_t     sm_s_confirm;
-static key_t     sm_stk;
-static uint8_t   sm_pairing_failed_reason = 0;
-static uint16_t  sm_s_div;
-static uint16_t  sm_s_y;
-static uint8_t   sm_user_response;
+static uint8_t   sm_s_pres[7];
 
 // key distribution, slave sends
 static key_t     sm_s_ltk;
+static uint16_t  sm_s_y;
+static uint16_t  sm_s_div;
 static uint16_t  sm_s_ediv;
 static uint8_t   sm_s_rand[8];
 static key_t     sm_s_csrk;
@@ -579,15 +579,17 @@ static void sm_run(void){
             // TODO use locally defined max encryption key size
 
             uint8_t buffer[7];
-            memcpy(buffer, sm_preq, 7);        
+
+            memcpy(buffer, sm_m_preq, 7);        
             buffer[0] = SM_CODE_PAIRING_RESPONSE;
             buffer[1] = sm_s_io_capabilities;
             buffer[2] = sm_stk_generation_method == OOB ? 1 : 0;
             buffer[3] = sm_s_auth_req;
             buffer[4] = 0x10;   // maxium encryption key size
 
+            memcpy(sm_s_pres, buffer, 7);
+
             // for validate
-            memcpy(sm_pres, buffer, 7);
 
             l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
             sm_timeout_reset();
@@ -687,7 +689,7 @@ static void sm_run(void){
         }
         case SM_STATE_PH2_SEND_STK: {
             key_t stk_flipped;
-            swap128(sm_stk, stk_flipped);
+            swap128(sm_s_ltk, stk_flipped);
             hci_send_cmd(&hci_le_long_term_key_request_reply, sm_response_handle, stk_flipped);
             sm_state_responding = SM_STATE_PH2_W4_CONNECTION_ENCRYPTED;
             return;
@@ -778,7 +780,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             sm_setup_key_distribution(packet[6]);
 
             // for validate
-            memcpy(sm_preq, packet, 7);
+            memcpy(sm_m_preq, packet, 7);
 
             // start sm timeout
             sm_timeout_start();
@@ -821,6 +823,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             sm_state_responding = SM_STATE_PH2_C1_GET_RANDOM_A;
             break;
 
+
         case SM_CODE_PAIRING_RANDOM:
             // received random value
             swap128(&packet[1], sm_m_random);
@@ -828,9 +831,10 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // use aes128 engine
             // calculate m_confirm using aes128 engine - step 1
             sm_aes128_set_key(sm_tk);
-            sm_c1_t1(sm_m_random, sm_preq, sm_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
             sm_state_responding = SM_STATE_PH2_C1_GET_ENC_C;
             break;
+            sm_c1_t1(sm_m_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
+
 
         case SM_CODE_ENCRYPTION_INFORMATION:
             sm_key_distribution_received_set |= SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
@@ -942,8 +946,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             if (sm_state_responding == SM_STATE_PH2_W4_LTK_REQUEST){
                                 // calculate STK
                                 log_info("LTK Request: calculating STK");
-                                // key_t sm_stk;
-                                // sm_s1(sm_tk, sm_s_random, sm_m_random, sm_stk);
                                 sm_aes128_set_key(sm_tk);
                                 sm_s1_r_prime(sm_s_random, sm_m_random, sm_aes128_plaintext);
                                 sm_state_responding = SM_STATE_PH2_CALC_STK;
@@ -974,7 +976,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             sm_state_responding = SM_STATE_PH4_DHK_GET_ENC;
 
                             // sm_s_div = sm_div(sm_persistent_dhk, sm_s_rand, sm_s_ediv);
-                            // sm_ltk(sm_persistent_er, sm_s_div, sm_s_ltk);
+                            // sm_s_ltk(sm_persistent_er, sm_s_div, sm_s_ltk);
                             break;
 
                         default:
@@ -1050,8 +1052,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 }
                                 break;
                             case SM_STATE_PH2_W4_STK:
-                                swap128(&packet[6], sm_stk);
-                                print_key("stk", sm_stk);
+                                swap128(&packet[6], sm_s_ltk);
+                                print_key("stk", sm_s_ltk);
                                 sm_state_responding = SM_STATE_PH2_SEND_STK;
                                 break;
                             case SM_STATE_PH3_DHK_W4_ENC:
@@ -1134,6 +1136,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 break;
                             }
                             case SM_STATE_PH2_C1_W4_RANDOM_A:
+
                                 memcpy(&sm_s_random[0], &packet[6], 8); // random endinaness
                                 sm_state_responding = SM_STATE_PH2_C1_GET_RANDOM_B;
                                 break;
@@ -1141,15 +1144,18 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 memcpy(&sm_s_random[8], &packet[6], 8); // random endinaness
 
                                 // calculate s_confirm manually
-                                // sm_c1(sm_tk, sm_s_random, sm_preq, sm_pres, sm_m_addr_type, sm_s_addr_type, sm_m_address, sm_s_address, sm_s_confirm);
+
                                 // send s_confirm
                                 // sm_state_responding = SM_STATE_PH2_C1_SEND;
+                                // sm_c1(sm_tk, sm_s_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_m_address, sm_s_address, sm_s_confirm);
+
 
                                 // calculate s_confirm using aes128 engine - step 1
                                 sm_aes128_set_key(sm_tk);
-                                sm_c1_t1(sm_s_random, sm_preq, sm_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
                                 sm_state_responding = SM_STATE_PH2_C1_GET_ENC_A;
                                 break;
+                                sm_c1_t1(sm_s_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
+
                             case SM_STATE_PH3_W4_RANDOM:
                                 swap64(&packet[6], sm_s_rand);
                                 sm_state_responding = SM_STATE_PH3_GET_DIV;
@@ -1172,7 +1178,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
                                 // // calculate EDIV and LTK
                                 // sm_s_ediv = sm_ediv(sm_persistent_dhk, sm_s_rand, sm_s_div);
-                                // sm_ltk(sm_persistent_er, sm_s_div, sm_s_ltk);
+                                // sm_s_ltk(sm_persistent_er, sm_s_div, sm_s_ltk);
                                 // print_key("ltk", sm_s_ltk);
                                 // print_hex16("ediv", sm_s_ediv);
                                 // // distribute keys
@@ -1293,6 +1299,7 @@ static void sm_s1(key_t k, key_t r1, key_t r2, key_t s1){
     int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
     rijndaelEncrypt(rk, nrounds, r_prime, s1);
     print_key("s1", s1);
+
 }
 
 // test code using aes128 c implementation
@@ -1300,8 +1307,9 @@ static int sm_validate_m_confirm(void){
     printf("sm_validate_m_confirm\n");
 
     key_t c1;
-    sm_c1(sm_tk, sm_m_random, sm_preq, sm_pres, sm_m_addr_type, sm_s_addr_type, sm_m_address, sm_s_address, c1);
     print_key("mc", sm_m_confirm);
+
+    sm_c1(sm_tk, sm_m_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_m_address, sm_s_address, c1);
 
     int m_confirm_valid = memcmp(c1, sm_m_confirm, 16) == 0;
     printf("m_confirm_valid: %u\n", m_confirm_valid);
