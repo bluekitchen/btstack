@@ -352,18 +352,12 @@ le_command_status_t le_central_disconnect(le_peripheral_t *context){
             // trigger cancel connect
             context->state = P_W2_CANCEL_CONNECT;
             break;
-        case P_W2_EXCHANGE_MTU:
-        case P_W4_EXCHANGE_MTU:
-        case P_CONNECTED:
-        case P_W2_DISCONNECT:
-        case P_W2_SEND_SERVICE_QUERY:
-        case P_W4_SERVICE_QUERY_RESULT:
-            // trigger disconnect
-            context->state = P_W2_DISCONNECT;
-            break;
         case P_W4_DISCONNECTED:
         case P_W4_CONNECT_CANCELLED: 
             return BLE_PERIPHERAL_IN_WRONG_STATE;
+        default:
+            context->state = P_W2_DISCONNECT;
+            break;
     }  
     gatt_client_run();    
     return BLE_PERIPHERAL_OK;      
@@ -371,9 +365,17 @@ le_command_status_t le_central_disconnect(le_peripheral_t *context){
 
 le_command_status_t le_central_get_services(le_peripheral_t *peripheral){
     if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
-    printf("le_central_get_services ready to send\n");
+    // printf("le_central_get_services ready to send\n");
     peripheral->last_group_handle = 0x0000;
     peripheral->state = P_W2_SEND_SERVICE_QUERY;
+    gatt_client_run();
+    return BLE_PERIPHERAL_OK;
+}
+
+le_command_status_t le_central_get_characteristics_for_service(le_peripheral_t *peripheral, le_service_t service){
+if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
+    printf("le_central_get_characteristics_for_service ready to send\n");
+    // TODO
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
 }
@@ -582,20 +584,23 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             int i;
             for (i = 2; i < size; i += attr_length){
                 le_service_event_t event;
-                event.type = GATT_SERVICE;
-                event.start_group_handle = READ_BT_16(packet,i);
-                event.end_group_handle = READ_BT_16(packet,i+2);
+                le_service_t service;
+
+                event.type = GATT_SERVICE_QUERY_RESULT;
+                service.start_group_handle = READ_BT_16(packet,i);
+                service.end_group_handle = READ_BT_16(packet,i+2);
                 
                 if (uuid_length == 2){
-                    memcpy((uint8_t*) &event.uuid16, &packet[i+4], uuid_length);
-                    sdp_normalize_uuid((uint8_t*) &event.uuid128, event.uuid16);
+                    memcpy((uint8_t*) &service.uuid16, &packet[i+4], uuid_length);
+                    sdp_normalize_uuid((uint8_t*) &service.uuid128, service.uuid16);
                 } else {
-                    memcpy(event.uuid128, &packet[i+4], uuid_length);
+                    memcpy(service.uuid128, &packet[i+4], uuid_length);
                 }
+                event.service = service;
 
                 (*le_central_callback)((le_central_event_t*)&event);
-                if (peripheral->last_group_handle < event.end_group_handle){
-                    peripheral->last_group_handle = event.end_group_handle;
+                if (peripheral->last_group_handle < service.end_group_handle){
+                    peripheral->last_group_handle = service.end_group_handle;
                 }
             }
 
@@ -693,6 +698,8 @@ static void dump_peripheral_state(peripheral_state_t p_state){
         case P_W4_DISCONNECTED: printf("P_W4_DISCONNECTED"); break;
         case P_W2_SEND_SERVICE_QUERY: printf("P_W2_SEND_SERVICE_QUERY"); break;
         case P_W4_SERVICE_QUERY_RESULT:printf("P_W4_SERVICE_QUERY_RESULT"); break;
+        case P_W2_SEND_CHARACTERISTIC_QUERY: printf("P_W2_SEND_CHARACTERISTIC_QUERY"); break;
+        case P_W4_CHARACTERISTIC_QUERY_RESULT:printf("P_W4_CHARACTERISTIC_QUERY_RESULT"); break;
     };
     printf("\n");
 }
@@ -805,11 +812,11 @@ static void handle_le_central_event(le_central_event_t * event){
             }
             break;
 
-        case GATT_SERVICE:
+        case GATT_SERVICE_QUERY_RESULT:
             service_event = (le_service_event_t *) event;
 
-            printf("    *** service request *** start group handle %02x, end group handle %02x, uuid ", service_event->start_group_handle, service_event->end_group_handle);
-            printUUID128(service_event->uuid128);
+            printf("    *** service request *** start group handle %02x, end group handle %02x, uuid ", service_event->service.start_group_handle, service_event->service.end_group_handle);
+            printUUID128(service_event->service.uuid128);
             printf("\n");
             test_client();
             break;
