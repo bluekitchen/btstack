@@ -199,6 +199,8 @@ typedef enum {
     SM_STATE_PH4_LTK_W4_ENC,
     SM_STATE_PH4_SEND_LTK,
 
+    SM_STATE_TIMEOUT, // no other security messages are exchanged
+
 } security_manager_state_t;
 
 typedef enum {
@@ -236,6 +238,8 @@ static key_t sm_persistent_irk;
 
 // derived from sm_persistent_er
 
+// SM timeout
+static timer_source_t sm_timeout;
 
 // data to send to aes128 crypto engine, see sm_aes128_set_key and sm_aes128_set_plaintext
 static key_t sm_aes128_key;
@@ -365,6 +369,37 @@ static void print_key(const char * name, key_t key){
 static void print_hex16(const char * name, uint16_t value){
     printf("%-6s 0x%04x\n", name, value);
 }
+
+// SMP Timeout implementation
+
+// Upon transmission of the Pairing Request command or reception of the Pairing Request command,
+// the Security Manager Timer shall be reset and started.
+//
+// The Security Manager Timer shall be reset when an L2CAP SMP command is queued for transmission.
+//
+// If the Security Manager Timer reaches 30 seconds, the procedure shall be considered to have failed,
+// and the local higher layer shall be notified. No further SMP commands shall be sent over the L2CAP
+// Security Manager Channel. A new SM procedure shall only be performed when a new physical link has been
+// established.
+
+static void sm_timeout_handler(timer_source_t * timer){
+    printf("SM timeout");
+    sm_state_responding = SM_STATE_TIMEOUT;
+}
+static void sm_timeout_start(){
+    run_loop_set_timer_handler(&sm_timeout, sm_timeout_handler);
+    run_loop_set_timer(&sm_timeout, 30000); // 30 seconds sm timeout
+    run_loop_add_timer(&sm_timeout);
+}
+static void sm_timeout_stop(){
+    run_loop_remove_timer(&sm_timeout);
+}
+static void sm_timeout_reset(){
+    sm_timeout_stop();
+    sm_timeout_start();    
+}
+
+// end of sm timeout
 
 static inline void sm_aes128_set_key(key_t key){
     memcpy(sm_aes128_key, key, 16);
@@ -539,6 +574,7 @@ static void sm_run(void){
             memcpy(sm_pres, buffer, 7);
 
             l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+            sm_timeout_reset();
 
             // notify client for: JUST WORKS confirm, PASSKEY display or input
             sm_user_response = SM_USER_RESPONSE_IDLE;
@@ -581,6 +617,7 @@ static void sm_run(void){
             buffer[0] = SM_CODE_PAIRING_FAILED;
             buffer[1] = sm_pairing_failed_reason;
             l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+            sm_timeout_stop();
             sm_state_responding = SM_STATE_IDLE;
             break;
         }
@@ -590,6 +627,7 @@ static void sm_run(void){
             buffer[0] = SM_CODE_PAIRING_RANDOM;
             swap128(sm_s_random, &buffer[1]);
             l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+            sm_timeout_reset();
             sm_state_responding = SM_STATE_PH2_W4_LTK_REQUEST;
             break;
         }
@@ -627,6 +665,7 @@ static void sm_run(void){
             buffer[0] = SM_CODE_PAIRING_CONFIRM;
             swap128(sm_s_confirm, &buffer[1]);
             l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+            sm_timeout_reset();
             sm_state_responding = SM_STATE_PH2_W4_LTK_REQUEST;
             return;
         }
@@ -652,6 +691,7 @@ static void sm_run(void){
                 buffer[0] = SM_CODE_ENCRYPTION_INFORMATION;
                 swap128(sm_s_ltk, &buffer[1]);
                 l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_timeout_reset();
                 return;
             }
             if (sm_send_master_identification){
@@ -661,6 +701,7 @@ static void sm_run(void){
                 bt_store_16(buffer, 1, sm_s_ediv);
                 swap64(sm_s_rand, &buffer[3]);
                 l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_timeout_reset();
                 return;
             }
             if (sm_send_identity_information){
@@ -669,6 +710,7 @@ static void sm_run(void){
                 buffer[0] = SM_CODE_IDENTITY_INFORMATION;
                 swap128(sm_persistent_irk, &buffer[1]);
                 l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_timeout_reset();
                 return;
             }
             if (sm_send_identity_address_information ){
@@ -678,6 +720,7 @@ static void sm_run(void){
                 buffer[1] = sm_s_addr_type;
                 bt_flip_addr(&buffer[2], sm_s_address);
                 l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_timeout_reset();
                 return;
             }
             if (sm_send_signing_identification){
@@ -686,8 +729,10 @@ static void sm_run(void){
                 buffer[0] = SM_CODE_SIGNING_INFORMATION;
                 swap128(sm_s_csrk, &buffer[1]);
                 l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_timeout_reset();
                 return;
             }
+            sm_timeout_stop();
             sm_state_responding = SM_STATE_IDLE; 
             break;
 
@@ -705,6 +750,9 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
     switch (packet[0]){
         case SM_CODE_PAIRING_REQUEST:
             
+            // a sm timeout requries a new physical connection
+            if (sm_state_responding == SM_STATE_TIMEOUT) break;
+
             // store key distribtion request
             sm_m_io_capabilities = packet[1];
             sm_m_have_oob_data = packet[2];
@@ -713,6 +761,9 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // for validate
             memcpy(sm_preq, packet, 7);
+
+            // start sm timeout
+            sm_timeout_start();
 
             // decide on Passkey Entry pairing algorithm
             sm_tk_setup();
@@ -941,6 +992,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
                     att_response_handle = 0;
                     att_response_size = 0;
+
+                    sm_state_responding = SM_STATE_IDLE;
                     break;
                     
 				case HCI_EVENT_COMMAND_COMPLETE:
