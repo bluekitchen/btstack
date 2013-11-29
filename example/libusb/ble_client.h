@@ -73,9 +73,13 @@ typedef enum {
     P_W4_EXCHANGE_MTU,
     
     P_CONNECTED,
+    
     P_W2_SEND_SERVICE_QUERY,
     P_W4_SERVICE_QUERY_RESULT,
     
+    P_W2_SEND_CHARACTERISTIC_QUERY,
+    P_W4_CHARACTERISTIC_QUERY_RESULT,
+
     P_W2_CANCEL_CONNECT,
     P_W4_CONNECT_CANCELLED,
     P_W2_DISCONNECT,
@@ -111,12 +115,16 @@ typedef struct le_peripheral_event{
     uint8_t status;
 } le_peripheral_event_t;
 
-typedef struct le_service_event{
-    uint8_t  type;
+typedef struct le_service{
     uint16_t start_group_handle;
     uint16_t end_group_handle;
     uint16_t uuid16; 
     uint8_t  uuid128[16]; 
+} le_service_t;
+
+typedef struct le_service_event{
+    uint8_t  type;
+    le_service_t service; 
 } le_service_event_t;
 
 typedef struct le_query_complete_event{
@@ -146,22 +154,25 @@ le_command_status_t  le_central_connect(le_peripheral_t *context, uint8_t addr_t
 le_command_status_t  le_central_disconnect(le_peripheral_t *context);
 
 le_command_status_t le_central_get_services(le_peripheral_t *context);
-le_command_status_t le_central_get_services_with_uuid16(le_peripheral_t *context,  uint16_t  uuid16);
-le_command_status_t le_central_get_services_with_uuid128(le_peripheral_t *context, uint8_t * uuid128);
 // { type (8), le_peripheral_t *context, service_handle }
 
-void le_central_get_characteristics_for_service(le_peripheral_t *context, uint16_t service_handle);
-void le_central_get_characteristics_for_service_with_uuid16(le_peripheral_t *context, uint16_t service_handle, uint16_t  uuid16);
-void le_central_get_characteristics_for_service_with_uuid128(le_peripheral_t *context, uint16_t service_handle, uint8_t * uuid128);
+le_command_status_t le_central_get_characteristics_for_service(le_peripheral_t *context, le_service_t service);
 // { type (8), le_peripheral_t *context, service_handle, le_characteristic *}
 
-void le_central_read_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);
-void le_central_write_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle, int length, uint8_t * data);
-void le_central_subscribe_to_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);
-void le_central_unsubscribe_from_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);
+le_command_status_t le_central_read_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);
+le_command_status_t le_central_write_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle, int length, uint8_t * data);
+le_command_status_t le_central_subscribe_to_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);
+le_command_status_t le_central_unsubscribe_from_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);
 // { read/write/subscribe/unsubscribe confirm/result}
 
 // { type, le_peripheral *, characteristic handle, int len, uint8_t data[]?}
+
+// ADVANCED .. more convenience
+le_command_status_t le_central_get_services_with_uuid16 (le_peripheral_t *context,  uint16_t  uuid16);
+le_command_status_t le_central_get_services_with_uuid128(le_peripheral_t *context, uint8_t * uuid128);
+le_command_status_t le_central_get_characteristics_for_service_with_uuid16 (le_peripheral_t *context, le_service_t service, uint16_t  uuid16);
+le_command_status_t le_central_get_characteristics_for_service_with_uuid128(le_peripheral_t *context, le_service_t service, uint8_t * uuid128);
+
 
 #if defined __cplusplus
 }
