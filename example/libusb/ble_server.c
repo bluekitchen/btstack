@@ -1388,6 +1388,10 @@ void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_
     sm_get_oob_data = get_oob_data_callback;
 }
 
+void sm_set_authentication_requirements(uint8_t auth_req){
+    sm_s_auth_req = auth_req;
+}
+
 void sm_set_io_capabilities(io_capability_t io_capability){
     sm_s_io_capabilities = io_capability;
 }
@@ -1499,6 +1503,7 @@ void setup(void){
     // setup SM
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+    sm_set_authentication_requirements( SM_AUTHREQ_BONDING );
     sm_set_request_security(1);
 }
 
