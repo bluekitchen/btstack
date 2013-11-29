@@ -81,10 +81,17 @@ typedef enum {
 #define SM_AUTHREQ_BONDING 0x01
 #define SM_AUTHREQ_MITM_PROTECTION 0x02
 
-//Key distribution flags
+// Key distribution flags used by spec
 #define SM_KEYDIST_ENC_KEY 0X01
 #define SM_KEYDIST_ID_KEY  0x02
 #define SM_KEYDIST_SIGN    0x04
+
+// Key distribution flags used internally
+#define SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION       0x01
+#define SM_KEYDIST_FLAG_MASTER_IDENTIFICATION        0x02
+#define SM_KEYDIST_FLAG_IDENTITY_INFORMATION         0x04
+#define SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION 0x08
+#define SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION       0x10
 
 // Pairing Failed Reasons
 #define SM_REASON_RESERVED                     0x00
@@ -249,17 +256,8 @@ static int sm_key_distribution_set = 0;
 
 static security_manager_state_t sm_state_responding = SM_STATE_IDLE;
 
-static int sm_send_encryption_information = 0;
-static int sm_send_master_identification = 0;
-static int sm_send_identity_information = 0;
-static int sm_send_identity_address_information = 0;
-static int sm_send_signing_identification = 0;
-
-static int sm_received_encryption_information = 0;
-static int sm_received_master_identification = 0;
-static int sm_received_identity_information = 0;
-static int sm_received_identity_address_information = 0;
-static int sm_received_signing_identification = 0;
+static int sm_key_distribution_send_set;
+static int sm_key_distribution_received_set;
 
 static key_t   sm_tk;
 
@@ -680,8 +678,8 @@ static void sm_run(void){
         }
 
         case SM_STATE_DISTRIBUTE_KEYS:
-            if (sm_send_encryption_information){
-                sm_send_encryption_information = 0;
+            if (sm_key_distribution_set &   SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION){
+                sm_key_distribution_set &= ~SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_ENCRYPTION_INFORMATION;
                 swap128(sm_s_ltk, &buffer[1]);
@@ -689,8 +687,8 @@ static void sm_run(void){
                 sm_timeout_reset();
                 return;
             }
-            if (sm_send_master_identification){
-                sm_send_master_identification = 0;
+            if (sm_key_distribution_set &   SM_KEYDIST_FLAG_MASTER_IDENTIFICATION){
+                sm_key_distribution_set &= ~SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
                 uint8_t buffer[11];
                 buffer[0] = SM_CODE_MASTER_IDENTIFICATION;
                 bt_store_16(buffer, 1, sm_s_ediv);
@@ -699,8 +697,8 @@ static void sm_run(void){
                 sm_timeout_reset();
                 return;
             }
-            if (sm_send_identity_information){
-                sm_send_identity_information = 0;
+            if (sm_key_distribution_set &   SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
+                sm_key_distribution_set &= ~SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_IDENTITY_INFORMATION;
                 swap128(sm_persistent_irk, &buffer[1]);
@@ -708,8 +706,8 @@ static void sm_run(void){
                 sm_timeout_reset();
                 return;
             }
-            if (sm_send_identity_address_information ){
-                sm_send_identity_address_information = 0;
+            if (sm_key_distribution_set &   SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION){
+                sm_key_distribution_set &= ~SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
                 uint8_t buffer[8];
                 buffer[0] = SM_CODE_IDENTITY_ADDRESS_INFORMATION;
                 buffer[1] = sm_s_addr_type;
@@ -718,8 +716,8 @@ static void sm_run(void){
                 sm_timeout_reset();
                 return;
             }
-            if (sm_send_signing_identification){
-                sm_send_signing_identification = 0;
+            if (sm_key_distribution_set &   SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
+                sm_key_distribution_set &= ~SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_SIGNING_INFORMATION;
                 swap128(sm_s_csrk, &buffer[1]);
@@ -810,29 +808,29 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             break;
 
         case SM_CODE_ENCRYPTION_INFORMATION:
-            sm_received_encryption_information = 1;
+            sm_key_distribution_received_set |= SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
             swap128(&packet[1], sm_m_ltk);
             break;
 
         case SM_CODE_MASTER_IDENTIFICATION:
-            sm_received_master_identification = 1;
+            sm_key_distribution_received_set |= SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
             sm_m_ediv = READ_BT_16(packet, 1);
             swap64(&packet[3], sm_m_rand);
             break;
 
         case SM_CODE_IDENTITY_INFORMATION:
-            sm_received_identity_information = 1;
+            sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
             swap128(&packet[1], sm_m_irk);
             break;
 
         case SM_CODE_IDENTITY_ADDRESS_INFORMATION:
-            sm_received_identity_address_information = 1;
+            sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
             sm_m_addr_type = packet[1];
             BD_ADDR_COPY(sm_m_address, &packet[2]); 
             break;
 
         case SM_CODE_SIGNING_INFORMATION:
-            sm_received_signing_identification = 1;
+            sm_key_distribution_received_set |= SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
             swap128(&packet[1], sm_m_csrk);
             break;
     }
@@ -846,16 +844,19 @@ static void sm_distribute_keys(){
     // TODO: handle initiator case here
 
     // distribute keys as requested by initiator
+    sm_key_distribution_send_set = 0;
+    sm_key_distribution_received_set = 0;
     if (sm_key_distribution_set & SM_KEYDIST_ENC_KEY){
-        sm_send_encryption_information = 1;
-        sm_send_master_identification = 1;
+        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
+        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;        
     }
     if (sm_key_distribution_set & SM_KEYDIST_ID_KEY){
-        sm_send_identity_information = 1;
-        sm_send_identity_address_information = 1;
+        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
+        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;        
     }
-    if (sm_key_distribution_set & SM_KEYDIST_SIGN)
-        sm_send_signing_identification = 1;  
+    if (sm_key_distribution_set & SM_KEYDIST_SIGN){
+        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
+    }
 }
 
 void sm_set_er(key_t er){
