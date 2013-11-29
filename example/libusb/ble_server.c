@@ -115,6 +115,7 @@ typedef enum {
     SM_STATE_IDLE,
 
     SM_STATE_SEND_SECURITY_REQUEST,
+    SM_STATE_SEND_LTK_REQUESTED_NEGATIVE_REPLY,
 
     // Phase 1: Pairing Feature Exchange
 
@@ -280,6 +281,7 @@ static bd_addr_t sm_m_address;
 static key_t     sm_m_csrk;
 static key_t     sm_m_irk;
 
+
 // @returns 1 if oob data is available
 // stores oob data in provided 16 byte buffer if not null
 static int (*sm_get_oob_data)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data) = NULL;
@@ -321,6 +323,16 @@ static inline void swap64(uint8_t src[8], uint8_t dst[8]){
 static inline void swap128(uint8_t src[16], uint8_t dst[16]){
     swapX(src, dst, 16);
 }
+
+// @returns 1 if all bytes are 0
+static int sm_is_null_random(uint8_t random[8]){
+    int i;
+    for (i=0; i < 8 ; i++){
+        if (random[i]) return 0;
+    }
+    return 1;
+}
+
 
 static void print_key(const char * name, key_t key){
     printf("%-6s ", name);
@@ -496,6 +508,11 @@ static void sm_run(void){
             sm_state_responding = SM_STATE_PH1_W4_PAIRING_CONFIRM;
             return;
         }
+
+        case SM_STATE_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
+            hci_send_cmd(&hci_le_long_term_key_negative_reply, sm_response_handle);
+            sm_state_responding = SM_STATE_IDLE;
+            return;
 
         case SM_STATE_SEND_PAIRING_FAILED: {
             uint8_t buffer[2];
@@ -789,10 +806,10 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             break;
 
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:
-                            log_info("LTK Request, state %u", sm_state_responding);
+                            log_info("LTK Request: state %u", sm_state_responding);
                             if (sm_state_responding == SM_STATE_PH2_W4_LTK_REQUEST){
                                 // calculate STK
-                                log_info("calculating STK");
+                                log_info("LTK Request: calculating STK");
                                 // key_t sm_stk;
                                 // sm_s1(sm_tk, sm_s_random, sm_m_random, sm_stk);
                                 sm_aes128_set_key(sm_tk);
@@ -802,9 +819,17 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             }
 
                             // re-establish previously used LTK using Rand and EDIV
-                            log_info("recalculating LTK");
                             swap64(&packet[5], sm_s_rand);
                             sm_s_ediv = READ_BT_16(packet, 13);
+
+                            // assume that we don't have a LTK for ediv == 0 and random == null
+                            if (sm_s_ediv == 0 && sm_is_null_random(sm_s_rand)){
+                                printf("LTK Request: ediv & random are empty\n");
+                                sm_state_responding = SM_STATE_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
+                                break;
+                            }
+
+                            log_info("LTK Request: recalculating with ediv 0x%04x", sm_s_ediv);
 
                             // dhk = d1(IR, 1, 0) - enc
                             // y   = dm(dhk, rand) - enc
@@ -833,11 +858,14 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    // restart advertising if we have been connected before
+                    // -> avoid sending advertise enable a second time before command complete was received 
+                    if (att_response_handle) {
+                        hci_send_cmd(&hci_le_set_advertise_enable, 1);
+                    }
+
                     att_response_handle = 0;
                     att_response_size = 0;
-                    
-                    // restart advertising
-                    hci_send_cmd(&hci_le_set_advertise_enable, 1);
                     break;
                     
 				case HCI_EVENT_COMMAND_COMPLETE:
@@ -946,7 +974,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 // distribute keys
                                 sm_distribute_keys();
                                 // done
-                                sm_state_responding = SM_STATE_IDLE;
+                                sm_state_responding = SM_STATE_DISTRIBUTE_KEYS;
                                 break;                                
                             case SM_STATE_PH4_LTK_W4_ENC:
                                 swap128(&packet[6], sm_s_ltk);
