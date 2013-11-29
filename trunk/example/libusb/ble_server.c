@@ -211,22 +211,17 @@ typedef enum {
     OOB             // OOB available on both sides
 } stk_generation_method_t;
 
-// horizontal: initiator capabilities
-// vertial:    responder capabilities
-static const stk_generation_method_t stk_generation_method[5][5] = {
-    { JUST_WORKS,      JUST_WORKS,       PK_INIT_INPUT,   JUST_WORKS,    PK_INIT_INPUT },
-    { JUST_WORKS,      JUST_WORKS,       PK_INIT_INPUT,   JUST_WORKS,    PK_INIT_INPUT },
-    { PK_RESP_INPUT,   PK_RESP_INPUT,    OK_BOTH_INPUT,   JUST_WORKS,    PK_RESP_INPUT },
-    { JUST_WORKS,      JUST_WORKS,       JUST_WORKS,      JUST_WORKS,    JUST_WORKS    },
-    { PK_RESP_INPUT,   PK_RESP_INPUT,    PK_INIT_INPUT,   JUST_WORKS,    PK_RESP_INPUT },
-};
+typedef enum {
+    SM_USER_RESPONSE_IDLE,
+    SM_USER_RESPONSE_PENDING,
+    SM_USER_RESPONSE_CONFIRM,
+    SM_USER_RESPONSE_PASSKEY,
+    SM_USER_RESPONSE_DECLINE
+} sm_user_response_t;
 
-static att_connection_t att_connection;
-static uint16_t         att_addr_type;
-static bd_addr_t        att_address;
-static uint16_t         att_response_handle = 0;
-static uint16_t         att_response_size   = 0;
-static uint8_t          att_response_buffer[28];
+//
+//
+//
 
 // Security Manager Master Keys, please use sm_set_er(er) and sm_set_ir(ir) with your own 128 bit random values
 static key_t sm_persistent_er;
@@ -287,13 +282,6 @@ static uint8_t   sm_pairing_failed_reason = 0;
 static uint16_t  sm_s_div;
 static uint16_t  sm_s_y;
 
-typedef enum {
-    SM_USER_RESPONSE_IDLE,
-    SM_USER_RESPONSE_PENDING,
-    SM_USER_RESPONSE_CONFIRM,
-    SM_USER_RESPONSE_PASSKEY,
-    SM_USER_RESPONSE_DECLINE
-} sm_user_response_t;
 static uint8_t   sm_user_response;
 
 // key distribution, slave sends
@@ -318,25 +306,24 @@ static key_t     sm_m_irk;
 // stores oob data in provided 16 byte buffer if not null
 static int (*sm_get_oob_data)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data) = NULL;
 
+// horizontal: initiator capabilities
+// vertial:    responder capabilities
+static const stk_generation_method_t stk_generation_method[5][5] = {
+    { JUST_WORKS,      JUST_WORKS,       PK_INIT_INPUT,   JUST_WORKS,    PK_INIT_INPUT },
+    { JUST_WORKS,      JUST_WORKS,       PK_INIT_INPUT,   JUST_WORKS,    PK_INIT_INPUT },
+    { PK_RESP_INPUT,   PK_RESP_INPUT,    OK_BOTH_INPUT,   JUST_WORKS,    PK_RESP_INPUT },
+    { JUST_WORKS,      JUST_WORKS,       JUST_WORKS,      JUST_WORKS,    JUST_WORKS    },
+    { PK_RESP_INPUT,   PK_RESP_INPUT,    PK_INIT_INPUT,   JUST_WORKS,    PK_RESP_INPUT },
+};
 
-static void att_try_respond(void){
-    if (!att_response_size) return;
-    if (!att_response_handle) return;
-    if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) return;
-    
-    // update state before sending packet
-    uint16_t size = att_response_size;
-    att_response_size = 0;
-    l2cap_send_connectionless(att_response_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, att_response_buffer, size);
-}
+// ATT Server
 
-static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
-    if (packet_type != ATT_DATA_PACKET) return;
-    
-    att_response_handle = handle;
-    att_response_size = att_handle_request(&att_connection, packet, size, att_response_buffer);
-    att_try_respond();
-}
+static att_connection_t att_connection;
+static uint16_t         att_addr_type;
+static bd_addr_t        att_address;
+static uint16_t         att_response_handle = 0;
+static uint16_t         att_response_size   = 0;
+static uint8_t          att_response_buffer[28];
 
 // SECURITY MANAGER (SM) MATERIALIZES HERE
 static inline void swapX(uint8_t *src, uint8_t *dst, int len){
@@ -890,6 +877,7 @@ void sm_init(){
 // END OF SM
 
 // enable LE, setup ADV data
+static void att_try_respond(void);
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     uint8_t adv_data[] = { 02, 01, 05,   03, 02, 0xf0, 0xff }; 
 
@@ -1420,6 +1408,25 @@ void sm_passkey_input(uint8_t addr_type, bd_addr_t address, uint32_t passkey){
 
 // test profile
 #include "profile.h"
+
+static void att_try_respond(void){
+    if (!att_response_size) return;
+    if (!att_response_handle) return;
+    if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) return;
+    
+    // update state before sending packet
+    uint16_t size = att_response_size;
+    att_response_size = 0;
+    l2cap_send_connectionless(att_response_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, att_response_buffer, size);
+}
+
+static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
+    if (packet_type != ATT_DATA_PACKET) return;
+    
+    att_response_handle = handle;
+    att_response_size = att_handle_request(&att_connection, packet, size, att_response_buffer);
+    att_try_respond();
+}
 
 // write requests
 static void att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size, signature_t * signature){
