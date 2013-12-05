@@ -223,14 +223,23 @@ static int bt_control_cc256x_next_cmd(void *config, uint8_t *hci_cmd_buffer){
 // MARK: const structs 
 
 static const bt_control_t bt_control_cc256x = {
-	.on = bt_control_cc256x_on,
-    .next_cmd = bt_control_cc256x_next_cmd,
-    .baudrate_cmd = cc256x_baudrate_cmd
+	bt_control_cc256x_on,                  // on
+	NULL,                                  // off
+	NULL,                                  // sleep
+	NULL,                                  // wake
+	NULL,                                  // valid
+	NULL,                                  // name
+	cc256x_baudrate_cmd,                   // baudrate_cmd
+	bt_control_cc256x_next_cmd,            // next_cmd
+	NULL,                                  // register_for_power_notifications
+    NULL,                                  // hw_error
 };
 
 static const hci_uart_config_t hci_uart_config_cc256x = {
-    .baudrate_init = 115200,
-    .baudrate_main = 1000000
+    NULL,
+    115200,
+    1000000,
+    NULL
 };
 
 // MARK: public API
