@@ -54,8 +54,19 @@ property_flags = {
     'LONG_UUID':                  0x200,
 }
 
+services = dict()
+current_service_uuid = list()
+current_service_start_handle = 0
+
 handle = 1
 total_size = 0
+
+def keyForUUID(uuid):
+    keyUUID = ""
+    for i in uuid:
+        keyUUID += "%02x" % i
+    return keyUUID
+ 
 
 def twoByteLEFor(value):
     return [ (value & 0xff), (value >> 8)]
@@ -120,9 +131,18 @@ def is_string(text):
         return False
     return True
 
-def parsePrimaryService(fout, parts):
+def parseService(fout, parts, service_type):
     global handle
     global total_size
+    global current_service_uuid
+    global current_service_start_handle
+    global services
+
+    keyUUID = keyForUUID(current_service_uuid)
+    if keyUUID:
+        fout.write("\n")
+        # print "append service %s = [%d, %d]\n" % (keyUUID, current_service_start_handle, handle-1)
+        services[keyUUID] = [current_service_start_handle, handle-1]
 
     property = property_flags['READ'];
     
@@ -131,22 +151,68 @@ def parsePrimaryService(fout, parts):
 
     uuid = parseUUID(parts[1])
     uuid_size = len(uuid)
-
+    
     size = 2 + 2 + 2 + uuid_size + 2
+
+    if service_type == 0x2802:
+        size += 4
 
     if uuid_size == 16:
         property = property | property_flags['LONG_UUID'];
-    
+
     write_indent(fout)
     write_16(fout, size)
     write_16(fout, property)
     write_16(fout, handle)
-    write_16(fout, 0x2800)
+    write_16(fout, service_type)
     write_uuid(uuid)
     fout.write("\n")
+
+    current_service_uuid = uuid
+    current_service_start_handle = handle
+    handle = handle + 1
+    total_size = total_size + size
+
+def parsePrimaryService(fout, parts):
+    parseService(fout, parts, 0x2800)
+
+def parseSecondaryService(fout, parts):
+    parseService(fout, parts, 0x2801)
+
+def parseIncludeService(fout, parts):
+    global handle
+    global total_size
+    
+    property = property_flags['READ'];
+    
+    write_indent(fout)
+    fout.write('// 0x%04x %s\n' % (handle, '-'.join(parts)))
+
+    uuid = parseUUID(parts[1])
+    uuid_size = len(uuid)
+    # print "Include Service ", keyForUUID(uuid)
+
+    size = 2 + 2 + 2 + uuid_size + 2 + 4
+
+    if uuid_size == 16:
+        property = property | property_flags['LONG_UUID'];
+
+    keyUUID = keyForUUID(uuid)
+
+    write_indent(fout)
+    write_16(fout, size)
+    write_16(fout, property)
+    write_16(fout, handle)
+    write_16(fout, 0x2802)
+    write_16(fout, services[keyUUID][0])
+    write_16(fout, services[keyUUID][1])
+    write_uuid(uuid)
+    fout.write("\n")
+
     handle = handle + 1
     total_size = total_size + size
     
+
 def parseCharacteristic(fout, parts):
     global handle
     global total_size
@@ -197,6 +263,7 @@ def parseCharacteristic(fout, parts):
     fout.write("\n")
     handle = handle + 1
 
+
 def parse(fname_in, fin, fname_out, fout):
     global handle
     global total_size
@@ -220,6 +287,14 @@ def parse(fname_in, fin, fname_out, fout):
         
         if parts[0] == 'PRIMARY_SERVICE':
             parsePrimaryService(fout, parts)
+            continue
+
+        if parts[0] == 'SECONDARY_SERVICE':
+            parseSecondaryService(fout, parts)
+            continue
+
+        if parts[0] == 'INCLUDE_SERVICE':
+            parseIncludeService(fout, parts)
             continue
 
         if parts[0] == 'CHARACTERISTIC':
