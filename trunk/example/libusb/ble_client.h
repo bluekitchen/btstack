@@ -81,6 +81,9 @@ typedef enum {
     P_W2_SEND_CHARACTERISTIC_QUERY,
     P_W4_CHARACTERISTIC_QUERY_RESULT,
 
+    P_W2_SEND_INCLUDE_SERVICE_QUERY,
+    P_W4_INCLUDE_SERVICE_QUERY_RESULT,
+
     P_W2_CANCEL_CONNECT,
     P_W4_CONNECT_CANCELLED,
     P_W2_DISCONNECT,
@@ -98,6 +101,7 @@ typedef enum {
 typedef struct le_service_node{
     uint16_t start_group_handle;
     uint16_t end_group_handle;
+    uint16_t last_group_handle;
 } le_service_node_t;
 
 typedef struct le_peripheral{
@@ -111,7 +115,6 @@ typedef struct le_peripheral{
     uint16_t mtu;
 
     // for service discovery
-    uint16_t last_group_handle;
     le_service_node_t nodes[LE_CENTRAL_MAX_INCLUDE_DEPTH];
 
     uint8_t  depth;
