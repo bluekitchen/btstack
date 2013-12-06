@@ -93,6 +93,11 @@ typedef enum {
 #define SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION 0x08
 #define SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION       0x10
 
+// STK Generation Methods
+#define SM_STK_GENERATION_METHOD_JUST_WORKS 0x01
+#define SM_STK_GENERATION_METHOD_OOB        0x02
+#define SM_STK_GENERATION_METHOD_PASSKEY    0x04
+
 // Pairing Failed Reasons
 #define SM_REASON_RESERVED                     0x00
 #define SM_REASON_PASSKEYT_ENTRY_FAILED        0x01
@@ -116,6 +121,8 @@ typedef enum {
     IO_CAPABILITY_KEYBOARD_DISPLAY, // not used by secure simple pairing
     IO_CAPABILITY_UNKNOWN = 0xff
 } io_capability_t;
+
+
 
 //
 // types used by client
@@ -241,6 +248,8 @@ static key_t sm_persistent_irk;
 
 // derived from sm_persistent_er
 // ..
+
+static uint8_t sm_accepted_stk_generation_methods;
 
 static uint8_t sm_s_auth_req = 0;
 static uint8_t sm_s_io_capabilities = IO_CAPABILITY_UNKNOWN;
@@ -782,7 +791,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
     if (sm_state_responding == SM_STATE_TIMEOUT) return;
 
     switch (packet[0]){
-        case SM_CODE_PAIRING_REQUEST:
+        case SM_CODE_PAIRING_REQUEST: {
 
             if (sm_state_responding != SM_STATE_IDLE) {
                 sm_pdu_received_in_wrong_state();
@@ -802,11 +811,32 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // for validate
             memcpy(sm_m_preq, packet, 7);
 
-            // start sm timeout
+            // start SM timeout
             sm_timeout_start();
 
-            // decide on Passkey Entry pairing algorithm
+            // decide on STK generation method
             sm_tk_setup();
+
+            // check if STK generation method is acceptable by client
+            int ok = 0;
+            switch (sm_stk_generation_method){
+                case JUST_WORKS:
+                    ok = (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_JUST_WORKS) != 0;
+                    break;
+                case PK_RESP_INPUT:
+                case PK_INIT_INPUT:
+                case OK_BOTH_INPUT:
+                    ok = (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_PASSKEY) != 0;
+                    break;
+                case OOB:
+                    ok = (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_OOB) != 0;
+                    break;
+            }
+            if (!ok){
+                sm_pairing_failed_reason = SM_REASON_AUTHENTHICATION_REQUIREMENTS;
+                sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
+                break;
+            }
 
             // generate random number first, if we need to show passkey
             if (sm_stk_generation_method == PK_INIT_INPUT){
@@ -816,7 +846,8 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             sm_state_responding = SM_STATE_PH1_SEND_PAIRING_RESPONSE;
             break;
-            
+        }
+
         case  SM_CODE_PAIRING_CONFIRM:
 
             if (sm_state_responding != SM_STATE_PH1_W4_PAIRING_CONFIRM) {
@@ -941,6 +972,10 @@ void sm_init(){
     sm_set_er(er);
     sm_set_ir(ir);
     sm_state_responding = SM_STATE_IDLE;
+    // defaults
+    sm_accepted_stk_generation_methods = SM_STK_GENERATION_METHOD_JUST_WORKS
+                                       | SM_STK_GENERATION_METHOD_OOB
+                                       | SM_STK_GENERATION_METHOD_PASSKEY;
 }
 
 // END OF SM
@@ -1433,6 +1468,10 @@ void sm_test2(){
 
 void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data)){
     sm_get_oob_data = get_oob_data_callback;
+}
+
+void sm_set_accepted_stk_generation_method(uint8_t accepted_stk_generation_methods){
+    sm_accepted_stk_generation_methods = accepted_stk_generation_methods;
 }
 
 void sm_set_authentication_requirements(uint8_t auth_req){
