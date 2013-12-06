@@ -589,8 +589,6 @@ static void sm_run(void){
 
         case SM_STATE_PH1_SEND_PAIRING_RESPONSE: {
 
-            // TODO use locally defined max encryption key size
-
             uint8_t buffer[7];
 
             memcpy(buffer, sm_m_preq, 7);        
@@ -804,6 +802,13 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             sm_m_have_oob_data = packet[2];
             sm_m_auth_req = packet[3];
             sm_m_max_encryption_key_size = packet[4];
+
+            // assert max encryption size above our minimum
+            if (sm_m_max_encryption_key_size < sm_min_encrypted_key_size){
+                sm_pairing_failed_reason = SM_REASON_ENCRYPTION_KEY_SIZE;
+                sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
+                break;
+            }
 
             // setup key distribution
             sm_m_key_distribution = packet[5];
