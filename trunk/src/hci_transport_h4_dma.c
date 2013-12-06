@@ -102,7 +102,9 @@ static uint16_t tx_len;
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
 static data_source_t hci_transport_h4_dma_ds = {
-    .process = h4_process
+  /*  .item    = */  NULL,
+  /*  .fd      = */  NULL,
+  /*  .process = */  h4_process
 };
 
 static hci_transport_h4_t hci_transport_h4_dma = {
