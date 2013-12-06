@@ -250,7 +250,8 @@ static key_t sm_persistent_irk;
 // ..
 
 static uint8_t sm_accepted_stk_generation_methods;
-
+static uint8_t sm_max_encrypted_key_size;
+static uint8_t sm_min_encrypted_key_size;
 static uint8_t sm_s_auth_req = 0;
 static uint8_t sm_s_io_capabilities = IO_CAPABILITY_UNKNOWN;
 static uint8_t sm_s_request_security = 0;
@@ -976,6 +977,8 @@ void sm_init(){
     sm_accepted_stk_generation_methods = SM_STK_GENERATION_METHOD_JUST_WORKS
                                        | SM_STK_GENERATION_METHOD_OOB
                                        | SM_STK_GENERATION_METHOD_PASSKEY;
+    sm_max_encrypted_key_size = 16;
+    sm_min_encrypted_key_size = 7;
 }
 
 // END OF SM
@@ -1472,6 +1475,14 @@ void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_
 
 void sm_set_accepted_stk_generation_method(uint8_t accepted_stk_generation_methods){
     sm_accepted_stk_generation_methods = accepted_stk_generation_methods;
+}
+
+void sm_set_max_encrypted_key_size(uint8_t size) {
+    sm_max_encrypted_key_size = size;
+}
+
+void sm_set_min_encrypted_key_size(uint8_t size) {
+    sm_min_encrypted_key_size = size;
 }
 
 void sm_set_authentication_requirements(uint8_t auth_req){
