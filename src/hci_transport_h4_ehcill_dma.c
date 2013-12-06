@@ -135,7 +135,7 @@ static uint8_t   tx_packet_type;
 // data source used in run_loop
 static data_source_t hci_transport_h4_dma_ds = {
   /*  .item    = */  NULL,
-  /*  .fd      = */  NULL,
+  /*  .fd      = */  0,
   /*  .process = */  h4_process
 };
 
