@@ -598,7 +598,7 @@ static void sm_run(void){
             buffer[1] = sm_s_io_capabilities;
             buffer[2] = sm_stk_generation_method == OOB ? 1 : 0;
             buffer[3] = sm_s_auth_req;
-            buffer[4] = 0x10;   // maxium encryption key size
+            buffer[4] = sm_max_encrypted_key_size;
 
             memcpy(sm_s_pres, buffer, 7);
 
