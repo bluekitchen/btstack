@@ -250,8 +250,10 @@ static key_t sm_persistent_irk;
 // ..
 
 static uint8_t sm_accepted_stk_generation_methods;
-static uint8_t sm_max_encrypted_key_size;
-static uint8_t sm_min_encrypted_key_size;
+static uint8_t sm_max_encryption_key_size;
+static uint8_t sm_min_encryption_key_size;
+
+static uint8_t sm_encryption_key_size;
 static uint8_t sm_s_auth_req = 0;
 static uint8_t sm_s_io_capabilities = IO_CAPABILITY_UNKNOWN;
 static uint8_t sm_s_request_security = 0;
@@ -366,6 +368,22 @@ static int sm_is_null_random(uint8_t random[8]){
         if (random[i]) return 0;
     }
     return 1;
+}
+
+static void sm_reset_tk(){
+    int i;
+    for (i=0;i<16;i++){
+        sm_tk[i] = 0;
+    }
+}
+
+// "For example, if a 128-bit encryption key is 0x123456789ABCDEF0123456789ABCDEF0
+// and it is reduced to 7 octets (56 bits), then the resulting key is 0x0000000000000000003456789ABCDEF0.""
+static void sm_truncate_key(key_t key, int max_encryption_size){
+    int i;
+    for (i = max_encryption_size ; i < 16 ; i++){
+        key[15-i] = 0;
+    }
 }
 
 static void print_key(const char * name, key_t key){
@@ -506,13 +524,6 @@ static void sm_notify_client(uint8_t type, uint8_t addr_type, bd_addr_t address,
     printf("sm_notify_client: event 0x%02x, addres_type %u, address (), num '%06u'", event.type, event.addr_type, event.passkey);
 }
 
-void sm_reset_tk(){
-    int i;
-    for (i=0;i<16;i++){
-        sm_tk[i] = 0;
-    }
-}
-
 // decide on stk generation based on
 // - pairing request
 // - io capabilities
@@ -596,7 +607,7 @@ static void sm_run(void){
             buffer[1] = sm_s_io_capabilities;
             buffer[2] = sm_stk_generation_method == OOB ? 1 : 0;
             buffer[3] = sm_s_auth_req;
-            buffer[4] = sm_max_encrypted_key_size;
+            buffer[4] = sm_max_encryption_key_size;
 
             memcpy(sm_s_pres, buffer, 7);
 
@@ -804,10 +815,16 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             sm_m_max_encryption_key_size = packet[4];
 
             // assert max encryption size above our minimum
-            if (sm_m_max_encryption_key_size < sm_min_encrypted_key_size){
+            if (sm_m_max_encryption_key_size < sm_min_encryption_key_size){
                 sm_pairing_failed_reason = SM_REASON_ENCRYPTION_KEY_SIZE;
                 sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
                 break;
+            }
+
+            // min{}
+            sm_encryption_key_size = sm_max_encryption_key_size;
+            if (sm_m_max_encryption_key_size < sm_max_encryption_key_size){
+                sm_encryption_key_size = sm_m_max_encryption_key_size;
             }
 
             // setup key distribution
@@ -982,8 +999,8 @@ void sm_init(){
     sm_accepted_stk_generation_methods = SM_STK_GENERATION_METHOD_JUST_WORKS
                                        | SM_STK_GENERATION_METHOD_OOB
                                        | SM_STK_GENERATION_METHOD_PASSKEY;
-    sm_max_encrypted_key_size = 16;
-    sm_min_encrypted_key_size = 7;
+    sm_max_encryption_key_size = 16;
+    sm_min_encryption_key_size = 7;
 }
 
 // END OF SM
@@ -1153,6 +1170,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 break;
                             case SM_STATE_PH2_W4_STK:
                                 swap128(&packet[6], sm_s_ltk);
+                                sm_truncate_key(sm_s_ltk, sm_encryption_key_size);
                                 print_key("stk", sm_s_ltk);
                                 sm_state_responding = SM_STATE_PH2_SEND_STK;
                                 break;
@@ -1212,6 +1230,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 break;                                
                             case SM_STATE_PH4_LTK_W4_ENC:
                                 swap128(&packet[6], sm_s_ltk);
+                                sm_truncate_key(sm_s_ltk, sm_encryption_key_size);
                                 print_key("ltk", sm_s_ltk);
                                 sm_state_responding = SM_STATE_PH4_SEND_LTK;
                                 break;                                
@@ -1483,11 +1502,11 @@ void sm_set_accepted_stk_generation_method(uint8_t accepted_stk_generation_metho
 }
 
 void sm_set_max_encrypted_key_size(uint8_t size) {
-    sm_max_encrypted_key_size = size;
+    sm_max_encryption_key_size = size;
 }
 
 void sm_set_min_encrypted_key_size(uint8_t size) {
-    sm_min_encrypted_key_size = size;
+    sm_min_encryption_key_size = size;
 }
 
 void sm_set_authentication_requirements(uint8_t auth_req){
