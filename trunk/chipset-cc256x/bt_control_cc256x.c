@@ -239,7 +239,7 @@ static const hci_uart_config_t hci_uart_config_cc256x = {
     NULL,
     115200,
     1000000,
-    NULL
+    0
 };
 
 // MARK: public API
