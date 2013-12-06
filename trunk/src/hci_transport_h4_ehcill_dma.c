@@ -139,14 +139,14 @@ static data_source_t hci_transport_h4_dma_ds = {
 
 // hci_transport for use by hci
 static const hci_transport_h4_t hci_transport_h4_ehcill_dma = {
-    .ds                                      = &hci_transport_h4_dma_ds,
     .transport.open                          = h4_open,
     .transport.close                         = h4_close,
     .transport.send_packet                   = ehcill_send_packet,
     .transport.register_packet_handler       = h4_register_packet_handler,
     .transport.get_transport_name            = h4_get_transport_name,
     .transport.set_baudrate                  = h4_set_baudrate,
-    .transport.can_send_packet_now           = h4_can_send_packet_now
+    .transport.can_send_packet_now           = h4_can_send_packet_now,
+    .ds                                      = &hci_transport_h4_dma_ds
 };
 
 
