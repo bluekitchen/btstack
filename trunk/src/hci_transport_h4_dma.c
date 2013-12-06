@@ -103,7 +103,7 @@ static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t si
 
 static data_source_t hci_transport_h4_dma_ds = {
   /*  .item    = */  NULL,
-  /*  .fd      = */  NULL,
+  /*  .fd      = */  0,
   /*  .process = */  h4_process
 };
 
