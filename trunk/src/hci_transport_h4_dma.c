@@ -102,12 +102,13 @@ static uint16_t tx_len;
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
 static data_source_t hci_transport_h4_dma_ds = {
-  /*  .item    = */  NULL,
+  /*  .item    = */  { NULL, NULL },
   /*  .fd      = */  0,
   /*  .process = */  h4_process
 };
 
 static hci_transport_h4_t hci_transport_h4_dma = {
+    {
   /*  .transport.open                          = */  h4_open,
   /*  .transport.close                         = */  h4_close,
   /*  .transport.send_packet                   = */  h4_send_packet,
@@ -115,6 +116,7 @@ static hci_transport_h4_t hci_transport_h4_dma = {
   /*  .transport.get_transport_name            = */  h4_get_transport_name,
   /*  .transport.set_baudrate                  = */  h4_set_baudrate,
   /*  .transport.can_send_packet_now           = */  h4_can_send_packet_now,
+    },
   /*  .ds                                      = */  &hci_transport_h4_dma_ds
 };
 

@@ -134,13 +134,14 @@ static uint8_t   tx_packet_type;
 
 // data source used in run_loop
 static data_source_t hci_transport_h4_dma_ds = {
-  /*  .item    = */  NULL,
+  /*  .item    = */  { NULL, NULL },
   /*  .fd      = */  0,
   /*  .process = */  h4_process
 };
 
 // hci_transport for use by hci
 static const hci_transport_h4_t hci_transport_h4_ehcill_dma = {
+    {
   /*  .transport.open                          = */  h4_open,
   /*  .transport.close                         = */  h4_close,
   /*  .transport.send_packet                   = */  ehcill_send_packet,
@@ -148,6 +149,7 @@ static const hci_transport_h4_t hci_transport_h4_ehcill_dma = {
   /*  .transport.get_transport_name            = */  h4_get_transport_name,
   /*  .transport.set_baudrate                  = */  h4_set_baudrate,
   /*  .transport.can_send_packet_now           = */  h4_can_send_packet_now,
+    },
   /*  .ds                                      = */  &hci_transport_h4_dma_ds
 };
 
