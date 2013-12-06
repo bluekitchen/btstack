@@ -165,7 +165,8 @@ typedef enum {
     SM_STATE_PH2_C1_W4_ENC_A,
     SM_STATE_PH2_C1_GET_ENC_B,
     SM_STATE_PH2_C1_W4_ENC_B,
-    SM_STATE_PH2_C1_SEND,
+    SM_STATE_PH2_C1_SEND_PAIRING_CONFIRM,
+    SM_STATE_PH2_W4_PAIRING_RANDOM,
     SM_STATE_PH2_C1_GET_ENC_C,
     SM_STATE_PH2_C1_W4_ENC_C,
     SM_STATE_PH2_C1_GET_ENC_D,
@@ -279,12 +280,14 @@ static int sm_key_distribution_received_set;
 // -> master := initiator, slave := responder
 //
 
-static key_t     sm_m_random;
-static key_t     sm_m_confirm;
+static uint8_t   sm_m_io_capabilities;
 static uint8_t   sm_m_have_oob_data;
 static uint8_t   sm_m_auth_req;
-static uint8_t   sm_m_io_capabilities;
+static uint8_t   sm_m_max_encryption_key_size;
+static uint8_t   sm_m_key_distribution;
 static uint8_t   sm_m_preq[7];
+static key_t     sm_m_random;
+static key_t     sm_m_confirm;
 
 static key_t     sm_s_random;
 static key_t     sm_s_confirm;
@@ -678,13 +681,13 @@ static void sm_run(void){
             sm_state_responding++;
             }
             return;
-        case SM_STATE_PH2_C1_SEND: {
+        case SM_STATE_PH2_C1_SEND_PAIRING_CONFIRM: {
             uint8_t buffer[17];
             buffer[0] = SM_CODE_PAIRING_CONFIRM;
             swap128(sm_s_confirm, &buffer[1]);
             l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
             sm_timeout_reset();
-            sm_state_responding = SM_STATE_PH2_W4_LTK_REQUEST;
+            sm_state_responding = SM_STATE_PH2_W4_PAIRING_RANDOM;
             return;
         }
         case SM_STATE_PH2_SEND_STK: {
@@ -759,6 +762,11 @@ static void sm_run(void){
     }
 }
 
+static void sm_pdu_received_in_wrong_state(){
+    sm_pairing_failed_reason = SM_REASON_UNSPECIFIED_REASON;
+    sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
+}
+
 static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
 
     if (packet_type != SM_DATA_PACKET) return;
@@ -768,20 +776,27 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
         return;
     }
 
-    printf("sm_packet_handler, request %0x\n", packet[0]);
+    // printf("sm_packet_handler, request %0x\n", packet[0]);
+
+    // a sm timeout requries a new physical connection
+    if (sm_state_responding == SM_STATE_TIMEOUT) return;
 
     switch (packet[0]){
         case SM_CODE_PAIRING_REQUEST:
-            
-            // a sm timeout requries a new physical connection
-            if (sm_state_responding == SM_STATE_TIMEOUT) break;
+
+            if (sm_state_responding != SM_STATE_IDLE) {
+                sm_pdu_received_in_wrong_state();
+                break;;
+            }
 
             // store key distribtion request
             sm_m_io_capabilities = packet[1];
             sm_m_have_oob_data = packet[2];
             sm_m_auth_req = packet[3];
+            sm_m_max_encryption_key_size = packet[4];
 
             // setup key distribution
+            sm_m_key_distribution = packet[5];
             sm_setup_key_distribution(packet[6]);
 
             // for validate
@@ -803,6 +818,12 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             break;
             
         case  SM_CODE_PAIRING_CONFIRM:
+
+            if (sm_state_responding != SM_STATE_PH1_W4_PAIRING_CONFIRM) {
+                sm_pdu_received_in_wrong_state();
+                break;
+            }
+
             // received confirm value
             swap128(&packet[1], sm_m_confirm);
 
@@ -830,6 +851,12 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
 
         case SM_CODE_PAIRING_RANDOM:
+
+            if (sm_state_responding != SM_STATE_PH2_W4_PAIRING_RANDOM) {
+                sm_pdu_received_in_wrong_state();
+                break;
+            }
+
             // received random value
             swap128(&packet[1], sm_m_random);
 
@@ -841,28 +868,48 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             break;
 
         case SM_CODE_ENCRYPTION_INFORMATION:
+            if ((sm_state_responding != SM_STATE_DISTRIBUTE_KEYS) || ((sm_m_key_distribution & SM_KEYDIST_ENC_KEY) == 0)){
+                sm_pdu_received_in_wrong_state();
+                break;
+            }
             sm_key_distribution_received_set |= SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
             swap128(&packet[1], sm_m_ltk);
             break;
 
         case SM_CODE_MASTER_IDENTIFICATION:
+            if ((sm_state_responding != SM_STATE_DISTRIBUTE_KEYS) || ((sm_m_key_distribution & SM_KEYDIST_ENC_KEY) == 0)){
+                sm_pdu_received_in_wrong_state();
+                break;
+            }
             sm_key_distribution_received_set |= SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
             sm_m_ediv = READ_BT_16(packet, 1);
             swap64(&packet[3], sm_m_rand);
             break;
 
         case SM_CODE_IDENTITY_INFORMATION:
+            if ((sm_state_responding != SM_STATE_DISTRIBUTE_KEYS) || ((sm_m_key_distribution & SM_KEYDIST_ID_KEY) == 0)){
+                sm_pdu_received_in_wrong_state();
+                break;
+            }
             sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
             swap128(&packet[1], sm_m_irk);
             break;
 
         case SM_CODE_IDENTITY_ADDRESS_INFORMATION:
+            if ((sm_state_responding != SM_STATE_DISTRIBUTE_KEYS) || ((sm_m_key_distribution & SM_KEYDIST_ID_KEY) == 0)){
+                sm_pdu_received_in_wrong_state();
+                break;
+            }
             sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
             sm_m_addr_type = packet[1];
             BD_ADDR_COPY(sm_m_address, &packet[2]); 
             break;
 
         case SM_CODE_SIGNING_INFORMATION:
+            if ((sm_state_responding != SM_STATE_DISTRIBUTE_KEYS) || ((sm_m_key_distribution & SM_KEYDIST_SIGN) == 0)){
+                sm_pdu_received_in_wrong_state();
+                break;
+            }
             sm_key_distribution_received_set |= SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
             swap128(&packet[1], sm_m_csrk);
             break;
