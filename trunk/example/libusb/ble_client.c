@@ -94,6 +94,12 @@ void le_central_init(){
 void (*le_central_callback)(le_central_event_t * event);
 static void gatt_client_run();
 
+void dump_nodes(le_peripheral_t * peripheral){
+    printf("current level %u, start %02x, end %02x, last %02x\n", peripheral->depth, 
+        peripheral->nodes[peripheral->depth].start_group_handle, 
+        peripheral->nodes[peripheral->depth].end_group_handle,
+        peripheral->nodes[peripheral->depth].last_group_handle);
+}
 
 // START Helper Functions - to be sorted
 static int l2cap_can_send_conectionless_packet_now(){
@@ -307,12 +313,17 @@ static void handle_peripheral_list(){
                 peripheral->state = P_W4_SERVICE_QUERY_RESULT;
                 break;
             case P_W2_SEND_CHARACTERISTIC_QUERY:
+                printf("send characteristic query, level %d\n", peripheral->depth);
+                dump_nodes(peripheral);
+
                 status = send_gatt_characteristic_request(peripheral);
                 if (status != BLE_PERIPHERAL_OK) break;
 
                 peripheral->state = P_W4_CHARACTERISTIC_QUERY_RESULT;
                 break;
             case P_W2_SEND_INCLUDE_SERVICE_QUERY:
+                printf("send include query\n"); 
+                dump_nodes(peripheral);
                 status = send_gatt_include_service_request(peripheral);
                 if (status != BLE_PERIPHERAL_OK) break;
 
@@ -627,15 +638,36 @@ static void handle_gatt_service_packet(le_peripheral_t * peripheral, uint8_t * p
 
 
 
-int has_more_includes_on_current_level(le_peripheral_t * peripheral){
+int has_more_handles_on_current_level(le_peripheral_t * peripheral){
     return peripheral->nodes[peripheral->depth].last_group_handle < peripheral->nodes[peripheral->depth].end_group_handle;
 }
 
-int find_include(le_peripheral_t * peripheral){
-    if (has_more_includes_on_current_level(peripheral)) return 1;
-    if (peripheral->depth == 0) return 0;
-    peripheral->depth--;
-    return find_include(peripheral);
+
+int find_next_handle(le_peripheral_t * peripheral){
+    
+    printf("find next node: ");
+    dump_nodes(peripheral);
+
+    if (has_more_handles_on_current_level(peripheral)){
+        peripheral->nodes[peripheral->depth].last_group_handle++;
+        printf("found on the same level : ");
+        dump_nodes(peripheral);
+        return 1;
+    }
+
+    if (peripheral->depth < LE_CENTRAL_MAX_INCLUDE_DEPTH){
+        printf("go deeper: ");
+        dump_nodes(peripheral);
+        peripheral->depth++;
+    } else if (peripheral->depth == 0){
+        printf("no more nodes\n");
+        return 0;
+    } else { 
+        printf("go up: ");
+        dump_nodes(peripheral);
+        peripheral->depth--;
+    }
+    return find_next_handle(peripheral);
 }
 
 
@@ -687,7 +719,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             int i;
 
             switch (peripheral->state){
-                case P_W4_CHARACTERISTIC_QUERY_RESULT:
+                case P_W4_CHARACTERISTIC_QUERY_RESULT:{
                     uuid_length = attr_length - 5;
                     
                     for (i = 2; i < size; i += attr_length){
@@ -712,40 +744,49 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                         (*le_central_callback)((le_central_event_t*)&event);
                     }
 
-                     // more characteristics to discover?
-                    if (peripheral->nodes[peripheral->depth].last_group_handle < peripheral->nodes[peripheral->depth].end_group_handle) {
+                    // query CHR on the same level
+                    if (has_more_handles_on_current_level(peripheral)){
+                        printf("more CHR on level\n");
                         peripheral->state = P_W2_SEND_CHARACTERISTIC_QUERY;
+                        peripheral->nodes[peripheral->depth].last_group_handle++;
                         break;
-                    }
+                    } 
 
-                    // don't look for includes on deepest level
-                    if ((peripheral->depth + 1) == LE_CENTRAL_MAX_INCLUDE_DEPTH){
+                    // start query includes on the same level
+                    // do not ask for include on the max level...
+                    if (peripheral->depth + 1 < LE_CENTRAL_MAX_INCLUDE_DEPTH){
+                        peripheral->nodes[peripheral->depth].last_group_handle = peripheral->nodes[peripheral->depth].start_group_handle - 1;
+                        peripheral->state = P_W2_SEND_INCLUDE_SERVICE_QUERY;
+                        break;
+                    } 
+                    
+                    // no includes on the current level -> go up
+                    while (peripheral->depth > 0 && !has_more_handles_on_current_level(peripheral)){
                         peripheral->depth--;
                     }
 
-                    // find level with more includes to query
-                    if (find_include(peripheral)){
+                    if (has_more_handles_on_current_level(peripheral)){
+                        peripheral->nodes[peripheral->depth].last_group_handle++;
                         peripheral->state = P_W2_SEND_INCLUDE_SERVICE_QUERY;
-                        break;                        
+                        break;
                     }
-
                     peripheral->state = P_CONNECTED;
-                    send_gatt_complete_event(peripheral, GATT_CHARACTERISTIC_QUERY_COMPLETE);                    
+                    send_gatt_complete_event(peripheral, GATT_CHARACTERISTIC_QUERY_COMPLETE); 
+                
                     break;
+                }
 
                 case P_W4_INCLUDE_SERVICE_QUERY_RESULT:{
-                    uint16_t start_group_handle = READ_BT_16(packet,4);
-                    uint16_t end_group_handle = READ_BT_16(packet,6);
-                    
-                    // update handle 
                     peripheral->nodes[peripheral->depth].last_group_handle = READ_BT_16(packet,2);
                     
-                    // go deeper -> update depth
+                    // update handle 
+                    printf("go down one level, ask for CHR\n");
                     peripheral->depth++;
+                    peripheral->nodes[peripheral->depth].start_group_handle = READ_BT_16(packet,4);
+                    peripheral->nodes[peripheral->depth].end_group_handle = READ_BT_16(packet,6);
+                    peripheral->nodes[peripheral->depth].last_group_handle = peripheral->nodes[peripheral->depth].start_group_handle - 1;
+                    
                     peripheral->state = P_W2_SEND_CHARACTERISTIC_QUERY;
-                    // ask for characteristic of service (peripheral, service[next-handle, end-handle])
-                    peripheral->nodes[peripheral->depth].start_group_handle = start_group_handle;
-                    peripheral->nodes[peripheral->depth].end_group_handle = end_group_handle;
                     break;
                 }
                 default:
@@ -754,6 +795,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             break;
         }
         case ATT_ERROR_RESPONSE:
+            printf("ATT_ERROR_RESPONSE error %u, state %u\n", packet[4], peripheral->state);
             switch (packet[4]){
                 case ATT_ERROR_ATTRIBUTE_NOT_FOUND: {
                     switch(peripheral->state){
@@ -762,8 +804,49 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                             send_gatt_complete_event(peripheral, GATT_SERVICE_QUERY_COMPLETE);
                             break;
                         case P_W4_CHARACTERISTIC_QUERY_RESULT:
+                            printf("CHARACTERISTIC_QUERY ERROR search includes\n");
+                            
+                            // start query includes on the same level
+                            // do not ask for include on the max level...
+                            if (peripheral->depth + 1 < LE_CENTRAL_MAX_INCLUDE_DEPTH){
+                                peripheral->nodes[peripheral->depth].last_group_handle = peripheral->nodes[peripheral->depth].start_group_handle - 1;
+                                peripheral->state = P_W2_SEND_INCLUDE_SERVICE_QUERY;
+                                break;
+                            } 
+                            
+                            // no includes on the current level -> go up
+                            while (peripheral->depth > 0 && !has_more_handles_on_current_level(peripheral)){
+                                peripheral->depth--;
+                            }
+
+                            if (has_more_handles_on_current_level(peripheral)){
+                                peripheral->nodes[peripheral->depth].last_group_handle++;
+                                peripheral->state = P_W2_SEND_INCLUDE_SERVICE_QUERY;
+                                break;
+                            }
                             peripheral->state = P_CONNECTED;
-                            send_gatt_complete_event(peripheral, GATT_CHARACTERISTIC_QUERY_COMPLETE);      
+                            send_gatt_complete_event(peripheral, GATT_CHARACTERISTIC_QUERY_COMPLETE);
+
+
+                            break;
+
+                        case P_W4_INCLUDE_SERVICE_QUERY_RESULT:
+                            printf("INCLUDE_SERVICE_QUERY ERROR\n");
+                            
+                            // no includes on the current level -> go up
+                            while (peripheral->depth > 0 && !has_more_handles_on_current_level(peripheral)){
+                                peripheral->depth--;
+                            }
+
+                            if (has_more_handles_on_current_level(peripheral)){
+                                peripheral->nodes[peripheral->depth].last_group_handle++;
+                                peripheral->state = P_W2_SEND_INCLUDE_SERVICE_QUERY;
+                                break;
+                            }
+                            peripheral->state = P_CONNECTED;
+                            send_gatt_complete_event(peripheral, GATT_CHARACTERISTIC_QUERY_COMPLETE);
+
+
                             break;
                         default:
                             return;
@@ -791,7 +874,7 @@ void setup(void){
     run_loop_init(RUN_LOOP_POSIX);
         
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+    hci_dump_open("/tmp/ble_client.pklg", HCI_DUMP_PACKETLOGGER);
 
   // init HCI
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
@@ -871,7 +954,8 @@ le_service_t services[20];
 int service_count = 0;
 int service_index = 0;
 
-static bd_addr_t test_device_addr = {0x1c, 0xba, 0x8c, 0x20, 0xc7, 0xf6};
+// static bd_addr_t test_device_addr = {0x1c, 0xba, 0x8c, 0x20, 0xc7, 0xf6};
+static bd_addr_t test_device_addr = {0x00, 0x1b, 0xdc, 0x05, 0xb5, 0xdc};
 
 typedef enum {
     TC_IDLE,
@@ -922,10 +1006,13 @@ void test_client(){
             break;
 
         case TC_W2_CHARACTERISTIC_REQUEST:
-            printf("test client - TC_W2_CHARACTERISTIC_REQUEST, for service[%d/%d]\n", service_index, service_count-1);
-            
-            status = le_central_get_characteristics_for_service(&test_device, &services[service_index++]);
+            if (service_index >= service_count) tc_state = TC_W2_DISCONNECT;
+
+            printf("test client - TC_W2_CHARACTERISTIC_REQUEST, for service %02x [%d/%d]\n", services[service_index].uuid16, service_index+1, service_count);
+
+            status = le_central_get_characteristics_for_service(&test_device, &services[service_index]);
             if (status != BLE_PERIPHERAL_OK) return;
+            service_index++;
             tc_state = TC_W4_CHARACTERISTIC_RESULT;
             printf("le_central_get_characteristics_for_service requested\n");
             break;
@@ -987,8 +1074,8 @@ static void handle_le_central_event(le_central_event_t * event){
             tc_state = TC_W2_CHARACTERISTIC_REQUEST;
             int i;
             for (i = 0; i < service_count; i++){
-                printf("    *** found service *** start group handle %02x, end group handle %02x, uuid ", services[i].start_group_handle, services[i].end_group_handle);
-                printUUID128(services[i].uuid128);
+                printf("    *** found service ***  uuid %02x, start group handle %02x, end group handle %02x", 
+                    services[i].uuid16, services[i].start_group_handle, services[i].end_group_handle);
                 printf("\n");
             }
             test_client();
