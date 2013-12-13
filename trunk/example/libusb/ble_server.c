@@ -198,8 +198,6 @@ typedef enum {
     SM_STATE_PH3_Y_W4_ENC,
     SM_STATE_PH3_LTK_GET_ENC,
     SM_STATE_PH3_LTK_W4_ENC,
-    SM_STATE_PH3_IRK_GET_ENC,
-    SM_STATE_PH3_IRK_W4_ENC,
 
     //
     SM_STATE_DISTRIBUTE_KEYS,
@@ -216,6 +214,13 @@ typedef enum {
     SM_STATE_TIMEOUT, // no other security messages are exchanged
 
 } security_manager_state_t;
+
+typedef enum {
+    DKG_W4_WORKING,
+    DKG_CALC_IRK,
+    DKG_W4_IRK,
+    DKG_IDLE
+} derived_key_generation_t;
 
 typedef enum {
     JUST_WORKS,
@@ -259,6 +264,9 @@ static uint8_t sm_s_request_security = 0;
 
 static uint8_t   sm_s_addr_type;
 static bd_addr_t sm_s_address;
+
+// 
+static derived_key_generation_t dkg_state = DKG_W4_WORKING;
 
 // PER INSTANCE DATA
 
@@ -587,6 +595,28 @@ static void sm_run(void){
     if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
     if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) return;
 
+    // distributed key generation
+    switch (dkg_state){
+        case DKG_CALC_IRK:
+            // already busy?
+            if (sm_aes128_active) break;
+            {
+            // IRK = d1(IR, 1, 0)
+            key_t d1_prime, plaintext_flipped;
+            sm_d1_d_prime(1, 0, d1_prime);  // plaintext
+            swap128(d1_prime, plaintext_flipped);
+            key_t key_flipped;
+            swap128(sm_persistent_ir, key_flipped);
+            sm_aes128_active = 1;
+            hci_send_cmd(&hci_le_encrypt, key_flipped, plaintext_flipped);
+            }
+            dkg_state = DKG_W4_IRK;
+            return;
+        default:
+            break;  
+    }
+
+    // responding state
     switch (sm_state_responding){
 
         case SM_STATE_SEND_SECURITY_REQUEST: {
@@ -688,7 +718,6 @@ static void sm_run(void){
         case SM_STATE_PH3_DHK_GET_ENC:
         case SM_STATE_PH3_Y_GET_ENC:
         case SM_STATE_PH3_LTK_GET_ENC:
-        case SM_STATE_PH3_IRK_GET_ENC:
         case SM_STATE_PH4_DHK_GET_ENC:
         case SM_STATE_PH4_Y_GET_ENC:
         case SM_STATE_PH4_LTK_GET_ENC:
@@ -1025,6 +1054,9 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					// bt stack activated, get started
 					if (packet[2] == HCI_STATE_WORKING) {
                         printf("Working!\n");
+
+                        dkg_state = DKG_CALC_IRK;
+                        
                         hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
 					}
 					break;
@@ -1143,6 +1175,15 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					}
                     if (COMMAND_COMPLETE_EVENT(packet, hci_le_encrypt)){
                         sm_aes128_active = 0;
+                        switch (dkg_state){
+                            case DKG_W4_IRK:
+                                swap128(&packet[6], sm_persistent_irk);
+                                print_key("irk", sm_persistent_irk);
+                                dkg_state = DKG_IDLE;
+                                break;
+                            default:
+                                break;
+                        }
                         switch (sm_state_responding){
                             case SM_STATE_PH2_C1_W4_ENC_A:
                             case SM_STATE_PH2_C1_W4_ENC_C:
@@ -1222,14 +1263,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             case SM_STATE_PH3_LTK_W4_ENC:
                                 swap128(&packet[6], sm_s_ltk);
                                 print_key("ltk", sm_s_ltk);
-                                // IRK = d1(IR, 1, 0)
-                                sm_aes128_set_key(sm_persistent_ir);
-                                sm_d1_d_prime(1, 0, sm_aes128_plaintext);
-                                sm_state_responding = SM_STATE_PH3_IRK_GET_ENC;
-                                break;
-                            case SM_STATE_PH3_IRK_W4_ENC:
-                                swap128(&packet[6], sm_persistent_irk);
-                                print_key("irk", sm_persistent_irk);
                                 // distribute keys
                                 sm_state_responding = SM_STATE_DISTRIBUTE_KEYS;
                                 break;                                
