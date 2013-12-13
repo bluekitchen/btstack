@@ -219,6 +219,8 @@ typedef enum {
     DKG_W4_WORKING,
     DKG_CALC_IRK,
     DKG_W4_IRK,
+    DKG_CALC_DHK,
+    DKG_W4_DHK,
     DKG_IDLE
 } derived_key_generation_t;
 
@@ -609,8 +611,22 @@ static void sm_run(void){
             swap128(sm_persistent_ir, key_flipped);
             sm_aes128_active = 1;
             hci_send_cmd(&hci_le_encrypt, key_flipped, plaintext_flipped);
+            dkg_state++;
             }
-            dkg_state = DKG_W4_IRK;
+        case DKG_CALC_DHK:
+            // already busy?
+            if (sm_aes128_active) break;
+            {
+            // DHK = d1(IR, 3, 0)
+            key_t d1_prime, plaintext_flipped;
+            sm_d1_d_prime(3, 0, d1_prime);  // plaintext
+            swap128(d1_prime, plaintext_flipped);
+            key_t key_flipped;
+            swap128(sm_persistent_ir, key_flipped);
+            sm_aes128_active = 1;
+            hci_send_cmd(&hci_le_encrypt, key_flipped, plaintext_flipped);
+            dkg_state++;
+            }
             return;
         default:
             break;  
@@ -1117,7 +1133,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
                             log_info("LTK Request: recalculating with ediv 0x%04x", sm_s_ediv);
 
-                            // dhk = d1(IR, 1, 0) - enc
+                            // dhk = d1(IR, 3, 0) - enc
                             // y   = dm(dhk, rand) - enc
                             // div = y xor ediv
                             // ltk = d1(ER, div, 0) - enc
@@ -1179,7 +1195,12 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             case DKG_W4_IRK:
                                 swap128(&packet[6], sm_persistent_irk);
                                 print_key("irk", sm_persistent_irk);
-                                dkg_state = DKG_IDLE;
+                                dkg_state++;
+                                break;
+                            case DKG_W4_DHK:
+                                swap128(&packet[6], sm_persistent_dhk);
+                                print_key("dhk", sm_persistent_dhk);
+                                dkg_state ++;
                                 break;
                             default:
                                 break;
