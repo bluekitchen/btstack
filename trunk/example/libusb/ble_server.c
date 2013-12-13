@@ -123,7 +123,6 @@ typedef enum {
 } io_capability_t;
 
 
-
 //
 // types used by client
 //
@@ -271,8 +270,9 @@ static uint8_t  sm_pairing_failed_reason = 0;
 static timer_source_t sm_timeout;
 
 // data to send to aes128 crypto engine, see sm_aes128_set_key and sm_aes128_set_plaintext
-static key_t sm_aes128_key;
-static key_t sm_aes128_plaintext;
+static key_t   sm_aes128_key;
+static key_t   sm_aes128_plaintext;
+static uint8_t sm_aes128_active;
 
 // generation method and temporary key for STK - STK is stored in sm_s_ltk
 static stk_generation_method_t sm_stk_generation_method;
@@ -692,7 +692,10 @@ static void sm_run(void){
         case SM_STATE_PH4_DHK_GET_ENC:
         case SM_STATE_PH4_Y_GET_ENC:
         case SM_STATE_PH4_LTK_GET_ENC:
+            // already busy?
+            if (sm_aes128_active) break;
             {
+            sm_aes128_active = 1;
             key_t key_flipped, plaintext_flipped;
             swap128(sm_aes128_key, key_flipped);
             swap128(sm_aes128_plaintext, plaintext_flipped);
@@ -1001,6 +1004,7 @@ void sm_init(){
                                        | SM_STK_GENERATION_METHOD_PASSKEY;
     sm_max_encryption_key_size = 16;
     sm_min_encryption_key_size = 7;
+    sm_aes128_active = 0;
 }
 
 // END OF SM
@@ -1138,6 +1142,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					   break;
 					}
                     if (COMMAND_COMPLETE_EVENT(packet, hci_le_encrypt)){
+                        sm_aes128_active = 0;
                         switch (sm_state_responding){
                             case SM_STATE_PH2_C1_W4_ENC_A:
                             case SM_STATE_PH2_C1_W4_ENC_C:
