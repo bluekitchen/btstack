@@ -447,15 +447,6 @@ static void sm_d1_d_prime(uint16_t d, uint16_t r, key_t d1_prime){
     net_store_16(d1_prime, 14, d);
 }
 
-static void sm_d1(key_t k, uint16_t d, uint16_t r, key_t d1){
-    key_t d1_prime;
-    sm_d1_d_prime(d, r, d1_prime);
-    // d1(k,d,r) = e(k, d'),
-    unsigned long rk[RKLENGTH(KEYBITS)];
-    int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
-    rijndaelEncrypt(rk, nrounds, d1_prime, d1);
-}
-
 static void sm_dm_r_prime(uint8_t r[8], key_t r_prime){
     // r’ = padding || r
     memset(r_prime, 0, 16);
@@ -1361,6 +1352,15 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 }
 
 // aes128 c implementation only code
+
+static void sm_d1(key_t k, uint16_t d, uint16_t r, key_t d1){
+    key_t d1_prime;
+    sm_d1_d_prime(d, r, d1_prime);
+    // d1(k,d,r) = e(k, d'),
+    unsigned long rk[RKLENGTH(KEYBITS)];
+    int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
+    rijndaelEncrypt(rk, nrounds, d1_prime, d1);
+}
 
 static uint16_t sm_dm(key_t k, uint8_t r[8]){
     key_t r_prime;
