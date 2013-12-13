@@ -192,8 +192,6 @@ typedef enum {
     SM_STATE_PH3_W4_RANDOM,
     SM_STATE_PH3_GET_DIV,
     SM_STATE_PH3_W4_DIV,
-    SM_STATE_PH3_DHK_GET_ENC,
-    SM_STATE_PH3_DHK_W4_ENC,
     SM_STATE_PH3_Y_GET_ENC,
     SM_STATE_PH3_Y_W4_ENC,
     SM_STATE_PH3_LTK_GET_ENC,
@@ -203,8 +201,6 @@ typedef enum {
     SM_STATE_DISTRIBUTE_KEYS,
 
     // re establish previously distribued LTK
-    SM_STATE_PH4_DHK_GET_ENC,
-    SM_STATE_PH4_DHK_W4_ENC,
     SM_STATE_PH4_Y_GET_ENC,
     SM_STATE_PH4_Y_W4_ENC,
     SM_STATE_PH4_LTK_GET_ENC,
@@ -731,10 +727,8 @@ static void sm_run(void){
         case SM_STATE_PH2_C1_GET_ENC_C:
         case SM_STATE_PH2_C1_GET_ENC_D:
         case SM_STATE_PH2_CALC_STK:
-        case SM_STATE_PH3_DHK_GET_ENC:
         case SM_STATE_PH3_Y_GET_ENC:
         case SM_STATE_PH3_LTK_GET_ENC:
-        case SM_STATE_PH4_DHK_GET_ENC:
         case SM_STATE_PH4_Y_GET_ENC:
         case SM_STATE_PH4_LTK_GET_ENC:
             // already busy?
@@ -1138,10 +1132,12 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             // div = y xor ediv
                             // ltk = d1(ER, div, 0) - enc
 
-                            // DHK = d1(IR, 3, 0)
-                            sm_aes128_set_key(sm_persistent_ir);
-                            sm_d1_d_prime(3, 0, sm_aes128_plaintext);
-                            sm_state_responding = SM_STATE_PH4_DHK_GET_ENC;
+                            // Y = dm(DHK, Rand)
+                            sm_aes128_set_key(sm_persistent_dhk);
+                            sm_dm_r_prime(sm_s_rand, sm_aes128_plaintext);
+                            sm_state_responding = SM_STATE_PH4_Y_GET_ENC;
+
+
 
                             // sm_s_div = sm_div(sm_persistent_dhk, sm_s_rand, sm_s_ediv);
                             // sm_s_ltk(sm_persistent_er, sm_s_div, sm_s_ltk);
@@ -1241,16 +1237,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 print_key("stk", sm_s_ltk);
                                 sm_state_responding = SM_STATE_PH2_SEND_STK;
                                 break;
-                            case SM_STATE_PH3_DHK_W4_ENC:
-                            case SM_STATE_PH4_DHK_W4_ENC:
-                                swap128(&packet[6], sm_persistent_dhk);
-                                print_key("dhk", sm_persistent_dhk);
-                                // PH3B2 - calculate Y from      - enc
-                                // Y = dm(DHK, Rand)
-                                sm_aes128_set_key(sm_persistent_dhk);
-                                sm_dm_r_prime(sm_s_rand, sm_aes128_plaintext);
-                                sm_state_responding++;
-                                break;
                             case SM_STATE_PH3_Y_W4_ENC:{
                                 key_t y128;
                                 swap128(&packet[6], y128);
@@ -1345,10 +1331,12 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 // PH3B3 - calculate EDIV
                                 // PH3B4 - calculate LTK         - enc
 
-                                // DHK = d1(IR, 3, 0)
-                                sm_aes128_set_key(sm_persistent_ir);
-                                sm_d1_d_prime(3, 0, sm_aes128_plaintext);
-                                sm_state_responding = SM_STATE_PH3_DHK_GET_ENC;
+                                // skip PH3B1 - we got DHK during startup
+                                // PH3B2 - calculate Y from      - enc
+                                // Y = dm(DHK, Rand)
+                                sm_aes128_set_key(sm_persistent_dhk);
+                                sm_dm_r_prime(sm_s_rand, sm_aes128_plaintext);
+                                sm_state_responding = SM_STATE_PH3_Y_GET_ENC;
 
                                 // // calculate EDIV and LTK
                                 // sm_s_ediv = sm_ediv(sm_persistent_dhk, sm_s_rand, sm_s_div);
