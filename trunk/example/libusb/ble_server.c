@@ -217,8 +217,17 @@ typedef enum {
     DKG_W4_IRK,
     DKG_CALC_DHK,
     DKG_W4_DHK,
-    DKG_IDLE
+    DKG_READY
 } derived_key_generation_t;
+
+typedef enum {
+    RAU_IDLE,
+    RAU_GET_RANDOM,
+    RAU_W4_RANDOM,
+    RAU_GET_ENC,
+    RAU_W4_ENC,
+    RAU_SET_ADDRESS,
+} random_address_update_t;
 
 typedef enum {
     JUST_WORKS,
@@ -260,11 +269,17 @@ static uint8_t sm_s_auth_req = 0;
 static uint8_t sm_s_io_capabilities = IO_CAPABILITY_UNKNOWN;
 static uint8_t sm_s_request_security = 0;
 
-static uint8_t   sm_s_addr_type;
-static bd_addr_t sm_s_address;
+
 
 // 
 static derived_key_generation_t dkg_state = DKG_W4_WORKING;
+
+//
+static random_address_update_t rau_state = RAU_IDLE;
+static uint8_t   sm_random_address[3];
+static uint8_t   sm_ah[3];
+static uint8_t   sm_s_addr_type;
+static bd_addr_t sm_s_address;
 
 // PER INSTANCE DATA
 
@@ -352,10 +367,15 @@ static uint16_t         att_response_size   = 0;
 static uint8_t          att_response_buffer[28];
 
 // SECURITY MANAGER (SM) MATERIALIZES HERE
+static void sm_run();
+
 static inline void swapX(uint8_t *src, uint8_t *dst, int len){
     int i;
     for (i = 0; i < len; i++)
         dst[len - 1 - i] = src[i];
+}
+static inline void swap24(uint8_t src[3], uint8_t dst[3]){
+    swapX(src, dst, 3);
 }
 static inline void swap56(uint8_t src[7], uint8_t dst[7]){
     swapX(src, dst, 7);
@@ -441,6 +461,9 @@ static void gap_random_address_update_handler(timer_source_t * timer){
     printf("GAP Random Address Update due\n");
     run_loop_set_timer(&gap_random_address_update_timer, gap_random_adress_update_period);
     run_loop_add_timer(&gap_random_address_update_timer);
+    if (rau_state != RAU_IDLE) return;
+    rau_state = RAU_GET_RANDOM;
+    sm_run();
 }
 
 static void gap_random_address_update_start(){
@@ -468,6 +491,12 @@ static void sm_aes128_start(key_t key, key_t plaintext){
     swap128(key, key_flipped);
     swap128(plaintext, plaintext_flipped);
     hci_send_cmd(&hci_le_encrypt, key_flipped, plaintext_flipped);
+}
+
+static void sm_ah_r_prime(uint8_t r[3], key_t d1_prime){
+    // r'= padding || r
+    memset(d1_prime, 0, 16);
+    memcpy(&d1_prime[13], r, 3);
 }
 
 static void sm_d1_d_prime(uint16_t d, uint16_t r, key_t d1_prime){
@@ -639,6 +668,36 @@ static void sm_run(void){
             return;
         default:
             break;  
+    }
+
+    // random address updates
+    switch (rau_state){
+        case RAU_GET_RANDOM:
+            hci_send_cmd(&hci_le_rand);
+            rau_state++;
+            return;
+        case RAU_GET_ENC:
+            // already busy?
+            if (sm_aes128_active) break;
+            {
+            key_t r_prime;
+            sm_ah_r_prime(sm_random_address, r_prime);
+            sm_aes128_start(sm_persistent_irk, r_prime);
+            rau_state++;
+            return;
+            }
+        case RAU_SET_ADDRESS:
+            memcpy(&sm_s_address[0], sm_random_address, 3);
+            memcpy(&sm_s_address[3], sm_ah, 3);
+            sm_s_addr_type = 1;
+            printf("Random address: ");
+            print_bd_addr(sm_s_address);
+            printf("\n");
+            hci_send_cmd(&hci_le_set_random_address, sm_s_address);
+            rau_state = RAU_IDLE;
+            return;
+        default:
+            break;
     }
 
     // responding state
@@ -1074,7 +1133,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
                         dkg_state = DKG_CALC_IRK;
                         
-                        hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
+                        // hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
 					}
 					break;
                 
@@ -1208,6 +1267,14 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             default:
                                 break;
                         }
+                        switch (rau_state){
+                            case RAU_W4_ENC:
+                                swap24(&packet[19], sm_ah);
+                                rau_state++;
+                                break;
+                            default:
+                                break;
+                        }
                         switch (sm_state_responding){
                             case SM_STATE_PH2_C1_W4_ENC_A:
                             case SM_STATE_PH2_C1_W4_ENC_C:
@@ -1291,6 +1358,14 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                         }
                     }
                     if (COMMAND_COMPLETE_EVENT(packet, hci_le_rand)){
+                        switch (rau_state){
+                            case RAU_W4_RANDOM:
+                                memcpy(sm_random_address, &packet[6], 3);
+                                rau_state++;
+                                break;
+                            default:
+                                break;
+                        }
                         switch (sm_state_responding){
                             case SM_STATE_PH2_W4_RANDOM_TK:
                             {
