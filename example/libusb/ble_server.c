@@ -432,6 +432,27 @@ static void sm_timeout_reset(){
 
 // end of sm timeout
 
+// GAP Random Address updates
+static uint8_t gap_random_adress_update_enable;
+static timer_source_t gap_random_address_update_timer; 
+static uint32_t gap_random_adress_update_period;
+
+static void gap_random_address_update_handler(timer_source_t * timer){
+    printf("GAP Random Address Update due\n");
+    run_loop_set_timer(&gap_random_address_update_timer, gap_random_adress_update_period);
+    run_loop_add_timer(&gap_random_address_update_timer);
+}
+
+static void gap_random_address_update_start(){
+    run_loop_set_timer_handler(&gap_random_address_update_timer, gap_random_address_update_handler);
+    run_loop_set_timer(&gap_random_address_update_timer, gap_random_adress_update_period);
+    run_loop_add_timer(&gap_random_address_update_timer);
+}
+
+static void gap_random_address_update_stop(){
+    run_loop_remove_timer(&gap_random_address_update_timer);
+}
+
 static inline void sm_aes128_set_key(key_t key){
     memcpy(sm_aes128_key, key, 16);
 } 
@@ -1533,6 +1554,22 @@ void sm_test2(){
     printf("Confirm value correct :%u\n", memcmp(c1, c1_true, 16) == 0);
 }
 
+// GAP LE API
+void gap_random_address_set_enable(int enable){
+    gap_random_address_update_stop();
+    gap_random_adress_update_enable = enable;
+    if (!enable) return;
+    gap_random_address_update_start();
+}
+
+void gap_random_address_set_update_period(int period_ms){
+    gap_random_adress_update_period = period_ms;
+    if (gap_random_adress_update_enable){
+        gap_random_address_update_stop();
+        gap_random_address_update_start();
+    }
+}
+
 // Security Manager Client API
 
 void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data)){
@@ -1677,6 +1714,8 @@ int main(void)
     // exit(0);
 
     setup();
+    gap_random_address_set_update_period(5000);
+    gap_random_address_set_enable(1);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
