@@ -440,6 +440,15 @@ static inline void sm_aes128_set_plaintext(key_t plaintext){
     memcpy(sm_aes128_plaintext, plaintext, 16);
 } 
 
+// asserts: sm_aes128_active == 0, hci_can_send_command == 1
+static void sm_aes128_start(key_t key, key_t plaintext){
+    sm_aes128_active = 1;
+    key_t key_flipped, plaintext_flipped;
+    swap128(key, key_flipped);
+    swap128(plaintext, plaintext_flipped);
+    hci_send_cmd(&hci_le_encrypt, key_flipped, plaintext_flipped);
+}
+
 static void sm_d1_d_prime(uint16_t d, uint16_t r, key_t d1_prime){
     // d'= padding || r || d
     memset(d1_prime, 0, 16);
@@ -591,13 +600,9 @@ static void sm_run(void){
             if (sm_aes128_active) break;
             {
             // IRK = d1(IR, 1, 0)
-            key_t d1_prime, plaintext_flipped;
+            key_t d1_prime;
             sm_d1_d_prime(1, 0, d1_prime);  // plaintext
-            swap128(d1_prime, plaintext_flipped);
-            key_t key_flipped;
-            swap128(sm_persistent_ir, key_flipped);
-            sm_aes128_active = 1;
-            hci_send_cmd(&hci_le_encrypt, key_flipped, plaintext_flipped);
+            sm_aes128_start(sm_persistent_ir, d1_prime);
             dkg_state++;
             }
         case DKG_CALC_DHK:
@@ -605,13 +610,9 @@ static void sm_run(void){
             if (sm_aes128_active) break;
             {
             // DHK = d1(IR, 3, 0)
-            key_t d1_prime, plaintext_flipped;
+            key_t d1_prime;
             sm_d1_d_prime(3, 0, d1_prime);  // plaintext
-            swap128(d1_prime, plaintext_flipped);
-            key_t key_flipped;
-            swap128(sm_persistent_ir, key_flipped);
-            sm_aes128_active = 1;
-            hci_send_cmd(&hci_le_encrypt, key_flipped, plaintext_flipped);
+            sm_aes128_start(sm_persistent_ir, d1_prime);
             dkg_state++;
             }
             return;
@@ -724,14 +725,8 @@ static void sm_run(void){
         case SM_STATE_PH4_LTK_GET_ENC:
             // already busy?
             if (sm_aes128_active) break;
-            {
-            sm_aes128_active = 1;
-            key_t key_flipped, plaintext_flipped;
-            swap128(sm_aes128_key, key_flipped);
-            swap128(sm_aes128_plaintext, plaintext_flipped);
-            hci_send_cmd(&hci_le_encrypt, key_flipped, plaintext_flipped);
+            sm_aes128_start(sm_aes128_key, sm_aes128_plaintext);
             sm_state_responding++;
-            }
             return;
         case SM_STATE_PH2_C1_SEND_PAIRING_CONFIRM: {
             uint8_t buffer[17];
