@@ -149,7 +149,7 @@ void posix_execute(void) {
                 next_tv.tv_usec += 1000000;
                 next_tv.tv_sec--;
             }
-            if (next_tv.tv_sec < 0 || (next_tv.tv_sec == 0 && next_tv.tv_usec < 0)){
+            if (next_tv.tv_sec < 0){
                 next_tv.tv_sec  = 0; 
                 next_tv.tv_usec = 0;
             }
