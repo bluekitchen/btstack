@@ -42,9 +42,6 @@
  *  Created by Matthias Ringwald on 7/5/09.
  */
 
-// delock bt class 2 - csr
-// 0a12:0001 (bus 27, device 2)
-
 // Interface Number - Alternate Setting - suggested Endpoint Address - Endpoint Type - Suggested Max Packet Size 
 // HCI Commands 0 0 0x00 Control 8/16/32/64 
 // HCI Events   0 0 0x81 Interrupt (IN) 16 
@@ -130,7 +127,9 @@ static int acl_out_addr;
 // list of known devices, using ProductID/VendorID tuples
 static uint16_t known_bt_devices[] = {
     // DeLOCK Bluetooth 4.0
-    0x0a5c, 0x21e8
+    0x0a5c, 0x21e8,
+    // Asus BT400
+    0x0b05, 0x17cb,
 };
 static int num_known_devices = sizeof(known_bt_devices) / sizeof(uint16_t) / 2;
 
