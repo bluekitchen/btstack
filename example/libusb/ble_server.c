@@ -347,6 +347,9 @@ static key_t     sm_m_irk;
 // stores oob data in provided 16 byte buffer if not null
 static int (*sm_get_oob_data)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data) = NULL;
 
+// used to notify applicationss that user interaction is neccessary, see sm_notify_t below
+static btstack_packet_handler_t sm_client_packet_handler = NULL;
+
 // horizontal: initiator capabilities
 // vertial:    responder capabilities
 static const stk_generation_method_t stk_generation_method[5][5] = {
@@ -578,6 +581,9 @@ static void sm_notify_client(uint8_t type, uint8_t addr_type, bd_addr_t address,
 
     // dummy implementation
     printf("sm_notify_client: event 0x%02x, addres_type %u, address (), num '%06u'", event.type, event.addr_type, event.passkey);
+
+    if (!sm_client_packet_handler) return;
+    sm_client_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(sm_event_t));
 }
 
 // decide on stk generation based on
@@ -1646,9 +1652,12 @@ void gap_random_address_set_update_period(int period_ms){
 }
 
 // Security Manager Client API
-
 void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data)){
     sm_get_oob_data = get_oob_data_callback;
+}
+
+void sm_register_packet_handler(btstack_packet_handler_t * handler){
+    sm_client_packet_handler = handler;    
 }
 
 void sm_set_accepted_stk_generation_method(uint8_t accepted_stk_generation_methods){
