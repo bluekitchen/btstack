@@ -281,8 +281,9 @@ static derived_key_generation_t dkg_state = DKG_W4_WORKING;
 
 //
 static random_address_update_t rau_state = RAU_IDLE;
-static uint8_t   sm_random_address[3];
-static uint8_t   sm_ah[3];
+static bd_addr_t sm_random_address;
+
+//
 static uint8_t   sm_s_addr_type;
 static bd_addr_t sm_s_address;
 
@@ -698,13 +699,10 @@ static void sm_run(void){
             return;
             }
         case RAU_SET_ADDRESS:
-            memcpy(&sm_s_address[0], sm_random_address, 3);
-            memcpy(&sm_s_address[3], sm_ah, 3);
-            sm_s_addr_type = 1;
-            printf("Random address: ");
-            print_bd_addr(sm_s_address);
+            printf("New random address: ");
+            print_bd_addr(sm_random_address);
             printf("\n");
-            hci_send_cmd(&hci_le_set_random_address, sm_s_address);
+            hci_send_cmd(&hci_le_set_random_address, sm_random_address);
             rau_state = RAU_IDLE;
             return;
         default:
@@ -1280,7 +1278,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                         }
                         switch (rau_state){
                             case RAU_W4_ENC:
-                                swap24(&packet[19], sm_ah);
+                                swap24(&packet[19], &sm_random_address[3]);
                                 rau_state++;
                                 break;
                             default:
@@ -1371,8 +1369,24 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     if (COMMAND_COMPLETE_EVENT(packet, hci_le_rand)){
                         switch (rau_state){
                             case RAU_W4_RANDOM:
-                                memcpy(sm_random_address, &packet[6], 3);
-                                rau_state++;
+                                // non-resolvable vs. resolvable
+                                switch (gap_random_adress_type){
+                                    case GAP_RANDOM_ADDRESS_RESOLVABLE:
+                                        // resolvable: use random as prand and calc address hash
+                                        // "The two most significant bits of prand shall be equal to ‘0’ and ‘1"
+                                        memcpy(sm_random_address, &packet[6], 3);
+                                        sm_random_address[0] &= 0x3f;
+                                        sm_random_address[0] |= 0x40;
+                                        rau_state = RAU_GET_ENC;
+                                        break;
+                                    case GAP_RANDOM_ADDRESS_NON_RESOLVABLE:
+                                    default:
+                                        // "The two most significant bits of the address shall be equal to ‘0’""
+                                        memcpy(sm_random_address, &packet[6], 6);
+                                        sm_random_address[0] &= 0x3f; 
+                                        rau_state = RAU_SET_ADDRESS;
+                                        break;
+                                }
                                 break;
                             default:
                                 break;
