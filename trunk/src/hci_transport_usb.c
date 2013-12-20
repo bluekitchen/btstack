@@ -286,7 +286,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
 
         // notify upper stack that iit might be possible to send again
         uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0};
-        packet_handler(HCI_EVENT_PACKET, (uint8_t*) &event, 2);
+        packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
 
         resubmit = 0;
     } else if (transfer->endpoint == 0){
@@ -295,7 +295,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
 
         // notify upper stack that iit might be possible to send again
         uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0};
-        packet_handler(HCI_EVENT_PACKET, (uint8_t*) &event, 2);
+        packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
         
         resubmit = 0;
     } else {

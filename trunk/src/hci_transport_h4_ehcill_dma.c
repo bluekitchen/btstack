@@ -341,8 +341,8 @@ static int h4_process(struct data_source *ds) {
     if (tx_state == TX_DONE){
         // reset state
         tx_state = TX_IDLE;
-        uint8_t event = DAEMON_EVENT_HCI_PACKET_SENT;
-        packet_handler(HCI_EVENT_PACKET, &event, 1);
+        uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0 };
+        packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
     }
 
     if (h4_state != H4_PACKET_RECEIVED) return 0;
