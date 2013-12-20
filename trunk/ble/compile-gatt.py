@@ -37,7 +37,7 @@ assigned_uuids = {
     'GATT_SERVICE'         : 0x1801, 
     'GAP_DEVICE_NAME'      : 0x2a00,
     'GAP_APPEARANCE'       : 0x2a01,
-    'GATT_SERVICE_CHANGED' : 0x2a05
+    'GATT_SERVICE_CHANGED' : 0x2a05,
 }
 
 property_flags = {
@@ -52,6 +52,7 @@ property_flags = {
     # custom BTstack extension
     'DYNAMIC':                    0x100,
     'LONG_UUID':                  0x200,
+    'CLIENT_CONFIGURATION':       0x400,
 }
 
 services = dict()
@@ -263,6 +264,20 @@ def parseCharacteristic(fout, parts):
     fout.write("\n")
     handle = handle + 1
 
+    if (properties & property_flags['CLIENT_CONFIGURATION']) == 0:
+        return
+
+    size = 2 + 2 + 2 + 2 + 2
+    write_indent(fout)
+    fout.write('// 0x%04x CLIENT_CHARACTERISTIC_CONFIGURATION\n' % (handle))
+    write_indent(fout)
+    write_16(fout, size)
+    write_16(fout, property_flags['READ'] | property_flags['WRITE'] | property_flags['DYNAMIC'])
+    write_16(fout, handle)
+    write_16(fout, 0x2902)
+    write_16(fout, 0)
+    fout.write("\n")
+    handle = handle + 1
 
 def parse(fname_in, fin, fname_out, fout):
     global handle
