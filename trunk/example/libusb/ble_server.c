@@ -123,6 +123,11 @@ typedef enum {
 } io_capability_t;
 
 
+typedef enum {
+    GAP_RANDOM_ADDRESS_TYPE_OFF = 0,
+    GAP_RANDOM_ADDRESS_NON_RESOLVABLE,
+    GAP_RANDOM_ADDRESS_RESOLVABLE,
+} gap_random_address_type_t;
 //
 // types used by client
 //
@@ -456,7 +461,7 @@ static void sm_timeout_reset(){
 // end of sm timeout
 
 // GAP Random Address updates
-static uint8_t gap_random_adress_update_enable;
+static gap_random_address_type_t gap_random_adress_type;
 static timer_source_t gap_random_address_update_timer; 
 static uint32_t gap_random_adress_update_period;
 
@@ -1636,19 +1641,18 @@ void sm_test2(){
 }
 
 // GAP LE API
-void gap_random_address_set_enable(int enable){
+void gap_random_address_set_mode(gap_random_address_type_t random_address_type){
     gap_random_address_update_stop();
-    gap_random_adress_update_enable = enable;
-    if (!enable) return;
+    gap_random_adress_type = random_address_type;
+    if (random_address_type == GAP_RANDOM_ADDRESS_TYPE_OFF) return;
     gap_random_address_update_start();
 }
 
 void gap_random_address_set_update_period(int period_ms){
     gap_random_adress_update_period = period_ms;
-    if (gap_random_adress_update_enable){
-        gap_random_address_update_stop();
-        gap_random_address_update_start();
-    }
+    if (gap_random_adress_type == GAP_RANDOM_ADDRESS_TYPE_OFF) return;
+    gap_random_address_update_stop();
+    gap_random_address_update_start();
 }
 
 // Security Manager Client API
@@ -1656,7 +1660,7 @@ void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_
     sm_get_oob_data = get_oob_data_callback;
 }
 
-void sm_register_packet_handler(btstack_packet_handler_t * handler){
+void sm_register_packet_handler(btstack_packet_handler_t handler){
     sm_client_packet_handler = handler;    
 }
 
@@ -1799,7 +1803,7 @@ int main(void)
 
     setup();
     gap_random_address_set_update_period(5000);
-    gap_random_address_set_enable(1);
+    gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
