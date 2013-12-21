@@ -1119,6 +1119,8 @@ void sm_init(){
     sm_max_encryption_key_size = 16;
     sm_min_encryption_key_size = 7;
     sm_aes128_active = 0;
+
+    gap_random_adress_update_period = 15 * 60 * 1000;
 }
 
 // END OF SM
@@ -1138,11 +1140,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started
 					if (packet[2] == HCI_STATE_WORKING) {
-                        printf("Working!\n");
-
+                        printf("HCI Working!\n");
                         dkg_state = DKG_CALC_IRK;
-                        
-                        // hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
 					}
 					break;
                 
@@ -1272,6 +1271,11 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 swap128(&packet[6], sm_persistent_dhk);
                                 print_key("dhk", sm_persistent_dhk);
                                 dkg_state ++;
+
+                                // SM INIT FINISHED, start application code - TODO untangle that
+                                printf("SM Init completed\n");
+                                hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
+
                                 break;
                             default:
                                 break;
@@ -1572,7 +1576,7 @@ static void sm_s1(key_t k, key_t r1, key_t r2, key_t s1){
     key_t r_prime;
     sm_s1_r_prime(r1, r2, r_prime);
 
-    // setup aes decryption
+    // setup aes encryption
     unsigned long rk[RKLENGTH(KEYBITS)];
     int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
     rijndaelEncrypt(rk, nrounds, r_prime, s1);
@@ -1652,6 +1656,60 @@ void sm_test2(){
 
     sm_c1(k, r, preq, pres, 1, 0, ia, ra, c1);
     printf("Confirm value correct :%u\n", memcmp(c1, c1_true, 16) == 0);
+}
+
+// result needs to provide mac_len / 8  bytes of storage
+// http://www.ietf.org/rfc/rfc4493.txt
+void sm_shift_left_by_one_bit_inplace(int len, uint8_t * data){
+    int i;
+    int carry = 0;
+    for (i=len-1; i >= 0 ; i--){
+        int new_carry = data[i] >> 7;
+        data[i] = data[i] << 1 | carry;
+        carry = new_carry;
+    }
+}
+
+void sm_cmac(key_t k, uint16_t message_len, uint8_t * message, int mac_len_octets, uint8_t * result){
+    
+    // generate subkeys using k
+
+    // setup aes encryption
+    unsigned long rk[RKLENGTH(KEYBITS)];
+    int nrounds = rijndaelSetupEncrypt(rk, &k[0], KEYBITS);
+
+    key_t const_zero;
+    memset(const_zero, 0, 16);
+
+    key_t l;
+    rijndaelEncrypt(rk, nrounds, const_zero, l);
+
+    key_t k1;
+    memcpy(k1, l, 16);
+    sm_shift_left_by_one_bit_inplace(16, k1);
+    if (l[0] & 0x80){
+        k1[15] ^= 0x87;
+    }
+
+    key_t k2;
+    memcpy(k2, k1, 16);
+    sm_shift_left_by_one_bit_inplace(16, k2);
+    if (k1[0] & 0x80){
+        k2[15] ^= 0x87;
+    }
+
+    print_key("k", k);
+    print_key("k1", k1);
+    print_key("k2", k2);
+}
+
+void sm_test_csrk(){
+    // signature is 12 bytes = 96 bits.
+    // we assume that the first 4 bytes are the little endian sequence counter followed by a little endian (flipped) MAC
+
+    key_t k = { 0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c };
+    uint8_t result[8];
+    sm_cmac(k, 0, NULL, 8, &result[0]);
 }
 
 // GAP LE API
@@ -1811,12 +1869,11 @@ void setup(void){
 
 int main(void)
 {
-    // sm_test();
-    // sm_test2();
-    // exit(0);
+    sm_test_csrk();
+    return 0;
 
     setup();
-    gap_random_address_set_update_period(5000);
+    // gap_random_address_set_update_period(5000);
     gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
 
     // turn on!
