@@ -1672,7 +1672,7 @@ void sm_shift_left_by_one_bit_inplace(int len, uint8_t * data){
 
 void sm_cmac(key_t k, uint16_t message_len, uint8_t * message, int mac_len_octets, uint8_t * result){
     
-    // generate subkeys using k
+    // Step 1 : (K1,K2) := Generate_Subkey(K); 
 
     // setup aes encryption
     unsigned long rk[RKLENGTH(KEYBITS)];
@@ -1698,9 +1698,72 @@ void sm_cmac(key_t k, uint16_t message_len, uint8_t * message, int mac_len_octet
         k2[15] ^= 0x87;
     }
 
-    print_key("k", k);
-    print_key("k1", k1);
-    print_key("k2", k2);
+    // print_key("k", k);
+    // print_key("k1", k1);
+    // print_key("k2", k2);
+
+    // step 2: n := ceil(len/const_Bsize);
+    int n = (message_len + 15) / 16;
+
+    // step 3: ..
+    int flag;
+    if (n==0){
+        n = 1;
+        flag = 0;
+    } else {
+        flag = (message_len & 0x0f) == 0;
+    }
+
+    // printf("n %u, flag %u\n", n, flag);
+
+    // step 4: set m_last
+    key_t m_last;
+    if (flag){
+        int i;
+        for (i=0;i<16;i++){
+            m_last[i] = message[message_len - 16 + i] ^ k1[i];
+        }
+    } else {
+        int valid_octets_in_last_block = message_len & 0x0f;
+        int i;
+        for (i=0;i<16;i++){
+            if (i < valid_octets_in_last_block){
+                m_last[i] = message[(message_len & 0xfff0) + i] ^ k2[i];
+                continue;
+            }
+            if (i == valid_octets_in_last_block){
+                m_last[i] = 0x80 ^ k2[i];
+                continue;
+            }
+            m_last[i] = k2[i];
+        }
+    }
+
+    // step 5.
+    key_t x;
+    key_t y;
+    memset(x, 0, 16);
+
+    // print_key("x", x);
+
+    // step 6.
+    int i;
+    for (i=0;i<n-1;i++){
+        int j;
+        for (j=0;j<16;j++){
+            y[j] = x[j] ^ message[i*16 + j];
+        }
+        rijndaelEncrypt(rk, nrounds, y, x);
+    }
+    for (i=0;i<16;i++){
+        y[i] = x[i] ^ m_last[i]; 
+    }
+    rijndaelEncrypt(rk, nrounds, y, x);
+
+    print_key("T", x);
+
+    // step 7: return T
+    memcpy(result, x, mac_len_octets);
 }
 
 void sm_test_csrk(){
@@ -1709,7 +1772,21 @@ void sm_test_csrk(){
 
     key_t k = { 0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c };
     uint8_t result[8];
-    sm_cmac(k, 0, NULL, 8, &result[0]);
+    sm_cmac(k, 0, NULL, 8, &result[0]); // bb1d6929 e9593728 7fa37d12 9b756746
+
+    uint8_t m16[] = { 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a};
+    sm_cmac(k, sizeof(m16), m16, 8, &result[0]);    // 070a16b4 6b4d4144 f79bdd9d d04a287c
+
+    uint8_t m40[] = { 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
+                      0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
+                      0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11};
+    sm_cmac(k, sizeof(m40), m40, 8, &result[0]);    // dfa66747 de9ae630 30ca3261 1497c827
+
+    uint8_t m64[] = { 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
+                      0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
+                      0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11, 0xe5, 0xfb, 0xc1, 0x19, 0x1a, 0x0a, 0x52, 0xef,
+                      0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10};
+    sm_cmac(k, sizeof(m64), m64, 8, &result[0]);    // 51f0bebf 7e3b9d92 fc497417 79363cfe
 }
 
 // GAP LE API
