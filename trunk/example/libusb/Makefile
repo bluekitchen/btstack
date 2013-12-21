@@ -32,7 +32,7 @@ COMMON = \
 
 CC2564 = \
     ${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
- 	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2564_2.5.c \
+ 	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2564_2.10.c \
 
 CORE_OBJ   = $(CORE:.c=.o)
 COMMON_OBJ = $(COMMON:.c=.o)
