@@ -401,12 +401,22 @@ static const stk_generation_method_t stk_generation_method[5][5] = {
 static att_connection_t att_connection;
 static uint16_t         att_addr_type;
 static bd_addr_t        att_address;
-static uint16_t         att_response_handle = 0;
-static uint16_t         att_response_size   = 0;
-static uint8_t          att_response_buffer[28];
+
+typedef enum {
+    ATT_SERVER_IDLE,
+    ATT_SERVER_REQUEST_RECEIVED,
+    ATT_SERVER_W4_SIGNED_WRITE_VALIDATION,
+} att_server_state_t;
+
+static att_server_state_t att_server_state;
+static uint16_t         att_request_handle = 0;
+static uint16_t         att_request_size   = 0;
+static uint8_t          att_request_buffer[28];
 
 // SECURITY MANAGER (SM) MATERIALIZES HERE
 static void sm_run();
+
+int sm_cmac_ready();
 static void sm_cmac_handle_encryption_result(key_t data);
 static void sm_cmac_handle_aes_engine_ready();
 static void sm_cmac_start(key_t k, uint16_t message_len, uint8_t * message);
@@ -715,6 +725,10 @@ static void sm_cmac_start(key_t k, uint16_t message_len, uint8_t * message){
 
     // first, we need to compute l for k1, k2, and m_last
     sm_cmac_state = CMAC_CALC_SUBKEYS;
+}
+
+int sm_cmac_ready(){
+    return sm_cmac_state != CMAC_IDLE;
 }
 
 static void sm_cmac_handle_aes_engine_ready(){
@@ -1313,7 +1327,7 @@ void sm_init(){
 // END OF SM
 
 // enable LE, setup ADV data
-static void att_try_respond(void);
+static void att_run(void);
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     uint8_t adv_data[] = { 02, 01, 05,   03, 02, 0xf0, 0xff }; 
 
@@ -1333,7 +1347,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					break;
                 
                 case DAEMON_EVENT_HCI_PACKET_SENT:
-                    att_try_respond();
+                    att_run();
                     break;
                     
                 case HCI_EVENT_LE_META:
@@ -1417,12 +1431,11 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // restart advertising if we have been connected before
                     // -> avoid sending advertise enable a second time before command complete was received 
-                    if (att_response_handle) {
+                    if (att_request_handle) {
                         hci_send_cmd(&hci_le_set_advertise_enable, 1);
                     }
 
-                    att_response_handle = 0;
-                    att_response_size = 0;
+                    att_server_state = ATT_SERVER_IDLE;
 
                     sm_response_handle = 0;
                     sm_state_responding = SM_STATE_IDLE;
@@ -1459,12 +1472,12 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
                                 // SM INIT FINISHED, start application code - TODO untangle that
                                 printf("SM Init completed\n");
-                                // hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
+                                hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
 
-{
-                                key_t k = { 0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c };
-                                sm_cmac_start(k, sizeof(m16), m16);
-}
+// {
+//                                 key_t k = { 0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c };
+//                                 sm_cmac_start(k, sizeof(m64), m64);
+// }
 
                                 break;
                             default:
@@ -2062,23 +2075,51 @@ void sm_passkey_input(uint8_t addr_type, bd_addr_t address, uint32_t passkey){
 // test profile
 #include "profile.h"
 
-static void att_try_respond(void){
-    if (!att_response_size) return;
-    if (!att_response_handle) return;
-    if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) return;
-    
-    // update state before sending packet
-    uint16_t size = att_response_size;
-    att_response_size = 0;
-    l2cap_send_connectionless(att_response_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, att_response_buffer, size);
+static void att_run(void){
+    switch (att_server_state){
+        case ATT_SERVER_IDLE:
+            return;
+        case ATT_SERVER_REQUEST_RECEIVED:
+            if (att_request_buffer[0] == ATT_SIGNED_WRITE_COMAND){
+                printf("ATT_SIGNED_WRITE_COMAND not implemented yet\n");
+                if (!sm_cmac_ready()) return;                                
+                return;
+            } 
+
+            // any other request
+            if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) return;
+
+            uint8_t  att_response_buffer[28];
+            uint16_t att_response_size = att_handle_request(&att_connection, att_request_buffer, att_request_size, att_response_buffer);
+            att_server_state = ATT_SERVER_IDLE;
+            if (att_response_size == 0) return;
+
+            l2cap_send_connectionless(att_request_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, att_response_buffer, att_response_size);
+            break;
+        case ATT_SERVER_W4_SIGNED_WRITE_VALIDATION:
+            // signed write doesn't have a response
+            att_handle_request(&att_connection, att_request_buffer, att_request_size, NULL);
+            att_server_state = ATT_SERVER_IDLE;
+            break;
+    }
 }
 
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
     if (packet_type != ATT_DATA_PACKET) return;
-    
-    att_response_handle = handle;
-    att_response_size = att_handle_request(&att_connection, packet, size, att_response_buffer);
-    att_try_respond();
+
+    // chcke size
+    if (size > sizeof(att_request_buffer)) return;
+
+    // last request still in processing?
+    if (att_server_state != ATT_SERVER_IDLE) return;
+
+    // store request
+    att_server_state = ATT_SERVER_REQUEST_RECEIVED;
+    att_request_size = size;
+    att_request_handle = handle;
+    memcpy(att_request_buffer, packet, size);
+
+    att_run();
 }
 
 // write requests
@@ -2118,6 +2159,7 @@ void setup(void){
     l2cap_register_packet_handler(packet_handler);
     
     // set up ATT
+    att_server_state = ATT_SERVER_IDLE;
     att_set_db(profile_data);
     att_set_write_callback(att_write_callback);
     att_dump_attributes();
@@ -2127,7 +2169,7 @@ void setup(void){
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_set_authentication_requirements( SM_AUTHREQ_BONDING );
-    sm_set_request_security(1);
+    sm_set_request_security(0);
 }
 
 int main(void)
