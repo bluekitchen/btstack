@@ -235,6 +235,16 @@ typedef enum {
 } random_address_update_t;
 
 typedef enum {
+    CMAC_IDLE,
+    CMAC_CALC_SUBKEYS,
+    CMAC_W4_SUBKEYS,
+    CMAC_CALC_MI,
+    CMAC_W4_MI,
+    CMAC_CALC_MLAST,
+    CMAC_W4_MLAST
+} cmac_state_t;
+
+typedef enum {
     JUST_WORKS,
     PK_RESP_INPUT,  // Initiator displays PK, initiator inputs PK 
     PK_INIT_INPUT,  // Responder displays PK, responder inputs PK
@@ -349,6 +359,26 @@ static bd_addr_t sm_m_address;
 static key_t     sm_m_csrk;
 static key_t     sm_m_irk;
 
+// CMAC calculation
+static cmac_state_t sm_cmac_state;
+static key_t        sm_cmac_k;
+static uint16_t     sm_cmac_message_len;
+static uint8_t *    sm_cmac_message;
+static key_t        sm_cmac_m_last;
+static key_t        sm_cmac_x;
+static uint8_t      sm_cmac_block_current;
+static uint8_t      sm_cmac_block_count;
+
+// CMAC Test Data
+uint8_t m16[] = { 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a};
+uint8_t m64[] = { 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
+                  0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
+                  0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11, 0xe5, 0xfb, 0xc1, 0x19, 0x1a, 0x0a, 0x52, 0xef,
+                  0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10};
+uint8_t m40[] = { 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
+                  0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
+                  0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11};
+
 // @returns 1 if oob data is available
 // stores oob data in provided 16 byte buffer if not null
 static int (*sm_get_oob_data)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data) = NULL;
@@ -377,6 +407,9 @@ static uint8_t          att_response_buffer[28];
 
 // SECURITY MANAGER (SM) MATERIALIZES HERE
 static void sm_run();
+static void sm_cmac_handle_encryption_result(key_t data);
+static void sm_cmac_handle_aes_engine_ready();
+static void sm_cmac_start(key_t k, uint16_t message_len, uint8_t * message);
 
 static inline void swapX(uint8_t *src, uint8_t *dst, int len){
     int i;
@@ -649,6 +682,147 @@ static void sm_setup_key_distribution(uint8_t key_set){
     }
 }
 
+// CMAC Implementation using AES128 engine
+static void sm_shift_left_by_one_bit_inplace(int len, uint8_t * data){
+    int i;
+    int carry = 0;
+    for (i=len-1; i >= 0 ; i--){
+        int new_carry = data[i] >> 7;
+        data[i] = data[i] << 1 | carry;
+        carry = new_carry;
+    }
+}
+
+static int sm_cmac_last_block_complete(){
+    if (sm_cmac_message_len == 0) return 0;
+    return (sm_cmac_message_len & 0x0f) == 0;
+}
+
+static void sm_cmac_start(key_t k, uint16_t message_len, uint8_t * message){
+    memcpy(sm_cmac_k, k, 16);
+    sm_cmac_message_len = message_len;
+    sm_cmac_message = message;
+    sm_cmac_block_current = 0;
+    memset(sm_cmac_x, 0, 16);
+
+    // step 2: n := ceil(len/const_Bsize);
+    sm_cmac_block_count = (message_len + 15) / 16;
+
+    // step 3: ..
+    if (sm_cmac_block_count==0){
+        sm_cmac_block_count = 1;
+    }
+
+    // first, we need to compute l for k1, k2, and m_last
+    sm_cmac_state = CMAC_CALC_SUBKEYS;
+}
+
+static void sm_cmac_handle_aes_engine_ready(){
+    switch (sm_cmac_state){
+        case CMAC_CALC_SUBKEYS:
+            {
+            key_t const_zero;
+            memset(const_zero, 0, 16);
+            sm_aes128_start(sm_cmac_k, const_zero);
+            sm_cmac_state++;
+            break;
+            }
+        case CMAC_CALC_MI: {
+            printf("CMAC_CALC_MI\n");
+            int j;
+            key_t y;
+            for (j=0;j<16;j++){
+                y[j] = sm_cmac_x[j] ^ sm_cmac_message[sm_cmac_block_current*16 + j];
+            }
+            sm_cmac_block_current++;
+            sm_aes128_start(sm_cmac_k, y);
+            sm_cmac_state++;
+            break;
+        }
+        case CMAC_CALC_MLAST: {
+            printf("CMAC_CALC_MLAST\n");
+            int i;
+            key_t y;
+            for (i=0;i<16;i++){
+                y[i] = sm_cmac_x[i] ^ sm_cmac_m_last[i]; 
+            }
+            print_key("Y", y);
+            sm_cmac_block_current++;
+            sm_aes128_start(sm_cmac_k, y);
+            sm_cmac_state++;
+            break;
+        }
+        default:
+            printf("sm_cmac_handle_aes_engine_ready called in state %u\n", sm_cmac_state);
+            break;
+    }
+}
+
+static void sm_cmac_handle_encryption_result(key_t data){
+    switch (sm_cmac_state){
+        case CMAC_W4_SUBKEYS: {
+            key_t k1;
+            memcpy(k1, data, 16);
+            sm_shift_left_by_one_bit_inplace(16, k1);
+            if (data[0] & 0x80){
+                k1[15] ^= 0x87;
+            }
+            key_t k2;
+            memcpy(k2, k1, 16);
+            sm_shift_left_by_one_bit_inplace(16, k2);
+            if (k1[0] & 0x80){
+                k2[15] ^= 0x87;
+            } 
+
+            print_key("k", sm_cmac_k);
+            print_key("k1", k1);
+            print_key("k2", k2);
+
+            // step 4: set m_last
+            if (sm_cmac_last_block_complete()){
+                printf("sm_cmac_last_block_complete = 1\n");
+                int i;
+                for (i=0;i<16;i++){
+                    sm_cmac_m_last[i] = sm_cmac_message[sm_cmac_message_len - 16 + i] ^ k1[i];
+                }
+            } else {
+                printf("sm_cmac_last_block_complete = 0\n");
+                int valid_octets_in_last_block = sm_cmac_message_len & 0x0f;
+                int i;
+                for (i=0;i<16;i++){
+                    if (i < valid_octets_in_last_block){
+                        sm_cmac_m_last[i] = sm_cmac_message[(sm_cmac_message_len & 0xfff0) + i] ^ k2[i];
+                        continue;
+                    }
+                    if (i == valid_octets_in_last_block){
+                        sm_cmac_m_last[i] = 0x80 ^ k2[i];
+                        continue;
+                    }
+                    sm_cmac_m_last[i] = k2[i];
+                }
+            }
+            print_key("ML", sm_cmac_m_last);
+
+
+            // next
+            sm_cmac_state = sm_cmac_block_current < sm_cmac_block_count - 1 ? CMAC_CALC_MI : CMAC_CALC_MLAST;  
+            printf("next %u\n", sm_cmac_state);
+            break;
+        }
+        case CMAC_W4_MI:
+            memcpy(sm_cmac_x, data, 16);
+            sm_cmac_state = sm_cmac_block_current < sm_cmac_block_count - 1 ? CMAC_CALC_MI : CMAC_CALC_MLAST;  
+            break;
+        case CMAC_W4_MLAST:
+            // done
+            print_key("T", data);
+            break;
+        default:
+            printf("sm_cmac_handle_encryption_result called in state %u\n", sm_cmac_state);
+            break;
+    }
+}
+
 static void sm_run(void){
 
     // assert that we can send either one
@@ -704,6 +878,19 @@ static void sm_run(void){
             printf("\n");
             hci_send_cmd(&hci_le_set_random_address, sm_random_address);
             rau_state = RAU_IDLE;
+            return;
+        default:
+            break;
+    }
+
+    // cmac
+    switch (sm_cmac_state){
+        case CMAC_CALC_SUBKEYS:
+        case CMAC_CALC_MI:
+        case CMAC_CALC_MLAST:
+            // already busy?
+            if (sm_aes128_active) break;
+            sm_cmac_handle_aes_engine_ready();
             return;
         default:
             break;
@@ -1211,8 +1398,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             sm_dm_r_prime(sm_s_rand, sm_aes128_plaintext);
                             sm_state_responding = SM_STATE_PH4_Y_GET_ENC;
 
-
-
                             // sm_s_div = sm_div(sm_persistent_dhk, sm_s_rand, sm_s_ediv);
                             // sm_s_ltk(sm_persistent_er, sm_s_div, sm_s_ltk);
                             break;
@@ -1274,7 +1459,12 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
                                 // SM INIT FINISHED, start application code - TODO untangle that
                                 printf("SM Init completed\n");
-                                hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
+                                // hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
+
+{
+                                key_t k = { 0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c };
+                                sm_cmac_start(k, sizeof(m16), m16);
+}
 
                                 break;
                             default:
@@ -1284,6 +1474,19 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             case RAU_W4_ENC:
                                 swap24(&packet[19], &sm_random_address[3]);
                                 rau_state++;
+                                break;
+                            default:
+                                break;
+                        }
+                        switch (sm_cmac_state){
+                            case CMAC_W4_SUBKEYS:
+                            case CMAC_W4_MI:
+                            case CMAC_W4_MLAST:
+                                {
+                                key_t t;
+                                swap128(&packet[6], t);
+                                sm_cmac_handle_encryption_result(t);
+                                }
                                 break;
                             default:
                                 break;
@@ -1658,18 +1861,8 @@ void sm_test2(){
     printf("Confirm value correct :%u\n", memcmp(c1, c1_true, 16) == 0);
 }
 
-// result needs to provide mac_len / 8  bytes of storage
-// http://www.ietf.org/rfc/rfc4493.txt
-void sm_shift_left_by_one_bit_inplace(int len, uint8_t * data){
-    int i;
-    int carry = 0;
-    for (i=len-1; i >= 0 ; i--){
-        int new_carry = data[i] >> 7;
-        data[i] = data[i] << 1 | carry;
-        carry = new_carry;
-    }
-}
 
+// http://www.ietf.org/rfc/rfc4493.txt
 void sm_cmac(key_t k, uint16_t message_len, uint8_t * message, key_t result){
     
     // Step 1 : (K1,K2) := Generate_Subkey(K); 
@@ -1706,12 +1899,9 @@ void sm_cmac(key_t k, uint16_t message_len, uint8_t * message, key_t result){
     int n = (message_len + 15) / 16;
 
     // step 3: ..
-    int flag;
+    int flag = (message_len > 0) && ((message_len & 0x0f) == 0); 
     if (n==0){
         n = 1;
-        flag = 0;
-    } else {
-        flag = (message_len & 0x0f) == 0;
     }
 
     // printf("n %u, flag %u\n", n, flag);
@@ -1741,7 +1931,6 @@ void sm_cmac(key_t k, uint16_t message_len, uint8_t * message, key_t result){
 
     // step 5.
     key_t x;
-    key_t y;
     memset(x, 0, 16);
 
     // print_key("x", x);
@@ -1750,14 +1939,19 @@ void sm_cmac(key_t k, uint16_t message_len, uint8_t * message, key_t result){
     int i;
     for (i=0;i<n-1;i++){
         int j;
+        key_t y;
         for (j=0;j<16;j++){
             y[j] = x[j] ^ message[i*16 + j];
         }
         rijndaelEncrypt(rk, nrounds, y, x);
     }
+
+    print_key("ML", m_last);
+    key_t y;
     for (i=0;i<16;i++){
         y[i] = x[i] ^ m_last[i]; 
     }
+    print_key("Y", y);
     rijndaelEncrypt(rk, nrounds, y, x);
 
     print_key("T", x);
@@ -1772,21 +1966,13 @@ void sm_test_csrk(){
 
     key_t k = { 0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c };
     key_t result;
-    sm_cmac(k, 0, NULL, result); // bb1d6929 e9593728 7fa37d12 9b756746
+    // sm_cmac(k, 0, NULL, result); // bb1d6929 e9593728 7fa37d12 9b756746
 
-    uint8_t m16[] = { 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a};
     sm_cmac(k, sizeof(m16), m16, result);    // 070a16b4 6b4d4144 f79bdd9d d04a287c
 
-    uint8_t m40[] = { 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
-                      0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
-                      0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11};
-    sm_cmac(k, sizeof(m40), m40, result);    // dfa66747 de9ae630 30ca3261 1497c827
+    // sm_cmac(k, sizeof(m40), m40, result);    // dfa66747 de9ae630 30ca3261 1497c827
 
-    uint8_t m64[] = { 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
-                      0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
-                      0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11, 0xe5, 0xfb, 0xc1, 0x19, 0x1a, 0x0a, 0x52, 0xef,
-                      0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10};
-    sm_cmac(k, sizeof(m64), m64, result);    // 51f0bebf 7e3b9d92 fc497417 79363cfe
+    // sm_cmac(k, sizeof(m64), m64, result);    // 51f0bebf 7e3b9d92 fc497417 79363cfe
 }
 
 // GAP LE API
@@ -1946,9 +2132,6 @@ void setup(void){
 
 int main(void)
 {
-    sm_test_csrk();
-    return 0;
-
     setup();
     // gap_random_address_set_update_period(5000);
     gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
