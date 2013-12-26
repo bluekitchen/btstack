@@ -227,8 +227,8 @@ extern "C" {
 #define SM_JUST_WORKS_CANCEL							   0xb1 
 #define SM_PASSKEY_DISPLAY_NUMBER						   0xb2
 #define SM_PASSKEY_DISPLAY_CANCEL  						   0xb3
-#define SM_PASSKEY_INPUT_NUMBER							   0xb1
-#define SM_PASSKEY_INPUT_CANCEL      					   0xb2
+#define SM_PASSKEY_INPUT_NUMBER							   0xb4
+#define SM_PASSKEY_INPUT_CANCEL      					   0xb5
 
 // last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
 
