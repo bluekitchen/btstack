@@ -79,7 +79,7 @@ typedef enum {
 // Authentication requirement flags
 #define SM_AUTHREQ_NO_BONDING 0x00
 #define SM_AUTHREQ_BONDING 0x01
-#define SM_AUTHREQ_MITM_PROTECTION 0x02
+#define SM_AUTHREQ_MITM_PROTECTION 0x04
 
 // Key distribution flags used by spec
 #define SM_KEYDIST_ENC_KEY 0X01
