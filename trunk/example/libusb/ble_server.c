@@ -656,12 +656,12 @@ static void sm_tk_setup(){
     // If both devices have not set the MITM option in the Authentication Requirements
     // Flags, then the IO capabilities shall be ignored and the Just Works association
     // model shall be used. 
-    if ( ((sm_m_auth_req & 0x04) == 0x00) && ((sm_s_auth_req & 0x04) == 0)){
+    if ( ((sm_m_auth_req & SM_AUTHREQ_MITM_PROTECTION) == 0x00) && ((sm_s_auth_req & SM_AUTHREQ_MITM_PROTECTION) == 0)){
         return;
     }
 
     // Also use just works if unknown io capabilites
-    if ((sm_m_io_capabilities > 4) || (sm_m_io_capabilities > 4)){
+    if ((sm_m_io_capabilities > IO_CAPABILITY_KEYBOARD_DISPLAY) || (sm_m_io_capabilities > IO_CAPABILITY_KEYBOARD_DISPLAY)){
         return;
     }
 
