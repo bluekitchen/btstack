@@ -1318,7 +1318,7 @@ void sm_init(){
                                        | SM_STK_GENERATION_METHOD_OOB
                                        | SM_STK_GENERATION_METHOD_PASSKEY;
     sm_max_encryption_key_size = 16;
-    sm_min_encryption_key_size = 16;    // don't accept weaker crypto attempts
+    sm_min_encryption_key_size = 7;
     sm_aes128_active = 0;
 
     gap_random_adress_update_period = 15 * 60 * 1000;
@@ -1403,6 +1403,9 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             // re-establish used key encryption size
                             if (sm_max_encryption_key_size == sm_min_encryption_key_size){
                                 sm_encryption_key_size = sm_max_encryption_key_size;
+                            } else {
+                                // no db for encryption size hack: encryption size is stored in lowest nibble of sm_s_rand
+                                sm_encryption_key_size = (sm_s_rand[7] & 0x0f) + 1;
                             }
 
                             log_info("LTK Request: recalculating with ediv 0x%04x", sm_s_ediv);
@@ -1650,6 +1653,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
                             case SM_STATE_PH3_W4_RANDOM:
                                 swap64(&packet[6], sm_s_rand);
+                                // no db for encryption size hack: encryption size is stored in lowest nibble of sm_s_rand
+                                sm_s_rand[7] =  (sm_s_rand[7] & 0xf0) + (sm_encryption_key_size - 1);
                                 sm_state_responding = SM_STATE_PH3_GET_DIV;
                                 break;
                             case SM_STATE_PH3_W4_DIV:
@@ -2174,7 +2179,7 @@ void setup(void){
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_set_authentication_requirements( SM_AUTHREQ_BONDING );
-    sm_set_request_security(0);
+    sm_set_request_security(1);
 }
 
 int main(void)
