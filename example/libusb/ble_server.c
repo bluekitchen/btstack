@@ -473,6 +473,82 @@ static void print_hex16(const char * name, uint16_t value){
     printf("%-6s 0x%04x\n", name, value);
 }
 
+// Central Device db interface
+
+void central_device_db_init();
+
+// @returns true, if successful
+int central_device_db_add(int addr_type, bd_addr_t addr, key_t csrk);
+
+// @returns number of device in db
+int central_device_db_count(void);
+
+// get device information: addr type and address
+void central_device_db_info(int index, int * addr_type, bd_addr_t addr, key_t csrk);
+
+// query last used/seen signing counter
+uint32_t central_device_db_counter_get(int index);
+
+// update signing counter
+void central_device_db_counter_set(int index, uint32_t counter);
+
+// free device
+void central_device_db_remove(int index);
+
+// Central Device db implemenation using static memory
+typedef struct central_device_memory_db {
+    int addr_type;
+    bd_addr_t addr;
+    key_t csrk;
+    uint32_t signing_counter;
+} central_device_memory_db_t;
+
+#define CENTRAL_DEVICE_MEMORY_SIZE 4
+static central_device_memory_db_t central_devices[CENTRAL_DEVICE_MEMORY_SIZE];
+static int central_devices_count;
+
+void central_device_db_init(){
+    central_devices_count = 0;
+}
+
+// @returns number of device in db
+int central_device_db_count(void){
+    return central_devices_count;
+}
+
+// free device - TODO not implemented
+void central_device_db_remove(int index){
+}
+
+int central_device_db_add(int addr_type, bd_addr_t addr, key_t csrk){
+    if (central_devices_count >= CENTRAL_DEVICE_MEMORY_SIZE) return 0;
+    central_devices[central_devices_count].addr_type = addr_type;
+    memcpy(central_devices[central_devices_count].addr, addr, 6);
+    memcpy(central_devices[central_devices_count].csrk, csrk, 16);
+    central_devices[central_devices_count].signing_counter = 0; 
+    central_devices_count++;
+    return 1;
+}
+
+
+// get device information: addr type and address
+void central_device_db_info(int index, int * addr_type, bd_addr_t addr, key_t csrk){
+    if (addr_type) *addr_type = central_devices[index].addr_type;
+    if (addr) memcpy(addr, central_devices[index].addr, 6);
+    if (csrk) memcpy(csrk, central_devices[index].csrk, 16);
+}
+
+// query last used/seen signing counter
+uint32_t central_device_db_counter_get(int index){
+    return central_devices[index].signing_counter;
+}
+
+// update signing counter
+void central_device_db_counter_set(int index, uint32_t counter){
+    central_devices[index].signing_counter = counter;
+}
+
+
 // SMP Timeout implementation
 
 // Upon transmission of the Pairing Request command or reception of the Pairing Request command,
