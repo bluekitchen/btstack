@@ -478,13 +478,16 @@ static void print_hex16(const char * name, uint16_t value){
 void central_device_db_init();
 
 // @returns true, if successful
-int central_device_db_add(int addr_type, bd_addr_t addr, key_t csrk);
+int central_device_db_add(int addr_type, bd_addr_t addr, key_t irk, key_t csrk);
 
 // @returns number of device in db
 int central_device_db_count(void);
 
 // get device information: addr type and address
 void central_device_db_info(int index, int * addr_type, bd_addr_t addr, key_t csrk);
+
+// get signature key
+void central_device_db_csrk(int index, key_t csrk);
 
 // query last used/seen signing counter
 uint32_t central_device_db_counter_get(int index);
@@ -500,6 +503,7 @@ typedef struct central_device_memory_db {
     int addr_type;
     bd_addr_t addr;
     key_t csrk;
+    key_t irk;
     uint32_t signing_counter;
 } central_device_memory_db_t;
 
@@ -520,11 +524,12 @@ int central_device_db_count(void){
 void central_device_db_remove(int index){
 }
 
-int central_device_db_add(int addr_type, bd_addr_t addr, key_t csrk){
+int central_device_db_add(int addr_type, bd_addr_t addr, key_t csrk, key_t irk){
     if (central_devices_count >= CENTRAL_DEVICE_MEMORY_SIZE) return 0;
     central_devices[central_devices_count].addr_type = addr_type;
     memcpy(central_devices[central_devices_count].addr, addr, 6);
     memcpy(central_devices[central_devices_count].csrk, csrk, 16);
+    memcpy(central_devices[central_devices_count].irk, irk, 16);
     central_devices[central_devices_count].signing_counter = 0; 
     central_devices_count++;
     return 1;
@@ -532,11 +537,17 @@ int central_device_db_add(int addr_type, bd_addr_t addr, key_t csrk){
 
 
 // get device information: addr type and address
-void central_device_db_info(int index, int * addr_type, bd_addr_t addr, key_t csrk){
+void central_device_db_info(int index, int * addr_type, bd_addr_t addr, key_t irk){
     if (addr_type) *addr_type = central_devices[index].addr_type;
     if (addr) memcpy(addr, central_devices[index].addr, 6);
+    if (irk) memcpy(irk, central_devices[index].irk, 16);
+}
+
+// get signature key
+void central_device_db_csrk(int index, key_t csrk){
     if (csrk) memcpy(csrk, central_devices[index].csrk, 16);
 }
+
 
 // query last used/seen signing counter
 uint32_t central_device_db_counter_get(int index){
