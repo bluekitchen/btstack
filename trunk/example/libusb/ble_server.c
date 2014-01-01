@@ -289,9 +289,11 @@ static uint8_t sm_s_request_security = 0;
 // 
 static derived_key_generation_t dkg_state = DKG_W4_WORKING;
 
-//
+// random address update
 static random_address_update_t rau_state = RAU_IDLE;
 static bd_addr_t sm_random_address;
+
+// resolvable private address lookup
 
 //
 static uint8_t   sm_s_addr_type;
@@ -1371,6 +1373,12 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             }
             sm_key_distribution_received_set |= SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
             swap128(&packet[1], sm_m_csrk);
+
+            // store, if: it's a public address, or, we got an IRK
+            if (sm_m_addr_type == 0 || (sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION)) {
+                central_device_db_add(sm_m_addr_type, sm_m_address, sm_m_irk, sm_m_csrk);
+                break;
+            } 
             break;
     }
 
