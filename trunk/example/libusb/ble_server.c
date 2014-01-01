@@ -1318,7 +1318,7 @@ void sm_init(){
                                        | SM_STK_GENERATION_METHOD_OOB
                                        | SM_STK_GENERATION_METHOD_PASSKEY;
     sm_max_encryption_key_size = 16;
-    sm_min_encryption_key_size = 7;
+    sm_min_encryption_key_size = 16;    // don't accept weaker crypto attempts
     sm_aes128_active = 0;
 
     gap_random_adress_update_period = 15 * 60 * 1000;
@@ -1398,6 +1398,11 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 printf("LTK Request: ediv & random are empty\n");
                                 sm_state_responding = SM_STATE_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
                                 break;
+                            }
+
+                            // re-establish used key encryption size
+                            if (sm_max_encryption_key_size == sm_min_encryption_key_size){
+                                sm_encryption_key_size = sm_max_encryption_key_size;
                             }
 
                             log_info("LTK Request: recalculating with ediv 0x%04x", sm_s_ediv);
