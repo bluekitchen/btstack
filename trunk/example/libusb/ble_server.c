@@ -1721,7 +1721,7 @@ void sm_register_packet_handler(btstack_packet_handler_t handler){
     sm_client_packet_handler = handler;    
 }
 
-void sm_set_accepted_stk_generation_method(uint8_t accepted_stk_generation_methods){
+void sm_set_accepted_stk_generation_methods(uint8_t accepted_stk_generation_methods){
     sm_accepted_stk_generation_methods = accepted_stk_generation_methods;
 }
 
