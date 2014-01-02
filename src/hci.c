@@ -455,7 +455,7 @@ int hci_le_supported(void){
 }
 
 // get addr type and address used in advertisement packets
-void hci_le_advertisement_address(int * addr_type, bd_addr_t * addr){
+void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t * addr){
     *addr_type = hci_stack.adv_addr_type;
     if (hci_stack.adv_addr_type){
         memcpy(addr, hci_stack.adv_address, 6);
