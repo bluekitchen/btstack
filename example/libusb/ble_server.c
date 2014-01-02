@@ -1539,9 +1539,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             // reset connection MTU
                             att_connection.mtu = 23;
 
-                            // TODO support private addresses
-                            sm_s_addr_type = 0;
-                            BD_ADDR_COPY(sm_s_address, hci_local_bd_addr());
+                            hci_le_advertisement_address(&sm_s_addr_type, &sm_s_address);
                             printf("Incoming connection, own address ");
                             print_bd_addr(sm_s_address);
 
