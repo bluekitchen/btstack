@@ -839,10 +839,13 @@ static void sm_cmac_start(key_t k, uint16_t message_len, uint8_t * message, void
 
     // first, we need to compute l for k1, k2, and m_last
     sm_cmac_state = CMAC_CALC_SUBKEYS;
+
+    // let's go
+    sm_run();
 }
 
 int sm_cmac_ready(){
-    return sm_cmac_state != CMAC_IDLE;
+    return sm_cmac_state == CMAC_IDLE;
 }
 
 static void sm_cmac_handle_aes_engine_ready(){
@@ -856,7 +859,6 @@ static void sm_cmac_handle_aes_engine_ready(){
             break;
             }
         case CMAC_CALC_MI: {
-            printf("CMAC_CALC_MI\n");
             int j;
             key_t y;
             for (j=0;j<16;j++){
@@ -868,7 +870,6 @@ static void sm_cmac_handle_aes_engine_ready(){
             break;
         }
         case CMAC_CALC_MLAST: {
-            printf("CMAC_CALC_MLAST\n");
             int i;
             key_t y;
             for (i=0;i<16;i++){
@@ -1489,6 +1490,8 @@ void sm_init(){
     sm_min_encryption_key_size = 7;
     sm_aes128_active = 0;
     
+    sm_cmac_state = CMAC_IDLE;
+
     sm_central_device_test = -1;    // no private address to resolve yet
     sm_central_ah_calculation_active = 0;
 
@@ -1669,12 +1672,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 // SM INIT FINISHED, start application code - TODO untangle that
                                 printf("SM Init completed\n");
                                 hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
-
-// {
-//                                 key_t k = { 0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c };
-//                                 sm_cmac_start(k, sizeof(m64), m64);
-// }
-
                                 break;
                             default:
                                 break;
@@ -1998,30 +1995,36 @@ static void att_run(void){
             return;
         case ATT_SERVER_REQUEST_RECEIVED:
             if (att_request_buffer[0] == ATT_SIGNED_WRITE_COMAND){
-                printf("ATT_SIGNED_WRITE_COMAND not implemented yet\n");
+                printf("ATT Signed Write!\n");
                 if (!sm_cmac_ready()) {
-                    printf("ATT Signed Write, sm_cmac engine not ready\n");
+                    printf("ATT Signed Write, sm_cmac engine not ready. Abort\n");
                     att_server_state = ATT_SERVER_IDLE;
                      return;
                 }  
-                if (att_request_size < 7) {
-                    printf("ATT Signed Write, request to short\n");
-                     att_server_state = ATT_SERVER_IDLE;
-                     return;
+                if (att_request_size < (3 + 12)) {
+                    printf("ATT Signed Write, request to short. Abort.\n");
+                    att_server_state = ATT_SERVER_IDLE;
+                    return;
+                }
+                if (sm_central_device_matched < 0){
+                    printf("ATT Signed Write, CSRK not available\n");
+                    att_server_state = ATT_SERVER_IDLE;
+                    return;
                 }
 
                 // check counter
                 uint32_t counter_packet = READ_BT_32(att_request_buffer, att_request_size-12);
                 uint32_t counter_db     = central_device_db_counter_get(sm_central_device_matched);
+                printf("ATT Signed Write, DB counter %u, packet counter %u\n", counter_db, counter_packet);
                 if (counter_packet < counter_db){
-                    printf("ATT Signed Write, db reports higher counter (%u vs. %u)\n", counter_db, counter_packet);
+                    printf("ATT Signed Write, db reports higher counter, abort\n");
                     att_server_state = ATT_SERVER_IDLE;
                     return;
                 }
 
                 // CSRK is in sm_m_csrk. signature is { sequence counter, secure hash }
-                sm_cmac_start(sm_m_csrk, att_request_size - 8, att_request_buffer, att_signed_write_handle_cmac_result);
                 att_server_state = ATT_SERVER_W4_SIGNED_WRITE_VALIDATION;
+                sm_cmac_start(sm_m_csrk, att_request_size - 8, att_request_buffer, att_signed_write_handle_cmac_result);
                 return;
             } 
 
