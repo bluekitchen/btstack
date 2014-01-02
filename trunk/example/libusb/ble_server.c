@@ -284,8 +284,6 @@ static uint8_t sm_s_auth_req = 0;
 static uint8_t sm_s_io_capabilities = IO_CAPABILITY_UNKNOWN;
 static uint8_t sm_s_request_security = 0;
 
-
-
 // 
 static derived_key_generation_t dkg_state = DKG_W4_WORKING;
 
@@ -373,6 +371,7 @@ static key_t        sm_cmac_m_last;
 static key_t        sm_cmac_x;
 static uint8_t      sm_cmac_block_current;
 static uint8_t      sm_cmac_block_count;
+static void (*sm_cmac_done_handler)(uint8_t hash[8]);
 
 // CMAC Test Data
 uint8_t m16[] = { 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a};
@@ -424,7 +423,7 @@ static void sm_run();
 int sm_cmac_ready();
 static void sm_cmac_handle_encryption_result(key_t data);
 static void sm_cmac_handle_aes_engine_ready();
-static void sm_cmac_start(key_t k, uint16_t message_len, uint8_t * message);
+static void sm_cmac_start(key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8]));
 
 static inline void swapX(uint8_t *src, uint8_t *dst, int len){
     int i;
@@ -482,7 +481,7 @@ static void print_hex16(const char * name, uint16_t value){
 
 void central_device_db_init();
 
-// @returns true, if successful
+// @returns index if successful, -1 otherwise
 int central_device_db_add(int addr_type, bd_addr_t addr, key_t irk, key_t csrk);
 
 // @returns number of device in db
@@ -530,20 +529,23 @@ void central_device_db_remove(int index){
 }
 
 int central_device_db_add(int addr_type, bd_addr_t addr, key_t irk, key_t csrk){
-    if (central_devices_count >= CENTRAL_DEVICE_MEMORY_SIZE) return 0;
+    if (central_devices_count >= CENTRAL_DEVICE_MEMORY_SIZE) return -1;
 
     printf("Central Device DB adding type %u - ", addr_type);
     print_bd_addr(addr);
     print_key("irk", irk);
     print_key("csrk", csrk);
 
-    central_devices[central_devices_count].addr_type = addr_type;
-    memcpy(central_devices[central_devices_count].addr, addr, 6);
-    memcpy(central_devices[central_devices_count].csrk, csrk, 16);
-    memcpy(central_devices[central_devices_count].irk, irk, 16);
-    central_devices[central_devices_count].signing_counter = 0; 
+    int index = central_devices_count;
     central_devices_count++;
-    return 1;
+
+    central_devices[index].addr_type = addr_type;
+    memcpy(central_devices[index].addr, addr, 6);
+    memcpy(central_devices[index].csrk, csrk, 16);
+    memcpy(central_devices[index].irk, irk, 16);
+    central_devices[index].signing_counter = 0; 
+
+    return index;
 }
 
 
@@ -819,10 +821,11 @@ static int sm_cmac_last_block_complete(){
     return (sm_cmac_message_len & 0x0f) == 0;
 }
 
-static void sm_cmac_start(key_t k, uint16_t message_len, uint8_t * message){
+static void sm_cmac_start(key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8])){
     memcpy(sm_cmac_k, k, 16);
     sm_cmac_message_len = message_len;
     sm_cmac_message = message;
+    sm_cmac_done_handler = done_handler;
     sm_cmac_block_current = 0;
     memset(sm_cmac_x, 0, 16);
 
@@ -905,13 +908,11 @@ static void sm_cmac_handle_encryption_result(key_t data){
 
             // step 4: set m_last
             if (sm_cmac_last_block_complete()){
-                printf("sm_cmac_last_block_complete = 1\n");
                 int i;
                 for (i=0;i<16;i++){
                     sm_cmac_m_last[i] = sm_cmac_message[sm_cmac_message_len - 16 + i] ^ k1[i];
                 }
             } else {
-                printf("sm_cmac_last_block_complete = 0\n");
                 int valid_octets_in_last_block = sm_cmac_message_len & 0x0f;
                 int i;
                 for (i=0;i<16;i++){
@@ -926,12 +927,10 @@ static void sm_cmac_handle_encryption_result(key_t data){
                     sm_cmac_m_last[i] = k2[i];
                 }
             }
-            print_key("ML", sm_cmac_m_last);
 
 
             // next
             sm_cmac_state = sm_cmac_block_current < sm_cmac_block_count - 1 ? CMAC_CALC_MI : CMAC_CALC_MLAST;  
-            printf("next %u\n", sm_cmac_state);
             break;
         }
         case CMAC_W4_MI:
@@ -940,7 +939,8 @@ static void sm_cmac_handle_encryption_result(key_t data){
             break;
         case CMAC_W4_MLAST:
             // done
-            print_key("T", data);
+            print_key("CMAC", data);
+            sm_cmac_done_handler(data);
             break;
         default:
             printf("sm_cmac_handle_encryption_result called in state %u\n", sm_cmac_state);
@@ -1434,8 +1434,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
                     // store, if: it's a public address, or, we got an IRK
                     if (sm_m_addr_type == 0 || (sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION)) {
-                        central_device_db_add(sm_m_addr_type, sm_m_address, sm_m_irk, sm_m_csrk);
-                        central_device_db_dump();
+                        sm_central_device_matched =  central_device_db_add(sm_m_addr_type, sm_m_address, sm_m_irk, sm_m_csrk);
                         break;
                     } 
                     break;
@@ -1973,19 +1972,59 @@ void sm_passkey_input(uint8_t addr_type, bd_addr_t address, uint32_t passkey){
 // test profile
 #include "profile.h"
 
+static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
+    
+    if (att_server_state != ATT_SERVER_W4_SIGNED_WRITE_VALIDATION) return;
+
+    if (memcmp(hash, &att_request_buffer[att_request_size-8], 8)){
+        printf("ATT Signed Write, invalid signature\n");
+        att_server_state = ATT_SERVER_IDLE;
+        return;
+    }
+
+    // update sequence number
+    uint32_t counter_packet = READ_BT_32(att_request_buffer, att_request_size-12);
+    central_device_db_counter_set(sm_central_device_matched, counter_packet+1);
+    // just treat signed write command as simple write command after validation
+    att_request_buffer[0] = ATT_WRITE_COMMAND;
+    att_server_state = ATT_SERVER_REQUEST_RECEIVED;
+    att_run();
+}
+
 static void att_run(void){
     switch (att_server_state){
         case ATT_SERVER_IDLE:
+        case ATT_SERVER_W4_SIGNED_WRITE_VALIDATION:
             return;
         case ATT_SERVER_REQUEST_RECEIVED:
             if (att_request_buffer[0] == ATT_SIGNED_WRITE_COMAND){
                 printf("ATT_SIGNED_WRITE_COMAND not implemented yet\n");
-                if (!sm_cmac_ready()) return;  
-                // get CSRK 
+                if (!sm_cmac_ready()) {
+                    printf("ATT Signed Write, sm_cmac engine not ready\n");
+                    att_server_state = ATT_SERVER_IDLE;
+                     return;
+                }  
+                if (att_request_size < 7) {
+                    printf("ATT Signed Write, request to short\n");
+                     att_server_state = ATT_SERVER_IDLE;
+                     return;
+                }
+
+                // check counter
+                uint32_t counter_packet = READ_BT_32(att_request_buffer, att_request_size-12);
+                uint32_t counter_db     = central_device_db_counter_get(sm_central_device_matched);
+                if (counter_packet < counter_db){
+                    printf("ATT Signed Write, db reports higher counter (%u vs. %u)\n", counter_db, counter_packet);
+                    att_server_state = ATT_SERVER_IDLE;
+                    return;
+                }
+
+                // CSRK is in sm_m_csrk. signature is { sequence counter, secure hash }
+                sm_cmac_start(sm_m_csrk, att_request_size - 8, att_request_buffer, att_signed_write_handle_cmac_result);
+                att_server_state = ATT_SERVER_W4_SIGNED_WRITE_VALIDATION;
                 return;
             } 
 
-            // any other request
             if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) return;
 
             uint8_t  att_response_buffer[28];
@@ -1995,7 +2034,9 @@ static void att_run(void){
 
             l2cap_send_connectionless(att_request_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, att_response_buffer, att_response_size);
             break;
-        case ATT_SERVER_W4_SIGNED_WRITE_VALIDATION:
+
+            if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) return;
+
             // signed write doesn't have a response
             att_handle_request(&att_connection, att_request_buffer, att_request_size, NULL);
             att_server_state = ATT_SERVER_IDLE;
