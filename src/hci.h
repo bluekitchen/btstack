@@ -329,6 +329,9 @@ typedef struct {
     uint8_t   decline_reason;
     bd_addr_t decline_addr;
 
+    uint8_t   adv_addr_type;
+    bd_addr_t adv_address;
+
 } hci_stack_t;
 
 // create and send hci command packets based on a template and a list of parameters
@@ -407,6 +410,9 @@ void hci_ssp_set_authentication_requirement(int authentication_requirement);
 
 // if set, BTstack will confirm a numberic comparion and enter '000000' if requested
 void hci_ssp_set_auto_accept(int auto_accept);
+
+// get addr type and address used in advertisement packets
+void hci_le_advertisement_address(int * addr_type, bd_addr_t * addr);
 
 #if defined __cplusplus
 }
