@@ -412,7 +412,7 @@ void hci_ssp_set_authentication_requirement(int authentication_requirement);
 void hci_ssp_set_auto_accept(int auto_accept);
 
 // get addr type and address used in advertisement packets
-void hci_le_advertisement_address(int * addr_type, bd_addr_t * addr);
+void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t * addr);
 
 #if defined __cplusplus
 }
