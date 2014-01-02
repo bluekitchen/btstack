@@ -1030,6 +1030,7 @@ static void sm_run(void){
                 printf("Central Device Lookup: found CSRK by { addr_type, address} \n");
                 sm_central_device_matched = sm_central_device_test;
                 sm_central_device_test = -1;
+                central_device_db_csrk(sm_central_device_matched, sm_m_csrk);
                 break;
             }
 
@@ -1647,6 +1648,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 // found
                                 sm_central_device_matched = sm_central_device_test;
                                 sm_central_device_test = -1;
+                                central_device_db_csrk(sm_central_device_matched, sm_m_csrk);
                                 printf("Central Device Lookup: matched resolvable private address\n");
                                 break;
                             }
@@ -1978,7 +1980,8 @@ static void att_run(void){
         case ATT_SERVER_REQUEST_RECEIVED:
             if (att_request_buffer[0] == ATT_SIGNED_WRITE_COMAND){
                 printf("ATT_SIGNED_WRITE_COMAND not implemented yet\n");
-                if (!sm_cmac_ready()) return;                                
+                if (!sm_cmac_ready()) return;  
+                // get CSRK 
                 return;
             } 
 
