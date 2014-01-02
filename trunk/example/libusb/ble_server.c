@@ -294,6 +294,9 @@ static random_address_update_t rau_state = RAU_IDLE;
 static bd_addr_t sm_random_address;
 
 // resolvable private address lookup
+static int sm_central_device_test;
+static int sm_central_device_matched;
+static int sm_central_ah_calculation_active;
 
 //
 static uint8_t   sm_s_addr_type;
@@ -526,8 +529,14 @@ int central_device_db_count(void){
 void central_device_db_remove(int index){
 }
 
-int central_device_db_add(int addr_type, bd_addr_t addr, key_t csrk, key_t irk){
+int central_device_db_add(int addr_type, bd_addr_t addr, key_t irk, key_t csrk){
     if (central_devices_count >= CENTRAL_DEVICE_MEMORY_SIZE) return 0;
+
+    printf("Central Device DB adding type %u - ", addr_type);
+    print_bd_addr(addr);
+    print_key("irk", irk);
+    print_key("csrk", csrk);
+
     central_devices[central_devices_count].addr_type = addr_type;
     memcpy(central_devices[central_devices_count].addr, addr, 6);
     memcpy(central_devices[central_devices_count].csrk, csrk, 16);
@@ -561,6 +570,16 @@ void central_device_db_counter_set(int index, uint32_t counter){
     central_devices[index].signing_counter = counter;
 }
 
+void central_device_db_dump(){
+    printf("Central Device DB dump, devices: %u\n", central_devices_count);
+    int i;
+    for (i=0;i<central_devices_count;i++){
+        printf("%u: %u ", i, central_devices[i].addr_type);
+        print_bd_addr(central_devices[i].addr);
+        print_key("irk", central_devices[i].irk);
+        print_key("csrk", central_devices[i].csrk);
+    }
+}
 
 // SMP Timeout implementation
 
@@ -759,26 +778,29 @@ static void sm_tk_setup(){
     sm_stk_generation_method = stk_generation_method[sm_m_io_capabilities][sm_s_io_capabilities];
 }
 
+static int sm_key_distribution_flags_for_set(uint8_t key_set){
+    int flags = 0;
+    if (key_set & SM_KEYDIST_ENC_KEY){
+        flags |= SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
+        flags |= SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;        
+    }
+    if (key_set & SM_KEYDIST_ID_KEY){
+        flags |= SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
+        flags |= SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;        
+    }
+    if (key_set & SM_KEYDIST_SIGN){
+        flags |= SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
+    }
+    return flags;
+}
 
 static void sm_setup_key_distribution(uint8_t key_set){
 
     // TODO: handle initiator case here
 
     // distribute keys as requested by initiator
-    sm_key_distribution_send_set = 0;
     sm_key_distribution_received_set = 0;
-    
-    if (key_set & SM_KEYDIST_ENC_KEY){
-        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
-        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;        
-    }
-    if (key_set & SM_KEYDIST_ID_KEY){
-        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
-        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;        
-    }
-    if (key_set & SM_KEYDIST_SIGN){
-        sm_key_distribution_send_set |= SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
-    }
+    sm_key_distribution_send_set = sm_key_distribution_flags_for_set(key_set);
 }
 
 // CMAC Implementation using AES128 engine
@@ -926,6 +948,12 @@ static void sm_cmac_handle_encryption_result(key_t data){
     }
 }
 
+static int sm_key_distribution_done(){
+    if (sm_key_distribution_send_set) return 0;
+    int recv_flags = sm_key_distribution_flags_for_set(sm_m_key_distribution);
+    return recv_flags == sm_key_distribution_received_set;
+}
+
 static void sm_run(void){
 
     // assert that we can send either one
@@ -984,6 +1012,48 @@ static void sm_run(void){
             return;
         default:
             break;
+    }
+
+    // CSRK device lookup by public or resolvable private address
+    if (sm_central_device_test >= 0){
+        printf("Central Device Lookup: device %u/%u\n", sm_central_device_test, central_device_db_count());
+        while (sm_central_device_test < central_device_db_count()){
+            int addr_type;
+            bd_addr_t addr;
+            key_t irk;
+            central_device_db_info(sm_central_device_test, &addr_type, addr, irk);
+            printf("device type %u, addr: ", addr_type);
+            print_bd_addr(addr);
+            printf("\n");
+
+            if (sm_m_addr_type == addr_type && memcmp(addr, sm_m_address, 6) == 0){
+                printf("Central Device Lookup: found CSRK by { addr_type, address} \n");
+                sm_central_device_matched = sm_central_device_test;
+                sm_central_device_test = -1;
+                break;
+            }
+
+            if (sm_m_addr_type == 0){
+                sm_central_device_test++;
+                continue;
+            }
+
+            if (sm_aes128_active) break;
+
+            printf("Central Device Lookup: calculate AH\n");
+            print_key("IRK", irk);
+
+            key_t r_prime;
+            sm_ah_r_prime(sm_m_address, r_prime);
+            sm_aes128_start(irk, r_prime);
+            sm_central_ah_calculation_active = 1;
+            return;
+        }
+
+        if (sm_central_device_test >= central_device_db_count()){
+            printf("Central Device Lookup: not found\n");
+            sm_central_device_test = -1;
+        }
     }
 
     // cmac
@@ -1179,8 +1249,12 @@ static void sm_run(void){
                 sm_timeout_reset();
                 return;
             }
-            sm_timeout_stop();
-            sm_state_responding = SM_STATE_IDLE; 
+
+            if (sm_key_distribution_done()){
+                sm_timeout_stop();
+                sm_state_responding = SM_STATE_IDLE; 
+            }
+
             break;
 
         default:
@@ -1202,15 +1276,19 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
         return;
     }
 
-    // printf("sm_packet_handler, request %0x\n", packet[0]);
+    if (packet[0] == SM_CODE_PAIRING_FAILED){
+        sm_state_responding = SM_STATE_IDLE;
+        return;
+    }
 
-    // a sm timeout requries a new physical connection
-    if (sm_state_responding == SM_STATE_TIMEOUT) return;
+    switch (sm_state_responding){
+        
+        // a sm timeout requries a new physical connection
+        case SM_STATE_TIMEOUT:
+            return;
 
-    switch (packet[0]){
-        case SM_CODE_PAIRING_REQUEST: {
-
-            if (sm_state_responding != SM_STATE_IDLE) {
+        case SM_STATE_IDLE: {
+            if (packet[0] != SM_CODE_PAIRING_REQUEST){
                 sm_pdu_received_in_wrong_state();
                 break;;
             }
@@ -1275,14 +1353,13 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             }
 
             sm_state_responding = SM_STATE_PH1_SEND_PAIRING_RESPONSE;
-            break;
+            break;            
         }
 
-        case  SM_CODE_PAIRING_CONFIRM:
-
-            if (sm_state_responding != SM_STATE_PH1_W4_PAIRING_CONFIRM) {
+        case SM_STATE_PH1_W4_PAIRING_CONFIRM:
+            if (packet[0] != SM_CODE_PAIRING_CONFIRM){
                 sm_pdu_received_in_wrong_state();
-                break;
+                break;;
             }
 
             // received confirm value
@@ -1310,12 +1387,10 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             sm_state_responding = SM_STATE_PH2_C1_GET_RANDOM_A;
             break;
 
-
-        case SM_CODE_PAIRING_RANDOM:
-
-            if (sm_state_responding != SM_STATE_PH2_W4_PAIRING_RANDOM) {
+        case SM_STATE_PH2_W4_PAIRING_RANDOM:
+            if (packet[0] != SM_CODE_PAIRING_RANDOM){
                 sm_pdu_received_in_wrong_state();
-                break;
+                break;;
             }
 
             // received random value
@@ -1328,57 +1403,55 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             sm_state_responding = SM_STATE_PH2_C1_GET_ENC_C;
             break;
 
-        case SM_CODE_ENCRYPTION_INFORMATION:
-            if ((sm_state_responding != SM_STATE_DISTRIBUTE_KEYS) || ((sm_m_key_distribution & SM_KEYDIST_ENC_KEY) == 0)){
-                sm_pdu_received_in_wrong_state();
-                break;
+        case SM_STATE_DISTRIBUTE_KEYS:
+            switch(packet[0]){
+                case SM_CODE_ENCRYPTION_INFORMATION:
+                    sm_key_distribution_received_set |= SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
+                    swap128(&packet[1], sm_m_ltk);
+                    break;
+
+                case SM_CODE_MASTER_IDENTIFICATION:
+                    sm_key_distribution_received_set |= SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
+                    sm_m_ediv = READ_BT_16(packet, 1);
+                    swap64(&packet[3], sm_m_rand);
+                    break;
+
+                case SM_CODE_IDENTITY_INFORMATION:
+                    sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
+                    swap128(&packet[1], sm_m_irk);
+                    break;
+
+                case SM_CODE_IDENTITY_ADDRESS_INFORMATION:
+                    sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
+                    sm_m_addr_type = packet[1];
+                    BD_ADDR_COPY(sm_m_address, &packet[2]); 
+                    break;
+
+                case SM_CODE_SIGNING_INFORMATION:
+                    sm_key_distribution_received_set |= SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
+                    swap128(&packet[1], sm_m_csrk);
+
+                    // store, if: it's a public address, or, we got an IRK
+                    if (sm_m_addr_type == 0 || (sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION)) {
+                        central_device_db_add(sm_m_addr_type, sm_m_address, sm_m_irk, sm_m_csrk);
+                        central_device_db_dump();
+                        break;
+                    } 
+                    break;
+                default:
+                    // Unexpected PDU
+                    printf("Unexpected PDU %u in SM_STATE_DISTRIBUTE_KEYS\n", packet[0]);
+                    break;
+            }     
+            // done with key distribution?         
+            if (sm_key_distribution_done()){
+                sm_timeout_stop();
+                sm_state_responding = SM_STATE_IDLE; 
             }
-            sm_key_distribution_received_set |= SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
-            swap128(&packet[1], sm_m_ltk);
             break;
-
-        case SM_CODE_MASTER_IDENTIFICATION:
-            if ((sm_state_responding != SM_STATE_DISTRIBUTE_KEYS) || ((sm_m_key_distribution & SM_KEYDIST_ENC_KEY) == 0)){
-                sm_pdu_received_in_wrong_state();
-                break;
-            }
-            sm_key_distribution_received_set |= SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
-            sm_m_ediv = READ_BT_16(packet, 1);
-            swap64(&packet[3], sm_m_rand);
-            break;
-
-        case SM_CODE_IDENTITY_INFORMATION:
-            if ((sm_state_responding != SM_STATE_DISTRIBUTE_KEYS) || ((sm_m_key_distribution & SM_KEYDIST_ID_KEY) == 0)){
-                sm_pdu_received_in_wrong_state();
-                break;
-            }
-            sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
-            swap128(&packet[1], sm_m_irk);
-            break;
-
-        case SM_CODE_IDENTITY_ADDRESS_INFORMATION:
-            if ((sm_state_responding != SM_STATE_DISTRIBUTE_KEYS) || ((sm_m_key_distribution & SM_KEYDIST_ID_KEY) == 0)){
-                sm_pdu_received_in_wrong_state();
-                break;
-            }
-            sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
-            sm_m_addr_type = packet[1];
-            BD_ADDR_COPY(sm_m_address, &packet[2]); 
-            break;
-
-        case SM_CODE_SIGNING_INFORMATION:
-            if ((sm_state_responding != SM_STATE_DISTRIBUTE_KEYS) || ((sm_m_key_distribution & SM_KEYDIST_SIGN) == 0)){
-                sm_pdu_received_in_wrong_state();
-                break;
-            }
-            sm_key_distribution_received_set |= SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
-            swap128(&packet[1], sm_m_csrk);
-
-            // store, if: it's a public address, or, we got an IRK
-            if (sm_m_addr_type == 0 || (sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION)) {
-                central_device_db_add(sm_m_addr_type, sm_m_address, sm_m_irk, sm_m_csrk);
-                break;
-            } 
+        default:
+            // Unexpected PDU
+            printf("Unexpected PDU %u in state %u\n", packet[0], sm_state_responding);
             break;
     }
 
@@ -1415,6 +1488,9 @@ void sm_init(){
     sm_max_encryption_key_size = 16;
     sm_min_encryption_key_size = 7;
     sm_aes128_active = 0;
+    
+    sm_central_device_test = -1;    // no private address to resolve yet
+    sm_central_ah_calculation_active = 0;
 
     gap_random_adress_update_period = 15 * 60 * 1000;
 }
@@ -1457,15 +1533,21 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             sm_response_handle = READ_BT_16(packet, 4);
                             sm_m_addr_type = packet[7];
                             bt_flip_addr(sm_m_address, &packet[8]);
+
                             sm_reset_tk();
+                            
+                            // reset connection MTU
+                            att_connection.mtu = 23;
+
                             // TODO support private addresses
                             sm_s_addr_type = 0;
                             BD_ADDR_COPY(sm_s_address, hci_local_bd_addr());
                             printf("Incoming connection, own address ");
                             print_bd_addr(sm_s_address);
 
-                            // reset connection MTU
-                            att_connection.mtu = 23;
+                            // try to lookup device
+                            sm_central_device_test = 0;
+                            sm_central_device_matched = -1;
 
                             // request security
                             if (sm_s_request_security){
@@ -1534,12 +1616,13 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // restart advertising if we have been connected before
                     // -> avoid sending advertise enable a second time before command complete was received 
-                    if (att_request_handle) {
+                    if (sm_response_handle) {
                         hci_send_cmd(&hci_le_set_advertise_enable, 1);
                     }
 
                     att_server_state = ATT_SERVER_IDLE;
 
+                    att_request_handle = 0;
                     sm_response_handle = 0;
                     sm_state_responding = SM_STATE_IDLE;
                     break;
@@ -1562,6 +1645,22 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					}
                     if (COMMAND_COMPLETE_EVENT(packet, hci_le_encrypt)){
                         sm_aes128_active = 0;
+=                        if (sm_central_ah_calculation_active){
+                            sm_central_ah_calculation_active = 0;
+                            // compare calulated address against connecting device
+                            uint8_t hash[3];
+                            swap24(&packet[6], hash);
+                            if (memcmp(&sm_m_address[3], hash, 3) == 0){
+                                // found
+                                sm_central_device_matched = sm_central_device_test;
+                                sm_central_device_test = -1;
+                                printf("Central Device Lookup: matched resolvable private address\n");
+                                break;
+                            }
+                            // no match
+                            sm_central_device_test++;
+                            break;
+                        }
                         switch (dkg_state){
                             case DKG_W4_IRK:
                                 swap128(&packet[6], sm_persistent_irk);
@@ -1588,7 +1687,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                         }
                         switch (rau_state){
                             case RAU_W4_ENC:
-                                swap24(&packet[19], &sm_random_address[3]);
+                                swap24(&packet[6], &sm_random_address[3]);
                                 rau_state++;
                                 break;
                             default:
@@ -1968,6 +2067,9 @@ void setup(void){
     att_set_write_callback(att_write_callback);
     att_dump_attributes();
     att_connection.mtu = 27;
+
+    // setup central device db
+    central_device_db_init();
 
     // setup SM
     sm_init();
