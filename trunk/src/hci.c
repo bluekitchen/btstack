@@ -454,6 +454,16 @@ int hci_le_supported(void){
 #endif    
 }
 
+// get addr type and address used in advertisement packets
+void hci_le_advertisement_address(int * addr_type, bd_addr_t * addr){
+    *addr_type = hci_stack.adv_addr_type;
+    if (hci_stack.adv_addr_type){
+        memcpy(addr, hci_stack.adv_address, 6);
+    } else {
+        memcpy(addr, hci_stack.local_bd_addr, 6);
+    }
+}
+
 // avoid huge local variables
 #ifndef EMBEDDED
 static device_name_t device_name;
@@ -845,6 +855,10 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
     hci_stack.ssp_io_capability = SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
     hci_stack.ssp_authentication_requirement = 0;
     hci_stack.ssp_auto_accept = 1;
+
+    // LE
+    hci_stack.adv_addr_type = 0;
+    memset(hci_stack.adv_address, 0, 6);
 }
 
 void hci_close(){
@@ -1469,6 +1483,16 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
         }
     }
     
+#ifdef HAVE_BLE
+    if (IS_COMMAND(packet, hci_le_set_advertising_parameters)){
+        hci_stack.adv_addr_type = packet[8];
+    }
+    if (IS_COMMAND(packet, hci_le_set_random_address)){
+        bt_flip_addr(hci_stack.adv_address, &packet[3]);
+    }
+#endif
+
+
     hci_stack.num_cmd_packets--;
     return hci_stack.hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
 }
