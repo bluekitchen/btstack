@@ -57,60 +57,13 @@
 
 #include "l2cap.h"
 
+#include "sm.h"
 #include "att.h"
+#include "central_device_db.h"
 
-#include "rijndael.h"
-
-// Bluetooth Spec definitions
-typedef enum {
-    SM_CODE_PAIRING_REQUEST = 0X01,
-    SM_CODE_PAIRING_RESPONSE,
-    SM_CODE_PAIRING_CONFIRM,
-    SM_CODE_PAIRING_RANDOM,
-    SM_CODE_PAIRING_FAILED,
-    SM_CODE_ENCRYPTION_INFORMATION,
-    SM_CODE_MASTER_IDENTIFICATION,
-    SM_CODE_IDENTITY_INFORMATION,
-    SM_CODE_IDENTITY_ADDRESS_INFORMATION,
-    SM_CODE_SIGNING_INFORMATION,
-    SM_CODE_SECURITY_REQUEST
-} SECURITY_MANAGER_COMMANDS;
-
-// Authentication requirement flags
-#define SM_AUTHREQ_NO_BONDING 0x00
-#define SM_AUTHREQ_BONDING 0x01
-#define SM_AUTHREQ_MITM_PROTECTION 0x04
-
-// Key distribution flags used by spec
-#define SM_KEYDIST_ENC_KEY 0X01
-#define SM_KEYDIST_ID_KEY  0x02
-#define SM_KEYDIST_SIGN    0x04
-
-// Key distribution flags used internally
-#define SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION       0x01
-#define SM_KEYDIST_FLAG_MASTER_IDENTIFICATION        0x02
-#define SM_KEYDIST_FLAG_IDENTITY_INFORMATION         0x04
-#define SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION 0x08
-#define SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION       0x10
-
-// STK Generation Methods
-#define SM_STK_GENERATION_METHOD_JUST_WORKS 0x01
-#define SM_STK_GENERATION_METHOD_OOB        0x02
-#define SM_STK_GENERATION_METHOD_PASSKEY    0x04
-
-// Pairing Failed Reasons
-#define SM_REASON_RESERVED                     0x00
-#define SM_REASON_PASSKEYT_ENTRY_FAILED        0x01
-#define SM_REASON_OOB_NOT_AVAILABLE            0x02
-#define SM_REASON_AUTHENTHICATION_REQUIREMENTS 0x03
-#define SM_REASON_CONFIRM_VALUE_FAILED         0x04
-#define SM_REASON_PAIRING_NOT_SUPPORTED        0x05
-#define SM_REASON_ENCRYPTION_KEY_SIZE          0x06
-#define SM_REASON_COMMAND_NOT_SUPPORTED        0x07
-#define SM_REASON_UNSPECIFIED_REASON           0x08
-#define SM_REASON_REPEATED_ATTEMPTS            0x09
-// also, invalid parameters
-// and reserved
+//
+// GAP API
+//
 
 // IO Capability Values
 typedef enum {
@@ -122,16 +75,14 @@ typedef enum {
     IO_CAPABILITY_UNKNOWN = 0xff
 } io_capability_t;
 
-
+// address type
 typedef enum {
     GAP_RANDOM_ADDRESS_TYPE_OFF = 0,
     GAP_RANDOM_ADDRESS_NON_RESOLVABLE,
     GAP_RANDOM_ADDRESS_RESOLVABLE,
 } gap_random_address_type_t;
-//
-// types used by client
-//
 
+// pairing user interacation
 typedef struct sm_event {
     uint8_t   type;   // see <btstack/hci_cmds.h> SM_...
     uint8_t   addr_type;
@@ -140,10 +91,8 @@ typedef struct sm_event {
 } sm_event_t;
 
 //
-// internal types and globals
+// SM internal types and globals
 //
-
-typedef uint8_t key_t[16];
 
 typedef enum {
 
@@ -265,12 +214,12 @@ typedef enum {
 //
 
 // Security Manager Master Keys, please use sm_set_er(er) and sm_set_ir(ir) with your own 128 bit random values
-static key_t sm_persistent_er;
-static key_t sm_persistent_ir;
+static sm_key_t sm_persistent_er;
+static sm_key_t sm_persistent_ir;
 
 // derived from sm_persistent_ir
-static key_t sm_persistent_dhk;
-static key_t sm_persistent_irk;
+static sm_key_t sm_persistent_dhk;
+static sm_key_t sm_persistent_irk;
 
 // derived from sm_persistent_er
 // ..
@@ -310,13 +259,13 @@ static uint8_t  sm_pairing_failed_reason = 0;
 static timer_source_t sm_timeout;
 
 // data to send to aes128 crypto engine, see sm_aes128_set_key and sm_aes128_set_plaintext
-static key_t   sm_aes128_key;
-static key_t   sm_aes128_plaintext;
+static sm_key_t   sm_aes128_key;
+static sm_key_t   sm_aes128_plaintext;
 static uint8_t sm_aes128_active;
 
 // generation method and temporary key for STK - STK is stored in sm_s_ltk
 static stk_generation_method_t sm_stk_generation_method;
-static key_t sm_tk;
+static sm_key_t sm_tk;
 
 // user response
 static uint8_t   sm_user_response;
@@ -338,50 +287,40 @@ static uint8_t   sm_m_auth_req;
 static uint8_t   sm_m_max_encryption_key_size;
 static uint8_t   sm_m_key_distribution;
 static uint8_t   sm_m_preq[7];
-static key_t     sm_m_random;
-static key_t     sm_m_confirm;
+static sm_key_t  sm_m_random;
+static sm_key_t  sm_m_confirm;
 
-static key_t     sm_s_random;
-static key_t     sm_s_confirm;
+static sm_key_t  sm_s_random;
+static sm_key_t  sm_s_confirm;
 static uint8_t   sm_s_pres[7];
 
 // key distribution, slave sends
-static key_t     sm_s_ltk;
+static sm_key_t  sm_s_ltk;
 static uint16_t  sm_s_y;
 static uint16_t  sm_s_div;
 static uint16_t  sm_s_ediv;
 static uint8_t   sm_s_rand[8];
-static key_t     sm_s_csrk;
+static sm_key_t  sm_s_csrk;
 
 // key distribution, received from master
-static key_t     sm_m_ltk;
+static sm_key_t  sm_m_ltk;
 static uint16_t  sm_m_ediv;
 static uint8_t   sm_m_rand[8];
 static uint8_t   sm_m_addr_type;
 static bd_addr_t sm_m_address;
-static key_t     sm_m_csrk;
-static key_t     sm_m_irk;
+static sm_key_t  sm_m_csrk;
+static sm_key_t  sm_m_irk;
 
 // CMAC calculation
 static cmac_state_t sm_cmac_state;
-static key_t        sm_cmac_k;
+static sm_key_t     sm_cmac_k;
 static uint16_t     sm_cmac_message_len;
 static uint8_t *    sm_cmac_message;
-static key_t        sm_cmac_m_last;
-static key_t        sm_cmac_x;
+static sm_key_t     sm_cmac_m_last;
+static sm_key_t     sm_cmac_x;
 static uint8_t      sm_cmac_block_current;
 static uint8_t      sm_cmac_block_count;
 static void (*sm_cmac_done_handler)(uint8_t hash[8]);
-
-// CMAC Test Data
-uint8_t m16[] = { 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a};
-uint8_t m64[] = { 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
-                  0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
-                  0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11, 0xe5, 0xfb, 0xc1, 0x19, 0x1a, 0x0a, 0x52, 0xef,
-                  0xf6, 0x9f, 0x24, 0x45, 0xdf, 0x4f, 0x9b, 0x17, 0xad, 0x2b, 0x41, 0x7b, 0xe6, 0x6c, 0x37, 0x10};
-uint8_t m40[] = { 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a,
-                  0xae, 0x2d, 0x8a, 0x57, 0x1e, 0x03, 0xac, 0x9c, 0x9e, 0xb7, 0x6f, 0xac, 0x45, 0xaf, 0x8e, 0x51,
-                  0x30, 0xc8, 0x1c, 0x46, 0xa3, 0x5c, 0xe4, 0x11};
 
 // @returns 1 if oob data is available
 // stores oob data in provided 16 byte buffer if not null
@@ -400,31 +339,15 @@ static const stk_generation_method_t stk_generation_method[5][5] = {
     { PK_RESP_INPUT,   PK_RESP_INPUT,    PK_INIT_INPUT,   JUST_WORKS,    PK_RESP_INPUT },
 };
 
-// ATT Server
-
-static att_connection_t att_connection;
-static uint16_t         att_addr_type;
-static bd_addr_t        att_address;
-
-typedef enum {
-    ATT_SERVER_IDLE,
-    ATT_SERVER_REQUEST_RECEIVED,
-    ATT_SERVER_W4_SIGNED_WRITE_VALIDATION,
-} att_server_state_t;
-
-static att_server_state_t att_server_state;
-static uint16_t         att_request_handle = 0;
-static uint16_t         att_request_size   = 0;
-static uint8_t          att_request_buffer[28];
-
-// SECURITY MANAGER (SM) MATERIALIZES HERE
 static void sm_run();
 
+/// CMAC Suppport
 int sm_cmac_ready();
-static void sm_cmac_handle_encryption_result(key_t data);
+static void sm_cmac_handle_encryption_result(sm_key_t data);
 static void sm_cmac_handle_aes_engine_ready();
-static void sm_cmac_start(key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8]));
+static void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8]));
 
+// Utils
 static inline void swapX(uint8_t *src, uint8_t *dst, int len){
     int i;
     for (i = 0; i < len; i++)
@@ -443,6 +366,10 @@ static inline void swap128(uint8_t src[16], uint8_t dst[16]){
     swapX(src, dst, 16);
 }
 
+static void print_hex16(const char * name, uint16_t value){
+    printf("%-6s 0x%04x\n", name, value);
+}
+
 // @returns 1 if all bytes are 0
 static int sm_is_null_random(uint8_t random[8]){
     int i;
@@ -452,6 +379,7 @@ static int sm_is_null_random(uint8_t random[8]){
     return 1;
 }
 
+// Key utils
 static void sm_reset_tk(){
     int i;
     for (i=0;i<16;i++){
@@ -461,125 +389,10 @@ static void sm_reset_tk(){
 
 // "For example, if a 128-bit encryption key is 0x123456789ABCDEF0123456789ABCDEF0
 // and it is reduced to 7 octets (56 bits), then the resulting key is 0x0000000000000000003456789ABCDEF0.""
-static void sm_truncate_key(key_t key, int max_encryption_size){
+static void sm_truncate_key(sm_key_t key, int max_encryption_size){
     int i;
     for (i = max_encryption_size ; i < 16 ; i++){
         key[15-i] = 0;
-    }
-}
-
-static void print_key(const char * name, key_t key){
-    printf("%-6s ", name);
-    hexdump(key, 16);
-}
-
-static void print_hex16(const char * name, uint16_t value){
-    printf("%-6s 0x%04x\n", name, value);
-}
-
-// Central Device db interface
-
-void central_device_db_init();
-
-// @returns index if successful, -1 otherwise
-int central_device_db_add(int addr_type, bd_addr_t addr, key_t irk, key_t csrk);
-
-// @returns number of device in db
-int central_device_db_count(void);
-
-// get device information: addr type and address
-void central_device_db_info(int index, int * addr_type, bd_addr_t addr, key_t csrk);
-
-// get signature key
-void central_device_db_csrk(int index, key_t csrk);
-
-// query last used/seen signing counter
-uint32_t central_device_db_counter_get(int index);
-
-// update signing counter
-void central_device_db_counter_set(int index, uint32_t counter);
-
-// free device
-void central_device_db_remove(int index);
-
-// Central Device db implemenation using static memory
-typedef struct central_device_memory_db {
-    int addr_type;
-    bd_addr_t addr;
-    key_t csrk;
-    key_t irk;
-    uint32_t signing_counter;
-} central_device_memory_db_t;
-
-#define CENTRAL_DEVICE_MEMORY_SIZE 4
-static central_device_memory_db_t central_devices[CENTRAL_DEVICE_MEMORY_SIZE];
-static int central_devices_count;
-
-void central_device_db_init(){
-    central_devices_count = 0;
-}
-
-// @returns number of device in db
-int central_device_db_count(void){
-    return central_devices_count;
-}
-
-// free device - TODO not implemented
-void central_device_db_remove(int index){
-}
-
-int central_device_db_add(int addr_type, bd_addr_t addr, key_t irk, key_t csrk){
-    if (central_devices_count >= CENTRAL_DEVICE_MEMORY_SIZE) return -1;
-
-    printf("Central Device DB adding type %u - ", addr_type);
-    print_bd_addr(addr);
-    print_key("irk", irk);
-    print_key("csrk", csrk);
-
-    int index = central_devices_count;
-    central_devices_count++;
-
-    central_devices[index].addr_type = addr_type;
-    memcpy(central_devices[index].addr, addr, 6);
-    memcpy(central_devices[index].csrk, csrk, 16);
-    memcpy(central_devices[index].irk, irk, 16);
-    central_devices[index].signing_counter = 0; 
-
-    return index;
-}
-
-
-// get device information: addr type and address
-void central_device_db_info(int index, int * addr_type, bd_addr_t addr, key_t irk){
-    if (addr_type) *addr_type = central_devices[index].addr_type;
-    if (addr) memcpy(addr, central_devices[index].addr, 6);
-    if (irk) memcpy(irk, central_devices[index].irk, 16);
-}
-
-// get signature key
-void central_device_db_csrk(int index, key_t csrk){
-    if (csrk) memcpy(csrk, central_devices[index].csrk, 16);
-}
-
-
-// query last used/seen signing counter
-uint32_t central_device_db_counter_get(int index){
-    return central_devices[index].signing_counter;
-}
-
-// update signing counter
-void central_device_db_counter_set(int index, uint32_t counter){
-    central_devices[index].signing_counter = counter;
-}
-
-void central_device_db_dump(){
-    printf("Central Device DB dump, devices: %u\n", central_devices_count);
-    int i;
-    for (i=0;i<central_devices_count;i++){
-        printf("%u: %u ", i, central_devices[i].addr_type);
-        print_bd_addr(central_devices[i].addr);
-        print_key("irk", central_devices[i].irk);
-        print_key("csrk", central_devices[i].csrk);
     }
 }
 
@@ -638,37 +451,37 @@ static void gap_random_address_update_stop(){
     run_loop_remove_timer(&gap_random_address_update_timer);
 }
 
-static inline void sm_aes128_set_key(key_t key){
+static inline void sm_aes128_set_key(sm_key_t key){
     memcpy(sm_aes128_key, key, 16);
 } 
 
-static inline void sm_aes128_set_plaintext(key_t plaintext){
+static inline void sm_aes128_set_plaintext(sm_key_t plaintext){
     memcpy(sm_aes128_plaintext, plaintext, 16);
 } 
 
 // asserts: sm_aes128_active == 0, hci_can_send_command == 1
-static void sm_aes128_start(key_t key, key_t plaintext){
+static void sm_aes128_start(sm_key_t key, sm_key_t plaintext){
     sm_aes128_active = 1;
-    key_t key_flipped, plaintext_flipped;
+    sm_key_t key_flipped, plaintext_flipped;
     swap128(key, key_flipped);
     swap128(plaintext, plaintext_flipped);
     hci_send_cmd(&hci_le_encrypt, key_flipped, plaintext_flipped);
 }
 
-static void sm_ah_r_prime(uint8_t r[3], key_t d1_prime){
+static void sm_ah_r_prime(uint8_t r[3], sm_key_t d1_prime){
     // r'= padding || r
     memset(d1_prime, 0, 16);
     memcpy(&d1_prime[13], r, 3);
 }
 
-static void sm_d1_d_prime(uint16_t d, uint16_t r, key_t d1_prime){
+static void sm_d1_d_prime(uint16_t d, uint16_t r, sm_key_t d1_prime){
     // d'= padding || r || d
     memset(d1_prime, 0, 16);
     net_store_16(d1_prime, 12, r);
     net_store_16(d1_prime, 14, d);
 }
 
-static void sm_dm_r_prime(uint8_t r[8], key_t r_prime){
+static void sm_dm_r_prime(uint8_t r[8], sm_key_t r_prime){
     // r’ = padding || r
     memset(r_prime, 0, 16);
     memcpy(&r_prime[8], r, 8);
@@ -676,7 +489,7 @@ static void sm_dm_r_prime(uint8_t r[8], key_t r_prime){
 
 
 // calculate arguments for first AES128 operation in C1 function
-static void sm_c1_t1(key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, key_t t1){
+static void sm_c1_t1(sm_key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, sm_key_t t1){
 
     // p1 = pres || preq || rat’ || iat’
     // "The octet of iat’ becomes the least significant octet of p1 and the most signifi-
@@ -685,7 +498,7 @@ static void sm_c1_t1(key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uin
     // is 0x07071000000101 and the 56 bit pres is 0x05000800000302 then
     // p1 is 0x05000800000302070710000001010001."
     
-    key_t p1;
+    sm_key_t p1;
     swap56(pres, &p1[0]);
     swap56(preq, &p1[7]);
     p1[14] = rat;
@@ -702,14 +515,14 @@ static void sm_c1_t1(key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uin
 }
 
 // calculate arguments for second AES128 operation in C1 function
-static void sm_c1_t3(key_t t2, bd_addr_t ia, bd_addr_t ra, key_t t3){
+static void sm_c1_t3(sm_key_t t2, bd_addr_t ia, bd_addr_t ra, sm_key_t t3){
      // p2 = padding || ia || ra
     // "The least significant octet of ra becomes the least significant octet of p2 and
     // the most significant octet of padding becomes the most significant octet of p2.
     // For example, if 48-bit ia is 0xA1A2A3A4A5A6 and the 48-bit ra is
     // 0xB1B2B3B4B5B6 then p2 is 0x00000000A1A2A3A4A5A6B1B2B3B4B5B6.
     
-    key_t p2;
+    sm_key_t p2;
     memset(p2, 0, 16);
     memcpy(&p2[4],  ia, 6);
     memcpy(&p2[10], ra, 6);
@@ -723,7 +536,7 @@ static void sm_c1_t3(key_t t2, bd_addr_t ia, bd_addr_t ra, key_t t3){
     print_key("t3", t3);
 }
 
-static void sm_s1_r_prime(key_t r1, key_t r2, key_t r_prime){
+static void sm_s1_r_prime(sm_key_t r1, sm_key_t r2, sm_key_t r_prime){
     print_key("r1", r1);
     print_key("r2", r2);
     memcpy(&r_prime[8], &r2[8], 8);
@@ -758,7 +571,7 @@ static void sm_tk_setup(){
     // If both devices have out of band authentication data, then the Authentication
     // Requirements Flags shall be ignored when selecting the pairing method and the
     // Out of Band pairing method shall be used.
-    if (sm_m_have_oob_data && (*sm_get_oob_data)(att_addr_type, &att_address, sm_tk)){
+    if (sm_m_have_oob_data && (*sm_get_oob_data)(sm_m_addr_type, &sm_m_address, sm_tk)){
         sm_stk_generation_method = OOB;
         return;
     }
@@ -821,7 +634,7 @@ static int sm_cmac_last_block_complete(){
     return (sm_cmac_message_len & 0x0f) == 0;
 }
 
-static void sm_cmac_start(key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8])){
+static void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8])){
     memcpy(sm_cmac_k, k, 16);
     sm_cmac_message_len = message_len;
     sm_cmac_message = message;
@@ -852,7 +665,7 @@ static void sm_cmac_handle_aes_engine_ready(){
     switch (sm_cmac_state){
         case CMAC_CALC_SUBKEYS:
             {
-            key_t const_zero;
+            sm_key_t const_zero;
             memset(const_zero, 0, 16);
             sm_aes128_start(sm_cmac_k, const_zero);
             sm_cmac_state++;
@@ -860,7 +673,7 @@ static void sm_cmac_handle_aes_engine_ready(){
             }
         case CMAC_CALC_MI: {
             int j;
-            key_t y;
+            sm_key_t y;
             for (j=0;j<16;j++){
                 y[j] = sm_cmac_x[j] ^ sm_cmac_message[sm_cmac_block_current*16 + j];
             }
@@ -871,7 +684,7 @@ static void sm_cmac_handle_aes_engine_ready(){
         }
         case CMAC_CALC_MLAST: {
             int i;
-            key_t y;
+            sm_key_t y;
             for (i=0;i<16;i++){
                 y[i] = sm_cmac_x[i] ^ sm_cmac_m_last[i]; 
             }
@@ -887,16 +700,16 @@ static void sm_cmac_handle_aes_engine_ready(){
     }
 }
 
-static void sm_cmac_handle_encryption_result(key_t data){
+static void sm_cmac_handle_encryption_result(sm_key_t data){
     switch (sm_cmac_state){
         case CMAC_W4_SUBKEYS: {
-            key_t k1;
+            sm_key_t k1;
             memcpy(k1, data, 16);
             sm_shift_left_by_one_bit_inplace(16, k1);
             if (data[0] & 0x80){
                 k1[15] ^= 0x87;
             }
-            key_t k2;
+            sm_key_t k2;
             memcpy(k2, k1, 16);
             sm_shift_left_by_one_bit_inplace(16, k2);
             if (k1[0] & 0x80){
@@ -968,7 +781,7 @@ static void sm_run(void){
             if (sm_aes128_active) break;
             {
             // IRK = d1(IR, 1, 0)
-            key_t d1_prime;
+            sm_key_t d1_prime;
             sm_d1_d_prime(1, 0, d1_prime);  // plaintext
             sm_aes128_start(sm_persistent_ir, d1_prime);
             dkg_state++;
@@ -978,7 +791,7 @@ static void sm_run(void){
             if (sm_aes128_active) break;
             {
             // DHK = d1(IR, 3, 0)
-            key_t d1_prime;
+            sm_key_t d1_prime;
             sm_d1_d_prime(3, 0, d1_prime);  // plaintext
             sm_aes128_start(sm_persistent_ir, d1_prime);
             dkg_state++;
@@ -998,7 +811,7 @@ static void sm_run(void){
             // already busy?
             if (sm_aes128_active) break;
             {
-            key_t r_prime;
+            sm_key_t r_prime;
             sm_ah_r_prime(sm_random_address, r_prime);
             sm_aes128_start(sm_persistent_irk, r_prime);
             rau_state++;
@@ -1021,7 +834,7 @@ static void sm_run(void){
         while (sm_central_device_test < central_device_db_count()){
             int addr_type;
             bd_addr_t addr;
-            key_t irk;
+            sm_key_t irk;
             central_device_db_info(sm_central_device_test, &addr_type, addr, irk);
             printf("device type %u, addr: ", addr_type);
             print_bd_addr(addr);
@@ -1045,7 +858,7 @@ static void sm_run(void){
             printf("Central Device Lookup: calculate AH\n");
             print_key("IRK", irk);
 
-            key_t r_prime;
+            sm_key_t r_prime;
             sm_ah_r_prime(sm_m_address, r_prime);
             sm_aes128_start(irk, r_prime);
             sm_central_ah_calculation_active = 1;
@@ -1189,14 +1002,14 @@ static void sm_run(void){
             return;
         }
         case SM_STATE_PH2_SEND_STK: {
-            key_t stk_flipped;
+            sm_key_t stk_flipped;
             swap128(sm_s_ltk, stk_flipped);
             hci_send_cmd(&hci_le_long_term_key_request_reply, sm_response_handle, stk_flipped);
             sm_state_responding = SM_STATE_PH2_W4_CONNECTION_ENCRYPTED;
             return;
         }
         case SM_STATE_PH4_SEND_LTK: {
-            key_t ltk_flipped;
+            sm_key_t ltk_flipped;
             swap128(sm_s_ltk, ltk_flipped);
             hci_send_cmd(&hci_le_long_term_key_request_reply, sm_response_handle, ltk_flipped);
             sm_state_responding = SM_STATE_IDLE;
@@ -1460,11 +1273,11 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
     sm_run();
 }
 
-void sm_set_er(key_t er){
+void sm_set_er(sm_key_t er){
     memcpy(sm_persistent_er, er, 16);
 }
 
-void sm_set_ir(key_t ir){
+void sm_set_ir(sm_key_t ir){
     memcpy(sm_persistent_ir, ir, 16);
     // sm_dhk(sm_persistent_ir, sm_persistent_dhk);
     // sm_irk(sm_persistent_ir, sm_persistent_irk);
@@ -1473,8 +1286,8 @@ void sm_set_ir(key_t ir){
 void sm_init(){
     // set some (BTstack default) ER and IR
     int i;
-    key_t er;
-    key_t ir;
+    sm_key_t er;
+    sm_key_t ir;
     for (i=0;i<16;i++){
         er[i] = 0x30 + i;
         ir[i] = 0x90 + i;
@@ -1499,6 +1312,24 @@ void sm_init(){
 }
 
 // END OF SM
+
+//
+// ATT Server Globals
+//
+
+static att_connection_t att_connection;
+
+typedef enum {
+    ATT_SERVER_IDLE,
+    ATT_SERVER_REQUEST_RECEIVED,
+    ATT_SERVER_W4_SIGNED_WRITE_VALIDATION,
+} att_server_state_t;
+
+static att_server_state_t att_server_state;
+static uint16_t         att_request_handle = 0;
+static uint16_t         att_request_size   = 0;
+static uint8_t          att_request_buffer[28];
+
 
 // enable LE, setup ADV data
 static void att_run(void);
@@ -1689,7 +1520,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             case CMAC_W4_MI:
                             case CMAC_W4_MLAST:
                                 {
-                                key_t t;
+                                sm_key_t t;
                                 swap128(&packet[6], t);
                                 sm_cmac_handle_encryption_result(t);
                                 }
@@ -1702,7 +1533,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                             case SM_STATE_PH2_C1_W4_ENC_C:
                                 {
                                 sm_aes128_set_key(sm_tk);
-                                key_t t2;
+                                sm_key_t t2;
                                 swap128(&packet[6], t2);
                                 sm_c1_t3(t2, sm_m_address, sm_s_address, sm_aes128_plaintext);
                                 }
@@ -1715,7 +1546,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 break;
                             case SM_STATE_PH2_C1_W4_ENC_D:
                                 {
-                                key_t m_confirm_test;
+                                sm_key_t m_confirm_test;
                                 swap128(&packet[6], m_confirm_test);
                                 print_key("c1!", m_confirm_test);
                                 if (memcmp(sm_m_confirm, m_confirm_test, 16) == 0){
@@ -1734,7 +1565,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 sm_state_responding = SM_STATE_PH2_SEND_STK;
                                 break;
                             case SM_STATE_PH3_Y_W4_ENC:{
-                                key_t y128;
+                                sm_key_t y128;
                                 swap128(&packet[6], y128);
                                 sm_s_y = READ_NET_16(y128, 14);
                                 print_hex16("y", sm_s_y);
@@ -1749,7 +1580,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 break;
                             }
                             case SM_STATE_PH4_Y_W4_ENC:{
-                                key_t y128;
+                                sm_key_t y128;
                                 swap128(&packet[6], y128);
                                 sm_s_y = READ_NET_16(y128, 14);
                                 print_hex16("y", sm_s_y);

@@ -88,6 +88,11 @@ void hexdump(void *data, int size){
     printf("\n");
 }
 
+void print_key(const char * name, sm_key_t key){
+    printf("%-6s ", name);
+    hexdump(key, 16);
+}
+
 void printUUID(uint8_t *uuid) {
     log_info("%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
            uuid[0], uuid[1], uuid[2], uuid[3], uuid[4], uuid[5], uuid[6], uuid[7],

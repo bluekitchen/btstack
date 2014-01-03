@@ -64,8 +64,8 @@ spp_counter_ssp: ${CORE_OBJ} ${COMMON_OBJ} spp_counter_ssp.c
 profile.h: profile.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 
-ble_server: ${CORE_OBJ} ${COMMON_OBJ} ble_server.c profile.h
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} ble_server.c ${CFLAGS} ${LDFLAGS} -o $@
+ble_server: ${CORE_OBJ} ${COMMON_OBJ} ble_server.c central_device_db_memory.c profile.h
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} ble_server.c central_device_db_memory.c ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_client: ${CORE_OBJ} ${COMMON_OBJ} ble_client.c ad_parser.c
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ad_parser.c ble_client.c ${CFLAGS} ${LDFLAGS} -o $@
