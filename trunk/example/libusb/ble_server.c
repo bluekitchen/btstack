@@ -768,6 +768,11 @@ static int sm_key_distribution_done(){
     return recv_flags == sm_key_distribution_received_set;
 }
 
+static void sm_pdu_received_in_wrong_state(){
+    sm_pairing_failed_reason = SM_REASON_UNSPECIFIED_REASON;
+    sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
+}
+
 static void sm_run(void){
 
     // assert that we can send either one
@@ -1077,11 +1082,6 @@ static void sm_run(void){
     }
 }
 
-static void sm_pdu_received_in_wrong_state(){
-    sm_pairing_failed_reason = SM_REASON_UNSPECIFIED_REASON;
-    sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
-}
-
 static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
 
     if (packet_type != SM_DATA_PACKET) return;
@@ -1273,69 +1273,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
     sm_run();
 }
 
-void sm_set_er(sm_key_t er){
-    memcpy(sm_persistent_er, er, 16);
-}
-
-void sm_set_ir(sm_key_t ir){
-    memcpy(sm_persistent_ir, ir, 16);
-    // sm_dhk(sm_persistent_ir, sm_persistent_dhk);
-    // sm_irk(sm_persistent_ir, sm_persistent_irk);
-}
-
-void sm_init(){
-    // set some (BTstack default) ER and IR
-    int i;
-    sm_key_t er;
-    sm_key_t ir;
-    for (i=0;i<16;i++){
-        er[i] = 0x30 + i;
-        ir[i] = 0x90 + i;
-    }
-    sm_set_er(er);
-    sm_set_ir(ir);
-    sm_state_responding = SM_STATE_IDLE;
-    // defaults
-    sm_accepted_stk_generation_methods = SM_STK_GENERATION_METHOD_JUST_WORKS
-                                       | SM_STK_GENERATION_METHOD_OOB
-                                       | SM_STK_GENERATION_METHOD_PASSKEY;
-    sm_max_encryption_key_size = 16;
-    sm_min_encryption_key_size = 7;
-    sm_aes128_active = 0;
-    
-    sm_cmac_state = CMAC_IDLE;
-
-    sm_central_device_test = -1;    // no private address to resolve yet
-    sm_central_ah_calculation_active = 0;
-
-    gap_random_adress_update_period = 15 * 60 * 1000;
-}
-
-// END OF SM
-
-//
-// ATT Server Globals
-//
-
-static att_connection_t att_connection;
-
-typedef enum {
-    ATT_SERVER_IDLE,
-    ATT_SERVER_REQUEST_RECEIVED,
-    ATT_SERVER_W4_SIGNED_WRITE_VALIDATION,
-} att_server_state_t;
-
-static att_server_state_t att_server_state;
-static uint16_t         att_request_handle = 0;
-static uint16_t         att_request_size   = 0;
-static uint8_t          att_request_buffer[28];
-
-
-// enable LE, setup ADV data
-static void att_run(void);
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    uint8_t adv_data[] = { 02, 01, 05,   03, 02, 0xf0, 0xff }; 
-
+static void sm_event_packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     sm_run();
 
     switch (packet_type) {
@@ -1348,13 +1286,12 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					if (packet[2] == HCI_STATE_WORKING) {
                         printf("HCI Working!\n");
                         dkg_state = DKG_CALC_IRK;
+
+                        sm_run();
+                        return; // don't notify app packet handler
 					}
 					break;
                 
-                case DAEMON_EVENT_HCI_PACKET_SENT:
-                    att_run();
-                    break;
-                    
                 case HCI_EVENT_LE_META:
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
@@ -1370,9 +1307,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
                             sm_reset_tk();
                             
-                            // reset connection MTU
-                            att_connection.mtu = 23;
-
                             hci_le_advertisement_address(&sm_s_addr_type, &sm_s_address);
                             printf("Incoming connection, own address ");
                             print_bd_addr(sm_s_address);
@@ -1446,30 +1380,11 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    // restart advertising if we have been connected before
-                    // -> avoid sending advertise enable a second time before command complete was received 
-                    if (sm_response_handle) {
-                        hci_send_cmd(&hci_le_set_advertise_enable, 1);
-                    }
-
-                    att_server_state = ATT_SERVER_IDLE;
-
-                    att_request_handle = 0;
-                    sm_response_handle = 0;
                     sm_state_responding = SM_STATE_IDLE;
+                    sm_response_handle = 0;
                     break;
                     
 				case HCI_EVENT_COMMAND_COMPLETE:
-                    if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_advertising_data)){
-                         // only needed for BLE Peripheral
-                       hci_send_cmd(&hci_le_set_scan_response_data, 10, adv_data);
-                       break;
-                    }
-                    if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_scan_response_data)){
-                         // only needed for BLE Peripheral
-                       hci_send_cmd(&hci_le_set_advertise_enable, 1);
-                       break;
-                    }
                     if (COMMAND_COMPLETE_EVENT(packet, hci_le_encrypt)){
                         sm_aes128_active = 0;
                         if (sm_central_ah_calculation_active){
@@ -1501,8 +1416,11 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 dkg_state ++;
 
                                 // SM INIT FINISHED, start application code - TODO untangle that
-                                printf("SM Init completed\n");
-                                hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
+                                if (sm_client_packet_handler)
+                                {
+                                    uint8_t event[] = { BTSTACK_EVENT_STATE, 0, HCI_STATE_WORKING };
+                                    sm_client_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*) event, sizeof(event));
+                                }
                                 break;
                             default:
                                 break;
@@ -1708,9 +1626,52 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                         break;
                     }
 			}
+
+            // forward packet to ATT or so
+            if (sm_client_packet_handler){
+                sm_client_packet_handler(packet_type, 0, packet, size);
+            }
 	}
 
     sm_run();
+}
+
+void sm_set_er(sm_key_t er){
+    memcpy(sm_persistent_er, er, 16);
+}
+
+void sm_set_ir(sm_key_t ir){
+    memcpy(sm_persistent_ir, ir, 16);
+    // sm_dhk(sm_persistent_ir, sm_persistent_dhk);
+    // sm_irk(sm_persistent_ir, sm_persistent_irk);
+}
+
+void sm_init(){
+    // set some (BTstack default) ER and IR
+    int i;
+    sm_key_t er;
+    sm_key_t ir;
+    for (i=0;i<16;i++){
+        er[i] = 0x30 + i;
+        ir[i] = 0x90 + i;
+    }
+    sm_set_er(er);
+    sm_set_ir(ir);
+    sm_state_responding = SM_STATE_IDLE;
+    // defaults
+    sm_accepted_stk_generation_methods = SM_STK_GENERATION_METHOD_JUST_WORKS
+                                       | SM_STK_GENERATION_METHOD_OOB
+                                       | SM_STK_GENERATION_METHOD_PASSKEY;
+    sm_max_encryption_key_size = 16;
+    sm_min_encryption_key_size = 7;
+    sm_aes128_active = 0;
+    
+    sm_cmac_state = CMAC_IDLE;
+
+    sm_central_device_test = -1;    // no private address to resolve yet
+    sm_central_ah_calculation_active = 0;
+
+    gap_random_adress_update_period = 15 * 60 * 1000;
 }
 
 // GAP LE API
@@ -1797,8 +1758,95 @@ void sm_passkey_input(uint8_t addr_type, bd_addr_t address, uint32_t passkey){
     sm_run();
 }
 
+
+//
+// ATT Server Globals
+//
+
 // test profile
 #include "profile.h"
+
+static att_connection_t att_connection;
+
+typedef enum {
+    ATT_SERVER_IDLE,
+    ATT_SERVER_REQUEST_RECEIVED,
+    ATT_SERVER_W4_SIGNED_WRITE_VALIDATION,
+} att_server_state_t;
+
+static att_server_state_t att_server_state;
+static uint16_t         att_request_handle = 0;
+static uint16_t         att_request_size   = 0;
+static uint8_t          att_request_buffer[28];
+
+
+// enable LE, setup ADV data
+static void att_run(void);
+static int att_advertisements_enabled = 0;
+static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    
+    uint8_t adv_data[] = { 02, 01, 05,   03, 02, 0xf0, 0xff }; 
+
+    switch (packet_type) {
+            
+        case HCI_EVENT_PACKET:
+            switch (packet[0]) {
+                
+                case BTSTACK_EVENT_STATE:
+                    // bt stack activated, get started
+                    if (packet[2] == HCI_STATE_WORKING) {
+                        printf("SM Init completed\n");
+                        hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
+                    }
+                    break;
+                
+                case DAEMON_EVENT_HCI_PACKET_SENT:
+                    att_run();
+                    break;
+                    
+                case HCI_EVENT_LE_META:
+                    switch (packet[2]) {
+                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                            // reset connection MTU
+                            att_connection.mtu = 23;
+                            att_advertisements_enabled = 0;
+                            break;
+
+                        default:
+                            break;
+                    }
+                    break;
+
+                case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    // restart advertising if we have been connected before
+                    // -> avoid sending advertise enable a second time before command complete was received 
+                    if (att_advertisements_enabled == 0) {
+                        hci_send_cmd(&hci_le_set_advertise_enable, 1);
+                        att_advertisements_enabled = 1;
+                    }
+                    att_server_state = ATT_SERVER_IDLE;
+                    att_request_handle = 0;
+                    break;
+                    
+                case HCI_EVENT_COMMAND_COMPLETE:
+                    if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_advertising_data)){
+                         // only needed for BLE Peripheral
+                       hci_send_cmd(&hci_le_set_scan_response_data, 10, adv_data);
+                       break;
+                    }
+                    if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_scan_response_data)){
+                         // only needed for BLE Peripheral
+                       hci_send_cmd(&hci_le_set_advertise_enable, 1);
+                       att_advertisements_enabled = 1;
+                       break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+    }
+}
+
 
 static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     
@@ -1930,7 +1978,7 @@ void setup(void){
     l2cap_init();
     l2cap_register_fixed_channel(att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
     l2cap_register_fixed_channel(sm_packet_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
-    l2cap_register_packet_handler(packet_handler);
+    l2cap_register_packet_handler(sm_event_packet_handler);
     
     // set up ATT
     att_server_state = ATT_SERVER_IDLE;
@@ -1947,6 +1995,7 @@ void setup(void){
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_set_authentication_requirements( SM_AUTHREQ_BONDING );
     sm_set_request_security(1);
+    sm_register_packet_handler(app_packet_handler);
 }
 
 int main(void)
