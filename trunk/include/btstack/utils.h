@@ -64,6 +64,11 @@ typedef uint8_t bd_addr_t[BD_ADDR_LEN];
 typedef uint8_t link_key_t[LINK_KEY_LEN]; 
 
 /**
+ * @brief 128 bit key used with AES128 in Security Manager
+ */
+typedef uint8_t sm_key_t[16];
+
+/**
  * @brief The device name type
  */
 #define DEVICE_NAME_LEN 248
@@ -108,6 +113,7 @@ void net_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 
 void hexdump(void *data, int size);
 void printUUID(uint8_t *uuid);
+void print_key(const char * name, sm_key_t key);
 
 // @deprecated please use more convenient bd_addr_to_str
 void print_bd_addr( bd_addr_t addr);
