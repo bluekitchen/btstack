@@ -55,13 +55,22 @@
 #endif
 #define NG_CONTROL        2           /* from freeBSD sys/ng_socket.h */
 #define SOCK_IOCTL_VAL    0xC0644E03  /* from reversing BTServer */
+
+#ifdef __LP64__
+// values changed for newer 64 bit devices
+#define GETSOCKOPT_VAL    0x40487413  /* from reversing BTServer */
+#define SETSOCKOPT_VAL    0x80487414  /* from reversing BTServer */
+#else
+ // older devices run 32 bit version
 #define GETSOCKOPT_VAL    0x402C7413  /* from reversing BTServer */
-#define SETSOCKOPT_VAL    0x802c7414  /* from reversing BTServer */
+#define SETSOCKOPT_VAL    0x802C7414  /* from reversing BTServer */
+#endif
 
 // don't enforce wake after 3s idle
 #define HCI_WAKE_TIMER_MS 3000
 #define HCI_WAKE_DURATION 10000
 
+#include <errno.h>
 #include <termios.h>  /* POSIX terminal control definitions */
 #include <fcntl.h>    /* File control definitions */
 #include <unistd.h>   /* UNIX standard function definitions */
@@ -129,7 +138,9 @@ static int h4_open(void *transport_config)
     hci_uart_config = (hci_uart_config_t *) transport_config;
 
     int fd = socket(PF_NETGRAPH, SOCK_STREAM, NG_CONTROL);
+    log_info("h4_open: open socket(%u, %u, %u) %d", PF_NETGRAPH, SOCK_STREAM, NG_CONTROL, fd);
     if (fd < 0) {
+        log_error("h4_open: open socket failed");
         perror("socket(HCI_IF)");
         goto err_out0;
     }
@@ -142,6 +153,7 @@ static int h4_open(void *transport_config)
     memset((void *) &ioctl_arg, 0x00, sizeof(struct ioctl_arg_t));
     strcpy((char *) &ioctl_arg.socket_name, SOCKET_DEVICE);
     if (ioctl(fd, SOCK_IOCTL_VAL, &ioctl_arg) != 0) {
+        log_error("h4_open: ioctl failed");
         perror("ioctl(fd_sock, SOCK_IOCTL_VAL)");
         goto err_out1;
     }
@@ -156,23 +168,36 @@ static int h4_open(void *transport_config)
     
     // connect
     if (connect(fd, (const struct sockaddr *) &sock_addr, sizeof(struct sockaddr_ng)) != 0) {
+        log_error("h4_open: connect failed");
         perror("connect(fd_sock)");
         goto err_out2;
     }
+    log_info("h4_open: connect to socket ok");
     
     // configure UART
     struct termios toptions;
     socklen_t toptions_len = sizeof(struct termios);
-    if (getsockopt(fd, SO_ACCEPTCONN, GETSOCKOPT_VAL, &toptions, &toptions_len) != 0) {
+    log_info("h4_open: sizeof (struct termios) = %lu", sizeof(struct termios));
+    log_info("h4_open: getsockopt (fd, %d, %x, buffer, %u)", SO_ACCEPTCONN, GETSOCKOPT_VAL, toptions_len);
+    int err = getsockopt(fd, SO_ACCEPTCONN, GETSOCKOPT_VAL, &toptions, &toptions_len);
+    log_info("h4_open: -> err %d, options_len %u", err, toptions_len);
+    if (err) {
+        log_error("h4_open: getsockopt failed with errno %d", errno);
         perror("getsockopt(fd_sock)");
         goto err_out3;
     }
+
+    // make raw and set speed
     cfmakeraw(&toptions);
     speed_t brate = (speed_t) hci_uart_config->baudrate_init;
     cfsetspeed(&toptions, brate);    
     toptions.c_iflag |=  IGNPAR;
     toptions.c_cflag = 0x00038b00;
-    if (setsockopt(fd, SO_ACCEPTCONN, SETSOCKOPT_VAL, &toptions, toptions_len) != 0) {
+
+    log_info("h4_open: setsockopt (fd, %d, %x, buffer, %u)", SO_ACCEPTCONN, SETSOCKOPT_VAL, toptions_len);
+    err = setsockopt(fd, SO_ACCEPTCONN, SETSOCKOPT_VAL, &toptions, toptions_len);
+    if (err) {
+        log_error("h4_open: setsockopt failed with errno %d", errno);
         perror("setsockopt(fd_sock)");
         goto err_out4;
     }
