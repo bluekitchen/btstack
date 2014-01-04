@@ -153,7 +153,7 @@ HOOK(SpringBoard, applicationDidFinishLaunching$, void, id app) {
 
     CALL_ORIG(SpringBoard, applicationDidFinishLaunching$, app);
 	
-	CFMessagePortRef local = CFMessagePortCreateLocal(NULL, CFSTR(SBA_MessagePortName), myCallBack, NULL, false);
+	CFMessagePortRef local = CFMessagePortCreateLocal(NULL, CFSTR(SBA_MessagePortName), myCallBack, NULL, NULL);
 	CFRunLoopSourceRef source = CFMessagePortCreateRunLoopSource(NULL, local, 0);
 	CFRunLoopAddSource(CFRunLoopGetCurrent(), source, kCFRunLoopDefaultMode);
 	
