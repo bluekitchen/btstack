@@ -494,6 +494,7 @@ static int iphone_on (void *transport_config){
     err = system ("launchctl unload /System/Library/LaunchDaemons/com.apple.BTServer.plist");
         
     if (iphone_os_at_least_60()) {
+        err = system ("launchctl unload /System/Library/LaunchDaemons/com.apple.BTServer.le.plist");
         err = system ("launchctl unload /System/Library/LaunchDaemons/com.apple.BlueTool.plist");
     }
     
@@ -604,6 +605,7 @@ static int iphone_off (void *config){
     if (iphone_os_at_least_60()) {
         log_info("iphone_off: reload BlueTool\n");
         system ("launchctl load /System/Library/LaunchDaemons/com.apple.BlueTool.plist");
+        system ("launchctl load /System/Library/LaunchDaemons/com.apple.BTServer.le.plist");
         log_info("iphone_off: done\n");
     }
 
