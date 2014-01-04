@@ -1,3 +1,4 @@
 #!/bin/sh
 /bin/launchctl unload /Library/LaunchDaemons/ch.ringwald.BTstack.plist 2&> /dev/null
 rm -f /usr/local/bin/BlueToolH4
+exit 0

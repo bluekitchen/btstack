@@ -1,3 +1,7 @@
-include $(THEOS)/makefiles/common.mk
+# this uses rpetrich's lipoplastic feature not present in dhowett's repository
+# you need to install Xcode 4.4.1 as /Applications/Xcode_4.4.1.app
+ 
 SUBPROJECTS = src PatchBlueTool PrefsBundle
-include $(FW_MAKEDIR)/aggregate.mk
+
+include $(THEOS)/makefiles/common.mk
+include $(THEOS_MAKE_PATH)/aggregate.mk

@@ -1,4 +1,10 @@
-include $(THEOS)/makefiles/common.mk
+# lipoplastic setup for armv6 + arm64 compilation
+TARGET := iphone:clang
+THEOS_PLATFORM_SDK_ROOT_armv6 = /Applications/Xcode-4.4.1.app/Contents/Developer
+SDKVERSION_armv6 = 5.1
+TARGET_IPHONEOS_DEPLOYMENT_VERSION = 3.0
+TARGET_IPHONEOS_DEPLOYMENT_VERSION_arm64 = 7.0
+ARCHS = armv6 arm64
 
 LIBRARY_NAME = libBTstack
 libBTstack_FILES  = btstack.c hci_cmds.c linked_list.c
@@ -31,11 +37,12 @@ BTdaemon_CFLAGS = -I../include -I..
 BTdaemon_LDFLAGS += $(SYSROOT)/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit
 
 after-BTdaemon-stage::
-	echo "current dir" `pwd`
-	mkdir -p ../_/usr/local/lib
-	mkdir -p ../_/usr/local/bin
-	ln -s /usr/lib/libBTstack.dylib ../_/usr/local/lib
-	ln -s /usr/bin/BTdaemon ../_/usr/local/bin/BTdaemon
+	echo $(THEOS_STAGING_DIR)
+	mkdir -p ../.theos/_/usr/local/lib
+	mkdir -p ../.theos/_/usr/local/bin
+	ln -s /usr/lib/libBTstack.dylib ../.theos/_/usr/local/lib
+	ln -s /usr/bin/BTdaemon         ../.theos/_/usr/local/bin/BTdaemon
 
+include $(THEOS)/makefiles/common.mk
 include $(THEOS_MAKE_PATH)/library.mk
 include $(THEOS_MAKE_PATH)/tool.mk
