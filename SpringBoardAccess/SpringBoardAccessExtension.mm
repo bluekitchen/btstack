@@ -39,24 +39,12 @@
 #import <CoreFoundation/CoreFoundation.h>
 #import <UIKit/UIKit.h>
 
-#import "../3rdparty/substrate.h"
-
 #include "SpringBoardAccess.h"
-
-class SpringBoard;
 
 @interface UIApplication (privateStatusBarIconAPI)
 - (void)addStatusBarImageNamed:(id)fp8;
 - (void)removeStatusBarImageNamed:(id)fp8;
 @end
-
-#define HOOK(class, name, type, args...) \
-static type (*_ ## class ## $ ## name)(class *self, SEL sel, ## args); \
-static type $ ## class ## $ ## name(class *self, SEL sel, ## args)
-
-#define CALL_ORIG(class, name, args...) \
-_ ## class ## $ ## name(self, sel, ## args)
-
 
 // minimal BluetoothManager swiped from BigBoss SBSettings Toggle
 #import <Foundation/Foundation.h>
@@ -147,29 +135,16 @@ CFDataRef myCallBack(CFMessagePortRef local, SInt32 msgid, CFDataRef cfData, voi
 }
 
 //______________________________________________________________________________
-
-HOOK(SpringBoard, applicationDidFinishLaunching$, void, id app) {
+%hook SpringBoard
+-(void) applicationDidFinishLaunching(id app){
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 
-    CALL_ORIG(SpringBoard, applicationDidFinishLaunching$, app);
-	
+	%orig();
+
 	CFMessagePortRef local = CFMessagePortCreateLocal(NULL, CFSTR(SBA_MessagePortName), myCallBack, NULL, NULL);
 	CFRunLoopSourceRef source = CFMessagePortCreateRunLoopSource(NULL, local, 0);
 	CFRunLoopAddSource(CFRunLoopGetCurrent(), source, kCFRunLoopDefaultMode);
 	
     [pool release]; 
 }
-//______________________________________________________________________________
-
-extern "C" void SpringBoardAccessInitialize(){
-	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-	
-	// NSLog(@"SpringBoardAccessInitialize called for SpringBoard!");
-	
-    // Setup hooks
-    Class $SpringBoard(objc_getClass("SpringBoard"));
-    _SpringBoard$applicationDidFinishLaunching$ =
-	MSHookMessage($SpringBoard, @selector(applicationDidFinishLaunching:), &$SpringBoard$applicationDidFinishLaunching$);
-
-    [pool release]; 
-}
+%end
