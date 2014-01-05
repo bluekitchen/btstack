@@ -33,7 +33,18 @@
  * Please inquire about commercial licensing options at contact@bluekitchen-gmbh.com
  *
  */
- 
+
+#pragma once
+
+#include <btstack/utils.h>
+#include <btstack/btstack.h>
+#include <stdint.h>
+
+#if defined __cplusplus
+extern "C" {
+#endif
+
+
 // Bluetooth Spec definitions
 typedef enum {
     SM_CODE_PAIRING_REQUEST = 0X01,
@@ -48,6 +59,16 @@ typedef enum {
     SM_CODE_SIGNING_INFORMATION,
     SM_CODE_SECURITY_REQUEST
 } SECURITY_MANAGER_COMMANDS;
+
+// IO Capability Values
+typedef enum {
+    IO_CAPABILITY_DISPLAY_ONLY = 0,
+    IO_CAPABILITY_DISPLAY_YES_NO,
+    IO_CAPABILITY_KEYBOARD_ONLY,
+    IO_CAPABILITY_NO_INPUT_NO_OUTPUT,
+    IO_CAPABILITY_KEYBOARD_DISPLAY, // not used by secure simple pairing
+    IO_CAPABILITY_UNKNOWN = 0xff
+} io_capability_t;
 
 // Authentication requirement flags
 #define SM_AUTHREQ_NO_BONDING 0x00
@@ -85,5 +106,47 @@ typedef enum {
 // also, invalid parameters
 // and reserved
 
-// BTstack Security Manager API
+// pairing user interacation
+typedef struct sm_event {
+    uint8_t   type;   // see <btstack/hci_cmds.h> SM_...
+    uint8_t   addr_type;
+    bd_addr_t address;
+    uint32_t  passkey;  // only used for SM_PASSKEY_DISPLAY_NUMBER 
+} sm_event_t;
 
+// address type
+typedef enum {
+    GAP_RANDOM_ADDRESS_TYPE_OFF = 0,
+    GAP_RANDOM_ADDRESS_NON_RESOLVABLE,
+    GAP_RANDOM_ADDRESS_RESOLVABLE,
+} gap_random_address_type_t;
+
+//
+// Security Manager Client API
+//
+
+void sm_init();
+void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data));
+void sm_register_packet_handler(btstack_packet_handler_t handler);
+
+void sm_set_accepted_stk_generation_methods(uint8_t accepted_stk_generation_methods);
+void sm_set_encrypted_key_size_range(uint8_t min_size, uint8_t max_size);
+void sm_set_authentication_requirements(uint8_t auth_req);
+void sm_set_io_capabilities(io_capability_t io_capability);
+void sm_set_request_security(int enable);
+
+// Support for signed writes
+int  sm_cmac_ready();
+void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8]));
+// @returns -1 if device wasn't found, -2, if lookup is ongoing, or index for central_device_db 
+int  sm_central_device_db_matched();
+
+//
+// GAP LE API
+//
+void gap_random_address_set_mode(gap_random_address_type_t random_address_type);
+void gap_random_address_set_update_period(int period_ms);
+
+#if defined __cplusplus
+}
+#endif
