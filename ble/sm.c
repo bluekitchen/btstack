@@ -257,9 +257,10 @@ static uint8_t   sm_s_rand[8];
 static sm_key_t  sm_s_csrk;
 
 // key distribution, received from master
-static sm_key_t  sm_m_ltk;
-static uint16_t  sm_m_ediv;
-static uint8_t   sm_m_rand[8];
+// commented keys that are not stored or used by Peripheral role
+// static sm_key_t  sm_m_ltk;
+// static uint16_t  sm_m_ediv;
+// static uint8_t   sm_m_rand[8];
 static uint8_t   sm_m_addr_type;
 static bd_addr_t sm_m_address;
 static sm_key_t  sm_m_csrk;
@@ -1184,13 +1185,13 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             switch(packet[0]){
                 case SM_CODE_ENCRYPTION_INFORMATION:
                     sm_key_distribution_received_set |= SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
-                    swap128(&packet[1], sm_m_ltk);
+                    // swap128(&packet[1], sm_m_ltk);
                     break;
 
                 case SM_CODE_MASTER_IDENTIFICATION:
                     sm_key_distribution_received_set |= SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
-                    sm_m_ediv = READ_BT_16(packet, 1);
-                    swap64(&packet[3], sm_m_rand);
+                    // sm_m_ediv = READ_BT_16(packet, 1);
+                    // swap64(&packet[3], sm_m_rand);
                     break;
 
                 case SM_CODE_IDENTITY_INFORMATION:
