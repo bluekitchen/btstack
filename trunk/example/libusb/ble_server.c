@@ -80,10 +80,15 @@ typedef enum {
 static void att_run(void);
 
 static att_server_state_t att_server_state;
-static uint16_t         att_request_handle = 0;
-static uint16_t         att_request_size   = 0;
-static uint8_t          att_request_buffer[28];
-static int              att_advertisements_enabled = 0;
+
+static uint16_t  att_request_handle = 0;
+static uint16_t  att_request_size   = 0;
+static uint8_t   att_request_buffer[28];
+
+static int       att_advertisements_enabled = 0;
+
+static int       att_ir_central_device_db_index = -1;
+static int       att_ir_lookup_active = 0;
 
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     
@@ -112,6 +117,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                             // reset connection MTU
                             att_connection.mtu = 23;
                             att_advertisements_enabled = 0;
+                            att_ir_lookup_active = 1;
                             break;
 
                         default:
@@ -143,12 +149,21 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                        break;
                     }
                     break;
+                case SM_IDENTITY_RESOLVING_SUCCEEDED:
+                    att_ir_lookup_active = 0;
+                    att_ir_central_device_db_index = ((sm_event_identity_resolving_t*) packet)->central_device_db_index;
+                    att_run();
+                    break;
+                case SM_IDENTITY_RESOLVING_FAILED:
+                    att_ir_lookup_active = 0;
+                    att_ir_central_device_db_index = -1;
+                    att_run();
+                    break;
                 default:
                     break;
             }
     }
 }
-
 
 static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     
@@ -162,7 +177,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
 
     // update sequence number
     uint32_t counter_packet = READ_BT_32(att_request_buffer, att_request_size-12);
-    central_device_db_counter_set(sm_central_device_db_matched(), counter_packet+1);
+    central_device_db_counter_set(att_ir_central_device_db_index, counter_packet+1);
     // just treat signed write command as simple write command after validation
     att_request_buffer[0] = ATT_WRITE_COMMAND;
     att_server_state = ATT_SERVER_REQUEST_RECEIVED;
@@ -187,22 +202,19 @@ static void att_run(void){
                     att_server_state = ATT_SERVER_IDLE;
                     return;
                 }
-                switch (sm_central_device_db_matched()){
-                    case -1:
-                        printf("ATT Signed Write, CSRK not available\n");
-                        att_server_state = ATT_SERVER_IDLE;
-                        return;
-                    case -2:
-                        // search ongoing,
-                        // @todo: send events for central device lookup, as it provides a trigger
-                        return;
-                    default:
-                        break;
+                if (att_ir_lookup_active){
+                    // search ongoing,
+                    return;
+                }
+                if (att_ir_central_device_db_index < 0){
+                    printf("ATT Signed Write, CSRK not available\n");
+                    att_server_state = ATT_SERVER_IDLE;
+                    return;
                 }
 
                 // check counter
                 uint32_t counter_packet = READ_BT_32(att_request_buffer, att_request_size-12);
-                uint32_t counter_db     = central_device_db_counter_get(sm_central_device_db_matched());
+                uint32_t counter_db     = central_device_db_counter_get(att_ir_central_device_db_index);
                 printf("ATT Signed Write, DB counter %u, packet counter %u\n", counter_db, counter_packet);
                 if (counter_packet < counter_db){
                     printf("ATT Signed Write, db reports higher counter, abort\n");
@@ -212,7 +224,7 @@ static void att_run(void){
 
                 // signature is { sequence counter, secure hash }
                 sm_key_t csrk;
-                central_device_db_csrk(sm_central_device_db_matched(), csrk);
+                central_device_db_csrk(att_ir_central_device_db_index, csrk);
                 att_server_state = ATT_SERVER_W4_SIGNED_WRITE_VALIDATION;
                 sm_cmac_start(csrk, att_request_size - 8, att_request_buffer, att_signed_write_handle_cmac_result);
                 return;

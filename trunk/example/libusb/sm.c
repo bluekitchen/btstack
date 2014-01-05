@@ -1254,7 +1254,7 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                         dkg_state = DKG_CALC_IRK;
 
                         sm_run();
-                        return; // don't notify app packet handler
+                        return; // don't notify app packet handler just yet
 					}
 					break;
                 
@@ -1563,28 +1563,11 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                                 sm_s_div = READ_NET_16(packet, 6);
                                 print_hex16("div", sm_s_div);
 
-                                // PLAN
-                                // PH3B1 - calculate DHK from IR - enc
-                                // PH3B2 - calculate Y from      - enc
-                                // PH3B3 - calculate EDIV
-                                // PH3B4 - calculate LTK         - enc
-
-                                // skip PH3B1 - we got DHK during startup
                                 // PH3B2 - calculate Y from      - enc
                                 // Y = dm(DHK, Rand)
                                 sm_aes128_set_key(sm_persistent_dhk);
                                 sm_dm_r_prime(sm_s_rand, sm_aes128_plaintext);
                                 sm_state_responding = SM_STATE_PH3_Y_GET_ENC;
-
-                                // // calculate EDIV and LTK
-                                // sm_s_ediv = sm_ediv(sm_persistent_dhk, sm_s_rand, sm_s_div);
-                                // sm_s_ltk(sm_persistent_er, sm_s_div, sm_s_ltk);
-                                // print_key("ltk", sm_s_ltk);
-                                // print_hex16("ediv", sm_s_ediv);
-                                // // distribute keys
-                                // sm_distribute_keys();
-                                // // done
-                                // sm_state_responding = SM_STATE_IDLE;
                                 break;
 
                             default:
@@ -1594,7 +1577,7 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                     }
 			}
 
-            // forward packet to ATT or so
+            // forward packet to higher layer
             if (sm_client_packet_handler){
                 sm_client_packet_handler(packet_type, 0, packet, size);
             }
@@ -1724,14 +1707,4 @@ void sm_set_io_capabilities(io_capability_t io_capability){
 
 void sm_set_request_security(int enable){
     sm_s_request_security = enable;
-}
-
-int sm_central_device_db_matched(){
-	if (sm_central_device_matched >= 0) {
-		return sm_central_device_matched;
-	}
-	if (sm_central_device_test >= 0){
-		return -2;
-	}
-	return -1;
 }

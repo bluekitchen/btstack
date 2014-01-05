@@ -143,8 +143,6 @@ void sm_set_request_security(int enable);
 // Support for signed writes
 int  sm_cmac_ready();
 void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8]));
-// @returns -1 if device wasn't found, -2, if lookup is ongoing, or index for central_device_db 
-int  sm_central_device_db_matched();
 
 //
 // GAP LE API
