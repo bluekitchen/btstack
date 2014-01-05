@@ -34,7 +34,6 @@
  *
  */
  
-#include "sm.h"
 #include <stdio.h>
 #include <strings.h>
 
@@ -42,6 +41,8 @@
 #include "hci.h"
 #include "l2cap.h"
 #include "central_device_db.h"
+#include "sm.h"
+#include "gap_le.h"
 
 //
 // SM internal types and globals

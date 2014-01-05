@@ -106,13 +106,6 @@ typedef enum {
 // also, invalid parameters
 // and reserved
 
-// address type
-typedef enum {
-    GAP_RANDOM_ADDRESS_TYPE_OFF = 0,
-    GAP_RANDOM_ADDRESS_NON_RESOLVABLE,
-    GAP_RANDOM_ADDRESS_RESOLVABLE,
-} gap_random_address_type_t;
-
 // Security Manager Events
 typedef struct sm_event_bonding {
     uint8_t   type;   // see <btstack/hci_cmds.h> SM_...
@@ -143,13 +136,6 @@ void sm_set_request_security(int enable);
 // Support for signed writes
 int  sm_cmac_ready();
 void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8]));
-
-//
-// GAP LE API
-//
-void gap_random_address_set_mode(gap_random_address_type_t random_address_type);
-void gap_random_address_set_update_period(int period_ms);
-
 #if defined __cplusplus
 }
 #endif
