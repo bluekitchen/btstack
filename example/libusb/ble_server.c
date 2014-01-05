@@ -289,11 +289,7 @@ void setup(void){
     hci_uart_config_t  * config    = NULL;
     bt_control_t       * control   = NULL;
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-        
     hci_init(transport, config, control, remote_db);
-
-    // setup central device db
-    central_device_db_init();
 
     // set up l2cap_le
     l2cap_init();
@@ -301,10 +297,12 @@ void setup(void){
     // set up ATT
     l2cap_register_fixed_channel(att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
     att_server_state = ATT_SERVER_IDLE;
+
     att_set_db(profile_data);
     att_set_write_callback(att_write_callback);
-    att_dump_attributes();
-    att_connection.mtu = 27;
+
+    // setup central device db
+    central_device_db_init();
 
     // setup SM
     sm_init();
