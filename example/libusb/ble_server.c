@@ -241,20 +241,13 @@ static void att_run(void){
 
             l2cap_send_connectionless(att_request_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, att_response_buffer, att_response_size);
             break;
-
-            if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) return;
-
-            // signed write doesn't have a response
-            att_handle_request(&att_connection, att_request_buffer, att_request_size, NULL);
-            att_server_state = ATT_SERVER_IDLE;
-            break;
     }
 }
 
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
     if (packet_type != ATT_DATA_PACKET) return;
 
-    // chcke size
+    // check size
     if (size > sizeof(att_request_buffer)) return;
 
     // last request still in processing?
