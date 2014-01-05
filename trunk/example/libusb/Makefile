@@ -12,23 +12,25 @@ CORE   = \
     ${BTSTACK_ROOT}/src/run_loop_posix.c          \
 
 COMMON = \
-    ${BTSTACK_ROOT}/src/hci.c			          \
-    ${BTSTACK_ROOT}/src/hci_cmds.c		          \
-    ${BTSTACK_ROOT}/src/hci_dump.c		          \
-    ${BTSTACK_ROOT}/src/hci_transport_h4.c        \
-    ${BTSTACK_ROOT}/src/hci_transport_usb.c       \
-    ${BTSTACK_ROOT}/src/l2cap.c			          \
-    ${BTSTACK_ROOT}/src/l2cap_signaling.c	      \
-	${BTSTACK_ROOT}/src/remote_device_db_memory.c \
-    ${BTSTACK_ROOT}/src/sdp_util.c	              \
-    ${BTSTACK_ROOT}/src/utils.c			          \
-    ${BTSTACK_ROOT}/src/rfcomm.c	              \
-    ${BTSTACK_ROOT}/src/sdp.c			          \
-    ${BTSTACK_ROOT}/src/sdp_client.c		      \
-    ${BTSTACK_ROOT}/src/sdp_parser.c		      \
-    ${BTSTACK_ROOT}/src/sdp_query_util.c		  \
-	${BTSTACK_ROOT}/src/sdp_query_rfcomm.c		  \
-    ${BTSTACK_ROOT}/ble/att.c 				 	  \
+    ${BTSTACK_ROOT}/src/hci.c			            \
+    ${BTSTACK_ROOT}/src/hci_cmds.c		            \
+    ${BTSTACK_ROOT}/src/hci_dump.c		            \
+    ${BTSTACK_ROOT}/src/hci_transport_h4.c          \
+    ${BTSTACK_ROOT}/src/hci_transport_usb.c         \
+    ${BTSTACK_ROOT}/src/l2cap.c			            \
+    ${BTSTACK_ROOT}/src/l2cap_signaling.c	        \
+	${BTSTACK_ROOT}/src/remote_device_db_memory.c   \
+    ${BTSTACK_ROOT}/src/sdp_util.c	                \
+    ${BTSTACK_ROOT}/src/utils.c			            \
+    ${BTSTACK_ROOT}/src/rfcomm.c	                \
+    ${BTSTACK_ROOT}/src/sdp.c			            \
+    ${BTSTACK_ROOT}/src/sdp_client.c		        \
+    ${BTSTACK_ROOT}/src/sdp_parser.c		        \
+    ${BTSTACK_ROOT}/src/sdp_query_util.c		    \
+	${BTSTACK_ROOT}/src/sdp_query_rfcomm.c		    \
+    ${BTSTACK_ROOT}/ble/att.c 				 	    \
+    ${BTSTACK_ROOT}/ble/sm.c 				 	    \
+    ${BTSTACK_ROOT}/ble/central_device_db_memory.c  \
 
 CC2564 = \
     ${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
@@ -64,8 +66,8 @@ spp_counter_ssp: ${CORE_OBJ} ${COMMON_OBJ} spp_counter_ssp.c
 profile.h: profile.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 
-ble_server: ${CORE_OBJ} ${COMMON_OBJ} ble_server.c sm.c central_device_db_memory.c profile.h
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} ble_server.c sm.c central_device_db_memory.c ${CFLAGS} ${LDFLAGS} -o $@
+ble_server: ${CORE_OBJ} ${COMMON_OBJ} ble_server.c profile.h
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} ble_server.c ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_client: ${CORE_OBJ} ${COMMON_OBJ} ble_client.c ad_parser.c
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ad_parser.c ble_client.c ${CFLAGS} ${LDFLAGS} -o $@
