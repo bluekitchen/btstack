@@ -35,6 +35,9 @@
 //  Created by Matthias Ringwald on 9/15/09.
 //
 
+// use MobileSubstrate for hooking
+%config(generator=MobileSubstrate);
+
 #import <Foundation/Foundation.h>
 #import <CoreFoundation/CoreFoundation.h>
 #import <UIKit/UIKit.h>
