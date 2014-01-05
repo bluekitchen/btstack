@@ -1658,10 +1658,6 @@ void sm_init(){
     l2cap_register_packet_handler(sm_event_packet_handler);
 }
 
-void sm_encrypted(uint8_t addr_type, bd_addr_t address){
-    
-}
-
 // GAP Bonding API
 static int sm_get_connection(uint8_t addr_type, bd_addr_t address){
     // TODO compare to current connection
