@@ -124,6 +124,8 @@ typedef struct sm_event_identity_resolving {
 //
 
 void sm_init();
+void sm_set_er(sm_key_t er);
+void sm_set_ir(sm_key_t ir);
 void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data));
 void sm_register_packet_handler(btstack_packet_handler_t handler);
 
@@ -132,6 +134,10 @@ void sm_set_encrypted_key_size_range(uint8_t min_size, uint8_t max_size);
 void sm_set_authentication_requirements(uint8_t auth_req);
 void sm_set_io_capabilities(io_capability_t io_capability);
 void sm_set_request_security(int enable);
+
+void sm_bonding_decline(uint8_t addr_type, bd_addr_t address);
+void sm_just_works_confirm(uint8_t addr_type, bd_addr_t address);
+void sm_passkey_input(uint8_t addr_type, bd_addr_t address, uint32_t passkey);
 
 // Support for signed writes
 int  sm_cmac_ready();

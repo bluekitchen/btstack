@@ -295,10 +295,6 @@ static const stk_generation_method_t stk_generation_method[5][5] = {
 
 static void sm_run();
 
-/// CMAC Suppport
-static void sm_cmac_handle_encryption_result(sm_key_t data);
-static void sm_cmac_handle_aes_engine_ready();
-
 // Utils
 static inline void swapX(uint8_t *src, uint8_t *dst, int len){
     int i;
@@ -438,7 +434,6 @@ static void sm_dm_r_prime(uint8_t r[8], sm_key_t r_prime){
     memset(r_prime, 0, 16);
     memcpy(&r_prime[8], r, 8);
 }
-
 
 // calculate arguments for first AES128 operation in C1 function
 static void sm_c1_t1(sm_key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, uint8_t rat, sm_key_t t1){
@@ -1588,6 +1583,37 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
     sm_run();
 }
 
+
+// Security Manager Client API
+void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data)){
+    sm_get_oob_data = get_oob_data_callback;
+}
+
+void sm_register_packet_handler(btstack_packet_handler_t handler){
+    sm_client_packet_handler = handler;    
+}
+
+void sm_set_accepted_stk_generation_methods(uint8_t accepted_stk_generation_methods){
+    sm_accepted_stk_generation_methods = accepted_stk_generation_methods;
+}
+
+void sm_set_encrypted_key_size_range(uint8_t min_size, uint8_t max_size){
+	sm_min_encryption_key_size = min_size;
+	sm_max_encryption_key_size = max_size;
+}
+
+void sm_set_authentication_requirements(uint8_t auth_req){
+    sm_s_auth_req = auth_req;
+}
+
+void sm_set_io_capabilities(io_capability_t io_capability){
+    sm_s_io_capabilities = io_capability;
+}
+
+void sm_set_request_security(int enable){
+    sm_s_request_security = enable;
+}
+
 void sm_set_er(sm_key_t er){
     memcpy(sm_persistent_er, er, 16);
 }
@@ -1630,22 +1656,8 @@ void sm_init(){
     l2cap_register_packet_handler(sm_event_packet_handler);
 }
 
-// GAP LE API
-void gap_random_address_set_mode(gap_random_address_type_t random_address_type){
-    gap_random_address_update_stop();
-    gap_random_adress_type = random_address_type;
-    if (random_address_type == GAP_RANDOM_ADDRESS_TYPE_OFF) return;
-    gap_random_address_update_start();
-}
-
-void gap_random_address_set_update_period(int period_ms){
-    gap_random_adress_update_period = period_ms;
-    if (gap_random_adress_type == GAP_RANDOM_ADDRESS_TYPE_OFF) return;
-    gap_random_address_update_stop();
-    gap_random_address_update_start();
-}
-
-int sm_get_connection(uint8_t addr_type, bd_addr_t address){
+// GAP Bonding API
+static int sm_get_connection(uint8_t addr_type, bd_addr_t address){
     // TODO compare to current connection
     return 1;
 }
@@ -1681,32 +1693,17 @@ void sm_passkey_input(uint8_t addr_type, bd_addr_t address, uint32_t passkey){
     sm_run();
 }
 
-// Security Manager Client API
-void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data)){
-    sm_get_oob_data = get_oob_data_callback;
+// GAP LE API
+void gap_random_address_set_mode(gap_random_address_type_t random_address_type){
+    gap_random_address_update_stop();
+    gap_random_adress_type = random_address_type;
+    if (random_address_type == GAP_RANDOM_ADDRESS_TYPE_OFF) return;
+    gap_random_address_update_start();
 }
 
-void sm_register_packet_handler(btstack_packet_handler_t handler){
-    sm_client_packet_handler = handler;    
-}
-
-void sm_set_accepted_stk_generation_methods(uint8_t accepted_stk_generation_methods){
-    sm_accepted_stk_generation_methods = accepted_stk_generation_methods;
-}
-
-void sm_set_encrypted_key_size_range(uint8_t min_size, uint8_t max_size){
-	sm_min_encryption_key_size = min_size;
-	sm_max_encryption_key_size = max_size;
-}
-
-void sm_set_authentication_requirements(uint8_t auth_req){
-    sm_s_auth_req = auth_req;
-}
-
-void sm_set_io_capabilities(io_capability_t io_capability){
-    sm_s_io_capabilities = io_capability;
-}
-
-void sm_set_request_security(int enable){
-    sm_s_request_security = enable;
+void gap_random_address_set_update_period(int period_ms){
+    gap_random_adress_update_period = period_ms;
+    if (gap_random_adress_type == GAP_RANDOM_ADDRESS_TYPE_OFF) return;
+    gap_random_address_update_stop();
+    gap_random_address_update_start();
 }
