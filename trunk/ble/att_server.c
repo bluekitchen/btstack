@@ -60,7 +60,8 @@
 #include "att_server.h"
 #include "gap_le.h"
 #include "central_device_db.h"
-static att_connection_t att_connection;
+
+static void att_run(void);
 
 typedef enum {
     ATT_SERVER_IDLE,
@@ -68,8 +69,7 @@ typedef enum {
     ATT_SERVER_W4_SIGNED_WRITE_VALIDATION,
 } att_server_state_t;
 
-static void att_run(void);
-
+static att_connection_t att_connection;
 static att_server_state_t att_server_state;
 
 static uint16_t  att_request_handle = 0;
@@ -78,6 +78,8 @@ static uint8_t   att_request_buffer[28];
 
 static int       att_ir_central_device_db_index = -1;
 static int       att_ir_lookup_active = 0;
+
+static int       att_connection_encrypted;
 
 static btstack_packet_handler_t att_client_packet_handler = NULL;
 
@@ -97,6 +99,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             // reset connection MTU
                             att_connection.mtu = 23;
+                            att_connection_encrypted = 0;
                             break;
 
                         default:
@@ -104,11 +107,18 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     }
                     break;
 
+                case HCI_EVENT_ENCRYPTION_CHANGE: 
+                	// check handle
+                	if (att_request_handle != READ_BT_16(packet, 3)) break;
+                	att_connection_encrypted = packet[5];
+                	break;
+
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // restart advertising if we have been connected before
                     // -> avoid sending advertise enable a second time before command complete was received 
                     att_server_state = ATT_SERVER_IDLE;
                     att_request_handle = 0;
+                    att_connection_encrypted = 0;
                     break;
                     
                 case SM_IDENTITY_RESOLVING_STARTED:
