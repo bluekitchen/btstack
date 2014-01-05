@@ -1277,14 +1277,15 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                             printf("Incoming connection, own address ");
                             print_bd_addr(sm_s_address);
 
-                            // try to lookup device
-                            sm_central_device_test = 0;
-                            sm_central_device_matched = -1;
-
                             // request security
                             if (sm_s_request_security){
                                 sm_state_responding = SM_STATE_SEND_SECURITY_REQUEST;
                             }
+
+                            // try to lookup device
+                            sm_central_device_test = 0;
+                            sm_central_device_matched = -1;
+                            sm_notify_client_identity_resolving(SM_IDENTITY_RESOLVING_STARTED, 0);
                             break;
 
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:

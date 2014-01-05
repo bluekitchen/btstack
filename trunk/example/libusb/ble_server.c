@@ -117,7 +117,6 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                             // reset connection MTU
                             att_connection.mtu = 23;
                             att_advertisements_enabled = 0;
-                            att_ir_lookup_active = 1;
                             break;
 
                         default:
@@ -148,6 +147,9 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                        att_advertisements_enabled = 1;
                        break;
                     }
+                    break;
+                case SM_IDENTITY_RESOLVING_STARTED:
+                    att_ir_lookup_active = 1;
                     break;
                 case SM_IDENTITY_RESOLVING_SUCCEEDED:
                     att_ir_lookup_active = 0;
@@ -203,7 +205,6 @@ static void att_run(void){
                     return;
                 }
                 if (att_ir_lookup_active){
-                    // search ongoing,
                     return;
                 }
                 if (att_ir_central_device_db_index < 0){
