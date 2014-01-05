@@ -136,15 +136,12 @@ CFDataRef myCallBack(CFMessagePortRef local, SInt32 msgid, CFDataRef cfData, voi
 
 //______________________________________________________________________________
 %hook SpringBoard
--(void) applicationDidFinishLaunching(id app){
-	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+-(void) applicationDidFinishLaunching:(id) app{
 
 	%orig();
 
 	CFMessagePortRef local = CFMessagePortCreateLocal(NULL, CFSTR(SBA_MessagePortName), myCallBack, NULL, NULL);
 	CFRunLoopSourceRef source = CFMessagePortCreateRunLoopSource(NULL, local, 0);
 	CFRunLoopAddSource(CFRunLoopGetCurrent(), source, kCFRunLoopDefaultMode);
-	
-    [pool release]; 
 }
 %end
