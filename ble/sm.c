@@ -215,7 +215,7 @@ static timer_source_t sm_timeout;
 // data to send to aes128 crypto engine, see sm_aes128_set_key and sm_aes128_set_plaintext
 static sm_key_t   sm_aes128_key;
 static sm_key_t   sm_aes128_plaintext;
-static uint8_t sm_aes128_active;
+static uint8_t    sm_aes128_active;
 
 // generation method and temporary key for STK - STK is stored in sm_s_ltk
 static stk_generation_method_t sm_stk_generation_method;
@@ -683,14 +683,13 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
             print_key("k2", k2);
 
             // step 4: set m_last
+            int i;
             if (sm_cmac_last_block_complete()){
-                int i;
                 for (i=0;i<16;i++){
                     sm_cmac_m_last[i] = sm_cmac_message[sm_cmac_message_len - 16 + i] ^ k1[i];
                 }
             } else {
                 int valid_octets_in_last_block = sm_cmac_message_len & 0x0f;
-                int i;
                 for (i=0;i<16;i++){
                     if (i < valid_octets_in_last_block){
                         sm_cmac_m_last[i] = sm_cmac_message[(sm_cmac_message_len & 0xfff0) + i] ^ k2[i];
@@ -1657,6 +1656,10 @@ void sm_init(){
     // attach to lower layers
     l2cap_register_fixed_channel(sm_packet_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
     l2cap_register_packet_handler(sm_event_packet_handler);
+}
+
+void sm_encrypted(uint8_t addr_type, bd_addr_t address){
+    
 }
 
 // GAP Bonding API
