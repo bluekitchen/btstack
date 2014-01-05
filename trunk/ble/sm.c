@@ -254,7 +254,8 @@ static uint16_t  sm_s_y;
 static uint16_t  sm_s_div;
 static uint16_t  sm_s_ediv;
 static uint8_t   sm_s_rand[8];
-static sm_key_t  sm_s_csrk;
+// commented keys are not used in Perihperal role
+// static sm_key_t  sm_s_csrk;
 
 // key distribution, received from master
 // commented keys that are not stored or used by Peripheral role
@@ -266,7 +267,7 @@ static bd_addr_t sm_m_address;
 static sm_key_t  sm_m_csrk;
 static sm_key_t  sm_m_irk;
 
-// CMAC calculation
+// CMAC calculation - only used by signed writes
 static cmac_state_t sm_cmac_state;
 static sm_key_t     sm_cmac_k;
 static uint16_t     sm_cmac_message_len;
@@ -1027,7 +1028,8 @@ static void sm_run(void){
                 sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_SIGNING_INFORMATION;
-                swap128(sm_s_csrk, &buffer[1]);
+                // swap128(sm_s_csrk, &buffer[1]);
+                memset(&buffer[1], 0, 16);  // csrk not calculated
                 l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_timeout_reset();
                 return;
