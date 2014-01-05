@@ -135,8 +135,6 @@ void sm_set_authentication_requirements(uint8_t auth_req);
 void sm_set_io_capabilities(io_capability_t io_capability);
 void sm_set_request_security(int enable);
 
-void sm_encrypted(uint8_t addr_type, bd_addr_t address);
-
 void sm_bonding_decline(uint8_t addr_type, bd_addr_t address);
 void sm_just_works_confirm(uint8_t addr_type, bd_addr_t address);
 void sm_passkey_input(uint8_t addr_type, bd_addr_t address, uint32_t passkey);
