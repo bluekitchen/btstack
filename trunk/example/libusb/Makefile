@@ -29,6 +29,7 @@ COMMON = \
     ${BTSTACK_ROOT}/src/sdp_query_util.c		    \
 	${BTSTACK_ROOT}/src/sdp_query_rfcomm.c		    \
     ${BTSTACK_ROOT}/ble/att.c 				 	    \
+    ${BTSTACK_ROOT}/ble/att_server.c        	    \
     ${BTSTACK_ROOT}/ble/sm.c 				 	    \
     ${BTSTACK_ROOT}/ble/central_device_db_memory.c  \
 
@@ -43,7 +44,7 @@ CC2564_OBJ = $(CC2564:.c=.o)
 
 # create firmware image from common objects and example source file
 
-all: ../../include/btstack/version.h ble_client ble_client_uart sdp_rfcomm_query sdp_general_query spp_counter ble_server ble_client
+all: ../../include/btstack/version.h ble_client ble_client_uart sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral
 
 #spp-usb l2cap-server-usb l2cap-client-usb l2cap-server-uart l2cap-client-uart
 

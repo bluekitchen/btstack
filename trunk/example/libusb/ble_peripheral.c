@@ -59,37 +59,29 @@
 
 #include "sm.h"
 #include "att.h"
+#include "att_server.h"
 #include "gap_le.h"
 #include "central_device_db.h"
 
-
-//
-// ATT Server Globals
-//
+///------
+static int advertisements_enabled = 0;
 
 // test profile
 #include "profile.h"
 
-static att_connection_t att_connection;
-
-typedef enum {
-    ATT_SERVER_IDLE,
-    ATT_SERVER_REQUEST_RECEIVED,
-    ATT_SERVER_W4_SIGNED_WRITE_VALIDATION,
-} att_server_state_t;
-
-static void att_run(void);
-
-static att_server_state_t att_server_state;
-
-static uint16_t  att_request_handle = 0;
-static uint16_t  att_request_size   = 0;
-static uint8_t   att_request_buffer[28];
-
-static int       att_advertisements_enabled = 0;
-
-static int       att_ir_central_device_db_index = -1;
-static int       att_ir_lookup_active = 0;
+// write requests
+static void att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size, signature_t * signature){
+    printf("WRITE Callback, handle %04x\n", handle);
+    switch(handle){
+        case 0x000b:
+            buffer[buffer_size]=0;
+            printf("New text: %s\n", buffer);
+            break;
+        case 0x000d:
+            printf("New value: %u\n", buffer[0]);
+            break;
+    }
+}
 
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     
@@ -108,16 +100,10 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     }
                     break;
                 
-                case DAEMON_EVENT_HCI_PACKET_SENT:
-                    att_run();
-                    break;
-                    
                 case HCI_EVENT_LE_META:
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            // reset connection MTU
-                            att_connection.mtu = 23;
-                            att_advertisements_enabled = 0;
+                            advertisements_enabled = 0;
                             break;
 
                         default:
@@ -128,12 +114,10 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     // restart advertising if we have been connected before
                     // -> avoid sending advertise enable a second time before command complete was received 
-                    if (att_advertisements_enabled == 0) {
+                    if (advertisements_enabled == 0) {
                         hci_send_cmd(&hci_le_set_advertise_enable, 1);
-                        att_advertisements_enabled = 1;
+                        advertisements_enabled = 1;
                     }
-                    att_server_state = ATT_SERVER_IDLE;
-                    att_request_handle = 0;
                     break;
                     
                 case HCI_EVENT_COMMAND_COMPLETE:
@@ -145,134 +129,13 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_scan_response_data)){
                          // only needed for BLE Peripheral
                        hci_send_cmd(&hci_le_set_advertise_enable, 1);
-                       att_advertisements_enabled = 1;
+                       advertisements_enabled = 1;
                        break;
                     }
-                    break;
-                case SM_IDENTITY_RESOLVING_STARTED:
-                    att_ir_lookup_active = 1;
-                    break;
-                case SM_IDENTITY_RESOLVING_SUCCEEDED:
-                    att_ir_lookup_active = 0;
-                    att_ir_central_device_db_index = ((sm_event_identity_resolving_t*) packet)->central_device_db_index;
-                    att_run();
-                    break;
-                case SM_IDENTITY_RESOLVING_FAILED:
-                    att_ir_lookup_active = 0;
-                    att_ir_central_device_db_index = -1;
-                    att_run();
                     break;
                 default:
                     break;
             }
-    }
-}
-
-static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
-    
-    if (att_server_state != ATT_SERVER_W4_SIGNED_WRITE_VALIDATION) return;
-
-    if (memcmp(hash, &att_request_buffer[att_request_size-8], 8)){
-        printf("ATT Signed Write, invalid signature\n");
-        att_server_state = ATT_SERVER_IDLE;
-        return;
-    }
-
-    // update sequence number
-    uint32_t counter_packet = READ_BT_32(att_request_buffer, att_request_size-12);
-    central_device_db_counter_set(att_ir_central_device_db_index, counter_packet+1);
-    // just treat signed write command as simple write command after validation
-    att_request_buffer[0] = ATT_WRITE_COMMAND;
-    att_server_state = ATT_SERVER_REQUEST_RECEIVED;
-    att_run();
-}
-
-static void att_run(void){
-    switch (att_server_state){
-        case ATT_SERVER_IDLE:
-        case ATT_SERVER_W4_SIGNED_WRITE_VALIDATION:
-            return;
-        case ATT_SERVER_REQUEST_RECEIVED:
-            if (att_request_buffer[0] == ATT_SIGNED_WRITE_COMAND){
-                printf("ATT Signed Write!\n");
-                if (!sm_cmac_ready()) {
-                    printf("ATT Signed Write, sm_cmac engine not ready. Abort\n");
-                    att_server_state = ATT_SERVER_IDLE;
-                     return;
-                }  
-                if (att_request_size < (3 + 12)) {
-                    printf("ATT Signed Write, request to short. Abort.\n");
-                    att_server_state = ATT_SERVER_IDLE;
-                    return;
-                }
-                if (att_ir_lookup_active){
-                    return;
-                }
-                if (att_ir_central_device_db_index < 0){
-                    printf("ATT Signed Write, CSRK not available\n");
-                    att_server_state = ATT_SERVER_IDLE;
-                    return;
-                }
-
-                // check counter
-                uint32_t counter_packet = READ_BT_32(att_request_buffer, att_request_size-12);
-                uint32_t counter_db     = central_device_db_counter_get(att_ir_central_device_db_index);
-                printf("ATT Signed Write, DB counter %u, packet counter %u\n", counter_db, counter_packet);
-                if (counter_packet < counter_db){
-                    printf("ATT Signed Write, db reports higher counter, abort\n");
-                    att_server_state = ATT_SERVER_IDLE;
-                    return;
-                }
-
-                // signature is { sequence counter, secure hash }
-                sm_key_t csrk;
-                central_device_db_csrk(att_ir_central_device_db_index, csrk);
-                att_server_state = ATT_SERVER_W4_SIGNED_WRITE_VALIDATION;
-                sm_cmac_start(csrk, att_request_size - 8, att_request_buffer, att_signed_write_handle_cmac_result);
-                return;
-            } 
-
-            if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) return;
-
-            uint8_t  att_response_buffer[28];
-            uint16_t att_response_size = att_handle_request(&att_connection, att_request_buffer, att_request_size, att_response_buffer);
-            att_server_state = ATT_SERVER_IDLE;
-            if (att_response_size == 0) return;
-
-            l2cap_send_connectionless(att_request_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, att_response_buffer, att_response_size);
-            break;
-    }
-}
-
-static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
-    if (packet_type != ATT_DATA_PACKET) return;
-
-    // check size
-    if (size > sizeof(att_request_buffer)) return;
-
-    // last request still in processing?
-    if (att_server_state != ATT_SERVER_IDLE) return;
-
-    // store request
-    att_server_state = ATT_SERVER_REQUEST_RECEIVED;
-    att_request_size = size;
-    att_request_handle = handle;
-    memcpy(att_request_buffer, packet, size);
-
-    att_run();
-}
-
-// write requests
-static void att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size, signature_t * signature){
-    printf("WRITE Callback, handle %04x\n", handle);
-    switch(handle){
-        case 0x000b:
-            buffer[buffer_size]=0;
-            printf("New text: %s\n", buffer);
-            break;
-        case 0x000d:
-            printf("New value: %u\n", buffer[0]);
-            break;
     }
 }
 
@@ -294,13 +157,6 @@ void setup(void){
     // set up l2cap_le
     l2cap_init();
     
-    // set up ATT
-    l2cap_register_fixed_channel(att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
-    att_server_state = ATT_SERVER_IDLE;
-
-    att_set_db(profile_data);
-    att_set_write_callback(att_write_callback);
-
     // setup central device db
     central_device_db_init();
 
@@ -309,7 +165,10 @@ void setup(void){
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_set_authentication_requirements( SM_AUTHREQ_BONDING );
     sm_set_request_security(1);
-    sm_register_packet_handler(app_packet_handler);
+
+    // setup ATT server
+    att_server_init(profile_data, NULL, att_write_callback);    
+    att_server_register_packet_handler(app_packet_handler);
 }
 
 int main(void)
