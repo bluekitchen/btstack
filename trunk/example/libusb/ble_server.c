@@ -59,6 +59,7 @@
 
 #include "sm.h"
 #include "att.h"
+#include "gap_le.h"
 #include "central_device_db.h"
 
 
