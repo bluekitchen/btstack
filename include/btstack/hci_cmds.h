@@ -229,6 +229,8 @@ extern "C" {
 #define SM_PASSKEY_DISPLAY_CANCEL  						   0xb3
 #define SM_PASSKEY_INPUT_NUMBER							   0xb4
 #define SM_PASSKEY_INPUT_CANCEL      					   0xb5
+#define SM_IDENTITY_RESOLVING_FAILED	        		   0xb6
+#define SM_IDENTITY_RESOLVING_SUCCEEDED  				   0xb7
 
 // last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
 

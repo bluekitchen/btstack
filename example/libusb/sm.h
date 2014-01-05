@@ -106,20 +106,25 @@ typedef enum {
 // also, invalid parameters
 // and reserved
 
-// pairing user interacation
-typedef struct sm_event {
-    uint8_t   type;   // see <btstack/hci_cmds.h> SM_...
-    uint8_t   addr_type;
-    bd_addr_t address;
-    uint32_t  passkey;  // only used for SM_PASSKEY_DISPLAY_NUMBER 
-} sm_event_t;
-
 // address type
 typedef enum {
     GAP_RANDOM_ADDRESS_TYPE_OFF = 0,
     GAP_RANDOM_ADDRESS_NON_RESOLVABLE,
     GAP_RANDOM_ADDRESS_RESOLVABLE,
 } gap_random_address_type_t;
+
+// Security Manager Events
+typedef struct sm_event_bonding {
+    uint8_t   type;   // see <btstack/hci_cmds.h> SM_...
+    uint8_t   addr_type;
+    bd_addr_t address;
+    uint32_t  passkey;  // only used for SM_PASSKEY_DISPLAY_NUMBER 
+} sm_event_bonding_t;
+
+typedef struct sm_event_identity_resolving {
+    uint8_t   type;   // see <btstack/hci_cmds.h> SM_IDENTITY_RESOLVING_
+    uint16_t  central_device_db_index;
+} sm_event_identity_resolving_t;
 
 //
 // Security Manager Client API

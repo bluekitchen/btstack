@@ -494,19 +494,32 @@ static void sm_s1_r_prime(sm_key_t r1, sm_key_t r2, sm_key_t r_prime){
     memcpy(&r_prime[0], &r1[8], 8);
 }
 
-static void sm_notify_client(uint8_t type, uint8_t addr_type, bd_addr_t address, uint32_t passkey){
+static void sm_notify_client_identity_resolving(uint8_t type, uint16_t index){
+    sm_event_identity_resolving_t event;
+    event.type = type;
+    event.central_device_db_index = index;
 
-    sm_event_t event;
+    // dummy implementation
+    log_info("sm_notify_client_identity_resolving: event 0x%02x, index %u", type, index);
+
+    if (!sm_client_packet_handler) return;
+    sm_client_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(sm_event_identity_resolving_t));
+
+}
+
+static void sm_notify_client_bonding(uint8_t type, uint8_t addr_type, bd_addr_t address, uint32_t passkey){
+
+    sm_event_bonding_t event;
     event.type = type;
     event.addr_type = addr_type;
     BD_ADDR_COPY(event.address, address);
     event.passkey = passkey;
 
     // dummy implementation
-    printf("sm_notify_client: event 0x%02x, addres_type %u, address (), num '%06u'", event.type, event.addr_type, event.passkey);
+    log_info("sm_notify_client_bonding: event 0x%02x, addres_type %u, address (), num '%06u'", event.type, event.addr_type, event.passkey);
 
     if (!sm_client_packet_handler) return;
-    sm_client_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(sm_event_t));
+    sm_client_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(sm_event_bonding_t));
 }
 
 // decide on stk generation based on
@@ -801,6 +814,7 @@ static void sm_run(void){
                 sm_central_device_matched = sm_central_device_test;
                 sm_central_device_test = -1;
                 central_device_db_csrk(sm_central_device_matched, sm_m_csrk);
+                sm_notify_client_identity_resolving(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_matched);
                 break;
             }
 
@@ -824,6 +838,7 @@ static void sm_run(void){
         if (sm_central_device_test >= central_device_db_count()){
             printf("Central Device Lookup: not found\n");
             sm_central_device_test = -1;
+            sm_notify_client_identity_resolving(SM_IDENTITY_RESOLVING_FAILED, 0);
         }
     }
 
@@ -875,17 +890,17 @@ static void sm_run(void){
             switch (sm_stk_generation_method){
                 case PK_RESP_INPUT:
                     sm_user_response = SM_USER_RESPONSE_PENDING;
-                    sm_notify_client(SM_PASSKEY_INPUT_NUMBER, sm_m_addr_type, sm_m_address, 0); 
+                    sm_notify_client_bonding(SM_PASSKEY_INPUT_NUMBER, sm_m_addr_type, sm_m_address, 0); 
                     break;
                 case PK_INIT_INPUT:
-                    sm_notify_client(SM_PASSKEY_DISPLAY_NUMBER, sm_m_addr_type, sm_m_address, READ_NET_32(sm_tk, 12)); 
+                    sm_notify_client_bonding(SM_PASSKEY_DISPLAY_NUMBER, sm_m_addr_type, sm_m_address, READ_NET_32(sm_tk, 12)); 
                     break;
                 case JUST_WORKS:
                     switch (sm_s_io_capabilities){
                         case IO_CAPABILITY_KEYBOARD_DISPLAY:
                         case IO_CAPABILITY_DISPLAY_YES_NO:
                             sm_user_response = SM_USER_RESPONSE_PENDING;
-                            sm_notify_client(SM_JUST_WORKS_REQUEST, sm_m_addr_type, sm_m_address, READ_NET_32(sm_tk, 12));
+                            sm_notify_client_bonding(SM_JUST_WORKS_REQUEST, sm_m_addr_type, sm_m_address, READ_NET_32(sm_tk, 12));
                             break;
                         default:
                             // cannot ask user
@@ -1133,7 +1148,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // notify client to hide shown passkey
             if (sm_stk_generation_method == PK_INIT_INPUT){
-                sm_notify_client(SM_PASSKEY_DISPLAY_CANCEL, sm_m_addr_type, sm_m_address, 0);
+                sm_notify_client_bonding(SM_PASSKEY_DISPLAY_CANCEL, sm_m_addr_type, sm_m_address, 0);
             }
 
             // handle user cancel pairing?
@@ -1348,7 +1363,8 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                                 sm_central_device_matched = sm_central_device_test;
                                 sm_central_device_test = -1;
                                 central_device_db_csrk(sm_central_device_matched, sm_m_csrk);
-                                printf("Central Device Lookup: matched resolvable private address\n");
+				                sm_notify_client_identity_resolving(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_matched);
+                                log_info("Central Device Lookup: matched resolvable private address");
                                 break;
                             }
                             // no match
