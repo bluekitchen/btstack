@@ -231,15 +231,19 @@ static uint16_t setup_error(uint8_t * response_buffer, uint16_t request, uint16_
     return 5;
 }
 
-static uint16_t setup_error_atribute_not_found(uint8_t * response_buffer, uint16_t request, uint16_t start_handle){
+static inline uint16_t setup_error_write_not_permited(uint8_t * response_buffer, uint16_t request, uint16_t start_handle){
+    return setup_error(response_buffer, request, start_handle, ATT_ERROR_WRITE_NOT_PERMITTED);
+}
+
+static inline uint16_t setup_error_atribute_not_found(uint8_t * response_buffer, uint16_t request, uint16_t start_handle){
     return setup_error(response_buffer, request, start_handle, ATT_ERROR_ATTRIBUTE_NOT_FOUND);
 }
 
-static uint16_t setup_error_invalid_handle(uint8_t * response_buffer, uint16_t request, uint16_t handle){
+static inline uint16_t setup_error_invalid_handle(uint8_t * response_buffer, uint16_t request, uint16_t handle){
     return setup_error(response_buffer, request, handle, ATT_ERROR_ATTRIBUTE_INVALID);
 }
 
-static uint16_t setup_error_invalid_offset(uint8_t * response_buffer, uint16_t request, uint16_t handle){
+static inline uint16_t setup_error_invalid_offset(uint8_t * response_buffer, uint16_t request, uint16_t handle){
     return setup_error(response_buffer, request, handle, ATT_ERROR_INVALID_OFFSET);
 }
 
@@ -689,8 +693,7 @@ static uint16_t handle_write_request(uint8_t * request_buffer,  uint16_t request
                               uint8_t * response_buffer, uint16_t response_buffer_size){
     uint16_t handle = READ_BT_16(request_buffer, 1);
     if (!att_write_callback) {
-        // TODO: Use "Write Not Permitted"
-        return setup_error_atribute_not_found(response_buffer, ATT_WRITE_REQUEST, handle);
+        return setup_error_write_not_permited(response_buffer, ATT_WRITE_REQUEST, handle);
     }
     att_iterator_t it;
     int ok = att_find_handle(&it, handle);
@@ -698,8 +701,7 @@ static uint16_t handle_write_request(uint8_t * request_buffer,  uint16_t request
         return setup_error_atribute_not_found(response_buffer, ATT_WRITE_REQUEST, handle);
     }
     if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0) {
-        // TODO: Use "Write Not Permitted"
-        return setup_error_atribute_not_found(response_buffer, ATT_WRITE_REQUEST, handle);
+        return setup_error_write_not_permited(response_buffer, ATT_WRITE_REQUEST, handle);
     }
     (*att_write_callback)(handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3, NULL);
     response_buffer[0] = ATT_WRITE_RESPONSE;
@@ -712,8 +714,7 @@ static uint16_t handle_prepare_write_request(uint8_t * request_buffer,  uint16_t
                                       uint8_t * response_buffer, uint16_t response_buffer_size){
     uint16_t handle = READ_BT_16(request_buffer, 1);
     if (!att_write_callback) {
-        // TODO: Use "Write Not Permitted"
-        return setup_error_atribute_not_found(response_buffer, ATT_PREPARE_WRITE_REQUEST, handle);
+        return setup_error_write_not_permited(response_buffer, ATT_PREPARE_WRITE_REQUEST, handle);
     }
     att_iterator_t it;
     int ok = att_find_handle(&it, handle);
@@ -721,8 +722,7 @@ static uint16_t handle_prepare_write_request(uint8_t * request_buffer,  uint16_t
         return setup_error_atribute_not_found(response_buffer, ATT_WRITE_REQUEST, handle);
     }
     if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0) {
-        // TODO: Use "Write Not Permitted"
-        return setup_error_atribute_not_found(response_buffer, ATT_WRITE_REQUEST, handle);
+        return setup_error_write_not_permited(response_buffer, ATT_WRITE_REQUEST, handle);
     }
     (*att_write_callback)(handle, ATT_TRANSACTION_MODE_ACTIVE, 0, request_buffer + 3, request_len - 3, NULL);
     
@@ -736,8 +736,7 @@ static uint16_t handle_prepare_write_request(uint8_t * request_buffer,  uint16_t
 static uint16_t handle_execute_write_request(uint8_t * request_buffer,  uint16_t request_len,
                                       uint8_t * response_buffer, uint16_t response_buffer_size){
     if (!att_write_callback) {
-        // TODO: Use "Write Not Permitted"
-        return setup_error_atribute_not_found(response_buffer, ATT_EXECUTE_WRITE_REQUEST, 0);
+        return setup_error_write_not_permited(response_buffer, ATT_EXECUTE_WRITE_REQUEST, 0);
     }
     if (request_buffer[1]) {
         (*att_write_callback)(0, ATT_TRANSACTION_MODE_EXECUTE, 0, request_buffer + 3, request_len - 3, NULL);
