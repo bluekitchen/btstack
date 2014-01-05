@@ -66,8 +66,8 @@ spp_counter_ssp: ${CORE_OBJ} ${COMMON_OBJ} spp_counter_ssp.c
 profile.h: profile.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 
-ble_server: ${CORE_OBJ} ${COMMON_OBJ} ble_server.c profile.h
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} ble_server.c ${CFLAGS} ${LDFLAGS} -o $@
+ble_peripheral: ${CORE_OBJ} ${COMMON_OBJ} ble_peripheral.c profile.h
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_client: ${CORE_OBJ} ${COMMON_OBJ} ble_client.c ad_parser.c
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ad_parser.c ble_client.c ${CFLAGS} ${LDFLAGS} -o $@
@@ -76,7 +76,7 @@ ble_client_uart: ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ble_client.c ad_parser.
 	${CC} -DHAVE_UART_CC2564 ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ad_parser.c ble_client.c ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
-	rm -f  spp_counter sdp_rfcomm_query sdp_general_query spp_counter_ssp ble_server ble_client 
+	rm -f  spp_counter sdp_rfcomm_query sdp_general_query spp_counter_ssp ble_peripheral ble_client 
 	rm -f  *.o *.out *.hex
 	rm -f  ${BTSTACK_ROOT}/src/*.o
 	rm -f  ${BTSTACK_ROOT}/ble/*.o
