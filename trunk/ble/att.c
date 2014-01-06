@@ -258,18 +258,18 @@ static inline uint16_t setup_error_invalid_offset(uint8_t * response_buffer, uin
 }
 
 static uint8_t att_validate_security(att_connection_t * att_connection, att_iterator_t * it){
-    int required_encryption_size = it->flags >> 24;
-    if (required_encryption_size > 0 && att_connection->encryption_key_size == 0){
-        return ATT_ERROR_INSUFFICIENT_ENCRYPTION;
-    }
-    if (required_encryption_size > att_connection->encryption_key_size){
-        return ATT_ERROR_INSUFFICIENT_ENCRYPTION_KEY_SIZE;
+    if ((it->flags & ATT_PROPERTY_AUTHORIZATION_REQUIRED) && att_connection->authorized == 0) {
+        return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
     }
     if ((it->flags & ATT_PROPERTY_AUTHENTICATION_REQUIRED) && att_connection->authenticated == 0) {
         return ATT_ERROR_INSUFFICIENT_AUTHENTICATION;
     }
-    if ((it->flags & ATT_PROPERTY_AUTHORIZATION_REQUIRED) && att_connection->authorized == 0) {
-        return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
+    int required_encryption_size = it->flags >> 24;
+    if (required_encryption_size > att_connection->encryption_key_size){
+        return ATT_ERROR_INSUFFICIENT_ENCRYPTION_KEY_SIZE;
+    }
+    if (required_encryption_size > 0 && att_connection->encryption_key_size == 0){
+        return ATT_ERROR_INSUFFICIENT_ENCRYPTION;
     }
     return 0;
 }
@@ -637,8 +637,9 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
 
     int i;
     uint8_t error_code = 0;
-    uint16_t handle = handles[i];
+    uint16_t handle = 0;
     for (i=0;i<num_handles;i++){
+        handle = handles[i];
         
         if (handle == 0){
             return setup_error_invalid_handle(response_buffer, ATT_READ_MULTIPLE_REQUEST, handle);
@@ -817,6 +818,11 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
     if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0) {
         return setup_error_write_not_permitted(response_buffer, ATT_WRITE_REQUEST, handle);
     }
+    // check security requirements
+    uint8_t error_code = att_validate_security(att_connection, &it);
+    if (error_code) {
+        return setup_error(response_buffer, ATT_READ_REQUEST, handle, error_code);
+    }
     (*att_write_callback)(handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3, NULL);
     response_buffer[0] = ATT_WRITE_RESPONSE;
     return 1;
@@ -838,6 +844,11 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
     if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0) {
         return setup_error_write_not_permitted(response_buffer, ATT_WRITE_REQUEST, handle);
     }
+    // check security requirements
+    uint8_t error_code = att_validate_security(att_connection, &it);
+    if (error_code) {
+        return setup_error(response_buffer, ATT_READ_REQUEST, handle, error_code);
+    }
     (*att_write_callback)(handle, ATT_TRANSACTION_MODE_ACTIVE, 0, request_buffer + 3, request_len - 3, NULL);
     
     // response: echo request
@@ -847,6 +858,7 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
 }
 
 // MARK: ATT_EXECUTE_WRITE_REQUEST 0x18
+// NOTE: security has been verified by handle_prepare_write_request
 static uint16_t handle_execute_write_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                       uint8_t * response_buffer, uint16_t response_buffer_size){
     if (!att_write_callback) {
@@ -862,6 +874,8 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
 }
 
 // MARK: ATT_WRITE_COMMAND 0x52
+// Core 4.0, vol 3, part F, 3.4.5.3
+// "No Error Response or Write Response shall be sent in response to this command"
 static void handle_write_command(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                            uint8_t * response_buffer, uint16_t response_buffer_size){
     if (!att_write_callback) return;
@@ -874,6 +888,8 @@ static void handle_write_command(att_connection_t * att_connection, uint8_t * re
 }
 
 // MARK: ATT_SIGNED_WRITE_COMAND 0xD2
+// Core 4.0, vol 3, part F, 3.4.5.4
+// "No Error Response or Write Response shall be sent in response to this command"
 static void handle_signed_write_command(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                  uint8_t * response_buffer, uint16_t response_buffer_size){
 
