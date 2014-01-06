@@ -82,6 +82,12 @@ static int is_Bluetooth_Base_UUID(uint8_t const *uuid){
     
 }
 
+static uint16_t uuid16_from_uuid(uint16_t uuid_len, uint8_t * uuid){
+    if (uuid_len == 2) return READ_BT_16(uuid, 0);
+    if (!is_Bluetooth_Base_UUID(uuid)) return 0;
+    return READ_BT_16(uuid, 12);
+}
+
 // ATT Database
 static uint8_t const * att_db = NULL;
 static att_read_callback_t  att_read_callback  = NULL;
@@ -231,7 +237,11 @@ static uint16_t setup_error(uint8_t * response_buffer, uint16_t request, uint16_
     return 5;
 }
 
-static inline uint16_t setup_error_write_not_permited(uint8_t * response_buffer, uint16_t request, uint16_t start_handle){
+static inline uint16_t setup_error_read_not_permitted(uint8_t * response_buffer, uint16_t request, uint16_t start_handle){
+    return setup_error(response_buffer, request, start_handle, ATT_ERROR_READ_NOT_PERMITTED);
+}
+
+static inline uint16_t setup_error_write_not_permitted(uint8_t * response_buffer, uint16_t request, uint16_t start_handle){
     return setup_error(response_buffer, request, start_handle, ATT_ERROR_WRITE_NOT_PERMITTED);
 }
 
@@ -247,6 +257,23 @@ static inline uint16_t setup_error_invalid_offset(uint8_t * response_buffer, uin
     return setup_error(response_buffer, request, handle, ATT_ERROR_INVALID_OFFSET);
 }
 
+static uint8_t att_validate_security(att_connection_t * att_connection, att_iterator_t * it){
+    int required_encryption_size = it->flags >> 24;
+    if (required_encryption_size > 0 && att_connection->encryption_key_size == 0){
+        return ATT_ERROR_INSUFFICIENT_ENCRYPTION;
+    }
+    if (required_encryption_size > att_connection->encryption_key_size){
+        return ATT_ERROR_INSUFFICIENT_ENCRYPTION_KEY_SIZE;
+    }
+    if ((it->flags & ATT_PROPERTY_AUTHENTICATION_REQUIRED) && att_connection->authenticated == 0) {
+        return ATT_ERROR_INSUFFICIENT_AUTHENTICATION;
+    }
+    if ((it->flags & ATT_PROPERTY_AUTHORIZATION_REQUIRED) && att_connection->authorized == 0) {
+        return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
+    }
+    return 0;
+}
+      
 //
 // MARK: ATT_EXCHANGE_MTU_REQUEST
 //
@@ -409,23 +436,6 @@ static uint16_t handle_find_by_type_value_request(att_connection_t * att_connect
                                               READ_BT_16(request_buffer, 3), READ_BT_16(request_buffer, 5), attribute_len, &request_buffer[7]);
 }
 
-uint8_t att_validate_security(att_connection_t * att_connection, att_iterator_t * it){
-    int required_encryption_size = it->flags >> 24;
-    if (required_encryption_size > 0 && att_connection->encryption_key_size == 0){
-        return ATT_ERROR_INSUFFICIENT_ENCRYPTION;
-    }
-    if (required_encryption_size > att_connection->encryption_key_size){
-        return ATT_ERROR_INSUFFICIENT_ENCRYPTION_KEY_SIZE;
-    }
-    if ((it->flags & ATT_PROPERTY_AUTHENTICATION_REQUIRED) && att_connection->authenticated == 0) {
-        return ATT_ERROR_INSUFFICIENT_AUTHENTICATION;
-    }
-    if ((it->flags & ATT_PROPERTY_AUTHORIZATION_REQUIRED) && att_connection->authorized == 0) {
-        return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
-    }
-    return 0;
-}
-                                                                                  
 //
 // MARK: ATT_READ_BY_TYPE_REQUEST
 //
@@ -532,6 +542,17 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
         return setup_error_atribute_not_found(response_buffer, ATT_READ_REQUEST, handle);
     }
     
+    // check if handle can be read
+    if ((it.flags & ATT_PROPERTY_READ) == 0) {
+        return setup_error_read_not_permitted(response_buffer, ATT_READ_REQUEST, handle);
+    }
+
+    // check security requirements
+    uint8_t error_code = att_validate_security(att_connection, &it);
+    if (error_code) {
+        return setup_error(response_buffer, ATT_READ_REQUEST, handle, error_code);
+    }
+
     att_update_value_len(&it);
 
     uint16_t offset   = 1;
@@ -565,6 +586,17 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
         return setup_error_atribute_not_found(response_buffer, ATT_READ_BLOB_REQUEST, handle);
     }
     
+    // check if handle can be read
+    if ((it.flags & ATT_PROPERTY_READ) == 0) {
+        return setup_error_read_not_permitted(response_buffer, ATT_READ_REQUEST, handle);
+    }
+
+    // check security requirements
+    uint8_t error_code = att_validate_security(att_connection, &it);
+    if (error_code) {
+        return setup_error(response_buffer, ATT_READ_REQUEST, handle, error_code);
+    }
+
     att_update_value_len(&it);
 
     if (value_offset >= it.value_len){
@@ -596,11 +628,17 @@ uint16_t handle_read_blob_request(att_connection_t * att_connection, uint8_t * r
 static uint16_t handle_read_multiple_request2(att_connection_t * att_connection, uint8_t * response_buffer, uint16_t response_buffer_size, uint16_t num_handles, uint16_t * handles){
     printf("ATT_READ_MULTIPLE_REQUEST: num handles %u\n", num_handles);
     
+    // TODO: figure out which error to respond with
+    // if (num_handles < 2){
+    //     return setup_error(response_buffer, ATT_READ_MULTIPLE_REQUEST, handle, ???);
+    // }
+
     uint16_t offset   = 1;
 
     int i;
+    uint8_t error_code = 0;
+    uint16_t handle = handles[i];
     for (i=0;i<num_handles;i++){
-        uint16_t handle = handles[i];
         
         if (handle == 0){
             return setup_error_invalid_handle(response_buffer, ATT_READ_MULTIPLE_REQUEST, handle);
@@ -613,6 +651,16 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
             return setup_error_invalid_handle(response_buffer, ATT_READ_MULTIPLE_REQUEST, handle);
         }
 
+        // check if handle can be read
+        if ((it.flags & ATT_PROPERTY_READ) == 0) {
+            error_code = ATT_ERROR_READ_NOT_PERMITTED;
+            break;
+        }
+
+        // check security requirements
+        error_code = att_validate_security(att_connection, &it);
+        if (error_code) break;
+
         att_update_value_len(&it);
         
         // limit data
@@ -623,6 +671,10 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
         // store
         uint16_t bytes_copied = att_copy_value(&it, 0, response_buffer + offset, it.value_len);
         offset += bytes_copied;
+    }
+
+    if (error_code){
+        return setup_error(response_buffer, ATT_READ_MULTIPLE_REQUEST, handle, error_code);
     }
     
     response_buffer[0] = ATT_READ_MULTIPLE_RESPONSE;
@@ -637,9 +689,18 @@ uint16_t handle_read_multiple_request(att_connection_t * att_connection, uint8_t
 //
 // MARK: ATT_READ_BY_GROUP_TYPE_REQUEST 0x10
 //
-// TODO: handle other types then GATT_PRIMARY_SERVICE_UUID and GATT_SECONDARY_SERVICE_UUID
+// Only handles GATT_PRIMARY_SERVICE_UUID and GATT_SECONDARY_SERVICE_UUID
+// Core v4.0, vol 3, part g, 2.5.3
+// "The «Primary Service» and «Secondary Service» grouping types may be used in the Read By Group Type Request.
+//  The «Characteristic» grouping type shall not be used in the ATT Read By Group Type Request."
 //
 // NOTE: doesn't handle DYNAMIC values
+//
+// NOTE: we don't check for security as PRIMARY and SECONDAY SERVICE definition shouldn't be protected
+// Core 4.0, vol 3, part g, 8.1
+// "The list of services and characteristics that a device supports is not considered private or
+//  confidential information, and therefore the Service and Characteristic Discovery procedures
+//  shall always be permitted. " 
 //
 static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connection, uint8_t * response_buffer, uint16_t response_buffer_size,
                                             uint16_t start_handle, uint16_t end_handle,
@@ -648,6 +709,16 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
     printf("ATT_READ_BY_GROUP_TYPE_REQUEST: from %04X to %04X, buffer size %u, type: ", start_handle, end_handle, response_buffer_size);
     hexdump2(attribute_type, attribute_type_len);
     
+    if (start_handle > end_handle || start_handle == 0){
+        return setup_error_invalid_handle(response_buffer, ATT_READ_BY_TYPE_REQUEST, start_handle);
+    }
+
+    // assert UUID is primary or secondary service uuid
+    uint16_t uuid16 = uuid16_from_uuid(attribute_type_len, attribute_type);
+    if (uuid16 != GATT_PRIMARY_SERVICE_UUID && uuid16 != GATT_SECONDARY_SERVICE_UUID){
+        return setup_error(response_buffer, ATT_READ_BY_GROUP_TYPE_REQUEST, start_handle, ATT_ERROR_UNSUPPORTED_GROUP_TYPE);
+    }
+
     uint16_t offset   = 1;
     uint16_t pair_len = 0;
     uint16_t in_group = 0;
@@ -666,7 +737,6 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
         // close current tag, if within a group and a new service definition starts or we reach end of att db
         if (in_group &&
             (it.handle == 0 || att_iterator_match_uuid16(&it, GATT_PRIMARY_SERVICE_UUID) || att_iterator_match_uuid16(&it, GATT_SECONDARY_SERVICE_UUID))){
-            // TODO: check if handle is included in start/end range
             // printf("End of group, handle 0x%04x, val_len: %u\n", prev_handle, pair_len - 4);
             
             bt_store_16(response_buffer, offset, group_start_handle);
@@ -742,10 +812,10 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
         return setup_error_atribute_not_found(response_buffer, ATT_WRITE_REQUEST, handle);
     }
     if (!att_write_callback) {
-        return setup_error_write_not_permited(response_buffer, ATT_WRITE_REQUEST, handle);
+        return setup_error_write_not_permitted(response_buffer, ATT_WRITE_REQUEST, handle);
     }
     if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0) {
-        return setup_error_write_not_permited(response_buffer, ATT_WRITE_REQUEST, handle);
+        return setup_error_write_not_permitted(response_buffer, ATT_WRITE_REQUEST, handle);
     }
     (*att_write_callback)(handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3, NULL);
     response_buffer[0] = ATT_WRITE_RESPONSE;
@@ -758,7 +828,7 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
                                       uint8_t * response_buffer, uint16_t response_buffer_size){
     uint16_t handle = READ_BT_16(request_buffer, 1);
     if (!att_write_callback) {
-        return setup_error_write_not_permited(response_buffer, ATT_PREPARE_WRITE_REQUEST, handle);
+        return setup_error_write_not_permitted(response_buffer, ATT_PREPARE_WRITE_REQUEST, handle);
     }
     att_iterator_t it;
     int ok = att_find_handle(&it, handle);
@@ -766,7 +836,7 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
         return setup_error_atribute_not_found(response_buffer, ATT_WRITE_REQUEST, handle);
     }
     if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0) {
-        return setup_error_write_not_permited(response_buffer, ATT_WRITE_REQUEST, handle);
+        return setup_error_write_not_permitted(response_buffer, ATT_WRITE_REQUEST, handle);
     }
     (*att_write_callback)(handle, ATT_TRANSACTION_MODE_ACTIVE, 0, request_buffer + 3, request_len - 3, NULL);
     
@@ -780,7 +850,7 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
 static uint16_t handle_execute_write_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                       uint8_t * response_buffer, uint16_t response_buffer_size){
     if (!att_write_callback) {
-        return setup_error_write_not_permited(response_buffer, ATT_EXECUTE_WRITE_REQUEST, 0);
+        return setup_error_write_not_permitted(response_buffer, ATT_EXECUTE_WRITE_REQUEST, 0);
     }
     if (request_buffer[1]) {
         (*att_write_callback)(0, ATT_TRANSACTION_MODE_EXECUTE, 0, request_buffer + 3, request_len - 3, NULL);
