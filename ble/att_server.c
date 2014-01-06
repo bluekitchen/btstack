@@ -72,14 +72,14 @@ typedef enum {
 static att_connection_t att_connection;
 static att_server_state_t att_server_state;
 
+static uint8_t   att_client_addr_type;
+static bd_addr_t att_client_address;
 static uint16_t  att_request_handle = 0;
 static uint16_t  att_request_size   = 0;
 static uint8_t   att_request_buffer[28];
 
 static int       att_ir_central_device_db_index = -1;
 static int       att_ir_lookup_active = 0;
-
-static int       att_connection_encrypted;
 
 static btstack_packet_handler_t att_client_packet_handler = NULL;
 
@@ -97,9 +97,15 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                 case HCI_EVENT_LE_META:
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            // reset connection MTU
+                        	// store address                       
+                        	att_client_addr_type = packet[7];
+                            bt_flip_addr(att_client_address, &packet[8]);
+
+                            // reset connection properties
                             att_connection.mtu = 23;
-                            att_connection_encrypted = 0;
+                            att_connection.encryption_key_size = 0;
+                            att_connection.authenticated = 0;
+		                	att_connection.authorized = 0;
                             break;
 
                         default:
@@ -110,7 +116,9 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                 case HCI_EVENT_ENCRYPTION_CHANGE: 
                 	// check handle
                 	if (att_request_handle != READ_BT_16(packet, 3)) break;
-                	att_connection_encrypted = packet[5];
+                	att_connection.encryption_key_size = sm_encryption_key_size(att_client_addr_type, att_client_address);
+                	att_connection.authenticated = sm_authenticated(att_client_addr_type, att_client_address);
+                	att_connection.authorized = 0;
                 	break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -118,7 +126,6 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     // -> avoid sending advertise enable a second time before command complete was received 
                     att_server_state = ATT_SERVER_IDLE;
                     att_request_handle = 0;
-                    att_connection_encrypted = 0;
                     break;
                     
                 case SM_IDENTITY_RESOLVING_STARTED:
