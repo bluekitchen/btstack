@@ -139,6 +139,16 @@ void sm_bonding_decline(uint8_t addr_type, bd_addr_t address);
 void sm_just_works_confirm(uint8_t addr_type, bd_addr_t address);
 void sm_passkey_input(uint8_t addr_type, bd_addr_t address, uint32_t passkey);
 
+// @returns 0 if not encrypted, 7-16 otherwise
+int sm_encryption_key_size(uint8_t addr_type, bd_addr_t address);
+
+// @returns 1 if bonded with OOB/Passekey AND MITM protection
+int sm_authenticated(uint8_t addr_type, bd_addr_t address);
+
+// called by client app on authorization request
+void sm_authorization_decline(uint8_t addr_type, bd_addr_t address);
+void sm_authorization_grant(uint8_t addr_type, bd_addr_t address);
+
 // Support for signed writes
 int  sm_cmac_ready();
 void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8]));
