@@ -33,14 +33,9 @@
 
 //*****************************************************************************
 //
-// att device demo
+// BLE Peripheral Demo
 //
 //*****************************************************************************
-
-// TODO: seperate BR/EDR from LE ACL buffers
-// ..
-
-// NOTE: Supports only a single connection
 
 #include <stdint.h>
 #include <stdio.h>
@@ -63,24 +58,52 @@
 #include "gap_le.h"
 #include "central_device_db.h"
 
-///------
-static int advertisements_enabled = 0;
+#define HEARTBEAT_PERIOD_MS 1000
 
 // test profile
 #include "profile.h"
 
+///------
+static int advertisements_enabled = 0;
+static timer_source_t heartbeat;
+static uint8_t counter = 0;
+static int update_client = 0;
+static int client_configuration = 0;
+
+static void app_run();
+
+static void  heartbeat_handler(struct timer *ts){
+    // restart timer
+    run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
+    run_loop_add_timer(ts);
+
+    counter++;
+    update_client = 1;
+    app_run();
+} 
+
+static void app_run(){
+    if (!client_configuration || !update_client) return;
+    if (!att_server_can_send()) return;
+    printf("Notify value %u\n", counter);
+    update_client = 0;
+    att_server_notify(0x0f, &counter, 1);
+}
+
 // write requests
-static void att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size, signature_t * signature){
+static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size, signature_t * signature){
     printf("WRITE Callback, handle %04x\n", handle);
     switch(handle){
-        case 0x000b:
-            buffer[buffer_size]=0;
-            printf("New text: %s\n", buffer);
+        case 0x0010:
+            client_configuration = buffer[0];
+            printf("Client Configuration set to %u\n", client_configuration);
             break;
-        case 0x000d:
-            printf("New value: %u\n", buffer[0]);
+        default:
+            printf("Value: ");
+            hexdump(buffer, buffer_size);
             break;
     }
+    return 1;
 }
 
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -180,8 +203,14 @@ void setup(void){
 int main(void)
 {
     setup();
-    // gap_random_address_set_update_period(5000);
+    gap_random_address_set_update_period(60000);
     gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
+
+    // set one-shot timer
+    heartbeat.process = &heartbeat_handler;
+    run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
+    run_loop_add_timer(&heartbeat);
+
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
