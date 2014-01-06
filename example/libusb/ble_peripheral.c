@@ -133,6 +133,12 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                        break;
                     }
                     break;
+                case SM_AUTHORIZATION_REQUEST: {
+                    // auto-authorize connection if requested
+                    sm_event_t * event = (sm_event_t *) packet;
+                    sm_authorization_grant(event->addr_type, event->address);
+                    break;
+                }
                 default:
                     break;
             }
