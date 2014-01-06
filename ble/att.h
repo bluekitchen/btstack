@@ -155,8 +155,9 @@ typedef uint16_t (*att_read_callback_t)(uint16_t handle, uint16_t offset, uint8_
 // @param offset into the value - used for queued writes and long attributes
 // @param buffer 
 // @param buffer_size
-// @Param signature used for signed write commmands
-typedef void (*att_write_callback_t)(uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size, signature_t * signature);
+// @param signature used for signed write commmands
+// @returns 1 if request could be queue for ATT_TRANSACTION_MODE_ACTIVE 
+typedef int (*att_write_callback_t)(uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size, signature_t * signature);
 
 // MARK: ATT Operations
 

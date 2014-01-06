@@ -847,10 +847,14 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
     // check security requirements
     uint8_t error_code = att_validate_security(att_connection, &it);
     if (error_code) {
-        return setup_error(response_buffer, ATT_READ_REQUEST, handle, error_code);
+        return setup_error(response_buffer, ATT_PREPARE_WRITE_REQUEST, handle, error_code);
     }
-    (*att_write_callback)(handle, ATT_TRANSACTION_MODE_ACTIVE, 0, request_buffer + 3, request_len - 3, NULL);
     
+    ok = (*att_write_callback)(handle, ATT_TRANSACTION_MODE_ACTIVE, 0, request_buffer + 3, request_len - 3, NULL);
+    if (!ok){
+        return setup_error(response_buffer, ATT_PREPARE_WRITE_REQUEST, handle, ATT_ERROR_PREPARE_QUEUE_FULL);
+    }
+
     // response: echo request
     memcpy(response_buffer, request_buffer, request_len);
     response_buffer[0] = ATT_PREPARE_WRITE_RESPONSE;
