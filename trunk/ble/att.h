@@ -81,12 +81,23 @@ extern "C" {
 #define ATT_SIGNED_WRITE_COMAND         0xD2
 
 // MARK: ATT Error Codes
-#define ATT_ERROR_ATTRIBUTE_INVALID      0x01
-#define ATT_ERROR_READ_NOT_PERMITTED     0x02
-#define ATT_ERROR_WRITE_NOT_PERMITTED    0x03
-#define ATT_ERROR_INVALID_OFFSET         0x07
-#define ATT_ERROR_ATTRIBUTE_NOT_FOUND    0x0a
-#define ATT_ERROR_UNSUPPORTED_GROUP_TYPE 0x10
+#define ATT_ERROR_ATTRIBUTE_INVALID                0x01
+#define ATT_ERROR_READ_NOT_PERMITTED               0x02
+#define ATT_ERROR_WRITE_NOT_PERMITTED              0x03
+#define ATT_ERROR_INVALID_PDU                      0x04  
+#define ATT_ERROR_INSUFFICIENT_AUTHENTICATION      0x05
+#define ATT_ERROR_REQUEST_NOT_SUPPORTED            0x06
+#define ATT_ERROR_INVALID_OFFSET                   0x07
+#define ATT_ERROR_INSUFFICIENT_AUTHORIZATION       0x08
+#define ATT_ERROR_PREPARE_QUEUE_FULL               0x09
+#define ATT_ERROR_ATTRIBUTE_NOT_FOUND              0x0a
+#define ATT_ERROR_ATTRIBUTE_NOT_LONG               0x0b
+#define ATT_ERROR_INSUFFICIENT_ENCRYPTION_KEY_SIZE 0x0c
+#define ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH   0x0d
+#define ATT_ERROR_UNLIKELY_ERROR                   0x0e
+#define ATT_ERROR_INSUFFICIENT_ENCRYPTION          0x0f
+#define ATT_ERROR_UNSUPPORTED_GROUP_TYPE           0x10
+#define ATT_ERROR_INSUFFICIENT_RESOURCES           0x11
 
 // MARK: Attribute Property Flags
 #define ATT_PROPERTY_BROADCAST           0x01
@@ -103,6 +114,11 @@ extern "C" {
 #define ATT_PROPERTY_DYNAMIC             0x100
 // 128 bit UUID used
 #define ATT_PROPERTY_UUID128             0x200
+// Authentication required
+#define ATT_PROPERTY_AUTHENTICATION_REQUIRED 0x400
+// Authorization from user required
+#define ATT_PROPERTY_AUTHORIZATION_REQUIRED  0x800
+// Encryption key size stored in upper 4 bits, 0 == no encryption, encryption key size - 1 otherwise
 
 // MARK: GATT UUIDs
 #define GATT_PRIMARY_SERVICE_UUID      0x2800
@@ -110,8 +126,8 @@ extern "C" {
 #define GATT_INCLUDE_SERVICE_UUID      0x2802
 #define GATT_CHARACTERISTICS_UUID      0x2803
 
-#define GAP_SERVICE_UUID          0x1800
-#define GAP_DEVICE_NAME_UUID      0x2a00
+#define GAP_SERVICE_UUID               0x1800
+#define GAP_DEVICE_NAME_UUID           0x2a00
 
 #define ATT_TRANSACTION_MODE_NONE      0x0
 #define ATT_TRANSACTION_MODE_ACTIVE    0x1

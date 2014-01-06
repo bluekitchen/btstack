@@ -41,18 +41,31 @@ assigned_uuids = {
 }
 
 property_flags = {
-    'BROADCAST' :                  0x01,
-    'READ' :                       0x02,
-    'WRITE_WITHOUT_RESPONSE' :     0x04,
-    'WRITE' :                      0x08,
-    'NOTIFY':                      0x10,
-    'INDICATE' :                   0x20,
-    'AUTHENTICATED_SIGNED_WRITE' : 0x40,
-    'EXTENDED_PROPERTIES' :        0x80,
+    'BROADCAST' :                   0x01,
+    'READ' :                        0x02,
+    'WRITE_WITHOUT_RESPONSE' :      0x04,
+    'WRITE' :                       0x08,
+    'NOTIFY':                       0x10,
+    'INDICATE' :                    0x20,
+    'AUTHENTICATED_SIGNED_WRITE' :  0x40,
+    'EXTENDED_PROPERTIES' :         0x80,
     # custom BTstack extension
-    'DYNAMIC':                    0x100,
-    'LONG_UUID':                  0x200,
-    'CLIENT_CONFIGURATION':       0x400,
+    'DYNAMIC':                     0x100,
+    'LONG_UUID':                   0x200,
+    'AUTHENTICATION_REQUIRED':     0x400,
+    'AUTHORIZATION_REQUIRED':      0x800,
+    'ENCRYPTION_KEY_SIZE_7':      0x6000,
+    'ENCRYPTION_KEY_SIZE_8':      0x7000,
+    'ENCRYPTION_KEY_SIZE_9':      0x8000,
+    'ENCRYPTION_KEY_SIZE_10':     0x9000,
+    'ENCRYPTION_KEY_SIZE_11':     0xa000,
+    'ENCRYPTION_KEY_SIZE_12':     0xb000,
+    'ENCRYPTION_KEY_SIZE_13':     0xc000,
+    'ENCRYPTION_KEY_SIZE_14':     0xd000,
+    'ENCRYPTION_KEY_SIZE_15':     0xe000,
+    'ENCRYPTION_KEY_SIZE_16':     0xf000,
+    # only used by gatt compiler
+    'CLIENT_CONFIGURATION':      0x10000,
 }
 
 services = dict()
@@ -107,7 +120,7 @@ def write_8(fout, value):
     fout.write( "0x%02x, " % (value & 0xff))
 
 def write_16(fout, value):
-    fout.write('0x%02x, 0x%02x, ' % (value & 0xff, value >> 8))
+    fout.write('0x%02x, 0x%02x, ' % (value & 0xff, (value >> 8) & 0xff))
 
 def write_uuid(uuid):
     for byte in uuid:
