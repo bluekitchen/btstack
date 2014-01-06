@@ -107,17 +107,14 @@ typedef enum {
 // and reserved
 
 // Security Manager Events
-typedef struct sm_event_bonding {
+typedef struct sm_event {
     uint8_t   type;   // see <btstack/hci_cmds.h> SM_...
     uint8_t   addr_type;
     bd_addr_t address;
     uint32_t  passkey;  // only used for SM_PASSKEY_DISPLAY_NUMBER 
-} sm_event_bonding_t;
-
-typedef struct sm_event_identity_resolving {
-    uint8_t   type;   // see <btstack/hci_cmds.h> SM_IDENTITY_RESOLVING_
-    uint16_t  central_device_db_index;
-} sm_event_identity_resolving_t;
+    uint16_t  central_device_db_index; // only used for SM_IDENTITY_RESOLVING_..
+    uint8_t   authorization_result; // only use for SM_AUTHORIZATION_RESULT
+} sm_event_t;
 
 //
 // Security Manager Client API
@@ -144,6 +141,12 @@ int sm_encryption_key_size(uint8_t addr_type, bd_addr_t address);
 
 // @returns 1 if bonded with OOB/Passkey (AND MITM protection)
 int sm_authenticated(uint8_t addr_type, bd_addr_t address);
+
+// @returns 1 if connection was authorized by client app (for this session)
+int sm_authorized(uint8_t addr_type, bd_addr_t address);
+
+// request authorization
+void sm_request_authorization(uint8_t addr_type, bd_addr_t address);
 
 // called by client app on authorization request
 void sm_authorization_decline(uint8_t addr_type, bd_addr_t address);

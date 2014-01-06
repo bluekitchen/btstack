@@ -495,32 +495,33 @@ static void sm_s1_r_prime(sm_key_t r1, sm_key_t r2, sm_key_t r_prime){
     memcpy(&r_prime[0], &r1[8], 8);
 }
 
-static void sm_notify_client_identity_resolving(uint8_t type, uint16_t index){
-    sm_event_identity_resolving_t event;
-    event.type = type;
-    event.central_device_db_index = index;
+static void sm_notify_client(uint8_t type, uint8_t addr_type, bd_addr_t address, uint32_t passkey, uint16_t index){
 
-    // dummy implementation
-    log_info("sm_notify_client_identity_resolving: event 0x%02x, index %u", type, index);
-
-    if (!sm_client_packet_handler) return;
-    sm_client_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(sm_event_identity_resolving_t));
-
-}
-
-static void sm_notify_client_bonding(uint8_t type, uint8_t addr_type, bd_addr_t address, uint32_t passkey){
-
-    sm_event_bonding_t event;
+    sm_event_t event;
     event.type = type;
     event.addr_type = addr_type;
     BD_ADDR_COPY(event.address, address);
     event.passkey = passkey;
+    event.central_device_db_index = index;
 
-    // dummy implementation
-    log_info("sm_notify_client_bonding: event 0x%02x, addres_type %u, address (), num '%06u'", event.type, event.addr_type, event.passkey);
+    log_info("sm_notify_client %02x, addres_type %u, address (), num '%06u', index %u", event.type, event.addr_type, event.passkey, event.central_device_db_index);
 
     if (!sm_client_packet_handler) return;
-    sm_client_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(sm_event_bonding_t));
+    sm_client_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
+}
+
+static void sm_notify_client_authorization(uint8_t type, uint8_t addr_type, bd_addr_t address, uint8_t result){
+
+    sm_event_t event;
+    event.type = type;
+    event.addr_type = addr_type;
+    BD_ADDR_COPY(event.address, address);
+    event.authorization_result = result;
+
+    log_info("sm_notify_client_authorization %02x, addres_type %u, address (), result %u, index %u", event.type, event.addr_type, event.authorization_result);
+
+    if (!sm_client_packet_handler) return;
+    sm_client_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
 }
 
 // decide on stk generation based on
@@ -814,7 +815,7 @@ static void sm_run(void){
                 sm_central_device_matched = sm_central_device_test;
                 sm_central_device_test = -1;
                 central_device_db_csrk(sm_central_device_matched, sm_m_csrk);
-                sm_notify_client_identity_resolving(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_matched);
+                sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_m_addr_type, sm_m_address, 0, sm_central_device_matched);
                 break;
             }
 
@@ -838,7 +839,7 @@ static void sm_run(void){
         if (sm_central_device_test >= central_device_db_count()){
             printf("Central Device Lookup: not found\n");
             sm_central_device_test = -1;
-            sm_notify_client_identity_resolving(SM_IDENTITY_RESOLVING_FAILED, 0);
+            sm_notify_client(SM_IDENTITY_RESOLVING_FAILED, sm_m_addr_type, sm_m_address, 0, 0);
         }
     }
 
@@ -890,17 +891,17 @@ static void sm_run(void){
             switch (sm_stk_generation_method){
                 case PK_RESP_INPUT:
                     sm_user_response = SM_USER_RESPONSE_PENDING;
-                    sm_notify_client_bonding(SM_PASSKEY_INPUT_NUMBER, sm_m_addr_type, sm_m_address, 0); 
+                    sm_notify_client(SM_PASSKEY_INPUT_NUMBER, sm_m_addr_type, sm_m_address, 0, 0); 
                     break;
                 case PK_INIT_INPUT:
-                    sm_notify_client_bonding(SM_PASSKEY_DISPLAY_NUMBER, sm_m_addr_type, sm_m_address, READ_NET_32(sm_tk, 12)); 
+                    sm_notify_client(SM_PASSKEY_DISPLAY_NUMBER, sm_m_addr_type, sm_m_address, READ_NET_32(sm_tk, 12), 0); 
                     break;
                 case JUST_WORKS:
                     switch (sm_s_io_capabilities){
                         case IO_CAPABILITY_KEYBOARD_DISPLAY:
                         case IO_CAPABILITY_DISPLAY_YES_NO:
                             sm_user_response = SM_USER_RESPONSE_PENDING;
-                            sm_notify_client_bonding(SM_JUST_WORKS_REQUEST, sm_m_addr_type, sm_m_address, READ_NET_32(sm_tk, 12));
+                            sm_notify_client(SM_JUST_WORKS_REQUEST, sm_m_addr_type, sm_m_address, READ_NET_32(sm_tk, 12), 0);
                             break;
                         default:
                             // cannot ask user
@@ -1152,7 +1153,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // notify client to hide shown passkey
             if (sm_stk_generation_method == PK_INIT_INPUT){
-                sm_notify_client_bonding(SM_PASSKEY_DISPLAY_CANCEL, sm_m_addr_type, sm_m_address, 0);
+                sm_notify_client(SM_PASSKEY_DISPLAY_CANCEL, sm_m_addr_type, sm_m_address, 0, 0);
             }
 
             // handle user cancel pairing?
@@ -1281,7 +1282,10 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                             printf("Incoming connection, own address ");
                             print_bd_addr(sm_s_address);
 
+                            // reset security properties
                             sm_connection_encrypted = 0;
+                            sm_connection_authenticated = 0;
+                            sm_connection_authorized = 0;
 
                             // request security
                             if (sm_s_request_security){
@@ -1291,7 +1295,7 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                             // try to lookup device
                             sm_central_device_test = 0;
                             sm_central_device_matched = -1;
-                            sm_notify_client_identity_resolving(SM_IDENTITY_RESOLVING_STARTED, 0);
+                            sm_notify_client(SM_IDENTITY_RESOLVING_STARTED, sm_m_addr_type, sm_m_address, 0, 0);
                             break;
 
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:
@@ -1372,7 +1376,7 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                                 sm_central_device_matched = sm_central_device_test;
                                 sm_central_device_test = -1;
                                 central_device_db_csrk(sm_central_device_matched, sm_m_csrk);
-				                sm_notify_client_identity_resolving(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_matched);
+				                sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_m_addr_type, sm_m_address, 0, sm_central_device_matched);
                                 log_info("Central Device Lookup: matched resolvable private address");
                                 break;
                             }
@@ -1686,6 +1690,33 @@ int sm_authenticated(uint8_t addr_type, bd_addr_t address){
     if (!sm_get_connection(addr_type, address)) return 0; // wrong connection
     if (!sm_connection_encrypted) return 0; // unencrypted connection cannot be authenticated
     return sm_connection_authenticated;
+}
+
+int sm_authorized(uint8_t addr_type, bd_addr_t address){
+    if (!sm_get_connection(addr_type, address)) return 0; // wrong connection
+    if (!sm_connection_encrypted) return 0;    // unencrypted connection cannot be authorized
+    if (!sm_connection_authenticated) return 0; // unauthenticatd connection cannot be authorized
+    return sm_connection_authorized;
+}
+
+// request authorization
+void sm_request_authorization(uint8_t addr_type, bd_addr_t address){
+    sm_notify_client(SM_AUTHORIZATION_REQUEST, sm_m_addr_type, sm_m_address, 0, 0);
+}
+
+// called by client app on authorization request
+void sm_authorization_decline(uint8_t addr_type, bd_addr_t address){
+    if (!sm_get_connection(addr_type, address)) return; // wrong connection
+    sm_connection_authorized = 0;
+    // post event
+    sm_notify_client_authorization(SM_AUTHORIZATION_RESULT, sm_m_addr_type, sm_m_address, sm_connection_authorized);
+}
+
+void sm_authorization_grant(uint8_t addr_type, bd_addr_t address){
+    if (!sm_get_connection(addr_type, address)) return; // wrong connection
+    sm_connection_authorized = 1;
+    // post event
+    sm_notify_client_authorization(SM_AUTHORIZATION_RESULT, sm_m_addr_type, sm_m_address, sm_connection_authorized);
 }
 
 // GAP Bonding API

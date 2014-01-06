@@ -232,6 +232,8 @@ extern "C" {
 #define SM_IDENTITY_RESOLVING_STARTED	        		   0xb6
 #define SM_IDENTITY_RESOLVING_FAILED	        		   0xb7
 #define SM_IDENTITY_RESOLVING_SUCCEEDED  				   0xb8
+#define SM_AUTHORIZATION_REQUEST						   0xb9
+#define SM_AUTHORIZATION_RESULT							   0xba
 
 // last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
 

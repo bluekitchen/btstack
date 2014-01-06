@@ -126,7 +126,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     break;
                 case SM_IDENTITY_RESOLVING_SUCCEEDED:
                     att_ir_lookup_active = 0;
-                    att_ir_central_device_db_index = ((sm_event_identity_resolving_t*) packet)->central_device_db_index;
+                    att_ir_central_device_db_index = ((sm_event_t*) packet)->central_device_db_index;
                     att_run();
                     break;
                 case SM_IDENTITY_RESOLVING_FAILED:
