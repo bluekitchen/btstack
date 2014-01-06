@@ -142,7 +142,7 @@ void sm_passkey_input(uint8_t addr_type, bd_addr_t address, uint32_t passkey);
 // @returns 0 if not encrypted, 7-16 otherwise
 int sm_encryption_key_size(uint8_t addr_type, bd_addr_t address);
 
-// @returns 1 if bonded with OOB/Passekey AND MITM protection
+// @returns 1 if bonded with OOB/Passkey (AND MITM protection)
 int sm_authenticated(uint8_t addr_type, bd_addr_t address);
 
 // called by client app on authorization request

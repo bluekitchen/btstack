@@ -203,6 +203,8 @@ static uint8_t   sm_s_addr_type;
 static bd_addr_t sm_s_address;
 static uint8_t   sm_actual_encryption_key_size;
 static uint8_t   sm_connection_encrypted;
+static uint8_t   sm_connection_authenticated;   // [0..1]
+static uint8_t   sm_connection_authorized;
 
 // PER INSTANCE DATA
 
@@ -1126,6 +1128,9 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                 break;
             }
 
+            // JUST WORKS doens't provide authentication
+            sm_connection_authenticated = sm_stk_generation_method == JUST_WORKS ? 0 : 1;
+
             // generate random number first, if we need to show passkey
             if (sm_stk_generation_method == PK_INIT_INPUT){
                 sm_state_responding = SM_STATE_PH2_GET_RANDOM_TK;
@@ -1312,12 +1317,11 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                             }
 
                             // re-establish used key encryption size
-                            if (sm_max_encryption_key_size == sm_min_encryption_key_size){
-                                sm_actual_encryption_key_size = sm_max_encryption_key_size;
-                            } else {
-                                // no db for encryption size hack: encryption size is stored in lowest nibble of sm_s_rand
-                                sm_actual_encryption_key_size = (sm_s_rand[7] & 0x0f) + 1;
-                            }
+                            // no db for encryption size hack: encryption size is stored in lowest nibble of sm_s_rand
+                            sm_actual_encryption_key_size = (sm_s_rand[7] & 0x0f) + 1;
+
+                            // no db for authenticated flag hack: flag is stored in bit 4 of LSB
+                            sm_connection_authenticated = (sm_s_rand[7] & 0x10) >> 4;
 
                             log_info("LTK Request: recalculating with ediv 0x%04x", sm_s_ediv);
 
@@ -1560,7 +1564,9 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                             case SM_STATE_PH3_W4_RANDOM:
                                 swap64(&packet[6], sm_s_rand);
                                 // no db for encryption size hack: encryption size is stored in lowest nibble of sm_s_rand
-                                sm_s_rand[7] =  (sm_s_rand[7] & 0xf0) + (sm_actual_encryption_key_size - 1);
+                                sm_s_rand[7] = (sm_s_rand[7] & 0xf0) + (sm_actual_encryption_key_size - 1);
+                                // no db for authenticated flag hack: store flag in bit 4 of LSB
+                                sm_s_rand[7] = (sm_s_rand[7] & 0xef) + (sm_connection_authenticated << 4);
                                 sm_state_responding = SM_STATE_PH3_GET_DIV;
                                 break;
                             case SM_STATE_PH3_W4_DIV:
@@ -1664,17 +1670,25 @@ void sm_init(){
     l2cap_register_packet_handler(sm_event_packet_handler);
 }
 
-// @returns 0 if not encrypted, 7-16 otherwise
-int sm_encryption_key_size(uint8_t addr_type, bd_addr_t address){
-    if (!sm_connection_encrypted) return 0;
-    return sm_actual_encryption_key_size;
-}
-
-// GAP Bonding API
 static int sm_get_connection(uint8_t addr_type, bd_addr_t address){
     // TODO compare to current connection
     return 1;
 }
+
+// @returns 0 if not encrypted, 7-16 otherwise
+int sm_encryption_key_size(uint8_t addr_type, bd_addr_t address){
+    if (!sm_get_connection(addr_type, address)) return 0; // wrong connection
+    if (!sm_connection_encrypted) return 0;
+    return sm_actual_encryption_key_size;
+}
+
+int sm_authenticated(uint8_t addr_type, bd_addr_t address){
+    if (!sm_get_connection(addr_type, address)) return 0; // wrong connection
+    if (!sm_connection_encrypted) return 0; // unencrypted connection cannot be authenticated
+    return sm_connection_authenticated;
+}
+
+// GAP Bonding API
 
 void sm_bonding_decline(uint8_t addr_type, bd_addr_t address){
     if (!sm_get_connection(addr_type, address)) return; // wrong connection
