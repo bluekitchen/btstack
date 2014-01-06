@@ -218,6 +218,22 @@ static void att_run(void){
 
             uint8_t  att_response_buffer[28];
             uint16_t att_response_size = att_handle_request(&att_connection, att_request_buffer, att_request_size, att_response_buffer);
+
+            // intercept "insufficient authorization" for authenticated connections to allow for user authorization
+            if (att_response_buffer[0] == ATT_ERROR_RESPONSE
+             && att_response_buffer[4] == ATT_ERROR_INSUFFICIENT_AUTHORIZATION
+             && att_connection.authenticated){
+            	switch (sm_authorization_state(att_client_addr_type, att_client_address)){
+            		case AUTHORIZATION_UNKNOWN:
+		             	sm_request_authorization(att_client_addr_type, att_client_address);
+	    		        return;
+	    		    case AUTHORIZATION_PENDING:
+	    		    	return;
+	    		    default:
+	    		    	break;
+            	}
+            }
+
             att_server_state = ATT_SERVER_IDLE;
             if (att_response_size == 0) return;
 

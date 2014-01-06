@@ -70,6 +70,14 @@ typedef enum {
     IO_CAPABILITY_UNKNOWN = 0xff
 } io_capability_t;
 
+// Authorization state
+typedef enum {
+    AUTHORIZATION_UNKNOWN,
+    AUTHORIZATION_PENDING,
+    AUTHORIZATION_DECLINED,
+    AUTHORIZATION_GRANTED
+} authorization_state_t;
+
 // Authentication requirement flags
 #define SM_AUTHREQ_NO_BONDING 0x00
 #define SM_AUTHREQ_BONDING 0x01
@@ -142,8 +150,8 @@ int sm_encryption_key_size(uint8_t addr_type, bd_addr_t address);
 // @returns 1 if bonded with OOB/Passkey (AND MITM protection)
 int sm_authenticated(uint8_t addr_type, bd_addr_t address);
 
-// @returns 1 if connection was authorized by client app (for this session)
-int sm_authorized(uint8_t addr_type, bd_addr_t address);
+// @returns authorization_state for the current session
+authorization_state_t sm_authorization_state(uint8_t addr_type, bd_addr_t address);
 
 // request authorization
 void sm_request_authorization(uint8_t addr_type, bd_addr_t address);
