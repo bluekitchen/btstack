@@ -141,6 +141,15 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_ir_central_device_db_index = -1;
                     att_run();
                     break;
+
+                case SM_AUTHORIZATION_RESULT: {
+                    sm_event_t * event = (sm_event_t *) packet;
+                    if (event->addr_type != att_client_addr_type) break;
+                    if (memcmp(event->address, att_client_address, 6) != 0) break;
+                    att_connection.authenticated = event->authorization_result;
+                	break;
+                }
+
                 default:
                     break;
             }
