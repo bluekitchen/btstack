@@ -204,7 +204,7 @@ static bd_addr_t sm_s_address;
 static uint8_t   sm_actual_encryption_key_size;
 static uint8_t   sm_connection_encrypted;
 static uint8_t   sm_connection_authenticated;   // [0..1]
-static uint8_t   sm_connection_authorized;
+static uint8_t   sm_connection_authorization_state;
 
 // PER INSTANCE DATA
 
@@ -518,7 +518,7 @@ static void sm_notify_client_authorization(uint8_t type, uint8_t addr_type, bd_a
     BD_ADDR_COPY(event.address, address);
     event.authorization_result = result;
 
-    log_info("sm_notify_client_authorization %02x, addres_type %u, address (), result %u, index %u", event.type, event.addr_type, event.authorization_result);
+    log_info("sm_notify_client_authorization %02x, address_type %u, address (), result %u", event.type, event.addr_type, event.authorization_result);
 
     if (!sm_client_packet_handler) return;
     sm_client_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
@@ -1285,7 +1285,7 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                             // reset security properties
                             sm_connection_encrypted = 0;
                             sm_connection_authenticated = 0;
-                            sm_connection_authorized = 0;
+                            sm_connection_authorization_state = AUTHORIZATION_UNKNOWN;
 
                             // request security
                             if (sm_s_request_security){
@@ -1692,31 +1692,30 @@ int sm_authenticated(uint8_t addr_type, bd_addr_t address){
     return sm_connection_authenticated;
 }
 
-int sm_authorized(uint8_t addr_type, bd_addr_t address){
+authorization_state_t sm_authorization_state(uint8_t addr_type, bd_addr_t address){
     if (!sm_get_connection(addr_type, address)) return 0; // wrong connection
     if (!sm_connection_encrypted) return 0;    // unencrypted connection cannot be authorized
     if (!sm_connection_authenticated) return 0; // unauthenticatd connection cannot be authorized
-    return sm_connection_authorized;
+    return sm_connection_authorization_state;
 }
 
 // request authorization
 void sm_request_authorization(uint8_t addr_type, bd_addr_t address){
+    sm_connection_authorization_state = AUTHORIZATION_PENDING;
     sm_notify_client(SM_AUTHORIZATION_REQUEST, sm_m_addr_type, sm_m_address, 0, 0);
 }
 
 // called by client app on authorization request
 void sm_authorization_decline(uint8_t addr_type, bd_addr_t address){
     if (!sm_get_connection(addr_type, address)) return; // wrong connection
-    sm_connection_authorized = 0;
-    // post event
-    sm_notify_client_authorization(SM_AUTHORIZATION_RESULT, sm_m_addr_type, sm_m_address, sm_connection_authorized);
+    sm_connection_authorization_state = AUTHORIZATION_DECLINED;
+    sm_notify_client_authorization(SM_AUTHORIZATION_RESULT, sm_m_addr_type, sm_m_address, 0);
 }
 
 void sm_authorization_grant(uint8_t addr_type, bd_addr_t address){
     if (!sm_get_connection(addr_type, address)) return; // wrong connection
-    sm_connection_authorized = 1;
-    // post event
-    sm_notify_client_authorization(SM_AUTHORIZATION_RESULT, sm_m_addr_type, sm_m_address, sm_connection_authorized);
+    sm_connection_authorization_state = AUTHORIZATION_GRANTED;
+    sm_notify_client_authorization(SM_AUTHORIZATION_RESULT, sm_m_addr_type, sm_m_address, 1);
 }
 
 // GAP Bonding API
