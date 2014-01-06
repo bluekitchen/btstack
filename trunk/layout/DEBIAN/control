@@ -5,9 +5,9 @@ Section: Networking
 Architecture: iphoneos-arm
 Breaks: co.cocoanuts.celeste (<= 0.90)
 Pre-Depends: ldid
-Depends: firmware (>= 3.0), ch.ringwald.springboardaccess (>= 0.2-974), preferenceloader (>= 2.0.2) 
-Maintainer: Matthias Ringwald <iphone@ringwald.ch>
-Author: Matthias Ringwald <iphone@ringwald.ch>
+Depends: firmware (>= 3.0), ch.ringwald.springboardaccess (>= 0.3), preferenceloader (>= 2.0.2) 
+Author: Mattthias Ringwald <tickets@btstack.uservoice.com>
+Maintainer: Mattthias Ringwald <tickets@btstack.uservoice.com>
 Section: Development
 Tag: role::developer
 Version: 0.8
