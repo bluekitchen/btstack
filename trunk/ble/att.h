@@ -136,6 +136,9 @@ extern "C" {
 
 typedef struct att_connection {
     uint16_t mtu;
+    uint8_t  encryption_key_size;
+    uint8_t  authenticated;
+    uint8_t  authorized;
 } att_connection_t;
 
 typedef uint8_t signature_t[12];
