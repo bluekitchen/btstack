@@ -274,6 +274,10 @@ static uint16_t handle_find_information_request2(att_connection_t * att_connecti
     
     printf("ATT_FIND_INFORMATION_REQUEST: from %04X to %04X\n", start_handle, end_handle);
     
+    if (start_handle > end_handle || start_handle == 0){
+        return setup_error_invalid_handle(response_buffer, ATT_READ_BY_TYPE_REQUEST, start_handle);
+    }
+
     uint16_t offset   = 1;
     uint16_t uuid_len = 0;
     
@@ -347,6 +351,10 @@ static uint16_t handle_find_by_type_value_request2(att_connection_t * att_connec
     printf("ATT_FIND_BY_TYPE_VALUE_REQUEST: from %04X to %04X, type %04X, value: ", start_handle, end_handle, attribute_type);
     hexdump2(attribute_value, attribute_len);
     
+    if (start_handle > end_handle || start_handle == 0){
+        return setup_error_invalid_handle(response_buffer, ATT_READ_BY_TYPE_REQUEST, start_handle);
+    }
+
     uint16_t offset      = 1;
     uint16_t in_group    = 0;
     uint16_t prev_handle = 0;
@@ -400,6 +408,23 @@ static uint16_t handle_find_by_type_value_request(att_connection_t * att_connect
     return handle_find_by_type_value_request2(att_connection, response_buffer, response_buffer_size, READ_BT_16(request_buffer, 1),
                                               READ_BT_16(request_buffer, 3), READ_BT_16(request_buffer, 5), attribute_len, &request_buffer[7]);
 }
+
+uint8_t att_validate_security(att_connection_t * att_connection, att_iterator_t * it){
+    int required_encryption_size = it->flags >> 24;
+    if (required_encryption_size > 0 && att_connection->encryption_key_size == 0){
+        return ATT_ERROR_INSUFFICIENT_ENCRYPTION;
+    }
+    if (required_encryption_size > att_connection->encryption_key_size){
+        return ATT_ERROR_INSUFFICIENT_ENCRYPTION_KEY_SIZE;
+    }
+    if ((it->flags & ATT_PROPERTY_AUTHENTICATION_REQUIRED) && att_connection->authenticated == 0) {
+        return ATT_ERROR_INSUFFICIENT_AUTHENTICATION;
+    }
+    if ((it->flags & ATT_PROPERTY_AUTHORIZATION_REQUIRED) && att_connection->authorized == 0) {
+        return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
+    }
+    return 0;
+}
                                                                                   
 //
 // MARK: ATT_READ_BY_TYPE_REQUEST
@@ -411,11 +436,16 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
     printf("ATT_READ_BY_TYPE_REQUEST: from %04X to %04X, type: ", start_handle, end_handle); 
     hexdump2(attribute_type, attribute_type_len);
     
+    if (start_handle > end_handle || start_handle == 0){
+        return setup_error_invalid_handle(response_buffer, ATT_READ_BY_TYPE_REQUEST, start_handle);
+    }
+
     uint16_t offset   = 1;
     uint16_t pair_len = 0;
 
     att_iterator_t it;
     att_iterator_init(&it);
+    uint8_t error_code = 0;
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
         
@@ -426,6 +456,13 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         // does current attribute match
         if (!att_iterator_match_uuid(&it, attribute_type, attribute_type_len)) continue;
         
+        // skip handles that cannot be read
+        if ((it.flags & ATT_PROPERTY_READ) == 0) continue;
+
+        // check security requirements
+        error_code = att_validate_security(att_connection, &it);
+        if (error_code) break;
+
         att_update_value_len(&it);
         
         // check if value has same len as last one
@@ -456,12 +493,19 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         offset += bytes_copied;
     }
     
-    if (offset == 1){
-        return setup_error_atribute_not_found(response_buffer, ATT_READ_BY_TYPE_REQUEST, start_handle);
+    // at least one attribute could be read
+    if (offset > 1){
+        response_buffer[0] = ATT_READ_BY_TYPE_RESPONSE;
+        return offset;
     }
-    
-    response_buffer[0] = ATT_READ_BY_TYPE_RESPONSE;
-    return offset;
+
+    // first attribute had an error
+    if (error_code){
+        return setup_error(response_buffer, ATT_READ_BY_TYPE_REQUEST, start_handle, error_code);
+    }
+
+    // attribute not found
+    return setup_error_atribute_not_found(response_buffer, ATT_READ_BY_TYPE_REQUEST, start_handle);
 }
 
 static uint16_t handle_read_by_type_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
