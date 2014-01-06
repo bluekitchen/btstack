@@ -182,7 +182,6 @@ static uint8_t sm_accepted_stk_generation_methods;
 static uint8_t sm_max_encryption_key_size;
 static uint8_t sm_min_encryption_key_size;
 
-static uint8_t sm_encryption_key_size;
 static uint8_t sm_s_auth_req = 0;
 static uint8_t sm_s_io_capabilities = IO_CAPABILITY_UNKNOWN;
 static uint8_t sm_s_request_security = 0;
@@ -202,6 +201,8 @@ static int sm_central_ah_calculation_active;
 //
 static uint8_t   sm_s_addr_type;
 static bd_addr_t sm_s_address;
+static uint8_t   sm_actual_encryption_key_size;
+static uint8_t   sm_connection_encrypted;
 
 // PER INSTANCE DATA
 
@@ -1086,9 +1087,9 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             }
 
             // min{}
-            sm_encryption_key_size = sm_max_encryption_key_size;
+            sm_actual_encryption_key_size = sm_max_encryption_key_size;
             if (sm_m_max_encryption_key_size < sm_max_encryption_key_size){
-                sm_encryption_key_size = sm_m_max_encryption_key_size;
+                sm_actual_encryption_key_size = sm_m_max_encryption_key_size;
             }
 
             // setup key distribution
@@ -1275,6 +1276,8 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                             printf("Incoming connection, own address ");
                             print_bd_addr(sm_s_address);
 
+                            sm_connection_encrypted = 0;
+
                             // request security
                             if (sm_s_request_security){
                                 sm_state_responding = SM_STATE_SEND_SECURITY_REQUEST;
@@ -1310,10 +1313,10 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
 
                             // re-establish used key encryption size
                             if (sm_max_encryption_key_size == sm_min_encryption_key_size){
-                                sm_encryption_key_size = sm_max_encryption_key_size;
+                                sm_actual_encryption_key_size = sm_max_encryption_key_size;
                             } else {
                                 // no db for encryption size hack: encryption size is stored in lowest nibble of sm_s_rand
-                                sm_encryption_key_size = (sm_s_rand[7] & 0x0f) + 1;
+                                sm_actual_encryption_key_size = (sm_s_rand[7] & 0x0f) + 1;
                             }
 
                             log_info("LTK Request: recalculating with ediv 0x%04x", sm_s_ediv);
@@ -1338,7 +1341,10 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                     break;
 
                 case HCI_EVENT_ENCRYPTION_CHANGE: 
-                    log_info("Connection encrypted");
+                    if (sm_response_handle != READ_BT_16(packet, 3)) break;
+                    sm_connection_encrypted = packet[5];
+                    log_info("Eencryption state change: %u", sm_connection_encrypted);
+                    if (!sm_connection_encrypted) break;
                     if (sm_state_responding == SM_STATE_PH2_W4_CONNECTION_ENCRYPTED) {
                         sm_state_responding = SM_STATE_PH3_GET_RANDOM;
                     }
@@ -1444,7 +1450,7 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                                 break;
                             case SM_STATE_PH2_W4_STK:
                                 swap128(&packet[6], sm_s_ltk);
-                                sm_truncate_key(sm_s_ltk, sm_encryption_key_size);
+                                sm_truncate_key(sm_s_ltk, sm_actual_encryption_key_size);
                                 print_key("stk", sm_s_ltk);
                                 sm_state_responding = SM_STATE_PH2_SEND_STK;
                                 break;
@@ -1486,7 +1492,7 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                                 break;                                
                             case SM_STATE_PH4_LTK_W4_ENC:
                                 swap128(&packet[6], sm_s_ltk);
-                                sm_truncate_key(sm_s_ltk, sm_encryption_key_size);
+                                sm_truncate_key(sm_s_ltk, sm_actual_encryption_key_size);
                                 print_key("ltk", sm_s_ltk);
                                 sm_state_responding = SM_STATE_PH4_SEND_LTK;
                                 break;                                
@@ -1554,7 +1560,7 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                             case SM_STATE_PH3_W4_RANDOM:
                                 swap64(&packet[6], sm_s_rand);
                                 // no db for encryption size hack: encryption size is stored in lowest nibble of sm_s_rand
-                                sm_s_rand[7] =  (sm_s_rand[7] & 0xf0) + (sm_encryption_key_size - 1);
+                                sm_s_rand[7] =  (sm_s_rand[7] & 0xf0) + (sm_actual_encryption_key_size - 1);
                                 sm_state_responding = SM_STATE_PH3_GET_DIV;
                                 break;
                             case SM_STATE_PH3_W4_DIV:
@@ -1656,6 +1662,12 @@ void sm_init(){
     // attach to lower layers
     l2cap_register_fixed_channel(sm_packet_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
     l2cap_register_packet_handler(sm_event_packet_handler);
+}
+
+// @returns 0 if not encrypted, 7-16 otherwise
+int sm_encryption_key_size(uint8_t addr_type, bd_addr_t address){
+    if (!sm_connection_encrypted) return 0;
+    return sm_actual_encryption_key_size;
 }
 
 // GAP Bonding API
