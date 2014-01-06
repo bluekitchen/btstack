@@ -285,3 +285,20 @@ void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_
 void att_server_register_packet_handler(btstack_packet_handler_t handler){
     att_client_packet_handler = handler;    
 }
+
+int  att_server_can_send(){
+	if (att_request_handle == 0) return 0;
+	return hci_can_send_packet_now(HCI_ACL_DATA_PACKET);
+}
+
+void att_server_notify(uint16_t handle, uint8_t *value, uint16_t value_len){
+    uint8_t packet_buffer[att_connection.mtu];
+    uint16_t size = att_prepare_handle_value_notification(&att_connection, handle, value, value_len, packet_buffer);
+	l2cap_send_connectionless(att_request_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, packet_buffer, size);
+}
+
+void att_server_indicate(uint16_t handle, uint8_t *value, uint16_t value_len){
+    uint8_t packet_buffer[att_connection.mtu];
+    uint16_t size = att_prepare_handle_value_indication(&att_connection, handle, value, value_len, packet_buffer);
+	l2cap_send_connectionless(att_request_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, packet_buffer, size);
+}

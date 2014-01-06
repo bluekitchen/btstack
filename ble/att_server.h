@@ -38,6 +38,9 @@
 #include <btstack/btstack.h>
 #include <stdint.h>
 #include "att.h"
- 
+
 void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_write_callback_t write_callback);
 void att_server_register_packet_handler(btstack_packet_handler_t handler);
+int  att_server_can_send();
+void att_server_notify(uint16_t handle, uint8_t *value, uint16_t value_len);
+void att_server_indicate(uint16_t handle, uint8_t *value, uint16_t value_len);
