@@ -74,30 +74,30 @@ static uint32_t system_ticks;
 static int trigger_event_received = 0;
 
 /**
- * trigger run loop iteration
- */
-void embedded_trigger(void){
-    trigger_event_received = 1;
-}
-
-/**
  * Add data_source to run_loop
  */
-void embedded_add_data_source(data_source_t *ds){
+static void embedded_add_data_source(data_source_t *ds){
     linked_list_add(&data_sources, (linked_item_t *) ds);
 }
 
 /**
  * Remove data_source from run loop
  */
-int embedded_remove_data_source(data_source_t *ds){
+static int embedded_remove_data_source(data_source_t *ds){
     return linked_list_remove(&data_sources, (linked_item_t *) ds);
+}
+
+// set timer
+static void embedded_set_timer(timer_source_t *ts, uint32_t timeout_in_ms){
+    uint32_t ticks = embedded_ticks_for_ms(timeout_in_ms);
+    if (ticks == 0) ticks++;
+    ts->timeout = system_ticks + ticks; 
 }
 
 /**
  * Add timer to run_loop (keep list sorted)
  */
-void embedded_add_timer(timer_source_t *ts){
+static void embedded_add_timer(timer_source_t *ts){
 #ifdef HAVE_TICK
     linked_item_t *it;
     for (it = (linked_item_t *) &timers; it->next ; it = it->next){
@@ -115,7 +115,7 @@ void embedded_add_timer(timer_source_t *ts){
 /**
  * Remove timer from run loop
  */
-int embedded_remove_timer(timer_source_t *ts){
+static int embedded_remove_timer(timer_source_t *ts){
 #ifdef HAVE_TICK    
     // log_info("Removed timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
     return linked_list_remove(&timers, (linked_item_t *) ts);
@@ -124,7 +124,7 @@ int embedded_remove_timer(timer_source_t *ts){
 #endif
 }
 
-void embedded_dump_timer(void){
+static void embedded_dump_timer(void){
 #ifdef HAVE_TICK
 #ifdef ENABLE_LOG_INFO 
     linked_item_t *it;
@@ -140,7 +140,7 @@ void embedded_dump_timer(void){
 /**
  * Execute run_loop once
  */
-void embedded_execute_once(void) {
+static void embedded_execute_once(void) {
     data_source_t *ds;
 
     // process data sources
@@ -173,7 +173,7 @@ void embedded_execute_once(void) {
 /**
  * Execute run_loop
  */
-void embedded_execute(void) {
+static void embedded_execute(void) {
     while (1) {
         embedded_execute_once();
     }
@@ -192,16 +192,16 @@ uint32_t embedded_get_ticks(void){
 uint32_t embedded_ticks_for_ms(uint32_t time_in_ms){
     return time_in_ms / hal_tick_get_tick_period_in_ms();
 }
-
-// set timer
-void run_loop_set_timer(timer_source_t *ts, uint32_t timeout_in_ms){
-    uint32_t ticks = embedded_ticks_for_ms(timeout_in_ms);
-    if (ticks == 0) ticks++;
-    ts->timeout = system_ticks + ticks; 
-}
 #endif
 
-void embedded_init(void){
+/**
+ * trigger run loop iteration
+ */
+void embedded_trigger(void){
+    trigger_event_received = 1;
+}
+
+static void embedded_init(void){
 
     data_sources = NULL;
 
@@ -217,8 +217,9 @@ const run_loop_t run_loop_embedded = {
     &embedded_init,
     &embedded_add_data_source,
     &embedded_remove_data_source,
+    &embedded_set_timer,
     &embedded_add_timer,
     &embedded_remove_timer,
     &embedded_execute,
-    &embedded_dump_timer
+    &embedded_dump_timer,
 };

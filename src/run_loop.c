@@ -98,6 +98,11 @@ int run_loop_remove_data_source(data_source_t *ds){
     return the_run_loop->remove_data_source(ds);
 }
 
+void run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms){
+    run_loop_assert();
+    the_run_loop->set_timer(a, timeout_in_ms);
+}
+
 /**
  * Add timer to run_loop (keep list sorted)
  */

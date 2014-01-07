@@ -138,6 +138,17 @@ int  cocoa_remove_timer(timer_source_t * ts){
 	return 0;
 }
 
+// set timer
+static void cocoa_set_timer(timer_source_t *a, uint32_t timeout_in_ms){
+    gettimeofday(&a->timeout, NULL);
+    a->timeout.tv_sec  +=  timeout_in_ms / 1000;
+    a->timeout.tv_usec += (timeout_in_ms % 1000) * 1000;
+    if (a->timeout.tv_usec  > 1000000) {
+        a->timeout.tv_usec -= 1000000;
+        a->timeout.tv_sec++;
+    }
+}
+
 void cocoa_init(void){
 }
 
@@ -155,9 +166,10 @@ run_loop_t run_loop_cocoa = {
     &cocoa_init,
     &cocoa_add_data_source,
     &cocoa_remove_data_source,
+    &cocoa_set_timer,
     &cocoa_add_timer,
     &cocoa_remove_timer,
     &cocoa_execute,
-    &cocoa_dump_timer
+    &cocoa_dump_timer,
 };
 
