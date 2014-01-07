@@ -259,13 +259,14 @@ static inline uint16_t setup_error_invalid_offset(uint8_t * response_buffer, uin
 
 static uint8_t att_validate_security(att_connection_t * att_connection, att_iterator_t * it){
     int required_encryption_size = it->flags >> 12;
+    if (required_encryption_size) required_encryption_size++;   // store -1 to fit into 4 bit
     printf("att_validate_security. flags 0x%04x - req enc size %u, authorized %u, authenticated %u, encryption_key_size %u\n",
         it->flags, required_encryption_size, att_connection->authorized, att_connection->authenticated, att_connection->encryption_key_size);
-    if ((it->flags & ATT_PROPERTY_AUTHORIZATION_REQUIRED) && att_connection->authorized == 0) {
-        return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
-    }
     if ((it->flags & ATT_PROPERTY_AUTHENTICATION_REQUIRED) && att_connection->authenticated == 0) {
         return ATT_ERROR_INSUFFICIENT_AUTHENTICATION;
+    }
+    if ((it->flags & ATT_PROPERTY_AUTHORIZATION_REQUIRED) && att_connection->authorized == 0) {
+        return ATT_ERROR_INSUFFICIENT_AUTHORIZATION;
     }
     if (required_encryption_size > 0 && att_connection->encryption_key_size == 0){
         return ATT_ERROR_INSUFFICIENT_ENCRYPTION;

@@ -160,7 +160,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case SM_PASSKEY_DISPLAY_NUMBER: {
                     // display number
                     sm_event_t * event = (sm_event_t *) packet;
-                    printf("GAP Bonding: Display Passkey '%u\n", event->passkey);
+                    printf("GAP Bonding: Display Passkey '%06u\n", event->passkey);
                     break;
                 }
 
@@ -205,7 +205,8 @@ void setup(void){
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
     sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION); 
-    sm_set_request_security(1);
+    // sm_set_request_security(1);
+    // sm_set_encrypted_key_size_range(7,15);
 
     // setup ATT server
     att_server_init(profile_data, NULL, att_write_callback);    

@@ -504,7 +504,7 @@ static void sm_notify_client(uint8_t type, uint8_t addr_type, bd_addr_t address,
     event.passkey = passkey;
     event.central_device_db_index = index;
 
-    log_info("sm_notify_client %02x, addres_type %u, address (), num '%06u', index %u", event.type, event.addr_type, event.passkey, event.central_device_db_index);
+    log_info("sm_notify_client %02x, addres_type %u, address %s, num '%06u', index %u", event.type, event.addr_type, bd_addr_to_str(event.address), event.passkey, event.central_device_db_index);
 
     if (!sm_client_packet_handler) return;
     sm_client_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
@@ -518,7 +518,7 @@ static void sm_notify_client_authorization(uint8_t type, uint8_t addr_type, bd_a
     BD_ADDR_COPY(event.address, address);
     event.authorization_result = result;
 
-    log_info("sm_notify_client_authorization %02x, address_type %u, address (), result %u", event.type, event.addr_type, event.authorization_result);
+    log_info("sm_notify_client_authorization %02x, address_type %u, address %s, result %u", event.type, event.addr_type, bd_addr_to_str(event.address), event.authorization_result);
 
     if (!sm_client_packet_handler) return;
     sm_client_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
@@ -1212,8 +1212,10 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
                 case SM_CODE_IDENTITY_ADDRESS_INFORMATION:
                     sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
-                    sm_m_addr_type = packet[1];
-                    BD_ADDR_COPY(sm_m_address, &packet[2]); 
+                    // note: we don't update addr_type and address as higher layer would get confused
+                    // note: if needed, we could use a different variable pair
+                    // sm_m_addr_type = packet[1];
+                    // BD_ADDR_COPY(sm_m_address, &packet[2]); 
                     break;
 
                 case SM_CODE_SIGNING_INFORMATION:
