@@ -113,7 +113,7 @@ uint32_t embedded_get_ticks(void);
 // just before entering sleep mode. Has to be called by the interupt
 // handler of a data source to signal the run loop that a new data 
 // is available.
-void     embedded_trigger(void);    
+void embedded_trigger(void);    
 #endif
 #if defined __cplusplus
 }
