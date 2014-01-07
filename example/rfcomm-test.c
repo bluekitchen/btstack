@@ -49,6 +49,9 @@
 // until next BTstack Cydia update
 #include "compat-svn.c"
 
+#define NUM_ROWS 25
+#define NUM_COLS 80
+
 // input from command line arguments
 bd_addr_t addr = { };
 uint16_t con_handle;
@@ -56,18 +59,19 @@ char pin[17];
 int counter = 0;
 uint16_t rfcomm_channel_id = 0;
 uint16_t mtu = 0;
-uint8_t service_buffer[100];
-uint8_t test_data[1021];
+uint8_t service_buffer[200];
+uint8_t test_data[NUM_ROWS * NUM_COLS + 1];
 
 void create_test_data(void){
     int x,y;
-    for (y=0;y<25;y++){
-        for (x=0;x<78;x++){
-            test_data[y*80+x] = '0' + (x % 10);
+    for (y=0;y<NUM_ROWS;y++){
+        for (x=0;x<NUM_COLS-2;x++){
+            test_data[y*NUM_COLS+x] = '0' + (x % 10);
         }
-        test_data[y*80+78] = '\n';
-        test_data[y*80+79] = '\r';
+        test_data[y*NUM_COLS+NUM_COLS-2] = '\n';
+        test_data[y*NUM_COLS+NUM_COLS-1] = '\r';
     }
+    test_data[NUM_COLS*NUM_ROWS] = 0;
 }
 
 void create_spp_service(uint8_t *service, int service_id){
