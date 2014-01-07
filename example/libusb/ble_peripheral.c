@@ -156,6 +156,18 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                        break;
                     }
                     break;
+
+                case SM_PASSKEY_DISPLAY_NUMBER: {
+                    // display number
+                    sm_event_t * event = (sm_event_t *) packet;
+                    printf("GAP Bonding: Display Passkey '%u\n", event->passkey);
+                    break;
+                }
+
+                case SM_PASSKEY_DISPLAY_CANCEL: 
+                    printf("GAP Bonding: Display cancel\n");
+                    break;
+
                 case SM_AUTHORIZATION_REQUEST: {
                     // auto-authorize connection if requested
                     sm_event_t * event = (sm_event_t *) packet;
@@ -189,10 +201,10 @@ void setup(void){
     // setup central device db
     central_device_db_init();
 
-    // setup SM
+    // setup SM: Display only
     sm_init();
-    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
-    sm_set_authentication_requirements( SM_AUTHREQ_BONDING );
+    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+    sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION); 
     sm_set_request_security(1);
 
     // setup ATT server
@@ -210,7 +222,6 @@ int main(void)
     heartbeat.process = &heartbeat_handler;
     run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
     run_loop_add_timer(&heartbeat);
-
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

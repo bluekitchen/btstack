@@ -362,7 +362,7 @@ static void sm_truncate_key(sm_key_t key, int max_encryption_size){
 // established.
 
 static void sm_timeout_handler(timer_source_t * timer){
-    printf("SM timeout");
+    printf("SM timeout\n");
     sm_state_responding = SM_STATE_TIMEOUT;
 }
 static void sm_timeout_start(){
@@ -556,7 +556,9 @@ static void sm_tk_setup(){
 
     // Otherwise the IO capabilities of the devices shall be used to determine the
     // pairing method as defined in Table 2.4.
-    sm_stk_generation_method = stk_generation_method[sm_m_io_capabilities][sm_s_io_capabilities];
+    sm_stk_generation_method = stk_generation_method[sm_s_io_capabilities][sm_m_io_capabilities];
+    printf("sm_tk_setup: master io cap: %u, slave io cap: %u -> method %u\n",
+        sm_m_io_capabilities, sm_s_io_capabilities, sm_stk_generation_method);
 }
 
 static int sm_key_distribution_flags_for_set(uint8_t key_set){
@@ -1107,6 +1109,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // decide on STK generation method
             sm_tk_setup();
+            printf("SMP: generation method %u\n", sm_stk_generation_method);
 
             // check if STK generation method is acceptable by client
             int ok = 0;
