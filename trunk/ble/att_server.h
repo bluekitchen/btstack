@@ -39,8 +39,32 @@
 #include <stdint.h>
 #include "att.h"
 
+ /*
+  * @brief setup ATT server
+  * @param db attribute database created by compile-gatt.ph
+  * @param read_callback, see att.h, can be NULL
+  * @param write_callback, see attl.h, can be NULL
+  */
 void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_write_callback_t write_callback);
+
+/*
+ * @brief register packet handler for general HCI Events like connect, diconnect, etc.
+ * @param handler
+ */
 void att_server_register_packet_handler(btstack_packet_handler_t handler);
+
+/*
+ * @brief tests if a notification or indication can be send right now
+ * @return 1, if packet can be sent
+ */
 int  att_server_can_send();
+
+/*
+ * @brief notify client about attribute value change
+ */
 void att_server_notify(uint16_t handle, uint8_t *value, uint16_t value_len);
+
+/*
+ * @brief indicate value change to client. client is supposed to reply with an indication_response
+ */
 void att_server_indicate(uint16_t handle, uint8_t *value, uint16_t value_len);
