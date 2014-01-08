@@ -28,23 +28,33 @@ COMMON = \
     ${BTSTACK_ROOT}/src/sdp_parser.c		        \
     ${BTSTACK_ROOT}/src/sdp_query_util.c		    \
 	${BTSTACK_ROOT}/src/sdp_query_rfcomm.c		    \
+
+ATT	= \
     ${BTSTACK_ROOT}/ble/att.c 				 	    \
     ${BTSTACK_ROOT}/ble/att_server.c        	    \
-    ${BTSTACK_ROOT}/ble/sm.c 				 	    \
-    ${BTSTACK_ROOT}/ble/central_device_db_memory.c  \
 
 CC2564 = \
     ${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
  	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2564_2.10.c \
 
+SM_REAL = \
+	${BTSTACK_ROOT}/ble/sm.c 				 	    \
+    ${BTSTACK_ROOT}/ble/central_device_db_memory.c  \
+
+SM_MINIMAL = \
+	${BTSTACK_ROOT}/ble/sm_minimal.c  		 	    \
+
 CORE_OBJ   = $(CORE:.c=.o)
 COMMON_OBJ = $(COMMON:.c=.o)
 CC2564_OBJ = $(CC2564:.c=.o)
+SM_REAL_OBJ = $(SM_REAL:.c=.o)
+SM_MINIMAL_OBJ = $(SM_MINIMAL:.c=.o)
+ATT_OBJ = $(ATT:.c=.o)
 
 
 # create firmware image from common objects and example source file
 
-all: ../../include/btstack/version.h ble_client ble_client_uart sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral
+all: ../../include/btstack/version.h ble_client ble_client_uart sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral ble_peripheral_sm_minimal
 
 #spp-usb l2cap-server-usb l2cap-client-usb l2cap-server-uart l2cap-client-uart
 
@@ -67,8 +77,11 @@ spp_counter_ssp: ${CORE_OBJ} ${COMMON_OBJ} spp_counter_ssp.c
 profile.h: profile.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 
-ble_peripheral: ${CORE_OBJ} ${COMMON_OBJ} ble_peripheral.c profile.h
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
+ble_peripheral: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_REAL_OBJ} ble_peripheral.c profile.h
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_REAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
+
+ble_peripheral_sm_minimal: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c profile.h
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_client: ${CORE_OBJ} ${COMMON_OBJ} ble_client.c ad_parser.c
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ad_parser.c ble_client.c ${CFLAGS} ${LDFLAGS} -o $@
