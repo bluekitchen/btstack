@@ -124,7 +124,7 @@ static int acl_out_addr;
 
 #ifndef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
 
-// list of known devices, using ProductID/VendorID tuples
+// list of known devices, using VendorID/ProductID tuples
 static uint16_t known_bt_devices[] = {
     // DeLOCK Bluetooth 4.0
     0x0a5c, 0x21e8,
