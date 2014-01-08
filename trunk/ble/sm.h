@@ -234,14 +234,12 @@ authorization_state_t sm_authorization_state(uint8_t addr_type, bd_addr_t addres
  * @param addr_type and address
  * @returns
  */
-// request authorization
 void sm_request_authorization(uint8_t addr_type, bd_addr_t address);
 
 /**
  * @brief Report user authorization decline
  * @param addr_type and address
  */
-// called by client app on authorization request
 void sm_authorization_decline(uint8_t addr_type, bd_addr_t address);
 
 /**
