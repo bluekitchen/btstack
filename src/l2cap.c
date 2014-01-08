@@ -907,6 +907,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
             break;
 
         case L2CAP_STATE_CONFIG:
+            result = READ_BT_16 (command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
             switch (code) {
                 case CONFIGURE_REQUEST:
                     channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP);
@@ -917,6 +918,11 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                     }
                     break;
                 case CONFIGURE_RESPONSE:
+                    if (result) {
+                        // retry on negative result
+                        channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ);
+                        break;
+                    }
                     channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_RSP);
                     break;
                 default:
