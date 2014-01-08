@@ -1620,7 +1620,7 @@ void sm_set_accepted_stk_generation_methods(uint8_t accepted_stk_generation_meth
     sm_accepted_stk_generation_methods = accepted_stk_generation_methods;
 }
 
-void sm_set_encrypted_key_size_range(uint8_t min_size, uint8_t max_size){
+void sm_set_encryption_key_size_range(uint8_t min_size, uint8_t max_size){
 	sm_min_encryption_key_size = min_size;
 	sm_max_encryption_key_size = max_size;
 }

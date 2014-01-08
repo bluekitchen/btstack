@@ -206,7 +206,7 @@ void setup(void){
     sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
     sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION); 
     // sm_set_request_security(1);
-    // sm_set_encrypted_key_size_range(7,15);
+    // sm_set_encryption_key_size_range(7,15);
 
     // setup ATT server
     att_server_init(profile_data, NULL, att_write_callback);    
