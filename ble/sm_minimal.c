@@ -71,7 +71,7 @@ void sm_set_ir(sm_key_t ir){}
 void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data)){}
 
 void sm_set_accepted_stk_generation_methods(uint8_t accepted_stk_generation_methods){}
-void sm_set_encrypted_key_size_range(uint8_t min_size, uint8_t max_size){}
+void sm_set_encryption_key_size_range(uint8_t min_size, uint8_t max_size){}
 void sm_set_authentication_requirements(uint8_t auth_req){}
 void sm_set_io_capabilities(io_capability_t io_capability){}
 void sm_set_request_security(int enable){}
