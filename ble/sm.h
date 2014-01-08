@@ -128,41 +128,133 @@ typedef struct sm_event {
 // Security Manager Client API
 //
 
+/**
+ * @brief Initializes the Security Manager, connects to L2CAP
+ */
 void sm_init();
+
+/**
+ * @brief Set secrect ER key for key generation as described in Core V4.0, Vol 3, Part G, 5.2.2 
+ */
 void sm_set_er(sm_key_t er);
+
+/**
+ * @brief Set secrect IR key for key generation as described in Core V4.0, Vol 3, Part G, 5.2.2 
+ */
 void sm_set_ir(sm_key_t ir);
+
+/**
+ *
+ * @brief Registers OOB Data Callback. The callback should set the oob_data and return 1 if OOB data is availble
+ * @param get_oob_data_callback
+ */
 void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data));
+
+/**
+ *
+ * @brief Registers packet handler. Called by att_server.c
+ */
 void sm_register_packet_handler(btstack_packet_handler_t handler);
 
+/**
+ * @brief Limit the STK generation methods. Bonding is stopped if the resulting one isn't in the list
+ * @param OR combination of SM_STK_GENERATION_METHOD_ 
+ */
 void sm_set_accepted_stk_generation_methods(uint8_t accepted_stk_generation_methods);
+
+/**
+ * @brief Set the accepted encryption key size range. Bonding is stopped if the result isn't within the range
+ * @param min_size (default 7)
+ * @param max_size (default 16)
+ */
 void sm_set_encryption_key_size_range(uint8_t min_size, uint8_t max_size);
+
+/**
+ * @brief Sets the requestsd authentication requirements, bonding yes/no, MITM yes/no
+ * @param OR combination of SM_AUTHREQ_ flags
+ */
 void sm_set_authentication_requirements(uint8_t auth_req);
+
+/**
+ * @brief Sets the availabe IO Capabilities
+ * @param IO_CAPABILITY_
+ */
 void sm_set_io_capabilities(io_capability_t io_capability);
+
+/**
+ * @brief Let Peripheral request an encrypted connection right after connecting
+ * @note Not used normally. Bonding is triggered by access to protected attributes in ATT Server
+ */
 void sm_set_request_security(int enable);
 
+/**
+ * @brief Decline bonding triggered by event before
+ * @param addr_type and address
+ */
 void sm_bonding_decline(uint8_t addr_type, bd_addr_t address);
+
+/**
+ * @brief Confirm Just Works bonding 
+ * @param addr_type and address
+ */
 void sm_just_works_confirm(uint8_t addr_type, bd_addr_t address);
+
+/**
+ * @brief Reports passkey input by user
+ * @param addr_type and address
+ * @param passkey in [0..999999]
+ * @returns
+ */
 void sm_passkey_input(uint8_t addr_type, bd_addr_t address, uint32_t passkey);
 
-// @returns 0 if not encrypted, 7-16 otherwise
+/**
+ *
+ * @brief Get encryption key size
+ * @param addr_type and address
+ * @returns 0 if not encrypted, 7-16 otherwise
+ */
 int sm_encryption_key_size(uint8_t addr_type, bd_addr_t address);
 
-// @returns 1 if bonded with OOB/Passkey (AND MITM protection)
+/**
+ * @brief Get authentication property
+ * @param addr_type and address
+ * @returns 1 if bonded with OOB/Passkey (AND MITM protection)
+ */
 int sm_authenticated(uint8_t addr_type, bd_addr_t address);
 
-// @returns authorization_state for the current session
+/**
+ * @brief Queries authorization state
+ * @param addr_type and address
+ * @returns authorization_state for the current session
+ */
 authorization_state_t sm_authorization_state(uint8_t addr_type, bd_addr_t address);
 
+/**
+ * @brief Used by ATT Server to request user authorization
+ * @param addr_type and address
+ * @returns
+ */
 // request authorization
 void sm_request_authorization(uint8_t addr_type, bd_addr_t address);
 
+/**
+ * @brief Report user authorization decline
+ * @param addr_type and address
+ */
 // called by client app on authorization request
 void sm_authorization_decline(uint8_t addr_type, bd_addr_t address);
+
+/**
+ *
+ * @brief Report user authorization grant
+ * @param addr_type and address
+ */
 void sm_authorization_grant(uint8_t addr_type, bd_addr_t address);
 
-// Support for signed writes
+// Support for signed writes, used by att_server.c
 int  sm_cmac_ready();
 void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8]));
+
 #if defined __cplusplus
 }
 #endif
