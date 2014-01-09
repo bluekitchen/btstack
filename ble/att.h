@@ -161,26 +161,58 @@ typedef int (*att_write_callback_t)(uint16_t handle, uint16_t transaction_mode, 
 
 // MARK: ATT Operations
 
+ /*
+  * @brief setup ATT database
+  */
 void att_set_db(uint8_t const * db);
 
+ /*
+  * @brief set callback for read of dynamic attributes
+  * @param callback
+  */
 void att_set_read_callback(att_read_callback_t callback);
 
+ /*
+  * @brief set callback for write of dynamic attributes
+  * @param callback
+  */
 void att_set_write_callback(att_write_callback_t callback);
 
+ /*
+  * @brief debug helper, dump ATT database to stdout using printf
+  */
 void att_dump_attributes(void);
 
-// response buffer size = att_connection->mtu
+ /*
+  * @brief process ATT request against database and put response into response buffer
+  * @param att_connection used for mtu and security properties
+  * @param request_buffer, request_len: ATT request from clinet
+  * @param response_buffer for result
+  * @returns len of data in response buffer. 0 = no response
+  */
 uint16_t att_handle_request(att_connection_t * att_connection,
                             uint8_t * request_buffer,
                             uint16_t request_len,
                             uint8_t * response_buffer);
 
+ /*
+  * @brief setup value notification in response buffer for a given handle and value
+  * @param att_connection
+  * @param value, value_len: new attribute value
+  * @param response_buffer for notification
+  */
 uint16_t att_prepare_handle_value_notification(att_connection_t * att_connection,
                                                uint16_t handle,
                                                uint8_t *value,
                                                uint16_t value_len, 
                                                uint8_t * response_buffer);
 
+ /*
+  * @brief setup value indication in response buffer for a given handle and value
+  * @param att_connection
+  * @param value, value_len: new attribute value
+  * @param response_buffer for indication
+  */
 uint16_t att_prepare_handle_value_indication(att_connection_t * att_connection,
                                              uint16_t handle,
                                              uint8_t *value,
