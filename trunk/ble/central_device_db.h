@@ -38,6 +38,10 @@
 
 #include <btstack/utils.h>
 
+#if defined __cplusplus
+extern "C" {
+#endif
+
 /** 
 
 	A Central Device DB is only required for signed writes

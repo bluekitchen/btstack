@@ -36,6 +36,10 @@
 
 #pragma once
 
+#if defined __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
     GAP_RANDOM_ADDRESS_TYPE_OFF = 0,
     GAP_RANDOM_ADDRESS_NON_RESOLVABLE,
@@ -54,4 +58,7 @@ void gap_random_address_set_mode(gap_random_address_type_t random_address_type);
  */
  void gap_random_address_set_update_period(int period_ms);
 
+#if defined __cplusplus
+}
+#endif
 
