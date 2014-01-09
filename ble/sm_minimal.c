@@ -228,34 +228,3 @@ void sm_init(){
 // GAP LE
 void gap_random_address_set_mode(gap_random_address_type_t random_address_type){}
 void gap_random_address_set_update_period(int period_ms){}
-
-// Central Device db interface
-void central_device_db_init(){}
-
-// @returns index if successful, -1 otherwise
-int central_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk, sm_key_t csrk){
-	return -1;
-}
-
-// @returns number of device in db
-int central_device_db_count(void){
-	return 0;
-}
-
-// get device information: addr type and address
-void central_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t csrk){}
-
-// get signature key
-void central_device_db_csrk(int index, sm_key_t csrk){}
-
-// query last used/seen signing counter
-uint32_t central_device_db_counter_get(int index){ 
-	return 0xffffffff;
-}
-
-// update signing counter
-void central_device_db_counter_set(int index, uint32_t counter){}
-
-// free device
-void central_device_db_remove(int index){}
-

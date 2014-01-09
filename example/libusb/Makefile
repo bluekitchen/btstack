@@ -43,6 +43,7 @@ SM_REAL = \
 
 SM_MINIMAL = \
 	${BTSTACK_ROOT}/ble/sm_minimal.c  		 	    \
+    ${BTSTACK_ROOT}/ble/central_device_db_dummy.c  \
 
 CORE_OBJ   = $(CORE:.c=.o)
 COMMON_OBJ = $(COMMON:.c=.o)
