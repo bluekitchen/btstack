@@ -39,6 +39,10 @@
 #include <stdint.h>
 #include "att.h"
 
+#if defined __cplusplus
+extern "C" {
+#endif
+
  /*
   * @brief setup ATT server
   * @param db attribute database created by compile-gatt.ph
@@ -68,3 +72,7 @@ void att_server_notify(uint16_t handle, uint8_t *value, uint16_t value_len);
  * @brief indicate value change to client. client is supposed to reply with an indication_response
  */
 void att_server_indicate(uint16_t handle, uint8_t *value, uint16_t value_len);
+
+#if defined __cplusplus
+}
+#endif
