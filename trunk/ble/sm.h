@@ -230,7 +230,7 @@ int sm_authenticated(uint8_t addr_type, bd_addr_t address);
 authorization_state_t sm_authorization_state(uint8_t addr_type, bd_addr_t address);
 
 /**
- * @brief Used by ATT Server to request user authorization
+ * @brief Used by att_server.c to request user authorization
  * @param addr_type and address
  * @returns
  */
