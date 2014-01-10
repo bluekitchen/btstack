@@ -127,6 +127,9 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             advertisements_enabled = 0;
+
+                            // request connection parameter update - test parameters
+                            // l2cap_le_request_connection_parameter_update(READ_BT_16(packet, 4), 20, 1000, 100, 100);
                             break;
 
                         default:
