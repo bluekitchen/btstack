@@ -82,7 +82,13 @@ extern "C" {
 // L2CAP Reject Result Codes
 #define L2CAP_REJ_CMD_UNKNOWN               0x0000
     
-    // private structs
+// Response Timeout eXpired
+#define L2CAP_RTX_TIMEOUT_MS 2000
+
+// Extended Response Timeout eXpired
+#define L2CAP_ERTX_TIMEOUT_MS 120000
+
+// private structs
 typedef enum {
     L2CAP_STATE_CLOSED = 1,           // no baseband
     L2CAP_STATE_WILL_SEND_CREATE_CONNECTION,

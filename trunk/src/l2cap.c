@@ -237,6 +237,55 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid){
     return 0;
 }
 
+static l2cap_channel_t * l2cap_channel_for_rtx_timer(timer_source_t * ts){
+    linked_item_t *it;
+    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+        l2cap_channel_t * channel = (l2cap_channel_t *) it;
+        if ( &channel->rtx == ts) {
+            return channel;
+        }
+    }
+    return NULL;
+}
+
+static void l2cap_rtx_timeout(timer_source_t * ts){
+    l2cap_channel_t * channel = l2cap_channel_for_rtx_timer(ts);
+    if (!ts) return;
+
+    log_info("l2cap_rtx_timeout for local cid 0x%02x", channel->local_cid);
+
+    // "When terminating the channel, it is not necessary to send a L2CAP_DisconnectReq
+    //  and enter WAIT_DISCONNECT state. Channels can be transitioned directly to the CLOSED state."
+    // notify client
+    l2cap_emit_channel_opened(channel, L2CAP_CONNECTION_RESPONSE_RESULT_RTX_TIMEOUT);
+
+    // discard channel
+    linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
+    btstack_memory_l2cap_channel_free(channel);
+}
+
+static void l2cap_stop_rtx(l2cap_channel_t * channel){
+    log_info("l2cap_stop_rtx for local cid 0x%02x", channel->local_cid);
+    run_loop_remove_timer(&channel->rtx);
+}
+
+static void l2cap_start_rtx(l2cap_channel_t * channel){
+    log_info("l2cap_start_rtx for local cid 0x%02x", channel->local_cid);
+    l2cap_stop_rtx(channel);
+    run_loop_set_timer_handler(&channel->rtx, l2cap_rtx_timeout);
+    run_loop_set_timer(&channel->rtx, L2CAP_RTX_TIMEOUT_MS);
+    run_loop_add_timer(&channel->rtx);
+}
+
+static void l2cap_start_ertx(l2cap_channel_t * channel){
+    log_info("l2cap_start_ertx for local cid 0x%02x", channel->local_cid);
+    l2cap_stop_rtx(channel);
+    run_loop_set_timer_handler(&channel->rtx, l2cap_rtx_timeout);
+    run_loop_set_timer(&channel->rtx, L2CAP_ERTX_TIMEOUT_MS);
+    run_loop_add_timer(&channel->rtx);
+}
+
+
 int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...){
 
     if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)){
@@ -467,7 +516,8 @@ void l2cap_run(void){
                 // success, start l2cap handshake
                 channel->local_sig_id = l2cap_next_sig_id();
                 channel->state = L2CAP_STATE_WAIT_CONNECT_RSP;
-                l2cap_send_signaling_packet( channel->handle, CONNECTION_REQUEST, channel->local_sig_id, channel->psm, channel->local_cid);                   
+                l2cap_send_signaling_packet( channel->handle, CONNECTION_REQUEST, channel->local_sig_id, channel->psm, channel->local_cid);
+                l2cap_start_rtx(channel);
                 break;
             
             case L2CAP_STATE_CONFIG:
@@ -500,6 +550,7 @@ void l2cap_run(void){
                     config_options[1] = 2; // len param
                     bt_store_16( (uint8_t*)&config_options, 2, channel->local_mtu);
                     l2cap_send_signaling_packet(channel->handle, CONFIGURE_REQUEST, channel->local_sig_id, channel->remote_cid, 0, 4, &config_options);
+                    l2cap_start_rtx(channel);
                 }
                 if (l2cap_channel_ready_for_open(channel)){
                     channel->state = L2CAP_STATE_OPEN;
@@ -510,6 +561,7 @@ void l2cap_run(void){
 
             case L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE:
                 l2cap_send_signaling_packet( channel->handle, DISCONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid);   
+                // we don't start an RTX timer for a disconnect - there's no point in closing the channel if the other side doesn't respond :)
                 l2cap_finialize_channel_close(channel);  // -- remove from list
                 break;
                 
@@ -886,6 +938,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
         case L2CAP_STATE_WAIT_CONNECT_RSP:
             switch (code){
                 case CONNECTION_RESPONSE:
+                    l2cap_stop_rtx(channel);
                     result = READ_BT_16 (command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET+4);
                     switch (result) {
                         case 0:
@@ -895,12 +948,12 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ);
                             break;
                         case 1:
-                            // connection pending. get some coffee
+                            // connection pending. get some coffee, but start the ERTX
+                            l2cap_start_ertx(channel);
                             break;
                         default:
                             // channel closed
                             channel->state = L2CAP_STATE_CLOSED;
-
                             // map l2cap connection response result to BTstack status enumeration
                             l2cap_emit_channel_opened(channel, L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL + result);
                             
@@ -934,12 +987,19 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                     }
                     break;
                 case CONFIGURE_RESPONSE:
-                    if (result) {
-                        // retry on negative result
-                        channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ);
-                        break;
+                    l2cap_stop_rtx(channel);
+                    switch (result){
+                        case 0: // success
+                            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_RSP);
+                            break;
+                        case 4: // pending
+                            l2cap_start_ertx(channel);
+                            break;
+                        default:
+                            // retry on negative result
+                            channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ);
+                            break;
                     }
-                    channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_RSP);
                     break;
                 default:
                     break;
