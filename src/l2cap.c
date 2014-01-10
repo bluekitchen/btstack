@@ -890,6 +890,10 @@ void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t 
             // log_info("l2cap cid 0x%02x, remote mtu %u\n", channel->local_cid, channel->remote_mtu);
             channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU);
         }
+        // Flush timeout { type(8):2, len(8): 2, Flush Timeout(16)}
+        if (option_type == 2 && length == 2){
+            channel->flush_timeout = READ_BT_16(command, pos);
+        }
         // check for unknown options
         if (option_hint == 0 && (option_type == 0 || option_type >= 0x07)){
             log_info("l2cap cid %u, unknown options", channel->local_cid);
