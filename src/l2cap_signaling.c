@@ -41,6 +41,7 @@
  */
 
 #include "l2cap_signaling.h"
+#include "config.h"
 
 #include <string.h>
 
@@ -135,3 +136,32 @@ uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_handle_t 
     
     return pos;
 }
+
+#ifdef HAVE_BLE
+uint16_t l2cap_le_create_connection_parameter_update_request(uint8_t * acl_buffer, uint16_t handle, uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency, uint16_t timeout_multiplier){
+      // 0 - Connection handle : PB=10 : BC=00 
+    bt_store_16(acl_buffer, 0, handle | (2 << 12) | (0 << 14));
+    // 6 - L2CAP LE Signaling channel = 5
+    bt_store_16(acl_buffer, 6, 5);
+    // 8 - Code
+    acl_buffer[8] = CONNECTION_PARAMETER_UPDATE_REQUEST;
+    // 9 - id (!= 0 sequentially)
+    acl_buffer[9] = 1;
+    uint16_t pos = 12;
+    bt_store_16(acl_buffer, pos, interval_min);
+    pos += 2;
+    bt_store_16(acl_buffer, pos, interval_max);
+    pos += 2;
+    bt_store_16(acl_buffer, pos, slave_latency);
+    pos += 2;
+    bt_store_16(acl_buffer, pos, timeout_multiplier);
+    pos += 2;
+    // 2 - ACL length
+    bt_store_16(acl_buffer, 2,  pos - 4);
+    // 4 - L2CAP packet length
+    bt_store_16(acl_buffer, 4,  pos - 6 - 2);
+    // 10 - L2CAP signaling parameter length
+    bt_store_16(acl_buffer, 10, pos - 12);
+    return pos;
+} 
+#endif

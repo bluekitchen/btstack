@@ -233,6 +233,8 @@ void l2cap_unregister_service_internal(void *connection, uint16_t psm);
 void l2cap_accept_connection_internal(uint16_t local_cid);
 void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason);
 
+// Request LE connection parameter update
+int l2cap_le_request_connection_parameter_update(uint16_t handle, uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency, uint16_t timeout_multiplier);
 
 #if defined __cplusplus
 }
