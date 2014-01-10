@@ -386,13 +386,29 @@ void l2cap_run(void){
                 l2cap_send_signaling_packet(handle, ECHO_RESPONSE, sig_id, 0, NULL);
                 break;
             case INFORMATION_REQUEST:
-                if (infoType == 2) {
-                    uint32_t features = 0;
-                    // extended features request supported, however no features present
-                    l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, 4, &features);
-                } else {
-                    // all other types are not supported
-                    l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 1, 0, NULL);
+                switch (infoType){
+                    case 1: { // Connectionless MTU
+                        uint16_t connectionless_mtu = hci_max_acl_data_packet_length();
+                        l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(connectionless_mtu), &connectionless_mtu);
+                        break;
+                    }
+                    case 2: { // Extended Features Supported
+                        // extended features request supported, only supporing fixed channel map
+                        uint32_t features = 0x80;
+                        l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(features), &features);
+                        break;
+                    }
+                    case 3: { // Fixed Channels Supported
+                        uint8_t map[8];
+                        memset(map, 0, 8);
+                        map[0] = 0x01;  // L2CAP Signaling Channel
+                        l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(map), &map);
+                        break;
+                    }
+                    default:
+                        // all other types are not supported
+                        l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 1, 0, NULL);
+                        break;                        
                 }
                 break;
             case COMMAND_REJECT:
