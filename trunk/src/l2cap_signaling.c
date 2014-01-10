@@ -56,6 +56,11 @@ static const char *l2cap_signaling_commands_format[] = {
 "D",    // 0x09 echo response: Data
 "2",    // 0x0a information request: InfoType {1=Connectionless MTU, 2=Extended features supported}
 "22D",  // 0x0b information response: InfoType, Result, Data
+#ifdef HAVE_BLE
+// skip 6 not supported signaling pdus, see below
+"2222", // 0x12 connection parameter update request: interval min, interval max, slave latency, timeout multipler
+"2",    // 0x13 connection parameter update response: result
+#endif
 };
 
 uint8_t   sig_seq_nr  = 0xff;
@@ -87,6 +92,10 @@ uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_handle_t 
     
     // 12 - L2CAP signaling parameters
     uint16_t pos = 12;
+    // skip AMP commands
+    if (cmd >= CONNECTION_PARAMETER_UPDATE_REQUEST){
+        cmd -= 6;
+    }
     const char *format = l2cap_signaling_commands_format[cmd-1];
     uint16_t word;
     uint8_t * ptr;
