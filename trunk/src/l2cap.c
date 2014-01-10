@@ -1274,3 +1274,17 @@ void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint1
     }
 }
 
+#ifdef HAVE_BLE
+// Request LE connection parameter update
+int l2cap_le_request_connection_parameter_update(uint16_t handle, uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency, uint16_t timeout_multiplier){
+    if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)){
+        log_info("l2cap_send_signaling_packet, cannot send\n");
+        return BTSTACK_ACL_BUFFERS_FULL;
+    }
+    // log_info("l2cap_send_signaling_packet type %u\n", cmd);
+    uint8_t *acl_buffer = hci_get_outgoing_acl_packet_buffer();
+    uint16_t len = l2cap_le_create_connection_parameter_update_request(acl_buffer, handle, interval_min, interval_max, slave_latency, timeout_multiplier);
+    return hci_send_acl_packet(acl_buffer, len);
+}
+#endif
+
