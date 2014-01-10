@@ -155,7 +155,7 @@ extern "C" {
 
 // L2CAP EVENTS
 	
-// data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16), local_mtu(16), remote_mtu(16) 
+// data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16), local_mtu(16), remote_mtu(16), flush_timeout(16)
 #define L2CAP_EVENT_CHANNEL_OPENED                         0x70
 
 // data: event (8), len(8), channel (16)
@@ -256,12 +256,13 @@ extern "C" {
 #define L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_PSM       0x65
 #define L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY  0x66
 #define L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_RESOURCES 0x65
+#define L2CAP_CONNECTION_RESPONSE_RESULT_RTX_TIMEOUT       0x66
 
-#define L2CAP_CONFIG_RESPONSE_RESULT_SUCCESSFUL            0x66
-#define L2CAP_CONFIG_RESPONSE_RESULT_UNACCEPTABLE_PARAMS   0x67
-#define L2CAP_CONFIG_RESPONSE_RESULT_REJECTED              0x68
-#define L2CAP_CONFIG_RESPONSE_RESULT_UNKNOWN_OPTIONS       0x69
-#define L2CAP_SERVICE_ALREADY_REGISTERED                   0x6a
+#define L2CAP_CONFIG_RESPONSE_RESULT_SUCCESSFUL            0x67
+#define L2CAP_CONFIG_RESPONSE_RESULT_UNACCEPTABLE_PARAMS   0x68
+#define L2CAP_CONFIG_RESPONSE_RESULT_REJECTED              0x69
+#define L2CAP_CONFIG_RESPONSE_RESULT_UNKNOWN_OPTIONS       0x6a
+#define L2CAP_SERVICE_ALREADY_REGISTERED                   0x6b
     
 #define RFCOMM_MULTIPLEXER_STOPPED                         0x70
 #define RFCOMM_CHANNEL_ALREADY_REGISTERED                  0x71
