@@ -139,6 +139,8 @@ typedef struct {
     uint16_t  local_mtu;
     uint16_t  remote_mtu;
     
+    uint16_t  flush_timeout;    // default 0xffff
+
     uint16_t  psm;
     
     uint8_t   packets_granted;    // number of L2CAP/ACL packets client is allowed to send
