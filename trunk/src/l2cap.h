@@ -139,6 +139,8 @@ typedef struct {
     
     uint8_t   reason; // used in decline internal
     
+    timer_source_t rtx; // also used for ertx
+
     // client connection
     void * connection;
     
