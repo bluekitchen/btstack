@@ -924,6 +924,27 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                 rfcomm_multiplexer_finalize(multiplexer);
                 return 1;
             }
+            switch (packet[payload_offset]){
+                case BT_RFCOMM_CLD_CMD:
+                     // Multiplexer close down (CLD) -> close mutliplexer
+                    log_info("Received Multiplexer close down command\n");
+                    log_info("-> Closing down multiplexer\n");
+                    rfcomm_multiplexer_finalize(multiplexer);
+                    return 1;
+
+                case BT_RFCOMM_TEST_CMD: {
+                    log_info("Received test command");
+                    int len = packet[payload_offset+1] >> 1; // length < 125
+                    if (len > RFCOMM_TEST_DATA_MAX_LEN){
+                        len = RFCOMM_TEST_DATA_MAX_LEN;
+                    }
+                    multiplexer->test_data_len = len;
+                    memcpy(multiplexer->test_data, &packet[payload_offset + 3], len);
+                    return 1;
+                }
+                default:
+                    break;
+            }
             break;
 
         default:
@@ -1303,16 +1324,9 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     }
                     break;
 
-                case BT_RFCOMM_TEST_CMD: {
+                case BT_RFCOMM_RLS_CMD:
                     log_info("Received test command");
-                    int len = packet[length_offset]; // length < 125
-                    if (len > RFCOMM_TEST_DATA_MAX_LEN){
-                        len = RFCOMM_TEST_DATA_MAX_LEN;
-                    }
-                    multiplexer->test_data_len = len;
-                    memcpy(multiplexer->test_data, &packet[payload_offset], len);
                     break;
-                }
                     
                 default:
                     log_error("Received unknown UIH packet - 0x%02x\n", packet[payload_offset]); 
