@@ -224,6 +224,18 @@ static void rfcomm_emit_service_registered(void *connection, uint8_t status, uin
 	(*app_packet_handler)(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
+// static
+void rfcomm_emit_remote_line_status(rfcomm_channel_t *channel, uint8_t line_status){
+    log_info("RFCOMM_EVENT_REMOTE_LINE_STATUS cid 0x%02x c, line status 0x%x", channel->rfcomm_cid, line_status);
+    uint8_t event[5];
+    event[0] = RFCOMM_EVENT_REMOTE_LINE_STATUS;
+    event[1] = sizeof(event) - 2;
+    bt_store_16(event, 2, channel->rfcomm_cid);
+    event[4] = line_status;
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+}
+
 // MARK: RFCOMM MULTIPLEXER HELPER
 
 static uint16_t rfcomm_max_frame_size_for_l2cap_mtu(uint16_t l2cap_mtu){
@@ -914,17 +926,6 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
             }
             break;
 
-        case BT_RFCOMM_TEST_CMD: {
-            log_info("Received test command");
-            int len = packet[length_offset]; // length < 125
-            if (len > RFCOMM_TEST_DATA_MAX_LEN){
-                len = RFCOMM_TEST_DATA_MAX_LEN;
-            }
-            multiplexer->test_data_len = len;
-            memcpy(multiplexer->test_data, &packet[payload_offset], len);
-            return 1;
-        }
-
         default:
             break;
             
@@ -1301,6 +1302,17 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                             break;
                     }
                     break;
+
+                case BT_RFCOMM_TEST_CMD: {
+                    log_info("Received test command");
+                    int len = packet[length_offset]; // length < 125
+                    if (len > RFCOMM_TEST_DATA_MAX_LEN){
+                        len = RFCOMM_TEST_DATA_MAX_LEN;
+                    }
+                    multiplexer->test_data_len = len;
+                    memcpy(multiplexer->test_data, &packet[payload_offset], len);
+                    break;
+                }
                     
                 default:
                     log_error("Received unknown UIH packet - 0x%02x\n", packet[payload_offset]); 
