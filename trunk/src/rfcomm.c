@@ -522,27 +522,32 @@ static int rfcomm_send_dm_pf(rfcomm_multiplexer_t *multiplexer, uint8_t dlci){
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_DM_PF, 0, NULL, 0);
 }
 
+static int rfcomm_send_uih_fc_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t fcon) {
+    uint8_t address = (1 << 0) | (multiplexer->outgoing<< 1);
+    uint8_t payload[2]; 
+    uint8_t pos = 0;
+    payload[pos++] = fcon ? BT_RFCOMM_FCON_RSP : BT_RFCOMM_FCOFF_RSP;
+    payload[pos++] = 0 << 1 | 1;  // len
+    return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
+}
+
 // static int rfcomm_send_uih_test_cmd(rfcomm_multiplexer_t *multiplexer, uint8_t * data, uint16_t len) {
-//     int dlci = 0;
 //     uint8_t address = (1 << 0) | (multiplexer->outgoing << 1);
-//     uint8_t payload[3+len]; 
+//     uint8_t payload[2+len]; 
 //     uint8_t pos = 0;
 //     payload[pos++] = BT_RFCOMM_TEST_CMD;
 //     payload[pos++] = (len + 1) << 1 | 1;  // len
-//     payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
 //     memcpy(&payload[pos], data, len);
 //     pos += len;
 //     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 // }
 
 static int rfcomm_send_uih_test_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t * data, uint16_t len) {
-    int dlci = 0;
     uint8_t address = (1 << 0) | (multiplexer->outgoing << 1);
-    uint8_t payload[3+len]; 
+    uint8_t payload[2+len]; 
     uint8_t pos = 0;
     payload[pos++] = BT_RFCOMM_TEST_RSP;
     payload[pos++] = (len + 1) << 1 | 1;  // len
-    payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
     memcpy(&payload[pos], data, len);
     pos += len;
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
@@ -958,12 +963,12 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                     return 1;
 
                 case BT_RFCOMM_FCON_CMD:
-                    multiplexer->fcon = 1;
+                    multiplexer->fcon = 0x81;
                     break;
 
                 case BT_RFCOMM_FCOFF_CMD:
                     // TODO trigger send again
-                    multiplexer->fcon = 0;
+                    multiplexer->fcon = 0x80;
                     break;
 
                 case BT_RFCOMM_TEST_CMD: {
@@ -973,7 +978,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                         len = RFCOMM_TEST_DATA_MAX_LEN;
                     }
                     multiplexer->test_data_len = len;
-                    memcpy(multiplexer->test_data, &packet[payload_offset + 3], len);
+                    memcpy(multiplexer->test_data, &packet[payload_offset + 2], len);
                     return 1;
                 }
                 default:
@@ -1004,6 +1009,11 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
         return;
     }
 
+    if (multiplexer->fcon & 0x80){
+        multiplexer->fcon &= 0x01;
+        rfcomm_send_uih_fc_rsp(multiplexer, multiplexer->fcon);
+        return;
+    }
 
     switch (multiplexer->state) {
         case RFCOMM_MULTIPLEXER_SEND_SABM_0:
