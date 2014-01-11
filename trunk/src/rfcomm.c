@@ -1868,6 +1868,10 @@ int rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
         return RFCOMM_NO_OUTGOING_CREDITS;
     }
     
+    if ((channel->multiplexer-fcon & 1) == 0){
+        log_info("rfcomm_send_internal cid 0x%02x, aggregate flow off!\n", rfcomm_cid);
+        return RFCOMM_AGGREGATE_FLOW_OFF;
+    }
     // log_info("rfcomm_send_internal: len %u... outgoing credits %u, l2cap credit %us, granted %u\n",
     //        len, channel->credits_outgoing, channel->multiplexer->l2cap_credits, channel->packets_granted);
     
