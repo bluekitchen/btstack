@@ -258,6 +258,7 @@ static void rfcomm_multiplexer_initialize(rfcomm_multiplexer_t *multiplexer){
 
     multiplexer->state = RFCOMM_MULTIPLEXER_CLOSED;
     multiplexer->l2cap_credits = 0;
+    multiplexer->fcon = 1;
     multiplexer->send_dm_for_dlci = 0;
     multiplexer->max_frame_size = rfcomm_max_frame_size_for_l2cap_mtu(l2cap_max_mtu());
     multiplexer->test_data_len = 0;
@@ -955,6 +956,15 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                     log_info("-> Closing down multiplexer\n");
                     rfcomm_multiplexer_finalize(multiplexer);
                     return 1;
+
+                case BT_RFCOMM_FCON_CMD:
+                    multiplexer->fcon = 1;
+                    break;
+                    
+                case BT_RFCOMM_FCOFF_CMD:
+                    // TODO trigger send again
+                    multiplexer->fcon = 0;
+                    break;
 
                 case BT_RFCOMM_TEST_CMD: {
                     log_info("Received test command");
