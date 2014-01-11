@@ -197,6 +197,12 @@ extern "C" {
 // data: event(8), len(8), status (8), rfcomm server channel id (8) 
 #define RFCOMM_EVENT_PERSISTENT_CHANNEL                    0x86
     
+// data: event (8), len(8), rfcomm_cid (16), modem status (8)
+#define RFCOMM_EVENT_REMOTE_MODEM_STATUS                   0x87
+
+// data: event (8), len(8), rfcomm_cid (16), rpn_data_t (67)
+#define RFCOMM_EVENT_PORT_NEGOTIATION                      0x88
+
     
 // data: event(8), len(8), status(8), service_record_handle(32)
 #define SDP_SERVICE_REGISTERED                             0x90
