@@ -55,6 +55,59 @@ extern "C" {
 
 #define RFCOMM_RLS_STATUS_INVALID 0xff
 
+// Line Status
+#define LINE_STATUS_NO_ERROR       0x00
+#define LINE_STATUS_OVERRUN_ERROR  0x03
+#define LINE_STATUS_PARITY_ERORR   0x05
+#define LINE_STATUS_FRAMING_ERROR  0x09
+
+// Modem Status Flags
+#define MODEM_STATUS_FC   0x02
+#define MODEM_STATUS_RTC  0x04
+#define MODEM_STATUS_RTR  0x08
+#define MODEM_STATUS_IC   0x40
+#define MODEM_STATUS_DV   0x80
+
+typedef enum rpn_baud {
+    RPN_BAUD_2400 = 0,
+    RPN_BAUD_4800,
+    RPN_BAUD_7200,
+    RPN_BAUD_9600,
+    RPN_BAUD_19200,
+    RPN_BAUD_38400,
+    RPN_BAUD_57600,
+    RPN_BAUD_115200,
+    RPN_BAUD_230400
+} rpn_baud_t;
+
+typedef enum rpn_data_bits {
+    RPN_DATA_BITS_5 = 0,
+    RPN_DATA_BITS_6 = 0,
+    RPN_DATA_BITS_7 = 0,
+    RPN_DATA_BITS_8 = 0
+} rpn_data_bits_t;
+
+typedef enum rpn_stop_bits {
+    RPN_STOP_BITS_1_0 = 0,
+    RPN_STOP_BITS_1_5 
+} rpn_stop_bits_t;
+
+typedef enum rpn_parity {
+    RPN_PARITY_NONE  = 0,
+    RPN_PARITY_ODD   = 1,
+    RPN_PARITY_EVEN  = 3,
+    RPN_PARITY_MARK  = 5,
+    RPN_PARITY_SPACE = 7, 
+} rpn_parity_t;
+
+typedef enum rpn_flow_control {
+    RPN_FLOW_CONTROL_XONXOFF_ON_INPUT  = 1 << 0,
+    RPN_FLOW_CONTROL_XONXOFF_ON_OUTPUT = 1 << 1,
+    RPN_FLOW_CONTROL_RTR_ON_INPUT  = 1 << 2,
+    RPN_FLOW_CONTROL_RTR_ON_OUTPUT = 1 << 3,
+    RPN_FLOW_CONTROL_RTC_ON_INPUT  = 1 << 4,
+    RPN_FLOW_CONTROL_RTC_ON_OUTPUT = 1 << 5,
+} rpn_flow_control_t;
 
 // private structs
 typedef enum {
@@ -322,6 +375,15 @@ void rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits);
 
 // Sends RFCOMM data packet to the RFCOMM channel with given identifier.
 int  rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len);
+
+// Sends Local Lnie Status, see LINE_STATUS_..
+int rfcomm_send_local_line_status(uint16_t rfcomm_cid, uint8_t line_status);
+
+// Sned local modem status. see MODEM_STAUS_..
+int rfcomm_send_modem_status(uint16_t rfcomm_cid, uint8_t modem_status);
+
+// Configure remote port 
+int rfcomm_send_port_configuration(uint16_t rfcomm_cid, rpn_baud_t baud_rate, rpn_data_bits_t data_bits, rpn_stop_bits_t stop_bits, rpn_parity_t parity, rpn_flow_control_t flow_control);
 
 #if defined __cplusplus
 }
