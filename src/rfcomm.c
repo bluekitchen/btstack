@@ -967,7 +967,6 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                     break;
 
                 case BT_RFCOMM_FCOFF_CMD:
-                    // TODO trigger send again
                     multiplexer->fcon = 0x80;
                     break;
 
@@ -1012,6 +1011,15 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
     if (multiplexer->fcon & 0x80){
         multiplexer->fcon &= 0x01;
         rfcomm_send_uih_fc_rsp(multiplexer, multiplexer->fcon);
+        if (multiplexer->fcon == 0) return;
+        // trigger client to send again after sending FCon Response
+        uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0};
+        linked_item_t *it;
+        for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
+            rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
+            if (channel->multiplexer != multiplexer) continue;
+            (*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+        }
         return;
     }
 
@@ -1868,7 +1876,7 @@ int rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
         return RFCOMM_NO_OUTGOING_CREDITS;
     }
     
-    if ((channel->multiplexer-fcon & 1) == 0){
+    if ((channel->multiplexer->fcon & 1) == 0){
         log_info("rfcomm_send_internal cid 0x%02x, aggregate flow off!\n", rfcomm_cid);
         return RFCOMM_AGGREGATE_FLOW_OFF;
     }
