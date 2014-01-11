@@ -248,6 +248,7 @@ static void rfcomm_multiplexer_initialize(rfcomm_multiplexer_t *multiplexer){
     multiplexer->l2cap_credits = 0;
     multiplexer->send_dm_for_dlci = 0;
     multiplexer->max_frame_size = rfcomm_max_frame_size_for_l2cap_mtu(l2cap_max_mtu());
+    multiplexer->test_data_len = 0;
 }
 
 static rfcomm_multiplexer_t * rfcomm_multiplexer_create_for_addr(bd_addr_t *addr){
@@ -503,6 +504,32 @@ static int rfcomm_send_ua(rfcomm_multiplexer_t *multiplexer, uint8_t dlci){
 static int rfcomm_send_dm_pf(rfcomm_multiplexer_t *multiplexer, uint8_t dlci){
 	uint8_t address = (1 << 0) | ((multiplexer->outgoing ^ 1) << 1) | (dlci << 2); // response
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_DM_PF, 0, NULL, 0);
+}
+
+// static int rfcomm_send_uih_test_cmd(rfcomm_multiplexer_t *multiplexer, uint8_t * data, uint16_t len) {
+//     int dlci = 0;
+//     uint8_t address = (1 << 0) | (multiplexer->outgoing << 1);
+//     uint8_t payload[3+len]; 
+//     uint8_t pos = 0;
+//     payload[pos++] = BT_RFCOMM_TEST_CMD;
+//     payload[pos++] = len << 1 | 1;  // len
+//     payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
+//     memcpy(&payload[pos], data, len);
+//     pos += len;
+//     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
+// }
+
+static int rfcomm_send_uih_test_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t * data, uint16_t len) {
+    int dlci = 0;
+    uint8_t address = (1 << 0) | (multiplexer->outgoing << 1);
+    uint8_t payload[3+len]; 
+    uint8_t pos = 0;
+    payload[pos++] = BT_RFCOMM_TEST_RSP;
+    payload[pos++] = len << 1 | 1;  // len
+    payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
+    memcpy(&payload[pos], data, len);
+    pos += len;
+    return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
 
 static int rfcomm_send_uih_msc_cmd(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, uint8_t signals) {
@@ -886,7 +913,18 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                 return 1;
             }
             break;
-            
+
+        case BT_RFCOMM_TEST_CMD: {
+            log_info("Received test command");
+            int len = packet[length_offset]; // length < 125
+            if (len > RFCOMM_TEST_DATA_MAX_LEN){
+                len = RFCOMM_TEST_DATA_MAX_LEN;
+            }
+            multiplexer->test_data_len = len;
+            memcpy(multiplexer->test_data, &packet[payload_offset], len);
+            return 1;
+        }
+
         default:
             break;
             
@@ -900,6 +938,7 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
     if (multiplexer->send_dm_for_dlci){
         rfcomm_send_dm_pf(multiplexer, multiplexer->send_dm_for_dlci);
         multiplexer->send_dm_for_dlci = 0;
+        return;
     }
 
     switch (multiplexer->state) {
@@ -939,6 +978,22 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
                         log_info("TODO: no connections established - delete link key prophylactically\n");
                         // hci_send_cmd(&hci_delete_stored_link_key, multiplexer->remote_addr);
                     }
+                default:
+                    break;
+            }
+            break;
+        case RFCOMM_MULTIPLEXER_OPEN:
+            switch (event) {
+                case MULT_EV_READY_TO_SEND:
+                    // respond to test command
+                    if (multiplexer->test_data_len){
+                        int len = multiplexer->test_data_len;
+                        log_info("Sending TEST Response with %u bytes", len);
+                        multiplexer->test_data_len = 0;
+                        rfcomm_send_uih_test_rsp(multiplexer, multiplexer->test_data, len);
+                        return;
+                    }
+                    break;
                 default:
                     break;
             }
