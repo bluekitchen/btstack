@@ -201,6 +201,8 @@ typedef struct {
     uint16_t  l2cap_cid;
     uint8_t   l2cap_credits;
     
+    uint8_t   fcon; // don't send if fcon == 0
+
 	bd_addr_t remote_addr;
     hci_con_handle_t con_handle;
     
