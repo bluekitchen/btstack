@@ -1318,6 +1318,7 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
     rfcomm_channel_event_t event;
     rfcomm_channel_event_pn_t event_pn;
     rfcomm_channel_event_rpn_t event_rpn;
+    rfcomm_channel_event_msc_t event_msc;
 
     // switch by rfcomm message type
     switch(packet[1]) {
@@ -1375,7 +1376,8 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     
                 case BT_RFCOMM_MSC_CMD: 
                     message_dlci = packet[payload_offset+2] >> 2;
-                    event.type = CH_EVT_RCVD_MSC_CMD;
+                    event_msc.super.type = CH_EVT_RCVD_MSC_CMD;
+                    event_msc.modem_status = packet[payload_offset+3];
                     log_info("Received MSC CMD for #%u, \n", message_dlci);
                     rfcomm_channel_state_machine_2(multiplexer, message_dlci, &event);
                     break;
@@ -1540,6 +1542,12 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
         rfcomm_channel_event_rpn_t *event_rpn = (rfcomm_channel_event_rpn_t*) event;
         memcpy(&channel->rpn_data, &event_rpn->data, sizeof(rfcomm_rpn_data_t));
         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP);
+        // notify client about new settings
+        uint8_t event[2+sizeof(rfcomm_rpn_data_t)];
+        event[0] = RFCOMM_EVENT_PORT_NEGOTIATION;
+        event[1] = sizeof(rfcomm_rpn_data_t);
+        memcpy(&event[2], (uint8_t*) &event_rpn->data, sizeof(rfcomm_rpn_data_t));
+        (*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->rfcomm_cid, (uint8_t*)&event, sizeof(event));
         return;
     }
     
@@ -1569,6 +1577,18 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
         }
     }
     
+    // emit MSC status to app
+    if (event->type == CH_EVT_RCVD_MSC_CMD){
+        // notify client about new settings
+        rfcomm_channel_event_msc_t *event_msc = (rfcomm_channel_event_msc_t*) event;
+        uint8_t event[2+1];
+        event[0] = RFCOMM_EVENT_REMOTE_MODEM_STATUS;
+        event[1] = 1;
+        event[2] = event_msc->modem_status;
+        (*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->rfcomm_cid, (uint8_t*)&event, sizeof(event));
+        // no return, MSC_CMD will be handled by state machine below
+    }
+
     rfcomm_channel_event_pn_t * event_pn = (rfcomm_channel_event_pn_t*) event;
     
     switch (channel->state) {

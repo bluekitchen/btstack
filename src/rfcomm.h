@@ -215,6 +215,11 @@ typedef struct rfcomm_channel_event_rls {
     uint8_t line_status;
 } rfcomm_channel_event_rls_t;
 
+typedef struct rfcomm_channel_event_msc {
+    rfcomm_channel_event_t super;
+    uint8_t modem_status;
+} rfcomm_channel_event_msc_t;
+
 // info regarding potential connections
 typedef struct {
     // linked list - assert: first field
@@ -320,6 +325,9 @@ typedef struct {
     
     // rls line status. RFCOMM_RLS_STATUS_INVALID if not set
     uint8_t rls_line_status;
+
+    // msc modem status.
+    uint8_t msc_modem_status;
 
 	// server channel (see rfcomm_service_t) - NULL => outgoing channel
 	rfcomm_service_t * service;
