@@ -51,6 +51,8 @@ extern "C" {
     
 #define UNLIMITED_INCOMING_CREDITS 0xff
 
+#define RFCOMM_TEST_DATA_MAX_LEN 4
+
 // private structs
 typedef enum {
 	RFCOMM_MULTIPLEXER_CLOSED = 1,
@@ -194,13 +196,17 @@ typedef struct {
 	uint8_t   outgoing;
     
     // hack to deal with authentication failure only observed by remote side
-    uint8_t   at_least_one_connection;
+    uint8_t at_least_one_connection;
     
     uint16_t max_frame_size;
     
     // send DM for DLCI != 0
     uint8_t send_dm_for_dlci;
     
+    // test data - limited to RFCOMM_TEST_DATA_MAX_LEN
+    uint8_t test_data_len;
+    uint8_t test_data[RFCOMM_TEST_DATA_MAX_LEN];
+
 } rfcomm_multiplexer_t;
 
 // info regarding an actual coneection
