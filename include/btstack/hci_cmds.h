@@ -185,7 +185,7 @@ extern "C" {
 // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
 #define RFCOMM_EVENT_INCOMING_CONNECTION                   0x82
 	
-// data: event (8), len(8), rfcommid (16), ...
+// data: event (8), len(8), rfcomm_cid (16), line status (8)
 #define RFCOMM_EVENT_REMOTE_LINE_STATUS                    0x83
 	
 // data: event(8), len(8), rfcomm_cid(16), credits(8)
@@ -267,6 +267,7 @@ extern "C" {
 #define RFCOMM_MULTIPLEXER_STOPPED                         0x70
 #define RFCOMM_CHANNEL_ALREADY_REGISTERED                  0x71
 #define RFCOMM_NO_OUTGOING_CREDITS                         0x72
+#define RFCOMM_AGGREGATE_FLOW_OFF						   0x73
 
 #define SDP_HANDLE_ALREADY_REGISTERED                      0x80
 #define SDP_QUERY_INCOMPLETE                               0x81
