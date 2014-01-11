@@ -621,6 +621,17 @@ static int rfcomm_send_uih_pn_response(rfcomm_multiplexer_t *multiplexer, uint8_
 	return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
 
+static int rfcomm_send_uih_rls_cmd(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, uint8_t line_status) {
+    uint8_t address = (1 << 0) | (multiplexer->outgoing << 1);
+    uint8_t payload[4]; 
+    uint8_t pos = 0;
+    payload[pos++] = BT_RFCOMM_RLS_CMD;
+    payload[pos++] = 2 << 1 | 1;  // len
+    payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
+    payload[pos++] = line_status;
+    return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
+}
+
 static int rfcomm_send_uih_rls_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, uint8_t line_status) {
     uint8_t address = (1 << 0) | (multiplexer->outgoing << 1);
     uint8_t payload[4]; 
@@ -629,6 +640,23 @@ static int rfcomm_send_uih_rls_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t dl
     payload[pos++] = 2 << 1 | 1;  // len
     payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
     payload[pos++] = line_status;
+    return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
+}
+
+static int rfcomm_send_uih_rpn_cmd(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, rfcomm_rpn_data_t *rpn_data) {
+    uint8_t payload[10];
+    uint8_t address = (1 << 0) | (multiplexer->outgoing << 1); 
+    uint8_t pos = 0;
+    payload[pos++] = BT_RFCOMM_RPN_CMD;
+    payload[pos++] = 8 << 1 | 1;  // len
+    payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
+    payload[pos++] = rpn_data->baud_rate;
+    payload[pos++] = rpn_data->flags;
+    payload[pos++] = rpn_data->flow_control;
+    payload[pos++] = rpn_data->xon;
+    payload[pos++] = rpn_data->xoff;
+    payload[pos++] = rpn_data->parameter_mask_0;
+    payload[pos++] = rpn_data->parameter_mask_1;
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
 
@@ -1519,13 +1547,13 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
     if (event->type == CH_EVT_RCVD_RPN_REQ){
         // default rpn rsp
         rfcomm_rpn_data_t rpn_data;
-        rpn_data.baud_rate = 0xa0;        /* 9600 bps */
-        rpn_data.flags = 0x03;            /* 8-n-1 */
-        rpn_data.flow_control = 0;        /* no flow control */
-        rpn_data.xon  = 0xd1;             /* XON */
-        rpn_data.xoff = 0xd3;             /* XOFF */
-        rpn_data.parameter_mask_0 = 0x7f; /* parameter mask, all values set */
-        rpn_data.parameter_mask_1 = 0x3f; /* parameter mask, all values set */
+        rpn_data.baud_rate = RPN_BAUD_9600;  /* 9600 bps */
+        rpn_data.flags = 0x03;               /* 8-n-1 */
+        rpn_data.flow_control = 0;           /* no flow control */
+        rpn_data.xon  = 0xd1;                /* XON */
+        rpn_data.xoff = 0xd3;                /* XOFF */
+        rpn_data.parameter_mask_0 = 0x7f;    /* parameter mask, all values set */
+        rpn_data.parameter_mask_1 = 0x3f;    /* parameter mask, all values set */
         memcpy(&channel->rpn_data, &rpn_data, sizeof(rfcomm_rpn_data_t));
         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP);
         return;
@@ -1908,6 +1936,45 @@ int rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
     
     return result;
 }
+
+// Sends Local Lnie Status, see LINE_STATUS_..
+int rfcomm_send_local_line_status(uint16_t rfcomm_cid, uint8_t line_status){
+    rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
+    if (!channel){
+        log_error("rfcomm_send_local_line_status cid 0x%02x doesn't exist!\n", rfcomm_cid);
+        return 0;
+    }
+    return rfcomm_send_uih_rls_cmd(channel->multiplexer, channel->dlci, line_status);
+}
+
+// Sned local modem status. see MODEM_STAUS_..
+int rfcomm_send_modem_status(uint16_t rfcomm_cid, uint8_t modem_status){
+    rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
+    if (!channel){
+        log_error("rfcomm_send_modem_status cid 0x%02x doesn't exist!\n", rfcomm_cid);
+        return 0;
+    }
+    return rfcomm_send_uih_msc_cmd(channel->multiplexer, channel->dlci, modem_status);
+}
+
+// Configure remote port 
+int rfcomm_send_port_configuration(uint16_t rfcomm_cid, rpn_baud_t baud_rate, rpn_data_bits_t data_bits, rpn_stop_bits_t stop_bits, rpn_parity_t parity, rpn_flow_control_t flow_control){
+    rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
+    if (!channel){
+        log_error("rfcomm_send_modem_status cid 0x%02x doesn't exist!\n", rfcomm_cid);
+        return 0;
+    }
+    rfcomm_rpn_data_t rpn_data; 
+    rpn_data.baud_rate = baud_rate;
+    rpn_data.flags = data_bits | (stop_bits << 2) | (parity << 3);
+    rpn_data.flow_control = flow_control;
+    rpn_data.xon = 0;
+    rpn_data.xoff = 0;
+    rpn_data.parameter_mask_0 = 0x1f;   // all but xon/xoff
+    rpn_data.parameter_mask_1 = 0x3f;   // all flow control options
+    return rfcomm_send_uih_rpn_cmd(channel->multiplexer, channel->dlci, &rpn_data);
+}
+
 
 void rfcomm_create_channel2(void * connection, bd_addr_t *addr, uint8_t server_channel, uint8_t incoming_flow_control, uint8_t initial_credits){
     log_info("RFCOMM_CREATE_CHANNEL addr %s channel #%u flow control %u init credits %u\n",  bd_addr_to_str(*addr), server_channel,
