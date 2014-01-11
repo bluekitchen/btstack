@@ -53,6 +53,9 @@ extern "C" {
 
 #define RFCOMM_TEST_DATA_MAX_LEN 4
 
+#define RFCOMM_RLS_STATUS_INVALID 0xff
+
+
 // private structs
 typedef enum {
 	RFCOMM_MULTIPLEXER_CLOSED = 1,
@@ -118,6 +121,8 @@ typedef enum {
     CH_EVT_RCVD_DM,
     CH_EVT_RCVD_MSC_CMD,
     CH_EVT_RCVD_MSC_RSP,
+    CH_EVT_RCVD_RLS_CMD,
+    CH_EVT_RCVD_RLS_RSP,
     CH_EVT_RCVD_RPN_CMD,
     CH_EVT_RCVD_RPN_REQ,
     CH_EVT_RCVD_CREDITS,
@@ -150,6 +155,11 @@ typedef struct rfcomm_channel_event_rpn {
     rfcomm_channel_event_t super;
     rfcomm_rpn_data_t data;
 } rfcomm_channel_event_rpn_t;
+
+typedef struct rfcomm_channel_event_rls {
+    rfcomm_channel_event_t super;
+    uint8_t line_status;
+} rfcomm_channel_event_rls_t;
 
 // info regarding potential connections
 typedef struct {
@@ -249,6 +259,9 @@ typedef struct {
     // rpn data
     rfcomm_rpn_data_t rpn_data;
     
+    // rls line status. RFCOMM_RLS_STATUS_INVALID if not set
+    uint8_t rls_line_status;
+
 	// server channel (see rfcomm_service_t) - NULL => outgoing channel
 	rfcomm_service_t * service;
     

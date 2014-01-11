@@ -524,7 +524,7 @@ static int rfcomm_send_dm_pf(rfcomm_multiplexer_t *multiplexer, uint8_t dlci){
 //     uint8_t payload[3+len]; 
 //     uint8_t pos = 0;
 //     payload[pos++] = BT_RFCOMM_TEST_CMD;
-//     payload[pos++] = len << 1 | 1;  // len
+//     payload[pos++] = (len + 1) << 1 | 1;  // len
 //     payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
 //     memcpy(&payload[pos], data, len);
 //     pos += len;
@@ -537,7 +537,7 @@ static int rfcomm_send_uih_test_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t *
     uint8_t payload[3+len]; 
     uint8_t pos = 0;
     payload[pos++] = BT_RFCOMM_TEST_RSP;
-    payload[pos++] = len << 1 | 1;  // len
+    payload[pos++] = (len + 1) << 1 | 1;  // len
     payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
     memcpy(&payload[pos], data, len);
     pos += len;
@@ -600,6 +600,17 @@ static int rfcomm_send_uih_pn_response(rfcomm_multiplexer_t *multiplexer, uint8_
 	payload[pos++] = 0x00; // number of retransmissions
 	payload[pos++] = 0x00; // (unused error recovery window) initial number of credits
 	return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
+}
+
+static int rfcomm_send_uih_rls_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, uint8_t line_status) {
+    uint8_t address = (1 << 0) | (multiplexer->outgoing << 1);
+    uint8_t payload[4]; 
+    uint8_t pos = 0;
+    payload[pos++] = BT_RFCOMM_RLS_RSP;
+    payload[pos++] = 2 << 1 | 1;  // len
+    payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
+    payload[pos++] = line_status;
+    return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
 
 static int rfcomm_send_uih_rpn_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, rfcomm_rpn_data_t *rpn_data) {
@@ -1324,9 +1335,15 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     }
                     break;
 
-                case BT_RFCOMM_RLS_CMD:
-                    log_info("Received test command");
+                case BT_RFCOMM_RLS_CMD: {
+                    log_info("Received RLS command");
+                    message_dlci = packet[payload_offset+2] >> 2;
+                    rfcomm_channel_event_rls_t event_rls;
+                    event_rls.super.type = CH_EVT_RCVD_RLS_CMD;
+                    event_rls.line_status = packet[payload_offset+3];
+                    rfcomm_channel_state_machine_2(multiplexer, message_dlci, (rfcomm_channel_event_t*) &event_rls);
                     break;
+                }
                     
                 default:
                     log_error("Received unknown UIH packet - 0x%02x\n", packet[payload_offset]); 
@@ -1660,13 +1677,25 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                         rfcomm_channel_send_credits(channel, new_credits);
                         break;
                     }
+                    if (channel->rls_line_status != RFCOMM_RLS_STATUS_INVALID){
+                        uint8_t line_status = channel->rls_line_status;
+                        channel->rls_line_status = RFCOMM_RLS_STATUS_INVALID;
+                        rfcomm_send_uih_rls_rsp(multiplexer, channel->dlci, line_status);
+                        break;
+                    }
                     break;
                 case CH_EVT_RCVD_CREDITS: {
                     // notify daemon -> might trigger re-try of parked connections
                     uint8_t event[1] = { DAEMON_EVENT_NEW_RFCOMM_CREDITS };
                     (*app_packet_handler)(channel->connection, DAEMON_EVENT_PACKET, channel->rfcomm_cid, event, sizeof(event));
                     break;
-                }  
+                }
+                case CH_EVT_RCVD_RLS_CMD: {
+                    rfcomm_channel_event_rls_t * event_rls = (rfcomm_channel_event_rls_t*) event;
+                    channel->rls_line_status = event_rls->line_status & 0x0f;
+                    rfcomm_emit_remote_line_status(channel, event_rls->line_status);
+                    break; 
+                }
                 default:
                     break;
             }
