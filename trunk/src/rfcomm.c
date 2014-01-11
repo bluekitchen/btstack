@@ -960,7 +960,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                 case BT_RFCOMM_FCON_CMD:
                     multiplexer->fcon = 1;
                     break;
-                    
+
                 case BT_RFCOMM_FCOFF_CMD:
                     // TODO trigger send again
                     multiplexer->fcon = 0;
@@ -1724,7 +1724,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                     break;
                 case CH_EVT_RCVD_CREDITS: {
                     // notify daemon -> might trigger re-try of parked connections
-                    uint8_t event[1] = { DAEMON_EVENT_NEW_RFCOMM_CREDITS };
+                    uint8_t event[2] = { DAEMON_EVENT_NEW_RFCOMM_CREDITS, 0 };
                     (*app_packet_handler)(channel->connection, DAEMON_EVENT_PACKET, channel->rfcomm_cid, event, sizeof(event));
                     break;
                 }
