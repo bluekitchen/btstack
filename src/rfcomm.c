@@ -261,6 +261,7 @@ static void rfcomm_multiplexer_initialize(rfcomm_multiplexer_t *multiplexer){
     multiplexer->send_dm_for_dlci = 0;
     multiplexer->max_frame_size = rfcomm_max_frame_size_for_l2cap_mtu(l2cap_max_mtu());
     multiplexer->test_data_len = 0;
+    multiplexer->nsc_command = 0;
 }
 
 static rfcomm_multiplexer_t * rfcomm_multiplexer_create_for_addr(bd_addr_t *addr){
@@ -351,6 +352,8 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
     channel->new_credits_incoming  = 0x30;
     channel->incoming_flow_control = 0;
     
+    channel->rls_line_status = RFCOMM_RLS_STATUS_INVALID;
+
 	if (service) {
 		// incoming connection
 		channel->outgoing = 0;
@@ -564,6 +567,16 @@ static int rfcomm_send_uih_msc_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t dl
 	payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
 	payload[pos++] = signals;
 	return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
+}
+
+static int rfcomm_send_uih_nsc_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t command) {
+    uint8_t address = (1 << 0) | (multiplexer->outgoing<< 1);
+    uint8_t payload[3]; 
+    uint8_t pos = 0;
+    payload[pos++] = BT_RFCOMM_NSC_RSP;
+    payload[pos++] = 1 << 1 | 1;  // len
+    payload[pos++] = command;
+    return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
 
 static int rfcomm_send_uih_pn_command(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, uint16_t max_frame_size){
@@ -969,10 +982,18 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
     
     // process stored DM responses
     if (multiplexer->send_dm_for_dlci){
-        rfcomm_send_dm_pf(multiplexer, multiplexer->send_dm_for_dlci);
         multiplexer->send_dm_for_dlci = 0;
+        rfcomm_send_dm_pf(multiplexer, multiplexer->send_dm_for_dlci);
         return;
     }
+
+    if (multiplexer->nsc_command){
+        uint8_t command = multiplexer->nsc_command;
+        multiplexer->nsc_command = 0;
+        rfcomm_send_uih_nsc_rsp(multiplexer, command);
+        return;
+    }
+
 
     switch (multiplexer->state) {
         case RFCOMM_MULTIPLEXER_SEND_SABM_0:
@@ -1344,10 +1365,17 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     rfcomm_channel_state_machine_2(multiplexer, message_dlci, (rfcomm_channel_event_t*) &event_rls);
                     break;
                 }
-                    
-                default:
-                    log_error("Received unknown UIH packet - 0x%02x\n", packet[payload_offset]); 
+
+                // Following commands are handled by rfcomm_multiplexer_l2cap_packet_handler
+                // case BT_RFCOMM_TEST_CMD: 
+                // case BT_RFCOMM_FCOFF_CMD:
+                // case BT_RFCOMM_FCON_CMD: 
+                // everything else is an not supported command
+                default: {
+                    log_error("Received unknown UIH command packet - 0x%02x\n", packet[payload_offset]); 
+                    multiplexer->nsc_command = packet[payload_offset];
                     break;
+                }
             }
             break;
             

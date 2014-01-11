@@ -121,6 +121,7 @@ typedef enum {
     CH_EVT_RCVD_DM,
     CH_EVT_RCVD_MSC_CMD,
     CH_EVT_RCVD_MSC_RSP,
+    CH_EVT_RCVD_NSC_RSP,
     CH_EVT_RCVD_RLS_CMD,
     CH_EVT_RCVD_RLS_RSP,
     CH_EVT_RCVD_RPN_CMD,
@@ -213,6 +214,9 @@ typedef struct {
     // send DM for DLCI != 0
     uint8_t send_dm_for_dlci;
     
+    // non supportec command, 0 if not set
+    uint8_t nsc_command;
+
     // test data - limited to RFCOMM_TEST_DATA_MAX_LEN
     uint8_t test_data_len;
     uint8_t test_data[RFCOMM_TEST_DATA_MAX_LEN];
