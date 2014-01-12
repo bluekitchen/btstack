@@ -228,6 +228,9 @@ extern "C" {
 #define GATT_CHARACTERISTIC_QUERY_RESULT				   0xA4
 #define GATT_CHARACTERISTIC_QUERY_COMPLETE    			   0xA5
 
+// data: event(8), len(8), status (8), hci_handle (16), attribute_handle (16)
+#define ATT_HANDLE_VALUE_INDICATION_COMPLETE        	   0xAF
+
 // data: event(8), address_type(8), address (48), [number(32)]
 #define SM_JUST_WORKS_REQUEST							   0xb0
 #define SM_JUST_WORKS_CANCEL							   0xb1 
@@ -240,6 +243,8 @@ extern "C" {
 #define SM_IDENTITY_RESOLVING_SUCCEEDED  				   0xb8
 #define SM_AUTHORIZATION_REQUEST						   0xb9
 #define SM_AUTHORIZATION_RESULT							   0xba
+
+// ATT 
 
 // last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
 
@@ -278,6 +283,9 @@ extern "C" {
 #define SDP_HANDLE_ALREADY_REGISTERED                      0x80
 #define SDP_QUERY_INCOMPLETE                               0x81
  
+#define ATT_HANDLE_VALUE_INDICATION_IN_PORGRESS 		   0x90 
+#define ATT_HANDLE_VALUE_INDICATION_TIMEOUT				   0x91
+
 /**
  * Default INQ Mode
  */

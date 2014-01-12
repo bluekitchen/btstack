@@ -81,7 +81,30 @@ static uint8_t   att_request_buffer[28];
 static int       att_ir_central_device_db_index = -1;
 static int       att_ir_lookup_active = 0;
 
+static int       att_handle_value_indication_handle = 0;    
+static timer_source_t att_handle_value_indication_timer;
+
 static btstack_packet_handler_t att_client_packet_handler = NULL;
+
+
+static int att_handle_value_indication_notify_client(uint8_t status, uint16_t client_handle, uint16_t attribute_handle){
+    uint8_t event[7];
+    int pos = 0;
+    event[pos++] = ATT_HANDLE_VALUE_INDICATION_COMPLETE;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = status;
+    bt_store_16(event, pos, client_handle);
+    pos += 2;
+    bt_store_16(event, pos, attribute_handle);
+    pos += 2;
+    (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
+}
+
+static void att_handle_value_indication_timeout(timer_source_t *ts){
+    uint16_t att_handle = att_handle_value_indication_handle;
+    att_handle_value_indication_handle = 0;    
+    att_handle_value_indication_notify_client(ATT_HANDLE_VALUE_INDICATION_TIMEOUT, att_request_handle, att_handle);
+}
 
 static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     
@@ -255,6 +278,15 @@ static void att_run(void){
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
     if (packet_type != ATT_DATA_PACKET) return;
 
+    // handle value indication confirms
+    if (packet[0] == ATT_HANDLE_VALUE_CONFIRMATION && att_handle_value_indication_handle){
+        run_loop_remove_timer(&att_handle_value_indication_timer);
+        uint16_t att_handle = att_handle_value_indication_handle;
+        att_handle_value_indication_handle = 0;    
+        att_handle_value_indication_notify_client(0, att_request_handle, att_handle);
+        return;
+    }
+
     // check size
     if (size > sizeof(att_request_buffer)) return;
 
@@ -292,14 +324,24 @@ int  att_server_can_send(){
 	return hci_can_send_packet_now(HCI_ACL_DATA_PACKET);
 }
 
-void att_server_notify(uint16_t handle, uint8_t *value, uint16_t value_len){
+int att_server_notify(uint16_t handle, uint8_t *value, uint16_t value_len){
     uint8_t packet_buffer[att_connection.mtu];
     uint16_t size = att_prepare_handle_value_notification(&att_connection, handle, value, value_len, packet_buffer);
-	l2cap_send_connectionless(att_request_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, packet_buffer, size);
+	return l2cap_send_connectionless(att_request_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, packet_buffer, size);
 }
 
-void att_server_indicate(uint16_t handle, uint8_t *value, uint16_t value_len){
+int att_server_indicate(uint16_t handle, uint8_t *value, uint16_t value_len){
+    if (att_handle_value_indication_handle) return ATT_HANDLE_VALUE_INDICATION_IN_PORGRESS;
+    if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) return BTSTACK_ACL_BUFFERS_FULL;
+
+    // track indication
+    att_handle_value_indication_handle = handle;
+    run_loop_set_timer_handler(&att_handle_value_indication_timer, att_handle_value_indication_timeout);
+    run_loop_set_timer(&att_handle_value_indication_timer, ATT_TRANSACTION_TIMEOUT_MS);
+    run_loop_add_timer(&att_handle_value_indication_timer);
+
     uint8_t packet_buffer[att_connection.mtu];
     uint16_t size = att_prepare_handle_value_indication(&att_connection, handle, value, value_len, packet_buffer);
 	l2cap_send_connectionless(att_request_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, packet_buffer, size);
+    return 0;
 }

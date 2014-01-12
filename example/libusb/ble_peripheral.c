@@ -83,11 +83,27 @@ static void  heartbeat_handler(struct timer *ts){
 } 
 
 static void app_run(){
-    if (!client_configuration || !update_client) return;
+    if (!update_client) return;
     if (!att_server_can_send()) return;
-    printf("Notify value %u\n", counter);
+
+    int result = -1;
+    switch (client_configuration){
+        case 0x01:
+            printf("Notify value %u\n", counter);
+            result = att_server_notify(0x0f, &counter, 1);
+            break;
+        case 0x02:
+            printf("Indicate value %u\n", counter);
+            result = att_server_indicate(0x0f, &counter, 1);
+            break;
+        default:
+            return;
+    }        
+    if (result){
+        printf("Error 0x%02x\n", result);
+        return;        
+    }
     update_client = 0;
-    att_server_notify(0x0f, &counter, 1);
 }
 
 // write requests
@@ -177,6 +193,10 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     sm_authorization_grant(event->addr_type, event->address);
                     break;
                 }
+                case ATT_HANDLE_VALUE_INDICATION_COMPLETE:
+                    printf("ATT_HANDLE_VALUE_INDICATION_COMPLETE status %u\n", packet[2]);
+                    break;
+
                 default:
                     break;
             }
