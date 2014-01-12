@@ -107,7 +107,7 @@ static void  heartbeat_handler(struct timer *ts){
         puts(lineBuffer);
         int err = rfcomm_send_internal(rfcomm_channel_id, (uint8_t*) lineBuffer, strlen(lineBuffer));
         if (err) {
-            log_error("rfcomm_send_internal -> error %d", err);
+            log_error("rfcomm_send_internal -> error 0X%02x", err);
         }
     }
     

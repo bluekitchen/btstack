@@ -1952,22 +1952,22 @@ int rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
-        log_error("rfcomm_send_internal cid 0x%02x doesn't exist!\n", rfcomm_cid);
+        log_error("rfcomm_send_internal cid 0x%02x doesn't exist!", rfcomm_cid);
         return 0;
     }
     
     if (!channel->credits_outgoing){
-        log_info("rfcomm_send_internal cid 0x%02x, no rfcomm outgoing credits!\n", rfcomm_cid);
+        log_info("rfcomm_send_internal cid 0x%02x, no rfcomm outgoing credits!", rfcomm_cid);
         return RFCOMM_NO_OUTGOING_CREDITS;
     }
 
     if (!channel->packets_granted){
-        log_info("rfcomm_send_internal cid 0x%02x, no rfcomm credits granted!\n", rfcomm_cid);
+        log_info("rfcomm_send_internal cid 0x%02x, no rfcomm credits granted!", rfcomm_cid);
         return RFCOMM_NO_OUTGOING_CREDITS;
     }
     
     if ((channel->multiplexer->fcon & 1) == 0){
-        log_info("rfcomm_send_internal cid 0x%02x, aggregate flow off!\n", rfcomm_cid);
+        log_info("rfcomm_send_internal cid 0x%02x, aggregate flow off!", rfcomm_cid);
         return RFCOMM_AGGREGATE_FLOW_OFF;
     }
     // log_info("rfcomm_send_internal: len %u... outgoing credits %u, l2cap credit %us, granted %u\n",
