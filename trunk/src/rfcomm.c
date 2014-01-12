@@ -242,6 +242,7 @@ void rfcomm_emit_port_configuration(rfcomm_channel_t *channel){
     event[0] = RFCOMM_EVENT_PORT_CONFIGURATION;
     event[1] = sizeof(rfcomm_rpn_data_t);
     memcpy(&event[2], (uint8_t*) &channel->rpn_data, sizeof(rfcomm_rpn_data_t));
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     (*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->rfcomm_cid, (uint8_t*)&event, sizeof(event));
 }
 
