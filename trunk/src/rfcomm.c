@@ -1438,7 +1438,7 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     event_msc.super.type = CH_EVT_RCVD_MSC_CMD;
                     event_msc.modem_status = packet[payload_offset+3];
                     log_info("Received MSC CMD for #%u, \n", message_dlci);
-                    rfcomm_channel_state_machine_2(multiplexer, message_dlci, &event);
+                    rfcomm_channel_state_machine_2(multiplexer, message_dlci, &event_msc);
                     break;
                     
                 case BT_RFCOMM_MSC_RSP:
