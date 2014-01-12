@@ -73,8 +73,8 @@ extern "C" {
 #define ATT_EXECUTE_WRITE_RESPONSE      0x19
 
 #define ATT_HANDLE_VALUE_NOTIFICATION   0x1b
-#define ATT_HANDLE_VALUE_CONFIRMATION   0x1c
 #define ATT_HANDLE_VALUE_INDICATION     0x1d
+#define ATT_HANDLE_VALUE_CONFIRMATION   0x1e
 
 
 #define ATT_WRITE_COMMAND               0x52
@@ -120,6 +120,14 @@ extern "C" {
 #define ATT_PROPERTY_AUTHORIZATION_REQUIRED  0x800
 // Encryption key size stored in upper 4 bits, 0 == no encryption, encryption key size - 1 otherwise
 
+// ATT Transaxtion Timeout of 30 seconds for Command/Response or Incidationc/Confirmation
+#define ATT_TRANSACTION_TIMEOUT_MS     30000
+
+#define ATT_TRANSACTION_MODE_NONE      0x0
+#define ATT_TRANSACTION_MODE_ACTIVE    0x1
+#define ATT_TRANSACTION_MODE_EXECUTE   0x2
+#define ATT_TRANSACTION_MODE_CANCEL    0x3
+
 // MARK: GATT UUIDs
 #define GATT_PRIMARY_SERVICE_UUID      0x2800
 #define GATT_SECONDARY_SERVICE_UUID    0x2801
@@ -129,10 +137,6 @@ extern "C" {
 #define GAP_SERVICE_UUID               0x1800
 #define GAP_DEVICE_NAME_UUID           0x2a00
 
-#define ATT_TRANSACTION_MODE_NONE      0x0
-#define ATT_TRANSACTION_MODE_ACTIVE    0x1
-#define ATT_TRANSACTION_MODE_EXECUTE   0x2
-#define ATT_TRANSACTION_MODE_CANCEL    0x3
 
 typedef struct att_connection {
     uint16_t mtu;

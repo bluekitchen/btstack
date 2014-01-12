@@ -65,13 +65,15 @@ int  att_server_can_send();
 
 /*
  * @brief notify client about attribute value change
+ * @ereturns 0 if ok, error otherwise
  */
-void att_server_notify(uint16_t handle, uint8_t *value, uint16_t value_len);
+int att_server_notify(uint16_t handle, uint8_t *value, uint16_t value_len);
 
 /*
  * @brief indicate value change to client. client is supposed to reply with an indication_response
+ * @ereturns 0 if ok, error otherwise
  */
-void att_server_indicate(uint16_t handle, uint8_t *value, uint16_t value_len);
+int att_server_indicate(uint16_t handle, uint8_t *value, uint16_t value_len);
 
 #if defined __cplusplus
 }
