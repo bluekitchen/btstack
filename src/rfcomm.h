@@ -320,7 +320,7 @@ typedef struct {
 	// negotiated frame size
     uint16_t max_frame_size;
 	
-    // rpn data
+    // local rpn data
     rfcomm_rpn_data_t rpn_data;
     
     // rls line status. RFCOMM_RLS_STATUS_INVALID if not set

@@ -360,6 +360,9 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
     channel->credits_outgoing = 0;
     channel->packets_granted  = 0;
 
+    // set defaults for port configuration (even for services)
+    rfcomm_rpn_data_set_defaults(&channel->rpn_data);
+
     // incoming flow control not active
     channel->new_credits_incoming  = 0x30;
     channel->incoming_flow_control = 0;
@@ -379,6 +382,7 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
 		// outgoing connection
 		channel->outgoing = 1;
 		channel->dlci = (server_channel << 1) | (multiplexer->outgoing ^ 1);
+
 	}
 }
 
@@ -1564,8 +1568,9 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
 
     // TODO: integrate in common switch
     if (event->type == CH_EVT_RCVD_RPN_REQ){
-        // default rpn rsp
-        rfcomm_rpn_data_set_defaults(&channel->rpn_data);
+        // all values are valid
+        channel->rpn_data->parameter_mask_0 = 0x7f;
+        channel->rpn_data->parameter_mask_1 = 0x3f;
         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP);
         return;
     }
