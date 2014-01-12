@@ -236,6 +236,17 @@ void rfcomm_emit_remote_line_status(rfcomm_channel_t *channel, uint8_t line_stat
     (*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
+// MARK RFCOMM RPN DATA HELPER
+static void rfcomm_rpn_data_set_defaults(rfcomm_rpn_data_t * rpn_data){
+        rpn_data->baud_rate = RPN_BAUD_9600;  /* 9600 bps */
+        rpn_data->flags = 0x03;               /* 8-n-1 */
+        rpn_data->flow_control = 0;           /* no flow control */
+        rpn_data->xon  = 0xd1;                /* XON */
+        rpn_data->xoff = 0xd3;                /* XOFF */
+        rpn_data->parameter_mask_0 = 0x7f;    /* parameter mask, all values set */
+        rpn_data->parameter_mask_1 = 0x3f;    /* parameter mask, all values set */
+}    
+
 // MARK: RFCOMM MULTIPLEXER HELPER
 
 static uint16_t rfcomm_max_frame_size_for_l2cap_mtu(uint16_t l2cap_mtu){
@@ -1550,19 +1561,11 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
         (*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->rfcomm_cid, (uint8_t*)&event, sizeof(event));
         return;
     }
-    
+
     // TODO: integrate in common switch
     if (event->type == CH_EVT_RCVD_RPN_REQ){
         // default rpn rsp
-        rfcomm_rpn_data_t rpn_data;
-        rpn_data.baud_rate = RPN_BAUD_9600;  /* 9600 bps */
-        rpn_data.flags = 0x03;               /* 8-n-1 */
-        rpn_data.flow_control = 0;           /* no flow control */
-        rpn_data.xon  = 0xd1;                /* XON */
-        rpn_data.xoff = 0xd3;                /* XOFF */
-        rpn_data.parameter_mask_0 = 0x7f;    /* parameter mask, all values set */
-        rpn_data.parameter_mask_1 = 0x3f;    /* parameter mask, all values set */
-        memcpy(&channel->rpn_data, &rpn_data, sizeof(rfcomm_rpn_data_t));
+        rfcomm_rpn_data_set_defaults(&channel->rpn_data);
         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP);
         return;
     }
