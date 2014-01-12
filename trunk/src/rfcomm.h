@@ -109,6 +109,26 @@ typedef enum rpn_flow_control {
     RPN_FLOW_CONTROL_RTC_ON_OUTPUT = 1 << 5,
 } rpn_flow_control_t;
 
+#define RPN_PARAM_MASK_0_BAUD             0x01
+#define RPN_PARAM_MASK_0_DATA_BITS        0x02
+#define RPN_PARAM_MASK_0_STOP_BITS        0x04
+#define RPN_PARAM_MASK_0_PARITY           0x08       
+#define RPN_PARAM_MASK_0_PARITY_TYPE      0x10
+#define RPN_PARAM_MASK_0_XON_CHAR         0x20
+#define RPN_PARAM_MASK_0_XOFF_CHAR        0x40
+#define RPN_PARAM_MASK_0_RESERVED         0x80
+
+// @note: values are identical to rpn_flow_control_t
+#define RPN_PARAM_MASK_1_XONOFF_ON_INPUT  0x01
+#define RPN_PARAM_MASK_1_XONOFF_ON_OUTPUT 0x02
+#define RPN_PARAM_MASK_1_RTR_ON_INPUT     0x04
+#define RPN_PARAM_MASK_1_RTR_ON_OUTPUT    0x08       
+#define RPN_PARAM_MASK_1_RTC_ON_INPUT     0x10
+#define RPN_PARAM_MASK_1_RTC_ON_OUTPUT    0x20
+#define RPN_PARAM_MASK_1_RESERVED_0       0x40
+#define RPN_PARAM_MASK_1_RESERVED_1       0x80
+
+
 // private structs
 typedef enum {
 	RFCOMM_MULTIPLEXER_CLOSED = 1,

@@ -201,7 +201,7 @@ extern "C" {
 #define RFCOMM_EVENT_REMOTE_MODEM_STATUS                   0x87
 
 // data: event (8), len(8), rfcomm_cid (16), rpn_data_t (67)
-#define RFCOMM_EVENT_PORT_NEGOTIATION                      0x88
+#define RFCOMM_EVENT_PORT_CONFIGURATION                    0x88
 
     
 // data: event(8), len(8), status(8), service_record_handle(32)

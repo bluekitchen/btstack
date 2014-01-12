@@ -236,6 +236,15 @@ void rfcomm_emit_remote_line_status(rfcomm_channel_t *channel, uint8_t line_stat
     (*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
+void rfcomm_emit_port_configuration(rfcomm_channel_t *channel){
+    // notify client about new settings
+    uint8_t event[2+sizeof(rfcomm_rpn_data_t)];
+    event[0] = RFCOMM_EVENT_PORT_CONFIGURATION;
+    event[1] = sizeof(rfcomm_rpn_data_t);
+    memcpy(&event[2], (uint8_t*) &channel->rpn_data, sizeof(rfcomm_rpn_data_t));
+    (*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->rfcomm_cid, (uint8_t*)&event, sizeof(event));
+}
+
 // MARK RFCOMM RPN DATA HELPER
 static void rfcomm_rpn_data_set_defaults(rfcomm_rpn_data_t * rpn_data){
         rpn_data->baud_rate = RPN_BAUD_9600;  /* 9600 bps */
@@ -247,6 +256,39 @@ static void rfcomm_rpn_data_set_defaults(rfcomm_rpn_data_t * rpn_data){
         rpn_data->parameter_mask_1 = 0x3f;    /* parameter mask, all values set */
 }    
 
+static void rfcomm_rpn_data_update(rfcomm_rpn_data_t * dest, rfcomm_rpn_data_t * src){
+    if (src->parameter_mask_0 & RPN_PARAM_MASK_0_BAUD){
+        dest->baud_rate = src->baud_rate;        
+    }
+    if (src->parameter_mask_0 & RPN_PARAM_MASK_0_DATA_BITS){
+        dest->flags = (dest->flags & 0xfc) | (src->flags & 0x03);
+    }
+    if (src->parameter_mask_0 & RPN_PARAM_MASK_0_STOP_BITS){
+        dest->flags = (dest->flags & 0xfb) | (src->flags & 0x04);
+    }
+    if (src->parameter_mask_0 & RPN_PARAM_MASK_0_PARITY){
+        dest->flags = (dest->flags & 0xf7) | (src->flags & 0x08);
+    }
+    if (src->parameter_mask_0 & RPN_PARAM_MASK_0_PARITY_TYPE){
+        dest->flags = (dest->flags & 0xfc) | (src->flags & 0x30);
+    }
+    if (src->parameter_mask_0 & RPN_PARAM_MASK_0_XON_CHAR){
+        dest->xon = src->xon;
+    }
+    if (src->parameter_mask_0 & RPN_PARAM_MASK_0_XOFF_CHAR){
+        dest->xoff = src->xoff;
+    }
+    int i;
+    for (i=0; i < 6 ; i++){
+        uint8_t mask = 1 << i;
+        if (src->parameter_mask_1 & mask){
+            dest->flags = (dest->flags & ~mask) | (src->flags & mask); 
+        }
+    }
+    // always copy parameter mask, too. informative for client, needed for response
+    dest->parameter_mask_0 = src->parameter_mask_0;
+    dest->parameter_mask_1 = src->parameter_mask_1;
+}
 // MARK: RFCOMM MULTIPLEXER HELPER
 
 static uint16_t rfcomm_max_frame_size_for_l2cap_mtu(uint16_t l2cap_mtu){
@@ -1170,6 +1212,7 @@ static void rfcomm_channel_opened(rfcomm_channel_t *rfChannel){
     
     rfChannel->state = RFCOMM_CHANNEL_OPEN;
     rfcomm_emit_channel_opened(rfChannel, 0);
+    rfcomm_emit_port_configuration(rfChannel);
     rfcomm_hand_out_credits();
 
     // remove (potential) timer
@@ -1408,20 +1451,14 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     message_dlci = packet[payload_offset+2] >> 2;
                     switch (message_len){
                         case 1:
-                            log_info("Received Remote Port Negotiation for #%u\n", message_dlci);
+                            log_info("Received Remote Port Negotiation Request for #%u\n", message_dlci);
                             event.type = CH_EVT_RCVD_RPN_REQ;
                             rfcomm_channel_state_machine_2(multiplexer, message_dlci, &event);
                             break;
                         case 8:
-                            log_info("Received Remote Port Negotiation (Info) for #%u\n", message_dlci);
+                            log_info("Received Remote Port Negotiation Update for #%u\n", message_dlci);
                             event_rpn.super.type = CH_EVT_RCVD_RPN_CMD;
-                            event_rpn.data.baud_rate = packet[payload_offset+3];
-                            event_rpn.data.flags = packet[payload_offset+4];
-                            event_rpn.data.flow_control = packet[payload_offset+5];
-                            event_rpn.data.xon  = packet[payload_offset+6];
-                            event_rpn.data.xoff = packet[payload_offset+7];
-                            event_rpn.data.parameter_mask_0 = packet[payload_offset+8];
-                            event_rpn.data.parameter_mask_1 = packet[payload_offset+9];
+                            event_rpn.data = *(rfcomm_rpn_data_t*) &packet[payload_offset+3];
                             rfcomm_channel_state_machine_2(multiplexer, message_dlci, (rfcomm_channel_event_t*) &event_rpn);
                             break;
                         default:
@@ -1555,14 +1592,10 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
     if (event->type == CH_EVT_RCVD_RPN_CMD){
         // control port parameters
         rfcomm_channel_event_rpn_t *event_rpn = (rfcomm_channel_event_rpn_t*) event;
-        memcpy(&channel->rpn_data, &event_rpn->data, sizeof(rfcomm_rpn_data_t));
+        rfcomm_rpn_data_update(&channel->rpn_data, &event_rpn->data);
         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP);
         // notify client about new settings
-        uint8_t event[2+sizeof(rfcomm_rpn_data_t)];
-        event[0] = RFCOMM_EVENT_PORT_NEGOTIATION;
-        event[1] = sizeof(rfcomm_rpn_data_t);
-        memcpy(&event[2], (uint8_t*) &event_rpn->data, sizeof(rfcomm_rpn_data_t));
-        (*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->rfcomm_cid, (uint8_t*)&event, sizeof(event));
+        rfcomm_emit_port_configuration(channel);
         return;
     }
 
