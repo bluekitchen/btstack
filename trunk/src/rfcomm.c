@@ -602,9 +602,12 @@ static int rfcomm_send_uih_fc_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t fco
 
 static int rfcomm_send_uih_test_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t * data, uint16_t len) {
     uint8_t address = (1 << 0) | (multiplexer->outgoing << 1);
-    uint8_t payload[2+len]; 
+    uint8_t payload[2+RFCOMM_TEST_DATA_MAX_LEN]; 
     uint8_t pos = 0;
     payload[pos++] = BT_RFCOMM_TEST_RSP;
+    if (len > RFCOMM_TEST_DATA_MAX_LEN) {
+        len = RFCOMM_TEST_DATA_MAX_LEN;
+    }
     payload[pos++] = (len + 1) << 1 | 1;  // len
     memcpy(&payload[pos], data, len);
     pos += len;
