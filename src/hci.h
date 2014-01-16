@@ -321,6 +321,7 @@ typedef struct {
     
     uint8_t   discoverable;
     uint8_t   connectable;
+    uint8_t   bondable;
     
     /* buffer for scan enable cmd - 0xff no change */
     uint8_t   new_scan_enable_value;
