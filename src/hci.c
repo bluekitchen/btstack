@@ -1770,11 +1770,18 @@ gap_security_level_t gap_security_level(hci_con_handle_t con_handle){
  * @result GAP_AUTHENTICATION_RESULT
  */
 void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_t level){
-    hci_connection_t * connection = hci_connection_for_handle(con_handle);
-    if (!connection){
-        hci_emit_security_level(con_handle, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, LEVEL_0);
-        return;
-    }
-    //
-
+    // hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    // if (!connection){
+    //     hci_emit_security_level(con_handle, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, LEVEL_0);
+    //     return;
+    // }
+    // gap_security_level_t current_level = gap_security_level(con_handle);
+    // if (ggap_security_level_t >= level){
+    //     hci_emit_security_level(con_handle, 0, gap_security_level_t);
+    //     return;
+    // }
+    // connection->bonding_flags |= 
+    
+    // magic!
+    hci_emit_security_level(con_handle, 0, level);
 }
