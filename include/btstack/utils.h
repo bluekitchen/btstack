@@ -58,10 +58,15 @@ typedef uint16_t hci_con_handle_t;
 typedef uint8_t bd_addr_t[BD_ADDR_LEN];
 
 /**
- * @brief The link key type
+ * @brief link key and its type
  */
 #define LINK_KEY_LEN 16
 typedef uint8_t link_key_t[LINK_KEY_LEN]; 
+
+typedef enum {
+	LINK_KEY_TYPE_UNAUTHENTICATED,
+	LINK_KEY_TYPE_AUTHENTICATD,
+} link_key_type_t;
 
 /**
  * @brief 128 bit key used with AES128 in Security Manager
