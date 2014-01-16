@@ -131,6 +131,19 @@ int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr){
 }
 #endif
 
+
+// treat standard pairing as Authenticated as it uses a PIN
+int is_authenticated_link_key(link_key_type_t link_key_type){
+    switch (link_key_type){
+        case COMBINATION_KEY:
+        case AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P192:
+        case AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256:
+            return 1;
+        default:
+            return 0;
+    }
+}
+
 /*  
  * CRC (reversed crc) lookup table as calculated by the table generator in ETSI TS 101 369 V6.3.0.
  */

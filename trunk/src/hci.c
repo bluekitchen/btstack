@@ -645,15 +645,22 @@ static void event_handler(uint8_t *packet, int size){
             // request handled by hci_run() as HANDLE_LINK_KEY_REQUEST gets set
             return;
             
-        case HCI_EVENT_LINK_KEY_NOTIFICATION:
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_NOTIFICATION);
-            if (!hci_stack.remote_device_db) break;
+        case HCI_EVENT_LINK_KEY_NOTIFICATION: {
             bt_flip_addr(addr, &packet[2]);
-            // @TODO determine link key type
-            hci_stack.remote_device_db->put_link_key(&addr, (link_key_t *) &packet[8], LINK_KEY_TYPE_UNAUTHENTICATED);
+            conn = connection_for_address(addr);
+            if (!conn) break;
+            conn->authentication_flags |= RECV_LINK_KEY_NOTIFICATION;
+            link_key_type_t link_key_type = packet[24];
+            // Change Connection Encryption keeps link key type
+            if (link_key_type != CHANGED_COMBINATION_KEY){
+                conn->link_key_type = link_key_type;
+            }
+            if (!hci_stack.remote_device_db) break;
+            hci_stack.remote_device_db->put_link_key(&addr, (link_key_t *) &packet[8], conn->link_key_type);
             // still forward event to allow dismiss of pairing dialog
             break;
-            
+        }
+
         case HCI_EVENT_PIN_CODE_REQUEST:
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_PIN_CODE_REQUEST);
             // non-bondable mode: pin code negative reply will be sent
@@ -1224,10 +1231,8 @@ void hci_run(){
             link_key_type_t link_key_type;
             log_info("responding to link key request\n");
             if ( hci_stack.bondable && hci_stack.remote_device_db && hci_stack.remote_device_db->get_link_key( &connection->address, &link_key, &link_key_type)){
+               connection->link_key_type = link_key_type;
                hci_send_cmd(&hci_link_key_request_reply, connection->address, &link_key);
-               if (link_key_type == LINK_KEY_TYPE_AUTHENTICATED){
-                    connectionSetAuthenticationFlags(connection, HAVE_AUTHENTICATED_LINK_KEY);
-               }
             } else {
                hci_send_cmd(&hci_link_key_request_negative_reply, connection->address);
             }
@@ -1526,13 +1531,6 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     if (IS_COMMAND(packet, hci_link_key_request_negative_reply)){
         hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_LINK_KEY_NEGATIVE_REQUEST);
     }
-    // Link key generated from PIN implies MITM protecion and authentication
-    if (IS_COMMAND(packet, hci_pin_code_request_reply)){
-        hci_add_connection_flags_for_flipped_bd_addr(&packet[3], HAVE_AUTHENTICATED_LINK_KEY);
-    }
-    // if (IS_COMMAND(packet, hci_pin_code_request_negative_reply)){
-    //     hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_PIN_CODE_NEGATIVE_REPLY);
-    // }
     
     if (IS_COMMAND(packet, hci_delete_stored_link_key)){
         if (hci_stack.remote_device_db){
