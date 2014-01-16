@@ -40,6 +40,34 @@
 extern "C" {
 #endif
 
+typedef enum {
+
+	// MITM protection not required
+	// No encryption required
+	// No user interaction required
+	LEVEL_0 = 0,
+
+	// MITM protection not required
+	// No encryption required
+	// Minimal user interaction desired
+	LEVEL_1,
+
+	// MITM protection not required
+	// Encryption required
+	LEVEL_2,
+
+	// MITM protection required
+	// Encryption required
+	// User interaction acceptable
+	LEVEL_3,
+
+	// MITM protection required
+	// Encryption required
+	// 128-bit equivalent strength for link and encryption keys required
+	// User interaction acceptable
+	LEVEL_4,	
+} gap_security_level_t;
+
 /**
  * @bbrief enable/disable bonding. default is enabled
  * @praram enabled

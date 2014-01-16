@@ -1691,3 +1691,17 @@ void hci_emit_discoverable_enabled(uint8_t enabled){
 void gap_set_bondable_mode(int enable){
     hci_stack.bondable = enable ? 1 : 0;
 }
+
+/**
+ * @brief get current security level
+ */
+gap_security_level_t gap_security_level(hci_con_handle_t con_handle){
+    return LEVEL_0;
+}
+
+/**
+ * @brief request connection to device to
+ * @result GAP_AUTHENTICATION_RESULT
+ */
+void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_t level){
+}
