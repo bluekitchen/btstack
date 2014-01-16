@@ -44,7 +44,8 @@
 #include "config.h"
 
 #include "hci.h"
-
+#include "gap.h"
+ 
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
@@ -639,6 +640,11 @@ static void event_handler(uint8_t *packet, int size){
             
         case HCI_EVENT_PIN_CODE_REQUEST:
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_PIN_CODE_REQUEST);
+            // non-bondable mode: pin code negative reply will be sent
+            if (!hci_stack.bondable){
+                hci_add_connection_flags_for_flipped_bd_addr(&packet[2], HANDLE_PIN_CODE_REQUEST);
+                break;
+            }
             // PIN CODE REQUEST means the link key request didn't succee -> delete stored link key
             if (!hci_stack.remote_device_db) break;
             bt_flip_addr(addr, &packet[2]);
@@ -1196,6 +1202,13 @@ void hci_run(){
             return;
         }
 
+        if (connection->authentication_flags & HANDLE_PIN_CODE_REQUEST){
+            log_info("denying to pin request\n");
+            hci_send_cmd(&hci_pin_code_request_negative_reply, connection->address);
+            connectionClearAuthenticationFlags(connection, HANDLE_PIN_CODE_REQUEST);
+            return;
+        }
+
         if (connection->authentication_flags & SEND_IO_CAPABILITIES_REPLY){
             hci_send_cmd(&hci_io_capability_request_reply, &connection->address, hci_stack.ssp_io_capability, NULL, hci_stack.ssp_authentication_requirement);
             connectionClearAuthenticationFlags(connection, SEND_IO_CAPABILITIES_REPLY);
@@ -1650,6 +1663,6 @@ void hci_emit_discoverable_enabled(uint8_t enabled){
  * @bbrief enable/disable bonding. default is enabled
  * @praram enabled
  */
-void gap_set_bondable_mode(int enabled);{
+void gap_set_bondable_mode(int enable){
     hci_stack.bondable = enable ? 1 : 0;
 }
