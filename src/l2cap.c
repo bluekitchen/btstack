@@ -493,6 +493,13 @@ void l2cap_run(void){
         
         switch (channel->state){
 
+            case L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT:
+                if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND) {
+                    channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND);
+                    l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, 0, 0, 1, 0);
+                }
+                break;
+
             case L2CAP_STATE_WILL_SEND_CREATE_CONNECTION:
                 // send connection request - set state first
                 channel->state = L2CAP_STATE_WAIT_CONNECTION_COMPLETE;
@@ -507,11 +514,6 @@ void l2cap_run(void){
                 btstack_memory_l2cap_channel_free(channel); 
                 break;
                 
-            case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_PENDING:
-                channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
-                l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, 1 , 0);
-                break;
-
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT:
                 channel->state = L2CAP_STATE_CONFIG;
                 channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ);
@@ -836,12 +838,20 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     }
     
     // set initial state
-    channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_PENDING;
-    channel->state_var = L2CAP_CHANNEL_STATE_VAR_NONE;
+    channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+    channel->state_var = L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND;
     
     // add to connections list
     linked_list_add(&l2cap_channels, (linked_item_t *) channel);
-    
+
+    // 
+    // gap_security_level_t current_level  = gap_security_level(handle);
+    // gap_security_level_t required_level = LEVEL_2;
+    // if (current_level < required_level){
+    //     gap_request_security_level(handle, required_level);
+    //     return;        
+    // }
+
     // emit incoming connection request
     l2cap_emit_connection_request(channel);
 }

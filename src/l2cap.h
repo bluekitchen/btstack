@@ -93,13 +93,13 @@ typedef enum {
     L2CAP_STATE_CLOSED = 1,           // no baseband
     L2CAP_STATE_WILL_SEND_CREATE_CONNECTION,
     L2CAP_STATE_WAIT_CONNECTION_COMPLETE,
+    L2CAP_STATE_WAIT_AUTHENTICATION_RESULT,
     L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT,
     L2CAP_STATE_WAIT_CONNECT_RSP, // from peer
     L2CAP_STATE_CONFIG,
     L2CAP_STATE_OPEN,
     L2CAP_STATE_WAIT_DISCONNECT,  // from application
     L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST,
-    L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_PENDING,
     L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE,
     L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT,   
     L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST,
@@ -114,10 +114,11 @@ typedef enum {
     L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP         = 1 << 3,
     L2CAP_CHANNEL_STATE_VAR_SENT_CONF_REQ         = 1 << 4,
     L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP         = 1 << 5,
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU     = 1 << 6,  // in CONF RSP, add MTU field
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_CONT    = 1 << 7,  // in CONF RSP, set CONTINUE flag
-    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID = 1 << 8,  // in CONF RSP, send UNKNOWN OPTIONS
-    L2CAP_CHANNEL_STATE_VAR_SEND_CMD_REJ_UNKNOWN  = 1 << 9,  // send CMD_REJ with reason unknown
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_MTU     = 1 << 6,   // in CONF RSP, add MTU field
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_CONT    = 1 << 7,   // in CONF RSP, set CONTINUE flag
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP_INVALID = 1 << 8,   // in CONF RSP, send UNKNOWN OPTIONS
+    L2CAP_CHANNEL_STATE_VAR_SEND_CMD_REJ_UNKNOWN  = 1 << 9,   // send CMD_REJ with reason unknown
+    L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND   = 1 << 10,  // send Connection Respond with pending
 } L2CAP_CHANNEL_STATE_VAR;
 
 // info regarding an actual coneection
@@ -174,7 +175,9 @@ typedef struct {
     
     // internal connection
     btstack_packet_handler_t packet_handler;
-    
+
+    // required security level
+    gap_security_level_t security_level;    
 } l2cap_service_t;
 
 
