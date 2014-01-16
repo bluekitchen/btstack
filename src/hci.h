@@ -207,15 +207,20 @@ typedef enum {
     RECV_LINK_KEY_NOTIFICATION     = 0x0010,
     RECV_PIN_CODE_REQUEST          = 0x0020,
     HANDLE_PIN_CODE_REQUEST        = 0x0040,
-    SENT_PIN_CODE_REPLY            = 0x0080, 
-    SENT_PIN_CODE_NEGATIVE_REPLY   = 0x0100,
     // SSP
-    RECV_IO_CAPABILITIES_REQUEST   = 0x0200,
-    SEND_IO_CAPABILITIES_REPLY     = 0x0400,
-    RECV_USER_CONFIRM_REQUEST      = 0x0800,
-    SEND_USER_CONFIRM_REPLY        = 0x1000,
-    RECV_USER_PASSKEY_REQUEST      = 0x2000,
-    SEND_USER_PASSKEY_REPLY        = 0x4000,
+    RECV_IO_CAPABILITIES_REQUEST   = 0x0080,
+    SEND_IO_CAPABILITIES_REPLY     = 0x0100,
+    RECV_USER_CONFIRM_REQUEST      = 0x0200,
+    SEND_USER_CONFIRM_REPLY        = 0x0400,
+    RECV_USER_PASSKEY_REQUEST      = 0x0800,
+    SEND_USER_PASSKEY_REPLY        = 0x1000,
+    // connection status
+    CONNECTION_ENCRYPTED           = 0x2000,
+    CONNECTION_AUTHENTICATED       = 0x4000,
+
+    // SENT_PIN_CODE_REPLY            = 0x0080, 
+    // SENT_PIN_CODE_NEGATIVE_REPLY   = 0x0100,
+
 } hci_authentication_flags_t;
 
 typedef enum {
@@ -232,6 +237,9 @@ typedef enum {
     BONDING_RECEIVED_REMOTE_FEATURES = 0x02,
     BONDING_REMOTE_SUPPORTS_SSP      = 0x04,
 } bonding_flags_t;
+
+#define CHANNEL_SECURITY_ENCRYPTED = 0x01
+#define CHANNEL_SECURITY_AUTHENTICAED = 0x02
 
 typedef enum {
     BLUETOOTH_OFF = 1,
@@ -253,7 +261,7 @@ typedef struct {
     CONNECTION_STATE state;
     
     // bonding
-    bonding_flags_t   bonding_flags;
+    bonding_flags_t bonding_flags;
 
     // errands
     hci_authentication_flags_t authentication_flags;
