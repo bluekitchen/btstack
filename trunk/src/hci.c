@@ -825,7 +825,8 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
     hci_stack.connections = NULL;
     hci_stack.discoverable = 0;
     hci_stack.connectable = 0;
-    
+    hci_stack.bondable = 1;
+
     // no pending cmds
     hci_stack.decline_reason = 0;
     hci_stack.new_scan_enable_value = 0xff;
@@ -1641,4 +1642,13 @@ void hci_emit_discoverable_enabled(uint8_t enabled){
     event[2] = enabled;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
+}
+
+// GAP API
+/**
+ * @bbrief enable/disable bonding. default is enabled
+ * @praram enabled
+ */
+void gap_set_bondable_mode(int enabled);{
+    hci_stack.bondable = enable ? 1 : 0;
 }
