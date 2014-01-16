@@ -228,6 +228,12 @@ typedef enum {
 } CONNECTION_STATE;
 
 typedef enum {
+    BONDING_REQUEST_REMOTE_FEATURES  = 0x01,
+    BONDING_RECEIVED_REMOTE_FEATURES = 0x02,
+    BONDING_REMOTE_SUPPORTS_SSP      = 0x04,
+} bonding_flags_t;
+
+typedef enum {
     BLUETOOTH_OFF = 1,
     BLUETOOTH_ON,
     BLUETOOTH_ACTIVE
@@ -243,9 +249,12 @@ typedef struct {
     // module handle
     hci_con_handle_t con_handle;
 
-    // state
+    // connection state
     CONNECTION_STATE state;
     
+    // bonding
+    bonding_flags_t   bonding_flags;
+
     // errands
     hci_authentication_flags_t authentication_flags;
 

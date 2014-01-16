@@ -248,6 +248,10 @@ const hci_cmd_t hci_remote_name_request_cancel = {
 OPCODE(OGF_LINK_CONTROL, 0x1A), "B"
 // BD_ADDR
 };
+const hci_cmd_t hci_read_remote_supported_features_command = {
+OPCODE(OGF_LINK_CONTROL, 0x1B), "H"
+// BD_ADDR
+};
 const hci_cmd_t hci_io_capability_request_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x2b), "B111"
 // BD_ADDR, IO_Capability, OOB_Data_Present, Authentication_ Requirements
