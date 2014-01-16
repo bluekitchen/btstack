@@ -622,7 +622,8 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_LINK_KEY_REQUEST:
             log_info("HCI_EVENT_LINK_KEY_REQUEST\n");
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_REQUEST);
-            if (!hci_stack.remote_device_db) break;
+            // non-bondable mode: link key negative reply will be sent by HANDLE_LINK_KEY_REQUEST
+            if (hci_stack.bondable && !hci_stack.remote_device_db) break;
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], HANDLE_LINK_KEY_REQUEST);
             hci_run();
             // request handled by hci_run() as HANDLE_LINK_KEY_REQUEST gets set
@@ -1186,7 +1187,7 @@ void hci_run(){
         if (connection->authentication_flags & HANDLE_LINK_KEY_REQUEST){
             link_key_t link_key;
             log_info("responding to link key request\n");
-            if ( hci_stack.remote_device_db->get_link_key( &connection->address, &link_key)){
+            if ( hci_stack.bondable && hci_stack.remote_device_db && hci_stack.remote_device_db->get_link_key( &connection->address, &link_key)){
                hci_send_cmd(&hci_link_key_request_reply, connection->address, &link_key);
             } else {
                hci_send_cmd(&hci_link_key_request_negative_reply, connection->address);
