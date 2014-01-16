@@ -1271,6 +1271,13 @@ void hci_run(){
         if (connection->bonding_flags & BONDING_REQUEST_REMOTE_FEATURES){
             hci_send_cmd(&hci_read_remote_supported_features_command, connection->con_handle);
             connection->bonding_flags &= ~BONDING_REQUEST_REMOTE_FEATURES;
+            return;
+        }
+
+        if (connection->bonding_flags & BONDING_DISCONNECT_SECURITY_BLOCK){
+            hci_send_cmd(&hci_disconnect, connection->con_handle, 0x0005);  // authentication failure
+            connection->bonding_flags &= ~BONDING_DISCONNECT_SECURITY_BLOCK;
+            return;
         }
     }
 
@@ -1552,11 +1559,23 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     return hci_stack.hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
 }
 
+// disconnect because of security block
+void hci_disconnect_security_block(hci_con_handle_t con_handle){
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (!connection) return;
+    connection->bonding_flags |= BONDING_DISCONNECT_SECURITY_BLOCK;
+}
+
+
 // Configure Secure Simple Pairing
 
 // enable will enable SSP during init
 void hci_ssp_set_enable(int enable){
     hci_stack.ssp_enable = enable;
+}
+
+int hci_local_ssp_activated(){
+    return hci_ssp_supported() && hci_stack.ssp_enable;
 }
 
 // if set, BTstack will respond to io capability request using authentication requirement
@@ -1709,6 +1728,13 @@ void hci_emit_security_level(hci_con_handle_t con_handle, uint8_t status, gap_se
     event[pos++] = level;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
+}
+
+// query if remote side supports SSP
+int hci_remote_ssp_supported(hci_con_handle_t con_handle){
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (!connection) return 0;
+    return (connection->bonding_flags & BONDING_REMOTE_SUPPORTS_SSP) ? 1 : 0;
 }
 
 // GAP API
