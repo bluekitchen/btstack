@@ -431,6 +431,8 @@ void l2cap_run(void){
         switch (signaling_responses[0].code){
             case CONNECTION_REQUEST:
                 l2cap_send_signaling_packet(handle, CONNECTION_RESPONSE, sig_id, 0, 0, result, 0);
+                // also disconnect if result is 0x0003 - security blocked
+                hci_disconnect_security_block(handle);
                 break;
             case ECHO_REQUEST:
                 l2cap_send_signaling_packet(handle, ECHO_RESPONSE, sig_id, 0, NULL);
@@ -810,6 +812,19 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
         log_error("no hci_connection for handle %u\n", handle);
         return;
     }
+
+    // reject connection (0x03 security block) and disconnect if both have SSP, connection is not encrypted and PSM != SDP
+    if (psm != PSM_SDP
+        && hci_local_ssp_activated()
+        && hci_remote_ssp_supported(handle)
+        && gap_security_level(handle) == LEVEL_0){
+        
+        // 0x0003 Security Block
+        l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, 0x0003);
+        return;
+    }
+
+
     // alloc structure
     // log_info("l2cap_handle_connection_request register channel\n");
     l2cap_channel_t * channel = (l2cap_channel_t*) btstack_memory_l2cap_channel_get();
@@ -844,10 +859,11 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     // add to connections list
     linked_list_add(&l2cap_channels, (linked_item_t *) channel);
 
-    // 
+    // check security requirements
     // gap_security_level_t current_level  = gap_security_level(handle);
     // gap_security_level_t required_level = LEVEL_2;
     // if (current_level < required_level){
+    //     channel->state = L2CAP_STATE_WAIT_AUTHENTICATION_RESULT;
     //     gap_request_security_level(handle, required_level);
     //     return;        
     // }

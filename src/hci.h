@@ -236,10 +236,8 @@ typedef enum {
     BONDING_REQUEST_REMOTE_FEATURES  = 0x01,
     BONDING_RECEIVED_REMOTE_FEATURES = 0x02,
     BONDING_REMOTE_SUPPORTS_SSP      = 0x04,
+    BONDING_DISCONNECT_SECURITY_BLOCK = 0x08,
 } bonding_flags_t;
-
-#define CHANNEL_SECURITY_ENCRYPTED = 0x01
-#define CHANNEL_SECURITY_AUTHENTICAED = 0x02
 
 typedef enum {
     BLUETOOTH_OFF = 1,
@@ -398,6 +396,15 @@ void hci_emit_system_bluetooth_enabled(uint8_t enabled);
 void hci_emit_remote_name_cached(bd_addr_t *addr, device_name_t *name);
 void hci_emit_discoverable_enabled(uint8_t enabled);
 
+// query if remote side supports SSP
+// query if the local side supports SSP
+int hci_local_ssp_activated();
+
+// query if the remote side supports SSP
+int hci_remote_ssp_supported(hci_con_handle_t con_handle);
+
+// disconnect because of security block
+void hci_disconnect_security_block(hci_con_handle_t con_handle);
 
 /** Embedded API **/
 
@@ -435,6 +442,7 @@ void hci_ssp_set_auto_accept(int auto_accept);
 
 // get addr type and address used in advertisement packets
 void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t * addr);
+
 
 #if defined __cplusplus
 }
