@@ -252,7 +252,8 @@ extern "C" {
 // Error Code
 #define ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER 	       0x02
 #define ERROR_CODE_PAIRING_NOT_ALLOWED					   0x18
-
+#define ERROR_CODE_INSUFFICIENT_SECURITY 				   0x2F
+ 
 // last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
 #define BTSTACK_CONNECTION_TO_BTDAEMON_FAILED              0x50
 #define BTSTACK_ACTIVATION_FAILED_SYSTEM_BLUETOOTH		   0x51

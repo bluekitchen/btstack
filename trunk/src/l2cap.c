@@ -769,6 +769,25 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
                 (*security_protocol_packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
             }
             break;
+
+        case GAP_AUTHENTICATION_RESULT:
+            handle = READ_BT_16(packet, 3);
+            for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+                channel = (l2cap_channel_t *) it;
+                if (channel->handle != handle) continue;
+                if (channel->state  != L2CAP_STATE_WAIT_AUTHENTICATION_RESULT) continue;
+                if (packet[2]){
+                    // fail
+                    channel->reason = 0x03; // security block
+                    channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
+                } else {
+                    // success
+                    // @todo check sercurity level again
+                    channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+                    l2cap_emit_connection_request(channel);
+                }
+            }
+            break;
             
         default:
             break;
@@ -818,7 +837,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
         && hci_local_ssp_activated()
         && hci_remote_ssp_supported(handle)
         && gap_security_level(handle) == LEVEL_0){
-        
+
         // 0x0003 Security Block
         l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, 0x0003);
         return;
@@ -853,23 +872,15 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     }
     
     // set initial state
-    channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+    channel->state = L2CAP_STATE_WAIT_AUTHENTICATION_RESULT;
     channel->state_var = L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND;
     
     // add to connections list
     linked_list_add(&l2cap_channels, (linked_item_t *) channel);
 
-    // check security requirements
-    // gap_security_level_t current_level  = gap_security_level(handle);
-    // gap_security_level_t required_level = LEVEL_2;
-    // if (current_level < required_level){
-    //     channel->state = L2CAP_STATE_WAIT_AUTHENTICATION_RESULT;
-    //     gap_request_security_level(handle, required_level);
-    //     return;        
-    // }
-
-    // emit incoming connection request
-    l2cap_emit_connection_request(channel);
+    // assert security requirements
+    gap_security_level_t required_level = LEVEL_0;
+    gap_request_security_level(handle, required_level);
 }
 
 void l2cap_accept_connection_internal(uint16_t local_cid){
