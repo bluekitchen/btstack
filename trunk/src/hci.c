@@ -1712,7 +1712,19 @@ void gap_set_bondable_mode(int enable){
  * @brief get current security level
  */
 gap_security_level_t gap_security_level(hci_con_handle_t con_handle){
-    return LEVEL_0;
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (!connection) return LEVEL_0;
+    if ((connection->authentication_flags & CONNECTION_ENCRYPTED) == 0) return LEVEL_0;
+    switch (connection->link_key_type){
+        case AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256:
+            return LEVEL_4;
+        case COMBINATION_KEY:
+        case AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P192:
+            return LEVEL_3;
+        case DEBUG_COMBINATION_KEY:
+        default:
+            return LEVEL_2;
+    }
 }
 
 /**
@@ -1721,3 +1733,4 @@ gap_security_level_t gap_security_level(hci_con_handle_t con_handle){
  */
 void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_t level){
 }
+

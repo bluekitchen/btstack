@@ -63,7 +63,7 @@ typedef enum {
 
 	// MITM protection required
 	// Encryption required
-	// 128-bit equivalent strength for link and encryption keys required
+	// 128-bit equivalent strength for link and encryption keys required (P-192 is not enough)
 	// User interaction acceptable
 	LEVEL_4,	
 } gap_security_level_t;
@@ -73,7 +73,7 @@ typedef enum {
 	GAP_SECUIRTY_ENCRYPTED,		// SSP: JUST WORKS
 	GAP_SECURITY_AUTHENTICATED, // SSP: numeric comparison, passkey, OOB 
 	// GAP_SECURITY_AUTHORIZED
-} gap_security_requirement_t;
+} gap_security_state;
 
 /**
  * @bbrief enable/disable bonding. default is enabled
