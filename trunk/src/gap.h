@@ -80,6 +80,8 @@ typedef enum {
  * @praram enabled
  */
 void gap_set_bondable_mode(int enabled);
+gap_security_level_t gap_security_level(hci_con_handle_t con_handle);
+void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_t level);
 
 #if defined __cplusplus
 }
