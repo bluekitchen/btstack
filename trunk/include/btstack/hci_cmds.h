@@ -246,6 +246,9 @@ extern "C" {
 
 // ATT 
 
+// Error Code
+#define ERROR_CODE_PAIRING_NOT_ALLOWED					   0x18
+
 // last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
 
 #define BTSTACK_CONNECTION_TO_BTDAEMON_FAILED              0x50
