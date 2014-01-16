@@ -685,6 +685,19 @@ static void event_handler(uint8_t *packet, int size){
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_USER_PASSKEY_REPLY);
             break;
 
+        case HCI_EVENT_ENCRYPTION_CHANGE:
+            if (packet[2]) break;   // error status
+            handle = READ_BT_16(packet, 3);
+            conn = hci_connection_for_handle(handle);
+            if (!conn) break;
+            if (packet[5]){
+                conn->authentication_flags |= CONNECTION_ENCRYPTED;
+                // @TODO set authentication depending on pairing process
+            } else {
+                conn->authentication_flags &= ~(CONNECTION_ENCRYPTED | CONNECTION_AUTHENTICATED);
+            }
+            break;
+            
 #ifndef EMBEDDED
         case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
             if (!hci_stack.remote_device_db) break;
@@ -1509,12 +1522,12 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     if (IS_COMMAND(packet, hci_link_key_request_negative_reply)){
         hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_LINK_KEY_NEGATIVE_REQUEST);
     }
-    if (IS_COMMAND(packet, hci_pin_code_request_reply)){
-        hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_PIN_CODE_REPLY);
-    }
-    if (IS_COMMAND(packet, hci_pin_code_request_negative_reply)){
-        hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_PIN_CODE_NEGATIVE_REPLY);
-    }
+    // if (IS_COMMAND(packet, hci_pin_code_request_reply)){
+    //     hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_PIN_CODE_REPLY);
+    // }
+    // if (IS_COMMAND(packet, hci_pin_code_request_negative_reply)){
+    //     hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_PIN_CODE_NEGATIVE_REPLY);
+    // }
     
     if (IS_COMMAND(packet, hci_delete_stored_link_key)){
         if (hci_stack.remote_device_db){
