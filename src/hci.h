@@ -214,9 +214,12 @@ typedef enum {
     SEND_USER_CONFIRM_REPLY        = 0x0400,
     RECV_USER_PASSKEY_REQUEST      = 0x0800,
     SEND_USER_PASSKEY_REPLY        = 0x1000,
+
+    // link key
+    HAVE_AUTHENTICATED_LINK_KEY    = 0x2000,
+
     // connection status
     CONNECTION_ENCRYPTED           = 0x2000,
-    CONNECTION_AUTHENTICATED       = 0x4000,
 
     // SENT_PIN_CODE_REPLY            = 0x0080, 
     // SENT_PIN_CODE_NEGATIVE_REPLY   = 0x0100,

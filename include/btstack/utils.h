@@ -65,7 +65,7 @@ typedef uint8_t link_key_t[LINK_KEY_LEN];
 
 typedef enum {
 	LINK_KEY_TYPE_UNAUTHENTICATED,
-	LINK_KEY_TYPE_AUTHENTICATD,
+	LINK_KEY_TYPE_AUTHENTICATED,
 } link_key_type_t;
 
 /**
