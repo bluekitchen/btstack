@@ -129,6 +129,7 @@ static hci_connection_t * create_connection_for_addr(bd_addr_t addr){
     BD_ADDR_COPY(conn->address, addr);
     conn->con_handle = 0xffff;
     conn->authentication_flags = AUTH_FLAGS_NONE;
+    conn->bonding_flags = 0;
     linked_item_set_user(&conn->timeout.item, conn);
     conn->timeout.process = hci_connection_timeout_handler;
     hci_connection_timestamp(conn);
@@ -599,7 +600,8 @@ static void event_handler(uint8_t *packet, int size){
                 if (!packet[2]){
                     conn->state = OPEN;
                     conn->con_handle = READ_BT_16(packet, 3);
-                    
+                    conn->bonding_flags = BONDING_REQUEST_REMOTE_FEATURES;
+
                     // restart timer
                     run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
                     run_loop_add_timer(&conn->timeout);
@@ -618,6 +620,19 @@ static void event_handler(uint8_t *packet, int size){
                     }
                 }
             }
+            break;
+
+        case HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE:
+            handle = READ_BT_16(packet, 3);
+            conn = hci_connection_for_handle(handle);
+            if (!conn) break;
+            if (!packet[2]){
+                uint8_t * features = &packet[5];
+                if (features[6] & (1 << 3)){
+                    conn->bonding_flags |= BONDING_REMOTE_SUPPORTS_SSP;
+                }
+            }
+            conn->bonding_flags |= BONDING_RECEIVED_REMOTE_FEATURES;
             break;
 
         case HCI_EVENT_LINK_KEY_REQUEST:
@@ -1230,6 +1245,11 @@ void hci_run(){
             hci_send_cmd(&hci_user_passkey_request_reply, &connection->address, 000000);
             connectionClearAuthenticationFlags(connection, SEND_USER_PASSKEY_REPLY);
             return;
+        }
+
+        if (connection->bonding_flags & BONDING_REQUEST_REMOTE_FEATURES){
+            hci_send_cmd(&hci_read_remote_supported_features_command, connection->con_handle);
+            connection->bonding_flags &= ~BONDING_REQUEST_REMOTE_FEATURES;
         }
     }
 
