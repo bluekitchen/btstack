@@ -649,7 +649,8 @@ static void event_handler(uint8_t *packet, int size){
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_NOTIFICATION);
             if (!hci_stack.remote_device_db) break;
             bt_flip_addr(addr, &packet[2]);
-            hci_stack.remote_device_db->put_link_key(&addr, (link_key_t *) &packet[8]);
+            // @TODO determine link key type
+            hci_stack.remote_device_db->put_link_key(&addr, (link_key_t *) &packet[8], LINK_KEY_TYPE_UNAUTHENTICATED);
             // still forward event to allow dismiss of pairing dialog
             break;
             
@@ -697,7 +698,7 @@ static void event_handler(uint8_t *packet, int size){
                 conn->authentication_flags &= ~(CONNECTION_ENCRYPTED | CONNECTION_AUTHENTICATED);
             }
             break;
-            
+
 #ifndef EMBEDDED
         case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
             if (!hci_stack.remote_device_db) break;
@@ -1221,8 +1222,9 @@ void hci_run(){
         
         if (connection->authentication_flags & HANDLE_LINK_KEY_REQUEST){
             link_key_t link_key;
+            link_key_type_t link_key_type;
             log_info("responding to link key request\n");
-            if ( hci_stack.bondable && hci_stack.remote_device_db && hci_stack.remote_device_db->get_link_key( &connection->address, &link_key)){
+            if ( hci_stack.bondable && hci_stack.remote_device_db && hci_stack.remote_device_db->get_link_key( &connection->address, &link_key, &link_key_type)){
                hci_send_cmd(&hci_link_key_request_reply, connection->address, &link_key);
             } else {
                hci_send_cmd(&hci_link_key_request_negative_reply, connection->address);

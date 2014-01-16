@@ -155,17 +155,20 @@ static id get_value(bd_addr_t *bd_addr, NSString *key){
     return [deviceDict objectForKey:key];
 }
 
-static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key) {
+static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type_t * link_key_type) {
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
     NSData *linkKey = get_value(bd_addr, PREFS_LINK_KEY);
     if ([linkKey length] == LINK_KEY_LEN){
         memcpy(link_key, [linkKey bytes], LINK_KEY_LEN);
+        if (link_key_type){
+            *link_key_type = LINK_KEY_TYPE_UNAUTHENTICATED;
+        }
     }
     [pool release];
     return (linkKey != nil);
 }
 
-static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key){
+static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type_t link_key_type){
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	NSData *linkKey = [NSData dataWithBytes:link_key length:16];
     set_value(bd_addr, PREFS_LINK_KEY, linkKey);

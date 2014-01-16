@@ -80,13 +80,15 @@ static int get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
 	return 1;
 }
 
-static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key) {
+static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type_t * link_key_type) {
     db_mem_device_link_key_t * item = (db_mem_device_link_key_t *) get_item(db_mem_link_keys, bd_addr);
     
     if (!item) return 0;
     
     memcpy(link_key, item->link_key, LINK_KEY_LEN);
-    
+    if (link_key_type) {
+        *link_key_type = item->link_key_type;
+    }
 	linked_list_remove(&db_mem_link_keys, (linked_item_t *) item);
     linked_list_add(&db_mem_link_keys, (linked_item_t *) item);
 
@@ -103,7 +105,7 @@ static void delete_link_key(bd_addr_t *bd_addr){
 }
 
 
-static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key){
+static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type_t link_key_type){
     db_mem_device_link_key_t * existingRecord = (db_mem_device_link_key_t *) get_item(db_mem_link_keys, bd_addr);
     
     if (existingRecord){
@@ -121,6 +123,7 @@ static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key){
     
     memcpy(newItem->device.bd_addr, bd_addr, sizeof(bd_addr_t));
     memcpy(newItem->link_key, link_key, LINK_KEY_LEN);
+    newItem->link_key_type = link_key_type;
     linked_list_add(&db_mem_link_keys, (linked_item_t *) newItem);
 }
 
