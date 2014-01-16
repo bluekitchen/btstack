@@ -244,13 +244,16 @@ extern "C" {
 #define SM_AUTHORIZATION_REQUEST						   0xb9
 #define SM_AUTHORIZATION_RESULT							   0xba
 
-// ATT 
+// GAP SECURITY
+
+ // data: event(8), len(8), status (8), hci_handle (16), security_level (8)
+ #define GAP_AUTHENTICATION_RESULT						   0xc0
 
 // Error Code
+#define ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER 	       0x02
 #define ERROR_CODE_PAIRING_NOT_ALLOWED					   0x18
 
 // last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
-
 #define BTSTACK_CONNECTION_TO_BTDAEMON_FAILED              0x50
 #define BTSTACK_ACTIVATION_FAILED_SYSTEM_BLUETOOTH		   0x51
 #define BTSTACK_ACTIVATION_POWERON_FAILED       		   0x52

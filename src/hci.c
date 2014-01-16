@@ -677,7 +677,6 @@ static void event_handler(uint8_t *packet, int size){
             
         case HCI_EVENT_IO_CAPABILITY_REQUEST:
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_IO_CAPABILITIES_REQUEST);
-            if (!hci_stack.bondable || hci_stack.ssp_io_capability == SSP_IO_CAPABILITY_UNKNOWN) break;
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_IO_CAPABILITIES_REPLY);
             break;
         
@@ -1248,7 +1247,7 @@ void hci_run(){
         }
 
         if (connection->authentication_flags & SEND_IO_CAPABILITIES_REPLY){
-            if (hci_stack.bondable){
+            if (hci_stack.bondable && hci_stack.ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN){
                 hci_send_cmd(&hci_io_capability_request_reply, &connection->address, hci_stack.ssp_io_capability, NULL, hci_stack.ssp_authentication_requirement);
             } else {
                 hci_send_cmd(&hci_io_capability_request_negative_reply, &connection->address, ERROR_CODE_PAIRING_NOT_ALLOWED);
@@ -1699,6 +1698,19 @@ void hci_emit_discoverable_enabled(uint8_t enabled){
     hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
+void hci_emit_security_level(hci_con_handle_t con_handle, uint8_t status, gap_security_level_t level){
+    uint8_t event[6];
+    int pos = 0;
+    event[pos++] = GAP_AUTHENTICATION_RESULT;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = status;
+    bt_store_16(event, 3, con_handle);
+    pos += 2;
+    event[pos++] = level;
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
+}
+
 // GAP API
 /**
  * @bbrief enable/disable bonding. default is enabled
@@ -1732,5 +1744,11 @@ gap_security_level_t gap_security_level(hci_con_handle_t con_handle){
  * @result GAP_AUTHENTICATION_RESULT
  */
 void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_t level){
-}
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (!connection){
+        hci_emit_security_level(con_handle, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, LEVEL_0);
+        return;
+    }
+    //
 
+}
