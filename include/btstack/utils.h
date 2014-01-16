@@ -64,8 +64,15 @@ typedef uint8_t bd_addr_t[BD_ADDR_LEN];
 typedef uint8_t link_key_t[LINK_KEY_LEN]; 
 
 typedef enum {
-	LINK_KEY_TYPE_UNAUTHENTICATED,
-	LINK_KEY_TYPE_AUTHENTICATED,
+	COMBINATION_KEY = 0,	// standard pairing
+	LOCAL_UNIT_KEY,			// ?
+	REMOTE_UNIT_KEY,		// ?
+	DEBUG_COMBINATION_KEY,	// SSP with debug
+	UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P192, // SSP Simple Pairing
+	AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P192,	 // SSP Passkey, Number confirm, OOB
+	CHANGED_COMBINATION_KEY,							 // Link key changed using Change Connection Lnk Key
+	UNAUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256, // SSP Simpe Pairing
+	AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256,   // SSP Passkey, Number confirm, OOB
 } link_key_type_t;
 
 /**
@@ -131,6 +138,8 @@ uint8_t crc8_calc(uint8_t *data, uint16_t len);
 
 #define BD_ADDR_CMP(a,b) memcmp(a,b, BD_ADDR_LEN)
 #define BD_ADDR_COPY(dest,src) memcpy(dest,src,BD_ADDR_LEN)
+
+int is_authenticated_link_key(link_key_type_t link_key_type);
 
 #if defined __cplusplus
 }

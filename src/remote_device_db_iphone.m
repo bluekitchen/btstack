@@ -161,7 +161,7 @@ static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type_
     if ([linkKey length] == LINK_KEY_LEN){
         memcpy(link_key, [linkKey bytes], LINK_KEY_LEN);
         if (link_key_type){
-            *link_key_type = LINK_KEY_TYPE_UNAUTHENTICATED;
+            *link_key_type = COMBINATION_KEY;
         }
     }
     [pool release];

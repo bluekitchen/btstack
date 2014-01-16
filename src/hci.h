@@ -215,9 +215,6 @@ typedef enum {
     RECV_USER_PASSKEY_REQUEST      = 0x0800,
     SEND_USER_PASSKEY_REPLY        = 0x1000,
 
-    // link key
-    HAVE_AUTHENTICATED_LINK_KEY    = 0x2000,
-
     // connection status
     CONNECTION_ENCRYPTED           = 0x2000,
 
@@ -265,6 +262,9 @@ typedef struct {
     
     // bonding
     bonding_flags_t bonding_flags;
+
+    // 
+    link_key_type_t link_key_type;
 
     // errands
     hci_authentication_flags_t authentication_flags;
