@@ -45,7 +45,7 @@
 
 #include "hci.h"
 #include "gap.h"
- 
+
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
@@ -643,7 +643,8 @@ static void event_handler(uint8_t *packet, int size){
             // non-bondable mode: pin code negative reply will be sent
             if (!hci_stack.bondable){
                 hci_add_connection_flags_for_flipped_bd_addr(&packet[2], HANDLE_PIN_CODE_REQUEST);
-                break;
+                hci_run();
+                return;
             }
             // PIN CODE REQUEST means the link key request didn't succee -> delete stored link key
             if (!hci_stack.remote_device_db) break;
@@ -653,7 +654,7 @@ static void event_handler(uint8_t *packet, int size){
             
         case HCI_EVENT_IO_CAPABILITY_REQUEST:
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_IO_CAPABILITIES_REQUEST);
-            if (hci_stack.ssp_io_capability == SSP_IO_CAPABILITY_UNKNOWN) break;
+            if (!hci_stack.bondable || hci_stack.ssp_io_capability == SSP_IO_CAPABILITY_UNKNOWN) break;
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_IO_CAPABILITIES_REPLY);
             break;
         
@@ -1210,7 +1211,11 @@ void hci_run(){
         }
 
         if (connection->authentication_flags & SEND_IO_CAPABILITIES_REPLY){
-            hci_send_cmd(&hci_io_capability_request_reply, &connection->address, hci_stack.ssp_io_capability, NULL, hci_stack.ssp_authentication_requirement);
+            if (hci_stack.bondable){
+                hci_send_cmd(&hci_io_capability_request_reply, &connection->address, hci_stack.ssp_io_capability, NULL, hci_stack.ssp_authentication_requirement);
+            } else {
+                hci_send_cmd(&hci_io_capability_request_negative_reply, &connection->address, ERROR_CODE_PAIRING_NOT_ALLOWED);
+            }
             connectionClearAuthenticationFlags(connection, SEND_IO_CAPABILITIES_REPLY);
             return;
         }
