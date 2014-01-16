@@ -507,6 +507,11 @@ void l2cap_run(void){
                 btstack_memory_l2cap_channel_free(channel); 
                 break;
                 
+            case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_PENDING:
+                channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+                l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, 1 , 0);
+                break;
+
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT:
                 channel->state = L2CAP_STATE_CONFIG;
                 channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ);
@@ -831,7 +836,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     }
     
     // set initial state
-    channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+    channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_PENDING;
     channel->state_var = L2CAP_CHANNEL_STATE_VAR_NONE;
     
     // add to connections list
