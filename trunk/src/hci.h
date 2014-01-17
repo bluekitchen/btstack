@@ -239,6 +239,7 @@ typedef enum {
     BONDING_DISCONNECT_SECURITY_BLOCK = 0x08,
     BONDING_REQUESTED                 = 0x10,
     BONDING_SEND_AUTHENTICATE_REQUEST = 0x20,
+    BONDING_SEND_ENCRYPTION_REQUEST   = 0x40,
 } bonding_flags_t;
 
 typedef enum {
