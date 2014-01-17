@@ -233,10 +233,12 @@ typedef enum {
 } CONNECTION_STATE;
 
 typedef enum {
-    BONDING_REQUEST_REMOTE_FEATURES  = 0x01,
-    BONDING_RECEIVED_REMOTE_FEATURES = 0x02,
-    BONDING_REMOTE_SUPPORTS_SSP      = 0x04,
+    BONDING_REQUEST_REMOTE_FEATURES   = 0x01,
+    BONDING_RECEIVED_REMOTE_FEATURES  = 0x02,
+    BONDING_REMOTE_SUPPORTS_SSP       = 0x04,
     BONDING_DISCONNECT_SECURITY_BLOCK = 0x08,
+    BONDING_REQUESTED                 = 0x10,
+    BONDING_SEND_AUTHENTICATE_REQUEST = 0x20,
 } bonding_flags_t;
 
 typedef enum {
@@ -260,6 +262,9 @@ typedef struct {
     
     // bonding
     bonding_flags_t bonding_flags;
+
+    // requested security level
+    gap_security_level_t requested_security_level;
 
     // 
     link_key_type_t link_key_type;

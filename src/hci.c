@@ -130,6 +130,7 @@ static hci_connection_t * create_connection_for_addr(bd_addr_t addr){
     conn->con_handle = 0xffff;
     conn->authentication_flags = AUTH_FLAGS_NONE;
     conn->bonding_flags = 0;
+    conn->requested_security_level = LEVEL_0;
     linked_item_set_user(&conn->timeout.item, conn);
     conn->timeout.process = hci_connection_timeout_handler;
     hci_connection_timestamp(conn);
@@ -704,6 +705,16 @@ static void event_handler(uint8_t *packet, int size){
             }
             break;
 
+        case HCI_EVENT_AUTHENTICATION_COMPLETE:
+            handle = READ_BT_16(packet, 3);
+            conn = hci_connection_for_handle(handle);
+            if (!conn) break;
+            if (conn->bonding_flags->BONDING_REQUESTED){
+                gap_security_level_t level = gap_security_level_for_connection(conn);
+                hci_emit_security_level(handle, packet[2], level);    
+            }
+            break;
+
 #ifndef EMBEDDED
         case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
             if (!hci_stack.remote_device_db) break;
@@ -1220,63 +1231,70 @@ void hci_run(){
         
         if (connection->state == RECEIVED_CONNECTION_REQUEST){
             log_info("sending hci_accept_connection_request\n");
-            hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
             connection->state = ACCEPTED_CONNECTION_REQUEST;
+            hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
             return;
         }
         
         if (connection->authentication_flags & HANDLE_LINK_KEY_REQUEST){
+            log_info("responding to link key request\n");
+            connectionClearAuthenticationFlags(connection, HANDLE_LINK_KEY_REQUEST);
             link_key_t link_key;
             link_key_type_t link_key_type;
-            log_info("responding to link key request\n");
-            if ( hci_stack.bondable && hci_stack.remote_device_db && hci_stack.remote_device_db->get_link_key( &connection->address, &link_key, &link_key_type)){
+            if ( hci_stack.remote_device_db
+              && hci_stack.remote_device_db->get_link_key( &connection->address, &link_key, &link_key_type)
+              && gap_security_level_for_link_key_type(link_key_type) >= connection->requested_security_level){
                connection->link_key_type = link_key_type;
                hci_send_cmd(&hci_link_key_request_reply, connection->address, &link_key);
             } else {
                hci_send_cmd(&hci_link_key_request_negative_reply, connection->address);
             }
-            connectionClearAuthenticationFlags(connection, HANDLE_LINK_KEY_REQUEST);
             return;
         }
 
         if (connection->authentication_flags & HANDLE_PIN_CODE_REQUEST){
             log_info("denying to pin request\n");
-            hci_send_cmd(&hci_pin_code_request_negative_reply, connection->address);
             connectionClearAuthenticationFlags(connection, HANDLE_PIN_CODE_REQUEST);
+            hci_send_cmd(&hci_pin_code_request_negative_reply, connection->address);
             return;
         }
 
         if (connection->authentication_flags & SEND_IO_CAPABILITIES_REPLY){
+            connectionClearAuthenticationFlags(connection, SEND_IO_CAPABILITIES_REPLY);
             if (hci_stack.bondable && hci_stack.ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN){
                 hci_send_cmd(&hci_io_capability_request_reply, &connection->address, hci_stack.ssp_io_capability, NULL, hci_stack.ssp_authentication_requirement);
             } else {
                 hci_send_cmd(&hci_io_capability_request_negative_reply, &connection->address, ERROR_CODE_PAIRING_NOT_ALLOWED);
             }
-            connectionClearAuthenticationFlags(connection, SEND_IO_CAPABILITIES_REPLY);
             return;
         }
         
         if (connection->authentication_flags & SEND_USER_CONFIRM_REPLY){
-            hci_send_cmd(&hci_user_confirmation_request_reply, &connection->address);
             connectionClearAuthenticationFlags(connection, SEND_USER_CONFIRM_REPLY);
+            hci_send_cmd(&hci_user_confirmation_request_reply, &connection->address);
             return;
         }
 
         if (connection->authentication_flags & SEND_USER_PASSKEY_REPLY){
-            hci_send_cmd(&hci_user_passkey_request_reply, &connection->address, 000000);
             connectionClearAuthenticationFlags(connection, SEND_USER_PASSKEY_REPLY);
+            hci_send_cmd(&hci_user_passkey_request_reply, &connection->address, 000000);
             return;
         }
 
         if (connection->bonding_flags & BONDING_REQUEST_REMOTE_FEATURES){
-            hci_send_cmd(&hci_read_remote_supported_features_command, connection->con_handle);
             connection->bonding_flags &= ~BONDING_REQUEST_REMOTE_FEATURES;
+            hci_send_cmd(&hci_read_remote_supported_features_command, connection->con_handle);
             return;
         }
 
         if (connection->bonding_flags & BONDING_DISCONNECT_SECURITY_BLOCK){
-            hci_send_cmd(&hci_disconnect, connection->con_handle, 0x0005);  // authentication failure
             connection->bonding_flags &= ~BONDING_DISCONNECT_SECURITY_BLOCK;
+            hci_send_cmd(&hci_disconnect, connection->con_handle, 0x0005);  // authentication failure
+            return;
+        }
+        if (connection->bonding_flags & BONDING_SEND_AUTHENTICATE_REQUEST){
+            connection->bonding_flags &= ~BONDING_SEND_AUTHENTICATE_REQUEST;
+            hci_send_cmd(&hci_authentication_requested, connection->con_handle);
             return;
         }
     }
@@ -1747,41 +1765,53 @@ void gap_set_bondable_mode(int enable){
 }
 
 /**
- * @brief get current security level
+ * @brief map link keys to security levels
  */
-gap_security_level_t gap_security_level(hci_con_handle_t con_handle){
-    hci_connection_t * connection = hci_connection_for_handle(con_handle);
-    if (!connection) return LEVEL_0;
-    if ((connection->authentication_flags & CONNECTION_ENCRYPTED) == 0) return LEVEL_0;
-    switch (connection->link_key_type){
+gap_security_level_t gap_security_level_for_link_key_type(link_key_type_t link_key_type){
+    switch (link_key_type){
         case AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P256:
             return LEVEL_4;
         case COMBINATION_KEY:
         case AUTHENTICATED_COMBINATION_KEY_GENERATED_FROM_P192:
             return LEVEL_3;
-        case DEBUG_COMBINATION_KEY:
         default:
             return LEVEL_2;
     }
+}
+
+gap_security_level_t gap_security_level_for_connection(hci_connection_t * connection){
+    if (!connection) return LEVEL_0;
+    if ((connection->authentication_flags & CONNECTION_ENCRYPTED) == 0) return LEVEL_0;
+    return gap_security_level_for_link_key_type(connection->link_key_type);
+}    
+
+
+/**
+ * @brief get current security level
+ */
+gap_security_level_t gap_security_level(hci_con_handle_t con_handle){
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (!connection) return LEVEL_0;
+    return gap_security_level_for_connection(connection);
 }
 
 /**
  * @brief request connection to device to
  * @result GAP_AUTHENTICATION_RESULT
  */
-void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_t level){
-    // hci_connection_t * connection = hci_connection_for_handle(con_handle);
-    // if (!connection){
-    //     hci_emit_security_level(con_handle, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, LEVEL_0);
-    //     return;
-    // }
-    // gap_security_level_t current_level = gap_security_level(con_handle);
-    // if (ggap_security_level_t >= level){
-    //     hci_emit_security_level(con_handle, 0, gap_security_level_t);
-    //     return;
-    // }
-    // connection->bonding_flags |= 
-    
-    // magic!
-    hci_emit_security_level(con_handle, 0, level);
+void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_t requested_level){
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (!connection){
+        hci_emit_security_level(con_handle, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, LEVEL_0);
+        return;
+    }
+    gap_security_level_t current_level = gap_security_level(con_handle);
+    log_info("gap_request_security_level %u, current level %u", requested_level, current_level);
+    if (current_level >= requested_level){
+        hci_emit_security_level(con_handle, 0, current_level);
+        return;
+    }
+    connection->requested_security_level = requested_level;
+    connection->bonding_flags |= BONDING_REQUESTED;
+    connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
 }

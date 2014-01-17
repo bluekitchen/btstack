@@ -496,7 +496,7 @@ void l2cap_run(void){
         switch (channel->state){
 
             case L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT:
-                if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND) {
+                if (channel->state_var & L2CAP_STATE_WAIT_AUTHENTICATION_RESULT) {
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND);
                     l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, 0, 0, 1, 0);
                 }
