@@ -244,7 +244,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case L2CAP_REGISTER_SERVICE:
             psm = READ_BT_16(packet, 3);
             mtu = READ_BT_16(packet, 5);
-            l2cap_register_service_internal(connection, NULL, psm, mtu);
+            l2cap_register_service_internal(connection, NULL, psm, mtu, LEVEL_0);
             break;
         case L2CAP_UNREGISTER_SERVICE:
             psm = READ_BT_16(packet, 3);

@@ -233,7 +233,7 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid);
 int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len);
 
 // Registers L2CAP service with given PSM and MTU, and assigns a packet handler. On embedded systems, use NULL for connection parameter.
-void l2cap_register_service_internal(void *connection, btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu);
+void l2cap_register_service_internal(void *connection, btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level);
 
 // Unregisters L2CAP service with given PSM.  On embedded systems, use NULL for connection parameter.
 void l2cap_unregister_service_internal(void *connection, uint16_t psm);

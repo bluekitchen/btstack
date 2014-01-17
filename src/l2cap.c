@@ -1231,7 +1231,7 @@ l2cap_service_t * l2cap_get_service(uint16_t psm){
     return NULL;
 }
 
-void l2cap_register_service_internal(void *connection, btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu){
+void l2cap_register_service_internal(void *connection, btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level){
     
     log_info("L2CAP_REGISTER_SERVICE psm 0x%x mtu %u", psm, mtu);
     
@@ -1258,7 +1258,8 @@ void l2cap_register_service_internal(void *connection, btstack_packet_handler_t 
     service->mtu = mtu;
     service->connection = connection;
     service->packet_handler = packet_handler;
-
+    service->security_level = security_level;
+    
     // add to services list
     linked_list_add(&l2cap_services, (linked_item_t *) service);
     
