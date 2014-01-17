@@ -205,22 +205,18 @@ typedef enum {
     SENT_LINK_KEY_REPLY            = 0x0004,
     SENT_LINK_KEY_NEGATIVE_REQUEST = 0x0008,
     RECV_LINK_KEY_NOTIFICATION     = 0x0010,
-    RECV_PIN_CODE_REQUEST          = 0x0020,
     DENY_PIN_CODE_REQUEST          = 0x0040,
-    // SSP
     RECV_IO_CAPABILITIES_REQUEST   = 0x0080,
     SEND_IO_CAPABILITIES_REPLY     = 0x0100,
-    RECV_USER_CONFIRM_REQUEST      = 0x0200,
-    SEND_USER_CONFIRM_REPLY        = 0x0400,
-    RECV_USER_PASSKEY_REQUEST      = 0x0800,
-    SEND_USER_PASSKEY_REPLY        = 0x1000,
+    SEND_USER_CONFIRM_REPLY        = 0x0200,
+    SEND_USER_PASSKEY_REPLY        = 0x0400,
+
+    // pairing status
+    LEGACY_PAIRING_ACTIVE          = 0x2000,
+    SSP_PAIRING_ACTIVE             = 0x4000,
 
     // connection status
-    CONNECTION_ENCRYPTED           = 0x2000,
-
-    // SENT_PIN_CODE_REPLY            = 0x0080, 
-    // SENT_PIN_CODE_NEGATIVE_REPLY   = 0x0100,
-
+    CONNECTION_ENCRYPTED           = 0x8000,
 } hci_authentication_flags_t;
 
 typedef enum {
