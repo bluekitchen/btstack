@@ -121,7 +121,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                         	// store connection info 
-                            att_request_handle = READ_BT_16(packet, 4)
+                            att_request_handle = READ_BT_16(packet, 4);
                         	att_client_addr_type = packet[7];
                             bt_flip_addr(att_client_address, &packet[8]);
                             // reset connection properties
