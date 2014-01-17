@@ -31,7 +31,7 @@ static char*    service_name[10];
 
 
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
+    // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
 
     if (packet_type != HCI_EVENT_PACKET) return;
     uint8_t event = packet[0];
@@ -53,7 +53,7 @@ static void btstack_setup(){
     btstack_memory_init();
     run_loop_init(RUN_LOOP_POSIX);
     
-    hci_dump_open("/tmp/hci_dump_sdp_rfcomm_query.pklg", HCI_DUMP_PACKETLOGGER);
+    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
    
     hci_transport_t    * transport = hci_transport_usb_instance();
     hci_uart_config_t  * config = NULL;

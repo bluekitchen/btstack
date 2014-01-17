@@ -1746,6 +1746,7 @@ void hci_emit_discoverable_enabled(uint8_t enabled){
 }
 
 void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t level){
+    log_info("hci_emit_security_level %u for handle %x", level, con_handle);
     uint8_t event[5];
     int pos = 0;
     event[pos++] = GAP_SECURITY_LEVEL;
@@ -1762,6 +1763,10 @@ int hci_remote_ssp_supported(hci_con_handle_t con_handle){
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     if (!connection) return 0;
     return (connection->bonding_flags & BONDING_REMOTE_SUPPORTS_SSP) ? 1 : 0;
+}
+
+int hci_ssp_supported_on_both_sides(hci_con_handle_t handle){
+    return hci_local_ssp_activated() && hci_remote_ssp_supported(handle);
 }
 
 // GAP API

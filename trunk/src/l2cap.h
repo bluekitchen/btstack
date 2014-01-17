@@ -93,7 +93,9 @@ typedef enum {
     L2CAP_STATE_CLOSED = 1,           // no baseband
     L2CAP_STATE_WILL_SEND_CREATE_CONNECTION,
     L2CAP_STATE_WAIT_CONNECTION_COMPLETE,
-    L2CAP_STATE_WAIT_SECURITY_LEVEL_UPDATE,
+    L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES,
+    L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE,
+    L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE,
     L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT,
     L2CAP_STATE_WAIT_CONNECT_RSP, // from peer
     L2CAP_STATE_CONFIG,
@@ -180,7 +182,7 @@ typedef struct {
     btstack_packet_handler_t packet_handler;
 
     // required security level
-    gap_security_level_t security_level;    
+    gap_security_level_t required_security_level;    
 } l2cap_service_t;
 
 
