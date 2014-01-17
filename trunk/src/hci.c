@@ -667,7 +667,7 @@ static void event_handler(uint8_t *packet, int size){
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_PIN_CODE_REQUEST);
             // non-bondable mode: pin code negative reply will be sent
             if (!hci_stack.bondable){
-                hci_add_connection_flags_for_flipped_bd_addr(&packet[2], HANDLE_PIN_CODE_REQUEST);
+                hci_add_connection_flags_for_flipped_bd_addr(&packet[2], DENY_PIN_CODE_REQUEST);
                 hci_run();
                 return;
             }
@@ -1257,9 +1257,9 @@ void hci_run(){
             return;
         }
 
-        if (connection->authentication_flags & HANDLE_PIN_CODE_REQUEST){
+        if (connection->authentication_flags & DENY_PIN_CODE_REQUEST){
             log_info("denying to pin request\n");
-            connectionClearAuthenticationFlags(connection, HANDLE_PIN_CODE_REQUEST);
+            connectionClearAuthenticationFlags(connection, DENY_PIN_CODE_REQUEST);
             hci_send_cmd(&hci_pin_code_request_negative_reply, connection->address);
             return;
         }
