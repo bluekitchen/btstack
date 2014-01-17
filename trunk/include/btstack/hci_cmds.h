@@ -246,14 +246,14 @@ extern "C" {
 
 // GAP SECURITY
 
- // data: event(8), len(8), status (8), hci_handle (16), security_level (8)
- #define GAP_AUTHENTICATION_RESULT						   0xc0
+ // data: event(8), len(8), hci_handle (16), security_level (8)
+ #define GAP_SECURITY_LEVEL     						   0xc0
 
 // Error Code
 #define ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER 	       0x02
 #define ERROR_CODE_PAIRING_NOT_ALLOWED					   0x18
 #define ERROR_CODE_INSUFFICIENT_SECURITY 				   0x2F
- 
+
 // last error code in 2.1 is 0x38 - we start with 0x50 for BTstack errors
 #define BTSTACK_CONNECTION_TO_BTDAEMON_FAILED              0x50
 #define BTSTACK_ACTIVATION_FAILED_SYSTEM_BLUETOOTH		   0x51

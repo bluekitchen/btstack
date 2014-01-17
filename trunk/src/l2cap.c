@@ -495,10 +495,11 @@ void l2cap_run(void){
         
         switch (channel->state){
 
+            case L2CAP_STATE_WAIT_SECURITY_LEVEL_UPDATE:
             case L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT:
-                if (channel->state_var & L2CAP_STATE_WAIT_AUTHENTICATION_RESULT) {
+                if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND) {
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND);
-                    l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, 0, 0, 1, 0);
+                    l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, 1, 0);
                 }
                 break;
 
@@ -770,22 +771,18 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
             }
             break;
 
-        case GAP_AUTHENTICATION_RESULT:
-            handle = READ_BT_16(packet, 3);
+        case GAP_SECURITY_LEVEL:
+            handle = READ_BT_16(packet, 2);
             for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
                 channel = (l2cap_channel_t *) it;
                 if (channel->handle != handle) continue;
-                if (channel->state  != L2CAP_STATE_WAIT_AUTHENTICATION_RESULT) continue;
-                if (packet[2]){
-                    // fail
-                    channel->reason = 0x03; // security block
-                    channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
-                } else {
-                    // success
-                    // @todo check sercurity level again
-                    channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
-                    l2cap_emit_connection_request(channel);
-                }
+                if (channel->state  != L2CAP_STATE_WAIT_SECURITY_LEVEL_UPDATE) continue;
+                // @todo check security level again
+                // channel->reason = 0x03; // security block
+                // channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
+                // success
+                channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+                l2cap_emit_connection_request(channel);                
             }
             break;
             
@@ -872,7 +869,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     }
     
     // set initial state
-    channel->state = L2CAP_STATE_WAIT_AUTHENTICATION_RESULT;
+    channel->state =     L2CAP_STATE_WAIT_SECURITY_LEVEL_UPDATE;
     channel->state_var = L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND;
     
     // add to connections list

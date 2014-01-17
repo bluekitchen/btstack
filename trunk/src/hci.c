@@ -70,6 +70,7 @@
 #endif
 
 static void hci_update_scan_enable(void);
+static gap_security_level_t gap_security_level_for_connection(hci_connection_t * connection);
 
 // the STACK is here
 static hci_stack_t       hci_stack;
@@ -703,16 +704,13 @@ static void event_handler(uint8_t *packet, int size){
             } else {
                 conn->authentication_flags &= ~CONNECTION_ENCRYPTED;
             }
+            hci_emit_security_level(handle, gap_security_level_for_connection(conn));
             break;
 
         // case HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT:
         //     handle = READ_BT_16(packet, 3);
         //     conn = hci_connection_for_handle(handle);
         //     if (!conn) break;
-        //     if (conn->bonding_flags & BONDING_REQUESTED){
-        //         gap_security_level_t level = gap_security_level_for_connection(conn);
-        //         hci_emit_security_level(handle, packet[2], level);    
-        //     }
         //     break;
 
 #ifndef EMBEDDED
@@ -1740,13 +1738,12 @@ void hci_emit_discoverable_enabled(uint8_t enabled){
     hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-void hci_emit_security_level(hci_con_handle_t con_handle, uint8_t status, gap_security_level_t level){
-    uint8_t event[6];
+void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t level){
+    uint8_t event[5];
     int pos = 0;
-    event[pos++] = GAP_AUTHENTICATION_RESULT;
+    event[pos++] = GAP_SECURITY_LEVEL;
     event[pos++] = sizeof(event) - 2;
-    event[pos++] = status;
-    bt_store_16(event, 3, con_handle);
+    bt_store_16(event, 2, con_handle);
     pos += 2;
     event[pos++] = level;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -1784,7 +1781,7 @@ gap_security_level_t gap_security_level_for_link_key_type(link_key_type_t link_k
     }
 }
 
-gap_security_level_t gap_security_level_for_connection(hci_connection_t * connection){
+static gap_security_level_t gap_security_level_for_connection(hci_connection_t * connection){
     if (!connection) return LEVEL_0;
     if ((connection->authentication_flags & CONNECTION_ENCRYPTED) == 0) return LEVEL_0;
     return gap_security_level_for_link_key_type(connection->link_key_type);
@@ -1807,16 +1804,30 @@ gap_security_level_t gap_security_level(hci_con_handle_t con_handle){
 void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_t requested_level){
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
     if (!connection){
-        hci_emit_security_level(con_handle, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER, LEVEL_0);
+        hci_emit_security_level(con_handle, LEVEL_0);
         return;
     }
     gap_security_level_t current_level = gap_security_level(con_handle);
     log_info("gap_request_security_level %u, current level %u", requested_level, current_level);
     if (current_level >= requested_level){
-        hci_emit_security_level(con_handle, 0, current_level);
+        hci_emit_security_level(con_handle, current_level);
         return;
     }
+
     connection->requested_security_level = requested_level;
-    connection->bonding_flags |= BONDING_REQUESTED;
-    connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
+
+    // would enabling ecnryption suffice?
+    if (hci_stack.remote_device_db){
+        link_key_type_t link_key_type;
+        link_key_t      link_key;
+        if (hci_stack.remote_device_db->get_link_key( &connection->address, &link_key, &link_key_type)){
+            if (gap_security_level_for_link_key_type(link_key_type) >= requested_level){
+                connection->bonding_flags |= BONDING_SEND_ENCRYPTION_REQUEST;
+                return;
+            }
+        }
+    }
+
+    // connection->bonding_flags |= BONDING_REQUESTED;
+    // connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
 }

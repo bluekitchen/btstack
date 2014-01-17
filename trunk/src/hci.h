@@ -401,6 +401,7 @@ void hci_emit_btstack_version(void);
 void hci_emit_system_bluetooth_enabled(uint8_t enabled);
 void hci_emit_remote_name_cached(bd_addr_t *addr, device_name_t *name);
 void hci_emit_discoverable_enabled(uint8_t enabled);
+void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t level);
 
 // query if remote side supports SSP
 // query if the local side supports SSP
