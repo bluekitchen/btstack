@@ -149,6 +149,8 @@ void setup(void){
     sdp_create_spp_service( spp_service_buffer, RFCOMM_SERVER_CHANNEL, "SPP Counter");
     printf("SDP service record size: %u\n\r", de_get_len(spp_service_buffer));
     sdp_register_service_internal(NULL, spp_service_buffer);
+
+    hci_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
 }
 
 // main == setup

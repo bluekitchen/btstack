@@ -840,7 +840,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     if (psm != PSM_SDP
         && hci_local_ssp_activated()
         && hci_remote_ssp_supported(handle)
-        && gap_security_level(handle) == LEVEL_0){
+        && gap_security_level(handle) == LEVEL_3){
 
         // 0x0003 Security Block
         l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, 0x0003);

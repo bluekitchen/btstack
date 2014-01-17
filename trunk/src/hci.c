@@ -714,7 +714,6 @@ static void event_handler(uint8_t *packet, int size){
             if (gap_security_level_for_link_key_type(conn->link_key_type) >= conn->requested_security_level){
                 // link key sufficient for requested security
                 conn->bonding_flags |= BONDING_SEND_ENCRYPTION_REQUEST;
-                return;
             } else {
                 // not enough
                hci_emit_security_level(handle, gap_security_level_for_connection(conn));
@@ -1824,7 +1823,7 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
 
     connection->requested_security_level = requested_level;
 
-    // would enabling ecnryption suffice?
+    // would enabling ecnryption suffice (>= LEVEL_2)?
     if (hci_stack.remote_device_db){
         link_key_type_t link_key_type;
         link_key_t      link_key;
@@ -1836,7 +1835,9 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
         }
     }
 
+    // setup SSP AuthRequirements, we need MITM to go higher
+    hci_stack.ssp_authentication_requirement |= 1;  // MITM required
+
     // try to authenticate connection
     connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
-    // connection->bonding_flags |= BONDING_REQUESTED;
 }

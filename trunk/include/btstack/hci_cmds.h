@@ -311,6 +311,24 @@ extern "C" {
  * SSP Authentication Requirements, see IO Capability Request Reply Commmand 
  */
 
+// Numeric comparison with automatic accept allowed.
+#define SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_NO_BONDING 0x00
+
+// Use IO Capabilities to deter- mine authentication procedure
+#define SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_NO_BONDING 0x01
+
+// Numeric compar- ison with automatic accept allowed.
+#define SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING 0x02
+
+// Use IO Capabilities to determine authentication procedure
+#define SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_DEDICATED_BONDING 0x03
+
+// Numeric Compari- son with automatic accept allowed.
+#define SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_GENERAL_BONDING 0x04
+
+// . Use IO capabilities to determine authentication procedure.
+#define SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_GENERAL_BONDING 0x05
+
 /**
  *  Hardware state of Bluetooth controller 
  */
