@@ -286,6 +286,10 @@ static void l2cap_start_ertx(l2cap_channel_t * channel){
     run_loop_add_timer(&channel->rtx);
 }
 
+static int l2cap_security_level_0_allowed_for_PSM(uint16_t psm){
+    // return 0;   // TESTING!
+    return psm != PSM_SDP;
+}
 
 int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...){
 
@@ -495,7 +499,7 @@ void l2cap_run(void){
         
         switch (channel->state){
 
-            case L2CAP_STATE_WAIT_SECURITY_LEVEL_UPDATE:
+            case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
             case L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT:
                 if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND) {
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND);
@@ -670,9 +674,10 @@ static void l2cap_handle_connection_success_for_addr(bd_addr_t address, hci_con_
         if ( ! BD_ADDR_CMP( channel->address, address) ){
             if (channel->state == L2CAP_STATE_WAIT_CONNECTION_COMPLETE || channel->state == L2CAP_STATE_WILL_SEND_CREATE_CONNECTION) {
                 // success, start l2cap handshake
-                channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
                 channel->handle = handle;
                 channel->local_cid = l2cap_next_local_cid();
+                // check remote SSP feature first
+                channel->state = L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES;
             }
         }
     }
@@ -771,24 +776,55 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
             }
             break;
 
+        case HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE:
+            handle = READ_BT_16(packet, 3);
+            for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+                channel = (l2cap_channel_t *) it;
+                if (channel->handle != handle) continue;
+                if (channel->state  != L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES) continue;
+                // we have been waiting for remote supported features, if both support SSP, 
+                if (hci_ssp_supported_on_both_sides(channel->handle) && !l2cap_security_level_0_allowed_for_PSM(channel->psm)){
+                    // request security level 2
+                    gap_request_security_level(channel->handle, LEVEL_2);
+                    channel->state = L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE;
+                    break;
+                }
+                // fine, go ahead
+                channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
+                break;
+            }            
+
         case GAP_SECURITY_LEVEL:
             handle = READ_BT_16(packet, 2);
+            log_info("GAP_SECURITY_LEVEL");
             for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
                 channel = (l2cap_channel_t *) it;
                 gap_security_level_t actual_level = packet[4];
-                log_info("GAP_SECURITY_LEVEL handle %x/%x level %u, state %u", handle, channel->handle, actual_level, channel->state);
                 if (channel->handle != handle) continue;
-                log_info("handle ok");
-                if (channel->state  != L2CAP_STATE_WAIT_SECURITY_LEVEL_UPDATE) continue;
-                log_info("state ok");
-                if (actual_level >= channel->required_security_level){
-                    log_info("level ok");
-                    channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
-                    l2cap_emit_connection_request(channel);                
-                } else {
-                    log_info("level nok");
-                    channel->reason = 0x03; // security block
-                    channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
+                switch (channel->state){
+                    case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
+                        log_info("gap incoming");
+                        if (actual_level >= channel->required_security_level){
+                            channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+                            l2cap_emit_connection_request(channel);                
+                        } else {
+                            channel->reason = 0x03; // security block
+                            channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
+                        }
+                        break;
+
+                    case L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE:
+                        log_info("gap outgoing");
+                        if (actual_level >= channel->required_security_level){
+                            channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
+                        } else {
+                            // disconnnect, authentication not good enough
+                            hci_disconnect_security_block(handle);
+                        }
+                        break;
+
+                    default:
+                        break;
                 }
             }
             break;
@@ -837,10 +873,9 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     }
 
     // reject connection (0x03 security block) and disconnect if both have SSP, connection is not encrypted and PSM != SDP
-    if (psm != PSM_SDP
-        && hci_local_ssp_activated()
-        && hci_remote_ssp_supported(handle)
-        && gap_security_level(handle) == LEVEL_3){
+    if (   l2cap_security_level_0_allowed_for_PSM(psm)
+        && hci_ssp_supported_on_both_sides(handle)
+        && gap_security_level(handle) == LEVEL_0){
 
         // 0x0003 Security Block
         l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, 0x0003);
@@ -869,7 +904,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     channel->remote_mtu = L2CAP_DEFAULT_MTU;
     channel->packets_granted = 0;
     channel->remote_sig_id = sig_id; 
-    channel->required_security_level = LEVEL_0; // @TODO get from 'security database'
+    channel->required_security_level = service->required_security_level;
 
     // limit local mtu to max acl packet length
     if (channel->local_mtu > l2cap_max_mtu()) {
@@ -877,7 +912,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     }
     
     // set initial state
-    channel->state =     L2CAP_STATE_WAIT_SECURITY_LEVEL_UPDATE;
+    channel->state =     L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE;
     channel->state_var = L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND;
     
     // add to connections list
@@ -1258,8 +1293,8 @@ void l2cap_register_service_internal(void *connection, btstack_packet_handler_t 
     service->mtu = mtu;
     service->connection = connection;
     service->packet_handler = packet_handler;
-    service->security_level = security_level;
-    
+    service->required_security_level = security_level;
+
     // add to services list
     linked_list_add(&l2cap_services, (linked_item_t *) service);
     

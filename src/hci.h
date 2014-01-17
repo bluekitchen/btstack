@@ -409,6 +409,10 @@ int hci_local_ssp_activated();
 // query if the remote side supports SSP
 int hci_remote_ssp_supported(hci_con_handle_t con_handle);
 
+// query if both sides support SSP
+int hci_ssp_supported_on_both_sides(hci_con_handle_t handle);
+
+
 // disconnect because of security block
 void hci_disconnect_security_block(hci_con_handle_t con_handle);
 
