@@ -120,10 +120,10 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                 case HCI_EVENT_LE_META:
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                        	// store address                       
+                        	// store connection info 
+                            att_request_handle = READ_BT_16(packet, 4)
                         	att_client_addr_type = packet[7];
                             bt_flip_addr(att_client_address, &packet[8]);
-
                             // reset connection properties
                             att_connection.mtu = 23;
                             att_connection.encryption_key_size = 0;
@@ -141,7 +141,6 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                 	if (att_request_handle != READ_BT_16(packet, 3)) break;
                 	att_connection.encryption_key_size = sm_encryption_key_size(att_client_addr_type, att_client_address);
                 	att_connection.authenticated = sm_authenticated(att_client_addr_type, att_client_address);
-                	att_connection.authorized = 0;
                 	break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -296,7 +295,6 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
     // store request
     att_server_state = ATT_SERVER_REQUEST_RECEIVED;
     att_request_size = size;
-    att_request_handle = handle;
     memcpy(att_request_buffer, packet, size);
 
     att_run();
