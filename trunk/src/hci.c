@@ -182,10 +182,9 @@ static void hci_add_connection_flags_for_flipped_bd_addr(uint8_t *bd_addr, hci_a
 int  hci_authentication_active_for_handle(hci_con_handle_t handle){
     hci_connection_t * conn = hci_connection_for_handle(handle);
     if (!conn) return 0;
-    if (!conn->authentication_flags) return 0;
-    if (conn->authentication_flags & SENT_LINK_KEY_REPLY) return 0;
-    if (conn->authentication_flags & RECV_LINK_KEY_NOTIFICATION) return 0;
-    return 1;
+    if (conn->authentication_flags & LEGACY_PAIRING_ACTIVE) return 1;
+    if (conn->authentication_flags & SSP_PAIRING_ACTIVE) return 1;
+    return 0;
 }
 
 void hci_drop_link_key_for_bd_addr(bd_addr_t *addr){
@@ -664,7 +663,7 @@ static void event_handler(uint8_t *packet, int size){
         }
 
         case HCI_EVENT_PIN_CODE_REQUEST:
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_PIN_CODE_REQUEST);
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], LEGACY_PAIRING_ACTIVE);
             // non-bondable mode: pin code negative reply will be sent
             if (!hci_stack.bondable){
                 hci_add_connection_flags_for_flipped_bd_addr(&packet[2], DENY_PIN_CODE_REQUEST);
@@ -683,13 +682,13 @@ static void event_handler(uint8_t *packet, int size){
             break;
         
         case HCI_EVENT_USER_CONFIRMATION_REQUEST:
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_USER_CONFIRM_REQUEST);
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SSP_PAIRING_ACTIVE);
             if (!hci_stack.ssp_auto_accept) break;
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_USER_CONFIRM_REPLY);
             break;
 
         case HCI_EVENT_USER_PASSKEY_REQUEST:
-            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_USER_PASSKEY_REQUEST);
+            hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SSP_PAIRING_ACTIVE);
             if (!hci_stack.ssp_auto_accept) break;
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], SEND_USER_PASSKEY_REPLY);
             break;
@@ -1572,7 +1571,27 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
             hci_stack.remote_device_db->delete_link_key(&addr);
         }
     }
-    
+
+    if (IS_COMMAND(packet, hci_pin_code_request_negative_reply)
+    ||  IS_COMMAND(packet, hci_pin_code_request_reply)){
+        bt_flip_addr(addr, &packet[3]);
+        conn = connection_for_address(addr);
+        if (conn){
+            connectionClearAuthenticationFlags(conn, LEGACY_PAIRING_ACTIVE);
+        }
+    }
+
+    if (IS_COMMAND(packet, hci_user_confirmation_request_negative_reply)
+    ||  IS_COMMAND(packet, hci_user_confirmation_request_reply)
+    ||  IS_COMMAND(packet, hci_user_passkey_request_negative_reply)
+    ||  IS_COMMAND(packet, hci_user_passkey_request_reply)) {
+        bt_flip_addr(addr, &packet[3]);
+        conn = connection_for_address(addr);
+        if (conn){
+            connectionClearAuthenticationFlags(conn, SSP_PAIRING_ACTIVE);
+        }
+    }
+
 #ifdef HAVE_BLE
     if (IS_COMMAND(packet, hci_le_set_advertising_parameters)){
         hci_stack.adv_addr_type = packet[8];
