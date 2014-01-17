@@ -711,7 +711,7 @@ static void event_handler(uint8_t *packet, int size){
             handle = READ_BT_16(packet, 3);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
-            if (gap_security_level_for_link_key_type(conn->link_key_type) >= conn->requested_security_level){
+            if (packet[2] == 0 && gap_security_level_for_link_key_type(conn->link_key_type) >= conn->requested_security_level){
                 // link key sufficient for requested security
                 conn->bonding_flags |= BONDING_SEND_ENCRYPTION_REQUEST;
             } else {
