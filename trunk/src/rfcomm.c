@@ -111,6 +111,8 @@ static linked_list_t rfcomm_multiplexers = NULL;
 static linked_list_t rfcomm_channels = NULL;
 static linked_list_t rfcomm_services = NULL;
 
+static gap_security_level_t rfcomm_security_level;
+
 static void (*app_packet_handler)(void * connection, uint8_t packet_type,
                                   uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -1942,6 +1944,11 @@ void rfcomm_init(void){
     rfcomm_multiplexers = NULL;
     rfcomm_services     = NULL;
     rfcomm_channels     = NULL;
+    rfcomm_security_level = LEVEL_0;
+}
+
+void rfcomm_set_required_security_level(gap_security_level_t security_level){
+    rfcomm_security_level = security_level;
 }
 
 // register packet handler
@@ -2122,7 +2129,7 @@ void rfcomm_register_service2(void * connection, uint8_t channel, uint16_t max_f
     
     // register with l2cap if not registered before, max MTU
     if (linked_list_empty(&rfcomm_services)){
-        l2cap_register_service_internal(NULL, rfcomm_packet_handler, PSM_RFCOMM, 0xffff, LEVEL_0);
+        l2cap_register_service_internal(NULL, rfcomm_packet_handler, PSM_RFCOMM, 0xffff, rfcomm_security_level);
     }
     
     // fill in 
