@@ -2122,7 +2122,7 @@ void rfcomm_register_service2(void * connection, uint8_t channel, uint16_t max_f
     
     // register with l2cap if not registered before, max MTU
     if (linked_list_empty(&rfcomm_services)){
-        l2cap_register_service_internal(NULL, rfcomm_packet_handler, PSM_RFCOMM, 0xffff);
+        l2cap_register_service_internal(NULL, rfcomm_packet_handler, PSM_RFCOMM, 0xffff, LEVEL_0);
     }
     
     // fill in 
