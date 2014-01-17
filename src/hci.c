@@ -705,15 +705,15 @@ static void event_handler(uint8_t *packet, int size){
             }
             break;
 
-        case HCI_EVENT_AUTHENTICATION_COMPLETE:
-            handle = READ_BT_16(packet, 3);
-            conn = hci_connection_for_handle(handle);
-            if (!conn) break;
-            if (conn->bonding_flags->BONDING_REQUESTED){
-                gap_security_level_t level = gap_security_level_for_connection(conn);
-                hci_emit_security_level(handle, packet[2], level);    
-            }
-            break;
+        // case HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT:
+        //     handle = READ_BT_16(packet, 3);
+        //     conn = hci_connection_for_handle(handle);
+        //     if (!conn) break;
+        //     if (conn->bonding_flags & BONDING_REQUESTED){
+        //         gap_security_level_t level = gap_security_level_for_connection(conn);
+        //         hci_emit_security_level(handle, packet[2], level);    
+        //     }
+        //     break;
 
 #ifndef EMBEDDED
         case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
@@ -1295,6 +1295,11 @@ void hci_run(){
         if (connection->bonding_flags & BONDING_SEND_AUTHENTICATE_REQUEST){
             connection->bonding_flags &= ~BONDING_SEND_AUTHENTICATE_REQUEST;
             hci_send_cmd(&hci_authentication_requested, connection->con_handle);
+            return;
+        }
+        if (connection->bonding_flags & BONDING_SEND_ENCRYPTION_REQUEST){
+            connection->bonding_flags &= ~BONDING_SEND_ENCRYPTION_REQUEST;
+            hci_send_cmd(&hci_set_connection_encryption, connection->con_handle, 1);
             return;
         }
     }
