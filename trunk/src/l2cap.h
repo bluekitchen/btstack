@@ -146,6 +146,8 @@ typedef struct {
 
     uint16_t  psm;
     
+    gap_security_level_t required_security_level;
+
     uint8_t   packets_granted;    // number of L2CAP/ACL packets client is allowed to send
     
     uint8_t   reason; // used in decline internal

@@ -511,7 +511,7 @@ void l2cap_run(void){
                 break;
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE:
-                l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, 0, 0, channel->reason, 0);
+                l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, channel->reason, 0);
                 // discard channel - l2cap_finialize_channel_close without sending l2cap close event
                 linked_list_remove(&l2cap_channels, (linked_item_t *) channel); // -- remove from list
                 btstack_memory_l2cap_channel_free(channel); 
@@ -775,14 +775,21 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
             handle = READ_BT_16(packet, 2);
             for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
                 channel = (l2cap_channel_t *) it;
+                gap_security_level_t actual_level = packet[4];
+                log_info("GAP_SECURITY_LEVEL handle %x/%x level %u, state %u", handle, channel->handle, actual_level, channel->state);
                 if (channel->handle != handle) continue;
+                log_info("handle ok");
                 if (channel->state  != L2CAP_STATE_WAIT_SECURITY_LEVEL_UPDATE) continue;
-                // @todo check security level again
-                // channel->reason = 0x03; // security block
-                // channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
-                // success
-                channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
-                l2cap_emit_connection_request(channel);                
+                log_info("state ok");
+                if (actual_level >= channel->required_security_level){
+                    log_info("level ok");
+                    channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
+                    l2cap_emit_connection_request(channel);                
+                } else {
+                    log_info("level nok");
+                    channel->reason = 0x03; // security block
+                    channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
+                }
             }
             break;
             
@@ -862,6 +869,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     channel->remote_mtu = L2CAP_DEFAULT_MTU;
     channel->packets_granted = 0;
     channel->remote_sig_id = sig_id; 
+    channel->required_security_level = LEVEL_0; // @TODO get from 'security database'
 
     // limit local mtu to max acl packet length
     if (channel->local_mtu > l2cap_max_mtu()) {
@@ -876,8 +884,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     linked_list_add(&l2cap_channels, (linked_item_t *) channel);
 
     // assert security requirements
-    gap_security_level_t required_level = LEVEL_0;
-    gap_request_security_level(handle, required_level);
+    gap_request_security_level(handle, channel->required_security_level);
 }
 
 void l2cap_accept_connection_internal(uint16_t local_cid){
@@ -1186,8 +1193,6 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
             break;
         }
     }
-    
-    l2cap_run();
 }
 
 static void l2cap_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
@@ -1201,6 +1206,7 @@ static void l2cap_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t 
         default:
             break;
     }
+    l2cap_run();
 }
 
 // finalize closed channel - l2cap_handle_disconnect_request & DISCONNECTION_RESPONSE

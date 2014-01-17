@@ -707,11 +707,19 @@ static void event_handler(uint8_t *packet, int size){
             hci_emit_security_level(handle, gap_security_level_for_connection(conn));
             break;
 
-        // case HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT:
-        //     handle = READ_BT_16(packet, 3);
-        //     conn = hci_connection_for_handle(handle);
-        //     if (!conn) break;
-        //     break;
+        case HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT:
+            handle = READ_BT_16(packet, 3);
+            conn = hci_connection_for_handle(handle);
+            if (!conn) break;
+            if (gap_security_level_for_link_key_type(conn->link_key_type) >= conn->requested_security_level){
+                // link key sufficient for requested security
+                conn->bonding_flags |= BONDING_SEND_ENCRYPTION_REQUEST;
+                return;
+            } else {
+                // not enough
+               hci_emit_security_level(handle, gap_security_level_for_connection(conn));
+            }
+            break;
 
 #ifndef EMBEDDED
         case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
@@ -1828,6 +1836,7 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
         }
     }
 
+    // try to authenticate connection
+    connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
     // connection->bonding_flags |= BONDING_REQUESTED;
-    // connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
 }
