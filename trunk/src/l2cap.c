@@ -287,7 +287,6 @@ static void l2cap_start_ertx(l2cap_channel_t * channel){
 }
 
 static int l2cap_security_level_0_allowed_for_PSM(uint16_t psm){
-    // return 0;   // TESTING!
     return psm != PSM_SDP;
 }
 
