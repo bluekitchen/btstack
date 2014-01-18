@@ -601,7 +601,7 @@ static void event_handler(uint8_t *packet, int size){
                 if (!packet[2]){
                     conn->state = OPEN;
                     conn->con_handle = READ_BT_16(packet, 3);
-                    conn->bonding_flags = BONDING_REQUEST_REMOTE_FEATURES;
+                    conn->bonding_flags |= BONDING_REQUEST_REMOTE_FEATURES;
 
                     // restart timer
                     run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
@@ -611,6 +611,11 @@ static void event_handler(uint8_t *packet, int size){
                     
                     hci_emit_nr_connections_changed();
                 } else {
+                    // notify client if dedicated bonding
+                    if (conn->bonding_flags & BONDING_DEDICATED){
+                        hci_emit_dedicated_bonding_result(conn, packet[2]);                        
+                    }
+
                     // connection failed, remove entry
                     linked_list_remove(&hci_stack.connections, (linked_item_t *) conn);
                     btstack_memory_hci_connection_free( conn );
@@ -634,6 +639,10 @@ static void event_handler(uint8_t *packet, int size){
                 }
             }
             conn->bonding_flags |= BONDING_RECEIVED_REMOTE_FEATURES;
+            log_info("HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE, bonding flags %x", conn->bonding_flags);
+            if (conn->bonding_flags & BONDING_DEDICATED){
+                conn->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
+            }
             break;
 
         case HCI_EVENT_LINK_KEY_REQUEST:
@@ -694,14 +703,15 @@ static void event_handler(uint8_t *packet, int size){
             break;
 
         case HCI_EVENT_ENCRYPTION_CHANGE:
-            if (packet[2]) break;   // error status
             handle = READ_BT_16(packet, 3);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
-            if (packet[5]){
-                conn->authentication_flags |= CONNECTION_ENCRYPTED;
-            } else {
-                conn->authentication_flags &= ~CONNECTION_ENCRYPTED;
+            if (packet[2] == 0) {
+                if (packet[5]){
+                    conn->authentication_flags |= CONNECTION_ENCRYPTED;
+                } else {
+                    conn->authentication_flags &= ~CONNECTION_ENCRYPTED;
+                }
             }
             hci_emit_security_level(handle, gap_security_level_for_connection(conn));
             break;
@@ -710,13 +720,22 @@ static void event_handler(uint8_t *packet, int size){
             handle = READ_BT_16(packet, 3);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;
+
+            // dedicated bonding: send result and disconnect
+            if (conn->bonding_flags & BONDING_DEDICATED){
+                conn->bonding_flags &= ~BONDING_DEDICATED;
+                hci_emit_dedicated_bonding_result( conn, packet[2]);           
+                conn->bonding_flags |= BONDING_DISCONNECT_DEDICATED_DONE;
+                break;
+            }
+
             if (packet[2] == 0 && gap_security_level_for_link_key_type(conn->link_key_type) >= conn->requested_security_level){
                 // link key sufficient for requested security
                 conn->bonding_flags |= BONDING_SEND_ENCRYPTION_REQUEST;
-            } else {
-                // not enough
-               hci_emit_security_level(handle, gap_security_level_for_connection(conn));
+                break;
             }
+            // not enough
+            hci_emit_security_level(handle, gap_security_level_for_connection(conn));
             break;
 
 #ifndef EMBEDDED
@@ -1233,6 +1252,12 @@ void hci_run(){
 
         connection = (hci_connection_t *) it;
         
+        if (connection->state == SEND_CREATE_CONNECTION){
+            log_info("sending hci_create_connection\n");
+            hci_send_cmd(&hci_create_connection, connection->address, hci_usable_acl_packet_types(), 0, 0, 0, 1); 
+            return;
+        }
+
         if (connection->state == RECEIVED_CONNECTION_REQUEST){
             log_info("sending hci_accept_connection_request\n");
             connection->state = ACCEPTED_CONNECTION_REQUEST;
@@ -1294,6 +1319,11 @@ void hci_run(){
         if (connection->bonding_flags & BONDING_DISCONNECT_SECURITY_BLOCK){
             connection->bonding_flags &= ~BONDING_DISCONNECT_SECURITY_BLOCK;
             hci_send_cmd(&hci_disconnect, connection->con_handle, 0x0005);  // authentication failure
+            return;
+        }
+        if (connection->bonding_flags & BONDING_DISCONNECT_DEDICATED_DONE){
+            connection->bonding_flags &= ~BONDING_DISCONNECT_DEDICATED_DONE;
+            hci_send_cmd(&hci_disconnect, connection->con_handle, 0);  // authentication done
             return;
         }
         if (connection->bonding_flags & BONDING_SEND_AUTHENTICATE_REQUEST){
@@ -1537,23 +1567,30 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     if (IS_COMMAND(packet, hci_create_connection)){
         bt_flip_addr(addr, &packet[3]);
         log_info("Create_connection to %s\n", bd_addr_to_str(addr));
+
         conn = connection_for_address(addr);
-        if (conn) {
-            // if connection exists
-            if (conn->state == OPEN) {
+        if (!conn){
+            conn = create_connection_for_addr(addr);
+            if (!conn){
+                // notify client that alloc failed
+                hci_emit_connection_complete(conn, BTSTACK_MEMORY_ALLOC_FAILED);
+                return 0; // don't sent packet to controller
+            }
+            conn->state = SEND_CREATE_CONNECTION;
+        }
+        log_info("conn state %u", conn->state);
+        switch (conn->state){
+            // if connection active exists
+            case OPEN:
                 // and OPEN, emit connection complete command
                 hci_emit_connection_complete(conn, 0);
-            }
-            //    otherwise, just ignore as it is already in the open process
-            return 0; // don't sent packet to controller
-            
-        }
-        // create connection struct and register, state = SENT_CREATE_CONNECTION
-        conn = create_connection_for_addr(addr);
-        if (!conn){
-            // notify client that alloc failed
-            hci_emit_connection_complete(conn, BTSTACK_MEMORY_ALLOC_FAILED);
-            return 0; // don't sent packet to controller
+                break;
+            case SEND_CREATE_CONNECTION:
+                // connection created by hci, e.g. dedicated bonding
+                break;
+            default:
+                // otherwise, just ignore as it is already in the open process
+                return 0;
         }
         conn->state = SENT_CREATE_CONNECTION;
     }
@@ -1777,6 +1814,19 @@ void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t l
     hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
+void hci_emit_dedicated_bonding_result(hci_connection_t * connection, uint8_t status){
+    log_info("hci_emit_dedicated_bonding_result %u ", status);
+    uint8_t event[9];
+    int pos = 0;
+    event[pos++] = GAP_DEDICATED_BONDING_COMPLETED;
+    event[pos++] = sizeof(event) - 2;
+    event[pos++] = status;
+    bt_flip_addr( * (bd_addr_t *) &event[pos], connection->address);
+    pos += 6;
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hci_stack.packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
+}
+
 // query if remote side supports SSP
 int hci_remote_ssp_supported(hci_con_handle_t con_handle){
     hci_connection_t * connection = hci_connection_for_handle(con_handle);
@@ -1864,4 +1914,46 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
 
     // try to authenticate connection
     connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
+}
+
+/**
+ * @brief start dedicated bonding with device. disconnect after bonding
+ * @param device
+ * @param request MITM protection
+ * @result GAP_DEDICATED_BONDING_COMPLETE
+ */
+int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required){
+
+
+    printf("gap_dedicated_bonding clled\n");
+    // create connection state machine
+    hci_connection_t * connection = create_connection_for_addr(device);
+
+    if (!connection){
+        return BTSTACK_MEMORY_ALLOC_FAILED;
+    }
+
+    printf("gap_dedicated_bonding 2\n");
+
+    // delete linkn key
+    hci_drop_link_key_for_bd_addr( (bd_addr_t *) &device);
+
+    // @TODO answer AutHReq based on context instead of global state
+    hci_stack.ssp_authentication_requirement = 
+        SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
+
+    // configure LEVEL_2/3, dedicated bonding
+    connection->state = SEND_CREATE_CONNECTION;    
+    connection->requested_security_level = mitm_protection_required ? LEVEL_3 : LEVEL_2;
+    connection->bonding_flags = BONDING_DEDICATED;
+
+    // wait for GAP Security Result and send GAP Dedicated Bonding complete
+
+    // handle: connnection failure (connection complete != ok)
+    // handle: authentication failure
+    // handle: disconnect on done
+
+    hci_run();
+
+    return 0;
 }

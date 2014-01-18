@@ -244,10 +244,13 @@ extern "C" {
 #define SM_AUTHORIZATION_REQUEST						   0xb9
 #define SM_AUTHORIZATION_RESULT							   0xba
 
-// GAP SECURITY
+// GAP
 
- // data: event(8), len(8), hci_handle (16), security_level (8)
- #define GAP_SECURITY_LEVEL     						   0xc0
+// data: event(8), len(8), hci_handle (16), security_level (8)
+#define GAP_SECURITY_LEVEL     						   	   0xc0
+
+// data: event(8), len(8), status (8), bd_addr(48)
+#define GAP_DEDICATED_BONDING_COMPLETED					   0xc1
 
 // Error Code
 #define ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER 	       0x02
