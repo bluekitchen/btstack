@@ -220,7 +220,8 @@ typedef enum {
 } hci_authentication_flags_t;
 
 typedef enum {
-    SENT_CREATE_CONNECTION = 1,
+    SEND_CREATE_CONNECTION = 0,
+    SENT_CREATE_CONNECTION,
     RECEIVED_CONNECTION_REQUEST,
     ACCEPTED_CONNECTION_REQUEST,
     REJECTED_CONNECTION_REQUEST,
@@ -233,8 +234,10 @@ typedef enum {
     BONDING_RECEIVED_REMOTE_FEATURES  = 0x02,
     BONDING_REMOTE_SUPPORTS_SSP       = 0x04,
     BONDING_DISCONNECT_SECURITY_BLOCK = 0x08,
-    BONDING_SEND_AUTHENTICATE_REQUEST = 0x10,
-    BONDING_SEND_ENCRYPTION_REQUEST   = 0x20,
+    BONDING_DISCONNECT_DEDICATED_DONE = 0x10,
+    BONDING_SEND_AUTHENTICATE_REQUEST = 0x20,
+    BONDING_SEND_ENCRYPTION_REQUEST   = 0x40,
+    BONDING_DEDICATED                 = 0x80,
 } bonding_flags_t;
 
 typedef enum {
@@ -397,6 +400,7 @@ void hci_emit_system_bluetooth_enabled(uint8_t enabled);
 void hci_emit_remote_name_cached(bd_addr_t *addr, device_name_t *name);
 void hci_emit_discoverable_enabled(uint8_t enabled);
 void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t level);
+void hci_emit_dedicated_bonding_result(hci_connection_t * connection, uint8_t status);
 
 // query if remote side supports SSP
 // query if the local side supports SSP

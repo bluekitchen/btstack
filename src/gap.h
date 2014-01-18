@@ -81,6 +81,15 @@ typedef enum {
  */
 void gap_set_bondable_mode(int enabled);
 
+/**
+ * @brief start dedicated bonding with device. disconnect after bonding
+ * @param device
+ * @param request MITM protection
+ * @returns error, if max num acl connections active
+ * @result GAP_DEDICATED_BONDING_COMPLETE
+ */
+int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required);
+
 gap_security_level_t gap_security_level_for_link_key_type(link_key_type_t link_key_type);
 gap_security_level_t gap_security_level(hci_con_handle_t con_handle);
 
