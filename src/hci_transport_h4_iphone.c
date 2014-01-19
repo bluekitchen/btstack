@@ -45,7 +45,7 @@
  *
  */
 
-#include "config.h"
+#include "btstack-config.h"
 
 #define SOCKET_DEVICE "com.apple.uart.bluetooth"
 #include <sys/socket.h>

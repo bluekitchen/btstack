@@ -49,7 +49,7 @@
 #include <btstack/utils.h>
 #include <btstack/sdp_util.h>
 
-#include "config.h"
+#include "btstack-config.h"
 
 #include "ble_client.h"
 #include "ad_parser.h"

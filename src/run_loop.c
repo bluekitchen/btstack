@@ -48,7 +48,7 @@
 #include "run_loop_private.h"
 
 #include "debug.h"
-#include "config.h"
+#include "btstack-config.h"
 
 static run_loop_t * the_run_loop = NULL;
 

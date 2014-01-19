@@ -56,7 +56,7 @@
 
 #include <libusb-1.0/libusb.h>
 
-#include "config.h"
+#include "btstack-config.h"
 
 #include "debug.h"
 #include "hci.h"

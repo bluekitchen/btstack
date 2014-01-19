@@ -48,7 +48,7 @@
 
 #include <stdlib.h>
 
-#include "config.h"
+#include "btstack-config.h"
 #include "hci.h"
 #include "l2cap.h"
 #include "rfcomm.h"

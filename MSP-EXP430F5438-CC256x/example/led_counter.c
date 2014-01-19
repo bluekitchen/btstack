@@ -18,7 +18,7 @@
 #include "btstack_memory.h"
 
 #include <btstack/run_loop.h>
-#include "config.h"
+#include "btstack-config.h"
 
 #define HEARTBEAT_PERIOD_MS 1000
 

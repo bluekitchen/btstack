@@ -38,7 +38,7 @@
  *  sdp_client.c
  */
 
-#include "config.h"
+#include "btstack-config.h"
 #include "sdp_client.h"
 
 #include <btstack/hci_cmds.h>

@@ -43,7 +43,7 @@
 #ifndef __DEBUG_H
 #define __DEBUG_H
 
-#include "config.h"
+#include "btstack-config.h"
 #include "hci_dump.h"
 
 #include <stdio.h>

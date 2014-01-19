@@ -38,7 +38,7 @@
 #ifndef __RUN_LOOP_H
 #define __RUN_LOOP_H
 
-#include "config.h"
+#include "btstack-config.h"
 
 #include <btstack/linked_list.h>
 

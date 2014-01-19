@@ -45,7 +45,7 @@
 #include <string.h>
 
 #include <btstack/sdp_util.h>
-#include "config.h"
+#include "btstack-config.h"
 #include "hci.h"
 
 // calculate combined ogf/ocf value

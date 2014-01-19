@@ -21,7 +21,7 @@
 #include "hci.h"
 #include "btstack_memory.h"
 #include "remote_device_db.h"
-#include "config.h"
+#include "btstack-config.h"
 
 
 #define MAX_DEVICES 10
