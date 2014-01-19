@@ -4,6 +4,7 @@
 #define HAVE_INIT_SCRIPT
 #define HAVE_BZERO
 #define HAVE_TIME
+#define SDP_DES_DUMP
 
 // #define ENABLE_LOG_INFO 
 // #define ENABLE_LOG_ERROR
@@ -22,4 +23,5 @@
 #define MAX_NO_DB_MEM_DEVICE_LINK_KEYS  2
 #define MAX_NO_DB_MEM_DEVICE_NAMES 10
 #define MAX_NO_DB_MEM_SERVICES 1
+
 

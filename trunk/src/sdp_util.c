@@ -47,14 +47,15 @@
 #include <stdint.h>
 #include <inttypes.h>   // PRIx32
 
+#ifdef SDP_DES_DUMP
 // workaround for missing PRIx32 on mspgcc (16-bit MCU)
 #ifndef PRIx32
 #warning Using own: #define PRIx32 "lx"
 #define PRIx32 "lx"
 #endif
-
 // date element type names
 const char * const type_names[] = { "NIL", "UINT", "INT", "UUID", "STRING", "BOOL", "DES", "DEA", "URL"};
+#endif
 
 // Bluetooth Base UUID: 00000000-0000-1000-8000- 00805F9B34FB
 const uint8_t sdp_bluetooth_base_uuid[] = { 0x00, 0x00, 0x00, 0x00, /* - */ 0x00, 0x00, /* - */ 0x10, 0x00, /* - */
@@ -566,6 +567,7 @@ int sdp_record_matches_service_search_pattern(uint8_t *record, uint8_t *serviceS
 
 // MARK: Dump DataElement
 // context { indent }
+#ifdef SDP_DES_DUMP
 static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_t de_size, void *my_context){
     int indent = *(int*) my_context;
     int i;
@@ -616,13 +618,16 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
     }
     return 0;
 }
+#endif
 
 void de_dump_data_element(uint8_t * record){
+#ifdef SDP_DES_DUMP
     int indent = 0;
     // hack to get root DES, too.
     de_type_t type = de_get_element_type(record);
     de_size_t size = de_get_size_type(record);
     de_traversal_dump_data(record, type, size, (void*) &indent);
+#endif
 }
 
 void sdp_create_spp_service(uint8_t *service, int service_id, const char *name){
