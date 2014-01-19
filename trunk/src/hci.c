@@ -1291,7 +1291,14 @@ void hci_run(){
         if (connection->authentication_flags & SEND_IO_CAPABILITIES_REPLY){
             connectionClearAuthenticationFlags(connection, SEND_IO_CAPABILITIES_REPLY);
             if (hci_stack.bondable && hci_stack.ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN){
-                hci_send_cmd(&hci_io_capability_request_reply, &connection->address, hci_stack.ssp_io_capability, NULL, hci_stack.ssp_authentication_requirement);
+                // tweak authentication requirements
+                uint8_t authreq = hci_stack.ssp_authentication_requirement;
+                if (connection->bonding_flags & BONDING_DEDICATED){
+                    authreq = gap_mitm_protection_required_for_security_level(connection->requested_security_level) ?
+                        SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_DEDICATED_BONDING :
+                        SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
+                }
+                hci_send_cmd(&hci_io_capability_request_reply, &connection->address, hci_stack.ssp_io_capability, NULL, authreq);
             } else {
                 hci_send_cmd(&hci_io_capability_request_negative_reply, &connection->address, ERROR_CODE_PAIRING_NOT_ALLOWED);
             }
@@ -1869,6 +1876,10 @@ static gap_security_level_t gap_security_level_for_connection(hci_connection_t *
 }    
 
 
+int gap_mitm_protection_required_for_security_level(gap_security_level_t level){
+    return level > LEVEL_2;
+}
+
 /**
  * @brief get current security level
  */
@@ -1937,10 +1948,6 @@ int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required){
 
     // delete linkn key
     hci_drop_link_key_for_bd_addr( (bd_addr_t *) &device);
-
-    // @TODO answer AutHReq based on context instead of global state
-    hci_stack.ssp_authentication_requirement = 
-        SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
 
     // configure LEVEL_2/3, dedicated bonding
     connection->state = SEND_CREATE_CONNECTION;    
