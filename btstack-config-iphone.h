@@ -1,4 +1,4 @@
-// btstack-config.h created by configure for BTstack  Sun Jan 19 17:44:59 CET 2014
+// btstack-config.h created by configure for BTstack  Sun Jan 19 18:35:17 CET 2014
 #define HAVE_TRANSPORT_H4
 #define UART_DEVICE "/dev/ttyS0"
 #define UART_SPEED 115200
@@ -15,3 +15,4 @@
 #define ENABLE_LOG_INFO 
 #define ENABLE_LOG_ERROR
 #define HCI_ACL_PAYLOAD_SIZE 1021
+#define SDP_DES_DUMP
