@@ -99,9 +99,26 @@ void printUUID(uint8_t *uuid) {
            uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15]);
 }
 
+char char_for_nibble(int nibble){
+    if (nibble < 10) return '0' + nibble;
+    nibble -= 10;
+    if (nibble < 6) return 'A' + nibble;
+    return '?';
+}
+
 static char bd_addr_to_str_buffer[6*3];  // 12:45:78:01:34:67\0
 char * bd_addr_to_str(bd_addr_t addr){
-    sprintf(bd_addr_to_str_buffer, "%02x:%02x:%02x:%02x:%02x:%02x", addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
+    // orig code
+    // sprintf(bd_addr_to_str_buffer, "%02x:%02x:%02x:%02x:%02x:%02x", addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
+    // sprintf-free code
+    char * p = bd_addr_to_str_buffer;
+    int i;
+    for (i = 0; i < 6 ; i++) {
+        *p++ = char_for_nibble((addr[i] >> 4) & 0x0F);
+        *p++ = char_for_nibble((addr[i] >> 0) & 0x0F);
+        *p++ = ':';
+    }
+    *--p = 0;
     return (char *) bd_addr_to_str_buffer;
 }
 
