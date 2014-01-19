@@ -272,6 +272,7 @@ echo "#define HAVE_BZERO" >> btstack-config.h
 echo "#define ENABLE_LOG_INFO " >> btstack-config.h
 echo "#define ENABLE_LOG_ERROR" >> btstack-config.h
 echo "#define HCI_ACL_PAYLOAD_SIZE 1021" >> btstack-config.h
+echo "#define SDP_DES_DUMP" >> btstack-config.h
 
 AC_SUBST(IPHONE_IP)
 AC_SUBST(HAVE_LIBUSB)

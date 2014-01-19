@@ -9,6 +9,7 @@
 #define HAVE_TIME
 #define HAVE_MALLOC
 #define HAVE_BZERO
+#define SDP_DES_DUMP
 #define ENABLE_LOG_INFO 
 #define ENABLE_LOG_ERROR
 #define HCI_ACL_PAYLOAD_SIZE 1021
