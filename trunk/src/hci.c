@@ -1294,10 +1294,11 @@ void hci_run(){
                 // tweak authentication requirements
                 uint8_t authreq = hci_stack.ssp_authentication_requirement;
                 if (connection->bonding_flags & BONDING_DEDICATED){
-                    authreq = gap_mitm_protection_required_for_security_level(connection->requested_security_level) ?
-                        SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_DEDICATED_BONDING :
-                        SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
+                    authreq = SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_DEDICATED_BONDING;
                 }
+                if (gap_mitm_protection_required_for_security_level(connection->requested_security_level)){
+                    authreq |= 1;
+                } 
                 hci_send_cmd(&hci_io_capability_request_reply, &connection->address, hci_stack.ssp_io_capability, NULL, authreq);
             } else {
                 hci_send_cmd(&hci_io_capability_request_negative_reply, &connection->address, ERROR_CODE_PAIRING_NOT_ALLOWED);
@@ -1919,9 +1920,6 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
             }
         }
     }
-
-    // setup SSP AuthRequirements, we need MITM to go higher
-    hci_stack.ssp_authentication_requirement |= 1;  // MITM required
 
     // try to authenticate connection
     connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
