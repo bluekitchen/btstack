@@ -41,7 +41,7 @@
 #ifndef __SDP_PARSER_H
 #define __SDP_PARSER_H
 
-#include "config.h"
+#include "btstack-config.h"
  
 #include <stdint.h>
 #include <stdio.h>

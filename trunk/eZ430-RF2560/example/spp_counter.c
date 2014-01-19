@@ -28,7 +28,7 @@
 #include "remote_device_db.h"
 #include "rfcomm.h"
 #include "sdp.h"
-#include "config.h"
+#include "btstack-config.h"
 
 #define HEARTBEAT_PERIOD_MS 1000
 

@@ -43,7 +43,7 @@
 #ifndef __BLE_CLIENT_H
 #define __BLE_CLIENT_H
 
-#include "config.h"
+#include "btstack-config.h"
 
 #include <btstack/utils.h>
 

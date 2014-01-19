@@ -5,7 +5,7 @@
 //
 //*****************************************************************************
 
-#include "config.h"
+#include "btstack-config.h"
 
 #include <stdint.h>
 #include <stdio.h>

@@ -39,7 +39,7 @@
 #include <stdint.h>
 #include <btstack/linked_list.h>
 
-#include "config.h"
+#include "btstack-config.h"
 
 #if defined __cplusplus
 extern "C" {

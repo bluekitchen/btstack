@@ -41,7 +41,7 @@
  */
 
 #include "l2cap_signaling.h"
-#include "config.h"
+#include "btstack-config.h"
 
 #include <string.h>
 

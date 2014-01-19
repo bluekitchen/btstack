@@ -42,7 +42,7 @@
  *  Created by Matthias Ringwald on 4/29/09.
  */
 
-#include "config.h"
+#include "btstack-config.h"
 
 #include <termios.h>  /* POSIX terminal control definitions */
 #include <fcntl.h>    /* File control definitions */

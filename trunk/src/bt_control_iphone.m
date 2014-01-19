@@ -45,7 +45,7 @@
  *  Bluetooth Toggle by BigBoss
  */
 
-#include "config.h"
+#include "btstack-config.h"
 
 #include "bt_control_iphone.h"
 #include "hci_transport.h"

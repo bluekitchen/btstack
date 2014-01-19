@@ -7,7 +7,7 @@
 #include "remote_device_db.h"
 #include "btstack_memory.h"
 
-#include "config.h"
+#include "btstack-config.h"
 
 extern linked_list_t db_mem_link_keys ;
 extern linked_list_t db_mem_names ;

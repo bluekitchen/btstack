@@ -227,51 +227,51 @@ echo "HAVE_SO_NOSIGPIPE:   $HAVE_SO_NOSIGPIPE"
 echo
 echo
 
-# create config.h
-echo "// config.h created by configure for BTstack " `date`> config.h
+# create btstack-config.h
+echo "// btstack-config.h created by configure for BTstack " `date`> btstack-config.h
 if test "x$HCI_TRANSPORT" = xUSB; then
     USB_SOURCES=hci_transport_usb.c
-    echo "#define HAVE_TRANSPORT_USB" >> config.h
-    echo "#define USB_PRODUCT_ID $USB_PRODUCT_ID" >> config.h
-    echo "#define USB_VENDOR_ID $USB_VENDOR_ID" >> config.h
+    echo "#define HAVE_TRANSPORT_USB" >> btstack-config.h
+    echo "#define USB_PRODUCT_ID $USB_PRODUCT_ID" >> btstack-config.h
+    echo "#define USB_VENDOR_ID $USB_VENDOR_ID" >> btstack-config.h
 else
-    echo "#define HAVE_TRANSPORT_H4" >> config.h
-    echo "#define UART_DEVICE \"$UART_DEVICE\"" >> config.h
-    echo "#define UART_SPEED $UART_SPEED" >> config.h
+    echo "#define HAVE_TRANSPORT_H4" >> btstack-config.h
+    echo "#define UART_DEVICE \"$UART_DEVICE\"" >> btstack-config.h
+    echo "#define UART_SPEED $UART_SPEED" >> btstack-config.h
     if test "x$USE_BLUETOOL" = xyes; then
-        echo "#define USE_BLUETOOL" >> config.h
+        echo "#define USE_BLUETOOL" >> btstack-config.h
     fi
     if test "x$USE_POWERMANAGEMENT" = xyes; then
-        echo "#define USE_POWERMANAGEMENT" >> config.h
+        echo "#define USE_POWERMANAGEMENT" >> btstack-config.h
     fi
 fi
 if test "x$USE_SPRINGBOARD" = xyes; then
     SPRINGBOARD_ACCESS_SOURCES="../SpringBoardAccess/SpringBoardAccess.c"
-    echo "#define USE_SPRINGBOARD" >> config.h
+    echo "#define USE_SPRINGBOARD" >> btstack-config.h
 fi
 if test "x$USE_LAUNCHD" = xyes; then
-    echo "#define USE_LAUNCHD" >> config.h
+    echo "#define USE_LAUNCHD" >> btstack-config.h
 fi
 if test "x$USE_COCOA_RUN_LOOP" = xyes; then
-    echo "#define USE_COCOA_RUN_LOOP" >> config.h
+    echo "#define USE_COCOA_RUN_LOOP" >> btstack-config.h
 fi
-echo "#define USE_POSIX_RUN_LOOP" >> config.h
-echo "#define HAVE_SDP" >> config.h
-echo "#define HAVE_RFCOMM" >> config.h
+echo "#define USE_POSIX_RUN_LOOP" >> btstack-config.h
+echo "#define HAVE_SDP" >> btstack-config.h
+echo "#define HAVE_RFCOMM" >> btstack-config.h
 if test ! -z "$REMOTE_DEVICE_DB" ; then 
-    echo "#define REMOTE_DEVICE_DB $REMOTE_DEVICE_DB" >> config.h
+    echo "#define REMOTE_DEVICE_DB $REMOTE_DEVICE_DB" >> btstack-config.h
 fi
 if test "x$HAVE_SO_NOSIGPIPE" == xyes ; then
-    echo "#define HAVE_SO_NOSIGPIPE" >> config.h
+    echo "#define HAVE_SO_NOSIGPIPE" >> btstack-config.h
 fi
 
 # often not present for embedded
-echo "#define HAVE_TIME" >> config.h
-echo "#define HAVE_MALLOC" >> config.h
-echo "#define HAVE_BZERO" >> config.h
-echo "#define ENABLE_LOG_INFO " >> config.h
-echo "#define ENABLE_LOG_ERROR" >> config.h
-echo "#define HCI_ACL_PAYLOAD_SIZE 1021" >> config.h
+echo "#define HAVE_TIME" >> btstack-config.h
+echo "#define HAVE_MALLOC" >> btstack-config.h
+echo "#define HAVE_BZERO" >> btstack-config.h
+echo "#define ENABLE_LOG_INFO " >> btstack-config.h
+echo "#define ENABLE_LOG_ERROR" >> btstack-config.h
+echo "#define HCI_ACL_PAYLOAD_SIZE 1021" >> btstack-config.h
 
 AC_SUBST(IPHONE_IP)
 AC_SUBST(HAVE_LIBUSB)

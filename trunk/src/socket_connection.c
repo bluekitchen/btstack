@@ -48,7 +48,7 @@
 #include "hci.h"
 #include "debug.h"
 
-#include "config.h"
+#include "btstack-config.h"
 
 #include <btstack/btstack.h>
 
