@@ -29,7 +29,8 @@
  *
  */
 
-#pragma once
+#ifndef __BTSTACKMANAGER_H
+#define __BTSTACKMANAGER_H
 
 #import <Foundation/Foundation.h>
 #import <stdint.h>
@@ -186,3 +187,5 @@ typedef enum {
 
 // TODO add l2cap and rfcomm incoming events
 @end
+
+#endif // __BTSTACKMANAGER_H

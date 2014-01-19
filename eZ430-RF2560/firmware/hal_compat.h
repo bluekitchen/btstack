@@ -7,7 +7,8 @@
  
 // mspgcc LTS doesn't support 20-bit pointer yet -> put const data into .fartext
 
-#pragma once
+#ifndef __HAL_COMPAT_H
+#define __HAL_COMPAT_H
 
 #include <stdint.h>
 
@@ -21,3 +22,4 @@ void FlashReadBlock(uint8_t *buffer, uint32_t addr,  uint16_t len);
     
 
 
+#endif // __HAL_COMPAT_H

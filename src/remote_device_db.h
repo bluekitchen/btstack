@@ -38,7 +38,8 @@
  * interface to provide link key and remote name storage
  */
 
-#pragma once
+#ifndef __REMOTE_DEVICE_DB_H
+#define __REMOTE_DEVICE_DB_H
 
 #include <btstack/utils.h>
 #include "gap.h"
@@ -103,3 +104,5 @@ typedef struct {
 #if defined __cplusplus
 }
 #endif
+
+#endif // __REMOTE_DEVICE_DB_H

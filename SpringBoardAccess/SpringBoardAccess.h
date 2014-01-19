@@ -41,7 +41,8 @@
  *  Created by Matthias Ringwald on 9/20/09.
  *
  */
-#pragma once
+#ifndef __SPRINGBOARDACCESS_H
+#define __SPRINGBOARDACCESS_H
 
 #define SBA_MessagePortName "SpringBoardAccess"
 
@@ -79,3 +80,5 @@ int SBA_setBluetoothEnabled(int on);
  * Tests if SpringBoardAccess server is available
  */
 int SBA_available();
+
+#endif // __SPRINGBOARDACCESS_H

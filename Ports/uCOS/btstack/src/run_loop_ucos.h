@@ -37,6 +37,9 @@
  *  Created by Albis Technologies.
  */
 
-#pragma once
+#ifndef __RUN_LOOP_UCOS_H
+#define __RUN_LOOP_UCOS_H
 
 void run_loop_notify_incoming_transport_packet(void);
+
+#endif // __RUN_LOOP_UCOS_H

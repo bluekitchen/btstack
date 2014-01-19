@@ -42,7 +42,8 @@
  *  Created by Matthias Ringwald on 4/29/09.
  *
  */
-#pragma once
+#ifndef __HCI_TRANSPORT_H
+#define __HCI_TRANSPORT_H
 
 #include <stdint.h>
 #include <btstack/run_loop.h>
@@ -86,3 +87,4 @@ extern void hci_transport_h4_iphone_set_enforce_wake_device(char *path);
 }
 #endif
 
+#endif // __HCI_TRANSPORT_H

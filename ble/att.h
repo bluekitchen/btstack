@@ -34,7 +34,8 @@
  *
  */
 
-#pragma once
+#ifndef __ATT_H
+#define __ATT_H
 
 #include <stdint.h>
 
@@ -226,3 +227,5 @@ uint16_t att_prepare_handle_value_indication(att_connection_t * att_connection,
 #if defined __cplusplus
 }
 #endif
+
+#endif // __ATT_H

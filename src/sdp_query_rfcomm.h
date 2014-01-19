@@ -38,7 +38,8 @@
  *  sdp_rfcomm_query.h
  */
 
-#pragma once
+#ifndef __SDP_QUERY_RFCOMM_H
+#define __SDP_QUERY_RFCOMM_H
 
 #include <btstack/utils.h>
 #include "sdp_parser.h"
@@ -79,3 +80,5 @@ void sdp_query_rfcomm_register_callback(void(*sdp_app_callback)(sdp_query_event_
 #if defined __cplusplus
 }
 #endif
+
+#endif // __SDP_QUERY_RFCOMM_H

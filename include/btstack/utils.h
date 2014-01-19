@@ -37,7 +37,8 @@
  *  Created by Matthias Ringwald on 7/23/09.
  */
 
-#pragma once
+#ifndef __UTILS_H
+#define __UTILS_H
 
 
 #if defined __cplusplus
@@ -145,3 +146,4 @@ int is_authenticated_link_key(link_key_type_t link_key_type);
 }
 #endif
 		
+#endif // __UTILS_H

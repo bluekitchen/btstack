@@ -42,7 +42,8 @@
 //  Created by Matthias Ringwald on 8/15/09.
 //
 
-#pragma once
+#ifndef __PLATFORM_IPHONE_H
+#define __PLATFORM_IPHONE_H
 
 #include "hci.h"
 
@@ -58,3 +59,5 @@ int  platform_iphone_logging_enabled(void);
 #if defined __cplusplus
 }
 #endif
+
+#endif // __PLATFORM_IPHONE_H

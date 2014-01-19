@@ -35,7 +35,8 @@
  *  Created by Matthias Ringwald on 6/6/09.
  */
 
-#pragma once
+#ifndef __RUN_LOOP_H
+#define __RUN_LOOP_H
 
 #include "config.h"
 
@@ -119,3 +120,4 @@ void embedded_trigger(void);
 }
 #endif
 
+#endif // __RUN_LOOP_H

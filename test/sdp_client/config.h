@@ -1,5 +1,6 @@
 // config.h created by configure for BTstack  Sun Sep 25 16:06:59 CEST 2011
-#pragma once
+#ifndef __CONFIG_H
+#define __CONFIG_H
 #define HAVE_TRANSPORT_H4
 #define UART_DEVICE "/dev/tty.usbserial-A600eIDu"
 #define UART_SPEED 115200
@@ -12,3 +13,5 @@
 #define HAVE_SDP_EXTRA_QUERIES
 #define HCI_ACL_PAYLOAD_SIZE 1021
 // #define HCI_ACL_PAYLOAD_SIZE 52
+
+#endif // __CONFIG_H

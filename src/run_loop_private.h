@@ -40,7 +40,8 @@
  *  Created by Matthias Ringwald on 6/6/09.
  */
 
-#pragma once
+#ifndef __RUN_LOOP_PRIVATE_H
+#define __RUN_LOOP_PRIVATE_H
 
 #include <btstack/run_loop.h>
 
@@ -71,3 +72,4 @@ typedef struct {
 }
 #endif
 
+#endif // __RUN_LOOP_PRIVATE_H

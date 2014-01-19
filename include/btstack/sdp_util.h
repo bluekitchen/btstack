@@ -33,7 +33,8 @@
  *  sdp_util.h
  */
 
-#pragma once
+#ifndef __SDP_UTIL_H
+#define __SDP_UTIL_H
 
 #include <stdint.h>
 
@@ -137,3 +138,5 @@ void      sdp_normalize_uuid(uint8_t *uuid, uint32_t shortUUID);
 #if defined __cplusplus
 }
 #endif
+
+#endif // __SDP_UTIL_H

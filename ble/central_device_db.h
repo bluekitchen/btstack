@@ -34,7 +34,8 @@
  *
  */
  
-#pragma once
+#ifndef __CENTRAL_DEVICE_DB_H
+#define __CENTRAL_DEVICE_DB_H
 
 #include <btstack/utils.h>
 
@@ -112,3 +113,5 @@ void central_device_db_counter_set(int index, uint32_t counter);
  * @param index
  */
 void central_device_db_remove(int index);
+
+#endif // __CENTRAL_DEVICE_DB_H

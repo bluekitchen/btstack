@@ -33,7 +33,8 @@
  * Please inquire about commercial licensing options at contact@bluekitchen-gmbh.com
  *
  */
-#pragma once
+#ifndef __ATT_SERVER_H
+#define __ATT_SERVER_H
 
 #include <btstack/btstack.h>
 #include <stdint.h>
@@ -78,3 +79,5 @@ int att_server_indicate(uint16_t handle, uint8_t *value, uint16_t value_len);
 #if defined __cplusplus
 }
 #endif
+
+#endif // __ATT_SERVER_H

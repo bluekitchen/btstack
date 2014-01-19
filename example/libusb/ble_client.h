@@ -40,7 +40,8 @@
 
 // NOTE: Supports only a single connection
 
-#pragma once
+#ifndef __BLE_CLIENT_H
+#define __BLE_CLIENT_H
 
 #include "config.h"
 
@@ -191,3 +192,4 @@ le_command_status_t le_central_get_characteristics_for_service_with_uuid128(le_p
 #if defined __cplusplus
 }
 #endif
+#endif // __BLE_CLIENT_H

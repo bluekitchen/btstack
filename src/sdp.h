@@ -33,7 +33,8 @@
  * Please inquire about commercial licensing options at btstack@ringwald.ch
  *
  */
-#pragma once
+#ifndef __SDP_H
+#define __SDP_H
 
 #include <stdint.h>
 #include <btstack/linked_list.h>
@@ -109,3 +110,4 @@ void sdp_unregister_service_internal(void *connection, uint32_t service_record_h
 #if defined __cplusplus
 }
 #endif
+#endif // __SDP_H
