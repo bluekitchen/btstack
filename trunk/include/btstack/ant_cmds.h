@@ -35,7 +35,8 @@
  *
  */
 
-#pragma once
+#ifndef __ANT_CMDS_H
+#define __ANT_CMDS_H
 
 #include <stdint.h>
 #include <btstack/hci_cmds.h>
@@ -178,3 +179,5 @@ const ant_cmd_t ant_request_message;
 #if defined __cplusplus
 }
 #endif
+
+#endif // __ANT_CMDS_H

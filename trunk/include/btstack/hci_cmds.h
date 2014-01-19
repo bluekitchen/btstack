@@ -35,7 +35,8 @@
  *  Created by Matthias Ringwald on 7/23/09.
  */
 
-#pragma once
+#ifndef __HCI_CMDS_H
+#define __HCI_CMDS_H
 
 #include <stdint.h>
 
@@ -492,3 +493,5 @@ extern const hci_cmd_t rfcomm_persistent_channel_for_service;
 #if defined __cplusplus
 }
 #endif
+
+#endif // __HCI_CMDS_H

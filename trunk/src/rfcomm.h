@@ -38,7 +38,8 @@
  *  RFCOMM.h
  */
 
-#pragma once
+#ifndef __RFCOMM_H
+#define __RFCOMM_H
  
 #include <btstack/btstack.h>
 #include <btstack/utils.h>
@@ -419,3 +420,5 @@ int rfcomm_send_port_configuration(uint16_t rfcomm_cid, rpn_baud_t baud_rate, rp
 #if defined __cplusplus
 }
 #endif
+
+#endif // __RFCOMM_H

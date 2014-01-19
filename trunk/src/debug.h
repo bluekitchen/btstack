@@ -40,7 +40,8 @@
  *  allow to funnel debug & error messages 
  */
 
-#pragma once
+#ifndef __DEBUG_H
+#define __DEBUG_H
 
 #include "config.h"
 #include "hci_dump.h"
@@ -76,3 +77,5 @@
 #else
 #define log_error(...)
 #endif
+
+#endif // __DEBUG_H

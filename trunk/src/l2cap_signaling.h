@@ -40,7 +40,8 @@
  *  Created by Matthias Ringwald on 7/23/09.
  */
 
-#pragma once
+#ifndef __L2CAP_SIGNALING_H
+#define __L2CAP_SIGNALING_H
 
 #include <stdint.h>
 #include <stdarg.h>
@@ -76,3 +77,4 @@ uint16_t l2cap_next_local_cid(void);
 }
 #endif
 
+#endif // __L2CAP_SIGNALING_H

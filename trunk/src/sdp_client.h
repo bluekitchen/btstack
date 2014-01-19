@@ -38,7 +38,8 @@
  *  sdp_client.h
  */
 
-#pragma once
+#ifndef __SDP_CLIENT_H
+#define __SDP_CLIENT_H
 
 #include "config.h"
 
@@ -64,3 +65,5 @@ void sdp_client_service_search(bd_addr_t remote, uint8_t * des_serviceSearchPatt
 #if defined __cplusplus
 }
 #endif
+
+#endif // __SDP_CLIENT_H

@@ -34,7 +34,8 @@
  *
  */
 
-#pragma once
+#ifndef __GAP_LE_H
+#define __GAP_LE_H
 
 #if defined __cplusplus
 extern "C" {
@@ -62,3 +63,4 @@ void gap_random_address_set_mode(gap_random_address_type_t random_address_type);
 }
 #endif
 
+#endif // __GAP_LE_H

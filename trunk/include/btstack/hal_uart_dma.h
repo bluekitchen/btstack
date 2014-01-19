@@ -38,7 +38,8 @@
  *
  */
 
-#pragma once
+#ifndef __HAL_UART_DMA_H
+#define __HAL_UART_DMA_H
 
 #include <stdint.h>
 
@@ -58,3 +59,4 @@ void hal_uart_dma_set_sleep(uint8_t sleep);
 #if defined __cplusplus
 }
 #endif
+#endif // __HAL_UART_DMA_H

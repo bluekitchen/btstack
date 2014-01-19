@@ -34,7 +34,8 @@
  *
  */
 
-#pragma once
+#ifndef __SM_H
+#define __SM_H
 
 #include <btstack/utils.h>
 #include <btstack/btstack.h>
@@ -256,3 +257,5 @@ void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, void (*d
 #if defined __cplusplus
 }
 #endif
+
+#endif // __SM_H

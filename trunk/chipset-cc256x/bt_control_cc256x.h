@@ -40,7 +40,8 @@
  *  Adapter to use cc256x-based chipsets with BTstack
  */
  
-#pragma once
+#ifndef __BT_CONTROL_CC256X_H
+#define __BT_CONTROL_CC256X_H
 
 #include <stdint.h>
 #include "bt_control.h"
@@ -53,3 +54,4 @@ void bt_control_cc256x_enable_ehcill(int on);
 int bt_control_cc256x_ehcill_enabled(void);
 
 hci_uart_config_t *hci_uart_config_cc256x_instance(void);
+#endif // __BT_CONTROL_CC256X_H

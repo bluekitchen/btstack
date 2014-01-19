@@ -38,7 +38,8 @@
  *  sdp_parser.h
  */
 
-#pragma once
+#ifndef __SDP_PARSER_H
+#define __SDP_PARSER_H
 
 #include "config.h"
  
@@ -117,3 +118,4 @@ void sdp_parser_register_callback(void (*sdp_callback)(sdp_query_event_t * event
 }
 #endif
 
+#endif // __SDP_PARSER_H

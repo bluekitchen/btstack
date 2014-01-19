@@ -41,7 +41,8 @@
  *
  *  Created by Matthias Ringwald on 5/19/09.
  */
-#pragma once
+#ifndef __BT_CONTROL_IPHONE_H
+#define __BT_CONTROL_IPHONE_H
  
 #include "bt_control.h"
 
@@ -63,3 +64,4 @@ int  iphone_system_has_csr(void);
 }
 #endif
 
+#endif // __BT_CONTROL_IPHONE_H

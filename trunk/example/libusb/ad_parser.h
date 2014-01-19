@@ -37,7 +37,8 @@
 //
 //*****************************************************************************
 
-#pragma once
+#ifndef __AD_PARSER_H
+#define __AD_PARSER_H
 
 #include "config.h"
 
@@ -69,3 +70,4 @@ int ad_data_contains_uuid128(uint8_t ad_len, uint8_t * ad_data, uint8_t * uuid12
 #if defined __cplusplus
 }
 #endif
+#endif // __AD_PARSER_H

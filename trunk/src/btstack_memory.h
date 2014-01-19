@@ -41,7 +41,8 @@
  *
  */
 
-#pragma once
+#ifndef __BTSTACK_MEMORY_H
+#define __BTSTACK_MEMORY_H
 
 #if defined __cplusplus
 extern "C" {
@@ -71,3 +72,5 @@ void   btstack_memory_db_mem_service_free(void *db_mem_service);
 #if defined __cplusplus
 }
 #endif
+
+#endif // __BTSTACK_MEMORY_H

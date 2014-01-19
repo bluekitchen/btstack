@@ -34,7 +34,8 @@
  *
  */
 
-#pragma once
+#ifndef __GAP_H
+#define __GAP_H
 
 #if defined __cplusplus
 extern "C" {
@@ -100,3 +101,4 @@ int  gap_mitm_protection_required_for_security_level(gap_security_level_t level)
 }
 #endif
 
+#endif // __GAP_H

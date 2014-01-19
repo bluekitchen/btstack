@@ -42,7 +42,8 @@
  *  Created by Matthias Ringwald on 5/16/09.
  */
 
-#pragma once
+#ifndef __L2CAP_H
+#define __L2CAP_H
 
 #include "hci.h"
 #include "l2cap_signaling.h"
@@ -250,3 +251,5 @@ int l2cap_le_request_connection_parameter_update(uint16_t handle, uint16_t inter
 #if defined __cplusplus
 }
 #endif
+
+#endif // __L2CAP_H

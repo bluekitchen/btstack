@@ -38,7 +38,8 @@
  *  
  */
 
-#pragma once
+#ifndef __BTSTACK_H
+#define __BTSTACK_H
 
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>
@@ -84,3 +85,5 @@ void bt_send_rfcomm(uint16_t rfcom_cid, uint8_t *data, uint16_t len);
 #if defined __cplusplus
 }
 #endif
+
+#endif // __BTSTACK_H

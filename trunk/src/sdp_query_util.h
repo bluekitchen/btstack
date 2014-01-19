@@ -38,7 +38,8 @@
  *  sdp_query_util.h
  */
 
-#pragma once
+#ifndef __SDP_QUERY_UTIL_H
+#define __SDP_QUERY_UTIL_H
 
 
 #if defined __cplusplus
@@ -56,3 +57,5 @@ void sdp_general_query_for_uuid(bd_addr_t remote, uint16_t uuid);
 #if defined __cplusplus
 }
 #endif
+
+#endif // __SDP_QUERY_UTIL_H

@@ -43,7 +43,8 @@
  *
  */
 
-#pragma once
+#ifndef __BT_CONTROL_H
+#define __BT_CONTROL_H
 
 #include <stdint.h>
 
@@ -82,3 +83,5 @@ typedef struct {
 #if defined __cplusplus
 }
 #endif
+
+#endif // __BT_CONTROL_H

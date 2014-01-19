@@ -41,7 +41,8 @@
  *  Created by Matthias Ringwald on 6/6/09.
  */
 
-#pragma once
+#ifndef __SOCKET_CONNECTION_H
+#define __SOCKET_CONNECTION_H
 
 #include <btstack/run_loop.h>
 
@@ -125,3 +126,5 @@ int  socket_connection_has_parked_connections(void);
 #if defined __cplusplus
 }
 #endif
+
+#endif // __SOCKET_CONNECTION_H

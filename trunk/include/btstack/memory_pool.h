@@ -40,7 +40,8 @@
  *  @Note minimal implementation, no error checking/handling
  */
 
-#pragma once
+#ifndef __MEMORY_POOL_H
+#define __MEMORY_POOL_H
 
 #if defined __cplusplus
 extern "C" {
@@ -60,3 +61,5 @@ void   memory_pool_free(memory_pool_t *pool, void * block);
 #if defined __cplusplus
 }
 #endif
+
+#endif // __MEMORY_POOL_H

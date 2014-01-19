@@ -42,7 +42,8 @@
  *  Created by Matthias Ringwald on 5/26/09.
  */
 
-#pragma once
+#ifndef __HCI_DUMP_H
+#define __HCI_DUMP_H
 
 #include <stdint.h>
 
@@ -65,3 +66,4 @@ void hci_dump_close(void);
 #if defined __cplusplus
 }
 #endif
+#endif // __HCI_DUMP_H

@@ -41,7 +41,8 @@
  *
  */
 
-#pragma once
+#ifndef __HCI_H
+#define __HCI_H
 
 #include "config.h"
 
@@ -457,3 +458,5 @@ void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t * addr);
 #if defined __cplusplus
 }
 #endif
+
+#endif // __HCI_H
