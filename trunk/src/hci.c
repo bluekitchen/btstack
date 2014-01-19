@@ -965,6 +965,10 @@ void hci_close(){
     hci_stack = NULL;
 }
 
+void hci_set_class_of_device(uint32_t class_of_device){
+    hci_stack->class_of_device = class_of_device;
+}
+
 // State-Module-Driver overview
 // state                    module  low-level 
 // HCI_STATE_OFF             off      close

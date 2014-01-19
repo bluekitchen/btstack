@@ -419,8 +419,11 @@ void hci_disconnect_security_block(hci_con_handle_t con_handle);
 
 /** Embedded API **/
 
-// Set up HCI.
+// Set up HCI. Needs to be called before any other function
 void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, remote_device_db_t const* remote_device_db);
+
+// Set class of device that will be set during Bluetooth init
+void hci_set_class_of_device(uint32_t class_of_device);
 
 // Registers a packet handler. Used if L2CAP is not used (rarely). 
 void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
