@@ -214,6 +214,7 @@ int  l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t *data, uin
 
 void l2cap_close_connection(void *connection);
 
+int l2cap_send_echo_request(uint16_t handle, uint8_t *data, uint16_t len);
 
 /** Embedded API **/
 
@@ -244,6 +245,7 @@ void l2cap_unregister_service_internal(void *connection, uint16_t psm);
 // Accepts/Deny incoming L2CAP connection.
 void l2cap_accept_connection_internal(uint16_t local_cid);
 void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason);
+
 
 // Request LE connection parameter update
 int l2cap_le_request_connection_parameter_update(uint16_t handle, uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency, uint16_t timeout_multiplier);
