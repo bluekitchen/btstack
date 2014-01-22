@@ -1,8 +1,8 @@
 BTSTACK_ROOT = ../..
 
 CFLAGS  = -g -Wall -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include -I${BTSTACK_ROOT}/chipset-cc256x
-CFLAGS += -I/sw/include -I../../ble -I../.. -I../.. 
-LDFLAGS = -L/sw/lib -lusb-1.0
+CFLAGS += -I/usr/local/include -I../../ble -I../.. -I../.. 
+LDFLAGS = -L/usr/local/lib -lusb-1.0
 
 CORE   = \
     ${BTSTACK_ROOT}/src/btstack_memory.c          \
@@ -55,9 +55,8 @@ ATT_OBJ = $(ATT:.c=.o)
 
 # create firmware image from common objects and example source file
 
-all: ../../include/btstack/version.h ble_client ble_client_uart gap_dedicated_bonding sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral ble_peripheral_sm_minimal
-
-#spp-usb l2cap-server-usb l2cap-client-usb l2cap-server-uart l2cap-client-uart
+all: ../../include/btstack/version.h ble_client  sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral ble_peripheral_sm_minimal
+# ble_client_uart #spp-usb l2cap-server-usb l2cap-client-usb l2cap-server-uart l2cap-client-uart
 
 ../../include/btstack/version.h:
 	cd ..; ../src/get_version.sh
