@@ -45,7 +45,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 				case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started - set local name
 					if (packet[2] == HCI_STATE_WORKING) {
-                        hci_send_cmd(&hci_write_local_name, "BlueMSP-Demo");
+                        hci_send_cmd(&hci_write_local_name, "BTstack SPP Counter");
 					}
 					break;
 				
@@ -63,6 +63,13 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     bt_flip_addr(event_addr, &packet[2]);
 					hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
 					break;
+
+                case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+                    // inform about user confirmation request
+                    printf("SSP User Confirmation Request with numeric value '%06u'\n", READ_BT_32(packet, 8));
+                    printf("SSP User Confirmation Auto accept\n");
+                    break;
+
                 
                 case RFCOMM_EVENT_INCOMING_CONNECTION:
 					// data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
