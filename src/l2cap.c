@@ -409,6 +409,10 @@ int l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t *data, uint
     return l2cap_send_prepared_connectionless(handle, cid, len);
 }
 
+int l2cap_send_echo_request(uint16_t handle, uint8_t *data, uint16_t len){
+    return l2cap_send_signaling_packet(handle, ECHO_REQUEST, 0x77, len, data);
+}
+
 static inline void channelStateVarSetFlag(l2cap_channel_t *channel, L2CAP_CHANNEL_STATE_VAR flag){
     channel->state_var = (L2CAP_CHANNEL_STATE_VAR) (channel->state_var | flag);
 }
