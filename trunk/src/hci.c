@@ -93,6 +93,17 @@ hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
     return NULL;
 }
 
+hci_connection_t * hci_connection_for_bd_addr(bd_addr_t * addr){
+    linked_item_t *it;
+    for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
+        hci_connection_t * connection = (hci_connection_t *) it;
+        if (memcmp(addr, connection->address, 6) == 0) {
+            return connection;
+        }
+    }
+    return NULL;
+}
+
 static void hci_connection_timeout_handler(timer_source_t *timer){
     hci_connection_t * connection = (hci_connection_t *) linked_item_get_user(&timer->item);
 #ifdef HAVE_TIME
@@ -1610,9 +1621,9 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
         switch (conn->state){
             // if connection active exists
             case OPEN:
-                // and OPEN, emit connection complete command
+                // and OPEN, emit connection complete command, don't send to controller
                 hci_emit_connection_complete(conn, 0);
-                break;
+                return 0;
             case SEND_CREATE_CONNECTION:
                 // connection created by hci, e.g. dedicated bonding
                 break;
