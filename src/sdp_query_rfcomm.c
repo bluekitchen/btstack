@@ -265,7 +265,7 @@ static void handle_sdp_parser_event(sdp_query_event_t * event){
             }
             break;
         case SDP_QUERY_COMPLETE:
-            (*sdp_app_callback)((sdp_query_event_t*)&event, sdp_app_context);
+            (*sdp_app_callback)(event, sdp_app_context);
             break;
     }
     // insert higher level code HERE
