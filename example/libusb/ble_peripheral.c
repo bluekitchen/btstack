@@ -66,6 +66,15 @@
 // test profile
 #include "profile.h"
 
+typedef enum {
+    DISABLE_ADVERTISEMENTS   = 1 << 0,
+    SET_ADVERTISEMENT_PARAMS = 1 << 1,
+    SET_ADVERTISEMENT_DATA   = 1 << 2,
+    SET_SCAN_RESPONSE_DATA   = 1 << 3,
+    ENABLE_ADVERTISEMENTS    = 1 << 4,
+} todo_t;
+static todo_t todos = 0;
+
 ///------
 static int advertisements_enabled = 0;
 static int gap_discoverable = 1;
@@ -79,6 +88,50 @@ static int client_configuration = 0;
 
 static void app_run();
 static void show_usage();
+static void update_advertisements();
+
+// some test data
+static uint8_t adv_data_0[] = { 2, 01, 05,   03, 02, 0xf0, 0xff }; 
+
+// AD Manufacturer Specific Data - Ericsson, 1, 2, 3, 4
+static uint8_t adv_data_1[] = { 7, 0xff, 0x00, 0x00, 1, 2, 3, 4 }; 
+// AD Local Name - 'BTstack'
+static uint8_t adv_data_2[] = { 8, 0x09, 'B', 'T', 's', 't', 'a', 'c', 'k' }; 
+// AD Flags - 2 - General Discoverable mode
+static uint8_t adv_data_3[] = { 2, 01, 02 }; 
+// AD Service Data - 0x1812 HID over LE
+static uint8_t adv_data_4[] = { 3, 0x16, 0x12, 0x18 }; 
+// AD Service Solicitation -  0x1812 HID over LE
+static uint8_t adv_data_5[] = { 3, 0x14, 0x12, 0x18 }; 
+// AD Services
+static uint8_t adv_data_6[] = { 3, 0x03, 0x12, 0x18 }; 
+// AD Slave Preferred Connection Interval Range - no min, no max
+static uint8_t adv_data_7[] = { 5, 0x12, 0xff, 0xff, 0xff, 0xff }; 
+// AD Tx Power Level - +4 dBm
+static uint8_t adv_data_8[] = { 2, 0x0a, 4 }; 
+
+static uint8_t adv_data_len;
+static uint8_t adv_data[32];
+
+typedef struct {
+    uint16_t len;
+    uint8_t * data;
+} advertisement_t;
+
+#define ADV(a) { sizeof(a), &a[0]}
+static advertisement_t advertisements[] = {
+    ADV(adv_data_0),
+    ADV(adv_data_1),
+    ADV(adv_data_2),
+    ADV(adv_data_3),
+    ADV(adv_data_4),
+    ADV(adv_data_5),
+    ADV(adv_data_6),
+    ADV(adv_data_7),
+    ADV(adv_data_8),
+};
+
+static int advertisement_index = 0;
 
 static void  heartbeat_handler(struct timer *ts){
     // restart timer
@@ -137,12 +190,47 @@ static uint8_t gap_adv_type(){
     return 0x03;
 }
 
-static int set_adv_params_after_set_adv_enable = 0;
+static void gap_run(){
+    if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
+
+    if (todos & DISABLE_ADVERTISEMENTS){
+        todos &= ~DISABLE_ADVERTISEMENTS;
+        advertisements_enabled = 0;
+        hci_send_cmd(&hci_le_set_advertise_enable, 0);
+        return;
+    }    
+
+    if (todos & SET_ADVERTISEMENT_DATA){
+        todos &= ~SET_ADVERTISEMENT_DATA;
+        hci_send_cmd(&hci_le_set_advertising_data, adv_data_len, adv_data);
+        return;
+    }    
+
+    if (todos & SET_ADVERTISEMENT_PARAMS){
+        todos &= ~SET_ADVERTISEMENT_PARAMS;
+        bd_addr_t null;
+        hci_send_cmd(&hci_le_set_advertising_parameters,0x0800, 0x0800, gap_adv_type(), 0, 0, &null, 0x07, 0x00);
+        return;
+    }    
+
+    // if (todos & SET_SCAN_RESPONSE_DATA){
+    //     todos &= ~SET_SCAN_RESPONSE_DATA;
+    //     hci_send_cmd(&hci_le_set_scan_response_data, adv_data_len, adv_data);
+    //     return;
+    // }    
+
+    if (todos & ENABLE_ADVERTISEMENTS){
+        todos &= ~ENABLE_ADVERTISEMENTS;
+        advertisements_enabled = 1;
+        hci_send_cmd(&hci_le_set_advertise_enable, 1);
+        show_usage();
+        return;
+    }    
+
+}
 
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     
-    uint8_t adv_data[] = { 02, 01, 05,   03, 02, 0xf0, 0xff }; 
-
     switch (packet_type) {
             
         case HCI_EVENT_PACKET:
@@ -152,7 +240,9 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     // bt stack activated, get started
                     if (packet[2] == HCI_STATE_WORKING) {
                         printf("SM Init completed\n");
-                        hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
+                        todos = SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | SET_SCAN_RESPONSE_DATA | ENABLE_ADVERTISEMENTS;
+                        update_advertisements();
+                        gap_run();
                     }
                     break;
                 
@@ -160,7 +250,6 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             advertisements_enabled = 0;
-
                             // request connection parameter update - test parameters
                             // l2cap_le_request_connection_parameter_update(READ_BT_16(packet, 4), 20, 1000, 100, 100);
                             break;
@@ -171,46 +260,11 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    // restart advertising if we have been connected before
-                    // -> avoid sending advertise enable a second time before command complete was received 
-                    if (advertisements_enabled == 0) {
-                        hci_send_cmd(&hci_le_set_advertise_enable, 1);
-                        advertisements_enabled = 1;
+                    if (!advertisements_enabled == 0 && gap_discoverable){
+                        todos = ENABLE_ADVERTISEMENTS;
                     }
                     break;
                     
-                case HCI_EVENT_COMMAND_COMPLETE:
-                    if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_advertising_data)){
-                         // only needed for BLE Peripheral
-                       hci_send_cmd(&hci_le_set_scan_response_data, 10, adv_data);
-                       break;
-                    }
-                    // first init
-                    if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_scan_response_data)){
-                        bd_addr_t null;
-                        printf("hci_le_set_advertising_parameters type %u\n", gap_adv_type());
-                        hci_send_cmd(&hci_le_set_advertising_parameters,0x0800, 0x0800, gap_adv_type(), 0, 0, &null, 0x07, 0x00);
-                        break;
-                    }
-                    // update
-                    if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_advertise_enable)){
-                        if (!set_adv_params_after_set_adv_enable) break;
-                        set_adv_params_after_set_adv_enable = 0;
-                        bd_addr_t null;
-                        printf("hci_le_set_advertising_parameters type %u\n", gap_adv_type());
-                        hci_send_cmd(&hci_le_set_advertising_parameters,0x0800, 0x0800, gap_adv_type(), 0, 0, &null, 0x07, 0x00);
-                    }
-                    if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_advertising_parameters)){
-                        if (gap_discoverable != advertisements_enabled){
-                            printf("hci_le_set_advertise_enable %u\n", gap_discoverable);
-                            hci_send_cmd(&hci_le_set_advertise_enable, gap_discoverable);
-                            advertisements_enabled = gap_discoverable;
-                        }
-                        show_usage();
-                        break;
-                    }
-                    break;
-
                 case SM_PASSKEY_DISPLAY_NUMBER: {
                     // display number
                     sm_event_t * event = (sm_event_t *) packet;
@@ -236,6 +290,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
             }
     }
+    gap_run();
 }
 
 void setup(void){
@@ -281,27 +336,36 @@ void show_usage(){
     printf("C - connectable on\n");
     printf("d - discoverable off\n");
     printf("D - discoverable on\n");
+    printf("---\n");
+    printf("1 - AD Manufacturer Specific Data\n");
+    printf("2 - AD Local Name\n");
+    printf("3 - AD Flags\n");
+    printf("4 - AD Service Data\n");
+    printf("5 - AD Service Solicitation\n");
+    printf("6 - AD Services\n");
+    printf("7 - AD Slave Preferred Connection Interval Range\n");
+    printf("8 - AD Tx Power Level\n");
+    printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
 
 void update_advertisements(){
-    bd_addr_t null;
+
+    memset(adv_data, 0, 32);
+    memcpy(adv_data, advertisements[advertisement_index].data, advertisements[advertisement_index].len);
+
     if (!gap_discoverable){
         gap_connectable = 0;
     }
     if (!gap_connectable){
         gap_bondable = 0;
     }
-    if (advertisements_enabled){
-        set_adv_params_after_set_adv_enable = 1;
-        advertisements_enabled = 0;
-        printf("hci_le_set_advertise_enable 0\n");
-        hci_send_cmd(&hci_le_set_advertise_enable, 0);
-        return;
-    }
+    if (!advertisements_enabled) return;
 
-    hci_send_cmd(&hci_le_set_advertising_parameters,0x0800, 0x0800, gap_adv_type(), 0, 0, null, 0x07, 0x00);
+    // update all
+    todos = DISABLE_ADVERTISEMENTS | SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | SET_SCAN_RESPONSE_DATA | ENABLE_ADVERTISEMENTS;
+    gap_run();
 }
 
 int  stdin_process(struct data_source *ds){
@@ -334,6 +398,17 @@ int  stdin_process(struct data_source *ds){
             gap_discoverable = 1;
             update_advertisements();
             break;
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+            advertisement_index = buffer - '0';
+            update_advertisements();
+            break;
         default:
             show_usage();
             break;
@@ -362,6 +437,7 @@ void setup_cli(){
 
 int main(void)
 {
+    printf("BTstack LE Peripheral starting up...\n");
     setup();
 
     setup_cli();
