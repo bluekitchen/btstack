@@ -84,7 +84,7 @@ static void btstack_setup(){
 
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
     hci_init(transport, config, control, remote_db);
-
+    hci_set_class_of_device(0x200404);
     l2cap_init();
     l2cap_register_packet_handler(&packet_handler2);
 
