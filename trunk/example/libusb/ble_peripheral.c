@@ -68,6 +68,10 @@
 
 ///------
 static int advertisements_enabled = 0;
+static int gap_discoverable = 1;
+static int gap_connectable = 1;
+static int gap_bondable = 1;
+
 static timer_source_t heartbeat;
 static uint8_t counter = 0;
 static int update_client = 0;
@@ -126,6 +130,15 @@ static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16
     return 1;
 }
 
+static uint8_t gap_adv_type(){
+    if (gap_connectable){
+        return 0;
+    }
+    return 0x03;
+}
+
+static int set_adv_params_after_set_adv_enable = 0;
+
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     
     uint8_t adv_data[] = { 02, 01, 05,   03, 02, 0xf0, 0xff }; 
@@ -139,7 +152,6 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     // bt stack activated, get started
                     if (packet[2] == HCI_STATE_WORKING) {
                         printf("SM Init completed\n");
-                        show_usage();
                         hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
                     }
                     break;
@@ -173,11 +185,29 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                        hci_send_cmd(&hci_le_set_scan_response_data, 10, adv_data);
                        break;
                     }
+                    // first init
                     if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_scan_response_data)){
-                         // only needed for BLE Peripheral
-                       hci_send_cmd(&hci_le_set_advertise_enable, 1);
-                       advertisements_enabled = 1;
-                       break;
+                        bd_addr_t null;
+                        printf("hci_le_set_advertising_parameters type %u\n", gap_adv_type());
+                        hci_send_cmd(&hci_le_set_advertising_parameters,0x0800, 0x0800, gap_adv_type(), 0, 0, &null, 0x07, 0x00);
+                        break;
+                    }
+                    // update
+                    if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_advertise_enable)){
+                        if (!set_adv_params_after_set_adv_enable) break;
+                        set_adv_params_after_set_adv_enable = 0;
+                        bd_addr_t null;
+                        printf("hci_le_set_advertising_parameters type %u\n", gap_adv_type());
+                        hci_send_cmd(&hci_le_set_advertising_parameters,0x0800, 0x0800, gap_adv_type(), 0, 0, &null, 0x07, 0x00);
+                    }
+                    if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_advertising_parameters)){
+                        if (gap_discoverable != advertisements_enabled){
+                            printf("hci_le_set_advertise_enable %u\n", gap_discoverable);
+                            hci_send_cmd(&hci_le_set_advertise_enable, gap_discoverable);
+                            advertisements_enabled = gap_discoverable;
+                        }
+                        show_usage();
+                        break;
                     }
                     break;
 
@@ -243,14 +273,67 @@ void setup(void){
 
 void show_usage(){
     printf("\n--- CLI for LE Peripheral ---\n");
+    printf("Status: discoverable %u, connectable %u, bondable %u, advertisements enabled %u \n", gap_discoverable, gap_connectable, gap_bondable, advertisements_enabled);
+    printf("---\n");
+    printf("b - bondable off\n");
+    printf("B - bondable on\n");
+    printf("c - connectable off\n");
+    printf("C - connectable on\n");
+    printf("d - discoverable off\n");
+    printf("D - discoverable on\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
+}
+
+void update_advertisements(){
+    bd_addr_t null;
+    if (!gap_discoverable){
+        gap_connectable = 0;
+    }
+    if (!gap_connectable){
+        gap_bondable = 0;
+    }
+    if (advertisements_enabled){
+        set_adv_params_after_set_adv_enable = 1;
+        advertisements_enabled = 0;
+        printf("hci_le_set_advertise_enable 0\n");
+        hci_send_cmd(&hci_le_set_advertise_enable, 0);
+        return;
+    }
+
+    hci_send_cmd(&hci_le_set_advertising_parameters,0x0800, 0x0800, gap_adv_type(), 0, 0, null, 0x07, 0x00);
 }
 
 int  stdin_process(struct data_source *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
     switch (buffer){
+        case 'b':
+            gap_bondable = 0;
+            sm_set_authentication_requirements(SM_AUTHREQ_NO_BONDING);
+            show_usage();
+            break;
+        case 'B':
+            gap_bondable = 1;
+            sm_set_authentication_requirements(SM_AUTHREQ_BONDING);
+            show_usage();
+            break;
+        case 'c':
+            gap_connectable = 0;
+            update_advertisements();
+            break;
+        case 'C':
+            gap_connectable = 1;
+            update_advertisements();
+            break;
+        case 'd':
+            gap_discoverable = 0;
+            update_advertisements();
+            break;
+        case 'D':
+            gap_discoverable = 1;
+            update_advertisements();
+            break;
         default:
             show_usage();
             break;
