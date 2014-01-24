@@ -80,6 +80,7 @@ static int advertisements_enabled = 0;
 static int gap_discoverable = 1;
 static int gap_connectable = 1;
 static int gap_bondable = 1;
+static int gap_directed_connectable = 0;
 
 static timer_source_t heartbeat;
 static uint8_t counter = 0;
@@ -89,6 +90,10 @@ static int client_configuration = 0;
 static void app_run();
 static void show_usage();
 static void update_advertisements();
+
+// -> hier Adresse vom Tester eintragen für Directed Connectable Mode
+static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x06, 0x07, 0x5F};
+static int tester_address_type = 0;
 
 // some test data
 static uint8_t adv_data_0[] = { 2, 01, 05,   03, 02, 0xf0, 0xff }; 
@@ -185,7 +190,10 @@ static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16
 
 static uint8_t gap_adv_type(){
     if (gap_connectable){
-        return 0;
+        if (gap_directed_connectable){
+            return 0x01;
+        }
+        return 0x00;
     }
     return 0x03;
 }
@@ -208,8 +216,7 @@ static void gap_run(){
 
     if (todos & SET_ADVERTISEMENT_PARAMS){
         todos &= ~SET_ADVERTISEMENT_PARAMS;
-        bd_addr_t null;
-        hci_send_cmd(&hci_le_set_advertising_parameters,0x0800, 0x0800, gap_adv_type(), 0, 0, &null, 0x07, 0x00);
+        hci_send_cmd(&hci_le_set_advertising_parameters, 0x0800, 0x0800, gap_adv_type(), 0, tester_address_type, &tester_address, 0x07, 0x00);
         return;
     }    
 
@@ -328,7 +335,7 @@ void setup(void){
 
 void show_usage(){
     printf("\n--- CLI for LE Peripheral ---\n");
-    printf("Status: discoverable %u, connectable %u, bondable %u, advertisements enabled %u \n", gap_discoverable, gap_connectable, gap_bondable, advertisements_enabled);
+    printf("Status: discoverable %u, connectable %u, bondable %u, directed connectable %u, advertisements enabled %u \n", gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, advertisements_enabled);
     printf("---\n");
     printf("b - bondable off\n");
     printf("B - bondable on\n");
@@ -336,6 +343,8 @@ void show_usage(){
     printf("C - connectable on\n");
     printf("d - discoverable off\n");
     printf("D - discoverable on\n");
+    printf("x - directed connectable off\n");
+    printf("X - directed connectable on\n");
     printf("---\n");
     printf("1 - AD Manufacturer Specific Data\n");
     printf("2 - AD Local Name\n");
@@ -396,6 +405,14 @@ int  stdin_process(struct data_source *ds){
             break;
         case 'D':
             gap_discoverable = 1;
+            update_advertisements();
+            break;
+        case 'x':
+            gap_directed_connectable = 0;
+            update_advertisements();
+            break;
+        case 'X':
+            gap_directed_connectable = 1;
             update_advertisements();
             break;
         case '1':
