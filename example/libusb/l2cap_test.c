@@ -60,6 +60,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 printf("L2CAP connection to device %s failed. status code %u\n", bd_addr_to_str(event_addr), packet[2]);
             }
             break;
+        case L2CAP_EVENT_INCOMING_CONNECTION: {
+            uint16_t l2cap_cid  = READ_BT_16(packet, 12);
+            printf("L2CAP Accepting incoming connection request\n"); 
+            l2cap_accept_connection_internal(l2cap_cid);
+            break;
+        }
+
 
         default:
             break;
@@ -85,9 +92,12 @@ static void btstack_setup(){
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
     hci_init(transport, config, control, remote_db);
     hci_set_class_of_device(0x200404);
+    hci_discoverable_control(1);
+
     l2cap_init();
     l2cap_register_packet_handler(&packet_handler2);
-
+    l2cap_register_service_internal(NULL, packet_handler, PSM_SDP, 100, LEVEL_0);
+    
     // turn on!
     hci_power_control(HCI_POWER_ON);
 }
