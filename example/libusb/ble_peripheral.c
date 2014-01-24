@@ -88,6 +88,8 @@ static uint8_t counter = 0;
 static int update_client = 0;
 static int client_configuration = 0;
 
+static uint16_t handle = 0;
+
 static void app_run();
 static void show_usage();
 static void update_advertisements();
@@ -258,6 +260,8 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             advertisements_enabled = 0;
+                            handle = READ_BT_16(packet, 4);
+                            printf("Connection handle 0x%04x", handle);
                             // request connection parameter update - test parameters
                             // l2cap_le_request_connection_parameter_update(READ_BT_16(packet, 4), 20, 1000, 100, 100);
                             break;
@@ -359,6 +363,8 @@ void show_usage(){
     printf("7 - AD Slave Preferred Connection Interval Range\n");
     printf("8 - AD Tx Power Level\n");
     printf("---\n");
+    printf("t - terminate connection\n");
+    printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -437,6 +443,9 @@ int  stdin_process(struct data_source *ds){
         case '8':
             advertisement_index = buffer - '0';
             update_advertisements();
+            break;
+        case 't':
+            hci_send_cmd(&hci_disconnect, handle, 0x13);
             break;
         default:
             show_usage();
