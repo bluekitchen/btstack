@@ -473,7 +473,7 @@ void l2cap_run(void){
                 }
                 break;
             case COMMAND_REJECT:
-                l2cap_send_signaling_packet(handle, COMMAND_REJECT, sig_id, result);
+                l2cap_send_signaling_packet(handle, COMMAND_REJECT, sig_id, result, 0, NULL);
                 break;
             default:
                 // should not happen
