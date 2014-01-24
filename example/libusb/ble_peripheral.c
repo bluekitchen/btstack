@@ -41,6 +41,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/uio.h>
+#include <unistd.h>
+#include <termios.h>
 
 #include "btstack-config.h"
 
@@ -71,6 +74,7 @@ static int update_client = 0;
 static int client_configuration = 0;
 
 static void app_run();
+static void show_usage();
 
 static void  heartbeat_handler(struct timer *ts){
     // restart timer
@@ -135,6 +139,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     // bt stack activated, get started
                     if (packet[2] == HCI_STATE_WORKING) {
                         printf("SM Init completed\n");
+                        show_usage();
                         hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
                     }
                     break;
@@ -236,9 +241,48 @@ void setup(void){
     att_server_register_packet_handler(app_packet_handler);
 }
 
+void show_usage(){
+    printf("\n--- CLI for LE Peripheral ---\n");
+    printf("Ctrl-c - exit\n");
+    printf("---\n");
+}
+
+int  stdin_process(struct data_source *ds){
+    char buffer;
+    read(ds->fd, &buffer, 1);
+    switch (buffer){
+        default:
+            show_usage();
+            break;
+
+    }
+    return 0;
+}
+
+static data_source_t stdin_source;
+void setup_cli(){
+
+    struct termios term = {0};
+    if (tcgetattr(0, &term) < 0)
+            perror("tcsetattr()");
+    term.c_lflag &= ~ICANON;
+    term.c_lflag &= ~ECHO;
+    term.c_cc[VMIN] = 1;
+    term.c_cc[VTIME] = 0;
+    if (tcsetattr(0, TCSANOW, &term) < 0)
+            perror("tcsetattr ICANON");
+
+    stdin_source.fd = 0; // stdin
+    stdin_source.process = &stdin_process;
+    run_loop_add_data_source(&stdin_source);
+}
+
 int main(void)
 {
     setup();
+
+    setup_cli();
+
     gap_random_address_set_update_period(60000);
     gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
 
