@@ -81,6 +81,7 @@ static int gap_discoverable = 1;
 static int gap_connectable = 1;
 static int gap_bondable = 1;
 static int gap_directed_connectable = 0;
+static int gap_privacy = 1;
 
 static timer_source_t heartbeat;
 static uint8_t counter = 0;
@@ -216,7 +217,7 @@ static void gap_run(){
 
     if (todos & SET_ADVERTISEMENT_PARAMS){
         todos &= ~SET_ADVERTISEMENT_PARAMS;
-        hci_send_cmd(&hci_le_set_advertising_parameters, 0x0800, 0x0800, gap_adv_type(), 0, tester_address_type, &tester_address, 0x07, 0x00);
+        hci_send_cmd(&hci_le_set_advertising_parameters, 0x0800, 0x0800, gap_adv_type(), gap_privacy, tester_address_type, &tester_address, 0x07, 0x00);
         return;
     }    
 
@@ -335,7 +336,8 @@ void setup(void){
 
 void show_usage(){
     printf("\n--- CLI for LE Peripheral ---\n");
-    printf("Status: discoverable %u, connectable %u, bondable %u, directed connectable %u, advertisements enabled %u \n", gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, advertisements_enabled);
+    printf("Status: discoverable %u, connectable %u, bondable %u, directed connectable %u, privacy %u, ads enabled %u \n",
+        gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, gap_privacy, advertisements_enabled);
     printf("---\n");
     printf("b - bondable off\n");
     printf("B - bondable on\n");
@@ -343,6 +345,8 @@ void show_usage(){
     printf("C - connectable on\n");
     printf("d - discoverable off\n");
     printf("D - discoverable on\n");
+    printf("p - privacy off\n");
+    printf("P - privacy on\n");
     printf("x - directed connectable off\n");
     printf("X - directed connectable on\n");
     printf("---\n");
@@ -405,6 +409,14 @@ int  stdin_process(struct data_source *ds){
             break;
         case 'D':
             gap_discoverable = 1;
+            update_advertisements();
+            break;
+        case 'p':
+            gap_privacy = 0;
+            update_advertisements();
+            break;
+        case 'P':
+            gap_privacy = 1;
             update_advertisements();
             break;
         case 'x':
