@@ -181,6 +181,7 @@ static void att_update_value_len(att_iterator_t *it){
     return;
 }
 
+// copy attribute value from offset into buffer with given size
 static int att_copy_value(att_iterator_t *it, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     
     // DYNAMIC 
@@ -189,7 +190,7 @@ static int att_copy_value(att_iterator_t *it, uint16_t offset, uint8_t * buffer,
     }
     
     // STATIC
-    uint16_t bytes_to_copy = it->value_len;
+    uint16_t bytes_to_copy = it->value_len - offset;
     if (bytes_to_copy > buffer_size){
         bytes_to_copy = buffer_size;
     }
@@ -602,7 +603,7 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
 
     att_update_value_len(&it);
 
-    if (value_offset >= it.value_len){
+    if (value_offset > it.value_len){
         return setup_error_invalid_offset(response_buffer, ATT_READ_BLOB_REQUEST, handle);
     }
     
