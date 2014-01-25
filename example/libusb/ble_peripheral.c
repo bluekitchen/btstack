@@ -87,6 +87,8 @@ static int sm_slave_initiated_security_request = 0;
 static char * sm_io_capabilities = NULL;
 static int sm_mitm_protection = 0;
 
+static int master_addr_type;
+static bd_addr_t master_address;
 static int ui_passkey = 0;
 static int ui_digits_for_passkey = 0;
 
@@ -312,15 +314,27 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     }
                     break;
                     
+                case SM_PASSKEY_INPUT_NUMBER: {
+                    // display number
+                    sm_event_t * event = (sm_event_t *) packet;
+                    memcpy(master_address, event->address, 6);
+                    master_addr_type = event->addr_type;
+                    printf("\nGAP Bonding %s (%u): Enter 6 digit passkey: '", bd_addr_to_str(master_address), master_addr_type);
+                    fflush(stdout);
+                    ui_passkey = 0;
+                    ui_digits_for_passkey = 6;
+                    break;
+                }
+
                 case SM_PASSKEY_DISPLAY_NUMBER: {
                     // display number
                     sm_event_t * event = (sm_event_t *) packet;
-                    printf("GAP Bonding: Display Passkey '%06u\n", event->passkey);
+                    printf("\nGAP Bonding %s (%u): Display Passkey '%06u\n", bd_addr_to_str(master_address), master_addr_type, event->passkey);
                     break;
                 }
 
                 case SM_PASSKEY_DISPLAY_CANCEL: 
-                    printf("GAP Bonding: Display cancel\n");
+                    printf("\nGAP Bonding %s (%u): Display cancel\n", bd_addr_to_str(master_address), master_addr_type);
                     break;
 
                 case SM_AUTHORIZATION_REQUEST: {
@@ -407,6 +421,8 @@ void show_usage(){
     printf("e - IO_CAPABILITY_DISPLAY_ONLY\n");
     printf("f - IO_CAPABILITY_DISPLAY_YES_NO\n");
     printf("g - IO_CAPABILITY_NO_INPUT_NO_OUTPUT\n");
+    printf("h - IO_CAPABILITY_KEYBOARD_ONLY\n");
+    printf("i - IO_CAPABILITY_KEYBOARD_DISPLAY\n");
     printf("m - MITM protection off\n");
     printf("M - MITM protecition on\n");
     printf("---\n");
@@ -465,7 +481,8 @@ int  stdin_process(struct data_source *ds){
         ui_passkey = ui_passkey * 10 + buffer - '0';
         ui_digits_for_passkey--;
         if (ui_digits_for_passkey == 0){
-            printf("\nPasskey '%06x'", ui_passkey);
+            printf("\nSending Passkey '%06x'\n", ui_passkey);
+            sm_passkey_input(master_addr_type, master_address, ui_passkey);
         }
         return 0;
     }
@@ -547,6 +564,16 @@ int  stdin_process(struct data_source *ds){
         case 'g':
             sm_io_capabilities = "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
             sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+            show_usage();
+            break;
+        case 'h':
+            sm_io_capabilities = "IO_CAPABILITY_KEYBOARD_ONLY";
+            sm_set_io_capabilities(IO_CAPABILITY_KEYBOARD_ONLY);
+            show_usage();
+            break;
+        case 'i':
+            sm_io_capabilities = "IO_CAPABILITY_KEYBOARD_DISPLAY";
+            sm_set_io_capabilities(IO_CAPABILITY_KEYBOARD_DISPLAY);
             show_usage();
             break;
         case 't':
