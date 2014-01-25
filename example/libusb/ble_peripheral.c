@@ -83,6 +83,8 @@ static int gap_bondable = 1;
 static int gap_directed_connectable = 0;
 static int gap_privacy = 1;
 
+static int sm_slave_initiated_security_request = 0;
+
 static timer_source_t heartbeat;
 static uint8_t counter = 0;
 static int update_client = 0;
@@ -368,8 +370,9 @@ void setup(void){
 
 void show_usage(){
     printf("\n--- CLI for LE Peripheral ---\n");
-    printf("Status: discoverable %u, connectable %u, bondable %u, directed connectable %u, privacy %u, ads enabled %u \n",
+    printf("GAP: discoverable %u, connectable %u, bondable %u, directed connectable %u, privacy %u, ads enabled %u \n",
         gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, gap_privacy, advertisements_enabled);
+    printf("SM:  slave iniitiated security request%u\n", sm_slave_initiated_security_request);
     printf("---\n");
     printf("b - bondable off\n");
     printf("B - bondable on\n");
@@ -391,6 +394,8 @@ void show_usage(){
     printf("7 - AD Slave Preferred Connection Interval Range\n");
     printf("8 - AD Tx Power Level\n");
     printf("---\n");
+    printf("s - slave initiated security request off\n");
+    printf("S - slave initiated security request on\n");
     printf("t - terminate connection\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
@@ -481,6 +486,14 @@ int  stdin_process(struct data_source *ds){
         case '8':
             advertisement_index = buffer - '0';
             update_advertisements();
+            break;
+        case 's':
+            sm_set_request_security(0);
+            sm_slave_initiated_security_request = 0;
+            break;
+        case 'S':
+            sm_set_request_security(1);
+            sm_slave_initiated_security_request = 1;
             break;
         case 't':
             hci_send_cmd(&hci_disconnect, handle, 0x13);
