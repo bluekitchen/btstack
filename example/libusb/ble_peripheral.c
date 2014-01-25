@@ -87,6 +87,9 @@ static int sm_slave_initiated_security_request = 0;
 static char * sm_io_capabilities = NULL;
 static int sm_mitm_protection = 0;
 
+static int ui_passkey = 0;
+static int ui_digits_for_passkey = 0;
+
 static timer_source_t heartbeat;
 static uint8_t counter = 0;
 static int update_client = 0;
@@ -453,6 +456,20 @@ void update_auth_req(){
 int  stdin_process(struct data_source *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
+
+    // passkey input
+    if (ui_digits_for_passkey){
+        if (buffer < '0' || buffer > '9') return 0;
+        printf("%c", buffer);
+        fflush(stdout);
+        ui_passkey = ui_passkey * 10 + buffer - '0';
+        ui_digits_for_passkey--;
+        if (ui_digits_for_passkey == 0){
+            printf("\nPasskey '%06x'", ui_passkey);
+        }
+        return 0;
+    }
+
     switch (buffer){
         case 'b':
             gap_bondable = 0;
