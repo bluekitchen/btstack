@@ -217,11 +217,11 @@ static void gap_run(){
         return;
     }    
 
-    if (todos & SET_ADVERTISEMENT_PARAMS){
-        todos &= ~SET_ADVERTISEMENT_PARAMS;
-        hci_send_cmd(&hci_le_set_advertising_parameters, 0x0800, 0x0800, gap_adv_type(), gap_privacy, tester_address_type, &tester_address, 0x07, 0x00);
-        return;
-    }    
+    // if (todos & SET_ADVERTISEMENT_PARAMS){
+    //     todos &= ~SET_ADVERTISEMENT_PARAMS;
+    //     hci_send_cmd(&hci_le_set_advertising_parameters, 0x0800, 0x0800, gap_adv_type(), gap_privacy, tester_address_type, &tester_address, 0x07, 0x00);
+    //     return;
+    // }    
 
     if (todos & SET_SCAN_RESPONSE_DATA){
         todos &= ~SET_SCAN_RESPONSE_DATA;
