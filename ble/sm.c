@@ -790,9 +790,7 @@ static void sm_run(void){
             return;
             }
         case RAU_SET_ADDRESS:
-            printf("New random address: ");
-            print_bd_addr(sm_random_address);
-            printf("\n");
+            printf("New random address: %s\n", bd_addr_to_str(sm_random_address));
             hci_send_cmd(&hci_le_set_random_address, sm_random_address);
             rau_state = RAU_IDLE;
             return;
@@ -808,9 +806,7 @@ static void sm_run(void){
             bd_addr_t addr;
             sm_key_t irk;
             central_device_db_info(sm_central_device_test, &addr_type, addr, irk);
-            printf("device type %u, addr: ", addr_type);
-            print_bd_addr(addr);
-            printf("\n");
+            printf("device type %u, addr: %s\n", addr_type, bd_addr_to_str(addr));
 
             if (sm_m_addr_type == addr_type && memcmp(addr, sm_m_address, 6) == 0){
                 printf("Central Device Lookup: found CSRK by { addr_type, address} \n");
@@ -1284,8 +1280,7 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                             sm_reset_tk();
                             
                             hci_le_advertisement_address(&sm_s_addr_type, &sm_s_address);
-                            printf("Incoming connection, own address ");
-                            print_bd_addr(sm_s_address);
+                            printf("Incoming connection, own address %s\n", bd_addr_to_str(sm_s_address));
 
                             // reset security properties
                             sm_connection_encrypted = 0;
