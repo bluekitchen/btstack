@@ -86,6 +86,9 @@ static int gap_privacy = 1;
 static int sm_slave_initiated_security_request = 0;
 static char * sm_io_capabilities = NULL;
 static int sm_mitm_protection = 0;
+static int sm_have_oob_data = 0;
+static uint8_t * sm_oob_data = (uint8_t *) "0123456789012345"; // = { 0x30...0x39, 0x30..0x35}
+// static uint8_t sm_oob_data[] = { 0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,  };
 
 static int master_addr_type;
 static bd_addr_t master_address;
@@ -391,8 +394,8 @@ void show_usage(){
     printf("\n--- CLI for LE Peripheral ---\n");
     printf("GAP: discoverable %u, connectable %u, bondable %u, directed connectable %u, privacy %u, ads enabled %u \n",
         gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, gap_privacy, advertisements_enabled);
-    printf("SM:  slave iniitiated security request %u, %s, MITM protection %u\n",
-        sm_slave_initiated_security_request, sm_io_capabilities, sm_mitm_protection);
+    printf("SM:  slave iniitiated security request %u, %s, MITM protection %u, OOB data %u\n",
+        sm_slave_initiated_security_request, sm_io_capabilities, sm_mitm_protection, sm_have_oob_data);
     printf("---\n");
     printf("b - bondable off\n");
     printf("B - bondable on\n");
@@ -423,6 +426,8 @@ void show_usage(){
     printf("g - IO_CAPABILITY_NO_INPUT_NO_OUTPUT\n");
     printf("h - IO_CAPABILITY_KEYBOARD_ONLY\n");
     printf("i - IO_CAPABILITY_KEYBOARD_DISPLAY\n");
+    printf("o - OOB data offoff\n");
+    printf("O - OOB data on ('%s')\n", sm_oob_data);
     printf("m - MITM protection off\n");
     printf("M - MITM protecition on\n");
     printf("---\n");
@@ -580,6 +585,14 @@ int  stdin_process(struct data_source *ds){
             printf("Terminating connection\n");
             hci_send_cmd(&hci_disconnect, handle, 0x13);
             break;
+        case 'o':
+            sm_have_oob_data = 0;
+            show_usage();
+            break;
+        case 'O':
+            sm_have_oob_data = 1;
+            show_usage();
+            break;
         case 'm':
             sm_mitm_protection = 0;
             update_auth_req();
@@ -596,6 +609,12 @@ int  stdin_process(struct data_source *ds){
 
     }
     return 0;
+}
+
+static int get_oob_data_callback(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data){
+    if(!sm_have_oob_data) return 0;
+    memcpy(oob_data, sm_oob_data, 16);
+    return 1;
 }
 
 static data_source_t stdin_source;
@@ -629,7 +648,7 @@ int main(void)
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
     sm_set_authentication_requirements(0);
-
+    sm_register_oob_data_callback(get_oob_data_callback);
     // set one-shot timer
     heartbeat.process = &heartbeat_handler;
     run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
