@@ -77,7 +77,7 @@ static todo_t todos = 0;
 
 ///------
 static int advertisements_enabled = 0;
-static int gap_discoverable = 1;
+static int gap_discoverable = 0;
 static int gap_connectable = 1;
 static int gap_bondable = 1;
 static int gap_directed_connectable = 0;
@@ -219,26 +219,26 @@ static void gap_run(){
         return;
     }    
 
-    if (todos & SET_ADVERTISEMENT_PARAMS){
-        todos &= ~SET_ADVERTISEMENT_PARAMS;
-        uint8_t adv_type = gap_adv_type();
-        bd_addr_t null_addr;
-        memset(null_addr, 0, 6);
-        uint16_t adv_int_min = 0x800;
-        uint16_t adv_int_max = 0x800;
-        switch (adv_type){
-            case 0:
-                hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, gap_privacy, 0, &null_addr, 0x07, 0x00);
-                break;
-            case 1:
-                hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, gap_privacy, tester_address_type, &tester_address, 0x07, 0x00);
-                break;
-            case 3:
-                hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, gap_privacy, 0, &null_addr, 0x07, 0x00);
-                break;
-        }
-        return;
-    }    
+    // if (todos & SET_ADVERTISEMENT_PARAMS){
+    //     todos &= ~SET_ADVERTISEMENT_PARAMS;
+    //     uint8_t adv_type = gap_adv_type();
+    //     bd_addr_t null_addr;
+    //     memset(null_addr, 0, 6);
+    //     uint16_t adv_int_min = 0x800;
+    //     uint16_t adv_int_max = 0x800;
+    //     switch (adv_type){
+    //         case 0:
+    //             hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, gap_privacy, 0, &null_addr, 0x07, 0x00);
+    //             break;
+    //         case 1:
+    //             hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, gap_privacy, tester_address_type, &tester_address, 0x07, 0x00);
+    //             break;
+    //         case 3:
+    //             hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, gap_privacy, 0, &null_addr, 0x07, 0x00);
+    //             break;
+    //     }
+    //     return;
+    // }    
 
     if (todos & SET_SCAN_RESPONSE_DATA){
         printf("GAP_RUN: set scan response data\n");
