@@ -89,6 +89,7 @@ static int sm_mitm_protection = 0;
 static int sm_have_oob_data = 0;
 static uint8_t * sm_oob_data = (uint8_t *) "0123456789012345"; // = { 0x30...0x39, 0x30..0x35}
 // static uint8_t sm_oob_data[] = { 0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,  };
+static int sm_min_key_size = 7;
 
 static int master_addr_type;
 static bd_addr_t master_address;
@@ -394,8 +395,8 @@ void show_usage(){
     printf("\n--- CLI for LE Peripheral ---\n");
     printf("GAP: discoverable %u, connectable %u, bondable %u, directed connectable %u, privacy %u, ads enabled %u \n",
         gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, gap_privacy, advertisements_enabled);
-    printf("SM:  slave iniitiated security request %u, %s, MITM protection %u, OOB data %u\n",
-        sm_slave_initiated_security_request, sm_io_capabilities, sm_mitm_protection, sm_have_oob_data);
+    printf("SM:  slave iniitiated security request %u, %s, MITM protection %u, OOB data %u, key range [%u..16]\n",
+        sm_slave_initiated_security_request, sm_io_capabilities, sm_mitm_protection, sm_have_oob_data, sm_min_key_size);
     printf("---\n");
     printf("b - bondable off\n");
     printf("B - bondable on\n");
@@ -430,6 +431,8 @@ void show_usage(){
     printf("O - OOB data on ('%s')\n", sm_oob_data);
     printf("m - MITM protection off\n");
     printf("M - MITM protecition on\n");
+    printf("k - encryption key range [ 7..16]\n");
+    printf("K - encryption key range [16..16]\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -593,6 +596,16 @@ int  stdin_process(struct data_source *ds){
             sm_have_oob_data = 1;
             show_usage();
             break;
+        case 'k':
+            sm_min_key_size = 7;
+            sm_set_encryption_key_size_range(7, 16);
+            show_usage();
+            break;
+        case 'K':
+            sm_min_key_size = 16;
+            sm_set_encryption_key_size_range(16, 16);
+            show_usage();
+            break;
         case 'm':
             sm_mitm_protection = 0;
             update_auth_req();
@@ -649,6 +662,7 @@ int main(void)
     sm_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
     sm_set_authentication_requirements(0);
     sm_register_oob_data_callback(get_oob_data_callback);
+    sm_set_encryption_key_size_range(sm_min_key_size, 16);
     // set one-shot timer
     heartbeat.process = &heartbeat_handler;
     run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
