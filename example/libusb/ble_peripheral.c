@@ -206,12 +206,14 @@ static void gap_run(){
 
     if (todos & DISABLE_ADVERTISEMENTS){
         todos &= ~DISABLE_ADVERTISEMENTS;
+        printf("GAP_RUN: disable advertisements\n");
         advertisements_enabled = 0;
         hci_send_cmd(&hci_le_set_advertise_enable, 0);
         return;
     }    
 
     if (todos & SET_ADVERTISEMENT_DATA){
+        printf("GAP_RUN: set advertisement data\n");
         todos &= ~SET_ADVERTISEMENT_DATA;
         hci_send_cmd(&hci_le_set_advertising_data, adv_data_len, adv_data);
         return;
@@ -224,19 +226,22 @@ static void gap_run(){
     // }    
 
     if (todos & SET_SCAN_RESPONSE_DATA){
+        printf("GAP_RUN: set scan response data\n");
         todos &= ~SET_SCAN_RESPONSE_DATA;
         hci_send_cmd(&hci_le_set_scan_response_data, adv_data_len, adv_data);
+        // hack for menu
+        if ((todos & ENABLE_ADVERTISEMENTS) == 0) show_usage();
         return;
     }    
 
     if (todos & ENABLE_ADVERTISEMENTS){
+        printf("GAP_RUN: enable advertisements\n");
         todos &= ~ENABLE_ADVERTISEMENTS;
         advertisements_enabled = 1;
         hci_send_cmd(&hci_le_set_advertise_enable, 1);
         show_usage();
         return;
-    }    
-
+    }
 }
 
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -380,10 +385,19 @@ void update_advertisements(){
     if (!gap_connectable){
         gap_bondable = 0;
     }
-    if (!advertisements_enabled) return;
 
-    // update all
-    todos = DISABLE_ADVERTISEMENTS | SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | SET_SCAN_RESPONSE_DATA | ENABLE_ADVERTISEMENTS;
+    todos = SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | SET_SCAN_RESPONSE_DATA;
+
+    // disable advertisements, if thez are active
+    if (advertisements_enabled){
+        todos |= DISABLE_ADVERTISEMENTS;
+    }
+
+    // enable advertisements, if we're discoverable
+    if (gap_discoverable) {
+        todos |= ENABLE_ADVERTISEMENTS;
+    }
+
     gap_run();
 }
 
