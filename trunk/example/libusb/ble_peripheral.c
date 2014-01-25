@@ -84,6 +84,7 @@ static int gap_directed_connectable = 0;
 static int gap_privacy = 1;
 
 static int sm_slave_initiated_security_request = 0;
+static char * sm_io_capabilities = NULL;
 
 static timer_source_t heartbeat;
 static uint8_t counter = 0;
@@ -372,7 +373,7 @@ void show_usage(){
     printf("\n--- CLI for LE Peripheral ---\n");
     printf("GAP: discoverable %u, connectable %u, bondable %u, directed connectable %u, privacy %u, ads enabled %u \n",
         gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, gap_privacy, advertisements_enabled);
-    printf("SM:  slave iniitiated security request%u\n", sm_slave_initiated_security_request);
+    printf("SM:  slave iniitiated security request %u, %s\n", sm_slave_initiated_security_request, sm_io_capabilities);
     printf("---\n");
     printf("b - bondable off\n");
     printf("B - bondable on\n");
@@ -397,6 +398,10 @@ void show_usage(){
     printf("s - slave initiated security request off\n");
     printf("S - slave initiated security request on\n");
     printf("t - terminate connection\n");
+    printf("---\n");
+    printf("e - IO_CAPABILITY_DISPLAY_ONLY\n");
+    printf("f - IO_CAPABILITY_DISPLAY_YES_NO\n");
+    printf("g - IO_CAPABILITY_NO_INPUT_NO_OUTPUT\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -490,12 +495,30 @@ int  stdin_process(struct data_source *ds){
         case 's':
             sm_set_request_security(0);
             sm_slave_initiated_security_request = 0;
+            show_usage();
             break;
         case 'S':
             sm_set_request_security(1);
             sm_slave_initiated_security_request = 1;
+            show_usage();
+            break;
+        case 'e':
+            sm_io_capabilities = "IO_CAPABILITY_DISPLAY_ONLY";
+            sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+            show_usage();
+            break;
+        case 'f':
+            sm_io_capabilities = "IO_CAPABILITY_DISPLAY_YES_NO";
+            sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
+            show_usage();
+            break;
+        case 'g':
+            sm_io_capabilities = "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
+            sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+            show_usage();
             break;
         case 't':
+            printf("Terminating connection\n");
             hci_send_cmd(&hci_disconnect, handle, 0x13);
             break;
         default:
@@ -533,6 +556,9 @@ int main(void)
 
     gap_random_address_set_update_period(60000);
     gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
+
+    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+    sm_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
 
     // set one-shot timer
     heartbeat.process = &heartbeat_handler;
