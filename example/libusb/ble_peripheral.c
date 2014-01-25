@@ -223,11 +223,11 @@ static void gap_run(){
         return;
     }    
 
-    // if (todos & SET_SCAN_RESPONSE_DATA){
-    //     todos &= ~SET_SCAN_RESPONSE_DATA;
-    //     hci_send_cmd(&hci_le_set_scan_response_data, adv_data_len, adv_data);
-    //     return;
-    // }    
+    if (todos & SET_SCAN_RESPONSE_DATA){
+        todos &= ~SET_SCAN_RESPONSE_DATA;
+        hci_send_cmd(&hci_le_set_scan_response_data, adv_data_len, adv_data);
+        return;
+    }    
 
     if (todos & ENABLE_ADVERTISEMENTS){
         todos &= ~ENABLE_ADVERTISEMENTS;
