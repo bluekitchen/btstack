@@ -85,6 +85,7 @@ static int gap_privacy = 1;
 
 static int sm_slave_initiated_security_request = 0;
 static char * sm_io_capabilities = NULL;
+static int sm_mitm_protection = 0;
 
 static timer_source_t heartbeat;
 static uint8_t counter = 0;
@@ -373,7 +374,8 @@ void show_usage(){
     printf("\n--- CLI for LE Peripheral ---\n");
     printf("GAP: discoverable %u, connectable %u, bondable %u, directed connectable %u, privacy %u, ads enabled %u \n",
         gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, gap_privacy, advertisements_enabled);
-    printf("SM:  slave iniitiated security request %u, %s\n", sm_slave_initiated_security_request, sm_io_capabilities);
+    printf("SM:  slave iniitiated security request %u, %s, MITM protection %u\n",
+        sm_slave_initiated_security_request, sm_io_capabilities, sm_mitm_protection);
     printf("---\n");
     printf("b - bondable off\n");
     printf("B - bondable on\n");
@@ -402,6 +404,8 @@ void show_usage(){
     printf("e - IO_CAPABILITY_DISPLAY_ONLY\n");
     printf("f - IO_CAPABILITY_DISPLAY_YES_NO\n");
     printf("g - IO_CAPABILITY_NO_INPUT_NO_OUTPUT\n");
+    printf("m - MITM protection off\n");
+    printf("M - MITM protecition on\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -433,6 +437,17 @@ void update_advertisements(){
     }
 
     gap_run();
+}
+
+void update_auth_req(){
+    uint8_t auth_req = 0;
+    if (sm_mitm_protection){
+        auth_req |= SM_AUTHREQ_MITM_PROTECTION;
+    }
+    if (gap_bondable){
+        auth_req |= SM_AUTHREQ_BONDING;
+    }
+    sm_set_authentication_requirements(auth_req);
 }
 
 int  stdin_process(struct data_source *ds){
@@ -521,6 +536,16 @@ int  stdin_process(struct data_source *ds){
             printf("Terminating connection\n");
             hci_send_cmd(&hci_disconnect, handle, 0x13);
             break;
+        case 'm':
+            sm_mitm_protection = 0;
+            update_auth_req();
+            show_usage();
+            break;
+        case 'M':
+            sm_mitm_protection = 1;
+            update_auth_req();
+            show_usage();
+            break;
         default:
             show_usage();
             break;
@@ -559,6 +584,7 @@ int main(void)
 
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
+    sm_set_authentication_requirements(0);
 
     // set one-shot timer
     heartbeat.process = &heartbeat_handler;
