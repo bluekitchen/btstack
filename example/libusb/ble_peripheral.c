@@ -289,13 +289,13 @@ static uint16_t att_read_callback(uint16_t handle, uint16_t offset, uint8_t * bu
 
 // write requests
 static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size, signature_t * signature){
-    printf("WRITE Callback, handle %04x\n", handle);
+    printf("WRITE Callback, handle %04x, mode %u, offset %u\n", handle, transaction_mode, offset);
 
     switch(handle){
-        case 0x0012:
-        case 0x0015:
-        case 0x002a:
-        case 0x002d:
+        case 0x0013:
+        case 0x0018:
+        case 0x0037:
+        case 0x003c:
             client_configuration = buffer[0];
             client_configuration_handle = handle;
             printf("Client Configuration set to %u for handle %04x\n", client_configuration, handle);
@@ -317,32 +317,30 @@ static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16
             }
             att_attributes[attributes_index].len = buffer_size;
             memcpy(att_attributes[attributes_index].value, buffer, buffer_size);
-            printf("Index %u\n", attributes_index);
             break;
         case ATT_TRANSACTION_MODE_ACTIVE:
             writes_index = att_write_queue_for_handle(handle);
             if (writes_index < 0) return 0;
             if (buffer_size + offset > ATT_VALUE_MAX_LEN) return 0;
             att_write_queues[writes_index].len = buffer_size + offset;
-            memcpy(&att_write_queues[writes_index].value[offset], buffer, buffer_size);
+            memcpy(&(att_write_queues[writes_index].value[offset]), buffer, buffer_size);
             break;
         case ATT_TRANSACTION_MODE_EXECUTE:
-            writes_index = att_write_queue_for_handle(handle);
-            if (writes_index < 0) return 0;
-            attributes_index = att_attribute_for_handle(handle);
-            if (attributes_index < 0){
-                attributes_index = att_attribute_for_handle(0);
-                if (attributes_index < 0) return 0;    // fail
-                att_attributes[attributes_index].handle = handle;
+            for (writes_index=0;writes_index<ATT_NUM_WRITE_QUEUES;writes_index++){
+                handle = att_write_queues[writes_index].handle;
+                if (handle == 0) continue;
+                attributes_index = att_attribute_for_handle(handle);
+                if (attributes_index < 0){
+                    attributes_index = att_attribute_for_handle(0);
+                    if (attributes_index < 0) return 0;    // fail
+                    att_attributes[attributes_index].handle = handle;
+                }
+                att_attributes[attributes_index].len = att_write_queues[writes_index].len;
+                memcpy(att_attributes[attributes_index].value, att_write_queues[writes_index].value, att_write_queues[writes_index].len);
             }
-            att_attributes[attributes_index].len = att_write_queues[writes_index].len;
-            memcpy(att_attributes[attributes_index].value, att_write_queues[writes_index].value, att_write_queues[writes_index].len);
-            printf("Index %u\n", attributes_index);
             break;
         case ATT_TRANSACTION_MODE_CANCEL:
-            writes_index = att_write_queue_for_handle(handle);
-            if (writes_index < 0) return 0;
-            att_write_queues[writes_index].handle = 0;
+            att_write_queue_init();
             break;
     }
     return 1;
