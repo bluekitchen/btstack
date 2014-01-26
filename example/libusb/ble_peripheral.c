@@ -177,11 +177,11 @@ static void app_run(){
     switch (client_configuration){
         case 0x01:
             printf("Notify value %u\n", counter);
-            result = att_server_notify(0x0f, &counter, 1);
+            result = att_server_notify(client_configuration_handle - 1, &counter, 1);
             break;
         case 0x02:
             printf("Indicate value %u\n", counter);
-            result = att_server_indicate(0x0f, &counter, 1);
+            result = att_server_indicate(client_configuration_handle - 1, &counter, 1);
             break;
         default:
             return;
@@ -430,6 +430,8 @@ void setup(void){
     memcpy(att_value, alphabet, sizeof(alphabet));
     att_value_len = sizeof(alphabet);
     att_server_register_packet_handler(app_packet_handler);
+
+    // att_dump_attributes();
 }
 
 void show_usage(){
