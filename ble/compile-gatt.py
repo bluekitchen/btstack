@@ -67,7 +67,6 @@ property_flags = {
     # only used by gatt compiler >= 0xffff
     # Extended Properties
     'RELIABLE_WRITE':             0x10000,
-
 }
 
 services = dict()
@@ -307,6 +306,34 @@ def parseCharacteristic(fout, parts):
         handle = handle + 1
 
 
+def parseCharacteristicUserDescription(fout, parts):
+    global handle
+    global total_size
+
+    property_read = property_flags['READ'];
+
+    properties = parseProperties(parts[1])
+    value      = parts[2]
+
+    size = 2 + 2 + 2 + 2
+    if is_string(value):
+        size = size + len(value) - 2
+    else:
+        size = size + len(value.split())
+
+    write_indent(fout)
+    fout.write('// 0x%04x CHARACTERISTIC_USER_DESCRIPTION-%s\n' % (handle, '-'.join(parts[1:len(parts)])))
+    write_indent(fout)
+    write_16(fout, size)
+    write_16(fout, properties)
+    write_16(fout, handle)
+    write_16(fout, 0x2901)
+    if is_string(value):
+        write_string(fout, value)
+    else:
+        write_sequence(fout,value)
+    fout.write("\n")
+    handle = handle + 1
 
 def parse(fname_in, fin, fname_out, fout):
     global handle
@@ -345,6 +372,10 @@ def parse(fname_in, fin, fname_out, fout):
             parseCharacteristic(fout, parts)
             continue
         
+        if parts[0] == 'CHARACTERISTIC_USER_DESCRIPTION':
+            parseCharacteristicUserDescription(fout, parts)
+            continue
+
         print "WARNING: unknown token: %s\n" % (parts[0])
 
     write_indent(fout)
