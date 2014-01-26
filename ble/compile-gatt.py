@@ -65,6 +65,9 @@ property_flags = {
     'ENCRYPTION_KEY_SIZE_15':     0xe000,
     'ENCRYPTION_KEY_SIZE_16':     0xf000,
     # only used by gatt compiler >= 0xffff
+    # Extended Properties
+    'RELIABLE_WRITE':             0x10000,
+
 }
 
 services = dict()
@@ -234,6 +237,10 @@ def parseCharacteristic(fout, parts):
     properties = parseProperties(parts[2])
     value      = parts[3]
 
+    # reliable writes is defined in an extended properties
+    if (properties & property_flags['RELIABLE_WRITE']):
+        properties = properties | property_flags['EXTENDED_PROPERTIES']
+
     write_indent(fout)
     fout.write('// 0x%04x %s\n' % (handle, '-'.join(parts[0:len(parts)-1])))
     
@@ -273,20 +280,33 @@ def parseCharacteristic(fout, parts):
     fout.write("\n")
     handle = handle + 1
 
-    if add_client_characteristic_configuration(properties) == 0: 
-        return
+    if properties & property_flags['RELIABLE_WRITE']:
+        size = 2 + 2 + 2 + 2 + 2
+        write_indent(fout)
+        fout.write('// 0x%04x CHARACTERISTIC_EXTENDED_PROPERTIES\n' % (handle))
+        write_indent(fout)
+        write_16(fout, size)
+        write_16(fout, property_flags['READ'])
+        write_16(fout, handle)
+        write_16(fout, 0x2900)
+        write_16(fout, 1)   # Reliable Write
+        fout.write("\n")
+        handle = handle + 1
 
-    size = 2 + 2 + 2 + 2 + 2
-    write_indent(fout)
-    fout.write('// 0x%04x CLIENT_CHARACTERISTIC_CONFIGURATION\n' % (handle))
-    write_indent(fout)
-    write_16(fout, size)
-    write_16(fout, property_flags['READ'] | property_flags['WRITE'] | property_flags['DYNAMIC'])
-    write_16(fout, handle)
-    write_16(fout, 0x2902)
-    write_16(fout, 0)
-    fout.write("\n")
-    handle = handle + 1
+    if add_client_characteristic_configuration(properties):
+        size = 2 + 2 + 2 + 2 + 2
+        write_indent(fout)
+        fout.write('// 0x%04x CLIENT_CHARACTERISTIC_CONFIGURATION\n' % (handle))
+        write_indent(fout)
+        write_16(fout, size)
+        write_16(fout, property_flags['READ'] | property_flags['WRITE'] | property_flags['DYNAMIC'])
+        write_16(fout, handle)
+        write_16(fout, 0x2902)
+        write_16(fout, 0)
+        fout.write("\n")
+        handle = handle + 1
+
+
 
 def parse(fname_in, fin, fname_out, fout):
     global handle
