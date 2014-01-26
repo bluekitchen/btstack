@@ -837,6 +837,7 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
 static uint16_t handle_prepare_write_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
                                       uint8_t * response_buffer, uint16_t response_buffer_size){
     uint16_t handle = READ_BT_16(request_buffer, 1);
+    uint16_t offset = READ_BT_16(request_buffer, 3);
     if (!att_write_callback) {
         return setup_error_write_not_permitted(response_buffer, ATT_PREPARE_WRITE_REQUEST, handle);
     }
@@ -853,8 +854,8 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
     if (error_code) {
         return setup_error(response_buffer, ATT_PREPARE_WRITE_REQUEST, handle, error_code);
     }
-    
-    ok = (*att_write_callback)(handle, ATT_TRANSACTION_MODE_ACTIVE, 0, request_buffer + 3, request_len - 3, NULL);
+
+    ok = (*att_write_callback)(handle, ATT_TRANSACTION_MODE_ACTIVE, offset, request_buffer + 3, request_len - 3, NULL);
     if (!ok){
         return setup_error(response_buffer, ATT_PREPARE_WRITE_REQUEST, handle, ATT_ERROR_PREPARE_QUEUE_FULL);
     }
