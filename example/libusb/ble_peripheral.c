@@ -117,24 +117,24 @@ static int tester_address_type = 0;
 #endif
 
 // some test data
-static uint8_t adv_data_0[] = { 2, 01, 05,   03, 02, 0xf0, 0xff }; 
+static uint8_t adv_data_0[] = { 2, 01, 02,   03, 02, 0xf0, 0xff }; 
 
 // AD Manufacturer Specific Data - Ericsson, 1, 2, 3, 4
-static uint8_t adv_data_1[] = { 7, 0xff, 0x00, 0x00, 1, 2, 3, 4 }; 
+static uint8_t adv_data_1[] = { 2, 01, 02,   7, 0xff, 0x00, 0x00, 1, 2, 3, 4 }; 
 // AD Local Name - 'BTstack'
-static uint8_t adv_data_2[] = { 8, 0x09, 'B', 'T', 's', 't', 'a', 'c', 'k' }; 
+static uint8_t adv_data_2[] = { 2, 01, 02,   8, 0x09, 'B', 'T', 's', 't', 'a', 'c', 'k' }; 
 // AD Flags - 2 - General Discoverable mode
 static uint8_t adv_data_3[] = { 2, 01, 02 }; 
 // AD Service Data - 0x1812 HID over LE
-static uint8_t adv_data_4[] = { 3, 0x16, 0x12, 0x18 }; 
+static uint8_t adv_data_4[] = { 2, 01, 02,   3, 0x16, 0x12, 0x18 }; 
 // AD Service Solicitation -  0x1812 HID over LE
-static uint8_t adv_data_5[] = { 3, 0x14, 0x12, 0x18 }; 
+static uint8_t adv_data_5[] = { 2, 01, 02,   3, 0x14, 0x12, 0x18 }; 
 // AD Services
-static uint8_t adv_data_6[] = { 3, 0x03, 0x12, 0x18 }; 
+static uint8_t adv_data_6[] = { 2, 01, 02,   3, 0x03, 0x12, 0x18 }; 
 // AD Slave Preferred Connection Interval Range - no min, no max
-static uint8_t adv_data_7[] = { 5, 0x12, 0xff, 0xff, 0xff, 0xff }; 
+static uint8_t adv_data_7[] = { 2, 01, 02,   5, 0x12, 0xff, 0xff, 0xff, 0xff }; 
 // AD Tx Power Level - +4 dBm
-static uint8_t adv_data_8[] = { 2, 0x0a, 4 }; 
+static uint8_t adv_data_8[] = { 2, 01, 02,   2, 0x0a, 4 }; 
 
 static uint8_t adv_data_len;
 static uint8_t adv_data[32];
