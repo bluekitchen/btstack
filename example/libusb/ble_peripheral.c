@@ -100,6 +100,7 @@ static timer_source_t heartbeat;
 static uint8_t counter = 0;
 static int update_client = 0;
 static int client_configuration = 0;
+static uint16_t client_configuration_handle;
 
 static uint16_t handle = 0;
 
@@ -220,22 +221,29 @@ static uint16_t att_read_callback(uint16_t handle, uint16_t offset, uint8_t * bu
 // write requests
 static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size, signature_t * signature){
     printf("WRITE Callback, handle %04x\n", handle);
+
+    switch(handle){
+        case 0x0012:
+        case 0x0015:
+        case 0x002a:
+        case 0x002d:
+            client_configuration = buffer[0];
+            client_configuration_handle = handle;
+            printf("Client Configuration set to %u for handle %04x\n", client_configuration, handle);
+            return 1;
+        default:
+            break;
+    }
+
     printf("Value: ");
     hexdump(buffer, buffer_size);
+
     if (buffer_size > ATT_VALUE_MAX_LEN){
         buffer_size = ATT_VALUE_MAX_LEN;
     }
     memcpy(att_value, buffer, buffer_size);
     att_value_len = buffer_size;
 
-    switch(handle){
-        case 0x0010:
-            client_configuration = buffer[0];
-            printf("Client Configuration set to %u\n", client_configuration);
-            break;
-        default:
-            break;
-    }
     return 1;
 }
 
