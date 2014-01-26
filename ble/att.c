@@ -855,9 +855,9 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
         return setup_error(response_buffer, ATT_PREPARE_WRITE_REQUEST, handle, error_code);
     }
 
-    ok = (*att_write_callback)(handle, ATT_TRANSACTION_MODE_ACTIVE, offset, request_buffer + 3, request_len - 3, NULL);
-    if (!ok){
-        return setup_error(response_buffer, ATT_PREPARE_WRITE_REQUEST, handle, ATT_ERROR_PREPARE_QUEUE_FULL);
+    int result = (*att_write_callback)(handle, ATT_TRANSACTION_MODE_ACTIVE, offset, request_buffer + 3, request_len - 3, NULL);
+    if (result){
+        return setup_error(response_buffer, ATT_PREPARE_WRITE_REQUEST, handle, result);
     }
 
     // response: echo request

@@ -299,7 +299,7 @@ static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16
             client_configuration = buffer[0];
             client_configuration_handle = handle;
             printf("Client Configuration set to %u for handle %04x\n", client_configuration, handle);
-            return 1;
+            return 0;   // ok
         default:
             break;
     }
@@ -312,7 +312,7 @@ static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16
             attributes_index = att_attribute_for_handle(handle);
             if (attributes_index < 0){
                 attributes_index = att_attribute_for_handle(0);
-                if (attributes_index < 0) return 0;    // fail
+                if (attributes_index < 0) return 0;    // ok, but we couldn't store it (our fault)
                 att_attributes[attributes_index].handle = handle;
             }
             att_attributes[attributes_index].len = buffer_size;
@@ -320,30 +320,35 @@ static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16
             break;
         case ATT_TRANSACTION_MODE_ACTIVE:
             writes_index = att_write_queue_for_handle(handle);
-            if (writes_index < 0) return 0;
-            if (buffer_size + offset > ATT_VALUE_MAX_LEN) return 0;
+            if (writes_index < 0)           return ATT_ERROR_PREPARE_QUEUE_FULL;
+            if (offset > ATT_VALUE_MAX_LEN) return ATT_ERROR_INVALID_OFFSET;
+            if (buffer_size + offset > ATT_VALUE_MAX_LEN) {
+                // truncat value
+                buffer_size = ATT_VALUE_MAX_LEN - offset;
+            }
             att_write_queues[writes_index].len = buffer_size + offset;
             memcpy(&(att_write_queues[writes_index].value[offset]), buffer, buffer_size);
             break;
         case ATT_TRANSACTION_MODE_EXECUTE:
-            for (writes_index=0;writes_index<ATT_NUM_WRITE_QUEUES;writes_index++){
+            for (writes_index=0 ; writes_index<ATT_NUM_WRITE_QUEUES ; writes_index++){
                 handle = att_write_queues[writes_index].handle;
                 if (handle == 0) continue;
                 attributes_index = att_attribute_for_handle(handle);
                 if (attributes_index < 0){
                     attributes_index = att_attribute_for_handle(0);
-                    if (attributes_index < 0) return 0;    // fail
+                    if (attributes_index < 0) continue;
                     att_attributes[attributes_index].handle = handle;
                 }
                 att_attributes[attributes_index].len = att_write_queues[writes_index].len;
                 memcpy(att_attributes[attributes_index].value, att_write_queues[writes_index].value, att_write_queues[writes_index].len);
             }
+            att_write_queue_init();
             break;
         case ATT_TRANSACTION_MODE_CANCEL:
             att_write_queue_init();
             break;
     }
-    return 1;
+    return 0;
 }
 
 #ifndef SKIP_ADVERTISEMENT_PARAMAS_UPDATE
@@ -454,6 +459,8 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     if (!advertisements_enabled == 0 && gap_discoverable){
                         todos = ENABLE_ADVERTISEMENTS;
                     }
+                    att_attributes_init();
+                    att_write_queue_init();
                     break;
                     
                 case SM_PASSKEY_INPUT_NUMBER: {
