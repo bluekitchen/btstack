@@ -192,17 +192,48 @@ static void app_run(){
     update_client = 0;
 }
 
+static const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+
+#define ATT_VALUE_MAX_LEN 32
+static uint8_t  att_value[ATT_VALUE_MAX_LEN];
+static uint16_t att_value_len = 0;
+
+
+// ATT Client Read Callback for Dynamic Data
+// - if buffer == NULL, don't copy data, just return size of value
+// - if buffer != NULL, copy data and return number bytes copied
+// @param offset defines start of attribute value
+static uint16_t att_read_callback(uint16_t handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    // assert offset <= att_value_len
+    if (offset > att_value_len) {
+        return 0;
+    }
+    uint16_t bytes_to_copy = att_value_len - offset;
+    if (!buffer) return bytes_to_copy;
+    if (bytes_to_copy > buffer_size){
+        bytes_to_copy = buffer_size;
+    }
+    memcpy(buffer, &att_value[offset], bytes_to_copy);
+    return bytes_to_copy;
+}
+
 // write requests
 static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size, signature_t * signature){
     printf("WRITE Callback, handle %04x\n", handle);
+    printf("Value: ");
+    hexdump(buffer, buffer_size);
+    if (buffer_size > ATT_VALUE_MAX_LEN){
+        buffer_size = ATT_VALUE_MAX_LEN;
+    }
+    memcpy(att_value, buffer, buffer_size);
+    att_value_len = buffer_size;
+
     switch(handle){
         case 0x0010:
             client_configuration = buffer[0];
             printf("Client Configuration set to %u\n", client_configuration);
             break;
         default:
-            printf("Value: ");
-            hexdump(buffer, buffer_size);
             break;
     }
     return 1;
@@ -387,7 +418,9 @@ void setup(void){
     // sm_set_encryption_key_size_range(7,15);
 
     // setup ATT server
-    att_server_init(profile_data, NULL, att_write_callback);    
+    att_server_init(profile_data, att_read_callback, att_write_callback);    
+    memcpy(att_value, alphabet, sizeof(alphabet));
+    att_value_len = sizeof(alphabet);
     att_server_register_packet_handler(app_packet_handler);
 }
 
