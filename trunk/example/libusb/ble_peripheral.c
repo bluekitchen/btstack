@@ -78,10 +78,10 @@ static todo_t todos = 0;
 ///------
 static int advertisements_enabled = 0;
 static int gap_discoverable = 0;
-static int gap_connectable = 1;
-static int gap_bondable = 1;
+static int gap_connectable = 0;
+static int gap_bondable = 0;
 static int gap_directed_connectable = 0;
-static int gap_privacy = 1;
+static int gap_privacy = 0;
 
 static int sm_slave_initiated_security_request = 0;
 static char * sm_io_capabilities = NULL;
@@ -426,7 +426,7 @@ void setup(void){
 
 void show_usage(){
     printf("\n--- CLI for LE Peripheral ---\n");
-    printf("GAP: discoverable %u, connectable %u, bondable %u, directed connectable %u, privacy %u, ads enabled %u \n",
+    printf("GAP: discoverable %u, connectable %u, bondable %u, directed connectable %u, privacy %u : ads enabled %u \n",
         gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, gap_privacy, advertisements_enabled);
     printf("SM:  slave iniitiated security request %u, %s, MITM protection %u, OOB data %u, key range [%u..16]\n",
         sm_slave_initiated_security_request, sm_io_capabilities, sm_mitm_protection, sm_have_oob_data, sm_min_key_size);
@@ -477,13 +477,6 @@ void update_advertisements(){
     adv_data_len = advertisements[advertisement_index].len;
     memcpy(adv_data, advertisements[advertisement_index].data, adv_data_len);
     
-    if (!gap_discoverable){
-        gap_connectable = 0;
-    }
-    if (!gap_connectable){
-        gap_bondable = 0;
-    }
-
     todos = SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | SET_SCAN_RESPONSE_DATA;
 
     // disable advertisements, if thez are active
