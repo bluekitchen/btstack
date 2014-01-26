@@ -197,6 +197,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     central_device_db_counter_set(att_ir_central_device_db_index, counter_packet+1);
     // just treat signed write command as simple write command after validation
     att_request_buffer[0] = ATT_WRITE_COMMAND;
+    att_request_size -= 12;
     att_server_state = ATT_SERVER_REQUEST_RECEIVED;
     att_run();
 }
