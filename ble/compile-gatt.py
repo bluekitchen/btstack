@@ -171,9 +171,6 @@ def parseService(fout, parts, service_type):
     if service_type == 0x2802:
         size += 4
 
-    if uuid_size == 16:
-        property = property | property_flags['LONG_UUID'];
-
     write_indent(fout)
     write_16(fout, size)
     write_16(fout, property)
