@@ -159,6 +159,66 @@ static advertisement_t advertisements[] = {
 
 static int advertisement_index = 0;
 
+// att write queue engine
+
+static const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+#define ATT_VALUE_MAX_LEN 32
+
+typedef struct {
+    uint16_t handle;
+    uint16_t len;
+    uint8_t  value[ATT_VALUE_MAX_LEN];
+} attribute_t;
+
+#define ATT_NUM_WRITE_QUEUES 2
+static attribute_t att_write_queues[ATT_NUM_WRITE_QUEUES];
+#define ATT_NUM_ATTRIBUTES 10
+static attribute_t att_attributes[ATT_NUM_ATTRIBUTES];
+
+static void att_write_queue_init(){
+    int i;
+    for (i=0;i<ATT_NUM_WRITE_QUEUES;i++){
+        att_write_queues[i].handle = 0;
+    }
+}
+
+static int att_write_queue_for_handle(uint16_t handle){
+    int i;
+    for (i=0;i<ATT_NUM_WRITE_QUEUES;i++){
+        if (att_write_queues[i].handle == handle){
+            return i;
+        }
+    }
+    for (i=0;i<ATT_NUM_WRITE_QUEUES;i++){
+        if (att_write_queues[i].handle == 0){
+            att_write_queues[i].handle = handle;
+            memset(att_write_queues[i].value, 0, ATT_VALUE_MAX_LEN);
+            att_write_queues[i].len = 0;
+            return i;
+        }
+    }
+    return -1;
+}
+
+static void att_attributes_init(){
+    int i;
+    for (i=0;i<ATT_NUM_ATTRIBUTES;i++){
+        att_attributes[i].handle = 0;
+    }
+}
+
+// handle == 0 finds free attribute
+static int att_attribute_for_handle(uint16_t handle){
+    int i;
+    for (i=0;i<ATT_NUM_ATTRIBUTES;i++){
+        if (att_attributes[i].handle == handle) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+
 static void  heartbeat_handler(struct timer *ts){
     // restart timer
     run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
@@ -193,18 +253,27 @@ static void app_run(){
     update_client = 0;
 }
 
-static const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
-
-#define ATT_VALUE_MAX_LEN 32
-static uint8_t  att_value[ATT_VALUE_MAX_LEN];
-static uint16_t att_value_len = 0;
-
-
 // ATT Client Read Callback for Dynamic Data
 // - if buffer == NULL, don't copy data, just return size of value
 // - if buffer != NULL, copy data and return number bytes copied
 // @param offset defines start of attribute value
 static uint16_t att_read_callback(uint16_t handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+
+    printf("READ Callback, handle %04x\n", handle);
+
+    // find attribute
+    int index = att_attribute_for_handle(handle);
+    uint8_t * att_value;
+    uint16_t  att_value_len;
+    if (index < 0){
+        // not written before
+        att_value = (uint8_t*) alphabet;
+        att_value_len  = sizeof(alphabet);
+    } else {
+        att_value = att_attributes[index].value;
+        att_value_len  = att_attributes[index].len;
+    }
+
     // assert offset <= att_value_len
     if (offset > att_value_len) {
         return 0;
@@ -235,15 +304,47 @@ static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16
             break;
     }
 
-    printf("Value: ");
-    hexdump(buffer, buffer_size);
-
-    if (buffer_size > ATT_VALUE_MAX_LEN){
-        buffer_size = ATT_VALUE_MAX_LEN;
+    // check transaction mode
+    int attributes_index;
+    int writes_index;
+    switch (transaction_mode){
+        case ATT_TRANSACTION_MODE_NONE:
+            attributes_index = att_attribute_for_handle(handle);
+            if (attributes_index < 0){
+                attributes_index = att_attribute_for_handle(0);
+                if (attributes_index < 0) return 0;    // fail
+                att_attributes[attributes_index].handle = handle;
+            }
+            att_attributes[attributes_index].len = buffer_size;
+            memcpy(att_attributes[attributes_index].value, buffer, buffer_size);
+            printf("Index %u\n", attributes_index);
+            break;
+        case ATT_TRANSACTION_MODE_ACTIVE:
+            writes_index = att_write_queue_for_handle(handle);
+            if (writes_index < 0) return 0;
+            if (buffer_size + offset > ATT_VALUE_MAX_LEN) return 0;
+            att_write_queues[writes_index].len = buffer_size + offset;
+            memcpy(&att_write_queues[writes_index].value[offset], buffer, buffer_size);
+            break;
+        case ATT_TRANSACTION_MODE_EXECUTE:
+            writes_index = att_write_queue_for_handle(handle);
+            if (writes_index < 0) return 0;
+            attributes_index = att_attribute_for_handle(handle);
+            if (attributes_index < 0){
+                attributes_index = att_attribute_for_handle(0);
+                if (attributes_index < 0) return 0;    // fail
+                att_attributes[attributes_index].handle = handle;
+            }
+            att_attributes[attributes_index].len = att_write_queues[writes_index].len;
+            memcpy(att_attributes[attributes_index].value, att_write_queues[writes_index].value, att_write_queues[writes_index].len);
+            printf("Index %u\n", attributes_index);
+            break;
+        case ATT_TRANSACTION_MODE_CANCEL:
+            writes_index = att_write_queue_for_handle(handle);
+            if (writes_index < 0) return 0;
+            att_write_queues[writes_index].handle = 0;
+            break;
     }
-    memcpy(att_value, buffer, buffer_size);
-    att_value_len = buffer_size;
-
     return 1;
 }
 
@@ -427,8 +528,8 @@ void setup(void){
 
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
-    memcpy(att_value, alphabet, sizeof(alphabet));
-    att_value_len = sizeof(alphabet);
+    att_write_queue_init();
+    att_attributes_init();
     att_server_register_packet_handler(app_packet_handler);
 
     // att_dump_attributes();
