@@ -64,8 +64,7 @@ property_flags = {
     'ENCRYPTION_KEY_SIZE_14':     0xd000,
     'ENCRYPTION_KEY_SIZE_15':     0xe000,
     'ENCRYPTION_KEY_SIZE_16':     0xf000,
-    # only used by gatt compiler
-    'CLIENT_CONFIGURATION':      0x10000,
+    # only used by gatt compiler >= 0xffff
 }
 
 services = dict()
@@ -144,6 +143,9 @@ def is_string(text):
     if not text.endswith('"'):
         return False
     return True
+
+def add_client_characteristic_configuration(properties):
+    return properties & (property_flags['NOTIFY'] | property_flags['INDICATE'])
 
 def parseService(fout, parts, service_type):
     global handle
@@ -271,7 +273,7 @@ def parseCharacteristic(fout, parts):
     fout.write("\n")
     handle = handle + 1
 
-    if (properties & property_flags['CLIENT_CONFIGURATION']) == 0:
+    if add_client_characteristic_configuration(properties) == 0: 
         return
 
     size = 2 + 2 + 2 + 2 + 2
