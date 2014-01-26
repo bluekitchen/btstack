@@ -161,7 +161,7 @@ typedef uint16_t (*att_read_callback_t)(uint16_t handle, uint16_t offset, uint8_
 // @param buffer 
 // @param buffer_size
 // @param signature used for signed write commmands
-// @returns 1 if request could be queue for ATT_TRANSACTION_MODE_ACTIVE 
+// @returns 0 if write was ok, ATT_ERROR_PREPARE_QUEUE_FULL if no space in queue, ATT_ERROR_INVALID_OFFSET if offset is larger than max buffer
 typedef int (*att_write_callback_t)(uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size, signature_t * signature);
 
 // MARK: ATT Operations
