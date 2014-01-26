@@ -279,6 +279,19 @@ def parseCharacteristic(fout, parts):
     fout.write("\n")
     handle = handle + 1
 
+    if add_client_characteristic_configuration(properties):
+        size = 2 + 2 + 2 + 2 + 2
+        write_indent(fout)
+        fout.write('// 0x%04x CLIENT_CHARACTERISTIC_CONFIGURATION\n' % (handle))
+        write_indent(fout)
+        write_16(fout, size)
+        write_16(fout, property_flags['READ'] | property_flags['WRITE'] | property_flags['DYNAMIC'])
+        write_16(fout, handle)
+        write_16(fout, 0x2902)
+        write_16(fout, 0)
+        fout.write("\n")
+        handle = handle + 1
+
     if properties & property_flags['RELIABLE_WRITE']:
         size = 2 + 2 + 2 + 2 + 2
         write_indent(fout)
@@ -292,18 +305,6 @@ def parseCharacteristic(fout, parts):
         fout.write("\n")
         handle = handle + 1
 
-    if add_client_characteristic_configuration(properties):
-        size = 2 + 2 + 2 + 2 + 2
-        write_indent(fout)
-        fout.write('// 0x%04x CLIENT_CHARACTERISTIC_CONFIGURATION\n' % (handle))
-        write_indent(fout)
-        write_16(fout, size)
-        write_16(fout, property_flags['READ'] | property_flags['WRITE'] | property_flags['DYNAMIC'])
-        write_16(fout, handle)
-        write_16(fout, 0x2902)
-        write_16(fout, 0)
-        fout.write("\n")
-        handle = handle + 1
 
 
 def parseCharacteristicUserDescription(fout, parts):
