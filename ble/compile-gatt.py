@@ -205,9 +205,6 @@ def parseIncludeService(fout, parts):
 
     size = 2 + 2 + 2 + uuid_size + 2 + 4
 
-    if uuid_size == 16:
-        property = property | property_flags['LONG_UUID'];
-
     keyUUID = keyForUUID(uuid)
 
     write_indent(fout)
