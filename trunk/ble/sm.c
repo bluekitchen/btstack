@@ -248,6 +248,7 @@ static sm_key_t  sm_m_random;
 static sm_key_t  sm_m_confirm;
 
 static sm_key_t  sm_s_random;
+static uint8_t   sm_s_have_oob_data;
 static sm_key_t  sm_s_confirm;
 static uint8_t   sm_s_pres[7];
 
@@ -534,10 +535,13 @@ static void sm_tk_setup(){
     sm_stk_generation_method = JUST_WORKS;
     sm_reset_tk();
 
+    // query client for OOB data
+    sm_s_have_oob_data = (*sm_get_oob_data)(sm_m_addr_type, &sm_m_address, sm_tk);
+
     // If both devices have out of band authentication data, then the Authentication
     // Requirements Flags shall be ignored when selecting the pairing method and the
     // Out of Band pairing method shall be used.
-    if (sm_m_have_oob_data && (*sm_get_oob_data)(sm_m_addr_type, &sm_m_address, sm_tk)){
+    if (sm_m_have_oob_data && sm_s_have_oob_data){
         sm_stk_generation_method = OOB;
         return;
     }
@@ -873,7 +877,7 @@ static void sm_run(void){
             memcpy(buffer, sm_m_preq, 7);        
             buffer[0] = SM_CODE_PAIRING_RESPONSE;
             buffer[1] = sm_s_io_capabilities;
-            buffer[2] = sm_stk_generation_method == OOB ? 1 : 0;
+            buffer[2] = sm_s_have_oob_data;
             buffer[3] = sm_s_auth_req;
             buffer[4] = sm_max_encryption_key_size;
 
