@@ -292,10 +292,10 @@ static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16
     printf("WRITE Callback, handle %04x, mode %u, offset %u\n", handle, transaction_mode, offset);
 
     switch(handle){
-        case 0x0013:
-        case 0x0018:
-        case 0x0037:
-        case 0x003c:
+        case 0x0012:
+        case 0x0017:
+        case 0x0036:
+        case 0x003b:
             client_configuration = buffer[0];
             client_configuration_handle = handle;
             printf("Client Configuration set to %u for handle %04x\n", client_configuration, handle);
