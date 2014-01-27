@@ -217,6 +217,9 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 show_usage();
             }
             break;
+        case GAP_DEDICATED_BONDING_COMPLETED:
+            printf("GAP Dedicated Bonding Complete, status %u\n", packet[2]);
+            break;
         case L2CAP_EVENT_CHANNEL_OPENED:
             // inform about new l2cap connection
             bt_flip_addr(event_addr, &packet[3]);
@@ -390,6 +393,11 @@ int  stdin_process(struct data_source *ds){
 
         case 'i':
             start_scan();
+            break;
+
+        case 'j':
+            printf("Start dedicated bonding to %s using MITM %u\n", bd_addr_to_str(remote), gap_mitm_protection);
+            gap_dedicated_bonding(remote, gap_mitm_protection);
             break;
 
        //  case 'c':
