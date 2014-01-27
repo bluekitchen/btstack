@@ -29,7 +29,6 @@
 #define HEARTBEAT_PERIOD_MS 1000
 
 static uint16_t  rfcomm_channel_id;
-
 static uint8_t   spp_service_buffer[150];
 
 

@@ -23,6 +23,8 @@
 #include "btstack_memory.h"
 #include "hci_dump.h"
 #include "l2cap.h"
+#include "rfcomm.h"
+#include "sdp.h"
 #include "sdp_query_rfcomm.h"
 #include "sm.h"
 
@@ -47,6 +49,13 @@ static int ui_pin_offset = 0;
 
 static uint16_t handle;
 static uint16_t local_cid;
+
+// SPP / RFCOMM
+#define RFCOMM_SERVER_CHANNEL 1
+#define HEARTBEAT_PERIOD_MS 1000
+static uint16_t  rfcomm_channel_id;
+static uint8_t   spp_service_buffer[150];
+static uint16_t  mtu;
 
 // GAP INQUIRY
 
@@ -255,18 +264,47 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             local_cid = READ_BT_16(packet, 13); 
             handle = READ_BT_16(packet, 9);
             if (packet[2] == 0) {
-                printf("Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
+                printf("L2CAP Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
                        bd_addr_to_str(remote), handle, psm, local_cid,  READ_BT_16(packet, 15));
             } else {
                 printf("L2CAP connection to device %s failed. status code %u\n", bd_addr_to_str(remote), packet[2]);
             }
             break;
+
         case L2CAP_EVENT_INCOMING_CONNECTION: {
             uint16_t l2cap_cid  = READ_BT_16(packet, 12);
             printf("L2CAP Accepting incoming connection request\n"); 
             l2cap_accept_connection_internal(l2cap_cid);
             break;
         }
+
+        case RFCOMM_EVENT_INCOMING_CONNECTION:
+            // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
+            bt_flip_addr(remote, &packet[2]); 
+            rfcomm_channel_nr = packet[8];
+            rfcomm_channel_id = READ_BT_16(packet, 9);
+            printf("RFCOMM channel %u requested for %s\n\r", rfcomm_channel_nr, bd_addr_to_str(remote));
+            rfcomm_accept_connection_internal(rfcomm_channel_id);
+            break;
+            
+        case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+            // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
+            if (packet[2]) {
+                printf("RFCOMM channel open failed, status %u\n\r", packet[2]);
+            } else {
+                rfcomm_channel_id = READ_BT_16(packet, 12);
+                mtu = READ_BT_16(packet, 14);
+                if (mtu > 60){
+                    printf("BTstack libusb hack: using reduced MTU for sending instead of %u\n", mtu);
+                    mtu = 60;
+                }
+                printf("\n\rRFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n\r", rfcomm_channel_id, mtu);
+            }
+            break;
+            
+        case RFCOMM_EVENT_CHANNEL_CLOSED:
+            rfcomm_channel_id = 0;
+            break;
 
         default:
             break;
@@ -311,6 +349,23 @@ void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
     }
 }
 
+static void  heartbeat_handler(struct timer *ts){
+
+    if (rfcomm_channel_id){
+        static int counter = 0;
+        char lineBuffer[30];
+        sprintf(lineBuffer, "BTstack counter %04u\n\r", ++counter);
+        puts(lineBuffer);
+        int err = rfcomm_send_internal(rfcomm_channel_id, (uint8_t*) lineBuffer, strlen(lineBuffer));
+        if (err) {
+            printf("rfcomm_send_internal -> error 0X%02x", err);
+        }
+    }
+    
+    run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
+    run_loop_add_timer(ts);
+} 
+
 void show_usage(){
 
     printf("\n--- Bluetooth Classic Test Console ---\n");
@@ -336,13 +391,13 @@ void show_usage(){
     printf("---\n");
     printf("k - query %s for RFCOMM channel\n", bd_addr_to_str(remote));
     printf("l - create RFCOMM connection to %s using channel #%u\n",  bd_addr_to_str(remote), rfcomm_channel_nr);
-    printf("l - send RFCOMM data\n");
-    printf("m - close RFCOMM connection\n");
+    printf("n - send RFCOMM data\n");
+    printf("o - close RFCOMM connection\n");
     printf("---\n");
-    printf("n - create L2CAP channel to SDP at addr %s\n", bd_addr_to_str(remote));
-    printf("o - send L2CAP data\n");
-    printf("p - send L2CAP ECHO request\n");
-    printf("q - close L2CAP channel\n");
+    printf("p - create L2CAP channel to SDP at addr %s\n", bd_addr_to_str(remote));
+    printf("q - send L2CAP data\n");
+    printf("r - send L2CAP ECHO request\n");
+    printf("s - close L2CAP channel\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -459,21 +514,34 @@ int  stdin_process(struct data_source *ds){
             hci_send_cmd(&hci_disconnect, handle, 0x13);  // remote closed connection
             break;
 
-        case 'n':
+        case 'p':
             printf("Creating L2CAP Connection to %s, PSM SDP\n", bd_addr_to_str(remote));
             l2cap_create_channel_internal(NULL, packet_handler, remote, PSM_SDP, 100);
             break;
-        case 'o':
+        case 'q':
             printf("Send L2CAP Data\n");
             l2cap_send_internal(local_cid, (uint8_t *) "0123456789", 10);
        break;
-        case 'p':
+        case 'r':
             printf("Send L2CAP ECHO Request\n");
             l2cap_send_echo_request(handle, (uint8_t *)  "Hello World!", 13);
             break;
-        case 'q':
+        case 's':
             printf("L2CAP Channel Closed\n");
             l2cap_disconnect_internal(local_cid, 0);
+            break;
+
+        case 'l':
+            printf("Creating RFCOMM Channel to %s #%u\n", bd_addr_to_str(remote), rfcomm_channel_nr);
+             rfcomm_create_channel_internal(NULL, &remote, rfcomm_channel_nr);
+            break;
+        case 'n':
+            printf("Send RFCOMM Data\n");   // mtu < 60 
+            rfcomm_send_internal(rfcomm_channel_id, (uint8_t *) "012345678901234567890123456789012345678901234567890123456789", mtu);
+            break;
+        case 'o':
+            printf("RFCOMM Channel Closed\n");
+            rfcomm_disconnect_internal(rfcomm_channel_id);
             break;
 
         default:
@@ -526,8 +594,23 @@ static void btstack_setup(){
     
     l2cap_init();
     l2cap_register_packet_handler(&packet_handler2);
-    l2cap_register_service_internal(NULL, packet_handler, PSM_SDP, 100, LEVEL_0);
+    l2cap_register_service_internal(NULL, packet_handler, PSM_SDP, 150, LEVEL_0);
     
+    rfcomm_init();
+    rfcomm_register_packet_handler(packet_handler2);
+    rfcomm_register_service_internal(NULL, RFCOMM_SERVER_CHANNEL, 150);  // reserved channel, mtu=100
+
+    // init SDP, create record for SPP and register with SDP
+    sdp_init();
+    memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
+    // service_record_item_t * service_record_item = (service_record_item_t *) spp_service_buffer;
+    // sdp_create_spp_service( (uint8_t*) &service_record_item->service_record, RFCOMM_SERVER_CHANNEL, "SPP Counter");
+    // printf("SDP service buffer size: %u\n\r", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
+    // sdp_register_service_internal(NULL, service_record_item);
+    sdp_create_spp_service( spp_service_buffer, RFCOMM_SERVER_CHANNEL, "SPP Counter");
+    printf("SDP service record size: %u\n\r", de_get_len(spp_service_buffer));
+    sdp_register_service_internal(NULL, spp_service_buffer);
+
     sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
     
     hci_discoverable_control(0);
@@ -540,6 +623,13 @@ static void btstack_setup(){
 int main(void){
     btstack_setup();
     setup_cli();
+
+    // set one-shot timer
+    timer_source_t heartbeat;
+    heartbeat.process = &heartbeat_handler;
+    run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
+    run_loop_add_timer(&heartbeat);
+
     run_loop_execute(); 
     return 0;
 }
