@@ -23,6 +23,7 @@
 #include "btstack_memory.h"
 #include "hci_dump.h"
 #include "l2cap.h"
+#include "sdp_query_rfcomm.h"
 #include "sm.h"
 
 void show_usage();
@@ -289,6 +290,27 @@ static void update_auth_req(){
     hci_ssp_set_authentication_requirement(auth_req);
 }
 
+void handle_found_service(char * name, uint8_t port){
+    printf("SDP: Service name: '%s', RFCOMM port %u\n", name, port);
+    rfcomm_channel_nr = port;
+}
+
+void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
+    sdp_query_rfcomm_service_event_t * ve;
+            
+    switch (event->type){
+        case SDP_QUERY_RFCOMM_SERVICE:
+            ve = (sdp_query_rfcomm_service_event_t*) event;
+            handle_found_service((char*) ve->service_name, ve->channel_nr);
+            break;
+        case SDP_QUERY_COMPLETE:
+            printf("SDP SPP Query complete\n");
+            break;
+        default: 
+            break;
+    }
+}
+
 void show_usage(){
 
     printf("\n--- Bluetooth Classic Test Console ---\n");
@@ -427,6 +449,11 @@ int  stdin_process(struct data_source *ds){
             gap_dedicated_bonding(remote, gap_mitm_protection);
             break;
 
+        case 'k':
+            printf("Start SDP query for SPP service\n");
+            sdp_query_rfcomm_channel_and_name_for_uuid(remote, 0x1002);
+            break;
+
         case 't':
             printf("Terminate connection with handle 0x%04x\n", handle);
             hci_send_cmd(&hci_disconnect, handle, 0x13);  // remote closed connection
@@ -500,6 +527,8 @@ static void btstack_setup(){
     l2cap_init();
     l2cap_register_packet_handler(&packet_handler2);
     l2cap_register_service_internal(NULL, packet_handler, PSM_SDP, 100, LEVEL_0);
+    
+    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
     
     hci_discoverable_control(0);
     hci_connectable_control(0);
