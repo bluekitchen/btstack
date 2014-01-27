@@ -414,6 +414,8 @@ int hci_remote_ssp_supported(hci_con_handle_t con_handle);
 // query if both sides support SSP
 int hci_ssp_supported_on_both_sides(hci_con_handle_t handle);
 
+// disable automatic l2cap disconnect for testing
+void hci_disable_l2cap_timeout_check();
 
 // disconnect because of security block
 void hci_disconnect_security_block(hci_con_handle_t con_handle);
