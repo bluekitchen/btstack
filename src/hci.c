@@ -78,6 +78,10 @@ static hci_stack_t   hci_stack_static;
 #endif
 static hci_stack_t * hci_stack = NULL;
 
+// test helper
+static uint8_t disable_l2cap_timeouts = 0;
+
+
 /**
  * get connection for a given handle
  *
@@ -909,6 +913,7 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
 #else
     hci_stack = &hci_stack_static;
 #endif
+    memset(hci_stack, 0, sizeof(hci_stack_t));
 
     // reference to use transport layer implementation
     hci_stack->hci_transport = transport;
@@ -980,6 +985,9 @@ void hci_set_class_of_device(uint32_t class_of_device){
     hci_stack->class_of_device = class_of_device;
 }
 
+void hci_disable_l2cap_timeout_check(){
+    disable_l2cap_timeouts = 1;
+}
 // State-Module-Driver overview
 // state                    module  low-level 
 // HCI_STATE_OFF             off      close
@@ -1763,6 +1771,7 @@ void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
 }
 
 void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
+    if (disable_l2cap_timeouts) return;
     log_info("L2CAP_EVENT_TIMEOUT_CHECK");
     uint8_t event[4];
     event[0] = L2CAP_EVENT_TIMEOUT_CHECK;
