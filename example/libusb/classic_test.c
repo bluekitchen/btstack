@@ -272,9 +272,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
 
         case L2CAP_EVENT_INCOMING_CONNECTION: {
-            uint16_t l2cap_cid  = READ_BT_16(packet, 12);
-            printf("L2CAP Accepting incoming connection request\n"); 
-            l2cap_accept_connection_internal(l2cap_cid);
+            // data: event (8), len(8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16) 
+            psm = READ_BT_16(packet, 10);
+            // uint16_t l2cap_cid  = READ_BT_16(packet, 12);
+            printf("L2CAP incoming connection request on PSM %u\n", psm); 
+            // l2cap_accept_connection_internal(l2cap_cid);
             break;
         }
 
