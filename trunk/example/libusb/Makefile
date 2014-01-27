@@ -56,7 +56,8 @@ ATT_OBJ = $(ATT:.c=.o)
 # create firmware image from common objects and example source file
 
 all: ../../include/btstack/version.h ble_client sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral \
-		ble_peripheral_sm_minimal gap_inquiry gap_dedicated_bonding gap_inquiry_and_bond l2cap_test spp_streamer
+		ble_peripheral_sm_minimal gap_inquiry gap_dedicated_bonding gap_inquiry_and_bond l2cap_test spp_streamer \
+		classic_test
 
 # ble_client_uart #spp-usb l2cap-server-usb l2cap-client-usb l2cap-server-uart l2cap-client-uart
 
@@ -88,6 +89,9 @@ gap_inquiry_and_bond: ${CORE_OBJ} ${COMMON_OBJ} gap_inquiry_and_bond.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 l2cap_test: ${CORE_OBJ} ${COMMON_OBJ} l2cap_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+classic_test: ${CORE_OBJ} ${COMMON_OBJ} classic_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 # compile .ble description
