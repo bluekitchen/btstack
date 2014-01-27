@@ -235,6 +235,13 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             hci_send_cmd(&hci_user_confirmation_request_reply, remote);
             break;
 
+        case HCI_EVENT_PIN_CODE_REQUEST:
+            bt_flip_addr(remote, &packet[2]);
+            printf("GAP Legacy PIN Request for %s (press ENTER to send)\nPasskey:", bd_addr_to_str(remote));
+            fflush(stdout);
+            ui_chars_for_pin = 1;
+            break;
+
         case L2CAP_EVENT_CHANNEL_OPENED:
             // inform about new l2cap connection
             bt_flip_addr(remote, &packet[3]);
@@ -336,7 +343,7 @@ int  stdin_process(struct data_source *ds){
         fflush(stdout);
         if (buffer == '\n'){
             printf("\nSending Pin '%s'\n", ui_pin);
-            // send hci pin key request reply
+            hci_send_cmd(&hci_pin_code_request_reply, &remote, ui_pin_offset, ui_pin);
         } else {
             ui_pin[ui_pin_offset++] = buffer;
         }
@@ -477,7 +484,8 @@ static void btstack_setup(){
     gap_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
     hci_ssp_set_authentication_requirement(0);
     hci_ssp_set_auto_accept(0);
-
+    // hci_ssp_set_enable(0);
+    
     l2cap_init();
     l2cap_register_packet_handler(&packet_handler2);
     l2cap_register_service_internal(NULL, packet_handler, PSM_SDP, 100, LEVEL_0);
