@@ -196,8 +196,8 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
-    bd_addr_t event_addr;
     uint16_t psm;
+    uint32_t passkey;
 
     if (packet_type != HCI_EVENT_PACKET) return;
 
@@ -220,17 +220,32 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case GAP_DEDICATED_BONDING_COMPLETED:
             printf("GAP Dedicated Bonding Complete, status %u\n", packet[2]);
             break;
+        
+        case HCI_EVENT_USER_PASSKEY_REQUEST:
+            bt_flip_addr(remote, &packet[2]);
+            printf("GAP User Passkey Request for %s\nPasskey:", bd_addr_to_str(remote));
+            fflush(stdout);
+            ui_digits_for_passkey = 6;
+            break;
+
+        case HCI_EVENT_USER_CONFIRMATION_REQUEST:
+            bt_flip_addr(remote, &packet[2]);
+            passkey = READ_BT_32(packet, 8);
+            printf("GAP User Confirmation Request for %s, number '%06u'\n", bd_addr_to_str(remote),passkey);
+            hci_send_cmd(&hci_user_confirmation_request_reply, remote);
+            break;
+
         case L2CAP_EVENT_CHANNEL_OPENED:
             // inform about new l2cap connection
-            bt_flip_addr(event_addr, &packet[3]);
+            bt_flip_addr(remote, &packet[3]);
             psm = READ_BT_16(packet, 11); 
             local_cid = READ_BT_16(packet, 13); 
             handle = READ_BT_16(packet, 9);
             if (packet[2] == 0) {
                 printf("Channel successfully opened: %s, handle 0x%02x, psm 0x%02x, local cid 0x%02x, remote cid 0x%02x\n",
-                       bd_addr_to_str(event_addr), handle, psm, local_cid,  READ_BT_16(packet, 15));
+                       bd_addr_to_str(remote), handle, psm, local_cid,  READ_BT_16(packet, 15));
             } else {
-                printf("L2CAP connection to device %s failed. status code %u\n", bd_addr_to_str(event_addr), packet[2]);
+                printf("L2CAP connection to device %s failed. status code %u\n", bd_addr_to_str(remote), packet[2]);
             }
             break;
         case L2CAP_EVENT_INCOMING_CONNECTION: {
@@ -311,8 +326,8 @@ int  stdin_process(struct data_source *ds){
         ui_passkey = ui_passkey * 10 + buffer - '0';
         ui_digits_for_passkey--;
         if (ui_digits_for_passkey == 0){
-            printf("\nSending Passkey '%06x'\n", ui_passkey);
-            // ??
+            printf("\nSending Passkey '%06u'\n", ui_passkey);
+            hci_send_cmd(&hci_user_passkey_request_reply, remote, ui_passkey);
         }
         return 0;
     }
@@ -461,6 +476,7 @@ static void btstack_setup(){
     hci_ssp_set_io_capability(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     gap_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
     hci_ssp_set_authentication_requirement(0);
+    hci_ssp_set_auto_accept(0);
 
     l2cap_init();
     l2cap_register_packet_handler(&packet_handler2);
