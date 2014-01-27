@@ -23,14 +23,176 @@
 #include "btstack_memory.h"
 #include "hci_dump.h"
 #include "l2cap.h"
+#include "sm.h"
 
 void show_usage();
 
 // static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
 
+static uint8_t rfcomm_channel_nr = 1;
+
+static int gap_discoverable = 0;
+static int gap_connectable = 0;
+static int gap_bondable = 0;
+static int gap_mitm_protection = 0;
+static char * gap_io_capabilities;
+
+static int ui_passkey = 0;
+static int ui_digits_for_passkey = 0;
+static int ui_chars_for_pin = 0;
+static uint8_t ui_pin[17];
+static int ui_pin_offset = 0;
+
 static uint16_t handle;
 static uint16_t local_cid;
+
+// GAP INQUIRY
+
+#define MAX_DEVICES 10
+enum DEVICE_STATE { REMOTE_NAME_REQUEST, REMOTE_NAME_INQUIRED, REMOTE_NAME_FETCHED };
+struct device {
+    bd_addr_t  address;
+    uint16_t   clockOffset;
+    uint32_t   classOfDevice;
+    uint8_t    pageScanRepetitionMode;
+    uint8_t    rssi;
+    enum DEVICE_STATE  state; 
+};
+
+#define INQUIRY_INTERVAL 5
+struct device devices[MAX_DEVICES];
+int deviceCount = 0;
+
+
+enum STATE {INIT, W4_INQUIRY_MODE_COMPLETE, ACTIVE} ;
+enum STATE state = INIT;
+
+
+int getDeviceIndexForAddress( bd_addr_t addr){
+    int j;
+    for (j=0; j< deviceCount; j++){
+        if (BD_ADDR_CMP(addr, devices[j].address) == 0){
+            return j;
+        }
+    }
+    return -1;
+}
+
+void start_scan(void){
+    printf("Starting inquiry scan..\n");
+    hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
+}
+
+int has_more_remote_name_requests(void){
+    int i;
+    for (i=0;i<deviceCount;i++) {
+        if (devices[i].state == REMOTE_NAME_REQUEST) return 1;
+    }
+    return 0;
+}
+
+void do_next_remote_name_request(void){
+    int i;
+    for (i=0;i<deviceCount;i++) {
+        // remote name request
+        if (devices[i].state == REMOTE_NAME_REQUEST){
+            devices[i].state = REMOTE_NAME_INQUIRED;
+            printf("Get remote name of %s...\n", bd_addr_to_str(devices[i].address));
+            hci_send_cmd(&hci_remote_name_request, devices[i].address,
+                        devices[i].pageScanRepetitionMode, 0, devices[i].clockOffset | 0x8000);
+            return;
+        }
+    }
+}
+
+static void continue_remote_names(){
+    if (has_more_remote_name_requests()){
+        do_next_remote_name_request();
+        return;
+    } 
+    // start_scan();
+    // accept first device
+    if (deviceCount){
+        memcpy(remote, devices[0].address, 6);
+        printf("Inquiry scan over, using %s for outgoing connections\n", bd_addr_to_str(remote));
+    } else {
+        printf("Inquiry scan over but no devices found\n" );
+    }
+}
+
+static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
+    bd_addr_t addr;
+    int i;
+    int numResponses;
+    
+    // printf("packet_handler: pt: 0x%02x, packet[0]: 0x%02x\n", packet_type, packet[0]);
+    if (packet_type != HCI_EVENT_PACKET) return;
+
+    uint8_t event = packet[0];
+
+    switch(event){
+        case HCI_EVENT_INQUIRY_RESULT:
+        case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+            numResponses = packet[2];
+            for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
+                bt_flip_addr(addr, &packet[3+i*6]);
+                int index = getDeviceIndexForAddress(addr);
+                if (index >= 0) continue;   // already in our list
+
+                memcpy(devices[deviceCount].address, addr, 6);
+                devices[deviceCount].pageScanRepetitionMode =   packet [3 + numResponses*(6)         + i*1];
+                if (event == HCI_EVENT_INQUIRY_RESULT){
+                    devices[deviceCount].classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1+1)   + i*3);
+                    devices[deviceCount].clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff;
+                    devices[deviceCount].rssi  = 0;
+                } else {
+                    devices[deviceCount].classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1)     + i*3);
+                    devices[deviceCount].clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+3)   + i*2) & 0x7fff;
+                    devices[deviceCount].rssi  =                    packet [3 + numResponses*(6+1+1+3+2) + i*1];
+                }
+                devices[deviceCount].state = REMOTE_NAME_REQUEST;
+                printf("Device found: %s with COD: 0x%06x, pageScan %d, clock offset 0x%04x, rssi 0x%02x\n", bd_addr_to_str(addr),
+                        devices[deviceCount].classOfDevice, devices[deviceCount].pageScanRepetitionMode,
+                        devices[deviceCount].clockOffset, devices[deviceCount].rssi);
+                deviceCount++;
+            }
+            break;
+            
+        case HCI_EVENT_INQUIRY_COMPLETE:
+            for (i=0;i<deviceCount;i++) {
+                // retry remote name request
+                if (devices[i].state == REMOTE_NAME_INQUIRED)
+                    devices[i].state = REMOTE_NAME_REQUEST;
+            }
+            continue_remote_names();
+            break;
+
+        case BTSTACK_EVENT_REMOTE_NAME_CACHED:
+            bt_flip_addr(addr, &packet[3]);
+            printf("Cached remote name for %s: '%s'\n", bd_addr_to_str(addr), &packet[9]);
+            break;
+
+        case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
+            bt_flip_addr(addr, &packet[3]);
+            int index = getDeviceIndexForAddress(addr);
+            if (index >= 0) {
+                if (packet[2] == 0) {
+                    printf("Name: '%s'\n", &packet[9]);
+                    devices[index].state = REMOTE_NAME_FETCHED;
+                } else {
+                    printf("Failed to get name: page timeout\n");
+                }
+            }
+            continue_remote_names();
+            break;
+
+        default:
+            break;
+    }
+}
+// GAP INQUIRY END
+
 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
@@ -40,10 +202,18 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     if (packet_type != HCI_EVENT_PACKET) return;
 
     switch (packet[0]) {
+        case HCI_EVENT_INQUIRY_RESULT:
+        case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+        case HCI_EVENT_INQUIRY_COMPLETE:
+        case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
+            inquiry_packet_handler(packet_type, packet, size);
+            break;
+
         case BTSTACK_EVENT_STATE:
             // bt stack activated, get started 
             if (packet[2] == HCI_STATE_WORKING){
-                printf("BTstack L2CAP Test Ready\n");
+                printf("BTstack Bluetooth Classic Test Ready\n");
+                hci_send_cmd(&hci_write_inquiry_mode, 0x01); // with RSSI
                 show_usage();
             }
             break;
@@ -67,7 +237,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             break;
         }
 
-
         default:
             break;
     }
@@ -77,12 +246,52 @@ static void packet_handler2 (void * connection, uint8_t packet_type, uint16_t ch
     packet_handler(packet_type, 0, packet, size);
 }
 
+
+static void update_auth_req(){
+    uint8_t auth_req = 0;
+    if (gap_mitm_protection){
+        auth_req |= 1;  // MITM Flag
+    }
+    if (gap_bondable){
+        auth_req |= 4;  // General bonding
+    }
+    printf("Authentication Requirements: %u\n", auth_req);
+    hci_ssp_set_authentication_requirement(auth_req);
+}
+
 void show_usage(){
-    printf("\n--- CLI for L2CAP TEST ---\n");
-    printf("c      - create connection to SDP at addr %s\n", bd_addr_to_str(remote));
-    printf("s      - send data\n");
-    printf("e      - send echo request\n");
-    printf("d      - disconnect\n");
+
+    printf("\n--- Bluetooth Classic Test Console ---\n");
+    printf("GAP: discoverable %u, connectable %u, bondable %u, MITM %u, %s\n", gap_discoverable, gap_connectable, gap_bondable, gap_mitm_protection, gap_io_capabilities);
+    printf("---\n");
+    printf("b - bondable off\n");
+    printf("B - bondable on\n");
+    printf("c - connectable off\n");
+    printf("C - connectable on\n");
+    printf("d - discoverable off\n");
+    printf("D - discoverable on\n");
+    printf("m - MITM protection off\n");
+    printf("M - MITM protection on\n");
+    printf("---\n");
+    printf("e - IO_CAPABILITY_DISPLAY_ONLY\n");
+    printf("f - IO_CAPABILITY_DISPLAY_YES_NO\n");
+    printf("g - IO_CAPABILITY_NO_INPUT_NO_OUTPUT\n");
+    printf("h - IO_CAPABILITY_KEYBOARD_ONLY\n");
+    printf("---\n");
+    printf("i - perform inquiry and remote name request\n");
+    printf("j - perform dedicated bonding to %s, MITM = %u\n", bd_addr_to_str(remote), gap_mitm_protection);
+    printf("t - terminate HCI connection\n");
+    printf("---\n");
+    printf("k - query %s for RFCOMM channel\n", bd_addr_to_str(remote));
+    printf("l - create RFCOMM connection to %s using channel #%u\n",  bd_addr_to_str(remote), rfcomm_channel_nr);
+    printf("l - send RFCOMM data\n");
+    printf("m - close RFCOMM connection\n");
+    printf("---\n");
+    printf("n - create L2CAP channel to SDP at addr %s\n", bd_addr_to_str(remote));
+    printf("o - send L2CAP data\n");
+    printf("p - send L2CAP ECHO request\n");
+    printf("q - close L2CAP channel\n");
+    printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
@@ -90,26 +299,115 @@ void show_usage(){
 int  stdin_process(struct data_source *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
+
+    // passkey input
+    if (ui_digits_for_passkey){
+        if (buffer < '0' || buffer > '9') return 0;
+        printf("%c", buffer);
+        fflush(stdout);
+        ui_passkey = ui_passkey * 10 + buffer - '0';
+        ui_digits_for_passkey--;
+        if (ui_digits_for_passkey == 0){
+            printf("\nSending Passkey '%06x'\n", ui_passkey);
+            // ??
+        }
+        return 0;
+    }
+    if (ui_chars_for_pin){
+        printf("%c", buffer);
+        fflush(stdout);
+        if (buffer == '\n'){
+            printf("\nSending Pin '%s'\n", ui_pin);
+            // send hci pin key request reply
+        } else {
+            ui_pin[ui_pin_offset++] = buffer;
+        }
+        return 0;
+    }
+
     switch (buffer){
         case 'c':
-            printf("Creating L2CAP Connection to %s, PSM SDP\n", bd_addr_to_str(remote));
-            l2cap_create_channel_internal(NULL, packet_handler, remote, PSM_SDP, 100);
+            gap_connectable = 0;
+            hci_connectable_control(0);
+            show_usage();
             break;
-        case 's':
-            printf("Send L2CAP Data\n");
-            l2cap_send_internal(local_cid, (uint8_t *) "0123456789", 10);
-       break;
-        case 'e':
-            printf("Send L2CAP ECHO Request\n");
-            l2cap_send_echo_request(handle, (uint8_t *)  "Hello World!", 13);
+        case 'C':
+            gap_connectable = 1;
+            hci_connectable_control(1);
+            show_usage();
             break;
         case 'd':
-            printf("L2CAP Channel Closed\n");
-            l2cap_disconnect_internal(local_cid, 0);
+            gap_discoverable = 0;
+            hci_discoverable_control(0);
+            show_usage();
             break;
-        case '\n':
-        case '\r':
+        case 'D':
+            gap_discoverable = 1;
+            hci_discoverable_control(1);
+            show_usage();
             break;
+        case 'b':
+            gap_bondable = 0;
+            update_auth_req();
+            show_usage();
+            break;
+        case 'B':
+            gap_bondable = 1;
+            update_auth_req();
+            show_usage();
+            break;
+        case 'm':
+            gap_mitm_protection = 0;
+            update_auth_req();
+            show_usage();
+            break;
+        case 'M':
+            gap_mitm_protection = 1;
+            update_auth_req();
+            show_usage();
+            break;
+
+        case 'e':
+            gap_io_capabilities = "IO_CAPABILITY_DISPLAY_ONLY";
+            hci_ssp_set_io_capability(IO_CAPABILITY_DISPLAY_ONLY);
+            show_usage();
+            break;
+        case 'f':
+            gap_io_capabilities = "IO_CAPABILITY_DISPLAY_YES_NO";
+            hci_ssp_set_io_capability(IO_CAPABILITY_DISPLAY_YES_NO);
+            show_usage();
+            break;
+        case 'g':
+            gap_io_capabilities = "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
+            hci_ssp_set_io_capability(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+            show_usage();
+            break;
+        case 'h':
+            gap_io_capabilities = "IO_CAPABILITY_KEYBOARD_ONLY";
+            hci_ssp_set_io_capability(IO_CAPABILITY_KEYBOARD_ONLY);
+            show_usage();
+            break;
+
+        case 'i':
+            start_scan();
+            break;
+
+       //  case 'c':
+       //      printf("Creating L2CAP Connection to %s, PSM SDP\n", bd_addr_to_str(remote));
+       //      l2cap_create_channel_internal(NULL, packet_handler, remote, PSM_SDP, 100);
+       //      break;
+       //  case 's':
+       //      printf("Send L2CAP Data\n");
+       //      l2cap_send_internal(local_cid, (uint8_t *) "0123456789", 10);
+       // break;
+       //  case 'e':
+       //      printf("Send L2CAP ECHO Request\n");
+       //      l2cap_send_echo_request(handle, (uint8_t *)  "Hello World!", 13);
+       //      break;
+       //  case 'd':
+       //      printf("L2CAP Channel Closed\n");
+       //      l2cap_disconnect_internal(local_cid, 0);
+       //      break;
         default:
             show_usage();
             break;
@@ -136,7 +434,6 @@ void setup_cli(){
     run_loop_add_data_source(&stdin_source);
 }
 
-
 static void btstack_setup(){
     printf("Starting up..\n");
     /// GET STARTED ///
@@ -152,13 +449,18 @@ static void btstack_setup(){
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
     hci_init(transport, config, control, remote_db);
     hci_set_class_of_device(0x200404);
-    hci_discoverable_control(1);
     hci_disable_l2cap_timeout_check();
-    
+    hci_ssp_set_io_capability(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+    gap_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
+    hci_ssp_set_authentication_requirement(0);
+
     l2cap_init();
     l2cap_register_packet_handler(&packet_handler2);
     l2cap_register_service_internal(NULL, packet_handler, PSM_SDP, 100, LEVEL_0);
     
+    hci_discoverable_control(0);
+    hci_connectable_control(0);
+
     // turn on!
     hci_power_control(HCI_POWER_ON);
 }
