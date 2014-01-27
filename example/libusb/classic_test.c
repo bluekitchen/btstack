@@ -220,7 +220,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case GAP_DEDICATED_BONDING_COMPLETED:
             printf("GAP Dedicated Bonding Complete, status %u\n", packet[2]);
             break;
-        
+        case HCI_EVENT_CONNECTION_COMPLETE:
+            if (!packet[2]){
+                handle = READ_BT_16(packet, 3);
+            }
+            break;
+
         case HCI_EVENT_USER_PASSKEY_REQUEST:
             bt_flip_addr(remote, &packet[2]);
             printf("GAP User Passkey Request for %s\nPasskey:", bd_addr_to_str(remote));
@@ -305,7 +310,7 @@ void show_usage(){
     printf("---\n");
     printf("i - perform inquiry and remote name request\n");
     printf("j - perform dedicated bonding to %s, MITM = %u\n", bd_addr_to_str(remote), gap_mitm_protection);
-    printf("t - terminate HCI connection\n");
+    printf("t - terminate HCI connection with handle 0x%04x\n", handle);
     printf("---\n");
     printf("k - query %s for RFCOMM channel\n", bd_addr_to_str(remote));
     printf("l - create RFCOMM connection to %s using channel #%u\n",  bd_addr_to_str(remote), rfcomm_channel_nr);
@@ -422,22 +427,28 @@ int  stdin_process(struct data_source *ds){
             gap_dedicated_bonding(remote, gap_mitm_protection);
             break;
 
-       //  case 'c':
-       //      printf("Creating L2CAP Connection to %s, PSM SDP\n", bd_addr_to_str(remote));
-       //      l2cap_create_channel_internal(NULL, packet_handler, remote, PSM_SDP, 100);
-       //      break;
-       //  case 's':
-       //      printf("Send L2CAP Data\n");
-       //      l2cap_send_internal(local_cid, (uint8_t *) "0123456789", 10);
-       // break;
-       //  case 'e':
-       //      printf("Send L2CAP ECHO Request\n");
-       //      l2cap_send_echo_request(handle, (uint8_t *)  "Hello World!", 13);
-       //      break;
-       //  case 'd':
-       //      printf("L2CAP Channel Closed\n");
-       //      l2cap_disconnect_internal(local_cid, 0);
-       //      break;
+        case 't':
+            printf("Terminate connection with handle 0x%04x\n", handle);
+            hci_send_cmd(&hci_disconnect, handle, 0x13);  // remote closed connection
+            break;
+
+        case 'n':
+            printf("Creating L2CAP Connection to %s, PSM SDP\n", bd_addr_to_str(remote));
+            l2cap_create_channel_internal(NULL, packet_handler, remote, PSM_SDP, 100);
+            break;
+        case 'o':
+            printf("Send L2CAP Data\n");
+            l2cap_send_internal(local_cid, (uint8_t *) "0123456789", 10);
+       break;
+        case 'p':
+            printf("Send L2CAP ECHO Request\n");
+            l2cap_send_echo_request(handle, (uint8_t *)  "Hello World!", 13);
+            break;
+        case 'q':
+            printf("L2CAP Channel Closed\n");
+            l2cap_disconnect_internal(local_cid, 0);
+            break;
+
         default:
             show_usage();
             break;
