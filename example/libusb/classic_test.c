@@ -77,32 +77,6 @@ static void packet_handler2 (void * connection, uint8_t packet_type, uint16_t ch
     packet_handler(packet_type, 0, packet, size);
 }
 
-static void btstack_setup(){
-    printf("Starting up..\n");
-    /// GET STARTED ///
-    btstack_memory_init();
-    run_loop_init(RUN_LOOP_POSIX);
-    
-    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
-   
-    hci_transport_t    * transport = hci_transport_usb_instance();
-    hci_uart_config_t  * config = NULL;
-    bt_control_t       * control   = NULL;    
-
-    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-    hci_init(transport, config, control, remote_db);
-    hci_set_class_of_device(0x200404);
-    hci_discoverable_control(1);
-
-    l2cap_init();
-    l2cap_register_packet_handler(&packet_handler2);
-    l2cap_register_service_internal(NULL, packet_handler, PSM_SDP, 100, LEVEL_0);
-    
-    // turn on!
-    hci_power_control(HCI_POWER_ON);
-}
-
-
 void show_usage(){
     printf("\n--- CLI for L2CAP TEST ---\n");
     printf("c      - create connection to SDP at addr %s\n", bd_addr_to_str(remote));
@@ -160,6 +134,33 @@ void setup_cli(){
     stdin_source.fd = 0; // stdin
     stdin_source.process = &stdin_process;
     run_loop_add_data_source(&stdin_source);
+}
+
+
+static void btstack_setup(){
+    printf("Starting up..\n");
+    /// GET STARTED ///
+    btstack_memory_init();
+    run_loop_init(RUN_LOOP_POSIX);
+    
+    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+   
+    hci_transport_t    * transport = hci_transport_usb_instance();
+    hci_uart_config_t  * config = NULL;
+    bt_control_t       * control   = NULL;    
+
+    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
+    hci_init(transport, config, control, remote_db);
+    hci_set_class_of_device(0x200404);
+    hci_discoverable_control(1);
+    hci_disable_l2cap_timeout_check();
+    
+    l2cap_init();
+    l2cap_register_packet_handler(&packet_handler2);
+    l2cap_register_service_internal(NULL, packet_handler, PSM_SDP, 100, LEVEL_0);
+    
+    // turn on!
+    hci_power_control(HCI_POWER_ON);
 }
 
 int main(void){
