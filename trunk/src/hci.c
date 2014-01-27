@@ -1973,16 +1973,12 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
  */
 int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required){
 
-
-    printf("gap_dedicated_bonding clled\n");
     // create connection state machine
     hci_connection_t * connection = create_connection_for_addr(device);
 
     if (!connection){
         return BTSTACK_MEMORY_ALLOC_FAILED;
     }
-
-    printf("gap_dedicated_bonding 2\n");
 
     // delete linkn key
     hci_drop_link_key_for_bd_addr( (bd_addr_t *) &device);
