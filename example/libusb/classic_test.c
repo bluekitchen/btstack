@@ -394,6 +394,9 @@ void show_usage(){
     printf("k - query %s for RFCOMM channel\n", bd_addr_to_str(remote));
     printf("l - create RFCOMM connection to %s using channel #%u\n",  bd_addr_to_str(remote), rfcomm_channel_nr);
     printf("n - send RFCOMM data\n");
+    printf("u - send RFCOMM Remote Line Status Indication indicating Framing Error\n");
+    printf("v - send RFCOMM Remote Port Negotiation to select 115200 baud\n");
+    printf("w - query RFCOMM Remote Port Negotiation\n");
     printf("o - close RFCOMM connection\n");
     printf("---\n");
     printf("p - create L2CAP channel to SDP at addr %s\n", bd_addr_to_str(remote));
@@ -545,6 +548,18 @@ int  stdin_process(struct data_source *ds){
         case 'n':
             printf("Send RFCOMM Data\n");   // mtu < 60 
             rfcomm_send_internal(rfcomm_channel_id, (uint8_t *) "012345678901234567890123456789012345678901234567890123456789", mtu);
+            break;
+        case 'u':
+            printf("Sending RLS indicating framing error\n");   // mtu < 60 
+            rfcomm_send_local_line_status(rfcomm_channel_id, 9);
+            break;
+        case 'v':
+            printf("Sending RPN CMD to select 115200 baud\n");   // mtu < 60 
+            rfcomm_send_port_configuration(rfcomm_channel_id, RPN_BAUD_115200, RPN_DATA_BITS_8, RPN_STOP_BITS_1_0, RPN_PARITY_NONE, 0);
+            break;
+        case 'w':
+            printf("Sending RPN REQ to query remote port settings\n");   // mtu < 60 
+            rfcomm_query_port_configuration(rfcomm_channel_id);
             break;
         case 'o':
             printf("RFCOMM Channel Closed\n");
