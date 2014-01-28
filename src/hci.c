@@ -143,6 +143,8 @@ static void hci_connection_timestamp(hci_connection_t *connection){
  * @return connection OR NULL, if no memory left
  */
 static hci_connection_t * create_connection_for_addr(bd_addr_t addr){
+
+    printf("create_connection_for_addr %s\n", bd_addr_to_str(addr));
     hci_connection_t * conn = (hci_connection_t *) btstack_memory_hci_connection_get();
     if (!conn) return NULL;
     BD_ADDR_COPY(conn->address, addr);
@@ -1329,7 +1331,8 @@ void hci_run(){
 
         if (connection->authentication_flags & SEND_IO_CAPABILITIES_REPLY){
             connectionClearAuthenticationFlags(connection, SEND_IO_CAPABILITIES_REPLY);
-            if (hci_stack->bondable && hci_stack->ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN){
+            log_info("IO Capability Request received, stack bondable %u, io cap %u", hci_stack->bondable, hci_stack->ssp_io_capability);
+            if (hci_stack->bondable && (hci_stack->ssp_io_capability != SSP_IO_CAPABILITY_UNKNOWN)){
                 // tweak authentication requirements
                 uint8_t authreq = hci_stack->ssp_authentication_requirement;
                 if (connection->bonding_flags & BONDING_DEDICATED){
@@ -1918,6 +1921,7 @@ static gap_security_level_t gap_security_level_for_connection(hci_connection_t *
 
 
 int gap_mitm_protection_required_for_security_level(gap_security_level_t level){
+    printf("gap_mitm_protection_required_for_security_level %u\n", level);
     return level > LEVEL_2;
 }
 
@@ -1986,6 +1990,7 @@ int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required){
     // configure LEVEL_2/3, dedicated bonding
     connection->state = SEND_CREATE_CONNECTION;    
     connection->requested_security_level = mitm_protection_required ? LEVEL_3 : LEVEL_2;
+    printf("gap_dedicated_bonding, mitm %u -> level %u\n", mitm_protection_required, connection->requested_security_level);
     connection->bonding_flags = BONDING_DEDICATED;
 
     // wait for GAP Security Result and send GAP Dedicated Bonding complete
