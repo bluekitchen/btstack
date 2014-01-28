@@ -77,6 +77,7 @@ static todo_t todos = 0;
 
 ///------
 static int advertisements_enabled = 0;
+static int gap_advertisements = 0;
 static int gap_discoverable = 0;
 static int gap_connectable = 0;
 static int gap_bondable = 0;
@@ -116,25 +117,32 @@ static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x06, 0x07, 0x5F};
 static int tester_address_type = 0;
 #endif
 
+// general discoverable flags
+static uint8_t adv_general_discoverable[] = { 2, 01, 02 };
+
+// non discoverable flags
+static uint8_t adv_non_discoverable[] = { 2, 01, 00 };
+
 // some test data
 static uint8_t adv_data_0[] = { 2, 01, 02,   03, 02, 0xf0, 0xff }; 
 
+
 // AD Manufacturer Specific Data - Ericsson, 1, 2, 3, 4
-static uint8_t adv_data_1[] = { 2, 01, 02,   7, 0xff, 0x00, 0x00, 1, 2, 3, 4 }; 
+static uint8_t adv_data_1[] = { 7, 0xff, 0x00, 0x00, 1, 2, 3, 4 }; 
 // AD Local Name - 'BTstack'
-static uint8_t adv_data_2[] = { 2, 01, 02,   8, 0x09, 'B', 'T', 's', 't', 'a', 'c', 'k' }; 
-// AD Flags - 2 - General Discoverable mode
-static uint8_t adv_data_3[] = { 2, 01, 02 }; 
+static uint8_t adv_data_2[] = { 8, 0x09, 'B', 'T', 's', 't', 'a', 'c', 'k' }; 
+// AD Flags - 2 - General Discoverable mode -- flags are always prepended
+static uint8_t adv_data_3[] = {  }; 
 // AD Service Data - 0x1812 HID over LE
-static uint8_t adv_data_4[] = { 2, 01, 02,   3, 0x16, 0x12, 0x18 }; 
+static uint8_t adv_data_4[] = { 3, 0x16, 0x12, 0x18 }; 
 // AD Service Solicitation -  0x1812 HID over LE
-static uint8_t adv_data_5[] = { 2, 01, 02,   3, 0x14, 0x12, 0x18 }; 
+static uint8_t adv_data_5[] = { 3, 0x14, 0x12, 0x18 }; 
 // AD Services
-static uint8_t adv_data_6[] = { 2, 01, 02,   3, 0x03, 0x12, 0x18 }; 
+static uint8_t adv_data_6[] = { 3, 0x03, 0x12, 0x18 }; 
 // AD Slave Preferred Connection Interval Range - no min, no max
-static uint8_t adv_data_7[] = { 2, 01, 02,   5, 0x12, 0xff, 0xff, 0xff, 0xff }; 
+static uint8_t adv_data_7[] = { 5, 0x12, 0xff, 0xff, 0xff, 0xff }; 
 // AD Tx Power Level - +4 dBm
-static uint8_t adv_data_8[] = { 2, 01, 02,   2, 0x0a, 4 }; 
+static uint8_t adv_data_8[] = { 2, 0x0a, 4 }; 
 
 static uint8_t adv_data_len;
 static uint8_t adv_data[32];
@@ -542,11 +550,13 @@ void setup(void){
 
 void show_usage(){
     printf("\n--- CLI for LE Peripheral ---\n");
-    printf("GAP: discoverable %u, connectable %u, bondable %u, directed connectable %u, privacy %u : ads enabled %u \n",
-        gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, gap_privacy, advertisements_enabled);
+    printf("GAP: discoverable %u, connectable %u, bondable %u, directed connectable %u, privacy %u, ads enabled %u \n",
+        gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, gap_privacy, gap_advertisements);
     printf("SM:  slave iniitiated security request %u, %s, MITM protection %u, OOB data %u, key range [%u..16]\n",
         sm_slave_initiated_security_request, sm_io_capabilities, sm_mitm_protection, sm_have_oob_data, sm_min_key_size);
     printf("---\n");
+    printf("a - advertisements off\n");
+    printf("A - advertisements on\n");
     printf("b - bondable off\n");
     printf("B - bondable on\n");
     printf("c - connectable off\n");
@@ -589,10 +599,24 @@ void show_usage(){
 
 void update_advertisements(){
 
+    // update adv data
     memset(adv_data, 0, 32);
-    adv_data_len = advertisements[advertisement_index].len;
-    memcpy(adv_data, advertisements[advertisement_index].data, adv_data_len);
+    adv_data_len = 0;
     
+    // add "Flags"
+    adv_data_len = 3;
+    if (gap_discoverable){
+        memcpy(adv_data, adv_general_discoverable, sizeof(adv_general_discoverable));
+        adv_data_len += sizeof(adv_general_discoverable);
+    } else {
+        memcpy(adv_data, adv_non_discoverable, sizeof(adv_non_discoverable));
+        adv_data_len += sizeof(adv_non_discoverable);
+    }
+
+    // append selected adv data
+    memcpy(&adv_data[adv_data_len], advertisements[advertisement_index].data, adv_data_len);
+    adv_data_len += advertisements[advertisement_index].len;
+
     todos = SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | SET_SCAN_RESPONSE_DATA;
 
     // disable advertisements, if thez are active
@@ -600,8 +624,8 @@ void update_advertisements(){
         todos |= DISABLE_ADVERTISEMENTS;
     }
 
-    // enable advertisements, if we're discoverable
-    if (gap_discoverable) {
+    // enable advertisements, if they should be on
+    if (gap_advertisements) {
         todos |= ENABLE_ADVERTISEMENTS;
     }
 
@@ -638,6 +662,14 @@ int  stdin_process(struct data_source *ds){
     }
 
     switch (buffer){
+        case 'a':
+            gap_advertisements = 0;
+            show_usage();
+            break;
+        case 'A':
+            gap_advertisements = 1;
+            show_usage();
+            break;
         case 'b':
             gap_bondable = 0;
             sm_set_authentication_requirements(SM_AUTHREQ_NO_BONDING);
