@@ -587,7 +587,7 @@ static int rfcomm_send_uih_fc_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t fco
     uint8_t payload[2]; 
     uint8_t pos = 0;
     payload[pos++] = fcon ? BT_RFCOMM_FCON_RSP : BT_RFCOMM_FCOFF_RSP;
-    payload[pos++] = 0 << 1 | 1;  // len
+    payload[pos++] = (0 << 1) | 1;  // len
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
 
@@ -610,7 +610,7 @@ static int rfcomm_send_uih_test_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t *
     if (len > RFCOMM_TEST_DATA_MAX_LEN) {
         len = RFCOMM_TEST_DATA_MAX_LEN;
     }
-    payload[pos++] = (len + 1) << 1 | 1;  // len
+    payload[pos++] = (len << 1) | 1;  // len
     memcpy(&payload[pos], data, len);
     pos += len;
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
@@ -621,7 +621,7 @@ static int rfcomm_send_uih_msc_cmd(rfcomm_multiplexer_t *multiplexer, uint8_t dl
 	uint8_t payload[4]; 
 	uint8_t pos = 0;
 	payload[pos++] = BT_RFCOMM_MSC_CMD;
-	payload[pos++] = 2 << 1 | 1;  // len
+	payload[pos++] = (2 << 1) | 1;  // len
 	payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
 	payload[pos++] = signals;
 	return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
@@ -632,7 +632,7 @@ static int rfcomm_send_uih_msc_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t dl
 	uint8_t payload[4]; 
 	uint8_t pos = 0;
 	payload[pos++] = BT_RFCOMM_MSC_RSP;
-	payload[pos++] = 2 << 1 | 1;  // len
+	payload[pos++] = (2 << 1) | 1;  // len
 	payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
 	payload[pos++] = signals;
 	return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
@@ -643,7 +643,7 @@ static int rfcomm_send_uih_nsc_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t co
     uint8_t payload[3]; 
     uint8_t pos = 0;
     payload[pos++] = BT_RFCOMM_NSC_RSP;
-    payload[pos++] = 1 << 1 | 1;  // len
+    payload[pos++] = (1 << 1) | 1;  // len
     payload[pos++] = command;
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
@@ -653,7 +653,7 @@ static int rfcomm_send_uih_pn_command(rfcomm_multiplexer_t *multiplexer, uint8_t
 	uint8_t address = (1 << 0) | (multiplexer->outgoing << 1); 
 	uint8_t pos = 0;
 	payload[pos++] = BT_RFCOMM_PN_CMD;
-	payload[pos++] = 8 << 1 | 1;  // len
+	payload[pos++] = (8 << 1) | 1;  // len
 	payload[pos++] = dlci;
 	payload[pos++] = 0xf0; // pre-defined for Bluetooth, see 5.5.3 of TS 07.10 Adaption for RFCOMM
 	payload[pos++] = 0; // priority
@@ -672,7 +672,7 @@ static int rfcomm_send_uih_pn_response(rfcomm_multiplexer_t *multiplexer, uint8_
 	uint8_t address = (1 << 0) | (multiplexer->outgoing << 1); 
 	uint8_t pos = 0;
 	payload[pos++] = BT_RFCOMM_PN_RSP;
-	payload[pos++] = 8 << 1 | 1;  // len
+	payload[pos++] = (8 << 1) | 1;  // len
 	payload[pos++] = dlci;
 	payload[pos++] = 0xe0; // pre defined for Bluetooth, see 5.5.3 of TS 07.10 Adaption for RFCOMM
 	payload[pos++] = priority; // priority
@@ -689,7 +689,7 @@ static int rfcomm_send_uih_rls_cmd(rfcomm_multiplexer_t *multiplexer, uint8_t dl
     uint8_t payload[4]; 
     uint8_t pos = 0;
     payload[pos++] = BT_RFCOMM_RLS_CMD;
-    payload[pos++] = 2 << 1 | 1;  // len
+    payload[pos++] = (2 << 1) | 1;  // len
     payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
     payload[pos++] = line_status;
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
@@ -700,7 +700,7 @@ static int rfcomm_send_uih_rls_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t dl
     uint8_t payload[4]; 
     uint8_t pos = 0;
     payload[pos++] = BT_RFCOMM_RLS_RSP;
-    payload[pos++] = 2 << 1 | 1;  // len
+    payload[pos++] = (2 << 1) | 1;  // len
     payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
     payload[pos++] = line_status;
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
@@ -711,7 +711,7 @@ static int rfcomm_send_uih_rpn_cmd(rfcomm_multiplexer_t *multiplexer, uint8_t dl
     uint8_t address = (1 << 0) | (multiplexer->outgoing << 1); 
     uint8_t pos = 0;
     payload[pos++] = BT_RFCOMM_RPN_CMD;
-    payload[pos++] = 8 << 1 | 1;  // len
+    payload[pos++] = (8 << 1) | 1;  // len
     payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
     payload[pos++] = rpn_data->baud_rate;
     payload[pos++] = rpn_data->flags;
@@ -728,7 +728,7 @@ static int rfcomm_send_uih_rpn_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t dl
 	uint8_t address = (1 << 0) | (multiplexer->outgoing << 1); 
 	uint8_t pos = 0;
 	payload[pos++] = BT_RFCOMM_RPN_RSP;
-	payload[pos++] = 8 << 1 | 1;  // len
+	payload[pos++] = (8 << 1) | 1;  // len
 	payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
 	payload[pos++] = rpn_data->baud_rate;
 	payload[pos++] = rpn_data->flags;
