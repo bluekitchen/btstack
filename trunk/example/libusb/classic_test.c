@@ -332,7 +332,7 @@ static void update_auth_req(){
 
 void handle_found_service(char * name, uint8_t port){
     printf("SDP: Service name: '%s', RFCOMM port %u\n", name, port);
-    rfcomm_channel_nr = port;
+    rfcomm_channel_nr = 3; //port;
 }
 
 void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
@@ -397,6 +397,7 @@ void show_usage(){
     printf("o - close RFCOMM connection\n");
     printf("---\n");
     printf("p - create L2CAP channel to SDP at addr %s\n", bd_addr_to_str(remote));
+    // printf("u - create L2CAP channel to PSM #3 (RFCOMM) at addr %s\n", bd_addr_to_str(remote));
     printf("q - send L2CAP data\n");
     printf("r - send L2CAP ECHO request\n");
     printf("s - close L2CAP channel\n");
@@ -520,6 +521,10 @@ int  stdin_process(struct data_source *ds){
             printf("Creating L2CAP Connection to %s, PSM SDP\n", bd_addr_to_str(remote));
             l2cap_create_channel_internal(NULL, packet_handler, remote, PSM_SDP, 100);
             break;
+        // case 'u':
+        //     printf("Creating L2CAP Connection to %s, PSM 3\n", bd_addr_to_str(remote));
+        //     l2cap_create_channel_internal(NULL, packet_handler, remote, 3, 100);
+        //     break;
         case 'q':
             printf("Send L2CAP Data\n");
             l2cap_send_internal(local_cid, (uint8_t *) "0123456789", 10);
