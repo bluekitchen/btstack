@@ -1097,8 +1097,9 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
     
     // process stored DM responses
     if (multiplexer->send_dm_for_dlci){
+        uint8_t dlci = multiplexer->send_dm_for_dlci;
         multiplexer->send_dm_for_dlci = 0;
-        rfcomm_send_dm_pf(multiplexer, multiplexer->send_dm_for_dlci);
+        rfcomm_send_dm_pf(multiplexer, dlci);
         return;
     }
 
