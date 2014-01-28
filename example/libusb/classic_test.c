@@ -332,7 +332,7 @@ static void update_auth_req(){
 
 void handle_found_service(char * name, uint8_t port){
     printf("SDP: Service name: '%s', RFCOMM port %u\n", name, port);
-    rfcomm_channel_nr = 3; //port;
+    rfcomm_channel_nr = port;
 }
 
 void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
