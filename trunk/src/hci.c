@@ -1967,6 +1967,7 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
 
     // try to authenticate connection
     connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
+    hci_run();
 }
 
 /**
