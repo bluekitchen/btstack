@@ -404,6 +404,7 @@ void show_usage(){
     printf("q - send L2CAP data\n");
     printf("r - send L2CAP ECHO request\n");
     printf("s - close L2CAP channel\n");
+    printf("x - require SSP for outgoing SDP L2CAP channel\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -539,6 +540,10 @@ int  stdin_process(struct data_source *ds){
         case 's':
             printf("L2CAP Channel Closed\n");
             l2cap_disconnect_internal(local_cid, 0);
+            break;
+        case 'x':
+            printf("Outgoing L2CAP Channels to SDP will also require SSP\n");
+            l2cap_require_security_level_2_for_outgoing_sdp();
             break;
 
         case 'l':
