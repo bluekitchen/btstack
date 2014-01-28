@@ -1472,6 +1472,10 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     }
                     break;
 
+                case BT_RFCOMM_RPN_CMD:
+                    log_info("Received RPN response");
+                    break;
+
                 case BT_RFCOMM_RLS_CMD: {
                     log_info("Received RLS command");
                     message_dlci = packet[payload_offset+2] >> 2;
@@ -1481,6 +1485,10 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     rfcomm_channel_state_machine_2(multiplexer, message_dlci, (rfcomm_channel_event_t*) &event_rls);
                     break;
                 }
+
+                case BT_RFCOMM_RLS_RSP:
+                    log_info("Received RLS response");
+                    break;
 
                 // Following commands are handled by rfcomm_multiplexer_l2cap_packet_handler
                 // case BT_RFCOMM_TEST_CMD: 
