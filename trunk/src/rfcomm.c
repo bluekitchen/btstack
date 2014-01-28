@@ -1472,7 +1472,7 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
                     }
                     break;
 
-                case BT_RFCOMM_RPN_CMD:
+                case BT_RFCOMM_RPN_RSP:
                     log_info("Received RPN response");
                     break;
 
