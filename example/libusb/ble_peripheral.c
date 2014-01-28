@@ -579,6 +579,7 @@ void show_usage(){
     printf("---\n");
     printf("s - slave initiated security request off\n");
     printf("S - slave initiated security request on\n");
+    printf("z - send Connection Parameter Update Request\n");
     printf("t - terminate connection\n");
     printf("---\n");
     printf("e - IO_CAPABILITY_DISPLAY_ONLY\n");
@@ -664,10 +665,12 @@ int  stdin_process(struct data_source *ds){
     switch (buffer){
         case 'a':
             gap_advertisements = 0;
+            update_advertisements();
             show_usage();
             break;
         case 'A':
             gap_advertisements = 1;
+            update_advertisements();
             show_usage();
             break;
         case 'b':
@@ -761,6 +764,10 @@ int  stdin_process(struct data_source *ds){
         case 't':
             printf("Terminating connection\n");
             hci_send_cmd(&hci_disconnect, handle, 0x13);
+            break;
+        case 'z':
+            printf("Sending l2cap connection update parameter request\n");
+            l2cap_le_request_connection_parameter_update(handle, 50, 120, 0, 550);
             break;
         case 'o':
             sm_have_oob_data = 0;
