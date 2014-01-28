@@ -723,6 +723,16 @@ static int rfcomm_send_uih_rpn_cmd(rfcomm_multiplexer_t *multiplexer, uint8_t dl
     return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
 }
 
+static int rfcomm_send_uih_rpn_req(rfcomm_multiplexer_t *multiplexer, uint8_t dlci) {
+    uint8_t payload[3];
+    uint8_t address = (1 << 0) | (multiplexer->outgoing << 1); 
+    uint8_t pos = 0;
+    payload[pos++] = BT_RFCOMM_RPN_CMD;
+    payload[pos++] = (1 << 1) | 1;  // len
+    payload[pos++] = (1 << 0) | (1 << 1) | (dlci << 2); // CMD => C/R = 1
+    return rfcomm_send_packet_for_multiplexer(multiplexer, address, BT_RFCOMM_UIH, 0, (uint8_t *) payload, pos);
+}
+
 static int rfcomm_send_uih_rpn_rsp(rfcomm_multiplexer_t *multiplexer, uint8_t dlci, rfcomm_rpn_data_t *rpn_data) {
 	uint8_t payload[10];
 	uint8_t address = (1 << 0) | (multiplexer->outgoing << 1); 
@@ -1618,10 +1628,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
 
     // TODO: integrate in common switch
     if (event->type == CH_EVT_RCVD_RPN_REQ){
-        // all values are accepted
-        // channel->rpn_data.parameter_mask_0 = 0x7f;
-        // channel->rpn_data.parameter_mask_1 = 0x3f;
-        // no values got accepted
+        // no values got accepted (no values have beens sent)
         channel->rpn_data.parameter_mask_0 = 0x00;
         channel->rpn_data.parameter_mask_1 = 0x00;
         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP);
@@ -2041,7 +2048,7 @@ int rfcomm_send_modem_status(uint16_t rfcomm_cid, uint8_t modem_status){
 int rfcomm_send_port_configuration(uint16_t rfcomm_cid, rpn_baud_t baud_rate, rpn_data_bits_t data_bits, rpn_stop_bits_t stop_bits, rpn_parity_t parity, rpn_flow_control_t flow_control){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
-        log_error("rfcomm_send_modem_status cid 0x%02x doesn't exist!\n", rfcomm_cid);
+        log_error("rfcomm_send_port_configuration cid 0x%02x doesn't exist!\n", rfcomm_cid);
         return 0;
     }
     rfcomm_rpn_data_t rpn_data; 
@@ -2053,6 +2060,16 @@ int rfcomm_send_port_configuration(uint16_t rfcomm_cid, rpn_baud_t baud_rate, rp
     rpn_data.parameter_mask_0 = 0x1f;   // all but xon/xoff
     rpn_data.parameter_mask_1 = 0x3f;   // all flow control options
     return rfcomm_send_uih_rpn_cmd(channel->multiplexer, channel->dlci, &rpn_data);
+}
+
+// Query remote port 
+int rfcomm_query_port_configuration(uint16_t rfcomm_cid){
+    rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
+    if (!channel){
+        log_error("rfcomm_query_port_configuration cid 0x%02x doesn't exist!\n", rfcomm_cid);
+        return 0;
+    }
+    return rfcomm_send_uih_rpn_req(channel->multiplexer, channel->dlci);
 }
 
 
