@@ -617,8 +617,8 @@ static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * ch
     // we have been waiting for remote supported features, if both support SSP, 
     if (hci_ssp_supported_on_both_sides(channel->handle) && !l2cap_security_level_0_allowed_for_PSM(channel->psm)){
         // request security level 2
-        gap_request_security_level(channel->handle, LEVEL_2);
         channel->state = L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE;
+        gap_request_security_level(channel->handle, LEVEL_2);
         return;
     }
     // fine, go ahead
