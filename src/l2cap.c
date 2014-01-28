@@ -79,6 +79,7 @@ static int new_credits_blocked = 0;
 
 static btstack_packet_handler_t attribute_protocol_packet_handler;
 static btstack_packet_handler_t security_protocol_packet_handler;
+static uint8_t require_security_level2_for_outgoing_sdp;
 
 // prototypes
 static void l2cap_finialize_channel_close(l2cap_channel_t *channel);
@@ -99,6 +100,8 @@ void l2cap_init(){
     packet_handler = null_packet_handler;
     attribute_protocol_packet_handler = NULL;
     security_protocol_packet_handler = NULL;
+    
+    require_security_level2_for_outgoing_sdp = 0;
 
     // 
     // register callback with HCI
@@ -288,8 +291,12 @@ static void l2cap_start_ertx(l2cap_channel_t * channel){
     run_loop_add_timer(&channel->rtx);
 }
 
+void l2cap_require_security_level_2_for_outgoing_sdp(){
+    require_security_level2_for_outgoing_sdp = 1;
+}
+
 static int l2cap_security_level_0_allowed_for_PSM(uint16_t psm){
-    return psm != PSM_SDP;
+    return (psm == PSM_SDP) && (!require_security_level2_for_outgoing_sdp);
 }
 
 int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...){
@@ -615,6 +622,7 @@ static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * ch
     if (channel->state != L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES) return;
 
     // we have been waiting for remote supported features, if both support SSP, 
+    log_info("l2cap received remote supported features, sec_level_0_allowed for psm %u = %u", channel->psm, l2cap_security_level_0_allowed_for_PSM(channel->psm));
     if (hci_ssp_supported_on_both_sides(channel->handle) && !l2cap_security_level_0_allowed_for_PSM(channel->psm)){
         // request security level 2
         channel->state = L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE;
@@ -662,7 +670,7 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     chan->remote_sig_id = L2CAP_SIG_ID_INVALID;
     chan->local_sig_id = L2CAP_SIG_ID_INVALID;
     chan->required_security_level = LEVEL_0;
-    
+
     // add to connections list
     linked_list_add(&l2cap_channels, (linked_item_t *) chan);
     
@@ -903,7 +911,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     }
 
     // reject connection (0x03 security block) and disconnect if both have SSP, connection is not encrypted and PSM != SDP
-    if (   l2cap_security_level_0_allowed_for_PSM(psm)
+    if (l2cap_security_level_0_allowed_for_PSM(psm)
         && hci_ssp_supported_on_both_sides(handle)
         && gap_security_level(handle) == LEVEL_0){
 

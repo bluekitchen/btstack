@@ -216,6 +216,8 @@ void l2cap_close_connection(void *connection);
 
 int l2cap_send_echo_request(uint16_t handle, uint8_t *data, uint16_t len);
 
+void l2cap_require_security_level_2_for_outgoing_sdp();  // testing
+
 /** Embedded API **/
 
 // Set up L2CAP and register L2CAP with HCI layer.
