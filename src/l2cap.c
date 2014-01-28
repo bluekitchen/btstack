@@ -602,6 +602,7 @@ uint16_t l2cap_max_mtu(void){
 
 static void l2cap_handle_connection_complete(uint16_t handle, l2cap_channel_t * channel){
     if (channel->state == L2CAP_STATE_WAIT_CONNECTION_COMPLETE || channel->state == L2CAP_STATE_WILL_SEND_CREATE_CONNECTION) {
+        log_info("l2cap_handle_connection_complete expected state");
         // success, start l2cap handshake
         channel->handle = handle;
         channel->local_cid = l2cap_next_local_cid();
@@ -611,7 +612,7 @@ static void l2cap_handle_connection_complete(uint16_t handle, l2cap_channel_t * 
 }
 
 static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * channel){
-    if (channel->state  != L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES) return;
+    if (channel->state != L2CAP_STATE_WAIT_REMOTE_SUPPORTED_FEATURES) return;
 
     // we have been waiting for remote supported features, if both support SSP, 
     if (hci_ssp_supported_on_both_sides(channel->handle) && !l2cap_security_level_0_allowed_for_PSM(channel->psm)){
@@ -660,6 +661,7 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     chan->state_var = L2CAP_CHANNEL_STATE_VAR_NONE;
     chan->remote_sig_id = L2CAP_SIG_ID_INVALID;
     chan->local_sig_id = L2CAP_SIG_ID_INVALID;
+    chan->required_security_level = LEVEL_0;
     
     // add to connections list
     linked_list_add(&l2cap_channels, (linked_item_t *) chan);
@@ -667,6 +669,7 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     // check if hci connection is already usable
     hci_connection_t * conn = hci_connection_for_bd_addr((bd_addr_t*)address);
     if (conn){
+        log_info("l2cap_create_channel_internal, hci connection already exists");
         l2cap_handle_connection_complete(conn->con_handle, chan);
         // check ir remote supported fearures are already received
         if (conn->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) {
@@ -823,12 +826,16 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
             log_info("GAP_SECURITY_LEVEL");
             for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
                 channel = (l2cap_channel_t *) it;
-                gap_security_level_t actual_level = packet[4];
                 if (channel->handle != handle) continue;
+
+                gap_security_level_t actual_level = packet[4];
+                gap_security_level_t required_level = channel->required_security_level;
+                log_info("gap outgoing - security level update %u, required %u", actual_level, required_level);
+
                 switch (channel->state){
                     case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
                         log_info("gap incoming");
-                        if (actual_level >= channel->required_security_level){
+                        if (actual_level >= required_level){
                             channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
                             l2cap_emit_connection_request(channel);                
                         } else {
@@ -838,8 +845,7 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
                         break;
 
                     case L2CAP_STATE_WAIT_OUTGOING_SECURITY_LEVEL_UPDATE:
-                        log_info("gap outgoing");
-                        if (actual_level >= channel->required_security_level){
+                        if (actual_level >= required_level){
                             channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST;
                         } else {
                             // disconnnect, authentication not good enough
