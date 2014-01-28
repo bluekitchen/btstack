@@ -1406,7 +1406,7 @@ void rfcomm_channel_packet_handler(rfcomm_multiplexer_t * multiplexer,  uint8_t 
             
         case BT_RFCOMM_UA:
             event.type = CH_EVT_RCVD_UA;
-            log_info("Received UA #%u - channel opened\n",frame_dlci);
+            log_info("Received UA #%u\n",frame_dlci);
             rfcomm_channel_state_machine_2(multiplexer, frame_dlci, &event);
             break;
             
@@ -1789,7 +1789,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                     break;
             }
             break;
-            
+
         case RFCOMM_CHANNEL_DLC_SETUP:
             switch (event->type){
                 case CH_EVT_RCVD_MSC_CMD:
@@ -1885,8 +1885,18 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
         case RFCOMM_CHANNEL_SEND_DISC:
             switch (event->type) {
                 case CH_EVT_READY_TO_SEND:
-                    channel->state = RFCOMM_CHANNEL_CLOSED;
+                    channel->state = RFCOMM_CHANNEL_W4_UA_AFTER_UA;
                     rfcomm_send_disc(multiplexer, channel->dlci);
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+        case RFCOMM_CHANNEL_W4_UA_AFTER_UA:
+            switch (event->type){
+                case CH_EVT_RCVD_UA:
+                    channel->state = RFCOMM_CHANNEL_CLOSED;
                     rfcomm_emit_channel_closed(channel);
                     rfcomm_channel_finalize(channel);
                     break;
@@ -1894,7 +1904,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                     break;
             }
             break;
-            
+                        
         case RFCOMM_CHANNEL_SEND_UA_AFTER_DISC:
             switch (event->type) {
                 case CH_EVT_READY_TO_SEND:
