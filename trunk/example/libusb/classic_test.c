@@ -551,7 +551,7 @@ int  stdin_process(struct data_source *ds){
 
         case 'l':
             printf("Creating RFCOMM Channel to %s #%u\n", bd_addr_to_str(remote_rfcomm), rfcomm_channel_nr);
-             rfcomm_create_channel_internal(NULL, &remote, rfcomm_channel_nr);
+             rfcomm_create_channel_internal(NULL, &remote_rfcomm, rfcomm_channel_nr);
             break;
         case 'n':
             printf("Send RFCOMM Data\n");   // mtu < 60 
