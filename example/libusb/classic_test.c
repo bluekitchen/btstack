@@ -572,6 +572,7 @@ int  stdin_process(struct data_source *ds){
         case 'o':
             printf("RFCOMM Channel Closed\n");
             rfcomm_disconnect_internal(rfcomm_channel_id);
+            rfcomm_channel_id = 0;
             break;
 
         default:
