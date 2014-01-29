@@ -32,6 +32,7 @@ void show_usage();
 
 // static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
+static bd_addr_t remote_rfcomm = {0x00, 0x00, 0x91, 0xE0, 0xD4, 0xC7};
 
 static uint8_t rfcomm_channel_nr = 1;
 
@@ -391,8 +392,8 @@ void show_usage(){
     printf("j - perform dedicated bonding to %s, MITM = %u\n", bd_addr_to_str(remote), gap_mitm_protection);
     printf("t - terminate HCI connection with handle 0x%04x\n", handle);
     printf("---\n");
-    printf("k - query %s for RFCOMM channel\n", bd_addr_to_str(remote));
-    printf("l - create RFCOMM connection to %s using channel #%u\n",  bd_addr_to_str(remote), rfcomm_channel_nr);
+    printf("k - query %s for RFCOMM channel\n", bd_addr_to_str(remote_rfcomm));
+    printf("l - create RFCOMM connection to %s using channel #%u\n",  bd_addr_to_str(remote_rfcomm), rfcomm_channel_nr);
     printf("n - send RFCOMM data\n");
     printf("u - send RFCOMM Remote Line Status Indication indicating Framing Error\n");
     printf("v - send RFCOMM Remote Port Negotiation to select 115200 baud\n");
@@ -515,7 +516,7 @@ int  stdin_process(struct data_source *ds){
 
         case 'k':
             printf("Start SDP query for SPP service\n");
-            sdp_query_rfcomm_channel_and_name_for_uuid(remote, 0x1002);
+            sdp_query_rfcomm_channel_and_name_for_uuid(remote_rfcomm, 0x1002);
             break;
 
         case 't':
@@ -549,7 +550,7 @@ int  stdin_process(struct data_source *ds){
             break;
 
         case 'l':
-            printf("Creating RFCOMM Channel to %s #%u\n", bd_addr_to_str(remote), rfcomm_channel_nr);
+            printf("Creating RFCOMM Channel to %s #%u\n", bd_addr_to_str(remote_rfcomm), rfcomm_channel_nr);
              rfcomm_create_channel_internal(NULL, &remote, rfcomm_channel_nr);
             break;
         case 'n':
