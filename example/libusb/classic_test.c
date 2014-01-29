@@ -658,10 +658,10 @@ int main(void){
     setup_cli();
 
     // set one-shot timer
-    timer_source_t heartbeat;
-    heartbeat.process = &heartbeat_handler;
-    run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
-    run_loop_add_timer(&heartbeat);
+    // timer_source_t heartbeat;
+    // heartbeat.process = &heartbeat_handler;
+    // run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
+    // run_loop_add_timer(&heartbeat);
 
     run_loop_execute(); 
     return 0;
