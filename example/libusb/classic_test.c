@@ -394,6 +394,7 @@ void show_usage(){
     printf("j - perform dedicated bonding to %s, MITM = %u\n", bd_addr_to_str(remote), gap_mitm_protection);
     printf("z - perform dedicated bonding to %s using legacy pairing\n", bd_addr_to_str(remote));
     printf("t - terminate HCI connection with handle 0x%04x\n", handle);
+    printf("y - disable SSP\n");
     printf("---\n");
     printf("k - query %s for RFCOMM channel\n", bd_addr_to_str(remote_rfcomm));
     printf("l - create RFCOMM connection to %s using channel #%u\n",  bd_addr_to_str(remote_rfcomm), rfcomm_channel_nr);
@@ -521,6 +522,11 @@ int  stdin_process(struct data_source *ds){
             printf("Start dedicated bonding to %s using legacy pairing\n", bd_addr_to_str(remote));
             hci_send_cmd(&hci_write_authentication_enable, 1);
             gap_dedicated_bonding(remote, gap_mitm_protection);
+            break;
+
+        case 'y':
+            printf("Disabling SSP for this session\n");
+            hci_send_cmd(&hci_write_simple_pairing_mode, 0);
             break;
 
         case 'k':
