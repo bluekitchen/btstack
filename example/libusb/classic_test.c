@@ -410,6 +410,7 @@ void show_usage(){
     printf("r - send L2CAP ECHO request\n");
     printf("s - close L2CAP channel\n");
     printf("x - require SSP for outgoing SDP L2CAP channel\n");
+    printf("+ - initate SSP on current connection\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -588,6 +589,11 @@ int  stdin_process(struct data_source *ds){
             printf("RFCOMM Channel Closed\n");
             rfcomm_disconnect_internal(rfcomm_channel_id);
             rfcomm_channel_id = 0;
+            break;
+
+        case '+':
+            printf("Initiate SSP on current connection\n");
+            gap_request_security_level(handle);
             break;
 
         default:
