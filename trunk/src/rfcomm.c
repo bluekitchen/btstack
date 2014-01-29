@@ -1636,6 +1636,20 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
         return;
     }
     
+    if (event->type == CH_EVT_RCVD_RLS_CMD){ 
+        rfcomm_channel_event_rls_t * event_rls = (rfcomm_channel_event_rls_t*) event;
+        // orig
+        // channel->rls_line_status = event_rls->line_status & 0x0f;
+        // log_info("CH_EVT_RCVD_RLS_CMD setting line status to 0x%0x", channel->rls_line_status);
+        // rfcomm_emit_remote_line_status(channel, event_rls->line_status);
+        
+        // direct response
+        log_info("CH_EVT_RCVD_RLS_CMD setting line status to 0x%0x", channel->rls_line_status);
+        rfcomm_emit_remote_line_status(channel, event_rls->line_status);
+        rfcomm_send_uih_rls_rsp(multiplexer, channel->dlci, event_rls->line_status);
+        return; 
+    }
+
     // TODO: integrate in common swich
     if (event->type == CH_EVT_READY_TO_SEND){
         if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_RPN_RSP){
