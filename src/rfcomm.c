@@ -1838,6 +1838,8 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP);
                     break;
                 case CH_EVT_READY_TO_SEND:
+                    log_info("CH_EVT_READY_TO_SEND line status to 0x%0x", channel->rls_line_status);
+
                     if (channel->new_credits_incoming) {
                         uint8_t new_credits = channel->new_credits_incoming;
                         channel->new_credits_incoming = 0;
@@ -1845,6 +1847,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                         break;
                     }
                     if (channel->rls_line_status != RFCOMM_RLS_STATUS_INVALID){
+                        log_info("Should send line status to 0x%0x", channel->rls_line_status);
                         uint8_t line_status = channel->rls_line_status;
                         channel->rls_line_status = RFCOMM_RLS_STATUS_INVALID;
                         rfcomm_send_uih_rls_rsp(multiplexer, channel->dlci, line_status);
@@ -1860,6 +1863,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                 case CH_EVT_RCVD_RLS_CMD: {
                     rfcomm_channel_event_rls_t * event_rls = (rfcomm_channel_event_rls_t*) event;
                     channel->rls_line_status = event_rls->line_status & 0x0f;
+                    log_info("CH_EVT_RCVD_RLS_CMD setting line status to 0x%0x", channel->rls_line_status);
                     rfcomm_emit_remote_line_status(channel, event_rls->line_status);
                     break; 
                 }
