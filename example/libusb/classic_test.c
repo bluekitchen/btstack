@@ -392,6 +392,7 @@ void show_usage(){
     printf("---\n");
     printf("i - perform inquiry and remote name request\n");
     printf("j - perform dedicated bonding to %s, MITM = %u\n", bd_addr_to_str(remote), gap_mitm_protection);
+    printf("z - perform dedicated bonding to %s using legacy pairing\n", bd_addr_to_str(remote));
     printf("t - terminate HCI connection with handle 0x%04x\n", handle);
     printf("---\n");
     printf("k - query %s for RFCOMM channel\n", bd_addr_to_str(remote_rfcomm));
@@ -513,6 +514,12 @@ int  stdin_process(struct data_source *ds){
 
         case 'j':
             printf("Start dedicated bonding to %s using MITM %u\n", bd_addr_to_str(remote), gap_mitm_protection);
+            gap_dedicated_bonding(remote, gap_mitm_protection);
+            break;
+
+        case 'z':
+            printf("Start dedicated bonding to %s using legacy pairing\n", bd_addr_to_str(remote));
+            hci_send_cmd(&hci_write_authentication_enable, 1);
             gap_dedicated_bonding(remote, gap_mitm_protection);
             break;
 
