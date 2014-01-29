@@ -231,9 +231,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
         case GAP_DEDICATED_BONDING_COMPLETED:
             printf("GAP Dedicated Bonding Complete, status %u\n", packet[2]);
             break;
+
         case HCI_EVENT_CONNECTION_COMPLETE:
             if (!packet[2]){
                 handle = READ_BT_16(packet, 3);
+                bt_flip_addr(remote, &packet[5]);
             }
             break;
 
