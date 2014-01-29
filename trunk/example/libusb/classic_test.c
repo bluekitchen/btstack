@@ -593,7 +593,7 @@ int  stdin_process(struct data_source *ds){
 
         case '+':
             printf("Initiate SSP on current connection\n");
-            gap_request_security_level(handle);
+            gap_request_security_level(handle, LEVEL_2);
             break;
 
         default:
