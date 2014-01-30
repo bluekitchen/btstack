@@ -1638,16 +1638,10 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
     
     if (event->type == CH_EVT_RCVD_RLS_CMD){ 
         rfcomm_channel_event_rls_t * event_rls = (rfcomm_channel_event_rls_t*) event;
-        // orig
-        // channel->rls_line_status = event_rls->line_status & 0x0f;
-        // log_info("CH_EVT_RCVD_RLS_CMD setting line status to 0x%0x", channel->rls_line_status);
-        // rfcomm_emit_remote_line_status(channel, event_rls->line_status);
-        
-        // direct response
+        channel->rls_line_status = event_rls->line_status & 0x0f;
         log_info("CH_EVT_RCVD_RLS_CMD setting line status to 0x%0x", channel->rls_line_status);
         rfcomm_emit_remote_line_status(channel, event_rls->line_status);
-        rfcomm_send_uih_rls_rsp(multiplexer, channel->dlci, event_rls->line_status);
-        return; 
+        return;
     }
 
     // TODO: integrate in common swich
@@ -1663,6 +1657,13 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
             rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP);
             rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SENT_MSC_RSP);
             rfcomm_send_uih_msc_rsp(multiplexer, channel->dlci, 0x8d);  // ea=1,fc=0,rtc=1,rtr=1,ic=0,dv=1
+            return;
+        }
+        if (channel->rls_line_status != RFCOMM_RLS_STATUS_INVALID){
+            log_info("Sending RLS RSP 0x%0x", channel->rls_line_status);
+            uint8_t line_status = channel->rls_line_status;
+            channel->rls_line_status = RFCOMM_RLS_STATUS_INVALID;
+            rfcomm_send_uih_rls_rsp(multiplexer, channel->dlci, line_status);
             return;
         }
     }
@@ -1852,19 +1853,10 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                     rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_RSP);
                     break;
                 case CH_EVT_READY_TO_SEND:
-                    log_info("CH_EVT_READY_TO_SEND line status to 0x%0x", channel->rls_line_status);
-
                     if (channel->new_credits_incoming) {
                         uint8_t new_credits = channel->new_credits_incoming;
                         channel->new_credits_incoming = 0;
                         rfcomm_channel_send_credits(channel, new_credits);
-                        break;
-                    }
-                    if (channel->rls_line_status != RFCOMM_RLS_STATUS_INVALID){
-                        log_info("Should send line status to 0x%0x", channel->rls_line_status);
-                        uint8_t line_status = channel->rls_line_status;
-                        channel->rls_line_status = RFCOMM_RLS_STATUS_INVALID;
-                        rfcomm_send_uih_rls_rsp(multiplexer, channel->dlci, line_status);
                         break;
                     }
                     break;
@@ -1873,19 +1865,6 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                     uint8_t event[2] = { DAEMON_EVENT_NEW_RFCOMM_CREDITS, 0 };
                     (*app_packet_handler)(channel->connection, DAEMON_EVENT_PACKET, channel->rfcomm_cid, event, sizeof(event));
                     break;
-                }
-                case CH_EVT_RCVD_RLS_CMD: {
-                    rfcomm_channel_event_rls_t * event_rls = (rfcomm_channel_event_rls_t*) event;
-                    // orig
-                    // channel->rls_line_status = event_rls->line_status & 0x0f;
-                    // log_info("CH_EVT_RCVD_RLS_CMD setting line status to 0x%0x", channel->rls_line_status);
-                    // rfcomm_emit_remote_line_status(channel, event_rls->line_status);
-                    
-                    // direct response
-                    log_info("CH_EVT_RCVD_RLS_CMD setting line status to 0x%0x", channel->rls_line_status);
-                    rfcomm_emit_remote_line_status(channel, event_rls->line_status);
-                    rfcomm_send_uih_rls_rsp(multiplexer, channel->dlci, event_rls->line_status);
-                    break; 
                 }
                 default:
                     break;
