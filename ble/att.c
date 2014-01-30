@@ -543,7 +543,7 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
     att_iterator_t it;
     int ok = att_find_handle(&it, handle);
     if (!ok){
-        return setup_error_atribute_not_found(response_buffer, ATT_READ_REQUEST, handle);
+        return setup_error_invalid_handle(response_buffer, ATT_READ_REQUEST, handle);
     }
     
     // check if handle can be read
@@ -587,7 +587,7 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
     att_iterator_t it;
     int ok = att_find_handle(&it, handle);
     if (!ok){
-        return setup_error_atribute_not_found(response_buffer, ATT_READ_BLOB_REQUEST, handle);
+        return setup_error_invalid_handle(response_buffer, ATT_READ_BLOB_REQUEST, handle);
     }
     
     // check if handle can be read
@@ -814,7 +814,7 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
     att_iterator_t it;
     int ok = att_find_handle(&it, handle);
     if (!ok) {
-        return setup_error_atribute_not_found(response_buffer, ATT_WRITE_REQUEST, handle);
+        return setup_error_invalid_handle(response_buffer, ATT_WRITE_REQUEST, handle);
     }
     if (!att_write_callback) {
         return setup_error_write_not_permitted(response_buffer, ATT_WRITE_REQUEST, handle);
@@ -844,7 +844,7 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
     att_iterator_t it;
     int ok = att_find_handle(&it, handle);
     if (!ok) {
-        return setup_error_atribute_not_found(response_buffer, ATT_WRITE_REQUEST, handle);
+        return setup_error_invalid_handle(response_buffer, ATT_WRITE_REQUEST, handle);
     }
     if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0) {
         return setup_error_write_not_permitted(response_buffer, ATT_WRITE_REQUEST, handle);
