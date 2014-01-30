@@ -266,7 +266,7 @@ static void app_run(){
 // @param offset defines start of attribute value
 static uint16_t att_read_callback(uint16_t handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
 
-    printf("READ Callback, handle %04x\n", handle);
+    printf("READ Callback, handle %04x, offset %u, buffer size %u\n", handle, offset, buffer_size);
 
     // find attribute
     int index = att_attribute_for_handle(handle);
