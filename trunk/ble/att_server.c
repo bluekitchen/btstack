@@ -102,7 +102,6 @@ static void att_handle_value_indication_notify_client(uint8_t status, uint16_t c
 
 static void att_handle_value_indication_timeout(timer_source_t *ts){
     uint16_t att_handle = att_handle_value_indication_handle;
-    att_handle_value_indication_handle = 0;    
     att_handle_value_indication_notify_client(ATT_HANDLE_VALUE_INDICATION_TIMEOUT, att_request_handle, att_handle);
 }
 
@@ -148,6 +147,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     // -> avoid sending advertise enable a second time before command complete was received 
                     att_server_state = ATT_SERVER_IDLE;
                     att_request_handle = 0;
+                    att_handle_value_indication_handle = 0; // reset error state
                     break;
                     
                 case SM_IDENTITY_RESOLVING_STARTED:
