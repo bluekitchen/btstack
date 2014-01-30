@@ -1648,6 +1648,15 @@ void sm_set_ir(sm_key_t ir){
     // sm_irk(sm_persistent_ir, sm_persistent_irk);
 }
 
+/** 
+ * @brief Trigger Security Request
+ * @note Not used normally. Bonding is triggered by access to protected attributes in ATT Server
+ */
+void sm_send_security_request(){
+    sm_state_responding = SM_STATE_SEND_SECURITY_REQUEST;
+    sm_run();
+}
+
 void sm_init(){
     // set some (BTstack default) ER and IR
     int i;

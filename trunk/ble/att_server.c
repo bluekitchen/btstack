@@ -87,7 +87,7 @@ static timer_source_t att_handle_value_indication_timer;
 static btstack_packet_handler_t att_client_packet_handler = NULL;
 
 
-static int att_handle_value_indication_notify_client(uint8_t status, uint16_t client_handle, uint16_t attribute_handle){
+static void att_handle_value_indication_notify_client(uint8_t status, uint16_t client_handle, uint16_t attribute_handle){
     uint8_t event[7];
     int pos = 0;
     event[pos++] = ATT_HANDLE_VALUE_INDICATION_COMPLETE;

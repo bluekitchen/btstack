@@ -74,7 +74,7 @@ void sm_set_accepted_stk_generation_methods(uint8_t accepted_stk_generation_meth
 void sm_set_encryption_key_size_range(uint8_t min_size, uint8_t max_size){}
 void sm_set_authentication_requirements(uint8_t auth_req){}
 void sm_set_io_capabilities(io_capability_t io_capability){}
-void sm_set_request_security(int enable){}
+void sm_send_security_request(){}
 
 void sm_bonding_decline(uint8_t addr_type, bd_addr_t address){}
 void sm_just_works_confirm(uint8_t addr_type, bd_addr_t address){}
