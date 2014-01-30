@@ -463,6 +463,8 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
     att_iterator_t it;
     att_iterator_init(&it);
     uint8_t error_code = 0;
+    uint16_t first_matching_but_unreadable_handle = 0;
+
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
         
@@ -473,8 +475,13 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         // does current attribute match
         if (!att_iterator_match_uuid(&it, attribute_type, attribute_type_len)) continue;
         
-        // skip handles that cannot be read
-        if ((it.flags & ATT_PROPERTY_READ) == 0) continue;
+        // skip handles that cannot be read but rembember that there has been at least one
+        if ((it.flags & ATT_PROPERTY_READ) == 0) {
+            if (first_matching_but_unreadable_handle == 0) {
+                first_matching_but_unreadable_handle = it.handle;
+            }
+            continue;
+        }
 
         // check security requirements
         error_code = att_validate_security(att_connection, &it);
@@ -520,6 +527,11 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
     // first attribute had an error
     if (error_code){
         return setup_error(response_buffer, request_type, start_handle, error_code);
+    }
+
+    // no other errors, but all found attributes had been non-readable
+    if (first_matching_but_unreadable_handle){
+        return setup_error_read_not_permitted(response_buffer, request_type, first_matching_but_unreadable_handle);        
     }
 
     // attribute not found
