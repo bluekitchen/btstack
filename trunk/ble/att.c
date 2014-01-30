@@ -842,6 +842,9 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
     if (!att_write_callback) {
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
+    if ((it.flags & ATT_PROPERTY_WRITE) == 0) {
+        return setup_error_write_not_permitted(response_buffer, request_type, handle);
+    }
     if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0) {
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
@@ -871,6 +874,9 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
     int ok = att_find_handle(&it, handle);
     if (!ok) {
         return setup_error_invalid_handle(response_buffer, request_type, handle);
+    }
+    if ((it.flags & ATT_PROPERTY_WRITE) == 0) {
+        return setup_error_write_not_permitted(response_buffer, request_type, handle);
     }
     if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0) {
         return setup_error_write_not_permitted(response_buffer, request_type, handle);
@@ -923,6 +929,7 @@ static void handle_write_command(att_connection_t * att_connection, uint8_t * re
     int ok = att_find_handle(&it, handle);
     if (!ok) return;
     if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0) return;
+    if ((it.flags & ATT_PROPERTY_WRITE_WITHOUT_RESPONSE) == 0) return;
     (*att_write_callback)(handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3, NULL);
 }
 
