@@ -498,7 +498,7 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         if (offset + pair_len > response_buffer_size) {
             if (offset > 2) break;
             it.value_len = response_buffer_size - 4;
-            response_buffer[1] = it.value_len;
+            response_buffer[1] = 2 + it.value_len;
         }
         
         // store
