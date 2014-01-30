@@ -542,6 +542,8 @@ static void sm_tk_setup(){
     // Requirements Flags shall be ignored when selecting the pairing method and the
     // Out of Band pairing method shall be used.
     if (sm_m_have_oob_data && sm_s_have_oob_data){
+        printf("SM: have OOB data");
+        print_key("OOB", sm_tk);
         sm_stk_generation_method = OOB;
         return;
     }
