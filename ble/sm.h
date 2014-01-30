@@ -188,6 +188,12 @@ void sm_set_io_capabilities(io_capability_t io_capability);
  */
 void sm_set_request_security(int enable);
 
+/** 
+ * @brief Trigger Security Request
+ * @note Not used normally. Bonding is triggered by access to protected attributes in ATT Server
+ */
+void sm_send_security_request();
+
 /**
  * @brief Decline bonding triggered by event before
  * @param addr_type and address

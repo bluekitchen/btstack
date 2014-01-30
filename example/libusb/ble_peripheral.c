@@ -84,7 +84,6 @@ static int gap_bondable = 0;
 static int gap_directed_connectable = 0;
 static int gap_privacy = 0;
 
-static int sm_slave_initiated_security_request = 0;
 static char * sm_io_capabilities = NULL;
 static int sm_mitm_protection = 0;
 static int sm_have_oob_data = 0;
@@ -552,8 +551,8 @@ void show_usage(){
     printf("\n--- CLI for LE Peripheral ---\n");
     printf("GAP: discoverable %u, connectable %u, bondable %u, directed connectable %u, privacy %u, ads enabled %u \n",
         gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, gap_privacy, gap_advertisements);
-    printf("SM:  slave iniitiated security request %u, %s, MITM protection %u, OOB data %u, key range [%u..16]\n",
-        sm_slave_initiated_security_request, sm_io_capabilities, sm_mitm_protection, sm_have_oob_data, sm_min_key_size);
+    printf("SM: %s, MITM protection %u, OOB data %u, key range [%u..16]\n",
+        sm_io_capabilities, sm_mitm_protection, sm_have_oob_data, sm_min_key_size);
     printf("---\n");
     printf("a - advertisements off\n");
     printf("A - advertisements on\n");
@@ -577,8 +576,7 @@ void show_usage(){
     printf("7 - AD Slave Preferred Connection Interval Range\n");
     printf("8 - AD Tx Power Level\n");
     printf("---\n");
-    printf("s - slave initiated security request off\n");
-    printf("S - slave initiated security request on\n");
+    printf("s - send security request\n");
     printf("z - send Connection Parameter Update Request\n");
     printf("t - terminate connection\n");
     printf("---\n");
@@ -727,14 +725,8 @@ int  stdin_process(struct data_source *ds){
             update_advertisements();
             break;
         case 's':
-            sm_set_request_security(0);
-            sm_slave_initiated_security_request = 0;
-            show_usage();
-            break;
-        case 'S':
-            sm_set_request_security(1);
-            sm_slave_initiated_security_request = 1;
-            show_usage();
+            printf("SM: sending security request\n");
+            sm_send_security_request();
             break;
         case 'e':
             sm_io_capabilities = "IO_CAPABILITY_DISPLAY_ONLY";
