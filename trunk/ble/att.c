@@ -306,7 +306,7 @@ static uint16_t handle_find_information_request2(att_connection_t * att_connecti
     printf("ATT_FIND_INFORMATION_REQUEST: from %04X to %04X\n", start_handle, end_handle);
     
     if (start_handle > end_handle || start_handle == 0){
-        return setup_error_invalid_handle(response_buffer, ATT_READ_BY_TYPE_REQUEST, start_handle);
+        return setup_error_invalid_handle(response_buffer, ATT_FIND_INFORMATION_REQUEST, start_handle);
     }
 
     uint16_t offset   = 1;
@@ -383,7 +383,7 @@ static uint16_t handle_find_by_type_value_request2(att_connection_t * att_connec
     hexdump2(attribute_value, attribute_len);
     
     if (start_handle > end_handle || start_handle == 0){
-        return setup_error_invalid_handle(response_buffer, ATT_READ_BY_TYPE_REQUEST, start_handle);
+        return setup_error_invalid_handle(response_buffer, ATT_FIND_BY_TYPE_VALUE_RESPONSE, start_handle);
     }
 
     uint16_t offset      = 1;
@@ -593,7 +593,7 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
     
     // check if handle can be read
     if ((it.flags & ATT_PROPERTY_READ) == 0) {
-        return setup_error_read_not_permitted(response_buffer, ATT_READ_REQUEST, handle);
+        return setup_error_read_not_permitted(response_buffer, ATT_READ_BLOB_REQUEST, handle);
     }
 
     // check security requirements
