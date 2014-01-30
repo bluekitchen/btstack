@@ -67,6 +67,7 @@ typedef enum {
     ATT_SERVER_IDLE,
     ATT_SERVER_REQUEST_RECEIVED,
     ATT_SERVER_W4_SIGNED_WRITE_VALIDATION,
+    ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED,
 } att_server_state_t;
 
 static att_connection_t att_connection;
@@ -195,10 +196,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     // update sequence number
     uint32_t counter_packet = READ_BT_32(att_request_buffer, att_request_size-12);
     central_device_db_counter_set(att_ir_central_device_db_index, counter_packet+1);
-    // just treat signed write command as simple write command after validation
-    att_request_buffer[0] = ATT_WRITE_COMMAND;
-    att_request_size -= 12;
-    att_server_state = ATT_SERVER_REQUEST_RECEIVED;
+    att_server_state = ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
     att_run();
 }
 
@@ -246,7 +244,9 @@ static void att_run(void){
                 sm_cmac_start(csrk, att_request_size - 8, att_request_buffer, att_signed_write_handle_cmac_result);
                 return;
             } 
+            // NOTE: fall through for regular commands
 
+        case ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED:
             if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) return;
 
             uint8_t  att_response_buffer[28];

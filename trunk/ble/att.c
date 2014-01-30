@@ -930,7 +930,7 @@ static void handle_write_command(att_connection_t * att_connection, uint8_t * re
     if (!ok) return;
     if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0) return;
     if ((it.flags & ATT_PROPERTY_WRITE_WITHOUT_RESPONSE) == 0) return;
-    if (att_validate_security(att_connection, &it)) return 0;
+    if (att_validate_security(att_connection, &it)) return;
     (*att_write_callback)(handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3, NULL);
 }
 
@@ -948,7 +948,7 @@ static void handle_signed_write_command(att_connection_t * att_connection, uint8
     if (!ok) return;
     if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0) return;
     if ((it.flags & ATT_PROPERTY_AUTHENTICATED_SIGNED_WRITE) == 0) return;
-    if (att_validate_security(att_connection, &it)) return 0;
+    if (att_validate_security(att_connection, &it)) return;
     (*att_write_callback)(handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3 - 12, (signature_t *) request_buffer + request_len - 12);
 }
 
