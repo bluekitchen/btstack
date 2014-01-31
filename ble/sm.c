@@ -367,6 +367,7 @@ static void sm_timeout_handler(timer_source_t * timer){
     sm_state_responding = SM_STATE_TIMEOUT;
 }
 static void sm_timeout_start(){
+    run_loop_remove_timer(&sm_timeout);
     run_loop_set_timer_handler(&sm_timeout, sm_timeout_handler);
     run_loop_set_timer(&sm_timeout, 30000); // 30 seconds sm timeout
     run_loop_add_timer(&sm_timeout);
