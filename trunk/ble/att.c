@@ -928,6 +928,13 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
     return request_len;
 }
 
+/*
+ * @brief transcation queue of prepared writes, e.g., after disconnect
+ */
+void att_clear_transaction_queue(){
+    (*att_write_callback)(0, ATT_TRANSACTION_MODE_CANCEL, 0, request_buffer + 3, request_len - 3, NULL);
+}
+
 // MARK: ATT_EXECUTE_WRITE_REQUEST 0x18
 // NOTE: security has been verified by handle_prepare_write_request
 static uint16_t handle_execute_write_request(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
@@ -941,7 +948,7 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
     if (request_buffer[1]) {
         // deliver queued errors
         if (att_prepare_write_error_code){
-            (*att_write_callback)(0, ATT_TRANSACTION_MODE_CANCEL, 0, request_buffer + 3, request_len - 3, NULL);
+            att_clear_transaction_queue();
             uint8_t  error_code = att_prepare_write_error_code;
             uint16_t handle     = att_prepare_write_error_handle;
             att_prepare_write_reset();
@@ -949,7 +956,7 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
         }
         (*att_write_callback)(0, ATT_TRANSACTION_MODE_EXECUTE, 0, request_buffer + 3, request_len - 3, NULL);
     } else {
-        (*att_write_callback)(0, ATT_TRANSACTION_MODE_CANCEL, 0, request_buffer + 3, request_len - 3, NULL);
+        att_clear_transaction_queue();
     }
     response_buffer[0] = ATT_EXECUTE_WRITE_RESPONSE;
     return 1;

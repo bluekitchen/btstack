@@ -149,6 +149,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     att_server_state = ATT_SERVER_IDLE;
                     att_request_handle = 0;
                     att_handle_value_indication_handle = 0; // reset error state
+                    att_clear_transaction_queue();
                     break;
                     
                 case SM_IDENTITY_RESOLVING_STARTED:

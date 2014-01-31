@@ -224,6 +224,11 @@ uint16_t att_prepare_handle_value_indication(att_connection_t * att_connection,
                                              uint16_t value_len, 
                                              uint8_t * response_buffer);
 
+/*
+ * @brief transcation queue of prepared writes, e.g., after disconnect
+ */
+void att_clear_transaction_queue();
+
 #if defined __cplusplus
 }
 #endif
