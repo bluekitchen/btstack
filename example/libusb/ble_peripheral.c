@@ -509,43 +509,6 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     gap_run();
 }
 
-void setup(void){
-    /// GET STARTED with BTstack ///
-    btstack_memory_init();
-    run_loop_init(RUN_LOOP_POSIX);
-        
-    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
-
-    // init HCI
-    hci_transport_t    * transport = hci_transport_usb_instance();
-    hci_uart_config_t  * config    = NULL;
-    bt_control_t       * control   = NULL;
-    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-    hci_init(transport, config, control, remote_db);
-
-    // set up l2cap_le
-    l2cap_init();
-    
-    // setup central device db
-    central_device_db_init();
-
-    // setup SM: Display only
-    sm_init();
-    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
-    sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION); 
-    // sm_set_request_security(1);
-    // sm_set_encryption_key_size_range(7,15);
-
-    // setup ATT server
-    att_server_init(profile_data, att_read_callback, att_write_callback);    
-    att_write_queue_init();
-    att_attributes_init();
-    att_server_register_packet_handler(app_packet_handler);
-
-    // att_dump_attributes();
-}
-
 void show_usage(){
     printf("\n--- CLI for LE Peripheral ---\n");
     printf("GAP: discoverable %u, connectable %u, bondable %u, directed connectable %u, privacy %u, ads enabled %u \n",
@@ -820,6 +783,42 @@ void setup_cli(){
     run_loop_add_data_source(&stdin_source);
 }
 
+void setup(void){
+    /// GET STARTED with BTstack ///
+    btstack_memory_init();
+    run_loop_init(RUN_LOOP_POSIX);
+        
+    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
+    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+
+    // init HCI
+    hci_transport_t    * transport = hci_transport_usb_instance();
+    hci_uart_config_t  * config    = NULL;
+    bt_control_t       * control   = NULL;
+    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
+    hci_init(transport, config, control, remote_db);
+
+    // set up l2cap_le
+    l2cap_init();
+    
+    // setup central device db
+    central_device_db_init();
+
+    // setup SM: Display only
+    sm_init();
+    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+    sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION); 
+    // sm_set_request_security(1);
+    // sm_set_encryption_key_size_range(7,15);
+
+    // setup ATT server
+    att_server_init(profile_data, att_read_callback, att_write_callback);    
+    att_write_queue_init();
+    att_attributes_init();
+    att_server_register_packet_handler(app_packet_handler);
+
+    att_dump_attributes();
+}
 int main(void)
 {
     printf("BTstack LE Peripheral starting up...\n");
