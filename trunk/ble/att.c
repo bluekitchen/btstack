@@ -92,8 +92,8 @@ static uint16_t uuid16_from_uuid(uint16_t uuid_len, uint8_t * uuid){
 static uint8_t const * att_db = NULL;
 static att_read_callback_t  att_read_callback  = NULL;
 static att_write_callback_t att_write_callback = NULL;
-static att_prepare_write_error_code   = 0;
-static att_prepare_write_error_handle = 0x0000;
+static uint8_t  att_prepare_write_error_code   = 0;
+static uint16_t att_prepare_write_error_handle = 0x0000;
 
 // new java-style iterator
 typedef struct att_iterator {
@@ -932,7 +932,7 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
  * @brief transcation queue of prepared writes, e.g., after disconnect
  */
 void att_clear_transaction_queue(){
-    (*att_write_callback)(0, ATT_TRANSACTION_MODE_CANCEL, 0, request_buffer + 3, request_len - 3, NULL);
+    (*att_write_callback)(0, ATT_TRANSACTION_MODE_CANCEL, 0, NULL, 0, NULL);
 }
 
 // MARK: ATT_EXECUTE_WRITE_REQUEST 0x18
