@@ -70,6 +70,7 @@ property_flags = {
 }
 
 services = dict()
+presentation_formats = dict()
 current_service_uuid = list()
 current_service_start_handle = 0
 
@@ -266,7 +267,7 @@ def parseCharacteristic(fout, parts):
         properties = properties | property_flags['LONG_UUID'];
 
     write_indent(fout)
-    fout.write('// 0x%04x VALUE-%s\n' % (handle, '-'.join(parts[1:len(parts)])))
+    fout.write('// 0x%04x VALUE-%s\n' % (handle, '-'.join(parts[1:])))
     write_indent(fout)
     write_16(fout, size)
     write_16(fout, properties)
@@ -311,8 +312,6 @@ def parseCharacteristicUserDescription(fout, parts):
     global handle
     global total_size
 
-    property_read = property_flags['READ'];
-
     properties = parseProperties(parts[1])
     value      = parts[2]
 
@@ -323,7 +322,7 @@ def parseCharacteristicUserDescription(fout, parts):
         size = size + len(value.split())
 
     write_indent(fout)
-    fout.write('// 0x%04x CHARACTERISTIC_USER_DESCRIPTION-%s\n' % (handle, '-'.join(parts[1:len(parts)])))
+    fout.write('// 0x%04x CHARACTERISTIC_USER_DESCRIPTION-%s\n' % (handle, '-'.join(parts[1:])))
     write_indent(fout)
     write_16(fout, size)
     write_16(fout, properties)
@@ -335,6 +334,83 @@ def parseCharacteristicUserDescription(fout, parts):
         write_sequence(fout,value)
     fout.write("\n")
     handle = handle + 1
+
+def parseServerCharacteristicConfiguration(fout, parts):
+    global handle
+    global total_size
+
+    properties = parseProperties(parts[1])
+    value      = parts[2]
+    size = 2 + 2 + 2 + 2 + 2
+
+    write_indent(fout)
+    fout.write('// 0x%04x SERVER_CHARACTERISTIC_CONFIGURATION-%s\n' % (handle, '-'.join(parts[1:])))
+    write_indent(fout)
+    write_16(fout, size)
+    write_16(fout, properties)
+    write_16(fout, handle)
+    write_16(fout, 0x2903)
+    write_sequence(fout, value)
+    fout.write("\n")
+    handle = handle + 1
+
+def parseCharacteristicFormat(fout, parts):
+    global handle
+    global total_size
+
+    property_read = property_flags['READ'];
+
+    identifier = parts[1]
+    presentation_formats[identifier] = handle
+    # print "format '%s' with handle %d\n" % (identifier, handle) 
+
+    format     = parts[2]
+    exponent   = parts[3]
+    unit       = parseUUID(parts[4])
+    name_space = parts[5]
+    description = parseUUID(parts[6])
+
+    size = 2 + 2 + 2 + 2 + 7
+
+    write_indent(fout)
+    fout.write('// 0x%04x CHARACTERISTIC_FORMAT-%s\n' % (handle, '-'.join(parts[1:])))
+    write_indent(fout)
+    write_16(fout, size)
+    write_16(fout, property_read)
+    write_16(fout, handle)
+    write_16(fout, 0x2904)
+    write_sequence(fout, format)
+    write_sequence(fout, exponent)
+    write_uuid(unit)
+    write_sequence(fout, name_space)
+    write_uuid(description)
+    fout.write("\n")
+    handle = handle + 1
+
+
+def parseCharacteristicAggregateFormat(fout, parts):
+    global handle
+    global total_size
+
+    property_read = property_flags['READ'];
+    size = 2 + 2 + 2 + 2 + (len(parts)-1) * 2
+
+    write_indent(fout)
+    fout.write('// 0x%04x CHARACTERISTIC_AGGREGATE_FORMAT-%s\n' % (handle, '-'.join(parts[1:])))
+    write_indent(fout)
+    write_16(fout, size)
+    write_16(fout, property_read)
+    write_16(fout, handle)
+    write_16(fout, 0x2905)
+    for identifier in parts[1:]:
+        format_handle = presentation_formats[identifier]
+        if format == 0:
+            print "ERROR: identifier '%s' in CHARACTERISTIC_AGGREGATE_FORMAT undefined" % identifier
+            sys.exit(1)
+        write_16(fout, format_handle)
+    fout.write("\n")
+    handle = handle + 1
+
 
 def parse(fname_in, fin, fname_out, fout):
     global handle
@@ -375,6 +451,18 @@ def parse(fname_in, fin, fname_out, fout):
         
         if parts[0] == 'CHARACTERISTIC_USER_DESCRIPTION':
             parseCharacteristicUserDescription(fout, parts)
+            continue
+
+        if parts[0] == 'SERVER_CHARACTERISTIC_CONFIGURATION':
+            parseServerCharacteristicConfiguration(fout, parts)
+            continue
+
+        if parts[0] == 'CHARACTERISTIC_FORMAT':
+            parseCharacteristicFormat(fout, parts)
+            continue
+
+        if parts[0] == 'CHARACTERISTIC_AGGREGATE_FORMAT':
+            parseCharacteristicAggregateFormat(fout, parts)
             continue
 
         print "WARNING: unknown token: %s\n" % (parts[0])
