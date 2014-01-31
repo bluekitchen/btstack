@@ -92,6 +92,8 @@ static uint16_t uuid16_from_uuid(uint16_t uuid_len, uint8_t * uuid){
 static uint8_t const * att_db = NULL;
 static att_read_callback_t  att_read_callback  = NULL;
 static att_write_callback_t att_write_callback = NULL;
+static att_prepare_write_error_code   = 0;
+static att_prepare_write_error_handle = 0x0000;
 
 // new java-style iterator
 typedef struct att_iterator {
@@ -227,6 +229,26 @@ void att_dump_attributes(void){
         }
         printf(", value_len: %u, value: ", it.value_len);
         hexdump2(it.value, it.value_len);
+    }
+}
+
+static void att_prepare_write_reset(){
+    att_prepare_write_error_code = 0;
+    att_prepare_write_error_handle = 0x0000;
+}
+
+static void att_prepare_write_update_errors(uint8_t error_code, uint16_t handle){
+    // first ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH has highest priority
+    if (error_code == ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH && error_code != att_prepare_write_error_code){
+        att_prepare_write_error_code = error_code;
+        att_prepare_write_error_handle = handle;
+        return;
+    }
+    // first ATT_ERROR_INVALID_OFFSET is next
+    if (error_code == ATT_ERROR_INVALID_OFFSET && att_prepare_write_error_code == 0){
+        att_prepare_write_error_code = error_code;
+        att_prepare_write_error_handle = handle;
+        return;
     }
 }
 
@@ -887,9 +909,17 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
         return setup_error(response_buffer, request_type, handle, error_code);
     }
 
-    int result = (*att_write_callback)(handle, ATT_TRANSACTION_MODE_ACTIVE, offset, request_buffer + 5, request_len - 5, NULL);
-    if (result){
-        return setup_error(response_buffer, request_type, handle, result);
+    error_code = (*att_write_callback)(handle, ATT_TRANSACTION_MODE_ACTIVE, offset, request_buffer + 5, request_len - 5, NULL);
+    switch (error_code){
+        case 0:
+            break;
+        case ATT_ERROR_INVALID_OFFSET:
+        case ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH:
+            // postpone to execute write request
+            att_prepare_write_update_errors(error_code, handle);
+            break;
+        default:
+            return setup_error(response_buffer, request_type, handle, error_code);
     }
 
     // response: echo request
@@ -909,6 +939,14 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
         return setup_error_write_not_permitted(response_buffer, request_type, 0);
     }
     if (request_buffer[1]) {
+        // deliver queued errors
+        if (att_prepare_write_error_code){
+            (*att_write_callback)(0, ATT_TRANSACTION_MODE_CANCEL, 0, request_buffer + 3, request_len - 3, NULL);
+            uint8_t  error_code = att_prepare_write_error_code;
+            uint16_t handle     = att_prepare_write_error_handle;
+            att_prepare_write_reset();
+            return setup_error(response_buffer, request_type, handle, error_code);
+        }
         (*att_write_callback)(0, ATT_TRANSACTION_MODE_EXECUTE, 0, request_buffer + 3, request_len - 3, NULL);
     } else {
         (*att_write_callback)(0, ATT_TRANSACTION_MODE_CANCEL, 0, request_buffer + 3, request_len - 3, NULL);
