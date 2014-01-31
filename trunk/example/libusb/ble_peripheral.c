@@ -329,6 +329,7 @@ static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16
             writes_index = att_write_queue_for_handle(handle);
             if (writes_index < 0)           return ATT_ERROR_PREPARE_QUEUE_FULL;
             if (offset > ATT_VALUE_MAX_LEN) return ATT_ERROR_INVALID_OFFSET;
+            if (offset > att_write_queues[writes_index].len) return ATT_ERROR_INVALID_OFFSET;
             if (buffer_size + offset > ATT_VALUE_MAX_LEN) {
                 // truncat value
                 buffer_size = ATT_VALUE_MAX_LEN - offset;
