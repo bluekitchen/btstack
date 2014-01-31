@@ -340,8 +340,8 @@ def parseServerCharacteristicConfiguration(fout, parts):
     global total_size
 
     properties = parseProperties(parts[1])
-    value      = parts[2]
-    size = 2 + 2 + 2 + 2 + 2
+    properties = properties | property_flags['DYNAMIC']
+    size = 2 + 2 + 2 + 2
 
     write_indent(fout)
     fout.write('// 0x%04x SERVER_CHARACTERISTIC_CONFIGURATION-%s\n' % (handle, '-'.join(parts[1:])))
@@ -350,7 +350,6 @@ def parseServerCharacteristicConfiguration(fout, parts):
     write_16(fout, properties)
     write_16(fout, handle)
     write_16(fout, 0x2903)
-    write_sequence(fout, value)
     fout.write("\n")
     handle = handle + 1
 
