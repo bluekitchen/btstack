@@ -169,7 +169,7 @@ static int advertisement_index = 0;
 // att write queue engine
 
 static const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
-#define ATT_VALUE_MAX_LEN 32
+#define ATT_VALUE_MAX_LEN 26
 
 typedef struct {
     uint16_t handle;
@@ -275,11 +275,13 @@ static uint16_t att_read_callback(uint16_t handle, uint16_t offset, uint8_t * bu
     if (index < 0){
         // not written before
         att_value = (uint8_t*) alphabet;
-        att_value_len  = sizeof(alphabet);
+        att_value_len  = strlen(alphabet);
     } else {
-        att_value = att_attributes[index].value;
-        att_value_len  = att_attributes[index].len;
+        att_value     = att_attributes[index].value;
+        att_value_len = att_attributes[index].len;
     }
+    printf("Attribute len %u, data: ", att_value_len);
+    hexdump(att_value, att_value_len);
 
     // assert offset <= att_value_len
     if (offset > att_value_len) {
@@ -327,13 +329,9 @@ static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16
             break;
         case ATT_TRANSACTION_MODE_ACTIVE:
             writes_index = att_write_queue_for_handle(handle);
-            if (writes_index < 0)           return ATT_ERROR_PREPARE_QUEUE_FULL;
-            if (offset > ATT_VALUE_MAX_LEN) return ATT_ERROR_INVALID_OFFSET;
+            if (writes_index < 0)                            return ATT_ERROR_PREPARE_QUEUE_FULL;
+            if (buffer_size + offset > ATT_VALUE_MAX_LEN)    return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
             if (offset > att_write_queues[writes_index].len) return ATT_ERROR_INVALID_OFFSET;
-            if (buffer_size + offset > ATT_VALUE_MAX_LEN) {
-                // truncat value
-                buffer_size = ATT_VALUE_MAX_LEN - offset;
-            }
             att_write_queues[writes_index].len = buffer_size + offset;
             memcpy(&(att_write_queues[writes_index].value[offset]), buffer, buffer_size);
             break;
