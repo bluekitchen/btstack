@@ -513,6 +513,7 @@ void show_usage(){
     printf("\n--- CLI for LE Peripheral ---\n");
     printf("GAP: discoverable %u, connectable %u, bondable %u, directed connectable %u, privacy %u, ads enabled %u \n",
         gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, gap_privacy, gap_advertisements);
+    printf("ADV: "); hexdump(adv_data, adv_data_len);
     printf("SM: %s, MITM protection %u, OOB data %u, key range [%u..16]\n",
         sm_io_capabilities, sm_mitm_protection, sm_have_oob_data, sm_min_key_size);
     printf("---\n");
@@ -574,7 +575,7 @@ void update_advertisements(){
     }
 
     // append selected adv data
-    memcpy(&adv_data[adv_data_len], advertisements[advertisement_index].data, adv_data_len);
+    memcpy(&adv_data[adv_data_len], advertisements[advertisement_index].data, advertisements[advertisement_index].len);
     adv_data_len += advertisements[advertisement_index].len;
 
     todos = SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | SET_SCAN_RESPONSE_DATA;
