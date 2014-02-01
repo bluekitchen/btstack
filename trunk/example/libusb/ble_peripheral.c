@@ -565,7 +565,6 @@ void update_advertisements(){
     adv_data_len = 0;
     
     // add "Flags"
-    adv_data_len = 3;
     if (gap_discoverable){
         memcpy(adv_data, adv_general_discoverable, sizeof(adv_general_discoverable));
         adv_data_len += sizeof(adv_general_discoverable);
