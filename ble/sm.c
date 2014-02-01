@@ -610,6 +610,9 @@ static int sm_cmac_last_block_complete(){
 }
 
 void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8])){
+    printf("sm_cmac_start, message len %u ", message_len);
+    hexdump(message, message_len);
+    print_key("csrk", k);
     memcpy(sm_cmac_k, k, 16);
     sm_cmac_message_len = message_len;
     sm_cmac_message = message;
@@ -636,6 +639,7 @@ int sm_cmac_ready(){
     return sm_cmac_state == CMAC_IDLE;
 }
 
+// NOTE: we flip the message on the fly using i' = sm_cmac_message_len - 1 - i
 static void sm_cmac_handle_aes_engine_ready(){
     switch (sm_cmac_state){
         case CMAC_CALC_SUBKEYS:
@@ -650,7 +654,7 @@ static void sm_cmac_handle_aes_engine_ready(){
             int j;
             sm_key_t y;
             for (j=0;j<16;j++){
-                y[j] = sm_cmac_x[j] ^ sm_cmac_message[sm_cmac_block_current*16 + j];
+                y[j] = sm_cmac_x[j] ^ sm_cmac_message[sm_cmac_message_len - 1 - (sm_cmac_block_current*16 + j)];
             }
             sm_cmac_block_current++;
             sm_aes128_start(sm_cmac_k, y);
@@ -699,13 +703,13 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
             int i;
             if (sm_cmac_last_block_complete()){
                 for (i=0;i<16;i++){
-                    sm_cmac_m_last[i] = sm_cmac_message[sm_cmac_message_len - 16 + i] ^ k1[i];
+                    sm_cmac_m_last[i] = sm_cmac_message[sm_cmac_message_len - 1 - (sm_cmac_message_len - 16 + i)] ^ k1[i];
                 }
             } else {
                 int valid_octets_in_last_block = sm_cmac_message_len & 0x0f;
                 for (i=0;i<16;i++){
                     if (i < valid_octets_in_last_block){
-                        sm_cmac_m_last[i] = sm_cmac_message[(sm_cmac_message_len & 0xfff0) + i] ^ k2[i];
+                        sm_cmac_m_last[i] = sm_cmac_message[sm_cmac_message_len - 1 - ((sm_cmac_message_len & 0xfff0) + i)] ^ k2[i];
                         continue;
                     }
                     if (i == valid_octets_in_last_block){
@@ -725,11 +729,14 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
             memcpy(sm_cmac_x, data, 16);
             sm_cmac_state = sm_cmac_block_current < sm_cmac_block_count - 1 ? CMAC_CALC_MI : CMAC_CALC_MLAST;  
             break;
-        case CMAC_W4_MLAST:
+        case CMAC_W4_MLAST: {
             // done
-            print_key("CMAC", data);
-            sm_cmac_done_handler(data);
+            uint8_t signature[8];
+            swap64(data, signature);
+            print_key("CMAC", signature);
+            sm_cmac_done_handler(signature);
             break;
+        }
         default:
             printf("sm_cmac_handle_encryption_result called in state %u\n", sm_cmac_state);
             break;
