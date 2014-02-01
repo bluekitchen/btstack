@@ -735,6 +735,7 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
             swap64(data, signature);
             print_key("CMAC", signature);
             sm_cmac_done_handler(signature);
+            sm_cmac_state = CMAC_IDLE;
             break;
         }
         default:
