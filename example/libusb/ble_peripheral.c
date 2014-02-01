@@ -122,9 +122,6 @@ static uint8_t adv_general_discoverable[] = { 2, 01, 02 };
 // non discoverable flags
 static uint8_t adv_non_discoverable[] = { 2, 01, 00 };
 
-// some test data
-static uint8_t adv_data_0[] = { 2, 01, 02,   03, 02, 0xf0, 0xff }; 
-
 
 // AD Manufacturer Specific Data - Ericsson, 1, 2, 3, 4
 static uint8_t adv_data_1[] = { 7, 0xff, 0x00, 0x00, 1, 2, 3, 4 }; 
@@ -142,9 +139,16 @@ static uint8_t adv_data_6[] = { 3, 0x03, 0x12, 0x18 };
 static uint8_t adv_data_7[] = { 5, 0x12, 0xff, 0xff, 0xff, 0xff }; 
 // AD Tx Power Level - +4 dBm
 static uint8_t adv_data_8[] = { 2, 0x0a, 4 }; 
+// AD OOB
+static uint8_t adv_data_9[] = { 2, 0x11, 3 }; 
+// AD TK Value
+static uint8_t adv_data_0[] = { 17, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; 
 
 static uint8_t adv_data_len;
 static uint8_t adv_data[32];
+
+static uint8_t scan_data_len;
+static uint8_t scan_data[32];
 
 typedef struct {
     uint16_t len;
@@ -162,9 +166,10 @@ static advertisement_t advertisements[] = {
     ADV(adv_data_6),
     ADV(adv_data_7),
     ADV(adv_data_8),
+    ADV(adv_data_9),
 };
 
-static int advertisement_index = 0;
+static int advertisement_index = 2;
 
 // att write queue engine
 
@@ -532,6 +537,8 @@ void show_usage(){
     printf("6   - AD Services\n");
     printf("7   - AD Slave Preferred Connection Interval Range\n");
     printf("8   - AD Tx Power Level\n");
+    printf("9   - AD SM OOB\n");
+    printf("0   - AD SM TK\n");
     printf("---\n");
     printf("s   - send security request\n");
     printf("z   - send Connection Parameter Update Request\n");
@@ -674,6 +681,8 @@ int  stdin_process(struct data_source *ds){
         case '6':
         case '7':
         case '8':
+        case '9':
+        case '0':
             advertisement_index = buffer - '0';
             update_advertisements();
             break;
