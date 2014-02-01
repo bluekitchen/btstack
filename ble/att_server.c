@@ -153,14 +153,17 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     break;
                     
                 case SM_IDENTITY_RESOLVING_STARTED:
+                    printf("SM_IDENTITY_RESOLVING_STARTED\n");
                     att_ir_lookup_active = 1;
                     break;
                 case SM_IDENTITY_RESOLVING_SUCCEEDED:
                     att_ir_lookup_active = 0;
                     att_ir_central_device_db_index = ((sm_event_t*) packet)->central_device_db_index;
+                    printf("SM_IDENTITY_RESOLVING_SUCCEEDED id %u\n", att_ir_central_device_db_index);
                     att_run();
                     break;
                 case SM_IDENTITY_RESOLVING_FAILED:
+                    printf("SM_IDENTITY_RESOLVING_FAILED\n");
                     att_ir_lookup_active = 0;
                     att_ir_central_device_db_index = -1;
                     att_run();
@@ -242,6 +245,8 @@ static void att_run(void){
                 sm_key_t csrk;
                 central_device_db_csrk(att_ir_central_device_db_index, csrk);
                 att_server_state = ATT_SERVER_W4_SIGNED_WRITE_VALIDATION;
+                printf("Orig Signature: ");
+                hexdump( &att_request_buffer[att_request_size-8], 8);
                 sm_cmac_start(csrk, att_request_size - 8, att_request_buffer, att_signed_write_handle_cmac_result);
                 return;
             } 
