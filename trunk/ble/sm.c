@@ -1228,6 +1228,10 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                     // store, if: it's a public address, or, we got an IRK
                     if (sm_m_addr_type == 0 || (sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION)) {
                         sm_central_device_matched =  central_device_db_add(sm_m_addr_type, sm_m_address, sm_m_irk, sm_m_csrk);
+                        // also tell client about it
+                        if (sm_central_device_matched >= 0){
+                            sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_m_addr_type, sm_m_address, 0, sm_central_device_matched);
+                        }
                         break;
                     } 
                     break;
