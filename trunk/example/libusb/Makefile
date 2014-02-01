@@ -1,6 +1,6 @@
 BTSTACK_ROOT = ../..
 
-CFLAGS  = -g -Wall -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include -I${BTSTACK_ROOT}/chipset-cc256x
+CFLAGS  = -g -Wall -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include  -I${BTSTACK_ROOT}/chipset-cc256x
 CFLAGS += -I/usr/local/include -I../../ble -I../.. -I../.. 
 LDFLAGS = -L/usr/local/lib -lusb-1.0
 
