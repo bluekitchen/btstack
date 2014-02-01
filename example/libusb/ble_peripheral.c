@@ -84,6 +84,8 @@ static int gap_bondable = 0;
 static int gap_directed_connectable = 0;
 static int gap_privacy = 0;
 
+static int att_default_value_long = 0;
+
 static char * sm_io_capabilities = NULL;
 static int sm_mitm_protection = 0;
 static int sm_have_oob_data = 0;
@@ -173,7 +175,9 @@ static int advertisement_index = 2;
 
 // att write queue engine
 
-static const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+static const char default_value_long[]  = "abcdefghijklmnopqrstuvwxyz";
+static const char default_value_short[] = "a";
+
 #define ATT_VALUE_MAX_LEN 26
 
 typedef struct {
@@ -279,8 +283,13 @@ static uint16_t att_read_callback(uint16_t handle, uint16_t offset, uint8_t * bu
     uint16_t  att_value_len;
     if (index < 0){
         // not written before
-        att_value = (uint8_t*) alphabet;
-        att_value_len  = strlen(alphabet);
+        if (att_default_value_long){
+            att_value = (uint8_t*) default_value_long;
+            att_value_len  = strlen(default_value_long);
+        } else {
+            att_value = (uint8_t*) default_value_short;
+            att_value_len  = strlen(default_value_short);
+        }
     } else {
         att_value     = att_attributes[index].value;
         att_value_len = att_attributes[index].len;
@@ -303,8 +312,9 @@ static uint16_t att_read_callback(uint16_t handle, uint16_t offset, uint8_t * bu
 
 // write requests
 static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size, signature_t * signature){
-    printf("WRITE Callback, handle %04x, mode %u, offset %u\n", handle, transaction_mode, offset);
-
+    printf("WRITE Callback, handle %04x, mode %u, offset %u, data: ", handle, transaction_mode, offset);
+    hexdump(buffer, buffer_size);
+    
     switch(handle){
         case 0x0012:
         case 0x0017:
@@ -456,7 +466,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             advertisements_enabled = 0;
                             handle = READ_BT_16(packet, 4);
-                            printf("Connection handle 0x%04x", handle);
+                            printf("Connection handle 0x%04x\n", handle);
                             // request connection parameter update - test parameters
                             // l2cap_le_request_connection_parameter_update(READ_BT_16(packet, 4), 20, 1000, 100, 100);
                             break;
@@ -521,6 +531,7 @@ void show_usage(){
     printf("ADV: "); hexdump(adv_data, adv_data_len);
     printf("SM: %s, MITM protection %u, OOB data %u, key range [%u..16]\n",
         sm_io_capabilities, sm_mitm_protection, sm_have_oob_data, sm_min_key_size);
+    printf("Default value: '%s'\n", att_default_value_long ? default_value_long : default_value_short);
     printf("---\n");
     printf("a/A - advertisements off/on\n");
     printf("b/B - bondable off/on\n");
@@ -535,6 +546,7 @@ void show_usage(){
     printf("4   - AD Service Data         | 9 - AD SM OOB\n");
     printf("5   - AD Service Solicitation | 0 - AD SM TK\n");
     printf("---\n");
+    printf("l/L - default attribute value '%s'/'%s'\n", default_value_short, default_value_long);
     printf("s   - send security request\n");
     printf("z   - send Connection Parameter Update Request\n");
     printf("t   - terminate connection\n");
@@ -717,6 +729,14 @@ int  stdin_process(struct data_source *ds){
         case 'z':
             printf("Sending l2cap connection update parameter request\n");
             l2cap_le_request_connection_parameter_update(handle, 50, 120, 0, 550);
+            break;
+        case 'l':
+            att_default_value_long = 0;
+            show_usage();
+            break;
+        case 'L':
+            att_default_value_long = 1;
+            show_usage();
             break;
         case 'o':
             sm_have_oob_data = 0;

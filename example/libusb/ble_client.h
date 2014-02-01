@@ -127,12 +127,6 @@ typedef struct le_peripheral_event{
     uint8_t status;
 } le_peripheral_event_t;
 
-// TODO replace with peripheral event
-typedef struct le_query_complete_event{
-    uint8_t   type;
-    le_peripheral_t * peripheral;
-} le_query_complete_event_t;
-
 typedef struct le_service{
     uint16_t start_group_handle;
     uint16_t end_group_handle;
