@@ -147,8 +147,8 @@ static uint8_t adv_data_0[] = { 17, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x
 static uint8_t adv_data_len;
 static uint8_t adv_data[32];
 
-static uint8_t scan_data_len;
-static uint8_t scan_data[32];
+// static uint8_t scan_data_len;
+// static uint8_t scan_data[32];
 
 typedef struct {
     uint16_t len;
@@ -529,16 +529,11 @@ void show_usage(){
     printf("p/P - privacy off\n");
     printf("x/X - directed connectable off\n");
     printf("---\n");
-    printf("1   - AD Manufacturer Specific Data\n");
-    printf("2   - AD Local Name\n");
-    printf("3   - AD Flags\n");
-    printf("4   - AD Service Data\n");
-    printf("5   - AD Service Solicitation\n");
-    printf("6   - AD Services\n");
-    printf("7   - AD Slave Preferred Connection Interval Range\n");
-    printf("8   - AD Tx Power Level\n");
-    printf("9   - AD SM OOB\n");
-    printf("0   - AD SM TK\n");
+    printf("1   - AD Manufacturer Data    | 6 - AD Services\n");
+    printf("2   - AD Local Name           | 7 - AD Slave Preferred Connection Interval Range\n");
+    printf("3   - AD flags                | 8 - AD Tx Power Level\n");
+    printf("4   - AD Service Data         | 9 - AD SM OOB\n");
+    printf("5   - AD Service Solicitation | 0 - AD SM TK\n");
     printf("---\n");
     printf("s   - send security request\n");
     printf("z   - send Connection Parameter Update Request\n");
