@@ -111,7 +111,7 @@ static void show_usage();
 static void update_advertisements();
 
 // -> hier Adresse vom Tester eintragen für Directed Connectable Mode
-#define SKIP_ADVERTISEMENT_PARAMAS_UPDATE
+// #define SKIP_ADVERTISEMENT_PARAMAS_UPDATE
 
 #ifndef SKIP_ADVERTISEMENT_PARAMAS_UPDATE
 static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x06, 0x07, 0x5F};
@@ -314,7 +314,7 @@ static uint16_t att_read_callback(uint16_t handle, uint16_t offset, uint8_t * bu
 static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size, signature_t * signature){
     printf("WRITE Callback, handle %04x, mode %u, offset %u, data: ", handle, transaction_mode, offset);
     hexdump(buffer, buffer_size);
-    
+
     switch(handle){
         case 0x0012:
         case 0x0017:
