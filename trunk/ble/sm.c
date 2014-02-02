@@ -787,7 +787,6 @@ static void sm_run(void){
     }
 
     // random address updates
-    if (rau_state) printf("sm_run(): rau_state %u\n", rau_state);
     switch (rau_state){
         case RAU_GET_RANDOM:
             hci_send_cmd(&hci_le_rand);
