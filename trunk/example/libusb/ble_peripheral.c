@@ -345,8 +345,8 @@ static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16
         case ATT_TRANSACTION_MODE_ACTIVE:
             writes_index = att_write_queue_for_handle(handle);
             if (writes_index < 0)                            return ATT_ERROR_PREPARE_QUEUE_FULL;
-            if (buffer_size + offset > ATT_VALUE_MAX_LEN)    return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
             if (offset > att_write_queues[writes_index].len) return ATT_ERROR_INVALID_OFFSET;
+            if (buffer_size + offset > ATT_VALUE_MAX_LEN)    return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
             att_write_queues[writes_index].len = buffer_size + offset;
             memcpy(&(att_write_queues[writes_index].value[offset]), buffer, buffer_size);
             break;
