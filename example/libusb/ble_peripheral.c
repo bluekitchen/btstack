@@ -85,6 +85,8 @@ static int gap_directed_connectable = 0;
 static int gap_privacy = 0;
 static int gap_scannable = 0;
 
+static bd_addr_t gap_reconnection_address;
+
 static int att_default_value_long = 0;
 
 static uint8_t test_irk[] =  { 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF };
@@ -279,6 +281,22 @@ static void app_run(){
 static uint16_t att_read_callback(uint16_t handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
 
     printf("READ Callback, handle %04x, offset %u, buffer size %u\n", handle, offset, buffer_size);
+    
+    uint16_t uuid16 = att_uuid_for_handle(handle);
+    switch (uuid16){
+        case 0x2902:
+            if (buffer) {
+                buffer[0] = client_configuration;
+            }
+            return 1;
+        case 0x2A03:
+            if (buffer) {
+                bt_flip_addr(buffer, gap_reconnection_address);
+            }
+            return 6;
+        default:
+            break;
+    }
 
     // find attribute
     int index = att_attribute_for_handle(handle);
@@ -318,17 +336,17 @@ static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16
     printf("WRITE Callback, handle %04x, mode %u, offset %u, data: ", handle, transaction_mode, offset);
     hexdump(buffer, buffer_size);
 
-    switch(handle){
-        case 0x0012:
-        case 0x0017:
-        case 0x0036:
-        case 0x003b:
+    uint16_t uuid16 = att_uuid_for_handle(handle);
+    switch (uuid16){
+        case 0x2902:
             client_configuration = buffer[0];
             client_configuration_handle = handle;
             printf("Client Configuration set to %u for handle %04x\n", client_configuration, handle);
             return 0;   // ok
-        default:
-            break;
+        case 0x2A03:
+            bt_flip_addr(gap_reconnection_address, buffer);
+            printf("Setting Reconnection Address to %s\n", bd_addr_to_str(gap_reconnection_address));
+            return 0;
     }
 
     // check transaction mode
