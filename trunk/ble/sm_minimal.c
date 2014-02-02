@@ -68,6 +68,8 @@ static uint8_t  sm_pairing_failed_reason = 0;
 
 void sm_set_er(sm_key_t er){}
 void sm_set_ir(sm_key_t ir){}
+void sm_test_set_irk(sm_key_t irk){}
+
 void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data)){}
 
 void sm_set_accepted_stk_generation_methods(uint8_t accepted_stk_generation_methods){}

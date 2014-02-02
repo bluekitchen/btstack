@@ -174,6 +174,7 @@ static sm_key_t sm_persistent_ir;
 // derived from sm_persistent_ir
 static sm_key_t sm_persistent_dhk;
 static sm_key_t sm_persistent_irk;
+static uint8_t  sm_persistent_irk_ready = 0;    // used for testing
 
 // derived from sm_persistent_er
 // ..
@@ -387,13 +388,18 @@ static gap_random_address_type_t gap_random_adress_type;
 static timer_source_t gap_random_address_update_timer; 
 static uint32_t gap_random_adress_update_period;
 
+static void gap_random_address_trigger(){
+    if (rau_state != RAU_IDLE) return;
+    printf("gap_random_address_trigger\n");
+    rau_state = RAU_GET_RANDOM;
+    sm_run();
+}
+
 static void gap_random_address_update_handler(timer_source_t * timer){
     printf("GAP Random Address Update due\n");
     run_loop_set_timer(&gap_random_address_update_timer, gap_random_adress_update_period);
     run_loop_add_timer(&gap_random_address_update_timer);
-    if (rau_state != RAU_IDLE) return;
-    rau_state = RAU_GET_RANDOM;
-    sm_run();
+    gap_random_address_trigger();
 }
 
 static void gap_random_address_update_start(){
@@ -610,9 +616,6 @@ static int sm_cmac_last_block_complete(){
 }
 
 void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8])){
-    printf("sm_cmac_start, message len %u ", message_len);
-    hexdump(message, message_len);
-    print_key("csrk", k);
     memcpy(sm_cmac_k, k, 16);
     sm_cmac_message_len = message_len;
     sm_cmac_message = message;
@@ -639,7 +642,6 @@ int sm_cmac_ready(){
     return sm_cmac_state == CMAC_IDLE;
 }
 
-// NOTE: we flip the message on the fly using i' = sm_cmac_message_len - 1 - i
 static void sm_cmac_handle_aes_engine_ready(){
     switch (sm_cmac_state){
         case CMAC_CALC_SUBKEYS:
@@ -654,7 +656,7 @@ static void sm_cmac_handle_aes_engine_ready(){
             int j;
             sm_key_t y;
             for (j=0;j<16;j++){
-                y[j] = sm_cmac_x[j] ^ sm_cmac_message[sm_cmac_message_len - 1 - (sm_cmac_block_current*16 + j)];
+                y[j] = sm_cmac_x[j] ^ sm_cmac_message[sm_cmac_block_current*16 + j];
             }
             sm_cmac_block_current++;
             sm_aes128_start(sm_cmac_k, y);
@@ -703,13 +705,13 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
             int i;
             if (sm_cmac_last_block_complete()){
                 for (i=0;i<16;i++){
-                    sm_cmac_m_last[i] = sm_cmac_message[sm_cmac_message_len - 1 - (sm_cmac_message_len - 16 + i)] ^ k1[i];
+                    sm_cmac_m_last[i] = sm_cmac_message[sm_cmac_message_len - 16 + i] ^ k1[i];
                 }
             } else {
                 int valid_octets_in_last_block = sm_cmac_message_len & 0x0f;
                 for (i=0;i<16;i++){
                     if (i < valid_octets_in_last_block){
-                        sm_cmac_m_last[i] = sm_cmac_message[sm_cmac_message_len - 1 - ((sm_cmac_message_len & 0xfff0) + i)] ^ k2[i];
+                        sm_cmac_m_last[i] = sm_cmac_message[(sm_cmac_message_len & 0xfff0) + i] ^ k2[i];
                         continue;
                     }
                     if (i == valid_octets_in_last_block){
@@ -729,15 +731,11 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
             memcpy(sm_cmac_x, data, 16);
             sm_cmac_state = sm_cmac_block_current < sm_cmac_block_count - 1 ? CMAC_CALC_MI : CMAC_CALC_MLAST;  
             break;
-        case CMAC_W4_MLAST: {
+        case CMAC_W4_MLAST:
             // done
-            uint8_t signature[8];
-            swap64(data, signature);
-            print_key("CMAC", signature);
-            sm_cmac_done_handler(signature);
-            sm_cmac_state = CMAC_IDLE;
+            print_key("CMAC", data);
+            sm_cmac_done_handler(data);
             break;
-        }
         default:
             printf("sm_cmac_handle_encryption_result called in state %u\n", sm_cmac_state);
             break;
@@ -789,6 +787,7 @@ static void sm_run(void){
     }
 
     // random address updates
+    if (rau_state) printf("sm_run(): rau_state %u\n", rau_state);
     switch (rau_state){
         case RAU_GET_RANDOM:
             hci_send_cmd(&hci_le_rand);
@@ -1236,10 +1235,6 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                     // store, if: it's a public address, or, we got an IRK
                     if (sm_m_addr_type == 0 || (sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION)) {
                         sm_central_device_matched =  central_device_db_add(sm_m_addr_type, sm_m_address, sm_m_irk, sm_m_csrk);
-                        // also tell client about it
-                        if (sm_central_device_matched >= 0){
-                            sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_m_addr_type, sm_m_address, 0, sm_central_device_matched);
-                        }
                         break;
                     } 
                     break;
@@ -1276,7 +1271,7 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
 					// bt stack activated, get started
 					if (packet[2] == HCI_STATE_WORKING) {
                         printf("HCI Working!\n");
-                        dkg_state = DKG_CALC_IRK;
+                        dkg_state = sm_persistent_irk_ready ? DKG_CALC_DHK : DKG_CALC_IRK;
 
                         sm_run();
                         return; // don't notify app packet handler just yet
@@ -1657,9 +1652,14 @@ void sm_set_er(sm_key_t er){
 
 void sm_set_ir(sm_key_t ir){
     memcpy(sm_persistent_ir, ir, 16);
-    // sm_dhk(sm_persistent_ir, sm_persistent_dhk);
-    // sm_irk(sm_persistent_ir, sm_persistent_irk);
 }
+
+// Testing support only
+void sm_test_set_irk(sm_key_t irk){
+    memcpy(sm_persistent_irk, irk, 16);
+    sm_persistent_irk_ready = 1;
+}
+
 
 /** 
  * @brief Trigger Security Request
@@ -1785,6 +1785,7 @@ void gap_random_address_set_mode(gap_random_address_type_t random_address_type){
     gap_random_adress_type = random_address_type;
     if (random_address_type == GAP_RANDOM_ADDRESS_TYPE_OFF) return;
     gap_random_address_update_start();
+    gap_random_address_trigger();
 }
 
 void gap_random_address_set_update_period(int period_ms){
