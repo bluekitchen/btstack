@@ -875,7 +875,10 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
     if (error_code) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
-    (*att_write_callback)(handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3, NULL);
+    error_code = (*att_write_callback)(handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3, NULL);
+    if (error_code) {
+        return setup_error(response_buffer, request_type, handle, error_code);
+    }
     response_buffer[0] = ATT_WRITE_RESPONSE;
     return 1;
 }
