@@ -303,6 +303,11 @@ static uint16_t att_read_callback(uint16_t handle, uint16_t offset, uint8_t * bu
                 bt_store_16(buffer, 0, gap_appearance);
             }
             return 2;
+        case 0x2a02:
+            if (buffer){
+                buffer[0] = gap_privacy;
+            }
+            return 1;
         case 0x2A03:
             if (buffer) {
                 bt_flip_addr(buffer, gap_reconnection_address);
@@ -367,6 +372,11 @@ static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16
         case 0x2a01:
             gap_appearance = READ_BT_16(buffer, 0);
             printf("Setting appearance to 0x%04x'\n", gap_appearance);
+            return 0;
+        case 0x2a02:
+            gap_privacy = buffer[0];
+            printf("Setting privacy to 0x%04x'\n", gap_privacy);
+            update_advertisements();
             return 0;
         case 0x2A03:
             bt_flip_addr(gap_reconnection_address, buffer);
