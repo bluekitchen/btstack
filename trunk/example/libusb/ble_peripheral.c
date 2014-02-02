@@ -84,6 +84,7 @@ static int gap_bondable = 0;
 static int gap_directed_connectable = 0;
 static int gap_privacy = 0;
 static int gap_scannable = 0;
+static char gap_device_name[20];
 
 static bd_addr_t gap_reconnection_address;
 
@@ -281,7 +282,8 @@ static void app_run(){
 static uint16_t att_read_callback(uint16_t handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
 
     printf("READ Callback, handle %04x, offset %u, buffer size %u\n", handle, offset, buffer_size);
-    
+    uint16_t  att_value_len;
+
     uint16_t uuid16 = att_uuid_for_handle(handle);
     switch (uuid16){
         case 0x2902:
@@ -289,11 +291,20 @@ static uint16_t att_read_callback(uint16_t handle, uint16_t offset, uint8_t * bu
                 buffer[0] = client_configuration;
             }
             return 1;
+        case 0x2a00:
+            att_value_len = strlen(gap_device_name);
+            if (buffer) {
+                memcpy(buffer, gap_device_name, att_value_len);
+            }
+            return att_value_len;        
         case 0x2A03:
             if (buffer) {
                 bt_flip_addr(buffer, gap_reconnection_address);
             }
             return 6;
+
+        // handle device name
+        // handle appearance
         default:
             break;
     }
@@ -301,7 +312,6 @@ static uint16_t att_read_callback(uint16_t handle, uint16_t offset, uint8_t * bu
     // find attribute
     int index = att_attribute_for_handle(handle);
     uint8_t * att_value;
-    uint16_t  att_value_len;
     if (index < 0){
         // not written before
         if (att_default_value_long){
@@ -343,10 +353,17 @@ static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16
             client_configuration_handle = handle;
             printf("Client Configuration set to %u for handle %04x\n", client_configuration, handle);
             return 0;   // ok
+        case 0x2a00:
+            memcpy(gap_device_name, buffer, buffer_size);
+            gap_device_name[buffer_size]=0;
+            printf("Setting device name to '%s'\n", gap_device_name);
+            return 0;
         case 0x2A03:
             bt_flip_addr(gap_reconnection_address, buffer);
             printf("Setting Reconnection Address to %s\n", bd_addr_to_str(gap_reconnection_address));
             return 0;
+        // handle device name
+        // handle appearance
     }
 
     // check transaction mode
@@ -877,7 +894,7 @@ int main(void)
 
     gap_random_address_set_update_period(300000);
     gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
-
+    strcpy(gap_device_name, "BTstack");
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
     sm_set_authentication_requirements(0);
