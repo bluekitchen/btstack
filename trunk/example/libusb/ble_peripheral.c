@@ -83,8 +83,11 @@ static int gap_connectable = 0;
 static int gap_bondable = 0;
 static int gap_directed_connectable = 0;
 static int gap_privacy = 0;
+static int gap_scannable = 0;
 
 static int att_default_value_long = 0;
+
+static uint8_t test_irk[] =  { 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF };
 
 static char * sm_io_capabilities = NULL;
 static int sm_mitm_protection = 0;
@@ -384,17 +387,12 @@ static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16
     return 0;
 }
 
-#ifndef SKIP_ADVERTISEMENT_PARAMAS_UPDATE
 static uint8_t gap_adv_type(){
-    if (gap_connectable){
-        if (gap_directed_connectable){
-            return 0x01;
-        }
-        return 0x00;
-    }
-    return 0x03;
+    if (gap_scannable) return 0x02;
+    if (gap_directed_connectable) return 0x01;
+    if (!gap_connectable) return 0x03;
+    return 0x00;
 }
-#endif
 
 static void gap_run(){
     if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
@@ -414,7 +412,6 @@ static void gap_run(){
         return;
     }    
 
-#ifndef SKIP_ADVERTISEMENT_PARAMAS_UPDATE
     if (todos & SET_ADVERTISEMENT_PARAMS){
         todos &= ~SET_ADVERTISEMENT_PARAMS;
         uint8_t adv_type = gap_adv_type();
@@ -424,18 +421,17 @@ static void gap_run(){
         uint16_t adv_int_max = 0x800;
         switch (adv_type){
             case 0:
+            case 2:
+            case 3:
                 hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, gap_privacy, 0, &null_addr, 0x07, 0x00);
                 break;
             case 1:
+            case 4:
                 hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, gap_privacy, tester_address_type, &tester_address, 0x07, 0x00);
-                break;
-            case 3:
-                hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, gap_privacy, 0, &null_addr, 0x07, 0x00);
                 break;
         }
         return;
     }    
-#endif
 
     if (todos & SET_SCAN_RESPONSE_DATA){
         printf("GAP_RUN: set scan response data\n");
@@ -538,8 +534,8 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 
 void show_usage(){
     printf("\n--- CLI for LE Peripheral ---\n");
-    printf("GAP: discoverable %u, connectable %u, bondable %u, directed connectable %u, privacy %u, ads enabled %u \n",
-        gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, gap_privacy, gap_advertisements);
+    printf("GAP: discoverable %u, connectable %u, bondable %u, directed connectable %u, privacy %u, ads enabled %u, adv type %u \n",
+        gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, gap_privacy, gap_advertisements, gap_adv_type());
     printf("ADV: "); hexdump(adv_data, adv_data_len);
     printf("SM: %s, MITM protection %u, OOB data %u, key range [%u..16]\n",
         sm_io_capabilities, sm_mitm_protection, sm_have_oob_data, sm_min_key_size);
@@ -551,6 +547,7 @@ void show_usage(){
     printf("d/D - discoverable off\n");
     printf("p/P - privacy off\n");
     printf("x/X - directed connectable off\n");
+    printf("y/Y - scannable on/off\n");
     printf("---\n");
     printf("1   - AD Manufacturer Data    | 6 - AD Services\n");
     printf("2   - AD Local Name           | 7 - AD Slave Preferred Connection Interval Range\n");
@@ -690,6 +687,14 @@ int  stdin_process(struct data_source *ds){
             break;
         case 'X':
             gap_directed_connectable = 1;
+            update_advertisements();
+            break;
+        case 'y':
+            gap_scannable = 0;
+            update_advertisements();
+            break;
+        case 'Y':
+            gap_scannable = 1;
             update_advertisements();
             break;
         case '1':
@@ -835,8 +840,6 @@ void setup(void){
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
     sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION); 
-    // sm_set_request_security(1);
-    // sm_set_encryption_key_size_range(7,15);
 
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
@@ -846,6 +849,7 @@ void setup(void){
 
     att_dump_attributes();
 }
+
 int main(void)
 {
     printf("BTstack LE Peripheral starting up...\n");
@@ -853,7 +857,7 @@ int main(void)
 
     setup_cli();
 
-    gap_random_address_set_update_period(60000);
+    gap_random_address_set_update_period(300000);
     gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
 
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
@@ -861,6 +865,8 @@ int main(void)
     sm_set_authentication_requirements(0);
     sm_register_oob_data_callback(get_oob_data_callback);
     sm_set_encryption_key_size_range(sm_min_key_size, 16);
+    sm_test_set_irk(test_irk);
+
     // set one-shot timer
     heartbeat.process = &heartbeat_handler;
     run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
