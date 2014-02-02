@@ -80,9 +80,10 @@ static int advertisements_enabled = 0;
 static int gap_advertisements = 0;
 static int gap_discoverable = 0;
 static int gap_connectable = 0;
+static int gap_privacy = 0;
+static int gap_random = 0;
 static int gap_bondable = 0;
 static int gap_directed_connectable = 0;
-static int gap_privacy = 0;
 static int gap_scannable = 0;
 static char gap_device_name[20];
 static uint16_t gap_appearance = 0;
@@ -117,13 +118,10 @@ static void app_run();
 static void show_usage();
 static void update_advertisements();
 
-// -> hier Adresse vom Tester eintragen für Directed Connectable Mode
-// #define SKIP_ADVERTISEMENT_PARAMAS_UPDATE
 
-#ifndef SKIP_ADVERTISEMENT_PARAMAS_UPDATE
-static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x06, 0x07, 0x5F};
+// static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x06, 0x07, 0x5F};
+static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};
 static int tester_address_type = 0;
-#endif
 
 // general discoverable flags
 static uint8_t adv_general_discoverable[] = { 2, 01, 02 };
@@ -478,11 +476,11 @@ static void gap_run(){
             case 0:
             case 2:
             case 3:
-                hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, gap_privacy, 0, &null_addr, 0x07, 0x00);
+                hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, gap_random, 0, &null_addr, 0x07, 0x00);
                 break;
             case 1:
             case 4:
-                hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, gap_privacy, tester_address_type, &tester_address, 0x07, 0x00);
+                hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, gap_random, tester_address_type, &tester_address, 0x07, 0x00);
                 break;
         }
         return;
@@ -589,18 +587,20 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 
 void show_usage(){
     printf("\n--- CLI for LE Peripheral ---\n");
-    printf("GAP: discoverable %u, connectable %u, bondable %u, directed connectable %u, privacy %u, ads enabled %u, adv type %u \n",
-        gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, gap_privacy, gap_advertisements, gap_adv_type());
+    printf("GAP: discoverable %u, connectable %u, bondable %u, directed connectable %u, random addr %u, ads enabled %u, adv type %u \n",
+        gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, gap_random, gap_advertisements, gap_adv_type());
     printf("ADV: "); hexdump(adv_data, adv_data_len);
     printf("SM: %s, MITM protection %u, OOB data %u, key range [%u..16]\n",
         sm_io_capabilities, sm_mitm_protection, sm_have_oob_data, sm_min_key_size);
     printf("Default value: '%s'\n", att_default_value_long ? default_value_long : default_value_short);
+    printf("Privacy %u\n", gap_privacy);
+    printf("Device name %s\n", gap_device_name);
     printf("---\n");
     printf("a/A - advertisements off/on\n");
     printf("b/B - bondable off/on\n");
     printf("c/C - connectable off\n");
     printf("d/D - discoverable off\n");
-    printf("p/P - privacy off\n");
+    printf("r/R - random address off/on\n");
     printf("x/X - directed connectable off\n");
     printf("y/Y - scannable on/off\n");
     printf("---\n");
@@ -611,6 +611,7 @@ void show_usage(){
     printf("5   - AD Service Solicitation | 0 - AD SM TK\n");
     printf("---\n");
     printf("l/L - default attribute value '%s'/'%s'\n", default_value_short, default_value_long);
+    printf("p/P - privacy flag off\n");
     printf("s   - send security request\n");
     printf("z   - send Connection Parameter Update Request\n");
     printf("t   - terminate connection\n");
@@ -728,12 +729,12 @@ int  stdin_process(struct data_source *ds){
             gap_discoverable = 1;
             update_advertisements();
             break;
-        case 'p':
-            gap_privacy = 0;
+        case 'r':
+            gap_random = 0;
             update_advertisements();
             break;
-        case 'P':
-            gap_privacy = 1;
+        case 'R':
+            gap_random = 1;
             update_advertisements();
             break;
         case 'x':
@@ -808,6 +809,14 @@ int  stdin_process(struct data_source *ds){
             break;
         case 'L':
             att_default_value_long = 1;
+            show_usage();
+            break;
+        case 'p':
+            gap_privacy = 0;
+            show_usage();
+            break;
+        case 'P':
+            gap_privacy = 1;
             show_usage();
             break;
         case 'o':
