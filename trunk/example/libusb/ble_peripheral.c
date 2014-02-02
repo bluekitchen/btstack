@@ -85,6 +85,7 @@ static int gap_directed_connectable = 0;
 static int gap_privacy = 0;
 static int gap_scannable = 0;
 static char gap_device_name[20];
+static uint16_t gap_appearance = 0;
 
 static bd_addr_t gap_reconnection_address;
 
@@ -297,6 +298,11 @@ static uint16_t att_read_callback(uint16_t handle, uint16_t offset, uint8_t * bu
                 memcpy(buffer, gap_device_name, att_value_len);
             }
             return att_value_len;        
+        case 0x2a01:
+            if (buffer){
+                bt_store_16(buffer, 0, gap_appearance);
+            }
+            return 2;
         case 0x2A03:
             if (buffer) {
                 bt_flip_addr(buffer, gap_reconnection_address);
@@ -357,6 +363,10 @@ static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16
             memcpy(gap_device_name, buffer, buffer_size);
             gap_device_name[buffer_size]=0;
             printf("Setting device name to '%s'\n", gap_device_name);
+            return 0;
+        case 0x2a01:
+            gap_appearance = READ_BT_16(buffer, 0);
+            printf("Setting appearance to 0x%04x'\n", gap_appearance);
             return 0;
         case 0x2A03:
             bt_flip_addr(gap_reconnection_address, buffer);
