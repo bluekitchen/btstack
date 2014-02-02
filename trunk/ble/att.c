@@ -168,6 +168,7 @@ int att_iterator_match_uuid(att_iterator_t *it, uint8_t *uuid, uint16_t uuid_len
 
 
 int att_find_handle(att_iterator_t *it, uint16_t handle){
+    if (handle == 0) return 0;
     att_iterator_init(it);
     while (att_iterator_has_next(it)){
         att_iterator_fetch_next(it);
@@ -176,6 +177,16 @@ int att_find_handle(att_iterator_t *it, uint16_t handle){
     }
     return 0;
 }
+
+// experimental client API
+uint16_t att_uuid_for_handle(uint16_t handle){
+    att_iterator_t it;
+    int ok = att_find_handle(&it, handle);
+    if (!ok) return 0;
+    if (it.flags & ATT_PROPERTY_UUID128) return 0;
+    return READ_BT_16(it.uuid, 0);
+}
+// end of client API
 
 static void att_update_value_len(att_iterator_t *it){
     if ((it->flags & ATT_PROPERTY_DYNAMIC) == 0 || !att_read_callback) return;
