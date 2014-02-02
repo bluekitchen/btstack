@@ -229,6 +229,9 @@ uint16_t att_prepare_handle_value_indication(att_connection_t * att_connection,
  */
 void att_clear_transaction_queue();
 
+// experimental client API
+uint16_t att_uuid_for_handle(uint16_t handle);
+
 #if defined __cplusplus
 }
 #endif
