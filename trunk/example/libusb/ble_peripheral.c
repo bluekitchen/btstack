@@ -338,7 +338,19 @@ static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16
                 attributes_index = att_attribute_for_handle(0);
                 if (attributes_index < 0) return 0;    // ok, but we couldn't store it (our fault)
                 att_attributes[attributes_index].handle = handle;
+                // not written before
+                uint8_t * att_value;
+                uint16_t att_value_len;
+                if (att_default_value_long){
+                    att_value = (uint8_t*) default_value_long;
+                    att_value_len  = strlen(default_value_long);
+                } else {
+                    att_value = (uint8_t*) default_value_short;
+                    att_value_len  = strlen(default_value_short);
+                }
+                att_attributes[attributes_index].len = att_value_len;
             }
+            if (buffer_size > att_attributes[attributes_index].len) return ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH;
             att_attributes[attributes_index].len = buffer_size;
             memcpy(att_attributes[attributes_index].value, buffer, buffer_size);
             break;
