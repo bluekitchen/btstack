@@ -92,7 +92,8 @@ static bd_addr_t gap_reconnection_address;
 
 static int att_default_value_long = 0;
 
-static uint8_t test_irk[] =  { 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF };
+// static uint8_t test_irk[] =  { 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF };
+static uint8_t test_irk[] =  { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 static char * sm_io_capabilities = NULL;
 static int sm_mitm_protection = 0;
@@ -150,6 +151,18 @@ static uint8_t adv_data_8[] = { 2, 0x0a, 4 };
 static uint8_t adv_data_9[] = { 2, 0x11, 3 }; 
 // AD TK Value
 static uint8_t adv_data_0[] = { 17, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; 
+// AD LE Bluetooth Device Address - 66:55:44:33:22:11  public address
+static uint8_t adv_data_le_bd_addr[] = { 8, 0x1b, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x00};
+// AD Appearance
+static uint8_t adv_data_appearance[] = { 3, 0x19, 0x00, 0x00};
+// AD LE Role - Peripheral only
+static uint8_t adv_data_le_role[] = {2 , 0x1c, 0x00};
+// AD Public Target Address
+static uint8_t adv_data_public_target_address[] = { 7, 0x17,  0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
+// AD Random Target Address
+static uint8_t adv_data_random_target_address[] = { 7, 0x18,  0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
+// AD Advertising Interval
+static uint8_t adv_data_advertising_interval[] =  { 3, 0x1a, 0x00, 0x80};
 
 static uint8_t adv_data_len;
 static uint8_t adv_data[32];
@@ -174,6 +187,12 @@ static advertisement_t advertisements[] = {
     ADV(adv_data_7),
     ADV(adv_data_8),
     ADV(adv_data_9),
+    ADV(adv_data_le_bd_addr),
+    ADV(adv_data_appearance),
+    ADV(adv_data_le_role),
+    ADV(adv_data_public_target_address),
+    ADV(adv_data_random_target_address),
+    ADV(adv_data_advertising_interval),
 };
 
 static int advertisement_index = 2;
@@ -604,11 +623,12 @@ void show_usage(){
     printf("x/X - directed connectable off\n");
     printf("y/Y - scannable on/off\n");
     printf("---\n");
-    printf("1   - AD Manufacturer Data    | 6 - AD Services\n");
-    printf("2   - AD Local Name           | 7 - AD Slave Preferred Connection Interval Range\n");
-    printf("3   - AD flags                | 8 - AD Tx Power Level\n");
-    printf("4   - AD Service Data         | 9 - AD SM OOB\n");
-    printf("5   - AD Service Solicitation | 0 - AD SM TK\n");
+    printf("1   - AD Manufacturer Data    | 7 - AD Slave Preferred... | = - AD Public Target Address\n");
+    printf("2   - AD Local Name           | 8 - AD Tx Power Level     | / - AD Random Target Address\n");
+    printf("3   - AD flags                | 9 - AD SM OOB             | # - AD Advertising interval\n");
+    printf("4   - AD Service Data         | 0 - AD SM TK              | & - AD LE Role\n");
+    printf("5   - AD Service Solicitation | + - AD LE BD_ADDR\n");
+    printf("6   - AD Services             | - - AD Appearance\n");
     printf("---\n");
     printf("l/L - default attribute value '%s'/'%s'\n", default_value_short, default_value_long);
     printf("p/P - privacy flag off\n");
@@ -764,6 +784,30 @@ int  stdin_process(struct data_source *ds){
         case '9':
         case '0':
             advertisement_index = buffer - '0';
+            update_advertisements();
+            break;
+        case '+':
+            advertisement_index = 10;
+            update_advertisements();
+            break;
+        case '-':
+            advertisement_index = 11;
+            update_advertisements();
+            break;
+        case '&':
+            advertisement_index = 12;
+            update_advertisements();
+            break;
+        case '=':
+            advertisement_index = 13;
+            update_advertisements();
+            break;
+        case '/':
+            advertisement_index = 14;
+            update_advertisements();
+            break;
+        case '#':
+            advertisement_index = 15;
             update_advertisements();
             break;
         case 's':
