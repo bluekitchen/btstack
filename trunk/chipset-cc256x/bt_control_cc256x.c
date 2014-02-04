@@ -52,6 +52,8 @@
  *  - store init script in .fartext and use assembly code to read from there 
  *  - split into two arrays
  *  
+ * Issues with AVR
+ *  - Harvard architecture doesn't allow to store init script directly -> use avr-libc helpers
  */
 
 #include "bt_control_cc256x.h"
@@ -62,6 +64,10 @@
 
 #if defined(__GNUC__) && (__MSP430X__ > 0)
 #include "hal_compat.h"
+#endif
+
+#ifdef __AVR__
+#include <avr/pgmspace.h>
 #endif
 
 #include "bt_control.h"
@@ -201,7 +207,15 @@ static int bt_control_cc256x_next_cmd(void *config, uint8_t *hci_cmd_buffer){
     int payload_len = hci_cmd_buffer[2];
     FlashReadBlock(&hci_cmd_buffer[3], init_script_addr + init_script_offset, payload_len);  // cmd payload
 
-#else
+#elif defined (__AVR__)
+
+    // workaround: use memcpy_P to access init script in lower 64 kB of flash
+    memcpy_P(&hci_cmd_buffer[0], &cc256x_init_script[init_script_offset], 3);
+    init_script_offset += 3;
+    int payload_len = hci_cmd_buffer[2];
+    memcpy_P(&hci_cmd_buffer[3], &cc256x_init_script[init_script_offset], payload_len);
+
+#else    
 
     // use memcpy with pointer
     uint8_t * init_script_ptr = (uint8_t*) &cc256x_init_script[0];
