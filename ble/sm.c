@@ -1280,6 +1280,9 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                 case HCI_EVENT_LE_META:
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+
+                            if (packet[3]) return; // connection failed
+
                             // only single connection for peripheral
                             if (sm_response_handle){
                                 printf("Already connected, ignoring incoming connection\n");
