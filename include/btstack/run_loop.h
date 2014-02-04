@@ -115,6 +115,8 @@ uint32_t embedded_get_ticks(void);
 // handler of a data source to signal the run loop that a new data 
 // is available.
 void embedded_trigger(void);    
+// execute run loop once for run_loop_embedded. pols all data sources and handles timers
+void embedded_execute_once(void);
 #endif
 #if defined __cplusplus
 }

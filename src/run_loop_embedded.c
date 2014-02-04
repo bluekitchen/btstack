@@ -145,7 +145,7 @@ static void embedded_dump_timer(void){
 /**
  * Execute run_loop once
  */
-static void embedded_execute_once(void) {
+void embedded_execute_once(void) {
     data_source_t *ds;
 
     // process data sources
