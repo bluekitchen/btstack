@@ -108,6 +108,8 @@ void run_loop_execute(void);
 uint32_t embedded_ticks_for_ms(uint32_t time_in_ms);
 // Queries the current time in ticks.
 uint32_t embedded_get_ticks(void);
+// Allows to update BTstack system ticks based on another already existing clock
+void embedded_set_ticks(uint32_t ticks);
 #endif
 #ifdef EMBEDDED
 // Sets an internal flag that is checked in the critical section
@@ -115,8 +117,6 @@ uint32_t embedded_get_ticks(void);
 // handler of a data source to signal the run loop that a new data 
 // is available.
 void embedded_trigger(void);    
-// execute run loop once for run_loop_embedded. pols all data sources and handles timers
-void embedded_execute_once(void);
 #endif
 #if defined __cplusplus
 }
