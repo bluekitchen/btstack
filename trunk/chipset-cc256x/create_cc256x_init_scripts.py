@@ -24,6 +24,9 @@ def extract_script(fin, patch_name, chipset, array_name):
 #if defined(__GNUC__) && (__MSP430X__ > 0)
 __attribute__((section (".fartext")))
 #endif
+#ifdef __AVR__
+__attribute__((__progmem__))
+#endif
 '''
 
     filename = '{0}_init_script.c'.format(chipset)

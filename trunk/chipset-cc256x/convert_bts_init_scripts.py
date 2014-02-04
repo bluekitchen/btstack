@@ -21,6 +21,9 @@ fartext = '''
 #if defined(__GNUC__) && (__MSP430X__ > 0)
 __attribute__((section (".fartext")))
 #endif
+#ifdef __AVR__
+__attribute__((__progmem__))
+#endif
 '''
 
 data_indent = '    '
