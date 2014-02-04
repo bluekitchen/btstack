@@ -43,6 +43,10 @@
 #ifndef __BT_CONTROL_CC256X_H
 #define __BT_CONTROL_CC256X_H
 
+#if defined __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include "bt_control.h"
 #include "hci_transport.h"
@@ -54,4 +58,9 @@ void bt_control_cc256x_enable_ehcill(int on);
 int bt_control_cc256x_ehcill_enabled(void);
 
 hci_uart_config_t *hci_uart_config_cc256x_instance(void);
+
+#if defined __cplusplus
+}
+#endif
+
 #endif // __BT_CONTROL_CC256X_H
