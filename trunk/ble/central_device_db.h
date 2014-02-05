@@ -114,4 +114,8 @@ void central_device_db_counter_set(int index, uint32_t counter);
  */
 void central_device_db_remove(int index);
 
+#if defined __cplusplus
+}
+#endif
+
 #endif // __CENTRAL_DEVICE_DB_H
