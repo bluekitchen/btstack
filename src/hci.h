@@ -308,7 +308,7 @@ typedef struct {
     void             * config;
     
     // bsic configuration
-    char             * local_name;
+    const char         * local_name;
     uint32_t           class_of_device;
     bd_addr_t          local_bd_addr;
     uint8_t            ssp_enable;

@@ -2004,3 +2004,9 @@ int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required){
 
     return 0;
 }
+
+void gap_set_local_name(const char * local_name){
+    hci_stack->local_name = local_name;
+}
+
+

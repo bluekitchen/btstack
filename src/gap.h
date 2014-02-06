@@ -97,6 +97,12 @@ gap_security_level_t gap_security_level(hci_con_handle_t con_handle);
 void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_t level);
 int  gap_mitm_protection_required_for_security_level(gap_security_level_t level);
 
+/** @brief sets local name
+ *  @note has to be done before stack starts up
+ *  @param name is not copied, make sure memory is accessible during stack startup
+ */
+void gap_set_local_name(const char * local_name);
+
 #if defined __cplusplus
 }
 #endif
