@@ -911,9 +911,9 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     }
 
     // reject connection (0x03 security block) and disconnect if both have SSP, connection is not encrypted and PSM != SDP
-    if (l2cap_security_level_0_allowed_for_PSM(psm)
-        && hci_ssp_supported_on_both_sides(handle)
-        && gap_security_level(handle) == LEVEL_0){
+    if (  hci_ssp_supported_on_both_sides(handle)
+    &&    gap_security_level(handle) == LEVEL_0
+    &&   !l2cap_security_level_0_allowed_for_PSM(psm)){
 
         // 0x0003 Security Block
         l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, 0x0003);
