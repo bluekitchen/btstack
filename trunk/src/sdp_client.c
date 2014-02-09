@@ -60,6 +60,8 @@ static uint16_t setup_service_search_attribute_request(uint8_t * data);
 #ifdef HAVE_SDP_EXTRA_QUERIES
 static uint16_t setup_service_search_request(uint8_t * data);
 static uint16_t setup_service_attribute_request(uint8_t * data);
+static void     parse_service_search_response(uint8_t* packet);
+static void     parse_service_attribute_response(uint8_t* packet);
 static uint32_t serviceRecordHandle;
 #endif
 
