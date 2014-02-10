@@ -38,6 +38,7 @@ static uint8_t rfcomm_channel_nr = 1;
 
 static int gap_discoverable = 0;
 static int gap_connectable = 0;
+// static int gap_pagable = 0;
 static int gap_bondable = 0;
 static int gap_mitm_protection = 0;
 static char * gap_io_capabilities;
@@ -374,16 +375,14 @@ static void  heartbeat_handler(struct timer *ts){
 void show_usage(){
 
     printf("\n--- Bluetooth Classic Test Console ---\n");
-    printf("GAP: discoverable %u, connectable %u, bondable %u, MITM %u, %s\n", gap_discoverable, gap_connectable, gap_bondable, gap_mitm_protection, gap_io_capabilities);
+    printf("GAP: discoverable %u, connectable %u, bondable %u, MITM %u, %s\n",
+        gap_discoverable, gap_connectable, gap_bondable, gap_mitm_protection, gap_io_capabilities);
     printf("---\n");
-    printf("b - bondable off\n");
-    printf("B - bondable on\n");
-    printf("c - connectable off\n");
-    printf("C - connectable on\n");
-    printf("d - discoverable off\n");
-    printf("D - discoverable on\n");
-    printf("m - MITM protection off\n");
-    printf("M - MITM protection on\n");
+    printf("b/B - bondable off/on\n");
+    printf("c/C - connectable off/on\n");
+    printf("d/D - discoverable off/on\n");
+    printf("m/M - MITM protection off/on\n");
+    // printf("a/A - pageable off/on\n");
     printf("---\n");
     printf("e - IO_CAPABILITY_DISPLAY_ONLY\n");
     printf("f - IO_CAPABILITY_DISPLAY_YES_NO\n");
@@ -468,13 +467,13 @@ int  stdin_process(struct data_source *ds){
             break;
         case 'b':
             gap_bondable = 0;
-            gap_set_bondable_mode(0);
+            // gap_set_bondable_mode(0);
             update_auth_req();
             show_usage();
             break;
         case 'B':
             gap_bondable = 1;
-            gap_set_bondable_mode(1);
+            // gap_set_bondable_mode(1);
             update_auth_req();
             show_usage();
             break;
@@ -642,7 +641,7 @@ static void btstack_setup(){
     gap_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
     hci_ssp_set_authentication_requirement(0);
     hci_ssp_set_auto_accept(0);
-    gap_set_bondable_mode(0);
+    // gap_set_bondable_mode(0);
 
     l2cap_init();
     l2cap_register_packet_handler(&packet_handler2);
