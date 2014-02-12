@@ -120,10 +120,10 @@ void do_next_remote_name_request(void){
 
 static void continue_remote_names(){
     // don't get remote names for testing
-   // if (has_more_remote_name_requests()){
-    //     do_next_remote_name_request();
-    //     return;
-    // } 
+    if (has_more_remote_name_requests()){
+        do_next_remote_name_request();
+        return;
+    } 
     // start_scan();
     // accept first device
     if (deviceCount){
