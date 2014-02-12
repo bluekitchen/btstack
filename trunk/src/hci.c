@@ -1373,7 +1373,7 @@ void hci_run(){
         }
         if (connection->bonding_flags & BONDING_DISCONNECT_DEDICATED_DONE){
             connection->bonding_flags &= ~BONDING_DISCONNECT_DEDICATED_DONE;
-            hci_send_cmd(&hci_disconnect, connection->con_handle, 0);  // authentication done
+            hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // authentication done
             return;
         }
         if (connection->bonding_flags & BONDING_SEND_AUTHENTICATE_REQUEST){
