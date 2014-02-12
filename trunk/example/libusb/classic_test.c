@@ -172,12 +172,13 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
             break;
             
         case HCI_EVENT_INQUIRY_COMPLETE:
-            for (i=0;i<deviceCount;i++) {
-                // retry remote name request
-                if (devices[i].state == REMOTE_NAME_INQUIRED)
-                    devices[i].state = REMOTE_NAME_REQUEST;
-            }
-            continue_remote_names();
+            // don't get remote names for testing
+            // for (i=0;i<deviceCount;i++) {
+            //     // retry remote name request
+            //     if (devices[i].state == REMOTE_NAME_INQUIRED)
+            //         devices[i].state = REMOTE_NAME_REQUEST;
+            // }
+            // continue_remote_names();
             break;
 
         case BTSTACK_EVENT_REMOTE_NAME_CACHED:
