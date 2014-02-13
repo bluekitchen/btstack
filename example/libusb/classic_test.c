@@ -57,6 +57,8 @@ static uint16_t local_cid;
 #define HEARTBEAT_PERIOD_MS 1000
 static uint16_t  rfcomm_channel_id;
 static uint8_t   spp_service_buffer[150];
+static uint8_t   dummy_service_buffer[150];
+static uint8_t   dummy_uuid128[] = { 1,1,1,1, 1,1,1,1,  1,1,1,1, 1,1,1,1, 1,1,1,1};
 static uint16_t  mtu;
 
 // GAP INQUIRY
@@ -609,6 +611,71 @@ int  stdin_process(struct data_source *ds){
     return 0;
 }
 
+void sdp_create_dummy_service(uint8_t *service, const char *name){
+    
+    uint8_t* attribute;
+    de_create_sequence(service);
+    
+    // 0x0000 "Service Record Handle"
+    de_add_number(service, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle);
+    de_add_number(service, DE_UINT, DE_SIZE_32, 0x10002);
+    
+    // 0x0001 "Service Class ID List"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);
+    attribute = de_push_sequence(service);
+    {
+        de_add_uuid128(attribute, &dummy_uuid128[0] );
+    }
+    de_pop_sequence(service, attribute);
+    
+    // 0x0004 "Protocol Descriptor List"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ProtocolDescriptorList);
+    attribute = de_push_sequence(service);
+    {
+        uint8_t* l2cpProtocol = de_push_sequence(attribute);
+        {
+            de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, 0x0100);
+        }
+        de_pop_sequence(attribute, l2cpProtocol);
+    }
+    de_pop_sequence(service, attribute);
+    
+    // 0x0005 "Public Browse Group"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BrowseGroupList); // public browse group
+    attribute = de_push_sequence(service);
+    {
+        de_add_number(attribute,  DE_UUID, DE_SIZE_16, 0x1002 );
+    }
+    de_pop_sequence(service, attribute);
+    
+    // 0x0006
+    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_LanguageBaseAttributeIDList);
+    attribute = de_push_sequence(service);
+    {
+        de_add_number(attribute, DE_UINT, DE_SIZE_16, 0x656e);
+        de_add_number(attribute, DE_UINT, DE_SIZE_16, 0x006a);
+        de_add_number(attribute, DE_UINT, DE_SIZE_16, 0x0100);
+    }
+    de_pop_sequence(service, attribute);
+    
+    // 0x0009 "Bluetooth Profile Descriptor List"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BluetoothProfileDescriptorList);
+    attribute = de_push_sequence(service);
+    {
+        uint8_t *sppProfile = de_push_sequence(attribute);
+        {
+            de_add_number(sppProfile,  DE_UINT, DE_SIZE_16, 0x0100);
+        }
+        de_pop_sequence(attribute, sppProfile);
+    }
+    de_pop_sequence(service, attribute);
+    
+    // 0x0100 "ServiceName"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
+    de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
+}
+
+
 static data_source_t stdin_source;
 void setup_cli(){
 
@@ -651,7 +718,6 @@ static void btstack_setup(){
 
     l2cap_init();
     l2cap_register_packet_handler(&packet_handler2);
-    l2cap_register_service_internal(NULL, packet_handler, PSM_SDP, 150, LEVEL_0);
     
     rfcomm_init();
     rfcomm_register_packet_handler(packet_handler2);
@@ -660,16 +726,15 @@ static void btstack_setup(){
     // init SDP, create record for SPP and register with SDP
     sdp_init();
     memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
-    // service_record_item_t * service_record_item = (service_record_item_t *) spp_service_buffer;
-    // sdp_create_spp_service( (uint8_t*) &service_record_item->service_record, RFCOMM_SERVER_CHANNEL, "SPP Counter");
-    // printf("SDP service buffer size: %u\n\r", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
-    // sdp_register_service_internal(NULL, service_record_item);
     sdp_create_spp_service( spp_service_buffer, RFCOMM_SERVER_CHANNEL, "SPP Counter");
     de_dump_data_element(spp_service_buffer);
     printf("SDP service record size: %u\n\r", de_get_len(spp_service_buffer));
-
     sdp_register_service_internal(NULL, spp_service_buffer);
-
+    memset(dummy_service_buffer, 0, sizeof(dummy_service_buffer));
+    sdp_create_dummy_service(dummy_service_buffer, "UUID128 Test");
+    de_dump_data_element(dummy_service_buffer);
+    printf("Dummy service record size: %u\n\r", de_get_len(dummy_service_buffer));
+    sdp_register_service_internal(NULL, dummy_service_buffer);
 
     sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
     
