@@ -252,7 +252,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             bt_flip_addr(remote, &packet[2]);
             passkey = READ_BT_32(packet, 8);
             printf("GAP User Confirmation Request for %s, number '%06u'\n", bd_addr_to_str(remote),passkey);
-            hci_send_cmd(&hci_user_confirmation_request_reply, remote);
             break;
 
         case HCI_EVENT_PIN_CODE_REQUEST:
@@ -356,7 +355,7 @@ void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
     }
 }
 
-static void  heartbeat_handler(struct timer *ts){
+void  heartbeat_handler(struct timer *ts){
 
     if (rfcomm_channel_id){
         static int counter = 0;
@@ -411,6 +410,7 @@ void show_usage(){
     printf("s - close L2CAP channel\n");
     printf("x - require SSP for outgoing SDP L2CAP channel\n");
     printf("+ - initate SSP on current connection\n");
+    printf("* - send SSP User Confirm YES\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -594,6 +594,11 @@ int  stdin_process(struct data_source *ds){
         case '+':
             printf("Initiate SSP on current connection\n");
             gap_request_security_level(handle, LEVEL_2);
+            break;
+
+        case '*':
+            printf("Sending SSP User Confirmation for %s\n", bd_addr_to_str(remote));
+            hci_send_cmd(&hci_user_confirmation_request_reply, remote);
             break;
 
         default:
