@@ -532,7 +532,7 @@ int  stdin_process(struct data_source *ds){
 
         case 'k':
             printf("Start SDP query for SPP service\n");
-            sdp_query_rfcomm_channel_and_name_for_uuid(remote_rfcomm, 0x1002);
+            sdp_query_rfcomm_channel_and_name_for_uuid(remote_rfcomm, 0x1101);
             break;
 
         case 't':
@@ -665,8 +665,11 @@ static void btstack_setup(){
     // printf("SDP service buffer size: %u\n\r", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
     // sdp_register_service_internal(NULL, service_record_item);
     sdp_create_spp_service( spp_service_buffer, RFCOMM_SERVER_CHANNEL, "SPP Counter");
+    de_dump_data_element(spp_service_buffer);
     printf("SDP service record size: %u\n\r", de_get_len(spp_service_buffer));
+
     sdp_register_service_internal(NULL, spp_service_buffer);
+
 
     sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
     

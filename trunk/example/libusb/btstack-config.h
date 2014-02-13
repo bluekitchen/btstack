@@ -14,3 +14,4 @@
 #define ENABLE_LOG_ERROR
 #define HCI_ACL_PAYLOAD_SIZE 1021
 #define HAVE_HCI_DUMP
+#define SDP_DES_DUMP
