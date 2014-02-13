@@ -831,18 +831,18 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
 
         case GAP_SECURITY_LEVEL:
             handle = READ_BT_16(packet, 2);
-            log_info("GAP_SECURITY_LEVEL");
+            log_info("l2cap - security level update");
             for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
                 channel = (l2cap_channel_t *) it;
                 if (channel->handle != handle) continue;
 
+                log_info("l2cap - state %u", channel->state);
+
                 gap_security_level_t actual_level = packet[4];
                 gap_security_level_t required_level = channel->required_security_level;
-                log_info("gap outgoing - security level update %u, required %u", actual_level, required_level);
 
                 switch (channel->state){
                     case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
-                        log_info("gap incoming");
                         if (actual_level >= required_level){
                             channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
                             l2cap_emit_connection_request(channel);                
@@ -873,6 +873,8 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
     
     // pass on
     (*packet_handler)(NULL, HCI_EVENT_PACKET, 0, packet, size);
+
+    l2cap_run();
 }
 
 static void l2cap_handle_disconnect_request(l2cap_channel_t *channel, uint16_t identifier){
