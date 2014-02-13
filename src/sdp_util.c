@@ -40,6 +40,7 @@
 
 #include <btstack/sdp_util.h>
 #include <btstack/utils.h>
+#include "btstack-config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
