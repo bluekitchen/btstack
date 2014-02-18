@@ -40,7 +40,9 @@ static int gap_discoverable = 0;
 static int gap_connectable = 0;
 // static int gap_pagable = 0;
 static int gap_bondable = 0;
+static int gap_dedicated_bonding_mode = 0;
 static int gap_mitm_protection = 0;
+static uint8_t gap_auth_req = 0;
 static char * gap_io_capabilities;
 
 static int ui_passkey = 0;
@@ -325,15 +327,17 @@ static void packet_handler2 (void * connection, uint8_t packet_type, uint16_t ch
 
 
 static void update_auth_req(){
-    uint8_t auth_req = 0;
+    gap_auth_req = 0;
     if (gap_mitm_protection){
-        auth_req |= 1;  // MITM Flag
+        gap_auth_req |= 1;  // MITM Flag
     }
-    if (gap_bondable){
-        auth_req |= 4;  // General bonding
+    if (gap_dedicated_bonding_mode){
+        gap_auth_req |= 2;  // Dedicated bonding
+    } else if (gap_bondable){
+        gap_auth_req |= 4;  // General bonding
     }
-    printf("Authentication Requirements: %u\n", auth_req);
-    hci_ssp_set_authentication_requirement(auth_req);
+    printf("Authentication Requirements: %u\n", gap_auth_req);
+    hci_ssp_set_authentication_requirement(gap_auth_req);
 }
 
 void handle_found_service(char * name, uint8_t port){
@@ -377,12 +381,13 @@ void  heartbeat_handler(struct timer *ts){
 void show_usage(){
 
     printf("\n--- Bluetooth Classic Test Console ---\n");
-    printf("GAP: discoverable %u, connectable %u, bondable %u, MITM %u, %s\n",
-        gap_discoverable, gap_connectable, gap_bondable, gap_mitm_protection, gap_io_capabilities);
+    printf("GAP: discoverable %u, connectable %u, bondable %u, MITM %u, dedicated bonding %u, auth_req 0x0%u, %s\n",
+        gap_discoverable, gap_connectable, gap_bondable, gap_mitm_protection, gap_dedicated_bonding_mode, gap_auth_req, gap_io_capabilities);
     printf("---\n");
     printf("b/B - bondable off/on\n");
     printf("c/C - connectable off/on\n");
     printf("d/D - discoverable off/on\n");
+    printf("</> - dedicated bonding off/on\n");
     printf("m/M - MITM protection off/on\n");
     // printf("a/A - pageable off/on\n");
     printf("---\n");
@@ -487,6 +492,17 @@ int  stdin_process(struct data_source *ds){
             break;
         case 'M':
             gap_mitm_protection = 1;
+            update_auth_req();
+            show_usage();
+            break;
+
+        case '<':
+            gap_dedicated_bonding_mode = 0;
+            update_auth_req();
+            show_usage();
+            break;
+        case '>':
+            gap_dedicated_bonding_mode = 1;
             update_auth_req();
             show_usage();
             break;
