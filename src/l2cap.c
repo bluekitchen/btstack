@@ -1281,7 +1281,14 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
                 (*security_protocol_packet_handler)(SM_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
             }
             break;
-            
+        
+        case L2CAP_CID_SIGNALING_LE: {
+            // not implemented yet for LE Peripheral
+            uint8_t sig_id = packet[COMPLETE_L2CAP_HEADER + 1]; 
+            l2cap_register_signaling_response(handle, COMMAND_REJECT_LE, sig_id, L2CAP_REJ_CMD_UNKNOWN);
+            break;
+        }
+
         default: {
             // Find channel for this channel_id and connection handle
             l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(channel_id);
