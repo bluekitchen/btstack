@@ -80,12 +80,12 @@ uint16_t l2cap_next_local_cid(void){
     return source_cid++;
 }
 
-uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
+uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_handle_t handle, uint16_t cid, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
     
     // 0 - Connection handle : PB=10 : BC=00 
     bt_store_16(acl_buffer, 0, handle | (2 << 12) | (0 << 14));
     // 6 - L2CAP channel = 1
-    bt_store_16(acl_buffer, 6, 1);
+    bt_store_16(acl_buffer, 6, cid);
     // 8 - Code
     acl_buffer[8] = cmd;
     // 9 - id (!= 0 sequentially)
@@ -137,7 +137,16 @@ uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_handle_t 
     return pos;
 }
 
+uint16_t l2cap_create_signaling_classic(uint8_t * acl_buffer, hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
+    return l2cap_create_signaling_internal(acl_buffer, handle, 1, cmd, identifier, argptr);
+}
+
 #ifdef HAVE_BLE
+
+uint16_t l2cap_create_signaling_le(uint8_t * acl_buffer, hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
+    return l2cap_create_signaling_internal(acl_buffer, handle, 5, cmd, identifier, argptr);
+}
+
 uint16_t l2cap_le_create_connection_parameter_update_request(uint8_t * acl_buffer, uint16_t handle, uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency, uint16_t timeout_multiplier){
       // 0 - Connection handle : PB=10 : BC=00 
     bt_store_16(acl_buffer, 0, handle | (2 << 12) | (0 << 14));
