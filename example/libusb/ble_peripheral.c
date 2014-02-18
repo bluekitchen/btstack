@@ -635,6 +635,7 @@ void show_usage(){
     printf("s   - send security request\n");
     printf("z   - send Connection Parameter Update Request\n");
     printf("t   - terminate connection\n");
+    printf("j   - create L2CAP LE connection to %s\n", bd_addr_to_str(tester_address));
     printf("---\n");
     printf("e   - IO_CAPABILITY_DISPLAY_ONLY\n");
     printf("f   - IO_CAPABILITY_DISPLAY_YES_NO\n");
@@ -890,6 +891,23 @@ int  stdin_process(struct data_source *ds){
             sm_mitm_protection = 1;
             update_auth_req();
             show_usage();
+            break;
+        case 'j':
+            printf("Create L2CAP Connection to %s\n", bd_addr_to_str(tester_address));
+            hci_send_cmd(&hci_le_create_connection, 
+                1000,      // scan interval: 625 ms
+                1000,      // scan interval: 625 ms
+                0,         // don't use whitelist
+                0,         // peer address type: public
+                tester_address,      // remote bd addr
+                tester_address_type, // random or public
+                80,        // conn interval min
+                80,        // conn interval max (3200 * 0.625)
+                0,         // conn latency
+                2000,      // supervision timeout
+                0,         // min ce length
+                1000       // max ce length
+                );
             break;
         default:
             show_usage();
