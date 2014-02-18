@@ -418,6 +418,7 @@ void show_usage(){
     printf("x - require SSP for outgoing SDP L2CAP channel\n");
     printf("+ - initate SSP on current connection\n");
     printf("* - send SSP User Confirm YES\n");
+    printf("= - delete link key\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -617,6 +618,11 @@ int  stdin_process(struct data_source *ds){
         case '*':
             printf("Sending SSP User Confirmation for %s\n", bd_addr_to_str(remote));
             hci_send_cmd(&hci_user_confirmation_request_reply, remote);
+            break;
+
+        case '=':
+            printf("Deleting Link Key for %s\n", bd_addr_to_str(remote));
+            hci_drop_link_key_for_bd_addr(&remote);
             break;
 
         default:
