@@ -65,7 +65,8 @@ typedef enum {
     INFORMATION_REQUEST,
     INFORMATION_RESPONSE,
     CONNECTION_PARAMETER_UPDATE_REQUEST = 0x12,
-    CONNECTION_PARAMETER_UPDATE_RESPONSE
+    CONNECTION_PARAMETER_UPDATE_RESPONSE, 
+    COMMAND_REJECT_LE = 0x14,  // internal to BTstack
 } L2CAP_SIGNALING_COMMANDS;
 
 uint16_t l2cap_create_signaling_classic(uint8_t * acl_buffer,hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr);
