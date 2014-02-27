@@ -115,32 +115,13 @@ static uint16_t l2cap_max_mtu_for_handle(uint16_t handle){
 // END Helper Functions
 
 
-static void dump_nodes(le_peripheral_t * peripheral){
-    printf("\n current level %u, start %02x, end %02x, last %02x\n", peripheral->depth, 
-        peripheral->nodes[peripheral->depth].start_group_handle, 
-        peripheral->nodes[peripheral->depth].end_group_handle,
-        peripheral->nodes[peripheral->depth].last_group_handle);
-}
-
-static inline le_command_status_t send_gatt_request(uint16_t request_type, uint16_t attribute_group_type, le_peripheral_t *peripheral){
+static le_command_status_t send_gatt_request(uint16_t request_type, uint16_t attribute_group_type, uint16_t peripheral_handle, uint16_t start_handle, uint16_t end_handle){
     if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
     
-    uint16_t next_handle = peripheral->nodes[peripheral->depth].last_group_handle+1;
-    uint16_t end_handle  = peripheral->nodes[peripheral->depth].end_group_handle;
-    uint16_t peripheral_handle = peripheral->handle;
-
-
-    if (attribute_group_type == GATT_PRIMARY_SERVICE_UUID){
-        end_handle = 0xffff;
-    }
-    
-    if (next_handle > end_handle){
-        printf (".......... smth went wrong: next_handle > end_handle");
-    }
-
+    // printf("send_gatt_request : %02X, %02X - %02X \n", peripheral_handle, start_handle, end_handle);
     uint8_t request[7];
     request[0] = request_type;
-    bt_store_16(request, 1, next_handle);
+    bt_store_16(request, 1, start_handle);
     bt_store_16(request, 3, end_handle);
     bt_store_16(request, 5, attribute_group_type);
 
@@ -149,15 +130,15 @@ static inline le_command_status_t send_gatt_request(uint16_t request_type, uint1
 }
 
 static le_command_status_t send_gatt_include_service_request(le_peripheral_t *peripheral){
-    return send_gatt_request(ATT_READ_BY_TYPE_REQUEST, GATT_INCLUDE_SERVICE_UUID, peripheral);
+    return send_gatt_request(ATT_READ_BY_TYPE_REQUEST, GATT_INCLUDE_SERVICE_UUID, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle);
 }
 
 static le_command_status_t send_gatt_characteristic_request(le_peripheral_t *peripheral){
-    return send_gatt_request(ATT_READ_BY_TYPE_REQUEST, GATT_CHARACTERISTICS_UUID, peripheral);
+    return send_gatt_request(ATT_READ_BY_TYPE_REQUEST, GATT_CHARACTERISTICS_UUID, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle);
 }
 
 static le_command_status_t send_gatt_services_request(le_peripheral_t *peripheral){
-    return send_gatt_request(ATT_READ_BY_GROUP_TYPE_REQUEST, GATT_PRIMARY_SERVICE_UUID, peripheral);
+    return send_gatt_request(ATT_READ_BY_GROUP_TYPE_REQUEST, GATT_PRIMARY_SERVICE_UUID, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle);
 }
 
 static inline void send_gatt_complete_event(le_peripheral_t * peripheral, uint8_t type, uint8_t status){
@@ -307,9 +288,8 @@ static void handle_peripheral_list(){
                 peripheral->state = P_W4_SERVICE_QUERY_RESULT;
                 break;
             case P_W2_SEND_CHARACTERISTIC_QUERY:
-                printf("send characteristic query, level %d\n", peripheral->depth);
-                dump_nodes(peripheral);
-
+                // printf("send characteristic query\n");
+               
                 status = send_gatt_characteristic_request(peripheral);
                 if (status != BLE_PERIPHERAL_OK) break;
 
@@ -317,7 +297,6 @@ static void handle_peripheral_list(){
                 break;
             case P_W2_SEND_INCLUDE_SERVICE_QUERY:
                 printf("send include query\n"); 
-                dump_nodes(peripheral);
                 status = send_gatt_include_service_request(peripheral);
                 if (status != BLE_PERIPHERAL_OK) break;
 
@@ -377,6 +356,7 @@ le_command_status_t le_central_connect(le_peripheral_t *context, uint8_t addr_ty
     return BLE_PERIPHERAL_OK;
 }
 
+
 le_command_status_t le_central_disconnect(le_peripheral_t *context){
     // printf("*** le_central_disconnect::CALLED DISCONNECT \n");
 
@@ -408,24 +388,25 @@ le_command_status_t le_central_disconnect(le_peripheral_t *context){
 
 le_command_status_t le_central_get_services(le_peripheral_t *peripheral){
     if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
-    // printf("le_central_get_services ready to send\n");
-    peripheral->nodes[0].last_group_handle = 0x0000;
-    peripheral->depth = 0;
+    
+    printf("le_central_get_services ready to send\n");
+    
+    peripheral->start_group_handle = 0x0001;
+    peripheral->end_group_handle   = 0xffff;
+
     peripheral->state = P_W2_SEND_SERVICE_QUERY;
+
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
 }
 
 le_command_status_t le_central_get_characteristics_for_service(le_peripheral_t *peripheral, le_service_t *service){
     if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
-    printf("le_central_get_characteristics_for_service ready to send\n");
+    // printf("le_central_get_characteristics_for_service ready to send\n");
     
-    // send will increment last_group_handle, so substract in advance
-    peripheral->depth = 0;
-    peripheral->nodes[peripheral->depth].start_group_handle = service->start_group_handle;
-    peripheral->nodes[peripheral->depth].end_group_handle = service->end_group_handle;
-    peripheral->nodes[peripheral->depth].last_group_handle = service->start_group_handle - 1;
-
+    peripheral->start_group_handle = service->start_group_handle;
+    peripheral->end_group_handle   = service->end_group_handle;
+    
     peripheral->state = P_W2_SEND_CHARACTERISTIC_QUERY;
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
@@ -607,72 +588,82 @@ static void printUUID128(const uint8_t * uuid){
     }
 }
 
+static uint16_t get_next_handle(uint8_t * packet, uint16_t size){
+    uint8_t attr_length = packet[1];
+    uint8_t handle_offset = 0;
+    switch (packet[0]){
+        case ATT_READ_BY_TYPE_RESPONSE:
+            handle_offset = 3;
+            break;
+        case ATT_READ_BY_GROUP_TYPE_RESPONSE:
+            handle_offset = 2;
+            break;
+    }
+    uint16_t next_handle = READ_BT_16(packet, size - attr_length + handle_offset);
+    if (next_handle < 0xffff){
+        next_handle++;
+    }
+    return next_handle;
+}
 
-static void handle_gatt_service_packet(le_peripheral_t * peripheral, uint8_t * packet, uint16_t uuid_length){
-    le_service_event_t event;
+static void report_gatt_services(le_peripheral_t * peripheral, uint8_t * packet,  uint16_t size, uint8_t is_primary){
+    // printf(" report_gatt_services for %02X\n", peripheral->handle);
+    uint8_t attr_length = packet[1];
+    uint8_t uuid_length = attr_length - 4;
+    
     le_service_t service;
-
+    le_service_event_t event;
     event.type = GATT_SERVICE_QUERY_RESULT;
-    service.start_group_handle = READ_BT_16(packet,0);
-    service.end_group_handle = READ_BT_16(packet,2);
     
-    if (uuid_length == 2){
-        service.uuid16 = READ_BT_16(packet, 4);
-        sdp_normalize_uuid((uint8_t*) &service.uuid128, service.uuid16);
-    } else {
-        memcpy(service.uuid128, &packet[4], uuid_length);
+    int i;
+    for (i = 2; i < size; i += attr_length){
+        service.start_group_handle = READ_BT_16(packet,i);
+        service.end_group_handle = READ_BT_16(packet,i+2);
+        service.is_primary = is_primary;
+        
+        if (uuid_length == 2){
+            service.uuid16 = READ_BT_16(packet, i+4);
+            sdp_normalize_uuid((uint8_t*) &service.uuid128, service.uuid16);
+        } else {
+            memcpy(service.uuid128, &packet[i+4], uuid_length);
+        }
+        event.service = service;
+        (*le_central_callback)((le_central_event_t*)&event);
     }
-    event.service = service;
-    (*le_central_callback)((le_central_event_t*)&event);
+    // printf("report_gatt_services for %02X done\n", peripheral->handle);
+}
+
+
+static void report_gatt_characteristics(le_peripheral_t * peripheral, uint8_t * packet,  uint16_t size){
+    uint8_t attr_length = packet[1];
+    uint8_t uuid_length = attr_length - 5;
     
-    if (peripheral->nodes[0].last_group_handle < service.end_group_handle){
-        peripheral->nodes[0].last_group_handle = service.end_group_handle;
-    }
-}
-
-
-
-int has_more_handles_on_current_level(le_peripheral_t * peripheral){
-    return peripheral->nodes[peripheral->depth].last_group_handle < peripheral->nodes[peripheral->depth].end_group_handle;
-}
-
-int has_more_handles_on_current_level2(le_peripheral_t * peripheral){
-    return peripheral->nodes[peripheral->depth].last_group_handle + 1 < peripheral->nodes[peripheral->depth].end_group_handle;
-}
-/*
-int find_next_handle(le_peripheral_t * peripheral){
+    le_characteristic_t characteristic;
+    le_characteristic_event_t event;
+    event.type = GATT_CHARACTERISTIC_QUERY_RESULT;
     
-    printf("find next node: ");
-    dump_nodes(peripheral);
+    int i;        
+    for (i = 2; i < size; i += attr_length){
+        characteristic.properties = packet[i+2];
+        characteristic.value_handle = READ_BT_16(packet, i+3);
 
-    if (has_more_handles_on_current_level(peripheral)){
-        peripheral->nodes[peripheral->depth].last_group_handle++;
-        printf("found on the same level : ");
-        dump_nodes(peripheral);
-        return 1;
-    }
+        if (uuid_length == 2){
+            characteristic.uuid16 = READ_BT_16(packet,i+5);
+            sdp_normalize_uuid((uint8_t*) &characteristic.uuid128, characteristic.uuid16);
+        } else {
+            memcpy(characteristic.uuid128, &packet[i+5], uuid_length);
+        }
 
-    if (peripheral->depth < LE_CENTRAL_MAX_INCLUDE_DEPTH){
-        printf("go deeper: ");
-        dump_nodes(peripheral);
-        peripheral->depth++;
-    } else if (peripheral->depth == 0){
-        printf("no more nodes\n");
-        return 0;
-    } else { 
-        printf("go up: ");
-        dump_nodes(peripheral);
-        peripheral->depth--;
+        event.characteristic = characteristic;
+        (*le_central_callback)((le_central_event_t*)&event);
     }
-    return find_next_handle(peripheral);
 }
-*/
 
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
     if (packet_type != ATT_DATA_PACKET) return;
     le_peripheral_t * peripheral = get_peripheral_for_handle(handle);
     if (!peripheral) return;
-
+    uint16_t next_handle;
     switch (packet[0]){
         case ATT_EXCHANGE_MTU_RESPONSE:
         {
@@ -686,118 +677,44 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             break;
         }
         case ATT_READ_BY_GROUP_TYPE_RESPONSE:
-        // if (peripheral->state != P_W4_SERVICE_QUERY_RESULT) return;
-        {
-            printf("att_packet_handler :: ATT_READ_BY_GROUP_TYPE_RESPONSE\n");
-        
-            uint8_t attr_length = packet[1];
-            uint8_t uuid_length = attr_length - 4;
+            report_gatt_services(peripheral, packet, size, 1);
 
-            int i;
-            for (i = 2; i < size; i += attr_length){
-                handle_gatt_service_packet(peripheral, &packet[i], uuid_length);
-            }
-
-            if (peripheral->nodes[0].last_group_handle < 0xffff){
+            next_handle = get_next_handle(packet, size);
+            if ( next_handle <= peripheral->end_group_handle){
+                peripheral->start_group_handle = next_handle;
                 peripheral->state = P_W2_SEND_SERVICE_QUERY;
                 break;
             }
-            printf("att_packet_handler :: ATT_READ_BY_GROUP_TYPE_RESPONSE ---> DONE\n");
             // DONE
             peripheral->state = P_CONNECTED;
             send_gatt_complete_event(peripheral, GATT_SERVICE_QUERY_COMPLETE, 0);
 
             break;
-        }
         case ATT_READ_BY_TYPE_RESPONSE:
-        {
-            uint8_t attr_length = packet[1];
-            uint8_t uuid_length;
-            int i;
-
             switch (peripheral->state){
-                case P_W4_CHARACTERISTIC_QUERY_RESULT:{
-                    uuid_length = attr_length - 5;
-                    
-                    for (i = 2; i < size; i += attr_length){
-                        le_characteristic_event_t event;
-                        le_characteristic_t characteristic;
+                case P_W4_CHARACTERISTIC_QUERY_RESULT:
+                    report_gatt_characteristics(peripheral, packet, size);
 
-                        event.type = GATT_CHARACTERISTIC_QUERY_RESULT;
-
-                        peripheral->nodes[peripheral->depth].last_group_handle = READ_BT_16(packet,i);
-
-                        characteristic.properties = packet[i+2];
-                        characteristic.value_handle = READ_BT_16(packet, i+3);
-
-                        if (uuid_length == 2){
-                            characteristic.uuid16 = READ_BT_16(packet,i+5);
-                            sdp_normalize_uuid((uint8_t*) &characteristic.uuid128, characteristic.uuid16);
-                        } else {
-                            memcpy(characteristic.uuid128, &packet[i+5], uuid_length);
-                        }
-
-                        event.characteristic = characteristic;
-                        (*le_central_callback)((le_central_event_t*)&event);
-                    }
-
-                    dump_nodes(peripheral);
-                    printf(" 1 .. query CHR on the same level\n");
-                    if (has_more_handles_on_current_level2(peripheral)){
-                        printf(" 2a .. more CHR on level\n");
+                    next_handle = get_next_handle(packet, size);
+                    if ( next_handle <= peripheral->end_group_handle){
+                        peripheral->start_group_handle = next_handle;
                         peripheral->state = P_W2_SEND_CHARACTERISTIC_QUERY;
-                        peripheral->nodes[peripheral->depth].last_group_handle++;
-                        break;
-                    } 
-                    printf(" 2b .. no more CHR on level\n");
-                    printf(" 3b .. start query includes on the same level do not ask for include on the max level...\n");
-
-                    if (peripheral->depth + 1 < LE_CENTRAL_MAX_INCLUDE_DEPTH){
-                        printf(" 4b .. more INCL on current level, reset LGH to SGH-1\n");
-                        peripheral->nodes[peripheral->depth].last_group_handle = peripheral->nodes[peripheral->depth].start_group_handle - 1;
-                        peripheral->state = P_W2_SEND_INCLUDE_SERVICE_QUERY;
-                        break;
-                    } 
-                    
-                    printf(" 4c .. no includes on current level -> go up .. \n");
-                    while (peripheral->depth > 0 && !has_more_handles_on_current_level(peripheral)){
-                        peripheral->depth--;
-                    }
-
-                    dump_nodes(peripheral);
-                    printf(" 5c .. query CHR on the upper level\n");
-                    if (has_more_handles_on_current_level2(peripheral)){
-                        printf(" 6c .. more CHR on level\n");
-                        peripheral->nodes[peripheral->depth].last_group_handle++;
-                        peripheral->state = P_W2_SEND_INCLUDE_SERVICE_QUERY;
                         break;
                     }
-                    printf(" 7 .. send_gatt_complete_event\n");
+                    // DONE
                     peripheral->state = P_CONNECTED;
                     send_gatt_complete_event(peripheral, GATT_CHARACTERISTIC_QUERY_COMPLETE, 0); 
-                
                     break;
-                }
-
+                
                 case P_W4_INCLUDE_SERVICE_QUERY_RESULT:{
-                    peripheral->nodes[peripheral->depth].last_group_handle = READ_BT_16(packet,2);
                     
-                    // update handle 
-                    dump_nodes(peripheral);
-                    printf(" .. go down one level, ask for CHR\n");
-                    peripheral->depth++;
-                    peripheral->nodes[peripheral->depth].start_group_handle = READ_BT_16(packet,4);
-                    peripheral->nodes[peripheral->depth].end_group_handle = READ_BT_16(packet,6);
-                    peripheral->nodes[peripheral->depth].last_group_handle = peripheral->nodes[peripheral->depth].start_group_handle - 1;
-                    
-                    peripheral->state = P_W2_SEND_CHARACTERISTIC_QUERY;
                     break;
                 }
                 default:
                     break;
             }
             break;
-        }
+        
         case ATT_ERROR_RESPONSE:
             printf("ATT_ERROR_RESPONSE error %u, state %u\n", packet[4], peripheral->state);
             switch (packet[4]){
@@ -807,49 +724,17 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                             peripheral->state = P_CONNECTED;
                             send_gatt_complete_event(peripheral, GATT_SERVICE_QUERY_COMPLETE, 0);
                             break;
-                        case P_W4_CHARACTERISTIC_QUERY_RESULT:
-                            printf("CHARACTERISTIC_QUERY ERROR search includes\n");
-                            
-                            // start query includes on the same level
-                            // do not ask for include on the max level...
-                            if (peripheral->depth + 1 < LE_CENTRAL_MAX_INCLUDE_DEPTH){
-                                peripheral->nodes[peripheral->depth].last_group_handle = peripheral->nodes[peripheral->depth].start_group_handle - 1;
-                                peripheral->state = P_W2_SEND_INCLUDE_SERVICE_QUERY;
-                                break;
-                            } 
-                            
-                            // no includes on the current level -> go up
-                            while (peripheral->depth > 0 && !has_more_handles_on_current_level(peripheral)){
-                                peripheral->depth--;
-                            }
 
-                            if (has_more_handles_on_current_level2(peripheral)){
-                                peripheral->nodes[peripheral->depth].last_group_handle++;
-                                peripheral->state = P_W2_SEND_INCLUDE_SERVICE_QUERY;
-                                break;
-                            }
+                        case P_W4_CHARACTERISTIC_QUERY_RESULT:
+                            printf("CHARACTERISTIC_QUERY ERROR\n");
                             peripheral->state = P_CONNECTED;
                             send_gatt_complete_event(peripheral, GATT_CHARACTERISTIC_QUERY_COMPLETE, 0);
-
-
                             break;
 
                         case P_W4_INCLUDE_SERVICE_QUERY_RESULT:
                             printf("INCLUDE_SERVICE_QUERY ERROR\n");
-                            
-                            // no includes on the current level -> go up
-                            while (peripheral->depth > 0 && !has_more_handles_on_current_level(peripheral)){
-                                peripheral->depth--;
-                            }
-
-                            if (has_more_handles_on_current_level2(peripheral)){
-                                peripheral->nodes[peripheral->depth].last_group_handle++;
-                                peripheral->state = P_W2_SEND_INCLUDE_SERVICE_QUERY;
-                                break;
-                            }
                             peripheral->state = P_CONNECTED;
-                            send_gatt_complete_event(peripheral, GATT_CHARACTERISTIC_QUERY_COMPLETE, 0);
-
+                            send_gatt_complete_event(peripheral, GATT_SERVICE_QUERY_COMPLETE, 0);
 
                             break;
                         default:
@@ -1013,13 +898,14 @@ void test_client(){
         case TC_W2_CHARACTERISTIC_REQUEST:
             if (service_index >= service_count) tc_state = TC_W2_DISCONNECT;
 
-            printf("test client - TC_W2_CHARACTERISTIC_REQUEST, for service %02x [%d/%d]\n", services[service_index].uuid16, service_index+1, service_count);
+            le_service_t s = services[service_index];
+            printf("\n test client - TC_W2_CHARACTERISTIC_REQUEST, for service %02x [%02x/%02x]\n", s.uuid16, s.start_group_handle, s.end_group_handle);
 
             status = le_central_get_characteristics_for_service(&test_device, &services[service_index]);
             if (status != BLE_PERIPHERAL_OK) return;
             service_index++;
             tc_state = TC_W4_CHARACTERISTIC_RESULT;
-            printf("le_central_get_characteristics_for_service requested\n");
+            // printf("le_central_get_characteristics_for_service requested\n");
             break;
             
         case TC_W2_DISCONNECT:
@@ -1088,9 +974,8 @@ static void handle_le_central_event(le_central_event_t * event){
         
         case GATT_CHARACTERISTIC_QUERY_RESULT:
             characteristic = ((le_characteristic_event_t *) event)->characteristic;
-            printf("    *** found characteristic *** properties %x, handle %02x, uuid ", characteristic.properties, characteristic.value_handle);
-            printUUID128(characteristic.uuid128);
-            printf("\n");
+            printf("    *** found characteristic *** properties %x, handle %02x, uuid  %02x\n", characteristic.properties, characteristic.value_handle, characteristic.uuid16);
+            //printUUID128(characteristic.uuid128);
             test_client();
             break;
 
