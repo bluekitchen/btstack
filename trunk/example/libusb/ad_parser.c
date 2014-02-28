@@ -83,12 +83,6 @@ uint8_t * ad_iterator_get_data(ad_context_t * context){
     return &context->data[context->offset + 2];
 }
 
-static inline void swap128(uint8_t src[16], uint8_t dst[16]){
-    int i;
-    for (i = 0; i < 16; i++)
-        dst[15 - i] = src[i];
-}
-
 int ad_data_contains_uuid16(uint8_t ad_len, uint8_t * ad_data, uint16_t uuid16){
     ad_context_t context;
     for (ad_iterator_init(&context, ad_len, ad_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){

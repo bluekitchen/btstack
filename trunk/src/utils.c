@@ -80,6 +80,25 @@ void bt_flip_addr(bd_addr_t dest, bd_addr_t src){
     dest[5] = src[0];
 }
 
+// general swap/endianess utils
+void swapX(uint8_t *src, uint8_t *dst, int len){
+    int i;
+    for (i = 0; i < len; i++)
+        dst[len - 1 - i] = src[i];
+}
+void swap24(uint8_t src[3], uint8_t dst[3]){
+    swapX(src, dst, 3);
+}
+void swap56(uint8_t src[7], uint8_t dst[7]){
+    swapX(src, dst, 7);
+}
+void swap64(uint8_t src[8], uint8_t dst[8]){
+    swapX(src, dst, 8);
+}
+void swap128(uint8_t src[16], uint8_t dst[16]){
+    swapX(src, dst, 16);
+}
+
 void hexdump(void *data, int size){
     int i;
     for (i=0; i<size;i++){
