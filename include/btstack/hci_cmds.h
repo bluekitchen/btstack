@@ -228,6 +228,8 @@ extern "C" {
 #define GATT_SERVICE_QUERY_COMPLETE    					   0xA3
 #define GATT_CHARACTERISTIC_QUERY_RESULT				   0xA4
 #define GATT_CHARACTERISTIC_QUERY_COMPLETE    			   0xA5
+#define GATT_INCLUDED_SERVICE_QUERY_RESULT     			   0xA6
+#define GATT_INCLUDED_SERVICE_QUERY_COMPLETE    		   0xA7
 
 // data: event(8), len(8), status (8), hci_handle (16), attribute_handle (16)
 #define ATT_HANDLE_VALUE_INDICATION_COMPLETE        	   0xAF
