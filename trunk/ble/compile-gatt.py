@@ -210,9 +210,11 @@ def parseIncludeService(fout, parts):
 
     uuid = parseUUID(parts[1])
     uuid_size = len(uuid)
+    if uuid_size > 2:
+        uuid_size = 0
     # print "Include Service ", keyForUUID(uuid)
 
-    size = 2 + 2 + 2 + uuid_size + 2 + 4
+    size = 2 + 2 + 2 + 2 + 4 + uuid_size
 
     keyUUID = keyForUUID(uuid)
 
@@ -223,7 +225,8 @@ def parseIncludeService(fout, parts):
     write_16(fout, 0x2802)
     write_16(fout, services[keyUUID][0])
     write_16(fout, services[keyUUID][1])
-    write_uuid(uuid)
+    if uuid_size > 0:
+        write_uuid(uuid)
     fout.write("\n")
 
     handle = handle + 1
