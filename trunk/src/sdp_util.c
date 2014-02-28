@@ -582,7 +582,7 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
         de_traverse_sequence(element, de_traversal_dump_data, (void *)&indent);
     } else if (de_type == DE_UUID && de_size == DE_SIZE_128) {
         printf(", value: ");
-        printUUID(element+1);
+        printUUID128(element+1);
         printf("\n");
     } else if (de_type == DE_STRING) {
         int len = 0;

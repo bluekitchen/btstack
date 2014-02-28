@@ -58,23 +58,6 @@ static void hexdump2(void const *data, int size){
     printf("\n");
 }
 
-static void printUUID128(const uint8_t * uuid){
-    int i;
-    for (i=15; i >= 0 ; i--){
-        printf("%02X", uuid[i]);
-        switch (i){
-            case 4:
-            case 6:
-            case 8:
-            case 10:
-                printf("-");
-                break;
-            default:
-                break;
-        }
-    }
-}
-
 static int is_Bluetooth_Base_UUID(uint8_t const *uuid){
     if (memcmp(&uuid[0],  &bluetooth_base_uuid[0], 12)) return 0;
     if (memcmp(&uuid[14], &bluetooth_base_uuid[14], 2)) return 0;
@@ -226,6 +209,7 @@ void att_set_write_callback(att_write_callback_t callback){
 void att_dump_attributes(void){
     att_iterator_t it;
     att_iterator_init(&it);
+    uint8_t uuid128[16];
     while (att_iterator_has_next(&it)){
         att_iterator_fetch_next(&it);
         if (it.handle == 0) {
@@ -234,7 +218,8 @@ void att_dump_attributes(void){
         }
         printf("Handle: 0x%04x, flags: 0x%04x, uuid: ", it.handle, it.flags);
         if (it.flags & ATT_PROPERTY_UUID128){
-            printUUID128(it.uuid);
+            swap128(it.uuid, uuid128);
+            printUUID128(uuid128);
         } else {
             printf("%04x", READ_BT_16(it.uuid, 0));
         }
