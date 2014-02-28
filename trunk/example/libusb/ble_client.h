@@ -113,6 +113,8 @@ typedef struct le_peripheral{
     bd_addr_t address;
     uint16_t handle;
     uint16_t mtu;
+
+    uint16_t uuid16;
     uint8_t  uuid128[16]; 
 
     uint16_t start_group_handle;
