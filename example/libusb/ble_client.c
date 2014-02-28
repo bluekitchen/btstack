@@ -854,7 +854,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                 (*le_central_callback)((le_central_event_t*)&event);
             }
 
-            trigger_next_service_query(peripheral, service.end_group_handle);
+            trigger_next_service_by_uuid_query(peripheral, service.end_group_handle);
             break;
         }
         case ATT_ERROR_RESPONSE:
@@ -946,41 +946,6 @@ static void dump_ad_event(ad_event_t* e){
     hexdump2( e->data, e->length);                            
 }
 
-static void dump_peripheral_state(peripheral_state_t p_state){
-    switch(p_state) {
-        case P_W2_CONNECT: printf("P_W2_CONNECT"); break;
-        case P_W4_CONNECTED: printf("P_W4_CONNECTED"); break;
-        case P_W2_EXCHANGE_MTU: printf("P_W2_EXCHANGE_MTU"); break;
-        case P_W4_EXCHANGE_MTU: printf("P_W4_EXCHANGE_MTU"); break;
-        case P_CONNECTED: printf("P_CONNECTED"); break;
-        case P_W2_CANCEL_CONNECT: printf("P_W2_CANCEL_CONNECT"); break;
-        case P_W4_CONNECT_CANCELLED: printf("P_W4_CONNECT_CANCELLED"); break;
-        case P_W2_DISCONNECT: printf("P_W2_DISCONNECT"); break;
-        case P_W4_DISCONNECTED: printf("P_W4_DISCONNECTED"); break;
-        case P_W2_SEND_SERVICE_QUERY: printf("P_W2_SEND_SERVICE_QUERY"); break;
-        case P_W4_SERVICE_QUERY_RESULT:printf("P_W4_SERVICE_QUERY_RESULT"); break;
-        case P_W2_SEND_CHARACTERISTIC_QUERY: printf("P_W2_SEND_CHARACTERISTIC_QUERY"); break;
-        case P_W4_CHARACTERISTIC_QUERY_RESULT:printf("P_W4_CHARACTERISTIC_QUERY_RESULT"); break;
-        case P_W2_SEND_INCLUDED_SERVICE_QUERY:printf("P_W2_SEND_INCLUDED_SERVICE_QUERY"); break;
-        case P_W4_INCLUDED_SERVICE_QUERY_RESULT:printf("P_W4_INCLUDED_SERVICE_QUERY_RESULT"); break;
-        default:
-            break;
-    };
-    printf("\n");
-}
-
-static void dump_state(){
-    switch(state){
-        case W4_ON: printf("W4_ON"); break;
-        case IDLE: printf("IDLE"); break;
-        case START_SCAN: printf("START_SCAN"); break;
-        case W4_SCANNING: printf("W4_SCANNING"); break;
-        case SCANNING: printf("SCANNING"); break;
-        case STOP_SCAN: printf("STOP_SCAN"); break;
-        case W4_SCAN_STOPPED: printf("W4_SCAN_STOPPED"); break;
-    };
-    printf(" : ");
-}
 
 le_peripheral_t test_device;
 le_service_t services[20];
@@ -1206,7 +1171,7 @@ static void handle_le_central_event(le_central_event_t * event){
         case GATT_INCLUDED_SERVICE_QUERY_RESULT:
             included_service = ((le_service_event_t *) event)->service;
             printf("    *** found included service ***  start group handle %02x, end group handle %02x, uuid ", 
-                    included_service.uuid16, included_service.start_group_handle, included_service.end_group_handle);
+                    included_service.start_group_handle, included_service.end_group_handle);
             printUUID128(included_service.uuid128); 
             printf("\n");
 
