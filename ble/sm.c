@@ -302,25 +302,6 @@ static const stk_generation_method_t stk_generation_method[5][5] = {
 
 static void sm_run();
 
-// Utils
-static inline void swapX(uint8_t *src, uint8_t *dst, int len){
-    int i;
-    for (i = 0; i < len; i++)
-        dst[len - 1 - i] = src[i];
-}
-static inline void swap24(uint8_t src[3], uint8_t dst[3]){
-    swapX(src, dst, 3);
-}
-static inline void swap56(uint8_t src[7], uint8_t dst[7]){
-    swapX(src, dst, 7);
-}
-static inline void swap64(uint8_t src[8], uint8_t dst[8]){
-    swapX(src, dst, 8);
-}
-static inline void swap128(uint8_t src[16], uint8_t dst[16]){
-    swapX(src, dst, 16);
-}
-
 static void print_hex16(const char * name, uint16_t value){
     printf("%-6s 0x%04x\n", name, value);
 }
