@@ -82,9 +82,11 @@ typedef enum {
     P_W2_SEND_CHARACTERISTIC_QUERY,
     P_W4_CHARACTERISTIC_QUERY_RESULT,
 
-    P_W2_SEND_INCLUDE_SERVICE_QUERY,
-    P_W4_INCLUDE_SERVICE_QUERY_RESULT,
-
+    P_W2_SEND_INCLUDED_SERVICE_QUERY,
+    P_W4_INCLUDED_SERVICE_QUERY_RESULT,
+    P_W2_SEND_INCLUDED_SERVICE_UUID_QUERY,
+    P_W4_INCLUDED_SERVICE_UUID_QUERY_RESULT,
+    
     P_W2_CANCEL_CONNECT,
     P_W4_CONNECT_CANCELLED,
     P_W2_DISCONNECT,
@@ -109,9 +111,12 @@ typedef struct le_peripheral{
     bd_addr_t address;
     uint16_t handle;
     uint16_t mtu;
-
+    
     uint16_t start_group_handle;
     uint16_t end_group_handle;
+    
+    uint16_t start_included_service_handle;
+    uint16_t end_included_service_handle; 
 } le_peripheral_t;
 
 
@@ -122,7 +127,6 @@ typedef struct le_peripheral_event{
 } le_peripheral_event_t;
 
 typedef struct le_service{
-    uint8_t is_primary;
     uint16_t start_group_handle;
     uint16_t end_group_handle;
     uint16_t uuid16; 
@@ -159,16 +163,17 @@ le_command_status_t  le_central_disconnect(le_peripheral_t *context);
 
 // returns primary services
 le_command_status_t le_central_get_services(le_peripheral_t *context);
-// { type (8), le_peripheral_t *context, service_handle }
+// { type (8), le_peripheral_t *context, le_service * }
 
 // returns characteristics, no inlcuded services
 le_command_status_t le_central_get_characteristics_for_service(le_peripheral_t *context, le_service_t *service);
 // { type (8), le_peripheral_t *context, service_handle, le_characteristic *}
 
-// returns inlcuded services
+// Returns included services.
+// Information about service type (primary/secondary) can be retrieved either by sending an ATT find query or 
+// by comparing the service to the list of primary services obtained by calling le_central_get_services.
 le_command_status_t le_central_get_included_services_for_service(le_peripheral_t *context, le_service_t *service);
-// { type (8), le_peripheral_t *context, service_handle, le_characteristic *}
-
+// { type (8), le_peripheral_t *context, le_service * }
 
 le_command_status_t le_central_read_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);
 le_command_status_t le_central_write_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle, int length, uint8_t * data);
