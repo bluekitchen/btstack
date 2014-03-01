@@ -70,11 +70,13 @@ property_flags = {
 }
 
 services = dict()
+characteristic_indices = dict()
 presentation_formats = dict()
-current_service_uuid = list()
+current_service_uuid_string = ""
 current_service_start_handle = 0
-defines = []
 current_characteristic_uuid_string = ""
+current_characteristic_uuid_string_full = ""
+defines = []
 
 handle = 1
 total_size = 0
@@ -157,15 +159,14 @@ def add_client_characteristic_configuration(properties):
 def parseService(fout, parts, service_type):
     global handle
     global total_size
-    global current_service_uuid
+    global current_service_uuid_string
     global current_service_start_handle
     global services
 
-    keyUUID = keyForUUID(current_service_uuid)
-    if keyUUID:
+    if current_service_uuid_string:
         fout.write("\n")
-        # print "append service %s = [%d, %d]\n" % (keyUUID, current_service_start_handle, handle-1)
-        services[keyUUID] = [current_service_start_handle, handle-1]
+        # print "append service %s = [%d, %d]\n" % (current_characteristic_uuid_string, current_service_start_handle, handle-1)
+        services[current_service_uuid_string] = [current_service_start_handle, handle-1]
 
     property = property_flags['READ'];
     
@@ -188,7 +189,7 @@ def parseService(fout, parts, service_type):
     write_uuid(uuid)
     fout.write("\n")
 
-    current_service_uuid = uuid
+    current_service_uuid_string = keyForUUID(uuid)
     current_service_start_handle = handle
     handle = handle + 1
     total_size = total_size + size
@@ -237,10 +238,21 @@ def parseCharacteristic(fout, parts):
     global handle
     global total_size
     global current_characteristic_uuid_string
+    global current_characteristic_uuid_string_full
+    global characteristic_indices
 
     property_read = property_flags['READ'];
 
+    # enumerate characteristics with same UUID, using optional name tag if available
     current_characteristic_uuid_string = c_string_for_uuid(parts[1]);
+    index = 1
+    if current_characteristic_uuid_string in characteristic_indices:
+        index = characteristic_indices[current_characteristic_uuid_string] + 1
+    characteristic_indices[current_characteristic_uuid_string] = index
+    if len(parts) > 4:
+        current_characteristic_uuid_string_full += '_' + parts[4].upper().replace(' ','_')
+    else:
+        current_characteristic_uuid_string_full += ('_%02x' % index)
 
     uuid       = parseUUID(parts[1])
     uuid_size  = len(uuid)
@@ -288,7 +300,7 @@ def parseCharacteristic(fout, parts):
     else:
         write_sequence(fout,value)
     fout.write("\n")
-    defines.append('#define ATT_CHARACTERISTIC_%s_VALUE_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
+    defines.append('#define ATT_CHARACTERISTIC_%s_VALUE_HANDLE 0x%04x' % (current_characteristic_uuid_string_full, handle))
     handle = handle + 1
 
     if add_client_characteristic_configuration(properties):
