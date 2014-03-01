@@ -1007,26 +1007,22 @@ void test_client(){
             tc_state = TC_W4_CONNECT;
             break;
 
-        case TC_W2_SERVICE_REQUEST: 
+        case TC_W2_SERVICE_REQUEST:
+            printf("\n test client - SERVICE QUERY\n"); 
             status = le_central_get_services(&test_device);
             if (status != BLE_PERIPHERAL_OK) return;
             tc_state = TC_W4_SERVICE_RESULT;
             break;
 
         case TC_W2_SERVICE_BY_UUID_REQUEST: 
-            status = le_central_get_service_by_service_uuid16(&test_device, 0x1800);
+            printf("\n test client - SERVICE by SERVICE UUID QUERY\n"); 
+            status = le_central_get_service_by_service_uuid16(&test_device, 0xffff);
             if (status != BLE_PERIPHERAL_OK) return;
             tc_state = TC_W4_SERVICE_BY_UUID_RESULT;
             break;
 
         case TC_W2_CHARACTERISTIC_REQUEST:
-            if (service_index >= service_count){
-                tc_state = TC_W2_INCLUDED_SERVICE_REQUEST;
-                service_index = 0;
-            } 
-
-            le_service_t s = services[service_index];
-            printf("\n test client - TC_W2_CHARACTERISTIC_REQUEST, for service %02x [%02x/%02x]\n", s.uuid16, s.start_group_handle, s.end_group_handle);
+            printf("\n test client - CHARACTERISTIC for SERVICE 0x%02x QUERY\n", services[service_index].uuid16);
 
             status = le_central_get_characteristics_for_service(&test_device, &services[service_index]);
             if (status != BLE_PERIPHERAL_OK) return;
@@ -1036,11 +1032,8 @@ void test_client(){
             break;
            
         case TC_W2_INCLUDED_SERVICE_REQUEST:
-            if (service_index >= service_count){
-                service_index = 0;
-                tc_state = TC_W2_DISCONNECT;
-            }
-
+            printf("\n\n test client - INCLUDED SERVICE QUERY\n");
+            
             le_service_t is = services[service_index];
             printf("\n test client - TC_W2_INCLUDED_SERVICE_REQUEST, for service %02x [%02x/%02x]\n", is.uuid16, is.start_group_handle, is.end_group_handle);
 
@@ -1048,11 +1041,11 @@ void test_client(){
             if (status != BLE_PERIPHERAL_OK) return;
             service_index++;
             tc_state = TC_W4_INCLUDED_SERVICE_RESULT;
-            // printf("le_central_get_characteristics_for_service requested\n");
             break;
            
        
        case TC_W2_DISCONNECT:
+            printf("\n\n test client - DISCONNECT\n");
             status = le_central_disconnect(&test_device);
             if (status != BLE_PERIPHERAL_OK) return;
             tc_state = TC_W4_DISCONNECT;
@@ -1064,134 +1057,103 @@ void test_client(){
 }
 
 static void handle_le_central_event(le_central_event_t * event){
-    ad_event_t * advertisement_event;
-    le_peripheral_event_t * peripheral_event;
-    
-    le_service_t service, included_service;
+    le_service_t service;
     le_characteristic_t characteristic;
+    
+    int i;
+                    
+    /*if (event->status != 0){
+        tc_state = TC_DISCONNECTED;
+        test_client();
+        return;
+    }*/
 
     switch(tc_state){
+        case TC_W4_SCAN_RESULT:
+            if (event->type != GATT_ADVERTISEMENT) break;
+            printf("test client - TC_SCAN_ACTIVE\n");
+            dump_ad_event((ad_event_t*) event);
+            tc_state = TC_SCAN_ACTIVE;
+            break;
+
         case TC_W4_CONNECT:
             if (event->type != GATT_CONNECTION_COMPLETE) break;
-            peripheral_event = (le_peripheral_event_t *) event;
-            if (peripheral_event->status != 0){
-                tc_state = TC_DISCONNECTED;
-                printf("test client - TC_DISCONNECTED\n");
-                break;
-            }
-            tc_state = TC_W2_SERVICE_BY_UUID_REQUEST;
-            printf("test client - TC_CONNECTED\n");
-            test_client();
+            printf("\n test client - TC_CONNECTED\n");
+            tc_state = TC_W2_SERVICE_REQUEST;
             return;
+        
+        case TC_W4_SERVICE_RESULT:
+            switch(event->type){
+                case GATT_SERVICE_QUERY_RESULT:
+                    service = ((le_service_event_t *) event)->service;
+                    services[service_count++] = service;
+                    break;
+                case GATT_SERVICE_QUERY_COMPLETE:
+                    for (i = 0; i < service_count; i++){
+                        printf("    *** found service ***  uuid %02x, start group handle %02x, end group handle %02x \n", 
+                            services[i].uuid16, services[i].start_group_handle, services[i].end_group_handle);
+                    }
+                    tc_state = TC_W2_SERVICE_BY_UUID_REQUEST;
+                    break;
+                default:
+                    break;
+            }
+            break;
+
         case TC_W4_SERVICE_BY_UUID_RESULT:
-            service = ((le_service_event_t *) event)->service;
-            printf("    *** found service by uuid *** start group handle %02x, end group handle %02x \n", service.start_group_handle, service.end_group_handle);
-            tc_state = TC_W2_DISCONNECT; 
-            test_client();
-            return;
-        // case TC_W4_SERVICE_BY_UUID_COMPLETE:...
-        default:
-            break;
-    }
-
-    switch (event->type){
-        case GATT_ADVERTISEMENT:
-            if (tc_state != TC_W4_SCAN_RESULT) return;
-            
-            advertisement_event = (ad_event_t*) event;
-            dump_ad_event(advertisement_event);
-            tc_state = TC_SCAN_ACTIVE;
-            printf("test client - TC_SCAN_ACTIVE\n");
-            
-            break;
-        case GATT_CONNECTION_COMPLETE:
-            printf("test client - GATT_CONNECTION_COMPLETE\n");
-            // if (tc_state != TC_W4_CONNECT || tc_state != TC_W4_DISCONNECT) return;
-
-            peripheral_event = (le_peripheral_event_t *) event;
-            if (peripheral_event->status == 0){
-                // printf("handle_le_central_event::device is connected\n");
-                tc_state = TC_W2_SERVICE_REQUEST;
-                printf("test client - TC_CONNECTED\n");
-                test_client();
-            } else {
-                // printf("handle_le_central_event::disconnected with status %02x \n", peripheral_event->status);
-                tc_state = TC_DISCONNECTED;
-                printf("test client - TC_DISCONNECTED\n");
+            switch(event->type){
+                case GATT_SERVICE_QUERY_RESULT:
+                    service = ((le_service_event_t *) event)->service;
+                    printf("    *** found service by uuid *** start group handle %02x, end group handle %02x \n", service.start_group_handle, service.end_group_handle);
+                    break;
+                case GATT_SERVICE_QUERY_COMPLETE:
+                    tc_state = TC_W2_CHARACTERISTIC_REQUEST;
+                    break;
+                default:
+                    break;
             }
             break;
 
-        case GATT_SERVICE_QUERY_RESULT:
-            if (tc_state == TC_W4_SERVICE_BY_UUID_RESULT){
-                printf("    *** found service ***  uuid %02x, start group handle %02x, end group handle %02x", 
-                    service.uuid16, service.start_group_handle, service.end_group_handle);
-
-                tc_state = TC_W2_DISCONNECT;
-                test_client();
-                break;
+        case TC_W4_CHARACTERISTIC_RESULT:
+            switch(event->type){
+                case GATT_CHARACTERISTIC_QUERY_RESULT:
+                    characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    printf("    *** found characteristic *** properties %x, handle %02x, uuid  %02x\n", characteristic.properties, characteristic.value_handle, characteristic.uuid16);
+                    break;
+                case GATT_CHARACTERISTIC_QUERY_COMPLETE:
+                    if (service_index == service_count) {
+                        tc_state = TC_W2_INCLUDED_SERVICE_REQUEST; 
+                        service_index = 0;
+                        break;
+                    }
+                    tc_state = TC_W2_CHARACTERISTIC_REQUEST;
+                    break;
+                default:
+                    break;
             }
-            
-            service = ((le_service_event_t *) event)->service;
-            services[service_count++] = service;
-            test_client();
             break;
 
-        case GATT_SERVICE_QUERY_COMPLETE:
-            peripheral_event = (le_peripheral_event_t*) event;
-            // tc_state = TC_W2_CHARACTERISTIC_REQUEST;
-            int i;
-            for (i = 0; i < service_count; i++){
-                printf("    *** found service ***  uuid %02x, start group handle %02x, end group handle %02x", 
-                    services[i].uuid16, services[i].start_group_handle, services[i].end_group_handle);
-                printf("\n");
+        case TC_W4_INCLUDED_SERVICE_RESULT:
+            switch(event->type){
+                case GATT_INCLUDED_SERVICE_QUERY_RESULT:
+                    service = ((le_service_event_t *) event)->service;
+                    printf("    *** found included service *** start group handle %02x, end group handle %02x \n", service.start_group_handle, service.end_group_handle);
+                    break;
+                case GATT_INCLUDED_SERVICE_QUERY_COMPLETE:
+                    tc_state = TC_DISCONNECTED;
+                    service_index = 0;
+                    break;
+                default:
+                    break;
             }
-
-            test_client();
-            tc_state = TC_W2_SERVICE_BY_UUID_REQUEST;
-            break;
-        
-        case GATT_CHARACTERISTIC_QUERY_RESULT:
-            characteristic = ((le_characteristic_event_t *) event)->characteristic;
-            printf("    *** found characteristic *** properties %x, handle %02x, uuid  %02x\n", characteristic.properties, characteristic.value_handle, characteristic.uuid16);
-            //printUUID128(characteristic.uuid128);
-            test_client();
-            break;
-
-        case GATT_CHARACTERISTIC_QUERY_COMPLETE:
-            peripheral_event = (le_peripheral_event_t*) event;
-            if (service_index == service_count) {
-                tc_state = TC_W2_INCLUDED_SERVICE_REQUEST; 
-                break;
-            }
-            tc_state = TC_W2_CHARACTERISTIC_REQUEST;
-            test_client();
-            
-            break;
-        
-        case GATT_INCLUDED_SERVICE_QUERY_RESULT:
-            included_service = ((le_service_event_t *) event)->service;
-            printf("    *** found included service ***  start group handle %02x, end group handle %02x, uuid ", 
-                    included_service.start_group_handle, included_service.end_group_handle);
-            printUUID128(included_service.uuid128); 
-            printf("\n");
-
-            test_client();
-            break;
-
-        case GATT_INCLUDED_SERVICE_QUERY_COMPLETE:
-            peripheral_event = (le_peripheral_event_t*) event;
-            if (service_index == service_count) {
-                tc_state = TC_W2_DISCONNECT; 
-                break;
-            }
-            tc_state = TC_W2_INCLUDED_SERVICE_REQUEST;
-            test_client();
-            
             break;
 
         default:
+            printf("Client, unhandled state %d\n", tc_state);
             break;
     }
+
+    test_client();
 }
 
 
