@@ -350,7 +350,6 @@ static void handle_peripheral_list(){
                 break;
 
             case P_W2_SEND_INCLUDED_SERVICE_UUID_QUERY:
-                printf("send included service UUID query\n"); 
                 status = send_gatt_included_service_uuid_request(peripheral);
                 if (status != BLE_PERIPHERAL_OK) break;
                 peripheral->state = P_W4_INCLUDED_SERVICE_UUID_QUERY_RESULT;
@@ -839,6 +838,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             break;
         case ATT_FIND_BY_TYPE_VALUE_RESPONSE:
         {
+            printf("ATT_FIND_BY_TYPE_VALUE_RESPONSE \n");
             uint8_t pair_size = 4;
             le_service_t service;
             le_service_event_t event;
@@ -875,12 +875,15 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                         case P_W4_INCLUDED_SERVICE_QUERY_RESULT:
                             peripheral->state = P_CONNECTED;
                             send_gatt_complete_event(peripheral, GATT_INCLUDED_SERVICE_QUERY_COMPLETE, 0);
+                            break;
 
                         case P_W4_SERVICE_BY_SERVICE_UUID_RESULT:
                             peripheral->state = P_CONNECTED;
                             send_gatt_complete_event(peripheral, GATT_SERVICE_QUERY_COMPLETE, 0);
                             break;
+
                         default:
+                            printf("ATT_ERROR_ATTRIBUTE_NOT_FOUND in 0x%02x\n", peripheral->state);
                             return;
                     }
                     break;
@@ -955,9 +958,9 @@ int service_index = 0;
 
 // static bd_addr_t test_device_addr = {0x1c, 0xba, 0x8c, 0x20, 0xc7, 0xf6};
 // static bd_addr_t test_device_addr = {0x00, 0x1b, 0xdc, 0x05, 0xb5, 0xdc}; // SensorTag 1
-// static bd_addr_t test_device_addr = {0x34, 0xb1, 0xf7, 0xd1, 0x77, 0x9b}; // SensorTag 2
+static bd_addr_t test_device_addr = {0x34, 0xb1, 0xf7, 0xd1, 0x77, 0x9b}; // SensorTag 2
 
-static bd_addr_t test_device_addr = {0x00, 0x02, 0x72, 0xdc, 0x31, 0xc1}; // delock40 
+// static bd_addr_t test_device_addr = {0x00, 0x02, 0x72, 0xdc, 0x31, 0xc1}; // delock40 
 
 typedef enum {
     TC_IDLE,
@@ -993,11 +996,9 @@ void test_client(){
 
     switch(tc_state){
         case TC_IDLE: 
-            // printf("test client - TC_IDLE\n");
             status = le_central_start_scan(); 
             if (status != BLE_PERIPHERAL_OK) return;
             tc_state = TC_W4_SCAN_RESULT;
-            // printf("test client - TC_W4_SCAN_RESULT\n");
             break;
 
         case TC_SCAN_ACTIVE: 
@@ -1008,46 +1009,39 @@ void test_client(){
             break;
 
         case TC_W2_SERVICE_REQUEST:
-            printf("\n test client - SERVICE QUERY\n"); 
             status = le_central_get_services(&test_device);
             if (status != BLE_PERIPHERAL_OK) return;
+            printf("\n test client - SERVICE QUERY\n"); 
             tc_state = TC_W4_SERVICE_RESULT;
             break;
 
         case TC_W2_SERVICE_BY_UUID_REQUEST: 
-            printf("\n test client - SERVICE by SERVICE UUID QUERY\n"); 
             status = le_central_get_service_by_service_uuid16(&test_device, 0xffff);
             if (status != BLE_PERIPHERAL_OK) return;
+            printf("\n test client - SERVICE by SERVICE UUID QUERY\n"); 
             tc_state = TC_W4_SERVICE_BY_UUID_RESULT;
             break;
 
         case TC_W2_CHARACTERISTIC_REQUEST:
-            printf("\n test client - CHARACTERISTIC for SERVICE 0x%02x QUERY\n", services[service_index].uuid16);
-
             status = le_central_get_characteristics_for_service(&test_device, &services[service_index]);
             if (status != BLE_PERIPHERAL_OK) return;
+            printf("\n test client - CHARACTERISTIC for SERVICE 0x%02x QUERY\n", services[service_index].uuid16);
             service_index++;
             tc_state = TC_W4_CHARACTERISTIC_RESULT;
-            // printf("le_central_get_characteristics_for_service requested\n");
             break;
            
         case TC_W2_INCLUDED_SERVICE_REQUEST:
-            printf("\n\n test client - INCLUDED SERVICE QUERY\n");
-            
-            le_service_t is = services[service_index];
-            printf("\n test client - TC_W2_INCLUDED_SERVICE_REQUEST, for service %02x [%02x/%02x]\n", is.uuid16, is.start_group_handle, is.end_group_handle);
-
             status = le_central_get_included_services_for_service(&test_device, &services[service_index]);
             if (status != BLE_PERIPHERAL_OK) return;
+            printf("\n test client - INCLUDED SERVICE QUERY, for service %02x\n", services[service_index].uuid16);
             service_index++;
             tc_state = TC_W4_INCLUDED_SERVICE_RESULT;
             break;
-           
        
        case TC_W2_DISCONNECT:
-            printf("\n\n test client - DISCONNECT\n");
             status = le_central_disconnect(&test_device);
             if (status != BLE_PERIPHERAL_OK) return;
+            printf("\n\n test client - DISCONNECT\n");
             tc_state = TC_W4_DISCONNECT;
 
         default: 
@@ -1093,6 +1087,7 @@ static void handle_le_central_event(le_central_event_t * event){
                         printf("    *** found service ***  uuid %02x, start group handle %02x, end group handle %02x \n", 
                             services[i].uuid16, services[i].start_group_handle, services[i].end_group_handle);
                     }
+                    printf("DONE\n");
                     tc_state = TC_W2_SERVICE_BY_UUID_REQUEST;
                     break;
                 default:
@@ -1108,6 +1103,7 @@ static void handle_le_central_event(le_central_event_t * event){
                     break;
                 case GATT_SERVICE_QUERY_COMPLETE:
                     tc_state = TC_W2_CHARACTERISTIC_REQUEST;
+                    printf("DONE\n");
                     break;
                 default:
                     break;
@@ -1121,6 +1117,7 @@ static void handle_le_central_event(le_central_event_t * event){
                     printf("    *** found characteristic *** properties %x, handle %02x, uuid  %02x\n", characteristic.properties, characteristic.value_handle, characteristic.uuid16);
                     break;
                 case GATT_CHARACTERISTIC_QUERY_COMPLETE:
+                    printf("DONE\n");
                     if (service_index == service_count) {
                         tc_state = TC_W2_INCLUDED_SERVICE_REQUEST; 
                         service_index = 0;
@@ -1140,14 +1137,25 @@ static void handle_le_central_event(le_central_event_t * event){
                     printf("    *** found included service *** start group handle %02x, end group handle %02x \n", service.start_group_handle, service.end_group_handle);
                     break;
                 case GATT_INCLUDED_SERVICE_QUERY_COMPLETE:
-                    tc_state = TC_DISCONNECTED;
-                    service_index = 0;
+                    printf("DONE\n");
+                    if (service_index == service_count) {
+                        tc_state = TC_DISCONNECTED; 
+                        service_index = 0;
+                        break;
+                    }
+                    tc_state = TC_W2_INCLUDED_SERVICE_REQUEST;
                     break;
                 default:
                     break;
             }
             break;
 
+        case TC_W2_SERVICE_REQUEST:
+        case TC_W2_SERVICE_BY_UUID_REQUEST:
+        case TC_W2_CHARACTERISTIC_REQUEST:
+        case TC_W2_INCLUDED_SERVICE_REQUEST:
+        case TC_W2_DISCONNECT:
+            break;
         default:
             printf("Client, unhandled state %d\n", tc_state);
             break;
