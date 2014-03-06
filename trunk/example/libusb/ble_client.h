@@ -83,6 +83,8 @@ typedef enum {
     
     P_W2_SEND_CHARACTERISTIC_QUERY,
     P_W4_CHARACTERISTIC_QUERY_RESULT,
+    P_W2_SEND_CHARACTERISTIC_BY_UUID_QUERY,
+    P_W4_CHARACTERISTIC_BY_UUID_QUERY_RESULT,
 
     P_W2_SEND_INCLUDED_SERVICE_QUERY,
     P_W4_INCLUDED_SERVICE_QUERY_RESULT,
@@ -120,8 +122,15 @@ typedef struct le_peripheral{
     uint16_t start_group_handle;
     uint16_t end_group_handle;
 
-    uint16_t start_included_service_handle;
-    uint16_t end_included_service_handle; 
+    uint16_t query_start_handle;
+    uint16_t query_end_handle; 
+
+    uint8_t  characteristic_properties;
+    uint16_t characteristic_start_handle;
+    uint16_t characteristic_value_handle;
+
+    uint8_t  filter_with_uuid;
+
 } le_peripheral_t;
 
 
@@ -145,7 +154,9 @@ typedef struct le_service_event{
 
 typedef struct le_characteristic{
     uint8_t  properties;
+    uint16_t start_handle;
     uint16_t value_handle;
+    uint16_t end_handle;
     uint16_t uuid16;
     uint8_t  uuid128[16];
 } le_characteristic_t;
@@ -175,15 +186,20 @@ le_command_status_t le_central_get_services(le_peripheral_t *context);
 le_command_status_t le_central_get_service_by_service_uuid16(le_peripheral_t *context, uint16_t uuid16);
 le_command_status_t le_central_get_service_by_service_uuid128(le_peripheral_t *context, uint8_t * uuid);
 
-// returns characteristics, no inlcuded services
-le_command_status_t le_central_get_characteristics_for_service(le_peripheral_t *context, le_service_t *service);
-// { type (8), le_peripheral_t *context, service_handle, le_characteristic *}
-
 // Returns included services.
 // Information about service type (primary/secondary) can be retrieved either by sending an ATT find query or 
 // by comparing the service to the list of primary services obtained by calling le_central_get_services.
 le_command_status_t le_central_get_included_services_for_service(le_peripheral_t *context, le_service_t *service);
 // { type (8), le_peripheral_t *context, le_service * }
+
+// returns characteristics, no included services
+le_command_status_t le_central_get_characteristics_for_service(le_peripheral_t *context, le_service_t *service);
+// { type (8), le_peripheral_t *context, service_handle, le_characteristic *}
+
+le_command_status_t le_central_get_characteristics_by_uuid16_for_service_range (le_peripheral_t *context, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
+// { type (8), le_peripheral_t *context, service_handle, le_characteristic *}
+le_command_status_t le_central_get_characteristics_by_uuid128_for_service_range(le_peripheral_t *context, uint16_t start_handle, uint16_t end_handle, uint8_t * uuid);
+// { type (8), le_peripheral_t *context, service_handle, le_characteristic *}
 
 
 le_command_status_t le_central_read_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);
