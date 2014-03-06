@@ -527,6 +527,15 @@ le_command_status_t le_central_discover_characteristics_for_handle_range_by_uuid
     return BLE_PERIPHERAL_OK;
 }
 
+le_command_status_t le_central_discover_characteristics_for_service_by_uuid16 (le_peripheral_t *peripheral, le_service_t *service, uint16_t  uuid16){
+    return le_central_discover_characteristics_for_handle_range_by_uuid16(peripheral, service->start_group_handle, service->end_group_handle, uuid16);
+}
+
+le_command_status_t le_central_discover_characteristics_for_service_by_uuid128(le_peripheral_t *peripheral, le_service_t *service, uint8_t * uuid128){
+    return le_central_discover_characteristics_for_handle_range_by_uuid128(peripheral, service->start_group_handle, service->end_group_handle, uuid128);
+}
+
+
 void test_client();
 
 static void gatt_client_run(){

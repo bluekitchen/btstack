@@ -203,8 +203,8 @@ le_command_status_t le_central_discover_characteristics_in_handle_range_by_uuid1
 // { type (8), le_peripheral_t *context, service_handle, le_characteristic *}
 
 // more convenience
-le_command_status_t le_central_discover_characteristics_for_service_with_uuid16 (le_peripheral_t *context, le_service_t *service, uint16_t  uuid16);
-le_command_status_t le_central_discover_characteristics_for_service_with_uuid128(le_peripheral_t *context, le_service_t *service, uint8_t * uuid128);
+le_command_status_t le_central_discover_characteristics_for_service_by_uuid16 (le_peripheral_t *context, le_service_t *service, uint16_t  uuid16);
+le_command_status_t le_central_discover_characteristics_for_service_by_uuid128(le_peripheral_t *context, le_service_t *service, uint8_t * uuid128);
 
 
 
