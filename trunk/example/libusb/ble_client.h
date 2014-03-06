@@ -85,6 +85,8 @@ typedef enum {
     P_W4_CHARACTERISTIC_QUERY_RESULT,
     P_W2_SEND_CHARACTERISTIC_WITH_UUID_QUERY,
     P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT,
+    P_W2_SEND_CHARACTERISTIC_DESCRIPTOR_QUERY,
+    P_W4_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT,
 
     P_W2_SEND_INCLUDED_SERVICE_QUERY,
     P_W4_INCLUDED_SERVICE_QUERY_RESULT,
@@ -166,6 +168,18 @@ typedef struct le_characteristic_event{
     le_characteristic_t characteristic; 
 } le_characteristic_event_t;
 
+typedef struct le_characteristic_descriptor{
+    uint16_t handle;
+    uint16_t uuid16;
+} le_characteristic_descriptor_t;
+
+
+typedef struct le_characteristic_descriptor_event{
+    uint8_t  type;
+    le_characteristic_descriptor_t characteristic_descriptor; 
+} le_characteristic_descriptor_event_t;
+
+
 void le_central_init();
 void le_central_register_handler(void (*le_callback)(le_central_event_t * event));
 
@@ -206,6 +220,7 @@ le_command_status_t le_central_discover_characteristics_in_handle_range_by_uuid1
 le_command_status_t le_central_discover_characteristics_for_service_by_uuid16 (le_peripheral_t *context, le_service_t *service, uint16_t  uuid16);
 le_command_status_t le_central_discover_characteristics_for_service_by_uuid128(le_peripheral_t *context, le_service_t *service, uint8_t * uuid128);
 
+le_command_status_t le_central_discover_characteristic_descriptors(le_peripheral_t *context, le_characteristic_t *characteristic);
 
 
 le_command_status_t le_central_read_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);
