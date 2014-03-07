@@ -220,6 +220,7 @@ le_command_status_t le_central_discover_characteristics_in_handle_range_by_uuid1
 le_command_status_t le_central_discover_characteristics_for_service_by_uuid16 (le_peripheral_t *context, le_service_t *service, uint16_t  uuid16);
 le_command_status_t le_central_discover_characteristics_for_service_by_uuid128(le_peripheral_t *context, le_service_t *service, uint8_t * uuid128);
 
+// returns handle and uuid16 of a descriptor
 le_command_status_t le_central_discover_characteristic_descriptors(le_peripheral_t *context, le_characteristic_t *characteristic);
 
 
