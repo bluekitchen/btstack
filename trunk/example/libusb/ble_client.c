@@ -85,11 +85,17 @@ static linked_list_t le_connections = NULL;
 static uint16_t att_client_start_handle = 0x0001;
     
 void (*le_central_callback)(le_central_event_t * event);
+void (*le_central_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = NULL;
+
+static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
+static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 void le_central_init(){
     state = W4_ON;
     le_connections = NULL;
     att_client_start_handle = 0x0000;
+    l2cap_register_fixed_channel(att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+    l2cap_register_packet_handler(packet_handler);
 }
 
 static void dummy_notify(le_central_event_t* event){}
@@ -101,6 +107,9 @@ void le_central_register_handler(void (*le_callback)(le_central_event_t* event))
     } 
 }
 
+void le_central_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+    le_central_packet_handler = handler;
+}
 
 static void gatt_client_run();
 
@@ -569,8 +578,6 @@ le_command_status_t le_central_discover_characteristic_descriptors(le_peripheral
     return BLE_PERIPHERAL_OK;
 }
 
-void test_client();
-
 static void gatt_client_run(){
     if (state == W4_ON) return;
     
@@ -594,11 +601,10 @@ static void gatt_client_run(){
         default:
             break;
     }
-    test_client();
 }
 
 
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     if (packet_type != HCI_EVENT_PACKET) return;
     
@@ -608,6 +614,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 			if (packet[2] == HCI_STATE_WORKING) {
                 printf("BTstack activated, get started!\n");
                 state = IDLE;
+
             }
 			break;
 
@@ -691,6 +698,10 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             break;
     }
     gatt_client_run();
+
+    // forward to app
+    if (!le_central_packet_handler) return;
+    le_central_packet_handler(packet_type, packet, size);
 }
 
 static char * att_errors[] = {
@@ -970,7 +981,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             break;
         }
         case ATT_FIND_INFORMATION_REPLY:
-            {
+        {
             uint8_t pair_size = 4;
             le_characteristic_descriptor_t descriptor;
             le_characteristic_descriptor_event_t event;
@@ -988,8 +999,6 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             trigger_next_characteristic_descriptor_query(peripheral, descriptor.handle);
             break;
         }
-            break;
-
         case ATT_ERROR_RESPONSE:
             // printf("ATT_ERROR_RESPONSE error %u, state %u\n", packet[4], peripheral->state);
             switch (packet[4]){
@@ -1037,37 +1046,6 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
     gatt_client_run();
 }
 
-
-static hci_uart_config_t  config;
-void setup(void){
-    /// GET STARTED with BTstack ///
-    btstack_memory_init();
-    run_loop_init(RUN_LOOP_POSIX);
-        
-    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-    hci_dump_open("/tmp/ble_client.pklg", HCI_DUMP_PACKETLOGGER);
-
-  // init HCI
-    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-    bt_control_t       * control   = NULL;
-#ifndef  HAVE_UART_CC2564
-    hci_transport_t    * transport = hci_transport_usb_instance();
-#else
-    hci_transport_t    * transport = hci_transport_h4_instance();
-    control   = bt_control_cc256x_instance();
-    // config.device_name   = "/dev/tty.usbserial-A600eIDu";   // 5438
-    config.device_name   = "/dev/tty.usbserial-A800cGd0";   // 5529
-    config.baudrate_init = 115200;
-    config.baudrate_main = 0;
-    config.flowcontrol = 1;
-#endif        
-    hci_init(transport, &config, control, remote_db);
-
-    l2cap_init();
-    l2cap_register_fixed_channel(att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
-    l2cap_register_packet_handler(packet_handler);
-}
-
 // TEST CODE
 
 
@@ -1100,21 +1078,6 @@ static void dump_descriptor(le_characteristic_descriptor_t * descriptor){
     printf("    *** descriptor *** handle 0x%02x, uuid16 0x%02x\n", descriptor->handle, descriptor->uuid16);
 }
 
-static void dump_client_event(le_central_event_t *event){
-    switch (event->type){
-        case GATT_ADVERTISEMENT                           : printf("GATT_ADVERTISEMENT\n"); break;
-        case GATT_CONNECTION_COMPLETE                     : printf("GATT_CONNECTION_COMPLETE\n"); break;
-        case GATT_SERVICE_QUERY_RESULT                    : printf("GATT_SERVICE_QUERY_RESULT\n"); break;
-        case GATT_SERVICE_QUERY_COMPLETE                  : printf("GATT_SERVICE_QUERY_COMPLETE\n"); break;
-        case GATT_CHARACTERISTIC_QUERY_RESULT             : printf("GATT_CHARACTERISTIC_QUERY_RESULT\n"); break;
-        case GATT_CHARACTERISTIC_QUERY_COMPLETE           : printf("GATT_CHARACTERISTIC_QUERY_COMPLETE\n"); break;
-        case GATT_INCLUDED_SERVICE_QUERY_RESULT           : printf("GATT_INCLUDED_SERVICE_QUERY_RESULT\n"); break;
-        case GATT_INCLUDED_SERVICE_QUERY_COMPLETE         : printf("GATT_INCLUDED_SERVICE_QUERY_COMPLETE\n"); break;
-        case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT  : printf("GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT\n"); break;
-        case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_COMPLETE: printf("GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_COMPLETE\n"); break;
-    }
-}
-
 le_peripheral_t test_device;
 le_service_t services[100];
 le_characteristic_t characteristics[100];
@@ -1134,98 +1097,23 @@ static uint8_t   test_device_addr_type = 0;
 typedef enum {
     TC_IDLE,
     TC_W4_SCAN_RESULT,
-    TC_W2_CONNECT,
     TC_W4_CONNECT,
 
     TC_W4_SERVICE_RESULT,
-
-    TC_W2_SERVICE_WITH_UUID_REQUEST,
     TC_W4_SERVICE_WITH_UUID_RESULT,
 
-    TC_W2_CHARACTERISTIC_REQUEST,
     TC_W4_CHARACTERISTIC_RESULT,
-    
-    TC_W2_CHARACTERISTIC_WITH_UUID_REQUEST,
     TC_W4_CHARACTERISTIC_WITH_UUID_RESULT,
-    
-    TC_W2_CHARACTERISTIC_DESCRIPTOR_REQUEST,
     TC_W4_CHARACTERISTIC_DESCRIPTOR_RESULT,
 
-    TC_W2_INCLUDED_SERVICE_REQUEST,
     TC_W4_INCLUDED_SERVICE_RESULT,
     
-    TC_W2_DISCONNECT,
     TC_W4_DISCONNECT,
     TC_DISCONNECTED
 
 } tc_state_t;
 
 tc_state_t tc_state = TC_IDLE;
-
-void test_client(){
-    le_command_status_t status;
-    // dump_state();
-    // dump_peripheral_state(test_device.state);
-
-    switch(tc_state){
-        case TC_IDLE: 
-            tc_state = TC_W4_SCAN_RESULT;
-            status = le_central_start_scan(); 
-            break;
-
-        case TC_W2_SERVICE_WITH_UUID_REQUEST: 
-            status = le_central_discover_primary_services_by_uuid16(&test_device, 0xffff);
-            if (status != BLE_PERIPHERAL_OK) return;
-            printf("\n test client - SERVICE by SERVICE UUID QUERY\n"); 
-            tc_state = TC_W4_SERVICE_WITH_UUID_RESULT;
-            break;
-
-        case TC_W2_CHARACTERISTIC_REQUEST:
-            status = le_central_discover_characteristics_for_service(&test_device, &services[service_index]);
-            if (status != BLE_PERIPHERAL_OK) return;
-            printf("\n test client - CHARACTERISTIC for SERVICE 0x%02x QUERY\n", services[service_index].uuid16);
-            tc_state = TC_W4_CHARACTERISTIC_RESULT;
-            break;
-        
-        case TC_W2_CHARACTERISTIC_WITH_UUID_REQUEST:
-            status = le_central_discover_characteristics_for_handle_range_by_uuid16(&test_device, 
-                    services[0].start_group_handle, services[0].end_group_handle, characteristics[0].uuid16);
-
-            if (status != BLE_PERIPHERAL_OK) return;
-            printf("\n test client - CHARACTERISTIC for SERVICE 0x%02x QUERY with UUID 0x%02x\n", 
-                            services[0].uuid16, characteristics[0].uuid16);
-            tc_state = TC_W4_CHARACTERISTIC_WITH_UUID_RESULT;
-            break;
-        
-        case TC_W2_CHARACTERISTIC_DESCRIPTOR_REQUEST:
-            printf("\n test client - DESCRIPTOR for CHARACTERISTIC \n");
-
-            dump_characteristic(&characteristics[0]);
-
-            tc_state = TC_W4_CHARACTERISTIC_DESCRIPTOR_RESULT;
-            status = le_central_discover_characteristic_descriptors(&test_device, &characteristics[0]);
-
-            // if (status != BLE_PERIPHERAL_OK) return;
-            break;
-
-        case TC_W2_INCLUDED_SERVICE_REQUEST:
-            status = le_central_find_included_services_for_service(&test_device, &services[service_index]);
-            if (status != BLE_PERIPHERAL_OK) return;
-            printf("\n test client - INCLUDED SERVICE QUERY, for service %02x\n", services[service_index].uuid16);
-            tc_state = TC_W4_INCLUDED_SERVICE_RESULT;
-            break;
-       
-       case TC_W2_DISCONNECT:
-            status = le_central_disconnect(&test_device);
-            if (status != BLE_PERIPHERAL_OK) return;
-            printf("\n\n test client - DISCONNECT ");
-            tc_state = TC_W4_DISCONNECT;
-
-        default: 
-            break;
-
-    }
-}
 
 static void handle_le_central_event(le_central_event_t * event){
     le_service_t service;
@@ -1251,23 +1139,25 @@ static void handle_le_central_event(le_central_event_t * event){
 
         case TC_W4_CONNECT:
             if (event->type != GATT_CONNECTION_COMPLETE) break;
-            printf("\n test client - CONNECTED, query services now\n");
-            
             tc_state = TC_W4_SERVICE_RESULT;
+            printf("\n test client - CONNECTED, query services now\n");
             le_central_discover_primary_services(&test_device);
             break;
         
         case TC_W4_SERVICE_RESULT:
-            printf("\n test client - TC_W4_SERVICE_RESULT\n");
             switch(event->type){
                 case GATT_SERVICE_QUERY_RESULT:
                     service = ((le_service_event_t *) event)->service;
                     dump_service(&service);
                     services[service_count++] = service;
                     break;
+                
                 case GATT_SERVICE_QUERY_COMPLETE:
-                    tc_state = TC_W2_SERVICE_WITH_UUID_REQUEST;
+                    tc_state = TC_W4_SERVICE_WITH_UUID_RESULT;
+                    printf("\n test client - SERVICE by SERVICE UUID QUERY\n"); 
+                    le_central_discover_primary_services_by_uuid16(&test_device, 0xffff);
                     break;
+                
                 default:
                     break;
             }
@@ -1279,13 +1169,14 @@ static void handle_le_central_event(le_central_event_t * event){
                     service = ((le_service_event_t *) event)->service;
                     dump_service(&service);
                     break;
+                
                 case GATT_SERVICE_QUERY_COMPLETE:
-                    printf("GATT_SERVICE_QUERY_COMPLETE\n");
-                    tc_state = TC_W2_CHARACTERISTIC_REQUEST;
+                    tc_state = TC_W4_CHARACTERISTIC_RESULT;
                     service_index = 0;
+                    printf("\n test client - CHARACTERISTIC for SERVICE 0x%02x QUERY\n", services[service_index].uuid16);
+                    le_central_discover_characteristics_for_service(&test_device, &services[service_index]);
                     break;
                 default:
-                    dump_client_event(event);
                     break;
             }
             break;
@@ -1300,13 +1191,19 @@ static void handle_le_central_event(le_central_event_t * event){
 
                 case GATT_CHARACTERISTIC_QUERY_COMPLETE:
                     if (service_index < service_count - 1) {
-                        tc_state = TC_W2_CHARACTERISTIC_REQUEST;
-                        service_index++;
+                        tc_state = TC_W4_CHARACTERISTIC_RESULT;
+                        service = services[service_index++];
+                        printf("\n test client - CHARACTERISTIC for SERVICE 0x%02x QUERY\n", service.uuid16);
+                        le_central_discover_characteristics_for_service(&test_device, &service);
                         break;
                     }
-                    tc_state = TC_W2_CHARACTERISTIC_WITH_UUID_REQUEST; 
+                    tc_state = TC_W4_CHARACTERISTIC_WITH_UUID_RESULT; 
                     service_index = 0;
                     characteristic_index = 0;
+                    printf("\n test client - CHARACTERISTIC for SERVICE 0x%02x QUERY with UUID 0x%02x\n", 
+                            services[0].uuid16, characteristics[0].uuid16);
+                    le_central_discover_characteristics_for_handle_range_by_uuid16(&test_device, 
+                        services[0].start_group_handle, services[0].end_group_handle, characteristics[0].uuid16);
                     break;
                 default:
                     break;
@@ -1320,7 +1217,10 @@ static void handle_le_central_event(le_central_event_t * event){
                     dump_characteristic(&characteristic);
                     break;
                 case GATT_CHARACTERISTIC_QUERY_COMPLETE:
-                    tc_state = TC_W2_CHARACTERISTIC_DESCRIPTOR_REQUEST; 
+                    tc_state = TC_W4_CHARACTERISTIC_DESCRIPTOR_RESULT;
+                    printf("\n test client - DESCRIPTOR for CHARACTERISTIC \n");
+                    dump_characteristic(&characteristics[0]);
+                    le_central_discover_characteristic_descriptors(&test_device, &characteristics[0]);
                     break;
                 default:
                     break;
@@ -1335,7 +1235,10 @@ static void handle_le_central_event(le_central_event_t * event){
                     break;
                 case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_COMPLETE:
                     service_index = 0;
-                    tc_state = TC_W2_INCLUDED_SERVICE_REQUEST; 
+                    service = services[service_index];
+                    tc_state = TC_W4_INCLUDED_SERVICE_RESULT;
+                    printf("\n test client - INCLUDED SERVICE QUERY, for service %02x\n", service.uuid16);
+                    le_central_find_included_services_for_service(&test_device, &service);
                     break;
                 default:
                     break;
@@ -1350,12 +1253,14 @@ static void handle_le_central_event(le_central_event_t * event){
                     break;
                 case GATT_INCLUDED_SERVICE_QUERY_COMPLETE:
                     if (service_index < service_count - 1) {
-                        tc_state = TC_W2_INCLUDED_SERVICE_REQUEST;
-                        service_index++;
+                        service = services[service_index++];
+                        printf("\n test client - INCLUDED SERVICE QUERY, for service %02x\n", service.uuid16);
+                        le_central_find_included_services_for_service(&test_device, &service);
                         break;
                     }
-                    tc_state = TC_W2_DISCONNECT; 
-                    service_index = 0;
+                    tc_state = TC_W4_DISCONNECT;
+                    printf("\n\n test client - DISCONNECT ");
+                    le_central_disconnect(&test_device);
                     break;
                 default:
                     break;
@@ -1363,16 +1268,64 @@ static void handle_le_central_event(le_central_event_t * event){
             break;
 
         case TC_W4_DISCONNECT:
-            if (event->type == GATT_CONNECTION_COMPLETE ){
-                printf("  DONE\n");
-            }
+            if (event->type != GATT_CONNECTION_COMPLETE ) break;
+            printf("  DONE\n");
             break;
         default:
             printf("Client, unhandled state %d\n", tc_state);
             break;
     }
+}
 
-    test_client();
+static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+
+    if (packet_type != HCI_EVENT_PACKET) return;
+    
+    switch (packet[0]) {
+        case BTSTACK_EVENT_STATE:
+            // BTstack activated, get started
+            if (packet[2] == HCI_STATE_WORKING) {
+                printf("BTstack activated, get started!\n");
+
+                tc_state = TC_W4_SCAN_RESULT;
+                le_central_start_scan(); 
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+
+
+static hci_uart_config_t  config;
+void setup(void){
+    /// GET STARTED with BTstack ///
+    btstack_memory_init();
+    run_loop_init(RUN_LOOP_POSIX);
+        
+    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
+    hci_dump_open("/tmp/ble_client.pklg", HCI_DUMP_PACKETLOGGER);
+
+  // init HCI
+    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
+    bt_control_t       * control   = NULL;
+#ifndef  HAVE_UART_CC2564
+    hci_transport_t    * transport = hci_transport_usb_instance();
+#else
+    hci_transport_t    * transport = hci_transport_h4_instance();
+    control   = bt_control_cc256x_instance();
+    // config.device_name   = "/dev/tty.usbserial-A600eIDu";   // 5438
+    config.device_name   = "/dev/tty.usbserial-A800cGd0";   // 5529
+    config.baudrate_init = 115200;
+    config.baudrate_main = 0;
+    config.flowcontrol = 1;
+#endif        
+    hci_init(transport, &config, control, remote_db);
+    l2cap_init();
+    le_central_init();
+    le_central_register_handler(handle_le_central_event);
+    le_central_register_packet_handler(handle_hci_event);
 }
 
 
@@ -1380,12 +1333,8 @@ int main(void)
 {
     setup();
  
-    le_central_init();
-    le_central_register_handler(handle_le_central_event);
-   
     // turn on!
     hci_power_control(HCI_POWER_ON);
-    
     // go!
     run_loop_execute(); 
     
