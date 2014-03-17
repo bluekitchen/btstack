@@ -93,6 +93,9 @@ typedef enum {
     P_W2_SEND_INCLUDED_SERVICE_WITH_UUID_QUERY,
     P_W4_INCLUDED_SERVICE_UUID_WITH_QUERY_RESULT,
     
+    P_W2_SEND_READ_CHARACTERISTIC_VALUE_QUERY,
+    P_W4_READ_CHARACTERISTIC_VALUE_RESULT,
+
     P_W2_CANCEL_CONNECT,
     P_W4_CONNECT_CANCELLED,
     P_W2_DISCONNECT,
@@ -173,11 +176,20 @@ typedef struct le_characteristic_descriptor{
     uint16_t uuid16;
 } le_characteristic_descriptor_t;
 
-
 typedef struct le_characteristic_descriptor_event{
     uint8_t  type;
     le_characteristic_descriptor_t characteristic_descriptor; 
 } le_characteristic_descriptor_event_t;
+
+typedef struct le_characteristic_value{
+    
+} le_characteristic_value_t;
+
+typedef struct le_characteristic_value_event{
+    uint8_t  type;
+    uint16_t characteristic_value_length;
+    uint8_t * characteristic_value; 
+} le_characteristic_value_event_t;
 
 
 void le_central_init();
@@ -224,7 +236,14 @@ le_command_status_t le_central_discover_characteristics_for_service_by_uuid128(l
 le_command_status_t le_central_discover_characteristic_descriptors(le_peripheral_t *context, le_characteristic_t *characteristic);
 
 
-le_command_status_t le_central_read_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);
+// Reads value of characteristic using characteristic value handle
+le_command_status_t le_central_read_value_of_characteristic(le_peripheral_t *context, le_characteristic_t *characteristic);
+le_command_status_t le_central_read_value_of_characteristic_using_value_handle(le_peripheral_t *context, uint16_t characteristic_value_handle);
+
+le_command_status_t le_central_read_long_value_of_characteristic(le_peripheral_t *context, le_characteristic_t *characteristic);
+le_command_status_t le_central_read_long_value_of_characteristic_using_value_handle(le_peripheral_t *context, uint16_t characteristic_value_handle);
+
+
 le_command_status_t le_central_write_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle, int length, uint8_t * data);
 le_command_status_t le_central_subscribe_to_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);
 le_command_status_t le_central_unsubscribe_from_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);

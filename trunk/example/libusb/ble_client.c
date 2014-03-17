@@ -37,9 +37,6 @@
 //
 //*****************************************************************************
 
-
-// NOTE: Supports only a single connection
-
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -207,6 +204,10 @@ static le_command_status_t send_gatt_characteristic_request(le_peripheral_t *per
 
 static le_command_status_t send_gatt_characteristic_descriptor_request(le_peripheral_t *peripheral){
     return att_find_information_request(ATT_FIND_INFORMATION_REQUEST, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle);
+}
+
+static le_command_status_t send_gatt_read_characteristic_value_request(le_peripheral_t *peripheral){
+    return att_read_request(ATT_READ_REQUEST, peripheral->handle, peripheral->query_start_handle);
 }
 
 static inline void send_gatt_complete_event(le_peripheral_t * peripheral, uint8_t type, uint8_t status){
@@ -391,6 +392,12 @@ static void handle_peripheral_list(){
                 peripheral->state = P_W4_INCLUDED_SERVICE_UUID_WITH_QUERY_RESULT;
                 break;
             
+            case P_W2_SEND_READ_CHARACTERISTIC_VALUE_QUERY:
+                status = send_gatt_read_characteristic_value_request(peripheral);
+                if (status != BLE_PERIPHERAL_OK) break;
+                peripheral->state = P_W4_READ_CHARACTERISTIC_VALUE_RESULT;
+                break;
+
             case P_W2_DISCONNECT:
                 peripheral->state = P_W4_DISCONNECTED;
                 hci_send_cmd(&hci_disconnect, peripheral->handle,0x13);
@@ -576,6 +583,32 @@ le_command_status_t le_central_discover_characteristic_descriptors(le_peripheral
     
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
+}
+
+le_command_status_t le_central_read_value_of_characteristic_using_value_handle(le_peripheral_t *peripheral, uint16_t value_handle){
+    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
+    peripheral->start_group_handle = value_handle;
+    peripheral->state = P_W2_SEND_READ_CHARACTERISTIC_VALUE_QUERY;
+    gatt_client_run();
+    return BLE_PERIPHERAL_OK;
+}
+
+
+le_command_status_t le_central_read_value_of_characteristic(le_peripheral_t *peripheral, le_characteristic_t *characteristic){
+    return le_central_read_value_of_characteristic_using_value_handle(peripheral, characteristic->value_handle);
+}
+
+le_command_status_t le_central_read_long_value_of_characteristic_using_value_handle(le_peripheral_t *peripheral, uint16_t value_handle){
+    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
+    peripheral->start_group_handle = value_handle;
+    peripheral->state = P_W2_SEND_READ_CHARACTERISTIC_VALUE_QUERY;
+    gatt_client_run();
+    return BLE_PERIPHERAL_OK;
+}
+
+
+le_command_status_t le_central_read_long_value_of_characteristic(le_peripheral_t *peripheral, le_characteristic_t *characteristic){
+    return le_central_read_long_value_of_characteristic_using_value_handle(peripheral, characteristic->value_handle);
 }
 
 static void gatt_client_run(){
@@ -850,6 +883,14 @@ static void report_gatt_included_service(le_peripheral_t * peripheral, uint8_t *
     (*le_central_callback)((le_central_event_t*)&event);
 }
 
+static void report_gatt_characteristic_value(le_peripheral_t * peripheral, uint8_t * value, int length){
+    le_characteristic_value_event_t event;
+    event.type = GATT_CHARACTERISTIC_VALUE_QUERY_COMPLETE;
+    event.characteristic_value_length = length; 
+    event.characteristic_value = value;
+    (*le_central_callback)((le_central_event_t*)&event);
+}
+
 static void trigger_next_query(le_peripheral_t * peripheral, uint16_t last_result_handle, peripheral_state_t next_query_state, uint8_t complete_event_type){
     if (last_result_handle < peripheral->end_group_handle){
         peripheral->start_group_handle = last_result_handle + 1;
@@ -954,8 +995,10 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                     report_gatt_included_service(peripheral, uuid128, 0);
                     trigger_next_included_service_query(peripheral, peripheral->start_group_handle);
                     break;
-
                 }
+                case P_W4_READ_CHARACTERISTIC_VALUE_RESULT:
+                    report_gatt_characteristic_value(peripheral, &packet[1], size-1);
+                    break;
                 default:
                     break;                
             }
