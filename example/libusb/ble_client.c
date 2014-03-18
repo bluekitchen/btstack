@@ -164,7 +164,7 @@ static le_command_status_t att_read_by_type_or_group_request(uint16_t request_ty
 
 static le_command_status_t att_read_request(uint16_t request_type, int16_t peripheral_handle, uint16_t attribute_handle){
     if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
-    
+    \
     uint8_t request[3];
     request[0] = request_type;
     bt_store_16(request, 1, attribute_handle);
@@ -207,7 +207,7 @@ static le_command_status_t send_gatt_characteristic_descriptor_request(le_periph
 }
 
 static le_command_status_t send_gatt_read_characteristic_value_request(le_peripheral_t *peripheral){
-    return att_read_request(ATT_READ_REQUEST, peripheral->handle, peripheral->query_start_handle);
+    return att_read_request(ATT_READ_REQUEST, peripheral->handle, peripheral->characteristic_value_handle);
 }
 
 static inline void send_gatt_complete_event(le_peripheral_t * peripheral, uint8_t type, uint8_t status){
@@ -587,7 +587,7 @@ le_command_status_t le_central_discover_characteristic_descriptors(le_peripheral
 
 le_command_status_t le_central_read_value_of_characteristic_using_value_handle(le_peripheral_t *peripheral, uint16_t value_handle){
     if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
-    peripheral->start_group_handle = value_handle;
+    peripheral->characteristic_value_handle = value_handle;
     peripheral->state = P_W2_SEND_READ_CHARACTERISTIC_VALUE_QUERY;
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
@@ -988,6 +988,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             }
             break;
         case ATT_READ_RESPONSE: 
+
             switch (peripheral->state){
                 case P_W4_INCLUDED_SERVICE_UUID_WITH_QUERY_RESULT: {
                     uint8_t uuid128[16];
@@ -1121,6 +1122,17 @@ static void dump_descriptor(le_characteristic_descriptor_t * descriptor){
     printf("    *** descriptor *** handle 0x%02x, uuid16 0x%02x\n", descriptor->handle, descriptor->uuid16);
 }
 
+static void dump_characteristic_value(le_characteristic_value_event_t * event){
+    printf("    *** found characteristic value *** ");
+    int i;
+    for (i = 0; i < event->characteristic_value_length; i++){
+        printf("%02x ", event->characteristic_value[i]);
+    }
+    printf("\n");
+    
+}
+
+
 le_peripheral_t test_device;
 le_service_t services[100];
 le_characteristic_t characteristics[100];
@@ -1151,6 +1163,8 @@ typedef enum {
 
     TC_W4_INCLUDED_SERVICE_RESULT,
     
+    TC_W4_READ_CHARACTERISTIC_VALUE_RESULT,
+
     TC_W4_DISCONNECT,
     TC_DISCONNECTED
 
@@ -1301,15 +1315,23 @@ static void handle_le_central_event(le_central_event_t * event){
                         le_central_find_included_services_for_service(&test_device, &service);
                         break;
                     }
-                    tc_state = TC_W4_DISCONNECT;
-                    printf("\n\n test client - DISCONNECT ");
-                    le_central_disconnect(&test_device);
+                    printf("\n test client - VALUE for CHARACTERISTIC \n");
+                    dump_characteristic(&characteristics[0]);
+                    tc_state = TC_W4_READ_CHARACTERISTIC_VALUE_RESULT;
+                    le_central_read_value_of_characteristic(&test_device, &characteristics[0]);
                     break;
                 default:
                     break;
             }
             break;
 
+        case TC_W4_READ_CHARACTERISTIC_VALUE_RESULT:
+            if (event->type != GATT_CHARACTERISTIC_VALUE_QUERY_COMPLETE) break;
+            dump_characteristic_value((le_characteristic_value_event_t *)event);      
+            tc_state = TC_W4_DISCONNECT;
+            printf("\n\n test client - DISCONNECT ");
+            le_central_disconnect(&test_device);
+            break;
         case TC_W4_DISCONNECT:
             if (event->type != GATT_CONNECTION_COMPLETE ) break;
             printf("  DONE\n");
