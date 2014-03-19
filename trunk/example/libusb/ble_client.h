@@ -96,6 +96,9 @@ typedef enum {
     P_W2_SEND_READ_CHARACTERISTIC_VALUE_QUERY,
     P_W4_READ_CHARACTERISTIC_VALUE_RESULT,
 
+    P_W2_SEND_READ_LONG_CHARACTERISTIC_VALUE_QUERY,
+    P_W4_READ_LONG_CHARACTERISTIC_VALUE_RESULT,
+
     P_W2_CANCEL_CONNECT,
     P_W4_CONNECT_CANCELLED,
     P_W2_DISCONNECT,
@@ -133,6 +136,7 @@ typedef struct le_peripheral{
     uint8_t  characteristic_properties;
     uint16_t characteristic_start_handle;
     uint16_t characteristic_value_handle;
+    uint16_t characteristic_value_offset;
 
     uint8_t  filter_with_uuid;
 
@@ -187,7 +191,8 @@ typedef struct le_characteristic_value{
 
 typedef struct le_characteristic_value_event{
     uint8_t  type;
-    uint16_t characteristic_value_length;
+    uint16_t characteristic_value_blob_length;
+    uint16_t characteristic_value_offset;
     uint8_t * characteristic_value; 
 } le_characteristic_value_event_t;
 

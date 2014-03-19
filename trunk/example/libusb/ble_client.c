@@ -164,10 +164,21 @@ static le_command_status_t att_read_by_type_or_group_request(uint16_t request_ty
 
 static le_command_status_t att_read_request(uint16_t request_type, int16_t peripheral_handle, uint16_t attribute_handle){
     if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
-    \
+    
     uint8_t request[3];
     request[0] = request_type;
     bt_store_16(request, 1, attribute_handle);
+    
+    l2cap_send_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
+    return BLE_PERIPHERAL_OK;
+}
+
+static le_command_status_t att_read_blob_request(uint16_t request_type, int16_t peripheral_handle, uint16_t attribute_handle, uint16_t value_offset){
+    if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
+    uint8_t request[5];
+    request[0] = request_type;
+    bt_store_16(request, 1, attribute_handle);
+    bt_store_16(request, 3, value_offset);
     
     l2cap_send_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
     return BLE_PERIPHERAL_OK;
@@ -208,6 +219,10 @@ static le_command_status_t send_gatt_characteristic_descriptor_request(le_periph
 
 static le_command_status_t send_gatt_read_characteristic_value_request(le_peripheral_t *peripheral){
     return att_read_request(ATT_READ_REQUEST, peripheral->handle, peripheral->characteristic_value_handle);
+}
+
+static le_command_status_t send_gatt_read_long_characteristic_value_request(le_peripheral_t *peripheral){
+    return att_read_blob_request(ATT_READ_BLOB_REQUEST, peripheral->handle, peripheral->characteristic_value_handle, peripheral->characteristic_value_offset);
 }
 
 static inline void send_gatt_complete_event(le_peripheral_t * peripheral, uint8_t type, uint8_t status){
@@ -396,6 +411,12 @@ static void handle_peripheral_list(){
                 status = send_gatt_read_characteristic_value_request(peripheral);
                 if (status != BLE_PERIPHERAL_OK) break;
                 peripheral->state = P_W4_READ_CHARACTERISTIC_VALUE_RESULT;
+                break;
+
+            case P_W2_SEND_READ_LONG_CHARACTERISTIC_VALUE_QUERY:
+                status = send_gatt_read_long_characteristic_value_request(peripheral);
+                if (status != BLE_PERIPHERAL_OK) break;
+                peripheral->state = P_W4_READ_LONG_CHARACTERISTIC_VALUE_RESULT;
                 break;
 
             case P_W2_DISCONNECT:
@@ -588,6 +609,7 @@ le_command_status_t le_central_discover_characteristic_descriptors(le_peripheral
 le_command_status_t le_central_read_value_of_characteristic_using_value_handle(le_peripheral_t *peripheral, uint16_t value_handle){
     if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     peripheral->characteristic_value_handle = value_handle;
+    peripheral->characteristic_value_offset = 0;
     peripheral->state = P_W2_SEND_READ_CHARACTERISTIC_VALUE_QUERY;
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
@@ -600,8 +622,9 @@ le_command_status_t le_central_read_value_of_characteristic(le_peripheral_t *per
 
 le_command_status_t le_central_read_long_value_of_characteristic_using_value_handle(le_peripheral_t *peripheral, uint16_t value_handle){
     if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
-    peripheral->start_group_handle = value_handle;
-    peripheral->state = P_W2_SEND_READ_CHARACTERISTIC_VALUE_QUERY;
+    peripheral->characteristic_value_handle = value_handle;
+    peripheral->characteristic_value_offset = 0;
+    peripheral->state = P_W2_SEND_READ_LONG_CHARACTERISTIC_VALUE_QUERY;
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
 }
@@ -883,10 +906,19 @@ static void report_gatt_included_service(le_peripheral_t * peripheral, uint8_t *
     (*le_central_callback)((le_central_event_t*)&event);
 }
 
+static void report_gatt_long_characteristic_value_blob(le_peripheral_t * peripheral, uint8_t * value, int value_length, int value_offset){
+    le_characteristic_value_event_t event;
+    event.type = GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT;
+    event.characteristic_value_blob_length = value_length; 
+    event.characteristic_value_offset = value_offset;
+    event.characteristic_value = value;
+    (*le_central_callback)((le_central_event_t*)&event);
+}
+
 static void report_gatt_characteristic_value(le_peripheral_t * peripheral, uint8_t * value, int length){
     le_characteristic_value_event_t event;
-    event.type = GATT_CHARACTERISTIC_VALUE_QUERY_COMPLETE;
-    event.characteristic_value_length = length; 
+    event.type = GATT_CHARACTERISTIC_VALUE_QUERY_RESULT;
+    event.characteristic_value_blob_length = length; 
     event.characteristic_value = value;
     (*le_central_callback)((le_central_event_t*)&event);
 }
@@ -900,6 +932,21 @@ static void trigger_next_query(le_peripheral_t * peripheral, uint16_t last_resul
     // DONE
     peripheral->state = P_CONNECTED;
     send_gatt_complete_event(peripheral, complete_event_type, 0); 
+}
+
+static void trigger_next_blob_query(le_peripheral_t * peripheral, uint16_t blob_length, uint16_t last_result_handle, peripheral_state_t next_query_state, uint8_t complete_event_type){
+    if ( blob_length >= peripheral->mtu - 1){
+        peripheral->characteristic_value_offset += blob_length;
+        peripheral->state = next_query_state;
+        return;
+    }
+    // DONE
+    peripheral->state = P_CONNECTED;
+    send_gatt_complete_event(peripheral, complete_event_type, 0); 
+}
+
+static inline void trigger_next_long_characteristic_value_blob_query(le_peripheral_t * peripheral, uint16_t blob_length, uint16_t last_result_handle){
+    trigger_next_blob_query(peripheral, blob_length, last_result_handle, P_W2_SEND_READ_LONG_CHARACTERISTIC_VALUE_QUERY, GATT_LONG_CHARACTERISTIC_VALUE_QUERY_COMPLETE);
 }
 
 static inline void trigger_next_included_service_query(le_peripheral_t * peripheral, uint16_t last_result_handle){
@@ -998,10 +1045,22 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                     break;
                 }
                 case P_W4_READ_CHARACTERISTIC_VALUE_RESULT:
+                    peripheral->state = P_CONNECTED;
                     report_gatt_characteristic_value(peripheral, &packet[1], size-1);
                     break;
                 default:
                     break;                
+            }
+            break;
+        case ATT_READ_BLOB_RESPONSE:
+            switch (peripheral->state){
+                case P_W4_READ_LONG_CHARACTERISTIC_VALUE_RESULT:
+                    report_gatt_long_characteristic_value_blob(peripheral, &packet[1], size-1, peripheral->characteristic_value_offset);
+                    trigger_next_long_characteristic_value_blob_query(peripheral, size-1,
+                        peripheral->characteristic_value_handle + peripheral->characteristic_value_offset);
+                    break;
+                default:
+                    break;
             }
             break;
         case ATT_FIND_BY_TYPE_VALUE_RESPONSE:
@@ -1069,7 +1128,10 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                             peripheral->state = P_CONNECTED;
                             send_gatt_complete_event(peripheral, GATT_INCLUDED_SERVICE_QUERY_COMPLETE, 0);
                             break;
-
+                        case P_W4_READ_LONG_CHARACTERISTIC_VALUE_RESULT:
+                            peripheral->state = P_CONNECTED;
+                            send_gatt_complete_event(peripheral, GATT_LONG_CHARACTERISTIC_VALUE_QUERY_COMPLETE, 0);
+                            break;
                         default:
                             printf("ATT_ERROR_ATTRIBUTE_NOT_FOUND in 0x%02x\n", peripheral->state);
                             return;
@@ -1123,9 +1185,9 @@ static void dump_descriptor(le_characteristic_descriptor_t * descriptor){
 }
 
 static void dump_characteristic_value(le_characteristic_value_event_t * event){
-    printf("    *** found characteristic value *** ");
+    printf("    *** found characteristic value of lenght %d *** ", event->characteristic_value_blob_length);
     int i;
-    for (i = 0; i < event->characteristic_value_length; i++){
+    for (i = 0; i < event->characteristic_value_blob_length; i++){
         printf("%02x ", event->characteristic_value[i]);
     }
     printf("\n");
@@ -1164,6 +1226,7 @@ typedef enum {
     TC_W4_INCLUDED_SERVICE_RESULT,
     
     TC_W4_READ_CHARACTERISTIC_VALUE_RESULT,
+    TC_W4_READ_LONG_CHARACTERISTIC_VALUE_RESULT,
 
     TC_W4_DISCONNECT,
     TC_DISCONNECTED
@@ -1326,12 +1389,29 @@ static void handle_le_central_event(le_central_event_t * event){
             break;
 
         case TC_W4_READ_CHARACTERISTIC_VALUE_RESULT:
-            if (event->type != GATT_CHARACTERISTIC_VALUE_QUERY_COMPLETE) break;
+            if (event->type != GATT_CHARACTERISTIC_VALUE_QUERY_RESULT) break;
             dump_characteristic_value((le_characteristic_value_event_t *)event);      
-            tc_state = TC_W4_DISCONNECT;
-            printf("\n\n test client - DISCONNECT ");
-            le_central_disconnect(&test_device);
+            tc_state = TC_W4_READ_LONG_CHARACTERISTIC_VALUE_RESULT;
+            printf("\n\n test client - LONG VALUE for CHARACTERISTIC \n");
+            le_central_read_long_value_of_characteristic(&test_device, &characteristics[0]);
             break;
+
+        case TC_W4_READ_LONG_CHARACTERISTIC_VALUE_RESULT:
+            switch (event->type){
+                case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
+                    dump_characteristic_value((le_characteristic_value_event_t *)event);      
+                    break;
+                case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_COMPLETE:
+                    tc_state = TC_W4_DISCONNECT;
+                    printf("\n\n test client - DISCONNECT ");
+                    le_central_disconnect(&test_device);
+                    break;
+                default:
+                    printf("TC_W4_READ_LONG_CHARACTERISTIC_VALUE_RESULT\n");
+                    break;
+            } 
+            break;
+
         case TC_W4_DISCONNECT:
             if (event->type != GATT_CONNECTION_COMPLETE ) break;
             printf("  DONE\n");
