@@ -118,6 +118,26 @@ static int l2cap_can_send_conectionless_packet_now(){
 static uint16_t l2cap_max_mtu_for_handle(uint16_t handle){
     return l2cap_max_mtu();
 }
+
+static uint16_t next_blob_length(le_peripheral_t * peripheral, uint16_t max_blob_length){
+    if (peripheral->characteristic_value_offset >= peripheral->characteristic_value_length) {
+        return 0;
+    }
+    uint16_t rest_length = peripheral->characteristic_value_length - peripheral->characteristic_value_offset;
+    if (max_blob_length > rest_length){
+        return rest_length;
+    }
+    return max_blob_length;
+}
+
+static uint16_t read_blob_length(le_peripheral_t * peripheral){
+    return next_blob_length(peripheral, peripheral->mtu - 1);
+}
+
+static uint16_t write_blob_length(le_peripheral_t * peripheral){
+    return next_blob_length(peripheral, peripheral->mtu - 5);
+}
+
 // END Helper Functions
 static le_command_status_t att_find_information_request(uint16_t request_type, uint16_t peripheral_handle, uint16_t start_handle, uint16_t end_handle){
     if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
@@ -162,7 +182,7 @@ static le_command_status_t att_read_by_type_or_group_request(uint16_t request_ty
     return BLE_PERIPHERAL_OK;
 }
 
-static le_command_status_t att_read_request(uint16_t request_type, int16_t peripheral_handle, uint16_t attribute_handle){
+static le_command_status_t att_read_request(uint16_t request_type, uint16_t peripheral_handle, uint16_t attribute_handle){
     if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
     
     uint8_t request[3];
@@ -173,7 +193,7 @@ static le_command_status_t att_read_request(uint16_t request_type, int16_t perip
     return BLE_PERIPHERAL_OK;
 }
 
-static le_command_status_t att_read_blob_request(uint16_t request_type, int16_t peripheral_handle, uint16_t attribute_handle, uint16_t value_offset){
+static le_command_status_t att_read_blob_request(uint16_t request_type, uint16_t peripheral_handle, uint16_t attribute_handle, uint16_t value_offset){
     if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
     uint8_t request[5];
     request[0] = request_type;
@@ -185,17 +205,41 @@ static le_command_status_t att_read_blob_request(uint16_t request_type, int16_t 
 }
 
 
-static le_command_status_t att_write_request(uint16_t request_type, int16_t peripheral_handle, uint16_t attribute_handle, uint16_t value_length, uint8_t * data){
+static le_command_status_t att_write_request(uint16_t request_type, uint16_t peripheral_handle, uint16_t attribute_handle, uint16_t value_length, uint8_t * value){
     if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
     // TODO: use prepared buffers
     uint8_t request[3+value_length];
     request[0] = request_type;
     bt_store_16(request, 1, attribute_handle);
-    memcpy(&request[3], data, value_length);
+    memcpy(&request[3], value, value_length);
 
     l2cap_send_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
     return BLE_PERIPHERAL_OK;
 }
+
+static le_command_status_t att_execute_write_request(uint16_t request_type, uint16_t peripheral_handle, uint8_t execute_write){
+    if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
+    uint8_t request[2];
+    request[0] = request_type;
+    request[1] = execute_write;
+    l2cap_send_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
+    return BLE_PERIPHERAL_OK;
+}
+
+
+static le_command_status_t att_prepare_write_request(uint16_t request_type, uint16_t peripheral_handle,  uint16_t attribute_handle, uint16_t value_offset, uint16_t blob_length, uint8_t * value){
+    if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
+    
+    uint8_t request[5+blob_length];
+    request[0] = request_type;
+    bt_store_16(request, 1, attribute_handle);
+    bt_store_16(request, 3, value_offset);
+    memcpy(&request[5], &value[value_offset], blob_length);
+
+    l2cap_send_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
+    return BLE_PERIPHERAL_OK;
+}
+
 
 static le_command_status_t send_gatt_services_request(le_peripheral_t *peripheral){
     return att_read_by_type_or_group_request(ATT_READ_BY_GROUP_TYPE_REQUEST, GATT_PRIMARY_SERVICE_UUID, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle);
@@ -237,8 +281,17 @@ static le_command_status_t send_gatt_read_long_characteristic_value_request(le_p
 }
 
 static le_command_status_t send_gatt_write_characteristic_value_request(le_peripheral_t * peripheral){
-    return att_write_request(ATT_WRITE_REQUEST, peripheral->handle, peripheral->characteristic_value_handle, peripheral->characteristic_value_length, peripheral->data);
+    return att_write_request(ATT_WRITE_REQUEST, peripheral->handle, peripheral->characteristic_value_handle, peripheral->characteristic_value_length, peripheral->characteristic_value);
 }
+
+static le_command_status_t send_gatt_prepare_write_long_characteristic_value_request(le_peripheral_t * peripheral){
+    return att_prepare_write_request(ATT_PREPARE_WRITE_REQUEST, peripheral->handle, peripheral->characteristic_value_handle, peripheral->characteristic_value_offset, write_blob_length(peripheral), peripheral->characteristic_value);
+}
+
+static le_command_status_t send_gatt_execute_write_long_characteristic_value_request(le_peripheral_t * peripheral){
+    return att_execute_write_request(ATT_EXECUTE_WRITE_REQUEST, peripheral->handle, 1);
+}
+
 
 static inline void send_gatt_complete_event(le_peripheral_t * peripheral, uint8_t type, uint8_t status){
     le_peripheral_event_t event;
@@ -439,6 +492,19 @@ static void handle_peripheral_list(){
                 if (status != BLE_PERIPHERAL_OK) break;
                 peripheral->state = P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT;
                 break;
+            
+            case P_W2_PREPARE_WRITE_LONG_CHARACTERISTIC_VALUE:
+                status = send_gatt_prepare_write_long_characteristic_value_request(peripheral);
+                if (status != BLE_PERIPHERAL_OK) break;
+                peripheral->state = P_W4_PREPARE_WRITE_LONG_CHARACTERISTIC_VALUE_RESULT;
+                break;
+            
+            case P_W2_EXECUTE_WRITE_LONG_CHARACTERISTIC_VALUE:
+                status = send_gatt_execute_write_long_characteristic_value_request(peripheral);
+                if (status != BLE_PERIPHERAL_OK) break;
+                peripheral->state = P_W4_EXECUTE_WRITE_LONG_CHARACTERISTIC_VALUE_RESULT;
+                break;
+            
             
             case P_W2_DISCONNECT:
                 peripheral->state = P_W4_DISCONNECTED;
@@ -658,24 +724,34 @@ static int is_connected(le_peripheral_t * peripheral){
     return peripheral->state >= P_CONNECTED && peripheral->state < P_W2_CANCEL_CONNECT;
 }
 
-le_command_status_t le_central_write_value_of_characteristic_without_response(le_peripheral_t *peripheral, uint16_t characteristic_handle, uint16_t length, uint8_t * data){
-    if (length >= peripheral->mtu - 3) return BLE_VALUE_TOO_LONG;
+le_command_status_t le_central_write_value_of_characteristic_without_response(le_peripheral_t *peripheral, uint16_t value_handle, uint16_t value_length, uint8_t * value){
+    if (value_length >= peripheral->mtu - 3) return BLE_VALUE_TOO_LONG;
     if (!is_connected(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
-    
-    return att_write_request(ATT_WRITE_COMMAND, peripheral->handle, characteristic_handle, length, data);
+    return att_write_request(ATT_WRITE_COMMAND, peripheral->handle, value_handle, value_length, value);
 }
 
-le_command_status_t le_central_write_value_of_characteristic(le_peripheral_t *peripheral, uint16_t characteristic_handle, uint16_t length, uint8_t * data){
-    if (length >= peripheral->mtu - 3) return BLE_VALUE_TOO_LONG;
+le_command_status_t le_central_write_value_of_characteristic(le_peripheral_t *peripheral, uint16_t value_handle, uint16_t value_length, uint8_t * value){
+    if (value_length >= peripheral->mtu - 3) return BLE_VALUE_TOO_LONG;
     if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
-     peripheral->characteristic_value_handle = characteristic_handle;
-    peripheral->characteristic_value_length = length;
-    peripheral->data = data;
+    
+    peripheral->characteristic_value_handle = value_length;
+    peripheral->characteristic_value_length = value_length;
+    peripheral->characteristic_value = value;
     peripheral->state = P_W2_SEND_WRITE_CHARACTERISTIC_VALUE;
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
 }
  
+le_command_status_t le_central_write_long_value_of_characteristic(le_peripheral_t *peripheral, uint16_t value_handle, uint16_t length, uint8_t * data){
+    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
+    peripheral->characteristic_value_handle = value_handle;
+    peripheral->characteristic_value_offset = 0;
+    peripheral->state = P_W2_PREPARE_WRITE_LONG_CHARACTERISTIC_VALUE;
+    gatt_client_run();
+    return BLE_PERIPHERAL_OK;
+}
+
+
 static void gatt_client_run(){
     if (state == W4_ON) return;
     
@@ -948,10 +1024,10 @@ static void report_gatt_included_service(le_peripheral_t * peripheral, uint8_t *
     (*le_central_callback)((le_central_event_t*)&event);
 }
 
-static void report_gatt_long_characteristic_value_blob(le_peripheral_t * peripheral, uint8_t * value, int value_length, int value_offset){
+static void report_gatt_long_characteristic_value_blob(le_peripheral_t * peripheral, uint8_t * value, int blob_length, int value_offset){
     le_characteristic_value_event_t event;
     event.type = GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT;
-    event.characteristic_value_blob_length = value_length; 
+    event.characteristic_value_blob_length = blob_length; 
     event.characteristic_value_offset = value_offset;
     event.characteristic_value = value;
     (*le_central_callback)((le_central_event_t*)&event);
@@ -965,6 +1041,7 @@ static void report_gatt_characteristic_value(le_peripheral_t * peripheral, uint8
     (*le_central_callback)((le_central_event_t*)&event);
 }
 
+
 static void trigger_next_query(le_peripheral_t * peripheral, uint16_t last_result_handle, peripheral_state_t next_query_state, uint8_t complete_event_type){
     if (last_result_handle < peripheral->end_group_handle){
         peripheral->start_group_handle = last_result_handle + 1;
@@ -976,20 +1053,6 @@ static void trigger_next_query(le_peripheral_t * peripheral, uint16_t last_resul
     send_gatt_complete_event(peripheral, complete_event_type, 0); 
 }
 
-static void trigger_next_blob_query(le_peripheral_t * peripheral, uint16_t blob_length, uint16_t last_result_handle, peripheral_state_t next_query_state, uint8_t complete_event_type){
-    if ( blob_length >= peripheral->mtu - 1){
-        peripheral->characteristic_value_offset += blob_length;
-        peripheral->state = next_query_state;
-        return;
-    }
-    // DONE
-    peripheral->state = P_CONNECTED;
-    send_gatt_complete_event(peripheral, complete_event_type, 0); 
-}
-
-static inline void trigger_next_long_characteristic_value_blob_query(le_peripheral_t * peripheral, uint16_t blob_length, uint16_t last_result_handle){
-    trigger_next_blob_query(peripheral, blob_length, last_result_handle, P_W2_SEND_READ_LONG_CHARACTERISTIC_VALUE_QUERY, GATT_LONG_CHARACTERISTIC_VALUE_QUERY_COMPLETE);
-}
 
 static inline void trigger_next_included_service_query(le_peripheral_t * peripheral, uint16_t last_result_handle){
     trigger_next_query(peripheral, last_result_handle, P_W2_SEND_INCLUDED_SERVICE_QUERY, GATT_INCLUDED_SERVICE_QUERY_COMPLETE);
@@ -1077,7 +1140,6 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             }
             break;
         case ATT_READ_RESPONSE: 
-
             switch (peripheral->state){
                 case P_W4_INCLUDED_SERVICE_UUID_WITH_QUERY_RESULT: {
                     uint8_t uuid128[16];
@@ -1094,17 +1156,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                     break;                
             }
             break;
-        case ATT_READ_BLOB_RESPONSE:
-            switch (peripheral->state){
-                case P_W4_READ_LONG_CHARACTERISTIC_VALUE_RESULT:
-                    report_gatt_long_characteristic_value_blob(peripheral, &packet[1], size-1, peripheral->characteristic_value_offset);
-                    trigger_next_long_characteristic_value_blob_query(peripheral, size-1,
-                        peripheral->characteristic_value_handle + peripheral->characteristic_value_offset);
-                    break;
-                default:
-                    break;
-            }
-            break;
+        
         case ATT_FIND_BY_TYPE_VALUE_RESPONSE:
         {
             uint8_t pair_size = 4;
@@ -1144,16 +1196,46 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             trigger_next_characteristic_descriptor_query(peripheral, descriptor.handle);
             break;
         }
+
         case ATT_WRITE_RESPONSE:
-            switch(peripheral->state){
-                case P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
-                    peripheral->state = P_CONNECTED;
-                    send_gatt_complete_event(peripheral, GATT_CHARACTERISTIC_VALUE_WRITE_RESPONSE, 0);
-                    break;
-                default:
-                    break;
-            }
+            if (peripheral->state != P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT) return;
+            peripheral->state = P_CONNECTED;
+            send_gatt_complete_event(peripheral, GATT_CHARACTERISTIC_VALUE_WRITE_RESPONSE, 0);
             break;
+    
+        case ATT_READ_BLOB_RESPONSE:
+            if ( peripheral->state != P_W4_READ_LONG_CHARACTERISTIC_VALUE_RESULT) return;
+            report_gatt_long_characteristic_value_blob(peripheral, &packet[1], size-1, peripheral->characteristic_value_offset);
+
+            uint16_t blob_length = read_blob_length(peripheral);
+            if (blob_length == 0){
+                peripheral->state = P_CONNECTED;
+                send_gatt_complete_event(peripheral, GATT_LONG_CHARACTERISTIC_VALUE_QUERY_COMPLETE, 0); 
+                return;
+            }
+            peripheral->characteristic_value_offset += blob_length;
+            peripheral->state = P_W2_SEND_READ_LONG_CHARACTERISTIC_VALUE_QUERY;
+            break;
+
+        case ATT_PREPARE_WRITE_RESPONSE:{
+            if (peripheral->state != P_W4_PREPARE_WRITE_LONG_CHARACTERISTIC_VALUE_RESULT) return;
+
+            uint16_t blob_length = write_blob_length(peripheral);
+            if (blob_length == 0){
+                peripheral->state = P_W2_EXECUTE_WRITE_LONG_CHARACTERISTIC_VALUE;
+                return;
+            }
+            peripheral->characteristic_value_offset += blob_length;
+            peripheral->state = P_W2_PREPARE_WRITE_LONG_CHARACTERISTIC_VALUE;
+            break;
+        }
+
+        case ATT_EXECUTE_WRITE_REQUEST:
+            if (peripheral->state != P_W4_EXECUTE_WRITE_LONG_CHARACTERISTIC_VALUE_RESULT) return;
+            peripheral->state = P_CONNECTED;
+            send_gatt_complete_event(peripheral, GATT_LONG_CHARACTERISTIC_VALUE_WRITE_COMPLETE, 0);
+            break;
+
         case ATT_ERROR_RESPONSE:
             // printf("ATT_ERROR_RESPONSE error %u, state %u\n", packet[4], peripheral->state);
             switch (packet[4]){
