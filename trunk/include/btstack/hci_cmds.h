@@ -235,9 +235,13 @@ extern "C" {
 #define GATT_CHARACTERISTIC_VALUE_QUERY_RESULT  		   0xAA
 #define GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT		   0xAB
 #define GATT_LONG_CHARACTERISTIC_VALUE_QUERY_COMPLETE	   0xAC
+#define GATT_CHARACTERISTIC_VALUE_WRITE_RESPONSE  		   0xAD
+#define GATT_LONG_CHARACTERISTIC_VALUE_WRITE_RESPONSE	   0xAE
+#define GATT_LONG_CHARACTERISTIC_VALUE_WRITE_COMPLETE	   0xAF
+
 
 // data: event(8), len(8), status (8), hci_handle (16), attribute_handle (16)
-#define ATT_HANDLE_VALUE_INDICATION_COMPLETE        	   0xAF
+#define ATT_HANDLE_VALUE_INDICATION_COMPLETE        	   0xBF
 
 // data: event(8), address_type(8), address (48), [number(32)]
 #define SM_JUST_WORKS_REQUEST							   0xb0
