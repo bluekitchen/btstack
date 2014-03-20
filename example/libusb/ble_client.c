@@ -765,7 +765,7 @@ le_command_status_t le_central_write_long_value_of_characteristic(le_peripheral_
     return BLE_PERIPHERAL_OK;
 }
 
-le_command_status_t le_central_reliable_write_long_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle, uint16_t length, uint8_t * data);
+le_command_status_t le_central_reliable_write_long_value_of_characteristic(le_peripheral_t *peripheral, uint16_t value_handle, uint16_t length, uint8_t * data){
     if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     peripheral->characteristic_value_handle = value_handle;
     peripheral->characteristic_value_offset = 0;
@@ -1112,8 +1112,12 @@ static inline void trigger_next_prepare_write_query(le_peripheral_t * peripheral
 }
 
 static int is_value_valid(le_peripheral_t *peripheral, uint8_t *packet, uint16_t size){
-    // TODO
-    return 0;
+    uint16_t attribute_handle = READ_BT_16(packet, 1);
+    uint16_t value_offset = READ_BT_16(packet, 3);
+
+    if (peripheral->characteristic_value_handle != attribute_handle) return 0;
+    if (peripheral->characteristic_value_offset != value_offset) return 0;
+    return memcmp(&peripheral->characteristic_value[peripheral->characteristic_value_offset], &packet[5], size-5) == 0;
 }
 
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
