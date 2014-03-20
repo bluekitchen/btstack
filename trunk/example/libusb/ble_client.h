@@ -270,6 +270,7 @@ le_command_status_t le_central_write_value_of_characteristic_without_response(le
 le_command_status_t le_central_write_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle, uint16_t length, uint8_t * data);
 
 le_command_status_t le_central_write_long_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle, uint16_t length, uint8_t * data);
+le_command_status_t le_central_reliable_write_long_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle, uint16_t length, uint8_t * data);
 
 le_command_status_t le_central_subscribe_to_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);
 le_command_status_t le_central_unsubscribe_from_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);

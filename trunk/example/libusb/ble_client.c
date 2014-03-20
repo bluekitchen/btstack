@@ -292,6 +292,9 @@ static le_command_status_t send_gatt_execute_write_request(le_peripheral_t * per
     return att_execute_write_request(ATT_EXECUTE_WRITE_REQUEST, peripheral->handle, 1);
 }
 
+static le_command_status_t send_gatt_cancel_prepared_write_request(le_peripheral_t * peripheral){
+    return att_execute_write_request(ATT_EXECUTE_WRITE_REQUEST, peripheral->handle, 0);
+}
 
 static inline void send_gatt_complete_event(le_peripheral_t * peripheral, uint8_t type, uint8_t status){
     le_peripheral_event_t event;
@@ -498,6 +501,12 @@ static void handle_peripheral_list(){
                 if (status != BLE_PERIPHERAL_OK) break;
                 peripheral->state = P_W4_PREPARE_WRITE_RESULT;
                 break;
+
+            case P_W2_PREPARE_RELIABLE_WRITE:
+                status = send_gatt_prepare_write_request(peripheral);
+                if (status != BLE_PERIPHERAL_OK) break;
+                peripheral->state = P_W4_PREPARE_RELIABLE_WRITE_RESULT;
+                break;
             
             case P_W2_EXECUTE_PREPARED_WRITE:
                 status = send_gatt_execute_write_request(peripheral);
@@ -505,7 +514,12 @@ static void handle_peripheral_list(){
                 peripheral->state = P_W4_EXECUTE_PREPARED_WRITE_RESULT;
                 break;
             
-            
+            case P_W2_CANCEL_PREPARED_WRITE:
+                status = send_gatt_cancel_prepared_write_request(peripheral);
+                if (status != BLE_PERIPHERAL_OK) break;
+                peripheral->state = P_W4_CANCEL_PREPARED_WRITE_RESULT;
+                break;    
+
             case P_W2_DISCONNECT:
                 peripheral->state = P_W4_DISCONNECTED;
                 hci_send_cmd(&hci_disconnect, peripheral->handle,0x13);
@@ -747,6 +761,15 @@ le_command_status_t le_central_write_long_value_of_characteristic(le_peripheral_
     peripheral->characteristic_value_handle = value_handle;
     peripheral->characteristic_value_offset = 0;
     peripheral->state = P_W2_PREPARE_WRITE;
+    gatt_client_run();
+    return BLE_PERIPHERAL_OK;
+}
+
+le_command_status_t le_central_reliable_write_long_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle, uint16_t length, uint8_t * data);
+    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
+    peripheral->characteristic_value_handle = value_handle;
+    peripheral->characteristic_value_offset = 0;
+    peripheral->state = P_W2_PREPARE_RELIABLE_WRITE;
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
 }
@@ -1078,6 +1101,21 @@ static inline void trigger_next_characteristic_descriptor_query(le_peripheral_t 
     trigger_next_query(peripheral, last_result_handle, P_W2_SEND_CHARACTERISTIC_DESCRIPTOR_QUERY, GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_COMPLETE);
 }
 
+static inline void trigger_next_prepare_write_query(le_peripheral_t * peripheral, peripheral_state_t next_query_state, peripheral_state_t done_state){
+    uint16_t blob_length = write_blob_length(peripheral);
+    if (blob_length == 0){
+        peripheral->state = done_state;
+        return;
+    }
+    peripheral->characteristic_value_offset += blob_length;
+    peripheral->state = next_query_state;
+}
+
+static int is_value_valid(le_peripheral_t *peripheral, uint8_t *packet, uint16_t size){
+    // TODO
+    return 0;
+}
+
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
     if (packet_type != ATT_DATA_PACKET) return;
     le_peripheral_t * peripheral = get_peripheral_for_handle(handle);
@@ -1217,23 +1255,37 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             peripheral->state = P_W2_SEND_READ_BLOB_QUERY;
             break;
 
-        case ATT_PREPARE_WRITE_RESPONSE:{
-            if (peripheral->state != P_W4_PREPARE_WRITE_RESULT) return;
-
-            uint16_t blob_length = write_blob_length(peripheral);
-            if (blob_length == 0){
-                peripheral->state = P_W2_EXECUTE_PREPARED_WRITE;
-                return;
-            }
-            peripheral->characteristic_value_offset += blob_length;
-            peripheral->state = P_W2_PREPARE_WRITE;
+        case ATT_PREPARE_WRITE_RESPONSE:
+            switch (peripheral->state){
+                case P_W4_PREPARE_WRITE_RESULT:
+                    trigger_next_prepare_write_query(peripheral, P_W2_PREPARE_WRITE, P_W2_EXECUTE_PREPARED_WRITE);
+                    break;
+                case P_W4_PREPARE_RELIABLE_WRITE_RESULT:
+                    if (is_value_valid(peripheral, packet, size)){
+                        trigger_next_prepare_write_query(peripheral, P_W2_PREPARE_RELIABLE_WRITE, P_W2_EXECUTE_PREPARED_WRITE);
+                        break;
+                    }
+                    peripheral->state = P_W2_CANCEL_PREPARED_WRITE;
+                    break;
+                default:
+                    break;
+            } 
             break;
-        }
-
+    
         case ATT_EXECUTE_WRITE_REQUEST:
-            if (peripheral->state != P_W4_EXECUTE_PREPARED_WRITE_RESULT) return;
-            peripheral->state = P_CONNECTED;
-            send_gatt_complete_event(peripheral, GATT_LONG_CHARACTERISTIC_VALUE_WRITE_COMPLETE, 0);
+            switch (peripheral->state){
+                case P_W4_EXECUTE_PREPARED_WRITE_RESULT:
+                    peripheral->state = P_CONNECTED;
+                    send_gatt_complete_event(peripheral, GATT_LONG_CHARACTERISTIC_VALUE_WRITE_COMPLETE, 0);
+                    break;
+                case P_W4_CANCEL_PREPARED_WRITE_RESULT:
+                    peripheral->state = P_CONNECTED;
+                    send_gatt_complete_event(peripheral, GATT_LONG_CHARACTERISTIC_VALUE_WRITE_COMPLETE, 1);
+                    break;
+                default:
+                    break;
+
+            }
             break;
 
         case ATT_ERROR_RESPONSE:
