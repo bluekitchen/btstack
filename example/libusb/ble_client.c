@@ -276,7 +276,7 @@ static le_command_status_t send_gatt_read_characteristic_value_request(le_periph
     return att_read_request(ATT_READ_REQUEST, peripheral->handle, peripheral->characteristic_value_handle);
 }
 
-static le_command_status_t send_gatt_read_long_characteristic_value_request(le_peripheral_t *peripheral){
+static le_command_status_t send_gatt_read_blob_request(le_peripheral_t *peripheral){
     return att_read_blob_request(ATT_READ_BLOB_REQUEST, peripheral->handle, peripheral->characteristic_value_handle, peripheral->characteristic_value_offset);
 }
 
@@ -284,11 +284,11 @@ static le_command_status_t send_gatt_write_characteristic_value_request(le_perip
     return att_write_request(ATT_WRITE_REQUEST, peripheral->handle, peripheral->characteristic_value_handle, peripheral->characteristic_value_length, peripheral->characteristic_value);
 }
 
-static le_command_status_t send_gatt_prepare_write_long_characteristic_value_request(le_peripheral_t * peripheral){
+static le_command_status_t send_gatt_prepare_write_request(le_peripheral_t * peripheral){
     return att_prepare_write_request(ATT_PREPARE_WRITE_REQUEST, peripheral->handle, peripheral->characteristic_value_handle, peripheral->characteristic_value_offset, write_blob_length(peripheral), peripheral->characteristic_value);
 }
 
-static le_command_status_t send_gatt_execute_write_long_characteristic_value_request(le_peripheral_t * peripheral){
+static le_command_status_t send_gatt_execute_write_request(le_peripheral_t * peripheral){
     return att_execute_write_request(ATT_EXECUTE_WRITE_REQUEST, peripheral->handle, 1);
 }
 
@@ -481,10 +481,10 @@ static void handle_peripheral_list(){
                 peripheral->state = P_W4_READ_CHARACTERISTIC_VALUE_RESULT;
                 break;
 
-            case P_W2_SEND_READ_LONG_CHARACTERISTIC_VALUE_QUERY:
-                status = send_gatt_read_long_characteristic_value_request(peripheral);
+            case P_W2_SEND_READ_BLOB_QUERY:
+                status = send_gatt_read_blob_request(peripheral);
                 if (status != BLE_PERIPHERAL_OK) break;
-                peripheral->state = P_W4_READ_LONG_CHARACTERISTIC_VALUE_RESULT;
+                peripheral->state = P_W4_READ_BLOB_RESULT;
                 break;
             
             case P_W2_SEND_WRITE_CHARACTERISTIC_VALUE:
@@ -493,16 +493,16 @@ static void handle_peripheral_list(){
                 peripheral->state = P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT;
                 break;
             
-            case P_W2_PREPARE_WRITE_LONG_CHARACTERISTIC_VALUE:
-                status = send_gatt_prepare_write_long_characteristic_value_request(peripheral);
+            case P_W2_PREPARE_WRITE:
+                status = send_gatt_prepare_write_request(peripheral);
                 if (status != BLE_PERIPHERAL_OK) break;
-                peripheral->state = P_W4_PREPARE_WRITE_LONG_CHARACTERISTIC_VALUE_RESULT;
+                peripheral->state = P_W4_PREPARE_WRITE_RESULT;
                 break;
             
-            case P_W2_EXECUTE_WRITE_LONG_CHARACTERISTIC_VALUE:
-                status = send_gatt_execute_write_long_characteristic_value_request(peripheral);
+            case P_W2_EXECUTE_PREPARED_WRITE:
+                status = send_gatt_execute_write_request(peripheral);
                 if (status != BLE_PERIPHERAL_OK) break;
-                peripheral->state = P_W4_EXECUTE_WRITE_LONG_CHARACTERISTIC_VALUE_RESULT;
+                peripheral->state = P_W4_EXECUTE_PREPARED_WRITE_RESULT;
                 break;
             
             
@@ -711,7 +711,7 @@ le_command_status_t le_central_read_long_value_of_characteristic_using_value_han
     if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     peripheral->characteristic_value_handle = value_handle;
     peripheral->characteristic_value_offset = 0;
-    peripheral->state = P_W2_SEND_READ_LONG_CHARACTERISTIC_VALUE_QUERY;
+    peripheral->state = P_W2_SEND_READ_BLOB_QUERY;
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
 }
@@ -746,7 +746,7 @@ le_command_status_t le_central_write_long_value_of_characteristic(le_peripheral_
     if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     peripheral->characteristic_value_handle = value_handle;
     peripheral->characteristic_value_offset = 0;
-    peripheral->state = P_W2_PREPARE_WRITE_LONG_CHARACTERISTIC_VALUE;
+    peripheral->state = P_W2_PREPARE_WRITE;
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
 }
@@ -1204,7 +1204,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             break;
     
         case ATT_READ_BLOB_RESPONSE:
-            if ( peripheral->state != P_W4_READ_LONG_CHARACTERISTIC_VALUE_RESULT) return;
+            if ( peripheral->state != P_W4_READ_BLOB_RESULT) return;
             report_gatt_long_characteristic_value_blob(peripheral, &packet[1], size-1, peripheral->characteristic_value_offset);
 
             uint16_t blob_length = read_blob_length(peripheral);
@@ -1214,24 +1214,24 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                 return;
             }
             peripheral->characteristic_value_offset += blob_length;
-            peripheral->state = P_W2_SEND_READ_LONG_CHARACTERISTIC_VALUE_QUERY;
+            peripheral->state = P_W2_SEND_READ_BLOB_QUERY;
             break;
 
         case ATT_PREPARE_WRITE_RESPONSE:{
-            if (peripheral->state != P_W4_PREPARE_WRITE_LONG_CHARACTERISTIC_VALUE_RESULT) return;
+            if (peripheral->state != P_W4_PREPARE_WRITE_RESULT) return;
 
             uint16_t blob_length = write_blob_length(peripheral);
             if (blob_length == 0){
-                peripheral->state = P_W2_EXECUTE_WRITE_LONG_CHARACTERISTIC_VALUE;
+                peripheral->state = P_W2_EXECUTE_PREPARED_WRITE;
                 return;
             }
             peripheral->characteristic_value_offset += blob_length;
-            peripheral->state = P_W2_PREPARE_WRITE_LONG_CHARACTERISTIC_VALUE;
+            peripheral->state = P_W2_PREPARE_WRITE;
             break;
         }
 
         case ATT_EXECUTE_WRITE_REQUEST:
-            if (peripheral->state != P_W4_EXECUTE_WRITE_LONG_CHARACTERISTIC_VALUE_RESULT) return;
+            if (peripheral->state != P_W4_EXECUTE_PREPARED_WRITE_RESULT) return;
             peripheral->state = P_CONNECTED;
             send_gatt_complete_event(peripheral, GATT_LONG_CHARACTERISTIC_VALUE_WRITE_COMPLETE, 0);
             break;
@@ -1262,7 +1262,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                             peripheral->state = P_CONNECTED;
                             send_gatt_complete_event(peripheral, GATT_INCLUDED_SERVICE_QUERY_COMPLETE, 0);
                             break;
-                        case P_W4_READ_LONG_CHARACTERISTIC_VALUE_RESULT:
+                        case P_W4_READ_BLOB_RESULT:
                             peripheral->state = P_CONNECTED;
                             send_gatt_complete_event(peripheral, GATT_LONG_CHARACTERISTIC_VALUE_QUERY_COMPLETE, 0);
                             break;
