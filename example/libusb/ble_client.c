@@ -121,6 +121,15 @@ static uint16_t l2cap_max_mtu_for_handle(uint16_t handle){
 
 
 // END Helper Functions
+
+static le_command_status_t att_confirmation(uint16_t peripheral_handle){
+    if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
+    uint8_t request[1];
+    request[0] = ATT_HANDLE_VALUE_CONFIRMATION;
+    l2cap_send_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
+    return BLE_PERIPHERAL_OK;
+}
+
 static le_command_status_t att_find_information_request(uint16_t request_type, uint16_t peripheral_handle, uint16_t start_handle, uint16_t end_handle){
     if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
     
@@ -396,6 +405,13 @@ static void handle_peripheral_list(){
     for (it = (linked_item_t *) le_connections; it ; it = it->next){
         le_peripheral_t * peripheral = (le_peripheral_t *) it;
         // printf("handle_peripheral_list, status %u\n", peripheral->state);
+
+        if (peripheral->send_confirmation){
+            peripheral->send_confirmation = 0;
+            att_confirmation(peripheral->handle);
+            return;
+        }
+
         switch (peripheral->state){
             case P_W2_CONNECT:
                 peripheral->state = P_W4_CONNECTED;
@@ -1047,23 +1063,31 @@ static void report_gatt_included_service(le_peripheral_t * peripheral, uint8_t *
     (*le_central_callback)((le_central_event_t*)&event);
 }
 
-static void report_gatt_long_characteristic_value_blob(le_peripheral_t * peripheral, uint8_t * value, int blob_length, int value_offset){
+static void send_characteristic_value_event(le_peripheral_t * peripheral, uint16_t handle, uint8_t * value, uint16_t length, uint16_t offset, uint8_t event_type){
     le_characteristic_value_event_t event;
-    event.type = GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT;
-    event.characteristic_value_blob_length = blob_length; 
-    event.characteristic_value_offset = value_offset;
-    event.characteristic_value = value;
-    (*le_central_callback)((le_central_event_t*)&event);
-}
-
-static void report_gatt_characteristic_value(le_peripheral_t * peripheral, uint8_t * value, int length){
-    le_characteristic_value_event_t event;
-    event.type = GATT_CHARACTERISTIC_VALUE_QUERY_RESULT;
+    event.type = event_type;
+    event.characteristic_value_handle = handle;
     event.characteristic_value_blob_length = length; 
     event.characteristic_value = value;
+    event.characteristic_value_offset = offset;
     (*le_central_callback)((le_central_event_t*)&event);
 }
 
+static void report_gatt_long_characteristic_value_blob(le_peripheral_t * peripheral, uint8_t * value, uint16_t blob_length, int value_offset){
+    send_characteristic_value_event(peripheral, peripheral->characteristic_value_handle, value, blob_length, value_offset, GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT);
+}
+
+static void report_gatt_notification(le_peripheral_t * peripheral, uint16_t handle, uint8_t * value, int length){
+    send_characteristic_value_event(peripheral, handle, value, length, 0, GATT_NOTIFICATION);
+}
+
+static void report_gatt_indication(le_peripheral_t * peripheral, uint16_t handle, uint8_t * value, int length){
+    send_characteristic_value_event(peripheral, handle, value, length, 0, GATT_INDICATION);
+}
+
+static void report_gatt_characteristic_value(le_peripheral_t * peripheral, uint16_t handle, uint8_t * value, int length){
+    send_characteristic_value_event(peripheral, handle, value, length, 0, GATT_CHARACTERISTIC_VALUE_QUERY_RESULT);
+}
 
 static void trigger_next_query(le_peripheral_t * peripheral, uint16_t last_result_handle, peripheral_state_t next_query_state, uint8_t complete_event_type){
     if (last_result_handle < peripheral->end_group_handle){
@@ -1146,7 +1170,14 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                     printf("ATT_READ_BY_GROUP_TYPE_RESPONSE");
                     break;
             }
-           
+            break;
+        case ATT_HANDLE_VALUE_NOTIFICATION:
+            report_gatt_notification(peripheral, READ_BT_16(packet,1), &packet[3], size-3);
+            break;
+        
+        case ATT_HANDLE_VALUE_INDICATION:
+            report_gatt_indication(peripheral, READ_BT_16(packet,1), &packet[3], size-3);
+            peripheral->send_confirmation = 1; 
             break;
 
         case ATT_READ_BY_TYPE_RESPONSE:
@@ -1201,7 +1232,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                 }
                 case P_W4_READ_CHARACTERISTIC_VALUE_RESULT:
                     peripheral->state = P_CONNECTED;
-                    report_gatt_characteristic_value(peripheral, &packet[1], size-1);
+                    report_gatt_characteristic_value(peripheral, peripheral->characteristic_value_handle, &packet[1], size-1);
                     break;
                 default:
                     break;                

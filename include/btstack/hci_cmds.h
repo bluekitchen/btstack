@@ -238,7 +238,8 @@ extern "C" {
 #define GATT_CHARACTERISTIC_VALUE_WRITE_RESPONSE  		   0xAD
 #define GATT_LONG_CHARACTERISTIC_VALUE_WRITE_RESPONSE	   0xAE
 #define GATT_LONG_CHARACTERISTIC_VALUE_WRITE_COMPLETE	   0xAF
-
+#define GATT_NOTIFICATION								   0xBC
+#define GATT_INDICATION									   0xBD
 
 // data: event(8), len(8), status (8), hci_handle (16), attribute_handle (16)
 #define ATT_HANDLE_VALUE_INDICATION_COMPLETE        	   0xBF
