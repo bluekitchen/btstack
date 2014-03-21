@@ -155,6 +155,7 @@ typedef struct le_peripheral{
     uint8_t* characteristic_value;
 
     uint8_t  filter_with_uuid;
+    uint8_t  send_confirmation;
 
 } le_peripheral_t;
 
@@ -207,6 +208,7 @@ typedef struct le_characteristic_value{
 
 typedef struct le_characteristic_value_event{
     uint8_t  type;
+    uint16_t characteristic_value_handle;
     uint16_t characteristic_value_blob_length;
     uint16_t characteristic_value_offset;
     uint8_t * characteristic_value; 
