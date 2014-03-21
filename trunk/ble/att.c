@@ -776,6 +776,8 @@ static uint16_t handle_read_by_group_type_request2(att_connection_t * att_connec
         
         if (it.handle && it.handle < start_handle) continue;
         if (it.handle > end_handle) break;  // (1)
+
+        // printf("Handle 0x%04x\n", it.handle);
         
         // close current tag, if within a group and a new service definition starts or we reach end of att db
         if (in_group &&
@@ -953,7 +955,7 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
             att_prepare_write_reset();
             return setup_error(response_buffer, request_type, handle, error_code);
         }
-        (*att_write_callback)(0, ATT_TRANSACTION_MODE_EXECUTE, 0, request_buffer + 3, request_len - 3, NULL);
+        (*att_write_callback)(0, ATT_TRANSACTION_MODE_EXECUTE, 0, NULL, 0, NULL);
     } else {
         att_clear_transaction_queue();
     }
