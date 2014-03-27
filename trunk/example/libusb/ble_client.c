@@ -286,6 +286,10 @@ static le_command_status_t send_gatt_write_characteristic_value_request(le_perip
     return att_write_request(ATT_WRITE_REQUEST, peripheral->handle, peripheral->characteristic_value_handle, peripheral->characteristic_value_length, peripheral->characteristic_value);
 }
 
+static le_command_status_t send_gatt_write_client_characteristic_configuration_request(le_peripheral_t * peripheral){
+    return att_write_request(ATT_WRITE_REQUEST, peripheral->handle, peripheral->client_characteristic_configuration_handle, 2, peripheral->client_characteristic_configuration_value);
+}
+
 static le_command_status_t send_gatt_prepare_write_request(le_peripheral_t * peripheral){
     return att_prepare_write_request(ATT_PREPARE_WRITE_REQUEST, peripheral->handle, peripheral->characteristic_value_handle, peripheral->characteristic_value_offset, write_blob_length(peripheral), peripheral->characteristic_value);
 }
@@ -296,6 +300,10 @@ static le_command_status_t send_gatt_execute_write_request(le_peripheral_t * per
 
 static le_command_status_t send_gatt_cancel_prepared_write_request(le_peripheral_t * peripheral){
     return att_execute_write_request(ATT_EXECUTE_WRITE_REQUEST, peripheral->handle, 0);
+}
+
+static le_command_status_t send_gatt_client_characteristic_configuration_request(le_peripheral_t * peripheral){
+    return att_read_by_type_or_group_request(ATT_READ_BY_TYPE_REQUEST, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle);
 }
 
 static inline void send_gatt_complete_event(le_peripheral_t * peripheral, uint8_t type, uint8_t status){
@@ -529,6 +537,17 @@ static void handle_peripheral_list(){
                 peripheral->state = P_W4_CANCEL_PREPARED_WRITE_RESULT;
                 break;    
 
+            case P_W2_SEND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY:
+                status = send_gatt_client_characteristic_configuration_request(peripheral);
+                if (status != BLE_PERIPHERAL_OK) break;
+                peripheral->state = P_W4_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT;
+                break;
+
+            case P_W2_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION:
+                status = send_gatt_write_client_characteristic_configuration_request(peripheral);
+                if (status != BLE_PERIPHERAL_OK) break;
+                peripheral->state = P_W4_CLIENT_CHARACTERISTIC_CONFIGURATION_RESULT;
+                break;
             case P_W2_DISCONNECT:
                 peripheral->state = P_W4_DISCONNECTED;
                 hci_send_cmd(&hci_disconnect, peripheral->handle,0x13);
@@ -608,7 +627,6 @@ le_command_status_t le_central_disconnect(le_peripheral_t *context){
 }
 
 le_command_status_t le_central_discover_primary_services(le_peripheral_t *peripheral){
-    printf("le_central_discover_primary_services state %u\n", peripheral->state);
     if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     peripheral->start_group_handle = 0x0001;
     peripheral->end_group_handle   = 0xffff;
@@ -701,15 +719,12 @@ le_command_status_t le_central_discover_characteristics_for_service_by_uuid128(l
 
 le_command_status_t le_central_discover_characteristic_descriptors(le_peripheral_t *peripheral, le_characteristic_t *characteristic){
     if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
-    
     if (characteristic->value_handle == characteristic->end_handle){
         send_gatt_complete_event(peripheral, GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_COMPLETE, 0);
         return BLE_PERIPHERAL_OK;
     }
-
     peripheral->start_group_handle = characteristic->value_handle + 1;
     peripheral->end_group_handle   = characteristic->end_handle;
-    
     peripheral->state = P_W2_SEND_CHARACTERISTIC_DESCRIPTOR_QUERY;
     
     gatt_client_run();
@@ -789,6 +804,16 @@ le_command_status_t le_central_reliable_write_long_value_of_characteristic(le_pe
     return BLE_PERIPHERAL_OK;
 }
 
+le_command_status_t le_central_write_client_characteristic_configuration(le_peripheral_t *peripheral, le_characteristic_t * characteristic, uint16_t configuration){
+    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
+    peripheral->query_start_handle = characteristic->start_handle;
+    peripheral->query_end_handle = characteristic->end_handle;
+    bt_store_16(peripheral->client_characteristic_configuration_value, 0, configuration);
+
+    peripheral->state = P_W2_SEND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY;
+    gatt_client_run();
+    return BLE_PERIPHERAL_OK;
+}
 
 static void gatt_client_run(){
     if (state == W4_ON) return;
@@ -982,7 +1007,7 @@ static void report_gatt_services(le_peripheral_t * peripheral, uint8_t * packet,
             swap128(&packet[i+4], service.uuid128);
         }
         event.service = service;
-        printf(" report_gatt_services 0x%02x : 0x%02x-0x%02x\n", service.uuid16, service.start_group_handle, service.end_group_handle);
+        // printf(" report_gatt_services 0x%02x : 0x%02x-0x%02x\n", service.uuid16, service.start_group_handle, service.end_group_handle);
 
         (*le_central_callback)((le_central_event_t*)&event);
     }
@@ -1187,7 +1212,6 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                     trigger_next_characteristic_query(peripheral, get_last_result_handle(packet, size));
                     break;
                 case P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT:
-
                     report_gatt_characteristics(peripheral, packet, size);
                     trigger_next_characteristic_query(peripheral, get_last_result_handle(packet, size));
                     break;
@@ -1216,7 +1240,10 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                     trigger_next_included_service_query(peripheral, get_last_result_handle(packet, size));
                     break;
                 }
-
+                case P_W4_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT:
+                    peripheral->client_characteristic_configuration_handle = READ_BT_16(packet, 2); 
+                    peripheral->state = P_W2_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
+                    break;
                 default:
                     break;
             }
@@ -1267,7 +1294,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             event.type = GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT;
                 
             int i;
-            for (i = 1; i<size; i+=pair_size){
+            for (i = 2; i<size; i+=pair_size){
                 descriptor.handle = READ_BT_16(packet,i);
                 descriptor.uuid16 = READ_BT_16(packet,i+2);
                 
@@ -1280,11 +1307,20 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
         }
 
         case ATT_WRITE_RESPONSE:
-            if (peripheral->state != P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT) return;
-            peripheral->state = P_CONNECTED;
-            send_gatt_complete_event(peripheral, GATT_CHARACTERISTIC_VALUE_WRITE_RESPONSE, 0);
+            switch (peripheral->state){
+                case P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
+                    peripheral->state = P_CONNECTED;
+                    send_gatt_complete_event(peripheral, GATT_CHARACTERISTIC_VALUE_WRITE_RESPONSE, 0);
+                    break;
+                case P_W4_CLIENT_CHARACTERISTIC_CONFIGURATION_RESULT:
+                    peripheral->state = P_CONNECTED;
+                    send_gatt_complete_event(peripheral, GATT_CLIENT_CHARACTERISTIC_CONFIGURATION_COMPLETE, 0);
+                    break;
+                default:
+                    break;
+            }
             break;
-    
+
         case ATT_READ_BLOB_RESPONSE:
             if ( peripheral->state != P_W4_READ_BLOB_RESULT) return;
             uint16_t received_blob_length = size-1;
@@ -1444,8 +1480,8 @@ static uint8_t   test_device_addr_type = 0;
 // pick one:
 // static bd_addr_t test_device_addr = {0x1c, 0xba, 0x8c, 0x20, 0xc7, 0xf6};
 // static bd_addr_t test_device_addr = {0x00, 0x1b, 0xdc, 0x05, 0xb5, 0xdc}; // SensorTag 1
-// static bd_addr_t test_device_addr = {0x34, 0xb1, 0xf7, 0xd1, 0x77, 0x9b}; // SensorTag 2
-static bd_addr_t test_device_addr = {0x00, 0x02, 0x72, 0xdc, 0x31, 0xc1}; // delock40 
+static bd_addr_t test_device_addr = {0x34, 0xb1, 0xf7, 0xd1, 0x77, 0x9b}; // SensorTag 2
+// static bd_addr_t test_device_addr = {0x00, 0x02, 0x72, 0xdc, 0x31, 0xc1}; // delock40 
 
 typedef enum {
     TC_IDLE,
@@ -1488,30 +1524,352 @@ uint8_t chr_long_value[26] = {
     0x5d};
 uint8_t chr_short_value[1] = {0x86};
 
-void sm_test_basic_cmds(le_central_event_t * event){
+// void sm_test_basic_cmds(le_central_event_t * event){
+//     le_service_t service;
+//     le_characteristic_descriptor_t descriptor;
+    
+//     switch(tc_state){
+//         case TC_W4_CONNECT:
+//             if (event->type != GATT_CONNECTION_COMPLETE) break;
+//             tc_state = TC_W4_SERVICE_RESULT;
+//             printf("\n test client - CONNECTED, query services now\n");
+//             le_central_discover_primary_services(&test_device);
+//             break;
+        
+//         case TC_W4_SERVICE_RESULT:
+//             switch(event->type){
+//                 case GATT_SERVICE_QUERY_RESULT:
+//                     service = ((le_service_event_t *) event)->service;
+//                     dump_service(&service);
+//                     services[service_count++] = service;
+//                     break;
+                
+//                 case GATT_SERVICE_QUERY_COMPLETE:
+//                     tc_state = TC_W4_SERVICE_WITH_UUID_RESULT;
+//                     printf("\n test client - SERVICE by SERVICE UUID QUERY\n"); 
+//                     le_central_discover_primary_services_by_uuid16(&test_device, 0xffff);
+//                     break;
+                
+//                 default:
+//                     break;
+//             }
+//             break;
+
+//         case TC_W4_SERVICE_WITH_UUID_RESULT:
+//             switch(event->type){
+//                 case GATT_SERVICE_QUERY_RESULT:
+//                     service = ((le_service_event_t *) event)->service;
+//                     dump_service(&service);
+//                     break;
+                
+//                 case GATT_SERVICE_QUERY_COMPLETE:
+//                     tc_state = TC_W4_CHARACTERISTIC_RESULT;
+//                     service_index = 0;
+//                     printf("\n test client - CHARACTERISTIC for SERVICE 0x%02x QUERY\n", services[service_index].uuid16);
+//                     le_central_discover_characteristics_for_service(&test_device, &services[service_index]);
+//                     break;
+//                 default:
+//                     break;
+//             }
+//             break;
+
+//         case TC_W4_CHARACTERISTIC_RESULT:
+//             switch(event->type){
+//                 case GATT_CHARACTERISTIC_QUERY_RESULT:
+//                     characteristic = ((le_characteristic_event_t *) event)->characteristic;
+//                     dump_characteristic(&characteristic);
+//                     characteristics[characteristic_count++] = characteristic;
+//                     break;
+
+//                 case GATT_CHARACTERISTIC_QUERY_COMPLETE:
+//                     if (service_index < service_count) {
+//                         tc_state = TC_W4_CHARACTERISTIC_RESULT;
+//                         service = services[service_index++];
+//                         printf("\n test client - CHARACTERISTIC for SERVICE 0x%02x QUERY\n", service.uuid16);
+//                         le_central_discover_characteristics_for_service(&test_device, &service);
+//                         break;
+//                     }
+//                     tc_state = TC_W4_CHARACTERISTIC_WITH_UUID_RESULT; 
+//                     service_index = 0;
+//                     characteristic_index = 0;
+//                     printf("\n test client - CHARACTERISTIC for SERVICE 0x%02x QUERY with UUID 0x%02x\n", 
+//                             services[0].uuid16, characteristics[0].uuid16);
+//                     le_central_discover_characteristics_for_handle_range_by_uuid16(&test_device, 
+//                         services[0].start_group_handle, services[0].end_group_handle, characteristics[0].uuid16);
+//                     break;
+//                 default:
+//                     break;
+//             }
+//             break;
+        
+//         case TC_W4_CHARACTERISTIC_WITH_UUID_RESULT:
+//             switch(event->type){
+//                 case GATT_CHARACTERISTIC_QUERY_RESULT:
+//                     characteristic = ((le_characteristic_event_t *) event)->characteristic;
+//                     dump_characteristic(&characteristic);
+//                     break;
+//                 case GATT_CHARACTERISTIC_QUERY_COMPLETE:
+//                     tc_state = TC_W4_CHARACTERISTIC_DESCRIPTOR_RESULT;
+//                     printf("\n test client - DESCRIPTOR for CHARACTERISTIC \n");
+//                     dump_characteristic(&characteristics[0]);
+//                     le_central_discover_characteristic_descriptors(&test_device, &characteristics[0]);
+//                     break;
+//                 default:
+//                     break;
+//             }
+//             break;
+
+//         case TC_W4_CHARACTERISTIC_DESCRIPTOR_RESULT:
+//             switch(event->type){
+//                 case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
+//                     descriptor = ((le_characteristic_descriptor_event_t *) event)->characteristic_descriptor;
+//                     dump_descriptor(&descriptor);
+//                     break;
+//                 case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_COMPLETE:
+//                     service_index = 0;
+//                     service = services[service_index];
+//                     tc_state = TC_W4_INCLUDED_SERVICE_RESULT;
+//                     printf("\n test client - INCLUDED SERVICE QUERY, for service %02x\n", service.uuid16);
+//                     le_central_find_included_services_for_service(&test_device, &service);
+//                     break;
+//                 default:
+//                     break;
+//             }
+//             break;
+
+//         case TC_W4_INCLUDED_SERVICE_RESULT:
+//             switch(event->type){
+//                 case GATT_INCLUDED_SERVICE_QUERY_RESULT:
+//                     service = ((le_service_event_t *) event)->service;
+//                     printf("    *** found included service *** start group handle %02x, end group handle %02x \n", service.start_group_handle, service.end_group_handle);
+//                     break;
+//                 case GATT_INCLUDED_SERVICE_QUERY_COMPLETE:
+//                     if (service_index < service_count) {
+//                         service = services[service_index++];
+//                         printf("\n test client - INCLUDED SERVICE QUERY, for service %02x\n", service.uuid16);
+//                         le_central_find_included_services_for_service(&test_device, &service);
+//                         break;
+//                     }
+//                     tc_state = TC_W4_DISCONNECT;
+//                     printf("\n\n test client - DISCONNECT ");
+//                     le_central_disconnect(&test_device);
+//                     break;
+//                 default:
+//                     break;
+//             }
+//             break;
+//         default:
+//             break;
+//     }
+// }
+
+
+// void sm_test_reads(le_central_event_t * event){
+//     switch(tc_state){
+//         // 59 5a 5d f200
+//         case TC_W4_CONNECT:
+//             if (event->type != GATT_CONNECTION_COMPLETE) break;
+//             tc_state = TC_W4_CHARACTERISTIC_WITH_UUID_RESULT;
+//             printf("\n test client - CONNECTED, query characteristic now\n");
+//             le_central_discover_characteristics_for_handle_range_by_uuid16(&test_device, 0x59, 0x5d, 0xf200);
+//             break;
+
+//          case TC_W4_CHARACTERISTIC_WITH_UUID_RESULT:
+//             switch(event->type){
+//                 case GATT_CHARACTERISTIC_QUERY_RESULT:
+//                     characteristic = ((le_characteristic_event_t *) event)->characteristic;
+//                     dump_characteristic(&characteristic);
+//                     break;
+//                 case GATT_CHARACTERISTIC_QUERY_COMPLETE:
+//                     tc_state = TC_W4_READ_LONG_RESULT;
+//                     printf("\n\n test client - LONG VALUE for CHARACTERISTIC \n");
+//                     le_central_write_value_of_characteristic_without_response(&test_device, characteristic.value_handle, 1, chr_short_value);
+//                     break;
+//                 default:
+//                     break;
+//             }
+//             break;   
+
+//          case TC_W4_READ_LONG_RESULT:
+//             switch (event->type){
+//                 case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
+//                     dump_characteristic_value((le_characteristic_value_event_t *)event);      
+//                     break;
+//                 case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_COMPLETE:
+//                     tc_state = TC_W4_DISCONNECT;
+//                     printf("\n\n test client - DISCONNECT ");
+//                     le_central_disconnect(&test_device);
+//                     break;
+//                 default:
+//                     printf("TC_W4_READ_LONG_RESULT\n");
+//                     break;
+//             } 
+//             break;
+
+//         default:
+//             break;
+//         }
+// }
+
+// void sm_test_write_no_response(le_central_event_t * event){
+//     switch(tc_state){
+//         case TC_W4_SCAN_RESULT: {
+//             if (event->type != GATT_ADVERTISEMENT) break;
+//             printf("test client - SCAN ACTIVE\n");
+//             ad_event_t * ad_event = (ad_event_t*) event;
+//             dump_ad_event(ad_event);
+//             // copy found addr
+//             test_device_addr_type = ad_event->address_type;
+//             bd_addr_t found_device_addr;
+//             memcpy(found_device_addr, ad_event->address, 6);
+
+//             if (memcmp(&found_device_addr, &test_device_addr, 6) != 0) break;
+//             // memcpy(test_device_addr, ad_event->address, 6);
+
+//             tc_state = TC_W4_CONNECT;
+//             le_central_stop_scan();
+//             le_central_connect(&test_device, test_device_addr_type, test_device_addr);
+//             break;
+//         }
+//         // 59 5a 5d f200
+//         case TC_W4_CONNECT:
+//             if (event->type != GATT_CONNECTION_COMPLETE) break;
+//             tc_state = TC_W4_CHARACTERISTIC_WITH_UUID_RESULT;
+//             printf("\n test client - CONNECTED, query characteristic now\n");
+//             le_central_discover_characteristics_for_handle_range_by_uuid16(&test_device, 0x59, 0x5d, 0xf200);
+//             break;
+
+//         case TC_W4_CHARACTERISTIC_WITH_UUID_RESULT:
+//             switch(event->type){
+//                 case GATT_CHARACTERISTIC_QUERY_RESULT:
+//                     characteristic = ((le_characteristic_event_t *) event)->characteristic;
+//                     dump_characteristic(&characteristic);
+//                     break;
+//                 case GATT_CHARACTERISTIC_QUERY_COMPLETE:{
+//                     printf("\n\n test client - Write VALUE for CHARACTERISTIC \n");
+//                     tc_state = TC_W2_WRITE_WITHOUT_RESPONSE;
+//                     le_command_status_t  status = le_central_write_value_of_characteristic_without_response(&test_device, characteristic.value_handle, 1, chr_short_value);
+//                     if (status != BLE_PERIPHERAL_OK) break;
+                    
+//                     tc_state = TC_W4_READ_LONG_RESULT;
+//                     le_central_read_long_value_of_characteristic(&test_device, &characteristic);
+//                     break;
+//                 }
+//                 default:
+//                     break;
+//             }
+//             break;   
+
+//         case TC_W4_READ_LONG_RESULT:
+//             switch (event->type){
+//                 case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
+//                     dump_characteristic_value((le_characteristic_value_event_t *)event);      
+//                     break;
+//                 case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_COMPLETE:
+//                     tc_state = TC_W4_DISCONNECT;
+//                     printf("\n\n test client - DISCONNECT ");
+//                     le_central_disconnect(&test_device);
+//                     break;
+//                 default:
+//                     printf("TC_W4_READ_LONG_RESULT\n");
+//                     break;
+//             } 
+//             break;
+        
+//         default:
+//             break;
+//         }
+// }
+
+// void sm_test_long_writes(le_central_event_t * event){
+//     switch(tc_state){
+//         case TC_W4_CONNECT:
+//             if (event->type != GATT_CONNECTION_COMPLETE) break;
+//             tc_state = TC_W4_CHARACTERISTIC_WITH_UUID_RESULT;
+//             printf("\n test client - CONNECTED, query characteristic now\n");
+//             le_central_discover_characteristics_for_handle_range_by_uuid16(&test_device, 0x59, 0x5d, 0xf200);
+//             break;
+
+//          case TC_W4_CHARACTERISTIC_WITH_UUID_RESULT:
+//             switch(event->type){
+//                 case GATT_CHARACTERISTIC_QUERY_RESULT:
+//                     characteristic = ((le_characteristic_event_t *) event)->characteristic;
+//                     dump_characteristic(&characteristic);
+//                     break;
+//                 case GATT_CHARACTERISTIC_QUERY_COMPLETE:{
+//                     printf("\n\n test client - Write LONG VALUE for CHARACTERISTIC \n");
+//                     tc_state = TC_W4_WRITE_RESULT;
+//                     // le_central_write_value_of_characteristic(&test_device, characteristic.value_handle, 1, chr_short_value);
+//                     // le_central_write_long_value_of_characteristic(&test_device, characteristic.value_handle, 26, chr_long_value);
+//                     le_central_reliable_write_long_value_of_characteristic(&test_device, characteristic.value_handle, 26, chr_long_value);
+//                     break;
+//                 }
+//                 default:
+//                     break;
+//             }
+//             break;   
+
+//          case TC_W4_WRITE_RESULT:
+//             printf("\n\n test client - Write LONG VALUE for CHARACTERISTIC \n");
+//             tc_state = TC_W4_READ_LONG_RESULT;
+//             le_central_read_long_value_of_characteristic(&test_device, &characteristic);
+//             break;
+
+//          case TC_W4_READ_LONG_RESULT:
+//             switch (event->type){
+//                 case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
+//                     dump_characteristic_value((le_characteristic_value_event_t *)event);      
+//                     break;
+//                 case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_COMPLETE:
+//                     tc_state = TC_W4_DISCONNECT;
+//                     printf("\n\n test client - DISCONNECT ");
+//                     le_central_disconnect(&test_device);
+//                     break;
+//                 default:
+//                     printf("TC_W4_READ_LONG_RESULT\n");
+//                     break;
+//             } 
+//             break;
+
+//         default:
+//             printf("Client, unhandled state %d\n", tc_state);
+//             break;
+//         }
+// }
+
+static void handle_scan_and_connect(le_central_event_t * event){
+    if (tc_state != TC_W4_SCAN_RESULT) return;
+    if (event->type != GATT_ADVERTISEMENT) return;
+    printf("test client - SCAN ACTIVE\n");
+    ad_event_t * ad_event = (ad_event_t*) event;
+    dump_ad_event(ad_event);
+    // copy found addr
+    test_device_addr_type = ad_event->address_type;
+    bd_addr_t found_device_addr;
+    memcpy(found_device_addr, ad_event->address, 6);
+
+    if (memcmp(&found_device_addr, &test_device_addr, 6) != 0) return;
+    // memcpy(test_device_addr, ad_event->address, 6);
+
+    tc_state = TC_W4_CONNECT;
+    le_central_stop_scan();
+    le_central_connect(&test_device, test_device_addr_type, test_device_addr);
+}
+
+static void handle_disconnect(le_central_event_t * event){
+    if (tc_state != TC_W4_DISCONNECT) return;
+    if (event->type != GATT_CONNECTION_COMPLETE ) return;
+    printf("  DONE\n");
+}
+
+static void handle_le_central_event(le_central_event_t * event){
+    handle_scan_and_connect(event);
+    handle_disconnect(event);
+
     le_service_t service;
     le_characteristic_descriptor_t descriptor;
     
     switch(tc_state){
-        case TC_W4_SCAN_RESULT: {
-            if (event->type != GATT_ADVERTISEMENT) break;
-            printf("test client - SCAN ACTIVE\n");
-            ad_event_t * ad_event = (ad_event_t*) event;
-            dump_ad_event(ad_event);
-            // copy found addr
-            test_device_addr_type = ad_event->address_type;
-            bd_addr_t found_device_addr;
-            memcpy(found_device_addr, ad_event->address, 6);
-
-            if (memcmp(&found_device_addr, &test_device_addr, 6) != 0) break;
-            // memcpy(test_device_addr, ad_event->address, 6);
-
-            tc_state = TC_W4_CONNECT;
-            le_central_stop_scan();
-            le_central_connect(&test_device, test_device_addr_type, test_device_addr);
-            break;
-        }
-
         case TC_W4_CONNECT:
             if (event->type != GATT_CONNECTION_COMPLETE) break;
             tc_state = TC_W4_SERVICE_RESULT;
@@ -1523,32 +1881,14 @@ void sm_test_basic_cmds(le_central_event_t * event){
             switch(event->type){
                 case GATT_SERVICE_QUERY_RESULT:
                     service = ((le_service_event_t *) event)->service;
-                    dump_service(&service);
+                    // dump_service(&service);
                     services[service_count++] = service;
-                    break;
-                
-                case GATT_SERVICE_QUERY_COMPLETE:
-                    tc_state = TC_W4_SERVICE_WITH_UUID_RESULT;
-                    printf("\n test client - SERVICE by SERVICE UUID QUERY\n"); 
-                    le_central_discover_primary_services_by_uuid16(&test_device, 0xffff);
-                    break;
-                
-                default:
-                    break;
-            }
-            break;
-
-        case TC_W4_SERVICE_WITH_UUID_RESULT:
-            switch(event->type){
-                case GATT_SERVICE_QUERY_RESULT:
-                    service = ((le_service_event_t *) event)->service;
-                    dump_service(&service);
                     break;
                 
                 case GATT_SERVICE_QUERY_COMPLETE:
                     tc_state = TC_W4_CHARACTERISTIC_RESULT;
                     service_index = 0;
-                    printf("\n test client - CHARACTERISTIC for SERVICE 0x%02x QUERY\n", services[service_index].uuid16);
+                    //printf("\n test client - CHARACTERISTIC for SERVICE 0x%02x QUERY\n", services[service_index].uuid16);
                     le_central_discover_characteristics_for_service(&test_device, &services[service_index]);
                     break;
                 default:
@@ -1560,7 +1900,7 @@ void sm_test_basic_cmds(le_central_event_t * event){
             switch(event->type){
                 case GATT_CHARACTERISTIC_QUERY_RESULT:
                     characteristic = ((le_characteristic_event_t *) event)->characteristic;
-                    dump_characteristic(&characteristic);
+                    // dump_characteristic(&characteristic);
                     characteristics[characteristic_count++] = characteristic;
                     break;
 
@@ -1568,315 +1908,47 @@ void sm_test_basic_cmds(le_central_event_t * event){
                     if (service_index < service_count) {
                         tc_state = TC_W4_CHARACTERISTIC_RESULT;
                         service = services[service_index++];
-                        printf("\n test client - CHARACTERISTIC for SERVICE 0x%02x QUERY\n", service.uuid16);
+                        // printf("\n test client - CHARACTERISTIC for SERVICE 0x%02x QUERY\n", service.uuid16);
                         le_central_discover_characteristics_for_service(&test_device, &service);
                         break;
                     }
-                    tc_state = TC_W4_CHARACTERISTIC_WITH_UUID_RESULT; 
-                    service_index = 0;
+                    tc_state = TC_W4_CHARACTERISTIC_DESCRIPTOR_RESULT; 
                     characteristic_index = 0;
-                    printf("\n test client - CHARACTERISTIC for SERVICE 0x%02x QUERY with UUID 0x%02x\n", 
-                            services[0].uuid16, characteristics[0].uuid16);
-                    le_central_discover_characteristics_for_handle_range_by_uuid16(&test_device, 
-                        services[0].start_group_handle, services[0].end_group_handle, characteristics[0].uuid16);
+                    characteristic = characteristics[characteristic_index];
+                    le_central_discover_characteristic_descriptors(&test_device, &characteristic);
                     break;
                 default:
                     break;
             }
             break;
         
-        case TC_W4_CHARACTERISTIC_WITH_UUID_RESULT:
-            switch(event->type){
-                case GATT_CHARACTERISTIC_QUERY_RESULT:
-                    characteristic = ((le_characteristic_event_t *) event)->characteristic;
-                    dump_characteristic(&characteristic);
-                    break;
-                case GATT_CHARACTERISTIC_QUERY_COMPLETE:
-                    tc_state = TC_W4_CHARACTERISTIC_DESCRIPTOR_RESULT;
-                    printf("\n test client - DESCRIPTOR for CHARACTERISTIC \n");
-                    dump_characteristic(&characteristics[0]);
-                    le_central_discover_characteristic_descriptors(&test_device, &characteristics[0]);
-                    break;
-                default:
-                    break;
-            }
-            break;
-
         case TC_W4_CHARACTERISTIC_DESCRIPTOR_RESULT:
             switch(event->type){
                 case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
                     descriptor = ((le_characteristic_descriptor_event_t *) event)->characteristic_descriptor;
+                    printf("\n test client - CLIENT CHARACTERISTIC CONFIGURATION %d/%d\n", characteristic_count, characteristic_index);
+                    printf("    *** characteristic *** value handle 0x%02x, end handle 0x%02x\n", characteristic.value_handle, characteristic.end_handle);
                     dump_descriptor(&descriptor);
                     break;
                 case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_COMPLETE:
-                    service_index = 0;
-                    service = services[service_index];
-                    tc_state = TC_W4_INCLUDED_SERVICE_RESULT;
-                    printf("\n test client - INCLUDED SERVICE QUERY, for service %02x\n", service.uuid16);
-                    le_central_find_included_services_for_service(&test_device, &service);
+                    if (characteristic_index >= characteristic_count ) break;
+                    tc_state = TC_W4_CHARACTERISTIC_DESCRIPTOR_RESULT;
+                    characteristic = characteristics[characteristic_index++];
+                    le_central_discover_characteristic_descriptors(&test_device, &characteristic);
                     break;
                 default:
                     break;
             }
+            if (characteristic_index < characteristic_count ) break;
+            tc_state = TC_W4_DISCONNECT;
+            printf("\n test client - DISCONNECT %d/%d\n", characteristic_count, characteristic_index);
+            le_central_disconnect(&test_device);
             break;
 
-        case TC_W4_INCLUDED_SERVICE_RESULT:
-            switch(event->type){
-                case GATT_INCLUDED_SERVICE_QUERY_RESULT:
-                    service = ((le_service_event_t *) event)->service;
-                    printf("    *** found included service *** start group handle %02x, end group handle %02x \n", service.start_group_handle, service.end_group_handle);
-                    break;
-                case GATT_INCLUDED_SERVICE_QUERY_COMPLETE:
-                    if (service_index < service_count) {
-                        service = services[service_index++];
-                        printf("\n test client - INCLUDED SERVICE QUERY, for service %02x\n", service.uuid16);
-                        le_central_find_included_services_for_service(&test_device, &service);
-                        break;
-                    }
-                    tc_state = TC_W4_DISCONNECT;
-                    printf("\n\n test client - DISCONNECT ");
-                    le_central_disconnect(&test_device);
-                    break;
-                default:
-                    break;
-            }
-            break;
-
-        case TC_W4_DISCONNECT:
-            if (event->type != GATT_CONNECTION_COMPLETE ) break;
-            printf("  DONE\n");
-            break;
-        default:
-            printf("Client, unhandled state %d\n", tc_state);
-            break;
-    }
-}
-
-
-void sm_test_reads(le_central_event_t * event){
-    switch(tc_state){
-        case TC_W4_SCAN_RESULT: {
-            if (event->type != GATT_ADVERTISEMENT) break;
-            printf("test client - SCAN ACTIVE\n");
-            ad_event_t * ad_event = (ad_event_t*) event;
-            dump_ad_event(ad_event);
-            // copy found addr
-            test_device_addr_type = ad_event->address_type;
-            bd_addr_t found_device_addr;
-            memcpy(found_device_addr, ad_event->address, 6);
-
-            if (memcmp(&found_device_addr, &test_device_addr, 6) != 0) break;
-            // memcpy(test_device_addr, ad_event->address, 6);
-
-            tc_state = TC_W4_CONNECT;
-            le_central_stop_scan();
-            le_central_connect(&test_device, test_device_addr_type, test_device_addr);
-            break;
-        }
-        // 59 5a 5d f200
-        case TC_W4_CONNECT:
-            if (event->type != GATT_CONNECTION_COMPLETE) break;
-            tc_state = TC_W4_CHARACTERISTIC_WITH_UUID_RESULT;
-            printf("\n test client - CONNECTED, query characteristic now\n");
-            le_central_discover_characteristics_for_handle_range_by_uuid16(&test_device, 0x59, 0x5d, 0xf200);
-            break;
-
-         case TC_W4_CHARACTERISTIC_WITH_UUID_RESULT:
-            switch(event->type){
-                case GATT_CHARACTERISTIC_QUERY_RESULT:
-                    characteristic = ((le_characteristic_event_t *) event)->characteristic;
-                    dump_characteristic(&characteristic);
-                    break;
-                case GATT_CHARACTERISTIC_QUERY_COMPLETE:
-                    tc_state = TC_W4_READ_LONG_RESULT;
-                    printf("\n\n test client - LONG VALUE for CHARACTERISTIC \n");
-                    le_central_write_value_of_characteristic_without_response(&test_device, characteristic.value_handle, 1, chr_short_value);
-                    break;
-                default:
-                    break;
-            }
-            break;   
-
-         case TC_W4_READ_LONG_RESULT:
-            switch (event->type){
-                case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
-                    dump_characteristic_value((le_characteristic_value_event_t *)event);      
-                    break;
-                case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_COMPLETE:
-                    tc_state = TC_W4_DISCONNECT;
-                    printf("\n\n test client - DISCONNECT ");
-                    le_central_disconnect(&test_device);
-                    break;
-                default:
-                    printf("TC_W4_READ_LONG_RESULT\n");
-                    break;
-            } 
-            break;
-
-        case TC_W4_DISCONNECT:
-            if (event->type != GATT_CONNECTION_COMPLETE ) break;
-            printf("  DONE\n");
-            break;
         default:
             printf("Client, unhandled state %d\n", tc_state);
             break;
         }
-}
-
-void sm_test_write_no_response(le_central_event_t * event){
-    switch(tc_state){
-        case TC_W4_SCAN_RESULT: {
-            if (event->type != GATT_ADVERTISEMENT) break;
-            printf("test client - SCAN ACTIVE\n");
-            ad_event_t * ad_event = (ad_event_t*) event;
-            dump_ad_event(ad_event);
-            // copy found addr
-            test_device_addr_type = ad_event->address_type;
-            bd_addr_t found_device_addr;
-            memcpy(found_device_addr, ad_event->address, 6);
-
-            if (memcmp(&found_device_addr, &test_device_addr, 6) != 0) break;
-            // memcpy(test_device_addr, ad_event->address, 6);
-
-            tc_state = TC_W4_CONNECT;
-            le_central_stop_scan();
-            le_central_connect(&test_device, test_device_addr_type, test_device_addr);
-            break;
-        }
-        // 59 5a 5d f200
-        case TC_W4_CONNECT:
-            if (event->type != GATT_CONNECTION_COMPLETE) break;
-            tc_state = TC_W4_CHARACTERISTIC_WITH_UUID_RESULT;
-            printf("\n test client - CONNECTED, query characteristic now\n");
-            le_central_discover_characteristics_for_handle_range_by_uuid16(&test_device, 0x59, 0x5d, 0xf200);
-            break;
-
-         case TC_W4_CHARACTERISTIC_WITH_UUID_RESULT:
-            switch(event->type){
-                case GATT_CHARACTERISTIC_QUERY_RESULT:
-                    characteristic = ((le_characteristic_event_t *) event)->characteristic;
-                    dump_characteristic(&characteristic);
-                    break;
-                case GATT_CHARACTERISTIC_QUERY_COMPLETE:{
-                    printf("\n\n test client - Write VALUE for CHARACTERISTIC \n");
-                    tc_state = TC_W2_WRITE_WITHOUT_RESPONSE;
-                    le_command_status_t  status = le_central_write_value_of_characteristic_without_response(&test_device, characteristic.value_handle, 1, chr_short_value);
-                    if (status != BLE_PERIPHERAL_OK) break;
-                    
-                    tc_state = TC_W4_READ_LONG_RESULT;
-                    le_central_read_long_value_of_characteristic(&test_device, &characteristic);
-                    break;
-                }
-                default:
-                    break;
-            }
-            break;   
-
-         case TC_W4_READ_LONG_RESULT:
-            switch (event->type){
-                case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
-                    dump_characteristic_value((le_characteristic_value_event_t *)event);      
-                    break;
-                case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_COMPLETE:
-                    tc_state = TC_W4_DISCONNECT;
-                    printf("\n\n test client - DISCONNECT ");
-                    le_central_disconnect(&test_device);
-                    break;
-                default:
-                    printf("TC_W4_READ_LONG_RESULT\n");
-                    break;
-            } 
-            break;
-
-        case TC_W4_DISCONNECT:
-            if (event->type != GATT_CONNECTION_COMPLETE ) break;
-            printf("  DONE\n");
-            break;
-        default:
-            printf("Client, unhandled state %d\n", tc_state);
-            break;
-        }
-}
-
-static void handle_le_central_event(le_central_event_t * event){
-    // dump_client_event(event);
-    switch(tc_state){
-        case TC_W4_SCAN_RESULT: {
-            if (event->type != GATT_ADVERTISEMENT) break;
-            printf("test client - SCAN ACTIVE\n");
-            ad_event_t * ad_event = (ad_event_t*) event;
-            dump_ad_event(ad_event);
-            // copy found addr
-            test_device_addr_type = ad_event->address_type;
-            bd_addr_t found_device_addr;
-            memcpy(found_device_addr, ad_event->address, 6);
-
-            if (memcmp(&found_device_addr, &test_device_addr, 6) != 0) break;
-            // memcpy(test_device_addr, ad_event->address, 6);
-
-            tc_state = TC_W4_CONNECT;
-            le_central_stop_scan();
-            le_central_connect(&test_device, test_device_addr_type, test_device_addr);
-            break;
-        }
-        // 59 5a 5d f200
-        case TC_W4_CONNECT:
-            if (event->type != GATT_CONNECTION_COMPLETE) break;
-            tc_state = TC_W4_CHARACTERISTIC_WITH_UUID_RESULT;
-            printf("\n test client - CONNECTED, query characteristic now\n");
-            le_central_discover_characteristics_for_handle_range_by_uuid16(&test_device, 0x59, 0x5d, 0xf200);
-            break;
-
-         case TC_W4_CHARACTERISTIC_WITH_UUID_RESULT:
-            switch(event->type){
-                case GATT_CHARACTERISTIC_QUERY_RESULT:
-                    characteristic = ((le_characteristic_event_t *) event)->characteristic;
-                    dump_characteristic(&characteristic);
-                    break;
-                case GATT_CHARACTERISTIC_QUERY_COMPLETE:{
-                    printf("\n\n test client - Write LONG VALUE for CHARACTERISTIC \n");
-                    tc_state = TC_W4_WRITE_RESULT;
-                    // le_central_write_value_of_characteristic(&test_device, characteristic.value_handle, 1, chr_short_value);
-                    // le_central_write_long_value_of_characteristic(&test_device, characteristic.value_handle, 26, chr_long_value);
-                    le_central_reliable_write_long_value_of_characteristic(&test_device, characteristic.value_handle, 26, chr_long_value);
-                    break;
-                }
-                default:
-                    break;
-            }
-            break;   
-
-         case TC_W4_WRITE_RESULT:
-            printf("\n\n test client - Write LONG VALUE for CHARACTERISTIC \n");
-            tc_state = TC_W4_READ_LONG_RESULT;
-            le_central_read_long_value_of_characteristic(&test_device, &characteristic);
-            break;
-
-         case TC_W4_READ_LONG_RESULT:
-            switch (event->type){
-                case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
-                    dump_characteristic_value((le_characteristic_value_event_t *)event);      
-                    break;
-                case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_COMPLETE:
-                    tc_state = TC_W4_DISCONNECT;
-                    printf("\n\n test client - DISCONNECT ");
-                    le_central_disconnect(&test_device);
-                    break;
-                default:
-                    printf("TC_W4_READ_LONG_RESULT\n");
-                    break;
-            } 
-            break;
-
-        case TC_W4_DISCONNECT:
-            if (event->type != GATT_CONNECTION_COMPLETE ) break;
-            printf("  DONE\n");
-            break;
-        default:
-            printf("Client, unhandled state %d\n", tc_state);
-            break;
-        }
-    
 }
 
 static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){

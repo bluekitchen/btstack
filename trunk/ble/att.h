@@ -121,7 +121,7 @@ extern "C" {
 #define ATT_PROPERTY_AUTHORIZATION_REQUIRED  0x800
 // Encryption key size stored in upper 4 bits, 0 == no encryption, encryption key size - 1 otherwise
 
-// ATT Transaxtion Timeout of 30 seconds for Command/Response or Incidationc/Confirmation
+// ATT Transaction Timeout of 30 seconds for Command/Response or Incidationc/Confirmation
 #define ATT_TRANSACTION_TIMEOUT_MS     30000
 
 #define ATT_TRANSACTION_MODE_NONE      0x0
@@ -130,10 +130,15 @@ extern "C" {
 #define ATT_TRANSACTION_MODE_CANCEL    0x3
 
 // MARK: GATT UUIDs
-#define GATT_PRIMARY_SERVICE_UUID      0x2800
-#define GATT_SECONDARY_SERVICE_UUID    0x2801
-#define GATT_INCLUDE_SERVICE_UUID      0x2802
-#define GATT_CHARACTERISTICS_UUID      0x2803
+#define GATT_PRIMARY_SERVICE_UUID                   0x2800
+#define GATT_SECONDARY_SERVICE_UUID                 0x2801
+#define GATT_INCLUDE_SERVICE_UUID                   0x2802
+#define GATT_CHARACTERISTICS_UUID                   0x2803
+#define GATT_CLIENT_CHARACTERISTICS_CONFIGURATION   0x2902
+
+#define GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NONE          0
+#define GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION  1
+#define GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION    2
 
 #define GAP_SERVICE_UUID               0x1800
 #define GAP_DEVICE_NAME_UUID           0x2a00
