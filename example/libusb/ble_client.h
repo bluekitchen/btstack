@@ -112,6 +112,11 @@ typedef enum {
     P_W2_CANCEL_PREPARED_WRITE,
     P_W4_CANCEL_PREPARED_WRITE_RESULT,
 
+    P_W2_SEND_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY,
+    P_W4_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT,
+    P_W2_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION,
+    P_W4_CLIENT_CHARACTERISTIC_CONFIGURATION_RESULT,
+
     P_W2_CANCEL_CONNECT,
     P_W4_CONNECT_CANCELLED,
     P_W2_DISCONNECT,
@@ -151,9 +156,13 @@ typedef struct le_peripheral{
     uint16_t characteristic_start_handle;
     uint16_t characteristic_value_handle;
     uint16_t characteristic_value_offset;
+    
     uint16_t characteristic_value_length;
     uint8_t* characteristic_value;
 
+    uint16_t client_characteristic_configuration_handle;
+    uint8_t client_characteristic_configuration_value[2];
+    
     uint8_t  filter_with_uuid;
     uint8_t  send_confirmation;
 
@@ -258,7 +267,6 @@ le_command_status_t le_central_discover_characteristics_for_service_by_uuid128(l
 // returns handle and uuid16 of a descriptor
 le_command_status_t le_central_discover_characteristic_descriptors(le_peripheral_t *context, le_characteristic_t *characteristic);
 
-
 // Reads value of characteristic using characteristic value handle
 le_command_status_t le_central_read_value_of_characteristic(le_peripheral_t *context, le_characteristic_t *characteristic);
 le_command_status_t le_central_read_value_of_characteristic_using_value_handle(le_peripheral_t *context, uint16_t characteristic_value_handle);
@@ -268,14 +276,21 @@ le_command_status_t le_central_read_long_value_of_characteristic(le_peripheral_t
 le_command_status_t le_central_read_long_value_of_characteristic_using_value_handle(le_peripheral_t *context, uint16_t characteristic_value_handle);
 
 
-le_command_status_t le_central_write_value_of_characteristic_without_response(le_peripheral_t *context, uint16_t characteristic_handle, uint16_t length, uint8_t * data);
-le_command_status_t le_central_write_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle, uint16_t length, uint8_t * data);
+le_command_status_t le_central_write_value_of_characteristic_without_response(le_peripheral_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
+le_command_status_t le_central_write_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
 
-le_command_status_t le_central_write_long_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle, uint16_t length, uint8_t * data);
-le_command_status_t le_central_reliable_write_long_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_handle, uint16_t length, uint8_t * data);
+le_command_status_t le_central_write_long_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
+le_command_status_t le_central_reliable_write_long_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
 
-le_command_status_t le_central_subscribe_to_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);
-le_command_status_t le_central_unsubscribe_from_characteristic(le_peripheral_t *context, uint16_t characteristic_handle);
+
+le_command_status_t le_central_read_characteristic_descriptor(le_peripheral_t *context, le_characteristic_descriptor_t * descriptor);
+le_command_status_t le_central_read_long_characteristic_descriptors(le_peripheral_t *context, le_characteristic_descriptor_t * descriptor);
+
+le_command_status_t le_central_write_characteristic_descriptors(le_peripheral_t *context, le_characteristic_descriptor_t * descriptor, uint16_t length, uint8_t * data);
+le_command_status_t le_central_write_long_characteristic_descriptors(le_peripheral_t *context, le_characteristic_descriptor_t * descriptor, uint16_t length, uint8_t * data);
+
+le_command_status_t le_central_write_client_characteristic_configuration(le_peripheral_t *context, le_characteristic_t * characteristic, uint16_t configuration);
+
 // { read/write/subscribe/unsubscribe confirm/result}
 
 // { type, le_peripheral *, characteristic handle, int len, uint8_t data[]?}
