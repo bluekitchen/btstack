@@ -738,7 +738,7 @@ static void sm_run(void){
 
     // assert that we can send either one
     if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
-    if (!hci_can_send_packet_now_using_packet_buffer(HCI_ACL_DATA_PACKET)) return;
+    if (!l2cap_can_send_connectionless_packet_now()) return;
 
     // distributed key generation
     switch (dkg_state){

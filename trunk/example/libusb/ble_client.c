@@ -119,17 +119,13 @@ void le_central_register_packet_handler(void (*handler)(uint8_t packet_type, uin
 static void gatt_client_run();
 
 // START Helper Functions - to be sorted
-static int l2cap_can_send_conectionless_packet_now(){
-    return hci_can_send_packet_now_using_packet_buffer(HCI_ACL_DATA_PACKET);
-}
-
 static uint16_t l2cap_max_mtu_for_handle(uint16_t handle){
     return l2cap_max_mtu();
 }
 // END Helper Functions
 
 
-// precondition: l2cap_can_send_conectionless_packet_now() == true
+// precondition: l2cap_can_send_connectionless_packet_now() == true
 static le_command_status_t att_confirmation(uint16_t peripheral_handle){
     uint8_t request[1];
     request[0] = ATT_HANDLE_VALUE_CONFIRMATION;
@@ -138,7 +134,7 @@ static le_command_status_t att_confirmation(uint16_t peripheral_handle){
 }
 
 static le_command_status_t att_find_information_request(uint16_t request_type, uint16_t peripheral_handle, uint16_t start_handle, uint16_t end_handle){
-    if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
+    if (!l2cap_can_send_connectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
     
     uint8_t request[5];
     request[0] = request_type;
@@ -151,7 +147,7 @@ static le_command_status_t att_find_information_request(uint16_t request_type, u
 
 
 static le_command_status_t att_find_by_type_value_request(uint16_t request_type, uint16_t attribute_group_type, uint16_t peripheral_handle, uint16_t start_handle, uint16_t end_handle, uint8_t * value, uint16_t value_size){
-    if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
+    if (!l2cap_can_send_connectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
     
     uint8_t request[23];    // TODO: use prepared packets
 
@@ -166,7 +162,7 @@ static le_command_status_t att_find_by_type_value_request(uint16_t request_type,
 }
 
 static le_command_status_t att_read_by_type_or_group_request(uint16_t request_type, uint16_t attribute_group_type, uint16_t peripheral_handle, uint16_t start_handle, uint16_t end_handle){
-    if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
+    if (!l2cap_can_send_connectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
     
     // printf("att_read_by_type_or_group_request : %02X, %02X - %02X \n", peripheral_handle, start_handle, end_handle);
     uint8_t request[7];
@@ -180,7 +176,7 @@ static le_command_status_t att_read_by_type_or_group_request(uint16_t request_ty
 }
 
 static le_command_status_t att_read_request(uint16_t request_type, uint16_t peripheral_handle, uint16_t attribute_handle){
-    if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
+    if (!l2cap_can_send_connectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
     
     uint8_t request[3];
     request[0] = request_type;
@@ -191,7 +187,7 @@ static le_command_status_t att_read_request(uint16_t request_type, uint16_t peri
 }
 
 static le_command_status_t att_read_blob_request(uint16_t request_type, uint16_t peripheral_handle, uint16_t attribute_handle, uint16_t value_offset){
-    if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
+    if (!l2cap_can_send_connectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
     uint8_t request[5];
     request[0] = request_type;
     bt_store_16(request, 1, attribute_handle);
@@ -203,7 +199,7 @@ static le_command_status_t att_read_blob_request(uint16_t request_type, uint16_t
 
 
 static le_command_status_t att_write_request(uint16_t request_type, uint16_t peripheral_handle, uint16_t attribute_handle, uint16_t value_length, uint8_t * value){
-    if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
+    if (!l2cap_can_send_connectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
     // TODO: use prepared buffers
     uint8_t request[3+value_length];
     request[0] = request_type;
@@ -215,7 +211,7 @@ static le_command_status_t att_write_request(uint16_t request_type, uint16_t per
 }
 
 static le_command_status_t att_execute_write_request(uint16_t request_type, uint16_t peripheral_handle, uint8_t execute_write){
-    if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
+    if (!l2cap_can_send_connectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
     uint8_t request[2];
     request[0] = request_type;
     request[1] = execute_write;
@@ -225,7 +221,7 @@ static le_command_status_t att_execute_write_request(uint16_t request_type, uint
 
 
 static le_command_status_t att_prepare_write_request(uint16_t request_type, uint16_t peripheral_handle,  uint16_t attribute_handle, uint16_t value_offset, uint16_t blob_length, uint8_t * value){
-    if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
+    if (!l2cap_can_send_connectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
     uint8_t request[5+blob_length];
     request[0] = request_type;
     bt_store_16(request, 1, attribute_handle);
@@ -414,7 +410,7 @@ static void handle_peripheral_list(){
 
     if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
     // printf("handle_peripheral_list 4\n");
-    if (!l2cap_can_send_conectionless_packet_now()) return;
+    if (!l2cap_can_send_connectionless_packet_now()) return;
     // printf("handle_peripheral_list 5\n");
     
     // printf("handle_peripheral_list empty %u\n", linked_list_empty(&le_connections));
@@ -846,7 +842,7 @@ static void gatt_client_run(){
 
     // check if command is send 
     if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
-    if (!l2cap_can_send_conectionless_packet_now()) return;
+    if (!l2cap_can_send_connectionless_packet_now()) return;
     
     switch(state){
         case START_SCAN:
