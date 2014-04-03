@@ -28,9 +28,12 @@ COMMON = \
     ${BTSTACK_ROOT}/src/hci.c    			      \
     ${BTSTACK_ROOT}/src/hci_cmds.c			      \
     ${BTSTACK_ROOT}/src/utils.c 	              \
-    ${BTSTACK_ROOT}/src/remote_device_db_memory.c 	              \
+    ${BTSTACK_ROOT}/src/remote_device_db_memory.c \
     ${BTSTACK_ROOT}/ble/att.c    	              \
+    ${BTSTACK_ROOT}/ble/att_server.c              \
     ${BTSTACK_ROOT}/ble/l2cap_le.c                \
+	${BTSTACK_ROOT}/ble/sm.c 				 	    \
+    ${BTSTACK_ROOT}/ble/central_device_db_memory.c  \
 	${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
 	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2564_2.10.c \
     ${BTSTACK_ROOT}/src/hci_transport_h4_ehcill_dma.c \
