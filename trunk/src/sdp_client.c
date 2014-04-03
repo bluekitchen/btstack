@@ -109,7 +109,7 @@ void sdp_client_query(bd_addr_t remote, uint8_t * des_serviceSearchPattern, uint
 static void try_to_send(uint16_t channel){
     if (sdp_client_state != W2_SEND) return;
 
-    if (!l2cap_can_send_packet_now_using_buffer(channel)) return;
+    if (!l2cap_can_send_packet_now(channel)) return;
 
     l2cap_reserve_packet_buffer();
     uint8_t * data = l2cap_get_outgoing_buffer();
