@@ -112,7 +112,7 @@ void hexdump2(void *data, int size){
 static void att_try_respond(void){
     if (!att_response_size) return;
     if (!att_response_handle) return;
-    if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) return;
+    if (!hci_can_send_packet_now_using_packet_buffer(HCI_ACL_DATA_PACKET)) return;
     
     // update state before sending packet
     uint16_t size = att_response_size;
