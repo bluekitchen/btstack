@@ -491,7 +491,7 @@ static rfcomm_service_t * rfcomm_service_for_channel(uint8_t server_channel){
  */
 static int rfcomm_send_packet_for_multiplexer(rfcomm_multiplexer_t *multiplexer, uint8_t address, uint8_t control, uint8_t credits, uint8_t *data, uint16_t len){
 
-    if (!l2cap_can_send_packet_now_using_buffer(multiplexer->l2cap_cid)) return BTSTACK_ACL_BUFFERS_FULL;
+    if (!l2cap_can_send_packet_now(multiplexer->l2cap_cid)) return BTSTACK_ACL_BUFFERS_FULL;
     
     l2cap_reserve_packet_buffer();
     uint8_t * rfcomm_out_buffer = l2cap_get_outgoing_buffer();
