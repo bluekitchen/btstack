@@ -86,20 +86,6 @@ int l2cap_reserve_packet_buffer(void){
     return hci_reserve_packet_buffer();
 }
 
-int  l2cap_can_send_packet_now(uint16_t local_cid){
-    l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
-    if (!channel) return 0;
-    if (!channel->packets_granted) return 0;
-    return hci_can_send_packet_now(HCI_ACL_DATA_PACKET);
-}
-
-int l2cap_can_send_packet_now_using_buffer(uint16_t local_cid){
-    l2cap_channel_t *channel = l2cap_get_channel_for_local_cid(local_cid);
-    if (!channel) return 0;
-    if (!channel->packets_granted) return 0;
-    return hci_can_send_packet_now_using_packet_buffer(HCI_ACL_DATA_PACKET);
-}
-
 int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){
     
     if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)){
