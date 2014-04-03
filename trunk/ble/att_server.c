@@ -260,9 +260,11 @@ static void att_run(void){
             uint16_t  att_response_size   = att_handle_request(&att_connection, att_request_buffer, att_request_size, att_response_buffer);
 
             // intercept "insufficient authorization" for authenticated connections to allow for user authorization
-            if (att_response_buffer[0] == ATT_ERROR_RESPONSE
-             && att_response_buffer[4] == ATT_ERROR_INSUFFICIENT_AUTHORIZATION
-             && att_connection.authenticated){
+            if ((att_response_size     >= 4)
+            && (att_response_buffer[0] == ATT_ERROR_RESPONSE)
+            && (att_response_buffer[4] == ATT_ERROR_INSUFFICIENT_AUTHORIZATION)
+            && (att_connection.authenticated)){
+
             	switch (sm_authorization_state(att_client_addr_type, att_client_address)){
             		case AUTHORIZATION_UNKNOWN:
                         l2cap_release_packet_buffer();
