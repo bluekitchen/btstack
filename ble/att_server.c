@@ -253,7 +253,7 @@ static void att_run(void){
             // NOTE: fall through for regular commands
 
         case ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED:
-            if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) return;
+            if (!hci_can_send_packet_now_using_packet_buffer(HCI_ACL_DATA_PACKET)) return;
 
             uint8_t  att_response_buffer[28];
             uint16_t att_response_size = att_handle_request(&att_connection, att_request_buffer, att_request_size, att_response_buffer);
@@ -326,7 +326,7 @@ void att_server_register_packet_handler(btstack_packet_handler_t handler){
 
 int  att_server_can_send(){
 	if (att_request_handle == 0) return 0;
-	return hci_can_send_packet_now(HCI_ACL_DATA_PACKET);
+	return hci_can_send_packet_now_using_packet_buffer(HCI_ACL_DATA_PACKET);
 }
 
 int att_server_notify(uint16_t handle, uint8_t *value, uint16_t value_len){
@@ -337,7 +337,7 @@ int att_server_notify(uint16_t handle, uint8_t *value, uint16_t value_len){
 
 int att_server_indicate(uint16_t handle, uint8_t *value, uint16_t value_len){
     if (att_handle_value_indication_handle) return ATT_HANDLE_VALUE_INDICATION_IN_PORGRESS;
-    if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)) return BTSTACK_ACL_BUFFERS_FULL;
+    if (!hci_can_send_packet_now_using_packet_buffer(HCI_ACL_DATA_PACKET)) return BTSTACK_ACL_BUFFERS_FULL;
 
     // track indication
     att_handle_value_indication_handle = handle;
