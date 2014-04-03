@@ -183,7 +183,7 @@ static void parse_service_search_attribute_response(uint8_t* packet){
 }
 
 void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    uint16_t handle;
+    // uint16_t handle;
 
     if (packet_type == L2CAP_DATA_PACKET){
 
@@ -249,7 +249,7 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
             }
             sdp_cid = channel;
             mtu = READ_BT_16(packet, 17);
-            handle = READ_BT_16(packet, 9);
+            // handle = READ_BT_16(packet, 9);
             log_info("Connected, cid %x, mtu %u.\n\r", sdp_cid, mtu);
 
             sdp_client_state = W2_SEND;
