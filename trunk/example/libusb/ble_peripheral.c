@@ -467,7 +467,7 @@ static uint8_t gap_adv_type(){
 }
 
 static void gap_run(){
-    if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
+    if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
 
     if (todos & DISABLE_ADVERTISEMENTS){
         todos &= ~DISABLE_ADVERTISEMENTS;
