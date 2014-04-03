@@ -196,7 +196,12 @@ typedef struct l2cap_signaling_response {
     
 
 void l2cap_block_new_credits(uint8_t blocked);
+
 int  l2cap_can_send_packet_now(uint16_t local_cid);    // non-blocking UART write
+
+int  l2cap_can_send_packet_now_using_buffer(uint16_t local_cid);
+
+int  l2cap_reserve_packet_buffer(void);
 
 // get outgoing buffer and prepare data
 uint8_t *l2cap_get_outgoing_buffer(void);
