@@ -78,6 +78,10 @@ void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t pa
     packet_handler = handler;
 }
 
+int l2cap_can_send_connectionless_packet_now(void){
+    return hci_can_send_packet_now_using_packet_buffer(HCI_ACL_DATA_PACKET);
+}
+
 uint8_t *l2cap_get_outgoing_buffer(void){
     return hci_get_outgoing_acl_packet_buffer() + COMPLETE_L2CAP_HEADER; // 8 bytes
 }
