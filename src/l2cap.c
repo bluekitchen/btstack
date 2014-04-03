@@ -339,6 +339,10 @@ uint8_t *l2cap_get_outgoing_buffer(void){
     return hci_get_outgoing_acl_packet_buffer() + COMPLETE_L2CAP_HEADER; // 8 bytes
 }
 
+int l2cap_reserve_packet_buffer(void){
+    return hci_reserve_packet_buffer();
+}
+
 int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     
     if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)){

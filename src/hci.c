@@ -273,6 +273,24 @@ int hci_can_send_packet_now(uint8_t packet_type){
     }
 }
 
+// same as hci_can_send_packet_now, but also checks if packet buffer is free for use
+int hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type){
+    if (hci_stack->hci_packet_buffer_reserved) return 0;
+    return hci_can_send_packet_now(packet_type);
+}
+
+// reserves outgoing packet buffer. @returns 1 if successful
+int hci_reserve_packet_buffer(void){
+    if (hci_stack->hci_packet_buffer_reserved) return 0;
+    hci_stack->hci_packet_buffer_reserved = 1;
+    return 1;    
+}
+
+// assumption: synchronous implementations don't provide can_send_packet_now as they don't keep the buffer after the call
+int hci_transport_synchronous(void){
+    return hci_stack->hci_transport->can_send_packet_now == NULL;
+}
+
 int hci_send_acl_packet(uint8_t *packet, int size){
 
     // check for free places on BT module
@@ -289,7 +307,12 @@ int hci_send_acl_packet(uint8_t *packet, int size){
 
     // send packet 
     int err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
-    
+
+    // free packet buffer for synchronous transport implementations    
+    if (hci_transport_synchronous()){
+        hci_stack->hci_packet_buffer_reserved = 0;
+    }
+
     return err;
 }
 
@@ -804,6 +827,12 @@ static void event_handler(uint8_t *packet, int size){
             if(hci_stack->control && hci_stack->control->hw_error){
                 (*hci_stack->control->hw_error)();
             }
+            break;
+
+        case DAEMON_EVENT_HCI_PACKET_SENT:
+            // free packet buffer for asynchronous transport
+            if (hci_transport_synchronous()) break;
+            hci_stack->hci_packet_buffer_reserved = 0;
             break;
 
 #ifdef HAVE_BLE
@@ -1688,9 +1717,15 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     }
 #endif
 
-
     hci_stack->num_cmd_packets--;
-    return hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
+    int err = hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
+
+    // free packet buffer for synchronous transport implementations    
+    if (hci_transport_synchronous()){
+        hci_stack->hci_packet_buffer_reserved = 0;
+    }
+
+    return err;
 }
 
 // disconnect because of security block
