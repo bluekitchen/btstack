@@ -83,7 +83,7 @@ int l2cap_can_send_connectionless_packet_now(void){
 }
 
 uint8_t *l2cap_get_outgoing_buffer(void){
-    return hci_get_outgoing_acl_packet_buffer() + COMPLETE_L2CAP_HEADER; // 8 bytes
+    return hci_get_outgoing_packet_buffer() + COMPLETE_L2CAP_HEADER; // 8 bytes
 }
 
 int l2cap_reserve_packet_buffer(void){
@@ -104,7 +104,7 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
     
     log_debug("l2cap_send_prepared_connectionless handle %u, cid %u\n", handle, cid);
     
-    uint8_t *acl_buffer = hci_get_outgoing_acl_packet_buffer();
+    uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
 
     // 0 - Connection handle : PB=10 : BC=00 
     bt_store_16(acl_buffer, 0, handle | (2 << 12) | (0 << 14));
@@ -128,7 +128,7 @@ int l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t *data, uint
     }
 
     hci_reserve_packet_buffer();
-    uint8_t *acl_buffer = hci_get_outgoing_acl_packet_buffer();
+    uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
 
     memcpy(&acl_buffer[8], data, len);
 

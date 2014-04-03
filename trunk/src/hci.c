@@ -477,7 +477,7 @@ uint16_t hci_usable_acl_packet_types(void){
     return hci_stack->packet_types;
 }
 
-uint8_t* hci_get_outgoing_acl_packet_buffer(void){
+uint8_t* hci_get_outgoing_packet_buffer(void){
     // hci packet buffer is >= acl data packet length
     return hci_stack->hci_packet_buffer;
 }
