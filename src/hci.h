@@ -398,7 +398,7 @@ int hci_reserve_packet_buffer(void);
 int hci_is_packet_buffer_reserved(void);
 
 // get point to packet buffer
-uint8_t* hci_get_outgoing_acl_packet_buffer(void);
+uint8_t* hci_get_outgoing_packet_buffer(void);
     
 bd_addr_t * hci_local_bd_addr(void);
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle);
