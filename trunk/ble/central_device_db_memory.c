@@ -37,7 +37,7 @@
 #include "central_device_db.h"
 
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 
 // Central Device db implemenation using static memory
 typedef struct central_device_memory_db {

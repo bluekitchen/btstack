@@ -35,7 +35,7 @@
  */
  
 #include <stdio.h>
-#include <strings.h>
+#include <string.h>
 
 #include "debug.h"
 #include "hci.h"
