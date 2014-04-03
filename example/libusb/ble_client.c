@@ -120,7 +120,7 @@ static void gatt_client_run();
 
 // START Helper Functions - to be sorted
 static int l2cap_can_send_conectionless_packet_now(){
-    return hci_can_send_packet_now(HCI_ACL_DATA_PACKET);
+    return hci_can_send_packet_now_using_packet_buffer(HCI_ACL_DATA_PACKET);
 }
 
 static uint16_t l2cap_max_mtu_for_handle(uint16_t handle){
@@ -412,7 +412,7 @@ static void handle_peripheral_list(){
     if (get_peripheral_w4_connect_cancelled()) return;
     // printf("handle_peripheral_list 3\n");
 
-    if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
+    if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
     // printf("handle_peripheral_list 4\n");
     if (!l2cap_can_send_conectionless_packet_now()) return;
     // printf("handle_peripheral_list 5\n");
@@ -845,7 +845,7 @@ static void gatt_client_run(){
     handle_peripheral_list();
 
     // check if command is send 
-    if (!hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)) return;
+    if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
     if (!l2cap_can_send_conectionless_packet_now()) return;
     
     switch(state){
