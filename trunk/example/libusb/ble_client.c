@@ -126,12 +126,11 @@ static int l2cap_can_send_conectionless_packet_now(){
 static uint16_t l2cap_max_mtu_for_handle(uint16_t handle){
     return l2cap_max_mtu();
 }
-
-
 // END Helper Functions
 
+
+// precondition: l2cap_can_send_conectionless_packet_now() == true
 static le_command_status_t att_confirmation(uint16_t peripheral_handle){
-    if (!l2cap_can_send_conectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
     uint8_t request[1];
     request[0] = ATT_HANDLE_VALUE_CONFIRMATION;
     l2cap_send_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
@@ -818,15 +817,17 @@ le_command_status_t le_central_reliable_write_long_value_of_characteristic(le_pe
 le_command_status_t le_central_write_client_characteristic_configuration(le_peripheral_t *peripheral, le_characteristic_t * characteristic, uint16_t configuration){
     if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     
-    if (((configuration & GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION) &&
-        (characteristic->properties & ATT_PROPERTY_NOTIFY)) == 0){
+    if ( (configuration & GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION) &&
+         (characteristic->properties & ATT_PROPERTY_NOTIFY) == 0) {
+        printf("Error: BLE_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED\n");
         return BLE_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED;   
-    } else if (((configuration & GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION) &&
-        (characteristic->properties & ATT_PROPERTY_INDICATE)) == 0){
+    } else if ( (configuration & GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION) &&
+                (characteristic->properties & ATT_PROPERTY_INDICATE) == 0){
+        printf("Error: BLE_CHARACTERISTIC_INDICATION_NOT_SUPPORTED\n");
         return BLE_CHARACTERISTIC_INDICATION_NOT_SUPPORTED;   
     }
 
-    printf("    *** characteristic *** properties 0x%02x, value handle 0x%02x, end handle 0x%02x\n", 
+    printf("   write configuration: *** characteristic *** properties 0x%02x, value handle 0x%02x, end handle 0x%02x\n", 
         characteristic->properties, characteristic->value_handle, characteristic->end_handle);
     
     peripheral->start_group_handle = characteristic->value_handle;
@@ -1965,12 +1966,14 @@ static void handle_le_central_event(le_central_event_t * event){
                     tc_state = TC_W4_ACC_DATA; 
                     printf("\n test client - ACC Client Configuration\n");
                     le_central_write_client_characteristic_configuration(&test_device, &config_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+                    // le_central_write_client_characteristic_configuration(&test_device, &config_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION);
                     break;
                 default:
                     break;
             }
             break;
         case TC_W4_ACC_DATA:
+            printf("ACC Client Data: ");
             if ( event->type != GATT_NOTIFICATION && event->type != GATT_INDICATION ) break;
             dump_characteristic_value((le_characteristic_value_event_t *) event);
             break;
