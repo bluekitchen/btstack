@@ -68,15 +68,14 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 
+#include "sm.h"
 #include "att.h"
+#include "att_server.h"
+#include "gap_le.h"
+#include "central_device_db.h"
 
 #define FONT_HEIGHT		12                    // Each character has 13 lines 
 #define FONT_WIDTH       8
-
-static att_connection_t att_connection;
-static uint16_t         att_response_handle = 0;
-static uint16_t         att_response_size   = 0;
-static uint8_t          att_response_buffer[28];
 
 void doLCD(void){
     //Initialize LCD and backlight    
@@ -109,29 +108,8 @@ void hexdump2(void *data, int size){
     printf("\n");
 }
 
-static void att_try_respond(void){
-    if (!att_response_size) return;
-    if (!att_response_handle) return;
-    if (!hci_can_send_packet_now_using_packet_buffer(HCI_ACL_DATA_PACKET)) return;
-    
-    // update state before sending packet
-    uint16_t size = att_response_size;
-    att_response_size = 0;
-    l2cap_send_connectionless(att_response_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, att_response_buffer, size);
-}
-
-
-static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
-    if (packet_type != ATT_DATA_PACKET) return;
-    
-    att_response_handle = handle;
-    att_response_size = att_handle_request(&att_connection, packet, size, att_response_buffer);
-    att_try_respond();
-}
-
-
 // enable LE, setup ADV data
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t addr;
     uint8_t adv_data[] = { 02, 01, 05,   03, 02, 0xf0, 0xff }; 
     switch (packet_type) {
@@ -146,22 +124,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                         hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
 					}
 					break;
-                
-                case DAEMON_EVENT_HCI_PACKET_SENT:
-                    att_try_respond();
-                    break;
                     
-                case HCI_EVENT_LE_META:
-                    switch (packet[2]) {
-                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            // reset connection MTU
-                            att_connection.mtu = 23;
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-
                 case BTSTACK_EVENT_NR_CONNECTIONS_CHANGED:
 				    if (packet[2]) {
                         overwriteLine(4, "CONNECTED");
@@ -171,9 +134,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     break;
                     
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    att_response_handle =0;
-                    att_response_size = 0;
-                    
                     // restart advertising
                     hci_send_cmd(&hci_le_set_advertise_enable, 1);
                     break;
@@ -200,15 +160,15 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 #include "profile.h"
 
 // write requests
-static void att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size, signature_t * signature){
+static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size, signature_t * signature){
     printf("WRITE Callback, handle %04x\n", handle);
     switch(handle){
-        case 0x000b:
+        case ATT_CHARACTERISTIC_FFF1_01_VALUE_HANDLE:
             buffer[buffer_size]=0;
             printf("New text: %s\n", buffer);
             overwriteLine(7, (char*)buffer);
             break;
-        case 0x000d:
+        case ATT_CHARACTERISTIC_FFF2_01_VALUE_HANDLE:
             printf("New value: %u\n", buffer[0]);
             if (buffer[0]){
                 LED_PORT_OUT |= LED_2;
@@ -217,6 +177,7 @@ static void att_write_callback(uint16_t handle, uint16_t transaction_mode, uint1
             }
             break;
     }
+    return 0;
 }
 
 // main
@@ -259,14 +220,18 @@ int main(void)
     
     // set up l2cap_le
     l2cap_init();
-    l2cap_register_fixed_channel(att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
-    l2cap_register_packet_handler(packet_handler);
     
-    // set up ATT
-    att_set_db(profile_data);
-    att_set_write_callback(att_write_callback);
-    att_dump_attributes();
-    att_connection.mtu = 27;
+    // setup central device db
+    central_device_db_init();
+
+    // setup SM: Display only
+    sm_init();
+    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+    sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION); 
+
+    // setup ATT server
+    att_server_init(profile_data, NULL, att_write_callback);    
+    att_server_register_packet_handler(app_packet_handler);
     
 	printf("Run...\n\r");
 
