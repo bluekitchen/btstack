@@ -351,25 +351,30 @@ int l2cap_reserve_packet_buffer(void){
 
 int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     
-    if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)){
-        log_info("l2cap_send_internal cid 0x%02x, cannot send\n", local_cid);
+    if (!hci_is_packet_buffer_reserved()){
+        log_error("l2cap_send_prepared called without reserving packet first");
         return BTSTACK_ACL_BUFFERS_FULL;
     }
-    
+
+    if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)){
+        log_info("l2cap_send_prepared cid 0x%02x, cannot send\n", local_cid);
+        return BTSTACK_ACL_BUFFERS_FULL;
+    }
+
     l2cap_channel_t * channel = l2cap_get_channel_for_local_cid(local_cid);
     if (!channel) {
-        log_error("l2cap_send_internal no channel for cid 0x%02x\n", local_cid);
+        log_error("l2cap_send_prepared no channel for cid 0x%02x\n", local_cid);
         return -1;   // TODO: define error
     }
 
     if (channel->packets_granted == 0){
-        log_error("l2cap_send_internal cid 0x%02x, no credits!\n", local_cid);
+        log_error("l2cap_send_prepared cid 0x%02x, no credits!\n", local_cid);
         return -1;  // TODO: define error
     }
     
     --channel->packets_granted;
 
-    log_debug("l2cap_send_internal cid 0x%02x, handle %u, 1 credit used, credits left %u;\n",
+    log_debug("l2cap_send_prepared cid 0x%02x, handle %u, 1 credit used, credits left %u;\n",
                   local_cid, channel->handle, channel->packets_granted);
     
     uint8_t *acl_buffer = hci_get_outgoing_acl_packet_buffer();
@@ -392,12 +397,17 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
 
 int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){
     
+    if (!hci_is_packet_buffer_reserved()){
+        log_error("l2cap_send_prepared_connectionless called without reserving packet first");
+        return BTSTACK_ACL_BUFFERS_FULL;
+    }
+
     if (!hci_can_send_packet_now(HCI_ACL_DATA_PACKET)){
-        log_info("l2cap_send_prepared_to_handle cid 0x%02x, cannot send\n", cid);
+        log_info("l2cap_send_prepared_connectionless handle 0x%02x, cid 0x%02x, cannot send\n", handle, cid);
         return BTSTACK_ACL_BUFFERS_FULL;
     }
     
-    log_debug("l2cap_send_prepared_to_handle cid 0x%02x, handle %u\n", cid, handle);
+    log_debug("l2cap_send_prepared_connectionless handle %u, cid 0x%02x\n", handle, cid);
     
     uint8_t *acl_buffer = hci_get_outgoing_acl_packet_buffer();
     

@@ -279,6 +279,11 @@ int hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type){
     return hci_can_send_packet_now(packet_type);
 }
 
+// used for internal checks in l2cap[-le].c
+int hci_is_packet_buffer_reserved(void){
+    return hci_stack->hci_packet_buffer_reserved;
+}
+
 // reserves outgoing packet buffer. @returns 1 if successful
 int hci_reserve_packet_buffer(void){
     if (hci_stack->hci_packet_buffer_reserved) return 0;
@@ -309,7 +314,7 @@ int hci_send_acl_packet(uint8_t *packet, int size){
     int err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
 
     // free packet buffer for synchronous transport implementations    
-    if (hci_transport_synchronous()){
+    if (hci_transport_synchronous() && (packet == hci_stack->hci_packet_buffer)){
         hci_stack->hci_packet_buffer_reserved = 0;
     }
 
@@ -1721,7 +1726,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     int err = hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
 
     // free packet buffer for synchronous transport implementations    
-    if (hci_transport_synchronous()){
+    if (hci_transport_synchronous() && (packet == hci_stack->hci_packet_buffer)){
         hci_stack->hci_packet_buffer_reserved = 0;
     }
 
