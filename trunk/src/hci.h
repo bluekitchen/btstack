@@ -323,7 +323,8 @@ typedef struct {
     linked_list_t     connections;
 
     // single buffer for HCI Command assembly
-    uint8_t          hci_packet_buffer[HCI_PACKET_BUFFER_SIZE]; // opcode (16), len(8)
+    uint8_t   hci_packet_buffer[HCI_PACKET_BUFFER_SIZE]; // opcode (16), len(8)
+    uint8_t   hci_packet_buffer_reserved;
     
     /* host to controller flow control */
     uint8_t  num_cmd_packets;
@@ -386,6 +387,15 @@ int hci_send_acl_packet(uint8_t *packet, int size);
 
 // non-blocking UART driver needs
 int hci_can_send_packet_now(uint8_t packet_type);
+
+// same as hci_can_send_packet_now, but also checks if packet buffer is free for use
+int hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type);
+
+// reserves outgoing packet buffer. @returns 1 if successful
+int hci_reserve_packet_buffer(void);
+
+// get point to packet buffer
+uint8_t* hci_get_outgoing_acl_packet_buffer(void);
     
 bd_addr_t * hci_local_bd_addr(void);
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle);
@@ -395,7 +405,6 @@ uint8_t  hci_number_free_acl_slots(void);
 int      hci_authentication_active_for_handle(hci_con_handle_t handle);
 uint16_t hci_max_acl_data_packet_length(void);
 uint16_t hci_usable_acl_packet_types(void);
-uint8_t* hci_get_outgoing_acl_packet_buffer(void);
 
 // 
 void hci_emit_state(void);
