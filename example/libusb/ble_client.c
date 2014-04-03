@@ -124,24 +124,26 @@ static uint16_t l2cap_max_mtu_for_handle(uint16_t handle){
 }
 // END Helper Functions
 
-
-// precondition: l2cap_can_send_connectionless_packet_now() == true
 static le_command_status_t att_confirmation(uint16_t peripheral_handle){
-    uint8_t request[1];
+    if (!l2cap_can_send_connectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
+
+    l2cap_reserve_packet_buffer();
+    uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = ATT_HANDLE_VALUE_CONFIRMATION;
-    l2cap_send_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
+    l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 1);
     return BLE_PERIPHERAL_OK;
 }
 
 static le_command_status_t att_find_information_request(uint16_t request_type, uint16_t peripheral_handle, uint16_t start_handle, uint16_t end_handle){
     if (!l2cap_can_send_connectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
     
-    uint8_t request[5];
+    l2cap_reserve_packet_buffer();
+    uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
     bt_store_16(request, 1, start_handle);
     bt_store_16(request, 3, end_handle);
     
-    l2cap_send_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
+    l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 5);
     return BLE_PERIPHERAL_OK;
 }
 
@@ -149,7 +151,8 @@ static le_command_status_t att_find_information_request(uint16_t request_type, u
 static le_command_status_t att_find_by_type_value_request(uint16_t request_type, uint16_t attribute_group_type, uint16_t peripheral_handle, uint16_t start_handle, uint16_t end_handle, uint8_t * value, uint16_t value_size){
     if (!l2cap_can_send_connectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
     
-    uint8_t request[23];    // TODO: use prepared packets
+    l2cap_reserve_packet_buffer();
+    uint8_t * request = l2cap_get_outgoing_buffer();
 
     request[0] = request_type;
     bt_store_16(request, 1, start_handle);
@@ -157,78 +160,86 @@ static le_command_status_t att_find_by_type_value_request(uint16_t request_type,
     bt_store_16(request, 5, attribute_group_type);
     memcpy(&request[7], value, value_size);
 
-    l2cap_send_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, 7+value_size);
+    l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 7+value_size);
     return BLE_PERIPHERAL_OK;
 }
 
 static le_command_status_t att_read_by_type_or_group_request(uint16_t request_type, uint16_t attribute_group_type, uint16_t peripheral_handle, uint16_t start_handle, uint16_t end_handle){
     if (!l2cap_can_send_connectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
     
-    // printf("att_read_by_type_or_group_request : %02X, %02X - %02X \n", peripheral_handle, start_handle, end_handle);
-    uint8_t request[7];
+    l2cap_reserve_packet_buffer();
+    uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
     bt_store_16(request, 1, start_handle);
     bt_store_16(request, 3, end_handle);
     bt_store_16(request, 5, attribute_group_type);
    
-    l2cap_send_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
+    l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 7);
     return BLE_PERIPHERAL_OK;
 }
 
 static le_command_status_t att_read_request(uint16_t request_type, uint16_t peripheral_handle, uint16_t attribute_handle){
     if (!l2cap_can_send_connectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
     
-    uint8_t request[3];
+    l2cap_reserve_packet_buffer();
+    uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
     bt_store_16(request, 1, attribute_handle);
     
-    l2cap_send_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
+    l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3);
     return BLE_PERIPHERAL_OK;
 }
 
 static le_command_status_t att_read_blob_request(uint16_t request_type, uint16_t peripheral_handle, uint16_t attribute_handle, uint16_t value_offset){
     if (!l2cap_can_send_connectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
-    uint8_t request[5];
+
+    l2cap_reserve_packet_buffer();
+    uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
     bt_store_16(request, 1, attribute_handle);
     bt_store_16(request, 3, value_offset);
     
-    l2cap_send_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
+    l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 5);
     return BLE_PERIPHERAL_OK;
 }
 
 
 static le_command_status_t att_write_request(uint16_t request_type, uint16_t peripheral_handle, uint16_t attribute_handle, uint16_t value_length, uint8_t * value){
     if (!l2cap_can_send_connectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
-    // TODO: use prepared buffers
-    uint8_t request[3+value_length];
+
+    l2cap_reserve_packet_buffer();
+    uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
     bt_store_16(request, 1, attribute_handle);
     memcpy(&request[3], value, value_length);
 
-    l2cap_send_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
+    l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3 + value_length);
     return BLE_PERIPHERAL_OK;
 }
 
 static le_command_status_t att_execute_write_request(uint16_t request_type, uint16_t peripheral_handle, uint8_t execute_write){
     if (!l2cap_can_send_connectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
-    uint8_t request[2];
+
+    l2cap_reserve_packet_buffer();
+    uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
     request[1] = execute_write;
-    l2cap_send_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
+    l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 2);
     return BLE_PERIPHERAL_OK;
 }
 
 
 static le_command_status_t att_prepare_write_request(uint16_t request_type, uint16_t peripheral_handle,  uint16_t attribute_handle, uint16_t value_offset, uint16_t blob_length, uint8_t * value){
     if (!l2cap_can_send_connectionless_packet_now()) return BLE_PERIPHERAL_BUSY;
-    uint8_t request[5+blob_length];
+
+    l2cap_reserve_packet_buffer();
+    uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
     bt_store_16(request, 1, attribute_handle);
     bt_store_16(request, 3, value_offset);
     memcpy(&request[5], &value[value_offset], blob_length);
 
-    l2cap_send_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
+    l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 5+blob_length);
     return BLE_PERIPHERAL_OK;
 }
 
@@ -453,10 +464,13 @@ static void handle_peripheral_list(){
             {
                 peripheral->state = P_W4_EXCHANGE_MTU;
                 uint16_t mtu = l2cap_max_mtu_for_handle(peripheral->handle);
-                uint8_t request[3];
+
+                // TODO: extract as att_exchange_mtu_request
+                l2cap_reserve_packet_buffer();
+                uint8_t * request = l2cap_get_outgoing_buffer();
                 request[0] = ATT_EXCHANGE_MTU_REQUEST;
                 bt_store_16(request, 1, mtu);
-                l2cap_send_connectionless(peripheral->handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, request, sizeof(request));
+                l2cap_send_prepared_connectionless(peripheral->handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3);
                 return;
             }
             case P_W2_SEND_SERVICE_QUERY:
