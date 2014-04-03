@@ -202,6 +202,7 @@ int  l2cap_can_send_packet_now(uint16_t local_cid);    // non-blocking UART writ
 int  l2cap_can_send_connectionless_packet_now(void);
 
 int  l2cap_reserve_packet_buffer(void);
+void l2cap_release_packet_buffer(void);
 
 // get outgoing buffer and prepare data
 uint8_t *l2cap_get_outgoing_buffer(void);
