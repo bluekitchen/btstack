@@ -255,8 +255,9 @@ static void att_run(void){
         case ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED:
             if (!l2cap_can_send_connectionless_packet_now()) return;
 
-            uint8_t  att_response_buffer[28];
-            uint16_t att_response_size = att_handle_request(&att_connection, att_request_buffer, att_request_size, att_response_buffer);
+            l2cap_reserve_packet_buffer();
+            uint8_t * att_response_buffer = l2cap_get_outgoing_buffer();
+            uint16_t  att_response_size   = att_handle_request(&att_connection, att_request_buffer, att_request_size, att_response_buffer);
 
             // intercept "insufficient authorization" for authenticated connections to allow for user authorization
             if (att_response_buffer[0] == ATT_ERROR_RESPONSE
@@ -264,9 +265,11 @@ static void att_run(void){
              && att_connection.authenticated){
             	switch (sm_authorization_state(att_client_addr_type, att_client_address)){
             		case AUTHORIZATION_UNKNOWN:
+                        l2cap_release_packet_buffer();
 		             	sm_request_authorization(att_client_addr_type, att_client_address);
 	    		        return;
 	    		    case AUTHORIZATION_PENDING:
+                        l2cap_release_packet_buffer();
 	    		    	return;
 	    		    default:
 	    		    	break;
@@ -274,9 +277,12 @@ static void att_run(void){
             }
 
             att_server_state = ATT_SERVER_IDLE;
-            if (att_response_size == 0) return;
+            if (att_response_size == 0) {
+                l2cap_release_packet_buffer();
+                return;
+            }
 
-            l2cap_send_connectionless(att_request_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, att_response_buffer, att_response_size);
+            l2cap_send_prepared_connectionless(att_request_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, att_response_size);
             break;
     }
 }
@@ -330,9 +336,12 @@ int  att_server_can_send(){
 }
 
 int att_server_notify(uint16_t handle, uint8_t *value, uint16_t value_len){
-    uint8_t packet_buffer[att_connection.mtu];
+    if (!l2cap_can_send_connectionless_packet_now()) return BTSTACK_ACL_BUFFERS_FULL;
+
+    l2cap_reserve_packet_buffer();
+    uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
     uint16_t size = att_prepare_handle_value_notification(&att_connection, handle, value, value_len, packet_buffer);
-	return l2cap_send_connectionless(att_request_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, packet_buffer, size);
+	return l2cap_send_prepared_connectionless(att_request_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
 }
 
 int att_server_indicate(uint16_t handle, uint8_t *value, uint16_t value_len){
@@ -345,8 +354,9 @@ int att_server_indicate(uint16_t handle, uint8_t *value, uint16_t value_len){
     run_loop_set_timer(&att_handle_value_indication_timer, ATT_TRANSACTION_TIMEOUT_MS);
     run_loop_add_timer(&att_handle_value_indication_timer);
 
-    uint8_t packet_buffer[att_connection.mtu];
+    l2cap_reserve_packet_buffer();
+    uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
     uint16_t size = att_prepare_handle_value_indication(&att_connection, handle, value, value_len, packet_buffer);
-	l2cap_send_connectionless(att_request_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, packet_buffer, size);
+	l2cap_send_prepared_connectionless(att_request_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
     return 0;
 }
