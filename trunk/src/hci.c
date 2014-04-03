@@ -291,6 +291,10 @@ int hci_reserve_packet_buffer(void){
     return 1;    
 }
 
+void hci_release_packet_buffer(void){
+    hci_stack->hci_packet_buffer_reserved = 0;
+}
+
 // assumption: synchronous implementations don't provide can_send_packet_now as they don't keep the buffer after the call
 int hci_transport_synchronous(void){
     return hci_stack->hci_transport->can_send_packet_now == NULL;

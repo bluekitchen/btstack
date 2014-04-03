@@ -349,6 +349,11 @@ int l2cap_reserve_packet_buffer(void){
     return hci_reserve_packet_buffer();
 }
 
+void l2cap_release_packet_buffer(void){
+    hci_release_packet_buffer();
+}
+
+
 int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     
     if (!hci_is_packet_buffer_reserved()){

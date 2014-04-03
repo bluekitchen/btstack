@@ -392,7 +392,8 @@ int hci_can_send_packet_now(uint8_t packet_type);
 int hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type);
 
 // reserves outgoing packet buffer. @returns 1 if successful
-int hci_reserve_packet_buffer(void);
+int  hci_reserve_packet_buffer(void);
+void hci_release_packet_buffer(void);
 
 // used for internal checks in l2cap[-le].c
 int hci_is_packet_buffer_reserved(void);
