@@ -160,11 +160,11 @@ typedef struct le_peripheral{
 
     uint8_t  characteristic_properties;
     uint16_t characteristic_start_handle;
-    uint16_t characteristic_value_handle;
-    uint16_t characteristic_value_offset;
     
-    uint16_t characteristic_value_length;
-    uint8_t* characteristic_value;
+    uint16_t attribute_handle;
+    uint16_t attribute_offset;
+    uint16_t attribute_length;
+    uint8_t* attribute_value;
 
     uint16_t client_characteristic_configuration_handle;
     uint8_t client_characteristic_configuration_value[2];
