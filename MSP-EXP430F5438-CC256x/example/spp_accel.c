@@ -15,10 +15,7 @@
 #include "hal_adc.h"
 #include "hal_board.h"
 #include "hal_compat.h"
-#include "hal_lcd.h"
 #include "hal_usb.h"
-
-#include "UserExperienceGraphics.h"
 
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>
@@ -42,32 +39,6 @@ char lineBuffer[80];
 static uint8_t   rfcomm_channel_nr = 1;
 static uint16_t  rfcomm_channel_id;
 static uint8_t   spp_service_buffer[150];
-
-// LCD setup
-void doLCD(void){
-    //Initialize LCD
-    // 138 x 110, 4-level grayscale pixels.
-    halLcdInit();       
-    halLcdSetContrast(100);
-    halLcdClearScreen(); 
-    halLcdImage(TI_TINY_BUG, 4, 32, 104, 12 );
-
-    halLcdPrintLine("BTstack on ", 0, 0);
-    halLcdPrintLine("TI MSP430", 1, 0);
-    halLcdPrintLine("SPP ACCEL", 2, 0);
-    halLcdPrintLine("Init...", 4, 0);
-    row = 5;
-}
-
-void clearLine(int line){
-    halLcdClearImage(130, FONT_HEIGHT, 0, line*FONT_HEIGHT);
-}
-
-void printLine(char *text){
-    printf("LCD: %s\n\r", text);
-    halLcdPrintLine(text, row++, 0);
-}
-
 
 // SPP description
 static uint8_t accel_buffer[6];
@@ -137,7 +108,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     
                 case HCI_EVENT_PIN_CODE_REQUEST:
                     // inform about pin code request
-                    printLine( "PIN = 0000");
                     printf("Pin code request - using '0000'\n\r");
                     bt_flip_addr(event_addr, &packet[2]);
                     hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
@@ -156,7 +126,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
                     if (packet[2]) {
                         printf("RFCOMM channel open failed, status %u\n\r", packet[2]);
-                        printLine("Connection failed :(");
                     } else {
                         rfcomm_channel_id = READ_BT_16(packet, 12);
                         mtu = READ_BT_16(packet, 14);
@@ -218,9 +187,6 @@ int main(void) {
     // init LEDs
     LED_PORT_OUT |= LED_1 | LED_2;
     LED_PORT_DIR |= LED_1 | LED_2;
-    
-    // show off
-    doLCD();
     
     prepare_accel_packet();
 

@@ -67,7 +67,7 @@ led_counter.out: ${CORE_OBJ} led_counter.o
 hid_demo.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} hid_demo.o 
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_accel.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} spp_accel.o ../firmware/hal_adc.o
+spp_accel.out: ${CORE_OBJ} ${COMMON_OBJ} spp_accel.o ../firmware/hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} spp_counter.o ../firmware/hal_adc.o
