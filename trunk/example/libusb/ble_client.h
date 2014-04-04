@@ -210,6 +210,9 @@ typedef struct le_characteristic_event{
 typedef struct le_characteristic_descriptor{
     uint16_t handle;
     uint16_t uuid16;
+    uint8_t  uuid128[16];
+    uint16_t value_length;
+    uint8_t * value;
 } le_characteristic_descriptor_t;
 
 typedef struct le_characteristic_descriptor_event{
