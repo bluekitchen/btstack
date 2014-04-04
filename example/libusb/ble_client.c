@@ -87,13 +87,6 @@ void (*le_central_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-static void dump_characteristic(le_characteristic_t * characteristic){
-    printf("    *** characteristic *** properties %x, start handle 0x%02x, value handle 0x%02x, end handle 0x%02x, uuid16 0x%02x, uuid128 ", 
-                            characteristic->properties, characteristic->start_handle, characteristic->value_handle,
-                            characteristic->end_handle, characteristic->uuid16);
-    printUUID128(characteristic->uuid128);
-    printf("\n");
-}
 
 void le_central_init(){
     state = W4_ON;
@@ -122,6 +115,7 @@ static void gatt_client_run();
 static uint16_t l2cap_max_mtu_for_handle(uint16_t handle){
     return l2cap_max_mtu();
 }
+
 // END Helper Functions
 
 static le_command_status_t att_confirmation(uint16_t peripheral_handle){
@@ -859,10 +853,12 @@ le_command_status_t le_central_write_client_characteristic_configuration(le_peri
 le_command_status_t le_central_read_characteristic_descriptor(le_peripheral_t *peripheral, le_characteristic_descriptor_t * descriptor){
     if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     peripheral->query_start_handle = descriptor->handle;
+    
     peripheral->uuid16 = descriptor->uuid16;
     if (!descriptor->uuid16){
         memcpy(peripheral->uuid128, descriptor->uuid128, 16);
     }
+
     peripheral->state = P_W2_SEND_READ_CHARACTERISTIC_DESCRIPTOR_QUERY;
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
@@ -1174,11 +1170,37 @@ static void report_gatt_characteristic_descriptor(le_peripheral_t * peripheral, 
     descriptor.uuid16 = uuid16;
     if (uuid128){
         memcpy(descriptor.uuid128, uuid128, 16);
+    } else {
+        sdp_normalize_uuid((uint8_t*) &descriptor.uuid128, descriptor.uuid16);
     }
+
     descriptor.value = value;
     descriptor.value_length = value_length;
     event.characteristic_descriptor = descriptor;
     (*le_central_callback)((le_central_event_t*)&event);
+}
+
+static void report_gatt_all_characteristic_descriptors(le_peripheral_t * peripheral, uint8_t * packet, uint16_t size, uint16_t pair_size){
+    le_characteristic_descriptor_t descriptor;
+    le_characteristic_descriptor_event_t event;
+    event.type = GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT;
+    
+    int i;
+    for (i = 0; i<size; i+=pair_size){
+        descriptor.handle = READ_BT_16(packet,i);
+        if (pair_size == 4){
+            descriptor.uuid16 = READ_BT_16(packet,i+2);
+            sdp_normalize_uuid((uint8_t*) &descriptor.uuid128, descriptor.uuid16);
+        } else {
+            descriptor.uuid16 = 0;
+            swap128(&packet[i+2], descriptor.uuid128);
+        }
+        descriptor.value_length = 0;
+
+        event.characteristic_descriptor = descriptor;
+        (*le_central_callback)((le_central_event_t*)&event);
+    }
+
 }
 
 static void trigger_next_query(le_peripheral_t * peripheral, uint16_t last_result_handle, peripheral_state_t next_query_state, uint8_t complete_event_type){
@@ -1363,20 +1385,14 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
         case ATT_FIND_INFORMATION_REPLY:
         {
             uint8_t pair_size = 4;
-            le_characteristic_descriptor_t descriptor;
-            le_characteristic_descriptor_event_t event;
-            event.type = GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT;
-                
-            int i;
-            for (i = 2; i<size; i+=pair_size){
-                descriptor.handle = READ_BT_16(packet,i);
-                descriptor.uuid16 = READ_BT_16(packet,i+2);
-                descriptor.value_length = 0;
-                event.characteristic_descriptor = descriptor;
-                (*le_central_callback)((le_central_event_t*)&event);
+            if (packet[1] == 2){
+               pair_size = 18;     
             }
+            uint16_t last_descriptor_handle = READ_BT_16(packet, size - pair_size);
 
-            trigger_next_characteristic_descriptor_query(peripheral, descriptor.handle);
+            report_gatt_all_characteristic_descriptors(peripheral, &packet[2], size-2, pair_size);
+            trigger_next_characteristic_descriptor_query(peripheral, last_descriptor_handle);
+
             break;
         }
 
@@ -1516,12 +1532,18 @@ static void hexdump2(void *data, int size){
 
 static void printUUID(uint8_t * uuid128, uint16_t uuid16){
     printf(", uuid ");
-    if (uuid128){
-        printUUID128(uuid128);
-    } else {
+    if (uuid16){
         printf(" 0x%02x",uuid16);
+    } else {
+        printUUID128(uuid128);
     }
     printf("\n");
+}
+
+static void dump_characteristic(le_characteristic_t * characteristic){
+    printf("    *** characteristic *** properties %x, start handle 0x%02x, value handle 0x%02x, end handle 0x%02x", 
+                            characteristic->properties, characteristic->start_handle, characteristic->value_handle, characteristic->end_handle);
+    printUUID(characteristic->uuid128, characteristic->uuid16);
 }
 
 static void dump_ad_event(ad_event_t * e){
