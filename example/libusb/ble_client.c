@@ -318,7 +318,7 @@ static le_command_status_t send_gatt_read_client_characteristic_configuration_re
 }
 
 static le_command_status_t send_gatt_read_characteristic_descriptor_request(le_peripheral_t * peripheral){
-    return att_read_request(ATT_READ_REQUEST, peripheral->handle, peripheral->query_start_handle);
+    return att_read_request(ATT_READ_REQUEST, peripheral->handle, peripheral->attribute_handle);
 }
 
 static inline void send_gatt_complete_event(le_peripheral_t * peripheral, uint8_t type, uint8_t status){
@@ -566,12 +566,19 @@ static void handle_peripheral_list(){
                 if (status != BLE_PERIPHERAL_OK) break;
                 peripheral->state = P_W4_READ_CHARACTERISTIC_DESCRIPTOR_RESULT;
                 break;
-
+                
+            case P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY:
+                status = send_gatt_read_blob_request(peripheral);
+                if (status != BLE_PERIPHERAL_OK) break;
+                peripheral->state = P_W4_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_RESULT;
+                break;
+                
             case P_W2_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION:
                 status = send_gatt_write_client_characteristic_configuration_request(peripheral);
                 if (status != BLE_PERIPHERAL_OK) break;
                 peripheral->state = P_W4_CLIENT_CHARACTERISTIC_CONFIGURATION_RESULT;
                 break;
+                
             case P_W2_DISCONNECT:
                 peripheral->state = P_W4_DISCONNECTED;
                 hci_send_cmd(&hci_disconnect, peripheral->handle,0x13);
@@ -852,7 +859,7 @@ le_command_status_t le_central_write_client_characteristic_configuration(le_peri
 
 le_command_status_t le_central_read_characteristic_descriptor(le_peripheral_t *peripheral, le_characteristic_descriptor_t * descriptor){
     if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
-    peripheral->query_start_handle = descriptor->handle;
+    peripheral->attribute_handle = descriptor->handle;
     
     peripheral->uuid16 = descriptor->uuid16;
     if (!descriptor->uuid16){
@@ -863,6 +870,17 @@ le_command_status_t le_central_read_characteristic_descriptor(le_peripheral_t *p
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
 }
+
+le_command_status_t le_central_read_long_characteristic_descriptor(le_peripheral_t *peripheral, le_characteristic_descriptor_t * descriptor){
+    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
+    
+    peripheral->attribute_handle = descriptor->handle;
+    peripheral->attribute_offset = 0;
+    peripheral->state = P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY;
+    gatt_client_run();
+    return BLE_PERIPHERAL_OK;
+}
+
 
 static void gatt_client_run(){
     if (state == W4_ON) return;
@@ -1161,13 +1179,14 @@ static void report_gatt_characteristic_value(le_peripheral_t * peripheral, uint1
     send_characteristic_value_event(peripheral, handle, value, length, 0, GATT_CHARACTERISTIC_VALUE_QUERY_RESULT);
 }
 
-static void report_gatt_characteristic_descriptor(le_peripheral_t * peripheral, uint16_t handle, uint8_t * uuid128, uint16_t uuid16, uint8_t *value, uint16_t value_length){
+static void report_gatt_characteristic_descriptor(le_peripheral_t * peripheral, uint16_t handle, uint8_t * uuid128, uint16_t uuid16, uint8_t *value, uint16_t value_length, uint16_t value_offset, uint8_t event_type){
     le_characteristic_descriptor_event_t event;
-    event.type = GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT;
+    event.type = event_type; // GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT;
 
     le_characteristic_descriptor_t descriptor;
     descriptor.handle = handle;
     descriptor.uuid16 = uuid16;
+    descriptor.value_offset = value_offset;
     if (uuid128){
         memcpy(descriptor.uuid128, uuid128, 16);
     } else {
@@ -1247,6 +1266,19 @@ static inline void trigger_next_prepare_write_query(le_peripheral_t * peripheral
         peripheral->state = done_state;
         return;
     }
+    peripheral->state = next_query_state;
+}
+
+static inline void trigger_next_blob_query(le_peripheral_t * peripheral, peripheral_state_t next_query_state, uint8_t done_event, uint16_t received_blob_length){
+    
+    uint16_t max_blob_length = peripheral->mtu - 1;
+    if (received_blob_length < max_blob_length){
+        peripheral->state = P_CONNECTED;
+        send_gatt_complete_event(peripheral, done_event, 0);
+        return;
+    }
+    
+    peripheral->attribute_offset += received_blob_length;
     peripheral->state = next_query_state;
 }
 
@@ -1354,7 +1386,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
 
                 case P_W4_READ_CHARACTERISTIC_DESCRIPTOR_RESULT:{
                     peripheral->state = P_CONNECTED;
-                    report_gatt_characteristic_descriptor(peripheral, peripheral->start_group_handle, peripheral->uuid128, peripheral->uuid16, &packet[1], size-1);
+                    report_gatt_characteristic_descriptor(peripheral, peripheral->attribute_handle, peripheral->uuid128, peripheral->uuid16, &packet[1], size-1, 0, GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT);
                     break;
                 }
                 default:
@@ -1411,22 +1443,25 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             }
             break;
 
-        case ATT_READ_BLOB_RESPONSE:
-            if ( peripheral->state != P_W4_READ_BLOB_RESULT) return;
+        case ATT_READ_BLOB_RESPONSE:{
             uint16_t received_blob_length = size-1;
-            uint16_t max_blob_length = peripheral->mtu - 1;
-
-            report_gatt_long_characteristic_value_blob(peripheral, &packet[1], received_blob_length, peripheral->attribute_offset);
-
-            if (received_blob_length < max_blob_length){
-                peripheral->state = P_CONNECTED;
-                send_gatt_complete_event(peripheral, GATT_LONG_CHARACTERISTIC_VALUE_QUERY_COMPLETE, 0); 
-                return;
+            
+            switch(peripheral->state){
+                case P_W4_READ_BLOB_RESULT:
+                    report_gatt_long_characteristic_value_blob(peripheral, &packet[1], received_blob_length, peripheral->attribute_offset);
+                    trigger_next_blob_query(peripheral, P_W2_SEND_READ_BLOB_QUERY, GATT_LONG_CHARACTERISTIC_VALUE_QUERY_COMPLETE, received_blob_length);
+                    break;
+                case P_W4_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_RESULT:
+                    report_gatt_characteristic_descriptor(peripheral, peripheral->attribute_handle,
+                        peripheral->uuid128, peripheral->uuid16, &packet[1], received_blob_length,
+                        peripheral->attribute_offset, GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT);
+                    trigger_next_blob_query(peripheral, P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY, GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_COMPLETE, received_blob_length);
+                    break;
+                default:
+                    break;
             }
-            peripheral->attribute_offset += received_blob_length;
-            peripheral->state = P_W2_SEND_READ_BLOB_QUERY;
             break;
-
+        }
         case ATT_PREPARE_WRITE_RESPONSE:
             switch (peripheral->state){
                 case P_W4_PREPARE_WRITE_RESULT:{
@@ -2032,7 +2067,77 @@ uint8_t chr_short_value[1] = {0x86};
 //             break;
 //     }
 // }
-
+//
+//void sm_test_read_characteristic_descriptor(le_central_event_t * event){
+//    switch(tc_state){
+//        case TC_W4_CONNECT:
+//            if (event->type != GATT_CONNECTION_COMPLETE) break;
+//            tc_state = TC_W4_SERVICE_RESULT;
+//            printf("\n test client - CONNECTED, query ACC service\n");
+//            le_central_discover_primary_services_by_uuid128(&test_device, acc_service_uuid);
+//            break;
+//            
+//        case TC_W4_SERVICE_RESULT:
+//            switch(event->type){
+//                case GATT_SERVICE_QUERY_RESULT:
+//                    service = ((le_service_event_t *) event)->service;
+//                    dump_service(&service);
+//                    break;
+//                case GATT_SERVICE_QUERY_COMPLETE:
+//                    tc_state = TC_W4_CHARACTERISTIC_RESULT;
+//                    printf("\n test client - FIND ENABLE CHARACTERISTIC for SERVICE QUERY : \n");
+//                    dump_service(&service);
+//                    le_central_discover_characteristics_for_service_by_uuid128(&test_device, &service, acc_chr_enable_uuid);
+//                    break;
+//                default:
+//                    break;
+//            }
+//            break;
+//            
+//        case TC_W4_CHARACTERISTIC_RESULT:
+//            switch(event->type){
+//                case GATT_CHARACTERISTIC_QUERY_RESULT:
+//                    enable_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+//                    dump_characteristic(&enable_characteristic);
+//                    break;
+//                case GATT_CHARACTERISTIC_QUERY_COMPLETE:
+//                    tc_state = TC_W4_CHARACTERISTIC_DESCRIPTOR_RESULT;
+//                    printf("\n test client - ACC ENABLE\n");
+//                    le_central_discover_characteristic_descriptors(&test_device, &enable_characteristic);
+//                    break;
+//                default:
+//                    break;
+//            }
+//            break;
+//            
+//        case TC_W4_CHARACTERISTIC_DESCRIPTOR_RESULT:
+//            switch(event->type){
+//                case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
+//                    descriptor = ((le_characteristic_descriptor_event_t *) event)->characteristic_descriptor;
+//                    dump_descriptor(&descriptor);
+//                    break;
+//                case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_COMPLETE:
+//                    le_central_read_characteristic_descriptor(&test_device, &descriptor);
+//                    break;
+//                case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:{
+//                    descriptor = ((le_characteristic_descriptor_event_t *) event)->characteristic_descriptor;
+//                    dump_descriptor(&descriptor);
+//                    tc_state = TC_W4_DISCONNECT;
+//                    printf("\n\n test client - DISCONNECT ");
+//                    le_central_disconnect(&test_device);
+//                    break;
+//                }
+//                default:
+//                    break;
+//            }
+//            break;
+//            
+//        default:
+//            printf("Client, unhandled state %d\n", tc_state);
+//            break;
+//    }
+//
+//}
 
 static void handle_scan_and_connect(le_central_event_t * event){
     if (tc_state != TC_W4_SCAN_RESULT) return;
@@ -2111,16 +2216,20 @@ static void handle_le_central_event(le_central_event_t * event){
                     dump_descriptor(&descriptor);
                     break;
                 case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_COMPLETE:
-                    le_central_read_characteristic_descriptor(&test_device, &descriptor);
+                    le_central_read_long_characteristic_descriptor(&test_device, &descriptor);
                     break;
-                case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:{
+                case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:{
                     descriptor = ((le_characteristic_descriptor_event_t *) event)->characteristic_descriptor;
                     dump_descriptor(&descriptor);
+                    break;
+                }
+                case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_COMPLETE:
+                    printf("DONE");
                     tc_state = TC_W4_DISCONNECT;
                     printf("\n\n test client - DISCONNECT ");
                     le_central_disconnect(&test_device);
                     break;
-                }
+                    
                 default:
                     break;
             }

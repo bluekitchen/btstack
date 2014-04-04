@@ -120,6 +120,9 @@ typedef enum {
 
     P_W2_SEND_READ_CHARACTERISTIC_DESCRIPTOR_QUERY,
     P_W4_READ_CHARACTERISTIC_DESCRIPTOR_RESULT,
+    
+    P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY,
+    P_W4_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_RESULT,
 
     P_W2_CANCEL_CONNECT,
     P_W4_CONNECT_CANCELLED,
@@ -212,6 +215,7 @@ typedef struct le_characteristic_descriptor{
     uint16_t uuid16;
     uint8_t  uuid128[16];
     uint16_t value_length;
+    uint16_t value_offset;
     uint8_t * value;
 } le_characteristic_descriptor_t;
 
@@ -293,10 +297,10 @@ le_command_status_t le_central_reliable_write_long_value_of_characteristic(le_pe
 
 
 le_command_status_t le_central_read_characteristic_descriptor(le_peripheral_t *context, le_characteristic_descriptor_t * descriptor);
-le_command_status_t le_central_read_long_characteristic_descriptors(le_peripheral_t *context, le_characteristic_descriptor_t * descriptor);
+le_command_status_t le_central_read_long_characteristic_descriptor(le_peripheral_t *context, le_characteristic_descriptor_t * descriptor);
 
-le_command_status_t le_central_write_characteristic_descriptors(le_peripheral_t *context, le_characteristic_descriptor_t * descriptor, uint16_t length, uint8_t * data);
-le_command_status_t le_central_write_long_characteristic_descriptors(le_peripheral_t *context, le_characteristic_descriptor_t * descriptor, uint16_t length, uint8_t * data);
+le_command_status_t le_central_write_characteristic_descriptor(le_peripheral_t *context, le_characteristic_descriptor_t * descriptor, uint16_t length, uint8_t * data);
+le_command_status_t le_central_write_long_characteristic_descriptor(le_peripheral_t *context, le_characteristic_descriptor_t * descriptor, uint16_t length, uint8_t * data);
 
 le_command_status_t le_central_write_client_characteristic_configuration(le_peripheral_t *context, le_characteristic_t * characteristic, uint16_t configuration);
 
