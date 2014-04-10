@@ -584,7 +584,19 @@ static void handle_peripheral_list(){
                 if (status != BLE_PERIPHERAL_OK) break;
                 peripheral->state = P_W4_CLIENT_CHARACTERISTIC_CONFIGURATION_RESULT;
                 break;
-                
+            
+            case P_W2_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR:
+                status = send_gatt_prepare_write_request(peripheral);
+                if (status != BLE_PERIPHERAL_OK) break;
+                peripheral->state = P_W4_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT;
+                break;
+            
+            case P_W2_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR:
+                status = send_gatt_execute_write_request(peripheral);
+                if (status != BLE_PERIPHERAL_OK) break;
+                peripheral->state = P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT;
+                break;
+            
             case P_W2_DISCONNECT:
                 peripheral->state = P_W4_DISCONNECTED;
                 hci_send_cmd(&hci_disconnect, peripheral->handle,0x13);
@@ -905,7 +917,7 @@ le_command_status_t le_central_write_long_characteristic_descriptor(le_periphera
     peripheral->attribute_offset = 0;
     peripheral->attribute_value = value;
     
-    peripheral->state = P_W2_SEND_WRITE_CHARACTERISTIC_DESCRIPTOR;
+    peripheral->state = P_W2_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR;
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
 }
@@ -1501,6 +1513,11 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                     trigger_next_prepare_write_query(peripheral, P_W2_PREPARE_WRITE, P_W2_EXECUTE_PREPARED_WRITE);
                     break;
                 }
+                case P_W4_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:{
+                    peripheral->attribute_offset = READ_BT_16(packet, 3);
+                    trigger_next_prepare_write_query(peripheral, P_W2_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR, P_W2_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR);
+                    break;
+                }
                 case P_W4_PREPARE_RELIABLE_WRITE_RESULT:{
                     if (is_value_valid(peripheral, packet, size)){
                         peripheral->attribute_offset = READ_BT_16(packet, 3);
@@ -1523,7 +1540,11 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                     break;
                 case P_W4_CANCEL_PREPARED_WRITE_RESULT:
                     peripheral->state = P_CONNECTED;
-                    send_gatt_complete_event(peripheral, GATT_LONG_CHARACTERISTIC_VALUE_WRITE_COMPLETE, 1);
+                    send_gatt_complete_event(peripheral, GATT_LONG_CHARACTERISTIC_VALUE_WRITE_CANCELED, 1);
+                    break;
+                case P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:
+                    peripheral->state = P_CONNECTED;
+                    send_gatt_complete_event(peripheral, GATT_LONG_CHARACTERISTIC_DESCRIPTOR_WRITE_COMPLETE, 0);
                     break;
                 default:
                     break;
