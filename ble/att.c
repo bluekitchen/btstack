@@ -269,7 +269,7 @@ static inline uint16_t setup_error_atribute_not_found(uint8_t * response_buffer,
 }
 
 static inline uint16_t setup_error_invalid_handle(uint8_t * response_buffer, uint16_t request, uint16_t handle){
-    return setup_error(response_buffer, request, handle, ATT_ERROR_ATTRIBUTE_INVALID);
+    return setup_error(response_buffer, request, handle, ATT_ERROR_INVALID_HANDLE);
 }
 
 static inline uint16_t setup_error_invalid_offset(uint8_t * response_buffer, uint16_t request, uint16_t handle){
