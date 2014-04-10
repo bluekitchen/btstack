@@ -82,7 +82,7 @@ extern "C" {
 #define ATT_SIGNED_WRITE_COMAND         0xD2
 
 // MARK: ATT Error Codes
-#define ATT_ERROR_ATTRIBUTE_INVALID                0x01
+#define ATT_ERROR_INVALID_HANDLE                   0x01
 #define ATT_ERROR_READ_NOT_PERMITTED               0x02
 #define ATT_ERROR_WRITE_NOT_PERMITTED              0x03
 #define ATT_ERROR_INVALID_PDU                      0x04  
