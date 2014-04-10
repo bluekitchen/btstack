@@ -20,9 +20,17 @@
 #include "hci.h"
 #include "ble_client.h"
 
-static bd_addr_t test_device_addr = {0x61, 0x48, 0x80, 0xe6, 0xa1, 0x71};
+static bd_addr_t test_device_addr = {0x34, 0xb1, 0xf7, 0xd1, 0x77, 0x9b};
+static le_peripheral_t test_device;
+
+static uint8_t advertisement_received;
+static uint8_t connected;
 
 void mock_simulate_hci_state_working();
+void mock_simulate_command_complete(const hci_cmd_t *cmd);
+void mock_simulate_scan_response();
+void mock_simulate_connected();
+void mock_simulate_exchange_mtu();
 
 void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
 	int i;
@@ -33,13 +41,11 @@ void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
 
 static void verify_advertisement(ad_event_t * e){
     CHECK_EQUAL(0, e->event_type);
- 	CHECK_EQUAL(1, e->address_type);
-	CHECK_EQUAL(183, e->rssi);
+ 	CHECK_EQUAL(0, e->address_type);
+	CHECK_EQUAL(188, e->rssi);
 	CHECK_EQUAL(3, e->length);
 	CHECK_EQUAL_ARRAY((uint8_t *)test_device_addr, (uint8_t *)e->address, 6);
 }
-
-uint8_t advertisement_received;
 
 static void handle_le_central_event(le_central_event_t * event){
 	switch(event->type){
@@ -47,17 +53,23 @@ static void handle_le_central_event(le_central_event_t * event){
 			advertisement_received = 1;
 			verify_advertisement((ad_event_t *) event);
 			break;
+		case GATT_CONNECTION_COMPLETE:
+			printf("GATT_CONNECTION_COMPLETE\n");
+			connected = 1;
+			break;
 		default:
+			printf("handle_le_central_event");
 			break;
 	}
 }
 
-
 TEST_GROUP(GATTClient){
 	void setup(){
 		advertisement_received = 0;
+		connected = 0;
 		le_central_init();
 		le_central_register_handler(handle_le_central_event);
+		// le_central_register_packet_handler(handle_hci_event);
 		mock_simulate_hci_state_working();
 	}
 };
@@ -65,7 +77,16 @@ TEST_GROUP(GATTClient){
 
 TEST(GATTClient, TestScanning){
 	le_central_start_scan();
+	mock_simulate_command_complete(&hci_le_set_scan_enable);
+	mock_simulate_scan_response();
 	CHECK(advertisement_received);
+}
+
+TEST(GATTClient, TestConnecting){
+	le_central_connect(&test_device, 1, test_device_addr);
+	mock_simulate_connected();
+	mock_simulate_exchange_mtu();
+	CHECK(connected);
 }
 
 
