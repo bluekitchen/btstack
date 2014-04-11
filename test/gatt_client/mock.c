@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <btstack/btstack.h>
+#include "att.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
@@ -37,9 +38,15 @@ void mock_simulate_scan_response(){
 }
 
 void mock_simulate_exchange_mtu(){
-	printf("mock_simulate_exchange_mtu\n");
-	uint8_t packet[] = {0x03, 0x17, 0x00};
-	att_packet_handler(ATT_DATA_PACKET, 0x40, (uint8_t *)&packet, sizeof(packet));
+	// uint8_t packet[] = {0x03, 0x17, 0x00};
+	// att_packet_handler(ATT_DATA_PACKET, 0x40, (uint8_t *)&packet, sizeof(packet));
+}
+
+static void att_init_connection(att_connection_t * att_connection){
+    att_connection->mtu = 23;
+    att_connection->encryption_key_size = 0;
+    att_connection->authenticated = 0;
+	att_connection->authorized = 0;
 }
 
 int hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type){
@@ -82,6 +89,15 @@ int l2cap_reserve_packet_buffer(void){
 
 int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){
 	printf("l2cap_send_prepared_connectionless\n");
+	// assert handle = current connection
+	// assert cid = att 
+
+	att_connection_t att_connection;
+	att_init_connection(&att_connection);
+	uint8_t response[max_mtu];
+	uint16_t response_len = att_handle_request(&att_connection, l2cap_get_outgoing_buffer(), len, &response[0]);
+	att_packet_handler(ATT_DATA_PACKET, 0x40, &response[0], response_len);
+
 	return 0;
 }
 

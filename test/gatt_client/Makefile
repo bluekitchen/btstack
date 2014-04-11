@@ -19,13 +19,18 @@ COMMON = \
     ${BTSTACK_ROOT}/src/run_loop_posix.c			\
     ${BTSTACK_ROOT}/src/hci_cmds.c					\
     ${BTSTACK_ROOT}/example/libusb/ble_client.c     \
+    ${BTSTACK_ROOT}/ble/att.c     					\
     mock.c
 	
 COMMON_OBJ = $(COMMON:.c=.o)
 
 all: gatt_client
 
-gatt_client: ${CORE_OBJ} ${COMMON_OBJ} gatt_client.c
+# compile .ble description
+profile.h: profile.gatt
+	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
+
+gatt_client: ${CORE_OBJ} ${COMMON_OBJ} gatt_client.c profile.h
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} gatt_client.c ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
