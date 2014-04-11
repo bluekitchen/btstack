@@ -1,0 +1,10 @@
+To compile/run the tests, cpputest is required
+
+Get cpputest
+$ git clone https://github.com/cpputest/cpputest.git
+
+Compile and install
+$ cd cpputest
+$ ./configure
+$ make
+$ sudo make install
