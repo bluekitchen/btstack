@@ -524,8 +524,11 @@ static void sm_tk_setup(){
     sm_reset_tk();
 
     // query client for OOB data
-    sm_s_have_oob_data = (*sm_get_oob_data)(sm_m_addr_type, &sm_m_address, sm_tk);
-
+    sm_s_have_oob_data = 0;
+    if (sm_get_oob_data) {
+        (*sm_get_oob_data)(sm_m_addr_type, &sm_m_address, sm_tk);
+    }
+    
     // If both devices have out of band authentication data, then the Authentication
     // Requirements Flags shall be ignored when selecting the pairing method and the
     // Out of Band pairing method shall be used.
