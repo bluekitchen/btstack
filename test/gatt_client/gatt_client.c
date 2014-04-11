@@ -21,14 +21,35 @@
 #include "ble_client.h"
 #include "att.h"
 #include "profile.h"
+#include "expected_results.h"
 
 static bd_addr_t test_device_addr = {0x34, 0xb1, 0xf7, 0xd1, 0x77, 0x9b};
 static le_peripheral_t test_device;
-uint8_t  service_uuid128[] = {0x00, 0x00, 0xf0, 0x01, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb};
-uint16_t service_uuid16 = 0xF000;
+
+typedef enum {
+	IDLE,
+	DISCOVER_PRIMARY_SERVICES,
+    DISCOVER_PRIMARY_SERVICE_WITH_UUID16,
+    DISCOVER_PRIMARY_SERVICE_WITH_UUID128,
+
+    DISCOVER_INCLUDED_SERVICE_FOR_SERVICE_WITH_UUID16,
+    DISCOVER_INCLUDED_SERVICE_FOR_SERVICE_WITH_UUID128,
+
+    DISCOVER_CHARACTERISTICS_FOR_SERVICE_WITH_UUID16,
+    DISCOVER_CHARACTERISTICS_FOR_SERVICE_WITH_UUID128,
+    DISCOVER_CHARACTERISTICS_BY_UUID16,
+    DISCOVER_CHARACTERISTICS_BY_UUID128
+} current_test_t;
+
+current_test_t test = IDLE;
+
+uint8_t  characteristic_uuid128[] = {0x00, 0x00, 0xf0, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb};
+uint16_t characteristic_uuid16 = 0xF000;
 
 static int result_index;
 static le_service_t services[50];
+static le_service_t included_services[50];
+
 static le_characteristic_t characteristics[50];
 
  
@@ -70,7 +91,7 @@ static void hexdump2(void const *data, int size){
 static void dump_characteristic(le_characteristic_t * characteristic){
     printf("    *** characteristic *** properties %x, start handle 0x%02x, value handle 0x%02x, end handle 0x%02x", 
                             characteristic->properties, characteristic->start_handle, characteristic->value_handle, characteristic->end_handle);
-    printUUID1(characteristic->uuid128);
+    printUUID(characteristic->uuid128, characteristic->uuid16);
 }
 
 static void dump_ad_event(ad_event_t * e){
@@ -98,12 +119,21 @@ static void dump_characteristic_value(le_characteristic_value_event_t * event){
 
 
 
-void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
+void CHECK_EQUAL_ARRAY(const uint8_t * expected, uint8_t * actual, int size){
 	int i;
 	for (i=0; i<size; i++){
 		BYTES_EQUAL(expected[i], actual[i]);
 	}
 }
+
+void CHECK_EQUAL_GATT_ATTRIBUTE(const uint8_t * exp_uuid, const uint8_t * exp_handles, uint8_t * uuid, uint16_t start_handle, uint16_t end_handle){
+	CHECK_EQUAL_ARRAY(exp_uuid, uuid, 16);
+	if (!exp_handles) return;
+	CHECK_EQUAL(exp_handles[0], start_handle);
+    CHECK_EQUAL(exp_handles[1], end_handle);
+}
+
+// -----------------------------------------------------
 
 static void verify_advertisement(ad_event_t * e){
     CHECK_EQUAL(0, e->event_type);
@@ -113,91 +143,45 @@ static void verify_advertisement(ad_event_t * e){
 	CHECK_EQUAL_ARRAY((uint8_t *)test_device_addr, (uint8_t *)e->address, 6);
 }
 
-static void verify_primary_services(){
-	if (result_index == 1){
-    	if (services[0].uuid16){
-    		CHECK_EQUAL(service_uuid16, services[0].uuid16);
-    		CHECK_EQUAL(0x24, services[0].start_group_handle);
-    		CHECK_EQUAL(0x55, services[0].end_group_handle);
-    	} else {
-			CHECK_EQUAL_ARRAY(service_uuid128, services[0].uuid128, 16);
-			CHECK_EQUAL(0x56, services[0].start_group_handle);
-    		CHECK_EQUAL(0x7A, services[0].end_group_handle);
-		}
-		return;
-	}
-	
-	CHECK_EQUAL(6, result_index);
-	uint8_t uuids[6][16] = {
-		{0x00, 0x00, 0x18, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0x18, 0x01, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0xf0, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0xf0, 0x01, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb}
-	};
+static void verify_primary_services_with_uuid16(){
+	CHECK_EQUAL(1, result_index);
+	CHECK_EQUAL_GATT_ATTRIBUTE(primary_service_uuid16,  primary_service_uuid16_handles, services[0].uuid128, services[0].start_group_handle, services[0].end_group_handle);	
+}
 
+static void verify_primary_services_with_uuid128(){
+	CHECK_EQUAL(1, result_index);
+	CHECK_EQUAL_GATT_ATTRIBUTE(primary_service_uuid128, primary_service_uuid128_handles, services[0].uuid128, services[0].start_group_handle, services[0].end_group_handle);
+}
+
+static void verify_primary_services(){
+	CHECK_EQUAL(6, result_index);
 	int i;
 	for (i=0; i<result_index; i++){
-		CHECK_EQUAL_ARRAY(uuids[i], services[i].uuid128, 16);
+		CHECK_EQUAL_GATT_ATTRIBUTE(primary_service_uuids[i], NULL, services[i].uuid128, services[i].start_group_handle, services[i].end_group_handle);
 	}
 }
 
-static void verify_included_services(){
-	uint8_t result_offset = services[1].uuid16 ? 0:1;
+static void verify_included_services_uuid16(){
+	CHECK_EQUAL(1, result_index);
+	CHECK_EQUAL_GATT_ATTRIBUTE(included_services_uuid16, included_services_uuid16_handles, included_services[0].uuid128, included_services[0].start_group_handle, included_services[0].end_group_handle);	
+}
 
-	uint8_t uuids[6][16] = {
-		{0x00, 0x00, 0xff, 0xf4, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0xff, 0x10, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0xff, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-	};
-
-	uint16_t handles[3][2] = {
-		{0x1F, 0x23},
-		{0x0F, 0x11},
-		{0x12, 0x14}
-	};
-
+static void verify_included_services_uuid128(){
+	CHECK_EQUAL(2, result_index);
 	int i;
-	for (i=1; i<result_index; i++){
-		int expected_result_index = i-1+result_offset;
-		CHECK_EQUAL_ARRAY(uuids[expected_result_index], services[i].uuid128, 16);
-		CHECK_EQUAL(handles[expected_result_index][0], services[i].start_group_handle);
-    	CHECK_EQUAL(handles[expected_result_index][1], services[i].end_group_handle);
+	for (i=0; i<result_index; i++){
+		CHECK_EQUAL_GATT_ATTRIBUTE(included_services_uuid128[i], included_services_uuid128_handles[i], included_services[i].uuid128, included_services[i].start_group_handle, included_services[i].end_group_handle);	
 	}
 }
 
 static void verify_charasteristics(){
-	uint16_t handles[14][2]= {
-		{0x26, 0x2a}, {0x2b, 0x2f}, {0x30, 0x32}, {0x33, 0x35}, {0x36, 0x38}, 
-		{0x39, 0x3b}, {0x3c, 0x3e}, {0x3f, 0x41}, {0x42, 0x44}, {0x45, 0x47}, 
-		{0x48, 0x49}, {0x4a, 0x4f}, {0x50, 0x51}, {0x52, 0x53}
-	};
-
-	uint8_t uuids[14][16] = {
-		{0x00, 0x00, 0xf0, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0xf1, 0x01, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0xf1, 0x03, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0xf1, 0x05, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0xf1, 0x07, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0xf1, 0x09, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0xf1, 0x0a, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0xf1, 0x0b, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
-		{0x00, 0x00, 0xf1, 0x0d, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb}
-	};
-
+	CHECK_EQUAL(14, result_index);
 	int i;
 	for (i=0; i<result_index; i++){
-		CHECK_EQUAL_ARRAY(uuids[i], characteristics[i].uuid128, 16);
-		CHECK_EQUAL(handles[i][0], characteristics[i].start_handle);
-    	CHECK_EQUAL(handles[i][1], characteristics[i].end_handle);
+		CHECK_EQUAL_GATT_ATTRIBUTE(characteristic_uuids[i], characteristic_handles[i], characteristics[i].uuid128, characteristics[i].start_handle, characteristics[i].end_handle);	
     }
 }
+
 
 static void handle_le_central_event(le_central_event_t * event){
 	switch(event->type){
@@ -213,14 +197,35 @@ static void handle_le_central_event(le_central_event_t * event){
             services[result_index++] = ((le_service_event_t *) event)->service;
             break;
         case GATT_SERVICE_QUERY_COMPLETE:
-        	verify_primary_services();
+        	switch(test){
+        		case DISCOVER_PRIMARY_SERVICES:
+        			verify_primary_services();
+        			break;
+        		case DISCOVER_PRIMARY_SERVICE_WITH_UUID16:
+        			verify_primary_services_with_uuid16();
+        			break;
+        		case DISCOVER_PRIMARY_SERVICE_WITH_UUID128:
+        			verify_primary_services_with_uuid128();
+        			break;
+        		default:
+        			break;
+        	}
         	result_found = 1;
             break;
         case GATT_INCLUDED_SERVICE_QUERY_RESULT:
-            services[result_index++] = ((le_service_event_t *) event)->service;
+            included_services[result_index++] = ((le_service_event_t *) event)->service;
             break;
         case GATT_INCLUDED_SERVICE_QUERY_COMPLETE:
-        	verify_included_services();
+        	switch(test){
+        		case DISCOVER_INCLUDED_SERVICE_FOR_SERVICE_WITH_UUID16:
+        			verify_included_services_uuid16();
+        			break;
+        		case DISCOVER_INCLUDED_SERVICE_FOR_SERVICE_WITH_UUID128:
+        			verify_included_services_uuid128();
+        			break;
+        		default:
+        			break;
+        	}
         	result_found = 1;
         	break;
         case GATT_CHARACTERISTIC_QUERY_RESULT:
@@ -253,6 +258,7 @@ TEST_GROUP(GATTClient){
 		connected = 0;
 		result_found = 0;
 		result_index = 0;
+		test = IDLE;
 
 		le_central_init();
 		le_central_register_handler(handle_le_central_event);
@@ -262,47 +268,55 @@ TEST_GROUP(GATTClient){
 	}
 };
 
-// TEST(GATTClient, TestScanning){
-// 	le_central_start_scan();
-// 	mock_simulate_command_complete(&hci_le_set_scan_enable);
-// 	mock_simulate_scan_response();
-// 	CHECK(advertisement_received);
-// }
+TEST(GATTClient, TestScanning){
+	le_central_start_scan();
+	mock_simulate_command_complete(&hci_le_set_scan_enable);
+	mock_simulate_scan_response();
+	CHECK(advertisement_received);
+}
 
-// TEST(GATTClient, TestDiscoverPrimaryServices){
-// 	le_central_discover_primary_services(&test_device);
-// 	CHECK(result_found);
-// }
+TEST(GATTClient, TestDiscoverPrimaryServices){
+	test = DISCOVER_PRIMARY_SERVICES;
+	le_central_discover_primary_services(&test_device);
+	CHECK(result_found);
+}
 
-// TEST(GATTClient, TestDiscoverPrimaryServicesByUUID16){
-// 	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
-// 	CHECK(result_found);
-// }
+TEST(GATTClient, TestDiscoverPrimaryServicesByUUID16){
+	test = DISCOVER_PRIMARY_SERVICE_WITH_UUID16;
+	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
+	CHECK(result_found);
+}
 
-// TEST(GATTClient, TestDiscoverPrimaryServicesByUUID128){
-// 	le_central_discover_primary_services_by_uuid128(&test_device, service_uuid128);
-// 	CHECK(result_found);
-// }
+TEST(GATTClient, TestDiscoverPrimaryServicesByUUID128){
+	test = DISCOVER_PRIMARY_SERVICE_WITH_UUID128;
+	le_central_discover_primary_services_by_uuid128(&test_device, primary_service_uuid128);
+	CHECK(result_found);
+}
 
-// TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID16){
-// 	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
-// 	CHECK(result_found);
+TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID16){
+	test = DISCOVER_INCLUDED_SERVICE_FOR_SERVICE_WITH_UUID16;
+	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
+	CHECK(result_found);
 
-// 	result_found = 0;
-// 	le_central_find_included_services_for_service(&test_device, &services[0]);
-// 	CHECK(result_found);
-// }
+	result_index = 0;
+	result_found = 0;
+	le_central_find_included_services_for_service(&test_device, &services[0]);
+	CHECK(result_found);
+}
 
-// TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID128){
-// 	le_central_discover_primary_services_by_uuid128(&test_device, service_uuid128);
-// 	CHECK(result_found);
+TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID128){
+	test = DISCOVER_INCLUDED_SERVICE_FOR_SERVICE_WITH_UUID128;
+	le_central_discover_primary_services_by_uuid128(&test_device, primary_service_uuid128);
+	CHECK(result_found);
 
-// 	result_found = 0;
-// 	le_central_find_included_services_for_service(&test_device, &services[0]);
-// 	CHECK(result_found);
-// }
+	result_index = 0;
+	result_found = 0;
+	le_central_find_included_services_for_service(&test_device, &services[0]);
+	CHECK(result_found);
+}
 
 TEST(GATTClient, TestDiscoverCharacteristicsForService){
+	test = DISCOVER_CHARACTERISTICS_FOR_SERVICE_WITH_UUID16;
 	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
 	CHECK(result_found);
 
@@ -310,6 +324,17 @@ TEST(GATTClient, TestDiscoverCharacteristicsForService){
 	result_index = 0;
 	le_central_discover_characteristics_for_service(&test_device, &services[0]);
 	CHECK(result_found);
+}
+
+TEST(GATTClient, TestDiscoverCharacteristicsByUUID16){
+	test = DISCOVER_CHARACTERISTICS_BY_UUID16;
+	// le_central_discover_characteristics_in_handle_range_by_uuid16(&test_device, 0,0, service_uuid16);
+	// CHECK(result_found);
+
+	// result_found = 0;
+	// result_index = 0;
+	// le_central_discover_characteristics_for_service(&test_device, &services[0]);
+	// CHECK(result_found);
 }
 
 int main (int argc, const char * argv[]){

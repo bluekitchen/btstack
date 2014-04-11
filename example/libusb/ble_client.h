@@ -263,7 +263,7 @@ le_command_status_t le_central_discover_primary_services(le_peripheral_t *contex
 
 //TODO: define uuid type
 le_command_status_t le_central_discover_primary_services_by_uuid16(le_peripheral_t *context, uint16_t uuid16);
-le_command_status_t le_central_discover_primary_services_by_uuid128(le_peripheral_t *context, uint8_t * uuid);
+le_command_status_t le_central_discover_primary_services_by_uuid128(le_peripheral_t *context, const uint8_t * uuid);
 
 // Returns included services.
 // Information about service type (primary/secondary) can be retrieved either by sending an ATT find query or 

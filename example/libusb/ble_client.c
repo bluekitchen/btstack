@@ -666,7 +666,7 @@ le_command_status_t le_central_discover_primary_services_by_uuid16(le_peripheral
     return BLE_PERIPHERAL_OK;
 }
 
-le_command_status_t le_central_discover_primary_services_by_uuid128(le_peripheral_t *peripheral, uint8_t * uuid128){
+le_command_status_t le_central_discover_primary_services_by_uuid128(le_peripheral_t *peripheral, const uint8_t * uuid128){
     if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     peripheral->start_group_handle = 0x0001;
     peripheral->end_group_handle   = 0xffff;
