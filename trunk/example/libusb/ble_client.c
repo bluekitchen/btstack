@@ -661,7 +661,7 @@ le_command_status_t le_central_discover_primary_services_by_uuid16(le_peripheral
     peripheral->end_group_handle   = 0xffff;
     peripheral->state = P_W2_SEND_SERVICE_WITH_UUID_QUERY;
     peripheral->uuid16 = uuid16;
-
+    sdp_normalize_uuid((uint8_t*) &(peripheral->uuid128), peripheral->uuid16);
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
 }
@@ -672,6 +672,7 @@ le_command_status_t le_central_discover_primary_services_by_uuid128(le_periphera
     peripheral->end_group_handle   = 0xffff;
     peripheral->uuid16 = 0;
     memcpy(peripheral->uuid128, uuid128, 16);
+
     peripheral->state = P_W2_SEND_SERVICE_WITH_UUID_QUERY;
     
     gatt_client_run();
@@ -1420,7 +1421,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                 service.start_group_handle = READ_BT_16(packet,i);
                 service.end_group_handle = READ_BT_16(packet,i+2);
                 memcpy(service.uuid128,  peripheral->uuid128, 16);
-
+                service.uuid16 = peripheral->uuid16;
                 event.service = service;
                 (*le_central_callback)((le_central_event_t*)&event);
             }
