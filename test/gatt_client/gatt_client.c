@@ -114,9 +114,13 @@ static void verify_advertisement(ad_event_t * e){
 static void verify_primary_services(){
 	if (result_index == 1){
     	if (services[0].uuid16){
-			CHECK_EQUAL(service_uuid16, services[0].uuid16);
-		} else {
+    		CHECK_EQUAL(service_uuid16, services[0].uuid16);
+    		CHECK_EQUAL(0x24, services[0].start_group_handle);
+    		CHECK_EQUAL(0x55, services[0].end_group_handle);
+    	} else {
 			CHECK_EQUAL_ARRAY(service_uuid128, services[0].uuid128, 16);
+			CHECK_EQUAL(0x56, services[0].start_group_handle);
+    		CHECK_EQUAL(0x7A, services[0].end_group_handle);
 		}
 		return;
 	}
@@ -137,6 +141,29 @@ static void verify_primary_services(){
 	}
 }
 
+static void verify_included_services(){
+	uint8_t result_offset = services[1].uuid16 ? 0:1;
+	uint8_t uuids[6][16] = {
+		{0x00, 0x00, 0xff, 0xf4, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
+		{0x00, 0x00, 0xff, 0x10, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
+		{0x00, 0x00, 0xff, 0x11, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb},
+	};
+
+	uint16_t handles[3][2] = {
+		{0x1F, 0x23},
+		{0x0F, 0x11},
+		{0x12, 0x14}
+	};
+
+	int i;
+	for (i=1; i<result_index; i++){
+		int expected_result_index = i-1+result_offset;
+		CHECK_EQUAL_ARRAY(uuids[expected_result_index], services[i].uuid128, 16);
+		CHECK_EQUAL(handles[expected_result_index][0], services[i].start_group_handle);
+    	CHECK_EQUAL(handles[expected_result_index][1], services[i].end_group_handle);
+	}
+}
+
 static void handle_le_central_event(le_central_event_t * event){
 	switch(event->type){
 		case GATT_ADVERTISEMENT:
@@ -154,6 +181,13 @@ static void handle_le_central_event(le_central_event_t * event){
         	verify_primary_services();
         	result_found = 1;
             break;
+        case GATT_INCLUDED_SERVICE_QUERY_RESULT:
+            services[result_index++] = ((le_service_event_t *) event)->service;
+            break;
+        case GATT_INCLUDED_SERVICE_QUERY_COMPLETE:
+        	verify_included_services();
+        	result_found = 1;
+        	break;
 		default:
 			printf("handle_le_central_event");
 			break;
@@ -207,6 +241,23 @@ TEST(GATTClient, TestDiscoverPrimaryServicesByUUID128){
 	CHECK(result_found);
 }
 
+TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID16){
+	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
+	CHECK(result_found);
+
+	result_found = 0;
+	le_central_find_included_services_for_service(&test_device, &services[0]);
+	CHECK(result_found);
+}
+
+TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID128){
+	le_central_discover_primary_services_by_uuid128(&test_device, service_uuid128);
+	CHECK(result_found);
+
+	result_found = 0;
+	le_central_find_included_services_for_service(&test_device, &services[0]);
+	CHECK(result_found);
+}
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
