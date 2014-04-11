@@ -101,7 +101,7 @@ static int  nr_packets = 0;
 static char log_message_buffer[256];
 #endif
 
-void hci_dump_open(char *filename, hci_dump_format_t format){
+void hci_dump_open(const char *filename, hci_dump_format_t format){
 #ifndef EMBEDDED
     dump_format = format;
     if (dump_format == HCI_DUMP_STDOUT) {
