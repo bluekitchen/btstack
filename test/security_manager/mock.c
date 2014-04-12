@@ -114,9 +114,9 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...){
 		swap128(key_flipped, key);
  		swap128(plaintext_flipped, plaintext);
 	    printf("le_encrypt key ");
-	    hexdump(key_flipped, 16);
+	    hexdump(key, 16);
 	    printf("le_encrypt txt ");
-	    hexdump(plaintext_flipped, 16);
+	    hexdump(plaintext, 16);
 	    aes128_calc_cyphertext(key, plaintext, aes128_cyphertext);
 	    printf("le_encrypt res ");
 	    hexdump(aes128_cyphertext, 16);

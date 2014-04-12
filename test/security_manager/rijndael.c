@@ -5,11 +5,14 @@
 
 #define FULL_UNROLL
 
-#include <stdint.h>
 #include "rijndael.h"
 
 typedef uint32_t u32;
 typedef uint8_t   u8;
+
+int rijndaelStartOfCode(){
+	return 1;
+}
 
 static const u32 Te0[256] =
 {
@@ -714,7 +717,7 @@ static const u32 rcon[] =
  *
  * @return the number of rounds for the given cipher key size.
  */
-int rijndaelSetupEncrypt(uint32_t *rk, const u8 *key, int keybits)
+int rijndaelSetupEncrypt(u32 *rk, const u8 *key, int keybits)
 {
   int i = 0;
   u32 temp;
@@ -803,7 +806,7 @@ int rijndaelSetupEncrypt(uint32_t *rk, const u8 *key, int keybits)
  *
  * @return the number of rounds for the given cipher key size.
  */
-int rijndaelSetupDecrypt(uint32_t *rk, const u8 *key, int keybits)
+int rijndaelSetupDecrypt(u32 *rk, const u8 *key, int keybits)
 {
   int nrounds, i, j;
   u32 temp;
@@ -849,6 +852,7 @@ int rijndaelSetupDecrypt(uint32_t *rk, const u8 *key, int keybits)
 void rijndaelEncrypt(const u32 *rk, int nrounds, const u8 plaintext[16],
   u8 ciphertext[16])
 {
+
   u32 s0, s1, s2, s3, t0, t1, t2, t3;
   #ifndef FULL_UNROLL
     int r;
@@ -1027,11 +1031,13 @@ void rijndaelEncrypt(const u32 *rk, int nrounds, const u8 plaintext[16],
     rk[3];
   PUTU32(ciphertext + 12, s3);
 
+
 }
 
 void rijndaelDecrypt(const u32 *rk, int nrounds, const u8 ciphertext[16],
   u8 plaintext[16])
 {
+
 
 	
 u32 s0, s1, s2, s3, t0, t1, t2, t3;
@@ -1214,4 +1220,9 @@ u32 s0, s1, s2, s3, t0, t1, t2, t3;
 
 	PUTU32(plaintext + 12, s3);
 	
+
+}
+
+int rijndaelEndOfCode(){
+	return 1;
 }

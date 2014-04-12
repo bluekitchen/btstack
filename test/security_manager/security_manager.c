@@ -78,7 +78,7 @@ TEST_GROUP(GATTClient){
 	    run_loop_init(RUN_LOOP_POSIX);
 	    sm_init();
 	    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
-	    sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION); 
+	    sm_set_authentication_requirements( SM_AUTHREQ_BONDING ); 
 
 	    mock_simulate_hci_state_working();
 

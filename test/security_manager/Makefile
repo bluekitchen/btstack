@@ -26,10 +26,13 @@ COMMON = \
 	
 COMMON_OBJ = $(COMMON:.c=.o)
 
-all: security_manager
+all: security_manager aestest
 
 security_manager: ${CORE_OBJ} ${COMMON_OBJ} security_manager.c
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} security_manager.c ${CFLAGS} ${LDFLAGS} -o $@
+
+aestest: aestest.c rijndael.c
+	${CC} ${CFLAGS} -m32 rijndael.c aestest.c -o $@
 
 clean:
 	rm -f  security_manager
