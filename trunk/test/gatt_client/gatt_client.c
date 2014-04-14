@@ -81,17 +81,16 @@ void printUUID1(uint8_t *uuid) {
 }
 
 static void hexdump2(void const *data, int size){
-    int i;
-    for (i=0; i<size;i++){
+    for (int i=0; i<size;i++){
         printf("%02X ", ((uint8_t *)data)[i]);
     }
     printf("\n");
 }
 
 static void dump_characteristic(le_characteristic_t * characteristic){
-    printf("    *** characteristic *** properties %x, start handle 0x%02x, value handle 0x%02x, end handle 0x%02x", 
-                            characteristic->properties, characteristic->start_handle, characteristic->value_handle, characteristic->end_handle);
-    printUUID(characteristic->uuid128, characteristic->uuid16);
+    //printf(" {0x%02x, 0x%02x}", characteristic->start_handle, characteristic->end_handle);
+    //printUUID(characteristic->uuid128, characteristic->uuid16);
+    printUUID1(characteristic->uuid128);
 }
 
 static void dump_ad_event(ad_event_t * e){
@@ -120,8 +119,7 @@ static void dump_characteristic_value(le_characteristic_value_event_t * event){
 
 
 void CHECK_EQUAL_ARRAY(const uint8_t * expected, uint8_t * actual, int size){
-	int i;
-	for (i=0; i<size; i++){
+	for (int i=0; i<size; i++){
 		BYTES_EQUAL(expected[i], actual[i]);
 	}
 }
@@ -155,8 +153,7 @@ static void verify_primary_services_with_uuid128(){
 
 static void verify_primary_services(){
 	CHECK_EQUAL(6, result_index);
-	int i;
-	for (i=0; i<result_index; i++){
+	for (int i=0; i<result_index; i++){
 		CHECK_EQUAL_GATT_ATTRIBUTE(primary_service_uuids[i], NULL, services[i].uuid128, services[i].start_group_handle, services[i].end_group_handle);
 	}
 }
@@ -168,16 +165,14 @@ static void verify_included_services_uuid16(){
 
 static void verify_included_services_uuid128(){
 	CHECK_EQUAL(2, result_index);
-	int i;
-	for (i=0; i<result_index; i++){
+	for (int i=0; i<result_index; i++){
 		CHECK_EQUAL_GATT_ATTRIBUTE(included_services_uuid128[i], included_services_uuid128_handles[i], included_services[i].uuid128, included_services[i].start_group_handle, included_services[i].end_group_handle);	
 	}
 }
 
 static void verify_charasteristics(){
 	CHECK_EQUAL(14, result_index);
-	int i;
-	for (i=0; i<result_index; i++){
+	for (int i=0; i<result_index; i++){
 		CHECK_EQUAL_GATT_ATTRIBUTE(characteristic_uuids[i], characteristic_handles[i], characteristics[i].uuid128, characteristics[i].start_handle, characteristics[i].end_handle);	
     }
 }
@@ -229,11 +224,20 @@ static void handle_le_central_event(le_central_event_t * event){
         	result_found = 1;
         	break;
         case GATT_CHARACTERISTIC_QUERY_RESULT:
-            characteristics[result_index++] = ((le_characteristic_event_t *) event)->characteristic;
-            dump_characteristic(&characteristics[result_index]);
+        	characteristics[result_index++] = ((le_characteristic_event_t *) event)->characteristic;
             break;
         case GATT_CHARACTERISTIC_QUERY_COMPLETE:
-        	verify_charasteristics();
+        	switch(test){
+        		case DISCOVER_CHARACTERISTICS_FOR_SERVICE_WITH_UUID16:
+        			verify_charasteristics();
+        			break;
+        		case DISCOVER_CHARACTERISTICS_BY_UUID16:
+        		case DISCOVER_CHARACTERISTICS_BY_UUID128:
+        			CHECK_EQUAL(1, result_index);
+        			break;
+        		default:
+        			break;
+        	}
         	result_found = 1;
         	break;
 		default:
@@ -328,13 +332,14 @@ TEST(GATTClient, TestDiscoverCharacteristicsForService){
 
 TEST(GATTClient, TestDiscoverCharacteristicsByUUID16){
 	test = DISCOVER_CHARACTERISTICS_BY_UUID16;
-	// le_central_discover_characteristics_in_handle_range_by_uuid16(&test_device, 0,0, service_uuid16);
-	// CHECK(result_found);
+	le_central_discover_characteristics_for_handle_range_by_uuid16(&test_device, 0x30, 0x32, 0xFFFF);
+	CHECK(result_found);
+}
 
-	// result_found = 0;
-	// result_index = 0;
-	// le_central_discover_characteristics_for_service(&test_device, &services[0]);
-	// CHECK(result_found);
+TEST(GATTClient, TestDiscoverCharacteristicsByUUID128){
+	test = DISCOVER_CHARACTERISTICS_BY_UUID128;
+	le_central_discover_characteristics_for_handle_range_by_uuid128(&test_device, characteristic_handles[1][0], characteristic_handles[1][1], characteristic_uuids[1]);
+	CHECK(result_found);
 }
 
 int main (int argc, const char * argv[]){
