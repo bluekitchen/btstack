@@ -706,10 +706,10 @@ le_command_status_t le_central_discover_characteristics_for_handle_range_by_uuid
     peripheral->end_group_handle   = end_handle;
     peripheral->filter_with_uuid = 1;
     peripheral->uuid16 = uuid16;
-    sdp_normalize_uuid((uint8_t*) &(peripheral->uuid128), peripheral->uuid16);
+    sdp_normalize_uuid((uint8_t*) &(peripheral->uuid128), uuid16);
     peripheral->characteristic_start_handle = 0;
     peripheral->state = P_W2_SEND_CHARACTERISTIC_WITH_UUID_QUERY;
-    
+
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
 }
@@ -727,6 +727,7 @@ le_command_status_t le_central_discover_characteristics_for_handle_range_by_uuid
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
 }
+
 
 le_command_status_t le_central_discover_characteristics_for_service_by_uuid16 (le_peripheral_t *peripheral, le_service_t *service, uint16_t  uuid16){
     return le_central_discover_characteristics_for_handle_range_by_uuid16(peripheral, service->start_group_handle, service->end_group_handle, uuid16);
@@ -1100,7 +1101,7 @@ static void characteristic_start_found(le_peripheral_t * peripheral, uint16_t st
     uint16_t uuid16;
     if (uuid_length == 2){
         uuid16 = READ_BT_16(uuid, 0);
-        sdp_normalize_uuid((uint8_t*) uuid128, peripheral->uuid16);
+        sdp_normalize_uuid((uint8_t*) uuid128, uuid16);
     } else {
         swap128(uuid, uuid128);
     }
@@ -1348,7 +1349,6 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                     trigger_next_characteristic_query(peripheral, get_last_result_handle(packet, size));
                     break;
                 case P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT:
-
                     report_gatt_characteristics(peripheral, packet, size);
                     trigger_next_characteristic_query(peripheral, get_last_result_handle(packet, size));
                     break;
