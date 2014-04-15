@@ -276,9 +276,9 @@ le_command_status_t le_central_discover_characteristics_for_service(le_periphera
 // { type (8), le_peripheral_t *context, service_handle, le_characteristic *}
 
 // gets all characteristics in handle range, and returns those that match the given UUID.
-le_command_status_t le_central_discover_characteristics_in_handle_range_by_uuid16(le_peripheral_t *context, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
+le_command_status_t le_central_discover_characteristics_for_handle_range_by_uuid16(le_peripheral_t *context, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
 // { type (8), le_peripheral_t *context, service_handle, le_characteristic *}
-le_command_status_t le_central_discover_characteristics_in_handle_range_by_uuid128(le_peripheral_t *context, uint16_t start_handle, uint16_t end_handle, uint8_t * uuid);
+le_command_status_t le_central_discover_characteristics_for_handle_range_by_uuid128(le_peripheral_t *context, uint16_t start_handle, uint16_t end_handle, uint8_t * uuid);
 // { type (8), le_peripheral_t *context, service_handle, le_characteristic *}
 
 // more convenience

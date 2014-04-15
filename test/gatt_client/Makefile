@@ -30,7 +30,7 @@ all: gatt_client
 profile.h: profile.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 
-gatt_client: ${CORE_OBJ} ${COMMON_OBJ} gatt_client.c profile.h
+gatt_client: ${CORE_OBJ} ${COMMON_OBJ} gatt_client.c profile.h expected_results.h
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} gatt_client.c ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:

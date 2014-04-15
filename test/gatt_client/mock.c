@@ -64,12 +64,12 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...){
 
 
 uint8_t *l2cap_get_outgoing_buffer(void){
-	printf("l2cap_get_outgoing_buffer\n");
+	// printf("l2cap_get_outgoing_buffer\n");
 	return (uint8_t *)&l2cap_stack_buffer; // 8 bytes
 }
 
 uint16_t l2cap_max_mtu(void){
-	printf("l2cap_max_mtu\n");
+	// printf("l2cap_max_mtu\n");
     return max_mtu;
 }
 
@@ -83,12 +83,12 @@ void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t pa
 }
 
 int l2cap_reserve_packet_buffer(void){
-	printf("l2cap_reserve_packet_buffer\n");
+	// printf("l2cap_reserve_packet_buffer\n");
 	return 1;
 }
 
 int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){
-	printf("l2cap_send_prepared_connectionless\n");
+	// printf("l2cap_send_prepared_connectionless\n");
 	// assert handle = current connection
 	// assert cid = att 
 
