@@ -40,7 +40,8 @@ typedef enum {
     DISCOVER_CHARACTERISTICS_BY_UUID16,
     DISCOVER_CHARACTERISTICS_BY_UUID128,
 
-    DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID
+    DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID,
+    DISCOVER_CHARACTERISTIC_DESCRIPTORS
 } current_test_t;
 
 current_test_t test = IDLE;
@@ -53,7 +54,7 @@ static le_service_t services[50];
 static le_service_t included_services[50];
 
 static le_characteristic_t characteristics[50];
-
+static le_characteristic_descriptor_t descriptors[50];
  
 static uint8_t advertisement_received;
 static uint8_t connected;
@@ -109,6 +110,7 @@ static void dump_service(le_service_t * service){
 static void dump_descriptor(le_characteristic_descriptor_t * descriptor){
     printf("    *** descriptor *** handle 0x%02x, value ", descriptor->handle);
     hexdump2(descriptor->value, descriptor->value_length);
+    printf(" UUID\n");
     printUUID1(descriptor->uuid128);
 }
 
@@ -198,9 +200,11 @@ static void handle_le_central_event(le_central_event_t * event){
         			verify_primary_services();
         			break;
         		case DISCOVER_PRIMARY_SERVICE_WITH_UUID16:
+        			CHECK_EQUAL(1, result_index);
         			verify_primary_services_with_uuid16();
         			break;
         		case DISCOVER_PRIMARY_SERVICE_WITH_UUID128:
+        			CHECK_EQUAL(1, result_index);
         			verify_primary_services_with_uuid128();
         			break;
         		default:
@@ -242,6 +246,13 @@ static void handle_le_central_event(le_central_event_t * event){
         		default:
         			break;
         	}
+        	result_found = 1;
+        	break;
+        case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
+        	descriptors[result_index++] = ((le_characteristic_descriptor_event_t *) event)->characteristic_descriptor;
+        	dump_descriptor(&descriptors[result_index-1]);
+        	break;
+        case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_COMPLETE:
         	result_found = 1;
         	break;
 		default:
@@ -348,9 +359,7 @@ TEST(GATTClient, TestDiscoverCharacteristicsByUUID128){
 
 TEST(GATTClient, TestDiscoverCharacteristics4ServiceByUUID128){
 	test = DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID;
-	le_central_discover_primary_services_by_uuid128
-	(&test_device, primary_service_uuid128);
-	CHECK_EQUAL(1, result_index);
+	le_central_discover_primary_services_by_uuid128(&test_device, primary_service_uuid128);
 	CHECK(result_found);
 
 	result_found = 0;
@@ -369,7 +378,6 @@ TEST(GATTClient, TestDiscoverCharacteristics4ServiceByUUID128){
 TEST(GATTClient, TestDiscoverCharacteristics4ServiceByUUID16){
 	test = DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID;
 	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
-	CHECK_EQUAL(1, result_index);
 	CHECK(result_found);
 
 	result_found = 0;
@@ -384,7 +392,25 @@ TEST(GATTClient, TestDiscoverCharacteristics4ServiceByUUID16){
 	CHECK(result_found);
 }
 
+TEST(GATTClient, TestDiscoverCharacteristicDescriptors){
+	test = DISCOVER_CHARACTERISTIC_DESCRIPTORS;
+	le_central_discover_primary_services_by_uuid16(&test_device, 0xF000);
+	CHECK(result_found);
 
+	result_found = 0;
+	result_index = 0;
+	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
+	CHECK(result_found);
+
+	result_found = 0;
+	result_index = 0;
+	le_central_discover_characteristic_descriptors(&test_device, &characteristics[0]);
+	CHECK(result_found);
+	CHECK_EQUAL(3, result_index);
+	CHECK_EQUAL(0x2902, descriptors[0].uuid16);
+	CHECK_EQUAL(0x2900, descriptors[1].uuid16);
+	CHECK_EQUAL(0x2901, descriptors[2].uuid16);
+}
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
