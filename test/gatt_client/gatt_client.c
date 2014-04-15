@@ -187,7 +187,6 @@ static void handle_le_central_event(le_central_event_t * event){
 			verify_advertisement((ad_event_t *) event);
 			break;
 		case GATT_CONNECTION_COMPLETE:
-			printf("GATT_CONNECTION_COMPLETE\n");
 			connected = 1;
 			break;
 		case GATT_SERVICE_QUERY_RESULT:
