@@ -994,7 +994,6 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
                         if (packet[3]){
                             linked_list_remove(&le_connections, (linked_item_t *) peripheral);
                         } else {
-                            printf("connection completed success\n");
                             peripheral->state = P_W2_EXCHANGE_MTU;
                             peripheral->handle = READ_BT_16(packet, 4);
                         }

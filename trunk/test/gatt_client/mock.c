@@ -58,7 +58,7 @@ int  l2cap_can_send_connectionless_packet_now(void){
 }
 
 int hci_send_cmd(const hci_cmd_t *cmd, ...){
-	printf("hci_send_cmd opcode 0x%02x\n", cmd->opcode);	
+//	printf("hci_send_cmd opcode 0x%02x\n", cmd->opcode);	
 	return 0;
 }
 
