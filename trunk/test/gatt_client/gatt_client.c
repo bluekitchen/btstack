@@ -26,6 +26,7 @@
 static bd_addr_t test_device_addr = {0x34, 0xb1, 0xf7, 0xd1, 0x77, 0x9b};
 static le_peripheral_t test_device;
 
+
 typedef enum {
 	IDLE,
 	DISCOVER_PRIMARY_SERVICES,
@@ -41,8 +42,13 @@ typedef enum {
     DISCOVER_CHARACTERISTICS_BY_UUID128,
 
     DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID,
-    DISCOVER_READ_WRITE_CHARACTERISTIC_DESCRIPTORS,
-    WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION
+    DISCOVER_CHARACTERISTIC_DESCRIPTORS,
+    READ_CHARACTERISTIC_DESCRIPTOR,
+    WRITE_CHARACTERISTIC_DESCRIPTOR,
+    
+    WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION,
+    READ_LONG_CHARACTERISTIC_DESCRIPTOR,
+    WRITE_LONG_CHARACTERISTIC_DESCRIPTOR
 } current_test_t;
 
 current_test_t test = IDLE;
@@ -60,6 +66,7 @@ static le_characteristic_descriptor_t descriptors[50];
 static uint8_t advertisement_received;
 static uint8_t connected;
 static uint8_t result_found;
+static uint8_t result_complete;
 
 void mock_simulate_hci_state_working();
 void mock_simulate_command_complete(const hci_cmd_t *cmd);
@@ -109,9 +116,12 @@ static void dump_service(le_service_t * service){
 }
 
 static void dump_descriptor(le_characteristic_descriptor_t * descriptor){
-    printf("\n    *** descriptor *** handle 0x%02x ", descriptor->handle);
+    printf("    *** descriptor *** handle 0x%02x, offset %d ", descriptor->handle, descriptor->value_offset);
     printUUID(descriptor->uuid128, descriptor->uuid16);
-    printf(" Value: "); hexdump2(descriptor->value, descriptor->value_length);
+    
+    if (descriptor->value_length){
+    	printf(" Value: "); hexdump2(descriptor->value, descriptor->value_length);
+    }
     //printf(" UUID: "); printUUID1(descriptor->uuid128);
     //printf("\n");
 }
@@ -183,6 +193,17 @@ static void verify_charasteristics(){
     }
 }
 
+static void verify_blob_of_long_descriptor(le_characteristic_descriptor_t * descriptor){
+	uint16_t value_length = descriptor->value_length;
+    uint16_t value_offset = descriptor->value_offset;
+    uint8_t * value = descriptor->value;
+    uint8_t * expected_value = (uint8_t*)&long_value[value_offset];
+    
+    CHECK(value_length);
+	CHECK_EQUAL_ARRAY(expected_value, value, value_length);
+    if (value_offset + value_length != sizeof(long_value)) return;
+    result_complete = 1;
+}
 
 static void handle_le_central_event(le_central_event_t * event){
 	switch(event->type){
@@ -257,8 +278,33 @@ static void handle_le_central_event(le_central_event_t * event){
         	result_found = 1;
         	break;
         case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
+        	if (test != READ_CHARACTERISTIC_DESCRIPTOR) return;
         	descriptors[result_index++] = ((le_characteristic_descriptor_event_t *) event)->characteristic_descriptor;
-        	// dump_descriptor(&descriptors[result_index-1]);
+        	CHECK_EQUAL(short_value_length, descriptors[result_index-1].value_length);
+        	CHECK_EQUAL_ARRAY((uint8_t*)short_value, descriptors[result_index-1].value, short_value_length);
+        	result_found = 1;
+        	break;
+        case GATT_CHARACTERISTIC_DESCRIPTOR_WRITE_RESPONSE:
+        	if (test != WRITE_CHARACTERISTIC_DESCRIPTOR) return;
+        	result_found = 1;
+        	break;
+        case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
+        	if (test != READ_LONG_CHARACTERISTIC_DESCRIPTOR) return;
+        	verify_blob_of_long_descriptor(&((le_characteristic_descriptor_event_t *) event)->characteristic_descriptor);
+        	break;
+        case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_COMPLETE:
+        	if (test != READ_LONG_CHARACTERISTIC_DESCRIPTOR) return;
+        	CHECK(result_complete);
+        	result_found = 1;
+        	break;
+        case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_WRITE_COMPLETE:
+        	if (test != WRITE_LONG_CHARACTERISTIC_DESCRIPTOR) return;
+        	CHECK(result_complete);
+        	result_found = 1;
+        	break;
+        case GATT_CLIENT_CHARACTERISTIC_CONFIGURATION_COMPLETE:
+        	if (test != WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION) return;
+        	CHECK(result_complete);
         	result_found = 1;
         	break;
 		default:
@@ -268,16 +314,22 @@ static void handle_le_central_event(le_central_event_t * event){
 }
 
 extern "C" int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size, signature_t * signature){
-	printf("gatt client test, att_write_callback mode %u, handle 0x%04x, offset %u, data ", transaction_mode, handle, offset);
+	// printf("gatt client test, att_write_callback mode %u, handle 0x%04x, offset %u, data ", transaction_mode, handle, offset);
 	hexdump2(buffer, buffer_size);
 	switch(test){
-		case DISCOVER_READ_WRITE_CHARACTERISTIC_DESCRIPTORS:
+		case WRITE_CHARACTERISTIC_DESCRIPTOR:
 		case WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION:
 			CHECK_EQUAL(ATT_TRANSACTION_MODE_NONE, transaction_mode);
-			CHECK_EQUAL(0x0028, handle);
 			CHECK_EQUAL(0, offset);
 			CHECK_EQUAL_ARRAY(indication, buffer, buffer_size);
-			result_found = 1;
+			result_complete = 1;
+			break;
+		case WRITE_LONG_CHARACTERISTIC_DESCRIPTOR:
+			if (transaction_mode == ATT_TRANSACTION_MODE_EXECUTE) break;
+			CHECK_EQUAL(ATT_TRANSACTION_MODE_ACTIVE, transaction_mode);
+			CHECK_EQUAL_ARRAY((uint8_t *)&long_value[offset], buffer, buffer_size);
+			if (offset + buffer_size != sizeof(long_value)) break;
+			result_complete = 1;
 			break;
 		default:
 			break;
@@ -285,19 +337,32 @@ extern "C" int att_write_callback(uint16_t handle, uint16_t transaction_mode, ui
 	return 0;
 }
 
+int copy_bytes(uint8_t * value, uint16_t value_length, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+	int blob_length = value_length - offset;
+	if (blob_length >= buffer_size) blob_length = buffer_size;
+	
+	memcpy(buffer, &value[offset], blob_length);
+	return blob_length;
+}
+
 extern "C" uint16_t att_read_callback(uint16_t handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
-	printf("gatt client test, att_read_callback_t handle 0x%04x, offset %u, buffer %p, buffer_size %u\n", handle, offset, buffer, buffer_size);
+	// printf("gatt client test, att_read_callback_t handle 0x%04x, offset %u, buffer %p, buffer_size %u\n", handle, offset, buffer, buffer_size);
 	switch(test){
-		case DISCOVER_READ_WRITE_CHARACTERISTIC_DESCRIPTORS:
-		case WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION:
-			CHECK_EQUAL(0x0028, handle);
-			CHECK_EQUAL(0, offset);
-			CHECK_EQUAL_ARRAY(0, buffer, buffer_size);
-			result_found = 1;
-			break;
+		case READ_CHARACTERISTIC_DESCRIPTOR:
+			if (buffer){
+				CHECK_EQUAL(0x005b, handle);
+				return copy_bytes((uint8_t *)short_value, short_value_length, offset, buffer, buffer_size);
+			}
+			return short_value_length;
+		case READ_LONG_CHARACTERISTIC_DESCRIPTOR:
+			if (buffer) {
+				return copy_bytes((uint8_t *)long_value, long_value_length, offset, buffer, buffer_size);
+			}
+			return long_value_length;
 		default:
 			break;
 	}
+	return 0;
 }
 
 
@@ -317,6 +382,7 @@ TEST_GROUP(GATTClient){
 		connected = 0;
 		result_found = 0;
 		result_index = 0;
+		result_complete = 0;
 		test = IDLE;
 
 		le_central_init();
@@ -434,8 +500,8 @@ TEST(GATTClient, TestDiscoverCharacteristics4ServiceByUUID16){
 	CHECK(result_found);
 }
 
-TEST(GATTClient, TestDiscoverWriteReadCharacteristicDescriptors){
-	test = DISCOVER_READ_WRITE_CHARACTERISTIC_DESCRIPTORS;
+TEST(GATTClient, TestDiscoverCharacteristicDescriptor){
+	test = DISCOVER_CHARACTERISTIC_DESCRIPTORS;
 	le_central_discover_primary_services_by_uuid16(&test_device, 0xF000);
 	CHECK(result_found);
 
@@ -452,38 +518,71 @@ TEST(GATTClient, TestDiscoverWriteReadCharacteristicDescriptors){
 	CHECK_EQUAL(0x2902, descriptors[0].uuid16);
 	CHECK_EQUAL(0x2900, descriptors[1].uuid16);
 	CHECK_EQUAL(0x2901, descriptors[2].uuid16);
+}
 
+TEST(GATTClient, TestReadCharacteristicDescriptor){
+	test = READ_CHARACTERISTIC_DESCRIPTOR;
+	le_central_discover_primary_services_by_uuid16(&test_device, 0xF000);
+	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
+	le_central_discover_characteristic_descriptors(&test_device, &characteristics[0]);
+	
 	result_found = 0;
 	le_central_read_characteristic_descriptor(&test_device, &descriptors[0]);
 	CHECK(result_found);
+}
+
+TEST(GATTClient, TestWriteCharacteristicDescriptor){
+	test = WRITE_CHARACTERISTIC_DESCRIPTOR;
+	le_central_discover_primary_services_by_uuid16(&test_device, 0xF000);
+	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
+	le_central_discover_characteristic_descriptors(&test_device, &characteristics[0]);
 	
 	result_found = 0;
 	le_central_write_characteristic_descriptor(&test_device, &descriptors[0], sizeof(indication), indication);
 	CHECK(result_found);
 }
 
-
 TEST(GATTClient, TestWriteClientCharacteristicConfiguration){
 	test = WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
 	le_central_discover_primary_services_by_uuid16(&test_device, 0xF000);
-	CHECK(result_found);
-
-	result_found = 0;
 	result_index = 0;
 	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
-	CHECK(result_found);
-
+	
 	result_found = 0;
 	le_central_write_client_characteristic_configuration(&test_device, &characteristics[0], GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
  	CHECK(result_found);  
 }
 
 	
+TEST(GATTClient, TestReadLongCharacteristicDescriptor){
+	test = READ_LONG_CHARACTERISTIC_DESCRIPTOR;
+	le_central_discover_primary_services_by_uuid128(&test_device, primary_service_uuid128);
+	result_index = 0;
+	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF200);
+	result_index = 0;
+	le_central_discover_characteristic_descriptors(&test_device, &characteristics[0]);
+	CHECK(result_found);
 
+	result_found = 0;
+	le_central_read_long_characteristic_descriptor(&test_device, &descriptors[0]);
+	CHECK(result_found);
+}
+
+
+TEST(GATTClient, TestWriteLongCharacteristicDescriptor){
+	test = WRITE_LONG_CHARACTERISTIC_DESCRIPTOR;
+	le_central_discover_primary_services_by_uuid128(&test_device, primary_service_uuid128);
+	result_index = 0;
+	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF200);
+	result_index = 0;
+	le_central_discover_characteristic_descriptors(&test_device, &characteristics[0]);
+	
+	result_found = 0;
+	le_central_write_long_characteristic_descriptor(&test_device, &descriptors[0], sizeof(long_value), (uint8_t *)long_value);
+	CHECK(result_found);
+}
 
 /*
-le_command_status_t le_central_read_long_characteristic_descriptor(le_peripheral_t *context, le_characteristic_descriptor_t * descriptor);
-le_command_status_t le_central_write_long_characteristic_descriptor(le_peripheral_t *context, le_characteristic_descriptor_t * descriptor, uint16_t length, uint8_t * data);
 
 // Reads value of characteristic using characteristic value handle
 le_command_status_t le_central_read_value_of_characteristic(le_peripheral_t *context, le_characteristic_t *characteristic);
