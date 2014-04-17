@@ -1194,19 +1194,17 @@ static void report_gatt_characteristic_value(le_peripheral_t * peripheral, uint1
     send_characteristic_value_event(peripheral, handle, value, length, 0, GATT_CHARACTERISTIC_VALUE_QUERY_RESULT);
 }
 
-static void report_gatt_characteristic_descriptor(le_peripheral_t * peripheral, uint16_t handle, uint8_t * uuid128, uint16_t uuid16, uint8_t *value, uint16_t value_length, uint16_t value_offset, uint8_t event_type){
+static void report_gatt_characteristic_descriptor(le_peripheral_t * peripheral, uint16_t handle, uint8_t *value, uint16_t value_length, uint16_t value_offset, uint8_t event_type){
     le_characteristic_descriptor_event_t event;
     event.type = event_type; // GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT;
 
     le_characteristic_descriptor_t descriptor;
     descriptor.handle = handle;
-    descriptor.uuid16 = uuid16;
+    descriptor.uuid16 = peripheral->uuid16;
     descriptor.value_offset = value_offset;
-    if (uuid128){
-        memcpy(descriptor.uuid128, uuid128, 16);
-    } else {
-        sdp_normalize_uuid((uint8_t*) &descriptor.uuid128, descriptor.uuid16);
-    }
+    if (peripheral->uuid128){
+        memcpy(descriptor.uuid128, peripheral->uuid128, 16);
+    } 
 
     descriptor.value = value;
     descriptor.value_length = value_length;
@@ -1400,7 +1398,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
 
                 case P_W4_READ_CHARACTERISTIC_DESCRIPTOR_RESULT:{
                     peripheral->state = P_CONNECTED;
-                    report_gatt_characteristic_descriptor(peripheral, peripheral->attribute_handle, peripheral->uuid128, peripheral->uuid16, &packet[1], size-1, 0, GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT);
+                    report_gatt_characteristic_descriptor(peripheral, peripheral->attribute_handle, &packet[1], size-1, 0, GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT);
                     break;
                 }
                 default:
@@ -1470,7 +1468,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
                     break;
                 case P_W4_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_RESULT:
                     report_gatt_characteristic_descriptor(peripheral, peripheral->attribute_handle,
-                        peripheral->uuid128, peripheral->uuid16, &packet[1], received_blob_length,
+                        &packet[1], received_blob_length,
                         peripheral->attribute_offset, GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT);
                     trigger_next_blob_query(peripheral, P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY, GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_COMPLETE, received_blob_length);
                     break;
