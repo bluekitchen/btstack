@@ -14,10 +14,34 @@
 static btstack_packet_handler_t le_data_handler;
 static void (*event_packet_handler) (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = NULL;
 
-static const uint16_t max_mtu = 23;
-static uint8_t  l2cap_stack_buffer[max_mtu];
+static uint8_t packet_buffer[256];
+static uint16_t packet_buffer_len = 0;
 
 static uint8_t aes128_cyphertext[16];
+
+
+uint8_t * mock_packet_buffer(void){
+	return packet_buffer;
+}
+
+void mock_clear_packet_buffer(void){
+	packet_buffer_len = 0;
+}
+
+static void dump_packet(int packet_type, uint8_t * buffer, uint16_t size){
+#if 0
+	static int packet_counter = 1;
+	char var_name[80];
+	sprintf(var_name, "test_%s_packet_%02u", packet_type == HCI_COMMAND_DATA_PACKET ? "command" : "acl", packet_counter);
+	printf("uint8_t %s[] = { ", var_name);
+	for (int i = 0; i < size ; i++){
+		if ((i % 16) == 0) printf("\n    ");
+		printf ("0x%02x, ", buffer[i]);
+	}
+	printf("};\n");
+	packet_counter++;
+#endif
+}
 
 void aes128_calc_cyphertext(uint8_t key[16], uint8_t plaintext[16], uint8_t cyphertext[16]){
 	uint32_t rk[RKLENGTH(KEYBITS)];
@@ -94,47 +118,36 @@ void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t * addr){
 }
 
 int  l2cap_can_send_connectionless_packet_now(void){
-	return 1;	
+	return packet_buffer_len == 0;
 }
 
 int hci_send_cmd(const hci_cmd_t *cmd, ...){
-	uint8_t cmd_buffer[256];
     va_list argptr;
     va_start(argptr, cmd);
-    uint16_t len = hci_create_cmd_internal(cmd_buffer, cmd, argptr);
+    uint16_t len = hci_create_cmd_internal(packet_buffer, cmd, argptr);
     va_end(argptr);
-	hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, cmd_buffer, len);
+	hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, packet_buffer, len);
+	dump_packet(HCI_COMMAND_DATA_PACKET, packet_buffer, len);
+	packet_buffer_len = len;
 
 	// track le encrypt and le rand
 	if (cmd->opcode ==  hci_le_encrypt.opcode){
-	    uint8_t * key_flipped = &cmd_buffer[3];
-	    uint8_t * plaintext_flipped = &cmd_buffer[19];
+	    uint8_t * key_flipped = &packet_buffer[3];
 	    uint8_t key[16];
-	    uint8_t plaintext[16];
 		swap128(key_flipped, key);
+	    // printf("le_encrypt key ");
+	    // hexdump(key, 16);
+	    uint8_t * plaintext_flipped = &packet_buffer[19];
+	    uint8_t plaintext[16];
  		swap128(plaintext_flipped, plaintext);
-	    printf("le_encrypt key ");
-	    hexdump(key, 16);
-	    printf("le_encrypt txt ");
-	    hexdump(plaintext, 16);
+	    // printf("le_encrypt txt ");
+	    // hexdump(plaintext, 16);
 	    aes128_calc_cyphertext(key, plaintext, aes128_cyphertext);
-	    printf("le_encrypt res ");
-	    hexdump(aes128_cyphertext, 16);
+	    // printf("le_encrypt res ");
+	    // hexdump(aes128_cyphertext, 16);
 	}
 	return 0;
 }
-
-
-uint8_t *l2cap_get_outgoing_buffer(void){
-	printf("l2cap_get_outgoing_buffer\n");
-	return (uint8_t *)&l2cap_stack_buffer; // 8 bytes
-}
-
-uint16_t l2cap_max_mtu(void){
-	printf("l2cap_max_mtu\n");
-    return max_mtu;
-}
-
 
 void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id) {
 	le_data_handler = packet_handler;
@@ -155,21 +168,22 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
 }
 
 int l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t * buffer, uint16_t len){
-	printf("l2cap_send_connectionless\n");
-
-	uint8_t acl_buffer[len + 8];
+	// printf("l2cap_send_connectionless\n");
 
 	// 0 - Connection handle : PB=10 : BC=00 
-    bt_store_16(acl_buffer, 0, handle | (2 << 12) | (0 << 14));
+    bt_store_16(packet_buffer, 0, handle | (2 << 12) | (0 << 14));
     // 2 - ACL length
-    bt_store_16(acl_buffer, 2,  len + 4);
+    bt_store_16(packet_buffer, 2,  len + 4);
     // 4 - L2CAP packet length
-    bt_store_16(acl_buffer, 4,  len + 0);
+    bt_store_16(packet_buffer, 4,  len + 0);
     // 6 - L2CAP channel DEST
-    bt_store_16(acl_buffer, 6, cid);  
+    bt_store_16(packet_buffer, 6, cid);  
 
-	memcpy(&acl_buffer[8], buffer, len);
-	hci_dump_packet(HCI_ACL_DATA_PACKET, 0, &acl_buffer[0], len + 8);
+	memcpy(&packet_buffer[8], buffer, len);
+	hci_dump_packet(HCI_ACL_DATA_PACKET, 0, &packet_buffer[0], len + 8);
+
+	dump_packet(HCI_ACL_DATA_PACKET, packet_buffer, len + 8);
+	packet_buffer_len = len + 8;
 
 	return 0;
 }
