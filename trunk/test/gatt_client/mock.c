@@ -96,8 +96,9 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
 	att_init_connection(&att_connection);
 	uint8_t response[max_mtu];
 	uint16_t response_len = att_handle_request(&att_connection, l2cap_get_outgoing_buffer(), len, &response[0]);
-	att_packet_handler(ATT_DATA_PACKET, 0x40, &response[0], response_len);
-
+	if (response_len){
+		att_packet_handler(ATT_DATA_PACKET, 0x40, &response[0], response_len);
+	}
 	return 0;
 }
 
