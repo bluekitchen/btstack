@@ -205,11 +205,6 @@ static void verify_blob(uint16_t value_length, uint16_t value_offset, uint8_t * 
     result_complete = 1;
 }
 
-static void verify_blob_of_long_descriptor(le_characteristic_descriptor_t * descriptor){
-    verify_blob(descriptor->value_length, descriptor->value_offset, descriptor->value);
-}
-
-
 static void handle_le_central_event(le_central_event_t * event){
 	switch(event->type){
 		case GATT_ADVERTISEMENT:
@@ -295,10 +290,12 @@ static void handle_le_central_event(le_central_event_t * event){
         	result_found = 1;
         	break;
         
-        case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
+        case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:{
         	if (test != READ_LONG_CHARACTERISTIC_DESCRIPTOR) return;
-        	verify_blob_of_long_descriptor(&((le_characteristic_descriptor_event_t *) event)->characteristic_descriptor);
+        	le_characteristic_descriptor_t descriptor = ((le_characteristic_descriptor_event_t *) event)->characteristic_descriptor;
+        	verify_blob(descriptor.value_length, descriptor.value_offset, descriptor.value);
         	break;
+        }
         case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_COMPLETE:
         	if (test != READ_LONG_CHARACTERISTIC_DESCRIPTOR) return;
         	CHECK(result_complete);
@@ -337,6 +334,18 @@ static void handle_le_central_event(le_central_event_t * event){
         	CHECK(result_complete);
         	result_found = 1;
         	break;
+
+        case GATT_CHARACTERISTIC_VALUE_WRITE_RESPONSE:
+        	if (test != WRITE_CHARACTERISTIC_VALUE) return;
+        	result_found = 1;
+        	break;
+        
+        case GATT_LONG_CHARACTERISTIC_VALUE_WRITE_COMPLETE:
+        	if (test != WRITE_LONG_CHARACTERISTIC_VALUE) return;
+        	CHECK(result_complete);
+        	result_found = 1;
+			break;
+
 		default:
 			printf("handle_le_central_event");
 			break;
@@ -351,10 +360,17 @@ extern "C" int att_write_callback(uint16_t handle, uint16_t transaction_mode, ui
 		case WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION:
 			CHECK_EQUAL(ATT_TRANSACTION_MODE_NONE, transaction_mode);
 			CHECK_EQUAL(0, offset);
-			CHECK_EQUAL_ARRAY(indication, buffer, buffer_size);
+			CHECK_EQUAL_ARRAY(indication, buffer, 2);
+			result_complete = 1;
+			break;
+		case WRITE_CHARACTERISTIC_VALUE:
+			CHECK_EQUAL(ATT_TRANSACTION_MODE_NONE, transaction_mode);
+			CHECK_EQUAL(0, offset);
+			CHECK_EQUAL_ARRAY((uint8_t *)short_value, buffer, short_value_length);
 			result_complete = 1;
 			break;
 		case WRITE_LONG_CHARACTERISTIC_DESCRIPTOR:
+		case WRITE_LONG_CHARACTERISTIC_VALUE:
 			if (transaction_mode == ATT_TRANSACTION_MODE_EXECUTE) break;
 			CHECK_EQUAL(ATT_TRANSACTION_MODE_ACTIVE, transaction_mode);
 			CHECK_EQUAL_ARRAY((uint8_t *)&long_value[offset], buffer, buffer_size);
@@ -637,41 +653,32 @@ TEST(GATTClient, TestReadLongCharacteristicValue){
 	CHECK(result_found);
 }
 
-// TEST(GATTClient, TestWriteCharacteristicValue){
-// 	test = WRITE_CHARACTERISTIC_VALUE;
-// 	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
-// 	result_index = 0;
-// 	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
+TEST(GATTClient, TestWriteCharacteristicValue){
+	test = WRITE_CHARACTERISTIC_VALUE;
+	printf(" test = WRITE_CHARACTERISTIC_VALUE\n");
+	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
+	result_index = 0;
+	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
 
-// 	result_found = 0;
-// 	le_central_write_value_of_characteristic(&test_device, characteristics[0].value_handle, short_value_length, (uint8_t*)short_value);
-// 	CHECK(result_found);
-// }
+	result_found = 0;
+	le_central_write_value_of_characteristic(&test_device, characteristics[0].value_handle, short_value_length, (uint8_t*)short_value);
+	CHECK(result_found);
+}
 
-// TEST(GATTClient, TestWriteLongCharacteristicValue){
-// 	test = WRITE_LONG_CHARACTERISTIC_VALUE;
-// 	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
-// 	result_index = 0;
-// 	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
+TEST(GATTClient, TestWriteLongCharacteristicValue){
+	test = WRITE_LONG_CHARACTERISTIC_VALUE;
+	printf(" test = WRITE_LONG_CHARACTERISTIC_VALUE\n");
+	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
+	result_index = 0;
+	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
 
-// 	result_found = 0;
-// 	le_central_write_long_value_of_characteristic(&test_device, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
-// 	CHECK(result_found);
-// }
+	result_found = 0;
+	le_central_write_long_value_of_characteristic(&test_device, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
+	CHECK(result_found);
+}
 
 /*
-
-// Reads value of characteristic using characteristic value handle
-le_command_status_t le_central_read_value_of_characteristic_using_value_handle(le_peripheral_t *context, uint16_t characteristic_value_handle);
-
-// Reads long caharacteristic value.
-le_command_status_t le_central_read_long_value_of_characteristic(le_peripheral_t *context, le_characteristic_t *characteristic);
-le_command_status_t le_central_read_long_value_of_characteristic_using_value_handle(le_peripheral_t *context, uint16_t characteristic_value_handle);
-
 le_command_status_t le_central_write_value_of_characteristic_without_response(le_peripheral_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
-le_command_status_t le_central_write_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
-
-le_command_status_t le_central_write_long_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
 le_command_status_t le_central_reliable_write_long_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
 */
 int main (int argc, const char * argv[]){
