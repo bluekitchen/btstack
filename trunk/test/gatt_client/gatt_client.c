@@ -677,6 +677,18 @@ TEST(GATTClient, TestWriteLongCharacteristicValue){
 	CHECK(result_found);
 }
 
+TEST(GATTClient, TestWriteLongCharacteristicValueWithoutResponse){
+	test = WRITE_LONG_CHARACTERISTIC_VALUE;
+	printf(" test = WRITE_LONG_CHARACTERISTIC_VALUE\n");
+	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
+	result_index = 0;
+	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
+
+	result_found = 0;
+	le_central_write_value_of_characteristic_without_response(&test_device, characteristics[0].value_handle, short_value_length, (uint8_t*)short_value);
+	CHECK(result_found);
+}
+
 /*
 le_command_status_t le_central_write_value_of_characteristic_without_response(le_peripheral_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
 le_command_status_t le_central_reliable_write_long_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
