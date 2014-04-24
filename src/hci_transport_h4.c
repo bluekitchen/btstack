@@ -118,7 +118,8 @@ static int    h4_open(void *transport_config){
         case 921600: brate=B921600; break;
 #endif
     }
-    cfsetspeed(&toptions, brate);
+    cfsetospeed(&toptions, brate);
+    cfsetispeed(&toptions, brate);
     
     // 8N1
     toptions.c_cflag &= ~PARENB;
