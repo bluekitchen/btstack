@@ -104,7 +104,7 @@ ble_peripheral: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_REAL_OBJ} ble_peripher
 ble_peripheral_sm_minimal: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c profile.h
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
 
-ble_client: ${CORE_OBJ} ${COMMON_OBJ} ble_client.c ad_parser.c
+ble_client: ${CORE_OBJ} ${COMMON_OBJ} ble_client.c ad_parser.c le_central.c gatt_client.c
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ad_parser.c ble_client.c ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_client_uart: ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ble_client.c ad_parser.c

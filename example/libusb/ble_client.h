@@ -53,6 +53,8 @@ extern "C" {
 
 #define LE_CENTRAL_MAX_INCLUDE_DEPTH 3
 
+//*************** le client
+    
 typedef struct le_central_event {
     uint8_t   type;
 } le_central_event_t;
@@ -67,6 +69,8 @@ typedef struct ad_event {
     uint8_t * data;
 } ad_event_t;
 
+    
+//*************** gatt client
 typedef enum {
     P_W2_CONNECT,
     P_W4_CONNECTED,
@@ -150,25 +154,35 @@ typedef enum {
 } le_command_status_t;
 
 
-typedef struct le_peripheral{
+typedef struct le_peripheral_connection{
     linked_item_t    item;
-
     peripheral_state_t state;
 
     uint8_t   address_type;
     bd_addr_t address;
     uint16_t handle;
     uint16_t mtu;
+} le_peripheral_connection_t;
 
+
+typedef struct gatt_client{
+    linked_item_t    item;
+    peripheral_state_t state;
+    uint16_t handle;
+    
+    uint8_t   address_type;
+    bd_addr_t address;
+    uint16_t mtu;
+    
     uint16_t uuid16;
-    uint8_t  uuid128[16]; 
-
+    uint8_t  uuid128[16];
+    
     uint16_t start_group_handle;
     uint16_t end_group_handle;
-
+    
     uint16_t query_start_handle;
-    uint16_t query_end_handle; 
-
+    uint16_t query_end_handle;
+    
     uint8_t  characteristic_properties;
     uint16_t characteristic_start_handle;
     
@@ -176,19 +190,18 @@ typedef struct le_peripheral{
     uint16_t attribute_offset;
     uint16_t attribute_length;
     uint8_t* attribute_value;
-
+    
     uint16_t client_characteristic_configuration_handle;
     uint8_t client_characteristic_configuration_value[2];
     
     uint8_t  filter_with_uuid;
     uint8_t  send_confirmation;
-
-} le_peripheral_t;
-
+    
+} gatt_client_t;
 
 typedef struct le_peripheral_event{
     uint8_t   type;
-    le_peripheral_t * device;
+    gatt_client_t * device;
     uint8_t status;
 } le_peripheral_event_t;
 
@@ -253,64 +266,64 @@ le_command_status_t le_central_start_scan();
 // { type (8), addr_type (8), addr(48), rssi(8), ad_len(8), ad_data(ad_len*8) }
 le_command_status_t le_central_stop_scan();
 
-le_command_status_t  le_central_connect(le_peripheral_t *context, uint8_t addr_type, bd_addr_t addr);
-le_command_status_t  le_central_disconnect(le_peripheral_t *context);
+le_command_status_t  le_central_connect(gatt_client_t *context, uint8_t addr_type, bd_addr_t addr);
+le_command_status_t  le_central_disconnect(gatt_client_t *context);
 
 // returns primary services
-le_command_status_t le_central_discover_primary_services(le_peripheral_t *context);
-// { type (8), le_peripheral_t *context, le_service * }
+le_command_status_t gatt_client_discover_primary_services(gatt_client_t *context);
+// { type (8), gatt_client_t *context, le_service * }
 
 
 //TODO: define uuid type
-le_command_status_t le_central_discover_primary_services_by_uuid16(le_peripheral_t *context, uint16_t uuid16);
-le_command_status_t le_central_discover_primary_services_by_uuid128(le_peripheral_t *context, const uint8_t * uuid);
+le_command_status_t gatt_client_discover_primary_services_by_uuid16(gatt_client_t *context, uint16_t uuid16);
+le_command_status_t gatt_client_discover_primary_services_by_uuid128(gatt_client_t *context, const uint8_t * uuid);
 
 // Returns included services.
 // Information about service type (primary/secondary) can be retrieved either by sending an ATT find query or 
 // by comparing the service to the list of primary services obtained by calling le_central_get_services.
-le_command_status_t le_central_find_included_services_for_service(le_peripheral_t *context, le_service_t *service);
-// { type (8), le_peripheral_t *context, le_service * }
+le_command_status_t gatt_client_find_included_services_for_service(gatt_client_t *context, le_service_t *service);
+// { type (8), gatt_client_t *context, le_service * }
 
 // returns characteristics, no included services
-le_command_status_t le_central_discover_characteristics_for_service(le_peripheral_t *context, le_service_t *service);
-// { type (8), le_peripheral_t *context, service_handle, le_characteristic *}
+le_command_status_t gatt_client_discover_characteristics_for_service(gatt_client_t *context, le_service_t *service);
+// { type (8), gatt_client_t *context, service_handle, le_characteristic *}
 
 // gets all characteristics in handle range, and returns those that match the given UUID.
-le_command_status_t le_central_discover_characteristics_for_handle_range_by_uuid16(le_peripheral_t *context, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
-// { type (8), le_peripheral_t *context, service_handle, le_characteristic *}
-le_command_status_t le_central_discover_characteristics_for_handle_range_by_uuid128(le_peripheral_t *context, uint16_t start_handle, uint16_t end_handle, uint8_t * uuid);
-// { type (8), le_peripheral_t *context, service_handle, le_characteristic *}
+le_command_status_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(gatt_client_t *context, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
+// { type (8), gatt_client_t *context, service_handle, le_characteristic *}
+le_command_status_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(gatt_client_t *context, uint16_t start_handle, uint16_t end_handle, uint8_t * uuid);
+// { type (8), gatt_client_t *context, service_handle, le_characteristic *}
 
 // more convenience
-le_command_status_t le_central_discover_characteristics_for_service_by_uuid16 (le_peripheral_t *context, le_service_t *service, uint16_t  uuid16);
-le_command_status_t le_central_discover_characteristics_for_service_by_uuid128(le_peripheral_t *context, le_service_t *service, uint8_t * uuid128);
+le_command_status_t gatt_client_discover_characteristics_for_service_by_uuid16 (gatt_client_t *context, le_service_t *service, uint16_t  uuid16);
+le_command_status_t gatt_client_discover_characteristics_for_service_by_uuid128(gatt_client_t *context, le_service_t *service, uint8_t * uuid128);
 
 // returns handle and uuid16 of a descriptor
-le_command_status_t le_central_discover_characteristic_descriptors(le_peripheral_t *context, le_characteristic_t *characteristic);
+le_command_status_t gatt_client_discover_characteristic_descriptors(gatt_client_t *context, le_characteristic_t *characteristic);
 
 // Reads value of characteristic using characteristic value handle
-le_command_status_t le_central_read_value_of_characteristic(le_peripheral_t *context, le_characteristic_t *characteristic);
-le_command_status_t le_central_read_value_of_characteristic_using_value_handle(le_peripheral_t *context, uint16_t characteristic_value_handle);
+le_command_status_t gatt_client_read_value_of_characteristic(gatt_client_t *context, le_characteristic_t *characteristic);
+le_command_status_t gatt_client_read_value_of_characteristic_using_value_handle(gatt_client_t *context, uint16_t characteristic_value_handle);
 
 // Reads long caharacteristic value.
-le_command_status_t le_central_read_long_value_of_characteristic(le_peripheral_t *context, le_characteristic_t *characteristic);
-le_command_status_t le_central_read_long_value_of_characteristic_using_value_handle(le_peripheral_t *context, uint16_t characteristic_value_handle);
+le_command_status_t gatt_client_read_long_value_of_characteristic(gatt_client_t *context, le_characteristic_t *characteristic);
+le_command_status_t gatt_client_read_long_value_of_characteristic_using_value_handle(gatt_client_t *context, uint16_t characteristic_value_handle);
 
 
-le_command_status_t le_central_write_value_of_characteristic_without_response(le_peripheral_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
-le_command_status_t le_central_write_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
+le_command_status_t gatt_client_write_value_of_characteristic_without_response(gatt_client_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
+le_command_status_t gatt_client_write_value_of_characteristic(gatt_client_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
 
-le_command_status_t le_central_write_long_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
-le_command_status_t le_central_reliable_write_long_value_of_characteristic(le_peripheral_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
+le_command_status_t gatt_client_write_long_value_of_characteristic(gatt_client_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
+le_command_status_t gatt_client_reliable_write_long_value_of_characteristic(gatt_client_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
 
 
-le_command_status_t le_central_read_characteristic_descriptor(le_peripheral_t *context, le_characteristic_descriptor_t * descriptor);
-le_command_status_t le_central_read_long_characteristic_descriptor(le_peripheral_t *context, le_characteristic_descriptor_t * descriptor);
+le_command_status_t gatt_client_read_characteristic_descriptor(gatt_client_t *context, le_characteristic_descriptor_t * descriptor);
+le_command_status_t gatt_client_read_long_characteristic_descriptor(gatt_client_t *context, le_characteristic_descriptor_t * descriptor);
 
-le_command_status_t le_central_write_characteristic_descriptor(le_peripheral_t *context, le_characteristic_descriptor_t * descriptor, uint16_t length, uint8_t * data);
-le_command_status_t le_central_write_long_characteristic_descriptor(le_peripheral_t *context, le_characteristic_descriptor_t * descriptor, uint16_t length, uint8_t * data);
+le_command_status_t gatt_client_write_characteristic_descriptor(gatt_client_t *context, le_characteristic_descriptor_t * descriptor, uint16_t length, uint8_t * data);
+le_command_status_t gatt_client_write_long_characteristic_descriptor(gatt_client_t *context, le_characteristic_descriptor_t * descriptor, uint16_t length, uint8_t * data);
 
-le_command_status_t le_central_write_client_characteristic_configuration(le_peripheral_t *context, le_characteristic_t * characteristic, uint16_t configuration);
+le_command_status_t gatt_client_write_client_characteristic_configuration(gatt_client_t *context, le_characteristic_t * characteristic, uint16_t configuration);
 
 // { read/write/subscribe/unsubscribe confirm/result}
 

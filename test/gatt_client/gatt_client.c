@@ -24,7 +24,7 @@
 #include "expected_results.h"
 
 static bd_addr_t test_device_addr = {0x34, 0xb1, 0xf7, 0xd1, 0x77, 0x9b};
-static le_peripheral_t test_device;
+static gatt_client_t test_device;
 
 
 typedef enum {
@@ -80,64 +80,6 @@ void mock_simulate_scan_response();
 void mock_simulate_connected();
 void mock_simulate_exchange_mtu();
 void mock_simulate_discover_primary_services_response();
-
-static void printUUID(uint8_t * uuid128, uint16_t uuid16){
-    printf(", uuid ");
-    if (uuid16){
-        printf(" 0x%02x",uuid16);
-    } else {
-        printUUID128(uuid128);
-    }
-    printf("\n");
-}
-
-void printUUID1(uint8_t *uuid) {
-    printf("0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x,\n",
-           uuid[0], uuid[1], uuid[2], uuid[3], uuid[4], uuid[5], uuid[6], uuid[7],
-           uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15]);
-}
-
-static void hexdump2(void const *data, int size){
-    for (int i=0; i<size;i++){
-        printf("%02X ", ((uint8_t *)data)[i]);
-    }
-    printf("\n");
-}
-
-static void dump_characteristic(le_characteristic_t * characteristic){
-    printf("\n  *** characteristic *** properties 0x%02x, handles {0x%02x, 0x%02x}", characteristic->properties, characteristic->start_handle, characteristic->end_handle);
-    printUUID(characteristic->uuid128, characteristic->uuid16);
-    //printf(" UUID: "); printUUID1(characteristic->uuid128);
-}
-
-static void dump_ad_event(ad_event_t * e){
-    printf("    *** adv. event *** evt-type %u, addr-type %u, addr %s, rssi %u, length adv %u, data: ", e->event_type, 
-                            e->address_type, bd_addr_to_str(e->address), e->rssi, e->length); 
-    hexdump2( e->data, e->length);                            
-}
-
-static void dump_service(le_service_t * service){
-    printf("    *** service *** start group handle %02x, end group handle %02x", service->start_group_handle, service->end_group_handle);
-    printUUID(service->uuid128, service->uuid16);
-}
-
-static void dump_descriptor(le_characteristic_descriptor_t * descriptor){
-    printf("    *** descriptor *** handle 0x%02x, offset %d ", descriptor->handle, descriptor->value_offset);
-    printUUID(descriptor->uuid128, descriptor->uuid16);
-    
-    if (descriptor->value_length){
-    	printf(" Value: "); hexdump2(descriptor->value, descriptor->value_length);
-    }
-    //printf(" UUID: "); printUUID1(descriptor->uuid128);
-    //printf("\n");
-}
-
-static void dump_characteristic_value(le_characteristic_value_event_t * event){
-    printf("    *** characteristic value of length %d *** ", event->characteristic_value_blob_length);
-    hexdump2(event->characteristic_value, event->characteristic_value_blob_length);
-    printf("\n");
-}
-
 
 
 void CHECK_EQUAL_ARRAY(const uint8_t * expected, uint8_t * actual, int size){
@@ -361,8 +303,7 @@ static void handle_le_central_event(le_central_event_t * event){
 }
 
 extern "C" int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size, signature_t * signature){
-	printf("gatt client test, att_write_callback mode %u, handle 0x%04x, offset %u, data ", transaction_mode, handle, offset);
-	hexdump2(buffer, buffer_size);
+	//printf("gatt client test, att_write_callback mode %u, handle 0x%04x, offset %u, data ", transaction_mode, handle, offset);
 	switch(test){
 		case WRITE_CHARACTERISTIC_DESCRIPTOR:
 		case WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION:
@@ -461,115 +402,115 @@ TEST(GATTClient, TestScanning){
 
 TEST(GATTClient, TestDiscoverPrimaryServices){
 	test = DISCOVER_PRIMARY_SERVICES;
-	le_central_discover_primary_services(&test_device);
+	gatt_client_discover_primary_services(&test_device);
 	CHECK(result_found);
 }
 
 TEST(GATTClient, TestDiscoverPrimaryServicesByUUID16){
 	test = DISCOVER_PRIMARY_SERVICE_WITH_UUID16;
-	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
+	gatt_client_discover_primary_services_by_uuid16(&test_device, service_uuid16);
 	CHECK(result_found);
 }
 
 TEST(GATTClient, TestDiscoverPrimaryServicesByUUID128){
 	test = DISCOVER_PRIMARY_SERVICE_WITH_UUID128;
-	le_central_discover_primary_services_by_uuid128(&test_device, primary_service_uuid128);
+	gatt_client_discover_primary_services_by_uuid128(&test_device, primary_service_uuid128);
 	CHECK(result_found);
 }
 
 TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID16){
 	test = DISCOVER_INCLUDED_SERVICE_FOR_SERVICE_WITH_UUID16;
-	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
+	gatt_client_discover_primary_services_by_uuid16(&test_device, service_uuid16);
 	CHECK(result_found);
 
 	result_index = 0;
 	result_found = 0;
-	le_central_find_included_services_for_service(&test_device, &services[0]);
+	gatt_client_find_included_services_for_service(&test_device, &services[0]);
 	CHECK(result_found);
 }
 
 TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID128){
 	test = DISCOVER_INCLUDED_SERVICE_FOR_SERVICE_WITH_UUID128;
-	le_central_discover_primary_services_by_uuid128(&test_device, primary_service_uuid128);
+	gatt_client_discover_primary_services_by_uuid128(&test_device, primary_service_uuid128);
 	CHECK(result_found);
 
 	result_index = 0;
 	result_found = 0;
-	le_central_find_included_services_for_service(&test_device, &services[0]);
+	gatt_client_find_included_services_for_service(&test_device, &services[0]);
 	CHECK(result_found);
 }
 
 TEST(GATTClient, TestDiscoverCharacteristicsForService){
 	test = DISCOVER_CHARACTERISTICS_FOR_SERVICE_WITH_UUID16;
-	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
+	gatt_client_discover_primary_services_by_uuid16(&test_device, service_uuid16);
 	CHECK(result_found);
 
 	result_found = 0;
 	result_index = 0;
-	le_central_discover_characteristics_for_service(&test_device, &services[0]);
+	gatt_client_discover_characteristics_for_service(&test_device, &services[0]);
 	CHECK(result_found);
 }
 
 TEST(GATTClient, TestDiscoverCharacteristicsByUUID16){
 	test = DISCOVER_CHARACTERISTICS_BY_UUID16;
-	le_central_discover_characteristics_for_handle_range_by_uuid16(&test_device, 0x30, 0x32, 0xF102);
+	gatt_client_discover_characteristics_for_handle_range_by_uuid16(&test_device, 0x30, 0x32, 0xF102);
 	CHECK(result_found);
 }
 
 TEST(GATTClient, TestDiscoverCharacteristicsByUUID128){
 	test = DISCOVER_CHARACTERISTICS_BY_UUID128;
-	le_central_discover_characteristics_for_handle_range_by_uuid128(&test_device, characteristic_handles[1][0], characteristic_handles[1][1], characteristic_uuids[1]);
+	gatt_client_discover_characteristics_for_handle_range_by_uuid128(&test_device, characteristic_handles[1][0], characteristic_handles[1][1], characteristic_uuids[1]);
 	CHECK(result_found);
 }
 
 TEST(GATTClient, TestDiscoverCharacteristics4ServiceByUUID128){
 	test = DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID;
-	le_central_discover_primary_services_by_uuid128(&test_device, primary_service_uuid128);
+	gatt_client_discover_primary_services_by_uuid128(&test_device, primary_service_uuid128);
 	CHECK(result_found);
 
 	result_found = 0;
 	result_index = 0;
 	uint8_t characteristic_uuid[] = {0x00, 0x00, 0xF2, 0x01, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
-	le_central_discover_characteristics_for_service_by_uuid128(&test_device, &services[0], characteristic_uuid);
+	gatt_client_discover_characteristics_for_service_by_uuid128(&test_device, &services[0], characteristic_uuid);
 	CHECK(result_found);
 
 	result_found = 0;
 	result_index = 0;
-	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF200);
+	gatt_client_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF200);
 	CHECK(result_found);
 
 }
 
 TEST(GATTClient, TestDiscoverCharacteristics4ServiceByUUID16){
 	test = DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID;
-	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
+	gatt_client_discover_primary_services_by_uuid16(&test_device, service_uuid16);
 	CHECK(result_found);
 
 	result_found = 0;
 	result_index = 0;
 	uint8_t characteristic_uuid[]= { 0x00, 0x00, 0xF1, 0x05, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
-	le_central_discover_characteristics_for_service_by_uuid128(&test_device, &services[0], characteristic_uuid);
+	gatt_client_discover_characteristics_for_service_by_uuid128(&test_device, &services[0], characteristic_uuid);
 	CHECK(result_found);
 
 	result_found = 0;
 	result_index = 0;
-	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
+	gatt_client_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
 	CHECK(result_found);
 }
 
 TEST(GATTClient, TestDiscoverCharacteristicDescriptor){
 	test = DISCOVER_CHARACTERISTIC_DESCRIPTORS;
-	le_central_discover_primary_services_by_uuid16(&test_device, 0xF000);
+	gatt_client_discover_primary_services_by_uuid16(&test_device, 0xF000);
 	CHECK(result_found);
 
 	result_found = 0;
 	result_index = 0;
-	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
+	gatt_client_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
 	CHECK(result_found);
 
 	result_found = 0;
 	result_index = 0;
-	le_central_discover_characteristic_descriptors(&test_device, &characteristics[0]);
+	gatt_client_discover_characteristic_descriptors(&test_device, &characteristics[0]);
 	CHECK(result_found);
 	CHECK_EQUAL(3, result_index);
 	CHECK_EQUAL(0x2902, descriptors[0].uuid16);
@@ -579,133 +520,132 @@ TEST(GATTClient, TestDiscoverCharacteristicDescriptor){
 
 TEST(GATTClient, TestReadCharacteristicDescriptor){
 	test = READ_CHARACTERISTIC_DESCRIPTOR;
-	le_central_discover_primary_services_by_uuid16(&test_device, 0xF000);
-	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
-	le_central_discover_characteristic_descriptors(&test_device, &characteristics[0]);
+	gatt_client_discover_primary_services_by_uuid16(&test_device, 0xF000);
+	gatt_client_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
+	gatt_client_discover_characteristic_descriptors(&test_device, &characteristics[0]);
 	
 	result_found = 0;
-	le_central_read_characteristic_descriptor(&test_device, &descriptors[0]);
+	gatt_client_read_characteristic_descriptor(&test_device, &descriptors[0]);
 	CHECK(result_found);
 }
 
 TEST(GATTClient, TestWriteCharacteristicDescriptor){
 	test = WRITE_CHARACTERISTIC_DESCRIPTOR;
-	le_central_discover_primary_services_by_uuid16(&test_device, 0xF000);
-	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
-	le_central_discover_characteristic_descriptors(&test_device, &characteristics[0]);
+	gatt_client_discover_primary_services_by_uuid16(&test_device, 0xF000);
+	gatt_client_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
+	gatt_client_discover_characteristic_descriptors(&test_device, &characteristics[0]);
 	
 	result_found = 0;
-	le_central_write_characteristic_descriptor(&test_device, &descriptors[0], sizeof(indication), indication);
+	gatt_client_write_characteristic_descriptor(&test_device, &descriptors[0], sizeof(indication), indication);
 	CHECK(result_found);
 }
 
 TEST(GATTClient, TestWriteClientCharacteristicConfiguration){
 	test = WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
-	le_central_discover_primary_services_by_uuid16(&test_device, 0xF000);
+	gatt_client_discover_primary_services_by_uuid16(&test_device, 0xF000);
 	result_index = 0;
-	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
+	gatt_client_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
 	
 	result_found = 0;
-	le_central_write_client_characteristic_configuration(&test_device, &characteristics[0], GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+	gatt_client_write_client_characteristic_configuration(&test_device, &characteristics[0], GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
  	CHECK(result_found);  
 }
 
 	
 TEST(GATTClient, TestReadLongCharacteristicDescriptor){
 	test = READ_LONG_CHARACTERISTIC_DESCRIPTOR;
-	le_central_discover_primary_services_by_uuid128(&test_device, primary_service_uuid128);
+	gatt_client_discover_primary_services_by_uuid128(&test_device, primary_service_uuid128);
 	result_index = 0;
-	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF200);
+	gatt_client_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF200);
 	result_index = 0;
-	le_central_discover_characteristic_descriptors(&test_device, &characteristics[0]);
+	gatt_client_discover_characteristic_descriptors(&test_device, &characteristics[0]);
 	CHECK(result_found);
 
 	result_found = 0;
-	le_central_read_long_characteristic_descriptor(&test_device, &descriptors[0]);
+	gatt_client_read_long_characteristic_descriptor(&test_device, &descriptors[0]);
 	CHECK(result_found);
 }
 
 
 TEST(GATTClient, TestWriteLongCharacteristicDescriptor){
 	test = WRITE_LONG_CHARACTERISTIC_DESCRIPTOR;
-	le_central_discover_primary_services_by_uuid128(&test_device, primary_service_uuid128);
+	gatt_client_discover_primary_services_by_uuid128(&test_device, primary_service_uuid128);
 	result_index = 0;
-	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF200);
+	gatt_client_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF200);
 	result_index = 0;
-	le_central_discover_characteristic_descriptors(&test_device, &characteristics[0]);
+	gatt_client_discover_characteristic_descriptors(&test_device, &characteristics[0]);
 	
 	result_found = 0;
-	le_central_write_long_characteristic_descriptor(&test_device, &descriptors[0], sizeof(long_value), (uint8_t *)long_value);
+	gatt_client_write_long_characteristic_descriptor(&test_device, &descriptors[0], sizeof(long_value), (uint8_t *)long_value);
 	CHECK(result_found);
 }
 
 TEST(GATTClient, TestReadCharacteristicValue){
 	test = READ_CHARACTERISTIC_VALUE;
 	
-	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
+	gatt_client_discover_primary_services_by_uuid16(&test_device, service_uuid16);
 	result_index = 0;
-	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
+	gatt_client_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
 
 	result_found = 0;
-	le_central_read_value_of_characteristic(&test_device, &characteristics[0]);
+	gatt_client_read_value_of_characteristic(&test_device, &characteristics[0]);
 	CHECK(result_found);
 }
 
 TEST(GATTClient, TestReadLongCharacteristicValue){
 	test = READ_LONG_CHARACTERISTIC_VALUE;
 	
-	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
+	gatt_client_discover_primary_services_by_uuid16(&test_device, service_uuid16);
 	result_index = 0;
-	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
+	gatt_client_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
 
 	result_found = 0;
-	le_central_read_long_value_of_characteristic(&test_device, &characteristics[0]);
+	gatt_client_read_long_value_of_characteristic(&test_device, &characteristics[0]);
 	CHECK(result_found);
 }
 
 TEST(GATTClient, TestWriteCharacteristicValue){
 	test = WRITE_CHARACTERISTIC_VALUE;
-	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
+	gatt_client_discover_primary_services_by_uuid16(&test_device, service_uuid16);
 	result_index = 0;
-	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
+	gatt_client_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
 
 	result_found = 0;
-	le_central_write_value_of_characteristic(&test_device, characteristics[0].value_handle, short_value_length, (uint8_t*)short_value);
+	gatt_client_write_value_of_characteristic(&test_device, characteristics[0].value_handle, short_value_length, (uint8_t*)short_value);
 	CHECK(result_found);
 }
 
 TEST(GATTClient, TestWriteLongCharacteristicValue){
 	test = WRITE_LONG_CHARACTERISTIC_VALUE;
-	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
+	gatt_client_discover_primary_services_by_uuid16(&test_device, service_uuid16);
 	result_index = 0;
-	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
+	gatt_client_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
 
 	result_found = 0;
-	le_central_write_long_value_of_characteristic(&test_device, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
+	gatt_client_write_long_value_of_characteristic(&test_device, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
 	CHECK(result_found);
 }
 
 TEST(GATTClient, TestWriteReliableLongCharacteristicValue){
 	test = WRITE_RELIABLE_LONG_CHARACTERISTIC_VALUE;
-	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
+	gatt_client_discover_primary_services_by_uuid16(&test_device, service_uuid16);
 	result_index = 0;
-	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
+	gatt_client_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF100);
 
 	result_found = 0;
-	le_central_reliable_write_long_value_of_characteristic(&test_device, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
+	gatt_client_reliable_write_long_value_of_characteristic(&test_device, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
 	CHECK(result_found);
 }
 
 TEST(GATTClient, TestWriteCharacteristicValueWithoutResponse){
 	test = WRITE_CHARACTERISTIC_VALUE_WITHOUT_RESPONSE;
-	le_central_discover_primary_services_by_uuid16(&test_device, service_uuid16);
+	gatt_client_discover_primary_services_by_uuid16(&test_device, service_uuid16);
 	result_index = 0;
-	le_central_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF10D);
+	gatt_client_discover_characteristics_for_service_by_uuid16(&test_device, &services[0], 0xF10D);
 
-	le_central_write_value_of_characteristic_without_response(&test_device, characteristics[0].value_handle, short_value_length, (uint8_t*)short_value);
+	gatt_client_write_value_of_characteristic_without_response(&test_device, characteristics[0].value_handle, short_value_length, (uint8_t*)short_value);
 	CHECK(result_complete);
 }
-
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
