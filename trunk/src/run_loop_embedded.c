@@ -89,9 +89,11 @@ static int embedded_remove_data_source(data_source_t *ds){
 
 // set timer
 static void embedded_set_timer(timer_source_t *ts, uint32_t timeout_in_ms){
+#ifdef HAVE_TICK
     uint32_t ticks = embedded_ticks_for_ms(timeout_in_ms);
     if (ticks == 0) ticks++;
     ts->timeout = system_ticks + ticks; 
+#endif
 }
 
 /**
