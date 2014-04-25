@@ -81,12 +81,19 @@ static state_t state = W4_ON;
 static linked_list_t le_connections = NULL;
 static uint16_t att_client_start_handle = 0x0001;
     
-void (*le_central_callback)(le_central_event_t * event);
-void (*le_central_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = NULL;
+void (*le_central_callback_old)(le_central_event_t * event);
+void (*le_central_packet_handler_old)(uint8_t packet_type, uint8_t *packet, uint16_t size) = NULL;
+static void packet_handler_old(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
-static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
+void (*le_central_callback)(le_central_event_t * event);
+void (*le_central_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = NULL;
+static void le_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
+void (*gatt_client_callback)(le_central_event_t * event);
+void (*gatt_client_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = NULL;
+static void gatt_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 
 static void hexdump2(void *data, int size){
@@ -98,26 +105,37 @@ static void hexdump2(void *data, int size){
     // printf("\n");
 }
 
+void gatt_client_init(){
+    att_client_start_handle = 0x0000;
+
+    l2cap_register_fixed_channel(gatt_client_att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+}
 
 void le_central_init(){
     state = W4_ON;
+}
+
+void ble_client_init(){
+    
     le_connections = NULL;
-    att_client_start_handle = 0x0000;
-    l2cap_register_fixed_channel(gatt_client_att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
-    l2cap_register_packet_handler(packet_handler);
+
+    le_central_init();
+    gatt_client_init();
+
+    l2cap_register_packet_handler(packet_handler_old);
 }
 
 static void dummy_notify(le_central_event_t* event){}
 
 void le_central_register_handler(void (*le_callback)(le_central_event_t* event)){
-    le_central_callback = dummy_notify;
+    le_central_callback_old = dummy_notify;
     if (le_callback != NULL){
-        le_central_callback = le_callback;
+        le_central_callback_old = le_callback;
     } 
 }
 
 void le_central_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
-    le_central_packet_handler = handler;
+    le_central_packet_handler_old = handler;
 }
 
 static void gatt_client_run();
@@ -316,7 +334,7 @@ static inline void send_gatt_complete_event(gatt_client_t * peripheral, uint8_t 
     event.type = type;
     event.device = peripheral;
     event.status = status;
-    (*le_central_callback)((le_central_event_t*)&event); 
+    (*le_central_callback_old)((le_central_event_t*)&event); 
 }
 
 static gatt_client_t * get_peripheral_for_handle(uint16_t handle){
@@ -396,7 +414,7 @@ static void handle_advertising_packet(uint8_t *packet, int size){
         
         advertisement_event.rssi = packet[4+num_reports*9+total_data_length + i];
         
-        (*le_central_callback)((le_central_event_t*)&advertisement_event); 
+        (*le_central_callback_old)((le_central_event_t*)&advertisement_event); 
     }
 }
 
@@ -558,6 +576,7 @@ static void gatt_client_handle_peripheral_list(){
 }
 
 static void le_central_handle_peripheral_list(){
+    if (state == W4_ON) return;
     // printf("handle_peripheral_list 1\n");
     // only one connect is allowed, wait for result
     if (get_le_central_w4_connected()) return;
@@ -940,8 +959,6 @@ le_command_status_t gatt_client_write_long_characteristic_descriptor(gatt_client
 
 
 static void gatt_client_run(){
-    if (state == W4_ON) return;
-    
     le_central_handle_peripheral_list();
     gatt_client_handle_peripheral_list();
 
@@ -965,8 +982,12 @@ static void gatt_client_run(){
     }
 }
 
+static void le_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+}
+static void gatt_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+}
 
-static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void packet_handler_old(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     // hexdump2(packet, size);
     // printf("\n");
     // printf("packet_handler:  HCI_EVENT_PACKET %d, packet[0]: 0x%02x, packet[2]: 0x%02x, state %d \n", packet_type == HCI_EVENT_PACKET, 
@@ -1063,8 +1084,8 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
     gatt_client_run();
 
     // forward to app
-    if (!le_central_packet_handler) return;
-    le_central_packet_handler(packet_type, packet, size);
+    if (!le_central_packet_handler_old) return;
+    le_central_packet_handler_old(packet_type, packet, size);
 }
 
 static char * att_errors[] = {
@@ -1135,7 +1156,7 @@ static void report_gatt_services(gatt_client_t * peripheral, uint8_t * packet,  
         event.service = service;
         // printf(" report_gatt_services 0x%02x : 0x%02x-0x%02x\n", service.uuid16, service.start_group_handle, service.end_group_handle);
 
-        (*le_central_callback)((le_central_event_t*)&event);
+        (*le_central_callback_old)((le_central_event_t*)&event);
     }
     // printf("report_gatt_services for %02X done\n", peripheral->handle);
 }
@@ -1176,7 +1197,7 @@ static void characteristic_end_found(gatt_client_t * peripheral, uint16_t end_ha
     event.characteristic.properties   = peripheral->characteristic_properties;
     event.characteristic.uuid16       = peripheral->uuid16;
     memcpy(event.characteristic.uuid128, peripheral->uuid128, 16);
-    (*le_central_callback)((le_central_event_t*)&event);
+    (*le_central_callback_old)((le_central_event_t*)&event);
 
     peripheral->characteristic_start_handle = 0;
 }
@@ -1211,7 +1232,7 @@ static void report_gatt_included_service(gatt_client_t * peripheral, uint8_t *uu
     le_service_event_t event;
     event.type = GATT_INCLUDED_SERVICE_QUERY_RESULT;
     event.service = service;
-    (*le_central_callback)((le_central_event_t*)&event);
+    (*le_central_callback_old)((le_central_event_t*)&event);
 }
 
 static void send_characteristic_value_event(gatt_client_t * peripheral, uint16_t handle, uint8_t * value, uint16_t length, uint16_t offset, uint8_t event_type){
@@ -1221,7 +1242,7 @@ static void send_characteristic_value_event(gatt_client_t * peripheral, uint16_t
     event.characteristic_value_blob_length = length; 
     event.characteristic_value = value;
     event.characteristic_value_offset = offset;
-    (*le_central_callback)((le_central_event_t*)&event);
+    (*le_central_callback_old)((le_central_event_t*)&event);
 }
 
 static void report_gatt_long_characteristic_value_blob(gatt_client_t * peripheral, uint8_t * value, uint16_t blob_length, int value_offset){
@@ -1255,7 +1276,7 @@ static void report_gatt_characteristic_descriptor(gatt_client_t * peripheral, ui
     descriptor.value = value;
     descriptor.value_length = value_length;
     event.characteristic_descriptor = descriptor;
-    (*le_central_callback)((le_central_event_t*)&event);
+    (*le_central_callback_old)((le_central_event_t*)&event);
 }
 
 static void report_gatt_all_characteristic_descriptors(gatt_client_t * peripheral, uint8_t * packet, uint16_t size, uint16_t pair_size){
@@ -1276,7 +1297,7 @@ static void report_gatt_all_characteristic_descriptors(gatt_client_t * periphera
         descriptor.value_length = 0;
 
         event.characteristic_descriptor = descriptor;
-        (*le_central_callback)((le_central_event_t*)&event);
+        (*le_central_callback_old)((le_central_event_t*)&event);
     }
 
 }
@@ -1466,7 +1487,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 memcpy(service.uuid128,  peripheral->uuid128, 16);
                 service.uuid16 = peripheral->uuid16;
                 event.service = service;
-                (*le_central_callback)((le_central_event_t*)&event);
+                (*le_central_callback_old)((le_central_event_t*)&event);
             }
 
             trigger_next_service_by_uuid_query(peripheral, service.end_group_handle);
@@ -2361,7 +2382,7 @@ void setup(void){
 #endif        
     hci_init(transport, &config, control, remote_db);
     l2cap_init();
-    le_central_init();
+    ble_client_init();
     le_central_register_handler(handle_le_central_event);
     le_central_register_packet_handler(handle_hci_event);
 }

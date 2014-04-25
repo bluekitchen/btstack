@@ -383,7 +383,7 @@ TEST_GROUP(GATTClient){
 		result_complete = 0;
 		test = IDLE2;
 
-		le_central_init();
+		ble_client_init();
 		le_central_register_handler(handle_le_central_event);
 		mock_simulate_hci_state_working();
 		att_set_db(profile_data);

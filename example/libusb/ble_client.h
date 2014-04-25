@@ -266,7 +266,7 @@ typedef struct le_characteristic_value_event{
 } le_characteristic_value_event_t;
 
 
-void le_central_init();
+void ble_client_init();
 void le_central_register_handler(void (*le_callback)(le_central_event_t * event));
 
 le_command_status_t le_central_start_scan();
