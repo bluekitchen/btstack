@@ -71,14 +71,21 @@ typedef struct ad_event {
 
     
 //*************** gatt client
+    
+typedef enum{
+    SEND_MTU_EXCHANGE,
+    SENT_MTU_EXCHANGE,
+    MTU_EXCHANGED
+} gatt_client_mtu_t;
+    
 typedef enum {
     P_W2_CONNECT,
     P_W4_CONNECTED,
-    
-    P_W2_EXCHANGE_MTU,
-    P_W4_EXCHANGE_MTU,
-    
     P_CONNECTED,
+    P_W2_CANCEL_CONNECT,
+    P_W4_CONNECT_CANCELLED,
+    P_W2_DISCONNECT,
+    P_W4_DISCONNECTED,
     
     P_W2_SEND_SERVICE_QUERY,
     P_W4_SERVICE_QUERY_RESULT,
@@ -134,12 +141,7 @@ typedef enum {
     P_W2_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR,
     P_W4_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT,
     P_W2_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR,
-    P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT,
-    
-    P_W2_CANCEL_CONNECT,
-    P_W4_CONNECT_CANCELLED,
-    P_W2_DISCONNECT,
-    P_W4_DISCONNECTED
+    P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT
 } peripheral_state_t;
 
 typedef enum {
@@ -161,7 +163,6 @@ typedef struct le_peripheral_connection{
     uint8_t   address_type;
     bd_addr_t address;
     uint16_t handle;
-    uint16_t mtu;
 } le_peripheral_connection_t;
 
 
@@ -173,6 +174,7 @@ typedef struct gatt_client{
     uint8_t   address_type;
     bd_addr_t address;
     uint16_t mtu;
+    gatt_client_mtu_t mtu_state;
     
     uint16_t uuid16;
     uint8_t  uuid128[16];

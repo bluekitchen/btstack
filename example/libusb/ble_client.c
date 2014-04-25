@@ -84,8 +84,9 @@ static uint16_t att_client_start_handle = 0x0001;
 void (*le_central_callback)(le_central_event_t * event);
 void (*le_central_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = NULL;
 
-static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
+static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
 
 
 static void hexdump2(void *data, int size){
@@ -102,7 +103,7 @@ void le_central_init(){
     state = W4_ON;
     le_connections = NULL;
     att_client_start_handle = 0x0000;
-    l2cap_register_fixed_channel(att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+    l2cap_register_fixed_channel(gatt_client_att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
     l2cap_register_packet_handler(packet_handler);
 }
 
@@ -351,24 +352,13 @@ static gatt_client_t * get_peripheral_with_address(uint8_t addr_type, bd_addr_t 
     return 0;
 }
 
-static inline gatt_client_t * get_peripheral_w4_disconnected(){
-    return get_peripheral_with_state(P_W4_DISCONNECTED);
-}
 
 static inline gatt_client_t * get_peripheral_w4_connect_cancelled(){
     return get_peripheral_with_state(P_W4_CONNECT_CANCELLED);
 }
 
-static inline gatt_client_t * get_peripheral_w2_connect(){
-    return get_peripheral_with_state(P_W2_CONNECT);
-}
-
 static inline gatt_client_t * get_peripheral_w4_connected(){
     return get_peripheral_with_state(P_W4_CONNECTED);
-}
-
-static inline gatt_client_t * get_peripheral_w2_exchange_MTU(){
-    return get_peripheral_with_state(P_W2_EXCHANGE_MTU);
 }
 
 
@@ -399,7 +389,7 @@ static void handle_advertising_packet(uint8_t *packet, int size){
     }
 }
 
-static void handle_peripheral_list(){
+static void gatt_client_handle_peripheral_list(){
     // printf("handle_peripheral_list 1\n");
     // only one connect is allowed, wait for result
     if (get_peripheral_w4_connected()) return;
@@ -419,40 +409,10 @@ static void handle_peripheral_list(){
         gatt_client_t * peripheral = (gatt_client_t *) it;
         // printf("handle_peripheral_list, status %u\n", peripheral->state);
 
-        if (peripheral->send_confirmation){
-            peripheral->send_confirmation = 0;
-            att_confirmation(peripheral->handle);
-            return;
-        }
-
-        switch (peripheral->state){
-            case P_W2_CONNECT:
-                peripheral->state = P_W4_CONNECTED;
-                hci_send_cmd(&hci_le_create_connection, 
-                     1000,      // scan interval: 625 ms
-                     1000,      // scan interval: 625 ms
-                     0,         // don't use whitelist
-                     peripheral->address_type, // peer address type
-                     peripheral->address,       // peer bd addr
-                     0,         // our addr type: public
-                     80,        // conn interval min
-                     80,        // conn interval max (3200 * 0.625)
-                     0,         // conn latency
-                     2000,      // supervision timeout
-                     0,         // min ce length
-                     1000       // max ce length
-                );
-                return;
-
-            case P_W2_CANCEL_CONNECT: 
-                peripheral->state = P_W4_CONNECT_CANCELLED;
-                hci_send_cmd(&hci_le_create_connection_cancel);
-                return;
-            case P_W2_EXCHANGE_MTU:
-            {
-                peripheral->state = P_W4_EXCHANGE_MTU;
+        switch (peripheral->mtu_state) {
+            case SEND_MTU_EXCHANGE:{
+                peripheral->mtu_state = SENT_MTU_EXCHANGE;
                 uint16_t mtu = l2cap_max_mtu_for_handle(peripheral->handle);
-
                 // TODO: extract as att_exchange_mtu_request
                 l2cap_reserve_packet_buffer();
                 uint8_t * request = l2cap_get_outgoing_buffer();
@@ -461,6 +421,19 @@ static void handle_peripheral_list(){
                 l2cap_send_prepared_connectionless(peripheral->handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3);
                 return;
             }
+            case SENT_MTU_EXCHANGE:
+                return;
+            default:
+                break;
+        }
+        
+        if (peripheral->send_confirmation){
+            peripheral->send_confirmation = 0;
+            att_confirmation(peripheral->handle);
+            return;
+        }
+
+        switch (peripheral->state){
             case P_W2_SEND_SERVICE_QUERY:
                 peripheral->state = P_W4_SERVICE_QUERY_RESULT;
                 send_gatt_services_request(peripheral);
@@ -565,18 +538,69 @@ static void handle_peripheral_list(){
                 peripheral->state = P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT;
                 send_gatt_execute_write_request(peripheral);
                 break;
-            
-            case P_W2_DISCONNECT:
-                peripheral->state = P_W4_DISCONNECTED;
-                hci_send_cmd(&hci_disconnect, peripheral->handle,0x13);
-                return;
-
             default:
                 break;
         }
         
     }
          
+}
+
+static void le_central_handle_peripheral_list(){
+    // printf("handle_peripheral_list 1\n");
+    // only one connect is allowed, wait for result
+    if (get_peripheral_w4_connected()) return;
+    // printf("handle_peripheral_list 2\n");
+    // only one cancel connect is allowed, wait for result
+    if (get_peripheral_w4_connect_cancelled()) return;
+    // printf("handle_peripheral_list 3\n");
+    
+    if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
+    // printf("handle_peripheral_list 4\n");
+    if (!l2cap_can_send_connectionless_packet_now()) return;
+    // printf("handle_peripheral_list 5\n");
+    
+    // printf("handle_peripheral_list empty %u\n", linked_list_empty(&le_connections));
+    linked_item_t *it;
+    for (it = (linked_item_t *) le_connections; it ; it = it->next){
+        gatt_client_t * peripheral = (gatt_client_t *) it;
+        // printf("handle_peripheral_list, status %u\n", peripheral->state);
+        
+        switch (peripheral->state){
+            case P_W2_CONNECT:
+                peripheral->state = P_W4_CONNECTED;
+                hci_send_cmd(&hci_le_create_connection,
+                             1000,      // scan interval: 625 ms
+                             1000,      // scan interval: 625 ms
+                             0,         // don't use whitelist
+                             peripheral->address_type, // peer address type
+                             peripheral->address,       // peer bd addr
+                             0,         // our addr type: public
+                             80,        // conn interval min
+                             80,        // conn interval max (3200 * 0.625)
+                             0,         // conn latency
+                             2000,      // supervision timeout
+                             0,         // min ce length
+                             1000       // max ce length
+                             );
+                return;
+                
+            case P_W2_CANCEL_CONNECT:
+                peripheral->state = P_W4_CONNECT_CANCELLED;
+                hci_send_cmd(&hci_le_create_connection_cancel);
+                return;
+                
+            case P_W2_DISCONNECT:
+                peripheral->state = P_W4_DISCONNECTED;
+                hci_send_cmd(&hci_disconnect, peripheral->handle,0x13);
+                return;
+                
+            default:
+                break;
+        }
+        
+    }
+    
 }
 
 
@@ -598,6 +622,7 @@ static void le_peripheral_init(gatt_client_t *context, uint8_t addr_type, bd_add
     memset(context, 0, sizeof(gatt_client_t));
     context->address_type = addr_type;
     memcpy (context->address, addr, 6);
+    context->mtu_state = SEND_MTU_EXCHANGE;
 }
 
 le_command_status_t le_central_connect(gatt_client_t *context, uint8_t addr_type, bd_addr_t addr){
@@ -645,7 +670,6 @@ le_command_status_t le_central_disconnect(gatt_client_t *context){
 }
 
 le_command_status_t gatt_client_discover_primary_services(gatt_client_t *peripheral){
-    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     peripheral->start_group_handle = 0x0001;
     peripheral->end_group_handle   = 0xffff;
     peripheral->state = P_W2_SEND_SERVICE_QUERY;
@@ -656,7 +680,6 @@ le_command_status_t gatt_client_discover_primary_services(gatt_client_t *periphe
 
 
 le_command_status_t gatt_client_discover_primary_services_by_uuid16(gatt_client_t *peripheral, uint16_t uuid16){
-    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     peripheral->start_group_handle = 0x0001;
     peripheral->end_group_handle   = 0xffff;
     peripheral->state = P_W2_SEND_SERVICE_WITH_UUID_QUERY;
@@ -667,7 +690,6 @@ le_command_status_t gatt_client_discover_primary_services_by_uuid16(gatt_client_
 }
 
 le_command_status_t gatt_client_discover_primary_services_by_uuid128(gatt_client_t *peripheral, const uint8_t * uuid128){
-    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     peripheral->start_group_handle = 0x0001;
     peripheral->end_group_handle   = 0xffff;
     peripheral->uuid16 = 0;
@@ -680,7 +702,6 @@ le_command_status_t gatt_client_discover_primary_services_by_uuid128(gatt_client
 }
 
 le_command_status_t gatt_client_discover_characteristics_for_service(gatt_client_t *peripheral, le_service_t *service){
-    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     peripheral->start_group_handle = service->start_group_handle;
     peripheral->end_group_handle   = service->end_group_handle;
     peripheral->filter_with_uuid = 0;
@@ -691,7 +712,6 @@ le_command_status_t gatt_client_discover_characteristics_for_service(gatt_client
 }
 
 le_command_status_t gatt_client_find_included_services_for_service(gatt_client_t *peripheral, le_service_t *service){
-    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     peripheral->start_group_handle = service->start_group_handle;
     peripheral->end_group_handle   = service->end_group_handle;
     peripheral->state = P_W2_SEND_INCLUDED_SERVICE_QUERY;
@@ -701,7 +721,6 @@ le_command_status_t gatt_client_find_included_services_for_service(gatt_client_t
 }
 
 le_command_status_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(gatt_client_t *peripheral, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16){
-    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     peripheral->start_group_handle = start_handle;
     peripheral->end_group_handle   = end_handle;
     peripheral->filter_with_uuid = 1;
@@ -715,7 +734,6 @@ le_command_status_t gatt_client_discover_characteristics_for_handle_range_by_uui
 }
 
 le_command_status_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(gatt_client_t *peripheral, uint16_t start_handle, uint16_t end_handle, uint8_t * uuid128){
-    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     peripheral->start_group_handle = start_handle;
     peripheral->end_group_handle   = end_handle;
     peripheral->filter_with_uuid = 1;
@@ -738,7 +756,6 @@ le_command_status_t gatt_client_discover_characteristics_for_service_by_uuid128(
 }
 
 le_command_status_t gatt_client_discover_characteristic_descriptors(gatt_client_t *peripheral, le_characteristic_t *characteristic){
-    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     if (characteristic->value_handle == characteristic->end_handle){
         send_gatt_complete_event(peripheral, GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_COMPLETE, 0);
         return BLE_PERIPHERAL_OK;
@@ -752,7 +769,6 @@ le_command_status_t gatt_client_discover_characteristic_descriptors(gatt_client_
 }
 
 le_command_status_t gatt_client_read_value_of_characteristic_using_value_handle(gatt_client_t *peripheral, uint16_t value_handle){
-    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     peripheral->attribute_handle = value_handle;
     peripheral->attribute_offset = 0;
     peripheral->state = P_W2_SEND_READ_CHARACTERISTIC_VALUE_QUERY;
@@ -766,7 +782,6 @@ le_command_status_t gatt_client_read_value_of_characteristic(gatt_client_t *peri
 
 
 le_command_status_t gatt_client_read_long_value_of_characteristic_using_value_handle(gatt_client_t *peripheral, uint16_t value_handle){
-    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     peripheral->attribute_handle = value_handle;
     peripheral->attribute_offset = 0;
     peripheral->state = P_W2_SEND_READ_BLOB_QUERY;
@@ -779,7 +794,17 @@ le_command_status_t gatt_client_read_long_value_of_characteristic(gatt_client_t 
 }
 
 static int is_connected(gatt_client_t * peripheral){
-    return peripheral->state >= P_CONNECTED && peripheral->state < P_W2_CANCEL_CONNECT;
+    switch (peripheral->state) {
+        case P_W2_CONNECT:
+        case P_W4_CONNECTED:
+        case P_W2_CANCEL_CONNECT:
+        case P_W4_CONNECT_CANCELLED:
+        case P_W2_DISCONNECT:
+        case P_W4_DISCONNECTED:
+            return 0;
+        default:
+            return 1;
+    }
 }
 
 le_command_status_t gatt_client_write_value_of_characteristic_without_response(gatt_client_t *peripheral, uint16_t value_handle, uint16_t value_length, uint8_t * value){
@@ -791,7 +816,6 @@ le_command_status_t gatt_client_write_value_of_characteristic_without_response(g
 
 le_command_status_t gatt_client_write_value_of_characteristic(gatt_client_t *peripheral, uint16_t value_handle, uint16_t value_length, uint8_t * value){
     if (value_length >= peripheral->mtu - 3) return BLE_VALUE_TOO_LONG;
-    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     
     peripheral->attribute_handle = value_handle;
     peripheral->attribute_length = value_length;
@@ -802,7 +826,6 @@ le_command_status_t gatt_client_write_value_of_characteristic(gatt_client_t *per
 }
  
 le_command_status_t gatt_client_write_long_value_of_characteristic(gatt_client_t *peripheral, uint16_t value_handle, uint16_t value_length, uint8_t * value){
-    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     
     peripheral->attribute_handle = value_handle;
     peripheral->attribute_length = value_length;
@@ -814,7 +837,6 @@ le_command_status_t gatt_client_write_long_value_of_characteristic(gatt_client_t
 }
 
 le_command_status_t gatt_client_reliable_write_long_value_of_characteristic(gatt_client_t *peripheral, uint16_t value_handle, uint16_t value_length, uint8_t * value){
-    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     
     peripheral->attribute_handle = value_handle;
     peripheral->attribute_length = value_length;
@@ -826,7 +848,6 @@ le_command_status_t gatt_client_reliable_write_long_value_of_characteristic(gatt
 }
 
 le_command_status_t gatt_client_write_client_characteristic_configuration(gatt_client_t *peripheral, le_characteristic_t * characteristic, uint16_t configuration){
-    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     
     if ( (configuration & GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION) &&
          (characteristic->properties & ATT_PROPERTY_NOTIFY) == 0) {
@@ -848,7 +869,6 @@ le_command_status_t gatt_client_write_client_characteristic_configuration(gatt_c
 }
 
 le_command_status_t gatt_client_read_characteristic_descriptor(gatt_client_t *peripheral, le_characteristic_descriptor_t * descriptor){
-    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     peripheral->attribute_handle = descriptor->handle;
     
     peripheral->uuid16 = descriptor->uuid16;
@@ -862,7 +882,6 @@ le_command_status_t gatt_client_read_characteristic_descriptor(gatt_client_t *pe
 }
 
 le_command_status_t gatt_client_read_long_characteristic_descriptor(gatt_client_t *peripheral, le_characteristic_descriptor_t * descriptor){
-    if (peripheral->state != P_CONNECTED) return BLE_PERIPHERAL_IN_WRONG_STATE;
     
     peripheral->attribute_handle = descriptor->handle;
     peripheral->attribute_offset = 0;
@@ -898,9 +917,10 @@ le_command_status_t gatt_client_write_long_characteristic_descriptor(gatt_client
 static void gatt_client_run(){
     if (state == W4_ON) return;
     
-    handle_peripheral_list();
+    le_central_handle_peripheral_list();
+    gatt_client_handle_peripheral_list();
 
-    // check if command is send 
+    // check if command is send
     if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
     if (!l2cap_can_send_connectionless_packet_now()) return;
     
@@ -994,7 +1014,7 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
                         if (packet[3]){
                             linked_list_remove(&le_connections, (linked_item_t *) peripheral);
                         } else {
-                            peripheral->state = P_W2_EXCHANGE_MTU;
+                            peripheral->state = P_CONNECTED;
                             peripheral->handle = READ_BT_16(packet, 4);
                         }
                         break;
@@ -1304,7 +1324,7 @@ static int is_value_valid(gatt_client_t *peripheral, uint8_t *packet, uint16_t s
     return memcmp(&peripheral->attribute_value[peripheral->attribute_offset], &packet[5], size-5) == 0;
 }
 
-static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
+static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
     if (packet_type != ATT_DATA_PACKET) return;
     gatt_client_t * peripheral = get_peripheral_for_handle(handle);
     if (!peripheral) return;
@@ -1315,7 +1335,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
             uint16_t local_rx_mtu = l2cap_max_mtu_for_handle(handle);
             peripheral->mtu = remote_rx_mtu < local_rx_mtu ? remote_rx_mtu : local_rx_mtu;
 
-            peripheral->state = P_CONNECTED; 
+            peripheral->mtu_state = MTU_EXCHANGED;
             send_gatt_complete_event(peripheral, GATT_CONNECTION_COMPLETE, 0);
             break;
         }
