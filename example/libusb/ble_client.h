@@ -146,7 +146,7 @@ typedef enum {
     P_W4_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT,
     P_W2_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR,
     P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT
-} peripheral_state_t;
+} gatt_client_state_t;
 
 typedef enum {
     BLE_PERIPHERAL_OK = 0,
@@ -162,17 +162,17 @@ typedef enum {
 
 typedef struct le_peripheral_connection{
     linked_item_t    item;
-    peripheral_state_t state;
+    le_central_state_t state;
 
     uint8_t   address_type;
     bd_addr_t address;
     uint16_t handle;
-} le_peripheral_connection_t;
+} le_central_t;
 
 
 typedef struct gatt_client{
     linked_item_t    item;
-    peripheral_state_t state;
+    gatt_client_state_t state;
     le_central_state_t le_central_state;
     
     uint16_t handle;
