@@ -161,9 +161,9 @@ typedef enum {
 } le_command_status_t;
 
 
-typedef struct le_peripheral_connection{
+typedef struct le_central{
     linked_item_t    item;
-    le_central_state_t state;
+    le_central_state_t le_central_state;
 
     uint8_t   address_type;
     bd_addr_t address;
@@ -174,7 +174,7 @@ typedef struct le_peripheral_connection{
 typedef struct gatt_client{
     linked_item_t    item;
     gatt_client_state_t gatt_client_state;
-    le_central_state_t le_central_state;
+    // le_central_state_t le_central_state;
     
     uint16_t handle;
     
@@ -208,11 +208,17 @@ typedef struct gatt_client{
     
 } gatt_client_t;
 
-typedef struct le_peripheral_event{
+typedef struct le_central_connection_complete_event{
+    uint8_t   type;
+    le_central_t * device;
+    uint8_t status;
+} le_central_connection_complete_event_t;
+
+typedef struct gatt_complete_event{
     uint8_t   type;
     gatt_client_t * device;
     uint8_t status;
-} le_peripheral_event_t;
+} gatt_complete_event_t;
 
 typedef struct le_service{
     uint16_t start_group_handle;
@@ -275,8 +281,8 @@ le_command_status_t le_central_start_scan();
 // { type (8), addr_type (8), addr(48), rssi(8), ad_len(8), ad_data(ad_len*8) }
 le_command_status_t le_central_stop_scan();
 
-le_command_status_t  le_central_connect(gatt_client_t *context, uint8_t addr_type, bd_addr_t addr);
-le_command_status_t  le_central_disconnect(gatt_client_t *context);
+le_command_status_t  le_central_connect(le_central_t *context, uint8_t addr_type, bd_addr_t addr);
+le_command_status_t  le_central_disconnect(le_central_t *context);
 
 // start/stop gatt client
 void gatt_client_start(gatt_client_t *context, uint16_t handle);
