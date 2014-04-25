@@ -38,8 +38,6 @@
 // ATT Server Globals
 //
 
-#include "att_server.h"
-
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -57,9 +55,11 @@
 
 #include "sm.h"
 #include "att.h"
-#include "att_server.h"
+#include "att_dispatch.h"
 #include "gap_le.h"
 #include "central_device_db.h"
+
+#include "att_server.h"
 
 static void att_run(void);
 
@@ -319,7 +319,7 @@ void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_
 
     sm_register_packet_handler(att_event_packet_handler);
 
-    l2cap_register_fixed_channel(att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+    att_dispatch_register_server(att_packet_handler);
 
     att_server_state = ATT_SERVER_IDLE;
     att_set_db(db);
