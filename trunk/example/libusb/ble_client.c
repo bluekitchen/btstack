@@ -78,7 +78,6 @@ typedef enum {
 
 
 static state_t state = W4_ON;
-//static linked_list_t le_connections = NULL;
 static linked_list_t le_central_connections = NULL;
 static linked_list_t gatt_client_connections = NULL;
 
@@ -99,6 +98,8 @@ void (*gatt_client_callback)(le_central_event_t * event);
 void (*gatt_client_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = NULL;
 static void gatt_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
+static void gatt_client_run();
+static void le_central_run();
 
 static void hexdump2(void *data, int size){
     if (size <= 0) return;
@@ -143,7 +144,6 @@ void le_central_register_packet_handler(void (*handler)(uint8_t packet_type, uin
     le_central_packet_handler_old = handler;
 }
 
-static void gatt_client_run();
 
 // START Helper Functions - to be sorted
 static uint16_t l2cap_max_mtu_for_handle(uint16_t handle){
@@ -608,19 +608,14 @@ static void gatt_client_handle_context_list(){
 }
 
 static void le_central_handle_context_list(){
-    if (state == W4_ON) return;
-    // printf("handle_peripheral_list 1\n");
-    // only one connect is allowed, wait for result
+     // only one connect is allowed, wait for result
     if (get_le_central_w4_connected()) return;
-    // printf("handle_peripheral_list 2\n");
+    
     // only one cancel connect is allowed, wait for result
     if (get_le_central_w4_connect_cancelled()) return;
-    // printf("handle_peripheral_list 3\n");
     
     if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
-    // printf("handle_peripheral_list 4\n");
     if (!l2cap_can_send_connectionless_packet_now()) return;
-    // printf("handle_peripheral_list 5\n");
     
     // printf("handle_peripheral_list empty %u\n", linked_list_empty(&le_connections));
     linked_item_t *it;
@@ -669,14 +664,14 @@ static void le_central_handle_context_list(){
 le_command_status_t le_central_start_scan(){
     if (state != IDLE) return BLE_PERIPHERAL_IN_WRONG_STATE; 
     state = START_SCAN;
-    gatt_client_run();
+    le_central_run();
     return BLE_PERIPHERAL_OK;
 }
 
 le_command_status_t le_central_stop_scan(){
     if (state != SCANNING) return BLE_PERIPHERAL_IN_WRONG_STATE;
     state = STOP_SCAN;
-    gatt_client_run();
+    le_central_run();
     return BLE_PERIPHERAL_OK;
 }
 
@@ -700,7 +695,7 @@ le_command_status_t le_central_connect(gatt_client_t *context, uint8_t addr_type
     } else {
         return BLE_PERIPHERAL_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS;
     }
-    gatt_client_run();
+    le_central_run();
     return BLE_PERIPHERAL_OK;
 }
 
@@ -728,7 +723,7 @@ le_command_status_t le_central_disconnect(gatt_client_t *context){
             context->le_central_state = P_W2_DISCONNECT;
             break;
     }  
-    gatt_client_run();    
+    le_central_run();
     return BLE_PERIPHERAL_OK;      
 }
 
@@ -990,29 +985,33 @@ le_command_status_t gatt_client_write_long_characteristic_descriptor(gatt_client
     return BLE_PERIPHERAL_OK;
 }
 
-
-static void gatt_client_run(){
-    le_central_handle_context_list();
-    gatt_client_handle_context_list();
-
+static void le_central_run(){
     // check if command is send
     if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
     if (!l2cap_can_send_connectionless_packet_now()) return;
     
     switch(state){
+        case W4_ON:
+            return;
+            
         case START_SCAN:
             state = W4_SCANNING;
             hci_send_cmd(&hci_le_set_scan_enable, 1, 0);
             return;
-
+            
         case STOP_SCAN:
             state = W4_SCAN_STOPPED;
             hci_send_cmd(&hci_le_set_scan_enable, 0, 0);
             return;
-
+            
         default:
             break;
     }
+    le_central_handle_context_list();
+}
+
+static void gatt_client_run(){
+    gatt_client_handle_context_list();
 }
 
 static void le_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -1098,6 +1097,7 @@ static void le_packet_handler(void * connection, uint8_t packet_type, uint16_t c
         default:
             break;
     }
+    le_central_run();
 }
 static void gatt_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet[0]) {
@@ -1116,6 +1116,7 @@ static void gatt_packet_handler(void * connection, uint8_t packet_type, uint16_t
         default:
             break;
     }
+    gatt_client_run();
 }
 
 static void packet_handler_old(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
