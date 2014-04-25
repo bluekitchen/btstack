@@ -30,6 +30,7 @@ COMMON = \
     ${BTSTACK_ROOT}/src/utils.c 	              \
     ${BTSTACK_ROOT}/src/remote_device_db_memory.c \
     ${BTSTACK_ROOT}/ble/att.c    	              \
+    ${BTSTACK_ROOT}/ble/att_dispatch.c            \
     ${BTSTACK_ROOT}/ble/att_server.c              \
     ${BTSTACK_ROOT}/ble/l2cap_le.c                \
 	${BTSTACK_ROOT}/ble/sm.c 				 	    \
