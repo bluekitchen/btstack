@@ -78,15 +78,18 @@ typedef enum{
     MTU_EXCHANGED
 } gatt_client_mtu_t;
     
-typedef enum {
+
+typedef enum{
     P_W2_CONNECT,
     P_W4_CONNECTED,
     P_CONNECTED,
     P_W2_CANCEL_CONNECT,
     P_W4_CONNECT_CANCELLED,
     P_W2_DISCONNECT,
-    P_W4_DISCONNECTED,
-    
+    P_W4_DISCONNECTED
+} le_central_state_t;
+
+typedef enum {
     P_READY,
     P_W2_SEND_SERVICE_QUERY,
     P_W4_SERVICE_QUERY_RESULT,
@@ -170,6 +173,8 @@ typedef struct le_peripheral_connection{
 typedef struct gatt_client{
     linked_item_t    item;
     peripheral_state_t state;
+    le_central_state_t le_central_state;
+    
     uint16_t handle;
     
     uint8_t   address_type;

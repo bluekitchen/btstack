@@ -28,7 +28,7 @@ static gatt_client_t test_device;
 
 
 typedef enum {
-	IDLE,
+	IDLE2,
 	DISCOVER_PRIMARY_SERVICES,
     DISCOVER_PRIMARY_SERVICE_WITH_UUID16,
     DISCOVER_PRIMARY_SERVICE_WITH_UUID128,
@@ -57,7 +57,7 @@ typedef enum {
     WRITE_CHARACTERISTIC_VALUE_WITHOUT_RESPONSE
 } current_test_t;
 
-current_test_t test = IDLE;
+current_test_t test = IDLE2;
 
 uint8_t  characteristic_uuid128[] = {0x00, 0x00, 0xf0, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb};
 uint16_t characteristic_uuid16 = 0xF000;
@@ -381,7 +381,7 @@ TEST_GROUP(GATTClient){
 		result_found = 0;
 		result_index = 0;
 		result_complete = 0;
-		test = IDLE;
+		test = IDLE2;
 
 		le_central_init();
 		le_central_register_handler(handle_le_central_event);
