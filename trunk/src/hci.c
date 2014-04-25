@@ -71,6 +71,8 @@
 
 static void hci_update_scan_enable(void);
 static gap_security_level_t gap_security_level_for_connection(hci_connection_t * connection);
+static void hci_connection_timeout_handler(timer_source_t *timer);
+static void hci_connection_timestamp(hci_connection_t *connection);
 
 // the STACK is here
 #ifndef HAVE_MALLOC
@@ -81,6 +83,31 @@ static hci_stack_t * hci_stack = NULL;
 // test helper
 static uint8_t disable_l2cap_timeouts = 0;
 
+/**
+ * create connection for given address
+ *
+ * @return connection OR NULL, if no memory left
+ */
+static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type){
+
+    printf("create_connection_for_addr %s\n", bd_addr_to_str(addr));
+    hci_connection_t * conn = (hci_connection_t *) btstack_memory_hci_connection_get();
+    if (!conn) return NULL;
+    BD_ADDR_COPY(conn->address, addr);
+    conn->address_type = addr_type;
+    conn->con_handle = 0xffff;
+    conn->authentication_flags = AUTH_FLAGS_NONE;
+    conn->bonding_flags = 0;
+    conn->requested_security_level = LEVEL_0;
+    linked_item_set_user(&conn->timeout.item, conn);
+    conn->timeout.process = hci_connection_timeout_handler;
+    hci_connection_timestamp(conn);
+    conn->acl_recombination_length = 0;
+    conn->acl_recombination_pos = 0;
+    conn->num_acl_packets_sent = 0;
+    linked_list_add(&hci_stack->connections, (linked_item_t *) conn);
+    return conn;
+}
 
 /**
  * get connection for a given handle
@@ -97,13 +124,18 @@ hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
     return NULL;
 }
 
-hci_connection_t * hci_connection_for_bd_addr(bd_addr_t * addr){
+/**
+ * get connection for given address
+ *
+ * @return connection OR NULL, if not found
+ */
+hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t * addr, bd_addr_type_t addr_type){
     linked_item_t *it;
     for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
         hci_connection_t * connection = (hci_connection_t *) it;
-        if (memcmp(addr, connection->address, 6) == 0) {
-            return connection;
-        }
+        if (connection->address_type != addr_type)  continue;
+        if (memcmp(addr, connection->address, 6) != 0) continue;
+        return connection;
     }
     return NULL;
 }
@@ -137,45 +169,6 @@ static void hci_connection_timestamp(hci_connection_t *connection){
 #endif
 }
 
-/**
- * create connection for given address
- *
- * @return connection OR NULL, if no memory left
- */
-static hci_connection_t * create_connection_for_addr(bd_addr_t addr){
-
-    printf("create_connection_for_addr %s\n", bd_addr_to_str(addr));
-    hci_connection_t * conn = (hci_connection_t *) btstack_memory_hci_connection_get();
-    if (!conn) return NULL;
-    BD_ADDR_COPY(conn->address, addr);
-    conn->con_handle = 0xffff;
-    conn->authentication_flags = AUTH_FLAGS_NONE;
-    conn->bonding_flags = 0;
-    conn->requested_security_level = LEVEL_0;
-    linked_item_set_user(&conn->timeout.item, conn);
-    conn->timeout.process = hci_connection_timeout_handler;
-    hci_connection_timestamp(conn);
-    conn->acl_recombination_length = 0;
-    conn->acl_recombination_pos = 0;
-    conn->num_acl_packets_sent = 0;
-    linked_list_add(&hci_stack->connections, (linked_item_t *) conn);
-    return conn;
-}
-
-/**
- * get connection for given address
- *
- * @return connection OR NULL, if not found
- */
-static hci_connection_t * connection_for_address(bd_addr_t address){
-    linked_item_t *it;
-    for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
-        if ( ! BD_ADDR_CMP( ((hci_connection_t *) it)->address, address) ){
-            return (hci_connection_t *) it;
-        }
-    }
-    return NULL;
-}
 
 inline static void connectionSetAuthenticationFlags(hci_connection_t * conn, hci_authentication_flags_t flags){
     conn->authentication_flags = (hci_authentication_flags_t)(conn->authentication_flags | flags);
@@ -188,11 +181,12 @@ inline static void connectionClearAuthenticationFlags(hci_connection_t * conn, h
 
 /**
  * add authentication flags and reset timer
+ * @note: assumes classic connection
  */
 static void hci_add_connection_flags_for_flipped_bd_addr(uint8_t *bd_addr, hci_authentication_flags_t flags){
     bd_addr_t addr;
     bt_flip_addr(addr, *(bd_addr_t *) bd_addr);
-    hci_connection_t * conn = connection_for_address(addr);
+    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_CLASSIC);
     if (conn) {
         connectionSetAuthenticationFlags(conn, flags);
         hci_connection_timestamp(conn);
@@ -534,6 +528,7 @@ static void event_handler(uint8_t *packet, int size){
     }
 
     bd_addr_t addr;
+    bd_addr_type_t addr_type;
     uint8_t link_type;
     hci_con_handle_t handle;
     hci_connection_t * conn;
@@ -625,9 +620,9 @@ static void event_handler(uint8_t *packet, int size){
             link_type = packet[11];
             log_info("Connection_incoming: %s, type %u\n", bd_addr_to_str(addr), link_type);
             if (link_type == 1) { // ACL
-                conn = connection_for_address(addr);
+                conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_CLASSIC);
                 if (!conn) {
-                    conn = create_connection_for_addr(addr);
+                    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
                 }
                 if (!conn) {
                     // CONNECTION REJECTED DUE TO LIMITED RESOURCES (0X0D)
@@ -648,7 +643,8 @@ static void event_handler(uint8_t *packet, int size){
             // Connection management
             bt_flip_addr(addr, &packet[5]);
             log_info("Connection_complete (status=%u) %s\n", packet[2], bd_addr_to_str(addr));
-            conn = connection_for_address(addr);
+            addr_type = BD_ADDR_TYPE_CLASSIC;
+            conn = hci_connection_for_bd_addr_and_type(&addr, addr_type);
             if (conn) {
                 if (!packet[2]){
                     conn->state = OPEN;
@@ -709,7 +705,7 @@ static void event_handler(uint8_t *packet, int size){
             
         case HCI_EVENT_LINK_KEY_NOTIFICATION: {
             bt_flip_addr(addr, &packet[2]);
-            conn = connection_for_address(addr);
+            conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_CLASSIC);
             if (!conn) break;
             conn->authentication_flags |= RECV_LINK_KEY_NOTIFICATION;
             link_key_type_t link_key_type = packet[24];
@@ -850,9 +846,10 @@ static void event_handler(uint8_t *packet, int size){
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                     // Connection management
                     bt_flip_addr(addr, &packet[8]);
-                    log_info("LE Connection_complete (status=%u) %s\n", packet[3], bd_addr_to_str(addr));
+                    addr_type = packet[7];
+                    log_info("LE Connection_complete (status=%u) type %u, %s\n", packet[3], addr_type, bd_addr_to_str(addr));
                     // LE connections are auto-accepted, so just create a connection if there isn't one already
-                    conn = connection_for_address(addr);
+                    conn = hci_connection_for_bd_addr_and_type(&addr, addr_type);
                     if (packet[3]){
                         if (conn){
                             // outgoing connection failed, remove entry
@@ -867,7 +864,7 @@ static void event_handler(uint8_t *packet, int size){
                         break;
                     }
                     if (!conn){
-                        conn = create_connection_for_addr(addr);
+                        conn = create_connection_for_bd_addr_and_type(addr, addr_type);
                     }
                     if (!conn){
                         // no memory
@@ -1656,9 +1653,9 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
         bt_flip_addr(addr, &packet[3]);
         log_info("Create_connection to %s\n", bd_addr_to_str(addr));
 
-        conn = connection_for_address(addr);
+        conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_CLASSIC);
         if (!conn){
-            conn = create_connection_for_addr(addr);
+            conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
             if (!conn){
                 // notify client that alloc failed
                 hci_emit_connection_complete(conn, BTSTACK_MEMORY_ALLOC_FAILED);
@@ -1700,7 +1697,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     if (IS_COMMAND(packet, hci_pin_code_request_negative_reply)
     ||  IS_COMMAND(packet, hci_pin_code_request_reply)){
         bt_flip_addr(addr, &packet[3]);
-        conn = connection_for_address(addr);
+        conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_CLASSIC);
         if (conn){
             connectionClearAuthenticationFlags(conn, LEGACY_PAIRING_ACTIVE);
         }
@@ -1711,7 +1708,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     ||  IS_COMMAND(packet, hci_user_passkey_request_negative_reply)
     ||  IS_COMMAND(packet, hci_user_passkey_request_reply)) {
         bt_flip_addr(addr, &packet[3]);
-        conn = connection_for_address(addr);
+        conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_CLASSIC);
         if (conn){
             connectionClearAuthenticationFlags(conn, SSP_PAIRING_ACTIVE);
         }
@@ -2023,7 +2020,7 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
 int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required){
 
     // create connection state machine
-    hci_connection_t * connection = create_connection_for_addr(device);
+    hci_connection_t * connection = create_connection_for_bd_addr_and_type(device, BD_ADDR_TYPE_CLASSIC);
 
     if (!connection){
         return BTSTACK_MEMORY_ALLOC_FAILED;

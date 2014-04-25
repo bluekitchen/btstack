@@ -264,6 +264,9 @@ typedef struct {
     // module handle
     hci_con_handle_t con_handle;
 
+    // le public, le random, classic
+    bd_addr_type_t address_type;
+
     // connection state
     CONNECTION_STATE state;
     
@@ -403,7 +406,7 @@ uint8_t* hci_get_outgoing_packet_buffer(void);
     
 bd_addr_t * hci_local_bd_addr(void);
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle);
-hci_connection_t * hci_connection_for_bd_addr(bd_addr_t *addr);
+hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t *addr, bd_addr_type_t addr_type);
 uint8_t  hci_number_outgoing_packets(hci_con_handle_t handle);
 uint8_t  hci_number_free_acl_slots(void);
 int      hci_authentication_active_for_handle(hci_con_handle_t handle);

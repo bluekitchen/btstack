@@ -355,6 +355,16 @@ extern "C" {
 #define SSP_IO_AUTHREQ_MITM_PROTECTION_REQUIRED_GENERAL_BONDING 0x05
 
 /**
+ * Address types
+ * @note: BTstack uses a custom addr type to refer to classic devices
+ */
+ typedef enum {
+ 	BD_ADDR_TYPE_LE_PUBLIC = 0,
+ 	BD_ADDR_TYPE_LE_RANDOM = 1,
+ 	BD_ADDR_TYPE_CLASSIC   = 0xff
+ } bd_addr_type_t;
+
+/**
  *  Hardware state of Bluetooth controller 
  */
 typedef enum {

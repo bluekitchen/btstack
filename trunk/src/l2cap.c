@@ -725,7 +725,7 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     linked_list_add(&l2cap_channels, (linked_item_t *) chan);
     
     // check if hci connection is already usable
-    hci_connection_t * conn = hci_connection_for_bd_addr((bd_addr_t*)address);
+    hci_connection_t * conn = hci_connection_for_bd_addr_and_type((bd_addr_t*)address, BD_ADDR_TYPE_CLASSIC);
     if (conn){
         log_info("l2cap_create_channel_internal, hci connection already exists");
         l2cap_handle_connection_complete(conn->con_handle, chan);
