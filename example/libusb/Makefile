@@ -31,6 +31,7 @@ COMMON = \
 
 ATT	= \
     ${BTSTACK_ROOT}/ble/att.c 				 	    \
+    ${BTSTACK_ROOT}/ble/att_dispatch.c       	    \
     ${BTSTACK_ROOT}/ble/att_server.c        	    \
 
 CC2564 = \
