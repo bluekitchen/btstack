@@ -1281,7 +1281,7 @@ static void report_gatt_all_characteristic_descriptors(gatt_client_t * periphera
 
 }
 
-static void trigger_next_query(gatt_client_t * peripheral, uint16_t last_result_handle, peripheral_state_t next_query_state, uint8_t complete_event_type){
+static void trigger_next_query(gatt_client_t * peripheral, uint16_t last_result_handle, gatt_client_state_t next_query_state, uint8_t complete_event_type){
     if (last_result_handle < peripheral->end_group_handle){
         peripheral->start_group_handle = last_result_handle + 1;
         peripheral->state = next_query_state;
@@ -1317,7 +1317,7 @@ static inline void trigger_next_characteristic_descriptor_query(gatt_client_t * 
     trigger_next_query(peripheral, last_result_handle, P_W2_SEND_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY, GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_COMPLETE);
 }
 
-static inline void trigger_next_prepare_write_query(gatt_client_t * peripheral, peripheral_state_t next_query_state, peripheral_state_t done_state){
+static inline void trigger_next_prepare_write_query(gatt_client_t * peripheral, gatt_client_state_t next_query_state, gatt_client_state_t done_state){
     peripheral->attribute_offset += write_blob_length(peripheral);
     uint16_t next_blob_length =  write_blob_length(peripheral);
     
@@ -1328,7 +1328,7 @@ static inline void trigger_next_prepare_write_query(gatt_client_t * peripheral, 
     peripheral->state = next_query_state;
 }
 
-static inline void trigger_next_blob_query(gatt_client_t * peripheral, peripheral_state_t next_query_state, uint8_t done_event, uint16_t received_blob_length){
+static inline void trigger_next_blob_query(gatt_client_t * peripheral, gatt_client_state_t next_query_state, uint8_t done_event, uint16_t received_blob_length){
     
     uint16_t max_blob_length = peripheral->mtu - 1;
     if (received_blob_length < max_blob_length){
