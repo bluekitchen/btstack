@@ -25,6 +25,7 @@
 
 static bd_addr_t test_device_addr = {0x34, 0xb1, 0xf7, 0xd1, 0x77, 0x9b};
 static gatt_client_t test_device;
+static gatt_client_t test_le_central_context;
 
 
 typedef enum {
@@ -155,9 +156,14 @@ static void handle_le_central_event(le_central_event_t * event){
 			advertisement_received = 1;
 			verify_advertisement((ad_event_t *) event);
 			break;
-		case GATT_CONNECTION_COMPLETE:
+		case GATT_CONNECTION_COMPLETE: {
 			connected = 1;
+
+            le_peripheral_event_t * peripheral_event = (le_peripheral_event_t *) event;
+            uint16_t handle = peripheral_event->device->handle;
+            gatt_client_start(&test_device, handle);
 			break;
+        }
 		case GATT_SERVICE_QUERY_RESULT:
             services[result_index++] = ((le_service_event_t *) event)->service;
             break;
@@ -367,12 +373,12 @@ extern "C" uint16_t att_read_callback(uint16_t handle, uint16_t offset, uint8_t 
 TEST_GROUP(GATTClient){
 	int acl_buffer_size;
     uint8_t acl_buffer[27];
-
+    
 	void connect(){
-		le_central_connect(&test_device, 1, test_device_addr);
+		le_central_connect(&test_le_central_context, 1, test_device_addr);
 		mock_simulate_connected();
-		mock_simulate_exchange_mtu();
 		CHECK(connected);
+		mock_simulate_exchange_mtu();
 	}
 
 	void setup(){

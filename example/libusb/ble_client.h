@@ -80,6 +80,7 @@ typedef enum{
     
 
 typedef enum{
+    P_IDLE,
     P_W2_CONNECT,
     P_W4_CONNECTED,
     P_CONNECTED,
@@ -277,6 +278,10 @@ le_command_status_t le_central_stop_scan();
 le_command_status_t  le_central_connect(gatt_client_t *context, uint8_t addr_type, bd_addr_t addr);
 le_command_status_t  le_central_disconnect(gatt_client_t *context);
 
+// start/stop gatt client
+void gatt_client_start(gatt_client_t *context, uint16_t handle);
+void gatt_client_stop(gatt_client_t *context);
+    
 // returns primary services
 le_command_status_t gatt_client_discover_primary_services(gatt_client_t *context);
 // { type (8), gatt_client_t *context, le_service * }
