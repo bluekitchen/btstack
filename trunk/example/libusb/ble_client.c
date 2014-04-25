@@ -330,16 +330,16 @@ static gatt_client_t * get_peripheral_for_handle(uint16_t handle){
     return NULL;
 }
 
-static gatt_client_t * get_peripheral_with_state(peripheral_state_t p_state){
-    linked_item_t *it;
-    for (it = (linked_item_t *) le_connections; it ; it = it->next){
-        gatt_client_t * peripheral = (gatt_client_t *) it;
-        if (peripheral->state == p_state){
-            return peripheral;
-        }
-    }
-    return NULL;
-}
+//static gatt_client_t * get_peripheral_with_state(peripheral_state_t p_state){
+//    linked_item_t *it;
+//    for (it = (linked_item_t *) le_connections; it ; it = it->next){
+//        gatt_client_t * peripheral = (gatt_client_t *) it;
+//        if (peripheral->state == p_state){
+//            return peripheral;
+//        }
+//    }
+//    return NULL;
+//}
 
 static gatt_client_t * get_peripheral_with_address(uint8_t addr_type, bd_addr_t addr){
     linked_item_t *it;
@@ -353,12 +353,23 @@ static gatt_client_t * get_peripheral_with_address(uint8_t addr_type, bd_addr_t 
 }
 
 
-static inline gatt_client_t * get_peripheral_w4_connect_cancelled(){
-    return get_peripheral_with_state(P_W4_CONNECT_CANCELLED);
+static gatt_client_t * get_le_central_with_state(le_central_state_t p_state){
+    linked_item_t *it;
+    for (it = (linked_item_t *) le_connections; it ; it = it->next){
+        gatt_client_t * peripheral = (gatt_client_t *) it;
+        if (peripheral->le_central_state == p_state){
+            return peripheral;
+        }
+    }
+    return NULL;
 }
 
-static inline gatt_client_t * get_peripheral_w4_connected(){
-    return get_peripheral_with_state(P_W4_CONNECTED);
+static inline gatt_client_t * get_le_central_w4_connect_cancelled(){
+    return get_le_central_with_state(P_W4_CONNECT_CANCELLED);
+}
+
+static inline gatt_client_t * get_le_central_w4_connected(){
+    return get_le_central_with_state(P_W4_CONNECTED);
 }
 
 
@@ -392,10 +403,10 @@ static void handle_advertising_packet(uint8_t *packet, int size){
 static void gatt_client_handle_peripheral_list(){
     // printf("handle_peripheral_list 1\n");
     // only one connect is allowed, wait for result
-    if (get_peripheral_w4_connected()) return;
+    if (get_le_central_w4_connected()) return;
     // printf("handle_peripheral_list 2\n");
     // only one cancel connect is allowed, wait for result
-    if (get_peripheral_w4_connect_cancelled()) return;
+    if (get_le_central_w4_connect_cancelled()) return;
     // printf("handle_peripheral_list 3\n");
 
     if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
@@ -549,10 +560,10 @@ static void gatt_client_handle_peripheral_list(){
 static void le_central_handle_peripheral_list(){
     // printf("handle_peripheral_list 1\n");
     // only one connect is allowed, wait for result
-    if (get_peripheral_w4_connected()) return;
+    if (get_le_central_w4_connected()) return;
     // printf("handle_peripheral_list 2\n");
     // only one cancel connect is allowed, wait for result
-    if (get_peripheral_w4_connect_cancelled()) return;
+    if (get_le_central_w4_connect_cancelled()) return;
     // printf("handle_peripheral_list 3\n");
     
     if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
@@ -566,9 +577,9 @@ static void le_central_handle_peripheral_list(){
         gatt_client_t * peripheral = (gatt_client_t *) it;
         // printf("handle_peripheral_list, status %u\n", peripheral->state);
         
-        switch (peripheral->state){
+        switch (peripheral->le_central_state){
             case P_W2_CONNECT:
-                peripheral->state = P_W4_CONNECTED;
+                peripheral->le_central_state = P_W4_CONNECTED;
                 hci_send_cmd(&hci_le_create_connection,
                              1000,      // scan interval: 625 ms
                              1000,      // scan interval: 625 ms
@@ -586,12 +597,12 @@ static void le_central_handle_peripheral_list(){
                 return;
                 
             case P_W2_CANCEL_CONNECT:
-                peripheral->state = P_W4_CONNECT_CANCELLED;
+                peripheral->le_central_state = P_W4_CONNECT_CANCELLED;
                 hci_send_cmd(&hci_le_create_connection_cancel);
                 return;
                 
             case P_W2_DISCONNECT:
-                peripheral->state = P_W4_DISCONNECTED;
+                peripheral->le_central_state = P_W4_DISCONNECTED;
                 hci_send_cmd(&hci_disconnect, peripheral->handle,0x13);
                 return;
                 
@@ -630,10 +641,10 @@ le_command_status_t le_central_connect(gatt_client_t *context, uint8_t addr_type
     gatt_client_t * peripheral = get_peripheral_with_address(addr_type, addr);
     if (!peripheral) {
         le_peripheral_init(context, addr_type, addr);
-        context->state = P_W2_CONNECT;
+        context->le_central_state = P_W2_CONNECT;
         linked_list_add(&le_connections, (linked_item_t *) context);
     } else if (peripheral == context) {
-        if (context->state != P_W2_CONNECT) return BLE_PERIPHERAL_IN_WRONG_STATE;
+        if (context->le_central_state != P_W2_CONNECT) return BLE_PERIPHERAL_IN_WRONG_STATE;
     } else {
         return BLE_PERIPHERAL_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS;
     }
@@ -648,7 +659,7 @@ le_command_status_t le_central_disconnect(gatt_client_t *context){
         return BLE_PERIPHERAL_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS;
     }
 
-    switch(context->state){
+    switch(context->le_central_state){
         case P_W2_CONNECT:
             linked_list_remove(&le_connections, (linked_item_t *) context);
             send_gatt_complete_event(peripheral, GATT_CONNECTION_COMPLETE, 0);
@@ -656,13 +667,13 @@ le_command_status_t le_central_disconnect(gatt_client_t *context){
         case P_W4_CONNECTED:
         case P_W2_CANCEL_CONNECT:
             // trigger cancel connect
-            context->state = P_W2_CANCEL_CONNECT;
+            context->le_central_state = P_W2_CANCEL_CONNECT;
             break;
         case P_W4_DISCONNECTED:
         case P_W4_CONNECT_CANCELLED: 
             return BLE_PERIPHERAL_IN_WRONG_STATE;
         default:
-            context->state = P_W2_DISCONNECT;
+            context->le_central_state = P_W2_DISCONNECT;
             break;
     }  
     gatt_client_run();    
@@ -803,7 +814,7 @@ le_command_status_t gatt_client_read_long_value_of_characteristic(gatt_client_t 
 }
 
 static int is_connected(gatt_client_t * peripheral){
-    switch (peripheral->state) {
+    switch (peripheral->le_central_state) {
         case P_W2_CONNECT:
         case P_W4_CONNECTED:
         case P_W2_CANCEL_CONNECT:
@@ -817,6 +828,8 @@ static int is_connected(gatt_client_t * peripheral){
 }
 
 le_command_status_t gatt_client_write_value_of_characteristic_without_response(gatt_client_t *peripheral, uint16_t value_handle, uint16_t value_length, uint8_t * value){
+    if (peripheral->state != P_READY) return BLE_PERIPHERAL_IN_WRONG_STATE;
+    
     if (value_length >= peripheral->mtu - 3) return BLE_VALUE_TOO_LONG;
     if (!is_connected(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
     att_write_request(ATT_WRITE_COMMAND, peripheral->handle, value_handle, value_length, value);
@@ -991,8 +1004,8 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
                 if (packet[3] != 0x0B) break;
 
                 // cancel connection failed, as connection already established
-                gatt_client_t * peripheral = get_peripheral_w4_connect_cancelled();
-                peripheral->state = P_W2_DISCONNECT;
+                gatt_client_t * peripheral = get_le_central_w4_connect_cancelled();
+                peripheral->le_central_state = P_W2_DISCONNECT;
                 break;
             }
             break;  
@@ -1003,7 +1016,7 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
             gatt_client_t * peripheral = get_peripheral_for_handle(handle);
             if (!peripheral) break;
 
-            peripheral->state = P_W2_CONNECT;
+            peripheral->le_central_state = P_W2_CONNECT;
             linked_list_remove(&le_connections, (linked_item_t *) peripheral);
             send_gatt_complete_event(peripheral, GATT_CONNECTION_COMPLETE, packet[5]);
             // printf("Peripheral disconnected, and removed from list\n");
@@ -1021,19 +1034,19 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
                     gatt_client_t * peripheral;
 
                     // conn success/error?
-                    peripheral = get_peripheral_w4_connected();
+                    peripheral = get_le_central_w4_connected();
                     if (peripheral){
                         if (packet[3]){
                             linked_list_remove(&le_connections, (linked_item_t *) peripheral);
                         } else {
-                            peripheral->state = P_CONNECTED;
+                            peripheral->le_central_state = P_CONNECTED;
                             peripheral->state = P_READY;
                             peripheral->handle = READ_BT_16(packet, 4);
                         }
                         break;
                     } 
                     // cancel success?
-                    peripheral = get_peripheral_w4_connect_cancelled();
+                    peripheral = get_le_central_w4_connect_cancelled();
                     if (!peripheral) break;
                     linked_list_remove(&le_connections, (linked_item_t *) peripheral);
                     send_gatt_complete_event(peripheral, GATT_CONNECTION_COMPLETE, packet[3]);
@@ -1296,9 +1309,9 @@ static inline void trigger_next_characteristic_query(gatt_client_t * peripheral,
     trigger_next_query(peripheral, last_result_handle, P_W2_SEND_CHARACTERISTIC_QUERY, GATT_CHARACTERISTIC_QUERY_COMPLETE);
 }
 
-static inline void trigger_next_characteristic_by_uuid_query(gatt_client_t * peripheral, uint16_t last_result_handle){
-    trigger_next_query(peripheral, last_result_handle, P_W2_SEND_INCLUDED_SERVICE_WITH_UUID_QUERY, GATT_CHARACTERISTIC_QUERY_COMPLETE);
-}
+//static inline void trigger_next_characteristic_by_uuid_query(gatt_client_t * peripheral, uint16_t last_result_handle){
+//    trigger_next_query(peripheral, last_result_handle, P_W2_SEND_INCLUDED_SERVICE_WITH_UUID_QUERY, GATT_CHARACTERISTIC_QUERY_COMPLETE);
+//}
 
 static inline void trigger_next_characteristic_descriptor_query(gatt_client_t * peripheral, uint16_t last_result_handle){
     trigger_next_query(peripheral, last_result_handle, P_W2_SEND_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY, GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_COMPLETE);
@@ -1647,11 +1660,11 @@ static void dump_descriptor(le_characteristic_descriptor_t * descriptor){
     printUUID(descriptor->uuid128, descriptor->uuid16);
 }
 
-static void dump_characteristic_value(le_characteristic_value_event_t * event){
-    printf("    *** characteristic value of length %d *** ", event->characteristic_value_blob_length);
-    hexdump2(event->characteristic_value, event->characteristic_value_blob_length);
-    printf("\n");
-}
+//static void dump_characteristic_value(le_characteristic_value_event_t * event){
+//    printf("    *** characteristic value of length %d *** ", event->characteristic_value_blob_length);
+//    hexdump2(event->characteristic_value, event->characteristic_value_blob_length);
+//    printf("\n");
+//}
 
 
 gatt_client_t test_device;
