@@ -172,7 +172,7 @@ typedef struct le_peripheral_connection{
 
 typedef struct gatt_client{
     linked_item_t    item;
-    gatt_client_state_t state;
+    gatt_client_state_t gatt_client_state;
     le_central_state_t le_central_state;
     
     uint16_t handle;
