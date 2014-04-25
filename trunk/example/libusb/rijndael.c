@@ -3,18 +3,15 @@
 // License: Public Domain, 
 // Author:  Philip J. Erdelsky
 
+#include <stdint.h>
+
 #define FULL_UNROLL
 
 #include "rijndael.h"
-// #include "KILL_DEBUGGER.h"
 #define KILL_DEBUGGER()
 
-typedef unsigned long u32;
-typedef unsigned char u8;
-
-int rijndaelStartOfCode(){
-	return 1;
-}
+typedef uint32_t u32;
+typedef uint8_t   u8;
 
 static const u32 Te0[256] =
 {
@@ -854,7 +851,6 @@ int rijndaelSetupDecrypt(u32 *rk, const u8 *key, int keybits)
 void rijndaelEncrypt(const u32 *rk, int nrounds, const u8 plaintext[16],
   u8 ciphertext[16])
 {
-	KILL_DEBUGGER();
 
   u32 s0, s1, s2, s3, t0, t1, t2, t3;
   #ifndef FULL_UNROLL
@@ -1034,7 +1030,6 @@ void rijndaelEncrypt(const u32 *rk, int nrounds, const u8 plaintext[16],
     rk[3];
   PUTU32(ciphertext + 12, s3);
 
-	KILL_DEBUGGER();
 
 }
 
@@ -1042,7 +1037,6 @@ void rijndaelDecrypt(const u32 *rk, int nrounds, const u8 ciphertext[16],
   u8 plaintext[16])
 {
 
-	KILL_DEBUGGER();
 
 	
 u32 s0, s1, s2, s3, t0, t1, t2, t3;
@@ -1225,10 +1219,5 @@ u32 s0, s1, s2, s3, t0, t1, t2, t3;
 
 	PUTU32(plaintext + 12, s3);
 	
-	KILL_DEBUGGER();
 
-}
-
-int rijndaelEndOfCode(){
-	return 1;
 }
