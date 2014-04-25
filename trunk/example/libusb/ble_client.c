@@ -349,8 +349,16 @@ static void send_gatt_read_characteristic_descriptor_request(gatt_client_t * per
     att_read_request(ATT_READ_REQUEST, peripheral->handle, peripheral->attribute_handle);
 }
 
+static inline void send_le_central_connection_complete_event(le_central_t * peripheral, uint8_t type, uint8_t status){
+    le_central_connection_complete_event_t event;
+    event.type = type;
+    event.device = peripheral;
+    event.status = status;
+    (*le_central_callback_old)((le_central_event_t*)&event);
+}
+
 static inline void send_gatt_complete_event(gatt_client_t * peripheral, uint8_t type, uint8_t status){
-    le_peripheral_event_t event;
+    gatt_complete_event_t event;
     event.type = type;
     event.device = peripheral;
     event.status = status;
@@ -368,10 +376,10 @@ static gatt_client_t * get_gatt_client_context_for_handle(uint16_t handle){
     return NULL;
 }
 
-static gatt_client_t * get_le_central_context_for_handle(uint16_t handle){
+static le_central_t * get_le_central_context_for_handle(uint16_t handle){
     linked_item_t *it;
     for (it = (linked_item_t *) le_central_connections; it ; it = it->next){
-        gatt_client_t * peripheral = (gatt_client_t *) it;
+        le_central_t * peripheral = (le_central_t *) it;
         if (peripheral->handle == handle){
             return peripheral;
         }
@@ -390,10 +398,10 @@ static gatt_client_t * get_le_central_context_for_handle(uint16_t handle){
 //    return NULL;
 //}
 
-static gatt_client_t * get_le_central_context_with_address(uint8_t addr_type, bd_addr_t addr){
+static le_central_t * get_le_central_context_with_address(uint8_t addr_type, bd_addr_t addr){
     linked_item_t *it;
     for (it = (linked_item_t *) le_central_connections; it ; it = it->next){
-        gatt_client_t * peripheral = (gatt_client_t *) it;
+        le_central_t * peripheral = (le_central_t *) it;
         if (BD_ADDR_CMP(addr, peripheral->address) == 0 && peripheral->address_type == addr_type){
             return peripheral;
         }
@@ -402,10 +410,10 @@ static gatt_client_t * get_le_central_context_with_address(uint8_t addr_type, bd
 }
 
 
-static gatt_client_t * get_le_central_context_with_state(le_central_state_t p_state){
+static le_central_t * get_le_central_context_with_state(le_central_state_t p_state){
     linked_item_t *it;
     for (it = (linked_item_t *) le_central_connections; it ; it = it->next){
-        gatt_client_t * peripheral = (gatt_client_t *) it;
+        le_central_t * peripheral = (le_central_t *) it;
         if (peripheral->le_central_state == p_state){
             return peripheral;
         }
@@ -413,11 +421,11 @@ static gatt_client_t * get_le_central_context_with_state(le_central_state_t p_st
     return NULL;
 }
 
-static inline gatt_client_t * get_le_central_w4_connect_cancelled(){
+static inline le_central_t * get_le_central_w4_connect_cancelled(){
     return get_le_central_context_with_state(P_W4_CONNECT_CANCELLED);
 }
 
-static inline gatt_client_t * get_le_central_w4_connected(){
+static inline le_central_t * get_le_central_w4_connected(){
     return get_le_central_context_with_state(P_W4_CONNECTED);
 }
 
@@ -620,7 +628,7 @@ static void le_central_handle_context_list(){
     // printf("handle_peripheral_list empty %u\n", linked_list_empty(&le_connections));
     linked_item_t *it;
     for (it = (linked_item_t *) le_central_connections; it ; it = it->next){
-        gatt_client_t * peripheral = (gatt_client_t *) it;
+        le_central_t * peripheral = (le_central_t *) it;
         // printf("handle_peripheral_list, status %u\n", peripheral->state);
         
         switch (peripheral->le_central_state){
@@ -675,17 +683,16 @@ le_command_status_t le_central_stop_scan(){
     return BLE_PERIPHERAL_OK;
 }
 
-static void le_central_context_init(gatt_client_t *context, uint8_t addr_type, bd_addr_t addr){
-    memset(context, 0, sizeof(gatt_client_t));
+static void le_central_context_init(le_central_t *context, uint8_t addr_type, bd_addr_t addr){
+    memset(context, 0, sizeof(le_central_t));
     context->address_type = addr_type;
     memcpy (context->address, addr, 6);
-    context->mtu_state = SEND_MTU_EXCHANGE;
 }
 
 
-le_command_status_t le_central_connect(gatt_client_t *context, uint8_t addr_type, bd_addr_t addr){
+le_command_status_t le_central_connect(le_central_t *context, uint8_t addr_type, bd_addr_t addr){
     //TODO: align with hci connection list capacity
-    gatt_client_t * peripheral = get_le_central_context_with_address(addr_type, addr);
+    le_central_t * peripheral = get_le_central_context_with_address(addr_type, addr);
     if (!peripheral) {
         le_central_context_init(context, addr_type, addr);
         context->le_central_state = P_W2_CONNECT;
@@ -700,8 +707,8 @@ le_command_status_t le_central_connect(gatt_client_t *context, uint8_t addr_type
 }
 
 
-le_command_status_t le_central_disconnect(gatt_client_t *context){
-    gatt_client_t * peripheral = get_le_central_context_with_address(context->address_type, context->address);
+le_command_status_t le_central_disconnect(le_central_t *context){
+    le_central_t * peripheral = get_le_central_context_with_address(context->address_type, context->address);
     if (!peripheral || (peripheral && peripheral != context)){
         return BLE_PERIPHERAL_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS;
     }
@@ -709,8 +716,8 @@ le_command_status_t le_central_disconnect(gatt_client_t *context){
     switch(context->le_central_state){
         case P_W2_CONNECT:
             linked_list_remove(&le_central_connections, (linked_item_t *) context);
-            send_gatt_complete_event(peripheral, GATT_CONNECTION_COMPLETE, 0);
-            break; 
+            send_le_central_connection_complete_event(peripheral, GATT_CONNECTION_COMPLETE, 0);
+            break;
         case P_W4_CONNECTED:
         case P_W2_CANCEL_CONNECT:
             // trigger cancel connect
@@ -860,25 +867,10 @@ le_command_status_t gatt_client_read_long_value_of_characteristic(gatt_client_t 
     return gatt_client_read_long_value_of_characteristic_using_value_handle(peripheral, characteristic->value_handle);
 }
 
-static int is_connected(gatt_client_t * peripheral){
-    switch (peripheral->le_central_state) {
-        case P_W2_CONNECT:
-        case P_W4_CONNECTED:
-        case P_W2_CANCEL_CONNECT:
-        case P_W4_CONNECT_CANCELLED:
-        case P_W2_DISCONNECT:
-        case P_W4_DISCONNECTED:
-            return 0;
-        default:
-            return 1;
-    }
-}
-
 le_command_status_t gatt_client_write_value_of_characteristic_without_response(gatt_client_t *peripheral, uint16_t value_handle, uint16_t value_length, uint8_t * value){
     if (peripheral->gatt_client_state != P_READY) return BLE_PERIPHERAL_IN_WRONG_STATE;
-    
     if (value_length >= peripheral->mtu - 3) return BLE_VALUE_TOO_LONG;
-    if (!is_connected(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
+    
     att_write_request(ATT_WRITE_COMMAND, peripheral->handle, value_handle, value_length, value);
     return BLE_PERIPHERAL_OK;
 }
@@ -1041,7 +1033,7 @@ static void le_packet_handler(void * connection, uint8_t packet_type, uint16_t c
                 if (packet[3] != 0x0B) break;
                 
                 // cancel connection failed, as connection already established
-                gatt_client_t * peripheral = get_le_central_w4_connect_cancelled();
+                le_central_t * peripheral = get_le_central_w4_connect_cancelled();
                 peripheral->le_central_state = P_W2_DISCONNECT;
                 break;
             }
@@ -1049,14 +1041,14 @@ static void le_packet_handler(void * connection, uint8_t packet_type, uint16_t c
         case HCI_EVENT_DISCONNECTION_COMPLETE:
         {
             uint16_t handle = READ_BT_16(packet,3);
-            gatt_client_t * peripheral = get_le_central_context_for_handle(handle);
+            le_central_t * peripheral = get_le_central_context_for_handle(handle);
             if (!peripheral) break;
             
             peripheral->le_central_state = P_IDLE;
             linked_list_remove(&le_central_connections, (linked_item_t *) peripheral);
             
             // TODO shouldn't we send some kind of disconnect complete?
-            send_gatt_complete_event(peripheral, GATT_CONNECTION_COMPLETE, packet[5]);
+            send_le_central_connection_complete_event(peripheral, GATT_CONNECTION_COMPLETE, packet[5]);
             // printf("Peripheral disconnected, and removed from list\n");
             break;
         }
@@ -1068,10 +1060,7 @@ static void le_packet_handler(void * connection, uint8_t packet_type, uint16_t c
                     break;
                     
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE: {
-                    gatt_client_t * peripheral;
-                    
-                    // conn success/error?
-                    peripheral = get_le_central_w4_connected();
+                    le_central_t * peripheral = get_le_central_w4_connected();
                     if (peripheral){
                         if (packet[3]){
                             peripheral->le_central_state = P_IDLE;
@@ -1080,14 +1069,14 @@ static void le_packet_handler(void * connection, uint8_t packet_type, uint16_t c
                             peripheral->le_central_state = P_CONNECTED;
                             peripheral->handle = READ_BT_16(packet, 4);
                         }
-                        send_gatt_complete_event(peripheral, GATT_CONNECTION_COMPLETE, packet[3]);
+                        send_le_central_connection_complete_event(peripheral, GATT_CONNECTION_COMPLETE, packet[3]);
                         break;
                     }
                     // cancel success?
                     peripheral = get_le_central_w4_connect_cancelled();
                     if (!peripheral) break;
                     linked_list_remove(&le_central_connections, (linked_item_t *) peripheral);
-                    send_gatt_complete_event(peripheral, GATT_CONNECTION_COMPLETE, packet[3]);
+                    send_le_central_connection_complete_event(peripheral, GATT_CONNECTION_COMPLETE, packet[3]);
                     break;
                 }
                 default:
@@ -1738,7 +1727,7 @@ static void dump_descriptor(le_characteristic_descriptor_t * descriptor){
 //}
 
 
-gatt_client_t test_device;
+le_central_t test_device;
 gatt_client_t test_gatt_client_context;
 
 le_service_t services[40];
@@ -2310,7 +2299,7 @@ static void handle_le_central_event(le_central_event_t * event){
             printf("\n test client - CONNECTED, query ACC service\n");
             
             // create gatt client context for this
-            le_peripheral_event_t * peripheral_event = (le_peripheral_event_t *) event;
+            le_central_connection_complete_event_t * peripheral_event = (le_central_connection_complete_event_t *) event;
             uint16_t handle = peripheral_event->device->handle;
             gatt_client_start(&test_gatt_client_context, handle);
             

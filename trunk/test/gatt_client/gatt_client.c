@@ -25,7 +25,7 @@
 
 static bd_addr_t test_device_addr = {0x34, 0xb1, 0xf7, 0xd1, 0x77, 0x9b};
 static gatt_client_t test_device;
-static gatt_client_t test_le_central_context;
+static le_central_t test_le_central_context;
 
 
 typedef enum {
@@ -159,7 +159,7 @@ static void handle_le_central_event(le_central_event_t * event){
 		case GATT_CONNECTION_COMPLETE: {
 			connected = 1;
 
-            le_peripheral_event_t * peripheral_event = (le_peripheral_event_t *) event;
+            le_central_connection_complete_event_t * peripheral_event = (le_central_connection_complete_event_t *) event;
             uint16_t handle = peripheral_event->device->handle;
             gatt_client_start(&test_device, handle);
 			break;
