@@ -15,6 +15,7 @@ static void (*gatt_central_packet_handler) (void * connection, uint8_t packet_ty
 
 static const uint16_t max_mtu = 23;
 static uint8_t  l2cap_stack_buffer[max_mtu];
+uint16_t gatt_client_handle = 0x40;
 
 void mock_simulate_command_complete(const hci_cmd_t *cmd){
 	uint8_t packet[] = {HCI_EVENT_COMMAND_COMPLETE, 4, 1, cmd->opcode & 0xff, cmd->opcode >> 8, 0};
@@ -35,11 +36,6 @@ void mock_simulate_connected(){
 void mock_simulate_scan_response(){
 	uint8_t packet[] = {0x3E, 0x0F, 0x02, 0x01, 0x00, 0x00, 0x9B, 0x77, 0xD1, 0xF7, 0xB1, 0x34, 0x03, 0x02, 0x01, 0x05, 0xBC};
 	gatt_central_packet_handler(NULL, HCI_EVENT_PACKET, NULL, (uint8_t *)&packet, sizeof(packet));
-}
-
-void mock_simulate_exchange_mtu(){
-	// uint8_t packet[] = {0x03, 0x17, 0x00};
-	// att_packet_handler(ATT_DATA_PACKET, 0x40, (uint8_t *)&packet, sizeof(packet));
 }
 
 static void att_init_connection(att_connection_t * att_connection){
@@ -75,6 +71,7 @@ uint16_t l2cap_max_mtu(void){
 
 
 void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id) {
+    // printf("mock: l2cap_register_fixed_channel, use att_packet_handler\n");
 	att_packet_handler = packet_handler;
 }
 
@@ -88,7 +85,6 @@ int l2cap_reserve_packet_buffer(void){
 }
 
 int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){
-	// printf("l2cap_send_prepared_connectionless\n");
 	// assert handle = current connection
 	// assert cid = att 
 
@@ -97,7 +93,7 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
 	uint8_t response[max_mtu];
 	uint16_t response_len = att_handle_request(&att_connection, l2cap_get_outgoing_buffer(), len, &response[0]);
 	if (response_len){
-		att_packet_handler(ATT_DATA_PACKET, 0x40, &response[0], response_len);
+		att_packet_handler(ATT_DATA_PACKET, gatt_client_handle, &response[0], response_len);
 	}
 	return 0;
 }
