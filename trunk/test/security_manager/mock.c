@@ -51,7 +51,12 @@ void aes128_calc_cyphertext(uint8_t key[16], uint8_t plaintext[16], uint8_t cyph
 
 void mock_simulate_hci_event(uint8_t * packet, uint16_t size){
 	hci_dump_packet(HCI_EVENT_PACKET, 1, packet, size);
-	event_packet_handler(NULL, HCI_EVENT_PACKET, NULL, packet, size);
+	if (event_packet_handler){
+		event_packet_handler(NULL, HCI_EVENT_PACKET, NULL, packet, size);
+	}
+	if (le_data_handler){
+		le_data_handler(HCI_EVENT_PACKET, NULL, packet, size);
+	}
 }
 
 void aes128_report_result(){
@@ -154,6 +159,7 @@ void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint1
 }
 
 void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
+	printf("l2cap_register_packet_handler\n");
 	event_packet_handler = handler;
 }
 
