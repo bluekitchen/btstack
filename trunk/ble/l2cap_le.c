@@ -203,10 +203,4 @@ void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint1
             security_protocol_packet_handler = packet_handler;
             break;
     }
-    
-    if (attribute_protocol_packet_handler || security_protocol_packet_handler){
-        hci_connectable_control(1); // new service
-    } else {
-        hci_connectable_control(0); // no services anymore
-    }
 }
