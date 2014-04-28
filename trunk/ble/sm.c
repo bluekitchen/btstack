@@ -1045,204 +1045,8 @@ static void sm_run(void){
     }
 }
 
-static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
+static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
-    if (packet_type != SM_DATA_PACKET) return;
-
-    if (handle != sm_response_handle){
-        printf("sm_packet_handler: packet from handle %u, but expecting from %u\n", handle, sm_response_handle);
-        return;
-    }
-
-    if (packet[0] == SM_CODE_PAIRING_FAILED){
-        sm_state_responding = SM_STATE_IDLE;
-        return;
-    }
-
-    switch (sm_state_responding){
-        
-        // a sm timeout requries a new physical connection
-        case SM_STATE_TIMEOUT:
-            return;
-
-        case SM_STATE_IDLE: {
-            if (packet[0] != SM_CODE_PAIRING_REQUEST){
-                sm_pdu_received_in_wrong_state();
-                break;;
-            }
-
-            // store key distribtion request
-            sm_m_io_capabilities = packet[1];
-            sm_m_have_oob_data = packet[2];
-            sm_m_auth_req = packet[3];
-            sm_m_max_encryption_key_size = packet[4];
-
-            // assert max encryption size above our minimum
-            if (sm_m_max_encryption_key_size < sm_min_encryption_key_size){
-                sm_pairing_failed_reason = SM_REASON_ENCRYPTION_KEY_SIZE;
-                sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
-                break;
-            }
-
-            // min{}
-            sm_actual_encryption_key_size = sm_max_encryption_key_size;
-            if (sm_m_max_encryption_key_size < sm_max_encryption_key_size){
-                sm_actual_encryption_key_size = sm_m_max_encryption_key_size;
-            }
-
-            // setup key distribution
-            sm_m_key_distribution = packet[5];
-            sm_setup_key_distribution(packet[6]);
-
-            // for validate
-            memcpy(sm_m_preq, packet, 7);
-
-            // start SM timeout
-            sm_timeout_start();
-
-            // decide on STK generation method
-            sm_tk_setup();
-            printf("SMP: generation method %u\n", sm_stk_generation_method);
-
-            // check if STK generation method is acceptable by client
-            int ok = 0;
-            switch (sm_stk_generation_method){
-                case JUST_WORKS:
-                    ok = (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_JUST_WORKS) != 0;
-                    break;
-                case PK_RESP_INPUT:
-                case PK_INIT_INPUT:
-                case OK_BOTH_INPUT:
-                    ok = (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_PASSKEY) != 0;
-                    break;
-                case OOB:
-                    ok = (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_OOB) != 0;
-                    break;
-            }
-            if (!ok){
-                sm_pairing_failed_reason = SM_REASON_AUTHENTHICATION_REQUIREMENTS;
-                sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
-                break;
-            }
-
-            // JUST WORKS doens't provide authentication
-            sm_connection_authenticated = sm_stk_generation_method == JUST_WORKS ? 0 : 1;
-
-            // generate random number first, if we need to show passkey
-            if (sm_stk_generation_method == PK_INIT_INPUT){
-                sm_state_responding = SM_STATE_PH2_GET_RANDOM_TK;
-                break;
-            }
-
-            sm_state_responding = SM_STATE_PH1_SEND_PAIRING_RESPONSE;
-            break;            
-        }
-
-        case SM_STATE_PH1_W4_PAIRING_CONFIRM:
-            if (packet[0] != SM_CODE_PAIRING_CONFIRM){
-                sm_pdu_received_in_wrong_state();
-                break;;
-            }
-
-            // received confirm value
-            swap128(&packet[1], sm_m_confirm);
-
-            // notify client to hide shown passkey
-            if (sm_stk_generation_method == PK_INIT_INPUT){
-                sm_notify_client(SM_PASSKEY_DISPLAY_CANCEL, sm_m_addr_type, sm_m_address, 0, 0);
-            }
-
-            // handle user cancel pairing?
-            if (sm_user_response == SM_USER_RESPONSE_DECLINE){
-                sm_pairing_failed_reason = SM_REASON_PASSKEYT_ENTRY_FAILED;
-                sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
-                break;
-            }
-
-            // wait for user action?
-            if (sm_user_response == SM_USER_RESPONSE_PENDING){
-                sm_state_responding = SM_STATE_PH1_W4_USER_RESPONSE;
-                break;
-            }
-
-            // calculate and send s_confirm
-            sm_state_responding = SM_STATE_PH2_C1_GET_RANDOM_A;
-            break;
-
-        case SM_STATE_PH2_W4_PAIRING_RANDOM:
-            if (packet[0] != SM_CODE_PAIRING_RANDOM){
-                sm_pdu_received_in_wrong_state();
-                break;;
-            }
-
-            // received random value
-            swap128(&packet[1], sm_m_random);
-
-            // use aes128 engine
-            // calculate m_confirm using aes128 engine - step 1
-            sm_aes128_set_key(sm_tk);
-            sm_c1_t1(sm_m_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
-            sm_state_responding = SM_STATE_PH2_C1_GET_ENC_C;
-            break;
-
-        case SM_STATE_DISTRIBUTE_KEYS:
-            switch(packet[0]){
-                case SM_CODE_ENCRYPTION_INFORMATION:
-                    sm_key_distribution_received_set |= SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
-                    // swap128(&packet[1], sm_m_ltk);
-                    break;
-
-                case SM_CODE_MASTER_IDENTIFICATION:
-                    sm_key_distribution_received_set |= SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
-                    // sm_m_ediv = READ_BT_16(packet, 1);
-                    // swap64(&packet[3], sm_m_rand);
-                    break;
-
-                case SM_CODE_IDENTITY_INFORMATION:
-                    sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
-                    swap128(&packet[1], sm_m_irk);
-                    break;
-
-                case SM_CODE_IDENTITY_ADDRESS_INFORMATION:
-                    sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
-                    // note: we don't update addr_type and address as higher layer would get confused
-                    // note: if needed, we could use a different variable pair
-                    // sm_m_addr_type = packet[1];
-                    // BD_ADDR_COPY(sm_m_address, &packet[2]); 
-                    break;
-
-                case SM_CODE_SIGNING_INFORMATION:
-                    sm_key_distribution_received_set |= SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
-                    swap128(&packet[1], sm_m_csrk);
-
-                    // store, if: it's a public address, or, we got an IRK
-                    if (sm_m_addr_type == 0 || (sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION)) {
-                        sm_central_device_matched =  central_device_db_add(sm_m_addr_type, sm_m_address, sm_m_irk, sm_m_csrk);
-                        break;
-                    } 
-                    break;
-                default:
-                    // Unexpected PDU
-                    printf("Unexpected PDU %u in SM_STATE_DISTRIBUTE_KEYS\n", packet[0]);
-                    break;
-            }     
-            // done with key distribution?         
-            if (sm_key_distribution_done()){
-                sm_timeout_stop();
-                sm_state_responding = SM_STATE_IDLE; 
-            }
-            break;
-        default:
-            // Unexpected PDU
-            printf("Unexpected PDU %u in state %u\n", packet[0], sm_state_responding);
-            break;
-    }
-
-    // try to send preparared packet
-    sm_run();
-}
-
-static void sm_event_packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     sm_run();
 
     switch (packet_type) {
@@ -1601,6 +1405,207 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
     sm_run();
 }
 
+static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
+
+    if (packet_type == HCI_EVENT_PACKET) {
+        sm_event_packet_handler(packet_type, handle, packet, size);
+        return;
+    }
+
+    if (packet_type != SM_DATA_PACKET) return;
+
+    if (handle != sm_response_handle){
+        printf("sm_packet_handler: packet from handle %u, but expecting from %u\n", handle, sm_response_handle);
+        return;
+    }
+
+    if (packet[0] == SM_CODE_PAIRING_FAILED){
+        sm_state_responding = SM_STATE_IDLE;
+        return;
+    }
+
+    switch (sm_state_responding){
+        
+        // a sm timeout requries a new physical connection
+        case SM_STATE_TIMEOUT:
+            return;
+
+        case SM_STATE_IDLE: {
+            if (packet[0] != SM_CODE_PAIRING_REQUEST){
+                sm_pdu_received_in_wrong_state();
+                break;;
+            }
+
+            // store key distribtion request
+            sm_m_io_capabilities = packet[1];
+            sm_m_have_oob_data = packet[2];
+            sm_m_auth_req = packet[3];
+            sm_m_max_encryption_key_size = packet[4];
+
+            // assert max encryption size above our minimum
+            if (sm_m_max_encryption_key_size < sm_min_encryption_key_size){
+                sm_pairing_failed_reason = SM_REASON_ENCRYPTION_KEY_SIZE;
+                sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
+                break;
+            }
+
+            // min{}
+            sm_actual_encryption_key_size = sm_max_encryption_key_size;
+            if (sm_m_max_encryption_key_size < sm_max_encryption_key_size){
+                sm_actual_encryption_key_size = sm_m_max_encryption_key_size;
+            }
+
+            // setup key distribution
+            sm_m_key_distribution = packet[5];
+            sm_setup_key_distribution(packet[6]);
+
+            // for validate
+            memcpy(sm_m_preq, packet, 7);
+
+            // start SM timeout
+            sm_timeout_start();
+
+            // decide on STK generation method
+            sm_tk_setup();
+            printf("SMP: generation method %u\n", sm_stk_generation_method);
+
+            // check if STK generation method is acceptable by client
+            int ok = 0;
+            switch (sm_stk_generation_method){
+                case JUST_WORKS:
+                    ok = (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_JUST_WORKS) != 0;
+                    break;
+                case PK_RESP_INPUT:
+                case PK_INIT_INPUT:
+                case OK_BOTH_INPUT:
+                    ok = (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_PASSKEY) != 0;
+                    break;
+                case OOB:
+                    ok = (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_OOB) != 0;
+                    break;
+            }
+            if (!ok){
+                sm_pairing_failed_reason = SM_REASON_AUTHENTHICATION_REQUIREMENTS;
+                sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
+                break;
+            }
+
+            // JUST WORKS doens't provide authentication
+            sm_connection_authenticated = sm_stk_generation_method == JUST_WORKS ? 0 : 1;
+
+            // generate random number first, if we need to show passkey
+            if (sm_stk_generation_method == PK_INIT_INPUT){
+                sm_state_responding = SM_STATE_PH2_GET_RANDOM_TK;
+                break;
+            }
+
+            sm_state_responding = SM_STATE_PH1_SEND_PAIRING_RESPONSE;
+            break;            
+        }
+
+        case SM_STATE_PH1_W4_PAIRING_CONFIRM:
+            if (packet[0] != SM_CODE_PAIRING_CONFIRM){
+                sm_pdu_received_in_wrong_state();
+                break;;
+            }
+
+            // received confirm value
+            swap128(&packet[1], sm_m_confirm);
+
+            // notify client to hide shown passkey
+            if (sm_stk_generation_method == PK_INIT_INPUT){
+                sm_notify_client(SM_PASSKEY_DISPLAY_CANCEL, sm_m_addr_type, sm_m_address, 0, 0);
+            }
+
+            // handle user cancel pairing?
+            if (sm_user_response == SM_USER_RESPONSE_DECLINE){
+                sm_pairing_failed_reason = SM_REASON_PASSKEYT_ENTRY_FAILED;
+                sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
+                break;
+            }
+
+            // wait for user action?
+            if (sm_user_response == SM_USER_RESPONSE_PENDING){
+                sm_state_responding = SM_STATE_PH1_W4_USER_RESPONSE;
+                break;
+            }
+
+            // calculate and send s_confirm
+            sm_state_responding = SM_STATE_PH2_C1_GET_RANDOM_A;
+            break;
+
+        case SM_STATE_PH2_W4_PAIRING_RANDOM:
+            if (packet[0] != SM_CODE_PAIRING_RANDOM){
+                sm_pdu_received_in_wrong_state();
+                break;;
+            }
+
+            // received random value
+            swap128(&packet[1], sm_m_random);
+
+            // use aes128 engine
+            // calculate m_confirm using aes128 engine - step 1
+            sm_aes128_set_key(sm_tk);
+            sm_c1_t1(sm_m_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
+            sm_state_responding = SM_STATE_PH2_C1_GET_ENC_C;
+            break;
+
+        case SM_STATE_DISTRIBUTE_KEYS:
+            switch(packet[0]){
+                case SM_CODE_ENCRYPTION_INFORMATION:
+                    sm_key_distribution_received_set |= SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
+                    // swap128(&packet[1], sm_m_ltk);
+                    break;
+
+                case SM_CODE_MASTER_IDENTIFICATION:
+                    sm_key_distribution_received_set |= SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
+                    // sm_m_ediv = READ_BT_16(packet, 1);
+                    // swap64(&packet[3], sm_m_rand);
+                    break;
+
+                case SM_CODE_IDENTITY_INFORMATION:
+                    sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
+                    swap128(&packet[1], sm_m_irk);
+                    break;
+
+                case SM_CODE_IDENTITY_ADDRESS_INFORMATION:
+                    sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
+                    // note: we don't update addr_type and address as higher layer would get confused
+                    // note: if needed, we could use a different variable pair
+                    // sm_m_addr_type = packet[1];
+                    // BD_ADDR_COPY(sm_m_address, &packet[2]); 
+                    break;
+
+                case SM_CODE_SIGNING_INFORMATION:
+                    sm_key_distribution_received_set |= SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
+                    swap128(&packet[1], sm_m_csrk);
+
+                    // store, if: it's a public address, or, we got an IRK
+                    if (sm_m_addr_type == 0 || (sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION)) {
+                        sm_central_device_matched =  central_device_db_add(sm_m_addr_type, sm_m_address, sm_m_irk, sm_m_csrk);
+                        break;
+                    } 
+                    break;
+                default:
+                    // Unexpected PDU
+                    printf("Unexpected PDU %u in SM_STATE_DISTRIBUTE_KEYS\n", packet[0]);
+                    break;
+            }     
+            // done with key distribution?         
+            if (sm_key_distribution_done()){
+                sm_timeout_stop();
+                sm_state_responding = SM_STATE_IDLE; 
+            }
+            break;
+        default:
+            // Unexpected PDU
+            printf("Unexpected PDU %u in state %u\n", packet[0], sm_state_responding);
+            break;
+    }
+
+    // try to send preparared packet
+    sm_run();
+}
 
 // Security Manager Client API
 void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data)){
@@ -1685,7 +1690,6 @@ void sm_init(){
 
     // attach to lower layers
     l2cap_register_fixed_channel(sm_packet_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
-    l2cap_register_packet_handler(sm_event_packet_handler);
 }
 
 static int sm_get_connection(uint8_t addr_type, bd_addr_t address){
