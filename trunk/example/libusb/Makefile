@@ -106,13 +106,13 @@ ble_peripheral_sm_minimal: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_MINIMAL_OBJ
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_client: ${CORE_OBJ} ${COMMON_OBJ} ble_client.c ad_parser.c le_central.c gatt_client.c
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} ad_parser.c ble_client.c ${CFLAGS} ${LDFLAGS} -o $@
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} ad_parser.c ble_client.c gatt_client.c le_central.c ${CFLAGS} ${LDFLAGS} -o $@
 
-ble_client_uart: ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ble_client.c ad_parser.c
-	${CC} -DHAVE_UART_CC2564 ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ad_parser.c ble_client.c ${CFLAGS} ${LDFLAGS} -o $@
+ble_client_uart: ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ble_client.c ad_parser.c le_central.c gatt_client.c
+	${CC} -DHAVE_UART_CC2564 ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ad_parser.c ble_client.c gatt_client.c le_central.c  ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
-	rm -f  spp_counter sdp_rfcomm_query sdp_general_query spp_counter_ssp ble_peripheral ble_client 
+	rm -f  spp_counter sdp_rfcomm_query sdp_general_query spp_counter_ssp ble_peripheral ble_client gatt_client le_central 
 	rm -f  *.o *.out *.hex
 	rm -f  ${BTSTACK_ROOT}/src/*.o
 	rm -f  ${BTSTACK_ROOT}/ble/*.o

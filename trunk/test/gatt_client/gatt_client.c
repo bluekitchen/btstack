@@ -132,7 +132,7 @@ static void verify_blob(uint16_t value_length, uint16_t value_offset, uint8_t * 
     result_complete = 1;
 }
 
-static void handle_le_central_event(le_central_event_t * event){
+static void handle_ble_client_event(le_event_t * event){
 	switch(event->type){
 		case GATT_SERVICE_QUERY_RESULT:
             services[result_index++] = ((le_service_event_t *) event)->service;
@@ -356,7 +356,7 @@ TEST_GROUP(GATTClient){
 		att_set_read_callback(&att_read_callback);
 
 		gatt_client_init();
-		gatt_client_register_handler(handle_le_central_event);
+		gatt_client_register_handler(handle_ble_client_event);
         gatt_client_start(&test_device, 0x40);
     }
 };
