@@ -141,24 +141,15 @@ int l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t *data, uint
 
 void l2cap_event_handler( uint8_t *packet, uint16_t size ){
     
-    switch(packet[0]){
-            
-        case DAEMON_EVENT_HCI_PACKET_SENT:
-            if (attribute_protocol_packet_handler) {
-                (*attribute_protocol_packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
-            }
-            if (security_protocol_packet_handler) {
-                (*security_protocol_packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
-            }
-            break;
-            
-        default:
-            break;
-    }
-    
     // pass on
     if (packet_handler) {
         (*packet_handler)(NULL, HCI_EVENT_PACKET, 0, packet, size);
+    }
+    if (attribute_protocol_packet_handler){
+        (*attribute_protocol_packet_handler)(HCI_EVENT_PACKET, 0, packet, size)
+    } 
+    if (security_protocol_packet_handler) {
+        (*security_protocol_packet_handler)(HCI_EVENT_PACKET, 0, packet, size)
     }
 }
 

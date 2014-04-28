@@ -779,7 +779,7 @@ static void l2cap_handle_connection_success_for_addr(bd_addr_t address, hci_con_
     l2cap_run();
 }
 
-void l2cap_event_handler( uint8_t *packet, uint16_t size ){
+void l2cap_event_handler(uint8_t *packet, uint16_t size){
     
     bd_addr_t address;
     hci_con_handle_t handle;
@@ -921,8 +921,14 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
             break;
     }
     
-    // pass on
+    // pass on: main packet handler, att and sm packet handlers
     (*packet_handler)(NULL, HCI_EVENT_PACKET, 0, packet, size);
+    if (attribute_protocol_packet_handler){
+        (*attribute_protocol_packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
+    } 
+    if (security_protocol_packet_handler) {
+        (*security_protocol_packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
+    }
 
     l2cap_run();
 }
