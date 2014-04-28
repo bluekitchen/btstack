@@ -48,7 +48,7 @@ static void verify_advertisement(ad_event_t * e){
 }
 
 
-static void handle_ble_client_event(le_central_event_t * event){
+static void handle_ble_client_event(le_event_t * event){
 	switch(event->type){
 		case GATT_ADVERTISEMENT:
 			advertisement_received = 1;
@@ -59,7 +59,7 @@ static void handle_ble_client_event(le_central_event_t * event){
 			break;
         }
 		default:
-			printf("handle_le_central_event");
+			printf("le_event_t");
 			break;
 	}
 }
