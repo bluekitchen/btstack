@@ -23,13 +23,10 @@
 #include "profile.h"
 #include "expected_results.h"
 
-static bd_addr_t test_device_addr = {0x34, 0xb1, 0xf7, 0xd1, 0x77, 0x9b};
 static gatt_client_t test_device;
-static le_central_t test_le_central_context;
-
 
 typedef enum {
-	IDLE2,
+	IDLE,
 	DISCOVER_PRIMARY_SERVICES,
     DISCOVER_PRIMARY_SERVICE_WITH_UUID16,
     DISCOVER_PRIMARY_SERVICE_WITH_UUID128,
@@ -58,28 +55,21 @@ typedef enum {
     WRITE_CHARACTERISTIC_VALUE_WITHOUT_RESPONSE
 } current_test_t;
 
-current_test_t test = IDLE2;
+current_test_t test = IDLE;
 
 uint8_t  characteristic_uuid128[] = {0x00, 0x00, 0xf0, 0x00, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5f, 0x9b, 0x34, 0xfb};
 uint16_t characteristic_uuid16 = 0xF000;
 
 static int result_index;
+static uint8_t result_found;
+static uint8_t result_complete;
+
 static le_service_t services[50];
 static le_service_t included_services[50];
 
 static le_characteristic_t characteristics[50];
 static le_characteristic_descriptor_t descriptors[50];
- 
-static uint8_t advertisement_received;
-static uint8_t connected;
-static uint8_t result_found;
-static uint8_t result_complete;
 
-void mock_simulate_hci_state_working();
-void mock_simulate_command_complete(const hci_cmd_t *cmd);
-void mock_simulate_scan_response();
-void mock_simulate_connected();
-void mock_simulate_exchange_mtu();
 void mock_simulate_discover_primary_services_response();
 
 
@@ -97,14 +87,6 @@ void CHECK_EQUAL_GATT_ATTRIBUTE(const uint8_t * exp_uuid, const uint8_t * exp_ha
 }
 
 // -----------------------------------------------------
-
-static void verify_advertisement(ad_event_t * e){
-    CHECK_EQUAL(0, e->event_type);
- 	CHECK_EQUAL(0, e->address_type);
-	CHECK_EQUAL(188, e->rssi);
-	CHECK_EQUAL(3, e->length);
-	CHECK_EQUAL_ARRAY((uint8_t *)test_device_addr, (uint8_t *)e->address, 6);
-}
 
 static void verify_primary_services_with_uuid16(){
 	CHECK_EQUAL(1, result_index);
@@ -152,18 +134,6 @@ static void verify_blob(uint16_t value_length, uint16_t value_offset, uint8_t * 
 
 static void handle_le_central_event(le_central_event_t * event){
 	switch(event->type){
-		case GATT_ADVERTISEMENT:
-			advertisement_received = 1;
-			verify_advertisement((ad_event_t *) event);
-			break;
-		case GATT_CONNECTION_COMPLETE: {
-			connected = 1;
-
-            le_central_connection_complete_event_t * peripheral_event = (le_central_connection_complete_event_t *) event;
-            uint16_t handle = peripheral_event->device->handle;
-            gatt_client_start(&test_device, handle);
-			break;
-        }
 		case GATT_SERVICE_QUERY_RESULT:
             services[result_index++] = ((le_service_event_t *) event)->service;
             break;
@@ -374,37 +344,22 @@ TEST_GROUP(GATTClient){
 	int acl_buffer_size;
     uint8_t acl_buffer[27];
     
-	void connect(){
-		le_central_connect(&test_le_central_context, 1, test_device_addr);
-		mock_simulate_connected();
-		CHECK(connected);
-		mock_simulate_exchange_mtu();
-	}
-
 	void setup(){
-		advertisement_received = 0;
-		connected = 0;
 		result_found = 0;
 		result_index = 0;
 		result_complete = 0;
-		test = IDLE2;
+		test = IDLE;
 
-		ble_client_init();
-		le_central_register_handler(handle_le_central_event);
-		mock_simulate_hci_state_working();
+        // setup remote db
 		att_set_db(profile_data);
 		att_set_write_callback(&att_write_callback);
 		att_set_read_callback(&att_read_callback);
-		connect();
-	}
-};
 
-TEST(GATTClient, TestScanning){
-	le_central_start_scan();
-	mock_simulate_command_complete(&hci_le_set_scan_enable);
-	mock_simulate_scan_response();
-	CHECK(advertisement_received);
-}
+		gatt_client_init();
+		gatt_client_register_handler(handle_le_central_event);
+        gatt_client_start(&test_device, 0x40);
+    }
+};
 
 TEST(GATTClient, TestDiscoverPrimaryServices){
 	test = DISCOVER_PRIMARY_SERVICES;

@@ -274,7 +274,12 @@ typedef struct le_characteristic_value_event{
 
 
 void ble_client_init();
+void gatt_client_init();
+void le_central_init();
+
+void gatt_client_register_handler(void (*le_callback)(le_central_event_t * event));
 void le_central_register_handler(void (*le_callback)(le_central_event_t * event));
+void ble_client_register_packet_handler(void (*le_callback)(le_central_event_t * event));
 
 le_command_status_t le_central_start_scan();
 // creates one event per found peripheral device

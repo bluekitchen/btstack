@@ -26,7 +26,7 @@ COMMON = \
 	
 COMMON_OBJ = $(COMMON:.c=.o)
 
-all: gatt_client
+all: gatt_client le_central
 
 # compile .ble description
 profile.h: profile.gatt
@@ -35,8 +35,11 @@ profile.h: profile.gatt
 gatt_client: ${CORE_OBJ} ${COMMON_OBJ} gatt_client.c profile.h expected_results.h
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} gatt_client.c ${CFLAGS} ${LDFLAGS} -o $@
 
+le_central: ${CORE_OBJ} ${COMMON_OBJ} le_central.c
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} le_central.c ${CFLAGS} ${LDFLAGS} -o $@
+
 clean:
-	rm -f  gatt_client
+	rm -f  gatt_client le_central
 	rm -f  *.o ${BTSTACK_ROOT}/src/*.o
 	rm -rf *.dSYM
 	
