@@ -30,9 +30,15 @@ COMMON = \
 	${BTSTACK_ROOT}/src/sdp_query_rfcomm.c		    \
 
 ATT	= \
-    ${BTSTACK_ROOT}/ble/att.c 				 	    \
     ${BTSTACK_ROOT}/ble/att_dispatch.c       	    \
+
+GATT_SERVER = \
+    ${BTSTACK_ROOT}/ble/att.c 				 	    \
     ${BTSTACK_ROOT}/ble/att_server.c        	    \
+
+GATT_CLIENT = \
+    ${BTSTACK_ROOT}/ble/ad_parser.c                 \
+    ${BTSTACK_ROOT}/ble/gatt_client.c        	    \
 
 CC2564 = \
     ${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
@@ -52,6 +58,8 @@ CC2564_OBJ = $(CC2564:.c=.o)
 SM_REAL_OBJ = $(SM_REAL:.c=.o)
 SM_MINIMAL_OBJ = $(SM_MINIMAL:.c=.o)
 ATT_OBJ = $(ATT:.c=.o)
+GATT_CLIENT_OBJ = $(GATT_CLIENT:.c=.o)
+GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
 
 
 # create firmware image from common objects and example source file
@@ -99,17 +107,17 @@ classic_test: ${CORE_OBJ} ${COMMON_OBJ} classic_test.c
 profile.h: profile.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 
-ble_peripheral: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_REAL_OBJ} ble_peripheral.c profile.h
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_REAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
+ble_peripheral: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c profile.h
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
 
-ble_peripheral_sm_minimal: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c profile.h
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
+ble_peripheral_sm_minimal: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c profile.h
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
 
-ble_client: ${CORE_OBJ} ${COMMON_OBJ} ble_client.c ad_parser.c le_central.c gatt_client.c
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} ad_parser.c ble_client.c gatt_client.c le_central.c ${CFLAGS} ${LDFLAGS} -o $@
+ble_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ble_client.c le_central.c
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ble_client.c le_central.c ${CFLAGS} ${LDFLAGS} -o $@
 
-ble_client_uart: ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ble_client.c ad_parser.c le_central.c gatt_client.c
-	${CC} -DHAVE_UART_CC2564 ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ad_parser.c ble_client.c gatt_client.c le_central.c  ${CFLAGS} ${LDFLAGS} -o $@
+ble_client_uart: ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ble_client.c le_central.c
+	${CC} -DHAVE_UART_CC2564 ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ble_client.c le_central.c  ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
 	rm -f  spp_counter sdp_rfcomm_query sdp_general_query spp_counter_ssp ble_peripheral ble_client gatt_client le_central 

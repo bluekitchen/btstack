@@ -18,10 +18,11 @@ COMMON = \
     ${BTSTACK_ROOT}/src/run_loop.c					\
     ${BTSTACK_ROOT}/src/run_loop_posix.c			\
     ${BTSTACK_ROOT}/src/hci_cmds.c					\
-    ${BTSTACK_ROOT}/example/libusb/le_central.c     \
-    ${BTSTACK_ROOT}/example/libusb/gatt_client.c    \
-    ${BTSTACK_ROOT}/example/libusb/ble_client.c     \
+    ${BTSTACK_ROOT}/ble/att_dispatch.c       	    \
     ${BTSTACK_ROOT}/ble/att.c     					\
+    ${BTSTACK_ROOT}/ble/ad_parser.c                 \
+    ${BTSTACK_ROOT}/ble/gatt_client.c               \
+    ${BTSTACK_ROOT}/example/libusb/ble_client.c     \
     mock.c
 	
 COMMON_OBJ = $(COMMON:.c=.o)
