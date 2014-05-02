@@ -63,6 +63,15 @@
 #include "bt_control_cc256x.h"
 #endif
 
+typedef struct ad_event {
+    uint8_t   type;
+    uint8_t   event_type;
+    uint8_t   address_type;
+    bd_addr_t address;
+    uint8_t   rssi;
+    uint8_t   length;
+    uint8_t * data;
+} ad_event_t;
 
 static linked_list_t le_central_connections = NULL;
     
@@ -947,24 +956,6 @@ uint8_t chr_short_value[1] = {0x86};
 //
 //}
 
-static void handle_scan_and_connect(le_event_t * event){
-    if (tc_state != TC_W4_SCAN_RESULT) return;
-    if (event->type != GATT_ADVERTISEMENT) return;
-    printf("test client - SCAN ACTIVE\n");
-    ad_event_t * ad_event = (ad_event_t*) event;
-    dump_ad_event(ad_event);
-    // copy found addr
-    test_device_addr_type = ad_event->address_type;
-    bd_addr_t found_device_addr;
-    memcpy(found_device_addr, ad_event->address, 6);
-
-    if (memcmp(&found_device_addr, &test_device_addr, 6) != 0) return;
-    // memcpy(test_device_addr, ad_event->address, 6);
-
-    tc_state = TC_W4_CONNECT;
-    le_central_stop_scan();
-    le_central_connect(&test_device, test_device_addr_type, test_device_addr);
-}
 
 static void handle_disconnect(le_event_t * event){
     if (tc_state != TC_W4_DISCONNECT) return;
@@ -1059,17 +1050,7 @@ static void handle_ble_client_event(le_event_t * event){
 
 }
 
-/*
- typedef struct ad_event {
- uint8_t   type;
- uint8_t   event_type;
- uint8_t   address_type;
- bd_addr_t address;
- uint8_t   rssi;
- uint8_t   length;
- uint8_t * data;
- } ad_event_t;
- */
+
 static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
     le_command_status_t status;
     

@@ -395,16 +395,6 @@ typedef enum {
     BLE_CHARACTERISTIC_INDICATION_NOT_SUPPORTED
 } le_command_status_t;
 
-    
-typedef struct ad_event {
-    uint8_t   type;
-    uint8_t   event_type;
-    uint8_t   address_type;
-    bd_addr_t address;
-    uint8_t   rssi;
-    uint8_t   length;
-    uint8_t * data;
-} ad_event_t;
 
 // void le_central_register_handler(void (*le_callback)(le_event_t* event));
 le_command_status_t le_central_start_scan();
