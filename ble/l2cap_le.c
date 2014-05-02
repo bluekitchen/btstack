@@ -146,10 +146,10 @@ void l2cap_event_handler( uint8_t *packet, uint16_t size ){
         (*packet_handler)(NULL, HCI_EVENT_PACKET, 0, packet, size);
     }
     if (attribute_protocol_packet_handler){
-        (*attribute_protocol_packet_handler)(HCI_EVENT_PACKET, 0, packet, size)
+        (*attribute_protocol_packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
     } 
     if (security_protocol_packet_handler) {
-        (*security_protocol_packet_handler)(HCI_EVENT_PACKET, 0, packet, size)
+        (*security_protocol_packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
     }
 }
 

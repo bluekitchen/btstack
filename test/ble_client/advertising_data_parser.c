@@ -11,10 +11,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ad_parser.h"
-
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
+
+#include <btstack/hci_cmds.h>
+
+#include "btstack_memory.h"
+#include "hci.h"
+#include "ad_parser.h"
+#include "l2cap.h"
 
 static uint8_t ad_data[] =   {0x02, 0x01, 0x05, 0x03, 0x02, 0xF0, 0xFF};
 
