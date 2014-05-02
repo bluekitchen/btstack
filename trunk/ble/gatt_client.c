@@ -51,6 +51,7 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "att.h"
+#include "att_dispatch.h"
 
 #ifdef HAVE_UART_CC2564
 #include "bt_control_cc256x.h"
@@ -61,13 +62,15 @@ static linked_list_t gatt_client_connections = NULL;
 static uint16_t att_client_start_handle = 0x0001;
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
+
 void (*gatt_client_callback)(le_event_t * event);
 
 
 void gatt_client_init(){
     att_client_start_handle = 0x0000;
     gatt_client_connections = NULL;
-    l2cap_register_fixed_channel(gatt_client_att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+    //l2cap_register_fixed_channel(gatt_client_att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
+    att_dispatch_register_client(gatt_client_att_packet_handler);
 }
 
 static void dummy_notify(le_event_t* event){}

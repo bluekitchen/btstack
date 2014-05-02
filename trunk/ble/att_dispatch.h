@@ -43,6 +43,10 @@
 
 #include <btstack/btstack.h>
 
+#if defined __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief reset att dispatchter
  * @param packet_hander for ATT client packets
@@ -54,5 +58,9 @@ void att_dispatch_register_client(btstack_packet_handler_t packet_handler);
  * @param packet_hander for ATT server packets
  */
 void att_dispatch_register_server(btstack_packet_handler_t packet_handler);
+
+#if defined __cplusplus
+}
+#endif
 
 #endif // __ATT_DISPATCH_H
