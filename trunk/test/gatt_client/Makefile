@@ -5,7 +5,7 @@ CC = g++
 BTSTACK_ROOT =  ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
-CFLAGS  = -DUNIT_TEST -g -Wall -I. -I${BTSTACK_ROOT}/example/libusb -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include -I$(CPPUTEST_HOME)/include
+CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -I. -I${BTSTACK_ROOT}/example/libusb -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include -I$(CPPUTEST_HOME)/include
 LDFLAGS += -L$(CPPUTEST_HOME) -lCppUTest -lCppUTestExt
 
 COMMON = \
@@ -18,6 +18,8 @@ COMMON = \
     ${BTSTACK_ROOT}/src/run_loop.c					\
     ${BTSTACK_ROOT}/src/run_loop_posix.c			\
     ${BTSTACK_ROOT}/src/hci_cmds.c					\
+    ${BTSTACK_ROOT}/src/hci.c     					\
+    ${BTSTACK_ROOT}/src/hci_dump.c     				\
     ${BTSTACK_ROOT}/ble/att_dispatch.c       	    \
     ${BTSTACK_ROOT}/ble/att.c     					\
     ${BTSTACK_ROOT}/ble/ad_parser.c                 \
@@ -25,6 +27,7 @@ COMMON = \
     ${BTSTACK_ROOT}/example/libusb/ble_client.c     \
     mock.c
 	
+
 COMMON_OBJ = $(COMMON:.c=.o)
 
 all: gatt_client le_central
@@ -33,11 +36,11 @@ all: gatt_client le_central
 profile.h: profile.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 
-gatt_client: ${CORE_OBJ} ${COMMON_OBJ} gatt_client.c profile.h expected_results.h
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} gatt_client.c ${CFLAGS} ${LDFLAGS} -o $@
+gatt_client: ${CORE_OBJ} ${COMMON_OBJ} gatt_client.o profile.h expected_results.h
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} gatt_client.o ${CFLAGS} ${LDFLAGS} -o $@
 
-le_central: ${CORE_OBJ} ${COMMON_OBJ} le_central.c
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} le_central.c ${CFLAGS} ${LDFLAGS} -o $@
+le_central: ${CORE_OBJ} ${COMMON_OBJ} le_central.o
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} le_central.o ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
 	rm -f  gatt_client le_central

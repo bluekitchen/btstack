@@ -80,6 +80,16 @@ static hci_stack_t   hci_stack_static;
 #endif
 static hci_stack_t * hci_stack = NULL;
 
+static void (*le_central_callback)(le_event_t * event);
+
+static void dummy_notify(le_event_t* event){}
+void le_central_register_handler(void (*le_callback)(le_event_t* event)){
+    if (le_callback == NULL){
+        le_callback = dummy_notify;
+    }
+    le_central_callback = le_callback;
+}
+
 // test helper
 static uint8_t disable_l2cap_timeouts = 0;
 
@@ -708,7 +718,7 @@ static void event_handler(uint8_t *packet, int size){
             conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_CLASSIC);
             if (!conn) break;
             conn->authentication_flags |= RECV_LINK_KEY_NOTIFICATION;
-            link_key_type_t link_key_type = packet[24];
+            link_key_type_t link_key_type = (link_key_type_t)packet[24];
             // Change Connection Encryption keeps link key type
             if (link_key_type != CHANGED_COMBINATION_KEY){
                 conn->link_key_type = link_key_type;
@@ -842,11 +852,39 @@ static void event_handler(uint8_t *packet, int size){
 
 #ifdef HAVE_BLE
         case HCI_EVENT_LE_META:
-            switch (packet[2]) {
+            switch (packet[2]){
+                case HCI_SUBEVENT_LE_ADVERTISING_REPORT:{
+                    if (hci_stack->le_scanning_state != LE_SCANNING) break;
+                    int num_reports = packet[3];
+                    int i;
+                    int total_data_length = 0;
+                    int data_offset = 0;
+                    
+                    for (i=0; i<num_reports;i++){
+                        total_data_length += packet[4+num_reports*8+i];
+                    }
+                    
+                    ad_event_t advertisement_event;
+                    advertisement_event.type = GATT_ADVERTISEMENT;
+                    for (i=0; i<num_reports;i++){
+                        advertisement_event.event_type = packet[4+i];
+                        
+                        advertisement_event.address_type = packet[4+num_reports+i];
+                        bt_flip_addr(advertisement_event.address, &packet[4+num_reports*2+i*6]);
+                        advertisement_event.length = packet[4+num_reports*8+i];
+                        advertisement_event.data = &packet[4+num_reports*9+data_offset];
+                        data_offset += advertisement_event.length;
+                        
+                        advertisement_event.rssi = packet[4+num_reports*9+total_data_length + i];
+                        
+                        (*le_central_callback)((le_event_t*)&advertisement_event);
+                    }
+                    break;
+                }
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                     // Connection management
                     bt_flip_addr(addr, &packet[8]);
-                    addr_type = packet[7];
+                    addr_type = (bd_addr_type_t)packet[7];
                     log_info("LE Connection_complete (status=%u) type %u, %s\n", packet[3], addr_type, bd_addr_to_str(addr));
                     // LE connections are auto-accepted, so just create a connection if there isn't one already
                     conn = hci_connection_for_bd_addr_and_type(&addr, addr_type);
@@ -1000,6 +1038,7 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
     // LE
     hci_stack->adv_addr_type = 0;
     memset(hci_stack->adv_address, 0, 6);
+    hci_stack->le_scanning_state = LE_SCAN_IDLE;
 }
 
 void hci_close(){
@@ -1321,6 +1360,23 @@ void hci_run(){
         hci_send_cmd(&hci_write_scan_enable, hci_stack->new_scan_enable_value);
         hci_stack->new_scan_enable_value = 0xff;
         return;
+    }
+    
+    // handle le scan
+    if (hci_stack->state == HCI_STATE_WORKING){
+        switch(hci_stack->le_scanning_state){
+            case LE_START_SCAN:
+                hci_stack->le_scanning_state = LE_SCANNING;
+                hci_send_cmd(&hci_le_set_scan_enable, 1, 0);
+                return;
+                
+            case LE_STOP_SCAN:
+                hci_stack->le_scanning_state = LE_SCAN_IDLE;
+                hci_send_cmd(&hci_le_set_scan_enable, 0, 0);
+                return;
+            default:
+                break;
+        }
     }
     
     // send pending HCI commands
@@ -2050,4 +2106,15 @@ void gap_set_local_name(const char * local_name){
     hci_stack->local_name = local_name;
 }
 
+le_command_status_t le_central_start_scan(){
+    printf("hci_init: scanning state START_SCAN\n");
+    hci_stack->le_scanning_state = LE_START_SCAN;
+    hci_run();
+    return BLE_PERIPHERAL_OK;
+}
 
+le_command_status_t le_central_stop_scan(){
+    hci_stack->le_scanning_state = LE_STOP_SCAN;
+    hci_run();
+    return BLE_PERIPHERAL_OK;
+}
