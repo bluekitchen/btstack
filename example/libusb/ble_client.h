@@ -55,48 +55,10 @@ extern "C" {
 #define LE_CENTRAL_MAX_INCLUDE_DEPTH 3
 
 
-//*************** le central client
-
-typedef enum{
-    P_IDLE,
-    P_W2_CONNECT,
-    P_W4_CONNECTED,
-    P_CONNECTED,
-    P_W2_CANCEL_CONNECT,
-    P_W4_CONNECT_CANCELLED,
-    P_W2_DISCONNECT,
-    P_W4_DISCONNECTED
-} le_central_state_t;
-
-typedef struct le_central{
-    linked_item_t    item;
-    le_central_state_t le_central_state;
-    
-    uint8_t   address_type;
-    bd_addr_t address;
-    uint16_t handle;
-} le_central_t;
-
-typedef struct le_central_connection_complete_event{
-    uint8_t   type;
-    le_central_t * device;
-    uint8_t status;
-} le_central_connection_complete_event_t;
-
-
-//*************** gatt client
-
-
-
 void ble_client_init();
 void le_central_init();
 
 void le_central_register_connection_handler(void (*le_callback)(le_event_t * event));
-//void ble_client_register_packet_handler(void (*le_callback)(le_event_t * event));
-
-le_command_status_t  le_central_connect(le_central_t *context, uint8_t addr_type, bd_addr_t addr);
-le_command_status_t  le_central_disconnect(le_central_t *context);
-
 
 #if defined __cplusplus
 }

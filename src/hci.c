@@ -80,16 +80,6 @@ static hci_stack_t   hci_stack_static;
 #endif
 static hci_stack_t * hci_stack = NULL;
 
-// static void (*le_central_callback)(le_event_t * event);
-
-//static void dummy_notify(le_event_t* event){}
-//void le_central_register_handler(void (*le_callback)(le_event_t* event)){
-//    if (le_callback == NULL){
-//        le_callback = dummy_notify;
-//    }
-//    le_central_callback = le_callback;
-//}
-
 // test helper
 static uint8_t disable_l2cap_timeouts = 0;
 
@@ -1394,7 +1384,29 @@ void hci_run(){
         
         if (connection->state == SEND_CREATE_CONNECTION){
             log_info("sending hci_create_connection\n");
-            hci_send_cmd(&hci_create_connection, connection->address, hci_usable_acl_packet_types(), 0, 0, 0, 1); 
+            switch(connection->address_type){
+                case BD_ADDR_TYPE_CLASSIC:
+                    hci_send_cmd(&hci_create_connection, connection->address, hci_usable_acl_packet_types(), 0, 0, 0, 1);
+                    break;
+                default:
+                    hci_send_cmd(&hci_le_create_connection,
+                                 1000,      // scan interval: 625 ms
+                                 1000,      // scan interval: 625 ms
+                                 0,         // don't use whitelist
+                                 connection->address_type, // peer address type
+                                 connection->address,       // peer bd addr
+                                 0,         // our addr type: public
+                                 80,        // conn interval min
+                                 80,        // conn interval max (3200 * 0.625)
+                                 0,         // conn latency
+                                 2000,      // supervision timeout
+                                 0,         // min ce length
+                                 1000       // max ce length
+                                 );
+
+                    connection->state = SENT_CREATE_CONNECTION;
+                    break;
+            }
             return;
         }
 
@@ -1863,7 +1875,25 @@ void hci_emit_connection_complete(hci_connection_t *conn, uint8_t status){
     bt_flip_addr(&event[5], conn->address);
     event[11] = 1; // ACL connection
     event[12] = 0; // encryption disabled
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
+}
+
+void hci_emit_le_connection_complete(hci_connection_t *conn, uint8_t status){
+    uint8_t event[21];
+    event[0] = HCI_EVENT_LE_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = HCI_SUBEVENT_LE_CONNECTION_COMPLETE;
+    event[3] = status;
+    bt_store_16(event, 4, conn->con_handle);
+    event[6] = 0; // TODO: role
+    event[7] = conn->address_type;
+    bt_flip_addr(&event[8], conn->address);
+    bt_store_16(event, 14, 0); // interval
+    bt_store_16(event, 16, 0); // latency
+    bt_store_16(event, 18, 0); // supervision timeout
+    event[20] = 0; // master clock accuracy
+    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
@@ -1874,7 +1904,7 @@ void hci_emit_disconnection_complete(uint16_t handle, uint8_t reason){
     event[2] = 0; // status = OK
     bt_store_16(event, 3, handle);
     event[5] = reason;
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
@@ -1885,7 +1915,7 @@ void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
     event[0] = L2CAP_EVENT_TIMEOUT_CHECK;
     event[1] = sizeof(event) - 2;
     bt_store_16(event, 2, conn->con_handle);
-    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
@@ -2124,5 +2154,29 @@ le_command_status_t le_central_start_scan(){
 le_command_status_t le_central_stop_scan(){
     hci_stack->le_scanning_state = LE_STOP_SCAN;
     hci_run();
+    return BLE_PERIPHERAL_OK;
+}
+
+
+le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_type){
+    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
+    if (!conn){
+        conn = create_connection_for_bd_addr_and_type(*addr, addr_type);
+        if (!conn){
+            // notify client that alloc failed
+            hci_emit_le_connection_complete(conn, BTSTACK_MEMORY_ALLOC_FAILED);
+            return BLE_PERIPHERAL_NOT_CONNECTED; // don't sent packet to controller
+        }
+        conn->state = SEND_CREATE_CONNECTION;
+        return BLE_PERIPHERAL_OK;
+    }
+    conn->state = OPEN;
+    hci_emit_le_connection_complete(conn, 0);
+    hci_run();
+    return BLE_PERIPHERAL_OK;
+}
+
+
+le_command_status_t le_central_disconnect(uint16_t * handle){
     return BLE_PERIPHERAL_OK;
 }
