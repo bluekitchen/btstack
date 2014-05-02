@@ -80,7 +80,7 @@ static void ble_packet_handler(void * connection, uint8_t packet_type, uint16_t 
 
 
 void (*le_central_callback)(le_event_t * event);
-static void le_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+// static void le_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static void le_central_run();
 
@@ -131,234 +131,9 @@ void le_central_register_packet_handler(void (*handler)(uint8_t packet_type, uin
 
 
 
-static inline void send_le_central_connection_complete_event(le_central_t * peripheral, uint8_t type, uint8_t status){
-    le_central_connection_complete_event_t event;
-    event.type = type;
-    event.device = peripheral;
-    event.status = status;
-    (*le_central_callback)((le_event_t*)&event);
-}
-
-
-static le_central_t * get_le_central_context_for_handle(uint16_t handle){
-    linked_item_t *it;
-    for (it = (linked_item_t *) le_central_connections; it ; it = it->next){
-        le_central_t * peripheral = (le_central_t *) it;
-        if (peripheral->handle == handle){
-            return peripheral;
-        }
-    }
-    return NULL;
-}
-
-static le_central_t * get_le_central_context_with_address(uint8_t addr_type, bd_addr_t addr){
-    linked_item_t *it;
-    for (it = (linked_item_t *) le_central_connections; it ; it = it->next){
-        le_central_t * peripheral = (le_central_t *) it;
-        if (BD_ADDR_CMP(addr, peripheral->address) == 0 && peripheral->address_type == addr_type){
-            return peripheral;
-        }
-    }
-    return 0;
-}
-
-static le_central_t * get_le_central_context_with_state(le_central_state_t p_state){
-    linked_item_t *it;
-    for (it = (linked_item_t *) le_central_connections; it ; it = it->next){
-        le_central_t * peripheral = (le_central_t *) it;
-        if (peripheral->le_central_state == p_state){
-            return peripheral;
-        }
-    }
-    return NULL;
-}
-
-static inline le_central_t * get_le_central_w4_connect_cancelled(){
-    return get_le_central_context_with_state(P_W4_CONNECT_CANCELLED);
-}
-
-static inline le_central_t * get_le_central_w4_connected(){
-    return get_le_central_context_with_state(P_W4_CONNECTED);
-}
-
-static void le_central_handle_context_list(){
-     // only one connect is allowed, wait for result
-    if (get_le_central_w4_connected()) return;
-    
-    // only one cancel connect is allowed, wait for result
-    if (get_le_central_w4_connect_cancelled()) return;
-    
-    if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
-    if (!l2cap_can_send_connectionless_packet_now()) return;
-    
-    // printf("handle_peripheral_list empty %u\n", linked_list_empty(&le_connections));
-    linked_item_t *it;
-    for (it = (linked_item_t *) le_central_connections; it ; it = it->next){
-        le_central_t * peripheral = (le_central_t *) it;
-        // printf("handle_peripheral_list, status %u\n", peripheral->state);
-        
-        switch (peripheral->le_central_state){
-            case P_W2_CONNECT:
-                peripheral->le_central_state = P_W4_CONNECTED;
-                hci_send_cmd(&hci_le_create_connection,
-                             1000,      // scan interval: 625 ms
-                             1000,      // scan interval: 625 ms
-                             0,         // don't use whitelist
-                             peripheral->address_type, // peer address type
-                             peripheral->address,       // peer bd addr
-                             0,         // our addr type: public
-                             80,        // conn interval min
-                             80,        // conn interval max (3200 * 0.625)
-                             0,         // conn latency
-                             2000,      // supervision timeout
-                             0,         // min ce length
-                             1000       // max ce length
-                             );
-                return;
-                
-            case P_W2_CANCEL_CONNECT:
-                peripheral->le_central_state = P_W4_CONNECT_CANCELLED;
-                hci_send_cmd(&hci_le_create_connection_cancel);
-                return;
-                
-            case P_W2_DISCONNECT:
-                peripheral->le_central_state = P_W4_DISCONNECTED;
-                hci_send_cmd(&hci_disconnect, peripheral->handle,0x13);
-                return;
-                
-            default:
-                break;
-        }
-        
-    }
-    
-}
-
-static void le_central_context_init(le_central_t *context, uint8_t addr_type, bd_addr_t addr){
-    memset(context, 0, sizeof(le_central_t));
-    context->address_type = addr_type;
-    memcpy (context->address, addr, 6);
-}
-
-
-le_command_status_t le_central_connect(le_central_t *context, uint8_t addr_type, bd_addr_t addr){
-    //TODO: align with hci connection list capacity
-    le_central_t * peripheral = get_le_central_context_with_address(addr_type, addr);
-    if (!peripheral) {
-        le_central_context_init(context, addr_type, addr);
-        context->le_central_state = P_W2_CONNECT;
-        linked_list_add(&le_central_connections, (linked_item_t *) context);
-    } else if (peripheral == context) {
-        if (context->le_central_state != P_W2_CONNECT) return BLE_PERIPHERAL_IN_WRONG_STATE;
-    } else {
-        return BLE_PERIPHERAL_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS;
-    }
-    le_central_run();
-    return BLE_PERIPHERAL_OK;
-}
-
-
-le_command_status_t le_central_disconnect(le_central_t *context){
-    le_central_t * peripheral = get_le_central_context_with_address(context->address_type, context->address);
-    if (!peripheral || (peripheral && peripheral != context)){
-        return BLE_PERIPHERAL_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS;
-    }
-
-    switch(context->le_central_state){
-        case P_W2_CONNECT:
-            linked_list_remove(&le_central_connections, (linked_item_t *) context);
-            send_le_central_connection_complete_event(peripheral, GATT_CONNECTION_COMPLETE, 0);
-            break;
-        case P_W4_CONNECTED:
-        case P_W2_CANCEL_CONNECT:
-            // trigger cancel connect
-            context->le_central_state = P_W2_CANCEL_CONNECT;
-            break;
-        case P_W4_DISCONNECTED:
-        case P_W4_CONNECT_CANCELLED: 
-            return BLE_PERIPHERAL_IN_WRONG_STATE;
-        default:
-            context->le_central_state = P_W2_DISCONNECT;
-            break;
-    }  
-    le_central_run();
-    return BLE_PERIPHERAL_OK;      
-}
-
-
-static void le_central_run(){
-    // check if command is send
-    le_central_handle_context_list();
-}
-
-
-static void le_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    switch (packet[0]) {
-
-        case HCI_EVENT_COMMAND_COMPLETE:
-            if (COMMAND_COMPLETE_EVENT(packet, hci_le_create_connection_cancel)){
-                // printf("packet_handler:: hci_le_create_connection_cancel: cancel connect\n");
-                if (packet[3] != 0x0B) break;
-                
-                // cancel connection failed, as connection already established
-                le_central_t * peripheral = get_le_central_w4_connect_cancelled();
-                peripheral->le_central_state = P_W2_DISCONNECT;
-                break;
-            }
-            break;
-        case HCI_EVENT_DISCONNECTION_COMPLETE:
-        {
-            uint16_t handle = READ_BT_16(packet,3);
-            le_central_t * peripheral = get_le_central_context_for_handle(handle);
-            if (!peripheral) break;
-            
-            peripheral->le_central_state = P_IDLE;
-            linked_list_remove(&le_central_connections, (linked_item_t *) peripheral);
-            
-            // TODO shouldn't we send some kind of disconnect complete?
-            send_le_central_connection_complete_event(peripheral, GATT_CONNECTION_COMPLETE, packet[5]);
-            // printf("Peripheral disconnected, and removed from list\n");
-            break;
-        }
-        case HCI_EVENT_LE_META:
-            switch (packet[2]) {
-
-                    
-                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE: {
-                    le_central_t * peripheral = get_le_central_w4_connected();
-                    if (peripheral){
-                        if (packet[3]){
-                            peripheral->le_central_state = P_IDLE;
-                            linked_list_remove(&le_central_connections, (linked_item_t *) peripheral);
-                        } else {
-                            peripheral->le_central_state = P_CONNECTED;
-                            peripheral->handle = READ_BT_16(packet, 4);
-                        }
-                        send_le_central_connection_complete_event(peripheral, GATT_CONNECTION_COMPLETE, packet[3]);
-                        break;
-                    }
-                    // cancel success?
-                    peripheral = get_le_central_w4_connect_cancelled();
-                    if (!peripheral) break;
-                    linked_list_remove(&le_central_connections, (linked_item_t *) peripheral);
-                    send_le_central_connection_complete_event(peripheral, GATT_CONNECTION_COMPLETE, packet[3]);
-                    break;
-                }
-                default:
-                    break;
-            }
-            break;
-        default:
-            break;
-    }
-    le_central_run();
-}
-
-
 static void ble_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
 
-    le_packet_handler(connection, packet_type, channel, packet, size);
     gatt_packet_handler(connection, packet_type, channel, packet, size);
 
     // hexdump2(packet, size);
@@ -421,7 +196,7 @@ static void dump_descriptor(le_characteristic_descriptor_t * descriptor){
 //}
 
 
-le_central_t test_device;
+
 gatt_client_t test_gatt_client_context;
 
 le_service_t services[40];
@@ -967,21 +742,21 @@ static void handle_ble_client_event(le_event_t * event){
     handle_disconnect(event);
     
     switch(tc_state){
-        case TC_W4_CONNECT: {
-            if (event->type != GATT_CONNECTION_COMPLETE) break;
-
-            tc_state = TC_W4_SERVICE_RESULT;
-            printf("\n test client - CONNECTED, query ACC service\n");
-            
-            // create gatt client context for this
-            le_central_connection_complete_event_t * peripheral_event = (le_central_connection_complete_event_t *) event;
-            uint16_t handle = peripheral_event->device->handle;
-            gatt_client_start(&test_gatt_client_context, handle);
-            
-            // let's start
-            gatt_client_discover_primary_services_by_uuid128(&test_gatt_client_context, acc_service_uuid);
-            break;
-        }
+//        case TC_W4_CONNECT: {
+//            if (event->type != GATT_CONNECTION_COMPLETE) break;
+//
+//            tc_state = TC_W4_SERVICE_RESULT;
+//            printf("\n test client - CONNECTED, query ACC service\n");
+//            
+//            // create gatt client context for this
+//            le_central_connection_complete_event_t * peripheral_event = (le_central_connection_complete_event_t *) event;
+//            uint16_t handle = peripheral_event->device->handle;
+//            gatt_client_start(&test_gatt_client_context, handle);
+//            
+//            // let's start
+//            gatt_client_discover_primary_services_by_uuid128(&test_gatt_client_context, acc_service_uuid);
+//            break;
+//        }
             
         case TC_W4_SERVICE_RESULT:
             switch(event->type){
@@ -1034,7 +809,7 @@ static void handle_ble_client_event(le_event_t * event){
                     printf("DONE");
                     tc_state = TC_W4_DISCONNECT;
                     printf("\n\n test client - DISCONNECT ");
-                    le_central_disconnect(&test_device);
+                    // le_central_disconnect(&test_device);
                     break;
                     
                 default:
@@ -1082,7 +857,7 @@ static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size
             
             tc_state = TC_W4_CONNECT;
             le_central_stop_scan();
-            le_central_connect(&test_device, test_device_addr_type, test_device_addr);
+            le_central_connect(&test_device_addr, test_device_addr_type);
             
             break;
         case BTSTACK_EVENT_STATE:
@@ -1093,6 +868,23 @@ static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size
                 le_central_start_scan(); 
             }
             break;
+        case HCI_EVENT_LE_META:
+            switch (packet[2]) {
+                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE: {
+                    if (tc_state != TC_W4_CONNECT) return;
+                    tc_state = TC_W4_SERVICE_RESULT;
+                    printf("\n test client - CONNECTED, query ACC service\n");
+                    gatt_client_start(&test_gatt_client_context, READ_BT_16(packet, 4));
+                    
+                    // let's start
+                    gatt_client_discover_primary_services_by_uuid128(&test_gatt_client_context, acc_service_uuid);
+                    break;
+                }
+                default:
+                    break;
+            }
+            break;
+            
         case DAEMON_EVENT_HCI_PACKET_SENT:
             switch(tc_state){
                 case TC_W2_WRITE_WITHOUT_RESPONSE:
@@ -1108,6 +900,7 @@ static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size
             break;
     }
 }
+
 
 #ifndef UNIT_TEST
 

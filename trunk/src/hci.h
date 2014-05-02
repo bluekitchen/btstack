@@ -262,6 +262,7 @@ typedef enum {
     LE_STOP_SCAN,
 } le_scanning_state_t;
 
+
 typedef struct {
     // linked list - assert: first field
     linked_item_t    item;
@@ -307,8 +308,8 @@ typedef struct {
     
     // number ACL packets sent to controller
     uint8_t num_acl_packets_sent;
-    
 } hci_connection_t;
+
 
 /**
  * main data structure
@@ -399,7 +400,9 @@ typedef enum {
 // void le_central_register_handler(void (*le_callback)(le_event_t* event));
 le_command_status_t le_central_start_scan();
 le_command_status_t le_central_stop_scan();
-    
+le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_type);
+le_command_status_t le_central_disconnect(uint16_t * handle);
+
 //*************** le client end
     
 // create and send hci command packets based on a template and a list of parameters
