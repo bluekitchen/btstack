@@ -57,16 +57,6 @@ extern "C" {
 
 //*************** le central client
 
-typedef struct ad_event {
-    uint8_t   type;
-    uint8_t   event_type;
-    uint8_t   address_type;
-    bd_addr_t address;
-    uint8_t   rssi;
-    uint8_t   length;
-    uint8_t * data;
-} ad_event_t;
-
 typedef enum{
     P_IDLE,
     P_W2_CONNECT,
@@ -101,13 +91,8 @@ typedef struct le_central_connection_complete_event{
 void ble_client_init();
 void le_central_init();
 
-void le_central_register_handler(void (*le_callback)(le_event_t * event));
-void ble_client_register_packet_handler(void (*le_callback)(le_event_t * event));
-
-le_command_status_t le_central_start_scan();
-// creates one event per found peripheral device
-// { type (8), addr_type (8), addr(48), rssi(8), ad_len(8), ad_data(ad_len*8) }
-le_command_status_t le_central_stop_scan();
+void le_central_register_connection_handler(void (*le_callback)(le_event_t * event));
+//void ble_client_register_packet_handler(void (*le_callback)(le_event_t * event));
 
 le_command_status_t  le_central_connect(le_central_t *context, uint8_t addr_type, bd_addr_t addr);
 le_command_status_t  le_central_disconnect(le_central_t *context);

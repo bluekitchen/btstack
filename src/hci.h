@@ -254,6 +254,14 @@ typedef enum {
     BLUETOOTH_ACTIVE
 } BLUETOOTH_STATE;
 
+// le central scanning state
+typedef enum {
+    LE_SCAN_IDLE,
+    LE_START_SCAN,
+    LE_SCANNING,
+    LE_STOP_SCAN,
+} le_scanning_state_t;
+
 typedef struct {
     // linked list - assert: first field
     linked_item_t    item;
@@ -271,7 +279,7 @@ typedef struct {
     CONNECTION_STATE state;
     
     // bonding
-    bonding_flags_t bonding_flags;
+    uint16_t bonding_flags;
 
     // requested security level
     gap_security_level_t requested_security_level;
@@ -280,7 +288,7 @@ typedef struct {
     link_key_type_t link_key_type;
 
     // errands
-    hci_authentication_flags_t authentication_flags;
+    uint32_t authentication_flags;
 
     timer_source_t timeout;
     
@@ -367,9 +375,43 @@ typedef struct {
 
     uint8_t   adv_addr_type;
     bd_addr_t adv_address;
-
+    le_scanning_state_t le_scanning_state;
 } hci_stack_t;
 
+//*************** le client start
+
+typedef struct le_event {
+    uint8_t   type;
+} le_event_t;
+
+typedef enum {
+    BLE_PERIPHERAL_OK = 0,
+    BLE_PERIPHERAL_IN_WRONG_STATE,
+    BLE_PERIPHERAL_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS,
+    BLE_PERIPHERAL_NOT_CONNECTED,
+    BLE_VALUE_TOO_LONG,
+    BLE_PERIPHERAL_BUSY,
+    BLE_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED,
+    BLE_CHARACTERISTIC_INDICATION_NOT_SUPPORTED
+} le_command_status_t;
+
+    
+typedef struct ad_event {
+    uint8_t   type;
+    uint8_t   event_type;
+    uint8_t   address_type;
+    bd_addr_t address;
+    uint8_t   rssi;
+    uint8_t   length;
+    uint8_t * data;
+} ad_event_t;
+
+void le_central_register_handler(void (*le_callback)(le_event_t* event));
+le_command_status_t le_central_start_scan();
+le_command_status_t le_central_stop_scan();
+    
+//*************** le client end
+    
 // create and send hci command packets based on a template and a list of parameters
 uint16_t hci_create_cmd(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, ...);
 uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, va_list argptr);
