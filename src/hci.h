@@ -406,7 +406,7 @@ typedef struct ad_event {
     uint8_t * data;
 } ad_event_t;
 
-void le_central_register_handler(void (*le_callback)(le_event_t* event));
+// void le_central_register_handler(void (*le_callback)(le_event_t* event));
 le_command_status_t le_central_start_scan();
 le_command_status_t le_central_stop_scan();
     

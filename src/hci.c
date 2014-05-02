@@ -80,15 +80,15 @@ static hci_stack_t   hci_stack_static;
 #endif
 static hci_stack_t * hci_stack = NULL;
 
-static void (*le_central_callback)(le_event_t * event);
+// static void (*le_central_callback)(le_event_t * event);
 
-static void dummy_notify(le_event_t* event){}
-void le_central_register_handler(void (*le_callback)(le_event_t* event)){
-    if (le_callback == NULL){
-        le_callback = dummy_notify;
-    }
-    le_central_callback = le_callback;
-}
+//static void dummy_notify(le_event_t* event){}
+//void le_central_register_handler(void (*le_callback)(le_event_t* event)){
+//    if (le_callback == NULL){
+//        le_callback = dummy_notify;
+//    }
+//    le_central_callback = le_callback;
+//}
 
 // test helper
 static uint8_t disable_l2cap_timeouts = 0;
@@ -523,6 +523,38 @@ void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t * addr){
     }
 }
 
+static void le_handle_advertisement_report(uint8_t *packet, int size){
+    int num_reports = packet[3];
+    int i;
+    int total_data_length = 0;
+    int data_offset = 0;
+
+    for (i=0; i<num_reports;i++){
+        total_data_length += packet[4+num_reports*8+i];
+    }
+
+    for (i=0; i<num_reports;i++){
+        int pos = 0;
+        uint8_t data_length = packet[4+num_reports*8+i];
+        uint8_t event_size = 3 + 9 + data_length + 1;
+        uint8_t event[event_size];
+        event[pos++] = GATT_ADVERTISEMENT;
+        event[pos++] = event_size;
+        event[pos++] = 0;
+        event[pos++] = packet[4+i]; // event_type;
+        event[pos++] = packet[4+num_reports+i]; // address_type;
+        bt_flip_addr(&event[pos], &packet[4+num_reports*2+i*6]); // bt address
+        pos += 6;
+        event[pos++] = data_length;
+        memcpy(&packet[4+num_reports*9+data_offset], &event[pos], data_length);
+        data_offset += data_length;
+        pos += data_length;
+        event[pos] = packet[4+num_reports*9+total_data_length + i];
+        
+        hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
+    }
+}
+
 // avoid huge local variables
 #ifndef EMBEDDED
 static device_name_t device_name;
@@ -531,7 +563,7 @@ static void event_handler(uint8_t *packet, int size){
 
     uint16_t event_length = packet[1];
 
-    // assert packet is complete    
+    // assert packet is complete
     if (size != event_length + 2){
         log_error("hci.c: event_handler called with event packet of wrong size %u, expected %u => dropping packet", size, event_length + 2);
         return;
@@ -853,34 +885,10 @@ static void event_handler(uint8_t *packet, int size){
 #ifdef HAVE_BLE
         case HCI_EVENT_LE_META:
             switch (packet[2]){
-                case HCI_SUBEVENT_LE_ADVERTISING_REPORT:{
+                case HCI_SUBEVENT_LE_ADVERTISING_REPORT:
                     if (hci_stack->le_scanning_state != LE_SCANNING) break;
-                    int num_reports = packet[3];
-                    int i;
-                    int total_data_length = 0;
-                    int data_offset = 0;
-                    
-                    for (i=0; i<num_reports;i++){
-                        total_data_length += packet[4+num_reports*8+i];
-                    }
-                    
-                    ad_event_t advertisement_event;
-                    advertisement_event.type = GATT_ADVERTISEMENT;
-                    for (i=0; i<num_reports;i++){
-                        advertisement_event.event_type = packet[4+i];
-                        
-                        advertisement_event.address_type = packet[4+num_reports+i];
-                        bt_flip_addr(advertisement_event.address, &packet[4+num_reports*2+i*6]);
-                        advertisement_event.length = packet[4+num_reports*8+i];
-                        advertisement_event.data = &packet[4+num_reports*9+data_offset];
-                        data_offset += advertisement_event.length;
-                        
-                        advertisement_event.rssi = packet[4+num_reports*9+total_data_length + i];
-                        
-                        (*le_central_callback)((le_event_t*)&advertisement_event);
-                    }
+                    le_handle_advertisement_report(packet, size);
                     break;
-                }
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                     // Connection management
                     bt_flip_addr(addr, &packet[8]);

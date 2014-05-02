@@ -388,8 +388,9 @@ static void dump_characteristic(le_characteristic_t * characteristic){
 
 static void dump_ad_event(ad_event_t * e){
     printf("    *** adv. event *** evt-type %u, addr-type %u, addr %s, rssi %u, length adv %u, data: ", e->event_type, 
-                            e->address_type, bd_addr_to_str(e->address), e->rssi, e->length); 
-    hexdump2( e->data, e->length);                            
+                            e->address_type, bd_addr_to_str(e->address), e->rssi, e->length);
+    hexdump2(e->data, e->length);
+    
 }
 
 static void dump_service(le_service_t * service){
@@ -972,7 +973,6 @@ static void handle_disconnect(le_event_t * event){
 }
 
 static void handle_ble_client_event(le_event_t * event){
-    handle_scan_and_connect(event);
     handle_disconnect(event);
     
     switch(tc_state){
@@ -1059,12 +1059,51 @@ static void handle_ble_client_event(le_event_t * event){
 
 }
 
+/*
+ typedef struct ad_event {
+ uint8_t   type;
+ uint8_t   event_type;
+ uint8_t   address_type;
+ bd_addr_t address;
+ uint8_t   rssi;
+ uint8_t   length;
+ uint8_t * data;
+ } ad_event_t;
+ */
 static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
     le_command_status_t status;
     
     if (packet_type != HCI_EVENT_PACKET) return;
     
     switch (packet[0]) {
+        case GATT_ADVERTISEMENT:
+            if (tc_state != TC_W4_SCAN_RESULT) return;
+            printf("test client - SCAN ACTIVE\n");
+        
+            ad_event_t ad_event;
+            int pos = 3;
+            ad_event.event_type = packet[pos++];
+            ad_event.address_type = packet[pos++];
+            memcpy(ad_event.address, &packet[pos], 6);
+            pos += 6;
+            ad_event.length = packet[pos++];
+            ad_event.data = &packet[pos];
+            pos += ad_event.length;
+            ad_event.rssi = packet[pos];
+            dump_ad_event(&ad_event);
+            
+            test_device_addr_type = ad_event.address_type;
+            bd_addr_t found_device_addr;
+            memcpy(found_device_addr, ad_event.address, 6);
+            
+            if (memcmp(&found_device_addr, &test_device_addr, 6) != 0) return;
+            // memcpy(test_device_addr, ad_event->address, 6);
+            
+            tc_state = TC_W4_CONNECT;
+            le_central_stop_scan();
+            le_central_connect(&test_device, test_device_addr_type, test_device_addr);
+            
+            break;
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
             if (packet[2] == HCI_STATE_WORKING) {
@@ -1118,7 +1157,6 @@ void setup(void){
     l2cap_init();
     ble_client_init();
     le_central_init();
-    le_central_register_handler(handle_ble_client_event);
     ble_client_register_packet_handler(handle_ble_client_event);
     le_central_register_packet_handler(handle_hci_event);
 }
