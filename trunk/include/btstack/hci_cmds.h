@@ -35,6 +35,10 @@
  *  Created by Matthias Ringwald on 7/23/09.
  */
 
+/**
+ * @format
+ */
+
 #ifndef __HCI_CMDS_H
 #define __HCI_CMDS_H
 
@@ -86,7 +90,15 @@ extern "C" {
 #define HCI_EVENT_INQUIRY_RESULT				           0x02
 #define HCI_EVENT_CONNECTION_COMPLETE			           0x03
 #define HCI_EVENT_CONNECTION_REQUEST			           0x04
+
+/**
+ * @format 121
+ * @param status
+ * @param connection_handle
+ * @param reason 
+ */
 #define HCI_EVENT_DISCONNECTION_COMPLETE		      	   0x05
+
 #define HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT            0x06
 #define HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE	           0x07
 #define HCI_EVENT_ENCRYPTION_CHANGE                        0x08
@@ -121,6 +133,19 @@ extern "C" {
 #define HCI_EVENT_LE_META                                  0x3E
 #define HCI_EVENT_VENDOR_SPECIFIC				           0xFF
 
+/** 
+ * @format 11211B2221
+ * @param subevent_code
+ * @param status
+ * @param connection_handle
+ * @param role
+ * @param peer_address_type
+ * @param peer_address
+ * @param conn_interval
+ * @param conn_latency
+ * @param supervision_timeout
+ * @param master_clock_accuracy
+ */
 #define HCI_SUBEVENT_LE_CONNECTION_COMPLETE                0x01
 #define HCI_SUBEVENT_LE_ADVERTISING_REPORT                 0x02
 #define HCI_SUBEVENT_LE_CONNECTION_UPDATE_COMPLETE         0x03
@@ -134,6 +159,11 @@ extern "C" {
 // BTSTACK DAEMON EVENTS
 
 // events from BTstack for application/client lib
+
+/**
+ * @format 1
+ * @param state
+ */
 #define BTSTACK_EVENT_STATE                                0x60
 
 // data: event(8), len(8), nr hci connections
@@ -220,8 +250,15 @@ extern "C" {
 // not provided by daemon, only used for internal testing
 #define SDP_QUERY_SERVICE_RECORD_HANDLE                    0x94
 
-// data: event(8), gatt subevent(8), address_type(8), address(6x8), rssi(8), len(8), data(len*8)
-#define GATT_ADVERTISEMENT								   0xA0
+/**
+ * @format 1B1LV
+ * @param address_type
+ * @param address
+ * @param rssi
+ * @param data_length
+ * @param data
+ */
+#define GAP_LE_ADVERTISING_REPORT						   0xA0
 
 #define GATT_CONNECTION_COMPLETE	 					   0xA1
 #define GATT_SERVICE_QUERY_RESULT     					   0xA2
@@ -521,6 +558,14 @@ extern const hci_cmd_t rfcomm_unregister_service;
 // request persisten rfcomm channel for service name: serive name (char*) 
 extern const hci_cmd_t rfcomm_persistent_channel_for_service;
     
+extern const hci_cmd_t gap_disconnect_cmd;
+extern const hci_cmd_t gap_le_scan_start;
+extern const hci_cmd_t gap_le_scan_stop;
+extern const hci_cmd_t gap_le_connect_cmd;
+extern const hci_cmd_t gatt_client_start_cmd;
+extern const hci_cmd_t gatt_client_stop_cmd;
+extern const hci_cmd_t gatt_discover_primary_services_cmd;
+
 #if defined __cplusplus
 }
 #endif

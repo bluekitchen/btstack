@@ -773,7 +773,7 @@ static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             printf("test client - DISCONNECTED\n");
             break;
-        case GATT_ADVERTISEMENT:
+        case GAP_LE_ADVERTISING_REPORT:
             if (tc_state != TC_W4_SCAN_RESULT) return;
             printf("test client - SCAN ACTIVE\n");
         
@@ -783,10 +783,10 @@ static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size
             ad_event.address_type = packet[pos++];
             memcpy(ad_event.address, &packet[pos], 6);
             pos += 6;
+            ad_event.rssi = packet[pos++];
             ad_event.length = packet[pos++];
             ad_event.data = &packet[pos];
             pos += ad_event.length;
-            ad_event.rssi = packet[pos];
             dump_ad_event(&ad_event);
             
             test_device_addr_type = ad_event.address_type;

@@ -606,6 +606,9 @@ OPCODE(OGF_BTSTACK, BTSTACK_GET_STATE), ""
 // no params -> 
 };
 
+/**
+ * @param power_mode
+ */
 const hci_cmd_t btstack_set_power_mode = {
 OPCODE(OGF_BTSTACK, BTSTACK_SET_POWER_MODE), "1"
 // mode: 0 = off, 1 = on
@@ -723,10 +726,62 @@ const hci_cmd_t rfcomm_accept_connection = {
 const hci_cmd_t rfcomm_decline_connection = {
     OPCODE(OGF_BTSTACK, RFCOMM_DECLINE_CONNECTION), "21"
 };
-// request persisten rfcomm channel number for named service
+// request persistent rfcomm channel number for named service
 const hci_cmd_t rfcomm_persistent_channel_for_service = {
     OPCODE(OGF_BTSTACK, RFCOMM_PERSISTENT_CHANNEL), "N"
 };
+
+/**
+ * @param handle
+ */
+const hci_cmd_t gap_disconnect_cmd = {
+    OPCODE(OGF_BTSTACK, GAP_DISCONNECT), "H"
+};
+
+/**
+ */
+const hci_cmd_t gap_le_scan_start = {
+    OPCODE(OGF_BTSTACK, GAP_LE_SCAN_START), ""
+};
+
+/**
+ */
+const hci_cmd_t gap_le_scan_stop = {
+    OPCODE(OGF_BTSTACK, GAP_LE_SCAN_STOP), ""
+};
+
+/**
+ * @param peer_address_type
+ * @param peer_address
+ */
+const hci_cmd_t gap_le_connect_cmd = {
+    OPCODE(OGF_BTSTACK, GAP_LE_CONNECT), "1B"
+};
+
+/**
+ * @param handle
+ */
+const hci_cmd_t gatt_client_start_cmd = {
+    OPCODE(OGF_BTSTACK, GAP_LE_CONNECT), "H"
+};
+
+/**
+ * @param handle
+ */
+const hci_cmd_t gatt_client_stop_cmd = {
+    OPCODE(OGF_BTSTACK, GAP_LE_CONNECT), "H"
+};
+
+/**
+ * @param handle
+ */
+const hci_cmd_t gatt_discover_primary_services_cmd = {
+    OPCODE(OGF_BTSTACK, GAP_LE_CONNECT), "H"
+};
+
+
+// GATT Client 0x70
+#define GATT_DISCOVER_ALL_PRIMARY_SERVICES 0x70
 
 // register rfcomm service: @param channel(8), mtu (16), initial credits (8)
 extern const hci_cmd_t rfcomm_register_service_with_initial_credits;
