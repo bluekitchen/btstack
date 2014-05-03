@@ -234,6 +234,7 @@ typedef enum {
     ACCEPTED_CONNECTION_REQUEST,
     REJECTED_CONNECTION_REQUEST,
     OPEN,
+    SEND_DISCONNECT,
     SENT_DISCONNECT
 } CONNECTION_STATE;
 
@@ -401,7 +402,7 @@ typedef enum {
 le_command_status_t le_central_start_scan();
 le_command_status_t le_central_stop_scan();
 le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_type);
-le_command_status_t le_central_disconnect(uint16_t * handle);
+le_command_status_t gap_disconnect(hci_con_handle_t handle);
 
 //*************** le client end
     
