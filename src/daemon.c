@@ -150,6 +150,8 @@ static void daemon_no_connections_timeout(struct timer *ts){
 static int btstack_command_handler(connection_t *connection, uint8_t *packet, uint16_t size){
     
     bd_addr_t addr;
+    bd_addr_type_t addr_type;
+    hci_con_handle_t handle;
     uint16_t cid;
     uint16_t psm;
     uint16_t service_channel;
@@ -358,7 +360,22 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
 
             // sdp_general_query_for_uuid(addr, 0x1002);
             break;
-        default:
+        case GAP_LE_SCAN_START:
+            le_central_start_scan();
+            break;
+        case GAP_LE_SCAN_STOP:
+            le_central_stop_scan();
+            break;
+        case GAP_LE_CONNECT:
+            bt_flip_addr(addr, &packet[4]);
+            addr_type = packet[3];
+            le_central_connect(&addr, addr_type);
+            break;
+        case GAP_DISCONNECT:
+            handle = READ_BT_16(packet, 3);
+            gap_disconnect(handle);
+            break;
+    default:
             log_error("Error: command %u not implemented\n:", READ_CMD_OCF(packet));
             break;
     }
@@ -560,7 +577,7 @@ static void handle_sdp_rfcomm_service_result(sdp_query_event_t * rfcomm_event, v
     switch (rfcomm_event->type){
         case SDP_QUERY_RFCOMM_SERVICE: {
             sdp_query_rfcomm_service_event_t * service_event = (sdp_query_rfcomm_service_event_t*) rfcomm_event;
-            int name_len = strlen((const char*)service_event);
+            int name_len = (int)strlen((const char*)service_event);
             int event_len = 3 + name_len; 
             uint8_t event[event_len];
             event[0] = rfcomm_event->type;
