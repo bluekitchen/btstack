@@ -50,7 +50,7 @@ static void verify_advertisement(ad_event_t * e){
 
 static void handle_ble_client_event(le_event_t * event){
 	switch(event->type){
-		case GATT_ADVERTISEMENT:
+		case GAP_LE_ADVERTISING_REPORT:
 			advertisement_received = 1;
 			verify_advertisement((ad_event_t *) event);
 			break;

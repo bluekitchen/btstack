@@ -526,21 +526,19 @@ static void le_handle_advertisement_report(uint8_t *packet, int size){
     for (i=0; i<num_reports;i++){
         int pos = 0;
         uint8_t data_length = packet[4+num_reports*8+i];
-        uint8_t event_size = 3 + 9 + data_length + 1;
-        uint8_t event[event_size];
-        event[pos++] = GATT_ADVERTISEMENT;
+        uint8_t event_size = 10 + data_length;
+        uint8_t event[2 + event_size ];
+        event[pos++] = GAP_LE_ADVERTISING_REPORT;
         event[pos++] = event_size;
-        event[pos++] = 0;
         event[pos++] = packet[4+i]; // event_type;
         event[pos++] = packet[4+num_reports+i]; // address_type;
         bt_flip_addr(&event[pos], &packet[4+num_reports*2+i*6]); // bt address
         pos += 6;
+        event[pos++] = packet[4+num_reports*9+total_data_length + i];
         event[pos++] = data_length;
         memcpy(&packet[4+num_reports*9+data_offset], &event[pos], data_length);
         data_offset += data_length;
         pos += data_length;
-        event[pos] = packet[4+num_reports*9+total_data_length + i];
-        
         hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
     }
 }

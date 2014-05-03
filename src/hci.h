@@ -185,6 +185,19 @@ extern "C" {
 #define RFCOMM_REGISTER_SERVICE_WITH_CREDITS 0x48
 #define RFCOMM_GRANT_CREDITS                 0x49
     
+// GAP Classic 0x50
+#define GAP_DISCONNECT              0x50
+
+// GAP LE      0x60  
+#define GAP_LE_SCAN_START           0x60
+#define GAP_LE_SCAN_STOP            0x61
+#define GAP_LE_CONNECT              0x62
+
+// GATT (Client) 0x70
+#define GATT_START                  0x70
+#define GATT_STOP                   0x71
+#define GATT_DISCOVER_ALL_PRIMARY_SERVICES 0x72
+
 // 
 #define IS_COMMAND(packet, command) (READ_BT_16(packet,0) == command.opcode)
 
