@@ -35,27 +35,11 @@
 #ifndef btstack_gatt_client_h
 #define btstack_gatt_client_h
 
+#include "hci.h"
+
 #if defined __cplusplus
 extern "C" {
 #endif
-    
-//*************** le client
-
-typedef struct le_event {
-    uint8_t   type;
-} le_event_t;
-
-typedef enum {
-    BLE_PERIPHERAL_OK = 0,
-    BLE_PERIPHERAL_IN_WRONG_STATE,
-    BLE_PERIPHERAL_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS,
-    BLE_PERIPHERAL_NOT_CONNECTED,
-    BLE_VALUE_TOO_LONG,
-    BLE_PERIPHERAL_BUSY,
-    BLE_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED,
-    BLE_CHARACTERISTIC_INDICATION_NOT_SUPPORTED
-} le_command_status_t;
-
     
 //*************** gatt client
 typedef enum {
