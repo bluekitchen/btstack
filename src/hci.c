@@ -1379,8 +1379,13 @@ void hci_run(){
     
     // send pending HCI commands
     for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
-
         connection = (hci_connection_t *) it;
+
+        if (connection->state == SEND_DISCONNECT){
+            hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13); // remote closed connection
+            connection->state = SENT_DISCONNECT;
+            return;
+        }
         
         if (connection->state == SEND_CREATE_CONNECTION){
             log_info("sending hci_create_connection\n");
@@ -2177,6 +2182,13 @@ le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_typ
 }
 
 
-le_command_status_t le_central_disconnect(uint16_t * handle){
+le_command_status_t gap_disconnect(hci_con_handle_t handle){
+    hci_connection_t * conn = hci_connection_for_handle(handle);
+    if (!conn){
+        hci_emit_le_connection_complete(conn, 0);
+        return BLE_PERIPHERAL_OK;
+    }
+    conn->state = SEND_DISCONNECT;
+    hci_run();
     return BLE_PERIPHERAL_OK;
 }

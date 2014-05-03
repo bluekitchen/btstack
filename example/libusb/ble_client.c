@@ -73,16 +73,8 @@ typedef struct ad_event {
     uint8_t * data;
 } ad_event_t;
 
-static linked_list_t le_central_connections = NULL;
-    
 void (*ble_client_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = NULL;
 static void ble_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-
-
-void (*le_central_callback)(le_event_t * event);
-// static void le_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-
-static void le_central_run();
 
 static void hexdump2(void *data, int size){
     if (size <= 0) return;
@@ -93,57 +85,25 @@ static void hexdump2(void *data, int size){
     // printf("\n");
 }
 
-void le_central_init(){
-    le_central_connections = NULL;
-}
-
 void ble_client_init(){
-    le_central_init();
     gatt_client_init();
-
     l2cap_register_packet_handler(ble_packet_handler);
 }
 
-static void dummy_notify(le_event_t* event){}
 
-void le_central_register_connection_handler(void (*le_callback)(le_event_t* event)){
-    if (le_callback == NULL){
-        le_callback = dummy_notify;
-    }
-    le_central_callback = le_callback;
-}
-
-void ble_client_register_packet_handler(void (*le_callback)(le_event_t* event)){
+void ble_client_register_gatt_client_event_packet_handler(void (*le_callback)(le_event_t* event)){
     gatt_client_register_handler(le_callback);
-    le_central_register_connection_handler(le_callback);
-    
-    /*
-     ble_client_callback = dummy_notify;
-     if (le_callback != NULL){
-     ble_client_callback = le_callback;
-     }
-     */
 }
 
-void le_central_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
+void ble_client_register_hci_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
     ble_client_packet_handler = handler;
 }
-
 
 
 static void ble_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
 
     gatt_packet_handler(connection, packet_type, channel, packet, size);
-
-    // hexdump2(packet, size);
-    // printf("\n");
-    // printf("packet_handler:  HCI_EVENT_PACKET %d, packet[0]: 0x%02x, packet[2]: 0x%02x, state %d \n", packet_type == HCI_EVENT_PACKET, 
-    //         packet[0], packet[2], state);
-    
-    // printf("HCI_EVENT_LE_META 0x%02x, ADVERTISING_REPORT 0x%02x, scanning %d\n", HCI_EVENT_LE_META, HCI_SUBEVENT_LE_ADVERTISING_REPORT, SCANNING);
-    
-    //gatt_client_run();
 
     // forward to app
     if (!ble_client_packet_handler) return;
@@ -198,6 +158,7 @@ static void dump_descriptor(le_characteristic_descriptor_t * descriptor){
 
 
 gatt_client_t test_gatt_client_context;
+uint16_t test_gatt_client_handle;
 
 le_service_t services[40];
 le_characteristic_t characteristics[100];
@@ -732,32 +693,9 @@ uint8_t chr_short_value[1] = {0x86};
 //}
 
 
-static void handle_disconnect(le_event_t * event){
-    if (tc_state != TC_W4_DISCONNECT) return;
-    if (event->type != GATT_CONNECTION_COMPLETE ) return;
-    printf("  DONE\n");
-}
 
-static void handle_ble_client_event(le_event_t * event){
-    handle_disconnect(event);
-    
+static void handle_gatt_client_event(le_event_t * event){
     switch(tc_state){
-//        case TC_W4_CONNECT: {
-//            if (event->type != GATT_CONNECTION_COMPLETE) break;
-//
-//            tc_state = TC_W4_SERVICE_RESULT;
-//            printf("\n test client - CONNECTED, query ACC service\n");
-//            
-//            // create gatt client context for this
-//            le_central_connection_complete_event_t * peripheral_event = (le_central_connection_complete_event_t *) event;
-//            uint16_t handle = peripheral_event->device->handle;
-//            gatt_client_start(&test_gatt_client_context, handle);
-//            
-//            // let's start
-//            gatt_client_discover_primary_services_by_uuid128(&test_gatt_client_context, acc_service_uuid);
-//            break;
-//        }
-            
         case TC_W4_SERVICE_RESULT:
             switch(event->type){
                 case GATT_SERVICE_QUERY_RESULT:
@@ -809,7 +747,7 @@ static void handle_ble_client_event(le_event_t * event){
                     printf("DONE");
                     tc_state = TC_W4_DISCONNECT;
                     printf("\n\n test client - DISCONNECT ");
-                    // le_central_disconnect(&test_device);
+                    gap_disconnect(test_gatt_client_handle);
                     break;
                     
                 default:
@@ -832,6 +770,9 @@ static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size
     if (packet_type != HCI_EVENT_PACKET) return;
     
     switch (packet[0]) {
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            printf("test client - DISCONNECTED\n");
+            break;
         case GATT_ADVERTISEMENT:
             if (tc_state != TC_W4_SCAN_RESULT) return;
             printf("test client - SCAN ACTIVE\n");
@@ -874,7 +815,8 @@ static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size
                     if (tc_state != TC_W4_CONNECT) return;
                     tc_state = TC_W4_SERVICE_RESULT;
                     printf("\n test client - CONNECTED, query ACC service\n");
-                    gatt_client_start(&test_gatt_client_context, READ_BT_16(packet, 4));
+                    test_gatt_client_handle = READ_BT_16(packet, 4);
+                    gatt_client_start(&test_gatt_client_context, test_gatt_client_handle);
                     
                     // let's start
                     gatt_client_discover_primary_services_by_uuid128(&test_gatt_client_context, acc_service_uuid);
@@ -930,9 +872,8 @@ void setup(void){
     hci_init(transport, &config, control, remote_db);
     l2cap_init();
     ble_client_init();
-    le_central_init();
-    ble_client_register_packet_handler(handle_ble_client_event);
-    le_central_register_packet_handler(handle_hci_event);
+    ble_client_register_gatt_client_event_packet_handler(handle_gatt_client_event);
+    ble_client_register_hci_packet_handler(handle_hci_event);
 }
 
 int main(void)
