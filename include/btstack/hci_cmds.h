@@ -35,10 +35,6 @@
  *  Created by Matthias Ringwald on 7/23/09.
  */
 
-/**
- * @format
- */
-
 #ifndef __HCI_CMDS_H
 #define __HCI_CMDS_H
 
