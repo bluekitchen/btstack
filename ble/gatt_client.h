@@ -164,10 +164,10 @@ typedef struct le_service_event{
 } le_service_event_t;
 
 typedef struct le_characteristic{
-    uint8_t  properties;
     uint16_t start_handle;
     uint16_t value_handle;
     uint16_t end_handle;
+    uint16_t properties;
     uint16_t uuid16;
     uint8_t  uuid128[16];
 } le_characteristic_t;
@@ -178,9 +178,11 @@ typedef struct le_characteristic_event{
 } le_characteristic_event_t;
 
 typedef struct le_characteristic_descriptor{
+    // no properties
     uint16_t handle;
     uint16_t uuid16;
     uint8_t  uuid128[16];
+    // TODO move to le_characteristic_descriptor_event_t
     uint16_t value_length;
     uint16_t value_offset;
     uint8_t * value;
