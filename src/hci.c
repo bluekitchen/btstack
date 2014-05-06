@@ -513,6 +513,7 @@ void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t * addr){
     }
 }
 
+#ifdef HAVE_BLE
 static void le_handle_advertisement_report(uint8_t *packet, int size){
     int num_reports = packet[3];
     int i;
@@ -542,6 +543,7 @@ static void le_handle_advertisement_report(uint8_t *packet, int size){
         hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
     }
 }
+#endif
 
 // avoid huge local variables
 #ifndef EMBEDDED
@@ -1358,6 +1360,7 @@ void hci_run(){
         return;
     }
     
+#ifdef HAVE_BLE
     // handle le scan
     if (hci_stack->state == HCI_STATE_WORKING){
         switch(hci_stack->le_scanning_state){
@@ -1374,6 +1377,7 @@ void hci_run(){
                 break;
         }
     }
+#endif
     
     // send pending HCI commands
     for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
@@ -1392,6 +1396,7 @@ void hci_run(){
                     hci_send_cmd(&hci_create_connection, connection->address, hci_usable_acl_packet_types(), 0, 0, 0, 1);
                     break;
                 default:
+#ifdef HAVE_BLE
                     hci_send_cmd(&hci_le_create_connection,
                                  1000,      // scan interval: 625 ms
                                  1000,      // scan interval: 625 ms
@@ -1408,6 +1413,7 @@ void hci_run(){
                                  );
 
                     connection->state = SENT_CREATE_CONNECTION;
+#endif
                     break;
             }
             return;
