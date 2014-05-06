@@ -71,6 +71,7 @@
 #include "sdp_query_util.h"
 #include "sdp_query_rfcomm.h"
 #include "socket_connection.h"
+#include "gatt_client.h"
 
 #ifdef USE_BLUETOOL
 #include <CoreFoundation/CoreFoundation.h>
@@ -375,6 +376,30 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             handle = READ_BT_16(packet, 3);
             gap_disconnect(handle);
             break;
+#if defined(HAVE_MALLOC) && defined(HAVE_BLE)
+        case GATT_START:{
+            handle = READ_BT_16(packet, 3);
+            gatt_client_t *context = (gatt_client_t*)malloc(sizeof(gatt_client_t));
+            gatt_client_start(context, handle);
+            break;
+        }
+        case GATT_STOP:{
+            handle = READ_BT_16(packet, 3);
+            gatt_client_t *context = get_gatt_client_context_for_handle(handle);
+            if (!context) break;
+            gatt_client_stop(context);
+            free(context);
+            break;
+        }
+        case GATT_DISCOVER_ALL_PRIMARY_SERVICES:{
+            handle = READ_BT_16(packet, 3);
+            gatt_client_t *context = get_gatt_client_context_for_handle(handle);
+            if (!context) break;
+            // TODO: emit error
+            gatt_client_discover_primary_services(context);
+            break;
+        }
+#endif
     default:
             log_error("Error: command %u not implemented\n:", READ_CMD_OCF(packet));
             break;
