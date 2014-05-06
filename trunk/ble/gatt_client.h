@@ -234,13 +234,14 @@ le_command_status_t gatt_client_find_included_services_for_service(gatt_client_t
 le_command_status_t gatt_client_discover_characteristics_for_service(gatt_client_t *context, le_service_t *service);
 // { type (8), gatt_client_t *context, service_handle, le_characteristic *}
 
+//
+// more convenience - all use the same query mechanism, but provided different ways to specify handle range and/or filter results
+// 
 // gets all characteristics in handle range, and returns those that match the given UUID.
 le_command_status_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(gatt_client_t *context, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
 // { type (8), gatt_client_t *context, service_handle, le_characteristic *}
 le_command_status_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(gatt_client_t *context, uint16_t start_handle, uint16_t end_handle, uint8_t * uuid);
 // { type (8), gatt_client_t *context, service_handle, le_characteristic *}
-
-// more convenience
 le_command_status_t gatt_client_discover_characteristics_for_service_by_uuid16 (gatt_client_t *context, le_service_t *service, uint16_t  uuid16);
 le_command_status_t gatt_client_discover_characteristics_for_service_by_uuid128(gatt_client_t *context, le_service_t *service, uint8_t * uuid128);
 
