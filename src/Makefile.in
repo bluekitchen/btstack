@@ -2,7 +2,7 @@ prefix =   @prefix@
 
 CC = @CC@
 LDFLAGS  = @LDFLAGS@
-CPPFLAGS = @CPPFLAGS@ -I.. -I../include
+CPPFLAGS = @CPPFLAGS@ -I../include -I../ble  -I../src -I.. 
 BTSTACK_LIB_LDFLAGS = @BTSTACK_LIB_LDFLAGS@
 BTSTACK_LIB_EXTENSION = @BTSTACK_LIB_EXTENSION@
 
