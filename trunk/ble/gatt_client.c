@@ -578,7 +578,7 @@ static int is_value_valid(gatt_client_t *peripheral, uint8_t *packet, uint16_t s
 }
 
 
-static gatt_client_t * get_gatt_client_context_for_handle(uint16_t handle){
+gatt_client_t * get_gatt_client_context_for_handle(uint16_t handle){
     linked_item_t *it;
     for (it = (linked_item_t *) gatt_client_connections; it ; it = it->next){
         gatt_client_t * peripheral = (gatt_client_t *) it;
