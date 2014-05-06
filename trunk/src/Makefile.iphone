@@ -9,7 +9,7 @@ ARCHS = armv6 arm64
 LIBRARY_NAME = libBTstack
 libBTstack_FILES  = btstack.c hci_cmds.c linked_list.c
 libBTstack_FILES += run_loop.c run_loop_cocoa.m run_loop_posix.c sdp_util.c socket_connection.c utils.c
-libBTstack_CFLAGS = -I../include -I..
+libBTstack_CFLAGS = -I../include -I../ble -I../src -I.. 
 
 TOOL_NAME = BTdaemon
 BTdaemon_FILES = $(libBTstack_FILES)   \
