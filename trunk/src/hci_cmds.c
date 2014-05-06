@@ -762,26 +762,22 @@ OPCODE(OGF_BTSTACK, GAP_LE_CONNECT), "1B"
  * @param handle
  */
 const hci_cmd_t gatt_client_start_cmd = {
-OPCODE(OGF_BTSTACK, GAP_LE_CONNECT), "H"
+OPCODE(OGF_BTSTACK, GATT_START), "H"
 };
 
 /**
  * @param handle
  */
 const hci_cmd_t gatt_client_stop_cmd = {
-OPCODE(OGF_BTSTACK, GAP_LE_CONNECT), "H"
+OPCODE(OGF_BTSTACK, GATT_STOP), "H"
 };
 
 /**
  * @param handle
  */
 const hci_cmd_t gatt_discover_primary_services_cmd = {
-OPCODE(OGF_BTSTACK, GAP_LE_CONNECT), "H"
+OPCODE(OGF_BTSTACK, GATT_DISCOVER_ALL_PRIMARY_SERVICES), "H"
 };
-
-
-// GATT Client 0x70
-#define GATT_DISCOVER_ALL_PRIMARY_SERVICES 0x70
 
 // register rfcomm service: @param channel(8), mtu (16), initial credits (8)
 extern const hci_cmd_t rfcomm_register_service_with_initial_credits;
