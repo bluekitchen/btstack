@@ -147,7 +147,7 @@ typedef struct gatt_client{
 
 typedef struct gatt_complete_event{
     uint8_t   type;
-    gatt_client_t * device;
+    gatt_client_t * client;
     uint8_t status;
 } gatt_complete_event_t;
 
@@ -160,6 +160,7 @@ typedef struct le_service{
 
 typedef struct le_service_event{
     uint8_t  type;
+    gatt_client_t * client;
     le_service_t service;
 } le_service_event_t;
 
@@ -174,6 +175,7 @@ typedef struct le_characteristic{
 
 typedef struct le_characteristic_event{
     uint8_t  type;
+    gatt_client_t * client;
     le_characteristic_t characteristic;
 } le_characteristic_event_t;
 
@@ -190,6 +192,7 @@ typedef struct le_characteristic_descriptor{
 
 typedef struct le_characteristic_descriptor_event{
     uint8_t  type;
+    gatt_client_t * client;
     le_characteristic_descriptor_t characteristic_descriptor;
 } le_characteristic_descriptor_event_t;
 
@@ -199,6 +202,7 @@ typedef struct le_characteristic_value{
 
 typedef struct le_characteristic_value_event{
     uint8_t  type;
+    gatt_client_t * client;
     uint16_t characteristic_value_handle;
     uint16_t characteristic_value_blob_length;
     uint16_t characteristic_value_offset;
