@@ -1046,6 +1046,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
 
 
 le_command_status_t gatt_client_discover_primary_services(gatt_client_t *peripheral){
+    if (peripheral->gatt_client_state != P_READY) return BLE_PERIPHERAL_IN_WRONG_STATE;
     peripheral->start_group_handle = 0x0001;
     peripheral->end_group_handle   = 0xffff;
     peripheral->gatt_client_state = P_W2_SEND_SERVICE_QUERY;
