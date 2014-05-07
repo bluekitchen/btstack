@@ -111,7 +111,9 @@ typedef enum{
 typedef struct gatt_client{
     linked_item_t    item;
     gatt_client_state_t gatt_client_state;
-    // le_central_state_t le_central_state;
+
+    // context used by higher layer
+    void * context;
     
     uint16_t handle;
     
@@ -212,7 +214,6 @@ typedef struct le_characteristic_value_event{
     
 void gatt_client_init();
 void gatt_client_register_handler(void (*le_callback)(le_event_t * event));
-void gatt_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 // start/stop gatt client
 void gatt_client_start(gatt_client_t *context, uint16_t handle);
