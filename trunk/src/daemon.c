@@ -148,6 +148,27 @@ static void daemon_no_connections_timeout(struct timer *ts){
     hci_power_control(HCI_POWER_OFF);
 }
 
+#ifdef HAVE_BLE
+static gatt_client_t * daemon_provide_gatt_client_context_for_handle(uint16_t handle){
+    gatt_client_t *context;
+    context = get_gatt_client_context_for_handle(handle);
+    if (!context){
+        context = (gatt_client_t*)malloc(sizeof(gatt_client_t));
+    }
+    return context;
+}
+
+static void send_gatt_service_query_complete(connection_t * connection, uint16_t handle, uint8_t status){
+    // @format H1
+    uint8_t event[5];
+    event[0] = GATT_SERVICE_QUERY_COMPLETE;
+    event[1] = 20;
+    bt_store_16(event, 2, handle);
+    event[4] = status;
+    socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+#endif
+
 static int btstack_command_handler(connection_t *connection, uint8_t *packet, uint16_t size){
     
     bd_addr_t addr;
@@ -377,28 +398,24 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             gap_disconnect(handle);
             break;
 #if defined(HAVE_MALLOC) && defined(HAVE_BLE)
-        case GATT_START:{
-            handle = READ_BT_16(packet, 3);
-            gatt_client_t *context = (gatt_client_t*)malloc(sizeof(gatt_client_t));
-            gatt_client_start(context, handle);
-            break;
-        }
-        case GATT_STOP:{
-            handle = READ_BT_16(packet, 3);
-            gatt_client_t *context = get_gatt_client_context_for_handle(handle);
-            if (!context) break;
-            gatt_client_stop(context);
-            free(context);
-            break;
-        }
         case GATT_DISCOVER_ALL_PRIMARY_SERVICES:{
             handle = READ_BT_16(packet, 3);
-            gatt_client_t *context = get_gatt_client_context_for_handle(handle);
-            if (!context) break;
-            // TODO: emit error
+            gatt_client_t *context = daemon_provide_gatt_client_context_for_handle(handle);
+            if (!context) {
+                send_gatt_service_query_complete(connection, handle, BTSTACK_MEMORY_ALLOC_FAILED);
+                break;
+            }
+            // check state
+            if (!gatt_client_is_ready(context)){
+                // TODO map BLE_PERIPHERAL errors to standard hci error codes
+//                send_gatt_service_query_complete(connection, handle, BTSTACK_MEMORY_ALLOC_FAILED);
+                break;
+            }
+            context->context = connection;
             gatt_client_discover_primary_services(context);
             break;
         }
+        // many more! ca 15
 #endif
     default:
             log_error("Error: command %u not implemented\n:", READ_CMD_OCF(packet));
@@ -577,6 +594,18 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     // RFCOMM CREDITS received...
                     daemon_retry_parked();
                     break;
+
+#if defined(HAVE_BLE) && defined(HAVE_MALLOC)
+                case HCI_EVENT_DISCONNECTION_COMPLETE:{
+                    uint16_t handle = READ_BT_16(packet, 3);
+                    gatt_client_t *context = get_gatt_client_context_for_handle(handle);
+                    if (!context) break;
+                    // @TODO return some complete event if request is active
+                    gatt_client_stop(context);
+                    free(context);
+                    break;
+                }
+#endif
                 default:
                     break;
             }
@@ -790,6 +819,73 @@ static void * run_loop_thread(void *context){
 }
 #endif
 
+#ifdef HAVE_BLE
+static void handle_gatt_client_event(le_event_t * le_event){
+    le_service_t * service;
+    le_service_event_t * service_event;
+    gatt_client_t * client;
+    connection_t * connection;
+
+    switch(le_event->type){
+
+        case GATT_SERVICE_QUERY_RESULT:{
+            service_event = (le_service_event_t *) le_event;
+            connection = (connection_t *) service_event->client->context;
+            service = &service_event->service;
+            // @format HX
+            // H22P
+            uint8_t event[24];
+            event[0] = GATT_SERVICE_QUERY_RESULT;
+            event[1] = 20;
+            bt_store_16(event, 2, service_event->client->handle);
+            bt_store_16(event, 4, service->start_group_handle);
+            bt_store_16(event, 6, service->end_group_handle);
+            swap128(service->uuid128, &event[8]);
+            socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+            break;
+        }
+
+        case GATT_SERVICE_QUERY_COMPLETE:
+            service_event = (le_service_event_t *) le_event;
+            client = service_event->client;
+            send_gatt_service_query_complete((connection_t *) client->context, client->handle, 0);
+            break;
+            
+//        case GATT_CHARACTERISTIC_QUERY_RESULT:
+//            enable_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+//            dump_characteristic(&enable_characteristic);
+//            break;
+//        case GATT_CHARACTERISTIC_QUERY_COMPLETE:
+//            tc_state = TC_W4_CHARACTERISTIC_DESCRIPTOR_RESULT;
+//            printf("\n test client - ACC ENABLE\n");
+//            gatt_client_discover_characteristic_descriptors(&test_gatt_client_context, &enable_characteristic);
+//            break;
+//        
+//        case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
+//            descriptor = ((le_characteristic_descriptor_event_t *) event)->characteristic_descriptor;
+//            dump_descriptor(&descriptor);
+//            break;
+//        case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_COMPLETE:
+//            gatt_client_read_long_characteristic_descriptor(&test_gatt_client_context, &descriptor);
+//            break;
+//        case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:{
+//            descriptor = ((le_characteristic_descriptor_event_t *) event)->characteristic_descriptor;
+//            dump_descriptor(&descriptor);
+//            break;
+//        }
+//        case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_COMPLETE:
+//            printf("DONE");
+//            tc_state = TC_W4_DISCONNECT;
+//            printf("\n\n test client - DISCONNECT ");
+//            gap_disconnect(test_gatt_client_handle);
+//            break;
+            
+        default:
+            break;
+    }
+}
+#endif
+
 int main (int argc,  char * const * argv){
     
     static int tcp_flag = 0;
@@ -911,18 +1007,22 @@ int main (int argc,  char * const * argv){
 #endif
     // init L2CAP
     l2cap_init();
-    l2cap_register_packet_handler(daemon_packet_handler);
+    l2cap_register_packet_handler(&daemon_packet_handler);
     timeout.process = daemon_no_connections_timeout;
 
 #ifdef HAVE_RFCOMM
     log_info("config.h: HAVE_RFCOMM\n");
     rfcomm_init();
-    rfcomm_register_packet_handler(daemon_packet_handler);
+    rfcomm_register_packet_handler(&daemon_packet_handler);
 #endif
     
 #ifdef HAVE_SDP
     sdp_init();
-    sdp_register_packet_handler(daemon_packet_handler);
+    sdp_register_packet_handler(&daemon_packet_handler);
+#endif
+
+#ifdef HAVE_BLE
+    gatt_client_register_handler(&handle_gatt_client_event);
 #endif
     
 #ifdef USE_LAUNCHD
@@ -935,7 +1035,7 @@ int main (int argc,  char * const * argv){
         socket_connection_create_unix(BTSTACK_UNIX);
     }
 #endif
-    socket_connection_register_packet_callback(daemon_client_handler);
+    socket_connection_register_packet_callback(&daemon_client_handler);
         
 #ifdef USE_BLUETOOL 
     // notify daemons
