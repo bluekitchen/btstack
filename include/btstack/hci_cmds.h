@@ -558,8 +558,6 @@ extern const hci_cmd_t gap_disconnect_cmd;
 extern const hci_cmd_t gap_le_scan_start;
 extern const hci_cmd_t gap_le_scan_stop;
 extern const hci_cmd_t gap_le_connect_cmd;
-extern const hci_cmd_t gatt_client_start_cmd;
-extern const hci_cmd_t gatt_client_stop_cmd;
 extern const hci_cmd_t gatt_discover_primary_services_cmd;
 
 #if defined __cplusplus
