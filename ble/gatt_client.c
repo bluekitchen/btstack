@@ -104,14 +104,6 @@ static uint16_t l2cap_max_mtu_for_handle(uint16_t handle){
 
 // END Helper Functions
 
-static inline void send_gatt_complete_event(gatt_client_t * peripheral, uint8_t type, uint8_t status){
-    gatt_complete_event_t event;
-    event.type = type;
-    event.device = peripheral;
-    event.status = status;
-    (*gatt_client_callback)((le_event_t*)&event);
-}
-
 // precondition: can_send_packet_now == TRUE
 static void att_confirmation(uint16_t peripheral_handle){
     l2cap_reserve_packet_buffer();
@@ -221,7 +213,6 @@ static uint16_t write_blob_length(gatt_client_t * peripheral){
     }
     return max_blob_length;
 }
-
 
 static void send_gatt_services_request(gatt_client_t *peripheral){
     return att_read_by_type_or_group_request(ATT_READ_BY_GROUP_TYPE_REQUEST, GATT_PRIMARY_SERVICE_UUID, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle);
@@ -340,6 +331,14 @@ static uint16_t get_last_result_handle(uint8_t * packet, uint16_t size){
     return READ_BT_16(packet, size - attr_length + handle_offset);
 }
 
+static inline void send_gatt_complete_event(gatt_client_t * peripheral, uint8_t type, uint8_t status){
+    gatt_complete_event_t event;
+    event.type = type;
+    event.client = peripheral;
+    event.status = status;
+    (*gatt_client_callback)((le_event_t*)&event);
+}
+
 static void report_gatt_services(gatt_client_t * peripheral, uint8_t * packet,  uint16_t size){
     uint8_t attr_length = packet[1];
     uint8_t uuid_length = attr_length - 4;
@@ -347,7 +346,8 @@ static void report_gatt_services(gatt_client_t * peripheral, uint8_t * packet,  
     le_service_t service;
     le_service_event_t event;
     event.type = GATT_SERVICE_QUERY_RESULT;
-    
+    event.client = peripheral;
+
     int i;
     for (i = 2; i < size; i += attr_length){
         service.start_group_handle = READ_BT_16(packet,i);
@@ -397,6 +397,7 @@ static void characteristic_end_found(gatt_client_t * peripheral, uint16_t end_ha
     
     le_characteristic_event_t event;
     event.type = GATT_CHARACTERISTIC_QUERY_RESULT;
+    event.client = peripheral;
     event.characteristic.start_handle = peripheral->characteristic_start_handle;
     event.characteristic.value_handle = peripheral->attribute_handle;
     event.characteristic.end_handle   = end_handle;
@@ -438,12 +439,14 @@ static void report_gatt_included_service(gatt_client_t * peripheral, uint8_t *uu
     le_service_event_t event;
     event.type = GATT_INCLUDED_SERVICE_QUERY_RESULT;
     event.service = service;
+    event.client = peripheral;
     (*gatt_client_callback)((le_event_t*)&event);
 }
 
 static void send_characteristic_value_event(gatt_client_t * peripheral, uint16_t handle, uint8_t * value, uint16_t length, uint16_t offset, uint8_t event_type){
     le_characteristic_value_event_t event;
     event.type = event_type;
+    event.client = peripheral;
     event.characteristic_value_handle = handle;
     event.characteristic_value_blob_length = length;
     event.characteristic_value = value;
@@ -470,6 +473,7 @@ static void report_gatt_characteristic_value(gatt_client_t * peripheral, uint16_
 static void report_gatt_characteristic_descriptor(gatt_client_t * peripheral, uint16_t handle, uint8_t *value, uint16_t value_length, uint16_t value_offset, uint8_t event_type){
     le_characteristic_descriptor_event_t event;
     event.type = event_type; // GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT;
+    event.client = peripheral;
     
     le_characteristic_descriptor_t descriptor;
     descriptor.handle = handle;
@@ -489,7 +493,8 @@ static void report_gatt_all_characteristic_descriptors(gatt_client_t * periphera
     le_characteristic_descriptor_t descriptor;
     le_characteristic_descriptor_event_t event;
     event.type = GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT;
-    
+    event.client = peripheral;
+
     int i;
     for (i = 0; i<size; i+=pair_size){
         descriptor.handle = READ_BT_16(packet,i);
