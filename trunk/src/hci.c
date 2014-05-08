@@ -533,7 +533,7 @@ static void le_handle_advertisement_report(uint8_t *packet, int size){
         event[pos++] = event_size;
         event[pos++] = packet[4+i]; // event_type;
         event[pos++] = packet[4+num_reports+i]; // address_type;
-        bt_flip_addr(&event[pos], &packet[4+num_reports*2+i*6]); // bt address
+        memcpy(&event[pos], &packet[4+num_reports*2+i*6], 6); // bt address
         pos += 6;
         event[pos++] = packet[4+num_reports*9+total_data_length + i];
         event[pos++] = data_length;
@@ -1390,13 +1390,14 @@ void hci_run(){
         }
         
         if (connection->state == SEND_CREATE_CONNECTION){
-            log_info("sending hci_create_connection\n");
             switch(connection->address_type){
                 case BD_ADDR_TYPE_CLASSIC:
+                    log_info("sending hci_create_connection\n");
                     hci_send_cmd(&hci_create_connection, connection->address, hci_usable_acl_packet_types(), 0, 0, 0, 1);
                     break;
                 default:
 #ifdef HAVE_BLE
+                    log_info("sending hci_le_create_connection\n");
                     hci_send_cmd(&hci_le_create_connection,
                                  1000,      // scan interval: 625 ms
                                  1000,      // scan interval: 625 ms
@@ -2169,6 +2170,7 @@ le_command_status_t le_central_stop_scan(){
 
 le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_type){
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
+    log_info("le_central_connect, conn struct %p", conn);
     if (!conn){
         conn = create_connection_for_bd_addr_and_type(*addr, addr_type);
         if (!conn){
@@ -2177,9 +2179,11 @@ le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_typ
             return BLE_PERIPHERAL_NOT_CONNECTED; // don't sent packet to controller
         }
         conn->state = SEND_CREATE_CONNECTION;
+        log_info("le_central_connect, state %u", conn->state);
+        hci_run();
         return BLE_PERIPHERAL_OK;
     }
-    conn->state = OPEN;
+    log_info("le_central_connect, state %u", conn->state);
     hci_emit_le_connection_complete(conn, 0);
     hci_run();
     return BLE_PERIPHERAL_OK;
