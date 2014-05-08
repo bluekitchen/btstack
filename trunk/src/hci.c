@@ -2155,13 +2155,14 @@ void gap_set_local_name(const char * local_name){
 }
 
 le_command_status_t le_central_start_scan(){
-    printf("hci_init: scanning state START_SCAN\n");
+    if (hci_stack->le_scanning_state == LE_SCANNING) return BLE_PERIPHERAL_OK;
     hci_stack->le_scanning_state = LE_START_SCAN;
     hci_run();
     return BLE_PERIPHERAL_OK;
 }
 
 le_command_status_t le_central_stop_scan(){
+    if ( hci_stack->le_scanning_state == LE_SCAN_IDLE) return BLE_PERIPHERAL_OK;
     hci_stack->le_scanning_state = LE_STOP_SCAN;
     hci_run();
     return BLE_PERIPHERAL_OK;
