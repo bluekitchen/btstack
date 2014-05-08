@@ -191,23 +191,19 @@ typedef struct le_characteristic_descriptor{
     uint16_t handle;
     uint16_t uuid16;
     uint8_t  uuid128[16];
-    // TODO move to le_characteristic_descriptor_event_t
-    uint16_t value_length;
-    uint16_t value_offset;
-    uint8_t * value;
 } le_characteristic_descriptor_t;
 
 typedef struct le_characteristic_descriptor_event{
     uint8_t  type;
     gatt_client_t * client;
     le_characteristic_descriptor_t characteristic_descriptor;
+    uint16_t value_length;
+    uint16_t value_offset;
+    uint8_t * value;
 } le_characteristic_descriptor_event_t;
 
 typedef struct le_characteristic_value{
     uint16_t handle;
-    uint16_t blob_length;
-    uint16_t value_offset;
-    uint8_t * value; 
 } le_characteristic_value_t;
 
 
@@ -215,6 +211,9 @@ typedef struct le_characteristic_value_event{
     uint8_t  type;
     gatt_client_t * client;
     le_characteristic_value_t characteristic_value;
+    uint16_t blob_length;
+    uint16_t value_offset;
+    uint8_t * value;
 } le_characteristic_value_event_t;
 
     

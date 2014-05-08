@@ -451,10 +451,9 @@ static void send_characteristic_value_event(gatt_client_t * peripheral, uint16_t
     le_characteristic_value_event_t event;
     le_characteristic_value_t characteristic_value;
     characteristic_value.handle = handle;
-    characteristic_value.blob_length = length;
-    characteristic_value.value = value;
-    characteristic_value.value_offset = offset;
-    
+    event.blob_length = length;
+    event.value = value;
+    event.value_offset = offset;
     event.type = event_type;
     event.client = peripheral;
     event.characteristic_value = characteristic_value;
@@ -485,13 +484,13 @@ static void report_gatt_characteristic_descriptor(gatt_client_t * peripheral, ui
     le_characteristic_descriptor_t descriptor;
     descriptor.handle = handle;
     descriptor.uuid16 = peripheral->uuid16;
-    descriptor.value_offset = value_offset;
+    event.value_offset = value_offset;
     if (peripheral->uuid128){
         memcpy(descriptor.uuid128, peripheral->uuid128, 16);
     }
     
-    descriptor.value = value;
-    descriptor.value_length = value_length;
+    event.value = value;
+    event.value_length = value_length;
     event.characteristic_descriptor = descriptor;
     (*gatt_client_callback)((le_event_t*)&event);
 }
@@ -512,7 +511,7 @@ static void report_gatt_all_characteristic_descriptors(gatt_client_t * periphera
             descriptor.uuid16 = 0;
             swap128(&packet[i+2], descriptor.uuid128);
         }
-        descriptor.value_length = 0;
+        event.value_length = 0;
         
         event.characteristic_descriptor = descriptor;
         (*gatt_client_callback)((le_event_t*)&event);
