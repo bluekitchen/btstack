@@ -449,12 +449,15 @@ static void report_gatt_included_service(gatt_client_t * peripheral, uint8_t *uu
 
 static void send_characteristic_value_event(gatt_client_t * peripheral, uint16_t handle, uint8_t * value, uint16_t length, uint16_t offset, uint8_t event_type){
     le_characteristic_value_event_t event;
+    le_characteristic_value_t characteristic_value;
+    characteristic_value.handle = handle;
+    characteristic_value.blob_length = length;
+    characteristic_value.value = value;
+    characteristic_value.value_offset = offset;
+    
     event.type = event_type;
     event.client = peripheral;
-    event.characteristic_value_handle = handle;
-    event.characteristic_value_blob_length = length;
-    event.characteristic_value = value;
-    event.characteristic_value_offset = offset;
+    event.characteristic_value = characteristic_value;
     (*gatt_client_callback)((le_event_t*)&event);
 }
 

@@ -410,11 +410,6 @@ typedef struct {
 
 //*************** le client start
 
-typedef struct le_event {
-    uint8_t   type;
-} le_event_t;
-
-// void le_central_register_handler(void (*le_callback)(le_event_t* event));
 le_command_status_t le_central_start_scan();
 le_command_status_t le_central_stop_scan();
 le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_type);
