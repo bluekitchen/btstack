@@ -765,5 +765,154 @@ const hci_cmd_t gatt_discover_primary_services_cmd = {
 OPCODE(OGF_BTSTACK, GATT_DISCOVER_ALL_PRIMARY_SERVICES), "H"
 };
 
+/**
+ * @param handle
+ * @param uuid16
+ */
+const hci_cmd_t gatt_discover_primary_services_by_uuid16_cmd = {
+    OPCODE(OGF_BTSTACK, GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID16), "H2"
+};
+
+/**
+ * @param handle
+ * @param uuid128
+ */
+const hci_cmd_t gatt_discover_primary_services_by_uuid128_cmd = {
+    OPCODE(OGF_BTSTACK, GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID128), "HP"
+};
+
+/**
+ * @param handle
+ * @param service
+ */
+const hci_cmd_t gatt_find_included_services_for_service_cmd = {
+    OPCODE(OGF_BTSTACK, GATT_FIND_INCLUDED_SERVICES_FOR_SERVICE), "HX"
+};
+
+/**
+ * @param handle
+ * @param service
+ */
+const hci_cmd_t gatt_discover_characteristics_for_service_cmd = {
+    OPCODE(OGF_BTSTACK, GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE), "HX"
+};
+
+/**
+ * @param handle
+ * @param service
+ * @param uuid128
+ */
+const hci_cmd_t gatt_discover_characteristics_for_service_by_uuid128_cmd = {
+    OPCODE(OGF_BTSTACK, GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID128), "HXP"
+};
+
+/**
+ * @param handle
+ * @param characteristic
+ */
+const hci_cmd_t gatt_discover_characteristic_descriptors_cmd = {
+    OPCODE(OGF_BTSTACK, GATT_DISCOVER_CHARACTERISTIC_DESCRIPTOR), "HY"
+};
+
+/**
+ * @param handle
+ * @param characteristic
+ */
+const hci_cmd_t gatt_read_value_of_characteristic_cmd = {
+    OPCODE(OGF_BTSTACK, GATT_READ_VALUE_OF_CHARACTERISTIC), "HY"
+};
+
+/**
+ * @param handle
+ * @param characteristic
+ */
+const hci_cmd_t gatt_read_long_value_of_characteristic_cmd = {
+    OPCODE(OGF_BTSTACK, GATT_READ_LONG_VALUE_OF_CHARACTERISTIC), "HY"
+};
+
+/**
+ * @param handle
+ * @param characteristic
+ * @param data_length
+ * @param data
+ */
+const hci_cmd_t gatt_write_value_of_characteristic_without_response_cmd = {
+    OPCODE(OGF_BTSTACK, GATT_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE), "HYLV"
+};
+
+/**
+ * @param handle
+ * @param characteristic
+ * @param data_length
+ * @param data
+ */
+const hci_cmd_t gatt_write_value_of_characteristic_cmd = {
+    OPCODE(OGF_BTSTACK, GATT_WRITE_VALUE_OF_CHARACTERISTIC), "HYLV"
+};
+
+/**
+ * @param handle
+ * @param characteristic
+ * @param data_length
+ * @param data
+ */
+const hci_cmd_t gatt_write_long_value_of_characteristic_cmd = {
+    OPCODE(OGF_BTSTACK, GATT_WRITE_LONG_VALUE_OF_CHARACTERISTIC), "HYLV"
+};
+
+/**
+ * @param handle
+ * @param characteristic
+ * @param data_length
+ * @param data
+ */
+const hci_cmd_t gatt_reliable_write_long_value_of_characteristic_cmd = {
+    OPCODE(OGF_BTSTACK, GATT_RELIABLE_WRITE_LONG_VALUE_OF_CHARACTERISTIC), "HYLV"
+};
+
+/**
+ * @param handle
+ * @param descriptor
+ */
+const hci_cmd_t gatt_read_characteristic_descriptor_cmd = {
+    OPCODE(OGF_BTSTACK, GATT_READ_CHARACTERISTIC_DESCRIPTOR), "HZ"
+};
+
+/**
+ * @param handle
+ * @param descriptor
+ */
+const hci_cmd_t gatt_read_long_characteristic_descriptor_cmd = {
+    OPCODE(OGF_BTSTACK, GATT_READ_LONG_CHARACTERISTIC_DESCRIPTOR), "HZ"
+};
+
+/**
+ * @param handle
+ * @param descriptor
+ * @param data_length
+ * @param data
+ */
+const hci_cmd_t gatt_write_characteristic_descriptor_cmd = {
+    OPCODE(OGF_BTSTACK, GATT_WRITE_CHARACTERISTIC_DESCRIPTOR), "HZLV"
+};
+
+/**
+ * @param handle
+ * @param descriptor
+ * @param data_length
+ * @param data
+ */
+const hci_cmd_t gatt_write_long_characteristic_descriptor_cmd = {
+    OPCODE(OGF_BTSTACK, GATT_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR), "HZLV"
+};
+
+/**
+ * @param handle
+ * @param characteristic
+ */
+const hci_cmd_t gatt_write_client_characteristic_configuration_cmd = {
+    OPCODE(OGF_BTSTACK, GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION), "HY2"
+};
+
 // register rfcomm service: @param channel(8), mtu (16), initial credits (8)
 extern const hci_cmd_t rfcomm_register_service_with_initial_credits;
