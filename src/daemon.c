@@ -407,15 +407,30 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             }
             // check state
             if (!gatt_client_is_ready(context)){
-                // TODO map BLE_PERIPHERAL errors to standard hci error codes
-//                send_gatt_service_query_complete(connection, handle, BTSTACK_MEMORY_ALLOC_FAILED);
+                send_gatt_service_query_complete(connection, handle, GATT_CLIENT_BUSY);
                 break;
             }
             context->context = connection;
             gatt_client_discover_primary_services(context);
             break;
         }
-        // many more! ca 15
+        case GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID16: break;
+        case GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID128: break;
+        case GATT_FIND_INCLUDED_SERVICES_FOR_SERVICE: break;
+        case GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE: break;
+        case GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID128: break;
+        case GATT_DISCOVER_CHARACTERISTIC_DESCRIPTOR: break;
+        case GATT_READ_VALUE_OF_CHARACTERISTIC: break;
+        case GATT_READ_LONG_VALUE_OF_CHARACTERISTIC: break;
+        case GATT_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE: break;
+        case GATT_WRITE_VALUE_OF_CHARACTERISTIC: break;
+        case GATT_WRITE_LONG_VALUE_OF_CHARACTERISTIC: break;
+        case GATT_RELIABLE_WRITE_LONG_VALUE_OF_CHARACTERISTIC: break;
+        case GATT_READ_CHARACTERISTIC_DESCRIPTOR: break;
+        case GATT_READ_LONG_CHARACTERISTIC_DESCRIPTOR: break;
+        case GATT_WRITE_CHARACTERISTIC_DESCRIPTOR: break;
+        case GATT_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR: break;
+        case GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION: break;
 #endif
     default:
             log_error("Error: command %u not implemented\n:", READ_CMD_OCF(packet));
