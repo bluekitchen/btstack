@@ -257,17 +257,55 @@ extern "C" {
 #define GAP_LE_ADVERTISING_REPORT						   0xA0
 
 #define GATT_CONNECTION_COMPLETE	 					   0xA1
+
+/**
+ * @format HX
+ * @param handle
+ * @param service
+ */
 #define GATT_SERVICE_QUERY_RESULT     					   0xA2
+
+/**
+ * @format H1
+ * @param handle
+ * @param status
+ */
 #define GATT_SERVICE_QUERY_COMPLETE    					   0xA3
+
 #define GATT_CHARACTERISTIC_QUERY_RESULT				   0xA4
+/**
+ * @format H1
+ * @param handle
+ * @param status
+ */
 #define GATT_CHARACTERISTIC_QUERY_COMPLETE    			   0xA5
+
 #define GATT_INCLUDED_SERVICE_QUERY_RESULT     			   0xA6
+
+/**
+ * @format H1
+ * @param handle
+ * @param status
+ */
 #define GATT_INCLUDED_SERVICE_QUERY_COMPLETE    		   0xA7
+
 #define GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT   0xA8
+
+/**
+ * @format H1
+ * @param handle
+ * @param status
+ */
 #define GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_COMPLETE 0xA9
 
 #define GATT_CHARACTERISTIC_VALUE_QUERY_RESULT  		   0xAA
 #define GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT		   0xAB
+
+/**
+ * @format H1
+ * @param handle
+ * @param status
+ */
 #define GATT_LONG_CHARACTERISTIC_VALUE_QUERY_COMPLETE	   0xAC
 #define GATT_CHARACTERISTIC_VALUE_WRITE_RESPONSE  		   0xAD
 #define GATT_LONG_CHARACTERISTIC_VALUE_WRITE_COMPLETE	   0xAE
@@ -275,6 +313,12 @@ extern "C" {
 
 #define GATT_NOTIFICATION								   0xBC
 #define GATT_INDICATION									   0xBD
+
+/**
+ * @format H1
+ * @param handle
+ * @param status
+ */
 #define GATT_CLIENT_CHARACTERISTIC_CONFIGURATION_COMPLETE  0xBE
 
 #define GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT        0xC2
@@ -287,27 +331,32 @@ extern "C" {
 #define ATT_HANDLE_VALUE_INDICATION_COMPLETE        	   0xBF
 
 // data: event(8), address_type(8), address (48), [number(32)]
-#define SM_JUST_WORKS_REQUEST							   0xb0
-#define SM_JUST_WORKS_CANCEL							   0xb1 
-#define SM_PASSKEY_DISPLAY_NUMBER						   0xb2
-#define SM_PASSKEY_DISPLAY_CANCEL  						   0xb3
-#define SM_PASSKEY_INPUT_NUMBER							   0xb4
-#define SM_PASSKEY_INPUT_CANCEL      					   0xb5
-#define SM_IDENTITY_RESOLVING_STARTED	        		   0xb6
-#define SM_IDENTITY_RESOLVING_FAILED	        		   0xb7
-#define SM_IDENTITY_RESOLVING_SUCCEEDED  				   0xb8
-#define SM_AUTHORIZATION_REQUEST						   0xb9
-#define SM_AUTHORIZATION_RESULT							   0xba
+#define SM_JUST_WORKS_REQUEST							   0xD0
+#define SM_JUST_WORKS_CANCEL							   0xD1 
+#define SM_PASSKEY_DISPLAY_NUMBER						   0xD2
+#define SM_PASSKEY_DISPLAY_CANCEL  						   0xD3
+#define SM_PASSKEY_INPUT_NUMBER							   0xD4
+#define SM_PASSKEY_INPUT_CANCEL      					   0xD5
+#define SM_IDENTITY_RESOLVING_STARTED	        		   0xD6
+#define SM_IDENTITY_RESOLVING_FAILED	        		   0xD7
+#define SM_IDENTITY_RESOLVING_SUCCEEDED  				   0xD8
+#define SM_AUTHORIZATION_REQUEST						   0xD9
+#define SM_AUTHORIZATION_RESULT							   0xDA
 
 // GAP
 
 // data: event(8), len(8), hci_handle (16), security_level (8)
-#define GAP_SECURITY_LEVEL     						   	   0xc0
+#define GAP_SECURITY_LEVEL     						   	   0xE0
 
 // data: event(8), len(8), status (8), bd_addr(48)
-#define GAP_DEDICATED_BONDING_COMPLETED					   0xc1
+#define GAP_DEDICATED_BONDING_COMPLETED					   0xE1
 
-// Error Code
+
+//
+// Error Codes
+//
+
+// from Bluetooth Core Specification
 #define ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER 	       0x02
 #define ERROR_CODE_PAIRING_NOT_ALLOWED					   0x18
 #define ERROR_CODE_INSUFFICIENT_SECURITY 				   0x2F
