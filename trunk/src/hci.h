@@ -414,18 +414,6 @@ typedef struct le_event {
     uint8_t   type;
 } le_event_t;
 
-typedef enum {
-    BLE_PERIPHERAL_OK = 0,
-    BLE_PERIPHERAL_IN_WRONG_STATE,
-    BLE_PERIPHERAL_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS,
-    BLE_PERIPHERAL_NOT_CONNECTED,
-    BLE_VALUE_TOO_LONG,
-    BLE_PERIPHERAL_BUSY,
-    BLE_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED,
-    BLE_CHARACTERISTIC_INDICATION_NOT_SUPPORTED
-} le_command_status_t;
-
-
 // void le_central_register_handler(void (*le_callback)(le_event_t* event));
 le_command_status_t le_central_start_scan();
 le_command_status_t le_central_stop_scan();
