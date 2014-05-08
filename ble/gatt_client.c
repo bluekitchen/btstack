@@ -42,7 +42,7 @@
 
 #include "btstack-config.h"
 
-#include "ble_client.h"
+#include "gatt_client.h"
 #include "ad_parser.h"
 
 #include "debug.h"
