@@ -102,9 +102,6 @@ void ble_client_register_hci_packet_handler(void (*handler)(uint8_t packet_type,
 
 static void ble_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
-
-    gatt_packet_handler(connection, packet_type, channel, packet, size);
-
     // forward to app
     if (!ble_client_packet_handler) return;
     ble_client_packet_handler(packet_type, packet, size);
@@ -143,10 +140,12 @@ static void dump_service(le_service_t * service){
 }
 
 
-static void dump_descriptor(le_characteristic_descriptor_t * descriptor){
-    printf("    *** descriptor *** handle 0x%02x, value ", descriptor->handle);
-    hexdump2(descriptor->value, descriptor->value_length);
-    printUUID(descriptor->uuid128, descriptor->uuid16);
+static void dump_descriptor(le_event_t * event){
+    le_characteristic_descriptor_event_t * devent = (le_characteristic_descriptor_event_t *) event;
+    le_characteristic_descriptor_t descriptor = devent->characteristic_descriptor;
+    printf("    *** descriptor *** handle 0x%02x, value ", descriptor.handle);
+    hexdump2(devent->value, devent->value_length);
+    printUUID(descriptor.uuid128, descriptor.uuid16);
 }
 
 //static void dump_characteristic_value(le_characteristic_value_event_t * event){
@@ -732,9 +731,9 @@ static void handle_gatt_client_event(le_event_t * event){
         case TC_W4_CHARACTERISTIC_DESCRIPTOR_RESULT:
             switch(event->type){
                 case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
-                    descriptor = ((le_characteristic_descriptor_event_t *) event)->characteristic_descriptor;
-                    dump_descriptor(&descriptor);
+                    dump_descriptor(event);
                     break;
+                
                 case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_COMPLETE:
                     gatt_client_read_long_characteristic_descriptor(&test_gatt_client_context, &descriptor);
                     break;
