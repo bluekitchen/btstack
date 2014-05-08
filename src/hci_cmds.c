@@ -778,7 +778,7 @@ const hci_cmd_t gatt_discover_primary_services_by_uuid16_cmd = {
  * @param uuid128
  */
 const hci_cmd_t gatt_discover_primary_services_by_uuid128_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID128), "HP"
+    OPCODE(OGF_BTSTACK, GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID128), "HU"
 };
 
 /**
@@ -803,7 +803,7 @@ const hci_cmd_t gatt_discover_characteristics_for_service_cmd = {
  * @param uuid128
  */
 const hci_cmd_t gatt_discover_characteristics_for_service_by_uuid128_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID128), "HXP"
+    OPCODE(OGF_BTSTACK, GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID128), "HXU"
 };
 
 /**
@@ -913,6 +913,3 @@ const hci_cmd_t gatt_write_long_characteristic_descriptor_cmd = {
 const hci_cmd_t gatt_write_client_characteristic_configuration_cmd = {
     OPCODE(OGF_BTSTACK, GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION), "HY2"
 };
-
-// register rfcomm service: @param channel(8), mtu (16), initial credits (8)
-extern const hci_cmd_t rfcomm_register_service_with_initial_credits;
