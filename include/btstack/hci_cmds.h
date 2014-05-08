@@ -247,7 +247,8 @@ extern "C" {
 #define SDP_QUERY_SERVICE_RECORD_HANDLE                    0x94
 
 /**
- * @format 1B1LV
+ * @format 11B1LV
+ * @param event_type
  * @param address_type
  * @param address
  * @param rssi
