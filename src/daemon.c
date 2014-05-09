@@ -1056,6 +1056,7 @@ static void * run_loop_thread(void *context){
 #ifdef HAVE_BLE
 
 static void handle_gatt_client_event(le_event_t * le_event){
+
     switch(le_event->type){
 
         case GATT_SERVICE_QUERY_RESULT:
@@ -1253,6 +1254,7 @@ int main (int argc,  char * const * argv){
 #endif
 
 #ifdef HAVE_BLE
+    gatt_client_init();
     gatt_client_register_handler(&handle_gatt_client_event);
 #endif
     
