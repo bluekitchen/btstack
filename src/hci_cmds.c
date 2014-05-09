@@ -428,6 +428,16 @@ OPCODE(OGF_LE_CONTROLLER, 0x05), "B"
 // params: random device address
 // return: status
 };
+/**
+ * @param advertising_interval_min
+ * @param advertising_interval_max
+ * @param advertising_type
+ * @param own_address_type
+ * @param direct_address_type
+ * @param direct_address
+ * @param advertising_channel_map
+ * @param advertising_filter_policy
+ */
 const hci_cmd_t hci_le_set_advertising_parameters = {
 OPCODE(OGF_LE_CONTROLLER, 0x06), "22111B11"
 // param: min advertising interval, [0x0020,0x4000], default: 0x0800, unit: 0.625 msec
@@ -445,6 +455,11 @@ OPCODE(OGF_LE_CONTROLLER, 0x07), ""
 // params: none
 // return: status, level [-20,10] signed int (8), units dBm
 };
+
+/**
+ * @param advertising_data_length
+ * @param advertising_data
+ */
 const hci_cmd_t hci_le_set_advertising_data= {
 OPCODE(OGF_LE_CONTROLLER, 0x08), "1A"
 // param: advertising data len
@@ -457,6 +472,9 @@ OPCODE(OGF_LE_CONTROLLER, 0x09), "1A"
 // param: scan response data (31 bytes)
 // return: status
 };
+/**
+ * @param advertise_enable
+ */
 const hci_cmd_t hci_le_set_advertise_enable = {
 OPCODE(OGF_LE_CONTROLLER, 0x0a), "1"
 // params: avertise enable: off (0), on (1)
