@@ -459,7 +459,7 @@ uint8_t  hci_number_free_acl_slots(void);
 int      hci_authentication_active_for_handle(hci_con_handle_t handle);
 uint16_t hci_max_acl_data_packet_length(void);
 uint16_t hci_usable_acl_packet_types(void);
-
+int      hci_non_flushable_packet_boundary_flag_supported(void);
 // 
 void hci_emit_state(void);
 void hci_emit_connection_complete(hci_connection_t *conn, uint8_t status);

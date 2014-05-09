@@ -484,19 +484,24 @@ uint16_t hci_max_acl_data_packet_length(void){
     return hci_stack->acl_data_packet_length;
 }
 
+int hci_non_flushable_packet_boundary_flag_supported(void){
+    // No. 54, byte 6, bit 6
+    return (hci_stack->local_supported_features[6] & (1 << 6)) != 0;
+}
+
 int hci_ssp_supported(void){
-    // No 51, byte 6, bit 3
+    // No. 51, byte 6, bit 3
     return (hci_stack->local_supported_features[6] & (1 << 3)) != 0;
 }
 
 int hci_classic_supported(void){
-    // No 37, byte 4, bit 5, = No BR/EDR Support
+    // No. 37, byte 4, bit 5, = No BR/EDR Support
     return (hci_stack->local_supported_features[4] & (1 << 5)) == 0;
 }
 
 int hci_le_supported(void){
-    // No 37, byte 4, bit 6 = LE Supported (Controller)
 #ifdef HAVE_BLE
+    // No. 37, byte 4, bit 6 = LE Supported (Controller)
     return (hci_stack->local_supported_features[4] & (1 << 6)) != 0;
 #else
     return 0;
