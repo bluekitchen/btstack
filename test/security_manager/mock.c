@@ -75,7 +75,7 @@ void mock_simulate_sm_data_packet(uint8_t * packet, uint16_t len){
 	uint8_t acl_buffer[len + 8];
 
 	// 0 - Connection handle : PB=10 : BC=00 
-    bt_store_16(acl_buffer, 0, handle | (2 << 12) | (0 << 14));
+    bt_store_16(acl_buffer, 0, handle | (0 << 12) | (0 << 14));
     // 2 - ACL length
     bt_store_16(acl_buffer, 2,  len + 4);
     // 4 - L2CAP packet length
@@ -176,8 +176,10 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
 int l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t * buffer, uint16_t len){
 	// printf("l2cap_send_connectionless\n");
 
-	// 0 - Connection handle : PB=10 : BC=00 
-    bt_store_16(packet_buffer, 0, handle | (2 << 12) | (0 << 14));
+    int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
+
+	// 0 - Connection handle : PB=pb : BC=00 
+    bt_store_16(packet_buffer, 0, handle | (pb << 12) | (0 << 14));
     // 2 - ACL length
     bt_store_16(packet_buffer, 2,  len + 4);
     // 4 - L2CAP packet length
