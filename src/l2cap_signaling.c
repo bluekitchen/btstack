@@ -82,8 +82,10 @@ uint16_t l2cap_next_local_cid(void){
 
 uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_handle_t handle, uint16_t cid, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
     
-    // 0 - Connection handle : PB=10 : BC=00 
-    bt_store_16(acl_buffer, 0, handle | (2 << 12) | (0 << 14));
+    int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
+
+    // 0 - Connection handle : PB=pb : BC=00 
+    bt_store_16(acl_buffer, 0, handle | (pb << 12) | (0 << 14));
     // 6 - L2CAP channel = 1
     bt_store_16(acl_buffer, 6, cid);
     // 8 - Code
@@ -148,8 +150,11 @@ uint16_t l2cap_create_signaling_le(uint8_t * acl_buffer, hci_con_handle_t handle
 }
 
 uint16_t l2cap_le_create_connection_parameter_update_request(uint8_t * acl_buffer, uint16_t handle, uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency, uint16_t timeout_multiplier){
-      // 0 - Connection handle : PB=10 : BC=00 
-    bt_store_16(acl_buffer, 0, handle | (2 << 12) | (0 << 14));
+
+    int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
+
+    // 0 - Connection handle : PB=pb : BC=00 
+    bt_store_16(acl_buffer, 0, handle | (pb << 12) | (0 << 14));
     // 6 - L2CAP LE Signaling channel = 5
     bt_store_16(acl_buffer, 6, 5);
     // 8 - Code

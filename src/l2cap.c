@@ -384,8 +384,10 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
 
-    // 0 - Connection handle : PB=10 : BC=00 
-    bt_store_16(acl_buffer, 0, channel->handle | (2 << 12) | (0 << 14));
+    int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
+
+    // 0 - Connection handle : PB=pb : BC=00 
+    bt_store_16(acl_buffer, 0, channel->handle | (pb << 12) | (0 << 14));
     // 2 - ACL length
     bt_store_16(acl_buffer, 2,  len + 4);
     // 4 - L2CAP packet length
@@ -416,8 +418,10 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
     
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
     
-    // 0 - Connection handle : PB=10 : BC=00 
-    bt_store_16(acl_buffer, 0, handle | (2 << 12) | (0 << 14));
+    int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
+
+    // 0 - Connection handle : PB=pb : BC=00 
+    bt_store_16(acl_buffer, 0, handle | (pb << 12) | (0 << 14));
     // 2 - ACL length
     bt_store_16(acl_buffer, 2,  len + 4);
     // 4 - L2CAP packet length
