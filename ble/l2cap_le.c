@@ -110,8 +110,8 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
     
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
 
-    // 0 - Connection handle : PB=10 : BC=00 
-    bt_store_16(acl_buffer, 0, handle | (2 << 12) | (0 << 14));
+    // 0 - Connection handle : PB=00 : BC=00 
+    bt_store_16(acl_buffer, 0, handle | (0 << 12) | (0 << 14));
     // 2 - ACL length
     bt_store_16(acl_buffer, 2,  len + 4);
     // 4 - L2CAP packet length
