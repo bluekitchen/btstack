@@ -602,6 +602,17 @@ static void event_handler(uint8_t *packet, int size){
                 hci_stack->le_data_packet_length = READ_BT_16(packet, 6);
                 hci_stack->total_num_le_packets  = packet[8];
                 log_info("hci_le_read_buffer_size: size %u, count %u\n", hci_stack->le_data_packet_length, hci_stack->total_num_le_packets);
+
+                // use LE buffers if no clasic buffers have been reported
+                if (hci_stack->total_num_acl_packets == 0){
+                    log_info("use le buffers instead of classic ones");
+                    hci_stack->total_num_acl_packets  = hci_stack->total_num_le_packets;
+                    hci_stack->acl_data_packet_length = hci_stack->le_data_packet_length;
+                    // determine usable ACL payload size
+                    if (HCI_ACL_PAYLOAD_SIZE < hci_stack->acl_data_packet_length){
+                        hci_stack->acl_data_packet_length = HCI_ACL_PAYLOAD_SIZE;
+                    }
+                }
             }            
 #endif
             // Dump local address
