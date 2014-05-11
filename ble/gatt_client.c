@@ -634,6 +634,19 @@ static void gatt_client_handle_context_list(){
             return;
         }
         
+        // check MTU for writes
+        switch (peripheral->gatt_client_state){
+            case P_W2_SEND_WRITE_CHARACTERISTIC_VALUE:
+                if (peripheral->attribute_length >= peripheral->mtu - 3) {
+                    hci_dump_log("P_W2_SEND_WRITE_CHARACTERISTIC_VALUE: val len %u > per->mtu %u", peripheral->attribute_length, peripheral->mtu);
+                    return;
+                }
+                break;
+            // TODO add more cases
+            default:
+                break;
+        }
+
         // printf("gatt_client_state %u\n", peripheral->gatt_client_state);
         switch (peripheral->gatt_client_state){
             case P_W2_SEND_SERVICE_QUERY:
@@ -1192,9 +1205,10 @@ le_command_status_t gatt_client_write_value_of_characteristic_without_response(g
 }
 
 le_command_status_t gatt_client_write_value_of_characteristic(gatt_client_t *peripheral, uint16_t value_handle, uint16_t value_length, uint8_t * value){
-    if (!gatt_client_is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
-    if (value_length >= peripheral->mtu - 3) return BLE_VALUE_TOO_LONG;
-    
+    if (!gatt_client_is_ready(peripheral)) {
+        hci_dump_log("gatt client not ready");
+        return BLE_PERIPHERAL_IN_WRONG_STATE;
+    }
     peripheral->attribute_handle = value_handle;
     peripheral->attribute_length = value_length;
     peripheral->attribute_value = value;
