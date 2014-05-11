@@ -186,6 +186,15 @@ typedef struct le_characteristic_event{
     le_characteristic_t characteristic;
 } le_characteristic_event_t;
 
+typedef struct le_characteristic_value_event{
+    uint8_t  type;
+    gatt_client_t * client;
+    uint16_t  value_handle;
+    uint16_t  value_offset;
+    uint16_t  blob_length;
+    uint8_t * blob;
+} le_characteristic_value_event_t;
+
 typedef struct le_characteristic_descriptor{
     // no properties
     uint16_t handle;
@@ -202,19 +211,6 @@ typedef struct le_characteristic_descriptor_event{
     uint8_t * value;
 } le_characteristic_descriptor_event_t;
 
-typedef struct le_characteristic_value{
-    uint16_t handle;
-} le_characteristic_value_t;
-
-
-typedef struct le_characteristic_value_event{
-    uint8_t  type;
-    gatt_client_t * client;
-    le_characteristic_value_t characteristic_value;
-    uint16_t blob_length;
-    uint16_t value_offset;
-    uint8_t * value;
-} le_characteristic_value_event_t;
 
     
 void gatt_client_init();
