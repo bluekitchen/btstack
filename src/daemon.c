@@ -166,10 +166,11 @@ typedef struct gatt_client_helper {
 static gatt_client_t * daemon_provide_gatt_client_context_for_handle(uint16_t handle){
     gatt_client_t *context;
     context = get_gatt_client_context_for_handle(handle);
-    if (!context){
-        context = (gatt_client_t*)malloc(sizeof(gatt_client_t) + sizeof(gatt_client_helper_t) + ATT_MAX_LONG_ATTRIBUTE_SIZE);
-    }
+    if (context) return context;
+
+    context = (gatt_client_t*)malloc(sizeof(gatt_client_t) + sizeof(gatt_client_helper_t) + ATT_MAX_LONG_ATTRIBUTE_SIZE);
     if (!context) return NULL;
+
     gatt_client_start(context, handle);
     return context;
 }
@@ -599,7 +600,6 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
             data_length = READ_BT_16(packet, 5 + CHARACTERISTIC_LENGTH);
             data = daemon_get_data_buffer(context);
-            hci_dump_log("GATT_WRITE_VALUE_OF_CHARACTERISTIC handle %x, len %u\n", characteristic.value_handle, data_length);
             memcpy(data, &packet[7 + CHARACTERISTIC_LENGTH], data_length);
             gatt_client_write_value_of_characteristic(context, characteristic.value_handle, data_length, data);
             break;
