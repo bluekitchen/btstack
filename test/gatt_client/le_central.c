@@ -54,9 +54,10 @@ static void handle_ble_client_event(le_event_t * event){
 			advertisement_received = 1;
 			verify_advertisement((ad_event_t *) event);
 			break;
-		case GATT_CONNECTION_COMPLETE: {
-			connected = 1;
-			break;
+		// TODO handle hci le connection complete event instead of this
+		// case GATT_CONNECTION_COMPLETE: {
+		// 	connected = 1;
+		// 	break;
         }
 		default:
 			printf("le_event_t");
