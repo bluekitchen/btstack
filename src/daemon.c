@@ -87,6 +87,15 @@
 #include <libusb-1.0/libusb.h>
 #endif
 
+#ifndef BTSTACK_LOG_FILE
+#define BTSTACK_LOG_FILE "/tmp/hci_dump.pklg"
+#endif
+
+// use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
+#ifndef BTSTACK_LOG_TYPE
+#define BTSTACK_LOG_TYPE HCI_DUMP_PACKETLOGGER 
+#endif
+
 #define DAEMON_NO_ACTIVE_CLIENT_TIMEOUT 10000
 
 
@@ -744,8 +753,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
 
 static void daemon_set_logging_enabled(int enabled){
     if (enabled && !loggingEnabled){
-        // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-        hci_dump_open("/data/btstack/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+        hci_dump_open(BTSTACK_LOG_FILE, BTSTACK_LOG_TYPE);
     }
     if (!enabled && loggingEnabled){
         hci_dump_close();
