@@ -45,6 +45,8 @@
 #include <btstack/run_loop.h>
 #include <btstack/utils.h>
 
+#include "btstack-config.h"
+
 #include <stdint.h>
 
 #if defined __cplusplus
@@ -52,10 +54,14 @@ extern "C" {
 #endif
 	
 // Default TCP port for BTstack daemon
+#ifndef BTSTACK_PORT
 #define BTSTACK_PORT            13333
+#endif
 
 // UNIX domain socket for BTstack */
+#ifndef BTSTACK_UNIX
 #define BTSTACK_UNIX            "/tmp/BTstack"
+#endif
 
 // packet handler
 typedef void (*btstack_packet_handler_t) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
