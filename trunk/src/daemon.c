@@ -533,6 +533,9 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             addr_type = packet[3];
             le_central_connect(&addr, addr_type);
             break;
+        case GAP_LE_CONNECT_CANCEL:
+            le_central_connect_cancel();
+            break;
         case GAP_DISCONNECT:
             handle = READ_BT_16(packet, 3);
             gap_disconnect(handle);

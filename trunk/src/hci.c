@@ -2206,6 +2206,10 @@ le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_typ
     return BLE_PERIPHERAL_OK;
 }
 
+le_command_status_t le_central_connect_cancel(){
+    // TODO implement
+    return BLE_PERIPHERAL_OK;
+}
 
 le_command_status_t gap_disconnect(hci_con_handle_t handle){
     hci_connection_t * conn = hci_connection_for_handle(handle);

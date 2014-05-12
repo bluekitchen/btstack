@@ -192,6 +192,7 @@ extern "C" {
 #define GAP_LE_SCAN_START           0x60
 #define GAP_LE_SCAN_STOP            0x61
 #define GAP_LE_CONNECT              0x62
+#define GAP_LE_CONNECT_CANCEL       0x63
 
 // GATT (Client) 0x70
 #define GATT_DISCOVER_ALL_PRIMARY_SERVICES                       0x70
@@ -413,6 +414,7 @@ typedef struct {
 le_command_status_t le_central_start_scan();
 le_command_status_t le_central_stop_scan();
 le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_type);
+le_command_status_t le_central_connect_cancel();
 le_command_status_t gap_disconnect(hci_con_handle_t handle);
 
 //*************** le client end
