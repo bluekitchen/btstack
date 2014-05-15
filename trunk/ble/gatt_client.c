@@ -770,9 +770,8 @@ void gatt_packet_handler(void * connection, uint8_t packet_type, uint16_t channe
             gatt_client_t * peripheral = get_gatt_client_context_for_handle(handle);
             if (!peripheral) break;
             
-            // TODO should we send some complete event if transaction pending???
-            
             peripheral->gatt_client_state = P_READY;
+            send_gatt_complete_event(peripheral, 0);
             linked_list_remove(&gatt_client_connections, (linked_item_t *) peripheral);
             break;
         }

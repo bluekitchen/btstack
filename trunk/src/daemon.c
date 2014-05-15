@@ -855,7 +855,6 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     uint16_t handle = READ_BT_16(packet, 3);
                     gatt_client_t *context = get_gatt_client_context_for_handle(handle);
                     if (!context) break;
-                    // @TODO return some complete event if request is active
                     gatt_client_stop(context);
                     free(context);
                     break;
