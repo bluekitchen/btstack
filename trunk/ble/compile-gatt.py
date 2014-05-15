@@ -27,10 +27,10 @@ Usage: ./compile-gatt.py profile.gatt profile.h
 import re
 import sys
 
-print '''
+print('''
 BLE configuration generator for use with BTstack, v0.1
 Copyright 2011 Matthias Ringwald
-'''
+''')
 
 assigned_uuids = {
     'GAP_SERVICE'          : 0x1800,
@@ -120,7 +120,7 @@ def parseProperties(properties):
         if property in property_flags:
             value |= property_flags[property]
         else:
-            print "WARNING: property %s undefined" % (property)
+            print("WARNING: property %s undefined" % (property))
     return value
 
 def write_8(fout, value):
@@ -164,7 +164,7 @@ def parseService(fout, parts, service_type):
 
     if current_service_uuid_string:
         fout.write("\n")
-        # print "append service %s = [%d, %d]\n" % (current_characteristic_uuid_string, current_service_start_handle, handle-1)
+        # print("append service %s = [%d, %d]\n" % (current_characteristic_uuid_string, current_service_start_handle, handle-1))
         services[current_service_uuid_string] = [current_service_start_handle, handle-1]
 
     property = property_flags['READ'];
@@ -212,7 +212,7 @@ def parseIncludeService(fout, parts):
     uuid_size = len(uuid)
     if uuid_size > 2:
         uuid_size = 0
-    # print "Include Service ", keyForUUID(uuid)
+    # print("Include Service ", keyForUUID(uuid))
 
     size = 2 + 2 + 2 + 2 + 4 + uuid_size
 
@@ -385,7 +385,7 @@ def parseCharacteristicFormat(fout, parts):
 
     identifier = parts[1]
     presentation_formats[identifier] = handle
-    # print "format '%s' with handle %d\n" % (identifier, handle) 
+    # print("format '%s' with handle %d\n" % (identifier, handle))
 
     format     = parts[2]
     exponent   = parts[3]
@@ -428,7 +428,7 @@ def parseCharacteristicAggregateFormat(fout, parts):
     for identifier in parts[1:]:
         format_handle = presentation_formats[identifier]
         if format == 0:
-            print "ERROR: identifier '%s' in CHARACTERISTIC_AGGREGATE_FORMAT undefined" % identifier
+            print("ERROR: identifier '%s' in CHARACTERISTIC_AGGREGATE_FORMAT undefined" % identifier)
             sys.exit(1)
         write_16(fout, format_handle)
     fout.write("\n")
@@ -488,7 +488,7 @@ def parse(fname_in, fin, fname_out, fout):
             parseCharacteristicAggregateFormat(fout, parts)
             continue
 
-        print "WARNING: unknown token: %s\n" % (parts[0])
+        print("WARNING: unknown token: %s\n" % (parts[0]))
 
     write_indent(fout)
     fout.write("// END\n");
@@ -509,7 +509,7 @@ def listHandles(fout):
         fout.write('\n')
 
 if (len(sys.argv) < 3):
-    print usage
+    print(usage)
     sys.exit(1)
 try:
     filename = sys.argv[2]
@@ -518,13 +518,10 @@ try:
     parse(sys.argv[1], fin, filename, fout)
     listHandles(fout)    
     fout.close()
-    print 'Created', filename
+    print('Created', filename)
 
 except IOError as e:
-    print usage
+    print(usage)
     sys.exit(1)
 
-print 'Compilation successful!\n'
-    
-
-
+print('Compilation successful!\n')
