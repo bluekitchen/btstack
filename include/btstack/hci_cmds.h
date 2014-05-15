@@ -411,6 +411,7 @@ extern "C" {
 
 // from Bluetooth Core Specification
 #define ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER 	       0x02
+#define ERROR_CODE_COMMAND_DISALLOWED                      0x0C
 #define ERROR_CODE_PAIRING_NOT_ALLOWED					   0x18
 #define ERROR_CODE_INSUFFICIENT_SECURITY 				   0x2F
 
