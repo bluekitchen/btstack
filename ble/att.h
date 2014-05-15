@@ -100,6 +100,9 @@ extern "C" {
 #define ATT_ERROR_UNSUPPORTED_GROUP_TYPE           0x10
 #define ATT_ERROR_INSUFFICIENT_RESOURCES           0x11
 
+    
+// custom BTstack error codes
+#define ATT_ERROR_HCI_DISCONNECT_RECEIVED          0x1f
 // MARK: Attribute Property Flags
 #define ATT_PROPERTY_BROADCAST           0x01
 #define ATT_PROPERTY_READ                0x02
