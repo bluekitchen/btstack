@@ -601,12 +601,11 @@ static void gatt_client_run(){
         // check MTU for writes
         switch (peripheral->gatt_client_state){
             case P_W2_SEND_WRITE_CHARACTERISTIC_VALUE:
-                if (peripheral->attribute_length >= peripheral->mtu - 3) {
-                    hci_dump_log("P_W2_SEND_WRITE_CHARACTERISTIC_VALUE: val len %u > per->mtu %u", peripheral->attribute_length, peripheral->mtu);
-                    return;
-                }
-                break;
-            // TODO add more cases
+            case P_W2_SEND_WRITE_CHARACTERISTIC_DESCRIPTOR:
+                if (peripheral->attribute_length < peripheral->mtu - 3) break;
+                peripheral->gatt_client_state = P_READY;
+                send_gatt_complete_event(peripheral, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
+                return;
             default:
                 break;
         }
@@ -726,7 +725,7 @@ static void gatt_client_run(){
 }
 
 static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8_t error_code) {
-    if (peripheral->gatt_client_state == P_READY) return;
+    if (gatt_client_is_ready(peripheral)) return;
     send_gatt_complete_event(peripheral, error_code);
 }
 
