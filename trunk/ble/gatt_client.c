@@ -335,9 +335,9 @@ static uint16_t get_last_result_handle(uint8_t * packet, uint16_t size){
     return READ_BT_16(packet, size - attr_length + handle_offset);
 }
 
-static inline void send_gatt_complete_event(gatt_client_t * peripheral, uint8_t type, uint8_t status){
+static inline void send_gatt_complete_event(gatt_client_t * peripheral, uint8_t status){
     gatt_complete_event_t event;
-    event.type = type;
+    event.type = GATT_QUERY_COMPLETE;
     event.client = peripheral;
     event.status = status;
     (*gatt_client_callback)((le_event_t*)&event);
@@ -476,7 +476,7 @@ static void report_gatt_characteristic_value(gatt_client_t * peripheral, uint16_
 
 static void report_gatt_characteristic_descriptor(gatt_client_t * peripheral, uint16_t handle, uint8_t *value, uint16_t value_length, uint16_t value_offset, uint8_t event_type){
     le_characteristic_descriptor_event_t event;
-    event.type = event_type; // GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT;
+    event.type = event_type;
     event.client = peripheral;
     
     le_characteristic_descriptor_t descriptor;
@@ -517,7 +517,7 @@ static void report_gatt_all_characteristic_descriptors(gatt_client_t * periphera
     
 }
 
-static void trigger_next_query(gatt_client_t * peripheral, uint16_t last_result_handle, gatt_client_state_t next_query_state, uint8_t complete_event_type){
+static void trigger_next_query(gatt_client_t * peripheral, uint16_t last_result_handle, gatt_client_state_t next_query_state){
     if (last_result_handle < peripheral->end_group_handle){
         peripheral->start_group_handle = last_result_handle + 1;
         peripheral->gatt_client_state = next_query_state;
@@ -525,32 +525,28 @@ static void trigger_next_query(gatt_client_t * peripheral, uint16_t last_result_
     }
     // DONE
     peripheral->gatt_client_state = P_READY;
-    send_gatt_complete_event(peripheral, complete_event_type, 0);
+    send_gatt_complete_event(peripheral, 0);
 }
 
 
 static inline void trigger_next_included_service_query(gatt_client_t * peripheral, uint16_t last_result_handle){
-    trigger_next_query(peripheral, last_result_handle, P_W2_SEND_INCLUDED_SERVICE_QUERY, GATT_INCLUDED_SERVICE_QUERY_COMPLETE);
+    trigger_next_query(peripheral, last_result_handle, P_W2_SEND_INCLUDED_SERVICE_QUERY);
 }
 
 static inline void trigger_next_service_query(gatt_client_t * peripheral, uint16_t last_result_handle){
-    trigger_next_query(peripheral, last_result_handle, P_W2_SEND_SERVICE_QUERY, GATT_SERVICE_QUERY_COMPLETE);
+    trigger_next_query(peripheral, last_result_handle, P_W2_SEND_SERVICE_QUERY);
 }
 
 static inline void trigger_next_service_by_uuid_query(gatt_client_t * peripheral, uint16_t last_result_handle){
-    trigger_next_query(peripheral, last_result_handle, P_W2_SEND_SERVICE_WITH_UUID_QUERY, GATT_SERVICE_QUERY_COMPLETE);
+    trigger_next_query(peripheral, last_result_handle, P_W2_SEND_SERVICE_WITH_UUID_QUERY);
 }
 
 static inline void trigger_next_characteristic_query(gatt_client_t * peripheral, uint16_t last_result_handle){
-    trigger_next_query(peripheral, last_result_handle, P_W2_SEND_CHARACTERISTIC_QUERY, GATT_CHARACTERISTIC_QUERY_COMPLETE);
+    trigger_next_query(peripheral, last_result_handle, P_W2_SEND_CHARACTERISTIC_QUERY);
 }
 
-//static inline void trigger_next_characteristic_by_uuid_query(gatt_client_t * peripheral, uint16_t last_result_handle){
-//    trigger_next_query(peripheral, last_result_handle, P_W2_SEND_INCLUDED_SERVICE_WITH_UUID_QUERY, GATT_CHARACTERISTIC_QUERY_COMPLETE);
-//}
-
 static inline void trigger_next_characteristic_descriptor_query(gatt_client_t * peripheral, uint16_t last_result_handle){
-    trigger_next_query(peripheral, last_result_handle, P_W2_SEND_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY, GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_COMPLETE);
+    trigger_next_query(peripheral, last_result_handle, P_W2_SEND_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY);
 }
 
 static inline void trigger_next_prepare_write_query(gatt_client_t * peripheral, gatt_client_state_t next_query_state, gatt_client_state_t done_state){
@@ -564,12 +560,12 @@ static inline void trigger_next_prepare_write_query(gatt_client_t * peripheral, 
     peripheral->gatt_client_state = next_query_state;
 }
 
-static inline void trigger_next_blob_query(gatt_client_t * peripheral, gatt_client_state_t next_query_state, uint8_t done_event, uint16_t received_blob_length){
+static inline void trigger_next_blob_query(gatt_client_t * peripheral, gatt_client_state_t next_query_state, uint16_t received_blob_length){
     
     uint16_t max_blob_length = peripheral->mtu - 1;
     if (received_blob_length < max_blob_length){
         peripheral->gatt_client_state = P_READY;
-        send_gatt_complete_event(peripheral, done_event, 0);
+        send_gatt_complete_event(peripheral, 0);
         return;
     }
     
@@ -926,15 +922,15 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             switch (peripheral->gatt_client_state){
                 case P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT:
                     peripheral->gatt_client_state = P_READY;
-                    send_gatt_complete_event(peripheral, GATT_CHARACTERISTIC_VALUE_WRITE_RESPONSE, 0);
+                    send_gatt_complete_event(peripheral, 0);
                     break;
                 case P_W4_CLIENT_CHARACTERISTIC_CONFIGURATION_RESULT:
                     peripheral->gatt_client_state = P_READY;
-                    send_gatt_complete_event(peripheral, GATT_CLIENT_CHARACTERISTIC_CONFIGURATION_COMPLETE, 0);
+                    send_gatt_complete_event(peripheral, 0);
                     break;
                 case P_W4_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:
                     peripheral->gatt_client_state = P_READY;
-                    send_gatt_complete_event(peripheral, GATT_CHARACTERISTIC_DESCRIPTOR_WRITE_RESPONSE, 0);
+                    send_gatt_complete_event(peripheral, 0);
                     break;
                 default:
                     break;
@@ -947,13 +943,13 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             switch(peripheral->gatt_client_state){
                 case P_W4_READ_BLOB_RESULT:
                     report_gatt_long_characteristic_value_blob(peripheral, &packet[1], received_blob_length, peripheral->attribute_offset);
-                    trigger_next_blob_query(peripheral, P_W2_SEND_READ_BLOB_QUERY, GATT_LONG_CHARACTERISTIC_VALUE_QUERY_COMPLETE, received_blob_length);
+                    trigger_next_blob_query(peripheral, P_W2_SEND_READ_BLOB_QUERY, received_blob_length);
                     break;
                 case P_W4_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_RESULT:
                     report_gatt_characteristic_descriptor(peripheral, peripheral->attribute_handle,
                                                           &packet[1], received_blob_length,
                                                           peripheral->attribute_offset, GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT);
-                    trigger_next_blob_query(peripheral, P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY, GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_COMPLETE, received_blob_length);
+                    trigger_next_blob_query(peripheral, P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY, received_blob_length);
                     break;
                 default:
                     break;
@@ -990,15 +986,15 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             switch (peripheral->gatt_client_state){
                 case P_W4_EXECUTE_PREPARED_WRITE_RESULT:
                     peripheral->gatt_client_state = P_READY;
-                    send_gatt_complete_event(peripheral, GATT_LONG_CHARACTERISTIC_VALUE_WRITE_COMPLETE, 0);
+                    send_gatt_complete_event(peripheral, 0);
                     break;
                 case P_W4_CANCEL_PREPARED_WRITE_RESULT:
                     peripheral->gatt_client_state = P_READY;
-                    send_gatt_complete_event(peripheral, GATT_LONG_CHARACTERISTIC_VALUE_WRITE_CANCELED, 1);
+                    send_gatt_complete_event(peripheral, 1);
                     break;
                 case P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:
                     peripheral->gatt_client_state = P_READY;
-                    send_gatt_complete_event(peripheral, GATT_LONG_CHARACTERISTIC_DESCRIPTOR_WRITE_COMPLETE, 0);
+                    send_gatt_complete_event(peripheral, 0);
                     break;
                 default:
                     break;
@@ -1014,31 +1010,31 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                         case P_W4_SERVICE_QUERY_RESULT:
                         case P_W4_SERVICE_WITH_UUID_RESULT:
                             peripheral->gatt_client_state = P_READY;
-                            send_gatt_complete_event(peripheral, GATT_SERVICE_QUERY_COMPLETE, 0);
+                            send_gatt_complete_event(peripheral, 0);
                             break;
                             
                         case P_W4_CHARACTERISTIC_QUERY_RESULT:
                         case P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT:
                             characteristic_end_found(peripheral, peripheral->end_group_handle);
                             peripheral->gatt_client_state = P_READY;
-                            send_gatt_complete_event(peripheral, GATT_CHARACTERISTIC_QUERY_COMPLETE, 0);
+                            send_gatt_complete_event(peripheral, 0);
                             break;
                             
                         case P_W4_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
                             peripheral->gatt_client_state = P_READY;
-                            send_gatt_complete_event(peripheral, GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_COMPLETE, 0);
+                            send_gatt_complete_event(peripheral, 0);
                             break;
                         case P_W4_INCLUDED_SERVICE_QUERY_RESULT:
                             peripheral->gatt_client_state = P_READY;
-                            send_gatt_complete_event(peripheral, GATT_INCLUDED_SERVICE_QUERY_COMPLETE, 0);
+                            send_gatt_complete_event(peripheral, 0);
                             break;
                         case P_W4_READ_BLOB_RESULT:
                             peripheral->gatt_client_state = P_READY;
-                            send_gatt_complete_event(peripheral, GATT_LONG_CHARACTERISTIC_VALUE_QUERY_COMPLETE, 0);
+                            send_gatt_complete_event(peripheral, 0);
                             break;
                         case P_W4_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT:
                             peripheral->gatt_client_state = P_READY;
-                            send_gatt_complete_event(peripheral, GATT_CLIENT_CHARACTERISTIC_CONFIGURATION_COMPLETE, 0);
+                            send_gatt_complete_event(peripheral, 0);
                             break;
                         default:
                             printf("ATT_ERROR_ATTRIBUTE_NOT_FOUND in %d\n", peripheral->gatt_client_state);
@@ -1158,7 +1154,7 @@ le_command_status_t gatt_client_discover_characteristics_for_service_by_uuid128(
 le_command_status_t gatt_client_discover_characteristic_descriptors(gatt_client_t *peripheral, le_characteristic_t *characteristic){
     if (!gatt_client_is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
     if (characteristic->value_handle == characteristic->end_handle){
-        send_gatt_complete_event(peripheral, GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_COMPLETE, 0);
+        send_gatt_complete_event(peripheral, 0);
         return BLE_PERIPHERAL_OK;
     }
     peripheral->start_group_handle = characteristic->value_handle + 1;

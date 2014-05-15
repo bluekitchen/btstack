@@ -247,18 +247,18 @@ extern "C" {
 #define SDP_QUERY_SERVICE_RECORD_HANDLE                    0x94
 
 /**
- * @format HX
- * @param handle
- * @param service
- */
-#define GATT_SERVICE_QUERY_RESULT     					   0xA0
-
-/**
  * @format H1
  * @param handle
  * @param status
  */
-#define GATT_SERVICE_QUERY_COMPLETE    					   0xA1
+#define GATT_QUERY_COMPLETE                                0xA0
+
+/**
+ * @format HX
+ * @param handle
+ * @param service
+ */
+#define GATT_SERVICE_QUERY_RESULT     					   0xA1
 
 /**
  * @format HY
@@ -268,39 +268,18 @@ extern "C" {
 #define GATT_CHARACTERISTIC_QUERY_RESULT				   0xA2
 
 /**
- * @format H1
- * @param handle
- * @param status
- */
-#define GATT_CHARACTERISTIC_QUERY_COMPLETE    			   0xA3
-
-/**
  * @format HX
  * @param handle
  * @param service
  */
-#define GATT_INCLUDED_SERVICE_QUERY_RESULT     			   0xA4
-
-/**
- * @format H1
- * @param handle
- * @param status
- */
-#define GATT_INCLUDED_SERVICE_QUERY_COMPLETE    		   0xA5
+#define GATT_INCLUDED_SERVICE_QUERY_RESULT     			   0xA3
 
 /**
  * @format HY
  * @param handle
  * @param characteristic_descriptor
  */
-#define GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT   0xA6
-
-/**
- * @format H1
- * @param handle
- * @param status
- */
-#define GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_COMPLETE 0xA7
+#define GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT   0xA4
 
 /**
  * @format H2LV
@@ -309,66 +288,15 @@ extern "C" {
  * @param value_length
  * @param value
  */
-#define GATT_CHARACTERISTIC_VALUE_QUERY_RESULT  		   0xA8
+#define GATT_CHARACTERISTIC_VALUE_QUERY_RESULT  		   0xA5
 
-#define GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT		   0xA9
+#define GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT		   0xA6
 
-/**
- * @format H1
- * @param handle
- * @param status
- */
-#define GATT_LONG_CHARACTERISTIC_VALUE_QUERY_COMPLETE	   0xAA
+#define GATT_NOTIFICATION								   0xA7
+#define GATT_INDICATION									   0xA8
 
-/**
- * @format H1
- * @param handle
- * @param status
- */
-#define GATT_CHARACTERISTIC_VALUE_WRITE_RESPONSE  		   0xAB
-
-/**
- * @format H1
- * @param handle
- * @param status
- */
-#define GATT_LONG_CHARACTERISTIC_VALUE_WRITE_COMPLETE	   0xAC
-
-/**
- * @format H1
- * @param handle
- * @param status
- */
-#define GATT_LONG_CHARACTERISTIC_VALUE_WRITE_CANCELED	   0xAD
-
-#define GATT_NOTIFICATION								   0xAE
-#define GATT_INDICATION									   0xAF
-
-/**
- * @format H1
- * @param handle
- * @param status
- */
-#define GATT_CLIENT_CHARACTERISTIC_CONFIGURATION_COMPLETE  0xB0
-
-#define GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT        0xB1
-#define GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT   0xB2
-
-/**
- * @format H1
- * @param handle
- * @param status
- */
-#define GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_COMPLETE 0xB3
-
-#define GATT_CHARACTERISTIC_DESCRIPTOR_WRITE_RESPONSE      0xB4
-
-/**
- * @format H1
- * @param handle
- * @param status
- */
-#define GATT_LONG_CHARACTERISTIC_DESCRIPTOR_WRITE_COMPLETE 0xB5
+#define GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT        0xA9
+#define GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT   0xAA
     
 // data: event(8), len(8), status (8), hci_handle (16), attribute_handle (16)
 #define ATT_HANDLE_VALUE_INDICATION_COMPLETE        	   0xB6

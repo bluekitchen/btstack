@@ -1441,11 +1441,12 @@ void hci_run(){
                 hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
                 return;
 
+#ifdef HAVE_BLE
             case SEND_CANCEL_CONNECTION:
                 connection->state = SENT_CANCEL_CONNECTION;
                 hci_send_cmd(&hci_le_create_connection_cancel);
                 return;
-                
+#endif                
             case SEND_DISCONNECT:
                 hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13); // remote closed connection
                 connection->state = SENT_DISCONNECT;
@@ -2234,10 +2235,10 @@ le_command_status_t le_central_connect_cancel(){
         hci_connection_t * conn = (hci_connection_t *) it;
         if (!hci_is_le_connection(conn)) continue;
         switch (conn->state){
-            SEND_CREATE_CONNECTION:
+            case SEND_CREATE_CONNECTION:
                 hci_emit_le_connection_complete(conn, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER);
                 break;
-            SENT_CREATE_CONNECTION:
+            case SENT_CREATE_CONNECTION:
                 conn->state = SEND_CANCEL_CONNECTION;
                 hci_run();
                 break;

@@ -701,7 +701,7 @@ static void handle_gatt_client_event(le_event_t * event){
                     service = ((le_service_event_t *) event)->service;
                     dump_service(&service);
                     break;
-                case GATT_SERVICE_QUERY_COMPLETE:
+                case GATT_QUERY_COMPLETE:
                     tc_state = TC_W4_CHARACTERISTIC_RESULT;
                     printf("\n test client - FIND ENABLE CHARACTERISTIC for SERVICE QUERY : \n"); 
                     dump_service(&service);
@@ -718,7 +718,7 @@ static void handle_gatt_client_event(le_event_t * event){
                     enable_characteristic = ((le_characteristic_event_t *) event)->characteristic;
                     dump_characteristic(&enable_characteristic);
                     break;
-                case GATT_CHARACTERISTIC_QUERY_COMPLETE:
+                case GATT_QUERY_COMPLETE:
                     tc_state = TC_W4_CHARACTERISTIC_DESCRIPTOR_RESULT; 
                     printf("\n test client - ACC ENABLE\n");
                     gatt_client_discover_characteristic_descriptors(&test_gatt_client_context, &enable_characteristic);
@@ -733,17 +733,8 @@ static void handle_gatt_client_event(le_event_t * event){
                 case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
                     dump_descriptor(event);
                     break;
-                
-                case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_COMPLETE:
-                    gatt_client_read_long_characteristic_descriptor(&test_gatt_client_context, &descriptor);
-                    break;
-                case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:{
-                    descriptor = ((le_characteristic_descriptor_event_t *) event)->characteristic_descriptor;
-                    dump_descriptor(&descriptor);
-                    break;
-                }
-                case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_COMPLETE:
-                    printf("DONE");
+                    
+                case GATT_QUERY_COMPLETE:
                     tc_state = TC_W4_DISCONNECT;
                     printf("\n\n test client - DISCONNECT ");
                     gap_disconnect(test_gatt_client_handle);
