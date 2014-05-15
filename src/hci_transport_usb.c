@@ -519,6 +519,9 @@ static int usb_open(void *transport_config){
     // Check for pollfds functionality
     doing_pollfds = libusb_pollfds_handle_timeouts(NULL);
     
+    // NOTE: using pollfds doesn't work on Linux, so it is disable until further investigation here
+    doing_pollfds = 0;
+
     if (doing_pollfds) {
         log_info("Async using pollfds:");
 
