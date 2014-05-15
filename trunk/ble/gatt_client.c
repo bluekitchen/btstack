@@ -289,37 +289,6 @@ static void send_gatt_read_characteristic_descriptor_request(gatt_client_t * per
     att_read_request(ATT_READ_REQUEST, peripheral->handle, peripheral->attribute_handle);
 }
 
-static char * att_errors[] = {
-    "OK",
-    "Invalid Handle",
-    "Read Not Permitted",
-    "Write Not Permitted",
-    "Invalid PDU",
-    "Insufficient Authentication",
-    "Request Not Supported",
-    "Invalid Offset",
-    "Insufficient Authorization",
-    "Prepare Queue Full",
-    "Attribute Not Found",
-    "Attribute Not Long",
-    "Insufficient Encryption Key Size",
-    "Invalid Attribute Value Length",
-    "Unlikely Error",
-    "Insufficient Encryption",
-    "Unsupported Group Type",
-    "Insufficient Resources"
-};
-
-static void att_client_report_error(uint8_t * packet, uint16_t size){
-    uint8_t error_code = packet[4];
-    char * error = "Unknown";
-    if (error_code <= 0x11){
-        error = att_errors[error_code];
-    }
-    uint16_t handle = READ_BT_16(packet, 2);
-    log_info("ATT_ERROR_REPORT handle 0x%04x, error: %u - %s\n", handle, error_code, error);
-}
-
 static uint16_t get_last_result_handle(uint8_t * packet, uint16_t size){
     uint8_t attr_length = packet[1];
     uint8_t handle_offset = 0;
@@ -541,7 +510,7 @@ static inline void trigger_next_service_by_uuid_query(gatt_client_t * peripheral
 }
 
 static inline void trigger_next_characteristic_query(gatt_client_t * peripheral, uint16_t last_result_handle){
-    trigger_next_query(peripheral, last_result_handle, P_W2_SEND_CHARACTERISTIC_QUERY);
+    trigger_next_query(peripheral, last_result_handle, P_W2_SEND_ALL_CHARACTERISTICS_OF_SERVICE_QUERY);
 }
 
 static inline void trigger_next_characteristic_descriptor_query(gatt_client_t * peripheral, uint16_t last_result_handle){
@@ -654,8 +623,8 @@ static void gatt_client_run(){
                 send_gatt_services_by_uuid_request(peripheral);
                 break;
                 
-            case P_W2_SEND_CHARACTERISTIC_QUERY:
-                peripheral->gatt_client_state = P_W4_CHARACTERISTIC_QUERY_RESULT;
+            case P_W2_SEND_ALL_CHARACTERISTICS_OF_SERVICE_QUERY:
+                peripheral->gatt_client_state = P_W4_ALL_CHARACTERISTICS_OF_SERVICE_QUERY_RESULT;
                 send_gatt_characteristic_request(peripheral);
                 break;
                 
@@ -756,6 +725,11 @@ static void gatt_client_run(){
     
 }
 
+static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8_t error_code) {
+    if (peripheral->gatt_client_state == P_READY) return;
+    send_gatt_complete_event(peripheral, error_code);
+}
+
 void gatt_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     switch (packet[0]) {
@@ -764,9 +738,7 @@ void gatt_packet_handler(void * connection, uint8_t packet_type, uint16_t channe
             uint16_t handle = READ_BT_16(packet,3);
             gatt_client_t * peripheral = get_gatt_client_context_for_handle(handle);
             if (!peripheral) break;
-            if (peripheral->gatt_client_state != P_READY){
-                send_gatt_complete_event(peripheral, ATT_ERROR_HCI_DISCONNECT_RECEIVED);
-            }
+            gatt_client_report_error_if_pending(peripheral, ATT_ERROR_HCI_DISCONNECT_RECEIVED);
             linked_list_remove(&gatt_client_connections, (linked_item_t *) peripheral);
             break;
         }
@@ -775,6 +747,7 @@ void gatt_packet_handler(void * connection, uint8_t packet_type, uint16_t channe
     }
     gatt_client_run();
 }
+
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
     if (packet_type != ATT_DATA_PACKET) return;
@@ -812,7 +785,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             
         case ATT_READ_BY_TYPE_RESPONSE:
             switch (peripheral->gatt_client_state){
-                case P_W4_CHARACTERISTIC_QUERY_RESULT:
+                case P_W4_ALL_CHARACTERISTICS_OF_SERVICE_QUERY_RESULT:
                     report_gatt_characteristics(peripheral, packet, size);
                     trigger_next_characteristic_query(peripheral, get_last_result_handle(packet, size));
                     break;
@@ -994,38 +967,33 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     
             }
             break;
-            
+
         case ATT_ERROR_RESPONSE:
-            // printf("ATT_ERROR_RESPONSE error %u, state %u\n", packet[4], peripheral->state);
             switch (packet[4]){
                 case ATT_ERROR_ATTRIBUTE_NOT_FOUND: {
                     switch(peripheral->gatt_client_state){
                         case P_W4_SERVICE_QUERY_RESULT:
                         case P_W4_SERVICE_WITH_UUID_RESULT:
-                        case P_W4_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
                         case P_W4_INCLUDED_SERVICE_QUERY_RESULT:
-                        case P_W4_READ_BLOB_RESULT:
-                        case P_W4_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT:
-                            peripheral->gatt_client_state = P_READY;
+                        case P_W4_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
                             send_gatt_complete_event(peripheral, 0);
                             break;
-                            
-                        case P_W4_CHARACTERISTIC_QUERY_RESULT:
+                        case P_W4_ALL_CHARACTERISTICS_OF_SERVICE_QUERY_RESULT:
                         case P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT:
                             characteristic_end_found(peripheral, peripheral->end_group_handle);
-                            peripheral->gatt_client_state = P_READY;
                             send_gatt_complete_event(peripheral, 0);
                             break;
                         default:
-                            return;
+                            gatt_client_report_error_if_pending(peripheral, packet[4]);
+                            break;
                     }
-                    
                     break;
                 }
                 default:                
-                    att_client_report_error(packet, size);
+                    gatt_client_report_error_if_pending(peripheral, packet[4]);
                     break;
             }
+            peripheral->gatt_client_state = P_READY;
             break;
             
         default:
@@ -1078,7 +1046,7 @@ le_command_status_t gatt_client_discover_characteristics_for_service(gatt_client
     peripheral->end_group_handle   = service->end_group_handle;
     peripheral->filter_with_uuid = 0;
     peripheral->characteristic_start_handle = 0;
-    peripheral->gatt_client_state = P_W2_SEND_CHARACTERISTIC_QUERY;
+    peripheral->gatt_client_state = P_W2_SEND_ALL_CHARACTERISTICS_OF_SERVICE_QUERY;
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
 }
