@@ -259,6 +259,8 @@ typedef enum {
 typedef enum {
     SEND_CREATE_CONNECTION = 0,
     SENT_CREATE_CONNECTION,
+    SEND_CANCEL_CONNECTION,
+    SENT_CANCEL_CONNECTION,
     RECEIVED_CONNECTION_REQUEST,
     ACCEPTED_CONNECTION_REQUEST,
     REJECTED_CONNECTION_REQUEST,
@@ -456,6 +458,7 @@ uint8_t* hci_get_outgoing_packet_buffer(void);
 bd_addr_t * hci_local_bd_addr(void);
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle);
 hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t *addr, bd_addr_type_t addr_type);
+int hci_is_le_connection(hci_connection_t * connection);
 uint8_t  hci_number_outgoing_packets(hci_con_handle_t handle);
 uint8_t  hci_number_free_acl_slots(void);
 int      hci_authentication_active_for_handle(hci_con_handle_t handle);

@@ -207,6 +207,11 @@ void hci_drop_link_key_for_bd_addr(bd_addr_t *addr){
     }
 }
 
+int hci_is_le_connection(hci_connection_t * connection){
+    return  connection->address_type == BD_ADDR_TYPE_LE_PUBLIC ||
+    connection->address_type == BD_ADDR_TYPE_LE_RANDOM;
+}
+
 
 /**
  * count connections
@@ -1398,50 +1403,59 @@ void hci_run(){
     // send pending HCI commands
     for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
         connection = (hci_connection_t *) it;
+        
+        switch(connection->state){
+            case SEND_CREATE_CONNECTION:
+                switch(connection->address_type){
+                    case BD_ADDR_TYPE_CLASSIC:
+                        log_info("sending hci_create_connection\n");
+                        hci_send_cmd(&hci_create_connection, connection->address, hci_usable_acl_packet_types(), 0, 0, 0, 1);
+                        break;
+                    default:
+#ifdef HAVE_BLE
+                        log_info("sending hci_le_create_connection\n");
+                        hci_send_cmd(&hci_le_create_connection,
+                                     1000,      // scan interval: 625 ms
+                                     1000,      // scan interval: 625 ms
+                                     0,         // don't use whitelist
+                                     connection->address_type, // peer address type
+                                     connection->address,       // peer bd addr
+                                     0,         // our addr type: public
+                                     80,        // conn interval min
+                                     80,        // conn interval max (3200 * 0.625)
+                                     0,         // conn latency
+                                     2000,      // supervision timeout
+                                     0,         // min ce length
+                                     1000       // max ce length
+                                     );
+                        
+                        connection->state = SENT_CREATE_CONNECTION;
+#endif
+                        break;
+                }
+                return;
+               
+            case RECEIVED_CONNECTION_REQUEST:
+                log_info("sending hci_accept_connection_request\n");
+                connection->state = ACCEPTED_CONNECTION_REQUEST;
+                hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
+                return;
 
-        if (connection->state == SEND_DISCONNECT){
-            hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13); // remote closed connection
-            connection->state = SENT_DISCONNECT;
-            return;
+            case SEND_CANCEL_CONNECTION:
+                connection->state = SENT_CANCEL_CONNECTION;
+                hci_send_cmd(&hci_le_create_connection_cancel);
+                return;
+                
+            case SEND_DISCONNECT:
+                hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13); // remote closed connection
+                connection->state = SENT_DISCONNECT;
+                return;
+                
+            default:
+                break;
         }
         
-        if (connection->state == SEND_CREATE_CONNECTION){
-            switch(connection->address_type){
-                case BD_ADDR_TYPE_CLASSIC:
-                    log_info("sending hci_create_connection\n");
-                    hci_send_cmd(&hci_create_connection, connection->address, hci_usable_acl_packet_types(), 0, 0, 0, 1);
-                    break;
-                default:
-#ifdef HAVE_BLE
-                    log_info("sending hci_le_create_connection\n");
-                    hci_send_cmd(&hci_le_create_connection,
-                                 1000,      // scan interval: 625 ms
-                                 1000,      // scan interval: 625 ms
-                                 0,         // don't use whitelist
-                                 connection->address_type, // peer address type
-                                 connection->address,       // peer bd addr
-                                 0,         // our addr type: public
-                                 80,        // conn interval min
-                                 80,        // conn interval max (3200 * 0.625)
-                                 0,         // conn latency
-                                 2000,      // supervision timeout
-                                 0,         // min ce length
-                                 1000       // max ce length
-                                 );
 
-                    connection->state = SENT_CREATE_CONNECTION;
-#endif
-                    break;
-            }
-            return;
-        }
-
-        if (connection->state == RECEIVED_CONNECTION_REQUEST){
-            log_info("sending hci_accept_connection_request\n");
-            connection->state = ACCEPTED_CONNECTION_REQUEST;
-            hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
-            return;
-        }
         
         if (connection->authentication_flags & HANDLE_LINK_KEY_REQUEST){
             log_info("responding to link key request\n");
@@ -2200,6 +2214,14 @@ le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_typ
         hci_run();
         return BLE_PERIPHERAL_OK;
     }
+    
+    if (!hci_is_le_connection(conn) ||
+        conn->state == SEND_CREATE_CONNECTION ||
+        conn->state == SENT_CREATE_CONNECTION) {
+        hci_emit_le_connection_complete(conn, ERROR_CODE_COMMAND_DISALLOWED);
+        return BLE_PERIPHERAL_IN_WRONG_STATE;
+    }
+    
     log_info("le_central_connect, state %u", conn->state);
     hci_emit_le_connection_complete(conn, 0);
     hci_run();
@@ -2207,7 +2229,22 @@ le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_typ
 }
 
 le_command_status_t le_central_connect_cancel(){
-    // TODO implement
+    linked_item_t *it;
+    for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
+        hci_connection_t * conn = (hci_connection_t *) it;
+        if (!hci_is_le_connection(conn)) continue;
+        switch (conn->state){
+            SEND_CREATE_CONNECTION:
+                hci_emit_le_connection_complete(conn, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER);
+                break;
+            SENT_CREATE_CONNECTION:
+                conn->state = SEND_CANCEL_CONNECTION;
+                hci_run();
+                break;
+            default:
+                break;
+        };
+    }
     return BLE_PERIPHERAL_OK;
 }
 
