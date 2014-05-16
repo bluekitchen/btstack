@@ -547,7 +547,7 @@ static void le_handle_advertisement_report(uint8_t *packet, int size){
         pos += 6;
         event[pos++] = packet[4+num_reports*9+total_data_length + i];
         event[pos++] = data_length;
-        memcpy(&packet[4+num_reports*9+data_offset], &event[pos], data_length);
+        memcpy(&event[pos], &packet[4+num_reports*9+data_offset], data_length);
         data_offset += data_length;
         pos += data_length;
         hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
