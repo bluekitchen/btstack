@@ -290,6 +290,13 @@ extern "C" {
  */
 #define GATT_CHARACTERISTIC_VALUE_QUERY_RESULT  		   0xA5
 
+/**
+ * @format H2LV
+ * @param handle
+ * @param value_handle
+ * @param value_length
+ * @param value
+ */
 #define GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT		   0xA6
 
 #define GATT_NOTIFICATION								   0xA7

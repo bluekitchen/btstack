@@ -192,6 +192,10 @@ uint8_t * daemon_get_data_buffer(gatt_client_t *context) {
     return ((uint8_t *) context) + sizeof(gatt_client_t) + sizeof(gatt_client_helper_t);
 }
 
+gatt_client_helper_t * daemon_get_gatt_client_helper(gatt_client_t *context) {
+    return (gatt_client_helper_t *) (((uint8_t *) context) + sizeof(gatt_client_t));
+}
+
 static void send_gatt_query_complete(connection_t * connection, uint16_t handle, uint8_t status){
     // @format H1
     uint8_t event[5];
@@ -286,15 +290,23 @@ void daemon_setup_characteristic_descriptor_event(le_event_t *le_event, uint8_t*
     daemon_gatt_serialize_characteristic_descriptor(&descriptor_event->characteristic_descriptor, event, 4);
 }
 
+void daemon_setup_long_characteristic_value_event(uint8_t* event, uint16_t connection_handle, uint16_t value_handle, uint16_t data_length, uint8_t * data) {
+    event[0] = GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT;
+    event[1] = 2 + (2 + 2 + data_length);
+    bt_store_16(event, 2, connection_handle);
+    bt_store_16(event, 4, value_handle);
+    bt_store_16(event, 6, data_length);
+    memcpy(&event[8], data, data_length);
+}
+
 void daemon_setup_characteristic_value_event(le_event_t *le_event, uint8_t* event) {
     le_characteristic_value_event_t * cvalue_event = (le_characteristic_value_event_t *) le_event;
     event[0] = le_event->type;
     event[1] = 2 + (2 + 2 + cvalue_event->blob_length);
     bt_store_16(event, 2, cvalue_event->client->handle);
     bt_store_16(event, 4, cvalue_event->value_handle);
-    // TODO bt_store_16(event, 6, cvalue_event->blob_length);
-    event[6] = cvalue_event->blob_length;
-    memcpy(&event[7], cvalue_event->blob, cvalue_event->blob_length); // &event[8] with 2 byte length
+    bt_store_16(event, 6, cvalue_event->blob_length);
+    memcpy(&event[8], cvalue_event->blob, cvalue_event->blob_length);
 }
 
 #endif
@@ -1079,6 +1091,13 @@ static void handle_gatt_client_event(le_event_t * le_event){
     connection_t * context = (connection_t *)le_event->client->context;
     gatt_complete_event_t * complete_event = (gatt_complete_event_t *) le_event;
     
+#if defined(HAVE_MALLOC)
+    uint16_t data_length;
+    uint8_t  * data;
+    gatt_client_helper_t  * gatt_client_helper;
+    uint8_t  gatt_chunk = 0;
+#endif
+    
     switch(le_event->type){
 
         case GATT_SERVICE_QUERY_RESULT:
@@ -1115,9 +1134,19 @@ static void handle_gatt_client_event(le_event_t * le_event){
             break;
         }
             
-        case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
-            // TODO
+        case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:{
+#if defined(HAVE_MALLOC)
+            gatt_chunk = 1;
+            le_characteristic_value_event_t * cvalue_event = (le_characteristic_value_event_t *) le_event;
+            data = daemon_get_data_buffer(le_event->client);
+            gatt_client_helper = daemon_get_gatt_client_helper(le_event->client);
+            gatt_client_helper->characteristic_length = cvalue_event->value_offset + cvalue_event->blob_length;
+            memcpy(&data[cvalue_event->value_offset], cvalue_event->blob, cvalue_event->blob_length);
+            
+            
+#endif
             break;
+        }
         case GATT_NOTIFICATION:
             // TODO
             break;
@@ -1125,10 +1154,20 @@ static void handle_gatt_client_event(le_event_t * le_event){
             // TODO
             break;
             
-        case GATT_QUERY_COMPLETE:
+        case GATT_QUERY_COMPLETE:{
+            if (gatt_chunk){
+                gatt_client_helper = daemon_get_gatt_client_helper(le_event->client);
+                data = daemon_get_data_buffer(le_event->client);
+                uint8_t event[4 + 2 + 1 + gatt_client_helper->characteristic_length];
+                daemon_setup_long_characteristic_value_event(event, complete_event->client->handle,
+                                                             complete_event->client->attribute_handle,
+                                                             gatt_client_helper->characteristic_length, data);
+                socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, event, sizeof(event));
+                gatt_chunk = 0;
+            }
             send_gatt_query_complete(context, complete_event->client->handle, complete_event->status);
             break;
-       
+        }
         default:
             break;
     }
