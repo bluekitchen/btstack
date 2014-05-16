@@ -1251,13 +1251,13 @@ le_command_status_t gatt_client_write_long_characteristic_descriptor(gatt_client
 }
 
 // used by daemon
-void gatt_client_disconnect_connection(connection_t * connection){
+void gatt_client_disconnect_connection(void * connection){
     if (!connection) return;
     linked_item_t *it;
     for (it = (linked_item_t *) gatt_client_connections; it ; it = it->next){
         gatt_client_t * client = (gatt_client_t *) it;
         if (client->context == connection){
-            gap_le_disconnect(client->handle);
+            gap_disconnect(client->handle);
         }
     }
 }
