@@ -223,7 +223,6 @@ gatt_client_t * daemon_prepare_gatt_client_context(connection_t *connection, uin
     return context;
 }
 
-
 // (de)serialize structs from/to HCI commands/events
 
 void daemon_gatt_deserialize_service(uint8_t *packet, int offset, le_service_t *service){
@@ -742,10 +741,15 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                     sdp_unregister_services_for_connection(connection);
                     rfcomm_close_connection(connection);
                     l2cap_close_connection(connection);
+#ifdef HAVE_BLE
+                    // NOTE: experimental - disconnect all LE connections where GATT Client was used
+                    gatt_client_disconnect_connection(connection);
+#endif
                     client = client_for_connection(connection);
                     if (!client) break;
                     linked_list_remove(&clients, (linked_item_t *) client);
                     free(client);
+
                     // update discoverable mode
                     hci_discoverable_control(clients_require_discoverable());
                     // start power off, if last active client
