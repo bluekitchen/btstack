@@ -837,7 +837,7 @@ const hci_cmd_t gatt_discover_characteristics_for_service_by_uuid128_cmd = {
  * @param characteristic
  */
 const hci_cmd_t gatt_discover_characteristic_descriptors_cmd = {
-    OPCODE(OGF_BTSTACK, GATT_DISCOVER_CHARACTERISTIC_DESCRIPTOR), "HY"
+    OPCODE(OGF_BTSTACK, GATT_DISCOVER_CHARACTERISTIC_DESCRIPTORS), "HY"
 };
 
 /**

@@ -577,7 +577,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             swap128(&packet[5 + SERVICE_LENGTH], uuid128);
             gatt_client_discover_characteristics_for_service_by_uuid128(context, &service, uuid128);
             break;
-        case GATT_DISCOVER_CHARACTERISTIC_DESCRIPTOR:
+        case GATT_DISCOVER_CHARACTERISTIC_DESCRIPTORS:
             context = daemon_prepare_gatt_client_context(connection, packet);
             if (!context) break;
             daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
