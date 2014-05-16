@@ -562,6 +562,7 @@ gatt_client_t * get_gatt_client_context_for_handle(uint16_t handle){
     return NULL;
 }
 
+
 static void gatt_client_run(){
     if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
     // printf("handle_peripheral_list 4\n");
@@ -1247,5 +1248,17 @@ le_command_status_t gatt_client_write_long_characteristic_descriptor(gatt_client
     peripheral->gatt_client_state = P_W2_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR;
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
+}
+
+// used by daemon
+void gatt_client_disconnect_connection(connection_t * connection){
+    if (!connection) return;
+    linked_item_t *it;
+    for (it = (linked_item_t *) gatt_client_connections; it ; it = it->next){
+        gatt_client_t * client = (gatt_client_t *) it;
+        if (client->context == connection){
+            gap_le_disconnect(client->handle);
+        }
+    }
 }
 
