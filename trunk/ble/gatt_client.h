@@ -220,7 +220,7 @@ void gatt_client_register_handler(void (*le_callback)(le_event_t * event));
 void gatt_client_start(gatt_client_t *context, uint16_t handle);
 void gatt_client_stop(gatt_client_t *context);
 gatt_client_t * get_gatt_client_context_for_handle(uint16_t handle);
-void gatt_client_disconnect_connection(connection_t * connection);
+void gatt_client_disconnect_connection(void * connection);
 
 // next command is used with daemon
 int gatt_client_is_ready(gatt_client_t *context);
