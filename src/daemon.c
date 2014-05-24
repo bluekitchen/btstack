@@ -565,7 +565,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID128:
             context = daemon_prepare_gatt_client_context(connection, packet);
             if (!context) break;
-            swap128(&packet[25], uuid128);
+            swap128(&packet[5], uuid128);
             gatt_client_discover_primary_services_by_uuid128(context, uuid128);
             break;
         case GATT_FIND_INCLUDED_SERVICES_FOR_SERVICE:
