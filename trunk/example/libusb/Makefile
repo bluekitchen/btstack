@@ -113,11 +113,11 @@ ble_peripheral: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REA
 ble_peripheral_sm_minimal: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c profile.h
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
 
-ble_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ble_client.c le_central.c
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ble_client.c le_central.c ${CFLAGS} ${LDFLAGS} -o $@
+ble_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ble_client.c
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ble_client.c ${CFLAGS} ${LDFLAGS} -o $@
 
-ble_client_uart: ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ble_client.c le_central.c
-	${CC} -DHAVE_UART_CC2564 ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ble_client.c le_central.c  ${CFLAGS} ${LDFLAGS} -o $@
+ble_client_uart: ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ble_client.c
+	${CC} -DHAVE_UART_CC2564 ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ble_client.c ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
 	rm -f  spp_counter sdp_rfcomm_query sdp_general_query spp_counter_ssp ble_peripheral ble_client gatt_client le_central 

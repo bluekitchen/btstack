@@ -148,11 +148,11 @@ static void dump_descriptor(le_event_t * event){
     printUUID(descriptor.uuid128, descriptor.uuid16);
 }
 
-//static void dump_characteristic_value(le_characteristic_value_event_t * event){
-//    printf("    *** characteristic value of length %d *** ", event->characteristic_value_blob_length);
-//    hexdump2(event->characteristic_value, event->characteristic_value_blob_length);
-//    printf("\n");
-//}
+static void dump_characteristic_value(le_characteristic_value_event_t * event){
+    printf("    *** characteristic value of length %d *** ", event->blob_length );
+    hexdump2(event->blob , event->blob_length);
+    printf("\n");
+}
 
 
 
@@ -181,9 +181,9 @@ uint8_t  acc_disable[1] = {0x00};
 
 static uint8_t   test_device_addr_type = 0;
 // pick one:
-// static bd_addr_t test_device_addr = {0x1c, 0xba, 0x8c, 0x20, 0xc7, 0xf6};
-// static bd_addr_t test_device_addr = {0x00, 0x1b, 0xdc, 0x05, 0xb5, 0xdc}; // SensorTag 1
-static bd_addr_t test_device_addr = {0x34, 0xb1, 0xf7, 0xd1, 0x77, 0x9b}; // SensorTag 2
+//static bd_addr_t test_device_addr = {0x00, 0x1b, 0xdc, 0x05, 0xb5, 0xdc};
+static bd_addr_t sensor_tag1_addr = {0x1c, 0xba, 0x8c, 0x20, 0xc7, 0xf6};// SensorTag 1
+static bd_addr_t sensor_tag2_addr = {0x34, 0xb1, 0xf7, 0xd1, 0x77, 0x9b}; // SensorTag 2
 // static bd_addr_t test_device_addr = {0x00, 0x02, 0x72, 0xdc, 0x31, 0xc1}; // delock40 
 
 typedef enum {
@@ -544,81 +544,7 @@ uint8_t chr_short_value[1] = {0x86};
 //             break;
 //         }
 // }
-// void sm_test_write_characteristic_descriptor(le_event_t * event){
-//     switch(tc_state){
-//         case TC_W4_CONNECT:
-//             if (event->type != GATT_CONNECTION_COMPLETE) break;
-//             tc_state = TC_W4_SERVICE_RESULT;
-//             printf("\n test client - CONNECTED, query ACC service\n");
-//             le_central_discover_primary_services_by_uuid128(&test_gatt_client_context, acc_service_uuid);
-//             break;
-        
-//         case TC_W4_SERVICE_RESULT:
-//             switch(event->type){
-//                 case GATT_SERVICE_QUERY_RESULT:
-//                     service = ((le_service_event_t *) event)->service;
-//                     dump_service(&service);
-//                     break;
-//                 case GATT_SERVICE_QUERY_COMPLETE:
-//                     tc_state = TC_W4_CHARACTERISTIC_RESULT;
-//                     printf("\n test client - ENABLE CHARACTERISTIC for SERVICE QUERY : \n"); 
-//                     dump_service(&service);
-//                     le_central_discover_characteristics_for_service_by_uuid128(&test_gatt_client_context, &service, acc_chr_enable_uuid);
-//                     break;
-//                 default:
-//                     break;
-//             }
-//             break;
 
-//         case TC_W4_CHARACTERISTIC_RESULT:
-//             switch(event->type){
-//                 case GATT_CHARACTERISTIC_QUERY_RESULT:
-//                     enable_characteristic = ((le_characteristic_event_t *) event)->characteristic;
-//                     dump_characteristic(&enable_characteristic);
-//                     break;
-//                 case GATT_CHARACTERISTIC_QUERY_COMPLETE:
-//                     tc_state = TC_W4_ACC_ENABLE; 
-//                     printf("\n test client - ACC ENABLE\n");
-//                     le_central_write_value_of_characteristic(&test_gatt_client_context, enable_characteristic.value_handle, 1, acc_enable);
-//                     break;
-//                 default:
-//                     break;
-//             }
-//             break;
-        
-//         case TC_W4_ACC_ENABLE:
-//             tc_state = TC_W4_ACC_CLIENT_CONFIG_CHARACTERISTIC_RESULT; 
-//             printf("\n test client - CLIENT CONFIG CHARACTERISTIC for SERVICE QUERY with UUID"); 
-//             printUUID128(service.uuid128);
-//             printf("\n");
-//             le_central_discover_characteristics_for_service_by_uuid128(&test_gatt_client_context, &service, acc_chr_client_config_uuid);
-//             break;
-//         case TC_W4_ACC_CLIENT_CONFIG_CHARACTERISTIC_RESULT:
-//             switch(event->type){
-//                 case GATT_CHARACTERISTIC_QUERY_RESULT:
-//                     config_characteristic = ((le_characteristic_event_t *) event)->characteristic;
-//                     dump_characteristic(&config_characteristic);
-//                     break;
-//                 case GATT_CHARACTERISTIC_QUERY_COMPLETE:
-//                     tc_state = TC_W4_ACC_DATA; 
-//                     printf("\n test client - ACC Client Configuration\n");
-//                     le_central_write_client_characteristic_configuration(&test_gatt_client_context, &config_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
-//                     // le_central_write_client_characteristic_configuration(&test_gatt_client_context, &config_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION);
-//                     break;
-//                 default:
-//                     break;
-//             }
-//             break;
-//         case TC_W4_ACC_DATA:
-//             printf("ACC Client Data: ");
-//             if ( event->type != GATT_NOTIFICATION && event->type != GATT_INDICATION ) break;
-//             dump_characteristic_value((le_characteristic_value_event_t *) event);
-//             break;
-//         default:
-//             printf("Client, unhandled state %d\n", tc_state);
-//             break;
-//     }
-// }
 //
 //void sm_test_read_characteristic_descriptor(le_event_t * event){
 //    switch(tc_state){
@@ -693,66 +619,133 @@ uint8_t chr_short_value[1] = {0x86};
 
 
 
-static void handle_gatt_client_event(le_event_t * event){
-    switch(tc_state){
-        case TC_W4_SERVICE_RESULT:
-            switch(event->type){
-                case GATT_SERVICE_QUERY_RESULT:
-                    service = ((le_service_event_t *) event)->service;
-                    dump_service(&service);
-                    break;
-                case GATT_QUERY_COMPLETE:
-                    tc_state = TC_W4_CHARACTERISTIC_RESULT;
-                    printf("\n test client - FIND ENABLE CHARACTERISTIC for SERVICE QUERY : \n"); 
-                    dump_service(&service);
-                    gatt_client_discover_characteristics_for_service_by_uuid128(&test_gatt_client_context, &service, acc_chr_enable_uuid);
-                    break;
-                default:
-                    break;
-            }
-            break;
+//static void handle_gatt_client_event(le_event_t * event){
+//    switch(tc_state){
+//        case TC_W4_SERVICE_RESULT:
+//            switch(event->type){
+//                case GATT_SERVICE_QUERY_RESULT:
+//                    service = ((le_service_event_t *) event)->service;
+//                    dump_service(&service);
+//                    break;
+//                case GATT_QUERY_COMPLETE:
+//                    tc_state = TC_W4_CHARACTERISTIC_RESULT;
+//                    printf("\n test client - FIND ENABLE CHARACTERISTIC for SERVICE QUERY : \n"); 
+//                    dump_service(&service);
+//                    gatt_client_discover_characteristics_for_service_by_uuid128(&test_gatt_client_context, &service, acc_chr_enable_uuid);
+//                    break;
+//                default:
+//                    break;
+//            }
+//            break;
+//
+//        case TC_W4_CHARACTERISTIC_RESULT:
+//            switch(event->type){
+//                case GATT_CHARACTERISTIC_QUERY_RESULT:
+//                    enable_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+//                    dump_characteristic(&enable_characteristic);
+//                    break;
+//                case GATT_QUERY_COMPLETE:
+//                    tc_state = TC_W4_CHARACTERISTIC_DESCRIPTOR_RESULT; 
+//                    printf("\n test client - ACC ENABLE\n");
+//                    gatt_client_discover_characteristic_descriptors(&test_gatt_client_context, &enable_characteristic);
+//                    break;
+//                default:
+//                    break;
+//            }
+//            break;
+//        
+//        case TC_W4_CHARACTERISTIC_DESCRIPTOR_RESULT:
+//            switch(event->type){
+//                case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
+//                    dump_descriptor(event);
+//                    break;
+//                    
+//                case GATT_QUERY_COMPLETE:
+//                    tc_state = TC_W4_DISCONNECT;
+//                    printf("\n\n test client - DISCONNECT ");
+//                    gap_disconnect(test_gatt_client_handle);
+//                    break;
+//                    
+//                default:
+//                    break;
+//            }
+//            break;
+//
+//        default:
+//            printf("Client, unhandled state %d\n", tc_state);
+//            break;
+//        }
+//
+//
+//}
 
-        case TC_W4_CHARACTERISTIC_RESULT:
-            switch(event->type){
-                case GATT_CHARACTERISTIC_QUERY_RESULT:
-                    enable_characteristic = ((le_characteristic_event_t *) event)->characteristic;
-                    dump_characteristic(&enable_characteristic);
-                    break;
-                case GATT_QUERY_COMPLETE:
-                    tc_state = TC_W4_CHARACTERISTIC_DESCRIPTOR_RESULT; 
-                    printf("\n test client - ACC ENABLE\n");
-                    gatt_client_discover_characteristic_descriptors(&test_gatt_client_context, &enable_characteristic);
-                    break;
-                default:
-                    break;
-            }
-            break;
-        
-        case TC_W4_CHARACTERISTIC_DESCRIPTOR_RESULT:
-            switch(event->type){
-                case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
-                    dump_descriptor(event);
-                    break;
-                    
-                case GATT_QUERY_COMPLETE:
-                    tc_state = TC_W4_DISCONNECT;
-                    printf("\n\n test client - DISCONNECT ");
-                    gap_disconnect(test_gatt_client_handle);
-                    break;
-                    
-                default:
-                    break;
-            }
-            break;
+ void handle_gatt_client_event(le_event_t * event){
+     switch(tc_state){
+         case TC_W4_SERVICE_RESULT:
+             switch(event->type){
+                 case GATT_SERVICE_QUERY_RESULT:
+                     service = ((le_service_event_t *) event)->service;
+                     dump_service(&service);
+                     break;
+                 case GATT_QUERY_COMPLETE:
+                     tc_state = TC_W4_CHARACTERISTIC_RESULT;
+                     printf("\n test client - ENABLE CHARACTERISTIC for SERVICE QUERY 1: \n");
+                     dump_service(&service);
+                     gatt_client_discover_characteristics_for_service_by_uuid128(&test_gatt_client_context, &service, acc_chr_enable_uuid);
+                     break;
+                 default:
+                     break;
+             }
+             break;
 
-        default:
-            printf("Client, unhandled state %d\n", tc_state);
-            break;
-        }
+         case TC_W4_CHARACTERISTIC_RESULT:
+             switch(event->type){
+                 case GATT_CHARACTERISTIC_QUERY_RESULT:
+                     enable_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                     dump_characteristic(&enable_characteristic);
+                     break;
+                 case GATT_QUERY_COMPLETE:
+                     tc_state = TC_W4_ACC_ENABLE;
+                     printf("\n test client - ACC ENABLE\n");
+                     gatt_client_write_value_of_characteristic(&test_gatt_client_context, enable_characteristic.value_handle, 1, acc_enable);
+                     break;
+                 default:
+                     break;
+             }
+             break;
 
-
-}
-
+         case TC_W4_ACC_ENABLE:
+             tc_state = TC_W4_ACC_CLIENT_CONFIG_CHARACTERISTIC_RESULT;
+             printf("\n test client - CLIENT CONFIG CHARACTERISTIC for SERVICE QUERY with UUID");
+             printUUID128(service.uuid128);
+             printf("\n");
+             gatt_client_discover_characteristics_for_service_by_uuid128(&test_gatt_client_context, &service, acc_chr_client_config_uuid);
+             break;
+         case TC_W4_ACC_CLIENT_CONFIG_CHARACTERISTIC_RESULT:
+             switch(event->type){
+                 case GATT_CHARACTERISTIC_QUERY_RESULT:
+                     config_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                     dump_characteristic(&config_characteristic);
+                     break;
+                 case GATT_QUERY_COMPLETE:
+                     tc_state = TC_W4_ACC_DATA;
+                     printf("\n test client - ACC Client Configuration\n");
+                     gatt_client_write_client_characteristic_configuration(&test_gatt_client_context, &config_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+                     break;
+                 default:
+                     break;
+             }
+             break;
+         case TC_W4_ACC_DATA:
+             printf("ACC Client Data: ");
+             if ( event->type != GATT_NOTIFICATION && event->type != GATT_INDICATION ) break;
+             dump_characteristic_value((le_characteristic_value_event_t *) event);
+             break;
+         default:
+             printf("Client, unhandled state %d\n", tc_state);
+             break;
+     }
+ }
 
 static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
     le_command_status_t status;
@@ -766,12 +759,12 @@ static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size
         case GAP_LE_ADVERTISING_REPORT:
             if (tc_state != TC_W4_SCAN_RESULT) return;
             printf("test client - SCAN ACTIVE\n");
-        
             ad_event_t ad_event;
-            int pos = 3;
+            int pos = 2;
             ad_event.event_type = packet[pos++];
             ad_event.address_type = packet[pos++];
             memcpy(ad_event.address, &packet[pos], 6);
+            
             pos += 6;
             ad_event.rssi = packet[pos++];
             ad_event.length = packet[pos++];
@@ -781,15 +774,17 @@ static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size
             
             test_device_addr_type = ad_event.address_type;
             bd_addr_t found_device_addr;
+            
             memcpy(found_device_addr, ad_event.address, 6);
+            swapX(ad_event.address, found_device_addr, 6);
             
-            if (memcmp(&found_device_addr, &test_device_addr, 6) != 0) return;
-            // memcpy(test_device_addr, ad_event->address, 6);
-            
-            tc_state = TC_W4_CONNECT;
-            le_central_stop_scan();
-            le_central_connect(&test_device_addr, test_device_addr_type);
-            
+            if (memcmp(&found_device_addr, &sensor_tag1_addr, 6) == 0
+                || memcmp(&found_device_addr, &sensor_tag2_addr, 6) == 0) {
+                    
+                    tc_state = TC_W4_CONNECT;
+                    le_central_stop_scan();
+                    le_central_connect(&found_device_addr, test_device_addr_type);
+            }
             break;
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
