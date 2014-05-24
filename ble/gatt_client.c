@@ -564,6 +564,7 @@ gatt_client_t * get_gatt_client_context_for_handle(uint16_t handle){
 
 
 static void gatt_client_run(){
+    
     if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
     // printf("handle_peripheral_list 4\n");
     if (!l2cap_can_send_connectionless_packet_now()) return;
@@ -720,13 +721,13 @@ static void gatt_client_run(){
             default:
                 break;
         }
-        
     }
     
 }
 
 static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8_t error_code) {
     if (gatt_client_is_ready(peripheral)) return;
+    peripheral->gatt_client_state = P_READY;
     send_gatt_complete_event(peripheral, error_code);
 }
 
@@ -976,11 +977,13 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                         case P_W4_SERVICE_WITH_UUID_RESULT:
                         case P_W4_INCLUDED_SERVICE_QUERY_RESULT:
                         case P_W4_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
+                            peripheral->gatt_client_state = P_READY;
                             send_gatt_complete_event(peripheral, 0);
                             break;
                         case P_W4_ALL_CHARACTERISTICS_OF_SERVICE_QUERY_RESULT:
                         case P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT:
                             characteristic_end_found(peripheral, peripheral->end_group_handle);
+                            peripheral->gatt_client_state = P_READY;
                             send_gatt_complete_event(peripheral, 0);
                             break;
                         default:
@@ -993,7 +996,6 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     gatt_client_report_error_if_pending(peripheral, packet[4]);
                     break;
             }
-            peripheral->gatt_client_state = P_READY;
             break;
             
         default:
