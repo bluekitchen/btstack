@@ -865,6 +865,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 memcpy(service.uuid128,  peripheral->uuid128, 16);
                 service.uuid16 = peripheral->uuid16;
                 event.service = service;
+                event.client  = peripheral;
                 (*gatt_client_callback)((le_event_t*)&event);
             }
             
