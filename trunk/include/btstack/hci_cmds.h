@@ -299,7 +299,22 @@ extern "C" {
  */
 #define GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT		   0xA6
 
+/**
+ * @format H2LV
+ * @param handle
+ * @param value_handle
+ * @param value_length
+ * @param value
+ */
 #define GATT_NOTIFICATION								   0xA7
+
+/**
+ * @format H2LV
+ * @param handle
+ * @param value_handle
+ * @param value_length
+ * @param value
+ */
 #define GATT_INDICATION									   0xA8
 
 #define GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT        0xA9
