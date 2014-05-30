@@ -72,148 +72,117 @@ typedef struct ad_event {
     uint8_t * data;
 } ad_event_t;
 
-void (*ble_client_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = NULL;
-static void ble_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-
-static void hexdump2(void *data, int size){
-    if (size <= 0) return;
-    int i;
-    for (i=0; i<size;i++){
-        printf("%02X ", ((uint8_t *)data)[i]);
-    }
-    // printf("\n");
-}
-
-
-void ble_client_register_hci_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){
-    ble_client_packet_handler = handler;
-}
-
-
-static void ble_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    if (packet_type != HCI_EVENT_PACKET) return;
-    // forward to app
-    if (!ble_client_packet_handler) return;
-    ble_client_packet_handler(packet_type, packet, size);
-}
-
-
-// TEST CODE
-
-static void printUUID(uint8_t * uuid128, uint16_t uuid16){
-    printf(", uuid ");
-    if (uuid16){
-        printf(" 0x%02x",uuid16);
-    } else {
-        printUUID128(uuid128);
-    }
-    printf("\n");
-}
-
-static void dump_ad_event(ad_event_t * e){
-    printf("    * adv. event: evt-type %u, addr-type %u, addr %s, rssi %u, length adv %u, data: ", e->event_type,
-           e->address_type, bd_addr_to_str(e->address), e->rssi, e->length);
-    hexdump2(e->data, e->length);
-    
-}
-
-static void dump_characteristic(le_characteristic_t * characteristic){
-    printf("    * characteristic: [0x%02x-0x%02x-0x%02x], properties %x",
-                            characteristic->start_handle, characteristic->value_handle, characteristic->end_handle, characteristic->properties);
-    printUUID(characteristic->uuid128, characteristic->uuid16);
-}
-
-static void dump_service(le_service_t * service){
-    printf("    * service: [0x%02x - 0x%02x]", service->start_group_handle, service->end_group_handle);
-    printUUID(service->uuid128, service->uuid16);
-}
-
-
-gatt_client_t test_gatt_client_context;
-uint16_t test_gatt_client_handle;
-
-le_service_t services[40];
-le_service_t service;
-le_characteristic_t characteristic;
-int service_count = 0;
-int service_index = 0;
-
-static uint8_t   test_device_addr_type = 0;
-// static bd_addr_t sensor_tag1_addr = {0x1c, 0xba, 0x8c, 0x20, 0xc7, 0xf6};// SensorTag 1
-// static bd_addr_t sensor_tag2_addr = {0x34, 0xb1, 0xf7, 0xd1, 0x77, 0x9b}; // SensorTag 2
 
 typedef enum {
     TC_IDLE,
     TC_W4_SCAN_RESULT,
     TC_W4_CONNECT,
-
+    
     TC_W4_SERVICE_RESULT,
     TC_W4_CHARACTERISTIC_RESULT,
     TC_W4_DISCONNECT
 } tc_state_t;
 
-tc_state_t tc_state = TC_IDLE;
 
-void handle_gatt_client_event(le_event_t * event){
-     switch(tc_state){
-         case TC_W4_SERVICE_RESULT:
-             switch(event->type){
-                 case GATT_SERVICE_QUERY_RESULT:
-                     service = ((le_service_event_t *) event)->service;
-                     dump_service(&service);
-                     services[service_count++] = service;
-                     break;
-                 case GATT_QUERY_COMPLETE:
-                     tc_state = TC_W4_CHARACTERISTIC_RESULT;
-                     service_index = 0;
-                     printf("\n test client - CHARACTERISTIC for SERVICE ");
-                     printUUID128(service.uuid128); printf("\n");
-                     
-                     gatt_client_discover_characteristics_for_service(&test_gatt_client_context, &services[service_index]);
-                     break;
-                 default:
-                     break;
-             }
-             break;
+static gatt_client_t test_gatt_client_context;
+static uint16_t test_gatt_client_handle;
 
-         case TC_W4_CHARACTERISTIC_RESULT:
-             switch(event->type){
-                 case GATT_CHARACTERISTIC_QUERY_RESULT:
-                     characteristic = ((le_characteristic_event_t *) event)->characteristic;
-                     dump_characteristic(&characteristic);
-                     break;
-                 case GATT_QUERY_COMPLETE:
-                     if (service_index < service_count) {
-                         tc_state = TC_W4_CHARACTERISTIC_RESULT;
-                         service = services[service_index++];
-                         printf("\n test client - CHARACTERISTIC for SERVICE ");
-                         printUUID128(service.uuid128); printf("\n");
-                         
-                         dump_service(&service);
-                         gatt_client_discover_characteristics_for_service(&test_gatt_client_context, &service);
-                         break;
-                     }
-                     tc_state = TC_W4_DISCONNECT;
-                     service_index = 0;
-                     printf("\n test client - DISCONNECT\n");
-                     gap_disconnect(test_gatt_client_context.handle);
-                     break;
-                 default:
-                     break;
-             }
-             break;
-         default:
-             break;
-     }
+static le_service_t services[40];
+static int service_count = 0;
+static int service_index = 0;
+static uint8_t   test_device_addr_type = 0;
+static tc_state_t tc_state = TC_IDLE;
 
+static void printUUID(uint8_t * uuid128, uint16_t uuid16){
+    if (uuid16){
+        printf("%04x",uuid16);
+    } else {
+        printUUID128(uuid128);
+    }
 }
 
-static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void dump_ad_event(ad_event_t * e){
+    printf("    * adv. event: evt-type %u, addr-type %u, addr %s, rssi %u, length adv %u, data: ", e->event_type,
+           e->address_type, bd_addr_to_str(e->address), e->rssi, e->length);
+    hexdump(e->data, e->length);
+    
+}
+
+static void dump_characteristic(le_characteristic_t * characteristic){
+    printf("    * characteristic: [0x%04x-0x%04x-0x%04x], properties 0x%02x, uuid ",
+                            characteristic->start_handle, characteristic->value_handle, characteristic->end_handle, characteristic->properties);
+    printUUID(characteristic->uuid128, characteristic->uuid16);
+    printf("\n");
+}
+
+static void dump_service(le_service_t * service){
+    printf("    * service: [0x%04x-0x%04x], uuid ", service->start_group_handle, service->end_group_handle);
+    printUUID(service->uuid128, service->uuid16);
+    printf("\n");
+}
+
+void handle_gatt_client_event(le_event_t * event){
+    le_service_t service;
+    le_characteristic_t characteristic;
+    switch(tc_state){
+        case TC_W4_SERVICE_RESULT:
+            switch(event->type){
+                case GATT_SERVICE_QUERY_RESULT:
+                    service = ((le_service_event_t *) event)->service;
+                    dump_service(&service);
+                    services[service_count++] = service;
+                    break;
+                case GATT_QUERY_COMPLETE:
+                    tc_state = TC_W4_CHARACTERISTIC_RESULT;
+                    service_index = 0;
+                    printf("\ntest client - CHARACTERISTIC for SERVICE ");
+                    printUUID128(service.uuid128); printf("\n");
+                    
+                    gatt_client_discover_characteristics_for_service(&test_gatt_client_context, &services[service_index]);
+                    break;
+                default:
+                    break;
+            }
+            break;
+            
+        case TC_W4_CHARACTERISTIC_RESULT:
+            switch(event->type){
+                case GATT_CHARACTERISTIC_QUERY_RESULT:
+                    characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    dump_characteristic(&characteristic);
+                    break;
+                case GATT_QUERY_COMPLETE:
+                    if (service_index < service_count) {
+                        tc_state = TC_W4_CHARACTERISTIC_RESULT;
+                        service = services[service_index++];
+                        printf("\ntest client - CHARACTERISTIC for SERVICE ");
+                        printUUID128(service.uuid128);
+                        printf(", [0x%04x-0x%04x]\n", service.start_group_handle, service.end_group_handle);
+                        
+                        gatt_client_discover_characteristics_for_service(&test_gatt_client_context, &service);
+                        break;
+                    }
+                    tc_state = TC_W4_DISCONNECT;
+                    service_index = 0;
+                    gap_disconnect(test_gatt_client_context.handle);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+    
+}
+
+static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     
     switch (packet[0]) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            printf("test client - DISCONNECTED\n");
+            printf("\ntest client - DISCONNECTED\n");
+            exit(0);
             break;
         case GAP_LE_ADVERTISING_REPORT:
             if (tc_state != TC_W4_SCAN_RESULT) return;
@@ -255,7 +224,7 @@ static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size
                 case HCI_SUBEVENT_LE_CONNECTION_COMPLETE: {
                     if (tc_state != TC_W4_CONNECT) return;
                     tc_state = TC_W4_SERVICE_RESULT;
-                    printf("\n test client - CONNECTED, query primary services\n");
+                    printf("\ntest client - CONNECTED, query primary services\n");
                     test_gatt_client_handle = READ_BT_16(packet, 4);
                     gatt_client_start(&test_gatt_client_context, test_gatt_client_handle);
                     
@@ -271,9 +240,6 @@ static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size
             break;
     }
 }
-
-
-#ifndef UNIT_TEST
 
 static hci_uart_config_t  config;
 void setup(void){
@@ -300,12 +266,10 @@ void setup(void){
 #endif        
     hci_init(transport, &config, control, remote_db);
     l2cap_init();
-    
-    l2cap_register_packet_handler(ble_packet_handler);
-    
+    l2cap_register_packet_handler(&handle_hci_event);
+
     gatt_client_init();
-    gatt_client_register_handler(handle_gatt_client_event);
-    ble_client_register_hci_packet_handler(handle_hci_event);
+    gatt_client_register_handler(&handle_gatt_client_event);
 }
 
 int main(void)
@@ -320,7 +284,6 @@ int main(void)
     // happy compiler!
     return 0;
 }
-#endif
 
 
 
