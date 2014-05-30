@@ -998,6 +998,23 @@ void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *p
     hci_stack->packet_handler = handler;
 }
 
+void hci_state_reset(){
+    // no connections yet
+    hci_stack->connections = NULL;
+    hci_stack->discoverable = 0;
+    hci_stack->connectable = 0;
+    hci_stack->bondable = 1;
+    
+    // no pending cmds
+    hci_stack->decline_reason = 0;
+    hci_stack->new_scan_enable_value = 0xff;
+    
+    // LE
+    hci_stack->adv_addr_type = 0;
+    memset(hci_stack->adv_address, 0, 6);
+    hci_stack->le_scanning_state = LE_SCAN_IDLE;
+}
+
 void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, remote_device_db_t const* remote_device_db){
     
 #ifdef HAVE_MALLOC
@@ -1017,16 +1034,6 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
     
     // reference to used config
     hci_stack->config = config;
-    
-    // no connections yet
-    hci_stack->connections = NULL;
-    hci_stack->discoverable = 0;
-    hci_stack->connectable = 0;
-    hci_stack->bondable = 1;
-
-    // no pending cmds
-    hci_stack->decline_reason = 0;
-    hci_stack->new_scan_enable_value = 0xff;
     
     // higher level handler
     hci_stack->packet_handler = dummy_handler;
@@ -1054,10 +1061,7 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
     hci_stack->ssp_authentication_requirement = SSP_IO_AUTHREQ_MITM_PROTECTION_NOT_REQUIRED_GENERAL_BONDING;
     hci_stack->ssp_auto_accept = 1;
 
-    // LE
-    hci_stack->adv_addr_type = 0;
-    memset(hci_stack->adv_address, 0, 6);
-    hci_stack->le_scanning_state = LE_SCAN_IDLE;
+    hci_state_reset();
 }
 
 void hci_close(){
@@ -1549,8 +1553,9 @@ void hci_run(){
             }
             switch (hci_stack->substate >> 1){
                 case 0: // RESET
+                    hci_state_reset();
+                
                     hci_send_cmd(&hci_reset);
-
                     if (hci_stack->config == 0 || ((hci_uart_config_t *)hci_stack->config)->baudrate_main == 0){
                         // skip baud change
                         hci_stack->substate = 4; // >> 1 = 2
