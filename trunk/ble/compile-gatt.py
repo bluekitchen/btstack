@@ -8,6 +8,9 @@
 # CHARACTERISTIC, ATTRIBUTE_TYPE_UUID, [READ | WRITE | DYNAMIC], VALUE
 
 import re
+import StringIO
+import csv
+import string
 
 header = '''
 // {0} generated from {1} for BTstack
@@ -146,11 +149,10 @@ def write_indent(fout):
     fout.write("    ")
 
 def is_string(text):
-    if not text.startswith('"'):
-        return False
-    if not text.endswith('"'):
-        return False
-    return True
+    for item in text.split(" "):
+        if not all(c in string.hexdigits for c in item):
+            return True
+    return False
 
 def add_client_characteristic_configuration(properties):
     return properties & (property_flags['NOTIFY'] | property_flags['INDICATE'])
@@ -255,14 +257,14 @@ def parseCharacteristic(fout, parts):
     uuid       = parseUUID(parts[1])
     uuid_size  = len(uuid)
     properties = parseProperties(parts[2])
-    value      = parts[3]
+    value = ', '.join([str(x) for x in parts[3:]])
 
     # reliable writes is defined in an extended properties
     if (properties & property_flags['RELIABLE_WRITE']):
         properties = properties | property_flags['EXTENDED_PROPERTIES']
 
     write_indent(fout)
-    fout.write('// 0x%04x %s\n' % (handle, '-'.join(parts[0:len(parts)-1])))
+    fout.write('// 0x%04x %s\n' % (handle, '-'.join(parts[0:3])))
     
     size = 2 + 2 + 2 + 2 + (1+2+uuid_size)
     write_indent(fout)
@@ -287,7 +289,7 @@ def parseCharacteristic(fout, parts):
         properties = properties | property_flags['LONG_UUID'];
 
     write_indent(fout)
-    fout.write('// 0x%04x VALUE-%s\n' % (handle, '-'.join(parts[1:])))
+    fout.write('// 0x%04x VALUE-%s-'"'%s'"'\n' % (handle, '-'.join(parts[1:3]),value))
     write_indent(fout)
     write_16(fout, size)
     write_16(fout, properties)
@@ -297,6 +299,7 @@ def parseCharacteristic(fout, parts):
         write_string(fout, value)
     else:
         write_sequence(fout,value)
+
     fout.write("\n")
     defines.append('#define ATT_CHARACTERISTIC_%s_VALUE_HANDLE 0x%04x' % (current_characteristic_uuid_string, handle))
     handle = handle + 1
@@ -452,43 +455,46 @@ def parse(fname_in, fin, fname_out, fout):
         if len(line) == 0:
             continue
             
-        parts = line.split(',')
-        for index, object in enumerate(parts):
-            parts[index] = object.strip()
+        f = StringIO.StringIO(line)
+        parts_list = csv.reader(f, delimiter=',', quotechar='"')
         
-        if parts[0] == 'PRIMARY_SERVICE':
-            parsePrimaryService(fout, parts)
-            continue
+        for parts in parts_list:
+            for index, object in enumerate(parts):
+                parts[index] = object.strip().lstrip('"').rstrip('"')
+                
+            if parts[0] == 'PRIMARY_SERVICE':
+                parsePrimaryService(fout, parts)
+                continue
 
-        if parts[0] == 'SECONDARY_SERVICE':
-            parseSecondaryService(fout, parts)
-            continue
+            if parts[0] == 'SECONDARY_SERVICE':
+                parseSecondaryService(fout, parts)
+                continue
 
-        if parts[0] == 'INCLUDE_SERVICE':
-            parseIncludeService(fout, parts)
-            continue
+            if parts[0] == 'INCLUDE_SERVICE':
+                parseIncludeService(fout, parts)
+                continue
 
-        if parts[0] == 'CHARACTERISTIC':
-            parseCharacteristic(fout, parts)
-            continue
-        
-        if parts[0] == 'CHARACTERISTIC_USER_DESCRIPTION':
-            parseCharacteristicUserDescription(fout, parts)
-            continue
+            if parts[0] == 'CHARACTERISTIC':
+                parseCharacteristic(fout, parts)
+                continue
+            
+            if parts[0] == 'CHARACTERISTIC_USER_DESCRIPTION':
+                parseCharacteristicUserDescription(fout, parts)
+                continue
 
-        if parts[0] == 'SERVER_CHARACTERISTIC_CONFIGURATION':
-            parseServerCharacteristicConfiguration(fout, parts)
-            continue
+            if parts[0] == 'SERVER_CHARACTERISTIC_CONFIGURATION':
+                parseServerCharacteristicConfiguration(fout, parts)
+                continue
 
-        if parts[0] == 'CHARACTERISTIC_FORMAT':
-            parseCharacteristicFormat(fout, parts)
-            continue
+            if parts[0] == 'CHARACTERISTIC_FORMAT':
+                parseCharacteristicFormat(fout, parts)
+                continue
 
-        if parts[0] == 'CHARACTERISTIC_AGGREGATE_FORMAT':
-            parseCharacteristicAggregateFormat(fout, parts)
-            continue
+            if parts[0] == 'CHARACTERISTIC_AGGREGATE_FORMAT':
+                parseCharacteristicAggregateFormat(fout, parts)
+                continue
 
-        print("WARNING: unknown token: %s\n" % (parts[0]))
+            print("WARNING: unknown token: %s\n" % (parts[0]))
 
     write_indent(fout)
     fout.write("// END\n");
