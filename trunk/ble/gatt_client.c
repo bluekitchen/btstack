@@ -329,6 +329,7 @@ static void report_gatt_services(gatt_client_t * peripheral, uint8_t * packet,  
             service.uuid16 = READ_BT_16(packet, i+4);
             sdp_normalize_uuid((uint8_t*) &service.uuid128, service.uuid16);
         } else {
+            service.uuid16 = 0;
             swap128(&packet[i+4], service.uuid128);
         }
         event.service = service;
@@ -342,7 +343,7 @@ static void report_gatt_services(gatt_client_t * peripheral, uint8_t * packet,  
 // helper
 static void characteristic_start_found(gatt_client_t * peripheral, uint16_t start_handle, uint8_t properties, uint16_t value_handle, uint8_t * uuid, uint16_t uuid_length){
     uint8_t uuid128[16];
-    uint16_t uuid16;
+    uint16_t uuid16 = 0;
     if (uuid_length == 2){
         uuid16 = READ_BT_16(uuid, 0);
         sdp_normalize_uuid((uint8_t*) uuid128, uuid16);
@@ -1013,7 +1014,7 @@ le_command_status_t gatt_client_discover_primary_services(gatt_client_t *periphe
     peripheral->start_group_handle = 0x0001;
     peripheral->end_group_handle   = 0xffff;
     peripheral->gatt_client_state = P_W2_SEND_SERVICE_QUERY;
-    
+    peripheral->uuid16 = 0;
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
 }
