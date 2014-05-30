@@ -64,7 +64,7 @@ GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
 
 # create firmware image from common objects and example source file
 
-all: ../../include/btstack/version.h ble_client sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral \
+all: ../../include/btstack/version.h ble_client gatt_browser sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral \
 		ble_peripheral_sm_minimal gap_inquiry gap_dedicated_bonding gap_inquiry_and_bond l2cap_test spp_streamer \
 		classic_test
 
@@ -116,11 +116,14 @@ ble_peripheral_sm_minimal: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OB
 ble_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ble_client.c
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ble_client.c ${CFLAGS} ${LDFLAGS} -o $@
 
+gatt_browser: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} gatt_browser.c
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} gatt_browser.c ${CFLAGS} ${LDFLAGS} -o $@
+
 ble_client_uart: ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ble_client.c
 	${CC} -DHAVE_UART_CC2564 ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ble_client.c ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
-	rm -f  spp_counter sdp_rfcomm_query sdp_general_query spp_counter_ssp ble_peripheral ble_client gatt_client le_central 
+	rm -f  spp_counter sdp_rfcomm_query sdp_general_query spp_counter_ssp ble_peripheral ble_client gatt_browser gatt_client le_central
 	rm -f  *.o *.out *.hex
 	rm -f  ${BTSTACK_ROOT}/src/*.o
 	rm -f  ${BTSTACK_ROOT}/ble/*.o
