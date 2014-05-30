@@ -418,9 +418,6 @@ static void acl_handler(uint8_t *packet, int size){
 static void hci_shutdown_connection(hci_connection_t *conn){
     log_info("Connection closed: handle %u, %s\n", conn->con_handle, bd_addr_to_str(conn->address));
 
-    // cancel all l2cap connections
-    hci_emit_disconnection_complete(conn->con_handle, 0x16);    // terminated by local host
-
     run_loop_remove_timer(&conn->timeout);
     
     linked_list_remove(&hci_stack->connections, (linked_item_t *) conn);
@@ -1070,6 +1067,8 @@ void hci_close(){
         hci_stack->remote_device_db->close();
     }
     while (hci_stack->connections) {
+        // cancel all l2cap connections
+        hci_emit_disconnection_complete(((hci_connection_t *) hci_stack->connections)->con_handle, 0x16); // terminated by local host
         hci_shutdown_connection((hci_connection_t *) hci_stack->connections);
     }
     hci_power_control(HCI_POWER_OFF);
