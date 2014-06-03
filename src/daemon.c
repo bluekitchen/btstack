@@ -1077,9 +1077,10 @@ static int clients_require_discoverable(void){
 
 static void usage(const char * name) {
     printf("%s, BTstack background daemon\n", name);
-    printf("usage: %s [-h|--help] [--tcp port]\n", name);
-    printf("    -h|--help    display this usage\n");
-    printf("    --tcp port   use TCP server socket instead of local unix socket\n");
+    printf("usage: %s [--help] [--tcp port]\n", name);
+    printf("    --help   display this usage\n");
+    printf("    --tcp    use TCP server on port %u\n", BTSTACK_PORT);
+    printf("Without the --tcp option, BTstack daemon is listening on unix domain socket %s\n\n", BTSTACK_UNIX);
 }
 
 #ifdef USE_BLUETOOL 
@@ -1218,6 +1219,12 @@ int main (int argc,  char * const * argv){
         }
     }
     
+    if (tcp_flag){
+        printf("BTstack Daemon started on port %u\n", BTSTACK_PORT);
+    } else {
+        printf("BTstack Daemon started on socket %s\n", BTSTACK_UNIX);
+    }
+
     // make stdout unbuffered
     setbuf(stdout, NULL);
     log_error("BTdaemon started\n");
