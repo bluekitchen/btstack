@@ -1096,7 +1096,6 @@ static void handle_gatt_client_event(le_event_t * le_event){
     gatt_complete_event_t * complete_event = (gatt_complete_event_t *) le_event;
     
 #if defined(HAVE_MALLOC)
-    uint16_t data_length;
     uint8_t  * data;
     gatt_client_helper_t  * gatt_client_helper;
     uint8_t  gatt_chunk = 0;
