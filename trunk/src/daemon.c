@@ -1076,10 +1076,10 @@ static int clients_require_discoverable(void){
 }
 
 static void usage(const char * name) {
-    log_info("%s, BTstack background daemon\n", name);
-    log_info("usage: %s [-h|--help] [--tcp]\n", name);
-    log_info("    -h|--help  display this usage\n");
-    log_info("    --tcp      use TCP server socket instead of local unix socket\n");
+    printf("%s, BTstack background daemon\n", name);
+    printf("usage: %s [-h|--help] [--tcp port]\n", name);
+    printf("    -h|--help    display this usage\n");
+    printf("    --tcp port   use TCP server socket instead of local unix socket\n");
 }
 
 #ifdef USE_BLUETOOL 
