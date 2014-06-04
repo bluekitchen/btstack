@@ -1,0 +1,53 @@
+<project name="BTstack" basedir="." default="main">
+
+    <property name="src.dir"     value="src"/>
+    <property name="gen.dir"     value="gen"/>
+    <property name="example.dir"     value="example"/>
+
+    <property name="build.dir"   value="build"/>
+    <property name="classes.dir" value="${build.dir}/classes"/>
+    <property name="jar.dir"     value="${build.dir}/jar"/>
+
+    <property name="test-class"  value="com.bluekitchen.GATTClientTest"/>
+
+    <target name="clean">
+        <delete dir="${build.dir}"/>
+        <delete dir="${gen.dir}"/>
+    </target>
+
+    <target name="generate">
+        <mkdir dir="${gen.dir}"/>
+        <exec executable="./generate.py"/>
+    </target>
+
+    <target name="compile" depends="generate">
+        <mkdir dir="${classes.dir}"/>
+        <javac destdir="${classes.dir}">
+            <src path="${src.dir}" />
+            <src path="${gen.dir}" />
+            <src path="${example.dir}" />
+        </javac>
+    </target>
+
+    <target name="jar" depends="compile">
+        <mkdir dir="${jar.dir}"/>
+        <jar destfile="${jar.dir}/${ant.project.name}.jar" basedir="${classes.dir}">
+            <manifest>
+                <attribute name="test-class" value="${test-class}"/>
+            </manifest>
+        </jar>
+    </target>
+
+    <target name="run" depends="jar">
+       <java fork="true" classname="${test-class}">
+          <classpath>
+             <path location="${jar.dir}/${ant.project.name}.jar"/>
+          </classpath>
+        </java>
+    </target>
+
+    <target name="clean-build" depends="clean,jar"/>
+
+    <target name="main" depends="clean,run"/>
+
+</project>
