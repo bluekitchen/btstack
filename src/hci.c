@@ -909,7 +909,6 @@ static void event_handler(uint8_t *packet, int size){
                             // outgoing connection failed, remove entry
                             linked_list_remove(&hci_stack->connections, (linked_item_t *) conn);
                             btstack_memory_hci_connection_free( conn );
-                            
                         }
                         // if authentication error, also delete link key
                         if (packet[3] == 0x05) {
@@ -1451,8 +1450,8 @@ void hci_run(){
                 return;
 #endif                
             case SEND_DISCONNECT:
-                hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13); // remote closed connection
                 connection->state = SENT_DISCONNECT;
+                hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13); // remote closed connection
                 return;
                 
             default:
@@ -2233,22 +2232,39 @@ le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_typ
     return BLE_PERIPHERAL_OK;
 }
 
-le_command_status_t le_central_connect_cancel(){
+// @assumption: only a single outgoing LE Connection exists
+static hci_connection_t * le_central_get_outgoing_connection(){
     linked_item_t *it;
     for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
         hci_connection_t * conn = (hci_connection_t *) it;
         if (!hci_is_le_connection(conn)) continue;
         switch (conn->state){
             case SEND_CREATE_CONNECTION:
-                hci_emit_le_connection_complete(conn, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER);
-                break;
             case SENT_CREATE_CONNECTION:
-                conn->state = SEND_CANCEL_CONNECTION;
-                hci_run();
-                break;
+                return conn;
             default:
                 break;
         };
+    }
+    return NULL;
+}
+
+le_command_status_t le_central_connect_cancel(){
+    hci_connection_t * conn = le_central_get_outgoing_connection();
+    switch (conn->state){
+        case SEND_CREATE_CONNECTION:
+            // skip sending create connection and emit event instead
+            hci_emit_le_connection_complete(conn, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER);
+            linked_list_remove(&hci_stack->connections, (linked_item_t *) conn);
+            btstack_memory_hci_connection_free( conn );
+            break;            
+        case SENT_CREATE_CONNECTION:
+            // request to send cancel connection
+            conn->state = SEND_CANCEL_CONNECTION;
+            hci_run();
+            break;
+        default:
+            break;
     }
     return BLE_PERIPHERAL_OK;
 }
@@ -2256,7 +2272,7 @@ le_command_status_t le_central_connect_cancel(){
 le_command_status_t gap_disconnect(hci_con_handle_t handle){
     hci_connection_t * conn = hci_connection_for_handle(handle);
     if (!conn){
-        hci_emit_disconnection_complete(conn, 0);
+        hci_emit_disconnection_complete(handle, 0);
         return BLE_PERIPHERAL_OK;
     }
     conn->state = SEND_DISCONNECT;
