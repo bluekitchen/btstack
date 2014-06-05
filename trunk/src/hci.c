@@ -2256,7 +2256,7 @@ le_command_status_t le_central_connect_cancel(){
 le_command_status_t gap_disconnect(hci_con_handle_t handle){
     hci_connection_t * conn = hci_connection_for_handle(handle);
     if (!conn){
-        hci_emit_le_connection_complete(conn, 0);
+        hci_emit_disconnection_complete(conn, 0);
         return BLE_PERIPHERAL_OK;
     }
     conn->state = SEND_DISCONNECT;
