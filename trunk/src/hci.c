@@ -2214,6 +2214,12 @@ le_command_status_t le_central_stop_scan(){
     return BLE_PERIPHERAL_OK;
 }
 
+void le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window){
+    hci_stack->le_scan_type     = scan_type;
+    hci_stack->le_scan_interval = scan_interval;
+    hci_stack->le_scan_window   = scan_window;
+    hci_run();
+}
 
 le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_type){
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
