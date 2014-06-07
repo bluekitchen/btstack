@@ -1009,6 +1009,7 @@ void hci_state_reset(){
     hci_stack->adv_addr_type = 0;
     memset(hci_stack->adv_address, 0, 6);
     hci_stack->le_scanning_state = LE_SCAN_IDLE;
+    hci_stack->le_scan_type = 0xff; 
 }
 
 void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, remote_device_db_t const* remote_device_db){
@@ -1398,6 +1399,13 @@ void hci_run(){
                 return;
             default:
                 break;
+        }
+        if (hci_stack->le_scan_type != 0xff){
+            // defaults: active scanning, accept all advertisement packets
+            int scan_type = hci_stack->le_scan_type;
+            hci_stack->le_scan_type = 0xff;
+            hci_send_cmd(&hci_le_set_scan_parameters, scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window, hci_stack->adv_addr_type, 0);
+            return;
         }
     }
 #endif

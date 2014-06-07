@@ -408,7 +408,13 @@ typedef struct {
 
     uint8_t   adv_addr_type;
     bd_addr_t adv_address;
+
     le_scanning_state_t le_scanning_state;
+
+    // buffer for le scan type command - 0xff not set
+    uint8_t  le_scan_type;
+    uint16_t le_scan_interval;  
+    uint16_t le_scan_window;
 } hci_stack_t;
 
 //*************** le client start
