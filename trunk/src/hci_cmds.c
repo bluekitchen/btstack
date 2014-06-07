@@ -769,6 +769,15 @@ OPCODE(OGF_BTSTACK, GAP_LE_SCAN_STOP), ""
 };
 
 /**
+ * @param scan_type
+ * @param scan_interval
+ * @param scan_window
+ */
+const hci_cmd_t gap_le_set_scan_parameters = {
+OPCODE(OGF_BTSTACK, GAP_LE_SET_SCAN_PARAMETERS), "122"
+};
+
+/**
  * @param peer_address_type
  * @param peer_address
  */

@@ -623,6 +623,7 @@ extern const hci_cmd_t rfcomm_persistent_channel_for_service;
 extern const hci_cmd_t gap_disconnect_cmd;
 extern const hci_cmd_t gap_le_scan_start;
 extern const hci_cmd_t gap_le_scan_stop;
+extern const hci_cmd_t gap_le_set_scan_parameters;
 extern const hci_cmd_t gap_le_connect_cmd;
 extern const hci_cmd_t gap_le_connect_cancel_cmd;
 extern const hci_cmd_t gatt_discover_primary_services_cmd;

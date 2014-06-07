@@ -540,6 +540,9 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case GAP_LE_SCAN_STOP:
             le_central_stop_scan();
             break;
+        case GAP_LE_SET_SCAN_PARAMETERS:
+            le_central_set_scan_parameters(packet[3], READ_BT_16(packet, 4), READ_BT_16(packet, 6));
+            break;
         case GAP_LE_CONNECT:
             bt_flip_addr(addr, &packet[4]);
             addr_type = packet[3];
