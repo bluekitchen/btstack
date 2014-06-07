@@ -1425,18 +1425,18 @@ void hci_run(){
 #ifdef HAVE_BLE
                         log_info("sending hci_le_create_connection\n");
                         hci_send_cmd(&hci_le_create_connection,
-                                     1000,      // scan interval: 625 ms
-                                     1000,      // scan interval: 625 ms
+                                     0x0060,    // scan interval: 60 ms
+                                     0x0030,    // scan interval: 30 ms
                                      0,         // don't use whitelist
                                      connection->address_type, // peer address type
-                                     connection->address,       // peer bd addr
-                                     0,         // our addr type: public
-                                     80,        // conn interval min
-                                     80,        // conn interval max (3200 * 0.625)
+                                     connection->address,      // peer bd addr
+                                     hci_stack->adv_addr_type, // our addr type:
+                                     0x0008,    // conn interval min
+                                     0x0018,    // conn interval max
                                      0,         // conn latency
-                                     2000,      // supervision timeout
-                                     0,         // min ce length
-                                     1000       // max ce length
+                                     0x0048,    // supervision timeout
+                                     0x0001,    // min ce length
+                                     0x0001     // max ce length
                                      );
                         
                         connection->state = SENT_CREATE_CONNECTION;
