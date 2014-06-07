@@ -193,6 +193,7 @@ extern "C" {
 #define GAP_LE_SCAN_STOP            0x61
 #define GAP_LE_CONNECT              0x62
 #define GAP_LE_CONNECT_CANCEL       0x63
+#define GAP_LE_SET_SCAN_PARAMETERS  0x64
 
 // GATT (Client) 0x70
 #define GATT_DISCOVER_ALL_PRIMARY_SERVICES                       0x70
