@@ -1603,7 +1603,7 @@ void hci_run(){
                             hci_stack->substate = 11 << 1;    // skip all classic command
                         } else {
                             log_error("Neither BR/EDR nor LE supported");
-                            hci_stack->substate = 13 << 1;    // skip all
+                            hci_stack->substate = 14 << 1;    // skip all
                         }
                     }
                     break;
@@ -1644,7 +1644,7 @@ void hci_run(){
 					hci_send_cmd(&hci_write_scan_enable, (hci_stack->connectable << 1) | hci_stack->discoverable); // page scan
                     if (!hci_le_supported()){
                         // SKIP LE init for Classic only configuration
-                        hci_stack->substate = 13 << 1;
+                        hci_stack->substate = 14 << 1;
                     }
 					break;
 
@@ -1657,10 +1657,14 @@ void hci_run(){
                     // LE Supported Host = 1, Simultaneous Host = 0
                     hci_send_cmd(&hci_write_le_host_supported, 1, 0);
                     break;
+                case 14:
+                    // LE Scan Parameters: active scanning, 300 ms interval, 30 ms window, public address, accept all advs
+                    hci_send_cmd(&hci_le_set_scan_parameters, 1, 0x1e0, 0x30, 0, 0);
+                    break;
 #endif
 
                 // DONE
-                case 14:
+                case 15:
                     // done.
                     hci_stack->state = HCI_STATE_WORKING;
                     hci_emit_state();
