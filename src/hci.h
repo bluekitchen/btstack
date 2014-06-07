@@ -424,6 +424,7 @@ le_command_status_t le_central_stop_scan();
 le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_type);
 le_command_status_t le_central_connect_cancel();
 le_command_status_t gap_disconnect(hci_con_handle_t handle);
+void le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window);
 
 //*************** le client end
     
