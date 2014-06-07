@@ -3,6 +3,8 @@ BTSTACK_ROOT = ../..
 CFLAGS  = -g -Wall -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include  -I${BTSTACK_ROOT}/chipset-cc256x
 CFLAGS += -I/usr/local/include -I../../ble -I../.. -I../.. 
 LDFLAGS = -L/usr/local/lib -lusb-1.0
+# needed on OS X with libusb compiled stand alone
+LDFLAGS += -framework IOKit -framework CoreFoundation -framework Foundation
 
 CORE   = \
     ${BTSTACK_ROOT}/src/btstack_memory.c          \
