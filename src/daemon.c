@@ -58,6 +58,7 @@
 #include <btstack/linked_list.h>
 #include <btstack/run_loop.h>
 #include <btstack/hci_cmds.h>
+#include <btstack/version.h>
 
 #include "debug.h"
 #include "hci.h"
@@ -1227,7 +1228,6 @@ int main (int argc,  char * const * argv){
 
     // make stdout unbuffered
     setbuf(stdout, NULL);
-    log_error("BTdaemon started\n");
 
     // handle CTRL-c
     signal(SIGINT, daemon_sigint_handler);
@@ -1300,6 +1300,10 @@ int main (int argc,  char * const * argv){
 #endif
     daemon_set_logging_enabled(newLoggingEnabled);
     
+    // dump version
+    log_info("BTdaemon started\n");
+    log_info("version %s, svn r%u, build %s", BTSTACK_VERSION, BTSTACK_REVISION, BTSTACK_DATE);
+
     // init HCI
     hci_init(transport, &config, control, remote_device_db);
 
