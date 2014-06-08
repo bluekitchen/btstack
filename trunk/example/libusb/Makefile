@@ -1,6 +1,8 @@
 BTSTACK_ROOT = ../..
 
-CFLAGS  = -g -Wall -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include  -I${BTSTACK_ROOT}/chipset-cc256x
+CFLAGS  = -g -Wall -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include 
+CFLAGS += -I${BTSTACK_ROOT}/chipset-cc256x
+CFLAGS += -I${BTSTACK_ROOT}/chipset-csr
 CFLAGS += -I/usr/local/include -I../../ble -I../.. -I../.. 
 LDFLAGS = -L/usr/local/lib -lusb-1.0
 # needed on OS X with libusb compiled stand alone
@@ -46,31 +48,31 @@ CC2564 = \
     ${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
  	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2564_2.10.c \
 
+CSR = ${BTSTACK_ROOT}/chipset-csr/bt_control_csr.c
+
 SM_REAL = \
 	${BTSTACK_ROOT}/ble/sm.c 				 	    \
     ${BTSTACK_ROOT}/ble/central_device_db_memory.c  \
 
 SM_MINIMAL = \
 	${BTSTACK_ROOT}/ble/sm_minimal.c  		 	    \
-    ${BTSTACK_ROOT}/ble/central_device_db_dummy.c  \
+    ${BTSTACK_ROOT}/ble/central_device_db_dummy.c   \
 
-CORE_OBJ   = $(CORE:.c=.o)
-COMMON_OBJ = $(COMMON:.c=.o)
-CC2564_OBJ = $(CC2564:.c=.o)
+CORE_OBJ    = $(CORE:.c=.o)
+COMMON_OBJ  = $(COMMON:.c=.o)
+CC2564_OBJ  = $(CC2564:.c=.o)
+CSR_OBJ     = $(CSR:.c=.o)
 SM_REAL_OBJ = $(SM_REAL:.c=.o)
 SM_MINIMAL_OBJ = $(SM_MINIMAL:.c=.o)
-ATT_OBJ = $(ATT:.c=.o)
+ATT_OBJ     = $(ATT:.c=.o)
 GATT_CLIENT_OBJ = $(GATT_CLIENT:.c=.o)
 GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
-
 
 # create firmware image from common objects and example source file
 
 all: ../../include/btstack/version.h ble_client gatt_browser sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral \
 		ble_peripheral_sm_minimal gap_inquiry gap_dedicated_bonding gap_inquiry_and_bond l2cap_test spp_streamer \
-		classic_test
-
-# ble_client_uart #spp-usb l2cap-server-usb l2cap-client-usb l2cap-server-uart l2cap-client-uart
+		classic_test ble_peripheral_uart ancs_client
 
 ../../include/btstack/version.h:
 	cd ..; ../src/get_version.sh
@@ -109,8 +111,14 @@ classic_test: ${CORE_OBJ} ${COMMON_OBJ} classic_test.c
 profile.h: profile.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 
+ancs_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ancs_client.c profile.h
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ancs_client.c ${CFLAGS} ${LDFLAGS} -o $@
+
 ble_peripheral: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c profile.h
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
+
+ble_peripheral_uart: ${CORE_OBJ} ${COMMON_OBJ} ${CSR_OBJ} ${ATT_OBJ} ${SM_REAL_OBJ} ble_peripheral.c profile.h
+	${CC} $ -DHAVE_UART_CSR ${CORE_OBJ} ${COMMON_OBJ} ${CSR_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_peripheral_sm_minimal: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c profile.h
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
@@ -121,11 +129,8 @@ ble_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ble_client.c
 gatt_browser: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} gatt_browser.c
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} gatt_browser.c ${CFLAGS} ${LDFLAGS} -o $@
 
-ble_client_uart: ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ble_client.c
-	${CC} -DHAVE_UART_CC2564 ${CORE_OBJ} ${COMMON_OBJ} ${CC2564_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ble_client.c ${CFLAGS} ${LDFLAGS} -o $@
-
 clean:
-	rm -f  spp_counter sdp_rfcomm_query sdp_general_query spp_counter_ssp ble_peripheral ble_client gatt_browser gatt_client le_central
+	rm -f  spp_counter sdp_rfcomm_query sdp_general_query spp_counter_ssp ble_peripheral ble_client gatt_browser gatt_client ancs_client
 	rm -f  *.o *.out *.hex
 	rm -f  ${BTSTACK_ROOT}/src/*.o
 	rm -f  ${BTSTACK_ROOT}/ble/*.o
