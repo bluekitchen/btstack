@@ -926,6 +926,7 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
  * @brief transcation queue of prepared writes, e.g., after disconnect
  */
 void att_clear_transaction_queue(){
+    if (!att_clear_transaction_queue) return;
     (*att_write_callback)(0, ATT_TRANSACTION_MODE_CANCEL, 0, NULL, 0, NULL);
 }
 
