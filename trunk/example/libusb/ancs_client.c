@@ -35,7 +35,6 @@
 //
 // ANCS Client Demo
 //
-// TODO: figure out why pairing/connecting from iOS Settings doesn't work
 // TODO: query full text upon notification using control point
 // TODO: present notifications in human readable form
 //
@@ -67,6 +66,9 @@
 #include "gap_le.h"
 #include "gatt_client.h"
 #include "sm.h"
+
+// ancs client profile
+#include "ancs_client.h"
 
 #ifdef HAVE_UART_CSR
 #include "bt_control_csr.h"
@@ -103,9 +105,6 @@ static todo_t todos = 0;
 
 static uint16_t handle;
 
-// test profile
-#include "profile.h"
-
 typedef enum {
     TC_IDLE,
     TC_W4_ENCRYPTED_CONNECTION,
@@ -117,7 +116,6 @@ typedef enum {
     TC_W4_DISCONNECT
 } tc_state_t;
 
-
 static gatt_client_t ancs_client_context;
 static int ancs_service_found;
 static le_service_t  ancs_service;
@@ -125,9 +123,7 @@ static le_characteristic_t ancs_notification_source_characteristic;
 static le_characteristic_t ancs_control_point_characteristic;
 static le_characteristic_t ancs_data_source_characteristic;
 static int ancs_characteristcs;
-
 static tc_state_t tc_state = TC_IDLE;
-
 
 void handle_gatt_client_event(le_event_t * event){
     le_characteristic_t characteristic;
@@ -293,9 +289,10 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case HCI_EVENT_ENCRYPTION_CHANGE: 
                     if (handle != READ_BT_16(packet, 3)) break;
                     connection_encrypted = packet[5];
-                    log_info("Eencryption state change: %u", connection_encrypted);
+                    log_info("Encryption state change: %u", connection_encrypted);
                     if (!connection_encrypted) break;
                     if (tc_state != TC_W4_ENCRYPTED_CONNECTION) break;
+
                     // let's start
                     printf("\nANCS Client - CONNECTED, discover ANCS service\n");
                     tc_state = TC_W4_SERVICE_RESULT;

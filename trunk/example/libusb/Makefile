@@ -110,8 +110,10 @@ classic_test: ${CORE_OBJ} ${COMMON_OBJ} classic_test.c
 # compile .ble description
 profile.h: profile.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
+ancs_client.h: ancs_client.gatt
+	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 
-ancs_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ancs_client.c profile.h
+ancs_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ancs_client.c ancs_client.h
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ancs_client.c ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_peripheral: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c profile.h
