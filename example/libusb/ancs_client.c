@@ -80,6 +80,8 @@ static hci_uart_config_t hci_uart_config_csr8811 = {
 };
 #endif
 
+static void app_run();
+
 const uint8_t adv_data[] = {
     // Flags general discoverable
     0x02, 0x01, 0x02, 
@@ -88,13 +90,23 @@ const uint8_t adv_data[] = {
     // Service Solicitation, 128-bit UUIDs - ANCS (little endian)
     0x11,0x15,0xD0,0x00,0x2D,0x12,0x1E,0x4B,0x0F,0xA4,0x99,0x4E,0xCE,0xB5,0x31,0xF4,0x05,0x79
 };
+uint8_t adv_data_len = sizeof(adv_data);
+
+const char * ancs_attribute_names[] = { 
+    "AppIdentifier",
+    "IDTitle",
+    "IDSubtitle",
+    "IDMessage",
+    "IDMessageSize",
+    "IDDate"
+};
 
 const uint8_t ancs_service_uuid[] =             {0x79,0x05,0xF4,0x31,0xB5,0xCE,0x4E,0x99,0xA4,0x0F,0x4B,0x1E,0x12,0x2D,0x00,0xD0};
 const uint8_t ancs_notification_source_uuid[] = {0x9F,0xBF,0x12,0x0D,0x63,0x01,0x42,0xD9,0x8C,0x58,0x25,0xE6,0x99,0xA2,0x1D,0xBD};
 const uint8_t ancs_control_point_uuid[] =       {0x69,0xD1,0xD8,0xF3,0x45,0xE1,0x49,0xA8,0x98,0x21,0x9B,0xBD,0xFD,0xAA,0xD9,0xD9};
 const uint8_t ancs_data_source_uuid[] =         {0x22,0xEA,0xC6,0xE9,0x24,0xD6,0x4B,0xB5,0xBE,0x44,0xB3,0x6A,0xCE,0x7C,0x7B,0xFB};
 
-uint8_t adv_data_len = sizeof(adv_data);
+uint32_t ancs_notification_uid;
 
 typedef enum {
     SET_ADVERTISEMENT_PARAMS = 1 << 0,
@@ -209,25 +221,45 @@ void handle_gatt_client_event(le_event_t * event){
             if ( event->type != GATT_NOTIFICATION && event->type != GATT_INDICATION ) break;
             value_event = (le_characteristic_value_event_t *) event;
             if (value_event->value_handle == ancs_data_source_characteristic.value_handle){
-                printf("Data Source: ");
+                int pos = 5;
+                while (pos < value_event->blob_length){
+                    uint8_t  attribute_id = value_event->blob[pos];
+                    pos++;
+                    uint16_t attribute_len = READ_BT_16(value_event->blob, pos);
+                    pos += 2;
+                    char text[32];
+                    uint16_t str_len = attribute_len < (sizeof(text)-1) ? attribute_len : (sizeof(text)-1);
+                    memcpy(text, &value_event->blob[pos], str_len);
+                    text[str_len] = 0;
+                    printf("%14s: %s\n", ancs_attribute_names[attribute_id], text);
+                    pos += attribute_len;
+                }
             } else if (value_event->value_handle == ancs_notification_source_characteristic.value_handle){
-                printf("Notification Source: ");
+                ancs_notification_uid = READ_BT_32(value_event->blob, 4);
+                printf("Notification received: EventID %02x, EventFlags %02x, CategoryID %02x, CategoryCount %u, UID %04x\n",
+                    value_event->blob[0], value_event->blob[1], value_event->blob[2], value_event->blob[3], ancs_notification_uid);
+                static uint8_t get_notification_attributes[] = {0, 0,0,0,0,  0,  1,32,0,  2,32,0, 3,32,0, 4, 5};
+                bt_store_32(get_notification_attributes, 1, ancs_notification_uid);
+                ancs_notification_uid = 0;
+                gatt_client_write_value_of_characteristic(&ancs_client_context, ancs_control_point_characteristic.value_handle, 
+                    sizeof(get_notification_attributes), get_notification_attributes);
             } else {
                 printf("Unknown Source: ");
+                hexdump(value_event->blob , value_event->blob_length);
             }
-            hexdump(value_event->blob , value_event->blob_length);
             break;
         default:
             break;
     }    
+    app_run();
 }
 
-static void gap_run(){
+static void app_run(){
 
     if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
 
     if (todos & SET_ADVERTISEMENT_DATA){
-        printf("GAP_RUN: set advertisement data\n");
+        printf("app_run: set advertisement data\n");
         todos &= ~SET_ADVERTISEMENT_DATA;
         hci_send_cmd(&hci_le_set_advertising_data, adv_data_len, adv_data);
         return;
@@ -245,7 +277,7 @@ static void gap_run(){
     }    
 
     if (todos & ENABLE_ADVERTISEMENTS){
-        printf("GAP_RUN: enable advertisements\n");
+        printf("app_run: enable advertisements\n");
         todos &= ~ENABLE_ADVERTISEMENTS;
         hci_send_cmd(&hci_le_set_advertise_enable, 1);
         return;
@@ -264,7 +296,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     if (packet[2] == HCI_STATE_WORKING) {
                         printf("SM Init completed\n");
                         todos = SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | ENABLE_ADVERTISEMENTS;
-                        gap_run();
+                        app_run();
                     }
                     break;
                 
@@ -312,7 +344,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     break;
             }
     }
-    gap_run();
+    app_run();
 }
 
 void setup(void){
