@@ -108,6 +108,7 @@ static uint16_t handle;
 
 typedef enum {
     TC_IDLE,
+    TC_W4_ENCRYPTED_CONNECTION,
     TC_W4_SERVICE_RESULT,
     TC_W4_CHARACTERISTIC_RESULT,
     TC_W4_DATA_SOURCE_SUBSCRIBED,
@@ -125,7 +126,7 @@ static le_characteristic_t ancs_control_point_characteristic;
 static le_characteristic_t ancs_data_source_characteristic;
 static int ancs_characteristcs;
 
-static tc_state_t    tc_state = TC_IDLE;
+static tc_state_t tc_state = TC_IDLE;
 
 
 void handle_gatt_client_event(le_event_t * event){
@@ -145,7 +146,7 @@ void handle_gatt_client_event(le_event_t * event){
                         break;
                     }
                     tc_state = TC_W4_CHARACTERISTIC_RESULT;
-                    printf("test client - CHARACTERISTIC for ANCS SERVICE \n");
+                    printf("ANCS Client - Discover characteristics for ANCS SERVICE \n");
                     gatt_client_discover_characteristics_for_service(&ancs_client_context, &ancs_service);
                     break;
                 default:
@@ -241,8 +242,8 @@ static void gap_run(){
         uint8_t adv_type = 0;   // default
         bd_addr_t null_addr;
         memset(null_addr, 0, 6);
-        uint16_t adv_int_min = 0x800;
-        uint16_t adv_int_max = 0x800;
+        uint16_t adv_int_min = 0x0030;
+        uint16_t adv_int_max = 0x0030;
         hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, 0, 0, &null_addr, 0x07, 0x00);
         return;
     }    
@@ -256,7 +257,7 @@ static void gap_run(){
 }
 
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    
+    int connection_encrypted;
     switch (packet_type) {
             
         case HCI_EVENT_PACKET:
@@ -277,16 +278,29 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                             handle = READ_BT_16(packet, 4);
                             printf("Connection handle 0x%04x\n", handle);
 
-                            // let's start
-                            tc_state = TC_W4_SERVICE_RESULT;
-                            printf("\ntest client - CONNECTED, query primary services\n");
-                            gatt_client_start(&ancs_client_context, handle);
-                            gatt_client_discover_primary_services_by_uuid128(&ancs_client_context, ancs_service_uuid);
+                            // we need to be paired to enable notifications
+                            tc_state = TC_W4_ENCRYPTED_CONNECTION;
+                            sm_send_security_request();
+                            break;
+
                             break;
 
                         default:
                             break;
                     }
+                    break;
+
+                case HCI_EVENT_ENCRYPTION_CHANGE: 
+                    if (handle != READ_BT_16(packet, 3)) break;
+                    connection_encrypted = packet[5];
+                    log_info("Eencryption state change: %u", connection_encrypted);
+                    if (!connection_encrypted) break;
+                    if (tc_state != TC_W4_ENCRYPTED_CONNECTION) break;
+                    // let's start
+                    printf("\nANCS Client - CONNECTED, discover ANCS service\n");
+                    tc_state = TC_W4_SERVICE_RESULT;
+                    gatt_client_start(&ancs_client_context, handle);
+                    gatt_client_discover_primary_services_by_uuid128(&ancs_client_context, ancs_service_uuid);
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
