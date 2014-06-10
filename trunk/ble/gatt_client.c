@@ -69,7 +69,6 @@ void (*gatt_client_callback)(le_event_t * event);
 void gatt_client_init(){
     att_client_start_handle = 0x0000;
     gatt_client_connections = NULL;
-    //l2cap_register_fixed_channel(gatt_client_att_packet_handler, L2CAP_CID_ATTRIBUTE_PROTOCOL);
     att_dispatch_register_client(gatt_client_att_packet_handler);
 }
 
@@ -575,7 +574,7 @@ static void gatt_client_run(){
     linked_item_t *it;
     for (it = (linked_item_t *) gatt_client_connections; it ; it = it->next){
         gatt_client_t * peripheral = (gatt_client_t *) it;
-        // printf("handle_peripheral_list, status %u\n", peripheral->state);
+        // printf("- handle_peripheral_list, mtu state %u, client state %u\n", peripheral->mtu_state, peripheral->gatt_client_state);
         
         switch (peripheral->mtu_state) {
             case SEND_MTU_EXCHANGE:{
@@ -732,8 +731,7 @@ static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8
     send_gatt_complete_event(peripheral, error_code);
 }
 
-void gatt_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    if (packet_type != HCI_EVENT_PACKET) return;
+static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
     switch (packet[0]) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
         {
@@ -747,11 +745,16 @@ void gatt_packet_handler(void * connection, uint8_t packet_type, uint16_t channe
         default:
             break;
     }
-    gatt_client_run();
 }
 
-
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
+
+    if (packet_type == HCI_EVENT_PACKET) {
+        gatt_client_hci_event_packet_handler(packet_type, packet, size);
+        gatt_client_run();
+        return;
+    }
+
     if (packet_type != ATT_DATA_PACKET) return;
     
     gatt_client_t * peripheral = get_gatt_client_context_for_handle(handle);
