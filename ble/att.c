@@ -164,18 +164,18 @@ uint16_t att_uuid_for_handle(uint16_t handle){
 }
 // end of client API
 
-static void att_update_value_len(att_iterator_t *it){
+static void att_update_value_len(att_iterator_t *it, uint16_t con_handle){
     if ((it->flags & ATT_PROPERTY_DYNAMIC) == 0 || !att_read_callback) return;
-    it->value_len = (*att_read_callback)(it->handle, 0, NULL, 0);
+    it->value_len = (*att_read_callback)(con_handle, it->handle, 0, NULL, 0);
     return;
 }
 
 // copy attribute value from offset into buffer with given size
-static int att_copy_value(att_iterator_t *it, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+static int att_copy_value(att_iterator_t *it, uint16_t offset, uint8_t * buffer, uint16_t buffer_size, uint16_t con_handle){
     
     // DYNAMIC 
     if ((it->flags & ATT_PROPERTY_DYNAMIC) && att_read_callback) {
-        return (*att_read_callback)(it->handle, offset, buffer, buffer_size);
+        return (*att_read_callback)(con_handle, it->handle, offset, buffer, buffer_size);
     }
     
     // STATIC
@@ -498,7 +498,7 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         error_code = att_validate_security(att_connection, &it);
         if (error_code) break;
 
-        att_update_value_len(&it);
+        att_update_value_len(&it, att_connection->con_handle);
         
         // check if value has same len as last one
         uint16_t this_pair_len = 2 + it.value_len;
@@ -525,7 +525,7 @@ static uint16_t handle_read_by_type_request2(att_connection_t * att_connection, 
         // store
         bt_store_16(response_buffer, offset, it.handle);
         offset += 2;
-        uint16_t bytes_copied = att_copy_value(&it, 0, response_buffer + offset, it.value_len);
+        uint16_t bytes_copied = att_copy_value(&it, 0, response_buffer + offset, it.value_len, att_connection->con_handle);
         offset += bytes_copied;
     }
     
@@ -585,7 +585,7 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
         return setup_error(response_buffer, request_type, handle, error_code);
     }
 
-    att_update_value_len(&it);
+    att_update_value_len(&it, att_connection->con_handle);
 
     uint16_t offset   = 1;
     // limit data
@@ -594,7 +594,7 @@ static uint16_t handle_read_request2(att_connection_t * att_connection, uint8_t 
     }
     
     // store
-    uint16_t bytes_copied = att_copy_value(&it, 0, response_buffer + offset, it.value_len);
+    uint16_t bytes_copied = att_copy_value(&it, 0, response_buffer + offset, it.value_len, att_connection->con_handle);
     offset += bytes_copied;
     
     response_buffer[0] = ATT_READ_RESPONSE;
@@ -630,7 +630,7 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
         return setup_error(response_buffer, request_type, handle, error_code);
     }
 
-    att_update_value_len(&it);
+    att_update_value_len(&it, att_connection->con_handle);
 
     if (value_offset > it.value_len){
         return setup_error_invalid_offset(response_buffer, request_type, handle);
@@ -643,7 +643,7 @@ static uint16_t handle_read_blob_request2(att_connection_t * att_connection, uin
     }
     
     // store
-    uint16_t bytes_copied = att_copy_value(&it, value_offset, response_buffer + offset, it.value_len - value_offset);
+    uint16_t bytes_copied = att_copy_value(&it, value_offset, response_buffer + offset, it.value_len - value_offset, att_connection->con_handle);
     offset += bytes_copied;
     
     response_buffer[0] = ATT_READ_BLOB_RESPONSE;
@@ -696,7 +696,7 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
         error_code = att_validate_security(att_connection, &it);
         if (error_code) break;
 
-        att_update_value_len(&it);
+        att_update_value_len(&it, att_connection->con_handle);
         
         // limit data
         if (offset + it.value_len > response_buffer_size) {
@@ -704,7 +704,7 @@ static uint16_t handle_read_multiple_request2(att_connection_t * att_connection,
         }
         
         // store
-        uint16_t bytes_copied = att_copy_value(&it, 0, response_buffer + offset, it.value_len);
+        uint16_t bytes_copied = att_copy_value(&it, 0, response_buffer + offset, it.value_len, att_connection->con_handle);
         offset += bytes_copied;
     }
 
@@ -866,7 +866,7 @@ static uint16_t handle_write_request(att_connection_t * att_connection, uint8_t 
     if (error_code) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
-    error_code = (*att_write_callback)(handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3, NULL);
+    error_code = (*att_write_callback)(att_connection->con_handle, handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3);
     if (error_code) {
         return setup_error(response_buffer, request_type, handle, error_code);
     }
@@ -903,7 +903,7 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
         return setup_error(response_buffer, request_type, handle, error_code);
     }
 
-    error_code = (*att_write_callback)(handle, ATT_TRANSACTION_MODE_ACTIVE, offset, request_buffer + 5, request_len - 5, NULL);
+    error_code = (*att_write_callback)(att_connection->con_handle, handle, ATT_TRANSACTION_MODE_ACTIVE, offset, request_buffer + 5, request_len - 5);
     switch (error_code){
         case 0:
             break;
@@ -925,9 +925,9 @@ static uint16_t handle_prepare_write_request(att_connection_t * att_connection, 
 /*
  * @brief transcation queue of prepared writes, e.g., after disconnect
  */
-void att_clear_transaction_queue(){
+void att_clear_transaction_queue(att_connection_t * att_connection){
     if (!att_write_callback) return;
-    (*att_write_callback)(0, ATT_TRANSACTION_MODE_CANCEL, 0, NULL, 0, NULL);
+    (*att_write_callback)(att_connection->con_handle, 0, ATT_TRANSACTION_MODE_CANCEL, 0, NULL, 0);
 }
 
 // MARK: ATT_EXECUTE_WRITE_REQUEST 0x18
@@ -943,15 +943,15 @@ static uint16_t handle_execute_write_request(att_connection_t * att_connection, 
     if (request_buffer[1]) {
         // deliver queued errors
         if (att_prepare_write_error_code){
-            att_clear_transaction_queue();
+            att_clear_transaction_queue(att_connection);
             uint8_t  error_code = att_prepare_write_error_code;
             uint16_t handle     = att_prepare_write_error_handle;
             att_prepare_write_reset();
             return setup_error(response_buffer, request_type, handle, error_code);
         }
-        (*att_write_callback)(0, ATT_TRANSACTION_MODE_EXECUTE, 0, NULL, 0, NULL);
+        (*att_write_callback)(att_connection->con_handle, 0, ATT_TRANSACTION_MODE_EXECUTE, 0, NULL, 0);
     } else {
-        att_clear_transaction_queue();
+        att_clear_transaction_queue(att_connection);
     }
     response_buffer[0] = ATT_EXECUTE_WRITE_RESPONSE;
     return 1;
@@ -971,25 +971,7 @@ static void handle_write_command(att_connection_t * att_connection, uint8_t * re
     if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0) return;
     if ((it.flags & ATT_PROPERTY_WRITE_WITHOUT_RESPONSE) == 0) return;
     if (att_validate_security(att_connection, &it)) return;
-    (*att_write_callback)(handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3, NULL);
-}
-
-// MARK: ATT_SIGNED_WRITE_COMAND 0xD2
-// Core 4.0, vol 3, part F, 3.4.5.4
-// "No Error Response or Write Response shall be sent in response to this command"
-static void handle_signed_write_command(att_connection_t * att_connection, uint8_t * request_buffer,  uint16_t request_len,
-                                 uint8_t * response_buffer, uint16_t response_buffer_size){
-
-    if (request_len < 15) return;
-    if (!att_write_callback) return;
-    uint16_t handle = READ_BT_16(request_buffer, 1);
-    att_iterator_t it;
-    int ok = att_find_handle(&it, handle);
-    if (!ok) return;
-    if ((it.flags & ATT_PROPERTY_DYNAMIC) == 0) return;
-    if ((it.flags & ATT_PROPERTY_AUTHENTICATED_SIGNED_WRITE) == 0) return;
-    if (att_validate_security(att_connection, &it)) return;
-    (*att_write_callback)(handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3 - 12, (signature_t *) request_buffer + request_len - 12);
+    (*att_write_callback)(att_connection->con_handle, handle, ATT_TRANSACTION_MODE_NONE, 0, request_buffer + 3, request_len - 3);
 }
 
 // MARK: helper for ATT_HANDLE_VALUE_NOTIFICATION and ATT_HANDLE_VALUE_INDICATION
@@ -1074,7 +1056,7 @@ uint16_t att_handle_request(att_connection_t * att_connection,
             handle_write_command(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
             break;
         case ATT_SIGNED_WRITE_COMAND:
-            handle_signed_write_command(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
+            printf("handle_signed_write_command preprocessed by att_server.c\n");
             break;
         default:
             printf("Unhandled ATT Command: %02X, DATA: ", request_buffer[0]);

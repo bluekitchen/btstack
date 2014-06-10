@@ -75,7 +75,6 @@ static att_server_state_t att_server_state;
 
 static uint8_t   att_client_addr_type;
 static bd_addr_t att_client_address;
-static uint16_t  att_request_handle = 0;
 static uint16_t  att_request_size   = 0;
 static uint8_t   att_request_buffer[28];
 
@@ -103,7 +102,7 @@ static void att_handle_value_indication_notify_client(uint8_t status, uint16_t c
 
 static void att_handle_value_indication_timeout(timer_source_t *ts){
     uint16_t att_handle = att_handle_value_indication_handle;
-    att_handle_value_indication_notify_client(ATT_HANDLE_VALUE_INDICATION_TIMEOUT, att_request_handle, att_handle);
+    att_handle_value_indication_notify_client(ATT_HANDLE_VALUE_INDICATION_TIMEOUT, att_connection.con_handle, att_handle);
 }
 
 static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -121,10 +120,10 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                         	// store connection info 
-                            att_request_handle = READ_BT_16(packet, 4);
                         	att_client_addr_type = packet[7];
                             bt_flip_addr(att_client_address, &packet[8]);
                             // reset connection properties
+                            att_connection.con_handle = READ_BT_16(packet, 4);
                             att_connection.mtu = 23;
                             att_connection.encryption_key_size = 0;
                             att_connection.authenticated = 0;
@@ -138,18 +137,18 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
 
                 case HCI_EVENT_ENCRYPTION_CHANGE: 
                 	// check handle
-                	if (att_request_handle != READ_BT_16(packet, 3)) break;
+                	if (att_connection.con_handle != READ_BT_16(packet, 3)) break;
                 	att_connection.encryption_key_size = sm_encryption_key_size(att_client_addr_type, att_client_address);
                 	att_connection.authenticated = sm_authenticated(att_client_addr_type, att_client_address);
                 	break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    att_clear_transaction_queue(&att_connection);
+                    att_connection.con_handle = 0;
+                    att_handle_value_indication_handle = 0; // reset error state
                     // restart advertising if we have been connected before
                     // -> avoid sending advertise enable a second time before command complete was received 
                     att_server_state = ATT_SERVER_IDLE;
-                    att_request_handle = 0;
-                    att_handle_value_indication_handle = 0; // reset error state
-                    att_clear_transaction_queue();
                     break;
                     
                 case SM_IDENTITY_RESOLVING_STARTED:
@@ -284,7 +283,7 @@ static void att_run(void){
                 return;
             }
 
-            l2cap_send_prepared_connectionless(att_request_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, att_response_size);
+            l2cap_send_prepared_connectionless(att_connection.con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, att_response_size);
             break;
     }
 }
@@ -297,7 +296,7 @@ static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pa
         run_loop_remove_timer(&att_handle_value_indication_timer);
         uint16_t att_handle = att_handle_value_indication_handle;
         att_handle_value_indication_handle = 0;    
-        att_handle_value_indication_notify_client(0, att_request_handle, att_handle);
+        att_handle_value_indication_notify_client(0, att_connection.con_handle, att_handle);
         return;
     }
 
@@ -333,7 +332,7 @@ void att_server_register_packet_handler(btstack_packet_handler_t handler){
 }
 
 int  att_server_can_send(){
-	if (att_request_handle == 0) return 0;
+	if (att_connection.con_handle == 0) return 0;
 	return l2cap_can_send_connectionless_packet_now();
 }
 
@@ -343,7 +342,7 @@ int att_server_notify(uint16_t handle, uint8_t *value, uint16_t value_len){
     l2cap_reserve_packet_buffer();
     uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
     uint16_t size = att_prepare_handle_value_notification(&att_connection, handle, value, value_len, packet_buffer);
-	return l2cap_send_prepared_connectionless(att_request_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
+	return l2cap_send_prepared_connectionless(att_connection.con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
 }
 
 int att_server_indicate(uint16_t handle, uint8_t *value, uint16_t value_len){
@@ -359,6 +358,6 @@ int att_server_indicate(uint16_t handle, uint8_t *value, uint16_t value_len){
     l2cap_reserve_packet_buffer();
     uint8_t * packet_buffer = l2cap_get_outgoing_buffer();
     uint16_t size = att_prepare_handle_value_indication(&att_connection, handle, value, value_len, packet_buffer);
-	l2cap_send_prepared_connectionless(att_request_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
+	l2cap_send_prepared_connectionless(att_connection.con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, size);
     return 0;
 }
