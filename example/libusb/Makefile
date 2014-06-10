@@ -72,7 +72,7 @@ GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
 
 all: ../../include/btstack/version.h ble_client gatt_browser sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral \
 		ble_peripheral_sm_minimal gap_inquiry gap_dedicated_bonding gap_inquiry_and_bond l2cap_test spp_streamer \
-		classic_test ble_peripheral_uart ancs_client
+		classic_test ble_peripheral_uart ancs_client spp_and_le_counter
 
 ../../include/btstack/version.h:
 	cd ..; ../src/get_version.sh
@@ -85,6 +85,9 @@ sdp_general_query: ${CORE_OBJ} ${COMMON_OBJ} sdp_general_query.c
 
 spp_counter: ${CORE_OBJ} ${COMMON_OBJ} spp_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+spp_and_le_counter: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} spp_and_le_counter.c spp_and_le_counter.h
+	${CC} ${CFLAGS} ${LDFLAGS} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} spp_and_le_counter.c -o $@
 
 spp_counter_ssp: ${CORE_OBJ} ${COMMON_OBJ} spp_counter_ssp.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
@@ -111,6 +114,8 @@ classic_test: ${CORE_OBJ} ${COMMON_OBJ} classic_test.c
 profile.h: profile.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 ancs_client.h: ancs_client.gatt
+	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
+spp_and_le_counter.h: spp_and_le_counter.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 
 ancs_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ancs_client.c ancs_client.h
