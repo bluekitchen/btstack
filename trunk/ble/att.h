@@ -148,29 +148,33 @@ extern "C" {
 
 
 typedef struct att_connection {
+    uint16_t con_handle;
     uint16_t mtu;
     uint8_t  encryption_key_size;
     uint8_t  authenticated;
     uint8_t  authorized;
 } att_connection_t;
 
-typedef uint8_t signature_t[12];
-
 // ATT Client Read Callback for Dynamic Data
 // - if buffer == NULL, don't copy data, just return size of value
 // - if buffer != NULL, copy data and return number bytes copied
+// @param con_handle of hci le connection
+// @param attribute_handle to be read
 // @param offset defines start of attribute value
-typedef uint16_t (*att_read_callback_t)(uint16_t handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
+// @param buffer 
+// @param buffer_size
+typedef uint16_t (*att_read_callback_t)(uint16_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
 
 // ATT Client Write Callback for Dynamic Data
-// @param handle to be written
+// @param con_handle of hci le connection
+// @param attribute_handle to be written
 // @param transaction - ATT_TRANSACTION_MODE_NONE for regular writes, ATT_TRANSACTION_MODE_ACTIVE for prepared writes and ATT_TRANSACTION_MODE_EXECUTE
 // @param offset into the value - used for queued writes and long attributes
 // @param buffer 
 // @param buffer_size
 // @param signature used for signed write commmands
 // @returns 0 if write was ok, ATT_ERROR_PREPARE_QUEUE_FULL if no space in queue, ATT_ERROR_INVALID_OFFSET if offset is larger than max buffer
-typedef int (*att_write_callback_t)(uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size, signature_t * signature);
+typedef int (*att_write_callback_t)(uint16_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 
 // MARK: ATT Operations
 

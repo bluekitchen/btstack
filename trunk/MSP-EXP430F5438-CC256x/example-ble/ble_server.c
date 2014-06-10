@@ -160,7 +160,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 #include "profile.h"
 
 // write requests
-static int att_write_callback(uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size, signature_t * signature){
+static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     printf("WRITE Callback, handle %04x\n", handle);
     switch(handle){
         case ATT_CHARACTERISTIC_FFF1_01_VALUE_HANDLE:
