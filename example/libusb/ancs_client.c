@@ -80,7 +80,29 @@ static hci_uart_config_t hci_uart_config_csr8811 = {
 };
 #endif
 
-static void app_run();
+
+typedef enum ancs_chunk_parser_state {
+    W4_ATTRIBUTE_ID,
+    W4_ATTRIBUTE_LEN,
+    W4_ATTRIBUTE_COMPLETE,
+} ancs_chunk_parser_state_t;
+
+typedef enum {
+    TC_IDLE,
+    TC_W4_ENCRYPTED_CONNECTION,
+    TC_W4_SERVICE_RESULT,
+    TC_W4_CHARACTERISTIC_RESULT,
+    TC_W4_DATA_SOURCE_SUBSCRIBED,
+    TC_W4_NOTIFICATION_SOURCE_SUBSCRIBED,
+    TC_SUBSCRIBED,
+    TC_W4_DISCONNECT
+} tc_state_t;
+
+typedef enum {
+    SET_ADVERTISEMENT_PARAMS = 1 << 0,
+    SET_ADVERTISEMENT_DATA   = 1 << 1,
+    ENABLE_ADVERTISEMENTS    = 1 << 2,
+} todo_t;
 
 const uint8_t adv_data[] = {
     // Flags general discoverable
@@ -106,28 +128,9 @@ const uint8_t ancs_notification_source_uuid[] = {0x9F,0xBF,0x12,0x0D,0x63,0x01,0
 const uint8_t ancs_control_point_uuid[] =       {0x69,0xD1,0xD8,0xF3,0x45,0xE1,0x49,0xA8,0x98,0x21,0x9B,0xBD,0xFD,0xAA,0xD9,0xD9};
 const uint8_t ancs_data_source_uuid[] =         {0x22,0xEA,0xC6,0xE9,0x24,0xD6,0x4B,0xB5,0xBE,0x44,0xB3,0x6A,0xCE,0x7C,0x7B,0xFB};
 
-uint32_t ancs_notification_uid;
-
-typedef enum {
-    SET_ADVERTISEMENT_PARAMS = 1 << 0,
-    SET_ADVERTISEMENT_DATA   = 1 << 1,
-    ENABLE_ADVERTISEMENTS    = 1 << 2,
-} todo_t;
 static todo_t todos = 0;
-
+static uint32_t ancs_notification_uid;
 static uint16_t handle;
-
-typedef enum {
-    TC_IDLE,
-    TC_W4_ENCRYPTED_CONNECTION,
-    TC_W4_SERVICE_RESULT,
-    TC_W4_CHARACTERISTIC_RESULT,
-    TC_W4_DATA_SOURCE_SUBSCRIBED,
-    TC_W4_NOTIFICATION_SOURCE_SUBSCRIBED,
-    TC_SUBSCRIBED,
-    TC_W4_DISCONNECT
-} tc_state_t;
-
 static gatt_client_t ancs_client_context;
 static int ancs_service_found;
 static le_service_t  ancs_service;
@@ -136,6 +139,56 @@ static le_characteristic_t ancs_control_point_characteristic;
 static le_characteristic_t ancs_data_source_characteristic;
 static int ancs_characteristcs;
 static tc_state_t tc_state = TC_IDLE;
+
+static ancs_chunk_parser_state_t chunk_parser_state;
+static uint8_t  ancs_notification_buffer[50];
+static uint16_t ancs_bytes_received;
+static uint16_t ancs_bytes_needed;
+static uint8_t  ancs_attribute_id;
+static uint16_t ancs_attribute_len;
+
+static void app_run();
+
+void print_attribute(){
+    ancs_notification_buffer[ancs_bytes_received] = 0;
+    printf("%14s: %s\n", ancs_attribute_names[ancs_attribute_id], ancs_notification_buffer);
+}
+
+void ancs_chunk_parser_init(){
+    chunk_parser_state = W4_ATTRIBUTE_ID;
+    ancs_bytes_received = 0;
+    ancs_bytes_needed = 6;
+}
+
+void ancs_chunk_parser_handle_byte(uint8_t data){
+    ancs_notification_buffer[ancs_bytes_received++] = data;
+    if (ancs_bytes_received < ancs_bytes_needed) return;
+    switch (chunk_parser_state){
+        case W4_ATTRIBUTE_ID:
+            ancs_attribute_id   = ancs_notification_buffer[ancs_bytes_received-1];
+            ancs_bytes_received = 0;
+            ancs_bytes_needed   = 2;
+            chunk_parser_state  = W4_ATTRIBUTE_LEN;
+            break;
+        case W4_ATTRIBUTE_LEN:
+            ancs_attribute_len  = READ_BT_16(ancs_notification_buffer, ancs_bytes_received-2);
+            ancs_bytes_received = 0;
+            ancs_bytes_needed   = ancs_attribute_len;
+            if (ancs_attribute_len == 0) {
+                ancs_bytes_needed   = 1;
+                chunk_parser_state  = W4_ATTRIBUTE_ID;
+                break;
+            }
+            chunk_parser_state  = W4_ATTRIBUTE_COMPLETE;
+            break;
+        case W4_ATTRIBUTE_COMPLETE:
+            print_attribute();
+            ancs_bytes_received = 0;
+            ancs_bytes_needed   = 1;
+            chunk_parser_state  = W4_ATTRIBUTE_ID;
+            break;
+    }
+}
 
 void handle_gatt_client_event(le_event_t * event){
     le_characteristic_t characteristic;
@@ -221,18 +274,9 @@ void handle_gatt_client_event(le_event_t * event){
             if ( event->type != GATT_NOTIFICATION && event->type != GATT_INDICATION ) break;
             value_event = (le_characteristic_value_event_t *) event;
             if (value_event->value_handle == ancs_data_source_characteristic.value_handle){
-                int pos = 5;
-                while (pos < value_event->blob_length){
-                    uint8_t  attribute_id = value_event->blob[pos];
-                    pos++;
-                    uint16_t attribute_len = READ_BT_16(value_event->blob, pos);
-                    pos += 2;
-                    char text[32];
-                    uint16_t str_len = attribute_len < (sizeof(text)-1) ? attribute_len : (sizeof(text)-1);
-                    memcpy(text, &value_event->blob[pos], str_len);
-                    text[str_len] = 0;
-                    printf("%14s: %s\n", ancs_attribute_names[attribute_id], text);
-                    pos += attribute_len;
+                int i;
+                for (i=0;i<value_event->blob_length;i++) {
+                    ancs_chunk_parser_handle_byte(value_event->blob[i]);
                 }
             } else if (value_event->value_handle == ancs_notification_source_characteristic.value_handle){
                 ancs_notification_uid = READ_BT_32(value_event->blob, 4);
@@ -241,6 +285,7 @@ void handle_gatt_client_event(le_event_t * event){
                 static uint8_t get_notification_attributes[] = {0, 0,0,0,0,  0,  1,32,0,  2,32,0, 3,32,0, 4, 5};
                 bt_store_32(get_notification_attributes, 1, ancs_notification_uid);
                 ancs_notification_uid = 0;
+                ancs_chunk_parser_init();
                 gatt_client_write_value_of_characteristic(&ancs_client_context, ancs_control_point_characteristic.value_handle, 
                     sizeof(get_notification_attributes), get_notification_attributes);
             } else {
