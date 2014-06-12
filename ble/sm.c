@@ -171,9 +171,9 @@ typedef enum {
 
 typedef enum {
     SM_AES128_IDLE,
-    SM_AES128_PLAINTEXT_SET,
     SM_AES128_ACTIVE
 } sm_aes128_state_t;
+
 //
 // GLOBAL DATA
 //
@@ -184,6 +184,7 @@ static uint8_t sm_max_encryption_key_size;
 static uint8_t sm_min_encryption_key_size;
 static uint8_t sm_s_auth_req = 0;
 static uint8_t sm_s_io_capabilities = IO_CAPABILITY_UNKNOWN;
+static uint8_t sm_slave_request_security;
 static stk_generation_method_t sm_stk_generation_method;
 
 // Security Manager Master Keys, please use sm_set_er(er) and sm_set_ir(ir) with your own 128 bit random values
@@ -203,7 +204,7 @@ static derived_key_generation_t dkg_state = DKG_W4_WORKING;
 static random_address_update_t rau_state = RAU_IDLE;
 static bd_addr_t sm_random_address;
 
-// CMAC calculation - single instance
+// CMAC calculation
 static cmac_state_t sm_cmac_state;
 static sm_key_t     sm_cmac_k;
 static uint16_t     sm_cmac_message_len;
@@ -214,19 +215,15 @@ static uint8_t      sm_cmac_block_current;
 static uint8_t      sm_cmac_block_count;
 static void (*sm_cmac_done_handler)(uint8_t hash[8]);
 
-// for all connections in slave role
-static uint8_t   sm_s_addr_type;
-static bd_addr_t sm_s_address;
-
-// resolvable private address lookup: single instance
+// resolvable private address lookup
 static int       sm_central_device_test;
 static int       sm_central_device_matched;
 static int       sm_central_ah_calculation_active;
 static uint8_t   sm_central_device_addr_type;
 static bd_addr_t sm_central_device_address;
 
-// state of aes128 crypto engine
-static sm_aes128_state_t    sm_aes128_state;
+// aes128 crypto engine
+static sm_aes128_state_t sm_aes128_state;
 
 //
 // Volume 3, Part H, Chapter 24
@@ -235,8 +232,7 @@ static sm_aes128_state_t    sm_aes128_state;
 // -> master := initiator, slave := responder
 //
 
-// PER INSTANCE DATA
-
+// data needed for security setup
 typedef struct sm_setup_context {
     // used during sm setup
     sm_key_t  sm_tk;
@@ -250,6 +246,7 @@ typedef struct sm_setup_context {
     // user response
     uint8_t   sm_user_response;
 
+    // master = remote data
     uint8_t   sm_m_io_capabilities;
     uint8_t   sm_m_have_oob_data;
     uint8_t   sm_m_auth_req;
@@ -259,6 +256,17 @@ typedef struct sm_setup_context {
     sm_key_t  sm_m_random;
     sm_key_t  sm_m_confirm;
 
+    // key distribution, received from master
+    // commented keys that are not stored or used by Peripheral role
+    // sm_key_t  sm_m_ltk;
+    // uint16_t  sm_m_ediv;
+    // uint8_t   sm_m_rand[8];
+    uint8_t   sm_m_addr_type;
+    bd_addr_t sm_m_address;
+    sm_key_t  sm_m_csrk;
+    sm_key_t  sm_m_irk;
+
+    // slave = local data
     sm_key_t  sm_s_random;
     uint8_t   sm_s_have_oob_data;
     sm_key_t  sm_s_confirm;
@@ -272,28 +280,20 @@ typedef struct sm_setup_context {
     uint8_t   sm_s_rand[8];
     // commented keys are not used in Perihperal role
     // sm_key_t  sm_s_csrk;
+    uint8_t   sm_s_addr_type;
+    bd_addr_t sm_s_address;
 
-    // key distribution, received from master
-    // commented keys that are not stored or used by Peripheral role
-    // sm_key_t  sm_m_ltk;
-    // uint16_t  sm_m_ediv;
-    // uint8_t   sm_m_rand[8];
-    uint8_t   sm_m_addr_type;
-    bd_addr_t sm_m_address;
-    sm_key_t  sm_m_csrk;
-    sm_key_t  sm_m_irk;
 } sm_setup_context_t;
 
 // connection info available as long as connection exists
 typedef struct sm_connection {
+    uint16_t sm_handle;
     security_manager_state_t sm_state_responding;
     csrk_lookup_state_t      sm_m_csrk_lookup_state;
     uint8_t  sm_connection_encrypted;
     uint8_t  sm_connection_authenticated;   // [0..1]
     uint8_t  sm_actual_encryption_key_size;
-    uint8_t  sm_s_request_security;
     authorization_state_t sm_connection_authorization_state;
-    uint16_t sm_response_handle;
     timer_source_t sm_timeout;
 } sm_connection_t;
 
@@ -915,7 +915,7 @@ static void sm_run(void){
             uint8_t buffer[2];
             buffer[0] = SM_CODE_SECURITY_REQUEST;
             buffer[1] = SM_AUTHREQ_BONDING;
-            l2cap_send_connectionless(connection->sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+            l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
             connection->sm_state_responding = SM_STATE_IDLE;            
             return;
         }
@@ -935,7 +935,7 @@ static void sm_run(void){
 
             // for validate
 
-            l2cap_send_connectionless(connection->sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+            l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
             sm_2timeout_reset();
 
             // notify client for: JUST WORKS confirm, PASSKEY display or input
@@ -970,7 +970,7 @@ static void sm_run(void){
         }
 
         case SM_STATE_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
-            hci_send_cmd(&hci_le_long_term_key_negative_reply, connection->sm_response_handle);
+            hci_send_cmd(&hci_le_long_term_key_negative_reply, connection->sm_handle);
             connection->sm_state_responding = SM_STATE_IDLE;
             return;
 
@@ -978,7 +978,7 @@ static void sm_run(void){
             uint8_t buffer[2];
             buffer[0] = SM_CODE_PAIRING_FAILED;
             buffer[1] = setup->sm_pairing_failed_reason;
-            l2cap_send_connectionless(connection->sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+            l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
             sm_2timeout_stop();
             connection->sm_state_responding = SM_STATE_IDLE;
             break;
@@ -988,7 +988,7 @@ static void sm_run(void){
             uint8_t buffer[17];
             buffer[0] = SM_CODE_PAIRING_RANDOM;
             swap128(setup->sm_s_random, &buffer[1]);
-            l2cap_send_connectionless(connection->sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+            l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
             sm_2timeout_reset();
             connection->sm_state_responding = SM_STATE_PH2_W4_LTK_REQUEST;
             break;
@@ -1023,7 +1023,7 @@ static void sm_run(void){
             // already busy?
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
             // calculate m_confirm using aes128 engine - step 1
-            sm_c1_t1(setup->sm_m_random, setup->sm_m_preq, setup->sm_s_pres, setup->sm_m_addr_type, sm_s_addr_type, plaintext);
+            sm_c1_t1(setup->sm_m_random, setup->sm_m_preq, setup->sm_s_pres, setup->sm_m_addr_type, setup->sm_s_addr_type, plaintext);
             sm_aes128_start(setup->sm_tk, plaintext);
             sm_next_responding_state();
             break;
@@ -1031,7 +1031,7 @@ static void sm_run(void){
             // already busy?
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
             // calculate s_confirm using aes128 engine - step 1
-            sm_c1_t1(setup->sm_s_random, setup->sm_m_preq, setup->sm_s_pres, setup->sm_m_addr_type, sm_s_addr_type, plaintext);
+            sm_c1_t1(setup->sm_s_random, setup->sm_m_preq, setup->sm_s_pres, setup->sm_m_addr_type, setup->sm_s_addr_type, plaintext);
             sm_aes128_start(setup->sm_tk, plaintext);
             sm_next_responding_state();
             break;
@@ -1056,7 +1056,7 @@ static void sm_run(void){
             uint8_t buffer[17];
             buffer[0] = SM_CODE_PAIRING_CONFIRM;
             swap128(setup->sm_s_confirm, &buffer[1]);
-            l2cap_send_connectionless(connection->sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+            l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
             sm_2timeout_reset();
             connection->sm_state_responding = SM_STATE_PH2_W4_PAIRING_RANDOM;
             return;
@@ -1064,14 +1064,14 @@ static void sm_run(void){
         case SM_STATE_PH2_SEND_STK: {
             sm_key_t stk_flipped;
             swap128(setup->sm_s_ltk, stk_flipped);
-            hci_send_cmd(&hci_le_long_term_key_request_reply, connection->sm_response_handle, stk_flipped);
+            hci_send_cmd(&hci_le_long_term_key_request_reply, connection->sm_handle, stk_flipped);
             connection->sm_state_responding = SM_STATE_PH2_W4_CONNECTION_ENCRYPTED;
             return;
         }
         case SM_STATE_PH4_SEND_LTK: {
             sm_key_t ltk_flipped;
             swap128(setup->sm_s_ltk, ltk_flipped);
-            hci_send_cmd(&hci_le_long_term_key_request_reply, connection->sm_response_handle, ltk_flipped);
+            hci_send_cmd(&hci_le_long_term_key_request_reply, connection->sm_handle, ltk_flipped);
             connection->sm_state_responding = SM_STATE_IDLE;
             return;
         }
@@ -1091,7 +1091,7 @@ static void sm_run(void){
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_ENCRYPTION_INFORMATION;
                 swap128(setup->sm_s_ltk, &buffer[1]);
-                l2cap_send_connectionless(connection->sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_2timeout_reset();
                 return;
             }
@@ -1101,7 +1101,7 @@ static void sm_run(void){
                 buffer[0] = SM_CODE_MASTER_IDENTIFICATION;
                 bt_store_16(buffer, 1, setup->sm_s_ediv);
                 swap64(setup->sm_s_rand, &buffer[3]);
-                l2cap_send_connectionless(connection->sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_2timeout_reset();
                 return;
             }
@@ -1110,7 +1110,7 @@ static void sm_run(void){
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_IDENTITY_INFORMATION;
                 swap128(sm_persistent_irk, &buffer[1]);
-                l2cap_send_connectionless(connection->sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_2timeout_reset();
                 return;
             }
@@ -1118,9 +1118,9 @@ static void sm_run(void){
                 setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
                 uint8_t buffer[8];
                 buffer[0] = SM_CODE_IDENTITY_ADDRESS_INFORMATION;
-                buffer[1] = sm_s_addr_type;
-                bt_flip_addr(&buffer[2], sm_s_address);
-                l2cap_send_connectionless(connection->sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                buffer[1] = setup->sm_s_addr_type;
+                bt_flip_addr(&buffer[2], setup->sm_s_address);
+                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_2timeout_reset();
                 return;
             }
@@ -1130,7 +1130,7 @@ static void sm_run(void){
                 buffer[0] = SM_CODE_SIGNING_INFORMATION;
                 // swap128(sm_s_csrk, &buffer[1]);
                 memset(&buffer[1], 0, 16);  // csrk not calculated
-                l2cap_send_connectionless(connection->sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_2timeout_reset();
                 return;
             }
@@ -1223,8 +1223,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             {
             sm_key_t t2;
             swap128(data, t2);
-            sm_c1_t3(t2, setup->sm_m_address, sm_s_address, setup->sm_aes128_plaintext);
-            sm_aes128_state = SM_AES128_PLAINTEXT_SET;
+            sm_c1_t3(t2, setup->sm_m_address, setup->sm_s_address, setup->sm_aes128_plaintext);
             }
             sm_next_responding_state();
             return;
@@ -1264,7 +1263,6 @@ static void sm_handle_encryption_result(uint8_t * data){
             // PH3B4 - calculate LTK         - enc
             // LTK = d1(ER, DIV, 0))
             sm_d1_d_prime(setup->sm_s_div, 0, setup->sm_aes128_plaintext);
-            sm_aes128_state = SM_AES128_PLAINTEXT_SET;
             connection->sm_state_responding = SM_STATE_PH3_LTK_GET_ENC;
             return;
         }
@@ -1279,7 +1277,6 @@ static void sm_handle_encryption_result(uint8_t * data){
             // PH3B4 - calculate LTK         - enc
             // LTK = d1(ER, DIV, 0))
             sm_d1_d_prime(setup->sm_s_div, 0, setup->sm_aes128_plaintext);
-            sm_aes128_state = SM_AES128_PLAINTEXT_SET;
             connection->sm_state_responding = SM_STATE_PH4_LTK_GET_ENC;
             return;
         }
@@ -1397,19 +1394,19 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             if (packet[3]) return; // connection failed
 
                             // only single connection for peripheral
-                            if (connection->sm_response_handle){
+                            if (connection->sm_handle){
                                 printf("Already connected, ignoring incoming connection\n");
                                 return;
                             }
 
-                            connection->sm_response_handle = READ_BT_16(packet, 4);
+                            connection->sm_handle = READ_BT_16(packet, 4);
                             setup->sm_m_addr_type = packet[7];
                             bt_flip_addr(setup->sm_m_address, &packet[8]);
 
                             sm_reset_tk();
                             
-                            hci_le_advertisement_address(&sm_s_addr_type, &sm_s_address);
-                            printf("Incoming connection, own address %s\n", bd_addr_to_str(sm_s_address));
+                            hci_le_advertisement_address(&setup->sm_s_addr_type, &setup->sm_s_address);
+                            printf("Incoming connection, own address %s\n", bd_addr_to_str(setup->sm_s_address));
 
                             // reset security properties
                             connection->sm_connection_encrypted = 0;
@@ -1417,7 +1414,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             connection->sm_connection_authorization_state = AUTHORIZATION_UNKNOWN;
 
                             // request security
-                            if (connection->sm_s_request_security){
+                            if (sm_slave_request_security){
                                 connection->sm_state_responding = SM_STATE_SEND_SECURITY_REQUEST;
                             }
 
@@ -1464,7 +1461,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     break;
 
                 case HCI_EVENT_ENCRYPTION_CHANGE: 
-                    if (connection->sm_response_handle != READ_BT_16(packet, 3)) break;
+                    if (connection->sm_handle != READ_BT_16(packet, 3)) break;
                     connection->sm_connection_encrypted = packet[5];
                     log_info("Eencryption state change: %u", connection->sm_connection_encrypted);
                     if (!connection->sm_connection_encrypted) break;
@@ -1475,7 +1472,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     connection->sm_state_responding = SM_STATE_IDLE;
-                    connection->sm_response_handle = 0;
+                    connection->sm_handle = 0;
                     break;
                     
 				case HCI_EVENT_COMMAND_COMPLETE:
@@ -1507,8 +1504,8 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
     if (packet_type != SM_DATA_PACKET) return;
 
-    if (handle != connection->sm_response_handle){
-        printf("sm_packet_handler: packet from handle %u, but expecting from %u\n", handle, connection->sm_response_handle);
+    if (handle != connection->sm_handle){
+        printf("sm_packet_handler: packet from handle %u, but expecting from %u\n", handle, connection->sm_handle);
         return;
     }
 
@@ -1722,7 +1719,7 @@ void sm_set_io_capabilities(io_capability_t io_capability){
 }
 
 void sm_set_request_security(int enable){
-    connection->sm_s_request_security = enable;
+    sm_slave_request_security = enable;
 }
 
 void sm_set_er(sm_key_t er){
