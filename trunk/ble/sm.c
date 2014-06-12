@@ -954,7 +954,6 @@ static void sm_run(void){
             hci_send_cmd(&hci_le_rand);
             sm_state_responding_next_state();
             return;
-        case SM_STATE_PH2_C1_GET_ENC_A:
         case SM_STATE_PH2_C1_GET_ENC_B:
         case SM_STATE_PH2_C1_GET_ENC_D:
         case SM_STATE_PH2_CALC_STK:
@@ -976,7 +975,15 @@ static void sm_run(void){
             sm_aes128_start(sm_aes128_key, sm_aes128_plaintext);
             sm_state_responding_next_state();
             break;
-
+        case SM_STATE_PH2_C1_GET_ENC_A:
+            // already busy?
+            if (sm_aes128_active) break;
+            // calculate s_confirm using aes128 engine - step 1
+            sm_aes128_set_key(sm_tk);
+            sm_c1_t1(sm_s_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
+            sm_aes128_start(sm_aes128_key, sm_aes128_plaintext);
+            sm_state_responding_next_state();
+            break;
         case SM_STATE_PH2_C1_SEND_PAIRING_CONFIRM: {
             uint8_t buffer[17];
             buffer[0] = SM_CODE_PAIRING_CONFIRM;
@@ -1260,14 +1267,6 @@ static void sm_handle_random_result(uint8_t * data){
             return;
         case SM_STATE_PH2_C1_W4_RANDOM_B:
             memcpy(&sm_s_random[8], data, 8); // random endinaness
-            // calculate s_confirm manually
-            // sm_c1(sm_tk, sm_s_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_m_address, sm_s_address, sm_s_confirm);
-
-            // SM_AES128_PLAINTEXT_USED_WIHTOUT_CHECK
-
-            // calculate s_confirm using aes128 engine - step 1
-            sm_aes128_set_key(sm_tk);
-            sm_c1_t1(sm_s_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
             sm_state_responding = SM_STATE_PH2_C1_GET_ENC_A;
             return;
         case SM_STATE_PH3_W4_RANDOM:
