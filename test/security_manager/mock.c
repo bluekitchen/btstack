@@ -200,5 +200,9 @@ void hci_disconnect_security_block(hci_con_handle_t con_handle){
 	printf("hci_disconnect_security_block \n");	
 }
 
+int hci_non_flushable_packet_boundary_flag_supported(){
+	return 1;
+}
+
 void l2cap_run(void){
 }
