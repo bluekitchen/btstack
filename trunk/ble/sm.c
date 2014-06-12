@@ -172,6 +172,14 @@ typedef enum {
 // GLOBAL DATA
 //
 
+// configuration
+static uint8_t sm_accepted_stk_generation_methods;
+static uint8_t sm_max_encryption_key_size;
+static uint8_t sm_min_encryption_key_size;
+static uint8_t sm_s_auth_req = 0;
+static uint8_t sm_s_io_capabilities = IO_CAPABILITY_UNKNOWN;
+static stk_generation_method_t sm_stk_generation_method;
+
 // Security Manager Master Keys, please use sm_set_er(er) and sm_set_ir(ir) with your own 128 bit random values
 static sm_key_t sm_persistent_er;
 static sm_key_t sm_persistent_ir;
@@ -180,61 +188,40 @@ static sm_key_t sm_persistent_ir;
 static sm_key_t sm_persistent_dhk;
 static sm_key_t sm_persistent_irk;
 static uint8_t  sm_persistent_irk_ready = 0;    // used for testing
+static derived_key_generation_t dkg_state = DKG_W4_WORKING;
 
 // derived from sm_persistent_er
 // ..
-
-static uint8_t sm_accepted_stk_generation_methods;
-static uint8_t sm_max_encryption_key_size;
-static uint8_t sm_min_encryption_key_size;
-
-static uint8_t sm_s_auth_req = 0;
-static uint8_t sm_s_io_capabilities = IO_CAPABILITY_UNKNOWN;
-static uint8_t sm_s_request_security = 0;
-
-// 
-static derived_key_generation_t dkg_state = DKG_W4_WORKING;
 
 // random address update
 static random_address_update_t rau_state = RAU_IDLE;
 static bd_addr_t sm_random_address;
 
-// resolvable private address lookup
-static int sm_central_device_test;
-static int sm_central_device_matched;
-static int sm_central_ah_calculation_active;
+// CMAC calculation - single instance
+static cmac_state_t sm_cmac_state;
+static sm_key_t     sm_cmac_k;
+static uint16_t     sm_cmac_message_len;
+static uint8_t *    sm_cmac_message;
+static sm_key_t     sm_cmac_m_last;
+static sm_key_t     sm_cmac_x;
+static uint8_t      sm_cmac_block_current;
+static uint8_t      sm_cmac_block_count;
+static void (*sm_cmac_done_handler)(uint8_t hash[8]);
 
-//
+// for all connections in slave role
 static uint8_t   sm_s_addr_type;
 static bd_addr_t sm_s_address;
-static uint8_t   sm_actual_encryption_key_size;
-static uint8_t   sm_connection_encrypted;
-static uint8_t   sm_connection_authenticated;   // [0..1]
-static authorization_state_t sm_connection_authorization_state;
 
-// PER INSTANCE DATA
-
-static security_manager_state_t sm_state_responding = SM_STATE_IDLE;
-static uint16_t sm_response_handle = 0;
-static uint8_t  sm_pairing_failed_reason = 0;
-
-// SM timeout
-static timer_source_t sm_timeout;
+// resolvable private address lookup: single instance, should be serialized
+static int       sm_central_device_test;
+static int       sm_central_device_matched;
+static int       sm_central_ah_calculation_active;
+static uint8_t   sm_central_device_addr_type;
+static bd_addr_t sm_central_device_address;
 
 // data to send to aes128 crypto engine, see sm_aes128_set_key and sm_aes128_set_plaintext
 static sm_key_t             sm_aes128_plaintext;
 static sm_aes128_state_t    sm_aes128_state;
-
-// generation method and temporary key for STK - STK is stored in sm_s_ltk
-static stk_generation_method_t sm_stk_generation_method;
-static sm_key_t sm_tk;
-
-// user response
-static uint8_t   sm_user_response;
-
-// defines which keys will be send  after connection is encrypted
-static int sm_key_distribution_send_set;
-static int sm_key_distribution_received_set;
 
 //
 // Volume 3, Part H, Chapter 24
@@ -242,6 +229,19 @@ static int sm_key_distribution_received_set;
 // The device in the slave role shall be the responding device."
 // -> master := initiator, slave := responder
 //
+
+// PER INSTANCE DATA
+
+// used during sm setup
+static sm_key_t sm_tk;
+static uint8_t  sm_pairing_failed_reason = 0;
+
+// defines which keys will be send  after connection is encrypted
+static int sm_key_distribution_send_set;
+static int sm_key_distribution_received_set;
+
+// user response
+static uint8_t   sm_user_response;
 
 static uint8_t   sm_m_io_capabilities;
 static uint8_t   sm_m_have_oob_data;
@@ -276,16 +276,17 @@ static bd_addr_t sm_m_address;
 static sm_key_t  sm_m_csrk;
 static sm_key_t  sm_m_irk;
 
-// CMAC calculation - only used by signed writes
-static cmac_state_t sm_cmac_state;
-static sm_key_t     sm_cmac_k;
-static uint16_t     sm_cmac_message_len;
-static uint8_t *    sm_cmac_message;
-static sm_key_t     sm_cmac_m_last;
-static sm_key_t     sm_cmac_x;
-static uint8_t      sm_cmac_block_current;
-static uint8_t      sm_cmac_block_count;
-static void (*sm_cmac_done_handler)(uint8_t hash[8]);
+
+// connection info available as long as connection exists
+static security_manager_state_t sm_state_responding = SM_STATE_IDLE;
+static uint8_t  sm_connection_encrypted;
+static uint8_t  sm_connection_authenticated;   // [0..1]
+static uint8_t  sm_actual_encryption_key_size;
+static uint8_t  sm_s_request_security = 0;
+static authorization_state_t sm_connection_authorization_state;
+static uint16_t sm_response_handle = 0;
+static timer_source_t sm_timeout;
+
 
 // @returns 1 if oob data is available
 // stores oob data in provided 16 byte buffer if not null
@@ -305,6 +306,7 @@ static const stk_generation_method_t stk_generation_method[5][5] = {
 };
 
 static void sm_run();
+static void sm_notify_client(uint8_t type, uint8_t addr_type, bd_addr_t address, uint32_t passkey, uint16_t index);
 
 static void print_hex16(const char * name, uint16_t value){
     printf("%-6s 0x%04x\n", name, value);
@@ -579,6 +581,25 @@ static void sm_setup_key_distribution(uint8_t key_set){
     sm_key_distribution_send_set = sm_key_distribution_flags_for_set(key_set);
 }
 
+// CSRK Key Lookup
+
+/* static */ int sm_central_device_lookup_active(){
+    return sm_central_device_test >= 0;
+}
+
+static void sm_central_device_start_lookup(uint8_t addr_type, bd_addr_t addr){
+    memcpy(sm_central_device_address, addr, 6);
+    sm_central_device_addr_type = addr_type;
+    sm_central_device_test = 0;
+    sm_central_device_matched = -1;
+    sm_notify_client(SM_IDENTITY_RESOLVING_STARTED, addr_type, addr, 0, 0);
+}
+
+// TODO use relevant connection structure
+static void sm_central_device_lookup_found(sm_key_t csrk){
+    memcpy(sm_m_csrk, csrk, 16);
+}
+
 // CMAC Implementation using AES128 engine
 static void sm_shift_left_by_one_bit_inplace(int len, uint8_t * data){
     int i;
@@ -746,6 +767,7 @@ static void sm_pdu_received_in_wrong_state(){
     sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
 }
 
+
 static void sm_run(void){
 
     // assert that we can send either one
@@ -816,12 +838,14 @@ static void sm_run(void){
             central_device_db_info(sm_central_device_test, &addr_type, addr, irk);
             printf("device type %u, addr: %s\n", addr_type, bd_addr_to_str(addr));
 
-            if (sm_m_addr_type == addr_type && memcmp(addr, sm_m_address, 6) == 0){
+            if (sm_central_device_addr_type == addr_type && memcmp(addr, sm_central_device_address, 6) == 0){
                 printf("Central Device Lookup: found CSRK by { addr_type, address} \n");
                 sm_central_device_matched = sm_central_device_test;
                 sm_central_device_test = -1;
-                central_device_db_csrk(sm_central_device_matched, sm_m_csrk);
-                sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_m_addr_type, sm_m_address, 0, sm_central_device_matched);
+                sm_key_t csrk;
+                central_device_db_csrk(sm_central_device_matched, csrk);
+                sm_central_device_lookup_found(csrk);
+                sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);
                 break;
             }
 
@@ -836,7 +860,7 @@ static void sm_run(void){
             print_key("IRK", irk);
 
             sm_key_t r_prime;
-            sm_ah_r_prime(sm_m_address, r_prime);
+            sm_ah_r_prime(sm_central_device_address, r_prime);
             sm_aes128_start(irk, r_prime);
             sm_central_ah_calculation_active = 1;
             return;
@@ -845,7 +869,7 @@ static void sm_run(void){
         if (sm_central_device_test >= central_device_db_count()){
             printf("Central Device Lookup: not found\n");
             sm_central_device_test = -1;
-            sm_notify_client(SM_IDENTITY_RESOLVING_FAILED, sm_m_addr_type, sm_m_address, 0, 0);
+            sm_notify_client(SM_IDENTITY_RESOLVING_FAILED, sm_central_device_addr_type, sm_central_device_address, 0, 0);
         }
     }
 
@@ -1111,12 +1135,14 @@ static void sm_handle_encryption_result(uint8_t * data){
         // compare calulated address against connecting device
         uint8_t hash[3];
         swap24(data, hash);
-        if (memcmp(&sm_m_address[3], hash, 3) == 0){
+        if (memcmp(&sm_central_device_address[3], hash, 3) == 0){
             // found
             sm_central_device_matched = sm_central_device_test;
             sm_central_device_test = -1;
-            central_device_db_csrk(sm_central_device_matched, sm_m_csrk);
-            sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_m_addr_type, sm_m_address, 0, sm_central_device_matched);
+            sm_key_t csrk;
+            central_device_db_csrk(sm_central_device_matched, csrk);
+            sm_central_device_lookup_found(csrk);
+            sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);
             log_info("Central Device Lookup: matched resolvable private address");
             return;
         }
@@ -1176,6 +1202,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             sm_key_t t2;
             swap128(data, t2);
             sm_c1_t3(t2, sm_m_address, sm_s_address, sm_aes128_plaintext);
+            sm_aes128_state = SM_AES128_PLAINTEXT_SET;
             }
             sm_state_responding_next_state();
             return;
@@ -1373,9 +1400,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             }
 
                             // try to lookup device
-                            sm_central_device_test = 0;
-                            sm_central_device_matched = -1;
-                            sm_notify_client(SM_IDENTITY_RESOLVING_STARTED, sm_m_addr_type, sm_m_address, 0, 0);
+                            sm_central_device_start_lookup(sm_m_addr_type, sm_m_address);
                             break;
 
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:
