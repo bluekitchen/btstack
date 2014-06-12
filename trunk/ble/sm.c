@@ -1415,7 +1415,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                             sm_m_csrk_lookup_state = CSRK_LOOKUP_W4_READY;
 
-                            if (!sm_central_device_lookup_active){
+                            if (!sm_central_device_lookup_active()){
                                 // try to lookup device
                                 sm_central_device_start_lookup(sm_m_addr_type, sm_m_address);
                                 sm_m_csrk_lookup_state = CSRK_LOOKUP_STARTED;
