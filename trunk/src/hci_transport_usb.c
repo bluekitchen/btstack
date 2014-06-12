@@ -111,6 +111,8 @@ static uint8_t hci_control_buffer[3 + 256 + LIBUSB_CONTROL_SETUP_SIZE];
 static struct libusb_transfer *handle_packet;
 
 static int doing_pollfds;
+static int num_pollfds;
+static data_source_t * pollfd_data_sources;
 static timer_source_t usb_timer;
 static int usb_timer_active;
 
@@ -531,13 +533,21 @@ static int usb_open(void *transport_config){
         log_info("Async using pollfds:");
 
         const struct libusb_pollfd ** pollfd = libusb_get_pollfds(NULL);
-        for (r = 0 ; pollfd[r] ; r++) {
-            data_source_t *ds = (data_source_t*)malloc(sizeof(data_source_t));
+        for (num_pollfds = 0 ; pollfd[num_pollfds] ; num_pollfds++);
+        pollfd_data_sources = malloc(sizeof(data_source_t) * num_pollfds);
+        if (!pollfd_data_sources){
+            log_error("Cannot allocate data sources for pollfds");
+            usb_close(handle);
+            return 1;            
+        }
+        for (r = 0 ; r < num_pollfds ; r++) {
+            data_source_t *ds = &pollfd_data_sources[r];
             ds->fd = pollfd[r]->fd;
             ds->process = usb_process_ds;
             run_loop_add_data_source(ds);
             log_info("%u: %p fd: %u, events %x", r, pollfd[r], pollfd[r]->fd, pollfd[r]->events);
         }
+        free(pollfd);
     } else {
         log_info("Async using timers:");
 
@@ -575,6 +585,18 @@ static int usb_close(void *transport_config){
             struct timeval tv;
             memset(&tv, 0, sizeof(struct timeval));
             libusb_handle_events_timeout(NULL, &tv);
+
+            if (doing_pollfds){
+                int r;
+                for (r = 0 ; r < num_pollfds ; r++) {
+                    data_source_t *ds = &pollfd_data_sources[r];
+                    run_loop_remove_data_source(ds);
+                }
+                free(pollfd_data_sources);
+                pollfd_data_sources = NULL;
+                num_pollfds = 0;
+                doing_pollfds = 0;
+            }
 
         case LIB_USB_INTERFACE_CLAIMED:
             for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
