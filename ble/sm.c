@@ -1057,6 +1057,152 @@ static void sm_run(void){
             break;
     }
 }
+static void sm_handle_encryption_result(uint8_t * data){
+    if (sm_central_ah_calculation_active){
+        sm_central_ah_calculation_active = 0;
+        // compare calulated address against connecting device
+        uint8_t hash[3];
+        swap24(data, hash);
+        if (memcmp(&sm_m_address[3], hash, 3) == 0){
+            // found
+            sm_central_device_matched = sm_central_device_test;
+            sm_central_device_test = -1;
+            central_device_db_csrk(sm_central_device_matched, sm_m_csrk);
+            sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_m_addr_type, sm_m_address, 0, sm_central_device_matched);
+            log_info("Central Device Lookup: matched resolvable private address");
+            return;
+        }
+        // no match
+        sm_central_device_test++;
+        return;
+    }
+    switch (dkg_state){
+        case DKG_W4_IRK:
+            swap128(data, sm_persistent_irk);
+            print_key("irk", sm_persistent_irk);
+            dkg_next_state();
+            return;
+        case DKG_W4_DHK:
+            swap128(data, sm_persistent_dhk);
+            print_key("dhk", sm_persistent_dhk);
+            dkg_next_state();
+
+            // SM INIT FINISHED, start application code - TODO untangle that
+            if (sm_client_packet_handler)
+            {
+                uint8_t event[] = { BTSTACK_EVENT_STATE, 0, HCI_STATE_WORKING };
+                sm_client_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*) event, sizeof(event));
+            }
+            return;
+        default:
+            break;
+    }
+
+    switch (rau_state){
+        case RAU_W4_ENC:
+            swap24(data, &sm_random_address[3]);
+            rau_next_state();
+            return;
+        default:
+            break;
+    }
+
+    switch (sm_cmac_state){
+        case CMAC_W4_SUBKEYS:
+        case CMAC_W4_MI:
+        case CMAC_W4_MLAST:
+            {
+            sm_key_t t;
+            swap128(data, t);
+            sm_cmac_handle_encryption_result(t);
+            }
+            return;
+        default:
+            break;
+    }
+
+    switch (sm_state_responding){
+        case SM_STATE_PH2_C1_W4_ENC_A:
+        case SM_STATE_PH2_C1_W4_ENC_C:
+            {
+            sm_aes128_set_key(sm_tk);
+            sm_key_t t2;
+            swap128(data, t2);
+            sm_c1_t3(t2, sm_m_address, sm_s_address, sm_aes128_plaintext);
+            }
+            sm_state_responding_next_state();
+            return;
+        case SM_STATE_PH2_C1_W4_ENC_B:
+            swap128(data, sm_s_confirm);
+            print_key("c1!", sm_s_confirm);
+            sm_state_responding_next_state();
+            return;
+        case SM_STATE_PH2_C1_W4_ENC_D:
+            {
+            sm_key_t m_confirm_test;
+            swap128(data, m_confirm_test);
+            print_key("c1!", m_confirm_test);
+            if (memcmp(sm_m_confirm, m_confirm_test, 16) == 0){
+                // send s_random
+                sm_state_responding = SM_STATE_SEND_PAIRING_RANDOM;
+                return;
+            }
+            sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
+            sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
+            }
+            return;
+        case SM_STATE_PH2_W4_STK:
+            swap128(data, sm_s_ltk);
+            sm_truncate_key(sm_s_ltk, sm_actual_encryption_key_size);
+            print_key("stk", sm_s_ltk);
+            sm_state_responding = SM_STATE_PH2_SEND_STK;
+            return;
+        case SM_STATE_PH3_Y_W4_ENC:{
+            sm_key_t y128;
+            swap128(data, y128);
+            sm_s_y = READ_NET_16(y128, 14);
+            print_hex16("y", sm_s_y);
+            // PH3B3 - calculate EDIV
+            sm_s_ediv = sm_s_y ^ sm_s_div;
+            print_hex16("ediv", sm_s_ediv);
+            // PH3B4 - calculate LTK         - enc
+            // LTK = d1(ER, DIV, 0))
+            sm_aes128_set_key(sm_persistent_er);
+            sm_d1_d_prime(sm_s_div, 0, sm_aes128_plaintext);
+            sm_state_responding = SM_STATE_PH3_LTK_GET_ENC;
+            return;
+        }
+        case SM_STATE_PH4_Y_W4_ENC:{
+            sm_key_t y128;
+            swap128(data, y128);
+            sm_s_y = READ_NET_16(y128, 14);
+            print_hex16("y", sm_s_y);
+            // PH3B3 - calculate DIV
+            sm_s_div = sm_s_y ^ sm_s_ediv;
+            print_hex16("ediv", sm_s_ediv);
+            // PH3B4 - calculate LTK         - enc
+            // LTK = d1(ER, DIV, 0))
+            sm_aes128_set_key(sm_persistent_er);
+            sm_d1_d_prime(sm_s_div, 0, sm_aes128_plaintext);
+            sm_state_responding = SM_STATE_PH4_LTK_GET_ENC;
+            return;
+        }
+        case SM_STATE_PH3_LTK_W4_ENC:
+            swap128(data, sm_s_ltk);
+            print_key("ltk", sm_s_ltk);
+            // distribute keys
+            sm_state_responding = SM_STATE_DISTRIBUTE_KEYS;
+            return;                                
+        case SM_STATE_PH4_LTK_W4_ENC:
+            swap128(data, sm_s_ltk);
+            sm_truncate_key(sm_s_ltk, sm_actual_encryption_key_size);
+            print_key("ltk", sm_s_ltk);
+            sm_state_responding = SM_STATE_PH4_SEND_LTK;
+            return;                                
+        default:
+            break;
+    }
+}
 
 static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
@@ -1183,147 +1329,8 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 				case HCI_EVENT_COMMAND_COMPLETE:
                     if (COMMAND_COMPLETE_EVENT(packet, hci_le_encrypt)){
                         sm_aes128_active = 0;
-                        if (sm_central_ah_calculation_active){
-                            sm_central_ah_calculation_active = 0;
-                            // compare calulated address against connecting device
-                            uint8_t hash[3];
-                            swap24(&packet[6], hash);
-                            if (memcmp(&sm_m_address[3], hash, 3) == 0){
-                                // found
-                                sm_central_device_matched = sm_central_device_test;
-                                sm_central_device_test = -1;
-                                central_device_db_csrk(sm_central_device_matched, sm_m_csrk);
-				                sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_m_addr_type, sm_m_address, 0, sm_central_device_matched);
-                                log_info("Central Device Lookup: matched resolvable private address");
-                                break;
-                    }
-                            // no match
-                            sm_central_device_test++;
-                            break;
-                        }
-                        switch (dkg_state){
-                            case DKG_W4_IRK:
-                                swap128(&packet[6], sm_persistent_irk);
-                                print_key("irk", sm_persistent_irk);
-                                dkg_next_state();
-                                break;
-                            case DKG_W4_DHK:
-                                swap128(&packet[6], sm_persistent_dhk);
-                                print_key("dhk", sm_persistent_dhk);
-                                dkg_next_state();
-
-                                // SM INIT FINISHED, start application code - TODO untangle that
-                                if (sm_client_packet_handler)
-                                {
-                                    uint8_t event[] = { BTSTACK_EVENT_STATE, 0, HCI_STATE_WORKING };
-                                    sm_client_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*) event, sizeof(event));
-                                }
-                                break;
-                            default:
-                                break;
-                        }
-                        switch (rau_state){
-                            case RAU_W4_ENC:
-                                swap24(&packet[6], &sm_random_address[3]);
-                                rau_next_state();
-                                break;
-                            default:
-                                break;
-                        }
-                        switch (sm_cmac_state){
-                            case CMAC_W4_SUBKEYS:
-                            case CMAC_W4_MI:
-                            case CMAC_W4_MLAST:
-                                {
-                                sm_key_t t;
-                                swap128(&packet[6], t);
-                                sm_cmac_handle_encryption_result(t);
-                                }
-                                break;
-                            default:
-                                break;
-                        }
-                        switch (sm_state_responding){
-                            case SM_STATE_PH2_C1_W4_ENC_A:
-                            case SM_STATE_PH2_C1_W4_ENC_C:
-                                {
-                                sm_aes128_set_key(sm_tk);
-                                sm_key_t t2;
-                                swap128(&packet[6], t2);
-                                sm_c1_t3(t2, sm_m_address, sm_s_address, sm_aes128_plaintext);
-                                }
-                                sm_state_responding_next_state();
-                                break;
-                            case SM_STATE_PH2_C1_W4_ENC_B:
-                                swap128(&packet[6], sm_s_confirm);
-                                print_key("c1!", sm_s_confirm);
-                                sm_state_responding_next_state();
-                                break;
-                            case SM_STATE_PH2_C1_W4_ENC_D:
-                                {
-                                sm_key_t m_confirm_test;
-                                swap128(&packet[6], m_confirm_test);
-                                print_key("c1!", m_confirm_test);
-                                if (memcmp(sm_m_confirm, m_confirm_test, 16) == 0){
-                                    // send s_random
-                                    sm_state_responding = SM_STATE_SEND_PAIRING_RANDOM;
-                                    break;
-                                }
-                                sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
-                                sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
-                                }
-                                break;
-                            case SM_STATE_PH2_W4_STK:
-                                swap128(&packet[6], sm_s_ltk);
-                                sm_truncate_key(sm_s_ltk, sm_actual_encryption_key_size);
-                                print_key("stk", sm_s_ltk);
-                                sm_state_responding = SM_STATE_PH2_SEND_STK;
-                                break;
-                            case SM_STATE_PH3_Y_W4_ENC:{
-                                sm_key_t y128;
-                                swap128(&packet[6], y128);
-                                sm_s_y = READ_NET_16(y128, 14);
-                                print_hex16("y", sm_s_y);
-                                // PH3B3 - calculate EDIV
-                                sm_s_ediv = sm_s_y ^ sm_s_div;
-                                print_hex16("ediv", sm_s_ediv);
-                                // PH3B4 - calculate LTK         - enc
-                                // LTK = d1(ER, DIV, 0))
-                                sm_aes128_set_key(sm_persistent_er);
-                                sm_d1_d_prime(sm_s_div, 0, sm_aes128_plaintext);
-                                sm_state_responding = SM_STATE_PH3_LTK_GET_ENC;
-                                break;
-                            }
-                            case SM_STATE_PH4_Y_W4_ENC:{
-                                sm_key_t y128;
-                                swap128(&packet[6], y128);
-                                sm_s_y = READ_NET_16(y128, 14);
-                                print_hex16("y", sm_s_y);
-                                // PH3B3 - calculate DIV
-                                sm_s_div = sm_s_y ^ sm_s_ediv;
-                                print_hex16("ediv", sm_s_ediv);
-                                // PH3B4 - calculate LTK         - enc
-                                // LTK = d1(ER, DIV, 0))
-                                sm_aes128_set_key(sm_persistent_er);
-                                sm_d1_d_prime(sm_s_div, 0, sm_aes128_plaintext);
-                                sm_state_responding = SM_STATE_PH4_LTK_GET_ENC;
-                                break;
-                            }
-                            case SM_STATE_PH3_LTK_W4_ENC:
-                                swap128(&packet[6], sm_s_ltk);
-                                print_key("ltk", sm_s_ltk);
-                                // distribute keys
-                                sm_state_responding = SM_STATE_DISTRIBUTE_KEYS;
-                                break;                                
-                            case SM_STATE_PH4_LTK_W4_ENC:
-                                swap128(&packet[6], sm_s_ltk);
-                                sm_truncate_key(sm_s_ltk, sm_actual_encryption_key_size);
-                                print_key("ltk", sm_s_ltk);
-                                sm_state_responding = SM_STATE_PH4_SEND_LTK;
-                                break;                                
-                            default:
-                                break;
-                        }
+                        sm_handle_encryption_result(&packet[6]);
+                        break;
                     }
                     if (COMMAND_COMPLETE_EVENT(packet, hci_le_rand)){
                         switch (rau_state){
