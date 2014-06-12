@@ -163,6 +163,11 @@ typedef enum {
     SM_USER_RESPONSE_DECLINE
 } sm_user_response_t;
 
+typedef enum {
+    SM_AES128_IDLE,
+    SM_AES128_PLAINTEXT_SET,
+    SM_AES128_ACTIVE
+} sm_aes128_state_t;
 //
 // GLOBAL DATA
 //
@@ -217,8 +222,8 @@ static uint8_t  sm_pairing_failed_reason = 0;
 static timer_source_t sm_timeout;
 
 // data to send to aes128 crypto engine, see sm_aes128_set_key and sm_aes128_set_plaintext
-static sm_key_t   sm_aes128_plaintext;
-static uint8_t    sm_aes128_active;
+static sm_key_t             sm_aes128_plaintext;
+static sm_aes128_state_t    sm_aes128_state;
 
 // generation method and temporary key for STK - STK is stored in sm_s_ltk
 static stk_generation_method_t sm_stk_generation_method;
@@ -392,9 +397,9 @@ static void gap_random_address_update_stop(){
     run_loop_remove_timer(&gap_random_address_update_timer);
 }
 
-// asserts: sm_aes128_active == 0, hci_can_send_command == 1
+// pre: sm_aes128_state != SM_AES128_ACTIVE, hci_can_send_command == 1
 static void sm_aes128_start(sm_key_t key, sm_key_t plaintext){
-    sm_aes128_active = 1;
+    sm_aes128_state = SM_AES128_ACTIVE;
     sm_key_t key_flipped, plaintext_flipped;
     swap128(key, key_flipped);
     swap128(plaintext, plaintext_flipped);
@@ -747,11 +752,13 @@ static void sm_run(void){
     if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
     if (!l2cap_can_send_connectionless_packet_now()) return;
 
+    sm_key_t plaintext;
+
     // distributed key generation
     switch (dkg_state){
         case DKG_CALC_IRK:
             // already busy?
-            if (sm_aes128_active) break;
+            if (sm_aes128_state == SM_AES128_ACTIVE) break;
             {
             // IRK = d1(IR, 1, 0)
             sm_key_t d1_prime;
@@ -761,7 +768,7 @@ static void sm_run(void){
             }
         case DKG_CALC_DHK:
             // already busy?
-            if (sm_aes128_active) break;
+            if (sm_aes128_state == SM_AES128_ACTIVE) break;
             {
             // DHK = d1(IR, 3, 0)
             sm_key_t d1_prime;
@@ -782,7 +789,7 @@ static void sm_run(void){
             return;
         case RAU_GET_ENC:
             // already busy?
-            if (sm_aes128_active) break;
+            if (sm_aes128_state == SM_AES128_ACTIVE) break;
             {
             sm_key_t r_prime;
             sm_ah_r_prime(sm_random_address, r_prime);
@@ -823,7 +830,7 @@ static void sm_run(void){
                 continue;
             }
 
-            if (sm_aes128_active) break;
+            if (sm_aes128_state == SM_AES128_ACTIVE) break;
 
             printf("Central Device Lookup: calculate AH\n");
             print_key("IRK", irk);
@@ -848,7 +855,7 @@ static void sm_run(void){
         case CMAC_CALC_MI:
         case CMAC_CALC_MLAST:
             // already busy?
-            if (sm_aes128_active) break;
+            if (sm_aes128_state == SM_AES128_ACTIVE) break;
             sm_cmac_handle_aes_engine_ready();
             return;
         default:
@@ -953,7 +960,7 @@ static void sm_run(void){
         case SM_STATE_PH2_C1_GET_ENC_B:
         case SM_STATE_PH2_C1_GET_ENC_D:
             // already busy?
-            if (sm_aes128_active) break;
+            if (sm_aes128_state == SM_AES128_ACTIVE) break;
             sm_aes128_start(sm_tk, sm_aes128_plaintext);
             sm_state_responding_next_state();
             return;
@@ -961,42 +968,42 @@ static void sm_run(void){
         case SM_STATE_PH3_LTK_GET_ENC:
         case SM_STATE_PH4_LTK_GET_ENC:
             // already busy?
-            if (sm_aes128_active) break;
+            if (sm_aes128_state == SM_AES128_ACTIVE) break;
             sm_aes128_start(sm_persistent_er, sm_aes128_plaintext);
             sm_state_responding_next_state();
             return;
 
         case SM_STATE_PH2_C1_GET_ENC_C:
             // already busy?
-            if (sm_aes128_active) break;
+            if (sm_aes128_state == SM_AES128_ACTIVE) break;
             // calculate m_confirm using aes128 engine - step 1
-            sm_c1_t1(sm_m_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
-            sm_aes128_start(sm_tk, sm_aes128_plaintext);
+            sm_c1_t1(sm_m_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, plaintext);
+            sm_aes128_start(sm_tk, plaintext);
             sm_state_responding_next_state();
             break;
         case SM_STATE_PH2_C1_GET_ENC_A:
             // already busy?
-            if (sm_aes128_active) break;
+            if (sm_aes128_state == SM_AES128_ACTIVE) break;
             // calculate s_confirm using aes128 engine - step 1
-            sm_c1_t1(sm_s_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
-            sm_aes128_start(sm_tk, sm_aes128_plaintext);
+            sm_c1_t1(sm_s_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, plaintext);
+            sm_aes128_start(sm_tk, plaintext);
             sm_state_responding_next_state();
             break;
         case SM_STATE_PH2_CALC_STK:
             // already busy?
-            if (sm_aes128_active) break;
+            if (sm_aes128_state == SM_AES128_ACTIVE) break;
             // calculate STK
-            sm_s1_r_prime(sm_s_random, sm_m_random, sm_aes128_plaintext);
-            sm_aes128_start(sm_tk, sm_aes128_plaintext);
+            sm_s1_r_prime(sm_s_random, sm_m_random, plaintext);
+            sm_aes128_start(sm_tk, plaintext);
             sm_state_responding_next_state();
             break;
         case SM_STATE_PH3_Y_GET_ENC:
             // already busy?
-            if (sm_aes128_active) break;
+            if (sm_aes128_state == SM_AES128_ACTIVE) break;
             // PH3B2 - calculate Y from      - enc
             // Y = dm(DHK, Rand)
-            sm_dm_r_prime(sm_s_rand, sm_aes128_plaintext);
-            sm_aes128_start(sm_persistent_dhk, sm_aes128_plaintext);
+            sm_dm_r_prime(sm_s_rand, plaintext);
+            sm_aes128_start(sm_persistent_dhk, plaintext);
             sm_state_responding_next_state();
             return;
         case SM_STATE_PH2_C1_SEND_PAIRING_CONFIRM: {
@@ -1024,11 +1031,11 @@ static void sm_run(void){
         }
         case SM_STATE_PH4_Y_GET_ENC:
             // already busy?
-            if (sm_aes128_active) break;
+            if (sm_aes128_state == SM_AES128_ACTIVE) break;
             log_info("LTK Request: recalculating with ediv 0x%04x", sm_s_ediv);
             // Y = dm(DHK, Rand)
-            sm_dm_r_prime(sm_s_rand, sm_aes128_plaintext);
-            sm_aes128_start(sm_persistent_dhk, sm_aes128_plaintext);
+            sm_dm_r_prime(sm_s_rand, plaintext);
+            sm_aes128_start(sm_persistent_dhk, plaintext);
             sm_state_responding_next_state();
             return;
 
@@ -1097,7 +1104,7 @@ static void sm_run(void){
 // note: aes engine is ready as we just got the aes result, also, sm_aes128_plaintext and sm_aes128_key can be set again 
 static void sm_handle_encryption_result(uint8_t * data){
 
-    sm_aes128_active = 0;
+    sm_aes128_state = SM_AES128_IDLE;
 
     if (sm_central_ah_calculation_active){
         sm_central_ah_calculation_active = 0;
@@ -1208,6 +1215,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             // PH3B4 - calculate LTK         - enc
             // LTK = d1(ER, DIV, 0))
             sm_d1_d_prime(sm_s_div, 0, sm_aes128_plaintext);
+            sm_aes128_state = SM_AES128_PLAINTEXT_SET;
             sm_state_responding = SM_STATE_PH3_LTK_GET_ENC;
             return;
         }
@@ -1222,6 +1230,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             // PH3B4 - calculate LTK         - enc
             // LTK = d1(ER, DIV, 0))
             sm_d1_d_prime(sm_s_div, 0, sm_aes128_plaintext);
+            sm_aes128_state = SM_AES128_PLAINTEXT_SET;
             sm_state_responding = SM_STATE_PH4_LTK_GET_ENC;
             return;
         }
@@ -1706,10 +1715,9 @@ void sm_init(){
                                        | SM_STK_GENERATION_METHOD_PASSKEY;
     sm_max_encryption_key_size = 16;
     sm_min_encryption_key_size = 7;
-    sm_aes128_active = 0;
     
-    sm_cmac_state = CMAC_IDLE;
-
+    sm_cmac_state  = CMAC_IDLE;
+    sm_aes128_state = SM_AES128_IDLE;
     sm_central_device_test = -1;    // no private address to resolve yet
     sm_central_ah_calculation_active = 0;
 
