@@ -182,8 +182,8 @@ typedef enum {
 static uint8_t sm_accepted_stk_generation_methods;
 static uint8_t sm_max_encryption_key_size;
 static uint8_t sm_min_encryption_key_size;
-static uint8_t sm_s_auth_req = 0;
-static uint8_t sm_s_io_capabilities = IO_CAPABILITY_UNKNOWN;
+static uint8_t sm_auth_req = 0;
+static uint8_t sm_io_capabilities = IO_CAPABILITY_UNKNOWN;
 static uint8_t sm_slave_request_security;
 static stk_generation_method_t sm_stk_generation_method;
 
@@ -267,8 +267,10 @@ typedef struct sm_setup_context {
     sm_key_t  sm_m_irk;
 
     // slave = local data
-    sm_key_t  sm_s_random;
+    uint8_t   sm_s_io_capabilities;
     uint8_t   sm_s_have_oob_data;
+    uint8_t   sm_s_auth_req;
+    sm_key_t  sm_s_random;
     sm_key_t  sm_s_confirm;
     uint8_t   sm_s_pres[7];
 
@@ -559,7 +561,7 @@ static void sm_setup_tk(){
     // If both devices have not set the MITM option in the Authentication Requirements
     // Flags, then the IO capabilities shall be ignored and the Just Works association
     // model shall be used. 
-    if ( ((setup->sm_m_auth_req & SM_AUTHREQ_MITM_PROTECTION) == 0x00) && ((sm_s_auth_req & SM_AUTHREQ_MITM_PROTECTION) == 0)){
+    if ( ((setup->sm_m_auth_req & SM_AUTHREQ_MITM_PROTECTION) == 0x00) && ((setup->sm_s_auth_req & SM_AUTHREQ_MITM_PROTECTION) == 0)){
         return;
     }
 
@@ -570,9 +572,9 @@ static void sm_setup_tk(){
 
     // Otherwise the IO capabilities of the devices shall be used to determine the
     // pairing method as defined in Table 2.4.
-    sm_stk_generation_method = stk_generation_method[sm_s_io_capabilities][setup->sm_m_io_capabilities];
+    sm_stk_generation_method = stk_generation_method[setup->sm_s_io_capabilities][setup->sm_m_io_capabilities];
     printf("sm_setup_tk: master io cap: %u, slave io cap: %u -> method %u\n",
-        setup->sm_m_io_capabilities, sm_s_io_capabilities, sm_stk_generation_method);
+        setup->sm_m_io_capabilities, setup->sm_s_io_capabilities, sm_stk_generation_method);
 }
 
 static int sm_key_distribution_flags_for_set(uint8_t key_set){
@@ -929,9 +931,9 @@ static void sm_run(void){
 
             memcpy(buffer, setup->sm_m_preq, 7);        
             buffer[0] = SM_CODE_PAIRING_RESPONSE;
-            buffer[1] = sm_s_io_capabilities;
+            buffer[1] = setup->sm_s_io_capabilities;
             buffer[2] = setup->sm_s_have_oob_data;
-            buffer[3] = sm_s_auth_req;
+            buffer[3] = setup->sm_s_auth_req;
             buffer[4] = sm_max_encryption_key_size;
 
             memcpy(setup->sm_s_pres, buffer, 7);
@@ -952,7 +954,7 @@ static void sm_run(void){
                     sm_notify_client(SM_PASSKEY_DISPLAY_NUMBER, setup->sm_m_addr_type, setup->sm_m_address, READ_NET_32(setup->sm_tk, 12), 0); 
                     break;
                 case JUST_WORKS:
-                    switch (sm_s_io_capabilities){
+                    switch (setup->sm_s_io_capabilities){
                         case IO_CAPABILITY_KEYBOARD_DISPLAY:
                         case IO_CAPABILITY_DISPLAY_YES_NO:
                             setup->sm_user_response = SM_USER_RESPONSE_PENDING;
@@ -1419,6 +1421,8 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             hci_le_advertisement_address(&setup->sm_s_addr_type, &setup->sm_s_address);
                             setup->sm_m_addr_type = packet[7];
                             bt_flip_addr(setup->sm_m_address, &packet[8]);
+                            setup->sm_s_auth_req = sm_auth_req;
+                            setup->sm_s_io_capabilities = sm_io_capabilities;
 
                             // request security if we're slave and requested by app
                             if (connection->sm_role == 0x01 && sm_slave_request_security){
@@ -1718,11 +1722,11 @@ void sm_set_encryption_key_size_range(uint8_t min_size, uint8_t max_size){
 }
 
 void sm_set_authentication_requirements(uint8_t auth_req){
-    sm_s_auth_req = auth_req;
+    sm_auth_req = auth_req;
 }
 
 void sm_set_io_capabilities(io_capability_t io_capability){
-    sm_s_io_capabilities = io_capability;
+    sm_io_capabilities = io_capability;
 }
 
 void sm_set_request_security(int enable){
