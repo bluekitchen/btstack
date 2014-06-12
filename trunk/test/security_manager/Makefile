@@ -5,8 +5,8 @@ CC = g++
 BTSTACK_ROOT =  ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
-CFLAGS  = -DUNIT_TEST -g -Wall -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include -I$(CPPUTEST_HOME)/include
-LDFLAGS += -L$(CPPUTEST_HOME) -lCppUTest -lCppUTestExt
+CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include -I$(CPPUTEST_HOME)/include
+LDFLAGS += -L$(CPPUTEST_HOME)/lib -lCppUTest -lCppUTestExt
 
 COMMON = \
     ${BTSTACK_ROOT}/src/utils.c			            \
