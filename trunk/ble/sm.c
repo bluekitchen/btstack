@@ -148,6 +148,12 @@ typedef enum {
 } cmac_state_t;
 
 typedef enum {
+    CSRK_LOOKUP_IDLE,
+    CSRK_LOOKUP_W4_READY,
+    CSRK_LOOKUP_STARTED,
+} csrk_lookup_state_t;
+
+typedef enum {
     JUST_WORKS,
     PK_RESP_INPUT,  // Initiator displays PK, initiator inputs PK 
     PK_INIT_INPUT,  // Responder displays PK, responder inputs PK
@@ -239,6 +245,8 @@ static uint8_t  sm_pairing_failed_reason = 0;
 // defines which keys will be send  after connection is encrypted
 static int sm_key_distribution_send_set;
 static int sm_key_distribution_received_set;
+
+static csrk_lookup_state_t sm_m_csrk_lookup_state;
 
 // user response
 static uint8_t   sm_user_response;
@@ -775,6 +783,12 @@ static void sm_run(void){
     if (!l2cap_can_send_connectionless_packet_now()) return;
 
     sm_key_t plaintext;
+
+    // CSRK lookup
+    if (sm_m_csrk_lookup_state == CSRK_LOOKUP_W4_READY && !sm_central_device_lookup_active()){
+        sm_central_device_start_lookup(sm_m_addr_type, sm_m_address);
+        sm_m_csrk_lookup_state = CSRK_LOOKUP_STARTED;
+    }
 
     // distributed key generation
     switch (dkg_state){
@@ -1399,8 +1413,13 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 sm_state_responding = SM_STATE_SEND_SECURITY_REQUEST;
                             }
 
-                            // try to lookup device
-                            sm_central_device_start_lookup(sm_m_addr_type, sm_m_address);
+                            sm_m_csrk_lookup_state = CSRK_LOOKUP_W4_READY;
+
+                            if (!sm_central_device_lookup_active){
+                                // try to lookup device
+                                sm_central_device_start_lookup(sm_m_addr_type, sm_m_address);
+                                sm_m_csrk_lookup_state = CSRK_LOOKUP_STARTED;
+                            }
                             break;
 
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:
