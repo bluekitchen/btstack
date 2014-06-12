@@ -303,6 +303,8 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         log_info("usb_process_ds endpoint unknown %x", transfer->endpoint);
     }
 
+    if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return;
+
     if (resubmit){
         // Re-submit transfer 
         transfer->user_data = NULL;
@@ -333,7 +335,10 @@ static int usb_process_ds(struct data_source *ds) {
         void * next = handle_packet->user_data;
 
         handle_completed_transfer(handle_packet);
-        
+
+        // handle case where libusb_close might be called by hci packet handler        
+        if (libusb_state != LIB_USB_TRANSFERS_ALLOCATED) return -1;
+
         // Move to next in the list of packets to handle
         if (next) {
             handle_packet = (struct libusb_transfer*)next;
@@ -591,6 +596,10 @@ static int usb_close(void *transport_config){
         case LIB_USB_OPENED:
             libusb_exit(NULL);
     }
+
+    libusb_state = LIB_USB_CLOSED;
+    handle = NULL;
+
     return 0;
 }
 
