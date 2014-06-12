@@ -957,7 +957,6 @@ static void sm_run(void){
         case SM_STATE_PH2_C1_GET_ENC_B:
         case SM_STATE_PH2_C1_GET_ENC_D:
         case SM_STATE_PH2_CALC_STK:
-        case SM_STATE_PH3_Y_GET_ENC:
         case SM_STATE_PH3_LTK_GET_ENC:
         case SM_STATE_PH4_Y_GET_ENC:
         case SM_STATE_PH4_LTK_GET_ENC:
@@ -984,6 +983,16 @@ static void sm_run(void){
             sm_aes128_start(sm_aes128_key, sm_aes128_plaintext);
             sm_state_responding_next_state();
             break;
+        case SM_STATE_PH3_Y_GET_ENC:
+            // already busy?
+            if (sm_aes128_active) break;
+            // PH3B2 - calculate Y from      - enc
+            // Y = dm(DHK, Rand)
+            sm_aes128_set_key(sm_persistent_dhk);
+            sm_dm_r_prime(sm_s_rand, sm_aes128_plaintext);
+            sm_aes128_start(sm_aes128_key, sm_aes128_plaintext);
+            sm_state_responding_next_state();
+            return;
         case SM_STATE_PH2_C1_SEND_PAIRING_CONFIRM: {
             uint8_t buffer[17];
             buffer[0] = SM_CODE_PAIRING_CONFIRM;
@@ -1281,13 +1290,6 @@ static void sm_handle_random_result(uint8_t * data){
             // use 16 bit from random value as div
             sm_s_div = READ_NET_16(data, 0);
             print_hex16("div", sm_s_div);
-
-            // SM_AES128_PLAINTEXT_USED_WIHTOUT_CHECK
-
-            // PH3B2 - calculate Y from      - enc
-            // Y = dm(DHK, Rand)
-            sm_aes128_set_key(sm_persistent_dhk);
-            sm_dm_r_prime(sm_s_rand, sm_aes128_plaintext);
             sm_state_responding = SM_STATE_PH3_Y_GET_ENC;
             return;
         default:
