@@ -52,6 +52,9 @@ typedef enum {
 
     SM_STATE_IDLE,
 
+    // SLAVE ROLE
+
+    SM_STATE_W4_PAIRING_REQUEST,
     SM_STATE_SEND_SECURITY_REQUEST,
     SM_STATE_SEND_LTK_REQUESTED_NEGATIVE_REPLY,
 
@@ -117,6 +120,9 @@ typedef enum {
 
     SM_STATE_TIMEOUT, // no other security messages are exchanged
 
+    // MASTR ROLE
+    SM_STATE_SEND_PAIRING_REQUEST,
+
 } security_manager_state_t;
 
 typedef enum {
@@ -173,6 +179,16 @@ typedef enum {
     SM_AES128_IDLE,
     SM_AES128_ACTIVE
 } sm_aes128_state_t;
+
+typedef struct sm_pairing_packet {
+    uint8_t code;
+    uint8_t io_capability;
+    uint8_t oob_data_flag;
+    uint8_t auth_req;
+    uint8_t max_encryption_key_size;
+    uint8_t initiator_key_distribution;
+    uint8_t responder_key_distribution;
+} sm_pairing_packet_t;
 
 //
 // GLOBAL DATA
@@ -247,12 +263,7 @@ typedef struct sm_setup_context {
     uint8_t   sm_user_response;
 
     // master = remote data
-    uint8_t   sm_m_io_capabilities;
-    uint8_t   sm_m_have_oob_data;
-    uint8_t   sm_m_auth_req;
-    uint8_t   sm_m_max_encryption_key_size;
-    uint8_t   sm_m_key_distribution;
-    uint8_t   sm_m_preq[7];
+    sm_pairing_packet_t sm_m_preq; // pairing request
     sm_key_t  sm_m_random;
     sm_key_t  sm_m_confirm;
 
@@ -267,12 +278,9 @@ typedef struct sm_setup_context {
     sm_key_t  sm_m_irk;
 
     // slave = local data
-    uint8_t   sm_s_io_capabilities;
-    uint8_t   sm_s_have_oob_data;
-    uint8_t   sm_s_auth_req;
+    sm_pairing_packet_t sm_s_pres; // pairing response
     sm_key_t  sm_s_random;
     sm_key_t  sm_s_confirm;
-    uint8_t   sm_s_pres[7];
 
     // key distribution, slave sends
     sm_key_t  sm_s_ltk;
@@ -540,18 +548,11 @@ static void sm_setup_tk(){
 
     // default: just works
     sm_stk_generation_method = JUST_WORKS;
-    sm_reset_tk();
-
-    // query client for OOB data
-    setup->sm_s_have_oob_data = 0;
-    if (sm_get_oob_data) {
-        (*sm_get_oob_data)(setup->sm_m_addr_type, &setup->sm_m_address, setup->sm_tk);
-    }
     
     // If both devices have out of band authentication data, then the Authentication
     // Requirements Flags shall be ignored when selecting the pairing method and the
     // Out of Band pairing method shall be used.
-    if (setup->sm_m_have_oob_data && setup->sm_s_have_oob_data){
+    if (setup->sm_m_preq.oob_data_flag && setup->sm_s_pres.oob_data_flag){
         printf("SM: have OOB data");
         print_key("OOB", setup->sm_tk);
         sm_stk_generation_method = OOB;
@@ -561,20 +562,20 @@ static void sm_setup_tk(){
     // If both devices have not set the MITM option in the Authentication Requirements
     // Flags, then the IO capabilities shall be ignored and the Just Works association
     // model shall be used. 
-    if ( ((setup->sm_m_auth_req & SM_AUTHREQ_MITM_PROTECTION) == 0x00) && ((setup->sm_s_auth_req & SM_AUTHREQ_MITM_PROTECTION) == 0)){
+    if ( ((setup->sm_m_preq.auth_req & SM_AUTHREQ_MITM_PROTECTION) == 0x00) && ((setup->sm_s_pres.auth_req & SM_AUTHREQ_MITM_PROTECTION) == 0)){
         return;
     }
 
     // Also use just works if unknown io capabilites
-    if ((setup->sm_m_io_capabilities > IO_CAPABILITY_KEYBOARD_DISPLAY) || (setup->sm_m_io_capabilities > IO_CAPABILITY_KEYBOARD_DISPLAY)){
+    if ((setup->sm_m_preq.io_capability > IO_CAPABILITY_KEYBOARD_DISPLAY) || (setup->sm_m_preq.io_capability > IO_CAPABILITY_KEYBOARD_DISPLAY)){
         return;
     }
 
     // Otherwise the IO capabilities of the devices shall be used to determine the
     // pairing method as defined in Table 2.4.
-    sm_stk_generation_method = stk_generation_method[setup->sm_s_io_capabilities][setup->sm_m_io_capabilities];
+    sm_stk_generation_method = stk_generation_method[setup->sm_s_pres.io_capability][setup->sm_m_preq.io_capability];
     printf("sm_setup_tk: master io cap: %u, slave io cap: %u -> method %u\n",
-        setup->sm_m_io_capabilities, setup->sm_s_io_capabilities, sm_stk_generation_method);
+        setup->sm_m_preq.io_capability, setup->sm_s_pres.io_capability, sm_stk_generation_method);
 }
 
 static int sm_key_distribution_flags_for_set(uint8_t key_set){
@@ -779,7 +780,7 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
 
 static int sm_key_distribution_done(){
     if (setup->sm_key_distribution_send_set) return 0;
-    int recv_flags = sm_key_distribution_flags_for_set(setup->sm_m_key_distribution);
+    int recv_flags = sm_key_distribution_flags_for_set(setup->sm_m_preq.initiator_key_distribution);
     return recv_flags == setup->sm_key_distribution_received_set;
 }
 
@@ -927,20 +928,12 @@ static void sm_run(void){
 
         case SM_STATE_PH1_SEND_PAIRING_RESPONSE: {
 
-            uint8_t buffer[7];
+            // echo initiator for now
+            setup->sm_s_pres.code = SM_CODE_PAIRING_RESPONSE;
+            setup->sm_s_pres.initiator_key_distribution = setup->sm_m_preq.initiator_key_distribution;
+            setup->sm_s_pres.responder_key_distribution = setup->sm_m_preq.responder_key_distribution;
 
-            memcpy(buffer, setup->sm_m_preq, 7);        
-            buffer[0] = SM_CODE_PAIRING_RESPONSE;
-            buffer[1] = setup->sm_s_io_capabilities;
-            buffer[2] = setup->sm_s_have_oob_data;
-            buffer[3] = setup->sm_s_auth_req;
-            buffer[4] = sm_max_encryption_key_size;
-
-            memcpy(setup->sm_s_pres, buffer, 7);
-
-            // for validate
-
-            l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+            l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet));
             sm_2timeout_reset();
 
             // notify client for: JUST WORKS confirm, PASSKEY display or input
@@ -954,7 +947,7 @@ static void sm_run(void){
                     sm_notify_client(SM_PASSKEY_DISPLAY_NUMBER, setup->sm_m_addr_type, setup->sm_m_address, READ_NET_32(setup->sm_tk, 12), 0); 
                     break;
                 case JUST_WORKS:
-                    switch (setup->sm_s_io_capabilities){
+                    switch (setup->sm_s_pres.io_capability){
                         case IO_CAPABILITY_KEYBOARD_DISPLAY:
                         case IO_CAPABILITY_DISPLAY_YES_NO:
                             setup->sm_user_response = SM_USER_RESPONSE_PENDING;
@@ -1028,7 +1021,7 @@ static void sm_run(void){
             // already busy?
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
             // calculate m_confirm using aes128 engine - step 1
-            sm_c1_t1(setup->sm_m_random, setup->sm_m_preq, setup->sm_s_pres, setup->sm_m_addr_type, setup->sm_s_addr_type, plaintext);
+            sm_c1_t1(setup->sm_m_random, (uint8_t*) &setup->sm_m_preq, (uint8_t*) &setup->sm_s_pres, setup->sm_m_addr_type, setup->sm_s_addr_type, plaintext);
             sm_aes128_start(setup->sm_tk, plaintext);
             sm_next_responding_state();
             break;
@@ -1036,7 +1029,7 @@ static void sm_run(void){
             // already busy?
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
             // calculate s_confirm using aes128 engine - step 1
-            sm_c1_t1(setup->sm_s_random, setup->sm_m_preq, setup->sm_s_pres, setup->sm_m_addr_type, setup->sm_s_addr_type, plaintext);
+            sm_c1_t1(setup->sm_s_random, (uint8_t*) &setup->sm_m_preq, (uint8_t*) &setup->sm_s_pres, setup->sm_m_addr_type, setup->sm_s_addr_type, plaintext);
             sm_aes128_start(setup->sm_tk, plaintext);
             sm_next_responding_state();
             break;
@@ -1375,6 +1368,7 @@ static void sm_handle_random_result(uint8_t * data){
 static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     sm_run();
+    int have_oob_data;
 
     switch (packet_type) {
             
@@ -1418,11 +1412,34 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                             // fill in sm setup
                             sm_reset_tk();
-                            hci_le_advertisement_address(&setup->sm_s_addr_type, &setup->sm_s_address);
-                            setup->sm_m_addr_type = packet[7];
-                            bt_flip_addr(setup->sm_m_address, &packet[8]);
-                            setup->sm_s_auth_req = sm_auth_req;
-                            setup->sm_s_io_capabilities = sm_io_capabilities;
+
+                            // query client for OOB data
+                            have_oob_data = 0;
+                            if (sm_get_oob_data) {
+                                have_oob_data = (*sm_get_oob_data)(connection->sm_peer_addr_type, &connection->sm_peer_address, setup->sm_tk);
+                            }
+
+                            if (connection->sm_role){
+                                // slave
+                                hci_le_advertisement_address(&setup->sm_s_addr_type, &setup->sm_s_address);
+                                setup->sm_m_addr_type = packet[7];
+                                bt_flip_addr(setup->sm_m_address, &packet[8]);
+                                setup->sm_s_pres.io_capability = sm_io_capabilities;
+                                setup->sm_s_pres.oob_data_flag = have_oob_data;
+                                setup->sm_s_pres.auth_req = sm_auth_req;
+                                setup->sm_s_pres.max_encryption_key_size = sm_max_encryption_key_size;
+                                connection->sm_state_responding = SM_STATE_W4_PAIRING_REQUEST;
+                            } else {
+                                // master
+                                hci_le_advertisement_address(&setup->sm_m_addr_type, &setup->sm_m_address);
+                                setup->sm_s_addr_type = packet[7];
+                                bt_flip_addr(setup->sm_s_address, &packet[8]);
+                                setup->sm_m_preq.io_capability = sm_io_capabilities;
+                                setup->sm_m_preq.oob_data_flag = have_oob_data;
+                                setup->sm_m_preq.auth_req = sm_auth_req;
+                                setup->sm_m_preq.max_encryption_key_size = sm_max_encryption_key_size;
+                                connection->sm_state_responding = SM_STATE_SEND_PAIRING_REQUEST;
+                            }
 
                             // request security if we're slave and requested by app
                             if (connection->sm_role == 0x01 && sm_slave_request_security){
@@ -1531,20 +1548,19 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
         case SM_STATE_TIMEOUT:
             return;
 
-        case SM_STATE_IDLE: {
+        case SM_STATE_IDLE: 
+        case SM_STATE_W4_PAIRING_REQUEST:
+        {
             if (packet[0] != SM_CODE_PAIRING_REQUEST){
                 sm_pdu_received_in_wrong_state();
                 break;;
             }
 
             // store key distribtion request
-            setup->sm_m_io_capabilities = packet[1];
-            setup->sm_m_have_oob_data = packet[2];
-            setup->sm_m_auth_req = packet[3];
-            setup->sm_m_max_encryption_key_size = packet[4];
+            memcpy(&setup->sm_m_preq, packet, sizeof(sm_pairing_packet_t));
 
             // assert max encryption size above our minimum
-            if (setup->sm_m_max_encryption_key_size < sm_min_encryption_key_size){
+            if (setup->sm_m_preq.max_encryption_key_size < sm_min_encryption_key_size){
                 setup->sm_pairing_failed_reason = SM_REASON_ENCRYPTION_KEY_SIZE;
                 connection->sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
                 break;
@@ -1552,16 +1568,12 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // min{}
             connection->sm_actual_encryption_key_size = sm_max_encryption_key_size;
-            if (setup->sm_m_max_encryption_key_size < sm_max_encryption_key_size){
-                connection->sm_actual_encryption_key_size = setup->sm_m_max_encryption_key_size;
+            if (setup->sm_m_preq.max_encryption_key_size < sm_max_encryption_key_size){
+                connection->sm_actual_encryption_key_size = setup->sm_m_preq.max_encryption_key_size;
             }
 
             // setup key distribution
-            setup->sm_m_key_distribution = packet[5];
-            sm_setup_key_distribution(packet[6]);
-
-            // for validate
-            memcpy(setup->sm_m_preq, packet, 7);
+            sm_setup_key_distribution(setup->sm_m_preq.responder_key_distribution);
 
             // start SM timeout
             sm_2timeout_start();
