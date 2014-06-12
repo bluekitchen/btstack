@@ -397,10 +397,6 @@ static inline void sm_aes128_set_key(sm_key_t key){
     memcpy(sm_aes128_key, key, 16);
 } 
 
-static inline void sm_aes128_set_plaintext(sm_key_t plaintext){
-    memcpy(sm_aes128_plaintext, plaintext, 16);
-} 
-
 // asserts: sm_aes128_active == 0, hci_can_send_command == 1
 static void sm_aes128_start(sm_key_t key, sm_key_t plaintext){
     sm_aes128_active = 1;
@@ -960,7 +956,6 @@ static void sm_run(void){
             return;
         case SM_STATE_PH2_C1_GET_ENC_A:
         case SM_STATE_PH2_C1_GET_ENC_B:
-        case SM_STATE_PH2_C1_GET_ENC_C:
         case SM_STATE_PH2_C1_GET_ENC_D:
         case SM_STATE_PH2_CALC_STK:
         case SM_STATE_PH3_Y_GET_ENC:
@@ -972,6 +967,16 @@ static void sm_run(void){
             sm_aes128_start(sm_aes128_key, sm_aes128_plaintext);
             sm_state_responding_next_state();
             return;
+        case SM_STATE_PH2_C1_GET_ENC_C:
+            // already busy?
+            if (sm_aes128_active) break;
+            // calculate m_confirm using aes128 engine - step 1
+            sm_aes128_set_key(sm_tk);
+            sm_c1_t1(sm_m_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
+            sm_aes128_start(sm_aes128_key, sm_aes128_plaintext);
+            sm_state_responding_next_state();
+            break;
+
         case SM_STATE_PH2_C1_SEND_PAIRING_CONFIRM: {
             uint8_t buffer[17];
             buffer[0] = SM_CODE_PAIRING_CONFIRM;
@@ -1057,6 +1062,8 @@ static void sm_run(void){
             break;
     }
 }
+
+// note: aes engine is ready as we just got the aes result, also, sm_aes128_plaintext and sm_aes128_key can be set again 
 static void sm_handle_encryption_result(uint8_t * data){
     if (sm_central_ah_calculation_active){
         sm_central_ah_calculation_active = 0;
@@ -1204,6 +1211,91 @@ static void sm_handle_encryption_result(uint8_t * data){
     }
 }
 
+// note: random generator is ready. this doesn NOT imply that aes engine is unused!
+static void sm_handle_random_result(uint8_t * data){
+
+    switch (rau_state){
+        case RAU_W4_RANDOM:
+            // non-resolvable vs. resolvable
+            switch (gap_random_adress_type){
+                case GAP_RANDOM_ADDRESS_RESOLVABLE:
+                    // resolvable: use random as prand and calc address hash
+                    // "The two most significant bits of prand shall be equal to ‘0’ and ‘1"
+                    memcpy(sm_random_address, data, 3);
+                    sm_random_address[0] &= 0x3f;
+                    sm_random_address[0] |= 0x40;
+                    rau_state = RAU_GET_ENC;
+                    break;
+                case GAP_RANDOM_ADDRESS_NON_RESOLVABLE:
+                default:
+                    // "The two most significant bits of the address shall be equal to ‘0’""
+                    memcpy(sm_random_address, data, 6);
+                    sm_random_address[0] &= 0x3f; 
+                    rau_state = RAU_SET_ADDRESS;
+                    break;
+            }
+            return;
+        default:
+            break;
+    }
+
+    switch (sm_state_responding){
+        case SM_STATE_PH2_W4_RANDOM_TK:
+        {
+            // map random to 0-999999 without speding much cycles on a modulus operation
+            uint32_t tk = * (uint32_t*) data; // random endianess
+            tk = tk & 0xfffff;  // 1048575
+            if (tk >= 999999){
+                tk = tk - 999999;
+            } 
+            sm_reset_tk();
+            net_store_32(sm_tk, 12, tk);
+            // continue with phase 1
+            sm_state_responding = SM_STATE_PH1_SEND_PAIRING_RESPONSE;
+            return;
+        }
+        case SM_STATE_PH2_C1_W4_RANDOM_A:
+            memcpy(&sm_s_random[0], data, 8); // random endinaness
+            sm_state_responding = SM_STATE_PH2_C1_GET_RANDOM_B;
+            return;
+        case SM_STATE_PH2_C1_W4_RANDOM_B:
+            memcpy(&sm_s_random[8], data, 8); // random endinaness
+            // calculate s_confirm manually
+            // sm_c1(sm_tk, sm_s_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_m_address, sm_s_address, sm_s_confirm);
+
+            // SM_AES128_PLAINTEXT_USED_WIHTOUT_CHECK
+
+            // calculate s_confirm using aes128 engine - step 1
+            sm_aes128_set_key(sm_tk);
+            sm_c1_t1(sm_s_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
+            sm_state_responding = SM_STATE_PH2_C1_GET_ENC_A;
+            return;
+        case SM_STATE_PH3_W4_RANDOM:
+            swap64(data, sm_s_rand);
+            // no db for encryption size hack: encryption size is stored in lowest nibble of sm_s_rand
+            sm_s_rand[7] = (sm_s_rand[7] & 0xf0) + (sm_actual_encryption_key_size - 1);
+            // no db for authenticated flag hack: store flag in bit 4 of LSB
+            sm_s_rand[7] = (sm_s_rand[7] & 0xef) + (sm_connection_authenticated << 4);
+            sm_state_responding = SM_STATE_PH3_GET_DIV;
+            return;
+        case SM_STATE_PH3_W4_DIV:
+            // use 16 bit from random value as div
+            sm_s_div = READ_NET_16(data, 0);
+            print_hex16("div", sm_s_div);
+
+            // SM_AES128_PLAINTEXT_USED_WIHTOUT_CHECK
+
+            // PH3B2 - calculate Y from      - enc
+            // Y = dm(DHK, Rand)
+            sm_aes128_set_key(sm_persistent_dhk);
+            sm_dm_r_prime(sm_s_rand, sm_aes128_plaintext);
+            sm_state_responding = SM_STATE_PH3_Y_GET_ENC;
+            return;
+        default:
+            break;
+    }
+}
+
 static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     sm_run();
@@ -1264,6 +1356,9 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:
                             log_info("LTK Request: state %u", sm_state_responding);
                             if (sm_state_responding == SM_STATE_PH2_W4_LTK_REQUEST){
+
+                                // SM_AES128_PLAINTEXT_USED_WIHTOUT_CHECK
+
                                 // calculate STK
                                 log_info("LTK Request: calculating STK");
                                 sm_aes128_set_key(sm_tk);
@@ -1296,6 +1391,8 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             // y   = dm(dhk, rand) - enc
                             // div = y xor ediv
                             // ltk = d1(ER, div, 0) - enc
+
+                            // SM_AES128_PLAINTEXT_USED_WIHTOUT_CHECK
 
                             // Y = dm(DHK, Rand)
                             sm_aes128_set_key(sm_persistent_dhk);
@@ -1333,85 +1430,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         break;
                     }
                     if (COMMAND_COMPLETE_EVENT(packet, hci_le_rand)){
-                        switch (rau_state){
-                            case RAU_W4_RANDOM:
-                                // non-resolvable vs. resolvable
-                                switch (gap_random_adress_type){
-                                    case GAP_RANDOM_ADDRESS_RESOLVABLE:
-                                        // resolvable: use random as prand and calc address hash
-                                        // "The two most significant bits of prand shall be equal to ‘0’ and ‘1"
-                                        memcpy(sm_random_address, &packet[6], 3);
-                                        sm_random_address[0] &= 0x3f;
-                                        sm_random_address[0] |= 0x40;
-                                        rau_state = RAU_GET_ENC;
-                                        break;
-                                    case GAP_RANDOM_ADDRESS_NON_RESOLVABLE:
-                                    default:
-                                        // "The two most significant bits of the address shall be equal to ‘0’""
-                                        memcpy(sm_random_address, &packet[6], 6);
-                                        sm_random_address[0] &= 0x3f; 
-                                        rau_state = RAU_SET_ADDRESS;
-                                        break;
-                                }
-                                break;
-                            default:
-                                break;
-                        }
-                        switch (sm_state_responding){
-                            case SM_STATE_PH2_W4_RANDOM_TK:
-                            {
-                                // map random to 0-999999 without speding much cycles on a modulus operation
-                                uint32_t tk = * (uint32_t*) &packet[6]; // random endianess
-                                tk = tk & 0xfffff;  // 1048575
-                                if (tk >= 999999){
-                                    tk = tk - 999999;
-                                } 
-                                sm_reset_tk();
-                                net_store_32(sm_tk, 12, tk);
-                                // continue with phase 1
-                                sm_state_responding = SM_STATE_PH1_SEND_PAIRING_RESPONSE;
-                                break;
-                            }
-                            case SM_STATE_PH2_C1_W4_RANDOM_A:
-
-                                memcpy(&sm_s_random[0], &packet[6], 8); // random endinaness
-                                sm_state_responding = SM_STATE_PH2_C1_GET_RANDOM_B;
-                                break;
-                            case SM_STATE_PH2_C1_W4_RANDOM_B:
-                                memcpy(&sm_s_random[8], &packet[6], 8); // random endinaness
-
-                                // calculate s_confirm manually
-                                // sm_c1(sm_tk, sm_s_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_m_address, sm_s_address, sm_s_confirm);
-
-                                // calculate s_confirm using aes128 engine - step 1
-                                sm_aes128_set_key(sm_tk);
-                                sm_c1_t1(sm_s_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
-                                sm_state_responding = SM_STATE_PH2_C1_GET_ENC_A;
-                                break;
-
-                            case SM_STATE_PH3_W4_RANDOM:
-                                swap64(&packet[6], sm_s_rand);
-                                // no db for encryption size hack: encryption size is stored in lowest nibble of sm_s_rand
-                                sm_s_rand[7] = (sm_s_rand[7] & 0xf0) + (sm_actual_encryption_key_size - 1);
-                                // no db for authenticated flag hack: store flag in bit 4 of LSB
-                                sm_s_rand[7] = (sm_s_rand[7] & 0xef) + (sm_connection_authenticated << 4);
-                                sm_state_responding = SM_STATE_PH3_GET_DIV;
-                                break;
-                            case SM_STATE_PH3_W4_DIV:
-                                // use 16 bit from random value as div
-                                sm_s_div = READ_NET_16(packet, 6);
-                                print_hex16("div", sm_s_div);
-
-                                // PH3B2 - calculate Y from      - enc
-                                // Y = dm(DHK, Rand)
-                                sm_aes128_set_key(sm_persistent_dhk);
-                                sm_dm_r_prime(sm_s_rand, sm_aes128_plaintext);
-                                sm_state_responding = SM_STATE_PH3_Y_GET_ENC;
-                                break;
-
-                            default:
-                                break;
-                        }
+                        sm_handle_random_result(&packet[6]);
                         break;
                     }
 			}
@@ -1562,11 +1581,6 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // received random value
             swap128(&packet[1], sm_m_random);
-
-            // use aes128 engine
-            // calculate m_confirm using aes128 engine - step 1
-            sm_aes128_set_key(sm_tk);
-            sm_c1_t1(sm_m_random, sm_m_preq, sm_s_pres, sm_m_addr_type, sm_s_addr_type, sm_aes128_plaintext);
             sm_state_responding = SM_STATE_PH2_C1_GET_ENC_C;
             break;
 
