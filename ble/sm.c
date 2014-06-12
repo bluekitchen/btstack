@@ -205,7 +205,7 @@ static bd_addr_t sm_s_address;
 static uint8_t   sm_actual_encryption_key_size;
 static uint8_t   sm_connection_encrypted;
 static uint8_t   sm_connection_authenticated;   // [0..1]
-static uint8_t   sm_connection_authorization_state;
+static authorization_state_t sm_connection_authorization_state;
 
 // PER INSTANCE DATA
 
@@ -594,6 +594,19 @@ static void sm_shift_left_by_one_bit_inplace(int len, uint8_t * data){
     }
 }
 
+// while x_state++ for an enum is possible in C, it isn't in C++. we use this helpers to avoid compile errors for now
+static inline void sm_state_responding_next_state(){
+    sm_state_responding = (security_manager_state_t) (((int)sm_state_responding) + 1);
+}
+static inline void dkg_next_state(){
+    dkg_state = (derived_key_generation_t) (((int)dkg_state) + 1);
+}
+static inline void rau_next_state(){
+    rau_state = (random_address_update_t) (((int)rau_state) + 1);
+}
+static inline void sm_cmac_next_state(){
+    sm_cmac_state = (cmac_state_t) (((int)sm_cmac_state) + 1);
+}
 static int sm_cmac_last_block_complete(){
     if (sm_cmac_message_len == 0) return 0;
     return (sm_cmac_message_len & 0x0f) == 0;
@@ -633,7 +646,7 @@ static void sm_cmac_handle_aes_engine_ready(){
             sm_key_t const_zero;
             memset(const_zero, 0, 16);
             sm_aes128_start(sm_cmac_k, const_zero);
-            sm_cmac_state++;
+            sm_cmac_next_state();
             break;
             }
         case CMAC_CALC_MI: {
@@ -644,7 +657,7 @@ static void sm_cmac_handle_aes_engine_ready(){
             }
             sm_cmac_block_current++;
             sm_aes128_start(sm_cmac_k, y);
-            sm_cmac_state++;
+            sm_cmac_next_state();
             break;
         }
         case CMAC_CALC_MLAST: {
@@ -656,7 +669,7 @@ static void sm_cmac_handle_aes_engine_ready(){
             print_key("Y", y);
             sm_cmac_block_current++;
             sm_aes128_start(sm_cmac_k, y);
-            sm_cmac_state++;
+            sm_cmac_next_state();
             break;
         }
         default:
@@ -753,7 +766,7 @@ static void sm_run(void){
             sm_key_t d1_prime;
             sm_d1_d_prime(1, 0, d1_prime);  // plaintext
             sm_aes128_start(sm_persistent_ir, d1_prime);
-            dkg_state++;
+            dkg_next_state();
             }
         case DKG_CALC_DHK:
             // already busy?
@@ -763,7 +776,7 @@ static void sm_run(void){
             sm_key_t d1_prime;
             sm_d1_d_prime(3, 0, d1_prime);  // plaintext
             sm_aes128_start(sm_persistent_ir, d1_prime);
-            dkg_state++;
+            dkg_next_state();
             }
             return;
         default:
@@ -774,7 +787,7 @@ static void sm_run(void){
     switch (rau_state){
         case RAU_GET_RANDOM:
             hci_send_cmd(&hci_le_rand);
-            rau_state++;
+            rau_next_state();
             return;
         case RAU_GET_ENC:
             // already busy?
@@ -783,9 +796,9 @@ static void sm_run(void){
             sm_key_t r_prime;
             sm_ah_r_prime(sm_random_address, r_prime);
             sm_aes128_start(sm_persistent_irk, r_prime);
-            rau_state++;
-            return;
+            rau_next_state();
             }
+            return;
         case RAU_SET_ADDRESS:
             printf("New random address: %s\n", bd_addr_to_str(sm_random_address));
             hci_send_cmd(&hci_le_set_random_address, sm_random_address);
@@ -943,7 +956,7 @@ static void sm_run(void){
         case SM_STATE_PH3_GET_RANDOM:
         case SM_STATE_PH3_GET_DIV:
             hci_send_cmd(&hci_le_rand);
-            sm_state_responding++;
+            sm_state_responding_next_state();
             return;
         case SM_STATE_PH2_C1_GET_ENC_A:
         case SM_STATE_PH2_C1_GET_ENC_B:
@@ -957,7 +970,7 @@ static void sm_run(void){
             // already busy?
             if (sm_aes128_active) break;
             sm_aes128_start(sm_aes128_key, sm_aes128_plaintext);
-            sm_state_responding++;
+            sm_state_responding_next_state();
             return;
         case SM_STATE_PH2_C1_SEND_PAIRING_CONFIRM: {
             uint8_t buffer[17];
@@ -1183,7 +1196,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 				                sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_m_addr_type, sm_m_address, 0, sm_central_device_matched);
                                 log_info("Central Device Lookup: matched resolvable private address");
                                 break;
-                            }
+                    }
                             // no match
                             sm_central_device_test++;
                             break;
@@ -1192,12 +1205,12 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             case DKG_W4_IRK:
                                 swap128(&packet[6], sm_persistent_irk);
                                 print_key("irk", sm_persistent_irk);
-                                dkg_state++;
+                                dkg_next_state();
                                 break;
                             case DKG_W4_DHK:
                                 swap128(&packet[6], sm_persistent_dhk);
                                 print_key("dhk", sm_persistent_dhk);
-                                dkg_state ++;
+                                dkg_next_state();
 
                                 // SM INIT FINISHED, start application code - TODO untangle that
                                 if (sm_client_packet_handler)
@@ -1212,7 +1225,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         switch (rau_state){
                             case RAU_W4_ENC:
                                 swap24(&packet[6], &sm_random_address[3]);
-                                rau_state++;
+                                rau_next_state();
                                 break;
                             default:
                                 break;
@@ -1239,12 +1252,12 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 swap128(&packet[6], t2);
                                 sm_c1_t3(t2, sm_m_address, sm_s_address, sm_aes128_plaintext);
                                 }
-                                sm_state_responding++;
+                                sm_state_responding_next_state();
                                 break;
                             case SM_STATE_PH2_C1_W4_ENC_B:
                                 swap128(&packet[6], sm_s_confirm);
                                 print_key("c1!", sm_s_confirm);
-                                sm_state_responding++;
+                                sm_state_responding_next_state();
                                 break;
                             case SM_STATE_PH2_C1_W4_ENC_D:
                                 {
@@ -1711,9 +1724,9 @@ int sm_authenticated(uint8_t addr_type, bd_addr_t address){
 }
 
 authorization_state_t sm_authorization_state(uint8_t addr_type, bd_addr_t address){
-    if (!sm_get_connection(addr_type, address)) return 0; // wrong connection
-    if (!sm_connection_encrypted) return 0;    // unencrypted connection cannot be authorized
-    if (!sm_connection_authenticated) return 0; // unauthenticatd connection cannot be authorized
+    if (!sm_get_connection(addr_type, address)) return AUTHORIZATION_UNKNOWN; // wrong connection
+    if (!sm_connection_encrypted)               return AUTHORIZATION_UNKNOWN; // unencrypted connection cannot be authorized
+    if (!sm_connection_authenticated)           return AUTHORIZATION_UNKNOWN; // unauthenticatd connection cannot be authorized
     return sm_connection_authorization_state;
 }
 
