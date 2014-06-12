@@ -287,12 +287,15 @@ typedef struct sm_setup_context {
 
 // connection info available as long as connection exists
 typedef struct sm_connection {
-    uint16_t sm_handle;
+    uint16_t  sm_handle;
+    uint8_t   sm_role;   // 0 - IamMaster, 1 = IamSlave
+    bd_addr_t sm_peer_address;
+    uint8_t   sm_peer_addr_type;
     security_manager_state_t sm_state_responding;
-    csrk_lookup_state_t      sm_m_csrk_lookup_state;
-    uint8_t  sm_connection_encrypted;
-    uint8_t  sm_connection_authenticated;   // [0..1]
-    uint8_t  sm_actual_encryption_key_size;
+    csrk_lookup_state_t      sm_csrk_lookup_state;
+    uint8_t   sm_connection_encrypted;
+    uint8_t   sm_connection_authenticated;   // [0..1]
+    uint8_t   sm_actual_encryption_key_size;
     authorization_state_t sm_connection_authorization_state;
     timer_source_t sm_timeout;
 } sm_connection_t;
@@ -793,9 +796,9 @@ static void sm_run(void){
     sm_key_t plaintext;
 
     // CSRK lookup
-    if (connection->sm_m_csrk_lookup_state == CSRK_LOOKUP_W4_READY && !sm_central_device_lookup_active()){
-        sm_central_device_start_lookup(setup->sm_m_addr_type, setup->sm_m_address);
-        connection->sm_m_csrk_lookup_state = CSRK_LOOKUP_STARTED;
+    if (connection->sm_csrk_lookup_state == CSRK_LOOKUP_W4_READY && !sm_central_device_lookup_active()){
+        sm_central_device_start_lookup(connection->sm_peer_addr_type, connection->sm_peer_address);
+        connection->sm_csrk_lookup_state = CSRK_LOOKUP_STARTED;
     }
 
     // distributed key generation
@@ -1400,30 +1403,34 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             }
 
                             connection->sm_handle = READ_BT_16(packet, 4);
-                            setup->sm_m_addr_type = packet[7];
-                            bt_flip_addr(setup->sm_m_address, &packet[8]);
+                            connection->sm_role = packet[6];
+                            connection->sm_peer_addr_type = packet[7];
+                            bt_flip_addr(connection->sm_peer_address, &packet[8]);
 
-                            sm_reset_tk();
-                            
-                            hci_le_advertisement_address(&setup->sm_s_addr_type, &setup->sm_s_address);
-                            printf("Incoming connection, own address %s\n", bd_addr_to_str(setup->sm_s_address));
+                            printf("New connection, role %s\n", connection->sm_role ? "slave" : "master");
 
                             // reset security properties
                             connection->sm_connection_encrypted = 0;
                             connection->sm_connection_authenticated = 0;
                             connection->sm_connection_authorization_state = AUTHORIZATION_UNKNOWN;
 
-                            // request security
-                            if (sm_slave_request_security){
+                            // fill in sm setup
+                            sm_reset_tk();
+                            hci_le_advertisement_address(&setup->sm_s_addr_type, &setup->sm_s_address);
+                            setup->sm_m_addr_type = packet[7];
+                            bt_flip_addr(setup->sm_m_address, &packet[8]);
+
+                            // request security if we're slave and requested by app
+                            if (connection->sm_role == 0x01 && sm_slave_request_security){
                                 connection->sm_state_responding = SM_STATE_SEND_SECURITY_REQUEST;
                             }
 
-                            connection->sm_m_csrk_lookup_state = CSRK_LOOKUP_W4_READY;
-
+                            // prepare CSRK lookup
+                            connection->sm_csrk_lookup_state = CSRK_LOOKUP_W4_READY;
                             if (!sm_central_device_lookup_active()){
                                 // try to lookup device
-                                sm_central_device_start_lookup(setup->sm_m_addr_type, setup->sm_m_address);
-                                connection->sm_m_csrk_lookup_state = CSRK_LOOKUP_STARTED;
+                                sm_central_device_start_lookup(connection->sm_peer_addr_type, connection->sm_peer_address);
+                                connection->sm_csrk_lookup_state = CSRK_LOOKUP_STARTED;
                             }
                             break;
 
