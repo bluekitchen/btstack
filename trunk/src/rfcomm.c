@@ -1153,16 +1153,16 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
         case RFCOMM_MULTIPLEXER_SEND_UA_0_AND_DISC:
             switch (event) {
                 case MULT_EV_READY_TO_SEND:
-                    log_info("Sending UA #0\n");
-                    log_info("Closing down multiplexer\n");
-                    multiplexer->state = RFCOMM_MULTIPLEXER_CLOSED;
-                    rfcomm_send_ua(multiplexer, 0);
-                    rfcomm_multiplexer_finalize(multiplexer);
                     // try to detect authentication errors: drop link key if multiplexer closed before first channel got opened
                     if (!multiplexer->at_least_one_connection){
                         log_info("TODO: no connections established - delete link key prophylactically\n");
                         // hci_send_cmd(&hci_delete_stored_link_key, multiplexer->remote_addr);
                     }
+                    log_info("Sending UA #0\n");
+                    log_info("Closing down multiplexer\n");
+                    multiplexer->state = RFCOMM_MULTIPLEXER_CLOSED;
+                    rfcomm_send_ua(multiplexer, 0);
+                    rfcomm_multiplexer_finalize(multiplexer);
                 default:
                     break;
             }
