@@ -118,6 +118,7 @@ typedef enum {
 
     //
     SM_STATE_DISTRIBUTE_KEYS,
+    SM_STATE_RECEIVE_KEYS,
 
     // re establish previously distribued LTK
     SM_STATE_PH4_Y_GET_ENC,
@@ -139,7 +140,7 @@ typedef enum {
     SM_STATE_INITIATOR_PH2_W4_PAIRING_RANDOM,
 
     SM_STATE_INITIATOR_PH3_SEND_START_ENCRYPTION,
-    SM_STATE_INITIATOR_XXX,
+    SM_STATE_INITIATOR_PH3_XXXX,
 
 } security_manager_state_t;
 
@@ -805,8 +806,7 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
     }
 }
 
-static int sm_key_distribution_done(){
-    if (setup->sm_key_distribution_send_set) return 0;
+static int sm_key_distribution_all_received(){
     int recv_flags = sm_key_distribution_flags_for_set(setup->sm_m_preq.initiator_key_distribution);
     return recv_flags == setup->sm_key_distribution_received_set;
 }
@@ -1189,7 +1189,12 @@ static void sm_run(void){
                 return;
             }
 
-            if (sm_key_distribution_done()){
+            // keys are sent
+            if (connection->sm_role){
+                // slave -> receive master keys
+                connection->sm_state_responding = SM_STATE_IDLE;
+            } else {
+                // master -> all done
                 sm_2timeout_stop();
                 connection->sm_state_responding = SM_STATE_IDLE; 
             }
@@ -1574,7 +1579,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         if (connection->sm_role){
                             connection->sm_state_responding = SM_STATE_PH3_GET_RANDOM;
                         } else {
-                            connection->sm_state_responding = SM_STATE_INITIATOR_XXX;
+                            connection->sm_state_responding = SM_STATE_RECEIVE_KEYS;
                         }
                     }
                     break;
@@ -1815,7 +1820,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             connection->sm_state_responding = SM_STATE_PH2_C1_GET_ENC_C;
             break;
 
-        case SM_STATE_DISTRIBUTE_KEYS:
+        case SM_STATE_RECEIVE_KEYS:
             switch(packet[0]){
                 case SM_CODE_ENCRYPTION_INFORMATION:
                     setup->sm_key_distribution_received_set |= SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
@@ -1853,13 +1858,17 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                     break;
                 default:
                     // Unexpected PDU
-                    printf("Unexpected PDU %u in SM_STATE_DISTRIBUTE_KEYS\n", packet[0]);
+                    printf("Unexpected PDU %u in SM_STATE_RECEIVE_KEYS\n", packet[0]);
                     break;
             }     
             // done with key distribution?         
-            if (sm_key_distribution_done()){
-                sm_2timeout_stop();
-                connection->sm_state_responding = SM_STATE_IDLE; 
+            if (sm_key_distribution_all_received()){
+                if (connection->sm_role){
+                    sm_2timeout_stop();
+                    connection->sm_state_responding = SM_STATE_IDLE; 
+                } else {
+                    connection->sm_state_responding = SM_STATE_DISTRIBUTE_KEYS; 
+                }
             }
             break;
         default:
