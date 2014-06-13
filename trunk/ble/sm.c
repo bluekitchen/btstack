@@ -56,6 +56,10 @@ typedef enum {
     SM_STATE_SEND_LTK_REQUESTED_NEGATIVE_REPLY,
     SM_STATE_TIMEOUT, // no other security messages are exchanged
 
+    // get random number for TK if we show it 
+    SM_STATE_PH2_GET_RANDOM_TK,
+    SM_STATE_PH2_W4_RANDOM_TK,
+
     // SLAVE ROLE
 
     SM_STATE_SEND_SECURITY_REQUEST,
@@ -70,10 +74,6 @@ typedef enum {
     SM_STATE_SEND_PAIRING_RANDOM,
 
     // Phase 2: Authenticating and Encrypting
-
-    // get random number for TK if we show it 
-    SM_STATE_PH2_GET_RANDOM_TK,
-    SM_STATE_PH2_W4_RANDOM_TK,
 
     // calculate confirm values for local and remote connection
     SM_STATE_PH2_C1_GET_RANDOM_A,
@@ -127,12 +127,10 @@ typedef enum {
     // PH1
     SM_STATE_INITIATOR_SEND_PAIRING_REQUEST,
     SM_STATE_INITIATOR_W4_PAIRING_RESPONSE,
-    SM_STATE_INITIATOR_PH1_SEND_PAIRING_CONFIRM,
 
     // PH2
-    SM_STATE_INITIATOR_PH2_GET_RANDOM_TK,
-    SM_STATE_INITIATOR_PH2_W4_RANDOM_TK,
-
+    SM_STATE_INITIATOR_PH2_C1_GET_RANDOM_A,
+    SM_STATE_INITIATOR_PH1_SEND_PAIRING_CONFIRM,
 
 } security_manager_state_t;
 
@@ -1357,8 +1355,11 @@ static void sm_handle_random_result(uint8_t * data){
             } 
             sm_reset_tk();
             net_store_32(setup->sm_tk, 12, tk);
-            // continue with phase 1
-            connection->sm_state_responding = SM_STATE_PH1_SEND_PAIRING_RESPONSE;
+            if (connection->sm_role){
+                connection->sm_state_responding = SM_STATE_PH1_SEND_PAIRING_RESPONSE;
+            } else {
+                connection->sm_state_responding = SM_STATE_INITIATOR_PH2_C1_GET_RANDOM_A;
+            }
             return;
         }
         case SM_STATE_PH2_C1_W4_RANDOM_A:
@@ -1645,7 +1646,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // generate random number first, if we need to show passkey
             if (setup->sm_stk_generation_method == PK_RESP_INPUT){
-                connection->sm_state_responding = SM_STATE_INITIATOR_PH2_GET_RANDOM_TK;
+                connection->sm_state_responding = SM_STATE_PH2_GET_RANDOM_TK;
                 break;
             }
 
