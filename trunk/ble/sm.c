@@ -271,6 +271,9 @@ typedef struct sm_setup_context {
 
     stk_generation_method_t sm_stk_generation_method;
 
+    // stk and ltk
+    sm_key_t  sm_ltk;
+
     // defines which keys will be send  after connection is encrypted
     int       sm_key_distribution_send_set;
     int       sm_key_distribution_received_set;
@@ -285,7 +288,6 @@ typedef struct sm_setup_context {
 
     // key distribution, received from master
     // commented keys that are not stored or used by Peripheral role
-    // sm_key_t  sm_m_ltk;
     // uint16_t  sm_m_ediv;
     // uint8_t   sm_m_rand[8];
     uint8_t   sm_m_addr_type;
@@ -299,7 +301,6 @@ typedef struct sm_setup_context {
     sm_key_t  sm_s_confirm;
 
     // key distribution, slave sends
-    sm_key_t  sm_s_ltk;
     uint16_t  sm_s_y;
     uint16_t  sm_s_div;
     uint16_t  sm_s_ediv;
@@ -1111,14 +1112,14 @@ static void sm_run(void){
         }
         case SM_STATE_PH2_ENCRYPT_WITH_STK: {
             sm_key_t stk_flipped;
-            swap128(setup->sm_s_ltk, stk_flipped);
+            swap128(setup->sm_ltk, stk_flipped);
             hci_send_cmd(&hci_le_long_term_key_request_reply, connection->sm_handle, stk_flipped);
             connection->sm_state_responding = SM_STATE_PH2_W4_CONNECTION_ENCRYPTED;
             return;
         }
         case SM_STATE_PH4_SEND_LTK: {
             sm_key_t ltk_flipped;
-            swap128(setup->sm_s_ltk, ltk_flipped);
+            swap128(setup->sm_ltk, ltk_flipped);
             hci_send_cmd(&hci_le_long_term_key_request_reply, connection->sm_handle, ltk_flipped);
             connection->sm_state_responding = SM_STATE_IDLE;
             return;
@@ -1138,7 +1139,7 @@ static void sm_run(void){
                 setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_ENCRYPTION_INFORMATION;
-                swap128(setup->sm_s_ltk, &buffer[1]);
+                swap128(setup->sm_ltk, &buffer[1]);
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_2timeout_reset();
                 return;
@@ -1307,9 +1308,9 @@ static void sm_handle_encryption_result(uint8_t * data){
             }
             return;
         case SM_STATE_PH2_W4_STK:
-            swap128(data, setup->sm_s_ltk);
-            sm_truncate_key(setup->sm_s_ltk, connection->sm_actual_encryption_key_size);
-            print_key("stk", setup->sm_s_ltk);
+            swap128(data, setup->sm_ltk);
+            sm_truncate_key(setup->sm_ltk, connection->sm_actual_encryption_key_size);
+            print_key("stk", setup->sm_ltk);
             connection->sm_state_responding = SM_STATE_PH2_ENCRYPT_WITH_STK;
             return;
         case SM_STATE_PH3_Y_W4_ENC:{
@@ -1341,15 +1342,15 @@ static void sm_handle_encryption_result(uint8_t * data){
             return;
         }
         case SM_STATE_PH3_LTK_W4_ENC:
-            swap128(data, setup->sm_s_ltk);
-            print_key("ltk", setup->sm_s_ltk);
+            swap128(data, setup->sm_ltk);
+            print_key("ltk", setup->sm_ltk);
             // distribute keys
             connection->sm_state_responding = SM_STATE_DISTRIBUTE_KEYS;
             return;                                
         case SM_STATE_PH4_LTK_W4_ENC:
-            swap128(data, setup->sm_s_ltk);
-            sm_truncate_key(setup->sm_s_ltk, connection->sm_actual_encryption_key_size);
-            print_key("ltk", setup->sm_s_ltk);
+            swap128(data, setup->sm_ltk);
+            sm_truncate_key(setup->sm_ltk, connection->sm_actual_encryption_key_size);
+            print_key("ltk", setup->sm_ltk);
             connection->sm_state_responding = SM_STATE_PH4_SEND_LTK;
             return;                                
         default:
