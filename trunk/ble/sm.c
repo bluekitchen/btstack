@@ -66,13 +66,24 @@ typedef enum {
     SM_STATE_PH2_C1_GET_RANDOM_B,
     SM_STATE_PH2_C1_W4_RANDOM_B,
 
-    // calculate confirm c1
+    // calculate confirm value for local side
     SM_STATE_PH2_C1_GET_ENC_A,
     SM_STATE_PH2_C1_W4_ENC_A,
     SM_STATE_PH2_C1_GET_ENC_B,
     SM_STATE_PH2_C1_W4_ENC_B,
 
+    // calculate confirm value for remote side
+    SM_STATE_PH2_C1_GET_ENC_C,
+    SM_STATE_PH2_C1_W4_ENC_C,
+    SM_STATE_PH2_C1_GET_ENC_D,
+    SM_STATE_PH2_C1_W4_ENC_D,
+
+    SM_STATE_PH2_C1_SEND_PAIRING_CONFIRM,
     SM_STATE_PH2_SEND_PAIRING_RANDOM,
+
+    // calc STK
+    SM_STATE_PH2_CALC_STK,
+    SM_STATE_PH2_W4_STK,
 
     // RESPONDER ROLE
 
@@ -87,18 +98,9 @@ typedef enum {
 
     // Phase 2: Authenticating and Encrypting
 
-    // calculate confirm values for remote connection
-    SM_STATE_PH2_C1_SEND_PAIRING_CONFIRM,
     SM_STATE_PH2_W4_PAIRING_RANDOM,
-    SM_STATE_PH2_C1_GET_ENC_C,
-    SM_STATE_PH2_C1_W4_ENC_C,
-    SM_STATE_PH2_C1_GET_ENC_D,
-    SM_STATE_PH2_C1_W4_ENC_D,
 
-    // calc STK
-    SM_STATE_PH2_CALC_STK,
-    SM_STATE_PH2_W4_STK,
-    SM_STATE_PH2_ENCRYPT_WITH_STK,
+    SM_STATE_PH2_SEND_LTK_REPLY,
     SM_STATE_PH2_W4_LTK_REQUEST,
     SM_STATE_PH2_W4_CONNECTION_ENCRYPTED,
 
@@ -136,7 +138,9 @@ typedef enum {
     SM_STATE_INITIATOR_PH2_W4_PAIRING_CONFIRM,
     SM_STATE_INITIATOR_PH2_W4_PAIRING_RANDOM,
 
+    SM_STATE_INITIATOR_PH3_SEND_START_ENCRYPTION,
     SM_STATE_INITIATOR_XXX,
+
 } security_manager_state_t;
 
 typedef enum {
@@ -1104,10 +1108,17 @@ static void sm_run(void){
             }
             return;
         }
-        case SM_STATE_PH2_ENCRYPT_WITH_STK: {
+        case SM_STATE_PH2_SEND_LTK_REPLY: {
             sm_key_t stk_flipped;
             swap128(setup->sm_ltk, stk_flipped);
             hci_send_cmd(&hci_le_long_term_key_request_reply, connection->sm_handle, stk_flipped);
+            connection->sm_state_responding = SM_STATE_PH2_W4_CONNECTION_ENCRYPTED;
+            return;
+        }
+        case SM_STATE_INITIATOR_PH3_SEND_START_ENCRYPTION: {
+            sm_key_t stk_flipped;
+            swap128(setup->sm_ltk, stk_flipped);
+            hci_send_cmd(&hci_le_start_encryption, connection->sm_handle, 0, 0, 0, stk_flipped);
             connection->sm_state_responding = SM_STATE_PH2_W4_CONNECTION_ENCRYPTED;
             return;
         }
@@ -1296,7 +1307,11 @@ static void sm_handle_encryption_result(uint8_t * data){
             swap128(data, setup->sm_ltk);
             sm_truncate_key(setup->sm_ltk, connection->sm_actual_encryption_key_size);
             print_key("stk", setup->sm_ltk);
-            connection->sm_state_responding = SM_STATE_PH2_ENCRYPT_WITH_STK;
+            if (connection->sm_role){
+                connection->sm_state_responding = SM_STATE_PH2_SEND_LTK_REPLY;
+            } else {
+                connection->sm_state_responding = SM_STATE_INITIATOR_PH3_SEND_START_ENCRYPTION;
+            }
             return;
         case SM_STATE_PH3_Y_W4_ENC:{
             sm_key_t y128;
