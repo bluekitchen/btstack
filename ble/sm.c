@@ -1067,7 +1067,7 @@ static void sm_run(void){
         case SM_STATE_PH2_C1_GET_ENC_A:
             // already busy?
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
-            // calculate s_confirm using aes128 engine - step 1
+            // calculate confirm using aes128 engine - step 1
             if (connection->sm_role){
                 sm_c1_t1(setup->sm_s_random, (uint8_t*) &setup->sm_m_preq, (uint8_t*) &setup->sm_s_pres, setup->sm_m_addr_type, setup->sm_s_addr_type, plaintext);
             } else {
@@ -1303,6 +1303,7 @@ static void sm_handle_encryption_result(uint8_t * data){
                     return;
                 }
             }
+
             setup->sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
             connection->sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
             }
@@ -1508,6 +1509,8 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             } else {
                                 // master
                                 hci_le_advertisement_address(&setup->sm_m_addr_type, &setup->sm_m_address);
+
+                                printf("hci_le_advertisement_address type %u\n", setup->sm_m_addr_type);
                                 setup->sm_s_addr_type = packet[7];
                                 bt_flip_addr(setup->sm_s_address, &packet[8]);
                                 setup->sm_m_preq.io_capability = sm_io_capabilities;
@@ -1714,7 +1717,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             }
 
             // store s_confirm
-            memcpy(setup->sm_s_confirm, &packet[1], 16);
+            swap128(&packet[1], setup->sm_s_confirm);
             connection->sm_state_responding = SM_STATE_PH2_SEND_PAIRING_RANDOM;
             break;
 
