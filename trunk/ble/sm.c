@@ -121,6 +121,7 @@ typedef enum {
     SM_STATE_TIMEOUT, // no other security messages are exchanged
 
     // MASTR ROLE
+    SM_STATE_CONNECTED_AS_INITIATOR,
     SM_STATE_SEND_PAIRING_REQUEST,
 
 } security_manager_state_t;
@@ -311,8 +312,8 @@ typedef struct sm_connection {
 } sm_connection_t;
 
 // 
-static sm_setup_context the_setup;
-static sm_setup_context * setup = &the_setup;
+static sm_setup_context_t the_setup;
+static sm_setup_context_t * setup = &the_setup;
 // 
 static sm_connection_t single_connection;
 static sm_connection_t * connection = &single_connection;
@@ -933,7 +934,7 @@ static void sm_run(void){
             setup->sm_s_pres.initiator_key_distribution = setup->sm_m_preq.initiator_key_distribution;
             setup->sm_s_pres.responder_key_distribution = setup->sm_m_preq.responder_key_distribution;
 
-            l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet));
+            l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
             sm_2timeout_reset();
 
             // notify client for: JUST WORKS confirm, PASSKEY display or input
@@ -1438,7 +1439,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 setup->sm_m_preq.oob_data_flag = have_oob_data;
                                 setup->sm_m_preq.auth_req = sm_auth_req;
                                 setup->sm_m_preq.max_encryption_key_size = sm_max_encryption_key_size;
-                                connection->sm_state_responding = SM_STATE_SEND_PAIRING_REQUEST;
+                                connection->sm_state_responding = SM_STATE_CONNECTED_AS_INITIATOR;
                             }
 
                             // request security if we're slave and requested by app
