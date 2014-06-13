@@ -60,6 +60,12 @@ typedef enum {
     SM_STATE_PH2_GET_RANDOM_TK,
     SM_STATE_PH2_W4_RANDOM_TK,
 
+    // get local random number for confirm
+    SM_STATE_PH2_C1_GET_RANDOM_A,
+    SM_STATE_PH2_C1_W4_RANDOM_A,
+    SM_STATE_PH2_C1_GET_RANDOM_B,
+    SM_STATE_PH2_C1_W4_RANDOM_B,
+
     // SLAVE ROLE
 
     SM_STATE_SEND_SECURITY_REQUEST,
@@ -76,10 +82,6 @@ typedef enum {
     // Phase 2: Authenticating and Encrypting
 
     // calculate confirm values for local and remote connection
-    SM_STATE_PH2_C1_GET_RANDOM_A,
-    SM_STATE_PH2_C1_W4_RANDOM_A,
-    SM_STATE_PH2_C1_GET_RANDOM_B,
-    SM_STATE_PH2_C1_W4_RANDOM_B,
     SM_STATE_PH2_C1_GET_ENC_A,
     SM_STATE_PH2_C1_W4_ENC_A,
     SM_STATE_PH2_C1_GET_ENC_B,
@@ -130,6 +132,8 @@ typedef enum {
 
     // PH2
     SM_STATE_INITIATOR_PH2_C1_GET_RANDOM_A,
+    SM_STATE_INITIATOR_PH2_C1_GET_ENC_A,
+
     SM_STATE_INITIATOR_PH1_SEND_PAIRING_CONFIRM,
 
 } security_manager_state_t;
@@ -1363,12 +1367,21 @@ static void sm_handle_random_result(uint8_t * data){
             return;
         }
         case SM_STATE_PH2_C1_W4_RANDOM_A:
-            memcpy(&setup->sm_s_random[0], data, 8); // random endinaness
+            if (connection->sm_role){
+                memcpy(&setup->sm_s_random[0], data, 8); // random endinaness
+            } else {
+                memcpy(&setup->sm_m_random[0], data, 8); // random endinaness
+            }
             connection->sm_state_responding = SM_STATE_PH2_C1_GET_RANDOM_B;
             return;
         case SM_STATE_PH2_C1_W4_RANDOM_B:
-            memcpy(&setup->sm_s_random[8], data, 8); // random endinaness
-            connection->sm_state_responding = SM_STATE_PH2_C1_GET_ENC_A;
+            if (connection->sm_role){
+                memcpy(&setup->sm_s_random[8], data, 8); // random endinaness
+                connection->sm_state_responding = SM_STATE_PH2_C1_GET_ENC_A;
+            } else {
+                memcpy(&setup->sm_m_random[8], data, 8); // random endinaness
+                connection->sm_state_responding = SM_STATE_INITIATOR_PH2_C1_GET_ENC_A;
+            }
             return;
         case SM_STATE_PH3_W4_RANDOM:
             swap64(data, setup->sm_s_rand);
