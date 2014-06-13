@@ -50,21 +50,23 @@
 
 typedef enum {
 
+    // general states
     SM_STATE_IDLE,
+    SM_STATE_SEND_PAIRING_FAILED,
+    SM_STATE_SEND_LTK_REQUESTED_NEGATIVE_REPLY,
+    SM_STATE_TIMEOUT, // no other security messages are exchanged
 
     // SLAVE ROLE
 
-    SM_STATE_W4_PAIRING_REQUEST,
     SM_STATE_SEND_SECURITY_REQUEST,
-    SM_STATE_SEND_LTK_REQUESTED_NEGATIVE_REPLY,
 
     // Phase 1: Pairing Feature Exchange
 
+    SM_STATE_W4_PAIRING_REQUEST,
     SM_STATE_PH1_SEND_PAIRING_RESPONSE,
     SM_STATE_PH1_W4_PAIRING_CONFIRM,
     SM_STATE_PH1_W4_USER_RESPONSE,
 
-    SM_STATE_SEND_PAIRING_FAILED,
     SM_STATE_SEND_PAIRING_RANDOM,
 
     // Phase 2: Authenticating and Encrypting
@@ -118,15 +120,19 @@ typedef enum {
     SM_STATE_PH4_LTK_W4_ENC,
     SM_STATE_PH4_SEND_LTK,
 
-    SM_STATE_TIMEOUT, // no other security messages are exchanged
 
     // MASTR ROLE
     SM_STATE_INITIATOR_CONNECTED,
+
+    // PH1
     SM_STATE_INITIATOR_SEND_PAIRING_REQUEST,
     SM_STATE_INITIATOR_W4_PAIRING_RESPONSE,
     SM_STATE_INITIATOR_PH1_SEND_PAIRING_CONFIRM,
+
+    // PH2
     SM_STATE_INITIATOR_PH2_GET_RANDOM_TK,
     SM_STATE_INITIATOR_PH2_W4_RANDOM_TK,
+
 
 } security_manager_state_t;
 
@@ -1547,7 +1553,28 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
     sm_run();
 }
+static inline int sm_calc_actual_encryption_key_size(int other){
+    if (other < sm_min_encryption_key_size) return 0;
+    if (other < sm_max_encryption_key_size) return other;
+    return sm_max_encryption_key_size;
+}
 
+/**
+ * @return ok
+ */
+static int sm_validate_stk_generation_method(){
+    // check if STK generation method is acceptable by client
+    switch (sm_stk_generation_method){
+        case JUST_WORKS:
+            return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_JUST_WORKS) != 0;
+        case PK_RESP_INPUT:
+        case PK_INIT_INPUT:
+        case OK_BOTH_INPUT:
+            return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_PASSKEY) != 0;
+        case OOB:
+            return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_OOB) != 0;
+    }
+}
 static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
 
     if (packet_type == HCI_EVENT_PACKET) {
@@ -1577,7 +1604,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
         case SM_STATE_INITIATOR_W4_PAIRING_RESPONSE:
             if (packet[0] != SM_CODE_PAIRING_RESPONSE){
                 sm_pdu_received_in_wrong_state();
-                break;;
+                break;
             }
 
             // store pairing request
@@ -1585,17 +1612,12 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // identical to responder, just other encryption size field
 
-            // assert max encryption size above our minimum
-            if (setup->sm_s_pres.max_encryption_key_size < sm_min_encryption_key_size){
+            // check key size
+            connection->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(setup->sm_s_pres.max_encryption_key_size);
+            if (connection->sm_actual_encryption_key_size == 0){
                 setup->sm_pairing_failed_reason = SM_REASON_ENCRYPTION_KEY_SIZE;
                 connection->sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
                 break;
-            }
-
-            // min{}
-            connection->sm_actual_encryption_key_size = sm_max_encryption_key_size;
-            if (setup->sm_s_pres.max_encryption_key_size < sm_max_encryption_key_size){
-                connection->sm_actual_encryption_key_size = setup->sm_s_pres.max_encryption_key_size;
             }
 
             // setup key distribution
@@ -1611,21 +1633,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             printf("SMP: generation method %u\n", sm_stk_generation_method);
 
             // check if STK generation method is acceptable by client
-            int ok = 0;
-            switch (sm_stk_generation_method){
-                case JUST_WORKS:
-                    ok = (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_JUST_WORKS) != 0;
-                    break;
-                case PK_RESP_INPUT:
-                case PK_INIT_INPUT:
-                case OK_BOTH_INPUT:
-                    ok = (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_PASSKEY) != 0;
-                    break;
-                case OOB:
-                    ok = (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_OOB) != 0;
-                    break;
-            }
-            if (!ok){
+            if (!sm_validate_stk_generation_method()){
                 setup->sm_pairing_failed_reason = SM_REASON_AUTHENTHICATION_REQUIREMENTS;
                 connection->sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
                 break;
@@ -1655,17 +1663,12 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // store pairing request
             memcpy(&setup->sm_m_preq, packet, sizeof(sm_pairing_packet_t));
 
-            // assert max encryption size above our minimum
-            if (setup->sm_m_preq.max_encryption_key_size < sm_min_encryption_key_size){
+            // check key size
+            connection->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(setup->sm_s_pres.max_encryption_key_size);
+            if (connection->sm_actual_encryption_key_size == 0){
                 setup->sm_pairing_failed_reason = SM_REASON_ENCRYPTION_KEY_SIZE;
                 connection->sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
                 break;
-            }
-
-            // min{}
-            connection->sm_actual_encryption_key_size = sm_max_encryption_key_size;
-            if (setup->sm_m_preq.max_encryption_key_size < sm_max_encryption_key_size){
-                connection->sm_actual_encryption_key_size = setup->sm_m_preq.max_encryption_key_size;
             }
 
             // setup key distribution
@@ -1679,21 +1682,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             printf("SMP: generation method %u\n", sm_stk_generation_method);
 
             // check if STK generation method is acceptable by client
-            int ok = 0;
-            switch (sm_stk_generation_method){
-                case JUST_WORKS:
-                    ok = (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_JUST_WORKS) != 0;
-                    break;
-                case PK_RESP_INPUT:
-                case PK_INIT_INPUT:
-                case OK_BOTH_INPUT:
-                    ok = (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_PASSKEY) != 0;
-                    break;
-                case OOB:
-                    ok = (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_OOB) != 0;
-                    break;
-            }
-            if (!ok){
+            if (!sm_validate_stk_generation_method()){
                 setup->sm_pairing_failed_reason = SM_REASON_AUTHENTHICATION_REQUIREMENTS;
                 connection->sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
                 break;
