@@ -291,10 +291,11 @@ typedef struct sm_setup_context {
 
     // master
     sm_pairing_packet_t sm_m_preq; // pairing request
-    sm_key_t  sm_m_confirm;
 
     // key distribution, received from master
     // commented keys that are not stored or used by Peripheral role
+    // uint16_t  sm_m_y;
+    // uint16_t  sm_m_div;
     // uint16_t  sm_m_ediv;
     // uint8_t   sm_m_rand[8];
     uint8_t   sm_m_addr_type;
@@ -304,7 +305,6 @@ typedef struct sm_setup_context {
 
     // slave
     sm_pairing_packet_t sm_s_pres; // pairing response
-    sm_key_t  sm_s_confirm;
 
     // key distribution, slave sends
     uint16_t  sm_s_y;
@@ -312,9 +312,9 @@ typedef struct sm_setup_context {
     uint16_t  sm_s_ediv;
     uint8_t   sm_s_rand[8];
     // commented keys are not used in Perihperal role
-    // sm_key_t  sm_s_csrk;
     uint8_t   sm_s_addr_type;
     bd_addr_t sm_s_address;
+    // sm_key_t  sm_s_csrk;
 
 } sm_setup_context_t;
 
@@ -1094,11 +1094,7 @@ static void sm_run(void){
         case SM_STATE_PH2_C1_SEND_PAIRING_CONFIRM: {
             uint8_t buffer[17];
             buffer[0] = SM_CODE_PAIRING_CONFIRM;
-            if (connection->sm_role){
-                swap128(setup->sm_s_confirm, &buffer[1]);
-            } else {
-                swap128(setup->sm_m_confirm, &buffer[1]);
-            }
+            swap128(setup->sm_local_confirm, &buffer[1]);
             l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
             sm_2timeout_reset();
             if (connection->sm_role){
@@ -1275,35 +1271,25 @@ static void sm_handle_encryption_result(uint8_t * data){
             sm_next_responding_state();
             return;
         case SM_STATE_PH2_C1_W4_ENC_B:
-            if (connection->sm_role){
-                swap128(data, setup->sm_s_confirm);
-                print_key("c1!", setup->sm_s_confirm);
-            } else {
-                swap128(data, setup->sm_m_confirm);
-                print_key("c1!", setup->sm_m_confirm);
-            }
+            swap128(data, setup->sm_local_confirm);
+            print_key("c1!", setup->sm_local_confirm);
             connection->sm_state_responding = SM_STATE_PH2_C1_SEND_PAIRING_CONFIRM;
             return;
         case SM_STATE_PH2_C1_W4_ENC_D:
             {
-            sm_key_t remote_confirm_test;
-            swap128(data, remote_confirm_test);
-            print_key("c1!", remote_confirm_test);
-            if (connection->sm_role){
-                if (memcmp(setup->sm_m_confirm, remote_confirm_test, 16) == 0){
-                    // send s_random
-                    connection->sm_state_responding = SM_STATE_PH2_SEND_PAIRING_RANDOM;
-                    return;
-                }
-            } else {
-                if (memcmp(setup->sm_s_confirm, remote_confirm_test, 16) == 0){
-                    connection->sm_state_responding = SM_STATE_PH2_CALC_STK;
-                    return;
-                }
+            sm_key_t peer_confirm_test;
+            swap128(data, peer_confirm_test);
+            print_key("c1!", peer_confirm_test);
+            if (memcmp(setup->sm_peer_confirm, peer_confirm_test, 16) != 0){
+                setup->sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
+                connection->sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
+                return;
             }
-
-            setup->sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
-            connection->sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
+            if (connection->sm_role){
+                connection->sm_state_responding = SM_STATE_PH2_SEND_PAIRING_RANDOM;
+            } else {
+                connection->sm_state_responding = SM_STATE_PH2_CALC_STK;
+            }
             }
             return;
         case SM_STATE_PH2_W4_STK:
@@ -1707,7 +1693,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             }
 
             // store s_confirm
-            swap128(&packet[1], setup->sm_s_confirm);
+            swap128(&packet[1], setup->sm_peer_confirm);
             connection->sm_state_responding = SM_STATE_PH2_SEND_PAIRING_RANDOM;
             break;
 
@@ -1779,7 +1765,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             }
 
             // received confirm value
-            swap128(&packet[1], setup->sm_m_confirm);
+            swap128(&packet[1], setup->sm_peer_confirm);
 
             // notify client to hide shown passkey
             if (setup->sm_stk_generation_method == PK_INIT_INPUT){
