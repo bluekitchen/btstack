@@ -213,7 +213,6 @@ static uint8_t sm_auth_req = 0;
 static uint8_t sm_io_capabilities = IO_CAPABILITY_UNKNOWN;
 static uint8_t sm_slave_request_security;
 static uint8_t sm_authenticate_outgoing_connections = 0;    // might go away
-static stk_generation_method_t sm_stk_generation_method;
 
 // Security Manager Master Keys, please use sm_set_er(er) and sm_set_ir(ir) with your own 128 bit random values
 static sm_key_t sm_persistent_er;
@@ -266,6 +265,8 @@ typedef struct sm_setup_context {
     sm_key_t  sm_tk;
     sm_key_t  sm_aes128_plaintext;
     uint8_t   sm_pairing_failed_reason;
+
+    stk_generation_method_t sm_stk_generation_method;
 
     // defines which keys will be send  after connection is encrypted
     int       sm_key_distribution_send_set;
@@ -559,7 +560,7 @@ static void sm_notify_client_authorization(uint8_t type, uint8_t addr_type, bd_a
 static void sm_setup_tk(){
 
     // default: just works
-    sm_stk_generation_method = JUST_WORKS;
+    setup->sm_stk_generation_method = JUST_WORKS;
     
     // If both devices have out of band authentication data, then the Authentication
     // Requirements Flags shall be ignored when selecting the pairing method and the
@@ -567,7 +568,7 @@ static void sm_setup_tk(){
     if (setup->sm_m_preq.oob_data_flag && setup->sm_s_pres.oob_data_flag){
         printf("SM: have OOB data");
         print_key("OOB", setup->sm_tk);
-        sm_stk_generation_method = OOB;
+        setup->sm_stk_generation_method = OOB;
         return;
     }
 
@@ -585,9 +586,9 @@ static void sm_setup_tk(){
 
     // Otherwise the IO capabilities of the devices shall be used to determine the
     // pairing method as defined in Table 2.4.
-    sm_stk_generation_method = stk_generation_method[setup->sm_s_pres.io_capability][setup->sm_m_preq.io_capability];
+    setup->sm_stk_generation_method = stk_generation_method[setup->sm_s_pres.io_capability][setup->sm_m_preq.io_capability];
     printf("sm_setup_tk: master io cap: %u, slave io cap: %u -> method %u\n",
-        setup->sm_m_preq.io_capability, setup->sm_s_pres.io_capability, sm_stk_generation_method);
+        setup->sm_m_preq.io_capability, setup->sm_s_pres.io_capability, setup->sm_stk_generation_method);
 }
 
 static int sm_key_distribution_flags_for_set(uint8_t key_set){
@@ -960,7 +961,7 @@ static void sm_run(void){
 
             // notify client for: JUST WORKS confirm, PASSKEY display or input
             setup->sm_user_response = SM_USER_RESPONSE_IDLE;
-            switch (sm_stk_generation_method){
+            switch (setup->sm_stk_generation_method){
                 case PK_RESP_INPUT:
                     setup->sm_user_response = SM_USER_RESPONSE_PENDING;
                     sm_notify_client(SM_PASSKEY_INPUT_NUMBER, setup->sm_m_addr_type, setup->sm_m_address, 0, 0); 
@@ -1564,7 +1565,7 @@ static inline int sm_calc_actual_encryption_key_size(int other){
  */
 static int sm_validate_stk_generation_method(){
     // check if STK generation method is acceptable by client
-    switch (sm_stk_generation_method){
+    switch (setup->sm_stk_generation_method){
         case JUST_WORKS:
             return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_JUST_WORKS) != 0;
         case PK_RESP_INPUT:
@@ -1630,7 +1631,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // decide on STK generation method
             sm_setup_tk();
-            printf("SMP: generation method %u\n", sm_stk_generation_method);
+            printf("SMP: generation method %u\n", setup->sm_stk_generation_method);
 
             // check if STK generation method is acceptable by client
             if (!sm_validate_stk_generation_method()){
@@ -1640,10 +1641,10 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             }
 
             // JUST WORKS doens't provide authentication
-            connection->sm_connection_authenticated = sm_stk_generation_method == JUST_WORKS ? 0 : 1;
+            connection->sm_connection_authenticated = setup->sm_stk_generation_method == JUST_WORKS ? 0 : 1;
 
             // generate random number first, if we need to show passkey
-            if (sm_stk_generation_method == PK_RESP_INPUT){
+            if (setup->sm_stk_generation_method == PK_RESP_INPUT){
                 connection->sm_state_responding = SM_STATE_INITIATOR_PH2_GET_RANDOM_TK;
                 break;
             }
@@ -1679,7 +1680,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // decide on STK generation method
             sm_setup_tk();
-            printf("SMP: generation method %u\n", sm_stk_generation_method);
+            printf("SMP: generation method %u\n", setup->sm_stk_generation_method);
 
             // check if STK generation method is acceptable by client
             if (!sm_validate_stk_generation_method()){
@@ -1689,10 +1690,10 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             }
 
             // JUST WORKS doens't provide authentication
-            connection->sm_connection_authenticated = sm_stk_generation_method == JUST_WORKS ? 0 : 1;
+            connection->sm_connection_authenticated = setup->sm_stk_generation_method == JUST_WORKS ? 0 : 1;
 
             // generate random number first, if we need to show passkey
-            if (sm_stk_generation_method == PK_INIT_INPUT){
+            if (setup->sm_stk_generation_method == PK_INIT_INPUT){
                 connection->sm_state_responding = SM_STATE_PH2_GET_RANDOM_TK;
                 break;
             }
@@ -1711,7 +1712,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             swap128(&packet[1], setup->sm_m_confirm);
 
             // notify client to hide shown passkey
-            if (sm_stk_generation_method == PK_INIT_INPUT){
+            if (setup->sm_stk_generation_method == PK_INIT_INPUT){
                 sm_notify_client(SM_PASSKEY_DISPLAY_CANCEL, setup->sm_m_addr_type, setup->sm_m_address, 0, 0);
             }
 
