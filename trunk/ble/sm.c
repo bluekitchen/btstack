@@ -290,36 +290,37 @@ typedef struct sm_setup_context {
     sm_key_t  sm_local_random;
     sm_key_t  sm_local_confirm;
 
+    // key distribution, we generate
+    uint16_t  sm_local_y;
+    uint16_t  sm_local_div;
+    uint16_t  sm_local_ediv;
+    uint8_t   sm_local_rand[8];
+    sm_key_t  sm_local_ltk;
+    sm_key_t  sm_local_csrk;
+    sm_key_t  sm_local_irk;
+
     // peer
     sm_key_t  sm_peer_random;
     sm_key_t  sm_peer_confirm;
 
+    // key distribution, received from peer
+    uint16_t  sm_peer_y;
+    uint16_t  sm_peer_div;
+    uint16_t  sm_peer_ediv;
+    uint8_t   sm_peer_rand[8];
+    sm_key_t  sm_peer_ltk;
+    sm_key_t  sm_peer_csrk;
+    sm_key_t  sm_peer_irk;
+
     // master
     sm_pairing_packet_t sm_m_preq; // pairing request
-
-    // key distribution, received from master
-    // commented keys that are not stored or used by Peripheral role
-    // uint16_t  sm_m_y;
-    // uint16_t  sm_m_div;
-    // uint16_t  sm_m_ediv;
-    // uint8_t   sm_m_rand[8];
     uint8_t   sm_m_addr_type;
     bd_addr_t sm_m_address;
-    sm_key_t  sm_m_csrk;
-    sm_key_t  sm_m_irk;
 
     // slave
     sm_pairing_packet_t sm_s_pres; // pairing response
-
-    // key distribution, slave sends
-    uint16_t  sm_s_y;
-    uint16_t  sm_s_div;
-    uint16_t  sm_s_ediv;
-    uint8_t   sm_s_rand[8];
-    // commented keys are not used in Perihperal role
     uint8_t   sm_s_addr_type;
     bd_addr_t sm_s_address;
-    // sm_key_t  sm_s_csrk;
 
 } sm_setup_context_t;
 
@@ -647,7 +648,7 @@ static void sm_central_device_start_lookup(uint8_t addr_type, bd_addr_t addr){
 
 // TODO use relevant connection structure
 static void sm_central_device_lookup_found(sm_key_t csrk){
-    memcpy(setup->sm_m_csrk, csrk, 16);
+    memcpy(setup->sm_peer_csrk, csrk, 16);
 }
 
 // CMAC Implementation using AES128 engine
@@ -1091,7 +1092,7 @@ static void sm_run(void){
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
             // PH3B2 - calculate Y from      - enc
             // Y = dm(DHK, Rand)
-            sm_dm_r_prime(setup->sm_s_rand, plaintext);
+            sm_dm_r_prime(setup->sm_local_rand, plaintext);
             sm_aes128_start(sm_persistent_dhk, plaintext);
             sm_next_responding_state();
             return;
@@ -1132,9 +1133,9 @@ static void sm_run(void){
         case SM_STATE_PH4_Y_GET_ENC:
             // already busy?
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
-            log_info("LTK Request: recalculating with ediv 0x%04x", setup->sm_s_ediv);
+            log_info("LTK Request: recalculating with ediv 0x%04x", setup->sm_local_ediv);
             // Y = dm(DHK, Rand)
-            sm_dm_r_prime(setup->sm_s_rand, plaintext);
+            sm_dm_r_prime(setup->sm_local_rand, plaintext);
             sm_aes128_start(sm_persistent_dhk, plaintext);
             sm_next_responding_state();
             return;
@@ -1153,8 +1154,8 @@ static void sm_run(void){
                 setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
                 uint8_t buffer[11];
                 buffer[0] = SM_CODE_MASTER_IDENTIFICATION;
-                bt_store_16(buffer, 1, setup->sm_s_ediv);
-                swap64(setup->sm_s_rand, &buffer[3]);
+                bt_store_16(buffer, 1, setup->sm_local_ediv);
+                swap64(setup->sm_local_rand, &buffer[3]);
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_2timeout_reset();
                 return;
@@ -1182,7 +1183,7 @@ static void sm_run(void){
                 setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_SIGNING_INFORMATION;
-                // swap128(sm_s_csrk, &buffer[1]);
+                // swap128(sm_local_csrk, &buffer[1]);
                 memset(&buffer[1], 0, 16);  // csrk not calculated
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_2timeout_reset();
@@ -1321,28 +1322,28 @@ static void sm_handle_encryption_result(uint8_t * data){
         case SM_STATE_PH3_Y_W4_ENC:{
             sm_key_t y128;
             swap128(data, y128);
-            setup->sm_s_y = READ_NET_16(y128, 14);
-            print_hex16("y", setup->sm_s_y);
+            setup->sm_local_y = READ_NET_16(y128, 14);
+            print_hex16("y", setup->sm_local_y);
             // PH3B3 - calculate EDIV
-            setup->sm_s_ediv = setup->sm_s_y ^ setup->sm_s_div;
-            print_hex16("ediv", setup->sm_s_ediv);
+            setup->sm_local_ediv = setup->sm_local_y ^ setup->sm_local_div;
+            print_hex16("ediv", setup->sm_local_ediv);
             // PH3B4 - calculate LTK         - enc
             // LTK = d1(ER, DIV, 0))
-            sm_d1_d_prime(setup->sm_s_div, 0, setup->sm_aes128_plaintext);
+            sm_d1_d_prime(setup->sm_local_div, 0, setup->sm_aes128_plaintext);
             connection->sm_state_responding = SM_STATE_PH3_LTK_GET_ENC;
             return;
         }
         case SM_STATE_PH4_Y_W4_ENC:{
             sm_key_t y128;
             swap128(data, y128);
-            setup->sm_s_y = READ_NET_16(y128, 14);
-            print_hex16("y", setup->sm_s_y);
+            setup->sm_local_y = READ_NET_16(y128, 14);
+            print_hex16("y", setup->sm_local_y);
             // PH3B3 - calculate DIV
-            setup->sm_s_div = setup->sm_s_y ^ setup->sm_s_ediv;
-            print_hex16("ediv", setup->sm_s_ediv);
+            setup->sm_local_div = setup->sm_local_y ^ setup->sm_local_ediv;
+            print_hex16("ediv", setup->sm_local_ediv);
             // PH3B4 - calculate LTK         - enc
             // LTK = d1(ER, DIV, 0))
-            sm_d1_d_prime(setup->sm_s_div, 0, setup->sm_aes128_plaintext);
+            sm_d1_d_prime(setup->sm_local_div, 0, setup->sm_aes128_plaintext);
             connection->sm_state_responding = SM_STATE_PH4_LTK_GET_ENC;
             return;
         }
@@ -1418,17 +1419,17 @@ static void sm_handle_random_result(uint8_t * data){
             connection->sm_state_responding = SM_STATE_PH2_C1_GET_ENC_A;
             return;
         case SM_STATE_PH3_W4_RANDOM:
-            swap64(data, setup->sm_s_rand);
-            // no db for encryption size hack: encryption size is stored in lowest nibble of setup->sm_s_rand
-            setup->sm_s_rand[7] = (setup->sm_s_rand[7] & 0xf0) + (connection->sm_actual_encryption_key_size - 1);
+            swap64(data, setup->sm_local_rand);
+            // no db for encryption size hack: encryption size is stored in lowest nibble of setup->sm_local_rand
+            setup->sm_local_rand[7] = (setup->sm_local_rand[7] & 0xf0) + (connection->sm_actual_encryption_key_size - 1);
             // no db for authenticated flag hack: store flag in bit 4 of LSB
-            setup->sm_s_rand[7] = (setup->sm_s_rand[7] & 0xef) + (connection->sm_connection_authenticated << 4);
+            setup->sm_local_rand[7] = (setup->sm_local_rand[7] & 0xef) + (connection->sm_connection_authenticated << 4);
             connection->sm_state_responding = SM_STATE_PH3_GET_DIV;
             return;
         case SM_STATE_PH3_W4_DIV:
             // use 16 bit from random value as div
-            setup->sm_s_div = READ_NET_16(data, 0);
-            print_hex16("div", setup->sm_s_div);
+            setup->sm_local_div = READ_NET_16(data, 0);
+            print_hex16("div", setup->sm_local_div);
             connection->sm_state_responding = SM_STATE_PH3_Y_GET_ENC;
             return;
         default:
@@ -1545,22 +1546,22 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             }
 
                             // re-establish previously used LTK using Rand and EDIV
-                            swap64(&packet[5], setup->sm_s_rand);
-                            setup->sm_s_ediv = READ_BT_16(packet, 13);
+                            swap64(&packet[5], setup->sm_local_rand);
+                            setup->sm_local_ediv = READ_BT_16(packet, 13);
 
                             // assume that we don't have a LTK for ediv == 0 and random == null
-                            if (setup->sm_s_ediv == 0 && sm_is_null_random(setup->sm_s_rand)){
+                            if (setup->sm_local_ediv == 0 && sm_is_null_random(setup->sm_local_rand)){
                                 printf("LTK Request: ediv & random are empty\n");
                                 connection->sm_state_responding = SM_STATE_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
                                 break;
                             }
 
                             // re-establish used key encryption size
-                            // no db for encryption size hack: encryption size is stored in lowest nibble of setup->sm_s_rand
-                            connection->sm_actual_encryption_key_size = (setup->sm_s_rand[7] & 0x0f) + 1;
+                            // no db for encryption size hack: encryption size is stored in lowest nibble of setup->sm_local_rand
+                            connection->sm_actual_encryption_key_size = (setup->sm_local_rand[7] & 0x0f) + 1;
 
                             // no db for authenticated flag hack: flag is stored in bit 4 of LSB
-                            connection->sm_connection_authenticated = (setup->sm_s_rand[7] & 0x10) >> 4;
+                            connection->sm_connection_authenticated = (setup->sm_local_rand[7] & 0x10) >> 4;
 
                             connection->sm_state_responding = SM_STATE_PH4_Y_GET_ENC;
                             break;
@@ -1824,18 +1825,18 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             switch(packet[0]){
                 case SM_CODE_ENCRYPTION_INFORMATION:
                     setup->sm_key_distribution_received_set |= SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION;
-                    // swap128(&packet[1], sm_m_ltk);
+                    swap128(&packet[1], setup->sm_peer_ltk);
                     break;
 
                 case SM_CODE_MASTER_IDENTIFICATION:
                     setup->sm_key_distribution_received_set |= SM_KEYDIST_FLAG_MASTER_IDENTIFICATION;
-                    // sm_m_ediv = READ_BT_16(packet, 1);
-                    // swap64(&packet[3], sm_m_rand);
+                    setup->sm_peer_ediv = READ_BT_16(packet, 1);
+                    swap64(&packet[3], setup->sm_peer_rand);
                     break;
 
                 case SM_CODE_IDENTITY_INFORMATION:
                     setup->sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_INFORMATION;
-                    swap128(&packet[1], setup->sm_m_irk);
+                    swap128(&packet[1], setup->sm_peer_irk);
                     break;
 
                 case SM_CODE_IDENTITY_ADDRESS_INFORMATION:
@@ -1848,11 +1849,11 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
                 case SM_CODE_SIGNING_INFORMATION:
                     setup->sm_key_distribution_received_set |= SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
-                    swap128(&packet[1], setup->sm_m_csrk);
+                    swap128(&packet[1], setup->sm_peer_csrk);
 
                     // store, if: it's a public address, or, we got an IRK
                     if (setup->sm_m_addr_type == 0 || (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION)) {
-                        sm_central_device_matched =  central_device_db_add(setup->sm_m_addr_type, setup->sm_m_address, setup->sm_m_irk, setup->sm_m_csrk);
+                        sm_central_device_matched =  central_device_db_add(setup->sm_m_addr_type, setup->sm_m_address, setup->sm_peer_irk, setup->sm_peer_csrk);
                         break;
                     } 
                     break;
