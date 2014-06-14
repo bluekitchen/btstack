@@ -298,6 +298,7 @@ typedef struct sm_setup_context {
     sm_key_t  sm_local_ltk;
     sm_key_t  sm_local_csrk;
     sm_key_t  sm_local_irk;
+    // sm_local_address/addr_type not needed
 
     // peer
     sm_key_t  sm_peer_random;
@@ -311,6 +312,8 @@ typedef struct sm_setup_context {
     sm_key_t  sm_peer_ltk;
     sm_key_t  sm_peer_csrk;
     sm_key_t  sm_peer_irk;
+    uint8_t   sm_peer_addr_type;
+    bd_addr_t sm_peer_address;
 
     // master
     sm_pairing_packet_t sm_m_preq; // pairing request
@@ -1171,10 +1174,11 @@ static void sm_run(void){
             }
             if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION){
                 setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
+                bd_addr_t local_address;
                 uint8_t buffer[8];
                 buffer[0] = SM_CODE_IDENTITY_ADDRESS_INFORMATION;
-                buffer[1] = setup->sm_s_addr_type;
-                bt_flip_addr(&buffer[2], setup->sm_s_address);
+                hci_le_advertisement_address(&buffer[1], &local_address);
+                bt_flip_addr(&buffer[2], local_address);
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_2timeout_reset();
                 return;
@@ -1183,8 +1187,7 @@ static void sm_run(void){
                 setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
                 uint8_t buffer[17];
                 buffer[0] = SM_CODE_SIGNING_INFORMATION;
-                // swap128(sm_local_csrk, &buffer[1]);
-                memset(&buffer[1], 0, 16);  // csrk not calculated
+                swap128(setup->sm_local_csrk, &buffer[1]);
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_2timeout_reset();
                 return;
@@ -1193,7 +1196,7 @@ static void sm_run(void){
             // keys are sent
             if (connection->sm_role){
                 // slave -> receive master keys
-                connection->sm_state_responding = SM_STATE_IDLE;
+                connection->sm_state_responding = SM_STATE_RECEIVE_KEYS;
             } else {
                 // master -> all done
                 sm_2timeout_stop();
@@ -1841,10 +1844,8 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
                 case SM_CODE_IDENTITY_ADDRESS_INFORMATION:
                     setup->sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
-                    // note: we don't update addr_type and address as higher layer would get confused
-                    // note: if needed, we could use a different variable pair
-                    // setup->sm_m_addr_type = packet[1];
-                    // BD_ADDR_COPY(setup->sm_m_address, &packet[2]); 
+                    setup->sm_peer_addr_type = packet[1];
+                    BD_ADDR_COPY(setup->sm_peer_address, &packet[2]); 
                     break;
 
                 case SM_CODE_SIGNING_INFORMATION:
@@ -1852,8 +1853,8 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                     swap128(&packet[1], setup->sm_peer_csrk);
 
                     // store, if: it's a public address, or, we got an IRK
-                    if (setup->sm_m_addr_type == 0 || (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION)) {
-                        sm_central_device_matched =  central_device_db_add(setup->sm_m_addr_type, setup->sm_m_address, setup->sm_peer_irk, setup->sm_peer_csrk);
+                    if (setup->sm_peer_addr_type == 0 || (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION)) {
+                        sm_central_device_matched =  central_device_db_add(setup->sm_peer_addr_type, setup->sm_peer_address, setup->sm_peer_irk, setup->sm_peer_csrk);
                         break;
                     } 
                     break;
