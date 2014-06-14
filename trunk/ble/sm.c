@@ -269,26 +269,43 @@ static sm_aes128_state_t sm_aes128_state;
 
 // data needed for security setup
 typedef struct sm_setup_context {
-    // used during sm setup
-    sm_key_t  sm_tk;
+
     sm_key_t  sm_aes128_plaintext;
+
     uint8_t   sm_pairing_failed_reason;
-
-    stk_generation_method_t sm_stk_generation_method;
-
-    // stk and ltk
-    sm_key_t  sm_ltk;
-
-    // defines which keys will be send  after connection is encrypted
-    int       sm_key_distribution_send_set;
-    int       sm_key_distribution_received_set;
 
     // user response
     uint8_t   sm_user_response;
 
+    stk_generation_method_t sm_stk_generation_method;
+    sm_key_t  sm_tk;
+
+    // master
+    sm_pairing_packet_t sm_m_preq; // pairing request - needed only for c1
+    uint8_t   sm_m_addr_type;
+    bd_addr_t sm_m_address;
+
+    // slave
+    sm_pairing_packet_t sm_s_pres; // pairing response - needed only for c1
+    uint8_t   sm_s_addr_type;
+    bd_addr_t sm_s_address;
+
     // local
     sm_key_t  sm_local_random;
     sm_key_t  sm_local_confirm;
+
+    // peer
+    sm_key_t  sm_peer_random;
+    sm_key_t  sm_peer_confirm;
+
+
+    // ltk
+    sm_key_t  sm_ltk;
+
+
+    // defines which keys will be send after connection is encrypted
+    int       sm_key_distribution_send_set;
+    int       sm_key_distribution_received_set;
 
     // key distribution, we generate
     uint16_t  sm_local_y;
@@ -300,10 +317,6 @@ typedef struct sm_setup_context {
     sm_key_t  sm_local_irk;
     // sm_local_address/addr_type not needed
 
-    // peer
-    sm_key_t  sm_peer_random;
-    sm_key_t  sm_peer_confirm;
-
     // key distribution, received from peer
     uint16_t  sm_peer_y;
     uint16_t  sm_peer_div;
@@ -314,17 +327,6 @@ typedef struct sm_setup_context {
     sm_key_t  sm_peer_irk;
     uint8_t   sm_peer_addr_type;
     bd_addr_t sm_peer_address;
-
-    // master
-    sm_pairing_packet_t sm_m_preq; // pairing request
-    uint8_t   sm_m_addr_type;
-    bd_addr_t sm_m_address;
-
-    // slave
-    sm_pairing_packet_t sm_s_pres; // pairing response
-    uint8_t   sm_s_addr_type;
-    bd_addr_t sm_s_address;
-
 } sm_setup_context_t;
 
 // connection info available as long as connection exists
@@ -908,7 +910,7 @@ static void sm_run(void){
                 break;
             }
 
-            if (setup->sm_m_addr_type == 0){
+            if (sm_central_device_addr_type == 0){
                 sm_central_device_test++;
                 continue;
             }
