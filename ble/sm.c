@@ -487,11 +487,9 @@ static void sm_ah_r_prime(uint8_t r[3], sm_key_t r_prime){
 // d,r - 16 bit values
 static void sm_d1_d_prime(uint16_t d, uint16_t r, sm_key_t d1_prime){
     // d'= padding || r || d
-    printf("sm_d1_d_prime(0x%x, 0x%x) -> ", d, r);
     memset(d1_prime, 0, 16);
     net_store_16(d1_prime, 12, r);
     net_store_16(d1_prime, 14, d);
-    hexdump(d1_prime, 16);
 }
 
 // dm helper
@@ -1385,7 +1383,6 @@ static void sm_handle_encryption_result(uint8_t * data){
         case SM_STATE_PH3_CSRK_W4_ENC:
             swap128(data, setup->sm_local_csrk);
             print_key("csrk", setup->sm_local_csrk);
-            // distribute keys
             connection->sm_state_responding = SM_STATE_DISTRIBUTE_KEYS;
             return;                                
         case SM_STATE_PH4_LTK_W4_ENC:
@@ -1901,7 +1898,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                     sm_2timeout_stop();
                     connection->sm_state_responding = SM_STATE_IDLE; 
                 } else {
-                    connection->sm_state_responding = SM_STATE_DISTRIBUTE_KEYS; 
+                    connection->sm_state_responding = SM_STATE_PH3_GET_RANDOM; 
                 }
             }
             break;
