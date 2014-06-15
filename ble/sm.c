@@ -805,6 +805,43 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
     }
 }
 
+static void sm_trigger_user_response(){
+    // notify client for: JUST WORKS confirm, PASSKEY display or input
+    setup->sm_user_response = SM_USER_RESPONSE_IDLE;
+    switch (setup->sm_stk_generation_method){
+        case PK_RESP_INPUT:
+            if (connection->sm_role){
+                setup->sm_user_response = SM_USER_RESPONSE_PENDING;
+                sm_notify_client(SM_PASSKEY_INPUT_NUMBER, setup->sm_m_addr_type, setup->sm_m_address, 0, 0); 
+            } else {
+                sm_notify_client(SM_PASSKEY_DISPLAY_NUMBER, setup->sm_m_addr_type, setup->sm_m_address, READ_NET_32(setup->sm_tk, 12), 0); 
+            }
+            break;
+        case PK_INIT_INPUT:
+            if (connection->sm_role){
+                sm_notify_client(SM_PASSKEY_DISPLAY_NUMBER, setup->sm_m_addr_type, setup->sm_m_address, READ_NET_32(setup->sm_tk, 12), 0); 
+            } else {
+                setup->sm_user_response = SM_USER_RESPONSE_PENDING;
+                sm_notify_client(SM_PASSKEY_INPUT_NUMBER, setup->sm_m_addr_type, setup->sm_m_address, 0, 0); 
+            }
+            break;
+        case JUST_WORKS:
+            switch (setup->sm_s_pres.io_capability){
+                case IO_CAPABILITY_KEYBOARD_DISPLAY:
+                case IO_CAPABILITY_DISPLAY_YES_NO:
+                    setup->sm_user_response = SM_USER_RESPONSE_PENDING;
+                    sm_notify_client(SM_JUST_WORKS_REQUEST, setup->sm_m_addr_type, setup->sm_m_address, READ_NET_32(setup->sm_tk, 12), 0);
+                    break;
+                default:
+                    // cannot ask user
+                    break;  
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 static int sm_key_distribution_all_received(){
     int recv_flags = sm_key_distribution_flags_for_set(setup->sm_m_preq.initiator_key_distribution);
     return recv_flags == setup->sm_key_distribution_received_set;
@@ -972,31 +1009,7 @@ static void sm_run(void){
             l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
             sm_2timeout_reset();
 
-            // notify client for: JUST WORKS confirm, PASSKEY display or input
-            setup->sm_user_response = SM_USER_RESPONSE_IDLE;
-            switch (setup->sm_stk_generation_method){
-                case PK_RESP_INPUT:
-                    setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-                    sm_notify_client(SM_PASSKEY_INPUT_NUMBER, setup->sm_m_addr_type, setup->sm_m_address, 0, 0); 
-                    break;
-                case PK_INIT_INPUT:
-                    sm_notify_client(SM_PASSKEY_DISPLAY_NUMBER, setup->sm_m_addr_type, setup->sm_m_address, READ_NET_32(setup->sm_tk, 12), 0); 
-                    break;
-                case JUST_WORKS:
-                    switch (setup->sm_s_pres.io_capability){
-                        case IO_CAPABILITY_KEYBOARD_DISPLAY:
-                        case IO_CAPABILITY_DISPLAY_YES_NO:
-                            setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-                            sm_notify_client(SM_JUST_WORKS_REQUEST, setup->sm_m_addr_type, setup->sm_m_address, READ_NET_32(setup->sm_tk, 12), 0);
-                            break;
-                        default:
-                            // cannot ask user
-                            break;  
-                    }
-                    break;
-                default:
-                    break;
-            }
+            sm_trigger_user_response();
 
             connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_CONFIRM;
             return;
