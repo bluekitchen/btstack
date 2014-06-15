@@ -1070,7 +1070,11 @@ static void sm_run(void){
         case SM_STATE_PH4_LTK_GET_ENC:
             // already busy?
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
-            sm_aes128_start(sm_persistent_er, setup->sm_aes128_plaintext);
+            {
+                sm_key_t d_prime;
+                sm_d1_d_prime(setup->sm_local_div, 0, d_prime);
+                sm_aes128_start(sm_persistent_er, d_prime);
+            }
             sm_next_responding_state();
             return;
 
@@ -1355,7 +1359,6 @@ static void sm_handle_encryption_result(uint8_t * data){
             print_hex16("ediv", setup->sm_local_ediv);
             // PH3B4 - calculate LTK         - enc
             // LTK = d1(ER, DIV, 0))
-            sm_d1_d_prime(setup->sm_local_div, 0, setup->sm_aes128_plaintext);
             connection->sm_state_responding = SM_STATE_PH3_LTK_GET_ENC;
             return;
         }
