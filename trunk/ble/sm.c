@@ -115,12 +115,14 @@ typedef enum {
     SM_STATE_PH3_Y_W4_ENC,
     SM_STATE_PH3_LTK_GET_ENC,
     SM_STATE_PH3_LTK_W4_ENC,
+    SM_STATE_PH3_CSRK_GET_ENC,
+    SM_STATE_PH3_CSRK_W4_ENC,
 
     //
     SM_STATE_DISTRIBUTE_KEYS,
     SM_STATE_RECEIVE_KEYS,
 
-    // re establish previously distribued LTK
+    // Phase 4: re-establish previously distributed LTK
     SM_STATE_PH4_Y_GET_ENC,
     SM_STATE_PH4_Y_W4_ENC,
     SM_STATE_PH4_LTK_GET_ENC,
@@ -471,21 +473,31 @@ static void sm_aes128_start(sm_key_t key, sm_key_t plaintext){
     hci_send_cmd(&hci_le_encrypt, key_flipped, plaintext_flipped);
 }
 
-static void sm_ah_r_prime(uint8_t r[3], sm_key_t d1_prime){
+// ah(k,r) helper
+// r = padding || r
+// r - 24 bit value
+static void sm_ah_r_prime(uint8_t r[3], sm_key_t r_prime){
     // r'= padding || r
-    memset(d1_prime, 0, 16);
-    memcpy(&d1_prime[13], r, 3);
+    memset(r_prime, 0, 16);
+    memcpy(&r_prime[13], r, 3);
 }
 
+// d1 helper
+// d' = padding || r || d
+// d,r - 16 bit values
 static void sm_d1_d_prime(uint16_t d, uint16_t r, sm_key_t d1_prime){
     // d'= padding || r || d
+    printf("sm_d1_d_prime(0x%x, 0x%x) -> ", d, r);
     memset(d1_prime, 0, 16);
     net_store_16(d1_prime, 12, r);
     net_store_16(d1_prime, 14, d);
+    hexdump(d1_prime, 16);
 }
 
+// dm helper
+// r’ = padding || r
+// r - 64 bit value
 static void sm_dm_r_prime(uint8_t r[8], sm_key_t r_prime){
-    // r’ = padding || r
     memset(r_prime, 0, 16);
     memcpy(&r_prime[8], r, 8);
 }
@@ -1064,6 +1076,17 @@ static void sm_run(void){
             sm_next_responding_state();
             return;
 
+        case SM_STATE_PH3_CSRK_GET_ENC:
+            // already busy?
+            if (sm_aes128_state == SM_AES128_ACTIVE) break;
+            {
+                sm_key_t d_prime;
+                sm_d1_d_prime(setup->sm_local_div, 1, d_prime);
+                sm_aes128_start(sm_persistent_er, d_prime);
+            }
+            sm_next_responding_state();
+            return;
+
         case SM_STATE_PH2_C1_GET_ENC_C:
             // already busy?
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
@@ -1343,6 +1366,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             swap128(data, y128);
             setup->sm_local_y = READ_NET_16(y128, 14);
             print_hex16("y", setup->sm_local_y);
+
             // PH3B3 - calculate DIV
             setup->sm_local_div = setup->sm_local_y ^ setup->sm_local_ediv;
             print_hex16("ediv", setup->sm_local_ediv);
@@ -1355,6 +1379,12 @@ static void sm_handle_encryption_result(uint8_t * data){
         case SM_STATE_PH3_LTK_W4_ENC:
             swap128(data, setup->sm_ltk);
             print_key("ltk", setup->sm_ltk);
+            // calc CSRK next
+            connection->sm_state_responding = SM_STATE_PH3_CSRK_GET_ENC;
+            return;
+        case SM_STATE_PH3_CSRK_W4_ENC:
+            swap128(data, setup->sm_local_csrk);
+            print_key("csrk", setup->sm_local_csrk);
             // distribute keys
             connection->sm_state_responding = SM_STATE_DISTRIBUTE_KEYS;
             return;                                
