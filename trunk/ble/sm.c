@@ -272,7 +272,7 @@ static sm_aes128_state_t sm_aes128_state;
 // data needed for security setup
 typedef struct sm_setup_context {
 
-    sm_key_t  sm_aes128_plaintext;
+    sm_key_t  sm_c1_t3_value;
 
     uint8_t   sm_pairing_failed_reason;
 
@@ -1062,7 +1062,7 @@ static void sm_run(void){
         case SM_STATE_PH2_C1_GET_ENC_D:
             // already busy?
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
-            sm_aes128_start(setup->sm_tk, setup->sm_aes128_plaintext);
+            sm_aes128_start(setup->sm_tk, setup->sm_c1_t3_value);
             sm_next_responding_state();
             return;
 
@@ -1237,7 +1237,7 @@ static void sm_run(void){
     }
 }
 
-// note: aes engine is ready as we just got the aes result, also, setup->sm_aes128_plaintext and sm_aes128_key can be set again 
+// note: aes engine is ready as we just got the aes result
 static void sm_handle_encryption_result(uint8_t * data){
 
     sm_aes128_state = SM_AES128_IDLE;
@@ -1313,7 +1313,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             {
             sm_key_t t2;
             swap128(data, t2);
-            sm_c1_t3(t2, setup->sm_m_address, setup->sm_s_address, setup->sm_aes128_plaintext);
+            sm_c1_t3(t2, setup->sm_m_address, setup->sm_s_address, setup->sm_c1_t3_value);
             }
             sm_next_responding_state();
             return;
