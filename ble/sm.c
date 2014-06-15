@@ -1373,7 +1373,6 @@ static void sm_handle_encryption_result(uint8_t * data){
             print_hex16("ediv", setup->sm_local_ediv);
             // PH3B4 - calculate LTK         - enc
             // LTK = d1(ER, DIV, 0))
-            sm_d1_d_prime(setup->sm_local_div, 0, setup->sm_aes128_plaintext);
             connection->sm_state_responding = SM_STATE_PH4_LTK_GET_ENC;
             return;
         }
