@@ -1435,7 +1435,8 @@ static void sm_handle_random_result(uint8_t * data){
             if (connection->sm_role){
                 connection->sm_engine_state = SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE;
             } else {
-                connection->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
+                sm_trigger_user_response();
+                connection->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
             }
             return;
         }
@@ -1733,7 +1734,9 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                 break;
             }
 
-            connection->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
+            sm_trigger_user_response();
+
+            connection->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
             break;                        
 
         case SM_INITIATOR_PH2_W4_PAIRING_CONFIRM:
@@ -1835,7 +1838,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                 break;
             }
 
-            // calculate and send s_confirm
+            // calculate and send local_confirm
             connection->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
             break;
 
