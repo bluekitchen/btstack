@@ -272,42 +272,34 @@ static sm_aes128_state_t sm_aes128_state;
 // data needed for security setup
 typedef struct sm_setup_context {
 
-    sm_key_t  sm_c1_t3_value;
-
+    // used in all phases
     uint8_t   sm_pairing_failed_reason;
 
-    // user response
+    // user response, (Phase 1 and/or 2)
     uint8_t   sm_user_response;
 
+    // defines which keys will be send after connection is encrypted - calculated during Phase 1, used Phase 3
+    int       sm_key_distribution_send_set;
+    int       sm_key_distribution_received_set;
+
+    // Phase 2 (Pairing over SMP)
     stk_generation_method_t sm_stk_generation_method;
     sm_key_t  sm_tk;
 
-    // master
+    sm_key_t  sm_c1_t3_value;   // c1 calculation 
     sm_pairing_packet_t sm_m_preq; // pairing request - needed only for c1
-    uint8_t   sm_m_addr_type;
-    bd_addr_t sm_m_address;
-
-    // slave
     sm_pairing_packet_t sm_s_pres; // pairing response - needed only for c1
-    uint8_t   sm_s_addr_type;
-    bd_addr_t sm_s_address;
-
-    // local
     sm_key_t  sm_local_random;
     sm_key_t  sm_local_confirm;
-
-    // peer
     sm_key_t  sm_peer_random;
     sm_key_t  sm_peer_confirm;
-
-
-    // ltk
+    uint8_t   sm_m_addr_type;   // address and type can be removed
+    uint8_t   sm_s_addr_type;   //  '' 
+    bd_addr_t sm_m_address;     //  ''
+    bd_addr_t sm_s_address;     //  ''
     sm_key_t  sm_ltk;
 
-
-    // defines which keys will be send after connection is encrypted
-    int       sm_key_distribution_send_set;
-    int       sm_key_distribution_received_set;
+    // Phase 3
 
     // key distribution, we generate
     uint16_t  sm_local_y;
