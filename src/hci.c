@@ -1065,6 +1065,9 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
     // class of device
     hci_stack->class_of_device = 0x007a020c; // Smartphone 
 
+    // bondable by default
+    hci_stack->bondable = 1;
+
     // Secure Simple Pairing default: enable, no I/O capabilities, general bonding, mitm not required, auto accept 
     hci_stack->ssp_enable = 1;
     hci_stack->ssp_io_capability = SSP_IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
