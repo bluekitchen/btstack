@@ -1008,9 +1008,11 @@ void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *p
 void hci_state_reset(){
     // no connections yet
     hci_stack->connections = NULL;
-    hci_stack->discoverable = 0;
-    hci_stack->connectable = 0;
-    hci_stack->bondable = 1;
+
+    // keep discoverable/connectable as this has been requested by the client(s)
+    // hci_stack->discoverable = 0;
+    // hci_stack->connectable = 0;
+    // hci_stack->bondable = 1;
     
     // no pending cmds
     hci_stack->decline_reason = 0;
