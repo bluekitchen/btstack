@@ -144,6 +144,7 @@ static uint8_t   attribute_value[1000];
 static const int attribute_value_buffer_size = sizeof(attribute_value);
 static uint8_t serviceSearchPattern[200];
 static uint8_t attributeIDList[50];
+static void * sdp_client_query_connection;
     
 
 static int loggingEnabled;
@@ -522,6 +523,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case SDP_CLIENT_QUERY_SERVICES:
             bt_flip_addr(addr, &packet[3]);
             sdp_parser_init();
+            sdp_client_query_connection = connection;
             sdp_parser_register_callback(handle_sdp_client_query_result);
 
             serviceSearchPatternLen = de_get_len(&packet[9]);
@@ -957,7 +959,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
 
                 memcpy(&event[7], attribute_value, ve->attribute_length);
                 hci_dump_packet(SDP_CLIENT_PACKET, 0, event, event_len);
-                socket_connection_send_packet(NULL, SDP_CLIENT_PACKET, 0, event, event_len);
+                socket_connection_send_packet(sdp_client_query_connection, SDP_CLIENT_PACKET, 0, event, event_len);
             }
 
             break;
@@ -965,7 +967,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
             complete_event = (sdp_query_complete_event_t*) event;
             uint8_t event[] = { SDP_QUERY_COMPLETE, 1, complete_event->status};
             hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-            socket_connection_send_packet(NULL, HCI_EVENT_PACKET, 0, event, sizeof(event));
+            socket_connection_send_packet(sdp_client_query_connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
             break;
     }
 }
