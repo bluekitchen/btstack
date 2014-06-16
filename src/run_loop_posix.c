@@ -120,17 +120,20 @@ static void posix_dump_timer(void){
  */
 static void posix_execute(void) {
     fd_set descriptors;
-    data_source_t *ds;
+    
     timer_source_t       *ts;
     struct timeval current_tv;
     struct timeval next_tv;
     struct timeval *timeout;
+    linked_list_iterator_t it;
     
     while (1) {
         // collect FDs
         FD_ZERO(&descriptors);
         int highest_fd = 0;
-        for (ds = (data_source_t *) data_sources; ds ; ds = (data_source_t *) ds->item.next){
+        linked_list_iterator_init(&it, &data_sources);
+        while (linked_list_iterator_has_next(&it)){
+            data_source_t *ds = (data_source_t*) linked_list_iterator_next(&it);
             if (ds->fd >= 0) {
                 FD_SET(ds->fd, &descriptors);
                 if (ds->fd > highest_fd) {
@@ -166,7 +169,9 @@ static void posix_execute(void) {
         
         // log_info("posix_execute: before ds check\n");
         data_sources_modified = 0;
-        for (ds = (data_source_t *) data_sources; !data_sources_modified && ds != NULL;  ds = (data_source_t *) ds->item.next){
+        linked_list_iterator_init(&it, &data_sources);
+        while (linked_list_iterator_has_next(&it) && !data_sources_modified){
+            data_source_t *ds = (data_source_t*) linked_list_iterator_next(&it);
             // log_info("posix_execute: check %x with fd %u\n", (int) ds, ds->fd);
             if (FD_ISSET(ds->fd, &descriptors)) {
                 // log_info("posix_execute: process %x with fd %u\n", (int) ds, ds->fd);
