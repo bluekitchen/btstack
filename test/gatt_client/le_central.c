@@ -13,6 +13,7 @@
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
+#include "CppUTestExt/MockSupport.h"
 
 #include <btstack/hci_cmds.h>
 
@@ -48,7 +49,7 @@ static void verify_advertisement(ad_event_t * e){
 }
 
 
-static void handle_ble_client_event(le_event_t * event){
+static void handle_le_client_event(le_event_t * event){
 	switch(event->type){
 		case GAP_LE_ADVERTISING_REPORT:
 			advertisement_received = 1;
@@ -76,19 +77,44 @@ TEST_GROUP(LECentral){
 		advertisement_received = 0;
 		connected = 0;
 		
-		ble_client_init();
-		ble_client_register_packet_handler(handle_ble_client_event);
-		mock_simulate_hci_state_working();
-		connect();
+		
+		// mock().expectOneCall("productionCode").andReturnValue(10);
+
+		// ble_client_init();
+		// le_central_register_handler(handle_le_client_event);
+		// le_central_register_connection_handler(handle_le_client_event);
+
+		// mock().expectOneCall("hci_can_send_packet_now_using_packet_buffer").andReturnValue(1);
+		// mock_simulate_hci_state_working();
+		// connect();
 	}
+	
+	void teardown(){
+        mock().clear();
+    }
 };
 
-TEST(LECentral, TestScanning){
-	le_central_start_scan();
-	mock_simulate_command_complete(&hci_le_set_scan_enable);
-	mock_simulate_scan_response();
-	CHECK(advertisement_received);
+
+
+// TEST(LECentral, TestScanning){
+// 	le_central_start_scan();
+// 	mock_simulate_command_complete(&hci_le_set_scan_enable);
+// 	mock_simulate_scan_response();
+// 	CHECK(advertisement_received);
+// }
+
+int productionCode(){
+	printf("productionCode 20\n");
+	mock().actualCall("productionCode");
+    return 20;
 }
+
+TEST(LECentral, SimpleScenario){
+    mock().expectOneCall("productionCode").andReturnValue(10);
+    printf("productionCode %d\n", productionCode());
+    mock().checkExpectations();
+}
+
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
