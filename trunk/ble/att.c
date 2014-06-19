@@ -1055,7 +1055,7 @@ uint16_t att_handle_request(att_connection_t * att_connection,
         case ATT_WRITE_COMMAND:
             handle_write_command(att_connection, request_buffer, request_len, response_buffer, response_buffer_size);
             break;
-        case ATT_SIGNED_WRITE_COMAND:
+        case ATT_SIGNED_WRITE_COMMAND:
             printf("handle_signed_write_command preprocessed by att_server.c\n");
             break;
         default:
