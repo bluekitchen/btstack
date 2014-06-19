@@ -2313,3 +2313,13 @@ le_command_status_t gap_disconnect(hci_con_handle_t handle){
     hci_run();
     return BLE_PERIPHERAL_OK;
 }
+
+void hci_disconnect_all(){
+    linked_list_iterator_t it;
+    linked_list_iterator_init(&it, &hci_stack->connections);
+    while (linked_list_iterator_has_next(&it)){
+        hci_connection_t * con = (hci_connection_t*) linked_list_iterator_next(&it);
+        if (con->state == SENT_DISCONNECT) continue;
+        con->state = SEND_DISCONNECT;
+    }
+}

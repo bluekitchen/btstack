@@ -211,7 +211,7 @@ static void send_gatt_query_complete(connection_t * connection, uint16_t handle,
 gatt_client_t * daemon_prepare_gatt_client_context(connection_t *connection, uint8_t *packet) {
     hci_con_handle_t handle = READ_BT_16(packet, 3);
     
-    hci_connection_t hci_con = hci_connection_for_handle(handle);
+    hci_connection_t * hci_con = hci_connection_for_handle(handle);
     if (hci_con->state != OPEN){
         send_gatt_query_complete(connection, handle, GATT_CLIENT_NOT_CONNECTED);
         return NULL;
@@ -757,6 +757,11 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                     // NOTE: experimental - disconnect all LE connections where GATT Client was used
                     gatt_client_disconnect_connection(connection);
 #endif
+                    // no clients -> no HCI connections
+                    if (!clients){
+                        hci_disconnect_all();
+                    }
+
                     client = client_for_connection(connection);
                     if (!client) break;
                     linked_list_remove(&clients, (linked_item_t *) client);
