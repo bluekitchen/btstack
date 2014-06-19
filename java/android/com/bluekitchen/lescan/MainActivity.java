@@ -30,8 +30,8 @@ public class MainActivity extends Activity implements PacketHandler {
 
 	private enum STATE {
 		w4_btstack_working, w4_scan_result, w4_connected, w4_services_complete, w4_characteristic_complete, w4_characteristic_read
-	, w4_characteristic_write, w4_acc_service_result, w4_acc_enable_characteristic_result, w4_write_acc_enable_result, w4_acc_client_config_characteristic_result, w4_acc_client_config_result,
-	w4_acc_data, w4_connected_acc
+		, w4_characteristic_write, w4_acc_service_result, w4_acc_enable_characteristic_result, w4_write_acc_enable_result, w4_acc_client_config_characteristic_result, w4_acc_client_config_result,
+		w4_acc_data, w4_connected_acc, w4_disconnect
 	};
 
 	private TextView tv;
@@ -44,6 +44,7 @@ public class MainActivity extends Activity implements PacketHandler {
 	private GATTCharacteristic testCharacteristic;
 	private int service_count = 0;
 	private int characteristic_count = 0;
+	private int test_run_count = 0;
 	
 	private byte[] acc_service_uuid =           new byte[] {(byte)0xf0, 0, (byte)0xaa, (byte)0x10, 4, (byte)0x51, (byte)0x40, 0, (byte)0xb0, 0, 0, 0, 0, 0, 0, 0};
 	private byte[] acc_chr_client_config_uuid = new byte[] {(byte)0xf0, 0, (byte)0xaa, (byte)0x11, 4, (byte)0x51, (byte)0x40, 0, (byte)0xb0, 0, 0, 0, 0, 0, 0, 0};
@@ -53,17 +54,17 @@ public class MainActivity extends Activity implements PacketHandler {
 	private GATTService accService;
 	private GATTCharacteristic enableCharacteristic;
 	private GATTCharacteristic configCharacteristic;
-	
-	
+
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		
-	    tv = new TextView(this);
-        setContentView(tv);
 
-        test();
+		tv = new TextView(this);
+		setContentView(tv);
+
+		test();
 	}
 
 	void addMessage(final String message){
@@ -75,6 +76,14 @@ public class MainActivity extends Activity implements PacketHandler {
 			}
 		});
 	}
+	void clearMessages(){
+		runOnUiThread(new Runnable(){
+			public void run(){
+				tv.setText("");
+			}
+		});
+	}
+
 	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -82,23 +91,14 @@ public class MainActivity extends Activity implements PacketHandler {
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
-	
-	public void handlePacket(Packet packet){
-		
-//		System.out.println(packet.toString());
-		if (packet instanceof HCIEventDisconnectionComplete){
-			HCIEventDisconnectionComplete event = (HCIEventDisconnectionComplete) packet;
-			testHandle = event.getConnectionHandle();
-			addMessage(String.format("Received disconnect, status %d, handle %x", event.getStatus(), testHandle));
-			return;
-		}
-		
+
+	public void testCharacteristics(Packet packet){
 		switch (state){
 		case w4_btstack_working:
 			if (packet instanceof BTstackEventState){
 				BTstackEventState event = (BTstackEventState) packet;
 				if (event.getState() == 2)	{
-					
+
 					addMessage("GAPLEScanStart()");
 					state = STATE.w4_scan_result;
 					btstack.GAPLEScanStart();
@@ -115,11 +115,10 @@ public class MainActivity extends Activity implements PacketHandler {
 				addMessage("GAPLEScanStop()");
 				btstack.GAPLEScanStop();
 				addMessage("GAPLEConnect(...)");
-				state = STATE.w4_connected_acc;
+				state = STATE.w4_connected;
 				btstack.GAPLEConnect(testAddrType, testAddr);
 			}
 			break;
-			
 		case w4_connected:
 			if (packet instanceof HCIEventLEConnectionComplete){
 				HCIEventLEConnectionComplete event = (HCIEventLEConnectionComplete) packet;
@@ -146,7 +145,7 @@ public class MainActivity extends Activity implements PacketHandler {
 				btstack.GATTDiscoverCharacteristicsForService(testHandle, testService);
 			}
 			break;
-				
+
 		case w4_characteristic_complete:
 			if (packet instanceof GATTCharacteristicQueryResult){
 				GATTCharacteristicQueryResult event = (GATTCharacteristicQueryResult) packet;
@@ -176,11 +175,45 @@ public class MainActivity extends Activity implements PacketHandler {
 		case w4_characteristic_write:
 			if (packet instanceof GATTQueryComplete){
 				addMessage("Write complete, search for ACC service");
-				state = STATE.w4_acc_service_result;
-				btstack.GATTDiscoverPrimaryServicesByUUID128(testHandle, new BT_UUID(this.acc_service_uuid)); // not working
+				state = STATE.w4_btstack_working;
+				btstack.GAPDisconnect(testHandle);
 			}
 			break;
-		
+
+		default:
+			break;
+		}
+	}
+
+	public void testAccelerometer(Packet packet){
+		switch (state){
+		case w4_btstack_working:
+			if (packet instanceof BTstackEventState){
+				BTstackEventState event = (BTstackEventState) packet;
+				if (event.getState() == 2)	{
+					addMessage("GAPLEScanStart()");
+					state = STATE.w4_scan_result;
+					btstack.GAPLEScanStart();
+				}
+			}
+			break;
+		case w4_scan_result:
+			if (packet instanceof GAPLEAdvertisingReport){
+				GAPLEAdvertisingReport report = (GAPLEAdvertisingReport) packet;
+				testAddrType = report.getAddressType();
+				testAddr = report.getAddress();
+				addMessage(String.format("Adv: type %d, addr %s", testAddrType, testAddr));
+				addMessage(String.format("Data: %s", Util.asHexdump(report.getData())));
+				addMessage("GAPLEScanStop()");
+				btstack.GAPLEScanStop();
+				addMessage("GAPLEConnect(...)");
+				state = STATE.w4_connected_acc;
+				btstack.GAPLEConnect(testAddrType, testAddr);
+			}
+			break;
+
+
+
 		case w4_connected_acc:
 			if (packet instanceof HCIEventLEConnectionComplete){
 				HCIEventLEConnectionComplete event = (HCIEventLEConnectionComplete) packet;
@@ -193,8 +226,8 @@ public class MainActivity extends Activity implements PacketHandler {
 				btstack.GATTDiscoverPrimaryServicesByUUID128(testHandle, new BT_UUID(uuid));
 			}
 			break;
-		
-		 case w4_acc_service_result:
+
+		case w4_acc_service_result:
 			addMessage(String.format("w4_acc_service_result state"));
 			if (packet instanceof GATTServiceQueryResult){
 				GATTServiceQueryResult event = (GATTServiceQueryResult) packet;
@@ -214,7 +247,7 @@ public class MainActivity extends Activity implements PacketHandler {
 				btstack.GATTDiscoverCharacteristicsForServiceByUUID128(testHandle, accService, new BT_UUID(uuid));
 			}
 			break;
-		
+
 		case w4_acc_enable_characteristic_result:
 			if (packet instanceof GATTCharacteristicQueryResult){
 				GATTCharacteristicQueryResult event = (GATTCharacteristicQueryResult) packet;
@@ -240,7 +273,7 @@ public class MainActivity extends Activity implements PacketHandler {
 				state = STATE.w4_acc_client_config_characteristic_result;
 			}
 			break;
-			
+
 		case w4_acc_client_config_characteristic_result:
 			if (packet instanceof GATTCharacteristicQueryResult){
 				GATTCharacteristicQueryResult event = (GATTCharacteristicQueryResult) packet;
@@ -257,26 +290,137 @@ public class MainActivity extends Activity implements PacketHandler {
 				btstack.GATTWriteClientCharacteristicConfiguration(testHandle, configCharacteristic, this.acc_notification);
 			}	
 			break;
-		
+
 		case w4_acc_data:
 			if (packet instanceof GATTQueryComplete){
 				addMessage("Acc configured for notification");
 				break;
 			}
-			
+
 			if (packet instanceof GATTNotification){
 				addMessage("Acc Value");
 				Log.d(BTSTACK_TAG, packet.toString());
+				state = STATE.w4_btstack_working;
 				btstack.GAPDisconnect(testHandle);
 			}
-		
+
 		default:
 			break;
 		}
 	}
-	
-	void test(){
+
+	public void testConnectDisconnect(Packet packet){
+		if (packet instanceof HCIEventDisconnectionComplete){
+			if (state != STATE.w4_disconnect) {
+				state = STATE.w4_scan_result;
+				btstack.GAPLEScanStart();
+				clearMessages();
+				HCIEventDisconnectionComplete event = (HCIEventDisconnectionComplete) packet;
+				addMessage(String.format("Unexpected disconnect %x. Start scan.", event.getConnectionHandle()));
+				return;
+			}
+		}
 		
+		switch (state){
+		case w4_btstack_working:
+			if (packet instanceof BTstackEventState){
+				BTstackEventState event = (BTstackEventState) packet;
+				if (event.getState() == 2)	{
+					addMessage("GAPLEScanStart()");
+					state = STATE.w4_scan_result;
+					btstack.GAPLEScanStart();
+				}
+			}
+			break;
+		case w4_scan_result:
+			if (packet instanceof GAPLEAdvertisingReport){
+				
+				BD_ADDR sensor_tag_addr = new BD_ADDR("1C:BA:8C:20:C7:F6");
+				BD_ADDR pts_dongle = new BD_ADDR("00:1B:DC:07:32:EF");
+
+				GAPLEAdvertisingReport report = (GAPLEAdvertisingReport) packet;
+				BD_ADDR reportAddr = report.getAddress();
+				if (reportAddr.toString().equalsIgnoreCase(pts_dongle.toString())){
+					testAddrType = report.getAddressType();
+					testAddr = report.getAddress();
+					addMessage(String.format("Adv: type %d, addr %s", testAddrType, testAddr));
+					addMessage(String.format("Data: %s", Util.asHexdump(report.getData())));
+
+					addMessage("GAPLEScanStop()");
+					btstack.GAPLEScanStop();
+					addMessage("GAPLEConnect(...)");
+					state = STATE.w4_connected;
+					
+					btstack.GAPLEConnect(testAddrType, testAddr);
+				}
+			}
+			break;
+		case w4_connected:
+			if (packet instanceof HCIEventLEConnectionComplete){
+				HCIEventLEConnectionComplete event = (HCIEventLEConnectionComplete) packet;
+				
+				testHandle = event.getConnectionHandle();
+				addMessage(String.format("Connection complete, status %d, handle %x", event.getStatus(), testHandle));
+				state = STATE.w4_services_complete;
+				addMessage("GATTDiscoverPrimaryServices(...)");
+				btstack.GATTDiscoverPrimaryServices(testHandle);
+				
+			}
+			break;
+		case w4_services_complete:
+			if (packet instanceof GATTServiceQueryResult){
+				GATTServiceQueryResult event = (GATTServiceQueryResult) packet;
+				if (testService == null){
+					addMessage(String.format("First service UUID %s", event.getService().getUUID()));
+					testService = event.getService();
+				}
+				Log.d(BTSTACK_TAG, "Service: " + event.getService());
+				service_count++;
+			}
+			if (packet instanceof GATTQueryComplete){
+				addMessage(String.format("Service query complete, total %d services", service_count));
+				state = STATE.w4_disconnect;
+				test_run_count++;
+				btstack.GAPDisconnect(testHandle);
+			}
+			break;
+		case w4_disconnect:
+			Log.d(BTSTACK_TAG, packet.toString());
+			if (packet instanceof HCIEventDisconnectionComplete){
+				clearMessages();
+				addMessage(String.format("Test run number %d started.", test_run_count));
+				if (test_run_count%10 == 0){
+					addMessage("Power off BTstack.");
+					state = STATE.w4_btstack_working;
+					btstack.BTstackSetPowerMode(0);
+					try {
+						Thread.sleep(15000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					addMessage("Power on BTstack.");
+					btstack.BTstackSetPowerMode(1);
+				} else {
+					addMessage("GAPLEScanStart()");
+					state = STATE.w4_scan_result;
+					btstack.GAPLEScanStart();
+				}
+			}
+			break;
+		default:
+			break;
+		}
+	}
+
+	
+	public void handlePacket(Packet packet){
+		// testCharacteristics(packet);
+		// testAccelerometer(packet);
+		testConnectDisconnect(packet);
+	}
+
+	void test(){
+
 		addMessage("LE Test Application");
 
 		btstack = new BTstack();
@@ -287,9 +431,9 @@ public class MainActivity extends Activity implements PacketHandler {
 			addMessage("Failed to connect to BTstack Server");
 			return;
 		}
-					
+
 		addMessage("BTstackSetPowerMode(1)");
-		
+
 		state = STATE.w4_btstack_working;
 		btstack.BTstackSetPowerMode(1);
 	}
