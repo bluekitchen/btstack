@@ -2322,4 +2322,5 @@ void hci_disconnect_all(){
         if (con->state == SENT_DISCONNECT) continue;
         con->state = SEND_DISCONNECT;
     }
+    hci_run();
 }
