@@ -45,18 +45,10 @@ static void att_init_connection(att_connection_t * att_connection){
 	att_connection->authorized = 0;
 }
 
-int hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type){
-	return 1;
-}
-
 int  l2cap_can_send_connectionless_packet_now(void){
 	return 1;	
 }
 
-int hci_send_cmd(const hci_cmd_t *cmd, ...){
-//	printf("hci_send_cmd opcode 0x%02x\n", cmd->opcode);	
-	return 0;
-}
 
 
 uint8_t *l2cap_get_outgoing_buffer(void){
@@ -98,14 +90,22 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
 	return 0;
 }
 
+// int hci_send_cmd(const hci_cmd_t *cmd, ...){
+// //	printf("hci_send_cmd opcode 0x%02x\n", cmd->opcode);	
+// 	return 0;
+// }
 
-void hci_disconnect_security_block(hci_con_handle_t con_handle){
-	printf("hci_disconnect_security_block \n");	
-}
+// int hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type){
+// 	return 1;
+// }
 
-void hci_dump_log(const char * format, ...){
-	printf("hci_disconnect_security_block \n");	
-}
+// void hci_disconnect_security_block(hci_con_handle_t con_handle){
+// 	printf("hci_disconnect_security_block \n");	
+// }
+
+// void hci_dump_log(const char * format, ...){
+// 	printf("hci_disconnect_security_block \n");	
+// }
 
 void l2cap_run(void){
 }

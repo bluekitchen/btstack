@@ -98,7 +98,9 @@ typedef enum {
     P_W2_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR,
     P_W4_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT,
     P_W2_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR,
-    P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT
+    P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT,
+
+    P_W4_CMAC
 } gatt_client_state_t;
     
     
@@ -145,6 +147,9 @@ typedef struct gatt_client{
     uint8_t  filter_with_uuid;
     uint8_t  send_confirmation;
     
+    sm_key_t csrk;
+    uint32_t sign_counter;
+    uint8_t  cmac[8];
 } gatt_client_t;
 
 typedef struct le_event {
@@ -282,6 +287,7 @@ le_command_status_t gatt_client_write_long_characteristic_descriptor(gatt_client
 
 le_command_status_t gatt_client_write_client_characteristic_configuration(gatt_client_t *context, le_characteristic_t * characteristic, uint16_t configuration);
 
+le_command_status_t gatt_client_signed_write(gatt_client_t * context, uint16_t handle, uint16_t message_len, uint8_t * message, sm_key_t csrk, uint32_t sgn_counter);
 // { read/write/subscribe/unsubscribe confirm/result}
 
 // { type, le_peripheral *, characteristic handle, int len, uint8_t data[]?}

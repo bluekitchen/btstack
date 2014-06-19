@@ -52,6 +52,7 @@
 #include "l2cap.h"
 #include "att.h"
 #include "att_dispatch.h"
+#include "sm.h"
 
 #ifdef HAVE_UART_CC2564
 #include "bt_control_cc256x.h"
@@ -171,6 +172,19 @@ static void att_read_blob_request(uint16_t request_type, uint16_t peripheral_han
     bt_store_16(request, 3, value_offset);
     
     l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 5);
+}
+
+// precondition: can_send_packet_now == TRUE
+static void att_signed_write_request(uint16_t request_type, uint16_t peripheral_handle, uint16_t attribute_handle, uint16_t value_length, uint8_t * value, uint32_t sign_counter, uint8_t sgn[8]){
+    l2cap_reserve_packet_buffer();
+    uint8_t * request = l2cap_get_outgoing_buffer();
+    request[0] = request_type;
+    bt_store_16(request, 1, attribute_handle);
+    memcpy(&request[3], value, value_length);
+    bt_store_32(request, 3 + value_length, sign_counter);
+    memcpy(&request[3+value_length+4], sgn, 8);
+    
+    l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3 + value_length + 12);
 }
 
 // precondition: can_send_packet_now == TRUE
@@ -718,6 +732,7 @@ static void gatt_client_run(){
                 peripheral->gatt_client_state = P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT;
                 send_gatt_execute_write_request(peripheral);
                 break;
+           
             default:
                 break;
         }
@@ -1010,7 +1025,40 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
     gatt_client_run();
 }
 
+static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
+    linked_list_iterator_t it;
+    linked_list_iterator_init(&it, &gatt_client_connections);
+    while (linked_list_iterator_has_next(&it)){
+        gatt_client_t * peripheral = (gatt_client_t *) linked_list_iterator_next(&it);
+        if (peripheral->gatt_client_state == P_W4_CMAC){
+            peripheral->gatt_client_state = P_READY;
+            memcpy(peripheral->cmac, hash, 8);
 
+            att_signed_write_request(ATT_SIGNED_WRITE_COMMAND, peripheral->handle, peripheral->attribute_handle, peripheral->attribute_length, peripheral->attribute_value, peripheral->sign_counter, peripheral->cmac);
+            return;
+        }
+    }
+}
+
+
+le_command_status_t gatt_client_signed_write(gatt_client_t * peripheral, uint16_t handle, uint16_t message_len, uint8_t * message, sm_key_t csrk, uint32_t sign_counter){
+    if (!gatt_client_is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
+    if (!sm_cmac_ready()) {
+        printf("ATT Signed Write, sm_cmac engine not ready. Abort\n");
+        return BLE_PERIPHERAL_IN_WRONG_STATE;
+    } 
+
+    peripheral->attribute_handle = handle;
+    peripheral->attribute_length = message_len;
+    peripheral->attribute_value = message;
+    peripheral->gatt_client_state = P_W4_CMAC;
+    peripheral->sign_counter = sign_counter;
+    memcpy(peripheral->csrk, csrk, 16);
+    
+    sm_cmac_start(peripheral->csrk, peripheral->attribute_length, peripheral->attribute_value, att_signed_write_handle_cmac_result);
+    gatt_client_run();
+    return BLE_PERIPHERAL_OK; 
+}
 
 le_command_status_t gatt_client_discover_primary_services(gatt_client_t *peripheral){
     if (!gatt_client_is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
