@@ -211,6 +211,12 @@ static void send_gatt_query_complete(connection_t * connection, uint16_t handle,
 gatt_client_t * daemon_prepare_gatt_client_context(connection_t *connection, uint8_t *packet) {
     hci_con_handle_t handle = READ_BT_16(packet, 3);
     
+    hci_connection_t hci_con = hci_connection_for_handle(handle);
+    if (hci_con->state != OPEN){
+        send_gatt_query_complete(connection, handle, GATT_CLIENT_NOT_CONNECTED);
+        return NULL;
+    }
+
     gatt_client_t *context = daemon_provide_gatt_client_context_for_handle(handle);
     if (!context) {
         send_gatt_query_complete(connection, handle, BTSTACK_MEMORY_ALLOC_FAILED);

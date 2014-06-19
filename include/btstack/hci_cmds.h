@@ -404,6 +404,7 @@ extern "C" {
 #define ATT_HANDLE_VALUE_INDICATION_IN_PORGRESS 		   0x90 
 #define ATT_HANDLE_VALUE_INDICATION_TIMEOUT				   0x91
 
+#define GATT_CLIENT_NOT_CONNECTED                          0x93
 #define GATT_CLIENT_BUSY								   0x94
 
 typedef enum {
