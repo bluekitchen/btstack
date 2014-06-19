@@ -213,7 +213,7 @@ static void att_run(void){
         case ATT_SERVER_W4_SIGNED_WRITE_VALIDATION:
             return;
         case ATT_SERVER_REQUEST_RECEIVED:
-            if (att_request_buffer[0] == ATT_SIGNED_WRITE_COMAND){
+            if (att_request_buffer[0] == ATT_SIGNED_WRITE_COMMAND){
                 printf("ATT Signed Write!\n");
                 if (!sm_cmac_ready()) {
                     printf("ATT Signed Write, sm_cmac engine not ready. Abort\n");

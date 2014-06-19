@@ -78,8 +78,8 @@ extern "C" {
 #define ATT_HANDLE_VALUE_CONFIRMATION   0x1e
 
 
-#define ATT_WRITE_COMMAND               0x52
-#define ATT_SIGNED_WRITE_COMAND         0xD2
+#define ATT_WRITE_COMMAND                0x52
+#define ATT_SIGNED_WRITE_COMMAND         0xD2
 
 // MARK: ATT Error Codes
 #define ATT_ERROR_INVALID_HANDLE                   0x01
