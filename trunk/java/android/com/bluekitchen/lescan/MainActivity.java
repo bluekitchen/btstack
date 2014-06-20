@@ -14,6 +14,7 @@ import com.bluekitchen.btstack.GATTService;
 import com.bluekitchen.btstack.Packet;
 import com.bluekitchen.btstack.PacketHandler;
 import com.bluekitchen.btstack.Util;
+import com.bluekitchen.btstack.event.BTstackEventDaemonDisconnect;
 import com.bluekitchen.btstack.event.BTstackEventState;
 import com.bluekitchen.btstack.event.GAPLEAdvertisingReport;
 import com.bluekitchen.btstack.event.GATTCharacteristicQueryResult;
@@ -310,6 +311,21 @@ public class MainActivity extends Activity implements PacketHandler {
 	}
 
 	public void testConnectDisconnect(Packet packet){
+		
+		if (packet instanceof BTstackEventDaemonDisconnect){
+			addMessage("Daemon disconnected, restarting connection");
+			
+			// wait a bit for BTstack to restart
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+			}
+			
+			// start all over
+			test();
+			return;
+		}
+		
 		if (packet instanceof HCIEventDisconnectionComplete){
 			if (state != STATE.w4_disconnect) {
 				state = STATE.w4_scan_result;
@@ -419,6 +435,7 @@ public class MainActivity extends Activity implements PacketHandler {
 		testConnectDisconnect(packet);
 	}
 
+	
 	void test(){
 
 		addMessage("LE Test Application");

@@ -1,5 +1,7 @@
 package com.bluekitchen.btstack;
 
+import com.bluekitchen.btstack.event.BTstackEventDaemonDisconnect;
+
 public class BTstackClient {
 
 	/**
@@ -69,14 +71,19 @@ public class BTstackClient {
 			public void run() {
 				while (socketConnection != null && !Thread.currentThread().isInterrupted()){
 					Packet packet = socketConnection.receivePacket();
-					if (packet == null) break;
+					if (packet == null) {
+						// server disconnected
+						System.out.println("Rx Thread: Daemon Disconnected");
+						packetHandler.handlePacket(new BTstackEventDaemonDisconnect());
+						return;
+					}
 					if (packet.getPacketType() == Packet.HCI_EVENT_PACKET){
 						packetHandler.handlePacket(EventFactory.eventForPacket(packet));
 						continue;
 					}
 					packetHandler.handlePacket(packet);
 				}
-				System.out.println("Rx Thread: Disconnected");
+				System.out.println("Rx Thread: Interrupted");
 			}
 		});
 		rxThread.start();
