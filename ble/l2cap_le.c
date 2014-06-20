@@ -72,6 +72,9 @@ void l2cap_init(){
     hci_connectable_control(0); // no services yet
 }
 
+uint16_t l2cap_max_mtu(void){
+    return hci_max_acl_data_packet_length() - L2CAP_HEADER_SIZE;
+}
 
 /** Register L2CAP packet handlers */
 void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
