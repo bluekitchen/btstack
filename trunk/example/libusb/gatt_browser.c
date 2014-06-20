@@ -83,7 +83,8 @@ typedef enum {
     TC_W4_DISCONNECT
 } tc_state_t;
 
-
+static bd_addr_t cmdline_addr = { };
+static int cmdline_addr_found = 0;
 static gatt_client_t test_gatt_client_context;
 static uint16_t test_gatt_client_handle;
 
@@ -214,6 +215,12 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
             if (packet[2] == HCI_STATE_WORKING) {
+                if (cmdline_addr_found){
+                    printf("Trying to connect to %s\n", bd_addr_to_str(cmdline_addr));
+                    tc_state = TC_W4_CONNECT;
+                    le_central_connect(&cmdline_addr, test_device_addr_type);
+                    break;
+                }
                 printf("BTstack activated, get started!\n");
                 tc_state = TC_W4_SCAN_RESULT;
                 le_central_start_scan(); 
@@ -272,10 +279,29 @@ void setup(void){
     gatt_client_register_handler(&handle_gatt_client_event);
 }
 
-int main(void)
+void usage(const char *name){
+	fprintf(stderr, "\nUsage: %s [-a|--address aa:bb:cc:dd:ee:ff]\n", name);
+	fprintf(stderr, "If no argument is provided, BTstack will start scannig and connect to the first found device.\nTo connect to a specific device use argument [-a].\n\n");
+}
+
+int main(int argc, const char * argv[])
 {
+    int arg = 1;
+    cmdline_addr_found = 0;
+    
+    while (arg < argc) {
+		if(!strcmp(argv[arg], "-a") || !strcmp(argv[arg], "--address")){
+			arg++;
+			cmdline_addr_found = sscan_bd_addr((uint8_t *)argv[arg], cmdline_addr);
+            arg++;
+            continue;
+        }
+    
+        usage(argv[0]);
+        return 0;
+	}
+
     setup();
- 
     // turn on!
     hci_power_control(HCI_POWER_ON);
     // go!
