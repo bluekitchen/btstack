@@ -8,9 +8,10 @@
 # CHARACTERISTIC, ATTRIBUTE_TYPE_UUID, [READ | WRITE | DYNAMIC], VALUE
 
 import re
-import StringIO
+import io
 import csv
 import string
+import codecs
 
 header = '''
 // {0} generated from {1} for BTstack
@@ -454,8 +455,8 @@ def parse(fname_in, fin, fname_out, fout):
             
         if len(line) == 0:
             continue
-            
-        f = StringIO.StringIO(line)
+        
+        f = io.StringIO(line)
         parts_list = csv.reader(f, delimiter=',', quotechar='"')
         
         for parts in parts_list:
@@ -519,7 +520,7 @@ if (len(sys.argv) < 3):
     sys.exit(1)
 try:
     filename = sys.argv[2]
-    fin  = open (sys.argv[1], 'r')
+    fin  = codecs.open (sys.argv[1], encoding='utf-8')
     fout = open (filename, 'w')
     parse(sys.argv[1], fin, filename, fout)
     listHandles(fout)    
