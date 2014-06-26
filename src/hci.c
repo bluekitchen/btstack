@@ -521,7 +521,7 @@ void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t * addr){
 }
 
 #ifdef HAVE_BLE
-static void le_handle_advertisement_report(uint8_t *packet, int size){
+void le_handle_advertisement_report(uint8_t *packet, int size){
     int num_reports = packet[3];
     int i;
     int total_data_length = 0;
