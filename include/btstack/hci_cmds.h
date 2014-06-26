@@ -82,11 +82,30 @@ extern "C" {
 #define PSM_HID_INTERRUPT 0x13
 
 // Events from host controller to host
-#define HCI_EVENT_INQUIRY_COMPLETE				           0x01
-#define HCI_EVENT_INQUIRY_RESULT				           0x02
-#define HCI_EVENT_CONNECTION_COMPLETE			           0x03
-#define HCI_EVENT_CONNECTION_REQUEST			           0x04
 
+/**
+ * @format 1
+ * @param status
+ */
+#define HCI_EVENT_INQUIRY_COMPLETE				           0x01
+// no format yet, can contain multiple results
+#define HCI_EVENT_INQUIRY_RESULT				           0x02
+/**
+ * @format 12B11
+ * @param status
+ * @param connection_handle
+ * @param bd_addr
+ * @param link_type
+ * @param encryption_enabled
+ */
+#define HCI_EVENT_CONNECTION_COMPLETE			           0x03
+/**
+ * @format B31
+ * @param bd_addr
+ * @param class_of_device
+ * @param link_type
+ */
+#define HCI_EVENT_CONNECTION_REQUEST			           0x04
 /**
  * @format 121
  * @param status
@@ -94,18 +113,46 @@ extern "C" {
  * @param reason 
  */
 #define HCI_EVENT_DISCONNECTION_COMPLETE		      	   0x05
-
+/**
+ * @format 12
+ * @param status
+ * @param connection_handle
+ */
 #define HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT            0x06
+// name not handle, no format yet
 #define HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE	           0x07
+/**
+ * @format 121
+ * @param status
+ * @param connection_handle
+ * @param encryption_enabled 
+ */
 #define HCI_EVENT_ENCRYPTION_CHANGE                        0x08
+/**
+ * @format 12
+ * @param status
+ * @param connection_handle
+ */
 #define HCI_EVENT_CHANGE_CONNECTION_LINK_KEY_COMPLETE      0x09
+/**
+ * @format 121
+ * @param status
+ * @param connection_handle
+ * @param key_flag 
+ */
 #define HCI_EVENT_MASTER_LINK_KEY_COMPLETE                 0x0A
 #define HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE  0x0B
 #define HCI_EVENT_READ_REMOTE_VERSION_INFORMATION_COMPLETE 0x0C
 #define HCI_EVENT_QOS_SETUP_COMPLETE			           0x0D
 #define HCI_EVENT_COMMAND_COMPLETE				           0x0E
 #define HCI_EVENT_COMMAND_STATUS				           0x0F
+
+/**
+ * @format 121
+ * @param hardware_code
+ */
 #define HCI_EVENT_HARDWARE_ERROR                           0x10
+
 #define HCI_EVENT_FLUSH_OCCURED                            0x11
 #define HCI_EVENT_ROLE_CHANGE				               0x12
 #define HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS	      	   0x13
