@@ -57,6 +57,7 @@
 #include "l2cap.h"
 #include "att.h"
 #include "gatt_client.h"
+#include "sm.h"
 
 #ifdef HAVE_UART_CC2564
 #include "bt_control_cc256x.h"
@@ -279,7 +280,7 @@ void setup(void){
     gatt_client_register_handler(&handle_gatt_client_event);
 
     sm_init();
-    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);}
+    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
 }
 
 void usage(const char *name){
