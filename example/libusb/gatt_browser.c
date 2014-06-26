@@ -277,6 +277,9 @@ void setup(void){
 
     gatt_client_init();
     gatt_client_register_handler(&handle_gatt_client_event);
+
+    sm_init();
+    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);}
 }
 
 void usage(const char *name){
