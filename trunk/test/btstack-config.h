@@ -5,6 +5,7 @@
 #define HAVE_BZERO
 #define HAVE_TIME
 #define SDP_DES_DUMP
+#define HAVE_BLE
 
 // #define ENABLE_LOG_INFO 
 // #define ENABLE_LOG_ERROR
