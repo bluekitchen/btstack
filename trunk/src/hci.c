@@ -73,6 +73,8 @@ static void hci_update_scan_enable(void);
 static gap_security_level_t gap_security_level_for_connection(hci_connection_t * connection);
 static void hci_connection_timeout_handler(timer_source_t *timer);
 static void hci_connection_timestamp(hci_connection_t *connection);
+static int  hci_power_control_on(void);
+static void hci_power_control_off(void);
 
 // the STACK is here
 #ifndef HAVE_MALLOC
@@ -881,6 +883,10 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_HARDWARE_ERROR:
             if(hci_stack->control && hci_stack->control->hw_error){
                 (*hci_stack->control->hw_error)();
+            } else {
+                // if no special requests, just reboot stack
+                hci_power_control_off();
+                hci_power_control_on();
             }
             break;
 
@@ -945,7 +951,6 @@ static void event_handler(uint8_t *packet, int size){
             }
             break;
 #endif            
-            
         default:
             break;
     }
