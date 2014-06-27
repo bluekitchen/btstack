@@ -216,9 +216,12 @@ typedef struct le_characteristic_descriptor_event{
     uint8_t * value;
 } le_characteristic_descriptor_event_t;
 
-
+//TODO: define uuid type
     
+// Set up GATT client.
 void gatt_client_init();
+
+// Register packet handler.
 void gatt_client_register_handler(void (*le_callback)(le_event_t * event));
 
 // start/stop gatt client
@@ -230,33 +233,45 @@ void gatt_client_disconnect_connection(void * connection);
 // next command is used with daemon
 int gatt_client_is_ready(gatt_client_t *context);
 
-// returns primary services
+// Discovers all primary services. For each found service, an
+// le_service_event_t with type set to GATT_SERVICE_QUERY_RESULT
+// will be generated and passed to the registered callback.
+// The gatt_complete_event_t, with type set to GATT_QUERY_COMPLETE,
+// marks the end of discovery.
 le_command_status_t gatt_client_discover_primary_services(gatt_client_t *context);
-// { type (8), gatt_client_t *context, le_service * }
 
-
-//TODO: define uuid type
+// Discovers a specific primary service given its UUID. This service
+// may exist multiple times. For each found service, an
+// le_service_event_t with type set to GATT_SERVICE_QUERY_RESULT
+// will be generated and passed to the registered callback.
+// The gatt_complete_event_t, with type set to GATT_QUERY_COMPLETE,
+// marks the end of discovery.
 le_command_status_t gatt_client_discover_primary_services_by_uuid16(gatt_client_t *context, uint16_t uuid16);
 le_command_status_t gatt_client_discover_primary_services_by_uuid128(gatt_client_t *context, const uint8_t * uuid);
 
-// Returns included services.
-// Information about service type (primary/secondary) can be retrieved either by sending an ATT find query or
-// by comparing the service to the list of primary services obtained by calling le_central_get_services.
-le_command_status_t gatt_client_find_included_services_for_service(gatt_client_t *context, le_service_t *service);
-// { type (8), gatt_client_t *context, le_service * }
 
-// returns characteristics, no included services
+// Finds included services within the specified service. For each
+// found included service, an le_service_event_t with type set to
+// GATT_INCLUDED_SERVICE_QUERY_RESULT will be generated and passed
+// to the registered callback. The gatt_complete_event_t with type
+// set to GATT_QUERY_COMPLETE, marks the end of discovery.
+//
+// Information about included service type (primary/secondary) can
+// be retrieved either by sending an ATT find information request
+// for the returned start group handle (returning the handle and
+// the UUID for primary or secondary service) or by comparing the
+// service to the list of all primary services.
+le_command_status_t gatt_client_find_included_services_for_service(gatt_client_t *context, le_service_t *service);
+
+    // returns characteristics, no included services
 le_command_status_t gatt_client_discover_characteristics_for_service(gatt_client_t *context, le_service_t *service);
-// { type (8), gatt_client_t *context, service_handle, le_characteristic *}
 
 //
 // more convenience - all use the same query mechanism, but provided different ways to specify handle range and/or filter results
 // 
 // gets all characteristics in handle range, and returns those that match the given UUID.
 le_command_status_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(gatt_client_t *context, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
-// { type (8), gatt_client_t *context, service_handle, le_characteristic *}
 le_command_status_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(gatt_client_t *context, uint16_t start_handle, uint16_t end_handle, uint8_t * uuid);
-// { type (8), gatt_client_t *context, service_handle, le_characteristic *}
 le_command_status_t gatt_client_discover_characteristics_for_service_by_uuid16 (gatt_client_t *context, le_service_t *service, uint16_t  uuid16);
 le_command_status_t gatt_client_discover_characteristics_for_service_by_uuid128(gatt_client_t *context, le_service_t *service, uint8_t * uuid128);
 
@@ -288,9 +303,6 @@ le_command_status_t gatt_client_write_long_characteristic_descriptor(gatt_client
 le_command_status_t gatt_client_write_client_characteristic_configuration(gatt_client_t *context, le_characteristic_t * characteristic, uint16_t configuration);
 
 le_command_status_t gatt_client_signed_write(gatt_client_t * context, uint16_t handle, uint16_t message_len, uint8_t * message, sm_key_t csrk, uint32_t sgn_counter);
-// { read/write/subscribe/unsubscribe confirm/result}
-
-// { type, le_peripheral *, characteristic handle, int len, uint8_t data[]?}
 
 #if defined __cplusplus
 }
