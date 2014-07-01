@@ -418,7 +418,7 @@ static void acl_handler(uint8_t *packet, int size){
 }
 
 static void hci_shutdown_connection(hci_connection_t *conn){
-    log_info("Connection closed: handle %u, %s\n", conn->con_handle, bd_addr_to_str(conn->address));
+    log_info("Connection closed: handle 0x%x, %s\n", conn->con_handle, bd_addr_to_str(conn->address));
 
     run_loop_remove_timer(&conn->timeout);
     
@@ -1593,11 +1593,13 @@ void hci_run(){
                     hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
                     break;
                 case 2: // LOCAL BAUD CHANGE
+                    log_info("Local baud rate change");
                     hci_stack->hci_transport->set_baudrate(((hci_uart_config_t *)hci_stack->config)->baudrate_main);
                     hci_stack->substate += 2;
                     // break missing here for fall through
                     
                 case 3:
+                    log_info("Custom init");
                     // Custom initialization
                     if (hci_stack->control && hci_stack->control->next_cmd){
                         int valid_cmd = (*hci_stack->control->next_cmd)(hci_stack->config, hci_stack->hci_packet_buffer);
@@ -2244,16 +2246,17 @@ void le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, u
 
 le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_type){
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
-    log_info("le_central_connect, conn struct %p", conn);
     if (!conn){
+        log_info("le_central_connect: no connection exists yet, creating context");
         conn = create_connection_for_bd_addr_and_type(*addr, addr_type);
         if (!conn){
             // notify client that alloc failed
             hci_emit_le_connection_complete(conn, BTSTACK_MEMORY_ALLOC_FAILED);
+            log_info("le_central_connect: failed to alloc context");
             return BLE_PERIPHERAL_NOT_CONNECTED; // don't sent packet to controller
         }
         conn->state = SEND_CREATE_CONNECTION;
-        log_info("le_central_connect, state %u", conn->state);
+        log_info("le_central_connect: send create connection next");
         hci_run();
         return BLE_PERIPHERAL_OK;
     }
@@ -2262,10 +2265,11 @@ le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_typ
         conn->state == SEND_CREATE_CONNECTION ||
         conn->state == SENT_CREATE_CONNECTION) {
         hci_emit_le_connection_complete(conn, ERROR_CODE_COMMAND_DISALLOWED);
+        log_error("le_central_connect: classic connection or connect is already being created");
         return BLE_PERIPHERAL_IN_WRONG_STATE;
     }
     
-    log_info("le_central_connect, state %u", conn->state);
+    log_info("le_central_connect: context exists with state %u", conn->state);
     hci_emit_le_connection_complete(conn, 0);
     hci_run();
     return BLE_PERIPHERAL_OK;
