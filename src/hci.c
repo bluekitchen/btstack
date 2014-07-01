@@ -1024,7 +1024,10 @@ void hci_state_reset(){
     // hci_stack->discoverable = 0;
     // hci_stack->connectable = 0;
     // hci_stack->bondable = 1;
-    
+
+    // buffer is free
+    hci_stack->hci_packet_buffer_reserved = 0;
+
     // no pending cmds
     hci_stack->decline_reason = 0;
     hci_stack->new_scan_enable_value = 0xff;
@@ -1211,6 +1214,13 @@ static int hci_power_control_wake(void){
     return 0;
 }
 
+static void hci_power_transition_to_initializing(void){
+    // set up state machine
+    hci_stack->num_cmd_packets = 1; // assume that one cmd can be sent
+    hci_stack->hci_packet_buffer_reserved = 0;
+    hci_stack->state = HCI_STATE_INITIALIZING;
+    hci_stack->substate = 0;
+}
 
 int hci_power_control(HCI_POWER_MODE power_mode){
     
@@ -1227,10 +1237,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                         log_error("hci_power_control_on() error %u", err);
                         return err;
                     }
-                    // set up state machine
-                    hci_stack->num_cmd_packets = 1; // assume that one cmd can be sent
-                    hci_stack->state = HCI_STATE_INITIALIZING;
-                    hci_stack->substate = 0;
+                    hci_power_transition_to_initializing();
                     break;
                 case HCI_POWER_OFF:
                     // do nothing
@@ -1277,9 +1284,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
         case HCI_STATE_HALTING:
             switch (power_mode){
                 case HCI_POWER_ON:
-                    // set up state machine
-                    hci_stack->state = HCI_STATE_INITIALIZING;
-                    hci_stack->substate = 0;
+                    hci_power_transition_to_initializing();
                     break;
                 case HCI_POWER_OFF:
                     // do nothing
@@ -1304,10 +1309,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                         break;
                     }
 #endif
-                    // set up state machine
-                    hci_stack->num_cmd_packets = 1; // assume that one cmd can be sent
-                    hci_stack->state = HCI_STATE_INITIALIZING;
-                    hci_stack->substate = 0;
+                    hci_power_transition_to_initializing();
                     break;
                 case HCI_POWER_OFF:
                     // see hci_run
@@ -1334,10 +1336,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
 #endif
                     err = hci_power_control_wake();
                     if (err) return err;
-                    // set up state machine
-                    hci_stack->num_cmd_packets = 1; // assume that one cmd can be sent
-                    hci_stack->state = HCI_STATE_INITIALIZING;
-                    hci_stack->substate = 0;
+                    hci_power_transition_to_initializing();
                     break;
                 case HCI_POWER_OFF:
                     hci_stack->state = HCI_STATE_HALTING;
