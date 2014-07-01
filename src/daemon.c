@@ -346,6 +346,9 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
     uint16_t serviceSearchPatternLen;
     uint16_t attributeIDListLen;
 
+    // verbose log info before other info to allow for better tracking
+    hci_dump_packet( HCI_COMMAND_DATA_PACKET, 1, packet, size);
+
     // BTstack internal commands - 16 Bit OpCode, 8 Bit ParamLen, Params...
     switch (READ_CMD_OCF(packet)){
         case BTSTACK_GET_STATE:
@@ -701,9 +704,6 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
     }
     
-    // verbose log info on command before dumped command unknown to PacketLogger or Wireshark
-    hci_dump_packet( HCI_COMMAND_DATA_PACKET, 1, packet, size);
-
     return 0;
 }
 
