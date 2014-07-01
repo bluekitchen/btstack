@@ -54,11 +54,6 @@
 #include "att_dispatch.h"
 #include "sm.h"
 
-#ifdef HAVE_UART_CC2564
-#include "bt_control_cc256x.h"
-#endif
-
-
 static linked_list_t gatt_client_connections = NULL;
 static uint16_t att_client_start_handle = 0x0001;
 
