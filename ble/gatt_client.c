@@ -573,15 +573,13 @@ gatt_client_t * get_gatt_client_context_for_handle(uint16_t handle){
 
 
 static void gatt_client_run(){
-    
-    if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
-    // printf("handle_peripheral_list 4\n");
+
     if (!l2cap_can_send_connectionless_packet_now()) return;
-    // printf("handle_peripheral_list 5\n");
-    
-    // printf("handle_peripheral_list empty %u\n", linked_list_empty(&le_connections));
+
     linked_item_t *it;
     for (it = (linked_item_t *) gatt_client_connections; it ; it = it->next){
+
+
         gatt_client_t * peripheral = (gatt_client_t *) it;
         // printf("- handle_peripheral_list, mtu state %u, client state %u\n", peripheral->mtu_state, peripheral->gatt_client_state);
         
@@ -626,107 +624,107 @@ static void gatt_client_run(){
             case P_W2_SEND_SERVICE_QUERY:
                 peripheral->gatt_client_state = P_W4_SERVICE_QUERY_RESULT;
                 send_gatt_services_request(peripheral);
-                break;
+                return;
                 
             case P_W2_SEND_SERVICE_WITH_UUID_QUERY:
                 peripheral->gatt_client_state = P_W4_SERVICE_WITH_UUID_RESULT;
                 send_gatt_services_by_uuid_request(peripheral);
-                break;
+                return;
                 
             case P_W2_SEND_ALL_CHARACTERISTICS_OF_SERVICE_QUERY:
                 peripheral->gatt_client_state = P_W4_ALL_CHARACTERISTICS_OF_SERVICE_QUERY_RESULT;
                 send_gatt_characteristic_request(peripheral);
-                break;
+                return;
                 
             case P_W2_SEND_CHARACTERISTIC_WITH_UUID_QUERY:
                 peripheral->gatt_client_state = P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT;
                 send_gatt_characteristic_request(peripheral);
-                break;
+                return;
                 
             case P_W2_SEND_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY:
                 peripheral->gatt_client_state = P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT;
                 send_gatt_characteristic_descriptor_request(peripheral);
-                break;
+                return;
                 
             case P_W2_SEND_INCLUDED_SERVICE_QUERY:
                 peripheral->gatt_client_state = P_W4_INCLUDED_SERVICE_QUERY_RESULT;
                 send_gatt_included_service_request(peripheral);
-                break;
+                return;
                 
             case P_W2_SEND_INCLUDED_SERVICE_WITH_UUID_QUERY:
                 peripheral->gatt_client_state = P_W4_INCLUDED_SERVICE_UUID_WITH_QUERY_RESULT;
                 send_gatt_included_service_uuid_request(peripheral);
-                break;
+                return;
                 
             case P_W2_SEND_READ_CHARACTERISTIC_VALUE_QUERY:
                 peripheral->gatt_client_state = P_W4_READ_CHARACTERISTIC_VALUE_RESULT;
                 send_gatt_read_characteristic_value_request(peripheral);
-                break;
+                return;
                 
             case P_W2_SEND_READ_BLOB_QUERY:
                 peripheral->gatt_client_state = P_W4_READ_BLOB_RESULT;
                 send_gatt_read_blob_request(peripheral);
-                break;
+                return;
                 
             case P_W2_SEND_WRITE_CHARACTERISTIC_VALUE:
                 peripheral->gatt_client_state = P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT;
                 send_gatt_write_attribute_value_request(peripheral);
-                break;
+                return;
                 
             case P_W2_PREPARE_WRITE:
                 peripheral->gatt_client_state = P_W4_PREPARE_WRITE_RESULT;
                 send_gatt_prepare_write_request(peripheral);
-                break;
+                return;
                 
             case P_W2_PREPARE_RELIABLE_WRITE:
                 peripheral->gatt_client_state = P_W4_PREPARE_RELIABLE_WRITE_RESULT;
                 send_gatt_prepare_write_request(peripheral);
-                break;
+                return;
                 
             case P_W2_EXECUTE_PREPARED_WRITE:
                 peripheral->gatt_client_state = P_W4_EXECUTE_PREPARED_WRITE_RESULT;
                 send_gatt_execute_write_request(peripheral);
-                break;
+                return;
                 
             case P_W2_CANCEL_PREPARED_WRITE:
                 peripheral->gatt_client_state = P_W4_CANCEL_PREPARED_WRITE_RESULT;
                 send_gatt_cancel_prepared_write_request(peripheral);
-                break;
+                return;
                 
             case P_W2_SEND_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY:
                 peripheral->gatt_client_state = P_W4_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT;
                 send_gatt_read_client_characteristic_configuration_request(peripheral);
-                break;
+                return;
                 
             case P_W2_SEND_READ_CHARACTERISTIC_DESCRIPTOR_QUERY:
                 peripheral->gatt_client_state = P_W4_READ_CHARACTERISTIC_DESCRIPTOR_RESULT;
                 send_gatt_read_characteristic_descriptor_request(peripheral);
-                break;
+                return;
                 
             case P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY:
                 peripheral->gatt_client_state = P_W4_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_RESULT;
                 send_gatt_read_blob_request(peripheral);
-                break;
+                return;
                 
             case P_W2_SEND_WRITE_CHARACTERISTIC_DESCRIPTOR:
                 peripheral->gatt_client_state = P_W4_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT;
                 send_gatt_write_attribute_value_request(peripheral);
-                break;
+                return;
                 
             case P_W2_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION:
                 peripheral->gatt_client_state = P_W4_CLIENT_CHARACTERISTIC_CONFIGURATION_RESULT;
                 send_gatt_write_client_characteristic_configuration_request(peripheral);
-                break;
+                return;
                 
             case P_W2_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR:
                 peripheral->gatt_client_state = P_W4_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT;
                 send_gatt_prepare_write_request(peripheral);
-                break;
+                return;
                 
             case P_W2_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR:
                 peripheral->gatt_client_state = P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT;
                 send_gatt_execute_write_request(peripheral);
-                break;
+                return;
            
             default:
                 break;
