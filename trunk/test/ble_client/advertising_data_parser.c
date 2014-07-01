@@ -51,6 +51,15 @@ static uint8_t adv_evt[] = {
     0xCE, 0xB5, 0x31, 0xF4, 0x05, 0x79, 0xb6, 0xbf, 0xc0
 };
 
+static uint8_t mtk_num_completed_evt[] ={
+    0x13 ,0x09, 0x02 ,0x01, 0x02 ,0x01, 0x00 ,0x01, 0x02 ,0x01, 0x00
+};
+
+static uint8_t num_completed_evt[] ={
+    0x13 ,0x09, 0x02 ,0x01, 0x02 ,0x01, 0x02, 0x01, 0x00, 0x01, 0x00
+};
+
+
 int dummy_callback(){
     return 0;
 }
@@ -133,6 +142,26 @@ static void fix_mtk_advertisement_report(uint8_t * packet, uint16_t size){
     memcpy(packet, fixed, size);
 }
 
+static void fix_mtk_num_completed_packets(uint8_t * packet, uint16_t size){
+    if (packet[0] != 0x13) return;
+    int num_handles = packet[2];
+    if (num_handles == 1) return;
+
+    uint8_t fixed[257];
+    
+    // header is correct
+    memcpy(fixed, packet, 3);
+
+    int i;
+    for (i=0; i<num_handles;i++){
+        fixed[3 + i*2] = packet[3 + i*4];
+        fixed[3 + i*2 + 1] = packet[3 + i*4 + 1];
+        fixed[3 + num_handles * 2 + i * 2] = packet[3 + i*4 + 2];
+        fixed[3 + num_handles * 2 + i * 2 + 1] = packet[3 + i*4 + 3];
+    }
+    memcpy(packet, fixed, size);
+}
+
 TEST_GROUP(ADParser){
     void setup(){
         hci_init(&dummy_transport, NULL, NULL, NULL);
@@ -171,6 +200,14 @@ TEST(ADParser, TestFixMtkAdvertisingReport){
     int j;
     for (j = 0; j < sizeof(mtk_adv_evt); j++){
         CHECK_EQUAL(mtk_adv_evt[j], adv_evt[j]);
+    }
+}
+
+TEST(ADParser, TestFixMtkNumCompletedPackets){
+    fix_mtk_num_completed_packets(mtk_num_completed_evt, sizeof(mtk_num_completed_evt));
+    int j;
+    for (j = 0; j < sizeof(mtk_num_completed_evt); j++){
+        CHECK_EQUAL(mtk_num_completed_evt[j], num_completed_evt[j]);
     }
 }
 
