@@ -304,11 +304,17 @@ int hci_transport_synchronous(void){
 int hci_send_acl_packet(uint8_t *packet, int size){
 
     // check for free places on BT module
-    if (!hci_number_free_acl_slots()) return BTSTACK_ACL_BUFFERS_FULL;
-    
+    if (!hci_number_free_acl_slots()) {
+        hci_release_packet_buffer();
+        return BTSTACK_ACL_BUFFERS_FULL;
+    }
+
     hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
     hci_connection_t *connection = hci_connection_for_handle( con_handle);
-    if (!connection) return 0;
+    if (!connection) {
+        hci_release_packet_buffer();
+        return 0;
+    }
     hci_connection_timestamp(connection);
     
     // count packet
@@ -320,7 +326,7 @@ int hci_send_acl_packet(uint8_t *packet, int size){
 
     // free packet buffer for synchronous transport implementations    
     if (hci_transport_synchronous() && (packet == hci_stack->hci_packet_buffer)){
-        hci_stack->hci_packet_buffer_reserved = 0;
+        hci_release_packet_buffer();
     }
 
     return err;
@@ -1217,7 +1223,10 @@ int hci_power_control(HCI_POWER_MODE power_mode){
             switch (power_mode){
                 case HCI_POWER_ON:
                     err = hci_power_control_on();
-                    if (err) return err;
+                    if (err) {
+                        log_error("hci_power_control_on() error %u", err);
+                        return err;
+                    }
                     // set up state machine
                     hci_stack->num_cmd_packets = 1; // assume that one cmd can be sent
                     hci_stack->state = HCI_STATE_INITIALIZING;
@@ -1486,8 +1495,6 @@ void hci_run(){
             default:
                 break;
         }
-        
-
         
         if (connection->authentication_flags & HANDLE_LINK_KEY_REQUEST){
             log_info("responding to link key request\n");
