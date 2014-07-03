@@ -249,7 +249,6 @@ le_command_status_t gatt_client_discover_primary_services(gatt_client_t *context
 le_command_status_t gatt_client_discover_primary_services_by_uuid16(gatt_client_t *context, uint16_t uuid16);
 le_command_status_t gatt_client_discover_primary_services_by_uuid128(gatt_client_t *context, const uint8_t * uuid);
 
-
 // Finds included services within the specified service. For each
 // found included service, an le_service_event_t with type set to
 // GATT_INCLUDED_SERVICE_QUERY_RESULT will be generated and passed
@@ -263,31 +262,62 @@ le_command_status_t gatt_client_discover_primary_services_by_uuid128(gatt_client
 // service to the list of all primary services.
 le_command_status_t gatt_client_find_included_services_for_service(gatt_client_t *context, le_service_t *service);
 
-    // returns characteristics, no included services
+// Discovers all characteristics within the specified service. For
+// each found characteristic, an le_characteristics_event_t with 
+// type set to GATT_CHARACTERISTIC_QUERY_RESULT will be generated 
+// and passed to the registered callback. The gatt_complete_event_t 
+// with type set to GATT_QUERY_COMPLETE, marks the end of discovery.
 le_command_status_t gatt_client_discover_characteristics_for_service(gatt_client_t *context, le_service_t *service);
 
-//
-// more convenience - all use the same query mechanism, but provided different ways to specify handle range and/or filter results
-// 
-// gets all characteristics in handle range, and returns those that match the given UUID.
+// The following four functions are used to discover all 
+// characteristics within the specified service or handle range, and 
+// return those that match the given UUID. For each found
+// characteristic, an le_characteristic_event_t with type set to   
+// GATT_CHARACTERISTIC_QUERY_RESULT will be generated and passed to 
+// the registered callback. The gatt_complete_event_t with type set
+// to GATT_QUERY_COMPLETE, marks the end of discovery.
 le_command_status_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(gatt_client_t *context, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
 le_command_status_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(gatt_client_t *context, uint16_t start_handle, uint16_t end_handle, uint8_t * uuid);
 le_command_status_t gatt_client_discover_characteristics_for_service_by_uuid16 (gatt_client_t *context, le_service_t *service, uint16_t  uuid16);
 le_command_status_t gatt_client_discover_characteristics_for_service_by_uuid128(gatt_client_t *context, le_service_t *service, uint8_t * uuid128);
 
-// returns handle and uuid16 of a descriptor
+// Discovers attribute handle and UUID of a characteristic 
+// descriptor within the specified characteristic. For each found
+// descriptor, an le_characteristic_descriptor_event_t with 
+// type set to GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT will be  
+// generated and passed to the registered callback. The  
+// gatt_complete_event_t with type set to GATT_QUERY_COMPLETE, marks 
+// the end of discovery.
 le_command_status_t gatt_client_discover_characteristic_descriptors(gatt_client_t *context, le_characteristic_t *characteristic);
 
-// Reads value of characteristic using characteristic value handle
+// Reads the characteristic value using the characteristic's value
+// handle. If the characteristic value is found, an 
+// le_characteristic_value_event_t with type set to 
+// GATT_CHARACTERISTIC_VALUE_QUERY_RESULT will be generated and
+// passed to the registered callback. The gatt_complete_event_t 
+// with type set to GATT_QUERY_COMPLETE, marks the end of read.
 le_command_status_t gatt_client_read_value_of_characteristic(gatt_client_t *context, le_characteristic_t *characteristic);
 le_command_status_t gatt_client_read_value_of_characteristic_using_value_handle(gatt_client_t *context, uint16_t characteristic_value_handle);
 
-// Reads long caharacteristic value.
+// Reads the long characteristic value using the characteristic's 
+// value handle. The value will be returned in several blobs. For 
+// each blob, an le_characteristic_value_event_t with type set to 
+// GATT_CHARACTERISTIC_VALUE_QUERY_RESULT and updated value offset
+// will be generated and passed to the registered callback. The 
+// gatt_complete_event_t with type set to GATT_QUERY_COMPLETE, marks
+// the end of read.
 le_command_status_t gatt_client_read_long_value_of_characteristic(gatt_client_t *context, le_characteristic_t *characteristic);
 le_command_status_t gatt_client_read_long_value_of_characteristic_using_value_handle(gatt_client_t *context, uint16_t characteristic_value_handle);
 
-
+// Writes the characteristic value using the characteristic's value
+// handle without an acknowledgement that the write was successfully 
+// performed.
 le_command_status_t gatt_client_write_value_of_characteristic_without_response(gatt_client_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
+
+// Writes the characteristic value using the characteristic's value
+// handle. The gatt_complete_event_t with type set to 
+// GATT_QUERY_COMPLETE, marks the end of write. The write is 
+// successfully performed, if the event's status field is set to 0.
 le_command_status_t gatt_client_write_value_of_characteristic(gatt_client_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
 
 le_command_status_t gatt_client_write_long_value_of_characteristic(gatt_client_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
