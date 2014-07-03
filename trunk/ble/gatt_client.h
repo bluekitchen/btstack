@@ -217,20 +217,29 @@ typedef struct le_characteristic_descriptor_event{
 } le_characteristic_descriptor_event_t;
 
 //TODO: define uuid type
-    
+ // used by daemon
+void gatt_client_disconnect_connection(void * connection);
+
 // Set up GATT client.
 void gatt_client_init();
 
 // Register packet handler.
 void gatt_client_register_handler(void (*le_callback)(le_event_t * event));
 
-// start/stop gatt client
+// To query a remote GATT Server, the application needs to provide a 
+// gatt client context structure and an active connection handle. 
+// This function initializes the provided gatt client context and 
+// adds it to the list of active clients.  
 void gatt_client_start(gatt_client_t *context, uint16_t handle);
-void gatt_client_stop(gatt_client_t *context);
-gatt_client_t * get_gatt_client_context_for_handle(uint16_t handle);
-void gatt_client_disconnect_connection(void * connection);
 
-// next command is used with daemon
+// Removes the gatt client context from the list of the list of 
+// active clients.
+void gatt_client_stop(gatt_client_t *context);
+
+// Returns the GATT client context for the specified handle.
+gatt_client_t * get_gatt_client_context_for_handle(uint16_t handle);
+
+// Returns if the gatt client is ready to receive a query. It is used with daemon.
 int gatt_client_is_ready(gatt_client_t *context);
 
 // Discovers all primary services. For each found service, an
@@ -308,31 +317,63 @@ le_command_status_t gatt_client_read_value_of_characteristic_using_value_handle(
 // the end of read.
 le_command_status_t gatt_client_read_long_value_of_characteristic(gatt_client_t *context, le_characteristic_t *characteristic);
 le_command_status_t gatt_client_read_long_value_of_characteristic_using_value_handle(gatt_client_t *context, uint16_t characteristic_value_handle);
-
+    
 // Writes the characteristic value using the characteristic's value
-// handle without an acknowledgement that the write was successfully 
+// handle without an acknowledgement that the write was successfully
 // performed.
 le_command_status_t gatt_client_write_value_of_characteristic_without_response(gatt_client_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
 
+// Writes the authenticated characteristic value using the
+// characteristic's value handle without an acknowledgement
+// that the write was successfully performed.
+le_command_status_t gatt_client_signed_write_without_response(gatt_client_t * context, uint16_t handle, uint16_t message_len, uint8_t * message, sm_key_t csrk, uint32_t sgn_counter);
+
 // Writes the characteristic value using the characteristic's value
-// handle. The gatt_complete_event_t with type set to 
-// GATT_QUERY_COMPLETE, marks the end of write. The write is 
+// handle. The gatt_complete_event_t with type set to
+// GATT_QUERY_COMPLETE, marks the end of write. The write is
 // successfully performed, if the event's status field is set to 0.
 le_command_status_t gatt_client_write_value_of_characteristic(gatt_client_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
-
 le_command_status_t gatt_client_write_long_value_of_characteristic(gatt_client_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
+
+// Writes of the long characteristic value using the
+// characteristic's value handle. It uses server response to
+// validate that the write was correctly received.
+// The gatt_complete_event_t with type set to GATT_QUERY_COMPLETE
+// marks the end of write. The write is successfully performed, if
+// the event's status field is set to 0.
 le_command_status_t gatt_client_reliable_write_long_value_of_characteristic(gatt_client_t *context, uint16_t characteristic_value_handle, uint16_t length, uint8_t * data);
 
-
+// Reads the characteristic descriptor using its handle. If the
+// characteristic descriptor is found, an
+// le_characteristic_descriptor_event_t with type set to
+// GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT will be generated
+// and passed to the registered callback. The gatt_complete_event_t
+// with type set to GATT_QUERY_COMPLETE, marks the end of read.
 le_command_status_t gatt_client_read_characteristic_descriptor(gatt_client_t *context, le_characteristic_descriptor_t * descriptor);
+
+// Reads the long characteristic descriptor using its handle. It
+// will be returned in several blobs.  For each blob, an
+// le_characteristic_descriptor_event_t with type set to
+// GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT will be generated
+// and passed to the registered callback. The gatt_complete_event_t
+// with type set to GATT_QUERY_COMPLETE, marks the end of read.
 le_command_status_t gatt_client_read_long_characteristic_descriptor(gatt_client_t *context, le_characteristic_descriptor_t * descriptor);
 
+// Writes the characteristic descriptor using its handle.
+// The gatt_complete_event_t with type set to
+// GATT_QUERY_COMPLETE, marks the end of write. The write is
+// successfully performed, if the event's status field is set to 0.
 le_command_status_t gatt_client_write_characteristic_descriptor(gatt_client_t *context, le_characteristic_descriptor_t * descriptor, uint16_t length, uint8_t * data);
 le_command_status_t gatt_client_write_long_characteristic_descriptor(gatt_client_t *context, le_characteristic_descriptor_t * descriptor, uint16_t length, uint8_t * data);
 
+// Writes the client characteristic configuration of the specified 
+// characteristic. It is used to subscribe for notifications or 
+// indications of the characteristic value. For notifications or 
+// indications specify:
+// GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION resp. 
+// GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION 
+// as configuration value.
 le_command_status_t gatt_client_write_client_characteristic_configuration(gatt_client_t *context, le_characteristic_t * characteristic, uint16_t configuration);
-
-le_command_status_t gatt_client_signed_write(gatt_client_t * context, uint16_t handle, uint16_t message_len, uint8_t * message, sm_key_t csrk, uint32_t sgn_counter);
 
 #if defined __cplusplus
 }
