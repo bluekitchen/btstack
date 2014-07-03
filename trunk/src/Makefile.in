@@ -35,6 +35,9 @@ BTdaemon_SOURCES =  $(libBTstack_SOURCES) \
     $(springboard_access_sources) \
     ../ble/att_dispatch.c   \
     ../ble/gatt_client.c    \
+    ../ble/sm.c    \
+    ../ble/central_device_db_memory.c \
+
 
 
 # use $(CC) for Objective-C files
