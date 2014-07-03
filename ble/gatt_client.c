@@ -1034,7 +1034,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
 }
 
 
-le_command_status_t gatt_client_signed_write(gatt_client_t * peripheral, uint16_t handle, uint16_t message_len, uint8_t * message, sm_key_t csrk, uint32_t sign_counter){
+le_command_status_t gatt_client_signed_write_without_response(gatt_client_t * peripheral, uint16_t handle, uint16_t message_len, uint8_t * message, sm_key_t csrk, uint32_t sign_counter){
     if (!gatt_client_is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
     if (!sm_cmac_ready()) {
         printf("ATT Signed Write, sm_cmac engine not ready. Abort\n");
