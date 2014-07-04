@@ -115,50 +115,50 @@ void hexdump2(void *data, int size){
 
 // enable LE, setup ADV data
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    if (packet_type != HCI_EVENT_PACKET) return;
     bd_addr_t addr;
     uint8_t adv_data[] = { 02, 01, 05,   03, 02, 0xf0, 0xff }; 
-    switch (packet_type) {
+    
+    switch (packet[0]) {
+        case BTSTACK_EVENT_STATE:
+            // bt stack activated, get started - set local name
+            if (packet[2] == HCI_STATE_WORKING) {
+                printf("Working!\n");
+                hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
+            }
+            break;
             
-		case HCI_EVENT_PACKET:
-			switch (packet[0]) {
-				
-                case BTSTACK_EVENT_STATE:
-					// bt stack activated, get started - set local name
-					if (packet[2] == HCI_STATE_WORKING) {
-                        printf("Working!\n");
-                        hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
-					}
-					break;
-                    
-                case BTSTACK_EVENT_NR_CONNECTIONS_CHANGED:
-				    if (packet[2]) {
-                        overwriteLine(4, "CONNECTED");
-                    } else {
-				        overwriteLine(4, "NOT CONNECTED");
-                    }
-                    break;
-                    
-                case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    // restart advertising
-                    hci_send_cmd(&hci_le_set_advertise_enable, 1);
-                    break;
-                    
-				case HCI_EVENT_COMMAND_COMPLETE:
-					if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)){
-    					bt_flip_addr(addr, &packet[6]);
-					    printf("BD ADDR: %s\n", bd_addr_to_str(addr));
-						break;
-					}
-				    if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_advertising_data)){
-					   hci_send_cmd(&hci_le_set_scan_response_data, 10, adv_data);
-					   break;
-					}
-				    if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_scan_response_data)){
-					   hci_send_cmd(&hci_le_set_advertise_enable, 1);
-					   break;
-					}
-			}
-	}
+        case BTSTACK_EVENT_NR_CONNECTIONS_CHANGED:
+            if (packet[2]) {
+                overwriteLine(4, "CONNECTED");
+            } else {
+                overwriteLine(4, "NOT CONNECTED");
+            }
+            break;
+            
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            // restart advertising
+            hci_send_cmd(&hci_le_set_advertise_enable, 1);
+            break;
+            
+        case HCI_EVENT_COMMAND_COMPLETE:
+            if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)){
+                bt_flip_addr(addr, &packet[6]);
+                printf("BD ADDR: %s\n", bd_addr_to_str(addr));
+                break;
+            }
+            if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_advertising_data)){
+               hci_send_cmd(&hci_le_set_scan_response_data, 10, adv_data);
+               break;
+            }
+            if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_scan_response_data)){
+               hci_send_cmd(&hci_le_set_advertise_enable, 1);
+               break;
+            }
+        default:
+            break;
+    }
+	
 }
 
 // test profile
@@ -196,17 +196,23 @@ static uint16_t get_write_att_value_len(uint16_t att_handle){
     return value_len;
 }
 
-uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
-    printf("READ Callback, handle %04x\n", att_handle);
-    uint16_t value_len = get_att_read_value_len(att_handle);
-    
-    if (!buffer) return value_len;
+static uint16_t get_bytes_to_copy(uint16_t value_len, uint16_t offset){
     if (value_len <= offset ) return 0;
     
     uint16_t bytes_to_copy = value_len - offset;
     if (bytes_to_copy > buffer_size) {
-        bytes_to_copy = buffer-size;
+        bytes_to_copy = buffer_size;
     }
+    return bytes_to_copy;
+}
+
+uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    printf("READ Callback, handle %04x\n", att_handle);
+    uint16_t value_len = get_att_read_value_len(att_handle);
+    if (!buffer) return value_len;
+    
+    uint16_t bytes_to_copy = get_bytes_to_copy(value_len, offset);
+    if (!bytes_to_copy) return 0;
     
     switch(att_handle){
         case ATT_CHARACTERISTIC_FFF1_01_HANDLE:
@@ -224,12 +230,8 @@ static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t
     printf("WRITE Callback, handle %04x\n", att_handle);
     
     uint16_t value_len = get_write_att_value_len(att_handle);
-    if (value_len <= offset ) return ATT_ERROR_INVALID_OFFSET;
-    
-    uint16_t bytes_to_copy = value_len - offset;
-    if (bytes_to_copy > buffer_size) {
-        bytes_to_copy = buffer-size;
-    }
+    uint16_t bytes_to_copy = get_bytes_to_copy(value_len, offset);
+    if (!bytes_to_copy) return ATT_ERROR_INVALID_OFFSET;
     
     switch(att_handle){
         case ATT_CHARACTERISTIC_FFF1_01_HANDLE:
