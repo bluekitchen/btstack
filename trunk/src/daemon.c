@@ -1345,7 +1345,7 @@ int main (int argc,  char * const * argv){
 
 #ifdef HAVE_BLE
     gatt_client_init();
-    gatt_client_register_handler(&handle_gatt_client_event);
+    gatt_client_register_packet_handler(&handle_gatt_client_event);
 #endif
     
 #ifdef USE_LAUNCHD

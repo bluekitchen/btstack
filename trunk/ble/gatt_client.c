@@ -70,7 +70,7 @@ void gatt_client_init(){
 
 static void dummy_notify(le_event_t* event){}
 
-void gatt_client_register_handler(void (*gatt_callback)(le_event_t* event)){
+void gatt_client_register_packet_handler(void (*gatt_callback)(le_event_t* event)){
     if (gatt_callback == NULL){
         gatt_callback = &dummy_notify;
     }

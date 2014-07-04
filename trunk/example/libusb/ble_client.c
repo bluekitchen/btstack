@@ -91,7 +91,7 @@ void ble_client_init(){
 
 
 void ble_client_register_gatt_client_event_packet_handler(void (*le_callback)(le_event_t* event)){
-    gatt_client_register_handler(le_callback);
+    gatt_client_register_packet_handler(le_callback);
 }
 
 void ble_client_register_hci_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size)){

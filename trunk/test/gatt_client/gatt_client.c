@@ -356,7 +356,7 @@ TEST_GROUP(GATTClient){
 		att_set_read_callback(&att_read_callback);
 
 		gatt_client_init();
-		gatt_client_register_handler(handle_ble_client_event);
+		gatt_client_register_packet_handler(handle_ble_client_event);
         gatt_client_start(&test_device, 0x40);
     }
 };

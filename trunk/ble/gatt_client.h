@@ -224,7 +224,7 @@ void gatt_client_disconnect_connection(void * connection);
 void gatt_client_init();
 
 // Register packet handler.
-void gatt_client_register_handler(void (*le_callback)(le_event_t * event));
+void gatt_client_register_packet_handler(void (*le_callback)(le_event_t * event));
 
 // To query a remote GATT Server, the application needs to provide a 
 // gatt client context structure and an active connection handle. 
