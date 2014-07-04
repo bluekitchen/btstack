@@ -278,7 +278,7 @@ void setup(void){
 
 void usage(const char *name){
 	fprintf(stderr, "\nUsage: %s [-a|--address aa:bb:cc:dd:ee:ff]\n", name);
-	fprintf(stderr, "If no argument is provided, BTstack will start scannig and connect to the first found device.\nTo connect to a specific device use argument [-a].\n\n");
+	fprintf(stderr, "If no argument is provided, GATT browser will start scanning and connect to the first found device.\nTo connect to a specific device use argument [-a].\n\n");
 }
 
 int main(int argc, const char * argv[])
