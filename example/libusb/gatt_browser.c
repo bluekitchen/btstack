@@ -63,7 +63,7 @@
 #include "bt_control_cc256x.h"
 #endif
 
-typedef struct ad_event {
+typedef struct advertising_report {
     uint8_t   type;
     uint8_t   event_type;
     uint8_t   address_type;
@@ -71,7 +71,7 @@ typedef struct ad_event {
     uint8_t   rssi;
     uint8_t   length;
     uint8_t * data;
-} ad_event_t;
+} advertising_report_t;
 
 
 typedef enum {
@@ -82,18 +82,16 @@ typedef enum {
     TC_W4_SERVICE_RESULT,
     TC_W4_CHARACTERISTIC_RESULT,
     TC_W4_DISCONNECT
-} tc_state_t;
+} gc_state_t;
 
 static bd_addr_t cmdline_addr = { };
 static int cmdline_addr_found = 0;
-static gatt_client_t test_gatt_client_context;
-static uint16_t test_gatt_client_handle;
+static gatt_client_t gc_context;
 
 static le_service_t services[40];
 static int service_count = 0;
 static int service_index = 0;
-static uint8_t   test_device_addr_type = 0;
-static tc_state_t tc_state = TC_IDLE;
+static gc_state_t state = TC_IDLE;
 
 static void printUUID(uint8_t * uuid128, uint16_t uuid16){
     if (uuid16){
@@ -103,7 +101,7 @@ static void printUUID(uint8_t * uuid128, uint16_t uuid16){
     }
 }
 
-static void dump_ad_event(ad_event_t * e){
+static void dump_advertising_report(advertising_report_t * e){
     printf("    * adv. event: evt-type %u, addr-type %u, addr %s, rssi %u, length adv %u, data: ", e->event_type,
            e->address_type, bd_addr_to_str(e->address), e->rssi, e->length);
     hexdump(e->data, e->length);
@@ -126,7 +124,7 @@ static void dump_service(le_service_t * service){
 void handle_gatt_client_event(le_event_t * event){
     le_service_t service;
     le_characteristic_t characteristic;
-    switch(tc_state){
+    switch(state){
         case TC_W4_SERVICE_RESULT:
             switch(event->type){
                 case GATT_SERVICE_QUERY_RESULT:
@@ -135,12 +133,12 @@ void handle_gatt_client_event(le_event_t * event){
                     services[service_count++] = service;
                     break;
                 case GATT_QUERY_COMPLETE:
-                    tc_state = TC_W4_CHARACTERISTIC_RESULT;
+                    state = TC_W4_CHARACTERISTIC_RESULT;
                     service_index = 0;
                     printf("\ntest client - CHARACTERISTIC for SERVICE ");
                     printUUID128(service.uuid128); printf("\n");
                     
-                    gatt_client_discover_characteristics_for_service(&test_gatt_client_context, &services[service_index]);
+                    gatt_client_discover_characteristics_for_service(&gc_context, &services[service_index]);
                     break;
                 default:
                     break;
@@ -155,18 +153,18 @@ void handle_gatt_client_event(le_event_t * event){
                     break;
                 case GATT_QUERY_COMPLETE:
                     if (service_index < service_count) {
-                        tc_state = TC_W4_CHARACTERISTIC_RESULT;
+                        state = TC_W4_CHARACTERISTIC_RESULT;
                         service = services[service_index++];
                         printf("\ntest client - CHARACTERISTIC for SERVICE ");
                         printUUID128(service.uuid128);
                         printf(", [0x%04x-0x%04x]\n", service.start_group_handle, service.end_group_handle);
                         
-                        gatt_client_discover_characteristics_for_service(&test_gatt_client_context, &service);
+                        gatt_client_discover_characteristics_for_service(&gc_context, &service);
                         break;
                     }
-                    tc_state = TC_W4_DISCONNECT;
+                    state = TC_W4_DISCONNECT;
                     service_index = 0;
-                    gap_disconnect(test_gatt_client_context.handle);
+                    gap_disconnect(gc_context.handle);
                     break;
                 default:
                     break;
@@ -178,71 +176,66 @@ void handle_gatt_client_event(le_event_t * event){
     
 }
 
+static void fill_advertising_report_from_packet(advertising_report_t * report, uint8_t *packet){
+    int pos = 2;
+    report->event_type = packet[pos++];
+    report->address_type = packet[pos++];
+    memcpy(report->address, &packet[pos], 6);
+    pos += 6;
+    report->rssi = packet[pos++];
+    report->length = packet[pos++];
+    report->data = &packet[pos];
+    pos += report->length;
+    dump_advertising_report(report);
+    
+    bd_addr_t found_device_addr;
+    memcpy(found_device_addr, report->address, 6);
+    swapX(found_device_addr, report->address, 6);
+}
+
 static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
-    
-    switch (packet[0]) {
-        case HCI_EVENT_DISCONNECTION_COMPLETE:
-            printf("\ntest client - DISCONNECTED\n");
-            exit(0);
-            break;
-        case GAP_LE_ADVERTISING_REPORT:
-            if (tc_state != TC_W4_SCAN_RESULT) return;
-            printf("test client - SCAN ACTIVE\n");
-            ad_event_t ad_event;
-            int pos = 2;
-            ad_event.event_type = packet[pos++];
-            ad_event.address_type = packet[pos++];
-            memcpy(ad_event.address, &packet[pos], 6);
-            
-            pos += 6;
-            ad_event.rssi = packet[pos++];
-            ad_event.length = packet[pos++];
-            ad_event.data = &packet[pos];
-            pos += ad_event.length;
-            dump_ad_event(&ad_event);
-            
-            test_device_addr_type = ad_event.address_type;
-            bd_addr_t found_device_addr;
-            
-            memcpy(found_device_addr, ad_event.address, 6);
-            swapX(ad_event.address, found_device_addr, 6);
-            
-            tc_state = TC_W4_CONNECT;
-            le_central_stop_scan();
-            le_central_connect(&found_device_addr, test_device_addr_type);
-    
-            break;
+    advertising_report_t report;
+    uint16_t gc_handle;
+
+    uint8_t event = packet[0];
+    switch (event) {
         case BTSTACK_EVENT_STATE:
             // BTstack activated, get started
-            if (packet[2] == HCI_STATE_WORKING) {
-                if (cmdline_addr_found){
-                    printf("Trying to connect to %s\n", bd_addr_to_str(cmdline_addr));
-                    tc_state = TC_W4_CONNECT;
-                    le_central_connect(&cmdline_addr, test_device_addr_type);
-                    break;
-                }
-                printf("BTstack activated, get started!\n");
-                tc_state = TC_W4_SCAN_RESULT;
-                le_central_start_scan(); 
+            if (packet[2] != HCI_STATE_WORKING) break;
+            if (cmdline_addr_found){
+                printf("Trying to connect to %s\n", bd_addr_to_str(cmdline_addr));
+                state = TC_W4_CONNECT;
+                le_central_connect(&cmdline_addr, 0);
+                break;
             }
+            printf("BTstack activated, start scanning!\n");
+            state = TC_W4_SCAN_RESULT;
+            le_central_start_scan();
+            break;
+        case GAP_LE_ADVERTISING_REPORT:
+            if (state != TC_W4_SCAN_RESULT) return;
+            state = TC_W4_CONNECT;
+            fill_advertising_report_from_packet(&report, packet);
+            // stop scanning, and connect to the device
+            le_central_stop_scan();
+            le_central_connect(&report.address,report.address_type);
             break;
         case HCI_EVENT_LE_META:
-            switch (packet[2]) {
-                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE: {
-                    if (tc_state != TC_W4_CONNECT) return;
-                    tc_state = TC_W4_SERVICE_RESULT;
-                    printf("\ntest client - CONNECTED, query primary services\n");
-                    test_gatt_client_handle = READ_BT_16(packet, 4);
-                    gatt_client_start(&test_gatt_client_context, test_gatt_client_handle);
-                    
-                    // let's start
-                    gatt_client_discover_primary_services(&test_gatt_client_context);
-                    break;
-                }
-                default:
-                    break;
-            }
+            // wait for connection complete
+            if (packet[2] !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+            if (state != TC_W4_CONNECT) return;
+            gc_handle = READ_BT_16(packet, 4);
+            // initialize gatt client context with handle, and add it to the list of active clients
+            gatt_client_start(&gc_context, gc_handle);
+            // query primary services
+            state = TC_W4_SERVICE_RESULT;
+            gatt_client_discover_primary_services(&gc_context);
+            break;
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            printf("\ntest client - DISCONNECTED\n");
+            gatt_client_stop(&gc_context);
+            exit(0);
             break;
         default:
             break;
@@ -277,7 +270,7 @@ void setup(void){
     l2cap_register_packet_handler(&handle_hci_event);
 
     gatt_client_init();
-    gatt_client_register_handler(&handle_gatt_client_event);
+    gatt_client_register_packet_handler(&handle_gatt_client_event);
 
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
