@@ -77,6 +77,11 @@
 #define FONT_HEIGHT		12                    // Each character has 13 lines 
 #define FONT_WIDTH       8
 
+uint16_t chr01_value_length = 0;
+uint16_t max_chr01_value_length = 40;
+char chr01_value[max_chr01_value_length];
+char chr02_value = 0;
+
 void doLCD(void){
     //Initialize LCD and backlight    
     // 138 x 110, 4-level grayscale pixels.
@@ -159,22 +164,90 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 // test profile
 #include "profile.h"
 
+static uint16_t get_read_att_value_len(uint16_t att_handle){
+    uint16_t value_len;
+    switch(att_handle){
+        case ATT_CHARACTERISTIC_FFF1_01_HANDLE:
+            value_len = chr01_value_length;
+            break;
+        case ATT_CHARACTERISTIC_FFF2_01_VALUE_HANDLE:
+            value_len = 1;
+            break;
+        default:
+            value_len = 0;
+            break;
+    }
+    return value_len;
+}
+
+static uint16_t get_write_att_value_len(uint16_t att_handle){
+    uint16_t value_len;
+    switch(att_handle){
+        case ATT_CHARACTERISTIC_FFF1_01_HANDLE:
+            value_len = max_chr01_value_length;
+            break;
+        case ATT_CHARACTERISTIC_FFF2_01_VALUE_HANDLE:
+            value_len = 1;
+            break;
+        default:
+            value_len = 0;
+            break;
+    }
+    return value_len;
+}
+
+uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    printf("READ Callback, handle %04x\n", att_handle);
+    uint16_t value_len = get_att_read_value_len(att_handle);
+    
+    if (!buffer) return value_len;
+    if (value_len <= offset ) return 0;
+    
+    uint16_t bytes_to_copy = value_len - offset;
+    if (bytes_to_copy > buffer_size) {
+        bytes_to_copy = buffer-size;
+    }
+    
+    switch(att_handle){
+        case ATT_CHARACTERISTIC_FFF1_01_HANDLE:
+            memcpy(buffer, &chr01_value[offset], bytes_to_copy);
+            break;
+        case ATT_CHARACTERISTIC_FFF2_01_VALUE_HANDLE:
+            buffer[offset] = chr02_value;
+            break;
+    }
+    return bytes_to_copy;
+}
+
 // write requests
 static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-    printf("WRITE Callback, handle %04x\n", handle);
-    switch(handle){
-        case ATT_CHARACTERISTIC_FFF1_01_VALUE_HANDLE:
-            buffer[buffer_size]=0;
+    printf("WRITE Callback, handle %04x\n", att_handle);
+    
+    uint16_t value_len = get_write_att_value_len(att_handle);
+    if (value_len <= offset ) return ATT_ERROR_INVALID_OFFSET;
+    
+    uint16_t bytes_to_copy = value_len - offset;
+    if (bytes_to_copy > buffer_size) {
+        bytes_to_copy = buffer-size;
+    }
+    
+    switch(att_handle){
+        case ATT_CHARACTERISTIC_FFF1_01_HANDLE:
+            buffer[buffer_size] = 0;
+            memcpy(&chr01_value[offset], buffer, bytes_to_copy);
+            chr01_value_length = bytes_to_copy + offset;
+            
             printf("New text: %s\n", buffer);
             overwriteLine(7, (char*)buffer);
             break;
         case ATT_CHARACTERISTIC_FFF2_01_VALUE_HANDLE:
-            printf("New value: %u\n", buffer[0]);
-            if (buffer[0]){
+            printf("New value: %u\n", buffer[offset]);
+            if (buffer[offset])
                 LED_PORT_OUT |= LED_2;
             } else {
                 LED_PORT_OUT &= ~LED_2;
             }
+            chr02_value = buffer[offset];
             break;
     }
     return 0;
