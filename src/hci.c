@@ -965,17 +965,14 @@ static void event_handler(uint8_t *packet, int size){
     if (hci_stack->state == HCI_STATE_INITIALIZING){
         if (hci_stack->substate % 2){
             // odd: waiting for event
-            if (packet[0] == HCI_EVENT_COMMAND_COMPLETE || packet[0] == HCI_EVENT_COMMAND_STATUS){
-                // wait for explicit COMMAND COMPLETE on RESET
-                if (hci_stack->substate > 1 || COMMAND_COMPLETE_EVENT(packet, hci_reset)) {
-                    hci_stack->substate++;
-                }
+            if (packet[0] == HCI_EVENT_COMMAND_COMPLETE){
+                hci_stack->substate++;
             }
 
             // HACK to deal with duplicate HCI Reset Complete events seen on cheapo CSR8510 A10 USB Dongle
             if (COMMAND_COMPLETE_EVENT(packet, hci_reset)){
                 if (hci_stack->state == HCI_STATE_INITIALIZING) {
-                    if (hci_stack->config == 0 || ((hci_uart_config_t *)hci_stack->config)->baudrate_main == 0){
+                    if (hci_stack->config == NULL || ((hci_uart_config_t *)hci_stack->config)->baudrate_main == 0){
                         hci_stack->substate = 6; // >> 1 = 3
                     } else {
                         hci_stack->substate = 2; // >> 1 = 1
