@@ -396,6 +396,8 @@ typedef struct {
     uint8_t   substate;
     uint8_t   cmds_ready;
     
+    uint16_t  last_cmd_opcode;
+
     uint8_t   discoverable;
     uint8_t   connectable;
     uint8_t   bondable;
