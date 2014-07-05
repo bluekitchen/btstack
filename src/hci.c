@@ -92,7 +92,7 @@ static uint8_t disable_l2cap_timeouts = 0;
  */
 static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type){
 
-    printf("create_connection_for_addr %s\n", bd_addr_to_str(addr));
+    log_info("create_connection_for_addr %s", bd_addr_to_str(addr));
     hci_connection_t * conn = (hci_connection_t *) btstack_memory_hci_connection_get();
     if (!conn) return NULL;
     BD_ADDR_COPY(conn->address, addr);
@@ -966,17 +966,26 @@ static void event_handler(uint8_t *packet, int size){
         if (hci_stack->substate % 2){
             // odd: waiting for event
             if (packet[0] == HCI_EVENT_COMMAND_COMPLETE){
-                hci_stack->substate++;
+                uint16_t opcode = READ_BT_16(packet,3);
+                if (opcode == hci_stack->last_cmd_opcode){
+                    hci_stack->substate++;
+                    log_info("Command complete for expected opcode %04x -> new substate %u", opcode, hci_stack->substate);
+                } else {
+                    log_info("Command complete for opcode %04x, expected %04x", opcode, hci_stack->last_cmd_opcode);
+                }
             }
-
-            // HACK to deal with duplicate HCI Reset Complete events seen on cheapo CSR8510 A10 USB Dongle
-            if (COMMAND_COMPLETE_EVENT(packet, hci_reset)){
-                if (hci_stack->state == HCI_STATE_INITIALIZING) {
-                    if (hci_stack->config == NULL || ((hci_uart_config_t *)hci_stack->config)->baudrate_main == 0){
-                        hci_stack->substate = 6; // >> 1 = 3
+            if (packet[0] == HCI_EVENT_COMMAND_STATUS){
+                uint8_t  status = packet[2];
+                uint16_t opcode = READ_BT_16(packet,4);
+                if (opcode == hci_stack->last_cmd_opcode){
+                    if (status){
+                        hci_stack->substate++;
+                        log_error("Command status error 0x%02x for expected opcode %04x -> new substate %u", status, opcode, hci_stack->substate);
                     } else {
-                        hci_stack->substate = 2; // >> 1 = 1
+                        log_info("Command status OK for expected opcode %04x, waiting for command complete", opcode);
                     }
+                } else {
+                    log_info("Command status for opcode %04x, expected %04x", opcode, hci_stack->last_cmd_opcode);
                 }
             }
         }
@@ -1586,7 +1595,7 @@ void hci_run(){
                     hci_state_reset();
                 
                     hci_send_cmd(&hci_reset);
-                    if (hci_stack->config == 0 || ((hci_uart_config_t *)hci_stack->config)->baudrate_main == 0){
+                    if (hci_stack->config == NULL || ((hci_uart_config_t *)hci_stack->config)->baudrate_main == 0){
                         // skip baud change
                         hci_stack->substate = 4; // >> 1 = 2
                     }
@@ -1596,7 +1605,8 @@ void hci_run(){
                     hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
                     break;
                 case 2: // LOCAL BAUD CHANGE
-                    log_info("Local baud rate change");
+					log_info("Local baud rate change");
+                    hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
                     hci_stack->hci_transport->set_baudrate(((hci_uart_config_t *)hci_stack->config)->baudrate_main);
                     hci_stack->substate += 2;
                     // break missing here for fall through
@@ -1608,6 +1618,7 @@ void hci_run(){
                         int valid_cmd = (*hci_stack->control->next_cmd)(hci_stack->config, hci_stack->hci_packet_buffer);
                         if (valid_cmd){
                             int size = 3 + hci_stack->hci_packet_buffer[2];
+                            hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
                             hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, hci_stack->hci_packet_buffer, size);
                             hci_stack->substate = 4; // more init commands
                             break;
@@ -1665,7 +1676,7 @@ void hci_run(){
                         // BTstack-11:22:33:44:55:66
                         strcpy(hostname, "BTstack ");
                         strcat(hostname, bd_addr_to_str(hci_stack->local_bd_addr));
-                        printf("---> Name %s\n", hostname);
+                        log_info("---> Name %s", hostname);
 #else
                         // hostname for POSIX systems
                         gethostname(hostname, 30);
@@ -1928,6 +1939,11 @@ void hci_ssp_set_auto_accept(int auto_accept){
  * pre: numcmds >= 0 - it's allowed to send a command to the controller
  */
 int hci_send_cmd(const hci_cmd_t *cmd, ...){
+
+    // for HCI INITIALIZATION
+    // printf("hci_send_cmd: opcode %04x\n", cmd->opcode);
+    hci_stack->last_cmd_opcode = cmd->opcode;
+
     va_list argptr;
     va_start(argptr, cmd);
     uint16_t size = hci_create_cmd_internal(hci_stack->hci_packet_buffer, cmd, argptr);
@@ -2138,7 +2154,7 @@ static gap_security_level_t gap_security_level_for_connection(hci_connection_t *
 
 
 int gap_mitm_protection_required_for_security_level(gap_security_level_t level){
-    printf("gap_mitm_protection_required_for_security_level %u\n", level);
+    log_info("gap_mitm_protection_required_for_security_level %u", level);
     return level > LEVEL_2;
 }
 
@@ -2208,7 +2224,7 @@ int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required){
     // configure LEVEL_2/3, dedicated bonding
     connection->state = SEND_CREATE_CONNECTION;    
     connection->requested_security_level = mitm_protection_required ? LEVEL_3 : LEVEL_2;
-    printf("gap_dedicated_bonding, mitm %u -> level %u\n", mitm_protection_required, connection->requested_security_level);
+    log_info("gap_dedicated_bonding, mitm %u -> level %u", mitm_protection_required, connection->requested_security_level);
     connection->bonding_flags = BONDING_DEDICATED;
 
     // wait for GAP Security Result and send GAP Dedicated Bonding complete
