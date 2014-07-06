@@ -562,31 +562,39 @@ void le_handle_advertisement_report(uint8_t *packet, int size){
 #endif
 
 static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
-    if (hci_stack->substate % 2){
-        // odd: waiting for event
-        if (packet[0] == HCI_EVENT_COMMAND_COMPLETE){
-            uint16_t opcode = READ_BT_16(packet,3);
-            if (opcode == hci_stack->last_cmd_opcode){
-                hci_stack->substate++;
-                log_info("Command complete for expected opcode %04x -> new substate %u", opcode, hci_stack->substate);
-            } else {
-                log_info("Command complete for opcode %04x, expected %04x", opcode, hci_stack->last_cmd_opcode);
-            }
+    uint8_t command_completed = 0;
+    if ((hci_stack->substate % 2) == 0) return;
+    // odd: waiting for event
+    if (packet[0] == HCI_EVENT_COMMAND_COMPLETE){
+        uint16_t opcode = READ_BT_16(packet,3);
+        if (opcode == hci_stack->last_cmd_opcode){
+            command_completed = 1;
+            log_info("Command complete for expected opcode %04x -> new substate %u", opcode, hci_stack->substate);
+        } else {
+            log_info("Command complete for opcode %04x, expected %04x", opcode, hci_stack->last_cmd_opcode);
         }
-        if (packet[0] == HCI_EVENT_COMMAND_STATUS){
-            uint8_t  status = packet[2];
-            uint16_t opcode = READ_BT_16(packet,4);
-            if (opcode == hci_stack->last_cmd_opcode){
-                if (status){
-                    hci_stack->substate++;
-                    log_error("Command status error 0x%02x for expected opcode %04x -> new substate %u", status, opcode, hci_stack->substate);
-                } else {
-                    log_info("Command status OK for expected opcode %04x, waiting for command complete", opcode);
-                }
+    }
+    if (packet[0] == HCI_EVENT_COMMAND_STATUS){
+        uint8_t  status = packet[2];
+        uint16_t opcode = READ_BT_16(packet,4);
+        if (opcode == hci_stack->last_cmd_opcode){
+            if (status){
+                command_completed = 1;
+                log_error("Command status error 0x%02x for expected opcode %04x -> new substate %u", status, opcode, hci_stack->substate);
             } else {
-                log_info("Command status for opcode %04x, expected %04x", opcode, hci_stack->last_cmd_opcode);
+                log_info("Command status OK for expected opcode %04x, waiting for command complete", opcode);
             }
+        } else {
+            log_info("Command status for opcode %04x, expected %04x", opcode, hci_stack->last_cmd_opcode);
         }
+    }
+    
+    if (!command_completed) return;
+
+    switch(hci_stack->substate >> 1){
+        default:
+            hci_stack->substate++;
+            break;
     }
 }
 
