@@ -163,6 +163,15 @@ static int    h4_open(void *transport_config){
     h4_state = H4_W4_PACKET_TYPE;
     read_pos = 0;
 
+    // bring bluetooth module into defined state
+    int i;
+    uint8_t reset[] = { 0x01, 0x03, 0x0c, 0x00};
+    write(fd, &reset, sizeof(reset));
+    usleep(100000);     // 100 ms
+    write(fd, &reset, sizeof(reset));
+    usleep(100000);     // 100 ms
+    tcflush(fd, TCIOFLUSH);
+    
     return 0;
 }
 
