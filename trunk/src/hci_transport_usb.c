@@ -634,9 +634,15 @@ static int usb_send_cmd_packet(uint8_t *packet, int size){
     libusb_fill_control_setup(hci_control_buffer, LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE, 0, 0, 0, size);
     memcpy(hci_control_buffer + LIBUSB_CONTROL_SETUP_SIZE, packet, size);
 
+    // prepare transfer
     int completed = 0;
     libusb_fill_control_transfer(command_out_transfer, handle, hci_control_buffer, async_callback, &completed, 0);
     command_out_transfer->flags = LIBUSB_TRANSFER_FREE_BUFFER;
+
+    // update stata before submitting transfer
+    usb_command_active = 1;
+
+    // submit transfer
     r = libusb_submit_transfer(command_out_transfer);
     
     // // Use synchronous call to sent out command
@@ -645,14 +651,13 @@ static int usb_send_cmd_packet(uint8_t *packet, int size){
     //     0, 0, 0, packet, size, 0);
 
     if (r < 0) {
+        usb_command_active = 0;
         log_error("Error submitting control transfer %d", r);
         return -1;
     }
 
     hci_dump_packet( HCI_COMMAND_DATA_PACKET, 0, packet, size);
     
-    usb_command_active = 1;
-
     return 0;
 }
 
@@ -663,20 +668,23 @@ static int usb_send_acl_packet(uint8_t *packet, int size){
 
     // log_info("usb_send_acl_packet enter, size %u", size);
     
+    // prepare transfer
     int completed = 0;
     libusb_fill_bulk_transfer(bulk_out_transfer, handle, acl_out_addr, packet, size,
         async_callback, &completed, 0);
     bulk_out_transfer->type = LIBUSB_TRANSFER_TYPE_BULK;
 
+    // update stata before submitting transfer
+    usb_acl_out_active = 1;
+
     r = libusb_submit_transfer(bulk_out_transfer);
     if (r < 0) {
+        usb_acl_out_active = 0;
         log_error("Error submitting data transfer, %d", r);
         return -1;
     }
 
     hci_dump_packet( HCI_ACL_DATA_PACKET, 0, packet, size);
-
-    usb_acl_out_active = 1;
     
     // log_info("usb_send_acl_packet exit");
 
