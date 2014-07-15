@@ -43,6 +43,9 @@
 extern "C" {
 #endif
 
+// Minimum/default MTU
+#define ATT_DEFAULT_MTU               23
+
 // MARK: Attribute PDU Opcodes 
 #define ATT_ERROR_RESPONSE              0x01
 
