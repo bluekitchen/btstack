@@ -616,11 +616,11 @@ static void hci_initializing_state_machine(){
             break;
         case 1: // SEND BAUD CHANGE
             hci_stack->control->baudrate_cmd(hci_stack->config, ((hci_uart_config_t *)hci_stack->config)->baudrate_main, hci_stack->hci_packet_buffer);
+            hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
             hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
             break;
         case 2: // LOCAL BAUD CHANGE
             log_info("Local baud rate change");
-            hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
             hci_stack->hci_transport->set_baudrate(((hci_uart_config_t *)hci_stack->config)->baudrate_main);
             hci_stack->substate += 2;
             // break missing here for fall through
