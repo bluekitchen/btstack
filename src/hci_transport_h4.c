@@ -120,11 +120,10 @@ static int    h4_open(void *transport_config){
     }
     cfsetospeed(&toptions, brate);
     cfsetispeed(&toptions, brate);
-    
+    cfmakeraw(&toptions);   // make raw
+
     // 8N1
-    toptions.c_cflag &= ~PARENB;
     toptions.c_cflag &= ~CSTOPB;
-    toptions.c_cflag &= ~CSIZE;
     toptions.c_cflag |= CS8;
 
     if (hci_uart_config->flowcontrol) {
@@ -137,9 +136,6 @@ static int    h4_open(void *transport_config){
     
     toptions.c_cflag |= CREAD | CLOCAL;  // turn on READ & ignore ctrl lines
     toptions.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl
-    
-    toptions.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG); // make raw
-    toptions.c_oflag &= ~OPOST; // make raw
     
     // see: http://unixwiz.net/techtips/termios-vmin-vtime.html
     toptions.c_cc[VMIN]  = 1;
