@@ -964,10 +964,9 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
                 int event_len = 1 + 3 * 2 + ve->attribute_length; 
                 uint8_t event[event_len];
                 event[0] = SDP_QUERY_ATTRIBUTE_VALUE;
-                event[1] = ve->record_id;
-                event[3] = ve->attribute_id;
-                event[5] = ve->attribute_length;
-
+                bt_store_16(event, 1, (uint16_t)ve->record_id);
+                bt_store_16(event, 3, ve->attribute_id);
+                bt_store_16(event, 5, (uint16_t)ve->attribute_length);
                 memcpy(&event[7], attribute_value, ve->attribute_length);
                 hci_dump_packet(SDP_CLIENT_PACKET, 0, event, event_len);
                 socket_connection_send_packet(sdp_client_query_connection, SDP_CLIENT_PACKET, 0, event, event_len);
