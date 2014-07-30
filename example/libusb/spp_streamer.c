@@ -113,7 +113,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 void handle_found_service(char * name, uint8_t port){
     printf("APP: Service name: '%s', RFCOMM port %u\n", name, port);
 
-    if (strncmp(name, spp_service_name_prefix, sizeof(spp_service_name_prefix) != 0)) return;
+    if (strncmp(name, spp_service_name_prefix, strlen(spp_service_name_prefix)) != 0) return;
 
     printf("APP: matches requested SPP Service Name\n");
     channel_nr = port;
