@@ -288,7 +288,10 @@ int hci_is_packet_buffer_reserved(void){
 
 // reserves outgoing packet buffer. @returns 1 if successful
 int hci_reserve_packet_buffer(void){
-    if (hci_stack->hci_packet_buffer_reserved) return 0;
+    if (hci_stack->hci_packet_buffer_reserved) {
+        log_error("hci_reserve_packet_buffer called but buffer already reserved");
+        return 0;
+    }
     hci_stack->hci_packet_buffer_reserved = 1;
     return 1;    
 }
@@ -1966,15 +1969,24 @@ void hci_ssp_set_auto_accept(int auto_accept){
  */
 int hci_send_cmd(const hci_cmd_t *cmd, ...){
 
+    if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)){ 
+        log_error("hci_send_cmd called but cannot send packet now");
+        return 0;
+    }
+
     // for HCI INITIALIZATION
     // printf("hci_send_cmd: opcode %04x\n", cmd->opcode);
     hci_stack->last_cmd_opcode = cmd->opcode;
 
+    hci_reserve_packet_buffer();
+    uint8_t * packet = hci_stack->hci_packet_buffer;
+
     va_list argptr;
     va_start(argptr, cmd);
-    uint16_t size = hci_create_cmd_internal(hci_stack->hci_packet_buffer, cmd, argptr);
+    uint16_t size = hci_create_cmd_internal(packet, cmd, argptr);
     va_end(argptr);
-    return hci_send_cmd_packet(hci_stack->hci_packet_buffer, size);
+
+    return hci_send_cmd_packet(packet, size);
 }
 
 // Create various non-HCI events. 
