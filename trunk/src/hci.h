@@ -446,8 +446,8 @@ void hci_run(void);
 // send complete CMD packet
 int hci_send_cmd_packet(uint8_t *packet, int size);
 
-// send ACL packet
-int hci_send_acl_packet(uint8_t *packet, int size);
+// send ACL packet prepared in hci packet buffer
+int hci_send_acl_packet_buffer(int size);
 
 // non-blocking UART driver needs
 int hci_can_send_packet_now(uint8_t packet_type);

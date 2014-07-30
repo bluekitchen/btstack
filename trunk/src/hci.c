@@ -302,17 +302,26 @@ int hci_transport_synchronous(void){
     return hci_stack->hci_transport->can_send_packet_now == NULL;
 }
 
-int hci_send_acl_packet(uint8_t *packet, int size){
+// pre: caller has reserved the packet buffer
+int hci_send_acl_packet_buffer(int size){
 
-    // check for free places on BT module
+    if (!hci_stack->hci_packet_buffer_reserved) {
+        log_error("hci_send_acl_packet_buffer called without reserving packet buffer");
+        return 0;
+    }
+
+    // check for free places on Bluetooth module
     if (!hci_number_free_acl_slots()) {
+        log_error("hci_send_acl_packet_buffer called but no free ACL buffers on controller");
         hci_release_packet_buffer();
         return BTSTACK_ACL_BUFFERS_FULL;
     }
 
+    uint8_t * packet = hci_stack->hci_packet_buffer;
     hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
     hci_connection_t *connection = hci_connection_for_handle( con_handle);
     if (!connection) {
+        log_error("hci_send_acl_packet_buffer called but no connection for handle 0x%04x");
         hci_release_packet_buffer();
         return 0;
     }
@@ -326,7 +335,7 @@ int hci_send_acl_packet(uint8_t *packet, int size){
     int err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
 
     // free packet buffer for synchronous transport implementations    
-    if (hci_transport_synchronous() && (packet == hci_stack->hci_packet_buffer)){
+    if (hci_transport_synchronous()){
         hci_release_packet_buffer();
     }
 

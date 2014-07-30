@@ -318,7 +318,7 @@ int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMAND
     uint16_t len = l2cap_create_signaling_classic(acl_buffer, handle, cmd, identifier, argptr);
     va_end(argptr);
     // log_info("l2cap_send_signaling_packet con %u!\n", handle);
-    return hci_send_acl_packet(acl_buffer, len);
+    return hci_send_acl_packet_buffer(len);
 }
 
 #ifdef HAVE_BLE
@@ -337,7 +337,7 @@ int l2cap_send_le_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMM
     uint16_t len = l2cap_create_signaling_le(acl_buffer, handle, cmd, identifier, argptr);
     va_end(argptr);
     // log_info("l2cap_send_signaling_packet con %u!\n", handle);
-    return hci_send_acl_packet(acl_buffer, len);
+    return hci_send_acl_packet_buffer(len);
 }
 #endif
 
@@ -395,7 +395,7 @@ int l2cap_send_prepared(uint16_t local_cid, uint16_t len){
     // 6 - L2CAP channel DEST
     bt_store_16(acl_buffer, 6, channel->remote_cid);    
     // send
-    int err = hci_send_acl_packet(acl_buffer, len+8);
+    int err = hci_send_acl_packet_buffer(len+8);
     
     l2cap_hand_out_credits();
     
@@ -429,7 +429,7 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
     // 6 - L2CAP channel DEST
     bt_store_16(acl_buffer, 6, cid);    
     // send
-    int err = hci_send_acl_packet(acl_buffer, len+8);
+    int err = hci_send_acl_packet_buffer(len+8);
     
     l2cap_hand_out_credits();
 
@@ -1475,9 +1475,10 @@ int l2cap_le_request_connection_parameter_update(uint16_t handle, uint16_t inter
         return BTSTACK_ACL_BUFFERS_FULL;
     }
     // log_info("l2cap_send_signaling_packet type %u\n", cmd);
+    hci_reserve_packet_buffer();
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
     uint16_t len = l2cap_le_create_connection_parameter_update_request(acl_buffer, handle, interval_min, interval_max, slave_latency, timeout_multiplier);
-    return hci_send_acl_packet(acl_buffer, len);
+    return hci_send_acl_packet_buffer(len);
 }
 #endif
 
