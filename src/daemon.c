@@ -722,9 +722,6 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                 btstack_command_handler(connection, data, length);
             }
             break;
-        case HCI_ACL_DATA_PACKET:
-            err = hci_send_acl_packet(data, length);
-            break;
         case L2CAP_DATA_PACKET:
             // process l2cap packet...
             err = l2cap_send_internal(channel, data, length);
