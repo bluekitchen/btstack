@@ -122,7 +122,7 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
     // 6 - L2CAP channel DEST
     bt_store_16(acl_buffer, 6, cid);    
     // send
-    int err = hci_send_acl_packet(acl_buffer, len+8);
+    int err = hci_send_acl_packet_buffer(len+8);
         
     return err;
 }
