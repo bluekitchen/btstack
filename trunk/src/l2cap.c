@@ -270,6 +270,7 @@ static void l2cap_rtx_timeout(timer_source_t * ts){
     l2cap_emit_channel_opened(channel, L2CAP_CONNECTION_RESPONSE_RESULT_RTX_TIMEOUT);
 
     // discard channel
+    // no need to stop timer here, it is removed from list during timer callback
     linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
     btstack_memory_l2cap_channel_free(channel);
 }
@@ -583,6 +584,7 @@ void l2cap_run(void){
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE:
                 l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, channel->reason, 0);
                 // discard channel - l2cap_finialize_channel_close without sending l2cap close event
+                l2cap_stop_rtx(channel);
                 linked_list_remove(&l2cap_channels, (linked_item_t *) channel); // -- remove from list
                 btstack_memory_l2cap_channel_free(channel); 
                 break;
@@ -763,6 +765,7 @@ static void l2cap_handle_connection_failed_for_addr(bd_addr_t address, uint8_t s
                 l2cap_emit_channel_opened(channel, status);
                 // discard channel
                 it->next = it->next->next;
+                l2cap_stop_rtx(channel);
                 btstack_memory_l2cap_channel_free(channel);
             }
         } else {
@@ -831,6 +834,7 @@ void l2cap_event_handler(uint8_t *packet, uint16_t size){
                     // update prev item before free'ing next element - don't call l2cap_finalize_channel_close
                     it->next = it->next->next;
                     l2cap_emit_channel_closed(channel);
+                    l2cap_stop_rtx(channel);
                     btstack_memory_l2cap_channel_free(channel);
                 } else {
                     it = it->next;
@@ -1356,6 +1360,7 @@ void l2cap_finialize_channel_close(l2cap_channel_t *channel){
     channel->state = L2CAP_STATE_CLOSED;
     l2cap_emit_channel_closed(channel);
     // discard channel
+    l2cap_stop_rtx(channel);
     linked_list_remove(&l2cap_channels, (linked_item_t *) channel);
     btstack_memory_l2cap_channel_free(channel);
 }
