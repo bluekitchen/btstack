@@ -72,7 +72,7 @@ GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
 
 all: ../../include/btstack/version.h ble_client gatt_browser sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral \
 		ble_peripheral_sm_minimal gap_inquiry gap_dedicated_bonding gap_inquiry_and_bond l2cap_test spp_streamer \
-		classic_test ble_peripheral_uart ancs_client spp_and_le_counter
+		classic_test ble_peripheral_uart_csr ble_peripheral_uart_cc256x ancs_client spp_and_le_counter
 
 ../../include/btstack/version.h:
 	cd ..; ../src/get_version.sh
@@ -124,8 +124,11 @@ ancs_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIE
 ble_peripheral: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c profile.h
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
 
-ble_peripheral_uart: ${CORE_OBJ} ${COMMON_OBJ} ${CSR_OBJ} ${ATT_OBJ} ${SM_REAL_OBJ} ble_peripheral.c profile.h
+ble_peripheral_uart_csr: ${CORE_OBJ} ${COMMON_OBJ} ${CSR_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c profile.h
 	${CC} $ -DHAVE_UART_CSR ${CORE_OBJ} ${COMMON_OBJ} ${CSR_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
+
+ble_peripheral_uart_cc256x: ${CORE_OBJ} ${COMMON_OBJ} ${CC2564} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c profile.h
+	${CC} $ -DHAVE_UART_CC256x ${CORE_OBJ} ${COMMON_OBJ} ${CC2564} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_peripheral_sm_minimal: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c profile.h
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
