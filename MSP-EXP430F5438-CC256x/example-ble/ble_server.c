@@ -76,11 +76,11 @@
 
 #define FONT_HEIGHT		12                    // Each character has 13 lines 
 #define FONT_WIDTH       8
+#define MAX_CHR01_VALUE_LENGTH 40
 
-uint16_t chr01_value_length = 0;
-uint16_t max_chr01_value_length = 40;
-char chr01_value[max_chr01_value_length];
-char chr02_value = 0;
+static uint16_t chr01_value_length = 0;
+static char chr01_value[MAX_CHR01_VALUE_LENGTH];
+static char chr02_value = 0;
 
 void doLCD(void){
     //Initialize LCD and backlight    
@@ -167,7 +167,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
 static uint16_t get_read_att_value_len(uint16_t att_handle){
     uint16_t value_len;
     switch(att_handle){
-        case ATT_CHARACTERISTIC_FFF1_01_HANDLE:
+        case ATT_CHARACTERISTIC_FFF1_01_VALUE_HANDLE:
             value_len = chr01_value_length;
             break;
         case ATT_CHARACTERISTIC_FFF2_01_VALUE_HANDLE:
@@ -183,8 +183,8 @@ static uint16_t get_read_att_value_len(uint16_t att_handle){
 static uint16_t get_write_att_value_len(uint16_t att_handle){
     uint16_t value_len;
     switch(att_handle){
-        case ATT_CHARACTERISTIC_FFF1_01_HANDLE:
-            value_len = max_chr01_value_length;
+        case ATT_CHARACTERISTIC_FFF1_01_VALUE_HANDLE:
+            value_len = MAX_CHR01_VALUE_LENGTH;
             break;
         case ATT_CHARACTERISTIC_FFF2_01_VALUE_HANDLE:
             value_len = 1;
@@ -196,7 +196,7 @@ static uint16_t get_write_att_value_len(uint16_t att_handle){
     return value_len;
 }
 
-static uint16_t get_bytes_to_copy(uint16_t value_len, uint16_t offset){
+static uint16_t get_bytes_to_copy(uint16_t value_len, uint16_t offset, uint16_t buffer_size){
     if (value_len <= offset ) return 0;
     
     uint16_t bytes_to_copy = value_len - offset;
@@ -208,14 +208,14 @@ static uint16_t get_bytes_to_copy(uint16_t value_len, uint16_t offset){
 
 uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     printf("READ Callback, handle %04x\n", att_handle);
-    uint16_t value_len = get_att_read_value_len(att_handle);
+    uint16_t value_len = get_read_att_value_len(att_handle);
     if (!buffer) return value_len;
     
-    uint16_t bytes_to_copy = get_bytes_to_copy(value_len, offset);
+    uint16_t bytes_to_copy = get_bytes_to_copy(value_len, offset, buffer_size);
     if (!bytes_to_copy) return 0;
     
     switch(att_handle){
-        case ATT_CHARACTERISTIC_FFF1_01_HANDLE:
+        case ATT_CHARACTERISTIC_FFF1_01_VALUE_HANDLE:
             memcpy(buffer, &chr01_value[offset], bytes_to_copy);
             break;
         case ATT_CHARACTERISTIC_FFF2_01_VALUE_HANDLE:
@@ -230,11 +230,11 @@ static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t
     printf("WRITE Callback, handle %04x\n", att_handle);
     
     uint16_t value_len = get_write_att_value_len(att_handle);
-    uint16_t bytes_to_copy = get_bytes_to_copy(value_len, offset);
+    uint16_t bytes_to_copy = get_bytes_to_copy(value_len, offset,buffer_size);
     if (!bytes_to_copy) return ATT_ERROR_INVALID_OFFSET;
     
     switch(att_handle){
-        case ATT_CHARACTERISTIC_FFF1_01_HANDLE:
+        case ATT_CHARACTERISTIC_FFF1_01_VALUE_HANDLE:
             buffer[buffer_size] = 0;
             memcpy(&chr01_value[offset], buffer, bytes_to_copy);
             chr01_value_length = bytes_to_copy + offset;
@@ -244,7 +244,7 @@ static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t
             break;
         case ATT_CHARACTERISTIC_FFF2_01_VALUE_HANDLE:
             printf("New value: %u\n", buffer[offset]);
-            if (buffer[offset])
+            if (buffer[offset]) {
                 LED_PORT_OUT |= LED_2;
             } else {
                 LED_PORT_OUT &= ~LED_2;
