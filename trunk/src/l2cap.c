@@ -205,11 +205,12 @@ void l2cap_block_new_credits(uint8_t blocked){
 void l2cap_hand_out_credits(void){
 
     if (new_credits_blocked) return;    // we're told not to. used by daemon
-    
-    linked_item_t *it;
-    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
+
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, &l2cap_channels);
+    while (linked_list_iterator_has_next(&it)){
+        l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
         if (!hci_number_free_acl_slots()) return;
-        l2cap_channel_t * channel = (l2cap_channel_t *) it;
         if (channel->state != L2CAP_STATE_OPEN) continue;
         if (hci_number_outgoing_packets(channel->handle) < NR_BUFFERED_ACL_PACKETS && channel->packets_granted == 0) {
             l2cap_emit_credits(channel, 1);
@@ -218,13 +219,14 @@ void l2cap_hand_out_credits(void){
 }
 
 l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
-    linked_item_t *it;
-    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-        l2cap_channel_t * channel = (l2cap_channel_t *) it;
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, &l2cap_channels);
+    while (linked_list_iterator_has_next(&it)){
+        l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
         if ( channel->local_cid == local_cid) {
             return channel;
         }
-    }
+    } 
     return NULL;
 }
 
@@ -248,9 +250,10 @@ uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid){
 }
 
 static l2cap_channel_t * l2cap_channel_for_rtx_timer(timer_source_t * ts){
-    linked_item_t *it;
-    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-        l2cap_channel_t * channel = (l2cap_channel_t *) it;
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, &l2cap_channels);
+    while (linked_list_iterator_has_next(&it)){
+        l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
         if ( &channel->rtx == ts) {
             return channel;
         }
@@ -551,18 +554,15 @@ void l2cap_run(void){
     }
     
     uint8_t  config_options[4];
-    linked_item_t *it;
-    linked_item_t *next;
-    for (it = (linked_item_t *) l2cap_channels; it ; it = next){
-        next = it->next;    // cache next item as current item might get freed
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, &l2cap_channels);
+    while (linked_list_iterator_has_next(&it)){
+        l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
 
         if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) break;
         if (!hci_can_send_packet_now_using_packet_buffer(HCI_ACL_DATA_PACKET)) break;
-        
-        l2cap_channel_t * channel = (l2cap_channel_t *) it;
-        
+                
         // log_info("l2cap_run: state %u, var 0x%02x\n", channel->state, channel->state_var);
-        
         
         switch (channel->state){
 
@@ -585,7 +585,7 @@ void l2cap_run(void){
                 l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, channel->reason, 0);
                 // discard channel - l2cap_finialize_channel_close without sending l2cap close event
                 l2cap_stop_rtx(channel);
-                linked_list_remove(&l2cap_channels, (linked_item_t *) channel); // -- remove from list
+                linked_list_iterator_remove(&it);
                 btstack_memory_l2cap_channel_free(channel); 
                 break;
                 
@@ -756,28 +756,33 @@ void l2cap_disconnect_internal(uint16_t local_cid, uint8_t reason){
 }
 
 static void l2cap_handle_connection_failed_for_addr(bd_addr_t address, uint8_t status){
-    linked_item_t *it = (linked_item_t *) &l2cap_channels;
-    while (it->next){
-        l2cap_channel_t * channel = (l2cap_channel_t *) it->next;
-        if ( ! BD_ADDR_CMP( channel->address, address) ){
-            if (channel->state == L2CAP_STATE_WAIT_CONNECTION_COMPLETE || channel->state == L2CAP_STATE_WILL_SEND_CREATE_CONNECTION) {
+    linked_list_iterator_t it;
+    linked_list_iterator_init(&it, &l2cap_channels);
+    while (linked_list_iterator_has_next(&it)){
+        l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
+        if ( BD_ADDR_CMP( channel->address, address) != 0) continue;
+        // channel for this address found
+        switch (channel->state){
+            case L2CAP_STATE_WAIT_CONNECTION_COMPLETE:
+            case L2CAP_STATE_WILL_SEND_CREATE_CONNECTION:
                 // failure, forward error code
                 l2cap_emit_channel_opened(channel, status);
                 // discard channel
-                it->next = it->next->next;
                 l2cap_stop_rtx(channel);
+                linked_list_iterator_remove(&it);
                 btstack_memory_l2cap_channel_free(channel);
-            }
-        } else {
-            it = it->next;
+                break;
+            default:
+                break;               
         }
     }
 }
 
 static void l2cap_handle_connection_success_for_addr(bd_addr_t address, hci_con_handle_t handle){
-    linked_item_t *it;
-    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-        l2cap_channel_t * channel = (l2cap_channel_t *) it;
+    linked_list_iterator_t it;
+    linked_list_iterator_init(&it, &l2cap_channels);
+    while (linked_list_iterator_has_next(&it)){
+        l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
         if ( ! BD_ADDR_CMP( channel->address, address) ){
             l2cap_handle_connection_complete(handle, channel);
         }
@@ -790,8 +795,7 @@ void l2cap_event_handler(uint8_t *packet, uint16_t size){
     
     bd_addr_t address;
     hci_con_handle_t handle;
-    l2cap_channel_t * channel;
-    linked_item_t *it;
+    linked_list_iterator_t it;
     int hci_con_used;
     
     switch(packet[0]){
@@ -825,20 +829,16 @@ void l2cap_event_handler(uint8_t *packet, uint16_t size){
             
         // handle disconnection complete events
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            // send l2cap disconnect events for all channels on this handle
+            // send l2cap disconnect events for all channels on this handle and free them
             handle = READ_BT_16(packet, 3);
-            it = (linked_item_t *) &l2cap_channels;
-            while (it->next){
-                l2cap_channel_t * channel = (l2cap_channel_t *) it->next;
-                if ( channel->handle == handle ){
-                    // update prev item before free'ing next element - don't call l2cap_finalize_channel_close
-                    it->next = it->next->next;
-                    l2cap_emit_channel_closed(channel);
-                    l2cap_stop_rtx(channel);
-                    btstack_memory_l2cap_channel_free(channel);
-                } else {
-                    it = it->next;
-                }
+            linked_list_iterator_init(&it, &l2cap_channels);
+            while (linked_list_iterator_has_next(&it)){
+                l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
+                if (channel->handle != handle) continue;
+                l2cap_emit_channel_closed(channel);
+                l2cap_stop_rtx(channel);
+                linked_list_iterator_remove(&it);
+                btstack_memory_l2cap_channel_free(channel);
             }
             break;
             
@@ -852,11 +852,12 @@ void l2cap_event_handler(uint8_t *packet, uint16_t size){
             handle = READ_BT_16(packet, 2);
             if (hci_authentication_active_for_handle(handle)) break;
             hci_con_used = 0;
-            for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-                channel = (l2cap_channel_t *) it;
-                if (channel->handle == handle) {
-                    hci_con_used = 1;
-                }
+            linked_list_iterator_init(&it, &l2cap_channels);
+            while (linked_list_iterator_has_next(&it)){
+                l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
+                if (channel->handle != handle) continue;
+                hci_con_used = 1;
+                break;
             }
             if (hci_con_used) break;
             if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) break;
@@ -864,11 +865,11 @@ void l2cap_event_handler(uint8_t *packet, uint16_t size){
             break;
 
         case DAEMON_EVENT_HCI_PACKET_SENT:
-            for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-                channel = (l2cap_channel_t *) it;
-                if (channel->packet_handler) {
-                    (* (channel->packet_handler))(HCI_EVENT_PACKET, channel->local_cid, packet, size);
-                } 
+            linked_list_iterator_init(&it, &l2cap_channels);
+            while (linked_list_iterator_has_next(&it)){
+                l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
+                if (!channel->packet_handler) continue;
+                (* (channel->packet_handler))(HCI_EVENT_PACKET, channel->local_cid, packet, size);
             }
             if (attribute_protocol_packet_handler) {
                 (*attribute_protocol_packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
@@ -880,18 +881,21 @@ void l2cap_event_handler(uint8_t *packet, uint16_t size){
 
         case HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE:
             handle = READ_BT_16(packet, 3);
-            for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-                channel = (l2cap_channel_t *) it;
+            linked_list_iterator_init(&it, &l2cap_channels);
+            while (linked_list_iterator_has_next(&it)){
+                l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
                 if (channel->handle != handle) continue;
                 l2cap_handle_remote_supported_features_received(channel);
                 break;
-            }            
+            }
+            break;           
 
         case GAP_SECURITY_LEVEL:
             handle = READ_BT_16(packet, 2);
             log_info("l2cap - security level update");
-            for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-                channel = (l2cap_channel_t *) it;
+            linked_list_iterator_init(&it, &l2cap_channels);
+            while (linked_list_iterator_has_next(&it)){
+                l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
                 if (channel->handle != handle) continue;
 
                 log_info("l2cap - state %u", channel->state);
@@ -921,7 +925,7 @@ void l2cap_event_handler(uint8_t *packet, uint16_t size){
 
                     default:
                         break;
-                }
+                } 
             }
             break;
             
@@ -1268,22 +1272,22 @@ void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t * comman
     uint16_t dest_cid = READ_BT_16(command, L2CAP_SIGNALING_COMMAND_DATA_OFFSET);
     
     // Find channel for this sig_id and connection handle
-    linked_item_t *it;
-    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-        l2cap_channel_t * channel = (l2cap_channel_t *) it;
-        if (channel->handle == handle) {
-            if (code & 1) {
-                // match odd commands (responses) by previous signaling identifier 
-                if (channel->local_sig_id == sig_id) {
-                    l2cap_signaling_handler_channel(channel, command);
-                    break;
-                }
-            } else {
-                // match even commands (requests) by local channel id
-                if (channel->local_cid == dest_cid) {
-                    l2cap_signaling_handler_channel(channel, command);
-                    break;
-                }
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, &l2cap_channels);
+    while (linked_list_iterator_has_next(&it)){
+        l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
+        if (channel->handle != handle) continue;
+        if (code & 1) {
+            // match odd commands (responses) by previous signaling identifier 
+            if (channel->local_sig_id == sig_id) {
+                l2cap_signaling_handler_channel(channel, command);
+                break;
+            }
+        } else {
+            // match even commands (requests) by local channel id
+            if (channel->local_cid == dest_cid) {
+                l2cap_signaling_handler_channel(channel, command);
+                break;
             }
         }
     }
@@ -1366,11 +1370,10 @@ void l2cap_finialize_channel_close(l2cap_channel_t *channel){
 }
 
 l2cap_service_t * l2cap_get_service(uint16_t psm){
-    linked_item_t *it;
-    
-    // close open channels
-    for (it = (linked_item_t *) l2cap_services; it ; it = it->next){
-        l2cap_service_t * service = ((l2cap_service_t *) it);
+    linked_list_iterator_t it;
+    linked_list_iterator_init(&it, &l2cap_services);
+    while (linked_list_iterator_has_next(&it)){
+        l2cap_service_t * service = (l2cap_service_t *) linked_list_iterator_next(&it);
         if ( service->psm == psm){
             return service;
         };
@@ -1433,27 +1436,24 @@ void l2cap_unregister_service_internal(void *connection, uint16_t psm){
 
 //
 void l2cap_close_connection(void *connection){
-    linked_item_t *it;
+
+    linked_list_iterator_t it;
     
-    // close open channels - note to myself: no channel is freed, so no new for fancy iterator tricks
-    l2cap_channel_t * channel;
-    for (it = (linked_item_t *) l2cap_channels; it ; it = it->next){
-        channel = (l2cap_channel_t *) it;
-        if (channel->connection == connection) {
-            channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
-        }
-    }   
+    // close open channels 
+    linked_list_iterator_init(&it, &l2cap_channels);
+    while (linked_list_iterator_has_next(&it)){
+        l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
+        if (channel->connection != connection) continue;
+        channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+    }
     
     // unregister services
-    it = (linked_item_t *) &l2cap_services;
-    while (it->next) {
-        l2cap_service_t * service = (l2cap_service_t *) it->next;
-        if (service->connection == connection){
-            it->next = it->next->next;
-            btstack_memory_l2cap_service_free(service);
-        } else {
-            it = it->next;
-        }
+    linked_list_iterator_init(&it, &l2cap_services);
+    while (linked_list_iterator_has_next(&it)){
+        l2cap_service_t * service = (l2cap_service_t *) linked_list_iterator_next(&it);
+        if (service->connection != connection) continue;
+        linked_list_iterator_remove(&it);
+        btstack_memory_l2cap_service_free(service);
     }
     
     // process
