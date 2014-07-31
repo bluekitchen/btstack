@@ -65,6 +65,11 @@
 #include "bt_control_csr.h"
 #endif
 
+#ifdef HAVE_UART_CC256x
+#include "bt_control_cc256x.h"
+#endif
+
+
 #define HEARTBEAT_PERIOD_MS 1000
 
 // test profile
@@ -945,9 +950,10 @@ void setup_cli(){
     run_loop_add_data_source(&stdin_source);
 }
 
-#ifdef HAVE_UART_CSR
-static hci_uart_config_t hci_uart_config_csr8811 = {
-    "/dev/tty.usbserial-A40081HW",
+#if defined(HAVE_UART_CSR) || defined(HAVE_UART_CC256x)
+static hci_uart_config_t hci_uart_config = {
+    // "/dev/tty.usbserial-A40081HW",
+    "/dev/tty.usbserial-AD025KU2",
     115200,
     0, // 1000000,
     1
@@ -965,8 +971,12 @@ void setup(void){
     // init HCI
 #ifdef HAVE_UART_CSR
     hci_transport_t    * transport = hci_transport_h4_instance();
-    hci_uart_config_t  * config    = &hci_uart_config_csr8811;
+    hci_uart_config_t  * config    = &hci_uart_config;
     bt_control_t       * control   = bt_control_csr_instance();
+#elif defined(HAVE_UART_CC256x)
+    hci_transport_t    * transport = hci_transport_h4_instance();
+    hci_uart_config_t  * config    = &hci_uart_config;
+    bt_control_t       * control   = bt_control_cc256x_instance();
 #else
     hci_transport_t    * transport = hci_transport_usb_instance();
     hci_uart_config_t  * config    = NULL;
