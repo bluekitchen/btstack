@@ -324,7 +324,7 @@ int hci_send_acl_packet_buffer(int size){
     hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
     hci_connection_t *connection = hci_connection_for_handle( con_handle);
     if (!connection) {
-        log_error("hci_send_acl_packet_buffer called but no connection for handle 0x%04x");
+        log_error("hci_send_acl_packet_buffer called but no connection for handle 0x%04x", con_handle);
         hci_release_packet_buffer();
         return 0;
     }
