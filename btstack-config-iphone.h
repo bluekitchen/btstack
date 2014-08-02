@@ -1,8 +1,11 @@
 // btstack-config.h created by configure for BTstack  Sun Jan 19 18:35:17 CET 2014
 #define HAVE_TRANSPORT_H4
-#define UART_DEVICE "/dev/ttyS0"
-#define UART_SPEED 115200
+#define UART_DEVICE "/dev/tty.bluetooth"
+#define UART_SPEED 921600
+#define USE_BLUETOOL
 #define USE_POWERMANAGEMENT
+#define USE_SPRINGBOARD
+#define USE_LAUNCHD
 #define USE_COCOA_RUN_LOOP
 #define USE_POSIX_RUN_LOOP
 #define HAVE_SDP
