@@ -149,7 +149,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                     int offset = 3;
                     for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
                         bt_flip_addr(addr, &packet[offset]);
-                        offset =+ 6;
+                        offset += 6;
                         int index = getDeviceIndexForAddress(addr);
                         if (index >= 0) continue;   // already in our list
                         memcpy(devices[deviceCount].address, addr, 6);
@@ -169,7 +169,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
                             devices[deviceCount].classOfDevice = READ_BT_24(packet, offset);
                             offset += 3;
                             devices[deviceCount].clockOffset =   READ_BT_16(packet, offset) & 0x7fff;
-                            offset += 2
+                            offset += 2;
                             devices[deviceCount].rssi  = packet[offset];
                             offset += 1;
                         }
