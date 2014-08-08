@@ -172,6 +172,16 @@ void l2cap_emit_connection_request(l2cap_channel_t *channel) {
     l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
+void l2cap_emit_connection_parameter_update_response(uint16_t handle, uint16_t result){
+    uint8_t event[6];
+    event[0] = L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE;
+    event[1] = 4;
+    bt_store_16(event, 2, handle);
+    bt_store_16(event, 4, result);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*packet_handler)(NULL, HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 static void l2cap_emit_service_registered(void *connection, uint8_t status, uint16_t psm){
     log_info("L2CAP_EVENT_SERVICE_REGISTERED status 0x%x psm 0x%x", status, psm);
     uint8_t event[5];
@@ -180,7 +190,7 @@ static void l2cap_emit_service_registered(void *connection, uint8_t status, uint
     event[2] = status;
     bt_store_16(event, 3, psm);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    (*packet_handler)(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*packet_handler)(NULL, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
@@ -1328,9 +1338,27 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
             break;
         
         case L2CAP_CID_SIGNALING_LE: {
-            // not implemented yet for LE Peripheral
-            uint8_t sig_id = packet[COMPLETE_L2CAP_HEADER + 1]; 
-            l2cap_register_signaling_response(handle, COMMAND_REJECT_LE, sig_id, L2CAP_REJ_CMD_UNKNOWN);
+            switch (packet[8]){
+                case CONNECTION_PARAMETER_UPDATE_RESPONSE: {
+                    uint16_t result = READ_BT_16(packet, 12);
+                    l2cap_emit_connection_parameter_update_response(handle, result);
+                    break;
+                }
+                case CONNECTION_PARAMETER_UPDATE_REQUEST: {
+                    uint8_t event[10];
+                    event[0] = L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST;
+                    event[1] = 8;
+                    memcpy(&event[2], &packet[12], 8);
+                    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+                    (*packet_handler)(NULL, HCI_EVENT_PACKET, 0, event, sizeof(event));
+                    break;
+                }
+                default: {
+                    uint8_t sig_id = packet[COMPLETE_L2CAP_HEADER + 1]; 
+                    l2cap_register_signaling_response(handle, COMMAND_REJECT_LE, sig_id, L2CAP_REJ_CMD_UNKNOWN);
+                    break;
+                }
+            }
             break;
         }
 

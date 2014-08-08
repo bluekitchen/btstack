@@ -247,6 +247,11 @@ extern "C" {
 // data: event(8), len(8), status (8), psm (16)
 #define L2CAP_EVENT_SERVICE_REGISTERED                     0x75
 
+// data: event(8), len(8), handle(16), interval min(16), interval max(16), latency(16), timeout multiplier(16)
+#define L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST    0x76
+
+// data: event(8), len(8), handle(16), result (16) (0 == ok, 1 == fail)
+#define L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE   0x77
 
 // RFCOMM EVENTS
 	
