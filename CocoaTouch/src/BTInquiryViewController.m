@@ -158,24 +158,34 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 				{
 					int numResponses = packet[2];
 					int i;
+					int offset = 3;
 					for (i=0; i<numResponses;i++){
 						bd_addr_t addr;
-						bt_flip_addr(addr, &packet[3+i*6]);
+						bt_flip_addr(addr, &packet[offset]);
+						offset += 6;
+
 						if ([inqView getDeviceForAddress:&addr]) {
 							// NSLog(@"Device %@ already in list", [BTDevice stringForAddress:&addr]);
 							continue;
 						}
 						BTDevice *dev = [[BTDevice alloc] init];
 						[dev setAddress:&addr];
-						[dev setPageScanRepetitionMode:packet[3 + numResponses*6 + i]];
+						[dev setPageScanRepetitionMode:packet[offset]];
+						offset += 1;
                         switch (packet[0]) {
                             case HCI_EVENT_INQUIRY_RESULT:
+                            	offset += 2; // Reserved + Reserved
                                 [dev setClassOfDevice:READ_BT_24(packet, 3 + numResponses*(6+1+1+1)   + i*3)];
+                                offset += 3;
                                 [dev setClockOffset:( READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff)];
+                                offset += 2;
                                 break;
                             case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+                            	offset += 1; // Reserved
                                 [dev setClassOfDevice:READ_BT_24(packet, 3 + numResponses*(6+1+1)   + i*3)];
+                                offset += 3;
                                 [dev setClockOffset:( READ_BT_16(packet, 3 + numResponses*(6+1+1+3) + i*2) & 0x7fff)];
+                                offset += 3; // setClockOffset(2) + RSSI(1)
                                 break;
                             default:
                                 break;

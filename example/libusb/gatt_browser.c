@@ -211,15 +211,16 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
             }
             printf("BTstack activated, start scanning!\n");
             state = TC_W4_SCAN_RESULT;
+            le_central_set_scan_parameters(0,0x0030, 0x0030);
             le_central_start_scan();
             break;
         case GAP_LE_ADVERTISING_REPORT:
             if (state != TC_W4_SCAN_RESULT) return;
-            state = TC_W4_CONNECT;
             fill_advertising_report_from_packet(&report, packet);
             // stop scanning, and connect to the device
-            le_central_stop_scan();
-            le_central_connect(&report.address,report.address_type);
+            // state = TC_W4_CONNECT;
+            //le_central_stop_scan();
+            //le_central_connect(&report.address,report.address_type);
             break;
         case HCI_EVENT_LE_META:
             // wait for connection complete
@@ -249,7 +250,7 @@ void setup(void){
     run_loop_init(RUN_LOOP_POSIX);
         
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-    hci_dump_open("/tmp/ble_client.pklg", HCI_DUMP_PACKETLOGGER);
+    hci_dump_open("/tmp/gatt_browser.pklg", HCI_DUMP_PACKETLOGGER);
 
   // init HCI
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
@@ -293,7 +294,6 @@ int main(int argc, const char * argv[])
             arg++;
             continue;
         }
-    
         usage(argv[0]);
         return 0;
 	}
