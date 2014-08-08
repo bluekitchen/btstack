@@ -552,6 +552,7 @@ void le_handle_advertisement_report(uint8_t *packet, int size){
         total_data_length += packet[4+num_reports*8+i];
     }
 
+    log_info("num reports: %d, ", num_reports);
     for (i=0; i<num_reports;i++){
         int pos = 0;
         uint8_t data_length = packet[4+num_reports*8+i];
@@ -564,6 +565,7 @@ void le_handle_advertisement_report(uint8_t *packet, int size){
         memcpy(&event[pos], &packet[4+num_reports*2+i*6], 6); // bt address
         pos += 6;
         event[pos++] = packet[4+num_reports*9+total_data_length + i];
+        log_info("rssi: %d, ", event[pos-1]);
         event[pos++] = data_length;
         memcpy(&event[pos], &packet[4+num_reports*9+data_offset], data_length);
         data_offset += data_length;
@@ -844,10 +846,14 @@ static void event_handler(uint8_t *packet, int size){
             hci_stack->num_cmd_packets = packet[3];
             break;
             
-        case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
+        case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:{
+            int offset = 3;
             for (i=0; i<packet[2];i++){
-                handle = READ_BT_16(packet, 3 + 2*i);
-                uint16_t num_packets = READ_BT_16(packet, 3 + packet[2]*2 + 2*i);
+                handle = READ_BT_16(packet, offset);
+                offset += 2;
+                uint16_t num_packets = READ_BT_16(packet, offset);
+                offset += 2;
+                
                 conn = hci_connection_for_handle(handle);
                 if (!conn){
                     log_error("hci_number_completed_packet lists unused con handle %u\n", handle);
@@ -857,7 +863,7 @@ static void event_handler(uint8_t *packet, int size){
                 // log_info("hci_number_completed_packet %u processed for handle %u, outstanding %u\n", num_packets, handle, conn->num_acl_packets_sent);
             }
             break;
-            
+        }
         case HCI_EVENT_CONNECTION_REQUEST:
             bt_flip_addr(addr, &packet[2]);
             // TODO: eval COD 8-10
@@ -1092,6 +1098,7 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_LE_META:
             switch (packet[2]){
                 case HCI_SUBEVENT_LE_ADVERTISING_REPORT:
+                    log_info("advertising report received\n");
                     if (hci_stack->le_scanning_state != LE_SCANNING) break;
                     le_handle_advertisement_report(packet, size);
                     break;
