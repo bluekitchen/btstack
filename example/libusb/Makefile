@@ -70,7 +70,7 @@ GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
 
 # create firmware image from common objects and example source file
 
-all: ../../include/btstack/version.h ble_client gatt_browser sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral \
+all: ../../include/btstack/version.h gatt_browser sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral \
 		ble_peripheral_sm_minimal gap_inquiry gap_dedicated_bonding gap_inquiry_and_bond l2cap_test spp_streamer \
 		classic_test ble_peripheral_uart_csr ble_peripheral_uart_cc256x ancs_client spp_and_le_counter
 
