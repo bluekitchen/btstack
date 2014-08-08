@@ -1054,18 +1054,21 @@ static void event_handler(uint8_t *packet, int size){
             break;
             
         case HCI_EVENT_INQUIRY_RESULT:
-        case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+        case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:{
             if (!hci_stack->remote_device_db) break;
             // first send inq result packet
             hci_stack->packet_handler(HCI_EVENT_PACKET, packet, size);
             // then send cached remote names
+            int offset = 3;
             for (i=0; i<packet[2];i++){
-                bt_flip_addr(addr, &packet[3+i*6]);
+                bt_flip_addr(addr, &packet[offset]);
+                offset += 14; // 6 + 1 + 1 + 1 + 3 + 2; 
                 if (hci_stack->remote_device_db->get_name(&addr, &device_name)){
                     hci_emit_remote_name_cached(&addr, &device_name);
                 }
             }
             return;
+        }
 #endif
             
         case HCI_EVENT_DISCONNECTION_COMPLETE:

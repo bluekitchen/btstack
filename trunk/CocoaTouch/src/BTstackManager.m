@@ -431,10 +431,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					}
 					break;
 					
-				case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+				case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:{
 					numResponses = packet[2];
+					int offset = 3;
 					for (i=0; i<numResponses ;i++){
-						bt_flip_addr(addr, &packet[3+i*6]);
+						bt_flip_addr(addr, &packet[offset]);
+						offset += 6;
 						// NSLog(@"found %@", [BTDevice stringForAddress:&addr]);
 						BTDevice* device = [self deviceForAddress:&addr];
 						if (!device) {
@@ -442,14 +444,18 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 							[discoveredDevices addObject:device];
 							[device setAddress:&addr];
 						}
-						device.pageScanRepetitionMode =   packet [3 + numResponses*(6)         + i*1];
-						device.classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1)     + i*3);
-						device.clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+3)   + i*2) & 0x7fff;
-						device.rssi  =                    packet [3 + numResponses*(6+1+1+3+2) + i*1];
+						device.pageScanRepetitionMode =   packet [offset];
+						offset += 2; // pageScanRepetitionMode + Reserved
+						device.classOfDevice = READ_BT_24(offset);
+						offset += 3;
+						device.clockOffset = READ_BT_16(offset) & 0x7fff;
+						offset += 2;
+						device.rssi = packet[offset];
+						offset += 1;
 						[self sendDeviceInfo:device];
 					}
 					break;
-
+				}
 				case BTSTACK_EVENT_REMOTE_NAME_CACHED:
                     [self handleRemoteNameCached:packet];
 					break;

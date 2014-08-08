@@ -118,23 +118,34 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
         case ACTIVE:
             switch(event){
                 case HCI_EVENT_INQUIRY_RESULT:
-                case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+                case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:{
                     numResponses = packet[2];
+                    int offset = 3;
                     for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
-                        bt_flip_addr(addr, &packet[3+i*6]);
+                        bt_flip_addr(addr, &packet[offset]);
+                        offset =+ 6;
                         int index = getDeviceIndexForAddress(addr);
                         if (index >= 0) continue;   // already in our list
-
                         memcpy(devices[deviceCount].address, addr, 6);
-                        devices[deviceCount].pageScanRepetitionMode =   packet [3 + numResponses*(6)         + i*1];
+
+                        devices[deviceCount].pageScanRepetitionMode = packet[offset];
+                        offset += 1;
+
                         if (event == HCI_EVENT_INQUIRY_RESULT){
-                            devices[deviceCount].classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1+1)   + i*3);
-                            devices[deviceCount].clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff;
+                            offset += 2; // Reserved + Reserved
+                            devices[deviceCount].classOfDevice = READ_BT_24(packet, offset);
+                            offset += 3;
+                            devices[deviceCount].clockOffset =   READ_BT_16(packet, offset) & 0x7fff;
+                            offset += 2;
                             devices[deviceCount].rssi  = 0;
                         } else {
-                            devices[deviceCount].classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1)     + i*3);
-                            devices[deviceCount].clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+3)   + i*2) & 0x7fff;
-                            devices[deviceCount].rssi  =                    packet [3 + numResponses*(6+1+1+3+2) + i*1];
+                            offset += 1; // Reserved
+                            devices[deviceCount].classOfDevice = READ_BT_24(packet, offset);
+                            offset += 3;
+                            devices[deviceCount].clockOffset =   READ_BT_16(packet, offset) & 0x7fff;
+                            offset += 2
+                            devices[deviceCount].rssi  = packet[offset];
+                            offset += 1;
                         }
                         devices[deviceCount].state = REMOTE_NAME_REQUEST;
                         printf("Device found: %s with COD: 0x%06x, pageScan %d, clock offset 0x%04x, rssi 0x%02x\n", bd_addr_to_str(addr),
@@ -142,8 +153,9 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
                                 devices[deviceCount].clockOffset, devices[deviceCount].rssi);
                         deviceCount++;
                     }
+
                     break;
-                    
+                }
                 case HCI_EVENT_INQUIRY_COMPLETE:
                     for (i=0;i<deviceCount;i++) {
                         // retry remote name request
