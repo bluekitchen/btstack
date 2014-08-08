@@ -21,7 +21,7 @@
 #include "gap.h"
 
 #define MAX_DEVICES 10
-enum DEVICE_STATE { BONDING_REQUEST,     BONDING_REQUESTED,    BONDING_COMPLETED };
+enum DEVICE_STATE { BONDING_REQUEST, BONDING_REQUESTED, BONDING_COMPLETED };
 
 struct device {
     bd_addr_t  address;
@@ -121,7 +121,7 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
                     int offset = 3;
                     for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
                         bt_flip_addr(addr, &packet[offset]);
-                        offset =+ 6;
+                        offset += 6;
                         int index = getDeviceIndexForAddress(addr);
                         if (index >= 0) continue;   // already in our list
                         memcpy(devices[deviceCount].address, addr, 6);
@@ -141,11 +141,11 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
                             devices[deviceCount].classOfDevice = READ_BT_24(packet, offset);
                             offset += 3;
                             devices[deviceCount].clockOffset =   READ_BT_16(packet, offset) & 0x7fff;
-                            offset += 2
+                            offset += 2;
                             devices[deviceCount].rssi  = packet[offset];
                             offset += 1;
                         }
-                        devices[deviceCount].state = REMOTE_NAME_REQUEST;
+                        devices[deviceCount].state = BONDING_REQUEST;
                         printf("Device found: %s with COD: 0x%06x, pageScan %d, clock offset 0x%04x, rssi 0x%02x\n", bd_addr_to_str(addr),
                                 devices[deviceCount].classOfDevice, devices[deviceCount].pageScanRepetitionMode,
                                 devices[deviceCount].clockOffset, devices[deviceCount].rssi);
