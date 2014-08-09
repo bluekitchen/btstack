@@ -2266,6 +2266,7 @@ void rfcomm_close_connection(void *connection){
         rfcomm_channel_t * channel = (rfcomm_channel_t *)it;
         if (channel->connection != connection) continue;
         channel->state = RFCOMM_CHANNEL_SEND_DISC;
+        channel->connection = NULL;
     }
     
     // unregister services

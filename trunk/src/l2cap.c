@@ -1473,6 +1473,7 @@ void l2cap_close_connection(void *connection){
         l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
         if (channel->connection != connection) continue;
         channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
+        channel->connection = NULL;
     }
     
     // unregister services
