@@ -199,6 +199,9 @@ void l2cap_block_new_credits(uint8_t blocked);
 
 int  l2cap_can_send_packet_now(uint16_t local_cid);    // non-blocking UART write
 
+int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle);
+
+// @deprecated use l2cap_can_send_fixed_channel_packet_now instead
 int  l2cap_can_send_connectionless_packet_now(void);
 
 int  l2cap_reserve_packet_buffer(void);

@@ -247,9 +247,14 @@ int  l2cap_can_send_packet_now(uint16_t local_cid){
     return hci_can_send_acl_packet_now(channel->handle);
 }
 
+// @deprecated
 int l2cap_can_send_connectionless_packet_now(void){
     // TODO provide real handle
-    return hci_can_send_acl_packet_now(0x1234);
+    return l2cap_can_send_fixed_channel_packet_now(0x1234);
+}
+
+int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle){
+    return hci_can_send_acl_packet_now(handle);
 }
 
 uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid){
