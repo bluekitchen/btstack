@@ -449,10 +449,17 @@ int hci_send_cmd_packet(uint8_t *packet, int size);
 // send ACL packet prepared in hci packet buffer
 int hci_send_acl_packet_buffer(int size);
 
+// new functions replacing hci_can_send_packet_now[_using_packet_buffer]
+int hci_can_send_command_packet_now(void);
+int hci_can_send_acl_packet_now(hci_con_handle_t con_handle);
+int hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle);
+
 // non-blocking UART driver needs
+// @deprecated use hci_can_send_X_now instead
 int hci_can_send_packet_now(uint8_t packet_type);
 
 // same as hci_can_send_packet_now, but also checks if packet buffer is free for use
+// @deprecated use hci_can_send_X_now instead
 int hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type);
 
 // reserves outgoing packet buffer. @returns 1 if successful
