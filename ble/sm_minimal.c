@@ -200,7 +200,7 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
 static void sm_run(void){
 
     // assert that we can send either one
-    if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
+    if (!hci_can_send_command_packet_now()) return;
     if (!l2cap_can_send_connectionless_packet_now()) return;
 
     switch (sm_state_responding){

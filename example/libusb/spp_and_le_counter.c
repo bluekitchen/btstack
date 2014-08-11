@@ -62,7 +62,7 @@ static todo_t todos = 0;
 
 static void gap_run(){
 
-    if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
+    if (!hci_can_send_command_packet_now()) return;
 
     if (todos & SET_ADVERTISEMENT_DATA){
         printf("GAP_RUN: set advertisement data\n");
