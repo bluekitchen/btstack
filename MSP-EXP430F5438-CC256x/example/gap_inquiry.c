@@ -143,7 +143,7 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
                             devices[deviceCount].classOfDevice = READ_BT_24(packet, offset);
                             offset += 3;
                             devices[deviceCount].clockOffset =   READ_BT_16(packet, offset) & 0x7fff;
-                            offset += 2
+                            offset += 2;
                             devices[deviceCount].rssi  = packet[offset];
                             offset += 1;
                         }
