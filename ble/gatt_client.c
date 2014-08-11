@@ -578,9 +578,10 @@ static void gatt_client_run(){
     linked_item_t *it;
     for (it = (linked_item_t *) gatt_client_connections; it ; it = it->next){
 
+        gatt_client_t * peripheral = (gatt_client_t *) it;
+
         if (!l2cap_can_send_fixed_channel_packet_now(peripheral->handle)) return;
 
-        gatt_client_t * peripheral = (gatt_client_t *) it;
         // printf("- handle_peripheral_list, mtu state %u, client state %u\n", peripheral->mtu_state, peripheral->gatt_client_state);
         
         switch (peripheral->mtu_state) {
