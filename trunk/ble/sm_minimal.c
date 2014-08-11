@@ -201,7 +201,7 @@ static void sm_run(void){
 
     // assert that we can send either one
     if (!hci_can_send_command_packet_now()) return;
-    if (!l2cap_can_send_connectionless_packet_now()) return;
+    if (!l2cap_can_send_fixed_channel_packet_now(sm_response_handle)) return;
 
     switch (sm_state_responding){
         case SM_STATE_SEND_LTK_REQUESTED_NEGATIVE_REPLY:

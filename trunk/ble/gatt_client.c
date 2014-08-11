@@ -574,11 +574,11 @@ gatt_client_t * get_gatt_client_context_for_handle(uint16_t handle){
 
 static void gatt_client_run(){
 
-    if (!l2cap_can_send_connectionless_packet_now()) return;
 
     linked_item_t *it;
     for (it = (linked_item_t *) gatt_client_connections; it ; it = it->next){
 
+        if (!l2cap_can_send_fixed_channel_packet_now(peripheral->handle)) return;
 
         gatt_client_t * peripheral = (gatt_client_t *) it;
         // printf("- handle_peripheral_list, mtu state %u, client state %u\n", peripheral->mtu_state, peripheral->gatt_client_state);
