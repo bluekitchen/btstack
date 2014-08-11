@@ -81,9 +81,14 @@ void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t pa
     packet_handler = handler;
 }
 
+// @deprecated
 int l2cap_can_send_connectionless_packet_now(void){
-    // TODO provide connection handle
-    return hci_can_send_acl_packet_now(0x1234);
+    // TODO provide real handle
+    return l2cap_can_send_fixed_channel_packet_now(0x1234);
+}
+
+int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle){
+    return hci_can_send_acl_packet_now(handle);
 }
 
 uint8_t *l2cap_get_outgoing_buffer(void){
