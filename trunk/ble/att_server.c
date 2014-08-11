@@ -86,11 +86,6 @@ static timer_source_t att_handle_value_indication_timer;
 
 static btstack_packet_handler_t att_client_packet_handler = NULL;
 
-// should that go into l2cap[_le].c? Should it actually use the handle?
-static uint16_t l2cap_max_mtu_for_handle(uint16_t handle){
-    return l2cap_max_mtu();
-}
-
 static void att_handle_value_indication_notify_client(uint8_t status, uint16_t client_handle, uint16_t attribute_handle){
     uint8_t event[7];
     int pos = 0;
