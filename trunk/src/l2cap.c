@@ -569,7 +569,7 @@ void l2cap_run(void){
     while (linked_list_iterator_has_next(&it)){
         l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
 
-        if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) break;
+        if (!hci_can_send_command_packet_now()) break;
         if (!hci_can_send_packet_now_using_packet_buffer(HCI_ACL_DATA_PACKET)) break;
                 
         // log_info("l2cap_run: state %u, var 0x%02x\n", channel->state, channel->state_var);
@@ -870,7 +870,7 @@ void l2cap_event_handler(uint8_t *packet, uint16_t size){
                 break;
             }
             if (hci_con_used) break;
-            if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) break;
+            if (!hci_can_send_command_packet_now()) break;
             hci_send_cmd(&hci_disconnect, handle, 0x13); // remote closed connection             
             break;
 

@@ -301,7 +301,7 @@ void handle_gatt_client_event(le_event_t * event){
 
 static void app_run(){
 
-    if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
+    if (!hci_can_send_command_packet_now()) return;
 
     if (todos & SET_ADVERTISEMENT_DATA){
         printf("app_run: set advertisement data\n");

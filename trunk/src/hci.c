@@ -1604,7 +1604,7 @@ void hci_run(){
     hci_connection_t * connection;
     linked_item_t * it;
     
-    if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
+    if (!hci_can_send_command_packet_now()) return;
 
     // global/non-connection oriented commands
     
@@ -1800,7 +1800,7 @@ void hci_run(){
             if (connection){
                 
                 // send disconnect
-                if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
+                if (!hci_can_send_command_packet_now()) return;
                 
                 log_info("HCI_STATE_HALTING, connection %p, handle %u\n", connection, (uint16_t)connection->con_handle);
                 hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
@@ -1835,7 +1835,7 @@ void hci_run(){
                     if (connection){
                         
                         // send disconnect
-                        if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
+                        if (!hci_can_send_command_packet_now()) return;
 
                         log_info("HCI_STATE_FALLING_ASLEEP, connection %p, handle %u\n", connection, (uint16_t)connection->con_handle);
                         hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
@@ -1847,7 +1847,7 @@ void hci_run(){
                     
                     if (hci_classic_supported()){
                         // disable page and inquiry scan
-                        if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)) return;
+                        if (!hci_can_send_command_packet_now()) return;
                         
                         log_info("HCI_STATE_HALTING, disabling inq scans\n");
                         hci_send_cmd(&hci_write_scan_enable, hci_stack->connectable << 1); // drop inquiry scan but keep page scan
@@ -2012,7 +2012,7 @@ void hci_ssp_set_auto_accept(int auto_accept){
  */
 int hci_send_cmd(const hci_cmd_t *cmd, ...){
 
-    if (!hci_can_send_packet_now_using_packet_buffer(HCI_COMMAND_DATA_PACKET)){ 
+    if (!hci_can_send_command_packet_now()){ 
         log_error("hci_send_cmd called but cannot send packet now");
         return 0;
     }
