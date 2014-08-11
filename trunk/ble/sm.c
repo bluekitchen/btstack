@@ -1659,6 +1659,8 @@ static int sm_validate_stk_generation_method(){
             return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_PASSKEY) != 0;
         case OOB:
             return (sm_accepted_stk_generation_methods & SM_STK_GENERATION_METHOD_OOB) != 0;
+        default:
+            return 0;
     }
 }
 static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
@@ -1990,7 +1992,7 @@ void sm_init(){
     sm_central_device_test = -1;    // no private address to resolve yet
     sm_central_ah_calculation_active = 0;
 
-    gap_random_adress_update_period = 15 * 60 * 1000;
+    gap_random_adress_update_period = 15 * 60 * 1000L;
 
     // attach to lower layers
     l2cap_register_fixed_channel(sm_packet_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
