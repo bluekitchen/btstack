@@ -857,7 +857,7 @@ static void sm_run(void){
 
     // assert that we can send either one
     if (!hci_can_send_command_packet_now()) return;
-    if (!l2cap_can_send_connectionless_packet_now()) return;
+    if (!l2cap_can_send_fixed_channel_packet_now(connection->handle)) return;
 
     sm_key_t plaintext;
 
