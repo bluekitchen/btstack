@@ -255,30 +255,63 @@ uint8_t hci_number_free_acl_slots(){
     return free_slots;
 }
 
-int hci_can_send_packet_now(uint8_t packet_type){
 
-    // check for async hci transport implementations
-    if (hci_stack->hci_transport->can_send_packet_now){
-        if (!hci_stack->hci_transport->can_send_packet_now(packet_type)){
-            return 0;
-        }
-    }
-    
-    // check regular Bluetooth flow control
+// @deprecated
+int hci_can_send_packet_now(uint8_t packet_type){
     switch (packet_type) {
         case HCI_ACL_DATA_PACKET:
-            return hci_number_free_acl_slots();
+            return hci_can_send_prepared_acl_packet_now(0);
         case HCI_COMMAND_DATA_PACKET:
-            return hci_stack->num_cmd_packets;
+            return hci_can_send_command_packet_now();
         default:
             return 0;
     }
 }
 
+// @deprecated
 // same as hci_can_send_packet_now, but also checks if packet buffer is free for use
 int hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type){
+
     if (hci_stack->hci_packet_buffer_reserved) return 0;
-    return hci_can_send_packet_now(packet_type);
+
+    switch (packet_type) {
+        case HCI_ACL_DATA_PACKET:
+            return hci_can_send_acl_packet_now(0);
+        case HCI_COMMAND_DATA_PACKET:
+            return hci_can_send_command_packet_now();
+        default:
+            return 0;
+    }
+}
+
+
+// new functions replacing hci_can_send_packet_now[_using_packet_buffer]
+int hci_can_send_command_packet_now(void){
+    if (hci_stack->hci_packet_buffer_reserved) return 0;
+
+    // check for async hci transport implementations
+    if (hci_stack->hci_transport->can_send_packet_now){
+        if (!hci_stack->hci_transport->can_send_packet_now(HCI_COMMAND_DATA_PACKET)){
+            return 0;
+        }
+    }
+
+    return hci_stack->num_cmd_packets > 0;
+}
+
+int hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle) {
+    // check for async hci transport implementations
+    if (hci_stack->hci_transport->can_send_packet_now){
+        if (!hci_stack->hci_transport->can_send_packet_now(HCI_ACL_DATA_PACKET)){
+            return 0;
+        }
+    }
+    return hci_number_free_acl_slots() > 0;
+}
+
+int hci_can_send_acl_packet_now(hci_con_handle_t con_handle){
+    if (hci_stack->hci_packet_buffer_reserved) return 0;
+    return hci_can_send_prepared_acl_packet_now(con_handle);
 }
 
 // used for internal checks in l2cap[-le].c
