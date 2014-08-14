@@ -65,6 +65,9 @@ extern "C" {
 #define L2CAP_MINIMAL_MTU 48
 #define L2CAP_DEFAULT_MTU 672
     
+// Minimum/default MTU
+#define L2CAP_LE_DEFAULT_MTU  23
+
 // check L2CAP MTU
 #if (L2CAP_MINIMAL_MTU + L2CAP_HEADER_SIZE) > HCI_ACL_PAYLOAD_SIZE
 #error "HCI_ACL_PAYLOAD_SIZE too small for minimal L2CAP MTU of 48 bytes"

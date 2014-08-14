@@ -682,8 +682,15 @@ void l2cap_run(void){
     }
 }
 
+
 uint16_t l2cap_max_mtu(void){
+    int classic_acl_lenght = hci_max_acl_data_packet_length();
+    if (classic_acl_lenght == 0) return 0;
     return hci_max_acl_data_packet_length() - L2CAP_HEADER_SIZE;
+}
+
+uint16_t l2cap_max_le_mtu(){
+    return L2CAP_LE_DEFAULT_MTU;
 }
 
 static void l2cap_handle_connection_complete(uint16_t handle, l2cap_channel_t * channel){

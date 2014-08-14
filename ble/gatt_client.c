@@ -95,14 +95,6 @@ int gatt_client_is_ready(gatt_client_t *context){
     return context->gatt_client_state == P_READY;
 }
 
-
-// START Helper Functions - to be sorted
-static uint16_t l2cap_max_mtu_for_handle(uint16_t handle){
-    return l2cap_max_mtu();
-}
-
-// END Helper Functions
-
 // precondition: can_send_packet_now == TRUE
 static void att_confirmation(uint16_t peripheral_handle){
     l2cap_reserve_packet_buffer();
@@ -574,7 +566,6 @@ gatt_client_t * get_gatt_client_context_for_handle(uint16_t handle){
 
 static void gatt_client_run(){
 
-
     linked_item_t *it;
     for (it = (linked_item_t *) gatt_client_connections; it ; it = it->next){
 
@@ -587,7 +578,7 @@ static void gatt_client_run(){
         switch (peripheral->mtu_state) {
             case SEND_MTU_EXCHANGE:{
                 peripheral->mtu_state = SENT_MTU_EXCHANGE;
-                uint16_t mtu = l2cap_max_mtu_for_handle(peripheral->handle);
+                uint16_t mtu = l2cap_max_le_mtu();
                 // TODO: extract as att_exchange_mtu_request
                 l2cap_reserve_packet_buffer();
                 uint8_t * request = l2cap_get_outgoing_buffer();
@@ -773,7 +764,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
         case ATT_EXCHANGE_MTU_RESPONSE:
         {
             uint16_t remote_rx_mtu = READ_BT_16(packet, 1);
-            uint16_t local_rx_mtu = l2cap_max_mtu_for_handle(handle);
+            uint16_t local_rx_mtu = l2cap_max_le_mtu());
             peripheral->mtu = remote_rx_mtu < local_rx_mtu ? remote_rx_mtu : local_rx_mtu;
             peripheral->mtu_state = MTU_EXCHANGED;
             break;
