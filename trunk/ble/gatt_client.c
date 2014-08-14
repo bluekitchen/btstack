@@ -764,7 +764,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
         case ATT_EXCHANGE_MTU_RESPONSE:
         {
             uint16_t remote_rx_mtu = READ_BT_16(packet, 1);
-            uint16_t local_rx_mtu = l2cap_max_le_mtu());
+            uint16_t local_rx_mtu = l2cap_max_le_mtu();
             peripheral->mtu = remote_rx_mtu < local_rx_mtu ? remote_rx_mtu : local_rx_mtu;
             peripheral->mtu_state = MTU_EXCHANGED;
             break;
