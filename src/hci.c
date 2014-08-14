@@ -235,24 +235,67 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 uint8_t hci_number_outgoing_packets(hci_con_handle_t handle){
     hci_connection_t * connection = hci_connection_for_handle(handle);
     if (!connection) {
-        log_error("hci_number_outgoing_packets connectino for handle %u does not exist!\n", handle);
+        log_error("hci_number_outgoing_packets: connection for handle %u does not exist!\n", handle);
         return 0;
     }
     return connection->num_acl_packets_sent;
 }
 
 uint8_t hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
-    uint8_t free_slots = hci_stack->total_num_acl_packets;
+    
+    int num_packets_sent_classic = 0;
+    int num_packets_sent_le = 0;
+
+    bd_addr_type_t address_type = BD_ADDR_TYPE_UNKNOWN;
+
     linked_item_t *it;
     for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
         hci_connection_t * connection = (hci_connection_t *) it;
-        if (free_slots < connection->num_acl_packets_sent) {
-            log_error("hci_number_free_acl_slots: sum of outgoing packets > total acl packets!\n");
+        if (connection->address_type == BD_ADDR_TYPE_CLASSIC){
+            num_packets_sent_classic += connection->num_acl_packets_sent;
+        } else {
+            num_packets_sent_le += connection->num_acl_packets_sent;
+        }
+        if (connection->con_handle == con_handle){
+            address_type = connection->address_type;
+        }
+    }
+
+    int free_slots_classic = hci_stack->acl_packets_total_num - num_packets_sent_classic;
+    int free_slots_le = 0;
+
+    if (free_slots_classic < 0){
+        log_error("hci_number_free_acl_slots: outgoing classic packets (%u) > total classic packets (%u)\n", num_packets_sent_classic, hci_stack->acl_packets_total_num);
+        return 0;
+    }
+
+    if (hci_stack->le_acl_packets_total_num){
+        // if we have LE slots, they are used
+        free_slots_le = hci_stack->le_acl_packets_total_num - num_packets_sent_le;
+        if (free_slots_le < 0){
+            log_error("hci_number_free_acl_slots: outgoing le packets (%u) > total le packets (%u)\n", num_packets_sent_le, hci_stack->le_acl_packets_total_num);
             return 0;
         }
-        free_slots -= connection->num_acl_packets_sent;
+    } else {
+        // otherwise, classic slots are used for LE, too
+        free_slots_classic -= num_packets_sent_le;
+        if (free_slots_classic < 0){
+            log_error("hci_number_free_acl_slots: outgoing classic + le packets (%u + %u) > total packets (%u)\n", num_packets_sent_classic, num_packets_sent_le, hci_stack->acl_packets_total_num);
+            return 0;
+        }
     }
-    return free_slots;
+
+    switch (address_type){
+        case BD_ADDR_TYPE_UNKNOWN:
+            log_error("hci_number_free_acl_slots: handle 0x%04x not in connection list\n", con_handle);
+            return 0;
+
+        case BD_ADDR_TYPE_CLASSIC:
+            return free_slots_classic;
+
+        default:
+            return free_slots_le;
+    }
 }
 
 
@@ -818,7 +861,7 @@ static void event_handler(uint8_t *packet, int size){
                 // "The HC_ACL_Data_Packet_Length return parameter will be used to determine the size of the L2CAP segments contained in ACL Data Packets"
                 hci_stack->acl_data_packet_length = READ_BT_16(packet, 6);
                 // ignore: SCO data packet len (8)
-                hci_stack->total_num_acl_packets  = packet[9];
+                hci_stack->acl_packets_total_num  = packet[9];
                 // ignore: total num SCO packets
                 if (hci_stack->state == HCI_STATE_INITIALIZING){
                     // determine usable ACL payload size
@@ -826,25 +869,14 @@ static void event_handler(uint8_t *packet, int size){
                         hci_stack->acl_data_packet_length = HCI_ACL_PAYLOAD_SIZE;
                     }
                     log_info("hci_read_buffer_size: used size %u, count %u\n",
-                             hci_stack->acl_data_packet_length, hci_stack->total_num_acl_packets); 
+                             hci_stack->acl_data_packet_length, hci_stack->acl_packets_total_num); 
                 }
             }
 #ifdef HAVE_BLE
             if (COMMAND_COMPLETE_EVENT(packet, hci_le_read_buffer_size)){
                 hci_stack->le_data_packet_length = READ_BT_16(packet, 6);
-                hci_stack->total_num_le_packets  = packet[8];
-                log_info("hci_le_read_buffer_size: size %u, count %u\n", hci_stack->le_data_packet_length, hci_stack->total_num_le_packets);
-
-                // use LE buffers if no clasic buffers have been reported
-                if (hci_stack->total_num_acl_packets == 0){
-                    log_info("use le buffers instead of classic ones");
-                    hci_stack->total_num_acl_packets  = hci_stack->total_num_le_packets;
-                    hci_stack->acl_data_packet_length = hci_stack->le_data_packet_length;
-                    // determine usable ACL payload size
-                    if (HCI_ACL_PAYLOAD_SIZE < hci_stack->acl_data_packet_length){
-                        hci_stack->acl_data_packet_length = HCI_ACL_PAYLOAD_SIZE;
-                    }
-                }
+                hci_stack->le_acl_packets_total_num  = packet[8];
+                log_info("hci_le_read_buffer_size: size %u, count %u\n", hci_stack->le_data_packet_length, hci_stack->le_acl_packets_total_num);
             }            
 #endif
             // Dump local address
