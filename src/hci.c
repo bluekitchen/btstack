@@ -874,9 +874,9 @@ static void event_handler(uint8_t *packet, int size){
             }
 #ifdef HAVE_BLE
             if (COMMAND_COMPLETE_EVENT(packet, hci_le_read_buffer_size)){
-                hci_stack->le_data_packet_length = READ_BT_16(packet, 6);
+                hci_stack->le_data_packets_length = READ_BT_16(packet, 6);
                 hci_stack->le_acl_packets_total_num  = packet[8];
-                log_info("hci_le_read_buffer_size: size %u, count %u\n", hci_stack->le_data_packet_length, hci_stack->le_acl_packets_total_num);
+                log_info("hci_le_read_buffer_size: size %u, count %u\n", hci_stack->le_data_packets_length, hci_stack->le_acl_packets_total_num);
             }            
 #endif
             // Dump local address
