@@ -513,7 +513,8 @@ typedef enum {
  typedef enum {
  	BD_ADDR_TYPE_LE_PUBLIC = 0,
  	BD_ADDR_TYPE_LE_RANDOM = 1,
- 	BD_ADDR_TYPE_CLASSIC   = 0xff
+ 	BD_ADDR_TYPE_CLASSIC   = 0xff,
+ 	BD_ADDR_TYPE_UNKNOWN   = 0xfe
  } bd_addr_type_t;
 
 /**
