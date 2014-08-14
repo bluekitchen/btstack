@@ -241,7 +241,7 @@ uint8_t hci_number_outgoing_packets(hci_con_handle_t handle){
     return connection->num_acl_packets_sent;
 }
 
-uint8_t hci_number_free_acl_slots(){
+uint8_t hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
     uint8_t free_slots = hci_stack->total_num_acl_packets;
     linked_item_t *it;
     for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
@@ -306,7 +306,7 @@ int hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle) {
             return 0;
         }
     }
-    return hci_number_free_acl_slots() > 0;
+    return hci_number_free_acl_slots_for_handle(con_handle) > 0;
 }
 
 int hci_can_send_acl_packet_now(hci_con_handle_t con_handle){
