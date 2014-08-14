@@ -220,7 +220,7 @@ void l2cap_hand_out_credits(void){
     linked_list_iterator_init(&it, &l2cap_channels);
     while (linked_list_iterator_has_next(&it)){
         l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
-        if (!hci_number_free_acl_slots()) return;
+        if (!hci_number_free_acl_slots_for_handle(channel->handle)) return;
         if (channel->state != L2CAP_STATE_OPEN) continue;
         if (hci_number_outgoing_packets(channel->handle) < NR_BUFFERED_ACL_PACKETS && channel->packets_granted == 0) {
             l2cap_emit_credits(channel, 1);

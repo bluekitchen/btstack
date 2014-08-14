@@ -477,7 +477,7 @@ hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle);
 hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t *addr, bd_addr_type_t addr_type);
 int hci_is_le_connection(hci_connection_t * connection);
 uint8_t  hci_number_outgoing_packets(hci_con_handle_t handle);
-uint8_t  hci_number_free_acl_slots(void);
+uint8_t  hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle);
 int      hci_authentication_active_for_handle(hci_con_handle_t handle);
 uint16_t hci_max_acl_data_packet_length(void);
 uint16_t hci_usable_acl_packet_types(void);
