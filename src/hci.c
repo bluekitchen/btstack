@@ -346,15 +346,16 @@ int hci_send_acl_packet_buffer(int size){
         return 0;
     }
 
+    uint8_t * packet = hci_stack->hci_packet_buffer;
+    hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
+
     // check for free places on Bluetooth module
-    if (!hci_number_free_acl_slots()) {
+    if (!hci_can_send_prepared_acl_packet_now(con_handle)) {
         log_error("hci_send_acl_packet_buffer called but no free ACL buffers on controller");
         hci_release_packet_buffer();
         return BTSTACK_ACL_BUFFERS_FULL;
     }
 
-    uint8_t * packet = hci_stack->hci_packet_buffer;
-    hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);
     hci_connection_t *connection = hci_connection_for_handle( con_handle);
     if (!connection) {
         log_error("hci_send_acl_packet_buffer called but no connection for handle 0x%04x", con_handle);
