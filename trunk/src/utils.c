@@ -99,12 +99,38 @@ void swap128(const uint8_t src[16], uint8_t dst[16]){
     swapX(src, dst, 16);
 }
 
+char char_for_nibble(int nibble){
+    if (nibble < 10) return '0' + nibble;
+    nibble -= 10;
+    if (nibble < 6) return 'A' + nibble;
+    return '?';
+}
+
 void hexdump(void *data, int size){
-    int i;
+    char buffer[6*16+1];
+    int i, j;
+
+    uint8_t low = 0x0F;
+    uint8_t high = 0xF0;
+    j = 0;
     for (i=0; i<size;i++){
-        printf("%02X ", ((uint8_t *)data)[i]);
+        uint8_t byte = ((uint8_t *)data)[i];
+        buffer[j++] = '0';
+        buffer[j++] = 'x';
+        buffer[j++] = char_for_nibble((byte & high) >> 4);
+        buffer[j++] = char_for_nibble(byte & low);
+        buffer[j++] = ',';
+        buffer[j++] = ' ';     
+        if (j >= 6*16 ){
+            buffer[j] = 0;
+            log_info("%s", buffer);
+            j = 0;
+        }
     }
-    printf("\n");
+    if (j != 0){
+        buffer[j] = 0;
+        log_info("%s", buffer);
+    }
 }
 
 void print_key(const char * name, sm_key_t key){
@@ -118,12 +144,7 @@ void printUUID128(uint8_t *uuid) {
            uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15]);
 }
 
-char char_for_nibble(int nibble){
-    if (nibble < 10) return '0' + nibble;
-    nibble -= 10;
-    if (nibble < 6) return 'A' + nibble;
-    return '?';
-}
+
 
 static char bd_addr_to_str_buffer[6*3];  // 12:45:78:01:34:67\0
 char * bd_addr_to_str(bd_addr_t addr){
