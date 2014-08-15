@@ -552,7 +552,6 @@ int  stdin_process(struct data_source *ds){
 
         case 'z':
             printf("Start dedicated bonding to %s using legacy pairing\n", bd_addr_to_str(remote));
-            hci_send_cmd(&hci_write_authentication_enable, 1);
             gap_dedicated_bonding(remote, gap_mitm_protection);
             break;
 
