@@ -106,16 +106,13 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 						   run_loop_set_timer(&timer, 3000);
 						   // run_loop_add_timer(&timer);
 				        } else {
-				        	bt_send_cmd(&hci_write_authentication_enable, 0);
+				        	bt_send_cmd(&hci_write_class_of_device, 0x38010c);
 				        }
 					}
 					break;
                 
                 case HCI_EVENT_COMMAND_COMPLETE:
 					// use pairing yes/no
-					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable) ) {
-    				    bt_send_cmd(&hci_write_class_of_device, 0x38010c);
-					}
 					if ( COMMAND_COMPLETE_EVENT(packet, hci_write_class_of_device) ) {
     				    bt_send_cmd(&l2cap_create_channel_mtu, addr, PSM_TEST, PACKET_SIZE);
 					}

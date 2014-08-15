@@ -556,10 +556,6 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	BD_ADDR_COPY(&connAddr, address);
 	connPSM = psm;
 	connAuth = authentication;
-	
-	// send write authentication enabled
-	bt_send_cmd(&hci_write_authentication_enable, authentication);	
-	state = kW4AuthenticationEnableCommand;
 #endif
 	return 0;
 };

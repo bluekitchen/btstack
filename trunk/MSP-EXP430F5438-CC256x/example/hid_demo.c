@@ -243,8 +243,10 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 				case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started - set local name
 					if (packet[2] == HCI_STATE_WORKING) {
-						// dumpCmds = 1;
-						hci_send_cmd(&hci_write_authentication_enable, 1);
+						printLine("Inquiry");
+						state = inquiry;
+						hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
+						break;
 					}
 					break;
 					
@@ -293,12 +295,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					break;
 					
 				case HCI_EVENT_COMMAND_COMPLETE:
-					if (COMMAND_COMPLETE_EVENT(packet, hci_write_authentication_enable)){
-						printLine("Inquiry");
-						state = inquiry;
-						hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
-						break;
-					}
 					if (COMMAND_COMPLETE_EVENT(packet, hci_inquiry_cancel) ) {
 						// inq successfully cancelled
 						// printLine("Connecting");
