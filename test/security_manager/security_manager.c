@@ -15,6 +15,7 @@
 #include "CppUTest/CommandLineTestRunner.h"
 
 #include <btstack/hci_cmds.h>
+#include <btstack/utils.h>
 
 #include "btstack_memory.h"
 #include "hci.h"
@@ -111,21 +112,14 @@ uint8_t * mock_packet_buffer(void);
 uint16_t mock_packet_buffer_len(void);
 void mock_clear_packet_buffer(void);
 
-void hexdump2(void const *data, int size){
-    int i;
-    for (i=0; i<size;i++){
-        printf("%02X ", ((uint8_t *)data)[i]);
-    }
-    printf("\n");
-}
 
 void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
 	int i;
 	for (i=0; i<size; i++){
 		if (expected[i] != actual[i]) {
 			printf("offset %u wrong\n", i);
-			printf("expected: "); hexdump2(expected, size);
-			printf("actual:   "); hexdump2(actual, size);
+			printf("expected: "); printf_hexdump(expected, size);
+			printf("actual:   "); printf_hexdump(actual, size);
 		}
 		BYTES_EQUAL(expected[i], actual[i]);
 	}

@@ -104,7 +104,7 @@ static void printUUID(uint8_t * uuid128, uint16_t uuid16){
 static void dump_advertising_report(advertising_report_t * e){
     printf("    * adv. event: evt-type %u, addr-type %u, addr %s, rssi %u, length adv %u, data: ", e->event_type,
            e->address_type, bd_addr_to_str(e->address), e->rssi, e->length);
-    hexdump(e->data, e->length);
+    printf_hexdump(e->data, e->length);
     
 }
 

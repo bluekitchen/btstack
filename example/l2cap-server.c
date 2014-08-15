@@ -71,7 +71,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 		case L2CAP_DATA_PACKET:
 			// just dump data for now
 			printf("source cid %x -- ", channel);
-			hexdump( packet, size );
+			printf_hexdump( packet, size );
 			break;
 			
 		case HCI_EVENT_PACKET:

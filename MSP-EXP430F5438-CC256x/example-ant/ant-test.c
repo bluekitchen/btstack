@@ -23,6 +23,7 @@
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>
 #include <btstack/sdp_util.h>
+#include <btstack/utils.h>
 
 #include "hci.h"
 #include "l2cap.h"
@@ -37,14 +38,6 @@
 static uint8_t   rfcomm_channel_nr = 1;
 static uint16_t  rfcomm_channel_id = 0;
 static uint8_t   spp_service_buffer[100];
-
-void hexdump2(void const *data, int size){
-    int i;
-    for (i=0; i<size;i++){
-        printf("%02X ", ((uint8_t *)data)[i]);
-    }
-    printf("\n");
-}
 
 
 // Bluetooth logic
@@ -129,7 +122,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					event_code = packet[7];
 
                 	printf("ANT Event: ");
-                	hexdump2(packet, size);
+                	printf_hexdump(packet, size);
 
 					switch(event_code){
 						

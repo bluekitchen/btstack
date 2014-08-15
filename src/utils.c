@@ -106,6 +106,15 @@ char char_for_nibble(int nibble){
     return '?';
 }
 
+void printf_hexdump(const void *data, int size){
+    if (size <= 0) return;
+    int i;
+    for (i=0; i<size;i++){
+        printf("%02X ", ((uint8_t *)data)[i]);
+    }
+    printf("\n");
+}
+
 void hexdump(const void *data, int size){
     char buffer[6*16+1];
     int i, j;

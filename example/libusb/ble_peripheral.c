@@ -363,7 +363,7 @@ static uint16_t att_read_callback(uint16_t con_handle, uint16_t attribute_handle
         att_value_len = att_attributes[index].len;
     }
     printf("Attribute len %u, data: ", att_value_len);
-    hexdump(att_value, att_value_len);
+    printf_hexdump(att_value, att_value_len);
 
     // assert offset <= att_value_len
     if (offset > att_value_len) {
@@ -381,7 +381,7 @@ static uint16_t att_read_callback(uint16_t con_handle, uint16_t attribute_handle
 // write requests
 static int att_write_callback(uint16_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     printf("WRITE Callback, handle %04x, mode %u, offset %u, data: ", handle, transaction_mode, offset);
-    hexdump(buffer, buffer_size);
+    printf_hexdump(buffer, buffer_size);
 
     uint16_t uuid16 = att_uuid_for_handle(handle);
     switch (uuid16){
@@ -617,7 +617,7 @@ void show_usage(){
     printf("\n--- CLI for LE Peripheral ---\n");
     printf("GAP: discoverable %u, connectable %u, bondable %u, directed connectable %u, random addr %u, ads enabled %u, adv type %u \n",
         gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, gap_random, gap_advertisements, gap_adv_type());
-    printf("ADV: "); hexdump(adv_data, adv_data_len);
+    printf("ADV: "); printf_hexdump(adv_data, adv_data_len);
     printf("SM: %s, MITM protection %u, OOB data %u, key range [%u..16]\n",
         sm_io_capabilities, sm_mitm_protection, sm_have_oob_data, sm_min_key_size);
     printf("Default value: '%s'\n", att_default_value_long ? default_value_long : default_value_short);

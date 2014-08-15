@@ -105,14 +105,6 @@ void overwriteLine(int line, char *text){
     halLcdPrintLine(text, line, 0);
 }
 
-void hexdump2(void *data, int size){
-    int i;
-    for (i=0; i<size;i++){
-        printf("%02X ", ((uint8_t *)data)[i]);
-    }
-    printf("\n");
-}
-
 // enable LE, setup ADV data
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;

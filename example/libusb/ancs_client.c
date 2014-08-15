@@ -290,7 +290,7 @@ void handle_gatt_client_event(le_event_t * event){
                     sizeof(get_notification_attributes), get_notification_attributes);
             } else {
                 printf("Unknown Source: ");
-                hexdump(value_event->blob , value_event->blob_length);
+                printf_hexdump(value_event->blob , value_event->blob_length);
             }
             break;
         default:

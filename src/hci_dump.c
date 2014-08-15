@@ -171,7 +171,7 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
                 default:
                     return;
             }
-            hexdump(packet, len);
+            printf_hexdump(packet, len);
             break;
         }
             
