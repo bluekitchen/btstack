@@ -130,7 +130,7 @@ void linked_list_iterator_init(linked_list_iterator_t * it, linked_list_t * head
 }
 
 int linked_list_iterator_has_next(linked_list_iterator_t * it){
-    // printf("linked_list_iterator_has_next: advance on next %u, it->prev %p, it->curr %p\n", it->advance_on_next, it->prev, it->curr);
+    // log_info("linked_list_iterator_has_next: advance on next %u, it->prev %p, it->curr %p", it->advance_on_next, it->prev, it->curr);
     if (!it->advance_on_next){
         return it->curr != NULL;
     }

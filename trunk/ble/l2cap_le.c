@@ -117,11 +117,11 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
     }
 
     if (!hci_can_send_prepared_acl_packet_now(handle)){
-        log_info("l2cap_send_prepared_connectionless handle %u,, cid %u, cannot send\n", handle, cid);
+        log_info("l2cap_send_prepared_connectionless handle %u,, cid %u, cannot send", handle, cid);
         return BTSTACK_ACL_BUFFERS_FULL;
     }
     
-    log_debug("l2cap_send_prepared_connectionless handle %u, cid %u\n", handle, cid);
+    log_debug("l2cap_send_prepared_connectionless handle %u, cid %u", handle, cid);
     
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
 
@@ -142,7 +142,7 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
 int l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t *data, uint16_t len){
 
     if (!hci_can_send_acl_packet_now(handle)){
-        log_info("l2cap_send_connectionless cid %u, cannot send\n", cid);
+        log_info("l2cap_send_connectionless cid %u, cannot send", cid);
         return BTSTACK_ACL_BUFFERS_FULL;
     }
 

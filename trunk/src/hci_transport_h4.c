@@ -231,7 +231,7 @@ static void h4_statemachine(void){
                 bytes_to_read = HCI_ACL_HEADER_SIZE;
                 h4_state = H4_W4_ACL_HEADER;
             } else {
-                log_error("h4_process: invalid packet type 0x%02x\n", hci_packet[0]);
+                log_error("h4_process: invalid packet type 0x%02x", hci_packet[0]);
                 read_pos = 0;
                 bytes_to_read = 1;
             }
@@ -262,7 +262,7 @@ static int    h4_process(struct data_source *ds) {
     
     // read up to bytes_to_read data in
     ssize_t bytes_read = read(hci_transport_h4->uart_fd, &hci_packet[read_pos], read_now);
-    // printf("h4_process: bytes read %u\n", bytes_read);
+    // log_info("h4_process: bytes read %u", bytes_read);
     if (bytes_read < 0) {
         return bytes_read;
     }

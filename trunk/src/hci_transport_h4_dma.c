@@ -171,7 +171,7 @@ static void h4_block_received(void){
                     bytes_to_read = HCI_EVENT_HEADER_SIZE;
                     break;
                 default:
-                    log_error("h4_process: invalid packet type 0x%02x\r\n", hci_packet[0]);
+                    log_error("h4_process: invalid packet type 0x%02x", hci_packet[0]);
                     read_pos = 0;
                     h4_state = H4_W4_PACKET_TYPE;
                     bytes_to_read = 1;
@@ -297,7 +297,7 @@ static int h4_send_packet(uint8_t packet_type, uint8_t *packet, int size){
 }
 
 static int h4_set_baudrate(uint32_t baudrate){
-    printf("h4_set_baudrate - set baud %lu\n\r", baudrate);
+    log_info("h4_set_baudrate - set baud %lu", baudrate);
     return hal_uart_dma_set_baud(baudrate);
 }
 

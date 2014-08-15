@@ -196,7 +196,7 @@ static int h4_open(void *transport_config){
 }
 
 static int h4_set_baudrate(uint32_t baudrate){
-    log_info("h4_set_baudrate - set baud %lu\n", baudrate);
+    log_info("h4_set_baudrate - set baud %lu", baudrate);
     return hal_uart_dma_set_baud(baudrate);
 }
 
@@ -241,7 +241,7 @@ static void h4_block_received(void){
                     bytes_to_read = 1;
                     break;
                 default:
-                    log_error("h4_process: invalid packet type 0x%02x\n", hci_packet[0]);
+                    log_error("h4_process: invalid packet type 0x%02x", hci_packet[0]);
                     read_pos = 0;
                     bytes_to_read = 1;
                     break;
@@ -388,7 +388,7 @@ static void ehcill_schedule_ecill_command(uint8_t command){
 static void ehcill_handle(uint8_t action){
     int size;
     
-    // printf("ehcill_handle: %x, state %u, defer_rx %u \n\r", action, ehcill_state, ehcill_defer_rx_size);
+    // log_info("ehcill_handle: %x, state %u, defer_rx %u", action, ehcill_state, ehcill_defer_rx_size);
     switch(ehcill_state){
         case EHCILL_STATE_AWAKE:
             switch(action){
@@ -398,7 +398,7 @@ static void ehcill_handle(uint8_t action){
                     // 2. enable CTS   - CTS always enabled
                     
                     ehcill_state = EHCILL_STATE_SLEEP;
-                    log_info("RX: EHCILL_GO_TO_SLEEP_IND\n");
+                    log_info("RX: EHCILL_GO_TO_SLEEP_IND");
                     ehcill_schedule_ecill_command(EHCILL_GO_TO_SLEEP_ACK);
                     break;
                     
@@ -417,7 +417,7 @@ static void ehcill_handle(uint8_t action){
                     // UART needed again
                     hal_uart_dma_set_sleep(0);
 
-                    log_info ("Re-activate rx\n");
+                    log_info ("Re-activate rx");
                     size = ehcill_defer_rx_size;
                     ehcill_defer_rx_size = 0;
                     hal_uart_dma_receive_block(ehcill_defer_rx_buffer, size);
@@ -426,7 +426,7 @@ static void ehcill_handle(uint8_t action){
                 case EHCILL_WAKE_UP_IND:
                     
                     ehcill_state = EHCILL_STATE_AWAKE;
-                    log_info("RX: EHCILL_GO_TO_SLEEP_IND\n");
+                    log_info("RX: EHCILL_GO_TO_SLEEP_IND");
                     ehcill_schedule_ecill_command(EHCILL_WAKE_UP_ACK);
                     break;
                     
@@ -440,7 +440,7 @@ static void ehcill_handle(uint8_t action){
                 case EHCILL_WAKE_UP_IND:
                 case EHCILL_WAKE_UP_ACK:
                     
-                    log_info("RX: EHCILL_WAKE_UP_IND or ACK\n");
+                    log_info("RX: EHCILL_WAKE_UP_IND or ACK");
 
                     tx_state = TX_W4_HEADER_SENT;
                     hal_uart_dma_send_block(&tx_packet_type, 1);
@@ -459,7 +459,7 @@ static int ehcill_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     
     // write in progress
     if (tx_state != TX_IDLE) {
-        log_error("h4_send_packet with tx_state = %u, type %u, data %02x %02x %02x\n", tx_state, packet_type, packet[0], packet[1], packet[2]);
+        log_error("h4_send_packet with tx_state = %u, type %u, data %02x %02x %02x", tx_state, packet_type, packet[0], packet[1], packet[2]);
         return -1;
     }
     
@@ -486,13 +486,13 @@ static int ehcill_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     ehcill_state = EHCILL_STATE_W4_ACK;
     
     // wake up
-    log_info("RX: SLEEP\n");
-    log_info("TX: EHCILL_WAKE_UP_IND\n");
+    log_info("RX: SLEEP");
+    log_info("TX: EHCILL_WAKE_UP_IND");
     ehcill_command_to_send = EHCILL_WAKE_UP_IND;
     hal_uart_dma_send_block(&ehcill_command_to_send, 1);
     
     if (!ehcill_defer_rx_size){
-        log_error("ERROR: NO RX REQUEST PENDING\n");
+        log_error("ERROR: NO RX REQUEST PENDING");
         return 0;
     }
     

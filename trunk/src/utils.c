@@ -106,7 +106,7 @@ char char_for_nibble(int nibble){
     return '?';
 }
 
-void hexdump(void *data, int size){
+void hexdump(const void *data, int size){
     char buffer[6*16+1];
     int i, j;
 
@@ -133,8 +133,8 @@ void hexdump(void *data, int size){
     }
 }
 
-void print_key(const char * name, sm_key_t key){
-    printf("%-6s ", name);
+void log_key(const char * name, sm_key_t key){
+    log_info("%-6s ", name);
     hexdump(key, 16);
 }
 

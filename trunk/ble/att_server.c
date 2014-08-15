@@ -151,17 +151,17 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     break;
                     
                 case SM_IDENTITY_RESOLVING_STARTED:
-                    printf("SM_IDENTITY_RESOLVING_STARTED\n");
+                    log_info("SM_IDENTITY_RESOLVING_STARTED");
                     att_ir_lookup_active = 1;
                     break;
                 case SM_IDENTITY_RESOLVING_SUCCEEDED:
                     att_ir_lookup_active = 0;
                     att_ir_central_device_db_index = ((sm_event_t*) packet)->central_device_db_index;
-                    printf("SM_IDENTITY_RESOLVING_SUCCEEDED id %u\n", att_ir_central_device_db_index);
+                    log_info("SM_IDENTITY_RESOLVING_SUCCEEDED id %u", att_ir_central_device_db_index);
                     att_run();
                     break;
                 case SM_IDENTITY_RESOLVING_FAILED:
-                    printf("SM_IDENTITY_RESOLVING_FAILED\n");
+                    log_info("SM_IDENTITY_RESOLVING_FAILED");
                     att_ir_lookup_active = 0;
                     att_ir_central_device_db_index = -1;
                     att_run();
@@ -190,7 +190,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     if (att_server_state != ATT_SERVER_W4_SIGNED_WRITE_VALIDATION) return;
 
     if (memcmp(hash, &att_request_buffer[att_request_size-8], 8)){
-        printf("ATT Signed Write, invalid signature\n");
+        log_info("ATT Signed Write, invalid signature");
         att_server_state = ATT_SERVER_IDLE;
         return;
     }
@@ -209,14 +209,14 @@ static void att_run(void){
             return;
         case ATT_SERVER_REQUEST_RECEIVED:
             if (att_request_buffer[0] == ATT_SIGNED_WRITE_COMMAND){
-                printf("ATT Signed Write!\n");
+                log_info("ATT Signed Write!");
                 if (!sm_cmac_ready()) {
-                    printf("ATT Signed Write, sm_cmac engine not ready. Abort\n");
+                    log_info("ATT Signed Write, sm_cmac engine not ready. Abort");
                     att_server_state = ATT_SERVER_IDLE;
                      return;
                 }  
                 if (att_request_size < (3 + 12)) {
-                    printf("ATT Signed Write, request to short. Abort.\n");
+                    log_info("ATT Signed Write, request to short. Abort.");
                     att_server_state = ATT_SERVER_IDLE;
                     return;
                 }
@@ -224,7 +224,7 @@ static void att_run(void){
                     return;
                 }
                 if (att_ir_central_device_db_index < 0){
-                    printf("ATT Signed Write, CSRK not available\n");
+                    log_info("ATT Signed Write, CSRK not available");
                     att_server_state = ATT_SERVER_IDLE;
                     return;
                 }
@@ -232,9 +232,9 @@ static void att_run(void){
                 // check counter
                 uint32_t counter_packet = READ_BT_32(att_request_buffer, att_request_size-12);
                 uint32_t counter_db     = central_device_db_counter_get(att_ir_central_device_db_index);
-                printf("ATT Signed Write, DB counter %u, packet counter %u\n", counter_db, counter_packet);
+                log_info("ATT Signed Write, DB counter %u, packet counter %u", counter_db, counter_packet);
                 if (counter_packet < counter_db){
-                    printf("ATT Signed Write, db reports higher counter, abort\n");
+                    log_info("ATT Signed Write, db reports higher counter, abort");
                     att_server_state = ATT_SERVER_IDLE;
                     return;
                 }
@@ -243,7 +243,7 @@ static void att_run(void){
                 sm_key_t csrk;
                 central_device_db_csrk(att_ir_central_device_db_index, csrk);
                 att_server_state = ATT_SERVER_W4_SIGNED_WRITE_VALIDATION;
-                printf("Orig Signature: ");
+                log_info("Orig Signature: ");
                 hexdump( &att_request_buffer[att_request_size-8], 8);
                 sm_cmac_start(csrk, att_request_size - 8, att_request_buffer, att_signed_write_handle_cmac_result);
                 return;

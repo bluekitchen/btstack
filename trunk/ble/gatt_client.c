@@ -333,11 +333,11 @@ static void report_gatt_services(gatt_client_t * peripheral, uint8_t * packet,  
             swap128(&packet[i+4], service.uuid128);
         }
         event.service = service;
-        // printf(" report_gatt_services 0x%02x : 0x%02x-0x%02x\n", service.uuid16, service.start_group_handle, service.end_group_handle);
+        // log_info(" report_gatt_services 0x%02x : 0x%02x-0x%02x", service.uuid16, service.start_group_handle, service.end_group_handle);
         
         (*gatt_client_callback)((le_event_t*)&event);
     }
-    // printf("report_gatt_services for %02X done\n", peripheral->handle);
+    // log_info("report_gatt_services for %02X done", peripheral->handle);
 }
 
 // helper
@@ -573,7 +573,7 @@ static void gatt_client_run(){
 
         if (!l2cap_can_send_fixed_channel_packet_now(peripheral->handle)) return;
 
-        // printf("- handle_peripheral_list, mtu state %u, client state %u\n", peripheral->mtu_state, peripheral->gatt_client_state);
+        // log_info("- handle_peripheral_list, mtu state %u, client state %u", peripheral->mtu_state, peripheral->gatt_client_state);
         
         switch (peripheral->mtu_state) {
             case SEND_MTU_EXCHANGE:{
@@ -611,7 +611,7 @@ static void gatt_client_run(){
                 break;
         }
 
-        // printf("gatt_client_state %u\n", peripheral->gatt_client_state);
+        // log_info("gatt_client_state %u", peripheral->gatt_client_state);
         switch (peripheral->gatt_client_state){
             case P_W2_SEND_SERVICE_QUERY:
                 peripheral->gatt_client_state = P_W4_SERVICE_QUERY_RESULT;
@@ -1004,7 +1004,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             break;
             
         default:
-            printf("ATT Handler, unhandled response type 0x%02x\n", packet[0]);
+            log_info("ATT Handler, unhandled response type 0x%02x", packet[0]);
             break;
     }
     gatt_client_run();
@@ -1029,7 +1029,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
 le_command_status_t gatt_client_signed_write_without_response(gatt_client_t * peripheral, uint16_t handle, uint16_t message_len, uint8_t * message, sm_key_t csrk, uint32_t sign_counter){
     if (!gatt_client_is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
     if (!sm_cmac_ready()) {
-        printf("ATT Signed Write, sm_cmac engine not ready. Abort\n");
+        log_info("ATT Signed Write, sm_cmac engine not ready. Abort");
         return BLE_PERIPHERAL_IN_WRONG_STATE;
     } 
 
@@ -1230,7 +1230,7 @@ le_command_status_t gatt_client_write_client_characteristic_configuration(gatt_c
         return BLE_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED;
     } else if ( (configuration & GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION) &&
                (characteristic->properties & ATT_PROPERTY_INDICATE) == 0){
-        log_info("le_central_write_client_characteristic_configuration: BLE_CHARACTERISTIC_INDICATION_NOT_SUPPORTED\n");
+        log_info("le_central_write_client_characteristic_configuration: BLE_CHARACTERISTIC_INDICATION_NOT_SUPPORTED");
         return BLE_CHARACTERISTIC_INDICATION_NOT_SUPPORTED;
     }
     

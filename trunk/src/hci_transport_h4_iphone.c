@@ -296,7 +296,7 @@ static void h4_statemachine(void){
                 bytes_to_read = HCI_ACL_HEADER_SIZE;
                 h4_state = H4_W4_ACL_HEADER;
             } else {
-                log_error("h4_process: invalid packet type 0x%02x\n", hci_packet[0]);
+                log_error("h4_process: invalid packet type 0x%02x", hci_packet[0]);
                 read_pos = 0;
                 bytes_to_read = 1;
             }

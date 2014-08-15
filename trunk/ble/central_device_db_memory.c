@@ -38,6 +38,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include "debug.h"
 
 // Central Device db implemenation using static memory
 typedef struct central_device_memory_db {
@@ -68,9 +69,9 @@ void central_device_db_remove(int index){
 int central_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk, sm_key_t csrk){
     if (central_devices_count >= CENTRAL_DEVICE_MEMORY_SIZE) return -1;
 
-    printf("Central Device DB adding type %u - %s\n", addr_type, bd_addr_to_str(addr));
-    print_key("irk", irk);
-    print_key("csrk", csrk);
+    log_info("Central Device DB adding type %u - %s", addr_type, bd_addr_to_str(addr));
+    log_key("irk", irk);
+    log_key("csrk", csrk);
 
     int index = central_devices_count;
     central_devices_count++;
@@ -109,12 +110,11 @@ void central_device_db_counter_set(int index, uint32_t counter){
 }
 
 void central_device_db_dump(){
-    printf("Central Device DB dump, devices: %u\n", central_devices_count);
+    log_info("Central Device DB dump, devices: %u", central_devices_count);
     int i;
     for (i=0;i<central_devices_count;i++){
-        printf("%u: %u ", i, central_devices[i].addr_type);
-        print_bd_addr(central_devices[i].addr);
-        print_key("irk", central_devices[i].irk);
-        print_key("csrk", central_devices[i].csrk);
+        log_info("%u: %u %s", i, central_devices[i].addr_type, bd_addr_to_str(central_devices[i].addr));
+        log_key("irk", central_devices[i].irk);
+        log_key("csrk", central_devices[i].csrk);
     }
 }

@@ -107,7 +107,7 @@ int bt_send_cmd(const hci_cmd_t *cmd, ...){
 }
 
 int btstack_packet_handler(connection_t *connection, uint16_t packet_type, uint16_t channel, uint8_t *data, uint16_t size){
-    // printf("BTstack client handler: packet type %u, data[0] %x\n", packet_type, data[0]);
+    // log_info("BTstack client handler: packet type %u, data[0] %x", packet_type, data[0]);
     (*client_packet_handler)(packet_type, channel, data, size);
     return 0;
 }

@@ -48,6 +48,7 @@
 #include <string.h>   /* memcpy */
 
 #include "bt_control.h"
+#include "debug.h"
 #include <btstack/utils.h>
 
 // minimal CSR init script
@@ -105,7 +106,7 @@ static int bt_control_csr_next_cmd(void *config, uint8_t *hci_cmd_buffer){
 
     // support for warm boot command
     uint16_t varid = READ_BT_16(hci_cmd_buffer, 10);
-    printf("csr: varid 0x%04x\n", varid);
+    log_info("csr: varid 0x%04x", varid);
     if (varid == 0x4002){
         return 2;
     }
