@@ -620,10 +620,12 @@ void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t * addr){
 
 #ifdef HAVE_BLE
 void le_handle_advertisement_report(uint8_t *packet, int size){
-    int num_reports = packet[3];
+    int offset = 3;
+    int num_reports = packet[offset];
+    offset += 1;
+
     int i;
     int total_data_length = 0;
-    int data_offset = 0;
 
     for (i=0; i<num_reports;i++){
         total_data_length += packet[4+num_reports*8+i];
@@ -631,22 +633,20 @@ void le_handle_advertisement_report(uint8_t *packet, int size){
 
     log_info("num reports: %d, ", num_reports);
     for (i=0; i<num_reports;i++){
-        int pos = 0;
-        uint8_t data_length = packet[4+num_reports*8+i];
+        uint8_t data_length = packet[offset + 9];
         uint8_t event_size = 10 + data_length;
         uint8_t event[2 + event_size ];
+        int pos = 0;
         event[pos++] = GAP_LE_ADVERTISING_REPORT;
         event[pos++] = event_size;
-        event[pos++] = packet[4+i]; // event_type;
-        event[pos++] = packet[4+num_reports+i]; // address_type;
-        memcpy(&event[pos], &packet[4+num_reports*2+i*6], 6); // bt address
-        pos += 6;
-        event[pos++] = packet[4+num_reports*9+total_data_length + i];
-        log_info("rssi: %d, ", event[pos-1]);
-        event[pos++] = data_length;
-        memcpy(&event[pos], &packet[4+num_reports*9+data_offset], data_length);
-        data_offset += data_length;
+        memcpy(&event[pos], &packet[offset], 1+1+6); // bt address
+        offset += 8;
+        pos += 8;
+        event[pos++] = packet[offset + 1 + data_length]; // rssi
+        event[pos++] = packet[offset++]; //data_length;
+        memcpy(&event[pos], &packet[offset], data_length);
         pos += data_length;
+        offset += data_length + 1; // rssi
         hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
     }
 }
