@@ -130,6 +130,7 @@ void swap56(const uint8_t  src[7],  uint8_t dst[7]);
 void swap64(const uint8_t  src[8],  uint8_t dst[8]);
 void swap128(const uint8_t src[16], uint8_t dst[16]);
 
+void printf_hexdump(const void *data, int size);
 void hexdump(const void *data, int size);
 void printUUID128(uint8_t *uuid);
 void log_key(const char * name, sm_key_t key);

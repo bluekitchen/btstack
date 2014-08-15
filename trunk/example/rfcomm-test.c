@@ -150,7 +150,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 			
 		case RFCOMM_DATA_PACKET:
 			printf("Received RFCOMM data on channel id %u, size %u\n", channel, size);
-			hexdump(packet, size);
+			printf_hexdump(packet, size);
             bt_send_rfcomm(channel, packet, size);
 			break;
 			

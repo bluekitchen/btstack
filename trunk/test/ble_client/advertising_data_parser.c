@@ -77,7 +77,7 @@ static hci_transport_t dummy_transport = {
 static void dump_ad_event(ad_event_t * e){
     printf(" * adv. event: evt-type %u, addr-type %u, addr %s, rssi %u, length adv %u, data: ", e->event_type,
            e->address_type, bd_addr_to_str(e->address), e->rssi, e->length);
-    hexdump(e->data, e->length);
+    printf_hexdump(e->data, e->length);
     
 }
 
@@ -98,7 +98,7 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 
     printf("\ndata: \n");
 
-    hexdump(packet, size);
+    printf_hexdump(packet, size);
 
     printf("\n");
 }

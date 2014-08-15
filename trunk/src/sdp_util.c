@@ -597,7 +597,7 @@ static int de_traversal_dump_data(uint8_t * element, de_type_t de_type, de_size_
                 break;
         }
         printf("len %u (0x%02x)\n", len, len);
-        hexdump(&element[pos], len);
+        printf_hexdump(&element[pos], len);
     } else {
         uint32_t value = 0;
         switch (de_size) {

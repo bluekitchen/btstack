@@ -75,15 +75,6 @@ typedef struct ad_event {
 void (*ble_client_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = NULL;
 static void ble_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-static void hexdump2(void *data, int size){
-    if (size <= 0) return;
-    int i;
-    for (i=0; i<size;i++){
-        printf("%02X ", ((uint8_t *)data)[i]);
-    }
-    // printf("\n");
-}
-
 void ble_client_init(){
     gatt_client_init();
     l2cap_register_packet_handler(ble_packet_handler);
@@ -129,7 +120,7 @@ static void dump_characteristic(le_characteristic_t * characteristic){
 static void dump_ad_event(ad_event_t * e){
     printf("    *** adv. event *** evt-type %u, addr-type %u, addr %s, rssi %u, length adv %u, data: ", e->event_type, 
                             e->address_type, bd_addr_to_str(e->address), e->rssi, e->length);
-    hexdump2(e->data, e->length);
+    printf_hexdump(e->data, e->length);
     
 }
 
@@ -143,13 +134,13 @@ static void dump_descriptor(le_event_t * event){
     le_characteristic_descriptor_event_t * devent = (le_characteristic_descriptor_event_t *) event;
     le_characteristic_descriptor_t descriptor = devent->characteristic_descriptor;
     printf("    *** descriptor *** handle 0x%02x, value ", descriptor.handle);
-    hexdump2(devent->value, devent->value_length);
+    printf_hexdump(devent->value, devent->value_length);
     printUUID(descriptor.uuid128, descriptor.uuid16);
 }
 
 static void dump_characteristic_value(le_characteristic_value_event_t * event){
     printf("    *** characteristic value of length %d *** ", event->blob_length );
-    hexdump2(event->blob , event->blob_length);
+    printf_hexdump(event->blob , event->blob_length);
     printf("\n");
 }
 
