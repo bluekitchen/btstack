@@ -28,7 +28,7 @@ CORE   = \
 COMMON = \
     ../src/hal_uart_dma.c                         \
 	${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
-	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2564_2.10.c   \
+	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2560B_1.0_BT_Spec_4.1.c   \
     ${BTSTACK_ROOT}/src/hci.c			          \
     ${BTSTACK_ROOT}/src/hci_cmds.c		          \
     ${BTSTACK_ROOT}/src/hci_dump.c		          \
@@ -59,7 +59,11 @@ LCD_OBJ    = $(LCD:.c=.o)
 
 # create firmware image from common objects and example source file
 
-all: hid_demo.hex led_counter.hex spp_accel.hex spp_counter.hex spp_flowcontrol.hex gap_inquiry.hex sdp_rfcomm_query.hex sdp_general_query.hex
+all: led_counter.hex spp_counter.hex spp_accel.hex gap_inquiry.hex spp_flowcontrol.hex \
+	sdp_rfcomm_query.hex sdp_general_query.hex
+
+# compiling hid_demo requires a 20-bit mspgcc version
+# hid_demo.hex 
 
 led_counter.out: ${CORE_OBJ} led_counter.o 
 	${CC} $^ ${LDFLAGS} -o $@
@@ -73,16 +77,16 @@ spp_accel.out: ${CORE_OBJ} ${COMMON_OBJ} spp_accel.o ../firmware/hal_adc.o
 spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} spp_counter.o ../firmware/hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} spp_flowcontrol.o ../firmware/hal_adc.o
+spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} spp_flowcontrol.o ../firmware/hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-gap_inquiry.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} gap_inquiry.o ../firmware/hal_adc.o
+gap_inquiry.out: ${CORE_OBJ} ${COMMON_OBJ} gap_inquiry.o ../firmware/hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-sdp_rfcomm_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} sdp_rfcomm_query.o ../firmware/hal_adc.o
+sdp_rfcomm_query.out: ${CORE_OBJ} ${COMMON_OBJ} sdp_rfcomm_query.o ../firmware/hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-sdp_general_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} sdp_general_query.o ../firmware/hal_adc.o
+sdp_general_query.out: ${CORE_OBJ} ${COMMON_OBJ} sdp_general_query.o ../firmware/hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 clean:
