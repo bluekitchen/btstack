@@ -228,6 +228,7 @@ echo
 echo
 
 # create btstack-config.h
+rm -f btstack-config.h
 echo "// btstack-config.h created by configure for BTstack " `date`> btstack-config.h
 if test "x$HCI_TRANSPORT" = xUSB; then
     USB_SOURCES=hci_transport_usb.c
