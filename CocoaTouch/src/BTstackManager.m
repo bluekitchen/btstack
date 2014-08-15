@@ -345,7 +345,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 		break;
 	}
 	if (!found) {
-		// printf("Queried all devices, restart.\n");
+		// log_info("Queried all devices, restart.");
 		discoveryState = kInquiry;
 		bt_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
 		[self sendDiscoveryInquiry];
@@ -461,7 +461,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					break;
 					
 				case HCI_EVENT_INQUIRY_COMPLETE:
-					// printf("Inquiry scan done.\n");
+					// log_info("Inquiry scan done.");
 					discoveryState = kRemoteName;
 					discoveryDeviceIndex = 0;
 					[self discoveryRemoteName];

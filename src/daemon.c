@@ -700,7 +700,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         }
 #endif
     default:
-            log_error("Error: command %u not implemented\n:", READ_CMD_OCF(packet));
+            log_error("Error: command %u not implemented:", READ_CMD_OCF(packet));
             break;
     }
     

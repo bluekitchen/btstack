@@ -356,8 +356,8 @@ static const stk_generation_method_t stk_generation_method[5][5] = {
 static void sm_run();
 static void sm_notify_client(uint8_t type, uint8_t addr_type, bd_addr_t address, uint32_t passkey, uint16_t index);
 
-static void print_hex16(const char * name, uint16_t value){
-    printf("%-6s 0x%04x\n", name, value);
+static void log_info_hex16(const char * name, uint16_t value){
+    log_info("%-6s 0x%04x", name, value);
 }
 
 // @returns 1 if all bytes are 0
@@ -399,7 +399,7 @@ static void sm_truncate_key(sm_key_t key, int max_encryption_size){
 // established.
 
 static void sm_2timeout_handler(timer_source_t * timer){
-    printf("SM timeout\n");
+    log_info("SM timeout");
     connection->sm_engine_state = SM_GENERAL_TIMEOUT;
 }
 static void sm_2timeout_start(){
@@ -425,13 +425,13 @@ static uint32_t gap_random_adress_update_period;
 
 static void gap_random_address_trigger(){
     if (rau_state != RAU_IDLE) return;
-    printf("gap_random_address_trigger\n");
+    log_info("gap_random_address_trigger");
     rau_state = RAU_GET_RANDOM;
     sm_run();
 }
 
 static void gap_random_address_update_handler(timer_source_t * timer){
-    printf("GAP Random Address Update due\n");
+    log_info("GAP Random Address Update due");
     run_loop_set_timer(&gap_random_address_update_timer, gap_random_adress_update_period);
     run_loop_add_timer(&gap_random_address_update_timer);
     gap_random_address_trigger();
@@ -498,15 +498,15 @@ static void sm_c1_t1(sm_key_t r, uint8_t preq[7], uint8_t pres[7], uint8_t iat, 
     swap56(preq, &p1[7]);
     p1[14] = rat;
     p1[15] = iat;
-    print_key("p1", p1);
-    print_key("r", r);
+    log_key("p1", p1);
+    log_key("r", r);
     
     // t1 = r xor p1
     int i;
     for (i=0;i<16;i++){
         t1[i] = r[i] ^ p1[i];
     }
-    print_key("t1", t1);
+    log_key("t1", t1);
 }
 
 // calculate arguments for second AES128 operation in C1 function
@@ -521,19 +521,19 @@ static void sm_c1_t3(sm_key_t t2, bd_addr_t ia, bd_addr_t ra, sm_key_t t3){
     memset(p2, 0, 16);
     memcpy(&p2[4],  ia, 6);
     memcpy(&p2[10], ra, 6);
-    print_key("p2", p2);
+    log_key("p2", p2);
 
     // c1 = e(k, t2_xor_p2)
     int i;
     for (i=0;i<16;i++){
         t3[i] = t2[i] ^ p2[i];
     }
-    print_key("t3", t3);
+    log_key("t3", t3);
 }
 
 static void sm_s1_r_prime(sm_key_t r1, sm_key_t r2, sm_key_t r_prime){
-    print_key("r1", r1);
-    print_key("r2", r2);
+    log_key("r1", r1);
+    log_key("r2", r2);
     memcpy(&r_prime[8], &r2[8], 8);
     memcpy(&r_prime[0], &r1[8], 8);
 }
@@ -580,8 +580,8 @@ static void sm_setup_tk(){
     // Requirements Flags shall be ignored when selecting the pairing method and the
     // Out of Band pairing method shall be used.
     if (setup->sm_m_preq.oob_data_flag && setup->sm_s_pres.oob_data_flag){
-        printf("SM: have OOB data");
-        print_key("OOB", setup->sm_tk);
+        log_info("SM: have OOB data");
+        log_key("OOB", setup->sm_tk);
         setup->sm_stk_generation_method = OOB;
         return;
     }
@@ -601,7 +601,7 @@ static void sm_setup_tk(){
     // Otherwise the IO capabilities of the devices shall be used to determine the
     // pairing method as defined in Table 2.4.
     setup->sm_stk_generation_method = stk_generation_method[setup->sm_s_pres.io_capability][setup->sm_m_preq.io_capability];
-    printf("sm_setup_tk: master io cap: %u, slave io cap: %u -> method %u\n",
+    log_info("sm_setup_tk: master io cap: %u, slave io cap: %u -> method %u",
         setup->sm_m_preq.io_capability, setup->sm_s_pres.io_capability, setup->sm_stk_generation_method);
 }
 
@@ -732,14 +732,14 @@ static void sm_cmac_handle_aes_engine_ready(){
             for (i=0;i<16;i++){
                 y[i] = sm_cmac_x[i] ^ sm_cmac_m_last[i]; 
             }
-            print_key("Y", y);
+            log_key("Y", y);
             sm_cmac_block_current++;
             sm_aes128_start(sm_cmac_k, y);
             sm_cmac_next_state();
             break;
         }
         default:
-            printf("sm_cmac_handle_aes_engine_ready called in state %u\n", sm_cmac_state);
+            log_info("sm_cmac_handle_aes_engine_ready called in state %u", sm_cmac_state);
             break;
     }
 }
@@ -760,9 +760,9 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
                 k2[15] ^= 0x87;
             } 
 
-            print_key("k", sm_cmac_k);
-            print_key("k1", k1);
-            print_key("k2", k2);
+            log_key("k", sm_cmac_k);
+            log_key("k1", k1);
+            log_key("k2", k2);
 
             // step 4: set m_last
             int i;
@@ -796,11 +796,11 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
             break;
         case CMAC_W4_MLAST:
             // done
-            print_key("CMAC", data);
+            log_key("CMAC", data);
             sm_cmac_done_handler(data);
             break;
         default:
-            printf("sm_cmac_handle_encryption_result called in state %u\n", sm_cmac_state);
+            log_info("sm_cmac_handle_encryption_result called in state %u", sm_cmac_state);
             break;
     }
 }
@@ -911,7 +911,7 @@ static void sm_run(void){
             }
             return;
         case RAU_SET_ADDRESS:
-            printf("New random address: %s\n", bd_addr_to_str(sm_random_address));
+            log_info("New random address: %s", bd_addr_to_str(sm_random_address));
             hci_send_cmd(&hci_le_set_random_address, sm_random_address);
             rau_state = RAU_IDLE;
             return;
@@ -921,16 +921,16 @@ static void sm_run(void){
 
     // CSRK device lookup by public or resolvable private address
     if (sm_central_device_test >= 0){
-        printf("Central Device Lookup: device %u/%u\n", sm_central_device_test, central_device_db_count());
+        log_info("Central Device Lookup: device %u/%u", sm_central_device_test, central_device_db_count());
         while (sm_central_device_test < central_device_db_count()){
             int addr_type;
             bd_addr_t addr;
             sm_key_t irk;
             central_device_db_info(sm_central_device_test, &addr_type, addr, irk);
-            printf("device type %u, addr: %s\n", addr_type, bd_addr_to_str(addr));
+            log_info("device type %u, addr: %s", addr_type, bd_addr_to_str(addr));
 
             if (sm_central_device_addr_type == addr_type && memcmp(addr, sm_central_device_address, 6) == 0){
-                printf("Central Device Lookup: found CSRK by { addr_type, address} \n");
+                log_info("Central Device Lookup: found CSRK by { addr_type, address} ");
                 sm_central_device_matched = sm_central_device_test;
                 sm_central_device_test = -1;
                 sm_key_t csrk;
@@ -947,8 +947,8 @@ static void sm_run(void){
 
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
 
-            printf("Central Device Lookup: calculate AH\n");
-            print_key("IRK", irk);
+            log_info("Central Device Lookup: calculate AH");
+            log_key("IRK", irk);
 
             sm_key_t r_prime;
             sm_ah_r_prime(sm_central_device_address, r_prime);
@@ -958,7 +958,7 @@ static void sm_run(void){
         }
 
         if (sm_central_device_test >= central_device_db_count()){
-            printf("Central Device Lookup: not found\n");
+            log_info("Central Device Lookup: not found");
             sm_central_device_test = -1;
             sm_notify_client(SM_IDENTITY_RESOLVING_FAILED, sm_central_device_addr_type, sm_central_device_address, 0, 0);
         }
@@ -1260,12 +1260,12 @@ static void sm_handle_encryption_result(uint8_t * data){
     switch (dkg_state){
         case DKG_W4_IRK:
             swap128(data, sm_persistent_irk);
-            print_key("irk", sm_persistent_irk);
+            log_key("irk", sm_persistent_irk);
             dkg_next_state();
             return;
         case DKG_W4_DHK:
             swap128(data, sm_persistent_dhk);
-            print_key("dhk", sm_persistent_dhk);
+            log_key("dhk", sm_persistent_dhk);
             dkg_next_state();
 
             // SM INIT FINISHED, start application code - TODO untangle that
@@ -1314,14 +1314,14 @@ static void sm_handle_encryption_result(uint8_t * data){
             return;
         case SM_PH2_C1_W4_ENC_B:
             swap128(data, setup->sm_local_confirm);
-            print_key("c1!", setup->sm_local_confirm);
+            log_key("c1!", setup->sm_local_confirm);
             connection->sm_engine_state = SM_PH2_C1_SEND_PAIRING_CONFIRM;
             return;
         case SM_PH2_C1_W4_ENC_D:
             {
             sm_key_t peer_confirm_test;
             swap128(data, peer_confirm_test);
-            print_key("c1!", peer_confirm_test);
+            log_key("c1!", peer_confirm_test);
             if (memcmp(setup->sm_peer_confirm, peer_confirm_test, 16) != 0){
                 setup->sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
                 connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
@@ -1337,7 +1337,7 @@ static void sm_handle_encryption_result(uint8_t * data){
         case SM_PH2_W4_STK:
             swap128(data, setup->sm_ltk);
             sm_truncate_key(setup->sm_ltk, connection->sm_actual_encryption_key_size);
-            print_key("stk", setup->sm_ltk);
+            log_key("stk", setup->sm_ltk);
             if (connection->sm_role){
                 connection->sm_engine_state = SM_RESPONDER_PH2_SEND_LTK_REPLY;
             } else {
@@ -1348,10 +1348,10 @@ static void sm_handle_encryption_result(uint8_t * data){
             sm_key_t y128;
             swap128(data, y128);
             setup->sm_local_y = READ_NET_16(y128, 14);
-            print_hex16("y", setup->sm_local_y);
+            log_info_hex16("y", setup->sm_local_y);
             // PH3B3 - calculate EDIV
             setup->sm_local_ediv = setup->sm_local_y ^ setup->sm_local_div;
-            print_hex16("ediv", setup->sm_local_ediv);
+            log_info_hex16("ediv", setup->sm_local_ediv);
             // PH3B4 - calculate LTK         - enc
             // LTK = d1(ER, DIV, 0))
             connection->sm_engine_state = SM_PH3_LTK_GET_ENC;
@@ -1361,11 +1361,11 @@ static void sm_handle_encryption_result(uint8_t * data){
             sm_key_t y128;
             swap128(data, y128);
             setup->sm_local_y = READ_NET_16(y128, 14);
-            print_hex16("y", setup->sm_local_y);
+            log_info_hex16("y", setup->sm_local_y);
 
             // PH3B3 - calculate DIV
             setup->sm_local_div = setup->sm_local_y ^ setup->sm_local_ediv;
-            print_hex16("ediv", setup->sm_local_ediv);
+            log_info_hex16("ediv", setup->sm_local_ediv);
             // PH3B4 - calculate LTK         - enc
             // LTK = d1(ER, DIV, 0))
             connection->sm_engine_state = SM_PH4_LTK_GET_ENC;
@@ -1373,19 +1373,19 @@ static void sm_handle_encryption_result(uint8_t * data){
         }
         case SM_PH3_LTK_W4_ENC:
             swap128(data, setup->sm_ltk);
-            print_key("ltk", setup->sm_ltk);
+            log_key("ltk", setup->sm_ltk);
             // calc CSRK next
             connection->sm_engine_state = SM_PH3_CSRK_GET_ENC;
             return;
         case SM_PH3_CSRK_W4_ENC:
             swap128(data, setup->sm_local_csrk);
-            print_key("csrk", setup->sm_local_csrk);
+            log_key("csrk", setup->sm_local_csrk);
             connection->sm_engine_state = SM_PH3_DISTRIBUTE_KEYS;
             return;                                
         case SM_PH4_LTK_W4_ENC:
             swap128(data, setup->sm_ltk);
             sm_truncate_key(setup->sm_ltk, connection->sm_actual_encryption_key_size);
-            print_key("ltk", setup->sm_ltk);
+            log_key("ltk", setup->sm_ltk);
             connection->sm_engine_state = SM_PH4_SEND_LTK;
             return;                                
         default:
@@ -1459,7 +1459,7 @@ static void sm_handle_random_result(uint8_t * data){
         case SM_PH3_W4_DIV:
             // use 16 bit from random value as div
             setup->sm_local_div = READ_NET_16(data, 0);
-            print_hex16("div", setup->sm_local_div);
+            log_info_hex16("div", setup->sm_local_div);
             connection->sm_engine_state = SM_PH3_Y_GET_ENC;
             return;
         default:
@@ -1480,7 +1480,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                 case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started
 					if (packet[2] == HCI_STATE_WORKING) {
-                        printf("HCI Working!\n");
+                        log_info("HCI Working!");
                         dkg_state = sm_persistent_irk_ready ? DKG_CALC_DHK : DKG_CALC_IRK;
 
                         sm_run();
@@ -1492,13 +1492,13 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
 
-                            printf("sm: connected\n");
+                            log_info("sm: connected");
 
                             if (packet[3]) return; // connection failed
 
                             // only single connection for peripheral
                             if (connection->sm_handle){
-                                printf("Already connected, ignoring incoming connection\n");
+                                log_info("Already connected, ignoring incoming connection");
                                 return;
                             }
 
@@ -1507,7 +1507,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             connection->sm_peer_addr_type = packet[7];
                             bt_flip_addr(connection->sm_peer_address, &packet[8]);
 
-                            printf("New connection, role %s\n", connection->sm_role ? "slave" : "master");
+                            log_info("New connection, role %s", connection->sm_role ? "slave" : "master");
 
                             // reset security properties
                             connection->sm_connection_encrypted = 0;
@@ -1537,7 +1537,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 // master
                                 hci_le_advertisement_address(&setup->sm_m_addr_type, &setup->sm_m_address);
 
-                                printf("hci_le_advertisement_address type %u\n", setup->sm_m_addr_type);
+                                log_info("hci_le_advertisement_address type %u", setup->sm_m_addr_type);
                                 setup->sm_s_addr_type = packet[7];
                                 bt_flip_addr(setup->sm_s_address, &packet[8]);
                                 setup->sm_m_preq.io_capability = sm_io_capabilities;
@@ -1581,7 +1581,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                             // assume that we don't have a LTK for ediv == 0 and random == null
                             if (setup->sm_local_ediv == 0 && sm_is_null_random(setup->sm_local_rand)){
-                                printf("LTK Request: ediv & random are empty\n");
+                                log_info("LTK Request: ediv & random are empty");
                                 connection->sm_engine_state = SM_RESPONDER_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
                                 break;
                             }
@@ -1673,7 +1673,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
     if (packet_type != SM_DATA_PACKET) return;
 
     if (handle != connection->sm_handle){
-        printf("sm_packet_handler: packet from handle %u, but expecting from %u\n", handle, connection->sm_handle);
+        log_info("sm_packet_handler: packet from handle %u, but expecting from %u", handle, connection->sm_handle);
         return;
     }
 
@@ -1718,7 +1718,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // decide on STK generation method
             sm_setup_tk();
-            printf("SMP: generation method %u\n", setup->sm_stk_generation_method);
+            log_info("SMP: generation method %u", setup->sm_stk_generation_method);
 
             // check if STK generation method is acceptable by client
             if (!sm_validate_stk_generation_method()){
@@ -1791,7 +1791,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // decide on STK generation method
             sm_setup_tk();
-            printf("SMP: generation method %u\n", setup->sm_stk_generation_method);
+            log_info("SMP: generation method %u", setup->sm_stk_generation_method);
 
             // check if STK generation method is acceptable by client
             if (!sm_validate_stk_generation_method()){
@@ -1891,7 +1891,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                     break;
                 default:
                     // Unexpected PDU
-                    printf("Unexpected PDU %u in SM_PH3_RECEIVE_KEYS\n", packet[0]);
+                    log_info("Unexpected PDU %u in SM_PH3_RECEIVE_KEYS", packet[0]);
                     break;
             }     
             // done with key distribution?         
@@ -1906,7 +1906,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             break;
         default:
             // Unexpected PDU
-            printf("Unexpected PDU %u in state %u\n", packet[0], connection->sm_engine_state);
+            log_info("Unexpected PDU %u in state %u", packet[0], connection->sm_engine_state);
             break;
     }
 
@@ -2025,7 +2025,7 @@ authorization_state_t sm_authorization_state(uint8_t addr_type, bd_addr_t addres
 
 // request authorization
 void sm_request_authorization(uint8_t addr_type, bd_addr_t address){
-    printf("sm_request_authorization in role %u, state %u\n", connection->sm_role, connection->sm_engine_state);
+    log_info("sm_request_authorization in role %u, state %u", connection->sm_role, connection->sm_engine_state);
     if (connection->sm_role){
         // code has no effect so far
         connection->sm_connection_authorization_state = AUTHORIZATION_PENDING;

@@ -130,9 +130,9 @@ void swap56(const uint8_t  src[7],  uint8_t dst[7]);
 void swap64(const uint8_t  src[8],  uint8_t dst[8]);
 void swap128(const uint8_t src[16], uint8_t dst[16]);
 
-void hexdump(void *data, int size);
+void hexdump(const void *data, int size);
 void printUUID128(uint8_t *uuid);
-void print_key(const char * name, sm_key_t key);
+void log_key(const char * name, sm_key_t key);
 
 // @deprecated please use more convenient bd_addr_to_str
 void print_bd_addr( bd_addr_t addr);

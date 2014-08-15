@@ -235,7 +235,7 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 uint8_t hci_number_outgoing_packets(hci_con_handle_t handle){
     hci_connection_t * connection = hci_connection_for_handle(handle);
     if (!connection) {
-        log_error("hci_number_outgoing_packets: connection for handle %u does not exist!\n", handle);
+        log_error("hci_number_outgoing_packets: connection for handle %u does not exist!", handle);
         return 0;
     }
     return connection->num_acl_packets_sent;
@@ -265,7 +265,7 @@ uint8_t hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
     int free_slots_le = 0;
 
     if (free_slots_classic < 0){
-        log_error("hci_number_free_acl_slots: outgoing classic packets (%u) > total classic packets (%u)\n", num_packets_sent_classic, hci_stack->acl_packets_total_num);
+        log_error("hci_number_free_acl_slots: outgoing classic packets (%u) > total classic packets (%u)", num_packets_sent_classic, hci_stack->acl_packets_total_num);
         return 0;
     }
 
@@ -273,21 +273,21 @@ uint8_t hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
         // if we have LE slots, they are used
         free_slots_le = hci_stack->le_acl_packets_total_num - num_packets_sent_le;
         if (free_slots_le < 0){
-            log_error("hci_number_free_acl_slots: outgoing le packets (%u) > total le packets (%u)\n", num_packets_sent_le, hci_stack->le_acl_packets_total_num);
+            log_error("hci_number_free_acl_slots: outgoing le packets (%u) > total le packets (%u)", num_packets_sent_le, hci_stack->le_acl_packets_total_num);
             return 0;
         }
     } else {
         // otherwise, classic slots are used for LE, too
         free_slots_classic -= num_packets_sent_le;
         if (free_slots_classic < 0){
-            log_error("hci_number_free_acl_slots: outgoing classic + le packets (%u + %u) > total packets (%u)\n", num_packets_sent_classic, num_packets_sent_le, hci_stack->acl_packets_total_num);
+            log_error("hci_number_free_acl_slots: outgoing classic + le packets (%u + %u) > total packets (%u)", num_packets_sent_classic, num_packets_sent_le, hci_stack->acl_packets_total_num);
             return 0;
         }
     }
 
     switch (address_type){
         case BD_ADDR_TYPE_UNKNOWN:
-            log_error("hci_number_free_acl_slots: handle 0x%04x not in connection list\n", con_handle);
+            log_error("hci_number_free_acl_slots: handle 0x%04x not in connection list", con_handle);
             return 0;
 
         case BD_ADDR_TYPE_CLASSIC:
@@ -409,7 +409,7 @@ int hci_send_acl_packet_buffer(int size){
     
     // count packet
     connection->num_acl_packets_sent++;
-    // log_info("hci_send_acl_packet - handle %u, sent %u\n", connection->con_handle, connection->num_acl_packets_sent);
+    // log_info("hci_send_acl_packet - handle %u, sent %u", connection->con_handle, connection->num_acl_packets_sent);
 
     // send packet 
     int err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
@@ -434,7 +434,7 @@ static void acl_handler(uint8_t *packet, int size){
 
     // ignore non-registered handle
     if (!conn){
-        log_error( "hci.c: acl_handler called with non-registered handle %u!\n" , con_handle);
+        log_error( "hci.c: acl_handler called with non-registered handle %u!" , con_handle);
         return;
     }
 
@@ -454,7 +454,7 @@ static void acl_handler(uint8_t *packet, int size){
             
             // sanity check
             if (conn->acl_recombination_pos == 0) {
-                log_error( "ACL Cont Fragment but no first fragment for handle 0x%02x\n", con_handle);
+                log_error( "ACL Cont Fragment but no first fragment for handle 0x%02x", con_handle);
                 return;
             }
             
@@ -462,7 +462,7 @@ static void acl_handler(uint8_t *packet, int size){
             memcpy(&conn->acl_recombination_buffer[conn->acl_recombination_pos], &packet[4], acl_length );
             conn->acl_recombination_pos += acl_length;
             
-            // log_error( "ACL Cont Fragment: acl_len %u, combined_len %u, l2cap_len %u\n", acl_length,
+            // log_error( "ACL Cont Fragment: acl_len %u, combined_len %u, l2cap_len %u", acl_length,
             //        conn->acl_recombination_pos, conn->acl_recombination_length);  
             
             // forward complete L2CAP packet if complete. 
@@ -479,14 +479,14 @@ static void acl_handler(uint8_t *packet, int size){
             
             // sanity check
             if (conn->acl_recombination_pos) {
-                log_error( "ACL First Fragment but data in buffer for handle 0x%02x\n", con_handle);
+                log_error( "ACL First Fragment but data in buffer for handle 0x%02x", con_handle);
                 return;
             }
 
             // peek into L2CAP packet!
             uint16_t l2cap_length = READ_L2CAP_LENGTH( packet );
 
-            // log_info( "ACL First Fragment: acl_len %u, l2cap_len %u\n", acl_length, l2cap_length);
+            // log_info( "ACL First Fragment: acl_len %u, l2cap_len %u", acl_length, l2cap_length);
 
             // compare fragment size to L2CAP packet size
             if (acl_length >= l2cap_length + 4){
@@ -505,7 +505,7 @@ static void acl_handler(uint8_t *packet, int size){
             
         } 
         default:
-            log_error( "hci.c: acl_handler called with invalid packet boundary flags %u\n", acl_flags & 0x03);
+            log_error( "hci.c: acl_handler called with invalid packet boundary flags %u", acl_flags & 0x03);
             return;
     }
     
@@ -514,7 +514,7 @@ static void acl_handler(uint8_t *packet, int size){
 }
 
 static void hci_shutdown_connection(hci_connection_t *conn){
-    log_info("Connection closed: handle 0x%x, %s\n", conn->con_handle, bd_addr_to_str(conn->address));
+    log_info("Connection closed: handle 0x%x, %s", conn->con_handle, bd_addr_to_str(conn->address));
 
     run_loop_remove_timer(&conn->timeout);
     
@@ -690,7 +690,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 }
 
 static void hci_initializing_state_machine(){
-        // log_info("hci_init: substate %u\n", hci_stack->substate);
+        // log_info("hci_init: substate %u", hci_stack->substate);
     if (hci_stack->substate % 2) {
         // odd: waiting for command completion
         return;
@@ -728,7 +728,7 @@ static void hci_initializing_state_machine(){
                     hci_stack->substate = 4; // more init commands
                     break;
                 }
-                log_info("hci_run: init script done\n\r");
+                log_info("hci_run: init script done");
             }
             // otherwise continue
             hci_send_cmd(&hci_read_bd_addr);
@@ -846,13 +846,13 @@ static void event_handler(uint8_t *packet, int size){
     hci_connection_t * conn;
     int i;
         
-    // printf("HCI:EVENT:%02x\n", packet[0]);
+    // log_info("HCI:EVENT:%02x", packet[0]);
     
     switch (packet[0]) {
                         
         case HCI_EVENT_COMMAND_COMPLETE:
             // get num cmd packets
-            // log_info("HCI_EVENT_COMMAND_COMPLETE cmds old %u - new %u\n", hci_stack->num_cmd_packets, packet[2]);
+            // log_info("HCI_EVENT_COMMAND_COMPLETE cmds old %u - new %u", hci_stack->num_cmd_packets, packet[2]);
             hci_stack->num_cmd_packets = packet[2];
 
             if (COMMAND_COMPLETE_EVENT(packet, hci_read_buffer_size)){
@@ -868,7 +868,7 @@ static void event_handler(uint8_t *packet, int size){
                     if (HCI_ACL_PAYLOAD_SIZE < hci_stack->acl_data_packet_length){
                         hci_stack->acl_data_packet_length = HCI_ACL_PAYLOAD_SIZE;
                     }
-                    log_info("hci_read_buffer_size: used size %u, count %u\n",
+                    log_info("hci_read_buffer_size: used size %u, count %u",
                              hci_stack->acl_data_packet_length, hci_stack->acl_packets_total_num); 
                 }
             }
@@ -876,13 +876,13 @@ static void event_handler(uint8_t *packet, int size){
             if (COMMAND_COMPLETE_EVENT(packet, hci_le_read_buffer_size)){
                 hci_stack->le_data_packets_length = READ_BT_16(packet, 6);
                 hci_stack->le_acl_packets_total_num  = packet[8];
-                log_info("hci_le_read_buffer_size: size %u, count %u\n", hci_stack->le_data_packets_length, hci_stack->le_acl_packets_total_num);
+                log_info("hci_le_read_buffer_size: size %u, count %u", hci_stack->le_data_packets_length, hci_stack->le_acl_packets_total_num);
             }            
 #endif
             // Dump local address
             if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)) {
                 bt_flip_addr(hci_stack->local_bd_addr, &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE + 1]);
-                log_info("Local Address, Status: 0x%02x: Addr: %s\n",
+                log_info("Local Address, Status: 0x%02x: Addr: %s",
                     packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE], bd_addr_to_str(hci_stack->local_bd_addr));
             }
             if (COMMAND_COMPLETE_EVENT(packet, hci_write_scan_enable)){
@@ -908,7 +908,7 @@ static void event_handler(uint8_t *packet, int size){
             
         case HCI_EVENT_COMMAND_STATUS:
             // get num cmd packets
-            // log_info("HCI_EVENT_COMMAND_STATUS cmds - old %u - new %u\n", hci_stack->num_cmd_packets, packet[3]);
+            // log_info("HCI_EVENT_COMMAND_STATUS cmds - old %u - new %u", hci_stack->num_cmd_packets, packet[3]);
             hci_stack->num_cmd_packets = packet[3];
             break;
             
@@ -922,11 +922,11 @@ static void event_handler(uint8_t *packet, int size){
                 
                 conn = hci_connection_for_handle(handle);
                 if (!conn){
-                    log_error("hci_number_completed_packet lists unused con handle %u\n", handle);
+                    log_error("hci_number_completed_packet lists unused con handle %u", handle);
                     continue;
                 }
                 conn->num_acl_packets_sent -= num_packets;
-                // log_info("hci_number_completed_packet %u processed for handle %u, outstanding %u\n", num_packets, handle, conn->num_acl_packets_sent);
+                // log_info("hci_number_completed_packet %u processed for handle %u, outstanding %u", num_packets, handle, conn->num_acl_packets_sent);
             }
             break;
         }
@@ -934,7 +934,7 @@ static void event_handler(uint8_t *packet, int size){
             bt_flip_addr(addr, &packet[2]);
             // TODO: eval COD 8-10
             link_type = packet[11];
-            log_info("Connection_incoming: %s, type %u\n", bd_addr_to_str(addr), link_type);
+            log_info("Connection_incoming: %s, type %u", bd_addr_to_str(addr), link_type);
             if (link_type == 1) { // ACL
                 conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_CLASSIC);
                 if (!conn) {
@@ -958,7 +958,7 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_CONNECTION_COMPLETE:
             // Connection management
             bt_flip_addr(addr, &packet[5]);
-            log_info("Connection_complete (status=%u) %s\n", packet[2], bd_addr_to_str(addr));
+            log_info("Connection_complete (status=%u) %s", packet[2], bd_addr_to_str(addr));
             addr_type = BD_ADDR_TYPE_CLASSIC;
             conn = hci_connection_for_bd_addr_and_type(&addr, addr_type);
             if (conn) {
@@ -971,7 +971,7 @@ static void event_handler(uint8_t *packet, int size){
                     run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
                     run_loop_add_timer(&conn->timeout);
                     
-                    log_info("New connection: handle %u, %s\n", conn->con_handle, bd_addr_to_str(conn->address));
+                    log_info("New connection: handle %u, %s", conn->con_handle, bd_addr_to_str(conn->address));
                     
                     hci_emit_nr_connections_changed();
                 } else {
@@ -1010,7 +1010,7 @@ static void event_handler(uint8_t *packet, int size){
             break;
 
         case HCI_EVENT_LINK_KEY_REQUEST:
-            log_info("HCI_EVENT_LINK_KEY_REQUEST\n");
+            log_info("HCI_EVENT_LINK_KEY_REQUEST");
             hci_add_connection_flags_for_flipped_bd_addr(&packet[2], RECV_LINK_KEY_REQUEST);
             // non-bondable mode: link key negative reply will be sent by HANDLE_LINK_KEY_REQUEST
             if (hci_stack->bondable && !hci_stack->remote_device_db) break;
@@ -1167,7 +1167,7 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_LE_META:
             switch (packet[2]){
                 case HCI_SUBEVENT_LE_ADVERTISING_REPORT:
-                    log_info("advertising report received\n");
+                    log_info("advertising report received");
                     if (hci_stack->le_scanning_state != LE_SCANNING) break;
                     le_handle_advertisement_report(packet, size);
                     break;
@@ -1175,7 +1175,7 @@ static void event_handler(uint8_t *packet, int size){
                     // Connection management
                     bt_flip_addr(addr, &packet[8]);
                     addr_type = (bd_addr_type_t)packet[7];
-                    log_info("LE Connection_complete (status=%u) type %u, %s\n", packet[3], addr_type, bd_addr_to_str(addr));
+                    log_info("LE Connection_complete (status=%u) type %u, %s", packet[3], addr_type, bd_addr_to_str(addr));
                     // LE connections are auto-accepted, so just create a connection if there isn't one already
                     conn = hci_connection_for_bd_addr_and_type(&addr, addr_type);
                     if (packet[3]){
@@ -1207,12 +1207,12 @@ static void event_handler(uint8_t *packet, int size){
                     // run_loop_set_timer(&conn->timeout, HCI_CONNECTION_TIMEOUT_MS);
                     // run_loop_add_timer(&conn->timeout);
                     
-                    log_info("New connection: handle %u, %s\n", conn->con_handle, bd_addr_to_str(conn->address));
+                    log_info("New connection: handle %u, %s", conn->con_handle, bd_addr_to_str(conn->address));
                     
                     hci_emit_nr_connections_changed();
                     break;
 
-            // printf("LE buffer size: %u, count %u\n", READ_BT_16(packet,6), packet[8]);
+            // log_info("LE buffer size: %u, count %u", READ_BT_16(packet,6), packet[8]);
                     
                 default:
                     break;
@@ -1376,7 +1376,7 @@ static int hci_power_control_on(void){
         err = (*hci_stack->control->on)(hci_stack->config);
     }
     if (err){
-        log_error( "POWER_ON failed\n");
+        log_error( "POWER_ON failed");
         hci_emit_hci_open_failed();
         return err;
     }
@@ -1384,7 +1384,7 @@ static int hci_power_control_on(void){
     // open low-level device
     err = hci_stack->hci_transport->open(hci_stack->config);
     if (err){
-        log_error( "HCI_INIT failed, turning Bluetooth off again\n");
+        log_error( "HCI_INIT failed, turning Bluetooth off again");
         if (hci_stack->control && hci_stack->control->off){
             (*hci_stack->control->off)(hci_stack->config);
         }
@@ -1396,26 +1396,26 @@ static int hci_power_control_on(void){
 
 static void hci_power_control_off(void){
     
-    log_info("hci_power_control_off\n");
+    log_info("hci_power_control_off");
 
     // close low-level device
     hci_stack->hci_transport->close(hci_stack->config);
 
-    log_info("hci_power_control_off - hci_transport closed\n");
+    log_info("hci_power_control_off - hci_transport closed");
     
     // power off
     if (hci_stack->control && hci_stack->control->off){
         (*hci_stack->control->off)(hci_stack->config);
     }
     
-    log_info("hci_power_control_off - control closed\n");
+    log_info("hci_power_control_off - control closed");
 
     hci_stack->state = HCI_STATE_OFF;
 }
 
 static void hci_power_control_sleep(void){
     
-    log_info("hci_power_control_sleep\n");
+    log_info("hci_power_control_sleep");
     
 #if 0
     // don't close serial port during sleep
@@ -1434,7 +1434,7 @@ static void hci_power_control_sleep(void){
 
 static int hci_power_control_wake(void){
     
-    log_info("hci_power_control_wake\n");
+    log_info("hci_power_control_wake");
 
     // wake on
     if (hci_stack->control && hci_stack->control->wake){
@@ -1445,7 +1445,7 @@ static int hci_power_control_wake(void){
     // open low-level device
     int err = hci_stack->hci_transport->open(hci_stack->config);
     if (err){
-        log_error( "HCI_INIT failed, turning Bluetooth off again\n");
+        log_error( "HCI_INIT failed, turning Bluetooth off again");
         if (hci_stack->control && hci_stack->control->off){
             (*hci_stack->control->off)(hci_stack->config);
         }
@@ -1467,7 +1467,7 @@ static void hci_power_transition_to_initializing(void){
 
 int hci_power_control(HCI_POWER_MODE power_mode){
     
-    log_info("hci_power_control: %u, current mode %u\n", power_mode, hci_stack->state);
+    log_info("hci_power_control: %u, current mode %u", power_mode, hci_stack->state);
     
     int err = 0;
     switch (hci_stack->state){
@@ -1690,12 +1690,12 @@ void hci_run(){
             case SEND_CREATE_CONNECTION:
                 switch(connection->address_type){
                     case BD_ADDR_TYPE_CLASSIC:
-                        log_info("sending hci_create_connection\n");
+                        log_info("sending hci_create_connection");
                         hci_send_cmd(&hci_create_connection, connection->address, hci_usable_acl_packet_types(), 0, 0, 0, 1);
                         break;
                     default:
 #ifdef HAVE_BLE
-                        log_info("sending hci_le_create_connection\n");
+                        log_info("sending hci_le_create_connection");
                         hci_send_cmd(&hci_le_create_connection,
                                      0x0060,    // scan interval: 60 ms
                                      0x0030,    // scan interval: 30 ms
@@ -1718,7 +1718,7 @@ void hci_run(){
                 return;
                
             case RECEIVED_CONNECTION_REQUEST:
-                log_info("sending hci_accept_connection_request\n");
+                log_info("sending hci_accept_connection_request");
                 connection->state = ACCEPTED_CONNECTION_REQUEST;
                 hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
                 return;
@@ -1739,7 +1739,7 @@ void hci_run(){
         }
         
         if (connection->authentication_flags & HANDLE_LINK_KEY_REQUEST){
-            log_info("responding to link key request\n");
+            log_info("responding to link key request");
             connectionClearAuthenticationFlags(connection, HANDLE_LINK_KEY_REQUEST);
             link_key_t link_key;
             link_key_type_t link_key_type;
@@ -1755,7 +1755,7 @@ void hci_run(){
         }
 
         if (connection->authentication_flags & DENY_PIN_CODE_REQUEST){
-            log_info("denying to pin request\n");
+            log_info("denying to pin request");
             connectionClearAuthenticationFlags(connection, DENY_PIN_CODE_REQUEST);
             hci_send_cmd(&hci_pin_code_request_negative_reply, connection->address);
             return;
@@ -1827,7 +1827,7 @@ void hci_run(){
             
         case HCI_STATE_HALTING:
 
-            log_info("HCI_STATE_HALTING\n");
+            log_info("HCI_STATE_HALTING");
             // close all open connections
             connection =  (hci_connection_t *) hci_stack->connections;
             if (connection){
@@ -1835,27 +1835,27 @@ void hci_run(){
                 // send disconnect
                 if (!hci_can_send_command_packet_now()) return;
                 
-                log_info("HCI_STATE_HALTING, connection %p, handle %u\n", connection, (uint16_t)connection->con_handle);
+                log_info("HCI_STATE_HALTING, connection %p, handle %u", connection, (uint16_t)connection->con_handle);
                 hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
 
                 // send disconnected event right away - causes higher layer connections to get closed, too.
                 hci_shutdown_connection(connection);
                 return;
             }
-            log_info("HCI_STATE_HALTING, calling off\n");
+            log_info("HCI_STATE_HALTING, calling off");
             
             // switch mode
             hci_power_control_off();
             
-            log_info("HCI_STATE_HALTING, emitting state\n");
+            log_info("HCI_STATE_HALTING, emitting state");
             hci_emit_state();
-            log_info("HCI_STATE_HALTING, done\n");
+            log_info("HCI_STATE_HALTING, done");
             break;
             
         case HCI_STATE_FALLING_ASLEEP:
             switch(hci_stack->substate) {
                 case 0:
-                    log_info("HCI_STATE_FALLING_ASLEEP\n");
+                    log_info("HCI_STATE_FALLING_ASLEEP");
                     // close all open connections
                     connection =  (hci_connection_t *) hci_stack->connections;
 
@@ -1870,7 +1870,7 @@ void hci_run(){
                         // send disconnect
                         if (!hci_can_send_command_packet_now()) return;
 
-                        log_info("HCI_STATE_FALLING_ASLEEP, connection %p, handle %u\n", connection, (uint16_t)connection->con_handle);
+                        log_info("HCI_STATE_FALLING_ASLEEP, connection %p, handle %u", connection, (uint16_t)connection->con_handle);
                         hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
                         
                         // send disconnected event right away - causes higher layer connections to get closed, too.
@@ -1882,7 +1882,7 @@ void hci_run(){
                         // disable page and inquiry scan
                         if (!hci_can_send_command_packet_now()) return;
                         
-                        log_info("HCI_STATE_HALTING, disabling inq scans\n");
+                        log_info("HCI_STATE_HALTING, disabling inq scans");
                         hci_send_cmd(&hci_write_scan_enable, hci_stack->connectable << 1); // drop inquiry scan but keep page scan
                         
                         // continue in next sub state
@@ -1892,7 +1892,7 @@ void hci_run(){
                     // fall through for ble-only chips
 
                 case 2:
-                    log_info("HCI_STATE_HALTING, calling sleep\n");
+                    log_info("HCI_STATE_HALTING, calling sleep");
 #if defined(USE_POWERMANAGEMENT) && defined(USE_BLUETOOL)
                     // don't actually go to sleep, if H4 supports power management
                     if (bt_control_iphone_power_management_enabled()){
@@ -1925,7 +1925,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     // create_connection?
     if (IS_COMMAND(packet, hci_create_connection)){
         bt_flip_addr(addr, &packet[3]);
-        log_info("Create_connection to %s\n", bd_addr_to_str(addr));
+        log_info("Create_connection to %s", bd_addr_to_str(addr));
 
         conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_CLASSIC);
         if (!conn){
@@ -2051,7 +2051,7 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...){
     }
 
     // for HCI INITIALIZATION
-    // printf("hci_send_cmd: opcode %04x\n", cmd->opcode);
+    // log_info("hci_send_cmd: opcode %04x", cmd->opcode);
     hci_stack->last_cmd_opcode = cmd->opcode;
 
     hci_reserve_packet_buffer();

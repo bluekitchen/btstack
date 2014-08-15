@@ -102,14 +102,14 @@ void handleProtocolDescriptorListData(uint32_t attribute_value_length, uint32_t 
         pdl_state = GET_PROTOCOL_LIST_LENGTH;
     }
 
-    // printf("handleProtocolDescriptorListData (%u,%u) %02x\n", attribute_value_length, data_offset, data);
+    // log_info("handleProtocolDescriptorListData (%u,%u) %02x", attribute_value_length, data_offset, data);
 
     switch(pdl_state){
         
         case GET_PROTOCOL_LIST_LENGTH:
             if (!de_state_size(data, &de_header_state)) break;
-            // printf("   query: PD List payload is %d bytes.\n", de_header_state.de_size);
-            // printf("   query: PD List offset %u, list size %u\n", de_header_state.de_offset, de_header_state.de_size);
+            // log_info("   query: PD List payload is %d bytes.", de_header_state.de_size);
+            // log_info("   query: PD List offset %u, list size %u", de_header_state.de_offset, de_header_state.de_size);
 
             pdl_state = GET_PROTOCOL_LENGTH;
             break;
@@ -117,7 +117,7 @@ void handleProtocolDescriptorListData(uint32_t attribute_value_length, uint32_t 
         case GET_PROTOCOL_LENGTH:
             // check size
             if (!de_state_size(data, &de_header_state)) break;
-            // printf("   query: PD Record payload is %d bytes.\n", de_header_state.de_size);
+            // log_info("   query: PD Record payload is %d bytes.", de_header_state.de_size);
             
             // cache protocol info
             protocol_offset = de_header_state.de_offset;
@@ -132,7 +132,7 @@ void handleProtocolDescriptorListData(uint32_t attribute_value_length, uint32_t 
             
             protocol_id = 0;
             protocol_id_bytes_to_read = de_header_state.de_size;
-            // printf("   query: ID data is stored in %d bytes.\n", protocol_id_bytes_to_read);
+            // log_info("   query: ID data is stored in %d bytes.", protocol_id_bytes_to_read);
             pdl_state = GET_PROTOCOL_ID;
             
             break;
@@ -144,11 +144,11 @@ void handleProtocolDescriptorListData(uint32_t attribute_value_length, uint32_t 
             protocol_id_bytes_to_read--;
             if (protocol_id_bytes_to_read > 0) break;
 
-            // printf("   query: Protocol ID: %04x.\n", protocol_id);
+            // log_info("   query: Protocol ID: %04x.", protocol_id);
 
             if (protocol_offset >= protocol_size){
                 pdl_state = GET_PROTOCOL_LENGTH;
-                // printf("   query: Get next protocol\n");
+                // log_info("   query: Get next protocol");
                 break;
             } 
             
@@ -170,17 +170,17 @@ void handleProtocolDescriptorListData(uint32_t attribute_value_length, uint32_t 
             protocol_offset++;
             protocol_value_bytes_received++;
            
-            // printf("   query: protocol_value_bytes_received %u, protocol_value_size %u\n", protocol_value_bytes_received, protocol_value_size);
+            // log_info("   query: protocol_value_bytes_received %u, protocol_value_size %u", protocol_value_bytes_received, protocol_value_size);
 
             if (protocol_value_bytes_received < protocol_value_size) break;
 
             if (protocol_id == 0x0003){
-                //  printf("\n\n *******  Data ***** %02x\n\n", data);
+                //  log_info("\n\n *******  Data ***** %02x\n\n", data);
                 sdp_rfcom_channel_nr = data;
             }
 
-            // printf("   query: protocol done\n");
-            // printf("   query: Protocol offset %u, protocol size %u\n", protocol_offset, protocol_size);
+            // log_info("   query: protocol done");
+            // log_info("   query: Protocol offset %u, protocol size %u", protocol_offset, protocol_size);
 
             if (protocol_offset >= protocol_size) {
                 pdl_state = GET_PROTOCOL_LENGTH;
@@ -188,7 +188,7 @@ void handleProtocolDescriptorListData(uint32_t attribute_value_length, uint32_t 
 
             }
             pdl_state = GET_PROTOCOL_ID_HEADER_LENGTH;
-            // printf("   query: Get next protocol\n");
+            // log_info("   query: Get next protocol");
             break;
         default:
             break;
@@ -247,7 +247,7 @@ static void handle_sdp_parser_event(sdp_query_event_t * event){
     switch (event->type){
         case SDP_QUERY_ATTRIBUTE_VALUE:
             ve = (sdp_query_attribute_value_event_t*) event;
-           // printf("handle_sdp_parser_event [ AID, ALen, DOff, Data] : [%x, %u, %u] BYTE %02x\n", 
+           // log_info("handle_sdp_parser_event [ AID, ALen, DOff, Data] : [%x, %u, %u] BYTE %02x", 
            //          ve->attribute_id, ve->attribute_length, ve->data_offset, ve->data);
             
             switch (ve->attribute_id){

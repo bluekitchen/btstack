@@ -125,7 +125,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
     if (packet_type != SM_DATA_PACKET) return;
 
     if (handle != sm_response_handle){
-        printf("sm_packet_handler: packet from handle %u, but expecting from %u\n", handle, sm_response_handle);
+        log_info("sm_packet_handler: packet from handle %u, but expecting from %u", handle, sm_response_handle);
         return;
     }
 
@@ -164,7 +164,7 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             // only single connection for peripheral
                             if (sm_response_handle){
-                                printf("Already connected, ignoring incoming connection\n");
+                                log_info("Already connected, ignoring incoming connection");
                                 return;
                             }
                             sm_response_handle = READ_BT_16(packet, 4);

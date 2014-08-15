@@ -136,15 +136,15 @@ static void try_to_send(uint16_t channel){
     switch (err){
         case 0:
             // packet is sent prepare next one
-            // printf("l2cap_send_internal() -> OK\n\r");
+            // log_info("l2cap_send_internal() -> OK");
             PDU_ID = SDP_Invalid;
             sdp_client_state = W4_RESPONSE;
             break;
         case BTSTACK_ACL_BUFFERS_FULL:
-            log_info("l2cap_send_internal() ->BTSTACK_ACL_BUFFERS_FULL\n\r");
+            log_info("l2cap_send_internal() ->BTSTACK_ACL_BUFFERS_FULL");
             break;
         default:
-            log_error("l2cap_send_internal() -> err %d\n\r", err);
+            log_error("l2cap_send_internal() -> err %d", err);
             break;
     }
 }
@@ -159,7 +159,7 @@ static void parse_service_search_attribute_response(uint8_t* packet){
     offset+=2;
 
     if (attributeListByteCount > mtu){
-        log_error("Error parsing ServiceSearchAttributeResponse: Number of bytes in found attribute list is larger then the MaximumAttributeByteCount.\n");
+        log_error("Error parsing ServiceSearchAttributeResponse: Number of bytes in found attribute list is larger then the MaximumAttributeByteCount.");
         return;
     }
 
@@ -171,14 +171,14 @@ static void parse_service_search_attribute_response(uint8_t* packet){
     offset++;
 
     if (continuationStateLen > 16){
-        log_error("Error parsing ServiceSearchAttributeResponse: Number of bytes in continuation state exceedes 16.\n");
+        log_error("Error parsing ServiceSearchAttributeResponse: Number of bytes in continuation state exceedes 16.");
         return;
     }
     memcpy(continuationState, packet+offset, continuationStateLen);
     offset+=continuationStateLen;
 
     if (parameterLength != offset - 5){
-        log_error("Error parsing ServiceSearchAttributeResponse: wrong size of parameters, number of expected bytes%u, actual number %u.\n", parameterLength, offset);
+        log_error("Error parsing ServiceSearchAttributeResponse: wrong size of parameters, number of expected bytes%u, actual number %u.", parameterLength, offset);
     }
 }
 
@@ -189,14 +189,14 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
 
         uint16_t responseTransactionID = READ_NET_16(packet,1);
         if ( responseTransactionID != transactionID){
-            log_error("Missmatching transaction ID, expected %u, found %u.\n", transactionID, responseTransactionID);
+            log_error("Missmatching transaction ID, expected %u, found %u.", transactionID, responseTransactionID);
             return;
         } 
         
         if (packet[0] != SDP_ServiceSearchAttributeResponse 
             && packet[0] != SDP_ServiceSearchResponse
             && packet[0] != SDP_ServiceAttributeResponse){
-            log_error("Not a valid PDU ID, expected %u, %u or %u, found %u.\n", SDP_ServiceSearchResponse, 
+            log_error("Not a valid PDU ID, expected %u, %u or %u, found %u.", SDP_ServiceSearchResponse, 
                                     SDP_ServiceAttributeResponse, SDP_ServiceSearchAttributeResponse, packet[0]);
             return;
         }
@@ -222,7 +222,7 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
 
         // continuation set or DONE?
         if (continuationStateLen == 0){
-            // printf("DONE! All clients already notified.\n");
+            // log_info("DONE! All clients already notified.");
             sdp_client_handle_done(0);
             sdp_client_state = INIT;
             return;
@@ -243,14 +243,14 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
 
             // data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16), local_mtu(16), remote_mtu(16) 
             if (packet[2]) {
-                log_error("Connection failed.\n\r");
+                log_error("Connection failed.");
                 sdp_client_handle_done(packet[2]);
                 break;
             }
             sdp_cid = channel;
             mtu = READ_BT_16(packet, 17);
             // handle = READ_BT_16(packet, 9);
-            log_info("Connected, cid %x, mtu %u.\n\r", sdp_cid, mtu);
+            log_info("Connected, cid %x, mtu %u.", sdp_cid, mtu);
 
             sdp_client_state = W2_SEND;
             try_to_send(sdp_cid);
@@ -260,7 +260,7 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
             try_to_send(sdp_cid);
             break;
         case L2CAP_EVENT_CHANNEL_CLOSED:
-            log_info("Channel closed.\n\r");
+            log_info("Channel closed.");
             if (sdp_client_state == INIT) break;
             sdp_client_handle_done(SDP_QUERY_INCOMPLETE);
             break;
@@ -401,7 +401,7 @@ static void parse_service_search_response(uint8_t* packet){
     offset+=2;
 
     if (currentServiceRecordCount > totalServiceRecordCount){
-        log_error("CurrentServiceRecordCount is larger then TotalServiceRecordCount.\n");
+        log_error("CurrentServiceRecordCount is larger then TotalServiceRecordCount.");
         return;
     }
     
@@ -413,14 +413,14 @@ static void parse_service_search_response(uint8_t* packet){
     offset++;
 
     if (continuationStateLen > 16){
-        log_error("Error parsing ServiceSearchResponse: Number of bytes in continuation state exceedes 16.\n");
+        log_error("Error parsing ServiceSearchResponse: Number of bytes in continuation state exceedes 16.");
         return;
     }
     memcpy(continuationState, packet+offset, continuationStateLen);
     offset+=continuationStateLen;
 
     if (parameterLength != offset - 5){
-        log_error("Error parsing ServiceSearchResponse: wrong size of parameters, number of expected bytes%u, actual number %u.\n", parameterLength, offset);
+        log_error("Error parsing ServiceSearchResponse: wrong size of parameters, number of expected bytes%u, actual number %u.", parameterLength, offset);
     }
 }
 
@@ -434,7 +434,7 @@ static void parse_service_attribute_response(uint8_t* packet){
     offset+=2;
 
     if (attributeListByteCount > mtu){
-        log_error("Error parsing ServiceSearchAttributeResponse: Number of bytes in found attribute list is larger then the MaximumAttributeByteCount.\n");
+        log_error("Error parsing ServiceSearchAttributeResponse: Number of bytes in found attribute list is larger then the MaximumAttributeByteCount.");
         return;
     }
 
@@ -446,14 +446,14 @@ static void parse_service_attribute_response(uint8_t* packet){
     offset++;
 
     if (continuationStateLen > 16){
-        log_error("Error parsing ServiceAttributeResponse: Number of bytes in continuation state exceedes 16.\n");
+        log_error("Error parsing ServiceAttributeResponse: Number of bytes in continuation state exceedes 16.");
         return;
     }
     memcpy(continuationState, packet+offset, continuationStateLen);
     offset+=continuationStateLen;
 
     if (parameterLength != offset - 5){
-        log_error("Error parsing ServiceAttributeResponse: wrong size of parameters, number of expected bytes%u, actual number %u.\n", parameterLength, offset);
+        log_error("Error parsing ServiceAttributeResponse: wrong size of parameters, number of expected bytes%u, actual number %u.", parameterLength, offset);
     }
 }
 

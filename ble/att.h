@@ -199,7 +199,7 @@ void att_set_read_callback(att_read_callback_t callback);
 void att_set_write_callback(att_write_callback_t callback);
 
  /*
-  * @brief debug helper, dump ATT database to stdout using printf
+  * @brief debug helper, dump ATT database to stdout using log_info
   */
 void att_dump_attributes(void);
 

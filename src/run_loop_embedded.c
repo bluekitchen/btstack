@@ -105,7 +105,7 @@ static void embedded_add_timer(timer_source_t *ts){
     for (it = (linked_item_t *) &timers; it->next ; it = it->next){
         // don't add timer that's already in there
         if ((timer_source_t *) it->next == ts){
-            log_error( "run_loop_timer_add error: timer to add already in list!\n");
+            log_error( "run_loop_timer_add error: timer to add already in list!");
             return;
         }
         if (ts->timeout < ((timer_source_t *) it->next)->timeout) {
