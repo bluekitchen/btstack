@@ -103,64 +103,6 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
     printf("\n");
 }
 
-static void fix_mtk_advertisement_report(uint8_t * packet, uint16_t size){
-    if (packet[0] != 0x3e) return;
-    if (packet[2] != 0x02) return;
-    int num_reports = packet[3];
-    if (num_reports == 1) return;
-
-    uint8_t fixed[257];
-    
-    // header is correct
-    memcpy(fixed, packet, 4);
-
-    // get total data length
-    int i;
-    uint16_t pos = 4;
-    int total_data_length = 0;
-    for (i=0; i<num_reports;i++){
-        pos += 8;
-        int data_length = packet[pos++];
-        pos += data_length + 1;
-        total_data_length += data_length;
-    }
-    // reorder reports
-    pos = 4;
-    int data_offset = 0;
-    for (i=0; i<num_reports;i++){
-        fixed[4 + i] = packet[pos++];            // event type
-        fixed[4 +num_reports + i] = packet[pos++]; // address_type;        
-        memcpy(&fixed[4+num_reports*2+i*6], &packet[pos], 6);   // bd_addr
-        pos += 6;
-        int data_length = packet[pos++];
-        fixed[4+num_reports*8+i] = data_length;
-        memcpy(&fixed[4+num_reports*9+data_offset], &packet[pos], data_length);
-        pos += data_length;
-        data_offset += data_length;
-        fixed[4+num_reports*9+total_data_length + i] = packet[pos++];
-    }
-    memcpy(packet, fixed, size);
-}
-
-static void fix_mtk_num_completed_packets(uint8_t * packet, uint16_t size){
-    if (packet[0] != 0x13) return;
-    int num_handles = packet[2];
-    if (num_handles == 1) return;
-
-    uint8_t fixed[257];
-    
-    // header is correct
-    memcpy(fixed, packet, 3);
-
-    int i;
-    for (i=0; i<num_handles;i++){
-        fixed[3 + i*2] = packet[3 + i*4];
-        fixed[3 + i*2 + 1] = packet[3 + i*4 + 1];
-        fixed[3 + num_handles * 2 + i * 2] = packet[3 + i*4 + 2];
-        fixed[3 + num_handles * 2 + i * 2 + 1] = packet[3 + i*4 + 3];
-    }
-    memcpy(packet, fixed, size);
-}
 
 TEST_GROUP(ADParser){
     void setup(){
@@ -196,7 +138,7 @@ TEST(ADParser, TestDataParsing){
 }
 
 TEST(ADParser, TestFixMtkAdvertisingReport){
-    fix_mtk_advertisement_report(mtk_adv_evt, sizeof(mtk_adv_evt));
+    // fix_mtk_advertisement_report(mtk_adv_evt, sizeof(mtk_adv_evt));
     int j;
     for (j = 0; j < sizeof(mtk_adv_evt); j++){
         CHECK_EQUAL(mtk_adv_evt[j], adv_evt[j]);
@@ -204,7 +146,7 @@ TEST(ADParser, TestFixMtkAdvertisingReport){
 }
 
 TEST(ADParser, TestFixMtkNumCompletedPackets){
-    fix_mtk_num_completed_packets(mtk_num_completed_evt, sizeof(mtk_num_completed_evt));
+    // fix_mtk_num_completed_packets(mtk_num_completed_evt, sizeof(mtk_num_completed_evt));
     int j;
     for (j = 0; j < sizeof(mtk_num_completed_evt); j++){
         CHECK_EQUAL(mtk_num_completed_evt[j], num_completed_evt[j]);
