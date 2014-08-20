@@ -754,6 +754,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                     // NOTE: experimental - disconnect all LE connections where GATT Client was used
                     gatt_client_disconnect_connection(connection);
 #endif
+                    sdp_query_rfcomm_deregister_callback();
                     // no clients -> no HCI connections
                     if (!clients){
                         hci_disconnect_all();
