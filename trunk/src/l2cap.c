@@ -580,17 +580,14 @@ void l2cap_run(void){
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, &l2cap_channels);
     while (linked_list_iterator_has_next(&it)){
-        l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
 
-        if (!hci_can_send_command_packet_now()) break;
-        if (!hci_can_send_acl_packet_now(channel->handle)) break;
-                
+        l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
         // log_info("l2cap_run: state %u, var 0x%02x", channel->state, channel->state_var);
-        
         switch (channel->state){
 
             case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
             case L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT:
+                if (!hci_can_send_acl_packet_now(channel->handle)) break;
                 if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND) {
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONN_RESP_PEND);
                     l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, 1, 0);
@@ -598,6 +595,7 @@ void l2cap_run(void){
                 break;
 
             case L2CAP_STATE_WILL_SEND_CREATE_CONNECTION:
+                if (!hci_can_send_command_packet_now()) break;
                 // send connection request - set state first
                 channel->state = L2CAP_STATE_WAIT_CONNECTION_COMPLETE;
                 // BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
@@ -605,6 +603,7 @@ void l2cap_run(void){
                 break;
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE:
+                if (!hci_can_send_acl_packet_now(channel->handle)) break;
                 l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, channel->reason, 0);
                 // discard channel - l2cap_finialize_channel_close without sending l2cap close event
                 l2cap_stop_rtx(channel);
@@ -613,12 +612,14 @@ void l2cap_run(void){
                 break;
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_ACCEPT:
+                if (!hci_can_send_acl_packet_now(channel->handle)) break;
                 channel->state = L2CAP_STATE_CONFIG;
                 channelStateVarSetFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_REQ);
                 l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, 0, 0);
                 break;
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_REQUEST:
+                if (!hci_can_send_acl_packet_now(channel->handle)) break;
                 // success, start l2cap handshake
                 channel->local_sig_id = l2cap_next_sig_id();
                 channel->state = L2CAP_STATE_WAIT_CONNECT_RSP;
@@ -627,6 +628,7 @@ void l2cap_run(void){
                 break;
             
             case L2CAP_STATE_CONFIG:
+                if (!hci_can_send_acl_packet_now(channel->handle)) break;
                 if (channel->state_var & L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP){
                     uint16_t flags = 0;
                     channelStateVarClearFlag(channel, L2CAP_CHANNEL_STATE_VAR_SEND_CONF_RSP);
@@ -666,12 +668,14 @@ void l2cap_run(void){
                 break;
 
             case L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE:
+                if (!hci_can_send_acl_packet_now(channel->handle)) break;
                 l2cap_send_signaling_packet( channel->handle, DISCONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid);   
                 // we don't start an RTX timer for a disconnect - there's no point in closing the channel if the other side doesn't respond :)
                 l2cap_finialize_channel_close(channel);  // -- remove from list
                 break;
                 
             case L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST:
+                if (!hci_can_send_acl_packet_now(channel->handle)) break;
                 channel->local_sig_id = l2cap_next_sig_id();
                 channel->state = L2CAP_STATE_WAIT_DISCONNECT;
                 l2cap_send_signaling_packet( channel->handle, DISCONNECTION_REQUEST, channel->local_sig_id, channel->remote_cid, channel->local_cid);   
