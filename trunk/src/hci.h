@@ -279,6 +279,7 @@ typedef enum {
     BONDING_SEND_AUTHENTICATE_REQUEST = 0x20,
     BONDING_SEND_ENCRYPTION_REQUEST   = 0x40,
     BONDING_DEDICATED                 = 0x80,
+    BONDING_EMIT_COMPLETE_ON_DISCONNECT = 0x100
 } bonding_flags_t;
 
 typedef enum {
@@ -314,7 +315,7 @@ typedef struct {
     
     // bonding
     uint16_t bonding_flags;
-
+    uint8_t  bonding_status;
     // requested security level
     gap_security_level_t requested_security_level;
 
@@ -496,7 +497,7 @@ void hci_emit_system_bluetooth_enabled(uint8_t enabled);
 void hci_emit_remote_name_cached(bd_addr_t *addr, device_name_t *name);
 void hci_emit_discoverable_enabled(uint8_t enabled);
 void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t level);
-void hci_emit_dedicated_bonding_result(hci_connection_t * connection, uint8_t status);
+void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status);
 
 // query if remote side supports SSP
 // query if the local side supports SSP
