@@ -49,7 +49,7 @@
 #include "debug.h"
 
 typedef enum {
-    INIT, W4_CONNECT, W2_SEND, W4_RESPONSE
+    INIT, W4_CONNECT, W2_SEND, W4_RESPONSE, QUERY_COMPLETE
 } sdp_client_state_t;
 
 
@@ -73,18 +73,8 @@ static uint8_t * attributeIDList;
 static uint16_t  transactionID = 0;
 static uint8_t   continuationState[16];
 static uint8_t   continuationStateLen;
-
-static sdp_client_state_t sdp_client_state;
+static sdp_client_state_t sdp_client_state = INIT;
 static SDP_PDU_ID_t PDU_ID = SDP_Invalid;
-
-
-
-void sdp_client_handle_done(uint8_t status){
-    if (status == 0){
-        l2cap_disconnect_internal(sdp_cid, 0);
-    }
-    sdp_parser_handle_done(status);
-}
 
 // TODO: inline if not needed (des(des))
 void parse_attribute_lists(uint8_t* packet, uint16_t length){
@@ -184,9 +174,7 @@ static void parse_service_search_attribute_response(uint8_t* packet){
 
 void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     // uint16_t handle;
-
     if (packet_type == L2CAP_DATA_PACKET){
-
         uint16_t responseTransactionID = READ_NET_16(packet,1);
         if ( responseTransactionID != transactionID){
             log_error("Missmatching transaction ID, expected %u, found %u.", transactionID, responseTransactionID);
@@ -222,35 +210,36 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
 
         // continuation set or DONE?
         if (continuationStateLen == 0){
-            // log_info("DONE! All clients already notified.");
-            sdp_client_handle_done(0);
-            sdp_client_state = INIT;
+            log_info("SDP Client Query DONE! ");
+            sdp_client_state = QUERY_COMPLETE;
+            l2cap_disconnect_internal(sdp_cid, 0);
+            // sdp_parser_handle_done(0);
             return;
         }
         // prepare next request and send
         sdp_client_state = W2_SEND;
         try_to_send(sdp_cid);
-    
         return;
     }
     
     if (packet_type != HCI_EVENT_PACKET) return;
     
     switch(packet[0]){
-
-        case L2CAP_EVENT_CHANNEL_OPENED: 
+        case L2CAP_EVENT_TIMEOUT_CHECK:
+            log_info("sdp client: L2CAP_EVENT_TIMEOUT_CHECK");
+            break;
+        case L2CAP_EVENT_CHANNEL_OPENED:
             if (sdp_client_state != W4_CONNECT) break;
-
             // data: event (8), len(8), status (8), address(48), handle (16), psm (16), local_cid(16), remote_cid (16), local_mtu(16), remote_mtu(16) 
             if (packet[2]) {
-                log_error("Connection failed.");
-                sdp_client_handle_done(packet[2]);
+                log_error("SDP Client Connection failed.");
+                sdp_parser_handle_done(packet[2]);
                 break;
             }
             sdp_cid = channel;
             mtu = READ_BT_16(packet, 17);
             // handle = READ_BT_16(packet, 9);
-            log_info("Connected, cid %x, mtu %u.", sdp_cid, mtu);
+            log_info("SDP Client Connected, cid %x, mtu %u.", sdp_cid, mtu);
 
             sdp_client_state = W2_SEND;
             try_to_send(sdp_cid);
@@ -259,11 +248,17 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
         case DAEMON_EVENT_HCI_PACKET_SENT:
             try_to_send(sdp_cid);
             break;
-        case L2CAP_EVENT_CHANNEL_CLOSED:
-            log_info("Channel closed.");
-            if (sdp_client_state == INIT) break;
-            sdp_client_handle_done(SDP_QUERY_INCOMPLETE);
+        case L2CAP_EVENT_CHANNEL_CLOSED: {
+            if (sdp_cid != READ_BT_16(packet, 2)) {
+                // log_info("Received L2CAP_EVENT_CHANNEL_CLOSED for cid %x, current cid %x\n",  READ_BT_16(packet, 2),sdp_cid);
+                break;
+            }
+            log_info("SDP Client disconnected.");
+            uint8_t status = sdp_client_state == QUERY_COMPLETE ? 0 : SDP_QUERY_INCOMPLETE;
+            sdp_client_state = INIT;
+            sdp_parser_handle_done(status);
             break;
+        }
         default:
             break;
     }
@@ -399,7 +394,6 @@ static void parse_service_search_response(uint8_t* packet){
 
     uint16_t currentServiceRecordCount = READ_NET_16(packet,offset);
     offset+=2;
-
     if (currentServiceRecordCount > totalServiceRecordCount){
         log_error("CurrentServiceRecordCount is larger then TotalServiceRecordCount.");
         return;
@@ -408,10 +402,8 @@ static void parse_service_search_response(uint8_t* packet){
     parse_service_record_handle_list(packet+offset, totalServiceRecordCount, currentServiceRecordCount);
     offset+=(currentServiceRecordCount * 4);
 
-
     continuationStateLen = packet[offset];
     offset++;
-
     if (continuationStateLen > 16){
         log_error("Error parsing ServiceSearchResponse: Number of bytes in continuation state exceedes 16.");
         return;
