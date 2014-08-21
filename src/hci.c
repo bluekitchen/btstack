@@ -975,15 +975,21 @@ static void event_handler(uint8_t *packet, int size){
                     
                     hci_emit_nr_connections_changed();
                 } else {
-                    // notify client if dedicated bonding
-                    if (conn->bonding_flags & BONDING_DEDICATED){
-                        hci_emit_dedicated_bonding_result(conn, packet[2]);                        
-                    }
+                    int notify_dedicated_bonding_failed = conn->bonding_flags & BONDING_DEDICATED;
+                    uint8_t status = packet[2];
+                    bd_addr_t bd_address;
+                    memcpy(&bd_address, conn->address, 6);
 
                     // connection failed, remove entry
                     linked_list_remove(&hci_stack->connections, (linked_item_t *) conn);
                     btstack_memory_hci_connection_free( conn );
                     
+                    // notify client if dedicated bonding
+                    if (notify_dedicated_bonding_failed){
+                        log_info("hci notify_dedicated_bonding_failed");
+                        hci_emit_dedicated_bonding_result(bd_address, status);                        
+                    }
+
                     // if authentication error, also delete link key
                     if (packet[2] == 0x05) {
                         hci_drop_link_key_for_bd_addr(&addr);
@@ -1088,8 +1094,8 @@ static void event_handler(uint8_t *packet, int size){
             // dedicated bonding: send result and disconnect
             if (conn->bonding_flags & BONDING_DEDICATED){
                 conn->bonding_flags &= ~BONDING_DEDICATED;
-                hci_emit_dedicated_bonding_result( conn, packet[2]);           
                 conn->bonding_flags |= BONDING_DISCONNECT_DEDICATED_DONE;
+                conn->bonding_status = packet[2];
                 break;
             }
 
@@ -1142,7 +1148,13 @@ static void event_handler(uint8_t *packet, int size){
                 handle = READ_BT_16(packet, 3);
                 hci_connection_t * conn = hci_connection_for_handle(handle);
                 if (conn) {
+                    uint8_t status = conn->bonding_status;
+                    bd_addr_t bd_address;
+                    memcpy(&bd_address, conn->address, 6);
                     hci_shutdown_connection(conn);
+                    if (conn->bonding_flags & BONDING_EMIT_COMPLETE_ON_DISCONNECT){
+                        hci_emit_dedicated_bonding_result(bd_address, status);           
+                    }
                 }
             }
             break;
@@ -1805,6 +1817,7 @@ void hci_run(){
         }
         if (connection->bonding_flags & BONDING_DISCONNECT_DEDICATED_DONE){
             connection->bonding_flags &= ~BONDING_DISCONNECT_DEDICATED_DONE;
+            connection->bonding_flags |= BONDING_EMIT_COMPLETE_ON_DISCONNECT;
             hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // authentication done
             return;
         }
@@ -2212,14 +2225,14 @@ void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t l
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-void hci_emit_dedicated_bonding_result(hci_connection_t * connection, uint8_t status){
+void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status){
     log_info("hci_emit_dedicated_bonding_result %u ", status);
     uint8_t event[9];
     int pos = 0;
     event[pos++] = GAP_DEDICATED_BONDING_COMPLETED;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = status;
-    bt_flip_addr( * (bd_addr_t *) &event[pos], connection->address);
+    bt_flip_addr( * (bd_addr_t *) &event[pos], address);
     pos += 6;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
