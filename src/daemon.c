@@ -106,7 +106,9 @@ typedef struct {
     
     // connection
     connection_t * connection;
-    
+    linked_list_t rfcomm_cids;
+    linked_list_t rfcomm_services;
+
     // power mode
     HCI_POWER_MODE power_mode;
     
@@ -169,6 +171,25 @@ static void daemon_no_connections_timeout(struct timer *ts){
 
 // ATT_MTU - 1
 #define ATT_MAX_ATTRIBUTE_SIZE 22
+
+static void daemon_add_client_rfcomm_service(connection_t * conn, uint16_t service_channel){
+}
+static void daemon_remove_client_rfcomm_service(connection_t * conn, uint16_t service_channel){
+}
+static void daemon_add_client_rfcomm_channel(connection_t * conn, uint16_t cid){
+}
+static void daemon_remove_client_rfcomm_channel(connection_t * conn, uint16_t cid){
+}
+
+static void daemon_add_client_l2cap_service(connection_t * conn, uint16_t psm){
+}
+static void daemon_remove_client_l2cap_service(connection_t * conn, uint16_t psm){
+}
+static void daemon_add_client_l2cap_channel(connection_t * conn, uint16_t cid){
+}
+static void daemon_remove_client_l2cap_channel(connection_t * conn, uint16_t cid){
+}
+
 
 typedef struct gatt_client_helper {
     uint16_t characteristic_length;
@@ -434,6 +455,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case L2CAP_UNREGISTER_SERVICE:
             psm = READ_BT_16(packet, 3);
+            daemon_remove_client_l2cap_service(connection, psm);
             l2cap_unregister_service_internal(connection, psm);
             break;
         case L2CAP_ACCEPT_CONNECTION:
@@ -474,6 +496,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case RFCOMM_UNREGISTER_SERVICE:
             service_channel = READ_BT_16(packet, 3);
+            daemon_remove_client_rfcomm_service(service_channel);
             rfcomm_unregister_service_internal(service_channel);
             break;
         case RFCOMM_ACCEPT_CONNECTION:
@@ -880,7 +903,28 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     // RFCOMM CREDITS received...
                     daemon_retry_parked();
                     break;
-
+                 case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+                    if (!packet[2]) break;
+                    daemon_add_client_rfcomm_channel(connection, READ_BT_16(packet, 9));
+                    break;
+                case RFCOMM_EVENT_CHANNEL_CLOSED:
+                    daemon_remove_client_rfcomm_channel(connection, READ_BT_16(packet, 2));
+                    break;
+                case RFCOMM_EVENT_SERVICE_REGISTERED:
+                    if (!packet[2]) break;
+                    daemon_add_client_rfcomm_service(connection, packet[3]);
+                    break;
+                case L2CAP_EVENT_CHANNEL_OPENED:
+                    if (!packet[2]) break;
+                    daemon_add_client_l2cap_channel(connection, READ_BT_16(packet, 13));
+                    break;
+                case L2CAP_EVENT_CHANNEL_CLOSED:
+                    daemon_remove_client_l2cap_channel(connection, READ_BT_16(packet, 2));
+                    break;
+                case L2CAP_EVENT_SERVICE_REGISTERED:
+                    if (!packet[2]) break;
+                    daemon_add_client_l2cap_service(connection, READ_BT_16(packet, 3));
+                    break;
 #if defined(HAVE_BLE) && defined(HAVE_MALLOC)
                 case HCI_EVENT_DISCONNECTION_COMPLETE:{
                     uint16_t handle = READ_BT_16(packet, 3);
