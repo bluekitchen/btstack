@@ -1486,32 +1486,6 @@ void l2cap_unregister_service_internal(void *connection, uint16_t psm){
     hci_connectable_control(0);
 }
 
-//
-void l2cap_close_connection(void *connection){
-
-    linked_list_iterator_t it;
-    
-    // close open channels 
-    linked_list_iterator_init(&it, &l2cap_channels);
-    while (linked_list_iterator_has_next(&it)){
-        l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
-        if (channel->connection != connection) continue;
-        channel->state = L2CAP_STATE_WILL_SEND_DISCONNECT_REQUEST;
-        channel->connection = NULL;
-    }
-    
-    // unregister services
-    linked_list_iterator_init(&it, &l2cap_services);
-    while (linked_list_iterator_has_next(&it)){
-        l2cap_service_t * service = (l2cap_service_t *) linked_list_iterator_next(&it);
-        if (service->connection != connection) continue;
-        linked_list_iterator_remove(&it);
-        btstack_memory_l2cap_service_free(service);
-    }
-    
-    // process
-    l2cap_run();
-}
 
 // Bluetooth 4.0 - allows to register handler for Attribute Protocol and Security Manager Protocol
 void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id) {

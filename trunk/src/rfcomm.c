@@ -2257,34 +2257,6 @@ void rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits){
     rfcomm_run();
 }
 
-//
-void rfcomm_close_connection(void *connection){
-    linked_item_t *it;
-    
-    // close open channels
-    for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
-        rfcomm_channel_t * channel = (rfcomm_channel_t *)it;
-        if (channel->connection != connection) continue;
-        channel->state = RFCOMM_CHANNEL_SEND_DISC;
-        channel->connection = NULL;
-    }
-    
-    // unregister services
-    it = (linked_item_t *) &rfcomm_services;
-    while (it->next) {
-        rfcomm_service_t * service = (rfcomm_service_t *) it->next;
-        if (service->connection == connection){
-            it->next = it->next->next;
-            btstack_memory_rfcomm_service_free(service);
-        } else {
-            it = it->next;
-        }
-    }
-
-    // process
-    rfcomm_run();
-}
-
 
 
 
