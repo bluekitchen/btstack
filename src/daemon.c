@@ -108,6 +108,8 @@ typedef struct {
     connection_t * connection;
     linked_list_t rfcomm_cids;
     linked_list_t rfcomm_services;
+    linked_list_t l2cap_cids;
+    linked_list_t l2cap_psms;
 
     // power mode
     HCI_POWER_MODE power_mode;
@@ -116,6 +118,15 @@ typedef struct {
     uint8_t        discoverable;
     
 } client_state_t;
+
+typedef struct linked_list_uint16 {
+    linked_item_t   item;
+    uint16_t        value;
+} linked_list_uint16_t;
+
+typedef struct gatt_client_helper {
+    uint16_t characteristic_length;
+} gatt_client_helper_t;
 
 // MARK: prototypes
 static void handle_sdp_rfcomm_service_result(sdp_query_event_t * event, void * context);
@@ -127,6 +138,8 @@ static int              clients_require_discoverable(void);
 static void              clients_clear_power_request(void);
 static void start_power_off_timer(void);
 static void stop_power_off_timer(void);
+static client_state_t * client_for_connection(connection_t *connection);
+
 
 // MARK: globals
 static hci_transport_t * transport;
@@ -172,28 +185,129 @@ static void daemon_no_connections_timeout(struct timer *ts){
 // ATT_MTU - 1
 #define ATT_MAX_ATTRIBUTE_SIZE 22
 
-static void daemon_add_client_rfcomm_service(connection_t * conn, uint16_t service_channel){
-}
-static void daemon_remove_client_rfcomm_service(connection_t * conn, uint16_t service_channel){
-}
-static void daemon_add_client_rfcomm_channel(connection_t * conn, uint16_t cid){
-}
-static void daemon_remove_client_rfcomm_channel(connection_t * conn, uint16_t cid){
+static void add_uint16_to_list(linked_list_t *list, uint16_t value){
+    linked_list_uint16_t * item = malloc(sizeof(linked_list_uint16_t));
+    if (!item) return; 
+    item->value = value;
+    linked_list_add(list, (linked_item_t *) item);
 }
 
-static void daemon_add_client_l2cap_service(connection_t * conn, uint16_t psm){
-}
-static void daemon_remove_client_l2cap_service(connection_t * conn, uint16_t psm){
-}
-static void daemon_add_client_l2cap_channel(connection_t * conn, uint16_t cid){
-}
-static void daemon_remove_client_l2cap_channel(connection_t * conn, uint16_t cid){
+static void remove_and_free_uint16_from_list(linked_list_t *list, uint16_t value){
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, list);
+    while (linked_list_iterator_has_next(&it)){
+        linked_list_uint16_t * item = (linked_list_uint16_t*) linked_list_iterator_next(&it);
+        if ( item->value != value) continue;
+        linked_list_remove(list, (linked_item_t *) item);
+        free(item);
+    } 
 }
 
+static void daemon_add_client_rfcomm_service(connection_t * connection, uint16_t service_channel){
+    client_state_t * client_state = client_for_connection(connection);
+    if (!client_state) return;
+    add_uint16_to_list(&client_state->rfcomm_services, service_channel);    
+}
 
-typedef struct gatt_client_helper {
-    uint16_t characteristic_length;
-} gatt_client_helper_t;
+static void daemon_remove_client_rfcomm_service(connection_t * connection, uint16_t service_channel){
+    client_state_t * client_state = client_for_connection(connection);
+    if (!client_state) return;
+    remove_and_free_uint16_from_list(&client_state->rfcomm_services, service_channel);    
+}
+
+static void daemon_add_client_rfcomm_channel(connection_t * connection, uint16_t cid){
+    client_state_t * client_state = client_for_connection(connection);
+    if (!client_state) return;
+    add_uint16_to_list(&client_state->rfcomm_cids, cid);
+}
+
+static void daemon_remove_client_rfcomm_channel(connection_t * connection, uint16_t cid){
+    client_state_t * client_state = client_for_connection(connection);
+    if (!client_state) return;
+    remove_and_free_uint16_from_list(&client_state->rfcomm_cids, cid);
+}
+
+static void daemon_add_client_l2cap_service(connection_t * connection, uint16_t psm){
+    client_state_t * client_state = client_for_connection(connection);
+    if (!client_state) return;
+    add_uint16_to_list(&client_state->l2cap_psms, psm);
+}
+
+static void daemon_remove_client_l2cap_service(connection_t * connection, uint16_t psm){
+    client_state_t * client_state = client_for_connection(connection);
+    if (!client_state) return;
+    remove_and_free_uint16_from_list(&client_state->l2cap_psms, psm);
+}
+
+static void daemon_add_client_l2cap_channel(connection_t * connection, uint16_t cid){
+    client_state_t * client_state = client_for_connection(connection);
+    if (!client_state) return;
+    add_uint16_to_list(&client_state->l2cap_cids, cid);
+}
+
+static void daemon_remove_client_l2cap_channel(connection_t * connection, uint16_t cid){
+    client_state_t * client_state = client_for_connection(connection);
+    if (!client_state) return;
+    remove_and_free_uint16_from_list(&client_state->l2cap_cids, cid);
+}
+
+static void daemon_rfcomm_close_connection(linked_list_t *rfcomm_services, linked_list_t *rfcomm_cids){
+    linked_list_iterator_t it;  
+
+    linked_list_iterator_init(&it, rfcomm_services);
+    while (linked_list_iterator_has_next(&it)){
+        linked_list_uint16_t * item = (linked_list_uint16_t*) linked_list_iterator_next(&it);
+        rfcomm_unregister_service_internal(item->value);
+        linked_list_remove(rfcomm_services, (linked_item_t *) item);
+        free(item);
+    }
+
+    linked_list_iterator_init(&it, rfcomm_cids);
+    while (linked_list_iterator_has_next(&it)){
+        linked_list_uint16_t * item = (linked_list_uint16_t*) linked_list_iterator_next(&it);
+        rfcomm_disconnect_internal(item->value);
+        linked_list_remove(rfcomm_cids, (linked_item_t *) item);
+        free(item);
+    }
+}
+
+static void daemon_l2cap_close_connection(linked_list_t *l2cap_psms, linked_list_t *l2cap_cids){
+    linked_list_iterator_t it;  
+
+    linked_list_iterator_init(&it, l2cap_psms);
+    while (linked_list_iterator_has_next(&it)){
+        linked_list_uint16_t * item = (linked_list_uint16_t*) linked_list_iterator_next(&it);
+        l2cap_unregister_service_internal(NULL, item->value);
+        linked_list_remove(l2cap_psms, (linked_item_t *) item);
+        free(item);
+    }
+
+    linked_list_iterator_init(&it, l2cap_cids);
+    while (linked_list_iterator_has_next(&it)){
+        linked_list_uint16_t * item = (linked_list_uint16_t*) linked_list_iterator_next(&it);
+        l2cap_disconnect_internal(item->value, 0); // note: reason isn't used
+        linked_list_remove(l2cap_cids, (linked_item_t *) item);
+        free(item);
+    }
+}
+
+static void daemon_disconnect_client(connection_t * connection){
+    log_info("Daemon disconnect client %p\n",connection);
+
+    client_state_t * client = client_for_connection(connection);
+    if (!client) return;
+
+    sdp_unregister_services_for_connection(connection);
+    daemon_rfcomm_close_connection(&client->rfcomm_services, &client->rfcomm_cids);
+    daemon_l2cap_close_connection(&client->l2cap_psms, &client->l2cap_cids);
+#ifdef HAVE_BLE
+    // NOTE: experimental - disconnect all LE connections where GATT Client was used
+    gatt_client_disconnect_connection(connection);
+#endif
+
+    linked_list_remove(&clients, (linked_item_t *) client);
+    free(client); 
+}
 
 static gatt_client_t * daemon_provide_gatt_client_context_for_handle(uint16_t handle){
     gatt_client_t *context;
@@ -496,7 +610,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
         case RFCOMM_UNREGISTER_SERVICE:
             service_channel = READ_BT_16(packet, 3);
-            daemon_remove_client_rfcomm_service(service_channel);
+            daemon_remove_client_rfcomm_service(connection, service_channel);
             rfcomm_unregister_service_internal(service_channel);
             break;
         case RFCOMM_ACCEPT_CONNECTION:
@@ -770,23 +884,12 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
                     break;
                 case DAEMON_EVENT_CONNECTION_CLOSED:
                     log_info("DAEMON_EVENT_CONNECTION_CLOSED %p\n",connection);
-                    sdp_unregister_services_for_connection(connection);
-                    rfcomm_close_connection(connection);
-                    l2cap_close_connection(connection);
-#ifdef HAVE_BLE
-                    // NOTE: experimental - disconnect all LE connections where GATT Client was used
-                    gatt_client_disconnect_connection(connection);
-#endif
+                    daemon_disconnect_client(connection);
                     sdp_query_rfcomm_deregister_callback();
                     // no clients -> no HCI connections
                     if (!clients){
                         hci_disconnect_all();
                     }
-
-                    client = client_for_connection(connection);
-                    if (!client) break;
-                    linked_list_remove(&clients, (linked_item_t *) client);
-                    free(client);
 
                     // update discoverable mode
                     hci_discoverable_control(clients_require_discoverable());

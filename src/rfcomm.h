@@ -363,7 +363,6 @@ typedef struct {
 } rfcomm_channel_t;
 
 void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-void rfcomm_close_connection(void *connection);
 
 /** Embedded API **/
 
