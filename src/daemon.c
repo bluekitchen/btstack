@@ -99,6 +99,15 @@
 
 #define DAEMON_NO_ACTIVE_CLIENT_TIMEOUT 10000
 
+#define ATT_MAX_LONG_ATTRIBUTE_SIZE 512
+
+
+#define SERVICE_LENGTH                      20
+#define CHARACTERISTIC_LENGTH               24
+#define CHARACTERISTIC_DESCRIPTOR_LENGTH    18
+
+// ATT_MTU - 1
+#define ATT_MAX_ATTRIBUTE_SIZE 22
 
 typedef struct {
     // linked list - assert: first field
@@ -161,7 +170,6 @@ static uint8_t serviceSearchPattern[200];
 static uint8_t attributeIDList[50];
 static void * sdp_client_query_connection;
     
-
 static int loggingEnabled;
 
 static void dummy_bluetooth_status_handler(BLUETOOTH_STATE state){
@@ -173,17 +181,6 @@ static void daemon_no_connections_timeout(struct timer *ts){
     log_info("No active client connection for %u seconds -> POWER OFF\n", DAEMON_NO_ACTIVE_CLIENT_TIMEOUT/1000);
     hci_power_control(HCI_POWER_OFF);
 }
-
-#define ATT_MAX_LONG_ATTRIBUTE_SIZE 512
-
-
-#ifdef HAVE_BLE
-#define SERVICE_LENGTH                      20
-#define CHARACTERISTIC_LENGTH               24
-#define CHARACTERISTIC_DESCRIPTOR_LENGTH    18
-
-// ATT_MTU - 1
-#define ATT_MAX_ATTRIBUTE_SIZE 22
 
 static void add_uint16_to_list(linked_list_t *list, uint16_t value){
     linked_list_uint16_t * item = malloc(sizeof(linked_list_uint16_t));
@@ -308,6 +305,8 @@ static void daemon_disconnect_client(connection_t * connection){
     linked_list_remove(&clients, (linked_item_t *) client);
     free(client); 
 }
+
+#ifdef HAVE_BLE
 
 static gatt_client_t * daemon_provide_gatt_client_context_for_handle(uint16_t handle){
     gatt_client_t *context;
