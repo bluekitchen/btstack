@@ -294,7 +294,10 @@ uint8_t hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
             return free_slots_classic;
 
         default:
-            return free_slots_le;
+           if (hci_stack->le_acl_packets_total_num){
+               return free_slots_le;
+           }
+           return free_slots_classic; 
     }
 }
 
