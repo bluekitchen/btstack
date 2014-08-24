@@ -118,22 +118,25 @@ static void try_to_send(uint16_t channel){
             request_len = setup_service_search_attribute_request(data);
             break;
         default:
-            log_info("SDP Client try_to_send :: PDU ID invalid. %u", PDU_ID);
+            log_error("SDP Client try_to_send :: PDU ID invalid. %u", PDU_ID);
             return;
     }
 
+    // prevent re-entrance
+    sdp_client_state = W4_RESPONSE;
     int err = l2cap_send_prepared(channel, request_len);
+    // l2cap_send_prepared shouldn't have failed as l2ap_can_send_packet_now() was true
     switch (err){
         case 0:
-            // packet is sent prepare next one
-            // log_info("l2cap_send_internal() -> OK");
+            log_debug("l2cap_send_internal() -> OK");
             PDU_ID = SDP_Invalid;
-            sdp_client_state = W4_RESPONSE;
             break;
         case BTSTACK_ACL_BUFFERS_FULL:
+            sdp_client_state = W2_SEND;
             log_info("l2cap_send_internal() ->BTSTACK_ACL_BUFFERS_FULL");
             break;
         default:
+            sdp_client_state = W2_SEND;
             log_error("l2cap_send_internal() -> err %d", err);
             break;
     }
