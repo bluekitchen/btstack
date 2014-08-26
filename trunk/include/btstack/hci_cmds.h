@@ -579,6 +579,7 @@ extern const hci_cmd_t hci_read_link_supervision_timeout;
 extern const hci_cmd_t hci_read_local_supported_features;
 extern const hci_cmd_t hci_read_num_broadcast_retransmissions;
 extern const hci_cmd_t hci_read_remote_supported_features_command;
+extern const hci_cmd_t hci_read_rssi;
 extern const hci_cmd_t hci_reject_connection_request;
 extern const hci_cmd_t hci_remote_name_request;
 extern const hci_cmd_t hci_remote_name_request_cancel;

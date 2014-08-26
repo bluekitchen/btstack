@@ -404,6 +404,20 @@ OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x09), ""
 // no params
 };
 
+/**
+ * Status Paramters
+ */
+
+/**
+ * @param handle
+ */
+const hci_cmd_t hci_read_rssi = {
+OPCODE(OGF_STATUS_PARAMETERS, 0x05), "H"
+// no params
+};
+
+
+
 #ifdef HAVE_BLE
 /**
  * Low Energy Commands
