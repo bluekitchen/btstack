@@ -855,9 +855,8 @@ static void sm_pdu_received_in_wrong_state(){
 
 static void sm_run(void){
 
-    // assert that we can send either one
+    // assert that we can send at least commands
     if (!hci_can_send_command_packet_now()) return;
-    if (!l2cap_can_send_fixed_channel_packet_now(connection->sm_handle)) return;
 
     sm_key_t plaintext;
 
@@ -976,6 +975,9 @@ static void sm_run(void){
         default:
             break;
     }
+
+    // assert that we could send a SM PDU - not needed for all of the following
+    if (!l2cap_can_send_fixed_channel_packet_now(connection->sm_handle)) return;
 
     // responding state
     switch (connection->sm_engine_state){
