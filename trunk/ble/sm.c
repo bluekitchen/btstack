@@ -1425,7 +1425,7 @@ static void sm_handle_random_result(uint8_t * data){
         case SM_PH2_W4_RANDOM_TK:
         {
             // map random to 0-999999 without speding much cycles on a modulus operation
-            uint32_t tk = * (uint32_t*) data; // random endianess
+            uint32_t tk = READ_BT_32(data,0);
             tk = tk & 0xfffff;  // 1048575
             if (tk >= 999999){
                 tk = tk - 999999;
