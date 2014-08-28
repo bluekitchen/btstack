@@ -1145,23 +1145,10 @@ static void event_handler(uint8_t *packet, int size){
             return;
         }
 #endif
-            
-        case HCI_EVENT_DISCONNECTION_COMPLETE:
-            if (!packet[2]){
-                handle = READ_BT_16(packet, 3);
-                hci_connection_t * conn = hci_connection_for_handle(handle);
-                if (conn) {
-                    uint8_t status = conn->bonding_status;
-                    bd_addr_t bd_address;
-                    memcpy(&bd_address, conn->address, 6);
-                    hci_shutdown_connection(conn);
-                    if (conn->bonding_flags & BONDING_EMIT_COMPLETE_ON_DISCONNECT){
-                        hci_emit_dedicated_bonding_result(bd_address, status);           
-                    }
-                }
-            }
-            break;
-            
+        
+        // HCI_EVENT_DISCONNECTION_COMPLETE
+        // has been moved down, to first notify stack before shutting connection down
+
         case HCI_EVENT_HARDWARE_ERROR:
             if(hci_stack->control && hci_stack->control->hw_error){
                 (*hci_stack->control->hw_error)();
@@ -1250,8 +1237,26 @@ static void event_handler(uint8_t *packet, int size){
         hci_stack->substate++;
     }
     
+    // notify upper stack
     hci_stack->packet_handler(HCI_EVENT_PACKET, packet, size);
 	
+    // moved here to give upper stack a chance to close down everything with hci_connection_t intact
+    if (packet[0] == HCI_EVENT_DISCONNECTION_COMPLETE){
+        if (!packet[2]){
+            handle = READ_BT_16(packet, 3);
+            hci_connection_t * conn = hci_connection_for_handle(handle);
+            if (conn) {
+                uint8_t status = conn->bonding_status;
+                bd_addr_t bd_address;
+                memcpy(&bd_address, conn->address, 6);
+                hci_shutdown_connection(conn);
+                if (conn->bonding_flags & BONDING_EMIT_COMPLETE_ON_DISCONNECT){
+                    hci_emit_dedicated_bonding_result(bd_address, status);           
+                }
+            }
+        }
+    }
+
 	// execute main loop
 	hci_run();
 }
