@@ -977,6 +977,7 @@ static void sm_run(void){
     }
 
     // assert that we could send a SM PDU - not needed for all of the following
+    if (!connection->sm_handle) return;
     if (!l2cap_can_send_fixed_channel_packet_now(connection->sm_handle)) return;
 
     // responding state
@@ -1471,7 +1472,6 @@ static void sm_handle_random_result(uint8_t * data){
 
 static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
-    sm_run();
     int have_oob_data;
 
     switch (packet_type) {
