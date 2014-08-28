@@ -200,15 +200,14 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
 static void sm_run(void){
 
     // assert that we can send either one
-    if (!hci_can_send_command_packet_now()) return;
-    if (!l2cap_can_send_fixed_channel_packet_now(sm_response_handle)) return;
-
     switch (sm_state_responding){
         case SM_STATE_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
+            if (!hci_can_send_command_packet_now()) return;
             hci_send_cmd(&hci_le_long_term_key_negative_reply, sm_response_handle);
             sm_state_responding = SM_STATE_IDLE;
             return;
         case SM_STATE_SEND_PAIRING_FAILED: {
+            if (!l2cap_can_send_fixed_channel_packet_now(sm_response_handle)) return;
             uint8_t buffer[2];
             buffer[0] = SM_CODE_PAIRING_FAILED;
             buffer[1] = sm_pairing_failed_reason;
