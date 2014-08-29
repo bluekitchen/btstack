@@ -142,6 +142,33 @@ void hexdump(const void *data, int size){
     }
 }
 
+void hexdumpf(const void *data, int size){
+    char buffer[6*16+1];
+    int i, j;
+
+    uint8_t low = 0x0F;
+    uint8_t high = 0xF0;
+    j = 0;
+    for (i=0; i<size;i++){
+        uint8_t byte = ((uint8_t *)data)[i];
+        buffer[j++] = '0';
+        buffer[j++] = 'x';
+        buffer[j++] = char_for_nibble((byte & high) >> 4);
+        buffer[j++] = char_for_nibble(byte & low);
+        buffer[j++] = ',';
+        buffer[j++] = ' ';     
+        if (j >= 6*16 ){
+            buffer[j] = 0;
+            printf("%s", buffer);
+            j = 0;
+        }
+    }
+    if (j != 0){
+        buffer[j] = 0;
+        printf("%s", buffer);
+    }
+}
+
 void log_key(const char * name, sm_key_t key){
     log_info("%-6s ", name);
     hexdump(key, 16);
