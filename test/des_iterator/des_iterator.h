@@ -1,6 +1,6 @@
 
-#ifndef __SDP_PARSER_H
-#define __SDP_PARSER_H
+#ifndef __DES_ITERATOR_H
+#define __DES_ITERATOR_H
 
 #include "btstack-config.h"
 
@@ -38,4 +38,4 @@ uint16_t de_element_get_uuid16(uint8_t * element);
 }
 #endif
 
-#endif // __DES_PARSER_H
+#endif // __DES_ITERATOR_H
