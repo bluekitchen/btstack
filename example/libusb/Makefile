@@ -58,6 +58,9 @@ SM_MINIMAL = \
 	${BTSTACK_ROOT}/ble/sm_minimal.c  		 	    \
     ${BTSTACK_ROOT}/ble/central_device_db_dummy.c   \
 
+SDP_DES = \
+	${BTSTACK_ROOT}/test/des_iterator/des_iterator.c  \
+
 CORE_OBJ    = $(CORE:.c=.o)
 COMMON_OBJ  = $(COMMON:.c=.o)
 CC2564_OBJ  = $(CC2564:.c=.o)
@@ -72,7 +75,8 @@ GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
 
 all: ../../include/btstack/version.h gatt_browser sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral \
 		ble_peripheral_sm_minimal gap_inquiry gap_dedicated_bonding gap_inquiry_and_bond l2cap_test spp_streamer \
-		classic_test ble_peripheral_uart_csr ble_peripheral_uart_cc256x ancs_client spp_and_le_counter
+		classic_test ble_peripheral_uart_csr ble_peripheral_uart_cc256x ancs_client spp_and_le_counter \
+		sdp_bnep_query \
 
 ../../include/btstack/version.h:
 	cd ..; ../src/get_version.sh
@@ -82,6 +86,9 @@ sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} sdp_rfcomm_query.c
 
 sdp_general_query: ${CORE_OBJ} ${COMMON_OBJ} sdp_general_query.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+sdp_bnep_query: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_DES} sdp_bnep_query.c  
+	${CC} $^ ${CFLAGS} -I../../test/des_iterator ${LDFLAGS} -o $@
 
 spp_counter: ${CORE_OBJ} ${COMMON_OBJ} spp_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
@@ -140,7 +147,9 @@ gatt_browser: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} gatt_browser.c ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
-	rm -f  spp_counter sdp_rfcomm_query sdp_general_query spp_counter_ssp ble_peripheral ble_client gatt_browser gatt_client ancs_client
+	rm -f  	spp_counter sdp_rfcomm_query sdp_general_query sdp_bnep_query spp_counter_ssp ble_peripheral ble_client gatt_browser \
+			gatt_client ancs_client ble_peripheral_sm_minimal classic_test ble_peripheral_uart_csr ble_peripheral_uart \
+			gap_dedicated_bonding gap_inquiry gap_inquiry_and_bond l2cap_test spp_and_le_counter spp_streamer
 	rm -f  *.o *.out *.hex
 	rm -f  ${BTSTACK_ROOT}/src/*.o
 	rm -f  ${BTSTACK_ROOT}/ble/*.o
