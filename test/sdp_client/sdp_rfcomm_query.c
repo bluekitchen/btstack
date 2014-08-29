@@ -85,6 +85,9 @@ static uint8_t  sdp_test_record_list[] = { 0x36, 0x02, 0xE7, 0x35, 0x48,
 extern "C" void sdp_client_query(bd_addr_t remote, uint8_t * des_serviceSearchPattern, uint8_t * des_attributeIDList){
 }
 
+// for test purposes
+void sdp_query_rfcomm_init();
+
 
 void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
     sdp_query_rfcomm_service_event_t * ve;
