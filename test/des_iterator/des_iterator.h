@@ -26,7 +26,13 @@ int des_iterator_init(des_iterator_t * it, uint8_t * element);
 int  des_iterator_has_more(des_iterator_t * it);
 de_type_t des_iterator_get_type (des_iterator_t * it);
 uint16_t des_iterator_get_size (des_iterator_t * it);
-uint8_t * des_iterator_get_value(des_iterator_t * it);
+uint8_t * des_iterator_get_element(des_iterator_t * it);
+void des_iterator_next(des_iterator_t * it);
+
+
+// move to sdp util
+int de_element_get_uint16(uint8_t * element, uint16_t * value);
+uint16_t de_element_get_uuid16(uint8_t * element);
 
 #if defined __cplusplus
 }
