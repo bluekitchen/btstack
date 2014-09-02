@@ -33,9 +33,11 @@ typedef enum {
     DONE
 } state_t;
 
+#define DATA_VOLUME (1000 * 1000)
+
 // configuration area {
 static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};     // address of remote device
-static const int data_volume = 1000 * 1000;                               // amout of test data to send in bytes
+static const int data_volume = DATA_VOLUME;                               // amout of test data to send in bytes
 static const char * spp_service_name_prefix = "Bluetooth-Incoming"; // default on OS X
 // configuration area }
 
@@ -44,7 +46,7 @@ static uint16_t test_data_len = sizeof(test_data);
 static uint8_t  channel_nr = 0;
 static uint16_t mtu;
 static uint16_t rfcomm_cid = 0;
-static uint32_t data_to_send =  data_volume;
+static uint32_t data_to_send =  DATA_VOLUME;
 static state_t state = W4_SDP_RESULT;
 
 static void create_test_data(void){
