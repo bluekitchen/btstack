@@ -1,0 +1,7 @@
+# .gitignore-file
+
+*.o
+*.*~
+.netrc
+
+include/btstack/version.h

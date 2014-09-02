@@ -94,7 +94,7 @@ spp_counter: ${CORE_OBJ} ${COMMON_OBJ} spp_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 spp_and_le_counter: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} spp_and_le_counter.c spp_and_le_counter.h
-	${CC} ${CFLAGS} ${LDFLAGS} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} spp_and_le_counter.c -o $@
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 spp_counter_ssp: ${CORE_OBJ} ${COMMON_OBJ} spp_counter_ssp.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
@@ -154,5 +154,9 @@ clean:
 	rm -f  ${BTSTACK_ROOT}/src/*.o
 	rm -f  ${BTSTACK_ROOT}/ble/*.o
 	rm -f  ${BTSTACK_ROOT}/chipset-cc256x/*.o
+	rm -f  ${BTSTACK_ROOT}/include/btstack/version.h
+	rm -f  ${BTSTACK_ROOT}/example/libusb/ancs_client.h
+	rm -f  ${BTSTACK_ROOT}/example/libusb/profile.h
+	rm -f  ${BTSTACK_ROOT}/example/libusb/spp_and_le_counter.h
 	rm -rf *.dSYM
 	
