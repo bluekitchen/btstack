@@ -43,7 +43,7 @@
 #include "platform_iphone.h"
 
 #include "btstack-config.h"
-#include "../SpringBoardAccess/SpringBoardAccess.h"
+#include "../platforms/ios/SpringBoardAccess/SpringBoardAccess.h"
 
 #include <stdio.h>
 #include <unistd.h>
