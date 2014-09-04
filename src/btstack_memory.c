@@ -381,8 +381,10 @@ void btstack_memory_init(void){
 #if MAX_NO_DB_MEM_SERVICES > 0
     memory_pool_create(&db_mem_service_pool, db_mem_service_storage, MAX_NO_DB_MEM_SERVICES, sizeof(db_mem_service_t));
 #endif
+#ifdef HAVE_BLE
 #if MAX_NO_GATT_CLIENTS > 0
     memory_pool_create(&gatt_client_pool, gatt_client_storage, MAX_NO_GATT_CLIENTS, sizeof(gatt_client_t));
+#endif
 #endif
 }
 
