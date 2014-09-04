@@ -7,7 +7,7 @@ cd src; ./get_version.sh; cd ..
 # check if $THEOS is set
 
 # remove autoconf created files
-rm -f btstack-config.h config.h Makefile src/Makefile example/Makefile
+rm -f btstack-config.h config.h layout Makefile src/Makefile example/Makefile ch.ringwald.btstack_*.deb
 
 # use theos Makefiles
 cp platforms/ios/btstack-config-iphone.h btstack-config.h
