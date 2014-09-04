@@ -730,7 +730,7 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     log_info("L2CAP_CREATE_CHANNEL_MTU addr %s psm 0x%x mtu %u", bd_addr_to_str(address), psm, mtu);
     
     // alloc structure
-    l2cap_channel_t * chan = (l2cap_channel_t*) btstack_memory_l2cap_channel_get();
+    l2cap_channel_t * chan = btstack_memory_l2cap_channel_get();
     if (!chan) {
         // emit error event
         l2cap_channel_t dummy_channel;
@@ -1027,7 +1027,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
 
     // alloc structure
     // log_info("l2cap_handle_connection_request register channel");
-    l2cap_channel_t * channel = (l2cap_channel_t*) btstack_memory_l2cap_channel_get();
+    l2cap_channel_t * channel = btstack_memory_l2cap_channel_get();
     if (!channel){
         // 0x0004 No resources available
         l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, 0x0004);
@@ -1448,7 +1448,7 @@ void l2cap_register_service_internal(void *connection, btstack_packet_handler_t 
     
     // alloc structure
     // TODO: emit error event
-    service = (l2cap_service_t *) btstack_memory_l2cap_service_get();
+    service = btstack_memory_l2cap_service_get();
     if (!service) {
         log_error("l2cap_register_service_internal: no memory for l2cap_service_t");
         l2cap_emit_service_registered(connection, BTSTACK_MEMORY_ALLOC_FAILED, psm);

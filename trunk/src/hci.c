@@ -94,7 +94,7 @@ static uint8_t disable_l2cap_timeouts = 0;
 static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type){
 
     log_info("create_connection_for_addr %s", bd_addr_to_str(addr));
-    hci_connection_t * conn = (hci_connection_t *) btstack_memory_hci_connection_get();
+    hci_connection_t * conn = btstack_memory_hci_connection_get();
     if (!conn) return NULL;
     BD_ADDR_COPY(conn->address, addr);
     conn->address_type = addr_type;
