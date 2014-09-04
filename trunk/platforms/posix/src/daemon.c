@@ -120,7 +120,8 @@ typedef struct {
     linked_list_t l2cap_cids;
     linked_list_t l2cap_psms;
     linked_list_t sdp_record_handles;
-
+    linked_list_t gatt_client_handles;
+    
     // power mode
     HCI_POWER_MODE power_mode;
     
@@ -261,6 +262,19 @@ static void daemon_remove_client_sdp_service_record_handle(connection_t * connec
     remove_and_free_uint32_from_list(&client_state->sdp_record_handles, handle);    
 }
 
+static void daemon_add_gatt_client_handle(connection_t * connection, uint32_t handle){
+    client_state_t * client_state = client_for_connection(connection);
+    if (!client_state) return;
+    add_uint32_to_list(&client_state->gatt_client_handles, handle);    
+}
+
+static void daemon_remove_gatt_client_handle(connection_t * connection, uint32_t handle){
+    client_state_t * client_state = client_for_connection(connection);
+    if (!client_state) return;
+    remove_and_free_uint32_from_list(&client_state->gatt_client_handles, handle);    
+}
+
+
 static void daemon_rfcomm_close_connection(linked_list_t *rfcomm_services, linked_list_t *rfcomm_cids){
     linked_list_iterator_t it;  
 
@@ -312,7 +326,16 @@ static void daemon_sdp_close_connection(void *connection, linked_list_t *sdp_han
     }
 }
 
-
+static void daemon_gatt_client_close_connection(linked_list_t *gatt_client_handles){
+    linked_list_iterator_t it;  
+    linked_list_iterator_init(&it, gatt_client_handles);
+    while (linked_list_iterator_has_next(&it)){
+        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+        gap_disconnect((hci_con_handle_t) item->value);
+        linked_list_remove(gatt_client_handles, (linked_item_t *) item);
+        free(item);
+    }
+}
 
 static void daemon_disconnect_client(connection_t * connection){
     log_info("Daemon disconnect client %p\n",connection);
@@ -325,7 +348,8 @@ static void daemon_disconnect_client(connection_t * connection){
     daemon_l2cap_close_connection(&client->l2cap_psms, &client->l2cap_cids);
 #ifdef HAVE_BLE
     // NOTE: experimental - disconnect all LE connections where GATT Client was used
-    gatt_client_disconnect_connection(connection);
+    // gatt_client_disconnect_connection(connection);
+    daemon_gatt_client_close_connection(&client->gatt_client_handles);
 #endif
 
     linked_list_remove(&clients, (linked_item_t *) client);
@@ -334,7 +358,7 @@ static void daemon_disconnect_client(connection_t * connection){
 
 #ifdef HAVE_BLE
 
-static gatt_client_t * daemon_provide_gatt_client_context_for_handle(uint16_t handle){
+static gatt_client_t * daemon_provide_gatt_client_context_for_handle(void * connection, uint16_t handle){
     gatt_client_t *context;
     context = get_gatt_client_context_for_handle(handle);
     if (context) return context;
@@ -343,6 +367,7 @@ static gatt_client_t * daemon_provide_gatt_client_context_for_handle(uint16_t ha
     if (!context) return NULL;
 
     gatt_client_start(context, handle);
+    daemon_add_gatt_client_handle(connection, handle);
     return context;
 }
 
@@ -377,7 +402,7 @@ gatt_client_t * daemon_prepare_gatt_client_context(connection_t *connection, uin
         return NULL;
     }
 
-    gatt_client_t *context = daemon_provide_gatt_client_context_for_handle(handle);
+    gatt_client_t *context = daemon_provide_gatt_client_context_for_handle(connection, handle);
     if (!context) {
         send_gatt_query_complete(connection, handle, BTSTACK_MEMORY_ALLOC_FAILED);
         return NULL;
@@ -387,6 +412,7 @@ gatt_client_t * daemon_prepare_gatt_client_context(connection_t *connection, uin
         send_gatt_query_complete(connection, handle, GATT_CLIENT_BUSY);
         return NULL;
     }
+
     context->context = connection;
     return context;
 }
@@ -1058,6 +1084,8 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
 #if defined(HAVE_BLE) && defined(HAVE_MALLOC)
                 case HCI_EVENT_DISCONNECTION_COMPLETE:{
                     uint16_t handle = READ_BT_16(packet, 3);
+                    daemon_remove_gatt_client_handle(connection, handle);
+                    
                     gatt_client_t *context = get_gatt_client_context_for_handle(handle);
                     if (!context) break;
                     gatt_client_stop(context);
