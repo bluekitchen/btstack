@@ -8,7 +8,12 @@ ARCHS = armv6 arm64
 
 LIBRARY_NAME = libBTstack
 libBTstack_FILES  = btstack.c hci_cmds.c linked_list.c
-libBTstack_FILES += run_loop.c run_loop_cocoa.m run_loop_posix.c sdp_util.c socket_connection.c utils.c
+libBTstack_FILES += run_loop.c \
+	../platforms/cocoa/run_loop_cocoa.m \
+	run_loop_posix.c \
+	sdp_util.c \
+	socket_connection.c \
+	utils.c
 libBTstack_CFLAGS = -I../include -I../ble -I../src -I..
 
 TOOL_NAME = BTdaemon
@@ -17,6 +22,7 @@ BTdaemon_FILES = $(libBTstack_FILES)  \
 	../platforms/ios/src/hci_transport_h4_iphone.c   \
 	../platforms/ios/src/platform_iphone.m       \
 	../platforms/ios/SpringBoardAccess/SpringBoardAccess.c \
+	../platforms/cocoa/remote_device_db_cocoa.m  \
 	btstack_memory.c        \
 	daemon.c                \
 	hci.c                   \
@@ -25,7 +31,6 @@ BTdaemon_FILES = $(libBTstack_FILES)  \
 	l2cap.c                 \
 	l2cap_signaling.c       \
 	memory_pool.c           \
-	remote_device_db_iphone.m  \
 	rfcomm.c                \
 	sdp.c                   \
     sdp_client.c            \
