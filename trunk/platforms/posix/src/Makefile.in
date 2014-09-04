@@ -52,7 +52,7 @@ BTdaemon_SOURCES =                          \
 all: $(BTSTACK_ROOT)/src/libBTstack.$(BTSTACK_LIB_EXTENSION) $(BTSTACK_ROOT)/src/libBTstack.a $(BTSTACK_ROOT)/src/BTdaemon
 
 $(BTSTACK_ROOT)/src/libBTstack.$(BTSTACK_LIB_EXTENSION): $(libBTstack_SOURCES)
-		$(BTSTACK_ROOT)/src/get_version.sh
+		$(BTSTACK_ROOT)/tools/get_version.sh
 		$(CC) $(CPPFLAGS) $(BTSTACK_LIB_LDFLAGS) -o $@ $(libBTstack_SOURCES) $(LDFLAGS)
 
 $(BTSTACK_ROOT)/src/libBTstack.a: $(libBTstack_SOURCES:.c=.o) $(libBTstack_SOURCES:.m=.o)

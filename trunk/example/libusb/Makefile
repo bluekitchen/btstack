@@ -80,7 +80,7 @@ all: ../../include/btstack/version.h gatt_browser sdp_rfcomm_query sdp_general_q
 		sdp_bnep_query \
 
 ../../include/btstack/version.h:
-	cd ..; ../src/get_version.sh
+	../tools/get_version.sh
 
 sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} sdp_rfcomm_query.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
