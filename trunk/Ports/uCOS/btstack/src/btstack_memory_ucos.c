@@ -51,14 +51,14 @@ DEFINE_THIS_FILE
 /*=============================================================================
 =============================================================================*/
 static MEM_POOL hci_connection_pool;
-void * btstack_memory_hci_connection_get(void)
+hci_connection_t * btstack_memory_hci_connection_get(void)
 {
     LIB_ERR err;
     return Mem_PoolBlkGet(&hci_connection_pool,
                           sizeof(hci_connection_t),
                           &err);
 }
-void btstack_memory_hci_connection_free(void *hci_connection)
+void btstack_memory_hci_connection_free(hci_connection_t *hci_connection)
 {
     LIB_ERR err;
     Mem_PoolBlkFree(&hci_connection_pool, hci_connection, &err);
@@ -67,14 +67,14 @@ void btstack_memory_hci_connection_free(void *hci_connection)
 /*=============================================================================
 =============================================================================*/
 static MEM_POOL l2cap_service_pool;
-void * btstack_memory_l2cap_service_get(void)
+l2cap_service_t * btstack_memory_l2cap_service_get(void)
 {
     LIB_ERR err;
     return Mem_PoolBlkGet(&l2cap_service_pool,
                           sizeof(l2cap_service_t),
                           &err);
 }
-void btstack_memory_l2cap_service_free(void *l2cap_service)
+void btstack_memory_l2cap_service_free(l2cap_service_t *l2cap_service)
 {
     LIB_ERR err;
     Mem_PoolBlkFree(&l2cap_service_pool, l2cap_service, &err);
@@ -83,14 +83,14 @@ void btstack_memory_l2cap_service_free(void *l2cap_service)
 /*=============================================================================
 =============================================================================*/
 static MEM_POOL l2cap_channel_pool;
-void * btstack_memory_l2cap_channel_get(void)
+l2cap_channel_t * btstack_memory_l2cap_channel_get(void)
 {
     LIB_ERR err;
     return Mem_PoolBlkGet(&l2cap_channel_pool,
                           sizeof(l2cap_channel_t),
                           &err);
 }
-void btstack_memory_l2cap_channel_free(void *l2cap_channel)
+void btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel)
 {
     LIB_ERR err;
     Mem_PoolBlkFree(&l2cap_channel_pool, l2cap_channel, &err);
@@ -99,14 +99,14 @@ void btstack_memory_l2cap_channel_free(void *l2cap_channel)
 /*=============================================================================
 =============================================================================*/
 static MEM_POOL rfcomm_multiplexer_pool;
-void * btstack_memory_rfcomm_multiplexer_get(void)
+rfcomm_multiplexer_t * btstack_memory_rfcomm_multiplexer_get(void)
 {
     LIB_ERR err;
     return Mem_PoolBlkGet(&rfcomm_multiplexer_pool,
                           sizeof(rfcomm_multiplexer_t),
                           &err);
 }
-void btstack_memory_rfcomm_multiplexer_free(void *rfcomm_multiplexer)
+void btstack_memory_rfcomm_multiplexer_free(rfcomm_multiplexer_t *rfcomm_multiplexer)
 {
     LIB_ERR err;
     Mem_PoolBlkFree(&rfcomm_multiplexer_pool, rfcomm_multiplexer, &err);
@@ -115,14 +115,14 @@ void btstack_memory_rfcomm_multiplexer_free(void *rfcomm_multiplexer)
 /*=============================================================================
 =============================================================================*/
 static MEM_POOL rfcomm_service_pool;
-void * btstack_memory_rfcomm_service_get(void)
+rfcomm_service_t * btstack_memory_rfcomm_service_get(void)
 {
     LIB_ERR err;
     return Mem_PoolBlkGet(&rfcomm_service_pool,
                           sizeof(rfcomm_service_t),
                           &err);
 }
-void btstack_memory_rfcomm_service_free(void *rfcomm_service)
+void btstack_memory_rfcomm_service_free(rfcomm_service_t *rfcomm_service)
 {
     LIB_ERR err;
     Mem_PoolBlkFree(&rfcomm_service_pool, rfcomm_service, &err);
@@ -131,14 +131,14 @@ void btstack_memory_rfcomm_service_free(void *rfcomm_service)
 /*=============================================================================
 =============================================================================*/
 static MEM_POOL rfcomm_channel_pool;
-void * btstack_memory_rfcomm_channel_get(void)
+rfcomm_channel_t * btstack_memory_rfcomm_channel_get(void)
 {
     LIB_ERR err;
     return Mem_PoolBlkGet(&rfcomm_channel_pool,
                           sizeof(rfcomm_channel_t),
                           &err);
 }
-void btstack_memory_rfcomm_channel_free(void *rfcomm_channel)
+void btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel)
 {
     LIB_ERR err;
     Mem_PoolBlkFree(&rfcomm_channel_pool, rfcomm_channel, &err);
@@ -147,13 +147,13 @@ void btstack_memory_rfcomm_channel_free(void *rfcomm_channel)
 /*=============================================================================
 =============================================================================*/
 static MEM_POOL db_mem_device_pool;
-void * btstack_memory_db_mem_device_get(void){
+db_mem_device_t * btstack_memory_db_mem_device_get(void){
     LIB_ERR err;
     return Mem_PoolBlkGet(&db_mem_device_pool,
                           sizeof(db_mem_device_t),
                           &err);
 }
-void btstack_memory_db_mem_device_free(void *db_mem_device){
+void btstack_memory_db_mem_device_free(db_mem_device_t *db_mem_device){
     LIB_ERR err;
     Mem_PoolBlkFree(&db_mem_device_pool, db_mem_device, &err);
 }
@@ -161,13 +161,13 @@ void btstack_memory_db_mem_device_free(void *db_mem_device){
 /*=============================================================================
 =============================================================================*/
 static MEM_POOL db_mem_service_pool;
-void * btstack_memory_db_mem_service_get(void){
+db_mem_service_t * btstack_memory_db_mem_service_get(void){
     LIB_ERR err;
     return Mem_PoolBlkGet(&db_mem_service_pool,
                           sizeof(db_mem_service_t),
                           &err);
 }
-void btstack_memory_db_mem_service_free(void *db_mem_service){
+void btstack_memory_db_mem_service_free(db_mem_service_t *db_mem_service){
     LIB_ERR err;
     Mem_PoolBlkFree(&db_mem_service_pool, db_mem_service, &err);
 }
