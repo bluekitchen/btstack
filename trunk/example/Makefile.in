@@ -7,31 +7,24 @@ all: test rfcomm-cat rfcomm-echo  rfcomm-test inquiry l2cap-server l2cap-through
 
 test: test.c
 	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
-	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
 l2cap-server: l2cap-server.c
 	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
-	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
 l2cap-throughput: l2cap-throughput.c
 	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
-	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
 inquiry: inquiry.c
 	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
-	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
 rfcomm-cat: rfcomm-cat.c
 	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
-	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
 rfcomm-echo: rfcomm-echo.c
 	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
-	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
 rfcomm-test: rfcomm-test.c
 	$(CC) $(CPPFLAGS) -o $@ $< $(LDFLAGS)
-	@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
 clean:
 	rm -f test mitm rfcomm-cat rfcomm-echo inquiry l2cap-server l2cap-throughput obex
