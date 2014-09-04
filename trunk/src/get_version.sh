@@ -1,5 +1,6 @@
 #!/bin/sh
-FILE=../include/btstack/version.h
+DIR=`dirname $0`
+FILE=$DIR/../include/btstack/version.h
 REVISION=`svnversion | sed "s/\([0-9]*\).*/\1/"`
 MAJOR=0
 MINOR=8
