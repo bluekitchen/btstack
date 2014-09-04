@@ -119,6 +119,7 @@ typedef struct {
     linked_list_t rfcomm_services;
     linked_list_t l2cap_cids;
     linked_list_t l2cap_psms;
+    linked_list_t sdp_record_handles;
 
     // power mode
     HCI_POWER_MODE power_mode;
@@ -200,25 +201,25 @@ static void remove_and_free_uint32_from_list(linked_list_t *list, uint32_t value
     } 
 }
 
-static void daemon_add_client_rfcomm_service(connection_t * connection, uint32_t service_channel){
+static void daemon_add_client_rfcomm_service(connection_t * connection, uint16_t service_channel){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
     add_uint32_to_list(&client_state->rfcomm_services, service_channel);    
 }
 
-static void daemon_remove_client_rfcomm_service(connection_t * connection, uint32_t service_channel){
+static void daemon_remove_client_rfcomm_service(connection_t * connection, uint16_t service_channel){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
     remove_and_free_uint32_from_list(&client_state->rfcomm_services, service_channel);    
 }
 
-static void daemon_add_client_rfcomm_channel(connection_t * connection, uint32_t cid){
+static void daemon_add_client_rfcomm_channel(connection_t * connection, uint16_t cid){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
     add_uint32_to_list(&client_state->rfcomm_cids, cid);
 }
 
-static void daemon_remove_client_rfcomm_channel(connection_t * connection, uint32_t cid){
+static void daemon_remove_client_rfcomm_channel(connection_t * connection, uint16_t cid){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
     remove_and_free_uint32_from_list(&client_state->rfcomm_cids, cid);
@@ -246,6 +247,18 @@ static void daemon_remove_client_l2cap_channel(connection_t * connection, uint16
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
     remove_and_free_uint32_from_list(&client_state->l2cap_cids, cid);
+}
+
+static void daemon_add_client_sdp_service_record_handle(connection_t * connection, uint32_t handle){
+    client_state_t * client_state = client_for_connection(connection);
+    if (!client_state) return;
+    add_uint32_to_list(&client_state->sdp_record_handles, handle);    
+}
+
+static void daemon_remove_client_sdp_service_record_handle(connection_t * connection, uint32_t handle){
+    client_state_t * client_state = client_for_connection(connection);
+    if (!client_state) return;
+    remove_and_free_uint32_from_list(&client_state->sdp_record_handles, handle);    
 }
 
 static void daemon_rfcomm_close_connection(linked_list_t *rfcomm_services, linked_list_t *rfcomm_cids){
@@ -288,13 +301,26 @@ static void daemon_l2cap_close_connection(linked_list_t *l2cap_psms, linked_list
     }
 }
 
+static void daemon_sdp_close_connection(void *connection, linked_list_t *sdp_handles){
+    linked_list_iterator_t it;  
+    linked_list_iterator_init(&it, sdp_handles);
+    while (linked_list_iterator_has_next(&it)){
+        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+        sdp_unregister_service_internal(connection, item->value);
+        linked_list_remove(sdp_handles, (linked_item_t *) item);
+        free(item);
+    }
+}
+
+
+
 static void daemon_disconnect_client(connection_t * connection){
     log_info("Daemon disconnect client %p\n",connection);
 
     client_state_t * client = client_for_connection(connection);
     if (!client) return;
 
-    sdp_unregister_services_for_connection(connection);
+    daemon_sdp_close_connection(connection, &client->sdp_record_handles);
     daemon_rfcomm_close_connection(&client->rfcomm_services, &client->rfcomm_cids);
     daemon_l2cap_close_connection(&client->l2cap_psms, &client->l2cap_cids);
 #ifdef HAVE_BLE
@@ -648,12 +674,14 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             
         case SDP_REGISTER_SERVICE_RECORD:
             log_info("SDP_REGISTER_SERVICE_RECORD size %u\n", size);
-            sdp_register_service_internal(connection, &packet[3]);
+            service_record_handle = sdp_register_service_internal(connection, &packet[3]);
+            daemon_add_client_sdp_service_record_handle(connection, service_record_handle);
             break;
         case SDP_UNREGISTER_SERVICE_RECORD:
             service_record_handle = READ_BT_32(packet, 3);
             log_info("SDP_UNREGISTER_SERVICE_RECORD handle 0x%x ", service_record_handle);
             sdp_unregister_service_internal(connection, service_record_handle);
+            daemon_remove_client_sdp_service_record_handle(connection, service_record_handle);
             break;
         case SDP_CLIENT_QUERY_RFCOMM_SERVICES: 
             bt_flip_addr(addr, &packet[3]);
