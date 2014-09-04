@@ -2,9 +2,9 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.60)
-AC_INIT(BTstack, 0.1)
+AC_INIT([BTstack], 0.1)
 AC_CONFIG_AUX_DIR(config)
-AM_INIT_AUTOMAKE(BTstack,0.1)
+AM_INIT_AUTOMAKE
 
 AC_ARG_WITH(hci-transport, [AS_HELP_STRING([--with-hci-transport=transportType], [Specify BT type to use: h4, usb])], HCI_TRANSPORT=$withval, HCI_TRANSPORT="h4")  
 AC_ARG_WITH(uart-device, [AS_HELP_STRING([--with-uart-device=uartDevice], [Specify BT UART device to use])], UART_DEVICE=$withval, UART_DEVICE="DEFAULT")  
