@@ -88,7 +88,6 @@ uint32_t sdp_register_service_internal(void *connection, uint8_t * service_recor
 #endif
 
 //
-void sdp_unregister_services_for_connection(void *connection);
 
 /** Embedded API **/
 
