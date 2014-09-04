@@ -6,28 +6,29 @@ TARGET_IPHONEOS_DEPLOYMENT_VERSION = 3.0
 TARGET_IPHONEOS_DEPLOYMENT_VERSION_arm64 = 7.0
 ARCHS = armv6 arm64
 
+BTSTACK_ROOT=..
+POSIX_ROOT=$(BTSTACK_ROOT)/platforms/posix
+
 LIBRARY_NAME = libBTstack
-libBTstack_FILES  = btstack.c hci_cmds.c linked_list.c
-libBTstack_FILES += run_loop.c \
-	../platforms/cocoa/run_loop_cocoa.m \
-	run_loop_posix.c \
+libBTstack_FILES = \
+	hci_cmds.c \
+	linked_list.c \
+	run_loop.c \
 	sdp_util.c \
-	socket_connection.c \
-	utils.c
+	utils.c \
+	$(BTSTACK_ROOT)/platforms/cocoa/run_loop_cocoa.m \
+	$(POSIX_ROOT)/src/btstack.c \
+	$(POSIX_ROOT)/src/run_loop_posix.c \
+	$(POSIX_ROOT)/src/socket_connection.c \
+
 libBTstack_CFLAGS = -I../include -I../ble -I../src -I..
 
 TOOL_NAME = BTdaemon
-BTdaemon_FILES = $(libBTstack_FILES)  \
-	../platforms/ios/src/bt_control_iphone.m     \
-	../platforms/ios/src/hci_transport_h4_iphone.c   \
-	../platforms/ios/src/platform_iphone.m       \
-	../platforms/ios/SpringBoardAccess/SpringBoardAccess.c \
-	../platforms/cocoa/remote_device_db_cocoa.m  \
+BTdaemon_FILES = \
+	$(libBTstack_FILES)  	\
 	btstack_memory.c        \
-	daemon.c                \
 	hci.c                   \
 	hci_dump.c              \
-	hci_transport_h4.c      \
 	l2cap.c                 \
 	l2cap_signaling.c       \
 	memory_pool.c           \
@@ -37,6 +38,13 @@ BTdaemon_FILES = $(libBTstack_FILES)  \
     sdp_parser.c            \
     sdp_query_rfcomm.c      \
     sdp_query_util.c        \
+	$(POSIX_ROOT)/src/daemon.c  \
+	$(POSIX_ROOT)/src/hci_transport_h4.c 		 	\
+	../platforms/ios/src/bt_control_iphone.m     	\
+	../platforms/ios/src/hci_transport_h4_iphone.c  \
+	../platforms/ios/src/platform_iphone.m       	\
+	../platforms/ios/SpringBoardAccess/SpringBoardAccess.c \
+	../platforms/cocoa/remote_device_db_cocoa.m  	\
 
 BTdaemon_CFLAGS = -I../include -I../ble -I../src -I..
 BTdaemon_LDFLAGS += $(SYSROOT)/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit

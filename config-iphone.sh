@@ -2,7 +2,7 @@
 echo "Configure BTstack for use with iOS using the theos build system"
 
 # get version from svn
-cd src; ./get_version.sh; cd ..
+tools/get_version.sh
 
 # check if $THEOS is set
 
