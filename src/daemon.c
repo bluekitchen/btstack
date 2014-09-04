@@ -81,7 +81,7 @@
 #endif
 
 #ifdef USE_SPRINGBOARD
-#include "platform_iphone.h"
+#include "../platforms/ios/src/platform_iphone.h"
 #endif
 
 #ifdef HAVE_TRANSPORT_USB

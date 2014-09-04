@@ -15,14 +15,13 @@ TOOL_NAME = BTdaemon
 BTdaemon_FILES = $(libBTstack_FILES)  \
 	../platforms/ios/src/bt_control_iphone.m     \
 	../platforms/ios/src/hci_transport_h4_iphone.c   \
+	../platforms/ios/src/platform_iphone.m       \
 	../platforms/ios/SpringBoardAccess/SpringBoardAccess.c \
-	platform_iphone.m       \
 	btstack_memory.c        \
 	daemon.c                \
 	hci.c                   \
 	hci_dump.c              \
 	hci_transport_h4.c      \
-	$(usb_sources)          \
 	l2cap.c                 \
 	l2cap_signaling.c       \
 	memory_pool.c           \
