@@ -12,10 +12,11 @@ libBTstack_FILES += run_loop.c run_loop_cocoa.m run_loop_posix.c sdp_util.c sock
 libBTstack_CFLAGS = -I../include -I../ble -I../src -I..
 
 TOOL_NAME = BTdaemon
-BTdaemon_FILES = $(libBTstack_FILES)   \
+BTdaemon_FILES = $(libBTstack_FILES)  \
 	../platforms/ios/src/bt_control_iphone.m     \
+	../platforms/ios/src/hci_transport_h4_iphone.c   \
+	../platforms/ios/SpringBoardAccess/SpringBoardAccess.c \
 	platform_iphone.m       \
-	hci_transport_h4_iphone.c \
 	btstack_memory.c        \
 	daemon.c                \
 	hci.c                   \
@@ -32,7 +33,7 @@ BTdaemon_FILES = $(libBTstack_FILES)   \
     sdp_parser.c            \
     sdp_query_rfcomm.c      \
     sdp_query_util.c        \
-	../platforms/ios/SpringBoardAccess/SpringBoardAccess.c
+
 BTdaemon_CFLAGS = -I../include -I../ble -I../src -I..
 BTdaemon_LDFLAGS += $(SYSROOT)/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit
 
