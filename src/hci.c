@@ -66,7 +66,7 @@
 #define HCI_INTIALIZING_SUBSTATE_AFTER_SLEEP 11
 
 #ifdef USE_BLUETOOL
-#include "bt_control_iphone.h"
+#include "../platforms/ios/src/bt_control_iphone.h"
 #endif
 
 static void hci_update_scan_enable(void);

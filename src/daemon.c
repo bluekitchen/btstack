@@ -76,7 +76,7 @@
 
 #ifdef USE_BLUETOOL
 #include <CoreFoundation/CoreFoundation.h>
-#include "bt_control_iphone.h"
+#include "../platforms/ios/src/bt_control_iphone.h"
 #include <notify.h>
 #endif
 
