@@ -10,19 +10,10 @@ AC_ARG_WITH(hci-transport, [AS_HELP_STRING([--with-hci-transport=transportType],
 AC_ARG_WITH(uart-device, [AS_HELP_STRING([--with-uart-device=uartDevice], [Specify BT UART device to use])], UART_DEVICE=$withval, UART_DEVICE="DEFAULT")  
 AC_ARG_WITH(uart-speed, [AS_HELP_STRING([--with-uart-speed=uartSpeed], [Specify BT UART speed to use])], UART_SPEED=$withval, UART_SPEED="115200")
 AC_ARG_ENABLE(powermanagement, [AS_HELP_STRING([--disable-powermanagement],[Disable powermanagement])], USE_POWERMANAGEMENT=$enableval, USE_POWERMANAGEMENT="yes")
-AC_ARG_ENABLE(bluetool, [AS_HELP_STRING([--disable-bluetool],[Disable init of Bluetooth module by BlueTool])], USE_BLUETOOL=$enableval, USE_BLUETOOL="DEFAULT")
-AC_ARG_ENABLE(springboard, [AS_HELP_STRING([--disable-springboard],[Disable display of BTstack status in SpringBoard])], USE_SPRINGBOARD=$enableval, USE_SPRINGBOARD="DEFAULT")
 AC_ARG_ENABLE(launchd, [AS_HELP_STRING([--enable-launchd],[Compiles BTdaemon for use by launchd])], USE_LAUNCHD=$enableval, USE_LAUNCHD="no")
-AC_ARG_WITH(prefsbundle, [AS_HELP_STRING([--with-prefsbundle],[Compiles iPhone Preferences Bundle])], USE_PREFSBUNDLE=$enableval, USE_PREFSBUNDLE="no")
-AC_ARG_WITH(iphone-ip, [AS_HELP_STRING([--with-iphone-ip=192.168.1.5], [Specify IP address used by iPhone for installation (not supported yet)])], IPHONE_IP=$withval, IPHONE_IP="")  
 AC_ARG_WITH(vendor-id, [AS_HELP_STRING([--with-vendor-id=vendorID], [Specify USB BT Dongle vendorID])], USB_VENDOR_ID=$withval, USB_VENDOR_ID="0")  
-AC_ARG_WITH(product-id, [AS_HELP_STRING([--with-product-id=productID], [Specify USB BT Dongle productID])], USB_PRODUCT_ID=$withval, USB_PRODUCT_ID="0") 
-AC_ARG_ENABLE(ldid, [AS_HELP_STRING([--enable-ldid], [Code sign binaries with ldid])], USE_LDID=$enableval, USE_LDID_ID="no")  
-AC_ARG_WITH(developer-path, [AS_HELP_STRING([--with-developer-path=path],
-[Specify toolchain path])], DEVELOPER_PATH=$withval, DEVELOPER_PATH="/Developer/Platforms/iPhoneOS.platform/Developer")  
-AC_ARG_WITH(sdk-version, [AS_HELP_STRING([--with-sdk-version=3.0], [Specify SDK version])], SDK_VERSION=$withval, SDK_VERSION="3.0")  
-AC_ARG_WITH(gcc-version, [AS_HELP_STRING([--with-gcc-version=4.2.1], [Specify GCC version])], GCC_VERSION=$withval, GCC_VERSION="4.2.1")  
-
+AC_ARG_WITH(product-id, [AS_HELP_STRING([--with-product-id=productID], [Specify USB BT Dongle productID])], USB_PRODUCT_ID=$withval, USB_PRODUCT_ID="0")  
+ 
 # BUILD/HOST/TARGET
 AC_CANONICAL_HOST
 
@@ -65,12 +56,12 @@ HAVE_SO_NOSIGPIPE="no"
 RUN_LOOP_SOURCES="run_loop_posix.c"
 case "$host_os" in
     darwin*)
-        RUN_LOOP_SOURCES="$RUN_LOOP_SOURCES run_loop_cocoa.m"
+        RUN_LOOP_SOURCES="$RUN_LOOP_SOURCES ../platforms/cocoa/run_loop_cocoa.m"
         LDFLAGS="$LDFLAGS -framework CoreFoundation -framework Foundation"
         USE_COCOA_RUN_LOOP="yes"
         BTSTACK_LIB_LDFLAGS="-dynamiclib -install_name \$(prefix)/lib/libBTstack.dylib"
         BTSTACK_LIB_EXTENSION="dylib"
-        REMOTE_DEVICE_DB_SOURCES="remote_device_db_iphone.m"
+        REMOTE_DEVICE_DB_SOURCES="../platforms/cocoa/remote_device_db_cocoa.m"
         REMOTE_DEVICE_DB="remote_device_db_iphone"
         HAVE_SO_NOSIGPIPE="yes";
         ;;
@@ -83,121 +74,18 @@ case "$host_os" in
     ;;
 esac
         
-# iPhone/iPod touch cross-compilation for darwin
+# iPhone/iPod touch cross-compilation uses theos
 SDK_PATH="$DEVELOPER_PATH/SDKs/iPhoneOS$SDK_VERSION.sdk"
 if test "x$target" = xiphone; then
-    if test "x$SDK_VERSION" = "x5.0"; then
-        GCC_VERSION="4.2"
-    fi
-
-    # Default DARWIN compiler version
-    darwin_v='9'
-    # Set up check for newest compiler:
-    if test -e "$DEVELOPER_PATH/usr/bin/arm-apple-darwin10-gcc-$GCC_VERSION"; then
-	   darwin_v='10'
-    fi
-    # Set up check for even newer compiler:
-    if test -e "$DEVELOPER_PATH/usr/bin/arm-apple-darwin10-llvm-gcc-$GCC_VERSION"; then
-       compiler_prefix='-llvm'
-	   darwin_v='10'
-    fi
-    
-    REMOTE_DEVICE_DB_SOURCES="remote_device_db_iphone.m"
-    REMOTE_DEVICE_DB="remote_device_db_iphone"
-    USE_COCOA_RUN_LOOP="yes"
-    HAVE_SO_NOSIGPIPE="yes";
-    PLATFORM_SOURCES="bt_control_iphone.m platform_iphone.m hci_transport_h4_iphone.c"
-
-    case "$host_os" in
-        darwin*)
-            echo "Cross-compiling for iPhone/iPod touch using Apple's iPhone SDK $SDK_VERSION, GCC $GCC_VERSION"
-            echo "SDK path: $SDK_PATH"
-            echo "iPhone IP for install-iphone target: $IPHONE_IP"
-            
-            CC="$DEVELOPER_PATH/usr/bin/arm-apple-darwin$darwin_v$compiler_prefix-gcc-$GCC_VERSION"
-            OBJC="$DEVELOPER_PATH/usr/bin/arm-apple-darwin$darwin_v$compiler_prefix-g++-$GCC_VERSION"
-            CFLAGS="$CFLAGS -g"
-            CPPFLAGS="$CPPFLAGS -isysroot $SDK_PATH"
-            LDFLAGS="$LDFLAGS -framework Foundation -framework CoreFoundation -lobjc"
-            LDFLAGS="$LDFLAGS -L$SDK_PATH/System/Library/Frameworks/IOKit.framework/Versions/A -lIOKit"
-            LDFLAGS="$LDFLAGS $SDK_PATH/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager"
-		   ;;
-        linux*)
-            echo "Cross-compiling for iPhone/iPod touch using Apple's iPhone SDK $SDK_VERSION, GCC $GCC_VERSION"
-            echo "SDK path: $SDK_PATH"
-            echo "iPhone IP for install-iphone target: $IPHONE_IP"
-
-            # also have cocoa run loop
-            RUN_LOOP_SOURCES="$RUN_LOOP_SOURCES run_loop_cocoa.m"
-            
-            # handle sdk written in lower case for people that followed:
-            # http://code.google.com/p/iphonedevonlinux/wiki/Installation
-            if test -e "$DEVELOPER_PATH/sdks/iPhoneOS$SDK_VERSION.sdk" ; then
-                SDK_PATH="$DEVELOPER_PATH/sdks/iPhoneOS$SDK_VERSION.sdk"
-            fi
-
-            CC="$DEVELOPER_PATH/pre/bin/arm-apple-darwin$darwin_v-gcc-$GCC_VERSION"
-            OBJC="$DEVELOPER_PATH/pre/bin/arm-apple-darwin$darwin_v-g++"
-            CFLAGS="$CFLAGS -g"
-            CPPFLAGS="$CPPFLAGS -isysroot $SDK_PATH"
-            LDFLAGS="$LDFLAGS -framework Foundation -framework CoreFoundation -framework UIKit -lobjc"
-            LDFLAGS="$LDFLAGS -L$SDK_PATH/System/Library/Frameworks/IOKit.framework/Versions/A -lIOKit"
-            LDFLAGS="$LDFLAGS $SDK_PATH/System/Library/PrivateFrameworks/BluetoothManager.framework/BluetoothManager"
-
-            BTSTACK_LIB_LDFLAGS="-dynamiclib -install_name \$(prefix)/lib/libBTstack.dylib"
-            BTSTACK_LIB_EXTENSION="dylib"
-		   ;;
-        *)
-            AC_MSG_ERROR(Don't know how to compile without Apple's iPhone SDK, sorry.)
-            ;;
-    esac	        
-    
-    if test "x$UART_DEVICE" = xDEFAULT ; then
-        UART_DEVICE=/dev/tty.bluetooth
-    fi
-    if test "x$USE_BLUETOOL" = xDEFAULT ; then
-        USE_BLUETOOL="yes"
-        echo "USE_BLUETOOL:    $USE_BLUETOOL"
-    fi
-
-    if test "x$USE_SPRINGBOARD" = xDEFAULT ; then
-        USE_SPRINGBOARD="yes"
-    fi
-    
-    if test "x$USE_LDID" = xyes ; then
-        USE_LDID=""
-        echo "USE_LDID:        yes"
-    else
-        USE_LDID="#"
-        echo "USE_LDID:        no"
-    fi
-        
-else
-    # cannot compile for iOS with strict-prototypes because of warnings in SDK 2.0
-    CPPFLAGS="$CPPFLAGS -Wstrict-prototypes"
-
-    case "$host_os" in
-        darwin*)
-            # on Mac, create universal - helps to build 32-bit iPhone Simulator apps on 64-bit machines
-            LDFLAGS="$LDFLAGS -framework CoreFoundation"
-            ;;
-    esac	  
-    USE_LDID="#"
-    if test "x$UART_DEVICE" = xDEFAULT ; then
-        UART_DEVICE=/dev/ttyS0
-    fi
-    if test "x$USE_SPRINGBOARD" = xDEFAULT ; then
-        USE_SPRINGBOARD="no"
-    fi
+    echo "Cross-compiling for iPhone/iPod touch using theos"
+    ./config-iphone.sh
+    exit 0
 fi
 
 # treat warnings seriously
 CPPFLAGS="$CPPFLAGS -Werror -Wall -Wpointer-arith"
     
-AM_CONDITIONAL(USE_SPRINGBOARD, [test "x$USE_SPRINGBOARD" == "xyes"])
-AM_CONDITIONAL(USE_BLUETOOL,    [test "x$USE_BLUETOOL" == "xyes"])
 AM_CONDITIONAL(USE_POWERMANAGEMENT, [test "x$USE_POWERMANAGEMENT" == "xyes"])
-AM_CONDITIONAL(USE_PREFSBUNDLE, [test "x$USE_PREFSBUNDLE" == "xyes"])
 
 # summary
 
@@ -215,11 +103,6 @@ else
     echo "UART_SPEED:          $UART_SPEED"
 fi
 
-
-echo "PLATFORM_SOURCES:    $PLATFORM_SOURCES"
-echo "USE_LAUNCHD:         $USE_LAUNCHD"
-echo "USE_SPRINGBOARD:     $USE_SPRINGBOARD"
-echo "USE_PREFSBUNDLE:     $USE_PREFSBUNDLE"
 echo "USE_POWERMANAGEMENT: $USE_POWERMANAGEMENT"
 echo "USE_COCOA_RUN_LOOP:  $USE_COCOA_RUN_LOOP"
 echo "REMOTE_DEVICE_DB:    $REMOTE_DEVICE_DB"
@@ -246,13 +129,6 @@ else
         echo "#define USE_POWERMANAGEMENT" >> btstack-config.h
     fi
 fi
-if test "x$USE_SPRINGBOARD" = xyes; then
-    SPRINGBOARD_ACCESS_SOURCES="../SpringBoardAccess/SpringBoardAccess.c"
-    echo "#define USE_SPRINGBOARD" >> btstack-config.h
-fi
-if test "x$USE_LAUNCHD" = xyes; then
-    echo "#define USE_LAUNCHD" >> btstack-config.h
-fi
 if test "x$USE_COCOA_RUN_LOOP" = xyes; then
     echo "#define USE_COCOA_RUN_LOOP" >> btstack-config.h
 fi
@@ -276,13 +152,9 @@ echo "#define ENABLE_LOG_ERROR" >> btstack-config.h
 echo "#define HCI_ACL_PAYLOAD_SIZE 1021" >> btstack-config.h
 echo "#define SDP_DES_DUMP" >> btstack-config.h
 
-AC_SUBST(IPHONE_IP)
 AC_SUBST(HAVE_LIBUSB)
-AC_SUBST(USE_LDID)
 AC_SUBST(REMOTE_DEVICE_DB_SOURCES)
 AC_SUBST(USB_SOURCES)
-AC_SUBST(PLATFORM_SOURCES)
-AC_SUBST(SPRINGBOARD_ACCESS_SOURCES)
 AC_SUBST(RUN_LOOP_SOURCES)
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)

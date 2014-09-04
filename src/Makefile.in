@@ -8,9 +8,7 @@ BTSTACK_LIB_EXTENSION = @BTSTACK_LIB_EXTENSION@
 
 remote_device_db_sources = @REMOTE_DEVICE_DB_SOURCES@
 run_loop_sources = @RUN_LOOP_SOURCES@
-springboard_access_sources = @SPRINGBOARD_ACCESS_SOURCES@
 usb_sources = @USB_SOURCES@
-platform_sources = @PLATFORM_SOURCES@
 
 libBTstack_SOURCES = btstack.c hci_cmds.c linked_list.c run_loop.c $(run_loop_sources) sdp_util.c socket_connection.c utils.c
 			  
@@ -49,7 +47,6 @@ all: libBTstack.$(BTSTACK_LIB_EXTENSION) libBTstack.a BTdaemon
 libBTstack.$(BTSTACK_LIB_EXTENSION): $(libBTstack_SOURCES)
 		./get_version.sh
 		$(CC) $(CPPFLAGS) $(BTSTACK_LIB_LDFLAGS) -o $@ $(libBTstack_SOURCES) $(LDFLAGS)
-		@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
 libBTstack.a: $(libBTstack_SOURCES:.c=.o) $(libBTstack_SOURCES:.m=.o)
 		ar cru $@ $(libBTstack_SOURCES:.c=.o) $(libBTstack_SOURCES:.m=.o)
@@ -57,7 +54,6 @@ libBTstack.a: $(libBTstack_SOURCES:.c=.o) $(libBTstack_SOURCES:.m=.o)
 
 BTdaemon: $(BTdaemon_SOURCES)
 		$(CC) $(CPPFLAGS) -DHAVE_HCI_DUMP -o $@ $(BTdaemon_SOURCES) $(LDFLAGS)
-		@USE_LDID@ export CODESIGN_ALLOCATE=/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/codesign_allocate ; ldid -S $@
 
 clean:
 	rm -rf libBTstack* BTdaemon *.o
