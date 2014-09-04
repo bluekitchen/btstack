@@ -36,7 +36,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     bd_addr_t event_addr;
     uint8_t   rfcomm_channel_nr;
     uint16_t  mtu;
-    
+    int i;
+
 	switch (packet_type) {
 		case HCI_EVENT_PACKET:
 			switch (packet[0]) {
@@ -51,14 +52,14 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 				case HCI_EVENT_COMMAND_COMPLETE:
 					if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)){
                         bt_flip_addr(event_addr, &packet[6]);
-                        printf("BD-ADDR: %s\n\r", bd_addr_to_str(event_addr));
+                        printf("BD-ADDR: %s\n", bd_addr_to_str(event_addr));
                         break;
                     }
                     break;
 					
 				case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
-                    printf("Pin code request - using '0000'\n\r");
+                    printf("Pin code request - using '0000'\n");
                     bt_flip_addr(event_addr, &packet[2]);
 					hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
 					break;
@@ -75,22 +76,23 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					bt_flip_addr(event_addr, &packet[2]); 
 					rfcomm_channel_nr = packet[8];
 					rfcomm_channel_id = READ_BT_16(packet, 9);
-					printf("RFCOMM channel %u requested for %s\n\r", rfcomm_channel_nr, bd_addr_to_str(event_addr));
+					printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
                     rfcomm_accept_connection_internal(rfcomm_channel_id);
 					break;
 					
 				case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
 					// data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
 					if (packet[2]) {
-						printf("RFCOMM channel open failed, status %u\n\r", packet[2]);
+						printf("RFCOMM channel open failed, status %u\n", packet[2]);
 					} else {
 						rfcomm_channel_id = READ_BT_16(packet, 12);
 						mtu = READ_BT_16(packet, 14);
-						printf("\n\rRFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n\r", rfcomm_channel_id, mtu);
+						printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_channel_id, mtu);
 					}
 					break;
                     
                 case RFCOMM_EVENT_CHANNEL_CLOSED:
+                    printf("RFCOMM channel closed\n");
                     rfcomm_channel_id = 0;
                     break;
                 
@@ -98,7 +100,15 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     break;
 			}
             break;
-                        
+        
+        case RFCOMM_DATA_PACKET:
+            printf("RCV: '");
+            for (i=0;i<size;i++){
+                putchar(packet[i]);
+            }
+            printf("'\n");
+            break;
+
         default:
             break;
 	}
@@ -106,11 +116,12 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
 static void  heartbeat_handler(struct timer *ts){
 
+    static int counter = 0;
+
     if (rfcomm_channel_id){
-        static int counter = 0;
         char lineBuffer[30];
-        sprintf(lineBuffer, "BTstack counter %04u\n\r", ++counter);
-        puts(lineBuffer);
+        sprintf(lineBuffer, "BTstack counter %04u\n", ++counter);
+        printf("%s", lineBuffer);
         int err = rfcomm_send_internal(rfcomm_channel_id, (uint8_t*) lineBuffer, strlen(lineBuffer));
         if (err) {
             log_error("rfcomm_send_internal -> error 0X%02x", err);
@@ -150,10 +161,10 @@ void setup(void){
 	memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
     // service_record_item_t * service_record_item = (service_record_item_t *) spp_service_buffer;
     // sdp_create_spp_service( (uint8_t*) &service_record_item->service_record, RFCOMM_SERVER_CHANNEL, "SPP Counter");
-    // printf("SDP service buffer size: %u\n\r", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
+    // printf("SDP service buffer size: %u\n", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
     // sdp_register_service_internal(NULL, service_record_item);
     sdp_create_spp_service( spp_service_buffer, RFCOMM_SERVER_CHANNEL, "SPP Counter");
-    printf("SDP service record size: %u\n\r", de_get_len(spp_service_buffer));
+    printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
     sdp_register_service_internal(NULL, spp_service_buffer);
 
     hci_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
