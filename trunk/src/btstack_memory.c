@@ -322,6 +322,36 @@ void btstack_memory_db_mem_service_free(db_mem_service_t *db_mem_service){
 #error "Neither HAVE_MALLOC nor MAX_NO_DB_MEM_SERVICES for struct db_mem_service is defined. Please, edit the config file."
 #endif
 
+// MARK: gatt_client_t
+#ifdef HAVE_BLE
+#ifdef MAX_NO_GATT_CLIENTS
+#if MAX_NO_GATT_CLIENTS > 0
+static gatt_client_t gatt_client_storage[MAX_NO_GATT_CLIENTS];
+static memory_pool_t gatt_client_pool;
+gatt_client_t * btstack_memory_gatt_client_get(void){
+    return memory_pool_get(&gatt_client_pool);
+}
+void btstack_memory_gatt_client_free(gatt_client_t *gatt_client){
+    memory_pool_free(&gatt_client_pool, gatt_client);
+}
+#else
+gatt_client_t * btstack_memory_gatt_client_get(void){
+    return NULL;
+}
+void btstack_memory_gatt_client_free(gatt_client_t *gatt_client){
+};
+#endif
+#elif defined(HAVE_MALLOC)
+gatt_client_t * btstack_memory_gatt_client_get(void){
+    return (gatt_client_t*) malloc(sizeof(gatt_client_t));
+}
+void btstack_memory_gatt_client_free(gatt_client_t *gatt_client){
+    free(gatt_client);
+}
+#else
+#error "Neither HAVE_MALLOC nor MAX_NO_GATT_CLIENTS for struct gatt_client is defined. Please, edit the config file."
+#endif
+#endif
 // init
 void btstack_memory_init(void){
 #if MAX_NO_HCI_CONNECTIONS > 0
@@ -350,6 +380,9 @@ void btstack_memory_init(void){
 #endif
 #if MAX_NO_DB_MEM_SERVICES > 0
     memory_pool_create(&db_mem_service_pool, db_mem_service_storage, MAX_NO_DB_MEM_SERVICES, sizeof(db_mem_service_t));
+#endif
+#if MAX_NO_GATT_CLIENTS > 0
+    memory_pool_create(&gatt_client_pool, gatt_client_storage, MAX_NO_GATT_CLIENTS, sizeof(gatt_client_t));
 #endif
 }
 

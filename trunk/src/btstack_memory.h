@@ -47,13 +47,19 @@
 #if defined __cplusplus
 extern "C" {
 #endif
+
+#include "btstack-config.h"
     
 #include "hci.h"
 #include "l2cap.h"
 #include "rfcomm.h"
 #include "rfcomm.h"
 #include "remote_device_db.h"
-	
+
+#ifdef HAVE_BLE
+#include "gatt_client.h"
+#endif
+
 void btstack_memory_init(void);
 
 hci_connection_t * btstack_memory_hci_connection_get(void);
@@ -74,6 +80,11 @@ db_mem_device_link_key_t * btstack_memory_db_mem_device_link_key_get(void);
 void   btstack_memory_db_mem_device_link_key_free(db_mem_device_link_key_t *db_mem_device_link_key);
 db_mem_service_t * btstack_memory_db_mem_service_get(void);
 void   btstack_memory_db_mem_service_free(db_mem_service_t *db_mem_service);
+
+#ifdef HAVE_BLE
+gatt_client_t * btstack_memory_gatt_client_get(void);
+void   btstack_memory_gatt_client_free(gatt_client_t *gatt_client);
+#endif
 
 #if defined __cplusplus
 }
