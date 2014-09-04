@@ -324,7 +324,7 @@ static void rfcomm_multiplexer_initialize(rfcomm_multiplexer_t *multiplexer){
 static rfcomm_multiplexer_t * rfcomm_multiplexer_create_for_addr(bd_addr_t *addr){
     
     // alloc structure 
-    rfcomm_multiplexer_t * multiplexer = (rfcomm_multiplexer_t*) btstack_memory_rfcomm_multiplexer_get();
+    rfcomm_multiplexer_t * multiplexer = btstack_memory_rfcomm_multiplexer_get();
     if (!multiplexer) return NULL;
     
     // fill in 
@@ -439,7 +439,7 @@ static rfcomm_channel_t * rfcomm_channel_create(rfcomm_multiplexer_t * multiplex
     rfcomm_dump_channels();
 
     // alloc structure 
-    rfcomm_channel_t * channel = (rfcomm_channel_t *) btstack_memory_rfcomm_channel_get();
+    rfcomm_channel_t * channel = btstack_memory_rfcomm_channel_get();
     if (!channel) return NULL;
     
     // fill in 
@@ -2161,7 +2161,7 @@ void rfcomm_register_service2(void * connection, uint8_t channel, uint16_t max_f
     }
     
     // alloc structure
-    service = (rfcomm_service_t*) btstack_memory_rfcomm_service_get();
+    service = btstack_memory_rfcomm_service_get();
     if (!service) {
         rfcomm_emit_service_registered(connection, BTSTACK_MEMORY_ALLOC_FAILED, channel);
         return;

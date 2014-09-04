@@ -114,7 +114,7 @@ static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type
     }
     
     // Record not found, create new one for this device
-    db_mem_device_link_key_t * newItem = (db_mem_device_link_key_t*) btstack_memory_db_mem_device_link_key_get();
+    db_mem_device_link_key_t * newItem = btstack_memory_db_mem_device_link_key_get();
     if (!newItem){
         newItem = (db_mem_device_link_key_t*)linked_list_get_last_item(&db_mem_link_keys);
     }
@@ -145,7 +145,7 @@ static void put_name(bd_addr_t *bd_addr, device_name_t *device_name){
     }
     
     // Record not found, create a new one for this device
-    db_mem_device_name_t * newItem = (db_mem_device_name_t *) btstack_memory_db_mem_device_name_get();
+    db_mem_device_name_t * newItem = btstack_memory_db_mem_device_name_get();
     if (!newItem) {
         newItem = (db_mem_device_name_t*)linked_list_get_last_item(&db_mem_names);
     };
@@ -177,7 +177,7 @@ static uint8_t persistent_rfcomm_channel(char *serviceName){
     }
 
     // Allocate new persistant channel
-    db_mem_service_t * newItem = (db_mem_service_t *) btstack_memory_db_mem_service_get();
+    db_mem_service_t * newItem = btstack_memory_db_mem_service_get();
 
     if (!newItem) return 0;
     
