@@ -66,7 +66,7 @@
 #include <sys/stat.h>
 
 #ifdef USE_LAUNCHD
-#include "../3rdparty/launch.h"
+#include "../platforms/ios/3rdparty/launch.h"
 #endif
 
 #define MAX_PENDING_CONNECTIONS 10

@@ -62,7 +62,7 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
-#include "../SpringBoardAccess/SpringBoardAccess.h"
+#include "../platforms/ios/SpringBoardAccess/SpringBoardAccess.h"
 
 // minimal IOKit
 #include <Availability.h>

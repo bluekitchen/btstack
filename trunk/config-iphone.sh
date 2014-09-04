@@ -10,7 +10,8 @@ cd src; ./get_version.sh; cd ..
 rm -f btstack-config.h config.h Makefile src/Makefile example/Makefile
 
 # use theos Makefiles
-ln -s btstack-config-iphone.h btstack-config.h
-ln -s Makefile.iphone Makefile
-ln -s Makefile.iphone src/Makefile
-ln -s Makefile.iphone example/Makefile
+cp platforms/ios/btstack-config-iphone.h btstack-config.h
+cp platforms/ios/Makefile.iphone Makefile
+cp platforms/ios/src/Makefile.iphone src/Makefile
+cp platforms/ios/example/Makefile.iphone example/Makefile
+ln -s platforms/ios/layout .
