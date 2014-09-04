@@ -48,26 +48,32 @@
 extern "C" {
 #endif
     
+#include "hci.h"
+#include "l2cap.h"
+#include "rfcomm.h"
+#include "rfcomm.h"
+#include "remote_device_db.h"
+	
 void btstack_memory_init(void);
 
-void * btstack_memory_hci_connection_get(void);
-void   btstack_memory_hci_connection_free(void *hci_connection);
-void * btstack_memory_l2cap_service_get(void);
-void   btstack_memory_l2cap_service_free(void *l2cap_service);
-void * btstack_memory_l2cap_channel_get(void);
-void   btstack_memory_l2cap_channel_free(void *l2cap_channel);
-void * btstack_memory_rfcomm_multiplexer_get(void);
-void   btstack_memory_rfcomm_multiplexer_free(void *rfcomm_multiplexer);
-void * btstack_memory_rfcomm_service_get(void);
-void   btstack_memory_rfcomm_service_free(void *rfcomm_service);
-void * btstack_memory_rfcomm_channel_get(void);
-void   btstack_memory_rfcomm_channel_free(void *rfcomm_channel);
-void * btstack_memory_db_mem_device_name_get(void);
-void   btstack_memory_db_mem_device_name_free(void *db_mem_device_name);
-void * btstack_memory_db_mem_device_link_key_get(void);
-void   btstack_memory_db_mem_device_link_key_free(void *db_mem_device_link_key);
-void * btstack_memory_db_mem_service_get(void);
-void   btstack_memory_db_mem_service_free(void *db_mem_service);
+hci_connection_t * btstack_memory_hci_connection_get(void);
+void   btstack_memory_hci_connection_free(hci_connection_t *hci_connection);
+l2cap_service_t * btstack_memory_l2cap_service_get(void);
+void   btstack_memory_l2cap_service_free(l2cap_service_t *l2cap_service);
+l2cap_channel_t * btstack_memory_l2cap_channel_get(void);
+void   btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel);
+rfcomm_multiplexer_t * btstack_memory_rfcomm_multiplexer_get(void);
+void   btstack_memory_rfcomm_multiplexer_free(rfcomm_multiplexer_t *rfcomm_multiplexer);
+rfcomm_service_t * btstack_memory_rfcomm_service_get(void);
+void   btstack_memory_rfcomm_service_free(rfcomm_service_t *rfcomm_service);
+rfcomm_channel_t * btstack_memory_rfcomm_channel_get(void);
+void   btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel);
+db_mem_device_name_t * btstack_memory_db_mem_device_name_get(void);
+void   btstack_memory_db_mem_device_name_free(db_mem_device_name_t *db_mem_device_name);
+db_mem_device_link_key_t * btstack_memory_db_mem_device_link_key_get(void);
+void   btstack_memory_db_mem_device_link_key_free(db_mem_device_link_key_t *db_mem_device_link_key);
+db_mem_service_t * btstack_memory_db_mem_service_get(void);
+void   btstack_memory_db_mem_service_free(db_mem_service_t *db_mem_service);
 
 #if defined __cplusplus
 }

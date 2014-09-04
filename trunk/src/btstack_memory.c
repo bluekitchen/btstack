@@ -58,28 +58,28 @@
 #if MAX_NO_HCI_CONNECTIONS > 0
 static hci_connection_t hci_connection_storage[MAX_NO_HCI_CONNECTIONS];
 static memory_pool_t hci_connection_pool;
-void * btstack_memory_hci_connection_get(void){
+hci_connection_t * btstack_memory_hci_connection_get(void){
     return memory_pool_get(&hci_connection_pool);
 }
-void btstack_memory_hci_connection_free(void *hci_connection){
+void btstack_memory_hci_connection_free(hci_connection_t *hci_connection){
     memory_pool_free(&hci_connection_pool, hci_connection);
 }
 #else
-void * btstack_memory_hci_connection_get(void){
+hci_connection_t * btstack_memory_hci_connection_get(void){
     return NULL;
 }
-void btstack_memory_hci_connection_free(void *hci_connection){
+void btstack_memory_hci_connection_free(hci_connection_t *hci_connection){
 };
 #endif
 #elif defined(HAVE_MALLOC)
-void * btstack_memory_hci_connection_get(void){
-    return malloc(sizeof(hci_connection_t));
+hci_connection_t * btstack_memory_hci_connection_get(void){
+    return (hci_connection_t*) malloc(sizeof(hci_connection_t));
 }
-void  btstack_memory_hci_connection_free(void *hci_connection){
+void btstack_memory_hci_connection_free(hci_connection_t *hci_connection){
     free(hci_connection);
 }
 #else
-#error "The struct hci_connection has neither HAVE_MALLOC nor MAX_NO_HCI_CONNECTIONS defined. Please, edit the config file."
+#error "Neither HAVE_MALLOC nor MAX_NO_HCI_CONNECTIONS for struct hci_connection is defined. Please, edit the config file."
 #endif
 
 
@@ -88,28 +88,28 @@ void  btstack_memory_hci_connection_free(void *hci_connection){
 #if MAX_NO_L2CAP_SERVICES > 0
 static l2cap_service_t l2cap_service_storage[MAX_NO_L2CAP_SERVICES];
 static memory_pool_t l2cap_service_pool;
-void * btstack_memory_l2cap_service_get(void){
+l2cap_service_t * btstack_memory_l2cap_service_get(void){
     return memory_pool_get(&l2cap_service_pool);
 }
-void btstack_memory_l2cap_service_free(void *l2cap_service){
+void btstack_memory_l2cap_service_free(l2cap_service_t *l2cap_service){
     memory_pool_free(&l2cap_service_pool, l2cap_service);
 }
 #else
-void * btstack_memory_l2cap_service_get(void){
+l2cap_service_t * btstack_memory_l2cap_service_get(void){
     return NULL;
 }
-void btstack_memory_l2cap_service_free(void *l2cap_service){
+void btstack_memory_l2cap_service_free(l2cap_service_t *l2cap_service){
 };
 #endif
 #elif defined(HAVE_MALLOC)
-void * btstack_memory_l2cap_service_get(void){
-    return malloc(sizeof(l2cap_service_t));
+l2cap_service_t * btstack_memory_l2cap_service_get(void){
+    return (l2cap_service_t*) malloc(sizeof(l2cap_service_t));
 }
-void  btstack_memory_l2cap_service_free(void *l2cap_service){
+void btstack_memory_l2cap_service_free(l2cap_service_t *l2cap_service){
     free(l2cap_service);
 }
 #else
-#error "The struct l2cap_service has neither HAVE_MALLOC nor MAX_NO_L2CAP_SERVICES defined. Please, edit the config file."
+#error "Neither HAVE_MALLOC nor MAX_NO_L2CAP_SERVICES for struct l2cap_service is defined. Please, edit the config file."
 #endif
 
 
@@ -118,28 +118,28 @@ void  btstack_memory_l2cap_service_free(void *l2cap_service){
 #if MAX_NO_L2CAP_CHANNELS > 0
 static l2cap_channel_t l2cap_channel_storage[MAX_NO_L2CAP_CHANNELS];
 static memory_pool_t l2cap_channel_pool;
-void * btstack_memory_l2cap_channel_get(void){
+l2cap_channel_t * btstack_memory_l2cap_channel_get(void){
     return memory_pool_get(&l2cap_channel_pool);
 }
-void btstack_memory_l2cap_channel_free(void *l2cap_channel){
+void btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel){
     memory_pool_free(&l2cap_channel_pool, l2cap_channel);
 }
 #else
-void * btstack_memory_l2cap_channel_get(void){
+l2cap_channel_t * btstack_memory_l2cap_channel_get(void){
     return NULL;
 }
-void btstack_memory_l2cap_channel_free(void *l2cap_channel){
+void btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel){
 };
 #endif
 #elif defined(HAVE_MALLOC)
-void * btstack_memory_l2cap_channel_get(void){
-    return malloc(sizeof(l2cap_channel_t));
+l2cap_channel_t * btstack_memory_l2cap_channel_get(void){
+    return (l2cap_channel_t*) malloc(sizeof(l2cap_channel_t));
 }
-void  btstack_memory_l2cap_channel_free(void *l2cap_channel){
+void btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel){
     free(l2cap_channel);
 }
 #else
-#error "The struct l2cap_channel has neither HAVE_MALLOC nor MAX_NO_L2CAP_CHANNELS defined. Please, edit the config file."
+#error "Neither HAVE_MALLOC nor MAX_NO_L2CAP_CHANNELS for struct l2cap_channel is defined. Please, edit the config file."
 #endif
 
 
@@ -148,28 +148,28 @@ void  btstack_memory_l2cap_channel_free(void *l2cap_channel){
 #if MAX_NO_RFCOMM_MULTIPLEXERS > 0
 static rfcomm_multiplexer_t rfcomm_multiplexer_storage[MAX_NO_RFCOMM_MULTIPLEXERS];
 static memory_pool_t rfcomm_multiplexer_pool;
-void * btstack_memory_rfcomm_multiplexer_get(void){
+rfcomm_multiplexer_t * btstack_memory_rfcomm_multiplexer_get(void){
     return memory_pool_get(&rfcomm_multiplexer_pool);
 }
-void btstack_memory_rfcomm_multiplexer_free(void *rfcomm_multiplexer){
+void btstack_memory_rfcomm_multiplexer_free(rfcomm_multiplexer_t *rfcomm_multiplexer){
     memory_pool_free(&rfcomm_multiplexer_pool, rfcomm_multiplexer);
 }
 #else
-void * btstack_memory_rfcomm_multiplexer_get(void){
+rfcomm_multiplexer_t * btstack_memory_rfcomm_multiplexer_get(void){
     return NULL;
 }
-void btstack_memory_rfcomm_multiplexer_free(void *rfcomm_multiplexer){
+void btstack_memory_rfcomm_multiplexer_free(rfcomm_multiplexer_t *rfcomm_multiplexer){
 };
 #endif
 #elif defined(HAVE_MALLOC)
-void * btstack_memory_rfcomm_multiplexer_get(void){
-    return malloc(sizeof(rfcomm_multiplexer_t));
+rfcomm_multiplexer_t * btstack_memory_rfcomm_multiplexer_get(void){
+    return (rfcomm_multiplexer_t*) malloc(sizeof(rfcomm_multiplexer_t));
 }
-void  btstack_memory_rfcomm_multiplexer_free(void *rfcomm_multiplexer){
+void btstack_memory_rfcomm_multiplexer_free(rfcomm_multiplexer_t *rfcomm_multiplexer){
     free(rfcomm_multiplexer);
 }
 #else
-#error "The struct rfcomm_multiplexer has neither HAVE_MALLOC nor MAX_NO_RFCOMM_MULTIPLEXERS defined. Please, edit the config file."
+#error "Neither HAVE_MALLOC nor MAX_NO_RFCOMM_MULTIPLEXERS for struct rfcomm_multiplexer is defined. Please, edit the config file."
 #endif
 
 
@@ -178,28 +178,28 @@ void  btstack_memory_rfcomm_multiplexer_free(void *rfcomm_multiplexer){
 #if MAX_NO_RFCOMM_SERVICES > 0
 static rfcomm_service_t rfcomm_service_storage[MAX_NO_RFCOMM_SERVICES];
 static memory_pool_t rfcomm_service_pool;
-void * btstack_memory_rfcomm_service_get(void){
+rfcomm_service_t * btstack_memory_rfcomm_service_get(void){
     return memory_pool_get(&rfcomm_service_pool);
 }
-void btstack_memory_rfcomm_service_free(void *rfcomm_service){
+void btstack_memory_rfcomm_service_free(rfcomm_service_t *rfcomm_service){
     memory_pool_free(&rfcomm_service_pool, rfcomm_service);
 }
 #else
-void * btstack_memory_rfcomm_service_get(void){
+rfcomm_service_t * btstack_memory_rfcomm_service_get(void){
     return NULL;
 }
-void btstack_memory_rfcomm_service_free(void *rfcomm_service){
+void btstack_memory_rfcomm_service_free(rfcomm_service_t *rfcomm_service){
 };
 #endif
 #elif defined(HAVE_MALLOC)
-void * btstack_memory_rfcomm_service_get(void){
-    return malloc(sizeof(rfcomm_service_t));
+rfcomm_service_t * btstack_memory_rfcomm_service_get(void){
+    return (rfcomm_service_t*) malloc(sizeof(rfcomm_service_t));
 }
-void  btstack_memory_rfcomm_service_free(void *rfcomm_service){
+void btstack_memory_rfcomm_service_free(rfcomm_service_t *rfcomm_service){
     free(rfcomm_service);
 }
 #else
-#error "The struct rfcomm_service has neither HAVE_MALLOC nor MAX_NO_RFCOMM_SERVICES defined. Please, edit the config file."
+#error "Neither HAVE_MALLOC nor MAX_NO_RFCOMM_SERVICES for struct rfcomm_service is defined. Please, edit the config file."
 #endif
 
 
@@ -208,28 +208,28 @@ void  btstack_memory_rfcomm_service_free(void *rfcomm_service){
 #if MAX_NO_RFCOMM_CHANNELS > 0
 static rfcomm_channel_t rfcomm_channel_storage[MAX_NO_RFCOMM_CHANNELS];
 static memory_pool_t rfcomm_channel_pool;
-void * btstack_memory_rfcomm_channel_get(void){
+rfcomm_channel_t * btstack_memory_rfcomm_channel_get(void){
     return memory_pool_get(&rfcomm_channel_pool);
 }
-void btstack_memory_rfcomm_channel_free(void *rfcomm_channel){
+void btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel){
     memory_pool_free(&rfcomm_channel_pool, rfcomm_channel);
 }
 #else
-void * btstack_memory_rfcomm_channel_get(void){
+rfcomm_channel_t * btstack_memory_rfcomm_channel_get(void){
     return NULL;
 }
-void btstack_memory_rfcomm_channel_free(void *rfcomm_channel){
+void btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel){
 };
 #endif
 #elif defined(HAVE_MALLOC)
-void * btstack_memory_rfcomm_channel_get(void){
-    return malloc(sizeof(rfcomm_channel_t));
+rfcomm_channel_t * btstack_memory_rfcomm_channel_get(void){
+    return (rfcomm_channel_t*) malloc(sizeof(rfcomm_channel_t));
 }
-void  btstack_memory_rfcomm_channel_free(void *rfcomm_channel){
+void btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel){
     free(rfcomm_channel);
 }
 #else
-#error "The struct rfcomm_channel has neither HAVE_MALLOC nor MAX_NO_RFCOMM_CHANNELS defined. Please, edit the config file."
+#error "Neither HAVE_MALLOC nor MAX_NO_RFCOMM_CHANNELS for struct rfcomm_channel is defined. Please, edit the config file."
 #endif
 
 
@@ -238,28 +238,28 @@ void  btstack_memory_rfcomm_channel_free(void *rfcomm_channel){
 #if MAX_NO_DB_MEM_DEVICE_NAMES > 0
 static db_mem_device_name_t db_mem_device_name_storage[MAX_NO_DB_MEM_DEVICE_NAMES];
 static memory_pool_t db_mem_device_name_pool;
-void * btstack_memory_db_mem_device_name_get(void){
+db_mem_device_name_t * btstack_memory_db_mem_device_name_get(void){
     return memory_pool_get(&db_mem_device_name_pool);
 }
-void btstack_memory_db_mem_device_name_free(void *db_mem_device_name){
+void btstack_memory_db_mem_device_name_free(db_mem_device_name_t *db_mem_device_name){
     memory_pool_free(&db_mem_device_name_pool, db_mem_device_name);
 }
 #else
-void * btstack_memory_db_mem_device_name_get(void){
+db_mem_device_name_t * btstack_memory_db_mem_device_name_get(void){
     return NULL;
 }
-void btstack_memory_db_mem_device_name_free(void *db_mem_device_name){
+void btstack_memory_db_mem_device_name_free(db_mem_device_name_t *db_mem_device_name){
 };
 #endif
 #elif defined(HAVE_MALLOC)
-void * btstack_memory_db_mem_device_name_get(void){
-    return malloc(sizeof(db_mem_device_name_t));
+db_mem_device_name_t * btstack_memory_db_mem_device_name_get(void){
+    return (db_mem_device_name_t*) malloc(sizeof(db_mem_device_name_t));
 }
-void  btstack_memory_db_mem_device_name_free(void *db_mem_device_name){
+void btstack_memory_db_mem_device_name_free(db_mem_device_name_t *db_mem_device_name){
     free(db_mem_device_name);
 }
 #else
-#error "The struct db_mem_device_name has neither HAVE_MALLOC nor MAX_NO_DB_MEM_DEVICE_NAMES defined. Please, edit the config file."
+#error "Neither HAVE_MALLOC nor MAX_NO_DB_MEM_DEVICE_NAMES for struct db_mem_device_name is defined. Please, edit the config file."
 #endif
 
 
@@ -268,28 +268,28 @@ void  btstack_memory_db_mem_device_name_free(void *db_mem_device_name){
 #if MAX_NO_DB_MEM_DEVICE_LINK_KEYS > 0
 static db_mem_device_link_key_t db_mem_device_link_key_storage[MAX_NO_DB_MEM_DEVICE_LINK_KEYS];
 static memory_pool_t db_mem_device_link_key_pool;
-void * btstack_memory_db_mem_device_link_key_get(void){
+db_mem_device_link_key_t * btstack_memory_db_mem_device_link_key_get(void){
     return memory_pool_get(&db_mem_device_link_key_pool);
 }
-void btstack_memory_db_mem_device_link_key_free(void *db_mem_device_link_key){
+void btstack_memory_db_mem_device_link_key_free(db_mem_device_link_key_t *db_mem_device_link_key){
     memory_pool_free(&db_mem_device_link_key_pool, db_mem_device_link_key);
 }
 #else
-void * btstack_memory_db_mem_device_link_key_get(void){
+db_mem_device_link_key_t * btstack_memory_db_mem_device_link_key_get(void){
     return NULL;
 }
-void btstack_memory_db_mem_device_link_key_free(void *db_mem_device_link_key){
+void btstack_memory_db_mem_device_link_key_free(db_mem_device_link_key_t *db_mem_device_link_key){
 };
 #endif
 #elif defined(HAVE_MALLOC)
-void * btstack_memory_db_mem_device_link_key_get(void){
-    return malloc(sizeof(db_mem_device_link_key_t));
+db_mem_device_link_key_t * btstack_memory_db_mem_device_link_key_get(void){
+    return (db_mem_device_link_key_t*) malloc(sizeof(db_mem_device_link_key_t));
 }
-void  btstack_memory_db_mem_device_link_key_free(void *db_mem_device_link_key){
+void btstack_memory_db_mem_device_link_key_free(db_mem_device_link_key_t *db_mem_device_link_key){
     free(db_mem_device_link_key);
 }
 #else
-#error "The struct db_mem_device_link_key has neither HAVE_MALLOC nor MAX_NO_DB_MEM_DEVICE_LINK_KEYS defined. Please, edit the config file."
+#error "Neither HAVE_MALLOC nor MAX_NO_DB_MEM_DEVICE_LINK_KEYS for struct db_mem_device_link_key is defined. Please, edit the config file."
 #endif
 
 
@@ -298,28 +298,28 @@ void  btstack_memory_db_mem_device_link_key_free(void *db_mem_device_link_key){
 #if MAX_NO_DB_MEM_SERVICES > 0
 static db_mem_service_t db_mem_service_storage[MAX_NO_DB_MEM_SERVICES];
 static memory_pool_t db_mem_service_pool;
-void * btstack_memory_db_mem_service_get(void){
+db_mem_service_t * btstack_memory_db_mem_service_get(void){
     return memory_pool_get(&db_mem_service_pool);
 }
-void btstack_memory_db_mem_service_free(void *db_mem_service){
+void btstack_memory_db_mem_service_free(db_mem_service_t *db_mem_service){
     memory_pool_free(&db_mem_service_pool, db_mem_service);
 }
 #else
-void * btstack_memory_db_mem_service_get(void){
+db_mem_service_t * btstack_memory_db_mem_service_get(void){
     return NULL;
 }
-void btstack_memory_db_mem_service_free(void *db_mem_service){
+void btstack_memory_db_mem_service_free(db_mem_service_t *db_mem_service){
 };
 #endif
 #elif defined(HAVE_MALLOC)
-void * btstack_memory_db_mem_service_get(void){
-    return malloc(sizeof(db_mem_service_t));
+db_mem_service_t * btstack_memory_db_mem_service_get(void){
+    return (db_mem_service_t*) malloc(sizeof(db_mem_service_t));
 }
-void  btstack_memory_db_mem_service_free(void *db_mem_service){
+void btstack_memory_db_mem_service_free(db_mem_service_t *db_mem_service){
     free(db_mem_service);
 }
 #else
-#error "The struct db_mem_service has neither HAVE_MALLOC nor MAX_NO_DB_MEM_SERVICES defined. Please, edit the config file."
+#error "Neither HAVE_MALLOC nor MAX_NO_DB_MEM_SERVICES for struct db_mem_service is defined. Please, edit the config file."
 #endif
 
 // init
