@@ -1,4 +1,5 @@
 BTSTACK_ROOT = ../..
+POSIX_ROOT= ${BTSTACK_ROOT}/platforms/posix
 
 CFLAGS  = -g -Wall -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include 
 CFLAGS += -I${BTSTACK_ROOT}/chipset-cc256x
@@ -9,18 +10,16 @@ LDFLAGS = -L/usr/local/lib -lusb-1.0
 LDFLAGS += -framework IOKit -framework CoreFoundation -framework Foundation
 
 CORE   = \
-    ${BTSTACK_ROOT}/src/btstack_memory.c          \
-    ${BTSTACK_ROOT}/src/linked_list.c	          \
-    ${BTSTACK_ROOT}/src/memory_pool.c             \
-    ${BTSTACK_ROOT}/src/run_loop.c		          \
-    ${BTSTACK_ROOT}/src/run_loop_posix.c          \
+    ${BTSTACK_ROOT}/src/btstack_memory.c            \
+    ${BTSTACK_ROOT}/src/linked_list.c	            \
+    ${BTSTACK_ROOT}/src/memory_pool.c               \
+    ${BTSTACK_ROOT}/src/run_loop.c		            \
+    ${POSIX_ROOT}/src/run_loop_posix.c              \
 
 COMMON = \
     ${BTSTACK_ROOT}/src/hci.c			            \
     ${BTSTACK_ROOT}/src/hci_cmds.c		            \
     ${BTSTACK_ROOT}/src/hci_dump.c		            \
-    ${BTSTACK_ROOT}/src/hci_transport_h4.c          \
-    ${BTSTACK_ROOT}/src/hci_transport_usb.c         \
     ${BTSTACK_ROOT}/src/l2cap.c			            \
     ${BTSTACK_ROOT}/src/l2cap_signaling.c	        \
 	${BTSTACK_ROOT}/src/remote_device_db_memory.c   \
@@ -32,6 +31,8 @@ COMMON = \
     ${BTSTACK_ROOT}/src/sdp_parser.c		        \
     ${BTSTACK_ROOT}/src/sdp_query_util.c		    \
 	${BTSTACK_ROOT}/src/sdp_query_rfcomm.c		    \
+    ${POSIX_ROOT}/src/hci_transport_h4.c            \
+    ${POSIX_ROOT}/src/hci_transport_h2_libusb.c     \
 
 ATT	= \
     ${BTSTACK_ROOT}/ble/att_dispatch.c       	    \
@@ -94,7 +95,7 @@ spp_counter: ${CORE_OBJ} ${COMMON_OBJ} spp_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 spp_and_le_counter: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} spp_and_le_counter.c spp_and_le_counter.h
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} spp_and_le_counter.c ${CFLAGS} ${LDFLAGS} -o $@
 
 spp_counter_ssp: ${CORE_OBJ} ${COMMON_OBJ} spp_counter_ssp.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
