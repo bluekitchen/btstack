@@ -128,10 +128,10 @@ typedef struct {
     
 } client_state_t;
 
-typedef struct linked_list_uint16 {
+typedef struct linked_list_uint32 {
     linked_item_t   item;
-    uint16_t        value;
-} linked_list_uint16_t;
+    uint32_t        value;
+} linked_list_uint32_t;
 
 typedef struct gatt_client_helper {
     uint16_t characteristic_length;
@@ -182,70 +182,70 @@ static void daemon_no_connections_timeout(struct timer *ts){
     hci_power_control(HCI_POWER_OFF);
 }
 
-static void add_uint16_to_list(linked_list_t *list, uint16_t value){
-    linked_list_uint16_t * item = malloc(sizeof(linked_list_uint16_t));
+static void add_uint32_to_list(linked_list_t *list, uint32_t value){
+    linked_list_uint32_t * item = malloc(sizeof(linked_list_uint32_t));
     if (!item) return; 
     item->value = value;
     linked_list_add(list, (linked_item_t *) item);
 }
 
-static void remove_and_free_uint16_from_list(linked_list_t *list, uint16_t value){
+static void remove_and_free_uint32_from_list(linked_list_t *list, uint32_t value){
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, list);
     while (linked_list_iterator_has_next(&it)){
-        linked_list_uint16_t * item = (linked_list_uint16_t*) linked_list_iterator_next(&it);
+        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
         if ( item->value != value) continue;
         linked_list_remove(list, (linked_item_t *) item);
         free(item);
     } 
 }
 
-static void daemon_add_client_rfcomm_service(connection_t * connection, uint16_t service_channel){
+static void daemon_add_client_rfcomm_service(connection_t * connection, uint32_t service_channel){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
-    add_uint16_to_list(&client_state->rfcomm_services, service_channel);    
+    add_uint32_to_list(&client_state->rfcomm_services, service_channel);    
 }
 
-static void daemon_remove_client_rfcomm_service(connection_t * connection, uint16_t service_channel){
+static void daemon_remove_client_rfcomm_service(connection_t * connection, uint32_t service_channel){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
-    remove_and_free_uint16_from_list(&client_state->rfcomm_services, service_channel);    
+    remove_and_free_uint32_from_list(&client_state->rfcomm_services, service_channel);    
 }
 
-static void daemon_add_client_rfcomm_channel(connection_t * connection, uint16_t cid){
+static void daemon_add_client_rfcomm_channel(connection_t * connection, uint32_t cid){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
-    add_uint16_to_list(&client_state->rfcomm_cids, cid);
+    add_uint32_to_list(&client_state->rfcomm_cids, cid);
 }
 
-static void daemon_remove_client_rfcomm_channel(connection_t * connection, uint16_t cid){
+static void daemon_remove_client_rfcomm_channel(connection_t * connection, uint32_t cid){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
-    remove_and_free_uint16_from_list(&client_state->rfcomm_cids, cid);
+    remove_and_free_uint32_from_list(&client_state->rfcomm_cids, cid);
 }
 
 static void daemon_add_client_l2cap_service(connection_t * connection, uint16_t psm){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
-    add_uint16_to_list(&client_state->l2cap_psms, psm);
+    add_uint32_to_list(&client_state->l2cap_psms, psm);
 }
 
 static void daemon_remove_client_l2cap_service(connection_t * connection, uint16_t psm){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
-    remove_and_free_uint16_from_list(&client_state->l2cap_psms, psm);
+    remove_and_free_uint32_from_list(&client_state->l2cap_psms, psm);
 }
 
 static void daemon_add_client_l2cap_channel(connection_t * connection, uint16_t cid){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
-    add_uint16_to_list(&client_state->l2cap_cids, cid);
+    add_uint32_to_list(&client_state->l2cap_cids, cid);
 }
 
 static void daemon_remove_client_l2cap_channel(connection_t * connection, uint16_t cid){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
-    remove_and_free_uint16_from_list(&client_state->l2cap_cids, cid);
+    remove_and_free_uint32_from_list(&client_state->l2cap_cids, cid);
 }
 
 static void daemon_rfcomm_close_connection(linked_list_t *rfcomm_services, linked_list_t *rfcomm_cids){
@@ -253,7 +253,7 @@ static void daemon_rfcomm_close_connection(linked_list_t *rfcomm_services, linke
 
     linked_list_iterator_init(&it, rfcomm_services);
     while (linked_list_iterator_has_next(&it)){
-        linked_list_uint16_t * item = (linked_list_uint16_t*) linked_list_iterator_next(&it);
+        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
         rfcomm_unregister_service_internal(item->value);
         linked_list_remove(rfcomm_services, (linked_item_t *) item);
         free(item);
@@ -261,7 +261,7 @@ static void daemon_rfcomm_close_connection(linked_list_t *rfcomm_services, linke
 
     linked_list_iterator_init(&it, rfcomm_cids);
     while (linked_list_iterator_has_next(&it)){
-        linked_list_uint16_t * item = (linked_list_uint16_t*) linked_list_iterator_next(&it);
+        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
         rfcomm_disconnect_internal(item->value);
         linked_list_remove(rfcomm_cids, (linked_item_t *) item);
         free(item);
@@ -273,7 +273,7 @@ static void daemon_l2cap_close_connection(linked_list_t *l2cap_psms, linked_list
 
     linked_list_iterator_init(&it, l2cap_psms);
     while (linked_list_iterator_has_next(&it)){
-        linked_list_uint16_t * item = (linked_list_uint16_t*) linked_list_iterator_next(&it);
+        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
         l2cap_unregister_service_internal(NULL, item->value);
         linked_list_remove(l2cap_psms, (linked_item_t *) item);
         free(item);
@@ -281,7 +281,7 @@ static void daemon_l2cap_close_connection(linked_list_t *l2cap_psms, linked_list
 
     linked_list_iterator_init(&it, l2cap_cids);
     while (linked_list_iterator_has_next(&it)){
-        linked_list_uint16_t * item = (linked_list_uint16_t*) linked_list_iterator_next(&it);
+        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
         l2cap_disconnect_internal(item->value, 0); // note: reason isn't used
         linked_list_remove(l2cap_cids, (linked_item_t *) item);
         free(item);
