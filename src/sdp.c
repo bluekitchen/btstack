@@ -254,22 +254,9 @@ void sdp_unregister_service_internal(void *connection, uint32_t service_record_h
     service_record_item_t * record_item = sdp_get_record_for_handle(service_record_handle);
     if (record_item && record_item->connection == connection) {
         linked_list_remove(&sdp_service_records, (linked_item_t *) record_item);
-    }
-}
-
-// remove all service record for a client connection
-void sdp_unregister_services_for_connection(void *connection){
-    linked_item_t *it = (linked_item_t *) &sdp_service_records;
-    while (it->next){
-        service_record_item_t *record_item = (service_record_item_t *) it->next;
-        if (record_item->connection == connection){
-            it->next = it->next->next;
 #ifndef EMBEDDED
-            free(record_item);
-#endif
-        } else {
-            it = it->next;
-        }
+        free(record_item);
+#endif        
     }
 }
 
