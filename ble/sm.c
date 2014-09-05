@@ -1438,8 +1438,8 @@ static void sm_handle_random_result(uint8_t * data){
             if (connection->sm_role){
                 connection->sm_engine_state = SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE;
             } else {
-                sm_trigger_user_response();
                 connection->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
+                sm_trigger_user_response();
             }
             return;
         }
