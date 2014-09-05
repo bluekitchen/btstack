@@ -101,7 +101,7 @@ static void delete_link_key(bd_addr_t *bd_addr){
     if (!item) return;
     
     linked_list_remove(&db_mem_link_keys, (linked_item_t *) item);
-    btstack_memory_db_mem_device_link_key_free(item);
+    btstack_memory_db_mem_device_link_key_free((db_mem_device_link_key_t*)item);
 }
 
 
@@ -133,7 +133,7 @@ static void delete_name(bd_addr_t *bd_addr){
     if (!item) return;
     
     linked_list_remove(&db_mem_names, (linked_item_t *) item);
-    btstack_memory_db_mem_device_name_free(item);    
+    btstack_memory_db_mem_device_name_free((db_mem_device_name_t*)item);    
 }
 
 static void put_name(bd_addr_t *bd_addr, device_name_t *device_name){
