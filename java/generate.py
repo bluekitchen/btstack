@@ -107,6 +107,12 @@ java_event_getter_data = \
         System.arraycopy(data, {1}, result, 0, len);
         return result;'''
 
+java_event_getter_remaining_data = \
+'''int len = getPayloadLen() - {0};
+        byte[] result = new byte[len];
+        System.arraycopy(data, {0}, result, 0, len);
+        return result;'''
+
 java_event_to_string = \
 '''
     public String toString(){{
@@ -118,6 +124,7 @@ java_event_to_string = \
         return t.toString();
     }}
 '''
+
 
 # global variables/defines
 package='com.bluekitchen.btstack'
@@ -162,7 +169,8 @@ def read_defines(infile):
 
 def java_type_for_btstack_type(type):
     param_types = { '1' : 'int', '2' : 'int', '3' : 'int', '4' : 'long', 'H' : 'int', 'B' : 'BD_ADDR',
-                    'D' : 'byte []', 'E' : 'byte [] ', 'N' : 'String' , 'P' : 'byte []', 'A' : 'byte []', 'S' : 'byte []',
+                    'D' : 'byte []', 'E' : 'byte [] ', 'N' : 'String' , 'P' : 'byte []', 'A' : 'byte []',
+                    'R' : 'byte []', 'S' : 'byte []',
                     'J' : 'int', 'L' : 'int', 'V' : 'byte []', 'U' : 'BT_UUID',
                     'X' : 'GATTService', 'Y' : 'GATTCharacteristic', 'Z' : 'GATTCharacteristicDescriptor' }
     return param_types[type]
@@ -341,7 +349,11 @@ def create_event(event_name, format, args):
             # just remember name
             if f in ['L','J']:
                 length_name = camel_case(arg)
-            if f == 'V':
+            if f == 'R':    
+                # remaining data
+                access = java_event_getter_remaining_data.format(offset)
+                size = 0
+            elif f == 'V':
                 access = java_event_getter_data.format(length_name, offset)
                 size = 0
             else: 
