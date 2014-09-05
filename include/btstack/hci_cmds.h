@@ -144,7 +144,20 @@ extern "C" {
 #define HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE  0x0B
 #define HCI_EVENT_READ_REMOTE_VERSION_INFORMATION_COMPLETE 0x0C
 #define HCI_EVENT_QOS_SETUP_COMPLETE			           0x0D
+
+/**
+ * @format 12R
+ * @param num_hci_command_packets
+ * @param command_opcode
+ * @param return_parameters
+ */
 #define HCI_EVENT_COMMAND_COMPLETE				           0x0E
+/**
+ * @format 112
+ * @param status
+ * @param num_hci_command_packets
+ * @param command_opcode
+ */
 #define HCI_EVENT_COMMAND_STATUS				           0x0F
 
 /**
