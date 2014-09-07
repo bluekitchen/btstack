@@ -10,19 +10,19 @@ public class Packet {
 	protected int packetType;
 	protected int channel;
 	
-	public int getPacketType() {
+	public final int getPacketType() {
 		return packetType;
 	}
 
-	public byte[] getBuffer() {
+	public final byte[] getBuffer() {
 		return data;
 	}
 	
-	public int getPayloadLen(){
+	public final int getPayloadLen(){
 		return payloadLen;
 	}
 
-	public int getChannel() {
+	public final int getChannel() {
 		return channel;
 	}
 
