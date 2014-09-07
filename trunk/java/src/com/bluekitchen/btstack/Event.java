@@ -10,7 +10,7 @@ public class Event extends Packet {
 		super(HCI_EVENT_PACKET, 0, packet.getBuffer(), packet.getPayloadLen());
 	}
 	
-	public int getEventType(){
+	public final int getEventType(){
 		return Util.readByte(data, 0);
 	}
 		
