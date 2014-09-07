@@ -72,7 +72,13 @@
 #include "sdp_query_util.h"
 #include "sdp_query_rfcomm.h"
 #include "socket_connection.h"
+
+#ifdef HAVE_BLE
 #include "gatt_client.h"
+#include "att_server.h"
+#include "att.h"
+#include "central_device_db.h"
+#endif
 
 #ifdef USE_BLUETOOL
 #include <CoreFoundation/CoreFoundation.h>
@@ -1543,8 +1549,14 @@ int main (int argc,  char * const * argv){
 #endif
 
 #ifdef HAVE_BLE
+    // GATT Client
     gatt_client_init();
     gatt_client_register_packet_handler(&handle_gatt_client_event);
+
+    // GATT Server - empty attribute database
+    central_device_db_init();
+    att_server_init(NULL, NULL, NULL);    
+
 #endif
     
 #ifdef USE_LAUNCHD

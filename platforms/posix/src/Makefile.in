@@ -40,6 +40,8 @@ BTdaemon_SOURCES =                          \
     $(BTSTACK_ROOT)/src/sdp_query_util.c    \
     $(BTSTACK_ROOT)/ble/att_dispatch.c      \
     $(BTSTACK_ROOT)/ble/gatt_client.c       \
+    $(BTSTACK_ROOT)/ble/att.c               \
+    $(BTSTACK_ROOT)/ble/att_server.c        \
     $(BTSTACK_ROOT)/ble/sm.c                \
     $(BTSTACK_ROOT)/ble/central_device_db_memory.c \
     $(usb_sources)                          \
