@@ -411,7 +411,7 @@ extern "C" {
 
 /**
  * @format 11B1JV
- * @param event_type
+ * @param advertising_event_type
  * @param address_type
  * @param address
  * @param rssi
