@@ -79,7 +79,7 @@ case "$host_os" in
         USE_COCOA_RUN_LOOP="no"
         BTSTACK_LIB_LDFLAGS="-shared -Wl,-rpath,\$(prefix)/lib"
         BTSTACK_LIB_EXTENSION="so"
-        REMOTE_DEVICE_DB_SOURCES="remote_device_db_memory.c"
+        REMOTE_DEVICE_DB_SOURCES="$BTSTACK_ROOT/src/remote_device_db_memory.c"
         REMOTE_DEVICE_DB="remote_device_db_memory"
     ;;
 esac
@@ -117,7 +117,7 @@ echo
 rm -f btstack-config.h
 echo "// btstack-config.h created by configure for BTstack " `date`> btstack-config.h
 if test "x$HCI_TRANSPORT" = xUSB; then
-    USB_SOURCES=hci_transport_h2_libusb.c.c
+    USB_SOURCES=hci_transport_h2_libusb.c
     echo "#define HAVE_TRANSPORT_USB" >> btstack-config.h
     echo "#define USB_PRODUCT_ID $USB_PRODUCT_ID" >> btstack-config.h
     echo "#define USB_VENDOR_ID $USB_VENDOR_ID" >> btstack-config.h
