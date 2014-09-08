@@ -1062,9 +1062,7 @@ const uint8_t adv_data[] = {
     // Flags general discoverable
     0x02, 0x01, 0x02, 
     // Name
-    0x05, 0x09, 'A', 'N', 'C', 'S', 
-    // Service Solicitation, 128-bit UUIDs - ANCS (little endian)
-    0x11,0x15,0xD0,0x00,0x2D,0x12,0x1E,0x4B,0x0F,0xA4,0x99,0x4E,0xCE,0xB5,0x31,0xF4,0x05,0x79
+    0x08, 0x09, 'B', 'T', 's', 't', 'a', 'c', 'k' 
 };
 uint8_t adv_data_len = sizeof(adv_data);
 static todo_t todos = 0;
@@ -1109,7 +1107,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
             switch (packet[0]){
 
                 case BTSTACK_EVENT_STATE:
-                    // bt stack activated, get started
+                    // setup advertisement data
                     if (packet[2] != HCI_STATE_WORKING) break;
                     todos = SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | ENABLE_ADVERTISEMENTS;
                     app_run();
@@ -1148,6 +1146,9 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     break;
 #if defined(HAVE_BLE) && defined(HAVE_MALLOC)
                 case HCI_EVENT_DISCONNECTION_COMPLETE:{
+                    // re-enable advertisements
+                    todos = ENABLE_ADVERTISEMENTS;
+
                     uint16_t handle = READ_BT_16(packet, 3);
                     daemon_remove_gatt_client_handle(connection, handle);
                     
