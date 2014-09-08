@@ -78,6 +78,7 @@
 #include "att_server.h"
 #include "att.h"
 #include "central_device_db.h"
+#include "sm.h"
 #endif
 
 #ifdef USE_BLUETOOL
@@ -1051,11 +1052,69 @@ static void daemon_retry_parked(void){
     retry_mutex = 0;
 }
 
+typedef enum {
+    SET_ADVERTISEMENT_PARAMS = 1 << 0,
+    SET_ADVERTISEMENT_DATA   = 1 << 1,
+    ENABLE_ADVERTISEMENTS    = 1 << 2,
+} todo_t;
+
+const uint8_t adv_data[] = {
+    // Flags general discoverable
+    0x02, 0x01, 0x02, 
+    // Name
+    0x05, 0x09, 'A', 'N', 'C', 'S', 
+    // Service Solicitation, 128-bit UUIDs - ANCS (little endian)
+    0x11,0x15,0xD0,0x00,0x2D,0x12,0x1E,0x4B,0x0F,0xA4,0x99,0x4E,0xCE,0xB5,0x31,0xF4,0x05,0x79
+};
+uint8_t adv_data_len = sizeof(adv_data);
+static todo_t todos = 0;
+
+static void app_run(){
+
+    if (!hci_can_send_command_packet_now()) return;
+
+    if (todos & SET_ADVERTISEMENT_DATA){
+        log_info("app_run: set advertisement data\n");
+        todos &= ~SET_ADVERTISEMENT_DATA;
+        hci_send_cmd(&hci_le_set_advertising_data, adv_data_len, adv_data);
+        return;
+    }    
+
+    if (todos & SET_ADVERTISEMENT_PARAMS){
+        todos &= ~SET_ADVERTISEMENT_PARAMS;
+        uint8_t adv_type = 0;   // default
+        bd_addr_t null_addr;
+        memset(null_addr, 0, 6);
+        uint16_t adv_int_min = 0x0030;
+        uint16_t adv_int_max = 0x0030;
+        hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, 0, 0, &null_addr, 0x07, 0x00);
+        return;
+    }    
+
+    if (todos & ENABLE_ADVERTISEMENTS){
+        log_info("app_run: enable advertisements\n");
+        todos &= ~ENABLE_ADVERTISEMENTS;
+        hci_send_cmd(&hci_le_set_advertise_enable, 1);
+        return;
+    }
+}
+
 static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+
+    app_run();
+
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             deamon_status_event_handler(packet, size);
             switch (packet[0]){
+
+                case BTSTACK_EVENT_STATE:
+                    // bt stack activated, get started
+                    if (packet[2] != HCI_STATE_WORKING) break;
+                    todos = SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | ENABLE_ADVERTISEMENTS;
+                    app_run();
+                    break;
+
                 case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
                     // ACL buffer freed...
                     daemon_retry_parked();
@@ -1553,6 +1612,10 @@ int main (int argc,  char * const * argv){
     gatt_client_init();
     gatt_client_register_packet_handler(&handle_gatt_client_event);
 
+    sm_init();
+    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+    sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION); 
+
     // GATT Server - empty attribute database
     central_device_db_init();
     att_server_init(NULL, NULL, NULL);    
@@ -1583,6 +1646,9 @@ int main (int argc,  char * const * argv){
     CFRunLoopRun();
 #endif
     
+    // power on
+    hci_power_control(HCI_POWER_ON);
+
     // go!
     run_loop_execute();
     return 0;
