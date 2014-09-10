@@ -420,6 +420,10 @@ extern "C" {
  */
 #define GAP_LE_ADVERTISING_REPORT						   0xE2
 
+// ANCS Client
+#define ANCS_CLIENT_CONNECTED							   0xF0
+#define ANCS_CLIENT_NOTIFICATION						   0xF1
+#define ANCS_CLIENT_DISCONNECTED						   0xF2
 //
 // Error Codes
 //

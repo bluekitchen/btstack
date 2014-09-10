@@ -54,7 +54,7 @@
 #include <unistd.h>   /* UNIX standard function definitions */
 #include <sys/types.h>
 
-#include <libusb-1.0/libusb.h>
+#include <libusb.h>
 
 #include "btstack-config.h"
 
