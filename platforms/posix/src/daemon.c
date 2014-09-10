@@ -122,6 +122,7 @@ typedef struct {
     
     // connection
     connection_t * connection;
+
     linked_list_t rfcomm_cids;
     linked_list_t rfcomm_services;
     linked_list_t l2cap_cids;
@@ -404,7 +405,7 @@ gatt_client_t * daemon_prepare_gatt_client_context(connection_t *connection, uin
     hci_con_handle_t handle = READ_BT_16(packet, 3);
     
     hci_connection_t * hci_con = hci_connection_for_handle(handle);
-    if (hci_con->state != OPEN){
+    if ((hci_con == NULL) || (hci_con->state != OPEN)){
         send_gatt_query_complete(connection, handle, GATT_CLIENT_NOT_CONNECTED);
         return NULL;
     }
@@ -937,6 +938,7 @@ static int daemon_client_handler(connection_t *connection, uint16_t packet_type,
 
                     client = malloc(sizeof(client_state_t));
                     if (!client) break; // fail
+                    memset(client, 0, sizeof(client_state_t));
                     client->connection   = connection;
                     client->power_mode   = HCI_POWER_OFF;
                     client->discoverable = 0;
@@ -1650,11 +1652,7 @@ int main (int argc,  char * const * argv){
     // needed to receive notifications
     CFRunLoopRun();
 #endif
-    
-    // power on
-    hci_power_control(HCI_POWER_ON);
-
-    // go!
+        // go!
     run_loop_execute();
     return 0;
 }
