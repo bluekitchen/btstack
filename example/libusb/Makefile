@@ -1,13 +1,18 @@
 BTSTACK_ROOT = ../..
 POSIX_ROOT= ${BTSTACK_ROOT}/platforms/posix
 
-CFLAGS  = -g -Wall -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include 
+CFLAGS  = -g -Wall -I.
+CFLAGS += -I${BTSTACK_ROOT}/ble
 CFLAGS += -I${BTSTACK_ROOT}/chipset-cc256x
 CFLAGS += -I${BTSTACK_ROOT}/chipset-csr
-CFLAGS += -I/usr/local/include -I../../ble -I../.. -I../.. 
-LDFLAGS = -L/usr/local/lib -lusb-1.0
+CFLAGS += -I${BTSTACK_ROOT}/include 
+CFLAGS += -I${BTSTACK_ROOT}/src
+CFLAGS += -I${BTSTACK_ROOT}
+
+CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
+LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 # needed on OS X with libusb compiled stand alone
-LDFLAGS += -framework IOKit -framework CoreFoundation -framework Foundation
+# LDFLAGS += -framework IOKit -framework CoreFoundation -framework Foundation
 
 CORE   = \
     ${BTSTACK_ROOT}/src/btstack_memory.c            \
@@ -63,7 +68,7 @@ SDP_DES = \
 	${BTSTACK_ROOT}/test/des_iterator/des_iterator.c  \
 
 CORE_OBJ    = $(CORE:.c=.o)
-COMMON_OBJ  = $(COMMON:.c=.o)
+COMMON_OBJ  = $(COMMON:.c=.o) 
 CC2564_OBJ  = $(CC2564:.c=.o)
 CSR_OBJ     = $(CSR:.c=.o)
 SM_REAL_OBJ = $(SM_REAL:.c=.o)
@@ -74,13 +79,13 @@ GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
 
 # create firmware image from common objects and example source file
 
-all: ../../include/btstack/version.h gatt_browser sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral \
+all: ${BTSTACK_ROOT}/include/btstack/version.h gatt_browser sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral \
 		ble_peripheral_sm_minimal gap_inquiry gap_dedicated_bonding gap_inquiry_and_bond l2cap_test spp_streamer \
 		classic_test ble_peripheral_uart_csr ble_peripheral_uart_cc256x ancs_client spp_and_le_counter \
 		sdp_bnep_query \
 
-../../include/btstack/version.h:
-	../tools/get_version.sh
+${BTSTACK_ROOT}/include/btstack/version.h:
+	${BTSTACK_ROOT}/tools/get_version.sh
 
 sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} sdp_rfcomm_query.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
@@ -126,8 +131,8 @@ ancs_client.h: ancs_client.gatt
 spp_and_le_counter.h: spp_and_le_counter.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 
-ancs_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ancs_client.c ancs_client.h
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ancs_client.c ${CFLAGS} ${LDFLAGS} -o $@
+ancs_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ancs_client_lib.c ancs_client.c ancs_client.h
+	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ancs_client.c ancs_client_lib.c ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_peripheral: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c profile.h
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
@@ -155,6 +160,7 @@ clean:
 	rm -f  ${BTSTACK_ROOT}/src/*.o
 	rm -f  ${BTSTACK_ROOT}/ble/*.o
 	rm -f  ${BTSTACK_ROOT}/chipset-cc256x/*.o
+	rm -f  ${BTSTACK_ROOT}/platforms/posix/src/*.o
 	rm -f  ${BTSTACK_ROOT}/include/btstack/version.h
 	rm -f  ${BTSTACK_ROOT}/example/libusb/ancs_client.h
 	rm -f  ${BTSTACK_ROOT}/example/libusb/profile.h
