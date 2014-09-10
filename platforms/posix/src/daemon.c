@@ -1052,6 +1052,10 @@ static void daemon_retry_parked(void){
     retry_mutex = 0;
 }
 
+#if 0
+
+Minimal Code for LE Peripheral
+
 typedef enum {
     SET_ADVERTISEMENT_PARAMS = 1 << 0,
     SET_ADVERTISEMENT_DATA   = 1 << 1,
@@ -1096,10 +1100,9 @@ static void app_run(){
         return;
     }
 }
+#endif 
 
 static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-
-    app_run();
 
     switch (packet_type) {
         case HCI_EVENT_PACKET:
@@ -1108,9 +1111,10 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
 
                 case BTSTACK_EVENT_STATE:
                     // setup advertisement data
-                    if (packet[2] != HCI_STATE_WORKING) break;
-                    todos = SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | ENABLE_ADVERTISEMENTS;
-                    app_run();
+                    // if (packet[2] != HCI_STATE_WORKING) break;
+                    // todos = SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | ENABLE_ADVERTISEMENTS;
+                    // app_run();
+                    log_info("Daemon: BTstack working");
                     break;
 
                 case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
@@ -1147,7 +1151,7 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
 #if defined(HAVE_BLE) && defined(HAVE_MALLOC)
                 case HCI_EVENT_DISCONNECTION_COMPLETE:{
                     // re-enable advertisements
-                    todos = ENABLE_ADVERTISEMENTS;
+                    // todos = ENABLE_ADVERTISEMENTS;
 
                     uint16_t handle = READ_BT_16(packet, 3);
                     daemon_remove_gatt_client_handle(connection, handle);
