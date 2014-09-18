@@ -86,14 +86,14 @@ esac
         
 
 # treat warnings seriously
-CPPFLAGS="$CPPFLAGS -Werror -Wall -Wpointer-arith"
+CFLAGS="$CFLAGS -Werror -Wall -Wpointer-arith"
     
 AM_CONDITIONAL(USE_POWERMANAGEMENT, [test "x$USE_POWERMANAGEMENT" == "xyes"])
 
 # summary
 
 echo "CC:                  $CC"
-echo "CPPFLAGS:            $CPPFLAGS"
+echo "CFLAGS:              $CFLAGS"
 echo "LDFLAGS:             $LDFLAGS"
 
 if test "x$HCI_TRANSPORT" = xUSB; then
@@ -160,7 +160,7 @@ AC_SUBST(REMOTE_DEVICE_DB_SOURCES)
 AC_SUBST(USB_SOURCES)
 AC_SUBST(RUN_LOOP_SOURCES)
 AC_SUBST(CFLAGS)
-AC_SUBST(CPPFLAGS)
+AC_SUBST(CFLAGS)
 AC_SUBST(BTSTACK_LIB_LDFLAGS)
 AC_SUBST(BTSTACK_LIB_EXTENSION)
 AC_OUTPUT(Makefile platforms/posix/src/Makefile example/Makefile)
