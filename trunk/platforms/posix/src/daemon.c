@@ -91,10 +91,6 @@
 #include "../platforms/ios/src/platform_iphone.h"
 #endif
 
-#ifdef HAVE_TRANSPORT_USB
-#include <libusb-1.0/libusb.h>
-#endif
-
 #ifndef BTSTACK_LOG_FILE
 #define BTSTACK_LOG_FILE "/tmp/hci_dump.pklg"
 #endif
