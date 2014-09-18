@@ -7,6 +7,8 @@ LDFLAGS = @LDFLAGS@
 CFLAGS = @CFLAGS@ -I $(BTSTACK_ROOT)/include -I $(BTSTACK_ROOT)/ble  -I $(BTSTACK_ROOT)/src -I $(BTSTACK_ROOT)
 BTSTACK_LIB_LDFLAGS = @BTSTACK_LIB_LDFLAGS@
 BTSTACK_LIB_EXTENSION = @BTSTACK_LIB_EXTENSION@
+LIBUSB_CFLAGS = @LIBUSB_CFLAGS@
+LIBUSB_LDFLAGS = @LIBUSB_LDFLAGS@
 
 remote_device_db_sources = @REMOTE_DEVICE_DB_SOURCES@
 run_loop_sources = @RUN_LOOP_SOURCES@
@@ -62,7 +64,7 @@ $(BTSTACK_ROOT)/src/libBTstack.a: $(libBTstack_SOURCES:.c=.o) $(libBTstack_SOURC
 		ranlib $@
 
 $(BTSTACK_ROOT)/src/BTdaemon: $(BTdaemon_SOURCES)
-		$(CC) $(CFLAGS) -DHAVE_HCI_DUMP -o $@ $(BTdaemon_SOURCES) $(LDFLAGS)
+		$(CC) $(CFLAGS) -DHAVE_HCI_DUMP -o $@ $(BTdaemon_SOURCES) $(LDFLAGS) $(LIBUSB_CFLAGS) $(LIBUSB_LDFLAGS)
 
 clean:
 	rm -rf $(BTSTACK_ROOT)/src/libBTstack* $(BTSTACK_ROOT)/src/BTdaemon *.o
