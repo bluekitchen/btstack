@@ -50,8 +50,7 @@ if test "x$HCI_TRANSPORT" = xUSB; then
     if test "$HAVE_LIBUSB" == "no" ; then 
         AC_MSG_ERROR(USB Transport requested but libusb-1.0 not found using pkg-config. Please set PKG_CONFIG_PATH correctly and/or install libusb-1.0 from your distribution or from http://libusb.sourceforge.net/api-1.0/)
     fi
-    CFLAGS="$CFLAGS $LIBUSB_CFLAGS"
-    LDFLAGS="$LDFLAGS $LIBUSB_LIBS"
+    LIBUSB_LDFLAGS=$LIBUSB_LIBS
 fi
 AM_CONDITIONAL(HAVE_LIBUSB, [test "x$HAVE_LIBUSB" == "xyes"])
 
@@ -100,7 +99,7 @@ if test "x$HCI_TRANSPORT" = xUSB; then
     echo "USB_PRODUCT_ID:      $USB_PRODUCT_ID"
     echo "USB_VENDOR_ID:       $USB_VENDOR_ID"
     echo "LIBUSB_CFLAGS:       $LIBUSB_CFLAGS"
-    echo "LIBUSB_LIBS:         $LIBUSB_LIBS"
+    echo "LIBUSB_LDFLAGS:      $LIBUSB_LDFLAGS"
 else
     echo "UART_DEVICE:         $UART_DEVICE"
     echo "UART_SPEED:          $UART_SPEED"
@@ -160,7 +159,9 @@ AC_SUBST(REMOTE_DEVICE_DB_SOURCES)
 AC_SUBST(USB_SOURCES)
 AC_SUBST(RUN_LOOP_SOURCES)
 AC_SUBST(CFLAGS)
-AC_SUBST(CFLAGS)
+AC_SUBST(CPPFLAGS)
 AC_SUBST(BTSTACK_LIB_LDFLAGS)
 AC_SUBST(BTSTACK_LIB_EXTENSION)
+AC_SUBST(LIBUSB_CFLAGS)
+AC_SUBST(LIBUSB_LDFLAGS)
 AC_OUTPUT(Makefile platforms/posix/src/Makefile example/Makefile)
