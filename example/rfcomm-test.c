@@ -59,7 +59,7 @@ char pin[17];
 int counter = 0;
 uint16_t rfcomm_channel_id = 0;
 uint16_t mtu = 0;
-uint8_t service_buffer[200];
+static uint8_t   spp_service_buffer[150];
 uint8_t test_data[NUM_ROWS * NUM_COLS + 1];
 
 void create_test_data(void){
@@ -72,74 +72,6 @@ void create_test_data(void){
         test_data[y*NUM_COLS+NUM_COLS-1] = '\r';
     }
     test_data[NUM_COLS*NUM_ROWS] = 0;
-}
-
-void create_spp_service(uint8_t *service, int service_id){
-	
-	uint8_t* attribute;
-	de_create_sequence(service);
-	
-	// 0x0001 "Service Class ID List"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0001);
-	attribute = de_push_sequence(service);
-	{
-		de_add_number(attribute,  DE_UUID, DE_SIZE_16, 0x1101 );
-	}
-	de_pop_sequence(service, attribute);
-	
-	// 0x0004 "Protocol Descriptor List"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0004);
-	attribute = de_push_sequence(service);
-	{
-		uint8_t* l2cpProtocol = de_push_sequence(attribute);
-		{
-			de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, 0x0100);
-		}
-		de_pop_sequence(attribute, l2cpProtocol);
-		
-		uint8_t* rfcomm = de_push_sequence(attribute);
-		{
-			de_add_number(rfcomm,  DE_UUID, DE_SIZE_16, 0x0003);  // rfcomm_service
-			de_add_number(rfcomm,  DE_UINT, DE_SIZE_8,  service_id);  // rfcomm channel
-		}
-		de_pop_sequence(attribute, rfcomm);
-	}
-	de_pop_sequence(service, attribute);
-	
-	// 0x0005 "Public Browse Group"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0005); // public browse group
-	attribute = de_push_sequence(service);
-	{
-		de_add_number(attribute,  DE_UUID, DE_SIZE_16, 0x1002 );
-	}
-	de_pop_sequence(service, attribute);
-	
-	// 0x0006
-	de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_LanguageBaseAttributeIDList);
-	attribute = de_push_sequence(service);
-	{
-		de_add_number(attribute, DE_UINT, DE_SIZE_16, 0x656e);
-		de_add_number(attribute, DE_UINT, DE_SIZE_16, 0x006a);
-		de_add_number(attribute, DE_UINT, DE_SIZE_16, 0x0100);
-	}
-	de_pop_sequence(service, attribute);
-	
-	// 0x0009 "Bluetooth Profile Descriptor List"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0009);
-	attribute = de_push_sequence(service);
-	{
-		uint8_t *sppProfile = de_push_sequence(attribute);
-		{
-			de_add_number(sppProfile,  DE_UUID, DE_SIZE_16, 0x1101);
-			de_add_number(sppProfile,  DE_UINT, DE_SIZE_16, 0x0100);
-		}
-		de_pop_sequence(attribute, sppProfile);
-	}
-	de_pop_sequence(service, attribute);
-	
-	// 0x0100 "ServiceName"
-	de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-	de_add_data(service,  DE_STRING, 8, (uint8_t *) "SPP TEST");
 }
 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -182,8 +114,8 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
                     printf("RFCOMM_EVENT_SERVICE_REGISTERED\n");
                     rfcomm_channel_nr = packet[3];
                     // register SDP for our SPP
-                    create_spp_service(service_buffer, rfcomm_channel_nr);
-                    bt_send_cmd(&sdp_register_service_record, service_buffer);
+				    sdp_create_spp_service( spp_service_buffer, rfcomm_channel_nr, "RFCOMM Test");
+                    bt_send_cmd(&sdp_register_service_record, spp_service_buffer);
                     bt_send_cmd(&btstack_set_discoverable, 1);
                     break;
 
