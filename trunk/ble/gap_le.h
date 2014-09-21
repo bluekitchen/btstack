@@ -41,6 +41,8 @@
 extern "C" {
 #endif
 
+#include <btstack/utils.h>
+
 typedef enum {
     GAP_RANDOM_ADDRESS_TYPE_OFF = 0,
     GAP_RANDOM_ADDRESS_NON_RESOLVABLE,
@@ -58,6 +60,18 @@ void gap_random_address_set_mode(gap_random_address_type_t random_address_type);
  * @param period_ms in ms
  */
  void gap_random_address_set_update_period(int period_ms);
+
+/**
+ * @brief Updates the connection parameters for a given LE connection
+ * @param handle
+ * @param conn_interval_min (unit: 1.25ms)
+ * @param conn_interval_max (unit: 1.25ms)
+ * @param conn_latency
+ * @param supervision_timeout (unit: 10ms)
+ * @returns 0 if ok
+ */
+void gap_update_connection_parameters(hci_con_handle_t con_handle, uint16_t conn_interval_min,
+	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout);
 
 #if defined __cplusplus
 }

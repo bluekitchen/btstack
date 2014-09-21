@@ -1839,6 +1839,15 @@ void hci_run(){
             hci_send_cmd(&hci_set_connection_encryption, connection->con_handle, 1);
             return;
         }
+#ifdef HAVE_BLE
+        if (connection->le_conn_interval_min){
+            uint16_t connection_interval_min = connection->le_conn_interval_min;
+            connection->le_conn_interval_min = 0;
+            hci_send_cmd(&hci_le_connection_update, connection->con_handle, connection_interval_min,
+                connection->le_conn_interval_max, connection->le_conn_latency, connection->le_supervision_timeout,
+                0x0000, 0xffff);
+        }
+#endif
     }
 
     switch (hci_stack->state){
@@ -2464,6 +2473,26 @@ le_command_status_t le_central_connect_cancel(){
             break;
     }
     return BLE_PERIPHERAL_OK;
+}
+
+/**
+ * @brief Updates the connection parameters for a given LE connection
+ * @param handle
+ * @param conn_interval_min (unit: 1.25ms)
+ * @param conn_interval_max (unit: 1.25ms)
+ * @param conn_latency
+ * @param supervision_timeout (unit: 10ms)
+ * @returns 0 if ok
+ */
+int gap_update_connection_parameters(hci_con_handle_t con_handle, uint16_t conn_interval_min,
+    uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout){
+    hci_connection_t * connection = hci_connection_for_handle(con_handle);
+    if (!connection) return ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER;
+    connection->le_conn_interval_min = conn_interval_min;
+    connection->le_conn_interval_max = conn_interval_max;
+    connection->le_conn_latency = conn_latency;
+    connection->le_supervision_timeout = supervision_timeout;
+    return 0;
 }
 
 le_command_status_t gap_disconnect(hci_con_handle_t handle){

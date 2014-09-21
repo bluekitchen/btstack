@@ -343,6 +343,12 @@ typedef struct {
     
     // number ACL packets sent to controller
     uint8_t num_acl_packets_sent;
+
+    // connection parameter update
+    uint16_t le_conn_interval_min;
+    uint16_t le_conn_interval_max;
+    uint16_t le_conn_latency;
+    uint16_t le_supervision_timeout;
 } hci_connection_t;
 
 
