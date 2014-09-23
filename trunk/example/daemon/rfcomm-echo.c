@@ -46,9 +46,6 @@
 #include <btstack/btstack.h>
 #include <btstack/sdp_util.h>
 
-// until next BTstack Cydia update
-#include "compat-svn.c"
-
 // input from command line arguments
 bd_addr_t addr = { };
 uint16_t con_handle;

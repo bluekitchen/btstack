@@ -30,7 +30,11 @@
  */
 
 /*
- *  rfcomm-echo.c
+ *  rfcomm.c
+ * 
+ *  Command line parsing and debug option
+ *  added by Vladimir Vyskocil <vladimir.vyskocil@gmail.com>
+ *
  */
 
 #include <unistd.h>
@@ -46,44 +50,22 @@
 #include <btstack/btstack.h>
 #include <btstack/sdp_util.h>
 
-// until next BTstack Cydia update
-#include "compat-svn.c"
-
-#define NUM_ROWS 25
-#define NUM_COLS 80
-
 // input from command line arguments
 bd_addr_t addr = { };
 uint16_t con_handle;
+int rfcomm_channel = 1;
 char pin[17];
-int counter = 0;
-uint16_t rfcomm_channel_id = 0;
-uint16_t mtu = 0;
-static uint8_t   spp_service_buffer[150];
-uint8_t test_data[NUM_ROWS * NUM_COLS + 1];
-
-void create_test_data(void){
-    int x,y;
-    for (y=0;y<NUM_ROWS;y++){
-        for (x=0;x<NUM_COLS-2;x++){
-            test_data[y*NUM_COLS+x] = '0' + (x % 10);
-        }
-        test_data[y*NUM_COLS+NUM_COLS-2] = '\n';
-        test_data[y*NUM_COLS+NUM_COLS-1] = '\r';
-    }
-    test_data[NUM_COLS*NUM_ROWS] = 0;
-}
 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	bd_addr_t event_addr;
-	uint16_t rfcomm_channel_nr;
+	uint16_t mtu;
+	uint16_t rfcomm_channel_id;
 	
 	switch (packet_type) {
 			
 		case RFCOMM_DATA_PACKET:
 			printf("Received RFCOMM data on channel id %u, size %u\n", channel, size);
 			printf_hexdump(packet, size);
-            bt_send_rfcomm(channel, packet, size);
 			break;
 			
 		case HCI_EVENT_PACKET:
@@ -94,63 +76,30 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 					printf("HCI Init failed - make sure you have turned off Bluetooth in the System Settings\n");
 					exit(1);
 					break;		
-                    
+					
 				case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started
                     if (packet[2] == HCI_STATE_WORKING) {
-                        // get persistent RFCOMM channel
-                        printf("HCI_STATE_WORKING\n");
-                        bt_send_cmd(&rfcomm_persistent_channel_for_service, "ch.ringwald.btstack.rfcomm-test");
-                  	}
+						bt_send_cmd(&rfcomm_create_channel, addr, rfcomm_channel);
+					}
 					break;
-                    
-                case RFCOMM_EVENT_PERSISTENT_CHANNEL:
-                    rfcomm_channel_nr = packet[3];
-                    printf("RFCOMM channel %u was assigned by BTdaemon\n", rfcomm_channel_nr);
-                    bt_send_cmd(&rfcomm_register_service, rfcomm_channel_nr, 1000);  // reserved channel, mtu=100
-                    break;
-                    
-                case RFCOMM_EVENT_SERVICE_REGISTERED:
-                    printf("RFCOMM_EVENT_SERVICE_REGISTERED\n");
-                    rfcomm_channel_nr = packet[3];
-                    // register SDP for our SPP
-				    sdp_create_spp_service( spp_service_buffer, rfcomm_channel_nr, "RFCOMM Test");
-                    bt_send_cmd(&sdp_register_service_record, spp_service_buffer);
-                    bt_send_cmd(&btstack_set_discoverable, 1);
-                    break;
-
-                case RFCOMM_EVENT_CREDITS:
-                    sprintf((char*)test_data, "\n\r\n\r-> %09u <- ", counter++);
-                    bt_send_rfcomm(rfcomm_channel_id, test_data, mtu);
-                    break;
-                    
+					
 				case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
 					printf("Using PIN 0000\n");
 					bt_flip_addr(event_addr, &packet[2]); 
 					bt_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
 					break;
-					
-				case RFCOMM_EVENT_INCOMING_CONNECTION:
-					// data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
-					bt_flip_addr(event_addr, &packet[2]); 
-					rfcomm_channel_nr = packet[8];
-					rfcomm_channel_id = READ_BT_16(packet, 9);
-					printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
-					bt_send_cmd(&rfcomm_accept_connection, rfcomm_channel_id);
-					break;
-					
+										
 				case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
 					// data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
 					if (packet[2]) {
 						printf("RFCOMM channel open failed, status %u\n", packet[2]);
 					} else {
-                        // data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
 						rfcomm_channel_id = READ_BT_16(packet, 12);
 						mtu = READ_BT_16(packet, 14);
-                        
 						printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_channel_id, mtu);
-                    }
+					}
 					break;
 					
 				case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -167,12 +116,46 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
 	}
 }
 
+void usage(const char *name){
+	fprintf(stderr, "Usage : %s [-a|--address aa:bb:cc:dd:ee:ff] [-c|--channel n] [-p|--pin nnnn]\n", name);
+}
 
 int main (int argc, const char * argv[]){
 	
-    create_test_data();
-    printf("created test data: \n%s\n", test_data);
-    
+	int arg = 1;
+	
+	if (argc == 1){
+		usage(argv[0]);
+		return 1;	}
+	
+	while (arg < argc) {
+		if(!strcmp(argv[arg], "-a") || !strcmp(argv[arg], "--address")){
+			arg++;
+			if(arg >= argc || !sscan_bd_addr((uint8_t *)argv[arg], addr)){
+				usage(argv[0]);
+				return 1;
+			}
+		} else if (!strcmp(argv[arg], "-c") || !strcmp(argv[arg], "--channel")) {
+			arg++;
+			if(arg >= argc || !sscanf(argv[arg], "%d", &rfcomm_channel)){
+				usage(argv[0]);
+				return 1;
+			}
+		} else if (!strcmp(argv[arg], "-p") || !strcmp(argv[arg], "--pin")) {
+			arg++;
+			if(arg >= argc) {
+				usage(argv[0]);
+				return 1;
+			}
+			strncpy(pin, argv[arg], 16);
+			pin[16] = 0;
+		} else {
+			usage(argv[0]);
+			return 1;
+		}
+		arg++;
+	}
+		
 	run_loop_init(RUN_LOOP_POSIX);
 	int err = bt_open();
 	if (err) {
@@ -180,7 +163,9 @@ int main (int argc, const char * argv[]){
 		return 1;
 	}
 	bt_register_packet_handler(packet_handler);
-	
+
+	printf("Trying to connect to %s, channel %d\n", bd_addr_to_str(addr), rfcomm_channel);
+			
 	bt_send_cmd(&btstack_set_power_mode, HCI_POWER_ON );
 	run_loop_execute();
 	bt_close();

@@ -44,9 +44,6 @@
 #include <btstack/hci_cmds.h>
 #include <btstack/sdp_util.h>
 
-// until next BTstack Cydia update
-#include "compat-svn.c"
-
 int l2cap_reg_fail = 0;
 
 hci_con_handle_t con_handle;

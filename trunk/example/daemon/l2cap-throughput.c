@@ -43,9 +43,6 @@
 #include <btstack/btstack.h>
 #include <btstack/hci_cmds.h>
 
-// until next BTstack Cydia update
-#include "compat-svn.c"
-
 #define PSM_TEST 0xdead
 #define PACKET_SIZE 1000
 
