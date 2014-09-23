@@ -42,9 +42,6 @@
 
 #include <btstack/btstack.h>
 
-// until next BTstack Cydia update
-#include "compat-svn.c"
-
 #define MAX_DEVICES 10
 struct device {
 	bd_addr_t  address;

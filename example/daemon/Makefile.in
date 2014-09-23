@@ -1,6 +1,7 @@
+BTSTACK_ROOT=../..
 CC = @CC@
-LDFLAGS  = @LDFLAGS@ -lBTstack -L../src
-CFLAGS = @CFLAGS@ -I.. -I../include
+LDFLAGS  = @LDFLAGS@ -lBTstack -L../../src
+CFLAGS = @CFLAGS@ -I$(BTSTACK_ROOT) -I$(BTSTACK_ROOT)/include
 prefix = @prefix@
 
 all: test rfcomm-cat rfcomm-echo  rfcomm-test inquiry l2cap-server l2cap-throughput
