@@ -13,5 +13,5 @@ rm -f btstack-config.h config.h layout Makefile src/Makefile example/Makefile ch
 cp platforms/ios/btstack-config-iphone.h btstack-config.h
 cp platforms/ios/Makefile.iphone Makefile
 cp platforms/ios/src/Makefile.iphone src/Makefile
-cp platforms/ios/example/Makefile.iphone example/Makefile
+cp platforms/ios/example/Makefile.iphone example/daemon/Makefile
 ln -s platforms/ios/layout .
