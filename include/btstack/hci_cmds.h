@@ -225,7 +225,9 @@ extern "C" {
 // data: event(8), len(8), nr hci connections
 #define BTSTACK_EVENT_NR_CONNECTIONS_CHANGED               0x61
 
-// data: none
+/**
+ * @format 
+ */
 #define BTSTACK_EVENT_POWERON_FAILED                       0x62
 
 // data: majot (8), minor (8), revision(16)
