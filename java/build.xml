@@ -17,7 +17,7 @@
 
     <target name="generate">
         <mkdir dir="${gen.dir}"/>
-        <exec executable="./generate.py"/>
+        <exec executable="./../tools/generate.py"/>
     </target>
 
     <target name="compile" depends="generate">
