@@ -928,7 +928,13 @@ static void event_handler(uint8_t *packet, int size){
                     log_error("hci_number_completed_packet lists unused con handle %u", handle);
                     continue;
                 }
-                conn->num_acl_packets_sent -= num_packets;
+                
+                if (conn->num_acl_packets_sent >= num_packets){
+                    conn->num_acl_packets_sent -= num_packets;
+                } else {
+                    log_error("hci_number_completed_packets, more slots freed then sent.");
+                    conn->num_acl_packets_sent = 0;
+                }
                 // log_info("hci_number_completed_packet %u processed for handle %u, outstanding %u", num_packets, handle, conn->num_acl_packets_sent);
             }
             break;
