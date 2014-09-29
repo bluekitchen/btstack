@@ -117,6 +117,9 @@ void embedded_set_ticks(uint32_t ticks);
 // handler of a data source to signal the run loop that a new data 
 // is available.
 void embedded_trigger(void);    
+// Execute run_loop once
+// can be used to integrate BTstack's timer and data source processing into a foreign run runloop (not recommended)
+void embedded_execute_once(void);
 #endif
 #if defined __cplusplus
 }
