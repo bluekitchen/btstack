@@ -12,9 +12,8 @@ Configuration:
 - Bluetooth: USART3 with Hardware Flowcontrol. TX PB10, RX PB11, CTS PB13 (in), RTS PB14 (out), N_SHUTDOWN PB15
 
 TODO:
-- figure out how to compile multiple examples with single Makefile/folder
-- implement hal_uart_dma.h
+- implement hal_uart_dma.h using DMA (fallback: regular UART)
 - implement hal_cpu.h
-- create and implement hal_led.h
+- figure out how to compile multiple examples with single Makefile/folder
 - extract classic and le examples into example/embedded
 - use examples from BTSTACK_ROOT/example/embedded directly
