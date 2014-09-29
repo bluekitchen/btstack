@@ -2,7 +2,8 @@
 # Makefile for STM32-F103RB Nucleo board with CC256x Bluetooth modules
 #
 
-BINARY=led_counter
+# BINARY=led_counter
+BINARY=gap_inquiry
 OPENCM3_DIR = libopencm3
 LDSCRIPT = stm32f1-nucleo.ld
 
@@ -16,13 +17,33 @@ CORE   = \
     ${BTSTACK_ROOT}/src/run_loop.c		          \
     ${BTSTACK_ROOT}/src/run_loop_embedded.c
 
+COMMON = \
+	${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
+	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2560B_1.0_BT_Spec_4.1.c   \
+    ${BTSTACK_ROOT}/src/hci.c			          \
+    ${BTSTACK_ROOT}/src/hci_cmds.c		          \
+    ${BTSTACK_ROOT}/src/hci_dump.c		          \
+    ${BTSTACK_ROOT}/src/hci_transport_h4_ehcill_dma.c \
+    ${BTSTACK_ROOT}/src/l2cap.c			          \
+    ${BTSTACK_ROOT}/src/l2cap_signaling.c         \
+	${BTSTACK_ROOT}/src/remote_device_db_memory.c \
+	${BTSTACK_ROOT}/src/rfcomm.c			      \
+    ${BTSTACK_ROOT}/src/sdp.c			          \
+    ${BTSTACK_ROOT}/src/sdp_util.c                \
+    ${BTSTACK_ROOT}/src/utils.c			          \
+    ${BTSTACK_ROOT}/src/sdp_parser.c              \
+    ${BTSTACK_ROOT}/src/sdp_client.c              \
+    ${BTSTACK_ROOT}/src/sdp_query_util.c		  \
+	${BTSTACK_ROOT}/src/sdp_query_rfcomm.c 		  \
+
 CORE_OBJ   = $(CORE:.c=.o)
+COMMON_OBJ   = $(COMMON:.c=.o)
 
-OBJS += $(CORE_OBJ)
+OBJS += $(CORE_OBJ) $(COMMON_OBJ)
 
-CFLAGS = -I. -I$(BTSTACK_ROOT)/include -I$(BTSTACK_ROOT)/src
+CFLAGS = -I. -I$(BTSTACK_ROOT)/include -I$(BTSTACK_ROOT)/src -I$(BTSTACK_ROOT)/chipset-cc256x
 
-examples: libopencm3/lib/libopencm3_stm32f1.a led_counter.elf
+examples: libopencm3/lib/libopencm3_stm32f1.a $(BINARY).elf
 
 include libopencm3.stm32f1.mk
 
