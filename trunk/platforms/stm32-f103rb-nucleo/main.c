@@ -65,7 +65,12 @@ void hal_cpu_enable_irqs_and_sleep(void){
 
 }
 
-//
+// hal_led.h implementation
+#include <btstack/hal_led.h>
+
+void hal_led_toggle(void){
+	gpio_toggle(GPIOA, GPIO_LED2);
+}
 
 /**
  * Use USART_CONSOLE as a console.
