@@ -63,7 +63,7 @@ extern run_loop_t run_loop_cocoa;
 #endif
 
 // assert run loop initialized
-void run_loop_assert(void){
+static void run_loop_assert(void){
 #ifndef EMBEDDED
     if (!the_run_loop){
         log_error("ERROR: run_loop function called before run_loop_init!");
