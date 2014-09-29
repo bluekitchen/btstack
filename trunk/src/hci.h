@@ -231,7 +231,7 @@ extern "C" {
 // data: event(8)
 #define DAEMON_EVENT_NEW_RFCOMM_CREDITS                    0x53
 
-// data: event()
+// data: event(8)
 #define DAEMON_EVENT_HCI_PACKET_SENT                       0x54
     
 /**
@@ -430,10 +430,10 @@ typedef struct {
 
 //*************** le client start
 
-le_command_status_t le_central_start_scan();
-le_command_status_t le_central_stop_scan();
+le_command_status_t le_central_start_scan(void);
+le_command_status_t le_central_stop_scan(void);
 le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_type);
-le_command_status_t le_central_connect_cancel();
+le_command_status_t le_central_connect_cancel(void);
 le_command_status_t gap_disconnect(hci_con_handle_t handle);
 void le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window);
 
@@ -491,7 +491,7 @@ uint16_t hci_max_acl_data_packet_length(void);
 uint16_t hci_usable_acl_packet_types(void);
 int      hci_non_flushable_packet_boundary_flag_supported(void);
 
-void hci_disconnect_all();
+void hci_disconnect_all(void);
 
 void hci_emit_state(void);
 void hci_emit_connection_complete(hci_connection_t *conn, uint8_t status);
@@ -508,7 +508,7 @@ void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status);
 
 // query if remote side supports SSP
 // query if the local side supports SSP
-int hci_local_ssp_activated();
+int hci_local_ssp_activated(void);
 
 // query if the remote side supports SSP
 int hci_remote_ssp_supported(hci_con_handle_t con_handle);
@@ -517,7 +517,7 @@ int hci_remote_ssp_supported(hci_con_handle_t con_handle);
 int hci_ssp_supported_on_both_sides(hci_con_handle_t handle);
 
 // disable automatic l2cap disconnect for testing
-void hci_disable_l2cap_timeout_check();
+void hci_disable_l2cap_timeout_check(void);
 
 // disconnect because of security block
 void hci_disconnect_security_block(hci_con_handle_t con_handle);
