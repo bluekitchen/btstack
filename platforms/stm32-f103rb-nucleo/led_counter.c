@@ -43,10 +43,6 @@ static void heartbeat_handler(timer_source_t *ts){
 // main
 int btstack_main(void)
 {
-    /// GET STARTED with BTstack ///
-    btstack_memory_init();
-    run_loop_init(RUN_LOOP_EMBEDDED);
-
     // set one-shot timer
     heartbeat.process = &heartbeat_handler;
     register_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
