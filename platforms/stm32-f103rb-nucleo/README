@@ -4,16 +4,17 @@ based on GNU Tools for ARM Embedded Processors and libopencm3
 GNU Tools for ARM Embedded Processors: 
 https://launchpad.net/gcc-arm-embedded
 
-libopencm3 is automatically build from its git repository
+libopencm3 is automatically fetched and build from its git repository by make
+
+openocd 0.8.0 (or higher) is used to upload firmware
 
 Configuration:
-- LED on PA5
+- Sys tick 1 ms (can be much slower for BTstack)
+- LED on PA5, on when MCU in Run mode and off while in Sleep mode
 - Debug UART: USART2 - 9600/8/N/1, TX on PA2
-- Bluetooth: USART3 with Hardware Flowcontrol. TX PB10, RX PB11, CTS PB13 (in), RTS PB14 (out), N_SHUTDOWN PB15
+- Bluetooth: USART3 with hardware flowcontrol RTS. IRQ on CTS Rising. TX PB10, RX PB11, CTS PB13 (in), RTS PB14 (out), N_SHUTDOWN PB15
 
 TODO:
-- implement hal_uart_dma.h using DMA (fallback: regular UART)
-- implement hal_cpu.h
 - figure out how to compile multiple examples with single Makefile/folder
 - extract classic and le examples into example/embedded
 - use examples from BTSTACK_ROOT/example/embedded directly
