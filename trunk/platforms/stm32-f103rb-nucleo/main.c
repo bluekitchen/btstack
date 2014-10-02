@@ -85,36 +85,24 @@ static void (*rx_done_handler)(void) = dummy_handler;
 static void (*tx_done_handler)(void) = dummy_handler;
 static void (*cts_irq_handler)(void) = dummy_handler;
 
-static uint8_t * rx_buffer;
-static int bytes_to_receive = 0;
-
 // DMA1_CHANNEL2 UART3_TX
 void dma1_channel2_isr(void) {
-	int done = 0;
 	if ((DMA1_ISR & DMA_ISR_TCIF2) != 0) {
 		DMA1_IFCR |= DMA_IFCR_CTCIF2;
-		done = 1;
+		dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL2);
+		usart_disable_tx_dma(USART3);
+		dma_disable_channel(DMA1, DMA_CHANNEL2);
+		(*tx_done_handler)();
 	}
-	dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL2);
-	usart_disable_tx_dma(USART3);
-	dma_disable_channel(DMA1, DMA_CHANNEL2);
-
-	if (done){
-	(*tx_done_handler)();
-}
 }
 
 // DMA1_CHANNEL2 UART3_RX
 void dma1_channel3_isr(void){
-	int done = 0;
 	if ((DMA1_ISR & DMA_ISR_TCIF3) != 0) {
 		DMA1_IFCR |= DMA_IFCR_CTCIF3;
-		done = 1;
-	}
-	dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL3);
-	usart_disable_rx_dma(USART3);
-	dma_disable_channel(DMA1, DMA_CHANNEL3);
-	if (done){
+		dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL3);
+		usart_disable_rx_dma(USART3);
+		dma_disable_channel(DMA1, DMA_CHANNEL3);
 		(*rx_done_handler)();
 	}
 }
@@ -143,6 +131,8 @@ int  hal_uart_dma_set_baud(uint32_t baud){
 }
 
 void hal_uart_dma_send_block(const uint8_t *data, uint16_t size){
+
+	// printf("hal_uart_dma_send_block size %u\n", size);
 	/*
 	 * USART3_TX Using DMA_CHANNEL2 
 	 */
@@ -168,9 +158,7 @@ void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
 	 * USART3_RX is on DMA_CHANNEL3
 	 */
 
-	printf("hal_uart_dma_receive_block req size %u\n", size);
-	bytes_to_receive = size;
-	rx_buffer = data;
+	// printf("hal_uart_dma_receive_block req size %u\n", size);
 
 	/* Reset DMA channel*/
 	dma_channel_reset(DMA1, DMA_CHANNEL3);
