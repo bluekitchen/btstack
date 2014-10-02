@@ -5,6 +5,7 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/usart.h>
 #include <libopencm3/stm32/exti.h>
+#include <libopencmsis/core_cm3.h>
 
 #include <stdio.h>
 #include <errno.h>
@@ -68,17 +69,20 @@ void sys_tick_handler(void)
 
 __attribute__(( always_inline ))
 inline void hal_cpu_disable_irqs(){
-	__asm volatile ("cpsid i" : : : "memory");
+	__disable_irq();
+	// __asm volatile ("cpsid i" : : : "memory");
 }
 
 __attribute__(( always_inline ))
 inline void hal_cpu_enable_irqs(){
-	__asm volatile ("cpsie i" : : : "memory");
+	__enable_irq();
+	// __asm volatile ("cpsie i" : : : "memory");
 
 }
 __attribute__(( always_inline ))
 inline void hal_cpu_enable_irqs_and_sleep(){
-	__asm volatile ("cpsie i" : : : "memory");
+	__enable_irq();
+	// __asm volatile ("cpsie i" : : : "memory");
 	// TODO: pick power mode for sleep depening on need for UART
 }
 
