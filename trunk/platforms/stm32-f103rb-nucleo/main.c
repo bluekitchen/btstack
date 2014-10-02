@@ -64,34 +64,39 @@ void sys_tick_handler(void)
 	(*tick_handler)();
 }
 
+// hal_led.h implementation
+#include <btstack/hal_led.h>
+void hal_led_off(void);
+void hal_led_on(void);
+
+void hal_led_off(void){
+	gpio_clear(GPIOA, GPIO_LED2);
+}
+void hal_led_on(void){
+	gpio_set(GPIOA, GPIO_LED2);
+}
+void hal_led_toggle(void){
+	gpio_toggle(GPIOA, GPIO_LED2);
+}
+
 // hal_cpu.h implementation
 #include <btstack/hal_cpu.h>
 
-__attribute__(( always_inline ))
-inline void hal_cpu_disable_irqs(){
+void hal_cpu_disable_irqs(){
 	__disable_irq();
-	// __asm volatile ("cpsid i" : : : "memory");
 }
 
-__attribute__(( always_inline ))
-inline void hal_cpu_enable_irqs(){
+void hal_cpu_enable_irqs(){
 	__enable_irq();
-	// __asm volatile ("cpsie i" : : : "memory");
-
 }
-__attribute__(( always_inline ))
-inline void hal_cpu_enable_irqs_and_sleep(){
+
+void hal_cpu_enable_irqs_and_sleep(){
+	hal_led_off();
 	__enable_irq();
-	// __asm volatile ("cpsie i" : : : "memory");
-	// TODO: pick power mode for sleep depening on need for UART
-}
-
-
-// hal_led.h implementation
-#include <btstack/hal_led.h>
-
-void hal_led_toggle(void){
-	gpio_toggle(GPIOA, GPIO_LED2);
+	__WFI();
+	// note: hal_uart_needed_during_sleep can be used to disable peripheral clock if it's not needed for a timer
+	// todo: the transition from disabled IRQs into sleep mode should be atomic
+	hal_led_on();
 }
 
 // hal_uart_dma.c implementation
@@ -101,6 +106,10 @@ void hal_led_toggle(void){
 static void (*rx_done_handler)(void) = dummy_handler;
 static void (*tx_done_handler)(void) = dummy_handler;
 static void (*cts_irq_handler)(void) = dummy_handler;
+
+void hal_uart_dma_set_sleep(uint8_t sleep){
+	hal_uart_needed_during_sleep = !sleep;
+}
 
 // DMA1_CHANNEL2 UART3_TX
 void dma1_channel2_isr(void) {
@@ -123,7 +132,6 @@ void dma1_channel3_isr(void){
 		(*rx_done_handler)();
 	}
 }
-
 
 // CTS RISING ISR
 void exti15_10_isr(void){
@@ -209,9 +217,7 @@ void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
     usart_enable_rx_dma(USART3);
 }
 
-void hal_uart_dma_set_sleep(uint8_t sleep){
-	hal_uart_needed_during_sleep = !sleep;
-}
+// end of hal_uart
 
 /**
  * Use USART_CONSOLE as a console.
