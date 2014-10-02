@@ -4,6 +4,7 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/usart.h>
+#include <libopencm3/stm32/exti.h>
 
 #include <stdio.h>
 #include <errno.h>
@@ -11,6 +12,9 @@
 
 #include <btstack/run_loop.h>
 #include "hci.h"
+#include "bt_control_cc256x.h"
+#include "btstack_memory.h"
+#include "remote_device_db.h"
 
 // Configuration
 // LED2 on PA5
@@ -108,6 +112,13 @@ void dma1_channel3_isr(void){
 	}
 }
 
+
+// CTS RISING ISR
+void exti15_10_isr(void){
+	exti_reset_request(EXTI13);
+	(*cts_irq_handler)();
+}
+
 void hal_uart_dma_init(void){
 	bluetooth_power_cycle();
 }
@@ -120,7 +131,16 @@ void hal_uart_dma_set_block_sent( void (*the_block_handler)(void)){
 }
 
 void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
-	// TODO: enable/disable interrupt
+	if (the_irq_handler){
+		/* Configure the EXTI13 interrupt (USART3_CTS is on PB13) */
+		nvic_enable_irq(NVIC_EXTI15_10_IRQ);
+		exti_select_source(EXTI13, GPIOB);
+		exti_set_trigger(EXTI13, EXTI_TRIGGER_RISING);
+		exti_enable_request(EXTI13);
+	} else {
+		exti_disable_request(EXTI13);
+		nvic_disable_irq(NVIC_EXTI15_10_IRQ);
+	}
     cts_irq_handler = the_irq_handler;
 }
 
@@ -215,6 +235,7 @@ static void clock_setup(void){
 	rcc_periph_clock_enable(RCC_USART2);
 	rcc_periph_clock_enable(RCC_USART3);
 	rcc_periph_clock_enable(RCC_DMA1);
+	rcc_periph_clock_enable(RCC_AFIO); // needed by EXTI interrupts
 }
 
 static void gpio_setup(void){
@@ -259,7 +280,7 @@ static void bluetooth_setup(void){
 	usart_set_stopbits(USART3, USART_STOPBITS_1);
 	usart_set_mode(USART3, USART_MODE_TX_RX);
 	usart_set_parity(USART3, USART_PARITY_NONE);
-	usart_set_flow_control(USART3, USART_FLOWCONTROL_RTS_CTS);
+	usart_set_flow_control(USART3, USART_FLOWCONTROL_RTS);
 
 	/* Finally enable the USART. */
 	usart_enable(USART3);
@@ -319,6 +340,9 @@ int main(void)
     hci_uart_config_t  * config    = hci_uart_config_cc256x_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
     hci_init(transport, config, control, remote_db);
+
+    // enable eHCILL
+    bt_control_cc256x_enable_ehcill(1);
 
 	// hand over to btstack embedded code 
     btstack_main();

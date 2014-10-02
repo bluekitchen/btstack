@@ -8,14 +8,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "bt_control_cc256x.h"
 
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>
 
 #include "hci.h"
-#include "btstack_memory.h"
-#include "remote_device_db.h"
 #include "btstack-config.h"
 
 int btstack_main(void);
