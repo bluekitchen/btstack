@@ -86,8 +86,8 @@ typedef enum {
 
 static bd_addr_t cmdline_addr = { };
 static int cmdline_addr_found = 0;
-static gatt_client_t gc_context;
 
+uint16_t gc_handle;
 static le_service_t services[40];
 static int service_count = 0;
 static int service_index = 0;
@@ -138,7 +138,7 @@ void handle_gatt_client_event(le_event_t * event){
                     printf("\ntest client - CHARACTERISTIC for SERVICE ");
                     printUUID128(service.uuid128); printf("\n");
                     
-                    gatt_client_discover_characteristics_for_service(&gc_context, &services[service_index]);
+                    gatt_client_discover_characteristics_for_service(gc_handle, &services[service_index]);
                     break;
                 default:
                     break;
@@ -159,12 +159,12 @@ void handle_gatt_client_event(le_event_t * event){
                         printUUID128(service.uuid128);
                         printf(", [0x%04x-0x%04x]\n", service.start_group_handle, service.end_group_handle);
                         
-                        gatt_client_discover_characteristics_for_service(&gc_context, &service);
+                        gatt_client_discover_characteristics_for_service(gc_handle, &service);
                         break;
                     }
                     state = TC_W4_DISCONNECT;
                     service_index = 0;
-                    gap_disconnect(gc_context.handle);
+                    gap_disconnect(gc_handle);
                     break;
                 default:
                     break;
@@ -196,8 +196,7 @@ static void fill_advertising_report_from_packet(advertising_report_t * report, u
 static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     advertising_report_t report;
-    uint16_t gc_handle;
-
+    
     uint8_t event = packet[0];
     switch (event) {
         case BTSTACK_EVENT_STATE:
@@ -227,15 +226,12 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
             if (packet[2] !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
             if (state != TC_W4_CONNECT) return;
             gc_handle = READ_BT_16(packet, 4);
-            // initialize gatt client context with handle, and add it to the list of active clients
-            gatt_client_start(&gc_context, gc_handle);
             // query primary services
             state = TC_W4_SERVICE_RESULT;
-            gatt_client_discover_primary_services(&gc_context);
+            gatt_client_discover_primary_services(gc_handle);
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             printf("\ntest client - DISCONNECTED\n");
-            gatt_client_stop(&gc_context);
             exit(0);
             break;
         default:

@@ -85,8 +85,8 @@ typedef enum {
 
 static bd_addr_t cmdline_addr = { };
 static int cmdline_addr_found = 0;
-static gatt_client_t gc_context;
 
+uint16_t gc_handle;
 static uint16_t battery_service_uuid = 0x180F;
 static uint16_t battery_level_characteristic_uuid = 0x2a19;
 static le_service_t battery_service;
@@ -150,7 +150,7 @@ void handle_gatt_client_event(le_event_t * event){
                 case GATT_QUERY_COMPLETE:
                     state = TC_W4_CHARACTERISTIC_RESULT;
                     printf("\nSearch for battery level characteristic in battery service. ");
-                    gatt_client_discover_characteristics_for_service_by_uuid16(&gc_context, &battery_service, battery_level_characteristic_uuid);
+                    gatt_client_discover_characteristics_for_service_by_uuid16(gc_handle, &battery_service, battery_level_characteristic_uuid);
                     break;
                 default:
                     break;
@@ -167,7 +167,7 @@ void handle_gatt_client_event(le_event_t * event){
                 case GATT_QUERY_COMPLETE:
                     state = TC_W4_BATTERY_DATA;
                     printf("\nConfigure battery level characteristic for notify.");
-                    gatt_client_write_client_characteristic_configuration(&gc_context, &config_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+                    gatt_client_write_client_characteristic_configuration(gc_handle, &config_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
                     break;
                 default:
                     break;
@@ -213,8 +213,6 @@ static void fill_advertising_report_from_packet(advertising_report_t * report, u
 static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     advertising_report_t report;
-    uint16_t gc_handle;
-
     uint8_t event = packet[0];
     switch (event) {
         case BTSTACK_EVENT_STATE:
@@ -237,6 +235,7 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
             // stop scanning, and connect to the device
             state = TC_W4_CONNECT;
             le_central_stop_scan();
+            printf("Stop scan. Start connect to device with addr %s.\n", bd_addr_to_str(report.address));
             le_central_connect(&report.address,report.address_type);
             break;
         case HCI_EVENT_LE_META:
@@ -245,15 +244,13 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
             if (state != TC_W4_CONNECT) return;
             gc_handle = READ_BT_16(packet, 4);
             // initialize gatt client context with handle, and add it to the list of active clients
-            gatt_client_start(&gc_context, gc_handle);
             // query primary services
             printf("\nSearch for battery service. ");
             state = TC_W4_SERVICE_RESULT;
-            gatt_client_discover_primary_services_by_uuid16(&gc_context, battery_service_uuid);
+            gatt_client_discover_primary_services_by_uuid16(gc_handle, battery_service_uuid);
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             printf("\nDISCONNECTED\n");
-            gatt_client_stop(&gc_context);
             exit(0);
             break;
         default:
@@ -268,7 +265,7 @@ void setup(void){
     run_loop_init(RUN_LOOP_POSIX);
         
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-    hci_dump_open("/tmp/gatt_browser.pklg", HCI_DUMP_PACKETLOGGER);
+    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
   // init HCI
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
