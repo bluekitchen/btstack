@@ -1,8 +1,9 @@
-#include <libopencm3/stm32/rcc.h>
-#include <libopencm3/stm32/gpio.h>
-#include <libopencm3/stm32/usart.h>
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/systick.h>
+#include <libopencm3/stm32/dma.h>
+#include <libopencm3/stm32/gpio.h>
+#include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/usart.h>
 
 #include <stdio.h>
 #include <errno.h>
@@ -84,6 +85,49 @@ static void (*rx_done_handler)(void) = dummy_handler;
 static void (*tx_done_handler)(void) = dummy_handler;
 static void (*cts_irq_handler)(void) = dummy_handler;
 
+static uint8_t * rx_buffer;
+static int bytes_to_receive = 0;
+
+// DMA1_CHANNEL2 UART3_TX
+void dma1_channel2_isr(void) {
+	int done = 0;
+	if ((DMA1_ISR & DMA_ISR_TCIF2) != 0) {
+		DMA1_IFCR |= DMA_IFCR_CTCIF2;
+		done = 1;
+	}
+	dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL2);
+	usart_disable_tx_dma(USART3);
+	dma_disable_channel(DMA1, DMA_CHANNEL2);
+
+	if (done){
+	(*tx_done_handler)();
+}
+}
+
+// DMA1_CHANNEL2 UART3_RX
+void dma1_channel3_isr(void){
+	int done = 0;
+	if ((DMA1_ISR & DMA_ISR_TCIF3) != 0) {
+		DMA1_IFCR |= DMA_IFCR_CTCIF3;
+		done = 1;
+	}
+	dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL3);
+	usart_disable_rx_dma(USART3);
+	dma_disable_channel(DMA1, DMA_CHANNEL3);
+	if (done){
+		gpio_clear(GPIOA, GPIO_LED2);
+#if 0
+		int i;
+		printf("RX: ");
+		for (i=0;i<bytes_to_receive;i++){
+			printf("%02x ", rx_buffer[i]);
+		}
+		printf("\n");
+#endif
+		(*rx_done_handler)();
+	}
+}
+
 void hal_uart_dma_init(void){
 	bluetooth_power_cycle();
 }
@@ -104,24 +148,75 @@ int  hal_uart_dma_set_baud(uint32_t baud){
 	usart_disable(USART3);
 	usart_set_baudrate(USART3, baud);
 	usart_enable(USART3);
+	return 0;
 }
 
-void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t length){
-	// TODO: use DMA for this
+void hal_uart_dma_send_block(const uint8_t *data, uint16_t size){
+
+#if 0
+	// dump data
+	int i;
 	printf("TX: ");
-	while (length){
-		printf("%02x ", *buffer);
-		usart_send_blocking(USART3, *buffer);
-		buffer++;
-		length--;
+	for (i=0;i<size;i++){
+		printf("%02x ", data[i]);
 	}
 	printf("\n");
+#endif
+
+#if 0 
+	// Blocking USART implementation
+	while (size){
+		usart_send_blocking(USART3, *data);
+		data++;
+		size--;
+	}
 	(*tx_done_handler)();
+#else
+
+	/*
+	 * USART3_TX Using DMA_CHANNEL2 
+	 */
+
+	/* Reset DMA channel*/
+	dma_channel_reset(DMA1, DMA_CHANNEL2);
+
+	dma_set_peripheral_address(DMA1, DMA_CHANNEL2, (uint32_t)&USART3_DR);
+	dma_set_memory_address(DMA1, DMA_CHANNEL2, (uint32_t)data);
+	dma_set_number_of_data(DMA1, DMA_CHANNEL2, size);
+	dma_set_read_from_memory(DMA1, DMA_CHANNEL2);
+	dma_enable_memory_increment_mode(DMA1, DMA_CHANNEL2);
+	dma_set_peripheral_size(DMA1, DMA_CHANNEL2, DMA_CCR_PSIZE_8BIT);
+	dma_set_memory_size(DMA1, DMA_CHANNEL2, DMA_CCR_MSIZE_8BIT);
+	dma_set_priority(DMA1, DMA_CHANNEL2, DMA_CCR_PL_VERY_HIGH);
+	dma_enable_transfer_complete_interrupt(DMA1, DMA_CHANNEL2);
+	dma_enable_channel(DMA1, DMA_CHANNEL2);
+    usart_enable_tx_dma(USART3);
+#endif
 }
-void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len){
-	// TODO: use DMA for this
-	(void) buffer;
-	(void) len;
+
+void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
+	/*
+	 * USART3_RX is on DMA_CHANNEL3
+	 */
+
+	printf("hal_uart_dma_receive_block req size %u\n", size);
+	bytes_to_receive = size;
+	rx_buffer = data;
+
+	/* Reset DMA channel*/
+	dma_channel_reset(DMA1, DMA_CHANNEL3);
+
+	dma_set_peripheral_address(DMA1, DMA_CHANNEL3, (uint32_t)&USART3_DR);
+	dma_set_memory_address(DMA1, DMA_CHANNEL3, (uint32_t)data);
+	dma_set_number_of_data(DMA1, DMA_CHANNEL3, size);
+	dma_set_read_from_peripheral(DMA1, DMA_CHANNEL3);
+	dma_enable_memory_increment_mode(DMA1, DMA_CHANNEL3);
+	dma_set_peripheral_size(DMA1, DMA_CHANNEL3, DMA_CCR_PSIZE_8BIT);
+	dma_set_memory_size(DMA1, DMA_CHANNEL3, DMA_CCR_MSIZE_8BIT);
+	dma_set_priority(DMA1, DMA_CHANNEL3, DMA_CCR_PL_HIGH);
+	dma_enable_transfer_complete_interrupt(DMA1, DMA_CHANNEL3);
+	dma_enable_channel(DMA1, DMA_CHANNEL3);
+    usart_enable_rx_dma(USART3);
 }
 
 void hal_uart_dma_set_sleep(uint8_t sleep){
@@ -161,6 +256,7 @@ static void clock_setup(void){
 	rcc_periph_clock_enable(RCC_GPIOB);
 	rcc_periph_clock_enable(RCC_USART2);
 	rcc_periph_clock_enable(RCC_USART3);
+	rcc_periph_clock_enable(RCC_DMA1);
 }
 
 static void gpio_setup(void){
@@ -168,7 +264,7 @@ static void gpio_setup(void){
 	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO_LED2);
 }
 
-static void usart_setup(void){
+static void debug_usart_setup(void){
 	/* Setup GPIO pin GPIO_USART2_TX/GPIO2 on GPIO port A for transmit. */
 	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART2_TX);
 
@@ -209,6 +305,14 @@ static void bluetooth_setup(void){
 
 	/* Finally enable the USART. */
 	usart_enable(USART3);
+
+	// TX
+	nvic_set_priority(NVIC_DMA1_CHANNEL2_IRQ, 0);
+	nvic_enable_irq(NVIC_DMA1_CHANNEL2_IRQ);
+
+	// RX
+	nvic_set_priority(NVIC_DMA1_CHANNEL3_IRQ, 0);
+	nvic_enable_irq(NVIC_DMA1_CHANNEL3_IRQ);
 }
 
 // reset Bluetooth using n_shutdown
@@ -236,7 +340,7 @@ int main(void)
 	clock_setup();
 	gpio_setup();
 	hal_tick_init();
-	usart_setup();
+	debug_usart_setup();
 	bluetooth_setup();
 
 	// hand over to btstack embedded code 
