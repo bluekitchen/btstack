@@ -115,15 +115,6 @@ void dma1_channel3_isr(void){
 	usart_disable_rx_dma(USART3);
 	dma_disable_channel(DMA1, DMA_CHANNEL3);
 	if (done){
-		gpio_clear(GPIOA, GPIO_LED2);
-#if 0
-		int i;
-		printf("RX: ");
-		for (i=0;i<bytes_to_receive;i++){
-			printf("%02x ", rx_buffer[i]);
-		}
-		printf("\n");
-#endif
 		(*rx_done_handler)();
 	}
 }
@@ -152,27 +143,6 @@ int  hal_uart_dma_set_baud(uint32_t baud){
 }
 
 void hal_uart_dma_send_block(const uint8_t *data, uint16_t size){
-
-#if 0
-	// dump data
-	int i;
-	printf("TX: ");
-	for (i=0;i<size;i++){
-		printf("%02x ", data[i]);
-	}
-	printf("\n");
-#endif
-
-#if 0 
-	// Blocking USART implementation
-	while (size){
-		usart_send_blocking(USART3, *data);
-		data++;
-		size--;
-	}
-	(*tx_done_handler)();
-#else
-
 	/*
 	 * USART3_TX Using DMA_CHANNEL2 
 	 */
@@ -191,7 +161,6 @@ void hal_uart_dma_send_block(const uint8_t *data, uint16_t size){
 	dma_enable_transfer_complete_interrupt(DMA1, DMA_CHANNEL2);
 	dma_enable_channel(DMA1, DMA_CHANNEL2);
     usart_enable_tx_dma(USART3);
-#endif
 }
 
 void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
