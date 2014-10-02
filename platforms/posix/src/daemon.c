@@ -124,8 +124,7 @@ typedef struct {
     linked_list_t l2cap_cids;
     linked_list_t l2cap_psms;
     linked_list_t sdp_record_handles;
-    linked_list_t gatt_client_handles;
-    
+    linked_list_t gatt_con_handles;
     // power mode
     HCI_POWER_MODE power_mode;
     
@@ -139,9 +138,19 @@ typedef struct linked_list_uint32 {
     uint32_t        value;
 } linked_list_uint32_t;
 
-typedef struct gatt_client_helper {
+typedef struct linked_list_connection {
+    linked_item_t   item;
+    connection_t  * connection;
+} linked_list_connection_t;
+
+typedef struct linked_list_gatt_client_helper{
+    linked_item_t item;
+    uint16_t con_handle;
+    connection_t * active_connection;   // the one that started the current query
+    linked_list_t  all_connections;     // list of all connections that ever used this helper
     uint16_t characteristic_length;
-} gatt_client_helper_t;
+    uint8_t  characteristic_buffer[ATT_MAX_LONG_ATTRIBUTE_SIZE];
+} linked_list_gatt_client_helper_t;
 
 // MARK: prototypes
 static void handle_sdp_rfcomm_service_result(sdp_query_event_t * event, void * context);
@@ -162,7 +171,9 @@ static hci_uart_config_t config;
 static timer_source_t timeout;
 static uint8_t timeout_active = 0;
 static int power_management_sleep = 0;
-static linked_list_t    clients = NULL; // list of connected clients 
+static linked_list_t clients = NULL;        // list of connected clients `
+static linked_list_t gatt_client_helpers = NULL;   // list of used gatt client (helpers)
+
 static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth_status_handler;
 
 static int global_enable = 0;
@@ -187,6 +198,7 @@ static void daemon_no_connections_timeout(struct timer *ts){
     log_info("No active client connection for %u seconds -> POWER OFF\n", DAEMON_NO_ACTIVE_CLIENT_TIMEOUT/1000);
     hci_power_control(HCI_POWER_OFF);
 }
+
 
 static void add_uint32_to_list(linked_list_t *list, uint32_t value){
     linked_list_uint32_t * item = malloc(sizeof(linked_list_uint32_t));
@@ -266,22 +278,169 @@ static void daemon_remove_client_sdp_service_record_handle(connection_t * connec
     remove_and_free_uint32_from_list(&client_state->sdp_record_handles, handle);    
 }
 
+
 static void daemon_add_gatt_client_handle(connection_t * connection, uint32_t handle){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
-    add_uint32_to_list(&client_state->gatt_client_handles, handle);    
+    
+    // check if handle already exists in the gatt_con_handles list
+    linked_list_iterator_t it;
+    int handle_found = 0;
+    linked_list_iterator_init(&it, &client_state->gatt_con_handles);
+    while (linked_list_iterator_has_next(&it)){
+        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+        if (item->value == handle){ 
+            handle_found = 1;
+            break;
+        }
+    }
+    // if handle doesn't exist add it to gatt_con_handles
+    if (!handle_found){
+        add_uint32_to_list(&client_state->gatt_con_handles, handle);
+    }
+    
+    // check if there is a helper with given handle
+    linked_list_gatt_client_helper_t * gatt_helper = NULL;
+    linked_list_iterator_init(&it, &gatt_client_helpers);
+    while (linked_list_iterator_has_next(&it)){
+        linked_list_gatt_client_helper_t * item = (linked_list_gatt_client_helper_t*) linked_list_iterator_next(&it);
+        if (item->con_handle == handle){
+            gatt_helper = item;
+            break;
+        }
+    }
+
+    // if gatt_helper doesn't exist, create it and add it to gatt_client_helpers list
+    if (!gatt_helper){
+        gatt_helper = malloc(sizeof(linked_list_gatt_client_helper_t));
+        if (!gatt_helper) return; 
+        memset(gatt_helper, 0, sizeof(linked_list_gatt_client_helper_t));
+        gatt_helper->con_handle = handle;
+        linked_list_add(&gatt_client_helpers, (linked_item_t *) gatt_helper);
+    }
+
+    // check if connection exists
+    int connection_found = 0;
+    linked_list_iterator_init(&it, &gatt_helper->all_connections);
+    while (linked_list_iterator_has_next(&it)){
+        linked_list_connection_t * item = (linked_list_connection_t*) linked_list_iterator_next(&it);
+        if (item->connection == connection){
+            connection_found = 1;
+            break;
+        }
+    }
+
+    // if connection is not found, add it to the all_connections, and set it as active connection
+    if (!connection_found){
+        linked_list_connection_t * con = malloc(sizeof(linked_list_connection_t));
+        if (!con) return;
+        memset(con, 0, sizeof(linked_list_connection_t));
+        con->connection = connection;
+        linked_list_add(&gatt_helper->all_connections, (linked_item_t *)con);
+    }
+
+    // remember connection responsible for this request
+    gatt_helper->active_connection = connection;
 }
+
 
 static void daemon_remove_gatt_client_handle(connection_t * connection, uint32_t handle){
+    // PART 1 - uses connection & handle
+    // might be extracted or vanish totally
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
-    remove_and_free_uint32_from_list(&client_state->gatt_client_handles, handle);    
+    
+    linked_list_iterator_t it;    
+    // remove handle from gatt_con_handles list
+    linked_list_iterator_init(&it, &client_state->gatt_con_handles);
+    while (linked_list_iterator_has_next(&it)){
+        linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+        if (item->value == handle){
+            linked_list_remove(&client_state->gatt_con_handles, (linked_item_t *) item);
+            free(item);
+        }
+    }
+
+    // PART 2 - only uses handle
+
+    // find helper with given handle
+    linked_list_gatt_client_helper_t * helper = NULL;
+    linked_list_iterator_init(&it, &gatt_client_helpers);
+    while (linked_list_iterator_has_next(&it)){
+        linked_list_gatt_client_helper_t * item = (linked_list_gatt_client_helper_t*) linked_list_iterator_next(&it);
+        if (item->con_handle == handle){
+            helper = item;
+            break;
+        }
+    }
+
+    if (!helper) return;
+    // remove connection from helper
+    linked_list_iterator_init(&it, &helper->all_connections);
+    while (linked_list_iterator_has_next(&it)){
+        linked_list_connection_t * item = (linked_list_connection_t*) linked_list_iterator_next(&it);
+        if (item->connection == connection){
+            linked_list_remove(&helper->all_connections, (linked_item_t *) item);
+            free(item);
+            break;
+        }
+    }
+
+    if (helper->active_connection == connection){
+        helper->active_connection = NULL;
+    }
+    // if helper has no more connections, call disconnect
+    if (helper->all_connections == NULL){
+        gap_disconnect((hci_con_handle_t) helper->con_handle);
+    }
 }
 
 
-static void daemon_rfcomm_close_connection(linked_list_t *rfcomm_services, linked_list_t *rfcomm_cids){
-    linked_list_iterator_t it;  
+static void daemon_remove_gatt_client_helper(uint32_t con_handle){
+    linked_list_iterator_t it, cl;    
+    // find helper with given handle
+    linked_list_gatt_client_helper_t * helper = NULL;
+    linked_list_iterator_init(&it, &gatt_client_helpers);
+    while (linked_list_iterator_has_next(&it)){
+        linked_list_gatt_client_helper_t * item = (linked_list_gatt_client_helper_t*) linked_list_iterator_next(&it);
+        if (item->con_handle == con_handle){
+            helper = item;
+            break;
+        }
+    }
 
+    if (!helper) return;
+
+    // remove all connection from helper
+    linked_list_iterator_init(&it, &helper->all_connections);
+    while (linked_list_iterator_has_next(&it)){
+        linked_list_connection_t * item = (linked_list_connection_t*) linked_list_iterator_next(&it);
+        linked_list_remove(&helper->all_connections, (linked_item_t *) item);
+        free(item);
+    }
+
+    free(helper);
+    
+    linked_list_iterator_init(&cl, &clients);
+    while (linked_list_iterator_has_next(&cl)){
+        client_state_t * client_state = (client_state_t *) linked_list_iterator_next(&cl);
+        linked_list_iterator_init(&it, &client_state->gatt_con_handles);
+        while (linked_list_iterator_has_next(&it)){
+            linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
+            if (item->value == con_handle){
+                linked_list_remove(&client_state->gatt_con_handles, (linked_item_t *) item);
+                free(item);
+            }
+        }
+    }
+}
+
+
+static void daemon_rfcomm_close_connection(client_state_t * gatt_client){
+    linked_list_iterator_t it;  
+    linked_list_t *rfcomm_services = &gatt_client->rfcomm_services;
+    linked_list_t *rfcomm_cids = &gatt_client->rfcomm_cids;
+    
     linked_list_iterator_init(&it, rfcomm_services);
     while (linked_list_iterator_has_next(&it)){
         linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
@@ -299,9 +458,12 @@ static void daemon_rfcomm_close_connection(linked_list_t *rfcomm_services, linke
     }
 }
 
-static void daemon_l2cap_close_connection(linked_list_t *l2cap_psms, linked_list_t *l2cap_cids){
-    linked_list_iterator_t it;  
 
+static void daemon_l2cap_close_connection(client_state_t * gatt_client){
+    linked_list_iterator_t it;  
+    linked_list_t *l2cap_psms = &gatt_client->l2cap_psms;
+    linked_list_t *l2cap_cids = &gatt_client->l2cap_cids;
+    
     linked_list_iterator_init(&it, l2cap_psms);
     while (linked_list_iterator_has_next(&it)){
         linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
@@ -319,25 +481,27 @@ static void daemon_l2cap_close_connection(linked_list_t *l2cap_psms, linked_list
     }
 }
 
-static void daemon_sdp_close_connection(void *connection, linked_list_t *sdp_handles){
+static void daemon_sdp_close_connection(client_state_t * gatt_client){
+    linked_list_t * list = &gatt_client->sdp_record_handles;
     linked_list_iterator_t it;  
-    linked_list_iterator_init(&it, sdp_handles);
+    linked_list_iterator_init(&it, list);
     while (linked_list_iterator_has_next(&it)){
         linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
-        sdp_unregister_service_internal(connection, item->value);
-        linked_list_remove(sdp_handles, (linked_item_t *) item);
+        sdp_unregister_service_internal(&gatt_client->connection, item->value);
+        linked_list_remove(list, (linked_item_t *) item);
         free(item);
     }
 }
 
-static void daemon_gatt_client_close_connection(linked_list_t *gatt_client_handles){
-    linked_list_iterator_t it;  
-    linked_list_iterator_init(&it, gatt_client_handles);
+static void daemon_gatt_client_close_connection(connection_t * connection){
+    client_state_t * client = client_for_connection(connection);
+    if (!client) return;
+
+    linked_list_iterator_t it; 
+    linked_list_iterator_init(&it, &client->gatt_con_handles);
     while (linked_list_iterator_has_next(&it)){
         linked_list_uint32_t * item = (linked_list_uint32_t*) linked_list_iterator_next(&it);
-        gap_disconnect((hci_con_handle_t) item->value);
-        linked_list_remove(gatt_client_handles, (linked_item_t *) item);
-        free(item);
+        daemon_remove_gatt_client_handle(connection, item->value);
     }
 }
 
@@ -347,13 +511,13 @@ static void daemon_disconnect_client(connection_t * connection){
     client_state_t * client = client_for_connection(connection);
     if (!client) return;
 
-    daemon_sdp_close_connection(connection, &client->sdp_record_handles);
-    daemon_rfcomm_close_connection(&client->rfcomm_services, &client->rfcomm_cids);
-    daemon_l2cap_close_connection(&client->l2cap_psms, &client->l2cap_cids);
+    daemon_sdp_close_connection(client);
+    daemon_rfcomm_close_connection(client);
+    daemon_l2cap_close_connection(client);
 #ifdef HAVE_BLE
     // NOTE: experimental - disconnect all LE connections where GATT Client was used
     // gatt_client_disconnect_connection(connection);
-    daemon_gatt_client_close_connection(&client->gatt_client_handles);
+    daemon_gatt_client_close_connection(connection);
 #endif
 
     linked_list_remove(&clients, (linked_item_t *) client);
@@ -362,29 +526,17 @@ static void daemon_disconnect_client(connection_t * connection){
 
 #ifdef HAVE_BLE
 
-static gatt_client_t * daemon_provide_gatt_client_context_for_handle(void * connection, uint16_t handle){
-    gatt_client_t *context;
-    context = get_gatt_client_context_for_handle(handle);
-    if (context) return context;
-
-    context = (gatt_client_t*)malloc(sizeof(gatt_client_t) + sizeof(gatt_client_helper_t) + ATT_MAX_LONG_ATTRIBUTE_SIZE);
-    if (!context) return NULL;
-
-    gatt_client_start(context, handle);
-    daemon_add_gatt_client_handle(connection, handle);
-    return context;
-}
-
-gatt_client_helper_t * daemon_get_gatt_helper(gatt_client_t * context){
-    return (gatt_client_helper_t*) (((uint8_t *) context) + sizeof(gatt_client_t));
-}
-
-uint8_t * daemon_get_data_buffer(gatt_client_t *context) {
-    return ((uint8_t *) context) + sizeof(gatt_client_t) + sizeof(gatt_client_helper_t);
-}
-
-gatt_client_helper_t * daemon_get_gatt_client_helper(gatt_client_t *context) {
-    return (gatt_client_helper_t *) (((uint8_t *) context) + sizeof(gatt_client_t));
+linked_list_gatt_client_helper_t * daemon_get_gatt_client_helper(uint16_t handle) {
+    linked_list_iterator_t it;  
+    linked_list_iterator_init(&it, &gatt_client_helpers);
+    while (linked_list_iterator_has_next(&it)){
+        linked_list_gatt_client_helper_t * item = (linked_list_gatt_client_helper_t*) linked_list_iterator_next(&it);
+        if (item->con_handle == handle){
+            return item;
+        }
+    }
+    log_info("daemon_get_gatt_client_helper for handle 0x%02x is NULL.", handle);
+    return NULL;
 }
 
 static void send_gatt_query_complete(connection_t * connection, uint16_t handle, uint8_t status){
@@ -397,28 +549,32 @@ static void send_gatt_query_complete(connection_t * connection, uint16_t handle,
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-gatt_client_t * daemon_prepare_gatt_client_context(connection_t *connection, uint8_t *packet) {
-    hci_con_handle_t handle = READ_BT_16(packet, 3);
-    
+linked_list_gatt_client_helper_t * daemon_setup_gatt_client_request(connection_t *connection, uint8_t *packet) {
+    hci_con_handle_t handle = READ_BT_16(packet, 3);    
+    log_info("daemon_setup_gatt_client_request for handle 0x%02x", handle);
     hci_connection_t * hci_con = hci_connection_for_handle(handle);
     if ((hci_con == NULL) || (hci_con->state != OPEN)){
         send_gatt_query_complete(connection, handle, GATT_CLIENT_NOT_CONNECTED);
         return NULL;
     }
 
-    gatt_client_t *context = daemon_provide_gatt_client_context_for_handle(connection, handle);
-    if (!context) {
-        send_gatt_query_complete(connection, handle, BTSTACK_MEMORY_ALLOC_FAILED);
-        return NULL;
-    }
-    // check state
-    if (!gatt_client_is_ready(context)){
+    linked_list_gatt_client_helper_t * helper = daemon_get_gatt_client_helper(handle);
+
+    if (!helper){
+        helper = malloc(sizeof(linked_list_gatt_client_helper_t));
+        if (!helper) return NULL; 
+        memset(helper, 0, sizeof(linked_list_gatt_client_helper_t));
+        helper->con_handle = handle;
+        linked_list_add(&gatt_client_helpers, (linked_item_t *) helper);
+    } 
+    
+    if (helper->active_connection){
         send_gatt_query_complete(connection, handle, GATT_CLIENT_BUSY);
         return NULL;
     }
 
-    context->context = connection;
-    return context;
+    daemon_add_gatt_client_handle(connection, handle);
+    return helper;
 }
 
 // (de)serialize structs from/to HCI commands/events
@@ -467,7 +623,7 @@ void daemon_setup_service_event(le_event_t *le_event, uint8_t* event) {
     le_service_event_t * service_event = (le_service_event_t *) le_event;
     event[0] = le_event->type;
     event[1] = SERVICE_LENGTH;
-    bt_store_16(event, 2, service_event->client->handle);
+    bt_store_16(event, 2, service_event->handle);
     daemon_gatt_serialize_service(&service_event->service, event, 4);
 }
 
@@ -475,7 +631,7 @@ void daemon_gatt_setup_characteristic_event(le_event_t *le_event, uint8_t* event
     le_characteristic_event_t * characteristic_event = (le_characteristic_event_t *) le_event;
     event[0] = le_event->type;
     event[1] = CHARACTERISTIC_LENGTH;
-    bt_store_16(event, 2, characteristic_event->client->handle);
+    bt_store_16(event, 2, characteristic_event->handle);
     daemon_gatt_serialize_characteristic(&characteristic_event->characteristic, event, 4);
 }
 
@@ -483,7 +639,7 @@ void daemon_setup_characteristic_descriptor_event(le_event_t *le_event, uint8_t*
     le_characteristic_descriptor_event_t * descriptor_event = (le_characteristic_descriptor_event_t *) le_event;
     event[0] = le_event->type;
     event[1] = CHARACTERISTIC_DESCRIPTOR_LENGTH;
-    bt_store_16(event, 2, descriptor_event->client->handle);
+    bt_store_16(event, 2, descriptor_event->handle);
     daemon_gatt_serialize_characteristic_descriptor(&descriptor_event->characteristic_descriptor, event, 4);
 }
 
@@ -500,7 +656,7 @@ void daemon_setup_characteristic_value_event(le_event_t *le_event, uint8_t* even
     le_characteristic_value_event_t * cvalue_event = (le_characteristic_value_event_t *) le_event;
     event[0] = le_event->type;
     event[1] = 2 + (2 + 2 + cvalue_event->blob_length);
-    bt_store_16(event, 2, cvalue_event->client->handle);
+    bt_store_16(event, 2, cvalue_event->handle);
     bt_store_16(event, 4, cvalue_event->value_handle);
     bt_store_16(event, 6, cvalue_event->blob_length);
     memcpy(&event[8], cvalue_event->blob, cvalue_event->blob_length);
@@ -524,13 +680,13 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
     client_state_t *client;
 
 #if defined(HAVE_MALLOC) && defined(HAVE_BLE)
-    gatt_client_t * context;
     uint8_t uuid128[16];
     le_service_t service;
     le_characteristic_t characteristic;
     le_characteristic_descriptor_t descriptor;
     uint16_t data_length;
     uint8_t  * data;
+    linked_list_gatt_client_helper_t * gatt_helper;
 #endif
 
     uint16_t serviceSearchPatternLen;
@@ -762,134 +918,134 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             break;
 #if defined(HAVE_MALLOC) && defined(HAVE_BLE)
         case GATT_DISCOVER_ALL_PRIMARY_SERVICES:
-            context = daemon_prepare_gatt_client_context(connection, packet);
-            if (!context) break;
-            gatt_client_discover_primary_services(context);
+            gatt_helper = daemon_setup_gatt_client_request(connection, packet);
+            if (!gatt_helper) break;
+            gatt_client_discover_primary_services(gatt_helper->con_handle);
             break;
         case GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID16:
-            context = daemon_prepare_gatt_client_context(connection, packet);
-            if (!context) break;
-            gatt_client_discover_primary_services_by_uuid16(context, READ_BT_16(packet, 5));
+            gatt_helper = daemon_setup_gatt_client_request(connection, packet);
+            if (!gatt_helper) break;
+            gatt_client_discover_primary_services_by_uuid16(gatt_helper->con_handle, READ_BT_16(packet, 5));
             break;
         case GATT_DISCOVER_PRIMARY_SERVICES_BY_UUID128:
-            context = daemon_prepare_gatt_client_context(connection, packet);
-            if (!context) break;
+            gatt_helper = daemon_setup_gatt_client_request(connection, packet);
+            if (!gatt_helper) break;
             swap128(&packet[5], uuid128);
-            gatt_client_discover_primary_services_by_uuid128(context, uuid128);
+            gatt_client_discover_primary_services_by_uuid128(gatt_helper->con_handle, uuid128);
             break;
         case GATT_FIND_INCLUDED_SERVICES_FOR_SERVICE:
-            context = daemon_prepare_gatt_client_context(connection, packet);
-            if (!context) break;
+            gatt_helper = daemon_setup_gatt_client_request(connection, packet);
+            if (!gatt_helper) break;
             daemon_gatt_deserialize_service(packet, 5, &service);
-            gatt_client_find_included_services_for_service(context, &service);
+            gatt_client_find_included_services_for_service(gatt_helper->con_handle, &service);
             break;
         
         case GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE:
-            context = daemon_prepare_gatt_client_context(connection, packet);
-            if (!context) break;
+            gatt_helper = daemon_setup_gatt_client_request(connection, packet);
+            if (!gatt_helper) break;
             daemon_gatt_deserialize_service(packet, 5, &service);
-            gatt_client_discover_characteristics_for_service(context, &service);
+            gatt_client_discover_characteristics_for_service(gatt_helper->con_handle, &service);
             break;
         case GATT_DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID128:
-            context = daemon_prepare_gatt_client_context(connection, packet);
-            if (!context) break;
+            gatt_helper = daemon_setup_gatt_client_request(connection, packet);
+            if (!gatt_helper) break;
             daemon_gatt_deserialize_service(packet, 5, &service);
             swap128(&packet[5 + SERVICE_LENGTH], uuid128);
-            gatt_client_discover_characteristics_for_service_by_uuid128(context, &service, uuid128);
+            gatt_client_discover_characteristics_for_service_by_uuid128(gatt_helper->con_handle, &service, uuid128);
             break;
         case GATT_DISCOVER_CHARACTERISTIC_DESCRIPTORS:
-            context = daemon_prepare_gatt_client_context(connection, packet);
-            if (!context) break;
+            gatt_helper = daemon_setup_gatt_client_request(connection, packet);
+            if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
-            gatt_client_discover_characteristic_descriptors(context, &characteristic);
+            gatt_client_discover_characteristic_descriptors(gatt_helper->con_handle, &characteristic);
             break;
         
         case GATT_READ_VALUE_OF_CHARACTERISTIC:
-            // context = daemon_prepare_gatt_client_context(connection, packet, GATT_CHARACTERISTIC_VALUE_QUERY_RESULT);
-            context = daemon_prepare_gatt_client_context(connection, packet);
-            if (!context) break;
+            gatt_helper = daemon_setup_gatt_client_request(connection, packet);
+            if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
-            gatt_client_read_value_of_characteristic(context, &characteristic);
+            gatt_client_read_value_of_characteristic(gatt_helper->con_handle, &characteristic);
             break;
         case GATT_READ_LONG_VALUE_OF_CHARACTERISTIC:
-            context = daemon_prepare_gatt_client_context(connection, packet);
-            if (!context) break;
+            gatt_helper = daemon_setup_gatt_client_request(connection, packet);
+            if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
-            gatt_client_read_long_value_of_characteristic(context, &characteristic);
+            gatt_client_read_long_value_of_characteristic(gatt_helper->con_handle, &characteristic);
             break;
         
         case GATT_WRITE_VALUE_OF_CHARACTERISTIC_WITHOUT_RESPONSE:
-            context = daemon_prepare_gatt_client_context(connection, packet);
-            if (!context) break;
+            gatt_helper = daemon_setup_gatt_client_request(connection, packet);
+            if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
             data_length = READ_BT_16(packet, 5 + CHARACTERISTIC_LENGTH);
-            data = daemon_get_data_buffer(context);
+            data = gatt_helper->characteristic_buffer;
             memcpy(data, &packet[7 + CHARACTERISTIC_LENGTH], data_length);
-            gatt_client_write_value_of_characteristic_without_response(context, characteristic.value_handle, data_length, data);
+            gatt_client_write_value_of_characteristic_without_response(gatt_helper->con_handle, characteristic.value_handle, data_length, data);
             break;
         case GATT_WRITE_VALUE_OF_CHARACTERISTIC:
-            context = daemon_prepare_gatt_client_context(connection, packet);
-            if (!context) break;
+            gatt_helper = daemon_setup_gatt_client_request(connection, packet);
+            if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
             data_length = READ_BT_16(packet, 5 + CHARACTERISTIC_LENGTH);
-            data = daemon_get_data_buffer(context);
+            data = gatt_helper->characteristic_buffer;
             memcpy(data, &packet[7 + CHARACTERISTIC_LENGTH], data_length);
-            gatt_client_write_value_of_characteristic(context, characteristic.value_handle, data_length, data);
+            gatt_client_write_value_of_characteristic(gatt_helper->con_handle, characteristic.value_handle, data_length, data);
             break;
         case GATT_WRITE_LONG_VALUE_OF_CHARACTERISTIC:
-            context = daemon_prepare_gatt_client_context(connection, packet);
-            if (!context) break;
+            gatt_helper = daemon_setup_gatt_client_request(connection, packet);
+            if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
             data_length = READ_BT_16(packet, 5 + CHARACTERISTIC_LENGTH);
-            data = daemon_get_data_buffer(context);
+            data = gatt_helper->characteristic_buffer;
             memcpy(data, &packet[7 + CHARACTERISTIC_LENGTH], data_length);
-            gatt_client_write_long_value_of_characteristic(context, characteristic.value_handle, data_length, data);
+            gatt_client_write_long_value_of_characteristic(gatt_helper->con_handle, characteristic.value_handle, data_length, data);
             break;
         case GATT_RELIABLE_WRITE_LONG_VALUE_OF_CHARACTERISTIC:
-            context = daemon_prepare_gatt_client_context(connection, packet);
-            if (!context) break;
+            gatt_helper = daemon_setup_gatt_client_request(connection, packet);
+            if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
             data_length = READ_BT_16(packet, 5 + CHARACTERISTIC_LENGTH);
-            data = daemon_get_data_buffer(context);
+            data = gatt_helper->characteristic_buffer;
             memcpy(data, &packet[7 + CHARACTERISTIC_LENGTH], data_length);
-            gatt_client_write_long_value_of_characteristic(context, characteristic.value_handle, data_length, data);
+            gatt_client_write_long_value_of_characteristic(gatt_helper->con_handle, characteristic.value_handle, data_length, data);
             break;
         case GATT_READ_CHARACTERISTIC_DESCRIPTOR:
-            // context = daemon_prepare_gatt_client_context(connection, packet, GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT);
-            context = daemon_prepare_gatt_client_context(connection, packet);
-            if (!context) break;
+            gatt_helper = daemon_setup_gatt_client_request(connection, packet);
+            if (!gatt_helper) break;
+            handle = READ_BT_16(packet, 3);
             daemon_gatt_deserialize_characteristic_descriptor(packet, 5, &descriptor);
-            gatt_client_read_characteristic_descriptor(context, &descriptor);
+            gatt_client_read_characteristic_descriptor(gatt_helper->con_handle, &descriptor);
             break;
         case GATT_READ_LONG_CHARACTERISTIC_DESCRIPTOR:
-            context = daemon_prepare_gatt_client_context(connection, packet);
-            if (!context) break;
+            gatt_helper = daemon_setup_gatt_client_request(connection, packet);
+            if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic_descriptor(packet, 5, &descriptor);
-            gatt_client_read_long_characteristic_descriptor(context, &descriptor);
+            gatt_client_read_long_characteristic_descriptor(gatt_helper->con_handle, &descriptor);
             break;
             
         case GATT_WRITE_CHARACTERISTIC_DESCRIPTOR:
-            context = daemon_prepare_gatt_client_context(connection, packet);
-            if (!context) break;
+            gatt_helper = daemon_setup_gatt_client_request(connection, packet);
+            if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic_descriptor(packet, 5, &descriptor);
-            data = daemon_get_data_buffer(context);
+            data = gatt_helper->characteristic_buffer;
             data_length = READ_BT_16(packet, 5 + CHARACTERISTIC_DESCRIPTOR_LENGTH);
-            gatt_client_write_characteristic_descriptor(context, &descriptor, data_length, data);
+            gatt_client_write_characteristic_descriptor(gatt_helper->con_handle, &descriptor, data_length, data);
             break;
         case GATT_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR:
-            context = daemon_prepare_gatt_client_context(connection, packet);
-            if (!context) break;
+            gatt_helper = daemon_setup_gatt_client_request(connection, packet);
+            if (!gatt_helper) break;
             daemon_gatt_deserialize_characteristic_descriptor(packet, 5, &descriptor);
-            data = daemon_get_data_buffer(context);
+            data = gatt_helper->characteristic_buffer;
             data_length = READ_BT_16(packet, 5 + CHARACTERISTIC_DESCRIPTOR_LENGTH);
-            gatt_client_write_long_characteristic_descriptor(context, &descriptor, data_length, data);
+            gatt_client_write_long_characteristic_descriptor(gatt_helper->con_handle, &descriptor, data_length, data);
             break;
         case GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION:{
             uint16_t configuration = READ_BT_16(packet, 5 + CHARACTERISTIC_LENGTH);
-            context = daemon_prepare_gatt_client_context(connection, packet);
-            if (!context) break;
+            gatt_helper = daemon_setup_gatt_client_request(connection, packet);
+            if (!gatt_helper) break;
+            data = gatt_helper->characteristic_buffer;
             daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
-            gatt_client_write_client_characteristic_configuration(context, &characteristic, configuration);
+            gatt_client_write_client_characteristic_configuration(gatt_helper->con_handle, &characteristic, configuration);
             break;
         }
 #endif
@@ -1147,19 +1303,11 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     daemon_add_client_l2cap_service(connection, READ_BT_16(packet, 3));
                     break;
 #if defined(HAVE_BLE) && defined(HAVE_MALLOC)
-                case HCI_EVENT_DISCONNECTION_COMPLETE:{
-                    // re-enable advertisements
-                    // todos = ENABLE_ADVERTISEMENTS;
-
-                    uint16_t handle = READ_BT_16(packet, 3);
-                    daemon_remove_gatt_client_handle(connection, handle);
-                    
-                    gatt_client_t *context = get_gatt_client_context_for_handle(handle);
-                    if (!context) break;
-                    gatt_client_stop(context);
-                    free(context);
+                case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    log_info("daemon : ignore HCI_EVENT_DISCONNECTION_COMPLETE ingnoring.");
+                    // note: moved to gatt_client_handler because it's received here prematurely
+                    // daemon_remove_gatt_client_helper(READ_BT_16(packet, 3));
                     break;
-                }
 #endif
                 default:
                     break;
@@ -1286,8 +1434,6 @@ static void daemon_sigint_handler(int param){
     exit(0);
 }
 
-
-
 // MARK: manage power off timer
 
 #define USE_POWER_OFF_TIMER
@@ -1377,12 +1523,30 @@ static void * run_loop_thread(void *context){
 #ifdef HAVE_BLE
 
 static void handle_gatt_client_event(le_event_t * le_event){
-    connection_t * context = (connection_t *)le_event->client->context;
+
+    // hack: handle disconnection_complete_here instead of main hci event packet handler
+    // we receive a HCI event packet in disguise
+    if (le_event->type == HCI_EVENT_DISCONNECTION_COMPLETE){
+        log_info("daemon hack: handle disconnection_complete in handle_gatt_client_event instead of main hci event packet handler");
+        uint8_t * packet = (uint8_t*) le_event;
+        uint16_t handle = READ_BT_16(packet, 3);
+        daemon_remove_gatt_client_helper(handle);
+        return;
+    }
+
     gatt_complete_event_t * complete_event = (gatt_complete_event_t *) le_event;
-    
+
+    linked_list_gatt_client_helper_t * gatt_client_helper = daemon_get_gatt_client_helper(le_event->handle);
+    if (!gatt_client_helper){
+        log_info("daemon handle_gatt_client_event: gc helper for handle 0x%2x is NULL.", le_event->handle);
+        return;
+    } 
+
+    connection_t *connection = gatt_client_helper->active_connection;
+    if (!connection) return;
+
 #if defined(HAVE_MALLOC)
     uint8_t  * data;
-    gatt_client_helper_t  * gatt_client_helper;
     uint8_t  gatt_chunk = 0;
 #endif
     
@@ -1393,14 +1557,14 @@ static void handle_gatt_client_event(le_event_t * le_event){
             uint8_t event[4 + SERVICE_LENGTH];
             daemon_setup_service_event(le_event, event);
             hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-            socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, event, sizeof(event));
+            socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
             break;
         }
         case GATT_CHARACTERISTIC_QUERY_RESULT:{
             uint8_t event[4 + CHARACTERISTIC_LENGTH];
             daemon_gatt_setup_characteristic_event(le_event, event);
             hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-            socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, event, sizeof(event));
+            socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
             break;
         }
             
@@ -1410,7 +1574,7 @@ static void handle_gatt_client_event(le_event_t * le_event){
             uint8_t event[4 + CHARACTERISTIC_DESCRIPTOR_LENGTH];
             daemon_setup_characteristic_descriptor_event(le_event, event);
             hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-            socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, event, sizeof(event));
+            socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
             break;
         }
         
@@ -1418,7 +1582,7 @@ static void handle_gatt_client_event(le_event_t * le_event){
             uint8_t event[4 + 2 + 1 + ATT_MAX_ATTRIBUTE_SIZE];  // (type, len, handle), handle, len, data 
             daemon_setup_characteristic_value_event(le_event, event);
             hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-            socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, event, sizeof(event));
+            socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
             break;
         }
             
@@ -1426,8 +1590,7 @@ static void handle_gatt_client_event(le_event_t * le_event){
 #if defined(HAVE_MALLOC)
             gatt_chunk = 1;
             le_characteristic_value_event_t * cvalue_event = (le_characteristic_value_event_t *) le_event;
-            data = daemon_get_data_buffer(le_event->client);
-            gatt_client_helper = daemon_get_gatt_client_helper(le_event->client);
+            data = gatt_client_helper->characteristic_buffer;
             gatt_client_helper->characteristic_length = cvalue_event->value_offset + cvalue_event->blob_length;
             memcpy(&data[cvalue_event->value_offset], cvalue_event->blob, cvalue_event->blob_length);
 #endif
@@ -1447,17 +1610,17 @@ static void handle_gatt_client_event(le_event_t * le_event){
             break;
         }
         case GATT_QUERY_COMPLETE:{
+            gatt_client_helper->active_connection = NULL;
             if (gatt_chunk){
-                gatt_client_helper = daemon_get_gatt_client_helper(le_event->client);
-                data = daemon_get_data_buffer(le_event->client);
+                data = gatt_client_helper->characteristic_buffer;
                 uint8_t event[4 + 2 + 1 + gatt_client_helper->characteristic_length];
-                daemon_setup_long_characteristic_value_event(event, complete_event->client->handle,
-                                                             complete_event->client->attribute_handle,
+                daemon_setup_long_characteristic_value_event(event, complete_event->handle,
+                                                             complete_event->attribute_handle,
                                                              gatt_client_helper->characteristic_length, data);
-                socket_connection_send_packet(context, HCI_EVENT_PACKET, 0, event, sizeof(event));
+                socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
                 gatt_chunk = 0;
             }
-            send_gatt_query_complete(context, complete_event->client->handle, complete_event->status);
+            send_gatt_query_complete(connection, complete_event->handle, complete_event->status);
             break;
         }
         default:
