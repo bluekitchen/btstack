@@ -34,6 +34,7 @@ static void bluetooth_power_cycle(void);
 
 static void dummy_handler(void);
 static void (*tick_handler)(void) = &dummy_handler;
+static int hal_uart_needed_during_sleep = 1;
 
 static void dummy_handler(void){};
 
@@ -65,15 +66,22 @@ void sys_tick_handler(void)
 // hal_cpu.h implementation
 #include <btstack/hal_cpu.h>
 
-void hal_cpu_disable_irqs(void){
+__attribute__(( always_inline ))
+inline void hal_cpu_disable_irqs(){
+	__asm volatile ("cpsid i" : : : "memory");
+}
+
+__attribute__(( always_inline ))
+inline void hal_cpu_enable_irqs(){
+	__asm volatile ("cpsie i" : : : "memory");
 
 }
-void hal_cpu_enable_irqs(void){
-
+__attribute__(( always_inline ))
+inline void hal_cpu_enable_irqs_and_sleep(){
+	__asm volatile ("cpsie i" : : : "memory");
+	// TODO: pick power mode for sleep depening on need for UART
 }
-void hal_cpu_enable_irqs_and_sleep(void){
 
-}
 
 // hal_led.h implementation
 #include <btstack/hal_led.h>
@@ -198,8 +206,7 @@ void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
 }
 
 void hal_uart_dma_set_sleep(uint8_t sleep){
-	// TODO:
-	(void) sleep;
+	hal_uart_needed_during_sleep = !sleep;
 }
 
 /**
