@@ -199,7 +199,7 @@ ifeq ($(OOCD_SERIAL),)
 %.flash: %.hex
 	@printf "  FLASH   $<\n"
 	@# IMPORTANT: Don't use "resume", only "reset" will work correctly!
-	$(Q)$(OOCD) -f interface/$(OOCD_INTERFACE).cfg \
+	$(Q)$(OOCD) \
 		    -f board/$(OOCD_BOARD).cfg \
 		    -c "init" -c "reset init" \
 		    -c "flash write_image erase $(*).hex" \
@@ -209,7 +209,7 @@ else
 %.flash: %.hex
 	@printf "  FLASH   $<\n"
 	@# IMPORTANT: Don't use "resume", only "reset" will work correctly!
-	$(Q)$(OOCD) -f interface/$(OOCD_INTERFACE).cfg \
+	$(Q)$(OOCD) \
 		    -f board/$(OOCD_BOARD).cfg \
 		    -c "ft2232_serial $(OOCD_SERIAL)" \
 		    -c "init" -c "reset init" \
