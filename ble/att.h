@@ -102,6 +102,7 @@ extern "C" {
 #define ATT_ERROR_INSUFFICIENT_ENCRYPTION          0x0f
 #define ATT_ERROR_UNSUPPORTED_GROUP_TYPE           0x10
 #define ATT_ERROR_INSUFFICIENT_RESOURCES           0x11
+#define ATT_ERROR_TIMEOUT                          0x12
 
     
 // custom BTstack error codes
