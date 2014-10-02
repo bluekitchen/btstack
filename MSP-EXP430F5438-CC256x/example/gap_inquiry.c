@@ -123,7 +123,7 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
                     int offset = 3;
                     for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
                         bt_flip_addr(addr, &packet[offset]);
-                        offset =+ 6;
+                        offset += 6;
                         int index = getDeviceIndexForAddress(addr);
                         if (index >= 0) continue;   // already in our list
                         memcpy(devices[deviceCount].address, addr, 6);
@@ -230,7 +230,7 @@ static void btstack_setup(void){
 
 
 // main == setup
-int main(void)
+int btstack_main(void)
 {
     hw_setup();
     btstack_setup();
