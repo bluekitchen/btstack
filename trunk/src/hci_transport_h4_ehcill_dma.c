@@ -327,11 +327,10 @@ static void h4_block_sent(void){
 #ifdef DUMP
 static void dump(uint8_t *data, uint16_t len){
     int i;
-    if (len > 5) len = 8;
     for (i=0; i<len;i++){
         printf("%02X ", ((uint8_t *)data)[i]);
     }
-    printf("\n\r");
+    printf("\n");
 }
 #endif
 
@@ -398,7 +397,7 @@ static void ehcill_handle(uint8_t action){
                     // 2. enable CTS   - CTS always enabled
                     
                     ehcill_state = EHCILL_STATE_SLEEP;
-                    log_info("RX: EHCILL_GO_TO_SLEEP_IND");
+                    log_info("EHCILL: GO_TO_SLEEP_IND RX");
                     ehcill_schedule_ecill_command(EHCILL_GO_TO_SLEEP_ACK);
                     break;
                     
@@ -417,7 +416,7 @@ static void ehcill_handle(uint8_t action){
                     // UART needed again
                     hal_uart_dma_set_sleep(0);
 
-                    log_info ("Re-activate rx");
+                    log_info ("EHCILL: Re-activate rx");
                     size = ehcill_defer_rx_size;
                     ehcill_defer_rx_size = 0;
                     hal_uart_dma_receive_block(ehcill_defer_rx_buffer, size);
@@ -426,7 +425,7 @@ static void ehcill_handle(uint8_t action){
                 case EHCILL_WAKE_UP_IND:
                     
                     ehcill_state = EHCILL_STATE_AWAKE;
-                    log_info("RX: EHCILL_GO_TO_SLEEP_IND");
+                    log_info("EHCILL: WAKE_UP_IND RX");
                     ehcill_schedule_ecill_command(EHCILL_WAKE_UP_ACK);
                     break;
                     
@@ -440,7 +439,7 @@ static void ehcill_handle(uint8_t action){
                 case EHCILL_WAKE_UP_IND:
                 case EHCILL_WAKE_UP_ACK:
                     
-                    log_info("RX: EHCILL_WAKE_UP_IND or ACK");
+                    log_info("EHCILL: WAKE_UP_IND or ACK");
 
                     tx_state = TX_W4_HEADER_SENT;
                     hal_uart_dma_send_block(&tx_packet_type, 1);
@@ -486,13 +485,12 @@ static int ehcill_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     ehcill_state = EHCILL_STATE_W4_ACK;
     
     // wake up
-    log_info("RX: SLEEP");
-    log_info("TX: EHCILL_WAKE_UP_IND");
+    log_info("EHCILL: WAKE_UP_IND TX");
     ehcill_command_to_send = EHCILL_WAKE_UP_IND;
     hal_uart_dma_send_block(&ehcill_command_to_send, 1);
     
     if (!ehcill_defer_rx_size){
-        log_error("ERROR: NO RX REQUEST PENDING");
+        log_error("EHCILL: NO RX REQUEST PENDING");
         return 0;
     }
     
