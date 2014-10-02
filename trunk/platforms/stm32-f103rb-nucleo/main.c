@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include <btstack/run_loop.h>
+#include "hci.h"
 
 // Configuration
 // LED2 on PA5
@@ -281,16 +282,24 @@ static void msleep(uint32_t delay)
 }
 
 static void bluetooth_power_cycle(void){
-	printf("n_shutdown low\n");
+	printf("Bluetooth power cycle\n");
 	gpio_clear(GPIOA, GPIO_LED2);
 	gpio_clear(GPIOB, GPIO_BT_N_SHUTDOWN);
-	msleep(1000);
-	printf("n_shutdown high\n");
+	msleep(100);
 	gpio_set(GPIOA, GPIO_LED2);
 	gpio_set(GPIOB, GPIO_BT_N_SHUTDOWN);
-	msleep(1000);
-	printf("n_shutdown toggling down\n");	
+	msleep(500);
 }
+
+
+// after HCI Reset, use 115200. Then increase baud reate to 468000.
+// (on nucleo board without external crystall, running at 8 Mhz, 1 mbps was not possible)
+static const hci_uart_config_t hci_uart_config_cc256x = {
+    NULL,
+    115200,
+    460800,
+    0
+};
 
 int main(void)
 {
@@ -300,8 +309,19 @@ int main(void)
 	debug_usart_setup();
 	bluetooth_setup();
 
+	// start with BTstack init - especially configure HCI Transport
+    btstack_memory_init();
+    run_loop_init(RUN_LOOP_EMBEDDED);
+    
+    // init HCI
+    hci_transport_t    * transport = hci_transport_h4_dma_instance();
+    bt_control_t       * control   = bt_control_cc256x_instance();
+    hci_uart_config_t  * config    = hci_uart_config_cc256x_instance();
+    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
+    hci_init(transport, config, control, remote_db);
+
 	// hand over to btstack embedded code 
-	btstack_main();
+    btstack_main();
 
 	return 0;
 }
