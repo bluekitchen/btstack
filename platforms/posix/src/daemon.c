@@ -419,6 +419,7 @@ static void daemon_remove_gatt_client_helper(uint32_t con_handle){
         free(item);
     }
 
+    linked_list_remove(&gatt_client_helpers, (linked_item_t *) helper);
     free(helper);
     
     linked_list_iterator_init(&cl, &clients);
@@ -528,9 +529,16 @@ static void daemon_disconnect_client(connection_t * connection){
 
 linked_list_gatt_client_helper_t * daemon_get_gatt_client_helper(uint16_t handle) {
     linked_list_iterator_t it;  
+    if (!gatt_client_helpers) return NULL;
+    log_info("daemon_get_gatt_client_helper for handle 0x%02x", handle);
+    
     linked_list_iterator_init(&it, &gatt_client_helpers);
     while (linked_list_iterator_has_next(&it)){
         linked_list_gatt_client_helper_t * item = (linked_list_gatt_client_helper_t*) linked_list_iterator_next(&it);
+        if (!item ) {
+            log_info("daemon_get_gatt_client_helper gatt_client_helpers null item");
+            break;
+        } 
         if (item->con_handle == handle){
             return item;
         }
@@ -561,6 +569,7 @@ linked_list_gatt_client_helper_t * daemon_setup_gatt_client_request(connection_t
     linked_list_gatt_client_helper_t * helper = daemon_get_gatt_client_helper(handle);
 
     if (!helper){
+        log_info("helper does not exist");
         helper = malloc(sizeof(linked_list_gatt_client_helper_t));
         if (!helper) return NULL; 
         memset(helper, 0, sizeof(linked_list_gatt_client_helper_t));
@@ -1778,9 +1787,9 @@ int main (int argc,  char * const * argv){
     gatt_client_init();
     gatt_client_register_packet_handler(&handle_gatt_client_event);
 
-    sm_init();
-    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
-    sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION); 
+    // sm_init();
+    // sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+    // sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION); 
 
     // GATT Server - empty attribute database
     central_device_db_init();
