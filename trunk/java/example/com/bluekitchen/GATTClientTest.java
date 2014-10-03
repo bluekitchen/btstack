@@ -23,7 +23,7 @@ public class GATTClientTest implements PacketHandler {
 	private enum STATE {
 		w4_btstack_working, w4_scan_result, w4_connected, w4_services_complete, w4_characteristic_complete, w4_characteristic_read
 	, w4_characteristic_write, w4_acc_service_result, w4_acc_enable_characteristic_result, w4_write_acc_enable_result, w4_acc_client_config_characteristic_result, w4_acc_client_config_result,
-	w4_acc_data, w4_connected_acc
+	w4_acc_data, w4_connected_acc, battery_data
 	};
 
 	private BTstack btstack;
@@ -35,7 +35,9 @@ public class GATTClientTest implements PacketHandler {
 	private GATTCharacteristic testCharacteristic;
 	private int service_count = 0;
 	private int characteristic_count = 0;
-	
+	private int connectionHandle;
+	private int counter = 0;
+
 	private byte[] acc_service_uuid =           new byte[] {(byte)0xf0, 0, (byte)0xaa, (byte)0x10, 4, (byte)0x51, (byte)0x40, 0, (byte)0xb0, 0, 0, 0, 0, 0, 0, 0};
 	private byte[] acc_chr_client_config_uuid = new byte[] {(byte)0xf0, 0, (byte)0xaa, (byte)0x11, 4, (byte)0x51, (byte)0x40, 0, (byte)0xb0, 0, 0, 0, 0, 0, 0, 0};
 	private byte[] acc_chr_enable_uuid =        new byte[] {(byte)0xf0, 0, (byte)0xaa, (byte)0x12, 4, (byte)0x51, (byte)0x40, 0, (byte)0xb0, 0, 0, 0, 0, 0, 0, 0};
@@ -44,9 +46,145 @@ public class GATTClientTest implements PacketHandler {
 	private GATTService accService;
 	private GATTCharacteristic enableCharacteristic;
 	private GATTCharacteristic configCharacteristic;
-	
 
+	private GATTService batteryService;
+	private GATTCharacteristic batteryLevelCharacteristic;
+	private byte[] battery_level_chr_uuid = new byte[] {0, 0, (byte)0x2a, (byte)0x19, 0, 0, (byte)0x10, 0, (byte)0x80, 0, 0, (byte)0x80, (byte)0x5f, (byte)0x9b, (byte)0x34, (byte)0xfb}; 
+	GATTCharacteristicValueQueryResult battery;
+	
+	private BT_UUID uuid128(byte[] att_uuid) {
+		byte [] uuid = new byte[16];
+		Util.flipX(att_uuid, uuid);	
+		return new BT_UUID(uuid);
+	}
+	
 	public void handlePacket(Packet packet){
+		if (packet instanceof HCIEventDisconnectionComplete){
+			System.out.println(String.format("Received dissconnect, restart scannning."));
+			state = STATE.w4_scan_result;
+			btstack.GAPLEScanStart();
+			return;
+		}
+		
+		if (packet instanceof GATTQueryComplete){
+			GATTQueryComplete event = (GATTQueryComplete) packet;
+			System.out.println(testAddr + " battery data");
+			if (event.getStatus() != 0){
+				System.out.println("Battery data could not be read.\nRestart scanning.");
+				state = STATE.w4_scan_result;
+				btstack.GAPLEScanStart(); 
+				return;
+			}
+		}
+
+		switch (state){
+			case w4_btstack_working:
+				if (packet instanceof BTstackEventState){
+					BTstackEventState event = (BTstackEventState) packet;
+					if (event.getState() == 2)	{
+						System.out.println("BTstack working, start scanning.");
+						state = STATE.w4_scan_result;
+						btstack.GAPLEScanStart();
+					}
+				}
+				break;
+			case w4_scan_result:
+				if (packet instanceof GAPLEAdvertisingReport){
+					// Advertisement received. Connect to the found BT address.
+					GAPLEAdvertisingReport report = (GAPLEAdvertisingReport) packet;
+					testAddrType = report.getAddressType();
+					testAddr = report.getAddress();
+					System.out.println(String.format("Adv: type %d, addr %s\ndata: %s \n Stop scan, initiate connect.", testAddrType, testAddr, Util.asHexdump(report.getData())));
+					btstack.GAPLEScanStop();
+					state = STATE.w4_connected;
+					btstack.GAPLEConnect(testAddrType, testAddr);
+				}
+				break;
+			case w4_connected:
+				if (packet instanceof HCIEventLEConnectionComplete){
+					HCIEventLEConnectionComplete event = (HCIEventLEConnectionComplete) packet;
+					if (event.getStatus() != 0) {
+						System.out.println(testAddr + String.format(" - connection failed, status %d.\nRestart scanning.", event.getStatus()));
+						state = STATE.w4_scan_result;
+						btstack.GAPLEScanStart();
+						break;
+					}
+					
+					// Query battery service.
+					state = STATE.w4_services_complete;
+					connectionHandle = event.getConnectionHandle();
+					System.out.println(testAddr + String.format(" - connected %x.\nQuery battery service.", connectionHandle));
+					btstack.GATTDiscoverPrimaryServicesByUUID16(connectionHandle, 0x180f);
+				}
+				break;
+			case w4_services_complete:
+				if (packet instanceof GATTServiceQueryResult){
+					// Store battery service. Wait for GATTQueryComplete event to send next GATT command.
+					GATTServiceQueryResult event = (GATTServiceQueryResult) packet;
+					System.out.println(testAddr + String.format(" - battery service %s", event.getService().getUUID()));
+					batteryService = event.getService();
+					break;
+				}
+				if (packet instanceof GATTQueryComplete){
+					// Check if battery service is found.
+					if (batteryService == null) {
+						System.out.println(testAddr + " - no battery service. \nRestart scanning.");
+						state = STATE.w4_scan_result;
+						btstack.GAPLEScanStart(); 
+						break;
+					}
+					System.out.println(testAddr + " - query battery level.");
+					state = STATE.w4_characteristic_complete;
+					btstack.GATTDiscoverCharacteristicsForServiceByUUID128(connectionHandle, batteryService, uuid128(this.battery_level_chr_uuid));	
+				}
+				break;
+			case w4_characteristic_complete:
+				if (packet instanceof GATTCharacteristicQueryResult){
+					// Store battery level characteristic. Wait for GATTQueryComplete event to send next GATT command.
+					GATTCharacteristicQueryResult event = (GATTCharacteristicQueryResult) packet;
+					batteryLevelCharacteristic = event.getCharacteristic();
+					System.out.println(testAddr + " - battery level found.");
+					break;
+				}
+				
+				if (!(packet instanceof GATTQueryComplete)) break;
+				if (batteryLevelCharacteristic == null) {
+					System.out.println("No battery level characteristic found");
+					break;
+				}
+				System.out.println(testAddr + " - polling battery.");
+				counter = 0;
+				state = STATE.battery_data;
+				new Thread(new Runnable(){
+					@Override
+					public void run() {
+						try {
+							while(state == STATE.battery_data){
+								Thread.sleep(5000);
+								btstack.GATTReadValueOfCharacteristic(connectionHandle, batteryLevelCharacteristic);
+							}
+						} catch (InterruptedException e) {}
+					}
+				}).start();
+				break;
+			case battery_data:
+				if (packet instanceof GATTCharacteristicValueQueryResult){
+					GATTCharacteristicValueQueryResult battery = (GATTCharacteristicValueQueryResult) packet;
+					
+					if (battery.getValueLength() != 1) break;
+					byte[] data = battery.getValue();
+					counter = counter + 1;
+					System.out.println(String.format("Counter %d, battery level: %d", counter, data[0]) + "%");
+					break;
+					
+				}
+				break;
+			default:
+				break;
+		}
+	}
+
+	public void handlePacketAcc(Packet packet){
 		
 //		System.out.println(packet.toString());
 		if (packet instanceof HCIEventDisconnectionComplete){
