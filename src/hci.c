@@ -634,7 +634,7 @@ void le_handle_advertisement_report(uint8_t *packet, int size){
         total_data_length += packet[4+num_reports*8+i];
     }
 
-    log_info("num reports: %d, ", num_reports);
+    log_info("HCI: handle adv report with num reports: %d", num_reports);
     for (i=0; i<num_reports;i++){
         uint8_t data_length = packet[offset + 9];
         uint8_t event_size = 10 + data_length;
@@ -650,6 +650,7 @@ void le_handle_advertisement_report(uint8_t *packet, int size){
         memcpy(&event[pos], &packet[offset], data_length);
         pos += data_length;
         offset += data_length + 1; // rssi
+        hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
         hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
     }
 }
