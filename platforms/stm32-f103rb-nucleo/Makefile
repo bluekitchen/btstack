@@ -3,7 +3,7 @@
 #
 
 # BINARY=led_counter
-BINARY=spp_counter
+BINARY=spp_and_le_counter
 OPENCM3_DIR = libopencm3
 LDSCRIPT = stm32f1-nucleo.ld
 
@@ -19,7 +19,7 @@ CORE   = \
 
 COMMON = \
 	${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
-	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2560B_1.0_BT_Spec_4.1.c   \
+	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2564B_1.0_BT_Spec_4.1.c   \
     ${BTSTACK_ROOT}/src/hci.c			          \
     ${BTSTACK_ROOT}/src/hci_cmds.c		          \
     ${BTSTACK_ROOT}/src/hci_dump.c		          \
@@ -48,8 +48,7 @@ CORE_OBJ   = $(CORE:.c=.o)
 COMMON_OBJ   = $(COMMON:.c=.o)
 BLE_OBJ   = $(BLE:.c=.o)
 
-OBJS += $(CORE_OBJ) $(COMMON_OBJ)
-# $(BLE_OBJ)
+OBJS += $(CORE_OBJ) $(COMMON_OBJ) $(BLE_OBJ)
 
 CFLAGS = -I. -I$(BTSTACK_ROOT)/include -I$(BTSTACK_ROOT)/src -I$(BTSTACK_ROOT)/ble -I$(BTSTACK_ROOT)/chipset-cc256x
 
