@@ -18,7 +18,7 @@ Then, unzip it and copy the *.bts file into this folder and start the script aga
 '''
 
 fartext = '''
-#if defined(__GNUC__) && (__MSP430X__ > 0)
+#if defined(__GNUC__) && defined(__MSP430X__) && (__MSP430X__ > 0)
 __attribute__((section (".fartext")))
 #endif
 #ifdef __AVR__
@@ -141,7 +141,7 @@ def convert_bts(bts_file):
 
                 if (part > 1):
                     suffix = '_{0}'.format(part)
-                    fout.write('#if defined(__GNUC__) && (__MSP430X__ > 0)\n')
+                    fout.write('#if defined(__GNUC__) && defined(__GNUC__) && (__MSP430X__ > 0)\n')
                     fout.write('};\n')
                     fout.write('__attribute__((section (".fartext")))\n')
 
