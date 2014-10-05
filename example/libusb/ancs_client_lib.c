@@ -115,7 +115,7 @@ static void notify_client(int event_type){
     if (!client_handler) return;
     ancs_event_t event;
     event.type = event_type;
-    event.handle = handle;
+    event.handle = gc_handle;
     event.attribute_id = ancs_attribute_id;
     event.text = ancs_notification_buffer;
     (*client_handler)(&event);
@@ -320,5 +320,5 @@ void ancs_client_hci_event_handler (uint8_t packet_type, uint16_t channel, uint8
 }
 
 void ancs_client_init(){
-    gatt_client_register_packet_handler(&gc_handle_gatt_client_event);
+    gatt_client_register_packet_handler(&handle_gatt_client_event);
 }
