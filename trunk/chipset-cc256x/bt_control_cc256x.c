@@ -62,7 +62,7 @@
 #include <stdio.h> 
 #include <string.h>   /* memcpy */
 
-#if defined(__GNUC__) && (__MSP430X__ > 0)
+#if defined(__GNUC__) && defined(__MSP430X__) && (__MSP430X__ > 0)
 #include "hal_compat.h"
 #endif
 
@@ -198,7 +198,7 @@ static int bt_control_cc256x_next_cmd(void *config, uint8_t *hci_cmd_buffer){
     
     init_script_offset++;   // extracted init script has 0x01 cmd packet type, but BTstack expects them without
     
-#if defined(__GNUC__) && (__MSP430X__ > 0)
+#if defined(__GNUC__) && defined(__MSP430X__) && (__MSP430X__ > 0)
     
     // workaround: use FlashReadBlock with 32-bit integer and assume init script starts at 0x10000
     uint32_t init_script_addr = 0x10000;
