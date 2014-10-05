@@ -59,6 +59,7 @@
 #include <btstack/hal_uart_dma.h>
 
 // #define DUMP
+// #define LOG_EHCILL
 
 // eHCILL commands (+interal CTS signal)
 #define EHCILL_GO_TO_SLEEP_IND 0x030
@@ -397,7 +398,9 @@ static void ehcill_handle(uint8_t action){
                     // 2. enable CTS   - CTS always enabled
                     
                     ehcill_state = EHCILL_STATE_SLEEP;
+#ifdef LOG_EHCILL
                     log_info("EHCILL: GO_TO_SLEEP_IND RX");
+#endif
                     ehcill_schedule_ecill_command(EHCILL_GO_TO_SLEEP_ACK);
                     break;
                     
@@ -416,7 +419,9 @@ static void ehcill_handle(uint8_t action){
                     // UART needed again
                     hal_uart_dma_set_sleep(0);
 
+#ifdef LOG_EHCILL
                     log_info ("EHCILL: Re-activate rx");
+#endif
                     size = ehcill_defer_rx_size;
                     ehcill_defer_rx_size = 0;
                     hal_uart_dma_receive_block(ehcill_defer_rx_buffer, size);
@@ -425,7 +430,9 @@ static void ehcill_handle(uint8_t action){
                 case EHCILL_WAKE_UP_IND:
                     
                     ehcill_state = EHCILL_STATE_AWAKE;
+#ifdef LOG_EHCILL
                     log_info("EHCILL: WAKE_UP_IND RX");
+#endif
                     ehcill_schedule_ecill_command(EHCILL_WAKE_UP_ACK);
                     break;
                     
@@ -439,8 +446,9 @@ static void ehcill_handle(uint8_t action){
                 case EHCILL_WAKE_UP_IND:
                 case EHCILL_WAKE_UP_ACK:
                     
+#ifdef LOG_EHCILL
                     log_info("EHCILL: WAKE_UP_IND or ACK");
-
+#endif
                     tx_state = TX_W4_HEADER_SENT;
                     hal_uart_dma_send_block(&tx_packet_type, 1);
                     ehcill_state = EHCILL_STATE_AWAKE;
@@ -484,8 +492,10 @@ static int ehcill_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     tx_state     = TX_W4_WAKEUP;
     ehcill_state = EHCILL_STATE_W4_ACK;
     
+#ifdef LOG_EHCILL
     // wake up
     log_info("EHCILL: WAKE_UP_IND TX");
+#endif
     ehcill_command_to_send = EHCILL_WAKE_UP_IND;
     hal_uart_dma_send_block(&ehcill_command_to_send, 1);
     
