@@ -375,10 +375,12 @@ typedef struct {
     // list of existing baseband connections
     linked_list_t     connections;
 
-    // single buffer for HCI Command assembly
+    // single buffer for HCI packet assembly
     uint8_t   hci_packet_buffer[HCI_PACKET_BUFFER_SIZE]; // opcode (16), len(8)
     uint8_t   hci_packet_buffer_reserved;
-    
+    uint16_t  acl_fragmentation_pos;
+    uint16_t  acl_fragmentation_total_size;
+     
     /* host to controller flow control */
     uint8_t  num_cmd_packets;
     // uint8_t  total_num_cmd_packets;

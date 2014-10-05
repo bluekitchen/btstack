@@ -384,8 +384,79 @@ int hci_transport_synchronous(void){
     return hci_stack->hci_transport->can_send_packet_now == NULL;
 }
 
+static int hci_send_acl_packet_fragments(hci_connection_t *connection){
+
+    // log_info("hci_send_acl_packet_fragments  %u/%u (con 0x%04x)", hci_stack->acl_fragmentation_pos, hci_stack->acl_fragmentation_total_size, connection->con_handle);
+
+    // max ACL data packet length depends on connection type (LE vs. Classic) and available buffers
+    uint16_t max_acl_data_packet_length = hci_stack->acl_data_packet_length;
+    if (hci_is_le_connection(connection) && hci_stack->le_data_packets_length > 0){
+        max_acl_data_packet_length = hci_stack->le_data_packets_length;
+    }
+
+    // testing: reduce buffer to minimum
+    // max_acl_data_packet_length = 52;
+
+    int err;
+    // multiple packets could be send on a synchronous HCI transport
+    while (1){
+
+        // get current data
+        const uint16_t acl_header_pos = hci_stack->acl_fragmentation_pos - 4;
+        int current_acl_data_packet_length = hci_stack->acl_fragmentation_total_size - hci_stack->acl_fragmentation_pos;
+        int more_fragments = 0;
+
+        // if ACL packet is larger than Bluetooth packet buffer, only send max_acl_data_packet_length
+        if (current_acl_data_packet_length > max_acl_data_packet_length){
+            more_fragments = 1;
+            current_acl_data_packet_length = max_acl_data_packet_length;
+        }
+
+        // copy handle_and_flags if not first fragment and update packet boundary flags to be 01 (continuing fragmnent)
+        if (acl_header_pos > 0){
+            uint16_t handle_and_flags = READ_BT_16(hci_stack->hci_packet_buffer, 0);
+            handle_and_flags = (handle_and_flags & 0xcfff) | (1 << 12);
+            bt_store_16(hci_stack->hci_packet_buffer, acl_header_pos, handle_and_flags);
+        }
+
+        // update header len
+        bt_store_16(hci_stack->hci_packet_buffer, acl_header_pos + 2, current_acl_data_packet_length);
+
+        // count packet
+        connection->num_acl_packets_sent++;
+
+        // send packet
+        uint8_t * packet = &hci_stack->hci_packet_buffer[acl_header_pos];
+        const int size = current_acl_data_packet_length + 4;
+        // hexdump(packet, size);
+        err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
+
+        // done yet?
+        if (!more_fragments) break;
+
+        // update start of next fragment to send
+        hci_stack->acl_fragmentation_pos += current_acl_data_packet_length;
+
+        // can send more?
+        if (!hci_can_send_prepared_acl_packet_now(connection->con_handle)) return err;
+    }
+
+    // done    
+    hci_stack->acl_fragmentation_pos = 0;
+    hci_stack->acl_fragmentation_total_size = 0;
+
+    // free buffer now for synchronous transport
+    if (!hci_transport_synchronous()){
+        hci_release_packet_buffer();                        
+    }
+
+    return err;
+}
+
 // pre: caller has reserved the packet buffer
 int hci_send_acl_packet_buffer(int size){
+
+    // log_info("hci_send_acl_packet_buffer size %u", size);
 
     if (!hci_stack->hci_packet_buffer_reserved) {
         log_error("hci_send_acl_packet_buffer called without reserving packet buffer");
@@ -410,19 +481,13 @@ int hci_send_acl_packet_buffer(int size){
     }
     hci_connection_timestamp(connection);
     
-    // count packet
-    connection->num_acl_packets_sent++;
-    // log_info("hci_send_acl_packet - handle %u, sent %u", connection->con_handle, connection->num_acl_packets_sent);
+    // hci_dump_packet( HCI_ACL_DATA_PACKET, 0, packet, size);
 
-    // send packet 
-    int err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
+    // setup data
+    hci_stack->acl_fragmentation_total_size = size;
+    hci_stack->acl_fragmentation_pos = 4;   // start of L2CAP packet
 
-    // free packet buffer for synchronous transport implementations    
-    if (hci_transport_synchronous()){
-        hci_release_packet_buffer();
-    }
-
-    return err;
+    return hci_send_acl_packet_fragments(connection);
 }
 
 static void acl_handler(uint8_t *packet, int size){
@@ -1849,6 +1914,21 @@ void hci_run(){
                 0x0000, 0xffff);
         }
 #endif
+    }
+
+    // send continuation fragments
+    if (hci_stack->acl_fragmentation_total_size > 0) {
+        hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(hci_stack->hci_packet_buffer);
+        if (hci_can_send_prepared_acl_packet_now(con_handle)){
+            hci_connection_t *connection = hci_connection_for_handle(con_handle);
+            if (connection) {
+                hci_send_acl_packet_fragments(connection);
+                return;
+            } 
+            // connection gone -> discard further fragments
+            hci_stack->acl_fragmentation_total_size = 0;
+            hci_stack->acl_fragmentation_pos = 0;
+        }        
     }
 
     switch (hci_stack->state){
