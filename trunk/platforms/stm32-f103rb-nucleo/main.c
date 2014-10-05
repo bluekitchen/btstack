@@ -93,7 +93,8 @@ void hal_cpu_enable_irqs(){
 void hal_cpu_enable_irqs_and_sleep(){
 	hal_led_off();
 	__enable_irq();
-	__WFI();
+	__asm__("wfe");	// go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
+
 	// note: hal_uart_needed_during_sleep can be used to disable peripheral clock if it's not needed for a timer
 	// todo: the transition from disabled IRQs into sleep mode should be atomic
 	hal_led_on();
@@ -358,7 +359,7 @@ int main(void)
     hci_init(transport, (void*) &hci_uart_config_cc256x, control, remote_db);
 
     // enable eHCILL
-    bt_control_cc256x_enable_ehcill(1);
+    // bt_control_cc256x_enable_ehcill(1);
 
 	// hand over to btstack embedded code 
     btstack_main();
