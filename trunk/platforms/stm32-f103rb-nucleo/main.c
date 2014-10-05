@@ -354,9 +354,8 @@ int main(void)
     // init HCI
     hci_transport_t    * transport = hci_transport_h4_dma_instance();
     bt_control_t       * control   = bt_control_cc256x_instance();
-    hci_uart_config_t  * config    = hci_uart_config_cc256x_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-    hci_init(transport, config, control, remote_db);
+    hci_init(transport, (void*) &hci_uart_config_cc256x, control, remote_db);
 
     // enable eHCILL
     bt_control_cc256x_enable_ehcill(1);
