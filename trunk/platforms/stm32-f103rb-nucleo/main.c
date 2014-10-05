@@ -40,8 +40,7 @@ static int hal_uart_needed_during_sleep = 1;
 static void dummy_handler(void){};
 
 void hal_tick_init(void){
-	/* clock rate / 1000 to get 1mS interrupt rate */
-	systick_set_reload(8000);
+	systick_set_reload(2000000);	// 1/4 of clock -> 250 ms tick
 	systick_set_clocksource(STK_CSR_CLKSOURCE_AHB);
 	systick_counter_enable();
 	systick_interrupt_enable();
@@ -56,12 +55,17 @@ void hal_tick_set_handler(void (*handler)(void)){
 }
 
 int  hal_tick_get_tick_period_in_ms(void){
-    return 1;
+    return 250;
 }
 
 void sys_tick_handler(void)
 {
 	(*tick_handler)();
+}
+
+static void msleep(uint32_t delay) {
+	uint32_t wake = embedded_get_ticks() + delay / hal_tick_get_tick_period_in_ms();
+	while (wake > embedded_get_ticks());
 }
 
 // hal_led.h implementation
@@ -313,18 +317,11 @@ static void bluetooth_setup(void){
 }
 
 // reset Bluetooth using n_shutdown
-
-static void msleep(uint32_t delay)
-{
-	uint32_t wake = embedded_get_ticks() + delay;
-	while (wake > embedded_get_ticks());
-}
-
 static void bluetooth_power_cycle(void){
 	printf("Bluetooth power cycle\n");
 	gpio_clear(GPIOA, GPIO_LED2);
 	gpio_clear(GPIOB, GPIO_BT_N_SHUTDOWN);
-	msleep(100);
+	msleep(250);
 	gpio_set(GPIOA, GPIO_LED2);
 	gpio_set(GPIOB, GPIO_BT_N_SHUTDOWN);
 	msleep(500);
@@ -359,7 +356,7 @@ int main(void)
     hci_init(transport, (void*) &hci_uart_config_cc256x, control, remote_db);
 
     // enable eHCILL
-    // bt_control_cc256x_enable_ehcill(1);
+    bt_control_cc256x_enable_ehcill(1);
 
 	// hand over to btstack embedded code 
     btstack_main();
