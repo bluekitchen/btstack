@@ -138,10 +138,14 @@ void log_key(const char * name, sm_key_t key);
 
 // @deprecated please use more convenient bd_addr_to_str
 void print_bd_addr( bd_addr_t addr);
+
 char * bd_addr_to_str(bd_addr_t addr);
+char * link_key_to_str(link_key_t link_key);
+char *link_key_type_to_str(link_key_type_t link_key);
 
 int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr);
-    
+int sscan_link_key(char * addr_string, link_key_t *link_key);
+
 uint8_t crc8_check(uint8_t *data, uint16_t len, uint8_t check_sum);
 uint8_t crc8_calc(uint8_t *data, uint16_t len);
 
