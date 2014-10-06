@@ -45,6 +45,7 @@
 #include "btstack-config.h"
 #include <btstack/utils.h>
 #include <stdio.h>
+#include <string.h>
 #include "debug.h"
 
 void bt_store_16(uint8_t *buffer, uint16_t pos, uint16_t value){
@@ -180,8 +181,6 @@ void printUUID128(uint8_t *uuid) {
            uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15]);
 }
 
-
-
 static char bd_addr_to_str_buffer[6*3];  // 12:45:78:01:34:67\0
 char * bd_addr_to_str(bd_addr_t addr){
     // orig code
@@ -198,6 +197,24 @@ char * bd_addr_to_str(bd_addr_t addr){
     return (char *) bd_addr_to_str_buffer;
 }
 
+static char link_key_to_str_buffer[LINK_KEY_LEN*2+1];  // 11223344556677889900112233445566\0
+char *link_key_to_str(link_key_t link_key){
+    char * p = link_key_to_str_buffer;
+    int i;
+    for (i = 0; i < LINK_KEY_LEN ; i++) {
+        *p++ = char_for_nibble((link_key[i] >> 4) & 0x0F);
+        *p++ = char_for_nibble((link_key[i] >> 0) & 0x0F);
+    }
+    *p = 0;
+    return (char *) link_key_to_str_buffer;
+}
+
+static char link_key_type_to_str_buffer[2];
+char *link_key_type_to_str(link_key_type_t link_key){
+    snprintf(link_key_type_to_str_buffer, sizeof(link_key_type_to_str_buffer), "%d", link_key);
+    return (char *) link_key_type_to_str_buffer;
+}
+
 void print_bd_addr( bd_addr_t addr){
     log_info("%s", bd_addr_to_str(addr));
 }
@@ -206,22 +223,46 @@ void print_bd_addr( bd_addr_t addr){
 int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr){
 	unsigned int bd_addr_buffer[BD_ADDR_LEN];  //for sscanf, integer needed
 	// reset result buffer
-	int i;
-    for (i = 0; i < BD_ADDR_LEN; i++) {
-        bd_addr_buffer[i] = 0;
-    }
+    memset(bd_addr_buffer, 0, sizeof(bd_addr_buffer));
     
 	// parse
     int result = sscanf( (char *) addr_string, "%2x:%2x:%2x:%2x:%2x:%2x", &bd_addr_buffer[0], &bd_addr_buffer[1], &bd_addr_buffer[2],
 						&bd_addr_buffer[3], &bd_addr_buffer[4], &bd_addr_buffer[5]);
+
+    if (result != BD_ADDR_LEN) return 0;
+
 	// store
-	if (result == 6){
-		for (i = 0; i < BD_ADDR_LEN; i++) {
-			addr[i] = (uint8_t) bd_addr_buffer[i];
-		}
+    int i;
+	for (i = 0; i < BD_ADDR_LEN; i++) {
+		addr[i] = (uint8_t) bd_addr_buffer[i];
 	}
-	return (result == 6);
+	return 1;
 }
+
+int sscan_link_key(char * addr_string, link_key_t *link_key){
+    unsigned int buffer[LINK_KEY_LEN];
+
+    // reset result buffer
+    memset(&buffer, 0, sizeof(buffer));
+
+    // parse
+    int result = sscanf( (char *) addr_string, "%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x%2x",
+                                    &buffer[0], &buffer[1], &buffer[2], &buffer[3],
+                                    &buffer[4], &buffer[5], &buffer[6], &buffer[7],
+                                    &buffer[8], &buffer[9], &buffer[10], &buffer[11],
+                                    &buffer[12], &buffer[13], &buffer[14], &buffer[15] );
+
+    if (result != LINK_KEY_LEN) return 0;
+
+    // store
+    int i;
+    uint8_t *p = (uint8_t *) link_key;
+    for (i=0; i<LINK_KEY_LEN; i++ ) {
+        *p++ = (uint8_t) buffer[i];
+    }
+    return 1;
+}
+
 #endif
 
 
