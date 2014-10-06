@@ -342,7 +342,7 @@ extern "C" {
 #define GATT_INCLUDED_SERVICE_QUERY_RESULT     			   0xA3
 
 /**
- * @format HY
+ * @format HZ
  * @param handle
  * @param characteristic_descriptor
  */
