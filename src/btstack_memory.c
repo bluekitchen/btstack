@@ -244,6 +244,65 @@ void btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel){
 #error "Neither HAVE_MALLOC nor MAX_NO_RFCOMM_CHANNELS for struct rfcomm_channel is defined. Please, edit the config file."
 #endif
 
+// MARK: bnepservice_t
+#ifdef MAX_NO_BNEP_SERVICES
+#if MAX_NO_BNEP_SERVICES > 0
+static bnep_service_t bnep_service_storage[MAX_NO_BNEP_SERVICES];
+static memory_pool_t bnep_service_pool;
+bnep_service_t * btstack_memory_bnep_service_get(void){
+    return memory_pool_get(&bnep_service_pool);
+}
+void btstack_memory_bnep_service_free(bnep_service_t *bnep_service){
+    memory_pool_free(&bnep_service_pool, bnep_service);
+}
+#else
+bnep_service_t * btstack_memory_bnep_service_get(void){
+    return NULL;
+}
+void btstack_memory_bnep_service_free(bnep_service_t *bnep_service){
+};
+#endif
+#elif defined(HAVE_MALLOC)
+bnep_service_t * btstack_memory_bnep_service_get(void){
+    return (bnep_service_t*) malloc(sizeof(bnep_service_t));
+}
+void btstack_memory_bnep_service_free(bnep_service_t *bnep_service){
+    free(bnep_service);
+}
+#else
+#error "Neither HAVE_MALLOC nor MAX_NO_BNEP_SERVICES for struct bnep_service is defined. Please, edit the config file."
+#endif
+
+
+// MARK: bnep_channel_t
+#ifdef MAX_NO_BNEP_CHANNELS
+#if MAX_NO_BNEP_CHANNELS > 0
+static bnep_channel_t bnep_channel_storage[MAX_NO_BNEP_CHANNELS];
+static memory_pool_t bnep_channel_pool;
+bnep_channel_t * btstack_memory_bnep_channel_get(void){
+    return memory_pool_get(&bnep_channel_pool);
+}
+void btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel){
+    memory_pool_free(&bnep_channel_pool, bnep_channel);
+}
+#else
+bnep_channel_t * btstack_memory_bnep_channel_get(void){
+    return NULL;
+}
+void btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel){
+};
+#endif
+#elif defined(HAVE_MALLOC)
+bnep_channel_t * btstack_memory_bnep_channel_get(void){
+    return (bnep_channel_t*) malloc(sizeof(bnep_channel_t));
+}
+void btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel){
+    free(bnep_channel);
+}
+#else
+#error "Neither HAVE_MALLOC nor MAX_NO_BNEP_CHANNELS for struct bnep_channel is defined. Please, edit the config file."
+#endif
+
 
 // MARK: db_mem_device_name_t
 #ifdef MAX_NO_DB_MEM_DEVICE_NAMES
@@ -372,6 +431,7 @@ void btstack_memory_gatt_client_free(gatt_client_t *gatt_client){
 #error "Neither HAVE_MALLOC nor MAX_NO_GATT_CLIENTS for struct gatt_client is defined. Please, edit the config file."
 #endif
 #endif
+
 // init
 void btstack_memory_init(void){
 #if MAX_NO_HCI_CONNECTIONS > 0
