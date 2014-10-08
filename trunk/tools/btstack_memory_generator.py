@@ -47,7 +47,7 @@ def replacePlaceholder(template, struct_name):
     snippet = template.replace("STRUCT_TYPE", struct_type).replace("STRUCT_NAME", struct_name).replace("POOL_COUNT", pool_count)
     return snippet
     
-list_of_structs = [ "hci_connection", "l2cap_service", "l2cap_channel", "rfcomm_multiplexer", "rfcomm_service", "rfcomm_channel", "db_mem_device_name", "db_mem_device_link_key", "db_mem_service", "gatt_client"]
+list_of_structs = [ "hci_connection", "l2cap_service", "l2cap_channel", "rfcomm_multiplexer", "rfcomm_service", "rfcomm_channel", "db_mem_device_name", "db_mem_device_link_key", "db_mem_service", "gatt_client", "bnep_service", "bnep_channel"]
 
 print "// header file"
 for struct_name in list_of_structs:

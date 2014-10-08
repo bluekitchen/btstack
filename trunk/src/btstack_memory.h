@@ -53,7 +53,7 @@ extern "C" {
 #include "hci.h"
 #include "l2cap.h"
 #include "rfcomm.h"
-#include "rfcomm.h"
+#include "bnep.h"
 #include "remote_device_db.h"
 
 #ifdef HAVE_BLE
@@ -64,23 +64,31 @@ void btstack_memory_init(void);
 
 hci_connection_t * btstack_memory_hci_connection_get(void);
 void   btstack_memory_hci_connection_free(hci_connection_t *hci_connection);
+    
 l2cap_service_t * btstack_memory_l2cap_service_get(void);
 void   btstack_memory_l2cap_service_free(l2cap_service_t *l2cap_service);
 l2cap_channel_t * btstack_memory_l2cap_channel_get(void);
 void   btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel);
+
 rfcomm_multiplexer_t * btstack_memory_rfcomm_multiplexer_get(void);
 void   btstack_memory_rfcomm_multiplexer_free(rfcomm_multiplexer_t *rfcomm_multiplexer);
 rfcomm_service_t * btstack_memory_rfcomm_service_get(void);
 void   btstack_memory_rfcomm_service_free(rfcomm_service_t *rfcomm_service);
 rfcomm_channel_t * btstack_memory_rfcomm_channel_get(void);
 void   btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel);
+
+bnep_service_t * btstack_memory_bnep_service_get(void);
+void   btstack_memory_bnep_service_free(bnep_service_t *bnep_service);
+bnep_channel_t * btstack_memory_bnep_channel_get(void);
+void   btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel);    
+
 db_mem_device_name_t * btstack_memory_db_mem_device_name_get(void);
 void   btstack_memory_db_mem_device_name_free(db_mem_device_name_t *db_mem_device_name);
 db_mem_device_link_key_t * btstack_memory_db_mem_device_link_key_get(void);
 void   btstack_memory_db_mem_device_link_key_free(db_mem_device_link_key_t *db_mem_device_link_key);
 db_mem_service_t * btstack_memory_db_mem_service_get(void);
 void   btstack_memory_db_mem_service_free(db_mem_service_t *db_mem_service);
-
+    
 #ifdef HAVE_BLE
 gatt_client_t * btstack_memory_gatt_client_get(void);
 void   btstack_memory_gatt_client_free(gatt_client_t *gatt_client);
