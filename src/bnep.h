@@ -50,6 +50,10 @@
 extern "C" {
 #endif
 
+#ifndef ETHER_ADDR_LEN
+#define ETHER_ADDR_LEN 6
+#endif
+
 #define	BNEP_MTU_MIN		        1691
 
 #define MAX_BNEP_NETFILTER          8
@@ -122,7 +126,7 @@ typedef struct {
 } bnep_net_filter;
 
 /* multicast address filter */
-struct mfilter {
+typedef struct {
 	uint8_t		        addr_start[ETHER_ADDR_LEN];
 	uint8_t		        addr_end[ETHER_ADDR_LEN];
 } bnep_multi_filter;
