@@ -80,6 +80,7 @@ extern "C" {
 #define PSM_RFCOMM 0x03
 #define PSM_HID_CONTROL 0x11
 #define PSM_HID_INTERRUPT 0x13
+#define PSM_BNEP   0x15
 
 // Events from host controller to host
 
