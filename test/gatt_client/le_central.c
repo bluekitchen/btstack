@@ -19,10 +19,10 @@
 
 #include "btstack_memory.h"
 #include "hci.h"
-#include "ble_client.h"
+#include "gatt_client.h"
 
 static bd_addr_t test_device_addr = {0x34, 0xb1, 0xf7, 0xd1, 0x77, 0x9b};
-static le_central_t test_le_central_context;
+//static le_central_t test_le_central_context;
  
 static uint8_t advertisement_received;
 static uint8_t connected;
@@ -31,6 +31,16 @@ void mock_simulate_hci_state_working();
 void mock_simulate_command_complete(const hci_cmd_t *cmd);
 void mock_simulate_scan_response();
 void mock_simulate_connected();
+
+typedef struct ad_event {
+    uint8_t   type;
+    uint8_t   event_type;
+    uint8_t   address_type;
+    bd_addr_t address;
+    uint8_t   rssi;
+    uint8_t   length;
+    uint8_t * data;
+} ad_event_t;
 
 void CHECK_EQUAL_ARRAY(const uint8_t * expected, uint8_t * actual, int size){
 	for (int i=0; i<size; i++){
@@ -51,7 +61,7 @@ static void verify_advertisement(ad_event_t * e){
 
 static void handle_le_client_event(le_event_t * event){
 	switch(event->type){
-		case GAP_LE_ADVERTISING_REPORT:
+		case GAP_LE_ADVERTISING_REPORT:{
 			advertisement_received = 1;
 			verify_advertisement((ad_event_t *) event);
 			break;
@@ -60,6 +70,7 @@ static void handle_le_client_event(le_event_t * event){
 		// 	connected = 1;
 		// 	break;
         }
+
 		default:
 			printf("le_event_t");
 			break;
@@ -68,7 +79,7 @@ static void handle_le_client_event(le_event_t * event){
 
 TEST_GROUP(LECentral){
 	void connect(){
-		le_central_connect(&test_le_central_context, 1, test_device_addr);
+		le_central_connect(&test_device_addr, BD_ADDR_TYPE_LE_PUBLIC);
 		mock_simulate_connected();
 		CHECK(connected);
 	}
