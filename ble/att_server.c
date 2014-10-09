@@ -76,7 +76,7 @@ static att_server_state_t att_server_state;
 static uint8_t   att_client_addr_type;
 static bd_addr_t att_client_address;
 static uint16_t  att_request_size   = 0;
-static uint8_t   att_request_buffer[28];
+static uint8_t   att_request_buffer[HCI_ACL_PAYLOAD_SIZE];
 
 static int       att_ir_central_device_db_index = -1;
 static int       att_ir_lookup_active = 0;
