@@ -290,10 +290,13 @@ static uint16_t handle_exchange_mtu_request(att_connection_t * att_connection, u
                                          uint8_t * response_buffer){
 
     uint16_t client_rx_mtu = READ_BT_16(request_buffer, 1);
-    if (client_rx_mtu < att_connection->mtu){
-        att_connection->mtu = client_rx_mtu;
-    }
     
+    if (client_rx_mtu < l2cap_le_max_mtu()){
+        att_connection->mtu = client_rx_mtu;
+    } else {
+        att_connection->mtu = l2cap_le_max_mtu();
+    }
+
     response_buffer[0] = ATT_EXCHANGE_MTU_RESPONSE;
     bt_store_16(response_buffer, 1, att_connection->mtu);
     return 3;
