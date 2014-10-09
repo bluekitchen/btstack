@@ -18,6 +18,7 @@
 
 #include "btstack_memory.h"
 #include "hci.h"
+#include "hci_dump.h"
 #include "gatt_client.h"
 #include "att.h"
 #include "profile.h"
@@ -273,13 +274,6 @@ TEST_GROUP(GATTClient){
 		result_counter = 0;
 		result_index = 0;
 		test = IDLE;
-
-		att_set_db(profile_data);
-		att_set_write_callback(&att_write_callback);
-		att_set_read_callback(&att_read_callback);
-
-		gatt_client_init();
-		gatt_client_register_packet_handler(handle_ble_client_event);
 	}
 
 	void reset_query_state(){
@@ -287,7 +281,6 @@ TEST_GROUP(GATTClient){
 		result_index = 0;
 	}
 };
-
 
 
 TEST(GATTClient, TestDiscoverPrimaryServices){
@@ -597,5 +590,16 @@ TEST(GATTClient, TestWriteReliableLongCharacteristicValue){
 
 
 int main (int argc, const char * argv[]){
+
+	run_loop_init(RUN_LOOP_POSIX);
+	// hci_dump_open("/tmp/test.pklg", HCI_DUMP_STDOUT);
+
+	att_set_db(profile_data);
+	att_set_write_callback(&att_write_callback);
+	att_set_read_callback(&att_read_callback);
+
+	gatt_client_init();
+	gatt_client_register_packet_handler(handle_ble_client_event);
+
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }
