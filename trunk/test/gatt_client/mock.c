@@ -8,14 +8,20 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "l2cap.h"
-#include "ble_client.h"
+#include "gatt_client.h"
+#include "sm.h"
 
 static btstack_packet_handler_t att_packet_handler;
 static void (*gatt_central_packet_handler) (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = NULL;
 
+
 static const uint16_t max_mtu = 23;
 static uint8_t  l2cap_stack_buffer[max_mtu];
 uint16_t gatt_client_handle = 0x40;
+
+uint16_t get_gatt_client_handle(){
+	return gatt_client_handle;
+}
 
 void mock_simulate_command_complete(const hci_cmd_t *cmd){
 	uint8_t packet[] = {HCI_EVENT_COMMAND_COMPLETE, 4, 1, cmd->opcode & 0xff, cmd->opcode >> 8, 0};
@@ -45,10 +51,9 @@ static void att_init_connection(att_connection_t * att_connection){
 	att_connection->authorized = 0;
 }
 
-int  l2cap_can_send_connectionless_packet_now(void){
+int  l2cap_can_send_connectionless_packet_now(){
 	return 1;	
 }
-
 
 
 uint8_t *l2cap_get_outgoing_buffer(void){
@@ -61,10 +66,13 @@ uint16_t l2cap_max_mtu(void){
     return max_mtu;
 }
 
+uint16_t l2cap_max_le_mtu(void){
+	// printf("l2cap_max_mtu\n");
+    return max_mtu;
+}
 
 void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id) {
-    // printf("mock: l2cap_register_fixed_channel, use att_packet_handler\n");
-	att_packet_handler = packet_handler;
+    att_packet_handler = packet_handler;
 }
 
 void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
@@ -72,14 +80,14 @@ void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t pa
 }
 
 int l2cap_reserve_packet_buffer(void){
-	// printf("l2cap_reserve_packet_buffer\n");
+	return 1;
+}
+
+int l2cap_can_send_fixed_channel_packet_now(uint16_t handle){
 	return 1;
 }
 
 int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len){
-	// assert handle = current connection
-	// assert cid = att 
-
 	att_connection_t att_connection;
 	att_init_connection(&att_connection);
 	uint8_t response[max_mtu];
@@ -89,6 +97,15 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
 	}
 	return 0;
 }
+
+int  sm_cmac_ready(){
+	return 1;
+}
+void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8])){
+	//sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);
+                
+}
+
 
 // int hci_send_cmd(const hci_cmd_t *cmd, ...){
 // //	printf("hci_send_cmd opcode 0x%02x\n", cmd->opcode);	
