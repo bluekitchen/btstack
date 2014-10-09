@@ -23,9 +23,7 @@
 #include "profile.h"
 #include "expected_results.h"
 
-//static gatt_client_t test_device;
 static uint16_t gatt_client_handle = 0x40;
-static int query_step = 1;
 
 typedef enum {
 	IDLE,
@@ -64,7 +62,6 @@ uint16_t characteristic_uuid16 = 0xF000;
 
 static int result_index;
 static uint8_t result_found;
-static uint8_t result_complete;
 
 static le_service_t services[50];
 static le_service_t included_services[50];
@@ -145,7 +142,7 @@ static void verify_blob(uint16_t value_length, uint16_t value_offset, uint8_t * 
     CHECK(value_length);
 	CHECK_EQUAL_ARRAY(expected_value, value, value_length);
     if (value_offset + value_length != sizeof(long_value)) return;
-    result_complete = 1;
+    result_found++;
 }
 
 static void handle_ble_client_event(le_event_t * event){
@@ -155,83 +152,24 @@ static void handle_ble_client_event(le_event_t * event){
 			services[result_index++] = ((le_service_event_t *) event)->service;
 			result_found++;
             break;
-        case GATT_QUERY_COMPLETE:
-        	switch(test){
-        		case DISCOVER_PRIMARY_SERVICES:
-        			verify_primary_services();
-        			break;
-        		case DISCOVER_PRIMARY_SERVICE_WITH_UUID16:
-        			CHECK_EQUAL(1, result_index);
-        			verify_primary_services_with_uuid16();
-        			break;
-        		case DISCOVER_PRIMARY_SERVICE_WITH_UUID128:
-        			CHECK_EQUAL(1, result_index);
-        			verify_primary_services_with_uuid128();
-        			break;
-        		case DISCOVER_INCLUDED_SERVICE_FOR_SERVICE_WITH_UUID16:
-        			if (query_step == 1){
-        				query_step = 2;
-        				break;
-        			}
-        			verify_included_services_uuid16();
-        			break;
-        		case DISCOVER_INCLUDED_SERVICE_FOR_SERVICE_WITH_UUID128:
-        			if (query_step == 1){
-        				query_step = 2;
-        				break;
-        			}
-        			verify_included_services_uuid128();
-        			break;
-        		case DISCOVER_CHARACTERISTICS_FOR_SERVICE_WITH_UUID16:
-        			if (query_step == 1){
-        				query_step = 2;
-        				break;
-        			}
-        			verify_charasteristics();
-        			break;
-        		case DISCOVER_CHARACTERISTICS_BY_UUID16:
-        		case DISCOVER_CHARACTERISTICS_BY_UUID128:
-        			CHECK_EQUAL(result_found, 1);
-        			break;
 
-        		case DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID:
-        			if (query_step < 3){
-        				query_step++;
-        				break;
-        			}
-        			CHECK_EQUAL(result_found, 1);
-        			break;
-        		case DISCOVER_CHARACTERISTIC_DESCRIPTORS:
-        		case WRITE_CHARACTERISTIC_DESCRIPTOR:
-        		case WRITE_CHARACTERISTIC_VALUE:
-		        	break;
-        		case READ_LONG_CHARACTERISTIC_DESCRIPTOR:
-		        case READ_LONG_CHARACTERISTIC_VALUE:
-		        case WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION:
-				case WRITE_LONG_CHARACTERISTIC_VALUE:
-        		case WRITE_RELIABLE_LONG_CHARACTERISTIC_VALUE:
-		        case WRITE_LONG_CHARACTERISTIC_DESCRIPTOR:
-		        	CHECK(result_complete);
-		        	break;
-        		default:
-        			break;
-        	}
-            break;
         case GATT_INCLUDED_SERVICE_QUERY_RESULT:
             included_services[result_index++] = ((le_service_event_t *) event)->service;
             result_found++;
             break;
-        case GATT_CHARACTERISTIC_QUERY_RESULT:
+        
+        case GATT_CHARACTERISTIC_QUERY_RESULT:{
         	characteristics[result_index++] = ((le_characteristic_event_t *) event)->characteristic;
         	result_found++;
             break;
-
-        case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
-        	descriptors[result_index++] = ((le_characteristic_descriptor_event_t *) event)->characteristic_descriptor;
+        }
+        case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:{
+        	le_characteristic_descriptor_event *descriptor_event = (le_characteristic_descriptor_event_t *) event;
+        	descriptors[result_index++] = descriptor_event->characteristic_descriptor;
+        	result_found++;
         	break;
-
+        }
         case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT: {
-        	printf("GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT \n");
         	le_characteristic_descriptor_event *descriptor_event = (le_characteristic_descriptor_event_t *) event;
         	CHECK_EQUAL(short_value_length, descriptor_event->value_length);
         	CHECK_EQUAL_ARRAY((uint8_t*)short_value, descriptor_event->value, short_value_length);
@@ -260,27 +198,25 @@ static void handle_ble_client_event(le_event_t * event){
         	break;
 		}
 		default:
-			printf("handle_le_central_event");
 			break;
 	}
 }
 
 extern "C" int att_write_callback(uint16_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-	printf("gatt client test, att_write_callback mode %u, handle 0x%04x, offset %u, data ", transaction_mode, con_handle, offset);
+	// printf("gatt client test, att_write_callback mode %u, handle 0x%04x, offset %u, data ", transaction_mode, con_handle, offset);
 	switch(test){
 		case WRITE_CHARACTERISTIC_DESCRIPTOR:
 		case WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION:
 			CHECK_EQUAL(ATT_TRANSACTION_MODE_NONE, transaction_mode);
 			CHECK_EQUAL(0, offset);
 			CHECK_EQUAL_ARRAY(indication, buffer, 2);
-			result_complete = 1;
+			result_found++;
 			break;
 		case WRITE_CHARACTERISTIC_VALUE:
-		case WRITE_CHARACTERISTIC_VALUE_WITHOUT_RESPONSE:
 			CHECK_EQUAL(ATT_TRANSACTION_MODE_NONE, transaction_mode);
 			CHECK_EQUAL(0, offset);
 			CHECK_EQUAL_ARRAY((uint8_t *)short_value, buffer, short_value_length);
-			result_complete = 1;
+			result_found++;
 			break;
 		case WRITE_LONG_CHARACTERISTIC_DESCRIPTOR:
 		case WRITE_LONG_CHARACTERISTIC_VALUE:
@@ -289,7 +225,7 @@ extern "C" int att_write_callback(uint16_t con_handle, uint16_t attribute_handle
 			CHECK_EQUAL(ATT_TRANSACTION_MODE_ACTIVE, transaction_mode);
 			CHECK_EQUAL_ARRAY((uint8_t *)&long_value[offset], buffer, buffer_size);
 			if (offset + buffer_size != sizeof(long_value)) break;
-			result_complete = 1;
+			result_found++;
 			break;
 		default:
 			break;
@@ -306,16 +242,21 @@ int copy_bytes(uint8_t * value, uint16_t value_length, uint16_t offset, uint8_t 
 }
 
 extern "C" uint16_t att_read_callback(uint16_t handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
-	printf("gatt client test, att_read_callback_t handle 0x%04x, offset %u, buffer %p, buffer_size %u\n", handle, offset, buffer, buffer_size);
 	switch(test){
 		case READ_CHARACTERISTIC_DESCRIPTOR:
 		case READ_CHARACTERISTIC_VALUE:
+			result_found++;
+			if (test== READ_CHARACTERISTIC_DESCRIPTOR){
+				printf("gatt client test, att_read_callback_t handle 0x%04x, offset %u, buffer %p, buffer_size %u\n", handle, offset, buffer, buffer_size);
+				printf("result_found %d\n", result_found);
+			}
 			if (buffer){
 				return copy_bytes((uint8_t *)short_value, short_value_length, offset, buffer, buffer_size);
 			}
 			return short_value_length;
 		case READ_LONG_CHARACTERISTIC_DESCRIPTOR:
 		case READ_LONG_CHARACTERISTIC_VALUE:
+			result_found++;
 			if (buffer) {
 				return copy_bytes((uint8_t *)long_value, long_value_length, offset, buffer, buffer_size);
 			}
@@ -334,7 +275,6 @@ TEST_GROUP(GATTClient){
 	void setup(){
 		result_found = 0;
 		result_index = 0;
-		result_complete = 0;
 		test = IDLE;
 
 		att_set_db(profile_data);
@@ -345,121 +285,134 @@ TEST_GROUP(GATTClient){
 		gatt_client_register_packet_handler(handle_ble_client_event);
 	}
 
-	void set_query_step(int step_nr){
+	void set_query_step(){
 		result_found = 0;
 		result_index = 0;
-		result_complete = 0;
-		query_step = step_nr;
 	}
 };
 
 
+
 TEST(GATTClient, TestDiscoverPrimaryServices){
 	test = DISCOVER_PRIMARY_SERVICES;
+	set_query_step();
 	gatt_client_discover_primary_services(gatt_client_handle);
+	verify_primary_services();
 }
 
 
 TEST(GATTClient, TestDiscoverPrimaryServicesByUUID16){
 	test = DISCOVER_PRIMARY_SERVICE_WITH_UUID16;
+	set_query_step();
 	gatt_client_discover_primary_services_by_uuid16(gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(result_found, 1);
+	verify_primary_services_with_uuid16();
 }
 
 TEST(GATTClient, TestDiscoverPrimaryServicesByUUID128){
 	test = DISCOVER_PRIMARY_SERVICE_WITH_UUID128;
 	gatt_client_discover_primary_services_by_uuid128(gatt_client_handle, primary_service_uuid128);
+	CHECK_EQUAL(result_found, 1);
+	verify_primary_services_with_uuid128();
 }
 
 
 TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID16){
 	test = DISCOVER_INCLUDED_SERVICE_FOR_SERVICE_WITH_UUID16;
-	set_query_step(1);
+	set_query_step();
 	gatt_client_discover_primary_services_by_uuid16(gatt_client_handle, service_uuid16);
 	
-	set_query_step(2);
+	set_query_step();
 	result_index = 0;
 	gatt_client_find_included_services_for_service(gatt_client_handle, &services[0]);
+	verify_included_services_uuid16();
 }
 
 TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID128){
 	test = DISCOVER_INCLUDED_SERVICE_FOR_SERVICE_WITH_UUID128;
-	set_query_step(1);
+	set_query_step();
 	gatt_client_discover_primary_services_by_uuid128(gatt_client_handle, primary_service_uuid128);
 	
-	set_query_step(2);
+	set_query_step();
 	gatt_client_find_included_services_for_service(gatt_client_handle, &services[0]);
+	verify_included_services_uuid128();
 }
 
 
 
 TEST(GATTClient, TestDiscoverCharacteristicsForService){
 	test = DISCOVER_CHARACTERISTICS_FOR_SERVICE_WITH_UUID16;
-	set_query_step(1);
+	set_query_step();
 	gatt_client_discover_primary_services_by_uuid16(gatt_client_handle, service_uuid16);
 	
-	set_query_step(2);
+	set_query_step();
 	gatt_client_discover_characteristics_for_service(gatt_client_handle, &services[0]);
+	verify_charasteristics();
 }
 
 
 TEST(GATTClient, TestDiscoverCharacteristicsByUUID16){
 	test = DISCOVER_CHARACTERISTICS_BY_UUID16;
-	set_query_step(1);
+	set_query_step();
 	gatt_client_discover_characteristics_for_handle_range_by_uuid16(gatt_client_handle, 0x30, 0x32, 0xF102);
+	CHECK_EQUAL(result_found, 1);
 }
 
 
 TEST(GATTClient, TestDiscoverCharacteristicsByUUID128){
 	test = DISCOVER_CHARACTERISTICS_BY_UUID128;
-	set_query_step(1);
+	set_query_step();
 	gatt_client_discover_characteristics_for_handle_range_by_uuid128(gatt_client_handle, characteristic_handles[1][0], characteristic_handles[1][1], characteristic_uuids[1]);
+	CHECK_EQUAL(result_found, 1);
 }
 
 
 TEST(GATTClient, TestDiscoverCharacteristics4ServiceByUUID128){
 	test = DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID;
-	set_query_step(1);
+	set_query_step();
 	gatt_client_discover_primary_services_by_uuid128(gatt_client_handle, primary_service_uuid128);
-	
-	set_query_step(2);
+	CHECK_EQUAL(result_found, 1);
+
+	set_query_step();
 	uint8_t characteristic_uuid[] = {0x00, 0x00, 0xF2, 0x01, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
 	gatt_client_discover_characteristics_for_service_by_uuid128(gatt_client_handle, &services[0], characteristic_uuid);
-	
-	set_query_step(3);
+	CHECK_EQUAL(result_found, 1);
+
+	set_query_step();
 	gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_handle, &services[0], 0xF200);
+	CHECK_EQUAL(result_found, 1);
 }
 
 
 TEST(GATTClient, TestDiscoverCharacteristics4ServiceByUUID16){
 	test = DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID;
-	set_query_step(1);
+	set_query_step();
 	gatt_client_discover_primary_services_by_uuid16(gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(result_found, 1);
 
-	set_query_step(2);
+	set_query_step();
 	uint8_t characteristic_uuid[]= { 0x00, 0x00, 0xF1, 0x05, 0x00, 0x00, 0x10, 0x00, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB};
 	gatt_client_discover_characteristics_for_service_by_uuid128(gatt_client_handle, &services[0], characteristic_uuid);
-	
-	set_query_step(3);
+	CHECK_EQUAL(result_found, 1);
+
+	set_query_step();
 	gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_handle, &services[0], 0xF100);
 	CHECK_EQUAL(result_found, 1);
 }
 
 
-
-/*
 TEST(GATTClient, TestDiscoverCharacteristicDescriptor){
 	test = DISCOVER_CHARACTERISTIC_DESCRIPTORS;
-	set_query_step(1);
+	set_query_step();
 	gatt_client_discover_primary_services_by_uuid16(gatt_client_handle, service_uuid16);
 	CHECK_EQUAL(result_found, 1);
 
-	set_query_step(2);
+	set_query_step();
 	gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_handle, &services[0], 0xF100);
 	CHECK_EQUAL(result_found, 1);
 
-	set_query_step(3);
+	set_query_step();
 	gatt_client_discover_characteristic_descriptors(gatt_client_handle, &characteristics[0]);
-
 	CHECK(result_found);
 	CHECK_EQUAL(3, result_index);
 	CHECK_EQUAL(0x2902, descriptors[0].uuid16);
@@ -467,122 +420,185 @@ TEST(GATTClient, TestDiscoverCharacteristicDescriptor){
 	CHECK_EQUAL(0x2901, descriptors[2].uuid16);
 }
 
-
 TEST(GATTClient, TestReadCharacteristicDescriptor){
 	test = READ_CHARACTERISTIC_DESCRIPTOR;
-	gatt_client_discover_primary_services_by_uuid16(gatt_client_handle, 0xF000);
+	set_query_step();
+	gatt_client_discover_primary_services_by_uuid16(gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(result_found, 1);
+
+	set_query_step();
 	gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(result_found, 1);
+
+	set_query_step();
 	gatt_client_discover_characteristic_descriptors(gatt_client_handle, &characteristics[0]);
-	
-	set_query_step(4);
+	CHECK_EQUAL(result_found, 3);
+
+	set_query_step();
 	gatt_client_read_characteristic_descriptor(gatt_client_handle, &descriptors[0]);
-	CHECK(result_found);
+	CHECK_EQUAL(result_found, 3);
 }
+
+
 
 TEST(GATTClient, TestWriteCharacteristicDescriptor){
 	test = WRITE_CHARACTERISTIC_DESCRIPTOR;
-	gatt_client_discover_primary_services_by_uuid16(gatt_client_handle, 0xF000);
+	set_query_step();
+	gatt_client_discover_primary_services_by_uuid16(gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(result_found, 1);
+
+	set_query_step();
 	gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(result_found, 1);
+
+	set_query_step();
 	gatt_client_discover_characteristic_descriptors(gatt_client_handle, &characteristics[0]);
+	CHECK_EQUAL(result_found, 3);
 	
-	set_query_step(4);
+	set_query_step();
 	gatt_client_write_characteristic_descriptor(gatt_client_handle, &descriptors[0], sizeof(indication), indication);
-	CHECK(result_found);
+	CHECK_EQUAL(result_found, 1);
 }
+
+
 
 TEST(GATTClient, TestWriteClientCharacteristicConfiguration){
 	test = WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
-	gatt_client_discover_primary_services_by_uuid16(gatt_client_handle, 0xF000);
+	set_query_step();
+	gatt_client_discover_primary_services_by_uuid16(gatt_client_handle, service_uuid16);
+	CHECK_EQUAL(result_found, 1);
+
+	set_query_step();
 	gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_handle, &services[0], 0xF100);
-	
-	set_query_step(3);
+	CHECK_EQUAL(result_found, 1);
+
+	set_query_step();
 	gatt_client_write_client_characteristic_configuration(gatt_client_handle, &characteristics[0], GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
- 	CHECK(result_found);  
+ 	CHECK_EQUAL(result_found, 1);
 }
 
 	
 TEST(GATTClient, TestReadLongCharacteristicDescriptor){
 	test = READ_LONG_CHARACTERISTIC_DESCRIPTOR;
+	set_query_step();
 	gatt_client_discover_primary_services_by_uuid128(gatt_client_handle, primary_service_uuid128);
+	CHECK_EQUAL(result_found, 1);
+
+	set_query_step();
 	gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_handle, &services[0], 0xF200);
+	CHECK_EQUAL(result_found, 1);
+
+	set_query_step();
 	gatt_client_discover_characteristic_descriptors(gatt_client_handle, &characteristics[0]);
-	
-	set_query_step(4);
+	CHECK_EQUAL(result_found, 3);
+
+	result_found = 0;
 	gatt_client_read_long_characteristic_descriptor(gatt_client_handle, &descriptors[0]);
-	CHECK(result_found);
+	CHECK_EQUAL(result_found, 7);
 }
 
 
 TEST(GATTClient, TestWriteLongCharacteristicDescriptor){
 	test = WRITE_LONG_CHARACTERISTIC_DESCRIPTOR;
+	set_query_step();
 	gatt_client_discover_primary_services_by_uuid128(gatt_client_handle, primary_service_uuid128);
+	CHECK_EQUAL(result_found, 1);
+
+	set_query_step();
 	gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_handle, &services[0], 0xF200);
+	CHECK_EQUAL(result_found, 1);
+
+	set_query_step();
 	gatt_client_discover_characteristic_descriptors(gatt_client_handle, &characteristics[0]);
-	
-	set_query_step(4);
+	CHECK_EQUAL(result_found, 3);
+
+	result_found = 0;
 	gatt_client_write_long_characteristic_descriptor(gatt_client_handle, &descriptors[0], sizeof(long_value), (uint8_t *)long_value);
-	CHECK(result_found);
+	CHECK_EQUAL(result_found, 1);
 }
+
 
 TEST(GATTClient, TestReadCharacteristicValue){
 	test = READ_CHARACTERISTIC_VALUE;
+	set_query_step();
 	gatt_client_discover_primary_services_by_uuid16(gatt_client_handle, service_uuid16);
-	gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(result_found, 1);
 
-	set_query_step(3);
+	set_query_step();
+	gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(result_found, 1);
+
+	set_query_step();
 	gatt_client_read_value_of_characteristic(gatt_client_handle, &characteristics[0]);
-	CHECK(result_found);
+	CHECK_EQUAL(result_found, 3);
 }
+
 
 TEST(GATTClient, TestReadLongCharacteristicValue){
 	test = READ_LONG_CHARACTERISTIC_VALUE;
+	set_query_step();
 	gatt_client_discover_primary_services_by_uuid16(gatt_client_handle, service_uuid16);
-	gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(result_found, 1);
 
-	set_query_step(3);
+	set_query_step();
+	gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(result_found, 1);
+
+	set_query_step();
 	gatt_client_read_long_value_of_characteristic(gatt_client_handle, &characteristics[0]);
-	CHECK(result_found);
+	CHECK_EQUAL(result_found, 7);
 }
+
 
 TEST(GATTClient, TestWriteCharacteristicValue){
 	test = WRITE_CHARACTERISTIC_VALUE;
+	set_query_step();
 	gatt_client_discover_primary_services_by_uuid16(gatt_client_handle, service_uuid16);
-	gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(result_found, 1);
 
-	set_query_step(3);
+	set_query_step();
+	gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(result_found, 1);
+
+
+	set_query_step();
 	gatt_client_write_value_of_characteristic(gatt_client_handle, characteristics[0].value_handle, short_value_length, (uint8_t*)short_value);
-	CHECK(result_found);
+	CHECK_EQUAL(result_found, 1);
 }
+
+
 
 TEST(GATTClient, TestWriteLongCharacteristicValue){
 	test = WRITE_LONG_CHARACTERISTIC_VALUE;
+	set_query_step();
 	gatt_client_discover_primary_services_by_uuid16(gatt_client_handle, service_uuid16);
-	gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(result_found, 1);
 
-	set_query_step(3);
+	set_query_step();
+	gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(result_found, 1);
+
+
+	set_query_step();
 	gatt_client_write_long_value_of_characteristic(gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
-	CHECK(result_found);
+	CHECK_EQUAL(result_found, 1);
 }
 
 TEST(GATTClient, TestWriteReliableLongCharacteristicValue){
 	test = WRITE_RELIABLE_LONG_CHARACTERISTIC_VALUE;
+	set_query_step();
 	gatt_client_discover_primary_services_by_uuid16(gatt_client_handle, service_uuid16);
-	gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(result_found, 1);
 
-	set_query_step(3);
+	set_query_step();
+	gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_handle, &services[0], 0xF100);
+	CHECK_EQUAL(result_found, 1);
+
+	set_query_step();
 	gatt_client_reliable_write_long_value_of_characteristic(gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
 	CHECK(result_found);
 }
 
-TEST(GATTClient, TestWriteCharacteristicValueWithoutResponse){
-	test = WRITE_CHARACTERISTIC_VALUE_WITHOUT_RESPONSE;
-	gatt_client_discover_primary_services_by_uuid16(gatt_client_handle, service_uuid16);
-	gatt_client_discover_characteristics_for_service_by_uuid16(gatt_client_handle, &services[0], 0xF10D);
-
-	set_query_step(3);
-	gatt_client_write_value_of_characteristic_without_response(gatt_client_handle, characteristics[0].value_handle, short_value_length, (uint8_t*)short_value);
-	CHECK(result_complete);
-}*/
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
