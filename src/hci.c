@@ -384,6 +384,10 @@ int hci_transport_synchronous(void){
     return hci_stack->hci_transport->can_send_packet_now == NULL;
 }
 
+uint16_t hci_max_acl_le_data_packet_length(void){
+    return hci_stack->le_data_packets_length > 0 ? hci_stack->le_data_packets_length : hci_stack->acl_data_packet_length;
+}
+
 static int hci_send_acl_packet_fragments(hci_connection_t *connection){
 
     // log_info("hci_send_acl_packet_fragments  %u/%u (con 0x%04x)", hci_stack->acl_fragmentation_pos, hci_stack->acl_fragmentation_total_size, connection->con_handle);
@@ -939,6 +943,10 @@ static void event_handler(uint8_t *packet, int size){
             if (COMMAND_COMPLETE_EVENT(packet, hci_le_read_buffer_size)){
                 hci_stack->le_data_packets_length = READ_BT_16(packet, 6);
                 hci_stack->le_acl_packets_total_num  = packet[8];
+                    // determine usable ACL payload size
+                    if (HCI_ACL_PAYLOAD_SIZE < hci_stack->le_data_packets_length){
+                        hci_stack->le_data_packets_length = HCI_ACL_PAYLOAD_SIZE;
+                    }
                 log_info("hci_le_read_buffer_size: size %u, count %u", hci_stack->le_data_packets_length, hci_stack->le_acl_packets_total_num);
             }            
 #endif
