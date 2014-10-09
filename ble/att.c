@@ -40,6 +40,7 @@
 #include "att.h"
 #include "debug.h"
 #include <btstack/utils.h>
+#include "l2cap.h"
 
 // Buetooth Base UUID 00000000-0000-1000-8000-00805F9B34FB in little endian
 static const uint8_t bluetooth_base_uuid[] = { 0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
@@ -291,10 +292,10 @@ static uint16_t handle_exchange_mtu_request(att_connection_t * att_connection, u
 
     uint16_t client_rx_mtu = READ_BT_16(request_buffer, 1);
     
-    if (client_rx_mtu < l2cap_le_max_mtu()){
+    if (client_rx_mtu < l2cap_max_le_mtu()){
         att_connection->mtu = client_rx_mtu;
     } else {
-        att_connection->mtu = l2cap_le_max_mtu();
+        att_connection->mtu = l2cap_max_le_mtu();
     }
 
     response_buffer[0] = ATT_EXCHANGE_MTU_RESPONSE;
