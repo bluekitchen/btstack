@@ -59,6 +59,7 @@
 #include "debug.h"
 #include "hci_dump.h"
 
+#include <btstack/linked_list.h>
 #include <btstack/hci_cmds.h>
 
 #define HCI_CONNECTION_TIMEOUT_MS 10000
@@ -108,8 +109,43 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
     conn->acl_recombination_length = 0;
     conn->acl_recombination_pos = 0;
     conn->num_acl_packets_sent = 0;
+    conn->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
     linked_list_add(&hci_stack->connections, (linked_item_t *) conn);
     return conn;
+}
+
+
+/**
+ * get le connection parameter range
+*
+ * @return le connection parameter range struct
+ */
+le_connection_parameter_range_t gap_le_get_connection_parameter_range(){
+    return hci_stack->le_connection_parameter_range;
+}
+
+/**
+ * set le connection parameter range
+ *
+ */
+
+void gap_le_set_connection_parameter_range(le_connection_parameter_range_t range){
+    hci_stack->le_connection_parameter_range.le_conn_interval_min = range.le_conn_interval_min;
+    hci_stack->le_connection_parameter_range.le_conn_interval_max = range.le_conn_interval_max;
+    hci_stack->le_connection_parameter_range.le_conn_interval_min = range.le_conn_latency_min;
+    hci_stack->le_connection_parameter_range.le_conn_interval_max = range.le_conn_latency_max;
+    hci_stack->le_connection_parameter_range.le_supervision_timeout_min = range.le_supervision_timeout_min;
+    hci_stack->le_connection_parameter_range.le_supervision_timeout_max = range.le_supervision_timeout_max;
+}
+
+/**
+ * get hci connections iterator
+ *
+ * @return hci connections iterator
+ */
+
+void hci_connections_get_iterator(linked_list_iterator_t *it){
+    linked_list_iterator_init(it, &hci_stack->connections);
 }
 
 /**
@@ -118,12 +154,14 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
  * @return connection OR NULL, if not found
  */
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
-    linked_item_t *it;
-    for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
-        if ( ((hci_connection_t *) it)->con_handle == con_handle){
-            return (hci_connection_t *) it;
+    linked_list_iterator_t it;
+    linked_list_iterator_init(&it, &hci_stack->connections);
+    while (linked_list_iterator_has_next(&it)){
+        hci_connection_t * item = (hci_connection_t *) linked_list_iterator_next(&it);
+        if ( item->con_handle != con_handle ) {
+            return item;
         }
-    }
+    } 
     return NULL;
 }
 
@@ -133,13 +171,14 @@ hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
  * @return connection OR NULL, if not found
  */
 hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t * addr, bd_addr_type_t addr_type){
-    linked_item_t *it;
-    for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
-        hci_connection_t * connection = (hci_connection_t *) it;
+    linked_list_iterator_t it;
+    linked_list_iterator_init(&it, &hci_stack->connections);
+    while (linked_list_iterator_has_next(&it)){
+        hci_connection_t * connection = (hci_connection_t *) linked_list_iterator_next(&it);
         if (connection->address_type != addr_type)  continue;
         if (memcmp(addr, connection->address, 6) != 0) continue;
-        return connection;
-    }
+        return connection;   
+    } 
     return NULL;
 }
 
@@ -1374,6 +1413,12 @@ static void hci_state_reset(){
     memset(hci_stack->adv_address, 0, 6);
     hci_stack->le_scanning_state = LE_SCAN_IDLE;
     hci_stack->le_scan_type = 0xff; 
+    hci_stack->le_connection_parameter_range.le_conn_interval_min = 0x0006;
+    hci_stack->le_connection_parameter_range.le_conn_interval_max = 0x0C80;
+    hci_stack->le_connection_parameter_range.le_conn_latency_min = 0x0000;
+    hci_stack->le_connection_parameter_range.le_conn_latency_max = 0x03E8;
+    hci_stack->le_connection_parameter_range.le_supervision_timeout_min = 0x000A;
+    hci_stack->le_connection_parameter_range.le_supervision_timeout_max = 0x0C80;
 }
 
 void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, remote_device_db_t const* remote_device_db){
@@ -1913,8 +1958,11 @@ void hci_run(){
             hci_send_cmd(&hci_set_connection_encryption, connection->con_handle, 1);
             return;
         }
+
 #ifdef HAVE_BLE
-        if (connection->le_conn_interval_min){
+        if (connection->le_con_parameter_update_state == CON_PARAMETER_UPDATE_CHANGE_HCI_CON_PARAMETERS){
+            connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE; 
+            
             uint16_t connection_interval_min = connection->le_conn_interval_min;
             connection->le_conn_interval_min = 0;
             hci_send_cmd(&hci_le_connection_update, connection->con_handle, connection_interval_min,
