@@ -179,4 +179,30 @@ uint16_t l2cap_le_create_connection_parameter_update_request(uint8_t * acl_buffe
     bt_store_16(acl_buffer, 10, pos - 12);
     return pos;
 } 
+
+uint16_t l2cap_le_create_connection_parameter_update_response(uint8_t * acl_buffer, uint16_t handle, uint16_t response){
+
+    int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
+
+    // 0 - Connection handle : PB=pb : BC=00 
+    bt_store_16(acl_buffer, 0, handle | (pb << 12) | (0 << 14));
+    // 6 - L2CAP LE Signaling channel = 5
+    bt_store_16(acl_buffer, 6, 5);
+    // 8 - Code
+    acl_buffer[8] = CONNECTION_PARAMETER_UPDATE_REQUEST;
+    // 9 - id (!= 0 sequentially)
+    acl_buffer[9] = 1;
+    uint16_t pos = 12;
+    bt_store_16(acl_buffer, pos, response);
+    pos += 2;
+    // 2 - ACL length
+    bt_store_16(acl_buffer, 2,  pos - 4);
+    // 4 - L2CAP packet length
+    bt_store_16(acl_buffer, 4,  pos - 6 - 2);
+    // 10 - L2CAP signaling parameter length
+    bt_store_16(acl_buffer, 10, pos - 12);
+    return pos;
+} 
+
+
 #endif

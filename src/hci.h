@@ -55,6 +55,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <btstack/linked_list.h>
 
 #if defined __cplusplus
 extern "C" {
@@ -233,7 +234,27 @@ extern "C" {
 
 // data: event(8)
 #define DAEMON_EVENT_HCI_PACKET_SENT                       0x54
-    
+
+/**
+ * LE connection parameter update state
+ */ 
+
+typedef enum {
+    CON_PARAMETER_UPDATE_NONE,
+    CON_PARAMETER_UPDATE_SEND_RESPONSE,
+    CON_PARAMETER_UPDATE_CHANGE_HCI_CON_PARAMETERS,
+    CON_PARAMETER_UPDATE_DENY
+} le_con_parameter_update_state_t;
+
+typedef struct le_connection_parameter_range{
+    uint16_t le_conn_interval_min;
+    uint16_t le_conn_interval_max;
+    uint16_t le_conn_latency_min;
+    uint16_t le_conn_latency_max;
+    uint16_t le_supervision_timeout_min;
+    uint16_t le_supervision_timeout_max;
+} le_connection_parameter_range_t;
+
 /**
  * Connection State 
  */
@@ -345,10 +366,12 @@ typedef struct {
     uint8_t num_acl_packets_sent;
 
     // connection parameter update
+    le_con_parameter_update_state_t le_con_parameter_update_state;
     uint16_t le_conn_interval_min;
     uint16_t le_conn_interval_max;
     uint16_t le_conn_latency;
     uint16_t le_supervision_timeout;
+    uint16_t le_update_con_parameter_response;
 } hci_connection_t;
 
 
@@ -428,7 +451,17 @@ typedef struct {
     uint8_t  le_scan_type;
     uint16_t le_scan_interval;  
     uint16_t le_scan_window;
+
+    le_connection_parameter_range_t le_connection_parameter_range;
 } hci_stack_t;
+
+/**
+ * set connection iterator
+ */
+void hci_connections_get_iterator(linked_list_iterator_t *it);
+
+le_connection_parameter_range_t gap_le_get_connection_parameter_range();
+void gap_le_set_connection_parameter_range(le_connection_parameter_range_t range);
 
 //*************** le client start
 
