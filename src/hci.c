@@ -158,7 +158,7 @@ hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
     linked_list_iterator_init(&it, &hci_stack->connections);
     while (linked_list_iterator_has_next(&it)){
         hci_connection_t * item = (hci_connection_t *) linked_list_iterator_next(&it);
-        if ( item->con_handle != con_handle ) {
+        if ( item->con_handle == con_handle ) {
             return item;
         }
     } 
