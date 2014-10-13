@@ -685,6 +685,7 @@ void l2cap_run(void){
         }
     }
 
+#ifdef HAVE_BLE
     // send l2cap con paramter update if necessary
     hci_connections_get_iterator(&it);
     while(linked_list_iterator_has_next(&it)){
@@ -711,6 +712,7 @@ void l2cap_run(void){
         uint16_t len = l2cap_le_create_connection_parameter_update_response(acl_buffer, connection->con_handle, 0);
         hci_send_acl_packet_buffer(len);
     }
+#endif
 
 }
 
