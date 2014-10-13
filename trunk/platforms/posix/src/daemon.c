@@ -172,7 +172,9 @@ static timer_source_t timeout;
 static uint8_t timeout_active = 0;
 static int power_management_sleep = 0;
 static linked_list_t clients = NULL;        // list of connected clients `
+#ifdef HAVE_BLE
 static linked_list_t gatt_client_helpers = NULL;   // list of used gatt client (helpers)
+#endif
 
 static void (*bluetooth_status_handler)(BLUETOOTH_STATE state) = dummy_bluetooth_status_handler;
 
@@ -278,7 +280,7 @@ static void daemon_remove_client_sdp_service_record_handle(connection_t * connec
     remove_and_free_uint32_from_list(&client_state->sdp_record_handles, handle);    
 }
 
-
+#ifdef HAVE_BLE
 static void daemon_add_gatt_client_handle(connection_t * connection, uint32_t handle){
     client_state_t * client_state = client_for_connection(connection);
     if (!client_state) return;
@@ -435,7 +437,7 @@ static void daemon_remove_gatt_client_helper(uint32_t con_handle){
         }
     }
 }
-
+#endif
 
 static void daemon_rfcomm_close_connection(client_state_t * gatt_client){
     linked_list_iterator_t it;  
@@ -494,6 +496,7 @@ static void daemon_sdp_close_connection(client_state_t * gatt_client){
     }
 }
 
+#ifdef HAVE_BLE
 static void daemon_gatt_client_close_connection(connection_t * connection){
     client_state_t * client = client_for_connection(connection);
     if (!client) return;
@@ -505,6 +508,7 @@ static void daemon_gatt_client_close_connection(connection_t * connection){
         daemon_remove_gatt_client_handle(connection, item->value);
     }
 }
+#endif
 
 static void daemon_disconnect_client(connection_t * connection){
     log_info("Daemon disconnect client %p\n",connection);
