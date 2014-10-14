@@ -1,4 +1,8 @@
 // config.h created by configure for BTstack  Tue Jun 4 23:10:20 CEST 2013
+
+#ifndef __BTSTACK_CONFIG
+#define __BTSTACK_CONFIG
+
 #define HAVE_TRANSPORT_USB
 #define HAVE_BLE
 #define USE_POSIX_RUN_LOOP
@@ -15,3 +19,5 @@
 #define HCI_ACL_PAYLOAD_SIZE 1021
 #define HAVE_HCI_DUMP
 #define SDP_DES_DUMP
+
+#endif

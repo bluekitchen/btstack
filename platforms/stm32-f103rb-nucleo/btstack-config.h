@@ -1,3 +1,6 @@
+#ifndef __BTSTACK_CONFIG
+#define __BTSTACK_CONFIG
+
 #define EMBEDDED
 
 #define HAVE_BLE
@@ -27,3 +30,5 @@
 #define MAX_NO_DB_MEM_SERVICES 1
 #define MAX_NO_BNEP_SERVICES 0
 #define MAX_NO_BNEP_CHANNELS 0
+
+#endif
