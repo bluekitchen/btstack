@@ -81,11 +81,11 @@ static hci_uart_config_t hci_uart_config_csr8811 = {
 };
 #endif
 
-typedef enum {
+enum {
     SET_ADVERTISEMENT_PARAMS = 1 << 0,
     SET_ADVERTISEMENT_DATA   = 1 << 1,
     ENABLE_ADVERTISEMENTS    = 1 << 2,
-} todo_t;
+};
 
 const uint8_t adv_data[] = {
     // Flags general discoverable
@@ -97,7 +97,7 @@ const uint8_t adv_data[] = {
 };
 uint8_t adv_data_len = sizeof(adv_data);
 
-static todo_t todos = 0;
+static uint16_t todos = 0;
 
 static void app_run(){
 

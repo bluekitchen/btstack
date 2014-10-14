@@ -75,14 +75,14 @@
 // test profile
 #include "profile.h"
 
-typedef enum {
+enum {
     DISABLE_ADVERTISEMENTS   = 1 << 0,
     SET_ADVERTISEMENT_PARAMS = 1 << 1,
     SET_ADVERTISEMENT_DATA   = 1 << 2,
     SET_SCAN_RESPONSE_DATA   = 1 << 3,
     ENABLE_ADVERTISEMENTS    = 1 << 4,
-} todo_t;
-static todo_t todos = 0;
+};
+static uint16_t todos = 0;
 
 ///------
 static int advertisements_enabled = 0;
