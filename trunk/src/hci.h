@@ -255,9 +255,7 @@ typedef struct le_connection_parameter_range{
     uint16_t le_supervision_timeout_max;
 } le_connection_parameter_range_t;
 
-/**
- * Connection State 
- */
+// Authentication flags
 typedef enum {
     AUTH_FLAGS_NONE                = 0x0000,
     RECV_LINK_KEY_REQUEST          = 0x0001,
@@ -279,6 +277,9 @@ typedef enum {
     CONNECTION_ENCRYPTED           = 0x8000,
 } hci_authentication_flags_t;
 
+/**
+ * Connection State 
+ */
 typedef enum {
     SEND_CREATE_CONNECTION = 0,
     SENT_CREATE_CONNECTION,
@@ -292,7 +293,8 @@ typedef enum {
     SENT_DISCONNECT
 } CONNECTION_STATE;
 
-typedef enum {
+// bonding flags
+enum {
     BONDING_REQUEST_REMOTE_FEATURES   = 0x01,
     BONDING_RECEIVED_REMOTE_FEATURES  = 0x02,
     BONDING_REMOTE_SUPPORTS_SSP       = 0x04,
@@ -302,7 +304,7 @@ typedef enum {
     BONDING_SEND_ENCRYPTION_REQUEST   = 0x40,
     BONDING_DEDICATED                 = 0x80,
     BONDING_EMIT_COMPLETE_ON_DISCONNECT = 0x100
-} bonding_flags_t;
+};
 
 typedef enum {
     BLUETOOTH_OFF = 1,
