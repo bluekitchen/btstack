@@ -68,5 +68,3 @@ libopencm3/lib/libopencm3_stm32f1.a:
 spp_and_le_counter.h: spp_and_le_counter.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 
-my_flash: $(BINARY).bin
-	st-flash write $(BINARY).bin 0x8000000
