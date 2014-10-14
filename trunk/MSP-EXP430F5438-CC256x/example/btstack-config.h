@@ -1,3 +1,7 @@
+
+#ifndef __BTSTACK_CONFIG
+#define __BTSTACK_CONFIG
+
 #define EMBEDDED
 
 #define HAVE_INIT_SCRIPT
@@ -25,4 +29,6 @@
 #define MAX_NO_DB_MEM_DEVICE_LINK_KEYS  2
 #define MAX_NO_DB_MEM_DEVICE_NAMES 0
 #define MAX_NO_DB_MEM_SERVICES 1
+
+#endif
 

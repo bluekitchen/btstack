@@ -1,4 +1,12 @@
-// btstack-config.h created by configure for BTstack  Sun Jan 19 18:35:17 CET 2014
+//
+// btstack-config.h
+// created by configure for BTstack 
+// Tue Oct 14 21:52:44 CEST 2014
+//
+
+#ifndef __BTSTACK_CONFIG
+#define __BTSTACK_CONFIG
+
 #define HAVE_TRANSPORT_H4
 #define UART_DEVICE "/dev/tty.bluetooth"
 #define UART_SPEED 921600
@@ -19,3 +27,5 @@
 #define ENABLE_LOG_ERROR
 #define HCI_ACL_PAYLOAD_SIZE 1021
 #define SDP_DES_DUMP
+
+#endif

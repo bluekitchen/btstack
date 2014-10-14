@@ -1,3 +1,8 @@
+// config.h created by configure for BTstack  Tue Jun 4 23:10:20 CEST 2013
+
+#ifndef __BTSTACK_CONFIG
+#define __BTSTACK_CONFIG
+
 #define EMBEDDED
 
 #define HAVE_INIT_SCRIPT
@@ -26,3 +31,4 @@
 #define MAX_NO_DB_MEM_DEVICE_NAMES 0
 #define MAX_NO_DB_MEM_SERVICES 1
 
+#endif

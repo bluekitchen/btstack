@@ -114,7 +114,15 @@ echo
 
 # create btstack-config.h
 rm -f btstack-config.h
-echo "// btstack-config.h created by configure for BTstack " `date`> btstack-config.h
+echo "//"                                       >> btstack-config.h
+echo "// btstack-config.h"                      >> btstack-config.h
+echo "// created by configure for BTstack "     >> btstack-config.h
+echo "//" `date`                                >> btstack-config.h
+echo "//"                                       >> btstack-config.h
+echo                                            >> btstack-config.h
+echo "#ifndef __BTSTACK_CONFIG"                 >> btstack-config.h
+echo "#define __BTSTACK_CONFIG"                 >> btstack-config.h
+echo                                            >> btstack-config.h
 if test "x$HCI_TRANSPORT" = xUSB; then
     USB_SOURCES=hci_transport_h2_libusb.c
     echo "#define HAVE_TRANSPORT_USB" >> btstack-config.h
@@ -153,6 +161,8 @@ echo "#define ENABLE_LOG_INFO " >> btstack-config.h
 echo "#define ENABLE_LOG_ERROR" >> btstack-config.h
 echo "#define HCI_ACL_PAYLOAD_SIZE 1021" >> btstack-config.h
 echo "#define SDP_DES_DUMP" >> btstack-config.h
+echo >> btstack-config.h
+echo "#endif" >> btstack-config.h
 
 AC_SUBST(HAVE_LIBUSB)
 AC_SUBST(REMOTE_DEVICE_DB_SOURCES)
