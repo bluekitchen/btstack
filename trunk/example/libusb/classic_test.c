@@ -142,7 +142,8 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
     bd_addr_t addr;
     int i;
     int numResponses;
-    
+    int index;
+
     // printf("packet_handler: pt: 0x%02x, packet[0]: 0x%02x\n", packet_type, packet[0]);
     if (packet_type != HCI_EVENT_PACKET) return;
 
@@ -156,7 +157,7 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
             for (i=0; i<numResponses && deviceCount < MAX_DEVICES;i++){
                 bt_flip_addr(addr, &packet[offset]);
                 offset += 6;
-                int index = getDeviceIndexForAddress(addr);
+                index = getDeviceIndexForAddress(addr);
                 if (index >= 0) continue;   // already in our list
                 memcpy(devices[deviceCount].address, addr, 6);
 
@@ -204,7 +205,7 @@ static void inquiry_packet_handler (uint8_t packet_type, uint8_t *packet, uint16
 
         case HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE:
             bt_flip_addr(addr, &packet[3]);
-            int index = getDeviceIndexForAddress(addr);
+            index = getDeviceIndexForAddress(addr);
             if (index >= 0) {
                 if (packet[2] == 0) {
                     printf("Name: '%s'\n", &packet[9]);
