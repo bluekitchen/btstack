@@ -58,7 +58,7 @@
 
 #include <btstack/hal_uart_dma.h>
 
-#define DUMP
+// #define DUMP
 // #define LOG_EHCILL
 
 // eHCILL commands (+interal CTS signal)
