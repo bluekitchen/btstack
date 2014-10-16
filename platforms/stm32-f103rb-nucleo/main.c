@@ -365,7 +365,7 @@ int main(void)
     hci_init(transport, (void*) &hci_uart_config_cc256x, control, remote_db);
 
     // enable eHCILL
-    bt_control_cc256x_enable_ehcill(1);
+    bt_control_cc256x_enable_ehcill(0);
 
 	// hand over to btstack embedded code 
     btstack_main();
