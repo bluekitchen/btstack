@@ -11,8 +11,6 @@ CFLAGS += -I${BTSTACK_ROOT}
 
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
-# needed on OS X with libusb compiled stand alone
-# LDFLAGS += -framework IOKit -framework CoreFoundation -framework Foundation
 
 CORE   = \
     ${BTSTACK_ROOT}/src/btstack_memory.c            \
@@ -52,7 +50,7 @@ GATT_CLIENT = \
 
 CC2564 = \
     ${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
- 	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2564_2.10.c \
+ 	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2564B_1.0_BT_Spec_4.1.c \
 
 CSR = ${BTSTACK_ROOT}/chipset-csr/bt_control_csr.c
 
