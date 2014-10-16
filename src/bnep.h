@@ -104,20 +104,18 @@ extern "C" {
 
 typedef enum {
 	BNEP_CHANNEL_STATE_CLOSED = 1,
-    BNEP_CHANNEL_STATE_INIT,
     BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_REQUEST,
     BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE,
 	BNEP_CHANNEL_STATE_CONNECTED,
 } BNEP_CHANNEL_STATE;
-    
+
 typedef enum {
-    BNEP_EVT_RCVD_CON_REQ = 1,
-    BNEP_EVT_RCVD_CON_RESP,
-    BNEP_EVT_RCVD_FILTER_SET_TYPE_REQ,
-    BNEP_EVT_RCVD_FILTER_SET_TYPE_RESP,
-    BNEP_EVT_RCVD_MULTI_ADDR_SET,
-    BNEP_EVT_RCVD_MULTI_ADDR_RESP,
-} BNEP_EVENT;
+    BNEP_CHANNEL_STATE_VAR_NONE                            = 0,
+    BNEP_CHANNEL_STATE_VAR_SND_NOT_UNDERSTOOD              = 1 << 0,
+    BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_RESPONSE         = 1 << 1,
+    BNEP_CHANNEL_STATE_VAR_SND_FILTER_NET_TYPE_RESPONSE    = 1 << 2,
+    BNEP_CHANNEL_STATE_VAR_SND_FILTER_MULTI_ADDR_RESPONSE  = 1 << 3,
+} RFCOMM_CHANNEL_STATE_VAR;
 
 /* network protocol type filter */
 typedef struct {
@@ -140,14 +138,21 @@ typedef struct {
 
     BNEP_CHANNEL_STATE state;	
 
-    uint16_t           max_frame_size; // incomming max. frame size   
-    void              *connection;     // client connection 
-	bd_addr_t          remote_addr;    // remote device address
-    uint16_t           l2cap_cid;      // l2cap channel id
-    hci_con_handle_t   con_handle;     // hci connection handle
+    // state variables used in RFCOMM_CHANNEL_INCOMING
+    BNEP_CHANNEL_STATE_VAR state_var;
+    
 
-    uint16_t           uuid_source;    // Source UUID
-    uint16_t           uuid_dest;      // Destination UUID
+    uint16_t           max_frame_size;    // incomming max. frame size   
+    void              *connection;        // client connection 
+	bd_addr_t          remote_addr;       // remote device address
+    uint16_t           l2cap_cid;         // l2cap channel id
+    hci_con_handle_t   con_handle;        // hci connection handle
+
+    uint16_t           uuid_source;       // Source UUID
+    uint16_t           uuid_dest;         // Destination UUID
+
+    uint8_t            last_control_type; // type of last control package
+    uint16_t           response_code;     // response code of last action (temp. storage for state machine)
 
     bnep_net_filter    net_filter[MAX_BNEP_NETFILTER];              // network protocol filter, define fixed size for now
     uint16_t           net_filter_count;
