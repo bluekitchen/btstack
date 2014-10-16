@@ -197,12 +197,13 @@ static void  heartbeat_handler(struct timer *ts){
 
     counter++;
     counter_string_len = sprintf(counter_string, "BTstack counter %04u\n", counter);
-    printf("%s", counter_string);
 
     if (rfcomm_channel_id){
         int err = rfcomm_send_internal(rfcomm_channel_id, (uint8_t*) counter_string, counter_string_len);
         if (err) {
             log_error("rfcomm_send_internal -> error 0X%02x", err);
+        } else {
+            printf("%s", counter_string);
         }
     }
 
