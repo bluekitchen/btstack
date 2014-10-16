@@ -34,6 +34,9 @@
 #define USART_CONSOLE USART2
 #define GPIO_BT_N_SHUTDOWN GPIO15
 
+#define GPIO_DEBUG_0 GPIO1
+#define GPIO_DEBUG_1 GPIO2
+
 // btstack code starts there
 void btstack_main(void);
 
@@ -49,10 +52,14 @@ static int hal_uart_needed_during_sleep = 1;
 static void dummy_handler(void){};
 
 void hal_tick_init(void){
-	systick_set_reload(2000000);	// 1/4 of clock -> 250 ms tick
+	systick_set_reload(800000);	// 1/4 of clock -> 250 ms tick
 	systick_set_clocksource(STK_CSR_CLKSOURCE_AHB);
 	systick_counter_enable();
 	systick_interrupt_enable();
+}
+
+int  hal_tick_get_tick_period_in_ms(void){
+    return 100;
 }
 
 void hal_tick_set_handler(void (*handler)(void)){
@@ -63,12 +70,7 @@ void hal_tick_set_handler(void (*handler)(void)){
     tick_handler = handler;
 }
 
-int  hal_tick_get_tick_period_in_ms(void){
-    return 250;
-}
-
-void sys_tick_handler(void)
-{
+void sys_tick_handler(void){
 	(*tick_handler)();
 }
 
@@ -109,7 +111,6 @@ void hal_cpu_enable_irqs_and_sleep(){
 	__asm__("wfe");	// go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
 
 	// note: hal_uart_needed_during_sleep can be used to disable peripheral clock if it's not needed for a timer
-	// todo: the transition from disabled IRQs into sleep mode should be atomic
 	hal_led_on();
 }
 
@@ -121,7 +122,20 @@ static void (*rx_done_handler)(void) = dummy_handler;
 static void (*tx_done_handler)(void) = dummy_handler;
 static void (*cts_irq_handler)(void) = dummy_handler;
 
+static void hal_uart_manual_rts_set(){
+	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO_USART3_RTS);
+}
+
+static void hal_uart_manual_rts_clear(){
+	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART3_RTS);
+}
+
 void hal_uart_dma_set_sleep(uint8_t sleep){
+	if (sleep){
+		hal_uart_manual_rts_set();
+	} else {
+		hal_uart_manual_rts_clear();
+	}
 	hal_uart_needed_during_sleep = !sleep;
 }
 
@@ -143,6 +157,9 @@ void dma1_channel3_isr(void){
 		dma_disable_transfer_complete_interrupt(DMA1, DMA_CHANNEL3);
 		usart_disable_rx_dma(USART3);
 		dma_disable_channel(DMA1, DMA_CHANNEL3);
+
+		gpio_set(GPIOB, GPIO_DEBUG_1);
+		// hal_uart_manual_rts_set();
 		(*rx_done_handler)();
 	}
 }
@@ -209,6 +226,10 @@ void hal_uart_dma_send_block(const uint8_t *data, uint16_t size){
 }
 
 void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
+
+	// hal_uart_manual_rts_clear();
+	gpio_clear(GPIOB, GPIO_DEBUG_1);
+
 	/*
 	 * USART3_RX is on DMA_CHANNEL3
 	 */
@@ -272,6 +293,9 @@ static void clock_setup(void){
 static void gpio_setup(void){
 	/* Set GPIO5 (in GPIO port A) to 'output push-pull'. [LED] */
 	gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO_LED2);
+
+	// PB1 and PB2 as debug output
+	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_2_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO_DEBUG_0 | GPIO_DEBUG_1);
 }
 
 static void debug_usart_setup(void){
@@ -298,12 +322,14 @@ static void bluetooth_setup(void){
 
 	// tx output
 	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART3_TX);
-	// rts output
+	// rts output (default to 1)
+	gpio_set(GPIOB, GPIO_USART3_RTS);
 	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART3_RTS);
 	// rx input
 	gpio_set_mode(GPIOB, GPIO_MODE_INPUT, GPIO_CNF_INPUT_FLOAT, GPIO_USART3_RX);
 	// cts as input
 	gpio_set_mode(GPIOB, GPIO_MODE_INPUT, GPIO_CNF_INPUT_FLOAT, GPIO_USART3_CTS);
+
 
 	/* Setup UART parameters. */
 	usart_set_baudrate(USART3, 115200);
@@ -365,7 +391,7 @@ int main(void)
     hci_init(transport, (void*) &hci_uart_config_cc256x, control, remote_db);
 
     // enable eHCILL
-    bt_control_cc256x_enable_ehcill(0);
+    bt_control_cc256x_enable_ehcill(1);
 
 	// hand over to btstack embedded code 
     btstack_main();
