@@ -51,13 +51,14 @@
 extern "C" {
 #endif
 
-void pan_create_nap_service(uint8_t *service, uint16_t net_access_type, uint32_t max_net_access_rate, 
-	const char *name, const char *description, const char *IPv4Subnet, const char *IPv6Subnet);
+void pan_create_panu_service(uint8_t *service, const char *name, const char *description);
 
-// void pan_create_gn_service(uint8_t *service, uint16_t net_access_type, uint32_t max_net_access_rate, 
-//	const char *name, const char *description, const char *IPv4Subnet, const char *IPv6Subnet);
-// void pan_create_panu_service(uint8_t *service, uint16_t net_access_type, uint32_t max_net_access_rate, 
-//	const char *name, const char *description, const char *IPv4Subnet, const char *IPv6Subnet);
+void pan_create_gn_service(uint8_t *service, const char *name, const char *description, 
+	const char *IPv4Subnet, const char *IPv6Subnet);
+
+void pan_create_nap_service(uint8_t *service, const char *name, const char *description, 
+	uint16_t net_access_type, uint32_t max_net_access_rate, const char *IPv4Subnet, const char *IPv6Subnet);
+
 
 #if defined __cplusplus
 }
