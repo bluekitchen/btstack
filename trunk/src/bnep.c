@@ -56,7 +56,7 @@
 
 #include "l2cap.h"
 
-static bnep_service_t * service = NULL;
+static linked_list_t bnep_services = NULL;
 static linked_list_t bnep_channels = NULL;
 
 static gap_security_level_t bnep_security_level;
@@ -342,6 +342,13 @@ static int bnep_send(bnep_channel_t *channel, uint8_t *src_addr, uint8_t *dest_a
     return err;        
 }
 
+inline static void bnep_channel_state_add(bnep_channel_t *channel, BNEP_CHANNEL_STATE_VAR event){
+    channel->state_var = (BNEP_CHANNEL_STATE_VAR) (channel->state_var | event);    
+}
+inline static void bnep_channel_state_remove(bnep_channel_t *channel, BNEP_CHANNEL_STATE_VAR event){
+    channel->state_var = (BNEP_CHANNEL_STATE_VAR) (channel->state_var & ~event);    
+}
+
 static uint16_t bnep_max_frame_size_for_l2cap_mtu(uint16_t l2cap_mtu){
 
     /* Assume a standard BNEP header, containing BNEP Type (1 Byte), dest and 
@@ -389,7 +396,7 @@ static bnep_channel_t* bnep_channel_for_addr(bd_addr_t *addr)
         bnep_channel_t *channel = ((bnep_channel_t *) it);
         if (BD_ADDR_CMP(addr, channel->remote_addr) == 0) {
             return channel;
-        };
+        }
     }
     return NULL;
 }
@@ -399,9 +406,21 @@ static bnep_channel_t * bnep_channel_for_l2cap_cid(uint16_t l2cap_cid)
     linked_item_t *it;
     for (it = (linked_item_t *) bnep_channels; it ; it = it->next){
         bnep_channel_t *channel = ((bnep_channel_t *) it);
-        if (multiplexer->l2cap_cid == l2cap_cid) {
+        if (channel->l2cap_cid == l2cap_cid) {
             return channel;
-        };
+        }
+    }
+    return NULL;
+}
+
+static bnep_service_t * bnep_service_for_uuid(uint16_t uuid)
+{
+    linked_item_t *it;
+    for (it = (linked_item_t *) bnep_services; it ; it = it->next){
+        bnep_service_t * service = ((bnep_service_t *) it);
+        if ( service->service_uuid == uuid){
+            return service;
+        }
     }
     return NULL;
 }
@@ -489,7 +508,7 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
     }
 
     /* Set flag to send out the connection response on next statemachine cycle */
-    channel->state_var |= BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_RESPONSE;
+    bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_RESPONSE);
     channel->response_code = response_code;
         
     /* Return the number of processed package bytes = BNEP Type, BNEP Control Type, UUID-Size + 2 * UUID */
@@ -572,7 +591,7 @@ static int bnep_handle_filter_net_type_set(bnep_channel_t *channel, uint8_t *pac
     }
 
     /* Set flag to send out the set net filter response on next statemachine cycle */
-    channel->state_var |= BNEP_CHANNEL_STATE_VAR_SND_FILTER_NET_TYPE_RESPONSE;
+    bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_SND_FILTER_NET_TYPE_RESPONSE);
     channel->response_code = response_code;
 
     return 2 + list_length;
@@ -658,7 +677,7 @@ static int bnep_handle_multi_addr_set(bnep_channel_t *channel, uint8_t *packet, 
         }
     }
     /* Set flag to send out the set multi addr response on next statemachine cycle */
-    channel->state_var |= BNEP_CHANNEL_STATE_VAR_SND_FILTER_MULTI_ADDR_RESPONSE;
+    bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_SND_FILTER_MULTI_ADDR_RESPONSE);
     channel->response_code = response_code;
     
     return 2 + list_length;
@@ -722,7 +741,7 @@ static int bnep_handle_control_packet(bnep_channel_t *channel, uint8_t *packet, 
                    COMMAND_NOT_UNDERSTOOD message. 
                    Set flag to process the request in the next statemachine loop 
                  */
-                channel->state_var |= BNEP_CHANNEL_STATE_VAR_SND_NOT_UNDERSTOOD;
+                bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_SND_NOT_UNDERSTOOD);
             }
             rc = 1;
             break;
@@ -740,7 +759,7 @@ static int bnep_handle_control_packet(bnep_channel_t *channel, uint8_t *packet, 
                    COMMAND_NOT_UNDERSTOOD message. 
                    Set flag to handle in the next statemachine loop 
                  */
-                channel->state_var |= BNEP_CHANNEL_STATE_VAR_SND_NOT_UNDERSTOOD;
+                bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_SND_NOT_UNDERSTOOD);
             }
             rc = 1;
             break;
@@ -769,7 +788,7 @@ static int bnep_handle_control_packet(bnep_channel_t *channel, uint8_t *packet, 
            COMMAND_NOT_UNDERSTOOD message. 
            Set flag to process the request in the next statemachine loop 
          */
-        channel->state_var |= BNEP_CHANNEL_STATE_VAR_SND_NOT_UNDERSTOOD;
+        bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_SND_NOT_UNDERSTOOD);        
     }
 
     return rc;
@@ -871,9 +890,9 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
 
                 // TODO: Should we now send the connect request ?
                 channel->state = BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE;
-                // TODO: Should be some state for connection request?
-                // TODO: Move this to statemachine
+                bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_REQUEST); 
                 channel->max_frame_size = bnep_max_frame_size_for_l2cap_mtu(READ_BT_16(packet, 17));
+                bnep_run();
             } else {              
                 log_info("L2CAP_EVENT_CHANNEL_OPENED: Instalid state: %d", channel->state);
             }
@@ -957,7 +976,6 @@ void bnep_packet_handler(uint8_t packet_type, uint16_t l2cap_cid, uint8_t *packe
 {
     bnep_channel_t* channel = NULL;
     
-    // multiplexer handler
     int handled = 0;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
@@ -984,7 +1002,7 @@ void bnep_packet_handler(uint8_t packet_type, uint16_t l2cap_cid, uint8_t *packe
     /* Forward l2cap packages to application handler, if no channel has been 
        registered for this l2cap cid, or if the channel is not opened. */
     channel = bnep_channel_for_l2cap_cid(l2cap_cid);
-    if (!channel || channel->state != BNEP_CHANNEL_OPEN) {
+    if (!channel || channel->state != BNEP_CHANNEL_STATE_CONNECTED) {
         (*app_packet_handler)(NULL, packet_type, l2cap_cid, packet, size);
         bnep_run();
         return;
@@ -994,21 +1012,43 @@ void bnep_packet_handler(uint8_t packet_type, uint16_t l2cap_cid, uint8_t *packe
     bnep_run();
 }
 
-static void bnep_state_machine(bnep_channel_t* channel){
-    
-    log_info("bnep_state_machine: state %u, event %u", service->state, event->type);
-
-    switch (service->state) {
-        case BNEP_CHANNEL_STATE_CLOSED:
-            break;
-        case BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_REQUEST:
-            break;
-        case BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE:
-            break;
-        case BNEP_CHANNEL_STATE_CONNECTED:
-            break;
-        default:
-    break;
+static void bnep_channel_state_machine(bnep_channel_t* channel, bnep_channel_event_t *event)
+{
+    log_info("bnep_state_machine: state %u, state var: %02x, event %u", channel->state, channel->state_var, event->type);
+ 
+    if (event->type == BNEP_CH_EVT_READY_TO_SEND) {
+        /* Send outstanding packets. */
+        if (channel->state_var & BNEP_CHANNEL_STATE_VAR_SND_NOT_UNDERSTOOD) {
+            bnep_channel_state_remove(channel, BNEP_CHANNEL_STATE_VAR_SND_NOT_UNDERSTOOD);
+            bnep_send_connection_resp(channel, channel->last_control_type);
+            return;
+        }        
+        if (channel->state_var & BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_REQUEST) {
+            bnep_channel_state_remove(channel, BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_REQUEST);
+            bnep_send_connection_request(channel, channel->uuid_source, channel->uuid_dest);
+        }
+        if (channel->state_var & BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_RESPONSE) {
+            if ((channel->state == BNEP_CHANNEL_STATE_CLOSED) ||
+                (channel->state == BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_REQUEST)) {
+                /* Set channel state to STATE_CONNECTED */
+                channel->state = BNEP_CHANNEL_STATE_CONNECTED;
+            }
+            
+            bnep_channel_state_remove(channel, BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_RESPONSE);
+            bnep_send_connection_resp(channel, channel->response_code);
+            return;
+        }
+        if (channel->state_var & BNEP_CHANNEL_STATE_VAR_SND_FILTER_NET_TYPE_RESPONSE) {
+            bnep_channel_state_remove(channel, BNEP_CHANNEL_STATE_VAR_SND_FILTER_NET_TYPE_RESPONSE);
+            bnep_send_connection_resp(channel, channel->response_code);
+            return;
+        }
+        if (channel->state_var & BNEP_CHANNEL_STATE_VAR_SND_FILTER_MULTI_ADDR_RESPONSE) {
+            bnep_channel_state_remove(channel, BNEP_CHANNEL_STATE_VAR_SND_FILTER_MULTI_ADDR_RESPONSE);
+            bnep_send_connection_resp(channel, channel->response_code);
+            return;
+        }
+    }    
 }
 
 
@@ -1028,7 +1068,8 @@ static void bnep_run(void)
             continue;
         }
 
-        bnep_channel_state_machine(channel);
+        bnep_channel_event_t channel_event = { BNEP_CH_EVT_READY_TO_SEND };
+        bnep_channel_state_machine(channel, &channel_event);
     }
 }
     
@@ -1043,23 +1084,30 @@ void bnep_set_required_security_level(gap_security_level_t security_level)
     bnep_security_level = security_level;
 }
 
-void bnep_connect(void * connection, bd_addr_t *addr)
+int bnep_connect(void * connection, bd_addr_t *addr, uint16_t uuid_dest)
 {
     log_info("BNEP_CONNECT addr %s", bd_addr_to_str(*addr));
-           
+    if (service == NULL) {
+        return -1;
+    }
+    
     l2cap_create_channel_internal(connection, bnep_packet_handler, *addr, PSM_BNEP, bnep_max_mtu());
     // TODO: Completely reworked...
     channel->state = BNEP_CHANNEL_STATE_CONNECT;
+    channel->uuid_source = service->service_uuid;
+    channel->uuid_dest = uuid_dest;
     bnep_run();
 }
 
-void bnep_disconnect(void)
+void bnep_disconnect(bd_addr_t *addr)
 {
+    bnep_channel_t *channel;
     log_info("BNEP_DISCONNECT");
 
-    if (service) {
-        service->state = BNEP_SEND_DISC;
-    }
+    channel = bnep_channel_for_addr(addr);
+    
+    bnep_channel_finalize(channel);
+
     bnep_run();
 }
 
@@ -1069,7 +1117,7 @@ void bnep_register_service(void * connection, uint16_t service_uuid, uint16_t ma
     log_info("BNEP_REGISTER_SERVICE mtu %d", max_frame_size);
 
     /* Check if we already registered a service */
-    bnep_service_t * bnep_service = NULL;
+    bnep_service_t * service = bnep_service_for_uuid(service_uuid);
     if (service) {
         bnep_emit_service_registered(connection, BNEP_SERVICE_ALREADY_REGISTERED);
         return;
@@ -1084,37 +1132,37 @@ void bnep_register_service(void * connection, uint16_t service_uuid, uint16_t ma
     }
     
     /* Allocate service memory */
-    bnep_service = (bnep_service_t*) btstack_memory_bnep_service_get();
-    if (!bnep_service) {
+    service = (bnep_service_t*) btstack_memory_bnep_service_get();
+    if (!service) {
         bnep_emit_service_registered(connection, BTSTACK_MEMORY_ALLOC_FAILED, channel);
         return;
     }
     
     /* register with l2cap if not registered before, max MTU */
-    if (linked_list_empty(&bnep_services)){
-        l2cap_register_service_internal(NULL, bnep_packet_handler, PSM_BNEP, 0xffff, bnep_security_level);
-    }
-    
+    l2cap_register_service_internal(NULL, bnep_packet_handler, PSM_BNEP, 0xffff, bnep_security_level);
+        
     /* Setup the service struct */
-    bnep_service->connection     = connection;
-    bnep_service->max_frame_size = max_frame_size;
-    bnep_service->sevice_uuid    = service_uuid;
-    
-    /* And now assigne the global variable */
-    service = bnep_service;
+    service->connection     = connection;
+    service->max_frame_size = max_frame_size;
+    service->sevice_uuid    = service_uuid;
+
+    /* Add to services list */
+    linked_list_add(&bnep_services, (linked_item_t *) service);
     
     /* Inform the application layer */
     bnep_emit_service_registered(connection, 0);
 }
 
-void bnep_unregister_service(void)
+void bnep_unregister_service(uint16_t service_uuid)
 {
     log_info("BNEP_UNREGISTER_SERVICE #%u", void);
 
+    bnep_service_t *service = bnep_service_for_uuid(service_uuid);    
     if (!service) {
         return;
     }
 
+    linked_list_remove(&bnep_services, (linked_item_t *) service);
     btstack_memory_bnep_service_free(service);
     service = NULL;
     

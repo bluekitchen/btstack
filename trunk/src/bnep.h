@@ -112,10 +112,15 @@ typedef enum {
 typedef enum {
     BNEP_CHANNEL_STATE_VAR_NONE                            = 0,
     BNEP_CHANNEL_STATE_VAR_SND_NOT_UNDERSTOOD              = 1 << 0,
-    BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_RESPONSE         = 1 << 1,
-    BNEP_CHANNEL_STATE_VAR_SND_FILTER_NET_TYPE_RESPONSE    = 1 << 2,
-    BNEP_CHANNEL_STATE_VAR_SND_FILTER_MULTI_ADDR_RESPONSE  = 1 << 3,
+    BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_REQUEST          = 1 << 1,
+    BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_RESPONSE         = 1 << 2,
+    BNEP_CHANNEL_STATE_VAR_SND_FILTER_NET_TYPE_RESPONSE    = 1 << 3,
+    BNEP_CHANNEL_STATE_VAR_SND_FILTER_MULTI_ADDR_RESPONSE  = 1 << 4,
 } BNEP_CHANNEL_STATE_VAR;
+
+typedef enum {
+    BNEP_CH_EVT_READY_TO_SEND,
+} BNEP_CHANNEL_EVENT;
 
 /* network protocol type filter */
 typedef struct {
@@ -140,7 +145,6 @@ typedef struct {
 
     // state variables used in RFCOMM_CHANNEL_INCOMING
     BNEP_CHANNEL_STATE_VAR state_var;
-    
 
     uint16_t           max_frame_size;    // incomming max. frame size   
     void              *connection;        // client connection 
@@ -162,7 +166,6 @@ typedef struct {
     
     // l2cap packet handler
     btstack_packet_handler_t packet_handler;
-
 } bnep_channel_t;
 
 /* Internal BNEP service descriptor */
@@ -191,16 +194,16 @@ void bnep_register_packet_handler(void (*handler)(void * connection, uint8_t pac
                                                     uint16_t channel, uint8_t *packet, uint16_t size));
 
 // Creates BNEP connection (channel) to a given server on a remote device with baseband address. A new baseband connection will be initiated if necessary.
-void bnep_connect(void * connection, bd_addr_t *addr);
+int bnep_connect(void * connection, bd_addr_t *addr, uint16_t uuid_dest);
 
 // Disconencts BNEP channel with given identifier. 
-void bnep_disconnect(uint16_t bnep_cid);
+void bnep_disconnect(bd_addr_t *addr)
 
 // Registers BNEP service, set a maximum frame size and assigns a packet handler. On embedded systems, use NULL for connection parameter.
 void bnep_register_service(void * connection, uint16_t service_uuid, uint16_t max_frame_size);
 
 // Unregister BNEP service.
-void bnep_unregister_service(uint8_t service_channel);
+void bnep_unregister_service(uint16_t service_uuid);
 
 #if defined __cplusplus
 }
