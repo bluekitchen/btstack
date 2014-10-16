@@ -17,6 +17,15 @@
 #include "btstack_memory.h"
 #include "remote_device_db.h"
 
+// STDOUT_FILENO and STDERR_FILENO are defined by <unistd.h> with GCC
+// (this is a hack for IAR)
+#ifndef STDOUT_FILENO
+#define STDERR_FILENO 1
+#endif
+#ifndef STDERR_FILENO
+#define STDERR_FILENO 2
+#endif
+
 // Configuration
 // LED2 on PA5
 // Debug: USART2, TX on PA2
