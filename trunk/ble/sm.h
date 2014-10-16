@@ -68,7 +68,6 @@ typedef enum {
     IO_CAPABILITY_KEYBOARD_ONLY,
     IO_CAPABILITY_NO_INPUT_NO_OUTPUT,
     IO_CAPABILITY_KEYBOARD_DISPLAY, // not used by secure simple pairing
-    IO_CAPABILITY_UNKNOWN = 0xff
 } io_capability_t;
 
 // Authorization state

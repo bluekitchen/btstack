@@ -211,7 +211,7 @@ static uint8_t sm_accepted_stk_generation_methods;
 static uint8_t sm_max_encryption_key_size;
 static uint8_t sm_min_encryption_key_size;
 static uint8_t sm_auth_req = 0;
-static uint8_t sm_io_capabilities = IO_CAPABILITY_UNKNOWN;
+static uint8_t sm_io_capabilities = IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
 static uint8_t sm_slave_request_security;
 static uint8_t sm_authenticate_outgoing_connections = 0;    // might go away
 
