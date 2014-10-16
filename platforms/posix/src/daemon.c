@@ -1294,25 +1294,25 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
                     daemon_retry_parked();
                     break;
                  case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
-                    if (!packet[2]) break;
+                    if (packet[2]) break;
                     daemon_add_client_rfcomm_channel(connection, READ_BT_16(packet, 9));
                     break;
                 case RFCOMM_EVENT_CHANNEL_CLOSED:
                     daemon_remove_client_rfcomm_channel(connection, READ_BT_16(packet, 2));
                     break;
                 case RFCOMM_EVENT_SERVICE_REGISTERED:
-                    if (!packet[2]) break;
+                    if (packet[2]) break;
                     daemon_add_client_rfcomm_service(connection, packet[3]);
                     break;
                 case L2CAP_EVENT_CHANNEL_OPENED:
-                    if (!packet[2]) break;
+                    if (packet[2]) break;
                     daemon_add_client_l2cap_channel(connection, READ_BT_16(packet, 13));
                     break;
                 case L2CAP_EVENT_CHANNEL_CLOSED:
                     daemon_remove_client_l2cap_channel(connection, READ_BT_16(packet, 2));
                     break;
                 case L2CAP_EVENT_SERVICE_REGISTERED:
-                    if (!packet[2]) break;
+                    if (packet[2]) break;
                     daemon_add_client_l2cap_service(connection, READ_BT_16(packet, 3));
                     break;
 #if defined(HAVE_BLE) && defined(HAVE_MALLOC)

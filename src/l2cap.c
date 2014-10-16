@@ -190,7 +190,7 @@ static void l2cap_emit_service_registered(void *connection, uint8_t status, uint
     event[2] = status;
     bt_store_16(event, 3, psm);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-    (*packet_handler)(NULL, HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*packet_handler)(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
 void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
@@ -1493,7 +1493,7 @@ l2cap_service_t * l2cap_get_service(uint16_t psm){
 
 void l2cap_register_service_internal(void *connection, btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level){
     
-    log_info("L2CAP_REGISTER_SERVICE psm 0x%x mtu %u", psm, mtu);
+    log_info("L2CAP_REGISTER_SERVICE psm 0x%x mtu %u connection %p", psm, mtu, connection);
     
     // check for alread registered psm 
     // TODO: emit error event
