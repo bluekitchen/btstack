@@ -133,6 +133,7 @@ static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t si
 
 // H4: tx state
 static TX_STATE  tx_state;
+static int       tx_send_packet_sent;
 static uint8_t * tx_data;
 static uint16_t  tx_len;
 static uint8_t   tx_packet_type;
@@ -319,6 +320,9 @@ static void h4_block_sent(void){
             hal_uart_dma_send_block(tx_data, tx_len);
             break;
         case TX_W4_PACKET_SENT:
+            // non-ehcill packet sent, confirm
+            tx_send_packet_sent = 1;
+
             // send pending ehcill command if neccessary
             switch (ehcill_command_to_send){
                 case EHCILL_GO_TO_SLEEP_ACK:
@@ -368,11 +372,15 @@ static void dump(uint8_t *data, uint16_t len){
 static int h4_process(struct data_source *ds) {
     
     // notify about packet sent
-    if (tx_state == TX_DONE){
-        // reset state
-        tx_state = TX_IDLE;
+    if (tx_send_packet_sent){
+        tx_send_packet_sent = 0;
         uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0 };
         packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
+    }
+
+    // reset tx state
+    if (tx_state == TX_DONE){
+        tx_state = TX_IDLE;
     }
 
     if (h4_state != H4_PACKET_RECEIVED) return 0;
@@ -410,7 +418,7 @@ static void ehcill_schedule_ecill_command(uint8_t command){
             // new: setup timer;
             // new: break
         case TX_DONE:
-            
+
 
             // gpio_clear(GPIOB, GPIO_DEBUG_1);
             tx_state = TX_W4_EHCILL_SENT;
