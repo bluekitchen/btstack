@@ -707,14 +707,13 @@ int sm_cmac_ready(){
 
 static void sm_cmac_handle_aes_engine_ready(){
     switch (sm_cmac_state){
-        case CMAC_CALC_SUBKEYS:
-            {
+        case CMAC_CALC_SUBKEYS: {
             sm_key_t const_zero;
             memset(const_zero, 0, 16);
-            sm_aes128_start(sm_cmac_k, const_zero);
             sm_cmac_next_state();
+            sm_aes128_start(sm_cmac_k, const_zero);
             break;
-            }
+        }
         case CMAC_CALC_MI: {
             int j;
             sm_key_t y;
@@ -722,8 +721,8 @@ static void sm_cmac_handle_aes_engine_ready(){
                 y[j] = sm_cmac_x[j] ^ sm_cmac_message[sm_cmac_block_current*16 + j];
             }
             sm_cmac_block_current++;
-            sm_aes128_start(sm_cmac_k, y);
             sm_cmac_next_state();
+            sm_aes128_start(sm_cmac_k, y);
             break;
         }
         case CMAC_CALC_MLAST: {
@@ -734,8 +733,8 @@ static void sm_cmac_handle_aes_engine_ready(){
             }
             log_key("Y", y);
             sm_cmac_block_current++;
-            sm_aes128_start(sm_cmac_k, y);
             sm_cmac_next_state();
+            sm_aes128_start(sm_cmac_k, y);
             break;
         }
         default:
@@ -870,25 +869,26 @@ static void sm_run(void){
     switch (dkg_state){
         case DKG_CALC_IRK:
             // already busy?
-            if (sm_aes128_state == SM_AES128_ACTIVE) break;
-            {
-            // IRK = d1(IR, 1, 0)
-            sm_key_t d1_prime;
-            sm_d1_d_prime(1, 0, d1_prime);  // plaintext
-            sm_aes128_start(sm_persistent_ir, d1_prime);
-            dkg_next_state();
+            if (sm_aes128_state == SM_AES128_IDLE) {
+                // IRK = d1(IR, 1, 0)
+                sm_key_t d1_prime;
+                sm_d1_d_prime(1, 0, d1_prime);  // plaintext
+                dkg_next_state();
+                sm_aes128_start(sm_persistent_ir, d1_prime);
+                return;
             }
+            break;
         case DKG_CALC_DHK:
             // already busy?
-            if (sm_aes128_state == SM_AES128_ACTIVE) break;
-            {
-            // DHK = d1(IR, 3, 0)
-            sm_key_t d1_prime;
-            sm_d1_d_prime(3, 0, d1_prime);  // plaintext
-            sm_aes128_start(sm_persistent_ir, d1_prime);
-            dkg_next_state();
+            if (sm_aes128_state == SM_AES128_IDLE) {
+                // DHK = d1(IR, 3, 0)
+                sm_key_t d1_prime;
+                sm_d1_d_prime(3, 0, d1_prime);  // plaintext
+                dkg_next_state();
+                sm_aes128_start(sm_persistent_ir, d1_prime);
+                return;
             }
-            return;
+            break;
         default:
             break;  
     }
@@ -896,23 +896,23 @@ static void sm_run(void){
     // random address updates
     switch (rau_state){
         case RAU_GET_RANDOM:
-            hci_send_cmd(&hci_le_rand);
             rau_next_state();
+            hci_send_cmd(&hci_le_rand);
             return;
         case RAU_GET_ENC:
             // already busy?
-            if (sm_aes128_state == SM_AES128_ACTIVE) break;
-            {
-            sm_key_t r_prime;
-            sm_ah_r_prime(sm_random_address, r_prime);
-            sm_aes128_start(sm_persistent_irk, r_prime);
-            rau_next_state();
+            if (sm_aes128_state == SM_AES128_IDLE) {
+                sm_key_t r_prime;
+                sm_ah_r_prime(sm_random_address, r_prime);
+                rau_next_state();
+                sm_aes128_start(sm_persistent_irk, r_prime);
+                return;
             }
-            return;
+            break;
         case RAU_SET_ADDRESS:
             log_info("New random address: %s", bd_addr_to_str(sm_random_address));
-            hci_send_cmd(&hci_le_set_random_address, sm_random_address);
             rau_state = RAU_IDLE;
+            hci_send_cmd(&hci_le_set_random_address, sm_random_address);
             return;
         default:
             break;
@@ -951,8 +951,8 @@ static void sm_run(void){
 
             sm_key_t r_prime;
             sm_ah_r_prime(sm_central_device_address, r_prime);
-            sm_aes128_start(irk, r_prime);
             sm_central_ah_calculation_active = 1;
+            sm_aes128_start(irk, r_prime);
             return;
         }
 
@@ -986,9 +986,9 @@ static void sm_run(void){
         // initiator side
         case SM_INITIATOR_PH1_SEND_PAIRING_REQUEST:
             setup->sm_m_preq.code = SM_CODE_PAIRING_REQUEST;
+            connection->sm_engine_state = SM_INITIATOR_PH1_W4_PAIRING_RESPONSE;
             l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_m_preq, sizeof(sm_pairing_packet_t));
             sm_2timeout_reset();
-            connection->sm_engine_state = SM_INITIATOR_PH1_W4_PAIRING_RESPONSE;
             break;
 
         // responder side
@@ -997,8 +997,8 @@ static void sm_run(void){
             uint8_t buffer[2];
             buffer[0] = SM_CODE_SECURITY_REQUEST;
             buffer[1] = SM_AUTHREQ_BONDING;
-            l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
             connection->sm_engine_state = SM_GENERAL_IDLE;            
+            l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
             return;
         }
 
@@ -1009,27 +1009,27 @@ static void sm_run(void){
             setup->sm_s_pres.initiator_key_distribution = setup->sm_m_preq.initiator_key_distribution;
             setup->sm_s_pres.responder_key_distribution = setup->sm_m_preq.responder_key_distribution;
 
+            connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_CONFIRM;
             l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
             sm_2timeout_reset();
 
             sm_trigger_user_response();
 
-            connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_CONFIRM;
             return;
         }
 
         case SM_RESPONDER_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
-            hci_send_cmd(&hci_le_long_term_key_negative_reply, connection->sm_handle);
             connection->sm_engine_state = SM_GENERAL_IDLE;
+            hci_send_cmd(&hci_le_long_term_key_negative_reply, connection->sm_handle);
             return;
 
         case SM_GENERAL_SEND_PAIRING_FAILED: {
             uint8_t buffer[2];
             buffer[0] = SM_CODE_PAIRING_FAILED;
             buffer[1] = setup->sm_pairing_failed_reason;
+            connection->sm_engine_state = SM_GENERAL_IDLE;
             l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
             sm_2timeout_stop();
-            connection->sm_engine_state = SM_GENERAL_IDLE;
             break;
         }
 
@@ -1037,13 +1037,13 @@ static void sm_run(void){
             uint8_t buffer[17];
             buffer[0] = SM_CODE_PAIRING_RANDOM;
             swap128(setup->sm_local_random, &buffer[1]);
-            l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-            sm_2timeout_reset();
             if (connection->sm_role){
                 connection->sm_engine_state = SM_RESPONDER_PH2_W4_LTK_REQUEST;
             } else {
                 connection->sm_engine_state = SM_INITIATOR_PH2_W4_PAIRING_RANDOM;
             }
+            l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+            sm_2timeout_reset();
             break;
         }
 
@@ -1052,56 +1052,56 @@ static void sm_run(void){
         case SM_PH2_C1_GET_RANDOM_B:
         case SM_PH3_GET_RANDOM:
         case SM_PH3_GET_DIV:
-            hci_send_cmd(&hci_le_rand);
             sm_next_responding_state();
+            hci_send_cmd(&hci_le_rand);
             return;
 
         case SM_PH2_C1_GET_ENC_B:
         case SM_PH2_C1_GET_ENC_D:
             // already busy?
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
-            sm_aes128_start(setup->sm_tk, setup->sm_c1_t3_value);
             sm_next_responding_state();
+            sm_aes128_start(setup->sm_tk, setup->sm_c1_t3_value);
             return;
 
         case SM_PH3_LTK_GET_ENC:
         case SM_PH4_LTK_GET_ENC:
             // already busy?
-            if (sm_aes128_state == SM_AES128_ACTIVE) break;
-            {
+            if (sm_aes128_state == SM_AES128_IDLE) {
                 sm_key_t d_prime;
                 sm_d1_d_prime(setup->sm_local_div, 0, d_prime);
+                sm_next_responding_state();
                 sm_aes128_start(sm_persistent_er, d_prime);
+                return;
             }
-            sm_next_responding_state();
-            return;
+            break;
 
         case SM_PH3_CSRK_GET_ENC:
             // already busy?
-            if (sm_aes128_state == SM_AES128_ACTIVE) break;
-            {
+            if (sm_aes128_state == SM_AES128_IDLE) {
                 sm_key_t d_prime;
                 sm_d1_d_prime(setup->sm_local_div, 1, d_prime);
+                sm_next_responding_state();
                 sm_aes128_start(sm_persistent_er, d_prime);
+                return;
             }
-            sm_next_responding_state();
-            return;
+            break;
 
         case SM_PH2_C1_GET_ENC_C:
             // already busy?
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
             // calculate m_confirm using aes128 engine - step 1
             sm_c1_t1(setup->sm_peer_random, (uint8_t*) &setup->sm_m_preq, (uint8_t*) &setup->sm_s_pres, setup->sm_m_addr_type, setup->sm_s_addr_type, plaintext);
-            sm_aes128_start(setup->sm_tk, plaintext);
             sm_next_responding_state();
+            sm_aes128_start(setup->sm_tk, plaintext);
             break;
         case SM_PH2_C1_GET_ENC_A:
             // already busy?
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
             // calculate confirm using aes128 engine - step 1
             sm_c1_t1(setup->sm_local_random, (uint8_t*) &setup->sm_m_preq, (uint8_t*) &setup->sm_s_pres, setup->sm_m_addr_type, setup->sm_s_addr_type, plaintext);
-            sm_aes128_start(setup->sm_tk, plaintext);
             sm_next_responding_state();
+            sm_aes128_start(setup->sm_tk, plaintext);
             break;
         case SM_PH2_CALC_STK:
             // already busy?
@@ -1112,8 +1112,8 @@ static void sm_run(void){
             } else {
                 sm_s1_r_prime(setup->sm_peer_random, setup->sm_local_random, plaintext);
             }
-            sm_aes128_start(setup->sm_tk, plaintext);
             sm_next_responding_state();
+            sm_aes128_start(setup->sm_tk, plaintext);
             break;
         case SM_PH3_Y_GET_ENC:
             // already busy?
@@ -1121,41 +1121,41 @@ static void sm_run(void){
             // PH3B2 - calculate Y from      - enc
             // Y = dm(DHK, Rand)
             sm_dm_r_prime(setup->sm_local_rand, plaintext);
-            sm_aes128_start(sm_persistent_dhk, plaintext);
             sm_next_responding_state();
+            sm_aes128_start(sm_persistent_dhk, plaintext);
             return;
         case SM_PH2_C1_SEND_PAIRING_CONFIRM: {
             uint8_t buffer[17];
             buffer[0] = SM_CODE_PAIRING_CONFIRM;
             swap128(setup->sm_local_confirm, &buffer[1]);
-            l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-            sm_2timeout_reset();
             if (connection->sm_role){
                 connection->sm_engine_state = SM_RESPONDER_PH2_W4_PAIRING_RANDOM;
             } else {
                 connection->sm_engine_state = SM_INITIATOR_PH2_W4_PAIRING_CONFIRM;
             }
+            l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+            sm_2timeout_reset();
             return;
         }
         case SM_RESPONDER_PH2_SEND_LTK_REPLY: {
             sm_key_t stk_flipped;
             swap128(setup->sm_ltk, stk_flipped);
-            hci_send_cmd(&hci_le_long_term_key_request_reply, connection->sm_handle, stk_flipped);
             connection->sm_engine_state = SM_PH2_W4_CONNECTION_ENCRYPTED;
+            hci_send_cmd(&hci_le_long_term_key_request_reply, connection->sm_handle, stk_flipped);
             return;
         }
         case SM_INITIATOR_PH3_SEND_START_ENCRYPTION: {
             sm_key_t stk_flipped;
             swap128(setup->sm_ltk, stk_flipped);
-            hci_send_cmd(&hci_le_start_encryption, connection->sm_handle, 0, 0, 0, stk_flipped);
             connection->sm_engine_state = SM_PH2_W4_CONNECTION_ENCRYPTED;
+            hci_send_cmd(&hci_le_start_encryption, connection->sm_handle, 0, 0, 0, stk_flipped);
             return;
         }
         case SM_PH4_SEND_LTK: {
             sm_key_t ltk_flipped;
             swap128(setup->sm_ltk, ltk_flipped);
-            hci_send_cmd(&hci_le_long_term_key_request_reply, connection->sm_handle, ltk_flipped);
             connection->sm_engine_state = SM_GENERAL_IDLE;
+            hci_send_cmd(&hci_le_long_term_key_request_reply, connection->sm_handle, ltk_flipped);
             return;
         }
         case SM_PH4_Y_GET_ENC:
@@ -1164,8 +1164,8 @@ static void sm_run(void){
             log_info("LTK Request: recalculating with ediv 0x%04x", setup->sm_local_ediv);
             // Y = dm(DHK, Rand)
             sm_dm_r_prime(setup->sm_local_rand, plaintext);
-            sm_aes128_start(sm_persistent_dhk, plaintext);
             sm_next_responding_state();
+            sm_aes128_start(sm_persistent_dhk, plaintext);
             return;
 
         case SM_PH3_DISTRIBUTE_KEYS:
@@ -1683,6 +1683,8 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
         connection->sm_engine_state = SM_GENERAL_IDLE;
         return;
     }
+
+    log_debug("sm_packet_handler: staate %u, pdu 0x%02x", connection->sm_engine_state, packet[0]);
 
     switch (connection->sm_engine_state){
         
