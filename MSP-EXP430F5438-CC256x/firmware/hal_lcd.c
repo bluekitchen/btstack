@@ -41,7 +41,7 @@ static  unsigned int  LcdAddress = 0, LcdTableAddress = 0;
 static unsigned char backlight  = 8;
 static int LCD_MEM[110*17];
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Sends 3+3 bytes of data to the LCD using the format specified
  *         by the LCD Guide.
  * 
@@ -70,7 +70,7 @@ void halLcdSendCommand(unsigned char Data[])
   LCD_CS_RST_OUT |= LCD_CS_PIN;             //CS = 1 --> Stop Transfer       
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Initializes the USCI module, LCD device for communication. 
  *           
  * - Sets up the SPI2C Communication Module
@@ -116,7 +116,7 @@ void halLcdInit(void)
   halLcdActive();  
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Shuts down the LCD display and hdisables the USCI communication. 
  * 
  * @param  none
@@ -138,7 +138,7 @@ void halLcdShutDown(void)
   UCB2CTL0 = UCSWRST; 
 }  
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Initializes the LCD backlight PWM signal. 
  * 
  * @param  none
@@ -160,7 +160,7 @@ void halLcdBackLightInit(void)
   TA0CTL = TASSEL_2+MC_1;   
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Get function for the backlight PWM's duty cycle. 
  * 
  * @param  none 
@@ -173,7 +173,7 @@ unsigned int halLcdGetBackLight(void)
   return backlight;
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Set function for the backlight PWM's duty cycle 
  * 
  * @param  BackLightLevel The target backlight duty cycle - valued 0 to 16.
@@ -206,7 +206,7 @@ void halLcdSetBackLight(unsigned char BackLightLevel)
   backlight = BackLightLevel;
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Turns off the backlight. 
  * 
  * Clears the respective GPIO and timer settings.
@@ -227,7 +227,7 @@ void halLcdShutDownBackLight(void)
   backlight = 0;  
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Set function for the contrast level of the LCD. 
  * 
  * @param  ContrastLevel The target contrast level 
@@ -242,7 +242,7 @@ void halLcdSetContrast(unsigned char ContrastLevel)
   halLcdSendCommand(&LcdInitMacro[ 0x04 * 6 ]);
 } 
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Get function for the contrast level of the LCD. 
  * 
  * @param  none
@@ -254,7 +254,7 @@ unsigned char halLcdGetContrast(void)
   return LcdInitMacro[ 0x04 * 6 + 5 ] ;
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Turns the LCD cursor on at the current text position.
  * 
  * @param  none
@@ -276,7 +276,7 @@ void halLcdCursor(void)
   halLcdSetAddress(LcdAddress);
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Turns off the LCD cursor.
  * 
  * @param  none
@@ -289,7 +289,7 @@ void halLcdCursorOff(void)
   halLcdSendCommand(&LcdInitMacro[ 8 * 6 ]);
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Inverts the grayscale values of the LCD display (Black <> white).  
  * 
  * @param  none
@@ -302,7 +302,7 @@ void halLcdReverse(void)
   halLcdSendCommand(&LcdInitMacro[ 7 * 6 ]);
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Sets the LCD in standby mode to reduce power consumption.
  * 
  * @param  none
@@ -316,7 +316,7 @@ void halLcdStandby(void)
   halLcdSendCommand(&LcdInitMacro[ 3 * 6 ]);
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Puts the LCD into active mode.
  * 
  * @param  none
@@ -331,7 +331,7 @@ void halLcdActive(void)
   halLcdSendCommand(&LcdInitMacro[ 3 * 6 ]);
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Sets the pointer location in the LCD. 
  *         
  * - LcdAddress      = Address  					 
@@ -356,7 +356,7 @@ void halLcdSetAddress(int Address)
   LcdTableAddress = temp + (Address & 0x1F); 
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Draws a block at the specified LCD address. 
  * 
  * A block is the smallest addressable memory on the LCD and is
@@ -375,7 +375,7 @@ void halLcdDrawBlock(unsigned int Address, unsigned int Value)
   halLcdDrawCurrentBlock(Value);
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Writes Value to LCD CGram and MSP430 internal LCD table. 
  * 
  * Also updates the LcdAddress and LcdTableAddress to the correct values.
@@ -408,7 +408,7 @@ void halLcdDrawCurrentBlock(unsigned int Value)
 }
 
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Returns the LCD CGRAM value at location Address.
  * 
  * @param  Address The address of the block to be read from the LCD. 
@@ -450,7 +450,7 @@ int halLcdReadBlock(unsigned int Address)
   return Value;
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Draw a Pixel of grayscale at coordinate (x,y) to LCD 
  * 
  * @param  x         x-coordinate for grayscale value 
@@ -496,7 +496,7 @@ void halLcdPixel( int x, int y, unsigned char GrayScale)
   }
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Clears entire LCD CGRAM as well as LCD_MEM.
  * 
  * @param  none
@@ -516,7 +516,7 @@ void halLcdClearScreen(void)
   halLcdSetAddress(0);                      // Reset LCD address 
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Loads an image of size = rows * columns, starting at the 
  *         coordinate (x,y).
  * 
@@ -547,7 +547,7 @@ void halLcdImage(const unsigned int Image[], int Columns, int Rows, int x, int y
   }  
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Clears an image of size rows x columns starting at (x, y). 
  * 
  * @param  Columns The size, in columns, of the image to be cleared.
@@ -574,7 +574,7 @@ void halLcdClearImage(int Columns, int Rows, int x, int y)
    }  
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Writes Value to LCD CGRAM. Pointers internal to the LCD 
  *         are also updated. 
  * 
@@ -606,7 +606,7 @@ void halLcdDrawTextBlock(unsigned int Value)
     halLcdSetAddress( 0 );  
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Displays the string to the LCD starting at current location.
  * 
  * Writes all the data to LCD_MEM first, then updates all corresponding 
@@ -689,7 +689,7 @@ void halLcdPrint( char String[], unsigned char TextStyle)
 }
 
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Displays the string to the LCD starting at (x,y) location. 
  * 
  * Writes all the data to LCD_MEM first, then updates all corresponding 
@@ -713,7 +713,7 @@ void halLcdPrintXY( char String[], int x, int y, unsigned char TextStyle)
   halLcdPrint(String,  TextStyle);
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Displays a string on the LCD on the specified line.  
  * 
  * @param  String[]  The string to be displayed on LCD.
@@ -735,7 +735,7 @@ void halLcdPrintLine(char String[], unsigned char Line, unsigned char TextStyle)
   halLcdPrint(String, TextStyle);
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Prints a string beginning on a given line and column.  
  * 
  * @param  String[]  The string to be displayed on LCD.
@@ -765,7 +765,7 @@ void halLcdPrintLineCol(char String[], unsigned char Line, unsigned char Col,
 }
 
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Draws a horizontral line from (x1,y) to (x2,y) of GrayScale level
  * 
  * @param  x1        x-coordinate of the first point 
@@ -793,7 +793,7 @@ void halLcdHLine( int x1, int x2, int y, unsigned char GrayScale)
   }
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Draws a vertical line from (x,y1) to (x,y2) of GrayScale level
  * 
  * @param  x         x-coordinate of both points
@@ -821,7 +821,7 @@ void halLcdVLine( int x, int y1, int y2, unsigned char GrayScale)
   }
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Draws a line from (x1,y1) to (x2,y2) of GrayScale level.
  *         
  * Uses Bresenham's line algorithm.
@@ -900,7 +900,7 @@ void halLcdLine( int x1, int y1, int x2, int y2, unsigned char GrayScale)
 }
 
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Draw a circle of Radius with center at (x,y) of GrayScale level.
  *         
  * Uses Bresenham's circle algorithm
@@ -953,7 +953,7 @@ void halLcdCircle(int x, int y, int Radius, int GrayScale)
   }
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Scrolls a single row of pixels one column to the left. 
  * 
  * The column that is scrolled out of the left side of the LCD will be 
@@ -984,7 +984,7 @@ void halLcdScrollRow(int y)
   halLcdDrawCurrentBlock( (( LCD_MEM[LcdTableAddressTemp + 0x10] & 0xFFFC ) >> 2) + temp);    
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Scrolls multiple rows of pixels, yStart to yEnd, 
  *         one column to the left. 
  * 
@@ -1006,7 +1006,7 @@ void halLcdHScroll(int yStart, int yEnd)
     halLcdScrollRow(i);
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Scrolls a line of text one column to the left. 
  * 
  * @param  Line The line of text to be scrolled.  

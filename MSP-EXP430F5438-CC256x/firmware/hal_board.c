@@ -18,8 +18,7 @@ static void halBoardGetSystemClockSettings(unsigned char systemClockSpeed,
                                            unsigned char *setVCore,
                                            unsigned int  *setMultiplier);
 
-/*-------------------------------------------------------------------------*/
-/**********************************************************************//**
+/************************************************************************
  * @brief  Increments the VCore setting.
  * 
  * @param  level The target VCore setting
@@ -55,7 +54,7 @@ static void halBoardSetVCoreUp (unsigned char level)
   PMMCTL0_H = 0x00;                         
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Decrements the VCore setting.
  * 
  * @param  level The target VCore.  
@@ -78,7 +77,7 @@ static void halBoardSetVCoreDown(unsigned char level)
   PMMCTL0_H = 0x00;                         
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Get function for the DCORSEL, VCORE, and DCO multiplier settings 
  *         that map to a given clock speed. 
  * 
@@ -141,8 +140,7 @@ static void halBoardGetSystemClockSettings(unsigned char systemClockSpeed,
   }	
 }
 
-/*-------------------------------------------------------------------------*/
-/**********************************************************************//**
+/************************************************************************
  * @brief  Set function for the PMM core voltage (PMMCOREV) setting
  * 
  * @param  level Target VCore setting 
@@ -164,7 +162,7 @@ void halBoardSetVCore(unsigned char level)
   }
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Disables all supply voltage supervision and monitoring. 
  * 
  * @param  none
@@ -184,7 +182,7 @@ void halBoardDisableSVS(void)
   PMMCTL0_H = 0x00;                         	
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Enables all supply voltage supervision and monitoring
  * 
  * @param  none
@@ -211,7 +209,7 @@ void halBoardEnableSVS(void)
   PMMCTL0_H = 0x00;                         
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Initialization routine for XT1. 
  * 
  * Sets the necessary internal capacitor values and loops until all 
@@ -238,7 +236,7 @@ void halBoardStartXT1(void)
   }
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Set function for MCLK frequency.
  * 
  * @param  systemClockSpeed Intended frequency of operation - SYSCLK_xxMHZ.
@@ -276,7 +274,7 @@ void halBoardSetSystemClock(unsigned char systemClockSpeed)
   }
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Initializes ACLK, MCLK, SMCLK outputs on P11.0, P11.1, 
  *         and P11.2, respectively.
  * 
@@ -290,7 +288,7 @@ void halBoardOutputSystemClock(void)
   P11SEL |= 0x07;                           
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Stops the output of ACLK, MCLK, SMCLK on P11.0, P11.1, and P11.2.
  * 
  * @param  none
@@ -304,7 +302,7 @@ void halBoardStopOutputSystemClock(void)
   P11SEL &= ~0x07;                 
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Initializes all GPIO configurations. 
  *         TI example did set all ports to OUTPUT, we don't.
  * @param  none

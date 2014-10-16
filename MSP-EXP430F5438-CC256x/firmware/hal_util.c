@@ -1,4 +1,4 @@
-/**********************************************************************//**
+/************************************************************************
  * @brief  Checks for the board revision and returns a value < 0 if wrong
  *         revision is specified in main.c 
  * 

@@ -4,7 +4,7 @@ THEOS_PLATFORM_SDK_ROOT_armv6 = /Applications/Xcode-4.4.1.app/Contents/Developer
 SDKVERSION_armv6 = 5.1
 TARGET_IPHONEOS_DEPLOYMENT_VERSION = 3.0
 TARGET_IPHONEOS_DEPLOYMENT_VERSION_arm64 = 7.0
-ARCHS = armv6 arm64
+ARCHS = armv7 arm64
 
 BUNDLE_NAME = BTstack
 BTstack_FILES = PrefsViewController.m BluetoothController.m BluetoothTableViewAdapter.m

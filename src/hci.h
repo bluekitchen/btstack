@@ -465,7 +465,7 @@ void hci_connections_get_iterator(linked_list_iterator_t *it);
 le_connection_parameter_range_t gap_le_get_connection_parameter_range();
 void gap_le_set_connection_parameter_range(le_connection_parameter_range_t range);
 
-//*************** le client start
+// *************** le client start
 
 le_command_status_t le_central_start_scan(void);
 le_command_status_t le_central_stop_scan(void);
@@ -474,7 +474,7 @@ le_command_status_t le_central_connect_cancel(void);
 le_command_status_t gap_disconnect(hci_con_handle_t handle);
 void le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window);
 
-//*************** le client end
+// *************** le client end
     
 // create and send hci command packets based on a template and a list of parameters
 uint16_t hci_create_cmd(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, ...);

@@ -17,7 +17,7 @@ static long int temperatureOffset = CELSIUS_OFFSET;
 static unsigned char conversionType = CELSIUS, adcMode = ADC_OFF_MODE;
 static unsigned char exit_active_from_ADC12 = 0;
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Turns on and initializes ADC12, accelerometer in order to 
  *         sample x, y, z-axis inputs.
  * 
@@ -51,7 +51,7 @@ void halAccelerometerInit(void)
   UCSCTL8 |= MODOSCREQEN;                   
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Calibrates the offset values for x, y, and z axes.
  * 
  * @param  none
@@ -73,7 +73,7 @@ void halAccelerometerCalibrate(void)
   halAdcSetQuitFromISR( tempQuit );    
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Set function for the calibrated offsets for the x, y, and z axes.
  * 
  * @param  x Calibrated offset for the x-axis
@@ -91,7 +91,7 @@ void halAccelerometerSetCalibratedOffset( int x, int y, int z )
   Acc_z_offset = z;
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Get function for the x, y, and z axes calibrated offsets
  * 
  * @param  x Pointer to the calibrated offset for the x-axis
@@ -109,7 +109,7 @@ void halAccelerometerGetCalibratedOffset(int *x, int *y, int *z)
   *z = Acc_y_offset;
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Get function for the x, y, and z accelerometer samples, 
  *         including the calibrated offsets.
  * 
@@ -132,7 +132,7 @@ void halAccelerometerRead(int *x, int *y, int *z)
   *z = Acc_z - Acc_z_offset;  
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Get function for the x, y, and z accelerometer samples, 
  *         excluding the calibrated offsets.
  * 
@@ -151,7 +151,7 @@ void halAccelerometerReadWithOffset(int *x, int *y, int *z)
   *z = SavedADC12MEM2;
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Disables the ADC12, accelerometer that sampled x, y, z-axis inputs.
  * 
  * @param  none
@@ -173,7 +173,7 @@ void halAccelerometerShutDown(void)
 }
 
 /*----------------------------------------------------------------------------*/
-/**********************************************************************//**
+/************************************************************************
  * @brief  Intializes the ADC12 to sample Temperature and Vcc. 
  * 
  * @param  none
@@ -193,7 +193,7 @@ void halAdcInitTempVcc(void)
   ADC12MCTL1 = ADC12SREF_1 + VCC_CHANNEL + ADC12EOS;                            
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Turns off / disable the ADC12. 
  * 
  * @param  none
@@ -206,7 +206,7 @@ void halAdcShutDownTempVcc(void)
   adcMode = ADC_OFF_MODE;      
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Sets the conversion type to either Farenheit (F) or Celsius (C).
  * 
  * @param  conversion The #define constant CELSIUS or FAHRENHEIT. 
@@ -218,7 +218,7 @@ void halAdcSetTempConversionType(unsigned char conversion)
   conversionType = conversion;
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Set function for the calibrated temperature offset.
  * 
  * @param  offset The temperature offset.
@@ -230,7 +230,7 @@ void halAdcSetTempOffset(long offset)
   temperatureOffset = offset;
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Get function for the current temperature value. 
  * 
  * @param  none
@@ -242,7 +242,7 @@ int halAdcGetTemp(void)
   return Temperature; 
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Get function for the current Vcc value. 
  * 
  * @param  none
@@ -254,7 +254,7 @@ int halAdcGetVcc(void)
   return Vcc;
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Converts the Vcc and Temp readings from the ADC to BCD format. 
  * 
  * @param  none
@@ -284,7 +284,7 @@ void halAdcConvertTempVccFromADC(void)
   Temperature = (long) SavedADC12MEM0 * multiplier/4096 - offset;   	
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Get function for the temperature and Vcc samples in "xxx^C/F" and 
  *         "x.xV" format.
  * 
@@ -365,7 +365,7 @@ void halAdcReadTempVcc(char *TemperatureStr, char *VccStr)
 }
 
 /*----------------------------------------------------------------------------*/
-/**********************************************************************//**
+/************************************************************************
  * @brief  Starts the ADC conversion.
  * 
  * @param  none
@@ -394,7 +394,7 @@ void halAdcStartRead(void)
   }
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Sets the flag that causes an exit into active CPU mode from 
  *         the ADC12 ISR.
  * 
