@@ -122,6 +122,10 @@ typedef enum {
     BNEP_CH_EVT_READY_TO_SEND,
 } BNEP_CHANNEL_EVENT;
 
+typedef struct bnep_channel_event {
+    BNEP_CHANNEL_EVENT type;
+} bnep_channel_event_t;
+
 /* network protocol type filter */
 typedef struct {
 	uint16_t	        range_start;
@@ -197,7 +201,7 @@ void bnep_register_packet_handler(void (*handler)(void * connection, uint8_t pac
 int bnep_connect(void * connection, bd_addr_t *addr, uint16_t uuid_dest);
 
 // Disconencts BNEP channel with given identifier. 
-void bnep_disconnect(bd_addr_t *addr)
+void bnep_disconnect(bd_addr_t *addr);
 
 // Registers BNEP service, set a maximum frame size and assigns a packet handler. On embedded systems, use NULL for connection parameter.
 void bnep_register_service(void * connection, uint16_t service_uuid, uint16_t max_frame_size);
