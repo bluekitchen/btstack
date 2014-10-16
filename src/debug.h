@@ -48,6 +48,14 @@
 
 #include <stdio.h>
 
+#ifndef EMBEDDED
+// Avoid complaints of unused arguments when log levels are disabled.
+static inline void __log_unused(const char *format, ...) {
+}
+#else
+#define __log_unused(...)
+#endif
+
 #ifdef ENABLE_LOG_DEBUG
 #ifdef HAVE_HCI_DUMP
 #define log_debug(format, ...)  hci_dump_log(format,  ## __VA_ARGS__)
@@ -55,7 +63,7 @@
 #define log_debug(format, ...)  printf(format "\n",  ## __VA_ARGS__)
 #endif
 #else
-#define log_debug(...)
+#define log_debug(...) __log_unused(__VA_ARGS__)
 #endif
 
 #ifdef ENABLE_LOG_INFO
@@ -65,7 +73,7 @@
 #define log_info(format, ...)  printf(format "\n",  ## __VA_ARGS__)
 #endif
 #else
-#define log_info(...)
+#define log_info(...) __log_unused(__VA_ARGS__)
 #endif
 
 #ifdef ENABLE_LOG_ERROR
@@ -75,7 +83,7 @@
 #define log_error(format, ...)  printf(format "\n",  ## __VA_ARGS__)
 #endif
 #else
-#define log_error(...)
+#define log_error(...) __log_unused(__VA_ARGS__)
 #endif
 
 #endif // __DEBUG_H
