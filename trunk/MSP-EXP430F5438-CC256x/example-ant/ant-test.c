@@ -1,11 +1,11 @@
-//*****************************************************************************
+// *****************************************************************************
 //
 // ant + spp demo - it provides a SPP port and and sends a counter every second
 //                - it also listens on ANT channel 33,1,1
 //
 // it doesn't use the LCD to get down to a minimal memory footpring
 //
-//*****************************************************************************
+// *****************************************************************************
 
 #include <stdint.h>
 #include <stdio.h>

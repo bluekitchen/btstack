@@ -1,4 +1,4 @@
-//*****************************************************************************
+// *****************************************************************************
 //
 // spp_flowcontrol demo - it provides a SPP that use sincoming flow control
 //                        Processing of data is simulated by granting the next
@@ -6,7 +6,7 @@
 //
 // it doesn't use the LCD to get down to a minimal memory footprint
 //
-//*****************************************************************************
+// *****************************************************************************
 
 #include <stdint.h>
 #include <stdio.h>

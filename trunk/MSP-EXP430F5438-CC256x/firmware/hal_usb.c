@@ -12,7 +12,7 @@ static char halUsbReceiveBuffer[255];
 static unsigned char bufferSize=0;
 #endif
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Initializes the serial communications peripheral and GPIO ports 
  *         to communicate with the TUSB3410.
  * 
@@ -48,7 +48,7 @@ void halUsbInit(void)
   // __bis_SR_register(GIE);                   // Enable Interrupts
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Disables the serial communications peripheral and clears the GPIO
  *         settings used to communicate with the TUSB3410.
  * 
@@ -66,7 +66,7 @@ void halUsbShutDown(void)
   USB_PORT_OUT &= ~(USB_PIN_TXD + USB_PIN_RXD);
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Sends a character over UART to the TUSB3410.
  * 
  * @param  character The character to be sent. 
@@ -84,7 +84,7 @@ char halUsbRecvChar(){
     return UCA1RXBUF;
 }
 
-/**********************************************************************//**
+/************************************************************************
  * @brief  Sends a string of characters to the TUSB3410
  * 
  * @param  string[] The array of characters to be transmit to the TUSB3410.

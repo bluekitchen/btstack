@@ -41,7 +41,7 @@
 extern "C" {
 #endif
     
-//*************** gatt client
+// *************** gatt client
 typedef enum {
     P_READY,
     P_W2_SEND_SERVICE_QUERY,
