@@ -4,7 +4,7 @@ LDFLAGS  = @LDFLAGS@ -lBTstack -L../../src
 CFLAGS = @CFLAGS@ -I$(BTSTACK_ROOT) -I$(BTSTACK_ROOT)/include
 prefix = @prefix@
 
-all: test rfcomm-cat rfcomm-echo  rfcomm-test inquiry l2cap-server l2cap-throughput le_scan
+all: test rfcomm-cat rfcomm-echo rfcomm-test inquiry l2cap-server l2cap-throughput le_scan
 
 test: test.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
@@ -31,8 +31,9 @@ le_scan: le_scan.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
 clean:
-	rm -f test mitm rfcomm-cat rfcomm-echo inquiry l2cap-server l2cap-throughput le_scan
-	
+	rm -f test mitm rfcomm-cat rfcomm-echo rfcomm-test inquiry l2cap-server l2cap-throughput le_scan
+	rm -rf *.dSYM
+
 install:    
 	echo "nothing to be done"
 
