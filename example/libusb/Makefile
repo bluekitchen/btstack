@@ -156,8 +156,8 @@ gatt_battery_query: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM
 clean:
 	rm -f  	spp_counter sdp_rfcomm_query sdp_general_query sdp_bnep_query spp_counter_ssp ble_peripheral ble_client gatt_battery_query gatt_browser \
 			gatt_client ancs_client ble_peripheral_sm_minimal classic_test ble_peripheral_uart_csr ble_peripheral_uart \
-			gap_dedicated_bonding gap_inquiry gap_inquiry_and_bond l2cap_test spp_and_le_counter spp_streamer
-	rm -f  *.o *.out *.hex
+			gap_dedicated_bonding gap_inquiry gap_inquiry_and_bond l2cap_test spp_and_le_counter spp_streamer ble_peripheral_uart_cc256x
+	rm -f  *.o *.out *.hex 
 	rm -f  ${BTSTACK_ROOT}/src/*.o
 	rm -f  ${BTSTACK_ROOT}/ble/*.o
 	rm -f  ${BTSTACK_ROOT}/chipset-cc256x/*.o
