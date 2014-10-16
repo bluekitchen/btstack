@@ -58,6 +58,10 @@
 
 #include <btstack/hal_uart_dma.h>
 
+// #include <libopencm3/stm32/gpio.h>
+// #define GPIO_DEBUG_0 GPIO1
+// #define GPIO_DEBUG_1 GPIO2
+
 // #define DUMP
 // #define LOG_EHCILL
 
@@ -132,6 +136,9 @@ static TX_STATE  tx_state;
 static uint8_t * tx_data;
 static uint16_t  tx_len;
 static uint8_t   tx_packet_type;
+
+// work around for eHCILL problem
+static timer_source_t ehcill_sleep_ack_timer;
 
 // data source used in run_loop
 static data_source_t hci_transport_h4_dma_ds = {
@@ -213,12 +220,11 @@ static int h4_close(){
     return 0;
 }
 
-// extern uint32_t hal_time_current(void);
-uint32_t h4_last_packet_timestamp;
-
 static void h4_block_received(void){
     
-    read_pos += bytes_to_read;
+    // gpio_set(GPIOB, GPIO_DEBUG_0);
+
+   read_pos += bytes_to_read;
     
     // act
     switch (h4_state) {
@@ -227,7 +233,6 @@ static void h4_block_received(void){
                 case HCI_ACL_DATA_PACKET:
                     h4_state = H4_W4_ACL_HEADER;
                     bytes_to_read = HCI_ACL_HEADER_SIZE;
-                    // h4_last_packet_timestamp = hal_time_current();
                     break;
                 case HCI_EVENT_PACKET:
                     h4_state = H4_W4_EVENT_HEADER;
@@ -285,11 +290,25 @@ static void h4_block_received(void){
     if (bytes_to_read) {
         ehcill_uart_dma_receive_block(&hci_packet[read_pos], bytes_to_read);
     }
+    // gpio_clear(GPIOB, GPIO_DEBUG_0);
 }
 
 static int h4_can_send_packet_now(uint8_t packet_type){
     return tx_state == TX_IDLE;
     
+}
+static void ehcill_sleep_ack_timer_handler(timer_source_t * timer){
+    tx_state = TX_W4_EHCILL_SENT;
+    // gpio_clear(GPIOB, GPIO_DEBUG_1);
+    hal_uart_dma_send_block(&ehcill_command_to_send, 1);    
+}
+
+static void ehcill_sleep_ack_timer_setup(){
+    // setup timer
+    ehcill_sleep_ack_timer.process = &ehcill_sleep_ack_timer_handler;
+    run_loop_set_timer(&ehcill_sleep_ack_timer, 50);
+    run_loop_add_timer(&ehcill_sleep_ack_timer);
+    embedded_trigger();    
 }
 
 static void h4_block_sent(void){
@@ -300,15 +319,22 @@ static void h4_block_sent(void){
             hal_uart_dma_send_block(tx_data, tx_len);
             break;
         case TX_W4_PACKET_SENT:
-            // send pending ehcill command
-            if (ehcill_command_to_send){
-                tx_state = TX_W4_EHCILL_SENT;
-                hal_uart_dma_send_block(&ehcill_command_to_send, 1);
-                break;
+            // send pending ehcill command if neccessary
+            switch (ehcill_command_to_send){
+                case EHCILL_GO_TO_SLEEP_ACK:
+                    ehcill_sleep_ack_timer_setup();
+                    break;
+                case EHCILL_WAKE_UP_IND:
+                    tx_state = TX_W4_EHCILL_SENT;
+                    // gpio_clear(GPIOB, GPIO_DEBUG_1);
+                    hal_uart_dma_send_block(&ehcill_command_to_send, 1);
+                    break;
+                default:
+                    // trigger run loop
+                    tx_state = TX_DONE;
+                    embedded_trigger();
+                    break;
             }
-            tx_state = TX_DONE;
-            // trigger run loop
-            embedded_trigger();
             break;
         case TX_W4_EHCILL_SENT:
             if (ehcill_command_to_send == EHCILL_GO_TO_SLEEP_ACK) {
@@ -330,6 +356,10 @@ static void dump(uint8_t *data, uint16_t len){
     int i;
     for (i=0; i<len;i++){
         printf("%02X ", ((uint8_t *)data)[i]);
+        if(i>30) {
+            printf("... %u more bytes", len - i);
+            break;
+        }
     }
     printf("\n");
 }
@@ -376,7 +406,13 @@ static void ehcill_schedule_ecill_command(uint8_t command){
     ehcill_command_to_send = command;
     switch (tx_state){
         case TX_IDLE:
+            // new: change state so BTstack cannot send
+            // new: setup timer;
+            // new: break
         case TX_DONE:
+            
+
+            // gpio_clear(GPIOB, GPIO_DEBUG_1);
             tx_state = TX_W4_EHCILL_SENT;
             hal_uart_dma_send_block(&ehcill_command_to_send, 1);
             break;
@@ -401,6 +437,8 @@ static void ehcill_handle(uint8_t action){
 #ifdef LOG_EHCILL
                     log_info("EHCILL: GO_TO_SLEEP_IND RX");
 #endif
+                    // gpio_set(GPIOB, GPIO_DEBUG_1);
+
                     ehcill_schedule_ecill_command(EHCILL_GO_TO_SLEEP_ACK);
                     break;
                     
