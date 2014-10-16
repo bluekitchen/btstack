@@ -239,7 +239,7 @@ int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr){
 	return 1;
 }
 
-int sscan_link_key(char * addr_string, link_key_t *link_key){
+int sscan_link_key(char * addr_string, link_key_t link_key){
     unsigned int buffer[LINK_KEY_LEN];
 
     // reset result buffer
