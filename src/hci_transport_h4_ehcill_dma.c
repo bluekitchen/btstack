@@ -85,6 +85,7 @@ typedef enum {
     TX_W4_WAKEUP,   // eHCILL only
     TX_W4_HEADER_SENT,
     TX_W4_PACKET_SENT,
+    TX_W2_EHCILL_SEND,
     TX_W4_EHCILL_SENT,
     TX_DONE
 } TX_STATE;
@@ -410,19 +411,20 @@ static void ehcill_cts_irq_handler(){
 }
 
 static void ehcill_schedule_ecill_command(uint8_t command){
-    // reply with HCILL_SLEEP_ACK
     ehcill_command_to_send = command;
     switch (tx_state){
         case TX_IDLE:
-            // new: change state so BTstack cannot send
-            // new: setup timer;
-            // new: break
         case TX_DONE:
-
-
-            // gpio_clear(GPIOB, GPIO_DEBUG_1);
-            tx_state = TX_W4_EHCILL_SENT;
-            hal_uart_dma_send_block(&ehcill_command_to_send, 1);
+            if (ehcill_command_to_send == EHCILL_WAKE_UP_ACK){
+                // send right away
+                // gpio_clear(GPIOB, GPIO_DEBUG_1);
+                tx_state = TX_W4_EHCILL_SENT;
+                hal_uart_dma_send_block(&ehcill_command_to_send, 1);        
+                break;
+            }
+            // change state so BTstack cannot send and setup timer
+            tx_state = TX_W2_EHCILL_SEND;
+            ehcill_sleep_ack_timer_setup();
             break;
         default:
             break;
