@@ -1043,7 +1043,7 @@ void bnep_set_required_security_level(gap_security_level_t security_level)
     bnep_security_level = security_level;
 }
 
-void bnep_connect2(void * connection, bd_addr_t *addr)
+void bnep_connect(void * connection, bd_addr_t *addr)
 {
     log_info("BNEP_CONNECT addr %s", bd_addr_to_str(*addr));
            
@@ -1053,12 +1053,7 @@ void bnep_connect2(void * connection, bd_addr_t *addr)
     bnep_run();
 }
 
-void bnep_connect_internal(void * connection, bd_addr_t *addr)
-{
-    bnep_connect2(connection, addr);
-}
-
-void bnep_disconnect_internal(void)
+void bnep_disconnect(void)
 {
     log_info("BNEP_DISCONNECT");
 
