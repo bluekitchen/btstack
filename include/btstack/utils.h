@@ -144,7 +144,7 @@ char * link_key_to_str(link_key_t link_key);
 char *link_key_type_to_str(link_key_type_t link_key);
 
 int sscan_bd_addr(uint8_t * addr_string, bd_addr_t addr);
-int sscan_link_key(char * addr_string, link_key_t *link_key);
+int sscan_link_key(char * addr_string, link_key_t link_key);
 
 uint8_t crc8_check(uint8_t *data, uint16_t len, uint8_t check_sum);
 uint8_t crc8_calc(uint8_t *data, uint16_t len);
