@@ -47,9 +47,11 @@
 
 #include <btstack/sdp_util.h>
 
-static uint16_t PANU_UUID = 0x1115;
-static uint16_t NAP_UUID = 0x1116;
-static uint16_t GN_UUID = 0x1117;
+typedef enum {
+	PANU_UUID = 0x1115,
+	NAP_UUID = 0x1116, 
+	GN_UUID = 0x1117
+} bnep_service_uuid_t; 
 
 static const char default_panu_service_name[] = "Personal Ad-hoc User Service";
 static const char default_panu_service_desc[] = "Personal Ad-hoc User Service";
@@ -60,8 +62,9 @@ static const char default_nap_service_desc[] = "Personal Ad-hoc Network Service 
 static const char default_gn_service_name[] = "Group Ad-hoc Network Service";
 static const char default_gn_service_desc[] = "Personal Group Ad-hoc Network Service";
 
-void pan_create_service(uint16_t service_uuid, uint8_t *service, const char *name, const char *descriptor, 
-	const char *IPv4Subnet, const char *IPv6Subnet, uint16_t net_access_type, uint32_t max_net_access_rate){
+void pan_create_service(bnep_service_uuid_t service_uuid, uint8_t *service, const char *name, const char *descriptor, 
+	 security_description_t security_desc, net_access_type_t net_access_type, uint32_t max_net_access_rate,
+	 const char *IPv4Subnet, const char *IPv6Subnet){
 
 	uint8_t* attribute;
 	de_create_sequence(service);
@@ -182,7 +185,7 @@ void pan_create_service(uint16_t service_uuid, uint8_t *service, const char *nam
 
 	// 0x030A "Security Description"
 	de_add_number(service, DE_UINT, DE_SIZE_16, 0x030A);
-	de_add_number(service, DE_UINT, DE_SIZE_16, 0x0000);
+	de_add_number(service, DE_UINT, DE_SIZE_16, security_desc);
 
 	if (service_uuid == PANU_UUID) return;
 
@@ -211,14 +214,17 @@ void pan_create_service(uint16_t service_uuid, uint8_t *service, const char *nam
 }
 
 
-void pan_create_nap_service(uint8_t *service, const char *name, const char *description, uint16_t net_access_type, uint32_t max_net_access_rate, const char *IPv4Subnet, const char *IPv6Subnet){
-	pan_create_service(NAP_UUID, service, name, description, IPv4Subnet, IPv6Subnet, net_access_type, max_net_access_rate);
+void pan_create_nap_service(uint8_t *service, const char *name, const char *description, security_description_t security_desc, 
+	net_access_type_t net_access_type, uint32_t max_net_access_rate, const char *IPv4Subnet, const char *IPv6Subnet){
+
+	pan_create_service(NAP_UUID, service, name, description, security_desc, net_access_type, max_net_access_rate, IPv4Subnet, IPv6Subnet);
 }
 
-void pan_create_gn_service(uint8_t *service, const char *name, const char *description, const char *IPv4Subnet, const char *IPv6Subnet){
-	pan_create_service(GN_UUID, service, name, description, IPv4Subnet, IPv6Subnet, 0, 0);
+void pan_create_gn_service(uint8_t *service, const char *name, const char *description, security_description_t security_desc, 
+	const char *IPv4Subnet, const char *IPv6Subnet){
+	pan_create_service(GN_UUID, service, name, description, security_desc, PAN_NET_ACCESS_TYPE_NONE, 0, IPv4Subnet, IPv6Subnet);
 }
 
-void pan_create_panu_service(uint8_t *service, const char *name, const char *description){
-	pan_create_service(PANU_UUID, service, name, description, NULL, NULL, 0, 0);
+void pan_create_panu_service(uint8_t *service, const char *name, const char *description, security_description_t security_desc){
+	pan_create_service(PANU_UUID, service, name, description, security_desc, PAN_NET_ACCESS_TYPE_NONE, 0, NULL, NULL);
 }
