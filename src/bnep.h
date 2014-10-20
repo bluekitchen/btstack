@@ -199,7 +199,7 @@ void bnep_register_packet_handler(void (*handler)(void * connection, uint8_t pac
                                                     uint16_t channel, uint8_t *packet, uint16_t size));
 
 // Creates BNEP connection (channel) to a given server on a remote device with baseband address. A new baseband connection will be initiated if necessary.
-int bnep_connect(void * connection, bd_addr_t *addr, uint16_t uuid_dest);
+int bnep_connect(void * connection, bd_addr_t *addr, uint16_t l2cap_psm, uint16_t uuid_dest);
 
 // Disconencts BNEP channel with given identifier. 
 void bnep_disconnect(bd_addr_t *addr);

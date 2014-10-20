@@ -56,6 +56,8 @@
 
 #include "l2cap.h"
 
+#define BNEP_CONNECTION_TIMEOUT_MS 30000
+
 static linked_list_t bnep_services = NULL;
 static linked_list_t bnep_channels = NULL;
 
@@ -80,29 +82,31 @@ static void bnep_emit_service_registered(void *connection, uint8_t status, uint1
 	(*app_packet_handler)(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
-static void bnep_emit_channel_opened(bnep_channel_t *channel, uint8_t status) 
+static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t status) 
 {
     log_info("BNEP_EVENT_OPEN_CHANNEL_COMPLETE status 0x%02x bd_addr: %s", status, bd_addr_to_str(channel->remote_addr));
-    uint8_t event[3 + sizeof(bd_addr_t) + 2 * sizeof(uint16_t)];
-    event[0] = BNEP_EVENT_CHANNEL_OPENED;
+    uint8_t event[3 + sizeof(bd_addr_t) + 3 * sizeof(uint16_t)];
+    event[0] = BNEP_EVENT_OPEN_CHANNEL_COMPLETE;
     event[1] = sizeof(event) - 2;
     event[2] = status;
     bt_store_16(event, 3, channel->uuid_source);
     bt_store_16(event, 5, channel->uuid_dest);
-    memcpy(&event[7], channel->remote_addr, sizeof(bd_addr_t));
+    bt_store_16(event, 7, channel->max_frame_size);
+    memcpy(&event[9], channel->remote_addr, sizeof(bd_addr_t));
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
-static void bnep_emit_incomming_connection(bnep_channel_t *channel) 
+static void bnep_emit_incoming_connection(bnep_channel_t *channel) 
 {
-    log_info("BNEP_EVENT_INCOMMING_CONNECTION bd_addr: %s", bd_addr_to_str(channel->remote_addr));
-    uint8_t event[2 + sizeof(bd_addr_t) + 2 * sizeof(uint16_t)];
-    event[0] = BNEP_EVENT_INCOMMING_CONNECTION;
+    log_info("BNEP_EVENT_INCOMING_CONNECTION bd_addr: %s", bd_addr_to_str(channel->remote_addr));
+    uint8_t event[2 + sizeof(bd_addr_t) + 3 * sizeof(uint16_t)];
+    event[0] = BNEP_EVENT_INCOMING_CONNECTION;
     event[1] = sizeof(event) - 2;
     bt_store_16(event, 3, channel->uuid_source);
     bt_store_16(event, 5, channel->uuid_dest);
-    memcpy(&event[7], channel->remote_addr, sizeof(bd_addr_t));
+    bt_store_16(event, 7, channel->max_frame_size);
+    memcpy(&event[9], channel->remote_addr, sizeof(bd_addr_t));
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
@@ -573,6 +577,7 @@ static int bnep_handle_connection_response(bnep_channel_t *channel, uint8_t *pac
     if (response_code == BNEP_RESP_SETUP_SUCCESS) {
         log_info("BNEP_CONNCTION_RESPONSE: Channel established to %s", bd_addr_to_str(channel->remote_addr));
         channel->state = BNEP_CHANNEL_STATE_CONNECTED;
+        bnep_emit_open_channel_complete(channel, 0);
     } else {
         log_info("BNEP_CONNCTION_RESPONSE: Connection to %s failed. Err: %d", bd_addr_to_str(channel->remote_addr), response_code);
         bnep_channel_finalize(channel);
@@ -846,7 +851,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
     
     switch (packet[0]) {
             
-        /* Accept an incomming L2CAP connection on PSM_BNEP */
+        /* Accept an incoming L2CAP connection on PSM_BNEP */
         case L2CAP_EVENT_INCOMING_CONNECTION:
             /* L2CAP event data: event(8), len(8), address(48), handle (16),  psm (16), source cid(16) dest cid(16) */
             bt_flip_addr(event_addr, &packet[2]);
@@ -864,7 +869,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
                 return 1;
             }
             
-            /* Create a new BNEP channel instance (incomming) */
+            /* Create a new BNEP channel instance (incoming) */
             channel = bnep_channel_create_for_addr(&event_addr);
 
             if (!channel) {
@@ -907,8 +912,8 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             
             /* On L2CAP open error discard everything */
             if (status) {
-                /* Emit bnep_channel_opened with status and free channel */
-                bnep_emit_channel_opened(channel, status);
+                /* Emit bnep_open_channel_complete with status and free channel */
+                bnep_emit_open_channel_complete(channel, status);
 
                 /* Free BNEP channel mempory */
                 bnep_channel_free(channel);
@@ -1066,6 +1071,7 @@ static void bnep_channel_state_machine(bnep_channel_t* channel, bnep_channel_eve
             
             bnep_channel_state_remove(channel, BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_RESPONSE);
             bnep_send_connection_response(channel, channel->response_code);
+            bnep_emit_incoming_connection(channel);
             return;
         }
         if (channel->state_var & BNEP_CHANNEL_STATE_VAR_SND_FILTER_NET_TYPE_RESPONSE) {
@@ -1114,7 +1120,13 @@ void bnep_set_required_security_level(gap_security_level_t security_level)
     bnep_security_level = security_level;
 }
 
-int bnep_connect(void * connection, bd_addr_t *addr, uint16_t uuid_dest)
+/* Register application packet handler */
+void bnep_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type,
+                                                    uint16_t channel, uint8_t *packet, uint16_t size)){
+	app_packet_handler = handler;
+}
+
+int bnep_connect(void * connection, bd_addr_t *addr, uint16_t l2cap_psm, uint16_t uuid_dest)
 {
     bnep_channel_t *channel;
     log_info("BNEP_CONNECT addr %s", bd_addr_to_str(*addr));
@@ -1127,7 +1139,7 @@ int bnep_connect(void * connection, bd_addr_t *addr, uint16_t uuid_dest)
     channel->uuid_source = BNEP_UUID_PANU;
     channel->uuid_dest   = uuid_dest;
 
-    l2cap_create_channel_internal(connection, bnep_packet_handler, *addr, PSM_BNEP, l2cap_max_mtu());
+    l2cap_create_channel_internal(connection, bnep_packet_handler, *addr, l2cap_psm, l2cap_max_mtu());
     
     return 0;
 }
