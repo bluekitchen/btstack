@@ -80,7 +80,7 @@ extern "C" {
 #define PSM_RFCOMM 0x03
 #define PSM_HID_CONTROL 0x11
 #define PSM_HID_INTERRUPT 0x13
-#define PSM_BNEP   0x15
+#define PSM_BNEP   0x0F
 
 // Events from host controller to host
 
@@ -395,11 +395,11 @@ extern "C" {
 // data: event(8), len(8), status (8), bnep service uuid (16) 
 #define BNEP_EVENT_SERVICE_REGISTERED                      0xC0
 
-// data: event(8), len(8), status (8), bnep source uuid (16), bnep destination uuid (16), remote_address (48) 
-#define BNEP_EVENT_CHANNEL_OPENED                          0xC1
+// data: event(8), len(8), status (8), bnep source uuid (16), bnep destination uuid (16), mtu (16), remote_address (48) 
+#define BNEP_EVENT_OPEN_CHANNEL_COMPLETE                   0xC1
 
-// data: event(8), len(8), status (8), bnep source uuid (16), bnep destination uuid (16), remote_address (48) 
-#define BNEP_EVENT_INCOMMING_CONNECTION                    0xC2
+// data: event(8), len(8), status (8), bnep source uuid (16), bnep destination uuid (16), mtu (16), remote_address (48) 
+#define BNEP_EVENT_INCOMING_CONNECTION                     0xC2
 
 // data: event(8), len(8), bnep source uuid (16), bnep destination uuid (16), remote_address (48) 
 #define BNEP_EVENT_CHANNEL_CLOSED                          0xC3
