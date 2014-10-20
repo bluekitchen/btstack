@@ -29,6 +29,7 @@ COMMON = \
     ${BTSTACK_ROOT}/src/sdp_util.c	                \
     ${BTSTACK_ROOT}/src/utils.c			            \
     ${BTSTACK_ROOT}/src/rfcomm.c	                \
+    ${BTSTACK_ROOT}/src/bnep.c	                    \
     ${BTSTACK_ROOT}/src/sdp.c			            \
     ${BTSTACK_ROOT}/src/sdp_client.c		        \
     ${BTSTACK_ROOT}/src/sdp_parser.c		        \
@@ -80,7 +81,8 @@ GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
 all: ${BTSTACK_ROOT}/include/btstack/version.h gatt_browser gatt_battery_query sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral \
 		ble_peripheral_sm_minimal gap_inquiry gap_dedicated_bonding gap_inquiry_and_bond l2cap_test spp_streamer \
 		classic_test ble_peripheral_uart_csr ble_peripheral_uart_cc256x ancs_client spp_and_le_counter \
-		sdp_bnep_query \
+		ddp_bnep_query panu_demo \
+
 
 ${BTSTACK_ROOT}/include/btstack/version.h:
 	${BTSTACK_ROOT}/tools/get_version.sh
@@ -114,6 +116,9 @@ gap_inquiry: ${CORE_OBJ} ${COMMON_OBJ} gap_inquiry.c
 
 gap_inquiry_and_bond: ${CORE_OBJ} ${COMMON_OBJ} gap_inquiry_and_bond.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_DES} panu_demo.c  
+	${CC} $^ ${CFLAGS} -I../../test/des_iterator ${LDFLAGS} -o $@
 
 l2cap_test: ${CORE_OBJ} ${COMMON_OBJ} l2cap_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
@@ -156,7 +161,7 @@ gatt_battery_query: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM
 clean:
 	rm -f  	spp_counter sdp_rfcomm_query sdp_general_query sdp_bnep_query spp_counter_ssp ble_peripheral ble_client gatt_battery_query gatt_browser \
 			gatt_client ancs_client ble_peripheral_sm_minimal classic_test ble_peripheral_uart_csr ble_peripheral_uart \
-			gap_dedicated_bonding gap_inquiry gap_inquiry_and_bond l2cap_test spp_and_le_counter spp_streamer ble_peripheral_uart_cc256x
+			gap_dedicated_bonding gap_inquiry gap_inquiry_and_bond l2cap_test spp_and_le_counter spp_streamer ble_peripheral_uart_cc256x panu_demo
 	rm -f  *.o *.out *.hex 
 	rm -f  ${BTSTACK_ROOT}/src/*.o
 	rm -f  ${BTSTACK_ROOT}/ble/*.o
