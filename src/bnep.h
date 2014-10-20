@@ -51,7 +51,7 @@ extern "C" {
 #endif
 
 #ifndef ETHER_ADDR_LEN
-#define ETHER_ADDR_LEN 6
+#define ETHER_ADDR_LEN sizeof(bd_addr_t)
 #endif
 
 #define	BNEP_MTU_MIN		        1691
@@ -145,13 +145,13 @@ typedef struct {
     // linked list - assert: first field
     linked_item_t      item;
 
-    BNEP_CHANNEL_STATE state;	
+    BNEP_CHANNEL_STATE state;	          // Channel state
 
-    // state variables used in RFCOMM_CHANNEL_INCOMING
-    BNEP_CHANNEL_STATE_VAR state_var;
+    BNEP_CHANNEL_STATE_VAR state_var;     // State flag variable. Needed for asynchronous packet sending
 
     uint16_t           max_frame_size;    // incomming max. frame size   
-    void              *connection;        // client connection 
+    void              *connection;        // client connection
+    bd_addr_t          local_addr;        // locale drvice address
 	bd_addr_t          remote_addr;       // remote device address
     uint16_t           l2cap_cid;         // l2cap channel id
     hci_con_handle_t   con_handle;        // hci connection handle
@@ -177,6 +177,7 @@ typedef struct {
     linked_item_t    item;           // linked list - assert: first field
     void            *connection;     // client connection 
     uint16_t         service_uuid;   // Service class: PANU, NAP, GN
+    uint16_t         max_frame_size; // incomming max. frame size 
     
     // internal connection
     btstack_packet_handler_t packet_handler;
