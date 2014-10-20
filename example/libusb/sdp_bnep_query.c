@@ -25,6 +25,7 @@
 #include "l2cap.h"
 #include "sdp_parser.h"
 #include "des_iterator.h"
+#include "pan.h"
 
 int record_id = -1;
 int attribute_id = -1;
@@ -86,6 +87,8 @@ char * get_string_from_data_element(uint8_t * element){
 static void handle_sdp_client_query_result(sdp_query_event_t * event){
     sdp_query_attribute_value_event_t * ve;
     sdp_query_complete_event_t * ce;
+    des_iterator_t des_list_it;
+    des_iterator_t prot_it;
 
     switch (event->type){
         case SDP_QUERY_ATTRIBUTE_VALUE:
@@ -101,21 +104,35 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
 
             attribute_value[ve->data_offset] = ve->data;
             if ((uint16_t)(ve->data_offset+1) == ve->attribute_length){
-
                 switch(ve->attribute_id){
+                    case SDP_ServiceClassIDList:
+                        if (de_get_element_type(attribute_value) != DE_DES) break;
+                        for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)){
+                            uint8_t * element = des_iterator_get_element(&des_list_it);
+                            if (de_get_element_type(element) != DE_UUID) continue;
+                            uint16_t uuid = de_element_get_uuid16(element);
+                            switch (uuid){
+                                case PANU_UUID:
+                                case NAP_UUID:
+                                case GN_UUID:
+                                    printf(" ** Attribute 0x%04x: BNEP PAN protocol UUID: %04x\n", ve->attribute_id, uuid);
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                        break;
                     case 0x0100:
                     case 0x0101:
                         printf(" ** Attribute 0x%04x: %s\n", ve->attribute_id, get_string_from_data_element(attribute_value));
                         break;
                     case 0x004:{
-                            printf(" ** Attribute 0x%04x, ", ve->attribute_id);
-                            des_iterator_t des_list_it;
-
+                            printf(" ** Attribute 0x%04x: ", ve->attribute_id);
+                            
                             uint16_t l2cap_psm = 0;
                             uint16_t bnep_version = 0;
                             for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)){
                                 if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
-                                des_iterator_t prot_it;
                                 uint8_t * des_element = des_iterator_get_element(&des_list_it);
                                 des_iterator_init(&prot_it, des_element);
                                 uint8_t * element = des_iterator_get_element(&prot_it);
@@ -138,9 +155,9 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
                                 }
                             }
                             printf("l2cap_psm 0x%04x, bnep_version 0x%04x\n", l2cap_psm, bnep_version);
-                            printf("  -> row data (length %d): ", ve->attribute_length);
-                            hexdumpf(attribute_value, ve->attribute_length);
-                            printf("\n");
+                            // printf("  -> row data (length %d): ", ve->attribute_length);
+                            // hexdumpf(attribute_value, ve->attribute_length);
+                            // printf("\n");
                             
                         }
                         break;
