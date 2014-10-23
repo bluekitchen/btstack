@@ -2015,9 +2015,11 @@ int rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
 
 // send packet over specific channel
 int rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
-    int err = rfcomm_can_send_packet_now();
+    int err = rfcomm_can_send_packet_now(rfcomm_cid);
     if (err) return err;
 
+    rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
+    
     // send might cause l2cap to emit new credits, update counters first
     channel->credits_outgoing--;
     int packets_granted_decreased = 0;
