@@ -98,6 +98,20 @@ static void  prepare_accel_packet(){
     printf("Accel: X: %04d, Y: %04d, Z: %04d\n\r", accl_x, accl_y, accl_z);
 } 
 
+static void send_packet(void){
+    int err = rfcomm_send_internal(rfcomm_channel_id, (uint8_t *)accel_buffer, sizeof(accel_buffer));
+    switch (err){
+        case 0:
+            prepare_accel_packet(); 
+            break;
+        case BTSTACK_ACL_BUFFERS_FULL:
+            break;
+        default:
+            printf("rfcomm_send_internal -> error 0X%02x", err);
+            break;
+    }                 
+}
+
 // Bluetooth logic
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t event_addr;
@@ -166,19 +180,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     
                 case DAEMON_EVENT_HCI_PACKET_SENT:
                 case RFCOMM_EVENT_CREDITS:
-                    if (!rfcomm_channel_id) break;
-                    // try send
-                    err = rfcomm_send_internal(rfcomm_channel_id, (uint8_t *)accel_buffer, sizeof(accel_buffer));
-                    switch (err){
-                        case 0:
-                            prepare_accel_packet();
-                            break;
-                        case BTSTACK_ACL_BUFFERS_FULL:
-                            break;
-                        default:
-                           printf("rfcomm_send_internal() -> err %d\n\r", err);
-                        break;
-                    }
+                    if (rfcomm_can_send_packet_now(rfcomm_channel_id)) send_packet();
                     break;
                     
                 case RFCOMM_EVENT_CHANNEL_CLOSED:

@@ -122,10 +122,12 @@ static void  heartbeat_handler(struct timer *ts){
         char lineBuffer[30];
         sprintf(lineBuffer, "BTstack counter %04u\n", ++counter);
         printf("%s", lineBuffer);
-        int err = rfcomm_send_internal(rfcomm_channel_id, (uint8_t*) lineBuffer, strlen(lineBuffer));
-        if (err) {
-            log_error("rfcomm_send_internal -> error 0X%02x", err);
-        }
+        if (rfcomm_can_send_packet_now(rfcomm_channel_id)) {
+            int err = rfcomm_send_internal(rfcomm_channel_id, (uint8_t*) lineBuffer, strlen(lineBuffer));  
+            if (err) {
+                log_error("rfcomm_send_internal -> error 0X%02x", err);  
+            }
+        }   
     }
     
     run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);

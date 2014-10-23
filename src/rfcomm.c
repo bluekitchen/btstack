@@ -1991,6 +1991,21 @@ int rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
         log_error("rfcomm_send_internal cid 0x%02x doesn't exist!", rfcomm_cid);
+        return 0;
+    }
+    if (!channel->credits_outgoing) return 0;
+    if (!channel->packets_granted)  return 0;
+    if ((channel->multiplexer->fcon & 1) == 0) return 0;
+        
+    return l2cap_can_send_packet_now(channel->multiplexer->l2cap_cid);
+}
+
+// send packet over specific channel
+int rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
+    rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
+    
+    if (!channel){
+        log_error("rfcomm_send_internal cid 0x%02x doesn't exist!", rfcomm_cid);
         return 1;
     }
     
@@ -2008,18 +2023,7 @@ int rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
         log_info("rfcomm_send_internal cid 0x%02x, aggregate flow off!", rfcomm_cid);
         return RFCOMM_AGGREGATE_FLOW_OFF;
     }
-    // log_info("rfcomm_send_internal: len %u... outgoing credits %u, l2cap credit %us, granted %u",
-    //        len, channel->credits_outgoing, channel->multiplexer->l2cap_credits, channel->packets_granted);
-    return 0;
-}
 
-// send packet over specific channel
-int rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
-    int err = rfcomm_can_send_packet_now(rfcomm_cid);
-    if (err) return err;
-
-    rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
-    
     // send might cause l2cap to emit new credits, update counters first
     channel->credits_outgoing--;
     int packets_granted_decreased = 0;

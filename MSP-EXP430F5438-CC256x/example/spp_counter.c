@@ -43,8 +43,7 @@ static int counter_to_send = 0;
 enum STATE {INIT, W4_CONNECTION, W4_CHANNEL_COMPLETE, ACTIVE} ;
 enum STATE state = INIT;
 
-static void tryToSend(void){
-    if (!rfcomm_channel_id) return;
+static void send_packet(void){
     if (real_counter <= counter_to_send) return;
                 
     char lineBuffer[30];
@@ -129,7 +128,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             break;
         case DAEMON_EVENT_HCI_PACKET_SENT:
         case RFCOMM_EVENT_CREDITS:
-            tryToSend();
+            if (rfcomm_can_send_packet_now(rfcomm_channel_id)) send_packet();
             break;
 
         case RFCOMM_EVENT_CHANNEL_CLOSED:
@@ -152,7 +151,7 @@ static void timer_handler(timer_source_t *ts){
     real_counter++;
     // re-register timer
     run_loop_register_timer(ts, HEARTBEAT_PERIOD_MS);
-    tryToSend();
+    if (rfcomm_can_send_packet_now(rfcomm_channel_id)) send_packet();
 } 
 
 static void timer_setup(){

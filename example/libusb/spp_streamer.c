@@ -59,10 +59,13 @@ static void create_test_data(void){
     }
 }
 
-static void try_send(){
-    if (!rfcomm_cid) return;
+static void send_packet(){
     int err = rfcomm_send_internal(rfcomm_cid, (uint8_t*) test_data, test_data_len);
-    if (err) return;
+    if (err){
+        printf("rfcomm_send_internal -> error 0X%02x", err);
+        return;
+    }
+    
     if (data_to_send < test_data_len){
         rfcomm_disconnect_internal(rfcomm_cid);
         rfcomm_cid = 0;
@@ -98,13 +101,13 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 if ((test_data_len > mtu)) {
                     test_data_len = mtu;
                 }
-                try_send();
+                if (rfcomm_can_send_packet_now(rfcomm_cid)) send_packet();
                 break;
             }
             break;
         case DAEMON_EVENT_HCI_PACKET_SENT:
         case RFCOMM_EVENT_CREDITS:
-            try_send();
+            if (rfcomm_can_send_packet_now(rfcomm_cid)) send_packet();
             break;
         default:
             break;
