@@ -95,12 +95,13 @@ void sdp_client_query(bd_addr_t remote, uint8_t * des_serviceSearchPattern, uint
     l2cap_create_channel_internal(NULL, sdp_packet_handler, remote, PSM_SDP, l2cap_max_mtu());
 }
 
+static int can_send_now(uint16_t channel){
+    if (sdp_client_state != W2_SEND) return 0;
+    if (!l2cap_can_send_packet_now(channel)) return 0;
+    return 1;
+}
 
-static void try_to_send(uint16_t channel){
-    if (sdp_client_state != W2_SEND) return;
-
-    if (!l2cap_can_send_packet_now(channel)) return;
-
+static void send_request(uint16_t channel){
     l2cap_reserve_packet_buffer();
     uint8_t * data = l2cap_get_outgoing_buffer();
     uint16_t request_len = 0;
@@ -118,7 +119,7 @@ static void try_to_send(uint16_t channel){
             request_len = setup_service_search_attribute_request(data);
             break;
         default:
-            log_error("SDP Client try_to_send :: PDU ID invalid. %u", PDU_ID);
+            log_error("SDP Client send_request :: PDU ID invalid. %u", PDU_ID);
             return;
     }
 
@@ -221,7 +222,7 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
         }
         // prepare next request and send
         sdp_client_state = W2_SEND;
-        try_to_send(sdp_cid);
+        if (can_send_now(sdp_cid)) send_request(sdp_cid);
         return;
     }
     
@@ -245,11 +246,12 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
             log_info("SDP Client Connected, cid %x, mtu %u.", sdp_cid, mtu);
 
             sdp_client_state = W2_SEND;
-            try_to_send(sdp_cid);
+            if (can_send_now(sdp_cid)) send_request(sdp_cid);
+        
             break;
         case L2CAP_EVENT_CREDITS:
         case DAEMON_EVENT_HCI_PACKET_SENT:
-            try_to_send(sdp_cid);
+            if (can_send_now(sdp_cid)) send_request(sdp_cid);
             break;
         case L2CAP_EVENT_CHANNEL_CLOSED: {
             if (sdp_cid != READ_BT_16(packet, 2)) {
