@@ -66,6 +66,9 @@ SM_MINIMAL = \
 SDP_DES = \
 	${BTSTACK_ROOT}/test/des_iterator/des_iterator.c  \
 
+PAN = \
+	${BTSTACK_ROOT}/src/pan.c \
+
 CORE_OBJ    = $(CORE:.c=.o)
 COMMON_OBJ  = $(COMMON:.c=.o) 
 CC2564_OBJ  = $(CC2564:.c=.o)
@@ -75,6 +78,7 @@ SM_MINIMAL_OBJ = $(SM_MINIMAL:.c=.o)
 ATT_OBJ     = $(ATT:.c=.o)
 GATT_CLIENT_OBJ = $(GATT_CLIENT:.c=.o)
 GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
+PAN_OBJ = $(PAN:.c=.o)
 
 # create firmware image from common objects and example source file
 
@@ -87,7 +91,7 @@ all: ${BTSTACK_ROOT}/include/btstack/version.h gatt_browser gatt_battery_query s
 ${BTSTACK_ROOT}/include/btstack/version.h:
 	${BTSTACK_ROOT}/tools/get_version.sh
 
-sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} sdp_rfcomm_query.c
+sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} ${PAN_OBJ} sdp_rfcomm_query.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 sdp_general_query: ${CORE_OBJ} ${COMMON_OBJ} sdp_general_query.c  
