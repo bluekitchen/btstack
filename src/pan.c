@@ -47,12 +47,6 @@
 
 #include <btstack/sdp_util.h>
 
-typedef enum {
-	PANU_UUID = 0x1115,
-	NAP_UUID = 0x1116, 
-	GN_UUID = 0x1117
-} bnep_service_uuid_t; 
-
 static const char default_panu_service_name[] = "Personal Ad-hoc User Service";
 static const char default_panu_service_desc[] = "Personal Ad-hoc User Service";
 
