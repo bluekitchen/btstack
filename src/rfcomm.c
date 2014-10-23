@@ -1987,13 +1987,11 @@ void rfcomm_register_packet_handler(void (*handler)(void * connection, uint8_t p
 	app_packet_handler = handler;
 }
 
-// send packet over specific channel
-int rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
-
+int rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
         log_error("rfcomm_send_internal cid 0x%02x doesn't exist!", rfcomm_cid);
-        return 0;
+        return 1;
     }
     
     if (!channel->credits_outgoing){
@@ -2012,7 +2010,13 @@ int rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
     }
     // log_info("rfcomm_send_internal: len %u... outgoing credits %u, l2cap credit %us, granted %u",
     //        len, channel->credits_outgoing, channel->multiplexer->l2cap_credits, channel->packets_granted);
-    
+    return 0;
+}
+
+// send packet over specific channel
+int rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
+    int err = rfcomm_can_send_packet_now();
+    if (err) return err;
 
     // send might cause l2cap to emit new credits, update counters first
     channel->credits_outgoing--;
