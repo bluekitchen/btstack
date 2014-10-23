@@ -473,6 +473,7 @@ extern "C" {
 #define L2CAP_CONNECTION_RESPONSE_RESULT_RTX_TIMEOUT       0x68
 
 #define L2CAP_SERVICE_ALREADY_REGISTERED                   0x69
+#define L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU				   0x6A
     
 #define RFCOMM_MULTIPLEXER_STOPPED                         0x70
 #define RFCOMM_CHANNEL_ALREADY_REGISTERED                  0x71

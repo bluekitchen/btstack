@@ -464,6 +464,11 @@ int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len){
         return -1;   // TODO: define error
     }
 
+    if (len > channel->remote_mtu){
+        log_error("l2cap_send_internal cid 0x%02x, data length exceeds remote MTU.", local_cid);
+        return L2CAP_DATA_LEN_EXCEEDS_REMOTE_MTU;
+    }
+
     if (!hci_can_send_acl_packet_now(channel->handle)){
         log_info("l2cap_send_internal cid 0x%02x, cannot send", local_cid);
         return BTSTACK_ACL_BUFFERS_FULL;
