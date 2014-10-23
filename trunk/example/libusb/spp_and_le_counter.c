@@ -199,11 +199,13 @@ static void  heartbeat_handler(struct timer *ts){
     counter_string_len = sprintf(counter_string, "BTstack counter %04u\n", counter);
 
     if (rfcomm_channel_id){
-        int err = rfcomm_send_internal(rfcomm_channel_id, (uint8_t*) counter_string, counter_string_len);
-        if (err) {
-            log_error("rfcomm_send_internal -> error 0X%02x", err);
-        } else {
-            printf("%s", counter_string);
+        if (rfcomm_can_send_packet_now(rfcomm_channel_id)) {
+            int err = rfcomm_send_internal(rfcomm_channel_id, (uint8_t*) counter_string, counter_string_len);
+            if (err) {
+                log_error("rfcomm_send_internal -> error 0X%02x", err);
+            } else {
+                printf("%s", counter_string);
+            }
         }
     }
 

@@ -405,7 +405,7 @@ void rfcomm_decline_connection_internal(uint16_t rfcomm_cid);
 // Grant more incoming credits to the remote side for the given RFCOMM channel identifier.
 void rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits);
 
-// Chekcs if RFCOMM can send packet. If yes returns 0, otherwise returns an error code.
+// Checks if RFCOMM can send packet. Returns yes if packet can be sent.
 int rfcomm_can_send_packet_now(uint16_t rfcomm_cid);
 
 // Sends RFCOMM data packet to the RFCOMM channel with given identifier.

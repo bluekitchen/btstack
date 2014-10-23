@@ -36,25 +36,17 @@ static int counter_to_send = 0;
 enum STATE {INIT, W4_CONNECTION, W4_CHANNEL_COMPLETE, ACTIVE} ;
 enum STATE state = INIT;
 
-static void tryToSend(void){
-    if (!rfcomm_channel_id) return;
+static void send_packet(void){
     if (real_counter <= counter_to_send) return;
                 
     char lineBuffer[30];
     sprintf(lineBuffer, "BTstack counter %04u\n\r", counter_to_send);
     printf(lineBuffer);
+    
     int err = rfcomm_send_internal(rfcomm_channel_id, (uint8_t*) lineBuffer, strlen(lineBuffer));
-
-    switch (err){
-        case 0:
-            counter_to_send++;
-            break;
-        case BTSTACK_ACL_BUFFERS_FULL:
-            break;
-        default:
-           printf("rfcomm_send_internal() -> err %d\n\r", err);
-        break;
-    }
+    if (err) return;
+    
+    counter_to_send++;
 }
 
 // Bluetooth logic
@@ -122,7 +114,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             break;
         case DAEMON_EVENT_HCI_PACKET_SENT:
         case RFCOMM_EVENT_CREDITS:
-            tryToSend();
+            if (rfcomm_can_send_packet_now(rfcomm_channel_id)) send_packet();
             break;
 
         case RFCOMM_EVENT_CHANNEL_CLOSED:
@@ -145,7 +137,6 @@ static void timer_handler(timer_source_t *ts){
     real_counter++;
     // re-register timer
     run_loop_register_timer(ts, HEARTBEAT_PERIOD_MS);
-    tryToSend();
 } 
 
 // main
