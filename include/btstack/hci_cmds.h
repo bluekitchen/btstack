@@ -478,6 +478,7 @@ extern "C" {
 #define RFCOMM_CHANNEL_ALREADY_REGISTERED                  0x71
 #define RFCOMM_NO_OUTGOING_CREDITS                         0x72
 #define RFCOMM_AGGREGATE_FLOW_OFF						   0x73
+#define RFCOMM_DATA_LEN_EXCEEDS_MTU						   0x74
 
 #define SDP_HANDLE_ALREADY_REGISTERED                      0x80
 #define SDP_QUERY_INCOMPLETE                               0x81

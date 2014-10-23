@@ -2008,6 +2008,11 @@ int rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
         log_error("rfcomm_send_internal cid 0x%02x doesn't exist!", rfcomm_cid);
         return 1;
     }
+
+    if (len > channel->max_frame_size){
+        log_error("rfcomm_send_internal cid 0x%02x, rfcomm data lenght exceeds MTU!", rfcomm_cid);
+        return RFCOMM_DATA_LEN_EXCEEDS_MTU;
+    }
     
     if (!channel->credits_outgoing){
         log_info("rfcomm_send_internal cid 0x%02x, no rfcomm outgoing credits!", rfcomm_cid);
