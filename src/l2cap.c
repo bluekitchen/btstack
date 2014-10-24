@@ -530,7 +530,9 @@ void l2cap_run(void){
             case CONNECTION_REQUEST:
                 l2cap_send_signaling_packet(handle, CONNECTION_RESPONSE, sig_id, 0, 0, result, 0);
                 // also disconnect if result is 0x0003 - security blocked
-                hci_disconnect_security_block(handle);
+                if (result == 0x0003){
+                    hci_disconnect_security_block(handle);
+                }
                 break;
             case ECHO_REQUEST:
                 l2cap_send_signaling_packet(handle, ECHO_RESPONSE, sig_id, 0, NULL);
