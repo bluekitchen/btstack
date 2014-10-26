@@ -1555,7 +1555,29 @@ static void handle_gatt_client_event(le_event_t * le_event){
         return;
     } 
 
-    connection_t *connection = gatt_client_helper->active_connection;
+    connection_t *connection = NULL;
+
+    // daemon doesn't track which connection subscribed to this particular handle, so we just notify all connections
+    switch(le_event->type){
+        case GATT_NOTIFICATION:
+        case GATT_INDICATION:{
+            uint8_t event[4 + 2 + 1 + ATT_MAX_ATTRIBUTE_SIZE];  // (type, len, handle), handle, len, data
+            daemon_setup_characteristic_value_event(le_event, event);
+            hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
+            
+            linked_item_t *it;
+            for (it = (linked_item_t *) clients; it ; it = it->next){
+                client_state_t * client_state = (client_state_t *) it;
+                socket_connection_send_packet(client_state->connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+            }
+            return;
+        }
+        default:
+            break;
+    }
+
+    // otherwise, we have to have an active connection
+    connection = gatt_client_helper->active_connection;
     if (!connection) return;
 
 #if defined(HAVE_MALLOC)
@@ -1609,19 +1631,7 @@ static void handle_gatt_client_event(le_event_t * le_event){
 #endif
             break;
         }
-        case GATT_NOTIFICATION:
-        case GATT_INDICATION:{
-            uint8_t event[4 + 2 + 1 + ATT_MAX_ATTRIBUTE_SIZE];  // (type, len, handle), handle, len, data
-            daemon_setup_characteristic_value_event(le_event, event);
-            hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-            
-            linked_item_t *it;
-            for (it = (linked_item_t *) clients; it ; it = it->next){
-                client_state_t * client_state = (client_state_t *) it;
-                socket_connection_send_packet(client_state->connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
-            }
-            break;
-        }
+
         case GATT_QUERY_COMPLETE:{
             gatt_client_helper->active_connection = NULL;
             if (gatt_chunk){
