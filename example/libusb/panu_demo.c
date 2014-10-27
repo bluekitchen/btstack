@@ -11,10 +11,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
+#include <linux/in.h>
+#include <linux/if.h>
+#include <linux/if_tun.h>
+#include <net/if_arp.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
 
-#include "sdp_parser.h"
-#include "sdp_client.h"
-#include "sdp_query_util.h"
 
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>
@@ -24,12 +32,18 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "sdp_parser.h"
+#include "sdp_client.h"
+#include "sdp_query_util.h"
 #include "des_iterator.h"
+#include "pan.h"
 
-int record_id = -1;
-int attribute_id = -1;
-uint16_t public_browse_group = 0x1002;
-uint16_t bnep_protocol_id    = 0x000f;
+static int record_id = -1;
+static int attribute_id = -1;
+static uint16_t public_browse_group = 0x1002;
+static uint16_t bnep_protocol_id    = 0x000f;
+static uint16_t bnep_l2cap_psm      = 0;
+static uint16_t bnep_remote_uuid    = 0;
+static uint16_t bnep_version        = 0;
 
 static uint8_t   attribute_value[1000];
 static const int attribute_value_buffer_size = sizeof(attribute_value);
@@ -37,7 +51,109 @@ static const int attribute_value_buffer_size = sizeof(attribute_value);
 //static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 static bd_addr_t remote = {0xE0,0x06,0xE6,0xBB,0x95,0x79};
 
+static int  tap_fd = -1;
+static char tap_dev_name[16] = "bnep%d";
+static uint8_t network_buffer[BNEP_MTU_MIN];
+static size_t  network_buffer_len = 0;
 
+static data_source_t tap_dev_ds;
+/*************** TUN / TAP interface routines *********************
+ *                                                                * 
+ * https://www.kernel.org/doc/Documentation/networking/tuntap.txt *
+ *                                                                *
+ ******************************************************************/
+
+int tap_alloc(char *dev, bd_addr_t bd_addr)
+{
+    struct ifreq ifr;
+    int fd_dev;
+    int fd_socket;
+    int err;
+
+    if( (fd_dev = open("/dev/net/tun", O_RDWR)) < 0 ) {
+        fprintf(stderr, "TAP: Error opening /dev/net/tun: %s\n", strerror(errno));
+        return -1;
+    }
+
+    memset(&ifr, 0, sizeof(ifr));
+
+    /* Flags: IFF_TUN   - TUN device (no Ethernet headers) 
+     *        IFF_TAP   - TAP device  
+     *
+     *        IFF_NO_PI - Do not provide packet information  
+     */ 
+    ifr.ifr_flags = IFF_TAP | IFF_NO_PI; 
+    if( *dev ) {
+        strncpy(ifr.ifr_name, dev, IFNAMSIZ);
+    }
+
+    if( (err = ioctl(fd_dev, TUNSETIFF, (void *) &ifr)) < 0 ) {
+        fprintf(stderr, "TAP: Error setting device name: %s\n", strerror(errno));
+        close(fd_dev);
+        return -1;
+    }  
+    strcpy(dev, ifr.ifr_name);
+
+    fd_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+	if (fd_socket < 0) {
+        close(fd_dev);
+		fprintf(stderr, "TAP: Error opening netlink socket: %s\n", strerror(errno));
+		return -1;
+	}
+
+    /* Configure the MAC address of the newly created bnep(x) device to the local bd_address */
+    memset (&ifr, 0, sizeof(struct ifreq));
+    strcpy(ifr.ifr_name, dev);
+    memcpy(ifr.ifr_hwaddr.sa_data, bd_addr, sizeof(bd_addr_t));
+    ifr.ifr_hwaddr.sa_family = ARPHRD_ETHER;
+
+	if (ioctl(fd_socket, SIOCSIFHWADDR, &ifr) == -1) {
+        close(fd_dev);
+        close(fd_socket);
+        fprintf(stderr, "TAP: Error setting hw addr: %s\n", strerror(errno));
+        exit(1);
+		return -1;
+	}
+
+    /* Bring the interface up */
+	if (ioctl(fd_socket, SIOCGIFFLAGS, &ifr) == -1) {
+        close(fd_dev);
+        close(fd_socket);
+		fprintf(stderr, "TAP: Error reading interface flags: %s\n", strerror(errno));
+		return -1;
+	}
+
+	if ((ifr.ifr_flags & IFF_UP) == 0) {
+		ifr.ifr_flags |= IFF_UP;
+
+		if (ioctl(fd_socket, SIOCSIFFLAGS, &ifr) == -1) {
+            close(fd_dev);
+            close(fd_socket);
+            fprintf(stderr, "TAP: Error set IFF_UP: %s\n", strerror(errno));
+            return -1;
+		}
+	}
+
+	close(fd_socket);
+    
+    return fd_dev;
+}
+
+int process_tap_dev_data(struct data_source *ds) 
+{
+    ssize_t len;
+    len = read(ds->fd, network_buffer, sizeof(network_buffer));
+    if (len > 0) {
+        network_buffer_len = len;
+    } else {
+        fprintf(stderr, "TAP: Error while reading: %s\n", strerror(errno));
+    }
+    
+    printf("Data from tap: %ld bytes\n", len);
+    return 0;
+}
+
+/*************** PANU client routines *********************/
 
 char * get_string_from_data_element(uint8_t * element){
     de_size_t de_size = de_get_size_type(element);
@@ -65,6 +181,8 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
 {
     sdp_query_attribute_value_event_t *value_event;
     sdp_query_complete_event_t        *complete_event;
+    des_iterator_t des_list_it;
+    des_iterator_t prot_it;
 
     switch (event->type){
         case SDP_QUERY_ATTRIBUTE_VALUE:
@@ -81,16 +199,30 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                 
                 if ((uint16_t)(value_event->data_offset+1) == value_event->attribute_length) {
 
-                    switch(value_event->attribute_id){
+                    switch(value_event->attribute_id) {
+                        case SDP_ServiceClassIDList:
+                            if (de_get_element_type(attribute_value) != DE_DES) break;
+                            for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
+                                uint8_t * element = des_iterator_get_element(&des_list_it);
+                                if (de_get_element_type(element) != DE_UUID) continue;
+                                uint16_t uuid = de_element_get_uuid16(element);
+                                switch (uuid){
+                                    case BNEP_UUID_PANU:
+                                    case BNEP_UUID_NAP:
+                                    case BNEP_UUID_GN:
+                                        printf("SDP Attribute 0x%04x: BNEP PAN protocol UUID: %04x\n", value_event->attribute_id, uuid);
+                                        bnep_remote_uuid = uuid;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                            break;
                         case 0x0100:
                         case 0x0101:
                             printf("SDP Attribute: 0x%04x: %s\n", value_event->attribute_id, get_string_from_data_element(attribute_value));
                             break;
-                        case 0x004: {
-                                des_iterator_t des_list_it;
-                                uint16_t       l2cap_psm = 0;
-                                uint16_t       bnep_version = 0;
-
+                        case 0x0004: {
                                 printf("SDP Attribute: 0x%04x\n", value_event->attribute_id);
 
                                 for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {                                    
@@ -112,7 +244,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                                         case 0x0100:
                                             if (!des_iterator_has_more(&prot_it)) continue;
                                             des_iterator_next(&prot_it);
-                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &l2cap_psm);
+                                            de_element_get_uint16(des_iterator_get_element(&prot_it), &bnep_l2cap_psm);
                                             break;
                                         case 0x000f:
                                             if (!des_iterator_has_more(&prot_it)) continue;
@@ -123,13 +255,14 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                                             break;
                                     }
                                 }
-                                printf("l2cap_psm 0x%04x, bnep_version 0x%04x\n", l2cap_psm, bnep_version);
+                                printf("l2cap_psm 0x%04x, bnep_version 0x%04x\n", bnep_l2cap_psm, bnep_version);
+/*
                                 printf("  -> row data (length %d): ", value_event->attribute_length);
                                 hexdumpf(attribute_value, value_event->attribute_length);
                                 printf("\n");
-
+*/
                                 /* Create BNEP connection */
-                                bnep_connect(NULL, &remote, l2cap_psm, BNEP_UUID_GN);
+                                bnep_connect(NULL, &remote, bnep_l2cap_psm, bnep_remote_uuid);
                             }
                             break;
                         default:
@@ -151,21 +284,17 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
 
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
-    uint8_t event;
+    int       rc;
+    uint8_t   event;
     bd_addr_t event_addr;
     uint16_t  uuid_source;
     uint16_t  uuid_dest;
     uint16_t  mtu;    
-    
-    if (packet_type != HCI_EVENT_PACKET) {
-        return;
-    }
-    
-    event = packet[0];
-    
+  
     switch (packet_type) {
 		case HCI_EVENT_PACKET:
-			switch (event) {            
+            event = packet[0];
+            switch (event) {            
                 case BTSTACK_EVENT_STATE:
                     /* BT Stack activated, get started */ 
                     if (packet[2] == HCI_STATE_WORKING) {
@@ -201,8 +330,9 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     uuid_source = READ_BT_16(packet, 3);
                     uuid_dest   = READ_BT_16(packet, 5);
                     mtu         = READ_BT_16(packet, 7);
-					bt_flip_addr(event_addr, &packet[9]);
-					printf("BNEP connection from %s source UUID 0x%04x dest UUID: 0x%04x, max frame size: %u", bd_addr_to_str(event_addr), uuid_source, uuid_dest, mtu);
+					//bt_flip_addr(event_addr, &packet[9]);
+                    memcpy(&event_addr, &packet[9], sizeof(bd_addr_t));
+					printf("BNEP connection from %s source UUID 0x%04x dest UUID: 0x%04x, max frame size: %u\n", bd_addr_to_str(event_addr), uuid_source, uuid_dest, mtu);
 					break;
 					
 				case BNEP_EVENT_OPEN_CHANNEL_COMPLETE:
@@ -213,19 +343,52 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                         uuid_source = READ_BT_16(packet, 3);
                         uuid_dest   = READ_BT_16(packet, 5);
                         mtu         = READ_BT_16(packet, 7);
-                        bt_flip_addr(event_addr, &packet[9]); 
-                        printf("BNEP connection open succeeded to %s source UUID 0x%04x dest UUID: 0x%04x, max frame size %u", bd_addr_to_str(event_addr), uuid_source, uuid_dest, mtu);
+                        //bt_flip_addr(event_addr, &packet[9]); 
+                        memcpy(&event_addr, &packet[9], sizeof(bd_addr_t));
+                        printf("BNEP connection open succeeded to %s source UUID 0x%04x dest UUID: 0x%04x, max frame size %u\n", bd_addr_to_str(event_addr), uuid_source, uuid_dest, mtu);
+                        /* Create the tap interface */
+                        tap_fd = tap_alloc(tap_dev_name, *hci_local_bd_addr());
+                        if (tap_fd < 0) {
+                            printf("Creating BNEP tap device failed: %s\n", strerror(errno));
+                        } else {
+                            printf("BNEP device \"%s\"allocated.\n", tap_dev_name);
+                            /* Create and register a new runloop data source */
+                            tap_dev_ds.fd = tap_fd;
+                            tap_dev_ds.process = process_tap_dev_data;
+                            run_loop_add_data_source(&tap_dev_ds);
+                        }
+
                     }
 					break;
                     
                 case BNEP_EVENT_CHANNEL_CLOSED:
                     printf("BNEP channel closed\n");
+                    run_loop_remove_data_source(&tap_dev_ds);
+                    if (tap_fd > 0) {
+                        close(tap_fd);
+                        tap_fd = -1;
+                    }
                     break;
 
                     
                 default:
                     break;
             }
+            break;
+        case BNEP_DATA_PACKET:
+            printf("BNEP: Received %d bytes\n", size);
+            /* Write out the ethernet frame to the tap device */
+            if (tap_fd > 0) {
+                printf_hexdump(packet, size);
+                rc = write(tap_fd, packet, size);
+                if (rc < 0) {
+                    fprintf(stderr, "TAP: Could not write to TAP device: %s\n", strerror(errno));
+                } else 
+                if (rc != size) {
+                    fprintf(stderr, "TAP: Package written only partially %d of %d bytes\n", rc, size);
+                }
+            }
+            break;            
             
         default:
             break;
