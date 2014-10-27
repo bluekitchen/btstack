@@ -85,7 +85,7 @@ PAN_OBJ = $(PAN:.c=.o)
 all: ${BTSTACK_ROOT}/include/btstack/version.h gatt_browser gatt_battery_query sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral \
 		ble_peripheral_sm_minimal gap_inquiry gap_dedicated_bonding gap_inquiry_and_bond l2cap_test spp_streamer \
 		classic_test ble_peripheral_uart_csr ble_peripheral_uart_cc256x ancs_client spp_and_le_counter \
-		ddp_bnep_query panu_demo \
+		ddp_bnep_query
 
 
 ${BTSTACK_ROOT}/include/btstack/version.h:
