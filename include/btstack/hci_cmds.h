@@ -71,6 +71,9 @@ extern "C" {
 // format: type (8), record_id (16), attribute_id (16), attribute_length (16), attribute_value (max 1k)
 #define SDP_CLIENT_PACKET       0x0a
 
+// BNEP data
+#define BNEP_DATA_PACKET        0x0b
+
 // debug log messages
 #define LOG_MESSAGE_PACKET      0xfc
 
