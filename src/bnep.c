@@ -92,7 +92,7 @@ static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t sta
     bt_store_16(event, 3, channel->uuid_source);
     bt_store_16(event, 5, channel->uuid_dest);
     bt_store_16(event, 7, channel->max_frame_size);
-    memcpy(&event[9], channel->remote_addr, sizeof(bd_addr_t));
+    BD_ADDR_COPY(&event[9], channel->remote_addr);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
@@ -106,7 +106,7 @@ static void bnep_emit_incoming_connection(bnep_channel_t *channel)
     bt_store_16(event, 3, channel->uuid_source);
     bt_store_16(event, 5, channel->uuid_dest);
     bt_store_16(event, 7, channel->max_frame_size);
-    memcpy(&event[9], channel->remote_addr, sizeof(bd_addr_t));
+    BD_ADDR_COPY(&event[9], channel->remote_addr);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
@@ -119,7 +119,7 @@ static void bnep_emit_channel_closed(bnep_channel_t *channel)
     event[1] = sizeof(event) - 2;
     bt_store_16(event, 2, channel->uuid_source);
     bt_store_16(event, 4, channel->uuid_dest);
-    memcpy(&event[6], channel->remote_addr, sizeof(bd_addr_t));
+    BD_ADDR_COPY(&event[6], channel->remote_addr);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
@@ -348,14 +348,14 @@ int bnep_send(bnep_channel_t *channel, uint8_t *src_addr, uint8_t *dest_addr, ui
 
     /* Add the destination address if needed */
     if (has_dest) {
-        memcpy(bnep_out_buffer + pos, dest_addr, ETHER_ADDR_LEN);
-        pos += ETHER_ADDR_LEN;
+        BD_ADDR_COPY(bnep_out_buffer + pos, dest_addr);
+        pos += sizeof(bd_addr_t);
     }
 
     /* Add the source address if needed */
     if (has_src) {
-        memcpy(bnep_out_buffer + pos, src_addr, ETHER_ADDR_LEN);
-        pos += ETHER_ADDR_LEN;
+        BD_ADDR_COPY(bnep_out_buffer + pos, src_addr);
+        pos += sizeof(bd_addr_t);
     }
 
     /* Add protocol type */
@@ -698,8 +698,8 @@ static int bnep_handle_multi_addr_set(bnep_channel_t *channel, uint8_t *packet, 
         int i;
         /* There is still enough space, copy the filters to our filter list */
         for (i = 0; i < list_length / (2 * ETHER_ADDR_LEN); i ++) {
-            memcpy(channel->multicast_filter[channel->multicast_filter_count].addr_start, packet + 4 + i * ETHER_ADDR_LEN * 2, ETHER_ADDR_LEN);
-            memcpy(channel->multicast_filter[channel->multicast_filter_count].addr_end, packet + 4 + i * ETHER_ADDR_LEN * 2 + ETHER_ADDR_LEN, ETHER_ADDR_LEN);
+            BD_ADDR_COPY(channel->multicast_filter[channel->multicast_filter_count].addr_start, packet + 4 + i * ETHER_ADDR_LEN * 2);
+            BD_ADDR_COPY(channel->multicast_filter[channel->multicast_filter_count].addr_end, packet + 4 + i * ETHER_ADDR_LEN * 2 + ETHER_ADDR_LEN);
 
             if (memcmp(channel->multicast_filter[channel->multicast_filter_count].addr_start, 
                        channel->multicast_filter[channel->multicast_filter_count].addr_end, ETHER_ADDR_LEN) > 0) {
@@ -752,6 +752,27 @@ static int bnep_handle_multi_addr_response(bnep_channel_t *channel, uint8_t *pac
     }
 
     return 1 + 1 + 2;
+}
+
+static int bnep_handle_ethernet_packet(bnep_channel_t *channel, bd_addr_t addr_dest, bd_addr_t addr_source, uint16_t network_protocol_type, uint8_t *payload, uint16_t size)
+{
+    uint8_t ethernet_packet[BNEP_MTU_MIN];
+    uint16_t pos = 0;
+
+    /* Restore the ethernet packet header */
+    BD_ADDR_COPY(ethernet_packet + pos, addr_dest);
+    pos += sizeof(bd_addr_t);
+    BD_ADDR_COPY(ethernet_packet + pos, addr_source);
+    pos += sizeof(bd_addr_t);
+    net_store_16(ethernet_packet, pos, 2);
+    pos += 2;
+    memcpy(ethernet_packet + pos, payload, size);
+
+    /* Notify application layer and deliver the ethernet packet */
+    (*app_packet_handler)(channel->connection, BNEP_DATA_PACKET, channel->uuid_source,
+                          ethernet_packet, size + sizeof(uint16_t) + 2 * sizeof(bd_addr_t));
+
+    return size;
 }
 
 static int bnep_handle_control_packet(bnep_channel_t *channel, uint8_t *packet, uint16_t size, int is_extension)
@@ -976,10 +997,13 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
 
 static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16_t size)
 {
-    int      rc = 0;
-    uint8_t  bnep_type;
-    uint8_t  bnep_header_has_ext;
-    uint16_t pos = 0;
+    int             rc = 0;
+    uint8_t         bnep_type;
+    uint8_t         bnep_header_has_ext;
+    uint16_t        pos = 0;
+    bd_addr_t       addr_source;
+    bd_addr_t       addr_dest;
+    uint16_t        network_protocol_type;
     bnep_channel_t *channel = NULL;
     
     /* Get the bnep channel for this package */
@@ -993,17 +1017,42 @@ static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16
         return rc;
     }
     
-    bnep_type = BNEP_TYPE(packet[0]);
-    bnep_header_has_ext = BNEP_HEADER_HAS_EXT(packet[0]); 
+    bnep_type = BNEP_TYPE(packet[pos]);
+    bnep_header_has_ext = BNEP_HEADER_HAS_EXT(packet[pos]); 
+    pos ++;
 
     switch(bnep_type) {
         case BNEP_PKT_TYPE_GENERAL_ETHERNET:
+            BD_ADDR_COPY(addr_dest, &packet[pos]);
+            pos += sizeof(bd_addr_t);
+            BD_ADDR_COPY(addr_source, &packet[pos]);
+            pos += sizeof(bd_addr_t);
+            network_protocol_type = READ_BT_16(packet, pos);
+            pos += 2;
+            rc = bnep_handle_ethernet_packet(channel, addr_dest, addr_source, network_protocol_type, &packet[pos], size - pos);
             break;
         case BNEP_PKT_TYPE_COMPRESSED_ETHERNET:
+            BD_ADDR_COPY(addr_dest, channel->local_addr);
+            BD_ADDR_COPY(addr_source, channel->remote_addr);
+            network_protocol_type = READ_BT_16(packet, pos);
+            pos += 2;
+            rc = bnep_handle_ethernet_packet(channel, addr_dest, addr_source, network_protocol_type, &packet[pos], size - pos);
             break;
         case BNEP_PKT_TYPE_COMPRESSED_ETHERNET_SOURCE_ONLY:
+            BD_ADDR_COPY(addr_dest, channel->local_addr);
+            BD_ADDR_COPY(addr_source, &packet[pos]);
+            pos += sizeof(bd_addr_t);
+            network_protocol_type = READ_BT_16(packet, pos);
+            pos += 2;
+            rc = bnep_handle_ethernet_packet(channel, addr_dest, addr_source, network_protocol_type, &packet[pos], size - pos);
             break;
         case BNEP_PKT_TYPE_COMPRESSED_ETHERNET_DEST_ONLY:
+            BD_ADDR_COPY(addr_dest, &packet[pos]);
+            pos += sizeof(bd_addr_t);
+            BD_ADDR_COPY(addr_source, channel->remote_addr);
+            network_protocol_type = READ_BT_16(packet, pos);
+            pos += 2;
+            rc = bnep_handle_ethernet_packet(channel, addr_dest, addr_source, network_protocol_type, &packet[pos], size - pos);
             break;
         case BNEP_PKT_TYPE_CONTROL:
             rc = bnep_handle_control_packet(channel, packet, size, 0 /* TODO: Is extension bit ? */);
