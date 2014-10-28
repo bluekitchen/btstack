@@ -67,6 +67,7 @@ static void (*app_packet_handler)(void * connection, uint8_t packet_type,
                                   uint16_t channel, uint8_t *packet, uint16_t size);
 
 
+static bnep_channel_t * bnep_channel_for_l2cap_cid(uint16_t l2cap_cid);
 static void bnep_run(void);
 
 /* Emit service registered event */
@@ -94,7 +95,7 @@ static void bnep_emit_open_channel_complete(bnep_channel_t *channel, uint8_t sta
     bt_store_16(event, 7, channel->max_frame_size);
     BD_ADDR_COPY(&event[9], channel->remote_addr);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));
 }
 
 static void bnep_emit_incoming_connection(bnep_channel_t *channel) 
@@ -108,7 +109,7 @@ static void bnep_emit_incoming_connection(bnep_channel_t *channel)
     bt_store_16(event, 7, channel->max_frame_size);
     BD_ADDR_COPY(&event[9], channel->remote_addr);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));
 }
 
 static void bnep_emit_channel_closed(bnep_channel_t *channel) 
@@ -121,7 +122,16 @@ static void bnep_emit_channel_closed(bnep_channel_t *channel)
     bt_store_16(event, 4, channel->uuid_dest);
     BD_ADDR_COPY(&event[6], channel->remote_addr);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
-	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));
+}
+
+static void bnep_emit_ready_to_send(bnep_channel_t *channel)
+{
+    uint8_t event[2];
+    event[0] = BNEP_EVENT_READY_TO_SEND;
+    event[1] = sizeof(event) - 2;
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));
 }
 
 /* Send BNEP connection request */
@@ -304,18 +314,41 @@ static int bnep_send_filter_multi_addr_response(bnep_channel_t *channel, uint16_
     return err;
 }
 
-/* Send BNEP ethernet packet */
-// TODO: Make static later?
-int bnep_send(bnep_channel_t *channel, uint8_t *src_addr, uint8_t *dest_addr, uint16_t protocol_type, uint8_t *payload, uint16_t len)
+int bnep_can_send_packet_now(uint16_t bnep_cid)
 {
-    uint8_t *bnep_out_buffer = NULL;
-    uint16_t pos = 0;
-    int      err = 0;
-    int      has_src;
-    int      has_dest;
+    bnep_channel_t *channel = bnep_channel_for_l2cap_cid(bnep_cid);
+
+    if (!channel){
+        log_error("bnep_can_send_packet_now cid 0x%02x doesn't exist!", bnep_cid);
+        return 0;
+    }
     
-    if (channel->state == BNEP_CHANNEL_STATE_CLOSED) {
-        return -1; // TODO
+    return l2cap_can_send_packet_now(channel->l2cap_cid);
+}
+
+/* Send BNEP ethernet packet */
+int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
+{
+    bnep_channel_t *channel;
+    uint8_t        *bnep_out_buffer = NULL;
+    uint16_t        pos = 0;
+    uint16_t        pos_out = 0;
+    int             err = 0;
+    int             has_source;
+    int             has_dest;
+
+    bd_addr_t       addr_dest;
+    bd_addr_t       addr_source;
+    uint16_t        network_protocol_type;
+
+    channel = bnep_channel_for_l2cap_cid(bnep_cid);
+    if (channel == NULL) {
+        log_error("bnep_can_send_packet_now cid 0x%02x doesn't exist!", bnep_cid);
+        return 1;
+    }
+        
+    if (channel->state != BNEP_CHANNEL_STATE_CONNECTED) {
+        return BNEP_CHANNEL_NOT_CONNECTED;
     }
     
     /* Check for free ACL buffers */
@@ -326,56 +359,65 @@ int bnep_send(bnep_channel_t *channel, uint8_t *src_addr, uint8_t *dest_addr, ui
     l2cap_reserve_packet_buffer();
     bnep_out_buffer = l2cap_get_outgoing_buffer();
 
+    /* Extract destination and source address from the ethernet packet */
+    pos = 0;
+    BD_ADDR_COPY(addr_dest, &packet[pos]);
+    pos += sizeof(bd_addr_t);
+    BD_ADDR_COPY(addr_source, &packet[pos]);
+    pos += sizeof(bd_addr_t);
+    network_protocol_type = READ_BT_16(packet, pos);
+    pos += sizeof(uint16_t);
+    
     /* Check if source address is the same as our local address and if the 
        destination address is the same as the remote addr. Maybe we can use
        the compressed data format
      */ 
-    has_src  = (memcmp(src_addr, channel->local_addr, ETHER_ADDR_LEN) != 0);
-    has_dest = (memcmp(dest_addr, channel->remote_addr, ETHER_ADDR_LEN) != 0);
+    has_source = (memcmp(addr_source, channel->local_addr, ETHER_ADDR_LEN) != 0);
+    has_dest = (memcmp(addr_dest, channel->remote_addr, ETHER_ADDR_LEN) != 0);
 
     /* Fill in the package type depending on the given source and destination address */
-    if (has_src && has_dest) {
-        bnep_out_buffer[pos++] = BNEP_PKT_TYPE_GENERAL_ETHERNET;
+    if (has_source && has_dest) {
+        bnep_out_buffer[pos_out++] = BNEP_PKT_TYPE_GENERAL_ETHERNET;
     } else 
-    if (has_src && !has_dest) {
-        bnep_out_buffer[pos++] = BNEP_PKT_TYPE_COMPRESSED_ETHERNET_SOURCE_ONLY;
+    if (has_source && !has_dest) {
+        bnep_out_buffer[pos_out++] = BNEP_PKT_TYPE_COMPRESSED_ETHERNET_SOURCE_ONLY;
     } else 
-    if (!has_src && has_dest) {
-        bnep_out_buffer[pos++] = BNEP_PKT_TYPE_COMPRESSED_ETHERNET_DEST_ONLY;
+    if (!has_source && has_dest) {
+        bnep_out_buffer[pos_out++] = BNEP_PKT_TYPE_COMPRESSED_ETHERNET_DEST_ONLY;
     } else {
-        bnep_out_buffer[pos++] = BNEP_PKT_TYPE_COMPRESSED_ETHERNET;
+        bnep_out_buffer[pos_out++] = BNEP_PKT_TYPE_COMPRESSED_ETHERNET;
     }
 
     /* Add the destination address if needed */
     if (has_dest) {
-        BD_ADDR_COPY(bnep_out_buffer + pos, dest_addr);
-        pos += sizeof(bd_addr_t);
+        BD_ADDR_COPY(bnep_out_buffer + pos_out, addr_dest);
+        pos_out += sizeof(bd_addr_t);
     }
 
     /* Add the source address if needed */
-    if (has_src) {
-        BD_ADDR_COPY(bnep_out_buffer + pos, src_addr);
-        pos += sizeof(bd_addr_t);
+    if (has_source) {
+        BD_ADDR_COPY(bnep_out_buffer + pos_out, addr_source);
+        pos_out += sizeof(bd_addr_t);
     }
 
     /* Add protocol type */
-    bnep_out_buffer[pos++] = (protocol_type >> 8) & 0xFF;    
-    bnep_out_buffer[pos++] = protocol_type & 0xFF;
-
+    bt_store_16(bnep_out_buffer, pos_out, network_protocol_type);
+    pos_out += 2;
+    
     /* TODO: Add extension headers, if we may support them at a later stage */
     
     /* Check for MTU limits add the payload and then send out the package */
-    if (pos + len <= channel->max_frame_size) {
-        memcpy(bnep_out_buffer + pos, payload, len);
-        pos += len;
+    if (len - pos <= channel->max_frame_size) {
+        memcpy(bnep_out_buffer + pos_out, packet + pos, len - pos);
+        pos_out += len - pos;
 
-        err = l2cap_send_prepared(channel->l2cap_cid, pos);
+        err = l2cap_send_prepared(channel->l2cap_cid, pos_out);
     } else {
-        // TODO: Error, MTU exceeded
+        return BNEP_DATA_LEN_EXCEEDS_MTU;
     }
     
     if (err) {
-        // TODO: Log error 
+        log_info("bnep_send: error %d", err);
     }
     return err;        
 }
@@ -953,7 +995,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
                 channel->l2cap_cid  = l2cap_cid;
                 channel->con_handle = con_handle;
 
-                // TODO: Should we now send the connect request ?
+                /* Initiate the connection request */
                 channel->state = BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE;
                 bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_REQUEST); 
                 channel->max_frame_size = bnep_max_frame_size_for_l2cap_mtu(READ_BT_16(packet, 17));
@@ -1133,6 +1175,9 @@ static void bnep_channel_state_machine(bnep_channel_t* channel, bnep_channel_eve
             bnep_send_filter_multi_addr_response(channel, channel->response_code);
             return;
         }
+
+        /* If the event was not yet handled, notify the application layer */
+        bnep_emit_ready_to_send(channel);
     }    
 }
 
