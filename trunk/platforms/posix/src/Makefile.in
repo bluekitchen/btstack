@@ -35,6 +35,7 @@ BTdaemon_SOURCES =                          \
     $(BTSTACK_ROOT)/src/l2cap_signaling.c   \
     $(BTSTACK_ROOT)/src/memory_pool.c       \
     $(BTSTACK_ROOT)/src/rfcomm.c            \
+    $(BTSTACK_ROOT)/src/bnep.c              \
     $(BTSTACK_ROOT)/src/sdp.c               \
     $(BTSTACK_ROOT)/src/sdp_client.c        \
     $(BTSTACK_ROOT)/src/sdp_parser.c        \
