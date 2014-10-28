@@ -407,6 +407,9 @@ extern "C" {
 // data: event(8), len(8), bnep source uuid (16), bnep destination uuid (16), remote_address (48) 
 #define BNEP_EVENT_CHANNEL_CLOSED                          0xC3
 
+// data: event(8), len(8)
+#define BNEP_EVENT_READY_TO_SEND                           0xC4
+
 // data: event(8), address_type(8), address (48), [number(32)]
 #define SM_JUST_WORKS_REQUEST							   0xD0
 #define SM_JUST_WORKS_CANCEL							   0xD1 
@@ -494,6 +497,8 @@ extern "C" {
 #define GATT_CLIENT_BUSY								   0x94
 
 #define BNEP_SERVICE_ALREADY_REGISTERED                    0xA0
+#define BNEP_CHANNEL_NOT_CONNECTED                         0xA1
+#define BNEP_DATA_LEN_EXCEEDS_MTU                          0xA2
 
 typedef enum {
     BLE_PERIPHERAL_OK = 0xA0,
