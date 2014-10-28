@@ -764,7 +764,7 @@ static int bnep_handle_ethernet_packet(bnep_channel_t *channel, bd_addr_t addr_d
     pos += sizeof(bd_addr_t);
     BD_ADDR_COPY(ethernet_packet + pos, addr_source);
     pos += sizeof(bd_addr_t);
-    net_store_16(ethernet_packet, pos, 2);
+    bt_store_16(ethernet_packet, pos, network_protocol_type);
     pos += 2;
     memcpy(ethernet_packet + pos, payload, size);
 
