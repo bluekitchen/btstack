@@ -177,7 +177,7 @@ typedef struct {
     linked_item_t    item;           // linked list - assert: first field
     void            *connection;     // client connection 
     uint16_t         service_uuid;   // Service class: PANU, NAP, GN
-    uint16_t         max_frame_size; // incomming max. frame size 
+    uint16_t         max_frame_size; // incomming max. frame size
     
     // internal connection
     btstack_packet_handler_t packet_handler;
@@ -190,6 +190,12 @@ void bnep_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet,
 
 /* Set up BNEP. */
 void bnep_init(void);
+
+/* Check if a data packet can be send out */
+int bnep_can_send_packet_now(uint16_t bnep_cid);
+
+/* Send a data packet */
+int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len);
 
 /* Set security level required for incoming connections, need to be called before registering services */
 void bnep_set_required_security_level(gap_security_level_t security_level);
