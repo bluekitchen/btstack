@@ -986,11 +986,6 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             if (channel->state == BNEP_CHANNEL_STATE_CLOSED) {
                 log_info("L2CAP_EVENT_CHANNEL_OPENED: outgoing connection");
 
-                /* Check for the correct remote address */
-                if (BD_ADDR_CMP(event_addr, channel->remote_addr)) {
-                    break;
-                }
-
                 /* Assign connection handle and l2cap cid */
                 channel->l2cap_cid  = l2cap_cid;
                 channel->con_handle = con_handle;
