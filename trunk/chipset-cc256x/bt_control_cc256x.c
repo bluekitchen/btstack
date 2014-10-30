@@ -54,8 +54,12 @@
  *  
  * Issues with AVR
  *  - Harvard architecture doesn't allow to store init script directly -> use avr-libc helpers
+ *
+ * Documentation for TI VS CC256x commands: http://processors.wiki.ti.com/index.php/CC256x_VS_HCI_Commands
+ *
  */
 
+#include "btstack-config.h"
 #include "bt_control_cc256x.h"
 
 #include <stddef.h>   /* NULL */
@@ -138,10 +142,21 @@ static int get_highest_level_for_given_power(int power_db, int recommended_db){
 
 static void update_set_power_vector(uint8_t *hci_cmd_buffer){
     int i;
-    int power_db = get_max_power_for_modulation_type(hci_cmd_buffer[3]);
+    int modulation_type = hci_cmd_buffer[3];
+    int power_db = get_max_power_for_modulation_type(modulation_type);
     int dynamic_range = 0;
+
     // f) don't touch level 0
     for ( i = (NUM_POWER_LEVELS-1) ; i >= 1 ; i--){
+
+#ifdef HAVE_BLE
+        // level 1 is BLE transmit power for GFSK
+        if (i == 1 && modulation_type == 0) {
+            hci_cmd_buffer[4+1] = 2 * get_max_power_for_modulation_type(modulation_type);
+            // as level 0 isn't set, we're done
+            continue;
+        }
+#endif
         hci_cmd_buffer[4+i] = 2 * power_db;
 
         if (dynamic_range + DB_PER_LEVEL > DB_DYNAMIC_RANGE) continue;  // e)
