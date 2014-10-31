@@ -102,7 +102,14 @@ typedef enum {
 
     P_W4_CMAC
 } gatt_client_state_t;
-    
+  
+
+typedef struct gatt_subclient {
+    linked_item_t   item;
+    uint16_t        id;
+    // gatt_client_callback_t callback;
+} gatt_subclient_t;
+
     
 typedef enum{
     SEND_MTU_EXCHANGE,
