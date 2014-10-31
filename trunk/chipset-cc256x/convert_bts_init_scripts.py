@@ -55,7 +55,7 @@ def append_power_vector_edr2(additions, str_list, data_indent):
     str_list.append(data_indent)
     str_list.append("0x01, 0x82, 0xfd, 0x14, 0x01, 0x9c, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xd8, \n");
     str_list.append(data_indent)
-    str_list.append("0xe2, 0xec, 0xf6, 0x00, 0x0a, 0x14, 0xff, 0x00, 0x00\n\n");
+    str_list.append("0xe2, 0xec, 0xf6, 0x00, 0x0a, 0x14, 0xff, 0x00, 0x00,\n\n");
     return 25
 
 def append_power_vector_edr3(additions, str_list, data_indent):
@@ -82,7 +82,7 @@ def append_ehcill(additions, str_list, data_indent):
     str_list.append(data_indent)
     str_list.append('// BTstack: added HCI_VS_Sleep_Mode_Configurations 0xFD0C template for eHCILL\n');
     str_list.append(data_indent)
-    str_list.append('0x01, 0x0c, 0xfd, 9 , 1, 0, 0,  0xff, 0xff, 0xff, 0xff, 100, 0\n\n');
+    str_list.append('0x01, 0x0c, 0xfd, 9 , 1, 0, 0,  0xff, 0xff, 0xff, 0xff, 100, 0,\n\n');
     return 13
 
 def append_calibration_sequence(additions, str_list, data_indent):
