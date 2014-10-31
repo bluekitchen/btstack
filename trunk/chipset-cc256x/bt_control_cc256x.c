@@ -186,7 +186,8 @@ static void update_sleep_mode_configurations(uint8_t * hci_cmd_buffer){
     }
 }
 
-static void bt_control_cc256x_update_command(uint8_t *hci_cmd_buffer){
+// @returns 1 if command was injected before this one
+static int bt_control_cc256x_update_command(uint8_t *hci_cmd_buffer){
 
     uint16_t opcode = hci_cmd_buffer[0] | (hci_cmd_buffer[1] << 8);
 
@@ -203,6 +204,8 @@ static void bt_control_cc256x_update_command(uint8_t *hci_cmd_buffer){
         default:
             break;
     }
+
+    return 0;
 }
 
 static int bt_control_cc256x_next_cmd(void *config, uint8_t *hci_cmd_buffer){
@@ -211,8 +214,12 @@ static int bt_control_cc256x_next_cmd(void *config, uint8_t *hci_cmd_buffer){
         return 0;
     }
     
-    init_script_offset++;   // extracted init script has 0x01 cmd packet type, but BTstack expects them without
-    
+    // store current position in case command needs to get expanded
+    uint32_t current_offset = init_script_offset;
+
+    // extracted init script has 0x01 cmd packet type, but BTstack expects them without
+    init_script_offset++;
+
 #if defined(__GNUC__) && defined(__MSP430X__) && (__MSP430X__ > 0)
     
     // workaround: use FlashReadBlock with 32-bit integer and assume init script starts at 0x10000
@@ -241,10 +248,15 @@ static int bt_control_cc256x_next_cmd(void *config, uint8_t *hci_cmd_buffer){
 
 #endif
 
-    // support for cc256x power commands and ehcill 
-    bt_control_cc256x_update_command(hci_cmd_buffer);
-
     init_script_offset += payload_len;
+
+    // support for cc256x power commands and ehcill 
+    int command_injected = bt_control_cc256x_update_command(hci_cmd_buffer);
+
+    if (command_injected){
+        // stay at this command
+        init_script_offset = current_offset;
+    }
 
     return 1; 
 }
