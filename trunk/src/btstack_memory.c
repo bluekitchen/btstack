@@ -1,5 +1,6 @@
+
 /*
- * Copyright (C) 2009-2012 by Matthias Ringwald
+ * Copyright (C) 2009 by BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -17,7 +18,7 @@
  *    personal benefit and not for any commercial purpose or for
  *    monetary gain.
  *
- * THIS SOFTWARE IS PROVIDED BY MATTHIAS RINGWALD AND CONTRIBUTORS
+ * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
@@ -30,9 +31,11 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at btstack@ringwald.ch
+ * Please inquire about commercial licensing options at 
+ * contact@bluekitchen-gmbh.com
  *
  */
+
 
 /*
  *  btstsack_memory.h
@@ -53,6 +56,7 @@
 #include "l2cap.h"
 #include "rfcomm.h"
 
+
 // MARK: hci_connection_t
 #ifdef MAX_NO_HCI_CONNECTIONS
 #if MAX_NO_HCI_CONNECTIONS > 0
@@ -70,7 +74,7 @@ hci_connection_t * btstack_memory_hci_connection_get(void){
 }
 void btstack_memory_hci_connection_free(hci_connection_t *hci_connection){
     // silence compiler warning about unused parameter in a portable way
-    hci_connection;
+    (void) hci_connection;
 };
 #endif
 #elif defined(HAVE_MALLOC)
@@ -83,6 +87,7 @@ void btstack_memory_hci_connection_free(hci_connection_t *hci_connection){
 #else
 #error "Neither HAVE_MALLOC nor MAX_NO_HCI_CONNECTIONS for struct hci_connection is defined. Please, edit the config file."
 #endif
+
 
 
 // MARK: l2cap_service_t
@@ -102,7 +107,7 @@ l2cap_service_t * btstack_memory_l2cap_service_get(void){
 }
 void btstack_memory_l2cap_service_free(l2cap_service_t *l2cap_service){
     // silence compiler warning about unused parameter in a portable way
-    (void) l2cap_service;    
+    (void) l2cap_service;
 };
 #endif
 #elif defined(HAVE_MALLOC)
@@ -134,7 +139,7 @@ l2cap_channel_t * btstack_memory_l2cap_channel_get(void){
 }
 void btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel){
     // silence compiler warning about unused parameter in a portable way
-    (void) l2cap_channel;    
+    (void) l2cap_channel;
 };
 #endif
 #elif defined(HAVE_MALLOC)
@@ -147,6 +152,7 @@ void btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel){
 #else
 #error "Neither HAVE_MALLOC nor MAX_NO_L2CAP_CHANNELS for struct l2cap_channel is defined. Please, edit the config file."
 #endif
+
 
 
 // MARK: rfcomm_multiplexer_t
@@ -244,64 +250,6 @@ void btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel){
 #error "Neither HAVE_MALLOC nor MAX_NO_RFCOMM_CHANNELS for struct rfcomm_channel is defined. Please, edit the config file."
 #endif
 
-// MARK: bnepservice_t
-#ifdef MAX_NO_BNEP_SERVICES
-#if MAX_NO_BNEP_SERVICES > 0
-static bnep_service_t bnep_service_storage[MAX_NO_BNEP_SERVICES];
-static memory_pool_t bnep_service_pool;
-bnep_service_t * btstack_memory_bnep_service_get(void){
-    return memory_pool_get(&bnep_service_pool);
-}
-void btstack_memory_bnep_service_free(bnep_service_t *bnep_service){
-    memory_pool_free(&bnep_service_pool, bnep_service);
-}
-#else
-bnep_service_t * btstack_memory_bnep_service_get(void){
-    return NULL;
-}
-void btstack_memory_bnep_service_free(bnep_service_t *bnep_service){
-};
-#endif
-#elif defined(HAVE_MALLOC)
-bnep_service_t * btstack_memory_bnep_service_get(void){
-    return (bnep_service_t*) malloc(sizeof(bnep_service_t));
-}
-void btstack_memory_bnep_service_free(bnep_service_t *bnep_service){
-    free(bnep_service);
-}
-#else
-#error "Neither HAVE_MALLOC nor MAX_NO_BNEP_SERVICES for struct bnep_service is defined. Please, edit the config file."
-#endif
-
-
-// MARK: bnep_channel_t
-#ifdef MAX_NO_BNEP_CHANNELS
-#if MAX_NO_BNEP_CHANNELS > 0
-static bnep_channel_t bnep_channel_storage[MAX_NO_BNEP_CHANNELS];
-static memory_pool_t bnep_channel_pool;
-bnep_channel_t * btstack_memory_bnep_channel_get(void){
-    return memory_pool_get(&bnep_channel_pool);
-}
-void btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel){
-    memory_pool_free(&bnep_channel_pool, bnep_channel);
-}
-#else
-bnep_channel_t * btstack_memory_bnep_channel_get(void){
-    return NULL;
-}
-void btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel){
-};
-#endif
-#elif defined(HAVE_MALLOC)
-bnep_channel_t * btstack_memory_bnep_channel_get(void){
-    return (bnep_channel_t*) malloc(sizeof(bnep_channel_t));
-}
-void btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel){
-    free(bnep_channel);
-}
-#else
-#error "Neither HAVE_MALLOC nor MAX_NO_BNEP_CHANNELS for struct bnep_channel is defined. Please, edit the config file."
-#endif
 
 
 // MARK: db_mem_device_name_t
@@ -319,7 +267,7 @@ void btstack_memory_db_mem_device_name_free(db_mem_device_name_t *db_mem_device_
 db_mem_device_name_t * btstack_memory_db_mem_device_name_get(void){
     return NULL;
 }
-void btstack_memory_db_mem_device_name_free(db_mem_device_name_t * db_mem_device_name){
+void btstack_memory_db_mem_device_name_free(db_mem_device_name_t *db_mem_device_name){
     // silence compiler warning about unused parameter in a portable way
     (void) db_mem_device_name;
 };
@@ -399,8 +347,75 @@ void btstack_memory_db_mem_service_free(db_mem_service_t *db_mem_service){
 #error "Neither HAVE_MALLOC nor MAX_NO_DB_MEM_SERVICES for struct db_mem_service is defined. Please, edit the config file."
 #endif
 
-// MARK: gatt_client_t
+
+
+// MARK: bnep_service_t
+#ifdef MAX_NO_BNEP_SERVICES
+#if MAX_NO_BNEP_SERVICES > 0
+static bnep_service_t bnep_service_storage[MAX_NO_BNEP_SERVICES];
+static memory_pool_t bnep_service_pool;
+bnep_service_t * btstack_memory_bnep_service_get(void){
+    return memory_pool_get(&bnep_service_pool);
+}
+void btstack_memory_bnep_service_free(bnep_service_t *bnep_service){
+    memory_pool_free(&bnep_service_pool, bnep_service);
+}
+#else
+bnep_service_t * btstack_memory_bnep_service_get(void){
+    return NULL;
+}
+void btstack_memory_bnep_service_free(bnep_service_t *bnep_service){
+    // silence compiler warning about unused parameter in a portable way
+    (void) bnep_service;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+bnep_service_t * btstack_memory_bnep_service_get(void){
+    return (bnep_service_t*) malloc(sizeof(bnep_service_t));
+}
+void btstack_memory_bnep_service_free(bnep_service_t *bnep_service){
+    free(bnep_service);
+}
+#else
+#error "Neither HAVE_MALLOC nor MAX_NO_BNEP_SERVICES for struct bnep_service is defined. Please, edit the config file."
+#endif
+
+
+// MARK: bnep_channel_t
+#ifdef MAX_NO_BNEP_CHANNELS
+#if MAX_NO_BNEP_CHANNELS > 0
+static bnep_channel_t bnep_channel_storage[MAX_NO_BNEP_CHANNELS];
+static memory_pool_t bnep_channel_pool;
+bnep_channel_t * btstack_memory_bnep_channel_get(void){
+    return memory_pool_get(&bnep_channel_pool);
+}
+void btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel){
+    memory_pool_free(&bnep_channel_pool, bnep_channel);
+}
+#else
+bnep_channel_t * btstack_memory_bnep_channel_get(void){
+    return NULL;
+}
+void btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel){
+    // silence compiler warning about unused parameter in a portable way
+    (void) bnep_channel;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+bnep_channel_t * btstack_memory_bnep_channel_get(void){
+    return (bnep_channel_t*) malloc(sizeof(bnep_channel_t));
+}
+void btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel){
+    free(bnep_channel);
+}
+#else
+#error "Neither HAVE_MALLOC nor MAX_NO_BNEP_CHANNELS for struct bnep_channel is defined. Please, edit the config file."
+#endif
+
+
 #ifdef HAVE_BLE
+
+// MARK: gatt_client_t
 #ifdef MAX_NO_GATT_CLIENTS
 #if MAX_NO_GATT_CLIENTS > 0
 static gatt_client_t gatt_client_storage[MAX_NO_GATT_CLIENTS];
@@ -430,8 +445,41 @@ void btstack_memory_gatt_client_free(gatt_client_t *gatt_client){
 #else
 #error "Neither HAVE_MALLOC nor MAX_NO_GATT_CLIENTS for struct gatt_client is defined. Please, edit the config file."
 #endif
+
+
+// MARK: gatt_subclient_t
+#ifdef MAX_NO_GATT_SUBCLIENTS
+#if MAX_NO_GATT_SUBCLIENTS > 0
+static gatt_subclient_t gatt_subclient_storage[MAX_NO_GATT_SUBCLIENTS];
+static memory_pool_t gatt_subclient_pool;
+gatt_subclient_t * btstack_memory_gatt_subclient_get(void){
+    return memory_pool_get(&gatt_subclient_pool);
+}
+void btstack_memory_gatt_subclient_free(gatt_subclient_t *gatt_subclient){
+    memory_pool_free(&gatt_subclient_pool, gatt_subclient);
+}
+#else
+gatt_subclient_t * btstack_memory_gatt_subclient_get(void){
+    return NULL;
+}
+void btstack_memory_gatt_subclient_free(gatt_subclient_t *gatt_subclient){
+    // silence compiler warning about unused parameter in a portable way
+    (void) gatt_subclient;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+gatt_subclient_t * btstack_memory_gatt_subclient_get(void){
+    return (gatt_subclient_t*) malloc(sizeof(gatt_subclient_t));
+}
+void btstack_memory_gatt_subclient_free(gatt_subclient_t *gatt_subclient){
+    free(gatt_subclient);
+}
+#else
+#error "Neither HAVE_MALLOC nor MAX_NO_GATT_SUBCLIENTS for struct gatt_subclient is defined. Please, edit the config file."
 #endif
 
+
+#endif
 // init
 void btstack_memory_init(void){
 #if MAX_NO_HCI_CONNECTIONS > 0
@@ -461,10 +509,18 @@ void btstack_memory_init(void){
 #if MAX_NO_DB_MEM_SERVICES > 0
     memory_pool_create(&db_mem_service_pool, db_mem_service_storage, MAX_NO_DB_MEM_SERVICES, sizeof(db_mem_service_t));
 #endif
+#if MAX_NO_BNEP_SERVICES > 0
+    memory_pool_create(&bnep_service_pool, bnep_service_storage, MAX_NO_BNEP_SERVICES, sizeof(bnep_service_t));
+#endif
+#if MAX_NO_BNEP_CHANNELS > 0
+    memory_pool_create(&bnep_channel_pool, bnep_channel_storage, MAX_NO_BNEP_CHANNELS, sizeof(bnep_channel_t));
+#endif
 #ifdef HAVE_BLE
 #if MAX_NO_GATT_CLIENTS > 0
     memory_pool_create(&gatt_client_pool, gatt_client_storage, MAX_NO_GATT_CLIENTS, sizeof(gatt_client_t));
 #endif
+#if MAX_NO_GATT_SUBCLIENTS > 0
+    memory_pool_create(&gatt_subclient_pool, gatt_subclient_storage, MAX_NO_GATT_SUBCLIENTS, sizeof(gatt_subclient_t));
+#endif
 #endif
 }
-
