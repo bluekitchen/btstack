@@ -90,7 +90,7 @@ static const uint8_t ancs_control_point_uuid[] =       {0x69,0xD1,0xD8,0xF3,0x45
 static const uint8_t ancs_data_source_uuid[] =         {0x22,0xEA,0xC6,0xE9,0x24,0xD6,0x4B,0xB5,0xBE,0x44,0xB3,0x6A,0xCE,0x7C,0x7B,0xFB};
 
 static uint32_t ancs_notification_uid;
-static uint16_t gc_handle;
+static uint16_t gc_handle, gc_id;
 static int ancs_service_found;
 static le_service_t  ancs_service;
 static le_characteristic_t ancs_notification_source_characteristic;
@@ -181,7 +181,7 @@ static void handle_gatt_client_event(le_event_t * event){
                     }
                     tc_state = TC_W4_CHARACTERISTIC_RESULT;
                     printf("ANCS Client - Discover characteristics for ANCS SERVICE \n");
-                    gatt_client_discover_characteristics_for_service(gc_handle, &ancs_service);
+                    gatt_client_discover_characteristics_for_service(gc_id, gc_handle, &ancs_service);
                     break;
                 default:
                     break;
@@ -214,7 +214,7 @@ static void handle_gatt_client_event(le_event_t * event){
                 case GATT_QUERY_COMPLETE:
                     printf("ANCS Characteristcs count %u\n", ancs_characteristcs);
                     tc_state = TC_W4_NOTIFICATION_SOURCE_SUBSCRIBED;
-                    gatt_client_write_client_characteristic_configuration(gc_handle, &ancs_notification_source_characteristic,
+                    gatt_client_write_client_characteristic_configuration(gc_id, gc_handle, &ancs_notification_source_characteristic,
                         GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
                     break;
                 default:
@@ -226,7 +226,7 @@ static void handle_gatt_client_event(le_event_t * event){
                 case GATT_QUERY_COMPLETE:
                     printf("ANCS Notification Source subscribed\n");
                     tc_state = TC_W4_DATA_SOURCE_SUBSCRIBED;
-                    gatt_client_write_client_characteristic_configuration(gc_handle, &ancs_data_source_characteristic,
+                    gatt_client_write_client_characteristic_configuration(gc_id, gc_handle, &ancs_data_source_characteristic,
                         GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
                     break;
                 default:
@@ -260,7 +260,7 @@ static void handle_gatt_client_event(le_event_t * event){
                 bt_store_32(get_notification_attributes, 1, ancs_notification_uid);
                 ancs_notification_uid = 0;
                 ancs_chunk_parser_init();
-                gatt_client_write_value_of_characteristic(gc_handle, ancs_control_point_characteristic.value_handle, 
+                gatt_client_write_value_of_characteristic(gc_id, gc_handle, ancs_control_point_characteristic.value_handle, 
                     sizeof(get_notification_attributes), get_notification_attributes);
             } else {
                 printf("Unknown Source: ");
@@ -306,7 +306,7 @@ void ancs_client_hci_event_handler (uint8_t packet_type, uint16_t channel, uint8
                     // let's start
                     printf("\nANCS Client - CONNECTED, discover ANCS service\n");
                     tc_state = TC_W4_SERVICE_RESULT;
-                    gatt_client_discover_primary_services_by_uuid128(gc_handle, ancs_service_uuid);
+                    gatt_client_discover_primary_services_by_uuid128(gc_id, gc_handle, ancs_service_uuid);
                     break;
                     
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -320,5 +320,5 @@ void ancs_client_hci_event_handler (uint8_t packet_type, uint16_t channel, uint8
 }
 
 void ancs_client_init(){
-    gatt_client_register_packet_handler(&handle_gatt_client_event);
+    gc_id = gatt_client_register_packet_handler(&handle_gatt_client_event);
 }
