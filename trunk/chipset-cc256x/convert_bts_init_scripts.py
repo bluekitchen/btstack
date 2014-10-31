@@ -38,6 +38,62 @@ def read_little_endian_16(f):
     high = f.read(1)
     return ord(high) << 8 | ord(low) 
 
+def append_power_vector_gfsk(additions, str_list, data_indent):
+    additions.append("- added HCI_VS_SET_POWER_VECTOR(GFSK) template")
+    str_list.append(data_indent)
+    str_list.append('// BTstack: added HCI_VS_SET_POWER_VECTOR(GFSK) 0xFD82 template\n');
+    str_list.append(data_indent)
+    str_list.append("0x01, 0x82, 0xfd, 0x14, 0x00, 0x9c, 0x18, 0xd2, 0xd2, 0xd2, 0xd2, 0xd2, 0xd2, 0xd2, 0xdc,\n");
+    str_list.append(data_indent)
+    str_list.append("0xe6, 0xf0, 0xfa, 0x04, 0x0e, 0x18, 0xff, 0x00, 0x00,\n\n");
+    return 25
+
+def append_power_vector_edr2(additions, str_list, data_indent):
+    additions.append("- added HCI_VS_SET_POWER_VECTOR(EDR2) template")
+    str_list.append(data_indent)
+    str_list.append('// BTstack: added HCI_VS_SET_POWER_VECTOR(EDR2) 0xFD82 template\n');
+    str_list.append(data_indent)
+    str_list.append("0x01, 0x82, 0xfd, 0x14, 0x01, 0x9c, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xd8, \n");
+    str_list.append(data_indent)
+    str_list.append("0xe2, 0xec, 0xf6, 0x00, 0x0a, 0x14, 0xff, 0x00, 0x00\n\n");
+    return 25
+
+def append_power_vector_edr3(additions, str_list, data_indent):
+    additions.append("- added HCI_VS_SET_POWER_VECTOR(EDR3) template")
+    str_list.append(data_indent)
+    str_list.append('// BTstack: added HCI_VS_SET_POWER_VECTOR(EDR3) 0xFD82 for EDR3 template\n');
+    str_list.append(data_indent)
+    str_list.append("0x01, 0x82, 0xfd, 0x14, 0x02, 0x9c, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xd8,\n");
+    str_list.append(data_indent)
+    str_list.append("0xe2, 0xec, 0xf6, 0x00, 0x0a, 0x14, 0xff, 0x00, 0x00,\n\n");
+    return 25
+
+def append_class2_single_power(additions, str_list, data_indent):
+    additions.append("- added HCI_VS_SET_CLASS2_SINGLE_POWER template")
+    str_list.append(data_indent)
+    str_list.append('// BTstack: added HCI_VS_SET_CLASS2_SINGLE_POWER 0xFD87 template\n');
+    str_list.append(data_indent)
+    str_list.append("0x01, 0x87, 0xfd, 0x03, 0x0d, 0x0d, 0x0d,\n\n");
+    return 9
+
+def append_ehcill(additions, str_list, data_indent):
+    additions.append("- added eHCILL template")
+    str_list.append('\n')
+    str_list.append(data_indent)
+    str_list.append('// BTstack: added HCI_VS_Sleep_Mode_Configurations 0xFD0C template for eHCILL\n');
+    str_list.append(data_indent)
+    str_list.append('0x01, 0x0c, 0xfd, 9 , 1, 0, 0,  0xff, 0xff, 0xff, 0xff, 100, 0\n\n');
+    return 13
+
+def append_calibration_sequence(additions, str_list, data_indent):
+    additions.append("- added calibration sequence")
+    str_list.append(data_indent)
+    str_list.append("// BTstack: added calibration sequence\n")
+    str_list.append(data_indent)
+    str_list.append("0x01, 0x80, 0xfd, 0x06, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,\n")
+    str_list.append(data_indent)
+    str_list.append("0x01, 0x80, 0xfd, 0x06, 0x3c, 0xf0, 0x5f, 0x00, 0x00, 0x00,\n\n")
+    return 20 
 
 def convert_bts(bts_file):
     array_name = 'cc256x'
@@ -92,38 +148,16 @@ def convert_bts(bts_file):
                     if opcode == 0xFD80:
                         # add missing power command templates
                         if not have_power_vector_gfsk:
-                            additions.append("- added HCI_VS_SET_POWER_VECTOR(GFSK) template")
-                            str_list.append(data_indent)
-                            str_list.append('// BTstack: added HCI_VS_SET_POWER_VECTOR(GFSK) 0xFD82 template\n');
-                            str_list.append(data_indent)
-                            str_list.append("0x01, 0x82, 0xfd, 0x14, 0x00, 0x9c, 0x18, 0xd2, 0xd2, 0xd2, 0xd2, 0xd2, 0xd2, 0xd2, 0xdc,\n");
-                            str_list.append(data_indent)
-                            str_list.append("0xe6, 0xf0, 0xfa, 0x04, 0x0e, 0x18, 0xff, 0x00, 0x00,\n");
-                            have_power_vector_gfsk = True;                            
+                            part_size += append_power_vector_gfsk(additions, str_list, data_indent)
+                            have_power_vector_gfsk = True; 
                         if not have_power_vector_edr2:
-                            additions.append("- added HCI_VS_SET_POWER_VECTOR(EDR2) template")
-                            str_list.append(data_indent)
-                            str_list.append('// BTstack: added HCI_VS_SET_POWER_VECTOR(EDR2) 0xFD82 template\n');
-                            str_list.append(data_indent)
-                            str_list.append("0x01, 0x82, 0xfd, 0x14, 0x01, 0x9c, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xd8, \n");
-                            str_list.append(data_indent)
-                            str_list.append("0xe2, 0xec, 0xf6, 0x00, 0x0a, 0x14, 0xff, 0x00, 0x00\n");
+                            part_size += append_power_vector_edr2(additions, str_list, data_indent)
                             have_power_vector_edr2 = True;                            
                         if not have_power_vector_edr3:
-                            additions.append("- added HCI_VS_SET_POWER_VECTOR(EDR3) template")
-                            str_list.append(data_indent)
-                            str_list.append('// BTstack: added HCI_VS_SET_POWER_VECTOR(EDR3) 0xFD82 for EDR3 template\n');
-                            str_list.append(data_indent)
-                            str_list.append("0x01, 0x82, 0xfd, 0x14, 0x02, 0x9c, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xce, 0xd8,\n");
-                            str_list.append(data_indent)
-                            str_list.append("0xe2, 0xec, 0xf6, 0x00, 0x0a, 0x14, 0xff, 0x00, 0x00,\n");
+                            part_size += append_power_vector_edr2(additions, str_list, data_indent)
                             have_power_vector_edr3 = True;                            
                         if not have_class2_single_power:
-                            additions.append("- added HCI_VS_SET_CLASS2_SINGLE_POWER template")
-                            str_list.append(data_indent)
-                            str_list.append('// BTstack: added HCI_VS_SET_CLASS2_SINGLE_POWER 0xFD87 template\n');
-                            str_list.append(data_indent)
-                            str_list.append("0x01, 0x87, 0xfd, 0x03, 0x0d, 0x0d, 0x0d, \n");
+                            part_size += append_class2_single_power(additions, str_list, data_indent)
                             have_class2_single_power = True;                            
 
                     counter = 0
@@ -161,12 +195,17 @@ def convert_bts(bts_file):
                     
 
             if not have_eHCILL:
-                additions.append("- added eHCILL template")
-                str_list.append('\n')
-                str_list.append(data_indent)
-                str_list.append('// BTstack: added HCI_VS_Sleep_Mode_Configurations 0xFD0C template for eHCILL\n');
-                str_list.append(data_indent)
-                str_list.append('0x01, 0x0c, 0xfd, 9 , 1, 0, 0,  0xff, 0xff, 0xff, 0xff, 100, 0\n');
+                part_size += append_ehcill(additions, str_list, data_indent)
+
+            # append calibration step, if missing so far
+            all_power_commands_provided = have_power_vector_gfsk and have_power_vector_edr2 and have_power_vector_edr3 and have_class2_single_power
+            if not all_power_commands_provided:
+                str_list.append("\n" + data_indent + "// BTstack: no calibration sequence found, adding power commands and calibration\n\n")
+                part_size += append_power_vector_gfsk(additions, str_list, data_indent)
+                part_size += append_power_vector_edr2(additions, str_list, data_indent)
+                part_size += append_power_vector_edr2(additions, str_list, data_indent)
+                part_size += append_class2_single_power(additions, str_list, data_indent)
+                part_size += append_calibration_sequence(additions, str_list, data_indent)
 
             part_strings.append(''.join(str_list))
             part_sizes.append(part_size)
@@ -186,10 +225,6 @@ def convert_bts(bts_file):
 
             print "\n".join(additions)
 
-            # raise alaram if not all power commands have been incorporated
-            all_power_commands_provided = have_power_vector_gfsk and have_power_vector_edr2 and have_power_vector_edr3 and have_class2_single_power
-            if not all_power_commands_provided:
-                print "\nWARNING: init script doesn't contain a calibration sequence. Please report on the BTstack Dveloper mailing list\n"
 
             part = 0
             for part_text in part_strings:
