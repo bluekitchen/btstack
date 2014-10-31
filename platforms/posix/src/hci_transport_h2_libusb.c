@@ -104,7 +104,7 @@ static struct libusb_transfer *command_out_transfer;
 
 
 static uint8_t hci_event_in_buffer[ASYNC_BUFFERS][HCI_ACL_BUFFER_SIZE]; // bigger than largest packet
-static uint8_t hci_bulk_in_buffer[ASYNC_BUFFERS][HCI_ACL_BUFFER_SIZE];  // bigger than largest packet
+static uint8_t hci_bulk_in_buffer[ASYNC_BUFFERS][HCI_INCOMING_PRE_BUFFER_SIZE + HCI_ACL_BUFFER_SIZE]; 
 static uint8_t hci_control_buffer[3 + 256 + LIBUSB_CONTROL_SETUP_SIZE];
 
 // For (ab)use as a linked list of received packets
@@ -295,7 +295,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         // log_info("command done, size %u", transfer->actual_length);
         usb_command_active = 0;
 
-        // notify upper stack that iit might be possible to send again
+        // notify upper stack that it might be possible to send again
         uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0};
         packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
         
@@ -513,7 +513,7 @@ static int usb_open(void *transport_config){
  
         // configure bulk_in handlers
         libusb_fill_bulk_transfer(bulk_in_transfer[c], handle, acl_in_addr, 
-                hci_bulk_in_buffer[c], HCI_ACL_BUFFER_SIZE, async_callback, NULL, 0) ;
+                hci_bulk_in_buffer[c] + HCI_INCOMING_PRE_BUFFER_SIZE, HCI_ACL_BUFFER_SIZE, async_callback, NULL, 0) ;
  
         r = libusb_submit_transfer(bulk_in_transfer[c]);
         if (r) {

@@ -110,6 +110,10 @@ extern "C" {
 // additional pre-buffer space for packets to Bluetooth module, for now, used for HCI Transport H4 DMA
 #define HCI_OUTGOING_PRE_BUFFER_SIZE 1
 
+#ifndef HCI_INCOMING_PRE_BUFFER_SIZE
+#define HCI_INCOMING_PRE_BUFFER_SIZE 0
+#endif
+
 // OGFs
 #define OGF_LINK_CONTROL          0x01
 #define OGF_LINK_POLICY           0x02
