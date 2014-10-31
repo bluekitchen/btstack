@@ -106,7 +106,10 @@ extern "C" {
         #define HCI_PACKET_BUFFER_SIZE HCI_CMD_BUFFER_SIZE
     #endif
 #endif
-    
+
+// additional pre-buffer space for packets to Bluetooth module, for now, used for HCI Transport H4 DMA
+#define HCI_OUTGOING_PRE_BUFFER_SIZE 1
+
 // OGFs
 #define OGF_LINK_CONTROL          0x01
 #define OGF_LINK_POLICY           0x02
@@ -400,7 +403,8 @@ typedef struct {
     // list of existing baseband connections
     linked_list_t     connections;
 
-    // single buffer for HCI packet assembly
+    // single buffer for HCI packet assembly + additional prebuffer for H4 drivers
+    uint8_t   hci_packet_buffer_prefix[HCI_OUTGOING_PRE_BUFFER_SIZE];
     uint8_t   hci_packet_buffer[HCI_PACKET_BUFFER_SIZE]; // opcode (16), len(8)
     uint8_t   hci_packet_buffer_reserved;
     uint16_t  acl_fragmentation_pos;
