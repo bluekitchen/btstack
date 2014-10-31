@@ -525,8 +525,16 @@ void l2cap_run(void){
         uint8_t  sig_id = signaling_responses[0].sig_id;
         uint16_t infoType = signaling_responses[0].data;    // INFORMATION_REQUEST
         uint16_t result   = signaling_responses[0].data;    // CONNECTION_REQUEST, COMMAND_REJECT
+        uint8_t  response_code = signaling_responses[0].code;
 
-        switch (signaling_responses[0].code){
+        // remove first item before sending (to avoid sending response mutliple times)
+        signaling_responses_pending--;
+        int i;
+        for (i=0; i < signaling_responses_pending; i++){
+            memcpy(&signaling_responses[i], &signaling_responses[i+1], sizeof(l2cap_signaling_response_t));
+        }
+
+        switch (response_code){
             case CONNECTION_REQUEST:
                 l2cap_send_signaling_packet(handle, CONNECTION_RESPONSE, sig_id, 0, 0, result, 0);
                 // also disconnect if result is 0x0003 - security blocked
@@ -573,13 +581,6 @@ void l2cap_run(void){
             default:
                 // should not happen
                 break;
-        }
-        
-        // remove first item
-        signaling_responses_pending--;
-        int i;
-        for (i=0; i < signaling_responses_pending; i++){
-            memcpy(&signaling_responses[i], &signaling_responses[i+1], sizeof(l2cap_signaling_response_t));
         }
     }
     
@@ -773,7 +774,7 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
         l2cap_emit_channel_opened(&dummy_channel, BTSTACK_MEMORY_ALLOC_FAILED);
         return;
     }
-    // limit local mtu to max acl packet length
+    // limit local mtu to max acl packet length - l2cap header
     if (mtu > l2cap_max_mtu()) {
         mtu = l2cap_max_mtu();
     }
@@ -1082,7 +1083,7 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
     channel->remote_sig_id = sig_id; 
     channel->required_security_level = service->required_security_level;
 
-    // limit local mtu to max acl packet length
+    // limit local mtu to max acl packet length - l2cap header
     if (channel->local_mtu > l2cap_max_mtu()) {
         channel->local_mtu = l2cap_max_mtu();
     }
