@@ -1,5 +1,6 @@
+
 /*
- * Copyright (C) 2009-2012 by Matthias Ringwald
+ * Copyright (C) 2009 by BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -17,7 +18,7 @@
  *    personal benefit and not for any commercial purpose or for
  *    monetary gain.
  *
- * THIS SOFTWARE IS PROVIDED BY MATTHIAS RINGWALD AND CONTRIBUTORS
+ * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
@@ -30,9 +31,12 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at btstack@ringwald.ch
+ * Please inquire about commercial licensing options at 
+ * contact@bluekitchen-gmbh.com
  *
  */
+
+
 
 /*
  *  btstsack_memory.h
@@ -62,14 +66,17 @@ extern "C" {
 
 void btstack_memory_init(void);
 
+// hci_connection
 hci_connection_t * btstack_memory_hci_connection_get(void);
 void   btstack_memory_hci_connection_free(hci_connection_t *hci_connection);
-    
+
+// l2cap_service, l2cap_channel
 l2cap_service_t * btstack_memory_l2cap_service_get(void);
 void   btstack_memory_l2cap_service_free(l2cap_service_t *l2cap_service);
 l2cap_channel_t * btstack_memory_l2cap_channel_get(void);
 void   btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel);
 
+// rfcomm_multiplexer, rfcomm_service, rfcomm_channel
 rfcomm_multiplexer_t * btstack_memory_rfcomm_multiplexer_get(void);
 void   btstack_memory_rfcomm_multiplexer_free(rfcomm_multiplexer_t *rfcomm_multiplexer);
 rfcomm_service_t * btstack_memory_rfcomm_service_get(void);
@@ -77,21 +84,26 @@ void   btstack_memory_rfcomm_service_free(rfcomm_service_t *rfcomm_service);
 rfcomm_channel_t * btstack_memory_rfcomm_channel_get(void);
 void   btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel);
 
-bnep_service_t * btstack_memory_bnep_service_get(void);
-void   btstack_memory_bnep_service_free(bnep_service_t *bnep_service);
-bnep_channel_t * btstack_memory_bnep_channel_get(void);
-void   btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel);    
-
+// db_mem_device_name, db_mem_device_link_key, db_mem_service
 db_mem_device_name_t * btstack_memory_db_mem_device_name_get(void);
 void   btstack_memory_db_mem_device_name_free(db_mem_device_name_t *db_mem_device_name);
 db_mem_device_link_key_t * btstack_memory_db_mem_device_link_key_get(void);
 void   btstack_memory_db_mem_device_link_key_free(db_mem_device_link_key_t *db_mem_device_link_key);
 db_mem_service_t * btstack_memory_db_mem_service_get(void);
 void   btstack_memory_db_mem_service_free(db_mem_service_t *db_mem_service);
-    
+
+// bnep_service, bnep_channel
+bnep_service_t * btstack_memory_bnep_service_get(void);
+void   btstack_memory_bnep_service_free(bnep_service_t *bnep_service);
+bnep_channel_t * btstack_memory_bnep_channel_get(void);
+void   btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel);
+
 #ifdef HAVE_BLE
+// gatt_client, gatt_subclient
 gatt_client_t * btstack_memory_gatt_client_get(void);
 void   btstack_memory_gatt_client_free(gatt_client_t *gatt_client);
+gatt_subclient_t * btstack_memory_gatt_subclient_get(void);
+void   btstack_memory_gatt_subclient_free(gatt_subclient_t *gatt_subclient);
 #endif
 
 #if defined __cplusplus
@@ -99,3 +111,4 @@ void   btstack_memory_gatt_client_free(gatt_client_t *gatt_client);
 #endif
 
 #endif // __BTSTACK_MEMORY_H
+
