@@ -87,7 +87,7 @@ typedef enum {
 static bd_addr_t cmdline_addr = { };
 static int cmdline_addr_found = 0;
 
-uint16_t gc_handle;
+uint16_t gc_id, gc_handle;
 static le_service_t services[40];
 static int service_count = 0;
 static int service_index = 0;
@@ -138,7 +138,7 @@ void handle_gatt_client_event(le_event_t * event){
                     printf("\ntest client - CHARACTERISTIC for SERVICE ");
                     printUUID128(service.uuid128); printf("\n");
                     
-                    gatt_client_discover_characteristics_for_service(gc_handle, &services[service_index]);
+                    gatt_client_discover_characteristics_for_service(gc_id, gc_handle, &services[service_index]);
                     break;
                 default:
                     break;
@@ -159,7 +159,7 @@ void handle_gatt_client_event(le_event_t * event){
                         printUUID128(service.uuid128);
                         printf(", [0x%04x-0x%04x]\n", service.start_group_handle, service.end_group_handle);
                         
-                        gatt_client_discover_characteristics_for_service(gc_handle, &service);
+                        gatt_client_discover_characteristics_for_service(gc_id, gc_handle, &service);
                         break;
                     }
                     state = TC_W4_DISCONNECT;
@@ -217,9 +217,9 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
             if (state != TC_W4_SCAN_RESULT) return;
             fill_advertising_report_from_packet(&report, packet);
             // stop scanning, and connect to the device
-            // state = TC_W4_CONNECT;
-            //le_central_stop_scan();
-            //le_central_connect(&report.address,report.address_type);
+            state = TC_W4_CONNECT;
+            le_central_stop_scan();
+            le_central_connect(&report.address,report.address_type);
             break;
         case HCI_EVENT_LE_META:
             // wait for connection complete
@@ -228,7 +228,7 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
             gc_handle = READ_BT_16(packet, 4);
             // query primary services
             state = TC_W4_SERVICE_RESULT;
-            gatt_client_discover_primary_services(gc_handle);
+            gatt_client_discover_primary_services(gc_id, gc_handle);
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             printf("\ntest client - DISCONNECTED\n");
@@ -246,7 +246,7 @@ void setup(void){
     run_loop_init(RUN_LOOP_POSIX);
         
     // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-    hci_dump_open("/tmp/gatt_browser.pklg", HCI_DUMP_PACKETLOGGER);
+    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
   // init HCI
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
@@ -267,7 +267,7 @@ void setup(void){
     l2cap_register_packet_handler(&handle_hci_event);
 
     gatt_client_init();
-    gatt_client_register_packet_handler(&handle_gatt_client_event);
+    gc_id = gatt_client_register_packet_handler(&handle_gatt_client_event);
 
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);

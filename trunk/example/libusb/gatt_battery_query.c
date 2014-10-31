@@ -86,7 +86,7 @@ typedef enum {
 static bd_addr_t cmdline_addr = { };
 static int cmdline_addr_found = 0;
 
-uint16_t gc_handle;
+uint16_t gc_id, gc_handle;
 static uint16_t battery_service_uuid = 0x180F;
 static uint16_t battery_level_characteristic_uuid = 0x2a19;
 static le_service_t battery_service;
@@ -148,9 +148,15 @@ void handle_gatt_client_event(le_event_t * event){
                     dump_service(&battery_service);
                     break;
                 case GATT_QUERY_COMPLETE:
+                    if (!((gatt_complete_event_t *) event)->status){
+                        printf("Battery service not found. Restart scan.\n");
+                        state = TC_W4_SCAN_RESULT;
+                        le_central_start_scan();
+                        break;  
+                    } 
                     state = TC_W4_CHARACTERISTIC_RESULT;
                     printf("\nSearch for battery level characteristic in battery service. ");
-                    gatt_client_discover_characteristics_for_service_by_uuid16(gc_handle, &battery_service, battery_level_characteristic_uuid);
+                    gatt_client_discover_characteristics_for_service_by_uuid16(gc_id, gc_handle, &battery_service, battery_level_characteristic_uuid);
                     break;
                 default:
                     break;
@@ -167,7 +173,7 @@ void handle_gatt_client_event(le_event_t * event){
                 case GATT_QUERY_COMPLETE:
                     state = TC_W4_BATTERY_DATA;
                     printf("\nConfigure battery level characteristic for notify.");
-                    gatt_client_write_client_characteristic_configuration(gc_handle, &config_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
+                    gatt_client_write_client_characteristic_configuration(gc_id, gc_handle, &config_characteristic, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION);
                     break;
                 default:
                     break;
@@ -219,7 +225,7 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
             // BTstack activated, get started
             if (packet[2] != HCI_STATE_WORKING) break;
             if (cmdline_addr_found){
-                printf("Trying to connect to %s\n", bd_addr_to_str(cmdline_addr));
+                printf("Start connect to %s\n", bd_addr_to_str(cmdline_addr));
                 state = TC_W4_CONNECT;
                 le_central_connect(&cmdline_addr, 0);
                 break;
@@ -247,7 +253,7 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
             // query primary services
             printf("\nSearch for battery service. ");
             state = TC_W4_SERVICE_RESULT;
-            gatt_client_discover_primary_services_by_uuid16(gc_handle, battery_service_uuid);
+            gatt_client_discover_primary_services_by_uuid16(gc_id, gc_handle, battery_service_uuid);
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             printf("\nDISCONNECTED\n");
@@ -286,7 +292,7 @@ void setup(void){
     l2cap_register_packet_handler(&handle_hci_event);
 
     gatt_client_init();
-    gatt_client_register_packet_handler(&handle_gatt_client_event);
+    gc_id = gatt_client_register_packet_handler(&handle_gatt_client_event);
 
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
