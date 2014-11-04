@@ -12,6 +12,7 @@ POSIX_ROOT=$(BTSTACK_ROOT)/platforms/posix
 LIBRARY_NAME = libBTstack
 libBTstack_FILES = \
 	hci_cmds.c \
+	hci_dump.c \
 	linked_list.c \
 	run_loop.c \
 	sdp_util.c \
@@ -28,7 +29,6 @@ BTdaemon_FILES = \
 	$(libBTstack_FILES)  	\
 	btstack_memory.c        \
 	hci.c                   \
-	hci_dump.c              \
 	l2cap.c                 \
 	l2cap_signaling.c       \
 	memory_pool.c           \
