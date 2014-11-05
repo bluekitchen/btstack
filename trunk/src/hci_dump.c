@@ -52,12 +52,12 @@
 #include "hci.h"
 #include "hci_transport.h"
 #include <btstack/hci_cmds.h>
+#include <stdio.h>
 
 #ifndef EMBEDDED
 #include <fcntl.h>        // open
 #include <arpa/inet.h>    // hton..
 #include <unistd.h>       // write 
-#include <stdio.h>
 #include <time.h>
 #include <sys/time.h>     // for timestamps
 #include <sys/stat.h>     // for mode flags
@@ -90,8 +90,8 @@ __attribute__ ((packed))
 #endif
 pktlog_hdr;
 
-#ifndef EMBEDDED
 static int dump_file = -1;
+#ifndef EMBEDDED
 static int dump_format;
 static hcidump_hdr header_bluez;
 static pktlog_hdr  header_packetlogger;
@@ -102,7 +102,9 @@ static char log_message_buffer[256];
 #endif
 
 void hci_dump_open(const char *filename, hci_dump_format_t format){
-#ifndef EMBEDDED
+#ifdef EMBEDDED
+    dump_file = 1;
+#else
     dump_format = format;
     if (dump_format == HCI_DUMP_STDOUT) {
         dump_file = fileno(stdout);
@@ -118,11 +120,37 @@ void hci_dump_set_max_packets(int packets){
 }
 #endif
 
+static inline void printf_packet(uint8_t packet_type, uint8_t in, uint8_t * packet, uint16_t len){
+    switch (packet_type){
+        case HCI_COMMAND_DATA_PACKET:
+            printf("CMD => ");
+            break;
+        case HCI_EVENT_PACKET:
+            printf("EVT <= ");
+            break;
+        case HCI_ACL_DATA_PACKET:
+            if (in) {
+                printf("ACL <= ");
+            } else {
+                printf("ACL => ");
+            }
+            break;
+        case LOG_MESSAGE_PACKET:
+            printf("LOG -- %s\n", (char*) packet);
+            return;
+        default:
+            return;
+    }
+    printf_hexdump(packet, len);  
+}
+
 void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len) {
-#ifndef EMBEDDED
 
     if (dump_file < 0) return; // not activated yet
 
+#ifdef EMBEDDED
+    printf_packet(packet_type, in, packet, len);
+#else
     // don't grow bigger than max_nr_packets
     if (dump_format != HCI_DUMP_STDOUT && max_nr_packets > 0){
         if (nr_packets >= max_nr_packets){
@@ -149,29 +177,7 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
             /* Print the formatted time, in seconds, followed by a decimal point
              and the milliseconds. */
             printf ("%s.%03u] ", time_string, milliseconds);
-            switch (packet_type){
-                case HCI_COMMAND_DATA_PACKET:
-                    printf("CMD => ");
-                    break;
-                case HCI_EVENT_PACKET:
-                    printf("EVT <= ");
-                    break;
-                case HCI_ACL_DATA_PACKET:
-                    if (in) {
-                        printf("ACL <= ");
-                    } else {
-                        printf("ACL => ");
-                    }
-                    break;
-                case LOG_MESSAGE_PACKET:
-                    // assume buffer is big enough
-                    packet[len] = 0;
-                    printf("LOG -- %s\n", (char*) packet);
-                    return;
-                default:
-                    return;
-            }
-            printf_hexdump(packet, len);
+            printf_packet(packet_type, in, packet, len);
             break;
         }
             
