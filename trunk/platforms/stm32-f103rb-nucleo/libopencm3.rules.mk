@@ -47,9 +47,9 @@ STYLECHECKFILES	:= $(shell find . -name '*.[ch]')
 ###############################################################################
 # Source files
 
-LDSCRIPT	?= $(BINARY).ld
+# LDSCRIPT	?= $(BINARY).ld
 
-OBJS		+= $(BINARY).o
+# OBJS		+= $(BINARY).o
 
 
 ifeq ($(strip $(OPENCM3_DIR)),)
@@ -123,13 +123,13 @@ LDLIBS		+= -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group
 .SECONDEXPANSION:
 .SECONDARY:
 
-all: elf
-
-elf: $(BINARY).elf
-bin: $(BINARY).bin
-hex: $(BINARY).hex
-srec: $(BINARY).srec
-list: $(BINARY).list
+# all: elf
+# 
+# elf: $(BINARY).elf
+# bin: $(BINARY).bin
+# hex: $(BINARY).hex
+# srec: $(BINARY).srec
+# list: $(BINARY).list
 
 images: $(BINARY).images
 flash: $(BINARY).flash
@@ -153,9 +153,9 @@ flash: $(BINARY).flash
 	@#printf "  OBJDUMP $(*).list\n"
 	$(Q)$(OBJDUMP) -S $(*).elf > $(*).list
 
-%.elf %.map: $(OBJS) $(LDSCRIPT) $(LIB_DIR)/lib$(LIBNAME).a
+%.elf %.map: $(OBJS) %.o $(LDSCRIPT) $(LIB_DIR)/lib$(LIBNAME).a
 	@#printf "  LD      $(*).elf\n"
-	$(Q)$(LD) $(LDFLAGS) $(ARCH_FLAGS) $(OBJS) $(LDLIBS) -o $(*).elf
+	$(Q)$(LD) $(LDFLAGS) $(ARCH_FLAGS) $(OBJS) $(*).o $(LDLIBS) -o $(*).elf
 
 %.o: %.c
 	@#printf "  CC      $(*).c\n"
