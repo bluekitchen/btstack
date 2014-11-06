@@ -3,11 +3,12 @@
 #
 
 # BINARY=led_counter
-# BINARY=spp_and_le_counter
+BINARY=spp_and_le_counter
 OPENCM3_DIR = libopencm3
 LDSCRIPT = stm32f1-nucleo.ld
 
 BTSTACK_ROOT = ../..
+VPATH = $(BTSTACK_ROOT)/example/embedded
 
 CORE   = \
 	main.c 										  \
