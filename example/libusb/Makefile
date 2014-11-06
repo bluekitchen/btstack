@@ -9,8 +9,10 @@ CFLAGS += -I${BTSTACK_ROOT}/include
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}
 
-CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
-LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
+# CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
+# LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
+CFLAGS += -I/usr/local/include/libusb-1.0
+LDFLAGS += -L/usr/local/lib -lusb-1.0
 
 CORE   = \
     ${BTSTACK_ROOT}/src/btstack_memory.c            \
