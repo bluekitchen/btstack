@@ -168,51 +168,11 @@ L2CAP relies on ACL flow control between sender and receiver. If there are no fr
 \subsection{Statically bounded memory}
 BTstack has to keep track of services and active connections on the various protocol layers. The number of maximum connections/channels/services can be configured. In addition, the non-persistent database for remote device names and link keys needs memory and can be be configured, too. These numbers determine the amount of static memory allocation.
 
-\section{How to use BTstack}
 
+\section{How to use BTstack}
 BTstack implements a set of basic Bluetooth protocols. To make use of these to connect to other devices or to provide own services, BTstack has to be properly configured during application startup. 
 
-In the following, we provide an overview of the provided protocols and services, as well as of the memory management and the run loop, that are necessary to setup BTstack. From the point when the run loop is executed, the application runs as a finite state machine, which processes events received from BTstack. BTstack groups events logically and provides them over packet handlers, of which an overview is provided here. Finally, we describe the RFCOMM credit-based flow-control, which may be necessary for resource-constraint devices. Complete examples for the MSP430 platforms will be presented in Chapter \ref{examples}. 
-
-\begin{figure}[htbp] %  figure placement: here, top, bottom, or page
-   \centering
-   \includegraphics[width=0.7\textwidth]{picts/btstack-protocols.pdf} 
-   \caption{BTstack Protocol Architecture}
-   \label{fig:BTstackProtocolArchitecture}
-\end{figure}
-
-\subsection{Protocols, profiles and services}
-
-\toread{BTstack implements following Bluetooh protocols: HCI, SMP, L2CAP, L2CAP-LE, RFCOMM, SDP, and ATT, as well as two profiles: GATT and SPP, see Figure \ref{fig:BTstackProtocolArchitecture}. 
-The Host Controller Interface (HCI) provides a command interface to the Bluetooth chipset. 
-The Security Manager Protocol (SMP) allows to setup authenticated and encrypted connection.
-The Service Discovery Protocol (SDP) allows to discover services provided by a Bluetooth device. 
-The Logical Link Control and Adaptation Protocol (L2CAP) supports higher level protocol multiplexing % packet segmentation
-The Radio frequency communication (RFCOMM) protocol provides emulation of serial ports over the L2CAP protocol.
-and reassembly. 
-The L2CAP Low Energy (LE) variant is optimized for connectionless data used by Bluetooth Low Energy devices. It is the base for the Attribute Protocol (ATT) of Bluetooth LE, which defines how to discover, read, and write attributes on a peer device. % , and the conveying of quality of service information. - L2CAP _can_ do this, but BTstack does not
-The Generic Attribute Profile (GATT) is a service that uses the ATT for discovering services, and for reading and writing characteristic values on a peer device. 
-The Serial Port Profile (SPP) defines how to set up virtual serial ports and connect two Bluetooth enabled devices. }
-
-% BTstack's API for HCI, L2CAP, RFCOMM, SM and SDP is provided in Appendix.
-
-One important construct of BTstack is \emph{service}. A service represents a server side component that handles incoming connections. So far, BTstack provides L2CAP and RFCOMM services. An L2CAP service handles incoming connections for an L2CAP channel and is registered with its protocol service multiplexer ID (PSM). Similarly,  an RFCOMM service handles incoming RFCOMM connections and is registered with the RFCOMM channel ID. Outgoing connections require no special registration, they are created by the application when needed. 
-
-\noindent\begin{minipage}{\textwidth}
-\begin{lstlisting}[caption=Memory configuration for an SPP service with a minimal L2CAP MTU., label=memoryConfigurationSPP]
-#define HCI_ACL_PAYLOAD_SIZE 52
-#define MAX_SPP_CONNECTIONS 1
-#define MAX_NO_HCI_CONNECTIONS MAX_SPP_CONNECTIONS
-#define MAX_NO_L2CAP_SERVICES  2
-#define MAX_NO_L2CAP_CHANNELS  (1+MAX_SPP_CONNECTIONS)
-#define MAX_NO_RFCOMM_MULTIPLEXERS MAX_SPP_CONNECTIONS
-#define MAX_NO_RFCOMM_SERVICES 1
-#define MAX_NO_RFCOMM_CHANNELS MAX_SPP_CONNECTIONS
-#define MAX_NO_DB_MEM_DEVICE_NAMES  0
-#define MAX_NO_DB_MEM_LINK_KEYS  3
-#define MAX_NO_DB_MEM_SERVICES 1
-\end{lstlisting}
-\end{minipage}
+In the following, we provide an overview of the memory management, the run loop, and services that are necessary to setup BTstack. From the point when the run loop is executed, the application runs as a finite state machine, which processes events received from BTstack. BTstack groups events logically and provides them over packet handlers, of which an overview is provided here. Finally, we describe the RFCOMM credit-based flow-control, which may be necessary for resource-constraint devices. Complete examples for the MSP430 platforms will be presented in Chapter \ref{examples}. 
 
 \subsection{Memory configuration}
 \label{section:memory_configuration}
@@ -301,7 +261,27 @@ hci_init(transport, config, control, remote_db);
 \end{lstlisting}
 
 The higher layers only rely on BTstack and are initialized by calling the respective \emph{*\_init} function. These init functions register themselves with the underlying layer. In addition, the application can register packet handlers to get events and data as explained in the following section.
-   
+
+
+\subsection{Services}
+One important construct of BTstack is \emph{service}. A service represents a server side component that handles incoming connections. So far, BTstack provides L2CAP and RFCOMM services. An L2CAP service handles incoming connections for an L2CAP channel and is registered with its protocol service multiplexer ID (PSM). Similarly,  an RFCOMM service handles incoming RFCOMM connections and is registered with the RFCOMM channel ID. Outgoing connections require no special registration, they are created by the application when needed. 
+
+\noindent\begin{minipage}{\textwidth}
+\begin{lstlisting}[caption=Memory configuration for an SPP service with a minimal L2CAP MTU., label=memoryConfigurationSPP]
+#define HCI_ACL_PAYLOAD_SIZE 52
+#define MAX_SPP_CONNECTIONS 1
+#define MAX_NO_HCI_CONNECTIONS MAX_SPP_CONNECTIONS
+#define MAX_NO_L2CAP_SERVICES  2
+#define MAX_NO_L2CAP_CHANNELS  (1+MAX_SPP_CONNECTIONS)
+#define MAX_NO_RFCOMM_MULTIPLEXERS MAX_SPP_CONNECTIONS
+#define MAX_NO_RFCOMM_SERVICES 1
+#define MAX_NO_RFCOMM_CHANNELS MAX_SPP_CONNECTIONS
+#define MAX_NO_DB_MEM_DEVICE_NAMES  0
+#define MAX_NO_DB_MEM_LINK_KEYS  3
+#define MAX_NO_DB_MEM_SERVICES 1
+\end{lstlisting}
+\end{minipage}
+
 \subsection{Where to get data - packet handlers}
 \label{section:packetHandlers}
 
@@ -340,17 +320,11 @@ The application can register a single shared packet handler for all protocols an
 
 Separate packet handlers can be used for each L2CAP service and outgoing connection. For example, to connect with a Bluetooth HID keyboard, your application could use three packet handlers: one to handle HCI events during discovery of a keyboard registered by \emph{l2cap\_register\_packet\_handler}; one that will be registered to an outgoing L2CAP channel to connect to keyboard and to receive keyboard data registered by \emph{l2cap\_create\_channel\_internal}; after that keyboard can reconnect by itself. For this, you need to register L2CAP services for the HID Control and HID Interrupt PSMs using \emph{l2cap\_register\_service\_internal}. In this call, you'll also specify a packet handler to accept and receive keyboard data. 
 
-\subsection{RFCOMM flow control}
-\label{section:flowcontrol}
-RFCOMM has a mandatory credit-based flow-control. This means that two devices that established RFCOMM connection, use credits to keep track of how many more RFCOMM data packets can be sent to each. If a device has no (outgoing) credits left, it cannot send another RFCOMM packet, the transmission must be paused. During the connection establishment, initial credits are provided. BTstack tracks the number of credits in both directions. If no outgoing credits are available, the RFCOMM send function will return an error, and you can try later. For incoming data, BTstack provides channels and services with and without automatic credit management via different functions to create/register them respectively. If the management of credits is automatic, the new credits are provided when needed relying on ACL flow control - this is only useful if there is not much data transmitted and/or only one physical connection is used. If the management of credits is manual, credits are provided by the application such that it can manage its receive buffers explicitly. 
-
-\subsection{RFCOMM configuration - TODO}
-\todo{Add here}
-
-
 \newcommand{\BluetoothSpecification}{\urlfoot{https://www.bluetooth.org/Technical/Specifications/adopted.htm}{Bluetooth Specification}}
 \newcommand{\BluetoothSpecificationURL}{\href{https://www.bluetooth.org/Technical/Specifications/adopted.htm}{\color{blue} Bluetooth Specification}}
 
+\input{protocols_profiles}
+%\input{client_server}
 
 \section{Quick Recipes}
 
@@ -978,6 +952,12 @@ int main(void){
 
 \end{lstlisting}
 
+\section{Supported Protocols and Profiles}
+\subsection{HCI}
+\subsection{L2CAP}
+\subsection{RFCOMM}
+
+
 
 \section{Examples}
 \label{examples}
@@ -1415,7 +1395,7 @@ typedef enum {
 } gc_state_t;
 
 gc_state_t state = TC_IDLE;
-gatt_client_t gc_context;
+uint16_t gc_id;
 
 // Handles connect, disconnect, and advertising report events,  
 // starts the GATT client, and sends the first query.
@@ -1434,7 +1414,7 @@ void setup(void){
   // Initialize GATT client and register handler for GATT client
   // events
   gatt_client_init();
-  gatt_client_register_packet_handler(&handle_gatt_client_event);
+  gc_id = gatt_client_register_packet_handler(&handle_gatt_client_event);  
   
   // Optionally, setup security manager for signed writes or 
   // encrypted or authenticated connection
@@ -1455,44 +1435,49 @@ Query results and further queries are handled by the gatt client packet handler,
 
 \begin{lstlisting}[caption= Advertising report handling., label=code:gattBrowserHCIPacketHandler]
 void handle_hci_event(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-  advertising_report_t report;
-  uint16_t gc_handle;
-  uint8_t event = packet[0];
-  
-  switch (event) {
-    case BTSTACK_EVENT_STATE:
-      if (packet[2] != HCI_STATE_WORKING) break;
-      // BTstack activated, start scanning
-      state = TC_W4_SCAN_RESULT;
-      le_central_start_scan(); 
-      break;
-    case GAP_LE_ADVERTISING_REPORT:
-      if (state != TC_W4_SCAN_RESULT) return;
-      state = TC_W4_CONNECT;
-      fill_advertising_report_from_packet(&report, packet);
-      // stop scanning, and connect to the device
-      le_central_stop_scan();
-      le_central_connect(&report.address,report.address_type);
-      break;
-    case HCI_EVENT_LE_META:
-      // wait for connection complete
-      if (packet[2] !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
-      if (state != TC_W4_CONNECT) return;
-      gc_handle = READ_BT_16(packet, 4);
-      // initialize gatt client context with handle, and add it to the list of active clients
-      gatt_client_start(&gc_context, gc_handle);
-      // query primary services
-      state = TC_W4_SERVICE_RESULT;
-      gatt_client_discover_primary_services(&gc_context);
-      break;
-    case HCI_EVENT_DISCONNECTION_COMPLETE:
-      // disconnect gatt client 
-      gatt_client_stop(&gc_context);
-      exit(0);
-      break;
-    default:
-      break;
-  }
+    if (packet_type != HCI_EVENT_PACKET) return;
+    advertising_report_t report;
+    
+    uint8_t event = packet[0];
+    switch (event) {
+        case BTSTACK_EVENT_STATE:
+            // BTstack activated, get started
+            if (packet[2] != HCI_STATE_WORKING) break;
+            if (cmdline_addr_found){
+                printf("Trying to connect to %s\n", bd_addr_to_str(cmdline_addr));
+                state = TC_W4_CONNECT;
+                le_central_connect(&cmdline_addr, 0);
+                break;
+            }
+            printf("BTstack activated, start scanning!\n");
+            state = TC_W4_SCAN_RESULT;
+            le_central_set_scan_parameters(0,0x0030, 0x0030);
+            le_central_start_scan();
+            break;
+        case GAP_LE_ADVERTISING_REPORT:
+            if (state != TC_W4_SCAN_RESULT) return;
+            fill_advertising_report_from_packet(&report, packet);
+            // stop scanning, and connect to the device
+            state = TC_W4_CONNECT;
+            le_central_stop_scan();
+            le_central_connect(&report.address,report.address_type);
+            break;
+        case HCI_EVENT_LE_META:
+            // wait for connection complete
+            if (packet[2] !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+            if (state != TC_W4_CONNECT) return;
+            gc_handle = READ_BT_16(packet, 4);
+            // query primary services
+            state = TC_W4_SERVICE_RESULT;
+            gatt_client_discover_primary_services(gc_id, gc_handle);
+            break;
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            printf("DISCONNECTED\n");
+            exit(0);
+            break;
+        default:
+            break;
+    }
 }
 \end{lstlisting}
 
@@ -1527,40 +1512,57 @@ void fill_advertising_report_from_packet(advertising_report_t * report, uint8_t 
 
 
 \begin{lstlisting}[caption=GATT client queries handling., label=code:gattBrowserQueryHandler]
-le_service_t service;
-le_characteristic_t characteristic;
-  
 void handle_gatt_client_event(le_event_t * event){
-  switch(state){
-    case TC_W4_SERVICE_RESULT:
-      switch(event->type){
-        case GATT_SERVICE_QUERY_RESULT:
-          service = ((le_service_event_t *) event)->service;
-          break;
-        case GATT_QUERY_COMPLETE:
-          state = TC_W4_CHARACTERISTIC_RESULT;
-          gatt_client_discover_characteristics_for_service(&gc_context, &service);
-          break;
+    le_service_t service;
+    le_characteristic_t characteristic;
+    switch(state){
+        case TC_W4_SERVICE_RESULT:
+            switch(event->type){
+                case GATT_SERVICE_QUERY_RESULT:
+                    service = ((le_service_event_t *) event)->service;
+                    dump_service(&service);
+                    services[service_count++] = service;
+                    break;
+                case GATT_QUERY_COMPLETE:
+                    state = TC_W4_CHARACTERISTIC_RESULT;
+                    service_index = 0;
+                    printf("\nCHARACTERISTIC for SERVICE ");
+                    printUUID128(service.uuid128); printf("\n");
+                    
+                    gatt_client_discover_characteristics_for_service(gc_id, gc_handle, &services[service_index]);
+                    break;
+                default:
+                    break;
+            }
+            break;
+            
+        case TC_W4_CHARACTERISTIC_RESULT:
+            switch(event->type){
+                case GATT_CHARACTERISTIC_QUERY_RESULT:
+                    characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    dump_characteristic(&characteristic);
+                    break;
+                case GATT_QUERY_COMPLETE:
+                    if (service_index < service_count) {
+                        state = TC_W4_CHARACTERISTIC_RESULT;
+                        service = services[service_index++];
+                        printf("\nCHARACTERISTIC for SERVICE ");
+                        printUUID128(service.uuid128);
+                        printf(", [0x%04x-0x%04x]\n", service.start_group_handle, service.end_group_handle);
+                        gatt_client_discover_characteristics_for_service(gc_id, gc_handle, &service);
+                        break;
+                    }
+                    state = TC_W4_DISCONNECT;
+                    service_index = 0;
+                    gap_disconnect(gc_handle);
+                    break;
+                default:
+                    break;
+            }
+            break;
         default:
-          break;
-      }
-      break;
-    case TC_W4_CHARACTERISTIC_RESULT:
-      switch(event->type){
-        case GATT_CHARACTERISTIC_QUERY_RESULT:
-          characteristic = ((le_characteristic_event_t *) event)->characteristic;
-          break;
-        case GATT_QUERY_COMPLETE:
-          state = TC_W4_DISCONNECT;
-          gap_disconnect(gc_context.handle);
-          break;
-        default:
-          break;
-      }
-      break;
-    default:
-      break;
-  }
+            break;
+    }
 }
 \end{lstlisting}
 
@@ -1699,71 +1701,6 @@ When using BTstack in a multi-threaded environment,  this assumption has to stay
 \item BTstack must be extended to run standalone, i.e, as a Daemon, on a dedicated thread and the Main Application controls this daemon via BTstack extended HCI command over IPC - this is used for the non-embedded version of BTstack e.g., on the iPhone and it is depicted in Figure \ref{fig:BTstackDaemon}. This option requires more code but provides more flexibility.
 \end{itemize}
 
-
-\pagebreak
-
-\section{Generic Access Profile for Low Energy- GAP}
-The Generic Access Profile (GAP) defines how to discover and how to connect to a Bluetooth device. There are several GAP roles that a Bluetooth device can take, but the most important ones are the Central and the Peripheral role. Peripheral devices are those that provide information or can be controlled and central devices are those that consume information or control the peripherals. Before the connection can be established, devices are first going through the advertising process. What happens with the peripheral device after the central device connect to a it, depends on the peripheral's Bluetooth controller. The peripheral will either stop advertising itself and other devices will no longer be able to see it or connect to it until the existing connection is broken, or it will be able to continue with advertising so that the parallel connections can be established.
-
-\subsection{GAP BLE Roles}
-There are four GAP roles defined for a Bluetooth low energy device: Broadcaster, Observer, Peripheral and Central. A device may operate in multiple GAP roles concurrently.
-
-\subsubsection{GAP Broadcaster Role}
-A broadcast device only sends advertisements and cannot be connected. It can emit some useful data as part of the advertisement. The most prominent use for this is Apple's iBeacon technology which uses broadcast devices to emit a unique ID. Apple's iOS framework then help to map this ID onto a specific location, e.g., in a museum.
-Broadcasting is efficient as no connection and no ATT database are needed. To control energy consumption the broadcast interval can be configured. An advertisement can contain up to 31 bytes of information. In addition, another 31 bytes of information can be sent in the scan response.
-
-\subsubsection{GAP Observer Role}
-An observer device only receives advertising events and cannot be connected. 
-
-\subsubsection{GAP Central Role} The role of the central device is to scan for peripherals, connect to them, and discover and receive data from them or sends data to control them. During scanning the central device can retrieve information on other device such are its name and unique number, as well as some broadcast data from its services. Upon connection, the central explores the device by discovering its primary and included services, characteristics, and characteristic descriptors.
-
-\subsubsection{GAP Peripheral Role} The role of a peripheral device is to deliver information on their inputs, i.e. sensor values, battery level, current time, to the applications running on central devices. It can also receive a write request from a central device and control connected actors, e.g. turn on and set the color of the light.
-Peripherals can broadcast data, they can be discovered and connected to by a central device, they can stay also disconnected and then establish connection when needed. 
-
-\subsection{Advertising and Scan Response Data}
-There are two ways to send advertising out with GAP: The Advertising Data payload and the Scan Response payload. Both payloads are identical and can contain up to 31 bytes of data, but only the advertising data payload is mandatory. The scan response payload is an optional secondary payload that central devices can request.
-
-
-\section{Generic Attribute Profile - GATT}
-The Generic Attribute Profile (GATT) is a profile that uses the ATT for discovering services, and for reading and writing characteristic values on a peer device. GATT also specifies the format of data contained on the GATT server: it groups ATT attributes into Services and Characteristics, and defines set of queries the GATT Client can use to discover services, characteristics.
-
-\subsection{GATT BLE Roles}
-\subsubsection{GATT Server Role}
-The GATT server stores the data and accepts GATT client requests, commands and confirmations. The GATT server sends responses to requests and when configured, sends indication and notifications asynchronously to the GATT client. 
-
-\subsubsection{GATT Client Role}
-The GATT Client discovers ...
-
-% 
-
-\subsection{Attribute Database - GATT-based Profile Hierarchy}
-Attributes, as transported by the Attribute Protocol, are formatted as services and characteristics. Services may contain a collection of characteristics. Characteristics contain a single value and any number of descriptors describing the characteristic value. The peripheral device server (ATT server) provides a set of attributes that are stored in a simple lookup database. GATT formats these attributes as services and characteristics. Services may contain a collection of characteristics. Characteristics contain a single value and any number of descriptors describing the characteristic value. A service starts with a service declaration attribute defining its type, i.e. primary or secondary. It is followed by the included services and characteristics. By means of including services, the service can incorporate more complex behavior, and still keep the definition small. A characteristic is assigned to a single value that can be accessed. It is composed of three basic elements: declaration, value and descriptors. The characteristic declaration defines how the data can be accessed. A characteristic descriptor is used to capture the additional properties, e.g., to configure if the characteristic value should be reported upon its change. Together, characteristic declaration and the descriptors define types of action that can be performed on characteristic value.
-
-The security that is required to access a service or a characteristic is defined in ATT database along with service/characteristic declaration. The GATT Server usually does not initiate any security request, but it can. 
-
-
-\section{Bluetooth Low Energy - BLE}
-Bluetooth Low Energy (BLE) is a Bluetooth technology used for discovering services and optimized for low power consumption - you don't get high data rates, and usually don't keep connection for long periods. The focus is on two different device roles:  devices that provide services and/or can be controlled and devices that consume services and/or control other devices. Devices are first going through the advertising process that is governed by the Generic Access Profile (GAP). Once the connection is established, the communication will be governed by the Generic Attribute Profile (GATT). Both profiles, GAP and GATT, have concepts that describe these two BLE roles:  GAP defines Peripheral and Central, and GATT defines Server and Client role respectively. The GATT roles are not necessarily tied to specific GAP roles and may be specified by higher layer profiles. GATT is built on top of the Attribute Protocol (ATT), which defines how to discover, read, and write attributes on a peer device. In addition, BLE uses two more BT protocols: SMP for for pairing and transport specific key distribution and L2CAP LE variant optimized for connectionless data used by Bluetooth Low Energy devices. 
-
-
-\subsection{Private/random addresses}
-To better protect privacy, a LE device can choose use a private i.e. random Bluetooth address. This address changes at a user-specified rate. To allow for later reconnection, the central and peripheral devices exchange their Identity Resolving Keys (IRKs) during bonding. The IRK is used to verify if a new address belongs to a previously bonded device.
-
-\subsection{Security manager}
-\label{section:security_manager}
-
-%\section{Client-Server use - TODO}
-%\subsection{C API}
-%\subsection{Java API}
-%\subsection{JavaScript API}
-%\subsection{Python API}
-
-%\section{GAP}
-%\subsection{Dedicated bonding}
-%\subsection{add RFCOMM port configuration for both local and remote}
-%\subsection{add RFCOMM modem and line status control/information}
-%\subsection{add RFCOMM\_AGGREGATE\_FLOW\_OFF to recoverable RFCOMM send errors (example in tex, code)}
-%\section{Security Levels and L2AP,RFCOMM}
 
 \pagebreak
 
