@@ -129,7 +129,11 @@ static uint8_t      ehcill_command_to_send;
 static H4_STATE  h4_state;
 static int       read_pos;
 static int       bytes_to_read;
-static uint8_t   hci_packet[HCI_PACKET_BUFFER_SIZE]; // bigger than largest packet
+
+ // bigger than largest packet
+static uint8_t hci_packet_prefixed[HCI_INCOMING_PRE_BUFFER_SIZE + HCI_PACKET_BUFFER_SIZE];
+static uint8_t * hci_packet = &hci_packet_prefixed[HCI_INCOMING_PRE_BUFFER_SIZE];
+
 static  void (*packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = dummy_handler;
 
 // H4: tx state

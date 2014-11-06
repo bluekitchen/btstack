@@ -90,7 +90,10 @@ static int h4_can_send_packet_now(uint8_t packet_type);
 static  H4_STATE h4_state;
 static int read_pos;
 static int bytes_to_read;
-static uint8_t hci_packet[HCI_PACKET_BUFFER_SIZE]; // bigger than largest packet
+
+ // bigger than largest packet
+static uint8_t hci_packet_prefixed[HCI_INCOMING_PRE_BUFFER_SIZE + HCI_PACKET_BUFFER_SIZE];
+static uint8_t * hci_packet = &hci_packet_prefixed[HCI_INCOMING_PRE_BUFFER_SIZE];
 
 // tx state
 static TX_STATE tx_state;

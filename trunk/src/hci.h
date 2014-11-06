@@ -110,8 +110,12 @@ extern "C" {
 // additional pre-buffer space for packets to Bluetooth module, for now, used for HCI Transport H4 DMA
 #define HCI_OUTGOING_PRE_BUFFER_SIZE 1
 
+// BNEP may uncompress the IP Header by 16 bytes
+#ifdef HAVE_BNEP
+#define HCI_INCOMING_PRE_BUFFER_SIZE (16 - HCI_ACL_HEADER_SIZE - 4)
+#endif 
 #ifndef HCI_INCOMING_PRE_BUFFER_SIZE
-#define HCI_INCOMING_PRE_BUFFER_SIZE 0
+    #define HCI_INCOMING_PRE_BUFFER_SIZE 0
 #endif
 
 // OGFs
@@ -366,8 +370,8 @@ typedef struct {
     uint32_t timestamp; // timeout in system ticks
 #endif
     
-    // ACL packet recombination - ACL Header + ACL payload
-    uint8_t  acl_recombination_buffer[4 + HCI_ACL_BUFFER_SIZE];
+    // ACL packet recombination - PRE_BUFFER + ACL Header + ACL payload
+    uint8_t  acl_recombination_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 4 + HCI_ACL_BUFFER_SIZE];
     uint16_t acl_recombination_pos;
     uint16_t acl_recombination_length;
     
