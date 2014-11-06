@@ -169,9 +169,9 @@ LDLIBS		+= -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group
 	@#printf "  CXX     $(*).cpp\n"
 	$(Q)$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(ARCH_FLAGS) -o $(*).o -c $<
 
-# clean:
-#	@#printf "  CLEAN\n"
-#	$(Q)$(RM) *.o *.d *.elf *.bin *.hex *.srec *.list *.map
+clean:
+	@#printf "  CLEAN\n"
+	$(Q)$(RM) *.o *.d *.elf *.bin *.hex *.srec *.list *.map
 
 stylecheck: $(STYLECHECKFILES:=.stylecheck)
 styleclean: $(STYLECHECKFILES:=.styleclean)

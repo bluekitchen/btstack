@@ -8,42 +8,45 @@ OPENCM3_DIR = libopencm3
 LDSCRIPT = stm32f1-nucleo.ld
 
 BTSTACK_ROOT = ../..
-VPATH = $(BTSTACK_ROOT)/example/embedded
+VPATH  = $(BTSTACK_ROOT)/example/embedded
+VPATH += $(BTSTACK_ROOT)/src
+VPATH += $(BTSTACK_ROOT)/ble
+VPATH += $(BTSTACK_ROOT)/chipset-cc256x
 
 CORE   = \
-	main.c 										  \
-    ${BTSTACK_ROOT}/src/btstack_memory.c          \
-    ${BTSTACK_ROOT}/src/linked_list.c	          \
-    ${BTSTACK_ROOT}/src/memory_pool.c             \
-    ${BTSTACK_ROOT}/src/run_loop.c		          \
-    ${BTSTACK_ROOT}/src/run_loop_embedded.c
+	main.c 					  \
+    btstack_memory.c          \
+    linked_list.c	          \
+    memory_pool.c             \
+    run_loop.c		          \
+    run_loop_embedded.c
 
 COMMON = \
-	${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
-	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2564B_1.0_BT_Spec_4.1.c   \
-    ${BTSTACK_ROOT}/src/hci.c			          \
-    ${BTSTACK_ROOT}/src/hci_cmds.c		          \
-    ${BTSTACK_ROOT}/src/hci_dump.c		          \
-    ${BTSTACK_ROOT}/src/hci_transport_h4_ehcill_dma.c \
-    ${BTSTACK_ROOT}/src/l2cap.c			          \
-    ${BTSTACK_ROOT}/src/l2cap_signaling.c         \
-	${BTSTACK_ROOT}/src/remote_device_db_memory.c \
-	${BTSTACK_ROOT}/src/rfcomm.c			      \
-    ${BTSTACK_ROOT}/src/sdp.c			          \
-    ${BTSTACK_ROOT}/src/sdp_util.c                \
-    ${BTSTACK_ROOT}/src/utils.c			          \
-    ${BTSTACK_ROOT}/src/sdp_parser.c              \
-    ${BTSTACK_ROOT}/src/sdp_client.c              \
-    ${BTSTACK_ROOT}/src/sdp_query_util.c		  \
-	${BTSTACK_ROOT}/src/sdp_query_rfcomm.c 		  \
+	bt_control_cc256x.c   \
+	bluetooth_init_cc2564B_1.0_BT_Spec_4.1.c   \
+    hci.c			          \
+    hci_cmds.c		          \
+    hci_dump.c		          \
+    hci_transport_h4_ehcill_dma.c \
+    l2cap.c			          \
+    l2cap_signaling.c         \
+	remote_device_db_memory.c \
+	rfcomm.c			      \
+    sdp.c			          \
+    sdp_util.c                \
+    utils.c			          \
+    sdp_parser.c              \
+    sdp_client.c              \
+    sdp_query_util.c		  \
+	sdp_query_rfcomm.c 		  \
 
 BLE = \
-	${BTSTACK_ROOT}/ble/att.c 					  \
-	${BTSTACK_ROOT}/ble/att_server.c     		  \
-	${BTSTACK_ROOT}/ble/central_device_db_memory.c  \
-	${BTSTACK_ROOT}/ble/sm.c                      \
-	${BTSTACK_ROOT}/ble/att_dispatch.c            \
-#	${BTSTACK_ROOT}/ble/gatt_client.c             \
+	att.c 					  \
+	att_server.c     		  \
+	central_device_db_memory.c  \
+	sm.c                      \
+	att_dispatch.c            \
+#	gatt_client.c             \
 
 CORE_OBJ   = $(CORE:.c=.o)
 COMMON_OBJ   = $(COMMON:.c=.o)
@@ -57,8 +60,8 @@ examples: libopencm3/lib/libopencm3_stm32f1.a spp_and_le_counter.h spp_and_le_co
 
 include libopencm3.stm32f1.mk
 
-clean:
-	rm -f *.map *.o *.d *.out *.elf *.bin *.hex ../driver/*.o ../../src/*.o ../../ble/*.o ../firmware/*.o ${BTSTACK_ROOT}/chipset-cc256x/*.o ${BTSTACK_ROOT}/src/*.o
+# clean:
+#	rm -f *.map *.o *.d *.out *.elf *.bin *.hex ../driver/*.o ../../src/*.o ../../ble/*.o ../firmware/*.o ${BTSTACK_ROOT}/chipset-cc256x/*.o ${BTSTACK_ROOT}/src/*.o
 
 # git clone and compile libopencm3
 libopencm3/lib/libopencm3_stm32f1.a:
