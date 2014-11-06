@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2012 by Matthias Ringwald
+ * Copyright (C) 2009-2014 by BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -13,11 +13,10 @@
  * 3. Neither the name of the copyright holders nor the names of
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
- * 4. Any redistribution, use, or modification is done solely for
- *    personal benefit and not for any commercial purpose or for
- *    monetary gain.
+ * 4. This software may not be used in a commercial product
+ *    without an explicit license granted by the copyright holder.
  *
- * THIS SOFTWARE IS PROVIDED BY MATTHIAS RINGWALD AND CONTRIBUTORS
+ * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
@@ -30,9 +29,11 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at btstack@ringwald.ch
+ * Please inquire about commercial licensing options at 
+ * contact@bluekitchen-gmbh.com
  *
  */
+
 
 #include <stdio.h>
 #include <string.h>
@@ -40,7 +41,6 @@
 #include "att.h"
 #include "debug.h"
 #include <btstack/utils.h>
-#include "l2cap.h"
 
 // Buetooth Base UUID 00000000-0000-1000-8000-00805F9B34FB in little endian
 static const uint8_t bluetooth_base_uuid[] = { 0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
@@ -292,10 +292,10 @@ static uint16_t handle_exchange_mtu_request(att_connection_t * att_connection, u
 
     uint16_t client_rx_mtu = READ_BT_16(request_buffer, 1);
     
-    if (client_rx_mtu < l2cap_max_le_mtu()){
+    if (client_rx_mtu < att_connection->mtu){
         att_connection->mtu = client_rx_mtu;
     } else {
-        att_connection->mtu = l2cap_max_le_mtu();
+        att_connection->mtu = att_connection->mtu;
     }
 
     response_buffer[0] = ATT_EXCHANGE_MTU_RESPONSE;
