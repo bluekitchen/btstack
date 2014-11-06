@@ -3,7 +3,7 @@
 #
 
 # BINARY=led_counter
-BINARY=spp_and_le_counter
+# BINARY=spp_and_le_counter
 OPENCM3_DIR = libopencm3
 LDSCRIPT = stm32f1-nucleo.ld
 
@@ -52,7 +52,7 @@ OBJS += $(CORE_OBJ) $(COMMON_OBJ) $(BLE_OBJ)
 
 CFLAGS = -I. -I$(BTSTACK_ROOT)/include -I$(BTSTACK_ROOT)/src -I$(BTSTACK_ROOT)/ble -I$(BTSTACK_ROOT)/chipset-cc256x
 
-examples: libopencm3/lib/libopencm3_stm32f1.a spp_and_le_counter.h $(BINARY).elf
+examples: libopencm3/lib/libopencm3_stm32f1.a spp_and_le_counter.h spp_and_le_counter.elf
 
 include libopencm3.stm32f1.mk
 
