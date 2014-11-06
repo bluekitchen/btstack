@@ -1,0 +1,1819 @@
+\documentclass[a4paper,titlepage,oneside,12pt]{amsart} %amsart
+\usepackage{graphicx}
+\usepackage{hyperref}
+%\usepackage{geometry} % see geometry.pdf on how to lay out the page. There's lots.
+\usepackage[margin=1.3in]{geometry}
+\geometry{a4paper} % or letter or a5paper or ... etc
+% \geometry{landscape} % rotated page geometry
+\usepackage{ifthen}
+
+% See the ``Article customise'' template for come common customisations
+\usepackage[usenames,dvipsnames]{color}
+
+\definecolor{lightgray}{RGB}{245, 245, 245}
+\definecolor{bkblue}{RGB}{18, 47, 76}
+\definecolor{bklightblue}{RGB}{102, 131, 158}
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{orange}{RGB}{255,153,0}
+
+\usepackage{opensans}
+\usepackage{setspace}
+\usepackage{booktabs} \newcommand{\ra}[1]{\renewcommand{\arraystretch}{#1}}
+
+\usepackage{color}
+\newcommand{\todo}[1]{\colorbox{yellow}{#1}}
+\newcommand{\toread}[1]{{\color{bklightblue} #1}}
+
+\usepackage{listings}
+\lstset{ %
+language=C,                % choose the language of the code
+basicstyle=\footnotesize,       % the size of the fonts that are used for the code
+%numbers=left,                   % where to put the line-numbers
+%numberstyle=\footnotesize,      % the size of the fonts that are used for the line-numbers
+%stepnumber=1,                   % the step between two line-numbers. If it is 1 each line will be numbered
+%numbersep=5pt,                  % how far the line-numbers are from the code
+backgroundcolor=\color{lightgray},  % choose the background color. You must add \usepackage{color}
+showspaces=false,               % show spaces adding particular underscores
+showstringspaces=false,         % underline spaces within strings
+showtabs=false,                 % show tabs within strings adding particular underscores
+frame=single,           % adds a frame around the code
+framerule=0.2pt,
+tabsize=2,          % sets default tabsize to 2 spaces
+captionpos=b,           % sets the caption-position to bottom
+breaklines=true,        % sets automatic line breaking
+breakatwhitespace=false,    % sets if automatic breaks should only happen at whitespace
+escapeinside={\%*}{*)},          % if you want to add a comment within your code
+belowcaptionskip=5em,
+belowskip=1em,
+aboveskip=1.8em,
+commentstyle=\itshape\color{mygreen},
+keywordstyle=\bfseries\color{black},
+identifierstyle=\color{black},
+stringstyle=\color{blue},
+morekeywords={*, timer_source_t, data_source_t, uint32_t, uint16_t, uint8_t, RUN_LOOP_TYPE, le_command_status_t, gatt_client_t,
+ 							le_characteristic_t, le_service_t, le_characteristic_descriptor_t, service_record_item_t, bd_addr_t, btstack_packet_handler_t,
+							hci_cmd_t, bt_control_t, remote_device_db_t, link_key_t, device_name_t, hci_transport_t, hci_uart_config_t, sdp_query_event_t,
+							sdp_query_complete_event_t, sdp_query_rfcomm_service_event_t, sdp_parser_event_t, sdp_parser_event_type_t,
+							sdp_parser_attribute_value_event_t, sdp_parser_complete_event_t, advertising_report_t, gc_state_t, le_service_event_t,
+							le_characteristic_event_t}
+}
+
+% Bluetopia & TI MSP430 + Stellaris
+% http://processors.wiki.ti.com/index.php/CC256x_Bluetopia_Stack#Demos
+
+% Setup MSP430+PAN1315
+% 
+\newcommand{\versionNr}{1.3}
+\newcommand{\authorMila}{Dr. sc. Milanka Ringwald}
+\newcommand{\authorMatthias}{Dr. sc. Matthias Ringwald}
+\newcommand{\bkContact}{\href{contact@bluekitchen-gmbh.com}{contact@bluekitchen-gmbh.com}}
+\newcommand{\barWidth}{0.3cm}
+
+\makeatletter
+\renewcommand{\maketitle}{
+  \begin{titlepage}
+    \fosfamily
+    \begin{center}
+    \begin{minipage}[b]{\textwidth}
+        \begin{minipage}[b]{.1\textwidth}
+            \color{bkblue}\rule{\barWidth{}}{22cm}
+        \end{minipage}
+        \hfill\begin{minipage}[b]{.8\textwidth}\begin{flushright}
+            {\color{bkblue}VERSION \versionNr{} \\
+            \today \\}
+            \vspace*{7.5cm}
+            \hfill\includegraphics[width=0.85\textwidth]{picts/bklogo.pdf}
+            \vspace*{1.5cm}
+            \begin{spacing}{2} 
+                {\huge \color{bkblue} \@title} \\ 
+                {\Large \color{bklightblue} Using MSP430 Examples}   
+            \end{spacing} 
+            \vspace*{1.5cm}
+            {\color{bkblue}\large \authorMila \\
+            \large \authorMatthias \\
+            \large \bkContact\\ }
+        \end{flushright}\end{minipage}
+        \vfill
+        \begin{minipage}[b]{\textwidth}
+            \color{bklightblue}\rule{\barWidth{}}{\barWidth{}}
+        \end{minipage}
+    \end{minipage}
+
+    
+    \end{center}
+  \end{titlepage}
+}
+\makeatother
+
+\title[BTstack for MSP430] {BTstack Getting Started} 
+\author{Copyright \copyright  2012-2013 BlueKitchen GmbH}
+
+%%% BEGIN DOCUMENT
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\pagebreak
+
+% \section{Overview}
+
+Thanks for checking out BTstack! In this manual, we first provide the usual 'quick starter guide' before highlighting BTstack's main design choices and going into more details with a few examples. Finally, we outline the basic steps when integrating BTstack into existing single-threaded or even multi-threaded environments. The Revision History is shown in the Appendix \ref{appendix:revision_history} on page \pageref{appendix:revision_history}.
+
+\input{hwsetup_msp430}
+
+\section{BTstack Architecture}
+
+As well as any other communication stack, BTstack is a collection of state machines that interact with each other. There is one or more state machines for each protocol and service that it implements. The rest of the architecture follows these fundamental design guidelines:
+
+\begin{itemize}
+\item \emph{Single threaded design} - BTstack does not use or require multi-threading to handle data sources and timers. Instead, it uses a single run loop.
+\item \emph{No blocking anywhere} - If Bluetooth processing is required, its result will be delivered as an event via registered packet handlers.
+\item \emph{No artificially limited buffers/pools} - Incoming and outgoing data packets are not queued.
+\item \emph{Statically bounded memory (optionally)} - The number of maximum connections/channels/services can be configured.
+\end{itemize}
+
+\begin{figure}[htbp] %  figure placement: here, top, bottom, or page
+   \centering
+   \includegraphics[width=\textwidth]{picts/btstack-architecture.pdf} 
+   \caption{BTstack-based single-threaded application. The Main Application contains the application logic, e.g., reading a sensor value and providing it via the Communication Logic as a SPP Server.
+    The Communication Logic is often modeled as a finite state machine with events and data coming from either the Main Application or from BTstack via registered  packet handlers (PH).   
+    BTstack's Run Loop is responsible for providing timers and processing incoming data.
+}
+    
+   \label{fig:BTstackArchitecture}
+\end{figure}
+
+Figure \ref{fig:BTstackArchitecture} shows the general architecture of a BTstack-based application that includes the BTstack run loop.
+
+\subsection{Single threaded design}
+BTstack does not use or require multi-threading. It uses a single run loop to handle data sources and timers. Data sources represent communication interfaces like an UART or an USB driver. 
+Timers are used by BTstack to implement various Bluetooth-related timeouts. For example, to disconnect a Bluetooth baseband channel without an active L2CAP channel after 20 seconds. They can also be used to handle periodic events. During a run loop cycle, the callback functions of all registered data sources are called. Then, the callback functions of timers that are ready are executed. 
+
+For adapting BTstack to multi-threaded environments, see Section \ref{section:multithreading}.
+
+
+\subsection{No blocking anywhere}
+
+Bluetooth logic is event-driven. Therefore, all BTstack functions are non-blocking, i.e., all functions that cannot return immediately implement an asynchronous pattern. If the arguments of a function are valid, the necessary commands are sent to the Bluetooth chipset and the function returns with a success  value. The actual result is delivered later as an asynchronous event via registered packet handlers. 
+
+If a Bluetooth event triggers longer processing by the application, the processing should be split into smaller chunks. The packet handler could then schedule a timer that manages the sequential execution of the chunks.
+
+\subsection{No artificially limited buffers/pools}
+Incoming and outgoing data packets are not queued. BTstack delivers an incoming data packet to the application before it receives the next one from the Bluetooth chipset. Therefore, it relies on the link layer of the Bluetooth chipset to slow down the remote sender when needed. 
+
+Similarly, the application has to adapt its packet generation to the remote receiver for outgoing data. 
+L2CAP relies on ACL flow control between sender and receiver. If there are no free ACL buffers in the Bluetooth module, the application cannot send.  For RFCOMM, the mandatory credit-based flow-control limits the data sending rate additionally. The application can only send an RFCOMM packet if it has RFCOMM credits.
+
+\subsection{Statically bounded memory}
+BTstack has to keep track of services and active connections on the various protocol layers. The number of maximum connections/channels/services can be configured. In addition, the non-persistent database for remote device names and link keys needs memory and can be be configured, too. These numbers determine the amount of static memory allocation.
+
+\section{How to use BTstack}
+
+BTstack implements a set of basic Bluetooth protocols. To make use of these to connect to other devices or to provide own services, BTstack has to be properly configured during application startup. 
+
+In the following, we provide an overview of the provided protocols and services, as well as of the memory management and the run loop, that are necessary to setup BTstack. From the point when the run loop is executed, the application runs as a finite state machine, which processes events received from BTstack. BTstack groups events logically and provides them over packet handlers, of which an overview is provided here. Finally, we describe the RFCOMM credit-based flow-control, which may be necessary for resource-constraint devices. Complete examples for the MSP430 platforms will be presented in Chapter \ref{examples}. 
+
+\begin{figure}[htbp] %  figure placement: here, top, bottom, or page
+   \centering
+   \includegraphics[width=0.7\textwidth]{picts/btstack-protocols.pdf} 
+   \caption{BTstack Protocol Architecture}
+   \label{fig:BTstackProtocolArchitecture}
+\end{figure}
+
+\subsection{Protocols, profiles and services}
+
+\toread{BTstack implements following Bluetooh protocols: HCI, SMP, L2CAP, L2CAP-LE, RFCOMM, SDP, and ATT, as well as two profiles: GATT and SPP, see Figure \ref{fig:BTstackProtocolArchitecture}. 
+The Host Controller Interface (HCI) provides a command interface to the Bluetooth chipset. 
+The Security Manager Protocol (SMP) allows to setup authenticated and encrypted connection.
+The Service Discovery Protocol (SDP) allows to discover services provided by a Bluetooth device. 
+The Logical Link Control and Adaptation Protocol (L2CAP) supports higher level protocol multiplexing % packet segmentation
+The Radio frequency communication (RFCOMM) protocol provides emulation of serial ports over the L2CAP protocol.
+and reassembly. 
+The L2CAP Low Energy (LE) variant is optimized for connectionless data used by Bluetooth Low Energy devices. It is the base for the Attribute Protocol (ATT) of Bluetooth LE, which defines how to discover, read, and write attributes on a peer device. % , and the conveying of quality of service information. - L2CAP _can_ do this, but BTstack does not
+The Generic Attribute Profile (GATT) is a service that uses the ATT for discovering services, and for reading and writing characteristic values on a peer device. 
+The Serial Port Profile (SPP) defines how to set up virtual serial ports and connect two Bluetooth enabled devices. }
+
+% BTstack's API for HCI, L2CAP, RFCOMM, SM and SDP is provided in Appendix.
+
+One important construct of BTstack is \emph{service}. A service represents a server side component that handles incoming connections. So far, BTstack provides L2CAP and RFCOMM services. An L2CAP service handles incoming connections for an L2CAP channel and is registered with its protocol service multiplexer ID (PSM). Similarly,  an RFCOMM service handles incoming RFCOMM connections and is registered with the RFCOMM channel ID. Outgoing connections require no special registration, they are created by the application when needed. 
+
+\noindent\begin{minipage}{\textwidth}
+\begin{lstlisting}[caption=Memory configuration for an SPP service with a minimal L2CAP MTU., label=memoryConfigurationSPP]
+#define HCI_ACL_PAYLOAD_SIZE 52
+#define MAX_SPP_CONNECTIONS 1
+#define MAX_NO_HCI_CONNECTIONS MAX_SPP_CONNECTIONS
+#define MAX_NO_L2CAP_SERVICES  2
+#define MAX_NO_L2CAP_CHANNELS  (1+MAX_SPP_CONNECTIONS)
+#define MAX_NO_RFCOMM_MULTIPLEXERS MAX_SPP_CONNECTIONS
+#define MAX_NO_RFCOMM_SERVICES 1
+#define MAX_NO_RFCOMM_CHANNELS MAX_SPP_CONNECTIONS
+#define MAX_NO_DB_MEM_DEVICE_NAMES  0
+#define MAX_NO_DB_MEM_LINK_KEYS  3
+#define MAX_NO_DB_MEM_SERVICES 1
+\end{lstlisting}
+\end{minipage}
+
+\subsection{Memory configuration}
+\label{section:memory_configuration}
+
+The structs for services, active connections and remote devices can be allocated in two different manners: 
+        \begin{itemize}
+        \item statically from an individual memory pool, whose maximal number of elements  is defined in the config file. To initialize the static pools, you need to call \emph{btstack\_memory\_init} function. An example of memory configuration for a single SPP service with a minimal L2CAP MTU is shown in Listing \ref{memoryConfigurationSPP}.
+        \item dynamically using the \emph{malloc/free} functions, if HAVE\_MALLOC is defined in config file. 
+        \end{itemize}
+
+If both HAVE\_MALLOC and  maximal size of a pool are defined in the config file, the statical allocation will take precedence. In case that both are omitted, an error will be raised.
+
+The memory is set up by calling \emph{btstack\_memory\_init} function:
+\begin{lstlisting}
+btstack_memory_init();
+\end{lstlisting}
+
+
+\subsection{Run loop}
+\label{section:run_loop}
+
+BTstack uses a run loop to handle incoming data and to schedule work. The run loop handles events from two different types of sources: data sources and timers. Data sources represent communication interfaces like an UART or an USB driver. Timers are used by BTstack to implement various Bluetooth-related timeouts. They can also be used to handle periodic events. 
+
+Data sources and timers are represented by the  structs \emph{data\_source\_t} and \emph{timer\_source\_t} respectively. Each of these structs contain a link list node and a pointer to a callback function. All active timers and data sources are kept in link lists. While the list of data sources is unsorted, the timers are sorted by expiration timeout for efficient processing.
+
+The complete run loop cycle looks like this: first, the callback function of all registered data sources are called in a round robin way. Then, the callback functions of timers that are ready are executed. Finally, it will be checked if another run loop iteration has been requested by an interrupt handler. If not, the run loop will put the MCU into sleep mode.
+
+Incoming data over the UART, USB, or timer ticks will generate an interrupt and wake up the microcontroller. In order to avoid the situation where a data source becomes ready just before the run loop enters sleep mode, an interrupt-driven data source has to call the \emph{embedded\_trigger} function. The call to \emph{embedded\_trigger} sets an internal flag that is checked in the critical section just before entering sleep mode. 
+
+Timers are single shot: a timer will be removed from the timer list before its event handler callback is executed. If you need a periodic timer, you can re-register the same timer source in the callback function, see Section \ref{section:periodicTimer} for an example. Note that BTstack expects to get called periodically to keep its time, see Section \ref{section:tickAbstraction} for more on the tick hardware abstraction. 
+
+The Run loop API is provided in Appendix \ref{appendix:api_run_loop}. To enable the use of timers, make sure that you defined HAVE\_TICK in the config file.
+
+In your code, you'll have to configure the run loop before you start it as shown in Listing \ref{RunLoopExecution}. The application can register data sources as well as timers, e.g., periodical sampling of sensors, or communication over the UART.
+
+The run loop is set up by calling \emph{run\_loop\_init} function for embedded systems:
+\begin{lstlisting}
+run_loop_init(RUN_LOOP_EMBEDDED);
+\end{lstlisting}
+
+
+\subsection{BTstack initialization}
+\label{section:btstack_initialization}
+To initialize BTstack you need to initialize the memory and the run loop as explained in Sections \ref{section:memory_configuration} and \ref{section:run_loop} respectively, then setup HCI and all needed higher level protocols.
+
+The HCI initialization has to adapt BTstack to the used platform and requires four arguments. These are:
+\begin{itemize}
+\item \emph{Bluetooth hardware control}: The Bluetooth hardware control API can provide the HCI layer with a custom initialization script, a vendor-specific baud rate change command, and system power notifications. It is also used to control the power mode of the Bluetooth module, i.e., turning it on/off and putting to sleep. In addition, it provides an error handler \emph{hw\_error} that is called when a Hardware Error is reported by the Bluetooth module. The callback allows for persistent logging or signaling of this failure. 
+
+Overall, the struct \emph{bt\_control\_t} encapsulates common functionality that is not covered by the Bluetooth specification. As an example, the \emph{bt\_con-trol\_cc256x\_in-stance} function returns a pointer to a control struct suitable for the CC256x chipset.
+\end{itemize}
+
+\begin{lstlisting}
+bt_control_t * control = bt_control_cc256x_instance();
+\end{lstlisting}
+
+\begin{itemize}
+\item \emph{HCI Transport implementation}: On embedded systems, a Bluetooth module can be connected via USB or an UART port. BTstack implements two UART based protocols: HCI UART Transport Layer (H4) and H4 with eHCILL support, a lightweight low-power variant by Texas Instruments.
+These are accessed by linking the appropriate file (\path{src/hci_transport_h4_dma.c} resp. \path{src/hci_transport_h4_ehcill_dma.c)} and then getting a pointer to HCI Transport implementation. For more information on adapting HCI Transport to different environments, see Section \ref{section:hci_transport}.
+\end{itemize}
+
+\begin{lstlisting}
+hci_transport_t * transport = hci_transport_h4_dma_instance();
+\end{lstlisting}
+
+\begin{itemize}
+\item \emph {HCI Transport configuration}: As the configuration of the UART used in the H4 transport interface are not standardized, it has to be provided by the main application to BTstack. In addition to the initial UART baud rate, the main baud rate can be specified. The HCI layer of BTstack will change the init baud rate to the main one after the basic setup of the Bluetooth module. A baud rate change has to be done in a coordinated way at both HCI and hardware level. First, the HCI command to change the baud rate is sent, then it is necessary to wait for the confirmation event from the Bluetooth module. Only now, can the UART baud rate changed. As an example, the CC256x has to be initialized at 115200 and can then be used at higher speeds.
+\end{itemize}
+
+\begin{lstlisting}
+hci_uart_config_t* config = hci_uart_config_cc256x_instance();
+\end{lstlisting}
+
+\begin{itemize}
+\item \emph {Persistent storage} - specifies where to persist data like link keys or remote device names. This commonly requires platform specific code to access the MCU's EEPROM of Flash storage. For the first steps, BTstack provides a (non) persistent store in memory. For more see Section \ref{section:persistent_storage}.
+\end{itemize}
+
+\begin{lstlisting}
+remote_device_db_t * remote_db = &remote_device_db_memory;
+\end{lstlisting}
+
+
+After these are ready, HCI is initialized like this:
+\begin{lstlisting}
+hci_init(transport, config, control, remote_db);
+\end{lstlisting}
+
+The higher layers only rely on BTstack and are initialized by calling the respective \emph{*\_init} function. These init functions register themselves with the underlying layer. In addition, the application can register packet handlers to get events and data as explained in the following section.
+   
+\subsection{Where to get data - packet handlers}
+\label{section:packetHandlers}
+
+After the hardware and BTstack are set up, the run loop is entered. From now on everything is event driven. The application calls BTstack functions, which in turn may send commands to the Bluetooth module. The resulting events are delivered back to the application. Instead of writing a single callback handler for each possible event (as it is done in some other Bluetooth stacks), BTstack groups events logically and provides them over a single generic interface.  Appendix \ref{appendix:api_events_and_errors} summarizes the parameters and event codes of L2CAP and RFCOMM events, as well as possible errors and the corresponding error codes.
+
+Here is summarized list of packet handlers that an application might use:
+\begin{itemize}
+\item HCI packet handler - handles HCI and general BTstack events if L2CAP is not used (rare case). 
+\item L2CAP packet handler - handles HCI and general BTstack events.
+\item L2CAP service packet handler - handles incoming L2CAP connections, i.e., channels initiated by the remote.
+\item L2CAP channel packet handler - handles outgoing L2CAP connections,  i.e., channels initiated internally.
+\item RFCOMM packet handler - handles RFCOMM  incoming/outgoing events and data.
+\end{itemize}
+
+\begin{table*}\centering
+\caption{Functions for registering packet handlers}
+\begin{tabular}{rl}\toprule
+Packet Handler & Registering Function\\ 
+\midrule
+HCI packet handler &  \emph{hci\_register\_packet\_handler}\\
+L2CAP packet handler &  \emph{l2cap\_register\_packet\_handler}\\
+L2CAP service packet handler & \emph{l2cap\_register\_service\_internal}\\
+L2CAP channel packet handler & \emph{l2cap\_create\_channel\_internal}\\
+RFCOMM packet handler & \emph{rfcomm\_register\_packet\_handler}\\
+\bottomrule
+ \label{table:registeringFunction}
+ \end{tabular}
+\end{table*}
+
+These handlers are registered with the functions listed in Table \ref{table:registeringFunction}. 
+
+HCI and general BTstack events are delivered to the packet handler specified by \emph{l2cap\_register\_packet\_handler} function, or \emph{hci\_register\_packet\_handler}, if L2CAP is not used. In L2CAP, BTstack discriminates incoming and outgoing connections, i.e., event and data packets are delivered to different packet handlers. Outgoing connections are used access remote services, incoming connections are used to provide services. For incoming connections, the packet handler specified by \emph{l2cap\_register\_service} is used. For outgoing connections, the handler provided by \emph{l2cap\_create\_channel\_internal} is used.
+Currently, RFCOMM provides only a single packet handler specified by \emph{rfcomm\_register\_packet\_handler} for all RFCOMM connections, but this will be fixed in the next API overhaul.
+ 
+The application can register a single shared packet handler for all protocols and services, or use separate packet handlers for each protocol layer and service. A shared packet handler is often used for stack initialization and connection management.
+
+Separate packet handlers can be used for each L2CAP service and outgoing connection. For example, to connect with a Bluetooth HID keyboard, your application could use three packet handlers: one to handle HCI events during discovery of a keyboard registered by \emph{l2cap\_register\_packet\_handler}; one that will be registered to an outgoing L2CAP channel to connect to keyboard and to receive keyboard data registered by \emph{l2cap\_create\_channel\_internal}; after that keyboard can reconnect by itself. For this, you need to register L2CAP services for the HID Control and HID Interrupt PSMs using \emph{l2cap\_register\_service\_internal}. In this call, you'll also specify a packet handler to accept and receive keyboard data. 
+
+\subsection{RFCOMM flow control}
+\label{section:flowcontrol}
+RFCOMM has a mandatory credit-based flow-control. This means that two devices that established RFCOMM connection, use credits to keep track of how many more RFCOMM data packets can be sent to each. If a device has no (outgoing) credits left, it cannot send another RFCOMM packet, the transmission must be paused. During the connection establishment, initial credits are provided. BTstack tracks the number of credits in both directions. If no outgoing credits are available, the RFCOMM send function will return an error, and you can try later. For incoming data, BTstack provides channels and services with and without automatic credit management via different functions to create/register them respectively. If the management of credits is automatic, the new credits are provided when needed relying on ACL flow control - this is only useful if there is not much data transmitted and/or only one physical connection is used. If the management of credits is manual, credits are provided by the application such that it can manage its receive buffers explicitly. 
+
+\subsection{RFCOMM configuration - TODO}
+\todo{Add here}
+
+
+\newcommand{\BluetoothSpecification}{\urlfoot{https://www.bluetooth.org/Technical/Specifications/adopted.htm}{Bluetooth Specification}}
+\newcommand{\BluetoothSpecificationURL}{\href{https://www.bluetooth.org/Technical/Specifications/adopted.htm}{\color{blue} Bluetooth Specification}}
+
+
+\section{Quick Recipes}
+
+\subsection{Periodic time handler}
+\label{section:periodicTimer}
+As timers in BTstack are single shot, a periodic timer, e.g., to implement a counter or to periodically sample a sesor,  is implemented by re-registering the \emph{timer\_source} in the \emph{timer\_handler} callback function, as shown in  Listing \ref{PeriodicTimeHandler}.
+
+\subsection{Defining custom HCI command templates}
+
+Each HCI command is assigned a 2 byte OpCode used to uniquely identify different types of commands. The OpCode parameter is divided into two fields, called the OpCode Group Field (OGF) and OpCode Command Field (OCF), see \BluetoothSpecification{} - Core Version 4.0, Volume 2, Part E, Chapter 5.4. In a HCI command, the OpCode is followed by parameter total length, and the actual parameters.
+
+BTstack provides the \emph{hci\_cmd\_t} struct as a compact format to define HCI command packets, see Listing \ref{HCIcmdTemplate},  and \path{include/btstack/hci_cmds.h} file in the source code. The OpCode of a command can be calculated using the OPCODE macro. 
+
+\begin{lstlisting}[caption=Periodic counter, label=PeriodicTimeHandler]
+#define TIMER_PERIOD_MS 1000
+timer_source_t periodic_timer;
+
+void register_timer(timer_source_t *timer, uint16_t period){
+    run_loop_set_timer(timer, period);
+    run_loop_add_timer(timer);
+}
+
+void timer_handler(timer_source_t *ts){
+    // do something,
+    ... e.g., increase counter,
+    
+    // then re-register timer
+    register_timer(ts, TIMER_PERIOD_MS);
+} 
+
+void timer_setup(){
+    // set one-shot timer
+    run_loop_set_timer_handler(&periodic_timer, &timer_handler);
+    register_timer(&periodic_timer, TIMER_PERIOD_MS);
+}
+\end{lstlisting}
+
+\noindent\begin{minipage}{\textwidth}
+\begin{lstlisting}[caption = hci\_cmds.h defines HCI command template., label=HCIcmdTemplate]
+// Calculate combined ogf/ocf value.
+#define OPCODE(ogf, ocf) (ocf | ogf << 10)
+
+// Compact HCI Command packet description.
+typedef struct {
+    uint16_t    opcode;
+    const char *format;
+} hci_cmd_t;
+
+extern const hci_cmd_t hci_write_local_name;
+...
+\end{lstlisting}
+\end{minipage}
+
+\begin{lstlisting}[caption=hci.h defines possible OGFs used for creation of a HCI command., label=hciCmdOGF]
+#define OGF_LINK_CONTROL  0x01
+#define OGF_LINK_POLICY  0x02
+#define OGF_CONTROLLER_BASEBAND  0x03
+#define OGF_INFORMATIONAL_PARAMETERS 0x04
+#define OGF_LE_CONTROLLER   0x08
+#define OGF_BTSTACK  0x3d
+#define OGF_VENDOR  0x3f
+\end{lstlisting}
+
+Listing \ref{hciCmdOGF} shows the OGFs provided by BTstack in \path{src/hci.h} file.  For all existing Bluetooth commands and their OCFs see \BluetoothSpecificationURL{} - Core Version 4.0, Volume 2, Part E, Chapter 7.
+
+Listing \ref{HCIcmdExample} illustrates the \emph{hci\_write\_local\_name} HCI command template from \mbox{BTstack} library. It uses  OGF\_CONTROLLER\_BASEBAND as OGF, 0x13 as OCF, and has one parameter with format "N" indicating a null terminated UTF-8 string. Table \ref{table:hciformat} lists the format specifiers supported by BTstack. Check \path{src/hci_cmds.c} for other predefined HCI commands and info on their parameters.
+
+\begin{lstlisting}[caption= Example of HCI command template., label=HCIcmdExample]
+// Sets local Bluetooth name
+const hci_cmd_t hci_write_local_name = {
+    OPCODE(OGF_CONTROLLER_BASEBAND, 0x13), "N"
+    // Local name (UTF-8, Null Terminated, max 248 octets)
+};
+\end{lstlisting}
+
+\begin{table*}\centering
+\caption{Supported Format Specifiers of HCI Command Parameter}
+\begin{tabular}{cl}\toprule
+Format Specifier & Description\\ 
+\midrule
+"1" & 8 bit value \\
+"2" & 16 bit value \\
+"H" & HCI handle \\
+"3" & 24 bit value \\
+"4" & 32 bit value \\
+"B" & Bluetooth address \\
+"D" & 8 byte data block \\
+"E" & Extended Inquiry Information 240 octets \\
+"N" & UTF8 string, null terminated \\
+"P" & 16 byte PIN code or link key \\
+"A" & 31 bytes advertising data \\
+"S" & Service Record (Data Element Sequence)\\
+\bottomrule
+\label{table:hciformat}
+\end{tabular}
+\end{table*}
+
+\subsection{Sending  HCI command based on a template}
+You can use the \emph{hci\_send-\_cmd} function to send HCI command based on a template and a list of parameters. However, it is necessary to check that the outgoing packet buffer is empty and that the Bluetooth module is ready to receive the next command - most modern Bluetooth modules only allow  to send a single HCI command. This can be done by calling \emph{hci\_can\_send\_packet\_now(HCI\_COMMAND\_DATA\_PACKET)} function, which returns true, if it is ok to send. Note: we'll integrate that check into \emph{hci\_send\_cmd}.
+
+Listing \ref{HCIcmdExampleLocalName} illustrates how to set the device name with the HCI Write Local Name command.
+
+Please note, that an application rarely has to send HCI commands on its own. All higher level functions in BTstack for the L2CAP and RFCOMM APIs manage this automatically. The main use of HCI commands in application is during the startup phase. At this time, no L2CAP or higher level data is sent, and the setup is usually done in the packet handler where the reception of the last  command complete event triggers sending of the next command, hereby asserting that the Bluetooth module is ready and the outgoing buffer is free as shown in Listing \ref{HCIcmdsExample} taken from \path{MSP-EXP430F5438-CC256x/example-ble/ble_server.c}.
+
+\begin{lstlisting}[caption= Send hci\_write\_local\_name command that takes a string as a parameter., label=HCIcmdExampleLocalName]
+if (hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)){
+    hci_send_cmd(&hci_write_local_name, "BTstack Demo");
+}  
+\end{lstlisting}
+
+\noindent\begin{minipage}{\textwidth}
+\begin{lstlisting}[caption=Example of sending a sequence of HCI Commands,label=HCIcmdsExample]
+void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    ...
+    switch (event) {
+        .. 
+        case HCI_EVENT_COMMAND_COMPLETE:
+            ...
+            if (COMMAND_COMPLETE_EVENT(packet, hci_read_local_supported_features)){
+                hci_send_cmd(&hci_set_event_mask, 0xffffffff, 0x20001fff);
+                break;
+            }
+            if (COMMAND_COMPLETE_EVENT(packet, hci_set_event_mask)){
+                hci_send_cmd(&hci_write_le_host_supported, 1, 1);
+                break;
+            }
+            if (COMMAND_COMPLETE_EVENT(packet, hci_write_le_host_supported)){
+                hci_send_cmd(&hci_le_set_event_mask, 0xffffffff, 0xffffffff);
+                break;
+            }
+            if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_event_mask)){
+                hci_send_cmd(&hci_le_read_buffer_size);
+                break;
+            }
+            ...
+            break;
+        ...
+    }
+}
+\end{lstlisting}
+\end{minipage}
+
+\subsection{Living with a single output buffer}
+\label{section:single_buffer}
+% l2cap checks hci_can_send_packet now
+Outgoing packets, both commands and data, are not queued in BTstack. This section explains the consequences of this design decision for sending data and why it is not as bad as it sounds.
+
+\noindent\begin{minipage}{\textwidth}
+\begin{lstlisting}[caption=Preparing and sending data., label=SingleOutputBufferTryToSend]
+void prepareData(void){
+    ...
+}
+
+void tryToSend(void){
+    if (!dataLen) return;
+    if (!rfcomm_channel_id) return;
+    
+    int err = rfcomm_send_internal(rfcomm_channel_id,  dataBuffer, dataLen);
+    switch (err){
+        case 0:
+            // packet is sent prepare next one
+            prepareData();
+            break;
+        case RFCOMM_NO_OUTGOING_CREDITS:
+        case BTSTACK_ACL_BUFFERS_FULL:
+            break;
+        default:
+           printf("rfcomm_send_internal() -> err %d\n\r", err);
+        break;
+    }
+}
+\end{lstlisting}
+\begin{lstlisting}[ caption= Managing the speed of RFCOMM packet generation., label=SingleOutputBufferTryPH]
+void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    ...
+    switch(event){
+        case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+            if (status) {
+                printf("RFCOMM channel open failed.");
+            } else {
+                rfcomm_channel_id = READ_BT_16(packet, 12);
+                rfcomm_mtu = READ_BT_16(packet, 14);
+                printf("RFCOMM channel opened, mtu = %u.", rfcomm_mtu);
+            }
+            break;
+        case RFCOMM_EVENT_CREDITS:
+        case DAEMON_EVENT_HCI_PACKET_SENT:
+            tryToSend();
+            break;
+        case RFCOMM_EVENT_CHANNEL_CLOSED:
+            rfcomm_channel_id = 0;
+            break;
+       ...
+       }
+}
+\end{lstlisting}
+\end{minipage}
+
+Independent from the number of output buffers, packet generation has to be adapted to the remote receiver and/or maximal link speed. Therefore, a packet can only be generated when it can get sent. With this assumption, the single output buffer design does not impose additional restrictions. In the following, we show how this is used for adapting the RFCOMM send rate. 
+
+BTstack returns BTSTACK\_ACL\_BUFFERS\_FULL, if the outgoing buffer is full and RFCOMM\_NO\_OUTGOING\_CREDITS, if no outgoing credits are available. In Listing \ref{SingleOutputBufferTryToSend}, we show how to resend data packets when credits or outgoing buffers become available.
+
+\begin{lstlisting}[caption=Setting device as discoverable. OFF by default., label=Discoverable]
+int main(void){
+    ... 
+    // make discoverable
+    hci_discoverable_control(1);
+    run_loop_execute(); 
+    return 0;
+}
+void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
+     ...
+     switch(state){
+          case INIT:
+              if (packet[2] == HCI_STATE_WORKING) {
+                  hci_send_cmd(&hci_write_local_name, "BTstack SPP Counter");
+                  state = W4_CONNECTION;
+               }
+              break;
+          case W4_CHANNEL_COMPLETE:
+              // if connection is successful, make device undiscoverable
+              hci_discoverable_control(0);
+          ...
+     }
+ }
+\end{lstlisting}
+
+
+RFCOMM's mandatory credit-based flow-control imposes an additional constraint on sending a data packet - at least one new RFCOMM credit must be available. BTstack signals the availability of a credit by sending an RFCOMM credit (RFCOMM\_EVENT\_CREDITS) event. 
+
+These two events represent two orthogonal mechanisms that deal with flow control. Taking these mechanisms in account, the application should try to send data packets when one of these two events is received, see Listing \ref{SingleOutputBufferTryPH} for a RFCOMM example.
+
+\subsection{Become discoverable}
+A remote unconnected Bluetooth device must be set as "discoverable" in order to be seen by a device performing the inquiry scan. To become discoverable, an application can call \emph{hci\_discoverable\_control}  with input parameter 1. If you want to provide a helpful name for your device, the application can set its local name by sending the $hci\_write\_local\_name$ command. To save energy, you may set the device as undiscoverable again, once a connection is established. See Listing \ref{Discoverable} for an example.
+
+
+\subsection{Discover remote devices}
+\label{section:DiscoverDevices}
+To scan for remote devices, the \emph{hci\_inquiry} command is used. After that, the Bluetooth devices actively scans for other devices and reports these as part of HCI\_EVENT\_INQUIRY\_RESULT, HCI\_EVENT-\_INQUIRY\_RESULT\_WITH\_RSSI, or HCI\_EVENT\_EXTENDED\_INQUIRY\_RE-SPONSE events. Each response contains at least the Bluetooth address, the class of device, the page scan repetition mode, and the clock offset of found device. The latter events add information about the received signal strength or provide the Extended Inquiry Result (EIR). A code snippet is shown in Listing \ref{DiscoverDevices}.
+
+By default, neither RSSI values nor EIR are reported. If the Bluetooth device implements Bluetooth Specification 2.1 or higher, the \emph{hci\_write\_inquiry\_mode} command enables reporting of this advanced features (0 for standard results, 1 for RSSI, 2 for RSSI and EIR). 
+
+A complete GAP inquiry example is provided in Section \ref{example:GapInquiry}.
+
+\begin{lstlisting}[float, caption=Discovering remote Bluetooth devices., label=DiscoverDevices]
+void print_inquiry_results(uint8_t *packet){
+    int event = packet[0];
+    int numResponses = packet[2];
+    uint16_t classOfDevice, clockOffset;
+    uint8_t  rssi, pageScanRepetitionMode;
+    for (i=0; i<numResponses; i++){
+        bt_flip_addr(addr, &packet[3+i*6]);
+        pageScanRepetitionMode = packet [3 + numResponses*6 + i];
+        if (event == HCI_EVENT_INQUIRY_RESULT){
+            classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1+1) + i*3);
+            clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+1+3) + i*2) & 0x7fff;
+            rssi  = 0;
+        } else {
+            classOfDevice = READ_BT_24(packet, 3 + numResponses*(6+1+1)     + i*3);
+            clockOffset =   READ_BT_16(packet, 3 + numResponses*(6+1+1+3)   + i*2) & 0x7fff;
+            rssi  = packet [3 + numResponses*(6+1+1+3+2) + i*1];
+        }
+        printf("Device found: %s with COD: 0x%06x, pageScan %u, clock offset 0x%04x, rssi 0x%02x\n", bd_addr_to_str(addr), classOfDevice, pageScanRepetitionMode, clockOffset, rssi);
+    }
+}
+
+void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
+    ...
+    switch (event) {
+         case HCI_STATE_WORKING:
+            hci_send_cmd(&hci_write_inquiry_mode, 0x01); // with RSSI
+            break;
+        case HCI_EVENT_COMMAND_COMPLETE:
+            if (COMMAND_COMPLETE_EVENT(packet, hci_write_inquiry_mode) ) {
+                start_scan();
+            }
+        case HCI_EVENT_COMMAND_STATUS:
+            if (COMMAND_STATUS_EVENT(packet, hci_write_inquiry_mode) ) {
+                printf("Ignoring error (0x%x) from hci_write_inquiry_mode.\n", packet[2]);
+                hci_send_cmd(&hci_inquiry, HCI_INQUIRY_LAP, INQUIRY_INTERVAL, 0);
+            }
+            break;
+        case HCI_EVENT_INQUIRY_RESULT:
+        case HCI_EVENT_INQUIRY_RESULT_WITH_RSSI:
+            print_inquiry_results(packet);
+            break;
+       ...
+    }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption=Answering authentication request with PIN 0000., label=PinCodeRequest]
+void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
+    ...
+    switch (event) {
+        case HCI_EVENT_PIN_CODE_REQUEST:
+            // inform about pin code request
+            printf("Pin code request - using '0000'\n\r");
+            bt_flip_addr(bd_addr, &packet[2]);
+            
+            // baseband address, pin length, PIN: c-string
+            hci_send_cmd(&hci_pin_code_request_reply, &bd_addr, 4, "0000");
+            break;
+       ...
+    }
+}
+\end{lstlisting}
+\subsection{Pairing of devices}
+By default, Bluetooth communication is not authenticated, and any device can talk to any other device. A Bluetooth device (for example, cellular phone) may choose to require authentication to provide a particular service (for example, a Dial-Up service). The process of establishing authentication is called pairing. Bluetooth provides two mechanism for this.
+
+On Bluetooth devices that conform to the Bluetooth v2.0 or older specification, a PIN code (up to 16 bytes ASCII) has to be entered on both sides. This isn't optimal for embedded systems that do not have full I/O capabilities. To support pairing with older devices using a PIN, see Listing \ref{PinCodeRequest}.
+
+The Bluetooth v2.1 specification introduces Secure Simple Pairing (SSP), which is a better approach as it both improves security and is better adapted to embedded system. With SSP, the devices first exchange their IO Capabilities and then settle on one of several ways to verify that the pairing is legitimate. If the Bluetooth device supports SSP, BTstack enables it by default and even automatically accepts SSP pairing requests. Depending on the product in which BTstack is used, this may not be desired and should be replaced with code to interact with the user.
+
+Regardless of the authentication mechanism (PIN/SSP), on success, both devices will generate a link key. The link key can be stored either in the Bluetooth module itself or in a persistent storage, see Section \ref{section:persistent_storage}. The next time the device connect and request an authenticated connection, both devices can use the previously generated link key. Please note that the pairing must be repeated if the link key is lost by one device.
+
+\subsection{Access an L2CAP service on a remote device}
+L2CAP is based around the concept of channels. A channel is a logical connection on top of a baseband connection. Each channel is bound to a single protocol in a many-to-one fashion. Multiple channels can be bound to the same protocol, but a channel cannot be bound to multiple protocols. Multiple channels can share the same baseband connection.
+
+\begin{lstlisting}[caption=L2CAP handler for outgoing L2CAP channel.,label=L2CAPremoteService]
+btstack_packet_handler_t l2cap_packet_handler;
+
+void btstack_setup(){
+    ...
+    l2cap_init();
+}
+
+void create_outgoing_l2cap_channel(bd_addr_t address, uint16_t psm, uint16_t mtu){
+     l2cap_create_channel_internal(NULL, l2cap_packet_handler, remote_bd_addr, psm, mtu);
+}
+
+void l2cap_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    if (packet_type == HCI_EVENT_PACKET &&
+          packet[0] == L2CAP_EVENT_CHANNEL_OPENED){
+        if (packet[2]) {
+            printf("Connection failed\n\r");
+            return;
+        }
+        printf("Connected\n\r");
+    }
+    if (packet_type == L2CAP_DATA_PACKET){
+        // handle L2CAP data packet
+        return;
+    }
+}
+\end{lstlisting}
+
+
+To communicate with an L2CAP service on a remote device, the application on a local Bluetooth device initiates the L2CAP layer using the \emph{l2cap\_init} function, and then creates an outgoing L2CAP channel to the PSM of a remote device using the \emph{l2cap\_create\_channel\_internal} function. The  \emph{l2cap\_-create\_channel\_internal} function will initiate a new baseband connection if it does not already exist. The packet handler that is given as an input parameter of the L2CAP create channel function will be assigned to the new outgoing L2CAP channel. This handler receives the L2CAP\_EVENT\_CHANNEL\_OPENED and L2CAP\_EVENT\_CHAN-NEL\_CLOSED events and L2CAP data packets, as shown in Listing \ref{L2CAPremoteService}.
+
+
+\subsection{Provide an L2CAP service}
+
+To provide an L2CAP service, the application on a local Bluetooth device must init the L2CAP layer and register the service with \emph{l2cap\_register\_service\_internal}. From there on, it can wait for incoming L2CAP connections. The application can accept or deny an incoming connection by calling the \emph{l2cap\_accept\_connection\_internal} and \emph{l2cap\_deny\_connection\_internal} functions respectively. If a connection is accepted and the incoming L2CAP channel gets successfully opened, the L2CAP service can send L2CAP data packets to the connected device with \emph{l2cap\_send\_internal}. 
+
+\begin{lstlisting}[caption=Providing an L2CAP service., label=L2CAPService]
+void btstack_setup(){
+    ...
+    l2cap_init();
+    l2cap_register_service_internal(NULL, packet_handler, 0x11,100);
+}
+
+void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+      ...
+      if (packet_type == L2CAP_DATA_PACKET){
+        // handle L2CAP data packet
+        return;
+    }
+    switch(event){
+        ...
+        case L2CAP_EVENT_INCOMING_CONNECTION:
+            bt_flip_addr(event_addr, &packet[2]);
+            handle     = READ_BT_16(packet, 8); 
+            psm        = READ_BT_16(packet, 10); 
+            local_cid  = READ_BT_16(packet, 12); 
+            printf("L2CAP incoming connection requested.");
+            l2cap_accept_connection_internal(local_cid);
+            break;
+        case L2CAP_EVENT_CHANNEL_OPENED:
+            bt_flip_addr(event_addr, &packet[3]);
+            psm = READ_BT_16(packet, 11); 
+            local_cid = READ_BT_16(packet, 13); 
+            handle = READ_BT_16(packet, 9);
+            if (packet[2] == 0) {
+                printf("Channel successfully opened.");
+            } else {
+                printf("L2CAP connection failed. status code.");
+            }
+            break;        
+        case L2CAP_EVENT_CREDITS:
+        case DAEMON_EVENT_HCI_PACKET_SENT:
+            tryToSend();
+            break;
+        case L2CAP_EVENT_CHANNEL_CLOSED:
+            break;
+    }
+}
+\end{lstlisting}
+
+Sending of L2CAP data packets may fail due to a full internal BTstack outgoing packet buffer, or if the ACL buffers in the Bluetooth module become full, i.e., if the application is sending faster than the packets can be transferred over the air. In such case, the application can try sending again upon reception of DAEMON\_EVENT\_HCI\_PACKET\_SENT or L2CAP\_EVENT\_CREDITS event. The first event signals that the internal BTstack outgoing buffer became free again, the second one signals the same for ACL buffers in the Bluetooth chipset. Listing \ref{L2CAPService} provides L2CAP service example code.
+
+
+\begin{lstlisting}[float, caption=RFCOMM handler for outgoing RFCOMM channel., label=RFCOMMremoteService] 
+void init_rfcomm(){
+    ...
+    rfcomm_init();
+    rfcomm_register_packet_handler(packet_handler);
+}
+
+void create_rfcomm_channel(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    rfcomm_create_channel_internal(connection, &addr, rfcomm_channel);
+}
+
+void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    if (packet_type == HCI_EVENT_PACKET && packet[0] == RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE){
+        if (packet[2]) {
+            printf("Connection failed\n\r");
+            return;
+        }
+        printf("Connected\n\r");
+    }
+    
+    if (packet_type == RFCOMM_DATA_PACKET){
+        // handle RFCOMM data packets
+        return;
+    }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[float, caption=Providing RFCOMM service., label=RFCOMMService]
+void btstack_setup(){
+    ...
+    rfcomm_init();
+    rfcomm_register_service_internal(NULL, rfcomm_channel_nr, mtu); 
+}
+
+void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    if (packet_type == RFCOMM_DATA_PACKET){
+        // handle RFCOMM data packets
+        return;
+    }
+    ...
+    switch (event) {
+        ...
+        case RFCOMM_EVENT_INCOMING_CONNECTION:
+            //data: event(8), len(8), address(48), channel(8), rfcomm_cid(16)
+            bt_flip_addr(event_addr, &packet[2]); 
+            rfcomm_channel_nr = packet[8];
+            rfcomm_channel_id = READ_BT_16(packet, 9);
+            rfcomm_accept_connection_internal(rfcomm_channel_id);
+            break;
+        case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+           // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
+            if (packet[2]) {
+                printf("RFCOMM channel open failed.");
+                break;
+            } 
+           // data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
+           rfcomm_channel_id = READ_BT_16(packet, 12);
+           mtu = READ_BT_16(packet, 14);
+           printf("RFCOMM channel open succeeded.);
+           break;
+        case RFCOMM_EVENT_CREDITS:
+        case DAEMON_EVENT_HCI_PACKET_SENT:
+            tryToSend();
+            break;
+
+        case RFCOMM_EVENT_CHANNEL_CLOSED:
+            printf("Channel closed.");
+            rfcomm_channel_id = 0;
+        break;
+    }
+}
+\end{lstlisting}
+
+\subsection{Access an RFCOMM service on a remote device}
+
+To communicate with an RFCOMM service on a remote device, the application on a local Bluetooth device initiates the RFCOMM layer using the \emph{rfcomm\_init} function, and then creates an outgoing RFCOMM channel to a given server channel on a remote device using the \emph{rfcomm\_create\_channel\_internal} function. The  \emph{rfcomm\_create\_channel\_intern-al} function will initiate a new L2CAP connection for the RFCOMM multiplexer, if it does not already exist. The channel will automatically provide enough credits to the remote side. To provide credits manually, you have to create the RFCOMM connection by calling \emph{rfcomm\_create\_channel\_with\_initial\_credits\_internal} - see Section \ref{sec:manualCredits}.
+
+
+The packet handler that is given as an input parameter of the RFCOMM create channel function will be assigned to the new outgoing \mbox{RFCOMM} channel. This handler receives the RFCOMM\_EVENT\_OPEN\_CHAN-NEL\_COMPLETE and RFCOMM\_EVENT\_CHANNEL\_CLOSED events, and RFCOMM data packets, as shown in Listing \ref{RFCOMMremoteService}.
+
+\subsection{Provide an RFCOMM service}
+\label{section:rfcomm_service}
+
+To provide an RFCOMM service, the application on a local Bluetooth device must first init the L2CAP and RFCOMM layers and then register the service with \emph{rfcomm\_register\_service\_internal}. From there on, it can wait for incoming RFCOMM connections. The application can accept or deny an incoming connection by calling the \emph{rfcomm\_accept\_connection-\_internal} and \emph{rfcomm\_deny\_connection\_internal} functions respectively. If a connection is accepted and the incoming RFCOMM channel gets successfully opened, the RFCOMM service can send RFCOMM data packets to the connected device with \emph{rfcomm\_send\_internal} and receive data packets by the packet handler provided by the \emph{rfcomm\_register\_service\_internal} call.
+
+Sending of RFCOMM data packets may fail due to a full internal BTstack outgoing packet buffer, or if the ACL buffers in the Bluetooth module become full, i.e., if the application is sending faster than the packets can be transferred over the air. In such case, the application can try sending again upon reception of DAEMON\_EVENT\_HCI\_PACKET\_SENT or RFCOMM\_EVENT\_CREDITS event. The first event signals that the internal BTstack outgoing buffer became free again, the second one signals that the remote side allowed to send another  packet. Listing \ref{RFCOMMService} provides the RFCOMM service example code.
+
+\begin{lstlisting}[caption= RFCOMM service with automatic credit management. , label=automaticFlowControl]
+void btstack_setup(void){
+    ...
+    // init RFCOMM
+    rfcomm_init();
+    rfcomm_register_packet_handler(packet_handler);
+    rfcomm_register_service_internal(NULL, rfcomm_channel_nr, 100); 
+}
+\end{lstlisting}
+
+\subsection{Slowing down RFCOMM data reception}
+\label{sec:manualCredits}
+RFCOMM has a mandatory credit-based flow-control that can be used to adapt, i.e., slow down the RFCOMM data to your processing speed. 
+For incoming data, BTstack provides channels and services with and without automatic credit management. 
+If the management of credits is automatic, see Listing \ref{automaticFlowControl},  new credits are provided when needed relying on ACL flow control. This is only useful if there is not much data transmitted and/or only one physical connection is used
+
+
+
+
+% \noindent\begin{minipage}\textwidth
+\begin{lstlisting}[ caption= RFCOMM service with manual credit management. , label=explicitFlowControl]
+void btstack_setup(void){
+    ...
+    // init RFCOMM
+    rfcomm_init();
+    rfcomm_register_packet_handler(packet_handler);
+    // reserved channel, mtu=100, 1 credit
+    rfcomm_register_service_with_initial_credits_internal(NULL, rfcomm_channel_nr, 100, 1);  
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption= Providing new credits , label=NewCredits]
+void processing(){
+    // process incoming data packet
+    ... 
+    // provide new credit
+    rfcomm_grant_credits(rfcomm_channel_id, 1);
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption=Creating record with the data element (\emph{de\_*}) functions., label=sdpCreate]
+uint8_t des_buffer[200];
+uint8_t* attribute;
+de_create_sequence(service);
+    
+// 0x0000 "Service Record Handle"
+de_add_number(des_buffer, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle);
+de_add_number(des_buffer, DE_UINT, DE_SIZE_32, 0x10001);
+    
+// 0x0001 "Service Class ID List"
+de_add_number(des_buffer,  DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);
+attribute = de_push_sequence(des_buffer);
+{
+    de_add_number(attribute,  DE_UUID, DE_SIZE_16, 0x1101 );
+}
+de_pop_sequence(des_buffer, attribute);
+\end{lstlisting}
+% \end{minipage}
+
+If the management of credits is manual, credits are provided by the application such that it can manage its receive buffers explicitly, see Listing \ref{explicitFlowControl}.
+
+Manual credit management is recommended when received RFCOMM data cannot be processed immediately. In the SPP flow control example in Section \ref{example:spp_flow_control}, delayed processing of received data is simulated with the help of a periodic timer. To provide new credits, you call the \emph{rfcomm\_grant\_credits} function with the RFCOMM channel ID and the number of credits as shown in Listing \ref{NewCredits}.
+Please note that providing single credits effectively reduces the credit-based (sliding window) flow control to a stop-and-wait flow-control that limits the data throughput substantially. On the plus side, it allows for a minimal memory footprint. If possible, multiple RFCOMM buffers should be used to avoid pauses while the sender has to wait for a new credit.
+
+% \newcommand{\FreeBSDHandbook}{\urlfoot{http://www.freebsd.org/doc/en\_US.ISO8859-1/books/handbook/network-bluetooth.html}{FreeBSD Handbook}}
+
+\subsection{Create SDP records}
+BTstack contains a complete SDP server and allows to register SDP records. An SDP record is a list of SDP Attribute \emph{\{ID, Value\}} pairs that are stored in a Data Element Sequence (DES). The Attribute ID is a 16-bit number, the value can be of other simple types like integers or strings or can itselff contain other DES. 
+
+
+To create an SDP record for an SPP service, you can call \emph{sdp\_create\_spp\_service} from \path{src/sdp_util.c} with a pointer to a buffer to store the record, the \mbox{RFCOMM} server channel number, and a record name. 
+
+For other types of records, you can use the other functions in \path{src/sdp_util.c}, using the data element \emph{de\_*} functions.  Listing \ref{sdpCreate} shows how an SDP record containing two SDP attributes can be created. First, a DES is created and then the Service Record Handle and Service Class ID List attributes are added to it. The Service Record Handle attribute is added by calling the \emph{de\_add\_number} function twice: the first time to add 0x0000 as attribute ID, and the second time to add the actual record handle (here 0x1000) as attribute value. The Service Class ID List attribute has ID 0x0001, and it requires a list of UUIDs as attribute value. To create the list, \emph{de\_push\_sequence} is called, which "opens" a sub-DES. The returned pointer is used to add elements to this sub-DES. After adding all UUIDs, the sub-DES is "closed" with \emph{de\_pop\_sequence}.
+
+\subsection{Query remote SDP service}
+
+BTstack provides an SDP client to query SDP services of a remote device. The SDP Client API  is shown in Appendix \ref{appendix:api_sdp_client}. The \emph{sdp\_client\_query} function initiates an L2CAP connection to the remote SDP server. Upon connect, a \emph{Service Search Attribute} request with a \emph{Service Search Pattern} and a \emph{Attribute ID List} is sent. The result of the \emph{Service Search Attribute} query contains a list of \emph{Service Records}, and each of them contains the requested attributes. These records are handled by the SDP parser. The parser delivers SDP\_PARSER\_ATTRIBUTE\_VALUE and SDP\_PARSER\_COMPLETE events via a registered callback. The SDP\_PARSER\_ATTRIBUTE\_VALUE event delivers the attribute value byte by byte.
+
+On top of this, you can implement specific SDP queries. For example, BTstack provides a query for RFCOMM service name and channel number. This information is needed, e.g., if you want to connect to a remote SPP service. The query delivers all matching RFCOMM services, including its name and the channel number, as well as a query complete  event via a registered callback, as shown in Listing \ref{SDPClientRFCOMM}.
+
+\begin{lstlisting}[caption=Searching RFCOMM services on a remote device., label=SDPClientRFCOMM ]
+bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
+
+void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    if (packet_type != HCI_EVENT_PACKET) return;
+
+    uint8_t event = packet[0];
+    switch (event) {
+        case BTSTACK_EVENT_STATE:
+            // bt stack activated, get started 
+            if (packet[2] == HCI_STATE_WORKING){
+            	  sdp_query_rfcomm_channel_and_name_for_uuid(remote, 0x0003);
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+static void btstack_setup(){
+   ...
+    // init L2CAP
+    l2cap_init();
+    l2cap_register_packet_handler(packet_handler);
+}
+
+void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
+    sdp_query_rfcomm_service_event_t * ve;
+            
+    switch (event->type){
+        case SDP_QUERY_RFCOMM_SERVICE:
+            ve = (sdp_query_rfcomm_service_event_t*) event;
+            printf("Service name: '%s', RFCOMM port %u\n", ve->service_name, ve->channel_nr);
+            break;
+        case SDP_QUERY_COMPLETE:
+            report_found_services();
+            printf("Client query response done with status %d. \n", ce->status);
+            break;
+    }
+}
+
+int main(void){
+    hw_setup();
+    btstack_setup();
+    
+    // register callback to receive matching RFCOMM Services and 
+    // query complete event 
+    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
+
+    // turn on!
+    hci_power_control(HCI_POWER_ON);
+    // go!
+    run_loop_execute(); 
+    return 0;
+}
+
+\end{lstlisting}
+
+
+\section{Examples}
+\label{examples}
+The \path{MSP-EXP430F5438-CC256x} folder in BTstack repository currently includes the following examples for the MSP430F5438 Experimenter Board:
+\begin{itemize}
+\item UART example:
+    \begin{itemize}
+    \item \emph{led\_counter}: provides UART and timer interrupt without Bluetooth.
+    \end{itemize}
+\item GAP example:
+    \begin{itemize}
+    \item \emph{gap\_inquiry}: uses GAP to discover surrounding Bluetooth devices and then requests their remote name.
+    \end{itemize}
+\item SPP Server examples :
+    \begin{itemize}
+    \item \emph{spp\_counter}: provides a virtual serial port via SPP and a periodic timer over RFCOMM. 
+    \item \emph{spp\_accel}: provides a virtual serial port via SPP. On connect, it sends the current accelerometer values as fast as possible.
+    \item \emph{spp\_flowcontrol}: provides a virtual serial port via SPP with manual RFCOMM credit management. Delayed processing of received data is simulated with the help of a periodic timer. 
+    \end{itemize}
+% \item SPP Client example: requires an SDP client to query SPP RFCOMM channel number. It is not yet provided by BTstack. Outgoing RFCOMM connections are fully supported otherwise.
+\item HID Host example:
+    \begin{itemize}                                    
+    \item \emph{hid\_demo}: on start, the device does a device discovery and connects to the first Bluetooth keyboard it finds, pairs, and allows to type on the little LCD screen. 
+%   \item \emph{mouse}: on start, the device does a device discovery and connects to the first Bluetooth keyboard it finds, paris, and allows move cursor on the screen. It is not yet provided by BTstack, but it can be created by combining existing parts.
+    \end{itemize}
+%\item HID Device examples:
+%   \begin{itemize}
+%   \item \emph{keyboard}: a keyboard device is simulated. Pressing the two buttons on the EXP430 board are mapped to Space and Enter. It is not yet provided by BTstack. %-- version for different board exists, needs to handle button IRQs
+%   \end{itemize}
+\item Low Energy example:
+    \begin{itemize}
+    \item \emph{ble\_server}: provides a ready-to-run example for a test Peripheral device. It assumes that a PAN1323 or 1326 module with a CC2564 chipset is used.
+    \item \emph{gatt\_browser}: shows how to use the GATT Client API to discover primary services and their characteristics.
+    \end{itemize}
+\item Dual mode example:
+	 \begin{itemize}
+     \item \emph{spp\_and\_ble\_counter}: \todo{TODO}
+     \end{itemize}
+    
+\end{itemize}
+
+In all examples the debug UART port is configured at 57600 bps speed. 
+
+\subsection{led\_counter: UART and timer interrupt without Bluetooth}
+The example demonstrates how to setup hardware, initialize BTstack without Bluetooth, provide a periodic timer to toggle an LED and print number of toggles as a minimal BTstack test.
+
+\subsubsection{Periodic Timer Setup}
+$ $
+\begin{lstlisting}[caption=Periodic counter, label=LEDToggler]
+void heartbeat_handler(timer_source_t *ts){
+    // increment counter
+    char lineBuffer[30];
+    sprintf(lineBuffer, "BTstack counter %04u\n\r", ++counter);
+    printf(lineBuffer);
+    
+    // toggle LED
+    LED_PORT_OUT = LED_PORT_OUT ^ LED_2;
+    
+    // re-register timer
+    run_loop_register_timer(ts, HEARTBEAT_PERIOD_MS);
+} 
+\end{lstlisting}
+
+As timers in BTstack are single shot, the periodic counter is implemented by re-registering the \emph{timer\_source} in the \emph{heartbeat\_handler} callback function. The general setup is explained in Section \ref{section:periodicTimer}. Listing \ref{LEDToggler} shows \emph{heartbeat\_handler} adapted to periodically toggle an LED and print number of toggles.
+
+
+\subsubsection{Turn On and Go}
+
+Listing \ref{RunLoopExecution} shows how to setup and start the run loop. For hardware and BTstack setup, please check the source code. 
+
+\begin{lstlisting}[float, caption= Run loop execution., label=RunLoopExecution]
+void timer_setup(){
+    // set one-shot timer
+    heartbeat.process = &timer_handler;
+    run_loop_register_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
+}
+
+int main(void){
+    hw_setup();
+    btstack_setup();
+    timer_setup();
+    
+    // go!
+    run_loop_execute(); 
+    
+    // happy compiler!
+    return 0;
+}
+\end{lstlisting}
+
+    
+\subsection{gap\_inquiry: GAP Inquiry Example}
+\label{example:GapInquiry}
+
+The Generic Access Profile (GAP) defines how Bluetooth devices discover and establish a connection with each other. In this example, the application discovers  surrounding Bluetooth devices and collects their Class of Device (CoD), page scan mode, clock offset, and RSSI. After that, the remote name of each device is requested. In the following section we outline the Bluetooth logic part, i.e., how the packet handler handles the asynchronous events and data packets.
+
+\subsubsection{Bluetooth Logic}
+The Bluetooth logic is implemented as a state machine within the packet handler. In this example, the following states are passed sequentially: INIT, W4\_INQUIRY\_MODE\_COMPLETE, and ACTIVE. 
+
+In INIT, the application enables the extended inquiry mode, which includes RSSI values, and transits to W4\_INQUIRY\_MODE\_COMPLETE state.
+
+In W4\_INQUIRY\_MODE\_COMPLETE, after the inquiry mode was set, an inquiry scan is started, and the application transits to ACTIVE state. 
+
+IN ACTIVE, the following events are processed:
+\begin{itemize}
+\item Inquiry result event: the list of discovered devices is processed and the Class of Device (CoD), page scan mode, clock offset, and RSSI are stored in a table.
+\item Inquiry complete event: the remote name is requested for devices without a fetched name. The state of a remote name can be one of the following: REMOTE\_NAME\_REQUEST, REMOTE\_NAME\_INQUIRED, or REMOTE\_NAME\_FETCHED.
+\item Remote name cached event: prints cached remote names provided by BTstack - if persistent storage is provided.
+\item Remote name request complete event: the remote name is stored in the table and the state is updated to REMOTE\_NAME\_FETCHED. The query of remote names is continued.
+\end{itemize}
+
+For more details please check Section \ref{section:DiscoverDevices} and the source code.
+
+%*************************************
+
+\begin{lstlisting}[caption=SPP service setup, label=SPPSetup]
+void btstack_setup(void){
+    btstack_memory_init();
+    run_loop_init(RUN_LOOP_EMBEDDED);
+    
+    // init HCI
+    hci_transport_t   * transport = hci_transport_h4_dma_instance();
+    bt_control_t      * control   = bt_control_cc256x_instance();
+    hci_uart_config_t * config  = hci_uart_config_cc256x_instance();
+    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
+    hci_init(transport, config, control, remote_db);
+    hci_register_packet_handler(packet_handler);
+    
+    // init L2CAP
+    l2cap_init();
+    l2cap_register_packet_handler(packet_handler);
+    
+    // init RFCOMM
+    rfcomm_init();
+    rfcomm_register_packet_handler(packet_handler);
+    rfcomm_register_service_internal(NULL, rfcomm_channel_nr, 100); 
+
+    // init SDP, create record for SPP and register with SDP
+    sdp_init();
+    memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
+    service_record_item_t * service_record_item = (service_record_item_t *) spp_service_buffer;
+    sdp_create_spp_service( (uint8_t*) &service_record_item->service_record, 1, "SPP Counter");
+    sdp_register_service_internal(NULL, service_record_item);   
+}
+\end{lstlisting}
+
+\subsection {spp\_counter: SPP Server - Heartbeat Counter over RFCOMM}
+\label{section:sppcounter}
+    The Serial port profile (SPP) is widely used as it provides a serial port over Bluetooth. The SPP counter example demonstrates how to setup an SPP service, and provide a periodic timer over RFCOMM. 
+    
+ \subsubsection{SPP Service Setup}
+    
+    SPP is based on RFCOMM, a Bluetooth protocol that emulates RS-232 serial ports. To access an RFCOMM serial port on a remote device, a client has to query its Service Discovery Protocol (SDP) server. The SDP response for an SPP service contains the RFCOMM channel number. To provide an SPP service, you need to initialize memory (Section \ref{section:memory_configuration}) and the run loop (Section \ref{section:run_loop}), setup HCI (Section \ref{section:btstack_initialization}) and L2CAP, then register an RFCOMM service and provide its RFCOMM channel number as part of the Protocol List attribute of the SDP record . Example code for SPP service setup is provided in Listing \ref{SPPSetup}. The SDP record created by $sdp\_create\_spp\_service$ consists of a basic SPP definition that uses provided RFCOMM channel ID and service name. For more details, please have a look at it in \path{include/btstack/sdp_util.c}. The SDP record is created on the fly in RAM and is deterministic. To preserve valuable RAM, the result can be stored as constant data inside the ROM.
+
+    
+\subsubsection{Periodic Timer Setup}
+
+The heartbeat handler increases the real counter every second, as shown in Listing \ref{PeriodicCounter}. The general setup is explained in Section \ref{section:periodicTimer}.
+
+\begin{lstlisting}[caption=Periodic counter, label=PeriodicCounter]
+#define HEARTBEAT_PERIOD_MS 1000
+
+void  theartbeat_handler(timer_source_t *ts){
+    real_counter++;
+    // re-register timer
+    run_loop_register_timer(ts, HEARTBEAT_PERIOD_MS);
+} 
+
+\end{lstlisting}
+
+\subsubsection{Bluetooth logic}
+The Bluetooth logic is implemented as a state machine within the packet handler, see Listing \ref{SppServerPacketHandler}. In this example, the following states are passed sequentially: INIT, W4\_CONNECTION, W4\_CHANNEL\_COMPLETE, and ACTIVE.
+
+\begin{lstlisting}[float, caption=SPP Server - Heartbeat Counter over RFCOMM., label=SppServerPacketHandler]
+void prepareData(void){
+   counter_to_send++;
+}
+
+void tryToSend(void){
+    // see Quick Recipe 5.4, Listing 8
+}
+
+void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
+    ...    
+    switch(state){
+        case INIT:
+            if (packet[2] == HCI_STATE_WORKING) {
+                hci_send_cmd(&hci_write_local_name, "BTstack Demo");
+                state = W4_CONNECTION;
+            }
+            break;
+
+        case W4_CONNECTION:
+            switch (event) {
+                case HCI_EVENT_PIN_CODE_REQUEST:
+                    // see Quick Recipe 5.7
+                    break;
+                case RFCOMM_EVENT_INCOMING_CONNECTION:
+                    // see Quick Recipe 5.11
+                    state = W4_CHANNEL_COMPLETE;
+                    break;
+            }
+        
+        case W4_CHANNEL_COMPLETE:
+            if (event != RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE) break;
+            // see Quick Recipe 5.11
+            // state: W4_CONNECTION on failure, otherwise ACTIVE
+            break;
+        
+        case ACTIVE:
+            // see Quick Recipe 5.4, Listing 9
+            // state: W4_CONNECTION on channel closed
+            break;
+        ...
+    }
+}
+\end{lstlisting}
+
+In INIT, upon successful startup of BTstack, the local Bluetooth name is set, and the state machine transits to W4\_CONNECTION.
+
+The W4\_CONNECTION state handles authentication and accepts incoming RFCOMM connections. It uses a fixed PIN code "0000" for authentication. An incoming RFCOMM  connection is accepted, and the state machine progresses to W4\_CHANNEL\_COMPLETE.  More logic is need, if you want to handle connections from multiple clients. The incoming RFCOMM connection event contains the RFCOMM channel number used during the SPP setup phase and the newly assigned RFCOMM channel ID that is used by all BTstack commands and events. 
+
+In W4\_CHANNEL\_COMPLETE state, an error in the channel establishment fails (rare case, e.g., client crashes), the application returns to the W4\_CONNE-CTION state. On successful connection, the RFCOMM channel ID and MTU for this channel are made available to the heartbeat counter and the state machine transits to ACTIVE.
+
+While in the ACTIVE state, the communication between client and the application takes place. In this example, the timer handler increases the real counter every second. The packet handler tries to send this information when an RFCOMM credit (RFCOMM\_EVENT\_CREDITS) or an HCI packet sent event (DAEMON\_EVENT\_HCI\_PACKET\_SENT) are received. These two events represent two orthogonal mechanisms that deal with flow control. A packet can only be sent when an RFCOMM credit is available and the internal BTstack outgoing packet buffer is free.
+
+
+%*************************************
+\subsection{spp\_accel: SPP Server - Accelerator Values}
+In this example, the server tries to send the current accelerometer values. It does not use a periodic timer, instead, it sends the data as fast as possible. 
+
+
+%*************************************
+\subsection {spp\_flowcontrol: SPP Server - Flow Control}
+\label{example:spp_flow_control}
+This example adds explicit flow control for incoming RFCOMM data to the SPP heartbeat counter example. We will highlight the changes compared to the SPP counter example. 
+
+\subsubsection{SPP Service Setup}
+
+Listing \ref{explicitFlowControl} shows how to provide one initial credit during RFCOMM service initialization. Please note that providing a single credit effectively reduces the credit-based (sliding window) flow control to a stop-and-wait flow control that limits the data throughput substantially.
+
+\begin{lstlisting}[caption= Heartbeat handler with manual credit management. , label=hbhManual]
+void  heartbeat_handler(struct timer *ts){
+    if (rfcomm_send_credit){
+        rfcomm_grant_credits(rfcomm_channel_id, 1);
+        rfcomm_send_credit = 0;
+    }
+    run_loop_register_timer(ts, HEARTBEAT_PERIOD_MS);
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption= Packet handler with manual credit management. , label=phManual]
+void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    ...
+    if (packet_type == RFCOMM_DATA_PACKET){
+        packet[size] = 0;
+        puts( (const char *) packet);
+        rfcomm_send_credit = 1;
+        return;
+    }
+    ...
+}
+\end{lstlisting}
+
+
+\subsubsection{Periodic Timer Setup}
+
+Explicit credit management is recommended when received RFCOMM data cannot be processed immediately. In this example, delayed processing of received data is simulated with the help of a periodic timer as follows. When the packet handler receives a data packet, it does not provide a new credit, it sets a flag instead. If the flag is set, a new credit will be granted by the heartbeat handler, introducing a delay of up to 1 second. The heartbeat handler code is shown in Listing \ref{hbhManual}. The general setup is explained in Section \ref{section:periodicTimer}.
+
+%*************************************
+
+\subsection {ble\_server: LE Peripheral}
+\label{example:ble_browser}
+
+This example shows how to create an LE peripheral. The peripheral can be discovered by other devices and provides a GATT Server. The GATT server allows to discover the primary services, and read and write their characteristics. The BTstack setup code is written for a PAN1323 or 1326 module with a CC2564 chipset.
+
+\begin{lstlisting}[caption=ATT Database ., label=code:lePeripheralDatabase]
+PRIMARY_SERVICE, GAP_SERVICE
+CHARACTERISTIC, GAP_DEVICE_NAME, READ, "BTstack LE Peripheral"
+CHARACTERISTIC, GAP_APPEARANCE, READ, 00 00
+
+PRIMARY_SERVICE, GATT_SERVICE
+CHARACTERISTIC, GATT_SERVICE_CHANGED, READ,
+
+PRIMARY_SERVICE, FFF0
+CHARACTERISTIC, FFF1, READ | WRITE | DYNAMIC, 
+CHARACTERISTIC, FFF2, READ | WRITE | DYNAMIC, 
+\end{lstlisting}
+
+
+
+\begin{lstlisting}[caption= Setting up LE peripheral., label=code:lePeripheralSetup]
+void setup(void){
+  ...
+  // set up l2cap_le
+  l2cap_init();
+    
+  // setup central device db
+  central_device_db_init();
+
+  // setup SM: Display only
+  sm_init();
+  sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+  sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION); 
+
+  // setup ATT server
+  att_server_init(profile_data, NULL, att_write_callback);  
+  att_server_register_packet_handler(app_packet_handler);
+}
+\end{lstlisting}
+
+
+\begin{lstlisting}[caption= Read callback ., label=code:lePeripheralReadCallback]
+uint16_t chr01_value_length = 0;
+uint16_t max_chr01_value_length = 40;
+char chr01_value[max_chr01_value_length];
+char chr02_value = 0;
+
+uint16_t get_read_att_value_len(uint16_t att_handle);
+uint16_t get_write_att_value_len(uint16_t att_handle);
+uint16_t get_bytes_to_copy(uint16_t value_len, uint16_t offset);
+
+uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+  printf("READ Callback, handle %04x\n", att_handle);
+  uint16_t value_len = get_att_read_value_len(att_handle);
+  if (!buffer) return value_len;
+      
+  uint16_t bytes_to_copy = get_bytes_to_copy(value_len, offset);
+  if (!bytes_to_copy) return 0;
+  
+  switch(att_handle){
+    case ATT_CHARACTERISTIC_FFF1_01_HANDLE:
+      memcpy(buffer, &chr01_value[offset], bytes_to_copy);
+      break;
+    case ATT_CHARACTERISTIC_FFF2_01_VALUE_HANDLE:
+      buffer[offset] = chr02_value;
+      break;
+  }
+  return bytes_to_copy;
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption= Write callback ., label=code:lePeripheralWriteCallback]
+int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+  printf("WRITE Callback, handle %04x\n", att_handle);
+  
+  uint16_t value_len = get_write_att_value_len(att_handle);
+  uint16_t bytes_to_copy = get_bytes_to_copy(value_len, offset);
+  if (!bytes_to_copy) return ATT_ERROR_INVALID_OFFSET;
+  
+  switch(att_handle){
+    case ATT_CHARACTERISTIC_FFF1_01_HANDLE:
+      buffer[buffer_size] = 0;
+      memcpy(&chr01_value[offset], buffer, bytes_to_copy);
+      chr01_value_length = bytes_to_copy + offset;
+      
+      printf("New text: %s\n", buffer);
+      overwriteLine(7, (char*)buffer);
+      break;
+    case ATT_CHARACTERISTIC_FFF2_01_VALUE_HANDLE:
+      printf("New value: %u\n", buffer[offset]);
+      if (buffer[offset])
+        LED_PORT_OUT |= LED_2;
+      } else {
+        LED_PORT_OUT &= ~LED_2;
+      }
+      chr02_value = buffer[offset];
+      break;
+  }
+  return 0;
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption= Write callback ., label=code:lePeripheralATTPacketHandler]
+static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+  if (packet_type != HCI_EVENT_PACKET) return;
+  bd_addr_t addr;
+  uint8_t adv_data[] = { 02, 01, 05,   03, 02, 0xf0, 0xff }; 
+  switch (packet[0]) {
+	case BTSTACK_EVENT_STATE:
+	  // bt stack activated, get started - set local name
+	  if (packet[2] == HCI_STATE_WORKING) {
+         printf("Working!\n");
+         hci_send_cmd(&hci_le_set_advertising_data, sizeof(adv_data), adv_data);
+      }
+      break;
+    case BTSTACK_EVENT_NR_CONNECTIONS_CHANGED:
+      if (packet[2]) {
+        overwriteLine(4, "CONNECTED");
+      } else {
+        overwriteLine(4, "NOT CONNECTED");
+      }
+      break;
+    case HCI_EVENT_DISCONNECTION_COMPLETE:
+      // restart advertising
+      hci_send_cmd(&hci_le_set_advertise_enable, 1);
+      break;
+    case HCI_EVENT_COMMAND_COMPLETE:
+      if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)){
+        bt_flip_addr(addr, &packet[6]);
+        printf("BD ADDR: %s\n", bd_addr_to_str(addr));
+        break;
+      }
+      if(COMMAND_COMPLETE_EVENT(packet,   hci_le_set_advertising_data)){
+        hci_send_cmd(&hci_le_set_scan_response_data,10,adv_data);
+        break;
+      }
+      if(COMMAND_COMPLETE_EVENT(packet, hci_le_set_scan_response_data)){
+        hci_send_cmd(&hci_le_set_advertise_enable, 1);
+        break;
+      }
+  }
+}
+\end{lstlisting}
+
+
+%*************************************
+\subsection {gatt\_browser: GATT Client - Discovering primary services and their characteristics}
+\label{example:gatt_browser}
+This example shows how to use the GATT Client API to discover primary services and their characteristics of the first found device that is advertising its services.
+
+The logic is divided between the HCI and GATT client packet handlers. The HCI packet handler with its state machine is responsible for finding and connecting to a remote device, and for starting the first GATT client query. Then, the GATT client packet handler receives all primary services and requests the characteristics of the last one to keep the example short.
+
+\subsubsection{Setting up GATT client}
+In setup phase, a GATT client must register the HCI and GATT client packet handlers, as shown in Listing \ref{code:gattClientSetup}. Additionally, the security manager can be setup, if signed writes, or encrypted or authenticated connection, are required to access the characteristics, as explained in Section \ref{section:security_manager}.  
+
+\begin{lstlisting}[caption= Setting up GATT client., label=code:gattClientSetup]
+typedef enum {
+  IDLE,
+  W4_SCAN_RESULT,
+  W4_CONNECT,
+  W4_SERVICE_RESULT,
+  W4_CHARACTERISTIC_RESULT,
+  W4_DISCONNECT
+} gc_state_t;
+
+gc_state_t state = TC_IDLE;
+gatt_client_t gc_context;
+
+// Handles connect, disconnect, and advertising report events,  
+// starts the GATT client, and sends the first query.
+void handle_hci_event(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
+// Handles GATT client query results, sends queries and the 
+// GAP disconnect command when the querying is done.
+void handle_gatt_client_event(le_event_t * event);
+
+void setup(void){
+  ...
+  // Initialize L2CAP and register HCI event handler
+  l2cap_init();
+  l2cap_register_packet_handler(&handle_hci_event);
+
+  // Initialize GATT client and register handler for GATT client
+  // events
+  gatt_client_init();
+  gatt_client_register_packet_handler(&handle_gatt_client_event);
+  
+  // Optionally, setup security manager for signed writes or 
+  // encrypted or authenticated connection
+  sm_init();
+  sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+}
+\end{lstlisting}
+
+\subsubsection{Packet handlers}
+The GATT browser goes sequentially through the states: IDLE, W4\_SCAN\_RESULT, W4\_CONNECT,  W4\_SERVICE\_RESULT,  
+\\ W4\_CHARACTERISTIC\_RESULT, and W4\_DISCONNECT. 
+
+The W4\_SERVICE\_RESULT and W4\_CHARACTERISTIC\_RESULT states compose the state machine of the GATT client packet handler, as it reacts on GATT client events. The other states compose the state machine of the HCI packet handler.
+
+In detail, the HCI packet handler has to start the scanning, to find the first advertising device, to stop scanning, to connect to and later to disconnect from it, to start the gatt client upon the connection is completed, and to send the first query - in this case the \emph{gatt\_client\_discover\_primary\_services} query is called, see Listing \ref{code:gattBrowserHCIPacketHandler}. A convenience function for filling advertising report struct from data packet is shown in Listing \ref{code:gattBrowserAdvReport}. 
+
+Query results and further queries are handled by the gatt client packet handler, as shown in Listing \ref{code:gattBrowserQueryHandler}. Here, upon receiving the primary services,  the \emph{gatt\_client\_discover\_characteristics\_for\_service} query for the last received service is sent. After receiving the characteristics for the service, the \emph{gap\_disconnect} is called to terminate the connection. Upon disconnect, the HCI packet handler receives the disconnect complete event, and has to call \emph{gatt\_client\_stop} function to remove the disconnected device from the list of active GATT clients.
+
+\begin{lstlisting}[caption= Advertising report handling., label=code:gattBrowserHCIPacketHandler]
+void handle_hci_event(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+  advertising_report_t report;
+  uint16_t gc_handle;
+  uint8_t event = packet[0];
+  
+  switch (event) {
+    case BTSTACK_EVENT_STATE:
+      if (packet[2] != HCI_STATE_WORKING) break;
+      // BTstack activated, start scanning
+      state = TC_W4_SCAN_RESULT;
+      le_central_start_scan(); 
+      break;
+    case GAP_LE_ADVERTISING_REPORT:
+      if (state != TC_W4_SCAN_RESULT) return;
+      state = TC_W4_CONNECT;
+      fill_advertising_report_from_packet(&report, packet);
+      // stop scanning, and connect to the device
+      le_central_stop_scan();
+      le_central_connect(&report.address,report.address_type);
+      break;
+    case HCI_EVENT_LE_META:
+      // wait for connection complete
+      if (packet[2] !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+      if (state != TC_W4_CONNECT) return;
+      gc_handle = READ_BT_16(packet, 4);
+      // initialize gatt client context with handle, and add it to the list of active clients
+      gatt_client_start(&gc_context, gc_handle);
+      // query primary services
+      state = TC_W4_SERVICE_RESULT;
+      gatt_client_discover_primary_services(&gc_context);
+      break;
+    case HCI_EVENT_DISCONNECTION_COMPLETE:
+      // disconnect gatt client 
+      gatt_client_stop(&gc_context);
+      exit(0);
+      break;
+    default:
+      break;
+  }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption=Convenience function for filling advertising report struct from data packet., label=code:gattBrowserAdvReport]
+typedef struct advertising_report {
+  uint8_t   type;
+  uint8_t   event_type;
+  uint8_t   address_type;
+  bd_addr_t address;
+  uint8_t   rssi;
+  uint8_t   length;
+  uint8_t * data;
+} advertising_report_t;
+
+void fill_advertising_report_from_packet(advertising_report_t * report, uint8_t *packet){
+  int pos = 2;
+  report->event_type = packet[pos++];
+  report->address_type = packet[pos++];
+  memcpy(report->address, &packet[pos], 6);
+  pos += 6;
+  report->rssi = packet[pos++];
+  report->length = packet[pos++];
+  report->data = &packet[pos];
+  pos += report->length;
+  dump_advertising_report(report);
+  
+  bd_addr_t found_device_addr;
+  memcpy(found_device_addr, report->address, 6);
+  swapX(found_device_addr, report->address, 6);
+}
+\end{lstlisting}
+
+
+\begin{lstlisting}[caption=GATT client queries handling., label=code:gattBrowserQueryHandler]
+le_service_t service;
+le_characteristic_t characteristic;
+  
+void handle_gatt_client_event(le_event_t * event){
+  switch(state){
+    case TC_W4_SERVICE_RESULT:
+      switch(event->type){
+        case GATT_SERVICE_QUERY_RESULT:
+          service = ((le_service_event_t *) event)->service;
+          break;
+        case GATT_QUERY_COMPLETE:
+          state = TC_W4_CHARACTERISTIC_RESULT;
+          gatt_client_discover_characteristics_for_service(&gc_context, &service);
+          break;
+        default:
+          break;
+      }
+      break;
+    case TC_W4_CHARACTERISTIC_RESULT:
+      switch(event->type){
+        case GATT_CHARACTERISTIC_QUERY_RESULT:
+          characteristic = ((le_characteristic_event_t *) event)->characteristic;
+          break;
+        case GATT_QUERY_COMPLETE:
+          state = TC_W4_DISCONNECT;
+          gap_disconnect(gc_context.handle);
+          break;
+        default:
+          break;
+      }
+      break;
+    default:
+      break;
+  }
+}
+\end{lstlisting}
+
+
+\section{Porting to Other Platforms}
+
+In this chapter, we highlight the BTstack components that need to be adjusted for different hardware platforms.
+\subsection{Tick Hardware Abstraction Layer}
+\label{section:tickAbstraction}
+
+BTstack requires a way to learn about passing time. In an embedded configuration, the following functions have to be provided. The \emph{hal\_tick\_init} and the \emph{hal\_tick\_set\_handler} functions will be called during the initialization of the run loop.
+ 
+ \begin{lstlisting}
+void hal_tick_init(void);
+void hal_tick_set_handler(void (*tick_handler)(void));
+int  hal_tick_get_tick_period_in_ms(void);
+ \end{lstlisting}
+ 
+\subsection{Bluetooth Hardware Control API}
+\label{section:bt_hw_control}
+The Bluetooth hardware control API can provide the HCI layer with a custom initialization script, a vendor-specific baud rate change command, and system power notifications. It is also used to control the power mode of the Bluetooth module, i.e., turning it on/off and putting to sleep. In addition, it provides an error handler \emph{hw\_error} that is called when a Hardware Error is reported by the Bluetooth module. The callback allows for persistent logging or signaling of this failure. \todo{add recipe}
+
+Overall, the struct \emph{bt\_control\_t} encapsulates common functionality that is not covered by the Bluetooth specification. As an example, the \emph{bt\_control\_cc256x\_in-stance} function returns a pointer to a control struct suitable for the CC256x chipset.
+
+ \subsection{HCI Transport Implementation}
+ \label{section:hci_transport}
+On embedded systems, a Bluetooth module can be connected via USB or an UART port. BTstack implements two UART based protocols for carrying HCI commands, events and data between a host and a Bluetooth module: HCI UART Transport Layer (H4) and H4 with eHCILL support, a lightweight low-power variant by Texas Instruments.
+
+ \subsubsection{HCI UART Transport Layer (H4)}
+ \label{section:hciUART}
+Most embedded UART interfaces operate on the byte level and generate a processor interrupt when a byte was received. In the interrupt handler, common UART drivers then place the received data in a ring buffer and set a flag for further processing or notify the higher-level code, i.e., in our case the Bluetooth stack.
+
+Bluetooth communication is packet-based and a single packet may contain up to 1021 bytes. Calling a data received handler of the Bluetooth stack for every byte creates an unnecessary overhead. To avoid that, a Bluetooth packet can be read as multiple blocks where the amount of bytes to read is known in advance. Even better would be the use of on-chip DMA modules for these block reads, if available.
+
+%During the BTstack will request up to three reads: first to get the packet type, second to get ACL or Event header, and last one to read the payload. 
+
+The BTstack UART Hardware Abstraction Layer API reflects this design approach and the underlying UART driver has to implement the following API:
+
+ \begin{lstlisting}
+void hal_uart_dma_init(void);
+void hal_uart_dma_set_block_received(void (*block_handler)(void));
+void hal_uart_dma_set_block_sent(void (*block_handler)(void));
+int  hal_uart_dma_set_baud(uint32_t baud);
+void hal_uart_dma_send_block(const uint8_t *buffer, uint16_t len);
+void hal_uart_dma_receive_block(uint8_t *buffer, uint16_t len);
+ \end{lstlisting}
+ 
+The main HCI H4 implementations for embedded system is \emph{hci\_h4\_transport-\_dma} function. This function calls the following sequence: \emph{hal\_uart\_dma\_init}, \emph{hal\_uart\_dma\_set\_block\_received} and \emph{hal\_uart\_dma\_set\_block\_sent} functions. \mbox{After} this sequence, the HCI layer will start packet processing by calling \emph{hal\_uart-\_dma\_receive\_block} function. The HAL implementation is responsible for reading the requested amount of bytes, stopping incoming data via the RTS line when the requested amount of data was received and has to call the handler. By this, the HAL implementation can stay generic, while requiring only three callbacks per HCI packet. 
+
+\subsubsection{H4 with eHCILL support}
+With the standard H4 protocol interface, it is not possible for either the host nor the baseband controller to enter a sleep mode. Besides the official H5 protocol, various chip vendors came up with proprietary solutions to this. The eHCILL support by Texas Instruments allows both the host and the baseband controller to independently enter sleep mode without loosing their synchronization with the HCI H4 Transport Layer. In addition to the IRQ-driven block-wise RX and TX, eHCILL requires a callback for CTS interrupts.
+
+\begin{lstlisting}
+void hal_uart_dma_set_cts_irq_handler(void(*cts_irq_handler)(void));
+void hal_uart_dma_set_sleep(uint8_t sleep);
+\end{lstlisting}
+
+
+\subsection{Persistent Storage API}
+\label{section:persistent_storage}
+
+On embedded systems there is no generic way to persist data like link keys or remote device names, as every type of a device has its own capabilities, particularities and limitations. The persistent storage API provides an interface to implement concrete drivers for a particular system. As an example and for testing purposes, BTstack provides the memory-only implementation \emph{remote\_device\_db\_memory}. An implementation has to conform to the interface in Listing \ref{persistentDB}.
+\\
+
+\begin{lstlisting}[caption=Persistent Storage Interface., label=persistentDB]
+typedef struct {
+    // management
+    void (*open)();
+    void (*close)();
+    
+    // link key
+    int  (*get_link_key)(bd_addr_t *bd_addr, link_key_t *link_key);
+    void (*put_link_key)(bd_addr_t *bd_addr, link_key_t *key);
+    void (*delete_link_key)(bd_addr_t *bd_addr);
+    
+    // remote name
+    int (*get_name)(bd_addr_t *bd_addr, device_name_t *device_name);
+    void(*put_name)(bd_addr_t *bd_addr, device_name_t *device_name);
+    void(*delete_name)(bd_addr_t *bd_addr);
+} remote_device_db_t;
+
+\end{lstlisting}
+
+\section{Integrating with Existing Systems}
+
+While the run loop provided by BTstack is sufficient for new designs, BTstack is often used with or added to existing projects. In this case, the run loop, data sources, and timers may need to be adapted. The following two sections provides a guideline for single and multi-threaded environments.
+
+To simplify the discussion, we'll consider an application split into "Main \mbox{Application}", "Communication Logic", and "BTstack". The Communication Logic contains the packet handler (PH) that handles all asynchronous events and data packets from BTstack. The Main Application makes use of the Communication Logic for its Bluetooth communication.
+
+\subsection{Adapting BTstack for Single-Threaded Environments}
+\label{section:singlethreading}
+
+In a single-threaded environment, all application components run on the same (single) thread and use direct function calls as shown in Figure \ref{fig:BTstackSingle}.
+
+\begin{figure}[htbp] %  figure placement: here, top, bottom, or page
+   \centering
+   \includegraphics[width=0.3\textwidth]{picts/singlethreading-btstack.pdf} 
+   \caption{BTstack in single-threaded environment. }
+   \label{fig:BTstackSingle}
+\end{figure}
+
+BTstack provides a basic run loop that supports the concept of data sources and timers, which can be registered centrally. This works well when working with a small MCU and without an operating system.
+To adapt to a basic operating system or a different scheduler, BTstack's run loop can be implemented based on the functions and mechanism of the existing system. 
+
+Currently, we have two examples for this:
+\begin{itemize}
+\item \emph{run\_loop\_cocoa.c} is an implementation for the CoreFoundation Framework used in OS X and iOS. All run loop functions are implemented in terms of CoreFoundation calls, data sources and timers are modeled as CFSockets and CFRunLoopTimer respectively. 
+\item \emph{run\_loop\_posix.c} is an implementation for POSIX compliant systems. The data sources are modeled as file descriptors and managed in a linked list. Then, the\emph{select} function is used to wait for the next file descriptor to become ready or timer to expire. 
+\end{itemize}
+
+\subsection{Adapting BTstack for Multi-Threaded Environments}
+\label{section:multithreading}
+
+The basic execution model of BTstack is a general while loop. Aside from interrupt-driven UART and timers, everything happens in sequence. 
+When using BTstack in a multi-threaded environment,  this assumption has to stay valid - at least with respect to BTstack. For this, there are two common options:
+
+\begin{figure}[ht]
+\begin{minipage}[b]{\linewidth}
+\centering
+   \includegraphics[width=0.8\textwidth]{picts/multithreading-monolithic.pdf} 
+   \caption{BTstack in multi-threaded environment - monolithic solution.}
+   \label{fig:BTstackMonolithic}
+\vspace{0.8cm}
+\end{minipage}
+
+\begin{minipage}[b]{\linewidth}
+\centering
+   \includegraphics[width=0.8\textwidth]{picts/multithreading-btdaemon.pdf} 
+   \caption{BTstack in multi-threaded environment - solution with daemon.}
+   \label{fig:BTstackDaemon}
+\end{minipage}
+\end{figure}
+
+\begin{itemize}
+\item The Communication Logic is implemented on a dedicated BTstack thread, and the Main Application communicates with the BTstack thread via application-specific messages over an Interprocess Communication (IPC) as depicted in Figure \ref{fig:BTstackMonolithic}. This option results in less code and quick adaption.
+\item BTstack must be extended to run standalone, i.e, as a Daemon, on a dedicated thread and the Main Application controls this daemon via BTstack extended HCI command over IPC - this is used for the non-embedded version of BTstack e.g., on the iPhone and it is depicted in Figure \ref{fig:BTstackDaemon}. This option requires more code but provides more flexibility.
+\end{itemize}
+
+
+\pagebreak
+
+\section{Generic Access Profile for Low Energy- GAP}
+The Generic Access Profile (GAP) defines how to discover and how to connect to a Bluetooth device. There are several GAP roles that a Bluetooth device can take, but the most important ones are the Central and the Peripheral role. Peripheral devices are those that provide information or can be controlled and central devices are those that consume information or control the peripherals. Before the connection can be established, devices are first going through the advertising process. What happens with the peripheral device after the central device connect to a it, depends on the peripheral's Bluetooth controller. The peripheral will either stop advertising itself and other devices will no longer be able to see it or connect to it until the existing connection is broken, or it will be able to continue with advertising so that the parallel connections can be established.
+
+\subsection{GAP BLE Roles}
+There are four GAP roles defined for a Bluetooth low energy device: Broadcaster, Observer, Peripheral and Central. A device may operate in multiple GAP roles concurrently.
+
+\subsubsection{GAP Broadcaster Role}
+A broadcast device only sends advertisements and cannot be connected. It can emit some useful data as part of the advertisement. The most prominent use for this is Apple's iBeacon technology which uses broadcast devices to emit a unique ID. Apple's iOS framework then help to map this ID onto a specific location, e.g., in a museum.
+Broadcasting is efficient as no connection and no ATT database are needed. To control energy consumption the broadcast interval can be configured. An advertisement can contain up to 31 bytes of information. In addition, another 31 bytes of information can be sent in the scan response.
+
+\subsubsection{GAP Observer Role}
+An observer device only receives advertising events and cannot be connected. 
+
+\subsubsection{GAP Central Role} The role of the central device is to scan for peripherals, connect to them, and discover and receive data from them or sends data to control them. During scanning the central device can retrieve information on other device such are its name and unique number, as well as some broadcast data from its services. Upon connection, the central explores the device by discovering its primary and included services, characteristics, and characteristic descriptors.
+
+\subsubsection{GAP Peripheral Role} The role of a peripheral device is to deliver information on their inputs, i.e. sensor values, battery level, current time, to the applications running on central devices. It can also receive a write request from a central device and control connected actors, e.g. turn on and set the color of the light.
+Peripherals can broadcast data, they can be discovered and connected to by a central device, they can stay also disconnected and then establish connection when needed. 
+
+\subsection{Advertising and Scan Response Data}
+There are two ways to send advertising out with GAP: The Advertising Data payload and the Scan Response payload. Both payloads are identical and can contain up to 31 bytes of data, but only the advertising data payload is mandatory. The scan response payload is an optional secondary payload that central devices can request.
+
+
+\section{Generic Attribute Profile - GATT}
+The Generic Attribute Profile (GATT) is a profile that uses the ATT for discovering services, and for reading and writing characteristic values on a peer device. GATT also specifies the format of data contained on the GATT server: it groups ATT attributes into Services and Characteristics, and defines set of queries the GATT Client can use to discover services, characteristics.
+
+\subsection{GATT BLE Roles}
+\subsubsection{GATT Server Role}
+The GATT server stores the data and accepts GATT client requests, commands and confirmations. The GATT server sends responses to requests and when configured, sends indication and notifications asynchronously to the GATT client. 
+
+\subsubsection{GATT Client Role}
+The GATT Client discovers ...
+
+% 
+
+\subsection{Attribute Database - GATT-based Profile Hierarchy}
+Attributes, as transported by the Attribute Protocol, are formatted as services and characteristics. Services may contain a collection of characteristics. Characteristics contain a single value and any number of descriptors describing the characteristic value. The peripheral device server (ATT server) provides a set of attributes that are stored in a simple lookup database. GATT formats these attributes as services and characteristics. Services may contain a collection of characteristics. Characteristics contain a single value and any number of descriptors describing the characteristic value. A service starts with a service declaration attribute defining its type, i.e. primary or secondary. It is followed by the included services and characteristics. By means of including services, the service can incorporate more complex behavior, and still keep the definition small. A characteristic is assigned to a single value that can be accessed. It is composed of three basic elements: declaration, value and descriptors. The characteristic declaration defines how the data can be accessed. A characteristic descriptor is used to capture the additional properties, e.g., to configure if the characteristic value should be reported upon its change. Together, characteristic declaration and the descriptors define types of action that can be performed on characteristic value.
+
+The security that is required to access a service or a characteristic is defined in ATT database along with service/characteristic declaration. The GATT Server usually does not initiate any security request, but it can. 
+
+
+\section{Bluetooth Low Energy - BLE}
+Bluetooth Low Energy (BLE) is a Bluetooth technology used for discovering services and optimized for low power consumption - you don't get high data rates, and usually don't keep connection for long periods. The focus is on two different device roles:  devices that provide services and/or can be controlled and devices that consume services and/or control other devices. Devices are first going through the advertising process that is governed by the Generic Access Profile (GAP). Once the connection is established, the communication will be governed by the Generic Attribute Profile (GATT). Both profiles, GAP and GATT, have concepts that describe these two BLE roles:  GAP defines Peripheral and Central, and GATT defines Server and Client role respectively. The GATT roles are not necessarily tied to specific GAP roles and may be specified by higher layer profiles. GATT is built on top of the Attribute Protocol (ATT), which defines how to discover, read, and write attributes on a peer device. In addition, BLE uses two more BT protocols: SMP for for pairing and transport specific key distribution and L2CAP LE variant optimized for connectionless data used by Bluetooth Low Energy devices. 
+
+
+\subsection{Private/random addresses}
+To better protect privacy, a LE device can choose use a private i.e. random Bluetooth address. This address changes at a user-specified rate. To allow for later reconnection, the central and peripheral devices exchange their Identity Resolving Keys (IRKs) during bonding. The IRK is used to verify if a new address belongs to a previously bonded device.
+
+\subsection{Security manager}
+\label{section:security_manager}
+
+%\section{Client-Server use - TODO}
+%\subsection{C API}
+%\subsection{Java API}
+%\subsection{JavaScript API}
+%\subsection{Python API}
+
+%\section{GAP}
+%\subsection{Dedicated bonding}
+%\subsection{add RFCOMM port configuration for both local and remote}
+%\subsection{add RFCOMM modem and line status control/information}
+%\subsection{add RFCOMM\_AGGREGATE\_FLOW\_OFF to recoverable RFCOMM send errors (example in tex, code)}
+%\section{Security Levels and L2AP,RFCOMM}
+
+\pagebreak
+
+\appendix
+	\input{api_run_loop}    
+	\input{api_hci}
+	\input{api_l2cap}
+	\input{api_rfcomm}
+	\input{api_sdp}
+	\input{api_sdp_client}
+	\input{api_sdp_queries}
+	\input{api_gatt_client}
+	\input{api_events_and_errors}
+
+\pagebreak
+
+\section{Revision History}
+\label{appendix:revision_history}
+
+\begin{table}[!htbp]
+\begin{tabular*}{\textwidth}{lp{3.5cm}p{8.5cm}}\toprule
+Rev & Date & Comments\\ 
+\midrule
+1.3 & November 6, 2014 & Introducing GATT client and server. Work in progress.\\
+1.2 & November 1, 2013 & Explained Secure Simple Pairing in "Pairing of devices".\\
+1.1 & August 30, 2013 & Introduced SDP client. Updated Quick Recipe on "Query remote SDP service".\\
+\bottomrule
+\end{tabular*}
+\end{table}
+
+%\section {TODO}
+%
+%\section {Maybe Missing}
+%\begin{itemize}
+%\item profiles in BTstack (SPP)
+%\item More examples: HID mouse host, HID mouse device, HID keyboard device, BLE Client, ..
+%\end{itemize}
+%
+
+
+% \bibliographystyle{IEEEtran}
+% \bibliography{btstack-manual}
+
+% \section*{Bibliography}
+
+%\textbf{P. W. Wachulak} received the degree${\ldots}$ \\[6pt]
+%\textbf{M. C. Marconi} received the degree${\ldots}$ \\[6pt]
+%\textbf{R. A. Bartels} received the degree${\ldots}$ \\[6pt]
+%\textbf{C. S. Menoni} received the degree${\ldots}$ \\[6pt]
+%\textbf{J. J. Rocca} received the degree${\ldots}$
+
+
+\end{document}

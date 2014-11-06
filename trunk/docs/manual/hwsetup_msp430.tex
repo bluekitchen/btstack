@@ -1,0 +1,118 @@
+% !TEX root = btstack_gettingstarted.tex
+\newcommand{\urlfoot}[2]{\href{#1}{{\color{blue} #2}}\footnote{#1}}
+
+\newcommand{\UserGuide}{\urlfoot{http://processors.wiki.ti.com/index.php/PAN1315EMK\_User\_Guide\#RF3\_Connector}{User Guide}{}}
+\newcommand{\MSPGCCWiki}{\urlfoot{http://sourceforge.net/apps/mediawiki/mspgcc/index.php?title=MSPGCC\_Wiki}{MSPGCC Wiki}}
+\newcommand{\Subversion}{\urlfoot{http://www.sliksvn.com/en/download}{Subversion}}
+\newcommand{\Tortoise}{\urlfoot{http://tortoisesvn.net/downloads.html}{Tortoise SVN}}
+\newcommand{\GNUMake}{\urlfoot{http://gnuwin32.sourceforge.net/packages/make.htm}{GNU Make}}
+\newcommand{\Python}{\urlfoot{http://www.python.org/getit/}{Python}}
+\newcommand{\mspgcc}{\urlfoot{http://sourceforge.net/projects/mspgcc/files/Windows/mingw32/}{mspgcc}}
+\newcommand{\BTSfile}{\urlfoot{http://processors.wiki.ti.com/index.php/CC256x\_Downloads}{BTS file}}
+\newcommand{\MSPFlasher}{\urlfoot{http://processors.wiki.ti.com/index.php/MSP430\_Flasher\_-\_Command\_Line\_Programmer}{MSP430Flasher software}}
+\newcommand{\MSPDebug}{\urlfoot{http://mspdebug.sourceforge.net/}{MSPDebug}}
+
+\section{Get started with BTstack and MSP-EXP430F5438 + CC256x}
+
+\subsection{Hardware Setup}
+We assume that a PAN1315, PAN1317, or PAN1323 module is plugged into RF1 and RF2 of the MSP-EXP430F5438 board and the "RF3 Adapter board" is used or at least simulated. See \UserGuide{}. 
+
+\subsection{General Tools}
+
+The MSP430 port of BTstack is developed using the Long Term Support (LTS) version of mspgcc. General information about it and installation instructions are provided on the \MSPGCCWiki{}.
+
+On Unix-based systems, Subversion, make, and Python are usually installed. If not, use the system's packet manager to install them. 
+
+On Windows, you need to install and configure Subversion, mspgcc, GNU Make, and Python manually:
+ \begin{itemize}
+ \item \Subversion{} for Windows.
+ \item Optionally \Tortoise{}: This is a GUI front-end for Subversion that makes checkouts and other operations easier by integrating them into the Windows Explorer.
+ \ref{sec:windowsPath}). For example, for one Python installation the path is  \path{C:\Python27}. 
+ \item \mspgcc{} for Windows:  Download and extract to \path{C:\mspgcc}. Add \path{C:\mspgcc\bin} folder to the Windows Path in Environment variable as explained in Section \ref{sec:windowsPath}.
+ \item \GNUMake{} for Windows: Add its bin folder to the Windows Path in Environment Variables. The bin folder is where make.exe resides, and it's usually located in \path{C:\Program Files\GnuWin32\bin}. 
+ \item \Python{} for Windows: Add Python installation folder to the Windows Path in Environment Variables.
+ \end{itemize}
+
+\subsubsection{Adding paths to the Windows Path variable}\label{sec:windowsPath}
+\begin{itemize} 
+   \item Go to: Control Panel$\rightarrow$System$\rightarrow$Advanced tab$\rightarrow$Environment Variables.
+   \item The top part contains a list of User variables. 
+   \item Click on the Path variable and then click edit.
+   \item Go to the end of the line, then append the path to the list., for example, \path{C:\mspgcc\bin} for mspgcc.
+   \item Ensure that there is a semicolon before and after \path{C:\mspgcc\bin}. 
+\end{itemize}
+
+
+\subsection{Getting BTstack from SVN}
+
+Use Subversion to check out the latest version. There are two approaches:
+\begin{itemize}
+\item On Windows: Use Tortoise SVN to checkout using the URL:
+\end{itemize}
+	\begin{lstlisting}
+ 		http://btstack.googlecode.com/svn/trunk/
+	\end{lstlisting}
+\begin{itemize}
+\item Use Subversion in a shell: Navigate to a folder where you would like to checkout BTstack, then type:
+\end{itemize}
+	\begin{lstlisting}
+ 		svn checkout http://btstack.googlecode.com/svn/trunk/
+	\end{lstlisting}
+In both cases, Subversion will create the \path{btstack} folder and place the code there.
+
+
+\subsection{CC256x Init Scripts}
+
+In order to use the CC256x chipset on the PAN13xx modules, an initialization script must be obtained. Due to licensing restrictions, this initialization script must be obtained separately as follows:
+\begin{itemize}
+\item Download the \BTSfile{} for your PAN13xx module.
+\item Copy the included .bts file into \path{btstack/chipset-cc256x}
+\item In \path{chipset-cc256x}, run the Python script: $./convert\_bts\_init\_scripts.py$
+\end{itemize}
+
+The common code for all CC256x chipsets is provided by $bt\_control\_cc256x.c$. During the setup, $bt\_control\_cc256x\_instance$ function is used to get  a $bt\_control\_t$ instance and passed to $hci\_init$ function. 
+
+Note: Depending on the PAN13xx module you're using, you'll need to update \path{bluetooth_init_cc25...} in the Makefile to match the downloaded file.
+
+\subsection{Compiling the Examples}
+
+Go to \path{btstack/MSP-EXP430F5438-CC256x/example} folder in command prompt and run make. If all the paths are correct, it will generate several .hex files. These .hex files are the firmware for the MSP430 and can be loaded onto the device, as described in the next section.
+
+\subsection{Loading Firmware}
+
+To load firmware files onto the MSP430 MCU, you need a programmer like the MSP430 MSP-FET430UIF debugger or something similar. Now, you can use one of following software tools:
+
+ \begin{itemize}
+ \item  \MSPFlasher{} (windows-only):
+ 	\begin{itemize}
+ 	   \item Use the following command, where you need to replace the \path{BINARY_FILE_NAME.hex} with the name of your application:
+	\end{itemize} 
+\end{itemize}
+	
+	   \begin{lstlisting}
+ 		MSP430Flasher.exe -n MSP430F5438A -w "BINARY_FILE_NAME.hex" -v -g -z [VCC]
+	   \end{lstlisting}
+
+ \begin{itemize}
+	
+	\item \MSPDebug{}: An example session with the MSP-FET430UIF connected on OS X is given in following listing:
+\end{itemize}
+
+\begin{lstlisting}
+mspdebug -j -d /dev/tty.FET430UIFfd130 uif
+... 
+prog blink.hex
+run
+\end{lstlisting}
+
+
+\subsection{Run the Example}
+
+As a first test, we recommend the SPP Counter example (see Section \ref{section:sppcounter}). During the startup, the LEDs flash rapidly while the init script is transferred to the CC256x chipset. After that, the Experimenter board is discoverable as "BTstack SPP Counter" and provides a single virtual serial port. When you connect to it, you'll receive a counter value as text every second. The SPP Counter doesn't use the display to keep the memory footprint small.
+
+The HID demo has a fancier user interface - it uses a display to show the discovery process and connection establishment with a Bluetooth keyboard, as well as the text as you type.
+
+After this quick intro, the main manual starts now.
+
+ 
+

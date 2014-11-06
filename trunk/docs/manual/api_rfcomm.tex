@@ -1,0 +1,58 @@
+% !TEX root = btstack_gettingstarted.tex
+\section{RFCOMM API}
+\label{appendix:api_rfcomm}
+$ $
+\begin{lstlisting}
+// Set up RFCOMM.
+void rfcomm_init(void);
+
+// Register packet handler.
+void rfcomm_register_packet_handler(void (*handler)(void *connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
+
+// Creates RFCOMM connection (channel) to a given server channel on 
+// a remote device with baseband address. A new baseband connection 
+// will be initiated if necessary.
+// This connection is an RFCOMM channel. The channel will 
+// automatically provide enough credits to the remote side.
+void rfcomm_create_channel_internal(void *connection, bd_addr_t *addr, uint8_t channel);
+
+// Creates RFCOMM connection (channel) to a given server channel on
+// a remote device with baseband address. A new baseband connection
+// will be initiated if necessary. 
+// This channel will use explicit credit management. During channel 
+// establishment, an initial amount of credits is provided.
+void rfcomm_create_channel_with_initial_credits_internal(void *connection, bd_addr_t *addr, uint8_t server_channel, uint8_t initial_credits);
+
+// Disconencts RFCOMM channel with given identifier. 
+void rfcomm_disconnect_internal(uint16_t rfcomm_cid);
+
+// Registers RFCOMM service for a server channel and a maximum frame 
+// size, and assigns a packet handler. On embedded systems, use NULL 
+// for connection parameter. This channel will automatically provide 
+// enough credits to the remote side.
+void rfcomm_register_service_internal(void *connection, uint8_t channel, uint16_t max_frame_size);
+
+// Registers RFCOMM service for a server channel and a maximum frame
+// size, and assigns a packet handler. On embedded systems, use NULL 
+// for connection parameter.  This channel will use explicit credit
+// management. During channel establishment, an initial amount of 
+// credits is provided.
+void rfcomm_register_service_with_initial_credits_internal(void *connection, uint8_t channel, uint16_t max_frame_size, uint8_t initial_credits);
+
+// Unregister RFCOMM service.
+void rfcomm_unregister_service_internal(uint8_t service_channel);
+
+// Accepts/Deny incoming RFCOMM connection.
+void rfcomm_accept_connection_internal(uint16_t rfcomm_cid);
+void rfcomm_decline_connection_internal(uint16_t rfcomm_cid);
+
+
+// Grant more incoming credits to the remote side for the given 
+// RFCOMM channel identifier.
+void rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits);
+
+// Sends RFCOMM data packet to the RFCOMM channel with given
+// identifier.
+int  rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len); 
+\end{lstlisting}
+\pagebreak

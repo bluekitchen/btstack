@@ -1,0 +1,20 @@
+% !TEX root = btstack_gettingstarted.tex
+\section{SDP API}
+\label{appendix:api_sdp}
+$ $
+\begin{lstlisting}
+// Set up SDP.
+void sdp_init(void);
+
+// Register service record internally - this version does not copy
+// the record therefore it must be forever accessible.
+// Preconditions:
+//     - AttributeIDs are in ascending order;
+//     - ServiceRecordHandle is first attribute and valid.
+// @returns ServiceRecordHandle or 0 if registration failed.
+uint32_t sdp_register_service_internal(void *connection, service_record_item_t * record_item);
+
+// Unregister service record internally.
+void sdp_unregister_service_internal(void *connection, uint32_t service_record_handle);
+\end{lstlisting}
+\pagebreak

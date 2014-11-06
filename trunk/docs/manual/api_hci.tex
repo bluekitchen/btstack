@@ -1,0 +1,26 @@
+% !TEX root = btstack_gettingstarted.tex
+\section{Host Controller Interface (HCI) API}
+\label{appendix:api_hci}
+$ $
+\begin{lstlisting}
+// Set up HCI.
+void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, remote_device_db_t const* remote_device_db);
+
+// Used if L2CAP is not used (rarely). 
+void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
+
+// Requests the change of BTstack power mode.
+int  hci_power_control(HCI_POWER_MODE mode);
+
+// Allows to control if device is dicoverable. OFF by default.
+void hci_discoverable_control(uint8_t enable);
+
+// Creates and sends HCI command packets based on a template and 
+// a list of parameters. Will return error if outgoing data buffer 
+// is occupied. 
+int hci_send_cmd(const hci_cmd_t *cmd, ...);
+
+// Deletes link key for remote device with baseband address.
+void hci_drop_link_key_for_bd_addr(bd_addr_t *addr);
+\end{lstlisting}
+\pagebreak

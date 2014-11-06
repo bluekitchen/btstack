@@ -1,0 +1,112 @@
+% !TEX root = btstack_gettingstarted.tex
+\section{Events and Errors}
+\label{appendix:api_events_and_errors}
+
+L2CAP events and data packets are delivered to the packet handler specified by \emph{l2cap\_register\_service} resp. \emph{l2cap\_create\_channel\_internal}. Data packets have the L2CAP\_DATA\_PACKET packet type. L2CAP provides the following events:
+\begin{itemize}
+\item L2CAP\_EVENT\_CHANNEL\_OPENED - sent if channel establishment is done. Status not equal zero indicates an error. Possible errors: out of memory; connection terminated by local host, when the connection to remote device fails.
+\item L2CAP\_EVENT\_CHANNEL\_CLOSED - emitted when channel is closed. No status information is provided.
+\item L2CAP\_EVENT\_INCOMING\_CONNECTION - received when the connection is requested  by remote. Connection accept and decline are performed with \emph{l2cap\_accept\_connection\_internal} and \emph{l2cap\_decline\_connecti-on\_internal} respectively.
+\item L2CAP\_EVENT\_CREDITS - emitted when there is a chance to send a new L2CAP packet. BTstack does not buffer packets. Instead, it requires the application to retry sending if BTstack cannot deliver a packet to the Bluetooth module. In this case, the l2cap\_send\_internal will return an error. 
+\item L2CAP\_EVENT\_SERVICE\_REGISTERED - Status not equal zero indicates an error. Possible errors: service is already registered; MAX\_NO-\_L2CAP\_SERVICES (defined in config.h) already registered.
+\end{itemize}
+ 
+\begin{table*}[bp]
+\caption{L2CAP Events}
+\begin{tabular}{p{1cm}p{10cm}c}\toprule
+\multicolumn{2}{c}{Event / Event Parameters (size in bits) } & Event Code\\ 
+\midrule
+\multicolumn{2}{l}{L2CAP\_EVENT\_CHANNEL\_OPENED} & 0x70\\
+&\emph{event(8), len(8), status(8), address(48), handle(16)}\\
+&\emph{psm(16), local\_cid(16), remote\_cid(16), local\_mtu(16), }\\
+&\emph{remote\_mtu(16)}\\
+\\
+\multicolumn{2}{l}{L2CAP\_EVENT\_CHANNEL\_CLOSED} & 0x71\\
+&\emph{event (8), len(8), channel(16)}\\
+\\
+\multicolumn{2}{l}{L2CAP\_EVENT\_INCOMING\_CONNECTION}& 0x72\\
+&\emph{event(8), len(8), address(48), handle(16), psm (16), }\\
+&\emph{local\_cid(16), remote\_cid (16)}\\
+\\
+\multicolumn{2}{l}{L2CAP\_EVENT\_CREDITS} & 0x74\\
+&\emph{event(8), len(8), local\_cid(16), credits(8)}\\
+\\
+\multicolumn{2}{l}{L2CAP\_EVENT\_SERVICE\_REGISTERED} & 0x75\\
+&\emph{event(8), len(8), status(8), psm(16)}\\
+\\
+\bottomrule
+ \label{table:l2capEvents}
+\end{tabular}
+\end{table*}
+
+\pagebreak
+
+All RFCOMM events and data packets are currently delivered to the packet handler specified by \emph{rfcomm\_register\_packet\_handler}. Data packets have the \mbox{RFCOMM}\_DATA\_PACKET packet type. Here is the list of events provided by RFCOMM:
+\begin{itemize}
+\item RFCOMM\_EVENT\_INCOMING\_CONNECTION - received when the connection is requested by remote. Connection accept and decline are performed with \emph{rfcomm\_accept\_connection\_internal} and \emph{rfcomm\_decline\_con-nection\_internal} respectively.
+\item RFCOMM\_EVENT\_CHANNEL\_CLOSED - emitted when channel is closed. No status information is provided.
+\item RFCOMM\_EVENT\_OPEN\_CHANNEL\_COMPLETE - sent if channel establishment is done. Status not equal zero indicates an error. Possible errors: an L2CAP error, out of memory.
+\item RFCOMM\_EVENT\_CREDITS - The application can resume sending when this even is received. See Section \ref{section:flowcontrol} for more on RFCOMM credit-based flow-control.
+\item RFCOMM\_EVENT\_SERVICE\_REGISTERED - Status not equal zero indicates an error. Possible errors: service is already registered; MAX-\_NO\_RFCOMM\_SERVICES (defined in config.h) already registered.
+\end{itemize}
+
+\begin{table*}[bp]
+\caption{RFCOMM Events}
+\begin{tabular}{p{1cm}p{10cm}c}\toprule
+\multicolumn{2}{c}{Event / Event Parameters (size in bits)} & Event Code\\ 
+\midrule
+
+\multicolumn{2}{l}{RFCOMM\_EVENT\_OPEN\_CHANNEL\_COMPLETE} & 0x80\\
+&\emph{event(8), len(8), status(8), address(48), handle(16), }\\
+&\emph{server\_channel(8), rfcomm\_cid(16), max\_frame\_size(16)}\\
+\\
+\multicolumn{2}{l}{RFCOMM\_EVENT\_CHANNEL\_CLOSED} & 0x81\\
+&\emph{event(8), len(8), rfcomm\_cid(16)}\\
+\\
+\multicolumn{2}{l}{RFCOMM\_EVENT\_INCOMING\_CONNECTION}& 0x82\\
+&\emph{event(8), len(8), address(48), channel (8),} \\
+& \emph{rfcomm\_cid(16)}\\
+\\
+\multicolumn{2}{l}{RFCOMM\_EVENT\_CREDITS} & 0x84\\
+&\emph{event(8), len(8), rfcomm\_cid(16), credits(8)}\\
+\\
+\multicolumn{2}{l}{RFCOMM\_EVENT\_SERVICE\_REGISTERED} & 0x85\\
+&\emph{event(8), len(8), status(8), rfcomm server channel\_id(8)}\\
+\bottomrule
+ \label{table:rfcommEvents}
+\end{tabular}
+\end{table*}
+
+
+\begin{table}
+\caption{Errors}
+\begin{tabular}{lc}\toprule
+Error & Error Code\\ 
+\midrule
+{\tiny BTSTACK\_MEMORY\_ALLOC\_FAILED} & {\tiny 0x56}\\
+{\tiny BTSTACK\_ACL\_BUFFERS\_FULL} & {\tiny 0x57}\\
+{\tiny L2CAP\_COMMAND\_REJECT\_REASON\_COMMAND\_NOT\_UNDERSTOOD} & {\tiny 0x60}\\
+{\tiny L2CAP\_COMMAND\_REJECT\_REASON\_SIGNALING\_MTU\_EXCEEDED} & {\tiny 0x61}\\
+{\tiny L2CAP\_COMMAND\_REJECT\_REASON\_INVALID\_CID\_IN\_REQUEST} & {\tiny 0x62}\\
+{\tiny L2CAP\_CONNECTION\_RESPONSE\_RESULT\_SUCCESSFUL} & {\tiny 0x63}\\
+{\tiny L2CAP\_CONNECTION\_RESPONSE\_RESULT\_PENDING} & {\tiny 0x64}\\
+{\tiny L2CAP\_CONNECTION\_RESPONSE\_RESULT\_REFUSED\_PSM} & {\tiny 0x65}\\
+{\tiny L2CAP\_CONNECTION\_RESPONSE\_RESULT\_REFUSED\_SECURITY} & {\tiny 0x66}\\
+{\tiny L2CAP\_CONNECTION\_RESPONSE\_RESULT\_REFUSED\_RESOURCES} & {\tiny 0x65}\\
+{\tiny L2CAP\_CONFIG\_RESPONSE\_RESULT\_SUCCESSFUL} & {\tiny 0x66}\\
+{\tiny L2CAP\_CONFIG\_RESPONSE\_RESULT\_UNACCEPTABLE\_PARAMS} & {\tiny 0x67}\\
+{\tiny L2CAP\_CONFIG\_RESPONSE\_RESULT\_REJECTED} & {\tiny 0x68}\\
+{\tiny L2CAP\_CONFIG\_RESPONSE\_RESULT\_UNKNOWN\_OPTIONS} & {\tiny 0x69}\\
+{\tiny L2CAP\_SERVICE\_ALREADY\_REGISTERED} & {\tiny 0x6a}\\
+{\tiny RFCOMM\_MULTIPLEXER\_STOPPED} & {\tiny 0x70}\\
+{\tiny RFCOMM\_CHANNEL\_ALREADY\_REGISTERED} & {\tiny 0x71}\\
+{\tiny RFCOMM\_NO\_OUTGOING\_CREDITS} & {\tiny 0x72}\\
+{\tiny SDP\_HANDLE\_ALREADY\_REGISTERED} & {\tiny 0x80}\\
+\bottomrule
+\label{table:sdpErrors}
+\end{tabular}
+\end{table}
+
+\begin{minipage}[t][5cm][t]{\textwidth}
+\end{minipage}
+\pagebreak
