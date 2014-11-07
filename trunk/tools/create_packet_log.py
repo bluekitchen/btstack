@@ -72,6 +72,7 @@ if len(sys.argv) == 1:
 	print 'Converted hci_dump.pklg can be viewed with Wireshark and OS X PacketLogger'
 	exit(0)
 
+infile = sys.argv[1]
 outfile = 'hci_dump.pklg'
 if len(sys.argv) > 2:
 	outfile = sys.argv[2]
