@@ -1,0 +1,47 @@
+% !TEX root = btstack_gettingstarted.tex
+\subsection{Classic Bluetooth}
+\subsubsection{HCI - Host Controller Interface}
+The HCI protocol provides a command interface to the Bluetooth chipset. 
+
+\subsubsection{L2CAP -  Logical Link Control and Adaptation Protocol}
+The L2CAP protocol supports higher level protocol multiplexing and packet fragmentation.
+%\section{Security Levels and L2AP}
+
+
+\subsubsection{RFCOMM - Radio Frequency Communication Protocol}
+%\label{section:flowcontrol}
+The Radio frequency communication (RFCOMM) protocol provides emulation of serial ports over the L2CAP protocol.
+and reassembly. 
+
+\textbf{RFCOMM flow control.}
+RFCOMM has a mandatory credit-based flow-control. This means that two devices that established RFCOMM connection, use credits to keep track of how many more RFCOMM data packets can be sent to each. If a device has no (outgoing) credits left, it cannot send another RFCOMM packet, the transmission must be paused. During the connection establishment, initial credits are provided. BTstack tracks the number of credits in both directions. If no outgoing credits are available, the RFCOMM send function will return an error, and you can try later. For incoming data, BTstack provides channels and services with and without automatic credit management via different functions to create/register them respectively. If the management of credits is automatic, the new credits are provided when needed relying on ACL flow control - this is only useful if there is not much data transmitted and/or only one physical connection is used. If the management of credits is manual, credits are provided by the application such that it can manage its receive buffers explicitly. 
+
+\todo{\textbf{RFCOMM port configuration for both local and remote}}\\
+\todo{\textbf{RFCOMM  modem and line status control/information}}\\
+\todo{\textbf{RFCOMM\_AGGREGATE\_FLOW\_OFF example}}\\
+\todo{\textbf{Security Levels and RFCOMM}}\\
+
+\subsection{SDP - Service Discovery Protocol}
+The SDP protocol allows to discover services provided by a Bluetooth device. 
+
+\subsubsection{SPP - Serial Port Profile}
+The SPP profile defines how to set up virtual serial ports and connect two Bluetooth enabled devices. See Appendix \ref{appendix:api_} for the SPP API.
+
+\subsubsection{BNEP -  Bluetooth Network Encapsulation Protocol}
+The BNEP protocol is built on top of L2CAP and it is used to transport control and data packets over standard network protocols such as TCP, IPv4 or IPv6.  . BNEP specifies a minimum L2CAP MTU of 1691. 
+
+\subsubsection{PAN -  Personal Area Networking Profile}
+The PAN profile uses BNEP to provide on-demand networking capabilities between Bluetooth devices. The PAN profile defines the following roles:
+\begin{itemize}
+\item PAN User (PANU)
+\item Network Access Point (NAP)
+\item Group Ad-hoc Network (GN)
+\end{itemize}
+
+PANU is a Bluetooth device that communicates as a client with GN, or NAP, or with another PANU Bluetooth device, through a point-to-point connection. Either the PANU or the other Bluetooth device may terminate the connection at anytime.
+
+NAP is a Bluetooth device that provides the service of routing network packets between PANU by using BNEP and the IP routing mechanism. A NAP can also act as a bridge between Bluetooth networks and other network technologies by using the Ethernet packets.
+
+The GN role enables two or more PANUs to interact with each other through a wireless network without using additional networking hardware. The devices are connected in a piconet where the GN acts as a master and communicates either point-to-point or a point-to-multipoint with a maximum of seven PANU slaves by using BNEP.
+
+Currently, BTstack supports only PANU.
