@@ -68,6 +68,7 @@ morekeywords={*, timer_source_t, data_source_t, uint32_t, uint16_t, uint8_t, RUN
 \newcommand{\authorMatthias}{Dr. sc. Matthias Ringwald}
 \newcommand{\bkContact}{\href{contact@bluekitchen-gmbh.com}{contact@bluekitchen-gmbh.com}}
 \newcommand{\barWidth}{0.3cm}
+\newcommand{\urlfoot}[2]{\href{#1}{{\color{blue} #2}}\footnote{#1}}
 
 \makeatletter
 \renewcommand{\maketitle}{
@@ -86,7 +87,7 @@ morekeywords={*, timer_source_t, data_source_t, uint32_t, uint16_t, uint8_t, RUN
             \vspace*{1.5cm}
             \begin{spacing}{2} 
                 {\huge \color{bkblue} \@title} \\ 
-                {\Large \color{bklightblue} Using MSP430 Examples}   
+                {\Large \color{bklightblue} Including Quickstart Guide and Recipes}   
             \end{spacing} 
             \vspace*{1.5cm}
             {\color{bkblue}\large \authorMila \\
@@ -105,8 +106,8 @@ morekeywords={*, timer_source_t, data_source_t, uint32_t, uint16_t, uint8_t, RUN
 }
 \makeatother
 
-\title[BTstack for MSP430] {BTstack Getting Started} 
-\author{Copyright \copyright  2012-2013 BlueKitchen GmbH}
+\title[BTstack Manual] {BTstack Manual} 
+\author{Copyright \copyright 2012-2014 BlueKitchen GmbH}
 
 %%% BEGIN DOCUMENT
 \begin{document}
@@ -120,7 +121,8 @@ morekeywords={*, timer_source_t, data_source_t, uint32_t, uint16_t, uint8_t, RUN
 
 Thanks for checking out BTstack! In this manual, we first provide the usual 'quick starter guide' before highlighting BTstack's main design choices and going into more details with a few examples. Finally, we outline the basic steps when integrating BTstack into existing single-threaded or even multi-threaded environments. The Revision History is shown in the Appendix \ref{appendix:revision_history} on page \pageref{appendix:revision_history}.
 
-\input{hwsetup_msp430}
+\section{Quick Start}
+
 
 \section{BTstack Architecture}
 
@@ -1510,7 +1512,6 @@ void fill_advertising_report_from_packet(advertising_report_t * report, uint8_t 
 }
 \end{lstlisting}
 
-
 \begin{lstlisting}[caption=GATT client queries handling., label=code:gattBrowserQueryHandler]
 void handle_gatt_client_event(le_event_t * event){
     le_service_t service;
@@ -1566,6 +1567,13 @@ void handle_gatt_client_event(le_event_t * event){
 }
 \end{lstlisting}
 
+
+\include{example_spp_le_counter}
+
+\subsection{sdp\_bnep\_query}
+
+\section{Platforms}
+\input{hwsetup_msp430}
 
 \section{Porting to Other Platforms}
 
