@@ -1,6 +1,4 @@
 % !TEX root = btstack_gettingstarted.tex
-\newcommand{\urlfoot}[2]{\href{#1}{{\color{blue} #2}}\footnote{#1}}
-
 \newcommand{\UserGuide}{\urlfoot{http://processors.wiki.ti.com/index.php/PAN1315EMK\_User\_Guide\#RF3\_Connector}{User Guide}{}}
 \newcommand{\MSPGCCWiki}{\urlfoot{http://sourceforge.net/apps/mediawiki/mspgcc/index.php?title=MSPGCC\_Wiki}{MSPGCC Wiki}}
 \newcommand{\Subversion}{\urlfoot{http://www.sliksvn.com/en/download}{Subversion}}
@@ -12,12 +10,13 @@
 \newcommand{\MSPFlasher}{\urlfoot{http://processors.wiki.ti.com/index.php/MSP430\_Flasher\_-\_Command\_Line\_Programmer}{MSP430Flasher software}}
 \newcommand{\MSPDebug}{\urlfoot{http://mspdebug.sourceforge.net/}{MSPDebug}}
 
-\section{Get started with BTstack and MSP-EXP430F5438 + CC256x}
 
-\subsection{Hardware Setup}
+\subsection{MSP-EXP430F5438 + CC256x }
+
+\subsubsection{Hardware Setup}
 We assume that a PAN1315, PAN1317, or PAN1323 module is plugged into RF1 and RF2 of the MSP-EXP430F5438 board and the "RF3 Adapter board" is used or at least simulated. See \UserGuide{}. 
 
-\subsection{General Tools}
+\subsubsection{General Tools}
 
 The MSP430 port of BTstack is developed using the Long Term Support (LTS) version of mspgcc. General information about it and installation instructions are provided on the \MSPGCCWiki{}.
 
@@ -33,8 +32,8 @@ On Windows, you need to install and configure Subversion, mspgcc, GNU Make, and 
  \item \Python{} for Windows: Add Python installation folder to the Windows Path in Environment Variables.
  \end{itemize}
 
-\subsubsection{Adding paths to the Windows Path variable}\label{sec:windowsPath}
-\begin{itemize} 
+Adding paths to the Windows Path variable:
+\begin{itemize} \label{sec:windowsPath}
    \item Go to: Control Panel$\rightarrow$System$\rightarrow$Advanced tab$\rightarrow$Environment Variables.
    \item The top part contains a list of User variables. 
    \item Click on the Path variable and then click edit.
@@ -43,7 +42,7 @@ On Windows, you need to install and configure Subversion, mspgcc, GNU Make, and 
 \end{itemize}
 
 
-\subsection{Getting BTstack from SVN}
+\subsubsection{Getting BTstack from SVN}
 
 Use Subversion to check out the latest version. There are two approaches:
 \begin{itemize}
@@ -61,7 +60,7 @@ Use Subversion to check out the latest version. There are two approaches:
 In both cases, Subversion will create the \path{btstack} folder and place the code there.
 
 
-\subsection{CC256x Init Scripts}
+\subsubsection{CC256x Init Scripts}
 
 In order to use the CC256x chipset on the PAN13xx modules, an initialization script must be obtained. Due to licensing restrictions, this initialization script must be obtained separately as follows:
 \begin{itemize}
@@ -74,11 +73,11 @@ The common code for all CC256x chipsets is provided by $bt\_control\_cc256x.c$. 
 
 Note: Depending on the PAN13xx module you're using, you'll need to update \path{bluetooth_init_cc25...} in the Makefile to match the downloaded file.
 
-\subsection{Compiling the Examples}
+\subsubsection{Compiling the Examples}
 
 Go to \path{btstack/MSP-EXP430F5438-CC256x/example} folder in command prompt and run make. If all the paths are correct, it will generate several .hex files. These .hex files are the firmware for the MSP430 and can be loaded onto the device, as described in the next section.
 
-\subsection{Loading Firmware}
+\subsubsection{Loading Firmware}
 
 To load firmware files onto the MSP430 MCU, you need a programmer like the MSP430 MSP-FET430UIF debugger or something similar. Now, you can use one of following software tools:
 
@@ -106,7 +105,7 @@ run
 \end{lstlisting}
 
 
-\subsection{Run the Example}
+\subsubsection{Run the Example}
 
 As a first test, we recommend the SPP Counter example (see Section \ref{section:sppcounter}). During the startup, the LEDs flash rapidly while the init script is transferred to the CC256x chipset. After that, the Experimenter board is discoverable as "BTstack SPP Counter" and provides a single virtual serial port. When you connect to it, you'll receive a counter value as text every second. The SPP Counter doesn't use the display to keep the memory footprint small.
 

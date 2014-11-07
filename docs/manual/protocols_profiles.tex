@@ -41,9 +41,7 @@ The SDP protocol allows to discover services provided by a Bluetooth device.
 The SMP protocol allows to setup authenticated and encrypted connection.
 
 \subsection{ATT - Attribute Protocol}
-
-\subsection{GATT -  Generic Attribute Profile}
-The GATT profile is a service that uses the ATT for discovering services, and for reading and writing characteristic values on a peer device. 
+ATT is a wire application protocol, while GATT dictates how ATT is employed in service composition. Every Low Energy profile must be based on GATT. So, ultimately, every LE service uses ATT as the application protocol. An ATT server stores attributes. An ATT client stores nothing; it uses the ATT wire protocol to read and write values on server attributes. Most of the ATT protocol is pure client-server: client takes the initiative, server answers. But ATT has notification and indication capabilities, in which the server takes the initiative of notifying a client that an attribute value has changed, saving the client from having to poll the attribute.
 
 \subsection{SPP - Serial Port Profile}
 The SPP profile defines how to set up virtual serial ports and connect two Bluetooth enabled devices. See Appendix \ref{appendix:api_} for the SPP API.
@@ -64,19 +62,38 @@ There are two ways to send advertising out with GAP: The Advertising Data payloa
 
 
 \subsection{GATT - Generic Attribute Profile}
-The Generic Attribute Profile (GATT) is a profile that uses the ATT for discovering services, and for reading and writing characteristic values on a peer device. GATT also specifies the format of data contained on the GATT server: it groups ATT attributes into Services and Characteristics, and defines set of queries the GATT Client can use to discover services, characteristics.
+The GATT profile uses the ATT for discovering services, and for reading and writing characteristic values on a peer device. GATT also specifies the format of data contained on the GATT server: it groups ATT attributes into Services and Characteristics, and defines set of queries the GATT Client can use to discover services, characteristics.
 
 \subsubsection{GATT BLE Roles}
 
 \begin{itemize}
 \item \emph{GATT Server Role} - The GATT server stores the data and accepts GATT client requests, commands and confirmations. The GATT server sends responses to requests and when configured, sends indication and notifications asynchronously to the GATT client. 
-\item \emph{GATT Client Role} - The GATT Client discovers ...
+\item \emph{GATT Client Role} - The GATT Client is used to discover services, and their characteristics and descriptors on a peer device. It can also subscribe for notifications or indications that the characteristic on the GATT server has changed its value. 
 \end{itemize}
 
 \subsubsection{Attribute Database - GATT-based Profile Hierarchy}
 Attributes, as transported by the Attribute Protocol, are formatted as services and characteristics. Services may contain a collection of characteristics. Characteristics contain a single value and any number of descriptors describing the characteristic value. The peripheral device server (ATT server) provides a set of attributes that are stored in a simple lookup database. GATT formats these attributes as services and characteristics. Services may contain a collection of characteristics. Characteristics contain a single value and any number of descriptors describing the characteristic value. A service starts with a service declaration attribute defining its type, i.e. primary or secondary. It is followed by the included services and characteristics. By means of including services, the service can incorporate more complex behavior, and still keep the definition small. A characteristic is assigned to a single value that can be accessed. It is composed of three basic elements: declaration, value and descriptors. The characteristic declaration defines how the data can be accessed. A characteristic descriptor is used to capture the additional properties, e.g., to configure if the characteristic value should be reported upon its change. Together, characteristic declaration and the descriptors define types of action that can be performed on characteristic value.
 
 The security that is required to access a service or a characteristic is defined in ATT database along with service/characteristic declaration. The GATT Server usually does not initiate any security request, but it can. 
+
+\subsection{BNEP -  Bluetooth Network Encapsulation Protocol}
+The BNEP protocol is built on top of L2CAP and it is used to transport control and data packets over standard network protocols such as TCP, IPv4 or IPv6.  . BNEP specifies a minimum L2CAP MTU of 1691. 
+
+\subsection{PAN -  Personal Area Networking Profile}
+The PAN profile uses BNEP to provide on-demand networking capabilities between Bluetooth devices. The PAN profile defines the following roles:
+\begin{itemize}
+\item PAN User (PANU)
+\item Network Access Point (NAP)
+\item Group Ad-hoc Network (GN)
+\end{itemize}
+
+PANU is a Bluetooth device that communicates as a client with GN, or NAP, or with another PANU Bluetooth device, through a point-to-point connection. Either the PANU or the other Bluetooth device may terminate the connection at anytime.
+
+NAP is a Bluetooth device that provides the service of routing network packets between PANU by using BNEP and the IP routing mechanism. A NAP can also act as a bridge between Bluetooth networks and other network technologies by using the Ethernet packets.
+
+The GN role enables two or more PANUs to interact with each other through a wireless network without using additional networking hardware. The devices are connected in a piconet where the GN acts as a master and communicates either point-to-point or a point-to-multipoint with a maximum of seven PANU slaves by using BNEP.
+
+Currently, BTstack supports only PANU.
 
 \section{Dual Mode Support}
 \subsection{BR/EDR - Basic Rate/Extended Data Rate, or shortly Classic}
