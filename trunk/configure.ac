@@ -74,6 +74,15 @@ case "$host_os" in
         REMOTE_DEVICE_DB="remote_device_db_iphone"
         HAVE_SO_NOSIGPIPE="yes";
         ;;
+    mingw*)
+        echo "Building on mingw32"
+        USE_COCOA_RUN_LOOP="no"
+        LDFLAGS="$LDFLAGS -lws2_32"
+        BTSTACK_LIB_LDFLAGS="-shared"
+        BTSTACK_LIB_EXTENSION="dll"
+        REMOTE_DEVICE_DB_SOURCES="$BTSTACK_ROOT/src/remote_device_db_memory.c"
+        REMOTE_DEVICE_DB="remote_device_db_memory"
+        ;;
     *)
         USE_COCOA_RUN_LOOP="no"
         BTSTACK_LIB_LDFLAGS="-shared -Wl,-rpath,\$(prefix)/lib"
