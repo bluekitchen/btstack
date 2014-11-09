@@ -46,7 +46,12 @@
 #include "debug.h"
 #include "run_loop_private.h"
 
+#ifdef _WIN32
+#include "Winsock2.h"
+#else
 #include <sys/select.h>
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 
