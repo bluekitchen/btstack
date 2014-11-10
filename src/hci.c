@@ -489,7 +489,7 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
     hci_stack->acl_fragmentation_total_size = 0;
 
     // free buffer now for synchronous transport
-    if (!hci_transport_synchronous()){
+    if (hci_transport_synchronous()){
         hci_release_packet_buffer();                        
     }
 
