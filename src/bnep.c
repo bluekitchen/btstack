@@ -959,7 +959,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             if (READ_BT_16(packet, 11) != PSM_BNEP) {
                 break;
             }
-            
+
             status = packet[2];
             log_info("L2CAP_EVENT_CHANNEL_OPENED for PSM_BNEP, status %u", status);
             
@@ -972,7 +972,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
                 log_error("L2CAP_EVENT_CHANNEL_OPENED but no BNEP channel prepared");
                 return 1;
             }
-            
+
             /* On L2CAP open error discard everything */
             if (status) {
                 /* Emit bnep_open_channel_complete with status and free channel */
@@ -982,7 +982,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
                 bnep_channel_free(channel);
                 return 1;
             }
-            
+
             if (channel->state == BNEP_CHANNEL_STATE_CLOSED) {
                 log_info("L2CAP_EVENT_CHANNEL_OPENED: outgoing connection");
 
@@ -996,7 +996,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
                 channel->max_frame_size = bnep_max_frame_size_for_l2cap_mtu(READ_BT_16(packet, 17));
                 bnep_run();
             } else {              
-                log_info("L2CAP_EVENT_CHANNEL_OPENED: Instalid state: %d", channel->state);
+                log_info("L2CAP_EVENT_CHANNEL_OPENED: Invalid state: %d", channel->state);
             }
             return 1;
             break;
@@ -1027,6 +1027,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             }
             break;
         default:
+            bnep_run();
             break;
     }
     return 0;
