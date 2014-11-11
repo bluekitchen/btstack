@@ -1703,13 +1703,17 @@ int main (int argc,  char * const * argv){
     signal(SIGINT, daemon_sigint_handler);
     // handle SIGTERM - suggested for launchd
     signal(SIGTERM, daemon_sigint_handler);
+
+    // TODO: win32 variant
+#ifndef _WIN32
     // handle SIGPIPE
     struct sigaction act;
     act.sa_handler = SIG_IGN;
     sigemptyset (&act.sa_mask);
     act.sa_flags = 0;
     sigaction (SIGPIPE, &act, NULL);
-    
+#endif
+
     bt_control_t * control = NULL;
     
 #ifdef HAVE_TRANSPORT_H4
