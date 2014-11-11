@@ -11,7 +11,10 @@ CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 # CFLAGS += -I/usr/local/include/libusb-1.0
 # LDFLAGS += -L/usr/local/lib -lusb-1.0
-# LDFLAGS += -lws2_32
+
+ifeq ($(OS),Windows_NT)
+LDFLAGS += -lws2_32
+endif
 
 CORE   = \
     ${BTSTACK_ROOT}/src/btstack_memory.c            \
@@ -36,7 +39,6 @@ COMMON = \
     ${BTSTACK_ROOT}/src/sdp_parser.c		        \
     ${BTSTACK_ROOT}/src/sdp_query_util.c		    \
 	${BTSTACK_ROOT}/src/sdp_query_rfcomm.c		    \
-    ${POSIX_ROOT}/src/hci_transport_h4.c            \
     ${POSIX_ROOT}/src/hci_transport_h2_libusb.c     \
 
 ATT	= \
