@@ -55,8 +55,17 @@
 #include <stdio.h>
 
 #ifndef EMBEDDED
-#include <fcntl.h>        // open
+#ifdef _WIN32
+//
+#define S_IRWXG 0
+#define S_IRWXO 0
+#define S_IRGRP 0
+#define S_IROTH 0
+#include "Winsock2.h"     // hton..
+#else
 #include <arpa/inet.h>    // hton..
+#endif
+#include <fcntl.h>        // open
 #include <unistd.h>       // write 
 #include <time.h>
 #include <sys/time.h>     // for timestamps
@@ -165,11 +174,12 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
     struct timeval curr_time;
     struct tm* ptm;
     gettimeofday(&curr_time, NULL);
-    
+    time_t curr_time_secs = curr_time.tv_sec;
+
     switch (dump_format){
         case HCI_DUMP_STDOUT: {
             /* Obtain the time of day, and convert it to a tm struct. */
-            ptm = localtime (&curr_time.tv_sec);
+            ptm = localtime (&curr_time_secs);
             /* Format the date and time, down to a single second. */
             strftime (time_string, sizeof (time_string), "[%Y-%m-%d %H:%M:%S", ptm);
             /* Compute milliseconds from microseconds. */
