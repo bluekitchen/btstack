@@ -3,16 +3,15 @@ POSIX_ROOT= ${BTSTACK_ROOT}/platforms/posix
 
 CFLAGS  = -g -Wall -I.
 CFLAGS += -I${BTSTACK_ROOT}/ble
-CFLAGS += -I${BTSTACK_ROOT}/chipset-cc256x
-CFLAGS += -I${BTSTACK_ROOT}/chipset-csr
 CFLAGS += -I${BTSTACK_ROOT}/include 
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}
 
-# CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
-# LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
-CFLAGS += -I/usr/local/include/libusb-1.0
-LDFLAGS += -L/usr/local/lib -lusb-1.0
+CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
+LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
+# CFLAGS += -I/usr/local/include/libusb-1.0
+# LDFLAGS += -L/usr/local/lib -lusb-1.0
+# LDFLAGS += -lws2_32
 
 CORE   = \
     ${BTSTACK_ROOT}/src/btstack_memory.c            \
@@ -51,12 +50,6 @@ GATT_CLIENT = \
     ${BTSTACK_ROOT}/ble/ad_parser.c                 \
     ${BTSTACK_ROOT}/ble/gatt_client.c        	    \
 
-CC2564 = \
-    ${BTSTACK_ROOT}/chipset-cc256x/bt_control_cc256x.c   \
- 	${BTSTACK_ROOT}/chipset-cc256x/bluetooth_init_cc2564B_1.0_BT_Spec_4.1.c \
-
-CSR = ${BTSTACK_ROOT}/chipset-csr/bt_control_csr.c
-
 SM_REAL = \
 	${BTSTACK_ROOT}/ble/sm.c 				 	    \
     ${BTSTACK_ROOT}/ble/central_device_db_memory.c  \
@@ -73,8 +66,6 @@ PAN = \
 
 CORE_OBJ    = $(CORE:.c=.o)
 COMMON_OBJ  = $(COMMON:.c=.o) 
-CC2564_OBJ  = $(CC2564:.c=.o)
-CSR_OBJ     = $(CSR:.c=.o)
 SM_REAL_OBJ = $(SM_REAL:.c=.o)
 SM_MINIMAL_OBJ = $(SM_MINIMAL:.c=.o)
 ATT_OBJ     = $(ATT:.c=.o)
@@ -86,8 +77,7 @@ PAN_OBJ = $(PAN:.c=.o)
 
 all: ${BTSTACK_ROOT}/include/btstack/version.h gatt_browser gatt_battery_query sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral \
 		ble_peripheral_sm_minimal gap_inquiry gap_dedicated_bonding gap_inquiry_and_bond l2cap_test spp_streamer \
-		classic_test ble_peripheral_uart_csr ble_peripheral_uart_cc256x ancs_client spp_and_le_counter \
-		sdp_bnep_query
+		classic_test ancs_client spp_and_le_counter sdp_bnep_query
 
 
 ${BTSTACK_ROOT}/include/btstack/version.h:
@@ -146,12 +136,6 @@ ancs_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIE
 ble_peripheral: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c profile.h
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
 
-ble_peripheral_uart_csr: ${CORE_OBJ} ${COMMON_OBJ} ${CSR_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c profile.h
-	${CC} $ -DHAVE_UART_CSR ${CORE_OBJ} ${COMMON_OBJ} ${CSR_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
-
-ble_peripheral_uart_cc256x: ${CORE_OBJ} ${COMMON_OBJ} ${CC2564} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c profile.h
-	${CC} $ -DHAVE_UART_CC256x ${CORE_OBJ} ${COMMON_OBJ} ${CC2564} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
-
 ble_peripheral_sm_minimal: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c profile.h
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
 
@@ -166,8 +150,8 @@ gatt_battery_query: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM
 
 clean:
 	rm -f  	spp_counter sdp_rfcomm_query sdp_general_query sdp_bnep_query spp_counter_ssp ble_peripheral ble_client gatt_battery_query gatt_browser \
-			gatt_client ancs_client ble_peripheral_sm_minimal classic_test ble_peripheral_uart_csr ble_peripheral_uart \
-			gap_dedicated_bonding gap_inquiry gap_inquiry_and_bond l2cap_test spp_and_le_counter spp_streamer ble_peripheral_uart_cc256x panu_demo
+			gatt_client ancs_client ble_peripheral_sm_minimal classic_test  \
+			gap_dedicated_bonding gap_inquiry gap_inquiry_and_bond l2cap_test spp_and_le_counter spp_streamer panu_demo
 	rm -f  *.o *.out *.hex 
 	rm -f  ${BTSTACK_ROOT}/src/*.o
 	rm -f  ${BTSTACK_ROOT}/ble/*.o
