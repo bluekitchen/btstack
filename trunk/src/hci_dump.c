@@ -55,16 +55,6 @@
 #include <stdio.h>
 
 #ifndef EMBEDDED
-#ifdef _WIN32
-//
-#define S_IRWXG 0
-#define S_IRWXO 0
-#define S_IRGRP 0
-#define S_IROTH 0
-#include "Winsock2.h"     // hton..
-#else
-#include <arpa/inet.h>    // hton..
-#endif
 #include <fcntl.h>        // open
 #include <unistd.h>       // write 
 #include <time.h>
@@ -118,7 +108,11 @@ void hci_dump_open(const char *filename, hci_dump_format_t format){
     if (dump_format == HCI_DUMP_STDOUT) {
         dump_file = fileno(stdout);
     } else {
+#ifdef _WIN32
+        dump_file = open(filename, O_WRONLY | O_CREAT | O_TRUNC);
+#else
         dump_file = open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+#endif
     }
 #endif
 }
@@ -203,9 +197,9 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
             break;
             
         case HCI_DUMP_PACKETLOGGER:
-            header_packetlogger.len = htonl( sizeof(pktlog_hdr) - 4 + len);
-            header_packetlogger.ts_sec =  htonl(curr_time.tv_sec);
-            header_packetlogger.ts_usec = htonl(curr_time.tv_usec);
+            net_store_32( (uint8_t *) &header_packetlogger, 0, sizeof(pktlog_hdr) - 4 + len);
+            net_store_32( (uint8_t *) &header_packetlogger, 4, curr_time.tv_sec);
+            net_store_32( (uint8_t *) &header_packetlogger, 8, curr_time.tv_usec);
             switch (packet_type){
                 case HCI_COMMAND_DATA_PACKET:
                     header_packetlogger.type = 0x00;
