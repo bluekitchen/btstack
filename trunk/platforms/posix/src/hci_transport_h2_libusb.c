@@ -198,9 +198,7 @@ static libusb_device * scan_for_bt_device(libusb_device **devs) {
         // The SubClass code (bDeviceSubClass) is 0x01 – RF Controller. 
         // The Protocol code (bDeviceProtocol) is 0x01 – Bluetooth programming.
         // if (desc.bDeviceClass == 0xe0 && desc.bDeviceSubClass == 0x01 && desc.bDeviceProtocol == 0x01){
-        if (desc.bDeviceClass == 0xE0 && desc.bDeviceSubClass == 0x01
-                && desc.bDeviceProtocol == 0x01) {
-            log_info("BT Dongle found.");
+        if (desc.bDeviceClass == 0xE0 && desc.bDeviceSubClass == 0x01 && desc.bDeviceProtocol == 0x01) {
             return dev;
         }
 
@@ -398,7 +396,7 @@ static int usb_open(void *transport_config){
     libusb_state = LIB_USB_OPENED;
 
     // configure debug level
-    libusb_set_debug(NULL,1);
+    libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_WARNING);
     
 #ifdef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
     // Use a specified device
@@ -412,7 +410,7 @@ static int usb_open(void *transport_config){
     }
 #else
     // Scan system for an appropriate device
-    log_info("Scanning for a device");
+    log_info("Scanning for USB Bluetooth device");
     cnt = libusb_get_device_list(NULL, &devs);
     if (cnt < 0) {
         usb_close(handle);
@@ -444,8 +442,8 @@ static int usb_open(void *transport_config){
 
     log_info("libusb open %d, handle %p", r, handle);
 
-    // Detach OS driver (not possible for OS X)
-#ifndef __APPLE__
+    // Detach OS driver (not possible for OS X and WIN32)
+#if !defined(__APPLE__) && !defined(_WIN32)
     r = libusb_kernel_driver_active(handle, 0);
     if (r < 0) {
         log_error("libusb_kernel_driver_active error %d", r);
@@ -465,6 +463,15 @@ static int usb_open(void *transport_config){
 #endif
     libusb_state = LIB_USB_KERNEL_DETACHED;
 
+    const int configuration = 1;
+    log_info("setting configuration %d...", configuration);
+    r = libusb_set_configuration(handle, configuration);
+    if (r < 0) {
+        log_error("Error libusb_set_configuration: %d\n", r);
+        usb_close(handle);
+        return r;
+    }
+
     // reserve access to device
     log_info("claiming interface 0...");
     r = libusb_claim_interface(handle, 0);
@@ -475,7 +482,6 @@ static int usb_open(void *transport_config){
     }
 
     libusb_state = LIB_USB_INTERFACE_CLAIMED;
-    log_info("claimed interface 0");
     
 #ifndef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
     scan_for_bt_endpoints();
@@ -609,7 +615,7 @@ static int usb_close(void *transport_config){
             libusb_release_interface(handle, 0);
 
         case LIB_USB_KERNEL_DETACHED:
-#ifndef __APPLE__
+#if !defined(__APPLE__) && !defined(_WIN32)
             libusb_attach_kernel_driver (handle, 0);
 #endif
         case LIB_USB_DEVICE_OPENDED:
