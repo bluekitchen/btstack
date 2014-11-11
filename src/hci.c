@@ -51,7 +51,11 @@
 #include <stdio.h>
 
 #ifndef EMBEDDED
+#ifdef _WIN32
+#include "Winsock2.h"
+#else
 #include <unistd.h> // gethostbyname
+#endif
 #include <btstack/version.h>
 #endif
 
