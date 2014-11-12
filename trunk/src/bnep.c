@@ -1050,6 +1050,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
 static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16_t size)
 {
     int             rc = 0;
+    int             processed = 0;
     uint8_t         bnep_type;
     uint8_t         bnep_header_has_ext;
     uint16_t        pos = 0;
@@ -1081,14 +1082,14 @@ static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16
             pos += sizeof(bd_addr_t);
             network_protocol_type = READ_BT_16(packet, pos);
             pos += 2;
-            rc = bnep_handle_ethernet_packet(channel, addr_dest, addr_source, network_protocol_type, &packet[pos], size - pos);
+            rc = processed = bnep_handle_ethernet_packet(channel, addr_dest, addr_source, network_protocol_type, &packet[pos], size - pos);
             break;
         case BNEP_PKT_TYPE_COMPRESSED_ETHERNET:
             BD_ADDR_COPY(addr_dest, channel->local_addr);
             BD_ADDR_COPY(addr_source, channel->remote_addr);
             network_protocol_type = READ_BT_16(packet, pos);
             pos += 2;
-            rc = bnep_handle_ethernet_packet(channel, addr_dest, addr_source, network_protocol_type, &packet[pos], size - pos);
+            rc = processed = bnep_handle_ethernet_packet(channel, addr_dest, addr_source, network_protocol_type, &packet[pos], size - pos);
             break;
         case BNEP_PKT_TYPE_COMPRESSED_ETHERNET_SOURCE_ONLY:
             BD_ADDR_COPY(addr_dest, channel->local_addr);
@@ -1096,7 +1097,7 @@ static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16
             pos += sizeof(bd_addr_t);
             network_protocol_type = READ_BT_16(packet, pos);
             pos += 2;
-            rc = bnep_handle_ethernet_packet(channel, addr_dest, addr_source, network_protocol_type, &packet[pos], size - pos);
+            rc = processed = bnep_handle_ethernet_packet(channel, addr_dest, addr_source, network_protocol_type, &packet[pos], size - pos);
             break;
         case BNEP_PKT_TYPE_COMPRESSED_ETHERNET_DEST_ONLY:
             BD_ADDR_COPY(addr_dest, &packet[pos]);
@@ -1104,23 +1105,23 @@ static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16
             BD_ADDR_COPY(addr_source, channel->remote_addr);
             network_protocol_type = READ_BT_16(packet, pos);
             pos += 2;
-            rc = bnep_handle_ethernet_packet(channel, addr_dest, addr_source, network_protocol_type, &packet[pos], size - pos);
+            rc = processed = bnep_handle_ethernet_packet(channel, addr_dest, addr_source, network_protocol_type, &packet[pos], size - pos);
             break;
         case BNEP_PKT_TYPE_CONTROL:
-            rc = bnep_handle_control_packet(channel, packet, size, 0 /* TODO: Is extension bit ? */);
+            rc = processed = bnep_handle_control_packet(channel, packet, size, 0);
             break;
         default:
             break;
     }
 
+    
+    
     return rc;
 
 }
 
 void bnep_packet_handler(uint8_t packet_type, uint16_t l2cap_cid, uint8_t *packet, uint16_t size)
 {
-    bnep_channel_t* channel = NULL;
-    
     int handled = 0;
     switch (packet_type) {
         case HCI_EVENT_PACKET:
