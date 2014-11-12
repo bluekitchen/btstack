@@ -38,8 +38,6 @@
 #include "pan.h"
 
 static int record_id = -1;
-static int attribute_id = -1;
-static uint16_t public_browse_group = 0x1002;
 static uint16_t bnep_protocol_id    = 0x000f;
 static uint16_t bnep_l2cap_psm      = 0;
 static uint16_t bnep_remote_uuid    = 0;
@@ -234,7 +232,6 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                                 printf("SDP Attribute: 0x%04x\n", value_event->attribute_id);
 
                                 for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {                                    
-                                    des_iterator_t prot_it;
                                     uint8_t       *des_element;
                                     uint8_t       *element;
                                     uint16_t       uuid;
