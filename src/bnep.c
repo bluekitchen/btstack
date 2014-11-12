@@ -375,6 +375,12 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
     has_source = (memcmp(addr_source, channel->local_addr, ETHER_ADDR_LEN) != 0);
     has_dest = (memcmp(addr_dest, channel->remote_addr, ETHER_ADDR_LEN) != 0);
 
+    /* Check for MTU limits */
+    if (len - pos > channel->max_frame_size) {
+        log_error("bnep_send: Max frame size (%d) exceeded: %d", channel->max_frame_size, len - pos);
+        return BNEP_DATA_LEN_EXCEEDS_MTU;
+    }
+    
     /* Fill in the package type depending on the given source and destination address */
     if (has_source && has_dest) {
         bnep_out_buffer[pos_out++] = BNEP_PKT_TYPE_GENERAL_ETHERNET;
@@ -405,16 +411,11 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
     pos_out += 2;
     
     /* TODO: Add extension headers, if we may support them at a later stage */
-    
-    /* Check for MTU limits add the payload and then send out the package */
-    if (len - pos <= channel->max_frame_size) {
-        memcpy(bnep_out_buffer + pos_out, packet + pos, len - pos);
-        pos_out += len - pos;
+    /* Add the payload and then send out the package */
+    memcpy(bnep_out_buffer + pos_out, packet + pos, len - pos);
+    pos_out += len - pos;
 
-        err = l2cap_send_prepared(channel->l2cap_cid, pos_out);
-    } else {
-        return BNEP_DATA_LEN_EXCEEDS_MTU;
-    }
+    err = l2cap_send_prepared(channel->l2cap_cid, pos_out);
     
     if (err) {
         log_info("bnep_send: error %d", err);
@@ -436,11 +437,6 @@ static uint16_t bnep_max_frame_size_for_l2cap_mtu(uint16_t l2cap_mtu){
      */
     uint16_t max_frame_size = l2cap_mtu - 15; // 15 bytes BNEP header
     
-    // single byte can denote len up to 127
-    if (max_frame_size > 127) {
-        max_frame_size--;
-    }
-
     log_info("bnep_max_frame_size_for_l2cap_mtu:  %u -> %u", l2cap_mtu, max_frame_size);
     return max_frame_size;
 }
