@@ -7,13 +7,17 @@ CFLAGS += -I${BTSTACK_ROOT}/include
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}
 
-CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
-LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
-# CFLAGS += -I/usr/local/include/libusb-1.0
-# LDFLAGS += -L/usr/local/lib -lusb-1.0
-
 ifeq ($(OS),Windows_NT)
 LDFLAGS += -lws2_32
+# assume libusb was installed into /usr/local
+CFLAGS  += -I/usr/local/include/libusb-1.0
+LDFLAGS += -L/usr/local/lib -lusb-1.0
+else
+# use pkg-config
+CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
+LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
+# requires termios
+NON_WINDOWS = ble_peripheral ble_peripheral_sm_minimal l2cap_test ancs_client classic_test
 endif
 
 CORE   = \
@@ -77,9 +81,19 @@ PAN_OBJ = $(PAN:.c=.o)
 
 # create firmware image from common objects and example source file
 
-all: ${BTSTACK_ROOT}/include/btstack/version.h gatt_browser gatt_battery_query sdp_rfcomm_query sdp_general_query spp_counter ble_peripheral \
-		ble_peripheral_sm_minimal gap_inquiry gap_dedicated_bonding gap_inquiry_and_bond l2cap_test spp_streamer \
-		classic_test ancs_client spp_and_le_counter sdp_bnep_query
+all: ${BTSTACK_ROOT}/include/btstack/version.h \
+	gap_dedicated_bonding	\
+	gap_inquiry 			\
+	gap_inquiry_and_bond 	\
+	gatt_battery_query		\
+	gatt_browser            \
+	sdp_bnep_query 			\
+	sdp_general_query		\
+	sdp_rfcomm_query		\
+	spp_and_le_counter 		\
+	spp_counter 			\
+	spp_streamer			\
+	${NON_WINDOWS}			\
 
 
 ${BTSTACK_ROOT}/include/btstack/version.h:
