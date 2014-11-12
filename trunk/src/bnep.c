@@ -794,8 +794,25 @@ static int bnep_handle_multi_addr_response(bnep_channel_t *channel, uint8_t *pac
 
 static int bnep_handle_ethernet_packet(bnep_channel_t *channel, bd_addr_t addr_dest, bd_addr_t addr_source, uint16_t network_protocol_type, uint8_t *payload, uint16_t size)
 {
-    uint8_t ethernet_packet[BNEP_MTU_MIN];
     uint16_t pos = 0;
+    
+#if (HCI_INCOMING_PRE_BUFFER_SIZE) && (HCI_INCOMING_PRE_BUFFER_SIZE >= 14 - 8) // 2 * sizeof(bd_addr_t) + sizeof(uint16_t) - L2CAP Header (4) - ACL Header (4)
+    /* In-place modify the package and add the ethernet header in front of the payload.
+     * WARNING: This modifies the data in front of the payload and may overwrite 14 bytes there!
+     */
+    uint8_t *ethernet_packet = payload - 2 * sizeof(bd_addr_t) - sizeof(uint16_t);
+    /* Restore the ethernet packet header */
+    BD_ADDR_COPY(ethernet_packet + pos, addr_dest);
+    pos += sizeof(bd_addr_t);
+    BD_ADDR_COPY(ethernet_packet + pos, addr_source);
+    pos += sizeof(bd_addr_t);
+    bt_store_16(ethernet_packet, pos, network_protocol_type);
+    /* Payload is just in place... */
+#else
+    /* Copy ethernet frame to statically allocated buffer. This solution is more 
+     * save, but needs an extra copy and more stack! 
+     */
+    uint8_t ethernet_packet[BNEP_MTU_MIN];
 
     /* Restore the ethernet packet header */
     BD_ADDR_COPY(ethernet_packet + pos, addr_dest);
@@ -805,11 +822,12 @@ static int bnep_handle_ethernet_packet(bnep_channel_t *channel, bd_addr_t addr_d
     bt_store_16(ethernet_packet, pos, network_protocol_type);
     pos += 2;
     memcpy(ethernet_packet + pos, payload, size);
-
+#endif
+    
     /* Notify application layer and deliver the ethernet packet */
     (*app_packet_handler)(channel->connection, BNEP_DATA_PACKET, channel->uuid_source,
                           ethernet_packet, size + sizeof(uint16_t) + 2 * sizeof(bd_addr_t));
-
+    
     return size;
 }
 
