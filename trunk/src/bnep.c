@@ -56,7 +56,7 @@
 
 #include "l2cap.h"
 
-#define BNEP_CONNECTION_TIMEOUT_MS 30000
+#define BNEP_CONNECTION_TIMEOUT_MS 10000
 
 static linked_list_t bnep_services = NULL;
 static linked_list_t bnep_channels = NULL;
@@ -68,6 +68,7 @@ static void (*app_packet_handler)(void * connection, uint8_t packet_type,
 
 
 static bnep_channel_t * bnep_channel_for_l2cap_cid(uint16_t l2cap_cid);
+static void bnep_channel_finalize(bnep_channel_t *channel);
 static void bnep_run(void);
 
 /* Emit service registered event */
@@ -108,6 +109,20 @@ static void bnep_emit_incoming_connection(bnep_channel_t *channel)
     bt_store_16(event, 5, channel->uuid_dest);
     bt_store_16(event, 7, channel->max_frame_size);
     BD_ADDR_COPY(&event[9], channel->remote_addr);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));
+}
+
+static void bnep_emit_channel_timeout(bnep_channel_t *channel) 
+{
+    log_info("BNEP_EVENT_CHANNEL_TIMEOUT bd_addr: %s", bd_addr_to_str(channel->remote_addr));
+    uint8_t event[2 + sizeof(bd_addr_t) + 2 * sizeof(uint16_t) + sizeof(uint8_t)];
+    event[0] = BNEP_EVENT_CHANNEL_TIMEOUT;
+    event[1] = sizeof(event) - 2;
+    bt_store_16(event, 2, channel->uuid_source);
+    bt_store_16(event, 4, channel->uuid_dest);
+    BD_ADDR_COPY(&event[6], channel->remote_addr);
+    event[12] = channel->state; 
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));
 }
@@ -423,6 +438,39 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
     return err;        
 }
 
+/* BNEP timeout timer helper function */
+static void bnep_channel_timer_handler(timer_source_t *timer)
+{
+    bnep_channel_t *channel = (bnep_channel_t *)linked_item_get_user((linked_item_t *) timer);
+    log_info( "bnep_channel_timeout_handler callback: shutting down connection!");
+    bnep_emit_channel_timeout(channel);
+    bnep_channel_finalize(channel);
+}
+
+
+static void bnep_channel_stop_timer(bnep_channel_t *channel)
+{
+    if (channel->timer_active) {
+        run_loop_remove_timer(&channel->timer);
+        channel->timer_active = 0;
+    }
+}
+
+static void bnep_channel_start_timer(bnep_channel_t *channel, int timeout)
+{
+    /* Stop any eventually running timeout timer */
+    bnep_channel_stop_timer(channel);
+
+    /* Start bnep channel timeout check timer */
+    run_loop_set_timer(&channel->timer, timeout);
+    channel->timer.process = bnep_channel_timer_handler;
+    linked_item_set_user((linked_item_t*) &channel->timer, channel);
+    run_loop_add_timer(&channel->timer);
+    channel->timer_active = 1;    
+}
+
+/* BNEP statemachine functions */
+
 inline static void bnep_channel_state_add(bnep_channel_t *channel, BNEP_CHANNEL_STATE_VAR event){
     channel->state_var = (BNEP_CHANNEL_STATE_VAR) (channel->state_var | event);    
 }
@@ -516,8 +564,11 @@ static void bnep_channel_finalize(bnep_channel_t *channel)
     if (channel->state == BNEP_CHANNEL_STATE_CONNECTED) {
         bnep_emit_channel_closed(channel);
     }
- 
+
     l2cap_cid = channel->l2cap_cid;
+
+    /* Stop any eventually running timer */
+    bnep_channel_stop_timer(channel);
     
     /* Free ressources and then close the l2cap channel */
     bnep_channel_free(channel);
@@ -615,6 +666,8 @@ static int bnep_handle_connection_response(bnep_channel_t *channel, uint8_t *pac
     if (response_code == BNEP_RESP_SETUP_SUCCESS) {
         log_info("BNEP_CONNCTION_RESPONSE: Channel established to %s", bd_addr_to_str(channel->remote_addr));
         channel->state = BNEP_CHANNEL_STATE_CONNECTED;
+        /* Stop timeout timer! */
+        bnep_channel_stop_timer(channel);
         bnep_emit_open_channel_complete(channel, 0);
     } else {
         log_error("BNEP_CONNCTION_RESPONSE: Connection to %s failed. Err: %d", bd_addr_to_str(channel->remote_addr), response_code);
@@ -946,6 +999,9 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
 
             /* Set channel into accept state */
             channel->state = BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_REQUEST;
+
+            /* Start connection timeout timer */
+            bnep_channel_start_timer(channel, BNEP_CONNECTION_TIMEOUT_MS);
             
             log_info("L2CAP_EVENT_INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_BNEP => accept", l2cap_cid);
             l2cap_accept_connection_internal(l2cap_cid);
@@ -1199,6 +1255,8 @@ static void bnep_channel_state_machine(bnep_channel_t* channel, bnep_channel_eve
                 (channel->state == BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_REQUEST)) {
                 /* Set channel state to STATE_CONNECTED */
                 channel->state = BNEP_CHANNEL_STATE_CONNECTED;
+                /* Stop timeout timer! */
+                bnep_channel_stop_timer(channel);
             }
             
             bnep_channel_state_remove(channel, BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_RESPONSE);
@@ -1274,6 +1332,8 @@ int bnep_connect(void * connection, bd_addr_t *addr, uint16_t l2cap_psm, uint16_
     channel->uuid_source = BNEP_UUID_PANU;
     channel->uuid_dest   = uuid_dest;
 
+    bnep_channel_start_timer(channel, BNEP_CONNECTION_TIMEOUT_MS);
+    
     l2cap_create_channel_internal(connection, bnep_packet_handler, *addr, l2cap_psm, l2cap_max_mtu());
     
     return 0;

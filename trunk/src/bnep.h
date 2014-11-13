@@ -167,6 +167,9 @@ typedef struct {
     
     bnep_multi_filter  multicast_filter[MAX_BNEP_MULTICAST_FILTER]; // multicast address filter, define fixed size for now
     uint16_t           multicast_filter_count;
+
+    timer_source_t     timer;             // Timeout timer
+    int                timer_active;      // Is a timer running?
     
     // l2cap packet handler
     btstack_packet_handler_t packet_handler;

@@ -363,6 +363,10 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     }
 					break;
                     
+                case BNEP_EVENT_CHANNEL_TIMEOUT:
+                    printf("BNEP channel timeout! Channel will be closed\n");
+                    break;
+                    
                 case BNEP_EVENT_CHANNEL_CLOSED:
                     printf("BNEP channel closed\n");
                     run_loop_remove_data_source(&tap_dev_ds);
