@@ -4,6 +4,7 @@ POSIX_ROOT= ${BTSTACK_ROOT}/platforms/posix
 VPATH += ${BTSTACK_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/ble
 VPATH += ${BTSTACK_ROOT}/platforms/posix/src
+VPATH += ${BTSTACK_ROOT}/example/embedded
 
 # TODO: move des iterator into /src
 VPATH += ${BTSTACK_ROOT}/test/des_iterator/
@@ -119,7 +120,7 @@ sdp_bnep_query: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_DES} sdp_bnep_query.c
 spp_counter: ${CORE_OBJ} ${COMMON_OBJ} spp_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_and_le_counter: spp_and_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} spp_and_le_counter.c 
+spp_and_le_counter: spp_and_le_counter.h main.o ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} spp_and_le_counter.c 
 	${CC} $(filter-out spp_and_le_counter.h,$^)  ${CFLAGS} ${LDFLAGS} -o $@
 
 spp_counter_ssp: ${CORE_OBJ} ${COMMON_OBJ} spp_counter_ssp.c
