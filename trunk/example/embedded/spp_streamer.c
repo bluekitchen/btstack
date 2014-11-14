@@ -147,19 +147,11 @@ void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
     }
 }
 
-static void btstack_setup(){
-    /// GET STARTED ///
-    btstack_memory_init();
-    run_loop_init(RUN_LOOP_POSIX);
-    
-    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
-   
-    hci_transport_t    * transport = hci_transport_usb_instance();
-    hci_uart_config_t  * config = NULL;
-    bt_control_t       * control   = NULL;    
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
 
-    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-    hci_init(transport, config, control, remote_db);
+    create_test_data();
+
     printf("Client HCI init done\r\n");
     
     // init L2CAP
@@ -172,11 +164,7 @@ static void btstack_setup(){
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
-}
 
-int main(void){
-    create_test_data();
-    btstack_setup();
     // go!
     run_loop_execute(); 
     return 0;

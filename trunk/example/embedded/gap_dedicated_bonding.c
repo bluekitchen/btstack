@@ -43,26 +43,11 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
     }
 }
 
-static void btstack_setup(){
-    /// GET STARTED ///
-    btstack_memory_init();
-    run_loop_init(RUN_LOOP_POSIX);
-    
-    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
-   
-    hci_transport_t    * transport = hci_transport_usb_instance();
-    hci_uart_config_t  * config = NULL;
-    bt_control_t       * control   = NULL;    
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
 
-    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-    hci_init(transport, config, control, remote_db);
     hci_register_packet_handler(packet_handler);    
     // turn on!
-    hci_power_control(HCI_POWER_ON);
-}
-
-int main(void){
-    btstack_setup();
-    run_loop_execute(); 
+    hci_power_control(HCI_POWER_ON);    run_loop_execute(); 
     return 0;
 }

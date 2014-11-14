@@ -58,10 +58,6 @@
 #include "att.h"
 #include "gatt_client.h"
 
-#ifdef HAVE_UART_CC2564
-#include "bt_control_cc256x.h"
-#endif
-
 typedef struct ad_event {
     uint8_t   type;
     uint8_t   event_type;
@@ -818,43 +814,14 @@ static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size
     }
 }
 
-
-#ifndef UNIT_TEST
-
-static hci_uart_config_t  config;
-void setup(void){
-    /// GET STARTED with BTstack ///
-    btstack_memory_init();
-    run_loop_init(RUN_LOOP_POSIX);
-        
-    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-    hci_dump_open("/tmp/ble_client.pklg", HCI_DUMP_PACKETLOGGER);
-
-  // init HCI
-    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-    bt_control_t       * control   = NULL;
-#ifndef  HAVE_UART_CC2564
-    hci_transport_t    * transport = hci_transport_usb_instance();
-#else
-    hci_transport_t    * transport = hci_transport_h4_instance();
-    control   = bt_control_cc256x_instance();
-    // config.device_name   = "/dev/tty.usbserial-A600eIDu";   // 5438
-    config.device_name   = "/dev/tty.usbserial-A800cGd0";   // 5529
-    config.baudrate_init = 115200;
-    config.baudrate_main = 0;
-    config.flowcontrol = 1;
-#endif        
-    hci_init(transport, &config, control, remote_db);
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
+    
     l2cap_init();
     ble_client_init();
     ble_client_register_gatt_client_event_packet_handler(handle_gatt_client_event);
     ble_client_register_hci_packet_handler(handle_hci_event);
-}
 
-int main(void)
-{
-    setup();
- 
     // turn on!
     hci_power_control(HCI_POWER_ON);
     // go!
@@ -863,7 +830,6 @@ int main(void)
     // happy compiler!
     return 0;
 }
-#endif
 
 
 

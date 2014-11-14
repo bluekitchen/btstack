@@ -48,29 +48,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     }
 }
 
-static void btstack_setup(){
-    /// GET STARTED ///
-    btstack_memory_init();
-    run_loop_init(RUN_LOOP_POSIX);
-    
-    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
-   
-    hci_transport_t    * transport = hci_transport_usb_instance();
-    hci_uart_config_t  * config = NULL;
-    bt_control_t       * control   = NULL;    
-
-    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-    hci_init(transport, config, control, remote_db);
-    printf("Client HCI init done\r\n");
-    
-    // init L2CAP
-    l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
-
-    // turn on!
-    hci_power_control(HCI_POWER_ON);
-}
-
 void store_found_service(uint8_t * name, uint8_t port){
     printf("APP: Service name: '%s', RFCOMM port %u\n", name, port);
     channel_nr[service_index] = port;
@@ -110,10 +87,20 @@ void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
     }
 }
 
-int main(void){
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
+
+    printf("Client HCI init done\r\n");
+        
+    // init L2CAP
+    l2cap_init();
+    l2cap_register_packet_handler(packet_handler);
+
     sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
 
-    btstack_setup();
+    // turn on!
+    hci_power_control(HCI_POWER_ON);
+
     // go!
     run_loop_execute(); 
     return 0;

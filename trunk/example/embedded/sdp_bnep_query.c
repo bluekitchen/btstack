@@ -176,34 +176,21 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
     }
 }
 
- static void btstack_setup(){
-    /// GET STARTED ///
-    btstack_memory_init();
-    run_loop_init(RUN_LOOP_POSIX);
-    
-    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
-   
-    hci_transport_t    * transport = hci_transport_usb_instance();
-    hci_uart_config_t  * config = NULL;
-    bt_control_t       * control   = NULL;    
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
 
-    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-    hci_init(transport, config, control, remote_db);
     printf("Client HCI init done\r\n");
     
     // init L2CAP
     l2cap_init();
     l2cap_register_packet_handler(packet_handler);
 
-    // turn on!
-    hci_power_control(HCI_POWER_ON);
-}
-
-int main(void){
     sdp_parser_init();
     sdp_parser_register_callback(handle_sdp_client_query_result);
+
+    // turn on!
+    hci_power_control(HCI_POWER_ON);
             
-    btstack_setup();
     // go!
     run_loop_execute(); 
     return 0;

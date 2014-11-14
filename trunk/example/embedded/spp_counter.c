@@ -134,48 +134,33 @@ static void  heartbeat_handler(struct timer *ts){
     run_loop_add_timer(ts);
 } 
 
-void setup(void){
-	/// GET STARTED with BTstack ///
-	btstack_memory_init();
-    run_loop_init(RUN_LOOP_POSIX);
-	    
-    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
 
-    // init HCI
-	hci_transport_t    * transport = hci_transport_usb_instance();
-    hci_uart_config_t * config = NULL;
-	bt_control_t       * control   = NULL;
-    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-        
-	hci_init(transport, config, control, remote_db);
-	hci_discoverable_control(1);
+    hci_discoverable_control(1);
 
-	l2cap_init();
-	l2cap_register_packet_handler(packet_handler);
+    l2cap_init();
+    l2cap_register_packet_handler(packet_handler);
 
-	rfcomm_init();
-	rfcomm_register_packet_handler(packet_handler);
+    rfcomm_init();
+    rfcomm_register_packet_handler(packet_handler);
     rfcomm_register_service_internal(NULL, RFCOMM_SERVER_CHANNEL, 100);  // reserved channel, mtu=100
 
     // init SDP, create record for SPP and register with SDP
     sdp_init();
-	memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
-    // service_record_item_t * service_record_item = (service_record_item_t *) spp_service_buffer;
-    // sdp_create_spp_service( (uint8_t*) &service_record_item->service_record, RFCOMM_SERVER_CHANNEL, "SPP Counter");
-    // printf("SDP service buffer size: %u\n", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
-    // sdp_register_service_internal(NULL, service_record_item);
+    memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
+#ifdef EMBEDDED
+    service_record_item_t * service_record_item = (service_record_item_t *) spp_service_buffer;
+    sdp_create_spp_service( (uint8_t*) &service_record_item->service_record, RFCOMM_SERVER_CHANNEL, "SPP Counter");
+    printf("SDP service buffer size: %u\n", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
+    sdp_register_service_internal(NULL, service_record_item);
+#else
     sdp_create_spp_service( spp_service_buffer, RFCOMM_SERVER_CHANNEL, "SPP Counter");
     printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
     sdp_register_service_internal(NULL, spp_service_buffer);
+#endif
 
     hci_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
-}
-
-// main == setup
-int main(void)
-{
-    setup();
 
     // set one-shot timer
     timer_source_t heartbeat;

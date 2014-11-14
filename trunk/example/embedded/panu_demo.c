@@ -409,24 +409,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     }
 }
 
-static void btstack_setup(void)
-{
-    hci_transport_t    *transport;
-    hci_uart_config_t  *config;
-    bt_control_t       *control;
-    remote_device_db_t *remote_db;
-
-    btstack_memory_init();
-    run_loop_init(RUN_LOOP_POSIX);
-
-    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
-   
-    transport = hci_transport_usb_instance();
-    config    = NULL;
-    control   = NULL;    
-    remote_db = (remote_device_db_t *) &remote_device_db_memory;
-    
-    hci_init(transport, config, control, remote_db);
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
 
     printf("Client HCI init done\n");
     
@@ -437,20 +421,14 @@ static void btstack_setup(void)
     /* Initialise BNEP */
     bnep_init();
     bnep_register_packet_handler(packet_handler);
-//    bnep_register_service(NULL, BNEP_UUID_PANU, 1691);  /* Minimum L2CAP MTU for bnep is 1691 bytes */
+    //  bnep_register_service(NULL, BNEP_UUID_PANU, 1691);  /* Minimum L2CAP MTU for bnep is 1691 bytes */
 
     /* Turn on the device */
     hci_power_control(HCI_POWER_ON);
-}
 
-int main(int argc, char **argv)
-{
     /* Initialise SDP */
     sdp_parser_init();
     sdp_parser_register_callback(handle_sdp_client_query_result);
-
-    /* Setup BT-Stack */
-    btstack_setup();
 
     /* Start mainloop */
     run_loop_execute(); 

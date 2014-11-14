@@ -61,15 +61,6 @@
 #include "gap_le.h"
 #include "central_device_db.h"
 
-#ifdef HAVE_UART_CSR
-#include "bt_control_csr.h"
-#endif
-
-#ifdef HAVE_UART_CC256x
-#include "bt_control_cc256x.h"
-#endif
-
-
 #define HEARTBEAT_PERIOD_MS 1000
 
 // test profile
@@ -961,29 +952,13 @@ static hci_uart_config_t hci_uart_config = {
 #endif
 
 void setup(void){
-    /// GET STARTED with BTstack ///
-    btstack_memory_init();
-    run_loop_init(RUN_LOOP_POSIX);
-        
-    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
 
-    // init HCI
-#ifdef HAVE_UART_CSR
-    hci_transport_t    * transport = hci_transport_h4_instance();
-    hci_uart_config_t  * config    = &hci_uart_config;
-    bt_control_t       * control   = bt_control_csr_instance();
-#elif defined(HAVE_UART_CC256x)
-    hci_transport_t    * transport = hci_transport_h4_instance();
-    hci_uart_config_t  * config    = &hci_uart_config;
-    bt_control_t       * control   = bt_control_cc256x_instance();
-#else
-    hci_transport_t    * transport = hci_transport_usb_instance();
-    hci_uart_config_t  * config    = NULL;
-    bt_control_t       * control   = NULL;
-#endif
-    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-    hci_init(transport, config, control, remote_db);
+}
+
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
+    
+    printf("BTstack LE Peripheral starting up...\n");
 
     // set up l2cap_le
     l2cap_init();
@@ -1003,12 +978,6 @@ void setup(void){
     att_server_register_packet_handler(app_packet_handler);
 
     att_dump_attributes();
-}
-
-int main(void)
-{
-    printf("BTstack LE Peripheral starting up...\n");
-    setup();
 
     setup_cli();
 

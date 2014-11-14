@@ -71,16 +71,6 @@
 // ancs client profile
 #include "ancs_client.h"
 
-#ifdef HAVE_UART_CSR
-#include "bt_control_csr.h"
-static hci_uart_config_t hci_uart_config_csr8811 = {
-    "/dev/tty.usbserial-A40081HW",
-    115200,
-    0, // 1000000,
-    1
-};
-#endif
-
 enum {
     SET_ADVERTISEMENT_PARAMS = 1 << 0,
     SET_ADVERTISEMENT_DATA   = 1 << 1,
@@ -181,26 +171,10 @@ void ancs_callback(ancs_event_t * event){
     }
 }
 
-void setup(void){
-    /// GET STARTED with BTstack ///
-    btstack_memory_init();
-    run_loop_init(RUN_LOOP_POSIX);
-        
-    // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
-    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
-
-    // init HCI
-#ifdef HAVE_UART_CSR
-    hci_transport_t    * transport = hci_transport_h4_instance();
-    hci_uart_config_t  * config    = &hci_uart_config_csr8811;
-    bt_control_t       * control   = bt_control_csr_instance();
-#else
-    hci_transport_t    * transport = hci_transport_usb_instance();
-    hci_uart_config_t  * config    = NULL;
-    bt_control_t       * control   = NULL;
-#endif
-    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-    hci_init(transport, config, control, remote_db);
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
+    
+    printf("BTstack ANCS Client starting up...\n");
 
     // set up l2cap_le
     l2cap_init();
@@ -223,14 +197,6 @@ void setup(void){
     // setup ANCS Client
     ancs_client_init();
     ancs_client_register_callback(&ancs_callback);
-
-}
-
-int main(void)
-{
-    printf("BTstack ANCS Client starting up...\n");
-
-    setup();
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

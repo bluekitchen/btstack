@@ -727,20 +727,11 @@ void setup_cli(){
     run_loop_add_data_source(&stdin_source);
 }
 
-static void btstack_setup(){
-    printf("Starting up..\n");
-    /// GET STARTED ///
-    btstack_memory_init();
-    run_loop_init(RUN_LOOP_POSIX);
-    
-    hci_dump_open("/tmp/hci_dump.pklg", HCI_DUMP_PACKETLOGGER);
-   
-    hci_transport_t    * transport = hci_transport_usb_instance();
-    hci_uart_config_t  * config = NULL;
-    bt_control_t       * control   = NULL;    
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
 
-    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-    hci_init(transport, config, control, remote_db);
+    printf("Starting up..\n");
+
     hci_set_class_of_device(0x200404);
     hci_disable_l2cap_timeout_check();
     hci_ssp_set_io_capability(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
@@ -776,10 +767,7 @@ static void btstack_setup(){
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
-}
 
-int main(void){
-    btstack_setup();
     setup_cli();
 
     // set one-shot timer
