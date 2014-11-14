@@ -111,8 +111,8 @@ sdp_bnep_query: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_DES} sdp_bnep_query.c
 spp_counter: ${CORE_OBJ} ${COMMON_OBJ} spp_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_and_le_counter: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} spp_and_le_counter.c spp_and_le_counter.h
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} spp_and_le_counter.c ${CFLAGS} ${LDFLAGS} -o $@
+spp_and_le_counter: spp_and_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} spp_and_le_counter.c 
+	${CC} $(filter-out spp_and_le_counter.h,$^)  ${CFLAGS} ${LDFLAGS} -o $@
 
 spp_counter_ssp: ${CORE_OBJ} ${COMMON_OBJ} spp_counter_ssp.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
@@ -156,14 +156,14 @@ ancs_client.h: ancs_client.gatt
 spp_and_le_counter.h: spp_and_le_counter.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 
-ancs_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ${BTSTACK_ROOT}/ble/ancs_client_lib.c ancs_client.c ancs_client.h
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ${BTSTACK_ROOT}/ble/ancs_client_lib.c ancs_client.c ${CFLAGS} ${LDFLAGS} -o $@
+ancs_client: ancs_client.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ${BTSTACK_ROOT}/ble/ancs_client_lib.c ancs_client.c
+	${CC} $(filter-out ancs_client.h,$^)  ${CFLAGS} ${LDFLAGS} -o $@
 
-ble_peripheral: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c profile.h
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
+ble_peripheral: profile.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.o
+	${CC} $(filter-out profile.h,$^)  ${CFLAGS} ${LDFLAGS} -o $@
 
-ble_peripheral_sm_minimal: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c profile.h
-	${CC} ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c ${CFLAGS} ${LDFLAGS} -o $@
+ble_peripheral_sm_minimal: profile.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c
+	${CC} $(filter-out profile.h,$^)  ${CFLAGS} ${LDFLAGS} -o $@
 
 
 clean:
