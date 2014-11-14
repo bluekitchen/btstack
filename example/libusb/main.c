@@ -18,9 +18,10 @@
 #include "hci.h"
 #include "hci_dump.h"
 
-void btstack_main();
+int btstack_main(int argc, const char * argv[]);
 
-int main(void){
+int main(int argc, const char * argv[]){
+
 	/// GET STARTED with BTstack ///
 	btstack_memory_init();
     run_loop_init(RUN_LOOP_POSIX);
@@ -36,7 +37,7 @@ int main(void){
         
 	hci_init(transport, config, control, remote_db);
 
-    btstack_main();
+    btstack_main(argc, argv);
 
     return 0;
 }
