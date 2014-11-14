@@ -1,6 +1,13 @@
 BTSTACK_ROOT = ../..
 POSIX_ROOT= ${BTSTACK_ROOT}/platforms/posix
 
+VPATH += ${BTSTACK_ROOT}/src
+VPATH += ${BTSTACK_ROOT}/ble
+VPATH += ${BTSTACK_ROOT}/platforms/posix/src
+
+# TODO: move des iterator into /src
+VPATH += ${BTSTACK_ROOT}/test/des_iterator/
+
 CFLAGS  = -g -Wall -I.
 CFLAGS += -I${BTSTACK_ROOT}/ble
 CFLAGS += -I${BTSTACK_ROOT}/include 
@@ -21,54 +28,54 @@ NON_WINDOWS = ble_peripheral ble_peripheral_sm_minimal l2cap_test ancs_client cl
 endif
 
 CORE   = \
-    ${BTSTACK_ROOT}/src/btstack_memory.c            \
-    ${BTSTACK_ROOT}/src/linked_list.c	            \
-    ${BTSTACK_ROOT}/src/memory_pool.c               \
-    ${BTSTACK_ROOT}/src/run_loop.c		            \
-    ${POSIX_ROOT}/src/run_loop_posix.c              \
+    btstack_memory.c            \
+    linked_list.c	            \
+    memory_pool.c               \
+    run_loop.c		            \
+    run_loop_posix.c            \
 
 COMMON = \
-    ${BTSTACK_ROOT}/src/hci.c			            \
-    ${BTSTACK_ROOT}/src/hci_cmds.c		            \
-    ${BTSTACK_ROOT}/src/hci_dump.c		            \
-    ${BTSTACK_ROOT}/src/l2cap.c			            \
-    ${BTSTACK_ROOT}/src/l2cap_signaling.c	        \
-	${BTSTACK_ROOT}/src/remote_device_db_memory.c   \
-    ${BTSTACK_ROOT}/src/sdp_util.c	                \
-    ${BTSTACK_ROOT}/src/utils.c			            \
-    ${BTSTACK_ROOT}/src/rfcomm.c	                \
-    ${BTSTACK_ROOT}/src/bnep.c	                    \
-    ${BTSTACK_ROOT}/src/sdp.c			            \
-    ${BTSTACK_ROOT}/src/sdp_client.c		        \
-    ${BTSTACK_ROOT}/src/sdp_parser.c		        \
-    ${BTSTACK_ROOT}/src/sdp_query_util.c		    \
-	${BTSTACK_ROOT}/src/sdp_query_rfcomm.c		    \
-    ${POSIX_ROOT}/src/hci_transport_h2_libusb.c     \
+    hci.c			            \
+    hci_cmds.c		            \
+    hci_dump.c		            \
+    l2cap.c			            \
+    l2cap_signaling.c	        \
+	remote_device_db_memory.c   \
+    sdp_util.c	                \
+    utils.c			            \
+    rfcomm.c	                \
+    bnep.c	                    \
+    sdp.c			            \
+    sdp_client.c		        \
+    sdp_parser.c		        \
+    sdp_query_util.c		    \
+	sdp_query_rfcomm.c		    \
+    hci_transport_h2_libusb.c   \
 
 ATT	= \
-    ${BTSTACK_ROOT}/ble/att_dispatch.c       	    \
+    att_dispatch.c       	    \
 
 GATT_SERVER = \
-    ${BTSTACK_ROOT}/ble/att.c 				 	    \
-    ${BTSTACK_ROOT}/ble/att_server.c        	    \
+    att.c 				 	    \
+    att_server.c        	    \
 
 GATT_CLIENT = \
-    ${BTSTACK_ROOT}/ble/ad_parser.c                 \
-    ${BTSTACK_ROOT}/ble/gatt_client.c        	    \
+    ad_parser.c                 \
+    gatt_client.c        	    \
 
 SM_REAL = \
-	${BTSTACK_ROOT}/ble/sm.c 				 	    \
-    ${BTSTACK_ROOT}/ble/central_device_db_memory.c  \
+	sm.c 				 	    \
+    central_device_db_memory.c  \
 
 SM_MINIMAL = \
-	${BTSTACK_ROOT}/ble/sm_minimal.c  		 	    \
-    ${BTSTACK_ROOT}/ble/central_device_db_dummy.c   \
+	sm_minimal.c  		 	    \
+    central_device_db_dummy.c   \
 
 SDP_DES = \
-	${BTSTACK_ROOT}/test/des_iterator/des_iterator.c  \
+	des_iterator.c  \
 
 PAN = \
-	${BTSTACK_ROOT}/src/pan.c \
+	pan.c \
 
 CORE_OBJ    = $(CORE:.c=.o)
 COMMON_OBJ  = $(COMMON:.c=.o) 
@@ -80,8 +87,7 @@ GATT_SERVER_OBJ = $(GATT_SERVER:.c=.o)
 PAN_OBJ = $(PAN:.c=.o)
 
 # create firmware image from common objects and example source file
-
-all: ${BTSTACK_ROOT}/include/btstack/version.h \
+EXAMPLES = 					\
 	gap_dedicated_bonding	\
 	gap_inquiry 			\
 	gap_inquiry_and_bond 	\
@@ -95,6 +101,8 @@ all: ${BTSTACK_ROOT}/include/btstack/version.h \
 	spp_streamer			\
 	${NON_WINDOWS}			\
 
+
+all: ${BTSTACK_ROOT}/include/btstack/version.h ${EXAMPLES}
 
 ${BTSTACK_ROOT}/include/btstack/version.h:
 	${BTSTACK_ROOT}/tools/get_version.sh
@@ -167,17 +175,9 @@ ble_peripheral_sm_minimal: profile.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT
 
 
 clean:
-	rm -f  	spp_counter sdp_rfcomm_query sdp_general_query sdp_bnep_query spp_counter_ssp ble_peripheral ble_client gatt_battery_query gatt_browser \
-			gatt_client ancs_client ble_peripheral_sm_minimal classic_test  \
-			gap_dedicated_bonding gap_inquiry gap_inquiry_and_bond l2cap_test spp_and_le_counter spp_streamer panu_demo
+	rm -f ${EXAMPLES}
 	rm -f  *.o *.out *.hex 
-	rm -f  ${BTSTACK_ROOT}/src/*.o
-	rm -f  ${BTSTACK_ROOT}/ble/*.o
-	rm -f  ${BTSTACK_ROOT}/chipset-cc256x/*.o
-	rm -f  ${BTSTACK_ROOT}/platforms/posix/src/*.o
 	rm -f  ${BTSTACK_ROOT}/include/btstack/version.h
-	rm -f  ${BTSTACK_ROOT}/example/libusb/ancs_client.h
-	rm -f  ${BTSTACK_ROOT}/example/libusb/profile.h
-	rm -f  ${BTSTACK_ROOT}/example/libusb/spp_and_le_counter.h
+	rm -f  ancs_client.h profile.h spp_and_le_counter.h
 	rm -rf *.dSYM
 	
