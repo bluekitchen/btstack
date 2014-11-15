@@ -49,40 +49,12 @@ static void timer_setup(){
     run_loop_register_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
 }
 
-static void hw_setup(){
-    // stop watchdog timer
-    WDTCTL = WDTPW + WDTHOLD;
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
 
-    //Initialize clock and peripherals 
-    halBoardInit();  
-    halBoardStartXT1(); 
-    halBoardSetSystemClock(SYSCLK_16MHZ);
-    
-    // init debug UART
-    halUsbInit();
-
-    // init LEDs
-    LED_PORT_OUT |= LED_1 | LED_2;
-    LED_PORT_DIR |= LED_1 | LED_2;
-}
-
-static void btstack_setup(){
-    /// GET STARTED with BTstack ///
-    btstack_memory_init();
-    run_loop_init(RUN_LOOP_EMBEDDED);
-}
-
-// main
-int main(void)
-{
-    hw_setup();
-    btstack_setup();
 	timer_setup();
     
 	printf("Run...\n\r");
-
-    // ready - enable irq used in h4 task
-    __enable_interrupt();   
 
  	// turn on!
     // go!

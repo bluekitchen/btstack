@@ -34,6 +34,7 @@ CORE   = \
     run_loop.c		          \
     run_loop_embedded.c       \
     utils.c			          \
+    main.c 					  \
 
 COMMON = \
     hal_uart_dma.c            \
@@ -41,11 +42,11 @@ COMMON = \
     hci.c			          \
     hci_cmds.c		          \
     hci_transport_h4_ehcill_dma.c \
+	remote_device_db_memory.c \
 
 SPP = \
     l2cap.c			          \
     l2cap_signaling.c         \
-	remote_device_db_memory.c \
 	rfcomm.c			      \
     sdp_util.c                \
 
@@ -95,7 +96,7 @@ all: led_counter.hex spp_counter.hex spp_accel.hex gap_inquiry.hex spp_flowcontr
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 
 
-led_counter.out: ${CORE_OBJ} led_counter.o 
+led_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${CC2560B} led_counter.o 
 	${CC} $^ ${LDFLAGS} -o $@
 
 ant-test.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} profile.h sdp.o ant_cmds.o ${CC2567} ant-test.o
@@ -110,22 +111,22 @@ hid_demo.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} ${SPP_OBJ} ${CC2560B} hid_dem
 spp_accel.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_accel.o sdp.o hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_and_le_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${BLE_OBJ} main.o spp_and_le_counter.h spp_and_le_counter.o sdp.o hal_adc.o
+spp_and_le_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${BLE_OBJ} spp_and_le_counter.h spp_and_le_counter.o sdp.o hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} main.o spp_counter.o sdp.o  hal_adc.o
+spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_counter.o sdp.o  hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} main.o spp_flowcontrol.o sdp.o  hal_adc.o
+spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_flowcontrol.o sdp.o  hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-gap_inquiry.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} main.o gap_inquiry.o hal_adc.o
+gap_inquiry.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} gap_inquiry.o hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-sdp_rfcomm_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${SDP_CLIENT} ${CC2560B} main.o sdp_rfcomm_query.o hal_adc.o
+sdp_rfcomm_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${SDP_CLIENT} ${CC2560B} sdp_rfcomm_query.o hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-sdp_general_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${SDP_CLIENT} ${CC2560B} main.o sdp_general_query.o hal_adc.o
+sdp_general_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${SDP_CLIENT} ${CC2560B} sdp_general_query.o hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 clean:
