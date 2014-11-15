@@ -534,10 +534,10 @@ static int ehcill_send_packet(uint8_t packet_type, uint8_t *packet, int size){
 #endif
     
     if (packet_type == HCI_COMMAND_DATA_PACKET){
-        hci_dump_packet( HCI_COMMAND_DATA_PACKET, 0, &hci_packet[1], read_pos-1);
+        hci_dump_packet( HCI_COMMAND_DATA_PACKET, 0, packet, size);
     }
     if (packet_type == HCI_ACL_DATA_PACKET){
-        hci_dump_packet( HCI_ACL_DATA_PACKET, 1, &hci_packet[1], read_pos-1);
+        hci_dump_packet( HCI_ACL_DATA_PACKET, 1, packet, size);
     }
 
     tx_packet_type = packet_type;
