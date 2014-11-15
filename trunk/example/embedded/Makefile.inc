@@ -31,10 +31,12 @@ COMMON += \
     rfcomm.c	                \
     bnep.c	                    \
     sdp.c			            \
-    sdp_client.c		        \
-    sdp_parser.c		        \
-    sdp_query_util.c		    \
-	sdp_query_rfcomm.c		    \
+
+SDP_CLIENT += \
+    sdp_client.o		        \
+    sdp_parser.o		        \
+    sdp_query_util.o		    \
+	sdp_query_rfcomm.o		    \
 
 ATT	+= \
     att_dispatch.c       	    \
@@ -101,13 +103,13 @@ spp_and_le_counter.h: spp_and_le_counter.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 
 # examples
-sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} ${PAN_OBJ} sdp_rfcomm_query.c
+sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} ${PAN_OBJ} ${SDP_CLIENT} sdp_rfcomm_query.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-sdp_general_query: ${CORE_OBJ} ${COMMON_OBJ} sdp_general_query.c  
+sdp_general_query: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} sdp_general_query.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-sdp_bnep_query: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_DES} sdp_bnep_query.c  
+sdp_bnep_query: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} ${SDP_DES} sdp_bnep_query.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 spp_counter: ${CORE_OBJ} ${COMMON_OBJ} spp_counter.c
@@ -119,7 +121,7 @@ spp_and_le_counter: spp_and_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${
 spp_counter_ssp: ${CORE_OBJ} ${COMMON_OBJ} spp_counter_ssp.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-spp_streamer: ${CORE_OBJ} ${COMMON_OBJ} spp_streamer.c  
+spp_streamer: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} spp_streamer.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 gap_dedicated_bonding: ${CORE_OBJ} ${COMMON_OBJ} gap_dedicated_bonding.c
@@ -137,7 +139,7 @@ panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_DES} panu_demo.c
 l2cap_test: ${CORE_OBJ} ${COMMON_OBJ} l2cap_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-classic_test: ${CORE_OBJ} ${COMMON_OBJ} classic_test.c
+classic_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} classic_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL} ble_client.c
