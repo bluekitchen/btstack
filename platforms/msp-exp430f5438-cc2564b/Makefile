@@ -12,13 +12,25 @@ CC2564B = bluetooth_init_cc2564B_1.0_BT_Spec_4.1.o
 CC2567  = CC256x_BT_Service_Pack_2.8_ANT_1.16.o
 
 BTSTACK_ROOT = ../..
+VPATH += example
+VPATH += firmware
+VPATH += src
 VPATH += $(BTSTACK_ROOT)/ble
 VPATH += $(BTSTACK_ROOT)/chipset-cc256x
 VPATH += $(BTSTACK_ROOT)/example/embedded
 VPATH += $(BTSTACK_ROOT)/src
 
 CC      = msp430-gcc
-CFLAGS  = -mmcu=msp430f5438a -Os -Wall -fno-toplevel-reorder -I. -I$(BTSTACK_ROOT)/include -I$(BTSTACK_ROOT)/src -I$(BTSTACK_ROOT)/ble -I$(BTSTACK_ROOT)/chipset-cc256x
+CFLAGS  = -mmcu=msp430f5438a -Os -Wall -fno-toplevel-reorder
+CFLAGS += \
+	-I. \
+	-I src \
+	-I firmware \
+	-I$(BTSTACK_ROOT)/include \
+  	-I$(BTSTACK_ROOT)/src \
+	-I$(BTSTACK_ROOT)/ble \
+	-I$(BTSTACK_ROOT)/chipset-cc256x \
+
 LDFLAGS = -mmcu=msp430f5438a
 
 CORE   = \
@@ -133,9 +145,5 @@ clean:
 	rm -f $ *.o *.out *.hex profile.h spp_and_le_counter.h ../driver/*.o ../../src/*.o ../src/*.o ../firmware/*.o ${BTSTACK_ROOT}/chipset-cc256x/*.o ${BTSTACK_ROOT}/src/*.o
 
 size: all
-	msp430-size ../firmware/*.o
-	msp430-size ../src/*.o
-	msp430-size ${BTSTACK_ROOT}/chipset-cc256x/*.o
-	msp430-size ${BTSTACK_ROOT}/src/*.o
 	msp430-size *.o
 	msp430-size *.out 
