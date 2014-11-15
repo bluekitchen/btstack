@@ -396,6 +396,12 @@ static int h4_process(struct data_source *ds) {
     dump(hci_packet, read_pos);
 #endif
     
+    if (hci_packet[0] == HCI_EVENT_PACKET){
+        hci_dump_packet( HCI_EVENT_PACKET, 0, &hci_packet[1], read_pos-1);
+    }
+    if (hci_packet[0] == HCI_ACL_DATA_PACKET){
+        hci_dump_packet( HCI_ACL_DATA_PACKET, 1, &hci_packet[1], read_pos-1);
+    }
     packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
 
     h4_rx_init_sm();
@@ -527,6 +533,13 @@ static int ehcill_send_packet(uint8_t packet_type, uint8_t *packet, int size){
     dump(packet, size);
 #endif
     
+    if (packet_type == HCI_COMMAND_DATA_PACKET){
+        hci_dump_packet( HCI_COMMAND_DATA_PACKET, 0, &hci_packet[1], read_pos-1);
+    }
+    if (packet_type == HCI_ACL_DATA_PACKET){
+        hci_dump_packet( HCI_ACL_DATA_PACKET, 1, &hci_packet[1], read_pos-1);
+    }
+
     tx_packet_type = packet_type;
     tx_data = packet;
     tx_len  = size;
