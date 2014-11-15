@@ -116,7 +116,7 @@ spp_and_le_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${BLE_OBJ} spp_and_
 spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} main.o spp_counter.o sdp.o  hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_flowcontrol.o sdp.o  hal_adc.o
+spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} main.o spp_flowcontrol.o sdp.o  hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 gap_inquiry.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} gap_inquiry.o hal_adc.o
