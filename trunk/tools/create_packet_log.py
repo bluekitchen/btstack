@@ -61,7 +61,7 @@ def dumpPacket(fout, timestamp, type, data):
 	fout.write(data)
 
 def handleHexPacket(fout, timestamp, type, text):
-	data = bytearray(map(str2hex, text.strip(" ").split(" ")))
+	data = bytearray(map(str2hex, text.strip().split(" ")))
 	dumpPacket(fout, timestamp, type, data)
 
 if len(sys.argv) == 1:
@@ -82,12 +82,11 @@ with open (outfile, 'wb') as fout:
 	with open (infile, 'rb') as fin:
 		packet_counter = 0
 		for line in fin:
+			# print line
 			timestamp = None
 			parts = parts = re.match('\[(.*)\] (.*)', line)
 			if parts and len(parts.groups()) == 2:
 				(timestamp, line) = parts.groups()
-			else:
-				timestamp = packet_counter
 			rest = chop(line,'CMD => ')
 			if rest:
 				handleHexPacket(fout, timestamp, 0, rest)
