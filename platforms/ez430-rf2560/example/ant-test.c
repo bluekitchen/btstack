@@ -1,6 +1,7 @@
 // *****************************************************************************
 //
-// spp_counter demo - it provides a SPP and sends a counter every second
+// ant + spp demo - it provides a SPP port and and sends a counter every second
+//                - it also listens on ANT channel 33,1,1
 //
 // it doesn't use the LCD to get down to a minimal memory footpring
 //
@@ -18,9 +19,11 @@
 #include "hal_compat.h"
 #include "hal_usb.h"
 
+#include <btstack/ant_cmds.h>
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>
 #include <btstack/sdp_util.h>
+#include <btstack/utils.h>
 
 #include "hci.h"
 #include "l2cap.h"
@@ -30,12 +33,12 @@
 #include "sdp.h"
 #include "btstack-config.h"
 
-#define HEARTBEAT_PERIOD_MS 500
+#define HEARTBEAT_PERIOD_MS 1000
 
 static uint8_t   rfcomm_channel_nr = 1;
-static uint16_t  rfcomm_channel_id;
-static uint8_t   rfcomm_send_credit = 0;
+static uint16_t  rfcomm_channel_id = 0;
 static uint8_t   spp_service_buffer[100];
+
 
 // Bluetooth logic
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -43,6 +46,10 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     uint8_t   rfcomm_channel_nr;
     uint16_t  mtu;
     
+    uint8_t event_code;
+	// uint8_t channel;
+	uint8_t message_id;
+
 	switch (packet_type) {
 		case HCI_EVENT_PACKET:
 			switch (packet[0]) {
@@ -61,8 +68,9 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                         break;
                     }
 					if (COMMAND_COMPLETE_EVENT(packet, hci_write_local_name)){
-                        hci_discoverable_control(1);
-                        break;
+						// start ANT init
+						ant_send_cmd(&ant_reset); 
+						break;
                     }
                     break;
 
@@ -104,62 +112,76 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     rfcomm_channel_id = 0;
                     break;
                 
-                default:
-                    break;
-			}
+
+                case 0xff:	// vendor specific -> ANT
+                	
+                	// vendor specific ant message
+                	if (packet[2] != 0x00) break;
+                	if (packet[3] != 0x05) break;
+
+					event_code = packet[7];
+
+                	printf("ANT Event: ");
+                	printf_hexdump(packet, size);
+
+					switch(event_code){
+						
+						case MESG_STARTUP_MESG_ID:
+							// 2. assign channel
+							ant_send_cmd(&ant_assign_channel, 0, 0x00, 0);
+							break;
+
+						case MESG_RESPONSE_EVENT_ID:
+							// channel    = packet[8];
+							message_id = packet[9];
+							switch (message_id){
+								case MESG_ASSIGN_CHANNEL_ID:
+									// 3. set channel ID
+									ant_send_cmd(&ant_channel_id, 0, 33, 1, 1);
+									break; 
+								case MESG_CHANNEL_ID_ID:
+									// 4. open channel
+									ant_send_cmd(&ant_open_channel, 0);
+							}
+							break;
+
+						default:
+							break;
+					}
+                	break;
+
+				default:
+					break;
+			} 
             break;
-            
-        case RFCOMM_DATA_PACKET:
-            // hack: truncate data (we know that the packet is at least on byte bigger
-            packet[size] = 0;
-            puts( (const char *) packet);
-            rfcomm_send_credit = 1;
+                        
         default:
             break;
 	}
 }
 
 static void  heartbeat_handler(struct timer *ts){
-    if (rfcomm_send_credit){
-        rfcomm_grant_credits(rfcomm_channel_id, 1);
-        rfcomm_send_credit = 0;
+
+    if (rfcomm_channel_id){
+        static int counter = 0;
+        char lineBuffer[30];
+        sprintf(lineBuffer, "BTstack counter %04u\n\r", ++counter);
+        printf(lineBuffer);
+        if (rfcomm_can_send_packet_now(rfcomm_channel_id)){
+            int err = rfcomm_send_internal(rfcomm_channel_id, (uint8_t*) lineBuffer, strlen(lineBuffer));
+            if (err) {
+                printf("rfcomm_send_internal -> error %d", err);
+            }
+        }   
     }
+    
     run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
     run_loop_add_timer(ts);
 } 
 
-// main
-int main(void)
-{
-    // stop watchdog timer
-    WDTCTL = WDTPW + WDTHOLD;
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
 
-    //Initialize clock and peripherals 
-    halBoardInit();  
-    halBoardStartXT1();	
-    halBoardSetSystemClock(SYSCLK_16MHZ);
-    
-    // init debug UART
-    halUsbInit();
-
-    // init LEDs
-    LED_PORT_OUT |= LED_1 | LED_2;
-    LED_PORT_DIR |= LED_1 | LED_2;
-    
-	/// GET STARTED with BTstack ///
-	btstack_memory_init();
-    run_loop_init(RUN_LOOP_EMBEDDED);
-	
-    // init HCI
-	hci_transport_t    * transport = hci_transport_h4_dma_instance();
-	bt_control_t       * control   = bt_control_cc256x_instance();
-    hci_uart_config_t  * config    = hci_uart_config_cc256x_instance();
-    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-	hci_init(transport, config, control, remote_db);
-	
-    // use eHCILL
-    bt_control_cc256x_enable_ehcill(1);
-    
     // init L2CAP
     l2cap_init();
     l2cap_register_packet_handler(packet_handler);
@@ -167,7 +189,7 @@ int main(void)
     // init RFCOMM
     rfcomm_init();
     rfcomm_register_packet_handler(packet_handler);
-    rfcomm_register_service_with_initial_credits_internal(NULL, rfcomm_channel_nr, 100, 1);  // reserved channel, mtu=100, 1 credit
+    rfcomm_register_service_internal(NULL, rfcomm_channel_nr, 100);  // reserved channel, mtu=100
 
     // init SDP, create record for SPP and register with SDP
     sdp_init();
@@ -183,14 +205,13 @@ int main(void)
     run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
     run_loop_add_timer(&heartbeat);
     
-    
-    puts("SPP FlowControl Demo: simulates processing on received data...\n\r");
-
-    // ready - enable irq used in h4 task
-    __enable_interrupt();   
+	printf("Run...\n\r");
 
  	// turn on!
 	hci_power_control(HCI_POWER_ON);
+
+    // default to discoverable
+    hci_discoverable_control(1);
 
     // go!
     run_loop_execute();	
