@@ -1,7 +1,7 @@
+# Makefile for MSP-EXP430F5438 board with CC2560B/CC2564B/CC2567 modules
 #
-# Makefile for MSP-EXP430F5438 demos with PAN1315, PAN1317, PAN1325, PAN1323, or PAN1327 Bluetooth modules
-#
-# Please check instructions at https://code.google.com/p/btstack/wiki/CC256x on where to download the init scripts and how to convert them to *.c files.
+# Please check instructions at https://code.google.com/p/btstack/wiki/CC256x on downloading
+# and converting the init scripts for use with BTstack
 #
 # mspgcc is used: http://sourceforge.net/apps/mediawiki/mspgcc/index.php?title=MSPGCC_Wiki
 #
@@ -9,7 +9,7 @@
 # init scripts
 CC2560B = bluetooth_init_cc2560B_1.0_BT_Spec_4.1.o
 CC2564B = bluetooth_init_cc2564B_1.0_BT_Spec_4.1.o
-CC2567 = CC256x_BT_Service_Pack_2.8_ANT_1.16.o
+CC2567  = CC256x_BT_Service_Pack_2.8_ANT_1.16.o
 
 BTSTACK_ROOT = ../..
 VPATH += $(BTSTACK_ROOT)/ble
@@ -48,10 +48,12 @@ SPP = \
 	remote_device_db_memory.c \
 	rfcomm.c			      \
     sdp_util.c                \
-    sdp_parser.c              \
-    sdp_client.c              \
-    sdp_query_util.c		  \
-	sdp_query_rfcomm.c 		  \
+
+SDP_CLIENT += \
+    sdp_client.o		      \
+    sdp_parser.o		      \
+    sdp_query_util.o		  \
+	sdp_query_rfcomm.o		  \
 
 BLE = \
 	att.c 					  \
@@ -111,7 +113,7 @@ spp_accel.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_accel.o sdp.o
 spp_and_le_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${BLE_OBJ} spp_and_le_counter.h spp_and_le_counter.o sdp.o hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_counter.o sdp.o  hal_adc.o
+spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} main.o spp_counter.o sdp.o  hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_flowcontrol.o sdp.o  hal_adc.o
@@ -120,10 +122,10 @@ spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_flowcon
 gap_inquiry.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} gap_inquiry.o hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-sdp_rfcomm_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} sdp_rfcomm_query.o hal_adc.o
+sdp_rfcomm_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${SDP_CLIENT} ${CC2560B} sdp_rfcomm_query.o hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-sdp_general_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} sdp_general_query.o hal_adc.o
+sdp_general_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${SDP_CLIENT} ${CC2560B} sdp_general_query.o hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 clean:
