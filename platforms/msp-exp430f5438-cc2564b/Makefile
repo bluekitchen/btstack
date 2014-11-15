@@ -15,6 +15,7 @@ BTSTACK_ROOT = ../..
 VPATH += example
 VPATH += firmware
 VPATH += src
+VPATH += ${BTSTACK_ROOT}/platforms/msp430
 VPATH += $(BTSTACK_ROOT)/ble
 VPATH += $(BTSTACK_ROOT)/chipset-cc256x
 VPATH += $(BTSTACK_ROOT)/example/embedded
@@ -30,6 +31,7 @@ CFLAGS += \
   	-I$(BTSTACK_ROOT)/src \
 	-I$(BTSTACK_ROOT)/ble \
 	-I$(BTSTACK_ROOT)/chipset-cc256x \
+    -I${BTSTACK_ROOT}/platforms/msp430 \
 
 LDFLAGS = -mmcu=msp430f5438a
 
