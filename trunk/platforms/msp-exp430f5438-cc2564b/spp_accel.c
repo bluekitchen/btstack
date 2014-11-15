@@ -166,47 +166,12 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     }
 }
 
-// main
-int main(void) {
-
-    // stop watchdog timer
-    WDTCTL = WDTPW + WDTHOLD;
-
-    //Initialize clock and peripherals 
-    halBoardInit();  
-    halBoardStartXT1(); 
-    halBoardSetSystemClock(SYSCLK_16MHZ);
-    
-    // Debug UART
-    halUsbInit();
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
 
     // Accel
     halAccelerometerInit(); 
-    
-    // MindTree demo doesn't calibrate
-    // halAccelerometerCalibrate();
-    
-    // init LEDs
-    LED_PORT_OUT |= LED_1 | LED_2;
-    LED_PORT_DIR |= LED_1 | LED_2;
-    
     prepare_accel_packet();
-
-    printf("Init BTstack...\n\r");
-    
-    /// GET STARTED ///
-    btstack_memory_init();
-    run_loop_init(RUN_LOOP_EMBEDDED);
-    
-    // init HCI
-    hci_transport_t    * transport = hci_transport_h4_dma_instance();
-    bt_control_t       * control   = bt_control_cc256x_instance();
-    hci_uart_config_t  * config    = hci_uart_config_cc256x_instance();
-    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
-    hci_init(transport, config, control, remote_db);
-    
-    // use eHCILL
-    bt_control_cc256x_enable_ehcill(1);
 
     // init L2CAP
     l2cap_init();

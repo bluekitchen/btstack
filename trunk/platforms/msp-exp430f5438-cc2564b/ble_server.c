@@ -247,43 +247,12 @@ static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t
     return 0;
 }
 
-// main
-int main(void)
-{
-    // stop watchdog timer
-    WDTCTL = WDTPW + WDTHOLD;
-    
-    //Initialize clock and peripherals 
-    halBoardInit();  
-    halBoardStartXT1();	
-    halBoardSetSystemClock(SYSCLK_16MHZ);
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
 
-    // Debug UART
-    halUsbInit();
-    
     // show off
     doLCD();
-    
-    // init debug UART
-    halUsbInit();
-    
-    // init LEDs
-    LED_PORT_OUT |= LED_1 | LED_2;
-    LED_PORT_DIR |= LED_1 | LED_2;
-    
-	/// GET STARTED with BTstack ///
-	btstack_memory_init();
-    run_loop_init(RUN_LOOP_EMBEDDED);
-	
-    // init HCI
-	hci_transport_t    * transport = hci_transport_h4_dma_instance();
-	bt_control_t       * control   = bt_control_cc256x_instance();
-    hci_uart_config_t  * config    = hci_uart_config_cc256x_instance();
-	hci_init(transport, config, control, NULL);
-	
-    // use eHCILL
-    // bt_control_cc256x_enable_ehcill(1);
-    
+
     // set up l2cap_le
     l2cap_init();
     
@@ -300,9 +269,6 @@ int main(void)
     att_server_register_packet_handler(app_packet_handler);
     
 	printf("Run...\n\r");
-
-    // ready - enable irq used in h4 task
-    __enable_interrupt();   
 
     // turn on!
 	hci_power_control(HCI_POWER_ON);
