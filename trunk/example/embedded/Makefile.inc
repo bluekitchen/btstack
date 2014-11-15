@@ -18,7 +18,6 @@ CORE += \
     linked_list.c	            \
     memory_pool.c               \
     run_loop.c		            \
-    run_loop_posix.c            \
 
 COMMON += \
     hci.c			            \
