@@ -52,7 +52,6 @@
 
 #include "debug.h"
 #include "hci.h"
-#include "hci_dump.h"
 #include "hci_transport.h"
 #include <btstack/run_loop.h>
 
@@ -62,7 +61,6 @@
 // #define GPIO_DEBUG_0 GPIO1
 // #define GPIO_DEBUG_1 GPIO2
 
-// #define DUMP
 // #define LOG_EHCILL
 
 // eHCILL commands (+interal CTS signal)
@@ -360,20 +358,6 @@ static void h4_block_sent(void){
     }
 }
 
-#ifdef DUMP
-static void dump(uint8_t *data, uint16_t len){
-    int i;
-    for (i=0; i<len;i++){
-        printf("%02X ", ((uint8_t *)data)[i]);
-        if(i>30) {
-            printf("... %u more bytes", len - i);
-            break;
-        }
-    }
-    printf("\n");
-}
-#endif
-
 static int h4_process(struct data_source *ds) {
     
     // notify about packet sent
@@ -389,19 +373,7 @@ static int h4_process(struct data_source *ds) {
     }
 
     if (h4_state != H4_PACKET_RECEIVED) return 0;
-        
-    // log packet
-#ifdef DUMP
-    printf("RX: ");
-    dump(hci_packet, read_pos);
-#endif
-    
-    if (hci_packet[0] == HCI_EVENT_PACKET){
-        hci_dump_packet( HCI_EVENT_PACKET, 0, &hci_packet[1], read_pos-1);
-    }
-    if (hci_packet[0] == HCI_ACL_DATA_PACKET){
-        hci_dump_packet( HCI_ACL_DATA_PACKET, 1, &hci_packet[1], read_pos-1);
-    }
+            
     packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
 
     h4_rx_init_sm();
@@ -528,18 +500,6 @@ static int ehcill_send_packet(uint8_t packet_type, uint8_t *packet, int size){
         return -1;
     }
     
-#ifdef DUMP
-    printf("TX: %02x ", packet_type);
-    dump(packet, size);
-#endif
-    
-    if (packet_type == HCI_COMMAND_DATA_PACKET){
-        hci_dump_packet( HCI_COMMAND_DATA_PACKET, 0, packet, size);
-    }
-    if (packet_type == HCI_ACL_DATA_PACKET){
-        hci_dump_packet( HCI_ACL_DATA_PACKET, 1, packet, size);
-    }
-
     tx_packet_type = packet_type;
     tx_data = packet;
     tx_len  = size;

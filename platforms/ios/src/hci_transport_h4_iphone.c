@@ -81,7 +81,6 @@
 #include "debug.h"
 #include "hci.h"
 #include "hci_transport.h"
-#include "hci_dump.h"
 
 static int  h4_process(struct data_source *ds);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
@@ -252,7 +251,6 @@ static int h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
     // wake Bluetooth module
     h4_enforce_wake_on();
 
-    hci_dump_packet( (uint8_t) packet_type, 0, packet, size);
     char *data = (char*) packet;
     int bytes_written = write(hci_transport_h4->uart_fd, &packet_type, 1);
     while (bytes_written < 1) {
@@ -277,7 +275,6 @@ static void   h4_register_packet_handler(void (*handler)(uint8_t packet_type, ui
 
 static void   h4_deliver_packet(void){
     if (read_pos < 3) return; // sanity check
-    hci_dump_packet( hci_packet[0], 1, &hci_packet[1], read_pos-1);
     packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
     
     h4_state = H4_W4_PACKET_TYPE;
@@ -324,19 +321,13 @@ static int    h4_process(struct data_source *ds) {
     if (hci_transport_h4->uart_fd == 0) return -1;
 
     int read_now = bytes_to_read;
-    //    if (read_now > 100) {
-    //        read_now = 100;
-    //    }
     
     // read up to bytes_to_read data in
     ssize_t bytes_read = read(hci_transport_h4->uart_fd, &hci_packet[read_pos], read_now);
-    // printf("h4_process: bytes read %u\n", bytes_read);
     if (bytes_read < 0) {
         return bytes_read;
     }
-    
-    // hexdump(&hci_packet[read_pos], bytes_read);
-    
+        
     bytes_to_read -= bytes_read;
     read_pos      += bytes_read;
     if (bytes_to_read > 0) {

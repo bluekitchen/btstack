@@ -475,7 +475,7 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
         // send packet
         uint8_t * packet = &hci_stack->hci_packet_buffer[acl_header_pos];
         const int size = current_acl_data_packet_length + 4;
-        // hexdump(packet, size);
+        hci_dump_packet(HCI_ACL_DATA_PACKET, 0, packet, size);
         err = hci_stack->hci_transport->send_packet(HCI_ACL_DATA_PACKET, packet, size);
 
         // done yet?
@@ -818,6 +818,7 @@ static void hci_initializing_state_machine(){
         case 1: // SEND BAUD CHANGE
             hci_stack->control->baudrate_cmd(hci_stack->config, ((hci_uart_config_t *)hci_stack->config)->baudrate_main, hci_stack->hci_packet_buffer);
             hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
+            hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
             hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
             break;
         case 2: // LOCAL BAUD CHANGE
@@ -834,6 +835,7 @@ static void hci_initializing_state_machine(){
                 if (valid_cmd){
                     int size = 3 + hci_stack->hci_packet_buffer[2];
                     hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
+                    hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, hci_stack->hci_packet_buffer, size);
                     hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, hci_stack->hci_packet_buffer, size);
                     hci_stack->substate = 4; // more init commands
                     break;
@@ -1379,6 +1381,7 @@ static void event_handler(uint8_t *packet, int size){
 }
 
 static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    hci_dump_packet(packet_type, 1, packet, size);
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             event_handler(packet, size);
@@ -2169,6 +2172,8 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
 #endif
 
     hci_stack->num_cmd_packets--;
+
+    hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, packet, size);
     int err = hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
 
     // free packet buffer for synchronous transport implementations    

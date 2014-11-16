@@ -54,7 +54,6 @@
 #include "debug.h"
 #include "hci.h"
 #include "hci_transport.h"
-#include "hci_dump.h"
 
 static int  h4_process(struct data_source *ds);
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size); 
@@ -188,7 +187,6 @@ static int h4_send_packet(uint8_t packet_type, uint8_t * packet, int size){
     if (hci_transport_h4->ds == NULL) return -1;
     if (hci_transport_h4->uart_fd == 0) return -1;
 
-    hci_dump_packet( (uint8_t) packet_type, 0, packet, size);
     char *data = (char*) packet;
     int bytes_written = write(hci_transport_h4->uart_fd, &packet_type, 1);
     while (bytes_written < 1) {
@@ -213,7 +211,6 @@ static void   h4_register_packet_handler(void (*handler)(uint8_t packet_type, ui
 
 static void   h4_deliver_packet(void){
     if (read_pos < 3) return; // sanity check
-    hci_dump_packet( hci_packet[0], 1, &hci_packet[1], read_pos-1);
     packet_handler(hci_packet[0], &hci_packet[1], read_pos-1);
     
     h4_state = H4_W4_PACKET_TYPE;
@@ -267,8 +264,6 @@ static int    h4_process(struct data_source *ds) {
     if (bytes_read < 0) {
         return bytes_read;
     }
-    
-    // hexdump(&hci_packet[read_pos], bytes_read);
     
     bytes_to_read -= bytes_read;
     read_pos      += bytes_read;
