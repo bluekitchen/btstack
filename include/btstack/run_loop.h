@@ -108,6 +108,8 @@ void run_loop_execute(void);
 uint32_t embedded_ticks_for_ms(uint32_t time_in_ms);
 // Queries the current time in ticks.
 uint32_t embedded_get_ticks(void);
+// Queries the current time in ms
+uint32_t embedded_get_time_ms(void);
 // Allows to update BTstack system ticks based on another already existing clock
 void embedded_set_ticks(uint32_t ticks);
 #endif
