@@ -204,6 +204,11 @@ void embedded_set_ticks(uint32_t ticks){
 uint32_t embedded_ticks_for_ms(uint32_t time_in_ms){
     return time_in_ms / hal_tick_get_tick_period_in_ms();
 }
+
+uint32_t embedded_get_time_ms(void){
+    return system_ticks * hal_tick_get_tick_period_in_ms();
+}
+
 #endif
 
 /**
