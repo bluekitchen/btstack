@@ -52,6 +52,7 @@
 #include "hci.h"
 #include "hci_transport.h"
 #include <btstack/hci_cmds.h>
+#include <btstack/run_loop.h>
 #include <stdio.h>
 
 #ifndef EMBEDDED
@@ -152,6 +153,10 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
     if (dump_file < 0) return; // not activated yet
 
 #ifdef EMBEDDED
+// #ifdef HAVE_TICK
+//     uint32_t time_ms = embedded_get_time_ms();
+//     printf("[%06u] ", time_ms);
+// #endif
     printf_packet(packet_type, in, packet, len);
 #else
     // don't grow bigger than max_nr_packets
@@ -231,13 +236,20 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
 }
 
 void hci_dump_log(const char * format, ...){
-#ifndef EMBEDDED
+
+    if (dump_file < 0) return; // not activated yet
+
     va_list argptr;
     va_start(argptr, format);
+#ifdef EMBEDDED
+    printf("LOG -- ");
+    vprintf(format, argptr);
+    putchar('\n');
+#else
     int len = vsnprintf(log_message_buffer, sizeof(log_message_buffer), format, argptr);
     hci_dump_packet(LOG_MESSAGE_PACKET, 0, (uint8_t*) log_message_buffer, len);
-    va_end(argptr);
 #endif    
+    va_end(argptr);
 }
 
 void hci_dump_close(){
