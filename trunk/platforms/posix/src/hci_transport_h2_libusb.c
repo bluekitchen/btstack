@@ -61,7 +61,6 @@
 #include "debug.h"
 #include "hci.h"
 #include "hci_transport.h"
-#include "hci_dump.h"
 
 #if (USB_VENDOR_ID != 0) && (USB_PRODUCT_ID != 0)
 #define HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
@@ -265,19 +264,13 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
     int resubmit = 0;
 
     if (transfer->endpoint == event_in_addr) {
-        hci_dump_packet( HCI_EVENT_PACKET, 1, transfer-> buffer,
-            transfer->actual_length);
-        packet_handler(HCI_EVENT_PACKET, transfer-> buffer,
-            transfer->actual_length);
+        packet_handler(HCI_EVENT_PACKET, transfer-> buffer, transfer->actual_length);
         resubmit = 1;
     }
 
     else if (transfer->endpoint == acl_in_addr) {
         // log_info("-> acl");
-        hci_dump_packet( HCI_ACL_DATA_PACKET, 1, transfer-> buffer,
-            transfer->actual_length);
-        packet_handler(HCI_ACL_DATA_PACKET, transfer-> buffer,
-            transfer->actual_length);
+        packet_handler(HCI_ACL_DATA_PACKET, transfer-> buffer, transfer->actual_length);
 
         resubmit = 1;
     } else if (transfer->endpoint == acl_out_addr){
@@ -662,8 +655,6 @@ static int usb_send_cmd_packet(uint8_t *packet, int size){
         return -1;
     }
 
-    hci_dump_packet( HCI_COMMAND_DATA_PACKET, 0, packet, size);
-    
     return 0;
 }
 
@@ -689,10 +680,6 @@ static int usb_send_acl_packet(uint8_t *packet, int size){
         log_error("Error submitting data transfer, %d", r);
         return -1;
     }
-
-    hci_dump_packet( HCI_ACL_DATA_PACKET, 0, packet, size);
-    
-    // log_info("usb_send_acl_packet exit");
 
     return 0;
 }
