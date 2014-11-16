@@ -77,7 +77,7 @@ void hal_uart_dma_init(void)
 
     // set BT CTS
     CTS_SEL &= ~CTS_PIN;  // = 0 - I/O
-    CTS_DIR &= ~CTS_PIN;  // = 0 - Input    P1DIR |=  BIT4; // RTS
+    CTS_DIR &= ~CTS_PIN;  // = 0 - Input
         
     // set BT SHUTDOWN to 1 (active low)
     N_SHUTDOWN_SEL &= ~N_SHUTDOWN_PIN;  // = 0 - I/O
@@ -284,7 +284,7 @@ void usbRxTxISR(void){
             if (bytes_to_read > 0) {
                 return;
             }
-            P1OUT |= BIT4;      // = 1 - RTS high -> stop
+            RTS_OUT |= RTS_PIN;      // = 1 - RTS high -> stop
             UCA0IE &= ~UCRXIE ; // disable RX interrupts
         
             (*rx_done_handler)();
