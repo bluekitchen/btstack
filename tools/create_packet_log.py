@@ -42,12 +42,16 @@ def generateTimestamp(t):
 	if t:
 		last_time = t
 		# handle ms
-		(t1, t2) = t.split('.')
-		if t1 and t2:
-			t_obj = time.strptime(t1, "%Y-%m-%d %H:%M:%S")
-			tv_sec  = int(time.mktime(t_obj)) 
-			tv_usec = int(t2) * 1000
-			return (tv_sec, tv_usec)
+		try: 
+			(t1, t2) = t.split('.')
+			if t1 and t2:
+				t_obj = time.strptime(t1, "%Y-%m-%d %H:%M:%S")
+				tv_sec  = int(time.mktime(t_obj)) 
+				tv_usec = int(t2) * 1000
+				return (tv_sec, tv_usec)
+		except ValueError:
+			# print 'Cannot parse time', t
+			pass
 	packet_counter += 1
 	return (packet_counter, 0)
 
@@ -61,8 +65,11 @@ def dumpPacket(fout, timestamp, type, data):
 	fout.write(data)
 
 def handleHexPacket(fout, timestamp, type, text):
-	data = bytearray(map(str2hex, text.strip().split(" ")))
-	dumpPacket(fout, timestamp, type, data)
+	try:
+		data = bytearray(map(str2hex, text.strip().split()))
+		dumpPacket(fout, timestamp, type, data)
+	except TypeError:
+		print 'Cannot parse hexdump', text.strip()
 
 if len(sys.argv) == 1:
 	print 'BTstack Console to PacketLogger converter'
