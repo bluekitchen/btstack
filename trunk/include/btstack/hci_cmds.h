@@ -234,7 +234,12 @@ extern "C" {
  */
 #define BTSTACK_EVENT_POWERON_FAILED                       0x62
 
-// data: majot (8), minor (8), revision(16)
+/**
+ * @format 112
+ * @param major
+ * @param minor
+ @ @param revision
+ */
 #define BTSTACK_EVENT_VERSION	        				   0x63
 
 // data: system bluetooth on/off (bool)
