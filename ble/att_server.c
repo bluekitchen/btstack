@@ -126,7 +126,8 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                             bt_flip_addr(att_client_address, &packet[8]);
                             // reset connection properties
                             att_connection.con_handle = READ_BT_16(packet, 4);
-                            att_connection.mtu = l2cap_max_mtu();
+                            att_connectino.mtu = ATT_DEFAULT_MTU;
+                            att_connection.max_mtu = l2cap_max_le_mtu();
                             att_connection.encryption_key_size = 0;
                             att_connection.authenticated = 0;
 		                	att_connection.authorized = 0;

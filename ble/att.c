@@ -292,10 +292,11 @@ static uint16_t handle_exchange_mtu_request(att_connection_t * att_connection, u
 
     uint16_t client_rx_mtu = READ_BT_16(request_buffer, 1);
     
-    if (client_rx_mtu < att_connection->mtu){
+    // find min(local max mtu, remote mtu) and use as mtu for this connection
+    if (client_rx_mtu < att_connection->max_mtu){
         att_connection->mtu = client_rx_mtu;
     } else {
-        att_connection->mtu = att_connection->mtu;
+        att_connection->mtu = att_connection->max_mtu;
     }
 
     response_buffer[0] = ATT_EXCHANGE_MTU_RESPONSE;
