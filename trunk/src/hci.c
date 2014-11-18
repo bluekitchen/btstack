@@ -1367,11 +1367,13 @@ static void event_handler(uint8_t *packet, int size){
             hci_connection_t * conn = hci_connection_for_handle(handle);
             if (conn) {
                 uint8_t status = conn->bonding_status;
+                uint16_t flags = conn->bonding_flags;
                 bd_addr_t bd_address;
                 memcpy(&bd_address, conn->address, 6);
                 hci_shutdown_connection(conn);
-                if (conn->bonding_flags & BONDING_EMIT_COMPLETE_ON_DISCONNECT){
-                    hci_emit_dedicated_bonding_result(bd_address, status);           
+                // connection struct is gone, don't access anymore
+                if (flags & BONDING_EMIT_COMPLETE_ON_DISCONNECT){
+                    hci_emit_dedicated_bonding_result(bd_address, status);
                 }
             }
         }
