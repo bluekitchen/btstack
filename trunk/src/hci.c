@@ -492,7 +492,7 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
     hci_stack->acl_fragmentation_pos = 0;
     hci_stack->acl_fragmentation_total_size = 0;
 
-    // free buffer now for synchronous transport
+    // release buffer now for synchronous transport
     if (hci_transport_synchronous()){
         hci_release_packet_buffer();                        
     }
@@ -1279,9 +1279,10 @@ static void event_handler(uint8_t *packet, int size){
             break;
 
         case DAEMON_EVENT_HCI_PACKET_SENT:
-            // free packet buffer for asynchronous transport
+            // release packet buffer only for asynchronous transport and if there are not further fragements
             if (hci_transport_synchronous()) break;
-            hci_stack->hci_packet_buffer_reserved = 0;
+            if (hci_stack->acl_fragmentation_total_size) break;
+            hci_release_packet_buffer();
             break;
 
 #ifdef HAVE_BLE
@@ -2176,7 +2177,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, packet, size);
     int err = hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, packet, size);
 
-    // free packet buffer for synchronous transport implementations    
+    // release packet buffer for synchronous transport implementations    
     if (hci_transport_synchronous() && (packet == hci_stack->hci_packet_buffer)){
         hci_stack->hci_packet_buffer_reserved = 0;
     }
