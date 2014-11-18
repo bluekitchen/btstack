@@ -45,7 +45,7 @@ static uint16_t bnep_version        = 0;
 static uint16_t bnep_cid            = 0;
 
 static uint8_t   attribute_value[1000];
-static const int attribute_value_buffer_size = sizeof(attribute_value);
+static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
 //static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 static bd_addr_t remote = {0xE0,0x06,0xE6,0xBB,0x95,0x79};
