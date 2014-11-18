@@ -1783,7 +1783,22 @@ void hci_run(){
         
     hci_connection_t * connection;
     linked_item_t * it;
-    
+
+    // send continuation fragments first, as they block the prepared packet buffer
+    if (hci_stack->acl_fragmentation_total_size > 0) {
+        hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(hci_stack->hci_packet_buffer);
+        if (hci_can_send_prepared_acl_packet_now(con_handle)){
+            hci_connection_t *connection = hci_connection_for_handle(con_handle);
+            if (connection) {
+                hci_send_acl_packet_fragments(connection);
+                return;
+            } 
+            // connection gone -> discard further fragments
+            hci_stack->acl_fragmentation_total_size = 0;
+            hci_stack->acl_fragmentation_pos = 0;
+        }        
+    }
+
     if (!hci_can_send_command_packet_now()) return;
 
     // global/non-connection oriented commands
@@ -1978,21 +1993,6 @@ void hci_run(){
                 0x0000, 0xffff);
         }
 #endif
-    }
-
-    // send continuation fragments
-    if (hci_stack->acl_fragmentation_total_size > 0) {
-        hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(hci_stack->hci_packet_buffer);
-        if (hci_can_send_prepared_acl_packet_now(con_handle)){
-            hci_connection_t *connection = hci_connection_for_handle(con_handle);
-            if (connection) {
-                hci_send_acl_packet_fragments(connection);
-                return;
-            } 
-            // connection gone -> discard further fragments
-            hci_stack->acl_fragmentation_total_size = 0;
-            hci_stack->acl_fragmentation_pos = 0;
-        }        
     }
 
     switch (hci_stack->state){
