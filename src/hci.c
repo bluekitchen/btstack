@@ -666,7 +666,7 @@ static const uint16_t packet_type_feature_packet_mask[] = {
 static uint16_t hci_acl_packet_types_for_buffer_size_and_local_features(uint16_t buffer_size, uint8_t * local_supported_features){
     // enable packet types based on size
     uint16_t packet_types = 0;
-    int i;
+    unsigned int i;
     for (i=0;i<16;i++){
         if (packet_type_sizes[i] == 0) continue;
         if (packet_type_sizes[i] <= buffer_size){
