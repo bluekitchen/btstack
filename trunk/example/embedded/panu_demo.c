@@ -189,6 +189,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
     sdp_query_complete_event_t        *complete_event;
     des_iterator_t des_list_it;
     des_iterator_t prot_it;
+    char *str;
 
     switch (event->type){
         case SDP_QUERY_ATTRIBUTE_VALUE:
@@ -226,7 +227,9 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                             break;
                         case 0x0100:
                         case 0x0101:
-                            printf("SDP Attribute: 0x%04x: %s\n", value_event->attribute_id, get_string_from_data_element(attribute_value));
+                            str = get_string_from_data_element(attribute_value);
+                            printf("SDP Attribute: 0x%04x: %s\n", value_event->attribute_id, str);
+                            free(str);
                             break;
                         case 0x0004: {
                                 printf("SDP Attribute: 0x%04x\n", value_event->attribute_id);
