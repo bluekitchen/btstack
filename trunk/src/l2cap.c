@@ -774,6 +774,8 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
         l2cap_emit_channel_opened(&dummy_channel, BTSTACK_MEMORY_ALLOC_FAILED);
         return;
     }
+    // Init memory (make valgrind happy)
+    memset(chan, 0, sizeof(l2cap_channel_t));
     // limit local mtu to max acl packet length - l2cap header
     if (mtu > l2cap_max_mtu()) {
         mtu = l2cap_max_mtu();
@@ -1068,7 +1070,8 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
         l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, 0x0004);
         return;
     }
-    
+    // Init memory (make valgrind happy)
+    memset(channel, 0, sizeof(l2cap_channel_t));
     // fill in 
     BD_ADDR_COPY(channel->address, hci_connection->address);
     channel->psm = psm;
