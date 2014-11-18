@@ -133,7 +133,7 @@ gap_inquiry: ${CORE_OBJ} ${COMMON_OBJ} gap_inquiry.c
 gap_inquiry_and_bond: ${CORE_OBJ} ${COMMON_OBJ} gap_inquiry_and_bond.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_DES} panu_demo.c  
+panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_DES} ${SDP_CLIENT} panu_demo.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 l2cap_test: ${CORE_OBJ} ${COMMON_OBJ} l2cap_test.c
