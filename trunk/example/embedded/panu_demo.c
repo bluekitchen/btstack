@@ -330,13 +330,12 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     break;
 
                 case BNEP_EVENT_INCOMING_CONNECTION:
-					// data: event(8), len(8), status (8), bnep source uuid (16), bnep destination uuid (16), remote_address (48)
-                    uuid_source = READ_BT_16(packet, 3);
-                    uuid_dest   = READ_BT_16(packet, 5);
-                    mtu         = READ_BT_16(packet, 7);
+					// data: event(8), len(8), bnep source uuid (16), bnep destination uuid (16), remote_address (48)
+                    uuid_source = READ_BT_16(packet, 2);
+                    uuid_dest   = READ_BT_16(packet, 4);
+                    mtu         = READ_BT_16(packet, 6);
                     bnep_cid    = channel;
-					//bt_flip_addr(event_addr, &packet[9]);
-                    memcpy(&event_addr, &packet[9], sizeof(bd_addr_t));
+                    memcpy(&event_addr, &packet[8], sizeof(bd_addr_t));
 					printf("BNEP connection from %s source UUID 0x%04x dest UUID: 0x%04x, max frame size: %u\n", bd_addr_to_str(event_addr), uuid_source, uuid_dest, mtu);
                     /* Create the tap interface */
                     tap_fd = tap_alloc(tap_dev_name, *hci_local_bd_addr());

@@ -105,10 +105,10 @@ static void bnep_emit_incoming_connection(bnep_channel_t *channel)
     uint8_t event[2 + sizeof(bd_addr_t) + 3 * sizeof(uint16_t)];
     event[0] = BNEP_EVENT_INCOMING_CONNECTION;
     event[1] = sizeof(event) - 2;
-    bt_store_16(event, 3, channel->uuid_source);
-    bt_store_16(event, 5, channel->uuid_dest);
-    bt_store_16(event, 7, channel->max_frame_size);
-    BD_ADDR_COPY(&event[9], channel->remote_addr);
+    bt_store_16(event, 2, channel->uuid_source);
+    bt_store_16(event, 4, channel->uuid_dest);
+    bt_store_16(event, 6, channel->max_frame_size);
+    BD_ADDR_COPY(&event[8], channel->remote_addr);
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
 	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->l2cap_cid, (uint8_t *) event, sizeof(event));
 }
