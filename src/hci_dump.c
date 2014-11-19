@@ -244,7 +244,7 @@ void hci_dump_log(const char * format, ...){
 #ifdef EMBEDDED
     printf("LOG -- ");
     vprintf(format, argptr);
-    putchar('\n');
+    printf("\n");
 #else
     int len = vsnprintf(log_message_buffer, sizeof(log_message_buffer), format, argptr);
     hci_dump_packet(LOG_MESSAGE_PACKET, 0, (uint8_t*) log_message_buffer, len);
