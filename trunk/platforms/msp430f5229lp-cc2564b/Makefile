@@ -89,7 +89,6 @@ CORE_OBJ   = $(CORE:.c=.o)
 COMMON_OBJ = $(COMMON:.c=.o)
 SPP_OBJ    = $(SPP:.c=.o)
 BLE_OBJ    = $(BLE:.c=.o)
-LCD_OBJ    = $(LCD:.c=.o)
 
 # create .hex file from .out
 %.hex: %.out
@@ -97,8 +96,8 @@ LCD_OBJ    = $(LCD:.c=.o)
 
 # create firmware image from common objects and example source file
 
-all: led_counter.hex spp_counter.hex  gap_inquiry.hex spp_flowcontrol.hex \
-	 sdp_rfcomm_query.hex sdp_general_query.hex 
+all: led_counter.hex spp_counter.hex gap_inquiry.hex spp_flowcontrol.hex \
+	 sdp_rfcomm_query.hex sdp_general_query.hex ble_server.hex
 
 # compiling requires a 20-bit mspgcc version
 # spp_and_le_counter.hex
@@ -117,16 +116,10 @@ led_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${CC2560B} led_counter.o
 ant-test.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} profile.h sdp.o ant_cmds.o ${CC2567} ant-test.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-ble_server.out: ${CORE_OBJ} ${COMMON_OBJ} ${BLE_OBJ} ${LCD_OBJ} profile.h ble_server.o
+ble_server.out: ${CORE_OBJ} ${COMMON_OBJ} ${BLE_OBJ} profile.h ble_server.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-hid_demo.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} ${SPP_OBJ} ${CC2560B} hid_demo.o 
-	${CC} $^ ${LDFLAGS} -o $@
-
-spp_accel.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_accel.o sdp.o hal_adc.o
-	${CC} $^ ${LDFLAGS} -o $@
-
-spp_and_le_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${BLE_OBJ} spp_and_le_counter.h spp_and_le_counter.o sdp.o hal_adc.o
+spp_and_le_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${BLE_OBJ} spp_and_le_counter.h spp_and_le_counter.o sdp.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_counter.o sdp.o
