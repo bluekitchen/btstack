@@ -360,16 +360,17 @@ static void h4_block_sent(void){
 
 static int h4_process(struct data_source *ds) {
     
+    // reset tx state before emitting packet sent event
+    // to allow for positive can_send_now
+    if (tx_state == TX_DONE){
+        tx_state = TX_IDLE;
+    }
+
     // notify about packet sent
     if (tx_send_packet_sent){
         tx_send_packet_sent = 0;
         uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0 };
         packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
-    }
-
-    // reset tx state
-    if (tx_state == TX_DONE){
-        tx_state = TX_IDLE;
     }
 
     if (h4_state != H4_PACKET_RECEIVED) return 0;
