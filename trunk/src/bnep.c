@@ -612,8 +612,8 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
 
     /* Check source and destination UUIDs for valid combinations */
     if (response_code == BNEP_RESP_SETUP_SUCCESS) {
-        channel->uuid_dest = READ_BT_16(packet, 2 + uuid_offset);
-        channel->uuid_source = READ_BT_16(packet, 2 + uuid_offset + uuid_size);
+        channel->uuid_dest = READ_NET_16(packet, 2 + uuid_offset);
+        channel->uuid_source = READ_NET_16(packet, 2 + uuid_offset + uuid_size);
 
         if ((channel->uuid_dest != BNEP_UUID_PANU) && 
             (channel->uuid_dest != BNEP_UUID_NAP) &&
@@ -978,7 +978,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
 
             channel = bnep_channel_for_addr(&event_addr);
 
-            if (channel) {
+            if (channel) {                
                 log_error("INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_BNEP => decline - channel already exists", l2cap_cid);
                 l2cap_decline_connection_internal(l2cap_cid,  0x04);    // no resources available
                 return 1;
@@ -1377,7 +1377,8 @@ void bnep_register_service(void * connection, uint16_t service_uuid, uint16_t ma
         bnep_emit_service_registered(connection, BTSTACK_MEMORY_ALLOC_FAILED, service_uuid);
         return;
     }
-    
+    memset(service, 0, sizeof(bnep_service_t));
+
     /* register with l2cap if not registered before, max MTU */
     l2cap_register_service_internal(NULL, bnep_packet_handler, PSM_BNEP, 0xffff, bnep_security_level);
         
