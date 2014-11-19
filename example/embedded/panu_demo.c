@@ -338,6 +338,17 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					//bt_flip_addr(event_addr, &packet[9]);
                     memcpy(&event_addr, &packet[9], sizeof(bd_addr_t));
 					printf("BNEP connection from %s source UUID 0x%04x dest UUID: 0x%04x, max frame size: %u\n", bd_addr_to_str(event_addr), uuid_source, uuid_dest, mtu);
+                    /* Create the tap interface */
+                    tap_fd = tap_alloc(tap_dev_name, *hci_local_bd_addr());
+                    if (tap_fd < 0) {
+                        printf("Creating BNEP tap device failed: %s\n", strerror(errno));
+                    } else {
+                        printf("BNEP device \"%s\" allocated.\n", tap_dev_name);
+                        /* Create and register a new runloop data source */
+                        tap_dev_ds.fd = tap_fd;
+                        tap_dev_ds.process = process_tap_dev_data;
+                        run_loop_add_data_source(&tap_dev_ds);
+                    }
 					break;
 					
 				case BNEP_EVENT_OPEN_CHANNEL_COMPLETE:
@@ -424,7 +435,7 @@ int btstack_main(int argc, const char * argv[]){
     /* Initialise BNEP */
     bnep_init();
     bnep_register_packet_handler(packet_handler);
-    //  bnep_register_service(NULL, BNEP_UUID_PANU, 1691);  /* Minimum L2CAP MTU for bnep is 1691 bytes */
+    bnep_register_service(NULL, BNEP_UUID_PANU, 1691);  /* Minimum L2CAP MTU for bnep is 1691 bytes */
 
     /* Turn on the device */
     hci_power_control(HCI_POWER_ON);
