@@ -29,11 +29,11 @@ extern void hal_cpu_set_uart_needed_during_sleep(uint8_t enabled);
 #define RTS_DIR P2DIR
 #define RTS_PIN BIT3
 
-// CTS P8.1
-#define CTS_SEL P8SEL
-#define CTS_OUT P8OUT
-#define CTS_DIR P8DIR
-#define CTS_PIN BIT1
+// CTS P8.1 rewired to P2.6 - only P1 & P2 have interrupts
+#define CTS_SEL P2SEL
+#define CTS_OUT P2OUT
+#define CTS_DIR P2DIR
+#define CTS_PIN BIT6
 
 // N_SHUTDOWN P4.1
 #define N_SHUTDOWN_SEL P4SEL
@@ -190,15 +190,14 @@ void hal_uart_dma_set_block_sent( void (*the_block_handler)(void)){
 void hal_uart_dma_set_csr_irq_handler( void (*the_irq_handler)(void)){
 #ifdef HAVE_CTS_IRQ
     if (the_irq_handler){
-        P8IFG  =  0;     // no IRQ pending
-        P8IV   =  0;     // no IRQ pending
-        P8IES &= ~BIT1;  // IRQ on 0->1 transition
-        P8IE  |=  BIT1;  // enable IRQ for P8.1
+        P2IFG  =  0;     // no IRQ pending
+        P2IV   =  0;     // no IRQ pending
+        P2IES &= ~ CTS_PIN;  // IRQ on 0->1 transition
+        P2IE  |=   CTS_PIN;  // enable IRQ for P8.1
         cts_irq_handler = the_irq_handler;
         return;
     }
-    
-    P8IE  &= ~BIT1;
+    P2IE  &= ~CTS_PIN;
     cts_irq_handler = dummy_handler;
 #endif
 }
@@ -330,14 +329,13 @@ extern void ehcill_handle(uint8_t action);
 #define EHCILL_CTS_SIGNAL      0x034
 
 #ifdef __GNUC__
-__attribute__((interrupt(POERT1_VECTOR)))
-#endif
-#ifdef __IAR_SYSTEMS_ICC__
-#pragma vector=PORT1_VECTOR
+__attribute__((interrupt(PORT2_VECTOR)))
+#elif defined( __IAR_SYSTEMS_ICC__)
+#pragma vector=PORT2_VECTOR
 __interrupt
 #endif
 void ctsISR(void){ 
-    P1IV = 0;
+    P2IV = 0;
     (*cts_irq_handler)();
 }
 #endif
