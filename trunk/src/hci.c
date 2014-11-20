@@ -598,6 +598,12 @@ static void acl_handler(uint8_t *packet, int size){
             
         case 0x02: { // first fragment
             
+            // sanity check
+            if (conn->acl_recombination_pos) {
+                log_error( "ACL First Fragment but data in buffer for handle 0x%02x, dropping stale fragments", con_handle);
+                conn->acl_recombination_pos = 0;
+            }
+
             // peek into L2CAP packet!
             uint16_t l2cap_length = READ_L2CAP_LENGTH( packet );
 
@@ -611,11 +617,6 @@ static void acl_handler(uint8_t *packet, int size){
             
             } else {
 
-                // sanity check
-                if (conn->acl_recombination_pos) {
-                    log_error( "ACL First Fragment but data in buffer for handle 0x%02x", con_handle);
-                    return;
-                }
                 if (acl_length > HCI_ACL_BUFFER_SIZE){
                     log_error( "ACL First Fragment to large: fragment %u > buffer size %u for handle 0x%02x",
                         4 + acl_length, 4 + HCI_ACL_BUFFER_SIZE, con_handle);
