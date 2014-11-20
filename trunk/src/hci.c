@@ -567,12 +567,18 @@ static void acl_handler(uint8_t *packet, int size){
             
         case 0x01: // continuation fragment
             
-            // sanity check
+            // sanity checks
             if (conn->acl_recombination_pos == 0) {
                 log_error( "ACL Cont Fragment but no first fragment for handle 0x%02x", con_handle);
                 return;
             }
-            
+            if (conn->acl_recombination_pos + acl_length > 4 + HCI_ACL_BUFFER_SIZE){
+                log_error( "ACL Cont Fragment to large: combined packet %u > buffer size %u for handle 0x%02x",
+                    conn->acl_recombination_pos + acl_length, 4 + HCI_ACL_BUFFER_SIZE, con_handle);
+                conn->acl_recombination_pos = 0;
+                return;
+            }
+
             // append fragment payload (header already stored)
             memcpy(&conn->acl_recombination_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + conn->acl_recombination_pos], &packet[4], acl_length );
             conn->acl_recombination_pos += acl_length;
@@ -592,12 +598,6 @@ static void acl_handler(uint8_t *packet, int size){
             
         case 0x02: { // first fragment
             
-            // sanity check
-            if (conn->acl_recombination_pos) {
-                log_error( "ACL First Fragment but data in buffer for handle 0x%02x", con_handle);
-                return;
-            }
-
             // peek into L2CAP packet!
             uint16_t l2cap_length = READ_L2CAP_LENGTH( packet );
 
@@ -610,6 +610,18 @@ static void acl_handler(uint8_t *packet, int size){
                 hci_stack->packet_handler(HCI_ACL_DATA_PACKET, packet, acl_length + 4);
             
             } else {
+
+                // sanity check
+                if (conn->acl_recombination_pos) {
+                    log_error( "ACL First Fragment but data in buffer for handle 0x%02x", con_handle);
+                    return;
+                }
+                if (acl_length > HCI_ACL_BUFFER_SIZE){
+                    log_error( "ACL First Fragment to large: fragment %u > buffer size %u for handle 0x%02x",
+                        4 + acl_length, 4 + HCI_ACL_BUFFER_SIZE, con_handle);
+                    return;
+                }
+
                 // store first fragment and tweak acl length for complete package
                 memcpy(&conn->acl_recombination_buffer[HCI_INCOMING_PRE_BUFFER_SIZE], packet, acl_length + 4);
                 conn->acl_recombination_pos    = acl_length + 4;
