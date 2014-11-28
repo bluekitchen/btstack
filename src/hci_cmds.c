@@ -179,229 +179,415 @@ uint16_t hci_create_cmd(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, ...){
 /**
  *  Link Control Commands 
  */
+
+/**
+ * @param lap
+ * @param inquiry_length
+ * @param num_responses
+ */
 const hci_cmd_t hci_inquiry = {
 OPCODE(OGF_LINK_CONTROL, 0x01), "311"
-// LAP, Inquiry length, Num_responses
 };
+
+/**
+ */
 const hci_cmd_t hci_inquiry_cancel = {
 OPCODE(OGF_LINK_CONTROL, 0x02), ""
-// no params
 };
+
+/**
+ * @param bd_addr
+ * @param packet_type
+ * @param page_scan_repetition_mode
+ * @param reserved
+ * @param clock_offset
+ * @param allow_role_switch
+ */
 const hci_cmd_t hci_create_connection = {
 OPCODE(OGF_LINK_CONTROL, 0x05), "B21121"
-// BD_ADDR, Packet_Type, Page_Scan_Repetition_Mode, Reserved, Clock_Offset, Allow_Role_Switch
 };
+
+/**
+ * @param handle 
+ * @param reason (0x05, 0x13-0x15, 0x1a, 0x29, see Errors Codes in BT Spec Part D)
+ */
 const hci_cmd_t hci_disconnect = {
 OPCODE(OGF_LINK_CONTROL, 0x06), "H1"
-// Handle, Reason: 0x05, 0x13-0x15, 0x1a, 0x29
-// see Errors Codes in BT Spec Part D
 };
+
+/**
+ * @param bd_addr
+ */
 const hci_cmd_t hci_create_connection_cancel = {
 OPCODE(OGF_LINK_CONTROL, 0x08), "B"
-// BD_ADDR
 };
+
+/**
+ * @param bd_addr
+ * @param role (become master, stay slave)
+ */
 const hci_cmd_t hci_accept_connection_request = {
 OPCODE(OGF_LINK_CONTROL, 0x09), "B1"
-// BD_ADDR, Role: become master, stay slave
 };
+
+/**
+ * @param bd_addr
+ * @param reason (e.g. CONNECTION REJECTED DUE TO LIMITED RESOURCES (0x0d))
+ */
 const hci_cmd_t hci_reject_connection_request = {
 OPCODE(OGF_LINK_CONTROL, 0x0a), "B1"
-// BD_ADDR, reason e.g. CONNECTION REJECTED DUE TO LIMITED RESOURCES (0x0d)
 };
+
+/**
+ * @param bd_addr
+ * @param link_key
+ */
 const hci_cmd_t hci_link_key_request_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x0b), "BP"
-// BD_ADDR, LINK_KEY
 };
+
+/**
+ * @param bd_addr
+ */
 const hci_cmd_t hci_link_key_request_negative_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x0c), "B"
-// BD_ADDR
 };
+
+/**
+ * @param bd_addr
+ * @param pin_length
+ * @param pin (c-string)
+ */
 const hci_cmd_t hci_pin_code_request_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x0d), "B1P"
-// BD_ADDR, pin length, PIN: c-string
 };
+
+/**
+ * @param bd_addr
+ */
 const hci_cmd_t hci_pin_code_request_negative_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x0e), "B"
-// BD_ADDR
 };
+
+/**
+ * @param handle
+ * @param packet_type
+ */
 const hci_cmd_t hci_change_connection_packet_type = {
 OPCODE(OGF_LINK_CONTROL, 0x0f), "H2"
-// Handle
 };
+
+/**
+ * @param handle
+ */
 const hci_cmd_t hci_authentication_requested = {
 OPCODE(OGF_LINK_CONTROL, 0x11), "H"
-// Handle
 };
+
+/**
+ * @param handle
+ * @param encryption_enable
+ */
 const hci_cmd_t hci_set_connection_encryption = {
 OPCODE(OGF_LINK_CONTROL, 0x13), "H1"
-// Handle, Encryption_Enable
 };
+
+/**
+ * @param handle
+ */
 const hci_cmd_t hci_change_connection_link_key = {
 OPCODE(OGF_LINK_CONTROL, 0x15), "H"
-// Handle
 };
+
+/**
+ * @param bd_addr
+ * @param page_scan_repetition_mode
+ * @param reserved
+ * @param clock_offset
+ */
 const hci_cmd_t hci_remote_name_request = {
 OPCODE(OGF_LINK_CONTROL, 0x19), "B112"
-// BD_ADDR, Page_Scan_Repetition_Mode, Reserved, Clock_Offset
 };
+
+
+/**
+ * @param bd_addr
+ */
 const hci_cmd_t hci_remote_name_request_cancel = {
 OPCODE(OGF_LINK_CONTROL, 0x1A), "B"
-// BD_ADDR
 };
+
+/**
+ * @param handle
+ */
 const hci_cmd_t hci_read_remote_supported_features_command = {
 OPCODE(OGF_LINK_CONTROL, 0x1B), "H"
-// BD_ADDR
 };
+
+/**
+ * @param bd_addr
+ * @param IO_capability
+ * @param OOB_data_present
+ * @param authentication_requirements
+ */
 const hci_cmd_t hci_io_capability_request_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x2b), "B111"
-// BD_ADDR, IO_Capability, OOB_Data_Present, Authentication_ Requirements
 };
+
+/**
+ * @param bd_addr
+ */
 const hci_cmd_t hci_user_confirmation_request_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x2c), "B"
-// BD_ADDR
 };
+
+/**
+ * @param bd_addr
+ */
 const hci_cmd_t hci_user_confirmation_request_negative_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x2d), "B"
-// BD_ADDR
 };
+
+/**
+ * @param bd_addr
+ * @param numeric_value
+ */
 const hci_cmd_t hci_user_passkey_request_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x2e), "B4"
-// BD_ADDR, Numeric value (passkey) entered by user (decimal 000000 - 999999).
 };
+
+/**
+ * @param bd_addr
+ */
 const hci_cmd_t hci_user_passkey_request_negative_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x2f), "B"
-// BD_ADDR
 };
+
+/**
+ * @param bd_addr
+ */
 const hci_cmd_t hci_remote_oob_data_request_negative_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x33), "B"
-// BD_ADDR
 };
+
+/**
+ * @param bd_addr
+ * @param reason (Part D, Error codes)
+ */
 const hci_cmd_t hci_io_capability_request_negative_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x34), "B1"
-// BD_ADDR, Reason - Part D, Error codes
 };
 
 
 /**
  *  Link Policy Commands 
  */
+
+/**
+ * @param handle
+ * @param sniff_max_interval
+ * @param sniff_min_interval
+ * @param sniff_attempt
+ * @param sniff_timeout
+ */
 const hci_cmd_t hci_sniff_mode = {
 OPCODE(OGF_LINK_POLICY, 0x03), "H2222"
-// handle, Sniff_Max_Interval, Sniff_Min_Interval, Sniff_Attempt, Sniff_Timeout:
 };
+
+/**
+ * @param handle
+ * @param flags
+ * @param service_type
+ * @param token_rate (bytes/s)
+ * @param peak_bandwith (bytes/s)
+ * @param latency (us)
+ * @param delay_variation (us)
+ */
 const hci_cmd_t hci_qos_setup = {
 OPCODE(OGF_LINK_POLICY, 0x07), "H114444"
-// handle, flags, service_type, token rate (bytes/s), peak bandwith (bytes/s),
-// latency (us), delay_variation (us)
 };
+
+/**
+ * @param handle
+ */
 const hci_cmd_t hci_role_discovery = {
 OPCODE(OGF_LINK_POLICY, 0x09), "H"
-// handle
 };
+
+/**
+ * @param bd_addr
+ * @param role (0=master,1=slave)
+ */
 const hci_cmd_t hci_switch_role_command= {
 OPCODE(OGF_LINK_POLICY, 0x0b), "B1"
-// BD_ADDR, role: {0=master,1=slave}
 };
+
+/**
+ * @param handle
+ */
 const hci_cmd_t hci_read_link_policy_settings = {
 OPCODE(OGF_LINK_POLICY, 0x0c), "H"
-// handle 
 };
+
+/**
+ * @param handle
+ * @param settings
+ */
 const hci_cmd_t hci_write_link_policy_settings = {
 OPCODE(OGF_LINK_POLICY, 0x0d), "H2"
-// handle, settings
 };
+
 
 /**
  *  Controller & Baseband Commands 
  */
+
+/**
+ * @param event_mask_lover_octets
+ * @param event_mask_higher_octets
+ */
 const hci_cmd_t hci_set_event_mask = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x01), "44"
-// event_mask lower 4 octets, higher 4 bytes
 };
+
+/**
+ */
 const hci_cmd_t hci_reset = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x03), ""
-// no params
 };
+
+/**
+ * @param bd_addr
+ * @param delete_all_flags
+ */
 const hci_cmd_t hci_delete_stored_link_key = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x12), "B1"
-// BD_ADDR, Delete_All_Flag
 };
+
+/**
+ * @param local_name (UTF-8, Null Terminated, max 248 octets)
+ */
 const hci_cmd_t hci_write_local_name = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x13), "N"
-// Local name (UTF-8, Null Terminated, max 248 octets)
 };
+
+/**
+ * @param page_timeout (* 0.625 ms)
+ */
 const hci_cmd_t hci_write_page_timeout = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x18), "2"
-// Page_Timeout * 0.625 ms
 };
+
+/**
+ * @param scan_enable (no, inq, page, inq+page)
+ */
 const hci_cmd_t hci_write_scan_enable = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x1A), "1"
-// Scan_enable: no, inq, page, inq+page
 };
+
+/**
+ * @param authentication_enable
+ */
 const hci_cmd_t hci_write_authentication_enable = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x20), "1"
-// Authentication_Enable
 };
+
+/**
+ * @param class_of_device
+ */
 const hci_cmd_t hci_write_class_of_device = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x24), "3"
-// Class of Device
 };
+
+/** 
+ */
 const hci_cmd_t hci_read_num_broadcast_retransmissions = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x29), ""
 };
+
+/**
+ * @param num_broadcast_retransmissions (e.g. 0 for a single broadcast)
+ */
 const hci_cmd_t hci_write_num_broadcast_retransmissions = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x2a), "1"
-// Num broadcast retransmissions (e.g. 0 for a single broadcast)
 };
+
+/**
+ * @param host_acl_data_packet_length
+ * @param host_synchronous_data_packet_length
+ * @param host_total_num_acl_data_packets
+ * @param host_total_num_synchronous_data_packets
+ */
 const hci_cmd_t hci_host_buffer_size = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x33), "2122"
-// Host_ACL_Data_Packet_Length:, Host_Synchronous_Data_Packet_Length:, Host_Total_Num_ACL_Data_Packets:, Host_Total_Num_Synchronous_Data_Packets:
 };
+
+/**
+ * @param handle
+ */
 const hci_cmd_t hci_read_link_supervision_timeout = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x36), "H"
-// handle
 };
+
+/**
+ * @param handle
+ * @param timeout (0x0001 - 0xFFFF Time -> Range: 0.625ms - 40.9 sec)
+ */
 const hci_cmd_t hci_write_link_supervision_timeout = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x37), "H2"
-// handle, Range for N: 0x0001 Ð 0xFFFF Time (Range: 0.625ms Ð 40.9 sec)
 };
+
+/**
+ * @param inquiry_mode (0x00 = standard, 0x01 = with RSSI, 0x02 = extended)
+ */
 const hci_cmd_t hci_write_inquiry_mode = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x45), "1"
-// Inquiry mode: 0x00 = standard, 0x01 = with RSSI, 0x02 = extended
 };
+
+/**
+ * @param fec_required
+ * @param exstended_inquiry_response
+ */
 const hci_cmd_t hci_write_extended_inquiry_response = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x52), "1E"
-// FEC_Required, Exstended Inquiry Response
 };
+
+/**
+ * @param mode (0 = off, 1 = on)
+ */
 const hci_cmd_t hci_write_simple_pairing_mode = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x56), "1"
-// mode: 0 = off, 1 = on
 };
+
+/**
+ */
 const hci_cmd_t hci_read_le_host_supported = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x6c), ""
-// params: none
 // return: status, le supported host, simultaneous le host
 };
+
+/**
+ * @param le_supported_host
+ * @param simultaneous_le_host
+ */
 const hci_cmd_t hci_write_le_host_supported = {
 OPCODE(OGF_CONTROLLER_BASEBAND, 0x6d), "11"
-// param: le supported host, simultaneous le host
 // return: status
 };
+
 
 /**
  * Informational Parameters
  */
+
 const hci_cmd_t hci_read_local_supported_features = {
 OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x03), ""
-// no params
 };
 const hci_cmd_t hci_read_buffer_size = {
 OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x05), ""
-// no params
 };
 const hci_cmd_t hci_read_bd_addr = {
 OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x09), ""
-// no params
 };
 
 /**
@@ -422,233 +608,288 @@ OPCODE(OGF_STATUS_PARAMETERS, 0x05), "H"
 /**
  * Low Energy Commands
  */
+
+/**
+ * @param event_mask_lower_octets
+ * @param event_mask_higher_octets
+ */
 const hci_cmd_t hci_le_set_event_mask = {
 OPCODE(OGF_LE_CONTROLLER, 0x01), "44"
-// params: event_mask lower 4 octets, higher 4 bytes
 // return: status
 };
+
 const hci_cmd_t hci_le_read_buffer_size = {
 OPCODE(OGF_LE_CONTROLLER, 0x02), ""
-// params: none
 // return: status, le acl data packet len (16), total num le acl data packets(8)
 };
 const hci_cmd_t hci_le_read_supported_features = {
 OPCODE(OGF_LE_CONTROLLER, 0x03), ""
-// params: none
 // return: LE_Features See [Vol 6] Part B, Section 4.6
 };
+
+/**
+ * @param random_bd_addr
+ */
 const hci_cmd_t hci_le_set_random_address = {
 OPCODE(OGF_LE_CONTROLLER, 0x05), "B"
-// params: random device address
 // return: status
 };
+
 /**
- * @param advertising_interval_min
- * @param advertising_interval_max
- * @param advertising_type
- * @param own_address_type
- * @param direct_address_type
- * @param direct_address
- * @param advertising_channel_map
- * @param advertising_filter_policy
+ * @param advertising_interval_min ([0x0020,0x4000], default: 0x0800, unit: 0.625 msec)
+ * @param advertising_interval_max ([0x0020,0x4000], default: 0x0800, unit: 0.625 msec)
+ * @param advertising_type (enum from 0: ADV_IND, ADC_DIRECT_IND, ADV_SCAN_IND, ADV_NONCONN_IND)
+ * @param own_address_type (enum from 0: public device address, random device address)
+ * @param direct_address_type ()
+ * @param direct_address (public or random address of device to be connecteed)
+ * @param advertising_channel_map (flags: chan_37(1), chan_38(2), chan_39(4))
+ * @param advertising_filter_policy (enum from 0: scan any conn any, scan whitelist, con any, scan any conn whitelist, scan whitelist, con whitelist)
  */
 const hci_cmd_t hci_le_set_advertising_parameters = {
 OPCODE(OGF_LE_CONTROLLER, 0x06), "22111B11"
-// param: min advertising interval, [0x0020,0x4000], default: 0x0800, unit: 0.625 msec
-// param: max advertising interval, [0x0020,0x4000], default: 0x0800, unit: 0.625 msec
-// param: advertising type (enum from 0): ADV_IND, ADC_DIRECT_IND, ADV_SCAN_IND, ADV_NONCONN_IND
-// param: own address type (enum from 0): public device address, random device address
-// param: direct address type (enum from 0): public device address, random device address
-// param: direct address - public or random address of device to be connecteed
-// param: advertising channel map (flags): chan_37(1), chan_38(2), chan_39(4)
-// param: advertising filter policy (enum from 0): scan any conn any, scan whitelist, con any, scan any conn whitelist, scan whitelist, con whitelist
 // return: status
 };
+
 const hci_cmd_t hci_le_read_advertising_channel_tx_power = {
 OPCODE(OGF_LE_CONTROLLER, 0x07), ""
-// params: none
 // return: status, level [-20,10] signed int (8), units dBm
 };
 
 /**
  * @param advertising_data_length
- * @param advertising_data
+ * @param advertising_data (31 bytes)
  */
 const hci_cmd_t hci_le_set_advertising_data= {
 OPCODE(OGF_LE_CONTROLLER, 0x08), "1A"
-// param: advertising data len
-// param: advertising data (31 bytes)
 // return: status
 };
+
+/**
+ * @param scan_response_data_length
+ * @param scan_response_data (31 bytes)
+ */
 const hci_cmd_t hci_le_set_scan_response_data= {
 OPCODE(OGF_LE_CONTROLLER, 0x09), "1A"
-// param: scan response data len
-// param: scan response data (31 bytes)
 // return: status
 };
+
 /**
- * @param advertise_enable
+ * @param advertise_enable (off: 0, on: 1)
  */
 const hci_cmd_t hci_le_set_advertise_enable = {
 OPCODE(OGF_LE_CONTROLLER, 0x0a), "1"
-// params: avertise enable: off (0), on (1)
 // return: status
 };
+
+/**
+ * @param le_scan_type (passive (0), active (1))
+ * @param le_scan_interval ([0x0004,0x4000], unit: 0.625 msec)
+ * @param le_scan_window   ([0x0004,0x4000], unit: 0.625 msec)
+ * @param own_address_type (public (0), random (1))
+ * @param scanning_filter_policy (any (0), only whitelist (1))
+ */
 const hci_cmd_t hci_le_set_scan_parameters = {
 OPCODE(OGF_LE_CONTROLLER, 0x0b), "12211"
-// param: le scan type: passive (0), active (1)
-// param: le scan interval [0x0004,0x4000], unit: 0.625 msec
-// param: le scan window   [0x0004,0x4000], unit: 0.625 msec
-// param: own address type: public (0), random (1)
-// param: scanning filter policy: any (0), only whitelist (1)
 // return: status
 };
+
+/**
+ * @param le_scan_enable  (disabled (0), enabled (1))
+ * @param filter_duplices (disabled (0), enabled (1))
+ */
 const hci_cmd_t hci_le_set_scan_enable = {
 OPCODE(OGF_LE_CONTROLLER, 0x0c), "11"
-// param: le scan enable:  disabled (0), enabled (1)
-// param: filter duplices: disabled (0), enabled (1)
 // return: status
 };
+
+/**
+ * @param le_scan_interval ([0x0004, 0x4000], unit: 0.625 msec)
+ * @param le_scan_window ([0x0004, 0x4000], unit: 0.625 msec)
+ * @param initiator_filter_policy (peer address type + peer address (0), whitelist (1))
+ * @param peer_address_type (public (0), random (1))
+ * @param peer_address
+ * @param own_address_type (public (0), random (1))
+ * @param conn_interval_min ([0x0006, 0x0c80], unit: 1.25 msec)
+ * @param conn_interval_max ([0x0006, 0x0c80], unit: 1.25 msec)
+ * @param conn_latency (number of connection events [0x0000, 0x01f4])
+ * @param supervision_timeout ([0x000a, 0x0c80], unit: 10 msec)
+ * @param minimum_CE_length ([0x0000, 0xffff], unit: 0.625 msec)
+ * @param maximum_CE_length ([0x0000, 0xffff], unit: 0.625 msec)
+ */
 const hci_cmd_t hci_le_create_connection= {
 OPCODE(OGF_LE_CONTROLLER, 0x0d), "2211B1222222"
-// param: le scan interval, [0x0004, 0x4000], unit: 0.625 msec
-// param: le scan window, [0x0004, 0x4000], unit: 0.625 msec
-// param: initiator filter policy: peer address type + peer address (0), whitelist (1)
-// param: peer address type: public (0), random (1)
-// param: peer address
-// param: own address type: public (0), random (1)
-// param: conn interval min, [0x0006, 0x0c80], unit: 1.25 msec
-// param: conn interval max, [0x0006, 0x0c80], unit: 1.25 msec
-// param: conn latency, number of connection events [0x0000, 0x01f4]
-// param: supervision timeout, [0x000a, 0x0c80], unit: 10 msec
-// param: minimum CE length, [0x0000, 0xffff], unit: 0.625 msec
 // return: none -> le create connection complete event
 };
+
 const hci_cmd_t hci_le_create_connection_cancel = {
 OPCODE(OGF_LE_CONTROLLER, 0x0e), ""
-// params: none
 // return: status
 };
+
 const hci_cmd_t hci_le_read_white_list_size = {
 OPCODE(OGF_LE_CONTROLLER, 0x0f), ""
-// params: none
 // return: status, number of entries in controller whitelist
 };
+
 const hci_cmd_t hci_le_clear_white_list = {
 OPCODE(OGF_LE_CONTROLLER, 0x10), ""
-// params: none
 // return: status
 };
+
+/**
+ * @param address_type (public (0), random (1))
+ * @param bd_addr
+ */
 const hci_cmd_t hci_le_add_device_to_whitelist = {
 OPCODE(OGF_LE_CONTROLLER, 0x11), "1B"
-// param: address type: public (0), random (1)
-// param: address
 // return: status
 };
+
+/**
+ * @param address_type (public (0), random (1))
+ * @param bd_addr
+ */
 const hci_cmd_t hci_le_remove_device_from_whitelist = {
 OPCODE(OGF_LE_CONTROLLER, 0x12), "1B"
-// param: address type: public (0), random (1)
-// param: address
 // return: status
 };
+
+/**
+ * @param conn_handle
+ * @param conn_interval_min ([0x0006,0x0c80], unit: 1.25 msec)
+ * @param conn_interval_max ([0x0006,0x0c80], unit: 1.25 msec)
+ * @param conn_latency ([0x0000,0x03e8], number of connection events)
+ * @param supervision_timeout ([0x000a,0x0c80], unit: 10 msec)
+ * @param minimum_CE_length ([0x0000,0xffff], unit: 0.625 msec)
+ * @param maximum_CE_length ([0x0000,0xffff], unit: 0.625 msec)
+ */
 const hci_cmd_t hci_le_connection_update = {
 OPCODE(OGF_LE_CONTROLLER, 0x13), "H222222"
-// param: conn handle
-// param: conn interval min, [0x0006,0x0c80], unit: 1.25 msec
-// param: conn interval max, [0x0006,0x0c80], unit: 1.25 msec
-// param: conn latency, [0x0000,0x03e8], number of connection events
-// param: supervision timeout, [0x000a,0x0c80], unit: 10 msec
-// param: minimum CE length, [0x0000,0xffff], unit: 0.625 msec
-// param: maximum CE length, [0x0000,0xffff], unit: 0.625 msec
 // return: none -> le connection update complete event
 };
+
+/**
+ * @param channel_map_lower_32bits 
+ * @param channel_map_higher_5bits
+ */
 const hci_cmd_t hci_le_set_host_channel_classification = {
 OPCODE(OGF_LE_CONTROLLER, 0x14), "41"
-// param: channel map 37 bit, split into first 32 and higher 5 bits
 // return: status
 };
+
+/**
+ * @param conn_handle
+ */
 const hci_cmd_t hci_le_read_channel_map = {
 OPCODE(OGF_LE_CONTROLLER, 0x15), "H"
-// params: connection handle
 // return: status, connection handle, channel map (5 bytes, 37 used)
 };
+
+/**
+ * @param conn_handle
+ */
 const hci_cmd_t hci_le_read_remote_used_features = {
 OPCODE(OGF_LE_CONTROLLER, 0x16), "H"
-// params: connection handle
 // return: none -> le read remote used features complete event
 };
+
+/**
+ * @param key ((128) for AES-128)
+ * @param plain_text (128) 
+ */
 const hci_cmd_t hci_le_encrypt = {
 OPCODE(OGF_LE_CONTROLLER, 0x17), "PP"
-// param: key (128) for AES-128
-// param: plain text (128) 
 // return: status, encrypted data (128)
 };
+
 const hci_cmd_t hci_le_rand = {
 OPCODE(OGF_LE_CONTROLLER, 0x18), ""
-// params: none
 // return: status, random number (64)
 };
+
+/**
+ * @param conn_handle
+ * @param random_number_lower_32bits
+ * @param random_number_higher_32bits
+ * @param encryption_diversifier (16)
+ * @param long_term_key (128)
+ */
 const hci_cmd_t hci_le_start_encryption = {
 OPCODE(OGF_LE_CONTROLLER, 0x19), "H442P"
-// param: connection handle
-// param: 64 bit random number lower  32 bit
-// param: 64 bit random number higher 32 bit
-// param: encryption diversifier (16)
-// param: long term key (128)
 // return: none -> encryption changed or encryption key refresh complete event
 };
+
+/**
+ * @param connection_handle
+ * @param long_term_key (128)
+ */
 const hci_cmd_t hci_le_long_term_key_request_reply = {
 OPCODE(OGF_LE_CONTROLLER, 0x1a), "HP"
-// param: connection handle
-// param: long term key (128)
 // return: status, connection handle
 };
+
+/**
+ * @param conn_handle
+ */
 const hci_cmd_t hci_le_long_term_key_negative_reply = {
 OPCODE(OGF_LE_CONTROLLER, 0x1b), "H"
-// param: connection handle
 // return: status, connection handle
 };
+
+/**
+ * @param conn_handle
+ */
 const hci_cmd_t hci_le_read_supported_states = {
 OPCODE(OGF_LE_CONTROLLER, 0x1c), "H"
-// param: none
 // return: status, LE states (64)
 };
+
+/**
+ * @param rx_frequency ([0x00 0x27], frequency (MHz): 2420 + N*2)
+ */
 const hci_cmd_t hci_le_receiver_test = {
 OPCODE(OGF_LE_CONTROLLER, 0x1d), "1"
-// param: rx frequency, [0x00 0x27], frequency (MHz): 2420 + N*2
 // return: status
 };
+
+/**
+ * @param tx_frequency ([0x00 0x27], frequency (MHz): 2420 + N*2)
+ * @param test_payload_lengh ([0x00,0x25])
+ * @param packet_payload ([0,7] different patterns)
+ */
 const hci_cmd_t hci_le_transmitter_test = {
 OPCODE(OGF_LE_CONTROLLER, 0x1e), "111"
-    // param: tx frequency, [0x00 0x27], frequency (MHz): 2420 + N*2
-    // param: lengh of test payload [0x00,0x25]
-    // param: packet payload [0,7] different patterns
-    // return: status
+// return: status
 };
+
+/**
+ * @param end_test_cmd
+ */
 const hci_cmd_t hci_le_test_end = {
 OPCODE(OGF_LE_CONTROLLER, 0x1f), "1"
-    // params: none
-    // return: status, number of packets (8)
+// return: status, number of packets (8)
 };
 #endif
+
 
 // BTstack commands
 const hci_cmd_t btstack_get_state = {
 OPCODE(OGF_BTSTACK, BTSTACK_GET_STATE), ""
-// no params -> 
 };
 
 /**
- * @param power_mode
+ * @param power_mode (0 = off, 1 = on)
  */
 const hci_cmd_t btstack_set_power_mode = {
 OPCODE(OGF_BTSTACK, BTSTACK_SET_POWER_MODE), "1"
-// mode: 0 = off, 1 = on
 };
 
+
+/**
+ * @param acl_capture_mode (0 = off, 1 = on)
+ */
 const hci_cmd_t btstack_set_acl_capture_mode = {
 OPCODE(OGF_BTSTACK, BTSTACK_SET_ACL_CAPTURE_MODE), "1"
-// mode: 0 = off, 1 = on
 };
 
 const hci_cmd_t btstack_get_version = {
@@ -659,106 +900,193 @@ const hci_cmd_t btstack_get_system_bluetooth_enabled = {
 OPCODE(OGF_BTSTACK, BTSTACK_GET_SYSTEM_BLUETOOTH_ENABLED), ""
 };
 
+/**
+ * @param bluetooth_enabled_flag (0 = off, 1 = on, only used by btstack config)
+ */
 const hci_cmd_t btstack_set_system_bluetooth_enabled = {
 OPCODE(OGF_BTSTACK, BTSTACK_SET_SYSTEM_BLUETOOTH_ENABLED), "1"
 };
 
+/**
+ * @param discoverable_flag (0 = off, 1 = on)
+ */
 const hci_cmd_t btstack_set_discoverable = {
 OPCODE(OGF_BTSTACK, BTSTACK_SET_DISCOVERABLE), "1"
 };
 
+/**
+ * @param bluetooth_enabled_flag (0 = off, 1 = on, only used by btstack config)
+ */
 const hci_cmd_t btstack_set_bluetooth_enabled = {
-// only used by btstack config
 OPCODE(OGF_BTSTACK, BTSTACK_SET_BLUETOOTH_ENABLED), "1"
 };
 
+/**
+ * @param bd_addr (48)
+ * @param psm (16)
+ */
 const hci_cmd_t l2cap_create_channel = {
 OPCODE(OGF_BTSTACK, L2CAP_CREATE_CHANNEL), "B2"
-// @param bd_addr(48), psm (16)
 };
+
+/**
+ * @param bd_addr (48)
+ * @param psm (16)
+ * @param mtu (16)
+ */
 const hci_cmd_t l2cap_create_channel_mtu = {
 OPCODE(OGF_BTSTACK, L2CAP_CREATE_CHANNEL_MTU), "B22"
 // @param bd_addr(48), psm (16), mtu (16)
 };
+
+/**
+ * @param channel (16)
+ * @param reason (16)
+ */
 const hci_cmd_t l2cap_disconnect = {
 OPCODE(OGF_BTSTACK, L2CAP_DISCONNECT), "21"
-// @param channel(16), reason(8)
 };
+
+/**
+ * @param psm (16)
+ * @param mtu (16)
+ */
 const hci_cmd_t l2cap_register_service = {
 OPCODE(OGF_BTSTACK, L2CAP_REGISTER_SERVICE), "22"
-// @param psm (16), mtu (16)
 };
+
+/**
+ * @param psm (16)
+ */
 const hci_cmd_t l2cap_unregister_service = {
 OPCODE(OGF_BTSTACK, L2CAP_UNREGISTER_SERVICE), "2"
-// @param psm (16)
 };
+
+/**
+ * @param source_cid (16)
+ */
 const hci_cmd_t l2cap_accept_connection = {
 OPCODE(OGF_BTSTACK, L2CAP_ACCEPT_CONNECTION), "2"
-// @param source cid (16)
 };
+
+/**
+ * @param source_cid (16)
+ * @param reason
+ */
 const hci_cmd_t l2cap_decline_connection = {
 OPCODE(OGF_BTSTACK, L2CAP_DECLINE_CONNECTION), "21"
-// @param source cid (16), reason(8)
 };
 
+
+/**
+ * @param service_record
+ */
 const hci_cmd_t sdp_register_service_record = {
 OPCODE(OGF_BTSTACK, SDP_REGISTER_SERVICE_RECORD), "S"
-// @param service record handle (DES)
 };
+
+/**
+ * @param service_record_handle
+ */
 const hci_cmd_t sdp_unregister_service_record = {
 OPCODE(OGF_BTSTACK, SDP_UNREGISTER_SERVICE_RECORD), "4"
-// @param service record handle (32)
 };
 
+/**
+ * @param bd_addr
+ * @param service_search_pattern
+ */
 const hci_cmd_t sdp_client_query_rfcomm_services = {
 OPCODE(OGF_BTSTACK, SDP_CLIENT_QUERY_RFCOMM_SERVICES), "BS"
-// @param service record handle (32)
 };
 
+/**
+ * @param bd_addr
+ * @param service_search_pattern
+ * @param attribute_ID_list
+ */
 const hci_cmd_t sdp_client_query_services = {
 OPCODE(OGF_BTSTACK, SDP_CLIENT_QUERY_SERVICES), "BSS"
-// @param service record handle (32)
 };
 
-// create rfcomm channel: @param bd_addr(48), channel (8)
+/**
+ * @param bd_addr
+ * @param server_channel
+ */
 const hci_cmd_t rfcomm_create_channel = {
 OPCODE(OGF_BTSTACK, RFCOMM_CREATE_CHANNEL), "B1"
 };
-// create rfcomm channel: @param bd_addr(48), channel (8), mtu (16), credits (8)
+
+/**
+ * @param bd_addr
+ * @param server_channel
+ * @param mtu
+ * @param credits
+ */
 const hci_cmd_t rfcomm_create_channel_with_initial_credits = {
 OPCODE(OGF_BTSTACK, RFCOMM_CREATE_CHANNEL_WITH_CREDITS), "B121"
 };
-// grant credits: @param rfcomm_cid(16), credits (8)
+
+/**
+ * @param rfcomm_cid
+ * @param credits
+ */
 const hci_cmd_t rfcomm_grants_credits= {
 OPCODE(OGF_BTSTACK, RFCOMM_GRANT_CREDITS), "21"
 };
-// disconnect rfcomm disconnect, @param rfcomm_cid(16), reason(8)
+
+/**
+ * @param rfcomm_cid
+ * @param reason
+ */
 const hci_cmd_t rfcomm_disconnect = {
 OPCODE(OGF_BTSTACK, RFCOMM_DISCONNECT), "21"
 };
 
-// register rfcomm service: @param channel(8), mtu (16)
+/**
+ * @param server_channel
+ * @param mtu
+ */
 const hci_cmd_t rfcomm_register_service = {
 OPCODE(OGF_BTSTACK, RFCOMM_REGISTER_SERVICE), "12"
 };
-// register rfcomm service: @param channel(8), mtu (16), initial credits (8)
+
+/**
+ * @param server_channel
+ * @param mtu
+ * @param initial_credits
+ */
 const hci_cmd_t rfcomm_register_service_with_initial_credits = {
 OPCODE(OGF_BTSTACK, RFCOMM_REGISTER_SERVICE_WITH_CREDITS), "121"
 };
 
-// unregister rfcomm service, @param service_channel(16)
+/**
+ * @param service_channel
+ */
 const hci_cmd_t rfcomm_unregister_service = {
 OPCODE(OGF_BTSTACK, RFCOMM_UNREGISTER_SERVICE), "2"
 };
-// accept connection @param source cid (16)
+
+/**
+ * @param source_cid
+ */
 const hci_cmd_t rfcomm_accept_connection = {
 OPCODE(OGF_BTSTACK, RFCOMM_ACCEPT_CONNECTION), "2"
 };
-// decline connection @param source cid (16)
+
+
+/**
+ * @param source_cid
+ * @param reason
+ */
 const hci_cmd_t rfcomm_decline_connection = {
 OPCODE(OGF_BTSTACK, RFCOMM_DECLINE_CONNECTION), "21"
 };
+
 // request persistent rfcomm channel number for named service
+/**
+ * @param named_service
+ */
 const hci_cmd_t rfcomm_persistent_channel_for_service = {
 OPCODE(OGF_BTSTACK, RFCOMM_PERSISTENT_CHANNEL), "N"
 };
@@ -958,6 +1286,7 @@ const hci_cmd_t gatt_write_long_characteristic_descriptor_cmd = {
 /**
  * @param handle
  * @param characteristic
+ * @param configuration
  */
 const hci_cmd_t gatt_write_client_characteristic_configuration_cmd = {
     OPCODE(OGF_BTSTACK, GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION), "HY2"
