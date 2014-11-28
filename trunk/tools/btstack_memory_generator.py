@@ -109,7 +109,7 @@ code_template = """
 static STRUCT_TYPE STRUCT_NAME_storage[POOL_COUNT];
 static memory_pool_t STRUCT_NAME_pool;
 STRUCT_NAME_t * btstack_memory_STRUCT_NAME_get(void){
-    return memory_pool_get(&STRUCT_NAME_pool);
+    return (STRUCT_NAME_t *) memory_pool_get(&STRUCT_NAME_pool);
 }
 void btstack_memory_STRUCT_NAME_free(STRUCT_NAME_t *STRUCT_NAME){
     memory_pool_free(&STRUCT_NAME_pool, STRUCT_NAME);
