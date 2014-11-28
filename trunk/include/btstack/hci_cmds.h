@@ -182,8 +182,31 @@ extern "C" {
 #define HCI_EVENT_MAX_SLOTS_CHANGED			               0x1B
 #define HCI_EVENT_READ_CLOCK_OFFSET_COMPLETE               0x1C
 #define HCI_EVENT_PACKET_TYPE_CHANGED                      0x1D
+
+/** 
+ * @format 1B11321
+ * @param num_responses
+ * @param bd_addr
+ * @param page_scan_repetition_mode
+ * @param reserved
+ * @param class_of_device
+ * @param clock_offset
+ * @param rssi
+ */
 #define HCI_EVENT_INQUIRY_RESULT_WITH_RSSI		      	   0x22
+
+/** 
+ * @format 1B11321
+ * @param num_responses
+ * @param bd_addr
+ * @param page_scan_repetition_mode
+ * @param reserved
+ * @param class_of_device
+ * @param clock_offset
+ * @param rssi
+ */
 #define HCI_EVENT_EXTENDED_INQUIRY_RESPONSE                0x2F
+
 #define HCI_EVENT_IO_CAPABILITY_REQUEST                    0x31
 #define HCI_EVENT_IO_CAPABILITY_RESPONSE                   0x32
 #define HCI_EVENT_USER_CONFIRMATION_REQUEST				   0x33
@@ -278,45 +301,107 @@ extern "C" {
 #define L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE   0x77
 
 // RFCOMM EVENTS
-	
-// data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
+/**
+ * @format 1B2122
+ * @param status
+ * @param bd_addr
+ * @param con_handle
+ * @param server_channel
+ * @param rfcomm_cid
+ * @param max_frame_size
+ */
 #define RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE                 0x80
-	
-// data: event(8), len(8), rfcomm_cid(16)
+
+/**
+ * @format 2
+ * @param rfcomm_cid
+ */
 #define RFCOMM_EVENT_CHANNEL_CLOSED                        0x81
-	
-// data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
+
+/**
+ * @format B12
+ * @param bd_addr
+ * @param server_channel
+ * @param rfcomm_cid
+ */
 #define RFCOMM_EVENT_INCOMING_CONNECTION                   0x82
-	
-// data: event (8), len(8), rfcomm_cid (16), line status (8)
+
+/**
+ * @format 21
+ * @param rfcomm_cid
+ * @param line_status
+ */
 #define RFCOMM_EVENT_REMOTE_LINE_STATUS                    0x83
 	
-// data: event(8), len(8), rfcomm_cid(16), credits(8)
+/**
+ * @format 21
+ * @param rfcomm_cid
+ * @param credits
+ */
 #define RFCOMM_EVENT_CREDITS			                   0x84
-	
-// data: event(8), len(8), status (8), rfcomm server channel id (8) 
+
+/**
+ * @format 11
+ * @param status
+ * @param channel_id
+ */
 #define RFCOMM_EVENT_SERVICE_REGISTERED                    0x85
     
-// data: event(8), len(8), status (8), rfcomm server channel id (8) 
+/**
+ * @format 11
+ * @param status
+ * @param server_channel_id
+ */
 #define RFCOMM_EVENT_PERSISTENT_CHANNEL                    0x86
     
 // data: event (8), len(8), rfcomm_cid (16), modem status (8)
+
+/**
+ * @format 21
+ * @param rfcomm_cid
+ * @param modem_status
+ */
 #define RFCOMM_EVENT_REMOTE_MODEM_STATUS                   0x87
 
 // data: event (8), len(8), rfcomm_cid (16), rpn_data_t (67)
+ /**
+  * TODO: format for variable data
+  * @param rfcomm_cid
+  * @param rpn_data
+  */
 #define RFCOMM_EVENT_PORT_CONFIGURATION                    0x88
 
     
 // data: event(8), len(8), status(8), service_record_handle(32)
+ /**
+  * @format 14
+  * @param status
+  * @param service_record_handle
+  */
 #define SDP_SERVICE_REGISTERED                             0x90
 
 // data: event(8), len(8), status(8)
+/**
+ * @format 1
+ * @param status
+ */
 #define SDP_QUERY_COMPLETE                                 0x91 
 
 // data: event(8), len(8), rfcomm channel(8), name(var)
+/**
+ * TODO: format for variable data
+ * @param rfcomm_channel
+ * @param name
+ */
 #define SDP_QUERY_RFCOMM_SERVICE                           0x92
 
 // data: event(8), len(8), record nr(16), attribute id(16), attribute value(var)
+/**
+ * TODO: format for variable data
+ * @param record_nr
+ * @param attribute_id
+ * @param attribute_value
+ */
 #define SDP_QUERY_ATTRIBUTE_VALUE                          0x93
 
 // not provided by daemon, only used for internal testing
