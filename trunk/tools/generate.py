@@ -414,7 +414,7 @@ def parse_events(path):
             if parts and len(parts.groups()) == 1:
                 param = parts.groups()[0]
                 params.append(param)
-            parts = re.match('#define\s+(\w+)\s+(\w*)',line)
+            parts = re.match('\s*#define\s+(\w+)\s+(\w*)',line)
             if parts and len(parts.groups()) == 2:
                 (key, value) = parts.groups()
                 if format != None:
