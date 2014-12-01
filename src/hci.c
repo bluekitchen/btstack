@@ -97,7 +97,6 @@ static uint8_t disable_l2cap_timeouts = 0;
  * @return connection OR NULL, if no memory left
  */
 static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type){
-
     log_info("create_connection_for_addr %s", bd_addr_to_str(addr));
     hci_connection_t * conn = btstack_memory_hci_connection_get();
     if (!conn) return NULL;
@@ -2283,16 +2282,16 @@ void hci_emit_connection_complete(hci_connection_t *conn, uint8_t status){
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-void hci_emit_le_connection_complete(hci_connection_t *conn, uint8_t status){
+void hci_emit_le_connection_complete(uint8_t address_type, bd_addr_t * address, uint16_t conn_handle, uint8_t status){
     uint8_t event[21];
     event[0] = HCI_EVENT_LE_META;
     event[1] = sizeof(event) - 2;
     event[2] = HCI_SUBEVENT_LE_CONNECTION_COMPLETE;
     event[3] = status;
-    bt_store_16(event, 4, conn->con_handle);
+    bt_store_16(event, 4, conn_handle);
     event[6] = 0; // TODO: role
-    event[7] = conn->address_type;
-    bt_flip_addr(&event[8], conn->address);
+    event[7] = address_type;
+    bt_flip_addr(&event[8], *address);
     bt_store_16(event, 14, 0); // interval
     bt_store_16(event, 16, 0); // latency
     bt_store_16(event, 18, 0); // supervision timeout
@@ -2576,8 +2575,8 @@ le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_typ
         conn = create_connection_for_bd_addr_and_type(*addr, addr_type);
         if (!conn){
             // notify client that alloc failed
-            hci_emit_le_connection_complete(conn, BTSTACK_MEMORY_ALLOC_FAILED);
-            log_info("le_central_connect: failed to alloc context");
+            hci_emit_le_connection_complete(addr_type, addr, 0, BTSTACK_MEMORY_ALLOC_FAILED);
+            log_info("le_central_connect: failed to alloc hci_connection_t");
             return BLE_PERIPHERAL_NOT_CONNECTED; // don't sent packet to controller
         }
         conn->state = SEND_CREATE_CONNECTION;
@@ -2589,13 +2588,13 @@ le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_typ
     if (!hci_is_le_connection(conn) ||
         conn->state == SEND_CREATE_CONNECTION ||
         conn->state == SENT_CREATE_CONNECTION) {
-        hci_emit_le_connection_complete(conn, ERROR_CODE_COMMAND_DISALLOWED);
+        hci_emit_le_connection_complete(conn->address_type, &conn->address, 0, ERROR_CODE_COMMAND_DISALLOWED);
         log_error("le_central_connect: classic connection or connect is already being created");
         return BLE_PERIPHERAL_IN_WRONG_STATE;
     }
     
     log_info("le_central_connect: context exists with state %u", conn->state);
-    hci_emit_le_connection_complete(conn, 0);
+    hci_emit_le_connection_complete(conn->address_type, &conn->address, conn->con_handle, 0);
     hci_run();
     return BLE_PERIPHERAL_OK;
 }
@@ -2622,7 +2621,7 @@ le_command_status_t le_central_connect_cancel(){
     switch (conn->state){
         case SEND_CREATE_CONNECTION:
             // skip sending create connection and emit event instead
-            hci_emit_le_connection_complete(conn, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER);
+            hci_emit_le_connection_complete(conn->address_type, &conn->address, 0, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER);
             linked_list_remove(&hci_stack->connections, (linked_item_t *) conn);
             btstack_memory_hci_connection_free( conn );
             break;            
