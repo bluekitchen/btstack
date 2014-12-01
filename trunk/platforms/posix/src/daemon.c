@@ -559,6 +559,7 @@ static void send_gatt_query_complete(connection_t * connection, uint16_t handle,
     event[1] = 3;
     bt_store_16(event, 2, handle);
     event[4] = status;
+    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
@@ -1641,6 +1642,7 @@ static void handle_gatt_client_event(le_event_t * le_event){
                 daemon_setup_long_characteristic_value_event(event, complete_event->handle,
                                                              complete_event->attribute_handle,
                                                              gatt_client_helper->characteristic_length, data);
+                hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
                 socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
                 gatt_chunk = 0;
             }
