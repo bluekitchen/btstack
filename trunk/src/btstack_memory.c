@@ -63,7 +63,7 @@
 static hci_connection_t hci_connection_storage[MAX_NO_HCI_CONNECTIONS];
 static memory_pool_t hci_connection_pool;
 hci_connection_t * btstack_memory_hci_connection_get(void){
-    return memory_pool_get(&hci_connection_pool);
+    return (hci_connection_t *) memory_pool_get(&hci_connection_pool);
 }
 void btstack_memory_hci_connection_free(hci_connection_t *hci_connection){
     memory_pool_free(&hci_connection_pool, hci_connection);
@@ -96,7 +96,7 @@ void btstack_memory_hci_connection_free(hci_connection_t *hci_connection){
 static l2cap_service_t l2cap_service_storage[MAX_NO_L2CAP_SERVICES];
 static memory_pool_t l2cap_service_pool;
 l2cap_service_t * btstack_memory_l2cap_service_get(void){
-    return memory_pool_get(&l2cap_service_pool);
+    return (l2cap_service_t *) memory_pool_get(&l2cap_service_pool);
 }
 void btstack_memory_l2cap_service_free(l2cap_service_t *l2cap_service){
     memory_pool_free(&l2cap_service_pool, l2cap_service);
@@ -128,7 +128,7 @@ void btstack_memory_l2cap_service_free(l2cap_service_t *l2cap_service){
 static l2cap_channel_t l2cap_channel_storage[MAX_NO_L2CAP_CHANNELS];
 static memory_pool_t l2cap_channel_pool;
 l2cap_channel_t * btstack_memory_l2cap_channel_get(void){
-    return memory_pool_get(&l2cap_channel_pool);
+    return (l2cap_channel_t *) memory_pool_get(&l2cap_channel_pool);
 }
 void btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel){
     memory_pool_free(&l2cap_channel_pool, l2cap_channel);
@@ -161,7 +161,7 @@ void btstack_memory_l2cap_channel_free(l2cap_channel_t *l2cap_channel){
 static rfcomm_multiplexer_t rfcomm_multiplexer_storage[MAX_NO_RFCOMM_MULTIPLEXERS];
 static memory_pool_t rfcomm_multiplexer_pool;
 rfcomm_multiplexer_t * btstack_memory_rfcomm_multiplexer_get(void){
-    return memory_pool_get(&rfcomm_multiplexer_pool);
+    return (rfcomm_multiplexer_t *) memory_pool_get(&rfcomm_multiplexer_pool);
 }
 void btstack_memory_rfcomm_multiplexer_free(rfcomm_multiplexer_t *rfcomm_multiplexer){
     memory_pool_free(&rfcomm_multiplexer_pool, rfcomm_multiplexer);
@@ -193,7 +193,7 @@ void btstack_memory_rfcomm_multiplexer_free(rfcomm_multiplexer_t *rfcomm_multipl
 static rfcomm_service_t rfcomm_service_storage[MAX_NO_RFCOMM_SERVICES];
 static memory_pool_t rfcomm_service_pool;
 rfcomm_service_t * btstack_memory_rfcomm_service_get(void){
-    return memory_pool_get(&rfcomm_service_pool);
+    return (rfcomm_service_t *) memory_pool_get(&rfcomm_service_pool);
 }
 void btstack_memory_rfcomm_service_free(rfcomm_service_t *rfcomm_service){
     memory_pool_free(&rfcomm_service_pool, rfcomm_service);
@@ -225,7 +225,7 @@ void btstack_memory_rfcomm_service_free(rfcomm_service_t *rfcomm_service){
 static rfcomm_channel_t rfcomm_channel_storage[MAX_NO_RFCOMM_CHANNELS];
 static memory_pool_t rfcomm_channel_pool;
 rfcomm_channel_t * btstack_memory_rfcomm_channel_get(void){
-    return memory_pool_get(&rfcomm_channel_pool);
+    return (rfcomm_channel_t *) memory_pool_get(&rfcomm_channel_pool);
 }
 void btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel){
     memory_pool_free(&rfcomm_channel_pool, rfcomm_channel);
@@ -258,7 +258,7 @@ void btstack_memory_rfcomm_channel_free(rfcomm_channel_t *rfcomm_channel){
 static db_mem_device_name_t db_mem_device_name_storage[MAX_NO_DB_MEM_DEVICE_NAMES];
 static memory_pool_t db_mem_device_name_pool;
 db_mem_device_name_t * btstack_memory_db_mem_device_name_get(void){
-    return memory_pool_get(&db_mem_device_name_pool);
+    return (db_mem_device_name_t *) memory_pool_get(&db_mem_device_name_pool);
 }
 void btstack_memory_db_mem_device_name_free(db_mem_device_name_t *db_mem_device_name){
     memory_pool_free(&db_mem_device_name_pool, db_mem_device_name);
@@ -290,7 +290,7 @@ void btstack_memory_db_mem_device_name_free(db_mem_device_name_t *db_mem_device_
 static db_mem_device_link_key_t db_mem_device_link_key_storage[MAX_NO_DB_MEM_DEVICE_LINK_KEYS];
 static memory_pool_t db_mem_device_link_key_pool;
 db_mem_device_link_key_t * btstack_memory_db_mem_device_link_key_get(void){
-    return memory_pool_get(&db_mem_device_link_key_pool);
+    return (db_mem_device_link_key_t *) memory_pool_get(&db_mem_device_link_key_pool);
 }
 void btstack_memory_db_mem_device_link_key_free(db_mem_device_link_key_t *db_mem_device_link_key){
     memory_pool_free(&db_mem_device_link_key_pool, db_mem_device_link_key);
@@ -322,7 +322,7 @@ void btstack_memory_db_mem_device_link_key_free(db_mem_device_link_key_t *db_mem
 static db_mem_service_t db_mem_service_storage[MAX_NO_DB_MEM_SERVICES];
 static memory_pool_t db_mem_service_pool;
 db_mem_service_t * btstack_memory_db_mem_service_get(void){
-    return memory_pool_get(&db_mem_service_pool);
+    return (db_mem_service_t *) memory_pool_get(&db_mem_service_pool);
 }
 void btstack_memory_db_mem_service_free(db_mem_service_t *db_mem_service){
     memory_pool_free(&db_mem_service_pool, db_mem_service);
@@ -355,7 +355,7 @@ void btstack_memory_db_mem_service_free(db_mem_service_t *db_mem_service){
 static bnep_service_t bnep_service_storage[MAX_NO_BNEP_SERVICES];
 static memory_pool_t bnep_service_pool;
 bnep_service_t * btstack_memory_bnep_service_get(void){
-    return memory_pool_get(&bnep_service_pool);
+    return (bnep_service_t *) memory_pool_get(&bnep_service_pool);
 }
 void btstack_memory_bnep_service_free(bnep_service_t *bnep_service){
     memory_pool_free(&bnep_service_pool, bnep_service);
@@ -387,7 +387,7 @@ void btstack_memory_bnep_service_free(bnep_service_t *bnep_service){
 static bnep_channel_t bnep_channel_storage[MAX_NO_BNEP_CHANNELS];
 static memory_pool_t bnep_channel_pool;
 bnep_channel_t * btstack_memory_bnep_channel_get(void){
-    return memory_pool_get(&bnep_channel_pool);
+    return (bnep_channel_t *) memory_pool_get(&bnep_channel_pool);
 }
 void btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel){
     memory_pool_free(&bnep_channel_pool, bnep_channel);
@@ -421,7 +421,7 @@ void btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel){
 static gatt_client_t gatt_client_storage[MAX_NO_GATT_CLIENTS];
 static memory_pool_t gatt_client_pool;
 gatt_client_t * btstack_memory_gatt_client_get(void){
-    return memory_pool_get(&gatt_client_pool);
+    return (gatt_client_t *) memory_pool_get(&gatt_client_pool);
 }
 void btstack_memory_gatt_client_free(gatt_client_t *gatt_client){
     memory_pool_free(&gatt_client_pool, gatt_client);
@@ -453,7 +453,7 @@ void btstack_memory_gatt_client_free(gatt_client_t *gatt_client){
 static gatt_subclient_t gatt_subclient_storage[MAX_NO_GATT_SUBCLIENTS];
 static memory_pool_t gatt_subclient_pool;
 gatt_subclient_t * btstack_memory_gatt_subclient_get(void){
-    return memory_pool_get(&gatt_subclient_pool);
+    return (gatt_subclient_t *) memory_pool_get(&gatt_subclient_pool);
 }
 void btstack_memory_gatt_subclient_free(gatt_subclient_t *gatt_subclient){
     memory_pool_free(&gatt_subclient_pool, gatt_subclient);
