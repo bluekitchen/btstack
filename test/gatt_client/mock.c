@@ -102,8 +102,7 @@ int  sm_cmac_ready(){
 	return 1;
 }
 void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8])){
-	//sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);
-                
+	//sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);      
 }
 
 void run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms){

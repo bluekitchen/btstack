@@ -65,6 +65,13 @@ static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8
 
 static void dummy_notify(le_event_t* event){}
 
+static uint16_t peripheral_mtu(gatt_client_t *peripheral){
+    if (peripheral->mtu > l2cap_max_le_mtu()){
+        log_info(" problem: peripheral mtu is not initialized\n");
+        return l2cap_max_le_mtu();
+    }
+    return peripheral->mtu;
+}
 
 static uint16_t gatt_client_next_id(){
     if (gatt_client_id < 0xFFFF) {
@@ -96,8 +103,6 @@ uint16_t gatt_client_register_packet_handler(gatt_client_callback_t gatt_callbac
     subclient->id = gatt_client_next_id();
     subclient->callback = gatt_callback;
     linked_list_add(&gatt_subclients, (linked_item_t *) subclient);
-
-    printf("regstered callback %p, id %d\n", gatt_callback, subclient->id);
     return subclient->id;
 }
 
@@ -172,8 +177,8 @@ static gatt_client_t * provide_context_for_conn_handle(uint16_t con_handle){
     if (!context) return NULL;
     // init state
     context->handle = con_handle;
+    context->mtu = ATT_DEFAULT_MTU;
     context->mtu_state = SEND_MTU_EXCHANGE;
-    
     context->gatt_client_state = P_READY;
     gatt_client_timeout_start(context);
     linked_list_add(&gatt_client_connections, (linked_item_t*)context);
@@ -302,7 +307,7 @@ static void att_prepare_write_request(uint16_t request_type, uint16_t peripheral
 }
 
 static uint16_t write_blob_length(gatt_client_t * peripheral){
-    uint16_t max_blob_length = peripheral->mtu - 5;
+    uint16_t max_blob_length = peripheral_mtu(peripheral) - 5;
     if (peripheral->attribute_offset >= peripheral->attribute_length) {
         return 0;
     }
@@ -640,7 +645,7 @@ static inline void trigger_next_prepare_write_query(gatt_client_t * peripheral, 
 
 static inline void trigger_next_blob_query(gatt_client_t * peripheral, gatt_client_state_t next_query_state, uint16_t received_blob_length){
     
-    uint16_t max_blob_length = peripheral->mtu - 1;
+    uint16_t max_blob_length = peripheral_mtu(peripheral) - 1;
     if (received_blob_length < max_blob_length){
         gatt_client_handle_transaction_complete(peripheral);
         emit_gatt_complete_event(peripheral, 0);
@@ -700,7 +705,9 @@ static void gatt_client_run(){
         switch (peripheral->gatt_client_state){
             case P_W2_SEND_WRITE_CHARACTERISTIC_VALUE:
             case P_W2_SEND_WRITE_CHARACTERISTIC_DESCRIPTOR:
-                if (peripheral->attribute_length < peripheral->mtu - 3) break;
+
+                if (peripheral->attribute_length < peripheral_mtu(peripheral) - 3) break;
+                printf(".. ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH %u > %u\n", peripheral->attribute_length, peripheral_mtu(peripheral));
                 gatt_client_handle_transaction_complete(peripheral);
                 emit_gatt_complete_event(peripheral, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
                 return;
@@ -1358,7 +1365,7 @@ le_command_status_t gatt_client_write_value_of_characteristic_without_response(u
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
     
-    if (value_length >= peripheral->mtu - 3) return BLE_VALUE_TOO_LONG;
+    if (value_length >= peripheral_mtu(peripheral) - 3) return BLE_VALUE_TOO_LONG;
     
     peripheral->subclient_id = gatt_client_id;
     att_write_request(ATT_WRITE_COMMAND, peripheral->handle, value_handle, value_length, value);
