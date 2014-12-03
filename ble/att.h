@@ -154,8 +154,8 @@ extern "C" {
 
 typedef struct att_connection {
     uint16_t con_handle;
-    uint16_t mtu;
-    uint16_t max_mtu;
+    uint16_t mtu;       // initialized to ATT_DEFAULT_MTU (23), negotiated during MTU exchange
+    uint16_t max_mtu;   // local maximal L2CAP_MTU, set to l2cap_max_le_mtu()
     uint8_t  encryption_key_size;
     uint8_t  authenticated;
     uint8_t  authorized;
