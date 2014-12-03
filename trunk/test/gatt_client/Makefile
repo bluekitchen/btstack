@@ -41,6 +41,6 @@ le_central: ${CORE_OBJ} ${COMMON_OBJ} le_central.o
 
 clean:
 	rm -f  gatt_client le_central
-	rm -f  *.o ${BTSTACK_ROOT}/src/*.o
+	rm -f  *.o ${BTSTACK_ROOT}/src/*.o ${BTSTACK_ROOT}/ble/*.o
 	rm -rf *.dSYM
 	
