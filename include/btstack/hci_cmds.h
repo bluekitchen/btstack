@@ -93,7 +93,19 @@ extern "C" {
  */
 #define HCI_EVENT_INQUIRY_COMPLETE				           0x01
 // no format yet, can contain multiple results
+
+/** 
+ * @format 1B11132
+ * @param num_responses
+ * @param bd_addr
+ * @param page_scan_repetition_mode
+ * @param reserved1
+ * @param reserved2
+ * @param class_of_device
+ * @param clock_offset
+ */
 #define HCI_EVENT_INQUIRY_RESULT				           0x02
+
 /**
  * @format 12B11
  * @param status
@@ -195,6 +207,7 @@ extern "C" {
  */
 #define HCI_EVENT_INQUIRY_RESULT_WITH_RSSI		      	   0x22
 
+// TODO: serialize extended_inquiry_response and provide parser
 /** 
  * @format 1B11321
  * @param num_responses
