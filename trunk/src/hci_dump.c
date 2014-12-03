@@ -236,9 +236,7 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
 }
 
 void hci_dump_log(const char * format, ...){
-
     if (dump_file < 0) return; // not activated yet
-
     va_list argptr;
     va_start(argptr, format);
 #ifdef EMBEDDED
@@ -251,6 +249,18 @@ void hci_dump_log(const char * format, ...){
 #endif    
     va_end(argptr);
 }
+
+#ifdef __AVR__
+void hci_dump_log_P(PGM_P format, ...){
+    if (dump_file < 0) return; // not activated yet
+    va_list argptr;
+    va_start(argptr, format);
+    printf_P(PSTR("LOG -- "));
+    vfprintf_P(stdout, format, argptr);
+    printf_P(PSTR("\n"));
+    va_end(argptr);
+}
+#endif
 
 void hci_dump_close(){
 #ifndef EMBEDDED

@@ -47,6 +47,10 @@
 
 #include <stdint.h>
 
+#ifdef __AVR__
+#include <avr/progmem.h>
+#endif
+
 #if defined __cplusplus
 extern "C" {
 #endif
@@ -62,6 +66,10 @@ void hci_dump_set_max_packets(int packets); // -1 for unlimited
 void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len);
 void hci_dump_log(const char * format, ...);
 void hci_dump_close(void);
+
+#ifdef __AVR__
+void hci_dump_log_P(PGM_P format, ...);
+#endif
 
 #if defined __cplusplus
 }
