@@ -48,6 +48,10 @@
 
 #include <stdio.h>
 
+#ifdef __AVR__
+#include <avr/pgmspace.h>
+#endif
+
 #ifndef EMBEDDED
 // Avoid complaints of unused arguments when log levels are disabled.
 static inline void __log_unused(const char *format, ...) {

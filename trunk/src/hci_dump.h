@@ -48,7 +48,7 @@
 #include <stdint.h>
 
 #ifdef __AVR__
-#include <avr/progmem.h>
+#include <avr/pgmspace.h>
 #endif
 
 #if defined __cplusplus
