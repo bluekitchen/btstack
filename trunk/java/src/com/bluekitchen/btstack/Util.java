@@ -145,6 +145,6 @@ public class Util {
 	}
 
 	public static byte[] serviceSearchPatternForUUID16(int uuid){
-		return new byte[] {(byte)0x35, (byte)0x03, (byte)0x19, 0, 0,(byte) (uuid >> 8), (byte) (uuid & 0xff)};
+		return new byte[] {(byte)0x35, (byte)0x03, (byte)0x19, (byte) (uuid >> 8), (byte) (uuid & 0xff)};
 	}
 }
