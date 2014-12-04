@@ -109,20 +109,22 @@ typedef enum {
 #define SDP_OBEXFileTypeAny 0xFF
 
 // MARK: DateElement
-void de_dump_data_element(uint8_t * record);
-int de_get_len(uint8_t *header);
+void      de_dump_data_element(uint8_t * record);
+int       de_get_len(uint8_t *header);
 de_size_t de_get_size_type(uint8_t *header);
 de_type_t de_get_element_type(uint8_t *header);
-int de_get_header_size(uint8_t * header);
-void de_create_sequence(uint8_t *header);
-void de_store_descriptor_with_len(uint8_t * header, de_type_t type, de_size_t size, uint32_t len);
+int       de_get_header_size(uint8_t * header);
+void      de_create_sequence(uint8_t *header);
+void      de_store_descriptor_with_len(uint8_t * header, de_type_t type, de_size_t size, uint32_t len);
 uint8_t * de_push_sequence(uint8_t *header);
-void de_pop_sequence(uint8_t * parent, uint8_t * child);
-void de_add_number(uint8_t *seq, de_type_t type, de_size_t size, uint32_t value);
-void de_add_data( uint8_t *seq, de_type_t type, uint16_t size, uint8_t *data);
+void      de_pop_sequence(uint8_t * parent, uint8_t * child);
+void      de_add_number(uint8_t *seq, de_type_t type, de_size_t size, uint32_t value);
+void      de_add_data( uint8_t *seq, de_type_t type, uint16_t size, uint8_t *data);
 
-int de_get_data_size(uint8_t * header);
-void de_add_uuid128(uint8_t * seq, uint8_t * uuid);
+int       de_get_data_size(uint8_t * header);
+void      de_add_uuid128(uint8_t * seq, uint8_t * uuid);
+uint32_t  de_get_uuid32(uint8_t * element);
+int       de_get_normalized_uuid(uint8_t *uuid128, uint8_t *element);
 
 // MARK: SDP
 uint16_t  sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startOffset, uint16_t maxBytes, uint8_t *buffer);
@@ -134,6 +136,7 @@ int       sdp_filter_attributes_in_attributeIDList(uint8_t *record, uint8_t *att
 
 void      sdp_create_spp_service(uint8_t *service, int service_id, const char *name);
 void      sdp_normalize_uuid(uint8_t *uuid, uint32_t shortUUID);
+int       sdp_has_blueooth_base_uuid(uint8_t * uuid128);
 
 #if defined __cplusplus
 }
