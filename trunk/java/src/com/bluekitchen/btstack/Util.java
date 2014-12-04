@@ -143,4 +143,8 @@ public class Util {
 	public static long readNet32(byte[] buffer, int offset) {
 		return (((long) readByte(buffer, offset)) << 24) | (readByte(buffer, offset + 1) << 16) | (readByte(buffer, offset + 2) << 8)  | readByte(buffer, offset + 3);
 	}
+
+	public static byte[] serviceSearchPatternForUUID16(int uuid){
+		return new byte[] {(byte)0x35, (byte)0x03, (byte)0x19, 0, 0,(byte) (uuid >> 8), (byte) (uuid & 0xff)};
+	}
 }
