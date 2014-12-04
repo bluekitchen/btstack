@@ -111,7 +111,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
                         for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)){
                             uint8_t * element = des_iterator_get_element(&des_list_it);
                             if (de_get_element_type(element) != DE_UUID) continue;
-                            uint16_t uuid = de_element_get_uuid16(element);
+                            uint32_t uuid = de_get_uuid32(element);
                             switch (uuid){
                                 case PANU_UUID:
                                 case NAP_UUID:
@@ -141,7 +141,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
                                 uint8_t * element = des_iterator_get_element(&prot_it);
                                 
                                 if (de_get_element_type(element) != DE_UUID) continue;
-                                uint16_t uuid = de_element_get_uuid16(element);
+                                uint32_t uuid = de_get_uuid32(element);
                                 switch (uuid){
                                     case 0x100:
                                         if (!des_iterator_has_more(&prot_it)) continue;
