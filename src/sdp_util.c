@@ -67,6 +67,10 @@ void sdp_normalize_uuid(uint8_t *uuid, uint32_t shortUUID){
     net_store_32(uuid, 0, shortUUID);
 }
 
+int sdp_has_blueooth_base_uuid(uint8_t * uuid128){
+    return memcmp(&uuid128[4], &sdp_bluetooth_base_uuid[4], 12) == 0;
+}
+
 // MARK: DataElement getter
 de_size_t de_get_size_type(uint8_t *header){
     return (de_size_t) (header[0] & 7);
@@ -135,6 +139,16 @@ int de_get_normalized_uuid(uint8_t *uuid128, uint8_t *element){
     }
     sdp_normalize_uuid(uuid128, shortUUID);
     return 1;
+}
+
+// @returns 0 if no UUID16 or UUID32 is present, and UUID32 otherwise
+uint32_t de_get_uuid32(uint8_t * element){
+    uint8_t uuid128[16];
+    int validUuid128 = de_get_normalized_uuid(uuid128, element);
+    if (!validUuid128) return 0;
+    int hasBlueoothBaseUuid = sdp_has_blueooth_base_uuid(uuid128);
+    if (!hasBlueoothBaseUuid) return 0;
+    return READ_NET_32(element, 0);
 }
 
 // functions to create record
