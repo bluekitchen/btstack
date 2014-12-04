@@ -95,6 +95,14 @@ public class BTstackClient {
 		if (socketConnection == null) return false;
 		return socketConnection.sendPacket(packet);
 	}
+	
+	public boolean L2CAPSendData(int l2capChannelID, byte[] data){
+		return sendPacket(new L2CAPDataPacket(l2capChannelID, data));
+	}
+
+	public boolean RFCOMMSendData(int rfcommChannelID, byte[] data){
+		return sendPacket(new RFCOMMDataPacket(rfcommChannelID, data));
+	}
 
 	public void disconnect(){
 		if (socketConnection == null) return;

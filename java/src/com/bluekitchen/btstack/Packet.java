@@ -4,6 +4,8 @@ public class Packet {
 	
 	public static final int HCI_COMMAND_PACKET = 1;
 	public static final int HCI_EVENT_PACKET   = 4;
+	public static final int L2CAP_DATA_PACKET  = 6;
+	public static final int RFCOMM_DATA_PACKET = 7;
 	
 	protected byte[] data;
 	protected int payloadLen;
@@ -31,7 +33,6 @@ public class Packet {
 		this.channel = channel;
 		this.data = new byte[payloadLen];
 		System.arraycopy(buffer, 0, this.data, 0, payloadLen);
-		this.data = buffer;
 		this.payloadLen = payloadLen;
 	}
 
