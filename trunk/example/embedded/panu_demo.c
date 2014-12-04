@@ -40,7 +40,7 @@
 static int record_id = -1;
 static uint16_t bnep_protocol_id    = 0x000f;
 static uint16_t bnep_l2cap_psm      = 0;
-static uint16_t bnep_remote_uuid    = 0;
+static uint32_t bnep_remote_uuid    = 0;
 static uint16_t bnep_version        = 0;
 static uint16_t bnep_cid            = 0;
 
@@ -212,7 +212,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                             for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {
                                 uint8_t * element = des_iterator_get_element(&des_list_it);
                                 if (de_get_element_type(element) != DE_UUID) continue;
-                                uint16_t uuid = de_element_get_uuid16(element);
+                                uint32_t uuid = de_get_uuid32(element);
                                 switch (uuid){
                                     case BNEP_UUID_PANU:
                                     case BNEP_UUID_NAP:
@@ -237,7 +237,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                                 for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)) {                                    
                                     uint8_t       *des_element;
                                     uint8_t       *element;
-                                    uint16_t       uuid;
+                                    uint32_t       uuid;
 
                                     if (des_iterator_get_type(&des_list_it) != DE_DES) continue;
 
@@ -247,7 +247,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                                     
                                     if (de_get_element_type(element) != DE_UUID) continue;
                                     
-                                    uuid = de_element_get_uuid16(element);
+                                    uuid = de_get_uuid32(element);
                                     switch (uuid){
                                         case 0x0100:
                                             if (!des_iterator_has_more(&prot_it)) continue;

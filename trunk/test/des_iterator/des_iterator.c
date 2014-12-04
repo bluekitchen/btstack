@@ -36,22 +36,3 @@ void des_iterator_next(des_iterator_t * it){
 	it->pos += element_len;
 }
 
-
-// move to sdp_util.c
-
-// @returns OK, if UINT16 value was read
-int de_element_get_uint16(uint8_t * element, uint16_t * value){
-	if (de_get_size_type(element) != DE_SIZE_16) return 0;
-	*value = READ_NET_16(element, de_get_header_size(element));
-    return 1;
-}
-
-// @returns 0 if no UUID16 was present, and UUID otherwise
-uint16_t de_element_get_uuid16(uint8_t * element){
-	if (de_get_element_type(element) != DE_UUID) return 0;
-    uint16_t value = 0;
-    de_element_get_uint16(element, &value);
-    return value;
-}
-
-

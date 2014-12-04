@@ -26,7 +26,6 @@ static uint16_t expected_values[] = {
 };
 
 
-
 TEST_GROUP(DESParser){
     int value_index;
     des_iterator_t des_list_it;
@@ -39,7 +38,7 @@ TEST_GROUP(DESParser){
         uint16_t value;
         uint8_t * element = des_iterator_get_element(it);
         if (des_iterator_get_type(it) == DE_UUID){
-            value = de_element_get_uuid16(element);
+            value = de_get_uuid32(element);
         } else {
             value = 0xffff;
             de_element_get_uint16(element, &value);
@@ -87,7 +86,7 @@ TEST(DESParser, DESIterator2){
         des_iterator_init(&prot_it, des_element);
         uint8_t * element = des_iterator_get_element(&prot_it);
         CHECK_EQUAL(de_get_element_type(element), DE_UUID);
-        uint16_t uuid = de_element_get_uuid16(element);
+        uint32_t uuid = de_get_uuid32(element);
         switch (uuid){
             case 0x100:
                 CHECK_EQUAL(des_iterator_has_more(&prot_it), 1);

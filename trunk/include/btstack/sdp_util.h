@@ -120,6 +120,7 @@ uint8_t * de_push_sequence(uint8_t *header);
 void      de_pop_sequence(uint8_t * parent, uint8_t * child);
 void      de_add_number(uint8_t *seq, de_type_t type, de_size_t size, uint32_t value);
 void      de_add_data( uint8_t *seq, de_type_t type, uint16_t size, uint8_t *data);
+int       de_element_get_uint16(uint8_t * element, uint16_t * value);
 
 int       de_get_data_size(uint8_t * header);
 void      de_add_uuid128(uint8_t * seq, uint8_t * uuid);

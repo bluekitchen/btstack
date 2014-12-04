@@ -118,6 +118,13 @@ int de_get_len(uint8_t *header){
     return de_get_header_size(header) + de_get_data_size(header); 
 }
 
+// @returns OK, if UINT16 value was read
+int de_element_get_uint16(uint8_t * element, uint16_t * value){
+    if (de_get_size_type(element) != DE_SIZE_16) return 0;
+    *value = READ_NET_16(element, de_get_header_size(element));
+    return 1;
+}
+
 // @returns: element is valid UUID
 int de_get_normalized_uuid(uint8_t *uuid128, uint8_t *element){
     de_type_t uuidType = de_get_element_type(element);
