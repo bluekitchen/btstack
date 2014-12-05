@@ -147,4 +147,13 @@ public class Util {
 	public static byte[] serviceSearchPatternForUUID16(int uuid){
 		return new byte[] {(byte)0x35, (byte)0x03, (byte)0x19, (byte) (uuid >> 8), (byte) (uuid & 0xff)};
 	}
+
+	public static byte[] getBytes(byte[] buffer, int offset, int length){
+		return Arrays.copyOfRange(buffer, offset, offset + length);
+	}
+
+	public static String getText(byte[] buffer, int offset, int length){
+		byte [] byteData = getBytes(buffer, offset, length);
+		return new String(byteData, "UTF-8");
+	}
 }

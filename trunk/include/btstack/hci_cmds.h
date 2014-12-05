@@ -402,9 +402,10 @@ extern "C" {
 
 // data: event(8), len(8), rfcomm channel(8), name(var)
 /**
- * TODO: format for variable data
+ * @format 1T
  * @param rfcomm_channel
  * @param name
+ * @brief SDP_QUERY_RFCOMM_SERVICE 0x92
  */
 #define SDP_QUERY_RFCOMM_SERVICE                           0x92
 
