@@ -96,6 +96,9 @@ public class {1} extends Event {{
 
 java_event_getter = \
 '''
+    /**
+     * @return {1} as {0}
+     {rest}
     public {0} get{1}(){{
         {2}
     }}
@@ -172,12 +175,13 @@ def java_type_for_btstack_type(type):
                     'D' : 'byte []', 'E' : 'byte [] ', 'N' : 'String' , 'P' : 'byte []', 'A' : 'byte []',
                     'R' : 'byte []', 'S' : 'byte []',
                     'J' : 'int', 'L' : 'int', 'V' : 'byte []', 'U' : 'BT_UUID',
-                    'X' : 'GATTService', 'Y' : 'GATTCharacteristic', 'Z' : 'GATTCharacteristicDescriptor' }
+                    'X' : 'GATTService', 'Y' : 'GATTCharacteristic', 'Z' : 'GATTCharacteristicDescriptor',
+                    'T' : 'String'}
     return param_types[type]
 
 def size_for_type(type):
     param_sizes = { '1' : 1, '2' : 2, '3' : 3, '4' : 4, 'H' : 2, 'B' : 6, 'D' : 8, 'E' : 240, 'N' : 248, 'P' : 16,
-                    'A' : 31, 'S' : -1, 'V': -1, 'J' : 1, 'L' : 2, 'U' : 16, 'X' : 20, 'Y' : 24, 'Z' : 18}
+                    'A' : 31, 'S' : -1, 'V': -1, 'J' : 1, 'L' : 2, 'U' : 16, 'X' : 20, 'Y' : 24, 'Z' : 18, 'T':-1}
     return param_sizes[type]
 
 def create_command_java(fout, name, ogf, ocf, format, params):
@@ -331,6 +335,7 @@ def create_event(event_name, format, args):
      'X' : 'return Util.readGattService(data, %u);',
      'Y' : 'return Util.readGattCharacteristic(data, %u);',
      'Z' : 'return Util.readGattCharacteristicDescriptor(data, %u);',
+     'T' : 'int offset = %u; \n        return Util.getText(data, offset, getPayloadLen()-offset);',
      # 'D' : 'Util.storeBytes(data, %u, 8);',
      # 'E' : 'Util.storeBytes(data, %u, 240);',
      # 'N' : 'Util.storeString(data, %u, 248);',
