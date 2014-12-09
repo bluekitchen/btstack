@@ -77,11 +77,20 @@ public class BTstackClient {
 						packetHandler.handlePacket(new BTstackEventDaemonDisconnect());
 						return;
 					}
-					if (packet.getPacketType() == Packet.HCI_EVENT_PACKET){
-						packetHandler.handlePacket(EventFactory.eventForPacket(packet));
-						continue;
+					switch (packet.getPacketType()){
+						case Packet.HCI_EVENT_PACKET:
+							packetHandler.handlePacket(EventFactory.eventForPacket(packet));
+							break;
+						case Packet.L2CAP_DATA_PACKET:
+							packetHandler.handlePacket(new L2CAPDataPacket(packet));
+							break;
+						case Packet.RFCOMM_DATA_PACKET:
+							packetHandler.handlePacket(new RFCOMMDataPacket(packet));
+							break;
+						default:
+							packetHandler.handlePacket(packet);
+							break;
 					}
-					packetHandler.handlePacket(packet);
 				}
 				System.out.println("Rx Thread: Interrupted");
 			}
