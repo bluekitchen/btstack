@@ -1349,7 +1349,7 @@ static void handle_sdp_rfcomm_service_result(sdp_query_event_t * rfcomm_event, v
     switch (rfcomm_event->type){
         case SDP_QUERY_RFCOMM_SERVICE: {
             sdp_query_rfcomm_service_event_t * service_event = (sdp_query_rfcomm_service_event_t*) rfcomm_event;
-            int name_len = (int)strlen((const char*)service_event);
+            int name_len = (int)strlen((const char*)service_event->service_name);
             int event_len = 3 + name_len; 
             uint8_t event[event_len];
             event[0] = rfcomm_event->type;
