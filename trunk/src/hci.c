@@ -2491,6 +2491,10 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
 
     connection->requested_security_level = requested_level;
 
+#if 0
+    // sending encryption request without a link key results in an error. 
+    // TODO: figure out how to use it properly
+
     // would enabling ecnryption suffice (>= LEVEL_2)?
     if (hci_stack->remote_device_db){
         link_key_type_t link_key_type;
@@ -2502,6 +2506,7 @@ void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_
             }
         }
     }
+#endif
 
     // try to authenticate connection
     connection->bonding_flags |= BONDING_SEND_AUTHENTICATE_REQUEST;
