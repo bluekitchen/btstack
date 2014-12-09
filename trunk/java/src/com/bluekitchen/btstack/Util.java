@@ -154,6 +154,11 @@ public class Util {
 
 	public static String getText(byte[] buffer, int offset, int length){
 		byte [] byteData = getBytes(buffer, offset, length);
-		return new String(byteData, "UTF-8");
+		try {
+			return new String(byteData, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
+		return "";
 	}
 }
