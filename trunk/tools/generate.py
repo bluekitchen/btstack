@@ -98,7 +98,7 @@ java_event_getter = \
 '''
     /**
      * @return {1} as {0}
-     {rest}
+     */
     public {0} get{1}(){{
         {2}
     }}
