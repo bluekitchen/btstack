@@ -201,11 +201,11 @@ static int bnep_send_connection_request(bnep_channel_t *channel, uint16_t uuid_s
     bnep_out_buffer[pos++] = 2;
 
     /* Add dest and source UUID */
-    bnep_out_buffer[pos++] = (uuid_dest >> 8) & 0xFF;    
-    bnep_out_buffer[pos++] = uuid_dest & 0xFF;
-    
-    bnep_out_buffer[pos++] = (uuid_source >> 8) & 0xFF;    
-    bnep_out_buffer[pos++] = uuid_source & 0xFF;
+    net_store_16(bnep_out_buffer, pos, uuid_dest);
+    pos += 2;
+
+    net_store_16(bnep_out_buffer, pos, uuid_source);
+    pos += 2;
 
     err = l2cap_send_prepared(channel->l2cap_cid, pos);
     
@@ -234,8 +234,8 @@ static int bnep_send_connection_response(bnep_channel_t *channel, uint16_t respo
 	bnep_out_buffer[pos++] = BNEP_CONTROL_TYPE_SETUP_CONNECTION_RESPONSE;
 
     /* Add response code */
-    bnep_out_buffer[pos++] = (response_code >> 8) & 0xFF;    
-    bnep_out_buffer[pos++] = response_code & 0xFF;
+    net_store_16(bnep_out_buffer, pos, response_code);
+    pos += 2;
 
     err = l2cap_send_prepared(channel->l2cap_cid, pos);
     
@@ -276,8 +276,8 @@ static int bnep_send_filter_net_type_response(bnep_channel_t *channel, uint16_t 
 	bnep_out_buffer[pos++] = BNEP_CONTROL_TYPE_FILTER_NET_TYPE_RESPONSE;
 
     /* Add response code */
-    bnep_out_buffer[pos++] = (response_code >> 8) & 0xFF;    
-    bnep_out_buffer[pos++] = response_code & 0xFF;
+    net_store_16(bnep_out_buffer, pos, response_code);
+    pos += 2;
 
     err = l2cap_send_prepared(channel->l2cap_cid, pos);
     
@@ -318,8 +318,8 @@ static int bnep_send_filter_multi_addr_response(bnep_channel_t *channel, uint16_
 	bnep_out_buffer[pos++] = BNEP_CONTROL_TYPE_FILTER_MULTI_ADDR_RESPONSE;
 
     /* Add response code */
-    bnep_out_buffer[pos++] = (response_code >> 8) & 0xFF;    
-    bnep_out_buffer[pos++] = response_code & 0xFF;
+    net_store_16(bnep_out_buffer, pos, response_code);
+    pos += 2;
 
     err = l2cap_send_prepared(channel->l2cap_cid, pos);
     
@@ -380,7 +380,7 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
     pos += sizeof(bd_addr_t);
     BD_ADDR_COPY(addr_source, &packet[pos]);
     pos += sizeof(bd_addr_t);
-    network_protocol_type = READ_BT_16(packet, pos);
+    network_protocol_type = READ_NET_16(packet, pos);
     pos += sizeof(uint16_t);
     
     /* Check if source address is the same as our local address and if the 
@@ -422,7 +422,7 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
     }
 
     /* Add protocol type */
-    bt_store_16(bnep_out_buffer, pos_out, network_protocol_type);
+    net_store_16(bnep_out_buffer, pos_out, network_protocol_type);
     pos_out += 2;
     
     /* TODO: Add extension headers, if we may support them at a later stage */
@@ -661,7 +661,7 @@ static int bnep_handle_connection_response(bnep_channel_t *channel, uint8_t *pac
         return 1 + 2;
     }
 
-    response_code = READ_BT_16(packet, 1);
+    response_code = READ_NET_16(packet, 1);
 
     if (response_code == BNEP_RESP_SETUP_SUCCESS) {
         log_info("BNEP_CONNCTION_RESPONSE: Channel established to %s", bd_addr_to_str(channel->remote_addr));
@@ -686,7 +686,7 @@ static int bnep_handle_filter_net_type_set(bnep_channel_t *channel, uint8_t *pac
         return 0;
     }
     
-    list_length = READ_BT_16(packet, 1);
+    list_length = READ_NET_16(packet, 1);
     /* Sanity check packet size again with known package size */
     if (size < 3 + list_length) {
         return 0;
@@ -706,8 +706,8 @@ static int bnep_handle_filter_net_type_set(bnep_channel_t *channel, uint8_t *pac
         int i;
         /* There is still enough space, copy the filters to our filter list */
         for (i = 0; i < list_length / (2 * 2); i ++) {
-            channel->net_filter[channel->net_filter_count].range_start = READ_BT_16(packet, 1 + 2 + i * 4);
-            channel->net_filter[channel->net_filter_count].range_end = READ_BT_16(packet, 1 + 2 + i * 4 + 2);
+            channel->net_filter[channel->net_filter_count].range_start = READ_NET_16(packet, 1 + 2 + i * 4);
+            channel->net_filter[channel->net_filter_count].range_end = READ_NET_16(packet, 1 + 2 + i * 4 + 2);
             if (channel->net_filter[channel->net_filter_count].range_start > channel->net_filter[channel->net_filter_count].range_end) {
                 /* Invalid filter range, ignore this filter rule */
                 log_error("BNEP_FILTER_NET_TYPE_SET: Invalid filter: start: %d, end: %d", 
@@ -748,7 +748,7 @@ static int bnep_handle_filter_net_type_response(bnep_channel_t *channel, uint8_t
         return 1 + 2;
     }
 
-    response_code = READ_BT_16(packet, 1);
+    response_code = READ_NET_16(packet, 1);
 
     if (response_code == BNEP_RESP_FILTER_SUCCESS) {
         log_info("BNEP_FILTER_NET_TYPE_RESPONSE: Net filter set successfully for %s", bd_addr_to_str(channel->remote_addr));
@@ -769,7 +769,7 @@ static int bnep_handle_multi_addr_set(bnep_channel_t *channel, uint8_t *packet, 
         return 0;
     }
     
-    list_length = READ_BT_16(packet, 1);
+    list_length = READ_NET_16(packet, 1);
     /* Sanity check packet size again with known package size */
     if (size < 3 + list_length) {
         return 0;
@@ -834,7 +834,7 @@ static int bnep_handle_multi_addr_response(bnep_channel_t *channel, uint8_t *pac
         return 1 + 2;
     }
 
-    response_code = READ_BT_16(packet, 1);
+    response_code = READ_NET_16(packet, 1);
 
     if (response_code == BNEP_RESP_FILTER_SUCCESS) {
         log_info("BNEP_MULTI_ADDR_RESPONSE: Multicast address filter set successfully for %s", bd_addr_to_str(channel->remote_addr));
@@ -859,7 +859,7 @@ static int bnep_handle_ethernet_packet(bnep_channel_t *channel, bd_addr_t addr_d
     pos += sizeof(bd_addr_t);
     BD_ADDR_COPY(ethernet_packet + pos, addr_source);
     pos += sizeof(bd_addr_t);
-    bt_store_16(ethernet_packet, pos, network_protocol_type);
+    net_store_16(ethernet_packet, pos, network_protocol_type);
     /* Payload is just in place... */
 #else
     /* Copy ethernet frame to statically allocated buffer. This solution is more 
@@ -872,7 +872,7 @@ static int bnep_handle_ethernet_packet(bnep_channel_t *channel, bd_addr_t addr_d
     pos += sizeof(bd_addr_t);
     BD_ADDR_COPY(ethernet_packet + pos, addr_source);
     pos += sizeof(bd_addr_t);
-    bt_store_16(ethernet_packet, pos, network_protocol_type);
+    net_store_16(ethernet_packet, pos, network_protocol_type);
     pos += 2;
     memcpy(ethernet_packet + pos, payload, size);
 #endif
@@ -1121,27 +1121,27 @@ static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16
             pos += sizeof(bd_addr_t);
             BD_ADDR_COPY(addr_source, &packet[pos]);
             pos += sizeof(bd_addr_t);
-            network_protocol_type = READ_BT_16(packet, pos);
+            network_protocol_type = READ_NET_16(packet, pos);
             pos += 2;
             break;
         case BNEP_PKT_TYPE_COMPRESSED_ETHERNET:
             BD_ADDR_COPY(addr_dest, channel->local_addr);
             BD_ADDR_COPY(addr_source, channel->remote_addr);
-            network_protocol_type = READ_BT_16(packet, pos);
+            network_protocol_type = READ_NET_16(packet, pos);
             pos += 2;
             break;
         case BNEP_PKT_TYPE_COMPRESSED_ETHERNET_SOURCE_ONLY:
             BD_ADDR_COPY(addr_dest, channel->local_addr);
             BD_ADDR_COPY(addr_source, &packet[pos]);
             pos += sizeof(bd_addr_t);
-            network_protocol_type = READ_BT_16(packet, pos);
+            network_protocol_type = READ_NET_16(packet, pos);
             pos += 2;
             break;
         case BNEP_PKT_TYPE_COMPRESSED_ETHERNET_DEST_ONLY:
             BD_ADDR_COPY(addr_dest, &packet[pos]);
             pos += sizeof(bd_addr_t);
             BD_ADDR_COPY(addr_source, channel->remote_addr);
-            network_protocol_type = READ_BT_16(packet, pos);
+            network_protocol_type = READ_NET_16(packet, pos);
             pos += 2;
             break;
         case BNEP_PKT_TYPE_CONTROL:
