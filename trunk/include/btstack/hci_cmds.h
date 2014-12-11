@@ -135,7 +135,12 @@ extern "C" {
  * @param connection_handle
  */
 #define HCI_EVENT_AUTHENTICATION_COMPLETE_EVENT            0x06
-// name not handle, no format yet
+/**
+ * @format 1BN
+ * @param status
+ * @param bd_addr
+ * @param remote_name
+ */
 #define HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE	           0x07
 /**
  * @format 121
