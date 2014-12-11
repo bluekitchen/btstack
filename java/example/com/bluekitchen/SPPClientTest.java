@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.bluekitchen.btstack.BD_ADDR;
-import com.bluekitchen.btstack.BT_UUID;
 import com.bluekitchen.btstack.BTstack;
 import com.bluekitchen.btstack.Packet;
 import com.bluekitchen.btstack.PacketHandler;
+import com.bluekitchen.btstack.RFCOMMDataPacket;
 import com.bluekitchen.btstack.Util;
 import com.bluekitchen.btstack.event.BTstackEventState;
 import com.bluekitchen.btstack.event.HCIEventDisconnectionComplete;
@@ -34,16 +34,8 @@ public class SPPClientTest implements PacketHandler {
 	 
 	List<Integer> services = new ArrayList<Integer>(10);
 	private int counter;
-	// List<String> service_name = new ArrayList<String>(10);
-	
-	private BT_UUID uuid128(byte[] att_uuid) {
-		byte [] uuid = new byte[16];
-		Util.flipX(att_uuid, uuid);	
-		return new BT_UUID(uuid);
-	}
 	
 	public void handlePacket(Packet packet){
-//		System.out.println(packet.toString());
 		if (packet instanceof HCIEventDisconnectionComplete){
 			HCIEventDisconnectionComplete event = (HCIEventDisconnectionComplete) packet;
 			testHandle = event.getConnectionHandle();
@@ -59,12 +51,6 @@ public class SPPClientTest implements PacketHandler {
 					System.out.println("BTstack working. Start SDP inquiry.");
 					state = STATE.w4_query_result;
 					byte[] serviceSearchPattern = Util.serviceSearchPatternForUUID16(rfcommServiceUUID);
-					
-//					StringBuilder sb = new StringBuilder();
-//					for (byte b:serviceSearchPattern){
-//						sb.append(String.format("%02X ", b));
-//					}
-//					System.out.println(sb.toString());
 					btstack.SDPClientQueryRFCOMMServices(remote, serviceSearchPattern);	
 				}
 			}
