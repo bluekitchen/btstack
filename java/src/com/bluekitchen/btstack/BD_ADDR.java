@@ -1,5 +1,7 @@
 package com.bluekitchen.btstack;
 
+import java.util.Arrays;
+
 public class BD_ADDR {
 	
 	public static final int LEN = 6;
@@ -33,10 +35,26 @@ public class BD_ADDR {
 		}
 		return buffer.toString();
 	}
-	
+
+	@Override
+	public int hashCode() {
+	  return Arrays.hashCode(address);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) return true;
+		if (obj == null) return false;
+		if (getClass() != obj.getClass()) return false;
+		BD_ADDR other = (BD_ADDR) obj;
+		return Arrays.equals(address, other.address);
+	}
+
 	public static void main(String args[]){
 		BD_ADDR addr = new BD_ADDR("11:22:33:44:55:66");
+		BD_ADDR addr2 = new BD_ADDR("11:22:33:44:55:66");
 		Util.hexdump(addr.getBytes());
 		System.out.println( addr.toString());
+		System.out.println("equals == " + (addr == addr2));
 	}
 }
