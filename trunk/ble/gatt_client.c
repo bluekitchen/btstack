@@ -186,6 +186,7 @@ static gatt_client_t * provide_context_for_conn_handle(uint16_t con_handle){
 
 static gatt_client_t * provide_context_for_conn_handle_and_start_timer(uint16_t con_handle){
     gatt_client_t * context = provide_context_for_conn_handle(con_handle);
+    if (!context) return NULL;
     gatt_client_timeout_start(context);
     return context;
 }
