@@ -170,7 +170,7 @@ typedef struct {
 
     timer_source_t     timer;             // Timeout timer
     int                timer_active;      // Is a timer running?
-    
+    int                retry_count;       // number of retries for CONTROL SETUP MSG
     // l2cap packet handler
     btstack_packet_handler_t packet_handler;
 } bnep_channel_t;

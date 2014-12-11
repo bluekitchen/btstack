@@ -57,6 +57,7 @@
 #include "l2cap.h"
 
 #define BNEP_CONNECTION_TIMEOUT_MS 10000
+#define BNEP_CONNECTION_MAX_RETRIES 1
 
 static linked_list_t bnep_services = NULL;
 static linked_list_t bnep_channels = NULL;
@@ -70,6 +71,8 @@ static void (*app_packet_handler)(void * connection, uint8_t packet_type,
 static bnep_channel_t * bnep_channel_for_l2cap_cid(uint16_t l2cap_cid);
 static void bnep_channel_finalize(bnep_channel_t *channel);
 static void bnep_run(void);
+static void bnep_channel_start_timer(bnep_channel_t *channel, int timeout);
+inline static void bnep_channel_state_add(bnep_channel_t *channel, BNEP_CHANNEL_STATE_VAR event);
 
 /* Emit service registered event */
 static void bnep_emit_service_registered(void *connection, uint8_t status, uint16_t service_uuid)
@@ -442,6 +445,17 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
 static void bnep_channel_timer_handler(timer_source_t *timer)
 {
     bnep_channel_t *channel = (bnep_channel_t *)linked_item_get_user((linked_item_t *) timer);
+    // retry send setup connection at least one time
+    if (channel->state == BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE){
+        if (channel->retry_count < BNEP_CONNECTION_MAX_RETRIES){
+            channel->retry_count++;
+            bnep_channel_start_timer(channel, BNEP_CONNECTION_TIMEOUT_MS);
+            bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_REQUEST); 
+            bnep_run();
+            return;
+        }
+    }
+
     log_info( "bnep_channel_timeout_handler callback: shutting down connection!");
     bnep_emit_channel_timeout(channel);
     bnep_channel_finalize(channel);
@@ -507,6 +521,7 @@ static bnep_channel_t * bnep_channel_create_for_addr(bd_addr_t *addr)
 
     channel->net_filter_count = 0;
     channel->multicast_filter_count = 0;
+    channel->retry_count = 0;
 
     /* Finally add it to the channel list */
     linked_list_add(&bnep_channels, (linked_item_t *) channel);
@@ -591,7 +606,7 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
     if ((channel->state != BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_REQUEST) &&
         (channel->state != BNEP_CHANNEL_STATE_CONNECTED)) {
         /* Ignore a connection request if not waiting for or still connected */
-        log_error("BNEP_CONNCTION_REQUEST: ignored in state %d, l2cap_cid: %d!", channel->state, channel->l2cap_cid);
+        log_error("BNEP_CONNECTION_REQUEST: ignored in state %d, l2cap_cid: %d!", channel->state, channel->l2cap_cid);
         return 0;
     }
 
@@ -605,7 +620,7 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
             uuid_offset = 2;
             break;
         default:
-            log_error("BNEP_CONNCTION_REQUEST: Invalid UUID size %d, l2cap_cid: %d!", channel->state, channel->l2cap_cid);
+            log_error("BNEP_CONNECTION_REQUEST: Invalid UUID size %d, l2cap_cid: %d!", channel->state, channel->l2cap_cid);
             response_code = BNEP_RESP_SETUP_INVALID_SERVICE_UUID_SIZE;
             break;
     }
@@ -618,13 +633,13 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
         if ((channel->uuid_dest != BNEP_UUID_PANU) && 
             (channel->uuid_dest != BNEP_UUID_NAP) &&
             (channel->uuid_dest != BNEP_UUID_GN)) {
-            log_error("BNEP_CONNCTION_REQUEST: Invalid destination service UUID: %04x", channel->uuid_dest);
+            log_error("BNEP_CONNECTION_REQUEST: Invalid destination service UUID: %04x", channel->uuid_dest);
             channel->uuid_dest = 0;
         }    
         if ((channel->uuid_source != BNEP_UUID_PANU) && 
             (channel->uuid_source != BNEP_UUID_NAP) &&
             (channel->uuid_source != BNEP_UUID_GN)) {
-            log_error("BNEP_CONNCTION_REQUEST: Invalid source service UUID: %04x", channel->uuid_source);
+            log_error("BNEP_CONNECTION_REQUEST: Invalid source service UUID: %04x", channel->uuid_source);
             channel->uuid_source = 0;
         }
 
@@ -657,20 +672,20 @@ static int bnep_handle_connection_response(bnep_channel_t *channel, uint8_t *pac
 
     if (channel->state != BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE) {
         /* Ignore a connection response in any state but WAIT_FOR_CONNECTION_RESPONSE */
-        log_error("BNEP_CONNCTION_RESPONSE: Ignored in channel state %d", channel->state);
+        log_error("BNEP_CONNECTION_RESPONSE: Ignored in channel state %d", channel->state);
         return 1 + 2;
     }
 
     response_code = READ_NET_16(packet, 1);
 
     if (response_code == BNEP_RESP_SETUP_SUCCESS) {
-        log_info("BNEP_CONNCTION_RESPONSE: Channel established to %s", bd_addr_to_str(channel->remote_addr));
+        log_info("BNEP_CONNECTION_RESPONSE: Channel established to %s", bd_addr_to_str(channel->remote_addr));
         channel->state = BNEP_CHANNEL_STATE_CONNECTED;
         /* Stop timeout timer! */
         bnep_channel_stop_timer(channel);
         bnep_emit_open_channel_complete(channel, 0);
     } else {
-        log_error("BNEP_CONNCTION_RESPONSE: Connection to %s failed. Err: %d", bd_addr_to_str(channel->remote_addr), response_code);
+        log_error("BNEP_CONNECTION_RESPONSE: Connection to %s failed. Err: %d", bd_addr_to_str(channel->remote_addr), response_code);
         bnep_channel_finalize(channel);
     }
     return 1 + 2;
@@ -1041,6 +1056,8 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             if (channel->state == BNEP_CHANNEL_STATE_CLOSED) {
                 log_info("L2CAP_EVENT_CHANNEL_OPENED: outgoing connection");
 
+                bnep_channel_start_timer(channel, BNEP_CONNECTION_TIMEOUT_MS);
+
                 /* Assign connection handle and l2cap cid */
                 channel->l2cap_cid  = l2cap_cid;
                 channel->con_handle = con_handle;
@@ -1332,8 +1349,6 @@ int bnep_connect(void * connection, bd_addr_t *addr, uint16_t l2cap_psm, uint16_
     channel->uuid_source = BNEP_UUID_PANU;
     channel->uuid_dest   = uuid_dest;
 
-    bnep_channel_start_timer(channel, BNEP_CONNECTION_TIMEOUT_MS);
-    
     l2cap_create_channel_internal(connection, bnep_packet_handler, *addr, l2cap_psm, l2cap_max_mtu());
     
     return 0;
