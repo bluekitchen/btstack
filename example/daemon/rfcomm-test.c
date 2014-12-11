@@ -104,7 +104,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
                 case RFCOMM_EVENT_PERSISTENT_CHANNEL:
                     rfcomm_channel_nr = packet[3];
                     printf("RFCOMM channel %u was assigned by BTdaemon\n", rfcomm_channel_nr);
-                    bt_send_cmd(&rfcomm_register_service, rfcomm_channel_nr, 1000);  // reserved channel, mtu=100
+                    bt_send_cmd(&rfcomm_register_service, rfcomm_channel_nr, 0xffff);  // reserved channel, mtu limited by l2cap
                     break;
                     
                 case RFCOMM_EVENT_SERVICE_REGISTERED:

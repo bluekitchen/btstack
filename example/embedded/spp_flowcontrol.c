@@ -130,7 +130,7 @@ int btstack_main(int argc, const char * argv[]){
     // init RFCOMM
     rfcomm_init();
     rfcomm_register_packet_handler(packet_handler);
-    rfcomm_register_service_with_initial_credits_internal(NULL, rfcomm_channel_nr, 100, 1);  // reserved channel, mtu=100, 1 credit
+    rfcomm_register_service_with_initial_credits_internal(NULL, rfcomm_channel_nr, 0xffff, 1);  // reserved channel, mtu limited by l2cap, 1 credit
 
     // init SDP, create record for SPP and register with SDP
     sdp_init();
