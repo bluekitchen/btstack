@@ -171,7 +171,7 @@ static gatt_client_t * get_gatt_client_context_for_handle(uint16_t handle){
 // returns existing one, or tries to setup new one
 static gatt_client_t * provide_context_for_conn_handle(uint16_t con_handle){
     gatt_client_t * context = get_gatt_client_context_for_handle(con_handle);
-    if (context) return context;
+    if (context) return  context;
 
     context = btstack_memory_gatt_client_get();
     if (!context) return NULL;
@@ -180,8 +180,13 @@ static gatt_client_t * provide_context_for_conn_handle(uint16_t con_handle){
     context->mtu = ATT_DEFAULT_MTU;
     context->mtu_state = SEND_MTU_EXCHANGE;
     context->gatt_client_state = P_READY;
-    gatt_client_timeout_start(context);
     linked_list_add(&gatt_client_connections, (linked_item_t*)context);
+    return context;
+}
+
+static gatt_client_t * provide_context_for_conn_handle_and_start_timer(uint16_t con_handle){
+    gatt_client_t * context = provide_context_for_conn_handle(con_handle);
+    gatt_client_timeout_start(context);
     return context;
 }
 
@@ -1179,7 +1184,7 @@ le_command_status_t gatt_client_signed_write_without_response(uint16_t gatt_clie
 }
 
 le_command_status_t gatt_client_discover_primary_services(uint16_t gatt_client_id, uint16_t con_handle){
-    gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
 
@@ -1194,7 +1199,7 @@ le_command_status_t gatt_client_discover_primary_services(uint16_t gatt_client_i
 
 
 le_command_status_t gatt_client_discover_primary_services_by_uuid16(uint16_t gatt_client_id, uint16_t con_handle, uint16_t uuid16){
-    gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
     
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
@@ -1210,7 +1215,7 @@ le_command_status_t gatt_client_discover_primary_services_by_uuid16(uint16_t gat
 }
 
 le_command_status_t gatt_client_discover_primary_services_by_uuid128(uint16_t gatt_client_id, uint16_t con_handle, const uint8_t * uuid128){
-    gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
     
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
@@ -1226,7 +1231,7 @@ le_command_status_t gatt_client_discover_primary_services_by_uuid128(uint16_t ga
 }
 
 le_command_status_t gatt_client_discover_characteristics_for_service(uint16_t gatt_client_id, uint16_t con_handle, le_service_t *service){
-    gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
     
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
@@ -1242,7 +1247,7 @@ le_command_status_t gatt_client_discover_characteristics_for_service(uint16_t ga
 }
 
 le_command_status_t gatt_client_find_included_services_for_service(uint16_t gatt_client_id, uint16_t con_handle, le_service_t *service){
-    gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
     
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
@@ -1257,7 +1262,7 @@ le_command_status_t gatt_client_find_included_services_for_service(uint16_t gatt
 }
 
 le_command_status_t gatt_client_discover_characteristics_for_handle_range_by_uuid16(uint16_t gatt_client_id, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16){
-    gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
     
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
@@ -1276,7 +1281,7 @@ le_command_status_t gatt_client_discover_characteristics_for_handle_range_by_uui
 }
 
 le_command_status_t gatt_client_discover_characteristics_for_handle_range_by_uuid128(uint16_t gatt_client_id, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle, uint8_t * uuid128){
-    gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
     
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
@@ -1304,7 +1309,7 @@ le_command_status_t gatt_client_discover_characteristics_for_service_by_uuid128(
 }
 
 le_command_status_t gatt_client_discover_characteristic_descriptors(uint16_t gatt_client_id, uint16_t con_handle, le_characteristic_t *characteristic){
-    gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
     
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
@@ -1323,7 +1328,7 @@ le_command_status_t gatt_client_discover_characteristic_descriptors(uint16_t gat
 }
 
 le_command_status_t gatt_client_read_value_of_characteristic_using_value_handle(uint16_t gatt_client_id, uint16_t con_handle, uint16_t value_handle){
-    gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
     
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
@@ -1342,7 +1347,7 @@ le_command_status_t gatt_client_read_value_of_characteristic(uint16_t gatt_clien
 
 
 le_command_status_t gatt_client_read_long_value_of_characteristic_using_value_handle(uint16_t gatt_client_id, uint16_t con_handle, uint16_t value_handle){
-    gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
     
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
@@ -1373,7 +1378,7 @@ le_command_status_t gatt_client_write_value_of_characteristic_without_response(u
 }
 
 le_command_status_t gatt_client_write_value_of_characteristic(uint16_t gatt_client_id, uint16_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
-    gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
     
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
@@ -1388,7 +1393,7 @@ le_command_status_t gatt_client_write_value_of_characteristic(uint16_t gatt_clie
 }
 
 le_command_status_t gatt_client_write_long_value_of_characteristic(uint16_t gatt_client_id, uint16_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
-    gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
     
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
@@ -1404,7 +1409,7 @@ le_command_status_t gatt_client_write_long_value_of_characteristic(uint16_t gatt
 }
 
 le_command_status_t gatt_client_reliable_write_long_value_of_characteristic(uint16_t gatt_client_id, uint16_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){
-    gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
     
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
@@ -1420,7 +1425,7 @@ le_command_status_t gatt_client_reliable_write_long_value_of_characteristic(uint
 }
 
 le_command_status_t gatt_client_write_client_characteristic_configuration(uint16_t gatt_client_id, uint16_t con_handle, le_characteristic_t * characteristic, uint16_t configuration){
-    gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
     
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
@@ -1446,7 +1451,7 @@ le_command_status_t gatt_client_write_client_characteristic_configuration(uint16
 }
 
 le_command_status_t gatt_client_read_characteristic_descriptor(uint16_t gatt_client_id, uint16_t con_handle, le_characteristic_descriptor_t * descriptor){
-    gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
     
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
@@ -1464,7 +1469,7 @@ le_command_status_t gatt_client_read_characteristic_descriptor(uint16_t gatt_cli
 }
 
 le_command_status_t gatt_client_read_long_characteristic_descriptor(uint16_t gatt_client_id, uint16_t con_handle, le_characteristic_descriptor_t * descriptor){
-    gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
     
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
@@ -1478,7 +1483,7 @@ le_command_status_t gatt_client_read_long_characteristic_descriptor(uint16_t gat
 }
 
 le_command_status_t gatt_client_write_characteristic_descriptor(uint16_t gatt_client_id, uint16_t con_handle, le_characteristic_descriptor_t * descriptor, uint16_t length, uint8_t * value){
-    gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
     
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
@@ -1494,7 +1499,7 @@ le_command_status_t gatt_client_write_characteristic_descriptor(uint16_t gatt_cl
 }
 
 le_command_status_t gatt_client_write_long_characteristic_descriptor(uint16_t gatt_client_id, uint16_t con_handle, le_characteristic_descriptor_t * descriptor, uint16_t length, uint8_t * value){
-    gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
     
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
