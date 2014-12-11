@@ -336,9 +336,9 @@ def create_event(event_name, format, args):
      'Y' : 'return Util.readGattCharacteristic(data, %u);',
      'Z' : 'return Util.readGattCharacteristicDescriptor(data, %u);',
      'T' : 'int offset = %u; \n        return Util.getText(data, offset, getPayloadLen()-offset);',
+     'N' : 'return Util.getText(data, %u, 248);',
      # 'D' : 'Util.storeBytes(data, %u, 8);',
      # 'E' : 'Util.storeBytes(data, %u, 240);',
-     # 'N' : 'Util.storeString(data, %u, 248);',
      # 'P' : 'Util.storeBytes(data, %u, 16);',
      # 'A' : 'Util.storeBytes(data, %u, 31);',
      # 'S' : 'Util.storeBytes(data, %u);'
