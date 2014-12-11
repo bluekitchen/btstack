@@ -51,10 +51,11 @@ public class BD_ADDR {
 	}
 
 	public static void main(String args[]){
-		BD_ADDR addr = new BD_ADDR("11:22:33:44:55:66");
-		BD_ADDR addr2 = new BD_ADDR("11:22:33:44:55:66");
-		Util.hexdump(addr.getBytes());
-		System.out.println( addr.toString());
-		System.out.println("equals == " + (addr == addr2));
+		BD_ADDR a = new BD_ADDR("11:22:33:44:55:66");
+		BD_ADDR b = new BD_ADDR("11:22:33:44:55:66");
+		// Util.hexdump(addr.getBytes());
+		System.out.println( "a = " + a.toString());
+		System.out.println( "b = " + b.toString());
+		System.out.println("a.equals(b) == " + a.equals(b));
 	}
 }
