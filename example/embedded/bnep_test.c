@@ -19,6 +19,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <termios.h>
 
 
 #include <btstack/hci_cmds.h>
@@ -32,15 +33,18 @@
 #include "pan.h"
 
 // prototypes
- void show_usage();
+static void show_usage();
 
 // Configuration for PTS
 static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};    
+// static bd_addr_t other_addr = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
+static bd_addr_t other_addr = { 0,0,0,0,0,0};
 
 // state
-static uint16_t bnep_protocol_id    = 0x000f;
-static uint16_t bnep_l2cap_psm      = 0;
-static uint32_t bnep_remote_uuid    = 0;
+static bd_addr_t local_addr;
+static uint16_t bnep_protocol_uuid  = 0x000f;
+static uint16_t bnep_l2cap_psm      = 0x000f;
+static uint32_t bnep_remote_uuid    = 0x1115;
 static uint16_t bnep_version        = 0;
 static uint16_t bnep_cid            = 0;
 
@@ -48,10 +52,41 @@ static uint8_t network_buffer[BNEP_MTU_MIN];
 static size_t  network_buffer_len = 0;
 
 /** Testig User Interface **/
-void show_usage(){
+static data_source_t stdin_source;
+
+static void send_ethernet_packet(int src_compressed, int dst_compressed){
+    // setup packet
+    int pos = 0;
+    BD_ADDR_COPY(&network_buffer[pos], src_compressed ? pts_addr   : other_addr);
+    pos += 6;
+    BD_ADDR_COPY(&network_buffer[pos], dst_compressed ? local_addr : other_addr);
+    pos += 6;
+    net_store_16(network_buffer, pos, 0x800);  // IPv4
+    pos += 2;
+
+    // dummy data Ethernet packet
+    int i;
+    for (i = 60; i >= 0 ; i--){
+        network_buffer[pos++] = i;
+    }
+
+    // test data payload
+    for (i = 0; i < 0x5a0 ; i++){
+        network_buffer[pos++] = i;
+    }
+
+    network_buffer_len = pos;
+
+    if (bnep_can_send_packet_now(bnep_cid)) {
+        bnep_send(bnep_cid, network_buffer, network_buffer_len);
+        network_buffer_len = 0;
+    }
+}
+
+static void show_usage(){
 
     printf("\n--- Bluetooth BNEP Test Console ---\n");
-    printf("Local UUID %04x, remote UUID %04x\n", 0, 0);
+    printf("Local UUID %04x, remote UUID %04x, \n", BNEP_UUID_PANU, bnep_remote_uuid);
     printf("---\n");
     printf("p - connect to PTS\n");
     printf("e - send general Ethernet packet\n");
@@ -65,20 +100,30 @@ void show_usage(){
     printf("---\n");
 }
 
-int  stdin_process(struct data_source *ds){
+static int stdin_process(struct data_source *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
 
     switch (buffer){
         case 'p':
+            printf("Connecting to PTS at %s...\n", bd_addr_to_str(pts_addr));
+            bnep_connect(NULL, &pts_addr, bnep_l2cap_psm, bnep_remote_uuid);
             break;
         case 'e':
+            printf("Sending general ethernet packet\n");
+            send_ethernet_packet(0,0);
             break;
         case 'c':
+            printf("Sending compressed ethernet packet\n");
+            send_ethernet_packet(1,1);
             break;
         case 's':
+            printf("Sending src only compressed ethernet packet\n");
+            send_ethernet_packet(1,0);
             break;
         case 'd':
+            printf("Sending dst only ethernet packet\n");
+            send_ethernet_packet(0,1);
             break;
         case 'f':
             break;
@@ -90,6 +135,25 @@ int  stdin_process(struct data_source *ds){
 
     }
     return 0;
+}
+
+static void setup_cli(){
+
+    struct termios term = {0};
+    if (tcgetattr(0, &term) < 0)
+            perror("tcsetattr()");
+    term.c_lflag &= ~ICANON;
+    term.c_lflag &= ~ECHO;
+    term.c_cc[VMIN] = 1;
+    term.c_cc[VTIME] = 0;
+    if (tcsetattr(0, TCSANOW, &term) < 0)
+            perror("tcsetattr ICANON");
+
+    stdin_source.fd = 0; // stdin
+    stdin_source.process = &stdin_process;
+    run_loop_add_data_source(&stdin_source);
+
+    show_usage();
 }
 
 /*************** PANU client routines *********************/
@@ -115,8 +179,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
                 case HCI_EVENT_COMMAND_COMPLETE:
 					if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)){
-                        bt_flip_addr(event_addr, &packet[6]);
-                        printf("BD-ADDR: %s\n", bd_addr_to_str(event_addr));
+                        bt_flip_addr(local_addr, &packet[6]);
+                        printf("BD-ADDR: %s\n", bd_addr_to_str(local_addr));
                         break;
                     }
                     break;
@@ -191,6 +255,8 @@ int btstack_main(int argc, const char * argv[]){
 
     /* Turn on the device */
     hci_power_control(HCI_POWER_ON);
+
+    setup_cli();
 
     /* Start mainloop */
     run_loop_execute(); 
