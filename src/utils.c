@@ -160,13 +160,13 @@ void hexdumpf(const void *data, int size){
         buffer[j++] = ' ';     
         if (j >= 6*16 ){
             buffer[j] = 0;
-            printf("%s", buffer);
+            printf("%s\n", buffer);
             j = 0;
         }
     }
     if (j != 0){
         buffer[j] = 0;
-        printf("%s", buffer);
+        printf("%s\n", buffer);
     }
 }
 
