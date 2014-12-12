@@ -70,7 +70,7 @@ EXAMPLES = 					\
 	spp_streamer			\
 
 # requires termios / command line support
-EXAMPLES_CLI = ble_peripheral ble_peripheral_sm_minimal l2cap_test ancs_client classic_test
+EXAMPLES_CLI = ble_peripheral ble_peripheral_sm_minimal l2cap_test ancs_client classic_test bnep_test
 
 # .o for .c
 CORE_OBJ    = $(CORE:.c=.o)
@@ -133,6 +133,9 @@ l2cap_test: ${CORE_OBJ} ${COMMON_OBJ} l2cap_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 classic_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} classic_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+bnep_test: ${CORE_OBJ} ${COMMON_OBJ} bnep_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL} ble_client.c
