@@ -127,6 +127,20 @@ void      de_add_uuid128(uint8_t * seq, uint8_t * uuid);
 uint32_t  de_get_uuid32(uint8_t * element);
 int       de_get_normalized_uuid(uint8_t *uuid128, uint8_t *element);
 
+// MARK: DES iterator
+typedef struct {
+    uint8_t * element;
+    uint16_t pos;
+    uint16_t length;
+} des_iterator_t;
+
+int des_iterator_init(des_iterator_t * it, uint8_t * element);
+int  des_iterator_has_more(des_iterator_t * it);
+de_type_t des_iterator_get_type (des_iterator_t * it);
+uint16_t des_iterator_get_size (des_iterator_t * it);
+uint8_t * des_iterator_get_element(des_iterator_t * it);
+void des_iterator_next(des_iterator_t * it);
+
 // MARK: SDP
 uint16_t  sdp_append_attributes_in_attributeIDList(uint8_t *record, uint8_t *attributeIDList, uint16_t startOffset, uint16_t maxBytes, uint8_t *buffer);
 uint8_t * sdp_get_attribute_value_for_attribute_id(uint8_t * record, uint16_t attributeID);

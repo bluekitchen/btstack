@@ -12,19 +12,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "sdp_parser.h"
-#include "sdp_client.h"
-#include "sdp_query_util.h"
-
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>
+#include <btstack/sdp_util.h>
 
 #include "hci.h"
 #include "btstack_memory.h"
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "sdp_parser.h"
-#include "des_iterator.h"
+#include "sdp_client.h"
+#include "sdp_query_util.h"
 #include "pan.h"
 
 int record_id = -1;

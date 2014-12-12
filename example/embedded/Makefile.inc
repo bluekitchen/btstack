@@ -9,10 +9,6 @@ CFLAGS += -I${BTSTACK_ROOT}/include
 CFLAGS += -I${BTSTACK_ROOT}/src
 CFLAGS += -I${BTSTACK_ROOT}
 
-# TODO: move des iterator into /src
-VPATH  +=   ${BTSTACK_ROOT}/test/des_iterator
-CFLAGS += -I${BTSTACK_ROOT}/test/des_iterator
-
 CORE += \
     btstack_memory.c            \
     linked_list.c	            \
@@ -56,9 +52,6 @@ SM_REAL += \
 SM_MINIMAL += \
 	sm_minimal.c  		 	    \
     central_device_db_dummy.c   \
-
-SDP_DES = \
-	des_iterator.c  \
 
 PAN += \
 	pan.c \
@@ -109,7 +102,7 @@ sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} ${PAN_OBJ} ${SDP_CLIENT} sdp_rfcomm_
 sdp_general_query: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} sdp_general_query.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-sdp_bnep_query: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} ${SDP_DES} sdp_bnep_query.c  
+sdp_bnep_query: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} sdp_bnep_query.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 spp_counter: ${CORE_OBJ} ${COMMON_OBJ} spp_counter.c
@@ -133,7 +126,7 @@ gap_inquiry: ${CORE_OBJ} ${COMMON_OBJ} gap_inquiry.c
 gap_inquiry_and_bond: ${CORE_OBJ} ${COMMON_OBJ} gap_inquiry_and_bond.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_DES} ${SDP_CLIENT} panu_demo.c  
+panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} panu_demo.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 l2cap_test: ${CORE_OBJ} ${COMMON_OBJ} l2cap_test.c
@@ -167,4 +160,8 @@ clean:
 	rm -f  ${BTSTACK_ROOT}/include/btstack/version.h
 	rm -f  ancs_client.h profile.h spp_and_le_counter.h
 	rm -rf *.dSYM
+	rm -rf ${BTSTACK_ROOT}/ble/*.o
+	rm -rf ${BTSTACK_ROOT}/src/*.o
+	rm -rf ${BTSTACK_ROOT}/platforms/posix/src/*.o
+	
 	
