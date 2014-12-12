@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "des_iterator.h"
+#include <btstack/sdp_util.h>
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 

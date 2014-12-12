@@ -10,8 +10,7 @@ LDFLAGS += -L$(CPPUTEST_HOME) -lCppUTest -lCppUTestExt
 
 COMMON = \
     ${BTSTACK_ROOT}/src/sdp_util.c	              \
-	${BTSTACK_ROOT}/src/utils.c			          \
-    des_iterator.c
+	${BTSTACK_ROOT}/src/utils.c			          
  
 COMMON_OBJ = $(COMMON:.c=.o)
 

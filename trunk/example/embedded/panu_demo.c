@@ -26,6 +26,7 @@
 
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>
+#include <btstack/sdp_util.h>
 
 #include "hci.h"
 #include "btstack_memory.h"
@@ -34,7 +35,6 @@
 #include "sdp_parser.h"
 #include "sdp_client.h"
 #include "sdp_query_util.h"
-#include "des_iterator.h"
 #include "pan.h"
 
 static int record_id = -1;
