@@ -12,9 +12,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+
+#ifdef __linux
 #include <linux/in.h>
 #include <linux/if.h>
 #include <linux/if_tun.h>
+#endif
+
 #include <net/if_arp.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
@@ -56,14 +60,20 @@ static uint8_t network_buffer[BNEP_MTU_MIN];
 static size_t  network_buffer_len = 0;
 
 static data_source_t tap_dev_ds;
-/*************** TUN / TAP interface routines *********************
- *                                                                * 
- * https://www.kernel.org/doc/Documentation/networking/tuntap.txt *
- *                                                                *
- ******************************************************************/
+
+/*************** TUN / TAP interface routines **********************
+ *                                                                 * 
+ * Available on Linux by default, custom kernel extension on OS X *
+ *                                                                 *
+ *******************************************************************/
 
 int tap_alloc(char *dev, bd_addr_t bd_addr)
 {
+
+#ifdef __linux
+    //
+    // see https://www.kernel.org/doc/Documentation/networking/tuntap.txt
+    //
     struct ifreq ifr;
     int fd_dev;
     int fd_socket;
@@ -136,6 +146,16 @@ int tap_alloc(char *dev, bd_addr_t bd_addr)
 	close(fd_socket);
     
     return fd_dev;
+#elif defined(__APPLE__)
+    // open TUN device
+    // set device name to dev
+    // open netlink socket?
+    // set hw addr
+    // check reading interface flags
+    // bring up the interface
+    return -1;
+#endif
+    return -1;
 }
 
 int process_tap_dev_data(struct data_source *ds) 
