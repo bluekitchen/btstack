@@ -110,6 +110,19 @@ int  linked_list_remove(linked_list_t * list, linked_item_t *item){    // <-- re
     return -1;
 }
 
+/**
+ * @returns number of items in list
+ */
+ int linked_list_count(linked_list_t * list){
+    linked_item_t *it;
+    int counter = 0;
+    for (it = (linked_item_t *) list; it ; it = it->next) {
+        counter++;
+    }
+    return counter; 
+}
+
+
 void linked_item_set_user(linked_item_t *item, void *user_data){
     item->next = (linked_item_t *) 0;
     item->user_data = user_data;
