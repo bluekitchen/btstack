@@ -423,6 +423,13 @@ int rfcomm_send_port_configuration(uint16_t rfcomm_cid, rpn_baud_t baud_rate, rp
 // Query remote port 
 int rfcomm_query_port_configuration(uint16_t rfcomm_cid);
 
+// allow to create rfcomm packet in outgoing buffer
+int       rfcomm_reserve_packet_buffer(void);
+void      rfcomm_release_packet_buffer(void);
+uint8_t * rfcomm_get_outgoing_buffer(void);
+uint16_t  rfcomm_get_max_frame_size(uint16_t rfcomm_cid);
+int       rfcomm_send_prepared(uint16_t rfcomm_cid, uint16_t len);
+
 #if defined __cplusplus
 }
 #endif
