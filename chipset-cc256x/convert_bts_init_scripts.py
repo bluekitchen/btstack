@@ -74,7 +74,7 @@ def append_class2_single_power(additions, str_list, data_indent):
     str_list.append('// BTstack: added HCI_VS_SET_CLASS2_SINGLE_POWER 0xFD87 template\n');
     str_list.append(data_indent)
     str_list.append("0x01, 0x87, 0xfd, 0x03, 0x0d, 0x0d, 0x0d,\n\n");
-    return 9
+    return 7
 
 def append_ehcill(additions, str_list, data_indent):
     additions.append("- added eHCILL template")
