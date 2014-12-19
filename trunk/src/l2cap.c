@@ -300,8 +300,8 @@ static void l2cap_stop_rtx(l2cap_channel_t * channel){
 }
 
 static void l2cap_start_rtx(l2cap_channel_t * channel){
-    log_info("l2cap_start_rtx for local cid 0x%02x", channel->local_cid);
     l2cap_stop_rtx(channel);
+    log_info("l2cap_start_rtx for local cid 0x%02x", channel->local_cid);
     run_loop_set_timer_handler(&channel->rtx, l2cap_rtx_timeout);
     run_loop_set_timer(&channel->rtx, L2CAP_RTX_TIMEOUT_MS);
     run_loop_add_timer(&channel->rtx);
