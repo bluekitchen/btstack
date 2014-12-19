@@ -446,9 +446,9 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						}
 						device.pageScanRepetitionMode =   packet [offset];
 						offset += 2; // pageScanRepetitionMode + Reserved
-						device.classOfDevice = READ_BT_24(offset);
+						device.classOfDevice = READ_BT_24(packet, offset);
 						offset += 3;
-						device.clockOffset = READ_BT_16(offset) & 0x7fff;
+						device.clockOffset = READ_BT_16(packet, offset) & 0x7fff;
 						offset += 2;
 						device.rssi = packet[offset];
 						offset += 1;
