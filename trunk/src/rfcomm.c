@@ -1581,6 +1581,16 @@ static int rfcomm_channel_ready_for_open(rfcomm_channel_t *channel){
     return 1;
 }
 
+static int rfcomm_channel_ready_for_incoming_dlc_setup(rfcomm_channel_t * channel){
+    log_info("rfcomm_channel_ready_for_incoming_dlc_setup state var %04x", channel->state_var);
+    // Client accept and SABM/UA is required, PN RSP is needed if PN was received
+    if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_CLIENT_ACCEPTED) == 0) return 0;
+    if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_RCVD_SABM      ) == 0) return 0;
+    if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_UA        ) != 0) return 0;
+    if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_PN_RSP    ) != 0) return 0;
+    return 1;
+}            
+
 inline static void rfcomm_channel_state_add(rfcomm_channel_t *channel, RFCOMM_CHANNEL_STATE_VAR event){
     channel->state_var = (RFCOMM_CHANNEL_STATE_VAR) (channel->state_var | event);    
 }
@@ -1703,7 +1713,7 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                     break;
             }
             break;
-            
+
         case RFCOMM_CHANNEL_INCOMING_SETUP:
             switch (event->type){
                 case CH_EVT_RCVD_SABM:
@@ -1720,24 +1730,23 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                     }
                     break;
                 case CH_EVT_READY_TO_SEND:
+                    // if / else if is used to check for state transition after sending
                     if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_PN_RSP){
                         log_info("Sending UIH Parameter Negotiation Respond for #%u", channel->dlci);
                         rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_PN_RSP);
                         rfcomm_send_uih_pn_response(multiplexer, channel->dlci, channel->pn_priority, channel->max_frame_size);
-                    }
-                    else if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_UA){
+                    } else if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_SEND_UA){
                         log_info("Sending UA #%u", channel->dlci);
                         rfcomm_channel_state_remove(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_UA);
                         rfcomm_send_ua(multiplexer, channel->dlci);
                     }
-                    if ((channel->state_var & RFCOMM_CHANNEL_STATE_VAR_CLIENT_ACCEPTED) && (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_RCVD_SABM)) {
-                        log_info("Accepted, requesting send MSC CMD and send Credits");
+                    if (rfcomm_channel_ready_for_incoming_dlc_setup(channel)){
+                        log_info("Incomping setup done, requesting send MSC CMD and send Credits");
                         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_MSC_CMD);
                         rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_CREDITS);
                         channel->state = RFCOMM_CHANNEL_DLC_SETUP;
-                    } 
+                    }
                     break;
-                    
                 default:
                     break;
             }
@@ -2236,6 +2245,8 @@ void rfcomm_accept_connection_internal(uint16_t rfcomm_cid){
             if (channel->state_var & RFCOMM_CHANNEL_STATE_VAR_RCVD_SABM){
                 rfcomm_channel_state_add(channel, RFCOMM_CHANNEL_STATE_VAR_SEND_UA);
             }
+            // at least one of { PN RSP, UA } needs to be sent
+            // state transistion incoming setup -> dlc setup happens in rfcomm_run after these have been sent
             break;
         default:
             break;
