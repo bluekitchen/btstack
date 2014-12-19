@@ -74,6 +74,7 @@ public class SocketConnectionUnix extends SocketConnection {
 		int len        = Util.readBt16(inHeader, 4);
 		
 		Util.readExactly(in, inPayload, 0, len);
+		if (bytes_read != len) return null;
 
 		Packet packet = new Packet(packetType, channel ,inPayload, len);
 		return packet;
