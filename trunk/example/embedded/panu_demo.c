@@ -7,26 +7,33 @@
 
 #include "btstack-config.h"
 
+#include <arpa/inet.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <ifaddrs.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
+#include <net/if.h>
+#include <net/if_arp.h>
+#include <net/if_types.h>
+#include <netinet/if_ether.h>
+#include <netinet/in.h>
+
+#include <sys/ioctl.h>
+#include <sys/param.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #ifdef __linux
 #include <linux/in.h>
 #include <linux/if.h>
 #include <linux/if_tun.h>
 #endif
-
-#include <net/if_arp.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <errno.h>
-
 
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>
@@ -52,40 +59,51 @@ static uint8_t   attribute_value[1000];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
 //static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
-static bd_addr_t remote = {0xE0,0x06,0xE6,0xBB,0x95,0x79};
+// static bd_addr_t remote = {0xE0,0x06,0xE6,0xBB,0x95,0x79};
+static bd_addr_t remote = {0x84,0x38,0x35,0x65,0xD1,0x15};  // MacBook 2013 
 
 static int  tap_fd = -1;
-static char tap_dev_name[16] = "bnep%d";
 static uint8_t network_buffer[BNEP_MTU_MIN];
 static size_t  network_buffer_len = 0;
+
+#ifdef __APPLE__
+// tuntaposx provides fixed set of tapX devices
+static const char * tap_dev = "/dev/tap0";
+static char tap_dev_name[16] = "tap0";
+#endif
+
+#ifdef __linux
+// Linux uses single control device to bring up tunX or tapX interface
+static const char * tap_dev = "/dev/net/tun";
+static char tap_dev_name[16] = "bnep";
+#endif
+
 
 static data_source_t tap_dev_ds;
 
 /*************** TUN / TAP interface routines **********************
  *                                                                 * 
- * Available on Linux by default, custom kernel extension on OS X *
- *                                                                 *
+ * Available on Linux by default, assumes tuntaposx on OS X        *
+ * interface name: set to "bnep" on linux, same as tapX on OS X    *
  *******************************************************************/
 
 int tap_alloc(char *dev, bd_addr_t bd_addr)
 {
 
-#ifdef __linux
     //
     // see https://www.kernel.org/doc/Documentation/networking/tuntap.txt
     //
     struct ifreq ifr;
     int fd_dev;
     int fd_socket;
-    int err;
 
-    if( (fd_dev = open("/dev/net/tun", O_RDWR)) < 0 ) {
-        fprintf(stderr, "TAP: Error opening /dev/net/tun: %s\n", strerror(errno));
+    if( (fd_dev = open(tap_dev, O_RDWR)) < 0 ) {
+        fprintf(stderr, "TAP: Error opening %s: %s\n", tap_dev, strerror(errno));
         return -1;
     }
 
+#ifdef __linux
     memset(&ifr, 0, sizeof(ifr));
-
     /* Flags: IFF_TUN   - TUN device (no Ethernet headers) 
      *        IFF_TAP   - TAP device  
      *
@@ -96,12 +114,17 @@ int tap_alloc(char *dev, bd_addr_t bd_addr)
         strncpy(ifr.ifr_name, dev, IFNAMSIZ);
     }
 
+    int err;
     if( (err = ioctl(fd_dev, TUNSETIFF, (void *) &ifr)) < 0 ) {
         fprintf(stderr, "TAP: Error setting device name: %s\n", strerror(errno));
         close(fd_dev);
         return -1;
     }  
     strcpy(dev, ifr.ifr_name);
+#endif
+#ifdef __APPLE__
+    dev = tap_dev_name;
+#endif    
 
     fd_socket = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
 	if (fd_socket < 0) {
@@ -113,9 +136,9 @@ int tap_alloc(char *dev, bd_addr_t bd_addr)
     /* Configure the MAC address of the newly created bnep(x) device to the local bd_address */
     memset (&ifr, 0, sizeof(struct ifreq));
     strcpy(ifr.ifr_name, dev);
-    memcpy(ifr.ifr_hwaddr.sa_data, bd_addr, sizeof(bd_addr_t));
+#ifdef __linux
     ifr.ifr_hwaddr.sa_family = ARPHRD_ETHER;
-
+    memcpy(ifr.ifr_hwaddr.sa_data, bd_addr, sizeof(bd_addr_t));
 	if (ioctl(fd_socket, SIOCSIFHWADDR, &ifr) == -1) {
         close(fd_dev);
         close(fd_socket);
@@ -123,6 +146,19 @@ int tap_alloc(char *dev, bd_addr_t bd_addr)
         exit(1);
 		return -1;
 	}
+#endif
+#ifdef __APPLE__
+    ifr.ifr_addr.sa_len = ETHER_ADDR_LEN;
+    ifr.ifr_addr.sa_family = AF_LINK;
+    (void)memcpy(ifr.ifr_addr.sa_data, bd_addr, ETHER_ADDR_LEN);
+    if (ioctl(fd_socket, SIOCSIFLLADDR, &ifr) == -1) {
+        close(fd_dev);
+        close(fd_socket);
+        fprintf(stderr, "TAP: Error setting hw addr: %s\n", strerror(errno));
+        exit(1);
+        return -1;
+}
+#endif    
 
     /* Bring the interface up */
 	if (ioctl(fd_socket, SIOCGIFFLAGS, &ifr) == -1) {
@@ -146,16 +182,6 @@ int tap_alloc(char *dev, bd_addr_t bd_addr)
 	close(fd_socket);
     
     return fd_dev;
-#elif defined(__APPLE__)
-    // open TUN device
-    // set device name to dev
-    // open netlink socket?
-    // set hw addr
-    // check reading interface flags
-    // bring up the interface
-    return -1;
-#endif
-    return -1;
 }
 
 int process_tap_dev_data(struct data_source *ds) 
@@ -286,6 +312,9 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                                 printf("l2cap_psm 0x%04x, bnep_version 0x%04x\n", bnep_l2cap_psm, bnep_version);
 
                                 /* Create BNEP connection */
+                                // hack - SDP Query seems to be broken
+                                // bnep_l2cap_psm = 0x000f;
+                                // bnep_remote_uuid = 0x1117;  // adhoc group networking
                                 bnep_connect(NULL, &remote, bnep_l2cap_psm, bnep_remote_uuid);
                             }
                             break;
@@ -446,7 +475,7 @@ int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
     printf("Client HCI init done\n");
-    
+
     /* Initialize L2CAP */
     l2cap_init();
     l2cap_register_packet_handler(packet_handler);
