@@ -155,7 +155,7 @@ uint32_t de_get_uuid32(uint8_t * element){
     if (!validUuid128) return 0;
     int hasBlueoothBaseUuid = sdp_has_blueooth_base_uuid(uuid128);
     if (!hasBlueoothBaseUuid) return 0;
-    return READ_NET_32(element, 0);
+    return READ_NET_32(uuid128, 0);
 }
 
 // functions to create record
