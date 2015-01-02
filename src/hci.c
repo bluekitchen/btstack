@@ -1025,8 +1025,8 @@ static void event_handler(uint8_t *packet, int size){
                     hci_stack->local_supported_features[4], hci_stack->local_supported_features[5],
                     hci_stack->local_supported_features[6], hci_stack->local_supported_features[7]);
 
-                // determine usable ACL packet types based buffer size and supported features
-                hci_stack->packet_types = hci_acl_packet_types_for_buffer_size_and_local_features(hci_stack->acl_data_packet_length, &hci_stack->local_supported_features[0]);
+                // determine usable ACL packet types based on host buffer size and supported features
+                hci_stack->packet_types = hci_acl_packet_types_for_buffer_size_and_local_features(HCI_ACL_PAYLOAD_SIZE, &hci_stack->local_supported_features[0]);
                 log_info("packet types %04x", hci_stack->packet_types); 
 
                 // Classic/LE
