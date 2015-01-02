@@ -40,6 +40,17 @@ static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 // static bd_addr_t other_addr = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
 static bd_addr_t other_addr = { 0,0,0,0,0,0};
 
+// Sample network protocol type filter set:
+//   Ethernet type/length values the range 0x0000 - 0x05dc (Length), 0x05dd - 0x05ff (Reserved in IEEE 802.3)
+//   Ethernet type 0x0600-0xFFFF
+static bnep_net_filter_t network_protocol_filter [3] = {{0x0000, 0x05dc}, {0x05dd, 0x05ff}, {0x0600, 0xFFFF}};
+
+// Sample multicast filter set:
+//   Multicast filter range set to 00:00:00:00:00:00 - 00:00:00:00:00:00 means: We do not want to receive any multicast traffic
+//   Ethernet type 0x0600-0xFFFF
+static bnep_multi_filter_t multicast_filter [1] = {{{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}};
+
+
 // state
 static bd_addr_t local_addr;
 //static uint16_t bnep_protocol_uuid  = 0x000f;
@@ -81,6 +92,14 @@ static void send_ethernet_packet(int src_compressed, int dst_compressed){
         bnep_send(bnep_cid, network_buffer, network_buffer_len);
         network_buffer_len = 0;
     }
+}
+
+static void set_network_protocol_filter() {
+    bnep_set_net_type_filter(bnep_cid, network_protocol_filter, 3);
+}
+
+static void set_multicast_filter() {
+    bnep_set_multicast_filter(bnep_cid, multicast_filter, 1);
 }
 
 static void show_usage(){
@@ -126,8 +145,12 @@ static int stdin_process(struct data_source *ds){
             send_ethernet_packet(0,1);
             break;
         case 'f':
+            printf("Setting network protocol filter\n");
+            set_network_protocol_filter();
             break;
         case 'm':
+            printf("Setting multicast filter\n");
+            set_multicast_filter();
             break;
         default:
             show_usage();
