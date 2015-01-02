@@ -54,6 +54,10 @@ extern "C" {
 #define ETHER_ADDR_LEN sizeof(bd_addr_t)
 #endif
 
+#ifndef ETHERTYPE_VLAN
+#define	ETHERTYPE_VLAN		        0x8100 /* IEEE 802.1Q VLAN tag */
+#endif
+
 #define	BNEP_MTU_MIN		        1691
 
 #define MAX_BNEP_NETFILTER          8
