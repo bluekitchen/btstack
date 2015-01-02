@@ -249,15 +249,40 @@ static int bnep_send_connection_response(bnep_channel_t *channel, uint16_t respo
 }
 
 /* Send BNEP filter net type set message */
-static int bnep_send_filter_net_type_set(bnep_channel_t *channel, ...)
+static int bnep_send_filter_net_type_set(bnep_channel_t *channel, bnep_net_filter_t *filter, uint16_t len)
 {  
+    uint8_t *bnep_out_buffer = NULL;
+    uint16_t pos = 0;
+    int      err = 0; 
+    int      i;
+
     if (channel->state == BNEP_CHANNEL_STATE_CLOSED) {
-        return -1; // TODO
+        return -1;
     }
 
-    /* TODO: Not yet implemented */
+    l2cap_reserve_packet_buffer();
+    bnep_out_buffer = l2cap_get_outgoing_buffer();
+
+    /* Setup control packet type */
+	bnep_out_buffer[pos++] = BNEP_PKT_TYPE_CONTROL;
+	bnep_out_buffer[pos++] = BNEP_CONTROL_TYPE_FILTER_NET_TYPE_SET;
+
+    net_store_16(bnep_out_buffer, pos, len * 2 * 2);
+    pos += 2;
+
+    for (i = 0; i < len; i ++) {
+        net_store_16(bnep_out_buffer, pos, filter[i].range_start);
+        pos += 2;
+        net_store_16(bnep_out_buffer, pos, filter[i].range_end);
+        pos += 2;
+    }
+
+    err = l2cap_send_prepared(channel->l2cap_cid, pos);
     
-    return -1;
+    if (err) {
+        // TODO: Log error 
+    }
+    return err;
 }
 
 /* Send BNEP filter net type response message */
@@ -268,7 +293,7 @@ static int bnep_send_filter_net_type_response(bnep_channel_t *channel, uint16_t 
     int      err = 0; 
     
     if (channel->state == BNEP_CHANNEL_STATE_CLOSED) {
-        return -1; // TODO
+        return -1;
     }
     
     l2cap_reserve_packet_buffer();
@@ -291,15 +316,41 @@ static int bnep_send_filter_net_type_response(bnep_channel_t *channel, uint16_t 
 }
 
 /* Send BNEP filter multicast address set message */
-static int bnep_send_filter_multi_addr_set(bnep_channel_t *channel, ...)
-{    
+
+static int bnep_send_filter_multi_addr_set(bnep_channel_t *channel, bnep_multi_filter_t *filter, uint16_t len)
+{
+    uint8_t *bnep_out_buffer = NULL;
+    uint16_t pos = 0;
+    int      err = 0; 
+    int      i;
+
     if (channel->state == BNEP_CHANNEL_STATE_CLOSED) {
-        return -1; // TODO
+        return -1;
     }
 
-    /* TODO: Not yet implemented */
+    l2cap_reserve_packet_buffer();
+    bnep_out_buffer = l2cap_get_outgoing_buffer();
+
+    /* Setup control packet type */
+	bnep_out_buffer[pos++] = BNEP_PKT_TYPE_CONTROL;
+	bnep_out_buffer[pos++] = BNEP_CONTROL_TYPE_FILTER_MULTI_ADDR_SET;
+
+    net_store_16(bnep_out_buffer, pos, len * 2 * ETHER_ADDR_LEN);
+    pos += 2;
+
+    for (i = 0; i < len; i ++) {
+        BD_ADDR_COPY(bnep_out_buffer + pos, filter[i].addr_start);
+        pos += ETHER_ADDR_LEN;
+        BD_ADDR_COPY(bnep_out_buffer + pos, filter[i].addr_end);
+        pos += ETHER_ADDR_LEN;
+    }
+
+    err = l2cap_send_prepared(channel->l2cap_cid, pos);
     
-    return -1;
+    if (err) {
+        // TODO: Log error 
+    }
+    return err;
 }
 
 /* Send BNEP filter multicast address response message */
@@ -310,7 +361,7 @@ static int bnep_send_filter_multi_addr_response(bnep_channel_t *channel, uint16_
     int      err = 0; 
     
     if (channel->state == BNEP_CHANNEL_STATE_CLOSED) {
-        return -1; // TODO
+        return -1;
     }
     
     l2cap_reserve_packet_buffer();
@@ -344,6 +395,45 @@ int bnep_can_send_packet_now(uint16_t bnep_cid)
     return l2cap_can_send_packet_now(channel->l2cap_cid);
 }
 
+
+static int bnep_filter_protocol(bnep_channel_t *channel, uint16_t network_protocol_type)
+{
+	int i;
+    
+    if (channel->net_filter_count == 0) {
+        return 1;
+    }
+    for (i = 0; i < channel->net_filter_count; i ++) {
+        if ((network_protocol_type >= channel->net_filter[i].range_start) &&
+            (network_protocol_type <= channel->net_filter[i].range_end)) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static int bnep_filter_multicast(bnep_channel_t *channel, bd_addr_t addr_dest)
+{
+	int i;
+
+    /* Check if the multicast flag is set int the destination address */
+	if (!addr_dest[0] & 0x01) {
+        /* Not a multicast frame, do not apply filtering and send it in any case */
+		return 1;
+    }
+
+	for (i = 0; i < channel->multicast_filter_count; i ++) {
+		if ((memcmp(addr_dest, channel->multicast_filter[i].addr_start, sizeof(bd_addr_t)) >= 0) &&
+		    (memcmp(addr_dest, channel->multicast_filter[i].addr_end, sizeof(bd_addr_t)) <= 0)) {
+			return 1;
+        }
+	}
+
+	return 0;
+}
+
+
 /* Send BNEP ethernet packet */
 int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
 {
@@ -351,6 +441,7 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
     uint8_t        *bnep_out_buffer = NULL;
     uint16_t        pos = 0;
     uint16_t        pos_out = 0;
+    uint16_t        payload_len;
     int             err = 0;
     int             has_source;
     int             has_dest;
@@ -361,7 +452,7 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
 
     channel = bnep_channel_for_l2cap_cid(bnep_cid);
     if (channel == NULL) {
-        log_error("bnep_can_send_packet_now cid 0x%02x doesn't exist!", bnep_cid);
+        log_error("bnep_send cid 0x%02x doesn't exist!", bnep_cid);
         return 1;
     }
         
@@ -373,9 +464,6 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
     if (!l2cap_can_send_packet_now(channel->l2cap_cid)) {
         return BTSTACK_ACL_BUFFERS_FULL;
     }
-    
-    l2cap_reserve_packet_buffer();
-    bnep_out_buffer = l2cap_get_outgoing_buffer();
 
     /* Extract destination and source address from the ethernet packet */
     pos = 0;
@@ -385,7 +473,39 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
     pos += sizeof(bd_addr_t);
     network_protocol_type = READ_NET_16(packet, pos);
     pos += sizeof(uint16_t);
-    
+
+    payload_len = len - pos;
+
+	if (network_protocol_type == ETHERTYPE_VLAN) {	/* IEEE 802.1Q tag header */
+		if (payload_len < 4) {
+            /* Omit this packet */
+			return 0;
+        }
+        /* The "real" network protocol type is 4 bytes ahead in a VLAN packet */
+		network_protocol_type = READ_NET_16(packet, pos + 2);
+	}
+
+    /* Check network protocol and multicast filters before sending */
+    if (!bnep_filter_protocol(channel, network_protocol_type) ||
+        !bnep_filter_multicast(channel, addr_dest)) {
+        /* Packet did not pass filter... omit it */
+        if ((network_protocol_type == ETHERTYPE_VLAN) && 
+            (payload_len >= 4)) {
+            /* The packet has been tagged as a with IEE 802.1Q tag and has been filtered out.
+               According to the spec the IEE802.1Q tag header shall be sended without ethernet payload.
+               So limit the payload_len to 4.
+             */
+            payload_len = 4;
+        } else {
+            /* Packet is not tagged with IEE802.1Q header and was filtered out. Omit this packet */        
+            return 0;
+        }
+    }
+
+    /* Reserve l2cap packet buffer */    
+    l2cap_reserve_packet_buffer();
+    bnep_out_buffer = l2cap_get_outgoing_buffer();
+
     /* Check if source address is the same as our local address and if the 
        destination address is the same as the remote addr. Maybe we can use
        the compressed data format
@@ -394,8 +514,8 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
     has_dest = (memcmp(addr_dest, channel->remote_addr, ETHER_ADDR_LEN) != 0);
 
     /* Check for MTU limits */
-    if (len - pos > channel->max_frame_size) {
-        log_error("bnep_send: Max frame size (%d) exceeded: %d", channel->max_frame_size, len - pos);
+    if (payload_len > channel->max_frame_size) {
+        log_error("bnep_send: Max frame size (%d) exceeded: %d", channel->max_frame_size, payload_len);
         return BNEP_DATA_LEN_EXCEEDS_MTU;
     }
     
@@ -430,8 +550,8 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
     
     /* TODO: Add extension headers, if we may support them at a later stage */
     /* Add the payload and then send out the package */
-    memcpy(bnep_out_buffer + pos_out, packet + pos, len - pos);
-    pos_out += len - pos;
+    memcpy(bnep_out_buffer + pos_out, packet + pos, payload_len);
+    pos_out += payload_len;
 
     err = l2cap_send_prepared(channel->l2cap_cid, pos_out);
     
@@ -439,6 +559,73 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
         log_error("bnep_send: error %d", err);
     }
     return err;        
+}
+
+
+/* Set BNEP network protocol type filter */
+int bnep_set_net_type_filter(uint16_t bnep_cid, bnep_net_filter_t *filter, uint16_t len)
+{
+    bnep_channel_t *channel;
+
+    if (filter == NULL) {
+        return -1;
+    }
+
+    channel = bnep_channel_for_l2cap_cid(bnep_cid);
+    if (channel == NULL) {
+        log_error("bnep_set_net_type_filter cid 0x%02x doesn't exist!", bnep_cid);
+        return 1;
+    }
+        
+    if (channel->state != BNEP_CHANNEL_STATE_CONNECTED) {
+        return BNEP_CHANNEL_NOT_CONNECTED;
+    }
+    
+    if (len > MAX_BNEP_NETFILTER_OUT) {
+        return BNEP_DATA_LEN_EXCEEDS_MTU;
+    }
+
+    channel->net_filter_out = filter;
+    channel->net_filter_out_count = len;
+
+    /* Set flag to send out the network protocol type filter set reqeuest on next statemachine cycle */
+    bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_SND_FILTER_NET_TYPE_SET);
+    bnep_run();    
+
+    return 0;        
+}
+
+/* Set BNEP network protocol type filter */
+int bnep_set_multicast_filter(uint16_t bnep_cid,  bnep_multi_filter_t *filter, uint16_t len)
+{
+    bnep_channel_t *channel;
+
+    if (filter == NULL) {
+        return -1;
+    }
+
+    channel = bnep_channel_for_l2cap_cid(bnep_cid);
+    if (channel == NULL) {
+        log_error("bnep_set_net_type_filter cid 0x%02x doesn't exist!", bnep_cid);
+        return 1;
+    }
+        
+    if (channel->state != BNEP_CHANNEL_STATE_CONNECTED) {
+        return BNEP_CHANNEL_NOT_CONNECTED;
+    }
+    
+    if (len > MAX_BNEP_MULTICAST_FULTER_OUT) {
+        return BNEP_DATA_LEN_EXCEEDS_MTU;
+    }
+
+    channel->multicast_filter_out = filter;
+    channel->multicast_filter_out_count = len;
+
+    /* Set flag to send out the multicast filter set reqeuest on next statemachine cycle */
+    bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_SND_FILTER_MULTI_ADDR_SET);
+    bnep_run();
+
+    return 0;        
 }
 
 /* BNEP timeout timer helper function */
@@ -801,7 +988,7 @@ static int bnep_handle_multi_addr_set(bnep_channel_t *channel, uint8_t *packet, 
         log_info("BNEP_MULTI_ADDR_SET: Too many filter");         
         response_code = BNEP_RESP_FILTER_ERR_TOO_MANY_FILTERS;
     } else {
-        int i;
+        unsigned int i;
         /* There is still enough space, copy the filters to our filter list */
         for (i = 0; i < list_length / (2 * ETHER_ADDR_LEN); i ++) {
             BD_ADDR_COPY(channel->multicast_filter[channel->multicast_filter_count].addr_start, packet + 1 + 2 + i * ETHER_ADDR_LEN * 2);
@@ -1281,9 +1468,27 @@ static void bnep_channel_state_machine(bnep_channel_t* channel, bnep_channel_eve
             bnep_emit_incoming_connection(channel);
             return;
         }
+        if (channel->state_var & BNEP_CHANNEL_STATE_VAR_SND_FILTER_NET_TYPE_SET) {
+            bnep_channel_state_remove(channel, BNEP_CHANNEL_STATE_VAR_SND_FILTER_NET_TYPE_SET);
+            if ((channel->net_filter_out_count > 0) && (channel->net_filter_out != NULL)) {
+                bnep_send_filter_net_type_set(channel, channel->net_filter_out, channel->net_filter_out_count);
+                channel->net_filter_out_count = 0;
+                channel->net_filter_out = NULL;
+            }
+            return;
+        }
         if (channel->state_var & BNEP_CHANNEL_STATE_VAR_SND_FILTER_NET_TYPE_RESPONSE) {
             bnep_channel_state_remove(channel, BNEP_CHANNEL_STATE_VAR_SND_FILTER_NET_TYPE_RESPONSE);
             bnep_send_filter_net_type_response(channel, channel->response_code);
+            return;
+        }
+        if (channel->state_var & BNEP_CHANNEL_STATE_VAR_SND_FILTER_MULTI_ADDR_SET) {
+            bnep_channel_state_remove(channel, BNEP_CHANNEL_STATE_VAR_SND_FILTER_MULTI_ADDR_SET);
+            if ((channel->multicast_filter_out_count > 0) && (channel->multicast_filter_out != NULL)) {
+                bnep_send_filter_multi_addr_set(channel, channel->multicast_filter_out, channel->multicast_filter_out_count);
+                channel->multicast_filter_out_count = 0;
+                channel->multicast_filter_out = NULL;
+            }
             return;
         }
         if (channel->state_var & BNEP_CHANNEL_STATE_VAR_SND_FILTER_MULTI_ADDR_RESPONSE) {
@@ -1291,6 +1496,7 @@ static void bnep_channel_state_machine(bnep_channel_t* channel, bnep_channel_eve
             bnep_send_filter_multi_addr_response(channel, channel->response_code);
             return;
         }
+
 
         /* If the event was not yet handled, notify the application layer */
         bnep_emit_ready_to_send(channel);
@@ -1424,3 +1630,4 @@ void bnep_unregister_service(uint16_t service_uuid)
     
     l2cap_unregister_service_internal(NULL, PSM_BNEP);
 }
+

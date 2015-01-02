@@ -55,23 +55,25 @@ extern "C" {
 #endif
 
 #ifndef ETHERTYPE_VLAN
-#define	ETHERTYPE_VLAN		        0x8100 /* IEEE 802.1Q VLAN tag */
+#define	ETHERTYPE_VLAN		                            0x8100 /* IEEE 802.1Q VLAN tag */
 #endif
 
-#define	BNEP_MTU_MIN		        1691
+#define	BNEP_MTU_MIN		                            1691
 
-#define MAX_BNEP_NETFILTER          8
-#define MAX_BNEP_MULTICAST_FILTER   8
+#define MAX_BNEP_NETFILTER                              8
+#define MAX_BNEP_MULTICAST_FILTER                       8
+#define MAX_BNEP_NETFILTER_OUT                          421
+#define MAX_BNEP_MULTICAST_FULTER_OUT                   140
     
-#define BNEP_EXT_FLAG               0x80
-#define BNEP_TYPE_MASK              0x7F
-#define	BNEP_TYPE(header)           ((header) & BNEP_TYPE_MASK)
-#define BNEP_HEADER_HAS_EXT(x)	    (((x) & BNEP_EXT_FLAG) == BNEP_EXT_FLAG)
+#define BNEP_EXT_FLAG                                   0x80
+#define BNEP_TYPE_MASK                                  0x7F
+#define	BNEP_TYPE(header)                               ((header) & BNEP_TYPE_MASK)
+#define BNEP_HEADER_HAS_EXT(x)	                        (((x) & BNEP_EXT_FLAG) == BNEP_EXT_FLAG)
 
 /* BNEP UUIDs */
-#define BNEP_UUID_PANU              0x1115
-#define BNEP_UUID_NAP               0x1116
-#define BNEP_UUID_GN                0x1117
+#define BNEP_UUID_PANU                                  0x1115
+#define BNEP_UUID_NAP                                   0x1116
+#define BNEP_UUID_GN                                    0x1117
     
 /* BNEP packet types */    
 #define	BNEP_PKT_TYPE_GENERAL_ETHERNET                  0x00
@@ -118,8 +120,10 @@ typedef enum {
     BNEP_CHANNEL_STATE_VAR_SND_NOT_UNDERSTOOD              = 1 << 0,
     BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_REQUEST          = 1 << 1,
     BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_RESPONSE         = 1 << 2,
-    BNEP_CHANNEL_STATE_VAR_SND_FILTER_NET_TYPE_RESPONSE    = 1 << 3,
-    BNEP_CHANNEL_STATE_VAR_SND_FILTER_MULTI_ADDR_RESPONSE  = 1 << 4,
+    BNEP_CHANNEL_STATE_VAR_SND_FILTER_NET_TYPE_SET         = 1 << 3,
+    BNEP_CHANNEL_STATE_VAR_SND_FILTER_NET_TYPE_RESPONSE    = 1 << 4,
+    BNEP_CHANNEL_STATE_VAR_SND_FILTER_MULTI_ADDR_SET       = 1 << 5,
+    BNEP_CHANNEL_STATE_VAR_SND_FILTER_MULTI_ADDR_RESPONSE  = 1 << 6,
 } BNEP_CHANNEL_STATE_VAR;
 
 typedef enum {
@@ -134,13 +138,13 @@ typedef struct bnep_channel_event {
 typedef struct {
 	uint16_t	        range_start;
 	uint16_t	        range_end;
-} bnep_net_filter;
+} bnep_net_filter_t;
 
 /* multicast address filter */
 typedef struct {
 	uint8_t		        addr_start[ETHER_ADDR_LEN];
 	uint8_t		        addr_end[ETHER_ADDR_LEN];
-} bnep_multi_filter;
+} bnep_multi_filter_t;
 
 
 // info regarding multiplexer
@@ -166,11 +170,18 @@ typedef struct {
     uint8_t            last_control_type; // type of last control package
     uint16_t           response_code;     // response code of last action (temp. storage for state machine)
 
-    bnep_net_filter    net_filter[MAX_BNEP_NETFILTER];              // network protocol filter, define fixed size for now
+    bnep_net_filter_t  net_filter[MAX_BNEP_NETFILTER];              // network protocol filter, define fixed size for now
     uint16_t           net_filter_count;
+
+    bnep_net_filter_t *net_filter_out;                              // outgoint network protocol filter, must be statically allocated in the application
+    uint16_t           net_filter_out_count;
     
-    bnep_multi_filter  multicast_filter[MAX_BNEP_MULTICAST_FILTER]; // multicast address filter, define fixed size for now
-    uint16_t           multicast_filter_count;
+    bnep_multi_filter_t  multicast_filter[MAX_BNEP_MULTICAST_FILTER]; // multicast address filter, define fixed size for now
+    uint16_t             multicast_filter_count;
+    
+    bnep_multi_filter_t *multicast_filter_out;                        // outgoing multicast address filter, must be statically allocated in the application
+    uint16_t             multicast_filter_out_count;
+
 
     timer_source_t     timer;             // Timeout timer
     int                timer_active;      // Is a timer running?
@@ -203,6 +214,12 @@ int bnep_can_send_packet_now(uint16_t bnep_cid);
 
 /* Send a data packet */
 int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len);
+
+/* Set the network protocol filter */
+int bnep_set_net_type_filter(uint16_t bnep_cid, bnep_net_filter_t *filter, uint16_t len);
+
+/* Set the multicast address filter */
+int bnep_set_multicast_filter(uint16_t bnep_cid, bnep_multi_filter_t *filter, uint16_t len);
 
 /* Set security level required for incoming connections, need to be called before registering services */
 void bnep_set_required_security_level(gap_security_level_t security_level);
