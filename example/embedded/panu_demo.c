@@ -17,11 +17,15 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <net/if.h>
 #include <net/if_arp.h>
+
+#ifdef __APPLE__
+#include <net/if.h>
 #include <net/if_types.h>
+
 #include <netinet/if_ether.h>
 #include <netinet/in.h>
+#endif
 
 #include <sys/ioctl.h>
 #include <sys/param.h>
@@ -30,7 +34,6 @@
 #include <sys/types.h>
 
 #ifdef __linux
-#include <linux/in.h>
 #include <linux/if.h>
 #include <linux/if_tun.h>
 #endif
