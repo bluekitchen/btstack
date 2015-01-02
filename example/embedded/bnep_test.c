@@ -42,10 +42,10 @@ static bd_addr_t other_addr = { 0,0,0,0,0,0};
 
 // state
 static bd_addr_t local_addr;
-static uint16_t bnep_protocol_uuid  = 0x000f;
+//static uint16_t bnep_protocol_uuid  = 0x000f;
 static uint16_t bnep_l2cap_psm      = 0x000f;
 static uint32_t bnep_remote_uuid    = 0x1115;
-static uint16_t bnep_version        = 0;
+//static uint16_t bnep_version        = 0;
 static uint16_t bnep_cid            = 0;
 
 static uint8_t network_buffer[BNEP_MTU_MIN];
