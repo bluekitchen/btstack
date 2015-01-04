@@ -401,8 +401,10 @@ static int bnep_filter_protocol(bnep_channel_t *channel, uint16_t network_protoc
 	int i;
     
     if (channel->net_filter_count == 0) {
+        /* No filter set */
         return 1;
     }
+
     for (i = 0; i < channel->net_filter_count; i ++) {
         if ((network_protocol_type >= channel->net_filter[i].range_start) &&
             (network_protocol_type <= channel->net_filter[i].range_end)) {
@@ -418,9 +420,14 @@ static int bnep_filter_multicast(bnep_channel_t *channel, bd_addr_t addr_dest)
 	int i;
 
     /* Check if the multicast flag is set int the destination address */
-	if (!addr_dest[0] & 0x01) {
+	if ((addr_dest[0] & 0x01) == 0x00) {
         /* Not a multicast frame, do not apply filtering and send it in any case */
 		return 1;
+    }
+
+    if (channel->multicast_filter_count == 0) {
+        /* No filter set */
+        return 1;
     }
 
 	for (i = 0; i < channel->multicast_filter_count; i ++) {
@@ -488,7 +495,7 @@ int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len)
     /* Check network protocol and multicast filters before sending */
     if (!bnep_filter_protocol(channel, network_protocol_type) ||
         !bnep_filter_multicast(channel, addr_dest)) {
-        /* Packet did not pass filter... omit it */
+        /* Packet did not pass filter... */
         if ((network_protocol_type == ETHERTYPE_VLAN) && 
             (payload_len >= 4)) {
             /* The packet has been tagged as a with IEE 802.1Q tag and has been filtered out.
@@ -901,11 +908,12 @@ static int bnep_handle_filter_net_type_set(bnep_channel_t *channel, uint8_t *pac
     }
 
     /* Check if we have enough space for more filters */
-    if ((list_length / (2*2)) + channel->net_filter_count > MAX_BNEP_NETFILTER) {
+    if ((list_length / (2*2)) > MAX_BNEP_NETFILTER) {
         log_info("BNEP_FILTER_NET_TYPE_SET: Too many filter");         
         response_code = BNEP_RESP_FILTER_ERR_TOO_MANY_FILTERS;
     } else {
         int i;
+        channel->net_filter_count = 0;
         /* There is still enough space, copy the filters to our filter list */
         for (i = 0; i < list_length / (2 * 2); i ++) {
             channel->net_filter[channel->net_filter_count].range_start = READ_NET_16(packet, 1 + 2 + i * 4);
@@ -984,12 +992,13 @@ static int bnep_handle_multi_addr_set(bnep_channel_t *channel, uint8_t *packet, 
     }
 
     /* Check if we have enough space for more filters */
-    if ((list_length / (2 * ETHER_ADDR_LEN)) + channel->multicast_filter_count > MAX_BNEP_MULTICAST_FILTER) {
+    if ((list_length / (2 * ETHER_ADDR_LEN)) > MAX_BNEP_MULTICAST_FILTER) {
         log_info("BNEP_MULTI_ADDR_SET: Too many filter");         
         response_code = BNEP_RESP_FILTER_ERR_TOO_MANY_FILTERS;
     } else {
         unsigned int i;
-        /* There is still enough space, copy the filters to our filter list */
+        channel->multicast_filter_count = 0;
+        /* There is enough space, copy the filters to our filter list */
         for (i = 0; i < list_length / (2 * ETHER_ADDR_LEN); i ++) {
             BD_ADDR_COPY(channel->multicast_filter[channel->multicast_filter_count].addr_start, packet + 1 + 2 + i * ETHER_ADDR_LEN * 2);
             BD_ADDR_COPY(channel->multicast_filter[channel->multicast_filter_count].addr_end, packet + 1 + 2 + i * ETHER_ADDR_LEN * 2 + ETHER_ADDR_LEN);
