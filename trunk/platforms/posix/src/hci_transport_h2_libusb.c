@@ -94,7 +94,7 @@ static libusb_device        * dev;
 static libusb_device_handle * handle;
 
 #define ASYNC_BUFFERS 20
-#define AYSNC_POLLING_INTERVAL_MS 3
+#define AYSNC_POLLING_INTERVAL_MS 1
 
 static struct libusb_transfer *event_in_transfer[ASYNC_BUFFERS];
 static struct libusb_transfer *bulk_in_transfer[ASYNC_BUFFERS];
