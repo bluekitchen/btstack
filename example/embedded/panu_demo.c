@@ -62,7 +62,7 @@ static uint8_t   attribute_value[1000];
 static const unsigned int attribute_value_buffer_size = sizeof(attribute_value);
 
 //static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
-// static bd_addr_t remote = {0xE0,0x06,0xE6,0xBB,0x95,0x79};
+// static bd_addr_t remote = {0xE0,0x06,0xE6,0xBB,0x95,0x79}; // Ole Thinkpad
 static bd_addr_t remote = {0x84,0x38,0x35,0x65,0xD1,0x15};  // MacBook 2013 
 
 static int  tap_fd = -1;
@@ -78,7 +78,7 @@ static char tap_dev_name[16] = "tap0";
 #ifdef __linux
 // Linux uses single control device to bring up tunX or tapX interface
 static const char * tap_dev = "/dev/net/tun";
-static char tap_dev_name[16] = "bnep";
+static char tap_dev_name[16] = "bnep%d";
 #endif
 
 
@@ -87,7 +87,7 @@ static data_source_t tap_dev_ds;
 /*************** TUN / TAP interface routines **********************
  *                                                                 * 
  * Available on Linux by default, assumes tuntaposx on OS X        *
- * interface name: set to "bnep" on linux, same as tapX on OS X    *
+ * interface name: set to "bnepX" on linux, same as tapX on OS X    *
  *******************************************************************/
 
 int tap_alloc(char *dev, bd_addr_t bd_addr)
