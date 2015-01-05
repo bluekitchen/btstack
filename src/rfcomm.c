@@ -93,6 +93,8 @@
 
 #define RFCOMM_MULIPLEXER_TIMEOUT_MS 60000
 
+#define RFCOMM_CREDITS 10
+
 // FCS calc 
 #define BT_RFCOMM_CODE_WORD         0xE0 // pol = x8+x2+x1+1
 #define BT_RFCOMM_CRC_CHECK_LEN     3
@@ -402,7 +404,7 @@ static void rfcomm_channel_initialize(rfcomm_channel_t *channel, rfcomm_multiple
     rfcomm_rpn_data_set_defaults(&channel->rpn_data);
 
     // incoming flow control not active
-    channel->new_credits_incoming  = 0x30;
+    channel->new_credits_incoming  =RFCOMM_CREDITS;
     channel->incoming_flow_control = 0;
     
     channel->rls_line_status = RFCOMM_RLS_STATUS_INVALID;
@@ -1310,7 +1312,7 @@ static void rfcomm_channel_packet_handler_uih(rfcomm_multiplexer_t *multiplexer,
     
     // automatically provide new credits to remote device, if no incoming flow control
     if (!channel->incoming_flow_control && channel->credits_incoming < 5){
-        channel->new_credits_incoming = 0x30;
+        channel->new_credits_incoming =RFCOMM_CREDITS;
     }    
     
     rfcomm_emit_credit_status(channel);
@@ -2224,7 +2226,7 @@ void rfcomm_create_channel_with_initial_credits_internal(void * connection, bd_a
 }
 
 void rfcomm_create_channel_internal(void * connection, bd_addr_t *addr, uint8_t server_channel){
-    rfcomm_create_channel2(connection, addr, server_channel, 0, 0x30);
+    rfcomm_create_channel2(connection, addr, server_channel, 0,RFCOMM_CREDITS);
 }
 
 void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
@@ -2280,7 +2282,7 @@ void rfcomm_register_service_with_initial_credits_internal(void * connection, ui
 }
 
 void rfcomm_register_service_internal(void * connection, uint8_t channel, uint16_t max_frame_size){
-    rfcomm_register_service2(connection, channel, max_frame_size, 0, 0x30);
+    rfcomm_register_service2(connection, channel, max_frame_size, 0,RFCOMM_CREDITS);
 }
 
 void rfcomm_unregister_service_internal(uint8_t service_channel){
