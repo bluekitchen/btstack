@@ -69,8 +69,11 @@ public class BTstackClient {
 		rxThread = new Thread(new Runnable(){
 			@Override
 			public void run() {
-				while (socketConnection != null && !Thread.currentThread().isInterrupted()){
+				while (socketConnection != null){
 					Packet packet = socketConnection.receivePacket();
+					if (Thread.currentThread().isInterrupted()){
+						return;
+					}
 					if (packet == null) {
 						// server disconnected
 						System.out.println("Rx Thread: Daemon Disconnected");
@@ -116,8 +119,13 @@ public class BTstackClient {
 	public void disconnect(){
 		if (socketConnection == null) return;
 		if (rxThread == null) return;
+		// signal rx thread to stop
 		rxThread.interrupt();
+		// wait for thread stopped
+		rxThread.join();
+		// disconnect socket
 		socketConnection.disconnect();
+		// done
 		socketConnection = null;
 	}
 }

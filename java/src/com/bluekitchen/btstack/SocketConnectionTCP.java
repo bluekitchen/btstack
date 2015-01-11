@@ -43,7 +43,7 @@ public class SocketConnectionTCP extends SocketConnection {
 	 * @see com.bluekitchen.btstack.SocketConnection#sendPacket(com.bluekitchen.btstack.Packet)
 	 */
 	@Override
-	public boolean sendPacket(Packet packet) {
+	public synchronized boolean sendPacket(Packet packet) {
 		
 		if (out == null) return false;
 
