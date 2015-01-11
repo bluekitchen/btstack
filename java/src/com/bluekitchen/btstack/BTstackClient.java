@@ -122,7 +122,12 @@ public class BTstackClient {
 		// signal rx thread to stop
 		rxThread.interrupt();
 		// wait for thread stopped
-		rxThread.join();
+		try {
+			rxThread.join();
+		} catch (InterruptedException e){
+			System.out.println("Unexpected interrupted execption waiting for receive thread to terminate");
+			e.printStackTrace();
+		}
 		// disconnect socket
 		socketConnection.disconnect();
 		// done
