@@ -87,7 +87,7 @@ extern "C" {
 #define L2CAP_REJ_CMD_UNKNOWN               0x0000
     
 // Response Timeout eXpired
-#define L2CAP_RTX_TIMEOUT_MS 2000
+#define L2CAP_RTX_TIMEOUT_MS   10000
 
 // Extended Response Timeout eXpired
 #define L2CAP_ERTX_TIMEOUT_MS 120000
