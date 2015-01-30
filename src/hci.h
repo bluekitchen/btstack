@@ -83,6 +83,8 @@ extern "C" {
        
 #define HCI_EVENT_PAYLOAD_SIZE     255
 #define HCI_CMD_PAYLOAD_SIZE       255
+
+#define LE_ADVERTISING_DATA_SIZE    31
     
 // packet buffer sizes
 // HCI_ACL_PAYLOAD_SIZE is configurable and defined in config.h
