@@ -753,10 +753,10 @@ void le_handle_advertisement_report(uint8_t *packet, int size){
 
     int i;
     log_info("HCI: handle adv report with num reports: %d", num_reports);
+    uint8_t event[2 + LE_ADVERTISING_DATA_SIZE]; // use upper bound to avoid var size automatic var
     for (i=0; i<num_reports;i++){
         uint8_t data_length = packet[offset + 8];
         uint8_t event_size = 10 + data_length;
-        uint8_t event[2 + event_size ];
         int pos = 0;
         event[pos++] = GAP_LE_ADVERTISING_REPORT;
         event[pos++] = event_size;
