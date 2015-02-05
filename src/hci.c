@@ -298,7 +298,8 @@ uint8_t hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
         } else {
             num_packets_sent_le += connection->num_acl_packets_sent;
         }
-        if (connection->con_handle == con_handle){
+        // ignore connections that are not open, e.g., in state RECEIVED_DISCONNECTION_COMPLETE
+        if (connection->con_handle == con_handle && connection->state == OPEN){
             address_type = connection->address_type;
         }
     }
@@ -1278,7 +1279,18 @@ static void event_handler(uint8_t *packet, int size){
 #endif
         
         // HCI_EVENT_DISCONNECTION_COMPLETE
-        // has been moved down, to first notify stack before shutting connection down
+        // has been split, to first notify stack before shutting connection down
+        // see end of function, too.
+        if (packet[0] == HCI_EVENT_DISCONNECTION_COMPLETE){
+            if (!packet[2]){
+                handle = READ_BT_16(packet, 3);
+                hci_connection_t * conn = hci_connection_for_handle(handle);
+                if (conn) {
+                    conn->state = RECEIVED_DISCONNECTION_COMPLETE;
+                }
+            }
+            break;
+        }
 
         case HCI_EVENT_HARDWARE_ERROR:
             if(hci_stack->control && hci_stack->control->hw_error){
