@@ -801,7 +801,6 @@ static void rfcomm_multiplexer_free(rfcomm_multiplexer_t * multiplexer){
 }
 
 static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
-    
     // remove (potential) timer
     rfcomm_multiplexer_stop_timer(multiplexer);
     
@@ -825,21 +824,17 @@ static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
         }
     }
     
-    // keep reference to l2cap channel
-    uint16_t l2cap_cid = multiplexer->l2cap_cid;
-    
     // remove mutliplexer
     rfcomm_multiplexer_free(multiplexer);
-    
-    // close l2cap multiplexer channel, too
-    l2cap_disconnect_internal(l2cap_cid, 0x13);
 }
 
 static void rfcomm_multiplexer_timer_handler(timer_source_t *timer){
     rfcomm_multiplexer_t * multiplexer = (rfcomm_multiplexer_t *) linked_item_get_user( (linked_item_t *) timer);
     if (!rfcomm_multiplexer_has_channels(multiplexer)){
         log_info( "rfcomm_multiplexer_timer_handler timeout: shutting down multiplexer!");
+        uint16_t l2cap_cid = multiplexer->l2cap_cid;
         rfcomm_multiplexer_finalize(multiplexer);
+        l2cap_disconnect_internal(l2cap_cid, 0x13);
     }
 }
 
@@ -1018,6 +1013,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
                 case RFCOMM_MULTIPLEXER_SEND_UA_0:
                 case RFCOMM_MULTIPLEXER_W4_UA_0:
                 case RFCOMM_MULTIPLEXER_OPEN:
+                    // don't call l2cap_disconnect as it's alreay closed
                     rfcomm_multiplexer_finalize(multiplexer);
                     return 1;
                 default:
@@ -1036,6 +1032,8 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
     rfcomm_multiplexer_t *multiplexer = rfcomm_multiplexer_for_l2cap_cid(channel);
     if (!multiplexer) return 0;
     
+    uint16_t l2cap_cid = multiplexer->l2cap_cid;
+
 	// but only care for multiplexer control channel
     uint8_t frame_dlci = packet[0] >> 2;
     if (frame_dlci) return 0;
@@ -1073,6 +1071,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
             log_info("Received DM #0");
             log_info("-> Closing down multiplexer");
             rfcomm_multiplexer_finalize(multiplexer);
+            l2cap_disconnect_internal(l2cap_cid, 0x13);
             return 1;
             
         case BT_RFCOMM_UIH:
@@ -1081,6 +1080,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                 log_info("Received Multiplexer close down command");
                 log_info("-> Closing down multiplexer");
                 rfcomm_multiplexer_finalize(multiplexer);
+                l2cap_disconnect_internal(l2cap_cid, 0x13);
                 return 1;
             }
             switch (packet[payload_offset]){
@@ -1089,6 +1089,7 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
                     log_info("Received Multiplexer close down command");
                     log_info("-> Closing down multiplexer");
                     rfcomm_multiplexer_finalize(multiplexer);
+                    l2cap_disconnect_internal(l2cap_cid, 0x13);
                     return 1;
 
                 case BT_RFCOMM_FCON_CMD:
@@ -1123,6 +1124,8 @@ static int rfcomm_multiplexer_l2cap_packet_handler(uint16_t channel, uint8_t *pa
 
 static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer, RFCOMM_MULTIPLEXER_EVENT event){
     
+    uint16_t l2cap_cid = multiplexer->l2cap_cid;
+
     // process stored DM responses
     if (multiplexer->send_dm_for_dlci){
         uint8_t dlci = multiplexer->send_dm_for_dlci;
@@ -1190,6 +1193,7 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
                     multiplexer->state = RFCOMM_MULTIPLEXER_CLOSED;
                     rfcomm_send_ua(multiplexer, 0);
                     rfcomm_multiplexer_finalize(multiplexer);
+                    l2cap_disconnect_internal(l2cap_cid, 0x13);
                 default:
                     break;
             }
