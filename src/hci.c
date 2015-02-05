@@ -344,36 +344,6 @@ uint8_t hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
     }
 }
 
-
-// @deprecated
-int hci_can_send_packet_now(uint8_t packet_type){
-    switch (packet_type) {
-        case HCI_ACL_DATA_PACKET:
-            return hci_can_send_prepared_acl_packet_now(0);
-        case HCI_COMMAND_DATA_PACKET:
-            return hci_can_send_command_packet_now();
-        default:
-            return 0;
-    }
-}
-
-// @deprecated
-// same as hci_can_send_packet_now, but also checks if packet buffer is free for use
-int hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type){
-
-    if (hci_stack->hci_packet_buffer_reserved) return 0;
-
-    switch (packet_type) {
-        case HCI_ACL_DATA_PACKET:
-            return hci_can_send_acl_packet_now(0);
-        case HCI_COMMAND_DATA_PACKET:
-            return hci_can_send_command_packet_now();
-        default:
-            return 0;
-    }
-}
-
-
 // new functions replacing hci_can_send_packet_now[_using_packet_buffer]
 int hci_can_send_command_packet_now(void){
     if (hci_stack->hci_packet_buffer_reserved) return 0;
