@@ -201,6 +201,16 @@ int gatt_client_is_ready(uint16_t handle){
     return is_ready(context);
 }
 
+le_command_status_t gatt_client_get_mtu(uint16_t handle, uint16_t * mtu){
+    gatt_client_t * context = provide_context_for_conn_handle(handle);
+    if (context && context->mtu_state == MTU_EXCHANGED){
+        *mtu = context->mtu;
+        return BLE_PERIPHERAL_OK;
+    } 
+    *mtu = ATT_DEFAULT_MTU;
+    return BLE_PERIPHERAL_IN_WRONG_STATE;
+}
+
 // precondition: can_send_packet_now == TRUE
 static void att_confirmation(uint16_t peripheral_handle){
     l2cap_reserve_packet_buffer();
@@ -310,6 +320,15 @@ static void att_prepare_write_request(uint16_t request_type, uint16_t peripheral
     memcpy(&request[5], &value[value_offset], blob_length);
     
     l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 5+blob_length);
+}
+
+static void att_exchange_mtu_request(uint16_t peripheral_handle){
+    uint16_t mtu = l2cap_max_le_mtu();
+    l2cap_reserve_packet_buffer();
+    uint8_t * request = l2cap_get_outgoing_buffer();
+    request[0] = ATT_EXCHANGE_MTU_REQUEST;
+    bt_store_16(request, 1, mtu);
+    l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3);
 }
 
 static uint16_t write_blob_length(gatt_client_t * peripheral){
@@ -686,13 +705,7 @@ static void gatt_client_run(){
         switch (peripheral->mtu_state) {
             case SEND_MTU_EXCHANGE:{
                 peripheral->mtu_state = SENT_MTU_EXCHANGE;
-                uint16_t mtu = l2cap_max_le_mtu();
-                // TODO: extract as att_exchange_mtu_request
-                l2cap_reserve_packet_buffer();
-                uint8_t * request = l2cap_get_outgoing_buffer();
-                request[0] = ATT_EXCHANGE_MTU_REQUEST;
-                bt_store_16(request, 1, mtu);
-                l2cap_send_prepared_connectionless(peripheral->handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3);
+                att_exchange_mtu_request(peripheral->handle);
                 return;
             }
             case SENT_MTU_EXCHANGE:
@@ -892,6 +905,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             uint16_t local_rx_mtu = l2cap_max_le_mtu();
             peripheral->mtu = remote_rx_mtu < local_rx_mtu ? remote_rx_mtu : local_rx_mtu;
             peripheral->mtu_state = MTU_EXCHANGED;
+
             break;
         }
         case ATT_READ_BY_GROUP_TYPE_RESPONSE:

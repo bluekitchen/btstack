@@ -237,6 +237,11 @@ uint16_t gatt_client_register_packet_handler (gatt_client_callback_t callback);
 // Unregister callback (packet handler) for gatt client.
 void gatt_client_unregister_packet_handler(uint16_t gatt_client_id);
 
+// MTU is available after the first query has completed. 
+// If status is equal to BLE_PERIPHERAL_OK, it returns the real value
+// otherwise the default value of 23. 
+le_command_status_t gatt_client_get_mtu(uint16_t handle, uint16_t * mtu);
+
 // Returns the GATT client context for the specified handle.
 // gatt_client_t * get_gatt_client_context_for_handle(uint16_t con_handle);
 
