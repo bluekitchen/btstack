@@ -1292,7 +1292,10 @@ static void event_handler(uint8_t *packet, int size){
 
         case DAEMON_EVENT_HCI_PACKET_SENT:
             // release packet buffer only for asynchronous transport and if there are not further fragements
-            if (hci_transport_synchronous()) break;
+            if (hci_transport_synchronous()) {
+                log_error("Synchronous HCI Transport shouldn't send DAEMON_EVENT_HCI_PACKET_SENT");
+                return; // instead of break: to avoid re-entering hci_run()
+            }
             if (hci_stack->acl_fragmentation_total_size) break;
             hci_release_packet_buffer();
             break;
