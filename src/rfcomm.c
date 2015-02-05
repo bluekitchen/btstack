@@ -830,27 +830,27 @@ static void rfcomm_multiplexer_finalize(rfcomm_multiplexer_t * multiplexer){
 
 static void rfcomm_multiplexer_timer_handler(timer_source_t *timer){
     rfcomm_multiplexer_t * multiplexer = (rfcomm_multiplexer_t *) linked_item_get_user( (linked_item_t *) timer);
-    if (!rfcomm_multiplexer_has_channels(multiplexer)){
-        log_info( "rfcomm_multiplexer_timer_handler timeout: shutting down multiplexer!");
-        uint16_t l2cap_cid = multiplexer->l2cap_cid;
-        rfcomm_multiplexer_finalize(multiplexer);
-        l2cap_disconnect_internal(l2cap_cid, 0x13);
-    }
+    if (rfcomm_multiplexer_has_channels(multiplexer)) return;
+
+    log_info("rfcomm_multiplexer_timer_handler timeout: shutting down multiplexer! (no channels)");
+    uint16_t l2cap_cid = multiplexer->l2cap_cid;
+    rfcomm_multiplexer_finalize(multiplexer);
+    l2cap_disconnect_internal(l2cap_cid, 0x13);
 }
 
 static void rfcomm_multiplexer_prepare_idle_timer(rfcomm_multiplexer_t * multiplexer){
     if (multiplexer->timer_active) {
         run_loop_remove_timer(&multiplexer->timer);
         multiplexer->timer_active = 0;
-    }
-    if (!rfcomm_multiplexer_has_channels(multiplexer)){
-        // start timer for multiplexer timeout check
-        run_loop_set_timer(&multiplexer->timer, RFCOMM_MULIPLEXER_TIMEOUT_MS);
-        multiplexer->timer.process = rfcomm_multiplexer_timer_handler;
-        linked_item_set_user((linked_item_t*) &multiplexer->timer, multiplexer);
-        run_loop_add_timer(&multiplexer->timer);
-        multiplexer->timer_active = 1;
-    }
+    }    
+    if (rfcomm_multiplexer_has_channels(multiplexer)) return;
+
+    // start idle timer for multiplexer timeout check as there are no rfcomm channels yet
+    run_loop_set_timer(&multiplexer->timer, RFCOMM_MULIPLEXER_TIMEOUT_MS);
+    multiplexer->timer.process = rfcomm_multiplexer_timer_handler;
+    linked_item_set_user((linked_item_t*) &multiplexer->timer, multiplexer);
+    run_loop_add_timer(&multiplexer->timer);
+    multiplexer->timer_active = 1;
 }
 
 static void rfcomm_multiplexer_opened(rfcomm_multiplexer_t *multiplexer){
