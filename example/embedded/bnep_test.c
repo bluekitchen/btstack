@@ -40,6 +40,8 @@ static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 //static bd_addr_t pts_addr = {0xE0,0x06,0xE6,0xBB,0x95,0x79}; // Ole Thinkpad
 // static bd_addr_t other_addr = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
 static bd_addr_t other_addr = { 0,0,0,0,0,0};
+// broadcast
+static bd_addr_t broadcast_addr = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
 // Sample network protocol type filter set:
 //   Ethernet type/length values the range 0x0000 - 0x05dc (Length), 0x05dd - 0x05ff (Reserved in IEEE 802.3)
@@ -66,33 +68,44 @@ static size_t  network_buffer_len = 0;
 /** Testig User Interface **/
 static data_source_t stdin_source;
 
-static void send_ethernet_packet(int src_compressed, int dst_compressed){
+static uint16_t setup_ethernet_header(int src_compressed, int dst_compressed, int broadcast, uint16_t network_protocol_type){
     // setup packet
     int pos = 0;
-    BD_ADDR_COPY(&network_buffer[pos], src_compressed ? pts_addr   : other_addr);
+    // destination
+    if (broadcast){
+        BD_ADDR_COPY(&network_buffer[pos], broadcast_addr);
+    } else {
+        BD_ADDR_COPY(&network_buffer[pos], dst_compressed ? pts_addr : other_addr);
+    }
     pos += 6;
-    BD_ADDR_COPY(&network_buffer[pos], dst_compressed ? local_addr : other_addr);
+    // source
+    BD_ADDR_COPY(&network_buffer[pos], src_compressed ? local_addr   : other_addr);
     pos += 6;
-    net_store_16(network_buffer, pos, 0x800);  // IPv4
+    net_store_16(network_buffer, pos, network_protocol_type);
     pos += 2;
+    return pos;
+}
 
+static void send_buffer(uint16_t pos){
+    network_buffer_len = pos;
+    if (bnep_can_send_packet_now(bnep_cid)) {
+        bnep_send(bnep_cid, network_buffer, network_buffer_len);
+        network_buffer_len = 0;
+    }
+}
+
+static void send_ethernet_packet(int src_compressed, int dst_compressed){
+    int pos = setup_ethernet_header(src_compressed, dst_compressed, 0, 0x0800); // IPv4
     // dummy data Ethernet packet
     int i;
     for (i = 60; i >= 0 ; i--){
         network_buffer[pos++] = i;
     }
-
     // test data payload
     for (i = 0; i < 0x5a0 ; i++){
         network_buffer[pos++] = i;
     }
-
-    network_buffer_len = pos;
-
-    if (bnep_can_send_packet_now(bnep_cid)) {
-        bnep_send(bnep_cid, network_buffer, network_buffer_len);
-        network_buffer_len = 0;
-    }
+    send_buffer(pos);
 }
 
 static void set_network_protocol_filter() {
@@ -101,6 +114,62 @@ static void set_network_protocol_filter() {
 
 static void set_multicast_filter() {
     bnep_set_multicast_filter(bnep_cid, multicast_filter, 1);
+}
+
+/* From RFC 5227 - 2.1.1
+   A host probes to see if an address is already in use by broadcasting
+   an ARP Request for the desired address.  The client MUST fill in the
+   'sender hardware address' field of the ARP Request with the hardware
+   address of the interface through which it is sending the packet.  The
+   'sender IP address' field MUST be set to all zeroes; this is to avoid
+   polluting ARP caches in other hosts on the same link in the case
+   where the address turns out to be already in use by another host.
+   The 'target hardware address' field is ignored and SHOULD be set to
+   all zeroes.  The 'target IP address' field MUST be set to the address
+   being probed.  An ARP Request constructed this way, with an all-zero
+   'sender IP address', is referred to as an 'ARP Probe'.
+*/
+static void send_arp_probe_ipv4(){
+
+    // "random address"
+    static uint8_t requested_address[4] = {169, 254, 1, 0};
+    requested_address[3]++;
+
+    int pos = setup_ethernet_header(1, 0, 1, 0x0806); // ARP
+
+    net_store_16(network_buffer, pos, 0x0001);  // Hardware type (HTYPE), 1 = Ethernet
+    pos += 2;
+    net_store_16(network_buffer, pos, 0x0800);  // Protocol type (PTYPE), 0x800 = IPv4
+    pos += 2;
+    network_buffer[pos++] = 6;                  // Hardware length (HLEN) - 6 MAC  Address
+    network_buffer[pos++] = 4;                  // Protocol length (PLEN) - 4 IPv4 Address
+    net_store_16(network_buffer, pos, 1);       // Operation 1 = request, 2 = reply
+    pos += 2;
+    BD_ADDR_COPY(&network_buffer[pos], local_addr); // Sender Hardware Address (SHA)
+    pos += 6;
+    bzero(&network_buffer[pos], 4);             // Sender Protocol Adress (SPA)
+    pos += 4;
+    BD_ADDR_COPY(&network_buffer[pos], other_addr); // Target Hardware Address (THA) (ignored for requests)
+    pos += 6;
+    memcpy(&network_buffer[pos], requested_address, 4);
+    pos += 4;
+    send_buffer(pos);
+}
+
+static void send_arp_probe_ipv6(){
+    
+}
+
+static void send_dhcp_discovery(){
+    
+}
+
+static void send_dhcp_request(){
+    
+}
+
+static void send_dns_request(){
+    
 }
 
 static void show_usage(){
@@ -115,6 +184,11 @@ static void show_usage(){
     printf("d - send destination only compressed Ethernet packet\n");
     printf("f - set network filter\n");
     printf("m - set multicast network filter\n");
+    printf("---\n");
+    printf("1 - get IP address via DHCP\n");
+    printf("2 - send DNS request\n");
+    printf("4 - send IPv4 ARP request\n");
+    printf("6 - send IPv6 ARP request\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -152,6 +226,14 @@ static int stdin_process(struct data_source *ds){
         case 'm':
             printf("Setting multicast filter\n");
             set_multicast_filter();
+            break;
+        case '4':
+            printf("Sending IPv4 ARP Probe\n");
+            send_arp_probe_ipv4();
+            break;
+        case '6':
+            printf("Sending IPv6 ARP Probe\n");
+            send_arp_probe_ipv6();
             break;
         default:
             show_usage();
