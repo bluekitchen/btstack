@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2013 by Matthias Ringwald
+ * Copyright (C) 2014 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -17,7 +17,7 @@
  *    personal benefit and not for any commercial purpose or for
  *    monetary gain.
  *
- * THIS SOFTWARE IS PROVIDED BY MATTHIAS RINGWALD AND CONTRIBUTORS
+ * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
@@ -30,7 +30,8 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at btstack@ringwald.ch
+ * Please inquire about commercial licensing options at 
+ * contact@bluekitchen-gmbh.com
  *
  */
 
@@ -41,7 +42,16 @@
 #include "sdp_client.h"
 
 static uint8_t des_attributeIDList[]    = { 0x35, 0x05, 0x0A, 0x00, 0x01, 0xff, 0xff};  // Arribute: 0x0001 - 0x0100
-static uint8_t des_serviceSearchPattern[5] = {0x35, 0x03, 0x19, 0x00, 0x00};
+static uint8_t des_serviceSearchPattern[] = {0x35, 0x03, 0x19, 0x00, 0x00};
+static uint8_t des_serviceSearchPatternUUID128[] = {
+	0x35, 0x10, 0x19, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+uint8_t* create_service_search_pattern_for_uuid128(uint8_t* uuid){
+	memcpy(&des_serviceSearchPattern[3], uuid, 16);
+	return (uint8_t*)des_serviceSearchPattern;
+}
 
 uint8_t* create_service_search_pattern_for_uuid(uint16_t uuid){
 	net_store_16(des_serviceSearchPattern, 3, uuid);
@@ -54,6 +64,11 @@ void sdp_general_query_for_uuid(bd_addr_t remote, uint16_t uuid){
     sdp_client_query(remote, (uint8_t*)&des_serviceSearchPattern[0], (uint8_t*)&des_attributeIDList[0]);
 }
 
+void sdp_general_query_for_uuid128(bd_addr_t remote, uint8_t* uuid){
+    create_service_search_pattern_for_uuid128(uuid);
+    sdp_parser_init();
+    sdp_client_query(remote, (uint8_t*)&des_serviceSearchPatternUUID128[0], (uint8_t*)&des_attributeIDList[0]);
+}
 
 
 

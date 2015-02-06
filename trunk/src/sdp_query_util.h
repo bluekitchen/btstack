@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2013 by Matthias Ringwald
+ * Copyright (C) 2014 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -17,7 +17,7 @@
  *    personal benefit and not for any commercial purpose or for
  *    monetary gain.
  *
- * THIS SOFTWARE IS PROVIDED BY MATTHIAS RINGWALD AND CONTRIBUTORS
+ * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
  * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
@@ -30,7 +30,8 @@
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * Please inquire about commercial licensing options at btstack@ringwald.ch
+ * Please inquire about commercial licensing options at 
+ * contact@bluekitchen-gmbh.com
  *
  */
 
@@ -53,6 +54,8 @@ uint8_t* create_service_search_pattern_for_uuid(uint16_t uuid);
 // Searches SDP records on a remote device for all services with
 // a given UUID.
 void sdp_general_query_for_uuid(bd_addr_t remote, uint16_t uuid);
+
+void sdp_general_query_for_uuid128(bd_addr_t remote, uint8_t* uuid);
 
 #if defined __cplusplus
 }
