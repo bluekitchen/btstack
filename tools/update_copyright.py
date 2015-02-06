@@ -2,8 +2,7 @@
 import os
 import re
 
-copyright = """
-/*
+copyright = """/*
  * Copyright (C) 2014 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,7 +40,7 @@ copyright = """
  */
 """
 
-onlyDumpDifferentCopyright = True
+onlyDumpDifferentCopyright = False
 copyrightString = "Copyright (C) 2014 BlueKitchen GmbH"
 copyrighters = ["BlueKitchen", "Matthias Ringwald"]
 
@@ -52,11 +51,48 @@ ignoreFiles = ["ant_cmds.h", "rijndael.c", "btstack-config.h", "version.h", "pro
 class State:
 	SearchStartComment = 0
 	SearchCopyrighter = 1
+	SearchEndComment = 2
 
 def updateCopyright(file_name):
-	global onlyDumpDifferentCopyright
-	if not onlyDumpDifferentCopyright:
-		print file_name, ": Update copyright"
+	print file_name, ": Update copyright"
+	
+	outfile = "tmp_"+file_name
+	with open(outfile, 'w') as fout:
+		fout.write(copyright)
+
+		bufferComment = ""
+		state = State.SearchStartComment
+
+		with open(file_name, 'rb') as fin:
+			for line in fin:
+				if state == State.SearchStartComment:
+					parts = re.match('\s*(/\*).*',line, re.I)
+					if parts:
+						state = State.SearchCopyrighter
+					else:
+						fout.write(line)
+
+				if state == State.SearchCopyrighter:
+					parts = re.match('.*(Copyright).*',line, re.I)
+					if parts:
+						# drop buffer
+						bufferComment = ""
+						state = State.SearchEndComment
+					else:
+						bufferComment = bufferComment + line
+						parts = re.match('\s*(\*/).*',line, re.I)
+						if parts:
+							# end of comment, no copyright
+							fout.write(bufferComment)
+							bufferComment = ""
+							state = State.SearchStartComment
+
+				if state == State.SearchEndComment:
+					parts = re.match('\s*(\*/).*',line, re.I)
+					if parts:
+						state = State.SearchStartComment
+
+	os.rename(outfile, file_name)
 
 def requiresCopyrightUpdate(file_name):
 	global copyrightString, onlyDumpDifferentCopyright
@@ -64,39 +100,36 @@ def requiresCopyrightUpdate(file_name):
 	with open(file_name, "rb") as fin:
 		parts = []
 		allowedCopyrighters = []
-		state = State.SearchStartComment
-
+		
 		for line in fin:
-			if state == State.SearchStartComment:
-				parts = re.match('\s*(/\*).*',line, re.I)
-				if parts:
-					state = State.SearchCopyrighter
-
-			if state == State.SearchCopyrighter:
-				parts = re.match('.*(Copyright).*',line, re.I)
-				if parts:
-					allowedCopyrighterFound = False
-					for name in copyrighters:
-						allowedCopyrighters = re.match('.*('+name+').*',line, re.I)
-						if allowedCopyrighters:
-							allowedCopyrighterFound = True
-							return re.match(copyrightString,line)
-					
-					if onlyDumpDifferentCopyright:
-						print file_name, ": Copyrighter not allowed > ", parts.group()
-					return False
-					
+			parts = re.match('.*(Copyright).*',line, re.I)
+			if parts:
+				allowedCopyrighterFound = False
+				for name in copyrighters:
+					allowedCopyrighters = re.match('.*('+name+').*',line, re.I)
+					if allowedCopyrighters:
+						allowedCopyrighterFound = True
+						return not re.match('.*('+copyrightString+').*',line)
+						
+				if not allowedCopyrighterFound and onlyDumpDifferentCopyright:
+					print file_name, ": Copyrighter not allowed > ", parts.group()
+				return False
+				
 	print file_name, ": File has no copyright"
 	return False
 
-for root, dirs, files in os.walk('../', topdown=True):
-	dirs[:] = [d for d in dirs if d not in ignoreFolders]
-	files[:] = [f for f in files if f not in ignoreFiles]
-	for f in files:
-		if f.endswith(".h") or f.endswith(".c"):
-			file_name = root + "/" + f
-			if requiresCopyrightUpdate(file_name):
-				updateCopyright(file_name)
+
+file_name = "att_server.h"
+updateCopyright(file_name)
+
+# for root, dirs, files in os.walk('../', topdown=True):
+# 	dirs[:] = [d for d in dirs if d not in ignoreFolders]
+# 	files[:] = [f for f in files if f not in ignoreFiles]
+# 	for f in files:
+# 		if f.endswith(".h") or f.endswith(".c"):
+# 			file_name = root + "/" + f
+# 			if requiresCopyrightUpdate(file_name):
+# 				updateCopyright(file_name)
 
 
     
