@@ -52,6 +52,7 @@ class State:
 	SearchStartComment = 0
 	SearchCopyrighter = 1
 	SearchEndComment = 2
+	SkipCopyright = 3
 
 def updateCopyright(dir_name, file_name):
 	infile = dir_name + "/" + file_name
@@ -68,38 +69,40 @@ def updateCopyright(dir_name, file_name):
 		with open(infile, 'rb') as fin:
 			for line in fin:
 				if state == State.SearchStartComment:
-					parts = re.match('\s*(/\*).*(\*/)',line, re.I)
+					parts = re.match('\s*(/\*).*(\*/)',line)
 					if parts:
 						if len(parts.groups()) == 2:
 							# one line comment
 							fout.write(line)
 							continue
-						else: 
-							bufferComment = bufferComment + line
-							state = State.SearchCopyrighter
+						
+					parts = re.match('\s*(/\*).*',line)
+					if parts: 
+						# beginning of comment
+						state = State.SearchCopyrighter
 					else:
-						# code line
+						# command line
 						fout.write(line)
 						continue
 					
 				if state == State.SearchCopyrighter:
-					parts = re.match('.*(Copyright).*',line, re.I)
+					parts = re.match('.*(Copyright).*',line)
 					if parts:
+						# ignore Copyright
 						# drop buffer
 						bufferComment = ""
-						state = State.SearchEndComment
+						state = State.SkipCopyright
 					else:
 						bufferComment = bufferComment + line
-						parts = re.match('\s*(\*/).*',line, re.I)
+						parts = re.match('.*(\*/)',line)
 						if parts:
-							# end of comment, no copyright
+							# end of comment
 							fout.write(bufferComment)
 							bufferComment = ""
 							state = State.SearchStartComment
-							continue
 
-				if state == State.SearchEndComment:
-					parts = re.match('\s*(\*/).*',line, re.I)
+				if state == State.SkipCopyright:
+					parts = re.match('.*(\*/)',line)
 					if parts:
 						state = State.SearchStartComment
 
@@ -108,18 +111,18 @@ def updateCopyright(dir_name, file_name):
 
 def requiresCopyrightUpdate(file_name):
 	global copyrightString, onlyDumpDifferentCopyright
-	
+	exactCopyrightFound = False
+
 	with open(file_name, "rb") as fin:
 		for line in fin:
-			parts = re.match('.*('+copyrightString+').*',line, re.I)
+			parts = re.match('.*('+copyrightString+').*',line)
 			if parts:
-				print file_name, "found copyright, skip"
+				exactCopyrightFound = True
 				continue
 			
-			parts = re.match('.*(Copyright).*',line, re.I)
+			parts = re.match('.*(Copyright).*',line)
 			if not parts:
 				continue
-				
 			for name in copyrighters:
 				allowedCopyrighters = re.match('.*('+name+').*',line, re.I)
 				if allowedCopyrighters:
@@ -129,12 +132,16 @@ def requiresCopyrightUpdate(file_name):
 				print file_name, ": Copyrighter not allowed > ", parts.group()
 			return False
 				
-	print file_name, ": File has no copyright"
+	if not exactCopyrightFound:
+		print file_name, ": File has no copyright"
+	
 	return False
 
 
-# updateCopyright("../example/embedded", "panu_demo.c")
-# requiresCopyrightUpdate("../example/embedded/panu_demo.c")
+# if requiresCopyrightUpdate("../example/embedded/panu_demo.c"):
+# 	print "UPdate"
+# 	updateCopyright("../example/embedded", "panu_demo.c")
+
 
 for root, dirs, files in os.walk('../', topdown=True):
 	dirs[:] = [d for d in dirs if d not in ignoreFolders]
