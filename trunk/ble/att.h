@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2014 by BlueKitchen GmbH
+ * Copyright (C) 2014 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -13,8 +13,9 @@
  * 3. Neither the name of the copyright holders nor the names of
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
- * 4. This software may not be used in a commercial product
- *    without an explicit license granted by the copyright holder.
+ * 4. Any redistribution, use, or modification is done solely for
+ *    personal benefit and not for any commercial purpose or for
+ *    monetary gain.
  *
  * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
  * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
