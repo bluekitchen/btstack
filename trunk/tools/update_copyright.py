@@ -53,17 +53,19 @@ class State:
 	SearchCopyrighter = 1
 	SearchEndComment = 2
 
-def updateCopyright(file_name):
+def updateCopyright(dir_name, file_name):
 	print file_name, ": Update copyright"
 	
-	outfile = "tmp_"+file_name
+	infile = dir_name + "/" + file_name
+	outfile = dir_name + "/tmp_" + file_name
+
 	with open(outfile, 'w') as fout:
 		fout.write(copyright)
 
 		bufferComment = ""
 		state = State.SearchStartComment
 
-		with open(file_name, 'rb') as fin:
+		with open(infile, 'rb') as fin:
 			for line in fin:
 				if state == State.SearchStartComment:
 					parts = re.match('\s*(/\*).*',line, re.I)
@@ -92,7 +94,7 @@ def updateCopyright(file_name):
 					if parts:
 						state = State.SearchStartComment
 
-	os.rename(outfile, file_name)
+	os.rename(outfile, infile)
 
 def requiresCopyrightUpdate(file_name):
 	global copyrightString, onlyDumpDifferentCopyright
@@ -119,17 +121,14 @@ def requiresCopyrightUpdate(file_name):
 	return False
 
 
-file_name = "att_server.h"
-updateCopyright(file_name)
-
-# for root, dirs, files in os.walk('../', topdown=True):
-# 	dirs[:] = [d for d in dirs if d not in ignoreFolders]
-# 	files[:] = [f for f in files if f not in ignoreFiles]
-# 	for f in files:
-# 		if f.endswith(".h") or f.endswith(".c"):
-# 			file_name = root + "/" + f
-# 			if requiresCopyrightUpdate(file_name):
-# 				updateCopyright(file_name)
+for root, dirs, files in os.walk('../', topdown=True):
+	dirs[:] = [d for d in dirs if d not in ignoreFolders]
+	files[:] = [f for f in files if f not in ignoreFiles]
+	for f in files:
+		if f.endswith(".h") or f.endswith(".c"):
+			file_name = root + "/" + f
+			if requiresCopyrightUpdate(file_name):
+				updateCopyright(file_name)
 
 
     
