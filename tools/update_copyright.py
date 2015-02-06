@@ -45,23 +45,22 @@ onlyDumpDifferentCopyright = True
 copyrightString = "Copyright (C) 2014 BlueKitchen GmbH"
 copyrighters = ["BlueKitchen", "Matthias Ringwald"]
 
-ignoreFolders = ["cpputest", "msp-exp430f5438-cc2564b", "msp430f5229lp-cc2564b", "ez430-rf2560", "ios"]
-ignoreFiles = ["ant_cmds.h"]
+ignoreFolders = ["cpputest", "test", "msp-exp430f5438-cc2564b", "msp430f5229lp-cc2564b", "ez430-rf2560", "ios", "chipset-cc256x", "docs", "mtk"]
+ignoreFiles = ["ant_cmds.h", "rijndael.c", "btstack-config.h", "version.h", "profile.h", "bluetoothdrv.h", 
+	"ancs_client.h", "spp_and_le_counter.h", "bluetoothdrv-stub.c", "minimal_peripheral.c", "BTstackDaemonRespawn.c"]
 
 class State:
 	SearchStartComment = 0
 	SearchCopyrighter = 1
-	SearchEndComment = 2
-	EndSearch = 3
 
 def updateCopyright(file_name):
 	global onlyDumpDifferentCopyright
 	if not onlyDumpDifferentCopyright:
 		print file_name, ": Update copyright"
 
-def analyseCopyright(file_name):
+def requiresCopyrightUpdate(file_name):
 	global copyrightString, onlyDumpDifferentCopyright
-
+	
 	with open(file_name, "rb") as fin:
 		parts = []
 		allowedCopyrighters = []
@@ -81,20 +80,14 @@ def analyseCopyright(file_name):
 						allowedCopyrighters = re.match('.*('+name+').*',line, re.I)
 						if allowedCopyrighters:
 							allowedCopyrighterFound = True
-							if not (re.match(copyrightString,line)):
-								updateCopyright(file_name) 
-					if not allowedCopyrighterFound and onlyDumpDifferentCopyright:
+							return re.match(copyrightString,line)
+					
+					if onlyDumpDifferentCopyright:
 						print file_name, ": Copyrighter not allowed > ", parts.group()
-					state = State.SearchEndComment
-
-			if state == State.SearchEndComment:
-				parts = re.match('\s*(\*/).*',line, re.I)
-				if parts:
-					state = State.EndSearch
-
-			if state == State.EndSearch:
-				continue
-	fin.close()
+					return False
+					
+	print file_name, ": File has no copyright"
+	return False
 
 for root, dirs, files in os.walk('../', topdown=True):
 	dirs[:] = [d for d in dirs if d not in ignoreFolders]
@@ -102,7 +95,8 @@ for root, dirs, files in os.walk('../', topdown=True):
 	for f in files:
 		if f.endswith(".h") or f.endswith(".c"):
 			file_name = root + "/" + f
-			analyseCopyright(file_name)
+			if requiresCopyrightUpdate(file_name):
+				updateCopyright(file_name)
 
 
     
