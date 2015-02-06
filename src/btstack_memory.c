@@ -1,6 +1,5 @@
-
 /*
- * Copyright (C) 2009 by BlueKitchen GmbH
+ * Copyright (C) 2014 BlueKitchen GmbH
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,6 +34,7 @@
  * contact@bluekitchen-gmbh.com
  *
  */
+
 
 
 /*
