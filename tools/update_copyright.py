@@ -68,12 +68,20 @@ def updateCopyright(dir_name, file_name):
 		with open(infile, 'rb') as fin:
 			for line in fin:
 				if state == State.SearchStartComment:
-					parts = re.match('\s*(/\*).*',line, re.I)
+					parts = re.match('\s*(/\*).*(\*/)',line, re.I)
 					if parts:
-						state = State.SearchCopyrighter
+						if len(parts.groups()) == 2:
+							# one line comment
+							fout.write(line)
+							continue
+						else: 
+							bufferComment = bufferComment + line
+							state = State.SearchCopyrighter
 					else:
+						# code line
 						fout.write(line)
-
+						continue
+					
 				if state == State.SearchCopyrighter:
 					parts = re.match('.*(Copyright).*',line, re.I)
 					if parts:
@@ -88,6 +96,7 @@ def updateCopyright(dir_name, file_name):
 							fout.write(bufferComment)
 							bufferComment = ""
 							state = State.SearchStartComment
+							continue
 
 				if state == State.SearchEndComment:
 					parts = re.match('\s*(\*/).*',line, re.I)
@@ -104,6 +113,7 @@ def requiresCopyrightUpdate(file_name):
 		for line in fin:
 			parts = re.match('.*('+copyrightString+').*',line, re.I)
 			if parts:
+				print file_name, "found copyright, skip"
 				continue
 			
 			parts = re.match('.*(Copyright).*',line, re.I)
@@ -122,6 +132,9 @@ def requiresCopyrightUpdate(file_name):
 	print file_name, ": File has no copyright"
 	return False
 
+
+# updateCopyright("../example/embedded", "panu_demo.c")
+# requiresCopyrightUpdate("../example/embedded/panu_demo.c")
 
 for root, dirs, files in os.walk('../', topdown=True):
 	dirs[:] = [d for d in dirs if d not in ignoreFolders]
