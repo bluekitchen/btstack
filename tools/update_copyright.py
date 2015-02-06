@@ -41,7 +41,7 @@ copyright = """/*
 """
 
 onlyDumpDifferentCopyright = False
-copyrightString = "Copyright (C) 2014 BlueKitchen GmbH"
+copyrightString = "Copyright \(C\) 2014 BlueKitchen GmbH"
 copyrighters = ["BlueKitchen", "Matthias Ringwald"]
 
 ignoreFolders = ["cpputest", "test", "msp-exp430f5438-cc2564b", "msp430f5229lp-cc2564b", "ez430-rf2560", "ios", "chipset-cc256x", "docs", "mtk"]
@@ -54,11 +54,11 @@ class State:
 	SearchEndComment = 2
 
 def updateCopyright(dir_name, file_name):
-	print file_name, ": Update copyright"
-	
 	infile = dir_name + "/" + file_name
 	outfile = dir_name + "/tmp_" + file_name
-
+	
+	#print "Update copyright: ", infile
+	
 	with open(outfile, 'w') as fout:
 		fout.write(copyright)
 
@@ -96,26 +96,28 @@ def updateCopyright(dir_name, file_name):
 
 	os.rename(outfile, infile)
 
+
 def requiresCopyrightUpdate(file_name):
 	global copyrightString, onlyDumpDifferentCopyright
 	
 	with open(file_name, "rb") as fin:
-		parts = []
-		allowedCopyrighters = []
-		
 		for line in fin:
-			parts = re.match('.*(Copyright).*',line, re.I)
+			parts = re.match('.*('+copyrightString+').*',line, re.I)
 			if parts:
-				allowedCopyrighterFound = False
-				for name in copyrighters:
-					allowedCopyrighters = re.match('.*('+name+').*',line, re.I)
-					if allowedCopyrighters:
-						allowedCopyrighterFound = True
-						return not re.match('.*('+copyrightString+').*',line)
-						
-				if not allowedCopyrighterFound and onlyDumpDifferentCopyright:
-					print file_name, ": Copyrighter not allowed > ", parts.group()
-				return False
+				continue
+			
+			parts = re.match('.*(Copyright).*',line, re.I)
+			if not parts:
+				continue
+				
+			for name in copyrighters:
+				allowedCopyrighters = re.match('.*('+name+').*',line, re.I)
+				if allowedCopyrighters:
+					return True
+			
+			if onlyDumpDifferentCopyright:
+				print file_name, ": Copyrighter not allowed > ", parts.group()
+			return False
 				
 	print file_name, ": File has no copyright"
 	return False
@@ -128,7 +130,7 @@ for root, dirs, files in os.walk('../', topdown=True):
 		if f.endswith(".h") or f.endswith(".c"):
 			file_name = root + "/" + f
 			if requiresCopyrightUpdate(file_name):
-				updateCopyright(file_name)
+				updateCopyright(root, f)
 
 
     
