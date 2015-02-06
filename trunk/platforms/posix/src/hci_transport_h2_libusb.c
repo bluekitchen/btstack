@@ -74,7 +74,6 @@ typedef enum {
     LIB_USB_CLOSED = 0,
     LIB_USB_OPENED,
     LIB_USB_DEVICE_OPENDED,
-    LIB_USB_KERNEL_DETACHED,
     LIB_USB_INTERFACE_CLAIMED,
     LIB_USB_TRANSFERS_ALLOCATED
 } libusb_state_t;
@@ -123,90 +122,6 @@ static int event_in_addr;
 static int acl_in_addr;
 static int acl_out_addr;
 
-#ifndef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
-
-// list of known devices, using VendorID/ProductID tuples
-static uint16_t known_bt_devices[] = {
-    // DeLOCK Bluetooth 4.0
-    0x0a5c, 0x21e8,
-    // Asus BT400
-    0x0b05, 0x17cb,
-};
-static int num_known_devices = sizeof(known_bt_devices) / sizeof(uint16_t) / 2;
-
-static int is_known_bt_device(uint16_t vendor_id, uint16_t product_id){
-    int i;
-    for (i=0; i<num_known_devices; i++){
-        if (known_bt_devices[i*2] == vendor_id && known_bt_devices[i*2+1] == product_id){
-            return 1;
-        }
-    }
-    return 0;
-}
-
-static void scan_for_bt_endpoints(void) {
-    int r;
-
-    // get endpoints from interface descriptor
-    struct libusb_config_descriptor *config_descriptor;
-    r = libusb_get_active_config_descriptor(dev, &config_descriptor);
-    log_info("configuration: %u interfaces", config_descriptor->bNumInterfaces);
-
-    const struct libusb_interface *interface = config_descriptor->interface;
-    const struct libusb_interface_descriptor * interface0descriptor = interface->altsetting;
-    log_info("interface 0: %u endpoints", interface0descriptor->bNumEndpoints);
-
-    const struct libusb_endpoint_descriptor *endpoint = interface0descriptor->endpoint;
-
-    for (r=0;r<interface0descriptor->bNumEndpoints;r++,endpoint++){
-        log_info("endpoint %x, attributes %x", endpoint->bEndpointAddress, endpoint->bmAttributes);
-
-        if ((endpoint->bmAttributes & 0x3) == LIBUSB_TRANSFER_TYPE_INTERRUPT){
-            event_in_addr = endpoint->bEndpointAddress;
-            log_info("Using 0x%2.2X for HCI Events", event_in_addr);
-        }
-        if ((endpoint->bmAttributes & 0x3) == LIBUSB_TRANSFER_TYPE_BULK){
-            if (endpoint->bEndpointAddress & 0x80) {
-                acl_in_addr = endpoint->bEndpointAddress;
-                log_info("Using 0x%2.2X for ACL Data In", acl_in_addr);
-            } else {
-                acl_out_addr = endpoint->bEndpointAddress;
-                log_info("Using 0x%2.2X for ACL Data Out", acl_out_addr);
-            }
-        }
-    }
-    libusb_free_config_descriptor(config_descriptor);
-}
-
-static libusb_device * scan_for_bt_device(libusb_device **devs) {
-    int i = 0;
-    while ((dev = devs[i++]) != NULL) {
-        int r = libusb_get_device_descriptor(dev, &desc);
-        if (r < 0) {
-            log_error("failed to get device descriptor");
-            return 0;
-        }
-        
-        log_info("%04x:%04x (bus %d, device %d) - class %x subclass %x protocol %x ",
-               desc.idVendor, desc.idProduct,
-               libusb_get_bus_number(dev), libusb_get_device_address(dev),
-               desc.bDeviceClass, desc.bDeviceSubClass, desc.bDeviceProtocol);
-        
-        // Detect USB Dongle based Class, Subclass, and Protocol
-        // The class code (bDeviceClass) is 0xE0 – Wireless Controller. 
-        // The SubClass code (bDeviceSubClass) is 0x01 – RF Controller. 
-        // The Protocol code (bDeviceProtocol) is 0x01 – Bluetooth programming.
-        // if (desc.bDeviceClass == 0xe0 && desc.bDeviceSubClass == 0x01 && desc.bDeviceProtocol == 0x01){
-        if (desc.bDeviceClass == 0xE0 && desc.bDeviceSubClass == 0x01 && desc.bDeviceProtocol == 0x01) {
-            return dev;
-        }
-
-        // Detect USB Dongle based on whitelist
-        if (is_known_bt_device(desc.idVendor, desc.idProduct)) return dev;
-    }
-    return NULL;
-}
-#endif
 
 static void queue_transfer(struct libusb_transfer *transfer){
 
@@ -367,13 +282,150 @@ void usb_process_ts(timer_source_t *timer) {
     return;
 }
 
-static int usb_open(void *transport_config){
-    int r,c;
 #ifndef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
-    libusb_device * aDev;
-    libusb_device **devs;
-    ssize_t cnt;
+
+// list of known devices, using VendorID/ProductID tuples
+static const uint16_t known_bt_devices[] = {
+    // DeLOCK Bluetooth 4.0
+    0x0a5c, 0x21e8,
+    // Asus BT400
+    0x0b05, 0x17cb,
+};
+static int num_known_devices = sizeof(known_bt_devices) / sizeof(uint16_t) / 2;
+
+static int is_known_bt_device(uint16_t vendor_id, uint16_t product_id){
+    int i;
+    for (i=0; i<num_known_devices; i++){
+        if (known_bt_devices[i*2] == vendor_id && known_bt_devices[i*2+1] == product_id){
+            return 1;
+        }
+    }
+    return 0;
+}
+
+static void scan_for_bt_endpoints(void) {
+    int r;
+
+    // get endpoints from interface descriptor
+    struct libusb_config_descriptor *config_descriptor;
+    r = libusb_get_active_config_descriptor(dev, &config_descriptor);
+    log_info("configuration: %u interfaces", config_descriptor->bNumInterfaces);
+
+    const struct libusb_interface *interface = config_descriptor->interface;
+    const struct libusb_interface_descriptor * interface0descriptor = interface->altsetting;
+    log_info("interface 0: %u endpoints", interface0descriptor->bNumEndpoints);
+
+    const struct libusb_endpoint_descriptor *endpoint = interface0descriptor->endpoint;
+
+    for (r=0;r<interface0descriptor->bNumEndpoints;r++,endpoint++){
+        log_info("endpoint %x, attributes %x", endpoint->bEndpointAddress, endpoint->bmAttributes);
+
+        if ((endpoint->bmAttributes & 0x3) == LIBUSB_TRANSFER_TYPE_INTERRUPT){
+            event_in_addr = endpoint->bEndpointAddress;
+            log_info("Using 0x%2.2X for HCI Events", event_in_addr);
+        }
+        if ((endpoint->bmAttributes & 0x3) == LIBUSB_TRANSFER_TYPE_BULK){
+            if (endpoint->bEndpointAddress & 0x80) {
+                acl_in_addr = endpoint->bEndpointAddress;
+                log_info("Using 0x%2.2X for ACL Data In", acl_in_addr);
+            } else {
+                acl_out_addr = endpoint->bEndpointAddress;
+                log_info("Using 0x%2.2X for ACL Data Out", acl_out_addr);
+            }
+        }
+    }
+    libusb_free_config_descriptor(config_descriptor);
+}
+
+// returns index of found device or -1
+static int scan_for_bt_device(libusb_device **devs, int start_index) {
+    int i;
+    for (i = start_index; devs[i] ; i++){
+        dev = devs[i];
+        int r = libusb_get_device_descriptor(dev, &desc);
+        if (r < 0) {
+            log_error("failed to get device descriptor");
+            return 0;
+        }
+        
+        log_info("%04x:%04x (bus %d, device %d) - class %x subclass %x protocol %x ",
+               desc.idVendor, desc.idProduct,
+               libusb_get_bus_number(dev), libusb_get_device_address(dev),
+               desc.bDeviceClass, desc.bDeviceSubClass, desc.bDeviceProtocol);
+        
+        // Detect USB Dongle based Class, Subclass, and Protocol
+        // The class code (bDeviceClass) is 0xE0 – Wireless Controller. 
+        // The SubClass code (bDeviceSubClass) is 0x01 – RF Controller. 
+        // The Protocol code (bDeviceProtocol) is 0x01 – Bluetooth programming.
+        // if (desc.bDeviceClass == 0xe0 && desc.bDeviceSubClass == 0x01 && desc.bDeviceProtocol == 0x01){
+        if (desc.bDeviceClass == 0xE0 && desc.bDeviceSubClass == 0x01 && desc.bDeviceProtocol == 0x01) {
+            return i;
+        }
+
+        // Detect USB Dongle based on whitelist
+        if (is_known_bt_device(desc.idVendor, desc.idProduct)) {
+            return i;
+        }
+    }
+    return -1;
+}
 #endif
+
+static int prepare_device(libusb_device_handle * handle){
+
+    int r;
+    int kernel_driver_detached = 0;
+
+    // Detach OS driver (not possible for OS X and WIN32)
+#if !defined(__APPLE__) && !defined(_WIN32)
+    r = libusb_kernel_driver_active(handle, 0);
+    if (r < 0) {
+        log_error("libusb_kernel_driver_active error %d", r);
+        libusb_close(handle);
+        return r;
+    }
+
+    if (r == 1) {
+        r = libusb_detach_kernel_driver(handle, 0);
+        if (r < 0) {
+            log_error("libusb_detach_kernel_driver error %d", r);
+            libusb_close(handle);
+            return r;
+        }
+        kernel_driver_detached = 1;
+    }
+    log_info("libusb_detach_kernel_driver");
+#endif
+
+    const int configuration = 1;
+    log_info("setting configuration %d...", configuration);
+    r = libusb_set_configuration(handle, configuration);
+    if (r < 0) {
+        log_error("Error libusb_set_configuration: %d", r);
+        if (kernel_driver_detached){
+            libusb_attach_kernel_driver(handle, 0);
+        }
+        libusb_close(handle);
+        return r;
+    }
+
+    // reserve access to device
+    log_info("claiming interface 0...");
+    r = libusb_claim_interface(handle, 0);
+    if (r < 0) {
+        log_error("Error claiming interface %d", r);
+        if (kernel_driver_detached){
+            libusb_attach_kernel_driver(handle, 0);
+        }
+        libusb_close(handle);
+        return r;
+    }
+
+    return 0;
+}
+
+static int usb_open(void *transport_config){
+    int r;
 
     handle_packet = NULL;
 
@@ -392,6 +444,7 @@ static int usb_open(void *transport_config){
     libusb_set_debug(NULL, LIBUSB_LOG_LEVEL_WARNING);
     
 #ifdef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
+
     // Use a specified device
     log_info("Want vend: %04x, prod: %04x", USB_VENDOR_ID, USB_PRODUCT_ID);
     handle = libusb_open_device_with_vid_pid(NULL, USB_VENDOR_ID, USB_PRODUCT_ID);
@@ -401,86 +454,83 @@ static int usb_open(void *transport_config){
         usb_close(handle);
         return -1;
     }
+    log_info("libusb open %d, handle %p", r, handle);
+
+    r = prepare_device(handle);
+    if (r < 0){
+        usb_close(handle);
+        return -1;
+    }
+
 #else
-    // Scan system for an appropriate device
+    // Scan system for an appropriate devices
+    libusb_device **devs;
+    ssize_t cnt;
+
     log_info("Scanning for USB Bluetooth device");
     cnt = libusb_get_device_list(NULL, &devs);
     if (cnt < 0) {
         usb_close(handle);
         return -1;
     }
-    // Find BT modul
-    aDev  = scan_for_bt_device(devs);
-    if (!aDev){
-        log_error("No USB Bluetooth device found");
-        libusb_free_device_list(devs, 1);
-        usb_close(handle);
-        return -1;
-    }
-    log_info("USB Bluetooth device found");
-    
-    dev = aDev;
-    r = libusb_open(dev, &handle);
 
-    // reset device
-    libusb_reset_device(handle);
+    int startIndex = 0;
+    dev = NULL;
+
+    while (1){
+        int deviceIndex = scan_for_bt_device(devs, startIndex);
+        if (deviceIndex < 0){
+            break;
+        }
+        startIndex = deviceIndex+1;
+
+        log_info("USB Bluetooth device found, index %u", deviceIndex);
+        
+        handle = NULL;
+        r = libusb_open(devs[deviceIndex], &handle);
+
+        if (r < 0) {
+            log_error("libusb_open failed!");
+            handle = NULL;
+            continue;
+        }
+    
+        log_info("libusb open %d, handle %p", r, handle);
+
+        // reset device
+        libusb_reset_device(handle);
+        if (r < 0) {
+            log_error("libusb_reset_device failed!");
+            libusb_close(handle);
+            handle = NULL;
+            continue;
+        }
+
+        // device found
+        r = prepare_device(handle);
+        
+        if (r < 0){
+            continue;
+        }
+
+        libusb_state = LIB_USB_INTERFACE_CLAIMED;
+
+        break;
+    }
 
     libusb_free_device_list(devs, 1);
 
-    if (r < 0) {
-        usb_close(handle);
-        return r;
-    }
-#endif
-
-    log_info("libusb open %d, handle %p", r, handle);
-
-    // Detach OS driver (not possible for OS X and WIN32)
-#if !defined(__APPLE__) && !defined(_WIN32)
-    r = libusb_kernel_driver_active(handle, 0);
-    if (r < 0) {
-        log_error("libusb_kernel_driver_active error %d", r);
-        usb_close(handle);
-        return r;
+    if (handle == 0){
+        log_error("No USB Bluetooth device found");
+        return -1;
     }
 
-    if (r == 1) {
-        r = libusb_detach_kernel_driver(handle, 0);
-        if (r < 0) {
-            log_error("libusb_detach_kernel_driver error %d", r);
-            usb_close(handle);
-            return r;
-        }
-    }
-    log_info("libusb_detach_kernel_driver");
-#endif
-    libusb_state = LIB_USB_KERNEL_DETACHED;
-
-    const int configuration = 1;
-    log_info("setting configuration %d...", configuration);
-    r = libusb_set_configuration(handle, configuration);
-    if (r < 0) {
-        log_error("Error libusb_set_configuration: %d\n", r);
-        usb_close(handle);
-        return r;
-    }
-
-    // reserve access to device
-    log_info("claiming interface 0...");
-    r = libusb_claim_interface(handle, 0);
-    if (r < 0) {
-        log_error("Error claiming interface %d", r);
-        usb_close(handle);
-        return r;
-    }
-
-    libusb_state = LIB_USB_INTERFACE_CLAIMED;
-    
-#ifndef HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
     scan_for_bt_endpoints();
-#endif
 
+#endif
+    
     // allocate transfer handlers
+    int c;
     for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
         event_in_transfer[c] = libusb_alloc_transfer(0); // 0 isochronous transfers Events
         bulk_in_transfer[c]  = libusb_alloc_transfer(0); // 0 isochronous transfers ACL in
@@ -558,6 +608,8 @@ static int usb_open(void *transport_config){
 
     return 0;
 }
+
+
 static int usb_close(void *transport_config){
     int c;
     // @TODO: remove all run loops!
@@ -607,10 +659,6 @@ static int usb_close(void *transport_config){
 
             libusb_release_interface(handle, 0);
 
-        case LIB_USB_KERNEL_DETACHED:
-#if !defined(__APPLE__) && !defined(_WIN32)
-            libusb_attach_kernel_driver (handle, 0);
-#endif
         case LIB_USB_DEVICE_OPENDED:
             libusb_close(handle);
 
