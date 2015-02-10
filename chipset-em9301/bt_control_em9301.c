@@ -48,8 +48,7 @@
 
 #include <stddef.h>   /* NULL */
 #include <stdio.h> 
-#include <string.h>   /* memcpy */
-
+	#include <string.h>   /* memcpy */
 #include "hci.h"
 
 // should go to some common place
@@ -58,7 +57,7 @@
 static int em9301_set_bd_addr_cmd(void * config, bd_addr_t addr, uint8_t *hci_cmd_buffer){
     bt_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, 0x02));
     hci_cmd_buffer[2] = 0x06;
-    bt_flip_addr(addr, &hci_cmd_buffer[3]);
+    bt_flip_addr(&hci_cmd_buffer[3], addr);
     return 0;
 }
 
