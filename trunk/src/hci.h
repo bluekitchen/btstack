@@ -391,7 +391,6 @@ typedef struct {
     uint16_t le_update_con_parameter_response;
 } hci_connection_t;
 
-
 /**
  * main data structure
  */
@@ -400,7 +399,7 @@ typedef struct {
     hci_transport_t  * hci_transport;
     void             * config;
     
-    // bsic configuration
+    // basic configuration
     const char         * local_name;
     uint32_t           class_of_device;
     bd_addr_t          local_bd_addr;
@@ -471,6 +470,11 @@ typedef struct {
     uint16_t le_scan_window;
 
     le_connection_parameter_range_t le_connection_parameter_range;
+
+    // custom BD ADDR
+    bd_addr_t custom_bd_addr; 
+    uint8_t   custom_bd_addr_set;
+
 } hci_stack_t;
 
 /**
@@ -575,6 +579,9 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
 
 // Set class of device that will be set during Bluetooth init
 void hci_set_class_of_device(uint32_t class_of_device);
+
+// Set Public BD ADDR - passed on to Bluetooth chipset if supported in bt_control_h
+void hci_set_bd_addr(bd_addr_t addr);
 
 // Registers a packet handler. Used if L2CAP is not used (rarely). 
 void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));

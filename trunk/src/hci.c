@@ -754,7 +754,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         uint16_t opcode = READ_BT_16(packet,3);
         if (opcode == hci_stack->last_cmd_opcode){
             command_completed = 1;
-            log_info("Command complete for expected opcode %04x -> new substate %u", opcode, hci_stack->substate);
+            log_info("Command complete for expected opcode %04x -> new substate %u", opcode, hci_stack->substate >> 1);
         } else {
             log_info("Command complete for opcode %04x, expected %04x", opcode, hci_stack->last_cmd_opcode);
         }
@@ -765,7 +765,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         if (opcode == hci_stack->last_cmd_opcode){
             if (status){
                 command_completed = 1;
-                log_error("Command status error 0x%02x for expected opcode %04x -> new substate %u", status, opcode, hci_stack->substate);
+                log_error("Command status error 0x%02x for expected opcode %04x -> new substate %u", status, opcode, hci_stack->substate >> 1);
             } else {
                 log_info("Command status OK for expected opcode %04x, waiting for command complete", opcode);
             }
@@ -784,11 +784,11 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 }
 
 static void hci_initializing_state_machine(){
-        // log_info("hci_init: substate %u", hci_stack->substate);
     if (hci_stack->substate % 2) {
         // odd: waiting for command completion
         return;
     }
+    // log_info("hci_init: substate %u", hci_stack->substate >> 1);
     switch (hci_stack->substate >> 1){
         case 0: // RESET
             hci_state_reset();
@@ -796,7 +796,7 @@ static void hci_initializing_state_machine(){
             hci_send_cmd(&hci_reset);
             if (hci_stack->config == NULL || ((hci_uart_config_t *)hci_stack->config)->baudrate_main == 0){
                 // skip baud change
-                hci_stack->substate = 4; // >> 1 = 2
+                hci_stack->substate = 2 << 1; 
             }
             break;
         case 1: // SEND BAUD CHANGE
@@ -810,8 +810,19 @@ static void hci_initializing_state_machine(){
             hci_stack->hci_transport->set_baudrate(((hci_uart_config_t *)hci_stack->config)->baudrate_main);
             hci_stack->substate += 2;
             // break missing here for fall through
-            
-        case 3:
+        
+        case 3: // SET BD ADDR
+            if ( hci_stack->custom_bd_addr_set && hci_stack->control && hci_stack->control->set_bd_addr_cmd){
+                log_info("Set Public BD ADDR to %s", bd_addr_to_str(hci_stack->custom_bd_addr));
+                hci_stack->control->set_bd_addr_cmd(hci_stack->config, hci_stack->custom_bd_addr, hci_stack->hci_packet_buffer);
+                hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
+                hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
+                break;
+            }
+            hci_stack->substate += 2;
+            // break missing here for fall through
+
+        case 4:
             log_info("Custom init");
             // Custom initialization
             if (hci_stack->control && hci_stack->control->next_cmd){
@@ -821,7 +832,7 @@ static void hci_initializing_state_machine(){
                     hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
                     hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, hci_stack->hci_packet_buffer, size);
                     hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, hci_stack->hci_packet_buffer, size);
-                    hci_stack->substate = 4; // more init commands
+                    hci_stack->substate = 3 << 1; // more init commands
                     break;
                 }
                 log_info("hci_run: init script done");
@@ -829,31 +840,31 @@ static void hci_initializing_state_machine(){
             // otherwise continue
             hci_send_cmd(&hci_read_bd_addr);
             break;
-        case 4:
+        case 5:
             hci_send_cmd(&hci_read_buffer_size);
             break;
-        case 5:
+        case 6:
             hci_send_cmd(&hci_read_local_supported_features);
             break;                
-        case 6:
+        case 7:
             if (hci_le_supported()){
                 hci_send_cmd(&hci_set_event_mask,0xffffffff, 0x3FFFFFFF);
             } else {
-                // Kensington Bluetoot 2.1 USB Dongle (CSR Chipset) returns an error for 0xffff... 
+                // Kensington Bluetooth 2.1 USB Dongle (CSR Chipset) returns an error for 0xffff... 
                 hci_send_cmd(&hci_set_event_mask,0xffffffff, 0x1FFFFFFF);
             }
 
             // skip Classic init commands for LE only chipsets
             if (!hci_classic_supported()){
                 if (hci_le_supported()){
-                    hci_stack->substate = 11 << 1;    // skip all classic command
+                    hci_stack->substate = 12 << 1;    // skip all classic command
                 } else {
                     log_error("Neither BR/EDR nor LE supported");
-                    hci_stack->substate = 14 << 1;    // skip all
+                    hci_stack->substate = 15 << 1;    // skip all
                 }
             }
             break;
-        case 7:
+        case 8:
             if (hci_ssp_supported()){
                 hci_send_cmd(&hci_write_simple_pairing_mode, hci_stack->ssp_enable);
                 break;
@@ -861,14 +872,14 @@ static void hci_initializing_state_machine(){
             hci_stack->substate += 2;
             // break missing here for fall through
 
-        case 8:
+        case 9:
             // ca. 15 sec
             hci_send_cmd(&hci_write_page_timeout, 0x6000);
             break;
-        case 9:
+        case 10:
             hci_send_cmd(&hci_write_class_of_device, hci_stack->class_of_device);
             break;
-        case 10:
+        case 11:
             if (hci_stack->local_name){
                 hci_send_cmd(&hci_write_local_name, hci_stack->local_name);
             } else {
@@ -886,31 +897,31 @@ static void hci_initializing_state_machine(){
                 hci_send_cmd(&hci_write_local_name, hostname);
             }
             break;
-        case 11:
+        case 12:
             hci_send_cmd(&hci_write_scan_enable, (hci_stack->connectable << 1) | hci_stack->discoverable); // page scan
             if (!hci_le_supported()){
                 // SKIP LE init for Classic only configuration
-                hci_stack->substate = 14 << 1;
+                hci_stack->substate = 15 << 1;
             }
             break;
 
 #ifdef HAVE_BLE
         // LE INIT
-        case 12:
+        case 13:
             hci_send_cmd(&hci_le_read_buffer_size);
             break;
-        case 13:
+        case 14:
             // LE Supported Host = 1, Simultaneous Host = 0
             hci_send_cmd(&hci_write_le_host_supported, 1, 0);
             break;
-        case 14:
+        case 15:
             // LE Scan Parameters: active scanning, 300 ms interval, 30 ms window, public address, accept all advs
             hci_send_cmd(&hci_le_set_scan_parameters, 1, 0x1e0, 0x30, 0, 0);
             break;
 #endif
 
         // DONE
-        case 15:
+        case 16:
             // done.
             hci_stack->state = HCI_STATE_WORKING;
             hci_emit_state();
@@ -1498,6 +1509,12 @@ void hci_close(){
 
 void hci_set_class_of_device(uint32_t class_of_device){
     hci_stack->class_of_device = class_of_device;
+}
+
+// Set Public BD ADDR - passed on to Bluetooth chipset if supported in bt_control_h
+void hci_set_bd_addr(bd_addr_t addr){
+    memcpy(hci_stack->custom_bd_addr, addr, 6);
+    hci_stack->custom_bd_addr_set = 1;
 }
 
 void hci_disable_l2cap_timeout_check(){
