@@ -128,6 +128,7 @@ static const bt_control_t bt_control_csr = {
 	bt_control_csr_next_cmd,            // next_cmd
 	NULL,                               // register_for_power_notifications
     NULL,                               // hw_error
+    NULL,                               // set_bd_addr_cmd
 };
 
 static const hci_uart_config_t hci_uart_config_csr = {
