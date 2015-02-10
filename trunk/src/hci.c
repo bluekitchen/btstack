@@ -1252,16 +1252,13 @@ static void event_handler(uint8_t *packet, int size){
         // HCI_EVENT_DISCONNECTION_COMPLETE
         // has been split, to first notify stack before shutting connection down
         // see end of function, too.
-        if (packet[0] == HCI_EVENT_DISCONNECTION_COMPLETE){
-            if (!packet[2]){
-                handle = READ_BT_16(packet, 3);
-                hci_connection_t * conn = hci_connection_for_handle(handle);
-                if (conn) {
-                    conn->state = RECEIVED_DISCONNECTION_COMPLETE;
-                }
-            }
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            if (packet[2]) break;   // status != 0
+            handle = READ_BT_16(packet, 3);
+            hci_connection_t * conn = hci_connection_for_handle(handle);
+            if (!conn) break;       // no conn struct anymore
+            conn->state = RECEIVED_DISCONNECTION_COMPLETE;
             break;
-        }
 
         case HCI_EVENT_HARDWARE_ERROR:
             if(hci_stack->control && hci_stack->control->hw_error){
