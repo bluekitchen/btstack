@@ -48,6 +48,7 @@
 #define __BT_CONTROL_H
 
 #include <stdint.h>
+#include <btstack/utils.h>
 
 #if defined __cplusplus
 extern "C" {
@@ -79,6 +80,12 @@ typedef struct {
     void         (*register_for_power_notifications)(void (*cb)(POWER_NOTIFICATION_t event));
 
     void         (*hw_error)(void); 
+
+    /** support for vendor-specific way to set BD ADDR - cmd has to be stored in hci_cmd_buffer
+     * @return have command
+     */
+    int          (*set_bd_addr_cmd)(void * config, bd_addr_t addr, uint8_t *hci_cmd_buffer); 
+
 } bt_control_t;
 
 #if defined __cplusplus
