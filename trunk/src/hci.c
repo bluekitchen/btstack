@@ -802,7 +802,6 @@ static void hci_initializing_state_machine(){
         case 1: // SEND BAUD CHANGE
             hci_stack->control->baudrate_cmd(hci_stack->config, ((hci_uart_config_t *)hci_stack->config)->baudrate_main, hci_stack->hci_packet_buffer);
             hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
-            hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
             hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
             break;
         case 2: // LOCAL BAUD CHANGE
@@ -815,7 +814,7 @@ static void hci_initializing_state_machine(){
             if ( hci_stack->custom_bd_addr_set && hci_stack->control && hci_stack->control->set_bd_addr_cmd){
                 log_info("Set Public BD ADDR to %s", bd_addr_to_str(hci_stack->custom_bd_addr));
                 hci_stack->control->set_bd_addr_cmd(hci_stack->config, hci_stack->custom_bd_addr, hci_stack->hci_packet_buffer);
-                hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
+                hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
                 hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
                 break;
             }
