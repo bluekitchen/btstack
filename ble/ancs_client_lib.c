@@ -288,11 +288,11 @@ void ancs_client_hci_event_handler (uint8_t packet_type, uint16_t channel, uint8
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             gc_handle = READ_BT_16(packet, 4);
-                            printf("Connection ghandle 0x%04x\n", gc_handle);
+                            printf("Connection handle 0x%04x\n", gc_handle);
 
                             // we need to be paired to enable notifications
                             tc_state = TC_W4_ENCRYPTED_CONNECTION;
-                            sm_send_security_request();
+                            sm_send_security_request(gc_handle);
                             break;
 
                         default:

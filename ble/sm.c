@@ -232,7 +232,6 @@ static sm_setup_context_t the_setup;
 static sm_setup_context_t * setup = &the_setup;
 // 
 static sm_connection_t single_connection;
-static sm_connection_t * connection = &single_connection;
 
 // @returns 1 if oob data is available
 // stores oob data in provided 16 byte buffer if not null
@@ -253,6 +252,7 @@ static const stk_generation_method_t stk_generation_method[5][5] = {
 
 static void sm_run();
 static void sm_notify_client(uint8_t type, uint8_t addr_type, bd_addr_t address, uint32_t passkey, uint16_t index);
+static sm_connection_t * sm_get_connection_for_handle(uint16_t handle);
 
 static void log_info_hex16(const char * name, uint16_t value){
     log_info("%-6s 0x%04x", name, value);
@@ -1396,6 +1396,8 @@ static void sm_handle_random_result(uint8_t * data){
 static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     int have_oob_data;
+    sm_connection_t  * sm_conn;
+    uint16_t handle;
 
     switch (packet_type) {
             
@@ -1421,23 +1423,21 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                             if (packet[3]) return; // connection failed
 
-                            // only single connection for peripheral
-                            if (connection->sm_handle){
-                                log_info("Already connected, ignoring incoming connection");
-                                return;
-                            }
+                            handle = READ_BT_16(packet, 4);
+                            sm_conn = sm_get_connection_for_handle(handle);
+                            if (!sm_conn) break;
 
-                            connection->sm_handle = READ_BT_16(packet, 4);
-                            connection->sm_role = packet[6];
-                            connection->sm_peer_addr_type = packet[7];
-                            bt_flip_addr(connection->sm_peer_address, &packet[8]);
+                            sm_conn->sm_handle = handle;
+                            sm_conn->sm_role = packet[6];
+                            sm_conn->sm_peer_addr_type = packet[7];
+                            bt_flip_addr(sm_conn->sm_peer_address, &packet[8]);
 
-                            log_info("New connection, role %s", connection->sm_role ? "slave" : "master");
+                            log_info("New sm_conn, role %s", sm_conn->sm_role ? "slave" : "master");
 
                             // reset security properties
-                            connection->sm_connection_encrypted = 0;
-                            connection->sm_connection_authenticated = 0;
-                            connection->sm_connection_authorization_state = AUTHORIZATION_UNKNOWN;
+                            sm_conn->sm_connection_encrypted = 0;
+                            sm_conn->sm_connection_authenticated = 0;
+                            sm_conn->sm_connection_authorization_state = AUTHORIZATION_UNKNOWN;
 
                             // fill in sm setup
                             sm_reset_tk();
@@ -1445,10 +1445,10 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             // query client for OOB data
                             have_oob_data = 0;
                             if (sm_get_oob_data) {
-                                have_oob_data = (*sm_get_oob_data)(connection->sm_peer_addr_type, &connection->sm_peer_address, setup->sm_tk);
+                                have_oob_data = (*sm_get_oob_data)(sm_conn->sm_peer_addr_type, &sm_conn->sm_peer_address, setup->sm_tk);
                             }
 
-                            if (connection->sm_role){
+                            if (sm_conn->sm_role){
                                 // slave
                                 hci_le_advertisement_address(&setup->sm_s_addr_type, &setup->sm_s_address);
                                 setup->sm_m_addr_type = packet[7];
@@ -1457,7 +1457,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 setup->sm_s_pres.oob_data_flag = have_oob_data;
                                 setup->sm_s_pres.auth_req = sm_auth_req;
                                 setup->sm_s_pres.max_encryption_key_size = sm_max_encryption_key_size;
-                                connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;
+                                sm_conn->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;
                             } else {
                                 // master
                                 hci_le_advertisement_address(&setup->sm_m_addr_type, &setup->sm_m_address);
@@ -1471,32 +1471,36 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 setup->sm_m_preq.max_encryption_key_size = sm_max_encryption_key_size;
                                 setup->sm_m_preq.initiator_key_distribution = 0x07;
                                 setup->sm_m_preq.responder_key_distribution = 0x07;
-                                connection->sm_engine_state = SM_INITIATOR_CONNECTED;
+                                sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
                             }
 
                             // request security if we're slave and requested by app
-                            if (connection->sm_role == 0x01 && sm_slave_request_security){
-                                connection->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
+                            if (sm_conn->sm_role == 0x01 && sm_slave_request_security){
+                                sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
                             }
 
                             // hack (probablu) start security if requested before
-                            if (connection->sm_role == 0x00 && sm_authenticate_outgoing_connections){
-                                connection->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;
+                            if (sm_conn->sm_role == 0x00 && sm_authenticate_outgoing_connections){
+                                sm_conn->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;
                             }
 
                             // prepare CSRK lookup
-                            connection->sm_csrk_lookup_state = CSRK_LOOKUP_W4_READY;
+                            sm_conn->sm_csrk_lookup_state = CSRK_LOOKUP_W4_READY;
                             if (!sm_central_device_lookup_active()){
                                 // try to lookup device
-                                sm_central_device_start_lookup(connection, connection->sm_peer_addr_type, connection->sm_peer_address);
-                                connection->sm_csrk_lookup_state = CSRK_LOOKUP_STARTED;
+                                sm_central_device_start_lookup(sm_conn, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
+                                sm_conn->sm_csrk_lookup_state = CSRK_LOOKUP_STARTED;
                             }
                             break;
 
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:
-                            log_info("LTK Request: state %u", connection->sm_engine_state);
-                            if (connection->sm_engine_state == SM_RESPONDER_PH2_W4_LTK_REQUEST){
-                                connection->sm_engine_state = SM_PH2_CALC_STK;
+                            handle = READ_BT_16(packet, 3);
+                            sm_conn = sm_get_connection_for_handle(handle);
+                            if (!sm_conn) break;
+
+                            log_info("LTK Request: state %u", sm_conn->sm_engine_state);
+                            if (sm_conn->sm_engine_state == SM_RESPONDER_PH2_W4_LTK_REQUEST){
+                                sm_conn->sm_engine_state = SM_PH2_CALC_STK;
                                 break;
                             }
 
@@ -1507,18 +1511,18 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             // assume that we don't have a LTK for ediv == 0 and random == null
                             if (setup->sm_local_ediv == 0 && sm_is_null_random(setup->sm_local_rand)){
                                 log_info("LTK Request: ediv & random are empty");
-                                connection->sm_engine_state = SM_RESPONDER_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
+                                sm_conn->sm_engine_state = SM_RESPONDER_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
                                 break;
                             }
 
                             // re-establish used key encryption size
                             // no db for encryption size hack: encryption size is stored in lowest nibble of setup->sm_local_rand
-                            connection->sm_actual_encryption_key_size = (setup->sm_local_rand[7] & 0x0f) + 1;
+                            sm_conn->sm_actual_encryption_key_size = (setup->sm_local_rand[7] & 0x0f) + 1;
 
                             // no db for authenticated flag hack: flag is stored in bit 4 of LSB
-                            connection->sm_connection_authenticated = (setup->sm_local_rand[7] & 0x10) >> 4;
+                            sm_conn->sm_connection_authenticated = (setup->sm_local_rand[7] & 0x10) >> 4;
 
-                            connection->sm_engine_state = SM_PH4_Y_GET_ENC;
+                            sm_conn->sm_engine_state = SM_PH4_Y_GET_ENC;
                             break;
 
                         default:
@@ -1527,22 +1531,29 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     break;
 
                 case HCI_EVENT_ENCRYPTION_CHANGE: 
-                    if (connection->sm_handle != READ_BT_16(packet, 3)) break;
-                    connection->sm_connection_encrypted = packet[5];
-                    log_info("Eencryption state change: %u", connection->sm_connection_encrypted);
-                    if (!connection->sm_connection_encrypted) break;
-                    if (connection->sm_engine_state == SM_PH2_W4_CONNECTION_ENCRYPTED) {
-                        if (connection->sm_role){
-                            connection->sm_engine_state = SM_PH3_GET_RANDOM;
+                    handle = READ_BT_16(packet, 3);
+                    sm_conn = sm_get_connection_for_handle(handle);
+                    if (!sm_conn) break;
+
+                    sm_conn->sm_connection_encrypted = packet[5];
+                    log_info("Eencryption state change: %u", sm_conn->sm_connection_encrypted);
+                    if (!sm_conn->sm_connection_encrypted) break;
+                    if (sm_conn->sm_engine_state == SM_PH2_W4_CONNECTION_ENCRYPTED) {
+                        if (sm_conn->sm_role){
+                            sm_conn->sm_engine_state = SM_PH3_GET_RANDOM;
                         } else {
-                            connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
+                            sm_conn->sm_engine_state = SM_PH3_RECEIVE_KEYS;
                         }
                     }
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    connection->sm_engine_state = SM_GENERAL_IDLE;
-                    connection->sm_handle = 0;
+                    handle = READ_BT_16(packet, 3);
+                    sm_conn = sm_get_connection_for_handle(handle);
+                    if (!sm_conn) break;
+
+                    sm_conn->sm_engine_state = SM_GENERAL_IDLE;
+                    sm_conn->sm_handle = 0;
                     break;
                     
 				case HCI_EVENT_COMMAND_COMPLETE:
@@ -1597,19 +1608,17 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
     if (packet_type != SM_DATA_PACKET) return;
 
-    if (handle != connection->sm_handle){
-        log_info("sm_packet_handler: packet from handle %u, but expecting from %u", handle, connection->sm_handle);
-        return;
-    }
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(handle);
+    if (!sm_conn) return;
 
     if (packet[0] == SM_CODE_PAIRING_FAILED){
-        connection->sm_engine_state = SM_GENERAL_IDLE;
+        sm_conn->sm_engine_state = SM_GENERAL_IDLE;
         return;
     }
 
-    log_debug("sm_packet_handler: staate %u, pdu 0x%02x", connection->sm_engine_state, packet[0]);
+    log_debug("sm_packet_handler: staate %u, pdu 0x%02x", sm_conn->sm_engine_state, packet[0]);
 
-    switch (connection->sm_engine_state){
+    switch (sm_conn->sm_engine_state){
         
         // a sm timeout requries a new physical connection
         case SM_GENERAL_TIMEOUT:
@@ -1618,7 +1627,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
         // Initiator
         case SM_INITIATOR_PH1_W4_PAIRING_RESPONSE:
             if (packet[0] != SM_CODE_PAIRING_RESPONSE){
-                sm_pdu_received_in_wrong_state(connection);
+                sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
 
@@ -1628,10 +1637,10 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // identical to responder, just other encryption size field
 
             // check key size
-            connection->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(setup->sm_s_pres.max_encryption_key_size);
-            if (connection->sm_actual_encryption_key_size == 0){
+            sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(setup->sm_s_pres.max_encryption_key_size);
+            if (sm_conn->sm_actual_encryption_key_size == 0){
                 setup->sm_pairing_failed_reason = SM_REASON_ENCRYPTION_KEY_SIZE;
-                connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+                sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
                 break;
             }
 
@@ -1641,7 +1650,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // identical to responder
 
             // start SM timeout
-            sm_2timeout_start(connection);
+            sm_2timeout_start(sm_conn);
 
             // decide on STK generation method
             sm_setup_tk();
@@ -1650,44 +1659,44 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // check if STK generation method is acceptable by client
             if (!sm_validate_stk_generation_method()){
                 setup->sm_pairing_failed_reason = SM_REASON_AUTHENTHICATION_REQUIREMENTS;
-                connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+                sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
                 break;
             }
 
             // JUST WORKS doens't provide authentication
-            connection->sm_connection_authenticated = setup->sm_stk_generation_method == JUST_WORKS ? 0 : 1;
+            sm_conn->sm_connection_authenticated = setup->sm_stk_generation_method == JUST_WORKS ? 0 : 1;
 
             // generate random number first, if we need to show passkey
             if (setup->sm_stk_generation_method == PK_RESP_INPUT){
-                connection->sm_engine_state = SM_PH2_GET_RANDOM_TK;
+                sm_conn->sm_engine_state = SM_PH2_GET_RANDOM_TK;
                 break;
             }
 
-            sm_trigger_user_response(connection);
+            sm_trigger_user_response(sm_conn);
 
-            connection->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
+            sm_conn->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
             break;                        
 
         case SM_INITIATOR_PH2_W4_PAIRING_CONFIRM:
             if (packet[0] != SM_CODE_PAIRING_CONFIRM){
-                sm_pdu_received_in_wrong_state(connection);
+                sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
 
             // store s_confirm
             swap128(&packet[1], setup->sm_peer_confirm);
-            connection->sm_engine_state = SM_PH2_SEND_PAIRING_RANDOM;
+            sm_conn->sm_engine_state = SM_PH2_SEND_PAIRING_RANDOM;
             break;
 
         case SM_INITIATOR_PH2_W4_PAIRING_RANDOM:
             if (packet[0] != SM_CODE_PAIRING_RANDOM){
-                sm_pdu_received_in_wrong_state(connection);
+                sm_pdu_received_in_wrong_state(sm_conn);
                 break;;
             }
 
             // received random value
             swap128(&packet[1], setup->sm_peer_random);
-            connection->sm_engine_state = SM_PH2_C1_GET_ENC_C;
+            sm_conn->sm_engine_state = SM_PH2_C1_GET_ENC_C;
             break;
 
         // Responder
@@ -1695,7 +1704,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
         case SM_RESPONDER_PH1_W4_PAIRING_REQUEST:
         {
             if (packet[0] != SM_CODE_PAIRING_REQUEST){
-                sm_pdu_received_in_wrong_state(connection);
+                sm_pdu_received_in_wrong_state(sm_conn);
                 break;;
             }
 
@@ -1703,10 +1712,10 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             memcpy(&setup->sm_m_preq, packet, sizeof(sm_pairing_packet_t));
 
             // check key size
-            connection->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(setup->sm_s_pres.max_encryption_key_size);
-            if (connection->sm_actual_encryption_key_size == 0){
+            sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(setup->sm_s_pres.max_encryption_key_size);
+            if (sm_conn->sm_actual_encryption_key_size == 0){
                 setup->sm_pairing_failed_reason = SM_REASON_ENCRYPTION_KEY_SIZE;
-                connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+                sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
                 break;
             }
 
@@ -1714,7 +1723,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             sm_setup_key_distribution(setup->sm_m_preq.responder_key_distribution);
 
             // start SM timeout
-            sm_2timeout_start(connection);
+            sm_2timeout_start(sm_conn);
 
             // decide on STK generation method
             sm_setup_tk();
@@ -1723,26 +1732,26 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // check if STK generation method is acceptable by client
             if (!sm_validate_stk_generation_method()){
                 setup->sm_pairing_failed_reason = SM_REASON_AUTHENTHICATION_REQUIREMENTS;
-                connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+                sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
                 break;
             }
 
             // JUST WORKS doens't provide authentication
-            connection->sm_connection_authenticated = setup->sm_stk_generation_method == JUST_WORKS ? 0 : 1;
+            sm_conn->sm_connection_authenticated = setup->sm_stk_generation_method == JUST_WORKS ? 0 : 1;
 
             // generate random number first, if we need to show passkey
             if (setup->sm_stk_generation_method == PK_INIT_INPUT){
-                connection->sm_engine_state = SM_PH2_GET_RANDOM_TK;
+                sm_conn->sm_engine_state = SM_PH2_GET_RANDOM_TK;
                 break;
             }
 
-            connection->sm_engine_state = SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE;
+            sm_conn->sm_engine_state = SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE;
             break;            
         }
 
         case SM_RESPONDER_PH1_W4_PAIRING_CONFIRM:
             if (packet[0] != SM_CODE_PAIRING_CONFIRM){
-                sm_pdu_received_in_wrong_state(connection);
+                sm_pdu_received_in_wrong_state(sm_conn);
                 break;;
             }
 
@@ -1757,29 +1766,29 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // handle user cancel pairing?
             if (setup->sm_user_response == SM_USER_RESPONSE_DECLINE){
                 setup->sm_pairing_failed_reason = SM_REASON_PASSKEYT_ENTRY_FAILED;
-                connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+                sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
                 break;
             }
 
             // wait for user action?
             if (setup->sm_user_response == SM_USER_RESPONSE_PENDING){
-                connection->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
+                sm_conn->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
                 break;
             }
 
             // calculate and send local_confirm
-            connection->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
+            sm_conn->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
             break;
 
         case SM_RESPONDER_PH2_W4_PAIRING_RANDOM:
             if (packet[0] != SM_CODE_PAIRING_RANDOM){
-                sm_pdu_received_in_wrong_state(connection);
+                sm_pdu_received_in_wrong_state(sm_conn);
                 break;;
             }
 
             // received random value
             swap128(&packet[1], setup->sm_peer_random);
-            connection->sm_engine_state = SM_PH2_C1_GET_ENC_C;
+            sm_conn->sm_engine_state = SM_PH2_C1_GET_ENC_C;
             break;
 
         case SM_PH3_RECEIVE_KEYS:
@@ -1823,17 +1832,17 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             }     
             // done with key distribution?         
             if (sm_key_distribution_all_received()){
-                if (connection->sm_role){
-                    sm_2timeout_stop(connection);
-                    connection->sm_engine_state = SM_GENERAL_IDLE; 
+                if (sm_conn->sm_role){
+                    sm_2timeout_stop(sm_conn);
+                    sm_conn->sm_engine_state = SM_GENERAL_IDLE; 
                 } else {
-                    connection->sm_engine_state = SM_PH3_GET_RANDOM; 
+                    sm_conn->sm_engine_state = SM_PH3_GET_RANDOM; 
                 }
             }
             break;
         default:
             // Unexpected PDU
-            log_info("Unexpected PDU %u in state %u", packet[0], connection->sm_engine_state);
+            log_info("Unexpected PDU %u in state %u", packet[0], sm_conn->sm_engine_state);
             break;
     }
 
@@ -1890,8 +1899,9 @@ void sm_test_set_irk(sm_key_t irk){
  * @brief Trigger Security Request
  * @note Not used normally. Bonding is triggered by access to protected attributes in ATT Server
  */
-void sm_send_security_request(){
-    connection->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
+void sm_send_security_request(uint16_t handle){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(handle);    
+    sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
     sm_run();
 }
 
@@ -1906,7 +1916,7 @@ void sm_init(){
     }
     sm_set_er(er);
     sm_set_ir(ir);
-    connection->sm_engine_state = SM_GENERAL_IDLE;
+    single_connection.sm_engine_state = SM_GENERAL_IDLE;
     // defaults
     sm_accepted_stk_generation_methods = SM_STK_GENERATION_METHOD_JUST_WORKS
                                        | SM_STK_GENERATION_METHOD_OOB
@@ -1925,9 +1935,13 @@ void sm_init(){
     l2cap_register_fixed_channel(sm_packet_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
 }
 
+// TODO lookup connection for handle
+static sm_connection_t * sm_get_connection_for_handle(uint16_t handle){
+    return &single_connection;    
+}
+// TODO lookup connection for given addr & type
 static sm_connection_t * sm_get_connection(uint8_t addr_type, bd_addr_t address){
-    // TODO lookup connection for given addr & type
-    return connection;
+    return &single_connection;
 }
 
 // @returns 0 if not encrypted, 7-16 otherwise

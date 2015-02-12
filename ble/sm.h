@@ -185,7 +185,7 @@ void sm_set_request_security(int enable);
  * @brief Trigger Security Request
  * @note Not used normally. Bonding is triggered by access to protected attributes in ATT Server
  */
-void sm_send_security_request();
+void sm_send_security_request(uint16_t handle);
 
 /**
  * @brief Decline bonding triggered by event before
