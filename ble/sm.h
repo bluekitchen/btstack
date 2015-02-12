@@ -71,13 +71,6 @@ typedef enum {
     IO_CAPABILITY_KEYBOARD_DISPLAY, // not used by secure simple pairing
 } io_capability_t;
 
-// Authorization state
-typedef enum {
-    AUTHORIZATION_UNKNOWN,
-    AUTHORIZATION_PENDING,
-    AUTHORIZATION_DECLINED,
-    AUTHORIZATION_GRANTED
-} authorization_state_t;
 
 // Authentication requirement flags
 #define SM_AUTHREQ_NO_BONDING 0x00

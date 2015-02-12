@@ -335,6 +335,127 @@ typedef enum {
     LE_STOP_SCAN,
 } le_scanning_state_t;
 
+//
+// SM internal types and globals
+//
+
+typedef enum {
+
+    // general states
+    SM_GENERAL_IDLE,
+    SM_GENERAL_SEND_PAIRING_FAILED,
+    SM_GENERAL_TIMEOUT, // no other security messages are exchanged
+
+    // Phase 1: Pairing Feature Exchange
+    SM_PH1_W4_USER_RESPONSE,
+
+    // Phase 2: Authenticating and Encrypting
+
+    // get random number for use as TK Passkey if we show it 
+    SM_PH2_GET_RANDOM_TK,
+    SM_PH2_W4_RANDOM_TK,
+
+    // get local random number for confirm c1
+    SM_PH2_C1_GET_RANDOM_A,
+    SM_PH2_C1_W4_RANDOM_A,
+    SM_PH2_C1_GET_RANDOM_B,
+    SM_PH2_C1_W4_RANDOM_B,
+
+    // calculate confirm value for local side
+    SM_PH2_C1_GET_ENC_A,
+    SM_PH2_C1_W4_ENC_A,
+    SM_PH2_C1_GET_ENC_B,
+    SM_PH2_C1_W4_ENC_B,
+
+    // calculate confirm value for remote side
+    SM_PH2_C1_GET_ENC_C,
+    SM_PH2_C1_W4_ENC_C,
+    SM_PH2_C1_GET_ENC_D,
+    SM_PH2_C1_W4_ENC_D,
+
+    SM_PH2_C1_SEND_PAIRING_CONFIRM,
+    SM_PH2_SEND_PAIRING_RANDOM,
+
+    // calc STK
+    SM_PH2_CALC_STK,
+    SM_PH2_W4_STK,
+
+    SM_PH2_W4_CONNECTION_ENCRYPTED,
+
+    // Phase 3: Transport Specific Key Distribution
+    
+    // calculate DHK, Y, EDIV, and LTK
+    SM_PH3_GET_RANDOM,
+    SM_PH3_W4_RANDOM,
+    SM_PH3_GET_DIV,
+    SM_PH3_W4_DIV,
+    SM_PH3_Y_GET_ENC,
+    SM_PH3_Y_W4_ENC,
+    SM_PH3_LTK_GET_ENC,
+    SM_PH3_LTK_W4_ENC,
+    SM_PH3_CSRK_GET_ENC,
+    SM_PH3_CSRK_W4_ENC,
+
+    // exchange keys
+    SM_PH3_DISTRIBUTE_KEYS,
+    SM_PH3_RECEIVE_KEYS,
+
+    // Phase 4: re-establish previously distributed LTK
+    SM_PH4_Y_GET_ENC,
+    SM_PH4_Y_W4_ENC,
+    SM_PH4_LTK_GET_ENC,
+    SM_PH4_LTK_W4_ENC,
+    SM_PH4_SEND_LTK,
+
+    // RESPONDER ROLE
+    SM_RESPONDER_SEND_SECURITY_REQUEST,
+    SM_RESPONDER_SEND_LTK_REQUESTED_NEGATIVE_REPLY,
+    SM_RESPONDER_PH1_W4_PAIRING_REQUEST,
+    SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE,
+    SM_RESPONDER_PH1_W4_PAIRING_CONFIRM,
+    SM_RESPONDER_PH2_W4_PAIRING_RANDOM,
+    SM_RESPONDER_PH2_W4_LTK_REQUEST,
+    SM_RESPONDER_PH2_SEND_LTK_REPLY,
+
+    // INITITIATOR ROLE
+    SM_INITIATOR_CONNECTED,
+    SM_INITIATOR_PH1_SEND_PAIRING_REQUEST,
+    SM_INITIATOR_PH1_W4_PAIRING_RESPONSE,
+    SM_INITIATOR_PH2_W4_PAIRING_CONFIRM,
+    SM_INITIATOR_PH2_W4_PAIRING_RANDOM,
+    SM_INITIATOR_PH3_SEND_START_ENCRYPTION,
+    SM_INITIATOR_PH3_XXXX,
+
+} security_manager_state_t;
+
+typedef enum {
+    CSRK_LOOKUP_IDLE,
+    CSRK_LOOKUP_W4_READY,
+    CSRK_LOOKUP_STARTED,
+} csrk_lookup_state_t;
+
+// Authorization state
+typedef enum {
+    AUTHORIZATION_UNKNOWN,
+    AUTHORIZATION_PENDING,
+    AUTHORIZATION_DECLINED,
+    AUTHORIZATION_GRANTED
+} authorization_state_t;
+
+// connection info available as long as connection exists
+typedef struct sm_connection {
+    uint16_t  sm_handle;
+    uint8_t   sm_role;   // 0 - IamMaster, 1 = IamSlave
+    bd_addr_t sm_peer_address;
+    uint8_t   sm_peer_addr_type;
+    security_manager_state_t sm_engine_state;
+    csrk_lookup_state_t      sm_csrk_lookup_state;
+    uint8_t   sm_connection_encrypted;
+    uint8_t   sm_connection_authenticated;   // [0..1]
+    uint8_t   sm_actual_encryption_key_size;
+    authorization_state_t sm_connection_authorization_state;
+    timer_source_t sm_timeout;
+} sm_connection_t;
 
 typedef struct {
     // linked list - assert: first field
@@ -389,6 +510,10 @@ typedef struct {
     uint16_t le_conn_latency;
     uint16_t le_supervision_timeout;
     uint16_t le_update_con_parameter_response;
+
+    // LE Security Manager
+    // sm_connection_t sm_connection;
+
 } hci_connection_t;
 
 /**

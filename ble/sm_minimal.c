@@ -49,23 +49,13 @@
 // SM internal types and globals
 //
 
-typedef enum {
-    SM_STATE_IDLE,
-    SM_STATE_SEND_LTK_REQUESTED_NEGATIVE_REPLY,
-    SM_STATE_SEND_PAIRING_FAILED,
-    SM_STATE_PAIRING_FAILED
-
-} security_manager_state_t;
-
 static void sm_run();
 
 // used to notify applicationss that user interaction is neccessary, see sm_notify_t below
 static btstack_packet_handler_t sm_client_packet_handler = NULL;
-static security_manager_state_t sm_state_responding = SM_STATE_IDLE;
+static security_manager_state_t sm_state_responding = SM_GENERAL_IDLE;
 static uint16_t sm_response_handle = 0;
 static uint8_t  sm_pairing_failed_reason = 0;
-
-
 
 void sm_set_er(sm_key_t er){}
 void sm_set_ir(sm_key_t ir){}
@@ -118,7 +108,7 @@ void sm_register_packet_handler(btstack_packet_handler_t handler){
 
 static void sm_pdu_received_in_wrong_state(){
     sm_pairing_failed_reason = SM_REASON_UNSPECIFIED_REASON;
-    sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
+    sm_state_responding = SM_GENERAL_SEND_PAIRING_FAILED;
 }
 
 static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
@@ -131,18 +121,18 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
     }
 
     if (packet[0] == SM_CODE_PAIRING_FAILED){
-        sm_state_responding = SM_STATE_PAIRING_FAILED;
+        sm_state_responding = SM_GENERAL_SEND_PAIRING_FAILED;
         return;
     }
 
     switch (sm_state_responding){
         
-        case SM_STATE_IDLE: {
+        case SM_GENERAL_IDLE: {
             if (packet[0] != SM_CODE_PAIRING_REQUEST){
                 sm_pdu_received_in_wrong_state();
                 break;;
             }
-           	sm_state_responding = SM_STATE_SEND_PAIRING_FAILED;
+           	sm_state_responding = SM_GENERAL_SEND_PAIRING_FAILED;
             sm_pairing_failed_reason = SM_REASON_PAIRING_NOT_SUPPORTED;
             break;
         }
@@ -169,12 +159,12 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                                 return;
                             }
                             sm_response_handle = READ_BT_16(packet, 4);
-                            sm_state_responding = SM_STATE_IDLE;
+                            sm_state_responding = SM_GENERAL_IDLE;
                             break;
 
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:
                             log_info("LTK Request: state %u", sm_state_responding);
-                            sm_state_responding = SM_STATE_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
+                            sm_state_responding = SM_RESPONDER_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
                             break;
 
                         default:
@@ -183,7 +173,7 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    sm_state_responding = SM_STATE_IDLE;
+                    sm_state_responding = SM_GENERAL_IDLE;
                     sm_response_handle = 0;
                     break;
 			}                    
@@ -202,18 +192,18 @@ static void sm_run(void){
 
     // assert that we can send either one
     switch (sm_state_responding){
-        case SM_STATE_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
+        case SM_RESPONDER_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
             if (!hci_can_send_command_packet_now()) return;
             hci_send_cmd(&hci_le_long_term_key_negative_reply, sm_response_handle);
-            sm_state_responding = SM_STATE_IDLE;
+            sm_state_responding = SM_GENERAL_IDLE;
             return;
-        case SM_STATE_SEND_PAIRING_FAILED: {
+        case SM_GENERAL_SEND_PAIRING_FAILED: {
             if (!l2cap_can_send_fixed_channel_packet_now(sm_response_handle)) return;
             uint8_t buffer[2];
             buffer[0] = SM_CODE_PAIRING_FAILED;
             buffer[1] = sm_pairing_failed_reason;
             l2cap_send_connectionless(sm_response_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-            sm_state_responding = SM_STATE_IDLE;
+            sm_state_responding = SM_GENERAL_IDLE;
             break;
         }
        	default:
