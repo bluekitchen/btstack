@@ -162,9 +162,9 @@ static int    h4_open(void *transport_config){
 
     // bring bluetooth module into defined state
     uint8_t reset[] = { 0x01, 0x03, 0x0c, 0x00};
-    write(fd, &reset, sizeof(reset));
+    write(fd, reset, sizeof(reset));
     usleep(100000);     // 100 ms
-    write(fd, &reset, sizeof(reset));
+    write(fd, reset, sizeof(reset));
     usleep(100000);     // 100 ms
     tcflush(fd, TCIOFLUSH);
     
