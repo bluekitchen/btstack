@@ -98,23 +98,23 @@ static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type
 
 static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type_t * link_key_type) {
     set_path(bd_addr);
+    if (access(keypath, R_OK)) return 0;
+    
     char link_key_str[LINK_KEY_STR_LEN + 1];
     char link_key_type_str[2];
-
-    if (access(keypath, R_OK)) return 0;
 
     FILE * rFile = fopen(keypath,"r+");
     size_t objects_read = fread(link_key_str, LINK_KEY_STR_LEN, 1, rFile );
     if (objects_read == 1){
         link_key_str[LINK_KEY_STR_LEN] = 0;
-        printf("found link key %s\n", link_key_str);
+        log_info("Found link key %s\n", link_key_str);
         objects_read = fread(link_key_type_str, 1, 1, rFile );
     }
     fclose(rFile);
     
     if (objects_read != 1) return 0;
     link_key_type_str[1] = 0;
-    printf("found link key type %s\n", link_key_type_str);
+    log_info("Found link key type %s\n", link_key_type_str);
     
     int scan_result = sscan_link_key(link_key_str, *link_key);
     if (scan_result == 0 ) return 0;
@@ -127,7 +127,6 @@ static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type_
 
 static void delete_link_key(bd_addr_t *bd_addr){
     set_path(bd_addr);
-    
     if (access(keypath, R_OK)) return;
 
     if(remove(keypath) != 0){

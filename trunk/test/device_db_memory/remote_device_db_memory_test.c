@@ -11,14 +11,8 @@
 
 extern linked_list_t db_mem_link_keys ;
 extern linked_list_t db_mem_names ;
-
-typedef struct teststruct{
-    int type;
-} teststruct_t;
-
-teststruct_t tr = {
-    type : 0
-};
+// const extern "C" db_mem_device_name_t * btstack_memory_db_mem_device_name_get(void);
+// const extern "C" void btstack_memory_init(void);
 
 void dump(linked_list_t list){
     printf("dump:\n");
@@ -37,9 +31,9 @@ TEST_GROUP(RemoteDeviceDB){
     bd_addr_t addr1, addr2, addr3;
     device_name_t device_name;
     link_key_t link_key;
-    
-    void setup(){
+    link_key_type_t link_key_type;
 
+    void setup(){
         btstack_memory_init();
 
         bd_addr_t addr_1 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x01 };
@@ -48,6 +42,9 @@ TEST_GROUP(RemoteDeviceDB){
         BD_ADDR_COPY(addr1, addr_1); 
         BD_ADDR_COPY(addr2, addr_2); 
         BD_ADDR_COPY(addr3, addr_3); 
+       
+        link_key_type = (link_key_type_t)4;
+        sprintf((char*)link_key, "%d", 100);
     }
     
     void teardown(){}
@@ -85,27 +82,27 @@ TEST(RemoteDeviceDB, SortByLastUsedName){
 
 TEST(RemoteDeviceDB, SinglePutGetDeleteKey){
 	sprintf((char*)link_key, "%d", 100);
-	remote_device_db_memory.put_link_key(&addr1, &link_key);
+	remote_device_db_memory.put_link_key(&addr1, &link_key, link_key_type);
     // dump(db_mem_link_keys);
 
-	CHECK(remote_device_db_memory.get_link_key(&addr1, &link_key));
+	CHECK(remote_device_db_memory.get_link_key(&addr1, &link_key, &link_key_type));
     
     remote_device_db_memory.delete_link_key(&addr1);
-    CHECK(!remote_device_db_memory.get_link_key(&addr1, &link_key));
+    CHECK(!remote_device_db_memory.get_link_key(&addr1, &link_key, &link_key_type));
 }
 
 TEST(RemoteDeviceDB, SortByLastUsedKey){
     sprintf((char*)link_key, "%d", 10);
-	remote_device_db_memory.put_link_key(&addr1, &link_key);
+	remote_device_db_memory.put_link_key(&addr1, &link_key, link_key_type);
     // dump(db_mem_link_keys);
     sprintf((char*)link_key, "%d", 20);
-	remote_device_db_memory.put_link_key(&addr2, &link_key);
+	remote_device_db_memory.put_link_key(&addr2, &link_key, link_key_type);
     // dump(db_mem_link_keys);
     sprintf((char*)link_key, "%d", 30);
-	remote_device_db_memory.put_link_key(&addr3, &link_key);
+	remote_device_db_memory.put_link_key(&addr3, &link_key, link_key_type);
     // dump(db_mem_link_keys);
 
-    CHECK(remote_device_db_memory.get_link_key(&addr2, &link_key));
+    CHECK(remote_device_db_memory.get_link_key(&addr2, &link_key, &link_key_type));
     // dump(db_mem_link_keys);
     
     //get first element of the list
