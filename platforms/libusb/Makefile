@@ -3,7 +3,7 @@ BTSTACK_ROOT = ../..
 POSIX_ROOT= ${BTSTACK_ROOT}/platforms/posix
 
 CORE   += main.c
-COMMON += hci_transport_h2_libusb.c run_loop_posix.c
+COMMON += hci_transport_h2_libusb.c run_loop_posix.c remote_device_db_fs.c
 
 
 include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
