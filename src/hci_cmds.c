@@ -325,6 +325,32 @@ const hci_cmd_t hci_read_remote_supported_features_command = {
 OPCODE(OGF_LINK_CONTROL, 0x1B), "H"
 };
 
+/** 
+ * @param handle
+ * @param transmit_bandwidth
+ * @param receive_bandwidth
+ * @param max_latency
+ * @param voice_settings
+ * @param retransmission_effort
+ * @param packet_type
+ */
+const hci_cmd_t hci_setup_synchronous_connection_command = {
+OPCODE(OGF_LINK_CONTROL, 0x0028), "H442212"
+};
+
+/**
+ * @param bd_addr
+ * @param transmit_bandwidth
+ * @param receive_bandwidth
+ * @param max_latency
+ * @param voice_settings
+ * @param retransmission_effort
+ * @param packet_type
+ */
+const hci_cmd_t hci_accept_synchronous_connection_command = {
+OPCODE(OGF_LINK_CONTROL, 0x0028), "B442212"
+};
+
 /**
  * @param bd_addr
  * @param IO_capability
@@ -379,6 +405,81 @@ const hci_cmd_t hci_io_capability_request_negative_reply = {
 OPCODE(OGF_LINK_CONTROL, 0x34), "B1"
 };
 
+/**
+ * @param handle
+ * @param transmit_bandwidth
+ * @param receive_bandwidth
+ * @param transmit_coding_format_type
+ * @param transmit_coding_format_company
+ * @param transmit_coding_format_codec
+ * @param receive_coding_format_type
+ * @param receive_coding_format_company
+ * @param receive_coding_format_codec
+ * @param transmit_coding_frame_size
+ * @param receive_coding_frame_size
+ * @param input_bandwidth
+ * @param output_bandwidth
+ * @param input_coding_format_type
+ * @param input_coding_format_company
+ * @param input_coding_format_codec
+ * @param output_coding_format_type
+ * @param output_coding_format_company
+ * @param output_coding_format_codec
+ * @param input_coded_data_size
+ * @param outupt_coded_data_size
+ * @param input_pcm_data_format
+ * @param output_pcm_data_format
+ * @param input_pcm_sample_payload_msb_position
+ * @param output_pcm_sample_payload_msb_position
+ * @param input_data_path
+ * @param output_data_path
+ * @param input_transport_unit_size
+ * @param output_transport_unit_size
+ * @param max_latency
+ * @param packet_type
+ * @param retransmission_effort
+ */
+const hci_cmd_t hci_enhanced_setup_synchronous_connection = {
+OPCODE(OGF_LINK_CONTROL, 0x3d), "H4412212222441221222211111111221" 
+};
+
+/**
+ * @param bd_addr
+ * @param transmit_bandwidth
+ * @param receive_bandwidth
+ * @param transmit_coding_format_type
+ * @param transmit_coding_format_company
+ * @param transmit_coding_format_codec
+ * @param receive_coding_format_type
+ * @param receive_coding_format_company
+ * @param receive_coding_format_codec
+ * @param transmit_coding_frame_size
+ * @param receive_coding_frame_size
+ * @param input_bandwidth
+ * @param output_bandwidth
+ * @param input_coding_format_type
+ * @param input_coding_format_company
+ * @param input_coding_format_codec
+ * @param output_coding_format_type
+ * @param output_coding_format_company
+ * @param output_coding_format_codec
+ * @param input_coded_data_size
+ * @param outupt_coded_data_size
+ * @param input_pcm_data_format
+ * @param output_pcm_data_format
+ * @param input_pcm_sample_payload_msb_position
+ * @param output_pcm_sample_payload_msb_position
+ * @param input_data_path
+ * @param output_data_path
+ * @param input_transport_unit_size
+ * @param output_transport_unit_size
+ * @param max_latency
+ * @param packet_type
+ * @param retransmission_effort
+ */
+const hci_cmd_t hci_enhanced_accept_synchronous_connection = {
+OPCODE(OGF_LINK_CONTROL, 0x3d), "B4412212222441221222211111111221" 
+};
 
 /**
  *  Link Policy Commands 
