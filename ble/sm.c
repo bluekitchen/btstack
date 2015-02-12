@@ -555,8 +555,8 @@ static void sm_shift_left_by_one_bit_inplace(int len, uint8_t * data){
 }
 
 // while x_state++ for an enum is possible in C, it isn't in C++. we use this helpers to avoid compile errors for now
-static inline void sm_next_responding_state(){
-    connection->sm_engine_state = (security_manager_state_t) (((int)connection->sm_engine_state) + 1);
+static inline void sm_next_responding_state(sm_connection_t * sm_conn){
+    sm_conn->sm_engine_state = (security_manager_state_t) (((int)sm_conn->sm_engine_state) + 1);
 }
 static inline void dkg_next_state(){
     dkg_state = (derived_key_generation_t) (((int)dkg_state) + 1);
@@ -698,12 +698,12 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
     }
 }
 
-static void sm_trigger_user_response(){
+static void sm_trigger_user_response(sm_connection_t * sm_conn){
     // notify client for: JUST WORKS confirm, PASSKEY display or input
     setup->sm_user_response = SM_USER_RESPONSE_IDLE;
     switch (setup->sm_stk_generation_method){
         case PK_RESP_INPUT:
-            if (connection->sm_role){
+            if (sm_conn->sm_role){
                 setup->sm_user_response = SM_USER_RESPONSE_PENDING;
                 sm_notify_client(SM_PASSKEY_INPUT_NUMBER, setup->sm_m_addr_type, setup->sm_m_address, 0, 0); 
             } else {
@@ -711,7 +711,7 @@ static void sm_trigger_user_response(){
             }
             break;
         case PK_INIT_INPUT:
-            if (connection->sm_role){
+            if (sm_conn->sm_role){
                 sm_notify_client(SM_PASSKEY_DISPLAY_NUMBER, setup->sm_m_addr_type, setup->sm_m_address, READ_NET_32(setup->sm_tk, 12), 0); 
             } else {
                 setup->sm_user_response = SM_USER_RESPONSE_PENDING;
@@ -740,13 +740,15 @@ static int sm_key_distribution_all_received(){
     return recv_flags == setup->sm_key_distribution_received_set;
 }
 
-static void sm_pdu_received_in_wrong_state(){
+static void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
     setup->sm_pairing_failed_reason = SM_REASON_UNSPECIFIED_REASON;
-    connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+    sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
 }
 
 
 static void sm_run(void){
+
+    // TODO: iterate over all hci_connections instead of handling the single connection
 
     // assert that we can send at least commands
     if (!hci_can_send_command_packet_now()) return;
@@ -907,7 +909,7 @@ static void sm_run(void){
             l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
             sm_2timeout_reset(connection);
 
-            sm_trigger_user_response();
+            sm_trigger_user_response(connection);
 
             return;
         }
@@ -946,7 +948,7 @@ static void sm_run(void){
         case SM_PH2_C1_GET_RANDOM_B:
         case SM_PH3_GET_RANDOM:
         case SM_PH3_GET_DIV:
-            sm_next_responding_state();
+            sm_next_responding_state(connection);
             hci_send_cmd(&hci_le_rand);
             return;
 
@@ -954,7 +956,7 @@ static void sm_run(void){
         case SM_PH2_C1_GET_ENC_D:
             // already busy?
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
-            sm_next_responding_state();
+            sm_next_responding_state(connection);
             sm_aes128_start(setup->sm_tk, setup->sm_c1_t3_value);
             return;
 
@@ -964,7 +966,7 @@ static void sm_run(void){
             if (sm_aes128_state == SM_AES128_IDLE) {
                 sm_key_t d_prime;
                 sm_d1_d_prime(setup->sm_local_div, 0, d_prime);
-                sm_next_responding_state();
+                sm_next_responding_state(connection);
                 sm_aes128_start(sm_persistent_er, d_prime);
                 return;
             }
@@ -975,7 +977,7 @@ static void sm_run(void){
             if (sm_aes128_state == SM_AES128_IDLE) {
                 sm_key_t d_prime;
                 sm_d1_d_prime(setup->sm_local_div, 1, d_prime);
-                sm_next_responding_state();
+                sm_next_responding_state(connection);
                 sm_aes128_start(sm_persistent_er, d_prime);
                 return;
             }
@@ -986,7 +988,7 @@ static void sm_run(void){
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
             // calculate m_confirm using aes128 engine - step 1
             sm_c1_t1(setup->sm_peer_random, (uint8_t*) &setup->sm_m_preq, (uint8_t*) &setup->sm_s_pres, setup->sm_m_addr_type, setup->sm_s_addr_type, plaintext);
-            sm_next_responding_state();
+            sm_next_responding_state(connection);
             sm_aes128_start(setup->sm_tk, plaintext);
             break;
         case SM_PH2_C1_GET_ENC_A:
@@ -994,7 +996,7 @@ static void sm_run(void){
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
             // calculate confirm using aes128 engine - step 1
             sm_c1_t1(setup->sm_local_random, (uint8_t*) &setup->sm_m_preq, (uint8_t*) &setup->sm_s_pres, setup->sm_m_addr_type, setup->sm_s_addr_type, plaintext);
-            sm_next_responding_state();
+            sm_next_responding_state(connection);
             sm_aes128_start(setup->sm_tk, plaintext);
             break;
         case SM_PH2_CALC_STK:
@@ -1006,7 +1008,7 @@ static void sm_run(void){
             } else {
                 sm_s1_r_prime(setup->sm_peer_random, setup->sm_local_random, plaintext);
             }
-            sm_next_responding_state();
+            sm_next_responding_state(connection);
             sm_aes128_start(setup->sm_tk, plaintext);
             break;
         case SM_PH3_Y_GET_ENC:
@@ -1015,7 +1017,7 @@ static void sm_run(void){
             // PH3B2 - calculate Y from      - enc
             // Y = dm(DHK, Rand)
             sm_dm_r_prime(setup->sm_local_rand, plaintext);
-            sm_next_responding_state();
+            sm_next_responding_state(connection);
             sm_aes128_start(sm_persistent_dhk, plaintext);
             return;
         case SM_PH2_C1_SEND_PAIRING_CONFIRM: {
@@ -1058,7 +1060,7 @@ static void sm_run(void){
             log_info("LTK Request: recalculating with ediv 0x%04x", setup->sm_local_ediv);
             // Y = dm(DHK, Rand)
             sm_dm_r_prime(setup->sm_local_rand, plaintext);
-            sm_next_responding_state();
+            sm_next_responding_state(connection);
             sm_aes128_start(sm_persistent_dhk, plaintext);
             return;
 
@@ -1207,7 +1209,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             swap128(data, t2);
             sm_c1_t3(t2, setup->sm_m_address, setup->sm_s_address, setup->sm_c1_t3_value);
             }
-            sm_next_responding_state();
+            sm_next_responding_state(connection);
             return;
         case SM_PH2_C1_W4_ENC_B:
             swap128(data, setup->sm_local_confirm);
@@ -1333,7 +1335,7 @@ static void sm_handle_random_result(uint8_t * data){
                 connection->sm_engine_state = SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE;
             } else {
                 connection->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
-                sm_trigger_user_response();
+                sm_trigger_user_response(connection);
             }
             return;
         }
@@ -1589,7 +1591,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
         // Initiator
         case SM_INITIATOR_PH1_W4_PAIRING_RESPONSE:
             if (packet[0] != SM_CODE_PAIRING_RESPONSE){
-                sm_pdu_received_in_wrong_state();
+                sm_pdu_received_in_wrong_state(connection);
                 break;
             }
 
@@ -1634,14 +1636,14 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                 break;
             }
 
-            sm_trigger_user_response();
+            sm_trigger_user_response(connection);
 
             connection->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
             break;                        
 
         case SM_INITIATOR_PH2_W4_PAIRING_CONFIRM:
             if (packet[0] != SM_CODE_PAIRING_CONFIRM){
-                sm_pdu_received_in_wrong_state();
+                sm_pdu_received_in_wrong_state(connection);
                 break;
             }
 
@@ -1652,7 +1654,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
         case SM_INITIATOR_PH2_W4_PAIRING_RANDOM:
             if (packet[0] != SM_CODE_PAIRING_RANDOM){
-                sm_pdu_received_in_wrong_state();
+                sm_pdu_received_in_wrong_state(connection);
                 break;;
             }
 
@@ -1666,7 +1668,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
         case SM_RESPONDER_PH1_W4_PAIRING_REQUEST:
         {
             if (packet[0] != SM_CODE_PAIRING_REQUEST){
-                sm_pdu_received_in_wrong_state();
+                sm_pdu_received_in_wrong_state(connection);
                 break;;
             }
 
@@ -1713,7 +1715,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
         case SM_RESPONDER_PH1_W4_PAIRING_CONFIRM:
             if (packet[0] != SM_CODE_PAIRING_CONFIRM){
-                sm_pdu_received_in_wrong_state();
+                sm_pdu_received_in_wrong_state(connection);
                 break;;
             }
 
@@ -1744,7 +1746,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
         case SM_RESPONDER_PH2_W4_PAIRING_RANDOM:
             if (packet[0] != SM_CODE_PAIRING_RANDOM){
-                sm_pdu_received_in_wrong_state();
+                sm_pdu_received_in_wrong_state(connection);
                 break;;
             }
 
