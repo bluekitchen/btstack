@@ -164,6 +164,8 @@ static sm_connection_t  * sm_aes128_connection_source;
 // random engine. store current sm_connection_t in sm_random
 static sm_connection_t * sm_random_connection_source;
 
+// CSRK calculation
+static sm_connection_t * sm_csrk_connection_source;
 //
 // Volume 3, Part H, Chapter 24
 // "Security shall be initiated by the Security Manager in the device in the master role.
@@ -541,11 +543,12 @@ static void sm_setup_key_distribution(uint8_t key_set){
     return sm_central_device_test >= 0;
 }
 
-static void sm_central_device_start_lookup(uint8_t addr_type, bd_addr_t addr){
+static void sm_central_device_start_lookup(sm_connection_t * sm_conn, uint8_t addr_type, bd_addr_t addr){
     memcpy(sm_central_device_address, addr, 6);
     sm_central_device_addr_type = addr_type;
     sm_central_device_test = 0;
     sm_central_device_matched = -1;
+    sm_csrk_connection_source = sm_conn;
     sm_notify_client(SM_IDENTITY_RESOLVING_STARTED, addr_type, addr, 0, 0);
 }
 
@@ -769,7 +772,7 @@ static void sm_run(void){
 
     // CSRK lookup
     if (connection->sm_csrk_lookup_state == CSRK_LOOKUP_W4_READY && !sm_central_device_lookup_active()){
-        sm_central_device_start_lookup(connection->sm_peer_addr_type, connection->sm_peer_address);
+        sm_central_device_start_lookup(connection, connection->sm_peer_addr_type, connection->sm_peer_address);
         connection->sm_csrk_lookup_state = CSRK_LOOKUP_STARTED;
     }
 
@@ -840,6 +843,8 @@ static void sm_run(void){
                 log_info("Central Device Lookup: found CSRK by { addr_type, address} ");
                 sm_central_device_matched = sm_central_device_test;
                 sm_central_device_test = -1;
+                sm_csrk_connection_source->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
+                sm_csrk_connection_source = NULL;
                 sm_key_t csrk;
                 central_device_db_csrk(sm_central_device_matched, csrk);
                 sm_central_device_lookup_found(csrk);
@@ -860,13 +865,15 @@ static void sm_run(void){
             sm_key_t r_prime;
             sm_ah_r_prime(sm_central_device_address, r_prime);
             sm_central_ah_calculation_active = 1;
-            sm_aes128_start(irk, r_prime, NULL);
+            sm_aes128_start(irk, r_prime, sm_csrk_connection_source);
             return;
         }
 
         if (sm_central_device_test >= central_device_db_count()){
             log_info("Central Device Lookup: not found");
             sm_central_device_test = -1;
+            sm_csrk_connection_source->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
+            sm_csrk_connection_source = NULL;
             sm_notify_client(SM_IDENTITY_RESOLVING_FAILED, sm_central_device_addr_type, sm_central_device_address, 0, 0);
         }
     }
@@ -1157,6 +1164,8 @@ static void sm_handle_encryption_result(uint8_t * data){
             // found
             sm_central_device_matched = sm_central_device_test;
             sm_central_device_test = -1;
+            sm_csrk_connection_source->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
+            sm_csrk_connection_source = NULL;
             sm_key_t csrk;
             central_device_db_csrk(sm_central_device_matched, csrk);
             sm_central_device_lookup_found(csrk);
@@ -1479,7 +1488,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             connection->sm_csrk_lookup_state = CSRK_LOOKUP_W4_READY;
                             if (!sm_central_device_lookup_active()){
                                 // try to lookup device
-                                sm_central_device_start_lookup(connection->sm_peer_addr_type, connection->sm_peer_address);
+                                sm_central_device_start_lookup(connection, connection->sm_peer_addr_type, connection->sm_peer_address);
                                 connection->sm_csrk_lookup_state = CSRK_LOOKUP_STARTED;
                             }
                             break;
