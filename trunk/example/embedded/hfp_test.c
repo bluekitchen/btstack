@@ -78,12 +78,7 @@ static void send_packet(){
     hfp_send_err = 0; 
     switch (hfp_service_level_connection_state){
         case 1:
-            strcpy(hfp_data, "+BRSF:0\r");
-            hfp_send_err = rfcomm_send_internal(rfcomm_cid, (uint8_t*) hfp_data, strlen(hfp_data));
-            hfp_service_level_connection_state++;
-            break;
-        case 2:
-            strcpy(hfp_data, "OK\r");
+            strcpy(hfp_data, "\r\n+BRSF: 224\r\n\r\nOK\r\n");
             hfp_send_err = rfcomm_send_internal(rfcomm_cid, (uint8_t*) hfp_data, strlen(hfp_data));
             hfp_service_level_connection_state++;
             break;
