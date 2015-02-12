@@ -70,7 +70,7 @@ int main(int argc, const char * argv[]){
 	hci_transport_t    * transport = hci_transport_usb_instance();
     hci_uart_config_t * config = NULL;
 	bt_control_t       * control   = NULL;
-    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
+    remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_fs;
         
 	hci_init(transport, config, control, remote_db);
 
