@@ -157,8 +157,12 @@ static int       sm_central_ah_calculation_active;
 static uint8_t   sm_central_device_addr_type;
 static bd_addr_t sm_central_device_address;
 
-// aes128 crypto engine
-static sm_aes128_state_t sm_aes128_state;
+// aes128 crypto engine. store current sm_connection_t in sm_aes128_connection_source
+static sm_aes128_state_t  sm_aes128_state;
+static sm_connection_t  * sm_aes128_connection_source;
+
+// random engine. store current sm_connection_t in sm_random
+static sm_connection_t * sm_random_connection_source;
 
 //
 // Volume 3, Part H, Chapter 24
@@ -341,12 +345,19 @@ static void gap_random_address_update_stop(){
     run_loop_remove_timer(&gap_random_address_update_timer);
 }
 
+static void sm_random_start(sm_connection_t * sm_conn){
+    sm_random_connection_source = sm_conn;
+    hci_send_cmd(&hci_le_rand);
+}
+
 // pre: sm_aes128_state != SM_AES128_ACTIVE, hci_can_send_command == 1
-static void sm_aes128_start(sm_key_t key, sm_key_t plaintext){
+// sm_conn is made availabe to aes128 result handler by this
+static void sm_aes128_start(sm_key_t key, sm_key_t plaintext, sm_connection_t * sm_conn){
     sm_aes128_state = SM_AES128_ACTIVE;
     sm_key_t key_flipped, plaintext_flipped;
     swap128(key, key_flipped);
     swap128(plaintext, plaintext_flipped);
+    sm_aes128_connection_source = sm_conn;
     hci_send_cmd(&hci_le_encrypt, key_flipped, plaintext_flipped);
 }
 
@@ -605,7 +616,7 @@ static void sm_cmac_handle_aes_engine_ready(){
             sm_key_t const_zero;
             memset(const_zero, 0, 16);
             sm_cmac_next_state();
-            sm_aes128_start(sm_cmac_k, const_zero);
+            sm_aes128_start(sm_cmac_k, const_zero, NULL);
             break;
         }
         case CMAC_CALC_MI: {
@@ -616,7 +627,7 @@ static void sm_cmac_handle_aes_engine_ready(){
             }
             sm_cmac_block_current++;
             sm_cmac_next_state();
-            sm_aes128_start(sm_cmac_k, y);
+            sm_aes128_start(sm_cmac_k, y, NULL);
             break;
         }
         case CMAC_CALC_MLAST: {
@@ -628,7 +639,7 @@ static void sm_cmac_handle_aes_engine_ready(){
             log_key("Y", y);
             sm_cmac_block_current++;
             sm_cmac_next_state();
-            sm_aes128_start(sm_cmac_k, y);
+            sm_aes128_start(sm_cmac_k, y, NULL);
             break;
         }
         default:
@@ -749,6 +760,7 @@ static void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
 static void sm_run(void){
 
     // TODO: iterate over all hci_connections instead of handling the single connection
+    sm_connection_t * connection = &single_connection;
 
     // assert that we can send at least commands
     if (!hci_can_send_command_packet_now()) return;
@@ -770,7 +782,7 @@ static void sm_run(void){
                 sm_key_t d1_prime;
                 sm_d1_d_prime(1, 0, d1_prime);  // plaintext
                 dkg_next_state();
-                sm_aes128_start(sm_persistent_ir, d1_prime);
+                sm_aes128_start(sm_persistent_ir, d1_prime, NULL);
                 return;
             }
             break;
@@ -781,7 +793,7 @@ static void sm_run(void){
                 sm_key_t d1_prime;
                 sm_d1_d_prime(3, 0, d1_prime);  // plaintext
                 dkg_next_state();
-                sm_aes128_start(sm_persistent_ir, d1_prime);
+                sm_aes128_start(sm_persistent_ir, d1_prime, NULL);
                 return;
             }
             break;
@@ -793,7 +805,7 @@ static void sm_run(void){
     switch (rau_state){
         case RAU_GET_RANDOM:
             rau_next_state();
-            hci_send_cmd(&hci_le_rand);
+            sm_random_start(NULL);
             return;
         case RAU_GET_ENC:
             // already busy?
@@ -801,7 +813,7 @@ static void sm_run(void){
                 sm_key_t r_prime;
                 sm_ah_r_prime(sm_random_address, r_prime);
                 rau_next_state();
-                sm_aes128_start(sm_persistent_irk, r_prime);
+                sm_aes128_start(sm_persistent_irk, r_prime, NULL);
                 return;
             }
             break;
@@ -848,7 +860,7 @@ static void sm_run(void){
             sm_key_t r_prime;
             sm_ah_r_prime(sm_central_device_address, r_prime);
             sm_central_ah_calculation_active = 1;
-            sm_aes128_start(irk, r_prime);
+            sm_aes128_start(irk, r_prime, NULL);
             return;
         }
 
@@ -949,7 +961,7 @@ static void sm_run(void){
         case SM_PH3_GET_RANDOM:
         case SM_PH3_GET_DIV:
             sm_next_responding_state(connection);
-            hci_send_cmd(&hci_le_rand);
+            sm_random_start(connection);
             return;
 
         case SM_PH2_C1_GET_ENC_B:
@@ -957,7 +969,7 @@ static void sm_run(void){
             // already busy?
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
             sm_next_responding_state(connection);
-            sm_aes128_start(setup->sm_tk, setup->sm_c1_t3_value);
+            sm_aes128_start(setup->sm_tk, setup->sm_c1_t3_value, connection);
             return;
 
         case SM_PH3_LTK_GET_ENC:
@@ -967,7 +979,7 @@ static void sm_run(void){
                 sm_key_t d_prime;
                 sm_d1_d_prime(setup->sm_local_div, 0, d_prime);
                 sm_next_responding_state(connection);
-                sm_aes128_start(sm_persistent_er, d_prime);
+                sm_aes128_start(sm_persistent_er, d_prime, connection);
                 return;
             }
             break;
@@ -978,7 +990,7 @@ static void sm_run(void){
                 sm_key_t d_prime;
                 sm_d1_d_prime(setup->sm_local_div, 1, d_prime);
                 sm_next_responding_state(connection);
-                sm_aes128_start(sm_persistent_er, d_prime);
+                sm_aes128_start(sm_persistent_er, d_prime, connection);
                 return;
             }
             break;
@@ -989,7 +1001,7 @@ static void sm_run(void){
             // calculate m_confirm using aes128 engine - step 1
             sm_c1_t1(setup->sm_peer_random, (uint8_t*) &setup->sm_m_preq, (uint8_t*) &setup->sm_s_pres, setup->sm_m_addr_type, setup->sm_s_addr_type, plaintext);
             sm_next_responding_state(connection);
-            sm_aes128_start(setup->sm_tk, plaintext);
+            sm_aes128_start(setup->sm_tk, plaintext, connection);
             break;
         case SM_PH2_C1_GET_ENC_A:
             // already busy?
@@ -997,7 +1009,7 @@ static void sm_run(void){
             // calculate confirm using aes128 engine - step 1
             sm_c1_t1(setup->sm_local_random, (uint8_t*) &setup->sm_m_preq, (uint8_t*) &setup->sm_s_pres, setup->sm_m_addr_type, setup->sm_s_addr_type, plaintext);
             sm_next_responding_state(connection);
-            sm_aes128_start(setup->sm_tk, plaintext);
+            sm_aes128_start(setup->sm_tk, plaintext, connection);
             break;
         case SM_PH2_CALC_STK:
             // already busy?
@@ -1009,7 +1021,7 @@ static void sm_run(void){
                 sm_s1_r_prime(setup->sm_peer_random, setup->sm_local_random, plaintext);
             }
             sm_next_responding_state(connection);
-            sm_aes128_start(setup->sm_tk, plaintext);
+            sm_aes128_start(setup->sm_tk, plaintext, connection);
             break;
         case SM_PH3_Y_GET_ENC:
             // already busy?
@@ -1018,7 +1030,7 @@ static void sm_run(void){
             // Y = dm(DHK, Rand)
             sm_dm_r_prime(setup->sm_local_rand, plaintext);
             sm_next_responding_state(connection);
-            sm_aes128_start(sm_persistent_dhk, plaintext);
+            sm_aes128_start(sm_persistent_dhk, plaintext, connection);
             return;
         case SM_PH2_C1_SEND_PAIRING_CONFIRM: {
             uint8_t buffer[17];
@@ -1061,7 +1073,7 @@ static void sm_run(void){
             // Y = dm(DHK, Rand)
             sm_dm_r_prime(setup->sm_local_rand, plaintext);
             sm_next_responding_state(connection);
-            sm_aes128_start(sm_persistent_dhk, plaintext);
+            sm_aes128_start(sm_persistent_dhk, plaintext, connection);
             return;
 
         case SM_PH3_DISTRIBUTE_KEYS:
@@ -1201,6 +1213,9 @@ static void sm_handle_encryption_result(uint8_t * data){
             break;
     }
 
+    // retrieve sm_connection provided to sm_aes128_start_encryption
+    sm_connection_t * connection = sm_aes128_connection_source;
+    if (!connection) return;
     switch (connection->sm_engine_state){
         case SM_PH2_C1_W4_ENC_A:
         case SM_PH2_C1_W4_ENC_C:
@@ -1320,6 +1335,9 @@ static void sm_handle_random_result(uint8_t * data){
             break;
     }
 
+    // retrieve sm_connection provided to sm_aes128_start_encryption
+    sm_connection_t * connection = sm_aes128_connection_source;
+    if (!connection) return;
     switch (connection->sm_engine_state){
         case SM_PH2_W4_RANDOM_TK:
         {
@@ -1898,37 +1916,43 @@ void sm_init(){
     l2cap_register_fixed_channel(sm_packet_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
 }
 
-static int sm_get_connection(uint8_t addr_type, bd_addr_t address){
-    // TODO compare to current connection
-    return 1;
+static sm_connection_t * sm_get_connection(uint8_t addr_type, bd_addr_t address){
+    // TODO lookup connection for given addr & type
+    return connection;
 }
 
 // @returns 0 if not encrypted, 7-16 otherwise
 int sm_encryption_key_size(uint8_t addr_type, bd_addr_t address){
-    if (!sm_get_connection(addr_type, address)) return 0; // wrong connection
-    if (!connection->sm_connection_encrypted) return 0;
-    return connection->sm_actual_encryption_key_size;
+    sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
+    if (!sm_conn) return 0;     // wrong connection
+    if (!sm_conn->sm_connection_encrypted) return 0;
+    return sm_conn->sm_actual_encryption_key_size;
 }
 
 int sm_authenticated(uint8_t addr_type, bd_addr_t address){
-    if (!sm_get_connection(addr_type, address)) return 0; // wrong connection
-    if (!connection->sm_connection_encrypted) return 0; // unencrypted connection cannot be authenticated
-    return connection->sm_connection_authenticated;
+    sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
+    if (!sm_conn) return 0;     // wrong connection
+    if (!sm_conn->sm_connection_encrypted) return 0; // unencrypted connection cannot be authenticated
+    return sm_conn->sm_connection_authenticated;
 }
 
 authorization_state_t sm_authorization_state(uint8_t addr_type, bd_addr_t address){
-    if (!sm_get_connection(addr_type, address)) return AUTHORIZATION_UNKNOWN; // wrong connection
-    if (!connection->sm_connection_encrypted)               return AUTHORIZATION_UNKNOWN; // unencrypted connection cannot be authorized
-    if (!connection->sm_connection_authenticated)           return AUTHORIZATION_UNKNOWN; // unauthenticatd connection cannot be authorized
-    return connection->sm_connection_authorization_state;
+    sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
+    if (!sm_conn) return AUTHORIZATION_UNKNOWN;     // wrong connection
+    if (!sm_conn->sm_connection_encrypted)               return AUTHORIZATION_UNKNOWN; // unencrypted connection cannot be authorized
+    if (!sm_conn->sm_connection_authenticated)           return AUTHORIZATION_UNKNOWN; // unauthenticatd connection cannot be authorized
+    return sm_conn->sm_connection_authorization_state;
 }
 
 // request authorization
 void sm_request_authorization(uint8_t addr_type, bd_addr_t address){
-    log_info("sm_request_authorization in role %u, state %u", connection->sm_role, connection->sm_engine_state);
-    if (connection->sm_role){
+    sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
+    if (!sm_conn) return;     // wrong connection
+
+    log_info("sm_request_authorization in role %u, state %u", sm_conn->sm_role, sm_conn->sm_engine_state);
+    if (sm_conn->sm_role){
         // code has no effect so far
-        connection->sm_connection_authorization_state = AUTHORIZATION_PENDING;
+        sm_conn->sm_connection_authorization_state = AUTHORIZATION_PENDING;
         sm_notify_client(SM_AUTHORIZATION_REQUEST, setup->sm_m_addr_type, setup->sm_m_address, 0, 0);
     } else {
 
@@ -1936,54 +1960,59 @@ void sm_request_authorization(uint8_t addr_type, bd_addr_t address){
         sm_authenticate_outgoing_connections = 1;
 
         // used as a trigger to start central/master/initiator security procedures
-        if (connection->sm_engine_state == SM_INITIATOR_CONNECTED){
-            connection->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;            
+        if (sm_conn->sm_engine_state == SM_INITIATOR_CONNECTED){
+            sm_conn->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;            
         }
     }
 }
 
 // called by client app on authorization request
 void sm_authorization_decline(uint8_t addr_type, bd_addr_t address){
-    if (!sm_get_connection(addr_type, address)) return; // wrong connection
-    connection->sm_connection_authorization_state = AUTHORIZATION_DECLINED;
+    sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
+    if (!sm_conn) return;     // wrong connection
+    sm_conn->sm_connection_authorization_state = AUTHORIZATION_DECLINED;
     sm_notify_client_authorization(SM_AUTHORIZATION_RESULT, setup->sm_m_addr_type, setup->sm_m_address, 0);
 }
 
 void sm_authorization_grant(uint8_t addr_type, bd_addr_t address){
-    if (!sm_get_connection(addr_type, address)) return; // wrong connection
-    connection->sm_connection_authorization_state = AUTHORIZATION_GRANTED;
+    sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
+    if (!sm_conn) return;     // wrong connection
+    sm_conn->sm_connection_authorization_state = AUTHORIZATION_GRANTED;
     sm_notify_client_authorization(SM_AUTHORIZATION_RESULT, setup->sm_m_addr_type, setup->sm_m_address, 1);
 }
 
 // GAP Bonding API
 
 void sm_bonding_decline(uint8_t addr_type, bd_addr_t address){
-    if (!sm_get_connection(addr_type, address)) return; // wrong connection
+    sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
+    if (!sm_conn) return;     // wrong connection
     setup->sm_user_response = SM_USER_RESPONSE_DECLINE;
 
-    if (connection->sm_engine_state == SM_PH1_W4_USER_RESPONSE){
+    if (sm_conn->sm_engine_state == SM_PH1_W4_USER_RESPONSE){
         setup->sm_pairing_failed_reason = SM_REASON_PASSKEYT_ENTRY_FAILED;
-        connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+        sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
     }
     sm_run();
 }
 
 void sm_just_works_confirm(uint8_t addr_type, bd_addr_t address){
-    if (!sm_get_connection(addr_type, address)) return; // wrong connection
+    sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
+    if (!sm_conn) return;     // wrong connection
     setup->sm_user_response = SM_USER_RESPONSE_CONFIRM;
-    if (connection->sm_engine_state == SM_PH1_W4_USER_RESPONSE){
-        connection->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
+    if (sm_conn->sm_engine_state == SM_PH1_W4_USER_RESPONSE){
+        sm_conn->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
     }
     sm_run();
 }
 
 void sm_passkey_input(uint8_t addr_type, bd_addr_t address, uint32_t passkey){
-    if (!sm_get_connection(addr_type, address)) return; // wrong connection
+    sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
+    if (!sm_conn) return;     // wrong connection
     sm_reset_tk();
     net_store_32(setup->sm_tk, 12, passkey);
     setup->sm_user_response = SM_USER_RESPONSE_PASSKEY;
-    if (connection->sm_engine_state == SM_PH1_W4_USER_RESPONSE){
-        connection->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
+    if (sm_conn->sm_engine_state == SM_PH1_W4_USER_RESPONSE){
+        sm_conn->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
     }
     sm_run();
 }
