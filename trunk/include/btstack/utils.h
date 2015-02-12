@@ -68,6 +68,7 @@ typedef uint8_t bd_addr_t[BD_ADDR_LEN];
  * @brief link key and its type
  */
 #define LINK_KEY_LEN 16
+#define LINK_KEY_STR_LEN (LINK_KEY_LEN*2)
 typedef uint8_t link_key_t[LINK_KEY_LEN]; 
 
 typedef enum {

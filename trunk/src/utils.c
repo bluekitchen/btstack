@@ -198,7 +198,7 @@ char * bd_addr_to_str(bd_addr_t addr){
     return (char *) bd_addr_to_str_buffer;
 }
 
-static char link_key_to_str_buffer[LINK_KEY_LEN*2+1];  // 11223344556677889900112233445566\0
+static char link_key_to_str_buffer[LINK_KEY_STR_LEN+1];  // 11223344556677889900112233445566\0
 char *link_key_to_str(link_key_t link_key){
     char * p = link_key_to_str_buffer;
     int i;
