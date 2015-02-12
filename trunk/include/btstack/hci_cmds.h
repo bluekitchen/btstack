@@ -717,12 +717,15 @@ extern const hci_cmd_t btstack_set_discoverable;
 extern const hci_cmd_t btstack_set_bluetooth_enabled;    // only used by btstack config
 	
 extern const hci_cmd_t hci_accept_connection_request;
+extern const hci_cmd_t hci_accept_synchronous_connection_command;
 extern const hci_cmd_t hci_authentication_requested;
 extern const hci_cmd_t hci_change_connection_link_key;
 extern const hci_cmd_t hci_change_connection_packet_type;
 extern const hci_cmd_t hci_create_connection;
 extern const hci_cmd_t hci_create_connection_cancel;
 extern const hci_cmd_t hci_delete_stored_link_key;
+extern const hci_cmd_t hci_enhanced_setup_synchronous_connection_command;
+extern const hci_cmd_t hci_enhanced_accept_synchronous_connection_command;
 extern const hci_cmd_t hci_disconnect;
 extern const hci_cmd_t hci_host_buffer_size;
 extern const hci_cmd_t hci_inquiry;
@@ -751,6 +754,7 @@ extern const hci_cmd_t hci_reset;
 extern const hci_cmd_t hci_role_discovery;
 extern const hci_cmd_t hci_set_event_mask;
 extern const hci_cmd_t hci_set_connection_encryption;
+extern const hci_cmd_t hci_setup_synchronous_connection_command;
 extern const hci_cmd_t hci_sniff_mode;
 extern const hci_cmd_t hci_switch_role_command;
 extern const hci_cmd_t hci_user_confirmation_request_negative_reply;
