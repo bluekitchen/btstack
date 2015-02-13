@@ -83,7 +83,7 @@ void pan_create_service(uint32_t service_uuid, uint8_t *service, const char *nam
 	{
 		uint8_t* l2cpProtocol = de_push_sequence(attribute);
 		{
-			de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, 0x0100);
+			de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, SDP_L2CAPProtocol);
 		}
 		de_pop_sequence(attribute, l2cpProtocol);
 		

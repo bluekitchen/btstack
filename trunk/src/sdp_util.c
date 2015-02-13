@@ -713,13 +713,13 @@ void sdp_create_spp_service(uint8_t *service, int service_id, const char *name){
 	{
 		uint8_t* l2cpProtocol = de_push_sequence(attribute);
 		{
-			de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, 0x0100);
+			de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, SDP_L2CAPProtocol);
 		}
 		de_pop_sequence(attribute, l2cpProtocol);
 		
 		uint8_t* rfcomm = de_push_sequence(attribute);
 		{
-			de_add_number(rfcomm,  DE_UUID, DE_SIZE_16, 0x0003);  // rfcomm_service
+			de_add_number(rfcomm,  DE_UUID, DE_SIZE_16, SDP_RFCOMMProtocol);  // rfcomm_service
 			de_add_number(rfcomm,  DE_UINT, DE_SIZE_8,  service_id);  // rfcomm channel
 		}
 		de_pop_sequence(attribute, rfcomm);
