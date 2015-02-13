@@ -75,6 +75,9 @@ static uint8_t channel_nr = 0;
 static uint16_t mtu;
 static uint16_t rfcomm_cid = 0;
 
+static uint16_t sco_handle = 0;
+static uint16_t rfcomm_handle = 0;
+
 // static uint8_t connection_state = 0;
 
 static int ag_microphone_gain = -1;
@@ -87,9 +90,11 @@ static void hsp_run();
 
 typedef enum {
     HSP_AG_IDLE,
-    HSP_AG_START_SDP_RFCOOM_QUERY_FOR_UUID,
-    HSP_W4_SCO_OPENED,
-    HSP_AG_ACTIVE
+    HSP_AG_QUERY_SDP_CHANNEL,
+    HSP_AG_W2_CONNECT_SCO,
+    HSP_AG_W4_SCO_CONNECTED,
+    HSP_AG_ACTIVE,
+    HSP_AG_SEND_DISCONNECT
 } hsp_state_t;
 
 static hsp_state_t hsp_state = HSP_AG_IDLE;
@@ -97,14 +102,21 @@ static hsp_state_t hsp_state = HSP_AG_IDLE;
 // remote audio volume control
 // AG +VGM=13 [0..15] ; HS AT+VGM=6 | AG OK
 
-void hsp_connect(bd_addr_t bd_addr){
+void hsp_ag_connect(bd_addr_t bd_addr){
     if (hsp_state != HSP_AG_IDLE) return;
-    hsp_state = HSP_AG_START_SDP_RFCOOM_QUERY_FOR_UUID;
+    hsp_state = HSP_AG_QUERY_SDP_CHANNEL;
     memcpy(remote, bd_addr, 6);
     hsp_run();
 }
 
-void hsp_ring(){
+void hsp_ag_disconnect(bd_addr_t bd_addr){
+    if (hsp_state == HSP_AG_IDLE) return;
+    hsp_state = HSP_AG_SEND_DISCONNECT;
+    memcpy(remote, bd_addr, 6);
+    hsp_run();
+}
+
+void hsp_ag_ring(){
     if (hsp_state != HSP_AG_ACTIVE) return;
 
 }
@@ -142,12 +154,22 @@ static void hsp_run(){
     int err;
 
     switch (hsp_state){
-        case HSP_AG_START_SDP_RFCOOM_QUERY_FOR_UUID:
+        case HSP_AG_QUERY_SDP_CHANNEL:
             printf("Start SDP RFCOMM Query for UUID 0x%02x\n", SDP_HSP);
             sdp_query_rfcomm_channel_and_name_for_uuid(remote, SDP_HSP);
-            hsp_state = HSP_W4_SCO_OPENED;
+            hsp_state = HSP_AG_W2_CONNECT_SCO;
             break;
-        
+        case HSP_AG_W2_CONNECT_SCO:
+            if (!hci_can_send_command_packet_now()) break;
+            hci_send_cmd(&hci_setup_synchronous_connection_command, rfcomm_handle, 8000, 8000, 0xFFFF, 0x0060, 0xFF, 0x003F);
+            hsp_state = HSP_AG_W4_SCO_CONNECTED;
+
+            break;
+        case HSP_AG_SEND_DISCONNECT:
+            rfcomm_disconnect_internal(rfcomm_cid);
+            rfcomm_cid = 0;
+            hsp_state = HSP_AG_IDLE;
+            break;
         case HSP_AG_ACTIVE:
             if (ag_send_ok){
                 err = send_str_over_rfcomm(rfcomm_cid, HSP_AG_OK);
@@ -222,7 +244,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
         case BTSTACK_EVENT_STATE:
             // bt stack activated, get started 
             if (packet[2] == HCI_STATE_WORKING){
-                hsp_connect(remote);
+                hsp_ag_connect(remote);
             }
             break;
 
@@ -232,11 +254,18 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             bt_flip_addr(event_addr, &packet[2]);
             hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
             break;
-
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            handle = READ_BT_16(packet,3);
+            if (handle == sco_handle){
+                sco_handle = 0;
+                hsp_state = HSP_AG_W2_CONNECT_SCO;
+                hsp_run();
+            }
+            break;
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
             int index = 2;
             uint8_t status = packet[index++];
-            uint16_t connection_handle = READ_BT_16(packet, index);
+            sco_handle = READ_BT_16(packet, index);
             index+=2;
             bd_addr_t address; 
             memcpy(address, &packet[index], 6);
@@ -270,8 +299,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     log_error("(e)SCO reserved link_type 0x%2x", link_type);
                     break;
             }
-            log_info("connection_handle 0x%2x, address %s, transmission_interval %u slots, retransmission_interval %u slots, " 
-                 " rx_packet_length %u bytes, tx_packet_length %u bytes, air_mode 0x%2x (0x02 == CVSD)", connection_handle,
+            log_info("sco_handle 0x%2x, address %s, transmission_interval %u slots, retransmission_interval %u slots, " 
+                 " rx_packet_length %u bytes, tx_packet_length %u bytes, air_mode 0x%2x (0x02 == CVSD)", sco_handle,
                  bd_addr_to_str(address), transmission_interval, retransmission_interval, rx_packet_length, tx_packet_length, air_mode);
 
             hsp_state = HSP_AG_ACTIVE;
@@ -286,11 +315,11 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 printf("RFCOMM channel open failed, status %u\n", packet[2]);
             } else {
                 // data: event(8) , len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
-                handle = READ_BT_16(packet, 9);
+                rfcomm_handle = READ_BT_16(packet, 9);
                 rfcomm_cid = READ_BT_16(packet, 12);
                 mtu = READ_BT_16(packet, 14);
                 printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_cid, mtu);
-                hci_send_cmd(&hci_setup_synchronous_connection_command, handle, 8000, 8000, 0xFFFF, 0x0060, 0xFF, 0x003F);
+                hsp_state = HSP_AG_W2_CONNECT_SCO;
                 /** 
                  * @param handle
                  * @param transmit_bandwidth = 8000 (64kbps)
