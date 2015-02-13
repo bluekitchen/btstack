@@ -97,9 +97,9 @@ static libusb_device        * dev;
 #endif
 static libusb_device_handle * handle;
 
-#define ASYNC_BUFFERS 20
+#define ASYNC_BUFFERS 2
 #define AYSNC_POLLING_INTERVAL_MS 1
-#define NUM_ISO_PACKETS 1
+#define NUM_ISO_PACKETS 4
 
 static struct libusb_transfer *command_out_transfer;
 static struct libusb_transfer *acl_out_transfer;
@@ -107,10 +107,10 @@ static struct libusb_transfer *event_in_transfer[ASYNC_BUFFERS];
 static struct libusb_transfer *acl_in_transfer[ASYNC_BUFFERS];
 
 #ifdef HAVE_SCO
-#define SCO_PACKET_SIZE 300
+#define SCO_PACKET_SIZE 64
 static struct  libusb_transfer *sco_out_transfer;
 static struct  libusb_transfer *sco_in_transfer[ASYNC_BUFFERS];
-static uint8_t hci_sco_in_buffer[ASYNC_BUFFERS][SCO_PACKET_SIZE]; 
+static uint8_t hci_sco_in_buffer[ASYNC_BUFFERS][NUM_ISO_PACKETS * SCO_PACKET_SIZE]; 
 #endif
 
 static uint8_t hci_cmd_buffer[3 + 256 + LIBUSB_CONTROL_SETUP_SIZE];
@@ -201,7 +201,26 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         packet_handler(HCI_ACL_DATA_PACKET, transfer-> buffer, transfer->actual_length);
         resubmit = 1;
     } else if (transfer->endpoint == sco_in_addr) {
-        packet_handler(HCI_SCO_DATA_PACKET, transfer-> buffer, transfer->actual_length);
+        // combine packet again
+        int i;
+        int packet_size = 0;
+        uint8_t * packet_start;
+        for (i = 0; i < transfer->num_iso_packets; i++) {
+            struct libusb_iso_packet_descriptor *pack = &transfer->iso_packet_desc[i];
+            if (pack->status != LIBUSB_TRANSFER_COMPLETED) {
+                log_error("Error: pack %u status %d\n", i, pack->status);
+                continue;
+            }
+            uint8_t * pack_buffer = libusb_get_iso_packet_buffer_simple(transfer, i);
+            if (i == 0) {
+                packet_start = pack_buffer;
+            } else {
+                // shift data around
+                memmove(&packet_start[packet_size], pack_buffer, pack->actual_length);
+            }
+            packet_size += pack->actual_length;
+        }
+        packet_handler(HCI_SCO_DATA_PACKET, packet_start, packet_size);
         resubmit = 1;
     } else if (transfer->endpoint == 0){
         // log_info("command done, size %u", transfer->actual_length);
@@ -467,6 +486,12 @@ static int prepare_device(libusb_device_handle * handle){
         libusb_close(handle);
         return r;
     }
+    r = libusb_set_interface_alt_setting(handle, 1, 5); // 3 x 8 kHz voice channels
+    if (r < 0) {
+        fprintf(stderr, "Error setting alternative setting 5 for interface 1: %s\n", libusb_error_name(r));
+        libusb_close(handle);
+        return r;
+    }
 #endif
 
     return 0;
@@ -613,11 +638,12 @@ static int usb_open(void *transport_config){
         }
        // configure sco_in handlers
         libusb_fill_iso_transfer(sco_in_transfer[c], handle, sco_in_addr, 
-                hci_sco_in_buffer[c], iMaxIsoPacketSize, NUM_ISO_PACKETS, async_callback, NULL, 0) ;
-        libusb_set_iso_packet_lengths(sco_in_transfer[c], NUM_ISO_PACKETS);
+                hci_sco_in_buffer[c], NUM_ISO_PACKETS * SCO_PACKET_SIZE, NUM_ISO_PACKETS, async_callback, NULL, 0) ;
+        libusb_set_iso_packet_lengths(sco_in_transfer[c], SCO_PACKET_SIZE);
+        // one of the following is relevant! find out which one
         sco_in_transfer[c]->type = LIBUSB_TRANSFER_TYPE_ISOCHRONOUS;
         sco_in_transfer[c]->num_iso_packets = NUM_ISO_PACKETS;
-        sco_in_transfer[c]->iso_packet_desc[0].length = 300;
+        // sco_in_transfer[c]->iso_packet_desc[0].length = 300;
         r = libusb_submit_transfer(sco_in_transfer[c]);
         log_info("Submit iso transfer res = %d", r);
         if (r) {
