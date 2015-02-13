@@ -65,6 +65,8 @@
 #include "hci.h"
 #include "hci_transport.h"
 
+// #define HAVE_SCO
+
 #if (USB_VENDOR_ID != 0) && (USB_PRODUCT_ID != 0)
 #define HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
 #endif
@@ -105,9 +107,10 @@ static struct libusb_transfer *event_in_transfer[ASYNC_BUFFERS];
 static struct libusb_transfer *acl_in_transfer[ASYNC_BUFFERS];
 
 #ifdef HAVE_SCO
+#define SCO_PACKET_SIZE 300
 static struct  libusb_transfer *sco_out_transfer;
 static struct  libusb_transfer *sco_in_transfer[ASYNC_BUFFERS];
-static uint8_t hci_sco_in_buffer[ASYNC_BUFFERS][HCI_INCOMING_PRE_BUFFER_SIZE + HCI_ACL_BUFFER_SIZE]; 
+static uint8_t hci_sco_in_buffer[ASYNC_BUFFERS][SCO_PACKET_SIZE]; 
 #endif
 
 static uint8_t hci_cmd_buffer[3 + 256 + LIBUSB_CONTROL_SETUP_SIZE];
@@ -309,6 +312,12 @@ static int is_known_bt_device(uint16_t vendor_id, uint16_t product_id){
 static void scan_for_bt_endpoints(void) {
     int r;
 
+    event_in_addr = 0;
+    acl_in_addr = 0;
+    acl_out_addr = 0;
+    sco_out_addr = 0;
+    sco_in_addr = 0;
+
     // get endpoints from interface descriptor
     struct libusb_config_descriptor *config_descriptor;
     r = libusb_get_active_config_descriptor(dev, &config_descriptor);
@@ -329,25 +338,30 @@ static void scan_for_bt_endpoints(void) {
 
             switch (endpoint->bmAttributes & 0x3){
                 case LIBUSB_TRANSFER_TYPE_INTERRUPT:
+                    if (event_in_addr) continue;
                     event_in_addr = endpoint->bEndpointAddress;
                     log_info("-> using 0x%2.2X for HCI Events", event_in_addr);
                     break;
                 case LIBUSB_TRANSFER_TYPE_BULK:
                     if (endpoint->bEndpointAddress & 0x80) {
+                        if (acl_in_addr) continue;
                         acl_in_addr = endpoint->bEndpointAddress;
                         log_info("-> using 0x%2.2X for ACL Data In", acl_in_addr);
                     } else {
+                        if (acl_out_addr) continue;
                         acl_out_addr = endpoint->bEndpointAddress;
                         log_info("-> using 0x%2.2X for ACL Data Out", acl_out_addr);
                     }
                     break;
                 case LIBUSB_TRANSFER_TYPE_ISOCHRONOUS:
                     if (endpoint->bEndpointAddress & 0x80) {
-                        // acl_in_addr = endpoint->bEndpointAddress;
-                        log_info("-> using 0x%2.2X for SCO Data In", endpoint->bEndpointAddress);
+                        if (sco_in_addr) continue;
+                        sco_in_addr = endpoint->bEndpointAddress;
+                        log_info("-> using 0x%2.2X for SCO Data In", sco_in_addr);
                     } else {
-                        // acl_out_addr = endpoint->bEndpointAddress;
-                        log_info("-> using 0x%2.2X for SCO Data Out", endpoint->bEndpointAddress);
+                        if (sco_out_addr) continue;
+                        sco_out_addr = endpoint->bEndpointAddress;
+                        log_info("-> using 0x%2.2X for SCO Data Out", sco_out_addr);
                     }
                     break;
                 default:
@@ -470,6 +484,8 @@ static int usb_open(void *transport_config){
     sco_in_addr  =  0x83; // EP3, IN isochronous
     sco_out_addr =  0x03; // EP3, OUT isochronous    
 
+    int iMaxIsoPacketSize = 100;
+
     // USB init
     r = libusb_init(NULL);
     if (r < 0) return -1;
@@ -549,6 +565,9 @@ static int usb_open(void *transport_config){
             continue;
         }
 
+        iMaxIsoPacketSize = libusb_get_max_iso_packet_size(devs[deviceIndex], 0x03);    // 0x03 is hack
+        log_info("max iso packet size %d", iMaxIsoPacketSize);
+
         libusb_state = LIB_USB_INTERFACE_CLAIMED;
 
         break;
@@ -583,6 +602,33 @@ static int usb_open(void *transport_config){
 
     libusb_state = LIB_USB_TRANSFERS_ALLOCATED;
 
+#ifdef HAVE_SCO
+
+    for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
+        sco_in_transfer[c] = libusb_alloc_transfer(NUM_ISO_PACKETS); // isochronous transfers SCO in
+        log_info("Alloc iso transfer");
+        if (!sco_in_transfer[c]) {
+            usb_close(handle);
+            return LIBUSB_ERROR_NO_MEM;
+        }
+       // configure sco_in handlers
+        libusb_fill_iso_transfer(sco_in_transfer[c], handle, sco_in_addr, 
+                hci_sco_in_buffer[c], iMaxIsoPacketSize, NUM_ISO_PACKETS, async_callback, NULL, 0) ;
+        libusb_set_iso_packet_lengths(sco_in_transfer[c], NUM_ISO_PACKETS);
+        sco_in_transfer[c]->type = LIBUSB_TRANSFER_TYPE_ISOCHRONOUS;
+        sco_in_transfer[c]->num_iso_packets = NUM_ISO_PACKETS;
+        sco_in_transfer[c]->iso_packet_desc[0].length = 300;
+        r = libusb_submit_transfer(sco_in_transfer[c]);
+        log_info("Submit iso transfer res = %d", r);
+        if (r) {
+            log_error("Error submitting isochronous in transfer %d", r);
+            usb_close(handle);
+            return r;
+        }
+    }
+    sco_out_transfer = libusb_alloc_transfer(1); // 1 isochronous transfers SCO out
+#endif
+
     for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
         // configure event_in handlers
         libusb_fill_interrupt_transfer(event_in_transfer[c], handle, event_in_addr, 
@@ -605,26 +651,6 @@ static int usb_open(void *transport_config){
         }
  
      }
-
-#ifdef HAVE_SCO
-    for (c = 0 ; c < ASYNC_BUFFERS ; c++) {
-        sco_in_transfer[c]  =  libusb_alloc_transfer(1); // 1 isochronous transfers SCO in
-        if (!sco_in_transfer[c]) {
-            usb_close(handle);
-            return LIBUSB_ERROR_NO_MEM;
-        }
-       // configure sco_in handlers
-        libusb_fill_iso_transfer(sco_in_transfer[c], handle, sco_in_addr, 
-                hci_sco_in_buffer[c] + HCI_INCOMING_PRE_BUFFER_SIZE, HCI_ACL_BUFFER_SIZE, NUM_ISO_PACKETS, async_callback, NULL, 0) ;
-        r = libusb_submit_transfer(sco_in_transfer[c]);
-        if (r) {
-            log_error("Error submitting isochronous in transfer %d", r);
-            usb_close(handle);
-            return r;
-        }
-    }
-    sco_out_transfer = libusb_alloc_transfer(1); // 1 isochronous transfers SCO out
-#endif
 
     // Check for pollfds functionality
     doing_pollfds = libusb_pollfds_handle_timeouts(NULL);
