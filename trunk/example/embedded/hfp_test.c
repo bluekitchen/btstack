@@ -37,7 +37,7 @@
  
 // *****************************************************************************
 //
-// minimal setup for SDP client over USB or UART
+// Minimal setup for HFP Audio Gateway
 //
 // *****************************************************************************
 
@@ -70,21 +70,22 @@ static int send_err = 0;
 
 static uint8_t hfp_service_level_connection_state = 0;
 
+static void send_str_over_rfcomm(uint16_t cid, char * command){
+    printf("Send %s.\n", command);
+    int err = rfcomm_send_internal(cid, (uint8_t*) command, strlen(command));
+    if (err){
+        printf("rfcomm_send_internal -> error 0X%02x", err);
+    }
+}
+
 static void send_packet(){
-    send_err = 0; 
     switch (hfp_service_level_connection_state){
         case 1:
-            strcpy(data, "\r\n+BRSF: 224\r\n\r\nOK\r\n");
-            send_err = rfcomm_send_internal(rfcomm_cid, (uint8_t*) data, strlen(data));
+            send_str_over_rfcomm(rfcomm_cid, "\r\n+BRSF: 224\r\n\r\nOK\r\n");
             hfp_service_level_connection_state++;
             break;
         default:
             break;
-    }
-    
-    if (send_err){
-        printf("rfcomm_send_internal -> error 0X%02x", send_err);
-        return;
     }
 }
 
