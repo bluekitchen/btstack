@@ -101,6 +101,7 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
     log_info("create_connection_for_addr %s", bd_addr_to_str(addr));
     hci_connection_t * conn = btstack_memory_hci_connection_get();
     if (!conn) return NULL;
+    memset(conn, 0, sizeof(hci_connection_t));
     BD_ADDR_COPY(conn->address, addr);
     conn->address_type = addr_type;
     conn->con_handle = 0xffff;
@@ -1388,6 +1389,10 @@ static void event_handler(uint8_t *packet, int size){
 	hci_run();
 }
 
+static void sco_handler(uint8_t * packet, uint16_t size){
+    // not handled yet
+}
+
 static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
     hci_dump_packet(packet_type, 1, packet, size);
     switch (packet_type) {
@@ -1397,6 +1402,8 @@ static void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
         case HCI_ACL_DATA_PACKET:
             acl_handler(packet, size);
             break;
+        case HCI_SCO_DATA_PACKET:
+            sco_handler(packet, size);
         default:
             break;
     }
