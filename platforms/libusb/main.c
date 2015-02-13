@@ -45,6 +45,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 #include "btstack-config.h"
 
@@ -56,6 +57,14 @@
 #include "hci_dump.h"
 
 int btstack_main(int argc, const char * argv[]);
+
+static void sigint_handler(int param){
+    log_info(" <= SIGINT received, shutting down..\n");   
+    hci_power_control(HCI_POWER_OFF);
+    hci_close();
+    log_info("Good bye, see you.\n");    
+    exit(0);
+}
 
 int main(int argc, const char * argv[]){
 
@@ -73,6 +82,9 @@ int main(int argc, const char * argv[]){
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_fs;
         
 	hci_init(transport, config, control, remote_db);
+    
+    // handle CTRL-c
+    signal(SIGINT, sigint_handler);
 
     btstack_main(argc, argv);
 

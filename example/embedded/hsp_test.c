@@ -48,7 +48,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>
 
@@ -80,7 +79,6 @@ static uint8_t channel_nr = 0;
 
 static uint16_t mtu;
 static uint16_t rfcomm_cid = 0;
-
 static uint16_t sco_handle = 0;
 static uint16_t rfcomm_handle = 0;
 
@@ -92,9 +90,7 @@ static uint8_t ag_ring = 0;
 static uint8_t ag_send_ok = 0;
 static uint8_t ag_send_error = 0;
 
-static uint8_t   spp_service_buffer[150];
-
-static void hsp_run();
+static uint8_t   hsp_service_buffer[150];
 
 typedef enum {
     HSP_IDLE,
@@ -106,9 +102,24 @@ typedef enum {
 } hsp_state_t;
 
 static hsp_state_t hsp_state = HSP_IDLE;
+static void hsp_run();
 
 // remote audio volume control
 // AG +VGM=13 [0..15] ; HS AT+VGM=6 | AG OK
+
+void hsp_ag_init(){
+    hsp_state = HSP_IDLE;
+    
+    rfcomm_cid = 0;
+    rfcomm_handle = 0;
+    sco_handle = 0;
+
+    ag_send_ok = 0;
+    ag_send_error = 0;
+    ag_ring = 0;
+    ag_microphone_gain = -1;
+    ag_speaker_gain = -1;
+}
 
 void hsp_ag_connect(bd_addr_t bd_addr){
     if (hsp_state != HSP_IDLE) return;
@@ -163,19 +174,19 @@ static void hsp_run(){
 
     switch (hsp_state){
         case HSP_AG_QUERY_SDP_CHANNEL:
+            hsp_state = HSP_AG_W2_CONNECT_SCO;
             printf("Start SDP RFCOMM Query for UUID 0x%02x\n", SDP_HSP);
             sdp_query_rfcomm_channel_and_name_for_uuid(remote, SDP_HSP);
-            hsp_state = HSP_AG_W2_CONNECT_SCO;
             break;
         case HSP_AG_W2_CONNECT_SCO:
             if (!hci_can_send_command_packet_now()) break;
-            hci_send_cmd(&hci_setup_synchronous_connection_command, rfcomm_handle, 8000, 8000, 0xFFFF, 0x0060, 0xFF, 0x003F);
             hsp_state = HSP_AG_W4_SCO_CONNECTED;
+            hci_send_cmd(&hci_setup_synchronous_connection_command, rfcomm_handle, 8000, 8000, 0xFFFF, 0x0060, 0xFF, 0x003F);
             break;
         case HSP_AG_SEND_DISCONNECT:
+            hsp_state = HSP_IDLE;
             rfcomm_disconnect_internal(rfcomm_cid);
             rfcomm_cid = 0;
-            hsp_state = HSP_IDLE;
             break;
         case HSP_AG_ACTIVE:
             if (ag_send_ok){
@@ -226,7 +237,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             strncmp((char *)packet, HSP_HS_SPEAKER_GAIN, 7) == 0){
             // uint8_t gain = packet[8];
             // TODO: parse gain
-            // printf("Received changed gain info %c\n", gain);
+            printf("Received changed gain info %c\n", packet[8]);
             ag_send_ok = 1;
         } else if (strncmp((char *)packet, "AT+", 3) == 0){
             //ag_send_error = 1;
@@ -309,6 +320,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
         case RFCOMM_EVENT_INCOMING_CONNECTION:
             // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
+            if (hsp_state != HSP_IDLE) return;
             bt_flip_addr(event_addr, &packet[2]); 
             rfcomm_cid = READ_BT_16(packet, 9);
             printf("RFCOMM channel %u requested for %s\n", packet[8], bd_addr_to_str(event_addr));
@@ -344,16 +356,12 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
         case RFCOMM_EVENT_CREDITS:
             if (!rfcomm_cid) {
                 hsp_state = HSP_IDLE;
-                return;
             }
             break;
 
         case RFCOMM_EVENT_CHANNEL_CLOSED:
             printf("RFCOMM channel closed\n");
-            hsp_state = HSP_IDLE;
-            rfcomm_cid = 0;
-            rfcomm_handle = 0;
-            sco_handle = 0;
+            hsp_ag_init();
             break;
         default:
             break;
@@ -539,11 +547,10 @@ int btstack_main(int argc, const char * argv[]){
 
     // init SDP, create record for SPP and register with SDP
     sdp_init();
-    memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
-    // TODO: create hsp hs record or ag sdp record;
-
-    // printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
-    // sdp_register_service_internal(NULL, spp_service_buffer);
+    memset(hsp_service_buffer, 0, sizeof(hsp_service_buffer));
+    // hsp_hs_create_service(hsp_service_buffer, RFCOMM_SERVER_CHANNEL, NULL, 0);
+    hsp_ag_create_service(hsp_service_buffer, RFCOMM_SERVER_CHANNEL, NULL);
+    sdp_register_service_internal(NULL, hsp_service_buffer);
 
     sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
 
