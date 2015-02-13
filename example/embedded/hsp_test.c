@@ -71,7 +71,7 @@ static uint8_t connection_state = 0;
 static void hsp_set_microphone_gain(){}; // +VGM=13 [0..15]
 static void hsp_set_speaker_gain(){};    // +VGS=5  [0..15]
 
-static int send_str_over_rfcomm(uint16_t cid, char * command){
+static void send_str_over_rfcomm(uint16_t cid, char * command){
     printf("Send %s.\n", command);
     int err = rfcomm_send_internal(cid, (uint8_t*) command, strlen(command));
     if (err){
