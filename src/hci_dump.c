@@ -217,6 +217,13 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
                         header_packetlogger.type = 0x02;
                     }
                     break;
+                case HCI_SCO_DATA_PACKET:
+                    if (in) {
+                        header_packetlogger.type = 0x09;
+                    } else {
+                        header_packetlogger.type = 0x08;
+                    }
+                    break;
                 case HCI_EVENT_PACKET:
                     header_packetlogger.type = 0x01;
                     break;
