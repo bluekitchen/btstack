@@ -310,28 +310,46 @@ static void scan_for_bt_endpoints(void) {
     // get endpoints from interface descriptor
     struct libusb_config_descriptor *config_descriptor;
     r = libusb_get_active_config_descriptor(dev, &config_descriptor);
-    log_info("configuration: %u interfaces", config_descriptor->bNumInterfaces);
 
-    const struct libusb_interface *interface = config_descriptor->interface;
-    const struct libusb_interface_descriptor * interface0descriptor = interface->altsetting;
-    log_info("interface 0: %u endpoints", interface0descriptor->bNumEndpoints);
+    int num_interfaces = config_descriptor->bNumInterfaces;
+    log_info("active configuration has %u interfaces", num_interfaces);
 
-    const struct libusb_endpoint_descriptor *endpoint = interface0descriptor->endpoint;
+    int i;
+    for (i = 0; i < num_interfaces ; i++){
+        const struct libusb_interface *interface = &config_descriptor->interface[i];
+        const struct libusb_interface_descriptor * interface_descriptor = interface->altsetting;
+        log_info("interface %u: %u endpoints", i, interface_descriptor->bNumEndpoints);
 
-    for (r=0;r<interface0descriptor->bNumEndpoints;r++,endpoint++){
-        log_info("endpoint %x, attributes %x", endpoint->bEndpointAddress, endpoint->bmAttributes);
+        const struct libusb_endpoint_descriptor *endpoint = interface_descriptor->endpoint;
 
-        if ((endpoint->bmAttributes & 0x3) == LIBUSB_TRANSFER_TYPE_INTERRUPT){
-            event_in_addr = endpoint->bEndpointAddress;
-            log_info("Using 0x%2.2X for HCI Events", event_in_addr);
-        }
-        if ((endpoint->bmAttributes & 0x3) == LIBUSB_TRANSFER_TYPE_BULK){
-            if (endpoint->bEndpointAddress & 0x80) {
-                acl_in_addr = endpoint->bEndpointAddress;
-                log_info("Using 0x%2.2X for ACL Data In", acl_in_addr);
-            } else {
-                acl_out_addr = endpoint->bEndpointAddress;
-                log_info("Using 0x%2.2X for ACL Data Out", acl_out_addr);
+        for (r=0;r<interface_descriptor->bNumEndpoints;r++,endpoint++){
+            log_info("- endpoint %x, attributes %x", endpoint->bEndpointAddress, endpoint->bmAttributes);
+
+            switch (endpoint->bmAttributes & 0x3){
+                case LIBUSB_TRANSFER_TYPE_INTERRUPT:
+                    event_in_addr = endpoint->bEndpointAddress;
+                    log_info("-> using 0x%2.2X for HCI Events", event_in_addr);
+                    break;
+                case LIBUSB_TRANSFER_TYPE_BULK:
+                    if (endpoint->bEndpointAddress & 0x80) {
+                        acl_in_addr = endpoint->bEndpointAddress;
+                        log_info("-> using 0x%2.2X for ACL Data In", acl_in_addr);
+                    } else {
+                        acl_out_addr = endpoint->bEndpointAddress;
+                        log_info("-> using 0x%2.2X for ACL Data Out", acl_out_addr);
+                    }
+                    break;
+                case LIBUSB_TRANSFER_TYPE_ISOCHRONOUS:
+                    if (endpoint->bEndpointAddress & 0x80) {
+                        // acl_in_addr = endpoint->bEndpointAddress;
+                        log_info("-> using 0x%2.2X for SCO Data In", endpoint->bEndpointAddress);
+                    } else {
+                        // acl_out_addr = endpoint->bEndpointAddress;
+                        log_info("-> using 0x%2.2X for SCO Data Out", endpoint->bEndpointAddress);
+                    }
+                    break;
+                default:
+                    break;
             }
         }
     }
