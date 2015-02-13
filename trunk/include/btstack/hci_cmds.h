@@ -218,6 +218,20 @@ extern "C" {
  */
 #define HCI_EVENT_INQUIRY_RESULT_WITH_RSSI		      	   0x22
 
+/**
+ * @format 1HB111221
+ * @param status
+ * @param handle
+ * @param bd_addr
+ * @param link_type
+ * @param transmission_interval
+ * @param retransmission_interval
+ * @param rx_packet_length
+ * @param tx_packet_length
+ * @param air_mode
+ */
+#define HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE        0x2C
+
 // TODO: serialize extended_inquiry_response and provide parser
 /** 
  * @format 1B11321
