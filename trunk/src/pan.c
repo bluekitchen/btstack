@@ -57,7 +57,7 @@ static const char default_nap_service_desc[] = "Personal Ad-hoc Network Service 
 static const char default_gn_service_name[] = "Group Ad-hoc Network Service";
 static const char default_gn_service_desc[] = "Personal Group Ad-hoc Network Service";
 
-void pan_create_service(bnep_service_uuid_t service_uuid, uint8_t *service, const char *name, const char *descriptor, 
+void pan_create_service(uint32_t service_uuid, uint8_t *service, const char *name, const char *descriptor, 
 	 security_description_t security_desc, net_access_type_t net_access_type, uint32_t max_net_access_rate,
 	 const char *IPv4Subnet, const char *IPv6Subnet){
 
@@ -89,7 +89,7 @@ void pan_create_service(bnep_service_uuid_t service_uuid, uint8_t *service, cons
 		
 		uint8_t* bnep = de_push_sequence(attribute);
 		{
-			de_add_number(bnep,  DE_UUID, DE_SIZE_16, 0x000F);  // bnep
+			de_add_number(bnep,  DE_UUID, DE_SIZE_16, SDP_BNEPProtocol);
 			de_add_number(bnep,  DE_UINT, DE_SIZE_16, 0x0100);  // version
 
 			uint8_t * net_packet_type_list = de_push_sequence(bnep);
@@ -107,7 +107,7 @@ void pan_create_service(bnep_service_uuid_t service_uuid, uint8_t *service, cons
 	de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BrowseGroupList); // public browse group
 	attribute = de_push_sequence(service);
 	{
-		de_add_number(attribute,  DE_UUID, DE_SIZE_16, 0x1002 );
+		de_add_number(attribute,  DE_UUID, DE_SIZE_16, SDP_PublicBrowseGroup);
 	}
 	de_pop_sequence(service, attribute);
 
@@ -144,13 +144,13 @@ void pan_create_service(bnep_service_uuid_t service_uuid, uint8_t *service, cons
 		de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
 	} else {
 		switch (service_uuid){
-			case PANU_UUID:
+			case SDP_PANU:
 				de_add_data(service,  DE_STRING, strlen(default_panu_service_name), (uint8_t *) default_panu_service_name);
 				break;
-			case NAP_UUID:
+			case SDP_NAP:
 				de_add_data(service,  DE_STRING, strlen(default_nap_service_name), (uint8_t *) default_nap_service_name);
 				break;
-			case GN_UUID:
+			case SDP_GN:
 				de_add_data(service,  DE_STRING, strlen(default_gn_service_name), (uint8_t *) default_gn_service_name);
 				break;
 			default:
@@ -164,13 +164,13 @@ void pan_create_service(bnep_service_uuid_t service_uuid, uint8_t *service, cons
 		de_add_data(service,  DE_STRING, strlen(descriptor), (uint8_t *) descriptor);
 	} else {
 		switch (service_uuid){
-			case PANU_UUID:
+			case SDP_PANU:
 				de_add_data(service,  DE_STRING, strlen(default_panu_service_desc), (uint8_t *) default_panu_service_desc);
 				break;
-			case NAP_UUID:
+			case SDP_NAP:
 				de_add_data(service,  DE_STRING, strlen(default_nap_service_desc), (uint8_t *) default_nap_service_desc);
 				break;
-			case GN_UUID:
+			case SDP_GN:
 				de_add_data(service,  DE_STRING, strlen(default_gn_service_desc), (uint8_t *) default_gn_service_desc);
 				break;
 			default:
@@ -182,7 +182,7 @@ void pan_create_service(bnep_service_uuid_t service_uuid, uint8_t *service, cons
 	de_add_number(service, DE_UINT, DE_SIZE_16, 0x030A);
 	de_add_number(service, DE_UINT, DE_SIZE_16, security_desc);
 
-	if (service_uuid == PANU_UUID) return;
+	if (service_uuid == SDP_PANU) return;
 
 	if (IPv4Subnet){
 		// 0x030D "IPv4Subnet", optional
@@ -196,7 +196,7 @@ void pan_create_service(bnep_service_uuid_t service_uuid, uint8_t *service, cons
 		de_add_data(service,  DE_STRING, strlen(IPv6Subnet), (uint8_t *) IPv6Subnet);
 	}
 
-	if (service_uuid == GN_UUID) return;
+	if (service_uuid == SDP_GN) return;
 
 	// 0x030B "NetAccessType"
 	de_add_number(service, DE_UINT, DE_SIZE_16, 0x030B);
@@ -212,14 +212,14 @@ void pan_create_service(bnep_service_uuid_t service_uuid, uint8_t *service, cons
 void pan_create_nap_service(uint8_t *service, const char *name, const char *description, security_description_t security_desc, 
 	net_access_type_t net_access_type, uint32_t max_net_access_rate, const char *IPv4Subnet, const char *IPv6Subnet){
 
-	pan_create_service(NAP_UUID, service, name, description, security_desc, net_access_type, max_net_access_rate, IPv4Subnet, IPv6Subnet);
+	pan_create_service(SDP_NAP, service, name, description, security_desc, net_access_type, max_net_access_rate, IPv4Subnet, IPv6Subnet);
 }
 
 void pan_create_gn_service(uint8_t *service, const char *name, const char *description, security_description_t security_desc, 
 	const char *IPv4Subnet, const char *IPv6Subnet){
-	pan_create_service(GN_UUID, service, name, description, security_desc, PAN_NET_ACCESS_TYPE_NONE, 0, IPv4Subnet, IPv6Subnet);
+	pan_create_service(SDP_GN, service, name, description, security_desc, PAN_NET_ACCESS_TYPE_NONE, 0, IPv4Subnet, IPv6Subnet);
 }
 
 void pan_create_panu_service(uint8_t *service, const char *name, const char *description, security_description_t security_desc){
-	pan_create_service(PANU_UUID, service, name, description, security_desc, PAN_NET_ACCESS_TYPE_NONE, 0, NULL, NULL);
+	pan_create_service(SDP_PANU, service, name, description, security_desc, PAN_NET_ACCESS_TYPE_NONE, 0, NULL, NULL);
 }

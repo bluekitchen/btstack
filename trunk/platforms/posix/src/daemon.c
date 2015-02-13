@@ -909,7 +909,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             
             sdp_client_query(addr, (uint8_t*)&serviceSearchPattern[0], (uint8_t*)&attributeIDList[0]);
 
-            // sdp_general_query_for_uuid(addr, 0x1002);
+            // sdp_general_query_for_uuid(addr, SDP_PublicBrowseGroup);
             break;
         case GAP_LE_SCAN_START:
             le_central_start_scan();

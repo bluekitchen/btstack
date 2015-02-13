@@ -72,11 +72,6 @@ extern "C" {
 #define BNEP_TYPE_MASK                                  0x7F
 #define	BNEP_TYPE(header)                               ((header) & BNEP_TYPE_MASK)
 #define BNEP_HEADER_HAS_EXT(x)	                        (((x) & BNEP_EXT_FLAG) == BNEP_EXT_FLAG)
-
-/* BNEP UUIDs */
-#define BNEP_UUID_PANU                                  0x1115
-#define BNEP_UUID_NAP                                   0x1116
-#define BNEP_UUID_GN                                    0x1117
     
 /* BNEP packet types */    
 #define	BNEP_PKT_TYPE_GENERAL_ETHERNET                  0x00

@@ -63,8 +63,6 @@
 
 int record_id = -1;
 int attribute_id = -1;
-uint16_t public_browse_group =  0x1002;
-uint16_t bnep_protocol_id = 0x000f;
 
 static uint8_t   attribute_value[1000];
 static const int attribute_value_buffer_size = sizeof(attribute_value);
@@ -88,7 +86,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             // bt stack activated, get started 
             if (packet[2] == HCI_STATE_WORKING){
                 printf("Start SDP BNEP query.\n");
-                sdp_general_query_for_uuid(remote, bnep_protocol_id);
+                sdp_general_query_for_uuid(remote, SDP_BNEPProtocol);
             }
             break;
         default:
@@ -177,12 +175,12 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
                                 if (de_get_element_type(element) != DE_UUID) continue;
                                 uint32_t uuid = de_get_uuid32(element);
                                 switch (uuid){
-                                    case 0x100:
+                                    case SDP_L2CAPProtocol:
                                         if (!des_iterator_has_more(&prot_it)) continue;
                                         des_iterator_next(&prot_it);
                                         de_element_get_uint16(des_iterator_get_element(&prot_it), &l2cap_psm);
                                         break;
-                                    case 0x000f:
+                                    case SDP_BNEPProtocol:
                                         if (!des_iterator_has_more(&prot_it)) continue;
                                         des_iterator_next(&prot_it);
                                         de_element_get_uint16(des_iterator_get_element(&prot_it), &bnep_version);

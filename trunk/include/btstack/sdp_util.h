@@ -89,9 +89,17 @@ typedef enum {
 #define SDP_SupportedFormatsList    0x0303
 
 // SERVICE CLASSES
-#define SDP_OBEXObjectPush    0x1105
-#define SDP_OBEXFileTransfer  0x1106
-#define SDP_PublicBrowseGroup 0x1002
+#define SDP_OBEXObjectPush          0x1105
+#define SDP_OBEXFileTransfer        0x1106
+#define SDP_PublicBrowseGroup       0x1002
+#define SDP_HSP                     0x1108
+#define SDP_Headset_AG              0x1112
+#define SDP_PANU                    0x1115
+#define SDP_NAP                     0x1116
+#define SDP_GN                      0x1117
+#define SDP_Handsfree               0x111E
+#define SDP_HandsfreeAudioGateway   0x111F
+
 
 // PROTOCOLS
 #define SDP_SDPProtocol       0x0001
@@ -99,6 +107,8 @@ typedef enum {
 #define SDP_RFCOMMProtocol    0x0003
 #define SDP_OBEXProtocol      0x0008
 #define SDP_L2CAPProtocol     0x0100
+#define SDP_BNEPProtocol      0x000F
+#define SDP_AVDTPProtocol     0x0019
 
 // OFFSETS FOR LOCALIZED ATTRIBUTES - SDP_LanguageBaseAttributeIDList
 #define SDP_Offest_ServiceName      0x0000

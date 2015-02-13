@@ -88,12 +88,12 @@ TEST(DESParser, DESIterator2){
         CHECK_EQUAL(de_get_element_type(element), DE_UUID);
         uint32_t uuid = de_get_uuid32(element);
         switch (uuid){
-            case 0x100:
+            case SDP_L2CAPProtocol:
                 CHECK_EQUAL(des_iterator_has_more(&prot_it), 1);
                 des_iterator_next(&prot_it);
                 de_element_get_uint16(des_iterator_get_element(&prot_it), &l2cap_psm);
                 break;
-            case 0x000f:
+            case SDP_BNEPProtocol:
                 CHECK_EQUAL(des_iterator_has_more(&prot_it), 1);
                 des_iterator_next(&prot_it);
                 de_element_get_uint16(des_iterator_get_element(&prot_it), &bnep_version);

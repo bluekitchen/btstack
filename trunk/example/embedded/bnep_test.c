@@ -93,7 +93,7 @@ static bnep_multi_filter_t multicast_filter [1] = {{{0x00, 0x00, 0x00, 0x00, 0x0
 static bd_addr_t local_addr;
 //static uint16_t bnep_protocol_uuid  = 0x000f;
 static uint16_t bnep_l2cap_psm      = 0x000f;
-static uint32_t bnep_remote_uuid    = 0x1115;
+static uint32_t bnep_remote_uuid    = SDP_PANU;
 //static uint16_t bnep_version        = 0;
 static uint16_t bnep_cid            = 0;
 
@@ -210,7 +210,7 @@ static void send_dns_request(){
 static void show_usage(){
 
     printf("\n--- Bluetooth BNEP Test Console ---\n");
-    printf("Local UUID %04x, remote UUID %04x, \n", BNEP_UUID_PANU, bnep_remote_uuid);
+    printf("Local UUID %04x, remote UUID %04x, \n", SDP_PANU, bnep_remote_uuid);
     printf("---\n");
     printf("p - connect to PTS\n");
     printf("e - send general Ethernet packet\n");
@@ -392,7 +392,7 @@ int btstack_main(int argc, const char * argv[]){
     /* Initialise BNEP */
     bnep_init();
     bnep_register_packet_handler(packet_handler);
-    bnep_register_service(NULL, BNEP_UUID_PANU, 1691);  /* Minimum L2CAP MTU for bnep is 1691 bytes */
+    bnep_register_service(NULL, SDP_PANU, 1691);  /* Minimum L2CAP MTU for bnep is 1691 bytes */
 
     /* Turn on the device */
     hci_power_control(HCI_POWER_ON);
