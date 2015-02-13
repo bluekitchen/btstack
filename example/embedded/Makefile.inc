@@ -68,6 +68,8 @@ EXAMPLES = 					\
 	spp_and_le_counter 		\
 	spp_counter 			\
 	spp_streamer			\
+	hfp_test				\
+	hsp_test				\
 
 # requires termios / command line support
 EXAMPLES_CLI = ble_peripheral ble_peripheral_sm_minimal l2cap_test ancs_client classic_test bnep_test
@@ -156,6 +158,11 @@ ble_peripheral: profile.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ
 ble_peripheral_sm_minimal: profile.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c
 	${CC} $(filter-out profile.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
+hfp_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hfp_test.c  
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+hsp_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_test.c  
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
 	rm -f ${EXAMPLES}
