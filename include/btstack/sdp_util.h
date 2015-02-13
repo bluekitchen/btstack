@@ -99,6 +99,8 @@ typedef enum {
 #define SDP_GN                      0x1117
 #define SDP_Handsfree               0x111E
 #define SDP_HandsfreeAudioGateway   0x111F
+#define SDP_Headset_HS              0x1131
+#define SDP_GenericAudio            0x1203
 
 
 // PROTOCOLS
