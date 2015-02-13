@@ -57,8 +57,8 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "sdp_query_rfcomm.h"
+#include "debug.h"
 
-// static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 static bd_addr_t remote = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
 static uint8_t channel_nr = 0;
 
@@ -68,15 +68,22 @@ static uint16_t rfcomm_cid = 0;
 static char data[50];
 static int send_err = 0; 
 
-static uint8_t hfp_service_level_connection_state = 0;
+static uint8_t connection_state = 0;
 
 static void send_packet(){
     send_err = 0; 
-    switch (hfp_service_level_connection_state){
+    switch (connection_state){
         case 1:
-            strcpy(data, "\r\n+BRSF: 224\r\n\r\nOK\r\n");
+            strcpy(data, "\r\nRING\r\n");
+            printf("Send RING.\n");
             send_err = rfcomm_send_internal(rfcomm_cid, (uint8_t*) data, strlen(data));
-            hfp_service_level_connection_state++;
+            connection_state++;
+            break;
+        case 3:
+            strcpy(data, "\r\nOK\r\n");
+            printf("Send OK.\n");
+            send_err = rfcomm_send_internal(rfcomm_cid, (uint8_t*) data, strlen(data));
+            connection_state++;
             break;
         default:
             break;
@@ -88,23 +95,29 @@ static void send_packet(){
     }
 }
 
+
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
     if (packet_type == RFCOMM_DATA_PACKET){
-        hfp_service_level_connection_state++;
-        if (rfcomm_can_send_packet_now(rfcomm_cid)) send_packet();
-        return;
+        if (strncmp((char *)packet, "AT+CKPD", 7) == 0){
+            printf("Received AT+CKPD\n");
+            connection_state++;
+            if (rfcomm_can_send_packet_now(rfcomm_cid)) send_packet();
+        }
+        return;   
     }
+
     if (packet_type != HCI_EVENT_PACKET) return;
     uint8_t event = packet[0];
     bd_addr_t event_addr;
+    uint16_t handle;
 
     switch (event) {
         case BTSTACK_EVENT_STATE:
             // bt stack activated, get started 
             if (packet[2] == HCI_STATE_WORKING){
-                printf("Start SDP RFCOMM Query for UUID 0x%02x\n", SDP_Handsfree);
-                sdp_query_rfcomm_channel_and_name_for_uuid(remote, SDP_Handsfree);
+                printf("Start SDP RFCOMM Query for UUID 0x%02x\n", SDP_HSP);
+                sdp_query_rfcomm_channel_and_name_for_uuid(remote, SDP_HSP);
             }
             break;
 
@@ -115,16 +128,74 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
             break;
 
+        case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
+            int index = 2;
+            uint8_t status = packet[index++];
+            uint16_t connection_handle = READ_BT_16(packet, index);
+            index+=2;
+            bd_addr_t address; 
+            memcpy(address, &packet[index], 6);
+            index+=6;
+            uint8_t link_type = packet[index++];
+            uint8_t transmission_interval = packet[index++];  // measured in slots
+            uint8_t retransmission_interval = packet[index++];// measured in slots
+            uint16_t rx_packet_length = READ_BT_16(packet, index); // measured in bytes
+            index+=2;
+            uint16_t tx_packet_length = READ_BT_16(packet, index); // measured in bytes
+            index+=2;
+            uint8_t air_mode = packet[index];
+
+            if (status != 0){
+                log_error("(e)SCO Connection is not established, status %u", status);
+                exit(0);
+                break;
+            }
+            switch (link_type){
+                case 0x00:
+                    printf("SCO Connection established. \n");
+                    if (transmission_interval != 0) log_error("SCO Connection: transmission_interval not zero: %d.", transmission_interval);
+                    if (retransmission_interval != 0) log_error("SCO Connection: retransmission_interval not zero: %d.", retransmission_interval);
+                    if (rx_packet_length != 0) log_error("SCO Connection: rx_packet_length not zero: %d.", rx_packet_length);
+                    if (tx_packet_length != 0) log_error("SCO Connection: tx_packet_length not zero: %d.", tx_packet_length);
+                    break;
+                case 0x02:
+                    printf("eSCO Connection established. \n");
+                    break;
+                default:
+                    log_error("(e)SCO reserved link_type 0x%2x", link_type);
+                    break;
+            }
+            log_info("connection_handle 0x%2x, address %s, transmission_interval %u slots, retransmission_interval %u slots, " 
+                 " rx_packet_length %u bytes, tx_packet_length %u bytes, air_mode 0x%2x (0x02 == CVSD)", connection_handle,
+                 bd_addr_to_str(address), transmission_interval, retransmission_interval, rx_packet_length, tx_packet_length, air_mode);
+
+            // Send "RING"
+            connection_state++;
+            if (rfcomm_can_send_packet_now(rfcomm_cid)) send_packet();
+            break;                
+        }
+
         case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
             printf("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
             // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
             if (packet[2]) {
                 printf("RFCOMM channel open failed, status %u\n", packet[2]);
             } else {
-                // data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
+                // data: event(8) , len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
+                handle = READ_BT_16(packet, 9);
                 rfcomm_cid = READ_BT_16(packet, 12);
                 mtu = READ_BT_16(packet, 14);
                 printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_cid, mtu);
+                hci_send_cmd(&hci_setup_synchronous_connection_command, handle, 8000, 8000, 0xFFFF, 0x0060, 0xFF, 0x003F);
+                /** 
+                 * @param handle
+                 * @param transmit_bandwidth = 8000 (64kbps)
+                 * @param receive_bandwidth = 8000 (64kbps)
+                 * @param max_latency >= 7ms for eSCO, 0xFFFF do not care
+                 * @param voice_settings = CVSD, Input Coding: Linear, Input Data Format: 2’s complement, data 16bit: 00011000000 == 0x60
+                 * @param retransmission_effort = 0xFF do not care
+                 * @param packet_type = at least EV3 for eSCO; here we have 0x3F = {HV1-3, EV3-5}
+                 */
                 break;
             }
             break;
