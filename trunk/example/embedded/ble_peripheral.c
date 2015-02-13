@@ -817,7 +817,7 @@ int  stdin_process(struct data_source *ds){
             break;
         case 's':
             printf("SM: sending security request\n");
-            sm_send_security_request();
+            sm_send_security_request(handle);
             break;
         case 'e':
             sm_io_capabilities = "IO_CAPABILITY_DISPLAY_ONLY";
