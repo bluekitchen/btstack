@@ -49,8 +49,8 @@
 #include <btstack/btstack.h>
 #include <btstack/hci_cmds.h>
 #include <btstack/utils.h>
+#include <btstack/sdp_util.h>
 
-#include <btstack/utils.h>
 #include "btstack_memory.h"
 #include "hci.h"
 #include "hci_dump.h"
@@ -827,15 +827,15 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
         channel->uuid_dest = READ_NET_16(packet, 2 + uuid_offset);
         channel->uuid_source = READ_NET_16(packet, 2 + uuid_offset + uuid_size);
 
-        if ((channel->uuid_dest != BNEP_UUID_PANU) && 
-            (channel->uuid_dest != BNEP_UUID_NAP) &&
-            (channel->uuid_dest != BNEP_UUID_GN)) {
+        if ((channel->uuid_dest != SDP_PANU) && 
+            (channel->uuid_dest != SDP_NAP) &&
+            (channel->uuid_dest != SDP_GN)) {
             log_error("BNEP_CONNECTION_REQUEST: Invalid destination service UUID: %04x", channel->uuid_dest);
             channel->uuid_dest = 0;
         }    
-        if ((channel->uuid_source != BNEP_UUID_PANU) && 
-            (channel->uuid_source != BNEP_UUID_NAP) &&
-            (channel->uuid_source != BNEP_UUID_GN)) {
+        if ((channel->uuid_source != SDP_PANU) && 
+            (channel->uuid_source != SDP_NAP) &&
+            (channel->uuid_source != SDP_GN)) {
             log_error("BNEP_CONNECTION_REQUEST: Invalid source service UUID: %04x", channel->uuid_source);
             channel->uuid_source = 0;
         }
@@ -845,7 +845,7 @@ static int bnep_handle_connection_request(bnep_channel_t *channel, uint8_t *pack
         if (service == NULL) {
             response_code = BNEP_RESP_SETUP_INVALID_DEST_UUID;
         } else 
-        if ((channel->uuid_source != BNEP_UUID_PANU) && (channel->uuid_dest != BNEP_UUID_PANU)) {
+        if ((channel->uuid_source != SDP_PANU) && (channel->uuid_dest != SDP_PANU)) {
             response_code = BNEP_RESP_SETUP_INVALID_SOURCE_UUID;
         }
     }
@@ -1564,7 +1564,7 @@ int bnep_connect(void * connection, bd_addr_t *addr, uint16_t l2cap_psm, uint16_
         return -1;
     }
 
-    channel->uuid_source = BNEP_UUID_PANU;
+    channel->uuid_source = SDP_PANU;
     channel->uuid_dest   = uuid_dest;
 
     l2cap_create_channel_internal(connection, bnep_packet_handler, *addr, l2cap_psm, l2cap_max_mtu());
@@ -1597,9 +1597,9 @@ void bnep_register_service(void * connection, uint16_t service_uuid, uint16_t ma
     }
 
     /* Only alow one the three service types: PANU, NAP, GN */
-    if ((service_uuid != BNEP_UUID_PANU) && 
-        (service_uuid != BNEP_UUID_NAP) &&
-        (service_uuid != BNEP_UUID_GN)) {
+    if ((service_uuid != SDP_PANU) && 
+        (service_uuid != SDP_NAP) &&
+        (service_uuid != SDP_GN)) {
         log_info("BNEP_REGISTER_SERVICE: Invalid service UUID: %04x", service_uuid);
         return;
     }

@@ -88,7 +88,6 @@
 #include "pan.h"
 
 static int record_id = -1;
-static uint16_t bnep_protocol_id    = 0x000f;
 static uint16_t bnep_l2cap_psm      = 0;
 static uint32_t bnep_remote_uuid    = 0;
 static uint16_t bnep_version        = 0;
@@ -299,9 +298,9 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                                 if (de_get_element_type(element) != DE_UUID) continue;
                                 uint32_t uuid = de_get_uuid32(element);
                                 switch (uuid){
-                                    case BNEP_UUID_PANU:
-                                    case BNEP_UUID_NAP:
-                                    case BNEP_UUID_GN:
+                                    case SDP_PANU:
+                                    case SDP_NAP:
+                                    case SDP_GN:
                                         printf("SDP Attribute 0x%04x: BNEP PAN protocol UUID: %04x\n", value_event->attribute_id, uuid);
                                         bnep_remote_uuid = uuid;
                                         break;
@@ -334,12 +333,12 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                                     
                                     uuid = de_get_uuid32(element);
                                     switch (uuid){
-                                        case 0x0100:
+                                        case SDP_L2CAPProtocol:
                                             if (!des_iterator_has_more(&prot_it)) continue;
                                             des_iterator_next(&prot_it);
                                             de_element_get_uint16(des_iterator_get_element(&prot_it), &bnep_l2cap_psm);
                                             break;
-                                        case 0x000f:
+                                        case SDP_BNEPProtocol:
                                             if (!des_iterator_has_more(&prot_it)) continue;
                                             des_iterator_next(&prot_it);
                                             de_element_get_uint16(des_iterator_get_element(&prot_it), &bnep_version);
@@ -351,9 +350,6 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
                                 printf("l2cap_psm 0x%04x, bnep_version 0x%04x\n", bnep_l2cap_psm, bnep_version);
 
                                 /* Create BNEP connection */
-                                // hack - SDP Query seems to be broken
-                                // bnep_l2cap_psm = 0x000f;
-                                // bnep_remote_uuid = 0x1117;  // adhoc group networking
                                 bnep_connect(NULL, &remote, bnep_l2cap_psm, bnep_remote_uuid);
                             }
                             break;
@@ -392,7 +388,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     if (packet[2] == HCI_STATE_WORKING) {
                         /* Send a general query for BNEP Protocol ID */
                         printf("Start SDP BNEP query.\n");
-                        sdp_general_query_for_uuid(remote, bnep_protocol_id);
+                        sdp_general_query_for_uuid(remote, SDP_BNEPProtocol);
                     }
                     break;
 
@@ -522,7 +518,7 @@ int btstack_main(int argc, const char * argv[]){
     /* Initialise BNEP */
     bnep_init();
     bnep_register_packet_handler(packet_handler);
-    bnep_register_service(NULL, BNEP_UUID_PANU, 1691);  /* Minimum L2CAP MTU for bnep is 1691 bytes */
+    bnep_register_service(NULL, SDP_PANU, 1691);  /* Minimum L2CAP MTU for bnep is 1691 bytes */
 
     /* Turn on the device */
     hci_power_control(HCI_POWER_ON);

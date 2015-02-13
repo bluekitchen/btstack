@@ -713,7 +713,7 @@ void sdp_create_dummy_service(uint8_t *service, const char *name){
     de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BrowseGroupList); // public browse group
     attribute = de_push_sequence(service);
     {
-        de_add_number(attribute,  DE_UUID, DE_SIZE_16, 0x1002 );
+        de_add_number(attribute,  DE_UUID, DE_SIZE_16, SDP_PublicBrowseGroup);
     }
     de_pop_sequence(service, attribute);
     

@@ -81,7 +81,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
         case BTSTACK_EVENT_STATE:
             // bt stack activated, get started 
             if (packet[2] == HCI_STATE_WORKING){
-                sdp_general_query_for_uuid(remote, 0x1002);
+                sdp_general_query_for_uuid(remote, SDP_PublicBrowseGroup);
             }
             break;
         default:
