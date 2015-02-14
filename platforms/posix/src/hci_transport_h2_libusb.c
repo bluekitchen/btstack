@@ -106,8 +106,8 @@ static struct libusb_transfer *acl_out_transfer;
 static struct libusb_transfer *event_in_transfer[ASYNC_BUFFERS];
 static struct libusb_transfer *acl_in_transfer[ASYNC_BUFFERS];
 
-#ifdef HAVE_SCO
 #define SCO_PACKET_SIZE 64
+#ifdef HAVE_SCO
 static struct  libusb_transfer *sco_out_transfer;
 static struct  libusb_transfer *sco_in_transfer[ASYNC_BUFFERS];
 static uint8_t hci_sco_in_buffer[ASYNC_BUFFERS][NUM_ISO_PACKETS * SCO_PACKET_SIZE]; 
@@ -188,6 +188,53 @@ static void async_callback(struct libusb_transfer *transfer)
     // log_info("end async_callback");
 }
 
+// SCO packet state machine
+typedef enum {
+    H2_W4_SCO_HEADER = 1,
+    H2_W4_PAYLOAD,
+} H2_SCO_STATE;
+
+static uint8_t  sco_buffer[255+3 + SCO_PACKET_SIZE];
+static uint16_t sco_read_pos;
+static uint16_t sco_bytes_to_read;
+static H2_SCO_STATE sco_state;
+
+static void sco_state_machine_init(){
+    sco_state = H2_W4_SCO_HEADER;
+    sco_read_pos = 0;
+    sco_bytes_to_read = 3;
+}
+
+static void handle_isochronous_data(uint8_t * buffer, uint16_t size){
+    while (size){
+        if (size < sco_bytes_to_read){
+            // just store incomplete data
+            memcpy(&sco_buffer[sco_read_pos], buffer, size);
+            sco_read_pos      += size;
+            sco_bytes_to_read -= size;
+            return;
+        }
+        // copy requested data
+        memcpy(&sco_buffer[sco_read_pos], buffer, sco_bytes_to_read);
+        sco_read_pos += sco_bytes_to_read;
+        buffer       += sco_bytes_to_read;
+        size         -= sco_bytes_to_read;
+
+        // chunk read successfully, next action
+        switch (sco_state){
+            case H2_W4_SCO_HEADER:
+                sco_state = H2_W4_PAYLOAD;
+                sco_bytes_to_read = sco_buffer[2];
+                break;
+            case H2_W4_PAYLOAD:
+                // packet complete
+                packet_handler(HCI_SCO_DATA_PACKET, sco_buffer, sco_read_pos);
+                sco_state_machine_init();
+                break;
+        }
+    }
+}
+
 static void handle_completed_transfer(struct libusb_transfer *transfer){
 
     int resubmit = 0;
@@ -201,26 +248,15 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         packet_handler(HCI_ACL_DATA_PACKET, transfer-> buffer, transfer->actual_length);
         resubmit = 1;
     } else if (transfer->endpoint == sco_in_addr) {
-        // combine packet again
         int i;
-        int packet_size = 0;
-        uint8_t * packet_start;
         for (i = 0; i < transfer->num_iso_packets; i++) {
             struct libusb_iso_packet_descriptor *pack = &transfer->iso_packet_desc[i];
             if (pack->status != LIBUSB_TRANSFER_COMPLETED) {
                 log_error("Error: pack %u status %d\n", i, pack->status);
                 continue;
             }
-            uint8_t * pack_buffer = libusb_get_iso_packet_buffer_simple(transfer, i);
-            if (i == 0) {
-                packet_start = pack_buffer;
-            } else {
-                // shift data around
-                memmove(&packet_start[packet_size], pack_buffer, pack->actual_length);
-            }
-            packet_size += pack->actual_length;
+            handle_isochronous_data(libusb_get_iso_packet_buffer_simple(transfer, i), pack->actual_length);
         }
-        packet_handler(HCI_SCO_DATA_PACKET, packet_start, packet_size);
         resubmit = 1;
     } else if (transfer->endpoint == 0){
         // log_info("command done, size %u", transfer->actual_length);
@@ -500,6 +536,7 @@ static int prepare_device(libusb_device_handle * handle){
 static int usb_open(void *transport_config){
     int r;
 
+    sco_state_machine_init();
     handle_packet = NULL;
 
     // default endpoint addresses
@@ -508,8 +545,6 @@ static int usb_open(void *transport_config){
     acl_out_addr =  0x02; // EP2, OUT bulk
     sco_in_addr  =  0x83; // EP3, IN isochronous
     sco_out_addr =  0x03; // EP3, OUT isochronous    
-
-    int iMaxIsoPacketSize = 100;
 
     // USB init
     r = libusb_init(NULL);
@@ -589,9 +624,6 @@ static int usb_open(void *transport_config){
         if (r < 0){
             continue;
         }
-
-        iMaxIsoPacketSize = libusb_get_max_iso_packet_size(devs[deviceIndex], 0x03);    // 0x03 is hack
-        log_info("max iso packet size %d", iMaxIsoPacketSize);
 
         libusb_state = LIB_USB_INTERFACE_CLAIMED;
 
