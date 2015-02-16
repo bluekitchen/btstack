@@ -967,9 +967,10 @@ static void event_handler(uint8_t *packet, int size){
                 // status 
                 // "The HC_ACL_Data_Packet_Length return parameter will be used to determine the size of the L2CAP segments contained in ACL Data Packets"
                 hci_stack->acl_data_packet_length = READ_BT_16(packet, 6);
-                // ignore: SCO data packet len (8)
+                hci_stack->sco_data_packet_length = packet[8];
                 hci_stack->acl_packets_total_num  = packet[9];
-                // ignore: total num SCO packets
+                hci_stack->sco_packets_total_num  = packet[10]; 
+
                 if (hci_stack->state == HCI_STATE_INITIALIZING){
                     // determine usable ACL payload size
                     if (HCI_ACL_PAYLOAD_SIZE < hci_stack->acl_data_packet_length){
