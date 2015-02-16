@@ -346,6 +346,16 @@ uint8_t hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
     }
 }
 
+int hci_number_free_sco_slots_for_handle(hci_con_handle_t handle){
+    // int num_sco_packets_sent = basic_num_sco_packets_sent;
+    // if (num_sco_packets_sent > hci_stack->sco_packets_total_num){
+    //     log_info("hci_number_free_sco_slots_for_handle: outgoing packets (%u) > total packets ()", num_sco_packets_sent, hci_stack->sco_packets_total_num);
+    //     return 0;
+    // }
+    // return hci_stack->sco_packets_total_num - num_sco_packets_sent;
+    return 0;
+}
+
 // new functions replacing hci_can_send_packet_now[_using_packet_buffer]
 int hci_can_send_command_packet_now(void){
     if (hci_stack->hci_packet_buffer_reserved) return 0;
@@ -373,6 +383,20 @@ int hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle) {
 int hci_can_send_acl_packet_now(hci_con_handle_t con_handle){
     if (hci_stack->hci_packet_buffer_reserved) return 0;
     return hci_can_send_prepared_acl_packet_now(con_handle);
+}
+
+int hci_can_send_prepared_sco_packet_now(hci_con_handle_t con_handle){
+    if (hci_stack->hci_transport->can_send_packet_now){
+        if (!hci_stack->hci_transport->can_send_packet_now(HCI_SCO_DATA_PACKET)){
+            return 0;
+        }
+    }
+    return hci_number_free_sco_slots_for_handle(con_handle) > 0;    
+}
+
+int hci_can_send_sco_packet_now(hci_con_handle_t con_handle){
+    if (hci_stack->hci_packet_buffer_reserved) return 0;
+    return hci_can_send_prepared_sco_packet_now(con_handle);
 }
 
 // used for internal checks in l2cap[-le].c
@@ -507,6 +531,39 @@ int hci_send_acl_packet_buffer(int size){
     hci_stack->acl_fragmentation_pos = 4;   // start of L2CAP packet
 
     return hci_send_acl_packet_fragments(connection);
+}
+
+// pre: caller has reserved the packet buffer
+int hci_send_sco_packet_buffer(int size){
+
+    // log_info("hci_send_acl_packet_buffer size %u", size);
+
+    if (!hci_stack->hci_packet_buffer_reserved) {
+        log_error("hci_send_acl_packet_buffer called without reserving packet buffer");
+        return 0;
+    }
+
+    uint8_t * packet = hci_stack->hci_packet_buffer;
+    hci_con_handle_t con_handle = READ_ACL_CONNECTION_HANDLE(packet);   // same for ACL and SCO
+
+    // check for free places on Bluetooth module
+    if (!hci_can_send_prepared_sco_packet_now(con_handle)) {
+        log_error("hci_send_sco_packet_buffer called but no free ACL buffers on controller");
+        hci_release_packet_buffer();
+        return BTSTACK_ACL_BUFFERS_FULL;
+    }
+
+    // TODO: track send packet in connection struct
+    // hci_connection_t *connection = hci_connection_for_handle( con_handle);
+    // if (!connection) {
+    //     log_error("hci_send_acl_packet_buffer called but no connection for handle 0x%04x", con_handle);
+    //     hci_release_packet_buffer();
+    //     return 0;
+    // }
+    // hci_connection_timestamp(connection);
+    
+    hci_dump_packet( HCI_SCO_DATA_PACKET, 0, packet, size);
+    return hci_stack->hci_transport->send_packet(HCI_SCO_DATA_PACKET, packet, size);
 }
 
 static void acl_handler(uint8_t *packet, int size){
@@ -1114,6 +1171,17 @@ static void event_handler(uint8_t *packet, int size){
                     }
                 }
             }
+            break;
+
+        case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:
+            bt_flip_addr(addr, &packet[5]);
+            log_info("Synchronous Connection Complete (status=%u) %s", packet[2], bd_addr_to_str(addr));
+            if (!packet[2]){
+                // connection failed
+                break;
+            }
+            // conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_SCO);
+            // if (!conn) break;
             break;
 
         case HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE:
