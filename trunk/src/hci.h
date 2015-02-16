@@ -548,9 +548,10 @@ typedef struct {
      
     /* host to controller flow control */
     uint8_t  num_cmd_packets;
-    // uint8_t  total_num_cmd_packets;
     uint8_t  acl_packets_total_num;
     uint16_t acl_data_packet_length;
+    uint8_t  sco_packets_total_num;
+    uint8_t  sco_data_packet_length;
     uint8_t  le_acl_packets_total_num;
     uint16_t le_data_packets_length;
 
