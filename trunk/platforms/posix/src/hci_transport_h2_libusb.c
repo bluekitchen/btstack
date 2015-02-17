@@ -65,7 +65,7 @@
 #include "hci.h"
 #include "hci_transport.h"
 
-#define HAVE_SCO
+// #define HAVE_SCO
 
 #if (USB_VENDOR_ID != 0) && (USB_PRODUCT_ID != 0)
 #define HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
