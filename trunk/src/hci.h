@@ -502,6 +502,7 @@ typedef struct {
     
     // number ACL packets sent to controller
     uint8_t num_acl_packets_sent;
+    uint8_t num_sco_packets_sent;
 
     // connection parameter update
     le_con_parameter_update_state_t le_con_parameter_update_state;
