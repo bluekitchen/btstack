@@ -65,7 +65,7 @@
 #include "hci.h"
 #include "hci_transport.h"
 
-// #define HAVE_SCO
+#define HAVE_SCO
 
 #if (USB_VENDOR_ID != 0) && (USB_PRODUCT_ID != 0)
 #define HAVE_USB_VENDOR_ID_AND_PRODUCT_ID
@@ -82,6 +82,12 @@ typedef enum {
     LIB_USB_INTERFACE_CLAIMED,
     LIB_USB_TRANSFERS_ALLOCATED
 } libusb_state_t;
+
+// SCO packet state machine
+typedef enum {
+    H2_W4_SCO_HEADER = 1,
+    H2_W4_PAYLOAD,
+} H2_SCO_STATE;
 
 static libusb_state_t libusb_state = LIB_USB_CLOSED;
 
@@ -108,6 +114,11 @@ static struct libusb_transfer *acl_in_transfer[ASYNC_BUFFERS];
 
 #define SCO_PACKET_SIZE 64
 #ifdef HAVE_SCO
+static uint8_t  sco_buffer[255+3 + SCO_PACKET_SIZE];
+static uint16_t sco_read_pos;
+static uint16_t sco_bytes_to_read;
+static H2_SCO_STATE sco_state;
+
 static struct  libusb_transfer *sco_out_transfer;
 static struct  libusb_transfer *sco_in_transfer[ASYNC_BUFFERS];
 static uint8_t hci_sco_in_buffer[ASYNC_BUFFERS][NUM_ISO_PACKETS * SCO_PACKET_SIZE]; 
@@ -136,7 +147,6 @@ static int acl_in_addr;
 static int acl_out_addr;
 static int sco_in_addr;
 static int sco_out_addr;
-
 
 
 static void queue_transfer(struct libusb_transfer *transfer){
@@ -187,17 +197,6 @@ static void async_callback(struct libusb_transfer *transfer)
     }
     // log_info("end async_callback");
 }
-
-// SCO packet state machine
-typedef enum {
-    H2_W4_SCO_HEADER = 1,
-    H2_W4_PAYLOAD,
-} H2_SCO_STATE;
-
-static uint8_t  sco_buffer[255+3 + SCO_PACKET_SIZE];
-static uint16_t sco_read_pos;
-static uint16_t sco_bytes_to_read;
-static H2_SCO_STATE sco_state;
 
 static void sco_state_machine_init(){
     sco_state = H2_W4_SCO_HEADER;
