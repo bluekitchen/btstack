@@ -106,19 +106,19 @@ static libusb_device_handle * handle;
 #define ASYNC_BUFFERS 2
 #define AYSNC_POLLING_INTERVAL_MS 1
 #define NUM_ISO_PACKETS 4
+#define SCO_PACKET_SIZE 64
 
 static struct libusb_transfer *command_out_transfer;
 static struct libusb_transfer *acl_out_transfer;
 static struct libusb_transfer *event_in_transfer[ASYNC_BUFFERS];
 static struct libusb_transfer *acl_in_transfer[ASYNC_BUFFERS];
 
-#define SCO_PACKET_SIZE 64
-#ifdef HAVE_SCO
+static H2_SCO_STATE sco_state;
 static uint8_t  sco_buffer[255+3 + SCO_PACKET_SIZE];
 static uint16_t sco_read_pos;
 static uint16_t sco_bytes_to_read;
-static H2_SCO_STATE sco_state;
 
+#ifdef HAVE_SCO
 static struct  libusb_transfer *sco_out_transfer;
 static struct  libusb_transfer *sco_in_transfer[ASYNC_BUFFERS];
 static uint8_t hci_sco_in_buffer[ASYNC_BUFFERS][NUM_ISO_PACKETS * SCO_PACKET_SIZE]; 
