@@ -267,7 +267,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         signal_done = 1;
     } else if (transfer->endpoint == sco_out_addr){
         // log_info("acl out done, size %u", transfer->actual_length);
-        usb_acl_out_active = 0;
+        usb_sco_out_active = 0;
         signal_done = 1;
     } else {
         log_info("usb_process_ds endpoint unknown %x", transfer->endpoint);
