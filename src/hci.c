@@ -347,13 +347,17 @@ uint8_t hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
 }
 
 int hci_number_free_sco_slots_for_handle(hci_con_handle_t handle){
-    // int num_sco_packets_sent = basic_num_sco_packets_sent;
-    // if (num_sco_packets_sent > hci_stack->sco_packets_total_num){
-    //     log_info("hci_number_free_sco_slots_for_handle: outgoing packets (%u) > total packets ()", num_sco_packets_sent, hci_stack->sco_packets_total_num);
-    //     return 0;
-    // }
-    // return hci_stack->sco_packets_total_num - num_sco_packets_sent;
-    return 0;
+    int num_sco_packets_sent = 0;
+    linked_item_t *it;
+    for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
+        hci_connection_t * connection = (hci_connection_t *) it;
+        num_sco_packets_sent += connection->num_sco_packets_sent;
+    }
+    if (num_sco_packets_sent > hci_stack->sco_packets_total_num){
+        log_info("hci_number_free_sco_slots_for_handle: outgoing packets (%u) > total packets ()", num_sco_packets_sent, hci_stack->sco_packets_total_num);
+        return 0;
+    }
+    return hci_stack->sco_packets_total_num - num_sco_packets_sent;
 }
 
 // new functions replacing hci_can_send_packet_now[_using_packet_buffer]
@@ -553,15 +557,15 @@ int hci_send_sco_packet_buffer(int size){
         return BTSTACK_ACL_BUFFERS_FULL;
     }
 
-    // TODO: track send packet in connection struct
-    // hci_connection_t *connection = hci_connection_for_handle( con_handle);
-    // if (!connection) {
-    //     log_error("hci_send_acl_packet_buffer called but no connection for handle 0x%04x", con_handle);
-    //     hci_release_packet_buffer();
-    //     return 0;
-    // }
-    // hci_connection_timestamp(connection);
-    
+    // track send packet in connection struct
+    hci_connection_t *connection = hci_connection_for_handle( con_handle);
+    if (!connection) {
+        log_error("hci_send_sco_packet_buffer called but no connection for handle 0x%04x", con_handle);
+        hci_release_packet_buffer();
+        return 0;
+    }
+    connection->num_sco_packets_sent++;
+
     hci_dump_packet( HCI_SCO_DATA_PACKET, 0, packet, size);
     return hci_stack->hci_transport->send_packet(HCI_SCO_DATA_PACKET, packet, size);
 }
@@ -1095,11 +1099,21 @@ static void event_handler(uint8_t *packet, int size){
                     continue;
                 }
                 
-                if (conn->num_acl_packets_sent >= num_packets){
-                    conn->num_acl_packets_sent -= num_packets;
+                if (conn->address_type == BD_ADDR_TYPE_SCO){
+                    if (conn->num_sco_packets_sent >= num_packets){
+                        conn->num_sco_packets_sent -= num_packets;
+                    } else {
+                        log_error("hci_number_completed_packets, more sco slots freed then sent.");
+                        conn->num_sco_packets_sent = 0;
+                    }
+
                 } else {
-                    log_error("hci_number_completed_packets, more slots freed then sent.");
-                    conn->num_acl_packets_sent = 0;
+                    if (conn->num_acl_packets_sent >= num_packets){
+                        conn->num_acl_packets_sent -= num_packets;
+                    } else {
+                        log_error("hci_number_completed_packets, more acl slots freed then sent.");
+                        conn->num_acl_packets_sent = 0;
+                    }
                 }
                 // log_info("hci_number_completed_packet %u processed for handle %u, outstanding %u", num_packets, handle, conn->num_acl_packets_sent);
             }
@@ -1110,24 +1124,19 @@ static void event_handler(uint8_t *packet, int size){
             // TODO: eval COD 8-10
             link_type = packet[11];
             log_info("Connection_incoming: %s, type %u", bd_addr_to_str(addr), link_type);
-            if (link_type == 1) { // ACL
-                conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_CLASSIC);
-                if (!conn) {
-                    conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
-                }
-                if (!conn) {
-                    // CONNECTION REJECTED DUE TO LIMITED RESOURCES (0X0D)
-                    hci_stack->decline_reason = 0x0d;
-                    BD_ADDR_COPY(hci_stack->decline_addr, addr);
-                    break;
-                }
-                conn->state = RECEIVED_CONNECTION_REQUEST;
-                hci_run();
-            } else {
-                // SYNCHRONOUS CONNECTION LIMIT TO A DEVICE EXCEEDED (0X0A)
-                hci_stack->decline_reason = 0x0a;
-                BD_ADDR_COPY(hci_stack->decline_addr, addr);
+            addr_type = link_type == 1 ? BD_ADDR_TYPE_CLASSIC : BD_ADDR_TYPE_SCO;
+            conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_CLASSIC);
+            if (!conn) {
+                conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
             }
+            if (!conn) {
+                // CONNECTION REJECTED DUE TO LIMITED RESOURCES (0X0D)
+                hci_stack->decline_reason = 0x0d;
+                BD_ADDR_COPY(hci_stack->decline_addr, addr);
+                break;
+            }
+            conn->state = RECEIVED_CONNECTION_REQUEST;
+            hci_run();
             break;
             
         case HCI_EVENT_CONNECTION_COMPLETE:
@@ -1180,8 +1189,13 @@ static void event_handler(uint8_t *packet, int size){
                 // connection failed
                 break;
             }
-            // conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_SCO);
-            // if (!conn) break;
+            conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_SCO);
+            if (!conn) {
+                conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO);
+            }
+            if (!conn) {
+                break;
+            }
             break;
 
         case HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE:
@@ -1971,7 +1985,12 @@ void hci_run(){
             case RECEIVED_CONNECTION_REQUEST:
                 log_info("sending hci_accept_connection_request");
                 connection->state = ACCEPTED_CONNECTION_REQUEST;
-                hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
+                if (connection->address_type == BD_ADDR_TYPE_CLASSIC){
+                    hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
+                } else {
+                    // TODO: allows to customize synchronous connection parameters
+                    hci_send_cmd(&hci_accept_synchronous_connection_command, connection->address, 8000, 8000, 0xFFFF, 0x0060, 0xFF, 0x003F);
+                }
                 return;
 
 #ifdef HAVE_BLE
@@ -2217,7 +2236,6 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
         }
         conn->state = SENT_CREATE_CONNECTION;
     }
-    
     if (IS_COMMAND(packet, hci_link_key_request_reply)){
         hci_add_connection_flags_for_flipped_bd_addr(&packet[3], SENT_LINK_KEY_REPLY);
     }
