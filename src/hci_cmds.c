@@ -615,6 +615,13 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x2a), "1"
 };
 
 /**
+ * @param synchronous_flow_control_enable - if yes, num completed packet everts are sent for SCO packets
+ */
+const hci_cmd_t hci_write_synchronous_flow_control_enable = {
+OPCODE(OGF_CONTROLLER_BASEBAND, 0x2f), "1"
+};
+
+/**
  * @param host_acl_data_packet_length
  * @param host_synchronous_data_packet_length
  * @param host_total_num_acl_data_packets
