@@ -788,6 +788,7 @@ extern const hci_cmd_t hci_write_num_broadcast_retransmissions;
 extern const hci_cmd_t hci_write_page_timeout;
 extern const hci_cmd_t hci_write_scan_enable;
 extern const hci_cmd_t hci_write_simple_pairing_mode;
+extern const hci_cmd_t hci_write_synchronous_flow_control_enable;
 
 extern const hci_cmd_t hci_le_add_device_to_whitelist;
 extern const hci_cmd_t hci_le_clear_white_list;
