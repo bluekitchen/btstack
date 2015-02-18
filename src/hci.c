@@ -98,7 +98,7 @@ static uint8_t disable_l2cap_timeouts = 0;
  * @return connection OR NULL, if no memory left
  */
 static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type){
-    log_info("create_connection_for_addr %s", bd_addr_to_str(addr));
+    log_info("create_connection_for_addr %s, type %x", bd_addr_to_str(addr), addr_type);
     hci_connection_t * conn = btstack_memory_hci_connection_get();
     if (!conn) return NULL;
     memset(conn, 0, sizeof(hci_connection_t));
@@ -114,6 +114,7 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
     conn->acl_recombination_length = 0;
     conn->acl_recombination_pos = 0;
     conn->num_acl_packets_sent = 0;
+    conn->num_sco_packets_sent = 0;
     conn->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
     linked_list_add(&hci_stack->connections, (linked_item_t *) conn);
     return conn;
@@ -1029,16 +1030,17 @@ static void event_handler(uint8_t *packet, int size){
                 // "The HC_ACL_Data_Packet_Length return parameter will be used to determine the size of the L2CAP segments contained in ACL Data Packets"
                 hci_stack->acl_data_packet_length = READ_BT_16(packet, 6);
                 hci_stack->sco_data_packet_length = packet[8];
-                hci_stack->acl_packets_total_num  = packet[9];
-                hci_stack->sco_packets_total_num  = packet[10]; 
+                hci_stack->acl_packets_total_num  = READ_BT_16(packet, 9);
+                hci_stack->sco_packets_total_num  = READ_BT_16(packet, 11); 
 
                 if (hci_stack->state == HCI_STATE_INITIALIZING){
                     // determine usable ACL payload size
                     if (HCI_ACL_PAYLOAD_SIZE < hci_stack->acl_data_packet_length){
                         hci_stack->acl_data_packet_length = HCI_ACL_PAYLOAD_SIZE;
                     }
-                    log_info("hci_read_buffer_size: used size %u, count %u",
-                             hci_stack->acl_data_packet_length, hci_stack->acl_packets_total_num); 
+                    log_info("hci_read_buffer_size: acl used size %u, count %u / sco size %u, count %u",
+                             hci_stack->acl_data_packet_length, hci_stack->acl_packets_total_num,
+                             hci_stack->sco_data_packet_length, hci_stack->sco_packets_total_num); 
                 }
             }
 #ifdef HAVE_BLE
@@ -1185,7 +1187,7 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:
             bt_flip_addr(addr, &packet[5]);
             log_info("Synchronous Connection Complete (status=%u) %s", packet[2], bd_addr_to_str(addr));
-            if (!packet[2]){
+            if (packet[2]){
                 // connection failed
                 break;
             }
@@ -1196,6 +1198,8 @@ static void event_handler(uint8_t *packet, int size){
             if (!conn) {
                 break;
             }
+            conn->state = OPEN;
+            conn->con_handle = READ_BT_16(packet, 3);            
             break;
 
         case HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE:
