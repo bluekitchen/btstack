@@ -266,7 +266,8 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         usb_acl_out_active = 0;
         signal_done = 1;
     } else if (transfer->endpoint == sco_out_addr){
-        // log_info("acl out done, size %u", transfer->actual_length);
+        log_info("sco out done, size %u/%u - status %x", transfer->actual_length, 
+            transfer->iso_packet_desc[0].actual_length, transfer->iso_packet_desc[0].status);
         usb_sco_out_active = 0;
         signal_done = 1;
     } else {
@@ -835,11 +836,6 @@ static int usb_send_cmd_packet(uint8_t *packet, int size){
     // submit transfer
     r = libusb_submit_transfer(command_out_transfer);
     
-    // // Use synchronous call to sent out command
-    // r = libusb_control_transfer(handle, 
-    //     LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
-    //     0, 0, 0, packet, size, 0);
-
     if (r < 0) {
         usb_command_active = 0;
         log_error("Error submitting cmd transfer %d", r);
@@ -885,11 +881,12 @@ static int usb_send_sco_packet(uint8_t *packet, int size){
     
     // prepare transfer
     int completed = 0;
-    libusb_fill_iso_transfer(sco_out_transfer, handle, sco_out_addr, packet, size, NUM_ISO_PACKETS,
+    libusb_fill_iso_transfer(sco_out_transfer, handle, sco_out_addr, packet, size, 1,
         async_callback, &completed, 0);
     sco_out_transfer->type = LIBUSB_TRANSFER_TYPE_ISOCHRONOUS;
+    sco_out_transfer->iso_packet_desc[0].length = size;
 
-    // update stata before submitting transfer
+    // update state before submitting transfer
     usb_sco_out_active = 1;
 
     r = libusb_submit_transfer(sco_out_transfer);
