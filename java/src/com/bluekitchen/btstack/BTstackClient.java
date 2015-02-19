@@ -15,6 +15,7 @@ public class BTstackClient {
 	private volatile SocketConnection socketConnection;
 	private PacketHandler packetHandler;
 	private boolean connected;
+	private int logicTime = 1;
 	private Thread rxThread;
 	private String unixDomainSocketPath;
 	private int tcpPort;
@@ -38,6 +39,8 @@ public class BTstackClient {
 	}
 	
 	public boolean connect(){
+		
+		rxThread = null;
 		
 		if (tcpPort == 0){
 			try {
@@ -66,12 +69,16 @@ public class BTstackClient {
 		connected = socketConnection.connect();
 		if (!connected) return false;
 		
+		logicTime++;
+		final int rxThreadId = logicTime;
+		final SocketConnection threadSocketConnection = socketConnection;
 		rxThread = new Thread(new Runnable(){
 			@Override
 			public void run() {
-				while (socketConnection != null){
-					Packet packet = socketConnection.receivePacket();
+				while (logicTime == rxThreadId){
+					Packet packet = threadSocketConnection.receivePacket();
 					if (Thread.currentThread().isInterrupted()){
+						System.out.println("Rx Thread: exit via interrupt, thread id " + rxThreadId);
 						return;
 					}
 					if (packet == null) {
@@ -95,7 +102,7 @@ public class BTstackClient {
 							break;
 					}
 				}
-				System.out.println("Rx Thread: Interrupted");
+				System.out.println("Rx Thread: exit via logic time change, thread id " + rxThreadId);
 			}
 		});
 		rxThread.start();
@@ -118,18 +125,33 @@ public class BTstackClient {
 
 	public void disconnect(){
 		if (socketConnection == null) return;
-		if (rxThread == null) return;
-		// signal rx thread to stop
-		rxThread.interrupt();
-		// wait for thread stopped
-		try {
-			rxThread.join();
-		} catch (InterruptedException e){
-			System.out.println("Unexpected interrupted execption waiting for receive thread to terminate");
-			e.printStackTrace();
+
+		logicTime++;
+		
+		// check if we're called on rx thread
+		if (Thread.currentThread() != rxThread){
+			
+			// signal rx thread to stop
+			rxThread.interrupt();
+
+			// unblock read by sending an arbitrary command
+			if (this instanceof BTstack){
+				BTstack btstack = (BTstack) this;
+				btstack.BTstackGetState();
+			}
+
+			// wait for thread to stop
+			try {
+				rxThread.join();
+			} catch (InterruptedException e){
+				System.out.println("Unexpected interrupted execption waiting for receive thread to terminate");
+				e.printStackTrace();
+			}
 		}
-		// disconnect socket
+		
+		// disconnect socket -> triggers IOException on read
 		socketConnection.disconnect();
+
 		// done
 		socketConnection = null;
 	}
