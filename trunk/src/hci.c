@@ -1127,9 +1127,9 @@ static void event_handler(uint8_t *packet, int size){
             link_type = packet[11];
             log_info("Connection_incoming: %s, type %u", bd_addr_to_str(addr), link_type);
             addr_type = link_type == 1 ? BD_ADDR_TYPE_CLASSIC : BD_ADDR_TYPE_SCO;
-            conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_CLASSIC);
+            conn = hci_connection_for_bd_addr_and_type(&addr, addr_type);
             if (!conn) {
-                conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
+                conn = create_connection_for_bd_addr_and_type(addr, addr_type);
             }
             if (!conn) {
                 // CONNECTION REJECTED DUE TO LIMITED RESOURCES (0X0D)
