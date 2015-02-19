@@ -50,7 +50,7 @@
 	<variableList>
 		<variable>
 			<name>BTSTACK_JAVA_LOC</name>
-			<value>file:/Projects/btstack-xcode/btstack/java</value>
+			<value>$%7BPARENT-3-PROJECT_LOC%7D/java</value>
 		</variable>
 		<variable>
 			<name>MTK_LOC</name>
