@@ -348,7 +348,7 @@ OPCODE(OGF_LINK_CONTROL, 0x0028), "H442212"
  * @param packet_type
  */
 const hci_cmd_t hci_accept_synchronous_connection_command = {
-OPCODE(OGF_LINK_CONTROL, 0x0028), "B442212"
+OPCODE(OGF_LINK_CONTROL, 0x0029), "B442212"
 };
 
 /**
