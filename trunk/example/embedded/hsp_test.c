@@ -37,7 +37,7 @@
  
 // *****************************************************************************
 //
-// Minimal setup for HSP Audio Gateway
+// Minimal setup for HSP Audio Gateway (!! UNDER DEVELOPMENT !!)
 //
 // *****************************************************************************
 
@@ -90,6 +90,9 @@ static uint8_t ag_ring = 0;
 static uint8_t ag_send_ok = 0;
 static uint8_t ag_send_error = 0;
 
+static uint8_t hs_button_press = 0;
+static uint8_t hs_ok_received = 0;
+
 static uint8_t   hsp_service_buffer[150];
 
 typedef enum {
@@ -99,11 +102,17 @@ typedef enum {
 
 typedef enum {
     HSP_IDLE,
-    HSP_QUERY_SDP_CHANNEL,
+    HSP_SDP_QUERY_RFCOMM_CHANNEL,
+    HSP_W2_CONNECT_RFCOMM,
+    HSP_W4_RFCOMM_CONNECTED,
     HSP_W2_CONNECT_SCO,
     HSP_W4_SCO_CONNECTED,
-    HSP_AG_ACTIVE,
-    HSP_AG_SEND_DISCONNECT
+    HSP_ACTIVE,
+    HSP_W2_DISCONNECT_SCO,
+    HSP_W4_SCO_DISCONNECTED,
+    HSP_W2_DISCONNECT_RFCOMM,
+    HSP_W4_RFCOMM_DISCONNECTED, 
+    HSP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN
 } hsp_state_t;
 
 static hsp_state_t hsp_state = HSP_IDLE;
@@ -113,6 +122,21 @@ static void hsp_run();
 
 // remote audio volume control
 // AG +VGM=13 [0..15] ; HS AT+VGM=6 | AG OK
+
+static int send_str_over_rfcomm(uint16_t cid, char * command){
+    if (!rfcomm_can_send_packet_now(rfcomm_cid)) return 1;
+    int err = rfcomm_send_internal(cid, (uint8_t*) command, strlen(command));
+    if (err){
+        printf("rfcomm_send_internal -> error 0X%02x", err);
+    }
+    return err;
+}
+
+static void hsp_hs_send_button_press_if_pending(uint16_t cid){
+    if (!hs_button_press) return;
+    int err = send_str_over_rfcomm(cid, HSP_HS_BUTTON_PRESS);
+    if (!err) hs_button_press = 0;
+}
 
 void hsp_ag_init(){
     hsp_state = HSP_IDLE;
@@ -135,35 +159,61 @@ void hsp_hs_init(){
     rfcomm_handle = 0;
     sco_handle = 0;
 
+    hs_button_press = 0;
+    hs_ok_received = 0;
+    hs_microphone_gain = -1;
+    hs_speaker_gain = -1;
     // TODO
 }
 
-void hsp_hs_send_button_press(){}
 
 void hsp_ag_connect(bd_addr_t bd_addr){
     if (hsp_state != HSP_IDLE) return;
-    hsp_state = HSP_QUERY_SDP_CHANNEL;
+    hsp_state = HSP_SDP_QUERY_RFCOMM_CHANNEL;
     memcpy(remote, bd_addr, 6);
     hsp_run();
 }
 
 void hsp_hs_connect(bd_addr_t bd_addr){
     if (hsp_state != HSP_IDLE) return;
-    hsp_state = HSP_QUERY_SDP_CHANNEL;
+    hsp_state = HSP_SDP_QUERY_RFCOMM_CHANNEL;
     memcpy(remote, bd_addr, 6);
     hsp_run();
 }
 
-void hsp_ag_disconnect(bd_addr_t bd_addr){
-    if (hsp_state == HSP_IDLE) return;
-    hsp_state = HSP_AG_SEND_DISCONNECT;
-    memcpy(remote, bd_addr, 6);
+void hsp_ag_disconnect(){
+    switch (hsp_state){
+        case HSP_ACTIVE:
+        case HSP_W2_CONNECT_SCO:
+            hsp_state = HSP_W2_DISCONNECT_RFCOMM;
+            break;
+
+        case HSP_W4_RFCOMM_CONNECTED:
+        case HSP_W4_SCO_CONNECTED:
+            hsp_state = HSP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN;
+            break;
+        default:
+            return;
+    }
     hsp_run();
 }
 
-void hsp_ag_ring(){
-    if (hsp_state != HSP_AG_ACTIVE) return;
+void hsp_hs_disconnect(bd_addr_t bd_addr){
+    switch (hsp_state){
+        case HSP_ACTIVE:
+        case HSP_W2_CONNECT_SCO:
+            hsp_state = HSP_W2_DISCONNECT_RFCOMM;
+            break;
 
+        case HSP_W4_RFCOMM_CONNECTED:
+        case HSP_W4_SCO_CONNECTED:
+            hsp_state = HSP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN;
+            break;
+        default:
+            return;
+    }
+    hsp_state = HSP_W2_DISCONNECT_SCO;
+    hsp_run();
 }
 
 void hsp_ag_set_microphone_gain(uint8_t gain){
@@ -173,7 +223,17 @@ void hsp_ag_set_microphone_gain(uint8_t gain){
     }
     ag_microphone_gain = gain;
     hsp_run();
-}; 
+}
+
+
+void hsp_hs_set_microphone_gain(uint8_t gain){
+    if (gain < 0 || gain >15) {
+        printf("Gain must be in interval [0..15], it is given %d\n", gain);
+        return; 
+    }
+    hs_microphone_gain = gain;
+    hsp_run();
+}
 
 // AG +VGS=5  [0..15] ; HS AT+VGM=6 | AG OK
 void hsp_ag_set_speaker_gain(uint8_t gain){
@@ -183,24 +243,25 @@ void hsp_ag_set_speaker_gain(uint8_t gain){
     }
     ag_speaker_gain = gain;
     hsp_run();
-};    
+}  
 
-static int send_str_over_rfcomm(uint16_t cid, char * command){
-    if (!rfcomm_can_send_packet_now(rfcomm_cid)) return 1;
-    int err = rfcomm_send_internal(cid, (uint8_t*) command, strlen(command));
-    if (err){
-        printf("rfcomm_send_internal -> error 0X%02x", err);
+// AG +VGS=5  [0..15] ; HS AT+VGM=6 | AG OK
+void hsp_hs_set_speaker_gain(uint8_t gain){
+    if (gain < 0 || gain >15) {
+        printf("Gain must be in interval [0..15], it is given %d\n", gain);
+        return; 
     }
-    return err;
-}
-
+    hs_speaker_gain = gain;
+    hsp_run();
+}  
+    
 
 static void hsp_run(){
     int err;
 
     switch (hsp_state){
-        case HSP_QUERY_SDP_CHANNEL:
-            hsp_state = HSP_W2_CONNECT_SCO;
+        case HSP_SDP_QUERY_RFCOMM_CHANNEL:
+            hsp_state = HSP_W2_CONNECT_RFCOMM;
             switch (hsp_role){
                 case HSP_AudioGateway:
                     sdp_query_rfcomm_channel_and_name_for_uuid(remote, SDP_Headset_HS);
@@ -211,19 +272,64 @@ static void hsp_run(){
             }
             break;
         case HSP_W2_CONNECT_SCO:
-            if (!hci_can_send_command_packet_now()) break;
-            hsp_state = HSP_W4_SCO_CONNECTED;
-            hci_send_cmd(&hci_setup_synchronous_connection_command, rfcomm_handle, 8000, 8000, 0xFFFF, 0x0060, 0xFF, 0x003F);
+            switch (hsp_role){
+                case HSP_Headset:
+                    if (hs_ok_received){
+                        if (!hci_can_send_command_packet_now()) break;
+                        hsp_state = HSP_W4_SCO_CONNECTED;
+                        hci_send_cmd(&hci_setup_synchronous_connection_command, rfcomm_handle, 8000, 8000, 0xFFFF, 0x0060, 0xFF, 0x003F);
+                        hs_ok_received = 0;
+                        break;
+                    }
+                    hsp_hs_send_button_press_if_pending(rfcomm_cid);
+                    break;
+                case HSP_AudioGateway:
+                    if (!hci_can_send_command_packet_now()) break;
+                    hsp_state = HSP_W4_SCO_CONNECTED;
+                    hci_send_cmd(&hci_setup_synchronous_connection_command, rfcomm_handle, 8000, 8000, 0xFFFF, 0x0060, 0xFF, 0x003F);
+                    break;
+                }
+        
+        case HSP_W2_DISCONNECT_SCO:
+            switch (hsp_role){
+                case HSP_Headset:
+                    if (hs_ok_received){
+                        hsp_state = HSP_W4_SCO_DISCONNECTED;
+                        hs_ok_received = 0;
+                        gap_disconnect(sco_handle);
+                    }
+                    hsp_hs_send_button_press_if_pending(rfcomm_cid);
+                    break;
+                case HSP_AudioGateway:
+                    hsp_state = HSP_W4_SCO_DISCONNECTED;
+                    gap_disconnect(sco_handle);
+                    break;
+                }
             break;
-        case HSP_AG_SEND_DISCONNECT:
-            hsp_state = HSP_IDLE;
+        
+        case HSP_W2_DISCONNECT_RFCOMM:
+            hsp_state = HSP_W4_RFCOMM_DISCONNECTED;
             rfcomm_disconnect_internal(rfcomm_cid);
-            rfcomm_cid = 0;
+            
             break;
-        case HSP_AG_ACTIVE:
-            if (ag_send_ok){
-                err = send_str_over_rfcomm(rfcomm_cid, HSP_AG_OK);
-                if (!err) ag_send_ok = 0;
+        case HSP_ACTIVE:
+            if (hsp_role == HSP_Headset){
+                hsp_hs_send_button_press_if_pending(rfcomm_cid);
+                if (hs_microphone_gain >= 0){
+                    char buffer[10];
+                    sprintf(buffer, "%s=%d\r", HSP_MICROPHONE_GAIN, hs_microphone_gain);
+                    err = send_str_over_rfcomm(rfcomm_cid, buffer);
+                    if (!err) hs_microphone_gain = -1;
+                    break;
+                }
+
+                if (hs_speaker_gain >= 0){
+                    char buffer[10];
+                    sprintf(buffer, "%s=%d\r", HSP_SPEAKER_GAIN, hs_speaker_gain);
+                    err = send_str_over_rfcomm(rfcomm_cid, buffer);
+                    if (!err) hs_speaker_gain = -1;
+                    break;
+                }
                 break;
             }
             if (ag_send_error){
@@ -252,6 +358,7 @@ static void hsp_run(){
                 if (!err) ag_speaker_gain = -1;
                 break;
             }
+
             break;
         default:
             break;
@@ -262,9 +369,11 @@ static void hsp_run(){
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
     if (packet_type == RFCOMM_DATA_PACKET){
-        if (strncmp((char *)packet, HSP_HS_BUTTON_PRESS, strlen(HSP_HS_BUTTON_PRESS)) == 0){
+        if (strncmp((char *)packet, HSP_HS_BUTTON_PRESS, 7) == 0){
             printf("Received button press %s\n", HSP_HS_BUTTON_PRESS);
             ag_send_ok = 1;
+        } else if (strncmp((char *)packet, HSP_AG_OK, strlen(HSP_AG_OK)) == 0){
+            hs_ok_received = 1;  
         } else if (strncmp((char *)packet, HSP_HS_MICROPHONE_GAIN, 7) == 0 ||
             strncmp((char *)packet, HSP_HS_SPEAKER_GAIN, 7) == 0){
             // uint8_t gain = packet[8];
@@ -272,8 +381,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             printf("Received changed gain info %c\n", packet[8]);
             ag_send_ok = 1;
         } else if (strncmp((char *)packet, "AT+", 3) == 0){
-            //ag_send_error = 1;
-            log_info("Received not yet supported AT command\n");
+            ag_send_error = 1;
+            log_info("Received not yet supported AT command.\n");
         }
         hsp_run();
         return;
@@ -304,13 +413,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             printf("Pin code request - using '0000'\n\r");
             bt_flip_addr(event_addr, &packet[2]);
             hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
-            break;
-        case HCI_EVENT_DISCONNECTION_COMPLETE:
-            handle = READ_BT_16(packet,3);
-            if (handle == sco_handle){
-                sco_handle = 0;
-                hsp_state = HSP_W2_CONNECT_SCO;
-            }
             break;
         case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
             int index = 2;
@@ -353,7 +455,11 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                  " rx_packet_length %u bytes, tx_packet_length %u bytes, air_mode 0x%2x (0x02 == CVSD)", sco_handle,
                  bd_addr_to_str(address), transmission_interval, retransmission_interval, rx_packet_length, tx_packet_length, air_mode);
 
-            hsp_state = HSP_AG_ACTIVE;
+            if (hsp_state == HSP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN){
+                hsp_state = HSP_W2_DISCONNECT_SCO;
+                break;
+            }
+            hsp_state = HSP_ACTIVE;
             break;                
         }
 
@@ -377,22 +483,18 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 rfcomm_cid = READ_BT_16(packet, 12);
                 mtu = READ_BT_16(packet, 14);
                 printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", rfcomm_cid, mtu);
+                if (hsp_state == HSP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN){
+                    hsp_state = HSP_W2_DISCONNECT_RFCOMM;
+                    break;
+                }
                 hsp_state = HSP_W2_CONNECT_SCO;
-                /** 
-                 * @param handle
-                 * @param transmit_bandwidth = 8000 (64kbps)
-                 * @param receive_bandwidth = 8000 (64kbps)
-                 * @param max_latency >= 7ms for eSCO, 0xFFFF do not care
-                 * @param voice_settings = CVSD, Input Coding: Linear, Input Data Format: 2’s complement, data 16bit: 00011000000 == 0x60
-                 * @param retransmission_effort = 0xFF do not care
-                 * @param packet_type = at least EV3 for eSCO; here we have 0x3F = {HV1-3, EV3-5}
-                 */
                 break;
             }
             break;
         case DAEMON_EVENT_HCI_PACKET_SENT:
         case RFCOMM_EVENT_CREDITS:
             if (!rfcomm_cid) {
+                hsp_state = HSP_IDLE;
                 switch (hsp_role){
                     case HSP_AudioGateway:
                         hsp_ag_init();
@@ -403,9 +505,18 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 }  
             }
             break;
-
+        
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            handle = READ_BT_16(packet,3);
+            if (handle == sco_handle){
+                sco_handle = 0;
+                hsp_state = HSP_W2_DISCONNECT_RFCOMM;
+                break;
+            }
+            break;
         case RFCOMM_EVENT_CHANNEL_CLOSED:
             printf("RFCOMM channel closed\n");
+            hsp_state = HSP_IDLE;
             switch (hsp_role){
                 case HSP_AudioGateway:
                     hsp_ag_init();
@@ -434,12 +545,13 @@ void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
         case SDP_QUERY_COMPLETE:
             ce = (sdp_query_complete_event_t*) event;
             
-            if (channel_nr > 0) {
+            if (channel_nr <= 0){
+                hsp_state = HSP_W4_RFCOMM_CONNECTED;
                 printf("RFCOMM create channel.\n");
                 rfcomm_create_channel_internal(NULL, &remote, channel_nr); 
                 break;
             }
-
+            
             printf("Service not found, status %u.\n", ce->status);
             exit(0);
             break;
