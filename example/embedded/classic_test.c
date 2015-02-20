@@ -67,7 +67,8 @@
 void show_usage();
 
 // static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
-static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
+// static bd_addr_t remote = {0x84, 0x38, 0x35, 0x65, 0xD1, 0x15};
+static bd_addr_t remote = {0x00, 0x1b, 0xdc, 0x07, 0x32, 0xef};
 static bd_addr_t remote_rfcomm = {0x00, 0x00, 0x91, 0xE0, 0xD4, 0xC7};
 
 static uint8_t rfcomm_channel_nr = 1;
@@ -265,6 +266,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
     uint16_t psm;
     uint32_t passkey;
 
+    if (packet_type == UCD_DATA_PACKET){
+        printf("UCD Data for PSM %04x received, size %u\n", READ_BT_16(packet, 0), size - 2);
+    }
+
     if (packet_type != HCI_EVENT_PACKET) return;
 
     switch (packet[0]) {
@@ -291,6 +296,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
             if (!packet[2]){
                 handle = READ_BT_16(packet, 3);
                 bt_flip_addr(remote, &packet[5]);
+                printf("HCI_EVENT_CONNECTION_COMPLETE: handle 0x%04x\n", handle);
             }
             break;
 
@@ -410,6 +416,18 @@ void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
     }
 }
 
+void send_ucd_packet(){
+    l2cap_reserve_packet_buffer();
+    int ucd_size = 50;
+    uint8_t * ucd_buffer = l2cap_get_outgoing_buffer();
+    bt_store_16(ucd_buffer, 0, 0x2211);
+    int i; 
+    for (i=2; i< ucd_size ; i++){
+        ucd_buffer[i] = i;
+    }
+    l2cap_send_prepared_connectionless(handle, L2CAP_CID_CONNECTIONLESS_CHANNEL, ucd_size);
+}
+
 void  heartbeat_handler(struct timer *ts){
     if (rfcomm_channel_id){
         static int counter = 0;
@@ -458,10 +476,12 @@ void show_usage(){
     printf("w - query RFCOMM Remote Port Negotiation\n");
     printf("o - close RFCOMM connection\n");
     printf("---\n");
-    printf("p - create L2CAP channel to SDP at addr %s\n", bd_addr_to_str(remote));
-    // printf("u - create L2CAP channel to PSM #3 (RFCOMM) at addr %s\n", bd_addr_to_str(remote));
+    // printf("p - create L2CAP channel to SDP at addr %s\n", bd_addr_to_str(remote));
+    printf("p - create HCI connection to addr %s\n", bd_addr_to_str(remote));
+    printf("Q - close HCI connection\n");
     printf("q - send L2CAP data\n");
     printf("r - send L2CAP ECHO request\n");
+    printf("U - send UCD data\n");
     printf("s - close L2CAP channel\n");
     printf("x - require SSP for outgoing SDP L2CAP channel\n");
     printf("+ - initate SSP on current connection\n");
@@ -607,9 +627,12 @@ int  stdin_process(struct data_source *ds){
             break;
 
         case 'p':
-            printf("Creating L2CAP Connection to %s, PSM SDP\n", bd_addr_to_str(remote));
-            l2cap_create_channel_internal(NULL, packet_handler, remote, PSM_SDP, 100);
+            printf("Creating HCI Connection to %s\n", bd_addr_to_str(remote));
+            hci_send_cmd(&hci_create_connection, remote, hci_usable_acl_packet_types(), 0, 0, 0, 1);
             break;
+            // printf("Creating L2CAP Connection to %s, PSM SDP\n", bd_addr_to_str(remote));
+            // l2cap_create_channel_internal(NULL, packet_handler, remote, PSM_SDP, 100);
+            // break;
         // case 'u':
         //     printf("Creating L2CAP Connection to %s, PSM 3\n", bd_addr_to_str(remote));
         //     l2cap_create_channel_internal(NULL, packet_handler, remote, 3, 100);
@@ -670,6 +693,16 @@ int  stdin_process(struct data_source *ds){
         case '=':
             printf("Deleting Link Key for %s\n", bd_addr_to_str(remote));
             hci_drop_link_key_for_bd_addr(&remote);
+            break;
+
+        case 'U':
+            printf("Sending UCD data on handle 0x%04x\n", handle);
+            send_ucd_packet();
+            break;
+
+        case 'Q':
+            printf("Closing HCI Connection to handle 0x%04x\n", handle);
+            gap_disconnect(handle);
             break;
 
         default:
@@ -778,7 +811,8 @@ int btstack_main(int argc, const char * argv[]){
 
     l2cap_init();
     l2cap_register_packet_handler(&packet_handler2);
-    
+    l2cap_register_fixed_channel(&packet_handler, L2CAP_CID_CONNECTIONLESS_CHANNEL);
+
     rfcomm_init();
     rfcomm_register_packet_handler(packet_handler2);
     rfcomm_register_service_internal(NULL, RFCOMM_SERVER_CHANNEL, 150);  // reserved channel, mtu=100
@@ -815,3 +849,8 @@ int btstack_main(int argc, const char * argv[]){
     run_loop_execute(); 
     return 0;
 }
+
+// Notes:
+// UCD Test 1: C
+// UCD Test 2: p, U, Q
+// UCD Test 3: =, p, +, *, U, Q
