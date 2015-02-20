@@ -80,6 +80,7 @@ static int new_credits_blocked = 0;
 
 static btstack_packet_handler_t attribute_protocol_packet_handler;
 static btstack_packet_handler_t security_protocol_packet_handler;
+static btstack_packet_handler_t connectionless_channel_packet_handler;
 static uint8_t require_security_level2_for_outgoing_sdp;
 
 // prototypes
@@ -101,7 +102,8 @@ void l2cap_init(){
     packet_handler = null_packet_handler;
     attribute_protocol_packet_handler = NULL;
     security_protocol_packet_handler = NULL;
-    
+    connectionless_channel_packet_handler = NULL;
+
     require_security_level2_for_outgoing_sdp = 0;
 
     // 
@@ -554,15 +556,15 @@ void l2cap_run(void){
                         break;
                     }
                     case 2: { // Extended Features Supported
-                        // extended features request supported, only supporing fixed channel map
-                        uint32_t features = 0x80;
+                        // extended features request supported, features: fixed channels, unicast connectionless data reception
+                        uint32_t features = 0x280;
                         l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(features), &features);
                         break;
                     }
                     case 3: { // Fixed Channels Supported
                         uint8_t map[8];
                         memset(map, 0, 8);
-                        map[0] = 0x01;  // L2CAP Signaling Channel
+                        map[0] = 0x01;  // L2CAP Signaling Channel (0x01) + Connectionless reception (0x02)
                         l2cap_send_signaling_packet(handle, INFORMATION_RESPONSE, sig_id, infoType, 0, sizeof(map), &map);
                         break;
                     }
@@ -949,6 +951,9 @@ void l2cap_event_handler(uint8_t *packet, uint16_t size){
             if (security_protocol_packet_handler) {
                 (*security_protocol_packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
             }
+            if (connectionless_channel_packet_handler) {
+                (*connectionless_channel_packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
+            }
             break;
 
         case HCI_EVENT_READ_REMOTE_SUPPORTED_FEATURES_COMPLETE:
@@ -1012,6 +1017,9 @@ void l2cap_event_handler(uint8_t *packet, uint16_t size){
     } 
     if (security_protocol_packet_handler) {
         (*security_protocol_packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
+    }
+    if (connectionless_channel_packet_handler) {
+        (*connectionless_channel_packet_handler)(HCI_EVENT_PACKET, 0, packet, size);
     }
 
     l2cap_run();
@@ -1399,6 +1407,12 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
                 (*security_protocol_packet_handler)(SM_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
             }
             break;
+
+        case L2CAP_CID_CONNECTIONLESS_CHANNEL:
+            if (connectionless_channel_packet_handler) {
+                (*connectionless_channel_packet_handler)(UCD_DATA_PACKET, handle, &packet[COMPLETE_L2CAP_HEADER], size-COMPLETE_L2CAP_HEADER);
+            }
+            break;
         
         case L2CAP_CID_SIGNALING_LE: {
             switch (packet[8]){
@@ -1565,6 +1579,9 @@ void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint1
             break;
         case L2CAP_CID_SECURITY_MANAGER_PROTOCOL:
             security_protocol_packet_handler = packet_handler;
+            break;
+        case L2CAP_CID_CONNECTIONLESS_CHANNEL:
+            connectionless_channel_packet_handler = packet_handler;
             break;
     }
 }
