@@ -411,6 +411,7 @@ typedef enum {
     SM_RESPONDER_SEND_SECURITY_REQUEST,
     SM_RESPONDER_SEND_LTK_REQUESTED_NEGATIVE_REPLY,
     SM_RESPONDER_PH1_W4_PAIRING_REQUEST,
+    SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED,
     SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE,
     SM_RESPONDER_PH1_W4_PAIRING_CONFIRM,
     SM_RESPONDER_PH2_W4_PAIRING_RANDOM,
@@ -419,6 +420,7 @@ typedef enum {
 
     // INITITIATOR ROLE
     SM_INITIATOR_CONNECTED,
+    SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST,
     SM_INITIATOR_PH1_SEND_PAIRING_REQUEST,
     SM_INITIATOR_PH1_W4_PAIRING_RESPONSE,
     SM_INITIATOR_PH2_W4_PAIRING_CONFIRM,
@@ -442,19 +444,30 @@ typedef enum {
     AUTHORIZATION_GRANTED
 } authorization_state_t;
 
+typedef struct sm_pairing_packet {
+    uint8_t code;
+    uint8_t io_capability;
+    uint8_t oob_data_flag;
+    uint8_t auth_req;
+    uint8_t max_encryption_key_size;
+    uint8_t initiator_key_distribution;
+    uint8_t responder_key_distribution;
+} sm_pairing_packet_t;
+
 // connection info available as long as connection exists
 typedef struct sm_connection {
-    uint16_t  sm_handle;
-    uint8_t   sm_role;   // 0 - IamMaster, 1 = IamSlave
-    bd_addr_t sm_peer_address;
-    uint8_t   sm_peer_addr_type;
+    uint16_t                 sm_handle;
+    uint8_t                  sm_role;   // 0 - IamMaster, 1 = IamSlave
+    bd_addr_t                sm_peer_address;
+    uint8_t                  sm_peer_addr_type;
     security_manager_state_t sm_engine_state;
     csrk_lookup_state_t      sm_csrk_lookup_state;
-    uint8_t   sm_connection_encrypted;
-    uint8_t   sm_connection_authenticated;   // [0..1]
-    uint8_t   sm_actual_encryption_key_size;
-    authorization_state_t sm_connection_authorization_state;
-    timer_source_t sm_timeout;
+    uint8_t                  sm_connection_encrypted;
+    uint8_t                  sm_connection_authenticated;   // [0..1]
+    uint8_t                  sm_actual_encryption_key_size;
+    sm_pairing_packet_t      sm_m_preq;  // only used during c1
+    authorization_state_t    sm_connection_authorization_state;
+    timer_source_t           sm_timeout;
 } sm_connection_t;
 
 typedef struct {
@@ -500,11 +513,11 @@ typedef struct {
     uint16_t acl_recombination_pos;
     uint16_t acl_recombination_length;
     
-    // number ACL packets sent to controller
+    // number packets sent to controller
     uint8_t num_acl_packets_sent;
     uint8_t num_sco_packets_sent;
 
-    // connection parameter update
+    // LE Connection parameter update
     le_con_parameter_update_state_t le_con_parameter_update_state;
     uint16_t le_conn_interval_min;
     uint16_t le_conn_interval_max;
@@ -512,8 +525,10 @@ typedef struct {
     uint16_t le_supervision_timeout;
     uint16_t le_update_con_parameter_response;
 
+#ifdef HAVE_BLE
     // LE Security Manager
-    // sm_connection_t sm_connection;
+    sm_connection_t sm_connection;
+#endif
 
 } hci_connection_t;
 
