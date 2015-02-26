@@ -1344,8 +1344,8 @@ static void sm_handle_random_result(uint8_t * data){
             break;
     }
 
-    // retrieve sm_connection provided to sm_aes128_start_encryption
-    sm_connection_t * connection = sm_aes128_connection_source;
+    // retrieve sm_connection provided to sm_random_start
+    sm_connection_t * connection = sm_random_connection_source;
     if (!connection) return;
     switch (connection->sm_engine_state){
         case SM_PH2_W4_RANDOM_TK:
