@@ -765,6 +765,11 @@ static void sm_run(void){
     // TODO: iterate over all hci_connections instead of handling the single connection
     sm_connection_t * connection = &single_connection;
 
+    // TODO: step only possible if setup not locked to yet
+    if (connection->sm_engine_state == SM_GENERAL_CONNECTED){
+        sm_init_setup(sm_conn);
+    }
+
     // assert that we can send at least commands
     if (!hci_can_send_command_packet_now()) return;
 
@@ -1494,8 +1499,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_conn->sm_connection_authorization_state = AUTHORIZATION_UNKNOWN;
 
                             // just connected -> sm_run()
-                            // sm_conn->sm_engine_state = SM_GENERAL_CONNECTED;
-                            sm_init_setup(sm_conn);
+                            sm_conn->sm_engine_state = SM_GENERAL_CONNECTED;
                             break;
 
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:
@@ -1580,6 +1584,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
     sm_run();
 }
+
 static inline int sm_calc_actual_encryption_key_size(int other){
     if (other < sm_min_encryption_key_size) return 0;
     if (other < sm_max_encryption_key_size) return other;
