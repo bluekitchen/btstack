@@ -81,6 +81,7 @@ static uint16_t mtu;
 static uint16_t rfcomm_cid = 0;
 static uint16_t sco_handle = 0;
 static uint16_t rfcomm_handle = 0;
+static timer_source_t hs_timeout;
 
 // static uint8_t connection_state = 0;
 
@@ -103,7 +104,6 @@ typedef enum {
     HSP_W4_RING_ANSWER,
     HSP_W2_CONNECT_SCO,
     HSP_W4_SCO_CONNECTED,
-    HSP_W4_AT_CMD,
     HSP_ACTIVE,
     HSP_W2_DISCONNECT_SCO,
     HSP_W4_SCO_DISCONNECTED,
@@ -124,7 +124,9 @@ static int send_str_over_rfcomm(uint16_t cid, char * command){
     int err = rfcomm_send_internal(cid, (uint8_t*) command, strlen(command));
     if (err){
         printf("rfcomm_send_internal -> error 0X%02x", err);
+        return err;
     }
+    printf("rfcomm send string %s\n", command); 
     return err;
 }
 
@@ -198,10 +200,27 @@ void hsp_ag_set_speaker_gain(uint8_t gain){
     hsp_run();
 }  
 
-    
+static void hsp_timeout_handler(timer_source_t * timer){
+    ag_ring = 1;
+}
+
+static void hsp_timeout_start(){
+    run_loop_remove_timer(&hs_timeout);
+    run_loop_set_timer_handler(&hs_timeout, hsp_timeout_handler);
+    run_loop_set_timer(&hs_timeout, 2000); // 2 seconds timeout
+    run_loop_add_timer(&hs_timeout);
+}
+
+static void hsp_timeout_stop(){
+    run_loop_remove_timer(&hs_timeout);
+} 
 
 static void hsp_run(){
     int err;
+    if (ag_at_ckpd_received){
+        ag_send_ok = 1;
+        ag_at_ckpd_received = 0;
+    } 
 
     if (ag_send_ok){
         err = send_str_over_rfcomm(rfcomm_cid, HSP_AG_OK);
@@ -214,73 +233,40 @@ static void hsp_run(){
         if (!err) ag_send_error = 0;
         return;
     }
-    if (ag_ring){
-        err = send_str_over_rfcomm(rfcomm_cid, HSP_AG_RING);
-        if (!err) ag_ring = 0;
-        return;
-    }
     
-    
-
     switch (hsp_state){
         case HSP_SDP_QUERY_RFCOMM_CHANNEL:
             hsp_state = HSP_W4_SDP_QUERY_COMPLETE;
             printf("Start SDP query %s, 0x%02x\n", bd_addr_to_str(remote), SDP_Headset_HS);
             sdp_query_rfcomm_channel_and_name_for_uuid(remote, SDP_Headset_HS);
             break;
+
         case HSP_W4_RING_ANSWER:
-            // ring once explicitely after the RFCOMM channel is created
             if (ag_ring){
                 err = send_str_over_rfcomm(rfcomm_cid, HSP_AG_RING);
-                if (!err) {
-                    printf("ring once explicitely after the RFCOMM channel is created\n");
-                    ag_ring = 0;
-                } 
-                break;   
-            }
-            
-            if (ag_in_band_ring_tone){
-                log_error("n_band_ring_tone: send is not yet implemented");
+                if (!err) ag_ring = 0;
                 break;
             }
 
-            if (!ag_button_press_received){
-                printf("keep ringing, until button pressed received \n");
-                // keep ringing, until button pressed received 
-                // send_str_over_rfcomm(rfcomm_cid, HSP_AG_RING);
-                break;    
+            if (ag_in_band_ring_tone){
+                log_error("in_band_ring_tone: send is not yet implemented");
+                break;
             }
-            ag_button_press_received = 0;
-            printf("received button press, send OK\n");
-            ag_send_ok = 1;
+
+            if (!ag_button_press_received) break;    
+            
             err = send_str_over_rfcomm(rfcomm_cid, HSP_AG_OK);
             if (!err) {
                 hsp_state = HSP_W2_CONNECT_SCO;
                 ag_send_ok = 0;
             }
             break;
-        
-        case HSP_W4_AT_CMD:
-            if (ag_at_ckpd_received){
-                ag_send_ok = 1;
-                ag_at_ckpd_received = 0;
-            }
-
-            if (ag_send_ok){
-                err = send_str_over_rfcomm(rfcomm_cid, HSP_AG_OK);
-                if (!err) ag_send_ok = 0; 
-                hsp_state = HSP_W2_CONNECT_SCO;
-            }
-            break;
 
         case HSP_W2_CONNECT_SCO:
-            printf("HSP_W2_CONNECT_SCO\n");
-
             if (!hci_can_send_command_packet_now()) break;
             hsp_state = HSP_W4_SCO_CONNECTED;
             hci_send_cmd(&hci_setup_synchronous_connection_command, rfcomm_handle, 8000, 8000, 0xFFFF, 0x0060, 0xFF, 0x003F);
             break;
-        
         
         case HSP_W2_DISCONNECT_SCO:
             hsp_state = HSP_W4_SCO_DISCONNECTED;
@@ -323,7 +309,9 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             printf("Received button press %s\n", HSP_HS_BUTTON_PRESS);
             //  hsp_state: HSP_W4_RING_ANSWER
             ag_button_press_received = 1;
-            
+            ag_send_ok = 1;
+            hsp_timeout_stop();
+
         } else if (strncmp((char *)packet, HSP_HS_AT_CKPD, 7) == 0){
             printf("Received AT+CKPD %s\n", HSP_HS_AT_CKPD);
             ag_at_ckpd_received = 1;
@@ -335,7 +323,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             ag_send_ok = 1;
         } else if (strncmp((char *)packet, "AT+", 3) == 0){
             ag_send_error = 1;
-            log_info("Received not yet supported AT command.\n");
+            packet[size] = 0;
+            printf("Received not yet supported AT command %s...\n", (char*)packet);
         }
         hsp_run();
         return;
@@ -419,7 +408,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             printf("RFCOMM channel %u requested for %s\n", packet[8], bd_addr_to_str(event_addr));
             rfcomm_accept_connection_internal(rfcomm_cid);
 
-            hsp_state = HSP_W4_AT_CMD;
+            hsp_state = HSP_W2_CONNECT_SCO;
             
             break;
 
@@ -439,8 +428,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 switch (hsp_state){
                     case HSP_W4_RFCOMM_CONNECTED:
                         hsp_state = HSP_W4_RING_ANSWER;
-                        printf("enter HSP_W4_RING_ANSWER\n");
                         ag_ring = 1;
+                        hsp_timeout_start();
                         break;
                     case HSP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN:
                         hsp_state = HSP_W2_DISCONNECT_RFCOMM;
