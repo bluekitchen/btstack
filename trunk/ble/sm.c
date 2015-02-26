@@ -1392,10 +1392,64 @@ static void sm_handle_random_result(uint8_t * data){
             break;
     }
 }
+static void sm_init_setup(sm_connection_t * sm_conn){
+
+    // fill in sm setup
+    sm_reset_tk();
+
+    // query client for OOB data
+    int have_oob_data = 0;
+    if (sm_get_oob_data) {
+        have_oob_data = (*sm_get_oob_data)(sm_conn->sm_peer_addr_type, &sm_conn->sm_peer_address, setup->sm_tk);
+    }
+
+    if (sm_conn->sm_role){
+        // slave
+        hci_le_advertisement_address(&setup->sm_s_addr_type, &setup->sm_s_address);
+        setup->sm_m_addr_type = sm_conn->sm_peer_addr_type;
+        memcpy(setup->sm_m_address, sm_conn->sm_peer_address, 6);
+        setup->sm_s_pres.io_capability = sm_io_capabilities;
+        setup->sm_s_pres.oob_data_flag = have_oob_data;
+        setup->sm_s_pres.auth_req = sm_auth_req;
+        setup->sm_s_pres.max_encryption_key_size = sm_max_encryption_key_size;
+        sm_conn->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;
+    } else {
+        // master
+        hci_le_advertisement_address(&setup->sm_m_addr_type, &setup->sm_m_address);
+
+        log_info("hci_le_advertisement_address type %u", setup->sm_m_addr_type);
+        setup->sm_s_addr_type = sm_conn->sm_peer_addr_type;
+        memcpy(setup->sm_s_address, sm_conn->sm_peer_address, 6);
+        setup->sm_m_preq.io_capability = sm_io_capabilities;
+        setup->sm_m_preq.oob_data_flag = have_oob_data;
+        setup->sm_m_preq.auth_req = sm_auth_req;
+        setup->sm_m_preq.max_encryption_key_size = sm_max_encryption_key_size;
+        setup->sm_m_preq.initiator_key_distribution = 0x07;
+        setup->sm_m_preq.responder_key_distribution = 0x07;
+        sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
+    }
+
+    // request security if we're slave and requested by app
+    if (sm_conn->sm_role == 0x01 && sm_slave_request_security){
+        sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
+    }
+
+    // hack (probablu) start security if requested before
+    if (sm_conn->sm_role == 0x00 && sm_authenticate_outgoing_connections){
+        sm_conn->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;
+    }
+
+    // prepare CSRK lookup
+    sm_conn->sm_csrk_lookup_state = CSRK_LOOKUP_W4_READY;
+    if (!sm_central_device_lookup_active()){
+        // try to lookup device
+        sm_central_device_start_lookup(sm_conn, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
+        sm_conn->sm_csrk_lookup_state = CSRK_LOOKUP_STARTED;
+    }
+}
 
 static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
-    int have_oob_data;
     sm_connection_t  * sm_conn;
     uint16_t handle;
 
@@ -1439,58 +1493,9 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_conn->sm_connection_authenticated = 0;
                             sm_conn->sm_connection_authorization_state = AUTHORIZATION_UNKNOWN;
 
-                            // fill in sm setup
-                            sm_reset_tk();
-
-                            // query client for OOB data
-                            have_oob_data = 0;
-                            if (sm_get_oob_data) {
-                                have_oob_data = (*sm_get_oob_data)(sm_conn->sm_peer_addr_type, &sm_conn->sm_peer_address, setup->sm_tk);
-                            }
-
-                            if (sm_conn->sm_role){
-                                // slave
-                                hci_le_advertisement_address(&setup->sm_s_addr_type, &setup->sm_s_address);
-                                setup->sm_m_addr_type = packet[7];
-                                bt_flip_addr(setup->sm_m_address, &packet[8]);
-                                setup->sm_s_pres.io_capability = sm_io_capabilities;
-                                setup->sm_s_pres.oob_data_flag = have_oob_data;
-                                setup->sm_s_pres.auth_req = sm_auth_req;
-                                setup->sm_s_pres.max_encryption_key_size = sm_max_encryption_key_size;
-                                sm_conn->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;
-                            } else {
-                                // master
-                                hci_le_advertisement_address(&setup->sm_m_addr_type, &setup->sm_m_address);
-
-                                log_info("hci_le_advertisement_address type %u", setup->sm_m_addr_type);
-                                setup->sm_s_addr_type = packet[7];
-                                bt_flip_addr(setup->sm_s_address, &packet[8]);
-                                setup->sm_m_preq.io_capability = sm_io_capabilities;
-                                setup->sm_m_preq.oob_data_flag = have_oob_data;
-                                setup->sm_m_preq.auth_req = sm_auth_req;
-                                setup->sm_m_preq.max_encryption_key_size = sm_max_encryption_key_size;
-                                setup->sm_m_preq.initiator_key_distribution = 0x07;
-                                setup->sm_m_preq.responder_key_distribution = 0x07;
-                                sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
-                            }
-
-                            // request security if we're slave and requested by app
-                            if (sm_conn->sm_role == 0x01 && sm_slave_request_security){
-                                sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
-                            }
-
-                            // hack (probablu) start security if requested before
-                            if (sm_conn->sm_role == 0x00 && sm_authenticate_outgoing_connections){
-                                sm_conn->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;
-                            }
-
-                            // prepare CSRK lookup
-                            sm_conn->sm_csrk_lookup_state = CSRK_LOOKUP_W4_READY;
-                            if (!sm_central_device_lookup_active()){
-                                // try to lookup device
-                                sm_central_device_start_lookup(sm_conn, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
-                                sm_conn->sm_csrk_lookup_state = CSRK_LOOKUP_STARTED;
-                            }
+                            // just connected -> sm_run()
+                            // sm_conn->sm_engine_state = SM_GENERAL_CONNECTED;
+                            sm_init_setup(sm_conn);
                             break;
 
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:
