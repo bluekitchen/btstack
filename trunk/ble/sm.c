@@ -762,12 +762,15 @@ static void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
 
 static void sm_run(void){
 
+    // setup locking
+    // - if no connection locked  
+
     // TODO: iterate over all hci_connections instead of handling the single connection
     sm_connection_t * connection = &single_connection;
 
-    // TODO: step only possible if setup not locked to yet
-    if (connection->sm_engine_state == SM_GENERAL_CONNECTED){
-        sm_init_setup(sm_conn);
+    // hack (probably) start security if requested before (setup lock recommended)
+    if (connection->sm_engine_state == SM_INITIATOR_CONNECTED && connection->sm_role == 0x00 && sm_authenticate_outgoing_connections){
+        connection->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;
     }
 
     // assert that we can send at least commands
@@ -912,7 +915,6 @@ static void sm_run(void){
             break;
 
         // responder side
-
         case SM_RESPONDER_SEND_SECURITY_REQUEST: {
             uint8_t buffer[2];
             buffer[0] = SM_CODE_SECURITY_REQUEST;
@@ -1417,12 +1419,9 @@ static void sm_init_setup(sm_connection_t * sm_conn){
         setup->sm_s_pres.oob_data_flag = have_oob_data;
         setup->sm_s_pres.auth_req = sm_auth_req;
         setup->sm_s_pres.max_encryption_key_size = sm_max_encryption_key_size;
-        sm_conn->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;
     } else {
         // master
         hci_le_advertisement_address(&setup->sm_m_addr_type, &setup->sm_m_address);
-
-        log_info("hci_le_advertisement_address type %u", setup->sm_m_addr_type);
         setup->sm_s_addr_type = sm_conn->sm_peer_addr_type;
         memcpy(setup->sm_s_address, sm_conn->sm_peer_address, 6);
         setup->sm_m_preq.io_capability = sm_io_capabilities;
@@ -1431,25 +1430,6 @@ static void sm_init_setup(sm_connection_t * sm_conn){
         setup->sm_m_preq.max_encryption_key_size = sm_max_encryption_key_size;
         setup->sm_m_preq.initiator_key_distribution = 0x07;
         setup->sm_m_preq.responder_key_distribution = 0x07;
-        sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
-    }
-
-    // request security if we're slave and requested by app
-    if (sm_conn->sm_role == 0x01 && sm_slave_request_security){
-        sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
-    }
-
-    // hack (probablu) start security if requested before
-    if (sm_conn->sm_role == 0x00 && sm_authenticate_outgoing_connections){
-        sm_conn->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;
-    }
-
-    // prepare CSRK lookup
-    sm_conn->sm_csrk_lookup_state = CSRK_LOOKUP_W4_READY;
-    if (!sm_central_device_lookup_active()){
-        // try to lookup device
-        sm_central_device_start_lookup(sm_conn, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address);
-        sm_conn->sm_csrk_lookup_state = CSRK_LOOKUP_STARTED;
     }
 }
 
@@ -1498,8 +1478,17 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_conn->sm_connection_authenticated = 0;
                             sm_conn->sm_connection_authorization_state = AUTHORIZATION_UNKNOWN;
 
-                            // just connected -> sm_run()
-                            sm_conn->sm_engine_state = SM_GENERAL_CONNECTED;
+                            // prepare CSRK lookup (does not involve setup)
+                            sm_conn->sm_csrk_lookup_state = CSRK_LOOKUP_W4_READY;
+
+                            // just connected -> everything else happens in sm_run()
+                            if (sm_conn->sm_role){
+                                // slave
+                                sm_conn->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;
+                            } else {
+                                // master
+                                sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
+                            }
                             break;
 
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:
@@ -1716,6 +1705,14 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             if (packet[0] != SM_CODE_PAIRING_REQUEST){
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;;
+            }
+
+            // start setup in responder role
+            sm_init_setup(sm_conn);
+
+            // request security if we're slave and requested by app (setup lock recommended)
+            if (sm_conn->sm_role == 0x01 && sm_slave_request_security){
+                sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
             }
 
             // store pairing request
