@@ -74,7 +74,7 @@
 
 static const char default_hsp_hs_service_name[] = "Headset";
 
-static bd_addr_t remote = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
+static bd_addr_t remote = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
 static uint8_t channel_nr = 0;
 
 static uint16_t mtu;
@@ -97,6 +97,7 @@ static uint8_t   hsp_service_buffer[150];
 typedef enum {
     HSP_IDLE,
     HSP_SDP_QUERY_RFCOMM_CHANNEL,
+    HSP_W4_SDP_QUERY_COMPLETE,
     HSP_W4_RFCOMM_CONNECTED,
     HSP_W2_CONNECT_SCO,
     HSP_W4_SCO_CONNECTED,
@@ -189,7 +190,11 @@ void hsp_hs_set_speaker_gain(uint8_t gain){
 
 static void hsp_run(){
     int err;
-
+    if (hs_ring_received){
+        hs_ring_received = 0;
+        hs_send_button_press = 1;
+    }
+    
     if (hs_send_at_cpkd){
         int err = send_str_over_rfcomm(rfcomm_cid, HSP_HS_AT_CKPD);
         if (!err) hs_send_at_cpkd = 0;
@@ -204,22 +209,11 @@ static void hsp_run(){
 
     switch (hsp_state){
         case HSP_SDP_QUERY_RFCOMM_CHANNEL:
+            hsp_state = HSP_W4_SDP_QUERY_COMPLETE;
             sdp_query_rfcomm_channel_and_name_for_uuid(remote, SDP_Headset_AG);
             break;
         
         case HSP_W2_CONNECT_SCO:
-            if (hs_send_button_press){
-                int err = send_str_over_rfcomm(rfcomm_cid, HSP_HS_BUTTON_PRESS);
-                if (!err) hs_send_button_press = 0;
-                break;
-            }
-            
-            if (hs_send_at_cpkd){
-                int err = send_str_over_rfcomm(rfcomm_cid, HSP_HS_AT_CKPD);
-                if (!err) hs_send_at_cpkd = 0;
-                break;
-            }
-
             if (hs_ok_received){
                 hs_ok_received = 0;
                 hsp_state = HSP_W4_SCO_CONNECTED;
@@ -227,11 +221,6 @@ static void hsp_run(){
             break;
         
         case HSP_W2_DISCONNECT_SCO:
-            if (hs_send_at_cpkd){
-                int err = send_str_over_rfcomm(rfcomm_cid, HSP_HS_AT_CKPD);
-                if (!err) hs_send_at_cpkd = 0;
-                break;
-            }
             if (hs_ok_received){
                 hs_ok_received = 0;
                 hsp_state = HSP_W4_SCO_DISCONNECTED;
