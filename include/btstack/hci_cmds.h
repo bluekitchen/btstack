@@ -80,6 +80,9 @@ extern "C" {
 // BNEP data
 #define BNEP_DATA_PACKET        0x0b
 
+// Unicast Connectionless Data
+#define UCD_DATA_PACKET         0x0c
+ 
 // debug log messages
 #define LOG_MESSAGE_PACKET      0xfc
 
