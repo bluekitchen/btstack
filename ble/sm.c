@@ -233,6 +233,9 @@ static sm_setup_context_t * setup = &the_setup;
 // 
 static sm_connection_t single_connection;
 
+// active connection - the one for which the_setup is used for
+static uint16_t sm_active_connection = 0;
+
 // @returns 1 if oob data is available
 // stores oob data in provided 16 byte buffer if not null
 static int (*sm_get_oob_data)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data) = NULL;
@@ -251,6 +254,7 @@ static const stk_generation_method_t stk_generation_method[5][5] = {
 };
 
 static void sm_run();
+static void sm_done_for_handle(uint16_t handle);
 static void sm_notify_client(uint8_t type, uint8_t addr_type, bd_addr_t address, uint32_t passkey, uint16_t index);
 static sm_connection_t * sm_get_connection_for_handle(uint16_t handle);
 
@@ -299,6 +303,7 @@ static void sm_truncate_key(sm_key_t key, int max_encryption_size){
 static void sm_2timeout_handler(timer_source_t * timer){
     log_info("SM timeout");
     sm_connection_t * sm_conn = (sm_connection_t *) linked_item_get_user((linked_item_t*) timer);
+    sm_done_for_handle(sm_conn->sm_handle);
     sm_conn->sm_engine_state = SM_GENERAL_TIMEOUT;
 }
 static void sm_2timeout_start(sm_connection_t * sm_conn){
@@ -755,8 +760,9 @@ static int sm_key_distribution_all_received(){
 }
 
 static void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
+    sm_done_for_handle(sm_conn->sm_handle);
     setup->sm_pairing_failed_reason = SM_REASON_UNSPECIFIED_REASON;
-    sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+    sm_conn->sm_engine_state = SM_GENERAL_IDLE;
 }
 
 
@@ -946,6 +952,7 @@ static void sm_run(void){
             return;
 
         case SM_GENERAL_SEND_PAIRING_FAILED: {
+            sm_done_for_handle(connection->sm_handle);
             uint8_t buffer[2];
             buffer[0] = SM_CODE_PAIRING_FAILED;
             buffer[1] = setup->sm_pairing_failed_reason;
@@ -1146,6 +1153,7 @@ static void sm_run(void){
                 connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
             } else {
                 // master -> all done
+                sm_done_for_handle(connection->sm_handle);
                 sm_2timeout_stop(connection);
                 connection->sm_engine_state = SM_GENERAL_IDLE; 
             }
@@ -1253,6 +1261,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             swap128(data, peer_confirm_test);
             log_key("c1!", peer_confirm_test);
             if (memcmp(setup->sm_peer_confirm, peer_confirm_test, 16) != 0){
+                sm_done_for_handle(connection->sm_handle);
                 setup->sm_pairing_failed_reason = SM_REASON_CONFIRM_VALUE_FAILED;
                 connection->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
                 return;
@@ -1399,6 +1408,13 @@ static void sm_handle_random_result(uint8_t * data){
             break;
     }
 }
+
+static void sm_done_for_handle(uint16_t handle){
+    if (sm_active_connection == handle){
+        sm_active_connection = 0;
+    }
+}
+
 static void sm_init_setup(sm_connection_t * sm_conn){
 
     // fill in sm setup
@@ -1547,6 +1563,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     handle = READ_BT_16(packet, 3);
+                    sm_done_for_handle(handle);
                     sm_conn = sm_get_connection_for_handle(handle);
                     if (!sm_conn) break;
 
@@ -1638,6 +1655,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // check key size
             sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(setup->sm_s_pres.max_encryption_key_size);
             if (sm_conn->sm_actual_encryption_key_size == 0){
+                sm_done_for_handle(sm_conn->sm_handle);
                 setup->sm_pairing_failed_reason = SM_REASON_ENCRYPTION_KEY_SIZE;
                 sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
                 break;
@@ -1657,6 +1675,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // check if STK generation method is acceptable by client
             if (!sm_validate_stk_generation_method()){
+                sm_done_for_handle(sm_conn->sm_handle);
                 setup->sm_pairing_failed_reason = SM_REASON_AUTHENTHICATION_REQUIREMENTS;
                 sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
                 break;
@@ -1721,6 +1740,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // check key size
             sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(setup->sm_s_pres.max_encryption_key_size);
             if (sm_conn->sm_actual_encryption_key_size == 0){
+                sm_done_for_handle(sm_conn->sm_handle);
                 setup->sm_pairing_failed_reason = SM_REASON_ENCRYPTION_KEY_SIZE;
                 sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
                 break;
@@ -1738,6 +1758,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // check if STK generation method is acceptable by client
             if (!sm_validate_stk_generation_method()){
+                sm_done_for_handle(sm_conn->sm_handle);
                 setup->sm_pairing_failed_reason = SM_REASON_AUTHENTHICATION_REQUIREMENTS;
                 sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
                 break;
@@ -1772,6 +1793,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // handle user cancel pairing?
             if (setup->sm_user_response == SM_USER_RESPONSE_DECLINE){
+                sm_done_for_handle(sm_conn->sm_handle);
                 setup->sm_pairing_failed_reason = SM_REASON_PASSKEYT_ENTRY_FAILED;
                 sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
                 break;
@@ -1840,6 +1862,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // done with key distribution?         
             if (sm_key_distribution_all_received()){
                 if (sm_conn->sm_role){
+                    sm_done_for_handle(sm_conn->sm_handle);
                     sm_2timeout_stop(sm_conn);
                     sm_conn->sm_engine_state = SM_GENERAL_IDLE; 
                 } else {
@@ -1938,6 +1961,8 @@ void sm_init(){
 
     gap_random_adress_update_period = 15 * 60 * 1000L;
 
+    sm_active_connection = 0;
+
     // attach to lower layers
     l2cap_register_fixed_channel(sm_packet_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
 }
@@ -2019,6 +2044,7 @@ void sm_bonding_decline(uint8_t addr_type, bd_addr_t address){
     setup->sm_user_response = SM_USER_RESPONSE_DECLINE;
 
     if (sm_conn->sm_engine_state == SM_PH1_W4_USER_RESPONSE){
+        sm_done_for_handle(sm_conn->sm_handle);
         setup->sm_pairing_failed_reason = SM_REASON_PASSKEYT_ENTRY_FAILED;
         sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
     }
