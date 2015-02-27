@@ -530,10 +530,6 @@ static int sm_key_distribution_flags_for_set(uint8_t key_set){
 }
 
 static void sm_setup_key_distribution(uint8_t key_set){
-
-    // TODO: handle initiator case here
-
-    // distribute keys as requested by initiator
     setup->sm_key_distribution_received_set = 0;
     setup->sm_key_distribution_send_set = sm_key_distribution_flags_for_set(key_set);
 }
@@ -551,11 +547,6 @@ static void sm_central_device_start_lookup(sm_connection_t * sm_conn, uint8_t ad
     sm_central_device_matched = -1;
     sm_csrk_connection_source = sm_conn;
     sm_notify_client(SM_IDENTITY_RESOLVING_STARTED, addr_type, addr, 0, 0);
-}
-
-// TODO use relevant connection structure
-static void sm_central_device_lookup_found(sm_key_t csrk){
-    memcpy(setup->sm_peer_csrk, csrk, 16);
 }
 
 // CMAC Implementation using AES128 engine
@@ -962,7 +953,6 @@ static void sm_run(void){
                 sm_csrk_connection_source = NULL;
                 sm_key_t csrk;
                 central_device_db_csrk(sm_central_device_matched, csrk);
-                sm_central_device_lookup_found(csrk);
                 sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);
                 break;
             }
@@ -1326,7 +1316,6 @@ static void sm_handle_encryption_result(uint8_t * data){
             sm_csrk_connection_source = NULL;
             sm_key_t csrk;
             central_device_db_csrk(sm_central_device_matched, csrk);
-            sm_central_device_lookup_found(csrk);
             sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);
             log_info("Central Device Lookup: matched resolvable private address");
             return;
