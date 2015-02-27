@@ -105,7 +105,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             // bt stack activated, get started 
             if (packet[2] == HCI_STATE_WORKING){
                 printf("Start SDP RFCOMM Query for UUID 0x%02x\n", SDP_Handsfree);
-                sdp_query_rfcomm_channel_and_name_for_uuid(remote, SDP_Handsfree);
+                // sdp_query_rfcomm_channel_and_name_for_uuid(remote, SDP_Handsfree);
             }
             break;
 
