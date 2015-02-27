@@ -214,7 +214,6 @@ typedef struct sm_setup_context {
     uint16_t  sm_peer_ediv;
     uint8_t   sm_peer_rand[8];
     sm_key_t  sm_peer_ltk;
-    sm_key_t  sm_peer_csrk;
     sm_key_t  sm_peer_irk;
     uint8_t   sm_peer_addr_type;
     bd_addr_t sm_peer_address;
@@ -951,8 +950,6 @@ static void sm_run(void){
                 sm_central_device_test = -1;
                 sm_csrk_connection_source->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
                 sm_csrk_connection_source = NULL;
-                sm_key_t csrk;
-                central_device_db_csrk(sm_central_device_matched, csrk);
                 sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);
                 break;
             }
@@ -1314,8 +1311,6 @@ static void sm_handle_encryption_result(uint8_t * data){
             sm_central_device_test = -1;
             sm_csrk_connection_source->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
             sm_csrk_connection_source = NULL;
-            sm_key_t csrk;
-            central_device_db_csrk(sm_central_device_matched, csrk);
             sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);
             log_info("Central Device Lookup: matched resolvable private address");
             return;
@@ -1739,6 +1734,8 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
     log_debug("sm_packet_handler: state %u, pdu 0x%02x", sm_conn->sm_engine_state, packet[0]);
 
+    sm_key_t csrk;
+
     switch (sm_conn->sm_engine_state){
         
         // a sm timeout requries a new physical connection
@@ -1902,11 +1899,11 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
                 case SM_CODE_SIGNING_INFORMATION:
                     setup->sm_key_distribution_received_set |= SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
-                    swap128(&packet[1], setup->sm_peer_csrk);
+                    swap128(&packet[1], csrk);
 
                     // store, if: it's a public address, or, we got an IRK
                     if (setup->sm_peer_addr_type == 0 || (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION)) {
-                        sm_central_device_matched =  central_device_db_add(setup->sm_peer_addr_type, setup->sm_peer_address, setup->sm_peer_irk, setup->sm_peer_csrk);
+                        sm_central_device_matched =  central_device_db_add(setup->sm_peer_addr_type, setup->sm_peer_address, setup->sm_peer_irk, csrk);
                         break;
                     } 
                     break;
