@@ -453,7 +453,6 @@ typedef struct sm_connection {
     uint8_t                  sm_actual_encryption_key_size;
     sm_pairing_packet_t      sm_m_preq;  // only used during c1
     authorization_state_t    sm_connection_authorization_state;
-    timer_source_t           sm_timeout;
 } sm_connection_t;
 
 typedef struct {
