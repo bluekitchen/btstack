@@ -769,6 +769,7 @@ static void sm_init_setup(sm_connection_t * sm_conn){
         hci_le_advertisement_address(&setup->sm_s_addr_type, &setup->sm_s_address);
         setup->sm_m_addr_type = sm_conn->sm_peer_addr_type;
         memcpy(setup->sm_m_address, sm_conn->sm_peer_address, 6);
+        
         setup->sm_s_pres.io_capability = sm_io_capabilities;
         setup->sm_s_pres.oob_data_flag = have_oob_data;
         setup->sm_s_pres.auth_req = sm_auth_req;
@@ -778,10 +779,12 @@ static void sm_init_setup(sm_connection_t * sm_conn){
         hci_le_advertisement_address(&setup->sm_m_addr_type, &setup->sm_m_address);
         setup->sm_s_addr_type = sm_conn->sm_peer_addr_type;
         memcpy(setup->sm_s_address, sm_conn->sm_peer_address, 6);
+        
         setup->sm_m_preq.io_capability = sm_io_capabilities;
         setup->sm_m_preq.oob_data_flag = have_oob_data;
         setup->sm_m_preq.auth_req = sm_auth_req;
         setup->sm_m_preq.max_encryption_key_size = sm_max_encryption_key_size;
+
         setup->sm_m_preq.initiator_key_distribution = 0x07;
         setup->sm_m_preq.responder_key_distribution = 0x07;
     }
@@ -793,6 +796,52 @@ static void sm_initiator_setup(sm_connection_t * sm_conn){
 
     // let's go
     sm_conn->sm_engine_state = SM_INITIATOR_PH1_SEND_PAIRING_REQUEST;
+}
+
+void sm_initiator_setup2(sm_connection_t * sm_conn){
+    // executed after pairing response was received
+
+    // identical to sm_responder_setup, just other encryption size field
+
+    // check key size
+    sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(setup->sm_s_pres.max_encryption_key_size);
+    if (sm_conn->sm_actual_encryption_key_size == 0){
+        setup->sm_pairing_failed_reason = SM_REASON_ENCRYPTION_KEY_SIZE;
+        sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+        return;
+    }
+
+    // setup key distribution
+    sm_setup_key_distribution(setup->sm_s_pres.initiator_key_distribution);
+
+    // identical to responder
+
+    // start SM timeout
+    sm_timeout_start(sm_conn);
+
+    // decide on STK generation method
+    sm_setup_tk();
+    log_info("SMP: generation method %u", setup->sm_stk_generation_method);
+
+    // check if STK generation method is acceptable by client
+    if (!sm_validate_stk_generation_method()){
+        setup->sm_pairing_failed_reason = SM_REASON_AUTHENTHICATION_REQUIREMENTS;
+        sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
+        return;
+    }
+
+    // JUST WORKS doens't provide authentication
+    sm_conn->sm_connection_authenticated = setup->sm_stk_generation_method == JUST_WORKS ? 0 : 1;
+
+    // generate random number first, if we need to show passkey
+    if (setup->sm_stk_generation_method == PK_RESP_INPUT){
+        sm_conn->sm_engine_state = SM_PH2_GET_RANDOM_TK;
+        return;
+    }
+
+    sm_trigger_user_response(sm_conn);
+
+    sm_conn->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
 }
 
 static void sm_responder_setup(sm_connection_t * sm_conn){
@@ -1752,47 +1801,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // store pairing request
             memcpy(&setup->sm_s_pres, packet, sizeof(sm_pairing_packet_t));
 
-            // identical to responder, just other encryption size field
-
-            // check key size
-            sm_conn->sm_actual_encryption_key_size = sm_calc_actual_encryption_key_size(setup->sm_s_pres.max_encryption_key_size);
-            if (sm_conn->sm_actual_encryption_key_size == 0){
-                setup->sm_pairing_failed_reason = SM_REASON_ENCRYPTION_KEY_SIZE;
-                sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
-                break;
-            }
-
-            // setup key distribution
-            sm_setup_key_distribution(setup->sm_s_pres.initiator_key_distribution);
-
-            // identical to responder
-
-            // start SM timeout
-            sm_timeout_start(sm_conn);
-
-            // decide on STK generation method
-            sm_setup_tk();
-            log_info("SMP: generation method %u", setup->sm_stk_generation_method);
-
-            // check if STK generation method is acceptable by client
-            if (!sm_validate_stk_generation_method()){
-                setup->sm_pairing_failed_reason = SM_REASON_AUTHENTHICATION_REQUIREMENTS;
-                sm_conn->sm_engine_state = SM_GENERAL_SEND_PAIRING_FAILED;
-                break;
-            }
-
-            // JUST WORKS doens't provide authentication
-            sm_conn->sm_connection_authenticated = setup->sm_stk_generation_method == JUST_WORKS ? 0 : 1;
-
-            // generate random number first, if we need to show passkey
-            if (setup->sm_stk_generation_method == PK_RESP_INPUT){
-                sm_conn->sm_engine_state = SM_PH2_GET_RANDOM_TK;
-                break;
-            }
-
-            sm_trigger_user_response(sm_conn);
-
-            sm_conn->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
+            sm_initiator_setup2(sm_conn);
             break;                        
 
         case SM_INITIATOR_PH2_W4_PAIRING_CONFIRM:
