@@ -591,12 +591,14 @@ extern "C" {
 
 #define HCI_EVENT_HSP_META                                 0xE8
 
-#define HSP_SUBEVENT_AUDIO_CONNECTION_ESTABLISHED          0x01
-#define HSP_SUBEVENT_AUDIO_CONNECTION_CLOSED               0x02
+#define HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE             0x01
+#define HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE          0x02
 #define HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED               0x03
 #define HSP_SUBEVENT_SPEAKER_GAIN_CHANGED                  0x04
-#define HSP_SUBEVENT_COMMAND                               0x05
-#define HSP_SUBEVENT_INDICATION                            0x06
+#define HSP_SUBEVENT_HS_COMMAND                            0x05
+#define HSP_SUBEVENT_AG_INDICATION                         0x06
+#define HSP_SUBEVENT_ERROR                                 0x07
+#define HSP_SUBEVENT_RING                                  0x08
 
 
 // ANCS Client
@@ -661,6 +663,7 @@ extern "C" {
 
 #define SDP_HANDLE_ALREADY_REGISTERED                      0x80
 #define SDP_QUERY_INCOMPLETE                               0x81
+#define SDP_SERVICE_NOT_FOUND                              0x82
  
 #define ATT_HANDLE_VALUE_INDICATION_IN_PORGRESS            0x90 
 #define ATT_HANDLE_VALUE_INDICATION_TIMEOUT                0x91

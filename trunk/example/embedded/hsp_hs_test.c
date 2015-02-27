@@ -61,7 +61,9 @@ const uint8_t    hsp_service_buffer[150];
 const uint8_t    rfcomm_channel_nr = 1;
 const char hsp_ag_service_name[] = "Headset Test";
 
-void packet_handler(uint8_t * event, uint16_t event_size){}
+void packet_handler(uint8_t * event, uint16_t event_size){
+    
+}
 
 int btstack_main(int argc, const char * argv[]){
     // init SDP, create record for SPP and register with SDP

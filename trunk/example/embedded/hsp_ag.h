@@ -59,7 +59,7 @@ void hsp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char 
 
 void hsp_ag_init(uint8_t rfcomm_channel_nr);
 void hsp_ag_connect(bd_addr_t bd_addr);
-void hsp_ag_disconnect(bd_addr_t bd_addr);
+void hsp_ag_disconnect();
 
 void hsp_ag_enable_in_band_ring_tone(int enabled);
 

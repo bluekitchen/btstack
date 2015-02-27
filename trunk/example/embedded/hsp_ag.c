@@ -75,7 +75,7 @@
 
 static const char default_hsp_ag_service_name[] = "Audio Gateway";
 
-static bd_addr_t remote = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
+static bd_addr_t remote;
 static uint8_t channel_nr = 0;
 
 static uint16_t mtu;
@@ -115,6 +115,11 @@ static hsp_state_t hsp_state = HSP_IDLE;
 
 
 static hsp_ag_callback_t hsp_ag_callback;
+
+static void hsp_run();
+static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context);
+
 static void dummy_notify(uint8_t * event, uint16_t size){}
 
 void hsp_ag_register_packet_handler(hsp_ag_callback_t callback){
@@ -124,14 +129,15 @@ void hsp_ag_register_packet_handler(hsp_ag_callback_t callback){
     hsp_ag_callback = callback;
 }
 
-static void emit_event(uint8_t * event, uint16_t size){
+static void emit_event(uint8_t event_subtype, uint8_t value){
     if (!hsp_ag_callback) return;
-    (*hsp_ag_callback)(event, size);
+    uint8_t event[4];
+    event[0] = HCI_EVENT_HSP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = event_subtype;
+    event[3] = value; // status 0 == OK
+    (*hsp_ag_callback)(event, sizeof(event));
 }
-
-static void hsp_run();
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context);
 
 void hsp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name){
     uint8_t* attribute;
@@ -411,19 +417,30 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             ag_send_ok = 1;
             hsp_timeout_stop();
 
-        } else if (strncmp((char *)packet, HSP_HS_AT_CKPD, 7) == 0){
-            printf("Received AT+CKPD %s\n", HSP_HS_AT_CKPD);
-            ag_at_ckpd_received = 1;
-        } else if (strncmp((char *)packet, HSP_HS_MICROPHONE_GAIN, 7) == 0 ||
-            strncmp((char *)packet, HSP_HS_SPEAKER_GAIN, 7) == 0){
-            // uint8_t gain = packet[8];
-            // TODO: parse gain
-            printf("Received changed gain info %c\n", packet[8]);
+        } else if (strncmp((char *)packet, HSP_HS_MICROPHONE_GAIN, 7) == 0){
+            uint8_t gain = (uint8_t)atoi((char*)&packet[8]);
             ag_send_ok = 1;
+            emit_event(HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED, gain);
+        
+        } else if (strncmp((char *)packet, HSP_HS_SPEAKER_GAIN, 7) == 0){
+            uint8_t gain = (uint8_t)atoi((char*)&packet[8]);
+            ag_send_ok = 1;
+            emit_event(HSP_SUBEVENT_SPEAKER_GAIN_CHANGED, gain);
+
+        } else if (strncmp((char *)packet, HSP_HS_AT_CKPD, 7) == 0){
+            ag_at_ckpd_received = 1;
         } else if (strncmp((char *)packet, "AT+", 3) == 0){
             ag_send_error = 1;
-            packet[size] = 0;
-            printf("Received not yet supported AT command %s...\n", (char*)packet);
+        }
+
+        if (ag_at_ckpd_received || ag_send_error){
+            if (!hsp_ag_callback) return;
+            // re-use incoming buffer to avoid reserving large buffers - ugly but efficient
+            uint8_t * event = packet - 3;
+            event[0] = HCI_EVENT_HSP_META;
+            event[1] = size + 1;
+            event[2] = HSP_SUBEVENT_HS_COMMAND;
+            (*hsp_ag_callback)(event, size+3);
         }
         hsp_run();
         return;
@@ -436,10 +453,9 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
     switch (event) {
         case BTSTACK_EVENT_STATE:
-            // bt stack activated, get started 
+            // BTstack activated, get started 
             if (packet[2] == HCI_STATE_WORKING){
-                printf("Try to connect.\n");
-                hsp_ag_connect(remote);
+                printf("BTstack activated, get started .\n");
             }
             break;
 
@@ -495,6 +511,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 break;
             }
             hsp_state = HSP_ACTIVE;
+
+            emit_event(HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE, 0);
             break;                
         }
 
@@ -517,6 +535,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             if (packet[2]) {
                 printf("RFCOMM channel open failed, status %u\n", packet[2]);
                 hsp_ag_reset_state();
+                emit_event(HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE, packet[2]);
             } else {
                 // data: event(8) , len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
                 rfcomm_handle = READ_BT_16(packet, 9);
@@ -560,6 +579,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             }
             printf("RFCOMM channel closed\n");
             hsp_ag_reset_state();
+            emit_event(HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE,0);
             break;
         default:
             break;
@@ -588,7 +608,13 @@ static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context)
             }
             hsp_ag_reset_state();
             printf("Service not found, status %u.\n", ce->status);
-            exit(0);
+            if (ce->status){
+                emit_event(HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE, ce->status);
+            } else {
+                emit_event(HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE, SDP_SERVICE_NOT_FOUND);
+            }
+            break;
+        default:
             break;
     }
 }
