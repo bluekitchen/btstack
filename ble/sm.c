@@ -816,9 +816,6 @@ void sm_initiator_setup2(sm_connection_t * sm_conn){
 
     // identical to responder
 
-    // start SM timeout
-    sm_timeout_start(sm_conn);
-
     // decide on STK generation method
     sm_setup_tk();
     log_info("SMP: generation method %u", setup->sm_stk_generation_method);
@@ -862,9 +859,6 @@ static void sm_responder_setup(sm_connection_t * sm_conn){
 
     // setup key distribution
     sm_setup_key_distribution(setup->sm_m_preq.responder_key_distribution);
-
-    // start SM timeout
-    sm_timeout_start(sm_conn);
 
     // decide on STK generation method
     sm_setup_tk();
@@ -1046,6 +1040,7 @@ static void sm_run(void){
             switch (sm_connection->sm_engine_state) {
                 case SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED:
                     sm_responder_setup(sm_connection);
+                    sm_timeout_start(sm_connection);
                     break;
                 case SM_RESPONDER_RECEIVED_LTK:
                     // re-establish previously used LTK using Rand and EDIV
@@ -1062,6 +1057,7 @@ static void sm_run(void){
                     break;
                 case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
                     sm_initiator_setup(sm_connection);
+                    sm_timeout_start(sm_connection);
                     break;
                 default:
                     done = 0;
