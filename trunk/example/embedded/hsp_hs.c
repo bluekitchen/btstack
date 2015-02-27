@@ -58,8 +58,7 @@
 #include "sdp_query_rfcomm.h"
 #include "sdp.h"
 #include "debug.h"
-
-#define RFCOMM_SERVER_CHANNEL 1
+#include "hsp_hs.h"
 
 #define HSP_HS_BUTTON_PRESS "AT+CKPD=200\r"
 #define HSP_HS_AT_CKPD "AT+CKPD\r"
@@ -92,7 +91,7 @@ static uint8_t hs_send_at_cpkd = 0;
 static uint8_t hs_ok_received = 0;
 static uint8_t hs_ring_received = 0;
 
-static uint8_t   hsp_service_buffer[150];
+
 
 typedef enum {
     HSP_IDLE,
@@ -112,6 +111,23 @@ typedef enum {
 static hsp_state_t hsp_state = HSP_IDLE;
 
 static void hsp_run();
+static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context);
+
+static hsp_hs_callback_t hsp_hs_callback;
+static void dummy_notify(uint8_t * event, uint16_t size){}
+
+void hsp_hs_register_packet_handler(hsp_hs_callback_t callback){
+    if (callback == NULL){
+        callback = &dummy_notify;
+    }
+    hsp_hs_callback = callback;
+}
+
+static void emit_event(uint8_t * event, uint16_t size){
+    if (!hsp_hs_callback) return;
+    (*hsp_hs_callback)(event, size);
+}
 
 // remote audio volume control
 // AG +VGM=13 [0..15] ; HS AT+VGM=6 | AG OK
@@ -125,7 +141,79 @@ static int send_str_over_rfcomm(uint16_t cid, char * command){
     return err;
 }
 
-void hsp_hs_init(){
+
+void hsp_hs_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t have_remote_audio_control){
+    uint8_t* attribute;
+    de_create_sequence(service);
+
+    // 0x0000 "Service Record Handle"
+    de_add_number(service, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle);
+    de_add_number(service, DE_UINT, DE_SIZE_32, 0x10001);
+
+    // 0x0001 "Service Class ID List"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);
+    attribute = de_push_sequence(service);
+    {
+        //  "UUID for PAN Service"
+        de_add_number(attribute, DE_UUID, DE_SIZE_16, SDP_Headset_HS);
+        de_add_number(attribute, DE_UUID, DE_SIZE_16, SDP_GenericAudio);
+    }
+    de_pop_sequence(service, attribute);
+
+    // 0x0004 "Protocol Descriptor List"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ProtocolDescriptorList);
+    attribute = de_push_sequence(service);
+    {
+        uint8_t* l2cpProtocol = de_push_sequence(attribute);
+        {
+            de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, SDP_L2CAPProtocol);
+        }
+        de_pop_sequence(attribute, l2cpProtocol);
+        
+        uint8_t* rfcomm = de_push_sequence(attribute);
+        {
+            de_add_number(rfcomm,  DE_UUID, DE_SIZE_16, SDP_RFCOMMProtocol);  // rfcomm_service
+            de_add_number(rfcomm,  DE_UINT, DE_SIZE_8,  rfcomm_channel_nr);  // rfcomm channel
+        }
+        de_pop_sequence(attribute, rfcomm);
+    }
+    de_pop_sequence(service, attribute);
+
+    // 0x0005 "Public Browse Group"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BrowseGroupList); // public browse group
+    attribute = de_push_sequence(service);
+    {
+        de_add_number(attribute,  DE_UUID, DE_SIZE_16, SDP_PublicBrowseGroup);
+    }
+    de_pop_sequence(service, attribute);
+
+    // 0x0009 "Bluetooth Profile Descriptor List"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BluetoothProfileDescriptorList);
+    attribute = de_push_sequence(service);
+    {
+        uint8_t *sppProfile = de_push_sequence(attribute);
+        {
+            de_add_number(sppProfile,  DE_UUID, DE_SIZE_16, SDP_HSP); 
+            de_add_number(sppProfile,  DE_UINT, DE_SIZE_16, 0x0102); // Verision 1.2
+        }
+        de_pop_sequence(attribute, sppProfile);
+    }
+    de_pop_sequence(service, attribute);
+
+    // 0x0100 "Service Name"
+    de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
+    if (name){
+        de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
+    } else {
+        de_add_data(service,  DE_STRING, strlen(default_hsp_hs_service_name), (uint8_t *) default_hsp_hs_service_name);
+    }
+    
+    // Remote audio volume control
+    de_add_number(service, DE_UINT, DE_SIZE_16, 0x030C);
+    de_add_number(service, DE_BOOL, DE_SIZE_8, have_remote_audio_control);
+}
+
+static void hsp_hs_reset_state(){
     hsp_state = HSP_IDLE;
     
     rfcomm_cid = 0;
@@ -141,6 +229,20 @@ void hsp_hs_init(){
     hs_ok_received = 0;
     hs_ring_received = 0;
     // TODO
+}
+
+void hsp_hs_init(uint8_t rfcomm_channel_nr){
+    // init L2CAP
+    l2cap_init();
+    l2cap_register_packet_handler(packet_handler);
+
+    rfcomm_init();
+    rfcomm_register_packet_handler(packet_handler);
+    rfcomm_register_service_internal(NULL, rfcomm_channel_nr, 0xffff);  // reserved channel, mtu limited by l2cap
+
+    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
+
+    hsp_hs_reset_state();
 }
 
 
@@ -355,7 +457,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
             if (packet[2]) {
                 printf("RFCOMM channel open failed, status %u\n", packet[2]);
-                hsp_state = HSP_IDLE;
+                hsp_hs_reset_state();
             } else {
                 // data: event(8) , len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
                 rfcomm_handle = READ_BT_16(packet, 9);
@@ -378,10 +480,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             break;
         case DAEMON_EVENT_HCI_PACKET_SENT:
         case RFCOMM_EVENT_CREDITS:
-            if (!rfcomm_cid) {
-                hsp_state = HSP_IDLE;
-                hsp_hs_init(); 
-            }
             break;
         
         case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -400,8 +498,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 log_info("received RFCOMM disconnect in wrong hsp state");
             }
             printf("RFCOMM channel closed\n");
-            hsp_state = HSP_IDLE;
-            hsp_hs_init();
+            hsp_hs_reset_state();
             break;
         default:
             break;
@@ -409,7 +506,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     hsp_run();
 }
 
-void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
+static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
     sdp_query_rfcomm_service_event_t * ve;
     sdp_query_complete_event_t * ce;
             
@@ -428,7 +525,7 @@ void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
                 rfcomm_create_channel_internal(NULL, &remote, channel_nr); 
                 break;
             }
-            hsp_state = HSP_IDLE;
+            hsp_hs_reset_state();
             printf("Service not found, status %u.\n", ce->status);
             exit(0);
             break;
@@ -436,105 +533,4 @@ void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
 }
 
 
-void hsp_hs_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t have_remote_audio_control){
-    uint8_t* attribute;
-    de_create_sequence(service);
 
-    // 0x0000 "Service Record Handle"
-    de_add_number(service, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle);
-    de_add_number(service, DE_UINT, DE_SIZE_32, 0x10001);
-
-    // 0x0001 "Service Class ID List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);
-    attribute = de_push_sequence(service);
-    {
-        //  "UUID for PAN Service"
-        de_add_number(attribute, DE_UUID, DE_SIZE_16, SDP_Headset_HS);
-        de_add_number(attribute, DE_UUID, DE_SIZE_16, SDP_GenericAudio);
-    }
-    de_pop_sequence(service, attribute);
-
-    // 0x0004 "Protocol Descriptor List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_ProtocolDescriptorList);
-    attribute = de_push_sequence(service);
-    {
-        uint8_t* l2cpProtocol = de_push_sequence(attribute);
-        {
-            de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, SDP_L2CAPProtocol);
-        }
-        de_pop_sequence(attribute, l2cpProtocol);
-        
-        uint8_t* rfcomm = de_push_sequence(attribute);
-        {
-            de_add_number(rfcomm,  DE_UUID, DE_SIZE_16, SDP_RFCOMMProtocol);  // rfcomm_service
-            de_add_number(rfcomm,  DE_UINT, DE_SIZE_8,  rfcomm_channel_nr);  // rfcomm channel
-        }
-        de_pop_sequence(attribute, rfcomm);
-    }
-    de_pop_sequence(service, attribute);
-
-    // 0x0005 "Public Browse Group"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BrowseGroupList); // public browse group
-    attribute = de_push_sequence(service);
-    {
-        de_add_number(attribute,  DE_UUID, DE_SIZE_16, SDP_PublicBrowseGroup);
-    }
-    de_pop_sequence(service, attribute);
-
-    // 0x0009 "Bluetooth Profile Descriptor List"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, SDP_BluetoothProfileDescriptorList);
-    attribute = de_push_sequence(service);
-    {
-        uint8_t *sppProfile = de_push_sequence(attribute);
-        {
-            de_add_number(sppProfile,  DE_UUID, DE_SIZE_16, SDP_HSP); 
-            de_add_number(sppProfile,  DE_UINT, DE_SIZE_16, 0x0102); // Verision 1.2
-        }
-        de_pop_sequence(attribute, sppProfile);
-    }
-    de_pop_sequence(service, attribute);
-
-    // 0x0100 "Service Name"
-    de_add_number(service,  DE_UINT, DE_SIZE_16, 0x0100);
-    if (name){
-        de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
-    } else {
-        de_add_data(service,  DE_STRING, strlen(default_hsp_hs_service_name), (uint8_t *) default_hsp_hs_service_name);
-    }
-    
-    // Remote audio volume control
-    de_add_number(service, DE_UINT, DE_SIZE_16, 0x030C);
-    de_add_number(service, DE_BOOL, DE_SIZE_8, have_remote_audio_control);
-}
-
-int btstack_main(int argc, const char * argv[]);
-int btstack_main(int argc, const char * argv[]){
-
-    printf("Client HCI init done\r\n");
-        
-    // init L2CAP
-    l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
-
-    rfcomm_init();
-    rfcomm_register_packet_handler(packet_handler);
-    rfcomm_register_service_internal(NULL, RFCOMM_SERVER_CHANNEL, 0xffff);  // reserved channel, mtu limited by l2cap
-
-    // init SDP, create record for SPP and register with SDP
-    sdp_init();
-    memset(hsp_service_buffer, 0, sizeof(hsp_service_buffer));
-   
-    hsp_hs_create_service(hsp_service_buffer, RFCOMM_SERVER_CHANNEL, NULL, 0);
-    hsp_hs_init();
-    
-    sdp_register_service_internal(NULL, hsp_service_buffer);
-
-    sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
-
-    // turn on!
-    hci_power_control(HCI_POWER_ON);
-
-    // go!
-    run_loop_execute(); 
-    return 0;
-}
