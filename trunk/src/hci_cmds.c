@@ -327,12 +327,12 @@ OPCODE(OGF_LINK_CONTROL, 0x1B), "H"
 
 /** 
  * @param handle
- * @param transmit_bandwidth
- * @param receive_bandwidth
- * @param max_latency
- * @param voice_settings
- * @param retransmission_effort
- * @param packet_type
+ * @param transmit_bandwidth 8000(64kbps)
+ * @param receive_bandwidth  8000(64kbps)
+ * @param max_latency        >= 7ms for eSCO, 0xFFFF do not care
+ * @param voice_settings     e.g. CVSD, Input Coding: Linear, Input Data Format: 2’s complement, data 16bit: 00011000000 == 0x60
+ * @param retransmission_effort  e.g. 0xFF do not care
+ * @param packet_type        at least EV3 for eSCO
  */
 const hci_cmd_t hci_setup_synchronous_connection_command = {
 OPCODE(OGF_LINK_CONTROL, 0x0028), "H442212"
