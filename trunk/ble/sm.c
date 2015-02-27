@@ -60,6 +60,7 @@ typedef enum {
 } derived_key_generation_t;
 
 typedef enum {
+    RAU_W4_WORKING,
     RAU_IDLE,
     RAU_GET_RANDOM,
     RAU_W4_RANDOM,
@@ -120,13 +121,13 @@ static sm_key_t sm_persistent_ir;
 static sm_key_t sm_persistent_dhk;
 static sm_key_t sm_persistent_irk;
 static uint8_t  sm_persistent_irk_ready = 0;    // used for testing
-static derived_key_generation_t dkg_state = DKG_W4_WORKING;
+static derived_key_generation_t dkg_state;
 
 // derived from sm_persistent_er
 // ..
 
 // random address update
-static random_address_update_t rau_state = RAU_IDLE;
+static random_address_update_t rau_state;
 static bd_addr_t sm_random_address;
 
 // CMAC calculation
@@ -1005,17 +1006,29 @@ static void sm_run(void){
             hci_connection_t * hci_connection = (hci_connection_t *) linked_list_iterator_next(&it);
             sm_connection_t  * sm_connection = &hci_connection->sm_connection;
             // - if no connection locked and we're ready/waiting for setup context, fetch it and start
-            int done = 0;
+            int done = 1;
             switch (sm_connection->sm_engine_state) {
                 case SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED:
                     sm_responder_setup(sm_connection);
-                    done = 1;
+                    break;
+                case SM_RESPONDER_RECEIVED_LTK:
+                    // re-establish previously used LTK using Rand and EDIV
+                    memcpy(setup->sm_local_rand, sm_connection->sm_local_rand, 8);
+                    setup->sm_local_ediv = sm_connection->sm_local_ediv;
+                    // re-establish used key encryption size
+                    // no db for encryption size hack: encryption size is stored in lowest nibble of setup->sm_local_rand
+                    sm_connection->sm_actual_encryption_key_size = (setup->sm_local_rand[7] & 0x0f) + 1;
+                    // no db for authenticated flag hack: flag is stored in bit 4 of LSB
+                    sm_connection->sm_connection_authenticated = (setup->sm_local_rand[7] & 0x10) >> 4;
+                    log_info("sm: received ltk request with key size %u, authenticated %u",
+                            sm_connection->sm_actual_encryption_key_size, sm_connection->sm_connection_authenticated);
+                    sm_connection->sm_engine_state = SM_PH4_Y_GET_ENC;
                     break;
                 case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
                     sm_initiator_setup(sm_connection);
-                    done = 1;
                     break;
                 default:
+                    done = 0;
                     break;
             }
             if (done){
@@ -1553,6 +1566,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 					if (packet[2] == HCI_STATE_WORKING) {
                         log_info("HCI Working!");
                         dkg_state = sm_persistent_irk_ready ? DKG_CALC_DHK : DKG_CALC_IRK;
+                        rau_state = RAU_IDLE;
 
                         sm_run();
                         return; // don't notify app packet handler just yet
@@ -1618,25 +1632,17 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 break;
                             }
 
-                            // re-establish previously used LTK using Rand and EDIV
-                            swap64(&packet[5], setup->sm_local_rand);
-                            setup->sm_local_ediv = READ_BT_16(packet, 13);
-
                             // assume that we don't have a LTK for ediv == 0 and random == null
-                            if (setup->sm_local_ediv == 0 && sm_is_null_random(setup->sm_local_rand)){
+                            if (READ_BT_16(packet, 13) == 0 && sm_is_null_random(&packet[5])){
                                 log_info("LTK Request: ediv & random are empty");
                                 sm_conn->sm_engine_state = SM_RESPONDER_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
                                 break;
                             }
 
-                            // re-establish used key encryption size
-                            // no db for encryption size hack: encryption size is stored in lowest nibble of setup->sm_local_rand
-                            sm_conn->sm_actual_encryption_key_size = (setup->sm_local_rand[7] & 0x0f) + 1;
-
-                            // no db for authenticated flag hack: flag is stored in bit 4 of LSB
-                            sm_conn->sm_connection_authenticated = (setup->sm_local_rand[7] & 0x10) >> 4;
-
-                            sm_conn->sm_engine_state = SM_PH4_Y_GET_ENC;
+                            // store rand and ediv
+                            swap64(&packet[5], sm_conn->sm_local_rand);
+                            sm_conn->sm_local_ediv   = READ_BT_16(packet, 13);
+                            sm_conn->sm_engine_state = SM_RESPONDER_RECEIVED_LTK;
                             break;
 
                         default:
@@ -1650,8 +1656,10 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     if (!sm_conn) break;
 
                     sm_conn->sm_connection_encrypted = packet[5];
-                    log_info("Encryption state change: %u", sm_conn->sm_connection_encrypted);
+                    log_info("Encryption state change: %u, key size %u", sm_conn->sm_connection_encrypted,
+                        sm_conn->sm_actual_encryption_key_size);
                     if (!sm_conn->sm_connection_encrypted) break;
+                    // continue if part of initial pairing
                     if (sm_conn->sm_engine_state == SM_PH2_W4_CONNECTION_ENCRYPTED) {
                         if (sm_conn->sm_role){
                             sm_conn->sm_engine_state = SM_PH3_GET_RANDOM;
@@ -2013,6 +2021,8 @@ void sm_init(){
     sm_min_encryption_key_size = 7;
     
     sm_cmac_state  = CMAC_IDLE;
+    dkg_state = DKG_W4_WORKING;
+    rau_state = RAU_W4_WORKING;
     sm_aes128_state = SM_AES128_IDLE;
     sm_central_device_test = -1;    // no private address to resolve yet
     sm_central_ah_calculation_active = 0;
@@ -2032,8 +2042,9 @@ static sm_connection_t * sm_get_connection_for_handle(uint16_t con_handle){
 }
 
 static sm_connection_t * sm_get_connection(uint8_t addr_type, bd_addr_t address){
-    hci_connection_t * hci_con = hci_connection_for_bd_addr_and_type( (bd_addr_t *) &address, addr_type);
-    if (!hci_con) return NULL;
+    // TODO figure out why the cast is needed. (using the address operator makes the code fail)
+    hci_connection_t * hci_con = hci_connection_for_bd_addr_and_type( (bd_addr_t*) address, addr_type);
+    if (!hci_con)  return NULL;
     return &hci_con->sm_connection;
 }
 
