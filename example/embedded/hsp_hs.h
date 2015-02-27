@@ -59,7 +59,7 @@ void hsp_hs_create_service(uint8_t * service, int rfcomm_channel_nr, const char 
 
 void hsp_hs_init(uint8_t rfcomm_channel_nr);
 void hsp_hs_connect(bd_addr_t bd_addr);
-void hsp_hs_disconnect(bd_addr_t bd_addr);
+void hsp_hs_disconnect();
 
 // AT+VGM=[0..15]
 void hsp_hs_set_microphone_gain(uint8_t gain);
