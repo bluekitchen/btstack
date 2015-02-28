@@ -394,6 +394,7 @@ typedef enum {
     SM_PH4_SEND_LTK,
 
     // RESPONDER ROLE
+    SM_RESPONDER_RECEIVED_LTK,
     SM_RESPONDER_SEND_SECURITY_REQUEST,
     SM_RESPONDER_SEND_LTK_REQUESTED_NEGATIVE_REPLY,
     SM_RESPONDER_PH1_W4_PAIRING_REQUEST,
@@ -453,6 +454,8 @@ typedef struct sm_connection {
     uint8_t                  sm_actual_encryption_key_size;
     sm_pairing_packet_t      sm_m_preq;  // only used during c1
     authorization_state_t    sm_connection_authorization_state;
+    uint16_t                 sm_local_ediv;
+    uint8_t                  sm_local_rand[8];
 } sm_connection_t;
 
 typedef struct {
