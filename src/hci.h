@@ -641,8 +641,8 @@ void hci_run(void);
 // send complete CMD packet
 int hci_send_cmd_packet(uint8_t *packet, int size);
 
-// send ACL packet prepared in hci packet buffer - not working yet
-// int hci_send_acl_packet_buffer(int size);
+// send ACL packet prepared in hci packet buffer
+int hci_send_acl_packet_buffer(int size);
 
 // send SCO packet prepared in hci packet buffer
 int hci_send_sco_packet_buffer(int size);
