@@ -69,7 +69,7 @@ const uint8_t des_attributeIDList[]    = { 0x35, 0x05, 0x0A, 0x00, 0x01, 0x01, 0
 static uint8_t des_serviceSearchPattern[5] = {0x35, 0x03, 0x19, 0x00, 0x00};
 
 static uint8_t sdp_service_name[SDP_SERVICE_NAME_LEN+1];
-static uint8_t sdp_rfcom_channel_nr = 0;
+static uint8_t sdp_rfcomm_channel_nr = 0;
 static uint8_t sdp_service_name_header_size;
 
 static pdl_state_t pdl_state = GET_PROTOCOL_LIST_LENGTH;
@@ -88,6 +88,16 @@ static void (*sdp_app_callback)(sdp_query_event_t * event, void * context) = dum
 //
 
 static void dummy_notify_app(sdp_query_event_t* event, void * context){}
+
+static void emit_service(){
+    sdp_query_rfcomm_service_event_t value_event = {
+        SDP_QUERY_RFCOMM_SERVICE, 
+        sdp_rfcomm_channel_nr,
+        (uint8_t *) sdp_service_name
+    };
+    (*sdp_app_callback)((sdp_query_event_t*)&value_event, sdp_app_context);
+    sdp_rfcomm_channel_nr = 0;
+}
 
 void sdp_query_rfcomm_register_callback(void (*sdp_callback)(sdp_query_event_t* event, void * context), void * context){
     sdp_app_callback = dummy_notify_app;
@@ -164,7 +174,7 @@ void handleProtocolDescriptorListData(uint32_t attribute_value_length, uint32_t 
 
             protocol_value_size = de_header_state.de_size;
             pdl_state = GET_PROTOCOL_VALUE;
-            sdp_rfcom_channel_nr = 0;
+            sdp_rfcomm_channel_nr = 0;
             break;
         
         case GET_PROTOCOL_VALUE:
@@ -177,7 +187,7 @@ void handleProtocolDescriptorListData(uint32_t attribute_value_length, uint32_t 
 
             if (protocol_id == 0x0003){
                 //  log_info("\n\n *******  Data ***** %02x\n\n", data);
-                sdp_rfcom_channel_nr = data;
+                sdp_rfcomm_channel_nr = data;
             }
 
             // log_info("   query: protocol done");
@@ -231,21 +241,24 @@ void handleServiceNameData(uint32_t attribute_value_length, uint32_t data_offset
     }
 
     // notify on last char
-    if (data_offset == attribute_value_length - 1 && sdp_rfcom_channel_nr!=0){
-        sdp_query_rfcomm_service_event_t value_event = {
-            SDP_QUERY_RFCOMM_SERVICE, 
-            sdp_rfcom_channel_nr,
-            (uint8_t *) sdp_service_name
-        };
-        (*sdp_app_callback)((sdp_query_event_t*)&value_event, sdp_app_context);
-        sdp_rfcom_channel_nr = 0;
+    if (data_offset == attribute_value_length - 1 && sdp_rfcomm_channel_nr!=0){
+        emit_service();
     }
 }
-
 
 static void handle_sdp_parser_event(sdp_query_event_t * event){
     sdp_query_attribute_value_event_t * ve;
     switch (event->type){
+        case SDP_QUERY_SERVICE_RECORD_HANDLE:
+            // handle service without a name
+            if (sdp_rfcomm_channel_nr){
+                emit_service();
+            }
+
+            // prepare for new record
+            sdp_rfcomm_channel_nr = 0;
+            sdp_service_name[0] = 0;
+            break;
         case SDP_QUERY_ATTRIBUTE_VALUE:
             ve = (sdp_query_attribute_value_event_t*) event;
            // log_info("handle_sdp_parser_event [ AID, ALen, DOff, Data] : [%x, %u, %u] BYTE %02x", 
@@ -266,6 +279,10 @@ static void handle_sdp_parser_event(sdp_query_event_t * event){
             }
             break;
         case SDP_QUERY_COMPLETE:
+            // handle service without a name
+            if (sdp_rfcomm_channel_nr){
+                emit_service();
+            }
             (*sdp_app_callback)(event, sdp_app_context);
             break;
     }
@@ -279,6 +296,8 @@ void sdp_query_rfcomm_init(){
     pdl_state = GET_PROTOCOL_LIST_LENGTH;
     protocol_offset = 0;
     sdp_parser_register_callback(handle_sdp_parser_event);
+    sdp_rfcomm_channel_nr = 0;
+    sdp_service_name[0] = 0;
 }
 
 
