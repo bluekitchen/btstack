@@ -41,7 +41,7 @@
 #include "sdp_parser.h"
 #include "sdp_client.h"
 
-static uint8_t des_attributeIDList[]    = { 0x35, 0x05, 0x0A, 0x00, 0x01, 0xff, 0xff};  // Arribute: 0x0001 - 0x0100
+static uint8_t des_attributeIDList[]    = { 0x35, 0x05, 0x0A, 0x00, 0x01, 0xff, 0xff};  // Attribute: 0x0001 - 0x0100
 static uint8_t des_serviceSearchPattern[] = {0x35, 0x03, 0x19, 0x00, 0x00};
 static uint8_t des_serviceSearchPatternUUID128[] = {
 	0x35, 0x10, 0x19, 
@@ -49,8 +49,8 @@ static uint8_t des_serviceSearchPatternUUID128[] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 uint8_t* create_service_search_pattern_for_uuid128(uint8_t* uuid){
-	memcpy(&des_serviceSearchPattern[3], uuid, 16);
-	return (uint8_t*)des_serviceSearchPattern;
+	memcpy(&des_serviceSearchPatternUUID128[3], uuid, 16);
+	return (uint8_t*)des_serviceSearchPatternUUID128;
 }
 
 uint8_t* create_service_search_pattern_for_uuid(uint16_t uuid){
