@@ -71,10 +71,10 @@ static char * bd_addr_to_dash_str(bd_addr_t addr){
     return (char *) bd_addr_to_dash_str_buffer;
 }
 
-static void set_path(bd_addr_t *bd_addr){
+static void set_path(bd_addr_t bd_addr){
     strcpy(keypath, LINK_KEY_PATH);
     strcat(keypath, LINK_KEY_PREFIX);
-    strcat(keypath, bd_addr_to_dash_str(*bd_addr));
+    strcat(keypath, bd_addr_to_dash_str(bd_addr));
     strcat(keypath, LINK_KEY_SUFIX);
 }
 
@@ -85,9 +85,9 @@ static void db_open(void){
 static void db_close(void){ 
 }
 
-static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type_t link_key_type){
+static void put_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t link_key_type){
     set_path(bd_addr);
-    char * link_key_str = link_key_to_str(*link_key);
+    char * link_key_str = link_key_to_str(link_key);
     char * link_key_type_str = link_key_type_to_str(link_key_type); 
 
     FILE * wFile = fopen(keypath,"w+");
@@ -96,7 +96,7 @@ static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type
     fclose(wFile);
 }
 
-static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type_t * link_key_type) {
+static int get_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * link_key_type) {
     set_path(bd_addr);
     if (access(keypath, R_OK)) return 0;
     
@@ -116,7 +116,7 @@ static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type_
     link_key_type_str[1] = 0;
     log_info("Found link key type %s\n", link_key_type_str);
     
-    int scan_result = sscan_link_key(link_key_str, *link_key);
+    int scan_result = sscan_link_key(link_key_str, link_key);
     if (scan_result == 0 ) return 0;
 
     scan_result = sscanf( (char *) link_key_type_str, "%d", link_key_type);
@@ -125,7 +125,7 @@ static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type_
     return 1;
 }
 
-static void delete_link_key(bd_addr_t *bd_addr){
+static void delete_link_key(bd_addr_t bd_addr){
     set_path(bd_addr);
     if (access(keypath, R_OK)) return;
 
@@ -134,14 +134,14 @@ static void delete_link_key(bd_addr_t *bd_addr){
     }
 }
 
-static int get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
+static int get_name(bd_addr_t bd_addr, device_name_t *device_name) {
     return 0;
 }
 
-static void delete_name(bd_addr_t *bd_addr){
+static void delete_name(bd_addr_t bd_addr){
 }
 
-static void put_name(bd_addr_t *bd_addr, device_name_t *device_name){
+static void put_name(bd_addr_t bd_addr, device_name_t *device_name){
 }
 
 const remote_device_db_t remote_device_db_fs = {

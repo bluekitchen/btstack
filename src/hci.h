@@ -619,7 +619,7 @@ void gap_le_set_connection_parameter_range(le_connection_parameter_range_t range
 
 le_command_status_t le_central_start_scan(void);
 le_command_status_t le_central_stop_scan(void);
-le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_type);
+le_command_status_t le_central_connect(bd_addr_t addr, bd_addr_type_t addr_type);
 le_command_status_t le_central_connect_cancel(void);
 le_command_status_t gap_disconnect(hci_con_handle_t handle);
 void le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window);
@@ -664,9 +664,11 @@ int hci_is_packet_buffer_reserved(void);
 // get point to packet buffer
 uint8_t* hci_get_outgoing_packet_buffer(void);
     
-bd_addr_t * hci_local_bd_addr(void);
+// returns pointer to a bd_addr_t array
+uint8_t * hci_local_bd_addr(void);
+
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle);
-hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t *addr, bd_addr_type_t addr_type);
+hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type);
 int hci_is_le_connection(hci_connection_t * connection);
 uint8_t  hci_number_outgoing_packets(hci_con_handle_t handle);
 uint8_t  hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle);
@@ -686,7 +688,7 @@ void hci_emit_nr_connections_changed(void);
 void hci_emit_hci_open_failed(void);
 void hci_emit_btstack_version(void);
 void hci_emit_system_bluetooth_enabled(uint8_t enabled);
-void hci_emit_remote_name_cached(bd_addr_t *addr, device_name_t *name);
+void hci_emit_remote_name_cached(bd_addr_t addr, device_name_t *name);
 void hci_emit_discoverable_enabled(uint8_t enabled);
 void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t level);
 void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status);
@@ -733,7 +735,7 @@ void hci_discoverable_control(uint8_t enable);
 int hci_send_cmd(const hci_cmd_t *cmd, ...);
 
 // Deletes link key for remote device with baseband address.
-void hci_drop_link_key_for_bd_addr(bd_addr_t *addr);
+void hci_drop_link_key_for_bd_addr(bd_addr_t addr);
 
 // Configure Secure Simple Pairing
 
@@ -748,7 +750,7 @@ void hci_ssp_set_authentication_requirement(int authentication_requirement);
 void hci_ssp_set_auto_accept(int auto_accept);
 
 // get addr type and address used in advertisement packets
-void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t * addr);
+void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t addr);
 
 
 #if defined __cplusplus

@@ -245,7 +245,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	return (BTDevice*) [discoveredDevices objectAtIndex:index];
 };
 
--(BTDevice*) deviceForAddress:(bd_addr_t*) address{
+-(BTDevice*) deviceForAddress:(bd_addr_t) address{
 	for (BTDevice *device in discoveredDevices){
 		// NSLog(@"compare %@ to %@", [BTDevice stringForAddress:address], [device addressString]); 
 		if ( BD_ADDR_CMP(address, [device address]) == 0){
@@ -368,8 +368,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 - (void) handleRemoteNameCached: (uint8_t *) packet {
 	bd_addr_t addr;
 	bt_flip_addr(addr, &packet[3]);
-	// NSLog(@"Get remote name done for %@", [BTDevice stringForAddress:&addr]);
-	BTDevice* device = [self deviceForAddress:&addr];
+	// NSLog(@"Get remote name done for %@", [BTDevice stringForAddress:addr]);
+	BTDevice* device = [self deviceForAddress:addr];
     if (!device) return;
 
     [device setName:[self createRemoteNameFromRemoteNameEvent:packet]];
@@ -379,8 +379,8 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 - (void) handleRemoteName: (uint8_t *) packet {
 	bd_addr_t addr;
 	bt_flip_addr(addr, &packet[3]);
-	// NSLog(@"Get remote name done for %@", [BTDevice stringForAddress:&addr]);
-	BTDevice* device = [self deviceForAddress:&addr];
+	// NSLog(@"Get remote name done for %@", [BTDevice stringForAddress:addr]);
+	BTDevice* device = [self deviceForAddress:addr];
     if (!device) return;
 
     [device setName:[self createRemoteNameFromRemoteNameEvent:packet]];
@@ -415,12 +415,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					numResponses = packet[2];
 					for (i=0; i<numResponses ; i++){
 						bt_flip_addr(addr, &packet[3+i*6]);
-						// NSLog(@"found %@", [BTDevice stringForAddress:&addr]);
-						BTDevice* device = [self deviceForAddress:&addr];
+						// NSLog(@"found %@", [BTDevice stringForAddress:addr]);
+						BTDevice* device = [self deviceForAddress:addr];
 						if (!device) {
 							device = [[BTDevice alloc] init];
 							[discoveredDevices addObject:device];
-							[device setAddress:&addr];
+							[device setAddress:addr];
 						}
 						// update
 						device.pageScanRepetitionMode =   packet [3 + numResponses*(6)         + i*1];
@@ -437,12 +437,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 					for (i=0; i<numResponses ;i++){
 						bt_flip_addr(addr, &packet[offset]);
 						offset += 6;
-						// NSLog(@"found %@", [BTDevice stringForAddress:&addr]);
-						BTDevice* device = [self deviceForAddress:&addr];
+						// NSLog(@"found %@", [BTDevice stringForAddress:addr]);
+						BTDevice* device = [self deviceForAddress:addr];
 						if (!device) {
 							device = [[BTDevice alloc] init];
 							[discoveredDevices addObject:device];
-							[device setAddress:&addr];
+							[device setAddress:addr];
 						}
 						device.pageScanRepetitionMode =   packet [offset];
 						offset += 2; // pageScanRepetitionMode + Reserved
@@ -503,7 +503,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	}
 }
 
--(void) dropLinkKeyForAddress:(bd_addr_t*) address {
+-(void) dropLinkKeyForAddress:(bd_addr_t) address {
     bt_send_cmd(&hci_delete_stored_link_key, address, 0);
 	// NSLog(@"Removing link key for %@", devAddress);
 }
@@ -546,7 +546,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 }
 
 // Connections
--(BTstackError) createL2CAPChannelAtAddress:(bd_addr_t*) address withPSM:(uint16_t)psm authenticated:(BOOL)authentication {
+-(BTstackError) createL2CAPChannelAtAddress:(bd_addr_t) address withPSM:(uint16_t)psm authenticated:(BOOL)authentication {
 	if (state < kActivated) return BTSTACK_NOT_ACTIVATED;
 	if (state != kActivated) return BTSTACK_BUSY;
 #if 0
@@ -568,7 +568,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	return 0;
 };
 
--(BTstackError) createRFCOMMConnectionAtAddress:(bd_addr_t*) address withChannel:(uint16_t)channel authenticated:(BOOL)authentication {
+-(BTstackError) createRFCOMMConnectionAtAddress:(bd_addr_t) address withChannel:(uint16_t)channel authenticated:(BOOL)authentication {
 	if (state < kActivated) return BTSTACK_NOT_ACTIVATED;
 	if (state != kActivated) return BTSTACK_BUSY;
 #if 0

@@ -921,7 +921,7 @@ int  stdin_process(struct data_source *ds){
     return 0;
 }
 
-static int get_oob_data_callback(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data){
+static int get_oob_data_callback(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_data){
     if(!sm_have_oob_data) return 0;
     memcpy(oob_data, sm_oob_data, 16);
     return 1;

@@ -227,7 +227,7 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
             if (cmdline_addr_found){
                 printf("Start connect to %s\n", bd_addr_to_str(cmdline_addr));
                 state = TC_W4_CONNECT;
-                le_central_connect(&cmdline_addr, 0);
+                le_central_connect(cmdline_addr, 0);
                 break;
             }
             printf("BTstack activated, start scanning!\n");
@@ -242,7 +242,7 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
             state = TC_W4_CONNECT;
             le_central_stop_scan();
             printf("Stop scan. Start connect to device with addr %s.\n", bd_addr_to_str(report.address));
-            le_central_connect(&report.address,report.address_type);
+            le_central_connect(report.address,report.address_type);
             break;
         case HCI_EVENT_LE_META:
             // wait for connection complete

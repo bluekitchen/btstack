@@ -57,18 +57,18 @@ static void db_open(void){
 static void db_close(void){ 
 }
 
-static db_mem_device_t * get_item(linked_list_t list, bd_addr_t *bd_addr) {
+static db_mem_device_t * get_item(linked_list_t list, bd_addr_t bd_addr) {
     linked_item_t *it;
     for (it = (linked_item_t *) list; it ; it = it->next){
         db_mem_device_t * item = (db_mem_device_t *) it;
-        if (BD_ADDR_CMP(item->bd_addr, *bd_addr) == 0) {
+        if (BD_ADDR_CMP(item->bd_addr, bd_addr) == 0) {
             return item;
         }
     }
     return NULL;
 }
 
-static int get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
+static int get_name(bd_addr_t bd_addr, device_name_t *device_name) {
     db_mem_device_name_t * item = (db_mem_device_name_t *) get_item(db_mem_names, bd_addr);
     
     if (!item) return 0;
@@ -81,7 +81,7 @@ static int get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
 	return 1;
 }
 
-static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type_t * link_key_type) {
+static int get_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * link_key_type) {
     db_mem_device_link_key_t * item = (db_mem_device_link_key_t *) get_item(db_mem_link_keys, bd_addr);
     
     if (!item) return 0;
@@ -96,7 +96,7 @@ static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type_
 	return 1;
 }
 
-static void delete_link_key(bd_addr_t *bd_addr){
+static void delete_link_key(bd_addr_t bd_addr){
     db_mem_device_t * item = get_item(db_mem_link_keys, bd_addr);
     
     if (!item) return;
@@ -106,7 +106,7 @@ static void delete_link_key(bd_addr_t *bd_addr){
 }
 
 
-static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type_t link_key_type){
+static void put_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t link_key_type){
     db_mem_device_link_key_t * existingRecord = (db_mem_device_link_key_t *) get_item(db_mem_link_keys, bd_addr);
     
     if (existingRecord){
@@ -128,7 +128,7 @@ static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type
     linked_list_add(&db_mem_link_keys, (linked_item_t *) newItem);
 }
 
-static void delete_name(bd_addr_t *bd_addr){
+static void delete_name(bd_addr_t bd_addr){
     db_mem_device_t * item = get_item(db_mem_names, bd_addr);
     
     if (!item) return;
@@ -137,7 +137,7 @@ static void delete_name(bd_addr_t *bd_addr){
     btstack_memory_db_mem_device_name_free((db_mem_device_name_t*)item);    
 }
 
-static void put_name(bd_addr_t *bd_addr, device_name_t *device_name){
+static void put_name(bd_addr_t bd_addr, device_name_t *device_name){
     db_mem_device_name_t * existingRecord = (db_mem_device_name_t *) get_item(db_mem_names, bd_addr);
     
     if (existingRecord){

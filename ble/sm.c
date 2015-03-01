@@ -228,7 +228,7 @@ static uint16_t sm_active_connection = 0;
 
 // @returns 1 if oob data is available
 // stores oob data in provided 16 byte buffer if not null
-static int (*sm_get_oob_data)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data) = NULL;
+static int (*sm_get_oob_data)(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_data) = NULL;
 
 // used to notify applicationss that user interaction is neccessary, see sm_notify_t below
 static btstack_packet_handler_t sm_client_packet_handler = NULL;
@@ -761,20 +761,20 @@ static void sm_init_setup(sm_connection_t * sm_conn){
     // query client for OOB data
     int have_oob_data = 0;
     if (sm_get_oob_data) {
-        have_oob_data = (*sm_get_oob_data)(sm_conn->sm_peer_addr_type, &sm_conn->sm_peer_address, setup->sm_tk);
+        have_oob_data = (*sm_get_oob_data)(sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, setup->sm_tk);
     }
     
     sm_pairing_packet_t * local_packet;
     if (sm_conn->sm_role){
         // slave
         local_packet = &setup->sm_s_pres;
-        hci_le_advertisement_address(&setup->sm_s_addr_type, &setup->sm_s_address);
+        hci_le_advertisement_address(&setup->sm_s_addr_type, setup->sm_s_address);
         setup->sm_m_addr_type = sm_conn->sm_peer_addr_type;
         memcpy(setup->sm_m_address, sm_conn->sm_peer_address, 6);
     } else {
         // master
         local_packet = &setup->sm_m_preq;
-        hci_le_advertisement_address(&setup->sm_m_addr_type, &setup->sm_m_address);
+        hci_le_advertisement_address(&setup->sm_m_addr_type, setup->sm_m_address);
         setup->sm_s_addr_type = sm_conn->sm_peer_addr_type;
         memcpy(setup->sm_s_address, sm_conn->sm_peer_address, 6);
         
@@ -1258,7 +1258,7 @@ static void sm_run(void){
                     bd_addr_t local_address;
                     uint8_t buffer[8];
                     buffer[0] = SM_CODE_IDENTITY_ADDRESS_INFORMATION;
-                    hci_le_advertisement_address(&buffer[1], &local_address);
+                    hci_le_advertisement_address(&buffer[1], local_address);
                     bt_flip_addr(&buffer[2], local_address);
                     l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                     sm_timeout_reset(connection);
@@ -1903,7 +1903,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 }
 
 // Security Manager Client API
-void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t * addr, uint8_t * oob_data)){
+void sm_register_oob_data_callback( int (*get_oob_data_callback)(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_data)){
     sm_get_oob_data = get_oob_data_callback;
 }
 
@@ -1998,8 +1998,7 @@ static sm_connection_t * sm_get_connection_for_handle(uint16_t con_handle){
 }
 
 static sm_connection_t * sm_get_connection(uint8_t addr_type, bd_addr_t address){
-    // TODO figure out why the cast is needed. (using the address operator makes the code fail)
-    hci_connection_t * hci_con = hci_connection_for_bd_addr_and_type( (bd_addr_t*) address, addr_type);
+    hci_connection_t * hci_con = hci_connection_for_bd_addr_and_type(address, addr_type);
     if (!hci_con)  return NULL;
     return &hci_con->sm_connection;
 }

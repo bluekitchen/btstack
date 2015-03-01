@@ -805,7 +805,7 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     linked_list_add(&l2cap_channels, (linked_item_t *) chan);
     
     // check if hci connection is already usable
-    hci_connection_t * conn = hci_connection_for_bd_addr_and_type((bd_addr_t*)address, BD_ADDR_TYPE_CLASSIC);
+    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(address, BD_ADDR_TYPE_CLASSIC);
     if (conn){
         log_info("l2cap_create_channel_internal, hci connection already exists");
         l2cap_handle_connection_complete(conn->con_handle, chan);
@@ -1234,7 +1234,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
                             
                             // drop link key if security block
                             if (L2CAP_CONNECTION_RESPONSE_RESULT_SUCCESSFUL + result == L2CAP_CONNECTION_RESPONSE_RESULT_REFUSED_SECURITY){
-                                hci_drop_link_key_for_bd_addr(&channel->address);
+                                hci_drop_link_key_for_bd_addr(channel->address);
                             }
                             
                             // discard channel

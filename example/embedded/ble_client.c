@@ -425,7 +425,7 @@ uint8_t chr_short_value[1] = {0x86};
 
 //             tc_state = TC_W4_CONNECT;
 //             le_central_stop_scan();
-//             le_central_connect(&test_device, test_device_addr_type, test_device_addr);
+//             le_central_connect(test_device, test_device_addr_type, test_device_addr);
 //             break;
 //         }
 //         // 59 5a 5d f200
@@ -772,7 +772,7 @@ static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size
                     
                     tc_state = TC_W4_CONNECT;
                     le_central_stop_scan();
-                    le_central_connect(&found_device_addr, test_device_addr_type);
+                    le_central_connect(found_device_addr, test_device_addr_type);
             }
             break;
         case BTSTACK_EVENT_STATE:

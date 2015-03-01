@@ -603,7 +603,7 @@ static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context)
             if (channel_nr > 0){
                 hsp_state = HSP_W4_RFCOMM_CONNECTED;
                 printf("RFCOMM create channel. state %d\n", HSP_W4_RFCOMM_CONNECTED);
-                rfcomm_create_channel_internal(NULL, &remote, channel_nr); 
+                rfcomm_create_channel_internal(NULL, remote, channel_nr); 
                 break;
             }
             hsp_ag_reset_state();

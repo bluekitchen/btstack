@@ -51,7 +51,7 @@
 #define PREFS_CHANNEL      @"channel"
 #define PREFS_LAST_USED    @"lastUsed"
 
-static void put_name(bd_addr_t *bd_addr, device_name_t *device_name);
+static void put_name(bd_addr_t bd_addr, device_name_t *device_name);
 
 static NSMutableDictionary *remote_devices  = nil;
 static NSMutableDictionary *rfcomm_services = nil;
@@ -123,13 +123,12 @@ static void db_close(void){
     [pool release];
 }
 
-static NSString * stringForAddress(bd_addr_t* address) {
-	uint8_t *addr = (uint8_t*) *address;
+static NSString * stringForAddress(bd_addr_t addr) {
 	return [NSString stringWithFormat:@"%02x:%02x:%02x:%02x:%02x:%02x", addr[0], addr[1], addr[2],
 			addr[3], addr[4], addr[5]];
 }
                              
-static void set_value(bd_addr_t *bd_addr, NSString *key, id value){
+static void set_value(bd_addr_t bd_addr, NSString *key, id value){
 	NSString *devAddress = stringForAddress(bd_addr);
 	NSMutableDictionary * deviceDict = [remote_devices objectForKey:devAddress];
 	if (!deviceDict){
@@ -140,7 +139,7 @@ static void set_value(bd_addr_t *bd_addr, NSString *key, id value){
     db_synchronize();
 }
 
-static void delete_value(bd_addr_t *bd_addr, NSString *key){
+static void delete_value(bd_addr_t bd_addr, NSString *key){
 	NSString *devAddress = stringForAddress(bd_addr);
 	NSMutableDictionary * deviceDict = [remote_devices objectForKey:devAddress];
 	[deviceDict removeObjectForKey:key];
@@ -148,14 +147,14 @@ static void delete_value(bd_addr_t *bd_addr, NSString *key){
 
 }
 
-static id get_value(bd_addr_t *bd_addr, NSString *key){
+static id get_value(bd_addr_t bd_addr, NSString *key){
 	NSString *devAddress = stringForAddress(bd_addr);
 	NSMutableDictionary * deviceDict = [remote_devices objectForKey:devAddress];
     if (!deviceDict) return nil;
     return [deviceDict objectForKey:key];
 }
 
-static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type_t * link_key_type) {
+static int get_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * link_key_type) {
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
     NSData *linkKey = get_value(bd_addr, PREFS_LINK_KEY);
     if ([linkKey length] == LINK_KEY_LEN){
@@ -168,20 +167,20 @@ static int get_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type_
     return (linkKey != nil);
 }
 
-static void put_link_key(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type_t link_key_type){
+static void put_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t link_key_type){
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	NSData *linkKey = [NSData dataWithBytes:link_key length:16];
     set_value(bd_addr, PREFS_LINK_KEY, linkKey);
     [pool release];
 }
 
-static void delete_link_key(bd_addr_t *bd_addr){
+static void delete_link_key(bd_addr_t bd_addr){
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
     delete_value(bd_addr, PREFS_LINK_KEY);
     [pool release];
 }
 
-static void put_name(bd_addr_t *bd_addr, device_name_t *device_name){
+static void put_name(bd_addr_t bd_addr, device_name_t *device_name){
     NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	NSString *remoteName = [NSString stringWithUTF8String:(char*)device_name];
 	if (!remoteName){
@@ -193,13 +192,13 @@ static void put_name(bd_addr_t *bd_addr, device_name_t *device_name){
     [pool release];
 }
 
-static void delete_name(bd_addr_t *bd_addr){
+static void delete_name(bd_addr_t bd_addr){
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
     delete_value(bd_addr, PREFS_REMOTE_NAME);
     [pool release];
 }
 
-static int  get_name(bd_addr_t *bd_addr, device_name_t *device_name) {
+static int  get_name(bd_addr_t bd_addr, device_name_t *device_name) {
     NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
     NSString *remoteName = get_value(bd_addr, PREFS_REMOTE_NAME);
     if (remoteName){

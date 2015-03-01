@@ -116,7 +116,7 @@ int hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type){
 }
 
 // get addr type and address used in advertisement packets
-void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t * addr){
+void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t addr){
     *addr_type = 0;
     uint8_t dummy[] = { 0x00, 0x1b, 0xdc, 0x07, 0x32, 0xef };
     memcpy(addr, dummy, 6);

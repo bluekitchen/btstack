@@ -58,22 +58,22 @@ TEST(RemoteDeviceDB, MemoryPool){
 
 TEST(RemoteDeviceDB, SinglePutGetDeleteName){
     sprintf((char*)device_name, "%d", 100);
-	remote_device_db_memory.put_name(&addr1, &device_name);
-    CHECK(remote_device_db_memory.get_name(&addr1, &device_name));
+	remote_device_db_memory.put_name(addr1, &device_name);
+    CHECK(remote_device_db_memory.get_name(addr1, &device_name));
     
-    remote_device_db_memory.delete_name(&addr1);
-    CHECK(!remote_device_db_memory.get_name(&addr1, &device_name));
+    remote_device_db_memory.delete_name(addr1);
+    CHECK(!remote_device_db_memory.get_name(addr1, &device_name));
 }
 
 TEST(RemoteDeviceDB, SortByLastUsedName){
     sprintf((char*)device_name, "%d", 10);
-	remote_device_db_memory.put_name(&addr1, &device_name);
+	remote_device_db_memory.put_name(addr1, &device_name);
     sprintf((char*)device_name, "%d", 20);
-	remote_device_db_memory.put_name(&addr2, &device_name);
+	remote_device_db_memory.put_name(addr2, &device_name);
     sprintf((char*)device_name, "%d", 30);
-	remote_device_db_memory.put_name(&addr3, &device_name);
+	remote_device_db_memory.put_name(addr3, &device_name);
     
-    CHECK(remote_device_db_memory.get_name(&addr2, &device_name));
+    CHECK(remote_device_db_memory.get_name(addr2, &device_name));
     //get first element of the list
     db_mem_device_name_t * item = (db_mem_device_name_t *) db_mem_names;
     STRCMP_EQUAL((char*)item->device_name, "20"); 
@@ -82,27 +82,27 @@ TEST(RemoteDeviceDB, SortByLastUsedName){
 
 TEST(RemoteDeviceDB, SinglePutGetDeleteKey){
 	sprintf((char*)link_key, "%d", 100);
-	remote_device_db_memory.put_link_key(&addr1, &link_key, link_key_type);
+	remote_device_db_memory.put_link_key(addr1, &link_key, link_key_type);
     // dump(db_mem_link_keys);
 
-	CHECK(remote_device_db_memory.get_link_key(&addr1, &link_key, &link_key_type));
+	CHECK(remote_device_db_memory.get_link_key(addr1, &link_key, &link_key_type));
     
-    remote_device_db_memory.delete_link_key(&addr1);
-    CHECK(!remote_device_db_memory.get_link_key(&addr1, &link_key, &link_key_type));
+    remote_device_db_memory.delete_link_key(addr1);
+    CHECK(!remote_device_db_memory.get_link_key(addr1, &link_key, &link_key_type));
 }
 
 TEST(RemoteDeviceDB, SortByLastUsedKey){
     sprintf((char*)link_key, "%d", 10);
-	remote_device_db_memory.put_link_key(&addr1, &link_key, link_key_type);
+	remote_device_db_memory.put_link_key(addr1, &link_key, link_key_type);
     // dump(db_mem_link_keys);
     sprintf((char*)link_key, "%d", 20);
-	remote_device_db_memory.put_link_key(&addr2, &link_key, link_key_type);
+	remote_device_db_memory.put_link_key(addr2, &link_key, link_key_type);
     // dump(db_mem_link_keys);
     sprintf((char*)link_key, "%d", 30);
-	remote_device_db_memory.put_link_key(&addr3, &link_key, link_key_type);
+	remote_device_db_memory.put_link_key(addr3, &link_key, link_key_type);
     // dump(db_mem_link_keys);
 
-    CHECK(remote_device_db_memory.get_link_key(&addr2, &link_key, &link_key_type));
+    CHECK(remote_device_db_memory.get_link_key(addr2, &link_key, &link_key_type));
     // dump(db_mem_link_keys);
     
     //get first element of the list

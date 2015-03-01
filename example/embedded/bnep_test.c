@@ -236,7 +236,7 @@ static int stdin_process(struct data_source *ds){
     switch (buffer){
         case 'p':
             printf("Connecting to PTS at %s...\n", bd_addr_to_str(pts_addr));
-            bnep_connect(NULL, &pts_addr, bnep_l2cap_psm, bnep_remote_uuid);
+            bnep_connect(NULL, pts_addr, bnep_l2cap_psm, bnep_remote_uuid);
             break;
         case 'e':
             printf("Sending general ethernet packet\n");

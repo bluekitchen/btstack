@@ -73,13 +73,13 @@ typedef enum {
 	BluetoothConnectionState  connectionState; 
 }
 
-- (void) setAddress:(bd_addr_t*)addr;
+- (void) setAddress:(bd_addr_t)addr;
 - (BOOL) setAddressFromString:(NSString *) addressString;
-- (bd_addr_t*) address;
+- (uint8_t*) address;
 - (NSString *) toString;
 - (NSString *) addressString;
-+ (NSString *) stringForAddress:(bd_addr_t*) address;
-+ (BOOL)       address:(bd_addr_t *) address fromString:(NSString *) addressString;
++ (NSString *) stringForAddress:(bd_addr_t) address;
++ (BOOL)       address:(bd_addr_t) address fromString:(NSString *) addressString;
 @property (readonly)          BluetoothDeviceType deviceType;
 @property (readonly)          NSString *          nameOrAddress;
 @property (nonatomic, copy)   NSString *          name;
