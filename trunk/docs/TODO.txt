@@ -67,7 +67,7 @@ AFTER:
   - add it to libBTstack.dylib
   - provide a libBTstackCocoaTouch.dylib (less memory usage)
 - move connection methods to BTdevice (get more object oriented)
-  - initWithAddress:(bd_addr_t *)addr
+  - initWithAddress:(bd_addr_t)addr
   - setters private
 - implement l2cap code
 - implement rfcomm code

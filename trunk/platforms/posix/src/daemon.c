@@ -811,13 +811,13 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case RFCOMM_CREATE_CHANNEL:
             bt_flip_addr(addr, &packet[3]);
             rfcomm_channel = packet[9];
-            rfcomm_create_channel_internal( connection, &addr, rfcomm_channel );
+            rfcomm_create_channel_internal( connection, addr, rfcomm_channel );
             break;
         case RFCOMM_CREATE_CHANNEL_WITH_CREDITS:
             bt_flip_addr(addr, &packet[3]);
             rfcomm_channel = packet[9];
             rfcomm_credits = packet[10];
-            rfcomm_create_channel_with_initial_credits_internal( connection, &addr, rfcomm_channel, rfcomm_credits );
+            rfcomm_create_channel_with_initial_credits_internal( connection, addr, rfcomm_channel, rfcomm_credits );
             break;
         case RFCOMM_DISCONNECT:
             cid = READ_BT_16(packet, 3);
@@ -923,7 +923,7 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
         case GAP_LE_CONNECT:
             bt_flip_addr(addr, &packet[4]);
             addr_type = packet[3];
-            le_central_connect(&addr, addr_type);
+            le_central_connect(addr, addr_type);
             break;
         case GAP_LE_CONNECT_CANCEL:
             le_central_connect_cancel();

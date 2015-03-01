@@ -165,15 +165,15 @@ static void rfcomm_emit_channel_opened(rfcomm_channel_t *channel, uint8_t status
 	(*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, pos);
 }
 
-static void rfcomm_emit_channel_open_failed_outgoing_memory(void * connection, bd_addr_t *addr, uint8_t server_channel){
+static void rfcomm_emit_channel_open_failed_outgoing_memory(void * connection, bd_addr_t addr, uint8_t server_channel){
     log_info("RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE BTSTACK_MEMORY_ALLOC_FAILED addr %s",
-             bd_addr_to_str(*addr));
+             bd_addr_to_str(addr));
     uint8_t event[16];
     uint8_t pos = 0;
     event[pos++] = RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = BTSTACK_MEMORY_ALLOC_FAILED;
-    bt_flip_addr(&event[pos], *addr); pos += 6;
+    bt_flip_addr(&event[pos], addr); pos += 6;
     bt_store_16(event,  pos, 0);   pos += 2;
 	event[pos++] = server_channel;
 	bt_store_16(event, pos, 0); pos += 2;   // channel ID
@@ -317,7 +317,7 @@ static void rfcomm_multiplexer_initialize(rfcomm_multiplexer_t *multiplexer){
     multiplexer->nsc_command = 0;
 }
 
-static rfcomm_multiplexer_t * rfcomm_multiplexer_create_for_addr(bd_addr_t *addr){
+static rfcomm_multiplexer_t * rfcomm_multiplexer_create_for_addr(bd_addr_t addr){
     
     // alloc structure 
     rfcomm_multiplexer_t * multiplexer = btstack_memory_rfcomm_multiplexer_get();
@@ -333,7 +333,7 @@ static rfcomm_multiplexer_t * rfcomm_multiplexer_create_for_addr(bd_addr_t *addr
     return multiplexer;
 }
 
-static rfcomm_multiplexer_t * rfcomm_multiplexer_for_addr(bd_addr_t *addr){
+static rfcomm_multiplexer_t * rfcomm_multiplexer_for_addr(bd_addr_t addr){
     linked_item_t *it;
     for (it = (linked_item_t *) rfcomm_multiplexers; it ; it = it->next){
         rfcomm_multiplexer_t * multiplexer = ((rfcomm_multiplexer_t *) it);
@@ -896,7 +896,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
 
             if (psm != PSM_RFCOMM) break;
 
-            multiplexer = rfcomm_multiplexer_for_addr(&event_addr);
+            multiplexer = rfcomm_multiplexer_for_addr(event_addr);
             
             if (multiplexer) {
                 log_info("INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_RFCOMM => decline - multiplexer already exists", l2cap_cid);
@@ -905,7 +905,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             }
             
             // create and inititialize new multiplexer instance (incoming)
-            multiplexer = rfcomm_multiplexer_create_for_addr(&event_addr);
+            multiplexer = rfcomm_multiplexer_create_for_addr(event_addr);
             if (!multiplexer){
                 log_info("INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_RFCOMM => decline - no memory left", l2cap_cid);
                 l2cap_decline_connection_internal(l2cap_cid,  0x04);    // no resources available
@@ -932,7 +932,7 @@ static int rfcomm_multiplexer_hci_event_handler(uint8_t *packet, uint16_t size){
             con_handle = READ_BT_16(packet, 9);
             l2cap_cid = READ_BT_16(packet, 13);
             bt_flip_addr(event_addr, &packet[3]);
-            multiplexer = rfcomm_multiplexer_for_addr(&event_addr);
+            multiplexer = rfcomm_multiplexer_for_addr(event_addr);
             if (!multiplexer) {
                 log_error("L2CAP_EVENT_CHANNEL_OPENED but no multiplexer prepared");
                 return 1;
@@ -2184,8 +2184,8 @@ int rfcomm_query_port_configuration(uint16_t rfcomm_cid){
 }
 
 
-void rfcomm_create_channel2(void * connection, bd_addr_t *addr, uint8_t server_channel, uint8_t incoming_flow_control, uint8_t initial_credits){
-    log_info("RFCOMM_CREATE_CHANNEL addr %s channel #%u flow control %u init credits %u",  bd_addr_to_str(*addr), server_channel,
+void rfcomm_create_channel2(void * connection, bd_addr_t addr, uint8_t server_channel, uint8_t incoming_flow_control, uint8_t initial_credits){
+    log_info("RFCOMM_CREATE_CHANNEL addr %s channel #%u flow control %u init credits %u",  bd_addr_to_str(addr), server_channel,
              incoming_flow_control, initial_credits);
     
     // create new multiplexer if necessary
@@ -2215,7 +2215,7 @@ void rfcomm_create_channel2(void * connection, bd_addr_t *addr, uint8_t server_c
         
         channel->state = RFCOMM_CHANNEL_W4_MULTIPLEXER;
         
-        l2cap_create_channel_internal(connection, rfcomm_packet_handler, *addr, PSM_RFCOMM, l2cap_max_mtu());
+        l2cap_create_channel_internal(connection, rfcomm_packet_handler, addr, PSM_RFCOMM, l2cap_max_mtu());
         
         return;
     }
@@ -2226,11 +2226,11 @@ void rfcomm_create_channel2(void * connection, bd_addr_t *addr, uint8_t server_c
     rfcomm_run();
 }
 
-void rfcomm_create_channel_with_initial_credits_internal(void * connection, bd_addr_t *addr, uint8_t server_channel, uint8_t initial_credits){
+void rfcomm_create_channel_with_initial_credits_internal(void * connection, bd_addr_t addr, uint8_t server_channel, uint8_t initial_credits){
     rfcomm_create_channel2(connection, addr, server_channel, 1, initial_credits);
 }
 
-void rfcomm_create_channel_internal(void * connection, bd_addr_t *addr, uint8_t server_channel){
+void rfcomm_create_channel_internal(void * connection, bd_addr_t addr, uint8_t server_channel){
     rfcomm_create_channel2(connection, addr, server_channel, 0,RFCOMM_CREDITS);
 }
 

@@ -56,14 +56,14 @@ typedef struct {
     void (*close)(void);
     
     // link key
-    int  (*get_link_key)(bd_addr_t *bd_addr, link_key_t *link_key, link_key_type_t * type);
-    void (*put_link_key)(bd_addr_t *bd_addr, link_key_t *key, link_key_type_t type);
-    void (*delete_link_key)(bd_addr_t *bd_addr);
+    int  (*get_link_key)(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t * type);
+    void (*put_link_key)(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t   type);
+    void (*delete_link_key)(bd_addr_t bd_addr);
     
     // remote name
-    int  (*get_name)(bd_addr_t *bd_addr, device_name_t *device_name);
-    void (*put_name)(bd_addr_t *bd_addr, device_name_t *device_name);
-    void (*delete_name)(bd_addr_t *bd_addr);
+    int  (*get_name)(bd_addr_t bd_addr, device_name_t *device_name);
+    void (*put_name)(bd_addr_t bd_addr, device_name_t *device_name);
+    void (*delete_name)(bd_addr_t bd_addr);
 
     // persistent rfcomm channel
     uint8_t (*persistent_rfcomm_channel)(char *servicename);

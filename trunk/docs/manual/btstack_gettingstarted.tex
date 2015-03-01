@@ -737,7 +737,7 @@ void init_rfcomm(){
 }
 
 void create_rfcomm_channel(uint8_t packet_type, uint8_t *packet, uint16_t size){
-    rfcomm_create_channel_internal(connection, &addr, rfcomm_channel);
+    rfcomm_create_channel_internal(connection, addr, rfcomm_channel);
 }
 
 void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -1448,7 +1448,7 @@ void handle_hci_event(void * connection, uint8_t packet_type, uint16_t channel, 
             if (cmdline_addr_found){
                 printf("Trying to connect to %s\n", bd_addr_to_str(cmdline_addr));
                 state = TC_W4_CONNECT;
-                le_central_connect(&cmdline_addr, 0);
+                le_central_connect(cmdline_addr, 0);
                 break;
             }
             printf("BTstack activated, start scanning!\n");
@@ -1462,7 +1462,7 @@ void handle_hci_event(void * connection, uint8_t packet_type, uint16_t channel, 
             // stop scanning, and connect to the device
             state = TC_W4_CONNECT;
             le_central_stop_scan();
-            le_central_connect(&report.address,report.address_type);
+            le_central_connect(report.address,report.address_type);
             break;
         case HCI_EVENT_LE_META:
             // wait for connection complete
@@ -1642,14 +1642,14 @@ typedef struct {
     void (*close)();
     
     // link key
-    int  (*get_link_key)(bd_addr_t *bd_addr, link_key_t *link_key);
-    void (*put_link_key)(bd_addr_t *bd_addr, link_key_t *key);
-    void (*delete_link_key)(bd_addr_t *bd_addr);
+    int  (*get_link_key)(bd_addr_t bd_addr, link_key_t link_key);
+    void (*put_link_key)(bd_addr_t bd_addr, link_key_t key);
+    void (*delete_link_key)(bd_addr_t bd_addr);
     
     // remote name
-    int (*get_name)(bd_addr_t *bd_addr, device_name_t *device_name);
-    void(*put_name)(bd_addr_t *bd_addr, device_name_t *device_name);
-    void(*delete_name)(bd_addr_t *bd_addr);
+    int (*get_name)(bd_addr_t bd_addr, device_name_t *device_name);
+    void(*put_name)(bd_addr_t bd_addr, device_name_t *device_name);
+    void(*delete_name)(bd_addr_t bd_addr);
 } remote_device_db_t;
 
 \end{lstlisting}

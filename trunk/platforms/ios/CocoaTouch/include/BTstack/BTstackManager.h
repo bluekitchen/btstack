@@ -119,14 +119,14 @@ typedef enum {
 -(BOOL) isDiscoveryActive;
 
 // Link Key Management
--(void) dropLinkKeyForAddress:(bd_addr_t*) address;
+-(void) dropLinkKeyForAddress:(bd_addr_t) address;
 
 // Connections
--(BTstackError) createL2CAPChannelAtAddress:(bd_addr_t*) address withPSM:(uint16_t)psm authenticated:(BOOL)authentication;
+-(BTstackError) createL2CAPChannelAtAddress:(bd_addr_t) address withPSM:(uint16_t)psm authenticated:(BOOL)authentication;
 -(BTstackError) closeL2CAPChannelWithID:(uint16_t) channelID;
 -(BTstackError) sendL2CAPPacketForChannelID:(uint16_t)channelID;
 
--(BTstackError) createRFCOMMConnectionAtAddress:(bd_addr_t*) address withChannel:(uint16_t)channel authenticated:(BOOL)authentication;
+-(BTstackError) createRFCOMMConnectionAtAddress:(bd_addr_t) address withChannel:(uint16_t)channel authenticated:(BOOL)authentication;
 -(BTstackError) closeRFCOMMConnectionWithID:(uint16_t) connectionID;
 -(BTstackError) sendRFCOMMPacketForChannelID:(uint16_t)connectionID;
 

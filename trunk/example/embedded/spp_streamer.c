@@ -176,7 +176,7 @@ void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
             // connect
             printf("Requested SPP Service found, creating RFCOMM channel\n");
             state = W4_RFCOMM_CHANNEL;
-            rfcomm_create_channel_internal(NULL, &remote, channel_nr); 
+            rfcomm_create_channel_internal(NULL, remote, channel_nr); 
             break;
         default: 
             break;

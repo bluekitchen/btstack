@@ -176,7 +176,7 @@ hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
  *
  * @return connection OR NULL, if not found
  */
-hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t * addr, bd_addr_type_t addr_type){
+hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t  addr, bd_addr_type_t addr_type){
     linked_list_iterator_t it;
     linked_list_iterator_init(&it, &hci_stack->connections);
     while (linked_list_iterator_has_next(&it)){
@@ -230,11 +230,12 @@ inline static void connectionClearAuthenticationFlags(hci_connection_t * conn, h
 /**
  * add authentication flags and reset timer
  * @note: assumes classic connection
+ * @note: bd_addr is passed in as litle endian uint8_t * as it is called from parsing packets
  */
 static void hci_add_connection_flags_for_flipped_bd_addr(uint8_t *bd_addr, hci_authentication_flags_t flags){
     bd_addr_t addr;
-    bt_flip_addr(addr, *(bd_addr_t *) bd_addr);
-    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_CLASSIC);
+    bt_flip_addr(addr, bd_addr);
+    hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
     if (conn) {
         connectionSetAuthenticationFlags(conn, flags);
         hci_connection_timestamp(conn);
@@ -249,7 +250,7 @@ int  hci_authentication_active_for_handle(hci_con_handle_t handle){
     return 0;
 }
 
-void hci_drop_link_key_for_bd_addr(bd_addr_t *addr){
+void hci_drop_link_key_for_bd_addr(bd_addr_t addr){
     if (hci_stack->remote_device_db) {
         hci_stack->remote_device_db->delete_link_key(addr);
     }
@@ -771,7 +772,7 @@ int hci_le_supported(void){
 }
 
 // get addr type and address used in advertisement packets
-void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t * addr){
+void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t  addr){
     *addr_type = hci_stack->adv_addr_type;
     if (hci_stack->adv_addr_type){
         memcpy(addr, hci_stack->adv_address, 6);
@@ -1127,7 +1128,7 @@ static void event_handler(uint8_t *packet, int size){
             link_type = packet[11];
             log_info("Connection_incoming: %s, type %u", bd_addr_to_str(addr), link_type);
             addr_type = link_type == 1 ? BD_ADDR_TYPE_CLASSIC : BD_ADDR_TYPE_SCO;
-            conn = hci_connection_for_bd_addr_and_type(&addr, addr_type);
+            conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
             if (!conn) {
                 conn = create_connection_for_bd_addr_and_type(addr, addr_type);
             }
@@ -1146,7 +1147,7 @@ static void event_handler(uint8_t *packet, int size){
             bt_flip_addr(addr, &packet[5]);
             log_info("Connection_complete (status=%u) %s", packet[2], bd_addr_to_str(addr));
             addr_type = BD_ADDR_TYPE_CLASSIC;
-            conn = hci_connection_for_bd_addr_and_type(&addr, addr_type);
+            conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
             if (conn) {
                 if (!packet[2]){
                     conn->state = OPEN;
@@ -1178,7 +1179,7 @@ static void event_handler(uint8_t *packet, int size){
 
                     // if authentication error, also delete link key
                     if (packet[2] == 0x05) {
-                        hci_drop_link_key_for_bd_addr(&addr);
+                        hci_drop_link_key_for_bd_addr(addr);
                     }
                 }
             }
@@ -1191,7 +1192,7 @@ static void event_handler(uint8_t *packet, int size){
                 // connection failed
                 break;
             }
-            conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_SCO);
+            conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO);
             if (!conn) {
                 conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_SCO);
             }
@@ -1231,7 +1232,7 @@ static void event_handler(uint8_t *packet, int size){
             
         case HCI_EVENT_LINK_KEY_NOTIFICATION: {
             bt_flip_addr(addr, &packet[2]);
-            conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_CLASSIC);
+            conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
             if (!conn) break;
             conn->authentication_flags |= RECV_LINK_KEY_NOTIFICATION;
             link_key_type_t link_key_type = (link_key_type_t)packet[24];
@@ -1240,7 +1241,7 @@ static void event_handler(uint8_t *packet, int size){
                 conn->link_key_type = link_key_type;
             }
             if (!hci_stack->remote_device_db) break;
-            hci_stack->remote_device_db->put_link_key(&addr, (link_key_t *) &packet[8], conn->link_key_type);
+            hci_stack->remote_device_db->put_link_key(addr, &packet[8], conn->link_key_type);
             // still forward event to allow dismiss of pairing dialog
             break;
         }
@@ -1256,7 +1257,7 @@ static void event_handler(uint8_t *packet, int size){
             // PIN CODE REQUEST means the link key request didn't succee -> delete stored link key
             if (!hci_stack->remote_device_db) break;
             bt_flip_addr(addr, &packet[2]);
-            hci_stack->remote_device_db->delete_link_key(&addr);
+            hci_stack->remote_device_db->delete_link_key(addr);
             break;
             
         case HCI_EVENT_IO_CAPABILITY_REQUEST:
@@ -1326,7 +1327,7 @@ static void event_handler(uint8_t *packet, int size){
             }
             memset(&device_name, 0, sizeof(device_name_t));
             strncpy((char*) device_name, (char*) &packet[9], 248);
-            hci_stack->remote_device_db->put_name(&addr, &device_name);
+            hci_stack->remote_device_db->put_name(addr, &device_name);
             break;
             
         case HCI_EVENT_INQUIRY_RESULT:
@@ -1339,8 +1340,8 @@ static void event_handler(uint8_t *packet, int size){
             for (i=0; i<packet[2];i++){
                 bt_flip_addr(addr, &packet[offset]);
                 offset += 14; // 6 + 1 + 1 + 1 + 3 + 2; 
-                if (hci_stack->remote_device_db->get_name(&addr, &device_name)){
-                    hci_emit_remote_name_cached(&addr, &device_name);
+                if (hci_stack->remote_device_db->get_name(addr, &device_name)){
+                    hci_emit_remote_name_cached(addr, &device_name);
                 }
             }
             return;
@@ -1392,7 +1393,7 @@ static void event_handler(uint8_t *packet, int size){
                     addr_type = (bd_addr_type_t)packet[7];
                     log_info("LE Connection_complete (status=%u) type %u, %s", packet[3], addr_type, bd_addr_to_str(addr));
                     // LE connections are auto-accepted, so just create a connection if there isn't one already
-                    conn = hci_connection_for_bd_addr_and_type(&addr, addr_type);
+                    conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
                     if (packet[3]){
                         if (conn){
                             // outgoing connection failed, remove entry
@@ -1401,7 +1402,7 @@ static void event_handler(uint8_t *packet, int size){
                         }
                         // if authentication error, also delete link key
                         if (packet[3] == 0x05) {
-                            hci_drop_link_key_for_bd_addr(&addr);
+                            hci_drop_link_key_for_bd_addr(addr);
                         }
                         break;
                     }
@@ -1882,8 +1883,8 @@ void hci_connectable_control(uint8_t enable){
     hci_update_scan_enable();
 }
 
-bd_addr_t * hci_local_bd_addr(void){
-    return &hci_stack->local_bd_addr;
+uint8_t * hci_local_bd_addr(void){
+    return hci_stack->local_bd_addr;
 }
 
 void hci_run(){
@@ -2018,7 +2019,7 @@ void hci_run(){
             link_key_t link_key;
             link_key_type_t link_key_type;
             if ( hci_stack->remote_device_db
-              && hci_stack->remote_device_db->get_link_key( &connection->address, &link_key, &link_key_type)
+              && hci_stack->remote_device_db->get_link_key(connection->address, link_key, &link_key_type)
               && gap_security_level_for_link_key_type(link_key_type) >= connection->requested_security_level){
                connection->link_key_type = link_key_type;
                hci_send_cmd(&hci_link_key_request_reply, connection->address, &link_key);
@@ -2214,7 +2215,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
         bt_flip_addr(addr, &packet[3]);
         log_info("Create_connection to %s", bd_addr_to_str(addr));
 
-        conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_CLASSIC);
+        conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
         if (!conn){
             conn = create_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
             if (!conn){
@@ -2250,14 +2251,14 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     if (IS_COMMAND(packet, hci_delete_stored_link_key)){
         if (hci_stack->remote_device_db){
             bt_flip_addr(addr, &packet[3]);
-            hci_stack->remote_device_db->delete_link_key(&addr);
+            hci_stack->remote_device_db->delete_link_key(addr);
         }
     }
 
     if (IS_COMMAND(packet, hci_pin_code_request_negative_reply)
     ||  IS_COMMAND(packet, hci_pin_code_request_reply)){
         bt_flip_addr(addr, &packet[3]);
-        conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_CLASSIC);
+        conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
         if (conn){
             connectionClearAuthenticationFlags(conn, LEGACY_PAIRING_ACTIVE);
         }
@@ -2268,7 +2269,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     ||  IS_COMMAND(packet, hci_user_passkey_request_negative_reply)
     ||  IS_COMMAND(packet, hci_user_passkey_request_reply)) {
         bt_flip_addr(addr, &packet[3]);
-        conn = hci_connection_for_bd_addr_and_type(&addr, BD_ADDR_TYPE_CLASSIC);
+        conn = hci_connection_for_bd_addr_and_type(addr, BD_ADDR_TYPE_CLASSIC);
         if (conn){
             connectionClearAuthenticationFlags(conn, SSP_PAIRING_ACTIVE);
         }
@@ -2379,7 +2380,7 @@ void hci_emit_connection_complete(hci_connection_t *conn, uint8_t status){
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-void hci_emit_le_connection_complete(uint8_t address_type, bd_addr_t * address, uint16_t conn_handle, uint8_t status){
+void hci_emit_le_connection_complete(uint8_t address_type, bd_addr_t address, uint16_t conn_handle, uint8_t status){
     uint8_t event[21];
     event[0] = HCI_EVENT_LE_META;
     event[1] = sizeof(event) - 2;
@@ -2388,7 +2389,7 @@ void hci_emit_le_connection_complete(uint8_t address_type, bd_addr_t * address, 
     bt_store_16(event, 4, conn_handle);
     event[6] = 0; // TODO: role
     event[7] = address_type;
-    bt_flip_addr(&event[8], *address);
+    bt_flip_addr(&event[8], address);
     bt_store_16(event, 14, 0); // interval
     bt_store_16(event, 16, 0); // latency
     bt_store_16(event, 18, 0); // supervision timeout
@@ -2462,16 +2463,16 @@ void hci_emit_system_bluetooth_enabled(uint8_t enabled){
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-void hci_emit_remote_name_cached(bd_addr_t *addr, device_name_t *name){
+void hci_emit_remote_name_cached(bd_addr_t addr, device_name_t *name){
     uint8_t event[2+1+6+248+1]; // +1 for \0 in log_info
     event[0] = BTSTACK_EVENT_REMOTE_NAME_CACHED;
     event[1] = sizeof(event) - 2 - 1;
     event[2] = 0;   // just to be compatible with HCI_EVENT_REMOTE_NAME_REQUEST_COMPLETE
-    bt_flip_addr(&event[3], *addr);
+    bt_flip_addr(&event[3], addr);
     memcpy(&event[9], name, 248);
     
     event[9+248] = 0;   // assert \0 for log_info
-    log_info("BTSTACK_EVENT_REMOTE_NAME_CACHED %s = '%s'", bd_addr_to_str(*addr), &event[9]);
+    log_info("BTSTACK_EVENT_REMOTE_NAME_CACHED %s = '%s'", bd_addr_to_str(addr), &event[9]);
 
     hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event)-1);
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event)-1);
@@ -2507,7 +2508,7 @@ void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status){
     event[pos++] = GAP_DEDICATED_BONDING_COMPLETED;
     event[pos++] = sizeof(event) - 2;
     event[pos++] = status;
-    bt_flip_addr( * (bd_addr_t *) &event[pos], address);
+    bt_flip_addr( &event[pos], address);
     pos += 6;
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
@@ -2626,7 +2627,7 @@ int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required){
     }
 
     // delete linkn key
-    hci_drop_link_key_for_bd_addr( (bd_addr_t *) &device);
+    hci_drop_link_key_for_bd_addr(device);
 
     // configure LEVEL_2/3, dedicated bonding
     connection->state = SEND_CREATE_CONNECTION;    
@@ -2670,11 +2671,11 @@ void le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, u
     hci_run();
 }
 
-le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_type){
+le_command_status_t le_central_connect(bd_addr_t  addr, bd_addr_type_t addr_type){
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
     if (!conn){
         log_info("le_central_connect: no connection exists yet, creating context");
-        conn = create_connection_for_bd_addr_and_type(*addr, addr_type);
+        conn = create_connection_for_bd_addr_and_type(addr, addr_type);
         if (!conn){
             // notify client that alloc failed
             hci_emit_le_connection_complete(addr_type, addr, 0, BTSTACK_MEMORY_ALLOC_FAILED);
@@ -2690,13 +2691,13 @@ le_command_status_t le_central_connect(bd_addr_t * addr, bd_addr_type_t addr_typ
     if (!hci_is_le_connection(conn) ||
         conn->state == SEND_CREATE_CONNECTION ||
         conn->state == SENT_CREATE_CONNECTION) {
-        hci_emit_le_connection_complete(conn->address_type, &conn->address, 0, ERROR_CODE_COMMAND_DISALLOWED);
+        hci_emit_le_connection_complete(conn->address_type, conn->address, 0, ERROR_CODE_COMMAND_DISALLOWED);
         log_error("le_central_connect: classic connection or connect is already being created");
         return BLE_PERIPHERAL_IN_WRONG_STATE;
     }
     
     log_info("le_central_connect: context exists with state %u", conn->state);
-    hci_emit_le_connection_complete(conn->address_type, &conn->address, conn->con_handle, 0);
+    hci_emit_le_connection_complete(conn->address_type, conn->address, conn->con_handle, 0);
     hci_run();
     return BLE_PERIPHERAL_OK;
 }
@@ -2723,7 +2724,7 @@ le_command_status_t le_central_connect_cancel(){
     switch (conn->state){
         case SEND_CREATE_CONNECTION:
             // skip sending create connection and emit event instead
-            hci_emit_le_connection_complete(conn->address_type, &conn->address, 0, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER);
+            hci_emit_le_connection_complete(conn->address_type, conn->address, 0, ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER);
             linked_list_remove(&hci_stack->connections, (linked_item_t *) conn);
             btstack_memory_hci_connection_free( conn );
             break;            

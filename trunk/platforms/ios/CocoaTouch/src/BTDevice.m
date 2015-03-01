@@ -54,25 +54,24 @@
 	return self;
 }
 
-- (void) setAddress:(bd_addr_t*)newAddr{
-	BD_ADDR_COPY( &_address, newAddr);
+- (void) setAddress:(bd_addr_t)newAddr{
+	BD_ADDR_COPY(_address, newAddr);
 }
 
 - (BOOL) setAddressFromString:(NSString *) addressString{
-	return [BTDevice address:&_address fromString:addressString];
+	return [BTDevice address:_address fromString:addressString];
 }
 
-- (bd_addr_t*) address{
-	return &_address;
+- (uint8_t*) address{
+	return _address;
 }
 
-+ (NSString *) stringForAddress:(bd_addr_t*) address {
-	uint8_t *addr = (uint8_t*) *address;
++ (NSString *) stringForAddress:(bd_addr_t) addr {
 	return [NSString stringWithFormat:@"%02x:%02x:%02x:%02x:%02x:%02x", addr[0], addr[1], addr[2],
 			addr[3], addr[4], addr[5]];
 }
 
-+ (BOOL) address:(bd_addr_t *)address fromString:(NSString *) addressString{
++ (BOOL) address:(bd_addr_t)address fromString:(NSString *) addressString{
 	// support both : and - or NOTHING as separator
 	addressString = [addressString stringByReplacingOccurrencesOfString:@":" withString:@""];
 	addressString = [addressString stringByReplacingOccurrencesOfString:@"-" withString:@""];

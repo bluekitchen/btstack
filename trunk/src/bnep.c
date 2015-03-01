@@ -700,7 +700,7 @@ static uint16_t bnep_max_frame_size_for_l2cap_mtu(uint16_t l2cap_mtu){
     return max_frame_size;
 }
 
-static bnep_channel_t * bnep_channel_create_for_addr(bd_addr_t *addr)
+static bnep_channel_t * bnep_channel_create_for_addr(bd_addr_t addr)
 {
     /* Allocate new channel structure */
     bnep_channel_t *channel = btstack_memory_bnep_channel_get();
@@ -726,7 +726,7 @@ static bnep_channel_t * bnep_channel_create_for_addr(bd_addr_t *addr)
     return channel;
 }
 
-static bnep_channel_t* bnep_channel_for_addr(bd_addr_t *addr)
+static bnep_channel_t* bnep_channel_for_addr(bd_addr_t addr)
 {
     linked_item_t *it;
     for (it = (linked_item_t *) bnep_channels; it ; it = it->next){
@@ -1190,7 +1190,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
 
             if (psm != PSM_BNEP) break;
 
-            channel = bnep_channel_for_addr(&event_addr);
+            channel = bnep_channel_for_addr(event_addr);
 
             if (channel) {                
                 log_error("INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_BNEP => decline - channel already exists", l2cap_cid);
@@ -1199,7 +1199,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             }
             
             /* Create a new BNEP channel instance (incoming) */
-            channel = bnep_channel_create_for_addr(&event_addr);
+            channel = bnep_channel_create_for_addr(event_addr);
 
             if (!channel) {
                 log_error("INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_BNEP => decline - no memory left", l2cap_cid);
@@ -1236,7 +1236,7 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             con_handle = READ_BT_16(packet, 9);
             l2cap_cid  = READ_BT_16(packet, 13);
             bt_flip_addr(event_addr, &packet[3]);
-            channel = bnep_channel_for_addr(&event_addr);
+            channel = bnep_channel_for_addr(event_addr);
             if (!channel) {
                 log_error("L2CAP_EVENT_CHANNEL_OPENED but no BNEP channel prepared");
                 return 1;
@@ -1554,10 +1554,10 @@ void bnep_register_packet_handler(void (*handler)(void * connection, uint8_t pac
 	app_packet_handler = handler;
 }
 
-int bnep_connect(void * connection, bd_addr_t *addr, uint16_t l2cap_psm, uint16_t uuid_dest)
+int bnep_connect(void * connection, bd_addr_t addr, uint16_t l2cap_psm, uint16_t uuid_dest)
 {
     bnep_channel_t *channel;
-    log_info("BNEP_CONNECT addr %s", bd_addr_to_str(*addr));
+    log_info("BNEP_CONNECT addr %s", bd_addr_to_str(addr));
 
     channel = bnep_channel_create_for_addr(addr);
     if (channel == NULL) {
@@ -1567,12 +1567,12 @@ int bnep_connect(void * connection, bd_addr_t *addr, uint16_t l2cap_psm, uint16_
     channel->uuid_source = SDP_PANU;
     channel->uuid_dest   = uuid_dest;
 
-    l2cap_create_channel_internal(connection, bnep_packet_handler, *addr, l2cap_psm, l2cap_max_mtu());
+    l2cap_create_channel_internal(connection, bnep_packet_handler, addr, l2cap_psm, l2cap_max_mtu());
     
     return 0;
 }
 
-void bnep_disconnect(bd_addr_t *addr)
+void bnep_disconnect(bd_addr_t addr)
 {
     bnep_channel_t *channel;
     log_info("BNEP_DISCONNECT");

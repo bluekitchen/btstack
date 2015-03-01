@@ -62,7 +62,7 @@ static uint8_t remoteNameIndex;
 
 @interface BTInquiryViewController (private) 
 - (void) handlePacket:(uint8_t) packet_type channel:(uint16_t) channel packet:(uint8_t*) packet size:(uint16_t) size;
-- (BTDevice *) getDeviceForAddress:(bd_addr_t *)addr;
+- (BTDevice *) getDeviceForAddress:(bd_addr_t)addr;
 - (void) getNextRemoteName;
 - (void) startInquiry;
 @end
@@ -164,12 +164,12 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 						bt_flip_addr(addr, &packet[offset]);
 						offset += 6;
 
-						if ([inqView getDeviceForAddress:&addr]) {
-							// NSLog(@"Device %@ already in list", [BTDevice stringForAddress:&addr]);
+						if ([inqView getDeviceForAddress:addr]) {
+							// NSLog(@"Device %@ already in list", [BTDevice stringForAddress:addr]);
 							continue;
 						}
 						BTDevice *dev = [[BTDevice alloc] init];
-						[dev setAddress:&addr];
+						[dev setAddress:addr];
 						[dev setPageScanRepetitionMode:packet[offset]];
 						offset += 1;
                         switch (packet[0]) {
@@ -334,7 +334,7 @@ static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 	(*clientHandler)(packet_type, channel, packet, size);
 }
 
-- (BTDevice *) getDeviceForAddress:(bd_addr_t *)addr {
+- (BTDevice *) getDeviceForAddress:(bd_addr_t)addr {
 	uint8_t j;
 	for (j=0; j<[devices count]; j++){
 		BTDevice *dev = [devices objectAtIndex:j];

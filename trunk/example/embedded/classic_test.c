@@ -514,7 +514,7 @@ int  stdin_process(struct data_source *ds){
         fflush(stdout);
         if (buffer == '\n'){
             printf("\nSending Pin '%s'\n", ui_pin);
-            hci_send_cmd(&hci_pin_code_request_reply, &remote, ui_pin_offset, ui_pin);
+            hci_send_cmd(&hci_pin_code_request_reply, remote, ui_pin_offset, ui_pin);
         } else {
             ui_pin[ui_pin_offset++] = buffer;
         }
@@ -656,7 +656,7 @@ int  stdin_process(struct data_source *ds){
 
         case 'l':
             printf("Creating RFCOMM Channel to %s #%u\n", bd_addr_to_str(remote_rfcomm), rfcomm_channel_nr);
-             rfcomm_create_channel_internal(NULL, &remote_rfcomm, rfcomm_channel_nr);
+             rfcomm_create_channel_internal(NULL, remote_rfcomm, rfcomm_channel_nr);
             break;
         case 'n':
             printf("Send RFCOMM Data\n");   // mtu < 60 
@@ -692,7 +692,7 @@ int  stdin_process(struct data_source *ds){
 
         case '=':
             printf("Deleting Link Key for %s\n", bd_addr_to_str(remote));
-            hci_drop_link_key_for_bd_addr(&remote);
+            hci_drop_link_key_for_bd_addr(remote);
             break;
 
         case 'U':

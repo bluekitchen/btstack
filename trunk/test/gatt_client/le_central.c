@@ -79,7 +79,7 @@ static void handle_le_client_event(le_event_t * event){
 
 TEST_GROUP(LECentral){
 	void connect(){
-		le_central_connect(&test_device_addr, BD_ADDR_TYPE_LE_PUBLIC);
+		le_central_connect(test_device_addr, BD_ADDR_TYPE_LE_PUBLIC);
 		mock_simulate_connected();
 		CHECK(connected);
 	}

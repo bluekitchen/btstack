@@ -21,6 +21,6 @@ void hci_discoverable_control(uint8_t enable);
 int hci_send_cmd(const hci_cmd_t *cmd, ...);
 
 // Deletes link key for remote device with baseband address.
-void hci_drop_link_key_for_bd_addr(bd_addr_t *addr);
+void hci_drop_link_key_for_bd_addr(bd_addr_t addr);
 \end{lstlisting}
 \pagebreak
