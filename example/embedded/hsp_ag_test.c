@@ -69,11 +69,9 @@
 static uint8_t    hsp_service_buffer[150];
 static uint8_t    rfcomm_channel_nr = 1;
 
-static uint8_t ag_speaker_gain = 0;
-static uint8_t ag_microphone_gain = 0;
-
 static char hsp_ag_service_name[] = "Audio Gateway Test";
 static bd_addr_t bt_speaker_addr = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
+static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 
 static char hs_cmd_buffer[100];
 // prototypes
@@ -83,26 +81,20 @@ static void show_usage();
 // Testig User Interface 
 static data_source_t stdin_source;
 
-static uint8_t next_ag_microphone_gain(){
-    ag_microphone_gain++;
-    if (ag_microphone_gain > 15) ag_microphone_gain = 0;
-    return ag_microphone_gain;
-}
-
-static uint8_t next_ag_speaker_gain(){
-    ag_speaker_gain++;
-    if (ag_speaker_gain > 15) ag_speaker_gain = 0;
-    return ag_speaker_gain;
-}
-
 static void show_usage(){
 
     printf("\n--- Bluetooth HSP AudioGateway Test Console ---\n");
     printf("---\n");
+    printf("p - establish audio connection to PTS module\n");
     printf("e - establish audio connection to Bluetooth Speaker\n");
-    printf("r - release audio connection from Bluetooth Speaker\n");
-    printf("m - set microphone gain\n");
-    printf("s - set speaker gain\n");
+    printf("d - release audio connection from Bluetooth Speaker\n");
+    printf("m - set microphone gain 8\n");
+    printf("M - set microphone gain 15\n");
+    printf("o - set speaker gain 0\n");
+    printf("s - set speaker gain 8\n");
+    printf("S - set speaker gain 15\n");
+    printf("r - start ringing\n");
+    printf("t - stop ringing\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -113,21 +105,45 @@ static int stdin_process(struct data_source *ds){
     read(ds->fd, &buffer, 1);
 
     switch (buffer){
+        case 'p':
+            printf("Establishing audio connection to PTS module %s...\n", bd_addr_to_str(pts_addr));
+            hsp_ag_connect(pts_addr);
+            break;
         case 'e':
             printf("Establishing audio connection to Bluetooth Speaker %s...\n", bd_addr_to_str(bt_speaker_addr));
             hsp_ag_connect(bt_speaker_addr);
             break;
-        case 'r':
+        case 'd':
             printf("Releasing audio connection from Bluetooth Speaker %s...\n", bd_addr_to_str(bt_speaker_addr));
             hsp_ag_disconnect();
             break;
         case 'm':
-            printf("Setting microphone gain\n");
-            hsp_ag_set_microphone_gain(next_ag_microphone_gain());
+            printf("Setting microphone gain 8\n");
+            hsp_ag_set_microphone_gain(8);
+            break;
+        case 'M':
+            printf("Setting microphone gain 15\n");
+            hsp_ag_set_microphone_gain(15);
+            break;
+        case 'o':
+            printf("Setting speaker gain 0\n");
+            hsp_ag_set_speaker_gain(0);
             break;
         case 's':
-            printf("Setting speaker gain\n");
-            hsp_ag_set_speaker_gain(next_ag_speaker_gain());
+            printf("Setting speaker gain 8\n");
+            hsp_ag_set_speaker_gain(8);
+            break;
+        case 'S':
+            printf("Setting speaker gain 15\n");
+            hsp_ag_set_speaker_gain(15);
+            break;
+        case 'r':
+            printf("Start ringing\n");
+            hsp_ag_start_ringing();
+            break;
+        case 't':
+            printf("Stop ringing\n");
+            hsp_ag_stop_ringing();
             break;
         default:
             show_usage();
@@ -183,7 +199,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
             memset(hs_cmd_buffer, 0, sizeof(hs_cmd_buffer));
             int size = event_size <= sizeof(hs_cmd_buffer)? event_size : sizeof(hs_cmd_buffer); 
             memcpy(hs_cmd_buffer, &event[3], size - 1);
-            printf("Received command %s\n", hs_cmd_buffer);
+            printf("Received command: \"%s\"\n", hs_cmd_buffer);
             break;
         }
         default:
@@ -196,12 +212,12 @@ int btstack_main(int argc, const char * argv[]){
     memset((uint8_t *)hsp_service_buffer, 0, sizeof(hsp_service_buffer));
     hsp_ag_create_service((uint8_t *)hsp_service_buffer, rfcomm_channel_nr, hsp_ag_service_name);
     
-    sdp_init();
-    sdp_register_service_internal(NULL, (uint8_t *)hsp_service_buffer);
-
     hsp_ag_init(rfcomm_channel_nr);
     hsp_ag_register_packet_handler(packet_handler);
     // turn on!
+    sdp_init();
+    sdp_register_service_internal(NULL, (uint8_t *)hsp_service_buffer);
+
     hci_power_control(HCI_POWER_ON);
 
     setup_cli();

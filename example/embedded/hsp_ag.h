@@ -68,6 +68,9 @@ void hsp_ag_set_microphone_gain(uint8_t gain);
 // +VGS=[0..15]
 void hsp_ag_set_speaker_gain(uint8_t gain);
 
+void hsp_ag_start_ringing();
+void hsp_ag_stop_ringing();
+
 #if defined __cplusplus
 }
 #endif
