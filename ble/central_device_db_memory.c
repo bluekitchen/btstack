@@ -43,45 +43,75 @@
 
 // Central Device db implemenation using static memory
 typedef struct central_device_memory_db {
+
+    // Identification
     int addr_type;
     bd_addr_t addr;
-    sm_key_t csrk;
     sm_key_t irk;
-    uint32_t signing_counter;
+
+    // Stored pairing information allows to re-establish an enncrypted connection
+    // with a peripheral that doesn't have any persistent memory
+    sm_key_t ltk;
+    uint16_t ediv;
+    uint8_t  rand[8];
+
+    // Signed Writes by remote
+    sm_key_t csrk;
+    uint32_t remote_counter;
+
+    // Signed Writes to remote (local CSRK is fixed)
+    uint32_t local_counter;
+
 } central_device_memory_db_t;
 
 #define CENTRAL_DEVICE_MEMORY_SIZE 4
+#define INVALID_ENTRY_ADDR_TYPE 0xff
+
 static central_device_memory_db_t central_devices[CENTRAL_DEVICE_MEMORY_SIZE];
-static int central_devices_count;
 
 void central_device_db_init(){
-    central_devices_count = 0;
+    int i;
+    for (i=0;i<CENTRAL_DEVICE_MEMORY_SIZE;i++){
+        central_device_db_remove(i);
+    }
 }
 
 // @returns number of device in db
 int central_device_db_count(void){
-    return central_devices_count;
+    int i;
+    int counter = 0;
+    for (i=0;i<CENTRAL_DEVICE_MEMORY_SIZE;i++){
+        if (central_devices[i].addr_type != INVALID_ENTRY_ADDR_TYPE) counter++;
+    }
+    return counter;
 }
 
 // free device - TODO not implemented
 void central_device_db_remove(int index){
+    central_devices[index].addr_type = INVALID_ENTRY_ADDR_TYPE;
 }
 
 int central_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk, sm_key_t csrk){
-    if (central_devices_count >= CENTRAL_DEVICE_MEMORY_SIZE) return -1;
+    int i;
+    int index = -1;
+    for (i=0;i<CENTRAL_DEVICE_MEMORY_SIZE;i++){
+         if (central_devices[i].addr_type == INVALID_ENTRY_ADDR_TYPE){
+            index = i;
+            break;
+         }
+    }
+
+    if (index < 0) return -1;
 
     log_info("Central Device DB adding type %u - %s", addr_type, bd_addr_to_str(addr));
     log_key("irk", irk);
     log_key("csrk", csrk);
 
-    int index = central_devices_count;
-    central_devices_count++;
-
     central_devices[index].addr_type = addr_type;
     memcpy(central_devices[index].addr, addr, 6);
     memcpy(central_devices[index].csrk, csrk, 16);
     memcpy(central_devices[index].irk, irk, 16);
-    central_devices[index].signing_counter = 0; 
+    central_devices[index].remote_counter = 0; 
 
     return index;
 }
@@ -102,18 +132,19 @@ void central_device_db_csrk(int index, sm_key_t csrk){
 
 // query last used/seen signing counter
 uint32_t central_device_db_counter_get(int index){
-    return central_devices[index].signing_counter;
+    return central_devices[index].remote_counter;
 }
 
 // update signing counter
 void central_device_db_counter_set(int index, uint32_t counter){
-    central_devices[index].signing_counter = counter;
+    central_devices[index].remote_counter = counter;
 }
 
 void central_device_db_dump(){
-    log_info("Central Device DB dump, devices: %u", central_devices_count);
+    log_info("Central Device DB dump, devices: %u", central_device_db_count);
     int i;
-    for (i=0;i<central_devices_count;i++){
+    for (i=0;i<CENTRAL_DEVICE_MEMORY_SIZE;i++){
+        if (central_devices[i].addr_type == INVALID_ENTRY_ADDR_TYPE) continue;
         log_info("%u: %u %s", i, central_devices[i].addr_type, bd_addr_to_str(central_devices[i].addr));
         log_key("irk", central_devices[i].irk);
         log_key("csrk", central_devices[i].csrk);
