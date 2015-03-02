@@ -456,6 +456,7 @@ typedef struct sm_connection {
     authorization_state_t    sm_connection_authorization_state;
     uint16_t                 sm_local_ediv;
     uint8_t                  sm_local_rand[8];
+    int                      sm_le_db_index;
 } sm_connection_t;
 
 typedef struct {
