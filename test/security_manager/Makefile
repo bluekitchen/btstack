@@ -20,7 +20,7 @@ COMMON = \
     ${BTSTACK_ROOT}/src/hci_cmds.c					\
     ${BTSTACK_ROOT}/src/hci_dump.c					\
     ${BTSTACK_ROOT}/ble/sm.c     					\
-    ${BTSTACK_ROOT}/ble/central_device_db_memory.c  \
+    ${BTSTACK_ROOT}/ble/le_device_db_memory.c       \
     rijndael.c 										\
     mock.c
 	

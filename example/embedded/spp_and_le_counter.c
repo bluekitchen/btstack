@@ -65,7 +65,7 @@
 
 #include "att.h"
 #include "att_server.h"
-#include "central_device_db.h"
+#include "le_device_db.h"
 #include "gap_le.h"
 #include "sm.h"
 

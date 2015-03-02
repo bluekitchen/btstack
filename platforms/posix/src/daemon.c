@@ -78,7 +78,7 @@
 #include "gatt_client.h"
 #include "att_server.h"
 #include "att.h"
-#include "central_device_db.h"
+#include "le_device_db.h"
 #include "sm.h"
 #endif
 
@@ -1814,7 +1814,7 @@ int main (int argc,  char * const * argv){
     // sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION); 
 
     // GATT Server - empty attribute database
-    central_device_db_init();
+    le_device_db_init();
     att_server_init(NULL, NULL, NULL);    
 
 #endif

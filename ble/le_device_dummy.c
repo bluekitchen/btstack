@@ -34,7 +34,7 @@
  * contact@bluekitchen-gmbh.com
  *
  */
-#include  "central_device_db.h"
+#include  "le_device_db.h"
 
  // Central Device db interface
 void le_device_db_init(){}

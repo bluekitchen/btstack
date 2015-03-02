@@ -52,14 +52,6 @@
 #include "gatt_client.h"
 #include "sm.h"
 
-// #include "btstack_memory.h"
-// #include "hci.h"
-// #include "hci_dump.h"
-// #include "l2cap.h"
-// #include "att_server.h"
-// #include "central_device_db.h"
-
-
 // ancs_client.h Start
 typedef enum ancs_chunk_parser_state {
     W4_ATTRIBUTE_ID,

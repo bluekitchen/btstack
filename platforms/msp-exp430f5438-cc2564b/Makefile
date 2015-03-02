@@ -73,7 +73,7 @@ SDP_CLIENT += \
 BLE = \
 	att.c 					  \
 	att_server.c     		  \
-	central_device_db_memory.c  \
+	le_device_db_memory.c  \
 	sm.c                      \
 	att_dispatch.c            \
 	l2cap_le.c 				  \

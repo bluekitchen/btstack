@@ -7,7 +7,7 @@ COMMON += hci_transport_h2_libusb.c run_loop_posix.c remote_device_db_fs.c
 
 
 include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
-
+# CC = gcc-fsf-4.9
 CFLAGS  += -g -Wall 
 # CFLAGS += -Werror
 
@@ -28,5 +28,7 @@ endif
 ifneq ($(OS),Windows_NT)
 EXAMPLES += ${EXAMPLES_CLI}
 endif
+
+EXAMPLES += sam3u_benchmark
 
 all: ${BTSTACK_ROOT}/include/btstack/version.h ${EXAMPLES}
