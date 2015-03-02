@@ -919,12 +919,12 @@ static void sm_run(void){
 
     // -- Continue with CSRK device lookup by public or resolvable private address
     if (sm_central_device_test >= 0){
-        log_info("Central Device Lookup: device %u/%u", sm_central_device_test, central_device_db_count());
-        while (sm_central_device_test < central_device_db_count()){
+        log_info("Central Device Lookup: device %u/%u", sm_central_device_test, le_device_db_count());
+        while (sm_central_device_test < le_device_db_count()){
             int addr_type;
             bd_addr_t addr;
             sm_key_t irk;
-            central_device_db_info(sm_central_device_test, &addr_type, addr, irk);
+            le_device_db_info(sm_central_device_test, &addr_type, addr, irk);
             log_info("device type %u, addr: %s", addr_type, bd_addr_to_str(addr));
 
             if (sm_central_device_addr_type == addr_type && memcmp(addr, sm_central_device_address, 6) == 0){
@@ -954,7 +954,7 @@ static void sm_run(void){
             return;
         }
 
-        if (sm_central_device_test >= central_device_db_count()){
+        if (sm_central_device_test >= le_device_db_count()){
             log_info("Central Device Lookup: not found");
             sm_central_device_test = -1;
             sm_csrk_connection_source->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
@@ -1581,7 +1581,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_conn->sm_connection_encrypted = 0;
                             sm_conn->sm_connection_authenticated = 0;
                             sm_conn->sm_connection_authorization_state = AUTHORIZATION_UNKNOWN;
-                            sm_conn->sm_central_db_index = -1;
+                            sm_conn->sm_le_db_index = -1;
 
                             // prepare CSRK lookup (does not involve setup)
                             sm_conn->sm_csrk_lookup_state = CSRK_LOOKUP_W4_READY;
@@ -1883,23 +1883,23 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
                 // store, if: it's a public address, or, we got an IRK
                 if (setup->sm_peer_addr_type == 0 || (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION)) {
-                    sm_conn->sm_central_db_index = central_device_db_add(setup->sm_peer_addr_type, setup->sm_peer_address, setup->sm_peer_irk);
+                    sm_conn->sm_le_db_index = le_device_db_add(setup->sm_peer_addr_type, setup->sm_peer_address, setup->sm_peer_irk);
                 } 
 
-                if (sm_conn->sm_central_db_index >= 0){
-                    central_device_db_local_counter_set(sm_conn->sm_central_db_index, 0);
+                if (sm_conn->sm_le_db_index >= 0){
+                    le_device_db_local_counter_set(sm_conn->sm_le_db_index, 0);
                     
                     // store CSRK
                     if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
-                        central_device_db_csrk_set(sm_conn->sm_central_db_index, setup->sm_peer_csrk);
-                        central_device_db_remote_counter_set(sm_conn->sm_central_db_index, 0);
+                        le_device_db_csrk_set(sm_conn->sm_le_db_index, setup->sm_peer_csrk);
+                        le_device_db_remote_counter_set(sm_conn->sm_le_db_index, 0);
                     }
 
                     // store encryption information as Central
                     if (sm_conn->sm_role == 0
                         && setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION   
                         && setup->sm_key_distribution_received_set &  SM_KEYDIST_FLAG_MASTER_IDENTIFICATION){
-                        central_device_db_encryption_set(sm_conn->sm_central_db_index, setup->sm_peer_ediv, setup->sm_peer_rand, setup->sm_peer_ltk);
+                        le_device_db_encryption_set(sm_conn->sm_le_db_index, setup->sm_peer_ediv, setup->sm_peer_rand, setup->sm_peer_ltk);
                     }                
                 }
 
