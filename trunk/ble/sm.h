@@ -113,8 +113,8 @@ typedef struct sm_event {
     uint8_t   type;   // see <btstack/hci_cmds.h> SM_...
     uint8_t   addr_type;
     bd_addr_t address;
-    uint32_t  passkey;  // only used for SM_PASSKEY_DISPLAY_NUMBER 
-    uint16_t  central_device_db_index; // only used for SM_IDENTITY_RESOLVING_..
+    uint32_t  passkey;              // only used for SM_PASSKEY_DISPLAY_NUMBER 
+    uint16_t  le_device_db_index;   // only used for SM_IDENTITY_RESOLVING_..
     uint8_t   authorization_result; // only use for SM_AUTHORIZATION_RESULT
 } sm_event_t;
 
