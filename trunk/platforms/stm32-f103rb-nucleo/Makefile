@@ -43,7 +43,7 @@ COMMON = \
 BLE = \
 	att.c 					  \
 	att_server.c     		  \
-	central_device_db_memory.c  \
+	le_device_db_memory.c  \
 	sm.c                      \
 	att_dispatch.c            \
 #	gatt_client.c             \

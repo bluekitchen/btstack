@@ -63,7 +63,7 @@
 #include "att.h"
 #include "att_server.h"
 #include "gap_le.h"
-#include "central_device_db.h"
+#include "le_device_db.h"
 
 #define HEARTBEAT_PERIOD_MS 1000
 

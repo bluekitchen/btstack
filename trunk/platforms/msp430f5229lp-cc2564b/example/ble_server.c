@@ -70,7 +70,7 @@
 #include "att.h"
 #include "att_server.h"
 #include "gap_le.h"
-#include "central_device_db.h"
+#include "le_device_db.h"
 
 #define FONT_HEIGHT		12                    // Each character has 13 lines 
 #define FONT_WIDTH       8
@@ -229,8 +229,8 @@ int btstack_main(int argc, const char * argv[]){
     // set up l2cap_le
     l2cap_init();
     
-    // setup central device db
-    central_device_db_init();
+    // setup le device db
+    le_device_db_init();
 
     // setup SM: Display only
     sm_init();

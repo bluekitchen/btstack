@@ -33,7 +33,7 @@ libBTstack_OBJS  = 		 \
 
 BTdaemon_OBJS = $(libBTstack_OBJS)   \
 	att_dispatch.o              \
-	central_device_db_memory.o  \
+	ledevice_db_memory.o        \
     att.o                       \
     att_server.o                \
 	gatt_client.o               \

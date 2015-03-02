@@ -40,8 +40,8 @@ void setup(void){
 
     hci_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
 
-    // setup central device db
-    central_device_db_init();
+    // setup le device db
+    le_device_db_init();
 
     // setup SM: Display only
     sm_init();

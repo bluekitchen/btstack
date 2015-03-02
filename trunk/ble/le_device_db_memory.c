@@ -35,7 +35,7 @@
  *
  */
  
-#include "central_device_db.h"
+#include "le_device_db.h"
 
 #include <stdio.h>
 #include <string.h>

@@ -47,11 +47,11 @@ GATT_CLIENT += \
 
 SM_REAL += \
 	sm.c 				 	    \
-    central_device_db_memory.c  \
+    le_device_db_memory.c  \
 
 SM_MINIMAL += \
 	sm_minimal.c  		 	    \
-    central_device_db_dummy.c   \
+    le_db_dummy.c   \
 
 PAN += \
 	pan.c \
