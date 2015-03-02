@@ -215,8 +215,10 @@ typedef struct sm_setup_context {
     uint8_t   sm_peer_rand[8];
     sm_key_t  sm_peer_ltk;
     sm_key_t  sm_peer_irk;
+    sm_key_t  sm_peer_csrk;
     uint8_t   sm_peer_addr_type;
     bd_addr_t sm_peer_address;
+
 } sm_setup_context_t;
 
 // 
@@ -1579,6 +1581,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_conn->sm_connection_encrypted = 0;
                             sm_conn->sm_connection_authenticated = 0;
                             sm_conn->sm_connection_authorization_state = AUTHORIZATION_UNKNOWN;
+                            sm_conn->sm_central_db_index = -1;
 
                             // prepare CSRK lookup (does not involve setup)
                             sm_conn->sm_csrk_lookup_state = CSRK_LOOKUP_W4_READY;
@@ -1733,7 +1736,6 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
     log_debug("sm_packet_handler: state %u, pdu 0x%02x", sm_conn->sm_engine_state, packet[0]);
 
-    sm_key_t csrk;
     int err;
 
     switch (sm_conn->sm_engine_state){
@@ -1869,13 +1871,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
                 case SM_CODE_SIGNING_INFORMATION:
                     setup->sm_key_distribution_received_set |= SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
-                    swap128(&packet[1], csrk);
-
-                    // store, if: it's a public address, or, we got an IRK
-                    if (setup->sm_peer_addr_type == 0 || (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION)) {
-                        sm_central_device_matched =  central_device_db_add(setup->sm_peer_addr_type, setup->sm_peer_address, setup->sm_peer_irk, csrk);
-                        break;
-                    } 
+                    swap128(&packet[1], setup->sm_peer_csrk);
                     break;
                 default:
                     // Unexpected PDU
@@ -1884,6 +1880,29 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             }     
             // done with key distribution?         
             if (sm_key_distribution_all_received()){
+
+                // store, if: it's a public address, or, we got an IRK
+                if (setup->sm_peer_addr_type == 0 || (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION)) {
+                    sm_conn->sm_central_db_index = central_device_db_add(setup->sm_peer_addr_type, setup->sm_peer_address, setup->sm_peer_irk);
+                } 
+
+                if (sm_conn->sm_central_db_index >= 0){
+                    central_device_db_local_counter_set(sm_conn->sm_central_db_index, 0);
+                    
+                    // store CSRK
+                    if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
+                        central_device_db_csrk_set(sm_conn->sm_central_db_index, setup->sm_peer_csrk);
+                        central_device_db_remote_counter_set(sm_conn->sm_central_db_index, 0);
+                    }
+
+                    // store encryption information as Central
+                    if (sm_conn->sm_role == 0
+                        && setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION   
+                        && setup->sm_key_distribution_received_set &  SM_KEYDIST_FLAG_MASTER_IDENTIFICATION){
+                        central_device_db_encryption_set(sm_conn->sm_central_db_index, setup->sm_peer_ediv, setup->sm_peer_rand, setup->sm_peer_ltk);
+                    }                
+                }
+
                 if (sm_conn->sm_role){
                     sm_conn->sm_engine_state = SM_GENERAL_IDLE; 
                     sm_done_for_handle(sm_conn->sm_handle);
