@@ -203,7 +203,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
 
     // update sequence number
     uint32_t counter_packet = READ_BT_32(att_request_buffer, att_request_size-12);
-    central_device_db_counter_set(att_ir_central_device_db_index, counter_packet+1);
+    central_device_db_remote_counter_set(att_ir_central_device_db_index, counter_packet+1);
     att_server_state = ATT_SERVER_REQUEST_RECEIVED_AND_VALIDATED;
     att_run();
 }
@@ -237,7 +237,7 @@ static void att_run(void){
 
                 // check counter
                 uint32_t counter_packet = READ_BT_32(att_request_buffer, att_request_size-12);
-                uint32_t counter_db     = central_device_db_counter_get(att_ir_central_device_db_index);
+                uint32_t counter_db     = central_device_db_remote_counter_get(att_ir_central_device_db_index);
                 log_info("ATT Signed Write, DB counter %u, packet counter %u", counter_db, counter_packet);
                 if (counter_packet < counter_db){
                     log_info("ATT Signed Write, db reports higher counter, abort");
@@ -247,7 +247,7 @@ static void att_run(void){
 
                 // signature is { sequence counter, secure hash }
                 sm_key_t csrk;
-                central_device_db_csrk(att_ir_central_device_db_index, csrk);
+                central_device_db_csrk_get(att_ir_central_device_db_index, csrk);
                 att_server_state = ATT_SERVER_W4_SIGNED_WRITE_VALIDATION;
                 log_info("Orig Signature: ");
                 hexdump( &att_request_buffer[att_request_size-8], 8);

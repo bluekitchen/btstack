@@ -86,12 +86,12 @@ int central_device_db_count(void){
     return counter;
 }
 
-// free device - TODO not implemented
+// free device
 void central_device_db_remove(int index){
     central_devices[index].addr_type = INVALID_ENTRY_ADDR_TYPE;
 }
 
-int central_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk, sm_key_t csrk){
+int central_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){
     int i;
     int index = -1;
     for (i=0;i<CENTRAL_DEVICE_MEMORY_SIZE;i++){
@@ -105,11 +105,9 @@ int central_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk, sm_key_t 
 
     log_info("Central Device DB adding type %u - %s", addr_type, bd_addr_to_str(addr));
     log_key("irk", irk);
-    log_key("csrk", csrk);
 
     central_devices[index].addr_type = addr_type;
     memcpy(central_devices[index].addr, addr, 6);
-    memcpy(central_devices[index].csrk, csrk, 16);
     memcpy(central_devices[index].irk, irk, 16);
     central_devices[index].remote_counter = 0; 
 
@@ -124,20 +122,59 @@ void central_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t
     if (irk) memcpy(irk, central_devices[index].irk, 16);
 }
 
+/**
+ * @brief set remote encryption info
+ * @brief index
+ * @brief ediv 
+ * @brief rand
+ * @brief ltk
+ */
+void central_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk){
+    central_devices[index].ediv = ediv;
+    if (rand) memcpy(central_devices[index].rand, rand, 8);
+    if (ltk) memcpy(central_devices[index].ltk, ltk, 16);
+}
+
+/**
+ * @brief get remote encryption info
+ * @brief index
+ * @brief ediv 
+ * @brief rand
+ * @brief ltk
+ */
+void central_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk){
+    if (ediv) *ediv = central_devices[index].ediv;
+    if (rand) memcpy(rand, central_devices[index].rand, 8);
+    if (ltk)  memcpy(ltk, central_devices[index].ltk, 16);    
+}
+
 // get signature key
-void central_device_db_csrk(int index, sm_key_t csrk){
+void central_device_db_csrk_get(int index, sm_key_t csrk){
     if (csrk) memcpy(csrk, central_devices[index].csrk, 16);
 }
 
+void central_device_db_csrk_set(int index, sm_key_t csrk){
+    if (csrk) memcpy(central_devices[index].csrk, csrk, 16);
+}
 
 // query last used/seen signing counter
-uint32_t central_device_db_counter_get(int index){
+uint32_t central_device_db_remote_counter_get(int index){
     return central_devices[index].remote_counter;
 }
 
 // update signing counter
-void central_device_db_counter_set(int index, uint32_t counter){
+void central_device_db_remote_counter_set(int index, uint32_t counter){
     central_devices[index].remote_counter = counter;
+}
+
+// query last used/seen signing counter
+uint32_t central_device_db_local_counter_get(int index){
+    return central_devices[index].local_counter;
+}
+
+// update signing counter
+void central_device_db_local_counter_set(int index, uint32_t counter){
+    central_devices[index].local_counter = counter;
 }
 
 void central_device_db_dump(){

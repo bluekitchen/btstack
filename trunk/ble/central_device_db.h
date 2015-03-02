@@ -69,10 +69,10 @@ void central_device_db_init();
 /**
  * @brief add device to db
  * @param addr_type, address of the device
- * @param irk and csrk of the device
+ * @param irk of the device
  * @returns index if successful, -1 otherwise
  */
-int central_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk, sm_key_t csrk);
+int central_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk);
 
 /**
  * @brief get number of devices in db for enumeration
@@ -88,26 +88,66 @@ int central_device_db_count(void);
  */
 void central_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t irk);
 
+
+/**
+ * @brief set remote encryption info
+ * @brief index
+ * @brief ediv 
+ * @brief rand
+ * @brief ltk
+ */
+void central_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk);
+
+/**
+ * @brief get remote encryption info
+ * @brief index
+ * @brief ediv 
+ * @brief rand
+ * @brief ltk
+ */
+void central_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk);
+
+/**
+ * @brief set signing key for this device
+ * @param index
+ * @param signing key as input
+ */
+void central_device_db_csrk_set(int index, sm_key_t csrk);
+
 /**
  * @brief get signing key for this device
  * @param index
  * @param signing key as output
  */
-void central_device_db_csrk(int index, sm_key_t csrk);
+void central_device_db_csrk_get(int index, sm_key_t csrk);
 
 /**
  * @brief query last used/seen signing counter
  * @param index
  * @returns next expected counter, 0 after devices was added
  */
-uint32_t central_device_db_counter_get(int index);
+uint32_t central_device_db_remote_counter_get(int index);
 
 /**
  * @brief update signing counter
  * @param index
  * @param counter to store
  */
-void central_device_db_counter_set(int index, uint32_t counter);
+void central_device_db_remote_counter_set(int index, uint32_t counter);
+
+/**
+ * @brief query last used/seen signing counter
+ * @param index
+ * @returns next expected counter, 0 after devices was added
+ */
+uint32_t central_device_db_local_counter_get(int index);
+
+/**
+ * @brief update signing counter
+ * @param index
+ * @param counter to store
+ */
+void central_device_db_local_counter_set(int index, uint32_t counter);
 
 /**
  * @brief free device
