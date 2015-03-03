@@ -1008,9 +1008,8 @@ static void sm_run(void){
                     break;
                 case SM_INITIATOR_PH0_HAS_LTK:
                     // fetch data from device db
-                    // ltk
-                    // ediv
-                    // rand
+                    le_device_db_encryption_get(sm_connection->sm_le_db_index, &setup->sm_peer_ediv, setup->sm_peer_rand, setup->sm_peer_ltk);
+                    sm_connection->sm_engine_state = SM_INITIATOR_PH0_SEND_START_ENCRYPTION;
                     break;
                 case SM_RESPONDER_PH0_RECEIVED_LTK:
                     // re-establish previously used LTK using Rand and EDIV
@@ -1058,6 +1057,14 @@ static void sm_run(void){
         switch (connection->sm_engine_state){
 
             // initiator side
+            case SM_INITIATOR_PH0_SEND_START_ENCRYPTION: {
+                sm_key_t peer_ltk_flipped;
+                swap128(setup->sm_peer_ltk, peer_ltk_flipped);
+                connection->sm_engine_state = SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED;
+                hci_send_cmd(&hci_le_start_encryption, connection->sm_handle, setup->sm_peer_rand, setup->sm_peer_ediv, peer_ltk_flipped);
+                return;
+            }
+
             case SM_INITIATOR_PH1_SEND_PAIRING_REQUEST:
                 setup->sm_m_preq.code = SM_CODE_PAIRING_REQUEST;
                 connection->sm_engine_state = SM_INITIATOR_PH1_W4_PAIRING_RESPONSE;
@@ -1652,12 +1659,20 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                         sm_conn->sm_actual_encryption_key_size);
                     if (!sm_conn->sm_connection_encrypted) break;
                     // continue if part of initial pairing
-                    if (sm_conn->sm_engine_state == SM_PH2_W4_CONNECTION_ENCRYPTED) {
-                        if (sm_conn->sm_role){
-                            sm_conn->sm_engine_state = SM_PH3_GET_RANDOM;
-                        } else {
-                            sm_conn->sm_engine_state = SM_PH3_RECEIVE_KEYS;
-                        }
+                    switch (sm_conn->sm_engine_state){
+                        case SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED:
+                            sm_conn->sm_engine_state = SM_GENERAL_IDLE; 
+                            sm_done_for_handle(sm_conn->sm_handle);
+                            break;                        
+                        case SM_PH2_W4_CONNECTION_ENCRYPTED:
+                            if (sm_conn->sm_role){
+                                sm_conn->sm_engine_state = SM_PH3_GET_RANDOM;
+                            } else {
+                                sm_conn->sm_engine_state = SM_PH3_RECEIVE_KEYS;
+                            }
+                            break;
+                        default:
+                            break;
                     }
                     break;
 
@@ -1666,6 +1681,13 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     sm_done_for_handle(handle);
                     sm_conn = sm_get_connection_for_handle(handle);
                     if (!sm_conn) break;
+
+                    // delete stored bonding on disconnect with authentication failure in ph0
+                    if (sm_conn->sm_role == 0 
+                        && sm_conn->sm_engine_state == SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED
+                        && packet[2] == ERROR_CODE_AUTHENTICATION_FAILURE){
+                        le_device_db_remove(sm_conn->sm_le_db_index);
+                    }
 
                     sm_conn->sm_engine_state = SM_GENERAL_IDLE;
                     sm_conn->sm_handle = 0;

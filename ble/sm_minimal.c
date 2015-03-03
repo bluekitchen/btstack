@@ -164,7 +164,7 @@ static void sm_event_packet_handler (void * connection, uint8_t packet_type, uin
 
                         case HCI_SUBEVENT_LE_LONG_TERM_KEY_REQUEST:
                             log_info("LTK Request: state %u", sm_state_responding);
-                            sm_state_responding = SM_RESPONDER_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
+                            sm_state_responding = SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
                             break;
 
                         default:
@@ -192,7 +192,7 @@ static void sm_run(void){
 
     // assert that we can send either one
     switch (sm_state_responding){
-        case SM_RESPONDER_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
+        case SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
             if (!hci_can_send_command_packet_now()) return;
             hci_send_cmd(&hci_le_long_term_key_negative_reply, sm_response_handle);
             sm_state_responding = SM_GENERAL_IDLE;
