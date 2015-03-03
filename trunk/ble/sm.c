@@ -919,7 +919,7 @@ static void sm_run(void){
 
     // -- Continue with CSRK device lookup by public or resolvable private address
     if (sm_central_device_test >= 0){
-        log_info("Central Device Lookup: device %u/%u", sm_central_device_test, le_device_db_count());
+        log_info("LE Device Lookup: device %u/%u", sm_central_device_test, le_device_db_count());
         while (sm_central_device_test < le_device_db_count()){
             int addr_type;
             bd_addr_t addr;
@@ -928,12 +928,21 @@ static void sm_run(void){
             log_info("device type %u, addr: %s", addr_type, bd_addr_to_str(addr));
 
             if (sm_central_device_addr_type == addr_type && memcmp(addr, sm_central_device_address, 6) == 0){
-                log_info("Central Device Lookup: found CSRK by { addr_type, address} ");
+                log_info("LE Device Lookup: found CSRK by { addr_type, address} ");
                 sm_central_device_matched = sm_central_device_test;
                 sm_central_device_test = -1;
+                sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);
+
+                // re-use stored LTK/EDIV/RAND if requested & we're master
+                // TODO: replace global with flag in sm_connection_t
+                if (sm_authenticate_outgoing_connections && sm_csrk_connection_source->sm_role == 0){
+                    sm_csrk_connection_source->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
+                    log_info("sm: Setting up previous ltk/ediv/rand");
+                }
+
+                // ready for other requests
                 sm_csrk_connection_source->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
                 sm_csrk_connection_source = NULL;
-                sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);
                 break;
             }
 
@@ -944,7 +953,7 @@ static void sm_run(void){
 
             if (sm_aes128_state == SM_AES128_ACTIVE) break;
 
-            log_info("Central Device Lookup: calculate AH");
+            log_info("LE Device Lookup: calculate AH");
             log_key("IRK", irk);
 
             sm_key_t r_prime;
@@ -955,7 +964,7 @@ static void sm_run(void){
         }
 
         if (sm_central_device_test >= le_device_db_count()){
-            log_info("Central Device Lookup: not found");
+            log_info("LE Device Lookup: not found");
             sm_central_device_test = -1;
             sm_csrk_connection_source->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
             sm_csrk_connection_source = NULL;
@@ -997,7 +1006,13 @@ static void sm_run(void){
                     }
                     sm_connection->sm_engine_state = SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE;
                     break;
-                case SM_RESPONDER_RECEIVED_LTK:
+                case SM_INITIATOR_PH0_HAS_LTK:
+                    // fetch data from device db
+                    // ltk
+                    // ediv
+                    // rand
+                    break;
+                case SM_RESPONDER_PH0_RECEIVED_LTK:
                     // re-establish previously used LTK using Rand and EDIV
                     memcpy(setup->sm_local_rand, sm_connection->sm_local_rand, 8);
                     setup->sm_local_ediv = sm_connection->sm_local_ediv;
@@ -1060,27 +1075,6 @@ static void sm_run(void){
                 return;
             }
 
-            case SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE: {
-
-                // echo initiator for now
-                setup->sm_s_pres.code = SM_CODE_PAIRING_RESPONSE;
-                setup->sm_s_pres.initiator_key_distribution = setup->sm_m_preq.initiator_key_distribution;
-                setup->sm_s_pres.responder_key_distribution = setup->sm_m_preq.responder_key_distribution;
-
-                connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_CONFIRM;
-                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
-                sm_timeout_reset(connection);
-
-                sm_trigger_user_response(connection);
-
-                return;
-            }
-
-            case SM_RESPONDER_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
-                connection->sm_engine_state = SM_GENERAL_IDLE;
-                hci_send_cmd(&hci_le_long_term_key_negative_reply, connection->sm_handle);
-                return;
-
             case SM_GENERAL_SEND_PAIRING_FAILED: {
                 uint8_t buffer[2];
                 buffer[0] = SM_CODE_PAIRING_FAILED;
@@ -1090,6 +1084,22 @@ static void sm_run(void){
                 sm_done_for_handle(connection->sm_handle);
                 break;
             }
+
+            case SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
+                connection->sm_engine_state = SM_GENERAL_IDLE;
+                hci_send_cmd(&hci_le_long_term_key_negative_reply, connection->sm_handle);
+                return;
+
+            case SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE:
+                // echo initiator for now
+                setup->sm_s_pres.code = SM_CODE_PAIRING_RESPONSE;
+                setup->sm_s_pres.initiator_key_distribution = setup->sm_m_preq.initiator_key_distribution;
+                setup->sm_s_pres.responder_key_distribution = setup->sm_m_preq.responder_key_distribution;
+                connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_CONFIRM;
+                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
+                sm_timeout_reset(connection);
+                sm_trigger_user_response(connection);
+                return;
 
             case SM_PH2_SEND_PAIRING_RANDOM: {
                 uint8_t buffer[17];
@@ -1313,7 +1323,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             sm_csrk_connection_source->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
             sm_csrk_connection_source = NULL;
             sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);
-            log_info("Central Device Lookup: matched resolvable private address");
+            log_info("LE Device Lookup: matched resolvable private address");
             return;
         }
         // no match
@@ -1599,11 +1609,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                 break;
                             } else {
                                 // master
-                                if (sm_authenticate_outgoing_connections){
-                                    sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
-                                } else {
-                                    sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
-                                }
+                                sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED;
                             }
                             break;
 
@@ -1621,14 +1627,14 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             // assume that we don't have a LTK for ediv == 0 and random == null
                             if (READ_BT_16(packet, 13) == 0 && sm_is_null_random(&packet[5])){
                                 log_info("LTK Request: ediv & random are empty");
-                                sm_conn->sm_engine_state = SM_RESPONDER_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
+                                sm_conn->sm_engine_state = SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY;
                                 break;
                             }
 
                             // store rand and ediv
                             swap64(&packet[5], sm_conn->sm_local_rand);
                             sm_conn->sm_local_ediv   = READ_BT_16(packet, 13);
-                            sm_conn->sm_engine_state = SM_RESPONDER_RECEIVED_LTK;
+                            sm_conn->sm_engine_state = SM_RESPONDER_PH0_RECEIVED_LTK;
                             break;
 
                         default:
