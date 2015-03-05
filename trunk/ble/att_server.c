@@ -251,7 +251,7 @@ static void att_run(void){
                 att_server_state = ATT_SERVER_W4_SIGNED_WRITE_VALIDATION;
                 log_info("Orig Signature: ");
                 hexdump( &att_request_buffer[att_request_size-8], 8);
-                sm_cmac_start(csrk, att_request_size - 8, att_request_buffer, att_signed_write_handle_cmac_result);
+                sm_cmac_start(csrk, att_request_size - 12, att_request_buffer, counter_packet, att_signed_write_handle_cmac_result);
                 return;
             } 
             // NOTE: fall through for regular commands

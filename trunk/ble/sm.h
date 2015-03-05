@@ -252,7 +252,7 @@ void sm_authorization_grant(uint8_t addr_type, bd_addr_t address);
 // Support for signed writes, used by att_server.c
 // NOTE: message and result are in little endian to allows passing in ATT PDU without flipping them first
 int  sm_cmac_ready();
-void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8]));
+void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t hash[8]));
 
 /**
  * @brief Identify device in LE Device DB

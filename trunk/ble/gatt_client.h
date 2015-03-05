@@ -157,10 +157,11 @@ typedef struct gatt_client{
     
     uint8_t  filter_with_uuid;
     uint8_t  send_confirmation;
-    
-    sm_key_t csrk;
+   
+    int      le_device_index;
     uint32_t sign_counter;
     uint8_t  cmac[8];
+
     timer_source_t gc_timeout;
 } gatt_client_t;
 
@@ -336,7 +337,7 @@ le_command_status_t gatt_client_write_value_of_characteristic_without_response(u
 // Writes the authenticated characteristic value using the
 // characteristic's value handle without an acknowledgement
 // that the write was successfully performed.
-le_command_status_t gatt_client_signed_write_without_response(uint16_t gatt_client_id, uint16_t con_handle, uint16_t handle, uint16_t message_len, uint8_t * message, sm_key_t csrk, uint32_t sgn_counter);
+le_command_status_t gatt_client_signed_write_without_response(uint16_t gatt_client_id, uint16_t con_handle, uint16_t handle, uint16_t message_len, uint8_t * message);
 
 // Writes the characteristic value using the characteristic's value
 // handle. The gatt_complete_event_t with type set to

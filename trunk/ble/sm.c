@@ -135,6 +135,7 @@ static cmac_state_t sm_cmac_state;
 static sm_key_t     sm_cmac_k;
 static uint16_t     sm_cmac_message_len;
 static uint8_t *    sm_cmac_message;
+static uint8_t      sm_cmac_sign_counter[4];
 static sm_key_t     sm_cmac_m_last;
 static sm_key_t     sm_cmac_x;
 static uint8_t      sm_cmac_block_current;
@@ -578,17 +579,30 @@ static int sm_cmac_last_block_complete(){
     if (sm_cmac_message_len == 0) return 0;
     return (sm_cmac_message_len & 0x0f) == 0;
 }
+static inline uint8_t sm_cmac_message_get_byte(int offset){
+    if (offset >= sm_cmac_message_len) {
+        log_error("sm_cmac_message_get_byte. out of bounds, access %u, len %u", offset, sm_cmac_message_len);
+        return 0;
+    }
+    int actual_len = sm_cmac_message_len - 4;
+    if (offset < actual_len) {
+        return sm_cmac_message[offset];
+    } else {
+        return sm_cmac_message[offset - actual_len];
+    }
+}
 
-void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8])){
+void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t hash[8])){
     memcpy(sm_cmac_k, k, 16);
-    sm_cmac_message_len = message_len;
+    sm_cmac_message_len = message_len + 4;  // incl. virtually appended sign_counter in LE
     sm_cmac_message = message;
+    bt_store_32(sm_cmac_sign_counter, 0, sign_counter);
     sm_cmac_done_handler = done_handler;
     sm_cmac_block_current = 0;
     memset(sm_cmac_x, 0, 16);
 
     // step 2: n := ceil(len/const_Bsize);
-    sm_cmac_block_count = (message_len + 15) / 16;
+    sm_cmac_block_count = (sm_cmac_message_len + 15) / 16;
 
     // step 3: ..
     if (sm_cmac_block_count==0){
@@ -619,7 +633,7 @@ static void sm_cmac_handle_aes_engine_ready(){
             int j;
             sm_key_t y;
             for (j=0;j<16;j++){
-                y[j] = sm_cmac_x[j] ^ sm_cmac_message[sm_cmac_block_current*16 + j];
+                y[j] = sm_cmac_x[j] ^ sm_cmac_message_get_byte(sm_cmac_block_current*16 + j);
             }
             sm_cmac_block_current++;
             sm_cmac_next_state();
@@ -668,13 +682,13 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
             int i;
             if (sm_cmac_last_block_complete()){
                 for (i=0;i<16;i++){
-                    sm_cmac_m_last[i] = sm_cmac_message[sm_cmac_message_len - 16 + i] ^ k1[i];
+                    sm_cmac_m_last[i] = sm_cmac_message_get_byte(sm_cmac_message_len - 16 + i) ^ k1[i];
                 }
             } else {
                 int valid_octets_in_last_block = sm_cmac_message_len & 0x0f;
                 for (i=0;i<16;i++){
                     if (i < valid_octets_in_last_block){
-                        sm_cmac_m_last[i] = sm_cmac_message[(sm_cmac_message_len & 0xfff0) + i] ^ k2[i];
+                        sm_cmac_m_last[i] = sm_cmac_message_get_byte((sm_cmac_message_len & 0xfff0) + i) ^ k2[i];
                         continue;
                     }
                     if (i == valid_octets_in_last_block){
