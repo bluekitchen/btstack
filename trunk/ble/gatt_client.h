@@ -110,7 +110,8 @@ typedef enum {
     P_W2_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR,
     P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT,
 
-    P_W4_CMAC,
+    P_W4_CMAC_READY,
+    P_W4_CMAC_RESULT,
     P_W2_SEND_SIGNED_WRITE,
     P_W4_SEND_SINGED_WRITE_DONE,
 } gatt_client_state_t;
@@ -161,7 +162,6 @@ typedef struct gatt_client{
     uint8_t  send_confirmation;
    
     int      le_device_index;
-    uint32_t sign_counter;
     uint8_t  cmac[8];
 
     timer_source_t gc_timeout;
