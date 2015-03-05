@@ -66,6 +66,13 @@ void hsp_hs_set_microphone_gain(uint8_t gain);
 // AT+VGS=[0..15]
 void hsp_hs_set_speaker_gain(uint8_t gain);
 
+void hsp_hs_support_custom_indications(int enable);
+
+// When support custom commands is enabled, AG will send HSP_SUBEVENT_AG_INDICATION.
+// On occurance of this event, client's packet handler must send the result back
+// by calling hsp_hs_send_result function.
+int hsp_hs_send_result(char * indication);
+
 #if defined __cplusplus
 }
 #endif

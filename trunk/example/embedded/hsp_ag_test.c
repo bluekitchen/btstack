@@ -82,12 +82,11 @@ static void show_usage();
 static data_source_t stdin_source;
 
 static void show_usage(){
-
     printf("\n--- Bluetooth HSP AudioGateway Test Console ---\n");
     printf("---\n");
     printf("p - establish audio connection to PTS module\n");
     printf("e - establish audio connection to Bluetooth Speaker\n");
-    printf("d - release audio connection from Bluetooth Speaker\n");
+    printf("d - release audio connection\n");
     printf("m - set microphone gain 8\n");
     printf("M - set microphone gain 15\n");
     printf("o - set speaker gain 0\n");
@@ -114,7 +113,7 @@ static int stdin_process(struct data_source *ds){
             hsp_ag_connect(bt_speaker_addr);
             break;
         case 'd':
-            printf("Releasing audio connection from Bluetooth Speaker %s...\n", bd_addr_to_str(bt_speaker_addr));
+            printf("Releasing audio connection\n");
             hsp_ag_disconnect();
             break;
         case 'm':
@@ -154,7 +153,6 @@ static int stdin_process(struct data_source *ds){
 }
 
 static void setup_cli(){
-
     struct termios term = {0};
     if (tcgetattr(0, &term) < 0)
             perror("tcsetattr()");
@@ -177,14 +175,14 @@ void packet_handler(uint8_t * event, uint16_t event_size){
     switch (event[2]) {
         case HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE:
             if (event[3] == 0){
-                printf("Audio connection established.\n");
+                printf("Audio connection established.\n\n");
             } else {
                 printf("Audio connection establishment failed with status %u\n", event[3]);
             }
             break;
         case HSP_SUBEVENT_AUDIO_DISCONNECTION_COMPLETE:
             if (event[3] == 0){
-                printf("Audio connection released.\n");
+                printf("Audio connection released.\n\n");
             } else {
                 printf("Audio connection releasing failed with status %u\n", event[3]);
             }
@@ -199,7 +197,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
             memset(hs_cmd_buffer, 0, sizeof(hs_cmd_buffer));
             int size = event_size <= sizeof(hs_cmd_buffer)? event_size : sizeof(hs_cmd_buffer); 
             memcpy(hs_cmd_buffer, &event[3], size - 1);
-            printf("Received command: \"%s\"\n", hs_cmd_buffer);
+            printf("Received custom command: \"%s\". \nExit code or call hsp_ag_send_result.\n", hs_cmd_buffer);
             break;
         }
         default:
@@ -214,10 +212,11 @@ int btstack_main(int argc, const char * argv[]){
     
     hsp_ag_init(rfcomm_channel_nr);
     hsp_ag_register_packet_handler(packet_handler);
-    // turn on!
+    
     sdp_init();
     sdp_register_service_internal(NULL, (uint8_t *)hsp_service_buffer);
 
+    // turn on!
     hci_power_control(HCI_POWER_ON);
 
     setup_cli();
