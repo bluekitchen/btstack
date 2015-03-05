@@ -290,7 +290,7 @@ static void att_signed_write_request(uint16_t request_type, uint16_t peripheral_
     bt_store_16(request, 1, attribute_handle);
     memcpy(&request[3], value, value_length);
     bt_store_32(request, 3 + value_length, sign_counter);
-    memcpy(&request[3+value_length+4], sgn, 8);
+    memcpy(&request[3 + value_length+4], sgn, 8);
     
     l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3 + value_length + 12);
 }
@@ -418,6 +418,11 @@ static void send_gatt_read_client_characteristic_configuration_request(gatt_clie
 static void send_gatt_read_characteristic_descriptor_request(gatt_client_t * peripheral){
     att_read_request(ATT_READ_REQUEST, peripheral->handle, peripheral->attribute_handle);
 }
+
+static void send_gatt_signed_write_request(gatt_client_t * peripheral){
+    att_signed_write_request(ATT_SIGNED_WRITE_COMMAND, peripheral->handle, peripheral->attribute_handle, peripheral->attribute_length, peripheral->attribute_value, peripheral->sign_counter, peripheral->cmac);
+}
+
 
 static uint16_t get_last_result_handle(uint8_t * packet, uint16_t size){
     uint8_t attr_length = packet[1];
@@ -845,6 +850,14 @@ static void gatt_client_run(){
                 peripheral->gatt_client_state = P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT;
                 send_gatt_execute_write_request(peripheral);
                 return;
+
+            case P_W2_SEND_SIGNED_WRITE:
+                peripheral->gatt_client_state = P_W4_SEND_SINGED_WRITE_DONE;
+                send_gatt_signed_write_request(peripheral);
+                peripheral->gatt_client_state = P_READY;
+                // finally, notifiy client that write is complete
+                gatt_client_handle_transaction_complete(peripheral);
+                return;
            
             default:
                 break;
@@ -1174,17 +1187,12 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     while (linked_list_iterator_has_next(&it)){
         gatt_client_t * peripheral = (gatt_client_t *) linked_list_iterator_next(&it);
         if (peripheral->gatt_client_state == P_W4_CMAC){
-            // bump local signing counter
-            uint32_t sign_counter = le_device_db_local_counter_get(peripheral->le_device_index);
-            le_device_db_local_counter_set(peripheral->le_device_index, sign_counter + 1);
-
-            // TODO: schedule sending and send from gatt_runn()
-
-            // send signed data
+            // store result
             memcpy(peripheral->cmac, hash, 8);
-            att_signed_write_request(ATT_SIGNED_WRITE_COMMAND, peripheral->handle, peripheral->attribute_handle, peripheral->attribute_length, peripheral->attribute_value, peripheral->sign_counter, peripheral->cmac);
-            // finally, notifiy client that write is complete
-            gatt_client_handle_transaction_complete(peripheral);
+            // bump local signing counter
+            le_device_db_local_counter_set(peripheral->le_device_index, peripheral->sign_counter + 1);
+            peripheral->gatt_client_state = P_W2_SEND_SIGNED_WRITE;
+            gatt_client_run();
             return;
         }
     }
@@ -1205,15 +1213,14 @@ le_command_status_t gatt_client_signed_write_without_response(uint16_t gatt_clie
 
     sm_key_t csrk;
     le_device_db_csrk_get(peripheral->le_device_index, csrk);
-    uint32_t sign_counter = le_device_db_local_counter_get(peripheral->le_device_index); 
-
+    peripheral->sign_counter = le_device_db_local_counter_get(peripheral->le_device_index); 
     peripheral->subclient_id = gatt_client_id;
     peripheral->attribute_handle = handle;
     peripheral->attribute_length = message_len;
     peripheral->attribute_value = message;
     peripheral->gatt_client_state = P_W4_CMAC;
-    
-    sm_cmac_start(csrk, peripheral->attribute_length, peripheral->attribute_value, sign_counter, att_signed_write_handle_cmac_result);
+
+    sm_cmac_start(csrk, peripheral->attribute_length, peripheral->attribute_value, peripheral->sign_counter, att_signed_write_handle_cmac_result);
     gatt_client_run();
     return BLE_PERIPHERAL_OK; 
 }
