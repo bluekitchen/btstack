@@ -254,6 +254,13 @@ void sm_authorization_grant(uint8_t addr_type, bd_addr_t address);
 int  sm_cmac_ready();
 void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8]));
 
+/**
+ * @brief Identify device in LE Device DB
+ * @param handle
+ * @returns index from le_device_db or -1 if not found/identified
+ */
+int sm_le_device_index(uint16_t handle );
+
 // Testing support only
 void sm_test_set_irk(sm_key_t irk);
 #if defined __cplusplus

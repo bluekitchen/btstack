@@ -2147,6 +2147,17 @@ void sm_passkey_input(uint8_t addr_type, bd_addr_t address, uint32_t passkey){
     sm_run();
 }
 
+/**
+ * @brief Identify device in LE Device DB
+ * @param handle
+ * @returns index from le_device_db or -1 if not found/identified
+ */
+int sm_le_device_index(uint16_t handle ){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(handle);
+    if (!sm_conn) return -1;
+    return sm_conn->sm_le_db_index;
+}
+
 // GAP LE API
 void gap_random_address_set_mode(gap_random_address_type_t random_address_type){
     gap_random_address_update_stop();
