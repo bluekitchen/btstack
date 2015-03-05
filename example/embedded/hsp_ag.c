@@ -62,8 +62,8 @@
 
 #define RFCOMM_SERVER_CHANNEL 1
 
-#define HSP_HS_BUTTON_PRESS "AT+CKPD=200\r"
-#define HSP_HS_AT_CKPD "AT+CKPD\r"
+#define HSP_HS_BUTTON_PRESS "AT+CKPD=200\r\n"
+#define HSP_HS_AT_CKPD "AT+CKPD\r\n"
 #define HSP_AG_OK "\r\nOK\r\n"
 #define HSP_AG_ERROR "\r\nERROR\r\n"
 #define HSP_AG_RING "\r\nRING\r\n"
@@ -91,8 +91,8 @@ static int ag_speaker_gain = -1;
 static uint8_t ag_ring = 0;
 static uint8_t ag_send_ok = 0;
 static uint8_t ag_send_error = 0;
-static uint8_t ag_in_band_ring_tone = 0;
 static uint8_t ag_num_button_press_received = 0;
+static uint8_t ag_support_custom_commands = 0;
 
 typedef enum {
     HSP_IDLE,
@@ -206,10 +206,6 @@ void hsp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char 
     }
 }
 
-
-// remote audio volume control
-// AG +VGM=13 [0..15] ; HS AT+VGM=6 | AG OK
-
 static int send_str_over_rfcomm(uint16_t cid, char * command){
     if (!rfcomm_can_send_packet_now(rfcomm_cid)) return 1;
     int err = rfcomm_send_internal(cid, (uint8_t*) command, strlen(command));
@@ -220,6 +216,16 @@ static int send_str_over_rfcomm(uint16_t cid, char * command){
     printf("Send string: \"%s\"\n", command); 
     return err;
 }
+
+void hsp_ag_support_custom_commands(int enable){
+    ag_support_custom_commands = enable;
+}
+
+int hsp_ag_send_result(char * result){
+    if (!ag_support_custom_commands) return 1;
+    return send_str_over_rfcomm(rfcomm_cid, result);
+}
+
 
 static void hsp_ag_reset_state(){
     hsp_state = HSP_IDLE;
@@ -233,10 +239,10 @@ static void hsp_ag_reset_state(){
     ag_ring = 0;
 
     ag_num_button_press_received = 0;
+    ag_support_custom_commands = 0;
 
     ag_microphone_gain = -1;
     ag_speaker_gain = -1;
-    ag_in_band_ring_tone = 0;
 }
 
 void hsp_ag_init(uint8_t rfcomm_channel_nr){
@@ -251,12 +257,6 @@ void hsp_ag_init(uint8_t rfcomm_channel_nr){
     sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
 
     hsp_ag_reset_state();
-}
-
-
-void hsp_ag_enable_in_band_ring_tone(int enabled){
-    // send is not yet implemented
-    ag_in_band_ring_tone = enabled;
 }
 
 void hsp_ag_connect(bd_addr_t bd_addr){
@@ -364,11 +364,6 @@ static void hsp_run(){
                 break;
             }
 
-            if (ag_in_band_ring_tone){
-                log_error("in_band_ring_tone: send is not yet implemented");
-                break;
-            }
-
             if (!ag_num_button_press_received) break;    
             
             err = send_str_over_rfcomm(rfcomm_cid, HSP_AG_OK);
@@ -422,7 +417,12 @@ static void hsp_run(){
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
     if (packet_type == RFCOMM_DATA_PACKET){
-        if (strncmp((char *)packet, HSP_HS_BUTTON_PRESS, 7) == 0){
+        while (size > 0 && (packet[0] == '\n' || packet[0] == '\r')){
+            size--;
+            packet++;
+        }
+
+        if (strncmp((char *)packet, HSP_HS_BUTTON_PRESS, strlen(HSP_HS_BUTTON_PRESS)) == 0){
             printf("Received button press %s\n", HSP_HS_BUTTON_PRESS);
             ag_num_button_press_received++;
             ag_send_ok = 1;
@@ -430,21 +430,18 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 ag_num_button_press_received = 0;
                 hsp_state = HSP_W2_DISCONNECT_SCO;
             }
-        } else if (strncmp((char *)packet, HSP_HS_MICROPHONE_GAIN, 7) == 0){
-            uint8_t gain = (uint8_t)atoi((char*)&packet[7]);
+        } else if (strncmp((char *)packet, HSP_HS_MICROPHONE_GAIN, strlen(HSP_HS_MICROPHONE_GAIN)) == 0){
+            uint8_t gain = (uint8_t)atoi((char*)&packet[strlen(HSP_HS_MICROPHONE_GAIN)]);
             ag_send_ok = 1;
             emit_event(HSP_SUBEVENT_MICROPHONE_GAIN_CHANGED, gain);
         
-        } else if (strncmp((char *)packet, HSP_HS_SPEAKER_GAIN, 7) == 0){
-            uint8_t gain = (uint8_t)atoi((char*)&packet[7]);
+        } else if (strncmp((char *)packet, HSP_HS_SPEAKER_GAIN, strlen(HSP_HS_SPEAKER_GAIN)) == 0){
+            uint8_t gain = (uint8_t)atoi((char*)&packet[strlen(HSP_HS_SPEAKER_GAIN)]);
             ag_send_ok = 1;
             emit_event(HSP_SUBEVENT_SPEAKER_GAIN_CHANGED, gain);
 
         } else if (strncmp((char *)packet, "AT+", 3) == 0){
             ag_send_error = 1;
-        }
-
-        if (ag_send_error){
             if (!hsp_ag_callback) return;
             // re-use incoming buffer to avoid reserving large buffers - ugly but efficient
             uint8_t * event = packet - 3;
@@ -453,6 +450,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             event[2] = HSP_SUBEVENT_HS_COMMAND;
             (*hsp_ag_callback)(event, size+3);
         }
+
         hsp_run();
         return;
     }
@@ -521,8 +519,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 hsp_state = HSP_W2_DISCONNECT_SCO;
                 break;
             }
-            hsp_state = HSP_ACTIVE;
 
+            hsp_state = HSP_ACTIVE;
             emit_event(HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE, 0);
             break;                
         }

@@ -61,8 +61,6 @@ void hsp_ag_init(uint8_t rfcomm_channel_nr);
 void hsp_ag_connect(bd_addr_t bd_addr);
 void hsp_ag_disconnect();
 
-void hsp_ag_enable_in_band_ring_tone(int enabled);
-
 // +VGM=[0..15]
 void hsp_ag_set_microphone_gain(uint8_t gain);
 // +VGS=[0..15]
@@ -70,6 +68,13 @@ void hsp_ag_set_speaker_gain(uint8_t gain);
 
 void hsp_ag_start_ringing();
 void hsp_ag_stop_ringing();
+
+void hsp_ag_support_custom_commands(int enable);
+
+// When support custom commands is enabled, AG will send HSP_SUBEVENT_HS_COMMAND.
+// On occurance of this event, client's packet handler must send the result back
+// by calling hsp_ag_send_result function.
+int hsp_ag_send_result(char * result);
 
 #if defined __cplusplus
 }
