@@ -57,6 +57,7 @@
 #include "att.h"
 #include "att_dispatch.h"
 #include "sm.h"
+#include "le_device_db.h"
 
 static linked_list_t gatt_client_connections = NULL;
 static linked_list_t gatt_subclients = NULL;
@@ -1173,31 +1174,46 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     while (linked_list_iterator_has_next(&it)){
         gatt_client_t * peripheral = (gatt_client_t *) linked_list_iterator_next(&it);
         if (peripheral->gatt_client_state == P_W4_CMAC){
-            gatt_client_handle_transaction_complete(peripheral);
+            // bump local signing counter
+            uint32_t sign_counter = le_device_db_local_counter_get(peripheral->le_device_index);
+            le_device_db_local_counter_set(peripheral->le_device_index, sign_counter + 1);
+
+            // TODO: schedule sending and send from gatt_runn()
+
+            // send signed data
             memcpy(peripheral->cmac, hash, 8);
             att_signed_write_request(ATT_SIGNED_WRITE_COMMAND, peripheral->handle, peripheral->attribute_handle, peripheral->attribute_length, peripheral->attribute_value, peripheral->sign_counter, peripheral->cmac);
+            // finally, notifiy client that write is complete
+            gatt_client_handle_transaction_complete(peripheral);
             return;
         }
     }
 }
 
-
-le_command_status_t gatt_client_signed_write_without_response(uint16_t gatt_client_id, uint16_t con_handle, uint16_t handle, uint16_t message_len, uint8_t * message, sm_key_t csrk, uint32_t sign_counter){
+le_command_status_t gatt_client_signed_write_without_response(uint16_t gatt_client_id, uint16_t con_handle, uint16_t handle, uint16_t message_len, uint8_t * message){
     gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
+
+    peripheral->le_device_index = sm_le_device_index(con_handle);
+    if (!peripheral->le_device_index < 0) return BLE_PERIPHERAL_IN_WRONG_STATE; // device lookup not done / no stored bonding information
+
+    // TODO: we can cache this info, no need to bail out here - e.g. use P_W2_CMAC
     if (!sm_cmac_ready()) {
         log_info("ATT Signed Write, sm_cmac engine not ready. Abort");
         return BLE_PERIPHERAL_IN_WRONG_STATE;
     } 
+
+    sm_key_t csrk;
+    le_device_db_csrk_get(peripheral->le_device_index, csrk);
+    uint32_t sign_counter = le_device_db_local_counter_get(peripheral->le_device_index); 
+
     peripheral->subclient_id = gatt_client_id;
     peripheral->attribute_handle = handle;
     peripheral->attribute_length = message_len;
     peripheral->attribute_value = message;
     peripheral->gatt_client_state = P_W4_CMAC;
-    peripheral->sign_counter = sign_counter;
-    memcpy(peripheral->csrk, csrk, 16);
     
-    sm_cmac_start(peripheral->csrk, peripheral->attribute_length, peripheral->attribute_value, att_signed_write_handle_cmac_result);
+    sm_cmac_start(csrk, peripheral->attribute_length, peripheral->attribute_value, sign_counter, att_signed_write_handle_cmac_result);
     gatt_client_run();
     return BLE_PERIPHERAL_OK; 
 }
