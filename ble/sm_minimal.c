@@ -100,7 +100,17 @@ int  sm_cmac_ready(){
 	return 0;
 }
 
-void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8])){}
+void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message,  uint32_t sign_counter, void (*done_handler)(uint8_t hash[8])){}
+
+/**
+ * @brief Identify device in LE Device DB
+ * @param handle
+ * @returns index from le_device_db or -1 if not found/identified
+ */
+int sm_le_device_index(uint16_t handle ){ 
+    return -1;
+}
+
 
 void sm_register_packet_handler(btstack_packet_handler_t handler){
     sm_client_packet_handler = handler;    
