@@ -68,11 +68,9 @@ EXAMPLES = 					\
 	spp_and_le_counter 		\
 	spp_counter 			\
 	spp_streamer			\
-	hsp_ag_test				\
-	hsp_hs_test				\
 
 # requires termios / command line support
-EXAMPLES_CLI = ble_peripheral ble_peripheral_sm_minimal l2cap_test ancs_client classic_test bnep_test 
+EXAMPLES_CLI = ble_peripheral ble_peripheral_sm_minimal ble_central_test l2cap_test ancs_client classic_test bnep_test hsp_ag_test hsp_hs_test
 
 # .o for .c
 CORE_OBJ    = $(CORE:.c=.o)
@@ -131,6 +129,32 @@ gap_inquiry_and_bond: ${CORE_OBJ} ${COMMON_OBJ} gap_inquiry_and_bond.c
 panu_demo: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} panu_demo.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
+gatt_browser: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} gatt_browser.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+gatt_battery_query: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} gatt_battery_query.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+ancs_client: ancs_client.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ${BTSTACK_ROOT}/ble/ancs_client_lib.c ancs_client.c
+	${CC} $(filter-out ancs_client.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+
+# CLI Examples
+ble_peripheral: profile.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.o
+	${CC} $(filter-out profile.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+ble_peripheral_sm_minimal: profile.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c
+	${CC} $(filter-out profile.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+ble_central_test: ${CORE_OBJ} ${COMMON_OBJ} ${SM_REAL_OBJ} ${ATT_OBJ}  ${GATT_CLIENT_OBJ}  ble_central_test.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+hsp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_ag.o hsp_ag_test.c 
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+hsp_hs_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_hs.o hsp_hs_test.c  
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
 l2cap_test: ${CORE_OBJ} ${COMMON_OBJ} l2cap_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
@@ -143,26 +167,6 @@ bnep_test: ${CORE_OBJ} ${COMMON_OBJ} bnep_test.c
 ble_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL} ble_client.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-gatt_browser: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} gatt_browser.c
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-
-gatt_battery_query: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} gatt_battery_query.c
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-
-ancs_client: ancs_client.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ${BTSTACK_ROOT}/ble/ancs_client_lib.c ancs_client.c
-	${CC} $(filter-out ancs_client.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
-
-ble_peripheral: profile.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.o
-	${CC} $(filter-out profile.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
-
-ble_peripheral_sm_minimal: profile.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c
-	${CC} $(filter-out profile.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
-
-hsp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_ag.o hsp_ag_test.c 
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-
-hsp_hs_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_hs.o hsp_hs_test.c  
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 clean:
 	rm -f ${EXAMPLES}

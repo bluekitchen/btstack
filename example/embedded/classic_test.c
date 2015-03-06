@@ -63,6 +63,7 @@
 #include "sdp.h"
 #include "sdp_query_rfcomm.h"
 #include "sm.h"
+#include "stdin_support.h"
 
 void show_usage();
 
@@ -777,25 +778,6 @@ void sdp_create_dummy_service(uint8_t *service, const char *name){
     de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
 }
 
-
-static data_source_t stdin_source;
-void setup_cli(){
-
-    struct termios term = {0};
-    if (tcgetattr(0, &term) < 0)
-            perror("tcsetattr()");
-    term.c_lflag &= ~ICANON;
-    term.c_lflag &= ~ECHO;
-    term.c_cc[VMIN] = 1;
-    term.c_cc[VTIME] = 0;
-    if (tcsetattr(0, TCSANOW, &term) < 0)
-            perror("tcsetattr ICANON");
-
-    stdin_source.fd = 0; // stdin
-    stdin_source.process = &stdin_process;
-    run_loop_add_data_source(&stdin_source);
-}
-
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
@@ -838,7 +820,7 @@ int btstack_main(int argc, const char * argv[]){
     // turn on!
     hci_power_control(HCI_POWER_ON);
 
-    setup_cli();
+    btstack_stdin_setup(stdin_process);
 
     // set one-shot timer
     // timer_source_t heartbeat;
