@@ -55,10 +55,17 @@
 #include "btstack_memory.h"
 #include "hci.h"
 #include "hci_dump.h"
+#include "stdin_support.h"
 
 int btstack_main(int argc, const char * argv[]);
 
 static void sigint_handler(int param){
+
+#ifndef _WIN32
+    // reset anyway
+    btstack_stdin_reset();
+#endif
+
     log_info(" <= SIGINT received, shutting down..\n");   
     hci_power_control(HCI_POWER_OFF);
     hci_close();
@@ -87,6 +94,6 @@ int main(int argc, const char * argv[]){
     signal(SIGINT, sigint_handler);
 
     btstack_main(argc, argv);
-
+    
     return 0;
 }

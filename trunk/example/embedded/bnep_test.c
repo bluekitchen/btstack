@@ -66,6 +66,7 @@
 #include "hci_dump.h"
 #include "l2cap.h"
 #include "pan.h"
+#include "stdin_support.h"
 
 // prototypes
 static void show_usage();
@@ -73,7 +74,7 @@ static void show_usage();
 // Configuration for PTS
 static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 //static bd_addr_t pts_addr = {0xE0,0x06,0xE6,0xBB,0x95,0x79}; // Ole Thinkpad
-// static bd_addr_t other_addr = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
+// static bd_addr_t other_addr = { 0x33, 0x33, 0x00, 0x00, 0x00, 0x16};
 static bd_addr_t other_addr = { 0,0,0,0,0,0};
 // broadcast
 static bd_addr_t broadcast_addr = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
@@ -99,9 +100,6 @@ static uint16_t bnep_cid            = 0;
 
 static uint8_t network_buffer[BNEP_MTU_MIN];
 static size_t  network_buffer_len = 0;
-
-/** Testig User Interface **/
-static data_source_t stdin_source;
 
 static uint16_t setup_ethernet_header(int src_compressed, int dst_compressed, int broadcast, uint16_t network_protocol_type){
     // setup packet
@@ -188,6 +186,8 @@ static void send_arp_probe_ipv4(){
     pos += 6;
     memcpy(&network_buffer[pos], requested_address, 4);
     pos += 4;
+    // magically, add some extra bytes for Ethernet padding
+    pos += 18;
     send_buffer(pos);
 }
 
@@ -207,6 +207,43 @@ static void send_dns_request(){
     
 }
 
+static void send_some_ipv6_packet(){
+
+    bd_addr_t an_addr = { 0x33, 0x33, 0x00, 0x00, 0x00, 0x16};
+    memcpy(other_addr, an_addr, 6);
+
+    int pos = setup_ethernet_header(1, 0, 0, 0x86DD); // IPv6
+    uint8_t ipv6_packet[] = {
+        0x60, 0x00, 0x00, 0x00, 0x00, 0x24, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x02,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x16, 0x3a, 0x00, 0x05, 0x02, 0x00, 0x00, 0x01, 0x00, 0x8f, 0x00, 0xf3, 0xa2,
+        0x00, 0x00, 0x00, 0x01, 0x04, 0x00, 0x00, 0x00, 0xff, 0x02, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xff, 0x60, 0x7b, 0x87                 
+    };
+    memcpy(&network_buffer[pos], ipv6_packet, sizeof(ipv6_packet));
+    pos += sizeof(ipv6_packet);
+    send_buffer(pos);
+}
+
+static void send_some_ipv6_packet_2(){
+
+    bd_addr_t an_addr = { 0x33, 0x33, 0xFF, 0x60, 0x7B, 0x87};
+    memcpy(other_addr, an_addr, 6);
+
+    int pos = setup_ethernet_header(1, 0, 0, 0x86DD); // IPv6
+    uint8_t ipv6_packet[] = {
+        0x60, 0x00, 0x00, 0x00, 0x00, 0x18, 0x3a, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x02, 
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xff, 0x60, 0x7b,
+        0x87, 0x87, 0x00, 0xb6, 0x64, 0x00, 0x00, 0x00, 0x00, 0xfe, 0x80, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x5e, 0xf3, 0x70, 0xff, 0xfe, 0x60, 0x7b, 0x87       
+    };
+    memcpy(&network_buffer[pos], ipv6_packet, sizeof(ipv6_packet));
+    pos += sizeof(ipv6_packet);
+    send_buffer(pos);
+}
+
 static void show_usage(){
 
     printf("\n--- Bluetooth BNEP Test Console ---\n");
@@ -224,6 +261,8 @@ static void show_usage(){
     printf("2 - send DNS request\n");
     printf("4 - send IPv4 ARP request\n");
     printf("6 - send IPv6 ARP request\n");
+    printf("9 - send some IPv6 packet\n");
+    printf("0 - send some IPv6 packet 2\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -270,31 +309,20 @@ static int stdin_process(struct data_source *ds){
             printf("Sending IPv6 ARP Probe\n");
             send_arp_probe_ipv6();
             break;
+        case '9':
+            printf("Sending some IPv6 packet\n");
+            send_some_ipv6_packet();
+            break;
+        case '0':
+            printf("Sending some IPv6 packet 2\n");
+            send_some_ipv6_packet_2();
+            break;
         default:
             show_usage();
             break;
 
     }
     return 0;
-}
-
-static void setup_cli(){
-
-    struct termios term = {0};
-    if (tcgetattr(0, &term) < 0)
-            perror("tcsetattr()");
-    term.c_lflag &= ~ICANON;
-    term.c_lflag &= ~ECHO;
-    term.c_cc[VMIN] = 1;
-    term.c_cc[VTIME] = 0;
-    if (tcsetattr(0, TCSANOW, &term) < 0)
-            perror("tcsetattr ICANON");
-
-    stdin_source.fd = 0; // stdin
-    stdin_source.process = &stdin_process;
-    run_loop_add_data_source(&stdin_source);
-
-    show_usage();
 }
 
 /*************** PANU client routines *********************/
@@ -397,7 +425,7 @@ int btstack_main(int argc, const char * argv[]){
     /* Turn on the device */
     hci_power_control(HCI_POWER_ON);
 
-    setup_cli();
+    btstack_stdin_setup(stdin_process);
 
     /* Start mainloop */
     run_loop_execute(); 

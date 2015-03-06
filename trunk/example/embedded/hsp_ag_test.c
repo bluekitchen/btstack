@@ -65,7 +65,8 @@
 #include "sdp.h"
 #include "debug.h"
 #include "hsp_ag.h"
-
+#include "stdin_support.h"
+ 
 static uint8_t    hsp_service_buffer[150];
 static uint8_t    rfcomm_channel_nr = 1;
 
@@ -76,10 +77,6 @@ static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static char hs_cmd_buffer[100];
 // prototypes
 static void show_usage();
-
-
-// Testig User Interface 
-static data_source_t stdin_source;
 
 static void show_usage(){
     printf("\n--- Bluetooth HSP AudioGateway Test Console ---\n");
@@ -152,24 +149,6 @@ static int stdin_process(struct data_source *ds){
     return 0;
 }
 
-static void setup_cli(){
-    struct termios term = {0};
-    if (tcgetattr(0, &term) < 0)
-            perror("tcsetattr()");
-    term.c_lflag &= ~ICANON;
-    term.c_lflag &= ~ECHO;
-    term.c_cc[VMIN] = 1;
-    term.c_cc[VTIME] = 0;
-    if (tcsetattr(0, TCSANOW, &term) < 0)
-            perror("tcsetattr ICANON");
-
-    stdin_source.fd = 0; // stdin
-    stdin_source.process = &stdin_process;
-    run_loop_add_data_source(&stdin_source);
-
-    show_usage();
-}
-
 // Audio Gateway routines 
 void packet_handler(uint8_t * event, uint16_t event_size){
     switch (event[2]) {
@@ -219,7 +198,8 @@ int btstack_main(int argc, const char * argv[]){
     // turn on!
     hci_power_control(HCI_POWER_ON);
 
-    setup_cli();
+    btstack_stdin_setup(stdin_process);
+
     // go!
     run_loop_execute(); 
     return 0;
