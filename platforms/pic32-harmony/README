@@ -1,0 +1,7 @@
+BTstack Port for the Microchip PIC32 Harmony Platform
+
+Status: Port started
+
+Installation: place BTstack tree into harmony/framework folder.
+Examples: app.X can be opened and compiled in Microchip MPLABX
+
