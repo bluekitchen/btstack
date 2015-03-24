@@ -375,6 +375,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     int       rc;
     uint8_t   event;
     bd_addr_t event_addr;
+    bd_addr_t local_addr;
     uint16_t  uuid_source;
     uint16_t  uuid_dest;
     uint16_t  mtu;    
@@ -422,7 +423,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     memcpy(&event_addr, &packet[8], sizeof(bd_addr_t));
 					printf("BNEP connection from %s source UUID 0x%04x dest UUID: 0x%04x, max frame size: %u\n", bd_addr_to_str(event_addr), uuid_source, uuid_dest, mtu);
                     /* Create the tap interface */
-                    tap_fd = tap_alloc(tap_dev_name, *hci_local_bd_addr());
+                    hci_local_bd_addr(local_addr);
+                    tap_fd = tap_alloc(tap_dev_name, local_addr);
                     if (tap_fd < 0) {
                         printf("Creating BNEP tap device failed: %s\n", strerror(errno));
                     } else {

@@ -496,7 +496,10 @@ static int hci_send_acl_packet_fragments(hci_connection_t *connection){
 
     // release buffer now for synchronous transport
     if (hci_transport_synchronous()){
-        hci_release_packet_buffer();                        
+        hci_release_packet_buffer();
+        // notify upper stack that iit might be possible to send again
+        uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0};
+        hci_stack->packet_handler(HCI_EVENT_PACKET, &event[0], sizeof(event));
     }
 
     return err;
@@ -1883,8 +1886,8 @@ void hci_connectable_control(uint8_t enable){
     hci_update_scan_enable();
 }
 
-uint8_t * hci_local_bd_addr(void){
-    return hci_stack->local_bd_addr;
+void hci_local_bd_addr(bd_addr_t address_buffer){
+    memcpy(address_buffer, hci_stack->local_bd_addr, 6);
 }
 
 void hci_run(){
