@@ -667,8 +667,8 @@ int hci_is_packet_buffer_reserved(void);
 // get point to packet buffer
 uint8_t* hci_get_outgoing_packet_buffer(void);
     
-// returns pointer to a bd_addr_t array
-uint8_t * hci_local_bd_addr(void);
+// gets local address 
+void hci_local_bd_addr(bd_addr_t address_buffer);
 
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle);
 hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type);
