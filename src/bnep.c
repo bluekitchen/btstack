@@ -714,7 +714,7 @@ static bnep_channel_t * bnep_channel_create_for_addr(bd_addr_t addr)
     channel->state = BNEP_CHANNEL_STATE_CLOSED;
     channel->max_frame_size = bnep_max_frame_size_for_l2cap_mtu(l2cap_max_mtu());
     BD_ADDR_COPY(&channel->remote_addr, addr);
-    BD_ADDR_COPY(&channel->local_addr, hci_local_bd_addr());
+    hci_local_bd_addr(channel->local_addr);
 
     channel->net_filter_count = 0;
     channel->multicast_filter_count = 0;
