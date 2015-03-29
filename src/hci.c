@@ -812,7 +812,128 @@ void le_handle_advertisement_report(uint8_t *packet, int size){
 #endif
 
 static void hci_initializing_next_state(){
-    hci_stack->substate = (hci_init_state_t )( ((int) hci_stack->substate) + 1);
+    hci_stack->substate = (hci_substate_t )( ((int) hci_stack->substate) + 1);
+}
+
+// assumption: hci_can_send_command_packet_now() == true
+static void hci_initializing_run(){
+    // log_info("hci_init: substate %u", hci_stack->substate >> 1);
+    switch (hci_stack->substate){
+        case HCI_INIT_SEND_RESET:
+            hci_state_reset();
+            hci_send_cmd(&hci_reset);
+            hci_stack->substate = HCI_INIT_W4_SEND_RESET;
+            break;
+        case HCI_INIT_SEND_BAUD_CHANGE:
+            hci_stack->control->baudrate_cmd(hci_stack->config, ((hci_uart_config_t *)hci_stack->config)->baudrate_main, hci_stack->hci_packet_buffer);
+            hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
+            hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
+            hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE;
+            break;
+        case HCI_INIT_SET_BD_ADDR:
+            log_info("Set Public BD ADDR to %s", bd_addr_to_str(hci_stack->custom_bd_addr));
+            hci_stack->control->set_bd_addr_cmd(hci_stack->config, hci_stack->custom_bd_addr, hci_stack->hci_packet_buffer);
+            hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
+            hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
+            hci_stack->substate = HCI_INIT_W4_SET_BD_ADDR;
+            break;
+        case HCI_INIT_CUSTOM_INIT:
+            log_info("Custom init");
+            // Custom initialization
+            if (hci_stack->control && hci_stack->control->next_cmd){
+                int valid_cmd = (*hci_stack->control->next_cmd)(hci_stack->config, hci_stack->hci_packet_buffer);
+                if (valid_cmd){
+                    int size = 3 + hci_stack->hci_packet_buffer[2];
+                    hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
+                    hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, hci_stack->hci_packet_buffer, size);
+                    hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, hci_stack->hci_packet_buffer, size);
+                    hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT; // more init commands
+                    break;
+                }
+               log_info("hci_run: init script done");
+            }
+            // otherwise continue
+            hci_send_cmd(&hci_read_bd_addr);
+            hci_stack->substate = HCI_INIT_W4_READ_BD_ADDR;
+            break;
+        case HCI_INIT_READ_BUFFER_SIZE:
+            hci_send_cmd(&hci_read_buffer_size);
+            hci_stack->substate = HCI_INIT_W4_READ_BUFFER_SIZE;
+            break;
+        case HCI_INIT_READ_LOCAL_SUPPORTED_FEATUES:
+            hci_send_cmd(&hci_read_local_supported_features);
+            hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_FEATUES;
+            break;                
+        case HCI_INIT_SET_EVENT_MASK:
+            if (hci_le_supported()){
+                hci_send_cmd(&hci_set_event_mask,0xffffffff, 0x3FFFFFFF);
+            } else {
+                // Kensington Bluetooth 2.1 USB Dongle (CSR Chipset) returns an error for 0xffff... 
+                hci_send_cmd(&hci_set_event_mask,0xffffffff, 0x1FFFFFFF);
+            }
+            hci_stack->substate = HCI_INIT_W4_SET_EVENT_MASK;
+            break;
+        case HCI_INIT_WRITE_SIMPLE_PAIRING_MODE:
+            hci_send_cmd(&hci_write_simple_pairing_mode, hci_stack->ssp_enable);
+            hci_stack->substate = HCI_INIT_W4_WRITE_SIMPLE_PAIRING_MODE;
+            break;
+        case HCI_INIT_WRITE_PAGE_TIMEOUT:
+            hci_send_cmd(&hci_write_page_timeout, 0x6000);  // ca. 15 sec
+            hci_stack->substate = HCI_INIT_W4_WRITE_PAGE_TIMEOUT;
+            break;
+        case HCI_INIT_WRITE_CLASS_OF_DEVICE:
+            hci_send_cmd(&hci_write_class_of_device, hci_stack->class_of_device);
+            hci_stack->substate = HCI_INIT_W4_WRITE_CLASS_OF_DEVICE;
+            break;
+        case HCI_INIT_WRITE_LOCAL_NAME:
+            if (hci_stack->local_name){
+                hci_send_cmd(&hci_write_local_name, hci_stack->local_name);
+            } else {
+                char hostname[30];
+#ifdef EMBEDDED
+                // BTstack-11:22:33:44:55:66
+                strcpy(hostname, "BTstack ");
+                strcat(hostname, bd_addr_to_str(hci_stack->local_bd_addr));
+                log_info("---> Name %s", hostname);
+#else
+                // hostname for POSIX systems
+                gethostname(hostname, 30);
+                hostname[29] = '\0';
+#endif                        
+                hci_send_cmd(&hci_write_local_name, hostname);
+            }
+            hci_stack->substate = HCI_INIT_W4_WRITE_LOCAL_NAME;
+            break;
+        case HCI_INIT_WRITE_SCAN_ENABLE:
+            hci_send_cmd(&hci_write_scan_enable, (hci_stack->connectable << 1) | hci_stack->discoverable); // page scan
+            hci_stack->substate = HCI_INIT_W4_WRITE_SCAN_ENABLE;
+            break;
+#ifdef HAVE_BLE
+        // LE INIT
+        case HCI_INIT_LE_READ_BUFFER_SIZE:
+            hci_send_cmd(&hci_le_read_buffer_size);
+            hci_stack->substate = HCI_INIT_W4_LE_READ_BUFFER_SIZE;
+            break;
+        case HCI_INIT_WRITE_LE_HOST_SUPPORTED:
+            // LE Supported Host = 1, Simultaneous Host = 0
+            hci_send_cmd(&hci_write_le_host_supported, 1, 0);
+            hci_stack->substate = HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED;
+            break;
+        case HCI_INIT_LE_SET_SCAN_PARAMETERS:
+            // LE Scan Parameters: active scanning, 300 ms interval, 30 ms window, public address, accept all advs
+            hci_send_cmd(&hci_le_set_scan_parameters, 1, 0x1e0, 0x30, 0, 0);
+            hci_stack->substate = HCI_INIT_W4_LE_SET_SCAN_PARAMETERS;
+            break;
+#endif
+        // DONE
+        case HCI_INIT_DONE:
+            // done.
+            hci_stack->state = HCI_STATE_WORKING;
+            hci_emit_state();
+            return;
+        default:
+            return;
+    }
 }
 
 static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
@@ -844,157 +965,66 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
     
     if (!command_completed) return;
 
-    switch(hci_stack->substate >> 1){
-        default:
-            hci_initializing_next_state();
-            break;
-    }
-}
-
-static void hci_initializing_state_machine(){
-
-    // log_info("hci_init: substate %u", hci_stack->substate >> 1);
-    switch (hci_stack->substate){
-        case HCI_INIT_SEND_RESET:
-            hci_state_reset();
-        
-            hci_send_cmd(&hci_reset);
+    switch(hci_stack->substate){
+        case HCI_INIT_W4_SEND_RESET:
             if (hci_stack->config == NULL || ((hci_uart_config_t *)hci_stack->config)->baudrate_main == 0){
-                // skip baud change
-                hci_stack->substate = HCI_INIT_LOCAL_BAUD_CHANGE; // to end up at HCI_INIT_SET_BD_ADDR
-            }
-            break;
-        case HCI_INIT_SEND_BAUD_CHANGE:
-            hci_stack->control->baudrate_cmd(hci_stack->config, ((hci_uart_config_t *)hci_stack->config)->baudrate_main, hci_stack->hci_packet_buffer);
-            hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
-            hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
+                if (hci_stack->custom_bd_addr_set && hci_stack->control && hci_stack->control->set_bd_addr_cmd){
+                    // skip baud change
+                    hci_stack->substate = HCI_INIT_SET_BD_ADDR;
+                    return;
+                } else {
+                    // skip baud change and set bd addr
+                    hci_stack->substate = HCI_INIT_CUSTOM_INIT;
+                    return;
+                }
+            } 
             break;
         case HCI_INIT_LOCAL_BAUD_CHANGE:
             log_info("Local baud rate change");
             hci_stack->hci_transport->set_baudrate(((hci_uart_config_t *)hci_stack->config)->baudrate_main);
-            hci_stack->substate = HCI_INIT_SET_BD_ADDR;
-            // break missing here for fall through
-        
-        case HCI_INIT_SET_BD_ADDR:
-            if ( hci_stack->custom_bd_addr_set && hci_stack->control && hci_stack->control->set_bd_addr_cmd){
-                log_info("Set Public BD ADDR to %s", bd_addr_to_str(hci_stack->custom_bd_addr));
-                hci_stack->control->set_bd_addr_cmd(hci_stack->config, hci_stack->custom_bd_addr, hci_stack->hci_packet_buffer);
-                hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
-                hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
-                break;
-            }
-            hci_stack->substate = HCI_INIT_CUSTOM_INIT;
-            // break missing here for fall through
-
-        case HCI_INIT_CUSTOM_INIT:
-            log_info("Custom init");
-            // Custom initialization
-            if (hci_stack->control && hci_stack->control->next_cmd){
-                int valid_cmd = (*hci_stack->control->next_cmd)(hci_stack->config, hci_stack->hci_packet_buffer);
-                if (valid_cmd){
-                    int size = 3 + hci_stack->hci_packet_buffer[2];
-                    hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
-                    hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, hci_stack->hci_packet_buffer, size);
-                    hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, hci_stack->hci_packet_buffer, size);
-                    hci_stack->substate = 3 << 1; // more init commands
-                    break;
-                }
-                log_info("hci_run: init script done");
-            }
-            // otherwise continue
-            hci_send_cmd(&hci_read_bd_addr);
-            break;
-        case HCI_INIT_READ_BUFFER_SIZE:
-            hci_send_cmd(&hci_read_buffer_size);
-            break;
-        case HCI_INIT_READ_LOCAL_SUPPORTED_FEATUES:
-            hci_send_cmd(&hci_read_local_supported_features);
-            break;                
-        case HCI_INIT_SET_EVENT_MASK:
-            if (hci_le_supported()){
-                hci_send_cmd(&hci_set_event_mask,0xffffffff, 0x3FFFFFFF);
+            if (hci_stack->custom_bd_addr_set && hci_stack->control && hci_stack->control->set_bd_addr_cmd){
+                // skip baud change
+                hci_stack->substate = HCI_INIT_SET_BD_ADDR;
+                return;
             } else {
-                // Kensington Bluetooth 2.1 USB Dongle (CSR Chipset) returns an error for 0xffff... 
-                hci_send_cmd(&hci_set_event_mask,0xffffffff, 0x1FFFFFFF);
+                // skip baud change and set bd addr
+                hci_stack->substate = HCI_INIT_CUSTOM_INIT;
+                return;
             }
-
+            break;
+        case HCI_INIT_W4_CUSTOM_INIT:
+            // repeat custom init
+            hci_stack->substate = HCI_INIT_CUSTOM_INIT;
+            return;
+        case HCI_INIT_W4_SET_EVENT_MASK:
             // skip Classic init commands for LE only chipsets
             if (!hci_classic_supported()){
                 if (hci_le_supported()){
-                    hci_stack->substate = HCI_INIT_WRITE_SCAN_ENABLE; // skip all classic command
+                    hci_stack->substate = HCI_INIT_LE_READ_BUFFER_SIZE; // skip all classic command
+                    return;
                 } else {
                     log_error("Neither BR/EDR nor LE supported");
-                    hci_stack->substate = HCI_INIT_LE_SET_SCAN_PARAMETERS;    // skip all
+                    hci_stack->substate = HCI_INIT_DONE; // skip all
+                    return;
                 }
             }
-            break;
-        case HCI_INIT_WRITE_SIMPLE_PAIRING_MODE:
-            if (hci_ssp_supported()){
-                hci_send_cmd(&hci_write_simple_pairing_mode, hci_stack->ssp_enable);
-                break;
-            }
-            hci_stack->substate = HCI_INIT_WRITE_PAGE_TIMEOUT;
-            // break missing here for fall through
-
-        case HCI_INIT_WRITE_PAGE_TIMEOUT:
-            hci_send_cmd(&hci_write_page_timeout, 0x6000);  // ca. 15 sec
-            break;
-        case HCI_INIT_WRITE_CLASS_OF_DEVICE:
-            hci_send_cmd(&hci_write_class_of_device, hci_stack->class_of_device);
-            break;
-
-        case HCI_INIT_WRITE_LOCAL_NAME:
-            if (hci_stack->local_name){
-                hci_send_cmd(&hci_write_local_name, hci_stack->local_name);
-            } else {
-                char hostname[30];
-#ifdef EMBEDDED
-                // BTstack-11:22:33:44:55:66
-                strcpy(hostname, "BTstack ");
-                strcat(hostname, bd_addr_to_str(hci_stack->local_bd_addr));
-                log_info("---> Name %s", hostname);
-#else
-                // hostname for POSIX systems
-                gethostname(hostname, 30);
-                hostname[29] = '\0';
-#endif                        
-                hci_send_cmd(&hci_write_local_name, hostname);
+            if (!hci_ssp_supported()){
+                hci_stack->substate = HCI_INIT_WRITE_PAGE_TIMEOUT;
+                return;
             }
             break;
-        case HCI_INIT_WRITE_SCAN_ENABLE:
-            hci_send_cmd(&hci_write_scan_enable, (hci_stack->connectable << 1) | hci_stack->discoverable); // page scan
+        case HCI_INIT_W4_WRITE_SCAN_ENABLE:
             if (!hci_le_supported()){
                 // SKIP LE init for Classic only configuration
-                hci_stack->substate = HCI_INIT_LE_SET_SCAN_PARAMETERS;
+                hci_stack->substate = HCI_INIT_DONE;
+                return;
             }
-            break;
-
-#ifdef HAVE_BLE
-        // LE INIT
-        case HCI_INIT_LE_READ_BUFFER_SIZE:
-            hci_send_cmd(&hci_le_read_buffer_size);
-            break;
-        case HCI_INIT_WRITE_LE_HOST_SUPPORTED:
-            // LE Supported Host = 1, Simultaneous Host = 0
-            hci_send_cmd(&hci_write_le_host_supported, 1, 0);
-            break;
-        case HCI_INIT_LE_SET_SCAN_PARAMETERS:
-            // LE Scan Parameters: active scanning, 300 ms interval, 30 ms window, public address, accept all advs
-            hci_send_cmd(&hci_le_set_scan_parameters, 1, 0x1e0, 0x30, 0, 0);
-            break;
-#endif
-
-        // DONE
-        case HCI_INIT_DONE:
-            // done.
-            hci_stack->state = HCI_STATE_WORKING;
-            hci_emit_state();
-            return;
         default:
-            return;
+            break;
     }
     hci_initializing_next_state();
 }
+
 
 // avoid huge local variables
 #ifndef EMBEDDED
@@ -1447,7 +1477,7 @@ static void event_handler(uint8_t *packet, int size){
     
     // help with BT sleep
     if (hci_stack->state == HCI_STATE_FALLING_ASLEEP
-        && hci_stack->substate == HCI_INIT_W4_SEND_RESET
+        && hci_stack->substate == HCI_FALLING_ASLEEP_W4_WRITE_SCAN_ENABLE
         && COMMAND_COMPLETE_EVENT(packet, hci_write_scan_enable)){
         hci_initializing_next_state();
     }
@@ -1775,7 +1805,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                 case HCI_POWER_SLEEP:
                     // see hci_run
                     hci_stack->state = HCI_STATE_FALLING_ASLEEP;
-                    hci_stack->substate = HCI_INIT_SEND_RESET;
+                    hci_stack->substate = HCI_FALLING_ASLEEP_DISCONNECT;
                     break;
             }
             break;
@@ -1791,7 +1821,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                 case HCI_POWER_SLEEP:
                     // see hci_run
                     hci_stack->state = HCI_STATE_FALLING_ASLEEP;
-                    hci_stack->substate = HCI_INIT_SEND_RESET;
+                    hci_stack->substate = HCI_FALLING_ASLEEP_DISCONNECT;
                     break;
             }
             break;
@@ -1804,7 +1834,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                     // nothing to do, if H4 supports power management
                     if (bt_control_iphone_power_management_enabled()){
                         hci_stack->state = HCI_STATE_INITIALIZING;
-                        hci_stack->substate = HCI_INIT_AFTER_SLEEP;
+                        hci_stack->substate = HCI_INIT_WRITE_SCAN_ENABLE;   // init after sleep
                         break;
                     }
 #endif
@@ -2111,7 +2141,7 @@ void hci_run(){
 
     switch (hci_stack->state){
         case HCI_STATE_INITIALIZING:
-            hci_initializing_state_machine();
+            hci_initializing_run();
             break;
             
         case HCI_STATE_HALTING:
@@ -2143,7 +2173,7 @@ void hci_run(){
             
         case HCI_STATE_FALLING_ASLEEP:
             switch(hci_stack->substate) {
-                case 0:
+                case HCI_FALLING_ASLEEP_DISCONNECT:
                     log_info("HCI_STATE_FALLING_ASLEEP");
                     // close all open connections
                     connection =  (hci_connection_t *) hci_stack->connections;
@@ -2175,12 +2205,12 @@ void hci_run(){
                         hci_send_cmd(&hci_write_scan_enable, hci_stack->connectable << 1); // drop inquiry scan but keep page scan
                         
                         // continue in next sub state
-                        hci_initializing_next_state();
+                        hci_stack->substate = HCI_FALLING_ASLEEP_W4_WRITE_SCAN_ENABLE;
                         break;
                     }
                     // fall through for ble-only chips
 
-                case 2:
+                case HCI_FALLING_ASLEEP_COMPLETE:
                     log_info("HCI_STATE_HALTING, calling sleep");
 #if defined(USE_POWERMANAGEMENT) && defined(USE_BLUETOOL)
                     // don't actually go to sleep, if H4 supports power management

@@ -538,6 +538,9 @@ typedef enum hci_init_state{
     HCI_INIT_W4_SET_BD_ADDR,
     HCI_INIT_CUSTOM_INIT,
     HCI_INIT_W4_CUSTOM_INIT,
+    
+    HCI_INIT_READ_BD_ADDR,
+    HCI_INIT_W4_READ_BD_ADDR,
 
     HCI_INIT_READ_BUFFER_SIZE,
     HCI_INIT_W4_READ_BUFFER_SIZE,
@@ -565,9 +568,14 @@ typedef enum hci_init_state{
     HCI_INIT_W4_LE_SET_SCAN_PARAMETERS,
 
     HCI_INIT_DONE,
+
+    HCI_FALLING_ASLEEP_DISCONNECT,
+    HCI_FALLING_ASLEEP_W4_WRITE_SCAN_ENABLE,
+    HCI_FALLING_ASLEEP_COMPLETE,
+
     HCI_INIT_AFTER_SLEEP
 
-} hci_init_state_t;
+} hci_substate_t;
 
 
 /**
@@ -622,8 +630,8 @@ typedef struct {
     remote_device_db_t const*remote_device_db;
     
     /* hci state machine */
-    HCI_STATE state;
-    hci_init_state_t substate;
+    HCI_STATE      state;
+    hci_substate_t substate;
     uint8_t   cmds_ready;
     
     uint16_t  last_cmd_opcode;
