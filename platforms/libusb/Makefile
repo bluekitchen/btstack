@@ -31,6 +31,4 @@ EXAMPLES += ${EXAMPLES_CLI}
 CFLAGS += -I${POSIX_ROOT}/src
 endif
 
-EXAMPLES += sam3u_benchmark
-
 all: ${BTSTACK_ROOT}/include/btstack/version.h ${EXAMPLES}
