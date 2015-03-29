@@ -817,8 +817,7 @@ static void hci_initializing_next_state(){
 
 static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
     uint8_t command_completed = 0;
-    if ((hci_stack->substate % 2) == 0) return;
-    // odd: waiting for event
+
     if (packet[0] == HCI_EVENT_COMMAND_COMPLETE){
         uint16_t opcode = READ_BT_16(packet,3);
         if (opcode == hci_stack->last_cmd_opcode){
@@ -853,10 +852,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 }
 
 static void hci_initializing_state_machine(){
-    if (hci_stack->substate % 2) {
-        // odd: waiting for command completion
-        return;
-    }
+
     // log_info("hci_init: substate %u", hci_stack->substate >> 1);
     switch (hci_stack->substate){
         case HCI_INIT_SEND_RESET:
@@ -993,9 +989,9 @@ static void hci_initializing_state_machine(){
             // done.
             hci_stack->state = HCI_STATE_WORKING;
             hci_emit_state();
-            break;
+            return;
         default:
-            break;
+            return;
     }
     hci_initializing_next_state();
 }
