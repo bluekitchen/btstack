@@ -854,28 +854,28 @@ static void hci_initializing_state_machine(){
         return;
     }
     // log_info("hci_init: substate %u", hci_stack->substate >> 1);
-    switch (hci_stack->substate >> 1){
-        case 0: // RESET
+    switch (hci_stack->substate){
+        case HCI_INIT_SEND_RESET:
             hci_state_reset();
         
             hci_send_cmd(&hci_reset);
             if (hci_stack->config == NULL || ((hci_uart_config_t *)hci_stack->config)->baudrate_main == 0){
                 // skip baud change
-                hci_stack->substate = 2 << 1; 
+                hci_stack->substate = HCI_INIT_LOCAL_BAUD_CHANGE; // to end up at HCI_INIT_SET_BD_ADDR
             }
             break;
-        case 1: // SEND BAUD CHANGE
+        case HCI_INIT_SEND_BAUD_CHANGE:
             hci_stack->control->baudrate_cmd(hci_stack->config, ((hci_uart_config_t *)hci_stack->config)->baudrate_main, hci_stack->hci_packet_buffer);
             hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
             hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
             break;
-        case 2: // LOCAL BAUD CHANGE
+        case HCI_INIT_LOCAL_BAUD_CHANGE:
             log_info("Local baud rate change");
             hci_stack->hci_transport->set_baudrate(((hci_uart_config_t *)hci_stack->config)->baudrate_main);
-            hci_stack->substate += 2;
+            hci_stack->substate = HCI_INIT_SET_BD_ADDR;
             // break missing here for fall through
         
-        case 3: // SET BD ADDR
+        case HCI_INIT_SET_BD_ADDR:
             if ( hci_stack->custom_bd_addr_set && hci_stack->control && hci_stack->control->set_bd_addr_cmd){
                 log_info("Set Public BD ADDR to %s", bd_addr_to_str(hci_stack->custom_bd_addr));
                 hci_stack->control->set_bd_addr_cmd(hci_stack->config, hci_stack->custom_bd_addr, hci_stack->hci_packet_buffer);
@@ -883,10 +883,10 @@ static void hci_initializing_state_machine(){
                 hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
                 break;
             }
-            hci_stack->substate += 2;
+            hci_stack->substate = HCI_INIT_CUSTOM_INIT;
             // break missing here for fall through
 
-        case 4:
+        case HCI_INIT_CUSTOM_INIT:
             log_info("Custom init");
             // Custom initialization
             if (hci_stack->control && hci_stack->control->next_cmd){
@@ -904,13 +904,13 @@ static void hci_initializing_state_machine(){
             // otherwise continue
             hci_send_cmd(&hci_read_bd_addr);
             break;
-        case 5:
+        case HCI_INIT_READ_BUFFER_SIZE:
             hci_send_cmd(&hci_read_buffer_size);
             break;
-        case 6:
+        case HCI_INIT_READ_LOCAL_SUPPORTED_FEATUES:
             hci_send_cmd(&hci_read_local_supported_features);
             break;                
-        case 7:
+        case HCI_INIT_SET_EVENT_MASK:
             if (hci_le_supported()){
                 hci_send_cmd(&hci_set_event_mask,0xffffffff, 0x3FFFFFFF);
             } else {
@@ -921,29 +921,29 @@ static void hci_initializing_state_machine(){
             // skip Classic init commands for LE only chipsets
             if (!hci_classic_supported()){
                 if (hci_le_supported()){
-                    hci_stack->substate = 12 << 1;    // skip all classic command
+                    hci_stack->substate = HCI_INIT_WRITE_SCAN_ENABLE; // skip all classic command
                 } else {
                     log_error("Neither BR/EDR nor LE supported");
-                    hci_stack->substate = 15 << 1;    // skip all
+                    hci_stack->substate = HCI_INIT_LE_SET_SCAN_PARAMETERS;    // skip all
                 }
             }
             break;
-        case 8:
+        case HCI_INIT_WRITE_SIMPLE_PAIRING_MODE:
             if (hci_ssp_supported()){
                 hci_send_cmd(&hci_write_simple_pairing_mode, hci_stack->ssp_enable);
                 break;
             }
-            hci_stack->substate += 2;
+            hci_stack->substate = HCI_INIT_WRITE_PAGE_TIMEOUT;
             // break missing here for fall through
 
-        case 9:
-            // ca. 15 sec
-            hci_send_cmd(&hci_write_page_timeout, 0x6000);
+        case HCI_INIT_WRITE_PAGE_TIMEOUT:
+            hci_send_cmd(&hci_write_page_timeout, 0x6000);  // ca. 15 sec
             break;
-        case 10:
+        case HCI_INIT_WRITE_CLASS_OF_DEVICE:
             hci_send_cmd(&hci_write_class_of_device, hci_stack->class_of_device);
             break;
-        case 11:
+
+        case HCI_INIT_WRITE_LOCAL_NAME:
             if (hci_stack->local_name){
                 hci_send_cmd(&hci_write_local_name, hci_stack->local_name);
             } else {
@@ -961,31 +961,31 @@ static void hci_initializing_state_machine(){
                 hci_send_cmd(&hci_write_local_name, hostname);
             }
             break;
-        case 12:
+        case HCI_INIT_WRITE_SCAN_ENABLE:
             hci_send_cmd(&hci_write_scan_enable, (hci_stack->connectable << 1) | hci_stack->discoverable); // page scan
             if (!hci_le_supported()){
                 // SKIP LE init for Classic only configuration
-                hci_stack->substate = 15 << 1;
+                hci_stack->substate = HCI_INIT_LE_SET_SCAN_PARAMETERS;
             }
             break;
 
 #ifdef HAVE_BLE
         // LE INIT
-        case 13:
+        case HCI_INIT_LE_READ_BUFFER_SIZE:
             hci_send_cmd(&hci_le_read_buffer_size);
             break;
-        case 14:
+        case HCI_INIT_WRITE_LE_HOST_SUPPORTED:
             // LE Supported Host = 1, Simultaneous Host = 0
             hci_send_cmd(&hci_write_le_host_supported, 1, 0);
             break;
-        case 15:
+        case HCI_INIT_LE_SET_SCAN_PARAMETERS:
             // LE Scan Parameters: active scanning, 300 ms interval, 30 ms window, public address, accept all advs
             hci_send_cmd(&hci_le_set_scan_parameters, 1, 0x1e0, 0x30, 0, 0);
             break;
 #endif
 
         // DONE
-        case 16:
+        case HCI_INIT_DONE:
             // done.
             hci_stack->state = HCI_STATE_WORKING;
             hci_emit_state();
@@ -1447,7 +1447,7 @@ static void event_handler(uint8_t *packet, int size){
     
     // help with BT sleep
     if (hci_stack->state == HCI_STATE_FALLING_ASLEEP
-        && hci_stack->substate == 1
+        && hci_stack->substate == HCI_INIT_W4_SEND_RESET
         && COMMAND_COMPLETE_EVENT(packet, hci_write_scan_enable)){
         hci_stack->substate++;
     }
@@ -1718,7 +1718,7 @@ static void hci_power_transition_to_initializing(void){
     hci_stack->num_cmd_packets = 1; // assume that one cmd can be sent
     hci_stack->hci_packet_buffer_reserved = 0;
     hci_stack->state = HCI_STATE_INITIALIZING;
-    hci_stack->substate = 0;
+    hci_stack->substate = HCI_INIT_SEND_RESET;
 }
 
 int hci_power_control(HCI_POWER_MODE power_mode){
@@ -1775,7 +1775,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                 case HCI_POWER_SLEEP:
                     // see hci_run
                     hci_stack->state = HCI_STATE_FALLING_ASLEEP;
-                    hci_stack->substate = 0;
+                    hci_stack->substate = HCI_INIT_SEND_RESET;
                     break;
             }
             break;
@@ -1791,7 +1791,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                 case HCI_POWER_SLEEP:
                     // see hci_run
                     hci_stack->state = HCI_STATE_FALLING_ASLEEP;
-                    hci_stack->substate = 0;
+                    hci_stack->substate = HCI_INIT_SEND_RESET;
                     break;
             }
             break;
@@ -1804,7 +1804,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                     // nothing to do, if H4 supports power management
                     if (bt_control_iphone_power_management_enabled()){
                         hci_stack->state = HCI_STATE_INITIALIZING;
-                        hci_stack->substate = HCI_INTI_AFTER_SLEEP;
+                        hci_stack->substate = HCI_INIT_AFTER_SLEEP;
                         break;
                     }
 #endif
@@ -1828,7 +1828,7 @@ int hci_power_control(HCI_POWER_MODE power_mode){
                     // nothing to do, if H4 supports power management
                     if (bt_control_iphone_power_management_enabled()){
                         hci_stack->state = HCI_STATE_INITIALIZING;
-                        hci_stack->substate = HCI_INTI_AFTER_SLEEP;
+                        hci_stack->substate = HCI_INIT_AFTER_SLEEP;
                         hci_update_scan_enable();
                         break;
                     }

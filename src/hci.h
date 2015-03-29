@@ -565,7 +565,7 @@ typedef enum hci_init_state{
     HCI_INIT_W4_LE_SET_SCAN_PARAMETERS,
 
     HCI_INIT_DONE,
-    HCI_INTI_AFTER_SLEEP
+    HCI_INIT_AFTER_SLEEP
 
 } hci_init_state_t;
 
