@@ -811,6 +811,10 @@ void le_handle_advertisement_report(uint8_t *packet, int size){
 }
 #endif
 
+static void hci_initializing_next_state(){
+    hci_stack->substate = (hci_init_state_t )( ((int) hci_stack->substate) + 1);
+}
+
 static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
     uint8_t command_completed = 0;
     if ((hci_stack->substate % 2) == 0) return;
@@ -843,7 +847,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 
     switch(hci_stack->substate >> 1){
         default:
-            hci_stack->substate++;
+            hci_initializing_next_state();
             break;
     }
 }
@@ -993,7 +997,7 @@ static void hci_initializing_state_machine(){
         default:
             break;
     }
-    hci_stack->substate++;
+    hci_initializing_next_state();
 }
 
 // avoid huge local variables
@@ -1449,7 +1453,7 @@ static void event_handler(uint8_t *packet, int size){
     if (hci_stack->state == HCI_STATE_FALLING_ASLEEP
         && hci_stack->substate == HCI_INIT_W4_SEND_RESET
         && COMMAND_COMPLETE_EVENT(packet, hci_write_scan_enable)){
-        hci_stack->substate++;
+        hci_initializing_next_state();
     }
     
     // notify upper stack
@@ -2175,7 +2179,7 @@ void hci_run(){
                         hci_send_cmd(&hci_write_scan_enable, hci_stack->connectable << 1); // drop inquiry scan but keep page scan
                         
                         // continue in next sub state
-                        hci_stack->substate++;
+                        hci_initializing_next_state();
                         break;
                     }
                     // fall through for ble-only chips
