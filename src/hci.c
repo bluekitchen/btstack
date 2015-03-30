@@ -811,6 +811,17 @@ void le_handle_advertisement_report(uint8_t *packet, int size){
 }
 #endif
 
+static void hci_initialization_timeout_handler(timer_source_t * ds){
+    switch (hci_stack->substate){
+        case HCI_INIT_W4_SEND_RESET:
+            hci_stack->substate = HCI_INIT_SEND_RESET;
+            hci_run();
+            break;
+        default:
+            break;
+    }
+}
+
 static void hci_initializing_next_state(){
     hci_stack->substate = (hci_substate_t )( ((int) hci_stack->substate) + 1);
 }
@@ -821,21 +832,26 @@ static void hci_initializing_run(){
     switch (hci_stack->substate){
         case HCI_INIT_SEND_RESET:
             hci_state_reset();
-            hci_send_cmd(&hci_reset);
+            // prepare reset if command complete not received in 100ms
+            run_loop_set_timer(&hci_stack->timeout, 100);
+            run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
+            run_loop_add_timer(&hci_stack->timeout);
+            // send command
             hci_stack->substate = HCI_INIT_W4_SEND_RESET;
+            hci_send_cmd(&hci_reset);
             break;
         case HCI_INIT_SEND_BAUD_CHANGE:
             hci_stack->control->baudrate_cmd(hci_stack->config, ((hci_uart_config_t *)hci_stack->config)->baudrate_main, hci_stack->hci_packet_buffer);
             hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
-            hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
             hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE;
+            hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
             break;
         case HCI_INIT_SET_BD_ADDR:
             log_info("Set Public BD ADDR to %s", bd_addr_to_str(hci_stack->custom_bd_addr));
             hci_stack->control->set_bd_addr_cmd(hci_stack->config, hci_stack->custom_bd_addr, hci_stack->hci_packet_buffer);
             hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
-            hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
             hci_stack->substate = HCI_INIT_W4_SET_BD_ADDR;
+            hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
             break;
         case HCI_INIT_CUSTOM_INIT:
             log_info("Custom init");
@@ -846,46 +862,47 @@ static void hci_initializing_run(){
                     int size = 3 + hci_stack->hci_packet_buffer[2];
                     hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
                     hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, hci_stack->hci_packet_buffer, size);
-                    hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, hci_stack->hci_packet_buffer, size);
                     hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT; // more init commands
+                    hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, hci_stack->hci_packet_buffer, size);
                     break;
                 }
                log_info("hci_run: init script done");
             }
             // otherwise continue
-            hci_send_cmd(&hci_read_bd_addr);
             hci_stack->substate = HCI_INIT_W4_READ_BD_ADDR;
+            hci_send_cmd(&hci_read_bd_addr);
             break;
         case HCI_INIT_READ_BUFFER_SIZE:
-            hci_send_cmd(&hci_read_buffer_size);
             hci_stack->substate = HCI_INIT_W4_READ_BUFFER_SIZE;
+            hci_send_cmd(&hci_read_buffer_size);
             break;
         case HCI_INIT_READ_LOCAL_SUPPORTED_FEATUES:
-            hci_send_cmd(&hci_read_local_supported_features);
             hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_FEATUES;
+            hci_send_cmd(&hci_read_local_supported_features);
             break;                
         case HCI_INIT_SET_EVENT_MASK:
+            hci_stack->substate = HCI_INIT_W4_SET_EVENT_MASK;
             if (hci_le_supported()){
                 hci_send_cmd(&hci_set_event_mask,0xffffffff, 0x3FFFFFFF);
             } else {
                 // Kensington Bluetooth 2.1 USB Dongle (CSR Chipset) returns an error for 0xffff... 
                 hci_send_cmd(&hci_set_event_mask,0xffffffff, 0x1FFFFFFF);
             }
-            hci_stack->substate = HCI_INIT_W4_SET_EVENT_MASK;
             break;
         case HCI_INIT_WRITE_SIMPLE_PAIRING_MODE:
-            hci_send_cmd(&hci_write_simple_pairing_mode, hci_stack->ssp_enable);
             hci_stack->substate = HCI_INIT_W4_WRITE_SIMPLE_PAIRING_MODE;
+            hci_send_cmd(&hci_write_simple_pairing_mode, hci_stack->ssp_enable);
             break;
         case HCI_INIT_WRITE_PAGE_TIMEOUT:
-            hci_send_cmd(&hci_write_page_timeout, 0x6000);  // ca. 15 sec
             hci_stack->substate = HCI_INIT_W4_WRITE_PAGE_TIMEOUT;
+            hci_send_cmd(&hci_write_page_timeout, 0x6000);  // ca. 15 sec
             break;
         case HCI_INIT_WRITE_CLASS_OF_DEVICE:
-            hci_send_cmd(&hci_write_class_of_device, hci_stack->class_of_device);
             hci_stack->substate = HCI_INIT_W4_WRITE_CLASS_OF_DEVICE;
+            hci_send_cmd(&hci_write_class_of_device, hci_stack->class_of_device);
             break;
         case HCI_INIT_WRITE_LOCAL_NAME:
+            hci_stack->substate = HCI_INIT_W4_WRITE_LOCAL_NAME;
             if (hci_stack->local_name){
                 hci_send_cmd(&hci_write_local_name, hci_stack->local_name);
             } else {
@@ -902,7 +919,6 @@ static void hci_initializing_run(){
 #endif                        
                 hci_send_cmd(&hci_write_local_name, hostname);
             }
-            hci_stack->substate = HCI_INIT_W4_WRITE_LOCAL_NAME;
             break;
         case HCI_INIT_WRITE_SCAN_ENABLE:
             hci_send_cmd(&hci_write_scan_enable, (hci_stack->connectable << 1) | hci_stack->discoverable); // page scan
@@ -911,18 +927,18 @@ static void hci_initializing_run(){
 #ifdef HAVE_BLE
         // LE INIT
         case HCI_INIT_LE_READ_BUFFER_SIZE:
-            hci_send_cmd(&hci_le_read_buffer_size);
             hci_stack->substate = HCI_INIT_W4_LE_READ_BUFFER_SIZE;
+            hci_send_cmd(&hci_le_read_buffer_size);
             break;
         case HCI_INIT_WRITE_LE_HOST_SUPPORTED:
             // LE Supported Host = 1, Simultaneous Host = 0
-            hci_send_cmd(&hci_write_le_host_supported, 1, 0);
             hci_stack->substate = HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED;
+            hci_send_cmd(&hci_write_le_host_supported, 1, 0);
             break;
         case HCI_INIT_LE_SET_SCAN_PARAMETERS:
             // LE Scan Parameters: active scanning, 300 ms interval, 30 ms window, public address, accept all advs
-            hci_send_cmd(&hci_le_set_scan_parameters, 1, 0x1e0, 0x30, 0, 0);
             hci_stack->substate = HCI_INIT_W4_LE_SET_SCAN_PARAMETERS;
+            hci_send_cmd(&hci_le_set_scan_parameters, 1, 0x1e0, 0x30, 0, 0);
             break;
 #endif
         // DONE
@@ -967,6 +983,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 
     switch(hci_stack->substate){
         case HCI_INIT_W4_SEND_RESET:
+            run_loop_remove_timer(&hci_stack->timeout);
             if (hci_stack->config == NULL || ((hci_uart_config_t *)hci_stack->config)->baudrate_main == 0){
                 if (hci_stack->custom_bd_addr_set && hci_stack->control && hci_stack->control->set_bd_addr_cmd){
                     // skip baud change

@@ -632,6 +632,7 @@ typedef struct {
     /* hci state machine */
     HCI_STATE      state;
     hci_substate_t substate;
+    timer_source_t timeout;
     uint8_t   cmds_ready;
     
     uint16_t  last_cmd_opcode;
