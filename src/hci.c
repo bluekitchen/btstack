@@ -814,7 +814,9 @@ void le_handle_advertisement_report(uint8_t *packet, int size){
 static void hci_initialization_timeout_handler(timer_source_t * ds){
     switch (hci_stack->substate){
         case HCI_INIT_W4_SEND_RESET:
+            log_info("Resend HCI Reset");
             hci_stack->substate = HCI_INIT_SEND_RESET;
+            hci_stack->num_cmd_packets = 1;
             hci_run();
             break;
         default:
