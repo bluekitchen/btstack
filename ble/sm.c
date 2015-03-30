@@ -1365,7 +1365,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             // SM INIT FINISHED, start application code - TODO untangle that
             if (sm_client_packet_handler)
             {
-                uint8_t event[] = { BTSTACK_EVENT_STATE, 0, HCI_STATE_WORKING };
+                uint8_t event[] = { BTSTACK_EVENT_STATE, 1, HCI_STATE_WORKING };
                 sm_client_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*) event, sizeof(event));
             }
             return;
