@@ -828,7 +828,6 @@ int btstack_main(int argc, const char * argv[]){
     // run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
     // run_loop_add_timer(&heartbeat);
 
-    run_loop_execute(); 
     return 0;
 }
 

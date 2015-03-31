@@ -529,8 +529,6 @@ int btstack_main(int argc, const char * argv[]){
     sdp_parser_init();
     sdp_parser_register_callback(handle_sdp_client_query_result);
 
-    /* Start mainloop */
-    run_loop_execute(); 
     return 0;
 }
 

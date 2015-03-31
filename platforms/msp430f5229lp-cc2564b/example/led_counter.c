@@ -56,11 +56,6 @@ int btstack_main(int argc, const char * argv[]){
 
 	timer_setup();
     
-
-    // go!
-    run_loop_execute();	
-    
-    // happy compiler!
     return 0;
 }
 

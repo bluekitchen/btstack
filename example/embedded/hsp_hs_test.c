@@ -219,7 +219,5 @@ int btstack_main(int argc, const char * argv[]){
     
     setup_cli();
 
-    // go!
-    run_loop_execute(); 
     return 0;
 }

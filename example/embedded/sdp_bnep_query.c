@@ -226,7 +226,5 @@ int btstack_main(int argc, const char * argv[]){
     // turn on!
     hci_power_control(HCI_POWER_ON);
             
-    // go!
-    run_loop_execute(); 
     return 0;
 }

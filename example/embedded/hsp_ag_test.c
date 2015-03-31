@@ -200,7 +200,5 @@ int btstack_main(int argc, const char * argv[]){
 
     btstack_stdin_setup(stdin_process);
 
-    // go!
-    run_loop_execute(); 
     return 0;
 }

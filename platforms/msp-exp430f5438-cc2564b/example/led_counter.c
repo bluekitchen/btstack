@@ -56,11 +56,6 @@ int btstack_main(int argc, const char * argv[]){
     
 	printf("Run...\n\r");
 
- 	// turn on!
-    // go!
-    run_loop_execute();	
-    
-    // happy compiler!
     return 0;
 }
 

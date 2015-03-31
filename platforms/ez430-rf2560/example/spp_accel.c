@@ -198,10 +198,6 @@ int btstack_main(int argc, const char * argv[]){
     // make discoverable
     hci_discoverable_control(1);
         
-    // go!
-    run_loop_execute(); 
-    
-    // happy compiler!
     return 0;
 }
 

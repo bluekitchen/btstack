@@ -427,8 +427,6 @@ int btstack_main(int argc, const char * argv[]){
 
     btstack_stdin_setup(stdin_process);
 
-    /* Start mainloop */
-    run_loop_execute(); 
     return 0;
 }
 

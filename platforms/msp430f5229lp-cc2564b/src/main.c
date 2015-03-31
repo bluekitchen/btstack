@@ -79,7 +79,8 @@ int main(void){
 
     btstack_setup();
     btstack_main(0, NULL);
-    // happy compiler!
+
+    run_loop_execute();
     return 0;
 }
 

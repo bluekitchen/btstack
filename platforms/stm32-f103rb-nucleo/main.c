@@ -433,5 +433,8 @@ int main(void)
 	// hand over to btstack embedded code 
     btstack_main();
 
+    // go
+    run_loop_execute();
+
 	return 0;
 }

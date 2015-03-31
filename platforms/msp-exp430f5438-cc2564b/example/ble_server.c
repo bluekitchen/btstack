@@ -275,10 +275,6 @@ int btstack_main(int argc, const char * argv[]){
 
     LED_PORT_OUT &= ~LED_2;
 
-    // go!
-    run_loop_execute();	
-    
-    // happy compiler!
     return 0;
 }
 

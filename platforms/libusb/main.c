@@ -93,7 +93,11 @@ int main(int argc, const char * argv[]){
     // handle CTRL-c
     signal(SIGINT, sigint_handler);
 
+    // setup app
     btstack_main(argc, argv);
-    
+
+    // go
+    run_loop_execute();    
+
     return 0;
 }
