@@ -77,6 +77,7 @@ static uint8_t   spp_service_buffer[150];
 static int       le_notification_enabled;
 
 // THE Couner
+static timer_source_t heartbeat;
 static int  counter = 0;
 static char counter_string[30];
 static int  counter_string_len;
@@ -291,7 +292,6 @@ int btstack_main(void)
     att_server_init(profile_data, att_read_callback, att_write_callback);    
     att_dump_attributes();
     // set one-shot timer
-    timer_source_t heartbeat;
     heartbeat.process = &heartbeat_handler;
     run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
     run_loop_add_timer(&heartbeat);

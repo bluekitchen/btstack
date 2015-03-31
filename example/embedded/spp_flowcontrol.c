@@ -65,6 +65,7 @@ static uint8_t   rfcomm_channel_nr = 1;
 static uint16_t  rfcomm_channel_id;
 static uint8_t   rfcomm_send_credit = 0;
 static uint8_t   spp_service_buffer[150];
+static timer_source_t heartbeat;
 
 // Bluetooth logic
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -178,7 +179,6 @@ int btstack_main(int argc, const char * argv[]){
     sdp_register_service_internal(NULL, service_record_item);
     
     // set one-shot timer
-    timer_source_t heartbeat;
     heartbeat.process = &heartbeat_handler;
     run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
     run_loop_add_timer(&heartbeat);
