@@ -1,5 +1,6 @@
 #!/bin/sh
 echo "Configure BTstack for use with iOS using the theos build system"
+echo "Please run from btstack root folder: platforms/ios/config-iphone.sh"
 
 # get version from svn
 tools/get_version.sh
