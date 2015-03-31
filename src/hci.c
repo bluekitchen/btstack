@@ -1008,7 +1008,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         }
     }
     // Vendor == CSR
-    if (packet[0] == HCI_EVENT_VENDOR_SPECIFIC){
+    if (hci_stack->substate == HCI_INIT_W4_CUSTOM_INIT && packet[0] == HCI_EVENT_VENDOR_SPECIFIC){
         // TODO: track actual command
         command_completed = 1;
     }
