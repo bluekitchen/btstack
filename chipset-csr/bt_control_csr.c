@@ -52,13 +52,15 @@
 #include "debug.h"
 #include <btstack/utils.h>
 
-// minimal CSR init script
+// minimal CSR init script to configure PSKEYs and activate them
 static const uint8_t init_script[] = { 
-    //  BCCMD set ANA_Freq PSKEY to 26MHz
+    //  Set ANA_Freq PSKEY to 26MHz
     0x01, 0x00, 0xFC, 0x13, 0xc2, 0x02, 0x00, 0x09, 0x00, 0x01, 0x00, 0x03, 0x70, 0x00, 0x00, 0xfe, 0x01, 0x01, 0x00, 0x00, 0x00, 0x90, 0x65,
-    //  BCCMD set UART baudrate to 115200
+    //  Set HCI_NOP_DISABLE
+    0x01, 0x00, 0xFC, 0x13, 0xc2, 0x02, 0x00, 0x09, 0x00, 0x01, 0x00, 0x03, 0x70, 0x00, 0x00, 0xf2, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00,
+    //  Set UART baudrate to 115200
     0x01, 0x00, 0xFC, 0x15, 0xc2, 0x02, 0x00, 0x0a, 0x00, 0x02, 0x00, 0x03, 0x70, 0x00, 0x00, 0xea, 0x01, 0x02, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0xc2,
-    //  BCCMD WarmReset
+    //  WarmReset
     0x01, 0x00, 0xFC, 0x13, 0xc2, 0x02, 0x00, 0x09, 0x00, 0x03, 0x0e, 0x02, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 static const uint16_t init_script_size = sizeof(init_script);
@@ -71,7 +73,7 @@ static int bt_control_csr_on(void *config){
 	return 0;
 }
 
-// set baud rate
+// set requested baud rate
 static void bt_control_csr_update_command(hci_uart_config_t *config, uint8_t *hci_cmd_buffer){
     uint16_t varid = READ_BT_16(hci_cmd_buffer, 10);
     if (varid != 0x7003) return;
@@ -119,15 +121,15 @@ static int bt_control_csr_next_cmd(void *config, uint8_t *hci_cmd_buffer){
 // MARK: const structs 
 
 static const bt_control_t bt_control_csr = {
-	bt_control_csr_on,                  // on
-	NULL,                               // off
-	NULL,                               // sleep
-	NULL,                               // wake
-	NULL,                               // valid
-	NULL,                               // name
-	NULL,                               // baudrate_cmd
-	bt_control_csr_next_cmd,            // next_cmd
-	NULL,                               // register_for_power_notifications
+    bt_control_csr_on,                  // on
+    NULL,                               // off
+    NULL,                               // sleep
+    NULL,                               // wake
+    NULL,                               // valid
+    NULL,                               // name
+    NULL,                               // baudrate_cmd
+    bt_control_csr_next_cmd,            // next_cmd
+    NULL,                               // register_for_power_notifications
     NULL,                               // hw_error
     NULL,                               // set_bd_addr_cmd
 };
