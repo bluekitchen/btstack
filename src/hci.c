@@ -819,6 +819,11 @@ static void hci_initialization_timeout_handler(timer_source_t * ds){
             hci_stack->num_cmd_packets = 1;
             hci_run();
             break;
+        case HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT:
+            log_info("Resend HCI Reset - CSR Warm Boot");
+            hci_stack->substate = HCI_INIT_SEND_RESET_CSR_WARM_BOOT;
+            hci_stack->num_cmd_packets = 1;
+            hci_run();
         default:
             break;
     }
@@ -840,6 +845,16 @@ static void hci_initializing_run(){
             run_loop_add_timer(&hci_stack->timeout);
             // send command
             hci_stack->substate = HCI_INIT_W4_SEND_RESET;
+            hci_send_cmd(&hci_reset);
+            break;
+        case HCI_INIT_SEND_RESET_CSR_WARM_BOOT:
+            hci_state_reset();
+            // prepare reset if command complete not received in 100ms
+            run_loop_set_timer(&hci_stack->timeout, 100);
+            run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
+            run_loop_add_timer(&hci_stack->timeout);
+            // send command
+            hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT;
             hci_send_cmd(&hci_reset);
             break;
         case HCI_INIT_SEND_BAUD_CHANGE:
@@ -864,7 +879,19 @@ static void hci_initializing_run(){
                     int size = 3 + hci_stack->hci_packet_buffer[2];
                     hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
                     hci_dump_packet(HCI_COMMAND_DATA_PACKET, 0, hci_stack->hci_packet_buffer, size);
-                    hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT; // more init commands
+                    switch (valid_cmd) {
+                        case 1:
+                        default:
+                            hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT;
+                            break;
+                        case 2: // CSR Warm Boot: Wait a bit, then send HCI Reset until HCI Command Complete
+                            log_info("CSR Warm Boot");
+                            run_loop_set_timer(&hci_stack->timeout, 100);
+                            run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
+                            run_loop_add_timer(&hci_stack->timeout);
+                            hci_stack->substate = HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT;
+                            break;
+                    }
                     hci_stack->hci_transport->send_packet(HCI_COMMAND_DATA_PACKET, hci_stack->hci_packet_buffer, size);
                     break;
                 }
@@ -980,7 +1007,12 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             log_info("Command status for opcode %04x, expected %04x", opcode, hci_stack->last_cmd_opcode);
         }
     }
-    
+    // Vendor == CSR
+    if (packet[0] == HCI_EVENT_VENDOR_SPECIFIC){
+        // TODO: track actual command
+        command_completed = 1;
+    }
+
     if (!command_completed) return;
 
     switch(hci_stack->substate){
@@ -996,8 +1028,13 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
                     hci_stack->substate = HCI_INIT_CUSTOM_INIT;
                     return;
                 }
-            } 
-            break;
+            }
+            hci_stack->substate = HCI_INIT_READ_BUFFER_SIZE;
+            return;
+        case HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT:
+            run_loop_remove_timer(&hci_stack->timeout);
+            hci_stack->substate = HCI_INIT_CUSTOM_INIT;
+            return;
         case HCI_INIT_LOCAL_BAUD_CHANGE:
             log_info("Local baud rate change");
             hci_stack->hci_transport->set_baudrate(((hci_uart_config_t *)hci_stack->config)->baudrate_main);
