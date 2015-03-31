@@ -176,10 +176,15 @@ void log_key(const char * name, sm_key_t key){
     hexdump(key, 16);
 }
 
-void printUUID128(uint8_t *uuid) {
-    printf("%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+static char uuid128_to_str_buffer[16+4+1];
+char * uuid128_to_str(uint8_t * uuid){
+    sprintf(uuid128_to_str_buffer, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
            uuid[0], uuid[1], uuid[2], uuid[3], uuid[4], uuid[5], uuid[6], uuid[7],
            uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15]);
+    return uuid128_to_str_buffer;
+}
+void printUUID128(uint8_t *uuid) {
+    printf("%s", uuid128_to_str(uuid));
 }
 
 static char bd_addr_to_str_buffer[6*3];  // 12:45:78:01:34:67\0
