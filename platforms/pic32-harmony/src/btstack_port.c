@@ -4,10 +4,11 @@
 
 #include "btstack_port.h"
 #include "system_config.h"
-
+#include "bt_control_csr.h"
 #include <btstack/run_loop.h>
 #include "hci_dump.h"
 #include "hci.h"
+#include "hci_transport.h"
 #include "debug.h"
 #include <stdint.h>
 #include <stdbool.h>
@@ -19,10 +20,13 @@
 #include "system/ports/sys_ports.h"
 
 
+// 
+int btstack_main(int argc, const char * argv[]);
+
+
 /// HAL Tick ///
 #include <btstack/hal_tick.h>
 
-//#define APP_TMR_ALARM_PERIOD                0xF424
 #define APP_TMR_ALARM_PERIOD                48825
 #define APP_LED_PORT                        PORT_CHANNEL_A
 #define APP_LED_PIN                         PORTS_BIT_POS_4
@@ -73,6 +77,12 @@ void hal_tick_set_handler(void (*handler)(void)){
     tick_handler = handler;
 }
 
+static void msleep(uint32_t delay) {
+    uint32_t wake = embedded_get_ticks() + delay / hal_tick_get_tick_period_in_ms();
+    while (wake > embedded_get_ticks()){
+        SYS_Tasks();
+    };
+}
 
 /// HAL CPU ///
 #include <btstack/hal_cpu.h>
@@ -109,14 +119,11 @@ static uint8_t * tx_buffer_ptr = 0;
 
 // reset Bluetooth using n_shutdown
 static void bluetooth_power_cycle(void){
-	printf("Bluetooth power cycle\n");
-
-        // TODO implement
-
-//	msleep(250);
-//        SYS_PORTS_PinSet(PORTS_ID_0, APP_BT_RESET_PORT, APP_BT_RESET_BIT);
-//	msleep(500);
-//        SYS_PORTS_PinClear(PORTS_ID_0, APP_BT_RESET_PORT, APP_BT_RESET_BIT);
+    printf("Bluetooth power cycle Reset ON\n");
+    SYS_PORTS_PinClear(PORTS_ID_0, BT_RESET_PORT, BT_RESET_BIT);
+    msleep(250);
+    printf("Bluetooth power cycle Reset OFF\n");
+    SYS_PORTS_PinSet(PORTS_ID_0, BT_RESET_PORT, BT_RESET_BIT);
 }
 
 void hal_uart_dma_init(void){
@@ -148,6 +155,25 @@ void hal_uart_dma_init(void){
     SYS_PORTS_PinDirectionSelect(PORTS_ID_0, SYS_PORTS_DIRECTION_OUTPUT, BT_RESET_PORT, BT_RESET_BIT);
 
     bluetooth_power_cycle();
+
+    // After reset, CTS is high and we need to wait until CTS is low again
+
+    // HACK: CTS doesn't seem to work right now
+    msleep(250);
+
+    // HACK: CSR seems to do an auto-baud on the uart, which makes the first HCI RESET fail
+    // 2 options: a) check for CTS going high within 10 ms, b) just send HCI RESET twice
+
+//    const uint8_t hci_reset_cmd[] = {0x01, 0x03, 0x0c, 0x00};
+//    int pos = 0;
+//    while(pos < sizeof(hci_reset_cmd)){
+//        if (PLIB_USART_TransmitterIsEmpty(BT_USART_ID)){
+//            PLIB_USART_TransmitterByteSend(BT_USART_ID, hci_reset_cmd[pos]);
+//            pos++;
+//        }
+//    }
+//    msleep(250);
+
 }
 
 void hal_uart_dma_set_block_received( void (*the_block_handler)(void)){
@@ -180,12 +206,37 @@ void hal_uart_dma_receive_block(uint8_t *data, uint16_t size){
     bytes_to_read = size;
 }
 
+///
+static const hci_uart_config_t hci_uart_config_csr = {
+    NULL,
+    115200,
+    0,  // 1000000,
+    0
+};
+
+void BTSTACK_Initialize ( void )
+{
+    printf("\n\nBTstack_Initialize()\n");
+
+    btstack_memory_init();
+    run_loop_init(RUN_LOOP_EMBEDDED);
+
+    hci_dump_open(NULL, HCI_DUMP_STDOUT);
+
+    hci_transport_t * transport = hci_transport_h4_dma_instance();
+    bt_control_t    * control   = bt_control_csr_instance();
+    hci_init(transport, (void*) &hci_uart_config_csr, control, NULL);
+
+    // hci_power_control(HCI_POWER_ON);
+    btstack_main(0, NULL);
+}
+
+
 void BTSTACK_Tasks(){
     if (bytes_to_read && PLIB_USART_ReceiverDataIsAvailable(BT_USART_ID)) {
         *rx_buffer_ptr++ = PLIB_USART_ReceiverByteReceive(BT_USART_ID);
         bytes_to_read--;
         if (bytes_to_read == 0){
-            // notify upper layer
             (*rx_done_handler)();
         }
     }
@@ -202,19 +253,3 @@ void BTSTACK_Tasks(){
     embedded_execute_once();
 }
 
-/* Application State Machine */
-void BTSTACK_Initialize ( void )
-{
-    printf("BTstack_Initialize()\n");
-
-    btstack_memory_init();
-    run_loop_init(RUN_LOOP_EMBEDDED);
-
-    hci_dump_open(NULL, HCI_DUMP_STDOUT);
-
-    hci_transport_t * transport = hci_transport_h4_dma_instance();
-    bt_control_t    * control   = NULL;
-    hci_init(transport, NULL, control, NULL);
-
-    hci_power_control(HCI_POWER_ON);
-}

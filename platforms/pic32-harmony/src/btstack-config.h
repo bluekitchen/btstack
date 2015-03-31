@@ -3,7 +3,7 @@
 
 #define EMBEDDED
 
-//#define HAVE_BLE
+#define HAVE_BLE
 
 #define HAVE_INIT_SCRIPT
 #define HAVE_BZERO
@@ -11,8 +11,8 @@
 
 #define HAVE_EHCILL
 
-// #define ENABLE_LOG_INFO
-// #define ENABLE_LOG_ERROR
+#define ENABLE_LOG_INFO
+#define ENABLE_LOG_ERROR
 
 #define HCI_ACL_PAYLOAD_SIZE 52
 

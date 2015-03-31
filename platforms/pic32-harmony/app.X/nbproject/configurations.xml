@@ -17,6 +17,17 @@
         <itemPath>../src/app.h</itemPath>
       </logicalFolder>
       <logicalFolder name="f3" displayName="btstack" projectFiles="true">
+        <logicalFolder name="ble" displayName="ble" projectFiles="true">
+          <itemPath>../../../ble/ad_parser.h</itemPath>
+          <itemPath>../../../ble/ancs_client_lib.h</itemPath>
+          <itemPath>../../../ble/att.h</itemPath>
+          <itemPath>../../../ble/att_dispatch.h</itemPath>
+          <itemPath>../../../ble/att_server.h</itemPath>
+          <itemPath>../../../ble/gap_le.h</itemPath>
+          <itemPath>../../../ble/gatt_client.h</itemPath>
+          <itemPath>../../../ble/le_device_db.h</itemPath>
+          <itemPath>../../../ble/sm.h</itemPath>
+        </logicalFolder>
         <logicalFolder name="btstack" displayName="btstack" projectFiles="true">
           <itemPath>../../../include/btstack/ant_cmds.h</itemPath>
           <itemPath>../../../include/btstack/btstack.h</itemPath>
@@ -96,8 +107,20 @@
         <itemPath>../src/app_debug.c</itemPath>
         <itemPath>../src/app.c</itemPath>
         <itemPath>../src/main.c</itemPath>
+        <itemPath>../../../example/embedded/spp_and_le_counter.c</itemPath>
       </logicalFolder>
       <logicalFolder name="f3" displayName="btstack" projectFiles="true">
+        <logicalFolder name="ble" displayName="ble" projectFiles="true">
+          <itemPath>../../../ble/ad_parser.c</itemPath>
+          <itemPath>../../../ble/att.c</itemPath>
+          <itemPath>../../../ble/att_dispatch.c</itemPath>
+          <itemPath>../../../ble/att_server.c</itemPath>
+          <itemPath>../../../ble/le_device_db_memory.c</itemPath>
+          <itemPath>../../../ble/sm.c</itemPath>
+        </logicalFolder>
+        <logicalFolder name="chipset-csr" displayName="chipset-csr" projectFiles="true">
+          <itemPath>../../../chipset-csr/bt_control_csr.c</itemPath>
+        </logicalFolder>
         <logicalFolder name="src" displayName="src" projectFiles="true">
           <itemPath>../../../src/bnep.c</itemPath>
           <itemPath>../../../src/btstack_memory.c</itemPath>
@@ -173,6 +196,8 @@
     <Elem>../../../include</Elem>
     <Elem>../../../src</Elem>
     <Elem>../../../ble</Elem>
+    <Elem>../../../chipset-csr</Elem>
+    <Elem>../../../example/embedded</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -218,12 +243,12 @@
         <property key="enable-unroll-loops" value="false"/>
         <property key="exclude-floating-point" value="false"/>
         <property key="extra-include-directories"
-                  value=".;../../../..;../src;../src/system_config/bk-audio-dk;../../../include;../../../src;../../../ble"/>
+                  value=".;../../../..;../src;../src/system_config/bk-audio-dk;../../../include;../../../src;../../../ble;../../../chipset-csr"/>
         <property key="generate-16-bit-code" value="false"/>
         <property key="generate-micro-compressed-code" value="false"/>
         <property key="isolate-each-function" value="false"/>
         <property key="make-warnings-into-errors" value="false"/>
-        <property key="optimization-level" value=""/>
+        <property key="optimization-level" value="-Os"/>
         <property key="place-data-into-section" value="false"/>
         <property key="post-instruction-scheduling" value="default"/>
         <property key="pre-instruction-scheduling" value="default"/>
@@ -359,6 +384,7 @@
         <property key="UART3" value="true"/>
         <property key="UART4" value="true"/>
         <property key="UART5" value="true"/>
+        <property key="firmware.download.all" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="memories.aux" value="false"/>
         <property key="memories.bootflash" value="true"/>
