@@ -1036,16 +1036,13 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         case HCI_INIT_W4_SEND_BAUD_CHANGE:
             log_info("Local baud rate change");
             hci_stack->hci_transport->set_baudrate(((hci_uart_config_t *)hci_stack->config)->baudrate_main);
-            if (hci_stack->custom_bd_addr_set && hci_stack->control && hci_stack->control->set_bd_addr_cmd){
-                // skip baud change
+            if (need_addr_change){
                 hci_stack->substate = HCI_INIT_SET_BD_ADDR;
                 return;
-            } else {
-                // skip baud change and set bd addr
-                hci_stack->substate = HCI_INIT_CUSTOM_INIT;
-                return;
             }
-            break;
+            // skipping addr change
+            hci_stack->substate = HCI_INIT_CUSTOM_INIT;
+            return;
         case HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT:
             run_loop_remove_timer(&hci_stack->timeout);
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
