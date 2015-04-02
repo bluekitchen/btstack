@@ -1015,27 +1015,25 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 
     if (!command_completed) return;
 
+    int need_baud_change = hci_stack->config && ((hci_uart_config_t *)hci_stack->config)->baudrate_main == 0;
+    int need_addr_change = hci_stack->custom_bd_addr_set && hci_stack->control && hci_stack->control->set_bd_addr_cmd;
+
     switch(hci_stack->substate){
         case HCI_INIT_W4_SEND_RESET:
             run_loop_remove_timer(&hci_stack->timeout);
-            if (hci_stack->config == NULL || ((hci_uart_config_t *)hci_stack->config)->baudrate_main == 0){
-                if (hci_stack->custom_bd_addr_set && hci_stack->control && hci_stack->control->set_bd_addr_cmd){
-                    // skip baud change
-                    hci_stack->substate = HCI_INIT_SET_BD_ADDR;
-                    return;
-                } else {
-                    // skip baud change and set bd addr
-                    hci_stack->substate = HCI_INIT_CUSTOM_INIT;
-                    return;
-                }
+            if (need_baud_change){
+                hci_stack->substate = HCI_INIT_SEND_BAUD_CHANGE;
+                return;
             }
-            hci_stack->substate = HCI_INIT_READ_BUFFER_SIZE;
-            return;
-        case HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT:
-            run_loop_remove_timer(&hci_stack->timeout);
+            // skipping baud change
+            if (need_addr_change){
+                hci_stack->substate = HCI_INIT_SET_BD_ADDR;
+                return;
+            }
+            // also skip set bd addr
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
             return;
-        case HCI_INIT_LOCAL_BAUD_CHANGE:
+        case HCI_INIT_W4_SEND_BAUD_CHANGE:
             log_info("Local baud rate change");
             hci_stack->hci_transport->set_baudrate(((hci_uart_config_t *)hci_stack->config)->baudrate_main);
             if (hci_stack->custom_bd_addr_set && hci_stack->control && hci_stack->control->set_bd_addr_cmd){
@@ -1048,6 +1046,10 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
                 return;
             }
             break;
+        case HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT:
+            run_loop_remove_timer(&hci_stack->timeout);
+            hci_stack->substate = HCI_INIT_CUSTOM_INIT;
+            return;
         case HCI_INIT_W4_CUSTOM_INIT:
             // repeat custom init
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
