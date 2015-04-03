@@ -230,6 +230,7 @@ extern "C" {
 #define GATT_WRITE_CHARACTERISTIC_DESCRIPTOR                     0X7F
 #define GATT_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR                0X80
 #define GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION           0X81
+#define GATT_GET_MTU                                             0x82
 
 // 
 #define IS_COMMAND(packet, command) (READ_BT_16(packet,0) == command.opcode)

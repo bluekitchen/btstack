@@ -540,6 +540,13 @@ extern "C" {
  * @param handle
  * @param MTU
  */    
+#define GATT_MTU										   0xAB
+
+/** 
+ * @format H2
+ * @param handle
+ * @param MTU
+ */    
 #define ATT_MTU_EXCHANGE_COMPLETE						   0xB5
 
 // data: event(8), len(8), status (8), hci_handle (16), attribute_handle (16)
