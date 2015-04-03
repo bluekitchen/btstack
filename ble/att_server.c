@@ -108,7 +108,7 @@ static void att_emit_mtu_event(uint16_t handle, uint16_t mtu){
 
     if (!att_client_packet_handler) return;
 
-    uint8_t event[5];
+    uint8_t event[6];
     int pos = 0;
     event[pos++] = ATT_MTU_EXCHANGE_COMPLETE;
     event[pos++] = sizeof(event) - 2;
