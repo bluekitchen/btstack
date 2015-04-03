@@ -131,6 +131,11 @@ void bt_flip_addr(bd_addr_t dest, bd_addr_t src);
 void net_store_16(uint8_t *buffer, uint16_t pos, uint16_t value);
 void net_store_32(uint8_t *buffer, uint16_t pos, uint32_t value);
 
+// hack: compilation with the android ndk causes an error as there's a swap64 macro
+#ifdef swap64
+#undef swap64
+#endif
+
 void swapX(const uint8_t *src, uint8_t *dst, int len);
 void swap24(const uint8_t  src[3],  uint8_t dst[3]);
 void swap56(const uint8_t  src[7],  uint8_t dst[7]);

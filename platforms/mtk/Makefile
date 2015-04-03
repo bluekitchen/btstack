@@ -33,7 +33,7 @@ libBTstack_OBJS  = 		 \
 
 BTdaemon_OBJS = $(libBTstack_OBJS)   \
 	att_dispatch.o              \
-	ledevice_db_memory.o        \
+	le_device_db_memory.o        \
     att.o                       \
     att_server.o                \
 	gatt_client.o               \
@@ -91,19 +91,19 @@ libBTstack.so: $(libBTstack_OBJS)
 	$(GCC) $(LDFLAGS) -shared -Wl,-soname,/system/lib/libBTstack.so -o $@ $^
 
 inquiry: inquiry.o
-	$(GCC) $(LDFLAGS) -Wl,-rpath,/system/lib libBTstack.so -o $@ $(BTSTACK_ROOT)/example/daemon/inquiry.o
+	$(GCC) $(LDFLAGS) -Wl,-rpath,/system/lib libBTstack.so -o $@ inquiry.o
 
 rfcomm-echo: rfcomm-echo.o
-	$(GCC) $(LDFLAGS) -Wl,-rpath,/system/lib libBTstack.so -o $@ $(BTSTACK_ROOT)/example/daemon/rfcomm-echo.o
+	$(GCC) $(LDFLAGS) -Wl,-rpath,/system/lib libBTstack.so -o $@ rfcomm-echo.o
 
 le_scan: le_scan.o
-	$(GCC) $(LDFLAGS) -Wl,-rpath,/system/lib libBTstack.so -o $@ $(BTSTACK_ROOT)/example/daemon/le_scan.o
+	$(GCC) $(LDFLAGS) -Wl,-rpath,/system/lib libBTstack.so -o $@ le_scan.o
 
 # minimal_peripheral: minimal_peripheral.o
 # 	$(GCC) $(LDFLAGS) libs/libbluetoothdrv.so  -o $@ minimal_peripheral.o
 
 hci_dump: 
-	-killall PacketLogger
+	# killall PacketLogger
 	$(ADB) shell su root chmod 666 /data/btstack/hci_dump.pklg
 	$(ADB) pull /data/btstack/hci_dump.pklg 2> /dev/null
 	open hci_dump.pklg
