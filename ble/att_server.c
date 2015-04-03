@@ -104,7 +104,7 @@ static void att_handle_value_indication_notify_client(uint8_t status, uint16_t c
     (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 
-static void att_emit_mtu_event(uint16_t handle, uin16_t mtu){
+static void att_emit_mtu_event(uint16_t handle, uint16_t mtu){
 
     if (!att_client_packet_handler) return;
 
