@@ -10,6 +10,8 @@
 % See the ``Article customise'' template for come common customisations
 \usepackage[usenames,dvipsnames]{color}
 
+\usepackage[table]{xcolor}
+
 \definecolor{lightgray}{RGB}{245, 245, 245}
 \definecolor{bkblue}{RGB}{18, 47, 76}
 \definecolor{bklightblue}{RGB}{102, 131, 158}
@@ -110,6 +112,21 @@ morekeywords={*, timer_source_t, data_source_t, uint32_t, uint16_t, uint8_t, RUN
 \author{Copyright \copyright 2012-2015 BlueKitchen GmbH}
 
 %%% BEGIN DOCUMENT
+
+\newcommand{\UserGuide}{\urlfoot{http://processors.wiki.ti.com/index.php/PAN1315EMK\_User\_Guide\#RF3\_Connector}{User Guide}{}}
+\newcommand{\MSPGCCWiki}{\urlfoot{http://sourceforge.net/apps/mediawiki/mspgcc/index.php?title=MSPGCC\_Wiki}{MSPGCC Wiki}}
+\newcommand{\GNUMake}{\urlfoot{http://gnuwin32.sourceforge.net/packages/make.htm}{GNU Make}}
+\newcommand{\Python}{\urlfoot{http://www.python.org/getit/}{Python}}
+\newcommand{\mspgcc}{\urlfoot{http://sourceforge.net/projects/mspgcc/files/Windows/mingw32/}{mspgcc}}
+\newcommand{\BTSfile}{\urlfoot{http://processors.wiki.ti.com/index.php/CC256x\_Downloads}{BTS file}}
+\newcommand{\MSPFlasher}{\urlfoot{http://processors.wiki.ti.com/index.php/MSP430\_Flasher\_-\_Command\_Line\_Programmer}{MSP430Flasher}}
+\newcommand{\MSPDebug}{\urlfoot{http://mspdebug.sourceforge.net/}{MSPDebug}}
+\newcommand{\BtstackGithub}{\urlfoot{https://github.com/bluekitchen/btstack/archive/master.zip}{BTstack's page}}
+\newcommand{\gccarm}{\urlfoot{https://launchpad.net/gcc-arm-embedded}{arm-gcc}}
+\newcommand{\OpenOCD}{\urlfoot{http://openocd.org}{OpenOCD}}
+\newcommand{\mplabxc}{\urlfoot{http://www.microchip.com/pagehandler/en\_us/devtools/mplabxc/}{MPLAB XC}}
+\newcommand{\PICkit}{\urlfoot{http://www.microchip.com/DevelopmentTools/ProductDetails.aspx?PartNO=pg164130}{PICkit 3}}
+
 \begin{document}
 
 \maketitle
@@ -117,11 +134,70 @@ morekeywords={*, timer_source_t, data_source_t, uint32_t, uint16_t, uint8_t, RUN
 \tableofcontents
 \pagebreak
 
-% \section{Overview}
 
 Thanks for checking out BTstack! In this manual, we first provide the usual 'quick starter guide' before highlighting BTstack's main design choices and going into more details with a few examples. Finally, we outline the basic steps when integrating BTstack into existing single-threaded or even multi-threaded environments. The Revision History is shown in the Appendix \ref{appendix:revision_history} on page \pageref{appendix:revision_history}.
 
 \section{Quick Start}
+
+\subsection{General Tools}
+On Unix-based systems, git, make, and Python are usually installed. If not, use the system's packet manager to install them. 
+
+On Windows, you need to install and configure mspgcc, GNU Make, Python, and optionally git manually:
+ \begin{itemize}
+ \item \GNUMake{} for Windows: Add its bin folder to the Windows Path in Environment Variables. The bin folder is where make.exe resides, and it's usually located in \path{C:\Program Files\GnuWin32\bin}. 
+ \item \Python{} for Windows: Add Python installation folder to the Windows Path in Environment Variables.
+ \end{itemize}
+
+Adding paths to the Windows Path variable:
+\begin{itemize} \label{sec:windowsPath}
+   \item Go to: Control Panel$\rightarrow$System$\rightarrow$Advanced tab$\rightarrow$Environment Variables.
+   \item The top part contains a list of User variables. 
+   \item Click on the Path variable and then click edit.
+   \item Go to the end of the line, then append the path to the list., for example, \path{C:\mspgcc\bin} for mspgcc.
+   \item Ensure that there is a semicolon before and after \path{C:\mspgcc\bin}. 
+\end{itemize}
+
+\subsection{Getting BTstack from GitHub}
+
+Use git to clone the latest version:
+	\begin{lstlisting}
+ 		git clone https://github.com/bluekitchen/btstack.git
+	\end{lstlisting}
+Alternatively, you can download it as a ZIP archive from \BtstackGithub{}on GitHub.
+
+\subsection{Compiling the examples and loading firmware}
+This step is platform specific. To compile and run the examples, you need to download and install the platform specific toolchain and a flash tool. For TI's CC256x chipsets, you also need the correct init script, or "Service Pack" in TI nomenclature. Assuming that these are provided, go to \path{btstack/platforms/$PLATFORM$} folder in command prompt and run make. If all the paths are correct, it will generate several firmware files. These firmware files can be loaded onto the device using platform specific flash programmer. For the PIC32-Harmony platform, a project file for the MPLAB X IDE is provided, too.
+
+\begin{table*}\centering
+\caption{Overview of platform specific toolchains, programmers, and used chipsets.}
+
+\resizebox{\textwidth}{!}{\begin{minipage}{\textwidth}
+\rowcolors{1}{lightgray}{white}
+
+\begin{tabular}{p{4cm}p{2cm}p{3cm}p{4cm} }
+\toprule
+\hiderowcolors Platform & Chipset & Toolchain & Programmer\\ \showrowcolors
+\midrule
+ez430-rf2560, msp-exp430f5438,  msp430f5229lp & CC256x & \mspgcc{} &\MSPFlasher{},  \MSPDebug{} \\           
+stm32-f103rb-nucleo     & CC256x   & \gccarm{}    & \OpenOCD{} \\      
+pic32-harmony               & CSR8811 & \mplabxc{} & \PICkit{} \\ \hiderowcolors
+\bottomrule
+ \label{table:platformCompiler}
+ \end{tabular}
+ 
+ \end{minipage} }
+\end{table*}
+
+\subsection{Run the Example}
+
+As a first test, we recommend the SPP Counter example (see Section \ref{section:sppcounter}). During the startup, for TI chipsets, the init script is transferred, and the Bluetooth stack brought up. After that, the development board is discoverable as "BTstack SPP Counter" and provides a single virtual serial port. When you connect to it, you'll receive a counter value as text every second.
+
+% The SPP Counter doesn't use the display to keep the memory footprint small.
+%  The HID demo has a fancier user interface - it uses a display to show the discovery process and connection establishment with a Bluetooth keyboard, as well as the text as you type.
+ 
+\subsection{Platform specifics}
+ 
+\input{quickstart_platforms}
 
 
 \section{BTstack Architecture}
@@ -979,12 +1055,6 @@ Separate packet handlers can be used for each L2CAP service and outgoing connect
 
 % \end{lstlisting}
 
-% \section{Supported Protocols and Profiles}
-% \subsection{HCI}
-% \subsection{L2CAP}
-% \subsection{RFCOMM}
-
-
 \section{Examples}
 \label{examples}
 The \path{MSP-EXP430F5438-CC256x} folder in BTstack repository currently includes the following examples for the MSP430F5438 Experimenter Board:
@@ -1595,8 +1665,7 @@ void handle_gatt_client_event(le_event_t * event){
 
 \subsection{sdp\_bnep\_query}
 
-\section{Platforms}
-\input{hwsetup_msp430}
+% \section{Platforms}
 
 \section{Porting to Other Platforms}
 

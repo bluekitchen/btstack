@@ -1,0 +1,48 @@
+% !TEX root = btstack_gettingstarted.tex
+
+In the following, we provide more information on specific platform setups, toolchains, programmers, and init scripts.
+
+\subsubsection{Texas Instruments MSP430-based boards}
+
+\emph{Compiler Setup} The MSP430 port of BTstack is developed using the Long Term Support (LTS) version of mspgcc. General information about it and installation instructions are provided on the \MSPGCCWiki{}. On Windows, you need to download and extract \mspgcc{} to \path{C:\mspgcc}. Add \path{C:\mspgcc\bin} folder to the Windows Path in Environment variable as explained in Section \ref{sec:windowsPath}.
+
+\emph{Loading Firmware} To load firmware files onto the MSP430 MCU, you need a programmer like the MSP430 MSP-FET430UIF debugger or something similar. Now, you can use one of following software tools:
+
+ \begin{itemize}
+ \item  \MSPFlasher{} (windows-only):
+ 	\begin{itemize}
+ 	   \item Use the following command, where you need to replace the \path{BINARY_FILE_NAME.hex} with the name of your application:
+	\end{itemize} 
+\end{itemize}
+	
+	   \begin{lstlisting}
+ 		MSP430Flasher.exe -n MSP430F5438A -w "BINARY_FILE_NAME.hex" -v -g -z [VCC]
+	   \end{lstlisting}
+
+ \begin{itemize}
+	
+	\item \MSPDebug{}: An example session with the MSP-FET430UIF connected on OS X is given in following listing:
+\end{itemize}
+
+\begin{lstlisting}
+mspdebug -j -d /dev/tty.FET430UIFfd130 uif
+... 
+prog blink.hex
+run
+\end{lstlisting}
+
+\subsubsection{Texas Instruments CC256x-based chipsets}
+\emph{CC256x Init Scripts} In order to use the CC256x chipset on the PAN13xx modules, an initialization script must be obtained. Due to licensing restrictions, this initialization script must be obtained separately as follows:
+\begin{itemize}
+\item Download the \BTSfile{} for your PAN13xx module.
+\item Copy the included .bts file into \path{btstack/chipset-cc256x}
+\item In \path{chipset-cc256x}, run the Python script: $./convert\_bts\_init\_scripts.py$
+\end{itemize}
+
+The common code for all CC256x chipsets is provided by $bt\_control\_cc256x.c$. During the setup, $bt\_control\_cc256x\_instance$ function is used to get  a $bt\_control\_t$ instance and passed to $hci\_init$ function. 
+
+Note: Depending on the PAN13xx module you're using, you'll need to update the reference \path{bluetooth_init_cc256...} in the Makefile to match the downloaded file.
+
+\subsubsection{MSP-EXP430F5438 + CC256x Platform}
+\label{platform:msp430}
+\emph{Hardware Setup} We assume that a PAN1315, PAN1317, or PAN1323 module is plugged into RF1 and RF2 of the MSP-EXP430F5438 board and the "RF3 Adapter board" is used or at least simulated. See \UserGuide{}. 
