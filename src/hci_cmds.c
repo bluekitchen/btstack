@@ -1400,3 +1400,10 @@ const hci_cmd_t gatt_write_long_characteristic_descriptor_cmd = {
 const hci_cmd_t gatt_write_client_characteristic_configuration_cmd = {
     OPCODE(OGF_BTSTACK, GATT_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION), "HY2"
 };
+
+/**
+ * @param handle
+ */
+const hci_cmd_t gatt_get_mtu = {
+    OPCODE(OGF_BTSTACK, GATT_GET_MTU), "H"
+};

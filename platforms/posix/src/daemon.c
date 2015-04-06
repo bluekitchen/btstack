@@ -564,6 +564,19 @@ static void send_gatt_query_complete(connection_t * connection, uint16_t handle,
     socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
+static void send_gatt_mtu_event(connection_t * connection, uint16_t handle, uint16_t mtu){
+    uint8_t event[6];
+    int pos = 0;
+    event[pos++] = GATT_MTU;
+    event[pos++] = sizeof(event) - 2;
+    bt_store_16(event, pos, handle);
+    pos += 2;
+    bt_store_16(event, pos, mtu);
+    pos += 2;
+    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
+    socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
 linked_list_gatt_client_helper_t * daemon_setup_gatt_client_request(connection_t *connection, uint8_t *packet) {
     hci_con_handle_t handle = READ_BT_16(packet, 3);    
     log_info("daemon_setup_gatt_client_request for handle 0x%02x", handle);
@@ -1062,6 +1075,11 @@ static int btstack_command_handler(connection_t *connection, uint8_t *packet, ui
             data = gatt_helper->characteristic_buffer;
             daemon_gatt_deserialize_characteristic(packet, 5, &characteristic);
             gatt_client_write_client_characteristic_configuration(gatt_client_id, gatt_helper->con_handle, &characteristic, configuration);
+            break;
+        case GATT_GET_MTU:
+            handle = READ_BT_16(packet, 3);
+            gatt_client_get_mtu(handle, &mtu);
+            send_gatt_mtu_event(connection, handle, mtu);
             break;
         }
 #endif

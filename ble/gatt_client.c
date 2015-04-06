@@ -1415,7 +1415,8 @@ le_command_status_t gatt_client_write_value_of_characteristic_without_response(u
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
     
     if (value_length >= peripheral_mtu(peripheral) - 3) return BLE_VALUE_TOO_LONG;
-    
+    if (!l2cap_can_send_fixed_channel_packet_now(peripheral->handle)) return BTSTACK_ACL_BUFFERS_FULL;
+
     peripheral->subclient_id = gatt_client_id;
     att_write_request(ATT_WRITE_COMMAND, peripheral->handle, value_handle, value_length, value);
     return BLE_PERIPHERAL_OK;

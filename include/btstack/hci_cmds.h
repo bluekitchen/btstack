@@ -534,9 +534,23 @@ extern "C" {
 
 #define GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT        0xA9
 #define GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT   0xAA
-    
+
+/** 
+ * @format H2
+ * @param handle
+ * @param MTU
+ */    
+#define GATT_MTU										   0xAB
+
+/** 
+ * @format H2
+ * @param handle
+ * @param MTU
+ */    
+#define ATT_MTU_EXCHANGE_COMPLETE						   0xB5
+
 // data: event(8), len(8), status (8), hci_handle (16), attribute_handle (16)
-#define ATT_HANDLE_VALUE_INDICATION_COMPLETE                 0xB6
+#define ATT_HANDLE_VALUE_INDICATION_COMPLETE               0xB6
 
 
 // data: event(8), len(8), status (8), bnep service uuid (16) 

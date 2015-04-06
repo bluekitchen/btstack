@@ -104,6 +104,21 @@ static void att_handle_value_indication_notify_client(uint8_t status, uint16_t c
     (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
 }
 
+static void att_emit_mtu_event(uint16_t handle, uint16_t mtu){
+
+    if (!att_client_packet_handler) return;
+
+    uint8_t event[6];
+    int pos = 0;
+    event[pos++] = ATT_MTU_EXCHANGE_COMPLETE;
+    event[pos++] = sizeof(event) - 2;
+    bt_store_16(event, pos, handle);
+    pos += 2;
+    bt_store_16(event, pos, mtu);
+    pos += 2;
+    (*att_client_packet_handler)(HCI_EVENT_PACKET, 0, &event[0], sizeof(event));
+}
+
 static void att_handle_value_indication_timeout(timer_source_t *ts){
     uint16_t att_handle = att_handle_value_indication_handle;
     att_handle_value_indication_notify_client(ATT_HANDLE_VALUE_INDICATION_TIMEOUT, att_connection.con_handle, att_handle);
@@ -289,6 +304,12 @@ static void att_run(void){
             }
 
             l2cap_send_prepared_connectionless(att_connection.con_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, att_response_size);
+
+            // notify client about MTU exchange result
+            if (att_response_buffer[0] == ATT_EXCHANGE_MTU_RESPONSE){
+                att_emit_mtu_event(att_connection.con_handle, att_connection.mtu);
+            }
+
             break;
     }
 }
