@@ -518,6 +518,8 @@ static inline void channelStateVarClearFlag(l2cap_channel_t *channel, L2CAP_CHAN
 // process outstanding signaling tasks
 void l2cap_run(void){
     
+    // log_info("l2cap_run: entered");
+
     // check pending signaling responses
     while (signaling_responses_pending){
         
@@ -593,7 +595,7 @@ void l2cap_run(void){
     while (linked_list_iterator_has_next(&it)){
 
         l2cap_channel_t * channel = (l2cap_channel_t *) linked_list_iterator_next(&it);
-        // log_info("l2cap_run: state %u, var 0x%02x", channel->state, channel->state_var);
+        // log_info("l2cap_run: channel %p, state %u, var 0x%02x", channel, channel->state, channel->state_var);
         switch (channel->state){
 
             case L2CAP_STATE_WAIT_INCOMING_SECURITY_LEVEL_UPDATE:
@@ -615,6 +617,7 @@ void l2cap_run(void){
                 
             case L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE:
                 if (!hci_can_send_acl_packet_now(channel->handle)) break;
+                channel->state = L2CAP_STATE_INVALID;
                 l2cap_send_signaling_packet(channel->handle, CONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid, channel->reason, 0);
                 // discard channel - l2cap_finialize_channel_close without sending l2cap close event
                 l2cap_stop_rtx(channel);
@@ -680,6 +683,7 @@ void l2cap_run(void){
 
             case L2CAP_STATE_WILL_SEND_DISCONNECT_RESPONSE:
                 if (!hci_can_send_acl_packet_now(channel->handle)) break;
+                channel->state = L2CAP_STATE_INVALID;
                 l2cap_send_signaling_packet( channel->handle, DISCONNECTION_RESPONSE, channel->remote_sig_id, channel->local_cid, channel->remote_cid);   
                 // we don't start an RTX timer for a disconnect - there's no point in closing the channel if the other side doesn't respond :)
                 l2cap_finialize_channel_close(channel);  // -- remove from list
@@ -725,6 +729,7 @@ void l2cap_run(void){
     }
 #endif
 
+    // log_info("l2cap_run: exit");
 }
 
 uint16_t l2cap_max_mtu(void){
