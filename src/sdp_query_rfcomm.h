@@ -52,9 +52,7 @@
 extern "C" {
 #endif
 
-/* SDP Queries */
-
-/* SDP Query for RFCOMM */
+/* API_START */
 
 // SDP Query RFCOMM event to deliver channel number and service name
 // byte by byte.
@@ -64,6 +62,11 @@ typedef struct sdp_query_rfcomm_service_event {
     uint8_t * service_name;
 } sdp_query_rfcomm_service_event_t;
 
+// Registers a callback to receive RFCOMM service and query complete 
+// event. 
+void sdp_query_rfcomm_register_callback(void(*sdp_app_callback)(sdp_query_event_t * event, void * context), void * context);
+
+void sdp_query_rfcomm_deregister_callback();
 
 // Searches SDP records on a remote device for RFCOMM services with
 // a given UUID.
@@ -72,11 +75,7 @@ void sdp_query_rfcomm_channel_and_name_for_uuid(bd_addr_t remote, uint16_t uuid)
 // Searches SDP records on a remote device for RFCOMM services with
 // a given service search pattern.
 void sdp_query_rfcomm_channel_and_name_for_search_pattern(bd_addr_t remote, uint8_t * des_serviceSearchPattern);
-
-// Registers a callback to receive RFCOMM service and query complete event. 
-void sdp_query_rfcomm_register_callback(void(*sdp_app_callback)(sdp_query_event_t * event, void * context), void * context);
-
-void sdp_query_rfcomm_deregister_callback();
+/* API_END */
 
 #if defined __cplusplus
 }

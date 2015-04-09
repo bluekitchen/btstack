@@ -672,34 +672,14 @@ typedef struct {
  */
 void hci_connections_get_iterator(linked_list_iterator_t *it);
 
-le_connection_parameter_range_t gap_le_get_connection_parameter_range();
-void gap_le_set_connection_parameter_range(le_connection_parameter_range_t range);
-
-// *************** le client start
-
-le_command_status_t le_central_start_scan(void);
-le_command_status_t le_central_stop_scan(void);
-le_command_status_t le_central_connect(bd_addr_t addr, bd_addr_type_t addr_type);
-le_command_status_t le_central_connect_cancel(void);
-le_command_status_t gap_disconnect(hci_con_handle_t handle);
-void le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window);
-
-// *************** le client end
-    
 // create and send hci command packets based on a template and a list of parameters
 uint16_t hci_create_cmd(uint8_t *hci_cmd_buffer, hci_cmd_t *cmd, ...);
 uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, va_list argptr);
-
-void hci_connectable_control(uint8_t enable);
-void hci_close(void);
 
 /**
  * run the hci control loop once
  */
 void hci_run(void);
-
-// send complete CMD packet
-int hci_send_cmd_packet(uint8_t *packet, int size);
 
 // send ACL packet prepared in hci packet buffer
 int hci_send_acl_packet_buffer(int size);
@@ -707,8 +687,7 @@ int hci_send_acl_packet_buffer(int size);
 // send SCO packet prepared in hci packet buffer
 int hci_send_sco_packet_buffer(int size);
 
-// new functions replacing hci_can_send_packet_now[_using_packet_buffer]
-int hci_can_send_command_packet_now(void);
+
 int hci_can_send_acl_packet_now(hci_con_handle_t con_handle);
 int hci_can_send_prepared_acl_packet_now(hci_con_handle_t con_handle);
 int hci_can_send_sco_packet_now(hci_con_handle_t con_handle);
@@ -723,13 +702,11 @@ int hci_is_packet_buffer_reserved(void);
 
 // get point to packet buffer
 uint8_t* hci_get_outgoing_packet_buffer(void);
-    
-// gets local address 
-void hci_local_bd_addr(bd_addr_t address_buffer);
+
 
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle);
 hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type);
-int hci_is_le_connection(hci_connection_t * connection);
+int      hci_is_le_connection(hci_connection_t * connection);
 uint8_t  hci_number_outgoing_packets(hci_con_handle_t handle);
 uint8_t  hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle);
 int      hci_authentication_active_for_handle(hci_con_handle_t handle);
@@ -753,7 +730,6 @@ void hci_emit_discoverable_enabled(uint8_t enabled);
 void hci_emit_security_level(hci_con_handle_t con_handle, gap_security_level_t level);
 void hci_emit_dedicated_bonding_result(bd_addr_t address, uint8_t status);
 
-// query if remote side supports SSP
 // query if the local side supports SSP
 int hci_local_ssp_activated(void);
 
@@ -769,15 +745,44 @@ void hci_disable_l2cap_timeout_check(void);
 // disconnect because of security block
 void hci_disconnect_security_block(hci_con_handle_t con_handle);
 
-/** Embedded API **/
+// send complete CMD packet
+int hci_send_cmd_packet(uint8_t *packet, int size);
 
-// Set up HCI. Needs to be called before any other function
+
+/* API_START */
+
+le_connection_parameter_range_t gap_le_get_connection_parameter_range();
+void gap_le_set_connection_parameter_range(le_connection_parameter_range_t range);
+
+/* LE Client Start */
+
+le_command_status_t le_central_start_scan(void);
+le_command_status_t le_central_stop_scan(void);
+le_command_status_t le_central_connect(bd_addr_t addr, bd_addr_type_t addr_type);
+le_command_status_t le_central_connect_cancel(void);
+le_command_status_t gap_disconnect(hci_con_handle_t handle);
+void le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, uint16_t scan_window);
+
+/* LE Client End */
+    
+void hci_connectable_control(uint8_t enable);
+void hci_close(void);
+
+// new functions replacing: 
+// hci_can_send_packet_now[_using_packet_buffer]
+int hci_can_send_command_packet_now(void);
+    
+// gets local address 
+void hci_local_bd_addr(bd_addr_t address_buffer);
+
+// Set up HCI. Needs to be called before any other function.
 void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, remote_device_db_t const* remote_device_db);
 
-// Set class of device that will be set during Bluetooth init
+// Set class of device that will be set during Bluetooth init.
 void hci_set_class_of_device(uint32_t class_of_device);
 
-// Set Public BD ADDR - passed on to Bluetooth chipset if supported in bt_control_h
+// Set Public BD ADDR - passed on to Bluetooth chipset if supported 
+// in bt_control_h
 void hci_set_bd_addr(bd_addr_t addr);
 
 // Registers a packet handler. Used if L2CAP is not used (rarely). 
@@ -797,21 +802,23 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...);
 // Deletes link key for remote device with baseband address.
 void hci_drop_link_key_for_bd_addr(bd_addr_t addr);
 
-// Configure Secure Simple Pairing
+/* Configure Secure Simple Pairing */
 
-// enable will enable SSP during init
+// Enable will enable SSP during init.
 void hci_ssp_set_enable(int enable);
 
-// if set, BTstack will respond to io capability request using authentication requirement
+// If set, BTstack will respond to io capability request using 
+// authentication requirement.
 void hci_ssp_set_io_capability(int ssp_io_capability);
 void hci_ssp_set_authentication_requirement(int authentication_requirement);
 
-// if set, BTstack will confirm a numberic comparion and enter '000000' if requested
+// If set, BTstack will confirm a numberic comparion and enter
+// '000000' if requested.
 void hci_ssp_set_auto_accept(int auto_accept);
 
-// get addr type and address used in advertisement packets
+// Get addr type and address used in advertisement packets.
 void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t addr);
-
+/* API_END */
 
 #if defined __cplusplus
 }

@@ -202,68 +202,75 @@ typedef struct l2cap_signaling_response {
 
 void l2cap_block_new_credits(uint8_t blocked);
 
-int  l2cap_can_send_packet_now(uint16_t local_cid);    // non-blocking UART write
-
 int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle);
 
 // @deprecated use l2cap_can_send_fixed_channel_packet_now instead
 int  l2cap_can_send_connectionless_packet_now(void);
 
-int  l2cap_reserve_packet_buffer(void);
-void l2cap_release_packet_buffer(void);
-
-// get outgoing buffer and prepare data
-uint8_t *l2cap_get_outgoing_buffer(void);
-
-int l2cap_send_prepared(uint16_t local_cid, uint16_t len);
-
-int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len);
-
-// Bluetooth 4.0 - allows to register handler for Attribute Protocol and Security Manager Protocol
-void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id);
-
-uint16_t l2cap_max_mtu(void);
-uint16_t l2cap_max_le_mtu(void);
-
-int  l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t *data, uint16_t len);
-
 int l2cap_send_echo_request(uint16_t handle, uint8_t *data, uint16_t len);
 
-void l2cap_require_security_level_2_for_outgoing_sdp(void);  // testing
+void l2cap_require_security_level_2_for_outgoing_sdp(void);  // for PTS testing only
 
-/** Embedded API **/
+/* API_START */
 
 // Set up L2CAP and register L2CAP with HCI layer.
 void l2cap_init(void);
 
-// Registers a packet handler that handles HCI and general BTstack events.
+// Registers a packet handler that handles HCI and general BTstack 
+// events.
 void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
 
-// Creates L2CAP channel to the PSM of a remote device with baseband address. A new baseband connection will be initiated if necessary.
+// Creates L2CAP channel to the PSM of a remote device with baseband 
+// address. A new baseband connection will be initiated if necessary.
 void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t packet_handler, bd_addr_t address, uint16_t psm, uint16_t mtu);
 
 // Disconencts L2CAP channel with given identifier. 
 void l2cap_disconnect_internal(uint16_t local_cid, uint8_t reason);
 
-// Queries the maximal transfer unit (MTU) for L2CAP channel with given identifier. 
+// Queries the maximal transfer unit (MTU) for L2CAP channel with 
+// given identifier. 
 uint16_t l2cap_get_remote_mtu_for_local_cid(uint16_t local_cid);
 
 // Sends L2CAP data packet to the channel with given identifier.
 int l2cap_send_internal(uint16_t local_cid, uint8_t *data, uint16_t len);
 
-// Registers L2CAP service with given PSM and MTU, and assigns a packet handler. On embedded systems, use NULL for connection parameter.
+// Registers L2CAP service with given PSM and MTU, and assigns a 
+// packet handler. On embedded systems, use NULL for connection
+// parameter.
 void l2cap_register_service_internal(void *connection, btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level);
 
-// Unregisters L2CAP service with given PSM.  On embedded systems, use NULL for connection parameter.
+// Unregisters L2CAP service with given PSM.  On embedded systems, 
+// use NULL for connection parameter.
 void l2cap_unregister_service_internal(void *connection, uint16_t psm);
 
 // Accepts/Deny incoming L2CAP connection.
 void l2cap_accept_connection_internal(uint16_t local_cid);
 void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason);
 
-
 // Request LE connection parameter update
 int l2cap_le_request_connection_parameter_update(uint16_t handle, uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency, uint16_t timeout_multiplier);
+
+// Non-blocking UART write
+int  l2cap_can_send_packet_now(uint16_t local_cid);    
+int  l2cap_reserve_packet_buffer(void);
+void l2cap_release_packet_buffer(void);
+
+// Get outgoing buffer and prepare data.
+uint8_t *l2cap_get_outgoing_buffer(void);
+
+int l2cap_send_prepared(uint16_t local_cid, uint16_t len);
+
+int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t len);
+
+// Bluetooth 4.0 - allows to register handler for Attribute Protocol 
+// and Security Manager Protocol
+void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id);
+
+uint16_t l2cap_max_mtu(void);
+uint16_t l2cap_max_le_mtu(void);
+
+int  l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t *data, uint16_t len);
+/* API_END */
 
 #if defined __cplusplus
 }

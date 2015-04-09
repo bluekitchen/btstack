@@ -45,13 +45,6 @@
 extern "C" {
 #endif
 
-typedef struct le_event {
-    uint8_t   type;
-    uint16_t handle;
-} le_event_t;
-
-typedef void (*gatt_client_callback_t)(le_event_t * event);
-
 typedef enum {
     P_READY,
     P_W2_SEND_SERVICE_QUERY,
@@ -173,6 +166,12 @@ typedef struct gatt_subclient {
     gatt_client_callback_t callback;
 } gatt_subclient_t;
 
+/* API_START */
+
+typedef struct le_event {
+    uint8_t   type;
+    uint16_t handle;
+} le_event_t;
 
 typedef struct gatt_complete_event{
     uint8_t   type;
@@ -219,7 +218,6 @@ typedef struct le_characteristic_value_event{
 } le_characteristic_value_event_t;
 
 typedef struct le_characteristic_descriptor{
-    // no properties
     uint16_t handle;
     uint16_t uuid16;
     uint8_t  uuid128[16];
@@ -234,25 +232,25 @@ typedef struct le_characteristic_descriptor_event{
     uint8_t * value;
 } le_characteristic_descriptor_event_t;
 
-//TODO: define uuid type
+typedef void (*gatt_client_callback_t)(le_event_t * event);
+
 // Set up GATT client.
 void gatt_client_init();
 
-// Register callback (packet handler) for gatt client. Returns gatt client ID.
+// Register callback (packet handler) for GATT client. Returns GATT 
+// client ID.
 uint16_t gatt_client_register_packet_handler (gatt_client_callback_t callback);
 
-// Unregister callback (packet handler) for gatt client.
+// Unregister callback (packet handler) for GATT client.
 void gatt_client_unregister_packet_handler(uint16_t gatt_client_id);
 
 // MTU is available after the first query has completed. 
-// If status is equal to BLE_PERIPHERAL_OK, it returns the real value
-// otherwise the default value of 23. 
+// If status is equal to BLE_PERIPHERAL_OK, it returns the real 
+// value, otherwise the default value of 23. 
 le_command_status_t gatt_client_get_mtu(uint16_t handle, uint16_t * mtu);
 
-// Returns the GATT client context for the specified handle.
-// gatt_client_t * get_gatt_client_context_for_handle(uint16_t con_handle);
-
-// Returns if the gatt client is ready to receive a query. It is used with daemon.
+// Returns if the GATT client is ready to receive a query. It is 
+// used with daemon.
 int gatt_client_is_ready(uint16_t handle);
 
 // Discovers all primary services. For each found service, an
@@ -387,6 +385,7 @@ le_command_status_t gatt_client_write_long_characteristic_descriptor(uint16_t ga
 // GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION 
 // as configuration value.
 le_command_status_t gatt_client_write_client_characteristic_configuration(uint16_t gatt_client_id, uint16_t con_handle, le_characteristic_t * characteristic, uint16_t configuration);
+/* API_END */
 
 #if defined __cplusplus
 }

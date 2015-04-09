@@ -81,6 +81,7 @@ typedef struct timer {
     void  (*process)(struct timer *ts);      // <-- do processing
 } timer_source_t;
 
+/* API_START */
 
 // Set timer based on current time in milliseconds.
 void run_loop_set_timer(timer_source_t *a, uint32_t timeout_in_ms);
@@ -99,11 +100,9 @@ void run_loop_init(RUN_LOOP_TYPE type);
 // Set data source callback.
 void run_loop_set_data_source_handler(data_source_t *ds, int (*process)(data_source_t *_ds));
 
-
 // Add/Remove data source.
 void run_loop_add_data_source(data_source_t *dataSource);
 int  run_loop_remove_data_source(data_source_t *dataSource);
-
 
 // Execute configured run loop. This function does not return.
 void run_loop_execute(void);
@@ -116,7 +115,8 @@ uint32_t embedded_ticks_for_ms(uint32_t time_in_ms);
 uint32_t embedded_get_ticks(void);
 // Queries the current time in ms
 uint32_t embedded_get_time_ms(void);
-// Allows to update BTstack system ticks based on another already existing clock
+// Allows to update BTstack system ticks based on another already 
+// existing clock.
 void embedded_set_ticks(uint32_t ticks);
 #endif
 #ifdef EMBEDDED
@@ -125,10 +125,13 @@ void embedded_set_ticks(uint32_t ticks);
 // handler of a data source to signal the run loop that a new data 
 // is available.
 void embedded_trigger(void);    
-// Execute run_loop once
-// can be used to integrate BTstack's timer and data source processing into a foreign run runloop (not recommended)
+// Execute run_loop once. It can be used to integrate BTstack's 
+// timer and data source processing into a foreign run runloop 
+// (it is not recommended).
 void embedded_execute_once(void);
 #endif
+/* API_END */
+
 #if defined __cplusplus
 }
 #endif
