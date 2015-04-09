@@ -13,7 +13,7 @@ docs_folder = ""
 appendix_file = docs_folder + "appendix_apis.tex"
 
 api_header = """% !TEX root = btstack_gettingstarted.tex
-\section{API_TITLE}
+\section{API_TITLE API}
 \label{appendix:API_LABLE}
 $ $
 \\begin{lstlisting}
@@ -26,13 +26,17 @@ api_ending = """\end{lstlisting}
 # [file_name, api_title, api_lable]
 list_of_apis = [ 
     ["../../include/btstack/run_loop.h", "Run Loop", "api_run_loop"],
-    ["../../src/hci.h", "Host Controller Interface (HCI)", "api_hci"],
+    ["../../src/hci.h", "HCI", "api_hci"],
     ["../../src/l2cap.h", "L2CAP", "api_l2cap"],
     ["../../src/rfcomm.h", "RFCOMM", "api_rfcomm"],
     ["../../src/sdp.h", "SDP", "api_sdp"],
     ["../../src/sdp_client.h", "SDP Client", "api_sdp_client"],
     ["../../src/sdp_query_rfcomm.h", "SDP RFCOMM Query", "api_sdp_queries"],
-    ["../../ble/gatt_client.h", "GATT Client", "api_gatt_client"]
+    ["../../ble/gatt_client.h", "GATT Client", "api_gatt_client"],
+    ["../../src/pan.h", "PAN", "api_pan"],
+    ["../../src/bnep.h", "BNEP", "api_bnep"],
+    ["../../src/gap.h", "GAP", "api_gap"],
+    ["../../ble/sm.h", "SM", "api_sm"]
 ]
 
 def replacePlaceholder(template, title, lable):

@@ -1,5 +1,5 @@
 % !TEX root = btstack_gettingstarted.tex
-\section{Host Controller Interface (HCI)}
+\section{HCI API}
 \label{appendix:api_hci}
 $ $
 \begin{lstlisting}
@@ -20,55 +20,77 @@ void le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, u
 void hci_connectable_control(uint8_t enable);
 void hci_close(void);
 
-// new functions replacing: 
-// hci_can_send_packet_now[_using_packet_buffer]
+/** 
+ * @note New functions replacing: hci_can_send_packet_now[_using_packet_buffer]
+ */
 int hci_can_send_command_packet_now(void);
     
-// gets local address 
+/**
+ * @brief Gets local address.
+ */
 void hci_local_bd_addr(bd_addr_t address_buffer);
 
-// Set up HCI. Needs to be called before any other function.
+/**
+ * @brief Set up HCI. Needs to be called before any other function.
+ */
 void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, remote_device_db_t const* remote_device_db);
 
-// Set class of device that will be set during Bluetooth init.
+/**
+ * @brief Set class of device that will be set during Bluetooth init.
+ */
 void hci_set_class_of_device(uint32_t class_of_device);
 
-// Set Public BD ADDR - passed on to Bluetooth chipset if supported 
-// in bt_control_h
+/**
+ * @brief Set Public BD ADDR - passed on to Bluetooth chipset if supported in bt_control_h
+ */
 void hci_set_bd_addr(bd_addr_t addr);
 
-// Registers a packet handler. Used if L2CAP is not used (rarely). 
+/**
+ * @brief Registers a packet handler. Used if L2CAP is not used (rarely). 
+ */
 void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
 
-// Requests the change of BTstack power mode.
+/**
+ * @brief Requests the change of BTstack power mode.
+ */
 int  hci_power_control(HCI_POWER_MODE mode);
 
-// Allows to control if device is discoverable. OFF by default.
+/**
+ * @brief Allows to control if device is discoverable. OFF by default.
+ */
 void hci_discoverable_control(uint8_t enable);
 
-// Creates and sends HCI command packets based on a template and 
-// a list of parameters. Will return error if outgoing data buffer 
-// is occupied. 
+/**
+ * @brief Creates and sends HCI command packets based on a template and a list of parameters. Will return error if outgoing data buffer is occupied. 
+ */
 int hci_send_cmd(const hci_cmd_t *cmd, ...);
 
-// Deletes link key for remote device with baseband address.
+/**
+ * @brief Deletes link key for remote device with baseband address.
+ */
 void hci_drop_link_key_for_bd_addr(bd_addr_t addr);
 
 /* Configure Secure Simple Pairing */
 
-// Enable will enable SSP during init.
+/**
+ * @brief Enable will enable SSP during init.
+ */
 void hci_ssp_set_enable(int enable);
 
-// If set, BTstack will respond to io capability request using 
-// authentication requirement.
+/**
+ * @brief If set, BTstack will respond to io capability request using authentication requirement.
+ */
 void hci_ssp_set_io_capability(int ssp_io_capability);
 void hci_ssp_set_authentication_requirement(int authentication_requirement);
 
-// If set, BTstack will confirm a numberic comparion and enter
-// '000000' if requested.
+/**
+ * @brief If set, BTstack will confirm a numeric comparison and enter '000000' if requested.
+ */
 void hci_ssp_set_auto_accept(int auto_accept);
 
-// Get addr type and address used in advertisement packets.
+/**
+ * @brief Get addr type and address used in advertisement packets.
+ */
 void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t addr);
 \end{lstlisting}
 \pagebreak
