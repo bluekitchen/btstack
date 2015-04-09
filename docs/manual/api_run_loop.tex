@@ -1,5 +1,5 @@
 % !TEX root = btstack_gettingstarted.tex
-\section{Run Loop API}
+\section{Run Loop}
 \label{appendix:api_run_loop}
 $ $
 \begin{lstlisting}
@@ -27,16 +27,28 @@ int  run_loop_remove_data_source(data_source_t *dataSource);
 // Execute configured run loop. This function does not return.
 void run_loop_execute(void);
 
-// Sets how many milliseconds has one tick.
+// hack to fix HCI timer handling
+#ifdef HAVE_TICK
+// Sets how many miliseconds has one tick.
 uint32_t embedded_ticks_for_ms(uint32_t time_in_ms);
-
 // Queries the current time in ticks.
 uint32_t embedded_get_ticks(void);
-
+// Queries the current time in ms
+uint32_t embedded_get_time_ms(void);
+// Allows to update BTstack system ticks based on another already 
+// existing clock.
+void embedded_set_ticks(uint32_t ticks);
+#endif
+#ifdef EMBEDDED
 // Sets an internal flag that is checked in the critical section
-// just before entering sleep mode. Has to be called by the 
-// interrupt handler of a data source to signal the run loop that  
-// a new data is available.
-void embedded_trigger(void);
+// just before entering sleep mode. Has to be called by the interupt
+// handler of a data source to signal the run loop that a new data 
+// is available.
+void embedded_trigger(void);    
+// Execute run_loop once. It can be used to integrate BTstack's 
+// timer and data source processing into a foreign run runloop 
+// (it is not recommended).
+void embedded_execute_once(void);
+#endif
 \end{lstlisting}
 \pagebreak
