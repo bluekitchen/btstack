@@ -108,19 +108,21 @@ typedef enum {
 // also, invalid parameters
 // and reserved
 
-// Security Manager Events
+// Only for PTS testing
+void sm_test_set_irk(sm_key_t irk);
+/* API_START */
+
+/**
+ * @brief Security Manager event
+ */
 typedef struct sm_event {
-    uint8_t   type;   // see <btstack/hci_cmds.h> SM_...
+    uint8_t   type;                 ///< See <btstack/hci_cmds.h> SM_...
     uint8_t   addr_type;
     bd_addr_t address;
-    uint32_t  passkey;              // only used for SM_PASSKEY_DISPLAY_NUMBER 
-    uint16_t  le_device_db_index;   // only used for SM_IDENTITY_RESOLVING_..
-    uint8_t   authorization_result; // only use for SM_AUTHORIZATION_RESULT
+    uint32_t  passkey;              ///< only used for SM_PASSKEY_DISPLAY_NUMBER 
+    uint16_t  le_device_db_index;   ///< only used for SM_IDENTITY_RESOLVING_..
+    uint8_t   authorization_result; ///< only use for SM_AUTHORIZATION_RESULT
 } sm_event_t;
-
-//
-// Security Manager Client API
-//
 
 /**
  * @brief Initializes the Security Manager, connects to L2CAP
@@ -128,12 +130,13 @@ typedef struct sm_event {
 void sm_init();
 
 /**
- * @brief Set secrect ER key for key generation as described in Core V4.0, Vol 3, Part G, 5.2.2 
+ * @brief Set secret ER key for key generation as described in Core V4.0, Vol 3, Part G, 5.2.2 
+ * @param er
  */
 void sm_set_er(sm_key_t er);
 
 /**
- * @brief Set secrect IR key for key generation as described in Core V4.0, Vol 3, Part G, 5.2.2 
+ * @brief Set secret IR key for key generation as described in Core V4.0, Vol 3, Part G, 5.2.2 
  */
 void sm_set_ir(sm_key_t ir);
 
@@ -164,13 +167,13 @@ void sm_set_accepted_stk_generation_methods(uint8_t accepted_stk_generation_meth
 void sm_set_encryption_key_size_range(uint8_t min_size, uint8_t max_size);
 
 /**
- * @brief Sets the requestsd authentication requirements, bonding yes/no, MITM yes/no
+ * @brief Sets the requested authentication requirements, bonding yes/no, MITM yes/no
  * @param OR combination of SM_AUTHREQ_ flags
  */
 void sm_set_authentication_requirements(uint8_t auth_req);
 
 /**
- * @brief Sets the availabe IO Capabilities
+ * @brief Sets the available IO Capabilities
  * @param IO_CAPABILITY_
  */
 void sm_set_io_capabilities(io_capability_t io_capability);
@@ -203,66 +206,64 @@ void sm_just_works_confirm(uint8_t addr_type, bd_addr_t address);
  * @brief Reports passkey input by user
  * @param addr_type and address
  * @param passkey in [0..999999]
- * @returns
  */
 void sm_passkey_input(uint8_t addr_type, bd_addr_t address, uint32_t passkey);
 
 /**
  *
- * @brief Get encryption key size
+ * @brief Get encryption key size.
  * @param addr_type and address
- * @returns 0 if not encrypted, 7-16 otherwise
+ * @return 0 if not encrypted, 7-16 otherwise
  */
 int sm_encryption_key_size(uint8_t addr_type, bd_addr_t address);
 
 /**
- * @brief Get authentication property
+ * @brief Get authentication property.
  * @param addr_type and address
- * @returns 1 if bonded with OOB/Passkey (AND MITM protection)
+ * @return 1 if bonded with OOB/Passkey (AND MITM protection)
  */
 int sm_authenticated(uint8_t addr_type, bd_addr_t address);
 
 /**
- * @brief Queries authorization state
+ * @brief Queries authorization state.
  * @param addr_type and address
- * @returns authorization_state for the current session
+ * @return authorization_state for the current session
  */
 authorization_state_t sm_authorization_state(uint8_t addr_type, bd_addr_t address);
 
 /**
- * @brief Used by att_server.c to request user authorization
+ * @brief Used by att_server.c to request user authorization.
  * @param addr_type and address
- * @returns
  */
 void sm_request_authorization(uint8_t addr_type, bd_addr_t address);
 
 /**
- * @brief Report user authorization decline
+ * @brief Report user authorization decline.
  * @param addr_type and address
  */
 void sm_authorization_decline(uint8_t addr_type, bd_addr_t address);
 
 /**
- *
- * @brief Report user authorization grant
+ * @brief Report user authorization grant.
  * @param addr_type and address
  */
 void sm_authorization_grant(uint8_t addr_type, bd_addr_t address);
 
-// Support for signed writes, used by att_server.c
-// NOTE: message and result are in little endian to allows passing in ATT PDU without flipping them first
+/**
+ * @brief Support for signed writes, used by att_server.
+ * @note Message and result are in little endian to allows passing in ATT PDU without flipping them first.
+ */
 int  sm_cmac_ready();
 void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t hash[8]));
 
 /**
- * @brief Identify device in LE Device DB
+ * @brief Identify device in LE Device DB.
  * @param handle
- * @returns index from le_device_db or -1 if not found/identified
+ * @return index from le_device_db or -1 if not found/identified
  */
 int sm_le_device_index(uint16_t handle );
+/* API_END */
 
-// Testing support only
-void sm_test_set_irk(sm_key_t irk);
 #if defined __cplusplus
 }
 #endif

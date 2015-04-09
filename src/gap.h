@@ -77,17 +77,19 @@ typedef enum {
 	// GAP_SECURITY_AUTHORIZED
 } gap_security_state;
 
+/* API_START */
+
 /**
- * @bbrief enable/disable bonding. default is enabled
- * @praram enabled
+ * @brief Enable/disable bonding. Default is enabled.
+ * @param enabled
  */
 void gap_set_bondable_mode(int enabled);
 
 /**
- * @brief start dedicated bonding with device. disconnect after bonding
+ * @brief Start dedicated bonding with device. Disconnect after bonding.
  * @param device
  * @param request MITM protection
- * @returns error, if max num acl connections active
+ * @return error, if max num acl connections active
  * @result GAP_DEDICATED_BONDING_COMPLETE
  */
 int gap_dedicated_bonding(bd_addr_t device, int mitm_protection_required);
@@ -98,11 +100,13 @@ gap_security_level_t gap_security_level(hci_con_handle_t con_handle);
 void gap_request_security_level(hci_con_handle_t con_handle, gap_security_level_t level);
 int  gap_mitm_protection_required_for_security_level(gap_security_level_t level);
 
-/** @brief sets local name
- *  @note has to be done before stack starts up
- *  @param name is not copied, make sure memory is accessible during stack startup
+/** 
+ * @brief Sets local name.
+ * @note has to be done before stack starts up
+ * @param name is not copied, make sure memory is accessible during stack startup
  */
 void gap_set_local_name(const char * local_name);
+/* API_END*/
 
 #if defined __cplusplus
 }

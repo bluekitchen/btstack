@@ -269,7 +269,7 @@ typedef struct {
 } rfcomm_service_t;
 
 // info regarding multiplexer
-// note: spec mandates single multplexer per device combination
+// note: spec mandates single multiplexer per device combination
 typedef struct {
     // linked list - assert: first field
     linked_item_t    item;
@@ -297,7 +297,7 @@ typedef struct {
     // send DM for DLCI != 0
     uint8_t send_dm_for_dlci;
     
-    // non supportec command, 0 if not set
+    // non supported command, 0 if not set
     uint8_t nsc_command;
 
     // test data - limited to RFCOMM_TEST_DATA_MAX_LEN
@@ -306,7 +306,7 @@ typedef struct {
 
 } rfcomm_multiplexer_t;
 
-// info regarding an actual coneection
+// info regarding an actual connection
 typedef struct {
     // linked list - assert: first field
     linked_item_t    item;
@@ -367,77 +367,95 @@ void rfcomm_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packe
 
 /* API_START */
 
-// Set up RFCOMM.
+/** 
+ * @brief Set up RFCOMM.
+ */
 void rfcomm_init(void);
 
-// Set security level required for incoming connections, need to be 
-// called before registering services.
+/** 
+ * @brief Set security level required for incoming connections, need to be called before registering services.
+ */
 void rfcomm_set_required_security_level(gap_security_level_t security_level);
 
-// Register packet handler.
+/** 
+ * @brief Register packet handler.
+ */
 void rfcomm_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
 
-// Creates RFCOMM connection (channel) to a given server channel on 
-// a remote device with baseband address. A new baseband connection 
-// will be initiated if necessary. This channel will automatically 
-// provide enough credits to the remote side
+/** 
+ * @brief Creates RFCOMM connection (channel) to a given server channel on a remote device with baseband address. A new baseband connection will be initiated if necessary. This channel will automatically provide enough credits to the remote side
+ */
 void rfcomm_create_channel_internal(void * connection, bd_addr_t addr, uint8_t channel);
 
-// Creates RFCOMM connection (channel) to a given server channel on 
-// a remote device with baseband address. new baseband connection 
-// will be initiated if necessary. This channel will use explicit 
-// credit management. During channel establishment, an initial  
-// amount of credits is provided.
+/** 
+ * @brief Creates RFCOMM connection (channel) to a given server channel on a remote device with baseband address. new baseband connection will be initiated if necessary. This channel will use explicit credit management. During channel establishment, an initial  amount of credits is provided.
+ */
 void rfcomm_create_channel_with_initial_credits_internal(void * connection, bd_addr_t addr, uint8_t server_channel, uint8_t initial_credits);
 
-// Disconencts RFCOMM channel with given identifier. 
+/** 
+ * @brief Disconnects RFCOMM channel with given identifier. 
+ */
 void rfcomm_disconnect_internal(uint16_t rfcomm_cid);
 
-// Registers RFCOMM service for a server channel and a maximum frame 
-// size, and assigns a packet handler. On embedded systems, use NULL 
-// for connection parameter. This channel provides automatically  
-// enough credits to the remote side.
+/** 
+ * @brief Registers RFCOMM service for a server channel and a maximum frame size, and assigns a packet handler. On embedded systems, use NULL for connection parameter. This channel provides automatically enough credits to the remote side.
+ */
 void rfcomm_register_service_internal(void * connection, uint8_t channel, uint16_t max_frame_size);
 
-// Registers RFCOMM service for a server channel and a maximum frame 
-// size, and assigns a packet handler. On embedded systems, use NULL 
-// for connection parameter. This channel will use explicit credit
-// management. During channel establishment, an initial amount of  
-// credits is provided.
+/** 
+ * @brief Registers RFCOMM service for a server channel and a maximum frame size, and assigns a packet handler. On embedded systems, use NULL for connection parameter. This channel will use explicit credit management. During channel establishment, an initial amount of credits is provided.
+ */
 void rfcomm_register_service_with_initial_credits_internal(void * connection, uint8_t channel, uint16_t max_frame_size, uint8_t initial_credits);
 
-// Unregister RFCOMM service.
+/** 
+ * @brief Unregister RFCOMM service.
+ */
 void rfcomm_unregister_service_internal(uint8_t service_channel);
 
-// Accepts/Deny incoming RFCOMM connection.
+/** 
+ * @brief Accepts/Deny incoming RFCOMM connection.
+ */
 void rfcomm_accept_connection_internal(uint16_t rfcomm_cid);
 void rfcomm_decline_connection_internal(uint16_t rfcomm_cid);
 
-// Grant more incoming credits to the remote side for the given 
-// RFCOMM channel identifier.
+/** 
+ * @brief Grant more incoming credits to the remote side for the given RFCOMM channel identifier.
+ */
 void rfcomm_grant_credits(uint16_t rfcomm_cid, uint8_t credits);
 
-// Checks if RFCOMM can send packet. Returns yes if packet can be 
-// sent.
+/** 
+ * @brief Checks if RFCOMM can send packet. Returns yes if packet can be sent.
+ */
 int rfcomm_can_send_packet_now(uint16_t rfcomm_cid);
 
-// Sends RFCOMM data packet to the RFCOMM channel with given 
-// identifier.
+/** 
+ * @brief Sends RFCOMM data packet to the RFCOMM channel with given identifier.
+ */
 int  rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len);
 
-// Sends Local Lnie Status, see LINE_STATUS_..
+/** 
+ * @brief Sends Local Line Status, see LINE_STATUS_..
+ */
 int rfcomm_send_local_line_status(uint16_t rfcomm_cid, uint8_t line_status);
 
-// Sned local modem status. see MODEM_STAUS_..
+/** 
+ * @brief Send local modem status. see MODEM_STAUS_..
+ */
 int rfcomm_send_modem_status(uint16_t rfcomm_cid, uint8_t modem_status);
 
-// Configure remote port 
+/** 
+ * @brief Configure remote port 
+ */
 int rfcomm_send_port_configuration(uint16_t rfcomm_cid, rpn_baud_t baud_rate, rpn_data_bits_t data_bits, rpn_stop_bits_t stop_bits, rpn_parity_t parity, rpn_flow_control_t flow_control);
 
-// Query remote port 
+/** 
+ * @brief Query remote port 
+ */
 int rfcomm_query_port_configuration(uint16_t rfcomm_cid);
 
-// Allow to create rfcomm packet in outgoing buffer.
+/** 
+ * @brief Allow to create RFCOMM packet in outgoing buffer.
+ */
 int       rfcomm_reserve_packet_buffer(void);
 void      rfcomm_release_packet_buffer(void);
 uint8_t * rfcomm_get_outgoing_buffer(void);

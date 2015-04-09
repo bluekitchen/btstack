@@ -84,44 +84,49 @@ typedef enum {
 	PAN_NET_ACCESS_TYPE_NONE
 } net_access_type_t;
 
-/* Creates SDP record for PANU BNEP service in provided empty buffer.
+/* API_START */
+
+/** 
+ * @brief Creates SDP record for PANU BNEP service in provided empty buffer.
  * @note Make sure the buffer is big enough.
  *
  * @param service is an empty buffer to store service record
- * @security_description 
+ * @param security_desc 
  * @param name if NULL, the default service name will be assigned
  * @param description if NULL, the default service description will be assigned
  */
 void pan_create_panu_service(uint8_t *service, const char *name, const char *description, security_description_t security_desc);
 
-/* Creates SDP record for GN BNEP service in provided empty buffer.
+/** 
+ * @brief Creates SDP record for GN BNEP service in provided empty buffer.
  * @note Make sure the buffer is big enough.
  *
  * @param service is an empty buffer to store service record
- * @security_description 
+ * @param security_desc 
  * @param name if NULL, the default service name will be assigned
  * @param description if NULL, the default service description will be assigned
  * @param IPv4Subnet is optional subnet definition, e.g. "10.0.0.0/8"
- * @param IPv6Subnet is optional subnet definition given in the standard IETF format wit hte absolute attribute IDs
+ * @param IPv6Subnet is optional subnet definition given in the standard IETF format with the absolute attribute IDs
  */
 void pan_create_gn_service(uint8_t *service, const char *name, const char *description, security_description_t security_desc, 
 	const char *IPv4Subnet, const char *IPv6Subnet);
 
-/* Creates SDP record for NAP BNEP service in provided empty buffer.
+/** 
+ * @brief Creates SDP record for NAP BNEP service in provided empty buffer.
  * @note Make sure the buffer is big enough.
  *
  * @param service is an empty buffer to store service record
  * @param name if NULL, the default service name will be assigned
- * @security_description 
+ * @param security_desc 
  * @param description if NULL, the default service description will be assigned
  * @param net_access_type type of available network access
  * @param max_net_access_rate based on net_access_type measured in byte/s
  * @param IPv4Subnet is optional subnet definition, e.g. "10.0.0.0/8"
- * @param IPv6Subnet is optional subnet definition given in the standard IETF format wit hte absolute attribute IDs
+ * @param IPv6Subnet is optional subnet definition given in the standard IETF format with the absolute attribute IDs
  */
 void pan_create_nap_service(uint8_t *service, const char *name, const char *description, security_description_t security_desc, 
 	net_access_type_t net_access_type, uint32_t max_net_access_rate, const char *IPv4Subnet, const char *IPv6Subnet);
-
+/* API_END */
 
 #if defined __cplusplus
 }

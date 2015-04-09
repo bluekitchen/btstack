@@ -202,41 +202,63 @@ typedef struct {
 
 void bnep_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-/** Embedded API **/
+/* API_START */
 
-/* Set up BNEP. */
+/**
+ * @brief Set up BNEP.
+ */
 void bnep_init(void);
 
-/* Check if a data packet can be send out */
+/**
+ * @brief Check if a data packet can be send out.
+ */
 int bnep_can_send_packet_now(uint16_t bnep_cid);
 
-/* Send a data packet */
+/**
+ * @brief Send a data packet.
+ */
 int bnep_send(uint16_t bnep_cid, uint8_t *packet, uint16_t len);
 
-/* Set the network protocol filter */
+/**
+ * @brief Set the network protocol filter.
+ */
 int bnep_set_net_type_filter(uint16_t bnep_cid, bnep_net_filter_t *filter, uint16_t len);
 
-/* Set the multicast address filter */
+/**
+ * @brief Set the multicast address filter.
+ */
 int bnep_set_multicast_filter(uint16_t bnep_cid, bnep_multi_filter_t *filter, uint16_t len);
 
-/* Set security level required for incoming connections, need to be called before registering services */
+/**
+ * @brief Set security level required for incoming connections, need to be called before registering services.
+ */
 void bnep_set_required_security_level(gap_security_level_t security_level);
 
-/* Register packet handler. */
-void bnep_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type,
-                                                    uint16_t channel, uint8_t *packet, uint16_t size));
+/**
+ * @brief Register packet handler. 
+ */
+void bnep_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
 
-// Creates BNEP connection (channel) to a given server on a remote device with baseband address. A new baseband connection will be initiated if necessary.
+/**
+ * @brief Creates BNEP connection (channel) to a given server on a remote device with baseband address. A new baseband connection will be initiated if necessary. 
+ */
 int bnep_connect(void * connection, bd_addr_t addr, uint16_t l2cap_psm, uint16_t uuid_dest);
 
-// Disconencts BNEP channel with given identifier. 
+/**
+ * @brief Disconnects BNEP channel with given identifier. 
+ */
 void bnep_disconnect(bd_addr_t addr);
 
-// Registers BNEP service, set a maximum frame size and assigns a packet handler. On embedded systems, use NULL for connection parameter.
+/**
+ * @brief Registers BNEP service, set a maximum frame size and assigns a packet handler. On embedded systems, use NULL for connection parameter. 
+ */
 void bnep_register_service(void * connection, uint16_t service_uuid, uint16_t max_frame_size);
 
-// Unregister BNEP service.
+/**
+ * @brief Unregister BNEP service.
+ */
 void bnep_unregister_service(uint16_t service_uuid);
+/* API_END */
 
 #if defined __cplusplus
 }

@@ -78,30 +78,34 @@ int sdp_handle_service_search_attribute_request(uint8_t * packet, uint16_t remot
 
 /* API_START */
 
-// Set up SDP.
+/** 
+ * @brief Set up SDP.
+ */
 void sdp_init(void);
 
 void sdp_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size));
 
 #ifdef EMBEDDED
-// Register service record internally - this version doesn't copy 
-// the record therefore it must be forever accessible.
-// Preconditions:
-//     - AttributeIDs are in ascending order;
-//     - ServiceRecordHandle is first attribute and valid.
-// @returns ServiceRecordHandle or 0 if registration failed.
+/** 
+ * @brief Register service record internally - this version doesn't copy the record therefore it must be forever accessible. Preconditions:
+    - AttributeIDs are in ascending order;
+    - ServiceRecordHandle is first attribute and valid.
+ * @return ServiceRecordHandle or 0 if registration failed.
+ */
 uint32_t sdp_register_service_internal(void *connection, service_record_item_t * record_item);
 #endif
 
 #ifndef EMBEDDED
-// Register service record internally - this version creates a copy
-// of the record precondition: AttributeIDs are in ascending order
-// => ServiceRecordHandle is first attribute if present.
-// @returns ServiceRecordHandle or 0 if registration failed
+/** 
+ * @brief Register service record internally - this version creates a copy of the record precondition: AttributeIDs are in ascending order => ServiceRecordHandle is first attribute if present. 
+ * @return ServiceRecordHandle or 0 if registration failed
+ */
 uint32_t sdp_register_service_internal(void *connection, uint8_t * service_record);
 #endif
 
-// Unregister service record internally.
+/** 
+ * @brief Unregister service record internally.
+ */
 void sdp_unregister_service_internal(void *connection, uint32_t service_record_handle);
 /* API_END */
 
