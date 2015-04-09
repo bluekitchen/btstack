@@ -39,11 +39,6 @@ In the following, we first explain how the various Bluetooth protocols are used.
 % 	\end{itemize}
 % \end{itemize}
 
-In the following, we provide an overview of the supported protocols and profiles.
-
-
-
-
 \subsection{HCI - Host Controller Interface}
 
 The HCI protocol provides a command interface to the Bluetooth chipset. In BTstack, the HCI implementation also keeps track of all active connections and also handles the re-assembly of higher layer (L2CAP) packets. Many features of the Generic Access Profile (GAP Classic) can be achieved by sending a single HCI command. Because of this, if there's no special GAP function, please consider sending the HCI command directly, as explained in the following. 
@@ -116,13 +111,19 @@ Format Specifier & Description\\
 \end{table*}
 
 \subsubsection{Sending  HCI command based on a template}
-You can use the \emph{hci\_send-\_cmd} function to send HCI command based on a template and a list of parameters. However, it is necessary to check that the outgoing packet buffer is empty and that the Bluetooth module is ready to receive the next command - most modern Bluetooth modules only allow  to send a single HCI command. 
+
+\begin{lstlisting}[caption= Send hci\_write\_local\_name command that takes a string as a parameter., label=HCIcmdExampleLocalName]
+if (hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)){
+    hci_send_cmd(&hci_write_local_name, "BTstack Demo");
+}  
+\end{lstlisting}
+
+You can use the \emph{hci\_send\_cmd} function to send HCI command based on a template and a list of parameters. However, it is necessary to check that the outgoing packet buffer is empty and that the Bluetooth module is ready to receive the next command - most modern Bluetooth modules only allow  to send a single HCI command. 
 This can be done by calling \emph{hci\_can\_send\_command\_packet\_now()} function, which returns true, if it is ok to send.
 
-Listing \ref{HCIcmdExampleLocalName} illustrates how to manually set the device name with the HCI Write Local Name command.
+Listing \ref{HCIcmdExampleLocalName} illustrates how to manually set the device name with the HCI Write Local Name command. 
 
-Please note, that an application rarely has to send HCI commands on its own. All higher level functions in BTstack for the L2CAP and RFCOMM APIs manage this automatically. The main use of HCI commands in application is during the startup phase to configure special features not available via the GAP API yet.
-
+Please note, that an application rarely has to send HCI commands on its own. Instead, BTstack provides convenience functions in HCI/GAP and higher level protocols use HCI automatically. E.g. to set the name, you can call \emph{gap\_set\_local\_name()} before powering up. The main use of HCI commands in application is during the startup phase to configure special features not available via the GAP API yet.
 
 
 
@@ -213,7 +214,7 @@ void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uin
 
 Sending of L2CAP data packets may fail due to a full internal BTstack outgoing packet buffer, or if the ACL buffers in the Bluetooth module become full, i.e., if the application is sending faster than the packets can be transferred over the air. In such case, the application can try sending again upon reception of DAEMON\_EVENT\_HCI\_PACKET\_SENT or L2CAP\_EVENT\_CREDITS event. The first event signals that the internal BTstack outgoing buffer became free again, the second one signals the same for ACL buffers in the Bluetooth chipset. Listing \ref{L2CAPService} provides L2CAP service example code.
 
-\todo{\textbf{L2CAP and Security Levels}}
+\todo{\textbf{L2CAP and Security Levels}} \\
 
 \subsubsection{L2CAP LE - L2CAP Low Energy Protocol}
 In addition to the full L2CAP implementation in the \emph{src} folder, BTstack provides an optimized v\emph{l2cap\_le} implementation in the \emph{ble} folder. This L2CAP LE variant can be used for single-mode devices and provides the base for the ATT and SMP protocols.
@@ -258,7 +259,7 @@ void btstack_setup(void){
 \end{lstlisting}
 
 
-\subsection{Living with a single output buffer}
+\subsubsection{Living with a single output buffer}
 \label{section:single_buffer}
 % l2cap checks hci_can_send_packet now
 Outgoing packets, both commands and data, are not queued in BTstack. This section explains the consequences of this design decision for sending data and why it is not as bad as it sounds.
@@ -395,7 +396,7 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
            // data: event(8), len(8), status (8), address (48), handle (16), server channel(8), rfcomm_cid(16), max frame size(16)
            rfcomm_channel_id = READ_BT_16(packet, 12);
            mtu = READ_BT_16(packet, 14);
-           printf("RFCOMM channel open succeeded.);
+           printf("RFCOMM channel open succeeded.");
            break;
         case RFCOMM_EVENT_CREDITS:
         case DAEMON_EVENT_HCI_PACKET_SENT:
@@ -527,19 +528,34 @@ de_pop_sequence(des_buffer, attribute);
 % \end{minipage}
 
 \subsection{BNEP -  Bluetooth Network Encapsulation Protocol}
-The BNEP protocol is built on top of L2CAP and it is used to transport control and data packets over standard network protocols such as TCP, IPv4 or IPv6.  . BNEP specifies a minimum L2CAP MTU of 1691. 
+The BNEP protocol is built on top of L2CAP and it is used to transport control and data packets over standard network protocols such as TCP, IPv4 or IPv6.  BNEP specifies a minimum L2CAP MTU of 1691. 
 
-\todo{\textbf{Explain BNEP usage}}
+To receive BNEP events, please register a packet handler with \emph{bnep\_register\_packet\_handler}.
+
+\subsubsection{Access a BNEP service on a remote device}
+To connect to a remote BNEP service, you need to know its UUID. The set of available UUIDs can be queried by a SDP query for the PAN profile. Please see section \ref{section:pan_profile} for details. With the remote UUID, you can create a connection using the \emph{bnep\_connect} function. You'll receive a \emph{BNEP\_EVENT\_OPEN\_CHANNEL\_COMPLETE} on success or failure. 
+
+If the connection was opened successfully, you can send ethernet packets  if you can send a Ethernet frames by first checking \emph{bnep\_can\_send\_packet\_now} and then calling \emph{bnep\_send}. You'll receive Ethernet frames via the registered packet handler and a packet type of \emph{BNEP\_DATA\_PACKET}.
+
+BTstack BNEP implementation supports both network protocol filter and multicast filters with \emph{bnep\_set\_net\_type\_filter} and \emph{bnep\_set\_multicast\_filter} respectively.
+
+Finally, to close a BNEP connection, you can call \emph{bnep\_disconnect}
+
+\subsubsection{Provide BNEP service}
+You can also provide a BNEP service by calling \emph{bnep\_register\_service} with the provided service UUID and a max frame size.
+
+After an incoming connection was established, a \emph{BNEP\_EVENT\_INCOMING\_CONNECTION} event is received. Ethernet packets can now be sent and received as in the previous section.
 
 \subsection{ATT - Attribute Protocol}
 ATT is a wire application protocol, while GATT dictates how ATT is employed in service composition. Every Low Energy profile must be based on GATT. So, ultimately, every LE service uses ATT as the application protocol. An ATT server stores attributes. An ATT client stores nothing; it uses the ATT wire protocol to read and write values on server attributes. Most of the ATT protocol is pure client-server: client takes the initiative, server answers. But ATT has notification and indication capabilities, in which the server takes the initiative of notifying a client that an attribute value has changed, saving the client from having to poll the attribute.
 
-\todo{\textbf{Explain ATT Client and Server. Explain how to setup ATT Database}}
+\todo{\textbf{Explain ATT Client and Server.}} \\
+\todo{\textbf{Explain how to setup ATT Database}} \\
 
 \subsection{SMP - Security Manager Protocol }
 The SMP protocol allows to setup authenticated and encrypted connection.
 
-\todo{\textbf{Explain SMP and what you can do with it, what it does for you}}
+\todo{\textbf{Explain SMP and what you can do with it, what it does for you}} \\
 
 
 % \newcommand{\FreeBSDHandbook}{\urlfoot{http://www.freebsd.org/doc/en\_US.ISO8859-1/books/handbook/network-bluetooth.html}{FreeBSD Handbook}}
@@ -659,12 +675,14 @@ The Bluetooth v2.1 specification introduces Secure Simple Pairing (SSP), which i
 
 Regardless of the authentication mechanism (PIN/SSP), on success, both devices will generate a link key. The link key can be stored either in the Bluetooth module itself or in a persistent storage, see Section \ref{section:persistent_storage}. The next time the device connect and request an authenticated connection, both devices can use the previously generated link key. Please note that the pairing must be repeated if the link key is lost by one device.
 
-\todo{\textbf{Dedicated bonding.}}
+\todo{\textbf{Dedicated bonding.}} \\
 
 
 
 \subsection{SPP - Serial Port Profile}
 The SPP profile defines how to set up virtual serial ports and connect two Bluetooth enabled devices. See Appendix \ref{appendix:api_} for the SPP API.
+
+\todo{\textbf{Explain SPP use.}} \\
 
 
 \subsection{PAN -  Personal Area Networking Profile}
