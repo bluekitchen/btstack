@@ -18,9 +18,9 @@ popd
 
 echo "Create Archive"
 pushd .
-cd ..
+cd ../..
 rm -f btstack-android-mtk.tar.gz
-tar cfz btstack-android-mtk.tar.gz mtk ../java ../LEScan ../SPPClient
+tar cfz btstack-android-mtk.tar.gz platforms/mtk java
 popd
 
 
