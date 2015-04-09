@@ -45,6 +45,13 @@
 extern "C" {
 #endif
 
+typedef struct le_event {
+    uint8_t   type;
+    uint16_t handle;
+} le_event_t;
+
+typedef void (*gatt_client_callback_t)(le_event_t * event);
+
 typedef enum {
     P_READY,
     P_W2_SEND_SERVICE_QUERY,
@@ -168,11 +175,6 @@ typedef struct gatt_subclient {
 
 /* API_START */
 
-typedef struct le_event {
-    uint8_t   type;
-    uint16_t handle;
-} le_event_t;
-
 typedef struct gatt_complete_event{
     uint8_t   type;
     uint16_t handle;
@@ -231,8 +233,6 @@ typedef struct le_characteristic_descriptor_event{
     uint16_t value_offset;
     uint8_t * value;
 } le_characteristic_descriptor_event_t;
-
-typedef void (*gatt_client_callback_t)(le_event_t * event);
 
 // Set up GATT client.
 void gatt_client_init();

@@ -603,7 +603,7 @@ linked_list_gatt_client_helper_t * daemon_setup_gatt_client_request(connection_t
     
     if (track_active_connection){
         // remember connection responsible for this request
-        gatt_helper->active_connection = connection;
+        helper->active_connection = connection;
     }
 
     return helper;
