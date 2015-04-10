@@ -53,7 +53,7 @@ BTdaemon_OBJS = $(libBTstack_OBJS)   \
 	daemon.o 				    \
 	hci_transport_h4_mtk.o      \
 
-all: $(TOOLCHAIN) BTstackDaemon libBTstack.so BTstackDaemonRespawn inquiry le_scan rfcomm-echo dist
+all: $(TOOLCHAIN) version BTstackDaemon libBTstack.so BTstackDaemonRespawn inquiry le_scan rfcomm-echo dist
 
 dist:
 	rm -f *.o
@@ -79,8 +79,11 @@ run:
 shell: 
 	$(ADB) shell
 
-BTstackDaemon: $(BTdaemon_OBJS) libbluetoothdrv.so
+version:
 	$(BTSTACK_ROOT)/tools/get_version.sh
+	grep BTSTACK_DATE $(BTSTACK_ROOT)/include/btstack/version.h
+
+BTstackDaemon: $(BTdaemon_OBJS) libbluetoothdrv.so
 	$(GCC) $(LDFLAGS) -o $@ libbluetoothdrv.so $^
 
 BTstackDaemonRespawn: BTstackDaemonRespawn.o
@@ -103,8 +106,9 @@ le_scan: le_scan.o
 # 	$(GCC) $(LDFLAGS) libs/libbluetoothdrv.so  -o $@ minimal_peripheral.o
 
 hci_dump: 
-	# killall PacketLogger
+	killall PacketLogger
 	$(ADB) shell su root chmod 666 /data/btstack/hci_dump.pklg
 	$(ADB) pull /data/btstack/hci_dump.pklg 2> /dev/null
 	open hci_dump.pklg
 	
+log: hci_dump
