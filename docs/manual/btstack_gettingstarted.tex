@@ -23,7 +23,12 @@
 \usepackage{booktabs} \newcommand{\ra}[1]{\renewcommand{\arraystretch}{#1}}
 
 \usepackage{color}
+
+% show todos
 \newcommand{\todo}[1]{\colorbox{yellow}{#1}}
+% ignore todos
+% \newcommand{\todo}[1]{}
+
 \newcommand{\toread}[1]{{\color{bklightblue} #1}}
 
 \usepackage{listings}
@@ -126,6 +131,9 @@ morekeywords={*, timer_source_t, data_source_t, uint32_t, uint16_t, uint8_t, RUN
 \newcommand{\OpenOCD}{\urlfoot{http://openocd.org}{OpenOCD}}
 \newcommand{\mplabxc}{\urlfoot{http://www.microchip.com/pagehandler/en\_us/devtools/mplabxc/}{MPLAB XC}}
 \newcommand{\PICkit}{\urlfoot{http://www.microchip.com/DevelopmentTools/ProductDetails.aspx?PartNO=pg164130}{PICkit 3}}
+
+%level -1: part, 0: chapter, 1: section, etc.
+\setcounter{tocdepth}{3}
 
 \begin{document}
 

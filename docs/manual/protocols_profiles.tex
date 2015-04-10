@@ -528,14 +528,14 @@ de_pop_sequence(des_buffer, attribute);
 % \end{minipage}
 
 \subsection{BNEP -  Bluetooth Network Encapsulation Protocol}
-The BNEP protocol is built on top of L2CAP and it is used to transport control and data packets over standard network protocols such as TCP, IPv4 or IPv6.  BNEP specifies a minimum L2CAP MTU of 1691. 
+The BNEP protocol is built on top of L2CAP and it is used to transport control and data packets over standard network protocols such as TCP, IPv4 or IPv6.  BNEP specifies a minimum L2CAP MTU of 1691 bytes. 
 
 To receive BNEP events, please register a packet handler with \emph{bnep\_register\_packet\_handler}.
 
 \subsubsection{Access a BNEP service on a remote device}
 To connect to a remote BNEP service, you need to know its UUID. The set of available UUIDs can be queried by a SDP query for the PAN profile. Please see section \ref{section:pan_profile} for details. With the remote UUID, you can create a connection using the \emph{bnep\_connect} function. You'll receive a \emph{BNEP\_EVENT\_OPEN\_CHANNEL\_COMPLETE} on success or failure. 
 
-If the connection was opened successfully, you can send ethernet packets  if you can send a Ethernet frames by first checking \emph{bnep\_can\_send\_packet\_now} and then calling \emph{bnep\_send}. You'll receive Ethernet frames via the registered packet handler and a packet type of \emph{BNEP\_DATA\_PACKET}.
+After the connection was opened successfully, you can send and receive Ethernet packets. Before sending an Ethernet frame with \emph{bnep\_send},   \emph{bnep\_can\_send\_packet\_now} needs to return true. Ethernet frames are received via the registered packet handler with packet type \emph{BNEP\_DATA\_PACKET}.
 
 BTstack BNEP implementation supports both network protocol filter and multicast filters with \emph{bnep\_set\_net\_type\_filter} and \emph{bnep\_set\_multicast\_filter} respectively.
 
@@ -547,13 +547,13 @@ You can also provide a BNEP service by calling \emph{bnep\_register\_service} wi
 After an incoming connection was established, a \emph{BNEP\_EVENT\_INCOMING\_CONNECTION} event is received. Ethernet packets can now be sent and received as in the previous section.
 
 \subsection{ATT - Attribute Protocol}
-ATT is a wire application protocol, while GATT dictates how ATT is employed in service composition. Every Low Energy profile must be based on GATT. So, ultimately, every LE service uses ATT as the application protocol. An ATT server stores attributes. An ATT client stores nothing; it uses the ATT wire protocol to read and write values on server attributes. Most of the ATT protocol is pure client-server: client takes the initiative, server answers. But ATT has notification and indication capabilities, in which the server takes the initiative of notifying a client that an attribute value has changed, saving the client from having to poll the attribute.
 
-\todo{\textbf{Explain ATT Client and Server.}} \\
-\todo{\textbf{Explain how to setup ATT Database}} \\
+The ATT protocol is used by the ATT client to read and write attribute values stored on the ATT server. In addition, the ATT server can notify the client about attribute value changes. An attribute has a handle, a type, and a set of properties.
+
+The GATT profile is built upon ATT and provides higher level organization of the ATT attributes into GATT Services and GATT Characteristics. In BTstack, the complete ATT client functionality is included within the GATT Client. On the server side, one ore more GATT profiles are converted ahead of time into the corresponding ATT attribute database and provided by the \emph{att\_server} implementation. While constant data is automatically served, dynamic data can be queried from the application. In addition, notifications and indications can be sent. Please see section \ref{section:GATT} for more.
 
 \subsection{SMP - Security Manager Protocol }
-The SMP protocol allows to setup authenticated and encrypted connection.
+The SMP protocol allows to setup authenticated and encrypted LE connection. To activate the security manager, call \emph{sm\_init()}. If you're creating a product, you should also call \emph{sm\_set\_ir()} and \emph{sm\_set\_er()} with a fixed, but different from BTstack's default, 16 byte random number.
 
 \todo{\textbf{Explain SMP and what you can do with it, what it does for you}} \\
 
@@ -686,6 +686,7 @@ The SPP profile defines how to set up virtual serial ports and connect two Bluet
 
 
 \subsection{PAN -  Personal Area Networking Profile}
+\label{section:pan_profile}
 The PAN profile uses BNEP to provide on-demand networking capabilities between Bluetooth devices. The PAN profile defines the following roles:
 \begin{itemize}
 \item PAN User (PANU)
@@ -721,6 +722,8 @@ There are four GAP roles defined for a Bluetooth low energy device: Broadcaster,
 
 \textbf{Advertising and Scan Response Data.}
 There are two ways to send advertising out with GAP: The Advertising Data payload and the Scan Response payload. Both payloads are identical and can contain up to 31 bytes of data, but only the advertising data payload is mandatory. The scan response payload is an optional secondary payload that central devices can request.
+
+\todo{\textbf{Explain how to setup ATT Database}} \\
 
 \subsection{GATT - Generic Attribute Profile}
 The GATT profile uses the ATT for discovering services, and for reading and writing characteristic values on a peer device. GATT also specifies the format of data contained on the GATT server: it groups ATT attributes into Services and Characteristics, and defines set of queries the GATT Client can use to discover services, characteristics.
