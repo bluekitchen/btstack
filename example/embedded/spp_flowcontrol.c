@@ -78,9 +78,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             switch (packet[0]) {
                     
                 case BTSTACK_EVENT_STATE:
-                    // bt stack activated, get started - set local name
                     if (packet[2] == HCI_STATE_WORKING) {
-                        hci_send_cmd(&hci_write_local_name, "BTstack SPP Flow Control");
+                        printf("BTstack is up and running\n");
                     }
                     break;
                 
@@ -88,10 +87,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)){
                         bt_flip_addr(event_addr, &packet[6]);
                         printf("BD-ADDR: %s\n\r", bd_addr_to_str(event_addr));
-                        break;
-                    }
-                    if (COMMAND_COMPLETE_EVENT(packet, hci_write_local_name)){
-                        hci_discoverable_control(1);
                         break;
                     }
                     break;
@@ -184,6 +179,8 @@ int btstack_main(int argc, const char * argv[]){
     run_loop_add_timer(&heartbeat);
     
     puts("SPP FlowControl Demo: simulates processing on received data...\n\r");
+    gap_set_local_name("BTstack SPP Flow Control");
+    hci_discoverable_control(1);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
