@@ -18,7 +18,7 @@ Multiple applications can communicate with this daemon over different inter-proc
 BTstack supports both, the Central and the Peripheral Role of Bluetooth 4.0 Low Energy specification. 
 It can be configures as both a single mode or a dual mode stack.
 
-For starters, download the [BTstack Manual](https://github.com/bluekitchen/btstack/blob/master/docs/manual/btstack-manual.pdf) 
+For starters, download the [BTstack Manual](https://github.com/bluekitchen/btstack/raw/master/docs/manual/btstack-manual.pdf) 
 and look for an Architecture overview and the Getting started example for MSP430.
 
 BTstack is free for non-commercial use. For commercial use, <a href="mailto:contact@bluekitchen-gmbh.com">tell us</a?=> 
@@ -46,21 +46,23 @@ together with LE Central, PAN/BNEP and HSP.
 Coming soon: HSP, HFP, and more.
 
 ## Supported Platforms
-Embedded Platforms      | 
------------------------ |  
-ez430-rf2560            |        
-msp-exp430f5438-cc2564b |        
-msp430f5229lp-cc2564b   |        
-stm32-f103rb-nucleo     |        
-pic32-harmony           | 
 
-Other Platforms         | 
------------------------ | 
-posix                   |        
-libusb                  |        
-iOS                     |        
-mtk                     |        
-java                    |
+#### Embedded Platforms:      
+* ez430-rf2560            
+* msp-exp430f5438-cc2564b 
+* msp430f5229lp-cc2564b   
+* stm32-f103rb-nucleo     
+* pic32-harmony          
+
+
+#### Other Platforms:     
+* posix   
+* libusb
+* iOS
+* mtk  
+* java
+
+
 
 ## Supported Chipsets
 Chipsets             | Status
