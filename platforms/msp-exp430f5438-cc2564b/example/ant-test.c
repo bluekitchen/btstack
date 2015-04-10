@@ -55,10 +55,11 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 			switch (packet[0]) {
 					
 				case BTSTACK_EVENT_STATE:
-					// bt stack activated, get started - set local name
 					if (packet[2] == HCI_STATE_WORKING) {
-                        hci_send_cmd(&hci_write_local_name, "BlueMSP-Demo");
-					}
+                        printf("BTstack is up and running\n");
+                        // start ANT init
+                        ant_send_cmd(&ant_reset); 
+                    }
 					break;
 				
 				case HCI_EVENT_COMMAND_COMPLETE:
@@ -67,12 +68,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                         printf("BD-ADDR: %s\n\r", bd_addr_to_str(event_addr));
                         break;
                     }
-					if (COMMAND_COMPLETE_EVENT(packet, hci_write_local_name)){
-						// start ANT init
-						ant_send_cmd(&ant_reset); 
-						break;
-                    }
-                    break;
+					break;
 
 				case HCI_EVENT_LINK_KEY_REQUEST:
 					// deny link key request
@@ -205,14 +201,14 @@ int btstack_main(int argc, const char * argv[]){
     run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
     run_loop_add_timer(&heartbeat);
     
-	printf("Run...\n\r");
-
- 	// turn on!
-	hci_power_control(HCI_POWER_ON);
-
-    // default to discoverable
+    // set local name
+    gap_set_local_name("BlueMSP-Demo");
+    // make discoverable
     hci_discoverable_control(1);
-
+                    
+ 	printf("Run...\n\r");
+    // turn on!
+	hci_power_control(HCI_POWER_ON);
     return 0;
 }
 

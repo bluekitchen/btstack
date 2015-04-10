@@ -82,7 +82,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 				case BTSTACK_EVENT_STATE:
 					// bt stack activated, get started - set local name
 					if (packet[2] == HCI_STATE_WORKING) {
-                        hci_send_cmd(&hci_write_local_name, "BTstack SPP Counter");
+                        printf("BTstack is up and running\n");
 					}
 					break;
 				
@@ -204,6 +204,7 @@ int btstack_main(int argc, const char * argv[]){
     run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
     run_loop_add_timer(&heartbeat);
 
+    gap_set_local_name("BTstack SPP Counter");
     // turn on!
 	hci_power_control(HCI_POWER_ON);
 	
