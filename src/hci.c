@@ -835,7 +835,7 @@ static void hci_initializing_next_state(){
 
 // assumption: hci_can_send_command_packet_now() == true
 static void hci_initializing_run(){
-    // log_info("hci_init: substate %u", hci_stack->substate >> 1);
+    log_info("hci_initializing_run: substate %u", hci_stack->substate);
     switch (hci_stack->substate){
         case HCI_INIT_SEND_RESET:
             hci_state_reset();
@@ -1015,8 +1015,15 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
 
     if (!command_completed) return;
 
-    int need_baud_change = hci_stack->config && ((hci_uart_config_t *)hci_stack->config)->baudrate_main == 0;
-    int need_addr_change = hci_stack->custom_bd_addr_set && hci_stack->control && hci_stack->control->set_bd_addr_cmd;
+    int need_baud_change = hci_stack->config
+                        && hci_stack->control
+                        && hci_stack->control->baudrate_cmd
+                        && hci_stack->hci_transport->set_baudrate
+                        && ((hci_uart_config_t *)hci_stack->config)->baudrate_main;
+
+    int need_addr_change = hci_stack->custom_bd_addr_set
+                        && hci_stack->control
+                        && hci_stack->control->set_bd_addr_cmd;
 
     switch(hci_stack->substate){
         case HCI_INIT_W4_SEND_RESET:
@@ -1974,7 +1981,8 @@ void hci_local_bd_addr(bd_addr_t address_buffer){
 }
 
 void hci_run(){
-        
+    
+    // log_info("hci_run: entered");
     hci_connection_t * connection;
     linked_item_t * it;
 
