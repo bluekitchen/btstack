@@ -176,7 +176,7 @@ void log_key(const char * name, sm_key_t key){
     hexdump(key, 16);
 }
 
-static char uuid128_to_str_buffer[16+4+1];
+static char uuid128_to_str_buffer[32+4+1];
 char * uuid128_to_str(uint8_t * uuid){
     sprintf(uuid128_to_str_buffer, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
            uuid[0], uuid[1], uuid[2], uuid[3], uuid[4], uuid[5], uuid[6], uuid[7],
