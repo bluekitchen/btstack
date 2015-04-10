@@ -23,6 +23,7 @@ example_header = """
 \usepackage{graphicx}                     
 \usepackage{amssymb}
 \usepackage{listings}
+\usepackage{hyperref}
 \\begin{document}
 \section{Examples}
 """
@@ -54,7 +55,7 @@ listing_ending = """
 msp_folder = "../../platforms/msp-exp430f5438-cc2564b/example/"
 # Example group title: [folder, example file, section title]
 list_of_examples = { 
-    "UART" : [[msp_folder, "led_counter", "provides UART and timer interrupt without Bluetooth", "UART and timer interrupt without Bluetooth"]]
+    "UART" : [[msp_folder, "led_counter", "provides UART and timer interrupt without Bluetooth"]]
     #"GAP"  : [["", "gap_inquiry"]],
     #"SPP Server" : [["", "spp_counter"],
     #                ["", "spp_accel"],
@@ -77,25 +78,25 @@ def replacePlaceholder(template, title, lable):
 def writeListings(fout, infile_name):
     lst_lable = ""
     lst_caption = ""
-    searchBrief = 0
+    listing = ""
     state = State.SearchExampleStart
     with open(infile_name, 'rb') as fin:
         for line in fin:
-            if searchBrief == 1:
-                parts = re.match('.*(@brief)\s*(.*)\n',line)
-                if parts:
-                    searchBrief = 0
-                    brief = parts.group(2)+"\n"
-                    if state == State.SearchExampleStart:
-                        aout.write(brief)
-                        state = State.SearchSnippetStart
-                    elif state == State.SearchSnippetStart:
-                        aout.write(example_subsection.replace("LISTING_CAPTION", lst_caption))
-                        brief = brief.replace(lst_lable, "\\ref{"+lst_lable+"}")
-                        print brief
-                        aout.write(brief)
-                        aout.write(listing_start.replace("LISTING_CAPTION", lst_caption).replace("LISTING_LABLE", lst_lable))
-                        state = State.SearchSnippetEnd
+            section_parts = re.match('.*(@section)\s*(.*)(\s*\*/)\n',line)
+            if section_parts:
+                aout.write(example_subsection.replace("LISTING_CAPTION", section_parts.group(2)))
+                continue
+
+            brief_parts = re.match('.*(@brief)\s*(.*)\n',line)
+            if brief_parts:
+                brief = brief_parts.group(2)+"\n"
+                if lst_lable:
+                    brief = brief.replace(lst_lable, "\\ref{"+lst_lable+"}")
+                    lst_lable = ""
+                aout.write(brief)
+                if listing:
+                    aout.write(listing)
+                    listing = ""
                 continue
 
             if state == State.SearchExampleStart:
@@ -105,34 +106,34 @@ def writeListings(fout, infile_name):
                     title = parts.group(2).replace("_","\_")
                     desc  = parts.group(3).replace("_","\_")
                     aout.write(example_section.replace("EXAMPLE_TITLE", title).replace("EXAMPLE_DESC", desc).replace("EXAMPLE_LABLE", lable))
-                    searchBrief = 1
+                    state = State.SearchSnippetStart
+                    continue
 
             if state == State.SearchSnippetStart:
                 parts = re.match('.*(SNIPPET_START)\((.*)\):\s*(.*)(\*/)?\n',line)
                 if parts: 
                     lst_lable = parts.group(2)
                     lst_caption = parts.group(3).replace("_","\_")
-                    searchBrief = 1
-
+                    listing = listing_start.replace("LISTING_CAPTION", lst_caption).replace("LISTING_LABLE", lst_lable)
+                    state = State.SearchSnippetEnd
+                    continue
+            
             if state == State.SearchSnippetEnd:
                 parts_end = re.match('.*(SNIPPET_END).*',line)
                 parts_pause = re.match('.*(SNIPPET_PAUSE).*',line)
                 
                 if not parts_end and not parts_pause:
-                    parts = re.match('.*(\*)/*\s*\n', line);
-                    if parts:
-                        continue
-                    aout.write(line)
-                    continue
+                    end_comment_parts = re.match('.*(\*)/*\s*\n', line);
+                    if not end_comment_parts:
+                        aout.write(line)
                 elif parts_end:
                     aout.write(listing_ending)
                     state = State.SearchSnippetStart
-                    continue
                 elif parts_pause:
                     aout.write("...\n")
                     state = State.SearchSnippetResume
-                    continue
-
+                continue
+                
             if state == State.SearchSnippetResume:
                 parts = re.match('.*(SNIPPET_RESUME).*',line)
                 if parts:

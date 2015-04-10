@@ -29,6 +29,7 @@ static void run_loop_register_timer(timer_source_t *timer, uint16_t period){
     run_loop_add_timer(timer);
 }
 
+/* @section Periodic Timer Setup */
 /* SNIPPET_START(LEDToggler): Periodic counter
  * @brief As timers in BTstack are single shot, the periodic counter is implemented by re-registering the timer source in the heartbeat handler callback function. Listing LEDToggler shows heartbeat handler adapted to periodically toggle an LED and print number of toggles.
  */
@@ -44,10 +45,11 @@ static void run_loop_register_timer(timer_source_t *timer, uint16_t period){
     // re-register timer
     run_loop_register_timer(ts, HEARTBEAT_PERIOD_MS);
 } 
-/* SNIPPET_END(LEDToggler) */
+/* SNIPPET_END */
 
+/* @section Turn On and Go */
 /* SNIPPET_START(RunLoopExecution): Run loop execution
- * @brief Listing RunLoopExecution shows how to setup and start the run loop. For hardware and BTstack setup, please check the source code in \path{../src/main.c} 
+ * @brief Listing RunLoopExecution shows how to setup and start the run loop. For hardware and BTstack setup, please check the source code in \path{../src/main.c}.
  */
 static void timer_setup(){
     // set one-shot timer
@@ -57,12 +59,9 @@ static void timer_setup(){
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-
-	timer_setup();
-    
-	printf("Run...\n\r");
-
+    timer_setup();
+    printf("Run...\n\r");
     return 0;
 }
-/* SNIPPET_END(RunLoopExecution) */
+/* SNIPPET_END */
 /* EXAMPLE_END */
