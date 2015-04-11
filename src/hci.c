@@ -2541,7 +2541,7 @@ void hci_emit_btstack_version() {
     event[1] = sizeof(event) - 2;
     event[2] = BTSTACK_MAJOR;
     event[3] = BTSTACK_MINOR;
-    bt_store_16(event, 4, BTSTACK_REVISION);
+    bt_store_16(event, 4, 3257);    // last SVN commit on Google Code + 1
     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
