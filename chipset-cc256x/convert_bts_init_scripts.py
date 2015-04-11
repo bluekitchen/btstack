@@ -7,6 +7,7 @@
 import glob
 import re
 import sys
+import os
 
 print '''
 CC256x init script conversion tool for use with BTstack, v0.1
@@ -95,163 +96,175 @@ def append_calibration_sequence(additions, str_list, data_indent):
     str_list.append("0x01, 0x80, 0xfd, 0x06, 0x3c, 0xf0, 0x5f, 0x00, 0x00, 0x00,\n\n")
     return 20 
 
-def convert_bts(bts_file):
+def convert_bts(main_bts_file, bts_add_on):
     array_name = 'cc256x'
-    c_file   = bts_file.replace('bts', 'c')    
+    c_file   = main_bts_file.replace('bts', 'c')
+
+    input_files = [ main_bts_file ]
+    if bts_add_on != "":
+        input_files.append(bts_add_on)   
     
     with open(c_file, 'w') as fout:
     
-        with open (bts_file, 'rb') as fin:
-    
-            print "Converting {0:32} to {1}".format(bts_file, c_file)
-            
-            header = fin.read(32)
-            if header[0:4] != 'BTSB':
-                print 'Error', bts_file, 'is not a valid .BTS file'
-                sys.exit(1)
+        # assert script contains templates for configuration by BTstack
+        have_eHCILL = False
+        have_power_vector_gfsk = False;
+        have_power_vector_edr2 = False;
+        have_power_vector_edr3 = False;
+        have_class2_single_power = False;
 
-            part_size = 0
+        print "Creating {0}".format(c_file)
 
-            # assert script contains templates for configuration by BTstack
-            have_eHCILL = False
-            have_power_vector_gfsk = False;
-            have_power_vector_edr2 = False;
-            have_power_vector_edr3 = False;
-            have_class2_single_power = False;
+        part_size = 0
 
-            parts = 0
-            str_list = []
-            part_strings = []
-            part_sizes   = []
-            additions = []
+        parts = 0
+        str_list = []
+        part_strings = []
+        part_sizes   = []
+        additions = []
 
-            while True:
-                action_type = read_little_endian_16(fin)
-                action_size = read_little_endian_16(fin)
-                action_data = fin.read(action_size)
+        for bts_file in input_files:
+
+            with open (bts_file, 'rb') as fin:
+        
+                print "- parsing {0:32}".format(bts_file)
                 
-                if (action_type == 1):  # hci command
+                header = fin.read(32)
+                if header[0:4] != 'BTSB':
+                    print 'Error', bts_file, 'is not a valid .BTS file'
+                    sys.exit(1)
 
-                    opcode = (ord(action_data[2]) << 8) | ord(action_data[1])
-                    if opcode == 0xFF36:
-                        continue    # skip baud rate command
-                    if opcode == 0xFD0C:
-                        have_eHCILL = True
-                    if opcode == 0xFD82:
-                        modulation_type = ord(action_data[4])
-                        if modulation_type == 0:
-                            have_power_vector_gfsk = True
-                        elif modulation_type == 1:
-                            have_power_vector_edr2 + True
-                        elif modulation_type == 2:
-                            have_power_vector_edr3 = True
-                    if opcode == 0xFD80:
-                        # add missing power command templates
-                        if not have_power_vector_gfsk:
-                            part_size += append_power_vector_gfsk(additions, str_list, data_indent)
-                            have_power_vector_gfsk = True; 
-                        if not have_power_vector_edr2:
-                            part_size += append_power_vector_edr2(additions, str_list, data_indent)
-                            have_power_vector_edr2 = True;                            
-                        if not have_power_vector_edr3:
-                            part_size += append_power_vector_edr2(additions, str_list, data_indent)
-                            have_power_vector_edr3 = True;                            
-                        if not have_class2_single_power:
-                            part_size += append_class2_single_power(additions, str_list, data_indent)
-                            have_class2_single_power = True;                            
 
-                    counter = 0
-                    str_list.append(data_indent)
-                    for byte in action_data:
-                        str_list.append("0x{0:02x}, ".format(ord(byte)))
-                        counter = counter + 1
-                        if (counter != 15):
-                            continue
+                while True:
+                    action_type = read_little_endian_16(fin)
+                    action_size = read_little_endian_16(fin)
+                    action_data = fin.read(action_size)
+                    
+                    if (action_type == 1):  # hci command
+
+                        opcode = (ord(action_data[2]) << 8) | ord(action_data[1])
+                        if opcode == 0xFF36:
+                            continue    # skip baud rate command
+                        if opcode == 0xFD0C:
+                            have_eHCILL = True
+                        if opcode == 0xFD82:
+                            modulation_type = ord(action_data[4])
+                            if modulation_type == 0:
+                                have_power_vector_gfsk = True
+                            elif modulation_type == 1:
+                                have_power_vector_edr2 + True
+                            elif modulation_type == 2:
+                                have_power_vector_edr3 = True
+                        if opcode == 0xFD80:
+                            # add missing power command templates
+                            if not have_power_vector_gfsk:
+                                part_size += append_power_vector_gfsk(additions, str_list, data_indent)
+                                have_power_vector_gfsk = True; 
+                            if not have_power_vector_edr2:
+                                part_size += append_power_vector_edr2(additions, str_list, data_indent)
+                                have_power_vector_edr2 = True;                            
+                            if not have_power_vector_edr3:
+                                part_size += append_power_vector_edr2(additions, str_list, data_indent)
+                                have_power_vector_edr3 = True;                            
+                            if not have_class2_single_power:
+                                part_size += append_class2_single_power(additions, str_list, data_indent)
+                                have_class2_single_power = True;                            
+
                         counter = 0
-                        str_list.append("\n")
                         str_list.append(data_indent)
-                    str_list.append("\n\n")
+                        for byte in action_data:
+                            str_list.append("0x{0:02x}, ".format(ord(byte)))
+                            counter = counter + 1
+                            if (counter != 15):
+                                continue
+                            counter = 0
+                            str_list.append("\n")
+                            str_list.append(data_indent)
+                        str_list.append("\n\n")
+                        
+                        part_size = part_size + action_size
+
+                        # 30 kB chunks
+                        if part_size < 30 * 1024:
+                            continue
+
+                        part_strings.append(''.join(str_list))
+                        part_sizes.append(part_size)
+                        parts += 1
+
+                        str_list = []
+                        part_size = 0
+
+                    if (action_type == 6):  # comment
+                        action_data = action_data.rstrip('\0')
+                        str_list.append(data_indent)
+                        str_list.append("// " + action_data + "\n")
+                        
+                    if (action_type < 0):   # EOF
+                        break;
                     
-                    part_size = part_size + action_size
 
-                    # 30 kB chunks
-                    if part_size < 30 * 1024:
-                        continue
+        if not have_eHCILL:
+            part_size += append_ehcill(additions, str_list, data_indent)
 
-                    part_strings.append(''.join(str_list))
-                    part_sizes.append(part_size)
-                    parts += 1
+        # append calibration step, if missing so far
+        all_power_commands_provided = have_power_vector_gfsk and have_power_vector_edr2 and have_power_vector_edr3 and have_class2_single_power
+        if not all_power_commands_provided:
+            str_list.append("\n" + data_indent + "// BTstack: no calibration sequence found, adding power commands and calibration\n\n")
+            part_size += append_power_vector_gfsk(additions, str_list, data_indent)
+            part_size += append_power_vector_edr2(additions, str_list, data_indent)
+            part_size += append_power_vector_edr2(additions, str_list, data_indent)
+            part_size += append_class2_single_power(additions, str_list, data_indent)
+            part_size += append_calibration_sequence(additions, str_list, data_indent)
 
-                    str_list = []
-                    part_size = 0
+        part_strings.append(''.join(str_list))
+        part_sizes.append(part_size)
+        parts += 1
 
-                if (action_type == 6):  # comment
-                    action_data = action_data.rstrip('\0')
-                    str_list.append(data_indent)
-                    str_list.append("// " + action_data + "\n")
-                    
-                if (action_type < 0):   # EOF
-                    break;
-                    
+        fout.write( '// init script created from\n')
+        fout.write( '// - {0}\n'.format(main_bts_file))
+        if bts_add_on != "":
+            fout.write( '// - {0}\n'.format(bts_add_on))
+        fout.write( '#include <stdint.h>\n')
 
-            if not have_eHCILL:
-                part_size += append_ehcill(additions, str_list, data_indent)
+        part = 0
+        size = 0
+        for part_size in part_sizes:
+            part += 1
+            size += part_size
+            print "- part", part, "size", part_size
 
-            # append calibration step, if missing so far
-            all_power_commands_provided = have_power_vector_gfsk and have_power_vector_edr2 and have_power_vector_edr3 and have_class2_single_power
-            if not all_power_commands_provided:
-                str_list.append("\n" + data_indent + "// BTstack: no calibration sequence found, adding power commands and calibration\n\n")
-                part_size += append_power_vector_gfsk(additions, str_list, data_indent)
-                part_size += append_power_vector_edr2(additions, str_list, data_indent)
-                part_size += append_power_vector_edr2(additions, str_list, data_indent)
-                part_size += append_class2_single_power(additions, str_list, data_indent)
-                part_size += append_calibration_sequence(additions, str_list, data_indent)
+        print '- total size', size
 
-            part_strings.append(''.join(str_list))
-            part_sizes.append(part_size)
-            parts += 1
-
-            fout.write( '// init script created from {0}\n'.format(bts_file))
-            fout.write( '#include <stdint.h>\n')
-
-            part = 0
-            size = 0
-            for part_size in part_sizes:
-                part += 1
-                size += part_size
-                print "- part", part, "size", part_size
-
-            print '- total size', size
-
-            print "\n".join(additions)
+        print "\n".join(additions)
 
 
-            part = 0
-            for part_text in part_strings:
-                part += 1
-                suffix = ''
-                
-                if part == 1:
-                    fout.write( fartext )
-
-                if (part > 1):
-                    suffix = '_{0}'.format(part)
-                    fout.write('#if defined(__GNUC__) && defined(__GNUC__) && (__MSP430X__ > 0)\n')
-                    fout.write('};\n')
-                    fout.write('__attribute__((section (".fartext")))\n')
-
-                fout.write('const uint8_t {0}_init_script{1}[] = {2}\n\n'.format(array_name, suffix, '{'))
-
-                if (part > 1):
-                    fout.write('#endif\n')
-
-                fout.write(part_text)
-
+        part = 0
+        for part_text in part_strings:
+            part += 1
+            suffix = ''
             
-            fout.write('};\n\n')
+            if part == 1:
+                fout.write( fartext )
 
-            fout.write('const uint32_t {0}_init_script_size = {1};\n\n'.format(array_name,size));
-            # fout.write('void main() {0} printf("size {1}\\n", {2}_init_script_size); {3}'.format('{', '%u', array_name,'}'));
+            if (part > 1):
+                suffix = '_{0}'.format(part)
+                fout.write('#if defined(__GNUC__) && defined(__GNUC__) && (__MSP430X__ > 0)\n')
+                fout.write('};\n')
+                fout.write('__attribute__((section (".fartext")))\n')
+
+            fout.write('const uint8_t {0}_init_script{1}[] = {2}\n\n'.format(array_name, suffix, '{'))
+
+            if (part > 1):
+                fout.write('#endif\n')
+
+            fout.write(part_text)
+
+        
+        fout.write('};\n\n')
+
+        fout.write('const uint32_t {0}_init_script_size = {1};\n\n'.format(array_name,size));
+        # fout.write('void main() {0} printf("size {1}\\n", {2}_init_script_size); {3}'.format('{', '%u', array_name,'}'));
 
 # get list of *.bts files
 files =  glob.glob('*.bts')
@@ -261,7 +274,24 @@ if not files:
 
 # convert each of them
 for name in files:
-    convert_bts(name)
+    # skip BLE and AVRP add-ons
+    if name.lower().startswith('ble_init_cc'):
+        print "Skipping BLE add-on", name
+        continue
+    if name.lower().startswith('avpr_init_cc'):
+        print "Skipping AVPR add-on", name
+        continue
+
+    # check for BLE add-on
+    add_on = ""
+    name_parts = re.match('bluetooth_init_(.....+_...)_.*.bts', name)
+    if name_parts:
+        potential_add_on = 'BLE_init_%s.bts' % name_parts.group(1)
+        if os.path.isfile(potential_add_on):
+            add_on = potential_add_on
+            print "Found", add_on, "add on for", name
+
+    convert_bts(name, add_on)
 
 # done
 print '\nConversion(s) successful!\n'
