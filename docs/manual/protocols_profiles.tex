@@ -111,6 +111,7 @@ Format Specifier & Description\\
 \end{table*}
 
 \subsubsection{Sending  HCI command based on a template}
+\label{subsubsection:sendinghci}
 
 \begin{lstlisting}[caption= Send hci\_write\_local\_name command that takes a string as a parameter., label=HCIcmdExampleLocalName]
 if (hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)){
@@ -558,6 +559,7 @@ The ATT protocol is used by the ATT client to read and write attribute values st
 The GATT profile is built upon ATT and provides higher level organization of the ATT attributes into GATT Services and GATT Characteristics. In BTstack, the complete ATT client functionality is included within the GATT Client. On the server side, one ore more GATT profiles are converted ahead of time into the corresponding ATT attribute database and provided by the \emph{att\_server} implementation. While constant data is automatically served, dynamic data can be queried from the application. In addition, notifications and indications can be sent. Please see section \ref{section:GATT} for more.
 
 \subsection{SMP - Security Manager Protocol }
+\label{subsection:smp}
 
 The SMP protocol allows to setup authenticated and encrypted LE connection. After initialization and configuration, SMP handles security related functions on it's own but emits events when feedback from the main app or even the user is required. The two main tasks of the SMP are: bonding and identity resolving.
 
@@ -766,27 +768,46 @@ To provide a PANU service, you need to provide an BNEP service with the service 
 % Have a look at the SPP Counter example
 
 \subsection{GAP - Generic Access Profile: Low Energy}
-The GAP profile defines how to discover and how to connect to a Bluetooth device. There are several GAP roles that a Bluetooth device can take, but the most important ones are the Central and the Peripheral role. Peripheral devices are those that provide information or can be controlled and central devices are those that consume information or control the peripherals. Before the connection can be established, devices are first going through the advertising process. What happens with the peripheral device after the central device connect to a it, depends on the peripheral's Bluetooth controller. The peripheral will either stop advertising itself and other devices will no longer be able to see it or connect to it until the existing connection is broken, or it will be able to continue with advertising so that the parallel connections can be established.
+As with GAP for Classic, the GAPP LE profile defines how to discover and how to connect to a Bluetooth Low Energy device. There are several GAP roles that a Bluetooth device can take, but the most important ones are the Central and the Peripheral role. Peripheral devices are those that provide information or can be controlled and central devices are those that consume information or control the peripherals. Before the connection can be established, devices are first going through the advertising process.
+
+% What happens with the peripheral device after the central device connect to a it, depends on the peripheral's Bluetooth controller. The peripheral will either stop advertising itself and other devices will no longer be able to see it or connect to it until the existing connection is broken, or it will be able to continue with advertising so that the parallel connections can be established.
 
 % \subsection{Low Energy}
-The focus is on two different device roles:  devices that provide services and/or can be controlled and devices that consume services and/or control other devices. Devices are first going through the advertising process that is governed by the Generic Access Profile (GAP). Once the connection is established, the communication will be governed by the Generic Attribute Profile (GATT). Both profiles, GAP and GATT, have concepts that describe these two BLE roles:  GAP defines Peripheral and Central, and GATT defines Server and Client role respectively. The GATT roles are not necessarily tied to specific GAP roles and may be specified by higher layer profiles. GATT is built on top of the Attribute Protocol (ATT), which defines how to discover, read, and write attributes on a peer device. In addition, BLE uses two more BT protocols: SMP for for pairing and transport specific key distribution and L2CAP LE variant optimized for connectionless data used by Bluetooth Low Energy devices. 
+% he focus is on two different device roles:  devices that provide services and/or can be controlled and devices that consume services and/or control other devices. Devices are first going through the advertising process that is governed by the Generic Access Profile (GAP). Once the connection is established, the communication will be governed by the Generic Attribute Profile (GATT). Both profiles, GAP and GATT, have concepts that describe these two BLE roles:  GAP defines Peripheral and Central, and GATT defines Server and Client role respectively. The GATT roles are not necessarily tied to specific GAP roles and may be specified by higher layer profiles. GATT is built on top of the Attribute Protocol (ATT), which defines how to discover, read, and write attributes on a peer device. In addition, BLE uses two more BT protocols: SMP for for pairing and transport specific key distribution and L2CAP LE variant optimized for connectionless data used by Bluetooth Low Energy devices. 
 
-\textbf{Private/random addresses.}
-To better protect privacy, a LE device can choose use a private i.e. random Bluetooth address. This address changes at a user-specified rate. To allow for later reconnection, the central and peripheral devices exchange their Identity Resolving Keys (IRKs) during bonding. The IRK is used to verify if a new address belongs to a previously bonded device.
+\subsubsection{Private addresses.}
+To better protect privacy, a LE device can choose use a private i.e. random Bluetooth address. This address changes at a user-specified rate. To allow for later reconnection, the central and peripheral devices exchange their Identity Resolving Keys (IRKs) during bonding. The IRK is used to verify if a new address belongs to a previously bonded device. 
 
-\textbf{GAP BLE Roles.}
-There are four GAP roles defined for a Bluetooth low energy device: Broadcaster, Observer, Peripheral and Central. A device may operate in multiple GAP roles concurrently.
+To toggle privacy mode using private addresses, \emph{gap\_random\_address\_set\_mode} is used. The update period can be set with \emph{gap\_random\_address\_set\_update\_period}.
+
+After a connection has been established, the Security Manager tries to resolve the peer Bluetooth address as explained in section \ref{subsection:smp}.
+
+% \textbf{GAP BLE Roles.}
+% There are four GAP roles defined for a Bluetooth low energy device: Broadcaster, Observer, Peripheral and Central. A device may operate in multiple GAP roles concurrently.
+% \begin{itemize}
+% \item \emph{GAP Broadcaster Role} - A broadcast device only sends advertisements and cannot be connected. It can emit some useful data as part of the advertisement. The most prominent use for this is Apple's iBeacon technology which uses broadcast devices to emit a unique ID. Apple's iOS framework then help to map this ID onto a specific location, e.g., in a museum. Broadcasting is efficient as no connection and no ATT database are needed. To control energy consumption the broadcast interval can be configured. An advertisement can contain up to 31 bytes of information. In addition, another 31 bytes of information can be sent in the scan response.
+% \item \emph{GAP Observer Role} - An observer device only receives advertising events and cannot be connected. 
+% \item \emph{GAP Central Role} - The role of the central device is to scan for peripherals, connect to them, and discover and receive data from them or sends data to control them. During scanning the central device can retrieve information on other device such are its name and unique number, as well as some broadcast data from its services. Upon connection, the central explores the device by discovering its primary and included services, characteristics, and characteristic descriptors.
+% \item \emph{GAP Peripheral Role} - The role of a peripheral device is to deliver information on their inputs, i.e. sensor values, battery level, current time, to the applications running on central devices. It can also receive a write request from a central device and control connected actors, e.g. turn on and set the color of the light. Peripherals can broadcast data, they can be discovered and connected to by a central device, they can stay also disconnected and then establish connection when needed. 
+% \end{itemize} 
+
+\subsubsection{Advertising and Discovery}
+
+For an LE device to become discoverable and connectable, it needs to periodically send out Adsvertisements. Advertisment contain up to 31 bytes of data. To configure and enable advertisement broadcast, the following HCI commands can be used:
 \begin{itemize}
-\item \emph{GAP Broadcaster Role} - A broadcast device only sends advertisements and cannot be connected. It can emit some useful data as part of the advertisement. The most prominent use for this is Apple's iBeacon technology which uses broadcast devices to emit a unique ID. Apple's iOS framework then help to map this ID onto a specific location, e.g., in a museum. Broadcasting is efficient as no connection and no ATT database are needed. To control energy consumption the broadcast interval can be configured. An advertisement can contain up to 31 bytes of information. In addition, another 31 bytes of information can be sent in the scan response.
-\item \emph{GAP Observer Role} - An observer device only receives advertising events and cannot be connected. 
-\item \emph{GAP Central Role} - The role of the central device is to scan for peripherals, connect to them, and discover and receive data from them or sends data to control them. During scanning the central device can retrieve information on other device such are its name and unique number, as well as some broadcast data from its services. Upon connection, the central explores the device by discovering its primary and included services, characteristics, and characteristic descriptors.
-\item \emph{GAP Peripheral Role} - The role of a peripheral device is to deliver information on their inputs, i.e. sensor values, battery level, current time, to the applications running on central devices. It can also receive a write request from a central device and control connected actors, e.g. turn on and set the color of the light. Peripherals can broadcast data, they can be discovered and connected to by a central device, they can stay also disconnected and then establish connection when needed. 
-\end{itemize} 
+\item \emph{hci\_le\_set\_advertising\_data}
+\item \emph{hci\_le\_set\_advertising\_parameters}
+\item \emph{hci\_le\_set\_advertise\_enable}
+\end{itemize}
+As these are direct HCI commands, please refer to section \ref{subsubsection:sendinghci} for details and have a look at the SPP and LE Counter example in section \ref{subsection:sppandlecounter}.
 
-\textbf{Advertising and Scan Response Data.}
-There are two ways to send advertising out with GAP: The Advertising Data payload and the Scan Response payload. Both payloads are identical and can contain up to 31 bytes of data, but only the advertising data payload is mandatory. The scan response payload is an optional secondary payload that central devices can request.
+In addition to the Advertisement data, a device in the peripheral role can also provide Scan Rseposne data, which has to be explicitly queried by the central device. It can be provided with the \emph{hci\_le\_set\_scan\_response\_data}.
 
-\todo{\textbf{Explain how to setup ATT Database}} \\
+To scan for LE device, the scan parameters can be set with \emph{le\_central\_set\_scan\_parameters}, and then the scan started/stopped with \emph{le\_central\_start\_scan}/\emph{le\_central\_stop\_scan}.
+
+Finally, if a suitable device is found, a connection can be initiated by calling \emph{le\_central\_connect}. In contrast to Bluetooth classic, there is no timeout for an LE connection establishment. To cancel such an attempt, \emph{le\_central\_connect\_cancel} has be be called.
+
+By default, a Bluetooth device stops sending Advertisements when it gets into the Connected state. However, it does not start broadcasting advertisements on disconnect again. It's necessary to send the \emph{hci\_le\_set\_advertise\_enable} again to re-enable it.
 
 \subsection{GATT - Generic Attribute Profile}
 The GATT profile uses the ATT for discovering services, and for reading and writing characteristic values on a peer device. GATT also specifies the format of data contained on the GATT server: it groups ATT attributes into Services and Characteristics, and defines set of queries the GATT Client can use to discover services, characteristics.
@@ -799,8 +820,9 @@ There are two GATT roles defined for a Bluetooth low energy device:
 \end{itemize}
 
 \textbf{Attribute Database - GATT-based Profile Hierarchy.}
-Attributes, as transported by the Attribute Protocol, are formatted as services and characteristics. Services may contain a collection of characteristics. Characteristics contain a single value and any number of descriptors describing the characteristic value. The peripheral device server (ATT server) provides a set of attributes that are stored in a simple lookup database. GATT formats these attributes as services and characteristics. Services may contain a collection of characteristics. Characteristics contain a single value and any number of descriptors describing the characteristic value. A service starts with a service declaration attribute defining its type, i.e. primary or secondary. It is followed by the included services and characteristics. By means of including services, the service can incorporate more complex behavior, and still keep the definition small. A characteristic is assigned to a single value that can be accessed. It is composed of three basic elements: declaration, value and descriptors. The characteristic declaration defines how the data can be accessed. A characteristic descriptor is used to capture the additional properties, e.g., to configure if the characteristic value should be reported upon its change. Together, characteristic declaration and the descriptors define types of action that can be performed on characteristic value.
+Attributes, as transported by the Attribute Protocol, are formatted as services and characteristics. Services may contain a collection of characteristics. Characteristics contain a single value and any number of descriptors describing the characteristic value. The peripheral device server (ATT server) provides a set of attributes that are stored in a simple lookup database. GATT formats these attributes as services and characteristics. Services may contain a collection of characteristics. A service starts with a service declaration attribute defining its type, i.e. primary or secondary. It is followed by the included services and characteristics. By means of including services, the service can incorporate more complex behavior, and still keep the definition small. A characteristic is assigned to a single value that can be accessed. It is composed of three basic elements: declaration, value and descriptors. The characteristic declaration defines how the data can be accessed. A characteristic descriptor is used to capture the additional properties, e.g., to configure if the characteristic value should be reported upon its change. Together, characteristic declaration and the descriptors define types of action that can be performed on characteristic value.
 
 The security that is required to access a service or a characteristic is defined in ATT database along with service/characteristic declaration. The GATT Server usually does not initiate any security request, but it can. 
 
+\todo{\textbf{Explain how to setup ATT Database}} \\
 
