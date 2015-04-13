@@ -810,19 +810,67 @@ Finally, if a suitable device is found, a connection can be initiated by calling
 By default, a Bluetooth device stops sending Advertisements when it gets into the Connected state. However, it does not start broadcasting advertisements on disconnect again. It's necessary to send the \emph{hci\_le\_set\_advertise\_enable} again to re-enable it.
 
 \subsection{GATT - Generic Attribute Profile}
-The GATT profile uses the ATT for discovering services, and for reading and writing characteristic values on a peer device. GATT also specifies the format of data contained on the GATT server: it groups ATT attributes into Services and Characteristics, and defines set of queries the GATT Client can use to discover services, characteristics.
+The GATT profile uses ATT Attributes to represent a hierarchical structure of GATT Services and GATT Characteristics. Each Service has one or more Characteristics. Each Characteristic has meta data attached like its type or its properties. This hierarchy of Characteristics and Services are queried and modified via ATT operations.
 
-\textbf{GATT LE Roles.}
-There are two GATT roles defined for a Bluetooth low energy device:
-\begin{itemize}
-\item \emph{GATT Server Role} - The GATT server stores the data and accepts GATT client requests, commands and confirmations. The GATT server sends responses to requests and when configured, sends indication and notifications asynchronously to the GATT client. 
-\item \emph{GATT Client Role} - The GATT Client is used to discover services, and their characteristics and descriptors on a peer device. It can also subscribe for notifications or indications that the characteristic on the GATT server has changed its value. 
-\end{itemize}
+GATT defines both a server and a client role. A device can implement one or both GATT roles.
 
-\textbf{Attribute Database - GATT-based Profile Hierarchy.}
-Attributes, as transported by the Attribute Protocol, are formatted as services and characteristics. Services may contain a collection of characteristics. Characteristics contain a single value and any number of descriptors describing the characteristic value. The peripheral device server (ATT server) provides a set of attributes that are stored in a simple lookup database. GATT formats these attributes as services and characteristics. Services may contain a collection of characteristics. A service starts with a service declaration attribute defining its type, i.e. primary or secondary. It is followed by the included services and characteristics. By means of including services, the service can incorporate more complex behavior, and still keep the definition small. A characteristic is assigned to a single value that can be accessed. It is composed of three basic elements: declaration, value and descriptors. The characteristic declaration defines how the data can be accessed. A characteristic descriptor is used to capture the additional properties, e.g., to configure if the characteristic value should be reported upon its change. Together, characteristic declaration and the descriptors define types of action that can be performed on characteristic value.
+\subsubsection{GATT Client}
+The GATT Client is used to discover services, and their characteristics and descriptors on a peer device. It can also subscribe for notifications or indications that the characteristic on the GATT server has changed its value. 
 
-The security that is required to access a service or a characteristic is defined in ATT database along with service/characteristic declaration. The GATT Server usually does not initiate any security request, but it can. 
+To perform GATT queries, \emph{gatt\_client.h} provides a rich interface. To use it, it needs get initialized with \emph{gatt\_client\_init} once. To allow for modular profile implementations, GATT Client can be used independently by multiple entities. To use it by a GATT Client client, you register a packet handler with \emph{gatt\_client\_register\_packet\_handler}. The return value of that is a GATT Client ID which has to be provided in all queries.
 
-\todo{\textbf{Explain how to setup ATT Database}} \\
+After a LE connection was created using the GAP LE API, you can query for the connection MTU with \emph{gatt\_client\_get\_mtu}.
+
+GATT queries cannot be interleaved. Therefore, you can check if you can perform a GATT query on a particular connection using \emph{gatt\_client\_is\_ready}. As a result to a GATT query, zero to many \emph{le\_event}s are returned before a \emph{GATT\_QUERY\_COMPLETE} event completes the query.
+
+For more details on the available GATT queries, please consult Appendix \ref{appendix:api_gatt_client}
+
+\subsubsection{GATT Server}
+The GATT server stores data and accepts GATT client requests, commands and confirmations. The GATT server sends responses to requests and when configured, sends indication and notifications asynchronously to the GATT client. 
+
+To save on both code space and memory, BTstack does not provide a GATT Server ipmlementation. Instead, a textual description of the GATT profile is directly converted into a compact interal ATT Attribute database by a GATT profile compiler. The ATT protocol server - implemented by  \emph{att\_server.c} and \emph{att.c}  - answers incoming ATT requests based on information provided in the compiled database and provides read- and write-callbacks for dynamic attributes.
+
+GATT profiles are defined by a simple textual comma separated value (.csv) representation. While the description is easy to read and edit, it is compact and can be placed in ROM.
+
+The current format is: 
+\begin{lstlisting}
+PRIMARY_SERVICE, {SERVICE_UUID}
+CHARACTERISTIC, {ATTRIBUTE_TYPE_UUID}, {PROPERTIES}, {VALUE}
+CHARACTERISTIC, {ATTRIBUTE_TYPE_UUID}, {PROPERTIES}, {VALUE}
+...
+PRIMARY_SERVICE, {SERVICE_UUID}
+CHARACTERISTIC, {ATTRIBUTE_TYPE_UUID}, {PROPERTIES}, {VALUE}
+...
+\end{lstlisting}
+
+Properties can be a list of READ $|$ WRITE $|$ WRITE\_WITHOUT\_RESPONSE $|$ NOTIFY $|$ INDICATE $|$ DYNAMIC
+
+Value can either be a string ("this is a string"), or, a sequence of hex bytes (e.g. 01 02 03)
+
+UUIDs are either 16 bit (1800) or 128 bit (00001234-0000-1000-8000-00805F9B34FB)
+
+Reads/writes to a Characteristic that is defined with the DYNAMIC flag, are forwarded to the application via callback. Otherwise, the Characteristics cannot be written and return the specified constant value. 
+
+Adding NOTIFY and/or INDICATE automatically creates an addition Client Configuration Characteristic.
+
+To requires encryption or authentication before a Characteristic can be accessed, you can add ENCRYPTION\_KEY\_SIZE\_X - with $X \in [7..16]$ - or  AUTHENTICATION\_REQUIRED.
+
+BTstack only provides an ATT Server, while the GATT Server logic is mainly provided by the GATT compiler. While GATT identifies Characteristics by UUIDs, ATT uses Handles (16 bit values). To allow to identify a Characteristic without hard-coding the attribute id, the GATT compiler creates a list of defines in the generated *.h file.
+
+% A service starts with a service declaration attribute defining its type, i.e. primary or secondary. It is followed by the included services and characteristics. By means of including services, the service can incorporate more complex behavior, and still keep the definition small. A characteristic is assigned to a single value that can be accessed. 
+% It is composed of three basic elements: declaration, value and descriptors. The characteristic declaration defines how the data can be accessed. A characteristic descriptor is used to capture the additional properties, e.g., to configure if the characteristic value should be reported upon its change. Together, characteristic declaration and the descriptors define types of action that can be performed on characteristic value.
+% The security that is required to access a service or a characteristic is defined in ATT database along with service/characteristic declaration.
+
+
+% Example for a [https://developer.bluetooth.org/gatt/services/Pages/ServiceViewer.aspx?u=org.bluetooth.service.device_information.xml Device Information Service]
+% PRIMARY_SERVICE, 180A
+% CHARACTERISTIC, 2A29, READ, "Manufacturer Name String"
+% CHARACTERISTIC, 2A24, READ, "Model Number"
+% CHARACTERISTIC, 2A25, READ, "Serial Number"
+% // more strings
+% // PnP ID, see https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.pnp_id.xml
+% // Vendor ID Source = 1, Vendor ID = 0x1234, Product ID = 0x5678, Product Version = 0x0001
+% CHARACTERISTIC, 2A50, READ, 02 34 12 78 56 01 00
+
+
 
