@@ -215,7 +215,7 @@ void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uin
 
 Sending of L2CAP data packets may fail due to a full internal BTstack outgoing packet buffer, or if the ACL buffers in the Bluetooth module become full, i.e., if the application is sending faster than the packets can be transferred over the air. In such case, the application can try sending again upon reception of DAEMON\_EVENT\_HCI\_PACKET\_SENT or L2CAP\_EVENT\_CREDITS event. The first event signals that the internal BTstack outgoing buffer became free again, the second one signals the same for ACL buffers in the Bluetooth chipset. Listing \ref{L2CAPService} provides L2CAP service example code.
 
-\todo{\textbf{L2CAP and Security Levels}} \\
+% \todo{\textbf{L2CAP and Security Levels}} \\
 
 \subsubsection{L2CAP LE - L2CAP Low Energy Protocol}
 In addition to the full L2CAP implementation in the \emph{src} folder, BTstack provides an optimized v\emph{l2cap\_le} implementation in the \emph{ble} folder. This L2CAP LE variant can be used for single-mode devices and provides the base for the ATT and SMP protocols.
