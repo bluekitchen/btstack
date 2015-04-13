@@ -535,6 +535,7 @@ The BNEP protocol is built on top of L2CAP and it is used to transport control a
 To receive BNEP events, please register a packet handler with \emph{bnep\_register\_packet\_handler}.
 
 \subsubsection{Access a BNEP service on a remote device}
+\label{subsubsection:bnepclient}
 To connect to a remote BNEP service, you need to know its UUID. The set of available UUIDs can be queried by a SDP query for the PAN profile. Please see section \ref{section:pan_profile} for details. With the remote UUID, you can create a connection using the \emph{bnep\_connect} function. You'll receive a \emph{BNEP\_EVENT\_OPEN\_CHANNEL\_COMPLETE} on success or failure. 
 
 After the connection was opened successfully, you can send and receive Ethernet packets. Before sending an Ethernet frame with \emph{bnep\_send},   \emph{bnep\_can\_send\_packet\_now} needs to return true. Ethernet frames are received via the registered packet handler with packet type \emph{BNEP\_DATA\_PACKET}.
@@ -544,6 +545,8 @@ BTstack BNEP implementation supports both network protocol filter and multicast 
 Finally, to close a BNEP connection, you can call \emph{bnep\_disconnect}
 
 \subsubsection{Provide BNEP service}
+\label{subsubsection:bnepserver}
+
 You can also provide a BNEP service by calling \emph{bnep\_register\_service} with the provided service UUID and a max frame size.
 
 After an incoming connection was established, a \emph{BNEP\_EVENT\_INCOMING\_CONNECTION} event is received. Ethernet packets can now be sent and received as in the previous section.
@@ -729,11 +732,12 @@ Aside from the regular bonding as needed, Bluetooth also provides the concecpt o
 \subsection{SPP - Serial Port Profile}
 The SPP profile defines how to set up virtual serial ports and connect two Bluetooth enabled devices. 
 %See Appendix \ref{appendix:api_} for the SPP API.
-\subsubsection{Providing an SPP Server}
-To provide an SPP Server, you need to provide an RFCOMM service with a specific RFCOMM channel number as explained in section \ref{section:rfcomm_service}. Then, you need to create an SDP record for it and publish it with the SDP server. BTstack provides the \emph{sdp\_create\_spp\_service} function in \emph{sdp\_utils.c} that one requires an empyut buffer of approx. 200 bytes, the service channel number, and a service name. Have a look at the SPP Counter example in section \ref{section:sppcounter}.
 
 \subsubsection{Accessing an SPP Server on a remote device}
 To access a remote SPP server, you first need to query the remote device for its SPP services. Section \ref{subsection:querysdp} shows how to query for all RFCOMM channels. For SPP, you can do the same but use the SPP UUID 0x1101 for the query. After you have identified the correct RFCOMM channel, you can create an RFCOMM connection as shown in section \ref{subsubsection:rfcommlient}
+
+\subsubsection{Providing an SPP Server}
+To provide an SPP Server, you need to provide an RFCOMM service with a specific RFCOMM channel number as explained in section \ref{section:rfcomm_service}. Then, you need to create an SDP record for it and publish it with the SDP server. BTstack provides the \emph{sdp\_create\_spp\_service} function in \emph{sdp\_utils.c} that one requires an empyut buffer of approx. 200 bytes, the service channel number, and a service name. Have a look at the SPP Counter example in section \ref{section:sppcounter}.
 
 \subsection{PAN -  Personal Area Networking Profile}
 \label{section:pan_profile}
@@ -751,6 +755,15 @@ NAP is a Bluetooth device that provides the service of routing network packets b
 The GN role enables two or more PANUs to interact with each other through a wireless network without using additional networking hardware. The devices are connected in a piconet where the GN acts as a master and communicates either point-to-point or a point-to-multipoint with a maximum of seven PANU slaves by using BNEP.
 
 Currently, BTstack supports only PANU.
+
+\subsubsection{Accessing a remote PANU service}
+To access a remote PANU service, you first need to do a SDP query to get the L2CAP PSM for the requested PANU UUID.
+With these two pieces of information, you can connect BNEP to the remote PANU service with the \emph{bnep\_connect}function. The PANU Demo example in section \ref{subsection:panudemo} shows how this is accomplished.
+
+\subsubsection{Providing a PANU service}
+To provide a PANU service, you need to provide an BNEP service with the service UUID, e.g. the PANU UUID, and a a maxmal ethernet frame size, as explained in section \ref{subsubsection:bnepserver}. Then, you need to create an SDP record for it and publish it with the SDP server. BTstack provides the \emph{pan\_create\_panu\_service} function in \emph{pan.c} that one requires an empty buffer of approx. 200 bytes, a description, and a security description.
+% \todo{\textbf{Add PANU SDP record registration to PANU_DEMO.c}}
+% Have a look at the SPP Counter example
 
 \subsection{GAP - Generic Access Profile: Low Energy}
 The GAP profile defines how to discover and how to connect to a Bluetooth device. There are several GAP roles that a Bluetooth device can take, but the most important ones are the Central and the Peripheral role. Peripheral devices are those that provide information or can be controlled and central devices are those that consume information or control the peripherals. Before the connection can be established, devices are first going through the advertising process. What happens with the peripheral device after the central device connect to a it, depends on the peripheral's Bluetooth controller. The peripheral will either stop advertising itself and other devices will no longer be able to see it or connect to it until the existing connection is broken, or it will be able to continue with advertising so that the parallel connections can be established.
