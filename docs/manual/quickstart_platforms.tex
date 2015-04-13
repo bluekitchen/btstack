@@ -32,7 +32,7 @@ run
 \end{lstlisting}
 
 \subsubsection{Texas Instruments CC256x-based chipsets}
-\emph{CC256x Init Scripts} In order to use the CC256x chipset on the PAN13xx modules, an initialization script must be obtained. Due to licensing restrictions, this initialization script must be obtained separately as follows:
+\emph{CC256x Init Scripts} In order to use the CC256x chipset on the PAN13xx modules and others, an initialization script must be obtained. Due to licensing restrictions, this initialization script must be obtained separately as follows:
 \begin{itemize}
 \item Download the \BTSfile{} for your PAN13xx module.
 \item Copy the included .bts file into \path{btstack/chipset-cc256x}
@@ -42,6 +42,8 @@ run
 The common code for all CC256x chipsets is provided by $bt\_control\_cc256x.c$. During the setup, $bt\_control\_cc256x\_instance$ function is used to get  a $bt\_control\_t$ instance and passed to $hci\_init$ function. 
 
 Note: Depending on the PAN13xx module you're using, you'll need to update the reference \path{bluetooth_init_cc256...} in the Makefile to match the downloaded file.
+
+Update: For the latest revision of the CC256x chipsets, the CC2560B and CC2564B, TI decided to split the init script into a main part and the BLE part. The conversion script has been updated to detect $blueooth\_init\_cc256x\_1.2.bts$ and adds $BLE\_init\_cc256x\_1.2.bts$ if present and merges them into a single .c file.
 
 \subsubsection{MSP-EXP430F5438 + CC256x Platform}
 \label{platform:msp430}
