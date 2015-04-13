@@ -229,12 +229,13 @@ and reassembly. It is the base for the Serial Port Profile and other profiles us
 \subsubsection{RFCOMM flow control.}
 RFCOMM has a mandatory credit-based flow-control. This means that two devices that established RFCOMM connection, use credits to keep track of how many more RFCOMM data packets can be sent to each. If a device has no (outgoing) credits left, it cannot send another RFCOMM packet, the transmission must be paused. During the connection establishment, initial credits are provided. BTstack tracks the number of credits in both directions. If no outgoing credits are available, the RFCOMM send function will return an error, and you can try later. For incoming data, BTstack provides channels and services with and without automatic credit management via different functions to create/register them respectively. If the management of credits is automatic, the new credits are provided when needed relying on ACL flow control - this is only useful if there is not much data transmitted and/or only one physical connection is used. If the management of credits is manual, credits are provided by the application such that it can manage its receive buffers explicitly. 
 
-\todo{\textbf{RFCOMM port configuration for both local and remote}}\\
-\todo{\textbf{RFCOMM  modem and line status control/information}}\\
-\todo{\textbf{RFCOMM\_AGGREGATE\_FLOW\_OFF example}}\\
-\todo{\textbf{RFCOMM and Security Levels}}\\
+% \todo{\textbf{RFCOMM port configuration for both local and remote}}\\
+% \todo{\textbf{RFCOMM  modem and line status control/information}}\\
+% \todo{\textbf{RFCOMM\_AGGREGATE\_FLOW\_OFF example}}\\
+% \todo{\textbf{RFCOMM and Security Levels}}\\
 
 \subsubsection{Access an RFCOMM service on a remote device}
+\label{subsubsection:rfcommlient}
 
 To communicate with an RFCOMM service on a remote device, the application on a local Bluetooth device initiates the RFCOMM layer using the \emph{rfcomm\_init} function, and then creates an outgoing RFCOMM channel to a given server channel on a remote device using the \emph{rfcomm\_create\_channel\_internal} function. The  \emph{rfcomm\_create\_channel\_intern-al} function will initiate a new L2CAP connection for the RFCOMM multiplexer, if it does not already exist. The channel will automatically provide enough credits to the remote side. To provide credits manually, you have to create the RFCOMM connection by calling \emph{rfcomm\_create\_channel\_with\_initial\_credits\_internal} - see Section \ref{sec:manualCredits}.
 
@@ -445,6 +446,7 @@ To create an SDP record for an SPP service, you can call \emph{sdp\_create\_spp\
 For other types of records, you can use the other functions in \path{src/sdp_util.c}, using the data element \emph{de\_*} functions.  Listing \ref{sdpCreate} shows how an SDP record containing two SDP attributes can be created. First, a DES is created and then the Service Record Handle and Service Class ID List attributes are added to it. The Service Record Handle attribute is added by calling the \emph{de\_add\_number} function twice: the first time to add 0x0000 as attribute ID, and the second time to add the actual record handle (here 0x1000) as attribute value. The Service Class ID List attribute has ID 0x0001, and it requires a list of UUIDs as attribute value. To create the list, \emph{de\_push\_sequence} is called, which "opens" a sub-DES. The returned pointer is used to add elements to this sub-DES. After adding all UUIDs, the sub-DES is "closed" with \emph{de\_pop\_sequence}.
 
 \subsubsection{Query remote SDP service}
+\label{subsection:querysdp}
 
 BTstack provides an SDP client to query SDP services of a remote device. The SDP Client API  is shown in Appendix \ref{appendix:api_sdp_client}. The \emph{sdp\_client\_query} function initiates an L2CAP connection to the remote SDP server. Upon connect, a \emph{Service Search Attribute} request with a \emph{Service Search Pattern} and a \emph{Attribute ID List} is sent. The result of the \emph{Service Search Attribute} query contains a list of \emph{Service Records}, and each of them contains the requested attributes. These records are handled by the SDP parser. The parser delivers SDP\_PARSER\_ATTRIBUTE\_VALUE and SDP\_PARSER\_COMPLETE events via a registered callback. The SDP\_PARSER\_ATTRIBUTE\_VALUE event delivers the attribute value byte by byte.
 
@@ -614,6 +616,8 @@ As promised in the previous chapter, we explain how to implement various Bluetoo
 
 
 \subsection{GAP - Generic Access Profile: Classic}
+The GAP profile defines how device find each other and establish a secure connection for other profiles.
+As mentioned before GAP functionality is split between gaph.h and hci.h. Please check both.
 
 \subsubsection{Become discoverable}
 A remote unconnected Bluetooth device must be set as "discoverable" in order to be seen by a device performing the inquiry scan. To become discoverable, an application can call \emph{hci\_discoverable\_control}  with input parameter 1. If you want to provide a helpful name for your device, the application can set its local name by sending the $hci\_write\_local\_name$ command. To save energy, you may set the device as undiscoverable again, once a connection is established. See Listing \ref{Discoverable} for an example.
@@ -709,7 +713,8 @@ void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
     }
 }
 \end{lstlisting}
-\subsubsection{Pairing of devices}
+
+\subsubsection{Pairing of Devices}
 By default, Bluetooth communication is not authenticated, and any device can talk to any other device. A Bluetooth device (for example, cellular phone) may choose to require authentication to provide a particular service (for example, a Dial-Up service). The process of establishing authentication is called pairing. Bluetooth provides two mechanism for this.
 
 On Bluetooth devices that conform to the Bluetooth v2.0 or older specification, a PIN code (up to 16 bytes ASCII) has to be entered on both sides. This isn't optimal for embedded systems that do not have full I/O capabilities. To support pairing with older devices using a PIN, see Listing \ref{PinCodeRequest}.
@@ -718,15 +723,17 @@ The Bluetooth v2.1 specification introduces Secure Simple Pairing (SSP), which i
 
 Regardless of the authentication mechanism (PIN/SSP), on success, both devices will generate a link key. The link key can be stored either in the Bluetooth module itself or in a persistent storage, see Section \ref{section:persistent_storage}. The next time the device connect and request an authenticated connection, both devices can use the previously generated link key. Please note that the pairing must be repeated if the link key is lost by one device.
 
-\todo{\textbf{Dedicated bonding.}} \\
-
-
+\subsubsection{Dedicated Bonding}
+Aside from the regular bonding as needed, Bluetooth also provides the concecpt of "dedicated bonding", where a connection is established for the sole purpose of bonding the device. After the bonding process is over, the connection will automatically be terminated. BTstack supports dedicated bonding via the \emph{gap\_dedicated\_bonding} function.
 
 \subsection{SPP - Serial Port Profile}
-The SPP profile defines how to set up virtual serial ports and connect two Bluetooth enabled devices. See Appendix \ref{appendix:api_} for the SPP API.
+The SPP profile defines how to set up virtual serial ports and connect two Bluetooth enabled devices. 
+%See Appendix \ref{appendix:api_} for the SPP API.
+\subsubsection{Providing an SPP Server}
+To provide an SPP Server, you need to provide an RFCOMM service with a specific RFCOMM channel number as explained in section \ref{section:rfcomm_service}. Then, you need to create an SDP record for it and publish it with the SDP server. BTstack provides the \emph{sdp\_create\_spp\_service} function in \emph{sdp\_utils.c} that one requires an empyut buffer of approx. 200 bytes, the service channel number, and a service name. Have a look at the SPP Counter example in section \ref{section:sppcounter}.
 
-\todo{\textbf{Explain SPP use.}} \\
-
+\subsubsection{Accessing an SPP Server on a remote device}
+To access a remote SPP server, you first need to query the remote device for its SPP services. Section \ref{subsection:querysdp} shows how to query for all RFCOMM channels. For SPP, you can do the same but use the SPP UUID 0x1101 for the query. After you have identified the correct RFCOMM channel, you can create an RFCOMM connection as shown in section \ref{subsubsection:rfcommlient}
 
 \subsection{PAN -  Personal Area Networking Profile}
 \label{section:pan_profile}
