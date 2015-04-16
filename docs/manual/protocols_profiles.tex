@@ -221,11 +221,11 @@ In addition to the full L2CAP implementation in the \emph{src} folder, BTstack p
 
 
 \subsection{RFCOMM - Radio Frequency Communication Protocol}
-%\label{section:flowcontrol}
 The Radio frequency communication (RFCOMM) protocol provides emulation of serial ports over the L2CAP protocol.
 and reassembly. It is the base for the Serial Port Profile and other profiles used for telecommunication like Head-Set Profile, Hands-Free Profile, Object Exchange (OBEX) etc.
 
 \subsubsection{RFCOMM flow control.}
+\label{section:flowcontrol}
 RFCOMM has a mandatory credit-based flow-control. This means that two devices that established RFCOMM connection, use credits to keep track of how many more RFCOMM data packets can be sent to each. If a device has no (outgoing) credits left, it cannot send another RFCOMM packet, the transmission must be paused. During the connection establishment, initial credits are provided. BTstack tracks the number of credits in both directions. If no outgoing credits are available, the RFCOMM send function will return an error, and you can try later. For incoming data, BTstack provides channels and services with and without automatic credit management via different functions to create/register them respectively. If the management of credits is automatic, the new credits are provided when needed relying on ACL flow control - this is only useful if there is not much data transmitted and/or only one physical connection is used. If the management of credits is manual, credits are provided by the application such that it can manage its receive buffers explicitly. 
 
 % \todo{\textbf{RFCOMM port configuration for both local and remote}}\\
@@ -529,55 +529,77 @@ de_pop_sequence(des_buffer, attribute);
 % \end{minipage}
 
 \subsection{BNEP -  Bluetooth Network Encapsulation Protocol}
-The BNEP protocol is built on top of L2CAP and it is used to transport control and data packets over standard network protocols such as TCP, IPv4 or IPv6.  BNEP specifies a minimum L2CAP MTU of 1691 bytes. 
+The BNEP protocol is used to transport control and data packets over standard network protocols such as TCP, IPv4 or IPv6. It is built on top of L2CAP, and it specifies a minimum L2CAP MTU of 1691 bytes. 
 
+\subsubsection{Receive BNEP events}
 To receive BNEP events, please register a packet handler with \emph{bnep\_register\_packet\_handler}.
 
 \subsubsection{Access a BNEP service on a remote device}
 \label{subsubsection:bnepclient}
-To connect to a remote BNEP service, you need to know its UUID. The set of available UUIDs can be queried by a SDP query for the PAN profile. Please see section \ref{section:pan_profile} for details. With the remote UUID, you can create a connection using the \emph{bnep\_connect} function. You'll receive a \emph{BNEP\_EVENT\_OPEN\_CHANNEL\_COMPLETE} on success or failure. 
+To connect to a remote BNEP service, you need to know its UUID. The set of available UUIDs can be queried by a SDP query for the PAN profile. Please see Section \ref{section:pan_profile} for details. With the remote UUID, you can create a connection using the \emph{bnep\_connect} function. You'll receive a \emph{BNEP\_EVENT\_OPEN\_CHANNEL\_COMPLETE} on success or failure. 
 
-After the connection was opened successfully, you can send and receive Ethernet packets. Before sending an Ethernet frame with \emph{bnep\_send},   \emph{bnep\_can\_send\_packet\_now} needs to return true. Ethernet frames are received via the registered packet handler with packet type \emph{BNEP\_DATA\_PACKET}.
+After the connection was opened successfully, you can send and receive Ethernet packets. Before sending an Ethernet frame with \emph{bnep\_send},  \emph{bnep\_can\_send-\_packet\_now} needs to return true. Ethernet frames are received via the registered packet handler with packet type \emph{BNEP\_DATA\_PACKET}.
 
 BTstack BNEP implementation supports both network protocol filter and multicast filters with \emph{bnep\_set\_net\_type\_filter} and \emph{bnep\_set\_multicast\_filter} respectively.
 
-Finally, to close a BNEP connection, you can call \emph{bnep\_disconnect}
+Finally, to close a BNEP connection, you can call \emph{bnep\_disconnect}.
 
 \subsubsection{Provide BNEP service}
 \label{subsubsection:bnepserver}
+To provide a BNEP service, call \emph{bnep\_register\_service} with the provided service UUID and a max frame size. 
 
-You can also provide a BNEP service by calling \emph{bnep\_register\_service} with the provided service UUID and a max frame size.
-
-After an incoming connection was established, a \emph{BNEP\_EVENT\_INCOMING\_CONNECTION} event is received. Ethernet packets can now be sent and received as in the previous section.
+A \emph{BNEP\_EVENT\_INCOMING\_CONNECTION} event will mark that an incoming connection is established. At this point you can start sending and receiving Ethernet packets as described in the previous section.
 
 \subsection{ATT - Attribute Protocol}
 
-The ATT protocol is used by the ATT client to read and write attribute values stored on the ATT server. In addition, the ATT server can notify the client about attribute value changes. An attribute has a handle, a type, and a set of properties.
+The ATT protocol is used by an ATT client to read and write attribute values stored on an ATT server. In addition, the ATT server can notify the client about attribute value changes. An attribute has a handle, a type, and a set of properties, see Section \ref{section:GATTServer}.
 
-The GATT profile is built upon ATT and provides higher level organization of the ATT attributes into GATT Services and GATT Characteristics. In BTstack, the complete ATT client functionality is included within the GATT Client. On the server side, one ore more GATT profiles are converted ahead of time into the corresponding ATT attribute database and provided by the \emph{att\_server} implementation. While constant data is automatically served, dynamic data can be queried from the application. In addition, notifications and indications can be sent. Please see section \ref{section:GATT} for more.
+The Generic Attribute (GATT) profile is built upon ATT and provides higher level organization of the ATT attributes into GATT Services and GATT Characteristics. In BTstack, the complete ATT client functionality is included within the GATT Client. On the server side, one ore more GATT profiles are converted ahead of time into the corresponding ATT attribute database and provided by the \emph{att\_server} implementation. The constant data are automatically served by the ATT server upon client request. To receive the dynamic data, such is characteristic value, the application needs to register read and/or write callback. In addition, notifications and indications can be sent. Please see Section \ref{section:GATTClient} for more.
+
+%\begin{lstlisting}[caption= ATT client registers packet handler for constant data and write callback for dynamic values of characteristics., label=ATTClientHanlder]
+%
+%// write requests
+%static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
+%
+%static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+%
+%int btstack_main(int argc, const char * argv[]){
+%	...
+%	// setup ATT server
+%    att_server_init(att_read_callback, NULL, att_write_callback);    
+%    att_server_register_packet_handler(app_packet_handler);
+%}
+%\end{lstlisting}
+
 
 \subsection{SMP - Security Manager Protocol }
 \label{subsection:smp}
 
-The SMP protocol allows to setup authenticated and encrypted LE connection. After initialization and configuration, SMP handles security related functions on it's own but emits events when feedback from the main app or even the user is required. The two main tasks of the SMP are: bonding and identity resolving.
+The SMP protocol allows to setup authenticated and encrypted LE connection. After initialization and configuration, SMP handles security related functions on it's own but emits events when feedback from the main app or the user is required. The two main tasks of the SMP protocol are: bonding and identity resolving.
 
 \subsubsection{Initialization}
 
 To activate the security manager, call \emph{sm\_init()}. 
 
-If you're creating a product, you should also call \emph{sm\_set\_ir()} and \emph{sm\_set\_er()} with a fixed random 16 byte number. If possible use a unique random number per device instead of deriving it from the product serial number something similar. The encryption key generated by the BLE peripheral ultimately will be derived from the ER key seed. See Blueooth Core V4.0, Vol 3, Part G, 5.2.2 for more details on deriving the different keys. The IR key is used to identify a device if private, resolvable Bluetooth addresses are used.
+If you're creating a product, you should also call \emph{sm\_set\_ir()} and \emph{sm\_set\_er()} with a fixed random 16 byte number to create the IR and ER key seeds. If possible use a unique random number per device instead of deriving it from the product serial number or something similar. The encryption key generated by the BLE peripheral will be ultimately derived from the ER key seed. See \BluetoothSpecificationURL{} - Bluetooth Core V4.0, Vol 3, Part G, 5.2.2 for more details on deriving the different keys. The IR key is used to identify a device if private, resolvable Bluetooth addresses are used.
 
 \subsubsection{Configuration}
 
-To receive events from the Security Manager, a call back is neccessary. How to register this packet handler depends on your application configuration. 
+To receive events from the Security Manager, a callback is necessary. How to register this packet handler depends on your application configuration. 
 
-When \emph{att\_server.c} is used to provide a GATT/ATT service, \emph{att\_server.c} registers itself as the Security Manager packet handler. Security Manager events are then are received by the application via the \emph{att\_server} packet handler.
+When \emph{att\_server} is used to provide a GATT/ATT service, \emph{att\_server} registers itself as the Security Manager packet handler. Security Manager events are then received by the application via the \emph{att\_server} packet handler.
 
-If \emph{att\_server} is not used, you can directly register your packet handler with the security manager. 
+If \emph{att\_server} is not used, you can directly register your packet handler with the security manager by calling \emph{sm\_register\_packet\_handler}.
 
-The default Security Manager configuration in BTstack is to be as open as possible: accept all Short Term Key (STK) Generation methods, accepted encryption key size from 7..16 bytes, and no authentication requirements. The default IO Capabilities are \emph{IO\_CAPABILITY\_NO\_INPUT\_NO\_OUTPUT}.
+The default SMP configuration in BTstack is to be as open as possible: 
+\begin{itemize}
+\item accept all Short Term Key (STK) Generation methods,
+\item accept encryption key size from 7..16 bytes,
+\item expect no authentication requirements, and
+\item IO Capabilities set to \emph{IO\_CAPABILITY\_NO\_INPUT\_NO\_OUTPUT}.
+\end{itemize}
 
-To configure the bonding options, you can use the following functions:
+You can configure these items by calling following functions respectively:
 \begin{itemize}
 \item \emph{sm\_set\_accepted\_stk\_generation\_methods}
 \item \emph{sm\_set\_encryption\_key\_size\_range}
@@ -587,11 +609,20 @@ To configure the bonding options, you can use the following functions:
 
 \subsubsection{Identity Resolving}
 
-Identity resolving is the process of matching a private, resolvable Bluetooth address to a previously paired device using its Identity Resolving (IR) key. For this, each device in the le central device db needs to get compared to the device address in question. After an LE connection gets established, BTstack automatically tries to resolve the address of this device. During this lookup, BTstack first emits the \emph{SM\_IDENTITY\_RESOLVING\_STARTED} event and later \emph{SM\_IDENTITY\_RESOLVING\_SUCCEEDED} or \emph{SM\_IDENTITY\_RESOLVING\_FAILED}.
+Identity resolving is the process of matching a private, resolvable Bluetooth address to a previously paired device using its Identity Resolving (IR) key. After an LE connection gets established, BTstack automatically tries to resolve the address of this device. During this lookup, BTstack will emit  the following events:
+\begin{itemize}
+\item \emph{SM\_IDENTITY\_RESOLVING\_STARTED} to mark the start of a lookup,
+\end{itemize}
+
+and later:
+\begin{itemize}
+	\item  \emph{SM\_IDENTITY\_RESOLVING\_SUCCEEDED} on lookup success, or
+	\item  \emph{SM\_IDENTITY\_RESOLVING\_FAILED} on lookup failure.
+\end{itemize}
 
 \subsubsection{Bonding process}
 
-In Bluetooth LE, there are thee main methods of establishing a first encrypted connection. From most secure to least secure, these are: Out-of-Band (OOB) Data , Passkey, and Just Works.
+In Bluetooth LE, there are three main methods of establishing an encrypted connection. From the most to the least secure, these are: Out-of-Band (OOB) Data , Passkey, and Just Works.
 
 With OOB data, there needs to be a pre-shared secret 16 byte key. In most cases, this is not an option, especially since popular OS like iOS don't provide a way to specify it. It some applications, where both sides of a Bluetooth link are developed together, this could provide a viable option.
 
@@ -604,7 +635,7 @@ Depending on the authentication requirements, available OOB data, and the enable
 \item \emph{SM\_JUST\_WORKS\_REQUEST}: request a user to accept a Just Works pairing
 \end{itemize}
 
-If the user stops the bonding process, \emph{sm\_bonding\_decline} should be called. Otherwise, \emph{sm\_just\_works\_confirm} or \emph{sm\_passkey\_input} can be called.
+To stop the bonding process, \emph{sm\_bonding\_decline} should be called. Otherwise, \emph{sm\_just\_works\_confirm} or \emph{sm\_passkey\_input} can be called.
 
 After the bonding process, \emph{SM\_PASSKEY\_DISPLAY\_CANCEL} is emitted to update the user interface.
 
@@ -615,15 +646,15 @@ After the bonding process, \emph{SM\_PASSKEY\_DISPLAY\_CANCEL} is emitted to upd
 % ------
 
 \section{Profiles}
-As promised in the previous chapter, we explain how to implement various Bluetooth profiles in this one.
 
+In the following, we explain how the various Bluetooth profiles are used in BTstack.
 
 \subsection{GAP - Generic Access Profile: Classic}
-The GAP profile defines how device find each other and establish a secure connection for other profiles.
-As mentioned before GAP functionality is split between gaph.h and hci.h. Please check both.
+The GAP profile defines how devices find each other and establish a secure connection for other profiles.
+As mentioned before, the GAP functionality is split between \path{src/gap.h} and \path{src/hci.h}. Please check both.
 
 \subsubsection{Become discoverable}
-A remote unconnected Bluetooth device must be set as "discoverable" in order to be seen by a device performing the inquiry scan. To become discoverable, an application can call \emph{hci\_discoverable\_control}  with input parameter 1. If you want to provide a helpful name for your device, the application can set its local name by sending the $hci\_write\_local\_name$ command. To save energy, you may set the device as undiscoverable again, once a connection is established. See Listing \ref{Discoverable} for an example.
+A remote unconnected Bluetooth device must be set as "discoverable" in order to be seen by a device performing the inquiry scan. To become discoverable, an application can call \emph{hci\_discoverable\_control}  with input parameter 1. If you want to provide a helpful name for your device, the application can set its local name by calling $gap\_set\_local\_name$. To save energy, you may set the device as undiscoverable again, once a connection is established. See Listing \ref{Discoverable} for an example.
 
 \begin{lstlisting}[caption=Setting device as discoverable. OFF by default., label=Discoverable]
 int main(void){
@@ -647,7 +678,7 @@ void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
 
 \subsubsection{Discover remote devices}
 \label{section:DiscoverDevices}
-To scan for remote devices, the \emph{hci\_inquiry} command is used. After that, the Bluetooth devices actively scans for other devices and reports these as part of HCI\_EVENT\_INQUIRY\_RESULT, HCI\_EVENT-\_INQUIRY\_RESULT\_WITH\_RSSI, or HCI\_EVENT\_EXTENDED\_INQUIRY\_RE-SPONSE events. Each response contains at least the Bluetooth address, the class of device, the page scan repetition mode, and the clock offset of found device. The latter events add information about the received signal strength or provide the Extended Inquiry Result (EIR). A code snippet is shown in Listing \ref{DiscoverDevices}.
+To scan for remote devices, the \emph{hci\_inquiry} command is used. Found remote devices are reported as a part of HCI\_EVENT\_INQUIRY\_RESULT, HCI\_EVENT-\_INQUIRY\_RESULT\_WITH\_RSSI, or HCI\_EVENT\_EXTENDED\_INQUIRY\_RE-SPONSE events. Each response contains at least the Bluetooth address, the class of device, the page scan repetition mode, and the clock offset of found device. The latter events add information about the received signal strength or provide the Extended Inquiry Result (EIR). A code snippet is shown in Listing \ref{DiscoverDevices}.
 
 By default, neither RSSI values nor EIR are reported. If the Bluetooth device implements Bluetooth Specification 2.1 or higher, the \emph{hci\_write\_inquiry\_mode} command enables reporting of this advanced features (0 for standard results, 1 for RSSI, 2 for RSSI and EIR). 
 
@@ -700,6 +731,12 @@ void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 \end{lstlisting}
 
+
+\subsubsection{Pairing of Devices}
+By default, Bluetooth communication is not authenticated, and any device can talk to any other device. A Bluetooth device (for example, cellular phone) may choose to require authentication to provide a particular service (for example, a Dial-Up service). The process of establishing authentication is called pairing. Bluetooth provides two mechanism for this.
+
+On Bluetooth devices that conform to the Bluetooth v2.0 or older specification, a PIN code (up to 16 bytes ASCII) has to be entered on both sides. This isn't optimal for embedded systems that do not have full I/O capabilities. To support pairing with older devices using a PIN, see Listing \ref{PinCodeRequest}.
+
 \begin{lstlisting}[caption=Answering authentication request with PIN 0000., label=PinCodeRequest]
 void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
     ...
@@ -717,27 +754,22 @@ void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 \end{lstlisting}
 
-\subsubsection{Pairing of Devices}
-By default, Bluetooth communication is not authenticated, and any device can talk to any other device. A Bluetooth device (for example, cellular phone) may choose to require authentication to provide a particular service (for example, a Dial-Up service). The process of establishing authentication is called pairing. Bluetooth provides two mechanism for this.
+The Bluetooth v2.1 specification introduces Secure Simple Pairing (SSP), which is a better approach as it both improves security and is better adapted to embedded systems. With SSP, the devices first exchange their IO Capabilities and then settle on one of several ways to verify that the pairing is legitimate. If the Bluetooth device supports SSP, BTstack enables it by default and even automatically accepts SSP pairing requests. Depending on the product in which BTstack is used, this may not be desired and should be replaced with code to interact with the user.
 
-On Bluetooth devices that conform to the Bluetooth v2.0 or older specification, a PIN code (up to 16 bytes ASCII) has to be entered on both sides. This isn't optimal for embedded systems that do not have full I/O capabilities. To support pairing with older devices using a PIN, see Listing \ref{PinCodeRequest}.
-
-The Bluetooth v2.1 specification introduces Secure Simple Pairing (SSP), which is a better approach as it both improves security and is better adapted to embedded system. With SSP, the devices first exchange their IO Capabilities and then settle on one of several ways to verify that the pairing is legitimate. If the Bluetooth device supports SSP, BTstack enables it by default and even automatically accepts SSP pairing requests. Depending on the product in which BTstack is used, this may not be desired and should be replaced with code to interact with the user.
-
-Regardless of the authentication mechanism (PIN/SSP), on success, both devices will generate a link key. The link key can be stored either in the Bluetooth module itself or in a persistent storage, see Section \ref{section:persistent_storage}. The next time the device connect and request an authenticated connection, both devices can use the previously generated link key. Please note that the pairing must be repeated if the link key is lost by one device.
+Regardless of the authentication mechanism (PIN/SSP), on success, both devices will generate a link key. The link key can be stored either in the Bluetooth module itself or in a persistent storage, see Section \ref{section:persistent_storage}. The next time the device connects and requests an authenticated connection, both devices can use the previously generated link key. Please note that the pairing must be repeated if the link key is lost by one device.
 
 \subsubsection{Dedicated Bonding}
-Aside from the regular bonding as needed, Bluetooth also provides the concecpt of "dedicated bonding", where a connection is established for the sole purpose of bonding the device. After the bonding process is over, the connection will automatically be terminated. BTstack supports dedicated bonding via the \emph{gap\_dedicated\_bonding} function.
+Aside from the regular bonding, Bluetooth also provides the concept of "dedicated bonding", where a connection is established for the sole purpose of bonding the device. After the bonding process is over, the connection will be automatically terminated. BTstack supports dedicated bonding via the \emph{gap\_dedicated\_bonding} function.
 
 \subsection{SPP - Serial Port Profile}
 The SPP profile defines how to set up virtual serial ports and connect two Bluetooth enabled devices. 
 %See Appendix \ref{appendix:api_} for the SPP API.
 
 \subsubsection{Accessing an SPP Server on a remote device}
-To access a remote SPP server, you first need to query the remote device for its SPP services. Section \ref{subsection:querysdp} shows how to query for all RFCOMM channels. For SPP, you can do the same but use the SPP UUID 0x1101 for the query. After you have identified the correct RFCOMM channel, you can create an RFCOMM connection as shown in section \ref{subsubsection:rfcommlient}
+To access a remote SPP server, you first need to query the remote device for its SPP services. Section \ref{subsection:querysdp} shows how to query for all RFCOMM channels. For SPP, you can do the same but use the SPP UUID 0x1101 for the query. After you have identified the correct RFCOMM channel, you can create an RFCOMM connection as shown in Section \ref{subsubsection:rfcommlient}
 
 \subsubsection{Providing an SPP Server}
-To provide an SPP Server, you need to provide an RFCOMM service with a specific RFCOMM channel number as explained in section \ref{section:rfcomm_service}. Then, you need to create an SDP record for it and publish it with the SDP server. BTstack provides the \emph{sdp\_create\_spp\_service} function in \emph{sdp\_utils.c} that one requires an empyut buffer of approx. 200 bytes, the service channel number, and a service name. Have a look at the SPP Counter example in section \ref{section:sppcounter}.
+To provide an SPP Server, you need to provide an RFCOMM service with a specific RFCOMM channel number as explained in Section \ref{section:rfcomm_service}. Then, you need to create an SDP record for it and publish it with the SDP server by calling \emph{sdp\_register\_service\_internal}. BTstack provides the \emph{sdp\_create\_spp\_service} function in \path{src/sdp_utils.c} that requires an empty buffer of approximately 200 bytes, the service channel number, and a service name. Have a look at the SPP Counter example in Section \ref{section:sppcounter}.
 
 \subsection{PAN -  Personal Area Networking Profile}
 \label{section:pan_profile}
@@ -757,55 +789,40 @@ The GN role enables two or more PANUs to interact with each other through a wire
 Currently, BTstack supports only PANU.
 
 \subsubsection{Accessing a remote PANU service}
-To access a remote PANU service, you first need to do a SDP query to get the L2CAP PSM for the requested PANU UUID.
-With these two pieces of information, you can connect BNEP to the remote PANU service with the \emph{bnep\_connect}function. The PANU Demo example in section \ref{subsection:panudemo} shows how this is accomplished.
+To access a remote PANU service, you first need perform an SDP query to get the L2CAP PSM for the requested PANU UUID.
+With these two pieces of information, you can connect BNEP to the remote PANU service with the \emph{bnep\_connect} function. The PANU Demo example in Section \ref{subsection:panudemo} shows how this is accomplished.
 
 \subsubsection{Providing a PANU service}
-To provide a PANU service, you need to provide an BNEP service with the service UUID, e.g. the PANU UUID, and a a maxmal ethernet frame size, as explained in section \ref{subsubsection:bnepserver}. Then, you need to create an SDP record for it and publish it with the SDP server. BTstack provides the \emph{pan\_create\_panu\_service} function in \emph{pan.c} that one requires an empty buffer of approx. 200 bytes, a description, and a security description.
+To provide a PANU service, you need to provide a BNEP service with the service UUID, e.g. the PANU UUID, and a a maximal ethernet frame size, as explained in Section \ref{subsubsection:bnepserver}. Then, you need to create an SDP record for it and publish it with the SDP server by calling \emph{sdp\_register\_service\_internal}. BTstack provides the \emph{pan\_create\_panu\_service} function in \emph{src/pan.c} that requires an empty buffer of approximately 200 bytes, a description, and a security description.
 % \todo{\textbf{Add PANU SDP record registration to PANU_DEMO.c}}
 % Have a look at the SPP Counter example
 
-\subsection{GAP - Generic Access Profile: Low Energy}
-As with GAP for Classic, the GAPP LE profile defines how to discover and how to connect to a Bluetooth Low Energy device. There are several GAP roles that a Bluetooth device can take, but the most important ones are the Central and the Peripheral role. Peripheral devices are those that provide information or can be controlled and central devices are those that consume information or control the peripherals. Before the connection can be established, devices are first going through the advertising process.
-
-% What happens with the peripheral device after the central device connect to a it, depends on the peripheral's Bluetooth controller. The peripheral will either stop advertising itself and other devices will no longer be able to see it or connect to it until the existing connection is broken, or it will be able to continue with advertising so that the parallel connections can be established.
-
-% \subsection{Low Energy}
-% he focus is on two different device roles:  devices that provide services and/or can be controlled and devices that consume services and/or control other devices. Devices are first going through the advertising process that is governed by the Generic Access Profile (GAP). Once the connection is established, the communication will be governed by the Generic Attribute Profile (GATT). Both profiles, GAP and GATT, have concepts that describe these two BLE roles:  GAP defines Peripheral and Central, and GATT defines Server and Client role respectively. The GATT roles are not necessarily tied to specific GAP roles and may be specified by higher layer profiles. GATT is built on top of the Attribute Protocol (ATT), which defines how to discover, read, and write attributes on a peer device. In addition, BLE uses two more BT protocols: SMP for for pairing and transport specific key distribution and L2CAP LE variant optimized for connectionless data used by Bluetooth Low Energy devices. 
+\subsection{GAP LE - Generic Access Profile for Low Energy}
+As with GAP for Classic, the GAP LE profile defines how to discover and how to connect to a Bluetooth Low Energy device. There are several GAP roles that a Bluetooth device can take, but the most important ones are the Central and the Peripheral role. Peripheral devices are those that provide information or can be controlled. Central devices are those that consume information or control the peripherals. Before the connection can be established, devices are first going through an advertising process.
 
 \subsubsection{Private addresses.}
-To better protect privacy, a LE device can choose use a private i.e. random Bluetooth address. This address changes at a user-specified rate. To allow for later reconnection, the central and peripheral devices exchange their Identity Resolving Keys (IRKs) during bonding. The IRK is used to verify if a new address belongs to a previously bonded device. 
+To better protect privacy, an LE device can choose to use a private i.e. random Bluetooth address. This address changes at a user-specified rate. To allow for later reconnection, the central and peripheral devices will exchange their Identity Resolving Keys (IRKs) during bonding. The IRK is used to verify if a new address belongs to a previously bonded device. 
 
-To toggle privacy mode using private addresses, \emph{gap\_random\_address\_set\_mode} is used. The update period can be set with \emph{gap\_random\_address\_set\_update\_period}.
+To toggle privacy mode using private addresses, call the \emph{gap\_random\_address\_set\_mode} function. The update period can be set with \emph{gap\_random\_address\_set\_update\_period}.
 
-After a connection has been established, the Security Manager tries to resolve the peer Bluetooth address as explained in section \ref{subsection:smp}.
-
-% \textbf{GAP BLE Roles.}
-% There are four GAP roles defined for a Bluetooth low energy device: Broadcaster, Observer, Peripheral and Central. A device may operate in multiple GAP roles concurrently.
-% \begin{itemize}
-% \item \emph{GAP Broadcaster Role} - A broadcast device only sends advertisements and cannot be connected. It can emit some useful data as part of the advertisement. The most prominent use for this is Apple's iBeacon technology which uses broadcast devices to emit a unique ID. Apple's iOS framework then help to map this ID onto a specific location, e.g., in a museum. Broadcasting is efficient as no connection and no ATT database are needed. To control energy consumption the broadcast interval can be configured. An advertisement can contain up to 31 bytes of information. In addition, another 31 bytes of information can be sent in the scan response.
-% \item \emph{GAP Observer Role} - An observer device only receives advertising events and cannot be connected. 
-% \item \emph{GAP Central Role} - The role of the central device is to scan for peripherals, connect to them, and discover and receive data from them or sends data to control them. During scanning the central device can retrieve information on other device such are its name and unique number, as well as some broadcast data from its services. Upon connection, the central explores the device by discovering its primary and included services, characteristics, and characteristic descriptors.
-% \item \emph{GAP Peripheral Role} - The role of a peripheral device is to deliver information on their inputs, i.e. sensor values, battery level, current time, to the applications running on central devices. It can also receive a write request from a central device and control connected actors, e.g. turn on and set the color of the light. Peripherals can broadcast data, they can be discovered and connected to by a central device, they can stay also disconnected and then establish connection when needed. 
-% \end{itemize} 
+After a connection is established, the Security Manager will try to resolve the peer Bluetooth address as explained in Section \ref{subsection:smp}.
 
 \subsubsection{Advertising and Discovery}
-
-For an LE device to become discoverable and connectable, it needs to periodically send out Advertisments. Advertisment contain up to 31 bytes of data. To configure and enable advertisement broadcast, the following HCI commands can be used:
+An LE device is discoverable and connectable, only if it periodically sends out Advertisements. An advertisement contains up to 31 bytes of data. To configure and enable advertisement broadcast, the following HCI commands can be used:
 \begin{itemize}
 \item \emph{hci\_le\_set\_advertising\_data}
 \item \emph{hci\_le\_set\_advertising\_parameters}
 \item \emph{hci\_le\_set\_advertise\_enable}
 \end{itemize}
-As these are direct HCI commands, please refer to section \ref{subsubsection:sendinghci} for details and have a look at the SPP and LE Counter example in section \ref{subsection:sppandlecounter}.
+As these are direct HCI commands, please refer to Section \ref{subsubsection:sendinghci} for details and have a look at the SPP and LE Counter example in Section \ref{subsection:sppandlecounter}.
 
-In addition to the Advertisement data, a device in the peripheral role can also provide Scan Rseposne data, which has to be explicitly queried by the central device. It can be provided with the \emph{hci\_le\_set\_scan\_response\_data}.
+In addition to the Advertisement data, a device in the peripheral role can also provide Scan Response data, which has to be explicitly queried by the central device. It can be provided with the \emph{hci\_le\_set\_scan\_response\_data}.
 
-To scan for LE device, the scan parameters can be set with \emph{le\_central\_set\_scan\_parameters}, and then the scan started/stopped with \emph{le\_central\_start\_scan}/\emph{le\_central\_stop\_scan}.
+The scan parameters can be set with \emph{le\_central\_set\_scan\_parameters}. The scan can be started/stopped with \emph{le\_central\_start\_scan}/\emph{le\_central\_stop\_scan}.
 
 Finally, if a suitable device is found, a connection can be initiated by calling \emph{le\_central\_connect}. In contrast to Bluetooth classic, there is no timeout for an LE connection establishment. To cancel such an attempt, \emph{le\_central\_connect\_cancel} has be be called.
 
-By default, a Bluetooth device stops sending Advertisements when it gets into the Connected state. However, it does not start broadcasting advertisements on disconnect again. It's necessary to send the \emph{hci\_le\_set\_advertise\_enable} again to re-enable it.
+By default, a Bluetooth device stops sending Advertisements when it gets into the Connected state. However, it does not start broadcasting advertisements on disconnect again. To re-enable it, please send the \emph{hci\_le\_set\_advertise\_enable} again .
 
 \subsection{GATT - Generic Attribute Profile}
 The GATT profile uses ATT Attributes to represent a hierarchical structure of GATT Services and GATT Characteristics. Each Service has one or more Characteristics. Each Characteristic has meta data attached like its type or its properties. This hierarchy of Characteristics and Services are queried and modified via ATT operations.
@@ -813,20 +830,26 @@ The GATT profile uses ATT Attributes to represent a hierarchical structure of GA
 GATT defines both a server and a client role. A device can implement one or both GATT roles.
 
 \subsubsection{GATT Client}
+\label{section:GATTClient} 
 The GATT Client is used to discover services, and their characteristics and descriptors on a peer device. It can also subscribe for notifications or indications that the characteristic on the GATT server has changed its value. 
 
-To perform GATT queries, \emph{gatt\_client.h} provides a rich interface. To use it, it needs get initialized with \emph{gatt\_client\_init} once. To allow for modular profile implementations, GATT Client can be used independently by multiple entities. To use it by a GATT Client client, you register a packet handler with \emph{gatt\_client\_register\_packet\_handler}. The return value of that is a GATT Client ID which has to be provided in all queries.
+To perform GATT queries, \path{ble/gatt_client.h} provides a rich interface. Before calling queries, the GATT client must be initialized with \emph{gatt\_client\_init} once. 
 
-After a LE connection was created using the GAP LE API, you can query for the connection MTU with \emph{gatt\_client\_get\_mtu}.
+To allow for modular profile implementations, GATT client can be used independently by multiple entities. 
+
+To use it by a GATT client, you register a packet handler with \emph{gatt\_client\_register\_packet\_ handler}. The return value of that is a GATT client ID which has to be provided in all queries.
+
+After an LE connection was created using the GAP LE API, you can query for the connection MTU with \emph{gatt\_client\_get\_mtu}.
 
 GATT queries cannot be interleaved. Therefore, you can check if you can perform a GATT query on a particular connection using \emph{gatt\_client\_is\_ready}. As a result to a GATT query, zero to many \emph{le\_event}s are returned before a \emph{GATT\_QUERY\_COMPLETE} event completes the query.
 
-For more details on the available GATT queries, please consult Appendix \ref{appendix:api_gatt_client}
+For more details on the available GATT queries, please consult Appendix \ref{appendix:api_gatt_client}.
 
 \subsubsection{GATT Server}
+\label{section:GATTServer}
 The GATT server stores data and accepts GATT client requests, commands and confirmations. The GATT server sends responses to requests and when configured, sends indication and notifications asynchronously to the GATT client. 
 
-To save on both code space and memory, BTstack does not provide a GATT Server ipmlementation. Instead, a textual description of the GATT profile is directly converted into a compact interal ATT Attribute database by a GATT profile compiler. The ATT protocol server - implemented by  \emph{att\_server.c} and \emph{att.c}  - answers incoming ATT requests based on information provided in the compiled database and provides read- and write-callbacks for dynamic attributes.
+To save on both code space and memory, BTstack does not provide a GATT Server implementation. Instead, a textual description of the GATT profile is directly converted into a compact internal ATT Attribute database by a GATT profile compiler. The ATT protocol server - implemented by \path{ble/att_server.c} and \path{ble/att.c}  - answers incoming ATT requests based on information provided in the compiled database and provides read- and write-callbacks for dynamic attributes.
 
 GATT profiles are defined by a simple textual comma separated value (.csv) representation. While the description is easy to read and edit, it is compact and can be placed in ROM.
 
@@ -841,19 +864,19 @@ CHARACTERISTIC, {ATTRIBUTE_TYPE_UUID}, {PROPERTIES}, {VALUE}
 ...
 \end{lstlisting}
 
-Properties can be a list of READ $|$ WRITE $|$ WRITE\_WITHOUT\_RESPONSE $|$ NOTIFY $|$ INDICATE $|$ DYNAMIC
+Properties can be a list of READ $|$ WRITE $|$ WRITE\_WITHOUT\_RESPONSE $|$ NOTIFY $|$ INDICATE $|$ DYNAMIC.
 
-Value can either be a string ("this is a string"), or, a sequence of hex bytes (e.g. 01 02 03)
+Value can either be a string ("this is a string"), or, a sequence of hex bytes (e.g. 01 02 03).
 
-UUIDs are either 16 bit (1800) or 128 bit (00001234-0000-1000-8000-00805F9B34FB)
+UUIDs are either 16 bit (1800) or 128 bit (00001234-0000-1000-8000-00805F9B34FB).
 
-Reads/writes to a Characteristic that is defined with the DYNAMIC flag, are forwarded to the application via callback. Otherwise, the Characteristics cannot be written and return the specified constant value. 
+Reads/writes to a Characteristic that is defined with the DYNAMIC flag, are forwarded to the application via callback. Otherwise, the Characteristics cannot be written and it will return the specified constant value. 
 
 Adding NOTIFY and/or INDICATE automatically creates an addition Client Configuration Characteristic.
 
-To requires encryption or authentication before a Characteristic can be accessed, you can add ENCRYPTION\_KEY\_SIZE\_X - with $X \in [7..16]$ - or  AUTHENTICATION\_REQUIRED.
+To require encryption or authentication before a Characteristic can be accessed, you can add ENCRYPTION\_KEY\_SIZE\_X - with $X \in [7..16]$ - or  AUTHENTICATION\_REQUIRED.
 
-BTstack only provides an ATT Server, while the GATT Server logic is mainly provided by the GATT compiler. While GATT identifies Characteristics by UUIDs, ATT uses Handles (16 bit values). To allow to identify a Characteristic without hard-coding the attribute id, the GATT compiler creates a list of defines in the generated *.h file.
+BTstack only provides an ATT Server, while the GATT Server logic is mainly provided by the GATT compiler. While GATT identifies Characteristics by UUIDs, ATT uses Handles (16 bit values). To allow to identify a Characteristic without hard-coding the attribute ID, the GATT compiler creates a list of defines in the generated *.h file.
 
 % A service starts with a service declaration attribute defining its type, i.e. primary or secondary. It is followed by the included services and characteristics. By means of including services, the service can incorporate more complex behavior, and still keep the definition small. A characteristic is assigned to a single value that can be accessed. 
 % It is composed of three basic elements: declaration, value and descriptors. The characteristic declaration defines how the data can be accessed. A characteristic descriptor is used to capture the additional properties, e.g., to configure if the characteristic value should be reported upon its change. Together, characteristic declaration and the descriptors define types of action that can be performed on characteristic value.
