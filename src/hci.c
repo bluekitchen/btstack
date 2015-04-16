@@ -847,6 +847,10 @@ static void hci_initializing_run(){
             hci_stack->substate = HCI_INIT_W4_SEND_RESET;
             hci_send_cmd(&hci_reset);
             break;
+        case HCI_INIT_SEND_READ_LOCAL_VERSION_INFORMATION:
+            hci_send_cmd(&hci_read_local_version_information);
+            hci_stack->substate = HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION;
+            break;        
         case HCI_INIT_SEND_RESET_CSR_WARM_BOOT:
             hci_state_reset();
             // prepare reset if command complete not received in 100ms
@@ -988,7 +992,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         uint16_t opcode = READ_BT_16(packet,3);
         if (opcode == hci_stack->last_cmd_opcode){
             command_completed = 1;
-            log_info("Command complete for expected opcode %04x -> new substate %u", opcode, hci_stack->substate >> 1);
+            log_info("Command complete for expected opcode %04x at substate %u", opcode, hci_stack->substate);
         } else {
             log_info("Command complete for opcode %04x, expected %04x", opcode, hci_stack->last_cmd_opcode);
         }
@@ -999,7 +1003,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
         if (opcode == hci_stack->last_cmd_opcode){
             if (status){
                 command_completed = 1;
-                log_error("Command status error 0x%02x for expected opcode %04x -> new substate %u", status, opcode, hci_stack->substate >> 1);
+                log_error("Command status error 0x%02x for expected opcode %04x at substate %u", status, opcode, hci_stack->substate);
             } else {
                 log_info("Command status OK for expected opcode %04x, waiting for command complete", opcode);
             }
@@ -1028,6 +1032,8 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
     switch(hci_stack->substate){
         case HCI_INIT_W4_SEND_RESET:
             run_loop_remove_timer(&hci_stack->timeout);
+            break;
+        case HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION:
             if (need_baud_change){
                 hci_stack->substate = HCI_INIT_SEND_BAUD_CHANGE;
                 return;
