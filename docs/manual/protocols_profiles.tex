@@ -47,18 +47,26 @@ In the following, we first explain how the various Bluetooth protocols are used 
 
 The HCI protocol provides a command interface to the Bluetooth chipset. In BTstack, the HCI implementation also keeps track of all active connections and handles the re-assembly of higher layer (L2CAP) packets. 
 
-Please note, that an application rarely has to send HCI commands on its own. Instead, BTstack provides convenience functions in GAP and higher level protocols use HCI automatically. E.g. to set the name, you can call \emph{gap\_set\_local\_name()} before powering up. The main use of HCI commands in application is during the startup phase to configure special features not available via the GAP API yet.
+Please note, that an application rarely has to send HCI commands on its own. Instead, BTstack provides convenience functions in GAP and higher level protocols use HCI automatically. E.g. to set the name, you can call \emph{gap\_set\_local\_name()} before powering up. The main use of HCI commands in application is during the startup phase to configure special features that are not available via the GAP API yet.
 
 However, as many features of the GAP Classic can be achieved by sending a single HCI command, not all GAP convenience functions are listed in \path{src/gap.h}. If there's no special GAP function, please consider sending the HCI command directly, as explained in the following. 
 
 \subsubsection{Defining custom HCI command templates}
 
-Each HCI command is assigned a 2-byte OpCode used to uniquely identify different types of commands. The OpCode parameter is divided into two fields, called the OpCode Group Field (OGF) and OpCode Command Field (OCF), see \BluetoothSpecification{} - Core Version 4.0, Volume 2, Part E, Chapter 5.4. In a HCI command packet, the OpCode is followed by parameter total length, and the actual parameters.
+Each HCI command is assigned a 2-byte OpCode used to uniquely identify different types of commands. The OpCode parameter is divided into two fields, called the OpCode Group Field (OGF) and OpCode Command Field (OCF), see \BluetoothSpecification{} - Core Version 4.0, Volume 2, Part E, Chapter 5.4. Listing \ref{hciCmdOGF} shows the OGFs provided by BTstack in \path{src/hci.h} file.  For all existing Bluetooth commands and their OCFs see \BluetoothSpecificationURL{} - Core Version 4.0, Volume 2, Part E, Chapter 7.
 
-BTstack provides the \emph{hci\_cmd\_t} struct as a compact format to define HCI command packets, see Listing \ref{HCIcmdTemplate},  and \path{include/btstack/hci_cmds.h} file in the source code. The OpCode of a command can be calculated using the OPCODE macro. 
+In a HCI command packet, the OpCode is followed by parameter total length, and the actual parameters. BTstack provides the \emph{hci\_cmd\_t} struct as a compact format to define HCI command packets, see Listing \ref{HCIcmdTemplate},  and \path{include/btstack/hci_cmds.h} file in the source code. The OpCode of a command can be calculated using the OPCODE macro. 
 
+\begin{lstlisting}[caption= Supported OpCode Group Fields., label=hciCmdOGF]
+#define OGF_LINK_CONTROL  0x01
+#define OGF_LINK_POLICY  0x02
+#define OGF_CONTROLLER_BASEBAND  0x03
+#define OGF_INFORMATIONAL_PARAMETERS 0x04
+#define OGF_LE_CONTROLLER   0x08
+#define OGF_BTSTACK  0x3d
+#define OGF_VENDOR  0x3f
+\end{lstlisting}
 
-\noindent\begin{minipage}{\textwidth}
 \begin{lstlisting}[caption = hci\_cmds.h defines HCI command template., label=HCIcmdTemplate]
 // Calculate combined ogf/ocf value.
 #define OPCODE(ogf, ocf) (ocf | ogf << 10)
@@ -72,19 +80,6 @@ typedef struct {
 extern const hci_cmd_t hci_write_local_name;
 ...
 \end{lstlisting}
-\end{minipage}
-
-\begin{lstlisting}[caption=hci.h defines possible OGFs used for creation of a HCI command., label=hciCmdOGF]
-#define OGF_LINK_CONTROL  0x01
-#define OGF_LINK_POLICY  0x02
-#define OGF_CONTROLLER_BASEBAND  0x03
-#define OGF_INFORMATIONAL_PARAMETERS 0x04
-#define OGF_LE_CONTROLLER   0x08
-#define OGF_BTSTACK  0x3d
-#define OGF_VENDOR  0x3f
-\end{lstlisting}
-
-Listing \ref{hciCmdOGF} shows the OGFs provided by BTstack in \path{src/hci.h} file.  For all existing Bluetooth commands and their OCFs see \BluetoothSpecificationURL{} - Core Version 4.0, Volume 2, Part E, Chapter 7.
 
 Listing \ref{HCIcmdExample} illustrates the \emph{hci\_write\_local\_name} HCI command template from \mbox{BTstack} library. It uses  OGF\_CONTROLLER\_BASEBAND as OGF, 0x13 as OCF, and has one parameter with format "N" indicating a null terminated UTF-8 string. Table \ref{table:hciformat} lists the format specifiers supported by BTstack. Check \path{src/hci_cmds.c} for other predefined HCI commands and info on their parameters.
 
@@ -129,9 +124,7 @@ This can be done by calling \emph{hci\_can\_send\_command\_packet\_now()} functi
 
 Listing \ref{HCIcmdExampleLocalName} illustrates how to manually set the device name with the HCI Write Local Name command. 
 
-Please note, that an application rarely has to send HCI commands on its own. Instead, BTstack provides convenience functions in HCI/GAP and higher level protocols use HCI automatically. E.g. to set the name, you can call \emph{gap\_set\_local\_name()} before powering up. The main use of HCI commands in application is during the startup phase to configure special features not available via the GAP API yet.
-
-
+Please note, that an application rarely has to send HCI commands on its own. Instead, BTstack provides convenience functions in GAP and higher level protocols use HCI automatically. 
 
 \subsection{L2CAP -  Logical Link Control and Adaptation Protocol}
 The L2CAP protocol supports higher level protocol multiplexing and packet fragmentation. It provides the base for the RFCOMM and BNEP protocols. For all profiles that are officially supported by BTstack, L2CAP does not need to be used directly. For testing or the development of custom protocols, it's helpful to be able to access and provide L2CAP services however.
