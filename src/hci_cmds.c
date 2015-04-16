@@ -689,6 +689,9 @@ OPCODE(OGF_CONTROLLER_BASEBAND, 0x6d), "11"
  * Informational Parameters
  */
 
+const hci_cmd_t hci_read_local_version_information = {
+OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x01), ""
+};
 const hci_cmd_t hci_read_local_supported_features = {
 OPCODE(OGF_INFORMATIONAL_PARAMETERS, 0x03), ""
 };

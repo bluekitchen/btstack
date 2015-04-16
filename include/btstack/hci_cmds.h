@@ -815,6 +815,7 @@ extern const hci_cmd_t hci_read_buffer_size;
 extern const hci_cmd_t hci_read_le_host_supported;
 extern const hci_cmd_t hci_read_link_policy_settings;
 extern const hci_cmd_t hci_read_link_supervision_timeout;
+extern const hci_cmd_t hci_read_local_version_information;
 extern const hci_cmd_t hci_read_local_supported_features;
 extern const hci_cmd_t hci_read_num_broadcast_retransmissions;
 extern const hci_cmd_t hci_read_remote_supported_features_command;
