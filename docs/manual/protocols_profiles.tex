@@ -45,7 +45,7 @@ In the following, we first explain how the various Bluetooth protocols are used 
 
 \subsection{HCI - Host Controller Interface}
 
-The HCI protocol provides a command interface to the Bluetooth chipset. In BTstack, the HCI implementation also keeps track of all active connections and handles the re-assembly of higher layer (L2CAP) packets. 
+The HCI protocol provides a command interface to the Bluetooth chipset. In BTstack, the HCI implementation also keeps track of all active connections and handles the fragmentation and re-assembly of higher layer (L2CAP) packets. 
 
 Please note, that an application rarely has to send HCI commands on its own. Instead, BTstack provides convenience functions in GAP and higher level protocols use HCI automatically. E.g. to set the name, you can call \emph{gap\_set\_local\_name()} before powering up. The main use of HCI commands in application is during the startup phase to configure special features that are not available via the GAP API yet.
 
