@@ -89,6 +89,43 @@ static int read_pos;
 static uint8_t hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 1 + HCI_PACKET_BUFFER_SIZE]; // packet type + max(acl header + acl payload, event header + event data)
 static uint8_t * hci_packet = &hci_packet_with_pre_buffer[HCI_INCOMING_PRE_BUFFER_SIZE];
 
+static int    h4_set_baudrate(uint32_t baudrate){
+
+    log_info("h4_set_baudrate %u", baudrate);
+
+    struct termios toptions;
+    int fd = hci_transport_h4->ds->fd;
+
+    if (tcgetattr(fd, &toptions) < 0) {
+        perror("init_serialport: Couldn't get term attributes");
+        return -1;
+    }
+    
+    speed_t brate = baudrate; // let you override switch below if needed
+    switch(baudrate) {
+        case 57600:  brate=B57600;  break;
+        case 115200: brate=B115200; break;
+#ifdef B230400
+        case 230400: brate=B230400; break;
+#endif
+#ifdef B460800
+        case 460800: brate=B460800; break;
+#endif
+#ifdef B921600
+        case 921600: brate=B921600; break;
+#endif
+    }
+    cfsetospeed(&toptions, brate);
+    cfsetispeed(&toptions, brate);
+
+    if( tcsetattr(fd, TCSANOW, &toptions) < 0) {
+        perror("init_serialport: Couldn't set term attributes");
+        return -1;
+    }
+
+    return 0;
+}
+
 static int    h4_open(void *transport_config){
     hci_uart_config = (hci_uart_config_t*) transport_config;
     struct termios toptions;
@@ -105,22 +142,6 @@ static int    h4_open(void *transport_config){
         return -1;
     }
     
-    speed_t brate = hci_uart_config->baudrate_init; // let you override switch below if needed
-    switch(hci_uart_config->baudrate_init) {
-        case 57600:  brate=B57600;  break;
-        case 115200: brate=B115200; break;
-#ifdef B230400
-        case 230400: brate=B230400; break;
-#endif
-#ifdef B460800
-        case 460800: brate=B460800; break;
-#endif
-#ifdef B921600
-        case 921600: brate=B921600; break;
-#endif
-    }
-    cfsetospeed(&toptions, brate);
-    cfsetispeed(&toptions, brate);
     cfmakeraw(&toptions);   // make raw
 
     // 8N1
@@ -155,6 +176,11 @@ static int    h4_open(void *transport_config){
     hci_transport_h4->ds->process = h4_process;
     run_loop_add_data_source(hci_transport_h4->ds);
     
+    // also set baudrate
+    if (h4_set_baudrate(hci_uart_config->baudrate_init) < 0){
+        return -1;
+    }
+
     // init state machine
     bytes_to_read = 1;
     h4_state = H4_W4_PACKET_TYPE;
@@ -284,7 +310,7 @@ hci_transport_t * hci_transport_h4_instance() {
         hci_transport_h4->transport.send_packet                   = h4_send_packet;
         hci_transport_h4->transport.register_packet_handler       = h4_register_packet_handler;
         hci_transport_h4->transport.get_transport_name            = h4_get_transport_name;
-        hci_transport_h4->transport.set_baudrate                  = NULL;
+        hci_transport_h4->transport.set_baudrate                  = h4_set_baudrate;
         hci_transport_h4->transport.can_send_packet_now           = NULL;
     }
     return (hci_transport_t *) hci_transport_h4;
