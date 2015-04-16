@@ -66,9 +66,9 @@ Coming soon: HSP, HFP, and more.
 ## Supported Chipsets
 Chipsets             | Status
 --------------       | ------ 
-TI CC256x            | complete, incl. eHCIll support 
-CSR 8811, 8510       | H4 only
-EM 9301              | experimental use on Arduino Shield
+TI CC256x, WL183x    | complete incl. eHCIll support (chipset-cc256x)
+CSR 8811, 8510       | H4 only (chipset-csr)
+EM 9301              | experimental use on Arduino Shield (chipset-em9301)
 CSR USB Dongles      | complete
 Broadcom USB Dongles | complete
 
