@@ -5,13 +5,17 @@
 \section{Protocols}
 \label{section:protocols_profiles}
 
-BTstack is a modular dual-mode Bluetooth stack, supporting both the Bluetooth Basic Rate/Enhanced Date Rate (BR/EDR)  as well as the Bluetooth Low Energy LE). The BR/EDR technology, also known as Classic Bluetooth, provides a robust wireless connection between devices designed for high data rate transfer. In contrast, the LE technology has a lower throughput but also lower energy consumption, faster connection setup, and the ability to connect to more device in parallel.
+BTstack is a modular dual-mode Bluetooth stack, supporting both the Bluetooth Basic Rate/Enhanced Date Rate (BR/EDR), as well as the Bluetooth Low Energy (LE). The BR/EDR technology, also known as Classic Bluetooth, provides a robust wireless connection between devices designed for high data rate transfer. In contrast, the LE technology has a lower throughput but also lower energy consumption, faster connection setup, and the ability to connect to more devices in parallel.
 
-So far, the most popular use of BTstack is in peripheral devices that can be connected via SPP (Android 2.0 or higher) and GATT (Android 4.3 or higher, and iOS 5 or higher). If higher data rates with iOS devices are neccessary, the iAP1 and iAP2 protocols of the Made for iPhone programm can be used. Please contact us directly for information of BTstack and MFi.
+Whether Classic or LE, a Bluetooth device must implement one or more Bluetooth profiles. A Bluetooth profile specifies how one or more Bluetooth protocols are used to achieve its goals. For example, every Bluetooth device must implement Generic Access Profile (GAP), which defines how devices find each other and how they establish a connection. This profile is built on top of the Host Controller Interface (HCI) protocol, the lowest protocol in the stack hierarchy which implements a command interface to the Bluetooth chipset.
 
-Bluetooth devices implement one or more Bluetooth profiles. A Bluetooth profile specifies how one or more Bluetooth protocols are used to achieve its goals. As an example, the Serial Port Profile (SPP) basically specifies that compatible devices should provide a Service Discovery Protocol record that includes the RFCOMM channel to use for the actual communication.
+On top of GAP, a popular Classic Bluetooth example would be a peripheral devices that can be connected via the Serial Port Profile (SPP). The SPP basically specifies that a compatible device should provide a Service Discovery Protocol (SDP) record containing an RFCOMM channel number, which will be used for the actual communication. In addition,  requires a secure connection, the Generic Access Profile (GAP) built on top of the Host Controller Interface (HCI) protocol must be used. 
 
-In the following, we first explain how the various Bluetooth protocols are used. In the next chapter, we go over the profiles.																			
+In addition to GAP, every LE example assumes that a device implements the Generic Attribute Profile (GATT) profile. The GATT is built on top of the Attribute Protocol (ATT), and it defines how to interact with low power devices.
+
+So far, the most popular use of BTstack is in peripheral devices that can be connected via SPP (Android 2.0 or higher) and GATT (Android 4.3 or higher, and iOS 5 or higher). If higher data rates are required between a peripheral and iOS device, the iAP1 and iAP2 protocols of the Made for iPhone program can be used instead of GATT. Please contact us directly for information on BTstack  and MFi.
+
+In the following, we first explain how the various Bluetooth protocols are used in BTstack. In the next chapter, we go over the profiles.																			
 % \item Classic Bluetooth applications
 % \item Low Energy (LE) Bluetooth applications
 % \item Dual-mode applications (using both Classic and LE technologies) 
@@ -41,7 +45,11 @@ In the following, we first explain how the various Bluetooth protocols are used.
 
 \subsection{HCI - Host Controller Interface}
 
-The HCI protocol provides a command interface to the Bluetooth chipset. In BTstack, the HCI implementation also keeps track of all active connections and also handles the re-assembly of higher layer (L2CAP) packets. Many features of the Generic Access Profile (GAP Classic) can be achieved by sending a single HCI command. Because of this, if there's no special GAP function, please consider sending the HCI command directly, as explained in the following. 
+The HCI protocol provides a command interface to the Bluetooth chipset. In BTstack, the HCI implementation also keeps track of all active connections and handles the re-assembly of higher layer (L2CAP) packets. 
+
+Please note, that an application rarely has to send HCI commands on its own. Instead, BTstack provides convenience functions in GAP and higher level protocols use HCI automatically. E.g. to set the name, you can call \emph{gap\_set\_local\_name()} before powering up. The main use of HCI commands in application is during the startup phase to configure special features not available via the GAP API yet.
+
+However, as many features of the GAP Classic can be achieved by sending a single HCI command, not all GAP convenience functions are listed in \path{src/gap.h}. If there's no special GAP function, please consider sending the HCI command directly, as explained in the following. 
 
 \subsubsection{Defining custom HCI command templates}
 
@@ -93,24 +101,21 @@ const hci_cmd_t hci_write_local_name = {
 \begin{tabular}{cl}\toprule
 Format Specifier & Description\\ 
 \midrule
-"1" & 8 bit value \\
-"2" & 16 bit value \\
-"H" & HCI handle \\
-"3" & 24 bit value \\
-"4" & 32 bit value \\
-"B" & Bluetooth address \\
-"D" & 8 byte data block \\
-"E" & Extended Inquiry Information 240 octets \\
-"N" & UTF8 string, null terminated \\
-"P" & 16 byte PIN code or link key \\
-"A" & 31 bytes advertising data \\
-"S" & Service Record (Data Element Sequence)\\
+1,2,3,4 & one to four byte value\\
+A & 31 bytes advertising data \\
+B & Bluetooth Baseband Address  \\
+D & 8 byte data block \\
+E & Extended Inquiry Information 240 octets \\
+H & HCI connection handle \\
+N & Name up to 248 chars, UTF8 string, null terminated \\
+P & 16 byte Pairing code, e.g. PIN code or link key \\
+S & Service Record (Data Element Sequence)\\
 \bottomrule
 \label{table:hciformat}
 \end{tabular}
 \end{table*}
 
-\subsubsection{Sending  HCI command based on a template}
+\subsubsection{Sending HCI command based on a template}
 \label{subsubsection:sendinghci}
 
 \begin{lstlisting}[caption= Send hci\_write\_local\_name command that takes a string as a parameter., label=HCIcmdExampleLocalName]
