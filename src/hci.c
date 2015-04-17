@@ -824,6 +824,10 @@ static void hci_initialization_timeout_handler(timer_source_t * ds){
             hci_stack->substate = HCI_INIT_SEND_RESET_CSR_WARM_BOOT;
             hci_stack->num_cmd_packets = 1;
             hci_run();
+        case HCI_INIT_W4_SEND_BAUD_CHANGE:
+            log_info("Local baud rate change to %u", ((hci_uart_config_t *)hci_stack->config)->baudrate_main);
+            hci_stack->hci_transport->set_baudrate(((hci_uart_config_t *)hci_stack->config)->baudrate_main);
+            break;
         default:
             break;
     }
@@ -866,6 +870,12 @@ static void hci_initializing_run(){
             hci_stack->last_cmd_opcode = READ_BT_16(hci_stack->hci_packet_buffer, 0);
             hci_stack->substate = HCI_INIT_W4_SEND_BAUD_CHANGE;
             hci_send_cmd_packet(hci_stack->hci_packet_buffer, 3 + hci_stack->hci_packet_buffer[2]);
+            // STLC25000D: baudrate change happens within 0.5 s after command was send,
+            // use timer to update baud rate after 100 ms (knowing exactly, when command was sent is non-trivial)
+            if (hci_stack->manufacturer == 0x0030){
+                run_loop_set_timer(&hci_stack->timeout, 100);
+                run_loop_add_timer(&hci_stack->timeout);
+            }
             break;
         case HCI_INIT_SET_BD_ADDR:
             log_info("Set Public BD ADDR to %s", bd_addr_to_str(hci_stack->custom_bd_addr));
@@ -1047,8 +1057,13 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
             return;
         case HCI_INIT_W4_SEND_BAUD_CHANGE:
-            log_info("Local baud rate change");
-            hci_stack->hci_transport->set_baudrate(((hci_uart_config_t *)hci_stack->config)->baudrate_main);
+            // for STLC2500D, baud rate change already happened.
+            // for CC256x, baud rate gets changed now
+            if (hci_stack->manufacturer != 0x0030){
+                uint32_t new_baud = ((hci_uart_config_t *)hci_stack->config)->baudrate_main;
+                log_info("Local baud rate change to %u", new_baud);
+                hci_stack->hci_transport->set_baudrate(new_baud);
+            }   
             if (need_addr_change){
                 hci_stack->substate = HCI_INIT_SET_BD_ADDR;
                 return;
@@ -1178,6 +1193,14 @@ static void event_handler(uint8_t *packet, int size){
 
                 // Classic/LE
                 log_info("BR/EDR support %u, LE support %u", hci_classic_supported(), hci_le_supported());
+            }
+            if (COMMAND_COMPLETE_EVENT(packet, hci_read_local_version_information)){
+                // hci_stack->hci_version    = READ_BT_16(packet, 4);
+                // hci_stack->hci_revision   = READ_BT_16(packet, 6);
+                // hci_stack->lmp_version    = READ_BT_16(packet, 8);
+                hci_stack->manufacturer   = READ_BT_16(packet, 10);
+                // hci_stack->lmp_subversion = READ_BT_16(packet, 12);
+                log_info("Manufacturer: 0x%04x", hci_stack->manufacturer);
             }
             break;
             

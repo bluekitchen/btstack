@@ -624,6 +624,13 @@ typedef struct {
     /* local supported features */
     uint8_t local_supported_features[8];
 
+    /* bluetooth device information from hci read local version information */
+    // uint16_t hci_version;
+    // uint16_t hci_revision;
+    // uint16_t lmp_version;
+    uint16_t manufacturer;
+    // uint16_t lmp_subversion;
+
     // usable packet types given acl_data_packet_length and HCI_ACL_BUFFER_SIZE
     uint16_t packet_types;
     
