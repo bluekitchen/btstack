@@ -133,7 +133,6 @@ static void continue_remote_names(){
  * @text The Bluetooth logic is implemented as a state machine within the packet
  * handler. In this example, the following states are passed sequentially:
  * INIT, and ACTIVE.
- 
  */ 
 
 static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
