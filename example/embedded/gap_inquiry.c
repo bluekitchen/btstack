@@ -36,9 +36,16 @@
  */
 
 // *****************************************************************************
-//
-// GAP
-//
+/* EXAMPLE_START(gap_inquiry): GAP Inquiry Example
+ *
+ * @text The Generic Access Profile (GAP) defines how Bluetooth devices discover
+ * and establish a connection with each other. In this example, the application
+ * discovers  surrounding Bluetooth devices and collects their Class of Device
+ * (CoD), page scan mode, clock offset, and RSSI. After that, the remote name of
+ * each device is requested. In the following section we outline the Bluetooth
+ * logic part, i.e., how the packet handler handles the asynchronous events and
+ * data packets.
+ */
 // *****************************************************************************
 
 #include <stdint.h>
@@ -121,6 +128,14 @@ static void continue_remote_names(){
     start_scan();
 }
 
+/* @section Bluetooth Logic 
+ *
+ * @text The Bluetooth logic is implemented as a state machine within the packet
+ * handler. In this example, the following states are passed sequentially:
+ * INIT, W4_INQUIRY_MODE_COMPLETE, and ACTIVE.
+ 
+ */ 
+
 static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
     bd_addr_t addr;
     int i;
@@ -132,22 +147,36 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
 
     uint8_t event = packet[0];
 
-    switch(state){
-
+    switch(state){ 
+        /* @text In INIT, the application enables the extended inquiry mode,
+         * which includes RSSI values, and transits to W4_INQUIRY_MODE_COMPLETE state.
+         */
         case INIT: 
             if (packet[2] == HCI_STATE_WORKING) {
                 hci_send_cmd(&hci_write_inquiry_mode, 0x01); // with RSSI
                 state = W4_INQUIRY_MODE_COMPLETE;
             }
             break;
-
+        /* @text In W4_INQUIRY_MODE_COMPLETE, after the inquiry mode was set, an inquiry 
+         * scan is started, and the application transits to ACTIVE state.
+         */ 
         case W4_INQUIRY_MODE_COMPLETE:
             if ( COMMAND_COMPLETE_EVENT(packet, hci_write_inquiry_mode) ) {
                 start_scan();
                 state = ACTIVE;
             }
             break;
-            
+        /* @text In ACTIVE, the following events are processed:
+         *  - Inquiry result event: the list of discovered devices is processed and the 
+         *    Class of Device (CoD), page scan mode, clock offset, and RSSI are stored in a table.
+         *  - Inquiry complete event: the remote name is requested for devices without a fetched 
+         *    name. The state of a remote name can be one of the following: 
+         *    REMOTE_NAME_REQUEST, REMOTE_NAME_INQUIRED, or REMOTE_NAME_FETCHED.
+         *  - Remote name cached event: prints cached remote names provided by BTstack, 
+         *    if persistent storage is provided.
+         *  - Remote name request complete event: the remote name is stored in the table and the 
+         *    state is updated to REMOTE_NAME_FETCHED. The query of remote names is continued.
+         */
         case ACTIVE:
             switch(event){
                 case HCI_EVENT_INQUIRY_RESULT:
@@ -215,6 +244,10 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
     }
 }
 
+/* @text For more details please check Section DiscoverRemoteDevices in the
+ * BTstack manual and the source code.  
+ */
+
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]) {
     
@@ -225,4 +258,4 @@ int btstack_main(int argc, const char * argv[]) {
 	    
     return 0;
 }
-
+/* EXAMPLE_END */

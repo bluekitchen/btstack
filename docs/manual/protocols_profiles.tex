@@ -677,7 +677,7 @@ void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
 
 
 \subsubsection{Discover remote devices}
-\label{section:DiscoverDevices}
+\label{section:DiscoverRemoteDevices}
 To scan for remote devices, the \emph{hci\_inquiry} command is used. Found remote devices are reported as a part of HCI\_EVENT\_INQUIRY\_RESULT, HCI\_EVENT-\_INQUIRY\_RESULT\_WITH\_RSSI, or HCI\_EVENT\_EXTENDED\_INQUIRY\_RE-SPONSE events. Each response contains at least the Bluetooth address, the class of device, the page scan repetition mode, and the clock offset of found device. The latter events add information about the received signal strength or provide the Extended Inquiry Result (EIR). A code snippet is shown in Listing \ref{DiscoverDevices}.
 
 By default, neither RSSI values nor EIR are reported. If the Bluetooth device implements Bluetooth Specification 2.1 or higher, the \emph{hci\_write\_inquiry\_mode} command enables reporting of this advanced features (0 for standard results, 1 for RSSI, 2 for RSSI and EIR). 

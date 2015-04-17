@@ -81,7 +81,7 @@ static void run_loop_register_timer(timer_source_t *timer, uint16_t period){
  * adapted to periodically toggle an LED and print number of toggles.  
  */ 
 
-/* SNIPPET_START(LEDToggler): Periodic counter */  
+/* LISTING_START(LEDToggler): Periodic counter */  
 static void heartbeat_handler(timer_source_t *ts){     
     // increment counter
     char lineBuffer[30];
@@ -94,35 +94,24 @@ static void heartbeat_handler(timer_source_t *ts){
     // re-register timer
     run_loop_register_timer(ts, HEARTBEAT_PERIOD_MS);
 } 
-/* SNIPPET_END */
+/* LISTING_END */
 
 /* @section Turn On and Go
  *
- * @text Listing RunLoopExecution shows how to setup and start the run loop.
- * For hardware and BTstack setup, please check the source code in
- * \path{../src/main.c}.
- */
-
-/* SNIPPET_START(RunLoopExecution): Run loop execution */
-static void timer_setup(){
-    // set one-shot timer
-    heartbeat.process = &heartbeat_handler;
-    run_loop_register_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
-}
-/* SNIPPET_END */
-
-/* @text Listing MainConfiguration shows main application code.
+ * @text Listing MainConfiguration shows main application code.
  * It is called after hardware and BTstack configuration (memory, run loop and
  * transport layer) by the platform main in
  * \path{platforms/PLATFORM_NAME/src/main.c}.
  */
 
-/* SNIPPET_START(MainConfiguration): Hardware and BTstack configuration */
+/* LISTING_START(MainConfiguration): Setup heartbeat timer */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-    timer_setup();
+    // set one-shot timer
+    heartbeat.process = &heartbeat_handler;
+    run_loop_register_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
     printf("Run...\n\r");
     return 0;
 }
-/* SNIPPET_END */
+/* LISTING_END */
 /* EXAMPLE_END */
