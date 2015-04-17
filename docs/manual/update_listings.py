@@ -97,6 +97,7 @@ def writeListings(fout, infile_name):
     itemText = None
     state = State.SearchExampleStart
     briefs_in_listings = ""
+    code_in_listing = ""
 
     with open(infile_name, 'rb') as fin:
         for line in fin:
@@ -175,22 +176,24 @@ def writeListings(fout, infile_name):
                 continue
             
             if state == State.SearchListingEnd:
-                print "END"
                 parts_end = re.match('.*(LISTING_END).*',line)
                 parts_pause = re.match('.*(LISTING_PAUSE).*',line)
                 end_comment_parts = re.match('.*(\*/)\s*\n', line);
                 
                 if parts_end:
+                    aout.write(code_in_listing)
+                    code_in_listing = ""
                     aout.write(listing_ending)
                     if briefs_in_listings:
                         aout.write(briefs_in_listings)
                         briefs_in_listings = ""
                     state = State.SearchListingStart
                 elif parts_pause:
-                    aout.write("...\n")
+                    code_in_listing = code_in_listing + "...\n"
                     state = State.SearchListingResume
                 elif not end_comment_parts:
-                    aout.write(line)
+                    # aout.write(line)
+                    code_in_listing = code_in_listing + line.replace("    ", "  ")
                 continue
                 
             if state == State.SearchListingResume:
