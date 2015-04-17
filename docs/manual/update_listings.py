@@ -81,6 +81,16 @@ def writeListings(fout, infile_name):
     state = State.SearchExampleStart
     with open(infile_name, 'rb') as fin:
         for line in fin:
+            if state == State.SearchExampleStart:
+                parts = re.match('.*(EXAMPLE_START)\((.*)\):\s*(.*)(\*/)?\n',line)
+                if parts: 
+                    lable = parts.group(2)
+                    title = parts.group(2).replace("_","\_")
+                    desc  = parts.group(3).replace("_","\_")
+                    aout.write(example_section.replace("EXAMPLE_TITLE", title).replace("EXAMPLE_DESC", desc).replace("EXAMPLE_LABLE", lable))
+                    state = State.SearchSnippetStart
+                continue
+
             section_parts = re.match('.*(@section)\s*(.*)\s*(\*?/?)\n',line)
             if section_parts:
                 aout.write("\n" + example_subsection.replace("LISTING_CAPTION", section_parts.group(2)))
@@ -92,7 +102,7 @@ def writeListings(fout, infile_name):
                 aout.write("\n" + subsubsection)
                 continue
 
-            brief_parts = re.match('.*(@brief)\s*(.*)',line)
+            brief_parts = re.match('.*(@text)\s*(.*)',line)
             if not brief_parts:
                 brief_parts = re.match('(\s\*\s)(.*)(\*/)?.*',line)
                 if brief_parts:
@@ -106,16 +116,6 @@ def writeListings(fout, infile_name):
                 if refs:
                     brief = brief.replace(refs.group(2), "\\ref{"+refs.group(2)+"}")
                 aout.write(brief)
-                continue
-
-            if state == State.SearchExampleStart:
-                parts = re.match('.*(EXAMPLE_START)\((.*)\):\s*(.*)(\*/)?\n',line)
-                if parts: 
-                    lable = parts.group(2)
-                    title = parts.group(2).replace("_","\_")
-                    desc  = parts.group(3).replace("_","\_")
-                    aout.write(example_section.replace("EXAMPLE_TITLE", title).replace("EXAMPLE_DESC", desc).replace("EXAMPLE_LABLE", lable))
-                    state = State.SearchSnippetStart
                 continue
 
             if state == State.SearchSnippetStart:
