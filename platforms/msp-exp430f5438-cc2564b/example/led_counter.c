@@ -29,11 +29,15 @@ static void run_loop_register_timer(timer_source_t *timer, uint16_t period){
     run_loop_add_timer(timer);
 }
 
-/* @section Periodic Timer Setup */
-/* SNIPPET_START(LEDToggler): Periodic counter
- * @brief As timers in BTstack are single shot, the periodic counter is implemented by re-registering the timer source in the heartbeat handler callback function. Listing LEDToggler shows heartbeat handler adapted to periodically toggle an LED and print number of toggles.
- */
- static void heartbeat_handler(timer_source_t *ts){
+/* @section Periodic Timer Setup 
+ * @brief As timers in BTstack are single shot,
+ * the periodic counter is implemented by re-registering the timer source in the
+ * heartbeat handler callback function. Listing LEDToggler shows heartbeat handler
+ * adapted to periodically toggle an LED and print number of toggles.  
+ */ 
+
+/* SNIPPET_START(LEDToggler): Periodic counter */  
+static void heartbeat_handler(timer_source_t *ts){     
     // increment counter
     char lineBuffer[30];
     sprintf(lineBuffer, "BTstack counter %04u\n\r", ++counter);
@@ -47,16 +51,27 @@ static void run_loop_register_timer(timer_source_t *timer, uint16_t period){
 } 
 /* SNIPPET_END */
 
-/* @section Turn On and Go */
-/* SNIPPET_START(RunLoopExecution): Run loop execution
- * @brief Listing RunLoopExecution shows how to setup and start the run loop. For hardware and BTstack setup, please check the source code in \path{../src/main.c}.
+/* @section Turn On and Go
+ * @brief Listing RunLoopExecution shows how to setup and start the run loop.
+ * For hardware and BTstack setup, please check the source code in
+ * \path{../src/main.c}.
  */
+
+/* SNIPPET_START(RunLoopExecution): Run loop execution */
 static void timer_setup(){
     // set one-shot timer
     heartbeat.process = &heartbeat_handler;
     run_loop_register_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
 }
+/* SNIPPET_END */
 
+/* @brief Listing MainConfiguration shows main application code. It is
+ * called after hardware and BTstack configuration (memory, run loop and
+ * transport layer) by the platform main in
+ * \path{platforms/PLATFORM_NAME/src/main.c}.
+ */
+
+/* SNIPPET_START(MainConfiguration): Hardware and BTstack configuration */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     timer_setup();

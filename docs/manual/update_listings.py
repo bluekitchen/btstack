@@ -48,8 +48,7 @@ listing_start = """
 \\begin{lstlisting}[float, caption= LISTING_CAPTION., label=LISTING_LABLE]
 """
 
-listing_ending = """
-\end{lstlisting}
+listing_ending = """\end{lstlisting}
 
 """
 msp_folder = "../../platforms/msp-exp430f5438-cc2564b/example/"
@@ -78,25 +77,35 @@ def replacePlaceholder(template, title, lable):
 def writeListings(fout, infile_name):
     lst_lable = ""
     lst_caption = ""
-    listing = ""
+
     state = State.SearchExampleStart
     with open(infile_name, 'rb') as fin:
         for line in fin:
-            section_parts = re.match('.*(@section)\s*(.*)(\s*\*/)\n',line)
+            section_parts = re.match('.*(@section)\s*(.*)\s*(\*?/?)\n',line)
             if section_parts:
-                aout.write(example_subsection.replace("LISTING_CAPTION", section_parts.group(2)))
+                aout.write("\n" + example_subsection.replace("LISTING_CAPTION", section_parts.group(2)))
                 continue
 
-            brief_parts = re.match('.*(@brief)\s*(.*)\n',line)
+            subsection_parts = re.match('.*(@subsection)\s*(.*)\s*(\*?/?)\n',line)
+            if section_parts:
+                subsubsection = example_subsection.replace("LISTING_CAPTION", section_parts.group(2)).replace('section', 'subsection')
+                aout.write("\n" + subsubsection)
+                continue
+
+            brief_parts = re.match('.*(@brief)\s*(.*)',line)
+            if not brief_parts:
+                brief_parts = re.match('(\s\*\s)(.*)(\*/)?.*',line)
+                if brief_parts:
+                    brief = " " + brief_parts.group(2)
+            else:
+                brief = brief_parts.group(2)
+
             if brief_parts:
-                brief = brief_parts.group(2)+"\n"
-                if lst_lable:
-                    brief = brief.replace(lst_lable, "\\ref{"+lst_lable+"}")
-                    lst_lable = ""
+                # replace refs
+                refs = re.match('.*(Listing\s*)(\w*).*',brief)
+                if refs:
+                    brief = brief.replace(refs.group(2), "\\ref{"+refs.group(2)+"}")
                 aout.write(brief)
-                if listing:
-                    aout.write(listing)
-                    listing = ""
                 continue
 
             if state == State.SearchExampleStart:
@@ -107,16 +116,19 @@ def writeListings(fout, infile_name):
                     desc  = parts.group(3).replace("_","\_")
                     aout.write(example_section.replace("EXAMPLE_TITLE", title).replace("EXAMPLE_DESC", desc).replace("EXAMPLE_LABLE", lable))
                     state = State.SearchSnippetStart
-                    continue
+                continue
 
             if state == State.SearchSnippetStart:
-                parts = re.match('.*(SNIPPET_START)\((.*)\):\s*(.*)(\*/)?\n',line)
+                parts = re.match('.*(SNIPPET_START)\((.*)\):\s*(.*\s*)(\*/).*',line)
+                
                 if parts: 
                     lst_lable = parts.group(2)
                     lst_caption = parts.group(3).replace("_","\_")
                     listing = listing_start.replace("LISTING_CAPTION", lst_caption).replace("LISTING_LABLE", lst_lable)
+                    if listing:
+                        aout.write("\n" + listing)
                     state = State.SearchSnippetEnd
-                    continue
+                continue
             
             if state == State.SearchSnippetEnd:
                 parts_end = re.match('.*(SNIPPET_END).*',line)
@@ -138,7 +150,7 @@ def writeListings(fout, infile_name):
                 parts = re.match('.*(SNIPPET_RESUME).*',line)
                 if parts:
                     state = State.SearchSnippetEnd
-                    continue
+                continue
         
             parts = re.match('.*(EXAMPLE_END).*',line)
             if parts:
