@@ -56,12 +56,14 @@
 #include "hci.h"
 #include "hci_dump.h"
 #include "stdin_support.h"
+#include "bt_control_stlc2500d.h"
 
 int btstack_main(int argc, const char * argv[]);
 
 static hci_uart_config_t hci_uart_config_cc256x = {
     NULL,
     115200,
+    0,          // main baudrate: set to higher standard values if needed e.g. 460800
 };
 
 static void sigint_handler(int param){
@@ -92,7 +94,7 @@ int main(int argc, const char * argv[]){
 
     // init HCI
 	hci_transport_t    * transport = hci_transport_h4_instance();
-	bt_control_t       * control   = NULL;
+	bt_control_t       * control   = bt_control_stlc2500d_instance();
     remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_fs;
         
 	hci_init(transport, (void*) &hci_uart_config_cc256x, control, remote_db);
