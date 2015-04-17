@@ -101,7 +101,7 @@ static void heartbeat_handler(timer_source_t *ts){
  * @text Listing MainConfiguration shows main application code.
  * It is called after hardware and BTstack configuration (memory, run loop and
  * transport layer) by the platform main in
- * \path{platforms/PLATFORM_NAME/src/main.c}.
+ * \path{platforms/PLATFORM/src/main.c}.
  */
 
 /* LISTING_START(MainConfiguration): Setup heartbeat timer */

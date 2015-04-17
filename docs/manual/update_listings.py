@@ -55,7 +55,7 @@ msp_folder = "../../platforms/msp-exp430f5438-cc2564b/example/"
 embedded_folder = "../../example/embedded/"
 # Example group title: [folder, example file, section title]
 list_of_examples = { 
-    #"UART" : [[msp_folder, "led_counter", "UART and timer interrupt without Bluetooth"]
+    "UART" : [[msp_folder, "led_counter", "UART and timer interrupt without Bluetooth"]],
     "GAP"  : [[embedded_folder, "gap_inquiry", "GAP Inquiry Example"]],
     #"SPP Server" : [[embedded_folder, "spp_counter", "SPP Server - Heartbeat Counter over RFCOMM"],
     #                [embedded_folder, "spp_accel", "SPP Server - Accelerator Values"],
@@ -80,6 +80,18 @@ def replacePlaceholder(template, title, lable):
     snippet = template.replace("API_TITLE", title).replace("API_LABLE", lable)
     return snippet
 
+def latexText(text):
+    brief = text.replace("_","\_")
+    brief = brief.replace(" in the BTstack manual","")
+    
+    refs = re.match('.*(Listing\s*)(\w*).*',brief)
+    if refs:
+        brief = brief.replace(refs.group(2), "\\ref{listing:"+refs.group(2)+"}")
+    refs = re.match('.*(Section\s*)(\w*).*',brief)
+    if refs:
+        brief = brief.replace(refs.group(2), "\\ref{section:"+refs.group(2)+"}")
+
+    return brief
 
 def writeListings(fout, infile_name):
     itemText = None
@@ -91,18 +103,37 @@ def writeListings(fout, infile_name):
                 parts = re.match('.*(EXAMPLE_START)\((.*)\):\s*(.*)(\*/)?\n',line)
                 if parts: 
                     lable = parts.group(2)
-                    title = parts.group(2).replace("_","\_")
-                    desc  = parts.group(3).replace("_","\_")
-                    print desc
+                    title = latexText(parts.group(2))
+                    desc  = latexText(parts.group(3))
                     aout.write(example_section.replace("EXAMPLE_TITLE", title).replace("EXAMPLE_DESC", desc).replace("EXAMPLE_LABLE", lable))
                     state = State.SearchListingStart
                 continue
             
+            # detect @section
+            section_parts = re.match('.*(@section)\s*(.*)\s*(\*?/?)\n',line)
+            if section_parts:
+                aout.write("\n" + example_subsection.replace("LISTING_CAPTION", section_parts.group(2)))
+                continue
+
+            # detect @subsection
+            subsection_parts = re.match('.*(@subsection)\s*(.*)\s*(\*?/?)\n',line)
+            if section_parts:
+                subsubsection = example_subsection.replace("LISTING_CAPTION", section_parts.group(2)).replace('section', 'subsection')
+                aout.write("\n" + subsubsection)
+                continue
+            # detect @text
+            brief = None
+            brief_start = re.match('.*(@text)\s*(.*)',line)
+            if brief_start:
+                aout.write("\n\n" + latexText(brief_start.group(2)))
+                continue
+
+            # detect subsequent items
             if itemText:
                 itemize_new = re.match('(\s*\*\s*\-\s*)(.*)',line)
                 if itemize_new:
                     aout.write(itemText + "\n")
-                    itemText = "\item "+ itemize_new.group(2)
+                    itemText = "\item "+ latexText(itemize_new.group(2))
                 else:
                     empty_line = re.match('(\s*\*\s*)\n',line)
                     comment_end = re.match('\s*\*/.*', line)
@@ -113,51 +144,27 @@ def writeListings(fout, infile_name):
                     else:
                         itemize_continuation = re.match('(\s*\*\s*)(.*)',line)
                         if itemize_continuation:
-                            itemText = itemText + " " + itemize_continuation.group(2)
-                continue
-            
-            section_parts = re.match('.*(@section)\s*(.*)\s*(\*?/?)\n',line)
-            if section_parts:
-                aout.write("\n" + example_subsection.replace("LISTING_CAPTION", section_parts.group(2)))
-                continue
-
-            subsection_parts = re.match('.*(@subsection)\s*(.*)\s*(\*?/?)\n',line)
-            if section_parts:
-                subsubsection = example_subsection.replace("LISTING_CAPTION", section_parts.group(2)).replace('section', 'subsection')
-                aout.write("\n" + subsubsection)
-                continue
-
-            brief_parts = re.match('.*(@text)\s*(.*)',line)
-            if brief_parts:
-                brief = "\n" + brief_parts.group(2)
-            else:
-                brief_parts = re.match('(\s\*\s)(.*)(\*/)?.*',line)
-                if brief_parts:
-                    brief = " " + brief_parts.group(2)
-            
-            if brief_parts:
-                # replace refs
-                refs = re.match('.*(Listing\s*)(\w*).*',brief)
-                if refs:
-                    brief = brief.replace(refs.group(2), "\\ref{listing"+refs.group(2)+"}")
-                refs = re.match('.*(Section\s*)(\w*).*',brief)
-                if refs:
-                    brief = brief.replace(refs.group(2), "\\ref{section:"+refs.group(2)+"}")
-                    
-                aout.write(brief)
+                            itemText = itemText + " " + latexText(itemize_continuation.group(2))
                 continue
             else:
-                itemize_part = re.match('(\s*\*\s*-\s*)(.*)',line)
-                if (itemize_part):
+                # detect "-" itemize
+                start_itemize = re.match('(\s*\*\s*-\s*)(.*)',line)
+                if (start_itemize):
                     aout.write("\n \\begin{itemize}\n")
-                    itemText = "\item "+ itemize_part.group(2)
+                    itemText = "\item "+ latexText(start_itemize.group(2))
+                    continue
 
+                brief_continue = re.match('(\s*\*\s)(.*)\s*\n',line)
+                if brief_continue:
+                    aout.write(" " + latexText(brief_continue.group(2)))
+                    continue
+            
             if state == State.SearchListingStart:
                 parts = re.match('.*(LISTING_START)\((.*)\):\s*(.*\s*)(\*/).*',line)
                 
                 if parts: 
                     lst_lable = parts.group(2)
-                    lst_caption = parts.group(3).replace("_","\_")
+                    lst_caption = latexText(parts.group(3))
                     listing = listing_start.replace("LISTING_CAPTION", lst_caption).replace("LISTING_LABLE", lst_lable)
                     if listing:
                         aout.write("\n" + listing)
@@ -210,8 +217,8 @@ with open(appendix_file, 'w') as aout:
         aout.write("  \\begin{itemize}\n");
         for example in examples:
             lable = example[1]
-            title = example[1].replace("_","\_")
-            desc = example[2].replace("_","\_")
+            title = latexText(example[1])
+            desc  = latexText(example[2])
             aout.write(example_item.replace("EXAMPLE_TITLE", title).replace("EXAMPLE_DESC", desc).replace("EXAMPLE_LABLE", lable))
         aout.write("  \\end{itemize}\n")
     aout.write("\\end{itemize}\n")
