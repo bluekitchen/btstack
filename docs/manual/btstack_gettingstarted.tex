@@ -33,6 +33,7 @@
 
 \usepackage{listings}
 \lstset{ %
+float,
 language=C,                % choose the language of the code
 basicstyle=\footnotesize,       % the size of the fonts that are used for the code
 %numbers=left,                   % where to put the line-numbers
@@ -288,7 +289,7 @@ The complete run loop cycle looks like this: first, the callback function of all
 
 Incoming data over the UART, USB, or timer ticks will generate an interrupt and wake up the microcontroller. In order to avoid the situation where a data source becomes ready just before the run loop enters sleep mode, an interrupt-driven data source has to call the \emph{embedded\_trigger} function. The call to \emph{embedded\_trigger} sets an internal flag that is checked in the critical section just before entering sleep mode. 
 
-Timers are single shot: a timer will be removed from the timer list before its event handler callback is executed. If you need a periodic timer, you can re-register the same timer source in the callback function, as shwon in Listing \ref{PeriodicTimerHandler}. Note that BTstack expects to get called periodically to keep its time, see Section \ref{section:tickAbstraction} for more on the tick hardware abstraction. 
+Timers are single shot: a timer will be removed from the timer list before its event handler callback is executed. If you need a periodic timer, you can re-register the same timer source in the callback function, as shown in Listing \ref{PeriodicTimerHandler}. Note that BTstack expects to get called periodically to keep its time, see Section \ref{section:tickAbstraction} for more on the tick hardware abstraction. 
 
 The Run loop API is provided in Appendix \ref{appendix:api_run_loop}. To enable the use of timers, make sure that you defined HAVE\_TICK in the config file.
 
@@ -300,7 +301,7 @@ run_loop_init(RUN_LOOP_EMBEDDED);
 \end{lstlisting}
 
 
-\begin{lstlisting}[caption=Periodic counter, label=PeriodicTimeHandler]
+\begin{lstlisting}[float, caption=Periodic counter, label=PeriodicTimerHandler]
 #define TIMER_PERIOD_MS 1000
 timer_source_t periodic_timer;
 
@@ -376,8 +377,7 @@ The higher layers only rely on BTstack and are initialized by calling the respec
 \subsection{Services}
 One important construct of BTstack is \emph{service}. A service represents a server side component that handles incoming connections. So far, BTstack provides L2CAP and RFCOMM services. An L2CAP service handles incoming connections for an L2CAP channel and is registered with its protocol service multiplexer ID (PSM). Similarly,  an RFCOMM service handles incoming RFCOMM connections and is registered with the RFCOMM channel ID. Outgoing connections require no special registration, they are created by the application when needed. 
 
-\noindent\begin{minipage}{\textwidth}
-\begin{lstlisting}[caption=Memory configuration for an SPP service with a minimal L2CAP MTU., label=memoryConfigurationSPP]
+\begin{lstlisting}[float, caption=Memory configuration for an SPP service with a minimal L2CAP MTU., label=memoryConfigurationSPP]
 #define HCI_ACL_PAYLOAD_SIZE 52
 #define MAX_SPP_CONNECTIONS 1
 #define MAX_NO_HCI_CONNECTIONS MAX_SPP_CONNECTIONS
@@ -390,7 +390,6 @@ One important construct of BTstack is \emph{service}. A service represents a ser
 #define MAX_NO_DB_MEM_LINK_KEYS  3
 #define MAX_NO_DB_MEM_SERVICES 1
 \end{lstlisting}
-\end{minipage}
 
 \subsection{Where to get data - packet handlers}
 \label{section:packetHandlers}
@@ -484,7 +483,7 @@ The example demonstrates how to setup hardware, initialize BTstack without Bluet
 
 \subsubsection{Periodic Timer Setup}
 $ $
-\begin{lstlisting}[caption=Periodic counter, label=LEDToggler]
+\begin{lstlisting}[float, caption=Periodic counter, label=LEDToggler]
 void heartbeat_handler(timer_source_t *ts){
     // increment counter
     char lineBuffer[30];
@@ -499,7 +498,7 @@ void heartbeat_handler(timer_source_t *ts){
 } 
 \end{lstlisting}
 
-As timers in BTstack are single shot, the periodic counter is implemented by re-registering the \emph{timer\_source} in the \emph{heartbeat\_handler} callback function. The general setup is explained in Section \ref{section:periodicTimer}. Listing \ref{LEDToggler} shows \emph{heartbeat\_handler} adapted to periodically toggle an LED and print number of toggles.
+As timers in BTstack are single shot, the periodic counter is implemented by re-registering the \emph{timer\_source} in the \emph{heartbeat\_handler} callback function. The general setup is shown in Listing \ref{PeriodicTimerHandler}. Listing \ref{LEDToggler} shows \emph{heartbeat\_handler} adapted to periodically toggle an LED and print number of toggles.
 
 
 \subsubsection{Turn On and Go}
@@ -550,7 +549,7 @@ For more details please check Section \ref{section:DiscoverDevices} and the sour
 
 %*************************************
 
-\begin{lstlisting}[caption=SPP service setup, label=SPPSetup]
+\begin{lstlisting}[float, caption=SPP service setup, label=SPPSetup]
 void btstack_setup(void){
     btstack_memory_init();
     run_loop_init(RUN_LOOP_EMBEDDED);
@@ -592,9 +591,9 @@ void btstack_setup(void){
     
 \subsubsection{Periodic Timer Setup}
 
-The heartbeat handler increases the real counter every second, as shown in Listing \ref{PeriodicCounter}. The general setup is explained in Section \ref{section:periodicTimer}.
+The heartbeat handler increases the real counter every second, as shown in Listing \ref{PeriodicCounter}. The general setup is shown in Listing \ref{PeriodicTimerHandler}.
 
-\begin{lstlisting}[caption=Periodic counter, label=PeriodicCounter]
+\begin{lstlisting}[float, caption=Periodic counter, label=PeriodicCounter]
 #define HEARTBEAT_PERIOD_MS 1000
 
 void  theartbeat_handler(timer_source_t *ts){
@@ -675,7 +674,7 @@ This example adds explicit flow control for incoming RFCOMM data to the SPP hear
 
 Listing \ref{explicitFlowControl} shows how to provide one initial credit during RFCOMM service initialization. Please note that providing a single credit effectively reduces the credit-based (sliding window) flow control to a stop-and-wait flow control that limits the data throughput substantially.
 
-\begin{lstlisting}[caption= Heartbeat handler with manual credit management. , label=hbhManual]
+\begin{lstlisting}[float, caption= Heartbeat handler with manual credit management. , label=hbhManual]
 void  heartbeat_handler(struct timer *ts){
     if (rfcomm_send_credit){
         rfcomm_grant_credits(rfcomm_channel_id, 1);
@@ -685,7 +684,7 @@ void  heartbeat_handler(struct timer *ts){
 }
 \end{lstlisting}
 
-\begin{lstlisting}[caption= Packet handler with manual credit management. , label=phManual]
+\begin{lstlisting}[float, caption= Packet handler with manual credit management. , label=phManual]
 void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     ...
     if (packet_type == RFCOMM_DATA_PACKET){
@@ -701,7 +700,7 @@ void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, u
 
 \subsubsection{Periodic Timer Setup}
 
-Explicit credit management is recommended when received RFCOMM data cannot be processed immediately. In this example, delayed processing of received data is simulated with the help of a periodic timer as follows. When the packet handler receives a data packet, it does not provide a new credit, it sets a flag instead. If the flag is set, a new credit will be granted by the heartbeat handler, introducing a delay of up to 1 second. The heartbeat handler code is shown in Listing \ref{hbhManual}. The general setup is explained in Section \ref{section:periodicTimer}.
+Explicit credit management is recommended when received RFCOMM data cannot be processed immediately. In this example, delayed processing of received data is simulated with the help of a periodic timer as follows. When the packet handler receives a data packet, it does not provide a new credit, it sets a flag instead. If the flag is set, a new credit will be granted by the heartbeat handler, introducing a delay of up to 1 second. The heartbeat handler code is shown in Listing \ref{hbhManual}. The general setup is shown in Listing \ref{PeriodicTimerHandler}.
 
 %*************************************
 
@@ -710,7 +709,7 @@ Explicit credit management is recommended when received RFCOMM data cannot be pr
 
 This example shows how to create an LE peripheral. The peripheral can be discovered by other devices and provides a GATT Server. The GATT server allows to discover the primary services, and read and write their characteristics. The BTstack setup code is written for a PAN1323 or 1326 module with a CC2564 chipset.
 
-\begin{lstlisting}[caption=ATT Database ., label=code:lePeripheralDatabase]
+\begin{lstlisting}[float, caption=ATT Database ., label=code:lePeripheralDatabase]
 PRIMARY_SERVICE, GAP_SERVICE
 CHARACTERISTIC, GAP_DEVICE_NAME, READ, "BTstack LE Peripheral"
 CHARACTERISTIC, GAP_APPEARANCE, READ, 00 00
@@ -725,7 +724,7 @@ CHARACTERISTIC, FFF2, READ | WRITE | DYNAMIC,
 
 
 
-\begin{lstlisting}[caption= Setting up LE peripheral., label=code:lePeripheralSetup]
+\begin{lstlisting}[float, caption= Setting up LE peripheral., label=code:lePeripheralSetup]
 void setup(void){
   ...
   // set up l2cap_le
@@ -746,7 +745,7 @@ void setup(void){
 \end{lstlisting}
 
 
-\begin{lstlisting}[caption= Read callback ., label=code:lePeripheralReadCallback]
+\begin{lstlisting}[float, caption= Read callback ., label=code:lePeripheralReadCallback]
 uint16_t chr01_value_length = 0;
 uint16_t max_chr01_value_length = 40;
 char chr01_value[max_chr01_value_length];
@@ -776,7 +775,7 @@ uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint16_t of
 }
 \end{lstlisting}
 
-\begin{lstlisting}[caption= Write callback ., label=code:lePeripheralWriteCallback]
+\begin{lstlisting}[float, caption= Write callback ., label=code:lePeripheralWriteCallback]
 int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
   printf("WRITE Callback, handle %04x\n", att_handle);
   
@@ -807,7 +806,7 @@ int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transa
 }
 \end{lstlisting}
 
-\begin{lstlisting}[caption= Write callback ., label=code:lePeripheralATTPacketHandler]
+\begin{lstlisting}[float, caption= Write callback ., label=code:lePeripheralATTPacketHandler]
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
   if (packet_type != HCI_EVENT_PACKET) return;
   bd_addr_t addr;
@@ -858,9 +857,9 @@ This example shows how to use the GATT Client API to discover primary services a
 The logic is divided between the HCI and GATT client packet handlers. The HCI packet handler with its state machine is responsible for finding and connecting to a remote device, and for starting the first GATT client query. Then, the GATT client packet handler receives all primary services and requests the characteristics of the last one to keep the example short.
 
 \subsubsection{Setting up GATT client}
-In setup phase, a GATT client must register the HCI and GATT client packet handlers, as shown in Listing \ref{code:gattClientSetup}. Additionally, the security manager can be setup, if signed writes, or encrypted or authenticated connection, are required to access the characteristics, as explained in Section \ref{section:security_manager}.  
+In setup phase, a GATT client must register the HCI and GATT client packet handlers, as shown in Listing \ref{code:gattClientSetup}. Additionally, the security manager can be setup, if signed writes, or encrypted or authenticated connection, are required to access the characteristics, as explained in Section \ref{subsection:smp}.  
 
-\begin{lstlisting}[caption= Setting up GATT client., label=code:gattClientSetup]
+\begin{lstlisting}[float, caption= Setting up GATT client., label=code:gattClientSetup]
 typedef enum {
   IDLE,
   W4_SCAN_RESULT,
@@ -909,7 +908,7 @@ In detail, the HCI packet handler has to start the scanning, to find the first a
 
 Query results and further queries are handled by the gatt client packet handler, as shown in Listing \ref{code:gattBrowserQueryHandler}. Here, upon receiving the primary services,  the \emph{gatt\_client\_discover\_characteristics\_for\_service} query for the last received service is sent. After receiving the characteristics for the service, the \emph{gap\_disconnect} is called to terminate the connection. Upon disconnect, the HCI packet handler receives the disconnect complete event, and has to call \emph{gatt\_client\_stop} function to remove the disconnected device from the list of active GATT clients.
 
-\begin{lstlisting}[caption= Advertising report handling., label=code:gattBrowserHCIPacketHandler]
+\begin{lstlisting}[float, caption= Advertising report handling., label=code:gattBrowserHCIPacketHandler]
 void handle_hci_event(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     advertising_report_t report;
@@ -957,7 +956,7 @@ void handle_hci_event(void * connection, uint8_t packet_type, uint16_t channel, 
 }
 \end{lstlisting}
 
-\begin{lstlisting}[caption=Convenience function for filling advertising report struct from data packet., label=code:gattBrowserAdvReport]
+\begin{lstlisting}[float, caption=Convenience function for filling advertising report struct from data packet., label=code:gattBrowserAdvReport]
 typedef struct advertising_report {
   uint8_t   type;
   uint8_t   event_type;
@@ -986,7 +985,7 @@ void fill_advertising_report_from_packet(advertising_report_t * report, uint8_t 
 }
 \end{lstlisting}
 
-\begin{lstlisting}[caption=GATT client queries handling., label=code:gattBrowserQueryHandler]
+\begin{lstlisting}[float, caption=GATT client queries handling., label=code:gattBrowserQueryHandler]
 void handle_gatt_client_event(le_event_t * event){
     le_service_t service;
     le_characteristic_t characteristic;
@@ -1045,6 +1044,7 @@ void handle_gatt_client_event(le_event_t * event){
 \include{example_spp_le_counter}
 
 \subsection{sdp\_bnep\_query}
+\label{subsection:panudemo}
 
 % \section{Platforms}
 
@@ -1108,7 +1108,7 @@ void hal_uart_dma_set_sleep(uint8_t sleep);
 On embedded systems there is no generic way to persist data like link keys or remote device names, as every type of a device has its own capabilities, particularities and limitations. The persistent storage API provides an interface to implement concrete drivers for a particular system. As an example and for testing purposes, BTstack provides the memory-only implementation \emph{remote\_device\_db\_memory}. An implementation has to conform to the interface in Listing \ref{persistentDB}.
 \\
 
-\begin{lstlisting}[caption=Persistent Storage Interface., label=persistentDB]
+\begin{lstlisting}[float, caption=Persistent Storage Interface., label=persistentDB]
 typedef struct {
     // management
     void (*open)();

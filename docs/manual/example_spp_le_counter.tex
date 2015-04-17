@@ -1,9 +1,9 @@
 % !TEX root = btstack_gettingstarted.tex
 
 \subsection{spp\_and\_le\_counter - Dual mode example}
-
-
-\begin{lstlisting}[caption= SPP\&LE client setup., label=code:spp_le_setup]
+\label{subsection:sppandlecounter}
+$ $
+\begin{lstlisting}[float, caption= SPP\&LE client setup., label=code:spp_le_setup]
 #define RFCOMM_SERVER_CHANNEL 1
 
 static uint16_t  rfcomm_channel_id;
@@ -52,7 +52,7 @@ void setup(void){
 }
 \end{lstlisting}
 
-\begin{lstlisting}[caption= SPP\&LE client - heartbeat handler., label=code:spp_le_heartbeat_handler]
+\begin{lstlisting}[float, caption= SPP\&LE client - heartbeat handler., label=code:spp_le_heartbeat_handler]
 #define HEARTBEAT_PERIOD_MS 1000
 // The Counter
 static int  counter = 0;
@@ -82,7 +82,7 @@ static void  heartbeat_handler(struct timer *ts){
 } 
 \end{lstlisting}
 
-\begin{lstlisting}[caption= SPP\&LE client - ATT Client Read Callback for Dynamic Data., label=code:spp_le_read_callback]
+\begin{lstlisting}[float, caption= SPP\&LE client - ATT Client Read Callback for Dynamic Data., label=code:spp_le_read_callback]
 // - if buffer == NULL, don't copy data, just return size of value
 // - if buffer != NULL, copy data and return number bytes copied
 // @param offset defines start of attribute value
@@ -97,7 +97,7 @@ static uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint
 }
 \end{lstlisting}
 
-\begin{lstlisting}[caption= SPP\&LE client - ATT Client Write Callback., label=code:spp_le_write_callback]
+\begin{lstlisting}[float, caption= SPP\&LE client - ATT Client Write Callback., label=code:spp_le_write_callback]
 // write requests
 static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
     // printf("WRITE Callback, handle %04x, mode %u, offset %u, data: ", handle, transaction_mode, offset);
@@ -108,7 +108,7 @@ static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t
 }
 \end{lstlisting}
 
-\begin{lstlisting}[caption= SPP\&LE client - GAP run., label=code:spp_le_gap_run]
+\begin{lstlisting}[float, caption= SPP\&LE client - GAP run., label=code:spp_le_gap_run]
 enum {
     SET_ADVERTISEMENT_PARAMS = 1 << 0,
     SET_ADVERTISEMENT_DATA   = 1 << 1,
@@ -146,17 +146,11 @@ static void gap_run(){
 }
 \end{lstlisting}
 
-\begin{lstlisting}[caption= SPP\&LE client - packet handler., label=code:spp_le_gap_run]
+\begin{lstlisting}[float, caption= SPP\&LE client - packet handler., label=code:spp_le_gap_run]
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    bd_addr_t event_addr;
-    uint8_t   rfcomm_channel_nr;
-    uint16_t  mtu;
-    int i;
-
     switch (packet_type) {
         case HCI_EVENT_PACKET:
             switch (packet[0]) {
-                    
                 case BTSTACK_EVENT_STATE:
                     // bt stack activated, get started - set local name
                     if (packet[2] == HCI_STATE_WORKING) {
