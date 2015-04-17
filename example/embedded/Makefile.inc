@@ -69,6 +69,15 @@ EXAMPLES = 					\
 	spp_counter 			\
 	spp_streamer			\
 
+EXAMPLES_USING_LE =			\
+	ancs_client 			\
+	ble_central_test        \
+	ble_peripheral          \
+	ble_peripheral_sm_minimal \
+	gatt_battery_query      \
+	gatt_browser			\
+	spp_and_le_counter	    \
+
 # requires termios / command line support
 EXAMPLES_CLI = ble_peripheral ble_peripheral_sm_minimal ble_central_test l2cap_test ancs_client classic_test bnep_test hsp_ag_test hsp_hs_test
 
