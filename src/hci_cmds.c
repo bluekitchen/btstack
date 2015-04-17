@@ -59,9 +59,11 @@
  *   1,2,3,4: one to four byte value
  *   H: HCI connection handle
  *   B: Bluetooth Baseband Address (BD_ADDR)
+ *   D: 8 byte data block
  *   E: Extended Inquiry Result
  *   N: Name up to 248 chars, \0 terminated
  *   P: 16 byte Pairing code
+ *   A: 31 bytes advertising data
  *   S: Service Record (Data Element Sequence)
  */
 uint16_t hci_create_cmd_internal(uint8_t *hci_cmd_buffer, const hci_cmd_t *cmd, va_list argptr){
