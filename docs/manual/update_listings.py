@@ -45,7 +45,7 @@ example_subsection = """
 """
 
 listing_start = """
-\\begin{lstlisting}[float, caption= LISTING_CAPTION., label=listing:LISTING_LABLE]
+\\begin{lstlisting}[caption= LISTING_CAPTION., label=listing:LISTING_LABLE]
 """
 
 listing_ending = """\end{lstlisting}
@@ -55,9 +55,9 @@ msp_folder = "../../platforms/msp-exp430f5438-cc2564b/example/"
 embedded_folder = "../../example/embedded/"
 # Example group title: [folder, example file, section title]
 list_of_examples = { 
-    "UART" : [[msp_folder, "led_counter", "UART and timer interrupt without Bluetooth"]],
-    "GAP"  : [[embedded_folder, "gap_inquiry", "GAP Inquiry Example"]],
-    #"SPP Server" : [[embedded_folder, "spp_counter", "SPP Server - Heartbeat Counter over RFCOMM"],
+    #"UART" : [[msp_folder, "led_counter", "UART and timer interrupt without Bluetooth"]],
+    #"GAP"  : [[embedded_folder, "gap_inquiry", "GAP Inquiry Example"]],
+    "SPP Server" : [[embedded_folder, "spp_counter", "SPP Server - Heartbeat Counter over RFCOMM"]]
     #                [embedded_folder, "spp_accel", "SPP Server - Accelerator Values"],
     #                [embedded_folder, "spp_flowcontrol", "SPP Server - Flow Control"]],
     #"HID Host" :[[embedded_folder, "hid_demo", "HID Demo"]],
@@ -96,6 +96,8 @@ def latexText(text):
 def writeListings(fout, infile_name):
     itemText = None
     state = State.SearchExampleStart
+    briefs_in_listings = ""
+    code_in_listing = ""
 
     with open(infile_name, 'rb') as fin:
         for line in fin:
@@ -125,7 +127,8 @@ def writeListings(fout, infile_name):
             brief = None
             brief_start = re.match('.*(@text)\s*(.*)',line)
             if brief_start:
-                aout.write("\n\n" + latexText(brief_start.group(2)))
+                brief_part = "\n\n" + latexText(brief_start.group(2))
+                briefs_in_listings = briefs_in_listings + brief_part
                 continue
 
             # detect subsequent items
@@ -156,7 +159,8 @@ def writeListings(fout, infile_name):
 
                 brief_continue = re.match('(\s*\*\s)(.*)\s*\n',line)
                 if brief_continue:
-                    aout.write(" " + latexText(brief_continue.group(2)))
+                    brief_part = " " + latexText(brief_continue.group(2))
+                    briefs_in_listings = briefs_in_listings + brief_part
                     continue
             
             if state == State.SearchListingStart:
@@ -174,17 +178,22 @@ def writeListings(fout, infile_name):
             if state == State.SearchListingEnd:
                 parts_end = re.match('.*(LISTING_END).*',line)
                 parts_pause = re.match('.*(LISTING_PAUSE).*',line)
+                end_comment_parts = re.match('.*(\*/)\s*\n', line);
                 
-                if not parts_end and not parts_pause:
-                    end_comment_parts = re.match('.*(\*)/*\s*\n', line);
-                    if not end_comment_parts:
-                        aout.write(line)
-                elif parts_end:
+                if parts_end:
+                    aout.write(code_in_listing)
+                    code_in_listing = ""
                     aout.write(listing_ending)
+                    if briefs_in_listings:
+                        aout.write(briefs_in_listings)
+                        briefs_in_listings = ""
                     state = State.SearchListingStart
                 elif parts_pause:
-                    aout.write("...\n")
+                    code_in_listing = code_in_listing + "...\n"
                     state = State.SearchListingResume
+                elif not end_comment_parts:
+                    # aout.write(line)
+                    code_in_listing = code_in_listing + line.replace("    ", "  ")
                 continue
                 
             if state == State.SearchListingResume:
@@ -198,6 +207,9 @@ def writeListings(fout, infile_name):
                 if state != State.SearchListingStart:
                     print "Formating error detected"
                 state = State.ReachedExampleEnd
+                if briefs_in_listings:
+                    aout.write(briefs_in_listings)
+                    briefs_in_listings = ""
                 print "Reached end of the example"
             
     
