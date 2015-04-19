@@ -50,6 +50,7 @@
 #include "btstack-config.h"
 
 #include <btstack/run_loop.h>
+#include <btstack/hal_led.h>
 
 #include "debug.h"
 #include "btstack_memory.h"
@@ -71,6 +72,12 @@ static void sigint_handler(int param){
     hci_close();
     log_info("Good bye, see you.\n");    
     exit(0);
+}
+
+static led_state = 0;
+void hal_led_toggle(){
+    led_state = 1 - led_state;
+    printf("LED State %u\n", led_state);
 }
 
 int main(int argc, const char * argv[]){
