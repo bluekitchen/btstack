@@ -36,33 +36,16 @@
  */
 
 // *****************************************************************************
-/* EXAMPLE_START(led_counter): UART and timer interrupt without Bluetooth
- *
- * @text The example uses the BTstack run loop to blink an LED.
- * The example demonstrates how to setup hardware, initialize BTstack without
- * Bluetooth, provide a periodic timer to toggle an LED and print number of
- * toggles as a minimal BTstack test.
- */
+//
+// led_counter demo - uses the BTstack run loop to blink an LED
+//
 // *****************************************************************************
-
-
 
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <msp430x54x.h>
-
-#include "hal_board.h"
-#include "hal_compat.h"
-#include "hal_usb.h"
-
-#include "btstack_memory.h"
 
 #include <btstack/run_loop.h>
 #include <btstack/hal_led.h>
-#include "btstack-config.h"
 
 #define HEARTBEAT_PERIOD_MS 1000
 
@@ -74,20 +57,11 @@ static void run_loop_register_timer(timer_source_t *timer, uint16_t period){
     run_loop_add_timer(timer);
 }
 
-/* @section Periodic Timer Setup 
- *
- * @text As timers in BTstack are single shot,
- * the periodic counter is implemented by re-registering the timer source in the
- * heartbeat handler callback function. Listing LEDToggler shows heartbeat handler
- * adapted to periodically toggle an LED and print number of toggles.  
- */ 
-
-/* LISTING_START(LEDToggler): Periodic counter */  
-static void heartbeat_handler(timer_source_t *ts){     
+static void heartbeat_handler(timer_source_t *ts){
     // increment counter
     char lineBuffer[30];
     sprintf(lineBuffer, "BTstack counter %04u\n\r", ++counter);
-    printf(lineBuffer);
+    puts(lineBuffer);
     
     // toggle LED
     hal_led_toggle();
@@ -95,24 +69,20 @@ static void heartbeat_handler(timer_source_t *ts){
     // re-register timer
     run_loop_register_timer(ts, HEARTBEAT_PERIOD_MS);
 } 
-/* LISTING_END */
 
-/* @section Turn On and Go
- *
- * @text Listing MainConfiguration shows main application code.
- * It is called after hardware and BTstack configuration (memory, run loop and
- * transport layer) by the platform main in
- * \path{platforms/PLATFORM/src/main.c}.
- */
-
-/* LISTING_START(MainConfiguration): Setup heartbeat timer */
-int btstack_main(int argc, const char * argv[]);
-int btstack_main(int argc, const char * argv[]){
+static void timer_setup(){
     // set one-shot timer
     heartbeat.process = &heartbeat_handler;
     run_loop_register_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
-    printf("Run...\n\r");
+}
+
+int btstack_main(int argc, const char * argv[]);
+int btstack_main(int argc, const char * argv[]){
+
+	timer_setup();
+    
+	printf("Run...\n\r");
+
     return 0;
 }
-/* LISTING_END */
-/* EXAMPLE_END */
+

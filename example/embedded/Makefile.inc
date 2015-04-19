@@ -68,6 +68,7 @@ EXAMPLES = 					\
 	spp_and_le_counter 		\
 	spp_counter 			\
 	spp_streamer			\
+	led_counter				\
 
 EXAMPLES_USING_LE =			\
 	ancs_client 			\
@@ -174,6 +175,9 @@ bnep_test: ${CORE_OBJ} ${COMMON_OBJ} bnep_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL} ble_client.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+led_counter: ${CORE_OBJ} ${COMMON_OBJ} led_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 
