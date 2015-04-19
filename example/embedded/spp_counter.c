@@ -68,6 +68,8 @@
 #define RFCOMM_SERVER_CHANNEL 1
 #define HEARTBEAT_PERIOD_MS 1000
 
+static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
 static uint16_t  rfcomm_channel_id;
 static uint8_t   spp_service_buffer[150];
 static timer_source_t heartbeat;
@@ -90,7 +92,7 @@ static timer_source_t heartbeat;
  */
 
 /* LISTING_START(SPPSetup): SPP service setup */ 
-int spp_service_setup(){
+void spp_service_setup(){
     l2cap_init();
     l2cap_register_packet_handler(packet_handler);
 
