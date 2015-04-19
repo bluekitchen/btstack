@@ -78,9 +78,11 @@ static void hw_setup(){
   
     hal_tick_init();
 
-    /// init LEDs
-    LED1_DIR |= LED1_PIN;   
-    LED2_DIR |= LED2_PIN;        
+    // init LEDs
+    LED1_OUT |= LED1_PIN;
+    LED1_DIR |= LED1_PIN;
+    LED2_OUT |= LED2_PIN;
+    LED2_DIR |= LED2_PIN;
 
     // ready - enable irq used in h4 task
     __enable_interrupt();  

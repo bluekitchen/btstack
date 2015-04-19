@@ -6,10 +6,15 @@
 #ifndef HAL_BOARD_H
 #define HAL_BOARD_H
 
-#define LED_PORT_DIR      P1DIR
-#define LED_PORT_OUT      P1OUT
-#define LED_1             BIT0
-#define LED_2             BIT1
+// LED 1 = P1.0
+#define LED1_DIR P1DIR
+#define LED1_OUT P1OUT
+#define LED1_PIN BIT0
+
+// LED 2 = P1.1
+#define LED2_DIR P1DIR
+#define LED2_OUT P1OUT
+#define LED2_PIN BIT1
 
 #define CLK_PORT_DIR      P11DIR
 #define CLK_PORT_OUT      P11OUT

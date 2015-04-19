@@ -80,9 +80,11 @@ int main(void)
     halUsbInit();
 
     // init LEDs
-    LED_PORT_OUT |= LED_1 | LED_2;
-    LED_PORT_DIR |= LED_1 | LED_2;
-    
+    LED1_OUT |= LED1_PIN;
+    LED1_DIR |= LED1_PIN;
+    LED2_OUT |= LED2_PIN;
+    LED2_DIR |= LED2_PIN;
+
 	/// GET STARTED with BTstack ///
 	btstack_memory_init();
     run_loop_init(RUN_LOOP_EMBEDDED);

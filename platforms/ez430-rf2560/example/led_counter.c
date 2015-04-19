@@ -55,6 +55,7 @@
 #include "btstack_memory.h"
 
 #include <btstack/run_loop.h>
+#include <btstack/hal_led.h>
 #include "btstack-config.h"
 
 #define HEARTBEAT_PERIOD_MS 1000
@@ -74,7 +75,7 @@ static void heartbeat_handler(timer_source_t *ts){
     printf(lineBuffer);
     
     // toggle LED
-    LED_PORT_OUT = LED_PORT_OUT ^ LED_2;
+    hal_led_toggle();
 
     // re-register timer
     run_loop_register_timer(ts, HEARTBEAT_PERIOD_MS);

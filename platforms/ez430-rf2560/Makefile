@@ -40,6 +40,7 @@ CORE   = \
     hal_cpu.c                 \
     hal_board.c	              \
     hal_compat.c              \
+    hal_led.c 				  \
     hal_usb.c                 \
     hci_dump.c		          \
     btstack_memory.c          \

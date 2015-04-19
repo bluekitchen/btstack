@@ -55,7 +55,7 @@ static uint8_t low_power_mode_for_sleep = LPM0_bits;
 void hal_cpu_disable_irqs(){
 
     // LED off
-    LED_PORT_OUT &= ~LED_1;
+    LED1_OUT &= ~LED1_PIN;
     
     // disable irq
     __bic_SR_register(GIE);  
@@ -67,16 +67,16 @@ void hal_cpu_enable_irqs(){
     __bis_SR_register(GIE);  
     
     // LED on
-    LED_PORT_OUT |= LED_1;
+    LED1_OUT |= LED1_PIN;
 }
 
 void hal_cpu_set_uart_needed_during_sleep(uint8_t enabled){
     if (enabled){
-        LED_PORT_OUT |= LED_2;
+        LED2_OUT |= LED2_PIN;
         low_power_mode_for_sleep = LPM0_bits;
         return;
     }
-    LED_PORT_OUT &= ~LED_2;
+    LED2_OUT &= ~LED2_PIN;
     low_power_mode_for_sleep = LPM3_bits;
 }
 
@@ -86,8 +86,7 @@ void hal_cpu_enable_irqs_and_sleep(){
     __bis_SR_register(low_power_mode_for_sleep + GIE);  
 
     // LED on
-    P1OUT |= 1;
-    
+    LED1_OUT |= LED1_PIN;
 }
 
 

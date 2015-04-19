@@ -45,6 +45,7 @@ CORE   = \
     utils.c			          \
     main.c 					  \
     hal_board.c	              \
+    hal_led.c 				  \
     hal_usb.c                 \
     hal_tick.c	              \
     run_loop.c		          \

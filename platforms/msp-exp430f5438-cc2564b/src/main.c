@@ -75,8 +75,10 @@ static void hw_setup(){
     halUsbInit();
 
     // init LEDs
-    LED_PORT_OUT |= LED_1 | LED_2;
-    LED_PORT_DIR |= LED_1 | LED_2;
+    LED1_OUT |= LED1_PIN;
+    LED1_DIR |= LED1_PIN;
+    LED2_OUT |= LED2_PIN;
+    LED2_DIR |= LED2_PIN;
 
     // ready - enable irq used in h4 task
     __enable_interrupt();  

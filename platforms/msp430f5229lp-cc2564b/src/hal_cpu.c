@@ -86,8 +86,7 @@ void hal_cpu_enable_irqs_and_sleep(){
     __bis_SR_register(low_power_mode_for_sleep + GIE);  
 
     // LED on
-    P1OUT |= 1;
-    
+    LED1_OUT |= LED1_PIN;
 }
 
 
