@@ -249,3 +249,7 @@ extern "C" void hal_uart_dma_process(){
     }
 }
 
+extern "C" uint32_t hal_time_ms(){
+    return millis();
+}
+
