@@ -7,3 +7,4 @@
 *.out
 *.pklg
 *.fdb_latexmk
+*.hex
