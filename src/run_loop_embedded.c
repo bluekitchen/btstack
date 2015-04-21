@@ -63,10 +63,24 @@
 
 #include <stddef.h> // NULL
 
+#ifdef HAVE_TIME_MS
+#include <btstack/hal_time_ms.h>
+#endif
+
+#if defined(HAVE_TICK) && defined(HAVE_TIME_MS)
+#error "Please specify either HAVE_TICK or HAVE_TIME_MS"
+#endif
+
+#if defined(HAVE_TICK) || defined(HAVE_TIME_MS)
+#define TIMER_SUPPORT
+#endif
+
 // the run loop
 static linked_list_t data_sources;
 
+#ifdef TIMER_SUPPORT
 static linked_list_t timers;
+#endif
 
 #ifdef HAVE_TICK
 static uint32_t system_ticks;
@@ -96,13 +110,16 @@ static void embedded_set_timer(timer_source_t *ts, uint32_t timeout_in_ms){
     // time until next tick is < hal_tick_get_tick_period_in_ms() and we don't know, so we add one
     ts->timeout = system_ticks + 1 + ticks; 
 #endif
+#ifdef HAVE_TIME_MS
+    ts->timeout = hal_time_ms() + timeout_in_ms + 1;
+#endif
 }
 
 /**
  * Add timer to run_loop (keep list sorted)
  */
 static void embedded_add_timer(timer_source_t *ts){
-#ifdef HAVE_TICK
+#ifdef TIMER_SUPPORT
     linked_item_t *it;
     for (it = (linked_item_t *) &timers; it->next ; it = it->next){
         // don't add timer that's already in there
@@ -116,8 +133,6 @@ static void embedded_add_timer(timer_source_t *ts){
     }
     ts->item.next = it->next;
     it->next = (linked_item_t *) ts;
-    // log_info("Added timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
-    // embedded_dump_timer();
 #endif
 }
 
@@ -125,8 +140,7 @@ static void embedded_add_timer(timer_source_t *ts){
  * Remove timer from run loop
  */
 static int embedded_remove_timer(timer_source_t *ts){
-#ifdef HAVE_TICK    
-    // log_info("Removed timer %x at %u\n", (int) ts, (unsigned int) ts->timeout.tv_sec);
+#ifdef TIMER_SUPPORT
     return linked_list_remove(&timers, (linked_item_t *) ts);
 #else
     return 0;
@@ -134,7 +148,7 @@ static int embedded_remove_timer(timer_source_t *ts){
 }
 
 static void embedded_dump_timer(void){
-#ifdef HAVE_TICK
+#ifdef TIMER_SUPPORT
 #ifdef ENABLE_LOG_INFO 
     linked_item_t *it;
     int i = 0;
@@ -160,10 +174,16 @@ void embedded_execute_once(void) {
     }
     
 #ifdef HAVE_TICK
+    uint32_t now = system_ticks;
+#endif
+#ifdef HAVE_TIME_MS
+    uint32_t now = hal_time_ms();
+#endif
+#ifdef TIMER_SUPPORT
     // process timers
     while (timers) {
         timer_source_t *ts = (timer_source_t *) timers;
-        if (ts->timeout > system_ticks) break;
+        if (ts->timeout > now) break;
         run_loop_remove_timer(ts);
         ts->process(ts);
     }
@@ -223,8 +243,11 @@ static void embedded_init(void){
 
     data_sources = NULL;
 
-#ifdef HAVE_TICK
+#ifdef TIMER_SUPPORT
     timers = NULL;
+#endif
+
+#ifdef HAVE_TICK
     system_ticks = 0;
     hal_tick_init();
     hal_tick_set_handler(&embedded_tick_handler);

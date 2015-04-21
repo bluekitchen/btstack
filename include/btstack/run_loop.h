@@ -75,8 +75,8 @@ typedef struct timer {
 #ifdef HAVE_TIME
     struct timeval timeout;                  // <-- next timeout
 #endif
-#ifdef HAVE_TICK
-    uint32_t timeout;                       // timeout in system ticks
+#if defined(HAVE_TICK) || defined(HAVE_TIME_MS)
+    uint32_t timeout;                       // timeout in system ticks (HAVE_TICK) or millis (HAVE_TIME_MS)
 #endif
     void  (*process)(struct timer *ts);      // <-- do processing
 } timer_source_t;
