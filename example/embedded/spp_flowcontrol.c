@@ -36,12 +36,13 @@
  */
 
 // *****************************************************************************
-//
-// spp_flowcontrol demo - it provides a SPP that use sincoming flow control
-//                        Processing of data is simulated by granting the next
-//                        credit only every second in the heartbeat handler
-//
-// *****************************************************************************
+/* EXAMPLE_START(spp_flowcontrol): SPP Server - Flow Control
+ *
+ * @text This example adds explicit flow control for incoming RFCOMM data to the 
+ * SPP heartbeat counter example. We will highlight the changes compared to the 
+ * SPP counter example. 
+ */
+ // *****************************************************************************
 
 #include <stdint.h>
 #include <stdio.h>
@@ -65,13 +66,75 @@ static uint8_t   rfcomm_channel_nr = 1;
 static uint16_t  rfcomm_channel_id;
 static uint8_t   rfcomm_send_credit = 0;
 static uint8_t   spp_service_buffer[150];
+
+/* @section SPP Service Setup   
+ *
+ * @text Listing explicitFlowControl shows how to
+ * provide one initial credit during RFCOMM service initialization. Please note
+ * that providing a single credit effectively reduces the credit-based (sliding
+ * window) flow control to a stop-and-wait flow control that limits the data
+ * throughput substantially.  
+ */ 
+
+static void spp_service_setup(){     
+    // init L2CAP
+    l2cap_init();
+    l2cap_register_packet_handler(packet_handler);
+    
+    // init RFCOMM
+    rfcomm_init();
+    rfcomm_register_packet_handler(packet_handler);
+    // reserved channel, mtu limited by l2cap, 1 credit
+    rfcomm_register_service_with_initial_credits_internal(NULL, rfcomm_channel_nr, 0xffff, 1);  
+
+    // init SDP, create record for SPP and register with SDP
+    sdp_init();
+    memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
+    service_record_item_t * service_record_item = (service_record_item_t *) spp_service_buffer;
+    sdp_create_spp_service( (uint8_t*) &service_record_item->service_record, 1, "SPP Counter");
+    printf("SDP service buffer size: %u\n\r", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
+    sdp_register_service_internal(NULL, service_record_item);
+}
+
+/* @section Periodic Timer Setup  
+ *  
+ * @text Explicit credit management is
+ * recommended when received RFCOMM data cannot be processed immediately. In this
+ * example, delayed processing of received data is simulated with the help of a
+ * periodic timer as follows. When the packet handler receives a data packet, it
+ * does not provide a new credit, it sets a flag instead. If the flag is set, a new
+ * credit will be granted by the heartbeat handler, introducing a delay of up to 1
+ * second. The heartbeat handler code is shown in Listing hbhManual. The
+ * general setup is shown in Listing PeriodicTimerHandler.    
+ */ 
+
 static timer_source_t heartbeat;
 
+/* LISTING_START(hbhManual): Heartbeat handler with manual credit management */ 
+static void  heartbeat_handler(struct timer *ts){
+    if (rfcomm_send_credit){
+        rfcomm_grant_credits(rfcomm_channel_id, 1);
+        rfcomm_send_credit = 0;
+    }
+    run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
+    run_loop_add_timer(ts);
+} 
+/* LISTING_END */
+
+static void one_shot_timer_setup(){
+    heartbeat.process = &heartbeat_handler;
+    run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
+    run_loop_add_timer(&heartbeat);
+}
+
+/* LISTING_START(phManual): Packet handler with manual credit management */
 // Bluetooth logic
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+/* LISTING_PAUSE */
     bd_addr_t event_addr;
     uint8_t   rfcomm_channel_nr;
     uint16_t  mtu;
+    int i;
     
     switch (packet_type) {
         case HCI_EVENT_PACKET:
@@ -133,50 +196,29 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     break;
             }
             break;
-            
+/* LISTING_RESUME */
         case RFCOMM_DATA_PACKET:
-            // hack: truncate data (we know that the packet is at least on byte bigger
-            packet[size] = 0;
-            puts( (const char *) packet);
+            for (i=0;i<size;i++){
+                putc(packet[i]);
+            };
+            putc('\n');
             rfcomm_send_credit = 1;
+            break;
+/* LISTING_PAUSE */
         default:
             break;
     }
+/* LISTING_RESUME */ 
 }
+/* LISTING_END */
 
-static void  heartbeat_handler(struct timer *ts){
-    if (rfcomm_send_credit){
-        rfcomm_grant_credits(rfcomm_channel_id, 1);
-        rfcomm_send_credit = 0;
-    }
-    run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
-    run_loop_add_timer(ts);
-} 
+
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     
-    // init L2CAP
-    l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
-    
-    // init RFCOMM
-    rfcomm_init();
-    rfcomm_register_packet_handler(packet_handler);
-    rfcomm_register_service_with_initial_credits_internal(NULL, rfcomm_channel_nr, 0xffff, 1);  // reserved channel, mtu limited by l2cap, 1 credit
-
-    // init SDP, create record for SPP and register with SDP
-    sdp_init();
-    memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
-    service_record_item_t * service_record_item = (service_record_item_t *) spp_service_buffer;
-    sdp_create_spp_service( (uint8_t*) &service_record_item->service_record, 1, "SPP Counter");
-    printf("SDP service buffer size: %u\n\r", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
-    sdp_register_service_internal(NULL, service_record_item);
-    
-    // set one-shot timer
-    heartbeat.process = &heartbeat_handler;
-    run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
-    run_loop_add_timer(&heartbeat);
+    spp_service_setup();
+    one_shot_timer_setup();
     
     puts("SPP FlowControl Demo: simulates processing on received data...\n\r");
     gap_set_local_name("BTstack SPP Flow Control");
@@ -187,5 +229,6 @@ int btstack_main(int argc, const char * argv[]){
 
     return 0;
 }
+/* EXAMPLE_END */
 
 

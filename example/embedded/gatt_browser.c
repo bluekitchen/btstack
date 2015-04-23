@@ -36,9 +36,19 @@
  */
 
 // *****************************************************************************
-//
-// BLE Client
-//
+/* EXAMPLE_START(gatt_browser): GATT Client - Discovering primary services and their characteristics
+ * 
+ * @text This example shows how to use the GATT Client
+ * API to discover primary services and their characteristics of the first found
+ * device that is advertising its services.
+ *
+ * @text The logic is divided between the HCI and GATT client packet handlers.
+ * The HCI packet handler with its state machine is responsible for finding and
+ * connecting to a remote device, and for starting the first GATT client query.
+ * Then, the GATT client packet handler receives all primary services and
+ * requests the characteristics of the last one to keep the example short.
+ *
+ */
 // *****************************************************************************
 
 #include <stdint.h>
@@ -73,7 +83,27 @@ typedef struct advertising_report {
     uint8_t * data;
 } advertising_report_t;
 
+static bd_addr_t cmdline_addr = { };
+static int cmdline_addr_found = 0;
 
+uint16_t gc_handle;
+static le_service_t services[40];
+static int service_count = 0;
+static int service_index = 0;
+static gc_state_t state = TC_IDLE;
+
+
+/* @section Setting up GATT client
+ *
+
+ * @text In setup phase, a GATT client must register the HCI and GATT client
+ * packet handlers, as shown in Listing gattClientSetup.
+ * Additionally, the security manager can be setup, if signed writes, or
+ * encrypted or authenticated connection, are required to access the
+ * characteristics, as explained in Section smp.
+ */
+
+/* LISTING_START(gattClientSetup): Setting up GATT client */
 typedef enum {
     TC_IDLE,
     TC_W4_SCAN_RESULT,
@@ -84,14 +114,33 @@ typedef enum {
     TC_W4_DISCONNECT
 } gc_state_t;
 
-static bd_addr_t cmdline_addr = { };
-static int cmdline_addr_found = 0;
-
-uint16_t gc_id, gc_handle;
-static le_service_t services[40];
-static int service_count = 0;
-static int service_index = 0;
 static gc_state_t state = TC_IDLE;
+static uint16_t gc_id;
+
+// Handles connect, disconnect, and advertising report events,  
+// starts the GATT client, and sends the first query.
+void handle_hci_event(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
+// Handles GATT client query results, sends queries and the 
+// GAP disconnect command when the querying is done.
+void handle_gatt_client_event(le_event_t * event);
+
+static void gatt_client_setup(){
+    // Initialize L2CAP and register HCI event handler
+    l2cap_init();
+    l2cap_register_packet_handler(&handle_hci_event);
+
+    // Initialize GATT client 
+    gatt_client_init();
+    // Register handler for GATT client events
+    gc_id = gatt_client_register_packet_handler(&handle_gatt_client_event);
+
+    // Optionally, setup security manager for signed writes or 
+    // encrypted or authenticated connection
+    sm_init();
+    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+}
+/* LISTING_END */
 
 static void printUUID(uint8_t * uuid128, uint16_t uuid16){
     if (uuid16){
@@ -121,6 +170,103 @@ static void dump_service(le_service_t * service){
     printf("\n");
 }
 
+static void fill_advertising_report_from_packet(advertising_report_t * report, uint8_t *packet){
+    int pos = 2;
+    report->event_type = packet[pos++];
+    report->address_type = packet[pos++];
+    memcpy(report->address, &packet[pos], 6);
+    pos += 6;
+    report->rssi = packet[pos++];
+    report->length = packet[pos++];
+    report->data = &packet[pos];
+    pos += report->length;
+    dump_advertising_report(report);
+    
+    bd_addr_t found_device_addr;
+    memcpy(found_device_addr, report->address, 6);
+    swapX(found_device_addr, report->address, 6);
+}
+
+
+/* @section Packet handlers
+ * 
+ * @text The GATT browser goes sequentially through the states:  
+ * IDLE, W4_SCAN_RESULT, W4_CONNECT, W4_SERVICE_RESULT,  
+ * W4_CHARACTERISTIC_RESULT, and W4_DISCONNECT.  
+ *  
+ * @text The W4_SERVICE_RESULT and W4_CHARACTERISTIC_RESULT states 
+ * compose the state machine of the GATT client packet handler, 
+ * as it reacts on GATT client events. The other states compose the
+ * state machine of the HCI packet handler.    
+ * 
+ * @text In detail, the HCI packet handler has to start the scanning, 
+ * to find the first advertising device, to stop scanning, to connect
+ * to and later to disconnect from it, to start the gatt client upon
+ * the connection is completed, and to send the first query - in this
+ * case the gatt_client_discover_primary_services() is called, see 
+ * Listing gattBrowserHCIPacketHandler.  
+ */
+
+/* LISTING_START(gattBrowserHCIPacketHandler): Connecting and disconnecting from the GATT client */
+static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    if (packet_type != HCI_EVENT_PACKET) return;
+    advertising_report_t report;
+    
+    uint8_t event = packet[0];
+    switch (event) {
+        case BTSTACK_EVENT_STATE:
+            // BTstack activated, get started
+            if (packet[2] != HCI_STATE_WORKING) break;
+            if (cmdline_addr_found){
+                printf("Trying to connect to %s\n", bd_addr_to_str(cmdline_addr));
+                state = TC_W4_CONNECT;
+                le_central_connect(cmdline_addr, 0);
+                break;
+            }
+            printf("BTstack activated, start scanning!\n");
+            state = TC_W4_SCAN_RESULT;
+            le_central_set_scan_parameters(0,0x0030, 0x0030);
+            le_central_start_scan();
+            break;
+        case GAP_LE_ADVERTISING_REPORT:
+            if (state != TC_W4_SCAN_RESULT) return;
+            fill_advertising_report_from_packet(&report, packet);
+            // stop scanning, and connect to the device
+            state = TC_W4_CONNECT;
+            le_central_stop_scan();
+            le_central_connect(report.address,report.address_type);
+            break;
+        case HCI_EVENT_LE_META:
+            // wait for connection complete
+            if (packet[2] !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
+            if (state != TC_W4_CONNECT) return;
+            gc_handle = READ_BT_16(packet, 4);
+            // query primary services
+            state = TC_W4_SERVICE_RESULT;
+            gatt_client_discover_primary_services(gc_id, gc_handle);
+            break;
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            printf("\ntest client - DISCONNECTED\n");
+            exit(0);
+            break;
+        default:
+            break;
+    }
+}
+/* LISTING_END */
+
+/* @text Query results and further queries are handled by the gatt client packet
+ * handler, as shown in Listing gattBrowserQueryHandler. Here, upon
+ * receiving the primary services,  the
+ * gatt_client_discover_characteristics_for_service() query for the last
+ * received service is sent. After receiving the characteristics for the service,
+ * gap_disconnect is called to terminate the connection. Upon
+ * disconnect, the HCI packet handler receives the disconnect complete event, and
+ * has to call the gatt_client_stop() function to remove the disconnected device
+ * from the list of active GATT clients.  
+ */
+
+/* LISTING_START(gattBrowserQueryHandler): Handling of the GATT client queries */
 void handle_gatt_client_event(le_event_t * event){
     le_service_t service;
     le_characteristic_t characteristic;
@@ -173,71 +319,8 @@ void handle_gatt_client_event(le_event_t * event){
         default:
             break;
     }
-    
 }
-
-static void fill_advertising_report_from_packet(advertising_report_t * report, uint8_t *packet){
-    int pos = 2;
-    report->event_type = packet[pos++];
-    report->address_type = packet[pos++];
-    memcpy(report->address, &packet[pos], 6);
-    pos += 6;
-    report->rssi = packet[pos++];
-    report->length = packet[pos++];
-    report->data = &packet[pos];
-    pos += report->length;
-    dump_advertising_report(report);
-    
-    bd_addr_t found_device_addr;
-    memcpy(found_device_addr, report->address, 6);
-    swapX(found_device_addr, report->address, 6);
-}
-
-static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    if (packet_type != HCI_EVENT_PACKET) return;
-    advertising_report_t report;
-    
-    uint8_t event = packet[0];
-    switch (event) {
-        case BTSTACK_EVENT_STATE:
-            // BTstack activated, get started
-            if (packet[2] != HCI_STATE_WORKING) break;
-            if (cmdline_addr_found){
-                printf("Trying to connect to %s\n", bd_addr_to_str(cmdline_addr));
-                state = TC_W4_CONNECT;
-                le_central_connect(cmdline_addr, 0);
-                break;
-            }
-            printf("BTstack activated, start scanning!\n");
-            state = TC_W4_SCAN_RESULT;
-            le_central_set_scan_parameters(0,0x0030, 0x0030);
-            le_central_start_scan();
-            break;
-        case GAP_LE_ADVERTISING_REPORT:
-            if (state != TC_W4_SCAN_RESULT) return;
-            fill_advertising_report_from_packet(&report, packet);
-            // stop scanning, and connect to the device
-            state = TC_W4_CONNECT;
-            le_central_stop_scan();
-            le_central_connect(report.address,report.address_type);
-            break;
-        case HCI_EVENT_LE_META:
-            // wait for connection complete
-            if (packet[2] !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
-            if (state != TC_W4_CONNECT) return;
-            gc_handle = READ_BT_16(packet, 4);
-            // query primary services
-            state = TC_W4_SERVICE_RESULT;
-            gatt_client_discover_primary_services(gc_id, gc_handle);
-            break;
-        case HCI_EVENT_DISCONNECTION_COMPLETE:
-            printf("\ntest client - DISCONNECTED\n");
-            exit(0);
-            break;
-        default:
-            break;
-    }
-}
+/* LISTING_END */
 
 void usage(const char *name){
 	fprintf(stderr, "\nUsage: %s [-a|--address aa:bb:cc:dd:ee:ff]\n", name);
@@ -261,14 +344,7 @@ int btstack_main(int argc, const char * argv[]){
         return 0;
 	}
 
-    l2cap_init();
-    l2cap_register_packet_handler(&handle_hci_event);
-
-    gatt_client_init();
-    gc_id = gatt_client_register_packet_handler(&handle_gatt_client_event);
-
-    sm_init();
-    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+    gatt_client_setup();
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
@@ -276,6 +352,6 @@ int btstack_main(int argc, const char * argv[]){
     return 0;
 }
 
-
+/* EXAMPLE_END */
 
 

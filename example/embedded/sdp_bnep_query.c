@@ -36,9 +36,9 @@
  */
  
 // *****************************************************************************
-//
-// minimal setup for SDP client over USB or UART
-//
+/* EXAMPLE_START(sdp_bnep_query): Minimal setup for SDP client over USB or UART
+ *
+ */
 // *****************************************************************************
 
 #include "btstack-config.h"
@@ -228,3 +228,5 @@ int btstack_main(int argc, const char * argv[]){
             
     return 0;
 }
+
+/* EXAMPLE_END */

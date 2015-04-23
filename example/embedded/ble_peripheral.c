@@ -36,9 +36,9 @@
  */
 
 // *****************************************************************************
-//
-// BLE Peripheral Demo
-//
+/* EXAMPLE_START(ble_peripheral): BLE Peripheral Demo
+ *
+ */
 // *****************************************************************************
 
 #include <stdint.h>
@@ -988,3 +988,5 @@ int btstack_main(int argc, const char * argv[]){
     
     return 0;
 }
+
+/* EXAMPLE_END */

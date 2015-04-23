@@ -72,7 +72,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
 static uint16_t  rfcomm_channel_id;
 static uint8_t   spp_service_buffer[150];
-static timer_source_t heartbeat;
+
 
 /* @section SPP Service Setup 
  *
@@ -123,6 +123,8 @@ void spp_service_setup(){
  */
 
 /* LISTING_START(PeriodicCounter): Periodic Counter */ 
+static timer_source_t heartbeat;
+
 static void  heartbeat_handler(struct timer *ts){
     static int counter = 0;
 
@@ -140,6 +142,13 @@ static void  heartbeat_handler(struct timer *ts){
     run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
     run_loop_add_timer(ts);
 } 
+
+static void one_shot_timer_setup(){
+    // set one-shot timer
+    heartbeat.process = &heartbeat_handler;
+    run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
+    run_loop_add_timer(&heartbeat);
+}
 /* LISTING_END */
 
 
@@ -255,11 +264,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-    // set one-shot timer
-    heartbeat.process = &heartbeat_handler;
-    run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
-    run_loop_add_timer(&heartbeat);
-    
+    one_shot_timer_setup();
     spp_service_setup();
 
     hci_discoverable_control(1);

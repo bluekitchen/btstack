@@ -36,9 +36,9 @@
  */
 
 // *****************************************************************************
-//
-// minimal setup for HCI code
-//
+/* EXAMPLE_START(spp_and_le_counter): Dual mode example
+ *
+ */
 // *****************************************************************************
 
 #include <stdint.h>
@@ -301,4 +301,4 @@ int btstack_main(void)
 	    
     return 0;
 }
-
+/* EXAMPLE_END */
