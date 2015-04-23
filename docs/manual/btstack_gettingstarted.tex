@@ -88,7 +88,8 @@ morekeywords={*, timer_source_t, data_source_t, uint32_t, uint16_t, uint8_t, RUN
             \color{bkblue}\rule{\barWidth{}}{22cm}
         \end{minipage}
         \hfill\begin{minipage}[b]{.8\textwidth}\begin{flushright}
-            {\color{bkblue}VERSION \versionNr{} \\
+            {\color{bkblue}
+%            VERSION \versionNr{} \\
             \today \\}
             \vspace*{7.5cm}
             \hfill\includegraphics[width=0.85\textwidth]{picts/bklogo.pdf}
@@ -289,7 +290,7 @@ The complete run loop cycle looks like this: first, the callback function of all
 
 Incoming data over the UART, USB, or timer ticks will generate an interrupt and wake up the microcontroller. In order to avoid the situation where a data source becomes ready just before the run loop enters sleep mode, an interrupt-driven data source has to call the \emph{embedded\_trigger} function. The call to \emph{embedded\_trigger} sets an internal flag that is checked in the critical section just before entering sleep mode. 
 
-Timers are single shot: a timer will be removed from the timer list before its event handler callback is executed. If you need a periodic timer, you can re-register the same timer source in the callback function, as shown in Listing \ref{PeriodicTimerHandler}. Note that BTstack expects to get called periodically to keep its time, see Section \ref{section:tickAbstraction} for more on the tick hardware abstraction. 
+Timers are single shot: a timer will be removed from the timer list before its event handler callback is executed. If you need a periodic timer, you can re-register the same timer source in the callback function, as shown in Listing \ref{PeriodicTimerHandler}. Note that BTstack expects to get called periodically to keep its time, see Section \ref{section:timeAbstraction} for more on the tick hardware abstraction. 
 
 The Run loop API is provided in Appendix \ref{appendix:api_run_loop}. To enable the use of timers, make sure that you defined HAVE\_TICK in the config file.
 
@@ -1051,17 +1052,46 @@ void handle_gatt_client_event(le_event_t * event){
 \section{Porting to Other Platforms}
 
 In this chapter, we highlight the BTstack components that need to be adjusted for different hardware platforms.
-\subsection{Tick Hardware Abstraction Layer}
-\label{section:tickAbstraction}
 
-BTstack requires a way to learn about passing time. In an embedded configuration, the following functions have to be provided. The \emph{hal\_tick\_init} and the \emph{hal\_tick\_set\_handler} functions will be called during the initialization of the run loop.
+\subsection{Time Abstraction Layer}
+\label{section:timeAbstraction}
+BTstack requires a way to learn about passing time. \emph{run\_loop\_embedded.c} supports to different modes: system ticks or a system clock with millisecond resolution. BTstack's timing requirements are really low as only Bluetooth timeouts in the second range need to be handled.
+
+\subsubsection{Tick Hardware Abstraction}
+\label{ssection:tickAbstraction}
+
+If your platform doesn't require a system clock or if you already have a system tick (as it is the default with CMSIS on ARM Cortex devices), you can use that to implement BTstack's time abstraction in \emph{include/btstack/hal\_tick.h>}.
+
+For this, you need to define \emph{HAVE\_TICK} in \emph{btstack-config.h}:
+\begin{lstlisting}
+#define HAVE_TICK
+\end{lstlisting}
+
+Then, you need to implement the functions \emph{hal\_tick\_init} and \emph{hal\_tick\_set\_handler}, which will be called during the initialization of the run loop.
  
- \begin{lstlisting}
+\begin{lstlisting}
 void hal_tick_init(void);
 void hal_tick_set_handler(void (*tick_handler)(void));
 int  hal_tick_get_tick_period_in_ms(void);
- \end{lstlisting}
+\end{lstlisting}
  
+After BTstack calls \emph{hal\_tick\_init()} and \emph{hal\_tick\_set\_handler(tick\_handler)}, it expects that the \emph{tick\_handler} gets called every \emph{hal\_tick\_get\_tick\_period\_in\_ms()} ms.
+
+\subsubsection{Time MS Hardware Abstraction}
+\label{ssection:timeMSAbstraction}
+If your platform already has a system clock or it is more convenient to provide such a clock, you can use the Time MS Hardware Abstraction in \emph{include/btstack/hal\_time\_ms.h}.
+
+For this, you need to define \emph{HAVE\_TICK} in \emph{btstack-config.h}:
+\begin{lstlisting}
+#define HAVE_TIME_MS
+\end{lstlisting}
+
+Then, you need to implement the function \emph{hal\_time\_ms()}, which will be called from BTstack's run loop and when setting a timer for the future. It has to return the time in milliseconds.
+
+\begin{lstlisting}
+uint32_t hal_time_ms(void);
+\end{lstlisting}
+
 \subsection{Bluetooth Hardware Control API}
 \label{section:bt_hw_control}
 The Bluetooth hardware control API can provide the HCI layer with a custom initialization script, a vendor-specific baud rate change command, and system power notifications. It is also used to control the power mode of the Bluetooth module, i.e., turning it on/off and putting to sleep. In addition, it provides an error handler \emph{hw\_error} that is called when a Hardware Error is reported by the Bluetooth module. The callback allows for persistent logging or signaling of this failure. \todo{add recipe}
@@ -1198,6 +1228,7 @@ When using BTstack in a multi-threaded environment,  this assumption has to stay
 \begin{tabular*}{\textwidth}{lp{3.5cm}p{8.5cm}}\toprule
 Rev & Date & Comments\\ 
 \midrule
+1.x & April 3, 2015 & Added Time MS Hardware Abstraction.\\
 1.3 & November 6, 2014 & Introducing GATT client and server. Work in progress.\\
 1.2 & November 1, 2013 & Explained Secure Simple Pairing in "Pairing of devices".\\
 1.1 & August 30, 2013 & Introduced SDP client. Updated Quick Recipe on "Query remote SDP service".\\
