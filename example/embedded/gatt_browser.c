@@ -90,7 +90,6 @@ uint16_t gc_handle;
 static le_service_t services[40];
 static int service_count = 0;
 static int service_index = 0;
-static gc_state_t state = TC_IDLE;
 
 
 /* @section Setting up GATT client
@@ -119,7 +118,7 @@ static uint16_t gc_id;
 
 // Handles connect, disconnect, and advertising report events,  
 // starts the GATT client, and sends the first query.
-void handle_hci_event(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 // Handles GATT client query results, sends queries and the 
 // GAP disconnect command when the querying is done.

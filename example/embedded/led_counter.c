@@ -36,12 +36,11 @@
  */
 
 // *****************************************************************************
-/* EXAMPLE_START(led_counter): UART and timer interrupt without Bluetooth
+/* EXAMPLE_START(led_counter): Hello World: blinking LED without Bluetooth
  *
  * @text The example uses the BTstack run loop to blink an LED.
- * The example demonstrates how to setup hardware, initialize BTstack without
- * Bluetooth, provide a periodic timer to toggle an LED and print number of
- * toggles as a minimal BTstack test.
+ * The example demonstrates how to provide a periodic timer to toggle an LED
+ * and send debug messages to the console as a minimal BTstack test.
  */
 // *****************************************************************************
 
@@ -58,11 +57,6 @@
 static int counter = 0;
 static timer_source_t heartbeat;
     
-static void run_loop_register_timer(timer_source_t *timer, uint16_t period){
-    run_loop_set_timer(timer, period);
-    run_loop_add_timer(timer);
-}
-
 /* @section Periodic Timer Setup 
  *
  * @text As timers in BTstack are single shot,
@@ -82,7 +76,8 @@ static void heartbeat_handler(timer_source_t *ts){
     hal_led_toggle();
 
     // re-register timer
-    run_loop_register_timer(ts, HEARTBEAT_PERIOD_MS);
+    run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
+    run_loop_add_timer(&heartbeat);
 } 
 /* LISTING_END */
 
@@ -97,10 +92,13 @@ static void heartbeat_handler(timer_source_t *ts){
 /* LISTING_START(MainConfiguration): Setup heartbeat timer */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
+
     // set one-shot timer
     heartbeat.process = &heartbeat_handler;
-    run_loop_register_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
-    printf("Run...\n\r");
+    run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
+    run_loop_add_timer(&heartbeat);
+
+    printf("Running...\n\r");
     return 0;
 }
 /* LISTING_END */
