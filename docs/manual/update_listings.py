@@ -5,6 +5,7 @@ import sys
 
 docs_folder = ""
 appendix_file = docs_folder + "examples.tex"
+stand_alone_doc = 0
 
 lst_header = """
 \\begin{lstlisting}
@@ -14,7 +15,7 @@ lst_ending = """
 \end{lstlisting}
 """
 
-example_header = """
+document_begin = """
 \documentclass[11pt, oneside]{article}      
 \usepackage{geometry}                       
 \geometry{letterpaper}                         
@@ -25,11 +26,15 @@ example_header = """
 \usepackage{listings}
 \usepackage{hyperref}
 \\begin{document}
-\section{Examples}
 """
 
-example_ending = """
+document_end = """
 \end{document}  
+"""
+
+examples_header = """
+% !TEX root = btstack_gettingstarted.tex
+\section{Examples}
 """
 
 example_item = """
@@ -45,6 +50,7 @@ example_subsection = """
 """
 
 listing_start = """
+$ $
 \\begin{lstlisting}[caption= LISTING_CAPTION., label=listing:LISTING_LABLE]
 """
 
@@ -55,20 +61,19 @@ msp_folder = "../../platforms/msp-exp430f5438-cc2564b/example/"
 embedded_folder = "../../example/embedded/"
 # Example group title: [folder, example file, section title]
 list_of_examples = { 
-    #"UART" : [[msp_folder, "led_counter", "UART and timer interrupt without Bluetooth"]],
-    #"GAP"  : [[embedded_folder, "gap_inquiry", "GAP Inquiry Example"]],
-    "SPP Server" : [[embedded_folder, "spp_counter", "SPP Server - Heartbeat Counter over RFCOMM"]]
-    #                [embedded_folder, "spp_accel", "SPP Server - Accelerator Values"],
-    #                [embedded_folder, "spp_flowcontrol", "SPP Server - Flow Control"]],
-    #"HID Host" :[[embedded_folder, "hid_demo", "HID Demo"]],
-    #"Low Energy" :[[embedded_folder, "gatt_browser", "GATT Client - Discovering primary services and their characteristics"],
-    #                [embedded_folder, "ble_server", "LE Peripheral"]],
-    #"Dual Mode " :[[embedded_folder, "spp_and_le_counter", "Dual mode example"]],
-    #"SDP BNEP Query" :[[embedded_folder, "sdp_bnep_query", "SDP BNEP Query"]],
+    "UART" : [[embedded_folder, "led_counter", "UART and timer interrupt without Bluetooth"]],
+    "GAP"  : [[embedded_folder, "gap_inquiry", "GAP Inquiry Example"]],
+    "SPP Server" : [[embedded_folder, "spp_counter", "SPP Server - Heartbeat Counter over RFCOMM"],
+                   [embedded_folder, "spp_flowcontrol", "SPP Server - Flow Control"]],
+    "Low Energy" :[[embedded_folder, "gatt_browser", "GATT Client - Discovering primary services and their characteristics"],
+                   [embedded_folder, "ble_peripheral", "LE Peripheral"]],
+    "Dual Mode " :[[embedded_folder, "spp_and_le_counter", "Dual mode example"]],
+    "SDP BNEP Query" :[[embedded_folder, "sdp_bnep_query", "SDP BNEP Query"]]
 }
 
 class State:
     SearchExampleStart = 0
+    SearchBlockEnd = 1
     SearchListingStart = 2
     SearchListingPause = 4
     SearchListingResume = 5
@@ -108,9 +113,24 @@ def writeListings(fout, infile_name):
                     title = latexText(parts.group(2))
                     desc  = latexText(parts.group(3))
                     aout.write(example_section.replace("EXAMPLE_TITLE", title).replace("EXAMPLE_DESC", desc).replace("EXAMPLE_LABLE", lable))
-                    state = State.SearchListingStart
+                    state = State.SearchBlockEnd
                 continue
-            
+            if state == State.SearchBlockEnd:
+                comment_end = re.match('(.*)\s(\*/)\n',line)
+                comment_continue = re.match('(\s?\*\s+)(.*)',line)
+                brief_start = re.match('.*(@text)\s*(.*)',line)
+                
+                if brief_start:
+                    brief_part = "\n\n" + latexText(brief_start.group(2))
+                    briefs_in_listings = briefs_in_listings + brief_part
+                    state = State.SearchBlockEnd
+                    continue
+                
+                if comment_end:
+                    state = State.SearchListingStart
+                elif comment_continue:
+                    aout.write(latexText(comment_continue.group(2)))
+                continue
             # detect @section
             section_parts = re.match('.*(@section)\s*(.*)\s*(\*?/?)\n',line)
             if section_parts:
@@ -129,6 +149,7 @@ def writeListings(fout, infile_name):
             if brief_start:
                 brief_part = "\n\n" + latexText(brief_start.group(2))
                 briefs_in_listings = briefs_in_listings + brief_part
+                state = State.SearchBlockEnd
                 continue
 
             # detect subsequent items
@@ -216,8 +237,10 @@ def writeListings(fout, infile_name):
 
 # write list of examples
 with open(appendix_file, 'w') as aout:
-    aout.write(example_header)
-    aout.write("\\begin{itemize}\n");
+    if stand_alone_doc:
+        aout.write(document_begin)
+    aout.write(examples_header)
+    aout.write("\n \\begin{itemize}\n");
     
     for group_title, examples in list_of_examples.iteritems():
         group_title = group_title + " example"
@@ -240,5 +263,6 @@ with open(appendix_file, 'w') as aout:
             file_name = example[0] + example[1] + ".c"
             writeListings(aout, file_name)
 
-    aout.write(example_ending)
+        if stand_alone_doc:
+            aout.write(document_end)
 
