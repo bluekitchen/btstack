@@ -80,7 +80,7 @@ EXAMPLES_USING_LE =			\
 	spp_and_le_counter	    \
 
 # requires termios / command line support
-EXAMPLES_CLI = ble_peripheral ble_peripheral_sm_minimal ble_central_test l2cap_test ancs_client classic_test bnep_test hsp_ag_test hsp_hs_test
+EXAMPLES_CLI = ble_peripheral_test ble_central_test l2cap_test ancs_client classic_test bnep_test hsp_ag_test hsp_hs_test
 
 # .o for .c
 CORE_OBJ    = $(CORE:.c=.o)
