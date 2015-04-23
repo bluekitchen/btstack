@@ -5,7 +5,7 @@ import sys
 
 docs_folder = ""
 appendix_file = docs_folder + "examples.tex"
-stand_alone_doc = 0
+stand_alone_doc = 1
 
 lst_header = """
 \\begin{lstlisting}
@@ -34,7 +34,6 @@ document_end = """
 
 examples_header = """
 % !TEX root = btstack_gettingstarted.tex
-\section{Examples}
 """
 
 example_item = """
@@ -73,7 +72,6 @@ list_of_examples = {
 
 class State:
     SearchExampleStart = 0
-    SearchBlockEnd = 1
     SearchListingStart = 2
     SearchListingPause = 4
     SearchListingResume = 5
@@ -86,6 +84,9 @@ def replacePlaceholder(template, title, lable):
     return snippet
 
 def latexText(text):
+    if not text:
+        return ""
+
     brief = text.replace("_","\_")
     brief = brief.replace(" in the BTstack manual","")
     
@@ -98,11 +99,42 @@ def latexText(text):
 
     return brief
 
+def isEmptyCommentLine(line):
+    return re.match('(\s*\*\s*)\n',line)
+
+def isEndOfComment(line):
+    return re.match('\s*\*/.*', line)
+
+def isNewItem(line):
+    return re.match('(\s*\*\s*\-\s*)(.*)',line)
+
+def isTextTag(line):
+    return re.match('.*(@text).*', line)
+
+def isItemizeTag(line):
+    return re.match("(\s+\*\s+)(-\s)(.*)", line)
+
+def getTextLine(line):
+    if isTextTag(line):
+        text_line_parts = re.match(".*(@text)(.*)", line)
+        return " " + latexText(text_line_parts.group(2))
+
+    if isItemizeTag(line):
+        text_line_parts = re.match("(\s*\*\s*\-\s*)(.*)", line)
+        return "\n \item " + latexText(text_line_parts.group(2))
+    
+    text_line_parts = re.match("(\s+\*\s+)(.*)", line)
+    if text_line_parts:
+        return " " + latexText(text_line_parts.group(2))
+    return ""
+
+
 def writeListings(fout, infile_name):
     itemText = None
     state = State.SearchExampleStart
-    briefs_in_listings = ""
     code_in_listing = ""
+    text_block = None
+    itemize_block = None
 
     with open(infile_name, 'rb') as fin:
         for line in fin:
@@ -113,24 +145,9 @@ def writeListings(fout, infile_name):
                     title = latexText(parts.group(2))
                     desc  = latexText(parts.group(3))
                     aout.write(example_section.replace("EXAMPLE_TITLE", title).replace("EXAMPLE_DESC", desc).replace("EXAMPLE_LABLE", lable))
-                    state = State.SearchBlockEnd
-                continue
-            if state == State.SearchBlockEnd:
-                comment_end = re.match('(.*)\s(\*/)\n',line)
-                comment_continue = re.match('(\s?\*\s+)(.*)',line)
-                brief_start = re.match('.*(@text)\s*(.*)',line)
-                
-                if brief_start:
-                    brief_part = "\n\n" + latexText(brief_start.group(2))
-                    briefs_in_listings = briefs_in_listings + brief_part
-                    state = State.SearchBlockEnd
-                    continue
-                
-                if comment_end:
                     state = State.SearchListingStart
-                elif comment_continue:
-                    aout.write(latexText(comment_continue.group(2)))
                 continue
+           
             # detect @section
             section_parts = re.match('.*(@section)\s*(.*)\s*(\*?/?)\n',line)
             if section_parts:
@@ -143,47 +160,31 @@ def writeListings(fout, infile_name):
                 subsubsection = example_subsection.replace("LISTING_CAPTION", section_parts.group(2)).replace('section', 'subsection')
                 aout.write("\n" + subsubsection)
                 continue
-            # detect @text
-            brief = None
-            brief_start = re.match('.*(@text)\s*(.*)',line)
-            if brief_start:
-                brief_part = "\n\n" + latexText(brief_start.group(2))
-                briefs_in_listings = briefs_in_listings + brief_part
-                state = State.SearchBlockEnd
-                continue
-
-            # detect subsequent items
-            if itemText:
-                itemize_new = re.match('(\s*\*\s*\-\s*)(.*)',line)
-                if itemize_new:
-                    aout.write(itemText + "\n")
-                    itemText = "\item "+ latexText(itemize_new.group(2))
-                else:
-                    empty_line = re.match('(\s*\*\s*)\n',line)
-                    comment_end = re.match('\s*\*/.*', line)
-                    if empty_line or comment_end:
-                        aout.write(itemText + "\n")
-                        aout.write("\n\end{itemize}\n")
-                        itemText = None
-                    else:
-                        itemize_continuation = re.match('(\s*\*\s*)(.*)',line)
-                        if itemize_continuation:
-                            itemText = itemText + " " + latexText(itemize_continuation.group(2))
-                continue
-            else:
-                # detect "-" itemize
-                start_itemize = re.match('(\s*\*\s*-\s*)(.*)',line)
-                if (start_itemize):
-                    aout.write("\n \\begin{itemize}\n")
-                    itemText = "\item "+ latexText(start_itemize.group(2))
-                    continue
-
-                brief_continue = re.match('(\s*\*\s)(.*)\s*\n',line)
-                if brief_continue:
-                    brief_part = " " + latexText(brief_continue.group(2))
-                    briefs_in_listings = briefs_in_listings + brief_part
-                    continue
             
+            if isTextTag(line):
+                text_block = getTextLine(line)
+                continue
+
+            if text_block:
+                if isEndOfComment(line):
+                    if itemize_block:
+                        aout.write(itemize_block + "\n\end{itemize}\n")
+                        itemize_block = None
+                    else:
+                        aout.write(text_block)
+                        text_block = None
+                else:
+                    if isNewItem(line):
+                        if not itemize_block:
+                            itemize_block = "\n \\begin{itemize}"
+
+                    if itemize_block:
+                        itemize_block = itemize_block + getTextLine(line)
+                    else:
+                        text_block = text_block + getTextLine(line)
+
+                continue
+
             if state == State.SearchListingStart:
                 parts = re.match('.*(LISTING_START)\((.*)\):\s*(.*\s*)(\*/).*',line)
                 
@@ -205,9 +206,6 @@ def writeListings(fout, infile_name):
                     aout.write(code_in_listing)
                     code_in_listing = ""
                     aout.write(listing_ending)
-                    if briefs_in_listings:
-                        aout.write(briefs_in_listings)
-                        briefs_in_listings = ""
                     state = State.SearchListingStart
                 elif parts_pause:
                     code_in_listing = code_in_listing + "...\n"
@@ -228,9 +226,6 @@ def writeListings(fout, infile_name):
                 if state != State.SearchListingStart:
                     print "Formating error detected"
                 state = State.ReachedExampleEnd
-                if briefs_in_listings:
-                    aout.write(briefs_in_listings)
-                    briefs_in_listings = ""
                 print "Reached end of the example"
             
     
@@ -263,6 +258,6 @@ with open(appendix_file, 'w') as aout:
             file_name = example[0] + example[1] + ".c"
             writeListings(aout, file_name)
 
-        if stand_alone_doc:
-            aout.write(document_end)
+    if stand_alone_doc:
+        aout.write(document_end)
 
