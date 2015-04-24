@@ -186,7 +186,7 @@ def writeListings(aout, infile_name, ref_prefix):
                         itemize_block = None
                     else: 
                         if isEmptyCommentLine(line):
-                            text_block = text_block + "\n\ngit "
+                            text_block = text_block + "\n\n"
                         else:
                             # finish text
                             aout.write(text_block)

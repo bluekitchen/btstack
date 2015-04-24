@@ -163,6 +163,28 @@ static void one_shot_timer_setup(){
  * - RFCOMM_EVENT_CHANNEL_CLOSED
  */
 
+/* @text Upon receiving HCI_EVENT_PIN_CODE_REQUEST event, we need to handle
+ * authentication. Here, we use a fixed PIN code "0000".
+ *
+ * When HCI_EVENT_USER_CONFIRMATION_REQUEST is received, the user will be 
+ * asked to accept the pairing request. If the IO capability is set to 
+ * SSP_IO_CAPABILITY_DISPLAY_YES_NO, the request will be automatically accepted.
+ *
+ * The RFCOMM_EVENT_INCOMING_CONNECTION event indicates an incoming connection.
+ * Here, the connection is accepted. More logic is need, if you want to handle connections
+ * from multiple clients. The incoming RFCOMM connection event contains the RFCOMM
+ * channel number used during the SPP setup phase and the newly assigned RFCOMM
+ * channel ID that is used by all BTstack commands and events.
+ *
+ * If RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE event returns status greater then 0,
+ * then the channel establishment has failed (rare case, e.g., client crashes).
+ * On successful connection, the RFCOMM channel ID and MTU for this
+ * channel are made available to the heartbeat counter. After openning the RFCOMM channel, 
+ * the communication between client and the application
+ * takes place. In this example, the timer handler increases the real counter every
+ * second. 
+ */ 
+
 /* LISTING_START(SppServerPacketHandler): SPP Server - Heartbeat Counter over RFCOMM */
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 /* LISTING_PAUSE */ 
@@ -182,9 +204,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     }
                     break;
 /* LISTING_RESUME */ 
-                /* @text Upon receiving HCI_EVENT_PIN_CODE_REQUEST event, we need to handle
-                 * authentication. Here, we use a fixed PIN code "0000".
-                 */
                 case HCI_EVENT_PIN_CODE_REQUEST:
                     // pre-ssp: inform about pin code request
                     printf("Pin code request - using '0000'\n");
@@ -192,22 +211,12 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     hci_send_cmd(&hci_pin_code_request_reply, &event_addr, 4, "0000");
                     break;
 
-                /* @text When HCI_EVENT_USER_CONFIRMATION_REQUEST is received, the user will be 
-                 * asked to accept the pairing request. If the IO capability is set to 
-                 * SSP_IO_CAPABILITY_DISPLAY_YES_NO, the request will be automatically accepted.
-                 */
                 case HCI_EVENT_USER_CONFIRMATION_REQUEST:
                     // ssp: inform about user confirmation request
                     printf("SSP User Confirmation Request with numeric value '%06u'\n", READ_BT_32(packet, 8));
                     printf("SSP User Confirmation Auto accept\n");
                     break;
 
-                /* @text The RFCOMM_EVENT_INCOMING_CONNECTION event indicates an incoming connection.
-                 * Here, the connection is accepted. More logic is need, if you want to handle connections
-                 * from multiple clients. The incoming RFCOMM connection event contains the RFCOMM
-                 * channel number used during the SPP setup phase and the newly assigned RFCOMM
-                 * channel ID that is used by all BTstack commands and events.
-                 */
                 case RFCOMM_EVENT_INCOMING_CONNECTION:
                     // data: event (8), len(8), address(48), channel (8), rfcomm_cid (16)
                     bt_flip_addr(event_addr, &packet[2]); 
@@ -216,16 +225,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     printf("RFCOMM channel %u requested for %s\n", rfcomm_channel_nr, bd_addr_to_str(event_addr));
                     rfcomm_accept_connection_internal(rfcomm_channel_id);
                     break;
-                
-                /* @text If RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE event returns status greater then 0,
-                 * then the channel establishment has failed (rare case, e.g., client crashes).
-                 * On successful connection, the RFCOMM channel ID and MTU for this
-                 * channel are made available to the heartbeat counter. After openning the RFCOMM channel, 
-                 * the communication between client and the application
-                 * takes place. In this example, the timer handler increases the real counter every
-                 * second. 
-                 */ 
-
+               
                 case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
                     // data: event(8), len(8), status (8), address (48), server channel(8), rfcomm_cid(16), max frame size(16)
                     if (packet[2]) {
