@@ -114,7 +114,7 @@ def isTextTag(line):
 def isItemizeTag(line):
     return re.match("(\s+\*\s+)(-\s)(.*)", line)
 
-def getTextLine(line):
+def processTextLine(line):
     if isTextTag(line):
         text_line_parts = re.match(".*(@text)(.*)", line)
         return " " + latexText(text_line_parts.group(2))
@@ -162,7 +162,7 @@ def writeListings(fout, infile_name):
                 continue
             
             if isTextTag(line):
-                text_block = getTextLine(line)
+                text_block = processTextLine(line)
                 continue
 
             if text_block:
@@ -179,9 +179,9 @@ def writeListings(fout, infile_name):
                             itemize_block = "\n \\begin{itemize}"
 
                     if itemize_block:
-                        itemize_block = itemize_block + getTextLine(line)
+                        itemize_block = itemize_block + processTextLine(line)
                     else:
-                        text_block = text_block + getTextLine(line)
+                        text_block = text_block + processTextLine(line)
 
                 continue
 
