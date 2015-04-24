@@ -38,9 +38,8 @@
 // *****************************************************************************
 /* EXAMPLE_START(led_counter): Hello World: blinking LED without Bluetooth
  *
- * @text The example uses the BTstack run loop to blink an LED.
- * The example demonstrates how to provide a periodic timer to toggle an LED
- * and send debug messages to the console as a minimal BTstack test.
+ * @text The example demonstrates how to provide a periodic timer to toggle an
+ * LED and send debug messages to the console as a minimal BTstack test.
  */
 // *****************************************************************************
 
@@ -81,13 +80,10 @@ static void heartbeat_handler(timer_source_t *ts){
 } 
 /* LISTING_END */
 
-/* @section Turn On and Go
+/* @section Main app setup
  *
  * @text Listing MainConfiguration shows main application code.
- * It is called after hardware and BTstack configuration (memory, run loop and
- * transport layer) by the platform main in
- * \path{platforms/PLATFORM/src/main.c}.
- */
+ * It configures the heartbeat tier and adds it to the run loop.
 
 /* LISTING_START(MainConfiguration): Setup heartbeat timer */
 int btstack_main(int argc, const char * argv[]);

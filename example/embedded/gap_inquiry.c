@@ -155,6 +155,8 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
                 start_scan();
                 state = ACTIVE;
             }
+            break;
+
         /* @text In ACTIVE, the following events are processed:
          *  - Inquiry result event: the list of discovered devices is processed and the 
          *    Class of Device (CoD), page scan mode, clock offset, and RSSI are stored in a table.
@@ -233,13 +235,20 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
     }
 }
 
-/* @text For more details please check Section DiscoverRemoteDevices in the
- * BTstack manual and the source code.  
+/* @text For more details on discovering remote devices, please see
+ * Section DiscoverRemoteDevices
  */
 
+
+/* @section Main app setup
+ *
+ * @text Listing MainConfiguration shows main application code.
+ * It registers the HCI packet handler and starts the Bluetoth stack
+ */
+
+/* LISTING_START(MainConfiguration): Setup heartbeat timer */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]) {
-    
     hci_register_packet_handler(packet_handler);
 
     // turn on!
@@ -247,4 +256,5 @@ int btstack_main(int argc, const char * argv[]) {
 	    
     return 0;
 }
+/* LISTING_END */
 /* EXAMPLE_END */
