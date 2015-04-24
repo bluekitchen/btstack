@@ -1002,6 +1002,18 @@ static void sm_run(void){
             int done = 1;
             int err;
             switch (sm_connection->sm_engine_state) {
+                case SM_RESPONDER_SEND_SECURITY_REQUEST:
+                    // send packet if possible,
+                    if (l2cap_can_send_fixed_channel_packet_now(sm_connection->sm_handle)){
+                        uint8_t buffer[2];
+                        buffer[0] = SM_CODE_SECURITY_REQUEST;
+                        buffer[1] = SM_AUTHREQ_BONDING;
+                        sm_connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;            
+                        l2cap_send_connectionless(sm_connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                    }
+                    // don't lock setup context yet
+                    done = 0;
+                    break;
                 case SM_RESPONDER_PH1_PAIRING_REQUEST_RECEIVED:
                     sm_init_setup(sm_connection);
                     // recover pairing request
@@ -1070,6 +1082,18 @@ static void sm_run(void){
         // responding state
         switch (connection->sm_engine_state){
 
+
+            // general
+            case SM_GENERAL_SEND_PAIRING_FAILED: {
+                uint8_t buffer[2];
+                buffer[0] = SM_CODE_PAIRING_FAILED;
+                buffer[1] = setup->sm_pairing_failed_reason;
+                connection->sm_engine_state = SM_GENERAL_IDLE;
+                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
+                sm_done_for_handle(connection->sm_handle);
+                break;
+            }
+
             // initiator side
             case SM_INITIATOR_PH0_SEND_START_ENCRYPTION: {
                 sm_key_t peer_ltk_flipped;
@@ -1087,25 +1111,6 @@ static void sm_run(void){
                 break;
 
             // responder side
-            case SM_RESPONDER_SEND_SECURITY_REQUEST: {
-                uint8_t buffer[2];
-                buffer[0] = SM_CODE_SECURITY_REQUEST;
-                buffer[1] = SM_AUTHREQ_BONDING;
-                connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;            
-                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-                return;
-            }
-
-            case SM_GENERAL_SEND_PAIRING_FAILED: {
-                uint8_t buffer[2];
-                buffer[0] = SM_CODE_PAIRING_FAILED;
-                buffer[1] = setup->sm_pairing_failed_reason;
-                connection->sm_engine_state = SM_GENERAL_IDLE;
-                l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
-                sm_done_for_handle(connection->sm_handle);
-                break;
-            }
-
             case SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
                 connection->sm_engine_state = SM_GENERAL_IDLE;
                 hci_send_cmd(&hci_le_long_term_key_negative_reply, connection->sm_handle);
@@ -2013,7 +2018,7 @@ void sm_test_set_irk(sm_key_t irk){
  * @note Not used normally. Bonding is triggered by access to protected attributes in ATT Server
  */
 void sm_send_security_request(uint16_t handle){
-    sm_connection_t * sm_conn = sm_get_connection_for_handle(handle);    
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(handle);
     if (sm_conn->sm_engine_state != SM_RESPONDER_PH1_W4_PAIRING_REQUEST) return;
     sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
     sm_run();
