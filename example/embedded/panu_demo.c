@@ -43,9 +43,6 @@
 
 /* EXAMPLE_START(panu_demo): PANU Demo
  *
- * @text The Serial port profile (SPP) is widely used as it provides a serial
- * port over Bluetooth. The SPP counter example demonstrates how to setup an SPP
- * service, and provide a periodic timer over RFCOMM.   
  */
 
 #include "btstack-config.h"
@@ -271,7 +268,9 @@ char * get_string_from_data_element(uint8_t * element){
 }
 
 
-/* @section SDP parser callback */
+/* @section SDP parser callback 
+ *
+ */
 static void handle_sdp_client_query_result(sdp_query_event_t *event)
 {
     sdp_query_attribute_value_event_t *value_event;
