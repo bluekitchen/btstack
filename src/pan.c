@@ -47,6 +47,7 @@
 #include <string.h>
 
 #include <btstack/sdp_util.h>
+#include <btstack/hci_cmds.h>
 
 static const char default_panu_service_name[] = "Personal Ad-hoc User Service";
 static const char default_panu_service_desc[] = "Personal Ad-hoc User Service";
@@ -73,7 +74,7 @@ void pan_create_service(uint32_t service_uuid, uint8_t *service, const char *nam
 	attribute = de_push_sequence(service);
 	{
 		//  "UUID for PAN Service"
-		de_add_number(attribute, DE_UUID, DE_SIZE_16, service_uuid);
+		de_add_number(attribute, DE_UUID, DE_SIZE_32, service_uuid);
 	}
 	de_pop_sequence(service, attribute);
 
@@ -84,6 +85,7 @@ void pan_create_service(uint32_t service_uuid, uint8_t *service, const char *nam
 		uint8_t* l2cpProtocol = de_push_sequence(attribute);
 		{
 			de_add_number(l2cpProtocol,  DE_UUID, DE_SIZE_16, SDP_L2CAPProtocol);
+			de_add_number(l2cpProtocol,  DE_UINT, DE_SIZE_16, PSM_BNEP);  // l2cap psm
 		}
 		de_pop_sequence(attribute, l2cpProtocol);
 		
