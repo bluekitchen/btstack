@@ -200,7 +200,7 @@ pic32-harmony               & CSR8811 & \mplabxc{} & \PICkit{} \\ \hiderowcolors
 
 \subsection{Run the Example}
 
-As a first test, we recommend the SPP Counter example (see Section \ref{section:sppcounter}). During the startup, for TI chipsets, the init script is transferred, and the Bluetooth stack brought up. After that, the development board is discoverable as "BTstack SPP Counter" and provides a single virtual serial port. When you connect to it, you'll receive a counter value as text every second.
+As a first test, we recommend the SPP Counter example (see Section \ref{example:spp_counter}). During the startup, for TI chipsets, the init script is transferred, and the Bluetooth stack brought up. After that, the development board is discoverable as "BTstack SPP Counter" and provides a single virtual serial port. When you connect to it, you'll receive a counter value as text every second.
 
 % The SPP Counter doesn't use the display to keep the memory footprint small.
 %  The HID demo has a fancier user interface - it uses a display to show the discovery process and connection establishment with a Bluetooth keyboard, as well as the text as you type.
@@ -260,7 +260,7 @@ BTstack has to keep track of services and active connections on the various prot
 \section{How to use BTstack}
 BTstack implements a set of basic Bluetooth protocols. To make use of these to connect to other devices or to provide own services, BTstack has to be properly configured during application startup. 
 
-In the following, we provide an overview of the memory management, the run loop, and services that are necessary to setup BTstack. From the point when the run loop is executed, the application runs as a finite state machine, which processes events received from BTstack. BTstack groups events logically and provides them over packet handlers, of which an overview is provided here. Finally, we describe the RFCOMM credit-based flow-control, which may be necessary for resource-constraint devices. Complete examples for the MSP430 platforms will be presented in Chapter \ref{examples}. 
+In the following, we provide an overview of the memory management, the run loop, and services that are necessary to setup BTstack. From the point when the run loop is executed, the application runs as a finite state machine, which processes events received from BTstack. BTstack groups events logically and provides them over packet handlers, of which an overview is provided here. Finally, we describe the RFCOMM credit-based flow-control, which may be necessary for resource-constraint devices. Complete examples for the MSP430 platforms will be presented in Chapter \ref{section:examples}. 
 
 \subsection{Memory configuration}
 \label{section:memory_configuration}
@@ -294,7 +294,7 @@ Timers are single shot: a timer will be removed from the timer list before its e
 
 The Run loop API is provided in Appendix \ref{appendix:api_run_loop}. To enable the use of timers, make sure that you defined HAVE\_TICK in the config file.
 
-In your code, you'll have to configure the run loop before you start it as shown in Listing \ref{RunLoopExecution}. The application can register data sources as well as timers, e.g., periodical sampling of sensors, or communication over the UART.
+In your code, you'll have to configure the run loop before you start it as shown in Listing \ref{listing:btstackInit}. The application can register data sources as well as timers, e.g., periodical sampling of sensors, or communication over the UART.
 
 The run loop is set up by calling \emph{run\_loop\_init} function for embedded systems:
 \begin{lstlisting}
@@ -437,12 +437,14 @@ Separate packet handlers can be used for each L2CAP service and outgoing connect
 
 \pagebreak 
 \section{Examples}
+\label{section:examples}
+
 In this section, we will describe a number of examples from the \emph{example/embedded} folder. To allow code-reuse with different platforms as well as with new ports, the low-level initialization of BTstack and the hardware configuration has been extracted to the various \emph{platforms/\$PLATFORM/main.c} files. The examples only contain the platform-independent Bluetooth logic. But let's have a look at the common init code. 
 
-Listing \ref{lst:btstackInit} shows a minimal platform setup for an embedded system with a Bluetooth chipset connected via UART.
+Listing \ref{listing:btstackInit} shows a minimal platform setup for an embedded system with a Bluetooth chipset connected via UART.
 
-\begin{lstlisting}[float, caption=Exemplary platform init in main.c, label=lst:btstackInit]
-int main(){}
+\begin{lstlisting}[float, caption=Exemplary platform init in main.c, label=listing:btstackInit]
+int main(){
   // ... hardware init: watchdoch, IOs, timers, etc...
 
   // setup BTstack memory pools
@@ -464,15 +466,16 @@ int main(){}
 
   // go
   run_loop_execute();    
+}
 \end{lstlisting}
 
 First, BTstack's memory pools are setup up. Then, the standard run loop implementation for embedded systems is selected.
 
-The call to \emph{hci\_dump\_open} configures BTstack to output all Bluetooth packets and it's own debug and error message via printf. The Python script \emph{tools/create\_packet\_log.py} can be used to convert the console output into a Bluetooth PacketLogger format that can be opened by the OS X PacketLogger tool as well as by Wireshark for further inspection. When asking for help, please always include a log created with hci dump of the problem. 
+The call to \emph{hci\_dump\_open} configures BTstack to output all Bluetooth packets and it's own debug and error message via printf. The Python script \emph{tools/create\_packet\_log.py} can be used to convert the console output into a Bluetooth PacketLogger format that can be opened by the OS X PacketLogger tool as well as by Wireshark for further inspection. When asking for help, please always include a log created with HCI dump. 
 
-The \emph{hci\_init} call setups HCI to use the HCI H4 Transport implementation. It doesn't provide a special transprot configuration nor a special implementation for a particular Bluetooth chipset. It makes use of the \emph{remote\_device\_db\_memory} implementation that allows for re-connects without a new pairing but doesn't persist the bonding information. 
+The \emph{hci\_init} function sets up HCI to use the HCI H4 Transport implementation. It doesn't provide a special transport configuration nor a special implementation for a particular Bluetooth chipset. It makes use of the \emph{remote\_device\_db\_memory} implementation that allows for re-connects without a new pairing but doesn't persist the bonding information. 
 
-Finally, it calls \emph{btstack\_main()} of the acutal example before executing the run lopp. 
+Finally, it calls \emph{btstack\_main()} of the actual example before executing the run loop. 
 
 The examples are grouped like this:
  \input{examples}
@@ -488,7 +491,7 @@ In this chapter, we highlight the BTstack components that need to be adjusted fo
 BTstack requires a way to learn about passing time. \emph{run\_loop\_embedded.c} supports two different modes: system ticks or a system clock with millisecond resolution. BTstack's timing requirements are quite low as only Bluetooth timeouts in the second range need to be handled.
 
 \subsubsection{Tick Hardware Abstraction}
-\label{ssection:tickAbstraction}
+\label{section:tickAbstraction}
 
 If your platform doesn't require a system clock or if you already have a system tick (as it is the default with CMSIS on ARM Cortex devices), you can use that to implement BTstack's time abstraction in \emph{include/btstack/hal\_tick.h>}.
 
@@ -508,7 +511,7 @@ int  hal_tick_get_tick_period_in_ms(void);
 After BTstack calls \emph{hal\_tick\_init()} and \emph{hal\_tick\_set\_handler(tick\_handler)}, it expects that the \emph{tick\_handler} gets called every \emph{hal\_tick\_get\_tick\_period\_in\_ms()} ms.
 
 \subsubsection{Time MS Hardware Abstraction}
-\label{ssection:timeMSAbstraction}
+\label{section:timeMSAbstraction}
 If your platform already has a system clock or it is more convenient to provide such a clock, you can use the Time MS Hardware Abstraction in \emph{include/btstack/hal\_time\_ms.h}.
 
 For this, you need to define \emph{HAVE\_TIME\_MS} in \emph{btstack-config.h}:
