@@ -76,19 +76,16 @@ static uint8_t   spp_service_buffer[150];
 
 /* @section SPP Service Setup 
  *
- * @text SPP is based on RFCOMM, a Bluetooth protocol that emulates RS-232  serial
- * ports. To access an RFCOMM serial port on a remote device, a client has  to
- * query its Service Discovery Protocol (SDP) server. The SDP response for an  SPP
- * service contains the RFCOMM channel number. To provide an SPP service, you  need
- * to initialize memory and the  run loop, setup HCI and L2CAP, then register an
- * RFCOMM service and provide its RFCOMM channel number as part of the Protocol
- * List attribute of the SDP record. Example code for SPP service setup is
- * provided in Listing SPPSetup. The SDP record created by
- * $sdp_create_spp_service$ consists of a basic SPP definition that uses provided
+ * @text To provide an SPP service, the L2CAP, RFCOMM, and SDP protocol layers 
+ * are required. After setting up an RFCOMM service with channel nubmer
+ * RFCOMM_SERVER_CHANNEL, an SDP record is created and registered with the SDP server.
+ * Example code for SPP service setup is
+ * provided in Listing SPPSetup. The SDP record created by function
+ * sdp_create_spp_service consists of a basic SPP definition that uses the provided
  * RFCOMM channel ID and service name. For more details, please have a look at it
- * in \path{include/btstack/sdp_util.c}. The SDP record is created on the fly in
- * RAM and is deterministic. To preserve valuable RAM, the result can be stored as
- * constant data inside the ROM.   
+ * in \path{src/sdp_util.c}. 
+ * The SDP record is created on the fly in RAM and is deterministic.
+ * To preserve valuable RAM, the result cuold be stored as constant data inside the ROM.   
  */
 
 /* LISTING_START(SPPSetup): SPP service setup */ 
@@ -103,23 +100,27 @@ void spp_service_setup(){
     // init SDP, create record for SPP and register with SDP
     sdp_init();
     memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
+/* LISTING_PAUSE */
 #ifdef EMBEDDED
+/* LISTING_RESUME */
     service_record_item_t * service_record_item = (service_record_item_t *) spp_service_buffer;
     sdp_create_spp_service( (uint8_t*) &service_record_item->service_record, RFCOMM_SERVER_CHANNEL, "SPP Counter");
     printf("SDP service buffer size: %u\n", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
     sdp_register_service_internal(NULL, service_record_item);
+/* LISTING_PAUSE */
 #else
     sdp_create_spp_service( spp_service_buffer, RFCOMM_SERVER_CHANNEL, "SPP Counter");
     printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
     sdp_register_service_internal(NULL, spp_service_buffer);
 #endif
+/* LISTING_RESUME */
 }
 /* LISTING_END */
 
 /* @section Periodic Timer Setup
  * 
  * @text The heartbeat handler increases the real counter every second, 
- * as shown in Listing PeriodicCounter. 
+ * and sends a text string with the counter value, as shown in Listing PeriodicCounter. 
  */
 
 /* LISTING_START(PeriodicCounter): Periodic Counter */ 
@@ -157,7 +158,8 @@ static void one_shot_timer_setup(){
  * packet handler, see Listing SppServerPacketHandler. In this example, 
  * the following events are passed sequentially: 
  * - BTSTACK_EVENT_STATE,
- * - HCI_EVENT_PIN_CODE_REQUEST or HCI_EVENT_USER_CONFIRMATION_REQUEST,
+ * - HCI_EVENT_PIN_CODE_REQUEST (Standard pairing) or \\
+ *   HCI_EVENT_USER_CONFIRMATION_REQUEST \\ (Secure Simple Pairing),
  * - RFCOMM_EVENT_INCOMING_CONNECTION,
  * - RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE, and
  * - RFCOMM_EVENT_CHANNEL_CLOSED
