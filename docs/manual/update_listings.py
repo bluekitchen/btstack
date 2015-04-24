@@ -84,11 +84,11 @@ def latexText(text, ref_prefix):
         
     brief = brief.replace(" in the BTstack manual","")
     
-    refs = re.match('.*Listing\s*\s*(\w+)(?:.|\s).*',brief)
+    refs = re.match('.*Listing\s+(\w+).*',brief)
     if refs:
         brief = brief.replace(refs.group(1), "\\ref{listing:"+ref_prefix+":" + refs.group(1)+"}")
 
-    refs = re.match('.*(Section\s*)(\w*).*',brief, re.I)
+    refs = re.match('.*(Section\s)(\w+).*',brief)
     if refs:
         brief = brief.replace(refs.group(2), "\\ref{section:"+refs.group(2)+"}")
 
