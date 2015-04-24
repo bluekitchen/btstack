@@ -178,7 +178,7 @@ static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t
 static void  heartbeat_handler(struct timer *ts){
     counter++;
     counter_string_len = sprintf(counter_string, "BTstack counter %04u\n", counter);
-    puts("%s", counter_string);
+    puts(counter_string);
 
     if (le_notification_enabled) {
         att_server_notify(ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
