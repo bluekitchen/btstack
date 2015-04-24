@@ -52,21 +52,20 @@ $ $
 listing_ending = """\end{lstlisting}
 
 """
-msp_folder = "../../platforms/msp-exp430f5438-cc2564b/example/"
-embedded_folder = "../../example/embedded/"
+
 # Example group title: [folder, example file, section title]
 list_of_examples = { 
-    "Hello World" : [[embedded_folder, "led_counter", "UART and timer interrupt without Bluetooth"]],
-    "GAP"         : [[embedded_folder, "gap_inquiry", "GAP Inquiry Example"]],
-    "SDP Queries" :[[embedded_folder, "sdp_general_query", "SDP General Query"],
-                    # [embedded_folder, "sdp_bnep_query", "SDP BNEP Query"]
+    "Hello World" : [["led_counter", "UART and timer interrupt without Bluetooth"]],
+    "GAP"         : [["gap_inquiry", "GAP Inquiry Example"]],
+    "SDP Queries" :[["sdp_general_query", "SDP General Query"],
+                    # ["sdp_bnep_query", "SDP BNEP Query"]
                     ],
-    "SPP Server"  : [[embedded_folder, "spp_counter", "SPP Server - Heartbeat Counter over RFCOMM"],
-                     [embedded_folder, "spp_flowcontrol", "SPP Server - Flow Control"]],
-    "BNEP/PAN"   : [[embedded_folder, "panu_demo", "PANU example"]],
-    "Low Energy"  : [[embedded_folder, "gatt_browser", "GATT Client - Discovering primary services and their characteristics"],
-                    [embedded_folder, "le_counter", "LE Peripheral - Counter example"]],
-    "Dual Mode " : [[embedded_folder, "spp_and_le_counter", "Dual mode example: Combined SPP Counter + LE Counter "]],
+    "SPP Server"  : [["spp_counter", "SPP Server - Heartbeat Counter over RFCOMM"],
+                     ["spp_flowcontrol", "SPP Server - Flow Control"]],
+    "BNEP/PAN"   : [["panu_demo", "PANU example"]],
+    "Low Energy"  : [["gatt_browser", "GATT Client - Discovering primary services and their characteristics"],
+                    ["le_counter", "LE Peripheral - Counter example"]],
+    "Dual Mode " : [["spp_and_le_counter", "Dual mode example: Combined SPP Counter + LE Counter "]],
 }
 
 class State:
@@ -230,9 +229,9 @@ def writeListings(aout, infile_name):
 
     
 # write list of examples
-def processExamples(examples_file, stand_alone_doc):
-    with open(examples_file, 'w') as aout:
-        if stand_alone_doc:
+def processExamples(examples_folder, standalone, examples_ofile):
+    with open(examples_ofile, 'w') as aout:
+        if standalone:
             aout.write(document_begin)
         aout.write(examples_header)
         aout.write("\n \\begin{itemize}\n");
@@ -246,41 +245,45 @@ def processExamples(examples_file, stand_alone_doc):
             aout.write("  \item " + group_title + "\n");
             aout.write("  \\begin{itemize}\n");
             for example in examples:
-                lable = example[1]
-                title = latexText(example[1])
-                desc  = latexText(example[2])
+                lable = example[0]
+                title = latexText(example[0])
+                desc  = latexText(example[1])
                 aout.write(example_item.replace("EXAMPLE_TITLE", title).replace("EXAMPLE_DESC", desc).replace("EXAMPLE_LABLE", lable))
             aout.write("  \\end{itemize}\n")
         aout.write("\\end{itemize}\n")
 
         for group_title, examples in list_of_examples.iteritems():
             for example in examples:
-                file_name = example[0] + example[1] + ".c"
+                file_name = examples_folder + example[0] + ".c"
                 writeListings(aout, file_name)
 
-        if stand_alone_doc:
+        if standalone:
             aout.write(document_end)
 
 def main(argv):
+    inputfolder = "../../example/embedded/"
     outputfile = "examples.tex"
-    standalone_flag = 0
+    standalone = 0
 
     try:
-        opts, args = getopt.getopt(argv,"hso:",["standalone","ofile="])
+        opts, args = getopt.getopt(argv,"hiso:",["ifolder=","standalone","ofile="])
     except getopt.GetoptError:
-        print 'test.py [-s] [-o <outputfile>]'
+        print 'update_listings.py [-i <inputfolder>] [-s] [-o <outputfile>]'
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print 'update_listings.py [-s] [-o <outputfile>]'
+            print 'update_listings.py [-i <inputfolder>] [-s] [-o <outputfile>]'
             sys.exit()
+        elif opt in ("-i", "--ifolder"):
+            inputfolder = arg
         elif opt in ("-s", "--standalone"):
-            standalone_flag = 1
+            standalone = 1
         elif opt in ("-o", "--ofile"):
             outputfile = arg
-    print 'Standalone flag is ', standalone_flag
+    print 'Input folder is ', inputfolder
+    print 'Standalone flag is ', standalone
     print 'Output file is ', outputfile
-    processExamples(outputfile, standalone_flag)
+    processExamples(inputfolder, standalone, outputfile)
 
 if __name__ == "__main__":
    main(sys.argv[1:])
