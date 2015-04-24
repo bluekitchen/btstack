@@ -1,12 +1,12 @@
+# STM32 F103RB Nucleo with CC256x
+
 BTstack port for STM32 F103RB Nucleo board and CC256x Bluetooth chipset
 based on GNU Tools for ARM Embedded Processors and libopencm3
 
-GNU Tools for ARM Embedded Processors: 
-https://launchpad.net/gcc-arm-embedded
-
-libopencm3 is automatically fetched and build from its git repository by make
-
-openocd 0.8.0 (or higher) is used to upload firmware
+Requirements:
+- GNU Tools for ARM Embedded Processors: https://launchpad.net/gcc-arm-embedded
+- libopencm3 is automatically fetched and build from its git repository by make
+- openocd 0.8.0 (or higher) is used to upload firmware
 
 Components:
 - STM32 F103RB Nucleo Board
@@ -36,7 +36,4 @@ Setup:
   - N_SHUTDOWN: CN10-26 - 10 (LP1)
 
 TODO:
-- fix eHCILL mode
 - figure out how to compile multiple examples with single Makefile/folder
-- extract classic and LE examples into example/embedded
-- use examples from BTSTACK_ROOT/example/embedded directly
