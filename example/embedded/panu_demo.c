@@ -41,6 +41,13 @@
  *
  */
 
+/* EXAMPLE_START(panu_demo): PANU Demo
+ *
+ * @text The Serial port profile (SPP) is widely used as it provides a serial
+ * port over Bluetooth. The SPP counter example demonstrates how to setup an SPP
+ * service, and provide a periodic timer over RFCOMM.   
+ */
+
 #include "btstack-config.h"
 
 #include <arpa/inet.h>
@@ -119,18 +126,20 @@ static char tap_dev_name[16] = "bnep%d";
 
 static data_source_t tap_dev_ds;
 
-/*************** TUN / TAP interface routines **********************
- *                                                                 * 
- * Available on Linux by default, assumes tuntaposx on OS X        *
- * interface name: set to "bnepX" on linux, same as tapX on OS X    *
- *******************************************************************/
+/* @section TUN / TAP interface routines 
+ *                                                                 
+ * @text Available on Linux by default, assumes tuntaposx on OS X 
+ * interface name: set to "bnepX" on linux, same as tapX on OS X,
+ * see https://www.kernel.org/doc/Documentation/networking/tuntap.txt
+ * 
+ * Flags: 
+ * - IFF_TUN: TUN device (no Ethernet headers) 
+ * - IFF_TAP: TAP device  
+ * - IFF_NO_PI: Do not provide packet information  
+ */ 
 
 int tap_alloc(char *dev, bd_addr_t bd_addr)
 {
-
-    //
-    // see https://www.kernel.org/doc/Documentation/networking/tuntap.txt
-    //
     struct ifreq ifr;
     int fd_dev;
     int fd_socket;
@@ -142,11 +151,7 @@ int tap_alloc(char *dev, bd_addr_t bd_addr)
 
 #ifdef __linux
     memset(&ifr, 0, sizeof(ifr));
-    /* Flags: IFF_TUN   - TUN device (no Ethernet headers) 
-     *        IFF_TAP   - TAP device  
-     *
-     *        IFF_NO_PI - Do not provide packet information  
-     */ 
+
     ifr.ifr_flags = IFF_TAP | IFF_NO_PI; 
     if( *dev ) {
         strncpy(ifr.ifr_name, dev, IFNAMSIZ);
@@ -171,7 +176,8 @@ int tap_alloc(char *dev, bd_addr_t bd_addr)
 		return -1;
 	}
 
-    /* Configure the MAC address of the newly created bnep(x) device to the local bd_address */
+    // Configure the MAC address of the newly created bnep(x) 
+    // device to the local bd_address
     memset (&ifr, 0, sizeof(struct ifreq));
     strcpy(ifr.ifr_name, dev);
 #ifdef __linux
@@ -198,7 +204,7 @@ int tap_alloc(char *dev, bd_addr_t bd_addr)
 }
 #endif    
 
-    /* Bring the interface up */
+    // Bring the interface up
 	if (ioctl(fd_socket, SIOCGIFFLAGS, &ifr) == -1) {
         close(fd_dev);
         close(fd_socket);
@@ -236,15 +242,14 @@ int process_tap_dev_data(struct data_source *ds)
         bnep_send(bnep_cid, network_buffer, network_buffer_len);
         network_buffer_len = 0;
     } else {
-        /* park the current network packet */
+        // park the current network packet
         run_loop_remove_data_source(&tap_dev_ds);
     }
     
     return 0;
 }
 
-/*************** PANU client routines *********************/
-
+// PANU client routines 
 char * get_string_from_data_element(uint8_t * element){
     de_size_t de_size = de_get_size_type(element);
     int pos     = de_get_header_size(element);
@@ -266,7 +271,7 @@ char * get_string_from_data_element(uint8_t * element){
 }
 
 
-/* SDP parser callback */
+/* @section SDP parser callback */
 static void handle_sdp_client_query_result(sdp_query_event_t *event)
 {
     sdp_query_attribute_value_event_t *value_event;
@@ -279,7 +284,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
         case SDP_QUERY_ATTRIBUTE_VALUE:
             value_event = (sdp_query_attribute_value_event_t*) event;
             
-            /* Handle new SDP record */
+            // Handle new SDP record 
             if (value_event->record_id != record_id) {
                 record_id = value_event->record_id;
                 printf("SDP Record: Nr: %d\n", record_id);
@@ -476,11 +481,11 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     break;
 
                 case BNEP_EVENT_READY_TO_SEND:
-                    /* Check for parked network packets and send it out now */
+                    // Check for parked network packets and send it out now 
                     if (network_buffer_len > 0) {
                         bnep_send(bnep_cid, network_buffer, network_buffer_len);
                         network_buffer_len = 0;
-                        /* Re-add the tap device data source */
+                        // Re-add the tap device data source
                         run_loop_add_data_source(&tap_dev_ds);
                     }
                     
@@ -491,7 +496,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             }
             break;
         case BNEP_DATA_PACKET:
-            /* Write out the ethernet frame to the tap device */
+            // Write out the ethernet frame to the tap device 
             if (tap_fd > 0) {
                 rc = write(tap_fd, packet, size);
                 if (rc < 0) {
@@ -513,24 +518,26 @@ int btstack_main(int argc, const char * argv[]){
 
     printf("Client HCI init done\n");
 
-    /* Initialize L2CAP */
+    // Initialize L2CAP 
     l2cap_init();
     l2cap_register_packet_handler(packet_handler);
 
-    /* Initialise BNEP */
+    // Initialise BNEP
     bnep_init();
     bnep_register_packet_handler(packet_handler);
-    bnep_register_service(NULL, SDP_PANU, 1691);  /* Minimum L2CAP MTU for bnep is 1691 bytes */
+    // Minimum L2CAP MTU for bnep is 1691 bytes
+    bnep_register_service(NULL, SDP_PANU, 1691);  
 
-    /* Turn on the device */
+    // Turn on the device 
     hci_power_control(HCI_POWER_ON);
 
-    /* Initialise SDP */
+    // Initialise SDP 
     sdp_parser_init();
     sdp_parser_register_callback(handle_sdp_client_query_result);
 
     return 0;
 }
 
+/* EXAMPLE_END */
 /* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*-  */
 

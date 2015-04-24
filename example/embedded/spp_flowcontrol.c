@@ -76,6 +76,7 @@ static uint8_t   spp_service_buffer[150];
  * throughput substantially.  
  */ 
 
+/* LISTING_START(explicitFlowControl): Providing one initial credit during RFCOMM service initialization */
 static void spp_service_setup(){     
     // init L2CAP
     l2cap_init();
@@ -95,6 +96,7 @@ static void spp_service_setup(){
     printf("SDP service buffer size: %u\n\r", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
     sdp_register_service_internal(NULL, service_record_item);
 }
+/* LISTING_END */
 
 /* @section Periodic Timer Setup  
  *  
@@ -102,10 +104,10 @@ static void spp_service_setup(){
  * recommended when received RFCOMM data cannot be processed immediately. In this
  * example, delayed processing of received data is simulated with the help of a
  * periodic timer as follows. When the packet handler receives a data packet, it
- * does not provide a new credit, it sets a flag instead. If the flag is set, a new
+ * does not provide a new credit, it sets a flag instead, see Listing phManual. 
+ * If the flag is set, a new
  * credit will be granted by the heartbeat handler, introducing a delay of up to 1
- * second. The heartbeat handler code is shown in Listing hbhManual. The
- * general setup is shown in Listing PeriodicTimerHandler.    
+ * second. The heartbeat handler code is shown in Listing hbhManual. 
  */ 
 
 static timer_source_t heartbeat;
