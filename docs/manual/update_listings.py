@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 import os
 import re
-import sys 
-
-docs_folder = ""
-appendix_file = docs_folder + "examples.tex"
-stand_alone_doc = 1
+import sys, getopt
 
 lst_header = """
 \\begin{lstlisting}
@@ -75,12 +71,12 @@ list_of_examples = {
 
 class State:
     SearchExampleStart = 0
-    SearchListingStart = 2
-    SearchListingPause = 4
-    SearchListingResume = 5
-    SearchListingEnd = 6
-    SearchItemizeEnd = 7
-    ReachedExampleEnd = 8
+    SearchListingStart = 1
+    SearchListingPause = 2
+    SearchListingResume = 3
+    SearchListingEnd = 4
+    SearchItemizeEnd = 5
+    ReachedExampleEnd = 6
 
 def replacePlaceholder(template, title, lable):
     snippet = template.replace("API_TITLE", title).replace("API_LABLE", lable)
@@ -132,7 +128,7 @@ def processTextLine(line):
     return ""
 
 
-def writeListings(fout, infile_name):
+def writeListings(aout, infile_name):
     itemText = None
     state = State.SearchExampleStart
     code_in_listing = ""
@@ -231,36 +227,60 @@ def writeListings(fout, infile_name):
                 state = State.ReachedExampleEnd
                 print "Reached end of the example"
             
-    
 
+    
 # write list of examples
-with open(appendix_file, 'w') as aout:
-    if stand_alone_doc:
-        aout.write(document_begin)
-    aout.write(examples_header)
-    aout.write("\n \\begin{itemize}\n");
-    
-    for group_title, examples in list_of_examples.iteritems():
-        group_title = group_title + " example"
-        if len(examples) > 1:
-            group_title = group_title + "s"
-        group_title = group_title + ":"
+def processExamples(examples_file, stand_alone_doc):
+    with open(examples_file, 'w') as aout:
+        if stand_alone_doc:
+            aout.write(document_begin)
+        aout.write(examples_header)
+        aout.write("\n \\begin{itemize}\n");
+        
+        for group_title, examples in list_of_examples.iteritems():
+            group_title = group_title + " example"
+            if len(examples) > 1:
+                group_title = group_title + "s"
+            group_title = group_title + ":"
 
-        aout.write("  \item " + group_title + "\n");
-        aout.write("  \\begin{itemize}\n");
-        for example in examples:
-            lable = example[1]
-            title = latexText(example[1])
-            desc  = latexText(example[2])
-            aout.write(example_item.replace("EXAMPLE_TITLE", title).replace("EXAMPLE_DESC", desc).replace("EXAMPLE_LABLE", lable))
-        aout.write("  \\end{itemize}\n")
-    aout.write("\\end{itemize}\n")
+            aout.write("  \item " + group_title + "\n");
+            aout.write("  \\begin{itemize}\n");
+            for example in examples:
+                lable = example[1]
+                title = latexText(example[1])
+                desc  = latexText(example[2])
+                aout.write(example_item.replace("EXAMPLE_TITLE", title).replace("EXAMPLE_DESC", desc).replace("EXAMPLE_LABLE", lable))
+            aout.write("  \\end{itemize}\n")
+        aout.write("\\end{itemize}\n")
 
-    for group_title, examples in list_of_examples.iteritems():
-        for example in examples:
-            file_name = example[0] + example[1] + ".c"
-            writeListings(aout, file_name)
+        for group_title, examples in list_of_examples.iteritems():
+            for example in examples:
+                file_name = example[0] + example[1] + ".c"
+                writeListings(aout, file_name)
 
-    if stand_alone_doc:
-        aout.write(document_end)
+        if stand_alone_doc:
+            aout.write(document_end)
 
+def main(argv):
+    outputfile = "examples.tex"
+    standalone_flag = 0
+
+    try:
+        opts, args = getopt.getopt(argv,"hs:o:",["sflag=","ofile="])
+    except getopt.GetoptError:
+        print 'test.py [-s <standaloneflag>] [-o <outputfile>]'
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print 'update_listings.py [-s <standalone_flag>] [-o <outputfile>]'
+            sys.exit()
+        elif opt in ("-s", "--sflag"):
+            standalone_flag = arg
+        elif opt in ("-o", "--ofile"):
+            outputfile = arg
+    print 'Standalone flag is ', standalone_flag
+    print 'Output file is ', outputfile
+    processExamples(outputfile, standalone_flag)
+
+if __name__ == "__main__":
+   main(sys.argv[1:])
