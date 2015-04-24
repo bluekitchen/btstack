@@ -36,9 +36,15 @@
  */
  
 // *****************************************************************************
-//
-// minimal setup for SDP client over USB or UART
-//
+/* EXAMPLE_START(sdp_general_query): Dump remote SDP Records
+ *
+ * @text The example shows how the SDP Client is used to get a list of 
+ * service records on a remote device. The address of the remote device is 
+ * fixed in the variable remote below.
+ * The SDP Client returns the results of the query in chunks. Each result
+ * packet contains the record ID, the Attribute ID, and a chunk of the Attribute
+ * value.
+ */
 // *****************************************************************************
 
 #include "btstack-config.h"
@@ -142,3 +148,5 @@ int btstack_main(int argc, const char * argv[]){
             
     return 0;
 }
+
+/* EXAMPLE_END */
