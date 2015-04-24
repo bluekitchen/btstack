@@ -69,15 +69,13 @@ int attribute_id = -1;
 static uint8_t   attribute_value[1000];
 static const int attribute_value_buffer_size = sizeof(attribute_value);
 
-static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
-
 /* @section SDP Client Setup
  *
  * @text SDP is based on L2CAP. To receive SDP query events you must register a
  * callback, i.e. query handler, with the SPD parser, as shown in 
- * Listing SDPClientInit. Via this handler, the SDP client will receive events:
+ * Listing SDPClientInit. Via this handler, the SDP client will receive the following events:
  * - SDP_QUERY_ATTRIBUTE_VALUE containing the results of the query in chunks,
- * - SDP_QUERY_COMPLETE reporting the status and the end of the query. 
+ * - SDP_QUERY_COMPLETE indicating the end of the query and the status
  */
 
 /* LISTING_START(SDPClientInit): SDP client setup */
@@ -96,11 +94,17 @@ static void sdp_client_init(){
 
 /* @section SDP Client Query 
  *
- * @text To get the a list of service records on a remote device, you need to
- * call sdp_general_query_for_uuid() with the remote address and the
+ * @text To trigger an SDP query to get the a list of service records on a remote device,
+ * you need to call sdp_general_query_for_uuid() with the remote address and the
  * UUID of the public browse group, as shown in Listing SDPQueryUUID. 
- * In this example we used fixed address of the remote device.
+ * In this example we used fixed address of the remote device shown in Listing Remote.
+ * Please update it with the address of a device in your vicinity, e.g., one reported
+ * by the GAP Inuiry example in the previous s-e-c-t-i-o-n.
  */ 
+
+/* LISTING_START(Remote): Address of remote device in big-endian order */
+static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
+/* LISTING_END */
 
 /* LISTING_START(SDPQueryUUID): Quering a list of service records on a remote device. */
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -127,11 +131,17 @@ static void assertBuffer(int size){
     }
 }
 
-/* @section Handling SDP Client Query Result 
+/* @section Handling SDP Client Query Results 
  *
  * @text The SDP Client returns the results of the query in chunks. Each result
  * packet contains the record ID, the Attribute ID, and a chunk of the Attribute
- * value, see Listing HandleSDPQUeryResult.
+ * value.
+ * In this example, we append new chunks for the same Attribute ID in a large buffer,
+ * see Listing HandleSDPQUeryResult.
+ *
+ * To save memory, it's also possible to process these chunks directly by a custom stream parser,
+ * similar to the way XML files are parsed by a SAX parser. Have a look at \emph{src/sdp_query_rfcomm.c}
+ * which retrieves the RFCOMM channel number and the service name.
  */
 
 /* LISTING_START(HandleSDPQUeryResult): Handling query result chunks. */
