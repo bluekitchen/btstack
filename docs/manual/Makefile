@@ -11,4 +11,4 @@ example:
 	open examples.pdf
 	
 clean:
-	rm -f $ *.pdf *.log *.aux *.gz *.toc *.out
+	rm -f $ *.log *.aux *.gz *.toc *.out btstack_gettingstarted.pdf examples.pdf

@@ -3,6 +3,24 @@ import os
 import re
 import sys, getopt
 
+# Defines the names of example groups. Preserves the order in which the example groups will be parsed.
+list_of_groups = ["Hello World", "GAP", "SDP Queries", "SPP Server", "BNEP/PAN", "Low Energy", "Dual Mode"]
+
+# Defines which examples belong to a group. Example is defined as [example file, example title].
+list_of_examples = { 
+    "Hello World" : [["led_counter"]],
+    "GAP"         : [["gap_inquiry"]],
+    "SDP Queries" :[["sdp_general_query"],
+                    # ["sdp_bnep_query"]
+                    ],
+    "SPP Server"  : [["spp_counter"],
+                     ["spp_flowcontrol"]],
+    "BNEP/PAN"   : [["panu_demo"]],
+    "Low Energy"  : [["gatt_browser"],
+                    ["le_counter"]],
+    "Dual Mode" : [["spp_and_le_counter"]],
+}
+
 lst_header = """
 \\begin{lstlisting}
 """
@@ -53,30 +71,6 @@ listing_ending = """\end{lstlisting}
 
 """
 
-# Example group title: [folder, example file, section title]
-list_of_examples = { 
-    "Hello World" : [["led_counter", "UART and timer interrupt without Bluetooth"]],
-    "GAP"         : [["gap_inquiry", "GAP Inquiry Example"]],
-    "SDP Queries" :[["sdp_general_query", "SDP General Query"],
-                    # ["sdp_bnep_query", "SDP BNEP Query"]
-                    ],
-    "SPP Server"  : [["spp_counter", "SPP Server - Heartbeat Counter over RFCOMM"],
-                     ["spp_flowcontrol", "SPP Server - Flow Control"]],
-    "BNEP/PAN"   : [["panu_demo", "PANU example"]],
-    "Low Energy"  : [["gatt_browser", "GATT Client - Discovering primary services and their characteristics"],
-                    ["le_counter", "LE Peripheral - Counter example"]],
-    "Dual Mode " : [["spp_and_le_counter", "Dual mode example: Combined SPP Counter + LE Counter "]],
-}
-
-class State:
-    SearchExampleStart = 0
-    SearchListingStart = 1
-    SearchListingPause = 2
-    SearchListingResume = 3
-    SearchListingEnd = 4
-    SearchItemizeEnd = 5
-    ReachedExampleEnd = 6
-
 def replacePlaceholder(template, title, lable):
     snippet = template.replace("API_TITLE", title).replace("API_LABLE", lable)
     return snippet
@@ -126,6 +120,24 @@ def processTextLine(line):
         return " " + latexText(text_line_parts.group(2))
     return ""
 
+def getExampleTitle(example_path):
+    example_title = ''
+    with open(example_path, 'rb') as fin:
+        for line in fin:
+            parts = re.match('.*(EXAMPLE_START)\((.*)\):\s*(.*)(\*/)?\n',line)
+            if parts: 
+                example_title = latexText(parts.group(3))
+                continue
+    return example_title
+
+class State:
+    SearchExampleStart = 0
+    SearchListingStart = 1
+    SearchListingPause = 2
+    SearchListingResume = 3
+    SearchListingEnd = 4
+    SearchItemizeEnd = 5
+    ReachedExampleEnd = 6
 
 def writeListings(aout, infile_name):
     itemText = None
@@ -227,16 +239,24 @@ def writeListings(aout, infile_name):
                 print "Reached end of the example"
             
 
-    
 # write list of examples
 def processExamples(examples_folder, standalone, examples_ofile):
     with open(examples_ofile, 'w') as aout:
+        for group_title in list_of_groups:
+            examples = list_of_examples[group_title]
+            for example in examples:
+                example_path  = examples_folder + example[0] + ".c"
+                example_title = getExampleTitle(example_path)
+                example.append(example_title)
+                    
+
         if standalone:
             aout.write(document_begin)
         aout.write(examples_header)
         aout.write("\n \\begin{itemize}\n");
-        
-        for group_title, examples in list_of_examples.iteritems():
+
+        for group_title in list_of_groups:
+            examples = list_of_examples[group_title]
             group_title = group_title + " example"
             if len(examples) > 1:
                 group_title = group_title + "s"
@@ -252,13 +272,15 @@ def processExamples(examples_folder, standalone, examples_ofile):
             aout.write("  \\end{itemize}\n")
         aout.write("\\end{itemize}\n")
 
-        for group_title, examples in list_of_examples.iteritems():
+        for group_title in list_of_groups:
+            examples = list_of_examples[group_title]
             for example in examples:
                 file_name = examples_folder + example[0] + ".c"
                 writeListings(aout, file_name)
 
         if standalone:
             aout.write(document_end)
+
 
 def main(argv):
     inputfolder = "../../example/embedded/"
