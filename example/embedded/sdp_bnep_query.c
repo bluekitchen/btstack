@@ -36,10 +36,10 @@
  */
  
 // *****************************************************************************
-/* EXAMPLE_START(sdp_bnep_query): Dump remote BNEP PAN protocol UUID and L2CAP PSM.
+/* EXAMPLE_START(sdp_bnep_query): Dump remote BNEP PAN protocol UUID and L2CAP PSM
  *
- * @text The example shows how the SDP Client is used to get the BNEP  
- * service records on a remote device. It extracts the remote BNEP PAN protocol 
+ * @text The example shows how the SDP Client is used to get all BNEP service
+ * records from a remote device. It extracts the remote BNEP PAN protocol 
  * UUID and the L2CAP PSM, which are needed to connect to a remote BNEP service.
  */
 // *****************************************************************************
@@ -82,7 +82,7 @@ static void assertBuffer(int size){
 
 /* @section SDP Client Setup
  *
- * @text To receive SDP query events you must register a
+ * @text As with the previous example, you must register a
  * callback, i.e. query handler, with the SPD parser, as shown in 
  * Listing SDPClientInit. Via this handler, the SDP client will receive events:
  * - SDP_QUERY_ATTRIBUTE_VALUE containing the results of the query in chunks,
@@ -106,10 +106,11 @@ static void sdp_client_init(){
 
 /* @section SDP Client Query 
  *
- * @text To get the the BNEP service records on a remote device, you need to
- * call sdp_general_query_for_uuid() with the remote address and the
+  To trigger an SDP query to get the a list of service records on a remote device,
+ * you need to call sdp_general_query_for_uuid() with the remote address and the
  * BNEP protocol UUID, as shown in Listing SDPQueryUUID. 
- * In this example we used fixed address of the remote device.
+ * In this example we again used fixed address of the remote device. Please update
+ * for your environment.
  */ 
 
 /* LISTING_START(SDPQueryUUID): Quering the a list of service records on a remote device. */
@@ -160,13 +161,13 @@ char * get_string_from_data_element(uint8_t * element){
  * Service Class ID List and Protocol Descriptor List, as they contain 
  * the BNEP Protocol UUID and L2CAP PSM respectively.
  *
- * Service Class ID List is a data element sequence (DES) of 32bit UUIDs. 
- * One of these UUIDs is the BNEP PAN protocol UUID. The BNEP PAN protocol UUID
- * is within this list.
+ * The Service Class ID List is a Data Element Sequence (DES) of UUIDs. 
+ * The BNEP PAN protocol UUID is within this list.
  *
- * Protocol Descriptor List is a data element sequence (DES) 
- * which contains a DES with the L2CAP PSM, and another DES with BNEP 
- * version of 32bit UUIDs. 
+ * The Protocol Descriptor List is DES 
+ * which contains one DES for each protocol. For PAN serivces, it contains
+ * a DES with the L2CAP Protocol UUID and a PSM,
+ * and another DES with the BNEP UUID and the the BNEP version.
  */
 
 /* LISTING_START(HandleSDPQUeryResult): Extracting BNEP Prototocol UUID and L2CAP PSM. */
