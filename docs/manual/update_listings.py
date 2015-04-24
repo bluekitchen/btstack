@@ -8,17 +8,17 @@ list_of_groups = ["Hello World", "GAP", "SDP Queries", "SPP Server", "BNEP/PAN",
 
 # Defines which examples belong to a group. Example is defined as [example file, example title].
 list_of_examples = { 
-    "Hello World" : [["led_counter"]],
-    "GAP"         : [["gap_inquiry"]],
-    "SDP Queries" :[["sdp_general_query"],
+    # "Hello World" : [["led_counter"]],
+    # "GAP"         : [["gap_inquiry"]],
+    "SDP Queries" :[#["sdp_general_query"],
                     ["sdp_bnep_query"]
                     ],
-    "SPP Server"  : [["spp_counter"],
-                     ["spp_flowcontrol"]],
-    "BNEP/PAN"   : [["panu_demo"]],
-    "Low Energy"  : [["gatt_browser"],
-                    ["le_counter"]],
-    "Dual Mode" : [["spp_and_le_counter"]],
+    # "SPP Server"  : [["spp_counter"],
+    #                  ["spp_flowcontrol"]],
+    # "BNEP/PAN"   : [["panu_demo"]],
+    # "Low Energy"  : [["gatt_browser"],
+    #                 ["le_counter"]],
+    # "Dual Mode" : [["spp_and_le_counter"]],
 }
 
 lst_header = """
@@ -51,7 +51,7 @@ examples_header = """
 """
 
 example_item = """
-    \item \emph{EXAMPLE_TITLE}: EXAMPLE_DESC, see Section \\ref{example:EXAMPLE_LABLE}.
+    \item \emph{EXAMPLE_TITLE}: EXAMPLE_DESC, in Section \\ref{example:EXAMPLE_LABLE}.
 """
 example_section = """
 \subsection{EXAMPLE_TITLE: EXAMPLE_DESC}
@@ -59,7 +59,7 @@ example_section = """
 
 """
 example_subsection = """
-\subsubsection{LISTING_CAPTION}
+\subsubsection{SECTION_TITLE}
 """
 
 listing_start = """
@@ -162,15 +162,15 @@ def writeListings(aout, infile_name, ref_prefix):
                 continue
            
             # detect @section
-            section_parts = re.match('.*(@section)\s*(.*)\s*(\*?/?)\n',line)
+            section_parts = re.match('.*(@section)\s*(.*)(:?\s*.?)\*?/?\n',line)
             if section_parts:
-                aout.write("\n" + example_subsection.replace("LISTING_CAPTION", section_parts.group(2)))
+                aout.write("\n" + example_subsection.replace("SECTION_TITLE", section_parts.group(2)))
                 continue
 
             # detect @subsection
-            subsection_parts = re.match('.*(@subsection)\s*(.*)\s*(\*?/?)\n',line)
+            subsection_parts = re.match('.*(@section)\s*(.*)(:?\s*.?)\*?/?\n',line)
             if section_parts:
-                subsubsection = example_subsection.replace("LISTING_CAPTION", section_parts.group(2)).replace('section', 'subsection')
+                subsubsection = example_subsection.replace("SECTION_TITLE", section_parts.group(2)).replace('section', 'subsection')
                 aout.write("\n" + subsubsection)
                 continue
             
@@ -186,7 +186,7 @@ def writeListings(aout, infile_name, ref_prefix):
                         itemize_block = None
                     else: 
                         if isEmptyCommentLine(line):
-                            text_block = text_block + "\n"
+                            text_block = text_block + "\n\n"
                         else:
                             # finish text
                             aout.write(text_block)

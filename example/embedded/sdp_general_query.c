@@ -39,11 +39,7 @@
 /* EXAMPLE_START(sdp_general_query): Dump remote SDP Records
  *
  * @text The example shows how the SDP Client is used to get a list of 
- * service records on a remote device. The address of the remote device is 
- * fixed in the variable remote below.
- * The SDP Client returns the results of the query in chunks. Each result
- * packet contains the record ID, the Attribute ID, and a chunk of the Attribute
- * value.
+ * service records on a remote device. 
  */
 // *****************************************************************************
 
@@ -75,8 +71,38 @@ static const int attribute_value_buffer_size = sizeof(attribute_value);
 
 static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 
+/* @section SDP Client Setup
+ *
+ * @text SDP is based on L2CAP. To receive SDP query events you must register a
+ * callback, i.e. query handler, with the SPD parser, as shown in 
+ * Listing SDPClientInit. Via this handler, the SDP client will receive events:
+ * - SDP_QUERY_ATTRIBUTE_VALUE containing the results of the query in chunks,
+ * - SDP_QUERY_COMPLETE reporting the status and the end of the query. 
+ */
+
+/* LISTING_START(SDPClientInit): SDP client setup */
+static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void handle_sdp_client_query_result(sdp_query_event_t * event);
 
+static void sdp_client_init(){
+    // init L2CAP
+    l2cap_init();
+    l2cap_register_packet_handler(packet_handler);
+
+    sdp_parser_init();
+    sdp_parser_register_callback(handle_sdp_client_query_result);
+}
+/* LISTING_END */
+
+/* @section SDP Client Query 
+ *
+ * @text To get the a list of service records on a remote device, you need to
+ * call sdp_general_query_for_uuid() with the remote address and the
+ * UUID of the public browse group, as shown in Listing SDPQueryUUID. 
+ * In this example we used fixed address of the remote device.
+ */ 
+
+/* LISTING_START(SDPQueryUUID): Quering a list of service records on a remote device. */
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
 
@@ -85,7 +111,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
     switch (event) {
         case BTSTACK_EVENT_STATE:
-            // bt stack activated, get started 
             if (packet[2] == HCI_STATE_WORKING){
                 sdp_general_query_for_uuid(remote, SDP_PublicBrowseGroup);
             }
@@ -94,6 +119,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             break;
     }
 }
+/* LISTING_END */
 
 static void assertBuffer(int size){
     if (size > attribute_value_buffer_size){
@@ -101,6 +127,14 @@ static void assertBuffer(int size){
     }
 }
 
+/* @section Handling SDP Client Query Result 
+ *
+ * @text The SDP Client returns the results of the query in chunks. Each result
+ * packet contains the record ID, the Attribute ID, and a chunk of the Attribute
+ * value, see Listing HandleSDPQUeryResult.
+ */
+
+/* LISTING_START(HandleSDPQUeryResult): Handling query result chunks. */
 static void handle_sdp_client_query_result(sdp_query_event_t * event){
     sdp_query_attribute_value_event_t * ve;
     sdp_query_complete_event_t * ce;
@@ -130,18 +164,14 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
             break;
     }
 }
+/* LISTING_END */
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
  
     printf("Client HCI init done\r\n");
     
-    // init L2CAP
-    l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
-
-    sdp_parser_init();
-    sdp_parser_register_callback(handle_sdp_client_query_result);
+    sdp_client_init();
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

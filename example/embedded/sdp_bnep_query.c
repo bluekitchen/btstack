@@ -36,8 +36,11 @@
  */
  
 // *****************************************************************************
-/* EXAMPLE_START(sdp_bnep_query): Minimal setup for SDP client over USB or UART
+/* EXAMPLE_START(sdp_bnep_query): Dump remote BNEP PAN protocol UUID and L2CAP PSM.
  *
+ * @text The example shows how the SDP Client is used to get the BNEP  
+ * service records on a remote device. It extracts the remote BNEP PAN protocol 
+ * UUID and the L2CAP PSM, which are needed to connect to a remote BNEP service.
  */
 // *****************************************************************************
 
@@ -77,6 +80,39 @@ static void assertBuffer(int size){
     }
 }
 
+/* @section SDP Client Setup
+ *
+ * @text To receive SDP query events you must register a
+ * callback, i.e. query handler, with the SPD parser, as shown in 
+ * Listing SDPClientInit. Via this handler, the SDP client will receive events:
+ * - SDP_QUERY_ATTRIBUTE_VALUE containing the results of the query in chunks,
+ * - SDP_QUERY_COMPLETE reporting the status and the end of the query. 
+ */
+
+/* LISTING_START(SDPClientInit): SDP client setup */
+static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void handle_sdp_client_query_result(sdp_query_event_t * event);
+
+static void sdp_client_init(){
+    // init L2CAP
+    l2cap_init();
+    l2cap_register_packet_handler(packet_handler);
+
+    sdp_parser_init();
+    sdp_parser_register_callback(handle_sdp_client_query_result);
+}
+/* LISTING_END */
+
+
+/* @section SDP Client Query 
+ *
+ * @text To get the the BNEP service records on a remote device, you need to
+ * call sdp_general_query_for_uuid() with the remote address and the
+ * BNEP protocol UUID, as shown in Listing SDPQueryUUID. 
+ * In this example we used fixed address of the remote device.
+ */ 
+
+/* LISTING_START(SDPQueryUUID): Quering the a list of service records on a remote device. */
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     uint8_t event = packet[0];
@@ -93,6 +129,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             break;
     }
 }
+/* LISTING_END */
 
 char * get_string_from_data_element(uint8_t * element){
     de_size_t de_size = de_get_size_type(element);
@@ -115,8 +152,26 @@ char * get_string_from_data_element(uint8_t * element){
 }
 
 
+/* @section Handling SDP Client Query Result 
+ *
+ * @text The SDP Client returns the result of the query in chunks. Each result
+ * packet contains the record ID, the Attribute ID, and a chunk of the Attribute
+ * value, see Listing HandleSDPQUeryResult. Here, we show how to parse the
+ * Service Class ID List and Protocol Descriptor List, as they contain 
+ * the BNEP Protocol UUID and L2CAP PSM respectively.
+ *
+ * Service Class ID List is a data element sequence (DES) of 32bit UUIDs. 
+ * One of these UUIDs is the BNEP PAN protocol UUID. The BNEP PAN protocol UUID
+ * is within this list.
+ *
+ * Protocol Descriptor List is a data element sequence (DES) 
+ * which contains a DES with the L2CAP PSM, and another DES with BNEP 
+ * version of 32bit UUIDs. 
+ */
 
+/* LISTING_START(HandleSDPQUeryResult): Extracting BNEP Prototocol UUID and L2CAP PSM. */
 static void handle_sdp_client_query_result(sdp_query_event_t * event){
+/* LISTING_PAUSE */
     sdp_query_attribute_value_event_t * ve;
     sdp_query_complete_event_t * ce;
     des_iterator_t des_list_it;
@@ -137,7 +192,10 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
 
             attribute_value[ve->data_offset] = ve->data;
             if ((uint16_t)(ve->data_offset+1) == ve->attribute_length){
+
+ /* LISTING_RESUME */
                 switch(ve->attribute_id){
+                    // 0x0001 "Service Class ID List"
                     case SDP_ServiceClassIDList:
                         if (de_get_element_type(attribute_value) != DE_DES) break;
                         for (des_iterator_init(&des_list_it, attribute_value); des_iterator_has_more(&des_list_it); des_iterator_next(&des_list_it)){
@@ -155,13 +213,17 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
                             }
                         }
                         break;
+/* LISTING_PAUSE */
+                    // 0x0100 "Service Name"
                     case 0x0100:
+                    // 0x0101 "Service Description"
                     case 0x0101:
                         str = get_string_from_data_element(attribute_value);
                         printf(" ** Attribute 0x%04x: %s\n", ve->attribute_id, str);
                         free(str);
                         break;
-                    case 0x004:{
+/* LISTING_RESUME */
+                    case SDP_ProtocolDescriptorList:{
                             printf(" ** Attribute 0x%04x: ", ve->attribute_id);
                             
                             uint16_t l2cap_psm = 0;
@@ -190,38 +252,28 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
                                 }
                             }
                             printf("l2cap_psm 0x%04x, bnep_version 0x%04x\n", l2cap_psm, bnep_version);
-                            // printf("  -> row data (length %d): ", ve->attribute_length);
-                            // hexdumpf(attribute_value, ve->attribute_length);
-                            // printf("\n");
-                            
                         }
                         break;
+/* LISTING_PAUSE */
                     default:
                         break;
                 }
-
-                
             }
             break;
         case SDP_QUERY_COMPLETE:
             ce = (sdp_query_complete_event_t*) event;
             printf("General query done with status %d.\n\n", ce->status);
-
             break;
     }
+/* LISTING_RESUME */
 }
+/* LISTING_END */
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
-
     printf("Client HCI init done\r\n");
     
-    // init L2CAP
-    l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
-
-    sdp_parser_init();
-    sdp_parser_register_callback(handle_sdp_client_query_result);
+    sdp_client_init();
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
