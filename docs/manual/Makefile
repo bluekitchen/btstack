@@ -8,6 +8,7 @@ example:
 	./update_listings.py -s
 	subl examples.tex
 	pdflatex examples.tex  
+	pdflatex examples.tex
 	open examples.pdf
 	
 clean:
