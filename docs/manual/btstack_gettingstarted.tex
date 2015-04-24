@@ -434,9 +434,47 @@ Separate packet handlers can be used for each L2CAP service and outgoing connect
 \newcommand{\BluetoothSpecificationURL}{\href{https://www.bluetooth.org/Technical/Specifications/adopted.htm}{\color{blue} Bluetooth Specification}}
 
 \input{protocols_profiles}
- 
+
+\pagebreak 
 \section{Examples}
-In this section, we will describe a number of examples from the \emph{example/embedded} folder. They are grouped like this:
+In this section, we will describe a number of examples from the \emph{example/embedded} folder. To allow code-reuse with different platforms as well as with new ports, the low-level initialization of BTstack and the hardware configuration has been extracted to the various \emph{platforms/\$PLATFORM/main.c} files. The examples only contain the platform-independent Bluetooth logic. But let's have a look at the common init code. 
+
+Listing \ref{lst:btstackInit} shows a minimal platform setup for an embedded system with a Bluetooth chipset connected via UART.
+
+\begin{lstlisting}[float, caption=Exemplary platform init in main.c, label=lst:btstackInit]
+int main(){}
+  // ... hardware init: watchdoch, IOs, timers, etc...
+
+  // setup BTstack memory pools
+  btstack_memory_init();
+
+  // select embedded run loop
+  run_loop_init(RUN_LOOP_EMBEDDED);
+      
+  // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
+  hci_dump_open(NULL, HCI_DUMP_STDOUT);
+
+  // init HCI
+  hci_transport_t    * transport = hci_transport_h4_dma_instance();
+  remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
+  hci_init(transport, NULL, NULL, remote_db);
+
+  // setup example    
+  btstack_main(argc, argv);
+
+  // go
+  run_loop_execute();    
+\end{lstlisting}
+
+First, BTstack's memory pools are setup up. Then, the standard run loop implementation for embedded systems is selected.
+
+The call to \emph{hci\_dump\_open} configures BTstack to output all Bluetooth packets and it's own debug and error message via printf. The Python script \emph{tools/create\_packet\_log.py} can be used to convert the console output into a Bluetooth PacketLogger format that can be opened by the OS X PacketLogger tool as well as by Wireshark for further inspection. When asking for help, please always include a log created with hci dump of the problem. 
+
+The \emph{hci\_init} call setups HCI to use the HCI H4 Transport implementation. It doesn't provide a special transprot configuration nor a special implementation for a particular Bluetooth chipset. It makes use of the \emph{remote\_device\_db\_memory} implementation that allows for re-connects without a new pairing but doesn't persist the bonding information. 
+
+Finally, it calls \emph{btstack\_main()} of the acutal example before executing the run lopp. 
+
+The examples are grouped like this:
  \input{examples}
 
 % \section{Platforms}
@@ -447,7 +485,7 @@ In this chapter, we highlight the BTstack components that need to be adjusted fo
 
 \subsection{Time Abstraction Layer}
 \label{section:timeAbstraction}
-BTstack requires a way to learn about passing time. \emph{run\_loop\_embedded.c} supports to different modes: system ticks or a system clock with millisecond resolution. BTstack's timing requirements are really low as only Bluetooth timeouts in the second range need to be handled.
+BTstack requires a way to learn about passing time. \emph{run\_loop\_embedded.c} supports two different modes: system ticks or a system clock with millisecond resolution. BTstack's timing requirements are quite low as only Bluetooth timeouts in the second range need to be handled.
 
 \subsubsection{Tick Hardware Abstraction}
 \label{ssection:tickAbstraction}
@@ -473,7 +511,7 @@ After BTstack calls \emph{hal\_tick\_init()} and \emph{hal\_tick\_set\_handler(t
 \label{ssection:timeMSAbstraction}
 If your platform already has a system clock or it is more convenient to provide such a clock, you can use the Time MS Hardware Abstraction in \emph{include/btstack/hal\_time\_ms.h}.
 
-For this, you need to define \emph{HAVE\_TICK} in \emph{btstack-config.h}:
+For this, you need to define \emph{HAVE\_TIME\_MS} in \emph{btstack-config.h}:
 \begin{lstlisting}
 #define HAVE_TIME_MS
 \end{lstlisting}
