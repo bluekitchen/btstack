@@ -99,7 +99,7 @@ static void sdp_client_init(){
  * UUID of the public browse group, as shown in Listing SDPQueryUUID. 
  * In this example we used fixed address of the remote device shown in Listing Remote.
  * Please update it with the address of a device in your vicinity, e.g., one reported
- * by the GAP Inuiry example in the previous s-e-c-t-i-o-n.
+ * by the GAP Inuiry example in the previous section.
  */ 
 
 /* LISTING_START(Remote): Address of remote device in big-endian order */
