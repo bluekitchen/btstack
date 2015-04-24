@@ -60,14 +60,17 @@ msp_folder = "../../platforms/msp-exp430f5438-cc2564b/example/"
 embedded_folder = "../../example/embedded/"
 # Example group title: [folder, example file, section title]
 list_of_examples = { 
-    "UART" : [[embedded_folder, "led_counter", "UART and timer interrupt without Bluetooth"]],
-    "GAP"  : [[embedded_folder, "gap_inquiry", "GAP Inquiry Example"]],
-    "SPP Server" : [[embedded_folder, "spp_counter", "SPP Server - Heartbeat Counter over RFCOMM"],
-                   [embedded_folder, "spp_flowcontrol", "SPP Server - Flow Control"]],
-    "Low Energy" :[[embedded_folder, "gatt_browser", "GATT Client - Discovering primary services and their characteristics"],
-                   [embedded_folder, "ble_peripheral", "LE Peripheral"]],
-    "Dual Mode " :[[embedded_folder, "spp_and_le_counter", "Dual mode example"]],
-    "SDP BNEP Query" :[[embedded_folder, "sdp_bnep_query", "SDP BNEP Query"]]
+    "Hello World" : [[embedded_folder, "led_counter", "UART and timer interrupt without Bluetooth"]],
+    "GAP"         : [[embedded_folder, "gap_inquiry", "GAP Inquiry Example"]],
+    "SDP Queries" :[[embedded_folder, "sdp_general_query", "SDP General Query"],
+                    # [embedded_folder, "sdp_bnep_query", "SDP BNEP Query"]
+                    ],
+    "SPP Server"  : [[embedded_folder, "spp_counter", "SPP Server - Heartbeat Counter over RFCOMM"],
+                     [embedded_folder, "spp_flowcontrol", "SPP Server - Flow Control"]],
+    "BNEP/PAN"   : [[embedded_folder, "panu_demo", "PANU example"]],
+    "Low Energy"  : [[embedded_folder, "gatt_browser", "GATT Client - Discovering primary services and their characteristics"],
+                    [embedded_folder, "le_counter", "LE Peripheral - Counter example"]],
+    "Dual Mode " : [[embedded_folder, "spp_and_le_counter", "Dual mode example: Combined SPP Counter + LE Counter "]],
 }
 
 class State:

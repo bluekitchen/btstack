@@ -62,25 +62,26 @@ EXAMPLES = 					\
 	gap_inquiry_and_bond 	\
 	gatt_battery_query		\
 	gatt_browser            \
+	le_counter              \
+	led_counter				\
 	sdp_bnep_query 			\
 	sdp_general_query		\
 	sdp_rfcomm_query		\
 	spp_and_le_counter 		\
 	spp_counter 			\
 	spp_streamer			\
-	led_counter				\
 
 EXAMPLES_USING_LE =			\
 	ancs_client 			\
 	ble_central_test        \
-	ble_peripheral          \
-	ble_peripheral_sm_minimal \
+	ble_peripheral_test     \
 	gatt_battery_query      \
 	gatt_browser			\
+	led_counter 			\
 	spp_and_le_counter	    \
 
 # requires termios / command line support
-EXAMPLES_CLI = ble_peripheral ble_peripheral_sm_minimal ble_central_test l2cap_test ancs_client classic_test bnep_test hsp_ag_test hsp_hs_test
+EXAMPLES_CLI = ble_peripheral_test ble_central_test l2cap_test ancs_client classic_test bnep_test hsp_ag_test hsp_hs_test
 
 # .o for .c
 CORE_OBJ    = $(CORE:.c=.o)
@@ -104,6 +105,8 @@ ancs_client.h: ancs_client.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 spp_and_le_counter.h: spp_and_le_counter.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
+le_counter.h: le_counter.gatt
+	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 
 # examples
 sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} ${PAN_OBJ} ${SDP_CLIENT} sdp_rfcomm_query.c
@@ -117,6 +120,9 @@ sdp_bnep_query: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} sdp_bnep_query.c
 
 spp_counter: ${CORE_OBJ} ${COMMON_OBJ} spp_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+le_counter: le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} le_counter.c 
+	${CC} $(filter-out le_counter.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 spp_and_le_counter: spp_and_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} spp_and_le_counter.c 
 	${CC} $(filter-out spp_and_le_counter.h,$^)  ${CFLAGS} ${LDFLAGS} -o $@
@@ -150,10 +156,7 @@ ancs_client: ancs_client.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OB
 
 
 # CLI Examples
-ble_peripheral: profile.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.o
-	${CC} $(filter-out profile.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
-
-ble_peripheral_sm_minimal: profile.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_MINIMAL_OBJ} ble_peripheral.c
+ble_peripheral_test: profile.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral.o
 	${CC} $(filter-out profile.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_central_test: ${CORE_OBJ} ${COMMON_OBJ} ${SM_REAL_OBJ} ${ATT_OBJ}  ${GATT_CLIENT_OBJ}  ble_central_test.c
