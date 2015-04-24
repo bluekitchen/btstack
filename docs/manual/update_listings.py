@@ -78,12 +78,15 @@ def replacePlaceholder(template, title, lable):
 def latexText(text, ref_prefix):
     if not text:
         return ""
-
-    brief = text.replace("_","\_")
-    # TODO: restore paths
-        
-    brief = brief.replace(" in the BTstack manual","")
+    brief = text.replace(" in the BTstack manual","")
     
+    paths_orig = re.findall(r'(\\path{.*})', brief)
+    brief = brief.replace("_","\_")
+    paths_new =  re.findall(r'(\\path{.*})', brief)
+
+    for i in range(len(paths_orig)):
+        brief = brief.replace(paths_new[i], paths_orig[i])    
+
     refs = re.match('.*Listing\s+(\w+).*',brief)
     if refs:
         brief = brief.replace(refs.group(1), "\\ref{listing:"+ref_prefix+":" + refs.group(1)+"}")
