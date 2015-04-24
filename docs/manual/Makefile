@@ -5,7 +5,7 @@ pdf: clean
 	open btstack_gettingstarted.pdf
 
 example:
-	./update_listings.py -s 1
+	./update_listings.py -s
 	subl examples.tex
 	pdflatex examples.tex  
 	open examples.pdf

@@ -266,16 +266,16 @@ def main(argv):
     standalone_flag = 0
 
     try:
-        opts, args = getopt.getopt(argv,"hs:o:",["sflag=","ofile="])
+        opts, args = getopt.getopt(argv,"hso:",["standalone","ofile="])
     except getopt.GetoptError:
-        print 'test.py [-s <standaloneflag>] [-o <outputfile>]'
+        print 'test.py [-s] [-o <outputfile>]'
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print 'update_listings.py [-s <standalone_flag>] [-o <outputfile>]'
+            print 'update_listings.py [-s] [-o <outputfile>]'
             sys.exit()
-        elif opt in ("-s", "--sflag"):
-            standalone_flag = arg
+        elif opt in ("-s", "--standalone"):
+            standalone_flag = 1
         elif opt in ("-o", "--ofile"):
             outputfile = arg
     print 'Standalone flag is ', standalone_flag
