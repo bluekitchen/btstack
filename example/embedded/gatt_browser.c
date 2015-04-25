@@ -42,9 +42,9 @@
  * API to discover primary services and their characteristics of the first found
  * device that is advertising its services.
  *
- * @text The logic is divided between the HCI and GATT client packet handlers.
- * The HCI packet handler with its state machine is responsible for finding and
- * connecting to a remote device, and for starting the first GATT client query.
+ * The logic is divided between the HCI and GATT client packet handlers.
+ * The HCI packet handler is responsible for finding a remote device, 
+ * connecting to it, and for starting the first GATT client query.
  * Then, the GATT client packet handler receives all primary services and
  * requests the characteristics of the last one to keep the example short.
  *
@@ -94,26 +94,14 @@ static int service_index = 0;
 
 /* @section Setting up GATT client
  *
-
  * @text In setup phase, a GATT client must register the HCI and GATT client
- * packet handlers, as shown in Listing gattClientSetup.
+ * packet handlers, as shown in Listing GATTClientSetup.
  * Additionally, the security manager can be setup, if signed writes, or
  * encrypted or authenticated connection, are required to access the
  * characteristics, as explained in Section smp.
  */
 
-/* LISTING_START(gattClientSetup): Setting up GATT client */
-typedef enum {
-    TC_IDLE,
-    TC_W4_SCAN_RESULT,
-    TC_W4_CONNECT,
-    
-    TC_W4_SERVICE_RESULT,
-    TC_W4_CHARACTERISTIC_RESULT,
-    TC_W4_DISCONNECT
-} gc_state_t;
-
-static gc_state_t state = TC_IDLE;
+/* LISTING_START(GATTClientSetup): Setting up GATT client */
 static uint16_t gc_id;
 
 // Handles connect, disconnect, and advertising report events,  
@@ -189,24 +177,15 @@ static void fill_advertising_report_from_packet(advertising_report_t * report, u
 
 /* @section Packet handlers
  * 
- * @text The GATT browser goes sequentially through the states:  
- * IDLE, W4_SCAN_RESULT, W4_CONNECT, W4_SERVICE_RESULT,  
- * W4_CHARACTERISTIC_RESULT, and W4_DISCONNECT.  
- *  
- * @text The W4_SERVICE_RESULT and W4_CHARACTERISTIC_RESULT states 
- * compose the state machine of the GATT client packet handler, 
- * as it reacts on GATT client events. The other states compose the
- * state machine of the HCI packet handler.    
- * 
- * @text In detail, the HCI packet handler has to start the scanning, 
+ * @text The HCI packet handler has to start the scanning, 
  * to find the first advertising device, to stop scanning, to connect
  * to and later to disconnect from it, to start the gatt client upon
  * the connection is completed, and to send the first query - in this
  * case the gatt_client_discover_primary_services() is called, see 
- * Listing gattBrowserHCIPacketHandler.  
+ * Listing GATTBrowserHCIPacketHandler.  
  */
 
-/* LISTING_START(gattBrowserHCIPacketHandler): Connecting and disconnecting from the GATT client */
+/* LISTING_START(GATTBrowserHCIPacketHandler): Connecting and disconnecting from the GATT client */
 static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     advertising_report_t report;
@@ -218,34 +197,28 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
             if (packet[2] != HCI_STATE_WORKING) break;
             if (cmdline_addr_found){
                 printf("Trying to connect to %s\n", bd_addr_to_str(cmdline_addr));
-                state = TC_W4_CONNECT;
                 le_central_connect(cmdline_addr, 0);
                 break;
             }
             printf("BTstack activated, start scanning!\n");
-            state = TC_W4_SCAN_RESULT;
             le_central_set_scan_parameters(0,0x0030, 0x0030);
             le_central_start_scan();
             break;
         case GAP_LE_ADVERTISING_REPORT:
-            if (state != TC_W4_SCAN_RESULT) return;
             fill_advertising_report_from_packet(&report, packet);
             // stop scanning, and connect to the device
-            state = TC_W4_CONNECT;
             le_central_stop_scan();
             le_central_connect(report.address,report.address_type);
             break;
         case HCI_EVENT_LE_META:
             // wait for connection complete
             if (packet[2] !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
-            if (state != TC_W4_CONNECT) return;
             gc_handle = READ_BT_16(packet, 4);
             // query primary services
-            state = TC_W4_SERVICE_RESULT;
             gatt_client_discover_primary_services(gc_id, gc_handle);
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            printf("\ntest client - DISCONNECTED\n");
+            printf("\nGATT browser - DISCONNECTED\n");
             exit(0);
             break;
         default:
@@ -254,65 +227,52 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
 }
 /* LISTING_END */
 
-/* @text Query results and further queries are handled by the gatt client packet
- * handler, as shown in Listing gattBrowserQueryHandler. Here, upon
- * receiving the primary services,  the
+/* @text Query results and further queries are handled by the GATT client packet
+ * handler, as shown in Listing GATTBrowserQueryHandler. Here, upon
+ * receiving the primary services, the
  * gatt_client_discover_characteristics_for_service() query for the last
  * received service is sent. After receiving the characteristics for the service,
  * gap_disconnect is called to terminate the connection. Upon
- * disconnect, the HCI packet handler receives the disconnect complete event, and
- * has to call the gatt_client_stop() function to remove the disconnected device
- * from the list of active GATT clients.  
+ * disconnect, the HCI packet handler receives the disconnect complete event.  
  */
 
-/* LISTING_START(gattBrowserQueryHandler): Handling of the GATT client queries */
+/* LISTING_START(GATTBrowserQueryHandler): Handling of the GATT client queries */
+static int search_services = 1;
+
 void handle_gatt_client_event(le_event_t * event){
     le_service_t service;
     le_characteristic_t characteristic;
-    switch(state){
-        case TC_W4_SERVICE_RESULT:
-            switch(event->type){
-                case GATT_SERVICE_QUERY_RESULT:
-                    service = ((le_service_event_t *) event)->service;
-                    dump_service(&service);
-                    services[service_count++] = service;
-                    break;
-                case GATT_QUERY_COMPLETE:
-                    state = TC_W4_CHARACTERISTIC_RESULT;
-                    service_index = 0;
-                    printf("\ntest client - CHARACTERISTIC for SERVICE ");
-                    printUUID128(service.uuid128); printf("\n");
-                    
-                    gatt_client_discover_characteristics_for_service(gc_id, gc_handle, &services[service_index]);
-                    break;
-                default:
-                    break;
-            }
+    switch(event->type){
+        case GATT_SERVICE_QUERY_RESULT:
+            service = ((le_service_event_t *) event)->service;
+            dump_service(&service);
+            services[service_count++] = service;
             break;
-            
-        case TC_W4_CHARACTERISTIC_RESULT:
-            switch(event->type){
-                case GATT_CHARACTERISTIC_QUERY_RESULT:
-                    characteristic = ((le_characteristic_event_t *) event)->characteristic;
-                    dump_characteristic(&characteristic);
+        case GATT_CHARACTERISTIC_QUERY_RESULT:
+            characteristic = ((le_characteristic_event_t *) event)->characteristic;
+            dump_characteristic(&characteristic);
+            break;
+        case GATT_QUERY_COMPLETE:
+            if (search_services){
+                // GATT_QUERY_COMPLETE of search services 
+                service_index = 0;
+                printf("\nGATT browser - CHARACTERISTIC for SERVICE ");
+                printUUID128(service.uuid128); printf("\n");
+                search_services = 0;
+                gatt_client_discover_characteristics_for_service(gc_id, gc_handle, &services[service_index]);
+            } else {
+                // GATT_QUERY_COMPLETE of search characteristics
+                if (service_index < service_count) {
+                    service = services[service_index++];
+                    printf("\nGATT browser - CHARACTERISTIC for SERVICE ");
+                    printUUID128(service.uuid128);
+                    printf(", [0x%04x-0x%04x]\n", service.start_group_handle, service.end_group_handle);
+                    
+                    gatt_client_discover_characteristics_for_service(gc_id, gc_handle, &service);
                     break;
-                case GATT_QUERY_COMPLETE:
-                    if (service_index < service_count) {
-                        state = TC_W4_CHARACTERISTIC_RESULT;
-                        service = services[service_index++];
-                        printf("\ntest client - CHARACTERISTIC for SERVICE ");
-                        printUUID128(service.uuid128);
-                        printf(", [0x%04x-0x%04x]\n", service.start_group_handle, service.end_group_handle);
-                        
-                        gatt_client_discover_characteristics_for_service(gc_id, gc_handle, &service);
-                        break;
-                    }
-                    state = TC_W4_DISCONNECT;
-                    service_index = 0;
-                    gap_disconnect(gc_handle);
-                    break;
-                default:
-                    break;
+                }
+                service_index = 0;
+                gap_disconnect(gc_handle); 
             }
             break;
         default:
