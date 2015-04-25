@@ -84,7 +84,8 @@ static void heartbeat_handler(timer_source_t *ts){
  *
  * @text Listing MainConfiguration shows main application code.
  * It configures the heartbeat tier and adds it to the run loop.
-
+ */
+ 
 /* LISTING_START(MainConfiguration): Setup heartbeat timer */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
