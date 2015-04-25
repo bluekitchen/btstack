@@ -38,11 +38,14 @@
 /*
  * panu_demo.c
  * Author: Ole Reinhardt <ole.reinhardt@kernelconcepts.de>
- *
  */
 
 /* EXAMPLE_START(panu_demo): PANU Demo
  *
+ * @text This example implements both a PANU client and a server. In server mode, it 
+ * setups a BNEP server and registers a PANU SDP record and wait for incoming connections.
+ * In client mode, it connects to a remote device, does an SDP Query to identify the PANU
+ * service and initiates the BNEP connection.
  */
 
 #include "btstack-config.h"
@@ -124,15 +127,16 @@ static char tap_dev_name[16] = "bnep%d";
 static data_source_t tap_dev_ds;
 
 /* @section TUN / TAP interface routines 
- *                                                                 
- * @text Available on Linux by default, assumes tuntaposx on OS X 
- * interface name: set to "bnepX" on linux, same as tapX on OS X,
- * see https://www.kernel.org/doc/Documentation/networking/tuntap.txt
+ *
+ * This example requires a TUN/TAP interface to connect the Bluetooth network interface
+ * with the native system. It has been tested on Linux and OS X, but should work on any
+ * system that provides TUN/TAP with minor modifications.
  * 
- * Flags: 
- * - IFF_TUN: TUN device (no Ethernet headers) 
- * - IFF_TAP: TAP device  
- * - IFF_NO_PI: Do not provide packet information  
+ * On Linux, TUN/TAP is availabe by default. On OS X, tuntaposx from
+ * http://tuntaposx.sourceforge.net needs to be installed.
+ *
+ * \emph{tap_alloc} sets up a virtual network interface with the given Bluetooth Address.
+ * It is rather low-level as it sets up and configures a network interface.
  */ 
 
 int tap_alloc(char *dev, bd_addr_t bd_addr)
@@ -225,16 +229,29 @@ int tap_alloc(char *dev, bd_addr_t bd_addr)
     return fd_dev;
 }
 
+/*
+ * @text Listig processTapData shows how removing a data source allows to
+ * temporarily disable incoming data, providing a basic flow control.
+ * 
+ * After successfully reading a network packet, the call to
+ * \emph{bnep_can_send_packet_now} checks, if BTstack can forward
+ * a network packet now. If that's not possible, the received data stays
+ * in the network buffer and the data source elements is removed from the
+ * run loop. \emph{process_tap_dev_data} will not be called until
+ * the data source is registered again.
+ */
+
+/* LISTING_START(processTapData): Process incoming network packets */
 int process_tap_dev_data(struct data_source *ds) 
 {
     ssize_t len;
     len = read(ds->fd, network_buffer, sizeof(network_buffer));
-    if (len > 0) {
-        network_buffer_len = len;
-    } else {
+    if (len <= 0){
         fprintf(stderr, "TAP: Error while reading: %s\n", strerror(errno));
+        return 0;
     }
 
+    network_buffer_len = len;
     if (bnep_can_send_packet_now(bnep_cid)) {
         bnep_send(bnep_cid, network_buffer, network_buffer_len);
         network_buffer_len = 0;
@@ -242,9 +259,9 @@ int process_tap_dev_data(struct data_source *ds)
         // park the current network packet
         run_loop_remove_data_source(&tap_dev_ds);
     }
-    
     return 0;
 }
+/* LISTING_END */
 
 // PANU client routines 
 char * get_string_from_data_element(uint8_t * element){
@@ -269,7 +286,8 @@ char * get_string_from_data_element(uint8_t * element){
 
 
 /* @section SDP parser callback 
- *
+ * 
+ * @text The SDP parsers retrieves the BNEP PAN UUID as explained in Section \ref{example:sdp_bnep_query}.
  */
 static void handle_sdp_client_query_result(sdp_query_event_t *event)
 {
@@ -374,8 +392,17 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
     }
 }
 
+/*
+ * @section Packet Handler
+ * 
+ * @text The packet handler responds to various HCI Events.
+ */
+
+
+ /* LISTING_START(packetHandler): Packet Handler */
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
+/* LISTING_PAUSE */
     int       rc;
     uint8_t   event;
     bd_addr_t event_addr;
@@ -384,27 +411,23 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     uint16_t  uuid_dest;
     uint16_t  mtu;    
   
+    /* LISTING_RESUME */
     switch (packet_type) {
 		case HCI_EVENT_PACKET:
             event = packet[0];
             switch (event) {            
+                /*
+                 * @text When $BTSTACK_EVENT_STATE$ with state $HCI_STATE_WORKING$
+                 * is received and the example is started in client mode, the remote SDP BNEP query is started.
+                 */
                 case BTSTACK_EVENT_STATE:
-                    /* BT Stack activated, get started */ 
                     if (packet[2] == HCI_STATE_WORKING) {
-                        /* Send a general query for BNEP Protocol ID */
                         printf("Start SDP BNEP query.\n");
                         sdp_general_query_for_uuid(remote, SDP_BNEPProtocol);
                     }
                     break;
 
-                case HCI_EVENT_COMMAND_COMPLETE:
-					if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)){
-                        bt_flip_addr(event_addr, &packet[6]);
-                        printf("BD-ADDR: %s\n", bd_addr_to_str(event_addr));
-                        break;
-                    }
-                    break;
-
+                /* LISTING_PAUSE */
                 case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
                     printf("Pin code request - using '0000'\n");
@@ -418,6 +441,15 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     printf("SSP User Confirmation Auto accept\n");
                     break;
 
+                /* LISTING_RESUME */
+                /* 
+                 * @text In server mode, $BNEP_EVENT_INCOMING_CONNECTION$ is received after a client has connected.
+                 * and the TAP network interface is then configured. A data source is set up and registered with the 
+                 * run loop to receive Ethernet packets from the TAP interface.
+                 *
+                 * The event contains both the source and destination UUIDs, as well as the MTU for this connection and
+                 * the BNEP Channel ID, that is used for sending Ethernet packets over BNEP.
+                 */
                 case BNEP_EVENT_INCOMING_CONNECTION:
 					// data: event(8), len(8), bnep source uuid (16), bnep destination uuid (16), remote_address (48)
                     uuid_source = READ_BT_16(packet, 2);
@@ -439,7 +471,13 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                         run_loop_add_data_source(&tap_dev_ds);
                     }
 					break;
-					
+
+                /* LISTING_PAUSE */
+                /* 
+                 * @text In client mode, $BNEP_EVENT_OPEN_CHANNEL_COMPLETE$ is received after a client has connected
+                 * or when the connection fails. The status field returs the error code. It is otherwise identical to 
+                 * $BNEP_EVENT_INCOMING_CONNECTION$ before.
+                 */
 				case BNEP_EVENT_OPEN_CHANNEL_COMPLETE:
                     if (packet[2]) {
                         printf("BNEP channel open failed, status %02x\n", packet[2]);
@@ -465,11 +503,18 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                         }
                     }
 					break;
-                    
+                
+                /* LISTING_RESUME */
+                /* 
+                 * @text If there is a timeout during the connection setup, $BNEP_EVENT_CHANNEL_TIMEOUT$ will be received
+                 * and the BNEP connection closed
+                 */     
                 case BNEP_EVENT_CHANNEL_TIMEOUT:
                     printf("BNEP channel timeout! Channel will be closed\n");
                     break;
-                    
+
+                /* @text $BNEP_EVENT_CHANNEL_CLOSED$ is received when the connection gets closed
+                 */
                 case BNEP_EVENT_CHANNEL_CLOSED:
                     printf("BNEP channel closed\n");
                     run_loop_remove_data_source(&tap_dev_ds);
@@ -479,6 +524,9 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     }
                     break;
 
+                /* @text $BNEP_EVENT_READY_TO_SEND$ indicates that a new packet can be send. This triggers the retry of a 
+                 * parked network packet. If this succeeds, the data source element is added to the run loop again.
+                 */
                 case BNEP_EVENT_READY_TO_SEND:
                     // Check for parked network packets and send it out now 
                     if (network_buffer_len > 0) {
@@ -494,6 +542,10 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     break;
             }
             break;
+
+        /* @text Ethernet packets from the remote device are received in the packet handler with type $BNEP_DATA_PACKET$
+         * It is forwarded to the TAP interface.
+         */
         case BNEP_DATA_PACKET:
             // Write out the ethernet frame to the tap device 
             if (tap_fd > 0) {
@@ -511,7 +563,13 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             break;
     }
 }
+/* LISTING_STOP */
 
+/* @section Main configuration
+ *
+ * @text In the app configuration, L2CAP and BNEP are initialized and a BNEP service, for server mode,
+ * is registered, before the Bluetooth stack gets started
+ */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 

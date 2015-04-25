@@ -62,6 +62,8 @@
 
 #define HEARTBEAT_PERIOD_MS 500
 
+static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
 static uint8_t   rfcomm_channel_nr = 1;
 static uint16_t  rfcomm_channel_id;
 static uint8_t   rfcomm_send_credit = 0;
@@ -201,9 +203,9 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 /* LISTING_RESUME */
         case RFCOMM_DATA_PACKET:
             for (i=0;i<size;i++){
-                putc(packet[i]);
+                putchar(packet[i]);
             };
-            putc('\n');
+            putchar('\n');
             rfcomm_send_credit = 1;
             break;
 /* LISTING_PAUSE */
