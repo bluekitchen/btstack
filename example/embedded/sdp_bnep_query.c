@@ -160,19 +160,11 @@ char * get_string_from_data_element(uint8_t * element){
  * value, see Listing HandleSDPQUeryResult. Here, we show how to parse the
  * Service Class ID List and Protocol Descriptor List, as they contain 
  * the BNEP Protocol UUID and L2CAP PSM respectively.
- *
- * The Service Class ID List is a Data Element Sequence (DES) of UUIDs. 
- * The BNEP PAN protocol UUID is within this list.
- *
- * The Protocol Descriptor List is DES 
- * which contains one DES for each protocol. For PAN serivces, it contains
- * a DES with the L2CAP Protocol UUID and a PSM,
- * and another DES with the BNEP UUID and the the BNEP version.
  */
 
-/* LISTING_START(HandleSDPQUeryResult): Extracting BNEP Prototocol UUID and L2CAP PSM. */
+/* LISTING_START(HandleSDPQUeryResult): Extracting BNEP Prototocol UUID and L2CAP PSM */
 static void handle_sdp_client_query_result(sdp_query_event_t * event){
-/* LISTING_PAUSE */
+    /* LISTING_PAUSE */
     sdp_query_attribute_value_event_t * ve;
     sdp_query_complete_event_t * ce;
     des_iterator_t des_list_it;
@@ -194,7 +186,11 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
             attribute_value[ve->data_offset] = ve->data;
             if ((uint16_t)(ve->data_offset+1) == ve->attribute_length){
 
- /* LISTING_RESUME */
+                /* LISTING_RESUME */
+                /* @text The Service Class ID List is a Data Element Sequence (DES) of UUIDs. 
+                 * The BNEP PAN protocol UUID is within this list.
+                 */
+
                 switch(ve->attribute_id){
                     // 0x0001 "Service Class ID List"
                     case SDP_ServiceClassIDList:
@@ -214,7 +210,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
                             }
                         }
                         break;
-/* LISTING_PAUSE */
+                    /* LISTING_PAUSE */
                     // 0x0100 "Service Name"
                     case 0x0100:
                     // 0x0101 "Service Description"
@@ -223,7 +219,13 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
                         printf(" ** Attribute 0x%04x: %s\n", ve->attribute_id, str);
                         free(str);
                         break;
-/* LISTING_RESUME */
+                    
+                    /* LISTING_RESUME */
+                    /* @text The Protocol Descriptor List is DES 
+                     * which contains one DES for each protocol. For PAN serivces, it contains
+                     * a DES with the L2CAP Protocol UUID and a PSM,
+                     * and another DES with the BNEP UUID and the the BNEP version.
+                     */
                     case SDP_ProtocolDescriptorList:{
                             printf(" ** Attribute 0x%04x: ", ve->attribute_id);
                             
@@ -255,7 +257,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
                             printf("l2cap_psm 0x%04x, bnep_version 0x%04x\n", l2cap_psm, bnep_version);
                         }
                         break;
-/* LISTING_PAUSE */
+                    /* LISTING_PAUSE */
                     default:
                         break;
                 }
@@ -266,7 +268,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
             printf("General query done with status %d.\n\n", ce->status);
             break;
     }
-/* LISTING_RESUME */
+    /* LISTING_RESUME */
 }
 /* LISTING_END */
 

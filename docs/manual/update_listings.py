@@ -8,17 +8,17 @@ list_of_groups = ["Hello World", "GAP", "SDP Queries", "SPP Server", "BNEP/PAN",
 
 # Defines which examples belong to a group. Example is defined as [example file, example title].
 list_of_examples = { 
-    "Hello World" : [["led_counter"]],
-    "GAP"         : [["gap_inquiry"]],
-    "SDP Queries" :[["sdp_general_query"],
+    # "Hello World" : [["led_counter"]],
+    # "GAP"         : [["gap_inquiry"]],
+    "SDP Queries" :[#["sdp_general_query"],
                     ["sdp_bnep_query"]
                     ],
-    "SPP Server"  : [["spp_counter"],
-                     ["spp_flowcontrol"]],
-    "BNEP/PAN"   : [["panu_demo"]],
-    "Low Energy"  : [["gatt_browser"],
-                    ["le_counter"]],
-    "Dual Mode" : [["spp_and_le_counter"]],
+    # "SPP Server"  : [["spp_counter"],
+    #                  ["spp_flowcontrol"]],
+    # "BNEP/PAN"   : [["panu_demo"]],
+    # "Low Energy"  : [["gatt_browser"],
+    #                 ["le_counter"]],
+    # "Dual Mode" : [["spp_and_le_counter"]],
 }
 
 lst_header = """
@@ -100,6 +100,9 @@ def latexText(text, ref_prefix):
 def isEmptyCommentLine(line):
     return re.match('(\s*\*\s*)\n',line)
 
+def isCommentLine(line):
+    return re.match('(\s*\*\s*).*',line)
+
 def isEndOfComment(line):
     return re.match('\s*\*/.*', line) 
 
@@ -145,12 +148,27 @@ class State:
     SearchItemizeEnd = 5
     ReachedExampleEnd = 6
 
+text_block = ''
+itemize_block = ''
+
+def writeTextBlock(aout, lstStarted):
+    global text_block
+    if text_block and not lstStarted:
+        aout.write(text_block)
+        text_block = ''
+
+def writeItemizeBlock(aout, lstStarted):
+    global itemize_block
+    if itemize_block and not lstStarted:
+        aout.write(itemize_block + "\n\end{itemize}\n")
+        itemize_block = ''
+
 def writeListings(aout, infile_name, ref_prefix):
+    global text_block, itemize_block
     itemText = None
     state = State.SearchExampleStart
     code_in_listing = ""
-    text_block = None
-    itemize_block = None
+    skip_code = 0
 
     with open(infile_name, 'rb') as fin:
         for line in fin:
@@ -178,40 +196,45 @@ def writeListings(aout, infile_name, ref_prefix):
                 continue
             
             if isTextTag(line):
-                text_block = processTextLine(line, ref_prefix)
+                text_block = text_block + "\n\n" + processTextLine(line, ref_prefix)
                 continue
 
+            skip_code = 0
+            lstStarted = state != State.SearchListingStart
             if text_block or itemize_block:
                 if isEndOfComment(line) or isEmptyCommentLine(line):
+                    skip_code = 1
                     if itemize_block:
                         # finish itemize
-                        aout.write(itemize_block + "\n\end{itemize}\n")
-                        itemize_block = None
+                        writeItemizeBlock(aout, lstStarted)
                     else: 
                         if isEmptyCommentLine(line):
                             text_block = text_block + "\n\n"
+                            
                         else:
-                            # finish text
-                            aout.write(text_block)
-                            text_block = None
+                            writeTextBlock(aout, lstStarted)
+
 
                 else:
                     if isNewItem(line) and not itemize_block:
+                        skip_code = 1
                         # finish text, start itemize
-                        aout.write(text_block)
-                        text_block = None
+                        writeTextBlock(aout, lstStarted)
                         itemize_block = "\n \\begin{itemize}"
-                    
+                        continue
                     if itemize_block:
+                        skip_code = 1
                         itemize_block = itemize_block + processTextLine(line, ref_prefix)
-                    else:
+                    elif isCommentLine(line):
                         # append text
+                        skip_code = 1
                         text_block = text_block + processTextLine(line, ref_prefix)
-
-                continue
+                    else:
+                        skip_code = 0
+                #continue
 
             if state == State.SearchListingStart:
-                parts = re.match('.*(LISTING_START)\((.*)\):\s*(.*\s*)(\*/).*',line)
+                parts = re.match('.*(LISTING_START)\((.*)\):\s*(.*)(\s+\*/).*',line)
                 
                 if parts: 
                     lst_lable = parts.group(2)
@@ -232,12 +255,15 @@ def writeListings(aout, infile_name, ref_prefix):
                     code_in_listing = ""
                     aout.write(listing_ending)
                     state = State.SearchListingStart
+                    writeItemizeBlock(aout, 0)
+                    writeTextBlock(aout, 0)
                 elif parts_pause:
                     code_in_listing = code_in_listing + "...\n"
                     state = State.SearchListingResume
                 elif not end_comment_parts:
                     # aout.write(line)
-                    code_in_listing = code_in_listing + line.replace("    ", "  ")
+                    if not skip_code:
+                        code_in_listing = code_in_listing + line.replace("    ", "  ")
                 continue
                 
             if state == State.SearchListingResume:
@@ -250,6 +276,8 @@ def writeListings(aout, infile_name, ref_prefix):
             if parts:
                 if state != State.SearchListingStart:
                     print "Formating error detected"
+                writeItemizeBlock(aout, 0)
+                writeTextBlock(aout, 0)
                 state = State.ReachedExampleEnd
                 print "Reached end of the example"
             
