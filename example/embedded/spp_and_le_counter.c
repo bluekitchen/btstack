@@ -37,7 +37,12 @@
 
 // *****************************************************************************
 /* EXAMPLE_START(spp_and_le_counter): Dual mode example
+ * 
+ * @text The SPP and LE Counter example combines the Bluetooth Classic SPP Counter
+ * and the Bluetooth LE Counter into a single application.
  *
+ * In this Section, we only point out the differences to the individual examples
+ * and how how the stack is configured.
  */
 // *****************************************************************************
 
@@ -82,12 +87,20 @@ static int  counter = 0;
 static char counter_string[30];
 static int  counter_string_len;
 
+/*
+ * @section Advertisements 
+ *
+ * @text The Flags attribute in the Advertisement Data indicates if a device is dual-mode or not.
+ * 0x02 encoded LE General Discoverable, Dual-Mode device. See Listing advertisements.
+ */
+/* LISTING_START(advertisements): Advertisement data: Flag 0x02 indicates a dual mode device */
 const uint8_t adv_data[] = {
     // Flags general discoverable
     0x02, 0x01, 0x02, 
     // Name
     0x0b, 0x09, 'L', 'E', ' ', 'C', 'o', 'u', 'n', 't', 'e', 'r', 
 };
+/* LISTING_END */
 uint8_t adv_data_len = sizeof(adv_data);
 
 enum {
@@ -96,7 +109,6 @@ enum {
     ENABLE_ADVERTISEMENTS    = 1 << 2,
 };
 static uint16_t todos = 0;
-
 
 static void gap_run(){
 
@@ -127,6 +139,12 @@ static void gap_run(){
         return;
     }
 }
+
+/* 
+ * @section Packet Handler
+ * 
+ * @text The packet handler of the combined example is just the combination of the individual packet handlers
+ */
 
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     bd_addr_t event_addr;
@@ -231,6 +249,16 @@ static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t
     le_notification_enabled = READ_BT_16(buffer, 0) == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
     return 0;
 }
+
+/*
+ * @section Heartbeat Handler
+ * 
+ * @text Similar to the packet handler,the hearbeat handler is the combinatino of the individual ones.
+ * After updating the counter, it sends an RFCOMM packet is an RFCOMM connection is active and an LE notification if 
+ * the remote side has requested notifications.
+ */
+
+ /* LISTING_START(heartbeat): Combined Heartbeat handler */
 static void  heartbeat_handler(struct timer *ts){
 
     counter++;
@@ -252,8 +280,15 @@ static void  heartbeat_handler(struct timer *ts){
     run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
     run_loop_add_timer(ts);
 } 
+/* LISTING_END */
 
-// main == setup
+/*
+ * @section Main app setup
+ *
+ * @text As with the packet and the heartbeat handlers, the combined app setup contains the code from the indifivaul example setups.
+ */
+
+/* LISTING_START(MainConfiguration): Init L2CAP RFCOMM SDO SM ATT Server and start heartbeat timer */
 int btstack_main(void);
 int btstack_main(void)
 {
@@ -264,21 +299,25 @@ int btstack_main(void)
 
     rfcomm_init();
     rfcomm_register_packet_handler(packet_handler);
-    rfcomm_register_service_internal(NULL, RFCOMM_SERVER_CHANNEL, 0xffff);  // reserved channel, mtu limited by l2cap
+    rfcomm_register_service_internal(NULL, RFCOMM_SERVER_CHANNEL, 0xffff);
 
     // init SDP, create record for SPP and register with SDP
     sdp_init();
     memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
+/* LISTING_PAUSE */
 #ifdef EMBEDDED
+/* LISTING_RESUME */
     service_record_item_t * service_record_item = (service_record_item_t *) spp_service_buffer;
     sdp_create_spp_service( (uint8_t*) &service_record_item->service_record, RFCOMM_SERVER_CHANNEL, "SPP Counter");
     printf("SDP service buffer size: %u\n", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
     sdp_register_service_internal(NULL, service_record_item);
+/* LISTING_PAUSE */
 #else
     sdp_create_spp_service( spp_service_buffer, RFCOMM_SERVER_CHANNEL, "SPP Counter");
     printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
     sdp_register_service_internal(NULL, spp_service_buffer);
 #endif
+/* LISTING_RESUME */
 
     hci_ssp_set_io_capability(SSP_IO_CAPABILITY_DISPLAY_YES_NO);
 
@@ -301,4 +340,5 @@ int btstack_main(void)
 	    
     return 0;
 }
+/* LISTING_END */
 /* EXAMPLE_END */
