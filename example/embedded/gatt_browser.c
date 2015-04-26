@@ -92,12 +92,12 @@ static int service_count = 0;
 static int service_index = 0;
 
 
-/* @section Setting up GATT client
+/* @section GATT client setup
  *
- * @text In setup phase, a GATT client must register the HCI and GATT client
+ * @text In the setup phase, a GATT client must register the HCI and GATT client
  * packet handlers, as shown in Listing GATTClientSetup.
  * Additionally, the security manager can be setup, if signed writes, or
- * encrypted or authenticated connection, are required to access the
+ * encrypted, or authenticated connection are required, to access the
  * characteristics, as explained in Section smp.
  */
 
@@ -122,8 +122,7 @@ static void gatt_client_setup(){
     // Register handler for GATT client events
     gc_id = gatt_client_register_packet_handler(&handle_gatt_client_event);
 
-    // Optionally, setup security manager for signed writes or 
-    // encrypted or authenticated connection
+    // Optinoally, Setup security manager
     sm_init();
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
 }
@@ -175,7 +174,7 @@ static void fill_advertising_report_from_packet(advertising_report_t * report, u
 }
 
 
-/* @section Packet handlers
+/* @section HCI packet handler
  * 
  * @text The HCI packet handler has to start the scanning, 
  * to find the first advertising device, to stop scanning, to connect
@@ -227,7 +226,9 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
 }
 /* LISTING_END */
 
-/* @text Query results and further queries are handled by the GATT client packet
+/* @section GATT Client event handler
+ *
+ * @text Query results and further queries are handled by the GATT client packet
  * handler, as shown in Listing GATTBrowserQueryHandler. Here, upon
  * receiving the primary services, the
  * gatt_client_discover_characteristics_for_service() query for the last

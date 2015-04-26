@@ -43,9 +43,9 @@
 /* EXAMPLE_START(panu_demo): PANU Demo
  *
  * @text This example implements both a PANU client and a server. In server mode, it 
- * setups a BNEP server and registers a PANU SDP record and wait for incoming connections.
+ * sets up a BNEP server and registers a PANU SDP record and waits for incoming connections.
  * In client mode, it connects to a remote device, does an SDP Query to identify the PANU
- * service and initiates the BNEP connection.
+ * service and initiates a BNEP connection.
  */
 
 #include "btstack-config.h"
@@ -128,7 +128,7 @@ static data_source_t tap_dev_ds;
 
 /* @section TUN / TAP interface routines 
  *
- * This example requires a TUN/TAP interface to connect the Bluetooth network interface
+ * @text This example requires a TUN/TAP interface to connect the Bluetooth network interface
  * with the native system. It has been tested on Linux and OS X, but should work on any
  * system that provides TUN/TAP with minor modifications.
  * 
@@ -230,15 +230,15 @@ int tap_alloc(char *dev, bd_addr_t bd_addr)
 }
 
 /*
- * @text Listig processTapData shows how removing a data source allows to
- * temporarily disable incoming data, providing a basic flow control.
+ * @text Listig processTapData shows how a packet is received from the TAP network interface
+ * and forwarded over the BNEP connection.
  * 
  * After successfully reading a network packet, the call to
  * \emph{bnep_can_send_packet_now} checks, if BTstack can forward
  * a network packet now. If that's not possible, the received data stays
  * in the network buffer and the data source elements is removed from the
  * run loop. \emph{process_tap_dev_data} will not be called until
- * the data source is registered again.
+ * the data source is registered again. This provides a basic flow control.
  */
 
 /* LISTING_START(processTapData): Process incoming network packets */
@@ -416,7 +416,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 		case HCI_EVENT_PACKET:
             event = packet[0];
             switch (event) {            
-                /* @text When $BTSTACK_EVENT_STATE$ with state $HCI_STATE_WORKING$
+                /* @text When BTSTACK_EVENT_STATE with state HCI_STATE_WORKING
                  * is received and the example is started in client mode, the remote SDP BNEP query is started.
                  */
                 case BTSTACK_EVENT_STATE:
@@ -442,7 +442,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
                 /* LISTING_RESUME */
 
-                /* @text In server mode, $BNEP_EVENT_INCOMING_CONNECTION$ is received after a client has connected.
+                /* @text In server mode, BNEP_EVENT_INCOMING_CONNECTION is received after a client has connected.
                  * and the TAP network interface is then configured. A data source is set up and registered with the 
                  * run loop to receive Ethernet packets from the TAP interface.
                  *
@@ -473,9 +473,9 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 
                 /* LISTING_PAUSE */
 
-                /* @text In client mode, $BNEP_EVENT_OPEN_CHANNEL_COMPLETE$ is received after a client has connected
+                /* @text In client mode, BNEP_EVENT_OPEN_CHANNEL_COMPLETE is received after a client has connected
                  * or when the connection fails. The status field returs the error code. It is otherwise identical to 
-                 * $BNEP_EVENT_INCOMING_CONNECTION$ before.
+                 * BNEP_EVENT_INCOMING_CONNECTION before.
                  */
 				case BNEP_EVENT_OPEN_CHANNEL_COMPLETE:
                     if (packet[2]) {
@@ -505,14 +505,14 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 
                 /* LISTING_RESUME */
 
-                /* @text If there is a timeout during the connection setup, $BNEP_EVENT_CHANNEL_TIMEOUT$ will be received
+                /* @text If there is a timeout during the connection setup, BNEP_EVENT_CHANNEL_TIMEOUT will be received
                  * and the BNEP connection closed
                  */     
                 case BNEP_EVENT_CHANNEL_TIMEOUT:
                     printf("BNEP channel timeout! Channel will be closed\n");
                     break;
 
-                /* @text $BNEP_EVENT_CHANNEL_CLOSED$ is received when the connection gets closed
+                /* @text BNEP_EVENT_CHANNEL_CLOSED is received when the connection gets closed
                  */
                 case BNEP_EVENT_CHANNEL_CLOSED:
                     printf("BNEP channel closed\n");
@@ -523,7 +523,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     }
                     break;
 
-                /* @text $BNEP_EVENT_READY_TO_SEND$ indicates that a new packet can be send. This triggers the retry of a 
+                /* @text BNEP_EVENT_READY_TO_SEND indicates that a new packet can be send. This triggers the retry of a 
                  * parked network packet. If this succeeds, the data source element is added to the run loop again.
                  */
                 case BNEP_EVENT_READY_TO_SEND:
@@ -542,7 +542,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             }
             break;
 
-        /* @text Ethernet packets from the remote device are received in the packet handler with type $BNEP_DATA_PACKET$
+        /* @text Ethernet packets from the remote device are received in the packet handler with type BNEP_DATA_PACKET.
          * It is forwarded to the TAP interface.
          */
         case BNEP_DATA_PACKET:

@@ -82,8 +82,11 @@ static int  le_notification_enabled;
  * @text To be discoverable, LE Advertisements are enabled using direct HCI Commands.
  * As there's no guarantee that a HCI command can always be sent, the gap_run function
  * is used to send each command as requested by the $todos$ variable.
- * First, the advertisement data is set, then the advertisement params incl. the 
- * advertisement interval is set. Finally, advertisements are enabled. See Listing gapRun.
+ * First, the advertisement data is set with hci_le_set_advertising_data.
+ * Then the advertisement parameters including the  advertisement interval is set
+ * with hci_le_set_advertising_parameters.
+ * Finally, advertisements are enabled with hci_le_set_advertise_enable.
+ * See Listing gapRun.
  *
  * In this example, the Advertisement contains the Flags attribute and the device name.
  * The flag 0x06 indicates: LE General Discoverable Mode and BR/EDR not supported.
@@ -141,7 +144,7 @@ static void gap_run(){
  *
  * @text The packet handler is only used to trigger advertisements after BTstack is ready and after disconnects.
  * See Listing packetHandler. 
- * Advertisemetns are not automatically re-enabled after a connection was closed although it was active before.
+ * Advertisements are not automatically re-enabled after a connection was closed even though they have been active before.
  *
  */
 
@@ -207,7 +210,7 @@ static void  heartbeat_handler(struct timer *ts){
 /*
  * @section ATT Read
  *
- * The ATT Server handles all reads to constant data. For dynamic data like the custom characteristic, the registered
+ * @text The ATT Server handles all reads to constant data. For dynamic data like the custom characteristic, the registered
  * att_read_callback is called. To handle long characteristics and long reads, the att_read_callback is first called
  * with buffer == NULL, to request the total value lenght. Then it will be called again requesting a chunk of the value.
  * See Listing attRead.
@@ -234,8 +237,8 @@ static uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint
 /*
  * @section ATT Write
  *
- * @text The only valid att write in this example is to the Client Characteristic Configuration, which configures notification
- * and indication. If the att_handle matches the client configuration handle, the new configuration value is stored and used
+ * @text The only valid ATT write in this example is to the Client Characteristic Configuration, which configures notification
+ * and indication. If the ATT handle matches the client configuration handle, the new configuration value is stored and used
  * in the hearbeat handler to decide if a new value should be sent. See Listing attWrite
  */
 
