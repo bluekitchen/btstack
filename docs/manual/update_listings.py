@@ -175,7 +175,7 @@ def writeListings(aout, infile_name, ref_prefix):
             if state == State.SearchExampleStart:
                 parts = re.match('.*(EXAMPLE_START)\((.*)\):\s*(.*)(\*/)?\n',line)
                 if parts: 
-                    lable = parts.group(2)
+                    lable = parts.group(2).replace("_","")
                     title = latexText(parts.group(2), ref_prefix)
                     desc  = latexText(parts.group(3), ref_prefix)
                     aout.write(example_section.replace("EXAMPLE_TITLE", title).replace("EXAMPLE_DESC", desc).replace("EXAMPLE_LABLE", lable))
@@ -237,7 +237,7 @@ def writeListings(aout, infile_name, ref_prefix):
                 parts = re.match('.*(LISTING_START)\((.*)\):\s*(.*)(\s+\*/).*',line)
                 
                 if parts: 
-                    lst_lable = parts.group(2)
+                    lst_lable = parts.group(2).replace("_","")
                     lst_caption = latexText(parts.group(3), ref_prefix)
                     listing = listing_start.replace("LISTING_CAPTION", lst_caption).replace("FILE_NAME", ref_prefix).replace("LISTING_LABLE", lst_lable)
                     if listing:
@@ -311,7 +311,7 @@ def processExamples(examples_folder, standalone, examples_ofile):
             aout.write("  \item " + group_title + "\n");
             aout.write("  \\begin{itemize}\n");
             for example in examples:
-                ref_prefix = example[0].replace("_", "-")
+                ref_prefix = example[0].replace("_", "")
                 title = latexText(example[0], ref_prefix)
                 desc  = latexText(example[1], ref_prefix)
                 aout.write(example_item.replace("EXAMPLE_TITLE", title).replace("EXAMPLE_DESC", desc).replace("EXAMPLE_LABLE", ref_prefix))
@@ -324,7 +324,7 @@ def processExamples(examples_folder, standalone, examples_ofile):
             
             for example in examples:
                 file_name = examples_folder + example[0] + ".c"
-                writeListings(aout, file_name, example[0])
+                writeListings(aout, file_name, example[0].replace("_",""))
 
         if standalone:
             aout.write(document_end)
