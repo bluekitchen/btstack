@@ -145,14 +145,15 @@ morekeywords={*, timer_source_t, data_source_t, uint32_t, uint16_t, uint8_t, RUN
 \pagebreak
 
 
-Thanks for checking out BTstack! In this manual, we first provide the usual 'quick starter guide' before highlighting BTstack's main design choices and going into more details with a few examples. Finally, we outline the basic steps when integrating BTstack into existing single-threaded or even multi-threaded environments. The Revision History is shown in the Appendix \ref{appendix:revision_history} on page \pageref{appendix:revision_history}.
+Thanks for checking out BTstack! In this manual, we first provide a 'quick starter guide' for common platforms before highlighting BTstack's main design choices and go over all implemented protocols and profiles. A series of examples shows how BTstack can be used to implement common 
+use cases. Finally, we outline the basic steps when integrating BTstack into existing single-threaded or even multi-threaded environments. The Revision History is shown in the Appendix \ref{appendix:revision_history} on page \pageref{appendix:revision_history}.
 
 \section{Quick Start}
 
 \subsection{General Tools}
 On Unix-based systems, git, make, and Python are usually installed. If not, use the system's packet manager to install them. 
 
-On Windows, you need to install and configure mspgcc, GNU Make, Python, and optionally git manually:
+On Windows, you need to install and configure, GNU Make, Python, and optionally git manually:
  \begin{itemize}
  \item \GNUMake{} for Windows: Add its bin folder to the Windows Path in Environment Variables. The bin folder is where make.exe resides, and it's usually located in \path{C:\Program Files\GnuWin32\bin}. 
  \item \Python{} for Windows: Add Python installation folder to the Windows Path in Environment Variables.
@@ -163,8 +164,8 @@ Adding paths to the Windows Path variable:
    \item Go to: Control Panel$\rightarrow$System$\rightarrow$Advanced tab$\rightarrow$Environment Variables.
    \item The top part contains a list of User variables. 
    \item Click on the Path variable and then click edit.
-   \item Go to the end of the line, then append the path to the list., for example, \path{C:\mspgcc\bin} for mspgcc.
-   \item Ensure that there is a semicolon before and after \path{C:\mspgcc\bin}. 
+   \item Go to the end of the line, then append the path to the list., for example, \path{C:\Program Files\GnuWin32\bin} for GNU Make.
+   \item Ensure that there is a semicolon before and after \path{C:\Program Files\GnuWin32\bin}. 
 \end{itemize}
 
 \subsection{Getting BTstack from GitHub}
@@ -188,9 +189,10 @@ This step is platform specific. To compile and run the examples, you need to dow
 \toprule
 \hiderowcolors Platform & Chipset & Toolchain & Programmer\\ \showrowcolors
 \midrule
-ez430-rf2560, msp-exp430f5438,  msp430f5229lp & CC256x & \mspgcc{} &\MSPFlasher{},  \MSPDebug{} \\           
-stm32-f103rb-nucleo     & CC256x   & \gccarm{}    & \OpenOCD{} \\      
-pic32-harmony               & CSR8811 & \mplabxc{} & \PICkit{} \\ \hiderowcolors
+ez430-rf2560, msp-exp430f5438,  msp430f5229lp & CC256x  & \mspgcc{}  & \MSPFlasher{},  \MSPDebug{} \\           
+stm32-f103rb-nucleo                           & CC256x  & \gccarm{}  & \OpenOCD{} \\      
+pic32-harmony                                 & CSR8811 & \mplabxc{} & \PICkit{}  \\ \hiderowcolors
+libusb on Linux/OS X                          & any     & any        & N/A        \\
 \bottomrule
  \label{table:platformCompiler}
  \end{tabular}
@@ -439,7 +441,7 @@ Separate packet handlers can be used for each L2CAP service and outgoing connect
 \section{Examples}
 \label{section:examples}
 
-In this section, we will describe a number of examples from the \emph{example/embedded} folder. To allow code-reuse with different platforms as well as with new ports, the low-level initialization of BTstack and the hardware configuration has been extracted to the various \emph{platforms/\$PLATFORM/main.c} files. The examples only contain the platform-independent Bluetooth logic. But let's have a look at the common init code. 
+In this section, we will describe a number of examples from the \emph{example/embedded} folder. To allow code-reuse with different platforms as well as with new ports, the low-level initialization of BTstack and the hardware configuration has been extracted to the various \emph{platforms/PLATFORM/main.c} files. The examples only contain the platform-independent Bluetooth logic. But let's have a look at the common init code. 
 
 Listing \ref{listing:btstackInit} shows a minimal platform setup for an embedded system with a Bluetooth chipset connected via UART.
 
