@@ -112,6 +112,8 @@ public:
 	// subscribe/unsubscribe
 	int subscribeForNotifications(BLECharacteristic * characteristic);
 	int unsubscribeFromNotifications(BLECharacteristic * characteristic);	
+	int subscribeForIndications(BLECharacteristic * characteristic);
+	int unsubscribeFromIndications(BLECharacteristic * characteristic);	
 };
 
 class BTstackManager {
@@ -147,9 +149,11 @@ public:
 	int  writeCharacteristic(BLEDevice * device, BLECharacteristic * characteristic, uint8_t * data, uint16_t size);
 	int  writeCharacteristicWithoutResponse(BLEDevice * device, BLECharacteristic * characteristic, uint8_t * data, uint16_t size);
 
-	// subscribe/unsubscribe
+	// subscribe/unsubscribe notification and indications
 	int subscribeForNotifications(BLEDevice * device, BLECharacteristic * characteristic);
 	int unsubscribeFromNotifications(BLEDevice * device, BLECharacteristic * characteristic);
+	int subscribeForIndications(BLEDevice * device, BLECharacteristic * characteristic);
+	int unsubscribeFromIndications(BLEDevice * device, BLECharacteristic * characteristic);
 
 	// Callbacks
 	void setBLEAdvertisementCallback(void (*)(BLEAdvertisement * bleAdvertisement));
@@ -159,6 +163,7 @@ public:
 	void setGATTCharacteristicDiscoveredCallback(void (*)(BLEStatus status, BLEDevice * device, BLECharacteristic * characteristic));
 	void setGATTCharacteristicReadCallback(void (*)(BLEStatus status, BLEDevice * device, uint8_t * value, uint16_t length));
 	void setGATTCharacteristicNotificationCallback(void (*)(BLEDevice * device, uint16_t value_handle, uint8_t* value, uint16_t length));
+	void setGATTCharacteristicIndicationCallback(void (*)(BLEDevice * device, uint16_t value_handle, uint8_t* value, uint16_t length));
 	void setGATTDoneCallback(void (*)(BLEStatus status, BLEDevice * device));
 
 	void setGATTCharacteristicWrittenCallback(void (*)(BLEStatus status, BLEDevice * device));
