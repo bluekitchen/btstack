@@ -1215,7 +1215,7 @@ le_command_status_t gatt_client_signed_write_without_response(uint16_t gatt_clie
     gatt_client_t * peripheral = provide_context_for_conn_handle(con_handle);
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
     peripheral->le_device_index = sm_le_device_index(con_handle);
-    if (!peripheral->le_device_index < 0) return BLE_PERIPHERAL_IN_WRONG_STATE; // device lookup not done / no stored bonding information
+    if (peripheral->le_device_index < 0) return BLE_PERIPHERAL_IN_WRONG_STATE; // device lookup not done / no stored bonding information
 
     peripheral->subclient_id = gatt_client_id;
     peripheral->attribute_handle = handle;
