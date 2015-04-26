@@ -36,10 +36,14 @@
  */
 
 // *****************************************************************************
-/* EXAMPLE_START(le_counter): Dual mode example
+/* EXAMPLE_START(le_counter): LE Peripheral - Heartbeat Counter over GATT
  *
+ * @text All newer operating systems provide GATT Client functionality.
+ * The LE Counter examples demonstrates how to specify a minimal GATT Database
+ * with a custom GATT Service and a custom Characteristic that sends periodic
+ * notifications. 
  */
-// *****************************************************************************
+ // *****************************************************************************
 
 #include <stdint.h>
 #include <stdio.h>
@@ -68,29 +72,38 @@
 
 #define HEARTBEAT_PERIOD_MS 1000
 
-static int       le_notification_enabled;
+/* LISTING_START(notificationFlag): Notification Flag */
+static int  le_notification_enabled;
+/* LISTING_END */
 
-// THE Couner
-static timer_source_t heartbeat;
-static int  counter = 0;
-static char counter_string[30];
-static int  counter_string_len;
+/*
+ * @section Managing LE Advertisements
+ *
+ * @text To be discoverable, LE Advertisements are enabled using direct HCI Commands.
+ * As there's no guarantee that a HCI command can always be sent, the gap_run function
+ * is used to send each command as requested by the $todos$ variable.
+ * First, the advertisement data is set, then the advertisement params incl. the 
+ * advertisement interval is set. Finally, advertisements are enabled. See Listing gapRun.
+ *
+ * In this example, the Advertisement contains the Flags attribute and the device name.
+ * The flag 0x06 indicates: LE General Discoverable Mode and BR/EDR not supported.
+ */
 
+/* LISTING_START(gapRun): Handle GAP Tasks */
 const uint8_t adv_data[] = {
     // Flags general discoverable
-    0x02, 0x01, 0x02, 
+    0x02, 0x01, 0x06, 
     // Name
     0x0b, 0x09, 'L', 'E', ' ', 'C', 'o', 'u', 'n', 't', 'e', 'r', 
 };
-uint8_t adv_data_len = sizeof(adv_data);
 
+uint8_t adv_data_len = sizeof(adv_data);
 enum {
     SET_ADVERTISEMENT_PARAMS = 1 << 0,
     SET_ADVERTISEMENT_DATA   = 1 << 1,
     ENABLE_ADVERTISEMENTS    = 1 << 2,
 };
 static uint16_t todos = 0;
-
 
 static void gap_run(){
 
@@ -121,7 +134,18 @@ static void gap_run(){
         return;
     }
 }
+/* LISTING_END */
 
+/* 
+ * @section Packet Handler
+ *
+ * @text The packet handler is only used to trigger advertisements after BTstack is ready and after disconnects.
+ * See Listing packetHandler. 
+ * Advertisemetns are not automatically re-enabled after a connection was closed although it was active before.
+ *
+ */
+
+/* LISTING_START(packetHandler): Packet Handler */
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 	switch (packet_type) {
 		case HCI_EVENT_PACKET:
@@ -151,6 +175,45 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 	}
     gap_run();
 }
+/* LISTING_END */
+
+/*
+ * @section Hearbeat Handler
+ *
+ * @text The hearbeat handler updates the value of the single Characteristic provided in this example
+ * and sends a notification for this characteristic if enabled. See Listing heartbeat.
+ */
+
+ /* LISTING_START(heartbeat): Hearbeat Handler */
+static timer_source_t heartbeat;
+static int  counter = 0;
+static char counter_string[30];
+static int  counter_string_len;
+
+static void  heartbeat_handler(struct timer *ts){
+    counter++;
+    counter_string_len = sprintf(counter_string, "BTstack counter %04u\n", counter);
+    puts(counter_string);
+
+    if (le_notification_enabled) {
+        att_server_notify(ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
+    }
+    run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
+    run_loop_add_timer(ts);
+} 
+/* LISTING_END */
+
+
+/*
+ * @section ATT Read
+ *
+ * The ATT Server handles all reads to constant data. For dynamic data like the custom characteristic, the registered
+ * att_read_callback is called. To handle long characteristics and long reads, the att_read_callback is first called
+ * with buffer == NULL, to request the total value lenght. Then it will be called again requesting a chunk of the value.
+ * See Listing attRead.
+ */
+
+/* LISTING_START(attRead): ATT Read */
 
 // ATT Client Read Callback for Dynamic Data
 // - if buffer == NULL, don't copy data, just return size of value
@@ -165,29 +228,35 @@ static uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint
     }
     return 0;
 }
+/* LISTING_END */
 
-// write requests
+
+/*
+ * @section ATT Write
+ *
+ * @text The only valid att write in this example is to the Client Characteristic Configuration, which configures notification
+ * and indication. If the att_handle matches the client configuration handle, the new configuration value is stored and used
+ * in the hearbeat handler to decide if a new value should be sent. See Listing attWrite
+ */
+
+/* LISTING_START(attWrite): ATT Write */
 static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-    // printf("WRITE Callback, handle %04x, mode %u, offset %u, data: ", handle, transaction_mode, offset);
-    // printf_hexdump(buffer, buffer_size);
     if (att_handle != ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_CLIENT_CONFIGURATION_HANDLE) return 0;
     le_notification_enabled = READ_BT_16(buffer, 0) == GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION;
     return 0;
 }
+/* LISTING_END */
 
-static void  heartbeat_handler(struct timer *ts){
-    counter++;
-    counter_string_len = sprintf(counter_string, "BTstack counter %04u\n", counter);
-    puts(counter_string);
 
-    if (le_notification_enabled) {
-        att_server_notify(ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
-    }
-    run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
-    run_loop_add_timer(ts);
-} 
-
-// main == setup
+/* @section Main app setup
+ *
+ * @text Listing MainConfiguration shows main application code.
+ * It initializes L2CAP, the Security Manager and configures the ATT Server with the pre-compiled
+ * ATT Database generated from $le_counter.gatt$. Finally, it configures the heartbeat handler and
+ * boots the Bluetooth stack.
+ */
+ 
+/* LISTING_START(MainConfiguration): Setup heartbeat timer */
 int btstack_main(void);
 int btstack_main(void)
 {
@@ -213,4 +282,5 @@ int btstack_main(void)
 	    
     return 0;
 }
+/* LISTING_END */
 /* EXAMPLE_END */
