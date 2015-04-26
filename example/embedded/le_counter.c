@@ -256,7 +256,7 @@ static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t
  * boots the Bluetooth stack.
  */
  
-/* LISTING_START(MainConfiguration): Setup heartbeat timer */
+/* LISTING_START(MainConfiguration): Init L2CAP SM ATT Server and start heartbeat timer */
 int btstack_main(void);
 int btstack_main(void)
 {

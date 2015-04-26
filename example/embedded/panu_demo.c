@@ -287,7 +287,7 @@ char * get_string_from_data_element(uint8_t * element){
 
 /* @section SDP parser callback 
  * 
- * @text The SDP parsers retrieves the BNEP PAN UUID as explained in Section \ref{example:sdp_bnep_query}.
+ * @text The SDP parsers retrieves the BNEP PAN UUID as explained in Section ... % example:sdp_bnep_query.
  */
 static void handle_sdp_client_query_result(sdp_query_event_t *event)
 {
@@ -399,7 +399,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t *event)
  */
 
 
- /* LISTING_START(packetHandler): Packet Handler */
+/* LISTING_START(packetHandler): Packet Handler */
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)
 {
 /* LISTING_PAUSE */
@@ -416,8 +416,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 		case HCI_EVENT_PACKET:
             event = packet[0];
             switch (event) {            
-                /*
-                 * @text When $BTSTACK_EVENT_STATE$ with state $HCI_STATE_WORKING$
+                /* @text When $BTSTACK_EVENT_STATE$ with state $HCI_STATE_WORKING$
                  * is received and the example is started in client mode, the remote SDP BNEP query is started.
                  */
                 case BTSTACK_EVENT_STATE:
@@ -442,8 +441,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     break;
 
                 /* LISTING_RESUME */
-                /* 
-                 * @text In server mode, $BNEP_EVENT_INCOMING_CONNECTION$ is received after a client has connected.
+
+                /* @text In server mode, $BNEP_EVENT_INCOMING_CONNECTION$ is received after a client has connected.
                  * and the TAP network interface is then configured. A data source is set up and registered with the 
                  * run loop to receive Ethernet packets from the TAP interface.
                  *
@@ -473,8 +472,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					break;
 
                 /* LISTING_PAUSE */
-                /* 
-                 * @text In client mode, $BNEP_EVENT_OPEN_CHANNEL_COMPLETE$ is received after a client has connected
+
+                /* @text In client mode, $BNEP_EVENT_OPEN_CHANNEL_COMPLETE$ is received after a client has connected
                  * or when the connection fails. The status field returs the error code. It is otherwise identical to 
                  * $BNEP_EVENT_INCOMING_CONNECTION$ before.
                  */
@@ -505,8 +504,8 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 					break;
                 
                 /* LISTING_RESUME */
-                /* 
-                 * @text If there is a timeout during the connection setup, $BNEP_EVENT_CHANNEL_TIMEOUT$ will be received
+
+                /* @text If there is a timeout during the connection setup, $BNEP_EVENT_CHANNEL_TIMEOUT$ will be received
                  * and the BNEP connection closed
                  */     
                 case BNEP_EVENT_CHANNEL_TIMEOUT:
@@ -563,7 +562,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             break;
     }
 }
-/* LISTING_STOP */
+/* LISTING_END */
 
 /* @section Main configuration
  *
