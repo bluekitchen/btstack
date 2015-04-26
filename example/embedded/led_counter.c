@@ -80,7 +80,7 @@ static void heartbeat_handler(timer_source_t *ts){
 } 
 /* LISTING_END */
 
-/* @section Main app setup
+/* @section Main Application Setup
  *
  * @text Listing MainConfiguration shows main application code.
  * It configures the heartbeat tier and adds it to the run loop.

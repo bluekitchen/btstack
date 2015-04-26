@@ -236,17 +236,17 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
 }
 
 /* @text For more details on discovering remote devices, please see
- * Section DiscoverRemoteDevices
+ * Section DiscoverRemoteDevices.
  */
 
 
-/* @section Main app setup
+/* @section Main Application Setup
  *
  * @text Listing MainConfiguration shows main application code.
- * It registers the HCI packet handler and starts the Bluetoth stack
+ * It registers the HCI packet handler and starts the Bluetooth stack.
  */
 
-/* LISTING_START(MainConfiguration): Setup heartbeat timer */
+/* LISTING_START(MainConfiguration): Setup packet handler for GAP inquiry */
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]) {
     hci_register_packet_handler(packet_handler);

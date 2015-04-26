@@ -105,22 +105,21 @@ static void sdp_client_init(){
 
 
 /* @section SDP Client Query 
- *
-  To trigger an SDP query to get the a list of service records on a remote device,
+ * To trigger an SDP query to get the a list of service records on a remote device,
  * you need to call sdp_general_query_for_uuid() with the remote address and the
  * BNEP protocol UUID, as shown in Listing SDPQueryUUID. 
  * In this example we again used fixed address of the remote device. Please update
  * for your environment.
  */ 
 
-/* LISTING_START(SDPQueryUUID): Quering the a list of service records on a remote device. */
+/* LISTING_START(SDPQueryUUID): Querying the a list of service records on a remote device. */
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
     uint8_t event = packet[0];
 
     switch (event) {
         case BTSTACK_EVENT_STATE:
-            // bt stack activated, get started 
+            // BTstack activated, get started 
             if (packet[2] == HCI_STATE_WORKING){
                 printf("Start SDP BNEP query.\n");
                 sdp_general_query_for_uuid(remote, SDP_BNEPProtocol);
@@ -162,7 +161,7 @@ char * get_string_from_data_element(uint8_t * element){
  * the BNEP Protocol UUID and L2CAP PSM respectively.
  */
 
-/* LISTING_START(HandleSDPQUeryResult): Extracting BNEP Prototocol UUID and L2CAP PSM */
+/* LISTING_START(HandleSDPQUeryResult): Extracting BNEP Protcol UUID and L2CAP PSM */
 static void handle_sdp_client_query_result(sdp_query_event_t * event){
     /* LISTING_PAUSE */
     sdp_query_attribute_value_event_t * ve;
@@ -223,7 +222,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
                     /* LISTING_RESUME */
                     /* @text The Protocol Descriptor List is DES 
                      * which contains one DES for each protocol. For PAN serivces, it contains
-                     * a DES with the L2CAP Protocol UUID and a PSM,
+                     * a DES with the L2CAP Protocol UUID and a PSM, Listing A_B_C, Section D_E_F
                      * and another DES with the BNEP UUID and the the BNEP version.
                      */
                     case SDP_ProtocolDescriptorList:{

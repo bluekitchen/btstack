@@ -99,14 +99,14 @@ static void sdp_client_init(){
  * UUID of the public browse group, as shown in Listing SDPQueryUUID. 
  * In this example we used fixed address of the remote device shown in Listing Remote.
  * Please update it with the address of a device in your vicinity, e.g., one reported
- * by the GAP Inuiry example in the previous section.
+ * by the GAP Inquiry example in the previous section.
  */ 
 
 /* LISTING_START(Remote): Address of remote device in big-endian order */
 static bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 /* LISTING_END */
 
-/* LISTING_START(SDPQueryUUID): Quering a list of service records on a remote device. */
+/* LISTING_START(SDPQueryUUID): Querying a list of service records on a remote device. */
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
 

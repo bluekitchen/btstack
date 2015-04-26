@@ -178,7 +178,7 @@ static void fill_advertising_report_from_packet(advertising_report_t * report, u
  * 
  * @text The HCI packet handler has to start the scanning, 
  * to find the first advertising device, to stop scanning, to connect
- * to and later to disconnect from it, to start the gatt client upon
+ * to and later to disconnect from it, to start the GATT client upon
  * the connection is completed, and to send the first query - in this
  * case the gatt_client_discover_primary_services() is called, see 
  * Listing GATTBrowserHCIPacketHandler.  

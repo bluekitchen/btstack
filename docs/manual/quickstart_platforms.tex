@@ -1,12 +1,39 @@
 % !TEX root = btstack_gettingstarted.tex
 
 In the following, we provide more information on specific platform setups, toolchains, programmers, and init scripts.
+\subsubsection{libusb}
+$ $
+
+The quickest way to try BTstack is on a Linux or OS X system with an additional USB Bluetooth module. The Makefile in \path{platforms/libusb} requires \pkgconfig{} and \libusb{}-1.0 or higher to be installed. 
+
+On Linux, it's usually necessary to run the examples as root as the kernel needs to detach from the USB module.
+
+On OS X, it's necessary to tell the OS to only use the internal Bluetooth. For this, execute:
+\begin{lstlisting}
+sudo nvram bluetoothHostControllerSwitchBehavior=never
+\end{lstlisting}
+
+It's also possible to run the examples on Win32 systems. For this:
+\begin{itemize}
+\item Install \MSYS{} and \MINGW{} using the MINGW installer
+\item Compile and install libusb-1.0.19 to /usr/local/ in msys command shell
+\item Setup a USB Bluetooth dongle for use with libusb-1.0:
+	\begin{itemize}
+	\item Start \Zadig{}
+	\item Select Options $\rightarrow$ "List all devices"
+	\item Select USB Bluetooth dongle in the big pull down list
+	\item Select WinUSB (libusb) in the right pull pull down list
+	\item Select "Replace Driver"
+	\end{itemize}
+\end{itemize}
+Now, you can run the examples from the $msys$ shell the same way as on Linux/OS X.
 
 \subsubsection{Texas Instruments MSP430-based boards}
+$ $
 
-\emph{Compiler Setup} The MSP430 port of BTstack is developed using the Long Term Support (LTS) version of mspgcc. General information about it and installation instructions are provided on the \MSPGCCWiki{}. On Windows, you need to download and extract \mspgcc{} to \path{C:\mspgcc}. Add \path{C:\mspgcc\bin} folder to the Windows Path in Environment variable as explained in Section \ref{sec:windowsPath}.
+\textbf{Compiler Setup.} The MSP430 port of BTstack is developed using the Long Term Support (LTS) version of mspgcc. General information about it and installation instructions are provided on the \MSPGCCWiki{}. On Windows, you need to download and extract \mspgcc{} to \path{C:\mspgcc}. Add \path{C:\mspgcc\bin} folder to the Windows Path in Environment variable as explained in Section \ref{sec:windowsPath}.
 
-\emph{Loading Firmware} To load firmware files onto the MSP430 MCU for the MSP-EXP430F5438 Experimeneter board, you need a programmer like the MSP430 MSP-FET430UIF debugger or something similar. The eZ430-RF2560 and MSP430F5529LP contain a basic debugger. the Now, you can use one of following software tools:
+\textbf{Loading Firmware.} To load firmware files onto the MSP430 MCU for the MSP-EXP430F5438 Experimeneter board, you need a programmer like the MSP430 MSP-FET430UIF debugger or something similar. The eZ430-RF2560 and MSP430F5529LP contain a basic debugger. Now, you can use one of following software tools:
 
  \begin{itemize}
  \item  \MSPFlasher{} (windows-only):
@@ -32,7 +59,9 @@ run
 \end{lstlisting}
 
 \subsubsection{Texas Instruments CC256x-based chipsets}
-\emph{CC256x Init Scripts} In order to use the CC256x chipset on the PAN13xx modules and others, an initialization script must be obtained. Due to licensing restrictions, this initialization script must be obtained separately as follows:
+$ $
+
+ \textbf{CC256x Init Scripts.} In order to use the CC256x chipset on the PAN13xx modules and others, an initialization script must be obtained. Due to licensing restrictions, this initialization script must be obtained separately as follows:
 \begin{itemize}
 \item Download the \BTSfile{} for your CC256x-based module.
 \item Copy the included .bts file into \path{btstack/chipset-cc256x}
@@ -41,45 +70,25 @@ run
 
 The common code for all CC256x chipsets is provided by $bt\_control\_cc256x.c$. During the setup, $bt\_control\_cc256x\_instance$ function is used to get  a $bt\_control\_t$ instance and passed to $hci\_init$ function. 
 
-Note: Depending on the CC256x-based module you're using, you'll need to update the reference \path{bluetooth_init_cc256...} in the Makefile to match the downloaded file.
+ \textbf{Note:} Depending on the CC256x-based module you're using, you'll need to update the reference \path{bluetooth_init_cc256...} in the Makefile to match the downloaded file.
 
-Update: For the latest revision of the CC256x chipsets, the CC2560B and CC2564B, TI decided to split the init script into a main part and the BLE part. The conversion script has been updated to detect $blueooth\_init\_cc256x\_1.2.bts$ and adds $BLE\_init\_cc256x\_1.2.bts$ if present and merges them into a single .c file.
+ \textbf{Update:} For the latest revision of the CC256x chipsets, the CC2560B and CC2564B, TI decided to split the init script into a main part and the BLE part. The conversion script has been updated to detect $bluetooth\_init\_cc256x\_1.2.bts$ and adds $BLE\_init\_cc256x\_1.2.bts$ if present and merges them into a single .c file.
 
 \subsubsection{MSP-EXP430F5438 + CC256x Platform}
 \label{platform:msp430}
-\emph{Hardware Setup} We assume that a PAN1315, PAN1317, or PAN1323 module is plugged into RF1 and RF2 of the MSP-EXP430F5438 board and the "RF3 Adapter board" is used or at least simulated. See \UserGuide{}. 
+$ $
+
+\textbf{Hardware Setup.} We assume that a PAN1315, PAN1317, or PAN1323 module is plugged into RF1 and RF2 of the MSP-EXP430F5438 board and the "RF3 Adapter board" is used or at least simulated. See \UserGuide{}. 
 
 \subsubsection{STM32F103RB Nucleo + CC256x Platform}
+$ $
+
 To try BTstack on this platform, you'll need a simple adaptor board. For details, please read the documentation in \path{platforms/stm32-f103rb-nucleo/README.md}.
 
 \subsubsection{PIC32 Bluetooth Audio Development Kit}
-The PIC32 Bluetooth Audio Development Kit comes with the CSR8811-based BTM805 Bluetooth module. In the port, the UART on the DAC daugtherboard was used for the debug output. Please remove the DAC board and connect a 3.3V USB-2-UART converter to GND and TX to get the debug output.
+$ $
+
+The PIC32 Bluetooth Audio Development Kit comes with the CSR8811-based BTM805 Bluetooth module. In the port, the UART on the DAC daughter board was used for the debug output. Please remove the DAC board and connect a 3.3V USB-2-UART converter to GND and TX to get the debug output.
 
 In \path{platforms/pic32-harmony}, a project file for the MPLAB X IDE is provided as well as a regular Makefile. Both assume that the MPLAB XC32 compiler is installed. The project is set to use -Os optimization which will cause warnings if you only have the Free version. It will still compile a working example. For this platform, we only provide the SPP and LE Counter example directly. Other examples can be run by replacing the spp\_and\_le\_counter.c file with one of the other example files.
-
-\subsubsection{libusb}
-The quickest way to try BTstack is on a Linux or OS X system with an additional USB Bluetooth module. The Makefile in \path{platforms/libusb}
-requires pkgconfig and libusb-1.0 or higher to be installed. 
-
-On Linux, it's usually necessary to run the examples as root as the kernel needs to detach from the USB module.
-
-On OS X, it's neccessary to tell the OS to only use the internal Bluetooth. For this, execute
-\begin{lstlisting}
-sudo nvram bluetoothHostControllerSwitchBehavior=never
-\end{lstlisting}
-
-It's also possible to run the examples on Win32 systems. For this, 
-\begin{itemize}
-\item Install MSYS and MINGW32 using the MINGW installer
-\item Compile and install libusb-1.0.19 to /usr/local/ in msys command shell
-\item Setup a USB Bluetooth dongle for use with libusb-1.0:
-	\begin{itemize}
-	\item Start Zadig from http://zadig.akeo.ie
-	\item Select Options $\rightarrow$ List all devices
-	\item Select USB Bluetooth dongle in the big pull down list
-	\item Select WinUSB (libusb) in the right pull pull down list
-	\item Select Replace Driver
-	\end{itemize}
-\end{itemize}
-Now, you can run the examples from the msys shell the same way as on Linux/OS X.
 

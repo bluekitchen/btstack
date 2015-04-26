@@ -90,12 +90,12 @@ static int  counter_string_len;
 /*
  * @section Advertisements 
  *
- * @text The Flags attribute in the Advertisement Data indicates if a device is dual-mode or not.
- * 0x02 encoded LE General Discoverable, Dual-Mode device. See Listing advertisements.
+ * @text The Flags attribute in the Advertisement Data indicates if a device is in dual-mode or not.
+ * Flag 0x02 indicates LE General Discoverable, Dual-Mode device. See Listing advertisements.
  */
 /* LISTING_START(advertisements): Advertisement data: Flag 0x02 indicates a dual mode device */
 const uint8_t adv_data[] = {
-    // Flags general discoverable
+    // Flags: General Discoverable
     0x02, 0x01, 0x02, 
     // Name
     0x0b, 0x09, 'L', 'E', ' ', 'C', 'o', 'u', 'n', 't', 'e', 'r', 
@@ -143,7 +143,7 @@ static void gap_run(){
 /* 
  * @section Packet Handler
  * 
- * @text The packet handler of the combined example is just the combination of the individual packet handlers
+ * @text The packet handler of the combined example is just the combination of the individual packet handlers.
  */
 
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -157,7 +157,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 			switch (packet[0]) {
 					
 				case BTSTACK_EVENT_STATE:
-					// bt stack activated, get started - set local name
+					// BTstack activated, get started 
 					if (packet[2] == HCI_STATE_WORKING) {
                         todos = SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | ENABLE_ADVERTISEMENTS;
                         gap_run();
@@ -253,9 +253,9 @@ static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t
 /*
  * @section Heartbeat Handler
  * 
- * @text Similar to the packet handler,the hearbeat handler is the combinatino of the individual ones.
- * After updating the counter, it sends an RFCOMM packet is an RFCOMM connection is active and an LE notification if 
- * the remote side has requested notifications.
+ * @text Similar to the packet handler, the heartbeat handler is the combination of the individual ones.
+ * After updating the counter, it sends an RFCOMM packet if an RFCOMM connection is active,
+ * and an LE notification if the remote side has requested notifications.
  */
 
  /* LISTING_START(heartbeat): Combined Heartbeat handler */
@@ -283,9 +283,9 @@ static void  heartbeat_handler(struct timer *ts){
 /* LISTING_END */
 
 /*
- * @section Main app setup
+ * @section Main Application Setup
  *
- * @text As with the packet and the heartbeat handlers, the combined app setup contains the code from the indifivaul example setups.
+ * @text As with the packet and the heartbeat handlers, the combined app setup contains the code from the individual example setups.
  */
 
 /* LISTING_START(MainConfiguration): Init L2CAP RFCOMM SDO SM ATT Server and start heartbeat timer */

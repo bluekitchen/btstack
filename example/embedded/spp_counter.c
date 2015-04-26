@@ -85,7 +85,7 @@ static uint8_t   spp_service_buffer[150];
  * RFCOMM channel ID and service name. For more details, please have a look at it
  * in \path{src/sdp_util.c}. 
  * The SDP record is created on the fly in RAM and is deterministic.
- * To preserve valuable RAM, the result cuold be stored as constant data inside the ROM.   
+ * To preserve valuable RAM, the result could be stored as constant data inside the ROM.   
  */
 
 /* LISTING_START(SPPSetup): SPP service setup */ 
@@ -181,7 +181,7 @@ static void one_shot_timer_setup(){
  * If RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE event returns status greater then 0,
  * then the channel establishment has failed (rare case, e.g., client crashes).
  * On successful connection, the RFCOMM channel ID and MTU for this
- * channel are made available to the heartbeat counter. After openning the RFCOMM channel, 
+ * channel are made available to the heartbeat counter. After opening the RFCOMM channel, 
  * the communication between client and the application
  * takes place. In this example, the timer handler increases the real counter every
  * second. 

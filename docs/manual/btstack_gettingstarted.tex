@@ -133,6 +133,12 @@ morekeywords={*, timer_source_t, data_source_t, uint32_t, uint16_t, uint8_t, RUN
 \newcommand{\OpenOCD}{\urlfoot{http://openocd.org}{OpenOCD}}
 \newcommand{\mplabxc}{\urlfoot{http://www.microchip.com/pagehandler/en\_us/devtools/mplabxc/}{MPLAB XC}}
 \newcommand{\PICkit}{\urlfoot{http://www.microchip.com/DevelopmentTools/ProductDetails.aspx?PartNO=pg164130}{PICkit 3}}
+\newcommand{\pkgconfig}{\urlfoot{http://www.freedesktop.org/wiki/Software/pkg-config/}{pkg-config}}
+\newcommand{\libusb}{\urlfoot{www.libusb.org}{libusb}}
+\newcommand{\Zadig}{\urlfoot{http://zadig.akeo.ie}{Zadig}}
+\newcommand{\MSYS}{\urlfoot{www.mingw.org/wiki/msys}{MSYS}}
+\newcommand{\MINGW}{\urlfoot{www.mingw.org}{MINGW32}}
+
 
 %level -1: part, 0: chapter, 1: section, etc.
 \setcounter{tocdepth}{3}
@@ -145,7 +151,7 @@ morekeywords={*, timer_source_t, data_source_t, uint32_t, uint16_t, uint8_t, RUN
 \pagebreak
 
 
-Thanks for checking out BTstack! In this manual, we first provide a 'quick starter guide' for common platforms before highlighting BTstack's main design choices and go over all implemented protocols and profiles. A series of examples shows how BTstack can be used to implement common 
+Thanks for checking out BTstack! In this manual, we first provide a 'quick starter guide' for common platforms before highlighting BTstack's main design choices and go over all implemented protocols and profiles. A series of examples show how BTstack can be used to implement common 
 use cases. Finally, we outline the basic steps when integrating BTstack into existing single-threaded or even multi-threaded environments. The Revision History is shown in the Appendix \ref{appendix:revision_history} on page \pageref{appendix:revision_history}.
 
 \section{Quick Start}
@@ -153,7 +159,7 @@ use cases. Finally, we outline the basic steps when integrating BTstack into exi
 \subsection{General Tools}
 On Unix-based systems, git, make, and Python are usually installed. If not, use the system's packet manager to install them. 
 
-On Windows, you need to install and configure, GNU Make, Python, and optionally git manually:
+On Windows, you need to manually install and configure GNU Make, Python, and optionally git :
  \begin{itemize}
  \item \GNUMake{} for Windows: Add its bin folder to the Windows Path in Environment Variables. The bin folder is where make.exe resides, and it's usually located in \path{C:\Program Files\GnuWin32\bin}. 
  \item \Python{} for Windows: Add Python installation folder to the Windows Path in Environment Variables.

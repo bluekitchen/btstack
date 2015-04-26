@@ -126,13 +126,40 @@ static char tap_dev_name[16] = "bnep%d";
 
 static data_source_t tap_dev_ds;
 
+/* @section Main application configuration
+ *
+ * @text In the application configuration, L2CAP and BNEP are initialized and a BNEP service, for server mode,
+ * is registered, before the Bluetooth stack gets started, as shown in Listing PanuSetup.
+ */
+
+/* LISTING_START(PanuSetup): Panu setup */
+static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void handle_sdp_client_query_result(sdp_query_event_t *event);
+
+static void panu_setup(){
+    // Initialize L2CAP 
+    l2cap_init();
+    l2cap_register_packet_handler(packet_handler);
+
+    // Initialise BNEP
+    bnep_init();
+    bnep_register_packet_handler(packet_handler);
+    // Minimum L2CAP MTU for bnep is 1691 bytes
+    bnep_register_service(NULL, SDP_PANU, 1691);  
+
+    // Initialise SDP 
+    sdp_parser_init();
+    sdp_parser_register_callback(handle_sdp_client_query_result);
+}
+/* LISTING_END */
+
 /* @section TUN / TAP interface routines 
  *
  * @text This example requires a TUN/TAP interface to connect the Bluetooth network interface
  * with the native system. It has been tested on Linux and OS X, but should work on any
  * system that provides TUN/TAP with minor modifications.
  * 
- * On Linux, TUN/TAP is availabe by default. On OS X, tuntaposx from
+ * On Linux, TUN/TAP is available by default. On OS X, tuntaposx from
  * http://tuntaposx.sourceforge.net needs to be installed.
  *
  * \emph{tap_alloc} sets up a virtual network interface with the given Bluetooth Address.
@@ -230,7 +257,7 @@ int tap_alloc(char *dev, bd_addr_t bd_addr)
 }
 
 /*
- * @text Listig processTapData shows how a packet is received from the TAP network interface
+ * @text Listing processTapData shows how a packet is received from the TAP network interface
  * and forwarded over the BNEP connection.
  * 
  * After successfully reading a network packet, the call to
@@ -443,11 +470,11 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 /* LISTING_RESUME */
 
                 /* @text In server mode, BNEP_EVENT_INCOMING_CONNECTION is received after a client has connected.
-                 * and the TAP network interface is then configured. A data source is set up and registered with the 
+                 * The TAP network interface is then configured. A data source is set up and registered with the 
                  * run loop to receive Ethernet packets from the TAP interface.
                  *
                  * The event contains both the source and destination UUIDs, as well as the MTU for this connection and
-                 * the BNEP Channel ID, that is used for sending Ethernet packets over BNEP.
+                 * the BNEP Channel ID, which is used for sending Ethernet packets over BNEP.
                  */
                 case BNEP_EVENT_INCOMING_CONNECTION:
 					// data: event(8), len(8), bnep source uuid (16), bnep destination uuid (16), remote_address (48)
@@ -474,7 +501,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 /* LISTING_PAUSE */
 
                 /* @text In client mode, BNEP_EVENT_OPEN_CHANNEL_COMPLETE is received after a client has connected
-                 * or when the connection fails. The status field returs the error code. It is otherwise identical to 
+                 * or when the connection fails. The status field returns the error code. It is otherwise identical to 
                  * BNEP_EVENT_INCOMING_CONNECTION before.
                  */
 				case BNEP_EVENT_OPEN_CHANNEL_COMPLETE:
@@ -506,13 +533,13 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                 /* LISTING_RESUME */
 
                 /* @text If there is a timeout during the connection setup, BNEP_EVENT_CHANNEL_TIMEOUT will be received
-                 * and the BNEP connection closed
+                 * and the BNEP connection  will be closed
                  */     
                 case BNEP_EVENT_CHANNEL_TIMEOUT:
                     printf("BNEP channel timeout! Channel will be closed\n");
                     break;
 
-                /* @text BNEP_EVENT_CHANNEL_CLOSED is received when the connection gets closed
+                /* @text BNEP_EVENT_CHANNEL_CLOSED is received when the connection gets closed.
                  */
                 case BNEP_EVENT_CHANNEL_CLOSED:
                     printf("BNEP channel closed\n");
@@ -564,33 +591,15 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 }
 /* LISTING_END */
 
-/* @section Main configuration
- *
- * @text In the app configuration, L2CAP and BNEP are initialized and a BNEP service, for server mode,
- * is registered, before the Bluetooth stack gets started
- */
+
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
     printf("Client HCI init done\n");
 
-    // Initialize L2CAP 
-    l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
-
-    // Initialise BNEP
-    bnep_init();
-    bnep_register_packet_handler(packet_handler);
-    // Minimum L2CAP MTU for bnep is 1691 bytes
-    bnep_register_service(NULL, SDP_PANU, 1691);  
-
+    panu_setup();
     // Turn on the device 
     hci_power_control(HCI_POWER_ON);
-
-    // Initialise SDP 
-    sdp_parser_init();
-    sdp_parser_register_callback(handle_sdp_client_query_result);
-
     return 0;
 }
 
