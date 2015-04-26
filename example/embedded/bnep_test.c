@@ -195,6 +195,7 @@ static void send_arp_probe_ipv6(){
     
 }
 
+#if 0
 static void send_dhcp_discovery(){
     
 }
@@ -206,6 +207,7 @@ static void send_dhcp_request(){
 static void send_dns_request(){
     
 }
+#endif
 
 static void send_some_ipv6_packet(){
 
