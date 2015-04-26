@@ -8,17 +8,17 @@ list_of_groups = ["Hello World", "GAP", "SDP Queries", "SPP Server", "BNEP/PAN",
 
 # Defines which examples belong to a group. Example is defined as [example file, example title].
 list_of_examples = { 
-    # "Hello World" : [["led_counter"]],
-    # "GAP"         : [["gap_inquiry"]],
-    "SDP Queries" :[#["sdp_general_query"],
+    "Hello World" : [["led_counter"]],
+    "GAP"         : [["gap_inquiry"]],
+    "SDP Queries" :[["sdp_general_query"],
                     ["sdp_bnep_query"]
                     ],
-    # "SPP Server"  : [["spp_counter"],
-    #                  ["spp_flowcontrol"]],
-    # "BNEP/PAN"   : [["panu_demo"]],
-    # "Low Energy"  : [["gatt_browser"],
-    #                 ["le_counter"]],
-    # "Dual Mode" : [["spp_and_le_counter"]],
+    "SPP Server"  : [["spp_counter"],
+                     ["spp_flowcontrol"]],
+    "BNEP/PAN"   : [["panu_demo"]],
+    "Low Energy"  : [["gatt_browser"],
+                    ["le_counter"]],
+    "Dual Mode" : [["spp_and_le_counter"]],
 }
 
 lst_header = """
@@ -220,7 +220,7 @@ def writeListings(aout, infile_name, ref_prefix):
                         skip_code = 1
                         # finish text, start itemize
                         writeTextBlock(aout, lstStarted)
-                        itemize_block = "\n \\begin{itemize}"
+                        itemize_block = "\n \\begin{itemize}" + processTextLine(line, ref_prefix)
                         continue
                     if itemize_block:
                         skip_code = 1
@@ -311,7 +311,7 @@ def processExamples(examples_folder, standalone, examples_ofile):
             aout.write("  \item " + group_title + "\n");
             aout.write("  \\begin{itemize}\n");
             for example in examples:
-                ref_prefix = example[0]
+                ref_prefix = example[0].replace("_", "-")
                 title = latexText(example[0], ref_prefix)
                 desc  = latexText(example[1], ref_prefix)
                 aout.write(example_item.replace("EXAMPLE_TITLE", title).replace("EXAMPLE_DESC", desc).replace("EXAMPLE_LABLE", ref_prefix))

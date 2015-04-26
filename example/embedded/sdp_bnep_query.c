@@ -222,7 +222,7 @@ static void handle_sdp_client_query_result(sdp_query_event_t * event){
                     /* LISTING_RESUME */
                     /* @text The Protocol Descriptor List is DES 
                      * which contains one DES for each protocol. For PAN serivces, it contains
-                     * a DES with the L2CAP Protocol UUID and a PSM, Listing A_B_C, Section D_E_F
+                     * a DES with the L2CAP Protocol UUID and a PSM,
                      * and another DES with the BNEP UUID and the the BNEP version.
                      */
                     case SDP_ProtocolDescriptorList:{
