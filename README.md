@@ -45,7 +45,7 @@ together with LE Central, PAN/BNEP and HSP.
 
 Coming soon: HSP, HFP, and more.
 
-## Supported Platforms
+## Evaluation Platforms
 
 #### Embedded Platforms:      
 * [EZ430-RF256x Bluetooth Evaluation Tool for MSP430](http://www.ti.com/tool/ez430-rf256x)          
