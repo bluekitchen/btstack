@@ -64,7 +64,12 @@ public:
 	int getRssi();
 	bool containsService(UUID * service);
 	bool nameHasPrefix(const char * namePrefix);
-	const uint8_t * getAdvData();  
+	const uint8_t * getAdvData(); 
+	bool isIBeacon();
+	const UUID * getIBeaconUUID();
+	uint16_t     getIBeaconMajorID();
+	uint16_t     getIBecaonMinorID();
+	uint8_t      getiBeaconMeasuredPower();
 };
 
 class BLECharacteristic {

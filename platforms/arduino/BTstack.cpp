@@ -33,17 +33,6 @@
 extern "C" void embedded_execute_once(void);
 extern "C" void hal_uart_dma_process(void);
 
-// HAL TICK Implementation
-extern "C" void hal_tick_init(void){
-
-}
-extern "C" void hal_tick_set_handler(void (*tick_handler)(void)){
-
-}
-extern "C" int  hal_tick_get_tick_period_in_ms(void){
-    return 250;
-}
-
 // btstack state 
 static int btstack_state;
 
@@ -52,6 +41,8 @@ extern "C" void hal_cpu_disable_irqs(void){ }
 extern "C" void hal_cpu_enable_irqs(void) { }
 extern "C" void hal_cpu_enable_irqs_and_sleep(void) { }
 
+static const uint8_t iBeaconAdvertisement01[] = { 0x02, 0x01 };
+static const uint8_t iBeaconAdvertisement38[] = { 0x1a, 0xff, 0x4c, 0x00, 0x02, 0x15 };
 static const uint8_t adv_data_default[] = { 02, 01, 05,   03, 02, 0xf0, 0xff }; 
 static const uint8_t * adv_data = adv_data_default;
 static uint16_t adv_data_len = sizeof(adv_data_default);
@@ -376,6 +367,25 @@ bool BLEAdvertisement::containsService(UUID * service){
 bool BLEAdvertisement::nameHasPrefix(const char * namePrefix){
     return false;
 };
+
+bool BLEAdvertisement::isIBeacon(){
+    return ((memcmp(iBeaconAdvertisement01,  data,    sizeof(iBeaconAdvertisement01)) == 0) 
+      &&    (memcmp(iBeaconAdvertisement38, &data[3], sizeof(iBeaconAdvertisement38)) == 0));
+}
+
+const UUID * BLEAdvertisement::getIBeaconUUID(){
+    return new UUID(&data[9]);
+};
+uint16_t     BLEAdvertisement::getIBeaconMajorID(){
+    return READ_NET_16(data, 25);
+};
+uint16_t     BLEAdvertisement::getIBecaonMinorID(){
+    return READ_NET_16(data, 27);
+};
+uint8_t      BLEAdvertisement::getiBeaconMeasuredPower(){
+    return data[29];
+}
+
 
 BLECharacteristic::BLECharacteristic() {
 }
