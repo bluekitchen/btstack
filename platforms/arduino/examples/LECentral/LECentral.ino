@@ -2,8 +2,13 @@
 #include <BTstack.h>
 #include <SPI.h>
 
-// BLE Shield Service V2 incl. used Characteristics
-UUID bleShieldServiceV2UUID("B8E06067-62AD-41BA-9231-206AE80AB550");
+// 
+typedef struct characteristic_summary {
+	UUID         uuid;
+	const char * name;
+	bool         found;
+	BLECharacteristic characteristic;
+} characteristic_summary_t;
 
 typedef enum characteristicIDs {
 	charRX = 0,
@@ -13,22 +18,15 @@ typedef enum characteristicIDs {
 	numCharacteristics	/* last one */
 } characteristicIDs_t;
 
-UUID characteristicUUIDs[] = {
-	UUID("f897177b-aee8-4767-8ecc-cc694fd5fcee"),
-	UUID("bf45e40a-de2a-4bc8-bba0-e5d6065f1b4b"),
-	UUID("2fbc0f31-726a-4014-b9fe-c8be0652e982"),
-	UUID("65c228da-bad1-4f41-b55f-3d177f4e2196"),
+characteristic_summary characteristics[] = {
+	{ UUID("f897177b-aee8-4767-8ecc-cc694fd5fcee"), "RX"       },
+	{ UUID("bf45e40a-de2a-4bc8-bba0-e5d6065f1b4b"), "TX"       },
+	{ UUID("2fbc0f31-726a-4014-b9fe-c8be0652e982"), "Baudrate" },
+	{ UUID("65c228da-bad1-4f41-b55f-3d177f4e2196"), "BD ADDR"  }
 };
 
-const char * characteristicNames[] = {
-	"RX",
-	"TX",
-	"Baudrate",
-	"BD ADDR"
-};
-
-bool characteristicFound[numCharacteristics];
-BLECharacteristic characteristics[numCharacteristics];
+// BLE Shield Service V2 incl. used Characteristics
+UUID bleShieldServiceV2UUID("B8E06067-62AD-41BA-9231-206AE80AB550");
 
 // Application state
 BLEDevice  myBLEDevice;
@@ -38,6 +36,8 @@ bool sendCounter = false;
 
 int counter = 0;
 char counterString[20];
+
+static timer_source_t heartbeat;
 
 // setup printf
 static FILE uartout = {0} ;
@@ -77,7 +77,7 @@ void loop() {
 	// send counter as fast as possible
 	if (sendCounter){
 		sprintf(counterString, "BTstack %u\n", counter);
-		int result = myBLEDevice.writeCharacteristicWithoutResponse(&characteristics[charTX], (uint8_t*) counterString, strlen(counterString) );
+		int result = myBLEDevice.writeCharacteristicWithoutResponse(&characteristics[charTX].characteristic, (uint8_t*) counterString, strlen(counterString) );
 		if (result == BLE_PERIPHERAL_OK){
 			printf("Wrote without response: %s\n", counterString);
 			counter++;
@@ -146,18 +146,18 @@ void gattCharacteristicDiscovered(BLEStatus status, BLEDevice *device, BLECharac
 			printf("Characteristic Discovered: %s, handle 0x%04x\n", characteristic->getUUID()->getUuidString(), characteristic->getCharacteristic()->value_handle);
 			int i;
 			for (i=0;i<numCharacteristics;i++){
-				if (characteristic->matches(&characteristicUUIDs[i])){
-					printf("\nCharacteristic '%s' found!\n", characteristicNames[i]);
-					characteristicFound[i] = 1;
-					characteristics[i] = *characteristic;
+				if (characteristic->matches(&characteristics[i].uuid)){
+					printf("\nCharacteristic '%s' found!\n", characteristics[i].name);
+					characteristics[i].found = 1;
+					characteristics[i].characteristic = *characteristic;
 					break;
 				}
 			}
 			break;
 		case BLE_STATUS_DONE:
 			printf("Characteristic discovery finished, status %u.\n", status);
-			if (characteristicFound[charRX]) {
-				device->subscribeForNotifications(&characteristics[charRX]);
+			if (characteristics[charRX].found) {
+				device->subscribeForNotifications(&characteristics[charRX].characteristic);
 			}
 			break;
 		default:
@@ -167,12 +167,12 @@ void gattCharacteristicDiscovered(BLEStatus status, BLEDevice *device, BLECharac
 }
 
 void gattSubscribedCallback(BLEStatus status, BLEDevice * device){
-	device->readCharacteristic(&characteristics[charBdAddr]);
+	device->readCharacteristic(&characteristics[charBdAddr].characteristic);
 }
 
 void gattReadCallback(BLEStatus status, BLEDevice *device, uint8_t *value, uint16_t length) {
 	printf("Read callback: '%s'\n", (const char *)value);
-	device->writeCharacteristic(&characteristics[charTX], (uint8_t*) "Hello!", 6);
+	device->writeCharacteristic(&characteristics[charTX].characteristic, (uint8_t*) "Hello!", 6);
 }
 
 void gattWrittenCallback(BLEStatus status, BLEDevice *device){
