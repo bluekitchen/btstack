@@ -64,7 +64,7 @@ extern "C" {
 /**
  * @brief init
  */
-void le_device_db_init();
+void le_device_db_init(void);
 
 /**
  * @brief add device to db

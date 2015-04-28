@@ -79,7 +79,7 @@ static void hci_connection_timeout_handler(timer_source_t *timer);
 static void hci_connection_timestamp(hci_connection_t *connection);
 static int  hci_power_control_on(void);
 static void hci_power_control_off(void);
-static void hci_state_reset();
+static void hci_state_reset(void);
 
 // the STACK is here
 #ifndef HAVE_MALLOC
@@ -1476,7 +1476,7 @@ static void event_handler(uint8_t *packet, int size){
         case HCI_EVENT_DISCONNECTION_COMPLETE:
             if (packet[2]) break;   // status != 0
             handle = READ_BT_16(packet, 3);
-            hci_connection_t * conn = hci_connection_for_handle(handle);
+            conn = hci_connection_for_handle(handle);
             if (!conn) break;       // no conn struct anymore
             conn->state = RECEIVED_DISCONNECTION_COMPLETE;
             break;

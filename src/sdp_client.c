@@ -194,7 +194,7 @@ void sdp_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, 
             return;
         }
 
-        PDU_ID = packet[0];
+        PDU_ID = (SDP_PDU_ID_t)packet[0];
         log_info("SDP Client :: PDU ID. %u ,%u", PDU_ID, packet[0]);
         switch (PDU_ID){
 #ifdef HAVE_SDP_EXTRA_QUERIES
