@@ -174,6 +174,14 @@ public:
 	void setGATTCharacteristicWrittenCallback(void (*)(BLEStatus status, BLEDevice * device));
 	void setGATTCharacteristicSubscribedCallback(void (*)(BLEStatus status, BLEDevice * device));
 	void setGATTCharacteristicUnsubscribedCallback(void (*)(BLEStatus status, BLEDevice * device));
+
+	void setGATTCharacteristicRead(uint16_t (*)(uint16_t characteristic_id, uint8_t * buffer, uint16_t buffer_size));
+	void setGATTCharacteristicWrite(int (*)(uint16_t characteristic_id, uint8_t *buffer, uint16_t buffer_size));
+
+	void addGATTService(UUID * uuid);
+ 	void addGATTCharacteristic(UUID * uuid, uint16_t flags, const char * text);
+ 	void addGATTCharacteristic(UUID * uuid, uint16_t flags, uint8_t * data, uint16_t data_len);
+ 	void addGATTCharacteristicDynamic(UUID * uuid, uint16_t flags, uint16_t characteristic_id);
 };
 
  extern BTstackManager BTstack;

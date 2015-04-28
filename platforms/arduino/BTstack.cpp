@@ -656,5 +656,18 @@ void BTstackManager::bleStopScanning(){
     le_central_stop_scan();
 }
 
+void BTstackManager::setGATTCharacteristicRead(uint16_t (*)(uint16_t characteristic_id, uint8_t * buffer, uint16_t buffer_size)){
+}
+void BTstackManager::setGATTCharacteristicWrite(int (*)(uint16_t characteristic_id, uint8_t *buffer, uint16_t buffer_size)){
+}
+void BTstackManager::addGATTService(UUID * uuid){
+}
+void BTstackManager::addGATTCharacteristic(UUID * uuid, uint16_t flags, const char * text){
+}
+void BTstackManager::addGATTCharacteristic(UUID * uuid, uint16_t flags, uint8_t * data, uint16_t data_len){
+}
+void BTstackManager::addGATTCharacteristicDynamic(UUID * uuid, uint16_t flags, uint16_t characteristic_id){
+}
+
 BTstackManager BTstack;
 

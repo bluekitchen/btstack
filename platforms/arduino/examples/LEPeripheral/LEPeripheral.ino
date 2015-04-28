@@ -1,72 +1,85 @@
+// LE Peripheral Example - not working yet
 #include <BTstack.h>
-#include <stdio.h>
-#include "att_server.h"
 #include <SPI.h>
 
-// EM9301 address 0C:F3:EE:00:00:00
+#define GATT_CHARACTERISTIC_TEMP_ID 0
 
-// retarget printf
-#ifdef ENERGIA
-extern "C" {
-    int putchar(int c) {
-        Serial.write((uint8_t)c);
-        return c;
-    }
-}
-static void setup_printf(void) {
-  Serial.begin(9600);
-}
-#else
+// setup printf
 static FILE uartout = {0} ;
 static int uart_putchar (char c, FILE *stream) {
     Serial.write(c);
     return 0;
 }
-static void setup_printf(void) {
-  Serial.begin(115200);
+static void setup_printf(int baud) {
+  Serial.begin(baud);
   fdev_setup_stream (&uartout, uart_putchar, NULL, _FDEV_SETUP_WRITE);
   stdout = &uartout;
 }  
-#endif
 
-// test profile
-#include "profile.h"
+void setup() {
 
-// write requests
-static int att_write_callback(uint16_t con_handle, uint16_t handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-    printf("WRITE Callback, handle 0x%04x\n", handle);
+  setup_printf(9600);
 
-    switch(handle){
-        case ATT_CHARACTERISTIC_FFF1_01_VALUE_HANDLE:
-            buffer[buffer_size]=0;
-            printf("New text: %s\n", buffer);
-            break;
-        case ATT_CHARACTERISTIC_FFF2_01_VALUE_HANDLE:
-            printf("New value: %u\n", buffer[0]);
-#ifdef PIN_LED
-            if (buffer[0]){
-                digitalWrite(PIN_LED, HIGH); 
-            } else {
-                digitalWrite(PIN_LED, LOW); 
-            }
-#endif
-            break;
+  // set callbacks
+  BTstack.setBLEDeviceConnectedCallback(deviceConnectedCallback);
+  BTstack.setBLEDeviceDisconnectedCallback(deviceDisconnectedCallback);
+  BTstack.setGATTCharacteristicRead(gattReadCallback);
+  BTstack.setGATTCharacteristicWrite(gattWriteCallback);
+
+  // setup GATT Database
+  int flags = 0;
+  uint8_t * data = NULL;
+  uint16_t data_len = 0;
+  BTstack.addGATTService(new UUID("B8E06067-62AD-41BA-9231-206AE80AB550"));
+  BTstack.addGATTCharacteristic(new UUID("f897177b-aee8-4767-8ecc-cc694fd5fcee"), flags, "string");
+  BTstack.addGATTCharacteristic(new UUID("f897177b-aee8-4767-8ecc-cc694fd5fcee"), flags, data, data_len);
+  BTstack.addGATTCharacteristicDynamic(new UUID("f897177b-aee8-4767-8ecc-cc694fd5fcee"), flags, GATT_CHARACTERISTIC_TEMP_ID);
+  // ..
+
+  BTstack.setup();
+}
+
+
+void loop() {
+  BTstack.loop();
+}
+
+void deviceConnectedCallback(BLEStatus status, BLEDevice *device) {
+  switch (status){
+    case BLE_STATUS_OK:
+      printf("Device connected!\n");
+      break;
+    default:
+      break;
+  }
+}
+
+void deviceDisconnectedCallback(BLEDevice * device){
+  printf("Disconnected.\n");
+}
+
+// ATT Client Read Callback for Dynamic Data
+// - if buffer == NULL, don't copy data, just return size of value
+// - if buffer != NULL, copy data and return number bytes copied
+// @param characteristic_id to be read
+// @param buffer 
+// @param buffer_size
+uint16_t gattReadCallback(uint16_t characteristic_id, uint8_t * buffer, uint16_t buffer_size){
+    switch (characteristic_id){
+      case GATT_CHARACTERISTIC_TEMP_ID:
+        break;
     }
     return 0;
 }
 
-void setup(){
-
-  setup_printf();
-
-  printf("Main::Setup()\n");
-  BT.setup();
-
-  // set up ATT
-  att_set_db(profile_data);
-  att_set_write_callback(att_write_callback);
+// ATT Client Write Callback for Dynamic Data
+// @param characteristic_id to be read
+// @param buffer 
+// @param buffer_size
+// @returns 0 if write was ok, ATT_ERROR_INVALID_OFFSET if offset is larger than max buffer
+int gattWriteCallback(uint16_t characteristic_id, uint8_t *buffer, uint16_t buffer_size){
+    switch (characteristic_id){
+    }
+    return 0;
 }
 
-void loop(){
-  BT.loop();
-}
