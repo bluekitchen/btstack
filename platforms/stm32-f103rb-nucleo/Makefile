@@ -23,7 +23,7 @@ CORE   = \
 
 COMMON = \
 	bt_control_cc256x.c   \
-	bluetooth_init_cc2564B_1.0_BT_Spec_4.1.c   \
+	bluetooth_init_cc2564B_1.2_BT_Spec_4.1.c   \
     hci.c			          \
     hci_cmds.c		          \
     hci_dump.c		          \
@@ -59,6 +59,9 @@ CFLAGS = -I. -I$(BTSTACK_ROOT)/include -I$(BTSTACK_ROOT)/src -I$(BTSTACK_ROOT)/b
 examples: libopencm3/lib/libopencm3_stm32f1.a spp_and_le_counter.h spp_and_le_counter.elf
 
 include libopencm3.stm32f1.mk
+
+# fetch and convert init scripts
+include ${BTSTACK_ROOT}/chipset-cc256x/Makefile.inc
 
 # clean:
 #	rm -f *.map *.o *.d *.out *.elf *.bin *.hex ../driver/*.o ../../src/*.o ../../ble/*.o ../firmware/*.o ${BTSTACK_ROOT}/chipset-cc256x/*.o ${BTSTACK_ROOT}/src/*.o

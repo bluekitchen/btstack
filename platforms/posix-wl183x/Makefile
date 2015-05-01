@@ -8,6 +8,9 @@ COMMON += hci_transport_h4.c run_loop_posix.c remote_device_db_fs.c
 
 include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 
+# fetch and convert init scripts
+include ${BTSTACK_ROOT}/chipset-cc256x/Makefile.inc
+
 CFLAGS += -I$(BTSTACK_ROOT)/chipset-cc256x
 
 # CC = gcc-fsf-4.9
