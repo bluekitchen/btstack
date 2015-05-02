@@ -1800,7 +1800,7 @@ int main (int argc,  char * const * argv){
     
     // dump version
     log_info("BTdaemon started\n");
-    log_info("version %s, svn r%u, build %s", BTSTACK_VERSION, BTSTACK_REVISION, BTSTACK_DATE);
+    log_info("version %s, build %s", BTSTACK_VERSION, BTSTACK_DATE);
 
     // init HCI
     hci_init(transport, &config, control, remote_device_db);
