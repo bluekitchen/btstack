@@ -1,5 +1,5 @@
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = platforms/posix/src example/daemon
+SUBDIRS = platforms/daemon example/daemon
 
 package:
 	./package.sh

@@ -59,8 +59,8 @@ echo "BTstack configured for HCI $HCI_TRANSPORT Transport"
 
 HAVE_SO_NOSIGPIPE="no"
 
-# from platform/posix/src
-BTSTACK_ROOT="../../../"
+# from platform/daemon
+BTSTACK_ROOT="../../"
 
 RUN_LOOP_SOURCES="$BTSTACK_ROOT/platforms/posix/src/run_loop_posix.c"
 case "$host_os" in
@@ -183,4 +183,4 @@ AC_SUBST(BTSTACK_LIB_LDFLAGS)
 AC_SUBST(BTSTACK_LIB_EXTENSION)
 AC_SUBST(LIBUSB_CFLAGS)
 AC_SUBST(LIBUSB_LDFLAGS)
-AC_OUTPUT(Makefile platforms/posix/src/Makefile example/daemon/Makefile)
+AC_OUTPUT(Makefile platforms/daemon/Makefile example/daemon/Makefile)
