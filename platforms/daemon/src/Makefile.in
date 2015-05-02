@@ -1,10 +1,10 @@
-BTSTACK_ROOT = ../..
+BTSTACK_ROOT = ../../..
 
 prefix = @prefix@
 
 CC = @CC@
 LDFLAGS = @LDFLAGS@
-CFLAGS = @CFLAGS@ -I $(BTSTACK_ROOT)/include -I$(BTSTACK_ROOT)/platforms/daemon -I $(BTSTACK_ROOT)/ble  -I $(BTSTACK_ROOT)/src -I $(BTSTACK_ROOT)
+CFLAGS = @CFLAGS@ -I $(BTSTACK_ROOT)/include -I$(BTSTACK_ROOT)/platforms/src/daemon -I $(BTSTACK_ROOT)/ble  -I $(BTSTACK_ROOT)/src -I $(BTSTACK_ROOT)
 BTSTACK_LIB_LDFLAGS = @BTSTACK_LIB_LDFLAGS@
 BTSTACK_LIB_EXTENSION = @BTSTACK_LIB_EXTENSION@
 LIBUSB_CFLAGS = @LIBUSB_CFLAGS@
@@ -15,8 +15,8 @@ run_loop_sources = @RUN_LOOP_SOURCES@
 usb_sources = @USB_SOURCES@
 
 libBTstack_SOURCES =                        \
-    $(BTSTACK_ROOT)/platforms/daemon/btstack.c  \
-    $(BTSTACK_ROOT)/platforms/daemon/socket_connection.c \
+    $(BTSTACK_ROOT)/platforms/daemon/src/btstack.c  \
+    $(BTSTACK_ROOT)/platforms/daemon/src/socket_connection.c \
     $(BTSTACK_ROOT)/src/hci_cmds.c          \
     $(BTSTACK_ROOT)/src/linked_list.c       \
     $(BTSTACK_ROOT)/src/run_loop.c          \
@@ -25,7 +25,7 @@ libBTstack_SOURCES =                        \
     $(run_loop_sources)                     \
 			  
 BTdaemon_SOURCES =                          \
-    $(BTSTACK_ROOT)/platforms/daemon/daemon.c  \
+    $(BTSTACK_ROOT)/platforms/daemon/src/daemon.c  \
     $(BTSTACK_ROOT)/platforms/posix/src/hci_transport_h4.c  \
     $(libBTstack_SOURCES)                   \
     $(BTSTACK_ROOT)/src/btstack_memory.c    \
