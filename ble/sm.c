@@ -246,12 +246,12 @@ static const stk_generation_method_t stk_generation_method[5][5] = {
     { PK_RESP_INPUT,   PK_RESP_INPUT,    PK_INIT_INPUT,   JUST_WORKS,    PK_RESP_INPUT },
 };
 
-static void sm_run();
+static void sm_run(void);
 static void sm_done_for_handle(uint16_t handle);
 static void sm_notify_client(uint8_t type, uint8_t addr_type, bd_addr_t address, uint32_t passkey, uint16_t index);
 static sm_connection_t * sm_get_connection_for_handle(uint16_t handle);
 static inline int sm_calc_actual_encryption_key_size(int other);
-static int sm_validate_stk_generation_method();
+static int sm_validate_stk_generation_method(void);
 
 static void log_info_hex16(const char * name, uint16_t value){
     log_info("%-6s 0x%04x", name, value);
@@ -2064,7 +2064,7 @@ static sm_connection_t * sm_get_connection_for_handle(uint16_t con_handle){
 }
 
 static sm_connection_t * sm_get_connection(uint8_t addr_type, bd_addr_t address){
-    hci_connection_t * hci_con = hci_connection_for_bd_addr_and_type(address, addr_type);
+    hci_connection_t * hci_con = hci_connection_for_bd_addr_and_type(address, (bd_addr_type_t)addr_type);
     if (!hci_con)  return NULL;
     return &hci_con->sm_connection;
 }

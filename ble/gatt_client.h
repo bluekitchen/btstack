@@ -237,7 +237,7 @@ typedef struct le_characteristic_descriptor_event{
 /** 
  * @brief Set up GATT client.
  */
-void gatt_client_init();
+void gatt_client_init(void);
 
 /** 
  * @brief Register callback (packet handler) for GATT client. Returns GATT client ID.

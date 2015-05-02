@@ -127,7 +127,7 @@ typedef struct sm_event {
 /**
  * @brief Initializes the Security Manager, connects to L2CAP
  */
-void sm_init();
+void sm_init(void);
 
 /**
  * @brief Set secret ER key for key generation as described in Core V4.0, Vol 3, Part G, 5.2.2 
@@ -253,7 +253,7 @@ void sm_authorization_grant(uint8_t addr_type, bd_addr_t address);
  * @brief Support for signed writes, used by att_server.
  * @note Message and result are in little endian to allows passing in ATT PDU without flipping them first.
  */
-int  sm_cmac_ready();
+int  sm_cmac_ready(void);
 void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t hash[8]));
 
 /**

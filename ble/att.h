@@ -246,7 +246,7 @@ uint16_t att_prepare_handle_value_indication(att_connection_t * att_connection,
 /*
  * @brief transcation queue of prepared writes, e.g., after disconnect
  */
-void att_clear_transaction_queue();
+void att_clear_transaction_queue(att_connection_t * att_connection);
 
 // experimental client API
 uint16_t att_uuid_for_handle(uint16_t handle);

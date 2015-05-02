@@ -68,7 +68,7 @@ typedef struct sdp_query_rfcomm_service_event {
  */
 void sdp_query_rfcomm_register_callback(void(*sdp_app_callback)(sdp_query_event_t * event, void * context), void * context);
 
-void sdp_query_rfcomm_deregister_callback();
+void sdp_query_rfcomm_deregister_callback(void);
 
 /** 
  * @brief Searches SDP records on a remote device for RFCOMM services with a given UUID.
