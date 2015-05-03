@@ -10,14 +10,16 @@ BTSTACK_ROOT=../../..
 POSIX_ROOT=$(BTSTACK_ROOT)/platforms/posix
 DAEMON_ROOT=$(BTSTACK_ROOT)/platforms/daemon
 
+VPATH += $(BTSTACK_ROOT)/src
+
 LIBRARY_NAME = libBTstack
 libBTstack_FILES = \
-	$(BTSTACK_ROOT)/src/hci_cmds.c \
-	$(BTSTACK_ROOT)/src/hci_dump.c \
-	$(BTSTACK_ROOT)/src/linked_list.c \
-	$(BTSTACK_ROOT)/src/run_loop.c \
-	$(BTSTACK_ROOT)/src/sdp_util.c \
-	$(BTSTACK_ROOT)/src/utils.c \
+	hci_cmds.c \
+	hci_dump.c \
+	linked_list.c \
+	run_loop.c \
+	sdp_util.c \
+	utils.c \
 	$(BTSTACK_ROOT)/platforms/cocoa/run_loop_cocoa.m \
 	$(POSIX_ROOT)/src/run_loop_posix.c \
 	$(DAEMON_ROOT)/src/btstack.c \
@@ -28,17 +30,17 @@ libBTstack_CFLAGS = -I$(BTSTACK_ROOT)/include -I$(BTSTACK_ROOT)/ble -I$(BTSTACK_
 TOOL_NAME = BTdaemon
 BTdaemon_FILES = \
 	$(libBTstack_FILES)  	\
-	$(BTSTACK_ROOT)/src/btstack_memory.c        \
-	$(BTSTACK_ROOT)/src/hci.c                   \
-	$(BTSTACK_ROOT)/src/l2cap.c                 \
-	$(BTSTACK_ROOT)/src/l2cap_signaling.c       \
-	$(BTSTACK_ROOT)/src/memory_pool.c           \
-	$(BTSTACK_ROOT)/src/rfcomm.c                \
-	$(BTSTACK_ROOT)/src/sdp.c                   \
-    $(BTSTACK_ROOT)/src/sdp_client.c            \
-    $(BTSTACK_ROOT)/src/sdp_parser.c            \
-    $(BTSTACK_ROOT)/src/sdp_query_rfcomm.c      \
-    $(BTSTACK_ROOT)/src/sdp_query_util.c        \
+	btstack_memory.c        \
+	hci.c                   \
+	l2cap.c                 \
+	l2cap_signaling.c       \
+	memory_pool.c           \
+	rfcomm.c                \
+	sdp.c                   \
+    sdp_client.c            \
+    sdp_parser.c            \
+    sdp_query_rfcomm.c      \
+    sdp_query_util.c        \
 	$(DAEMON_ROOT)/src/daemon.c  \
 	$(POSIX_ROOT)/src/hci_transport_h4.c 		 	\
 	$(BTSTACK_ROOT)/platforms/ios/src/bt_control_iphone.m     	\
@@ -49,6 +51,9 @@ BTdaemon_FILES = \
 
 BTdaemon_CFLAGS = -I$(BTSTACK_ROOT)/include -I$(BTSTACK_ROOT)/ble -I$(BTSTACK_ROOT)/src -I..
 BTdaemon_LDFLAGS += $(SYSROOT)/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit
+
+before-all::
+	../../../tools/get_version.sh
 
 after-BTdaemon-stage::
 	echo $(THEOS_STAGING_DIR)
