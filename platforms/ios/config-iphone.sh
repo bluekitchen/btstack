@@ -1,18 +1,9 @@
 #!/bin/sh
-echo "Configure BTstack for use with iOS using the theos build system"
-echo "Please run from btstack root folder: platforms/ios/config-iphone.sh"
 
-# get version from svn
+# get version from repository
 tools/get_version.sh
 
 # check if $THEOS is set
 
-# remove autoconf created files
-rm -f btstack-config.h config.h layout Makefile src/Makefile example/Makefile ch.ringwald.btstack_*.deb
-
-# use theos Makefiles
-cp platforms/ios/btstack-config-iphone.h btstack-config.h
-cp platforms/ios/Makefile.iphone Makefile
-cp platforms/ios/src/Makefile.iphone src/Makefile
+# use theos Makefiles ??
 cp platforms/ios/example/Makefile.iphone example/daemon/Makefile
-ln -s platforms/ios/layout .
