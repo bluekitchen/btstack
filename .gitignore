@@ -8,3 +8,13 @@
 *.pklg
 *.fdb_latexmk
 *.hex
+*.a
+*.dylib
+*.bts
+*.elf
+*.map
+.theos
+.stamp
+bluetooth_init_cc2560B_1.2_BT_Spec_4.1.c
+bluetooth_init_cc2564B_1.2_BT_Spec_4.1.c
+TIInit_11.8.32.c
