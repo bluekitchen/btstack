@@ -8,6 +8,7 @@ ARCHS = armv6 arm64
 
 BTSTACK_ROOT=..
 POSIX_ROOT=$(BTSTACK_ROOT)/platforms/posix
+DAEMON_ROOT=$(BTSTACK_ROOT)/platforms/daemon
 
 LIBRARY_NAME = libBTstack
 libBTstack_FILES = \
@@ -18,9 +19,9 @@ libBTstack_FILES = \
 	sdp_util.c \
 	utils.c \
 	$(BTSTACK_ROOT)/platforms/cocoa/run_loop_cocoa.m \
-	$(POSIX_ROOT)/src/btstack.c \
 	$(POSIX_ROOT)/src/run_loop_posix.c \
-	$(POSIX_ROOT)/src/socket_connection.c \
+	$(DAEMON_ROOT)/src/btstack.c \
+	$(DAEMON_ROOT)/src/socket_connection.c \
 
 libBTstack_CFLAGS = -I../include -I../ble -I../src -I..
 
@@ -38,7 +39,7 @@ BTdaemon_FILES = \
     sdp_parser.c            \
     sdp_query_rfcomm.c      \
     sdp_query_util.c        \
-	$(POSIX_ROOT)/src/daemon.c  \
+	$(DAEMON_ROOT)/src/daemon.c  \
 	$(POSIX_ROOT)/src/hci_transport_h4.c 		 	\
 	../platforms/ios/src/bt_control_iphone.m     	\
 	../platforms/ios/src/hci_transport_h4_iphone.c  \
