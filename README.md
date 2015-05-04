@@ -18,14 +18,15 @@ Multiple applications can communicate with this daemon over different inter-proc
 BTstack supports both, the Central and the Peripheral Role of Bluetooth 4.0 Low Energy specification. 
 It can be configures as both a single mode or a dual mode stack.
 
-For starters, download the [BTstack Manual](https://github.com/bluekitchen/btstack/raw/master/docs/manual/btstack-manual.pdf) 
-and look for an Architecture overview and the Getting started example for MSP430.
-
 BTstack is free for non-commercial use. For commercial use, <a href="mailto:contact@bluekitchen-gmbh.com">tell us</a> 
 a bit about your project to get a quote.
 The Serial Port Profile (SPP) and the Bluetooth 4.0 Low Energy Peripheral role (LE Peripheral) have been qualified with 
 the Bluetooth SIG (QD ID 54558). This summer, we plan to qualify for Bluetooth Core 4.2,
 together with LE Central, PAN/BNEP and HSP.
+
+## Documentation
+For starters, download the [BTstack Manual](https://github.com/bluekitchen/btstack/raw/master/docs/manual/btstack-manual.pdf) 
+and look for an Architecture overview and the Getting started example for MSP430.
 
 ## Supported Protocols
 * L2CAP            
