@@ -1,0 +1,16 @@
+site_name: BTstack Manual
+pages:
+- [index.md, Wellcome]
+- [quick_start.md, Quick Start]
+- [architecture.md, BTstack Architecture]
+- [how_to.md, How to use BTstack]
+- [protocols.md, Protocols]
+- [profiles.md, Profiles]
+- [examples/intro.md, Examples]
+- [examples/generated.md, List of Examples]
+- [porting.md, Porting to Other Platforms]
+- [integration.md, Integrating with Existing Systems]
+- [appendix/apis.md, APIs]
+- [appendix/events_errors.md, Events and Errors]
+- [revision_history.md, Revision History]
+theme: readthedocs
