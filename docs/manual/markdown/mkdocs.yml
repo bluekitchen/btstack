@@ -1,6 +1,6 @@
 site_name: BTstack Manual
 pages:
-- [index.md, Wellcome]
+- [index.md, Welcome]
 - [quick_start.md, Quick Start]
 - [architecture.md, BTstack Architecture]
 - [how_to.md, How to use BTstack]
