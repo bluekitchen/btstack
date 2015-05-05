@@ -25,8 +25,9 @@ the Bluetooth SIG (QD ID 54558). This summer, we plan to qualify for Bluetooth C
 together with LE Central, PAN/BNEP and HSP.
 
 ## Documentation
-For starters, download the [BTstack Manual](https://github.com/bluekitchen/btstack/raw/master/docs/manual/btstack-manual.pdf) 
-and look for an Architecture overview and the Getting started example for MSP430.
+For starters, check the BTstack Manual:
+- [PDF](https://github.com/bluekitchen/btstack/raw/master/docs/manual/btstack-manual.pdf)
+- [HTML](http://bluekitchen-gmbh.com/btstack/)
 
 ## Supported Protocols
 * L2CAP            
