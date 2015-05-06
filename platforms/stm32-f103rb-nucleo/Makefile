@@ -68,7 +68,7 @@ include ${BTSTACK_ROOT}/chipset-cc256x/Makefile.inc
 
 # git clone and compile libopencm3
 libopencm3/lib/libopencm3_stm32f1.a:
-	git clone git@github.com:libopencm3/libopencm3.git
+	git clone https://github.com/libopencm3/libopencm3.git
 	make -C libopencm3
 
 # compile GATT database
