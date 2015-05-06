@@ -1,4 +1,5 @@
 site_name: BTstack Manual
+site_dir: btstack
 pages:
 - [index.md, Welcome]
 - [quick_start.md, Quick Start]
