@@ -11,7 +11,9 @@ an overview is provided here. Finally, we describe the RFCOMM
 credit-based flow-control, which may be necessary for
 resource-constraint devices.
 
-Memory configuration <a name ="sec:memory_configuration"></a>
+<a name ="sec:memory_configuration"></a>
+
+Memory configuration
 ------------------------------------------------------------
 
 The structs for services, active connections and remote devices can be
@@ -51,7 +53,9 @@ The memory is set up by calling *btstack_memory_init* function:
 
     btstack_memory_init();
 
-Run loop <a name"sec:run_loop"></a>
+<a name"sec:run_loop"></a>
+
+Run loop 
 -----------------------------------
 
 BTstack uses a run loop to handle incoming data and to schedule work.
@@ -106,7 +110,9 @@ as shown in Listing [listing:btstackInit]. The application can register
 data sources as well as timers, e.g., periodical sampling of sensors, or
 communication over the UART.
 
-BTstack initialization <a nam="sec:btstack_initialization"></a>
+<a nam="sec:btstack_initialization"></a>
+
+BTstack initialization
 ----------------------
 
 To initialize BTstack you need to initialize the memory and the run loop
@@ -186,6 +192,8 @@ themselves with the underlying layer. In addition, the application can
 register packet handlers to get events and data as explained in the
 following section.
 
+<a name="sec:services"></a>
+
 Services
 --------
 
@@ -199,8 +207,9 @@ ID. Outgoing connections require no special registration, they are
 created by the application when needed.
 
 
+<a name="sec:packetHandlers"></a>
 
-Where to get data - packet handlers <a name="sec:packetHandlers"></a>
+Where to get data - packet handlers
 -----------------------------------
 
 After the hardware and BTstack are set up, the run loop is entered. From
@@ -276,7 +285,9 @@ services for the HID Control and HID Interrupt PSMs using
 a packet handler to accept and receive keyboard data.
 
 
-Bluetooth HCI Packet Logs
+<a name="sec:packetlogs"></a>
+
+Bluetooth HCI Packet Logs 
 -------------------------
 
 If things don't work as expected, having a look at the data exchanged
