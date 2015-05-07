@@ -91,11 +91,13 @@ case "$host_os" in
         REMOTE_DEVICE_DB="remote_device_db_memory"
     ;;
 esac
-        
 
 # treat warnings seriously
 CFLAGS="$CFLAGS -Werror -Wall -Wpointer-arith"
     
+# 64-bit compilation requires position independent code (PIC) for libraries
+BTSTACK_LIB_LDFLAGS+=" -fpic"
+
 AM_CONDITIONAL(USE_POWERMANAGEMENT, [test "x$USE_POWERMANAGEMENT" == "xyes"])
 
 # summary
@@ -103,6 +105,7 @@ AM_CONDITIONAL(USE_POWERMANAGEMENT, [test "x$USE_POWERMANAGEMENT" == "xyes"])
 echo "CC:                  $CC"
 echo "CFLAGS:              $CFLAGS"
 echo "LDFLAGS:             $LDFLAGS"
+echo "BTSTACK_LIB_LDFLAGS: $BTSTACK_LIB_LDFLAGS"
 
 if test "x$HCI_TRANSPORT" = xUSB; then
     echo "USB_PRODUCT_ID:      $USB_PRODUCT_ID"
