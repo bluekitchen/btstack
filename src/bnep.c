@@ -1313,7 +1313,7 @@ static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16
     uint16_t        pos = 0;
     bd_addr_t       addr_source;
     bd_addr_t       addr_dest;
-    uint16_t        network_protocol_type;
+    uint16_t        network_protocol_type = 0xffff;
     bnep_channel_t *channel = NULL;
     
     /* Get the bnep channel for this package */
@@ -1410,7 +1410,7 @@ static int bnep_l2cap_packet_handler(uint16_t l2cap_cid, uint8_t *packet, uint16
         } while (bnep_header_has_ext);
     }
 
-    if (bnep_type != BNEP_PKT_TYPE_CONTROL) {
+    if (bnep_type != BNEP_PKT_TYPE_CONTROL && network_protocol_type != 0xffff) {
         if (channel->state == BNEP_CHANNEL_STATE_CONNECTED) {
             rc = bnep_handle_ethernet_packet(channel, addr_dest, addr_source, network_protocol_type, packet + pos, size - pos);
         } else {
