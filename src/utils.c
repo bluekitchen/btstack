@@ -118,6 +118,7 @@ void printf_hexdump(const void *data, int size){
 }
 
 void hexdump(const void *data, int size){
+#ifdef ENABLE_LOG_INFO
     char buffer[6*16+1];
     int i, j;
 
@@ -142,6 +143,7 @@ void hexdump(const void *data, int size){
         buffer[j] = 0;
         log_info("%s", buffer);
     }
+#endif
 }
 
 void hexdumpf(const void *data, int size){

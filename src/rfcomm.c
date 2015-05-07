@@ -551,7 +551,7 @@ static int rfcomm_send_uih_prepared(rfcomm_multiplexer_t *multiplexer, uint8_t d
     
     uint16_t pos = 0;
     rfcomm_out_buffer[pos++] = address;
-    rfcomm_out_buffer[pos++] = BT_RFCOMM_UIH;
+    rfcomm_out_buffer[pos++] = control;
     rfcomm_out_buffer[pos++] = (len & 0x7f) << 1; // bits 0-6
     rfcomm_out_buffer[pos++] = len >> 7;          // bits 7-14
 
