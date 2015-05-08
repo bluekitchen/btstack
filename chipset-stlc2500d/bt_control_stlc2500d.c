@@ -47,7 +47,7 @@
 
 #include <stddef.h>   /* NULL */
 #include <stdio.h> 
-	#include <string.h>   /* memcpy */
+#include <string.h>   /* memcpy */
 #include "hci.h"
 #include "debug.h"
 
@@ -95,6 +95,15 @@ static int stlc2500d_baudrate_cmd(void * config, uint32_t baudrate, uint8_t *hci
     return 0;
 }
 
+static int stlc2500d_set_bd_addr_cmd(void * config, bd_addr_t addr, uint8_t *hci_cmd_buffer){
+    bt_store_16(hci_cmd_buffer, 0, OPCODE(OGF_VENDOR, 0x22));
+    hci_cmd_buffer[2] = 0x08;
+    hci_cmd_buffer[3] = 254;
+    hci_cmd_buffer[4] = 0x06;
+    bt_flip_addr(&hci_cmd_buffer[5], addr);
+    return 0;
+}
+
 // MARK: const structs 
 static const bt_control_t bt_control_stlc2500d = {
 	NULL,                                  // on
@@ -107,7 +116,7 @@ static const bt_control_t bt_control_stlc2500d = {
 	NULL,                                  // next_cmd
 	NULL,                                  // register_for_power_notifications
     NULL,                                  // hw_error
-    NULL, 				                   // set_bd_addr_cmd
+    stlc2500d_set_bd_addr_cmd,             // set_bd_addr_cmd
 };
 
 // MARK: public API
