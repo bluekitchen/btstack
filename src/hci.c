@@ -1044,16 +1044,24 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             run_loop_remove_timer(&hci_stack->timeout);
             break;
         case HCI_INIT_W4_SEND_READ_LOCAL_VERSION_INFORMATION:
+            if (need_addr_change){
+                hci_stack->substate = HCI_INIT_SET_BD_ADDR;
+                return;
+            }
+            // skipping addr change
+            if (need_baud_change){
+                hci_stack->substate = HCI_INIT_SEND_BAUD_CHANGE;
+                return;
+            }
+            // also skip baud change
+            hci_stack->substate = HCI_INIT_CUSTOM_INIT;
+            return;
+        case HCI_INIT_W4_SET_BD_ADDR:
             if (need_baud_change){
                 hci_stack->substate = HCI_INIT_SEND_BAUD_CHANGE;
                 return;
             }
             // skipping baud change
-            if (need_addr_change){
-                hci_stack->substate = HCI_INIT_SET_BD_ADDR;
-                return;
-            }
-            // also skip set bd addr
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
             return;
         case HCI_INIT_W4_SEND_BAUD_CHANGE:
@@ -1064,11 +1072,6 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
                 log_info("Local baud rate change to %u", new_baud);
                 hci_stack->hci_transport->set_baudrate(new_baud);
             }   
-            if (need_addr_change){
-                hci_stack->substate = HCI_INIT_SET_BD_ADDR;
-                return;
-            }
-            // skipping addr change
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
             return;
         case HCI_INIT_W4_CUSTOM_INIT_CSR_WARM_BOOT:
