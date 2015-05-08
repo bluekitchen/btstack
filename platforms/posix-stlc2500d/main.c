@@ -80,7 +80,7 @@ static void sigint_handler(int param){
     exit(0);
 }
 
-static led_state = 0;
+static int led_state = 0;
 void hal_led_toggle(){
     led_state = 1 - led_state;
     printf("LED State %u\n", led_state);
