@@ -10,9 +10,10 @@ contains the packet handler (PH) that handles all asynchronous events
 and data packets from BTstack. The Main Application makes use of the
 Communication Logic for its Bluetooth communication.
 
-Adapting BTstack for Single-Threaded Environments
--------------------------------------------------
 <a name="sec:singlethreading"></a> 
+
+## Adapting BTstack for Single-Threaded Environments
+
 
 In a single-threaded environment, all application components run on the
 same (single) thread and use direct function calls as shown in Figure [below](#fig:BTstackSingle).
@@ -39,9 +40,9 @@ Currently, we have two examples for this:
     managed in a linked list. Then, the*select* function is used to wait
     for the next file descriptor to become ready or timer to expire.
 
-Adapting BTstack for Multi-Threaded Environments 
-------------------------------------------------
 <a name="sec:multithreading"></a> 
+
+## Adapting BTstack for Multi-Threaded Environments
 
 
 The basic execution model of BTstack is a general while loop. Aside from

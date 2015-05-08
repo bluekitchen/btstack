@@ -67,7 +67,7 @@ fields, called the OpCode Group Field (OGF) and OpCode Command Field
 (OCF), see [Bluetooth Specification](https://www.bluetooth.org/Technical/Specifications/adopted.htm) -
 Core Version 4.0, Volume 2, Part E, Chapter 5.4. 
 
-Listing [below](#lst:hciOGFs) shows the OGFs provided by BTstack in file:
+Listing [below](#lst:hciOGFs) shows the OGFs provided by BTstack in file [src/hci.h]():
 
 <a name "lst:hciOGFs"></a>
 <!-- -->
@@ -88,7 +88,8 @@ In a HCI command packet, the OpCode is followed by parameter total
 length, and the actual parameters. The OpCode of a command can be
 calculated using the OPCODE macro. BTstack provides the *hci_cmd_t*
 struct as a compact format to define HCI command packets, see 
-Listing [below](#lst:HCIcmdTemplate):
+Listing [below](#lst:HCIcmdTemplate), and [include/btstack/hci_cmds.h]()
+file in the source code. 
 
 <a name "lst:HCIcmdTemplate"></a>
 <!-- -->
