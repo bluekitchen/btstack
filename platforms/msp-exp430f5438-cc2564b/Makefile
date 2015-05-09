@@ -96,8 +96,8 @@ LCD_OBJ    = $(LCD:.c=.o)
 
 # create firmware image from common objects and example source file
 
-all: led_counter.hex spp_counter.hex spp_accel.hex gap_inquiry.hex spp_flowcontrol.hex \
-	sdp_rfcomm_query.hex sdp_general_query.hex ble_server.hex 
+all: led_counter.hex spp_counter.hex gap_inquiry.hex spp_flowcontrol.hex \
+	sdp_rfcomm_query.hex sdp_general_query.hex 
 
 # fetch and convert init scripts
 include ${BTSTACK_ROOT}/chipset-cc256x/Makefile.inc
@@ -105,6 +105,8 @@ include ${BTSTACK_ROOT}/chipset-cc256x/Makefile.inc
 # compiling requires a 20-bit mspgcc version
 # hid_demo.hex 
 # spp_and_le_counter.hex
+# spp_accel.hex
+# ble_server.hex  
 
 # compiling ant-test requires special ant init script
 # ant-test.hex
@@ -129,22 +131,22 @@ hid_demo.out: ${CORE_OBJ} ${COMMON_OBJ} ${LCD_OBJ} ${SPP_OBJ} ${CC2560B} hid_dem
 spp_accel.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_accel.o sdp.o hal_adc.o
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_and_le_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${BLE_OBJ} spp_and_le_counter.h spp_and_le_counter.o sdp.o hal_adc.o
+spp_and_le_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${BLE_OBJ} spp_and_le_counter.h spp_and_le_counter.o sdp.o 
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_counter.o sdp.o  hal_adc.o
+spp_counter.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_counter.o sdp.o  
 	${CC} $^ ${LDFLAGS} -o $@
 
-spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_flowcontrol.o sdp.o  hal_adc.o
+spp_flowcontrol.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} spp_flowcontrol.o sdp.o  
 	${CC} $^ ${LDFLAGS} -o $@
 
-gap_inquiry.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} gap_inquiry.o hal_adc.o
+gap_inquiry.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${CC2560B} gap_inquiry.o 
 	${CC} $^ ${LDFLAGS} -o $@
 
-sdp_rfcomm_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${SDP_CLIENT} ${CC2560B} sdp_rfcomm_query.o hal_adc.o
+sdp_rfcomm_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${SDP_CLIENT} ${CC2560B} sdp_rfcomm_query.o 
 	${CC} $^ ${LDFLAGS} -o $@
 
-sdp_general_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${SDP_CLIENT} ${CC2560B} sdp_general_query.o hal_adc.o
+sdp_general_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${SDP_CLIENT} ${CC2560B} sdp_general_query.o
 	${CC} $^ ${LDFLAGS} -o $@
 
 clean:
