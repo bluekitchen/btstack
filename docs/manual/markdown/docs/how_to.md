@@ -11,10 +11,9 @@ an overview is provided here. Finally, we describe the RFCOMM
 credit-based flow-control, which may be necessary for
 resource-constraint devices.
 
-<a name ="sec:memory_configuration"></a>
+<a name ="section:memory_configuration"></a>
 
-Memory configuration
-------------------------------------------------------------
+## Memory configuration
 
 The structs for services, active connections and remote devices can be
 allocated in two different manners:
@@ -53,10 +52,9 @@ The memory is set up by calling *btstack_memory_init* function:
 
     btstack_memory_init();
 
-<a name"sec:run_loop"></a>
+<a name"section:run_loop"></a>
 
-Run loop 
------------------------------------
+## Run loop 
 
 BTstack uses a run loop to handle incoming data and to schedule work.
 The run loop handles events from two different types of sources: data
@@ -112,12 +110,10 @@ communication over the UART.
 
 <a nam="sec:btstack_initialization"></a>
 
-BTstack initialization
-----------------------
+## BTstack initialization
 
-To initialize BTstack you need to initialize the memory and the run loop
-as explained in Sections [section:memory~c~onfiguration] and
-[section:run~l~oop] respectively, then setup HCI and all needed higher
+To initialize BTstack you need to [initialize the memory](#section:memory_configuration)
+and [the run loop](#section:run_loop) respectively, then setup HCI and all needed higher
 level protocols.
 
 The HCI initialization has to adapt BTstack to the used platform and
@@ -145,10 +141,11 @@ requires four arguments. These are:
     module can be connected via USB or an UART port. BTstack implements
     two UART based protocols: HCI UART Transport Layer (H4) and H4 with
     eHCILL support, a lightweight low-power variant by Texas
-    Instruments. These are accessed by linking the appropriate file (
-    resp. and then getting a pointer to HCI Transport implementation.
+    Instruments. These are accessed by linking the appropriate file 
+    [src/hci_transport_h4_dma.c]() resp. [src/hci_transport_h4_ehcill_dma.c]()
+    and then getting a pointer to HCI Transport implementation.
     For more information on adapting HCI Transport to different
-    environments, see Section [section:hci~t~ransport].
+    environments, see [here](porting/#hci-transport-implementation).
 
 <!-- -->
 
@@ -175,7 +172,7 @@ requires four arguments. These are:
     keys or remote device names. This commonly requires platform
     specific code to access the MCU’s EEPROM of Flash storage. For the
     first steps, BTstack provides a (non) persistent store in memory.
-    For more see [here](#sec:persistent_storage).
+    For more see [here](porting/#persistent-storage-api).
 
 <!-- -->
 
@@ -194,8 +191,7 @@ following section.
 
 <a name="sec:services"></a>
 
-Services
---------
+## Services
 
 One important construct of BTstack is *service*. A service represents a
 server side component that handles incoming connections. So far, BTstack
@@ -209,8 +205,8 @@ created by the application when needed.
 
 <a name="sec:packetHandlers"></a>
 
-Where to get data - packet handlers
------------------------------------
+## Where to get data - packet handlers
+
 
 After the hardware and BTstack are set up, the run loop is entered. From
 now on everything is event driven. The application calls BTstack
@@ -287,8 +283,8 @@ a packet handler to accept and receive keyboard data.
 
 <a name="sec:packetlogs"></a>
 
-Bluetooth HCI Packet Logs 
--------------------------
+## Bluetooth HCI Packet Logs 
+
 
 If things don't work as expected, having a look at the data exchanged
 between BTstack and the Bluetooth chipset often helps.

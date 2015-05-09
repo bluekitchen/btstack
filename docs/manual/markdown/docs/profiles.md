@@ -1,8 +1,8 @@
 In the following, we explain how the various Bluetooth profiles are used
 in BTstack.
 
-GAP - Generic Access Profile: Classic
--------------------------------------
+## GAP - Generic Access Profile: Classic
+
 
 The GAP profile defines how devices find each other and establish a
 secure connection for other profiles. As mentioned before, the GAP
@@ -162,8 +162,8 @@ purpose of bonding the device. After the bonding process is over, the
 connection will be automatically terminated. BTstack supports dedicated
 bonding via the *gap_dedicated_bonding* function.
 
-SPP - Serial Port Profile
--------------------------
+## SPP - Serial Port Profile
+
 
 The SPP profile defines how to set up virtual serial ports and connect
 two Bluetooth enabled devices.
@@ -188,8 +188,10 @@ and publish it with the SDP server by calling
 approximately 200 bytes, the service channel number, and a service name.
 Have a look at the SPP Counter example in Section [example:sppcounter].
 
-PAN - Personal Area Networking Profile {#section:pan_profile}
---------------------------------------
+<a name="section:pan_profile"></a>
+
+## PAN - Personal Area Networking Profile 
+
 
 The PAN profile uses BNEP to provide on-demand networking capabilities
 between Bluetooth devices. The PAN profile defines the following roles:
@@ -237,8 +239,8 @@ calling *sdp_register_service_internal*. BTstack provides the
 empty buffer of approximately 200 bytes, a description, and a security
 description.
 
-GAP LE - Generic Access Profile for Low Energy
-----------------------------------------------
+## GAP LE - Generic Access Profile for Low Energy
+
 
 As with GAP for Classic, the GAP LE profile defines how to discover and
 how to connect to a Bluetooth Low Energy device. There are several GAP
@@ -301,8 +303,8 @@ into the Connected state. However, it does not start broadcasting
 advertisements on disconnect again. To re-enable it, please send the
 *hci_le_set_advertise_enable* again .
 
-GATT - Generic Attribute Profile
---------------------------------
+## GATT - Generic Attribute Profile
+
 
 The GATT profile uses ATT Attributes to represent a hierarchical
 structure of GATT Services and GATT Characteristics. Each Service has
@@ -313,7 +315,9 @@ Services are queried and modified via ATT operations.
 GATT defines both a server and a client role. A device can implement one
 or both GATT roles.
 
-### GATT Client {#section:GATTClient}
+<a name = "section:GATTClient"></a>
+
+### GATT Client 
 
 The GATT Client is used to discover services, and their characteristics
 and descriptors on a peer device. It can also subscribe for
@@ -340,10 +344,12 @@ perform a GATT query on a particular connection using
 *le_event*s are returned before a *GATT_QUERY_COMPLETE* event
 completes the query.
 
-For more details on the available GATT queries, please consult Appendix
-[appendix:api~g~att~c~lient].
+For more details on the available GATT queries, please consult 
+[GATT Client API](#appendix:api_gatt_client).
 
-### GATT Server {#section:GATTServer}
+<a name="section:GATTServer">
+
+### GATT Server
 
 The GATT server stores data and accepts GATT client requests, commands
 and confirmations. The GATT server sends responses to requests and when
