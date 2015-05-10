@@ -131,7 +131,7 @@ static int get_max_power_for_modulation_type(int type){
 static int get_highest_level_for_given_power(int power_db, int recommended_db){
     int i = NUM_POWER_LEVELS-1;
     while (i) {
-        if (power_db < recommended_db) {
+        if (power_db <= recommended_db) {
             return i;
         }
         power_db -= DB_PER_LEVEL;
@@ -170,10 +170,12 @@ static void update_set_power_vector(uint8_t *hci_cmd_buffer){
     } 
 }
 
+// max permitted power for class 2 devices: 4 dBm
 static void update_set_class2_single_power(uint8_t * hci_cmd_buffer){
+    const int max_power_class_2 = 4;
     int i = 0;
     for (i=0;i<3;i++){
-        hci_cmd_buffer[3+i] = get_highest_level_for_given_power(get_max_power_for_modulation_type(i), 4);
+        hci_cmd_buffer[3+i] = get_highest_level_for_given_power(get_max_power_for_modulation_type(i), max_power_class_2);
     }
 }
 
