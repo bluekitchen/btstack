@@ -751,7 +751,7 @@ void sdp_create_spp_service(uint8_t *service, int service_id, const char *name){
 		uint8_t *sppProfile = de_push_sequence(attribute);
 		{
 			de_add_number(sppProfile,  DE_UUID, DE_SIZE_16, 0x1101);
-			de_add_number(sppProfile,  DE_UINT, DE_SIZE_16, 0x0100);
+			de_add_number(sppProfile,  DE_UINT, DE_SIZE_16, 0x0102);
 		}
 		de_pop_sequence(attribute, sppProfile);
 	}
