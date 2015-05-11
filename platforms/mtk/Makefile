@@ -1,7 +1,7 @@
 # Toolchain config
-NDK = /Projects/Android/android-ndk-r9d
+NDK = /Projects/Android/android-ndk-r10d
 ADB = adb
-TOOLCHAIN = /tmp/ndk-standalone
+TOOLCHAIN = /usr/local/android-ndk
 SYSROOT = $(TOOLCHAIN)/sysroot
 GCC = $(TOOLCHAIN)/bin/arm-linux-androideabi-gcc
 STRIP = $(TOOLCHAIN)/bin/arm-linux-androideabi-strip
@@ -18,6 +18,7 @@ CFLAGS += -I.
 VPATH += $(BTSTACK_ROOT)/src
 VPATH += $(BTSTACK_ROOT)/ble
 VPATH += $(BTSTACK_ROOT)/platforms/posix/src
+VPATH += $(BTSTACK_ROOT)/platforms/daemon/src
 VPATH += $(BTSTACK_ROOT)/example/daemon
 
 libBTstack_OBJS  = 		 \
