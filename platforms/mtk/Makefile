@@ -1,7 +1,7 @@
 # Toolchain config
-NDK = /Projects/Android/android-ndk-r9d
+NDK = /Projects/Android/android-ndk-r10d
 ADB = adb
-TOOLCHAIN = /tmp/ndk-standalone
+TOOLCHAIN = /usr/local/android-ndk
 SYSROOT = $(TOOLCHAIN)/sysroot
 GCC = $(TOOLCHAIN)/bin/arm-linux-androideabi-gcc
 STRIP = $(TOOLCHAIN)/bin/arm-linux-androideabi-strip
