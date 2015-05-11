@@ -18,6 +18,7 @@ CFLAGS += -I.
 VPATH += $(BTSTACK_ROOT)/src
 VPATH += $(BTSTACK_ROOT)/ble
 VPATH += $(BTSTACK_ROOT)/platforms/posix/src
+VPATH += $(BTSTACK_ROOT)/platforms/daemon/src
 VPATH += $(BTSTACK_ROOT)/example/daemon
 
 libBTstack_OBJS  = 		 \
