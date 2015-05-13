@@ -12,4 +12,4 @@ printf "#define BTSTACK_MAJOR %u\n"             $MAJOR >> $FILE
 printf "#define BTSTACK_MINOR %u\n"             $MINOR >> $FILE
 printf "#define BTSTACK_COMMIT \"%s\"\n"        $COMMIT >> $FILE
 printf "#define BTSTACK_VERSION \"%u.%u-%s\"\n" $MAJOR $MINOR $COMMIT >> $FILE
-printf "#define BTSTACK_DATE \"%s\""			$DATE >> $FILE
+printf "#define BTSTACK_DATE \"%s\"\n"			$DATE >> $FILE
