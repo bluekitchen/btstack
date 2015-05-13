@@ -1220,7 +1220,6 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
             log_info("L2CAP_EVENT_INCOMING_CONNECTION (l2cap_cid 0x%02x) for PSM_BNEP => accept", l2cap_cid);
             l2cap_accept_connection_internal(l2cap_cid);
             return 1;
-            break;
             
         /* Outgoing L2CAP connection has been opened -> store l2cap_cid, remote_addr */
         case L2CAP_EVENT_CHANNEL_OPENED: 
@@ -1270,7 +1269,6 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
                 log_error("L2CAP_EVENT_CHANNEL_OPENED: Invalid state: %d", channel->state);
             }
             return 1;
-            break;
                     
         case DAEMON_EVENT_HCI_PACKET_SENT:
             bnep_run();
