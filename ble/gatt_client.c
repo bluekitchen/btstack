@@ -63,8 +63,6 @@ static linked_list_t gatt_client_connections = NULL;
 static linked_list_t gatt_subclients = NULL;
 static uint16_t gatt_client_id = 0;
 
-static uint16_t att_client_start_handle = 0x0001;
-
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
 static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8_t error_code);
 static void att_signed_write_handle_cmac_result(uint8_t hash[8]);
@@ -124,7 +122,6 @@ void gatt_client_unregister_packet_handler(uint16_t gatt_client_id){
 }
 
 void gatt_client_init(void){
-    att_client_start_handle = 0x0000;
     gatt_client_connections = NULL;
     att_dispatch_register_client(gatt_client_att_packet_handler);
 }
@@ -350,18 +347,19 @@ static uint16_t write_blob_length(gatt_client_t * peripheral){
 }
 
 static void send_gatt_services_request(gatt_client_t *peripheral){
-    return att_read_by_type_or_group_request(ATT_READ_BY_GROUP_TYPE_REQUEST, GATT_PRIMARY_SERVICE_UUID, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle);
+    att_read_by_type_or_group_request(ATT_READ_BY_GROUP_TYPE_REQUEST, GATT_PRIMARY_SERVICE_UUID, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle);
 }
 
 static void send_gatt_by_uuid_request(gatt_client_t *peripheral, uint16_t attribute_group_type){
     if (peripheral->uuid16){
         uint8_t uuid16[2];
         bt_store_16(uuid16, 0, peripheral->uuid16);
-        return att_find_by_type_value_request(ATT_FIND_BY_TYPE_VALUE_REQUEST, attribute_group_type, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle, uuid16, 2);
+        att_find_by_type_value_request(ATT_FIND_BY_TYPE_VALUE_REQUEST, attribute_group_type, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle, uuid16, 2);
+        return;
     }
     uint8_t uuid128[16];
     swap128(peripheral->uuid128, uuid128);
-    return att_find_by_type_value_request(ATT_FIND_BY_TYPE_VALUE_REQUEST, attribute_group_type, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle, uuid128, 16);
+    att_find_by_type_value_request(ATT_FIND_BY_TYPE_VALUE_REQUEST, attribute_group_type, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle, uuid128, 16);
 }
 
 static void send_gatt_services_by_uuid_request(gatt_client_t *peripheral){
@@ -862,7 +860,7 @@ static void gatt_client_run(void){
                 }
                 return;
 
-            case P_W2_SEND_SIGNED_WRITE:
+            case P_W2_SEND_SIGNED_WRITE: {
                 peripheral->gatt_client_state = P_W4_SEND_SINGED_WRITE_DONE;
                 // bump local signing counter
                 uint32_t sign_counter = le_device_db_local_counter_get(peripheral->le_device_index);
@@ -873,7 +871,8 @@ static void gatt_client_run(void){
                 // finally, notifiy client that write is complete
                 gatt_client_handle_transaction_complete(peripheral);
                 return;
-           
+            }
+
             default:
                 break;
         }
@@ -1415,7 +1414,7 @@ le_command_status_t gatt_client_write_value_of_characteristic_without_response(u
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
     
     if (value_length >= peripheral_mtu(peripheral) - 3) return BLE_VALUE_TOO_LONG;
-    if (!l2cap_can_send_fixed_channel_packet_now(peripheral->handle)) return BTSTACK_ACL_BUFFERS_FULL;
+    if (!l2cap_can_send_fixed_channel_packet_now(peripheral->handle)) return BLE_PERIPHERAL_BUSY;
 
     peripheral->subclient_id = gatt_client_id;
     att_write_request(ATT_WRITE_COMMAND, peripheral->handle, value_handle, value_length, value);
