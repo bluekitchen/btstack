@@ -43,7 +43,7 @@
 static CFMessagePortRef springBoardAccessMessagePort = 0;
 
 
-static void SBA_refresh(){
+static void SBA_refresh(void){
 	// still valid
 	if (springBoardAccessMessagePort && !CFMessagePortIsValid(springBoardAccessMessagePort)){
 		CFRelease(springBoardAccessMessagePort);
@@ -55,7 +55,7 @@ static void SBA_refresh(){
 	}
 }
 
-int SBA_available(){
+int SBA_available(void){
 	SBA_refresh();
 	if (springBoardAccessMessagePort) return 1;
 	return 0;
@@ -88,7 +88,7 @@ int SBA_removeStatusBarImage(char *name){
 	return SBA_sendMessage(SBAC_removeStatusBarImage, strlen(name), (UInt8*) name, NULL);
 }
 
-int SBA_getBluetoothEnabled() {
+int SBA_getBluetoothEnabled(void){
 	CFDataRef cfData;
 	int result = SBA_sendMessage(SBAC_getBluetoothEnabled, 0, NULL, &cfData);
 	if (result == 0){

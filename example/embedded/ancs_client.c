@@ -93,7 +93,7 @@ uint8_t adv_data_len = sizeof(adv_data);
 
 static uint16_t todos = 0;
 
-static void app_run(){
+static void app_run(void){
 
     if (!hci_can_send_command_packet_now()) return;
 

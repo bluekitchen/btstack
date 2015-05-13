@@ -51,7 +51,7 @@ static void setup_printf(int baud) {
   stdout = &uartout;
 }  
 
-void setup() {
+void setup(void){
 
 	setup_printf(9600);
 
@@ -71,7 +71,7 @@ void setup() {
 }
 
 
-void loop() {
+void loop(void){
 	BTstack.loop();
 
 	// send counter as fast as possible

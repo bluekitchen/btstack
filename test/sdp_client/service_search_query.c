@@ -63,7 +63,7 @@ static void handle_sdp_parser_event(sdp_query_event_t * event){
 
 
 TEST_GROUP(SDPClient){
-    void setup(){
+    void setup(void){
         sdp_parser_init_service_search();
         sdp_parser_register_callback(handle_sdp_parser_event);
     }

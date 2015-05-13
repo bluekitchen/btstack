@@ -95,7 +95,7 @@ static void create_test_data(void){
     }
 }
 
-static void send_packet(){
+static void send_packet(void){
     int err = rfcomm_send_internal(rfcomm_cid, (uint8_t*) test_data, test_data_len);
     if (err){
         printf("rfcomm_send_internal -> error 0X%02x", err);

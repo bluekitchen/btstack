@@ -114,7 +114,7 @@ void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
 TEST_GROUP(SDPClient){
     uint8_t spp_buffer[sizeof(sdp_test_record_list)];
 
-    void setup(){
+    void setup(void){
         service_index = 0;
         sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
         sdp_parser_init();

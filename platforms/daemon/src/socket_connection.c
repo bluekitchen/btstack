@@ -260,7 +260,7 @@ int socket_connection_hci_process(struct data_source *ds) {
  * if dispatch is successful, a connection is added again to run loop
  * pre: connections get parked iff packet was dispatched but could not be sent
  */
-void socket_connection_retry_parked(){
+void socket_connection_retry_parked(void){
     // log_info("socket_connection_hci_process retry parked");
     linked_item_t *it = (linked_item_t *) &parked;
     while (it->next) {
@@ -382,7 +382,7 @@ void socket_connection_launchd_register_fd_array(launch_data_t listening_fd_arra
 /** 
  * create socket data_source for socket specified by launchd configuration
  */
-int socket_connection_create_launchd(){
+int socket_connection_create_launchd(void){
     
     launch_data_t sockets_dict, checkin_response;
 	launch_data_t checkin_request;
@@ -589,7 +589,7 @@ int socket_connection_close_tcp(connection_t * connection){
 /**
  * create socket connection to BTdaemon 
  */
-connection_t * socket_connection_open_unix(){
+connection_t * socket_connection_open_unix(void){
     
     int btsocket = socket(AF_UNIX, SOCK_STREAM, 0);
 	if(btsocket == -1){

@@ -92,7 +92,7 @@ static void l2cap_emit_connection_request(l2cap_channel_t *channel);
 static int l2cap_channel_ready_for_open(l2cap_channel_t *channel);
 
 
-void l2cap_init(){
+void l2cap_init(void){
     new_credits_blocked = 0;
     signaling_responses_pending = 0;
     
@@ -318,7 +318,7 @@ static void l2cap_start_ertx(l2cap_channel_t * channel){
     run_loop_add_timer(&channel->rtx);
 }
 
-void l2cap_require_security_level_2_for_outgoing_sdp(){
+void l2cap_require_security_level_2_for_outgoing_sdp(void){
     require_security_level2_for_outgoing_sdp = 1;
 }
 
@@ -736,7 +736,7 @@ uint16_t l2cap_max_mtu(void){
     return HCI_ACL_PAYLOAD_SIZE - L2CAP_HEADER_SIZE;
 }
 
-uint16_t l2cap_max_le_mtu(){
+uint16_t l2cap_max_le_mtu(void){
     return l2cap_max_mtu();
 }
 

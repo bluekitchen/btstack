@@ -62,7 +62,7 @@
 #include "remote_device_db.h"
 #include "btstack-config.h"
 
-static void hw_setup(){
+static void hw_setup(void){
     // stop watchdog timer
     WDTCTL = WDTPW + WDTHOLD;
 
@@ -84,7 +84,7 @@ static void hw_setup(){
     __enable_interrupt();  
 }
 
-static void btstack_setup(){
+static void btstack_setup(void){
     /// GET STARTED with BTstack ///
     btstack_memory_init();
     run_loop_init(RUN_LOOP_EMBEDDED);

@@ -87,7 +87,7 @@ void halUsbSendChar(char character)
   UCA3TXBUF = character;
 }
 
-char halUsbRecvChar(){
+char halUsbRecvChar(void){
     while (!(UCA3IFG & UCRXIFG));  
     return UCA3RXBUF;
 }

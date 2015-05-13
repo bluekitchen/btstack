@@ -220,7 +220,7 @@ static attribute_t att_write_queues[ATT_NUM_WRITE_QUEUES];
 #define ATT_NUM_ATTRIBUTES 10
 static attribute_t att_attributes[ATT_NUM_ATTRIBUTES];
 
-static void att_write_queue_init(){
+static void att_write_queue_init(void){
     int i;
     for (i=0;i<ATT_NUM_WRITE_QUEUES;i++){
         att_write_queues[i].handle = 0;
@@ -245,7 +245,7 @@ static int att_write_queue_for_handle(uint16_t handle){
     return -1;
 }
 
-static void att_attributes_init(){
+static void att_attributes_init(void){
     int i;
     for (i=0;i<ATT_NUM_ATTRIBUTES;i++){
         att_attributes[i].handle = 0;
@@ -274,7 +274,7 @@ static void  heartbeat_handler(struct timer *ts){
     app_run();
 } 
 
-static void app_run(){
+static void app_run(void){
     if (!update_client) return;
     if (!att_server_can_send()) return;
 
@@ -464,14 +464,14 @@ static int att_write_callback(uint16_t con_handle, uint16_t attribute_handle, ui
     return 0;
 }
 
-static uint8_t gap_adv_type(){
+static uint8_t gap_adv_type(void){
     if (gap_scannable) return 0x02;
     if (gap_directed_connectable) return 0x01;
     if (!gap_connectable) return 0x03;
     return 0x00;
 }
 
-static void gap_run(){
+static void gap_run(void){
     if (!hci_can_send_command_packet_now()) return;
 
     if (todos & DISABLE_ADVERTISEMENTS){
@@ -609,7 +609,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     gap_run();
 }
 
-void show_usage(){
+void show_usage(void){
     printf("\n--- CLI for LE Peripheral ---\n");
     printf("GAP: discoverable %u, connectable %u, bondable %u, directed connectable %u, random addr %u, ads enabled %u, adv type %u \n",
         gap_discoverable, gap_connectable, gap_bondable, gap_directed_connectable, gap_random, gap_advertisements, gap_adv_type());
@@ -655,7 +655,7 @@ void show_usage(){
     printf("---\n");
 }
 
-void update_advertisements(){
+void update_advertisements(void){
 
     // update adv data
     memset(adv_data, 0, 32);
@@ -689,7 +689,7 @@ void update_advertisements(){
     gap_run();
 }
 
-void update_auth_req(){
+void update_auth_req(void){
     uint8_t auth_req = 0;
     if (sm_mitm_protection){
         auth_req |= SM_AUTHREQ_MITM_PROTECTION;

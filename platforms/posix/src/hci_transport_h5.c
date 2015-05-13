@@ -159,7 +159,7 @@ static int    h5_open(void *transport_config){
     return 0;
 }
 
-static int    h5_close(){
+static int    h5_close(void *transport_config){
     // first remove run loop handler
 	run_loop_remove_data_source(hci_transport_h5->ds);
     
@@ -285,7 +285,7 @@ static int    h5_process(struct data_source *ds) {
     return 0;
 }
 
-static const char * h5_get_transport_name(){
+static const char * h5_get_transport_name(void){
     return "H5";
 }
 

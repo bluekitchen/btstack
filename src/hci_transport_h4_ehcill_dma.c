@@ -106,9 +106,9 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size);
 static void h4_block_received(void);
 static void h4_block_sent(void);
 static int  h4_open(void *transport_config);
-static int  h4_close();
+static int  h4_close(void *transport_config);
 static void h4_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
-static const char * h4_get_transport_name();
+static const char * h4_get_transport_name(void);
 static int  h4_set_baudrate(uint32_t baudrate);
 static int  h4_can_send_packet_now(uint8_t packet_type);
 
@@ -116,7 +116,7 @@ static int  ehcill_send_packet(uint8_t packet_type, uint8_t *packet, int size);
 static void ehcill_uart_dma_receive_block(uint8_t *buffer, uint16_t size);
 static int  ehcill_sleep_mode_active(void);
 static void ehcill_handle(uint8_t action);
-static void ehcill_cts_irq_handler();
+static void ehcill_cts_irq_handler(void);
 
 // eCHILL: state machine
 static EHCILL_STATE ehcill_state = EHCILL_STATE_AWAKE;
@@ -170,12 +170,12 @@ static const hci_transport_h4_t hci_transport_h4_ehcill_dma = {
 static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
-static const char * h4_get_transport_name(){
+static const char * h4_get_transport_name(void){
     return "H4_EHCILL_DMA";
 }
 
 // get h4 singleton
-hci_transport_t * hci_transport_h4_dma_instance() { 
+hci_transport_t * hci_transport_h4_dma_instance(void){ 
     return (hci_transport_t *) &hci_transport_h4_ehcill_dma;
 }
 
@@ -213,7 +213,7 @@ static int h4_set_baudrate(uint32_t baudrate){
     return hal_uart_dma_set_baud(baudrate);
 }
 
-static int h4_close(){
+static int h4_close(void *transport_config){
     // first remove run loop handler
 	run_loop_remove_data_source(&hci_transport_h4_dma_ds);
     
@@ -308,7 +308,7 @@ static void ehcill_sleep_ack_timer_handler(timer_source_t * timer){
     hal_uart_dma_send_block(&ehcill_command_to_send, 1);    
 }
 
-static void ehcill_sleep_ack_timer_setup(){
+static void ehcill_sleep_ack_timer_setup(void){
     // setup timer
     ehcill_sleep_ack_timer.process = &ehcill_sleep_ack_timer_handler;
     run_loop_set_timer(&ehcill_sleep_ack_timer, 50);
@@ -390,7 +390,7 @@ int  ehcill_sleep_mode_active(void){
     return ehcill_state == EHCILL_STATE_SLEEP;
 }
 
-static void ehcill_cts_irq_handler(){
+static void ehcill_cts_irq_handler(void){
     ehcill_handle(EHCILL_CTS_SIGNAL);
 }
 

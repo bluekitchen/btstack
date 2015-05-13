@@ -120,7 +120,7 @@ void do_next_remote_name_request(void){
     }
 }
 
-static void continue_remote_names(){
+static void continue_remote_names(void){
     if (has_more_remote_name_requests()){
         do_next_remote_name_request();
         return;

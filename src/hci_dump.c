@@ -270,7 +270,7 @@ void hci_dump_log_P(PGM_P format, ...){
 }
 #endif
 
-void hci_dump_close(){
+void hci_dump_close(void){
 #ifndef EMBEDDED
     close(dump_file);
     dump_file = -1;

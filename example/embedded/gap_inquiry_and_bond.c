@@ -116,7 +116,7 @@ void do_next_bonding_request(void){
     }
 }
 
-static void continue_bonding(){
+static void continue_bonding(void){
     if (has_more_bonding_requests()){
         do_next_bonding_request();
         return;

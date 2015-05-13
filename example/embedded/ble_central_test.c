@@ -149,7 +149,7 @@ static void fill_advertising_report_from_packet(advertising_report_t * report, u
     swapX(found_device_addr, report->address, 6);
 }
 
-static void gap_run(){
+static void gap_run(void){
     if (!hci_can_send_command_packet_now()) return;
 }
 
@@ -252,7 +252,7 @@ void handle_gatt_client_event(le_event_t * event){
 uint16_t value_handle = 1;
 uint16_t attribute_size = 1;
 
-void show_usage(){
+void show_usage(void){
     printf("\e[1;1H\e[2J");
     printf("--- CLI for LE Central ---\n");
     printf("SM: %s, MITM protection %u, OOB data %u, key range [%u..16]\n",
@@ -284,7 +284,7 @@ void show_usage(){
     printf("---\n");
 }
 
-void update_auth_req(){
+void update_auth_req(void){
     uint8_t auth_req = 0;
     if (sm_mitm_protection){
         auth_req |= SM_AUTHREQ_MITM_PROTECTION;

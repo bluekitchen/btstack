@@ -89,7 +89,7 @@ static uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint
 static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 static void  heartbeat_handler(struct timer *ts);
 
-static void le_counter_setup(){
+static void le_counter_setup(void){
     l2cap_init();
     l2cap_register_packet_handler(packet_handler);
 
@@ -142,7 +142,7 @@ enum {
 };
 static uint16_t todos = 0;
 
-static void gap_run(){
+static void gap_run(void){
 
     if (!hci_can_send_command_packet_now()) return;
 

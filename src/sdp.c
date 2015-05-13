@@ -73,7 +73,7 @@ static void (*app_packet_handler)(void * connection, uint8_t packet_type,
 static uint16_t l2cap_cid = 0;
 static uint16_t sdp_response_size = 0;
 
-void sdp_init(){
+void sdp_init(void){
     // register with l2cap psm sevices - max MTU
     l2cap_register_service_internal(NULL, sdp_packet_handler, PSM_SDP, 0xffff, LEVEL_0);
 }

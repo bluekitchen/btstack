@@ -141,11 +141,11 @@ static void send_ethernet_packet(int src_compressed, int dst_compressed){
     send_buffer(pos);
 }
 
-static void set_network_protocol_filter() {
+static void set_network_protocol_filter(void){
     bnep_set_net_type_filter(bnep_cid, network_protocol_filter, 3);
 }
 
-static void set_multicast_filter() {
+static void set_multicast_filter(void){
     bnep_set_multicast_filter(bnep_cid, multicast_filter, 1);
 }
 
@@ -162,7 +162,7 @@ static void set_multicast_filter() {
    being probed.  An ARP Request constructed this way, with an all-zero
    'sender IP address', is referred to as an 'ARP Probe'.
 */
-static void send_arp_probe_ipv4(){
+static void send_arp_probe_ipv4(void){
 
     // "random address"
     static uint8_t requested_address[4] = {169, 254, 1, 0};
@@ -191,25 +191,25 @@ static void send_arp_probe_ipv4(){
     send_buffer(pos);
 }
 
-static void send_arp_probe_ipv6(){
+static void send_arp_probe_ipv6(void){
     
 }
 
 #if 0
-static void send_dhcp_discovery(){
+static void send_dhcp_discovery(void){
     
 }
 
-static void send_dhcp_request(){
+static void send_dhcp_request(void){
     
 }
 
-static void send_dns_request(){
+static void send_dns_request(void){
     
 }
 #endif
 
-static void send_some_ipv6_packet(){
+static void send_some_ipv6_packet(void){
 
     bd_addr_t an_addr = { 0x33, 0x33, 0x00, 0x00, 0x00, 0x16};
     memcpy(other_addr, an_addr, 6);
@@ -228,7 +228,7 @@ static void send_some_ipv6_packet(){
     send_buffer(pos);
 }
 
-static void send_some_ipv6_packet_2(){
+static void send_some_ipv6_packet_2(void){
 
     bd_addr_t an_addr = { 0x33, 0x33, 0xFF, 0x60, 0x7B, 0x87};
     memcpy(other_addr, an_addr, 6);
@@ -246,7 +246,7 @@ static void send_some_ipv6_packet_2(){
     send_buffer(pos);
 }
 
-static void show_usage(){
+static void show_usage(void){
 
     printf("\n--- Bluetooth BNEP Test Console ---\n");
     printf("Local UUID %04x, remote UUID %04x, \n", SDP_PANU, bnep_remote_uuid);

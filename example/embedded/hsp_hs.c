@@ -230,7 +230,7 @@ void hsp_hs_create_service(uint8_t * service, int rfcomm_channel_nr, const char 
     de_add_number(service, DE_BOOL, DE_SIZE_8, have_remote_audio_control);
 }
 
-static void hsp_hs_reset_state(){
+static void hsp_hs_reset_state(void){
     hsp_state = HSP_IDLE;
     
     rfcomm_cid = 0;
@@ -306,7 +306,7 @@ void hsp_hs_set_speaker_gain(uint8_t gain){
 }  
     
 
-static void hsp_run(){
+static void hsp_run(void){
     int err;
     if (hs_ring_received){
         hs_ring_received = 0;

@@ -63,7 +63,7 @@
 #define kAppNetwork CFSTR("com.apple.preferences.network")
 #define kKeyBTNetwork CFSTR("bluetooth-network")
 
-int iphone_system_bt_enabled(){
+int iphone_system_bt_enabled(void){
 	if ([[BluetoothManager sharedInstance] enabled]) {
         return 1;
     } else {

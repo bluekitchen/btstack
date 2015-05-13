@@ -37,7 +37,7 @@
 #include  "le_device_db.h"
 
  // Central Device db interface
-void le_device_db_init(){}
+void le_device_db_init(void){}
 
 // @returns index if successful, -1 otherwise
 int le_device_db_add(int addr_type, bd_addr_t addr, sm_key_t irk){

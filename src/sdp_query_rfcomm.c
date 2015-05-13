@@ -89,7 +89,7 @@ static void (*sdp_app_callback)(sdp_query_event_t * event, void * context) = dum
 
 static void dummy_notify_app(sdp_query_event_t* event, void * context){}
 
-static void emit_service(){
+static void emit_service(void){
     sdp_query_rfcomm_service_event_t value_event = {
         SDP_QUERY_RFCOMM_SERVICE, 
         sdp_rfcomm_channel_nr,
@@ -289,7 +289,7 @@ static void handle_sdp_parser_event(sdp_query_event_t * event){
     // insert higher level code HERE
 }
 
-void sdp_query_rfcomm_init(){
+void sdp_query_rfcomm_init(void){
     // init
     de_state_init(&de_header_state);
     de_state_init(&sn_de_header_state);
@@ -312,7 +312,7 @@ void sdp_query_rfcomm_channel_and_name_for_uuid(bd_addr_t remote, uint16_t uuid)
     sdp_query_rfcomm_channel_and_name_for_search_pattern(remote, (uint8_t*)des_serviceSearchPattern);
 }
 
-void sdp_query_rfcomm_deregister_callback(){
+void sdp_query_rfcomm_deregister_callback(void){
     sdp_query_rfcomm_init();
     sdp_app_callback = dummy_notify_app; 
     sdp_app_context = NULL;

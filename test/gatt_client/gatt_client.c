@@ -103,37 +103,37 @@ void CHECK_EQUAL_GATT_ATTRIBUTE(const uint8_t * exp_uuid, const uint8_t * exp_ha
 
 // -----------------------------------------------------
 
-static void verify_primary_services_with_uuid16(){
+static void verify_primary_services_with_uuid16(void){
 	CHECK_EQUAL(1, result_index);
 	CHECK_EQUAL_GATT_ATTRIBUTE(primary_service_uuid16,  primary_service_uuid16_handles, services[0].uuid128, services[0].start_group_handle, services[0].end_group_handle);	
 }
 
 
-static void verify_primary_services_with_uuid128(){
+static void verify_primary_services_with_uuid128(void){
 	CHECK_EQUAL(1, result_index);
 	CHECK_EQUAL_GATT_ATTRIBUTE(primary_service_uuid128, primary_service_uuid128_handles, services[0].uuid128, services[0].start_group_handle, services[0].end_group_handle);
 }
 
-static void verify_primary_services(){
+static void verify_primary_services(void){
 	CHECK_EQUAL(6, result_index);
 	for (int i=0; i<result_index; i++){
 		CHECK_EQUAL_GATT_ATTRIBUTE(primary_service_uuids[i], NULL, services[i].uuid128, services[i].start_group_handle, services[i].end_group_handle);
 	}
 }
 
-static void verify_included_services_uuid16(){
+static void verify_included_services_uuid16(void){
 	CHECK_EQUAL(1, result_index);
 	CHECK_EQUAL_GATT_ATTRIBUTE(included_services_uuid16, included_services_uuid16_handles, included_services[0].uuid128, included_services[0].start_group_handle, included_services[0].end_group_handle);	
 }
 
-static void verify_included_services_uuid128(){
+static void verify_included_services_uuid128(void){
 	CHECK_EQUAL(2, result_index);
 	for (int i=0; i<result_index; i++){
 		CHECK_EQUAL_GATT_ATTRIBUTE(included_services_uuid128[i], included_services_uuid128_handles[i], included_services[i].uuid128, included_services[i].start_group_handle, included_services[i].end_group_handle);	
 	}
 }
 
-static void verify_charasteristics(){
+static void verify_charasteristics(void){
 	CHECK_EQUAL(14, result_index);
 	for (int i=0; i<result_index; i++){
 		CHECK_EQUAL_GATT_ATTRIBUTE(characteristic_uuids[i], characteristic_handles[i], characteristics[i].uuid128, characteristics[i].start_handle, characteristics[i].end_handle);	
@@ -288,13 +288,13 @@ TEST_GROUP(GATTClient){
     uint8_t acl_buffer[27];
     le_command_status_t status;
 
-	void setup(){
+	void setup(void){
 		result_counter = 0;
 		result_index = 0;
 		test = IDLE;
 	}
 
-	void reset_query_state(){
+	void reset_query_state(void){
 		gatt_query_complete = 0;
 		result_counter = 0;
 		result_index = 0;

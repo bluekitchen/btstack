@@ -117,7 +117,7 @@ static void notify_client(int event_type){
     (*client_handler)(&event);
 }
 
-static void ancs_chunk_parser_init(){
+static void ancs_chunk_parser_init(void){
     chunk_parser_state = W4_ATTRIBUTE_ID;
     ancs_bytes_received = 0;
     ancs_bytes_needed = 6;
@@ -315,6 +315,6 @@ void ancs_client_hci_event_handler (uint8_t packet_type, uint16_t channel, uint8
     }
 }
 
-void ancs_client_init(){
+void ancs_client_init(void){
     gc_id = gatt_client_register_packet_handler(&handle_gatt_client_event);
 }

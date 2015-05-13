@@ -79,7 +79,7 @@ static uint8_t   spp_service_buffer[150];
  */ 
 
 /* LISTING_START(explicitFlowControl): Providing one initial credit during RFCOMM service initialization */
-static void spp_service_setup(){     
+static void spp_service_setup(void){     
     // init L2CAP
     l2cap_init();
     l2cap_register_packet_handler(packet_handler);
@@ -125,7 +125,7 @@ static void  heartbeat_handler(struct timer *ts){
 } 
 /* LISTING_END */
 
-static void one_shot_timer_setup(){
+static void one_shot_timer_setup(void){
     heartbeat.process = &heartbeat_handler;
     run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
     run_loop_add_timer(&heartbeat);

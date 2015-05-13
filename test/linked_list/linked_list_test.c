@@ -9,7 +9,7 @@ linked_item_t itemC;
 linked_item_t itemD;
 
 TEST_GROUP(LinkedList){
-    void setup(){
+    void setup(void){
         testList = NULL;
         linked_list_add(&testList, &itemD);
         linked_list_add(&testList, &itemC);

@@ -78,13 +78,13 @@ static void handle_le_client_event(le_event_t * event){
 }
 
 TEST_GROUP(LECentral){
-	void connect(){
+	void connect(void){
 		le_central_connect(test_device_addr, BD_ADDR_TYPE_LE_PUBLIC);
 		mock_simulate_connected();
 		CHECK(connected);
 	}
 
-	void setup(){
+	void setup(void){
 		advertisement_received = 0;
 		connected = 0;
 		
@@ -100,7 +100,7 @@ TEST_GROUP(LECentral){
 		// connect();
 	}
 	
-	void teardown(){
+	void teardown(void){
         mock().clear();
     }
 };
@@ -114,7 +114,7 @@ TEST_GROUP(LECentral){
 // 	CHECK(advertisement_received);
 // }
 
-int productionCode(){
+int productionCode(void){
 	printf("productionCode 20\n");
 	mock().actualCall("productionCode");
     return 20;

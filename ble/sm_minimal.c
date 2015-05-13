@@ -96,7 +96,7 @@ void sm_authorization_decline(uint8_t addr_type, bd_addr_t address){}
 void sm_authorization_grant(uint8_t addr_type, bd_addr_t address){}
 
 // Support for signed writes
-int  sm_cmac_ready(){
+int  sm_cmac_ready(void){
 	return 0;
 }
 
@@ -116,7 +116,7 @@ void sm_register_packet_handler(btstack_packet_handler_t handler){
     sm_client_packet_handler = handler;    
 }
 
-static void sm_pdu_received_in_wrong_state(){
+static void sm_pdu_received_in_wrong_state(void){
     sm_pairing_failed_reason = SM_REASON_UNSPECIFIED_REASON;
     sm_state_responding = SM_GENERAL_SEND_PAIRING_FAILED;
 }
@@ -221,7 +221,7 @@ static void sm_run(void){
     }
 }
 
-void sm_init(){
+void sm_init(void){
     // attach to lower layers
     l2cap_register_fixed_channel(sm_packet_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);
     l2cap_register_packet_handler(sm_event_packet_handler);

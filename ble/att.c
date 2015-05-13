@@ -217,7 +217,7 @@ void att_dump_attributes(void){
     }
 }
 
-static void att_prepare_write_reset(){
+static void att_prepare_write_reset(void){
     att_prepare_write_error_code = 0;
     att_prepare_write_error_handle = 0x0000;
 }
@@ -1071,7 +1071,7 @@ uint16_t att_handle_request(att_connection_t * att_connection,
 // test profile
 #include "profile.h"
 
-int main(){
+int main(void){
     int acl_buffer_size;
     uint8_t acl_buffer[27];
     att_set_db(profile_data);

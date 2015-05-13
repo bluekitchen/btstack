@@ -267,7 +267,7 @@ static int sm_is_null_random(uint8_t random[8]){
 }
 
 // Key utils
-static void sm_reset_tk(){
+static void sm_reset_tk(void){
     int i;
     for (i=0;i<16;i++){
         setup->sm_tk[i] = 0;
@@ -311,7 +311,7 @@ static void sm_timeout_start(sm_connection_t * sm_conn){
     linked_item_set_user((linked_item_t*) &setup->sm_timeout, sm_conn);
     run_loop_add_timer(&setup->sm_timeout);
 }
-static void sm_timeout_stop(){
+static void sm_timeout_stop(void){
     run_loop_remove_timer(&setup->sm_timeout);
 }
 static void sm_timeout_reset(sm_connection_t * sm_conn){
@@ -326,7 +326,7 @@ static gap_random_address_type_t gap_random_adress_type;
 static timer_source_t gap_random_address_update_timer; 
 static uint32_t gap_random_adress_update_period;
 
-static void gap_random_address_trigger(){
+static void gap_random_address_trigger(void){
     if (rau_state != RAU_IDLE) return;
     log_info("gap_random_address_trigger");
     rau_state = RAU_GET_RANDOM;
@@ -340,13 +340,13 @@ static void gap_random_address_update_handler(timer_source_t * timer){
     gap_random_address_trigger();
 }
 
-static void gap_random_address_update_start(){
+static void gap_random_address_update_start(void){
     run_loop_set_timer_handler(&gap_random_address_update_timer, gap_random_address_update_handler);
     run_loop_set_timer(&gap_random_address_update_timer, gap_random_adress_update_period);
     run_loop_add_timer(&gap_random_address_update_timer);
 }
 
-static void gap_random_address_update_stop(){
+static void gap_random_address_update_stop(void){
     run_loop_remove_timer(&gap_random_address_update_timer);
 }
 
@@ -481,7 +481,7 @@ static void sm_notify_client_authorization(uint8_t type, uint8_t addr_type, bd_a
 // - pairing request
 // - io capabilities
 // - OOB data availability
-static void sm_setup_tk(){
+static void sm_setup_tk(void){
 
     // default: just works
     setup->sm_stk_generation_method = JUST_WORKS;
@@ -538,7 +538,7 @@ static void sm_setup_key_distribution(uint8_t key_set){
 
 // CSRK Key Lookup
 
-/* static */ int sm_central_device_lookup_active(){
+/* static */ int sm_central_device_lookup_active(void){
     return sm_central_device_test >= 0;
 }
 
@@ -566,16 +566,16 @@ static void sm_shift_left_by_one_bit_inplace(int len, uint8_t * data){
 static inline void sm_next_responding_state(sm_connection_t * sm_conn){
     sm_conn->sm_engine_state = (security_manager_state_t) (((int)sm_conn->sm_engine_state) + 1);
 }
-static inline void dkg_next_state(){
+static inline void dkg_next_state(void){
     dkg_state = (derived_key_generation_t) (((int)dkg_state) + 1);
 }
-static inline void rau_next_state(){
+static inline void rau_next_state(void){
     rau_state = (random_address_update_t) (((int)rau_state) + 1);
 }
-static inline void sm_cmac_next_state(){
+static inline void sm_cmac_next_state(void){
     sm_cmac_state = (cmac_state_t) (((int)sm_cmac_state) + 1);
 }
-static int sm_cmac_last_block_complete(){
+static int sm_cmac_last_block_complete(void){
     if (sm_cmac_message_len == 0) return 0;
     return (sm_cmac_message_len & 0x0f) == 0;
 }
@@ -616,11 +616,11 @@ void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, uint32_t
     sm_run();
 }
 
-int sm_cmac_ready(){
+int sm_cmac_ready(void){
     return sm_cmac_state == CMAC_IDLE;
 }
 
-static void sm_cmac_handle_aes_engine_ready(){
+static void sm_cmac_handle_aes_engine_ready(void){
     switch (sm_cmac_state){
         case CMAC_CALC_SUBKEYS: {
             sm_key_t const_zero;
@@ -756,7 +756,7 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
     }
 }
 
-static int sm_key_distribution_all_received(){
+static int sm_key_distribution_all_received(void){
     int recv_flags = sm_key_distribution_flags_for_set(setup->sm_m_preq.initiator_key_distribution);
     return recv_flags == setup->sm_key_distribution_received_set;
 }
@@ -1741,7 +1741,7 @@ static inline int sm_calc_actual_encryption_key_size(int other){
 /**
  * @return ok
  */
-static int sm_validate_stk_generation_method(){
+static int sm_validate_stk_generation_method(void){
     // check if STK generation method is acceptable by client
     switch (setup->sm_stk_generation_method){
         case JUST_WORKS:
@@ -2024,7 +2024,7 @@ void sm_send_security_request(uint16_t handle){
     sm_run();
 }
 
-void sm_init(){
+void sm_init(void){
     // set some (BTstack default) ER and IR
     int i;
     sm_key_t er;

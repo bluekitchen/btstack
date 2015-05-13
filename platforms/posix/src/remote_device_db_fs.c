@@ -155,6 +155,6 @@ const remote_device_db_t remote_device_db_fs = {
     delete_name
 };
 
-const remote_device_db_t * remote_device_db_fs_instance(){
+const remote_device_db_t * remote_device_db_fs_instance(void){
     return &remote_device_db_fs;
 }

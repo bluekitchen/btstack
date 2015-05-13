@@ -10,7 +10,7 @@
 typedef uint32_t u32;
 typedef uint8_t   u8;
 
-int rijndaelStartOfCode(){
+int rijndaelStartOfCode(void){
 	return 1;
 }
 
@@ -1223,6 +1223,6 @@ u32 s0, s1, s2, s3, t0, t1, t2, t3;
 
 }
 
-int rijndaelEndOfCode(){
+int rijndaelEndOfCode(void){
 	return 1;
 }

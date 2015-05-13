@@ -76,7 +76,7 @@ void platform_iphone_status_handler(BLUETOOTH_STATE state){
 }
 
 static void (*window_manager_restart_callback)() = NULL;
-static void springBoardDidLaunch(){
+static void springBoardDidLaunch(void){
     NSLog(@"springBoardDidLaunch!\n");
     if (window_manager_restart_callback) {
         int timer;
@@ -104,7 +104,7 @@ void platform_iphone_register_window_manager_restart(void (*callback)() ){
 }
 
 static void (*preferences_changed_callback)() = NULL;
-static void preferencesDidChange(){
+static void preferencesDidChange(void){
     NSLog(@"ch.ringwald.btstack.preferences!\n");
     if (preferences_changed_callback) {
         (*preferences_changed_callback)();

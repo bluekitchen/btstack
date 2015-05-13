@@ -198,7 +198,7 @@ static void async_callback(struct libusb_transfer *transfer)
     // log_info("end async_callback");
 }
 
-static void sco_state_machine_init(){
+static void sco_state_machine_init(void){
     sco_state = H2_W4_SCO_HEADER;
     sco_read_pos = 0;
     sco_bytes_to_read = 3;

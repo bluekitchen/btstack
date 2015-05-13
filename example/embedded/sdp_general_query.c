@@ -82,7 +82,7 @@ static const int attribute_value_buffer_size = sizeof(attribute_value);
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static void handle_sdp_client_query_result(sdp_query_event_t * event);
 
-static void sdp_client_init(){
+static void sdp_client_init(void){
     // init L2CAP
     l2cap_init();
     l2cap_register_packet_handler(packet_handler);

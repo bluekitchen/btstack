@@ -171,7 +171,7 @@ static void handle_sdp_parser_event(sdp_query_event_t * event){
 
 
 TEST_GROUP(SDPClient){
-    void setup(){
+    void setup(void){
         attribute_value_buffer_size = 1000;
         attribute_value = (uint8_t*) malloc(attribute_value_buffer_size);
         record_id = -1;

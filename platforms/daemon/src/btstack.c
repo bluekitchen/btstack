@@ -77,7 +77,7 @@ void bt_use_tcp(const char * address, uint16_t port){
 }
 
 // init BTstack library
-int bt_open(){
+int bt_open(void){
 
     socket_connection_register_packet_callback(btstack_packet_handler);
 
@@ -93,7 +93,7 @@ int bt_open(){
 }
 
 // stop using BTstack library
-int bt_close(){
+int bt_close(void){
     return socket_connection_close_tcp(btstack_connection);
 }
 

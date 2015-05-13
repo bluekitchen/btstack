@@ -120,7 +120,7 @@ int run_loop_remove_timer(timer_source_t *ts){
     return the_run_loop->remove_timer(ts);
 }
 
-void run_loop_timer_dump(){
+void run_loop_timer_dump(void){
     run_loop_assert();
     the_run_loop->dump_timer();
 }
@@ -128,7 +128,7 @@ void run_loop_timer_dump(){
 /**
  * Execute run_loop
  */
-void run_loop_execute() {
+void run_loop_execute(void){
     run_loop_assert();
     the_run_loop->execute();
 }

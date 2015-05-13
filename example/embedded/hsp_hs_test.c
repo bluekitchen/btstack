@@ -84,7 +84,7 @@ static void show_usage();
 // Testig User Interface 
 static data_source_t stdin_source;
 
-static void show_usage(){
+static void show_usage(void){
     printf("\n--- Bluetooth HSP Headset Test Console ---\n");
     printf("---\n");
     printf("p - establish audio connection to PTS module\n");
@@ -151,7 +151,7 @@ static int stdin_process(struct data_source *ds){
 }
 
 
-static void setup_cli(){
+static void setup_cli(void){
     struct termios term = {0};
     if (tcgetattr(0, &term) < 0)
             perror("tcsetattr()");

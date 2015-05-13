@@ -18,7 +18,7 @@ void _mon_putc (char c)
     PLIB_USART_TransmitterByteSend(APP_DEBUG_USART_ID, c);;
 }
 
-void APP_Debug_Initialize(){
+void APP_Debug_Initialize(void){
 
     // PPS Output Mapping:
     PLIB_PORTS_RemapOutput(PORTS_ID_0, OUTPUT_FUNC_U1TX, OUTPUT_PIN_RPD3 );

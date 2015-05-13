@@ -89,7 +89,7 @@ static uint8_t   spp_service_buffer[150];
  */
 
 /* LISTING_START(SPPSetup): SPP service setup */ 
-void spp_service_setup(){
+void spp_service_setup(void){
     l2cap_init();
     l2cap_register_packet_handler(packet_handler);
 
@@ -144,7 +144,7 @@ static void  heartbeat_handler(struct timer *ts){
     run_loop_add_timer(ts);
 } 
 
-static void one_shot_timer_setup(){
+static void one_shot_timer_setup(void){
     // set one-shot timer
     heartbeat.process = &heartbeat_handler;
     run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);

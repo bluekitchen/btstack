@@ -74,7 +74,7 @@ typedef struct ad_event {
 void (*ble_client_packet_handler)(uint8_t packet_type, uint8_t *packet, uint16_t size) = NULL;
 static void ble_packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-void ble_client_init(){
+void ble_client_init(void){
     gatt_client_init();
     l2cap_register_packet_handler(ble_packet_handler);
 }

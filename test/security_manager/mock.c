@@ -59,7 +59,7 @@ void mock_simulate_hci_event(uint8_t * packet, uint16_t size){
 	}
 }
 
-void aes128_report_result(){
+void aes128_report_result(void){
 	uint8_t le_enc_result[22];
 	uint8_t enc1_data[] = { 0x0e, 0x14, 0x01, 0x17, 0x20, 0x00 };
 	memcpy (le_enc_result, enc1_data, 6);
@@ -94,12 +94,12 @@ void mock_simulate_command_complete(const hci_cmd_t *cmd){
 	mock_simulate_hci_event((uint8_t *)&packet, sizeof(packet));
 }
 
-void mock_simulate_hci_state_working(){
+void mock_simulate_hci_state_working(void){
 	uint8_t packet[] = {BTSTACK_EVENT_STATE, 0, HCI_STATE_WORKING};
 	mock_simulate_hci_event((uint8_t *)&packet, sizeof(packet));
 }
 
-void mock_simulate_connected(){
+void mock_simulate_connected(void){
     uint8_t packet[] = { 0x3e, 0x13, 0x01, 0x00, 0x40, 0x00, 0x01, 0x01, 0x18, 0x12, 0x5e, 0x68, 0xc9, 0x73, 0x18, 0x00, 0x00, 0x00, 0x48, 0x00, 0x05};
 	mock_simulate_hci_event((uint8_t *)&packet, sizeof(packet));
 }
@@ -200,7 +200,7 @@ void hci_disconnect_security_block(hci_con_handle_t con_handle){
 	printf("hci_disconnect_security_block \n");	
 }
 
-int hci_non_flushable_packet_boundary_flag_supported(){
+int hci_non_flushable_packet_boundary_flag_supported(void){
 	return 1;
 }
 

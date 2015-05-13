@@ -80,7 +80,7 @@ static uint8_t   spp_service_buffer[150];
 // SPP description
 static uint8_t accel_buffer[6];
 
-static void  prepare_accel_packet(){
+static void  prepare_accel_packet(void){
     int16_t accl_x;
     int16_t accl_y;
     int16_t accl_z;
@@ -106,7 +106,7 @@ static void  prepare_accel_packet(){
     printf("Accel: X: %04d, Y: %04d, Z: %04d\n\r", accl_x, accl_y, accl_z);
 } 
 
-static void send_packet(){
+static void send_packet(void){
     int err = rfcomm_send_internal(rfcomm_channel_id, (uint8_t *)accel_buffer, sizeof(accel_buffer));
     switch(err){
         case 0:

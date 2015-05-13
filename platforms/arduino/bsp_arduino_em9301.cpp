@@ -89,7 +89,7 @@ static void bt_power_cycle(void){
 #endif
 
 #ifndef HAVE_SHUTDOWN
-static void bt_send_illegal(){
+static void bt_send_illegal(void){
     digitalWrite(PIN_MOSI, HIGH);
     digitalWrite(PIN_CS, LOW);
     printf("Illegal start\n");
@@ -104,7 +104,7 @@ static void bt_send_illegal(){
     digitalWrite(PIN_CS, HIGH);
 }
 
-static void bt_flush_input(){
+static void bt_flush_input(void){
     digitalWrite(PIN_MOSI, LOW);
     digitalWrite(PIN_CS, LOW);
     SPI.begin(); 
@@ -115,7 +115,7 @@ static void bt_flush_input(){
     digitalWrite(PIN_CS, HIGH);
 }
 
-static void bt_send_reset(){
+static void bt_send_reset(void){
       digitalWrite(PIN_MOSI, HIGH);
       digitalWrite(PIN_CS, LOW);
       SPI.begin(); 
@@ -242,14 +242,14 @@ extern "C" void hal_uart_dma_set_sleep(uint8_t sleep){
     // not needed for SPI (doesn't need internal clock to work)
 }
 
-extern "C" void hal_uart_dma_process(){
+extern "C" void hal_uart_dma_process(void){
     int num_bytes_read = bt_try_read();
     if (num_bytes_read == 0){
         bt_try_send();
     }
 }
 
-extern "C" uint32_t hal_time_ms(){
+extern "C" uint32_t hal_time_ms(void){
     return millis();
 }
 

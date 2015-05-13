@@ -765,7 +765,7 @@ int hci_send_cmd_packet(uint8_t *packet, int size);
 
 /* API_START */
 
-le_connection_parameter_range_t gap_le_get_connection_parameter_range();
+le_connection_parameter_range_t gap_le_get_connection_parameter_range(void);
 void gap_le_set_connection_parameter_range(le_connection_parameter_range_t range);
 
 /* LE Client Start */

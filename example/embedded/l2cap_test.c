@@ -114,7 +114,7 @@ static void packet_handler2 (void * connection, uint8_t packet_type, uint16_t ch
     packet_handler(packet_type, 0, packet, size);
 }
 
-void show_usage(){
+void show_usage(void){
     printf("\n--- CLI for L2CAP TEST ---\n");
     printf("c      - create connection to SDP at addr %s\n", bd_addr_to_str(remote));
     printf("s      - send data\n");

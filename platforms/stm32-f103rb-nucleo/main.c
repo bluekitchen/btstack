@@ -134,15 +134,15 @@ void hal_led_toggle(void){
 // hal_cpu.h implementation
 #include <btstack/hal_cpu.h>
 
-void hal_cpu_disable_irqs(){
+void hal_cpu_disable_irqs(void){
 	__disable_irq();
 }
 
-void hal_cpu_enable_irqs(){
+void hal_cpu_enable_irqs(void){
 	__enable_irq();
 }
 
-void hal_cpu_enable_irqs_and_sleep(){
+void hal_cpu_enable_irqs_and_sleep(void){
 	hal_led_off();
 	__enable_irq();
 	__asm__("wfe");	// go to sleep if event flag isn't set. if set, just clear it. IRQs set event flag
@@ -159,11 +159,11 @@ static void (*rx_done_handler)(void) = dummy_handler;
 static void (*tx_done_handler)(void) = dummy_handler;
 static void (*cts_irq_handler)(void) = dummy_handler;
 
-static void hal_uart_manual_rts_set(){
+static void hal_uart_manual_rts_set(void){
 	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, GPIO_USART3_RTS);
 }
 
-static void hal_uart_manual_rts_clear(){
+static void hal_uart_manual_rts_clear(void){
 	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART3_RTS);
 }
 

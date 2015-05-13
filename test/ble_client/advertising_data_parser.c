@@ -96,7 +96,7 @@ static uint8_t num_completed_evt[] ={
 };
 
 
-int dummy_callback(){
+int dummy_callback(void){
     return 0;
 }
 
@@ -141,7 +141,7 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 
 
 TEST_GROUP(ADParser){
-    void setup(){
+    void setup(void){
         hci_init(&dummy_transport, NULL, NULL, NULL);
         hci_register_packet_handler(packet_handler);
     }

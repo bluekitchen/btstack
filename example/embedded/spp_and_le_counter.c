@@ -111,7 +111,7 @@ enum {
 };
 static uint16_t todos = 0;
 
-static void gap_run(){
+static void gap_run(void){
 
     if (!hci_can_send_command_packet_now()) return;
 

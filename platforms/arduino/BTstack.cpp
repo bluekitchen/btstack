@@ -246,7 +246,7 @@ static int nibble_for_char(const char c){
 }
 
 /// UUID class
-UUID::UUID(){
+UUID::UUID(void){
     memset(uuid, 0, 16);
 }
 
@@ -311,7 +311,7 @@ bool UUID::matches(UUID *other)        const {
 
 
 // BD_ADDR class
-BD_ADDR::BD_ADDR(){
+BD_ADDR::BD_ADDR(void){
 }
 
 BD_ADDR::BD_ADDR(const char * address_string, BD_ADDR_TYPE address_type ) : address_type(address_type) {
@@ -323,15 +323,15 @@ BD_ADDR::BD_ADDR(const uint8_t address[6], BD_ADDR_TYPE address_type) : address_
     memcpy(this->address, address, 6);
 }
 
-const uint8_t * BD_ADDR::getAddress(){
+const uint8_t * BD_ADDR::getAddress(void){
     return address;
 }
 
-const char * BD_ADDR::getAddressString(){
+const char * BD_ADDR::getAddressString(void){
     return bd_addr_to_str(address);
 }
 
-BD_ADDR_TYPE BD_ADDR::getAddressType(){
+BD_ADDR_TYPE BD_ADDR::getAddressType(void){
     return address_type;
 }
 
@@ -347,7 +347,7 @@ data_length(event_packet[11])
     memcpy(data, &event_packet[12], LE_ADVERTISING_DATA_SIZE);
 }
 
-const uint8_t * BLEAdvertisement::getAdvData(){
+const uint8_t * BLEAdvertisement::getAdvData(void){
     return data;
 }
 
@@ -355,7 +355,7 @@ BD_ADDR * BLEAdvertisement::getBdAddr(void){
     return &bd_addr;
 }
 
-int BLEAdvertisement::getRssi(){
+int BLEAdvertisement::getRssi(void){
     return rssi > 127 ? rssi - 256 : rssi;
 }
 
@@ -368,33 +368,33 @@ bool BLEAdvertisement::nameHasPrefix(const char * namePrefix){
     return false;
 };
 
-bool BLEAdvertisement::isIBeacon(){
+bool BLEAdvertisement::isIBeacon(void){
     return ((memcmp(iBeaconAdvertisement01,  data,    sizeof(iBeaconAdvertisement01)) == 0) 
       &&    (memcmp(iBeaconAdvertisement38, &data[3], sizeof(iBeaconAdvertisement38)) == 0));
 }
 
-const UUID * BLEAdvertisement::getIBeaconUUID(){
+const UUID * BLEAdvertisement::getIBeaconUUID(void){
     return new UUID(&data[9]);
 };
-uint16_t     BLEAdvertisement::getIBeaconMajorID(){
+uint16_t     BLEAdvertisement::getIBeaconMajorID(void){
     return READ_NET_16(data, 25);
 };
-uint16_t     BLEAdvertisement::getIBecaonMinorID(){
+uint16_t     BLEAdvertisement::getIBecaonMinorID(void){
     return READ_NET_16(data, 27);
 };
-uint8_t      BLEAdvertisement::getiBeaconMeasuredPower(){
+uint8_t      BLEAdvertisement::getiBeaconMeasuredPower(void){
     return data[29];
 }
 
 
-BLECharacteristic::BLECharacteristic() {
+BLECharacteristic::BLECharacteristic(void){
 }
 
 BLECharacteristic::BLECharacteristic(le_characteristic_t characteristic)
 : characteristic(characteristic), uuid(characteristic.uuid128) {        
 }
 
-const UUID * BLECharacteristic::getUUID(){
+const UUID * BLECharacteristic::getUUID(void){
     return &uuid;
 }
 
@@ -406,19 +406,19 @@ bool BLECharacteristic::isValueHandle(uint16_t value_handle){
     return characteristic.value_handle == value_handle;
 }
 
-const le_characteristic_t * BLECharacteristic::getCharacteristic() {
+const le_characteristic_t * BLECharacteristic::getCharacteristic(void){
     return &characteristic; 
 }
 
 
-BLEService::BLEService(){
+BLEService::BLEService(void){
 }
 
 BLEService::BLEService(le_service_t service)
 : service(service), uuid(service.uuid128){
 }
 
-const UUID * BLEService::getUUID(){
+const UUID * BLEService::getUUID(void){
     return &uuid;
 }
 
@@ -426,20 +426,20 @@ bool BLEService::matches(UUID * uuid){
     return this->uuid.matches(uuid);
 }
 
-const le_service_t * BLEService::getService(){
+const le_service_t * BLEService::getService(void){
     return &service;
 }
 
 // discovery of services and characteristics
-BLEDevice::BLEDevice(){
+BLEDevice::BLEDevice(void){
 }
 BLEDevice::BLEDevice(uint16_t handle)
 : handle(handle){
 }
-uint16_t BLEDevice::getHandle(){
+uint16_t BLEDevice::getHandle(void){
     return handle;
 }
-int BLEDevice::discoverGATTServices(){
+int BLEDevice::discoverGATTServices(void){
     return BTstack.discoverGATTServices(this);
 }
 int BLEDevice::discoverCharacteristicsForService(BLEService * service){
@@ -468,7 +468,7 @@ int BLEDevice::unsubscribeFromIndications(BLECharacteristic * characteristic){
 }
 
 
-BTstackManager::BTstackManager() {
+BTstackManager::BTstackManager(void){
     // client_packet_handler = NULL;
     have_custom_addr = false;
     // reset handler
@@ -580,7 +580,7 @@ void BTstackManager::registerPacketHandler(btstack_packet_handler_t packet_handl
     // client_packet_handler = packet_handler;
 }
 
-void BTstackManager::setClientMode(){
+void BTstackManager::setClientMode(void){
     client_mode = 1;
 }
 
@@ -596,7 +596,7 @@ void BTstackManager::setPublicBdAddr(bd_addr_t addr){
 
 // static hci_uart_config_t config;
 
-void BTstackManager::setup(){
+void BTstackManager::setup(void){
 
 #ifdef PIN_LED
     pinMode(PIN_LED, OUTPUT);
@@ -641,18 +641,18 @@ void BTstackManager::setup(){
     printf("--> READY <--\n");
 }
 
-void BTstackManager::loop(){
+void BTstackManager::loop(void){
     // process data from/to Bluetooth module
     hal_uart_dma_process();
     // BTstack Run Loop
     embedded_execute_once();
 }
 
-void BTstackManager::bleStartScanning(){
+void BTstackManager::bleStartScanning(void){
     printf("Start scanning\n");
     le_central_start_scan();
 }
-void BTstackManager::bleStopScanning(){
+void BTstackManager::bleStopScanning(void){
     le_central_stop_scan();
 }
 

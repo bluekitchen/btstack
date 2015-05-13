@@ -79,10 +79,10 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size);
 static void h4_block_received(void);
 static void h4_block_sent(void);
 static int h4_open(void *transport_config);
-static int h4_close();
+static int h4_close(void *transport_config);
 static void h4_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *packet, uint16_t size));
 static int h4_send_packet(uint8_t packet_type, uint8_t *packet, int size);
-static const char * h4_get_transport_name();
+static const char * h4_get_transport_name(void);
 static int h4_set_baudrate(uint32_t baudrate);
 static int h4_can_send_packet_now(uint8_t packet_type);
 
@@ -148,7 +148,7 @@ static int h4_open(void *transport_config){
     return 0;
 }
 
-static int h4_close(){
+static int h4_close(void *transport_config){
     // first remove run loop handler
 	run_loop_remove_data_source(&hci_transport_h4_dma_ds);
     
@@ -286,7 +286,7 @@ static int h4_can_send_packet_now(uint8_t packet_type){
 
 }
 
-static const char * h4_get_transport_name(){
+static const char * h4_get_transport_name(void){
     return "H4_DMA";
 }
 
@@ -294,6 +294,6 @@ static void dummy_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
 }
 
 // get h4 singleton
-hci_transport_t * hci_transport_h4_dma_instance() { 
+hci_transport_t * hci_transport_h4_dma_instance(void){ 
     return (hci_transport_t *) &hci_transport_h4_dma;
 }

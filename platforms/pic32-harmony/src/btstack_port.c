@@ -87,15 +87,15 @@ static void msleep(uint32_t delay) {
 /// HAL CPU ///
 #include <btstack/hal_cpu.h>
 
-void hal_cpu_disable_irqs(){
+void hal_cpu_disable_irqs(void){
     // TODO implement
 }
 
-void hal_cpu_enable_irqs(){
+void hal_cpu_enable_irqs(void){
     // TODO implement
 }
 
-void hal_cpu_enable_irqs_and_sleep(){
+void hal_cpu_enable_irqs_and_sleep(void){
     // TODO implement
 }
 
@@ -232,7 +232,7 @@ void BTSTACK_Initialize ( void )
 }
 
 
-void BTSTACK_Tasks(){
+void BTSTACK_Tasks(void){
     if (bytes_to_read && PLIB_USART_ReceiverDataIsAvailable(BT_USART_ID)) {
         *rx_buffer_ptr++ = PLIB_USART_ReceiverByteReceive(BT_USART_ID);
         bytes_to_read--;

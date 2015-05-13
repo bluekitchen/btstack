@@ -30,7 +30,7 @@ TEST_GROUP(DESParser){
     int value_index;
     des_iterator_t des_list_it;
 
-    void setup(){
+    void setup(void){
         value_index = 0;
     }
     

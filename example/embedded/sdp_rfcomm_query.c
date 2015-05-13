@@ -93,7 +93,7 @@ void store_found_service(uint8_t * name, uint8_t port){
     service_index++;
 }
 
-void report_found_services(){
+void report_found_services(void){
     printf("\n *** Client query response done. ");
     if (service_index == 0){
         printf("No service found.\n\n");

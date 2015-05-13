@@ -130,7 +130,7 @@ void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
 
 
 TEST_GROUP(GATTClient){
-	void setup(){
+	void setup(void){
 	    btstack_memory_init();
 	    run_loop_init(RUN_LOOP_POSIX);
 	    sm_init();

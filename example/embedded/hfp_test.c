@@ -78,7 +78,7 @@ static void send_str_over_rfcomm(uint16_t cid, char * command){
     }
 }
 
-static void send_packet(){
+static void send_packet(void){
     switch (hfp_service_level_connection_state){
         case 1:
             send_str_over_rfcomm(rfcomm_cid, "\r\n+BRSF: 224\r\n\r\nOK\r\n");
@@ -89,7 +89,7 @@ static void send_packet(){
     }
 }
 
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
     if (packet_type == RFCOMM_DATA_PACKET){
         hfp_service_level_connection_state++;

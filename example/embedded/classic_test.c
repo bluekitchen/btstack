@@ -160,7 +160,7 @@ void do_next_remote_name_request(void){
     }
 }
 
-static void continue_remote_names(){
+static void continue_remote_names(void){
     // don't get remote names for testing
     if (has_more_remote_name_requests()){
         do_next_remote_name_request();
@@ -382,7 +382,7 @@ static void packet_handler2 (void * connection, uint8_t packet_type, uint16_t ch
 }
 
 
-static void update_auth_req(){
+static void update_auth_req(void){
     gap_auth_req = 0;
     if (gap_mitm_protection){
         gap_auth_req |= 1;  // MITM Flag
@@ -417,7 +417,7 @@ void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
     }
 }
 
-void send_ucd_packet(){
+void send_ucd_packet(void){
     l2cap_reserve_packet_buffer();
     int ucd_size = 50;
     uint8_t * ucd_buffer = l2cap_get_outgoing_buffer();
@@ -445,7 +445,7 @@ void  heartbeat_handler(struct timer *ts){
     run_loop_add_timer(ts);
 } 
 
-void show_usage(){
+void show_usage(void){
 
     printf("\n--- Bluetooth Classic Test Console ---\n");
     printf("GAP: discoverable %u, connectable %u, bondable %u, MITM %u, dedicated bonding %u, auth_req 0x0%u, %s\n",

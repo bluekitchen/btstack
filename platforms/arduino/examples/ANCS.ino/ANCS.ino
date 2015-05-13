@@ -63,7 +63,7 @@ void ancs_callback(ancs_event_t * event){
     }
 }
 
-void setup(){
+void setup(void){
     setup_printf();
     printf("Main::Setup()\n");
     BT.setup();
@@ -86,6 +86,6 @@ void setup(){
     ancs_client_register_callback(&ancs_callback);
 }
 
-void loop(){
+void loop(void){
     BT.loop();
 }

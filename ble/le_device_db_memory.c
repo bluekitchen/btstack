@@ -69,7 +69,7 @@ typedef struct le_device_memory_db {
 
 static le_device_memory_db_t le_devices[LE_DEVICE_MEMORY_SIZE];
 
-void le_device_db_init(){
+void le_device_db_init(void){
     int i;
     for (i=0;i<LE_DEVICE_MEMORY_SIZE;i++){
         le_device_db_remove(i);
@@ -177,7 +177,7 @@ void le_device_db_local_counter_set(int index, uint32_t counter){
     le_devices[index].local_counter = counter;
 }
 
-void le_device_db_dump(){
+void le_device_db_dump(void){
     log_info("Central Device DB dump, devices: %u", le_device_db_count);
     int i;
     for (i=0;i<LE_DEVICE_MEMORY_SIZE;i++){

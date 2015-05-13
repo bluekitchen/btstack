@@ -112,7 +112,7 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
 // GAP disconnect command when the querying is done.
 void handle_gatt_client_event(le_event_t * event);
 
-static void gatt_client_setup(){
+static void gatt_client_setup(void){
     // Initialize L2CAP and register HCI event handler
     l2cap_init();
     l2cap_register_packet_handler(&handle_hci_event);

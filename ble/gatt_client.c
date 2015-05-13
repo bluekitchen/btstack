@@ -79,7 +79,7 @@ static uint16_t peripheral_mtu(gatt_client_t *peripheral){
     return peripheral->mtu;
 }
 
-static uint16_t gatt_client_next_id(){
+static uint16_t gatt_client_next_id(void){
     if (gatt_client_id < 0xFFFF) {
         gatt_client_id++;
     } else {
@@ -123,7 +123,7 @@ void gatt_client_unregister_packet_handler(uint16_t gatt_client_id){
     } 
 }
 
-void gatt_client_init(){
+void gatt_client_init(void){
     att_client_start_handle = 0x0000;
     gatt_client_connections = NULL;
     att_dispatch_register_client(gatt_client_att_packet_handler);
@@ -702,7 +702,7 @@ static int is_value_valid(gatt_client_t *peripheral, uint8_t *packet, uint16_t s
 }
 
 
-static void gatt_client_run(){
+static void gatt_client_run(void){
 
     linked_item_t *it;
     for (it = (linked_item_t *) gatt_client_connections; it ; it = it->next){

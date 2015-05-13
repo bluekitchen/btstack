@@ -151,14 +151,14 @@ static NSTimeInterval getTime(void){
 /**
  * check OS version for >= 4.0
  */
-static int iphone_os_at_least_40(){
+static int iphone_os_at_least_40(void){
     return kCFCoreFoundationVersionNumber >= 550.32;
 }
 
 /**
  * check OS version for >= 6.0
  */
-static int iphone_os_at_least_60(){
+static int iphone_os_at_least_60(void){
     return kCFCoreFoundationVersionNumber >= 788.0;
 }
 
@@ -185,7 +185,7 @@ static const char * iphone_name(void *config){
 }
 
 // Get BD_ADDR from IORegistry
-static void ioregistry_get_info() {
+static void ioregistry_get_info(void){
     mach_port_t mp;
     IOMasterPort(MACH_PORT_NULL,&mp);
     CFMutableDictionaryRef bt_matching = IOServiceNameMatching("bluetooth");
@@ -207,7 +207,7 @@ static void ioregistry_get_info() {
     log_info("transport-speed:   %u\n", transport_speed);
 }
 
-static int iphone_has_csr(){
+static int iphone_has_csr(void){
     // construct script path from device name
     char *machine = get_machine_name();
 	if (strncmp(machine, "iPhone1,", strlen("iPhone1,")) == 0) {

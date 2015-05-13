@@ -60,7 +60,7 @@ static void (*packet_handler) (void * connection, uint8_t packet_type, uint16_t 
 static btstack_packet_handler_t attribute_protocol_packet_handler;
 static btstack_packet_handler_t security_protocol_packet_handler;
 
-void l2cap_init(){
+void l2cap_init(void){
     
     packet_handler = NULL;
     attribute_protocol_packet_handler = NULL;
@@ -77,7 +77,7 @@ uint16_t l2cap_max_mtu(void){
     return HCI_ACL_PAYLOAD_SIZE - L2CAP_HEADER_SIZE;
 }
 
-uint16_t l2cap_max_le_mtu(){
+uint16_t l2cap_max_le_mtu(void){
     return l2cap_max_mtu();
 }
 

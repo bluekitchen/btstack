@@ -76,9 +76,9 @@ static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 
 static char hs_cmd_buffer[100];
 // prototypes
-static void show_usage();
+static void show_usage(void);
 
-static void show_usage(){
+static void show_usage(void){
     printf("\n--- Bluetooth HSP AudioGateway Test Console ---\n");
     printf("---\n");
     printf("p - establish audio connection to PTS module\n");

@@ -124,7 +124,7 @@ static hci_connection_t * create_connection_for_bd_addr_and_type(bd_addr_t addr,
 *
  * @return le connection parameter range struct
  */
-le_connection_parameter_range_t gap_le_get_connection_parameter_range(){
+le_connection_parameter_range_t gap_le_get_connection_parameter_range(void){
     return hci_stack->le_connection_parameter_range;
 }
 
@@ -833,12 +833,12 @@ static void hci_initialization_timeout_handler(timer_source_t * ds){
     }
 }
 
-static void hci_initializing_next_state(){
+static void hci_initializing_next_state(void){
     hci_stack->substate = (hci_substate_t )( ((int) hci_stack->substate) + 1);
 }
 
 // assumption: hci_can_send_command_packet_now() == true
-static void hci_initializing_run(){
+static void hci_initializing_run(void){
     log_info("hci_initializing_run: substate %u", hci_stack->substate);
     switch (hci_stack->substate){
         case HCI_INIT_SEND_RESET:
@@ -1646,7 +1646,7 @@ void hci_register_packet_handler(void (*handler)(uint8_t packet_type, uint8_t *p
     hci_stack->packet_handler = handler;
 }
 
-static void hci_state_reset(){
+static void hci_state_reset(void){
     // no connections yet
     hci_stack->connections = NULL;
 
@@ -1727,7 +1727,7 @@ void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, r
     hci_state_reset();
 }
 
-void hci_close(){
+void hci_close(void){
     // close remote device db
     if (hci_stack->remote_device_db) {
         hci_stack->remote_device_db->close();
@@ -1755,7 +1755,7 @@ void hci_set_bd_addr(bd_addr_t addr){
     hci_stack->custom_bd_addr_set = 1;
 }
 
-void hci_disable_l2cap_timeout_check(){
+void hci_disable_l2cap_timeout_check(void){
     disable_l2cap_timeouts = 1;
 }
 // State-Module-Driver overview
@@ -2031,7 +2031,7 @@ void hci_local_bd_addr(bd_addr_t address_buffer){
     memcpy(address_buffer, hci_stack->local_bd_addr, 6);
 }
 
-void hci_run(){
+void hci_run(void){
     
     // log_info("hci_run: entered");
     hci_connection_t * connection;
@@ -2457,7 +2457,7 @@ void hci_ssp_set_enable(int enable){
     hci_stack->ssp_enable = enable;
 }
 
-int hci_local_ssp_activated(){
+int hci_local_ssp_activated(void){
     return hci_ssp_supported() && hci_stack->ssp_enable;
 }
 
@@ -2502,7 +2502,7 @@ int hci_send_cmd(const hci_cmd_t *cmd, ...){
 // Create various non-HCI events. 
 // TODO: generalize, use table similar to hci_create_command
 
-void hci_emit_state(){
+void hci_emit_state(void){
     log_info("BTSTACK_EVENT_STATE %u", hci_stack->state);
     uint8_t event[3];
     event[0] = BTSTACK_EVENT_STATE;
@@ -2565,7 +2565,7 @@ void hci_emit_l2cap_check_timeout(hci_connection_t *conn){
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-void hci_emit_nr_connections_changed(){
+void hci_emit_nr_connections_changed(void){
     log_info("BTSTACK_EVENT_NR_CONNECTIONS_CHANGED %u", nr_hci_connections());
     uint8_t event[3];
     event[0] = BTSTACK_EVENT_NR_CONNECTIONS_CHANGED;
@@ -2575,7 +2575,7 @@ void hci_emit_nr_connections_changed(){
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-void hci_emit_hci_open_failed(){
+void hci_emit_hci_open_failed(void){
     log_info("BTSTACK_EVENT_POWERON_FAILED");
     uint8_t event[2];
     event[0] = BTSTACK_EVENT_POWERON_FAILED;
@@ -2585,7 +2585,7 @@ void hci_emit_hci_open_failed(){
 }
 
 #ifndef EMBEDDED
-void hci_emit_btstack_version() {
+void hci_emit_btstack_version(void){
     log_info("BTSTACK_EVENT_VERSION %u.%u", BTSTACK_MAJOR, BTSTACK_MINOR);
     uint8_t event[6];
     event[0] = BTSTACK_EVENT_VERSION;
@@ -2795,14 +2795,14 @@ void gap_set_local_name(const char * local_name){
     hci_stack->local_name = local_name;
 }
 
-le_command_status_t le_central_start_scan(){
+le_command_status_t le_central_start_scan(void){
     if (hci_stack->le_scanning_state == LE_SCANNING) return BLE_PERIPHERAL_OK;
     hci_stack->le_scanning_state = LE_START_SCAN;
     hci_run();
     return BLE_PERIPHERAL_OK;
 }
 
-le_command_status_t le_central_stop_scan(){
+le_command_status_t le_central_stop_scan(void){
     if ( hci_stack->le_scanning_state == LE_SCAN_IDLE) return BLE_PERIPHERAL_OK;
     hci_stack->le_scanning_state = LE_STOP_SCAN;
     hci_run();
@@ -2848,7 +2848,7 @@ le_command_status_t le_central_connect(bd_addr_t  addr, bd_addr_type_t addr_type
 }
 
 // @assumption: only a single outgoing LE Connection exists
-static hci_connection_t * le_central_get_outgoing_connection(){
+static hci_connection_t * le_central_get_outgoing_connection(void){
     linked_item_t *it;
     for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
         hci_connection_t * conn = (hci_connection_t *) it;
@@ -2864,7 +2864,7 @@ static hci_connection_t * le_central_get_outgoing_connection(){
     return NULL;
 }
 
-le_command_status_t le_central_connect_cancel(){
+le_command_status_t le_central_connect_cancel(void){
     hci_connection_t * conn = le_central_get_outgoing_connection();
     switch (conn->state){
         case SEND_CREATE_CONNECTION:
@@ -2915,7 +2915,7 @@ le_command_status_t gap_disconnect(hci_con_handle_t handle){
     return BLE_PERIPHERAL_OK;
 }
 
-void hci_disconnect_all(){
+void hci_disconnect_all(void){
     linked_list_iterator_t it;
     linked_list_iterator_init(&it, &hci_stack->connections);
     while (linked_list_iterator_has_next(&it)){

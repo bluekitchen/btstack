@@ -19,7 +19,7 @@ static const uint16_t max_mtu = 23;
 static uint8_t  l2cap_stack_buffer[max_mtu];
 uint16_t gatt_client_handle = 0x40;
 
-uint16_t get_gatt_client_handle(){
+uint16_t get_gatt_client_handle(void){
 	return gatt_client_handle;
 }
 
@@ -28,18 +28,18 @@ void mock_simulate_command_complete(const hci_cmd_t *cmd){
 		gatt_central_packet_handler(NULL, HCI_EVENT_PACKET, NULL, (uint8_t *)&packet, sizeof(packet));
 }
 
-void mock_simulate_hci_state_working(){
+void mock_simulate_hci_state_working(void){
 	uint8_t packet[3] = {BTSTACK_EVENT_STATE, 0, HCI_STATE_WORKING};
 	gatt_central_packet_handler(NULL, HCI_EVENT_PACKET, NULL, (uint8_t *)&packet, 3);
 }
 
-void mock_simulate_connected(){
+void mock_simulate_connected(void){
 	uint8_t packet[] = {0x3E, 0x13, 0x01, 0x00, 0x40, 0x00, 0x00, 0x00, 0x9B, 0x77, 0xD1, 0xF7, 0xB1, 0x34, 0x50, 0x00, 0x00, 0x00, 0xD0, 0x07, 0x05};
 	gatt_central_packet_handler(NULL, HCI_EVENT_PACKET, NULL, (uint8_t *)&packet, sizeof(packet));
 }
 
 
-void mock_simulate_scan_response(){
+void mock_simulate_scan_response(void){
 	uint8_t packet[] = {0x3E, 0x0F, 0x02, 0x01, 0x00, 0x00, 0x9B, 0x77, 0xD1, 0xF7, 0xB1, 0x34, 0x03, 0x02, 0x01, 0x05, 0xBC};
 	gatt_central_packet_handler(NULL, HCI_EVENT_PACKET, NULL, (uint8_t *)&packet, sizeof(packet));
 }
@@ -51,7 +51,7 @@ static void att_init_connection(att_connection_t * att_connection){
 	att_connection->authorized = 0;
 }
 
-int  l2cap_can_send_connectionless_packet_now(){
+int  l2cap_can_send_connectionless_packet_now(void){
 	return 1;	
 }
 
@@ -98,7 +98,7 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
 	return 0;
 }
 
-int  sm_cmac_ready(){
+int  sm_cmac_ready(void){
 	return 1;
 }
 void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, void (*done_handler)(uint8_t hash[8])){
