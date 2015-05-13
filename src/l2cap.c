@@ -982,7 +982,7 @@ void l2cap_event_handler(uint8_t *packet, uint16_t size){
 
                 log_info("l2cap - state %u", channel->state);
 
-                gap_security_level_t actual_level = packet[4];
+                gap_security_level_t actual_level = (gap_security_level_t) packet[4];
                 gap_security_level_t required_level = channel->required_security_level;
 
                 switch (channel->state){
