@@ -101,6 +101,7 @@ void linked_list_add_tail(linked_list_t * list, linked_item_t *item){   // <-- a
  * @note: assumes that data_source_t.next is first element in data_source
  */
 int  linked_list_remove(linked_list_t * list, linked_item_t *item){    // <-- remove item from list
+    if (!item) return -1;
     linked_item_t *it;
     for (it = (linked_item_t *) list; it ; it = it->next){
         if (it->next == item){
