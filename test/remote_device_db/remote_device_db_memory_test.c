@@ -17,12 +17,13 @@ extern linked_list_t db_mem_names ;
 void dump(linked_list_t list){
     printf("dump:\n");
 
+    int i;
     linked_item_t *it;
-    for (it = (linked_item_t *) list; it ; it = it->next){
+    for (it = (linked_item_t *) list, i = 1; it ; it = it->next, i++){
         db_mem_device_t * item = (db_mem_device_t *) it;
         db_mem_device_name_t * item1 = (db_mem_device_name_t *) it;
         db_mem_device_link_key_t * item2 = (db_mem_device_link_key_t *) it;
-        printf("%s + %s + %u\n",  item1->device_name,  item2->link_key, item->bd_addr[5]);
+        printf("%u. %s + %s + %u\n",  i, item1->device_name,  item2->link_key, item->bd_addr[5]);
     }
 }
 
@@ -66,13 +67,14 @@ TEST(RemoteDeviceDB, SinglePutGetDeleteName){
 }
 
 TEST(RemoteDeviceDB, SortByLastUsedName){
-    sprintf((char*)device_name, "%d", 10);
-	remote_device_db_memory.put_name(addr1, &device_name);
-    sprintf((char*)device_name, "%d", 20);
-	remote_device_db_memory.put_name(addr2, &device_name);
-    sprintf((char*)device_name, "%d", 30);
-	remote_device_db_memory.put_name(addr3, &device_name);
+	remote_device_db_memory.put_name(addr1, (device_name_t*) "10");
+    // dump(db_mem_names);
+	remote_device_db_memory.put_name(addr2, (device_name_t*) "20");
+    // dump(db_mem_names);
+	remote_device_db_memory.put_name(addr3, (device_name_t*) "30");
+    // dump(db_mem_names);
     
+    CHECK(!remote_device_db_memory.get_name(addr1, &device_name));
     CHECK(remote_device_db_memory.get_name(addr2, &device_name));
     //get first element of the list
     db_mem_device_name_t * item = (db_mem_device_name_t *) db_mem_names;
@@ -102,6 +104,7 @@ TEST(RemoteDeviceDB, SortByLastUsedKey){
 	remote_device_db_memory.put_link_key(addr3, link_key, link_key_type);
     // dump(db_mem_link_keys);
 
+    CHECK(!remote_device_db_memory.get_link_key(addr1, link_key, &link_key_type));
     CHECK(remote_device_db_memory.get_link_key(addr2, link_key, &link_key_type));
     // dump(db_mem_link_keys);
     

@@ -107,25 +107,32 @@ static void delete_link_key(bd_addr_t bd_addr){
 
 
 static void put_link_key(bd_addr_t bd_addr, link_key_t link_key, link_key_type_t link_key_type){
-    db_mem_device_link_key_t * existingRecord = (db_mem_device_link_key_t *) get_item(db_mem_link_keys, bd_addr);
-    
-    if (existingRecord){
-        memcpy(existingRecord->link_key, link_key, LINK_KEY_LEN);
-        return;
+
+    // check for existing record and remove if found
+    db_mem_device_link_key_t * record = (db_mem_device_link_key_t *) get_item(db_mem_link_keys, bd_addr);
+    if (record){
+        linked_list_remove(&db_mem_link_keys, (linked_item_t*) record);
     }
-    
-    // Record not found, create new one for this device
-    db_mem_device_link_key_t * newItem = btstack_memory_db_mem_device_link_key_get();
-    if (!newItem){
-        newItem = (db_mem_device_link_key_t*)linked_list_get_last_item(&db_mem_link_keys);
+
+    // record not found, get new one from memory pool
+    if (!record) {
+        record = btstack_memory_db_mem_device_link_key_get();
     }
+
+    // if none left, re-use last item and remove from list
+    if (!record){
+        record = (db_mem_device_link_key_t*)linked_list_get_last_item(&db_mem_link_keys);
+        if (record) {
+            linked_list_remove(&db_mem_link_keys, (linked_item_t*) record);
+        }
+    }
+        
+    if (!record) return;
     
-    if (!newItem) return;
-    
-    memcpy(newItem->device.bd_addr, bd_addr, sizeof(bd_addr_t));
-    memcpy(newItem->link_key, link_key, LINK_KEY_LEN);
-    newItem->link_key_type = link_key_type;
-    linked_list_add(&db_mem_link_keys, (linked_item_t *) newItem);
+    memcpy(record->device.bd_addr, bd_addr, sizeof(bd_addr_t));
+    memcpy(record->link_key, link_key, LINK_KEY_LEN);
+    record->link_key_type = link_key_type;
+    linked_list_add(&db_mem_link_keys, (linked_item_t *) record);
 }
 
 static void delete_name(bd_addr_t bd_addr){
@@ -138,24 +145,31 @@ static void delete_name(bd_addr_t bd_addr){
 }
 
 static void put_name(bd_addr_t bd_addr, device_name_t *device_name){
-    db_mem_device_name_t * existingRecord = (db_mem_device_name_t *) get_item(db_mem_names, bd_addr);
-    
-    if (existingRecord){
-        strncpy(existingRecord->device_name, (const char*) device_name, MAX_NAME_LEN);
-        return;
-    }
-    
-    // Record not found, create a new one for this device
-    db_mem_device_name_t * newItem = btstack_memory_db_mem_device_name_get();
-    if (!newItem) {
-        newItem = (db_mem_device_name_t*)linked_list_get_last_item(&db_mem_names);
-    };
 
-    if (!newItem) return;
+    // check for existing record and remove if found
+    db_mem_device_name_t * record = (db_mem_device_name_t *) get_item(db_mem_names, bd_addr);
+    if (record){
+        linked_list_remove(&db_mem_names, (linked_item_t*) record);
+    }
+
+    // record not found, get new one from memory pool
+    if (!record) {
+        record = btstack_memory_db_mem_device_name_get();
+    }
+
+    // if none left, re-use last item and remove from list
+    if (!record){
+        record = (db_mem_device_name_t*)linked_list_get_last_item(&db_mem_names);
+        if (record) {
+            linked_list_remove(&db_mem_names, (linked_item_t*) record);
+        }
+    }
+
+    if (!record) return;
     
-    memcpy(newItem->device.bd_addr, bd_addr, sizeof(bd_addr_t));
-    strncpy(newItem->device_name, (const char*) device_name, MAX_NAME_LEN);
-    linked_list_add(&db_mem_names, (linked_item_t *) newItem);
+    memcpy(record->device.bd_addr, bd_addr, sizeof(bd_addr_t));
+    strncpy(record->device_name, (const char*) device_name, MAX_NAME_LEN);
+    linked_list_add(&db_mem_names, (linked_item_t *) record);
 }
 
 
