@@ -8,20 +8,25 @@ CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include -I$(CPPUTEST_HOME)/include
 LDFLAGS += -L$(CPPUTEST_HOME) -lCppUTest -lCppUTestExt
 
+VPATH += ${BTSTACK_ROOT}/ble 
+VPATH += ${BTSTACK_ROOT}/src
+VPATH += ${BTSTACK_ROOT}/platforms/posix/src
+
 COMMON = \
-    ${BTSTACK_ROOT}/src/utils.c			            \
-    ${BTSTACK_ROOT}/src/btstack_memory.c			\
-    ${BTSTACK_ROOT}/src/memory_pool.c			    \
-    ${BTSTACK_ROOT}/src/linked_list.c			    \
-    ${BTSTACK_ROOT}/src/sdp_util.c			        \
-    ${BTSTACK_ROOT}/src/remote_device_db_memory.c	\
-    ${BTSTACK_ROOT}/src/hci_cmds.c					\
-    ${BTSTACK_ROOT}/src/hci.c     					\
-    ${BTSTACK_ROOT}/src/hci_dump.c     				\
-    ${BTSTACK_ROOT}/ble/att_dispatch.c       	    \
-    ${BTSTACK_ROOT}/ble/att.c     					\
-    ${BTSTACK_ROOT}/ble/ad_parser.c                 \
-    ${BTSTACK_ROOT}/ble/gatt_client.c               \
+    utils.c			            \
+    btstack_memory.c			\
+    memory_pool.c			    \
+    linked_list.c			    \
+    sdp_util.c			        \
+    remote_device_db_memory.c	\
+    hci_cmds.c					\
+    hci.c     					\
+    hci_dump.c     				\
+    att_dispatch.c       	    \
+    att.c     					\
+    ad_parser.c                 \
+    gatt_client.c               \
+    gatt_client_test.c          \
     mock.c
 	
 
@@ -41,6 +46,6 @@ le_central: ${CORE_OBJ} ${COMMON_OBJ} le_central.o
 
 clean:
 	rm -f  gatt_client le_central
-	rm -f  *.o ${BTSTACK_ROOT}/src/*.o ${BTSTACK_ROOT}/ble/*.o
+	rm -f  *.o *.o ${BTSTACK_ROOT}/ble/*.o
 	rm -rf *.dSYM
 	

@@ -31,16 +31,16 @@ TEST(RemoteDeviceDB, SinglePutGetDeleteKey){
 	link_key_t test_link_key;
     link_key_type_t test_link_key_type;
     
-    remote_device_db_fs_instance()->delete_link_key(&bd_addr);
-    CHECK(remote_device_db_fs_instance()->get_link_key(&bd_addr, &test_link_key, &test_link_key_type) == 0);
+    remote_device_db_fs_instance()->delete_link_key(bd_addr);
+    CHECK(remote_device_db_fs_instance()->get_link_key(bd_addr, test_link_key, &test_link_key_type) == 0);
     
-	remote_device_db_fs_instance()->put_link_key(&bd_addr, &link_key, link_key_type);
-    CHECK(remote_device_db_fs_instance()->get_link_key(&bd_addr, &test_link_key, &test_link_key_type) == 1);
+	remote_device_db_fs_instance()->put_link_key(bd_addr, link_key, link_key_type);
+    CHECK(remote_device_db_fs_instance()->get_link_key(bd_addr, test_link_key, &test_link_key_type) == 1);
     
     CHECK(strcmp(link_key_to_str(link_key), link_key_to_str(test_link_key)) == 0);
     
-    remote_device_db_fs_instance()->delete_link_key(&bd_addr);
-    CHECK(remote_device_db_fs_instance()->get_link_key(&bd_addr, &test_link_key, &test_link_key_type) == 0);
+    remote_device_db_fs_instance()->delete_link_key(bd_addr);
+    CHECK(remote_device_db_fs_instance()->get_link_key(bd_addr, test_link_key, &test_link_key_type) == 0);
 }
 
 

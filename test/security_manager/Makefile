@@ -16,7 +16,7 @@ COMMON = \
     ${BTSTACK_ROOT}/src/sdp_util.c			        \
     ${BTSTACK_ROOT}/src/remote_device_db_memory.c	\
     ${BTSTACK_ROOT}/src/run_loop.c					\
-    ${BTSTACK_ROOT}/src/run_loop_posix.c			\
+    ${BTSTACK_ROOT}/platforms/posix/src/run_loop_posix.c			\
     ${BTSTACK_ROOT}/src/hci_cmds.c					\
     ${BTSTACK_ROOT}/src/hci_dump.c					\
     ${BTSTACK_ROOT}/ble/sm.c     					\
@@ -36,6 +36,6 @@ aestest: aestest.c rijndael.c
 
 clean:
 	rm -f  security_manager
-	rm -f  *.o ${BTSTACK_ROOT}/src/*.o
+	rm -f  *.o
 	rm -rf *.dSYM
 	

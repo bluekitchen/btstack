@@ -5,22 +5,26 @@ CC = g++
 BTSTACK_ROOT =  ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
-CFLAGS  = -g -Wall -I. -I${BTSTACK_ROOT}/example/libusb -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include -I$(CPPUTEST_HOME)/include
+CFLAGS  = -g -Wall -I.. -I${BTSTACK_ROOT}/example/libusb -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include -I$(CPPUTEST_HOME)/include
 LDFLAGS += -L$(CPPUTEST_HOME)/lib -lCppUTest -lCppUTestExt
 
+VPATH += ${BTSTACK_ROOT}/ble 
+VPATH += ${BTSTACK_ROOT}/src
+VPATH += ${BTSTACK_ROOT}/platforms/posix/src
+
 COMMON = \
-    ${BTSTACK_ROOT}/src/utils.c			            \
-    ${BTSTACK_ROOT}/src/btstack_memory.c			\
-    ${BTSTACK_ROOT}/src/memory_pool.c			    \
-    ${BTSTACK_ROOT}/src/linked_list.c			    \
-    ${BTSTACK_ROOT}/src/sdp_util.c			        \
-    ${BTSTACK_ROOT}/src/remote_device_db_memory.c	\
-    ${BTSTACK_ROOT}/src/run_loop.c					\
-    ${BTSTACK_ROOT}/src/run_loop_posix.c			\
-    ${BTSTACK_ROOT}/src/hci_cmds.c					\
-    ${BTSTACK_ROOT}/src/hci_dump.c					\
-    ${BTSTACK_ROOT}/src/hci.c                       \
-    ${BTSTACK_ROOT}/ble/ad_parser.c                 \
+    utils.c			            \
+    btstack_memory.c			\
+    memory_pool.c			    \
+    linked_list.c			    \
+    sdp_util.c			        \
+    remote_device_db_memory.c	\
+    run_loop.c					\
+    run_loop_posix.c 			\
+    hci_cmds.c					\
+    hci_dump.c					\
+    hci.c                       \
+    ad_parser.c                 \
 	
 COMMON_OBJ = $(COMMON:.c=.o)
 
@@ -31,6 +35,6 @@ ad_parser: ${CORE_OBJ} ${COMMON_OBJ} advertising_data_parser.c
 
 clean:
 	rm -f  ad_parser le_central
-	rm -f  *.o ${BTSTACK_ROOT}/src/*.o
+	rm -f  *.o
 	rm -rf *.dSYM
 	
