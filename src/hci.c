@@ -354,7 +354,7 @@ int hci_number_free_sco_slots_for_handle(hci_con_handle_t handle){
         num_sco_packets_sent += connection->num_sco_packets_sent;
     }
     if (num_sco_packets_sent > hci_stack->sco_packets_total_num){
-        log_info("hci_number_free_sco_slots_for_handle: outgoing packets (%u) > total packets ()", num_sco_packets_sent, hci_stack->sco_packets_total_num);
+        log_info("hci_number_free_sco_slots_for_handle: outgoing packets (%u) > total packets (%u)", num_sco_packets_sent, hci_stack->sco_packets_total_num);
         return 0;
     }
     return hci_stack->sco_packets_total_num - num_sco_packets_sent;
