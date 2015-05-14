@@ -814,7 +814,7 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     if (conn){
         log_info("l2cap_create_channel_internal, hci connection already exists");
         l2cap_handle_connection_complete(conn->con_handle, chan);
-        // check ir remote supported fearures are already received
+        // check if remote supported fearures are already received
         if (conn->bonding_flags & BONDING_RECEIVED_REMOTE_FEATURES) {
             l2cap_handle_remote_supported_features_received(chan);
         }
@@ -991,7 +991,7 @@ void l2cap_event_handler(uint8_t *packet, uint16_t size){
                             channel->state = L2CAP_STATE_WAIT_CLIENT_ACCEPT_OR_REJECT;
                             l2cap_emit_connection_request(channel);                
                         } else {
-                            channel->reason = 0x03; // security block
+                            channel->reason = 0x0003; // security block
                             channel->state = L2CAP_STATE_WILL_SEND_CONNECTION_RESPONSE_DECLINE;
                         }
                         break;
@@ -1064,17 +1064,6 @@ static void l2cap_handle_connection_request(hci_con_handle_t handle, uint8_t sig
         log_error("no hci_connection for handle %u", handle);
         return;
     }
-
-    // reject connection (0x03 security block) and disconnect if both have SSP, connection is not encrypted and PSM != SDP
-    if (  hci_ssp_supported_on_both_sides(handle)
-    &&    gap_security_level(handle) == LEVEL_0
-    &&   !l2cap_security_level_0_allowed_for_PSM(psm)){
-
-        // 0x0003 Security Block
-        l2cap_register_signaling_response(handle, CONNECTION_REQUEST, sig_id, 0x0003);
-        return;
-    }
-
 
     // alloc structure
     // log_info("l2cap_handle_connection_request register channel");
