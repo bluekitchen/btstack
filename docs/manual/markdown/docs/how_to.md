@@ -294,12 +294,12 @@ For this, BTstack provides a configurable packet logging mechanism via hci_dump.
     // formats: HCI_DUMP_BLUEZ, HCI_DUMP_PACKETLOGGER, HCI_DUMP_STDOUT
     void hci_dump_open(const char *filename, hci_dump_format_t format);
 
-On POSIX systems, you can call hci_dump_open with a path and HCI_DUMP_BLUEZ 
-or HCI_DUMP_PACKETLOGGER in the setup, i.e., before entering the run loop.
+On POSIX systems, you can call *hci_dump_open* with a path and *HCI_DUMP_BLUEZ* 
+or *HCI_DUMP_PACKETLOGGER* in the setup, i.e., before entering the run loop.
 The resulting file can be analyzed with Wireshark 
 or the Apple's PacketLogger tool.
 
-On embedded systems without a file system, you still can call hci_dump_open(NULL, HCI_DUMP_STDOUT).
+On embedded systems without a file system, you still can call *hci_dump_open(NULL, HCI_DUMP_STDOUT)*.
 It will log all HCI packets to the consolve via printf.
 If you capture the console output, incl. your own debug messages, you can use 
 the create_packet_log.py tool in the tools folder to convert a text output into a
