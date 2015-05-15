@@ -1,5 +1,5 @@
 # this uses rpetrich's lipoplastic feature not present in dhowett's repository
-# you need to install Xcode 4.4.1 as /Applications/Xcode_4.4.1.app
+# you need to install Xcode 4.4.1 as /Applications/Xcode-4.4.1.app
  
 SUBPROJECTS = src example PatchBlueTool PrefsBundle
 
