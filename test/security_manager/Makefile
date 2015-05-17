@@ -6,21 +6,26 @@ BTSTACK_ROOT =  ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
 CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wno-unused -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include -I$(CPPUTEST_HOME)/include
-LDFLAGS += -L$(CPPUTEST_HOME)/lib -lCppUTest -lCppUTestExt
+LDFLAGS +=  -lCppUTest -lCppUTestExt
+# -L$(CPPUTEST_HOME)/lib
+
+VPATH += ${BTSTACK_ROOT}/ble 
+VPATH += ${BTSTACK_ROOT}/src
+VPATH += ${BTSTACK_ROOT}/platforms/posix/src
 
 COMMON = \
-    ${BTSTACK_ROOT}/src/utils.c			            \
-    ${BTSTACK_ROOT}/src/btstack_memory.c			\
-    ${BTSTACK_ROOT}/src/memory_pool.c			    \
-    ${BTSTACK_ROOT}/src/linked_list.c			    \
-    ${BTSTACK_ROOT}/src/sdp_util.c			        \
-    ${BTSTACK_ROOT}/src/remote_device_db_memory.c	\
-    ${BTSTACK_ROOT}/src/run_loop.c					\
-    ${BTSTACK_ROOT}/platforms/posix/src/run_loop_posix.c			\
-    ${BTSTACK_ROOT}/src/hci_cmds.c					\
-    ${BTSTACK_ROOT}/src/hci_dump.c					\
-    ${BTSTACK_ROOT}/ble/sm.c     					\
-    ${BTSTACK_ROOT}/ble/le_device_db_memory.c       \
+    utils.c			            \
+    btstack_memory.c			\
+    memory_pool.c			    \
+    linked_list.c			    \
+    sdp_util.c			        \
+    remote_device_db_memory.c	\
+    run_loop.c					\
+    run_loop_posix.c			\
+    hci_cmds.c					\
+    hci_dump.c					\
+    sm.c     					\
+    le_device_db_memory.c       \
     rijndael.c 										\
     mock.c
 	
@@ -34,6 +39,10 @@ security_manager: ${CORE_OBJ} ${COMMON_OBJ} security_manager.c
 aestest: aestest.c rijndael.c
 	${CC} ${CFLAGS} -m32 rijndael.c aestest.c -o $@
 
+test:
+	./security_manager
+	./aestest
+	
 clean:
 	rm -f  security_manager
 	rm -f  *.o

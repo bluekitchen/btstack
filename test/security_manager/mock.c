@@ -111,8 +111,24 @@ void att_init_connection(att_connection_t * att_connection){
 	att_connection->authorized = 0;
 }
 
+int hci_can_send_command_packet_now(void){
+	return 1;
+}
 int hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type){
 	return 1;
+}
+
+// todo:
+hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type){
+	printf("hci_connection_for_bd_addr_and_type not implemented in mock backend\n");
+	return NULL;
+}
+hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
+	printf("hci_connection_for_handle not implemented in mock backend\n");
+	return NULL;
+}
+void hci_connections_get_iterator(linked_list_iterator_t *it){
+	printf("hci_connections_get_iterator not implemented in mock backend\n");
 }
 
 // get addr type and address used in advertisement packets
@@ -123,6 +139,10 @@ void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t addr){
 }
 
 int  l2cap_can_send_connectionless_packet_now(void){
+	return packet_buffer_len == 0;
+}
+
+int  l2cap_can_send_fixed_channel_packet_now(uint16_t handle){
 	return packet_buffer_len == 0;
 }
 

@@ -33,6 +33,9 @@ all: ad_parser
 ad_parser: ${CORE_OBJ} ${COMMON_OBJ} advertising_data_parser.c
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} advertising_data_parser.c ${CFLAGS} ${LDFLAGS} -o $@
 
+test:
+	./ad_parser
+
 clean:
 	rm -f  ad_parser le_central
 	rm -f  *.o
