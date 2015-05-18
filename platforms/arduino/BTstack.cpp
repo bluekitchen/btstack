@@ -4,7 +4,8 @@
 
 #include <Arduino.h> 
 #include <SPI.h>
-
+#include <avr/wdt.h>
+ 
 #include "BTstack.h"
 
 #include "btstack_memory.h"
@@ -596,6 +597,14 @@ void BTstackManager::setPublicBdAddr(bd_addr_t addr){
 
 // static hci_uart_config_t config;
 
+
+void bluetooth_hardware_error(){
+    printf("Bluetooth Hardware Error event. Restarting...\n\n\n");
+    wdt_enable(WDTO_15MS);
+    // wait for watchdog to trigger
+    while(1);
+}
+
 void BTstackManager::setup(void){
 
 #ifdef PIN_LED
@@ -616,6 +625,8 @@ void BTstackManager::setup(void){
     if (have_custom_addr){
         hci_set_bd_addr(public_bd_addr);
     }
+
+    hci_set_hardware_error_callback(&bluetooth_hardware_error);
 
     l2cap_init();
 
