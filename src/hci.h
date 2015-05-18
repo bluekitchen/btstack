@@ -679,6 +679,9 @@ typedef struct {
     bd_addr_t custom_bd_addr; 
     uint8_t   custom_bd_addr_set;
 
+    // hardware error handler
+    void (*hardware_error_callback)(void);
+
 } hci_stack_t;
 
 /**
@@ -854,6 +857,12 @@ void hci_ssp_set_auto_accept(int auto_accept);
  * @brief Get addr type and address used in advertisement packets.
  */
 void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t addr);
+
+/**
+ * @brief Set callback for Bluetooth Hardware Error
+ */
+void hci_set_hardware_error_callback(void (*fn)(void));
+
 /* API_END */
 
 #if defined __cplusplus

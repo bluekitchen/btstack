@@ -1504,7 +1504,9 @@ static void event_handler(uint8_t *packet, int size){
             break;
 
         case HCI_EVENT_HARDWARE_ERROR:
-            if(hci_stack->control && hci_stack->control->hw_error){
+            if (hci_stack->hardware_error_callback){
+                (*hci_stack->hardware_error_callback)();
+            } else if(hci_stack->control && hci_stack->control->hw_error){
                 (*hci_stack->control->hw_error)();
             } else {
                 // if no special requests, just reboot stack
@@ -2914,6 +2916,14 @@ le_command_status_t gap_disconnect(hci_con_handle_t handle){
     hci_run();
     return BLE_PERIPHERAL_OK;
 }
+
+/**
+ * @brief Set callback for Bluetooth Hardware Error
+ */
+void hci_set_hardware_error_callback(void (*fn)(void)){
+    hci_stack->hardware_error_callback = fn;
+}
+
 
 void hci_disconnect_all(void){
     linked_list_iterator_t it;
