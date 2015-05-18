@@ -31,7 +31,7 @@ all: release
 update_version:
 	${BTSTACK_ROOT}/tools/get_version.sh 
 
-install:
+install: update_version
 	rm -rf ${ARDUINO_LIBS}
 	mkdir ${ARDUINO_LIBS}
 	cp -r ${PATHS} ${ARDUINO_LIBS}
