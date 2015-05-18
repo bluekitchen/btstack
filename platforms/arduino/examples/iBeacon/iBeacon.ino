@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <SPI.h>
 
-UUID uuid("f897177b-aee8-4767-8ecc-cc694fd5fcee");
+UUID uuid("E2C56DB5-DFFB-48D2-B060-D0F5A71096E0");
 
 // retarget printf
 #ifdef ENERGIA
