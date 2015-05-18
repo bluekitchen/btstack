@@ -127,13 +127,11 @@ public:
 	void setup(void);
 	void loop(void);
 
-// @deprecated
-	void registerPacketHandler(btstack_packet_handler_t packet_handler);
-// @deprecated
-	void setClientMode();
+	void setPublicBdAddr(bd_addr_t addr);
 
 	void setAdvData(uint16_t size, const uint8_t * data);
-	void setPublicBdAddr(bd_addr_t addr);
+	void startAdvertising();
+	void stopAdvertising();
 
 	void bleStartScanning();
 	void bleStopScanning();

@@ -36,7 +36,9 @@ void setup(void){
   BTstack.addGATTCharacteristicDynamic(new UUID("f897177b-aee8-4767-8ecc-cc694fd5fcee"), flags, GATT_CHARACTERISTIC_TEMP_ID);
   // ..
 
+  // startup Bluetooth and activate advertisements
   BTstack.setup();
+  BTstack.startAdvertising();
 }
 
 

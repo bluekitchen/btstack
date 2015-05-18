@@ -34,21 +34,11 @@
 extern "C" void embedded_execute_once(void);
 extern "C" void hal_uart_dma_process(void);
 
-// btstack state 
-static int btstack_state;
-
-// HAL CPU Implementation
-extern "C" void hal_cpu_disable_irqs(void){ }
-extern "C" void hal_cpu_enable_irqs(void) { }
-extern "C" void hal_cpu_enable_irqs_and_sleep(void) { }
-
-static const uint8_t iBeaconAdvertisement01[] = { 0x02, 0x01 };
-static const uint8_t iBeaconAdvertisement38[] = { 0x1a, 0xff, 0x4c, 0x00, 0x02, 0x15 };
-static const uint8_t adv_data_default[] = { 02, 01, 05,   03, 02, 0xf0, 0xff }; 
-static const uint8_t * adv_data = adv_data_default;
-static uint16_t adv_data_len = sizeof(adv_data_default);
-static uint16_t gatt_client_id;
-static int gatt_is_characteristics_query;
+enum {
+    SET_ADVERTISEMENT_PARAMS  = 1 << 0,
+    SET_ADVERTISEMENT_DATA    = 1 << 1,
+    SET_ADVERTISEMENT_ENABLED = 1 << 2,
+};
 
 typedef enum gattAction {
     gattActionWrite,
@@ -61,8 +51,18 @@ typedef enum gattAction {
 
 static gattAction_t gattAction;
 
-// static btstack_packet_handler_t client_packet_handler = NULL;
-static int client_mode = 0;
+// btstack state 
+static int btstack_state;
+
+static const uint8_t iBeaconAdvertisement01[] = { 0x02, 0x01 };
+static const uint8_t iBeaconAdvertisement38[] = { 0x1a, 0xff, 0x4c, 0x00, 0x02, 0x15 };
+static uint8_t * adv_data = NULL;
+static uint16_t  adv_data_len = 0;
+static int       adv_enabled = 0;
+static uint16_t gatt_client_id;
+static int gatt_is_characteristics_query;
+
+static uint16_t le_peripheral_todos = 0;
 static bool have_custom_addr;
 static bd_addr_t public_bd_addr;
 
@@ -80,6 +80,12 @@ static void (*gattCharacteristicWrittenCallback)(BLEStatus status, BLEDevice * d
 static void (*gattCharacteristicSubscribedCallback)(BLEStatus status, BLEDevice * device) = NULL;
 static void (*gattCharacteristicUnsubscribedCallback)(BLEStatus status, BLEDevice * device) = NULL;
 
+// HAL CPU Implementation
+extern "C" void hal_cpu_disable_irqs(void){ }
+extern "C" void hal_cpu_enable_irqs(void) { }
+extern "C" void hal_cpu_enable_irqs_and_sleep(void) { }
+
+// 
 static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
     bd_addr_t addr;
@@ -93,14 +99,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                 case BTSTACK_EVENT_STATE:
                     btstack_state = packet[2];
                     // bt stack activated, get started 
-                    // if (packet[2] == HCI_STATE_WORKING) {
-                    //     if (client_mode) {
-                    //         emit_stack_ready();
-                    //         return;
-                    //     }
-                    //     // printf("1 - hci_le_set_advertising_parameters\n");
-                    // hci_send_cmd(&hci_le_set_advertising_parameters,  0x0400, 0x0800, 0, 0, 0, &addr, 0x07, 0);
-                    // }
+                    if (packet[2] == HCI_STATE_WORKING) {
+                        le_peripheral_todos |= SET_ADVERTISEMENT_PARAMS
+                                            | SET_ADVERTISEMENT_DATA
+                                            | SET_ADVERTISEMENT_ENABLED;
+                    }
                     break;
                 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -109,6 +112,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         BLEDevice device(handle);
                         (*bleDeviceDisconnectedCallback)(&device);
                     }
+                    le_peripheral_todos |= SET_ADVERTISEMENT_ENABLED;
                     break;
                 
                 case GAP_LE_ADVERTISING_REPORT: {
@@ -125,20 +129,6 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                         printf("Local Address: %s\n", bd_addr_to_str(addr));
                         break;
                     }
-                    // if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_advertising_parameters)){
-                    //     printf("2 - hci_le_set_advertising_data\n");
-                    //     hci_send_cmd(&hci_le_set_advertising_data, adv_data_len, adv_data);
-                    //     break;
-                    // }
-                    // if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_advertising_data)){
-                    //     printf("3 - hci_le_set_advertise_enable\n");
-                    //     hci_send_cmd(&hci_le_set_advertise_enable, 1);
-                    //     break;
-                    // }
-                    // if (COMMAND_COMPLETE_EVENT(packet, hci_le_set_advertise_enable)){
-                    //     emit_stack_ready();
-                    //     break;
-                    // }
                     break;
 
                 case HCI_EVENT_LE_META:
@@ -227,6 +217,53 @@ static void gatt_client_callback(le_event_t * event){
             break;
         default:
             break;
+    }
+}
+
+static void le_peripheral_run(void){
+
+    if (!hci_can_send_command_packet_now()) return;
+
+    if (le_peripheral_todos & SET_ADVERTISEMENT_DATA){
+        uint8_t data[31];
+        memset(data, 0, 31);
+        int pos = 0;
+        if (adv_data){
+            memcpy(data, adv_data, adv_data_len);
+            pos = adv_data_len;
+        } else {
+            uint8_t flags[] = { 0x02, 0x01, 0x02 };
+            memcpy(&data[pos], flags, sizeof(flags));
+            pos += sizeof(flags);
+            char * name = "BTstack LE Shield";
+            data[pos++] = strlen(name) + 1;
+            data[pos++] = 0x09;
+            memcpy(&data[pos], name, strlen(name));
+            pos += strlen(name);
+        }
+        printf("le_peripheral_run: set advertisement data\n");
+        le_peripheral_todos &= ~SET_ADVERTISEMENT_DATA;
+        hci_send_cmd(&hci_le_set_advertising_data, pos, data);
+        return;
+    }    
+
+    if (le_peripheral_todos & SET_ADVERTISEMENT_PARAMS){
+        printf("le_peripheral_run: set advertisement params\n");
+        le_peripheral_todos &= ~SET_ADVERTISEMENT_PARAMS;
+        uint8_t adv_type = 0;   // default
+        bd_addr_t null_addr;
+        memset(null_addr, 0, 6);
+        uint16_t adv_int_min = 0x0030;
+        uint16_t adv_int_max = 0x0030;
+        hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, 0, 0, &null_addr, 0x07, 0x00);
+        return;
+    }    
+
+    if (le_peripheral_todos & SET_ADVERTISEMENT_ENABLED)  {
+         printf("le_peripheral_run: enable advertisements\n");
+         le_peripheral_todos &= ~SET_ADVERTISEMENT_ENABLED;
+         hci_send_cmd(&hci_le_set_advertise_enable, adv_enabled);
+         return;
     }
 }
 
@@ -577,19 +614,6 @@ void BTstackManager::bleDisconnect(BLEDevice * device){
     run_loop_remove_timer(&connection_timer);
 }
 
-void BTstackManager::registerPacketHandler(btstack_packet_handler_t packet_handler){
-    // client_packet_handler = packet_handler;
-}
-
-void BTstackManager::setClientMode(void){
-    client_mode = 1;
-}
-
-void BTstackManager::setAdvData(uint16_t size, const uint8_t * data){
-    adv_data = data;
-    adv_data_len = size;
-}
-
 void BTstackManager::setPublicBdAddr(bd_addr_t addr){
     have_custom_addr = true;
     memcpy(public_bd_addr, addr ,6);
@@ -657,6 +681,9 @@ void BTstackManager::loop(void){
     hal_uart_dma_process();
     // BTstack Run Loop
     embedded_execute_once();
+    
+    // manage advertisements
+    le_peripheral_run();
 }
 
 void BTstackManager::bleStartScanning(void){
@@ -679,6 +706,27 @@ void BTstackManager::addGATTCharacteristic(UUID * uuid, uint16_t flags, uint8_t 
 }
 void BTstackManager::addGATTCharacteristicDynamic(UUID * uuid, uint16_t flags, uint16_t characteristic_id){
 }
+void BTstackManager::setAdvData(uint16_t size, const uint8_t * data){
+    adv_data = (uint8_t*) data;
+    adv_data_len = size;
+    if (btstack_state == HCI_STATE_WORKING){
+        le_peripheral_todos |= SET_ADVERTISEMENT_DATA;
+    }
+}
+void BTstackManager::startAdvertising(){
+    adv_enabled = 1;
+    if (btstack_state == HCI_STATE_WORKING){
+        le_peripheral_todos |= SET_ADVERTISEMENT_DATA;
+    }
+}
+void BTstackManager::stopAdvertising(){
+    adv_enabled = 0;
+    if (btstack_state == HCI_STATE_WORKING){
+        le_peripheral_todos |= SET_ADVERTISEMENT_DATA;
+    }
+    le_peripheral_todos |= SET_ADVERTISEMENT_DATA;
+}
+
 
 BTstackManager BTstack;
 

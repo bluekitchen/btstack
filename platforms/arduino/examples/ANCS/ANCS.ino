@@ -33,7 +33,7 @@ static int uart_putchar (char c, FILE *stream) {
     return 0;
 }
 static void setup_printf(void) {
-  Serial.begin(115200);
+  Serial.begin(9600);
   fdev_setup_stream (&uartout, uart_putchar, NULL, _FDEV_SETUP_WRITE);
   stdout = &uartout;
 }  
@@ -66,12 +66,10 @@ void ancs_callback(ancs_event_t * event){
 void setup(void){
     setup_printf();
     printf("Main::Setup()\n");
-    BT.setup();
-    BT.setAdvData(sizeof(adv_data), adv_data);
+    BTstack.setup();
+    BTstack.setAdvData(sizeof(adv_data), adv_data);
+    BTstack.startAdvertising();
 
-    // setup packet handler (Client+Server_
-    BT.registerPacketHandler(&packet_handler);
-  
     sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
     sm_set_authentication_requirements( SM_AUTHREQ_BONDING ); 
 
@@ -87,5 +85,5 @@ void setup(void){
 }
 
 void loop(void){
-    BT.loop();
+    BTstack.loop();
 }
