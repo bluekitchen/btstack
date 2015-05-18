@@ -56,7 +56,7 @@ static int btstack_state;
 
 static const uint8_t iBeaconAdvertisement01[] = { 0x02, 0x01 };
 static const uint8_t iBeaconAdvertisement38[] = { 0x1a, 0xff, 0x4c, 0x00, 0x02, 0x15 };
-static uint8_t * adv_data = NULL;
+static uint8_t   adv_data[31];
 static uint16_t  adv_data_len = 0;
 static int       adv_enabled = 0;
 static uint16_t gatt_client_id;
@@ -225,25 +225,9 @@ static void le_peripheral_run(void){
     if (!hci_can_send_command_packet_now()) return;
 
     if (le_peripheral_todos & SET_ADVERTISEMENT_DATA){
-        uint8_t data[31];
-        memset(data, 0, 31);
-        int pos = 0;
-        if (adv_data){
-            memcpy(data, adv_data, adv_data_len);
-            pos = adv_data_len;
-        } else {
-            uint8_t flags[] = { 0x02, 0x01, 0x02 };
-            memcpy(&data[pos], flags, sizeof(flags));
-            pos += sizeof(flags);
-            char * name = "BTstack LE Shield";
-            data[pos++] = strlen(name) + 1;
-            data[pos++] = 0x09;
-            memcpy(&data[pos], name, strlen(name));
-            pos += strlen(name);
-        }
         printf("le_peripheral_run: set advertisement data\n");
         le_peripheral_todos &= ~SET_ADVERTISEMENT_DATA;
-        hci_send_cmd(&hci_le_set_advertising_data, pos, data);
+        hci_send_cmd(&hci_le_set_advertising_data, adv_data_len, adv_data);
         return;
     }    
 
@@ -516,6 +500,18 @@ BTstackManager::BTstackManager(void){
     gattServiceDiscoveredCallback = NULL;
     gattCharacteristicDiscoveredCallback = NULL;
     gattCharacteristicNotificationCallback = NULL;
+
+    // setup adv data
+    int pos = 0;
+    const uint8_t flags[] = { 0x02, 0x01, 0x02 };
+    memcpy(&adv_data[pos], flags, sizeof(flags));
+    pos += sizeof(flags);
+    char * name = "BTstack LE Shield";
+    adv_data[pos++] = strlen(name) + 1;
+    adv_data[pos++] = 0x09;
+    memcpy(&adv_data[pos], name, strlen(name));
+    pos += strlen(name);
+    adv_data_len = pos;
 }
 
 void BTstackManager::setBLEAdvertisementCallback(void (*callback)(BLEAdvertisement * bleAdvertisement)){
@@ -707,7 +703,7 @@ void BTstackManager::addGATTCharacteristic(UUID * uuid, uint16_t flags, uint8_t 
 void BTstackManager::addGATTCharacteristicDynamic(UUID * uuid, uint16_t flags, uint16_t characteristic_id){
 }
 void BTstackManager::setAdvData(uint16_t size, const uint8_t * data){
-    adv_data = (uint8_t*) data;
+    memcpy(adv_data, data, size);
     adv_data_len = size;
     if (btstack_state == HCI_STATE_WORKING){
         le_peripheral_todos |= SET_ADVERTISEMENT_DATA;
@@ -724,8 +720,23 @@ void BTstackManager::stopAdvertising(){
     if (btstack_state == HCI_STATE_WORKING){
         le_peripheral_todos |= SET_ADVERTISEMENT_DATA;
     }
-    le_peripheral_todos |= SET_ADVERTISEMENT_DATA;
 }
+
+void BTstackManager::iBeaconConfigure(UUID * uuid, uint16_t major_id, uint16_t minor_id, uint8_t measured_power){
+    memcpy(adv_data, iBeaconAdvertisement01,  sizeof(iBeaconAdvertisement01));
+    adv_data[2] = 0x06;
+    memcpy(&adv_data[3], iBeaconAdvertisement38, sizeof(iBeaconAdvertisement38));
+    memcpy(&adv_data[9], uuid->getUuid(), 16);
+    net_store_16(adv_data, 25, major_id);
+    net_store_16(adv_data, 27, minor_id);
+    adv_data[29] = measured_power;
+    adv_data_len = 30;
+    if (btstack_state == HCI_STATE_WORKING){
+        le_peripheral_todos |= SET_ADVERTISEMENT_DATA;
+    }
+}
+// 02 01 06 1A FF 4C 00 02 15 -- F8 97 17 7B AE E8 47 67 8E CC CC 69 4F D5 FC EE -- 12 67 00 02 00 00 
+// 02 01 06 1a ff 4c 00 02 15 -- FB 0B 57 A2 82 28 44 CD 91 3A 94 A1 22 BA 12 06 -- 00 01 00 02 D1 00
 
 
 BTstackManager BTstack;
