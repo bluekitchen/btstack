@@ -7,11 +7,9 @@ pages:
 - [how_to.md, How to use BTstack]
 - [protocols.md, Protocols]
 - [profiles.md, Profiles]
-- [examples/intro.md, Examples]
-- [examples/generated.md, List of Examples]
-- [porting.md, Porting to Other Platforms]
+- [examples/generated.md, Examples]
+- [porting.md, Porting]
 - [integration.md, Integrating with Existing Systems]
 - [appendix/apis.md, APIs]
 - [appendix/events_errors.md, Events and Errors]
-- [revision_history.md, Revision History]
 theme: readthedocs

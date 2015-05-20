@@ -1,4 +1,4 @@
-## General Tools
+# General Tools
 
 On Unix-based systems, git, make, and Python are usually installed. If
 not, use the system’s packet manager to install them.
@@ -28,7 +28,7 @@ Adding paths to the Windows Path variable <a name="sec:windowsPath"></a>:
 
 -   Ensure that there is a semicolon before and after [C:\Program Files\GnuWin32\bin]().
 
-## Getting BTstack from GitHub
+# Getting BTstack from GitHub
 
 Use git to clone the latest version:
 
@@ -39,7 +39,7 @@ Alternatively, you can download it as a ZIP archive from
 [BTstack’s page](https://github.com/bluekitchen/btstack/archive/master.zip) on
 GitHub.
 
-## Compiling the examples and loading firmware
+# Compiling the examples and loading firmware
 
 This step is platform specific. To compile and run the examples, you
 need to download and install the platform specific toolchain and a flash
@@ -51,7 +51,7 @@ can be loaded onto the device using platform specific flash programmer.
 For the PIC32-Harmony platform, a project file for the MPLAB X IDE is
 provided, too.
 
-## Run the Example
+# Run the Example
 
 As a first test, we recommend [the SPP Counter example](examples/generated/#section:sppcounter). During the startup, for TI chipsets, the init
 script is transferred, and the Bluetooth stack brought up. After that,
@@ -59,12 +59,12 @@ the development board is discoverable as “BTstack SPP Counter” and
 provides a single virtual serial port. When you connect to it, you’ll
 receive a counter value as text every second.
 
-## Platform specifics
+# Platform specifics
 
 In the following, we provide more information on specific platform
 setups, toolchains, programmers, and init scripts.
 
-### libusb
+## libusb
 
 The quickest way to try BTstack is on a Linux or OS X system with an
 additional USB Bluetooth module. The Makefile [platforms/libusb]() in requires
@@ -103,7 +103,7 @@ It’s also possible to run the examples on Win32 systems. For this:
 Now, you can run the examples from the *msys* shell the same way as on
 Linux/OS X.
 
-### Texas Instruments MSP430-based boards
+## Texas Instruments MSP430-based boards
 
 **Compiler Setup.** The MSP430 port of BTstack is developed using the
 Long Term Support (LTS) version of mspgcc. General information about it
@@ -142,7 +142,7 @@ following software tools:
     prog blink.hex
     run
 
-### Texas Instruments CC256x-based chipsets
+## Texas Instruments CC256x-based chipsets
 
 **CC256x Init Scripts.** In order to use the CC256x chipset on the
 PAN13xx modules and others, an initialization script must be obtained.
@@ -176,19 +176,19 @@ if present and merges them into a single .c file.
 
 <a name="platform:msp430"></a>
 
-### MSP-EXP430F5438 + CC256x Platform 
+## MSP-EXP430F5438 + CC256x Platform 
 
 **Hardware Setup.** We assume that a PAN1315, PAN1317, or PAN1323 module
 is plugged into RF1 and RF2 of the MSP-EXP430F5438 board and the “RF3
 Adapter board” is used or at least simulated. See [User
 Guide](http://processors.wiki.ti.com/index.php/PAN1315EMK_User_Guide#RF3_Connector).
 
-### STM32F103RB Nucleo + CC256x Platform
+## STM32F103RB Nucleo + CC256x Platform
 
 To try BTstack on this platform, you’ll need a simple adaptor board. For
 details, please read the documentation in [platforms/stm32-f103rb-nucleo/README.md]().
 
-### PIC32 Bluetooth Audio Development Kit
+## PIC32 Bluetooth Audio Development Kit
 
 The PIC32 Bluetooth Audio Development Kit comes with the CSR8811-based
 BTM805 Bluetooth module. In the port, the UART on the DAC daughter board

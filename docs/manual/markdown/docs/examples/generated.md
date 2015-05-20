@@ -1,4 +1,61 @@
+# Embedded Examples
 
+In this section, we will describe a number of examples from the
+*example/embedded* folder. To allow code-reuse with different platforms
+as well as with new ports, the low-level initialization of BTstack and
+the hardware configuration has been extracted to the various
+*platforms/PLATFORM/main.c* files. The examples only contain the
+platform-independent Bluetooth logic. But let’s have a look at the
+common init code.
+
+Listing [below](#lst:btstackInit) shows a minimal platform setup for an
+embedded system with a Bluetooth chipset connected via UART.
+
+<a name="lst:btstackInit"></a>
+
+    int main(){
+      // ... hardware init: watchdoch, IOs, timers, etc...
+
+      // setup BTstack memory pools
+      btstack_memory_init();
+
+      // select embedded run loop
+      run_loop_init(RUN_LOOP_EMBEDDED);
+          
+      // use logger: format HCI_DUMP_PACKETLOGGER, HCI_DUMP_BLUEZ or HCI_DUMP_STDOUT
+      hci_dump_open(NULL, HCI_DUMP_STDOUT);
+
+      // init HCI
+      hci_transport_t    * transport = hci_transport_h4_dma_instance();
+      remote_device_db_t * remote_db = (remote_device_db_t *) &remote_device_db_memory;
+      hci_init(transport, NULL, NULL, remote_db);
+
+      // setup example    
+      btstack_main(argc, argv);
+
+      // go
+      run_loop_execute();    
+    }
+
+First, BTstack’s memory pools are setup up. Then, the standard run loop
+implementation for embedded systems is selected.
+
+The call to *hci_dump_open* configures BTstack to output all Bluetooth
+packets and it’s own debug and error message via printf. The Python
+script *tools/create_packet_log.py* can be used to convert the console
+output into a Bluetooth PacketLogger format that can be opened by the OS
+X PacketLogger tool as well as by Wireshark for further inspection. When
+asking for help, please always include a log created with HCI dump.
+
+The *hci_init* function sets up HCI to use the HCI H4 Transport
+implementation. It doesn’t provide a special transport configuration nor
+a special implementation for a particular Bluetooth chipset. It makes
+use of the *remote_device_db_memory* implementation that allows for
+re-connects without a new pairing but doesn’t persist the bonding
+information.
+
+Finally, it calls *btstack_main()* of the actual example before
+executing the run loop.
 
 
 - Hello World example:
@@ -166,7 +223,7 @@
     static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
     static void handle_sdp_client_query_result(sdp_query_event_t * event);
     
-    static void sdp_client_init(){
+    static void sdp_client_init(void){
       // init L2CAP
       l2cap_init();
       l2cap_register_packet_handler(packet_handler);
@@ -284,7 +341,7 @@
     static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
     static void handle_sdp_client_query_result(sdp_query_event_t * event);
     
-    static void sdp_client_init(){
+    static void sdp_client_init(void){
       // init L2CAP
       l2cap_init();
       l2cap_register_packet_handler(packet_handler);
@@ -412,7 +469,7 @@
 <a name="sppcounter:SPPSetup"></a>
 <!-- -->
 
-    void spp_service_setup(){
+    void spp_service_setup(void){
       l2cap_init();
       l2cap_register_packet_handler(packet_handler);
     
@@ -463,7 +520,7 @@
       run_loop_add_timer(ts);
     } 
     
-    static void one_shot_timer_setup(){
+    static void one_shot_timer_setup(void){
       // set one-shot timer
       heartbeat.process = &heartbeat_handler;
       run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
@@ -554,7 +611,7 @@
 <a name="sppflowcontrol:explicitFlowControl"></a>
 <!-- -->
 
-    static void spp_service_setup(){   
+    static void spp_service_setup(void){   
       // init L2CAP
       l2cap_init();
       l2cap_register_packet_handler(packet_handler);
@@ -637,7 +694,7 @@
     static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
     static void handle_sdp_client_query_result(sdp_query_event_t *event);
     
-    static void panu_setup(){
+    static void panu_setup(void){
       // Initialize L2CAP 
       l2cap_init();
       l2cap_register_packet_handler(packet_handler);
@@ -844,7 +901,7 @@
     // GAP disconnect command when the querying is done.
     void handle_gatt_client_event(le_event_t * event);
     
-    static void gatt_client_setup(){
+    static void gatt_client_setup(void){
       // Initialize L2CAP and register HCI event handler
       l2cap_init();
       l2cap_register_packet_handler(&handle_hci_event);
@@ -993,7 +1050,7 @@
     static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
     static void  heartbeat_handler(struct timer *ts);
     
-    static void le_counter_setup(){
+    static void le_counter_setup(void){
       l2cap_init();
       l2cap_register_packet_handler(packet_handler);
     
@@ -1041,7 +1098,7 @@
     };
     static uint16_t todos = 0;
     
-    static void gap_run(){
+    static void gap_run(void){
     
       if (!hci_can_send_command_packet_now()) return;
     
