@@ -1,0 +1,42 @@
+BTSTACK_ROOT=../../..
+
+CC = @CC@
+LDFLAGS  = @LDFLAGS@ -lBTstack -L../src
+CFLAGS = @CFLAGS@ -I$(BTSTACK_ROOT)/platforms/daemon -I$(BTSTACK_ROOT)/include
+prefix = @prefix@
+
+VPATH += ${BTSTACK_ROOT}/example/daemon
+
+all: test rfcomm-cat rfcomm-echo rfcomm-test inquiry l2cap-server l2cap-throughput le_scan
+
+test: test.c
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+
+l2cap-server: l2cap-server.c
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+
+l2cap-throughput: l2cap-throughput.c
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+
+inquiry: inquiry.c
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+
+rfcomm-cat: rfcomm-cat.c
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+
+rfcomm-echo: rfcomm-echo.c
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+
+rfcomm-test: rfcomm-test.c
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+
+le_scan: le_scan.c
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+
+clean:
+	rm -f test mitm rfcomm-cat rfcomm-echo rfcomm-test inquiry l2cap-server l2cap-throughput le_scan
+	rm -rf *.dSYM
+
+install:    
+	echo "nothing to be done"
+
