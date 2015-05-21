@@ -67,7 +67,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 static uint8_t   rfcomm_channel_nr = 1;
 static uint16_t  rfcomm_channel_id;
 static uint8_t   rfcomm_send_credit = 0;
-static uint8_t   spp_service_buffer[150];
+static uint32_t  spp_service_buffer[150/4];  // implicit alignment to 4-byte memory address
 
 /* @section SPP Service Setup   
  *

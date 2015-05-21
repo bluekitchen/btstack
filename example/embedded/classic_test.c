@@ -96,8 +96,8 @@ static uint16_t local_cid;
 #define RFCOMM_SERVER_CHANNEL 1
 #define HEARTBEAT_PERIOD_MS 1000
 static uint16_t  rfcomm_channel_id;
-static uint8_t   spp_service_buffer[150];
-static uint8_t   dummy_service_buffer[150];
+static uint32_t  spp_service_buffer[150/4];    // implicit alignment to 4-byte memory address
+static uint32_t  dummy_service_buffer[150/4];  // implicit alignment to 4-byte memory address
 static uint8_t   dummy_uuid128[] = { 1,1,1,1, 1,1,1,1,  1,1,1,1, 1,1,1,1, 1,1,1,1};
 static uint16_t  mtu;
 

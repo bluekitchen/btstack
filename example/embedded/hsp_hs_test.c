@@ -68,7 +68,7 @@
 #include "debug.h"
 #include "hsp_hs.h"
 
-const uint8_t    hsp_service_buffer[150];
+const uint32_t   hsp_service_buffer[150/4]; // implicit alignment to 4-byte memory address
 const uint8_t    rfcomm_channel_nr = 1;
 const char hsp_hs_service_name[] = "Headset Test";
 

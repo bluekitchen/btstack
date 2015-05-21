@@ -67,7 +67,7 @@
 #include "hsp_ag.h"
 #include "stdin_support.h"
  
-static uint8_t    hsp_service_buffer[150];
+static uint32_t   hsp_service_buffer[150/4]; // implicit alignment to 4-byte memory address
 static uint8_t    rfcomm_channel_nr = 1;
 
 static char hsp_ag_service_name[] = "Audio Gateway Test";

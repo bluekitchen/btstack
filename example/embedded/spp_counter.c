@@ -71,11 +71,11 @@
 static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 static uint16_t  rfcomm_channel_id;
-static uint8_t   spp_service_buffer[150];
+static uint32_t  spp_service_buffer[150/4];  // implicit alignment to 4-byte memory address
 
 
 /* @section SPP Service Setup 
- *
+ *s
  * @text To provide an SPP service, the L2CAP, RFCOMM, and SDP protocol layers 
  * are required. After setting up an RFCOMM service with channel nubmer
  * RFCOMM_SERVER_CHANNEL, an SDP record is created and registered with the SDP server.
