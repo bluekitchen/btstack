@@ -64,24 +64,24 @@ void ancs_callback(ancs_event_t * event){
 }
 
 void setup(void){
+
     setup_printf();
-    printf("Main::Setup()\n");
+
+    printf("BTstack ANCS Client starting up...\n");
+
+    // startup BTstack and configure log_info/log_error
     BTstack.setup();
-    BTstack.setAdvData(sizeof(adv_data), adv_data);
-    BTstack.startAdvertising();
 
     sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
     sm_set_authentication_requirements( SM_AUTHREQ_BONDING ); 
 
-    // set up GATT Server
-    att_set_db(NULL);
-    
-    // setup GATT client
-    gatt_client_init();
-
     // setup ANCS Client
     ancs_client_init();
     ancs_client_register_callback(&ancs_callback);
+
+    // enable advertisements
+    BTstack.setAdvData(sizeof(adv_data), adv_data);
+    BTstack.startAdvertising();
 }
 
 void loop(void){
