@@ -56,7 +56,7 @@ static void dummy_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *
 static void att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
 	switch (packet_type){
 		case ATT_DATA_PACKET: {
-			log_info("att_data_packet with opcode 0x%x", packet[0]);
+			// log_info("att_data_packet with opcode 0x%x", packet[0]);
 			uint8_t att_pdu_odd = packet[0] & 1;
 			if (att_pdu_odd){
 				// odd PDUs are sent from server to client
