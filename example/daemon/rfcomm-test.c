@@ -117,7 +117,7 @@ void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint
                     printf("RFCOMM_EVENT_SERVICE_REGISTERED\n");
                     rfcomm_channel_nr = packet[3];
                     // register SDP for our SPP
-				    sdp_create_spp_service( spp_service_buffer, rfcomm_channel_nr, "RFCOMM Test");
+				    sdp_create_spp_service((uint8_t*) spp_service_buffer, rfcomm_channel_nr, "RFCOMM Test");
                     bt_send_cmd(&sdp_register_service_record, spp_service_buffer);
                     bt_send_cmd(&btstack_set_discoverable, 1);
                     break;

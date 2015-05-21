@@ -802,15 +802,15 @@ int btstack_main(int argc, const char * argv[]){
     // init SDP, create record for SPP and register with SDP
     sdp_init();
     memset(spp_service_buffer, 0, sizeof(spp_service_buffer));
-    sdp_create_spp_service( spp_service_buffer, RFCOMM_SERVER_CHANNEL, "SPP Counter");
-    de_dump_data_element(spp_service_buffer);
-    printf("SDP service record size: %u\n\r", de_get_len(spp_service_buffer));
-    sdp_register_service_internal(NULL, spp_service_buffer);
+    sdp_create_spp_service((uint8_t*) spp_service_buffer, RFCOMM_SERVER_CHANNEL, "SPP Counter");
+    de_dump_data_element((uint8_t*) spp_service_buffer);
+    printf("SDP service record size: %u\n\r", de_get_len((uint8_t*)spp_service_buffer));
+    sdp_register_service_internal(NULL, (uint8_t*)spp_service_buffer);
     memset(dummy_service_buffer, 0, sizeof(dummy_service_buffer));
-    sdp_create_dummy_service(dummy_service_buffer, "UUID128 Test");
-    de_dump_data_element(dummy_service_buffer);
-    printf("Dummy service record size: %u\n\r", de_get_len(dummy_service_buffer));
-    sdp_register_service_internal(NULL, dummy_service_buffer);
+    sdp_create_dummy_service((uint8_t*)dummy_service_buffer, "UUID128 Test");
+    de_dump_data_element((uint8_t*)dummy_service_buffer);
+    printf("Dummy service record size: %u\n\r", de_get_len((uint8_t*)dummy_service_buffer));
+    sdp_register_service_internal(NULL, (uint8_t*)dummy_service_buffer);
 
     sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
     

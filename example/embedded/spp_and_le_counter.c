@@ -314,9 +314,9 @@ int btstack_main(void)
     sdp_register_service_internal(NULL, service_record_item);
 /* LISTING_PAUSE */
 #else
-    sdp_create_spp_service( spp_service_buffer, RFCOMM_SERVER_CHANNEL, "SPP Counter");
-    printf("SDP service record size: %u\n", de_get_len(spp_service_buffer));
-    sdp_register_service_internal(NULL, spp_service_buffer);
+    sdp_create_spp_service( (uint8_t*)spp_service_buffer, RFCOMM_SERVER_CHANNEL, "SPP Counter");
+    printf("SDP service record size: %u\n", de_get_len((uint8_t*)spp_service_buffer));
+    sdp_register_service_internal(NULL, (uint8_t*)spp_service_buffer);
 #endif
 /* LISTING_RESUME */
 
