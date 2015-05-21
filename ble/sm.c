@@ -1624,13 +1624,15 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
 
                             // just connected -> everything else happens in sm_run()
                             if (sm_conn->sm_role){
-                                // slave
-                                if (sm_slave_request_security){
-                                    // request security if requested by app
-                                    sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
-                                } else {
-                                    // otherwise, wait for pairing request 
-                                    sm_conn->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;
+                                // slave - state already could be SM_RESPONDER_SEND_SECURITY_REQUEST instead
+                                if (sm_conn->sm_engine_state == sm_conn->sm_engine_state == SM_GENERAL_IDLE){
+                                   if (sm_slave_request_security)
+                                        // request security if requested by app
+                                        sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
+                                    } else {
+                                        // otherwise, wait for pairing request 
+                                        sm_conn->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;
+                                    }
                                 }
                                 break;
                             } else {
@@ -2015,13 +2017,18 @@ void sm_test_set_irk(sm_key_t irk){
 
 /** 
  * @brief Trigger Security Request
- * @note Not used normally. Bonding is triggered by access to protected attributes in ATT Server
  */
 void sm_send_security_request(uint16_t handle){
     sm_connection_t * sm_conn = sm_get_connection_for_handle(handle);
-    if (sm_conn->sm_engine_state != SM_RESPONDER_PH1_W4_PAIRING_REQUEST) return;
-    sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
-    sm_run();
+    switch (sm_conn->sm_engine_state){
+        case SM_GENERAL_IDLE:
+        case SM_RESPONDER_PH1_W4_PAIRING_REQUEST:
+            sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
+            sm_run();
+            break;
+        default:
+            break;
+    }
 }
 
 void sm_init(void){
