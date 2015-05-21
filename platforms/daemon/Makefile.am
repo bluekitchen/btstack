@@ -1,2 +1,2 @@
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = src ../../example/daemon
+SUBDIRS = src example

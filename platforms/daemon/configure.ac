@@ -59,18 +59,15 @@ echo "BTstack configured for HCI $HCI_TRANSPORT Transport"
 
 HAVE_SO_NOSIGPIPE="no"
 
-# from platform/daemon
-BTSTACK_ROOT="../../.."
-
-RUN_LOOP_SOURCES="$BTSTACK_ROOT/platforms/posix/src/run_loop_posix.c"
+RUN_LOOP_SOURCES="run_loop_posix.c"
 case "$host_os" in
     darwin*)
-        RUN_LOOP_SOURCES="$RUN_LOOP_SOURCES $BTSTACK_ROOT/platforms/cocoa/run_loop_cocoa.m"
+        RUN_LOOP_SOURCES="$RUN_LOOP_SOURCES run_loop_cocoa.m"
         LDFLAGS="$LDFLAGS -framework CoreFoundation -framework Foundation"
         USE_COCOA_RUN_LOOP="yes"
         BTSTACK_LIB_LDFLAGS="-dynamiclib -install_name \$(prefix)/lib/libBTstack.dylib"
         BTSTACK_LIB_EXTENSION="dylib"
-        REMOTE_DEVICE_DB_SOURCES="$BTSTACK_ROOT/platforms/cocoa/remote_device_db_cocoa.m"
+        REMOTE_DEVICE_DB_SOURCES="remote_device_db_cocoa.m"
         REMOTE_DEVICE_DB="remote_device_db_iphone"
         HAVE_SO_NOSIGPIPE="yes";
         ;;
@@ -80,14 +77,14 @@ case "$host_os" in
         LDFLAGS="$LDFLAGS -lws2_32"
         BTSTACK_LIB_LDFLAGS="-shared"
         BTSTACK_LIB_EXTENSION="dll"
-        REMOTE_DEVICE_DB_SOURCES="$BTSTACK_ROOT/src/remote_device_db_memory.c"
+        REMOTE_DEVICE_DB_SOURCES="remote_device_db_memory.c"
         REMOTE_DEVICE_DB="remote_device_db_memory"
         ;;
     *)
         USE_COCOA_RUN_LOOP="no"
         BTSTACK_LIB_LDFLAGS="-shared -Wl,-rpath,\$(prefix)/lib"
         BTSTACK_LIB_EXTENSION="so"
-        REMOTE_DEVICE_DB_SOURCES="$BTSTACK_ROOT/src/remote_device_db_memory.c"
+        REMOTE_DEVICE_DB_SOURCES="remote_device_db_memory.c"
         REMOTE_DEVICE_DB="remote_device_db_memory"
     ;;
 esac
@@ -186,4 +183,4 @@ AC_SUBST(BTSTACK_LIB_LDFLAGS)
 AC_SUBST(BTSTACK_LIB_EXTENSION)
 AC_SUBST(LIBUSB_CFLAGS)
 AC_SUBST(LIBUSB_LDFLAGS)
-AC_OUTPUT(Makefile src/Makefile ../../example/daemon/Makefile)
+AC_OUTPUT(Makefile src/Makefile example/Makefile)
