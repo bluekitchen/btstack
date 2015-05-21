@@ -67,8 +67,6 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
 static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8_t error_code);
 static void att_signed_write_handle_cmac_result(uint8_t hash[8]);
 
-static void dummy_notify(le_event_t* event){}
-
 static uint16_t peripheral_mtu(gatt_client_t *peripheral){
     if (peripheral->mtu > l2cap_max_le_mtu()){
         log_info(" problem: peripheral mtu is not initialized\n");
@@ -99,14 +97,21 @@ static gatt_client_callback_t gatt_client_callback_for_id(uint16_t id){
 
 uint16_t gatt_client_register_packet_handler(gatt_client_callback_t gatt_callback){
     if (gatt_callback == NULL){
-        gatt_callback = &dummy_notify;
+        log_error("gatt_client_register_packet_handler called with NULL callback");
+        return 0;
     }
 
     gatt_subclient_t * subclient = btstack_memory_gatt_subclient_get();
-    if (!subclient) return 0; 
+    if (!subclient) {
+        log_error("gatt_client_register_packet_handler failed (no memory)");
+        return 0;
+    } 
+
     subclient->id = gatt_client_next_id();
     subclient->callback = gatt_callback;
     linked_list_add(&gatt_subclients, (linked_item_t *) subclient);
+    log_info("gatt_client_register_packet_handler with new id %u", subclient->id);
+
     return subclient->id;
 }
 
@@ -899,7 +904,7 @@ static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint8_t *p
     switch (packet[0]) {
         case HCI_EVENT_DISCONNECTION_COMPLETE:
         {
-            log_info("gatt client: HCI_EVENT_DISCONNECTION_COMPLETE gatt_client_hci_event_packet_handler ");
+            log_info("GATT Client: HCI_EVENT_DISCONNECTION_COMPLETE");
             uint16_t con_handle = READ_BT_16(packet,3);
             gatt_client_t * peripheral = get_gatt_client_context_for_handle(con_handle);
             if (!peripheral) break;
@@ -915,6 +920,9 @@ static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint8_t *p
         default:
             break;
     }
+
+    // forward all hci events
+    emit_event_to_all_subclients((le_event_t *) packet);
 }
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size){
