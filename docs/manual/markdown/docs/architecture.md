@@ -27,8 +27,7 @@ for providing timers and processing incoming data.
 
 <a name="fig:BTstackArchitecture"></a>![Architecture of a BTstack-based application.](picts/btstack-architecture.png)
 
-Single threaded design
-----------------------
+# Single threaded design
 
 BTstack does not use or require multi-threading. It uses a single run
 loop to handle data sources and timers. Data sources represent
@@ -42,8 +41,7 @@ timers that are ready are executed.
 
 For adapting BTstack to multi-threaded environments check [here](integration/#sec:multithreading).
 
-No blocking anywhere
---------------------
+# No blocking anywhere
 
 Bluetooth logic is event-driven. Therefore, all BTstack functions are
 non-blocking, i.e., all functions that cannot return immediately
@@ -57,8 +55,7 @@ processing should be split into smaller chunks. The packet handler could
 then schedule a timer that manages the sequential execution of the
 chunks.
 
-No artificially limited buffers/pools
--------------------------------------
+# No artificially limited buffers/pools
 
 Incoming and outgoing data packets are not queued. BTstack delivers an
 incoming data packet to the application before it receives the next one
@@ -72,8 +69,7 @@ Bluetooth module, the application cannot send. For RFCOMM, the mandatory
 credit-based flow-control limits the data sending rate additionally. The
 application can only send an RFCOMM packet if it has RFCOMM credits.
 
-Statically bounded memory
--------------------------
+# Statically bounded memory
 
 BTstack has to keep track of services and active connections on the
 various protocol layers. The number of maximum

@@ -1,3 +1,6 @@
+
+# Supported Protocols
+
 BTstack is a modular dual-mode Bluetooth stack, supporting both
 Bluetooth Basic Rate/Enhanced Date Rate (BR/EDR) as well as Bluetooth
 Low Energy (LE). The BR/EDR technology, also known as Classic Bluetooth,
