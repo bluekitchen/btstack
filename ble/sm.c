@@ -1625,8 +1625,8 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             // just connected -> everything else happens in sm_run()
                             if (sm_conn->sm_role){
                                 // slave - state already could be SM_RESPONDER_SEND_SECURITY_REQUEST instead
-                                if (sm_conn->sm_engine_state == sm_conn->sm_engine_state == SM_GENERAL_IDLE){
-                                   if (sm_slave_request_security)
+                                if (sm_conn->sm_engine_state == SM_GENERAL_IDLE){
+                                    if (sm_slave_request_security) {
                                         // request security if requested by app
                                         sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
                                     } else {
