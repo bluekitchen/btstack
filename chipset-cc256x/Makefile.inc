@@ -1,4 +1,7 @@
-# download .bts files, from http://processors.wiki.ti.com/index.php/CC256x_Downloads
+# 
+# Makefile to download and convert .bts files from 
+# http://processors.wiki.ti.com/index.php/CC256x_Downloads
+#
 BASE_URL = https://git.ti.com/ti-bt/service-packs/blobs/raw/a027ae390d8790e56e1c78136c78fe6537470e91
 
 bluetooth_init_cc2560B_1.2_BT_Spec_4.0.bts:
@@ -14,7 +17,7 @@ bluetooth_init_cc2564B_1.2_BT_Spec_4.1.bts:
 	curl -O $(BASE_URL)/bluetooth_init_cc2564B_1.2_BT_Spec_4.1.bts
 
 BLE_init_cc2564B_1.2.bts:
-	curl -O $(BASE_URL)/bluetooth_init_cc2564B_1.2_BT_Spec_4.1.bts
+	curl -O $(BASE_URL)/BLE_init_cc2564B_1.2.bts
 
 TIInit_11.8.32.bts:
 	curl -O $(BASE_URL)/TIInit_11.8.32.bts
