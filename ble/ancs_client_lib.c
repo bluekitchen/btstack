@@ -160,6 +160,48 @@ static void ancs_chunk_parser_handle_byte(uint8_t data){
 }
 
 static void handle_gatt_client_event(le_event_t * event){
+
+    uint8_t * packet = (uint8_t*) event;
+    int connection_encrypted;
+
+    // handle connect / disconncet events first
+    switch (packet[0]) {
+        case HCI_EVENT_LE_META:
+            switch (packet[2]) {
+                case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                    gc_handle = READ_BT_16(packet, 4);
+                    printf("Connection handle 0x%04x, request encryption\n", gc_handle);
+
+                    // we need to be paired to enable notifications
+                    tc_state = TC_W4_ENCRYPTED_CONNECTION;
+                    sm_send_security_request(gc_handle);
+                    break;
+                default:
+                    break;
+            }
+            return;
+
+        case HCI_EVENT_ENCRYPTION_CHANGE: 
+            if (gc_handle != READ_BT_16(packet, 3)) return;
+            connection_encrypted = packet[5];
+            log_info("Encryption state change: %u", connection_encrypted);
+            if (!connection_encrypted) return;
+            if (tc_state != TC_W4_ENCRYPTED_CONNECTION) return;
+
+            // let's start
+            printf("\nANCS Client - CONNECTED, discover ANCS service\n");
+            tc_state = TC_W4_SERVICE_RESULT;
+            gatt_client_discover_primary_services_by_uuid128(gc_id, gc_handle, ancs_service_uuid);
+            return;
+            
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            notify_client(ANCS_CLIENT_DISCONNECTED);
+            return;
+
+        default:
+            break;
+    }
+
     le_characteristic_t characteristic;
     le_characteristic_value_event_t * value_event;
     switch(tc_state){
@@ -267,52 +309,6 @@ static void handle_gatt_client_event(le_event_t * event){
             break;
     }    
     // app_run();
-}
-
-void ancs_client_hci_event_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    int connection_encrypted;
-    switch (packet_type) {
-            
-        case HCI_EVENT_PACKET:
-            switch (packet[0]) {
-                
-                case HCI_EVENT_LE_META:
-                    switch (packet[2]) {
-                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
-                            gc_handle = READ_BT_16(packet, 4);
-                            printf("Connection handle 0x%04x\n", gc_handle);
-
-                            // we need to be paired to enable notifications
-                            tc_state = TC_W4_ENCRYPTED_CONNECTION;
-                            sm_send_security_request(gc_handle);
-                            break;
-
-                        default:
-                            break;
-                    }
-                    break;
-
-                case HCI_EVENT_ENCRYPTION_CHANGE: 
-                    if (gc_handle != READ_BT_16(packet, 3)) break;
-                    connection_encrypted = packet[5];
-                    log_info("Encryption state change: %u", connection_encrypted);
-                    if (!connection_encrypted) break;
-                    if (tc_state != TC_W4_ENCRYPTED_CONNECTION) break;
-
-                    // let's start
-                    printf("\nANCS Client - CONNECTED, discover ANCS service\n");
-                    tc_state = TC_W4_SERVICE_RESULT;
-                    gatt_client_discover_primary_services_by_uuid128(gc_id, gc_handle, ancs_service_uuid);
-                    break;
-                    
-                case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    notify_client(ANCS_CLIENT_DISCONNECTED);
-                    break;
-
-                default:
-                    break;
-            }
-    }
 }
 
 void ancs_client_init(void){

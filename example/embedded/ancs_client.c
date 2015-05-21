@@ -125,8 +125,6 @@ static void app_run(void){
 
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 
-    ancs_client_hci_event_handler(packet_type, channel, packet, size);
-
     switch (packet_type) {
             
         case HCI_EVENT_PACKET:
