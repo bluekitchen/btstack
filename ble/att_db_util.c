@@ -82,19 +82,19 @@ void att_db_util_init(void){
  */
 static int att_db_util_assert_space(uint16_t size){
 	size += 2; // for end tag
-	if (att_db_size + size <= att_db_max_size) return true;
+	if (att_db_size + size <= att_db_max_size) return 1;
 #ifdef HAVE_MALLOC
 	int new_size = att_db_size + att_db_size / 2;
 	att_db = (uint8_t*) realloc(att_db, new_size);
 	if (!att_db) {
 		log_error("att_db: realloc failed");
-		return false;
+		return 0;
 	}
 	att_db_max_size = new_size;
-	return true;
+	return 1;
 #else
 	log_error("att_db: out of memory");
-	return false;
+	return 0;
 #endif
 }
 
