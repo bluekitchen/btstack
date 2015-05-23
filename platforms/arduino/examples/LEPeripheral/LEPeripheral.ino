@@ -2,8 +2,6 @@
 #include <BTstack.h>
 #include <SPI.h>
 
-#define GATT_CHARACTERISTIC_TEMP_ID 0
-
 // setup printf
 static FILE uartout = {0} ;
 static int uart_putchar (char c, FILE *stream) {
@@ -15,6 +13,8 @@ static void setup_printf(int baud) {
   fdev_setup_stream (&uartout, uart_putchar, NULL, _FDEV_SETUP_WRITE);
   stdout = &uartout;
 }  
+
+static uint16_t value_handle;
 
 void setup(void){
 
@@ -31,9 +31,7 @@ void setup(void){
   uint8_t * data = NULL;
   uint16_t data_len = 0;
   BTstack.addGATTService(new UUID("B8E06067-62AD-41BA-9231-206AE80AB550"));
-  BTstack.addGATTCharacteristic(new UUID("f897177b-aee8-4767-8ecc-cc694fd5fcee"), flags, "This is a String!");
-  BTstack.addGATTCharacteristicDynamic(new UUID("f897177b-aee8-4767-8ecc-cc694fd5fcee"), flags, GATT_CHARACTERISTIC_TEMP_ID);
-  // ..
+  value_handle = BTstack.addGATTCharacteristic(new UUID("f897177b-aee8-4767-8ecc-cc694fd5fcee"), flags, "This is a String!");
 
   // startup Bluetooth and activate advertisements
   BTstack.setup();
@@ -65,11 +63,8 @@ void deviceDisconnectedCallback(BLEDevice * device){
 // @param characteristic_id to be read
 // @param buffer 
 // @param buffer_size
-uint16_t gattReadCallback(uint16_t characteristic_id, uint8_t * buffer, uint16_t buffer_size){
-    switch (characteristic_id){
-      case GATT_CHARACTERISTIC_TEMP_ID:
-        break;
-    }
+uint16_t gattReadCallback(uint16_t value_handle, uint8_t * buffer, uint16_t buffer_size){
+    printf("gattReadCallback, handle %u\n", value_handle);
     return 0;
 }
 
@@ -78,9 +73,8 @@ uint16_t gattReadCallback(uint16_t characteristic_id, uint8_t * buffer, uint16_t
 // @param buffer 
 // @param buffer_size
 // @returns 0 if write was ok, ATT_ERROR_INVALID_OFFSET if offset is larger than max buffer
-int gattWriteCallback(uint16_t characteristic_id, uint8_t *buffer, uint16_t buffer_size){
-    switch (characteristic_id){
-    }
+int gattWriteCallback(uint16_t value_handle, uint8_t *buffer, uint16_t buffer_size){
+    printf("gattWriteCallback, handle %u\n", value_handle);
     return 0;
 }
 

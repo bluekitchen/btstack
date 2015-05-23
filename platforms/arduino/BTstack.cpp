@@ -491,6 +491,41 @@ int BLEDevice::unsubscribeFromIndications(BLECharacteristic * characteristic){
 }
 
 
+
+static uint16_t (*gattReadCallback)(uint16_t characteristic_id, uint8_t * buffer, uint16_t buffer_size);
+static int (*gattWriteCallback)(uint16_t characteristic_id, uint8_t *buffer, uint16_t buffer_size);
+
+// ATT Client Read Callback for Dynamic Data
+// - if buffer == NULL, don't copy data, just return size of value
+// - if buffer != NULL, copy data and return number bytes copied
+// @param offset defines start of attribute value
+static uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+    if (gattReadCallback){
+        gattReadCallback(att_handle, buffer, buffer_size);
+    }
+    return 0;
+}
+/* LISTING_END */
+
+
+/*
+ * @section ATT Write
+ *
+ * @text The only valid ATT write in this example is to the Client Characteristic Configuration, which configures notification
+ * and indication. If the ATT handle matches the client configuration handle, the new configuration value is stored and used
+ * in the heartbeat handler to decide if a new value should be sent. See Listing attWrite.
+ */
+
+/* LISTING_START(attWrite): ATT Write */
+static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
+    if (gattWriteCallback){
+        gattWriteCallback(att_handle, buffer, buffer_size);
+    }
+    return 0;
+}
+
+
+
 BTstackManager::BTstackManager(void){
     // client_packet_handler = NULL;
     have_custom_addr = false;
@@ -658,7 +693,7 @@ void BTstackManager::setup(void){
 
     sm_init();
     
-    att_server_init(att_db_util_get_address(), NULL, NULL);    
+    att_server_init(att_db_util_get_address(),att_read_callback, att_write_callback);    
     att_server_register_packet_handler(packet_handler);
 
     gatt_client_init();
@@ -693,21 +728,23 @@ void BTstackManager::bleStopScanning(void){
     le_central_stop_scan();
 }
 
-void BTstackManager::setGATTCharacteristicRead(uint16_t (*)(uint16_t characteristic_id, uint8_t * buffer, uint16_t buffer_size)){
+void BTstackManager::setGATTCharacteristicRead(uint16_t (*cb)(uint16_t characteristic_id, uint8_t * buffer, uint16_t buffer_size)){
+    gattReadCallback = cb;
 }
-void BTstackManager::setGATTCharacteristicWrite(int (*)(uint16_t characteristic_id, uint8_t *buffer, uint16_t buffer_size)){
+void BTstackManager::setGATTCharacteristicWrite(int (*cb)(uint16_t characteristic_id, uint8_t *buffer, uint16_t buffer_size)){
+    gattWriteCallback = cb;
 }
 void BTstackManager::addGATTService(UUID * uuid){
     att_db_util_add_service_uuid128((uint8_t*)uuid->getUuid());
 }
-void BTstackManager::addGATTCharacteristic(UUID * uuid, uint16_t flags, const char * text){
-    att_db_util_add_characteristic_uuid128((uint8_t*)uuid->getUuid(), flags, (uint8_t*)text, strlen(text));
+uint16_t BTstackManager::addGATTCharacteristic(UUID * uuid, uint16_t flags, const char * text){
+    return att_db_util_add_characteristic_uuid128((uint8_t*)uuid->getUuid(), flags, (uint8_t*)text, strlen(text));
 }
-void BTstackManager::addGATTCharacteristic(UUID * uuid, uint16_t flags, uint8_t * data, uint16_t data_len){
-    att_db_util_add_characteristic_uuid128((uint8_t*)uuid->getUuid(), flags, data, data_len);
+uint16_t BTstackManager::addGATTCharacteristic(UUID * uuid, uint16_t flags, uint8_t * data, uint16_t data_len){
+    return att_db_util_add_characteristic_uuid128((uint8_t*)uuid->getUuid(), flags, data, data_len);
 }
-void BTstackManager::addGATTCharacteristicDynamic(UUID * uuid, uint16_t flags, uint16_t characteristic_id){
-    att_db_util_add_characteristic_uuid128((uint8_t*)uuid->getUuid(), flags | ATT_PROPERTY_DYNAMIC, NULL, 0);
+uint16_t BTstackManager::addGATTCharacteristicDynamic(UUID * uuid, uint16_t flags, uint16_t characteristic_id){
+    return att_db_util_add_characteristic_uuid128((uint8_t*)uuid->getUuid(), flags | ATT_PROPERTY_DYNAMIC, NULL, 0);
 }
 void BTstackManager::setAdvData(uint16_t size, const uint8_t * data){
     memcpy(adv_data, data, size);
