@@ -31,8 +31,7 @@ void setup(void){
   uint8_t * data = NULL;
   uint16_t data_len = 0;
   BTstack.addGATTService(new UUID("B8E06067-62AD-41BA-9231-206AE80AB550"));
-  BTstack.addGATTCharacteristic(new UUID("f897177b-aee8-4767-8ecc-cc694fd5fcee"), flags, "string");
-  BTstack.addGATTCharacteristic(new UUID("f897177b-aee8-4767-8ecc-cc694fd5fcee"), flags, data, data_len);
+  BTstack.addGATTCharacteristic(new UUID("f897177b-aee8-4767-8ecc-cc694fd5fcee"), flags, "This is a String!");
   BTstack.addGATTCharacteristicDynamic(new UUID("f897177b-aee8-4767-8ecc-cc694fd5fcee"), flags, GATT_CHARACTERISTIC_TEMP_ID);
   // ..
 

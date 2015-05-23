@@ -23,6 +23,7 @@
 #include "ad_parser.h"
 #include "att.h"
 #include "att_server.h"
+#include "att_db_util.h"
 #include "le_device_db.h"
 #include "sm.h"
 #include "debug.h"
@@ -512,6 +513,8 @@ BTstackManager::BTstackManager(void){
     memcpy(&adv_data[pos], name, strlen(name));
     pos += strlen(name);
     adv_data_len = pos;
+
+    att_db_util_init();
 }
 
 void BTstackManager::setBLEAdvertisementCallback(void (*callback)(BLEAdvertisement * bleAdvertisement)){
@@ -655,7 +658,7 @@ void BTstackManager::setup(void){
 
     sm_init();
     
-    att_server_init(NULL, NULL, NULL);    
+    att_server_init(att_db_util_get_address(), NULL, NULL);    
     att_server_register_packet_handler(packet_handler);
 
     gatt_client_init();
@@ -695,12 +698,16 @@ void BTstackManager::setGATTCharacteristicRead(uint16_t (*)(uint16_t characteris
 void BTstackManager::setGATTCharacteristicWrite(int (*)(uint16_t characteristic_id, uint8_t *buffer, uint16_t buffer_size)){
 }
 void BTstackManager::addGATTService(UUID * uuid){
+    att_db_util_add_service_uuid128((uint8_t*)uuid->getUuid());
 }
 void BTstackManager::addGATTCharacteristic(UUID * uuid, uint16_t flags, const char * text){
+    att_db_util_add_characteristic_uuid128((uint8_t*)uuid->getUuid(), flags, (uint8_t*)text, strlen(text));
 }
 void BTstackManager::addGATTCharacteristic(UUID * uuid, uint16_t flags, uint8_t * data, uint16_t data_len){
+    att_db_util_add_characteristic_uuid128((uint8_t*)uuid->getUuid(), flags, data, data_len);
 }
 void BTstackManager::addGATTCharacteristicDynamic(UUID * uuid, uint16_t flags, uint16_t characteristic_id){
+    att_db_util_add_characteristic_uuid128((uint8_t*)uuid->getUuid(), flags | ATT_PROPERTY_DYNAMIC, NULL, 0);
 }
 void BTstackManager::setAdvData(uint16_t size, const uint8_t * data){
     memcpy(adv_data, data, size);
