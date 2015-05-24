@@ -387,7 +387,24 @@ bool BLEAdvertisement::containsService(UUID * service){
     return ad_data_contains_uuid128(data_length, data, (uint8_t*) service->getUuid());
 }
 
-bool BLEAdvertisement::nameHasPrefix(const char * namePrefix){
+bool BLEAdvertisement::nameHasPrefix(const char * name_prefix){
+    ad_context_t context;
+    int name_prefix_len = strlen(name_prefix);
+    for (ad_iterator_init(&context, data_length, data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
+        uint8_t data_type = ad_iterator_get_data_type(&context);
+        uint8_t data_len  = ad_iterator_get_data_len(&context);
+        uint8_t * data    = ad_iterator_get_data(&context);
+        int compare_len = name_prefix_len;
+        switch(data_type){
+            case 8: // shortented local name
+            case 9: // complete local name
+                if (compare_len > data_len) compare_len = data_len;
+                if (strncmp(name_prefix, (const char*) data, compare_len) == 0) return true;
+                break;
+            default:
+                break;
+        }
+    }
     return false;
 };
 
