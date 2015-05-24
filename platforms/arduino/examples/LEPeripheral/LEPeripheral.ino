@@ -2,18 +2,6 @@
 #include <BTstack.h>
 #include <SPI.h>
 
-// setup printf
-static FILE uartout = {0} ;
-static int uart_putchar (char c, FILE *stream) {
-    Serial.write(c);
-    return 0;
-}
-static void setup_printf(int baud) {
-  Serial.begin(baud);
-  fdev_setup_stream (&uartout, uart_putchar, NULL, _FDEV_SETUP_WRITE);
-  stdout = &uartout;
-}  
-
 static uint16_t value_handle;
 
 void setup(void){

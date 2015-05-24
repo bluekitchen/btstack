@@ -39,18 +39,6 @@ char counterString[20];
 
 static timer_source_t heartbeat;
 
-// setup printf
-static FILE uartout = {0} ;
-static int uart_putchar (char c, FILE *stream) {
-    Serial.write(c);
-    return 0;
-}
-static void setup_printf(int baud) {
-  Serial.begin(baud);
-  fdev_setup_stream (&uartout, uart_putchar, NULL, _FDEV_SETUP_WRITE);
-  stdout = &uartout;
-}  
-
 void setup(void){
 
 	setup_printf(9600);

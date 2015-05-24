@@ -81,6 +81,29 @@ static void (*gattCharacteristicWrittenCallback)(BLEStatus status, BLEDevice * d
 static void (*gattCharacteristicSubscribedCallback)(BLEStatus status, BLEDevice * device) = NULL;
 static void (*gattCharacteristicUnsubscribedCallback)(BLEStatus status, BLEDevice * device) = NULL;
 
+
+// retarget printf to Serial
+#ifdef ENERGIA
+extern "C" int putchar(int c) {
+    Serial.write((uint8_t)c);
+    return c;
+}
+static void setup_printf(int baud) {
+  Serial.begin(baud);
+}
+#else
+static FILE uartout = {0} ;
+static int uart_putchar (char c, FILE *stream) {
+    Serial.write(c);
+    return 0;
+}
+void setup_printf(int baud) {
+  Serial.begin(baud);
+  fdev_setup_stream (&uartout, uart_putchar, NULL, _FDEV_SETUP_WRITE);
+  stdout = &uartout;
+}  
+#endif
+
 // HAL CPU Implementation
 extern "C" void hal_cpu_disable_irqs(void){ }
 extern "C" void hal_cpu_enable_irqs(void) { }

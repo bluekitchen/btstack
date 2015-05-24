@@ -19,6 +19,11 @@ typedef enum BLEStatus {
 
 typedef void (*btstack_packet_handler_t) (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
+/** 
+ * @brief Setup printf to use Serial with given baud rate
+ */
+void setup_printf(int baud);
+
 class UUID {
 private:
 	uint8_t uuid[16];
