@@ -70,6 +70,7 @@ typedef struct ad_event {
 } ad_event_t;
 
 static uint8_t ad_data[] =   {0x02, 0x01, 0x05, 0x03, 0x02, 0xF0, 0xFF};
+static uint8_t adv_data_2[] = { 8, 0x09, 'B', 'T', 's', 't', 'a', 'c', 'k' }; 
 
 static uint8_t mtk_adv_evt[] = {
     0x3e, 0x3b, 0x02, 0x03, 0x04, 0x01, 0x55, 0x05, 0x67, 0x5c, 0xc2, 0x4f, 0x00,
@@ -139,6 +140,26 @@ void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
     printf("\n");
 }
 
+bool nameHasPrefix(const char * name_prefix, uint16_t data_length, uint8_t * data){
+    ad_context_t context;
+    int name_prefix_len = strlen(name_prefix);
+    for (ad_iterator_init(&context, data_length, data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
+        uint8_t data_type = ad_iterator_get_data_type(&context);
+        uint8_t data_len  = ad_iterator_get_data_len(&context);
+        uint8_t * data    = ad_iterator_get_data(&context);
+        int compare_len = name_prefix_len;
+        switch(data_type){
+            case 8: // shortented local name
+            case 9: // complete local name
+                if (compare_len > data_len) compare_len = data_len;
+                if (strncmp(name_prefix, (const char*) data, compare_len) == 0) return true;
+                break;
+            default:
+                break;
+        }
+    }
+    return false;
+}
 
 TEST_GROUP(ADParser){
     void setup(void){
@@ -147,7 +168,11 @@ TEST_GROUP(ADParser){
     }
 };
 
+TEST(ADParser, TestNamePrefix){
+    CHECK(nameHasPrefix("BTstack", sizeof(adv_data_2), adv_data_2));
+}
 
+#if 0
 TEST(ADParser, TestDataParsing){
     ad_context_t context;
     uint8_t  expected_len[] = {1, 2};
@@ -173,6 +198,7 @@ TEST(ADParser, TestDataParsing){
     }
 }
 
+
 TEST(ADParser, TestFixMtkAdvertisingReport){
     // fix_mtk_advertisement_report(mtk_adv_evt, sizeof(mtk_adv_evt));
     int j;
@@ -192,6 +218,7 @@ TEST(ADParser, TestFixMtkNumCompletedPackets){
 TEST(ADParser, TestAdvertisementEventMultipleReports){
     le_handle_advertisement_report(adv_evt, sizeof(adv_evt));
 }
+#endif
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
