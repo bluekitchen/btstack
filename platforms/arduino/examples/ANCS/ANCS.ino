@@ -15,11 +15,6 @@ const uint8_t adv_data[] = {
     0x11,0x15,0xD0,0x00,0x2D,0x12,0x1E,0x4B,0x0F,0xA4,0x99,0x4E,0xCE,0xB5,0x31,0xF4,0x05,0x79
 };
 
-static void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    printf("packet_handler type %u, event 0x%02x\n", packet_type, packet[0]);
-    ancs_client_hci_event_handler(packet_type, channel, packet, size);
-}
-
 void ancs_callback(ancs_event_t * event){
     const char * attribute_name;
     switch (event->type){
