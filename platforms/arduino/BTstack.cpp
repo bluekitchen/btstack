@@ -712,11 +712,12 @@ void BTstackManager::setup(void){
 	btstack_memory_init();
     run_loop_init(RUN_LOOP_EMBEDDED);
 
-    hci_dump_open(NULL, HCI_DUMP_STDOUT);
-
 	hci_transport_t * transport = hci_transport_h4_dma_instance();
     bt_control_t    * control   = bt_control_em9301_instance();
 	hci_init(transport, NULL, control, NULL);
+
+    // disable LOG_INFO messages
+    hci_dump_enable_log_level(LOG_LEVEL_INFO, 0);
 
     if (have_custom_addr){
         hci_set_bd_addr(public_bd_addr);
@@ -747,6 +748,15 @@ void BTstackManager::setup(void){
     }
     printf("--> READY <--\n");
 }
+
+void BTstackManager::enablePacketLogger(void){
+    hci_dump_open(NULL, HCI_DUMP_STDOUT);
+}
+void BTstackManager::enableDebugLogger(){
+    // enable LOG_INFO messages
+    hci_dump_enable_log_level(LOG_LEVEL_INFO, 1);
+}
+
 
 void BTstackManager::loop(void){
     // process data from/to Bluetooth module
