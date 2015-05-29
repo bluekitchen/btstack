@@ -6,43 +6,43 @@ static uint16_t value_handle;
 
 void setup(void){
 
-  setup_printf(9600);
+    setup_printf(9600);
 
-  // set callbacks
-  BTstack.setBLEDeviceConnectedCallback(deviceConnectedCallback);
-  BTstack.setBLEDeviceDisconnectedCallback(deviceDisconnectedCallback);
-  BTstack.setGATTCharacteristicRead(gattReadCallback);
-  BTstack.setGATTCharacteristicWrite(gattWriteCallback);
+    // set callbacks
+    BTstack.setBLEDeviceConnectedCallback(deviceConnectedCallback);
+    BTstack.setBLEDeviceDisconnectedCallback(deviceDisconnectedCallback);
+    BTstack.setGATTCharacteristicRead(gattReadCallback);
+    BTstack.setGATTCharacteristicWrite(gattWriteCallback);
 
-  // setup GATT Database
-  int flags = 0;
-  uint8_t * data = NULL;
-  uint16_t data_len = 0;
-  BTstack.addGATTService(new UUID("B8E06067-62AD-41BA-9231-206AE80AB550"));
-  value_handle = BTstack.addGATTCharacteristic(new UUID("f897177b-aee8-4767-8ecc-cc694fd5fcee"), flags, "This is a String!");
+    // setup GATT Database
+    int flags = 0;
+    uint8_t * data = NULL;
+    uint16_t data_len = 0;
+    BTstack.addGATTService(new UUID("B8E06067-62AD-41BA-9231-206AE80AB550"));
+    value_handle = BTstack.addGATTCharacteristic(new UUID("f897177b-aee8-4767-8ecc-cc694fd5fcee"), flags, "This is a String!");
 
-  // startup Bluetooth and activate advertisements
-  BTstack.setup();
-  BTstack.startAdvertising();
+    // startup Bluetooth and activate advertisements
+    BTstack.setup();
+    BTstack.startAdvertising();
 }
 
 
 void loop(void){
-  BTstack.loop();
+    BTstack.loop();
 }
 
 void deviceConnectedCallback(BLEStatus status, BLEDevice *device) {
-  switch (status){
-    case BLE_STATUS_OK:
-      printf("Device connected!\n");
-      break;
-    default:
-      break;
-  }
+    switch (status){
+        case BLE_STATUS_OK:
+            printf("Device connected!\n");
+            break;
+        default:
+            break;
+    }
 }
 
 void deviceDisconnectedCallback(BLEDevice * device){
-  printf("Disconnected.\n");
+    printf("Disconnected.\n");
 }
 
 // ATT Client Read Callback for Dynamic Data

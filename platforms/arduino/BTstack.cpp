@@ -88,20 +88,12 @@ extern "C" int putchar(int c) {
     Serial.write((uint8_t)c);
     return c;
 }
-static void setup_printf(int baud) {
-  Serial.begin(baud);
-}
 #else
 static FILE uartout = {0} ;
 static int uart_putchar (char c, FILE *stream) {
     Serial.write(c);
     return 0;
 }
-void setup_printf(int baud) {
-  Serial.begin(baud);
-  fdev_setup_stream (&uartout, uart_putchar, NULL, _FDEV_SETUP_WRITE);
-  stdout = &uartout;
-}  
 #endif
 
 // HAL CPU Implementation
@@ -590,6 +582,12 @@ BTstackManager::BTstackManager(void){
     adv_data_len = pos;
 
     att_db_util_init();
+
+#ifdef __AVR__
+    // configure stdout to go via Serial
+  fdev_setup_stream (&uartout, uart_putchar, NULL, _FDEV_SETUP_WRITE);
+  stdout = &uartout;
+#endif
 }
 
 void BTstackManager::setBLEAdvertisementCallback(void (*callback)(BLEAdvertisement * bleAdvertisement)){

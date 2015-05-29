@@ -19,15 +19,18 @@ void ancs_callback(ancs_event_t * event){
     const char * attribute_name;
     switch (event->type){
         case ANCS_CLIENT_CONNECTED:
-            printf("ANCS Client: Connected\n");
+            Serial.println("ANCS Client: Connected");
             break;
         case ANCS_CLIENT_DISCONNECTED:
-            printf("ANCS Client: Disconnected\n");
+            Serial.println("ANCS Client: Disconnected");
             break;
         case ANCS_CLIENT_NOTIFICATION:
             attribute_name = ancs_client_attribute_name_for_id(event->attribute_id);
             if (!attribute_name) break;
-            printf("Notification: %s - %s\n", attribute_name, event->text);
+            Serial.print("Notification: ");
+            Serial.print(attribute_name);
+            Serial.print(" - ");
+            Serial.println(event->text);
             break;
         default:
             break;
@@ -36,9 +39,8 @@ void ancs_callback(ancs_event_t * event){
 
 void setup(void){
 
-    setup_printf(9600);
-
-    printf("BTstack ANCS Client starting up...\n");
+    Serial.begin(9600);
+    Serial.println("BTstack ANCS Client starting up...");
 
     // startup BTstack and configure log_info/log_error
     BTstack.setup();

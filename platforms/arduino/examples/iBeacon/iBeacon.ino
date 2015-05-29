@@ -5,7 +5,7 @@
 UUID uuid("E2C56DB5-DFFB-48D2-B060-D0F5A71096E0");
 
 void setup(void){
-    setup_printf(9600);
+    Serial.begin(9600);
     BTstack.iBeaconConfigure(&uuid, 4711, 2);
     BTstack.setup();
     BTstack.startAdvertising();
