@@ -102,6 +102,9 @@ static int  nr_packets = 0;
 static char log_message_buffer[256];
 #endif
 
+// levels: debug, info, error
+static int log_level_enabled[3] = { 1, 1, 1};
+
 void hci_dump_open(const char *filename, hci_dump_format_t format){
 #ifdef EMBEDDED
     dump_file = 1;
@@ -125,7 +128,7 @@ void hci_dump_set_max_packets(int packets){
 }
 #endif
 
-static inline void printf_packet(uint8_t packet_type, uint8_t in, uint8_t * packet, uint16_t len){
+static void printf_packet(uint8_t packet_type, uint8_t in, uint8_t * packet, uint16_t len){
     switch (packet_type){
         case HCI_COMMAND_DATA_PACKET:
             printf("CMD => ");
@@ -243,8 +246,14 @@ void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t 
 #endif
 }
 
-void hci_dump_log(const char * format, ...){
-    if (dump_file < 0) return; // not activated yet
+static int hci_dump_log_level_active(int log_level){
+    if (log_level < 0) return 0;
+    if (log_level > LOG_LEVEL_ERROR) return 0;
+    return log_level_enabled[log_level];
+}
+
+void hci_dump_log(int log_level, const char * format, ...){
+    if (!hci_dump_log_level_active(log_level)) return;
     va_list argptr;
     va_start(argptr, format);
 #ifdef EMBEDDED
@@ -259,8 +268,8 @@ void hci_dump_log(const char * format, ...){
 }
 
 #ifdef __AVR__
-void hci_dump_log_P(PGM_P format, ...){
-    if (dump_file < 0) return; // not activated yet
+void hci_dump_log_P(int log_level, PGM_P format, ...){
+    if (!hci_dump_log_level_active(log_level)) return;
     va_list argptr;
     va_start(argptr, format);
     printf_P(PSTR("LOG -- "));
@@ -275,5 +284,11 @@ void hci_dump_close(void){
     close(dump_file);
     dump_file = -1;
 #endif
+}
+
+void hci_dump_enable_log_level(int log_level, int enable){
+    if (log_level < 0) return;
+    if (log_level > LOG_LEVEL_ERROR) return;
+    log_level_enabled[log_level] = enable;
 }
 

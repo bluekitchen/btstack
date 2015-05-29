@@ -56,6 +56,10 @@
 extern "C" {
 #endif
 
+#define LOG_LEVEL_DEBUG 0
+#define LOG_LEVEL_INFO  1
+#define LOG_LEVEL_ERROR 2
+
 typedef enum {
     HCI_DUMP_BLUEZ = 0,
     HCI_DUMP_PACKETLOGGER,
@@ -65,11 +69,12 @@ typedef enum {
 void hci_dump_open(const char *filename, hci_dump_format_t format);
 void hci_dump_set_max_packets(int packets); // -1 for unlimited
 void hci_dump_packet(uint8_t packet_type, uint8_t in, uint8_t *packet, uint16_t len);
-void hci_dump_log(const char * format, ...);
+void hci_dump_log(int log_level, const char * format, ...);
+void hci_dump_enable_log_level(int log_level, int enable);
 void hci_dump_close(void);
 
 #ifdef __AVR__
-void hci_dump_log_P(PGM_P format, ...);
+void hci_dump_log_P(int log_level, PGM_P format, ...);
 #endif
 
 #if defined __cplusplus

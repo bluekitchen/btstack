@@ -62,16 +62,16 @@ static inline void __log_unused(const char *format, ...) {
 #endif
 
 #ifdef __AVR__
-#define HCI_DUMP_LOG(format, ...) hci_dump_log_P(PSTR(format), ## __VA_ARGS__)
+#define HCI_DUMP_LOG(log_level, format, ...) hci_dump_log_P(log_level, PSTR(format), ## __VA_ARGS__)
 #define PRINTF(format, ...)       printf_P(PSTR(format), ## __VA_ARGS__)
 #else
-#define HCI_DUMP_LOG(format, ...) hci_dump_log(format, ## __VA_ARGS__)
+#define HCI_DUMP_LOG(log_level, format, ...) hci_dump_log(log_level, format, ## __VA_ARGS__)
 #define PRINTF(format, ...)       printf(format, ## __VA_ARGS__)
 #endif
 
 #ifdef ENABLE_LOG_DEBUG
 #ifdef HAVE_HCI_DUMP
-#define log_debug(format, ...)  HCI_DUMP_LOG(format,  ## __VA_ARGS__)
+#define log_debug(format, ...)  HCI_DUMP_LOG(LOG_LEVEL_DEBUG, format,  ## __VA_ARGS__)
 #else
 #define log_debug(format, ...)  PRINTF(format "\n",  ## __VA_ARGS__)
 #endif
@@ -81,7 +81,7 @@ static inline void __log_unused(const char *format, ...) {
 
 #ifdef ENABLE_LOG_INFO
 #ifdef HAVE_HCI_DUMP
-#define log_info(format, ...)  HCI_DUMP_LOG(format,  ## __VA_ARGS__)
+#define log_info(format, ...)  HCI_DUMP_LOG(LOG_LEVEL_INFO, format,  ## __VA_ARGS__)
 #else
 #define log_info(format, ...)  PRINTF(format "\n",  ## __VA_ARGS__)
 #endif
@@ -91,7 +91,7 @@ static inline void __log_unused(const char *format, ...) {
 
 #ifdef ENABLE_LOG_ERROR
 #ifdef HAVE_HCI_DUMP
-#define log_error(format, ...)  HCI_DUMP_LOG(format,  ## __VA_ARGS__)
+#define log_error(format, ...)  HCI_DUMP_LOG(LOG_LEVEL_ERROR, format,  ## __VA_ARGS__)
 #else
 #define log_error(format, ...)  PRINTF(format "\n",  ## __VA_ARGS__)
 #endif
