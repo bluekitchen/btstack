@@ -77,7 +77,7 @@ void loop(void){
 void advertisementCallback(BLEAdvertisement *bleAdvertisement) {
     Serial.print("Device discovered: ");
     Serial.print(bleAdvertisement->getBdAddr()->getAddressString());
-    Serial.print(", RSSI: %d");
+    Serial.print(", RSSI: ");
     Serial.println(bleAdvertisement->getRssi());
     if (bleAdvertisement->containsService(&bleShieldServiceV2UUID)) {
         Serial.println("\nBLE ShieldService V2 found!\n");
