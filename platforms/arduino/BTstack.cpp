@@ -533,7 +533,7 @@ static int (*gattWriteCallback)(uint16_t characteristic_id, uint8_t *buffer, uin
 // @param offset defines start of attribute value
 static uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     if (gattReadCallback){
-        gattReadCallback(att_handle, buffer, buffer_size);
+        return gattReadCallback(att_handle, buffer, buffer_size);
     }
     return 0;
 }
