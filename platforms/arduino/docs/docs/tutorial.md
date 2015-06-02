@@ -1,8 +1,8 @@
-# Quick Start
+# Tutorial
 
 ## Arduino IDE
 
-Please install the latest version of the Arduino IDE from <http://arduino.cc>
+Please install the latest version of the Arduino IDE from <http://arduino.cc>.
 This tutorial was created & tested with version 1.6.4, but it should work with all newer versions.
 
 ## BTstack Library
@@ -16,15 +16,19 @@ After installing the BTstack Library, you have to restart the Arduino IDE to mak
 
 
 ## Hardware
-Please plug the BTstack LE Shield into one of the supported Arduino boards listed on [the Welcome page](../)
-With an Arduino Mega 2560, it should look like this:
+Please plug the BTstack LE Shield into one of the supported Arduino boards listed on the [Welcome page](../).
+With an Arduino Mega 2560, it looks like this:
 
 ![Image of BTstack LE Shield plugged into Arduion Mega 2560](picts/setup.jpg)
 
 ## Test
 
 As a first test, open the iBeaconScanner example via File->Examples->BTstack->iBeaconScanner.
-In the Sketch window, press the Upload button. After it was successfully uploaded to the board,
+In the Sketch window, press the Upload button. 
+
+![Image of Arduino IDE Sketch](picts/sketch.jpg)
+
+After it was successfully uploaded to the board,
 open the Serial Console.
 
 The output should look similar to this:
@@ -40,7 +44,7 @@ The output should look similar to this:
     Device discovered: D0:39:72:CD:83:45, RSSI -55
     Device discovered: D0:39:72:CD:83:45, RSSI -55
 
-This examples listens for BLE Advertisements and prints the Bluetooth BD_ADDR (similar to a Wifi MAC) address and the received signal strength. For iBeacons, also the Major and Minor ID as well as the iBeacon UUID is shown.
+This example listens for BLE Advertisements and prints the Bluetooth BD_ADDR (similar to a WiFi MAC) address and the received signal strength. For iBeacons, also the Major ID, the Minor ID and the iBeacon UUID are shown.
 
-Please have a look at the other [examples](../examples/generated.md), too.
+Please have a look at the other [examples](../examples/generated/), too.
 
