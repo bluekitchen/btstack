@@ -264,8 +264,13 @@ def writeListings(aout, infile_name, ref_prefix):
             
 
 # write list of examples
-def processExamples(examples_folder, examples_ofile):
+def processExamples(intro_file, examples_folder, examples_ofile):
     with open(examples_ofile, 'w') as aout:
+
+        with open(intro_file, 'rb') as fin:
+            for line in fin:
+                aout.write(line)
+
         for group_title in list_of_groups:
             if not list_of_examples.has_key(group_title): continue
             examples = list_of_examples[group_title]
@@ -309,7 +314,8 @@ def main(argv):
     docs_folder = "docs/examples/"
     inputfolder = btstack_folder + "platforms/arduino/examples/"
     outputfile = docs_folder + "generated.md"
-    
+    intro_file = "docs/examples/intro.md"
+
     try:
         opts, args = getopt.getopt(argv,"hiso:",["ifolder=","ofile="])
     except getopt.GetoptError:
@@ -325,7 +331,7 @@ def main(argv):
             outputfile = arg
     print 'Input folder is ', inputfolder
     print 'Output file is ', outputfile
-    processExamples(inputfolder, outputfile)
+    processExamples(intro_file, inputfolder, outputfile)
 
 if __name__ == "__main__":
    main(sys.argv[1:])

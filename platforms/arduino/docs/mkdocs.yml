@@ -3,6 +3,5 @@ site_dir: btstack-arduino
 pages:
 - [index.md, Welcome]
 - [tutorial.md, Tutorial]
-- [examples/intro.md, Examples]
-- [examples/generated.md, List of Examples]
+- [examples/generated.md, Examples]
 theme: readthedocs
