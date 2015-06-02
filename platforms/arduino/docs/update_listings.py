@@ -8,7 +8,7 @@ list_of_groups = ["iBeacon", "ANCS", "LE Central", "LE Peripheral"]
 
 # Defines which examples belong to a group. Example is defined as [example file, example title].
 list_of_examples = {
-    "iBeacon": [["iBeacon", "iBeaconScanner"]],
+    "iBeacon": [["iBeacon"], ["iBeaconScanner"]],
     "ANCS": [["ANCS"]],
     "LE Central": [["LECentral"]],
     "LE Peripheral": [["LEPeripheral"]],
