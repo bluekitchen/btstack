@@ -4,4 +4,5 @@ pages:
 - [index.md, Welcome]
 - [tutorial.md, Tutorial]
 - [examples/generated.md, Examples]
+- [appendix/apis.md, API]
 theme: readthedocs
