@@ -2,6 +2,10 @@
 #include <BTstack.h>
 #include <SPI.h>
 
+/*
+ * EXAMPLE_START(LEPeripheral): LE Peripheral
+ */
+
 static char characteristic_data = 'H';
 
 void setup(void){

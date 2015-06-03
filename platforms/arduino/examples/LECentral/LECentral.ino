@@ -2,7 +2,10 @@
 #include <BTstack.h>
 #include <SPI.h>
 
-// 
+/* 
+ * EXAMPLE_START(LECentral): LE Central
+ */
+
 typedef struct characteristic_summary {
     UUID         uuid;
     const char * name;
