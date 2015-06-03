@@ -4,8 +4,20 @@
 
 /*
  * EXAMPLE_START(LEPeripheral): LE Peripheral
+ *
+ * @text BTstack allows to setup a GATT Services and Characteristics directly
+ * from the setup function without using other tools outside of the Arduino IDE.
+ *
+ * @section Setup
+ *
+ * @text First, a number of callbacks are set. Then, a Service with a Read-only 
+ * Characteristic and a dynamic Characteristic is added to the GATT database.
+ * In BTstack, a dynamic Characteristic is a Characteristic where reads and writes
+ * are forwarded to the Sketch. In this example, the dynamic Characteristic is 
+ * provided by the single byte variable characteristic_data.
  */
 
+/* LISTING_START(LEPeripheralSetup): Setup */
 static char characteristic_data = 'H';
 
 void setup(void){
@@ -32,12 +44,18 @@ void setup(void){
     BTstack.startAdvertising();
     // BTstack.enablePacketLogger();
 }
-
+/* LISTING_END(LEPeripheralSetup): Setup */
 
 void loop(void){
     BTstack.loop();
 }
 
+/*
+ * @section Device Connected Callback
+ *
+ * @text When a remove device connects, device connected callback is callec.
+ */
+/* LISTING_START(LEPeripheralDeviceConnectedCallback): Device Connected Callback */
 void deviceConnectedCallback(BLEStatus status, BLEDevice *device) {
     switch (status){
         case BLE_STATUS_OK:
@@ -47,17 +65,31 @@ void deviceConnectedCallback(BLEStatus status, BLEDevice *device) {
             break;
     }
 }
+/* LISTING_END(LEPeripheralDeviceConnectedCallback): Device Connected Callback */
 
+/*
+ * @section Device Disconnected Callback
+ *
+ * @text If the connection to a device breaks, the device disconnected callback
+ * is called.
+ */
+/* LISTING_START(LEPeripheralDeviceDisconnectedCallback): Device Disconnected Callback */
 void deviceDisconnectedCallback(BLEDevice * device){
     Serial.println("Disconnected.");
 }
+/* LISTING_END(LEPeripheralDeviceDisconnectedCallback): Device Disconnected Callback */
 
-// ATT Client Read Callback for Dynamic Data
-// - if buffer == NULL, don't copy data, just return size of value
-// - if buffer != NULL, copy data and return number bytes copied
-// @param characteristic_id to be read
-// @param buffer 
-// @param buffer_size
+/*
+ * @section Read Callback
+ *
+ * @text In BTstack, the Read Callback is first called to query the size of the
+ * Charcteristic Value, before it is called to provide the data. 
+ * Both times, the size has to be returned. The data is only stored in the provided
+ * buffer, if the buffer argeument is not NULL.
+ * If more than one dynamic Characteristics is used, the value handle is used
+ * to distinguish them.
+ */
+/* LISTING_START(LEPeripheralReadCallback): Read Callback */
 uint16_t gattReadCallback(uint16_t value_handle, uint8_t * buffer, uint16_t buffer_size){
     if (buffer){
         Serial.print("gattReadCallback, value: ");
@@ -66,16 +98,22 @@ uint16_t gattReadCallback(uint16_t value_handle, uint8_t * buffer, uint16_t buff
     }
     return 1;
 }
+/* LISTING_END(LEPeripheralDeviceDisconnectedCallback): Read Callback */
 
-// ATT Client Write Callback for Dynamic Data
-// @param characteristic_id to be read
-// @param buffer 
-// @param buffer_size
-// @returns 0 if write was ok, ATT_ERROR_INVALID_OFFSET if offset is larger than max buffer
-int gattWriteCallback(uint16_t value_handle, uint8_t *buffer, uint16_t buffer_size){
+/*
+ * @section Write Callback
+ *
+ * @text When the remove device writes a Characteristic Value, the Write callback
+ * is called. The buffer arguments points to the data of size size/
+ * If more than one dynamic Characteristics is used, the value handle is used
+ * to distinguish them.
+ */
+/* LISTING_START(LEPeripheralWriteCallback): Write Callback */
+int gattWriteCallback(uint16_t value_handle, uint8_t *buffer, uint16_t size){
     characteristic_data = buffer[0];
     Serial.print("gattWriteCallback , value ");
     Serial.println(characteristic_data, HEX);
     return 0;
 }
+/* LISTING_END(LEPeripheralWriteCallback): Write Callback */
 
