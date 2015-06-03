@@ -42,3 +42,4 @@ release: update_version
 	cp -r ${PATHS} ${BTSTACK_PACKAGE}
 	rm -f ${ARCHIVE}
 	zip -r ${ARCHIVE} btstack
+	cp ${ARCHIVE} btstack-arduino-latest.zip
