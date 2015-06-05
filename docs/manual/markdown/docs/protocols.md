@@ -155,6 +155,7 @@ device name with the HCI Write Local Name command.
 
 <a name "lst:HCIcmdExampleLocalName"></a>
 <!-- -->
+
     if (hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)){
         hci_send_cmd(&hci_write_local_name, "BTstack Demo");
     }  
@@ -632,7 +633,7 @@ After adding all UUIDs, the sub-DES is “closed” with
 <a name="sec:querysdp"></a>
 
 BTstack provides an SDP client to query SDP services of a remote device.
-The SDP Client API is shown in Appendix [appendix:api~s~dp~c~lient]. The
+The SDP Client API is shown in [here](appendix/apis/#appendix:api_sdp). The
 *sdp_client_query* function initiates an L2CAP connection to the
 remote SDP server. Upon connect, a *Service Search Attribute* request
 with a *Service Search Pattern* and a *Attribute ID List* is sent. The
@@ -741,9 +742,9 @@ To receive BNEP events, please register a packet handler with
 
 To connect to a remote BNEP service, you need to know its UUID. The set
 of available UUIDs can be queried by a SDP query for the PAN profile.
-Please see Section [section:pan~p~rofile] for details. With the remote
-UUID, you can create a connection using the *bnep_connect* function.
-You’ll receive a *BNEP_EVENT_OPEN_CHANNEL_COMPLETE* on success or
+Please see section on [PAN profile](profiles/#section:pan_profile) for details. 
+With the remote UUID, you can create a connection using the *bnep_connect* 
+function. You’ll receive a *BNEP_EVENT_OPEN_CHANNEL_COMPLETE* on success or
 failure.
 
 After the connection was opened successfully, you can send and receive

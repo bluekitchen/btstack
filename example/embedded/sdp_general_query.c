@@ -140,7 +140,7 @@ static void assertBuffer(int size){
  * see Listing HandleSDPQUeryResult.
  *
  * To save memory, it's also possible to process these chunks directly by a custom stream parser,
- * similar to the way XML files are parsed by a SAX parser. Have a look at \emph{src/sdp_query_rfcomm.c}
+ * similar to the way XML files are parsed by a SAX parser. Have a look at *src/sdp_query_rfcomm.c*
  * which retrieves the RFCOMM channel number and the service name.
  */
 

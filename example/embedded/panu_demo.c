@@ -162,7 +162,7 @@ static void panu_setup(void){
  * On Linux, TUN/TAP is available by default. On OS X, tuntaposx from
  * http://tuntaposx.sourceforge.net needs to be installed.
  *
- * \emph{tap_alloc} sets up a virtual network interface with the given Bluetooth Address.
+ * The *tap_alloc* function sets up a virtual network interface with the given Bluetooth Address.
  * It is rather low-level as it sets up and configures a network interface.
  */ 
 
@@ -261,10 +261,10 @@ int tap_alloc(char *dev, bd_addr_t bd_addr)
  * and forwarded over the BNEP connection.
  * 
  * After successfully reading a network packet, the call to
- * \emph{bnep_can_send_packet_now} checks, if BTstack can forward
+ * the *bnep_can_send_packet_now* function checks, if BTstack can forward
  * a network packet now. If that's not possible, the received data stays
  * in the network buffer and the data source elements is removed from the
- * run loop. \emph{process_tap_dev_data} will not be called until
+ * run loop. The *process_tap_dev_data* function will not be called until
  * the data source is registered again. This provides a basic flow control.
  */
 

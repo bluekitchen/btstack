@@ -99,7 +99,7 @@ embedded systems:
 
     run_loop_init(RUN_LOOP_EMBEDDED);
 
-The Run loop API is provided in Appendix [appendix:api~r~un~l~oop]. To
+The Run loop API is provided [here](appendix/apis/#appendix:api_run_loop). To
 enable the use of timers, make sure that you defined HAVE_TICK in the
 config file.
 

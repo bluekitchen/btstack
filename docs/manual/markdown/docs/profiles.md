@@ -177,19 +177,19 @@ To access a remote SPP server, you first need to query the remote device
 for its SPP services. Section [subsection:querysdp] shows how to query
 for all RFCOMM channels. For SPP, you can do the same but use the SPP
 UUID 0x1101 for the query. After you have identified the correct RFCOMM
-channel, you can create an RFCOMM connection as shown in Section
-[subsubsection:rfcommlient]
+channel, you can create an RFCOMM connection as shown 
+[here](protocols/#sec:rfcommlient).
 
 ### Providing an SPP Server
 
 To provide an SPP Server, you need to provide an RFCOMM service with a
-specific RFCOMM channel number as explained in Section
-[section:rfcomm~s~ervice]. Then, you need to create an SDP record for it
-and publish it with the SDP server by calling
+specific RFCOMM channel number as explained in section on 
+[RFCOMM service](protocols/#sec:rfcomm_service). Then, you need to create 
+an SDP record for it and publish it with the SDP server by calling
 *sdp_register_service_internal*. BTstack provides the
 *sdp_create_spp_service* function in that requires an empty buffer of
 approximately 200 bytes, the service channel number, and a service name.
-Have a look at the SPP Counter example in Section [example:sppcounter].
+Have a look at the [SPP Counter example](examples/generated/#section:sppcounter].
 
 <a name="section:pan_profile"></a>
 

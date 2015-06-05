@@ -278,7 +278,7 @@ executing the run loop.
 
   The SDP Client returns the results of the query in chunks. Each result packet contains the record ID, the Attribute ID, and a chunk of the Attribute value. In this example, we append new chunks for the same Attribute ID in a large buffer, see [code snippet below](#sdpgeneralquery:HandleSDPQUeryResult).
 
- To save memory, it's also possible to process these chunks directly by a custom stream parser, similar to the way XML files are parsed by a SAX parser. Have a look at \emph{src/sdp_query_rfcomm.c} which retrieves the RFCOMM channel number and the service name.
+ To save memory, it's also possible to process these chunks directly by a custom stream parser, similar to the way XML files are parsed by a SAX parser. Have a look at *src/sdp_query_rfcomm.c* which retrieves the RFCOMM channel number and the service name.
 
 
 <a name="sdpgeneralquery:HandleSDPQUeryResult"></a>
@@ -720,11 +720,11 @@ executing the run loop.
 
  On Linux, TUN/TAP is available by default. On OS X, tuntaposx from http://tuntaposx.sourceforge.net needs to be installed.
 
- \emph{tap_alloc} sets up a virtual network interface with the given Bluetooth Address. It is rather low-level as it sets up and configures a network interface.
+ The *tap_alloc* function sets up a virtual network interface with the given Bluetooth Address. It is rather low-level as it sets up and configures a network interface.
 
   [code snippet below](#panudemo:processTapData) shows how a packet is received from the TAP network interface and forwarded over the BNEP connection.
 
- After successfully reading a network packet, the call to \emph{bnep_can_send_packet_now} checks, if BTstack can forward a network packet now. If that's not possible, the received data stays in the network buffer and the data source elements is removed from the run loop. \emph{process_tap_dev_data} will not be called until the data source is registered again. This provides a basic flow control.
+ After successfully reading a network packet, the call to the *bnep_can_send_packet_now* function checks, if BTstack can forward a network packet now. If that's not possible, the received data stays in the network buffer and the data source elements is removed from the run loop. The *process_tap_dev_data* function will not be called until the data source is registered again. This provides a basic flow control.
 
 
 <a name="panudemo:processTapData"></a>
