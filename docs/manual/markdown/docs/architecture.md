@@ -42,7 +42,7 @@ events. During a run loop cycle, the callback functions of all
 registered data sources are called. Then, the callback functions of
 timers that are ready are executed.
 
-For adapting BTstack to multi-threaded environments check [here](integration/#sec:multithreading).
+For adapting BTstack to multi-threaded environments check [here](integration/#adapting-btstack-for-multi-threaded-environments).
 
 ## No blocking anywhere
 
