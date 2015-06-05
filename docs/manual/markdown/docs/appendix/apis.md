@@ -74,7 +74,7 @@
 ## HCI API
 <a name ="appendix:api_hci"></a>
 
-    le_connection_parameter_range_t gap_le_get_connection_parameter_range();
+    le_connection_parameter_range_t gap_le_get_connection_parameter_range(void);
     void gap_le_set_connection_parameter_range(le_connection_parameter_range_t range);
     
     /* LE Client Start */
@@ -163,6 +163,12 @@
      * @brief Get addr type and address used in advertisement packets.
      */
     void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t addr);
+    
+    /**
+     * @brief Set callback for Bluetooth Hardware Error
+     */
+    void hci_set_hardware_error_callback(void (*fn)(void));
+    
 
 
 ## L2CAP API

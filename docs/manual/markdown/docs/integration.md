@@ -1,3 +1,4 @@
+
 While the run loop provided by BTstack is sufficient for new designs,
 BTstack is often used with or added to existing projects. In this case,
 the run loop, data sources, and timers may need to be adapted. The

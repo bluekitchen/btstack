@@ -1,3 +1,4 @@
+
 BTstack implements a set of basic Bluetooth protocols. To make use of
 these to connect to other devices or to provide own services, BTstack
 has to be properly configured during application startup.
@@ -13,7 +14,7 @@ resource-constraint devices.
 
 <a name ="section:memory_configuration"></a>
 
-# Memory configuration
+## Memory configuration
 
 The structs for services, active connections and remote devices can be
 allocated in two different manners:
@@ -54,7 +55,7 @@ The memory is set up by calling *btstack_memory_init* function:
 
 <a name"section:run_loop"></a>
 
-# Run loop 
+## Run loop 
 
 BTstack uses a run loop to handle incoming data and to schedule work.
 The run loop handles events from two different types of sources: data
@@ -110,7 +111,7 @@ communication over the UART.
 
 <a nam="sec:btstack_initialization"></a>
 
-# BTstack initialization
+## BTstack initialization
 
 To initialize BTstack you need to [initialize the memory](#section:memory_configuration)
 and [the run loop](#section:run_loop) respectively, then setup HCI and all needed higher
@@ -191,7 +192,7 @@ following section.
 
 <a name="sec:services"></a>
 
-# Services
+## Services
 
 One important construct of BTstack is *service*. A service represents a
 server side component that handles incoming connections. So far, BTstack
@@ -205,7 +206,7 @@ created by the application when needed.
 
 <a name="sec:packetHandlers"></a>
 
-# Where to get data - packet handlers
+## Where to get data - packet handlers
 
 
 After the hardware and BTstack are set up, the run loop is entered. From
@@ -283,7 +284,7 @@ a packet handler to accept and receive keyboard data.
 
 <a name="sec:packetlogs"></a>
 
-# Bluetooth HCI Packet Logs 
+## Bluetooth HCI Packet Logs 
 
 
 If things don't work as expected, having a look at the data exchanged

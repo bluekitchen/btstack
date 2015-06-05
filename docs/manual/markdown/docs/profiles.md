@@ -1,5 +1,4 @@
 
-# Supported Profiles
 
 In the following, we explain how the various Bluetooth profiles are used
 in BTstack.

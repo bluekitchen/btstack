@@ -1,6 +1,4 @@
 
-# Supported Protocols
-
 BTstack is a modular dual-mode Bluetooth stack, supporting both
 Bluetooth Basic Rate/Enhanced Date Rate (BR/EDR) as well as Bluetooth
 Low Energy (LE). The BR/EDR technology, also known as Classic Bluetooth,
@@ -726,8 +724,7 @@ registered callback, as shown in Listing [below](#lst:SDPClientRFCOMM).
     de_pop_sequence(des_buffer, attribute);
 
 
-BNEP - Bluetooth Network Encapsulation Protocol
------------------------------------------------
+## BNEP - Bluetooth Network Encapsulation Protocol
 
 The BNEP protocol is used to transport control and data packets over
 standard network protocols such as TCP, IPv4 or IPv6. It is built on top
@@ -768,8 +765,7 @@ A *BNEP_EVENT_INCOMING_CONNECTION* event will mark that an incoming
 connection is established. At this point you can start sending and
 receiving Ethernet packets as described in the previous section.
 
-ATT - Attribute Protocol
-------------------------
+## ATT - Attribute Protocol
 
 The ATT protocol is used by an ATT client to read and write attribute
 values stored on an ATT server. In addition, the ATT server can notify
@@ -788,8 +784,8 @@ application needs to register read and/or write callback. In addition,
 notifications and indications can be sent. Please see Section
 [section:GATTClient] for more.
 
-SMP - Security Manager Protocol  {#section:smp}
---------------------------------
+## SMP - Security Manager Protocol 
+<a name="section:smp"></a>
 
 The SMP protocol allows to setup authenticated and encrypted LE
 connection. After initialization and configuration, SMP handles security

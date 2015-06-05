@@ -1,5 +1,3 @@
-# Porting to Other Platforms 
-
 In this section, we highlight the BTstack components that need to be
 adjusted for different hardware platforms.
 
