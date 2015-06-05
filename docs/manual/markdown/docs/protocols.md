@@ -40,6 +40,7 @@ In the following, we first explain how the various Bluetooth protocols
 are used in BTstack. In the next chapter, we go over the profiles.
 
 <a name="fig:BTstackProtocolArchitecture"></a>
+
 ![Architecture of a BTstack-based application.](picts/btstack-protocols.png)
 
 

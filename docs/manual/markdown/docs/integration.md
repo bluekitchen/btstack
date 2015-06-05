@@ -19,6 +19,7 @@ In a single-threaded environment, all application components run on the
 same (single) thread and use direct function calls as shown in Figure [below](#fig:BTstackSingle).
 
 <a name="fig:BTstackSingle"></a>
+
 ![BTstack in single-threaded environment](picts/singlethreading-btstack.png)
 
 BTstack provides a basic run loop that supports the concept of data
@@ -67,3 +68,4 @@ common options:
     This option requires more code but provides more flexibility.
 
     ![](picts/multithreading-btdaemon.png)
+    

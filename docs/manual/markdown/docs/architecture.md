@@ -25,7 +25,9 @@ events and data coming from either the Main Application or from BTstack
 via registered packet handlers (PH). BTstack’s Run Loop is responsible
 for providing timers and processing incoming data.
 
-<a name="fig:BTstackArchitecture"></a>![Architecture of a BTstack-based application.](picts/btstack-architecture.png)
+<a name="fig:BTstackArchitecture"></a> 
+
+![Architecture of a BTstack-based application.](picts/btstack-architecture.png)
 
 # Single threaded design
 
