@@ -349,7 +349,7 @@ completes the query.
 For more details on the available GATT queries, please consult 
 [GATT Client API](#appendix:api_gatt_client).
 
-<a name="section:GATTServer">
+<a name="section:GATTServer"></a>
 
 ### GATT Server
 
