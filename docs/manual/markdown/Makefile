@@ -9,7 +9,7 @@ all:
 	./markdown2pdf.py
 	cp btstack_gettingstarted.tex latex
 	cd latex && pdflatex btstack_gettingstarted.tex && pdflatex btstack_gettingstarted.tex
-	mv latex/btstack_gettingstarted.pdf .
+	mv latex/btstack_gettingstarted.pdf btstack
 	rm -rf latex
 
 	
