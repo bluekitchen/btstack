@@ -920,6 +920,10 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_READ_BD_ADDR;
             hci_send_cmd(&hci_read_bd_addr);
             break;
+        case HCI_INIT_READ_LOCAL_SUPPORTED_COMMANDS:
+            hci_stack->substate = HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS;
+            hci_send_cmd(&hci_read_local_supported_commands);
+            break;
         case HCI_INIT_READ_BUFFER_SIZE:
             hci_stack->substate = HCI_INIT_W4_READ_BUFFER_SIZE;
             hci_send_cmd(&hci_read_buffer_size);
@@ -1101,6 +1105,11 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             // repeat custom init
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;
             return;
+        case HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS:
+            // skip read buffer size if not supported
+            if (hci_stack->local_supported_commands[0] & 0x01) break;
+            hci_stack->substate = HCI_INIT_READ_LOCAL_SUPPORTED_FEATUES;
+            return;
         case HCI_INIT_W4_SET_EVENT_MASK:
             // skip Classic init commands for LE only chipsets
             if (!hci_classic_supported()){
@@ -1118,6 +1127,11 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
                 return;
             }
             break;
+        case HCI_INIT_W4_LE_READ_BUFFER_SIZE:
+            // skip write le host if not supported (e.g. on LE only EM9301)
+            if (hci_stack->local_supported_commands[0] & 0x02) break;
+            hci_stack->substate = HCI_INIT_LE_SET_SCAN_PARAMETERS;
+            return;
         case HCI_INIT_W4_WRITE_SCAN_ENABLE:
             if (!hci_le_supported()){
                 // SKIP LE init for Classic only configuration
@@ -1203,11 +1217,6 @@ static void event_handler(uint8_t *packet, int size){
             // Note: HCI init checks 
             if (COMMAND_COMPLETE_EVENT(packet, hci_read_local_supported_features)){
                 memcpy(hci_stack->local_supported_features, &packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1], 8);
-                log_info("Local Supported Features: 0x%02x%02x%02x%02x%02x%02x%02x%02x",
-                    hci_stack->local_supported_features[0], hci_stack->local_supported_features[1],
-                    hci_stack->local_supported_features[2], hci_stack->local_supported_features[3],
-                    hci_stack->local_supported_features[4], hci_stack->local_supported_features[5],
-                    hci_stack->local_supported_features[6], hci_stack->local_supported_features[7]);
 
                 // determine usable ACL packet types based on host buffer size and supported features
                 hci_stack->packet_types = hci_acl_packet_types_for_buffer_size_and_local_features(HCI_ACL_PAYLOAD_SIZE, &hci_stack->local_supported_features[0]);
@@ -1223,6 +1232,11 @@ static void event_handler(uint8_t *packet, int size){
                 hci_stack->manufacturer   = READ_BT_16(packet, 10);
                 // hci_stack->lmp_subversion = READ_BT_16(packet, 12);
                 log_info("Manufacturer: 0x%04x", hci_stack->manufacturer);
+            }
+            if (COMMAND_COMPLETE_EVENT(packet, hci_read_local_supported_commands)){
+                hci_stack->local_supported_commands[0] =
+                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+14] & 0X80) >> 7 |  // Octet 14, bit 7
+                    (packet[OFFSET_OF_DATA_IN_COMMAND_COMPLETE+1+24] & 0x40) >> 5;   // Octet 24, bit 6 
             }
             break;
             

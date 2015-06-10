@@ -549,6 +549,8 @@ typedef enum hci_init_state{
 
     HCI_INIT_READ_BD_ADDR,
     HCI_INIT_W4_READ_BD_ADDR,
+    HCI_INIT_READ_LOCAL_SUPPORTED_COMMANDS,
+    HCI_INIT_W4_READ_LOCAL_SUPPORTED_COMMANDS,
 
     HCI_INIT_READ_BUFFER_SIZE,
     HCI_INIT_W4_READ_BUFFER_SIZE,
@@ -627,6 +629,11 @@ typedef struct {
 
     /* local supported features */
     uint8_t local_supported_features[8];
+
+    /* local supported commands summary - complete info is 64 bytes */
+    /* 0 - read buffer size */
+    /* 1 - write le host supported */
+    uint8_t local_supported_commands[1];
 
     /* bluetooth device information from hci read local version information */
     // uint16_t hci_version;
