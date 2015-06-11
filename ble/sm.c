@@ -2193,6 +2193,10 @@ void gap_random_address_set_mode(gap_random_address_type_t random_address_type){
     gap_random_address_trigger();
 }
 
+gap_random_address_type_t gap_random_address_get_mode(void){
+    return gap_random_adress_type;
+}
+
 void gap_random_address_set_update_period(int period_ms){
     gap_random_adress_update_period = period_ms;
     if (gap_random_adress_type == GAP_RANDOM_ADDRESS_TYPE_OFF) return;

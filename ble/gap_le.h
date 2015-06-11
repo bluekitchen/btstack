@@ -57,6 +57,11 @@ typedef enum {
 void gap_random_address_set_mode(gap_random_address_type_t random_address_type);
 
 /**
+ * @brief Get privacy mode
+ */
+gap_random_address_type_t gap_random_address_get_mode(void);
+
+/**
  * @brief Sets update period for random address
  * @param period_ms in ms
  */
@@ -73,6 +78,35 @@ void gap_random_address_set_mode(gap_random_address_type_t random_address_type);
  */
 void gap_update_connection_parameters(hci_con_handle_t con_handle, uint16_t conn_interval_min,
 	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout);
+
+/** 
+ * @brief Set Advertisement Data 
+ * @param advertisement date (31 octets)
+ * @note data is not copied, pointer has to stay valid
+ */
+void gap_advertisements_set_data(uint8_t * adv_data);
+
+/**
+ * @brief Set Advertisement Paramters
+ * @param adv_int_min
+ * @param adv_int_max
+ * @param adv_type
+ * @param direct_address_type
+ * @param direct_address
+ * @param channel_map
+ * @param filter_policy
+ *
+ * @note own_address_type is used from gap_random_address_set_mode
+ */
+
+void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
+	uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy);
+
+/** 
+ * @brief Enable/Disable Advertisements
+ * @param enabled
+ */
+void gap_advertisements_enable(int enabled);
 
 #if defined __cplusplus
 }
