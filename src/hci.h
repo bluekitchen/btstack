@@ -682,6 +682,8 @@ typedef struct {
 
     le_connection_parameter_range_t le_connection_parameter_range;
 
+    uint8_t  le_advertisements_active;
+
     // custom BD ADDR
     bd_addr_t custom_bd_addr; 
     uint8_t   custom_bd_addr_set;

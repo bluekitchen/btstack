@@ -1552,8 +1552,8 @@ static void event_handler(uint8_t *packet, int size){
                     bt_flip_addr(addr, &packet[8]);
                     addr_type = (bd_addr_type_t)packet[7];
                     log_info("LE Connection_complete (status=%u) type %u, %s", packet[3], addr_type, bd_addr_to_str(addr));
-                    // LE connections are auto-accepted, so just create a connection if there isn't one already
                     conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
+                    // handle error first
                     if (packet[3]){
                         if (conn){
                             // outgoing connection failed, remove entry
@@ -1567,6 +1567,9 @@ static void event_handler(uint8_t *packet, int size){
                         break;
                     }
                     if (!conn){
+                        // advertisemts are stopped on incoming connection
+                        hci_stack->le_advertisements_active = 0;
+                        // LE connections are auto-accepted, so just create a connection if there isn't one already
                         conn = create_connection_for_bd_addr_and_type(addr, addr_type);
                     }
                     if (!conn){
@@ -2442,6 +2445,9 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     }
     if (IS_COMMAND(packet, hci_le_set_random_address)){
         bt_flip_addr(hci_stack->adv_address, &packet[3]);
+    }
+    if (IS_COMMAND(packet, hci_le_set_advertise_enable)){
+        hci_stack->le_advertisements_active = packet[3];
     }
 #endif
 
