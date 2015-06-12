@@ -35,14 +35,9 @@ void setup(void){
     BTstack.addGATTCharacteristic(new UUID("f897177b-aee8-4767-8ecc-cc694fd5fcef"), ATT_PROPERTY_READ, "This is a String!");
     BTstack.addGATTCharacteristicDynamic(new UUID("f897177b-aee8-4767-8ecc-cc694fd5fce0"), ATT_PROPERTY_READ | ATT_PROPERTY_WRITE | ATT_PROPERTY_NOTIFY, 0);
 
-    // use dummy address to force refresh on iOS devices
-    bd_addr_t dummy = { 1,2,3,4,5,6};
-    BTstack.setPublicBdAddr(dummy);
-
     // startup Bluetooth and activate advertisements
     BTstack.setup();
     BTstack.startAdvertising();
-    // BTstack.enablePacketLogger();
 }
 /* LISTING_END(LEPeripheralSetup): Setup */
 
