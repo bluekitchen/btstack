@@ -22,3 +22,6 @@ spp_and_le_counter.h
 spp_counter
 spp_streamer
 led_counter
+ble_peripheral_test
+le_counter
+le_counter.h

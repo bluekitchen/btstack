@@ -23,3 +23,5 @@ spp_counter
 spp_streamer
 led_counter
 le_counter.h
+ble_peripheral_test
+le_counter
