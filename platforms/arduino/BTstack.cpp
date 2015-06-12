@@ -26,6 +26,7 @@
 #include "att_db_util.h"
 #include "le_device_db.h"
 #include "sm.h"
+#include "gap_le.h"
 #include "debug.h"
 
 // Pin 13 has an LED connected on most Arduino boards.
@@ -59,7 +60,6 @@ static const uint8_t iBeaconAdvertisement01[] = { 0x02, 0x01 };
 static const uint8_t iBeaconAdvertisement38[] = { 0x1a, 0xff, 0x4c, 0x00, 0x02, 0x15 };
 static uint8_t   adv_data[31];
 static uint16_t  adv_data_len = 0;
-static int       adv_enabled = 0;
 static uint16_t gatt_client_id;
 static int gatt_is_characteristics_query;
 
@@ -233,37 +233,6 @@ static void gatt_client_callback(le_event_t * event){
             break;
         default:
             break;
-    }
-}
-
-static void le_peripheral_run(void){
-
-    if (!hci_can_send_command_packet_now()) return;
-
-    if (le_peripheral_todos & SET_ADVERTISEMENT_DATA){
-        printf("le_peripheral_run: set advertisement data\n");
-        le_peripheral_todos &= ~SET_ADVERTISEMENT_DATA;
-        hci_send_cmd(&hci_le_set_advertising_data, adv_data_len, adv_data);
-        return;
-    }    
-
-    if (le_peripheral_todos & SET_ADVERTISEMENT_PARAMS){
-        printf("le_peripheral_run: set advertisement params\n");
-        le_peripheral_todos &= ~SET_ADVERTISEMENT_PARAMS;
-        uint8_t adv_type = 0;   // default
-        bd_addr_t null_addr;
-        memset(null_addr, 0, 6);
-        uint16_t adv_int_min = 0x0030;
-        uint16_t adv_int_max = 0x0030;
-        hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, 0, 0, &null_addr, 0x07, 0x00);
-        return;
-    }    
-
-    if (le_peripheral_todos & SET_ADVERTISEMENT_ENABLED)  {
-         printf("le_peripheral_run: enable advertisements\n");
-         le_peripheral_todos &= ~SET_ADVERTISEMENT_ENABLED;
-         hci_send_cmd(&hci_le_set_advertise_enable, adv_enabled);
-         return;
     }
 }
 
@@ -569,19 +538,10 @@ BTstackManager::BTstackManager(void){
     gattCharacteristicDiscoveredCallback = NULL;
     gattCharacteristicNotificationCallback = NULL;
 
-    // setup adv data
-    int pos = 0;
-    const uint8_t flags[] = { 0x02, 0x01, 0x02 };
-    memcpy(&adv_data[pos], flags, sizeof(flags));
-    pos += sizeof(flags);
-    char * name = "BTstack LE Shield";
-    adv_data[pos++] = strlen(name) + 1;
-    adv_data[pos++] = 0x09;
-    memcpy(&adv_data[pos], name, strlen(name));
-    pos += strlen(name);
-    adv_data_len = pos;
-
     att_db_util_init();
+
+    // disable LOG_INFO messages
+    hci_dump_enable_log_level(LOG_LEVEL_INFO, 0);
 
 #ifdef __AVR__
     // configure stdout to go via Serial
@@ -716,9 +676,6 @@ void BTstackManager::setup(void){
     bt_control_t    * control   = bt_control_em9301_instance();
 	hci_init(transport, NULL, control, NULL);
 
-    // disable LOG_INFO messages
-    hci_dump_enable_log_level(LOG_LEVEL_INFO, 0);
-
     if (have_custom_addr){
         hci_set_bd_addr(public_bd_addr);
     }
@@ -737,6 +694,27 @@ void BTstackManager::setup(void){
 
     gatt_client_init();
     gatt_client_id = gatt_client_register_packet_handler(gatt_client_callback);
+
+    // setup advertisements params
+    uint16_t adv_int_min = 0x0030;
+    uint16_t adv_int_max = 0x0030;
+    uint8_t adv_type = 0;
+    bd_addr_t null_addr;
+    memset(null_addr, 0, 6);
+    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
+
+    // setup advertisements data
+    int pos = 0;
+    const uint8_t flags[] = { 0x02, 0x01, 0x02 };
+    memcpy(&adv_data[pos], flags, sizeof(flags));
+    pos += sizeof(flags);
+    char * name = "BTstack LE Shield";
+    adv_data[pos++] = strlen(name) + 1;
+    adv_data[pos++] = 0x09;
+    memcpy(&adv_data[pos], name, strlen(name));
+    pos += strlen(name);
+    adv_data_len = pos;
+    gap_advertisements_set_data(adv_data_len, adv_data);
 
     // turn on!
     btstack_state = 0;
@@ -763,9 +741,6 @@ void BTstackManager::loop(void){
     hal_uart_dma_process();
     // BTstack Run Loop
     embedded_execute_once();
-    
-    // manage advertisements
-    le_peripheral_run();
 }
 
 void BTstackManager::bleStartScanning(void){
@@ -794,26 +769,15 @@ uint16_t BTstackManager::addGATTCharacteristic(UUID * uuid, uint16_t flags, uint
 uint16_t BTstackManager::addGATTCharacteristicDynamic(UUID * uuid, uint16_t flags, uint16_t characteristic_id){
     return att_db_util_add_characteristic_uuid128((uint8_t*)uuid->getUuid(), flags | ATT_PROPERTY_DYNAMIC, NULL, 0);
 }
-void BTstackManager::setAdvData(uint16_t size, const uint8_t * data){
-    memcpy(adv_data, data, size);
-    adv_data_len = size;
-    if (btstack_state == HCI_STATE_WORKING){
-        le_peripheral_todos |= SET_ADVERTISEMENT_DATA;
-    }
+void BTstackManager::setAdvData(uint16_t adv_data_len, const uint8_t * adv_data){
+    gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
 }
 void BTstackManager::startAdvertising(){
-    adv_enabled = 1;
-    if (btstack_state == HCI_STATE_WORKING){
-        le_peripheral_todos |= SET_ADVERTISEMENT_DATA;
-    }
+    gap_advertisements_enable(1);
 }
 void BTstackManager::stopAdvertising(){
-    adv_enabled = 0;
-    if (btstack_state == HCI_STATE_WORKING){
-        le_peripheral_todos |= SET_ADVERTISEMENT_DATA;
-    }
+    gap_advertisements_enable(0);
 }
-
 void BTstackManager::iBeaconConfigure(UUID * uuid, uint16_t major_id, uint16_t minor_id, uint8_t measured_power){
     memcpy(adv_data, iBeaconAdvertisement01,  sizeof(iBeaconAdvertisement01));
     adv_data[2] = 0x06;
@@ -823,9 +787,7 @@ void BTstackManager::iBeaconConfigure(UUID * uuid, uint16_t major_id, uint16_t m
     net_store_16(adv_data, 27, minor_id);
     adv_data[29] = measured_power;
     adv_data_len = 30;
-    if (btstack_state == HCI_STATE_WORKING){
-        le_peripheral_todos |= SET_ADVERTISEMENT_DATA;
-    }
+    gap_advertisements_set_data(adv_data_len, adv_data);
 }
 // 02 01 06 1A FF 4C 00 02 15 -- F8 97 17 7B AE E8 47 67 8E CC CC 69 4F D5 FC EE -- 12 67 00 02 00 00 
 // 02 01 06 1a ff 4c 00 02 15 -- FB 0B 57 A2 82 28 44 CD 91 3A 94 A1 22 BA 12 06 -- 00 01 00 02 D1 00
