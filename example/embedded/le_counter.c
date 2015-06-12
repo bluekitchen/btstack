@@ -76,8 +76,10 @@
  *
  * @text Listing MainConfiguration shows main application code.
  * It initializes L2CAP, the Security Manager and configures the ATT Server with the pre-compiled
- * ATT Database generated from $le_counter.gatt$. Finally, it configures the heartbeat handler and
- * boots the Bluetooth stack.
+ * ATT Database generated from $le_counter.gatt$. Finally, it configures the advertisements 
+ * and the heartbeat handler and boots the Bluetooth stack. 
+ * In this example, the Advertisement contains the Flags attribute and the device name.
+ * The flag 0x06 indicates: LE General Discoverable Mode and BR/EDR not supported.
  */
  
 /* LISTING_START(MainConfiguration): Init L2CAP SM ATT Server and start heartbeat timer */
@@ -88,6 +90,14 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 static uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size);
 static int att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 static void  heartbeat_handler(struct timer *ts);
+
+const uint8_t adv_data[] = {
+    // Flags general discoverable
+    0x02, 0x01, 0x06, 
+    // Name
+    0x0b, 0x09, 'L', 'E', ' ', 'C', 'o', 'u', 'n', 't', 'e', 'r', 
+};
+const uint8_t adv_data_len = sizeof(adv_data);
 
 static void le_counter_setup(void){
     l2cap_init();
@@ -102,6 +112,17 @@ static void le_counter_setup(void){
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
     att_dump_attributes();
+
+    // setup advertisements
+    uint16_t adv_int_min = 0x0030;
+    uint16_t adv_int_max = 0x0030;
+    uint8_t adv_type = 0;
+    bd_addr_t null_addr;
+    memset(null_addr, 0, 6);
+    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
+    gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
+    gap_advertisements_enable(1);
+
     // set one-shot timer
     heartbeat.process = &heartbeat_handler;
     run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
@@ -109,77 +130,10 @@ static void le_counter_setup(void){
 }
 /* LISTING_END */
 
-
-/*
- * @section Managing LE Advertisements
- *
- * @text To be discoverable, LE Advertisements are enabled using direct HCI Commands.
- * As there's no guarantee that a HCI command can always be sent, the gap_run function
- * is used to send each command as requested by the $todos$ variable.
- * First, the advertisement data is set with hci_le_set_advertising_data.
- * Then the advertisement parameters including the  advertisement interval is set
- * with hci_le_set_advertising_parameters.
- * Finally, advertisements are enabled with hci_le_set_advertise_enable.
- * See Listing gapRun.
- *
- * In this example, the Advertisement contains the Flags attribute and the device name.
- * The flag 0x06 indicates: LE General Discoverable Mode and BR/EDR not supported.
- */
-
-/* LISTING_START(gapRun): Handle GAP Tasks */
-const uint8_t adv_data[] = {
-    // Flags general discoverable
-    0x02, 0x01, 0x06, 
-    // Name
-    0x0b, 0x09, 'L', 'E', ' ', 'C', 'o', 'u', 'n', 't', 'e', 'r', 
-};
-
-uint8_t adv_data_len = sizeof(adv_data);
-enum {
-    SET_ADVERTISEMENT_PARAMS = 1 << 0,
-    SET_ADVERTISEMENT_DATA   = 1 << 1,
-    ENABLE_ADVERTISEMENTS    = 1 << 2,
-};
-static uint16_t todos = 0;
-
-static void gap_run(void){
-
-    if (!hci_can_send_command_packet_now()) return;
-
-    if (todos & SET_ADVERTISEMENT_DATA){
-        printf("GAP_RUN: set advertisement data\n");
-        todos &= ~SET_ADVERTISEMENT_DATA;
-        hci_send_cmd(&hci_le_set_advertising_data, adv_data_len, adv_data);
-        return;
-    }    
-
-    if (todos & SET_ADVERTISEMENT_PARAMS){
-        todos &= ~SET_ADVERTISEMENT_PARAMS;
-        uint8_t adv_type = 0;   // default
-        bd_addr_t null_addr;
-        memset(null_addr, 0, 6);
-        uint16_t adv_int_min = 0x0030;
-        uint16_t adv_int_max = 0x0030;
-        hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, 0, 0, &null_addr, 0x07, 0x00);
-        return;
-    }    
-
-    if (todos & ENABLE_ADVERTISEMENTS){
-        printf("GAP_RUN: enable advertisements\n");
-        todos &= ~ENABLE_ADVERTISEMENTS;
-        hci_send_cmd(&hci_le_set_advertise_enable, 1);
-        return;
-    }
-}
-/* LISTING_END */
-
 /* 
  * @section Packet Handler
  *
- * @text The packet handler is only used to trigger advertisements 
- * after BTstack is ready and after disconnects, see Listing packetHandler. 
- * Advertisements are not automatically re-enabled after a connection 
- * was closed, even though they have been active before.
+ * @text The packet handler is only used to stop the counter after a disconnect
  */
 
 /* LISTING_START(packetHandler): Packet Handler */
@@ -187,30 +141,12 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 	switch (packet_type) {
 		case HCI_EVENT_PACKET:
 			switch (packet[0]) {
-					
-				case BTSTACK_EVENT_STATE:
-					// BTstack activated, get started 
-					if (packet[2] == HCI_STATE_WORKING) {
-                        todos = SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | ENABLE_ADVERTISEMENTS;
-                        gap_run();
-					}
-					break;
-
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    todos = ENABLE_ADVERTISEMENTS;
                     le_notification_enabled = 0;
-                    gap_run();
-                    break;
-                
-                default:
                     break;
 			}
             break;
-
-        default:
-            break;
 	}
-    gap_run();
 }
 /* LISTING_END */
 
@@ -227,11 +163,10 @@ static char counter_string[30];
 static int  counter_string_len;
 
 static void  heartbeat_handler(struct timer *ts){
-    counter++;
-    counter_string_len = sprintf(counter_string, "BTstack counter %04u\n", counter);
-    puts(counter_string);
-
     if (le_notification_enabled) {
+        counter++;
+        counter_string_len = sprintf(counter_string, "BTstack counter %04u", counter);
+        puts(counter_string);
         att_server_notify(ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
     }
     run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);

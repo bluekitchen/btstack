@@ -104,42 +104,6 @@ const uint8_t adv_data[] = {
 /* LISTING_END */
 uint8_t adv_data_len = sizeof(adv_data);
 
-enum {
-    SET_ADVERTISEMENT_PARAMS = 1 << 0,
-    SET_ADVERTISEMENT_DATA   = 1 << 1,
-    ENABLE_ADVERTISEMENTS    = 1 << 2,
-};
-static uint16_t todos = 0;
-
-static void gap_run(void){
-
-    if (!hci_can_send_command_packet_now()) return;
-
-    if (todos & SET_ADVERTISEMENT_DATA){
-        printf("GAP_RUN: set advertisement data\n");
-        todos &= ~SET_ADVERTISEMENT_DATA;
-        hci_send_cmd(&hci_le_set_advertising_data, adv_data_len, adv_data);
-        return;
-    }    
-
-    if (todos & SET_ADVERTISEMENT_PARAMS){
-        todos &= ~SET_ADVERTISEMENT_PARAMS;
-        uint8_t adv_type = 0;   // default
-        bd_addr_t null_addr;
-        memset(null_addr, 0, 6);
-        uint16_t adv_int_min = 0x0030;
-        uint16_t adv_int_max = 0x0030;
-        hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, 0, 0, &null_addr, 0x07, 0x00);
-        return;
-    }    
-
-    if (todos & ENABLE_ADVERTISEMENTS){
-        printf("GAP_RUN: enable advertisements\n");
-        todos &= ~ENABLE_ADVERTISEMENTS;
-        hci_send_cmd(&hci_le_set_advertise_enable, 1);
-        return;
-    }
-}
 
 /* 
  * @section Packet Handler
@@ -156,15 +120,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 	switch (packet_type) {
 		case HCI_EVENT_PACKET:
 			switch (packet[0]) {
-					
-				case BTSTACK_EVENT_STATE:
-					// BTstack activated, get started 
-					if (packet[2] == HCI_STATE_WORKING) {
-                        todos = SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | ENABLE_ADVERTISEMENTS;
-                        gap_run();
-					}
-					break;
-									
 				case HCI_EVENT_PIN_CODE_REQUEST:
 					// inform about pin code request
                     printf("Pin code request - using '0000'\n");
@@ -179,9 +134,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    todos = ENABLE_ADVERTISEMENTS;
                     le_notification_enabled = 0;
-                    gap_run();
                     break;
 
                 case RFCOMM_EVENT_INCOMING_CONNECTION:
@@ -225,7 +178,6 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
         default:
             break;
 	}
-    gap_run();
 }
 
 // ATT Client Read Callback for Dynamic Data
@@ -335,6 +287,16 @@ int btstack_main(void)
     heartbeat.process = &heartbeat_handler;
     run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);
     run_loop_add_timer(&heartbeat);
+
+    // setup advertisements
+    uint16_t adv_int_min = 0x0030;
+    uint16_t adv_int_max = 0x0030;
+    uint8_t adv_type = 0;
+    bd_addr_t null_addr;
+    memset(null_addr, 0, 6);
+    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
+    gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
+    gap_advertisements_enable(1);
 
     // turn on!
 	hci_power_control(HCI_POWER_ON);

@@ -75,12 +75,6 @@
 // ancs client profile
 #include "ancs_client.h"
 
-enum {
-    SET_ADVERTISEMENT_PARAMS = 1 << 0,
-    SET_ADVERTISEMENT_DATA   = 1 << 1,
-    ENABLE_ADVERTISEMENTS    = 1 << 2,
-};
-
 const uint8_t adv_data[] = {
     // Flags general discoverable
     0x02, 0x01, 0x02, 
@@ -91,67 +85,18 @@ const uint8_t adv_data[] = {
 };
 uint8_t adv_data_len = sizeof(adv_data);
 
-static uint16_t todos = 0;
-
-static void app_run(void){
-
-    if (!hci_can_send_command_packet_now()) return;
-
-    if (todos & SET_ADVERTISEMENT_DATA){
-        printf("app_run: set advertisement data\n");
-        todos &= ~SET_ADVERTISEMENT_DATA;
-        hci_send_cmd(&hci_le_set_advertising_data, adv_data_len, adv_data);
-        return;
-    }    
-
-    if (todos & SET_ADVERTISEMENT_PARAMS){
-        todos &= ~SET_ADVERTISEMENT_PARAMS;
-        uint8_t adv_type = 0;   // default
-        bd_addr_t null_addr;
-        memset(null_addr, 0, 6);
-        uint16_t adv_int_min = 0x0030;
-        uint16_t adv_int_max = 0x0030;
-        hci_send_cmd(&hci_le_set_advertising_parameters, adv_int_min, adv_int_max, adv_type, 0, 0, &null_addr, 0x07, 0x00);
-        return;
-    }    
-
-    if (todos & ENABLE_ADVERTISEMENTS){
-        printf("app_run: enable advertisements\n");
-        todos &= ~ENABLE_ADVERTISEMENTS;
-        hci_send_cmd(&hci_le_set_advertise_enable, 1);
-        return;
-    }
-}
-
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-
     switch (packet_type) {
-            
         case HCI_EVENT_PACKET:
             switch (packet[0]) {
-                
                 case BTSTACK_EVENT_STATE:
-                    // bt stack activated, get started
                     if (packet[2] == HCI_STATE_WORKING) {
                         printf("SM Init completed\n");
-                        todos = SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | ENABLE_ADVERTISEMENTS;
-                        app_run();
                     }
                     break;
-                
-                case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    todos = ENABLE_ADVERTISEMENTS;
-                    break;
-                    
-                // case ATT_HANDLE_VALUE_INDICATION_COMPLETE:
-                //     printf("ATT_HANDLE_VALUE_INDICATION_COMPLETE status %u\n", packet[2]);
-                //     break;
-
-                default:
-                    break;
             }
+            break;
     }
-    app_run();
 }
 
 void ancs_callback(ancs_event_t * event){
@@ -199,6 +144,16 @@ int btstack_main(int argc, const char * argv[]){
     // setup ANCS Client
     ancs_client_init();
     ancs_client_register_callback(&ancs_callback);
+
+    // setup advertisements
+    uint16_t adv_int_min = 0x0030;
+    uint16_t adv_int_max = 0x0030;
+    uint8_t adv_type = 0;
+    bd_addr_t null_addr;
+    memset(null_addr, 0, 6);
+    gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
+    gap_advertisements_set_data(adv_data_len, (uint8_t*) adv_data);
+    gap_advertisements_enable(1);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);
