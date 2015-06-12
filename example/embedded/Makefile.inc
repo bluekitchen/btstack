@@ -73,15 +73,10 @@ EXAMPLES = 					\
 
 EXAMPLES_USING_LE =			\
 	ancs_client 			\
-	ble_central_test        \
-	ble_peripheral_test     \
 	gatt_battery_query      \
 	gatt_browser			\
 	led_counter 			\
 	spp_and_le_counter	    \
-
-# requires termios / command line support
-EXAMPLES_CLI = ble_peripheral_test ble_central_test l2cap_test ancs_client classic_test bnep_test hsp_ag_test hsp_hs_test
 
 # .o for .c
 CORE_OBJ    = $(CORE:.c=.o)
@@ -154,33 +149,10 @@ gatt_battery_query: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM
 ancs_client: ancs_client.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL_OBJ} ${BTSTACK_ROOT}/ble/ancs_client_lib.c ancs_client.c
 	${CC} $(filter-out ancs_client.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-
-# CLI Examples
-ble_peripheral_test: profile.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral_test.o
-	${CC} $(filter-out profile.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
-
-ble_central_test: ${CORE_OBJ} ${COMMON_OBJ} ${SM_REAL_OBJ} ${ATT_OBJ}  ${GATT_CLIENT_OBJ}  ble_central_test.c
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-
-hsp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_ag.o hsp_ag_test.c 
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-
-hsp_hs_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_hs.o hsp_hs_test.c  
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-
-l2cap_test: ${CORE_OBJ} ${COMMON_OBJ} l2cap_test.c
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-
-classic_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} classic_test.c
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-
-bnep_test: ${CORE_OBJ} ${COMMON_OBJ} bnep_test.c
+led_counter: ${CORE_OBJ} ${COMMON_OBJ} led_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL} ble_client.c
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
-
-led_counter: ${CORE_OBJ} ${COMMON_OBJ} led_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 
