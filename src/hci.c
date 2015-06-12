@@ -1518,6 +1518,10 @@ static void event_handler(uint8_t *packet, int size){
             handle = READ_BT_16(packet, 3);
             conn = hci_connection_for_handle(handle);
             if (!conn) break;       // no conn struct anymore
+            // re-enable advertisements for le connections if active
+            if (hci_is_le_connection(conn) && hci_stack->le_advertisements_enabled){
+                hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_ENABLE;
+            }
             conn->state = RECEIVED_DISCONNECTION_COMPLETE;
             break;
 
@@ -2118,6 +2122,9 @@ void hci_run(void){
             return;
         }
         // le advertisement control
+        if (hci_stack->le_advertisements_todo){
+            log_info("hci_run: gap_le: adv todo: %x", hci_stack->le_advertisements_todo );
+        }
         if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_DISABLE){
             hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_DISABLE;
             hci_send_cmd(&hci_le_set_advertise_enable, 0);
