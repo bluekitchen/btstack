@@ -587,6 +587,12 @@ typedef enum hci_init_state{
 
 } hci_substate_t;
 
+enum {
+    LE_ADVERTISEMENT_TASKS_DISABLE     = 1 << 0,
+    LE_ADVERTISEMENT_TASKS_SET_DATA    = 1 << 1,
+    LE_ADVERTISEMENT_TASKS_SET_PARAMS  = 1 << 2,
+    LE_ADVERTISEMENT_TASKS_ENABLE      = 1 << 0,
+};
 
 /**
  * main data structure
@@ -682,7 +688,21 @@ typedef struct {
 
     le_connection_parameter_range_t le_connection_parameter_range;
 
+    uint8_t  * le_advertisements_data;
+    uint8_t    le_advertisements_data_len;
+
     uint8_t  le_advertisements_active;
+    uint8_t  le_advertisements_enabled;
+    uint8_t  le_advertisements_todo;
+
+    uint16_t le_advertisements_interval_min;
+    uint16_t le_advertisements_interval_max;
+    uint8_t  le_advertisements_type;
+    uint8_t  le_advertisements_own_address_type;
+    uint8_t  le_advertisements_direct_address_type;
+    uint8_t  le_advertisements_channel_map;
+    uint8_t  le_advertisements_filter_policy;
+    bd_addr_t le_advertisements_direct_address;
 
     // custom BD ADDR
     bd_addr_t custom_bd_addr; 
@@ -873,6 +893,23 @@ void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t addr);
 void hci_set_hardware_error_callback(void (*fn)(void));
 
 /* API_END */
+
+/**
+ * @brief Set Advertisement Parameters
+ * @param adv_int_min
+ * @param adv_int_max
+ * @param adv_type
+ * @param own_address_type
+ * @param direct_address_type
+ * @param direct_address
+ * @param channel_map
+ * @param filter_policy
+ *
+ * @note internal use. use gap_advertisements_set_params from gap_le.h instead.
+ */
+void hci_le_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
+    uint8_t own_address_type, uint8_t direct_address_typ, bd_addr_t direct_address,
+    uint8_t channel_map, uint8_t filter_policy);
 
 #if defined __cplusplus
 }

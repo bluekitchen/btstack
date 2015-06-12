@@ -350,6 +350,7 @@ static void gap_random_address_update_stop(void){
     run_loop_remove_timer(&gap_random_address_update_timer);
 }
 
+
 static void sm_random_start(sm_connection_t * sm_conn){
     sm_random_connection_source = sm_conn;
     hci_send_cmd(&hci_le_rand);
@@ -2203,3 +2204,22 @@ void gap_random_address_set_update_period(int period_ms){
     gap_random_address_update_stop();
     gap_random_address_update_start();
 }
+
+/**
+ * @brief Set Advertisement Paramters
+ * @param adv_int_min
+ * @param adv_int_max
+ * @param adv_type
+ * @param direct_address_type
+ * @param direct_address
+ * @param channel_map
+ * @param filter_policy
+ *
+ * @note own_address_type is used from gap_random_address_set_mode
+ */
+void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
+    uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy){
+    hci_le_advertisements_set_params(adv_int_min, adv_int_max, adv_type, gap_random_adress_type,
+        direct_address_typ, direct_address, channel_map, filter_policy);
+}
+

@@ -76,15 +76,16 @@ gap_random_address_type_t gap_random_address_get_mode(void);
  * @param supervision_timeout (unit: 10ms)
  * @returns 0 if ok
  */
-void gap_update_connection_parameters(hci_con_handle_t con_handle, uint16_t conn_interval_min,
+int gap_update_connection_parameters(hci_con_handle_t con_handle, uint16_t conn_interval_min,
 	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout);
 
-/** 
- * @brief Set Advertisement Data 
- * @param advertisement date (31 octets)
+/**
+ * @brief Set Advertisement Data
+ * @param advertising_data_length
+ * @param advertising_data (max 31 octets)
  * @note data is not copied, pointer has to stay valid
  */
-void gap_advertisements_set_data(uint8_t * adv_data);
+void gap_advertisements_set_data(uint8_t advertising_data_length, uint8_t * advertising_data);
 
 /**
  * @brief Set Advertisement Paramters

@@ -47,6 +47,10 @@
 #include "hci.h"
 #include "gap.h"
 
+#ifdef HAVE_BLE
+#include "gap_le.h"
+#endif
+
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
@@ -2091,8 +2095,8 @@ void hci_run(void){
     }
     
 #ifdef HAVE_BLE
-    // handle le scan
     if (hci_stack->state == HCI_STATE_WORKING){
+        // handle le scan
         switch(hci_stack->le_scanning_state){
             case LE_START_SCAN:
                 hci_stack->le_scanning_state = LE_SCANNING;
@@ -2111,6 +2115,36 @@ void hci_run(void){
             int scan_type = hci_stack->le_scan_type;
             hci_stack->le_scan_type = 0xff;
             hci_send_cmd(&hci_le_set_scan_parameters, scan_type, hci_stack->le_scan_interval, hci_stack->le_scan_window, hci_stack->adv_addr_type, 0);
+            return;
+        }
+        // le advertisement control
+        if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_DISABLE){
+            hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_DISABLE;
+            hci_send_cmd(&hci_le_set_advertise_enable, 0);
+            return;
+        }
+        if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_PARAMS){
+            hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_PARAMS;
+            hci_send_cmd(&hci_le_set_advertising_parameters,
+                 hci_stack->le_advertisements_interval_min,
+                 hci_stack->le_advertisements_interval_max,
+                 hci_stack->le_advertisements_type,
+                 hci_stack->le_advertisements_own_address_type,
+                 hci_stack->le_advertisements_direct_address_type,
+                 hci_stack->le_advertisements_direct_address,
+                 hci_stack->le_advertisements_channel_map,
+                 hci_stack->le_advertisements_filter_policy);
+            return;
+        }
+        if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_SET_DATA){
+            hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_SET_DATA;
+            hci_send_cmd(&hci_le_set_advertising_data, hci_stack->le_advertisements_data_len,
+                hci_stack->le_advertisements_data);
+            return;
+        }
+        if (hci_stack->le_advertisements_todo & LE_ADVERTISEMENT_TASKS_ENABLE){
+            hci_stack->le_advertisements_todo &= ~LE_ADVERTISEMENT_TASKS_ENABLE;
+            hci_send_cmd(&hci_le_set_advertise_enable, 1);
             return;
         }
     }
@@ -2925,6 +2959,70 @@ int gap_update_connection_parameters(hci_con_handle_t con_handle, uint16_t conn_
     connection->le_supervision_timeout = supervision_timeout;
     return 0;
 }
+
+/**
+ * @brief Set Advertisement Data
+ * @param advertising_data_length
+ * @param advertising_data (max 31 octets)
+ * @note data is not copied, pointer has to stay valid
+ */
+void gap_advertisements_set_data(uint8_t advertising_data_length, uint8_t * advertising_data){
+    hci_stack->le_advertisements_data_len = advertising_data_length;
+    hci_stack->le_advertisements_data = advertising_data;
+    hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_DATA;
+    // disable advertisements before setting data
+    if (hci_stack->le_advertisements_enabled){
+        hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_DISABLE | LE_ADVERTISEMENT_TASKS_ENABLE;
+    }
+}
+
+/**
+ * @brief Set Advertisement Parameters
+ * @param adv_int_min
+ * @param adv_int_max
+ * @param adv_type
+ * @param own_address_type
+ * @param direct_address_type
+ * @param direct_address
+ * @param channel_map
+ * @param filter_policy
+ *
+ * @note internal use. use gap_advertisements_set_params from gap_le.h instead.
+ */
+ void hci_le_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
+    uint8_t own_address_type, uint8_t direct_address_typ, bd_addr_t direct_address,
+    uint8_t channel_map, uint8_t filter_policy) {
+
+    hci_stack->le_advertisements_interval_min = adv_int_min;
+    hci_stack->le_advertisements_interval_max = adv_int_max;
+    hci_stack->le_advertisements_type = adv_type;
+    hci_stack->le_advertisements_own_address_type = own_address_type;
+    hci_stack->le_advertisements_direct_address_type = direct_address_typ;
+    hci_stack->le_advertisements_channel_map = channel_map;
+    hci_stack->le_advertisements_filter_policy = filter_policy;
+    memcpy(hci_stack->le_advertisements_direct_address, direct_address, 6);
+
+    hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
+    // disable advertisements before changing params
+    if (hci_stack->le_advertisements_enabled){
+        hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_DISABLE | LE_ADVERTISEMENT_TASKS_ENABLE;
+    }
+ }
+
+/**
+ * @brief Enable/Disable Advertisements
+ * @param enabled
+ */
+void gap_advertisements_enable(int enabled){
+    hci_stack->le_advertisements_enabled = enabled;
+    if (enabled && !hci_stack->le_advertisements_active){
+        hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_ENABLE;
+    }
+    if (!enabled && hci_stack->le_advertisements_active){
+        hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_DISABLE;
+    }
+}
+
 
 le_command_status_t gap_disconnect(hci_con_handle_t handle){
     hci_connection_t * conn = hci_connection_for_handle(handle);
