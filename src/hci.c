@@ -2964,6 +2964,7 @@ int gap_update_connection_parameters(hci_con_handle_t con_handle, uint16_t conn_
     connection->le_conn_interval_max = conn_interval_max;
     connection->le_conn_latency = conn_latency;
     connection->le_supervision_timeout = supervision_timeout;
+    hci_run();
     return 0;
 }
 
@@ -2981,6 +2982,7 @@ void gap_advertisements_set_data(uint8_t advertising_data_length, uint8_t * adve
     if (hci_stack->le_advertisements_enabled){
         hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_DISABLE | LE_ADVERTISEMENT_TASKS_ENABLE;
     }
+    hci_run();
 }
 
 /**
@@ -3014,6 +3016,7 @@ void gap_advertisements_set_data(uint8_t advertising_data_length, uint8_t * adve
     if (hci_stack->le_advertisements_enabled){
         hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_DISABLE | LE_ADVERTISEMENT_TASKS_ENABLE;
     }
+    hci_run();
  }
 
 /**
@@ -3028,6 +3031,7 @@ void gap_advertisements_enable(int enabled){
     if (!enabled && hci_stack->le_advertisements_active){
         hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_DISABLE;
     }
+    hci_run();
 }
 
 
