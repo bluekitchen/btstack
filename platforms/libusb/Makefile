@@ -12,6 +12,7 @@ include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 CFLAGS  += -g -Wall 
 # CFLAGS += -Werror
 
+CFLAGS += -I${POSIX_ROOT}/src
 VPATH += ${BTSTACK_ROOT}/platforms/posix/src
 
 ifeq ($(OS),Windows_NT)
