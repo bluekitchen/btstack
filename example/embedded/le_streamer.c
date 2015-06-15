@@ -81,8 +81,7 @@
  
 /* LISTING_START(MainConfiguration): Init L2CAP, SM, ATT Server, and enable advertisements */
 static int  le_notification_enabled;
-
-static void     packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static void     packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 static int      att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
 static void     streamer(void);
 
@@ -96,7 +95,6 @@ const uint8_t adv_data_len = sizeof(adv_data);
 
 static void le_streamer_setup(void){
     l2cap_init();
-    l2cap_register_packet_handler(packet_handler);
 
     // setup le device db
     le_device_db_init();
@@ -106,6 +104,7 @@ static void le_streamer_setup(void){
 
     // setup ATT server
     att_server_init(profile_data, NULL, att_write_callback);    
+    att_server_register_packet_handler(packet_handler);
     att_dump_attributes();
 
     // setup advertisements
@@ -120,37 +119,10 @@ static void le_streamer_setup(void){
 }
 /* LISTING_END */
 
-/* 
- * @section Packet Handler
- *
- * @text The packet handler is only used to stop the counter after a disconnect
- */
-
-/* LISTING_START(packetHandler): Packet Handler */
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-	switch (packet_type) {
-		case HCI_EVENT_PACKET:
-			switch (packet[0]) {
-                case HCI_EVENT_DISCONNECTION_COMPLETE:
-                    le_notification_enabled = 0;
-                    break;
-			}
-            break;
-	}
-    // try sending whenever something happens
-    streamer();
-}
-/* LISTING_END */
-
 /*
- * @section Streamer
- *
- * @text The streamer updates the value of the single Characteristic provided in this example,
- * and sends a notification for this characteristic if enabled, see Listing streamer.
+ * @section Track sending speed
  */
-
- /* LISTING_START(streamer): Hearbeat Handler */
- #define REPORT_INTERVAL_MS 10000
+#define REPORT_INTERVAL_MS 10000
 static int  counter = 'A';
 static char test_data[200];
 static int  test_data_len;
@@ -185,7 +157,49 @@ static void test_track_sent(int bytes_sent){
     test_reset();
 }
 
-static void  streamer(void){
+/* 
+ * @section Packet Handler
+ *
+ * @text The packet handler is only used to stop the counter after a disconnect
+ */
+
+/* LISTING_START(packetHandler): Packet Handler */
+static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    int mtu;
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            switch (packet[0]) {
+                case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    le_notification_enabled = 0;
+                    break;
+                case HCI_EVENT_LE_META:
+                    switch (packet[2]) {
+                        case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
+                            test_data_len = ATT_DEFAULT_MTU - 3;
+                            break;
+                    }
+                    break;  
+                case ATT_MTU_EXCHANGE_COMPLETE:
+                    mtu = READ_BT_16(packet, 4) - 3;
+                    printf("ATT MTU = %u\n", mtu);
+                    test_data_len = mtu - 3;
+                    break;
+            }
+    }
+    // try sending whenever something happens
+    streamer();
+}
+
+/* LISTING_END */
+/*
+ * @section Streamer
+ *
+ * @text The streamer updates the value of the single Characteristic provided in this example,
+ * and sends a notification for this characteristic if enabled, see Listing streamer.
+ */
+
+ /* LISTING_START(streamer): Hearbeat Handler */
+static void streamer(void){
     // check if we can send
     if (!le_notification_enabled) return;
     if (!att_server_can_send()) return;
@@ -197,8 +211,6 @@ static void  streamer(void){
     for (i=0;i<sizeof(test_data);i++){
         test_data[i] = counter;
     }
-    // figure out max data len
-    test_data_len = 20;
 
     // send
     att_server_notify(ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) test_data, test_data_len);
