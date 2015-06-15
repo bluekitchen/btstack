@@ -153,6 +153,13 @@ void embedded_execute_once(void);
 #endif
 /* API_END */
 
+#ifdef HAVE_TIME
+/**
+ * @brief Queries the current time in ms since start
+ */
+uint32_t posix_get_time_ms(void);
+#endif
+
 #if defined __cplusplus
 }
 #endif

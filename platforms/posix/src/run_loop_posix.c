@@ -64,7 +64,7 @@ static int posix_timer_compare(timer_source_t *a, timer_source_t *b);
 static linked_list_t data_sources;
 static int data_sources_modified;
 static linked_list_t timers;
-
+static struct timeval init_tv;
 /**
  * Add data_source to run_loop
  */
@@ -250,6 +250,17 @@ static int posix_timer_compare(timer_source_t *a, timer_source_t *b){
 static void posix_init(void){
     data_sources = NULL;
     timers = NULL;
+    gettimeofday(&init_tv, NULL);
+}
+
+/**
+ * @brief Queries the current time in ms since start
+ */
+uint32_t posix_get_time_ms(void){
+    struct timeval current_tv;
+    gettimeofday(&current_tv, NULL);
+    return (current_tv.tv_sec  - init_tv.tv_sec)  * 1000
+         + (current_tv.tv_usec - init_tv.tv_usec) / 1000;
 }
 
 run_loop_t run_loop_posix = {
