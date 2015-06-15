@@ -131,13 +131,15 @@ uint32_t embedded_ticks_for_ms(uint32_t time_in_ms);
  */
 uint32_t embedded_get_ticks(void);
 /**
- * @brief Queries the current time in ms
- */
-uint32_t embedded_get_time_ms(void);
-/**
  * @brief Allows to update BTstack system ticks based on another already existing clock.
  */
 void embedded_set_ticks(uint32_t ticks);
+#endif
+#if defined(HAVE_TICK) || defined(HAVE_TIME_MS)
+/**
+ * @brief Queries the current time in ms
+ */
+uint32_t embedded_get_time_ms(void);
 #endif
 #ifdef EMBEDDED
 /**
