@@ -57,12 +57,14 @@ PAN += \
 	pan.c \
 
 EXAMPLES = 					\
+	ancs_client 			\
 	gap_dedicated_bonding	\
 	gap_inquiry 			\
 	gap_inquiry_and_bond 	\
 	gatt_battery_query		\
 	gatt_browser            \
 	le_counter              \
+	le_streamer				\
 	led_counter				\
 	sdp_bnep_query 			\
 	sdp_general_query		\
@@ -75,7 +77,8 @@ EXAMPLES_USING_LE =			\
 	ancs_client 			\
 	gatt_battery_query      \
 	gatt_browser			\
-	led_counter 			\
+	le_counter              \
+	le_streamer				\
 	spp_and_le_counter	    \
 
 # .o for .c
@@ -102,6 +105,8 @@ spp_and_le_counter.h: spp_and_le_counter.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 le_counter.h: le_counter.gatt
 	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
+le_streamer.h: le_streamer.gatt
+	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
 
 # examples
 sdp_rfcomm_query: ${CORE_OBJ} ${COMMON_OBJ} ${PAN_OBJ} ${SDP_CLIENT} sdp_rfcomm_query.c
@@ -118,6 +123,9 @@ spp_counter: ${CORE_OBJ} ${COMMON_OBJ} spp_counter.c
 
 le_counter: le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} le_counter.c 
 	${CC} $(filter-out le_counter.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+
+le_streamer: le_streamer.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} le_streamer.c 
+	${CC} $(filter-out le_streamer.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 spp_and_le_counter: spp_and_le_counter.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} spp_and_le_counter.c 
 	${CC} $(filter-out spp_and_le_counter.h,$^)  ${CFLAGS} ${LDFLAGS} -o $@
