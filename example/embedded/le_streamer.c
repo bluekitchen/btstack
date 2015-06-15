@@ -93,6 +93,16 @@ const uint8_t adv_data[] = {
 };
 const uint8_t adv_data_len = sizeof(adv_data);
 
+#define REPORT_INTERVAL_MS 10000
+static int  counter = 'A';
+static char test_data[200];
+static int  test_data_len;
+
+static uint32_t test_data_sent;
+static uint32_t test_data_start;
+
+static uint16_t conn_handle;
+
 static void le_streamer_setup(void){
     l2cap_init();
 
@@ -122,14 +132,6 @@ static void le_streamer_setup(void){
 /*
  * @section Track sending speed
  */
-#define REPORT_INTERVAL_MS 10000
-static int  counter = 'A';
-static char test_data[200];
-static int  test_data_len;
-
-static uint32_t test_data_sent;
-static uint32_t test_data_start;
-
 static uint32_t get_time_ms(void){
 #if defined(HAVE_TICK) || defined(HAVE_TIME_MS)
     return embedded_get_time_ms();
@@ -176,6 +178,10 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                     switch (packet[2]) {
                         case HCI_SUBEVENT_LE_CONNECTION_COMPLETE:
                             test_data_len = ATT_DEFAULT_MTU - 3;
+                            conn_handle = READ_BT_16(packet, 4);
+                            // min con interval 20 ms 
+                            printf("Connected, requesting conn param update for handle 0x%04x\n", conn_handle);
+                            gap_update_connection_parameters(conn_handle, 0x10, 0x10, 0, 0x0048);
                             break;
                     }
                     break;  
