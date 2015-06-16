@@ -142,12 +142,6 @@ uint32_t embedded_get_ticks(void);
  */
 void embedded_set_ticks(uint32_t ticks);
 #endif
-#if defined(HAVE_TICK) || defined(HAVE_TIME_MS)
-/**
- * @brief Queries the current time in ms
- */
-uint32_t embedded_get_time_ms(void);
-#endif
 #ifdef EMBEDDED
 /**
  * @brief Sets an internal flag that is checked in the critical section just before entering sleep mode. Has to be called by the interrupt handler of a data source to signal the run loop that a new data is available.
@@ -159,13 +153,6 @@ void embedded_trigger(void);
 void embedded_execute_once(void);
 #endif
 /* API_END */
-
-#ifdef HAVE_TIME
-/**
- * @brief Queries the current time in ms since start
- */
-uint32_t posix_get_time_ms(void);
-#endif
 
 #if defined __cplusplus
 }
