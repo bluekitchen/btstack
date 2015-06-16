@@ -100,6 +100,12 @@ void run_loop_add_timer(timer_source_t *timer);
 int  run_loop_remove_timer(timer_source_t *timer);
 
 /**
+ * @brief Get current time in ms
+ * @note 32-bit ms counter will overflow after approx. 52 days
+ */
+uint32_t run_loop_get_time_ms(void);
+
+/**
  * @brief Init must be called before any other run_loop call. Use RUN_LOOP_EMBEDDED for embedded devices.
  */
 void run_loop_init(RUN_LOOP_TYPE type);
@@ -119,6 +125,7 @@ int  run_loop_remove_data_source(data_source_t *dataSource);
  * @brief Execute configured run loop. This function does not return.
  */
 void run_loop_execute(void);
+
 
 // hack to fix HCI timer handling
 #ifdef HAVE_TICK

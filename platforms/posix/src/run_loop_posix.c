@@ -272,4 +272,5 @@ run_loop_t run_loop_posix = {
     &posix_remove_timer,
     &posix_execute,
     &posix_dump_timer,
+    &posix_get_time_ms,
 };

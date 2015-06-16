@@ -52,6 +52,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static struct timeval init_tv;
+
 static void theCFRunLoopTimerCallBack (CFRunLoopTimerRef timer,void *info){
     timer_source_t * ts = (timer_source_t*)info;
     ts->process(ts);
@@ -149,7 +151,18 @@ static void cocoa_set_timer(timer_source_t *a, uint32_t timeout_in_ms){
     }
 }
 
+/**
+ * @brief Queries the current time in ms since start
+ */
+static uint32_t cocoa_get_time_ms(void){
+    struct timeval current_tv;
+    gettimeofday(&current_tv, NULL);
+    return (current_tv.tv_sec  - init_tv.tv_sec)  * 1000
+         + (current_tv.tv_usec - init_tv.tv_usec) / 1000;
+}
+
 void cocoa_init(void){
+    gettimeofday(&init_tv, NULL);
 }
 
 void cocoa_execute(void)
@@ -171,5 +184,6 @@ run_loop_t run_loop_cocoa = {
     &cocoa_remove_timer,
     &cocoa_execute,
     &cocoa_dump_timer,
+    &cocoa_get_time_ms,
 };
 

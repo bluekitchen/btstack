@@ -67,6 +67,7 @@ typedef struct {
 	int  (*remove_timer)(timer_source_t *timer); 
 	void (*execute)(void);
 	void (*dump_timer)(void);
+	uint32_t (*get_time_ms)(void);
 } run_loop_t;
 
 #if defined __cplusplus

@@ -268,4 +268,5 @@ const run_loop_t run_loop_embedded = {
     &embedded_remove_timer,
     &embedded_execute,
     &embedded_dump_timer,
+    &embedded_get_time_ms,
 };

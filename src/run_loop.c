@@ -120,6 +120,15 @@ int run_loop_remove_timer(timer_source_t *ts){
     return the_run_loop->remove_timer(ts);
 }
 
+/**
+ * @brief Get current time in ms
+ */
+uint32_t run_loop_get_time_ms(void){
+    run_loop_assert();
+    return the_run_loop->get_time_ms();
+}
+
+
 void run_loop_timer_dump(void){
     run_loop_assert();
     the_run_loop->dump_timer();
