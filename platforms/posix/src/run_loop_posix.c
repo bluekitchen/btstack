@@ -256,7 +256,7 @@ static void posix_init(void){
 /**
  * @brief Queries the current time in ms since start
  */
-uint32_t posix_get_time_ms(void){
+static uint32_t posix_get_time_ms(void){
     struct timeval current_tv;
     gettimeofday(&current_tv, NULL);
     return (current_tv.tv_sec  - init_tv.tv_sec)  * 1000

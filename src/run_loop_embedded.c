@@ -225,17 +225,18 @@ void embedded_set_ticks(uint32_t ticks){
 uint32_t embedded_ticks_for_ms(uint32_t time_in_ms){
     return time_in_ms / hal_tick_get_tick_period_in_ms();
 }
-
-uint32_t embedded_get_time_ms(void){
-    return system_ticks * hal_tick_get_tick_period_in_ms();
-}
 #endif
 
+static uint32_t embedded_get_time_ms(void){
 #ifdef HAVE_TIME_MS
-uint32_t embedded_get_time_ms(void){
     return hal_time_ms();
-}
 #endif
+#ifdef HAVE_TICK
+    return system_ticks * hal_tick_get_tick_period_in_ms();
+#endif
+    return 0;
+}
+
 
 /**
  * trigger run loop iteration
