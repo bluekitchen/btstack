@@ -41,8 +41,11 @@
  * @text All newer operating systems provide GATT Client functionality.
  * This example shows how to get a maximal throughput via BLE:
  * - send whenever possible
- * - use the max ATT MTU 
- * - update the connection paramters to the minimal allowed connection interval
+ * - use the max ATT MTU
+ *
+ * In theory, we should also update the connection parameters, but we already get
+ * a connection interval of 30 ms and there's no public way to use a shorter 
+ * interval with iOS (if we're not implementing an HID device)
  */
  // *****************************************************************************
 
@@ -71,19 +74,10 @@
 #include "gap_le.h"
 #include "sm.h"
 
-/* @section Main Application Setup
- *
- * @text Listing MainConfiguration shows main application code.
- * It initializes L2CAP, the Security Manager and configures the ATT Server with the pre-compiled
- * ATT Database generated from $le_streamer.gatt$. Finally, it configures the advertisements 
- * and boots the Bluetooth stack. 
- */
- 
-/* LISTING_START(MainConfiguration): Init L2CAP, SM, ATT Server, and enable advertisements */
-static int  le_notification_enabled;
-static void     packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
-static int      att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
-static void     streamer(void);
+static int   le_notification_enabled;
+static void  packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+static int   att_write_callback(uint16_t con_handle, uint16_t att_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size);
+static void  streamer(void);
 
 const uint8_t adv_data[] = {
     // Flags general discoverable
@@ -93,15 +87,21 @@ const uint8_t adv_data[] = {
 };
 const uint8_t adv_data_len = sizeof(adv_data);
 
-#define REPORT_INTERVAL_MS 3000
 static int  counter = 'A';
 static char test_data[200];
 static int  test_data_len;
 
-static uint32_t test_data_sent;
-static uint32_t test_data_start;
-
 static uint16_t conn_handle;
+
+/* @section Main Application Setup
+ *
+ * @text Listing MainConfiguration shows main application code.
+ * It initializes L2CAP, the Security Manager, and configures the ATT Server with the pre-compiled
+ * ATT Database generated from $le_streamer.gatt$. Finally, it configures the advertisements 
+ * and boots the Bluetooth stack. 
+ */
+ 
+/* LISTING_START(MainConfiguration): Init L2CAP, SM, ATT Server, and enable advertisements */
 
 static void le_streamer_setup(void){
     l2cap_init();
@@ -130,8 +130,17 @@ static void le_streamer_setup(void){
 /* LISTING_END */
 
 /*
- * @section Track sending speed
+ * @section Track throughput
+ * @text We calculate the throughput by setting a start time and measuring the amount of 
+ * data sent. After a configurable REPORT_INTERVAL_MS, we print the throughput in kB/s
+ * and reset the counter and start time.
  */
+
+/* LISTING_START(tracking): Tracking throughput */
+#define REPORT_INTERVAL_MS 3000
+static uint32_t test_data_sent;
+static uint32_t test_data_start;
+
 static void test_reset(void){
     test_data_start = run_loop_get_time_ms();
     test_data_sent = 0;
@@ -151,11 +160,14 @@ static void test_track_sent(int bytes_sent){
     test_data_start = now;
     test_data_sent  = 0;
 }
+/* LISTING_END(tracking): Tracking throughput */
 
 /* 
  * @section Packet Handler
  *
- * @text The packet handler is only used to stop the counter after a disconnect
+ * @text The packet handler is used to stop the notifications and reset the MTU on connect
+ * It would also be a good place to request the connection parameter update as indicated 
+ * in the commented code block.
  */
 
 /* LISTING_START(packetHandler): Packet Handler */
@@ -194,11 +206,11 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 /*
  * @section Streamer
  *
- * @text The streamer updates the value of the single Characteristic provided in this example,
- * and sends a notification for this characteristic if enabled, see Listing streamer.
+ * @text The streamer function checks if notifications are enabled and if a notification can be sent now.
+ * It creates some test data - a single letter that gets increased every time - and tracks the data sent.
  */
 
- /* LISTING_START(streamer): Hearbeat Handler */
+ /* LISTING_START(streamer): Streaming code */
 static void streamer(void){
     // check if we can send
     if (!le_notification_enabled) return;
