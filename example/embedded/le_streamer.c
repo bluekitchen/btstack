@@ -93,7 +93,7 @@ const uint8_t adv_data[] = {
 };
 const uint8_t adv_data_len = sizeof(adv_data);
 
-#define REPORT_INTERVAL_MS 10000
+#define REPORT_INTERVAL_MS 3000
 static int  counter = 'A';
 static char test_data[200];
 static int  test_data_len;
@@ -132,31 +132,24 @@ static void le_streamer_setup(void){
 /*
  * @section Track sending speed
  */
-static uint32_t get_time_ms(void){
-#if defined(HAVE_TICK) || defined(HAVE_TIME_MS)
-    return embedded_get_time_ms();
-#elif defined(HAVE_TIME)
-    return posix_get_time_ms();
-#else
-#error "No idea how to get time"
-#endif
-}
-
 static void test_reset(void){
-    test_data_start = get_time_ms();
+    test_data_start = run_loop_get_time_ms();
     test_data_sent = 0;
 }
 
 static void test_track_sent(int bytes_sent){
     test_data_sent += test_data_len;
     // evaluate
-    uint32_t now = get_time_ms();
-    if (now < test_data_start + REPORT_INTERVAL_MS) return;
+    uint32_t now = run_loop_get_time_ms();
+    uint32_t time_passed = now - test_data_start;
+    if (time_passed < REPORT_INTERVAL_MS) return;
     // print speed
-    int bytes_per_second = test_data_sent  / (REPORT_INTERVAL_MS / 1000);
+    int bytes_per_second = test_data_sent * 1000 / time_passed;
     printf("%u bytes sent-> %u.%03u kB/s\n", test_data_sent, bytes_per_second / 1000, bytes_per_second % 1000);
+
     // restart
-    test_reset();
+    test_data_start = now;
+    test_data_sent  = 0;
 }
 
 /* 
