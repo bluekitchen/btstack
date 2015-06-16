@@ -17,7 +17,8 @@ list_of_examples = {
                      ["spp_flowcontrol"]],
     "BNEP/PAN"   : [["panu_demo"]],
     "Low Energy"  : [["gatt_browser"],
-                    ["le_counter"]],
+                    ["le_counter"],
+                    ["le_streamer"]],
     "Dual Mode" : [["spp_and_le_counter"]],
 }
 
