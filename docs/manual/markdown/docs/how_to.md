@@ -12,9 +12,7 @@ an overview is provided here. Finally, we describe the RFCOMM
 credit-based flow-control, which may be necessary for
 resource-constraint devices.
 
-<a name ="section:memory_configuration"></a>
-
-## Memory configuration
+## Memory configuration {#sec:memoryConfigurationHowTo}
 
 The structs for services, active connections and remote devices can be
 allocated in two different manners:
@@ -53,9 +51,8 @@ The memory is set up by calling *btstack_memory_init* function:
 
     btstack_memory_init();
 
-<a name"section:run_loop"></a>
 
-## Run loop 
+## Run loop {#sec:runLoopHowTo}
 
 BTstack uses a run loop to handle incoming data and to schedule work.
 The run loop handles events from two different types of sources: data
@@ -91,7 +88,8 @@ before its event handler callback is executed. If you need a periodic
 timer, you can re-register the same timer source in the callback
 function, as shown in Listing [PeriodicTimerHandler]. Note that BTstack
 expects to get called periodically to keep its time, see Section
-[on time abstraction](#section:test) for more on the tick hardware abstraction.
+[on time abstraction](#sec:timeAbstractionPorting) for more on the 
+tick hardware abstraction.
 
 The run loop is set up by calling *run_loop_init* function for
 embedded systems:
@@ -100,7 +98,7 @@ embedded systems:
 
     run_loop_init(RUN_LOOP_EMBEDDED);
 
-The Run loop API is provided [here](appendix/apis/#appendix:api_run_loop). To
+The Run loop API is provided [here](appendix/apis/#sec:runLoopAPIAppendix). To
 enable the use of timers, make sure that you defined HAVE_TICK in the
 config file.
 
@@ -109,12 +107,11 @@ as shown in Listing [listing:btstackInit]. The application can register
 data sources as well as timers, e.g., periodical sampling of sensors, or
 communication over the UART.
 
-<a nam="sec:btstack_initialization"></a>
 
-## BTstack initialization {#section:test}
+## BTstack initialization {#sec:btstackInitializationHowTo}
 
-To initialize BTstack you need to [initialize the memory](#section:memory_configuration)
-and [the run loop](#section:run_loop) respectively, then setup HCI and all needed higher
+To initialize BTstack you need to [initialize the memory](#sec:memoryConfigurationHowTo)
+and [the run loop](#sec:runLoopHowTo) respectively, then setup HCI and all needed higher
 level protocols.
 
 The HCI initialization has to adapt BTstack to the used platform and
@@ -146,7 +143,7 @@ requires four arguments. These are:
     [src/hci_transport_h4_dma.c]() resp. [src/hci_transport_h4_ehcill_dma.c]()
     and then getting a pointer to HCI Transport implementation.
     For more information on adapting HCI Transport to different
-    environments, see [here](porting/#hci-transport-implementation).
+    environments, see [here](porting/#sec:hciTransportPorting).
 
 <!-- -->
 
@@ -173,7 +170,7 @@ requires four arguments. These are:
     keys or remote device names. This commonly requires platform
     specific code to access the MCU’s EEPROM of Flash storage. For the
     first steps, BTstack provides a (non) persistent store in memory.
-    For more see [here](porting/#persistent-storage-api).
+    For more see [here](porting/#sec:persistentStoragePorting).
 
 <!-- -->
 
@@ -190,9 +187,8 @@ themselves with the underlying layer. In addition, the application can
 register packet handlers to get events and data as explained in the
 following section.
 
-<a name="sec:services"></a>
 
-## Services
+## Services {#sec:servicesHowTo}
 
 One important construct of BTstack is *service*. A service represents a
 server side component that handles incoming connections. So far, BTstack
@@ -204,9 +200,8 @@ ID. Outgoing connections require no special registration, they are
 created by the application when needed.
 
 
-<a name="sec:packetHandlers"></a>
 
-## Where to get data - packet handlers
+## Where to get data - packet handlers {#sec:packetHandlersHowTo}
 
 
 After the hardware and BTstack are set up, the run loop is entered. From
@@ -216,7 +211,7 @@ resulting events are delivered back to the application. Instead of
 writing a single callback handler for each possible event (as it is done
 in some other Bluetooth stacks), BTstack groups events logically and
 provides them over a single generic interface. Appendix 
-[Events and Errors](generated/appendix/#events_and_errors)
+[Events and Errors](generated/appendix/#sec:eventsAndErrorsAppendix)
 summarizes the parameters and event
 codes of L2CAP and RFCOMM events, as well as possible errors and the
 corresponding error codes.
@@ -282,9 +277,8 @@ services for the HID Control and HID Interrupt PSMs using
 a packet handler to accept and receive keyboard data.
 
 
-<a name="sec:packetlogs"></a>
 
-## Bluetooth HCI Packet Logs 
+## Bluetooth HCI Packet Logs {#sec:packetlogsHowTo}
 
 
 If things don't work as expected, having a look at the data exchanged

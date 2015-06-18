@@ -43,10 +43,15 @@ undiscoverable again, once a connection is established. See Listing
 ### Discover remote devices {#section:DiscoverRemoteDevices}
 
 To scan for remote devices, the *hci_inquiry* command is used. Found
-remote devices are reported as a part of HCI_EVENT_INQUIRY_RESULT,
-HCI_EVENT-_INQUIRY_RESULT_WITH_RSSI, or
-HCI_EVENT_EXTENDED_INQUIRY_RESPONSE events. Each response contains
-at least the Bluetooth address, the class of device, the page scan
+remote devices are reported as a part of:
+
+- HCI_EVENT_INQUIRY_RESULT,
+
+- HCI_EVENT-_INQUIRY_RESULT_WITH_RSSI, or
+
+- HCI_EVENT_EXTENDED_INQUIRY_RESPONSE events. 
+
+Each response contains at least the Bluetooth address, the class of device, the page scan
 repetition mode, and the clock offset of found device. The latter events
 add information about the received signal strength or provide the
 Extended Inquiry Result (EIR). A code snippet is shown in Listing
@@ -104,7 +109,7 @@ device implements Bluetooth Specification 2.1 or higher, the
 *hci_write_inquiry_mode* command enables reporting of this advanced
 features (0 for standard results, 1 for RSSI, 2 for RSSI and EIR).
 
-A complete GAP inquiry example is provided [here](examples/#gapinquiry).
+A complete GAP inquiry example is provided [here](examples/generated/#sec:gapinquiryExample).
 
 ### Pairing of Devices
 
@@ -150,8 +155,8 @@ user.
 
 Regardless of the authentication mechanism (PIN/SSP), on success, both
 devices will generate a link key. The link key can be stored either in
-the Bluetooth module itself or in a persistent storage, see [here](#examples/#persistent_storage). 
-The next time the device connects and
+the Bluetooth module itself or in a persistent storage, see 
+[here](porting/#sec:persistentStoragePorting). The next time the device connects and
 requests an authenticated connection, both devices can use the
 previously generated link key. Please note that the pairing must be
 repeated if the link key is lost by one device.
@@ -177,22 +182,21 @@ for its SPP services. Section [subsection:querysdp] shows how to query
 for all RFCOMM channels. For SPP, you can do the same but use the SPP
 UUID 0x1101 for the query. After you have identified the correct RFCOMM
 channel, you can create an RFCOMM connection as shown 
-[here](protocols/#sec:rfcommlient).
+[here](protocols/#sec:rfcommClientProtocols).
 
 ### Providing an SPP Server
 
 To provide an SPP Server, you need to provide an RFCOMM service with a
 specific RFCOMM channel number as explained in section on 
-[RFCOMM service](protocols/#sec:rfcomm_service). Then, you need to create 
+[RFCOMM service](protocols/#sec:rfcommServiceProtocols). Then, you need to create 
 an SDP record for it and publish it with the SDP server by calling
 *sdp_register_service_internal*. BTstack provides the
 *sdp_create_spp_service* function in that requires an empty buffer of
 approximately 200 bytes, the service channel number, and a service name.
-Have a look at the [SPP Counter example](examples/generated/#section:sppcounter].
+Have a look at the [SPP Counter example](examples/generated/#sec:sppcounterExample].
 
-<a name="section:pan_profile"></a>
 
-## PAN - Personal Area Networking Profile 
+## PAN - Personal Area Networking Profile {#sec:panProfiles}
 
 
 The PAN profile uses BNEP to provide on-demand networking capabilities
@@ -234,7 +238,7 @@ information, you can connect BNEP to the remote PANU service with the
 
 To provide a PANU service, you need to provide a BNEP service with the
 service UUID, e.g. the PANU UUID, and a a maximal ethernet frame size,
-as explained in Section [subsubsection:bnepserver]. Then, you need to
+as explained in Section [on BNEP service](protocols/#sec:bnepServiceProtocols). Then, you need to
 create an SDP record for it and publish it with the SDP server by
 calling *sdp_register_service_internal*. BTstack provides the
 *pan_create_panu_service* function in *src/pan.c* that requires an
@@ -266,8 +270,8 @@ To toggle privacy mode using private addresses, call the
 with *gap_random_address_set_update_period*.
 
 After a connection is established, the Security Manager will try to
-resolve the peer Bluetooth address as explained in Section
-[section:smp].
+resolve the peer Bluetooth address as explained in Section on 
+[SMP](protocols/#sec:smpProtocols).
 
 ### Advertising and Discovery
 
@@ -283,8 +287,8 @@ commands can be used:
 -   *hci_le_set_advertise_enable*
 
 As these are direct HCI commands, please refer to Section
-[subsubsection:sendinghci] for details and have a look at the SPP and LE
-Counter example in Section [example:sppandlecounter].
+[subsubsection:sendinghci] for details and have a look at the [SPP and LE
+Counter example](examples/generated/#sec:sppandlecounterExample).
 
 In addition to the Advertisement data, a device in the peripheral role
 can also provide Scan Response data, which has to be explicitly queried
@@ -317,9 +321,8 @@ Services are queried and modified via ATT operations.
 GATT defines both a server and a client role. A device can implement one
 or both GATT roles.
 
-<a name = "section:GATTClient"></a>
 
-### GATT Client 
+### GATT Client {#sec:GATTClientProfiles}
 
 The GATT Client is used to discover services, and their characteristics
 and descriptors on a peer device. It can also subscribe for
@@ -347,11 +350,10 @@ perform a GATT query on a particular connection using
 completes the query.
 
 For more details on the available GATT queries, please consult 
-[GATT Client API](#appendix:api_gatt_client).
+[GATT Client API](#sec:gattClientAPIAppendix).
 
-<a name="section:GATTServer"></a>
 
-### GATT Server
+### GATT Server {#sec:GATTServerProfiles}
 
 The GATT server stores data and accepts GATT client requests, commands
 and confirmations. The GATT server sends responses to requests and when

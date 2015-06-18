@@ -16,8 +16,7 @@ code_identation = "    "
 
 api_header = """
 
-## API_TITLE API
-<a name ="appendix:API_LABLE"></a>
+## API_TITLE API {#sec:API_LABLEAPIAppendix}
 
 """
 
@@ -26,18 +25,18 @@ api_ending = """
 
 # [file_name, api_title, api_lable]
 list_of_apis = [ 
-    [btstack_folder+"include/btstack/run_loop.h", "Run Loop", "api_run_loop"],
-    [btstack_folder+"src/hci.h", "HCI", "api_hci"],
-    [btstack_folder+"src/l2cap.h", "L2CAP", "api_l2cap"],
-    [btstack_folder+"src/rfcomm.h", "RFCOMM", "api_rfcomm"],
-    [btstack_folder+"src/sdp.h", "SDP", "api_sdp"],
-    [btstack_folder+"src/sdp_client.h", "SDP Client", "api_sdp_client"],
-    [btstack_folder+"src/sdp_query_rfcomm.h", "SDP RFCOMM Query", "api_sdp_queries"],
-    [btstack_folder+"ble/gatt_client.h", "GATT Client", "api_gatt_client"],
-    [btstack_folder+"src/pan.h", "PAN", "api_pan"],
-    [btstack_folder+"src/bnep.h", "BNEP", "api_bnep"],
-    [btstack_folder+"src/gap.h", "GAP", "api_gap"],
-    [btstack_folder+"ble/sm.h", "SM", "api_sm"]
+    [btstack_folder+"include/btstack/run_loop.h", "Run Loop", "runLoop"],
+    [btstack_folder+"src/hci.h", "HCI", "hci"],
+    [btstack_folder+"src/l2cap.h", "L2CAP", "l2cap"],
+    [btstack_folder+"src/rfcomm.h", "RFCOMM", "rfcomm"],
+    [btstack_folder+"src/sdp.h", "SDP", "sdp"],
+    [btstack_folder+"src/sdp_client.h", "SDP Client", "sdpClient"],
+    [btstack_folder+"src/sdp_query_rfcomm.h", "SDP RFCOMM Query", "sdpQueries"],
+    [btstack_folder+"ble/gatt_client.h", "GATT Client", "gattClient"],
+    [btstack_folder+"src/pan.h", "PAN", "pan"],
+    [btstack_folder+"src/bnep.h", "BNEP", "bnep"],
+    [btstack_folder+"src/gap.h", "GAP", "gap"],
+    [btstack_folder+"ble/sm.h", "SM", "sm"]
 ]
 
 def replacePlaceholder(template, title, lable):

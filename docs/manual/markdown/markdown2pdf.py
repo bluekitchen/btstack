@@ -24,9 +24,15 @@ def main(argv):
                 with open(docs_folder +"/"+ md_file, 'r') as mdin:
                     aout.write("\n\n#"+ title +"\n\n")
                     for line in mdin:
+                        # remove path from section reference
+                        # e.g. [the SPP Counter example](examples/generated/#sec:sppcounterExample)
+                        # replace with [the SPP Counter example](#sec:sppcounterExample)
+                        section_ref = re.match('.*\(((.*)(#sec:.*))\).*',line)
+                        if section_ref:
+                            line = line.replace(section_ref.group(2),"")
                         aout.write(line)                
 
-    pandoc_cmd = "pandoc -f markdown -t latex --listings latex/btstack_generated.md -o latex/btstack_generated.tex"
+    pandoc_cmd = "pandoc -f markdown -t latex --filter pandoc-fignos --listings latex/btstack_generated.md -o latex/btstack_generated.tex"
     p = os.popen(pandoc_cmd,"r")
     while 1:
         line = p.readline()

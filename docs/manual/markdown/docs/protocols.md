@@ -137,8 +137,8 @@ and info on their parameters.
            S          Service Record (Data Element Sequence)  
   ------------------- ----------------------------------------------------
 
-### Sending HCI command based on a template 
-<a name ="sec:sendinghci"></a>
+
+### Sending HCI command based on a template {#sec:sendingHCIProtocols}
 
 You can use the *hci_send_cmd* function to send HCI command based on a
 template and a list of parameters. However, it is necessary to check
@@ -163,8 +163,9 @@ Please note, that an application rarely has to send HCI commands on its
 own. Instead, BTstack provides convenience functions in GAP and higher
 level protocols use HCI automatically.
 
-L2CAP - Logical Link Control and Adaptation Protocol
-----------------------------------------------------
+
+## L2CAP - Logical Link Control and Adaptation Protocol
+
 
 The L2CAP protocol supports higher level protocol multiplexing and
 packet fragmentation. It provides the base for the RFCOMM and BNEP
@@ -185,7 +186,7 @@ To communicate with an L2CAP service on a remote device, the application
 on a local Bluetooth device initiates the L2CAP layer using the
 *l2cap_init* function, and then creates an outgoing L2CAP channel to
 the PSM of a remote device using the *l2cap_create_channel_internal*
-function. The *l2cap_-create_channel_internal* function will initiate
+function. The *l2cap_create_channel_internal* function will initiate
 a new baseband connection if it does not already exist. The packet
 handler that is given as an input parameter of the L2CAP create channel
 function will be assigned to the new outgoing L2CAP channel. This
@@ -298,8 +299,8 @@ BTstack provides an optimized *l2cap_le* implementation in the *ble*
 folder. This L2CAP LE variant can be used for single-mode devices and
 provides the base for the ATT and SMP protocols.
 
-RFCOMM - Radio Frequency Communication Protocol
------------------------------------------------
+
+## RFCOMM - Radio Frequency Communication Protocol
 
 The Radio frequency communication (RFCOMM) protocol provides emulation
 of serial ports over the L2CAP protocol. and reassembly. It is the base
@@ -307,8 +308,8 @@ for the Serial Port Profile and other profiles used for
 telecommunication like Head-Set Profile, Hands-Free Profile, Object
 Exchange (OBEX) etc.
 
-### RFCOMM flow control. 
-<a name="sec:flowcontrol"></a>
+
+### RFCOMM flow control {#sec:flowControlProtocols}
 
 RFCOMM has a mandatory credit-based flow-control. This means that two
 devices that established RFCOMM connection, use credits to keep track of
@@ -326,24 +327,24 @@ is not much data transmitted and/or only one physical connection is
 used. If the management of credits is manual, credits are provided by
 the application such that it can manage its receive buffers explicitly.
 
-### Access an RFCOMM service on a remote device 
-<a name="sec:rfcommlient"></a>
+
+### Access an RFCOMM service on a remote device {#sec:rfcommClientProtocols}
 
 To communicate with an RFCOMM service on a remote device, the
 application on a local Bluetooth device initiates the RFCOMM layer using
 the *rfcomm_init* function, and then creates an outgoing RFCOMM channel
 to a given server channel on a remote device using the
 *rfcomm_create_channel_internal* function. The
-*rfcomm_create_channel_intern-al* function will initiate a new L2CAP
+*rfcomm_create_channel_internal* function will initiate a new L2CAP
 connection for the RFCOMM multiplexer, if it does not already exist. The
 channel will automatically provide enough credits to the remote side. To
 provide credits manually, you have to create the RFCOMM connection by
 calling *rfcomm_create_channel_with_initial_credits_internal* -
-see Section [on manual credit assignement](#sec:manualCredits).
+see Section [on manual credit assignement](#sec:manualCreditsProtocols).
 
 The packet handler that is given as an input parameter of the RFCOMM
 create channel function will be assigned to the new outgoing channel.
-This handler receives the RFCOMM_EVENT_OPEN_CHAN-NEL_COMPLETE and
+This handler receives the RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE and
 RFCOMM_EVENT_CHANNEL_CLOSED events, and RFCOMM data packets, as shown in
 Listing [below](#lst:RFCOMMremoteService).
 
@@ -376,8 +377,7 @@ Listing [below](#lst:RFCOMMremoteService).
     }
 
 
-### Provide an RFCOMM service 
-<a name="sec:rfcomm_service"></a>
+### Provide an RFCOMM service {#sec:rfcommServiceProtocols}
 
 To provide an RFCOMM service, the application on a local Bluetooth
 device must first init the L2CAP and RFCOMM layers and then register the
@@ -449,8 +449,9 @@ provides the RFCOMM service example code.
         }
     }
 
-### Living with a single output buffer 
-<a name="sec:single_buffer"></a>
+
+### Living with a single output buffer {#sec:singleBufferProtocols}
+
 Outgoing packets, both commands and data, are not queued in BTstack.
 This section explains the consequences of this design decision for
 sending data and why it is not as bad as it sounds.
@@ -533,7 +534,7 @@ Listing [below](#lst:SingleOutputBufferTryPH).
 
 If the management of credits is manual, credits are provided by the
 application such that it can manage its receive buffers explicitly, see
-Listing [below].
+Listing [below](#lst:explicitFlowControl).
 
 <a name "lst:explicitFlowControl"></a>
 <!-- -->
@@ -549,7 +550,7 @@ Listing [below].
 
 
 Manual credit management is recommended when received RFCOMM data cannot
-be processed immediately. In the [SPP flow control example](examples/#sec:sppflowcontrol), 
+be processed immediately. In the [SPP flow control example](examples/generated/#sec:sppflowcontrolExample), 
 delayed processing of received data is
 simulated with the help of a periodic timer. To provide new credits, you
 call the *rfcomm_grant_credits* function with the RFCOMM channel ID
@@ -572,8 +573,8 @@ for a minimal memory footprint. If possible, multiple RFCOMM buffers
 should be used to avoid pauses while the sender has to wait for a new
 credit.
 
-### Slowing down RFCOMM data reception 
-<a name="sec:manualCredits"></a>
+
+### Slowing down RFCOMM data reception {#sec:manualCreditsProtocols}
 
 RFCOMM’s credit-based flow-control can be used to adapt, i.e., slow down
 the RFCOMM data to your processing speed. For incoming data, BTstack
@@ -595,8 +596,7 @@ connection is used. See Listing [below](#lst:automaticFlowControl).
     }
 
 
-SDP - Service Discovery Protocol
---------------------------------
+## SDP - Service Discovery Protocol
 
 The SDP protocol allows to announce services and discover services
 provided by a remote Bluetooth device.
@@ -627,11 +627,11 @@ a sub-DES. The returned pointer is used to add elements to this sub-DES.
 After adding all UUIDs, the sub-DES is “closed” with
 *de_pop_sequence*.
 
-### Query remote SDP service 
-<a name="sec:querysdp"></a>
+
+### Query remote SDP service {#sec:querySDPProtocols}
 
 BTstack provides an SDP client to query SDP services of a remote device.
-The SDP Client API is shown in [here](appendix/apis/#appendix:api_sdp). The
+The SDP Client API is shown in [here](appendix/apis/#sec:sdpAPIAppendix). The
 *sdp_client_query* function initiates an L2CAP connection to the
 remote SDP server. Upon connect, a *Service Search Attribute* request
 with a *Service Search Pattern* and a *Attribute ID List* is sent. The
@@ -735,11 +735,12 @@ of L2CAP, and it specifies a minimum L2CAP MTU of 1691 bytes.
 To receive BNEP events, please register a packet handler with
 *bnep_register_packet_handler*.
 
-### Access a BNEP service on a remote device {#subsubsection:bnepclient}
+
+### Access a BNEP service on a remote device {#sec:bnepClientProtocols}
 
 To connect to a remote BNEP service, you need to know its UUID. The set
 of available UUIDs can be queried by a SDP query for the PAN profile.
-Please see section on [PAN profile](profiles/#section:pan_profile) for details. 
+Please see section on [PAN profile](profiles/#sec:panProfiles) for details. 
 With the remote UUID, you can create a connection using the *bnep_connect* 
 function. You’ll receive a *BNEP_EVENT_OPEN_CHANNEL_COMPLETE* on success or
 failure.
@@ -756,7 +757,8 @@ multicast filters with *bnep_set_net_type_filter* and
 
 Finally, to close a BNEP connection, you can call *bnep_disconnect*.
 
-### Provide BNEP service {#subsubsection:bnepserver}
+
+### Provide BNEP service {#sec:bnepServiceProtocols}
 
 To provide a BNEP service, call *bnep_register_service* with the
 provided service UUID and a max frame size.
@@ -781,11 +783,11 @@ attribute database and provided by the *att_server* implementation. The
 constant data are automatically served by the ATT server upon client
 request. To receive the dynamic data, such is characteristic value, the
 application needs to register read and/or write callback. In addition,
-notifications and indications can be sent. Please see Section
-[section:GATTClient] for more.
+notifications and indications can be sent. Please see Section on 
+[GATT client](profiles/#sec:GATTClientProfiles) for more.
 
-## SMP - Security Manager Protocol 
-<a name="section:smp"></a>
+
+## SMP - Security Manager Protocol {#sec:smpProtocols}
 
 The SMP protocol allows to setup authenticated and encrypted LE
 connection. After initialization and configuration, SMP handles security
@@ -802,7 +804,8 @@ If you’re creating a product, you should also call *sm_set_ir()* and
 ER key seeds. If possible use a unique random number per device instead
 of deriving it from the product serial number or something similar. The
 encryption key generated by the BLE peripheral will be ultimately
-derived from the ER key seed. See [Bluetooth Specification](https://www.bluetooth.org/Technical/Specifications/adopted.htm) -
+derived from the ER key seed. See 
+[Bluetooth Specification](https://www.bluetooth.org/Technical/Specifications/adopted.htm) -
 Bluetooth Core V4.0, Vol 3, Part G, 5.2.2 for more details on deriving
 the different keys. The IR key is used to identify a device if private,
 resolvable Bluetooth addresses are used.

@@ -1,6 +1,5 @@
 
-## L2CAP Events
-<a name="appendix:events_and_errors"></a>
+## L2CAP Events {#sec:eventsAndErrorsAppendix}
 
 L2CAP events and data packets are delivered to the packet handler
 specified by *l2cap_register_service* resp.

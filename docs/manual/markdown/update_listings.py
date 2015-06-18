@@ -32,12 +32,11 @@ examples_header = """
 """
 
 example_item = """
-    - [EXAMPLE_TITLE](#section:EXAMPLE_LABEL): EXAMPLE_DESC.
+    - [EXAMPLE_TITLE](#sec:EXAMPLE_LABELExample): EXAMPLE_DESC.
 """
 example_section = """
 
-## EXAMPLE_TITLE: EXAMPLE_DESC
-<a name="section:EXAMPLE_LABEL"></a>
+## EXAMPLE_TITLE: EXAMPLE_DESC {#sec:EXAMPLE_LABELExample}
 
 """
 example_subsection = """
@@ -72,7 +71,7 @@ def latexText(text, ref_prefix):
     refs = re.match('.*(Section\s+)(\w+).*',brief)
     if refs:
         brief = brief.replace(refs.group(1), "[here]")
-        brief = brief.replace(refs.group(2), "(#section:"+refs.group(2)+")")
+        brief = brief.replace(refs.group(2), "(#sec:"+refs.group(2)+")")
 
     return brief
 

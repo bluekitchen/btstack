@@ -8,5 +8,6 @@ protocols and profiles.
 A series of examples show how BTstack can be used to implement common 
 use cases. 
 
-Finally, we outline the basic steps when integrating BTstack into existing single-threaded or even multi-threaded environments. The changes in the documentation are listed in the [Revision History](revision_history).
+Finally, we outline the basic steps when integrating BTstack into existing 
+single-threaded or even multi-threaded environments. 
 

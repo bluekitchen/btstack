@@ -16,7 +16,7 @@ and optionally git :
     Windows: Add Python installation folder to the Windows Path in
     Environment Variables.
 
-Adding paths to the Windows Path variable <a name="sec:windowsPath"></a>:
+### Adding paths to the Windows Path variable {#sec:windowsPathQuickStart}
 
 -   Go to: Control Panel->System->Advanced tab->Environment Variables.
 
@@ -33,7 +33,7 @@ Adding paths to the Windows Path variable <a name="sec:windowsPath"></a>:
 
 Use git to clone the latest version:
 
-            git clone https://github.com/bluekitchen/btstack.git
+    git clone https://github.com/bluekitchen/btstack.git
         
 
 Alternatively, you can download it as a ZIP archive from
@@ -54,7 +54,8 @@ provided, too.
 
 ## Run the Example
 
-As a first test, we recommend [the SPP Counter example](examples/generated/#section:sppcounter). During the startup, for TI chipsets, the init
+As a first test, we recommend the [SPP Counter example](examples/generated/#sec:sppcounterExample). 
+During the startup, for TI chipsets, the init
 script is transferred, and the Bluetooth stack brought up. After that,
 the development board is discoverable as “BTstack SPP Counter” and
 provides a single virtual serial port. When you connect to it, you’ll
@@ -83,8 +84,8 @@ Bluetooth. For this, execute:
 
 It’s also possible to run the examples on Win32 systems. For this:
 
--   Install [MSYS](www.mingw.org/wiki/msys) and
-    [MINGW32](www.mingw.org) using the MINGW installer
+-   Install [MSYS](http://www.mingw.org/wiki/msys) and
+    [MINGW32](http://www.mingw.org) using the MINGW installer
 
 -   Compile and install libusb-1.0.19 to [/usr/local/]() in msys command
     shell
@@ -113,7 +114,7 @@ and installation instructions are provided on the
 On Windows, you need to download and extract 
 [mspgcc](http://sourceforge.net/projects/mspgcc/files/Windows/mingw32/)
 to [C:\mspgcc](). Add [C:\mspgcc\bin]() folder to the Windows Path in Environment 
-variable as explained [here](#sec:windowsPath).
+variable as explained [here](#sec:windowsPathQuickStart).
 
 **Loading Firmware.** To load firmware files onto the MSP430 MCU for the
 MSP-EXP430F5438 Experimeneter board, you need a programmer like the
@@ -129,7 +130,7 @@ following software tools:
 
 <!-- -->
 
-            MSP430Flasher.exe -n MSP430F5438A -w "BINARY_FILE_NAME.hex" -v -g -z [VCC]
+    MSP430Flasher.exe -n MSP430F5438A -w "BINARY_FILE_NAME.hex" -v -g -z [VCC]
            
 
 -   [MSPDebug](http://mspdebug.sourceforge.net/):
@@ -175,9 +176,8 @@ the BLE part. The conversion script has been updated to detect
 *bluetooth_init_cc256x_1.2.bts* and adds *BLE_init_cc256x_1.2.bts*
 if present and merges them into a single .c file.
 
-<a name="platform:msp430"></a>
 
-### MSP-EXP430F5438 + CC256x Platform 
+### MSP-EXP430F5438 + CC256x Platform {#sec:platformMSP430QuickStart}
 
 **Hardware Setup.** We assume that a PAN1315, PAN1317, or PAN1323 module
 is plugged into RF1 and RF2 of the MSP-EXP430F5438 board and the “RF3
@@ -196,10 +196,11 @@ BTM805 Bluetooth module. In the port, the UART on the DAC daughter board
 was used for the debug output. Please remove the DAC board and connect a
 3.3V USB-2-UART converter to GND and TX to get the debug output.
 
-In [platforms/pic32-harmony](), a project file for the MPLAB X IDE is provided as well as a regular
+In [platforms/pic32-harmony](), a project file for the MPLAB X IDE 
+is provided as well as a regular
 Makefile. Both assume that the MPLAB XC32 compiler is installed. The
 project is set to use -Os optimization which will cause warnings if you
 only have the Free version. It will still compile a working example. For
 this platform, we only provide the SPP and LE Counter example directly.
-Other examples can be run by replacing the spp_and_le_counter.c file
+Other examples can be run by replacing the *spp_and_le_counter.c* file
 with one of the other example files.

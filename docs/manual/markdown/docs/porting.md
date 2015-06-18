@@ -1,9 +1,8 @@
 In this section, we highlight the BTstack components that need to be
 adjusted for different hardware platforms.
 
-<a name="section:timeAbstraction"></a>
 
-## Time Abstraction Layer
+## Time Abstraction Layer {#sec:timeAbstractionPorting}
 
 BTstack requires a way to learn about passing time.
 *run_loop_embedded.c* supports two different modes: system ticks or a
@@ -12,7 +11,7 @@ are quite low as only Bluetooth timeouts in the second range need to be
 handled.
 
 
-### Tick Hardware Abstraction ### {#section:tickAbstraction}
+### Tick Hardware Abstraction {#sec:tickAbstractionPorting}
 
 
 If your platform doesn’t require a system clock or if you already have a
@@ -37,9 +36,8 @@ After BTstack calls *hal_tick_init()* and
 *tick_handler* gets called every
 *hal_tick_get_tick_period_in_ms()* ms.
 
-<a name="sec:timeMSAbstraction"></a>
 
-### Time MS Hardware Abstraction 
+### Time MS Hardware Abstraction {#sec:timeMSAbstractionPorting}
 
 
 If your platform already has a system clock or it is more convenient to
@@ -57,9 +55,7 @@ future. It has to return the time in milliseconds.
     uint32_t hal_time_ms(void);
 
 
-<a name="sec:bt_hw_control"></a>
-
-## Bluetooth Hardware Control API 
+## Bluetooth Hardware Control API {#sec:btHWControlPorting}
 
 
 The Bluetooth hardware control API can provide the HCI layer with a
@@ -76,9 +72,8 @@ that is not covered by the Bluetooth specification. As an example, the
 struct suitable for the CC256x chipset.
 
 
-<a name="sec:hci_transport"></a>
 
-## HCI Transport Implementation 
+## HCI Transport Implementation {#sec:hciTransportPorting}
 
 
 On embedded systems, a Bluetooth module can be connected via USB or an
@@ -87,9 +82,8 @@ commands, events and data between a host and a Bluetooth module: HCI
 UART Transport Layer (H4) and H4 with eHCILL support, a lightweight
 low-power variant by Texas Instruments.
 
-<a name="sec:hciUART"></a>
 
-### HCI UART Transport Layer (H4) 
+### HCI UART Transport Layer (H4) {#sec:hciUARTPorting}
 
 
 Most embedded UART interfaces operate on the byte level and generate a
@@ -142,9 +136,8 @@ callback for CTS interrupts.
     void hal_uart_dma_set_cts_irq_handler(void(*cts_irq_handler)(void));
     void hal_uart_dma_set_sleep(uint8_t sleep);
 
-<a name="sec:persistent_storage"></a>
 
-## Persistent Storage API 
+## Persistent Storage API {#sec:persistentStoragePorting}
 
 On embedded systems there is no generic way to persist data like link
 keys or remote device names, as every type of a device has its own
