@@ -17,7 +17,7 @@ the architecture follows these fundamental design guidelines:
 -   *Statically bounded memory (optionally)* - The number of maximum
     connections/channels/services can be configured.
 
-Figure [below](#fig:BTstackArchitecture) shows the general architecture of a
+Figure {@fig:BTstackArchitecture} shows the general architecture of a
 BTstack-based single-threaded application that includes the BTstack run loop. 
 The Main Application contains the application logic, e.g., reading a sensor value and
 providing it via the Communication Logic as a SPP Server. The
@@ -28,7 +28,7 @@ for providing timers and processing incoming data.
 
 <a name="fig:BTstackArchitecture"></a> 
 
-![Architecture of a BTstack-based application.](picts/btstack-architecture.png)
+![Architecture of a BTstack-based application.](picts/btstack-architecture.png) {#fig:BTstackArchitecture}
 
 ## Single threaded design
 

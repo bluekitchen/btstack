@@ -17,11 +17,10 @@ Communication Logic for its Bluetooth communication.
 
 
 In a single-threaded environment, all application components run on the
-same (single) thread and use direct function calls as shown in Figure [below](#fig:BTstackSingle).
+same (single) thread and use direct function calls as shown in
+Figure {@fig:BTstackSingle}.
 
-<a name="fig:BTstackSingle"></a>
-
-![BTstack in single-threaded environment](picts/singlethreading-btstack.png)
+![BTstack in single-threaded environment.](picts/singlethreading-btstack.png) {#fig:BTstackSingle}
 
 BTstack provides a basic run loop that supports the concept of data
 sources and timers, which can be registered centrally. This works well
@@ -57,16 +56,17 @@ common options:
 -   The Communication Logic is implemented on a dedicated BTstack
     thread, and the Main Application communicates with the BTstack
     thread via application-specific messages over an Interprocess
-    Communication (IPC). This option results in less code and quick 
-    adaption.
+    Communication (IPC) as depicted in Figure {@fig:MTMonolithic}. 
+    This option results in less code and quick adaption.
 
-    ![](picts/multithreading-monolithic.png)
+    ![BTstack in multi-threaded environment - monolithic solution.](picts/multithreading-monolithic.png) {#fig:MTMonolithic}
 
 -   BTstack must be extended to run standalone, i.e, as a Daemon, on a
     dedicated thread and the Main Application controls this daemon via
     BTstack extended HCI command over IPC - this is used for the
-    non-embedded version of BTstack e.g., on the iPhone. 
-    This option requires more code but provides more flexibility.
+    non-embedded version of BTstack e.g., on the iPhone and it is depicted 
+    in Figure {@fig:MTDaemon}. This option requires more code but provides 
+    more flexibility.
 
-    ![](picts/multithreading-btdaemon.png)
+    ![BTstack in multi-threaded environment - solution with daemon.](picts/multithreading-btdaemon.png) {#fig:MTDaemon}
     

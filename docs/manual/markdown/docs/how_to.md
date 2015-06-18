@@ -91,7 +91,7 @@ before its event handler callback is executed. If you need a periodic
 timer, you can re-register the same timer source in the callback
 function, as shown in Listing [PeriodicTimerHandler]. Note that BTstack
 expects to get called periodically to keep its time, see Section
-[section:timeAbstraction] for more on the tick hardware abstraction.
+[on time abstraction](#section:test) for more on the tick hardware abstraction.
 
 The run loop is set up by calling *run_loop_init* function for
 embedded systems:
@@ -111,7 +111,7 @@ communication over the UART.
 
 <a nam="sec:btstack_initialization"></a>
 
-## BTstack initialization
+## BTstack initialization {#section:test}
 
 To initialize BTstack you need to [initialize the memory](#section:memory_configuration)
 and [the run loop](#section:run_loop) respectively, then setup HCI and all needed higher

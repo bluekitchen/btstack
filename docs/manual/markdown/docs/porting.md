@@ -1,7 +1,7 @@
 In this section, we highlight the BTstack components that need to be
 adjusted for different hardware platforms.
 
-<a name="sec:timeAbstraction"></a>
+<a name="section:timeAbstraction"></a>
 
 ## Time Abstraction Layer
 
@@ -11,9 +11,8 @@ system clock with millisecond resolution. BTstack’s timing requirements
 are quite low as only Bluetooth timeouts in the second range need to be
 handled.
 
-<a name="sec:tickAbstraction"></a>
 
-### Tick Hardware Abstraction 
+### Tick Hardware Abstraction ### {#section:tickAbstraction}
 
 
 If your platform doesn’t require a system clock or if you already have a

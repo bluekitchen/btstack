@@ -34,12 +34,12 @@ between a peripheral and iOS device, the iAP1 and iAP2 protocols of the
 Made for iPhone program can be used instead of GATT. Please contact us
 directly for information on BTstack and MFi.
 
+Figure {@fig:BTstackProtocolArchitecture} depicts Bluetooth protocols
+and profiles that are currently implemented by BTstack.
 In the following, we first explain how the various Bluetooth protocols
-are used in BTstack. In the next chapter, we go over the profiles.
+are used in BTstack. In the next chapter, we go over the profiles. 
 
-<a name="fig:BTstackProtocolArchitecture"></a>
-
-![Architecture of a BTstack-based application.](picts/btstack-protocols.png)
+![Architecture of a BTstack-based application.](picts/btstack-protocols.png) {#fig:BTstackProtocolArchitecture}
 
 
 ## HCI - Host Controller Interface
