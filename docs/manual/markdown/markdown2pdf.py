@@ -3,10 +3,38 @@
 import sys, yaml
 import os, re
 
-def href2path(line):
+def fix_latex(line):
     corr = re.match('.*(href{}).*',line)
     if corr:
         line = line.replace(corr.group(1), "path")
+    corr = re.match('.*begin{lstlisting}',line)
+    if corr:
+        line = "\leavevmode" + line
+
+    corr = re.match('.*section{APIs}.*',line)
+    if corr:
+        line = "\leavevmode\pagebreak\n" + line
+
+    corr = re.match('(.*includegraphics)(.*btstack-architecture.*)',line)
+    if corr:
+        line = corr.group(1) + "[width=\\textwidth]" + corr.group(2)
+
+    corr = re.match('(.*includegraphics)(.*singlethreading-btstack.*)',line)
+    if corr:
+        line = corr.group(1) + "[width=0.3\\textwidth]" + corr.group(2)
+
+    corr = re.match('(.*includegraphics)(.*multithreading-monolithic.*)',line)
+    if corr:
+        line = corr.group(1) + "[width=0.8\\textwidth]" + corr.group(2)
+
+    corr = re.match('(.*includegraphics)(.*multithreading-btdaemon.*)',line)
+    if corr:
+        line = corr.group(1) + "[width=0.8\\textwidth]" + corr.group(2)
+
+    corr = re.match('(.*includegraphics)(.*btstack-protocols.*)',line)
+    if corr:
+        line = corr.group(1) + "[width=0.8\\textwidth]" + corr.group(2)
+
     return line
 
 
@@ -30,7 +58,7 @@ def main(argv):
                         section_ref = re.match('.*\(((.*)(#sec:.*))\).*',line)
                         if section_ref:
                             line = line.replace(section_ref.group(2),"")
-                        aout.write(line)                
+                        aout.write(line)               
 
     pandoc_cmd = "pandoc -f markdown -t latex --filter pandoc-fignos --listings latex/btstack_generated.md -o latex/btstack_generated.tex"
     p = os.popen(pandoc_cmd,"r")
@@ -49,7 +77,7 @@ def main(argv):
 
         with open(btstack_generated_file, 'r') as fin:
             for line in fin:
-                line = href2path(line)
+                line = fix_latex(line)
                 aout.write(line)       
              
 

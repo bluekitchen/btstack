@@ -277,17 +277,16 @@ resolve the peer Bluetooth address as explained in Section on
 
 An LE device is discoverable and connectable, only if it periodically
 sends out Advertisements. An advertisement contains up to 31 bytes of
-data. To configure and enable advertisement broadcast, the following HCI
-commands can be used:
+data. To configure and enable advertisement broadcast, the following GAP
+functions can be used:
 
--   *hci_le_set_advertising_data*
+-   *gap_advertisements_set_data*
 
--   *hci_le_set_advertising_parameters*
+-   *gap_advertisements_set_params*
 
--   *hci_le_set_advertise_enable*
+-   *gap_advertisements_enable*
 
-As these are direct HCI commands, please refer to Section
-[subsubsection:sendinghci] for details and have a look at the [SPP and LE
+Please have a look at the [SPP and LE
 Counter example](examples/generated/#sec:sppandlecounterExample).
 
 In addition to the Advertisement data, a device in the peripheral role

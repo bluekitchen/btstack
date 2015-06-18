@@ -158,8 +158,8 @@ static void one_shot_timer_setup(void){
  * packet handler, see Listing SppServerPacketHandler. In this example, 
  * the following events are passed sequentially: 
  * - BTSTACK_EVENT_STATE,
- * - HCI_EVENT_PIN_CODE_REQUEST (Standard pairing) or \\
- *   HCI_EVENT_USER_CONFIRMATION_REQUEST \\ (Secure Simple Pairing),
+ * - HCI_EVENT_PIN_CODE_REQUEST (Standard pairing) or 
+ * - HCI_EVENT_USER_CONFIRMATION_REQUEST (Secure Simple Pairing),
  * - RFCOMM_EVENT_INCOMING_CONNECTION,
  * - RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE, and
  * - RFCOMM_EVENT_CHANNEL_CLOSED
