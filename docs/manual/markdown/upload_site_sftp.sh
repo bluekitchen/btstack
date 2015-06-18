@@ -16,5 +16,6 @@ echo Uploading generated docs to ${host}/${path}/btstack with user ${user}
 sftp ${user}@${host} << EOF
   mkdir ${path}/btstack
   put -r btstack ${path}
+  put btstack.pdf ${path}
   quit
 EOF
