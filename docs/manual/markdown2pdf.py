@@ -3,38 +3,41 @@
 import sys, yaml
 import os, re
 
-def fix_latex(line):
+figures = {
+    'btstack-architecture'     : '1',
+    'singlethreading-btstack'  : '0.3',
+    'multithreading-monolithic': '0.8',
+    'multithreading-btdaemon'  : '0.8',
+    'btstack-protocols'        : '0.8'
+}
+
+
+def fix_empty_href(line):
     corr = re.match('.*(href{}).*',line)
     if corr:
         line = line.replace(corr.group(1), "path")
+    return line
+
+
+def fix_listing_after_section(line):
     corr = re.match('.*begin{lstlisting}',line)
     if corr:
         line = "\leavevmode" + line
+    return line
 
+
+def fix_figure_width_and_type(line):
+    global figures
+    for name, width in figures.items():
+        corr = re.match('(.*includegraphics)(.*'+name+'.*)',line)
+        if corr:
+            line = corr.group(1) + '[width='+width+'\\textwidth]' + corr.group(2).replace('png','pdf')
+    return line
+
+def fix_appendix_pagebreak(line):
     corr = re.match('.*section{APIs}.*',line)
     if corr:
         line = "\leavevmode\pagebreak\n" + line
-
-    corr = re.match('(.*includegraphics)(.*btstack-architecture.*)',line)
-    if corr:
-        line = corr.group(1) + "[width=\\textwidth]" + corr.group(2)
-
-    corr = re.match('(.*includegraphics)(.*singlethreading-btstack.*)',line)
-    if corr:
-        line = corr.group(1) + "[width=0.3\\textwidth]" + corr.group(2)
-
-    corr = re.match('(.*includegraphics)(.*multithreading-monolithic.*)',line)
-    if corr:
-        line = corr.group(1) + "[width=0.8\\textwidth]" + corr.group(2)
-
-    corr = re.match('(.*includegraphics)(.*multithreading-btdaemon.*)',line)
-    if corr:
-        line = corr.group(1) + "[width=0.8\\textwidth]" + corr.group(2)
-
-    corr = re.match('(.*includegraphics)(.*btstack-protocols.*)',line)
-    if corr:
-        line = corr.group(1) + "[width=0.8\\textwidth]" + corr.group(2)
-
     return line
 
 
@@ -77,9 +80,12 @@ def main(argv):
 
         with open(btstack_generated_file, 'r') as fin:
             for line in fin:
-                line = fix_latex(line)
+                line = fix_empty_href(line)
+                line = fix_listing_after_section(line)
+                line = fix_figure_width_and_type(line)
+                line = fix_appendix_pagebreak(line)
                 aout.write(line)       
-             
 
+             
 if __name__ == "__main__":
    main(sys.argv[1:])
