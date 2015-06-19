@@ -10,11 +10,11 @@ all:
 	mkdocs build --clean
 	mkdir -p latex
 	cp -r docs/picts latex
-	cp ../picts/bklogo.pdf latex/picts
 	./markdown2pdf.py
 	cp btstack_gettingstarted.tex latex
 	cd latex && pdflatex btstack_gettingstarted.tex && pdflatex btstack_gettingstarted.tex
 	mv latex/btstack_gettingstarted.pdf btstack.pdf
-	rm -rf latex
+	rm -rf latex docs_final
+
 
 	

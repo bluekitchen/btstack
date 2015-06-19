@@ -308,7 +308,7 @@ def processExamples(intro_file, examples_folder, examples_ofile):
 
 
 def main(argv):
-    btstack_folder = "../../../"
+    btstack_folder = "../../"
     docs_folder = "docs/examples/"
     inputfolder = btstack_folder + "example/embedded/"
     outputfile = docs_folder + "generated.md"

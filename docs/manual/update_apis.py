@@ -11,7 +11,7 @@ class State:
 
 docs_folder = "docs/appendix/"
 appendix_file = docs_folder + "apis.md"
-btstack_folder = "../../../"
+btstack_folder = "../../"
 code_identation = "    "
 
 api_header = """
