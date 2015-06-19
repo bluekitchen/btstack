@@ -55,8 +55,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
-#include <termios.h>
-
 
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>
@@ -150,25 +148,6 @@ static int stdin_process(struct data_source *ds){
     return 0;
 }
 
-
-static void setup_cli(void){
-    struct termios term = {0};
-    if (tcgetattr(0, &term) < 0)
-            perror("tcsetattr()");
-    term.c_lflag &= ~ICANON;
-    term.c_lflag &= ~ECHO;
-    term.c_cc[VMIN] = 1;
-    term.c_cc[VTIME] = 0;
-    if (tcsetattr(0, TCSANOW, &term) < 0)
-            perror("tcsetattr ICANON");
-
-    stdin_source.fd = 0; // stdin
-    stdin_source.process = &stdin_process;
-    run_loop_add_data_source(&stdin_source);
-
-    show_usage();
-}
-
 void packet_handler(uint8_t * event, uint16_t event_size){
     switch (event[2]) {   
         case HSP_SUBEVENT_AUDIO_CONNECTION_COMPLETE:
@@ -217,7 +196,7 @@ int btstack_main(int argc, const char * argv[]){
     // turn on!
     hci_power_control(HCI_POWER_ON);
     
-    setup_cli();
+    btstack_stdin_setup(stdin_process);
 
     return 0;
 }

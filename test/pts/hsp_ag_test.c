@@ -53,8 +53,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
-#include <termios.h>
-
 
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>

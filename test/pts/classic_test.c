@@ -49,7 +49,6 @@
 #include <string.h>
 #include <sys/uio.h>
 #include <unistd.h>
-#include <termios.h>
 
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>
