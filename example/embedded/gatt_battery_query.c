@@ -203,17 +203,13 @@ static void fill_advertising_report_from_packet(advertising_report_t * report, u
     int pos = 2;
     report->event_type = packet[pos++];
     report->address_type = packet[pos++];
-    memcpy(report->address, &packet[pos], 6);
+    bt_flip_addr(report->address, &packet[pos]);
     pos += 6;
     report->rssi = packet[pos++];
     report->length = packet[pos++];
     report->data = &packet[pos];
     pos += report->length;
     dump_advertising_report(report);
-    
-    bd_addr_t found_device_addr;
-    memcpy(found_device_addr, report->address, 6);
-    swapX(found_device_addr, report->address, 6);
 }
 
 static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
