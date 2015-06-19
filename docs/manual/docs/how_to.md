@@ -233,6 +233,9 @@ use:
 -   RFCOMM packet handler - handles RFCOMM incoming/outgoing events and
     data.
 
+These handlers are registered with the functions listed in Table
+{@tbl:registeringFunction}.
+
   ------------------------------ --------------------------------------
                   Packet Handler Registering Function
               HCI packet handler *hci_register_packet_handler*
@@ -240,11 +243,9 @@ use:
     L2CAP service packet handler *l2cap_register_service_internal*
     L2CAP channel packet handler *l2cap_create_channel_internal*
            RFCOMM packet handler *rfcomm_register_packet_handler*
-     [table:registeringFunction] 
   ------------------------------ --------------------------------------
 
-These handlers are registered with the functions listed in Table
-[table:registeringFunction].
+Table: Functions for registering packet handlers. {#tbl:registeringFunction}
 
 HCI and general BTstack events are delivered to the packet handler
 specified by *l2cap_register_packet_handler* function, or

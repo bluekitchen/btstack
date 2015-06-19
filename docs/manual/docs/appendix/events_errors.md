@@ -31,14 +31,29 @@ L2CAP_DATA_PACKET packet type. L2CAP provides the following events:
 
 
 
-Event Code |Event / Event Parameters (size in bits) 
+Event      | Event Code
 -----------|----------------------------------------
-0x70 | L2CAP_EVENT_CHANNEL_OPENED<br/> *event(8), len(8), status(8), address(48), handle(16), psm(16), local_cid(16), remote_cid(16), local_mtu(16), remote_mtu(16)*  
-0x71 | L2CAP_EVENT_CHANNEL_CLOSED<br/> *event (8), len(8), channel(16)* 
-0x72 | L2CAP_EVENT_INCOMING_CONNECTION<br/> *event(8), len(8), address(48), handle(16), psm (16), local_cid(16), remote_cid (16)* 
-0x74 | L2CAP_EVENT_CREDITS<br/> *event(8), len(8), local_cid(16), credits(8)*
-0x75 | L2CAP_EVENT_SERVICE_REGISTERED</br> *event(8), len(8), status(8), psm(16)* 
+L2CAP_EVENT_CHANNEL_OPENED          | 0x70 
+L2CAP_EVENT_CHANNEL_CLOSED          | 0x71 
+L2CAP_EVENT_INCOMING_CONNECTION     | 0x72 
+L2CAP_EVENT_CREDITS                 | 0x74 
+L2CAP_EVENT_SERVICE_REGISTERED      | 0x75 
 
+
+Table: L2CAP Events. {#tbl:l2capEvents}
+
+L2CAP event paramaters, with size in bits:
+
+- L2CAP_EVENT_CHANNEL_OPENED: 
+    - *event(8), len(8), status(8), address(48), handle(16), psm(16), local_cid(16), remote_cid(16), local_mtu(16), remote_mtu(16)*  
+- L2CAP_EVENT_CHANNEL_CLOSED: 
+    - *event (8), len(8), channel(16)* 
+- L2CAP_EVENT_INCOMING_CONNECTION: 
+    - *event(8), len(8), address(48), handle(16), psm (16), local_cid(16), remote_cid (16)* 
+- L2CAP_EVENT_CREDITS:
+    - *event(8), len(8), local_cid(16), credits(8)*
+- L2CAP_EVENT_SERVICE_REGISTERED: 
+    - *event(8), len(8), status(8), psm(16)* 
 
 ## RFCOMM Events
 
@@ -64,20 +79,38 @@ by RFCOMM:
     RFCOMM credit-based flow-control.
 
 -   RFCOMM_EVENT_SERVICE_REGISTERED - Status not equal zero indicates
-    an error. Possible errors: service is already registered;
-    MAX_NO_RFCOMM_SERVICES (defined in config.h) already registered.
+    an error. Possible errors: 
+    
+    - service is already registered;
+    - MAX_NO_RFCOMM_SERVICES (defined in config.h) already registered.
 
 
-Event Code |Event / Event Parameters (size in bits) 
------------|----------------------------------------
-0x80 | RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE<br/> *event(8), len(8), status(8), address(48), handle(16), server_channel(8), rfcomm_cid(16), max_frame_size(16)*
-0x81 | RFCOMM_EVENT_CHANNEL_CLOSED<br/> *event(8), len(8), rfcomm_cid(16)*
-0x82 | RFCOMM_EVENT_INCOMING_CONNECTION<br/> *event(8), len(8), address(48), channel (8), rfcomm_cid(16)*
-0x84 | RFCOMM_EVENT_CREDITS<br/> *event(8), len(8), rfcomm_cid(16), credits(8)*
-0x85 | RFCOMM_EVENT_SERVICE_REGISTERED<br/> *event(8), len(8), status(8), rfcomm server channel_id(8)*
+Event      | Event Code
+-----------|-----------------------------
+RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE | 0x80 
+RFCOMM_EVENT_CHANNEL_CLOSED        | 0x81 
+RFCOMM_EVENT_INCOMING_CONNECTION   | 0x82 
+RFCOMM_EVENT_CREDITS               | 0x84 
+RFCOMM_EVENT_SERVICE_REGISTERED    | 0x85 
 
+Table: RFCOMM Events. {#tbl:rfcommEvents}
+
+
+RFCOMM event paramaters, with size in bits:
+
+- RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE: 
+    - *event(8), len(8), status(8), address(48), handle(16), server_channel(8), rfcomm_cid(16), max_frame_size(16)*
+- RFCOMM_EVENT_CHANNEL_CLOSED: 
+    - *event(8), len(8), rfcomm_cid(16)*
+- RFCOMM_EVENT_INCOMING_CONNECTION: 
+    - *event(8), len(8), address(48), channel (8), rfcomm_cid(16)*
+- RFCOMM_EVENT_CREDITS: 
+    - *event(8), len(8), rfcomm_cid(16), credits(8)*
+- RFCOMM_EVENT_SERVICE_REGISTERED: 
+    - *event(8), len(8), status(8), rfcomm server channel_id(8)*
 
 ## Errors
+
 
 Error                                                                   |    Error Code
 ------------------------------------------------------------------------|-------------------
@@ -101,4 +134,5 @@ RFCOMM_CHANNEL_ALREADY_REGISTERED | 0x71
 RFCOMM_NO_OUTGOING_CREDITS | 0x72
 SDP_HANDLE_ALREADY_REGISTERED | 0x80
 
+Table: Errors. {#tbl:errors}
 

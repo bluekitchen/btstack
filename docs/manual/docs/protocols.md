@@ -120,7 +120,7 @@ command template from library:
 
 It uses OGF_CONTROLLER_BASEBAND as OGF,
 0x13 as OCF, and has one parameter with format “N” indicating a null
-terminated UTF-8 string. Table [table:hciformat] lists the format
+terminated UTF-8 string. Table {@tbl:hciCmdParamSpecifier} lists the format
 specifiers supported by BTstack. Check for other predefined HCI commands
 and info on their parameters.
 
@@ -136,6 +136,8 @@ and info on their parameters.
            P          16 byte Pairing code, e.g. PIN code or link key
            S          Service Record (Data Element Sequence)  
   ------------------- ----------------------------------------------------
+
+Table: Supported Format Specifiers of HCI Command Parameter. {#tbl:hciCmdParamSpecifier}
 
 
 ### Sending HCI command based on a template {#sec:sendingHCIProtocols}

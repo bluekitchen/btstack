@@ -47,6 +47,25 @@ def process_figures(temp_file, dest_file):
     fcopy(dest_file, temp_file)
     return
 
+def process_tables(temp_file, dest_file):
+    with open(dest_file, 'w') as mdout:
+        with open(temp_file, 'r') as mdin:
+            for line in mdin:
+                # detect table
+                table = re.match('\s*(Table:.*)({#(tbl:.*)})',line)
+                if table:
+                    insert_anchor(mdout, table.group(3))
+                    mdout.write(table.group(1)+"\n")
+                else:
+                    table_ref = re.match('.*({@(tbl:.*)})',line)
+                    if table_ref:
+                        md_reference = "[below](#"+table_ref.group(2)+")"
+                        line = line.replace(table_ref.group(1), md_reference) 
+                    mdout.write(line)
+    fcopy(dest_file, temp_file)
+    return
+
+
 # def process_listings(temp_file, dest_file):
 #     with open(dest_file, 'w') as mdout:
 #         with open(temp_file, 'r') as mdin:
@@ -55,13 +74,6 @@ def process_figures(temp_file, dest_file):
 #     fcopy(dest_file, temp_file)
 #     return
 
-# def process_tables(temp_file, dest_file):
-#     with open(dest_file, 'w') as mdout:
-#         with open(temp_file, 'r') as mdin:
-#             for line in mdin:
-#                 mdout.write(line)
-#     fcopy(dest_file, temp_file)
-#     return
 
 
 def main(argv):
@@ -79,8 +91,8 @@ def main(argv):
             
             process_sections(temp_file, dest_file)
             process_figures(temp_file, dest_file)
+            process_tables(temp_file, dest_file)
             # process_listings(temp_file, dest_file)
-            # process_tables(temp_file, dest_file)
 
 
 if __name__ == "__main__":
