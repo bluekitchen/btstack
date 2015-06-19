@@ -4,8 +4,11 @@
 
 #include <Arduino.h> 
 #include <SPI.h>
+
+#ifdef __AVR__
 #include <avr/wdt.h>
- 
+#endif
+
 #include "BTstack.h"
 
 #include "btstack_memory.h"
@@ -89,11 +92,26 @@ extern "C" int putchar(int c) {
     return c;
 }
 #else
+#ifdef __AVR__
 static FILE uartout = {0} ;
 static int uart_putchar (char c, FILE *stream) {
     Serial.write(c);
     return 0;
 }
+#endif
+#ifdef __arm__
+// added for Arduino Zero, might work on Arduino Due, too.
+extern "C" int _write(int file, char *ptr, int len){
+    int i;
+    for (i = 0; i < len; i++) {
+        if (ptr[i] == '\n') {
+            Serial.write((uint8_t)'\r');
+        }
+        Serial.write((uint8_t)ptr[i]);
+    }
+    return i;
+}
+#endif
 #endif
 
 // HAL CPU Implementation
@@ -656,8 +674,10 @@ void BTstackManager::setPublicBdAddr(bd_addr_t addr){
 
 void bluetooth_hardware_error(){
     printf("Bluetooth Hardware Error event. Restarting...\n\n\n");
+#ifdef __AVR__
     wdt_enable(WDTO_15MS);
     // wait for watchdog to trigger
+#endif
     while(1);
 }
 
