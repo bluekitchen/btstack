@@ -65,6 +65,7 @@
 #include "sdp.h"
 #include "debug.h"
 #include "hsp_hs.h"
+#include "stdin_support.h"
 
 const uint32_t   hsp_service_buffer[150/4]; // implicit alignment to 4-byte memory address
 const uint8_t    rfcomm_channel_nr = 1;
@@ -80,8 +81,6 @@ static void show_usage();
 
 
 // Testig User Interface 
-static data_source_t stdin_source;
-
 static void show_usage(void){
     printf("\n--- Bluetooth HSP Headset Test Console ---\n");
     printf("---\n");
