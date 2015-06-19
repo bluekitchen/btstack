@@ -34,6 +34,7 @@ def fix_figure_width_and_type(line):
             line = corr.group(1) + '[width='+width+'\\textwidth]' + corr.group(2).replace('png','pdf')
     return line
 
+
 def fix_appendix_pagebreak(line):
     corr = re.match('.*section{APIs}.*',line)
     if corr:
@@ -63,7 +64,7 @@ def main(argv):
                             line = line.replace(section_ref.group(2),"")
                         aout.write(line)               
 
-    pandoc_cmd = "pandoc -f markdown -t latex --filter pandoc-fignos --listings latex/btstack_generated.md -o latex/btstack_generated.tex"
+    pandoc_cmd = "pandoc -f markdown -t latex --filter pandoc-fignos --filter pandoc-tablenos --listings latex/btstack_generated.md -o latex/btstack_generated.tex"
     p = os.popen(pandoc_cmd,"r")
     while 1:
         line = p.readline()
