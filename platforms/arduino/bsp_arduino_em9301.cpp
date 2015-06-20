@@ -19,21 +19,30 @@
 #ifdef ENERGIA
 
 // CMM 9301 Configuration for TI Launchpad
-#define PIN_SCK      7
+#define PIN_SPI_SCK      7
 #define PIN_CS       8
 #define PIN_SHUTDOWN 11
 #define PIN_IRQ_DATA 13
-#define PIN_MISO     14
-#define PIN_MOSI     15
+#define PIN_SPI_MISO     14
+#define PIN_SPI_MOSI     15
 #else // ARDUINO
 
-// CMM 9301 Configuration on Arduino
+// CMM 9301 Configuration for Arduino
 #define PIN_IRQ_DATA 2
 #define PIN_CS 4
 #define PIN_SHUTDOWN 5
-#define PIN_MISO 50
-#define PIN_MOSI 51
-#define PIN_SCK  52
+
+// -- SPI defines for Arduino Mega
+#ifndef PIN_SPI_MISO
+#define PIN_SPI_MISO 50
+#endif
+#ifndef PIN_SPI_MOSI
+#define PIN_SPI_MOSI 51
+#endif
+#ifndef PIN_SPI_SCK
+#define PIN_SPI_SCK  52
+#endif
+
 #endif
 
 // rx state
@@ -51,37 +60,40 @@ static void (*tx_done_handler)(void) = dummy_handler;
 
 static void bt_setup(void){
     pinMode(PIN_CS, OUTPUT);
-    pinMode(PIN_MOSI, OUTPUT);
-    pinMode(PIN_SCK, OUTPUT);
+    pinMode(PIN_SPI_MOSI, OUTPUT);
+    pinMode(PIN_SPI_SCK, OUTPUT);
     pinMode(PIN_SHUTDOWN, OUTPUT);
     pinMode(PIN_IRQ_DATA, INPUT);
 
     digitalWrite(PIN_CS, HIGH);
-    digitalWrite(PIN_MOSI, LOW);
+    digitalWrite(PIN_SPI_MOSI, LOW);
     digitalWrite(PIN_SHUTDOWN, HIGH);
 
+    // SPI.begin();
     SPI.setBitOrder(MSBFIRST);
     SPI.setDataMode(SPI_MODE0);
+    // SPI.end();
 }
 
 #ifdef HAVE_SHUTDOWN
 static void bt_power_cycle(void){
+
     // power cycle. set CPU outputs to input to not power EM9301 via IOs
-    // pinMode(PIN_MOSI, INPUT);
+    // pinMode(PIN_SPI_MOSI, INPUT);
     // pinMode(PIN_CS, INPUT);
     pinMode(PIN_CS, OUTPUT);
-    pinMode(PIN_MOSI, OUTPUT);
-    pinMode(PIN_SCK, OUTPUT);
+    pinMode(PIN_SPI_MOSI, OUTPUT);
+    pinMode(PIN_SPI_SCK, OUTPUT);
     pinMode(PIN_SHUTDOWN, OUTPUT);
     digitalWrite(PIN_CS, LOW);
-    digitalWrite(PIN_MOSI, LOW);
-    digitalWrite(PIN_SCK, LOW);
+    digitalWrite(PIN_SPI_MOSI, LOW);
+    digitalWrite(PIN_SPI_SCK, LOW);
     digitalWrite(PIN_SHUTDOWN, HIGH);
     delay(500);
 
-    pinMode(PIN_MOSI, OUTPUT);
+    pinMode(PIN_SPI_MOSI, OUTPUT);
     pinMode(PIN_CS, OUTPUT);
-    digitalWrite(PIN_MOSI, LOW);
+    digitalWrite(PIN_SPI_MOSI, LOW);
     digitalWrite(PIN_CS, HIGH);
     digitalWrite(PIN_SHUTDOWN, LOW);
     delay(1000);
@@ -90,7 +102,7 @@ static void bt_power_cycle(void){
 
 #ifndef HAVE_SHUTDOWN
 static void bt_send_illegal(void){
-    digitalWrite(PIN_MOSI, HIGH);
+    digitalWrite(PIN_SPI_MOSI, HIGH);
     digitalWrite(PIN_CS, LOW);
     printf("Illegal start\n");
     SPI.begin(); 
@@ -105,7 +117,7 @@ static void bt_send_illegal(void){
 }
 
 static void bt_flush_input(void){
-    digitalWrite(PIN_MOSI, LOW);
+    digitalWrite(PIN_SPI_MOSI, LOW);
     digitalWrite(PIN_CS, LOW);
     SPI.begin(); 
     while (digitalRead(PIN_IRQ_DATA) == HIGH){
@@ -116,7 +128,7 @@ static void bt_flush_input(void){
 }
 
 static void bt_send_reset(void){
-      digitalWrite(PIN_MOSI, HIGH);
+      digitalWrite(PIN_SPI_MOSI, HIGH);
       digitalWrite(PIN_CS, LOW);
       SPI.begin(); 
       SPI.transfer(0x01);
@@ -134,13 +146,13 @@ static void bt_try_send(void){
     if (!bytes_to_write) return;
 
     // activate module
-    pinMode(PIN_MOSI, OUTPUT);
-    digitalWrite(PIN_MOSI, HIGH);
+    pinMode(PIN_SPI_MOSI, OUTPUT);
+    digitalWrite(PIN_SPI_MOSI, HIGH);
     digitalWrite(PIN_CS, LOW);
 
     // module ready
     int tx_done = 0;
-    if (digitalRead(PIN_MISO) == HIGH){
+    if (digitalRead(PIN_SPI_MISO) == HIGH){
         // printf("Sending: ");
 
         SPI.begin(); 
@@ -157,8 +169,8 @@ static void bt_try_send(void){
 
     // deactivate module
     digitalWrite(PIN_CS, HIGH);
-    digitalWrite(PIN_MOSI, LOW);
-    pinMode(PIN_MOSI, OUTPUT);
+    digitalWrite(PIN_SPI_MOSI, LOW);
+    pinMode(PIN_SPI_MOSI, OUTPUT);
 
     // notify upper layer
     if (tx_done) {
@@ -177,7 +189,7 @@ static int bt_try_read(void){
     // printf("Reading (%u): ", bytes_to_read);
 
     // activate module
-    digitalWrite(PIN_MOSI, LOW);
+    digitalWrite(PIN_SPI_MOSI, LOW);
     digitalWrite(PIN_CS, LOW);
     SPI.begin(); 
     do {
