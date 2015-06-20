@@ -69,9 +69,9 @@ static void bt_setup(void){
     digitalWrite(PIN_SPI_MOSI, LOW);
     digitalWrite(PIN_SHUTDOWN, HIGH);
 
-    // SPI.begin();
-    SPI.setBitOrder(MSBFIRST);
-    SPI.setDataMode(SPI_MODE0);
+    // SPI settings are reset in SPI.begin() - calls hang on Arduino Zero, too.
+    // SPI.setBitOrder(MSBFIRST);
+    // SPI.setDataMode(SPI_MODE0);
     // SPI.end();
 }
 
