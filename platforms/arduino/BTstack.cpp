@@ -191,8 +191,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 static void gatt_client_callback(le_event_t * event){
-    // le_characteristic_t characteristic;
-    // le_characteristic_value_event_t * value_event;
+
+    // if (hci) event is not 4-byte aligned, event->handle causes crash
+    // workaround: check event type, assuming GATT event types are contagious
+    if (event->type < GATT_QUERY_COMPLETE) return;
+    if (event->type > GATT_MTU) return;
+
     gatt_complete_event_t * gatt_complete_event;
 
     BLEDevice device(event->handle);
