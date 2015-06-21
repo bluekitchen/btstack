@@ -99,8 +99,10 @@ static int uart_putchar (char c, FILE *stream) {
     return 0;
 }
 #endif
-#ifdef __arm__
-// added for Arduino Zero, might work on Arduino Due, too.
+// added for Arduino Zero. Arduino Due already has tis own _write(..) implementation
+// in  /Users/mringwal/Library/Arduino15/packages/arduino/hardware/sam/1.6.4/cores/arduino/syscalls_sam3.c
+#if defined(__SAMD21G18A__)
+// #ifdef __arm__
 extern "C" int _write(int file, char *ptr, int len){
     int i;
     for (i = 0; i < len; i++) {
