@@ -14,6 +14,7 @@ So far, we did test the BTstack LE Arduino Shield together with these Arduino bo
 - Arduino Mega 2560 R3
 - Arduino Mega 2560 
 - Arduino Mega 1280 
+- Arduion Zero
 - Sparkfun Mega 3.3
 
 Please let us know if you got it working with other Arduino clones.
