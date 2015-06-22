@@ -9,6 +9,10 @@
 #include <avr/wdt.h>
 #endif
 
+#if __arm__
+#include <Reset.h>  // also provides NVIC_SystemReset
+#endif
+
 #include "BTstack.h"
 
 #include "btstack_memory.h"
@@ -683,6 +687,10 @@ void bluetooth_hardware_error(){
 #ifdef __AVR__
     wdt_enable(WDTO_15MS);
     // wait for watchdog to trigger
+#endif
+
+#ifdef __arm__
+    NVIC_SystemReset();
 #endif
     while(1);
 }
