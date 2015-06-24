@@ -147,8 +147,8 @@ system. As an example and for testing purposes, BTstack provides the
 memory-only implementation *remote_device_db_memory*. An
 implementation has to conform to the interface in Listing [below](#lst:persistentDB).
 
-<a name="lst:persistentDB"></a>
-
+~~~~ {#lst:persistentDB .c caption="{Persistent storage interface.}"}
+    
     typedef struct {
         // management
         void (*open)();
@@ -164,3 +164,4 @@ implementation has to conform to the interface in Listing [below](#lst:persisten
         void(*put_name)(bd_addr_t bd_addr, device_name_t *device_name);
         void(*delete_name)(bd_addr_t bd_addr);
     } remote_device_db_t;
+~~~~ 

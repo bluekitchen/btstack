@@ -21,7 +21,7 @@ $gap_set_local_name$. To save energy, you may set the device as
 undiscoverable again, once a connection is established. See Listing
 [below](#lst:Discoverable) for an example.
 
-<a name="lst:Discoverable"></a>
+~~~~ {#lst:Discoverable .c caption="{Setting discoverable mode.}"}
 
     int main(void){
         ... 
@@ -39,8 +39,9 @@ undiscoverable again, once a connection is established. See Listing
               ...
          }
      }
+~~~~ 
 
-### Discover remote devices {#section:DiscoverRemoteDevices}
+### Discover remote devices {#sec:GAPdiscoverRemoteDevices}
 
 To scan for remote devices, the *hci_inquiry* command is used. Found
 remote devices are reported as a part of:
@@ -57,7 +58,7 @@ add information about the received signal strength or provide the
 Extended Inquiry Result (EIR). A code snippet is shown in Listing
 [below](#lst:DiscoverDevices).
 
-<a name="lst:DiscoverDevices"></a>
+~~~~ {#lst:DiscoverDevices .c caption="{Discover remote devices.}"}
 
     void print_inquiry_results(uint8_t *packet){
         int event = packet[0];
@@ -103,6 +104,7 @@ Extended Inquiry Result (EIR). A code snippet is shown in Listing
            ...
         }
     }
+~~~~ 
 
 By default, neither RSSI values nor EIR are reported. If the Bluetooth
 device implements Bluetooth Specification 2.1 or higher, the
@@ -126,7 +128,7 @@ both sides. This isn’t optimal for embedded systems that do not have
 full I/O capabilities. To support pairing with older devices using a
 PIN, see Listing [below](#lst:PinCodeRequest).
 
-<a name="lst:PinCodeRequest"></a>
+~~~~ {#lst:PinCodeRequest .c caption="{PIN code request.}"}
 
     void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size){
         ...
@@ -142,6 +144,7 @@ PIN, see Listing [below](#lst:PinCodeRequest).
            ...
         }
     }
+~~~~ 
 
 The Bluetooth v2.1 specification introduces Secure Simple Pairing (SSP),
 which is a better approach as it both improves security and is better
@@ -178,10 +181,10 @@ two Bluetooth enabled devices.
 ### Accessing an SPP Server on a remote device
 
 To access a remote SPP server, you first need to query the remote device
-for its SPP services. Section [subsection:querysdp] shows how to query
-for all RFCOMM channels. For SPP, you can do the same but use the SPP
-UUID 0x1101 for the query. After you have identified the correct RFCOMM
-channel, you can create an RFCOMM connection as shown 
+for its SPP services. Section [on querying remote SDP service](#sec:querySDPProtocols) 
+shows how to query for all RFCOMM channels. For SPP, you can do the same 
+but use the SPP UUID 0x1101 for the query. After you have identified the 
+correct RFCOMM channel, you can create an RFCOMM connection as shown 
 [here](protocols/#sec:rfcommClientProtocols).
 
 ### Providing an SPP Server
@@ -231,8 +234,8 @@ Currently, BTstack supports only PANU.
 To access a remote PANU service, you first need perform an SDP query to
 get the L2CAP PSM for the requested PANU UUID. With these two pieces of
 information, you can connect BNEP to the remote PANU service with the
-*bnep_connect* function. The PANU Demo example in Section
-[example:panudemo] shows how this is accomplished.
+*bnep_connect* function. The Section on [PANU Demo example](#exaples/#sec:panudemoExample)
+shows how this is accomplished.
 
 ### Providing a PANU service
 
@@ -371,7 +374,9 @@ GATT profiles are defined by a simple textual comma separated value
 (.csv) representation. While the description is easy to read and edit,
 it is compact and can be placed in ROM.
 
-The current format is:
+The current format is shown in Listing [below](#lst:GATTServerProfile).
+
+~~~~ {#lst:GATTServerProfile .c caption="{GATT profile.}"}
 
     PRIMARY_SERVICE, {SERVICE_UUID}
     CHARACTERISTIC, {ATTRIBUTE_TYPE_UUID}, {PROPERTIES}, {VALUE}
@@ -380,6 +385,7 @@ The current format is:
     PRIMARY_SERVICE, {SERVICE_UUID}
     CHARACTERISTIC, {ATTRIBUTE_TYPE_UUID}, {PROPERTIES}, {VALUE}
     ...
+~~~~ 
 
 Properties can be a list of READ $|$ WRITE $|$ WRITE_WITHOUT_RESPONSE
 $|$ NOTIFY $|$ INDICATE $|$ DYNAMIC.

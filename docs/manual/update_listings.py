@@ -43,14 +43,17 @@ example_subsection = """
 ### SECTION_TITLE
 """
 
+listing_reference = """[here](#lst:FILE_NAMELISTING_LABEL)
+"""
+
 listing_start = """
 
-<a name="FILE_NAME:LISTING_LABEL"></a>
-<!-- -->
+~~~~ {#lst:FILE_NAMELISTING_LABEL .c caption="{LISTING_CAPTION}"}
 
 """
 
 listing_ending = """
+~~~~
 
 """
 
@@ -65,13 +68,7 @@ def latexText(text, ref_prefix):
 
     refs = re.match('.*(Listing\s+)(\w+).*',brief)
     if refs:
-        brief = brief.replace(refs.group(1), "[code snippet below]")
-        brief = brief.replace(refs.group(2), "(#"+ref_prefix+":" + refs.group(2)+")")
-
-    refs = re.match('.*(Section\s+)(\w+).*',brief)
-    if refs:
-        brief = brief.replace(refs.group(1), "[here]")
-        brief = brief.replace(refs.group(2), "(#sec:"+refs.group(2)+")")
+        brief = brief.replace(refs.group(2), "[here](#lst:"+ref_prefix + refs.group(2)+")")
 
     return brief
 

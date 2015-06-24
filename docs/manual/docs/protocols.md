@@ -71,8 +71,7 @@ Core Version 4.0, Volume 2, Part E, Chapter 5.4.
 
 Listing [below](#lst:hciOGFs) shows the OGFs provided by BTstack in file [src/hci.h]():
 
-<a name "lst:hciOGFs"></a>
-<!-- -->
+~~~~ {#lst:hciOGFs .c caption="{HCI OGFs provided by BTstack.}"}
 
     #define OGF_LINK_CONTROL  0x01
     #define OGF_LINK_POLICY  0x02
@@ -81,6 +80,7 @@ Listing [below](#lst:hciOGFs) shows the OGFs provided by BTstack in file [src/hc
     #define OGF_LE_CONTROLLER   0x08
     #define OGF_BTSTACK  0x3d
     #define OGF_VENDOR  0x3f
+~~~~ 
 
 For all existing Bluetooth
 commands and their OCFs see [Bluetooth Specification](https://www.bluetooth.org/Technical/Specifications/adopted.htm) -
@@ -93,8 +93,7 @@ struct as a compact format to define HCI command packets, see
 Listing [below](#lst:HCIcmdTemplate), and [include/btstack/hci_cmds.h]()
 file in the source code. 
 
-<a name "lst:HCIcmdTemplate"></a>
-<!-- -->
+~~~~ {#lst:HCIcmdTemplate .c caption="{HCI command struct.}"}
 
     // Calculate combined ogf/ocf value.
     #define OPCODE(ogf, ocf) (ocf | ogf << 10)
@@ -104,19 +103,19 @@ file in the source code.
         uint16_t    opcode;
         const char *format;
     } hci_cmd_t;
-
+~~~~ 
 
 Listing [below](#lst:HCIcmdExample) illustrates the *hci_write_local_name* HCI
 command template from library:
 
-<a name "lst:HCIcmdExample"></a>
-<!-- -->
+~~~~ {#lst:HCIcmdExample .c caption="{HCI command example.}"}
 
     // Sets local Bluetooth name
     const hci_cmd_t hci_write_local_name = {
         OPCODE(OGF_CONTROLLER_BASEBAND, 0x13), "N"
         // Local name (UTF-8, Null Terminated, max 248 octets)
     };
+~~~~ 
 
 It uses OGF_CONTROLLER_BASEBAND as OGF,
 0x13 as OCF, and has one parameter with format “N” indicating a null
@@ -153,13 +152,12 @@ if it is ok to send.
 Listing [below](#lst:HCIcmdExampleLocalName) illustrates how to manually set the
 device name with the HCI Write Local Name command.
 
-<a name "lst:HCIcmdExampleLocalName"></a>
-<!-- -->
+~~~~ {#lst:HCIcmdExampleLocalName .c caption="{Sending HCI command example.}"}
 
     if (hci_can_send_packet_now(HCI_COMMAND_DATA_PACKET)){
         hci_send_cmd(&hci_write_local_name, "BTstack Demo");
     }  
-
+~~~~ 
 
 Please note, that an application rarely has to send HCI commands on its
 own. Instead, BTstack provides convenience functions in GAP and higher
@@ -196,8 +194,8 @@ handler receives the L2CAP_EVENT_CHANNEL_OPENED and
 L2CAP_EVENT_CHANNEL_CLOSED events and L2CAP data packets, as shown
 in Listing [below](#lst:L2CAPremoteService).
 
-<a name "lst:L2CAPremoteService"></a>
-<!-- -->
+
+~~~~ {#lst:L2CAPremoteService .c caption="{Accessing an L2CAP service on a remote device.}"}
 
     btstack_packet_handler_t l2cap_packet_handler;
 
@@ -224,7 +222,7 @@ in Listing [below](#lst:L2CAPremoteService).
             return;
         }
     }
-
+~~~~ 
 
 ### Provide an L2CAP service
 
@@ -248,8 +246,8 @@ BTstack outgoing buffer became free again, the second one signals the
 same for ACL buffers in the Bluetooth chipset. Listing [below](#lst:L2CAPService)
 provides L2CAP service example code.
 
-<a name "lst:L2CAPService"></a>
-<!-- -->
+
+~~~~ {#lst:L2CAPService .c caption="{Providing an L2CAP service.}"}
 
     void btstack_setup(){
         ...
@@ -292,7 +290,7 @@ provides L2CAP service example code.
                 break;
         }
     }
-
+~~~~ 
 
 ### L2CAP LE - L2CAP Low Energy Protocol
 
@@ -350,9 +348,9 @@ This handler receives the RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE and
 RFCOMM_EVENT_CHANNEL_CLOSED events, and RFCOMM data packets, as shown in
 Listing [below](#lst:RFCOMMremoteService).
 
-<a name "lst:RFCOMMremoteService"></a>
-<!-- -->
-    
+
+~~~~ {#lst:RFCOMMremoteService .c caption="{RFCOMM handler for outgoing RFCOMM channel.}"}
+
     void init_rfcomm(){
         ...
         rfcomm_init();
@@ -377,7 +375,7 @@ Listing [below](#lst:RFCOMMremoteService).
             return;
         }
     }
-
+~~~~ 
 
 ### Provide an RFCOMM service {#sec:rfcommServiceProtocols}
 
@@ -404,8 +402,8 @@ BTstack outgoing buffer became free again, the second one signals that
 the remote side allowed to send another packet. Listing [below](#lst:RFCOMMService)
 provides the RFCOMM service example code.
 
-<a name "lst:RFCOMMService"></a>
-<!-- -->
+
+~~~~ {#lst:RFCOMMService .c caption="{Providing an RFCOMM service.}"}
     
     void btstack_setup(){
         ...
@@ -450,7 +448,7 @@ provides the RFCOMM service example code.
             break;
         }
     }
-
+~~~~ 
 
 ### Living with a single output buffer {#sec:singleBufferProtocols}
 
@@ -470,9 +468,7 @@ full and RFCOMM_NO_OUTGOING_CREDITS, if no outgoing credits are
 available. In Listing [below](#lst:SingleOutputBufferTryToSend), we show how to
 resend data packets when credits or outgoing buffers become available.
 
-<a name "lst:SingleOutputBufferTryToSend"></a>
-<!-- -->
-    
+~~~~ {#lst:SingleOutputBufferTryToSend .c caption="{Preparing and sending data.}"}    
     void prepareData(void){
         ...
     }
@@ -495,7 +491,7 @@ resend data packets when credits or outgoing buffers become available.
             break;
         }
     }
-
+~~~~ 
 
 RFCOMM’s mandatory credit-based flow-control imposes an additional
 constraint on sending a data packet - at least one new RFCOMM credit
@@ -504,12 +500,11 @@ sending an RFCOMM credit (RFCOMM_EVENT_CREDITS) event.
 
 These two events represent two orthogonal mechanisms that deal with flow
 control. Taking these mechanisms in account, the application should try
-to send data packets when one of these two events is received. For a RFCOMM example see
-Listing [below](#lst:SingleOutputBufferTryPH).
+to send data packets when one of these two events is received. For an
+RFCOMM example see Listing [below](#lst:SingleOutputBufferTryPH).
 
 
-<a name "lst:SingleOutputBufferTryPH"></a>
-<!-- -->
+~~~~ {#lst:SingleOutputBufferTryPH .c caption="{Resending data packets.}"} 
 
     void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
         ...
@@ -533,14 +528,14 @@ Listing [below](#lst:SingleOutputBufferTryPH).
            ...
            }
     }
+~~~~ 
 
 If the management of credits is manual, credits are provided by the
 application such that it can manage its receive buffers explicitly, see
 Listing [below](#lst:explicitFlowControl).
 
-<a name "lst:explicitFlowControl"></a>
-<!-- -->
-    
+
+~~~~ {#lst:explicitFlowControl .c caption="{RFCOMM service with manual credit management.}"}   
     void btstack_setup(void){
         ...
         // init RFCOMM
@@ -549,7 +544,7 @@ Listing [below](#lst:explicitFlowControl).
         // reserved channel, mtu=100, 1 credit
         rfcomm_register_service_with_initial_credits_internal(NULL, rfcomm_channel_nr, 100, 1);  
     }
-
+~~~~ 
 
 Manual credit management is recommended when received RFCOMM data cannot
 be processed immediately. In the [SPP flow control example](examples/generated/#sec:sppflowcontrolExample), 
@@ -558,15 +553,14 @@ simulated with the help of a periodic timer. To provide new credits, you
 call the *rfcomm_grant_credits* function with the RFCOMM channel ID
 and the number of credits as shown in Listing [below](#lst:NewCredits). 
 
-<a name "lst:NewCredits"></a>
-<!-- -->
-
+~~~~ {#lst:NewCredits .c caption="{Granting RFCOMM credits.}"} 
     void processing(){
         // process incoming data packet
         ... 
         // provide new credit
         rfcomm_grant_credits(rfcomm_channel_id, 1);
     }
+~~~~ 
 
 Please note that providing single credits effectively reduces the credit-based
 (sliding window) flow control to a stop-and-wait flow-control that
@@ -585,10 +579,8 @@ management. If the management of credits is automatic, new credits
 are provided when needed relying on ACL flow control. This is only 
 useful if there is not much data transmitted and/or only one physical 
 connection is used. See Listing [below](#lst:automaticFlowControl).
-
-<a name "lst:automaticFlowControl"></a>
-<!-- -->
-    
+ 
+~~~~ {#lst:automaticFlowControl .c caption="{RFCOMM service with automatic credit management.}"}   
     void btstack_setup(void){
         ...
         // init RFCOMM
@@ -596,7 +588,7 @@ connection is used. See Listing [below](#lst:automaticFlowControl).
         rfcomm_register_packet_handler(packet_handler);
         rfcomm_register_service_internal(NULL, rfcomm_channel_nr, 100); 
     }
-
+~~~~ 
 
 ## SDP - Service Discovery Protocol
 
@@ -651,8 +643,8 @@ service. The query delivers all matching RFCOMM services, including its
 name and the channel number, as well as a query complete event via a
 registered callback, as shown in Listing [below](#lst:SDPClientRFCOMM).
 
-<a name "lst:SDPClientRFCOMM"></a>
-<!-- -->
+
+~~~~ {#lst:SDPClientRFCOMM .c caption="{Searching RFCOMM services on a remote device.}"}
 
     bd_addr_t remote = {0x04,0x0C,0xCE,0xE4,0x85,0xD3};
 
@@ -708,23 +700,7 @@ registered callback, as shown in Listing [below](#lst:SDPClientRFCOMM).
         run_loop_execute(); 
         return 0;
     }
-
-    uint8_t des_buffer[200];
-    uint8_t* attribute;
-    de_create_sequence(service);
-        
-    // 0x0000 "Service Record Handle"
-    de_add_number(des_buffer, DE_UINT, DE_SIZE_16, SDP_ServiceRecordHandle);
-    de_add_number(des_buffer, DE_UINT, DE_SIZE_32, 0x10001);
-        
-    // 0x0001 "Service Class ID List"
-    de_add_number(des_buffer,  DE_UINT, DE_SIZE_16, SDP_ServiceClassIDList);
-    attribute = de_push_sequence(des_buffer);
-    {
-        de_add_number(attribute,  DE_UUID, DE_SIZE_16, 0x1101 );
-    }
-    de_pop_sequence(des_buffer, attribute);
-
+~~~~ 
 
 ## BNEP - Bluetooth Network Encapsulation Protocol
 

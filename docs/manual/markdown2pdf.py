@@ -25,6 +25,12 @@ def fix_listing_after_section(line):
         line = "\leavevmode" + line
     return line
 
+def fix_listing_hyperref_into_ref(line):
+    corr = re.match('(.*\\\\)hyperref\[(lst:.*)\]{.*}(.*)',line)
+    if corr:
+        line = corr.group(1)+"ref{" + corr.group(2) +"} " + corr.group(3) 
+    return line
+
 
 def fix_figure_width_and_type(line):
     global figures
@@ -83,6 +89,7 @@ def main(argv):
             for line in fin:
                 line = fix_empty_href(line)
                 line = fix_listing_after_section(line)
+                line = fix_listing_hyperref_into_ref(line)
                 line = fix_figure_width_and_type(line)
                 line = fix_appendix_pagebreak(line)
                 aout.write(line)       

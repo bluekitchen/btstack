@@ -75,9 +75,9 @@ by RFCOMM:
     Possible errors: an L2CAP error, out of memory.
 
 -   RFCOMM_EVENT_CREDITS - The application can resume sending when
-    this even is received. See Section [section:flowcontrol] for more on
-    RFCOMM credit-based flow-control.
-
+    this even is received. See Section on [RFCOMM credit-based flow-control]{protocols/#sec:flowControlProtocols} 
+    for more.
+    
 -   RFCOMM_EVENT_SERVICE_REGISTERED - Status not equal zero indicates
     an error. Possible errors: 
     
@@ -109,7 +109,7 @@ RFCOMM event paramaters, with size in bits:
 - RFCOMM_EVENT_SERVICE_REGISTERED: 
     - *event(8), len(8), status(8), rfcomm server channel_id(8)*
 
-## Errors
+## Errors {#sec:errorsAppendix}
 
 
 Error                                                                   |    Error Code

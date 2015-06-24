@@ -98,7 +98,7 @@ static int service_index = 0;
  * packet handlers, as shown in Listing GATTClientSetup.
  * Additionally, the security manager can be setup, if signed writes, or
  * encrypted, or authenticated connection are required, to access the
- * characteristics, as explained in Section smp.
+ * characteristics, as explained in Section on [SMP](protocols/#sec:smpProtocols).
  */
 
 /* LISTING_START(GATTClientSetup): Setting up GATT client */

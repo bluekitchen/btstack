@@ -21,12 +21,12 @@ allocated in two different manners:
     elements is defined in the config file. To initialize the static
     pools, you need to call *btstack_memory_init* function. An example
     of memory configuration for a single SPP service with a minimal
-    L2CAP MTU is shown in Listing [below](#lst:memoryConfigurationSPP).
+    L2CAP MTU is shown in Listing {@lst:memoryConfigurationSPP}.
 
 -   dynamically using the *malloc/free* functions, if HAVE_MALLOC is
     defined in config file.
 
-<a name "lst:memoryConfigurationSPP"></a>
+<!-- a name "lst:memoryConfigurationSPP"></a-->
 <!-- -->
 
     #define HCI_ACL_PAYLOAD_SIZE 52
@@ -40,6 +40,8 @@ allocated in two different manners:
     #define MAX_NO_DB_MEM_DEVICE_NAMES  0
     #define MAX_NO_DB_MEM_LINK_KEYS  3
     #define MAX_NO_DB_MEM_SERVICES 1
+
+Listing: Title. {#lst:memoryConfigurationSPP}
 
 If both HAVE_MALLOC and maximal size of a pool are defined in the
 config file, the statical allocation will take precedence. In case that

@@ -10,7 +10,7 @@ common init code.
 Listing [below](#lst:btstackInit) shows a minimal platform setup for an
 embedded system with a Bluetooth chipset connected via UART.
 
-<a name="lst:btstackInit"></a>
+~~~~ {#lst:btstackInit .c caption="{Minimal platform setup for an embedded system}"}
 
     int main(){
       // ... hardware init: watchdoch, IOs, timers, etc...
@@ -35,6 +35,8 @@ embedded system with a Bluetooth chipset connected via UART.
       // go
       run_loop_execute();    
     }
+    
+~~~~ 
 
 First, BTstack’s memory pools are setup up. Then, the standard run loop
 implementation for embedded systems is selected.

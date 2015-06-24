@@ -314,8 +314,8 @@ char * get_string_from_data_element(uint8_t * element){
 
 /* @section SDP parser callback 
  * 
- * @text The SDP parsers retrieves the BNEP PAN UUID as explained in Section 
- * \ref{example:sdpbnepquery}.
+ * @text The SDP parsers retrieves the BNEP PAN UUID as explained in  
+ * Section [on SDP BNEP Query example](examples/#sec:sdpbnepqueryExample}.
  */
 static void handle_sdp_client_query_result(sdp_query_event_t *event)
 {
