@@ -236,7 +236,7 @@ static void packet_handler (uint8_t packet_type, uint8_t *packet, uint16_t size)
 }
 
 /* @text For more details on discovering remote devices, please see
- * Section on [GAP](profiles/#sec:GAPdiscoverRemoteDevices).
+ * Section on [GAP](../profiles/#sec:GAPdiscoverRemoteDevices).
  */
 
 

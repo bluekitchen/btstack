@@ -66,13 +66,20 @@ def process_tables(temp_file, dest_file):
     return
 
 
-# def process_listings(temp_file, dest_file):
-#     with open(dest_file, 'w') as mdout:
-#         with open(temp_file, 'r') as mdin:
-#             for line in mdin:
-#                 mdout.write(line)
-#     fcopy(dest_file, temp_file)
-#     return
+def process_listings(temp_file, dest_file):
+    with open(dest_file, 'w') as mdout:
+        with open(temp_file, 'r') as mdin:
+            for line in mdin:
+                listing_start = re.match('.*{#(lst:.*)\s+.c\s+.*',line)
+                listing_end = re.match('\s*~~~~\s*\n',line)
+                if listing_start:
+                    insert_anchor(mdout, listing_start.group(1))
+                elif listing_end:
+                    mdout.write("\n")
+                else:
+                    mdout.write(line)
+    fcopy(dest_file, temp_file)
+    return
 
 
 
@@ -92,7 +99,7 @@ def main(argv):
             process_sections(temp_file, dest_file)
             process_figures(temp_file, dest_file)
             process_tables(temp_file, dest_file)
-            # process_listings(temp_file, dest_file)
+            process_listings(temp_file, dest_file)
 
 
 if __name__ == "__main__":
