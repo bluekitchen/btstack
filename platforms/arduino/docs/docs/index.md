@@ -11,6 +11,7 @@ In the second part, we'll explain the examples to get you starting with creating
 It should work with any board that provides at least 64 kB Flash and a working SPI driver. 
 So far, we did test the BTstack LE Arduino Shield together with these Arduino boards:
 
+- Arduino Zero
 - Arduino Mega 2560 R3
 - Arduino Mega 2560 
 - Arduino Mega 1280 

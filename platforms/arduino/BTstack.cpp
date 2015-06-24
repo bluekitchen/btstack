@@ -4,8 +4,15 @@
 
 #include <Arduino.h> 
 #include <SPI.h>
+
+#ifdef __AVR__
 #include <avr/wdt.h>
- 
+#endif
+
+#if __arm__
+#include <Reset.h>  // also provides NVIC_SystemReset
+#endif
+
 #include "BTstack.h"
 
 #include "btstack_memory.h"
@@ -89,11 +96,28 @@ extern "C" int putchar(int c) {
     return c;
 }
 #else
+#ifdef __AVR__
 static FILE uartout = {0} ;
 static int uart_putchar (char c, FILE *stream) {
     Serial.write(c);
     return 0;
 }
+#endif
+// added for Arduino Zero. Arduino Due already has tis own _write(..) implementation
+// in  /Users/mringwal/Library/Arduino15/packages/arduino/hardware/sam/1.6.4/cores/arduino/syscalls_sam3.c
+#if defined(__SAMD21G18A__)
+// #ifdef __arm__
+extern "C" int _write(int file, char *ptr, int len){
+    int i;
+    for (i = 0; i < len; i++) {
+        if (ptr[i] == '\n') {
+            Serial.write((uint8_t)'\r');
+        }
+        Serial.write((uint8_t)ptr[i]);
+    }
+    return i;
+}
+#endif
 #endif
 
 // HAL CPU Implementation
@@ -173,8 +197,12 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
 }
 
 static void gatt_client_callback(le_event_t * event){
-    // le_characteristic_t characteristic;
-    // le_characteristic_value_event_t * value_event;
+
+    // if (hci) event is not 4-byte aligned, event->handle causes crash
+    // workaround: check event type, assuming GATT event types are contagious
+    if (event->type < GATT_QUERY_COMPLETE) return;
+    if (event->type > GATT_MTU) return;
+
     gatt_complete_event_t * gatt_complete_event;
 
     BLEDevice device(event->handle);
@@ -656,8 +684,14 @@ void BTstackManager::setPublicBdAddr(bd_addr_t addr){
 
 void bluetooth_hardware_error(){
     printf("Bluetooth Hardware Error event. Restarting...\n\n\n");
+#ifdef __AVR__
     wdt_enable(WDTO_15MS);
     // wait for watchdog to trigger
+#endif
+
+#ifdef __arm__
+    NVIC_SystemReset();
+#endif
     while(1);
 }
 
