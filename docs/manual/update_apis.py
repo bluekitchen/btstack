@@ -75,7 +75,7 @@ def writeAPI(apifile, btstackfolder, apis, mk_codeidentation):
                         parts = re.match('\s*(/\*).*API_END.*(\*/)',line)
                         if parts:
                             state = State.DoneAPI
-                            return
+                            continue
                         fout.write(mk_codeidentation + line)
                         continue
 
