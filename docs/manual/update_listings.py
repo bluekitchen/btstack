@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-import os
-import re
-import sys, getopt
+import os, sys, getopt, re
 
 # Defines the names of example groups. Preserves the order in which the example groups will be parsed.
 list_of_groups = ["Hello World", "GAP", "SDP Queries", "SPP Server", "BNEP/PAN", "Low Energy", "Dual Mode"]
@@ -305,29 +303,34 @@ def processExamples(intro_file, examples_folder, examples_ofile):
 
 
 def main(argv):
-    btstack_folder = "../../"
-    docs_folder = "docs/examples/"
-    inputfolder = btstack_folder + "example/embedded/"
-    outputfile = docs_folder + "generated.md"
-    intro_file = "docs/examples/intro.md"
-
+    btstackfolder = "../../"
+    docsfolder    = "docs/"
+    
+    inputfolder = btstackfolder + "example/embedded/"
+    introfile   = docsfolder + "examples/intro.md"
+    outputfile  = docsfolder + "examples/examples.md"
+    
+    cmd = 'update_listings.py [-f <inputfolder>] [-i <introfile>] [-o <outputfile>]'
     try:
-        opts, args = getopt.getopt(argv,"hiso:",["ifolder=","ofile="])
+        opts, args = getopt.getopt(argv,"hiso:",["ffolder=","ifile=","ofile="])
     except getopt.GetoptError:
-        print 'update_listings.py [-i <inputfolder>] [-o <outputfile>]'
+        print cmd
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print 'update_listings.py [-i <inputfolder>] [-s] [-o <outputfile>]'
+            print cmd
             sys.exit()
-        elif opt in ("-i", "--ifolder"):
+        elif opt in ("-f", "--ffolder"):
             inputfolder = arg
+        elif opt in ("-i", "--ifile"):
+            introfile = arg
         elif opt in ("-o", "--ofile"):
             outputfile = arg
     print 'Input folder is ', inputfolder
+    print 'Intro file is ',  introfile
     print 'Output file is ', outputfile
 
-    processExamples(intro_file, inputfolder, outputfile)
+    processExamples(introfile, inputfolder, outputfile)
 
 if __name__ == "__main__":
    main(sys.argv[1:])
