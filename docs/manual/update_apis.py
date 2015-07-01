@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os, sys, getopt, re
+import os, sys, getopt, re, pickle
 
 class State:
     SearchStartAPI = 0
@@ -35,12 +35,12 @@ api_header = """
 api_ending = """
 """
 
-code_ref = """[FNAME](GITHUBFPATH#LLINENR)"""
+code_ref = """GITHUBFPATH#LLINENR"""
+
 
 def codeReference(fname, githubfolder, filepath, linenr):
     global code_ref
-    ref = code_ref.replace("FNAME",fname)
-    ref = ref.replace("GITHUB", githubfolder)
+    ref = code_ref.replace("GITHUB", githubfolder)
     ref = ref.replace("FPATH", filepath)
     ref = ref.replace("LINENR", str(linenr))
     return ref
@@ -80,47 +80,44 @@ def writeAPI(apifile, btstackfolder, apis, mk_codeidentation):
                         continue
 
 
-def writeIndex(indexfile, btstackfolder, apis, githubfolder):
+def createIndex(btstackfolder, apis, githubfolder):
     global typedefs, functions
 
-    with open(indexfile, 'w') as fout:
-        for api_tuple in apis:
-            api_filename = btstackfolder + api_tuple[0]
-            api_title = api_tuple[1]
-            api_lable = api_tuple[2]
+    for api_tuple in apis:
+        api_filename = btstackfolder + api_tuple[0]
+        api_title = api_tuple[1]
+        api_lable = api_tuple[2]
 
-            linenr = 0
-            with open(api_filename, 'rb') as fin:
-                typedefFound = 0
+        linenr = 0
+        with open(api_filename, 'rb') as fin:
+            typedefFound = 0
 
-                for line in fin:
-                    linenr = linenr + 1
-                    
-                    typedef =  re.match('.*typedef\s+struct.*', line)
+            for line in fin:
+                linenr = linenr + 1
+                
+                # search typedef struct begin
+                typedef =  re.match('.*typedef\s+struct.*', line)
+                if typedef:
+                    typedefFound = 1
+                
+                # search typedef struct begin
+                if typedefFound:
+                    typedef = re.match('}\s*(.*);\n', line)
                     if typedef:
-                        typedefFound = 1
-                        continue
+                        typedefFound = 0
+                        typedefs[typedef.group(1)] = codeReference(typedef.group(1), githubfolder, api_tuple[0], linenr)
+                    continue
 
-                    if typedefFound:
-                        typedef = re.match('}\s*(.*);\n', line)
-                        if typedef:
-                            typedefFound = 0
-                            typedefs[typedef.group(1)] = codeReference(typedef.group(1), githubfolder, api_tuple[0], linenr)
-                            fout.write(typedefs[typedef.group(1)]+"\n")
-                        continue
+                function =  re.match('.*typedef\s+void\s+\(\s*\*\s*(.*?)\)\(.*', line)
+                if function:
+                    functions[function.group(1)] = codeReference(function.group(1), githubfolder, api_tuple[0], linenr)
+                    continue
 
-                    function =  re.match('.*typedef\s+void\s+\(\s*\*\s*(.*?)\)\(.*', line)
-                    if function:
-                        functions[function.group(1)] = codeReference(function.group(1), githubfolder, api_tuple[0], linenr)
-                        fout.write(functions[function.group(1)]+"\n")
-                        continue
+                function = re.match('.*?\s+\*?\s*(.*?)\(.*\(*.*;', line)
+                if function:
+                    functions[function.group(1)] = codeReference(function.group(1), githubfolder, api_tuple[0], linenr)
+                    continue
 
-                    function = re.match('.*?\s+\*?\s*(.*?)\(.*\(*.*;', line)
-                    if function:
-
-                        functions[function.group(1)] = codeReference(function.group(1), githubfolder, api_tuple[0], linenr)
-                        fout.write(functions[function.group(1)]+"\n")
-                        continue
 
                         
 def main(argv):
@@ -157,7 +154,17 @@ def main(argv):
     print 'Index file is     :', indexfile
 
     writeAPI(apifile, btstackfolder, apis, mk_codeidentation)
-    # writeIndex(indexfile, btstackfolder, apis, githubfolder)
+    createIndex(btstackfolder, apis, githubfolder)
+
+    references = functions.copy()
+    references.update(typedefs)
+
+    with open(indexfile, 'w') as fout:
+        for function, reference in references.items():
+            fout.write("[" + function + "](" + reference + ")\n")
+
+
+    pickle.dump(references, open( "tmp/references.p", "wb" ) )
 
 
 if __name__ == "__main__":
