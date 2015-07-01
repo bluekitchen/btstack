@@ -49,6 +49,8 @@
 extern "C" {
 #endif
 
+/* API_START */
+
 typedef struct {
 
     // management
@@ -70,11 +72,24 @@ typedef struct {
 
 } remote_device_db_t;
 
+/*
+ * @brief
+ */
 extern       remote_device_db_t remote_device_db_iphone;
+
+/*
+ * @brief
+ */
 extern const remote_device_db_t remote_device_db_memory;
+
+/*
+ * @brief
+ */
 extern const remote_device_db_t remote_device_db_fs;
 
-// MARK: non-persisten implementation
+/* API_END */
+
+// MARK: non-persistent implementation
 #include <btstack/linked_list.h>
 #define MAX_NAME_LEN 32
 typedef struct {

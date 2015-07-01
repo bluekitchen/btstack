@@ -252,8 +252,8 @@ int btstack_main(int argc, const char * argv[]) {
     hci_register_packet_handler(packet_handler);
 
     // turn on!
-	hci_power_control(HCI_POWER_ON);
-	    
+    hci_power_control(HCI_POWER_ON);
+        
     return 0;
 }
 /* LISTING_END */

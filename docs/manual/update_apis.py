@@ -8,20 +8,25 @@ class State:
 
 # [file_name, api_title, api_lable]
 apis = [ 
-    #["","",""]
+    ["src/bnep.h", "BNEP", "bnep"],
     ["src/btstack_memory.h","Memory Management","btMemory"],
-    ["include/btstack/run_loop.h", "Run Loop", "runLoop"],
+    ["src/gap.h", "GAP", "gap"],
+    ["ble/gatt_client.h", "GATT Client", "gattClient"],
     ["src/hci.h", "HCI", "hci"],
+    ["src/hci_dump.h","Logging","hciTrace"],
+    ["src/hci_transport.h","HCI Transport","hciTransport"],
     ["src/l2cap.h", "L2CAP", "l2cap"],
+    ["src/pan.h", "PAN", "pan"],
+    ["src/remote_device_db.h","Remote Device DB","rdevDb"],
     ["src/rfcomm.h", "RFCOMM", "rfcomm"],
+    ["include/btstack/run_loop.h", "Run Loop", "runLoop"],
+    ["ble/sm.h", "SM", "sm"],
     ["src/sdp.h", "SDP", "sdp"],
     ["src/sdp_client.h", "SDP Client", "sdpClient"],
+    ["src/sdp_parser.h","SDP Parser","sdpParser"],
     ["src/sdp_query_rfcomm.h", "SDP RFCOMM Query", "sdpQueries"],
-    ["ble/gatt_client.h", "GATT Client", "gattClient"],
-    ["src/pan.h", "PAN", "pan"],
-    ["src/bnep.h", "BNEP", "bnep"],
-    ["src/gap.h", "GAP", "gap"],
-    ["ble/sm.h", "SM", "sm"]
+    ["src/sdp_query_util.h","SDP Query Util","sdpQueryUtil"],
+    ["include/btstack/sdp_util.h","SDP Utils", "sdpUtil"]
 ]
 
 functions = {}

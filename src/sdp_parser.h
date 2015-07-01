@@ -68,6 +68,8 @@ typedef struct de_state {
 void de_state_init(de_state_t * state);
 int  de_state_size(uint8_t eventByte, de_state_t *de_state);
 
+/* API_START */
+
 // SDP Parser
 // Basic SDP Query event type
 typedef struct sdp_query_event {
@@ -100,20 +102,42 @@ typedef struct sdp_query_service_record_handle_event {
 } sdp_query_service_record_handle_event_t;
 #endif
 
+/*
+ * @brief
+ */
 void sdp_parser_init(void);
+
+/*
+ * @brief
+ */
 void sdp_parser_handle_chunk(uint8_t * data, uint16_t size);
 
 #ifdef HAVE_SDP_EXTRA_QUERIES
+
+/*
+ * @brief
+ */
 void sdp_parser_init_service_attribute_search(void);
+
+/*
+ * @brief
+ */
 void sdp_parser_init_service_search(void);
+
+/*
+ * @brief
+ */
 void sdp_parser_handle_service_search(uint8_t * data, uint16_t total_count, uint16_t record_handle_count);
 #endif
 
 void sdp_parser_handle_done(uint8_t status);
 
-// Registers a callback to receive attribute value data and parse complete event.
+/*
+ * @brief Registers a callback to receive attribute value data and parse complete event.
+ */
 void sdp_parser_register_callback(void (*sdp_callback)(sdp_query_event_t * event));
 
+/* API_END */
 
 #if defined __cplusplus
 }

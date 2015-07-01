@@ -47,15 +47,24 @@
 extern "C" {
 #endif
 
+/* API_START */
 
-// Returns service search pattern for given UUID
+/*
+ * @brief Returns service search pattern for given UUID
+ */
 uint8_t* create_service_search_pattern_for_uuid(uint16_t uuid);
 
-// Searches SDP records on a remote device for all services with
-// a given UUID.
+/*
+ * @brief Searches SDP records on a remote device for all services with a given UUID.
+ */
 void sdp_general_query_for_uuid(bd_addr_t remote, uint16_t uuid);
 
+/*
+ * @brief
+ */
 void sdp_general_query_for_uuid128(bd_addr_t remote, uint8_t* uuid);
+
+/* API_END */
 
 #if defined __cplusplus
 }
