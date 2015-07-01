@@ -71,7 +71,7 @@ setups, toolchains, programmers, and init scripts.
 The quickest way to try BTstack is on a Linux or OS X system with an
 additional USB Bluetooth module. The Makefile [platforms/libusb]() in requires
 [pkg-config](http://www.freedesktop.org/wiki/Software/pkg-config/)
-and [libusb-1.0](www.libusb.org) or higher to be
+and [libusb-1.0](http://www.libusb.org) or higher to be
 installed.
 
 On Linux, it’s usually necessary to run the examples as root as the
