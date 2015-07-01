@@ -44,6 +44,8 @@ extern "C" {
 
 #include <btstack/utils.h>
 
+/* API_START */
+
 typedef enum {
     GAP_RANDOM_ADDRESS_TYPE_OFF = 0,
     GAP_RANDOM_ADDRESS_NON_RESOLVABLE,
@@ -96,10 +98,8 @@ void gap_advertisements_set_data(uint8_t advertising_data_length, uint8_t * adve
  * @param direct_address
  * @param channel_map
  * @param filter_policy
- *
  * @note own_address_type is used from gap_random_address_set_mode
  */
-
 void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
 	uint8_t direct_address_typ, bd_addr_t direct_address, uint8_t channel_map, uint8_t filter_policy);
 
@@ -108,6 +108,8 @@ void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, u
  * @param enabled
  */
 void gap_advertisements_enable(int enabled);
+
+/* API_END */
 
 #if defined __cplusplus
 }

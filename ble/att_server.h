@@ -45,12 +45,13 @@
 extern "C" {
 #endif
 
- /*
-  * @brief setup ATT server
-  * @param db attribute database created by compile-gatt.ph
-  * @param read_callback, see att.h, can be NULL
-  * @param write_callback, see attl.h, can be NULL
-  */
+/* API_START */
+/*
+ * @brief setup ATT server
+ * @param db attribute database created by compile-gatt.ph
+ * @param read_callback, see att.h, can be NULL
+ * @param write_callback, see attl.h, can be NULL
+ */
 void att_server_init(uint8_t const * db, att_read_callback_t read_callback, att_write_callback_t write_callback);
 
 /*
@@ -67,15 +68,17 @@ int  att_server_can_send(void);
 
 /*
  * @brief notify client about attribute value change
- * @ereturns 0 if ok, error otherwise
+ * @return 0 if ok, error otherwise
  */
 int att_server_notify(uint16_t handle, uint8_t *value, uint16_t value_len);
 
 /*
  * @brief indicate value change to client. client is supposed to reply with an indication_response
- * @ereturns 0 if ok, error otherwise
+ * @return 0 if ok, error otherwise
  */
 int att_server_indicate(uint16_t handle, uint8_t *value, uint16_t value_len);
+
+/* API_END */
 
 #if defined __cplusplus
 }

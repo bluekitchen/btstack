@@ -111,7 +111,6 @@ static void le_counter_setup(void){
 
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
-    att_dump_attributes();
 
     // setup advertisements
     uint16_t adv_int_min = 0x0030;

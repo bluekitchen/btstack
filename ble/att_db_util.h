@@ -55,6 +55,8 @@
 extern "C" {
 #endif
 
+/* API_START */
+
 /**
  * @brief Init ATT DB storage
  */
@@ -93,6 +95,8 @@ uint8_t * att_db_util_get_address(void);
  * @brief Get size of constructed ATT DB 
  */
 uint16_t att_db_util_get_size(void);
+
+/* API_END */
 
 #if defined __cplusplus
 }

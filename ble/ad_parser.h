@@ -50,6 +50,8 @@
 extern "C" {
 #endif
 
+/* API_START */
+
 typedef struct ad_context {
      uint8_t * data;
      uint8_t   offset;
@@ -70,6 +72,7 @@ uint8_t * ad_iterator_get_data(ad_context_t * context);
 int ad_data_contains_uuid16(uint8_t ad_len, uint8_t * ad_data, uint16_t uuid);
 int ad_data_contains_uuid128(uint8_t ad_len, uint8_t * ad_data, uint8_t * uuid128);
 
+/* API_END */
 
 #if defined __cplusplus
 }

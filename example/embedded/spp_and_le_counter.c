@@ -282,7 +282,7 @@ int btstack_main(void)
 
     // setup ATT server
     att_server_init(profile_data, att_read_callback, att_write_callback);    
-    att_dump_attributes();
+
     // set one-shot timer
     heartbeat.process = &heartbeat_handler;
     run_loop_set_timer(&heartbeat, HEARTBEAT_PERIOD_MS);

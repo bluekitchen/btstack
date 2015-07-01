@@ -115,8 +115,7 @@ static void le_streamer_setup(void){
     // setup ATT server
     att_server_init(profile_data, NULL, att_write_callback);    
     att_server_register_packet_handler(packet_handler);
-    att_dump_attributes();
-
+    
     // setup advertisements
     uint16_t adv_int_min = 0x0030;
     uint16_t adv_int_max = 0x0030;

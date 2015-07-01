@@ -60,6 +60,7 @@ extern "C" {
 
 // LE Device db interface
 
+/* API_START */
 
 /**
  * @brief init
@@ -154,6 +155,8 @@ void le_device_db_local_counter_set(int index, uint32_t counter);
  * @param index
  */
 void le_device_db_remove(int index);
+
+/* API_END */
 
 #if defined __cplusplus
 }

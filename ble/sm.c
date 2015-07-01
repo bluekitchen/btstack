@@ -2205,7 +2205,7 @@ void gap_random_address_set_update_period(int period_ms){
     gap_random_address_update_start();
 }
 
-/**
+/*
  * @brief Set Advertisement Paramters
  * @param adv_int_min
  * @param adv_int_max
