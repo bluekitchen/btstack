@@ -52,7 +52,9 @@
 #if defined __cplusplus
 extern "C" {
 #endif
-    
+
+/* API_START */
+
 /* HCI packet types */
 typedef struct {
     int    (*open)(void *transport_config);
@@ -75,11 +77,33 @@ typedef struct {
 
 
 // inline various hci_transport_X.h files
+
+/*
+ * @brief
+ */
 extern hci_transport_t * hci_transport_h4_instance(void);
+
+/*
+ * @brief
+ */
 extern hci_transport_t * hci_transport_h4_dma_instance(void);
+
+/*
+ * @brief
+ */
 extern hci_transport_t * hci_transport_h4_iphone_instance(void);
+
+/*
+ * @brief
+ */
 extern hci_transport_t * hci_transport_h5_instance(void);
+
+/*
+ * @brief
+ */
 extern hci_transport_t * hci_transport_usb_instance(void);
+
+/* API_END */
 
 // support for "enforece wake device" in h4 - used by iOS power management
 extern void hci_transport_h4_iphone_set_enforce_wake_device(char *path);

@@ -36,7 +36,6 @@
  */
 
 
-
 /*
  *  btstsack_memory.h
  *

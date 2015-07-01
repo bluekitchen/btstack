@@ -37,7 +37,6 @@
 
 
 
-
 /*
  *  btstsack_memory.h
  *
@@ -64,7 +63,14 @@ extern "C" {
 #include "gatt_client.h"
 #endif
 
+/* API_START */
+
+/**
+ * @brief Initializes BTstack memory pools.
+ */
 void btstack_memory_init(void);
+
+/* API_END */
 
 // hci_connection
 hci_connection_t * btstack_memory_hci_connection_get(void);

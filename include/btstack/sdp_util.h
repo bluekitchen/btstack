@@ -47,29 +47,8 @@
 #if defined __cplusplus
 extern "C" {
 #endif
-	
-typedef enum {
-    DE_NIL = 0,
-    DE_UINT,
-    DE_INT,
-    DE_UUID,
-    DE_STRING,
-    DE_BOOL,
-    DE_DES,
-    DE_DEA,
-    DE_URL
-} de_type_t;
 
-typedef enum {
-    DE_SIZE_8 = 0,
-    DE_SIZE_16,
-    DE_SIZE_32,
-    DE_SIZE_64,
-    DE_SIZE_128,
-    DE_SIZE_VAR_8,
-    DE_SIZE_VAR_16,
-    DE_SIZE_VAR_32
-} de_size_t;
+/* API_START */
 
 // UNIVERSAL ATTRIBUTE DEFINITIONS
 #define SDP_ServiceRecordHandle     0x0000
@@ -126,6 +105,30 @@ typedef enum {
 #define SDP_vMessage        0x06
 #define SDP_OBEXFileTypeAny 0xFF
 
+    
+typedef enum {
+    DE_NIL = 0,
+    DE_UINT,
+    DE_INT,
+    DE_UUID,
+    DE_STRING,
+    DE_BOOL,
+    DE_DES,
+    DE_DEA,
+    DE_URL
+} de_type_t;
+
+typedef enum {
+    DE_SIZE_8 = 0,
+    DE_SIZE_16,
+    DE_SIZE_32,
+    DE_SIZE_64,
+    DE_SIZE_128,
+    DE_SIZE_VAR_8,
+    DE_SIZE_VAR_16,
+    DE_SIZE_VAR_32
+} de_size_t;
+
 // MARK: DateElement
 void      de_dump_data_element(uint8_t * record);
 int       de_get_len(uint8_t *header);
@@ -170,6 +173,8 @@ int       sdp_filter_attributes_in_attributeIDList(uint8_t *record, uint8_t *att
 void      sdp_create_spp_service(uint8_t *service, int service_id, const char *name);
 void      sdp_normalize_uuid(uint8_t *uuid, uint32_t shortUUID);
 int       sdp_has_blueooth_base_uuid(uint8_t * uuid128);
+
+/* API_END */
 
 #if defined __cplusplus
 }

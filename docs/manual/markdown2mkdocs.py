@@ -1,19 +1,13 @@
 #!/usr/bin/env python
 
-import sys, yaml
-import os, re
+import sys, os, shutil
+import re, yaml
 
 def insert_anchor(mdout, reference):
     mdout.write("<a name=\"" + reference + "\"></a>\n\n")
 
 def insert_reference(mdout, text, link):
     mdout.write("")
-
-def fcopy(source_file, dest_file):
-    with open(dest_file, 'w') as mdout:
-        with open(source_file, 'r') as mdin:
-            for line in mdin:
-                mdout.write(line)
 
 def process_sections(temp_file, dest_file):
     with open(dest_file, 'w') as mdout:
@@ -26,7 +20,7 @@ def process_sections(temp_file, dest_file):
                 else:
                     mdout.write(line)
                 
-    fcopy(dest_file, temp_file)
+    shutil.copyfile(dest_file, temp_file)
     return
 
 def process_figures(temp_file, dest_file):
@@ -44,7 +38,7 @@ def process_figures(temp_file, dest_file):
                         md_reference = "[below](#"+figure_ref.group(2)+")"
                         line = line.replace(figure_ref.group(1), md_reference) 
                     mdout.write(line)
-    fcopy(dest_file, temp_file)
+    shutil.copyfile(dest_file, temp_file)
     return
 
 def process_tables(temp_file, dest_file):
@@ -62,7 +56,7 @@ def process_tables(temp_file, dest_file):
                         md_reference = "[below](#"+table_ref.group(2)+")"
                         line = line.replace(table_ref.group(1), md_reference) 
                     mdout.write(line)
-    fcopy(dest_file, temp_file)
+    shutil.copyfile(dest_file, temp_file)
     return
 
 
@@ -78,7 +72,7 @@ def process_listings(temp_file, dest_file):
                     mdout.write("\n")
                 else:
                     mdout.write(line)
-    fcopy(dest_file, temp_file)
+    shutil.copyfile(dest_file, temp_file)
     return
 
 
