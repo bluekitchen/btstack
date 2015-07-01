@@ -38,7 +38,9 @@
 	UIActivityIndicatorView *bluetoothActivity;
     UITableView *_tableView;
     UISwitch *loggingSwitch;
+    UIButton *offButton;
 }
 -(id) initWithTableView:(UITableView *) tableView;
 @property (nonatomic, retain)  UISwitch *loggingSwitch;
+@property (nonatomic, retain)  UIButton *offButton;
 @end

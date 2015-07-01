@@ -36,6 +36,7 @@
 
 @implementation BluetoothTableViewAdapter
 @synthesize loggingSwitch;
+@synthesize offButton;
 
 -(id) initWithTableView:(UITableView *) tableView {
 	bluetoothActivity = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
@@ -43,7 +44,12 @@
     _tableView = tableView;
     self.loggingSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(0,0, 100, 20)]; // size will be ignored anyway
     [loggingSwitch addTarget:self action:@selector(loggingSwitchToggled) forControlEvents:UIControlEventValueChanged];
-    
+    self.offButton = [UIButton buttonWithType:UIButtonTypeRoundedRect];
+    self.offButton.frame = CGRectMake(0.0f, 0.0f, 80.0f, 20.0f);
+    // self.offButton.backgroundColor = [UIColor redColor];
+    [self.offButton setTitle:@"Force Off" forState:UIControlStateNormal];  
+    [offButton addTarget:self action:@selector(offTapped) forControlEvents:UIControlEventTouchUpInside];
+
     // get old value
     Boolean valid;
     Boolean loggingOn = CFPreferencesGetAppBooleanValue(CFSTR("Logging"), CFSTR("ch.ringwald.btstack"), &valid);
@@ -73,6 +79,11 @@
     notify_post("ch.ringwald.btstack.preferences");
 }
 
+-(void)offTapped {
+    NSLog(@"BTstack 'Force off' tapped");
+    [[BluetoothController sharedInstance] requestType:BluetoothTypeNone];
+}
+
 #pragma mark Table view delegate methods
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -93,34 +104,31 @@
     
     cell.accessoryType = UITableViewCellAccessoryNone;
     cell.accessoryView = nil;
-    BOOL hasAccessory;
     
     BluetoothType_t bluetoothType = [[BluetoothController sharedInstance] targetType];
     BOOL activity = [[BluetoothController sharedInstance] isActive];
-    // NSLog(@"tableView update: type %u, active %u", bluetoothType, activity);
+    NSLog(@"tableView update: type %u, active %u", bluetoothType, activity);
     
     switch ([indexPath section]) {
         case 0:
-            switch ([indexPath row]) {
-                case 0:
-                    theLabel = @"BTstack";
-                    hasAccessory = bluetoothType == BluetoothTypeBTstack;
-                    break;
-                case 1:
-                    theLabel = @"iOS";
-                    hasAccessory = bluetoothType == BluetoothTypeApple;
-                    break;
-                default:
-                    theLabel = @"None";
-                    hasAccessory = bluetoothType == BluetoothTypeNone;
-                    break;
-            }
-            if (hasAccessory) {
-                if (activity){
-                    cell.accessoryView = bluetoothActivity;
-                } else {
-                    cell.accessoryType = UITableViewCellAccessoryCheckmark;
+            if ([[BluetoothController sharedInstance] isConnected]){
+                switch (bluetoothType){
+                    case BluetoothTypeBTstack:
+                        theLabel = @"Bluetooth Stack: BTstack";
+                        cell.accessoryView = offButton;
+                        break;
+                    case BluetoothTypeApple:
+                        theLabel = @"Bluetooth Stack: iOS";
+                        break;
+                    case BluetoothTypeNone:
+                        theLabel = @"Bluetooth Stack: None";
+                        break;
                 }
+            } else {
+                theLabel = @"Bluetooth Stack: Unknown";
+            }
+            if (activity){
+                cell.accessoryView = bluetoothActivity;
             }
             break;
         case 1:
@@ -141,25 +149,8 @@
 }
 
 - (NSIndexPath *)tableView:(UITableView *)tableView willSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    if([indexPath section] != 0) return nil;
-    
-    BluetoothType_t newType;
-    switch ([indexPath row]) {
-        case 0:
-            newType = BluetoothTypeBTstack;
-            break;
-        case 1:
-            newType = BluetoothTypeApple;
-            break;
-        default:
-            newType = BluetoothTypeNone;
-            break;
-    }
-    
-    [[BluetoothController sharedInstance] requestType:newType];
-    [_tableView reloadData];
-
-	return nil;
+    // avoid selecting a row
+    return nil;
 }
 
 #pragma mark Table view data source methods
@@ -171,12 +162,7 @@
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section{
     switch (section){
         case 0:
-            if (![[BluetoothController sharedInstance] isConnected]){
-                return @"Internal BTstack Error";
-            }
-            return @"Active Bluetooth Stack";
-        case 1:
-            return @"BTstack Config";
+            return @"Bluetooth Config";
         default:
             return @"BTstack Config";
     }
@@ -186,11 +172,10 @@
     switch (section) {
         case 0:
             if (![[BluetoothController sharedInstance] isConnected]){
-                return @"Cannot connect to BTstack daemon.\n\nPlease re-install BTstack package and/or make "
-                "sure that /Library/LaunchDaemons/ is owned by user 'root' and group 'wheel' (root:wheel).\n"
-                "If you're on 5.x, pleaes install latest version of 'Corona 5.0.1 Untether' package, reboot and try again.";
+                return @"Cannot connect to BTstack daemon.\n\nPlease re-install the BTstack package.";
             }
-            return @"Enabling iOS Bluetooth after BTstack was used can take up to 30 seconds. Please be patient.";
+            return @"BTstack-compatible applications automatically enable BTstack on start and disable it on exit. "
+                   "Otherwise, you can force BTstack off here.";
         case 1:
             return @"Turn on logging, if you experience problems with BTstack-based software and add /tmp/hci_dump.pklg to your support mail.";
         default:
@@ -201,17 +186,7 @@
 
 // Customize the number of rows in the table view.
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    switch (section){
-        case 0:
-            if (![[BluetoothController sharedInstance] isConnected]){
-                return 0;
-            }
-            return 3;
-        case 1:
-            return 1;
-        default:
-            return 1;
-    }
+    return 1;
 }
 
 
