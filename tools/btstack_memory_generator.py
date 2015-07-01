@@ -66,7 +66,14 @@ extern "C" {
 #include "gatt_client.h"
 #endif
 
+/* API_START */
+
+/**
+ * @brief Initializes BTstack memory pools.
+ */
 void btstack_memory_init(void);
+
+/* API_END */
 """
 
 hfile_header_end = """

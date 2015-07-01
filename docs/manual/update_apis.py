@@ -3,12 +3,13 @@ import os, sys, getopt, re, pickle
 
 class State:
     SearchStartAPI = 0
-    RemoveEmptyLinesAfterAPIStart = 1
-    SearchEndAPI = 2
-    DoneAPI = 3
+    SearchEndAPI = 1
+    DoneAPI = 2
 
 # [file_name, api_title, api_lable]
 apis = [ 
+    #["","",""]
+    ["src/btstack_memory.h","Memory Management","btMemory"],
     ["include/btstack/run_loop.h", "Run Loop", "runLoop"],
     ["src/hci.h", "HCI", "hci"],
     ["src/l2cap.h", "L2CAP", "l2cap"],
@@ -60,19 +61,13 @@ def writeAPI(apifile, btstackfolder, apis, mk_codeidentation):
             with open(api_filename, 'rb') as fin:
                 for line in fin:
                     if state == State.SearchStartAPI:
-                        parts = re.match('\s*(/\*).*API_START.*(\*/)',line)
+                        parts = re.match('.*API_START.*',line)
                         if parts:
-                            state = State.RemoveEmptyLinesAfterAPIStart
+                            state = State.SearchEndAPI
                         continue
                     
-                    if state == State.RemoveEmptyLinesAfterAPIStart:
-                        if line == "" or line == "\n":
-                            continue
-                        state = State.SearchEndAPI
-                        continue
-
                     if state == State.SearchEndAPI:
-                        parts = re.match('\s*(/\*).*API_END.*(\*/)',line)
+                        parts = re.match('.*API_END.*',line)
                         if parts:
                             state = State.DoneAPI
                             continue
