@@ -604,10 +604,8 @@ static void report_gatt_characteristic_descriptor(gatt_client_t * peripheral, ui
     le_characteristic_descriptor_t descriptor;
     descriptor.handle = handle;
     descriptor.uuid16 = peripheral->uuid16;
+    memcpy(descriptor.uuid128, peripheral->uuid128, 16);
     event.value_offset = value_offset;
-    if (peripheral->uuid128){
-        memcpy(descriptor.uuid128, peripheral->uuid128, 16);
-    }
     
     event.value = value;
     event.value_length = value_length;
