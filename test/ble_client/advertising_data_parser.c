@@ -72,32 +72,31 @@ typedef struct ad_event {
 static uint8_t ad_data[] =   {0x02, 0x01, 0x05, 0x03, 0x02, 0xF0, 0xFF};
 static uint8_t adv_data_2[] = { 8, 0x09, 'B', 'T', 's', 't', 'a', 'c', 'k' }; 
 
-static uint8_t mtk_adv_evt[] = {
-    0x3e, 0x3b, 0x02, 0x03, 0x04, 0x01, 0x55, 0x05, 0x67, 0x5c, 0xc2, 0x4f, 0x00,
-    0xb6, 0x00, 0x00, 0x87, 0x7b, 0x60, 0x70, 0xf3, 0x5c, 0x1b, 0x02, 0x01, 0x02,
-    0x05, 0x09, 0x41, 0x4e, 0x43, 0x53, 0x11, 0x15, 0xd0, 0x00, 0x2d, 0x12, 0x1e,
-    0x4b, 0x0f, 0xa4, 0x99, 0x4e, 0xce, 0xb5, 0x31, 0xf4, 0x05, 0x79, 0xbf, 0x04,
-    0x00, 0x87, 0x7b, 0x60, 0x70, 0xf3, 0x5c, 0x00, 0xc0
+static uint8_t expected_bt_addr[] = {0x34, 0xB1, 0xF7, 0xD1, 0x77, 0x9B};
+static uint8_t adv_multi_packet[] = {
+    0x3E, 0x3B, 0x02, 0x03, // num_reports = 1
+    // data_length = 9; event_size = 10 + data_length = 19 = 0x13
+    // ( ev_type, ev_size, address type, address)
+    0xE2, 0x01, 0x34, 0xB1, 0xF7, 0xD1, 0x77, 0x9B,           
+    0x09, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0xCC, // data len, data, rssi
+    
+    0xE2, 0x01, 0x34, 0xB1, 0xF7, 0xD1, 0x77, 0x9B,            
+    0x08, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0xCB,       // data len, data, rssi
+    
+    0xE2, 0x01, 0x34, 0xB1, 0xF7, 0xD1, 0x77, 0x9B,            
+    0x07, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0xCA              // data len, data, rssi
 };
 
-static uint8_t adv_evt[] = {
-    0x3E, 0x3B, 0x02, 0x03, 0x04, 0x00, 0x04, 0x01, 0x00, 0x00, 0x55, 0x05, 0x67,
-    0x5C, 0xC2, 0x4F, 0x87, 0x7B, 0x60, 0x70, 0xF3, 0x5C, 0x87, 0x7B, 0x60, 0x70,
-    0xF3, 0x5C, 0x00, 0x1B, 0x00, 0x02, 0x01, 0x02, 0x05, 0x09, 0x41, 0x4E, 0x43,
-    0x53, 0x11, 0x15, 0xD0, 0x00, 0x2D, 0x12, 0x1E, 0x4B, 0x0F, 0xA4, 0x99, 0x4E,
-    0xCE, 0xB5, 0x31, 0xF4, 0x05, 0x79, 0xb6, 0xbf, 0xc0
-};
+static int adv_index = 0;
 
-static uint8_t mtk_num_completed_evt[] ={
-    0x13 ,0x09, 0x02 ,0x01, 0x02 ,0x01, 0x00 ,0x01, 0x02 ,0x01, 0x00
-};
-
-static uint8_t num_completed_evt[] ={
-    0x13 ,0x09, 0x02 ,0x01, 0x02 ,0x01, 0x02, 0x01, 0x00, 0x01, 0x00
-};
+void CHECK_EQUAL_ARRAY(const uint8_t * expected, uint8_t * actual, int size){
+    for (int i=0; i<size; i++){
+        BYTES_EQUAL(expected[i], actual[i]);
+    }
+}
 
 
-int dummy_callback(void){
+static int dummy_callback(void){
     return 0;
 }
 
@@ -111,33 +110,18 @@ static hci_transport_t dummy_transport = {
   /*  .transport.can_send_packet_now           = */  NULL,
 };
 
-static void dump_ad_event(ad_event_t * e){
-    printf(" * adv. event: evt-type %u, addr-type %u, addr %s, rssi %u, length adv %u, data: ", e->event_type,
-           e->address_type, bd_addr_to_str(e->address), e->rssi, e->length);
-    printf_hexdump(e->data, e->length);
-    
-}
 
 void packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t size){
-
-    ad_event_t ad_event;
-    int pos = 2;
-    ad_event.event_type = packet[pos++];
-    ad_event.address_type = packet[pos++];
-    memcpy(ad_event.address, &packet[pos], 6);
+    CHECK_EQUAL(0xE2, packet[2]);                   // event type
+    CHECK_EQUAL(0x01, packet[3]);                   // address type
+    CHECK_EQUAL_ARRAY(expected_bt_addr, &packet[4], 6);
+    CHECK_EQUAL(0xCC - adv_index, packet[10]);      // rssi
+    CHECK_EQUAL(0x09 - adv_index, packet[11]);      // data size
     
-    pos += 6;
-    ad_event.rssi = packet[pos++];
-    ad_event.length = packet[pos++];
-    ad_event.data = &packet[pos];
-    pos += ad_event.length;
-    dump_ad_event(&ad_event);
-
-    printf("\ndata: \n");
-
-    printf_hexdump(packet, size);
-
-    printf("\n");
+    for (int i=0; i<0x09 - adv_index; i++){         // data
+        CHECK_EQUAL(i, packet[12+i]);
+    }
+    adv_index++;
 }
 
 bool nameHasPrefix(const char * name_prefix, uint16_t data_length, uint8_t * data){
@@ -172,7 +156,7 @@ TEST(ADParser, TestNamePrefix){
     CHECK(nameHasPrefix("BTstack", sizeof(adv_data_2), adv_data_2));
 }
 
-#if 0
+
 TEST(ADParser, TestDataParsing){
     ad_context_t context;
     uint8_t  expected_len[] = {1, 2};
@@ -199,26 +183,9 @@ TEST(ADParser, TestDataParsing){
 }
 
 
-TEST(ADParser, TestFixMtkAdvertisingReport){
-    // fix_mtk_advertisement_report(mtk_adv_evt, sizeof(mtk_adv_evt));
-    int j;
-    for (j = 0; j < sizeof(mtk_adv_evt); j++){
-        CHECK_EQUAL(mtk_adv_evt[j], adv_evt[j]);
-    }
-}
-
-TEST(ADParser, TestFixMtkNumCompletedPackets){
-    // fix_mtk_num_completed_packets(mtk_num_completed_evt, sizeof(mtk_num_completed_evt));
-    int j;
-    for (j = 0; j < sizeof(mtk_num_completed_evt); j++){
-        CHECK_EQUAL(mtk_num_completed_evt[j], num_completed_evt[j]);
-    }
-}
-
 TEST(ADParser, TestAdvertisementEventMultipleReports){
-    le_handle_advertisement_report(adv_evt, sizeof(adv_evt));
+    le_handle_advertisement_report(adv_multi_packet, sizeof(adv_multi_packet));
 }
-#endif
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);

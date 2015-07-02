@@ -138,6 +138,11 @@ void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t addr){
     memcpy(addr, dummy, 6);
 }
 
+ void hci_le_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, uint8_t adv_type,
+    uint8_t own_address_type, uint8_t direct_address_typ, bd_addr_t direct_address,
+    uint8_t channel_map, uint8_t filter_policy) {
+ }
+
 int  l2cap_can_send_connectionless_packet_now(void){
 	return packet_buffer_len == 0;
 }
