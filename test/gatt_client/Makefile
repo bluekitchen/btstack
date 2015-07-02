@@ -21,7 +21,6 @@ COMMON = \
     sdp_util.c			        \
     remote_device_db_memory.c	\
     hci_cmds.c					\
-    hci.c     					\
     hci_dump.c     				\
     att_dispatch.c       	    \
     att.c     					\
