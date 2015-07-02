@@ -19,6 +19,7 @@ static uint16_t packet_buffer_len = 0;
 
 static uint8_t aes128_cyphertext[16];
 
+static linked_list_t     connections;
 
 uint8_t * mock_packet_buffer(void){
 	return packet_buffer;
@@ -128,7 +129,8 @@ hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
 	return NULL;
 }
 void hci_connections_get_iterator(linked_list_iterator_t *it){
-	printf("hci_connections_get_iterator not implemented in mock backend\n");
+	// printf("hci_connections_get_iterator not implemented in mock backend\n");
+    linked_list_iterator_init(it, &connections);
 }
 
 // get addr type and address used in advertisement packets
