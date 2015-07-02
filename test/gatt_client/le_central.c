@@ -40,7 +40,6 @@ void CHECK_EQUAL_ARRAY(const uint8_t * expected, uint8_t * actual, int size){
 // -----------------------------------------------------
 
 static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    printf(" handle_hci_event \n");
     if (packet_type != HCI_EVENT_PACKET) return;
     
     bd_addr_t address;
@@ -48,9 +47,7 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
     switch (event) {
         case BTSTACK_EVENT_STATE:
             if (packet[2] != HCI_STATE_WORKING) break;
-            printf("BTstack activated, set scan params!\n");
             le_central_set_scan_parameters(0,0x0030, 0x0030);
-            printf("Start scanning\n");
             le_central_start_scan();
             break;
             
@@ -65,11 +62,9 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
         case HCI_EVENT_LE_META:
             // wait for connection complete
             if (packet[2] !=  HCI_SUBEVENT_LE_CONNECTION_COMPLETE) break;
-            printf("connected\n");
             connected = 1;
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
-            printf("disconnected\n");
             exit(0);
             break;
         default:
