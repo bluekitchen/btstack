@@ -790,15 +790,15 @@ extern const hci_cmd_t btstack_set_discoverable;
 extern const hci_cmd_t btstack_set_bluetooth_enabled;    // only used by btstack config
     
 extern const hci_cmd_t hci_accept_connection_request;
-extern const hci_cmd_t hci_accept_synchronous_connection_command;
+extern const hci_cmd_t hci_accept_synchronous_connection;
 extern const hci_cmd_t hci_authentication_requested;
 extern const hci_cmd_t hci_change_connection_link_key;
 extern const hci_cmd_t hci_change_connection_packet_type;
 extern const hci_cmd_t hci_create_connection;
 extern const hci_cmd_t hci_create_connection_cancel;
 extern const hci_cmd_t hci_delete_stored_link_key;
-extern const hci_cmd_t hci_enhanced_setup_synchronous_connection_command;
-extern const hci_cmd_t hci_enhanced_accept_synchronous_connection_command;
+extern const hci_cmd_t hci_enhanced_setup_synchronous_connection;
+extern const hci_cmd_t hci_enhanced_accept_synchronous_connection;
 extern const hci_cmd_t hci_disconnect;
 extern const hci_cmd_t hci_host_buffer_size;
 extern const hci_cmd_t hci_inquiry;
@@ -829,7 +829,7 @@ extern const hci_cmd_t hci_reset;
 extern const hci_cmd_t hci_role_discovery;
 extern const hci_cmd_t hci_set_event_mask;
 extern const hci_cmd_t hci_set_connection_encryption;
-extern const hci_cmd_t hci_setup_synchronous_connection_command;
+extern const hci_cmd_t hci_setup_synchronous_connection;
 extern const hci_cmd_t hci_sniff_mode;
 extern const hci_cmd_t hci_switch_role_command;
 extern const hci_cmd_t hci_user_confirmation_request_negative_reply;
@@ -913,7 +913,8 @@ extern const hci_cmd_t rfcomm_register_service_with_initial_credits;
 extern const hci_cmd_t rfcomm_unregister_service;
 // request persisten rfcomm channel for service name: serive name (char*) 
 extern const hci_cmd_t rfcomm_persistent_channel_for_service;
-    
+extern const hci_cmd_t rfcomm_grants_credits;
+
 extern const hci_cmd_t gap_disconnect_cmd;
 extern const hci_cmd_t gap_le_scan_start;
 extern const hci_cmd_t gap_le_scan_stop;
@@ -921,6 +922,26 @@ extern const hci_cmd_t gap_le_set_scan_parameters;
 extern const hci_cmd_t gap_le_connect_cmd;
 extern const hci_cmd_t gap_le_connect_cancel_cmd;
 extern const hci_cmd_t gatt_discover_primary_services_cmd;
+
+extern const hci_cmd_t gatt_discover_primary_services_by_uuid16_cmd;
+extern const hci_cmd_t gatt_discover_primary_services_by_uuid128_cmd;
+extern const hci_cmd_t gatt_find_included_services_for_service_cmd;
+extern const hci_cmd_t gatt_discover_characteristics_for_service_cmd;
+extern const hci_cmd_t gatt_discover_characteristics_for_service_by_uuid128_cmd;
+extern const hci_cmd_t gatt_discover_characteristic_descriptors_cmd;
+extern const hci_cmd_t gatt_read_value_of_characteristic_cmd;
+extern const hci_cmd_t gatt_read_long_value_of_characteristic_cmd;
+extern const hci_cmd_t gatt_write_value_of_characteristic_without_response_cmd;
+extern const hci_cmd_t gatt_write_value_of_characteristic_cmd;
+extern const hci_cmd_t gatt_write_long_value_of_characteristic_cmd;
+extern const hci_cmd_t gatt_reliable_write_long_value_of_characteristic_cmd;
+extern const hci_cmd_t gatt_read_characteristic_descriptor_cmd;
+extern const hci_cmd_t gatt_read_long_characteristic_descriptor_cmd;
+extern const hci_cmd_t gatt_write_characteristic_descriptor_cmd;
+extern const hci_cmd_t gatt_write_long_characteristic_descriptor_cmd;
+extern const hci_cmd_t gatt_write_client_characteristic_configuration_cmd;
+extern const hci_cmd_t gatt_get_mtu;
+
 
 #if defined __cplusplus
 }

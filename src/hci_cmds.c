@@ -336,7 +336,7 @@ OPCODE(OGF_LINK_CONTROL, 0x1B), "H"
  * @param retransmission_effort  e.g. 0xFF do not care
  * @param packet_type        at least EV3 for eSCO
  */
-const hci_cmd_t hci_setup_synchronous_connection_command = {
+const hci_cmd_t hci_setup_synchronous_connection = {
 OPCODE(OGF_LINK_CONTROL, 0x0028), "H442212"
 };
 
@@ -349,7 +349,7 @@ OPCODE(OGF_LINK_CONTROL, 0x0028), "H442212"
  * @param retransmission_effort
  * @param packet_type
  */
-const hci_cmd_t hci_accept_synchronous_connection_command = {
+const hci_cmd_t hci_accept_synchronous_connection = {
 OPCODE(OGF_LINK_CONTROL, 0x0029), "B442212"
 };
 
