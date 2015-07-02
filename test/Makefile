@@ -2,7 +2,7 @@
 # Makefile to build and run all tests
 
 SUBDIRS =  \
-	att_db_util \
+	att_db \
 	ble_client \
 	des_iterator \
 	gatt_client \
