@@ -270,18 +270,18 @@ extern "C" uint16_t att_read_callback(uint16_t handle, uint16_t attribute_handle
 	return 0;
 }
 
-static const char * decode_status(le_command_status_t status){
-	switch (status){
-		case BLE_PERIPHERAL_OK: return "BLE_PERIPHERAL_OK";
-    	case BLE_PERIPHERAL_IN_WRONG_STATE: return "BLE_PERIPHERAL_IN_WRONG_STATE";
-    	case BLE_PERIPHERAL_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS: return "BLE_PERIPHERAL_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS";
-    	case BLE_PERIPHERAL_NOT_CONNECTED: return "BLE_PERIPHERAL_NOT_CONNECTED";
-    	case BLE_VALUE_TOO_LONG: return "BLE_VALUE_TOO_LONG";
-	    case BLE_PERIPHERAL_BUSY: return "BLE_PERIPHERAL_BUSY";
-	    case BLE_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED: return "BLE_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED";
-	    case BLE_CHARACTERISTIC_INDICATION_NOT_SUPPORTED: return "BLE_CHARACTERISTIC_INDICATION_NOT_SUPPORTED";
-	}
-}
+// static const char * decode_status(le_command_status_t status){
+// 	switch (status){
+// 		case BLE_PERIPHERAL_OK: return "BLE_PERIPHERAL_OK";
+//     	case BLE_PERIPHERAL_IN_WRONG_STATE: return "BLE_PERIPHERAL_IN_WRONG_STATE";
+//     	case BLE_PERIPHERAL_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS: return "BLE_PERIPHERAL_DIFFERENT_CONTEXT_FOR_ADDRESS_ALREADY_EXISTS";
+//     	case BLE_PERIPHERAL_NOT_CONNECTED: return "BLE_PERIPHERAL_NOT_CONNECTED";
+//     	case BLE_VALUE_TOO_LONG: return "BLE_VALUE_TOO_LONG";
+// 	    case BLE_PERIPHERAL_BUSY: return "BLE_PERIPHERAL_BUSY";
+// 	    case BLE_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED: return "BLE_CHARACTERISTIC_NOTIFICATION_NOT_SUPPORTED";
+// 	    case BLE_CHARACTERISTIC_INDICATION_NOT_SUPPORTED: return "BLE_CHARACTERISTIC_INDICATION_NOT_SUPPORTED";
+// 	}
+// }
 
 TEST_GROUP(GATTClient){
 	int acl_buffer_size;
@@ -347,6 +347,8 @@ TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID16){
 	CHECK_EQUAL(gatt_query_complete, 1);
 	verify_included_services_uuid16();
 }
+
+
 
 TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID128){
 	test = DISCOVER_INCLUDED_SERVICE_FOR_SERVICE_WITH_UUID128;
@@ -471,7 +473,6 @@ TEST(GATTClient, TestDiscoverCharacteristicDescriptor){
 }
 
 
-
 TEST(GATTClient, TestWriteClientCharacteristicConfiguration){
 	test = WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
 	reset_query_state();
@@ -562,7 +563,7 @@ TEST(GATTClient, TestWriteCharacteristicValue){
 	CHECK_EQUAL(status, BLE_PERIPHERAL_OK);
 	CHECK_EQUAL(gatt_query_complete, 1);
 }
-
+/*
 
 TEST(GATTClient, TestWriteCharacteristicDescriptor){
 	test = WRITE_CHARACTERISTIC_DESCRIPTOR;
@@ -614,6 +615,7 @@ TEST(GATTClient, TestReadLongCharacteristicValue){
 	CHECK_EQUAL(result_counter, 7);
 }
 
+
 TEST(GATTClient, TestReadLongCharacteristicDescriptor){
 	test = READ_LONG_CHARACTERISTIC_DESCRIPTOR;
 	reset_query_state();
@@ -641,8 +643,6 @@ TEST(GATTClient, TestReadLongCharacteristicDescriptor){
 	CHECK_EQUAL(gatt_query_complete, 1);
 	CHECK_EQUAL(result_counter, 7);
 }
-
-
 
 
 TEST(GATTClient, TestWriteLongCharacteristicDescriptor){
@@ -673,6 +673,7 @@ TEST(GATTClient, TestWriteLongCharacteristicDescriptor){
 }
 
 
+
 TEST(GATTClient, TestWriteLongCharacteristicValue){
 	test = WRITE_LONG_CHARACTERISTIC_VALUE;
 	reset_query_state();
@@ -695,6 +696,7 @@ TEST(GATTClient, TestWriteLongCharacteristicValue){
 	CHECK_EQUAL(result_counter, 1);
 }
 
+
 TEST(GATTClient, TestWriteReliableLongCharacteristicValue){
 	test = WRITE_RELIABLE_LONG_CHARACTERISTIC_VALUE;
 	reset_query_state();
@@ -715,6 +717,7 @@ TEST(GATTClient, TestWriteReliableLongCharacteristicValue){
 	CHECK_EQUAL(gatt_query_complete, 1);
 	CHECK(result_counter);
 }
+*/
 
 int main (int argc, const char * argv[]){
 	att_set_db(profile_data);
