@@ -847,10 +847,13 @@ static void hci_initializing_run(void){
     switch (hci_stack->substate){
         case HCI_INIT_SEND_RESET:
             hci_state_reset();
+
+#ifndef USE_BLUETOOL
             // prepare reset if command complete not received in 100ms
             run_loop_set_timer(&hci_stack->timeout, 100);
             run_loop_set_timer_handler(&hci_stack->timeout, hci_initialization_timeout_handler);
             run_loop_add_timer(&hci_stack->timeout);
+#endif
             // send command
             hci_stack->substate = HCI_INIT_W4_SEND_RESET;
             hci_send_cmd(&hci_reset);
