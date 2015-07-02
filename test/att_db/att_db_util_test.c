@@ -101,7 +101,7 @@ TEST(AttDbUtil, LeCounterDb){
     uint16_t  size = att_db_util_get_size();
 
     // hexdumpf(addr, size);    
-    CHECK_EQUAL(size, sizeof(profile_data));
+    CHECK_EQUAL(size, (uint16_t)sizeof(profile_data));
     CHECK_EQUAL_ARRAY(profile_data, addr, size);
 }
 
