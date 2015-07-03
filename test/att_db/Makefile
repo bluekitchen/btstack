@@ -1,12 +1,10 @@
 CC = g++
 
-# Requirements: http://www.cpputest.org/ should be placed in btstack/test
+# Requirements: cpputest.github.io
 
 BTSTACK_ROOT =  ../..
-CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
-CFLAGS  = -g -Wall -I.. -I${BTSTACK_ROOT}/example/libusb -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include -I$(CPPUTEST_HOME)/include
-# -L$(CPPUTEST_HOME)/lib
+CFLAGS  = -g -Wall -I.. -I${BTSTACK_ROOT}/example/libusb -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include 
 LDFLAGS += -lCppUTest -lCppUTestExt 
 
 VPATH += ${BTSTACK_ROOT}/ble 
@@ -24,7 +22,7 @@ all: att_db_util_test
 att_db_util_test: ${COMMON_OBJ} att_db_util_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-test:
+test: all
 	./att_db_util_test
 
 clean:

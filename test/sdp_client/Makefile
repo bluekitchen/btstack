@@ -1,11 +1,11 @@
 CC = g++
 
-# Requirements: http://www.cpputest.org/ should be placed in btstack/test
+# Requirements: cpputest.github.io
 
 BTSTACK_ROOT =  ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
-CFLAGS  = -g -Wall -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include -I$(CPPUTEST_HOME)/include
+CFLAGS  = -g -Wall -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include
 LDFLAGS += -lCppUTest -lCppUTestExt
 # -L$(CPPUTEST_HOME) 
 
@@ -34,7 +34,7 @@ service_attribute_search_query: ${COMMON_OBJ} service_attribute_search_query.c
 service_search_query: ${COMMON_OBJ} service_search_query.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-test:
+test: all
 	./sdp_rfcomm_query
 	./general_sdp_query
 	./service_attribute_search_query

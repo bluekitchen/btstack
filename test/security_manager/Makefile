@@ -1,13 +1,11 @@
 CC = g++
 
-# Requirements: http://www.cpputest.org/ should be placed in btstack/test
+# Requirements: cpputest.github.io
 
 BTSTACK_ROOT =  ../..
-CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
-CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wno-unused -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include -I$(CPPUTEST_HOME)/include
+CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -Wno-unused -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include
 LDFLAGS +=  -lCppUTest -lCppUTestExt
-# -L$(CPPUTEST_HOME)/lib
 
 VPATH += ${BTSTACK_ROOT}/ble 
 VPATH += ${BTSTACK_ROOT}/src
@@ -39,7 +37,7 @@ security_manager: ${CORE_OBJ} ${COMMON_OBJ} security_manager.c
 aestest: aestest.c rijndael.c
 	${CC} ${CFLAGS} -m32 rijndael.c aestest.c -o $@
 
-test:
+test: all
 	./security_manager
 	./aestest
 	
