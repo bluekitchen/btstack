@@ -129,150 +129,160 @@ void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
 #define CHECK_ACL_PACKET(packet)  { printf("check " #packet "\n") ; CHECK_EQUAL_ARRAY(packet, mock_packet_buffer(), sizeof(packet)); mock_clear_packet_buffer(); }
 
 
-TEST_GROUP(GATTClient){
+TEST_GROUP(SecurityManager){
 	void setup(void){
 	    btstack_memory_init();
 	    run_loop_init(RUN_LOOP_POSIX);
 	    sm_init();
 	    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
 	    sm_set_authentication_requirements( SM_AUTHREQ_BONDING ); 
-
-	    mock_simulate_hci_state_working();
-
-	    // expect le encrypt commmand
-	    CHECK_HCI_COMMAND(test_command_packet_01);
-
-	    aes128_report_result();
-
-	    // expect le encrypt commmand
-	    CHECK_HCI_COMMAND(test_command_packet_02);
-
-	    aes128_report_result();
-
-	    mock_simulate_connected();
-	    
-	    uint8_t test_pairing_request_command[] = { 0x01, 0x04, 0x00, 0x01, 0x10, 0x07, 0x07 };
-	    mock_simulate_sm_data_packet(&test_pairing_request_command[0], sizeof(test_pairing_request_command));
-
-	    // expect send pairing response command
-	    CHECK_ACL_PACKET(test_acl_packet_03);
-
-	    uint8_t test_pairing_confirm_command[] = { 0x03, 0x84, 0x5a, 0x87, 0x9a, 0x0f, 0xa9, 0x42, 0xba, 0x48, 0xc5, 0x79, 0xa0, 0x70, 0x70, 0xa9, 0xc8 };
-	    mock_simulate_sm_data_packet(&test_pairing_confirm_command[0], sizeof(test_pairing_confirm_command));
-
-	    // expect le random command
-	    CHECK_HCI_COMMAND(test_command_packet_04);
-
-	    uint8_t rand1_data_event[] = { 0x0e, 0x0c, 0x01, 0x18, 0x20, 0x00, 0x2f, 0x04, 0x82, 0x84, 0x72, 0x46, 0x9c, 0x93 };
-		mock_simulate_hci_event(&rand1_data_event[0], sizeof(rand1_data_event));
-
-	    // expect le random command
-	    CHECK_HCI_COMMAND(test_command_packet_05);
-
-	    uint8_t rand2_data_event[] = { 0x0e, 0x0c,0x01, 0x18,0x20, 0x00,0x48, 0x3f,0x27, 0x0e,0xeb, 0xd5,0x05, 0x7a };
-		mock_simulate_hci_event(&rand2_data_event[0], sizeof(rand2_data_event));
-
-		// expect le encrypt command
-	    CHECK_HCI_COMMAND(test_command_packet_06);
-
-	    aes128_report_result();
-
-	    // expect le encrypt command
-	    CHECK_HCI_COMMAND(test_command_packet_07);
-
-	    aes128_report_result();
-
-	    // expect send paring confirm command
-	    CHECK_ACL_PACKET(test_acl_packet_08);
-
-	    uint8_t test_pairing_random_command[] ={0x04, 0xfd, 0xd4, 0x06, 0x45, 0x0f, 0x1e, 0xdc, 0x84, 0xd5, 0x43, 0xac, 0xf7, 0x5e, 0xc0, 0x36, 0x29};
-	    mock_simulate_sm_data_packet(&test_pairing_random_command[0], sizeof(test_pairing_random_command));
-
-	    // expect le encrypt command
-	    CHECK_HCI_COMMAND(test_command_packet_09);
-
-	    aes128_report_result();
-
-	    // expect le encrypt command
-	    CHECK_HCI_COMMAND(test_command_packet_10);
-
-	    aes128_report_result();
-
-	    // expect send pairing random command
-	    CHECK_ACL_PACKET(test_acl_packet_11);
-
-	    // NOTE: SM also triggered for wrong handle
-
-		uint8_t test_le_ltk_request[] = { 0x3e, 0x0d, 0x05, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 00 };
-		mock_simulate_hci_event(&test_le_ltk_request[0], sizeof(test_le_ltk_request));
-
-		// expect le encrypt command
-	    CHECK_HCI_COMMAND(test_command_packet_12);
-
-	    aes128_report_result();
-
-		// expect le ltk reply
-	    CHECK_HCI_COMMAND(test_command_packet_13);
-
-		uint8_t test_ecnryption_change_event[] = { 0x08, 0x04, 0x00, 0x40, 0x00, 0x01 };
-		mock_simulate_hci_event(&test_ecnryption_change_event[0], sizeof(test_ecnryption_change_event));
-
-	    // expect le random command
-	    CHECK_HCI_COMMAND(test_command_packet_14);
-
-	    uint8_t rand3_data_event[] = { 0x0e, 0x0c, 0x01, 0x18, 0x20, 0x00, 0xc0, 0x10, 0x70, 0x5f, 0x3c, 0x2d, 0xe3, 0xb3 };
-		mock_simulate_hci_event(&rand3_data_event[0], sizeof(rand3_data_event));
-
-	    // expect le random command
-	    CHECK_HCI_COMMAND(test_command_packet_15);
-
-	    uint8_t rand4_data_event[] = { 0x0e, 0x0c, 0x01, 0x18, 0x20, 0x00, 0xf1, 0xe2, 0xbf, 0x7d, 0x84, 0x19, 0x32, 0x8b };
-		mock_simulate_hci_event(&rand4_data_event[0], sizeof(rand4_data_event));
-
-		// expect le encrypt command
-	    CHECK_HCI_COMMAND(test_command_packet_16);
-
-	    aes128_report_result();
-
-		// expect le encrypt command
-	    CHECK_HCI_COMMAND(test_command_packet_17);
-
-	    aes128_report_result();
-
-		// expect le encrypt command
-	    CHECK_HCI_COMMAND(test_command_packet_18);
-
-	    aes128_report_result();
-
-	    //
-		uint8_t num_completed_packets_event[] = { 0x13, 0x05, 0x01, 0x4a, 0x00, 0x01, 00 };
-
-	    // expect send LE SMP Encryption Information Command
-	    CHECK_ACL_PACKET(test_acl_packet_18);
-		
-		mock_simulate_hci_event(&num_completed_packets_event[0], sizeof(num_completed_packets_event));
-
-	    // expect send LE SMP Master Identification Command 
-	    CHECK_ACL_PACKET(test_acl_packet_19);
-		
-		mock_simulate_hci_event(&num_completed_packets_event[0], sizeof(num_completed_packets_event));
-
-		// expect send LE SMP Identity Information Command
-	    CHECK_ACL_PACKET(test_acl_packet_20);
-		
-		mock_simulate_hci_event(&num_completed_packets_event[0], sizeof(num_completed_packets_event));
-		
-		// expect send LE SMP Identity Address Information Command 
-	    CHECK_ACL_PACKET(test_acl_packet_21);
-
-		mock_simulate_hci_event(&num_completed_packets_event[0], sizeof(num_completed_packets_event));
-
-		// expect send LE SMP Code Signing Information Command
-	    CHECK_ACL_PACKET(test_acl_packet_22);
 	}
 };
 
-TEST(GATTClient, TestScanning){
+TEST(SecurityManager, MainTest){
+
+    mock_simulate_hci_state_working();
+
+	printf("0\n");
+
+    // expect le encrypt commmand
+    CHECK_HCI_COMMAND(test_command_packet_01);
+
+    aes128_report_result();
+
+    // expect le encrypt commmand
+    CHECK_HCI_COMMAND(test_command_packet_02);
+
+    aes128_report_result();
+	
+	printf("1\n");
+
+    mock_simulate_connected();
+    
+    uint8_t test_pairing_request_command[] = { 0x01, 0x04, 0x00, 0x01, 0x10, 0x07, 0x07 };
+    mock_simulate_sm_data_packet(&test_pairing_request_command[0], sizeof(test_pairing_request_command));
+
+	printf("2\n");
+
+    // expect send pairing response command
+    CHECK_ACL_PACKET(test_acl_packet_03);
+
+	printf("3\n");
+
+    uint8_t test_pairing_confirm_command[] = { 0x03, 0x84, 0x5a, 0x87, 0x9a, 0x0f, 0xa9, 0x42, 0xba, 0x48, 0xc5, 0x79, 0xa0, 0x70, 0x70, 0xa9, 0xc8 };
+    mock_simulate_sm_data_packet(&test_pairing_confirm_command[0], sizeof(test_pairing_confirm_command));
+
+	printf("4\n");
+
+    // expect le random command
+    CHECK_HCI_COMMAND(test_command_packet_04);
+
+    uint8_t rand1_data_event[] = { 0x0e, 0x0c, 0x01, 0x18, 0x20, 0x00, 0x2f, 0x04, 0x82, 0x84, 0x72, 0x46, 0x9c, 0x93 };
+	mock_simulate_hci_event(&rand1_data_event[0], sizeof(rand1_data_event));
+
+    // expect le random command
+    CHECK_HCI_COMMAND(test_command_packet_05);
+
+    uint8_t rand2_data_event[] = { 0x0e, 0x0c,0x01, 0x18,0x20, 0x00,0x48, 0x3f,0x27, 0x0e,0xeb, 0xd5,0x05, 0x7a };
+	mock_simulate_hci_event(&rand2_data_event[0], sizeof(rand2_data_event));
+
+	// expect le encrypt command
+    CHECK_HCI_COMMAND(test_command_packet_06);
+
+    aes128_report_result();
+
+    // expect le encrypt command
+    CHECK_HCI_COMMAND(test_command_packet_07);
+
+    aes128_report_result();
+
+    // expect send paring confirm command
+    CHECK_ACL_PACKET(test_acl_packet_08);
+
+    uint8_t test_pairing_random_command[] ={0x04, 0xfd, 0xd4, 0x06, 0x45, 0x0f, 0x1e, 0xdc, 0x84, 0xd5, 0x43, 0xac, 0xf7, 0x5e, 0xc0, 0x36, 0x29};
+    mock_simulate_sm_data_packet(&test_pairing_random_command[0], sizeof(test_pairing_random_command));
+
+    // expect le encrypt command
+    CHECK_HCI_COMMAND(test_command_packet_09);
+
+    aes128_report_result();
+
+    // expect le encrypt command
+    CHECK_HCI_COMMAND(test_command_packet_10);
+
+    aes128_report_result();
+
+    // expect send pairing random command
+    CHECK_ACL_PACKET(test_acl_packet_11);
+
+    // NOTE: SM also triggered for wrong handle
+
+	uint8_t test_le_ltk_request[] = { 0x3e, 0x0d, 0x05, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 00 };
+	mock_simulate_hci_event(&test_le_ltk_request[0], sizeof(test_le_ltk_request));
+
+	// expect le encrypt command
+    CHECK_HCI_COMMAND(test_command_packet_12);
+
+    aes128_report_result();
+
+	// expect le ltk reply
+    CHECK_HCI_COMMAND(test_command_packet_13);
+
+	uint8_t test_ecnryption_change_event[] = { 0x08, 0x04, 0x00, 0x40, 0x00, 0x01 };
+	mock_simulate_hci_event(&test_ecnryption_change_event[0], sizeof(test_ecnryption_change_event));
+
+    // expect le random command
+    CHECK_HCI_COMMAND(test_command_packet_14);
+
+    uint8_t rand3_data_event[] = { 0x0e, 0x0c, 0x01, 0x18, 0x20, 0x00, 0xc0, 0x10, 0x70, 0x5f, 0x3c, 0x2d, 0xe3, 0xb3 };
+	mock_simulate_hci_event(&rand3_data_event[0], sizeof(rand3_data_event));
+
+    // expect le random command
+    CHECK_HCI_COMMAND(test_command_packet_15);
+
+    uint8_t rand4_data_event[] = { 0x0e, 0x0c, 0x01, 0x18, 0x20, 0x00, 0xf1, 0xe2, 0xbf, 0x7d, 0x84, 0x19, 0x32, 0x8b };
+	mock_simulate_hci_event(&rand4_data_event[0], sizeof(rand4_data_event));
+
+	// expect le encrypt command
+    CHECK_HCI_COMMAND(test_command_packet_16);
+
+    aes128_report_result();
+
+	// expect le encrypt command
+    CHECK_HCI_COMMAND(test_command_packet_17);
+
+    aes128_report_result();
+
+	// expect le encrypt command
+    CHECK_HCI_COMMAND(test_command_packet_18);
+
+    aes128_report_result();
+
+    //
+	uint8_t num_completed_packets_event[] = { 0x13, 0x05, 0x01, 0x4a, 0x00, 0x01, 00 };
+
+    // expect send LE SMP Encryption Information Command
+    CHECK_ACL_PACKET(test_acl_packet_18);
+	
+	mock_simulate_hci_event(&num_completed_packets_event[0], sizeof(num_completed_packets_event));
+
+    // expect send LE SMP Master Identification Command 
+    CHECK_ACL_PACKET(test_acl_packet_19);
+	
+	mock_simulate_hci_event(&num_completed_packets_event[0], sizeof(num_completed_packets_event));
+
+	// expect send LE SMP Identity Information Command
+    CHECK_ACL_PACKET(test_acl_packet_20);
+	
+	mock_simulate_hci_event(&num_completed_packets_event[0], sizeof(num_completed_packets_event));
+	
+	// expect send LE SMP Identity Address Information Command 
+    CHECK_ACL_PACKET(test_acl_packet_21);
+
+	mock_simulate_hci_event(&num_completed_packets_event[0], sizeof(num_completed_packets_event));
+
+	// expect send LE SMP Code Signing Information Command
+    CHECK_ACL_PACKET(test_acl_packet_22);
 }
 
 int main (int argc, const char * argv[]){

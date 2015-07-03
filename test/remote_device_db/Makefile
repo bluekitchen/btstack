@@ -1,13 +1,12 @@
 CC=g++
 
-# Requirements: http://www.cpputest.org/ should be placed in btstack/test
+# Requirements: cpputest.github.io
 
 BTSTACK_ROOT =  ../..
 CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
-CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include -I${BTSTACK_ROOT}/ble -I$(CPPUTEST_HOME)/include
+CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include -I${BTSTACK_ROOT}/ble
 LDFLAGS += -lCppUTest -lCppUTestExt
-# -L$(CPPUTEST_HOME) 
 
 VPATH += ${BTSTACK_ROOT}/ble 
 VPATH += ${BTSTACK_ROOT}/src
@@ -36,7 +35,7 @@ remote_device_db_memory_test: ${MEMORY_OBJ} remote_device_db_memory_test.c
 remote_device_db_fs_test: ${FS_OBJ} remote_device_db_fs_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-test:
+test: all
 	./remote_device_db_memory_test
 	./remote_device_db_fs_test
 

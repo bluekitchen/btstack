@@ -1,11 +1,10 @@
 CC = g++
 
-# Requirements: http://www.cpputest.org/ should be placed in btstack/test
+# Requirements: cpputest.github.io
 
 BTSTACK_ROOT =  ../..
-CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
-CFLAGS  = -g -Wall -I.. -I${BTSTACK_ROOT}/example/libusb -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include -I$(CPPUTEST_HOME)/include
+CFLAGS  = -g -Wall -I.. -I${BTSTACK_ROOT}/example/libusb -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include
 LDFLAGS += -L$(CPPUTEST_HOME)/lib -lCppUTest -lCppUTestExt
 
 VPATH += ${BTSTACK_ROOT}/ble 
@@ -33,7 +32,7 @@ all: ad_parser
 ad_parser: ${CORE_OBJ} ${COMMON_OBJ} advertising_data_parser.c
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} advertising_data_parser.c ${CFLAGS} ${LDFLAGS} -o $@
 
-test:
+test: all
 	./ad_parser
 
 clean:

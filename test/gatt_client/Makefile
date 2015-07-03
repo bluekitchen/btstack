@@ -1,13 +1,11 @@
 CC = g++
 
-# Requirements: http://www.cpputest.org/ should be placed in btstack/test
+# Requirements: cpputest.github.io
 
 BTSTACK_ROOT =  ../..
-CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
-CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include -I$(CPPUTEST_HOME)/include
+CFLAGS  = -DUNIT_TEST -x c++ -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/ble -I${BTSTACK_ROOT}/include
 LDFLAGS +=  -lCppUTest -lCppUTestExt
-# -L$(CPPUTEST_HOME)
 
 VPATH += ${BTSTACK_ROOT}/ble 
 VPATH += ${BTSTACK_ROOT}/src
@@ -44,7 +42,7 @@ gatt_client_test: profile.h ${CORE_OBJ} ${COMMON_OBJ} gatt_client_test.o expecte
 le_central: ${CORE_OBJ} ${COMMON_OBJ} le_central.o
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} le_central.o ${CFLAGS} ${LDFLAGS} -o $@
 
-test:
+test: all
 	./gatt_client_test
 	./le_central
 		

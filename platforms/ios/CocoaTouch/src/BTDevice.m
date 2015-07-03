@@ -90,7 +90,7 @@
 	// store
 	if (result == 6){
 		for (i = 0; i < BD_ADDR_LEN; i++) {
-			(*address)[i] = (uint8_t) bd_addr_buffer[i];
+			address[i] = (uint8_t) bd_addr_buffer[i];
 		}
 		return YES;
 	}
@@ -103,7 +103,7 @@
 }
 
 - (NSString *) addressString{
-	return [BTDevice stringForAddress:&_address];
+	return [BTDevice stringForAddress:_address];
 }
 
 - (BluetoothDeviceType) deviceType{
@@ -117,7 +117,7 @@
 	}
 }
 - (NSString *) toString{
-	return [NSString stringWithFormat:@"Device addr %@ name %@ COD %x", [BTDevice stringForAddress:&_address], name, classOfDevice];
+	return [NSString stringWithFormat:@"Device addr %@ name %@ COD %x", [BTDevice stringForAddress:_address], name, classOfDevice];
 }
 
 - (void)dealloc {

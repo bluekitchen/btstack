@@ -1,13 +1,11 @@
 CC = g++
 
-# Requirements: http://www.cpputest.org/ should be placed in btstack/test
+# Requirements: cpputest.github.io
 
 BTSTACK_ROOT =  ../..
-CPPUTEST_HOME = ${BTSTACK_ROOT}/test/cpputest
 
-CFLAGS  = -g -Wall -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include -I$(CPPUTEST_HOME)/include
+CFLAGS  = -g -Wall -I. -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include
 LDFLAGS += -lCppUTest -lCppUTestExt
-# -L$(CPPUTEST_HOME) 
 
 VPATH += ${BTSTACK_ROOT}/ble 
 VPATH += ${BTSTACK_ROOT}/src
@@ -24,7 +22,7 @@ all: des_iterator_test
 des_iterator_test: ${COMMON_OBJ} des_iterator_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-test:
+test: all
 	./des_iterator_test
 
 clean:
