@@ -69,7 +69,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]);
 
 static uint16_t peripheral_mtu(gatt_client_t *peripheral){
     if (peripheral->mtu > l2cap_max_le_mtu()){
-        log_info(" problem: peripheral mtu is not initialized\n");
+        log_error("Peripheral mtu is not initialized");
         return l2cap_max_le_mtu();
     }
     return peripheral->mtu;

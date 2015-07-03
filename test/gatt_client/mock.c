@@ -57,6 +57,7 @@ void le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, u
 
 static void att_init_connection(att_connection_t * att_connection){
     att_connection->mtu = 23;
+    att_connection->max_mtu = 23;
     att_connection->encryption_key_size = 0;
     att_connection->authenticated = 0;
 	att_connection->authorized = 0;

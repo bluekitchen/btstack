@@ -73,7 +73,7 @@ static le_characteristic_t characteristics[50];
 static le_characteristic_descriptor_t descriptors[50];
 
 void mock_simulate_discover_primary_services_response();
-
+void mock_simulate_att_exchange_mtu_response();
 
 void CHECK_EQUAL_ARRAY(const uint8_t * expected, uint8_t * actual, int size){
 	for (int i=0; i<size; i++){
@@ -89,12 +89,6 @@ void pUUID128(const uint8_t *uuid) {
 
 //static int counter = 0;
 void CHECK_EQUAL_GATT_ATTRIBUTE(const uint8_t * exp_uuid, const uint8_t * exp_handles, uint8_t * uuid, uint16_t start_handle, uint16_t end_handle){
-	// printf("counter %d\n", counter);
-	// counter++;
-	// printf("expected uuid16: "); pUUID128(exp_uuid);
-	// printf("\n");
-	// printf("received uuid16: "); pUUID128(uuid);
-	// printf("\n\n");
 	CHECK_EQUAL_ARRAY(exp_uuid, uuid, 16);
 	if (!exp_handles) return;
 	CHECK_EQUAL(exp_handles[0], start_handle);
@@ -200,16 +194,22 @@ static void handle_ble_client_event(le_event_t * event){
         	result_counter++;
         	break;
 		}
-		case GATT_QUERY_COMPLETE:
-			gatt_query_complete = 1;
-			break;
+		case GATT_QUERY_COMPLETE:{
+            gatt_complete_event_t *gce = (gatt_complete_event_t *)event;
+            gatt_query_complete = 1;
+
+            if (gce->status != 0){
+                gatt_query_complete = 0;
+                printf("GATT_QUERY_COMPLETE failed with status 0x%02X\n", gce->status);
+            }
+            break;
+        }
 		default:
 			break;
 	}
 }
 
 extern "C" int att_write_callback(uint16_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
-	// printf("gatt client test, att_write_callback mode %u, handle 0x%04x, offset %u, data ", transaction_mode, con_handle, offset);
 	switch(test){
 		case WRITE_CHARACTERISTIC_DESCRIPTOR:
 		case WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION:
@@ -222,7 +222,7 @@ extern "C" int att_write_callback(uint16_t con_handle, uint16_t attribute_handle
 			CHECK_EQUAL(ATT_TRANSACTION_MODE_NONE, transaction_mode);
 			CHECK_EQUAL(0, offset);
 			CHECK_EQUAL_ARRAY((uint8_t *)short_value, buffer, short_value_length);
-			result_counter++;
+    		result_counter++;
 			break;
 		case WRITE_LONG_CHARACTERISTIC_DESCRIPTOR:
 		case WRITE_LONG_CHARACTERISTIC_VALUE:
@@ -312,7 +312,6 @@ TEST(GATTClient, TestDiscoverPrimaryServices){
 	CHECK_EQUAL(gatt_query_complete, 1);
 }
 
-
 TEST(GATTClient, TestDiscoverPrimaryServicesByUUID16){
 	test = DISCOVER_PRIMARY_SERVICE_WITH_UUID16;
 	reset_query_state();
@@ -323,7 +322,6 @@ TEST(GATTClient, TestDiscoverPrimaryServicesByUUID16){
 	CHECK_EQUAL(gatt_query_complete, 1);
 }
 
-
 TEST(GATTClient, TestDiscoverPrimaryServicesByUUID128){
 	test = DISCOVER_PRIMARY_SERVICE_WITH_UUID128;
 	status = gatt_client_discover_primary_services_by_uuid128(gatt_client_id, gatt_client_handle, primary_service_uuid128);
@@ -332,7 +330,6 @@ TEST(GATTClient, TestDiscoverPrimaryServicesByUUID128){
 	verify_primary_services_with_uuid128();
 	CHECK_EQUAL(gatt_query_complete, 1);
 }
-
 
 TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID16){
 	test = DISCOVER_INCLUDED_SERVICE_FOR_SERVICE_WITH_UUID16;
@@ -348,8 +345,6 @@ TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID16){
 	verify_included_services_uuid16();
 }
 
-
-
 TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID128){
 	test = DISCOVER_INCLUDED_SERVICE_FOR_SERVICE_WITH_UUID128;
 	reset_query_state();
@@ -363,8 +358,6 @@ TEST(GATTClient, TestFindIncludedServicesForServiceWithUUID128){
 	CHECK_EQUAL(gatt_query_complete, 1);
 	verify_included_services_uuid128();
 }
-
-
 
 TEST(GATTClient, TestDiscoverCharacteristicsForService){
 	test = DISCOVER_CHARACTERISTICS_FOR_SERVICE_WITH_UUID16;
@@ -380,7 +373,6 @@ TEST(GATTClient, TestDiscoverCharacteristicsForService){
 	verify_charasteristics();
 }
 
-
 TEST(GATTClient, TestDiscoverCharacteristicsByUUID16){
 	test = DISCOVER_CHARACTERISTICS_BY_UUID16;
 	reset_query_state();
@@ -390,7 +382,6 @@ TEST(GATTClient, TestDiscoverCharacteristicsByUUID16){
 	CHECK_EQUAL(result_counter, 1);
 }
 
-
 TEST(GATTClient, TestDiscoverCharacteristicsByUUID128){
 	test = DISCOVER_CHARACTERISTICS_BY_UUID128;
 	reset_query_state();
@@ -399,7 +390,6 @@ TEST(GATTClient, TestDiscoverCharacteristicsByUUID128){
 	CHECK_EQUAL(gatt_query_complete, 1);
 	CHECK_EQUAL(result_counter, 1);
 }
-
 
 TEST(GATTClient, TestDiscoverCharacteristics4ServiceByUUID128){
 	test = DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID;
@@ -423,7 +413,6 @@ TEST(GATTClient, TestDiscoverCharacteristics4ServiceByUUID128){
 	CHECK_EQUAL(result_counter, 1);
 }
 
-
 TEST(GATTClient, TestDiscoverCharacteristics4ServiceByUUID16){
 	test = DISCOVER_CHARACTERISTICS_FOR_SERVICE_BY_UUID;
 	reset_query_state();
@@ -445,7 +434,6 @@ TEST(GATTClient, TestDiscoverCharacteristics4ServiceByUUID16){
 	CHECK_EQUAL(gatt_query_complete, 1);
 	CHECK_EQUAL(result_counter, 1);
 }
-
 
 TEST(GATTClient, TestDiscoverCharacteristicDescriptor){
 	test = DISCOVER_CHARACTERISTIC_DESCRIPTORS;
@@ -471,7 +459,6 @@ TEST(GATTClient, TestDiscoverCharacteristicDescriptor){
 	CHECK_EQUAL(0x2900, descriptors[1].uuid16);
 	CHECK_EQUAL(0x2901, descriptors[2].uuid16);
 }
-
 
 TEST(GATTClient, TestWriteClientCharacteristicConfiguration){
 	test = WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
@@ -521,7 +508,6 @@ TEST(GATTClient, TestReadCharacteristicDescriptor){
 	CHECK_EQUAL(result_counter, 3);
 }
 
-
 TEST(GATTClient, TestReadCharacteristicValue){
 	test = READ_CHARACTERISTIC_VALUE;
 	reset_query_state();
@@ -544,7 +530,7 @@ TEST(GATTClient, TestReadCharacteristicValue){
 }
 
 TEST(GATTClient, TestWriteCharacteristicValue){
-	test = WRITE_CHARACTERISTIC_VALUE;
+    test = WRITE_CHARACTERISTIC_VALUE;
 	reset_query_state();
 	status = gatt_client_discover_primary_services_by_uuid16(gatt_client_id, gatt_client_handle, service_uuid16);
 	CHECK_EQUAL(status, BLE_PERIPHERAL_OK);
@@ -557,13 +543,11 @@ TEST(GATTClient, TestWriteCharacteristicValue){
 	CHECK_EQUAL(gatt_query_complete, 1);
 	CHECK_EQUAL(result_counter, 1);
 
-
 	reset_query_state();
 	status = gatt_client_write_value_of_characteristic(gatt_client_id, gatt_client_handle, characteristics[0].value_handle, short_value_length, (uint8_t*)short_value);
 	CHECK_EQUAL(status, BLE_PERIPHERAL_OK);
 	CHECK_EQUAL(gatt_query_complete, 1);
 }
-/*
 
 TEST(GATTClient, TestWriteCharacteristicDescriptor){
 	test = WRITE_CHARACTERISTIC_DESCRIPTOR;
@@ -589,10 +573,7 @@ TEST(GATTClient, TestWriteCharacteristicDescriptor){
 	status = gatt_client_write_characteristic_descriptor(gatt_client_id, gatt_client_handle, &descriptors[0], sizeof(indication), indication);
 	CHECK_EQUAL(status, BLE_PERIPHERAL_OK);
 	CHECK_EQUAL(gatt_query_complete, 1);
-	CHECK_EQUAL(result_counter, 1);
 }
-
-
 
 TEST(GATTClient, TestReadLongCharacteristicValue){
 	test = READ_LONG_CHARACTERISTIC_VALUE;
@@ -614,7 +595,6 @@ TEST(GATTClient, TestReadLongCharacteristicValue){
 	CHECK_EQUAL(gatt_query_complete, 1);
 	CHECK_EQUAL(result_counter, 7);
 }
-
 
 TEST(GATTClient, TestReadLongCharacteristicDescriptor){
 	test = READ_LONG_CHARACTERISTIC_DESCRIPTOR;
@@ -672,8 +652,6 @@ TEST(GATTClient, TestWriteLongCharacteristicDescriptor){
 	CHECK_EQUAL(result_counter, 1);
 }
 
-
-
 TEST(GATTClient, TestWriteLongCharacteristicValue){
 	test = WRITE_LONG_CHARACTERISTIC_VALUE;
 	reset_query_state();
@@ -693,9 +671,7 @@ TEST(GATTClient, TestWriteLongCharacteristicValue){
 	status = gatt_client_write_long_value_of_characteristic(gatt_client_id, gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
 	CHECK_EQUAL(status, BLE_PERIPHERAL_OK);
 	CHECK_EQUAL(gatt_query_complete, 1);
-	CHECK_EQUAL(result_counter, 1);
 }
-
 
 TEST(GATTClient, TestWriteReliableLongCharacteristicValue){
 	test = WRITE_RELIABLE_LONG_CHARACTERISTIC_VALUE;
@@ -715,9 +691,8 @@ TEST(GATTClient, TestWriteReliableLongCharacteristicValue){
 	status = gatt_client_reliable_write_long_value_of_characteristic(gatt_client_id, gatt_client_handle, characteristics[0].value_handle, long_value_length, (uint8_t*)long_value);
 	CHECK_EQUAL(status, BLE_PERIPHERAL_OK);
 	CHECK_EQUAL(gatt_query_complete, 1);
-	CHECK(result_counter);
 }
-*/
+
 
 int main (int argc, const char * argv[]){
 	att_set_db(profile_data);
