@@ -463,10 +463,7 @@ assumption, the single output buffer design does not impose additional
 restrictions. In the following, we show how this is used for adapting
 the RFCOMM send rate.
 
-BTstack returns BTSTACK_ACL_BUFFERS_FULL, if the outgoing buffer is
-full and RFCOMM_NO_OUTGOING_CREDITS, if no outgoing credits are
-available. In Listing [below](#lst:SingleOutputBufferTryToSend), we show how to
-resend data packets when credits or outgoing buffers become available.
+Before sending data packets, check if RFCOMM can send them by calling rfcomm_can_send_packet_now, as shown in Listing [below](#lst:SingleOutputBufferTryToSend). L2CAP, BNEP, and ATT API offer similar functions. 
 
 ~~~~ {#lst:SingleOutputBufferTryToSend .c caption="{Preparing and sending data.}"}    
     void prepareData(void){
@@ -476,20 +473,15 @@ resend data packets when credits or outgoing buffers become available.
     void tryToSend(void){
         if (!dataLen) return;
         if (!rfcomm_channel_id) return;
-        
+        if (!rfcomm_can_send_packet_now(rfcomm_channel_id)) return;
+
         int err = rfcomm_send_internal(rfcomm_channel_id,  dataBuffer, dataLen);
-        switch (err){
-            case 0:
-                // packet is sent prepare next one
-                prepareData();
-                break;
-            case RFCOMM_NO_OUTGOING_CREDITS:
-            case BTSTACK_ACL_BUFFERS_FULL:
-                break;
-            default:
-               printf("rfcomm_send_internal() -> err %d\n\r", err);
-            break;
+        if (err) {
+            log_error("rfcomm_send_internal -> error 0X%02x", err);
+            return;
         }
+        // packet is sent prepare next one
+        prepareData();
     }
 ~~~~ 
 
