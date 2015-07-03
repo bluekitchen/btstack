@@ -72,6 +72,7 @@ EXAMPLES = 					\
 	spp_and_le_counter 		\
 	spp_counter 			\
 	spp_streamer			\
+    gap_le_advertisements   \
 
 EXAMPLES_USING_LE =			\
 	ancs_client 			\
@@ -80,6 +81,7 @@ EXAMPLES_USING_LE =			\
 	le_counter              \
 	le_streamer				\
 	spp_and_le_counter	    \
+    gap_le_advertisements   \
 
 # .o for .c
 CORE_OBJ    = $(CORE:.c=.o)
@@ -161,6 +163,9 @@ led_counter: ${CORE_OBJ} ${COMMON_OBJ} led_counter.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 ble_client: ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_CLIENT_OBJ} ${SM_REAL} ble_client.c
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+gap_le_advertisements: ${CORE_OBJ} ${COMMON_OBJ} ad_parser.c gap_le_advertisements.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 
