@@ -1300,14 +1300,6 @@ static void daemon_packet_handler(void * connection, uint8_t packet_type, uint16
             deamon_status_event_handler(packet, size);
             switch (packet[0]){
 
-                case BTSTACK_EVENT_STATE:
-                    // setup advertisement data
-                    // if (packet[2] != HCI_STATE_WORKING) break;
-                    // todos = SET_ADVERTISEMENT_PARAMS | SET_ADVERTISEMENT_DATA | ENABLE_ADVERTISEMENTS;
-                    // app_run();
-                    log_info("Daemon: BTstack working");
-                    break;
-
                 case HCI_EVENT_NUMBER_OF_COMPLETED_PACKETS:
                     // ACL buffer freed...
                     daemon_retry_parked();
