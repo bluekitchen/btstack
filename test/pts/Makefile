@@ -21,7 +21,7 @@ VPATH += ${BTSTACK_ROOT}/platforms/libusb
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 
-EXAMPLES = ble_peripheral_test ble_central_test l2cap_test ancs_client classic_test bnep_test hsp_ag_test hsp_hs_test
+EXAMPLES = hfp_hf_test hfp_ag_test ble_peripheral_test ble_central_test l2cap_test ancs_client classic_test bnep_test hsp_ag_test hsp_hs_test
 
 all: ${BTSTACK_ROOT}/include/btstack/version.h ${EXAMPLES}
 
@@ -35,6 +35,12 @@ hsp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_ag.o hsp_ag_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hsp_hs_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_hs.o hsp_hs_test.c  
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+hfp_hf_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hfp_hf.o hfp_hf_test.c  
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+hfp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hfp_ag.o hfp_ag_test.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 l2cap_test: ${CORE_OBJ} ${COMMON_OBJ} l2cap_test.c
