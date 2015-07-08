@@ -8,15 +8,13 @@ list_of_groups = ["Hello World", "GAP", "SDP Queries", "SPP Server", "BNEP/PAN",
 list_of_examples = { 
     "Hello World" : [["led_counter"]],
     "GAP"         : [["gap_inquiry"]],
-    "SDP Queries" :[["sdp_general_query"],
-                    ["sdp_bnep_query"]
-                    ],
-    "SPP Server"  : [["spp_counter"],
-                     ["spp_flowcontrol"]],
-    "BNEP/PAN"   : [["panu_demo"]],
-    "Low Energy"  : [["gatt_browser"],
-                    ["le_counter"],
-                    ["le_streamer"]],
+    "SDP Queries" : [["sdp_general_query"],["sdp_bnep_query"]],
+    "SPP Server"  : [["spp_counter"],["spp_flowcontrol"]],
+    "BNEP/PAN"   :  [["panu_demo"]],
+    "Low Energy"  : [["gap_le_advertisements"],
+                     ["gatt_browser"],
+                     ["le_counter"],
+                     ["le_streamer"]],
     "Dual Mode" : [["spp_and_le_counter"]],
 }
 

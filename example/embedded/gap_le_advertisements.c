@@ -39,7 +39,7 @@
 // *****************************************************************************
 /* EXAMPLE_START(gap_le_advertisements): GAP LE Advertisements Dumper
  *
- * @text This example shows how to scan for advertisements and how to parse them.
+ * @text This example shows how to scan and parse advertisements.
  * 
  */
  // *****************************************************************************
@@ -56,13 +56,29 @@
 #include "hci.h"
 #include "ad_parser.h"
 
+/* @section GAP LE setup for receiving advertisements
+ *
+ * @text GAP LE advertisements are received as custom HCI events of the 
+ * GAP_LE_ADVERTISING_REPORT type. To receive them, you'll need to register
+ * the HCI packet handler, as shown in Listing GAPLEAdvSetup.
+ */
 
+/* LISTING_START(GAPLEAdvSetup): Setting up GAP LE client for receiving advertisements */
 static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 static void gap_le_advertisements_setup(){
     hci_register_packet_handler(handle_hci_event);
 }
+/* LISTING_END */
 
+/* @section GAP LE Advertising Data Dumper
+ *
+ * @text Here, we use the definition of advertising data types and flags as specified in 
+ * [Assigned Numbers GAP](https://www.bluetooth.org/en-us/specification/assigned-numbers/generic-access-profile)
+ * and [Supplement to the Bluetooth Core Specification, v4](https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=282152).
+ */
+
+/* LISTING_START(GAPLEAdvDataTypesAndFlags): Advertising data types and flags */
 static char * ad_types[] = {
     "", 
     "Flags",
@@ -103,8 +119,15 @@ static char * flags[] = {
     "Reserved",
     "Reserved"
 };
+/* LISTING_END */
 
-void dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
+/* @text BTstack offers an iterator for parsing sequence of advertising data (AD) structures, 
+ * see [BLE advertisements parser API](appendix/apis/#ble-advertisements-parser-api).
+ * After initializing the iterator, each AD structure is dumped according to its type.
+ */
+
+/* LISTING_START(GAPLEAdvDataParsing): Parsing advertising data */
+char * dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
     ad_context_t context;
     
     for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
@@ -191,10 +214,20 @@ void dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
             default:
                 printf("Unknown Advertising Data Type\n"); 
                 break;
-        }
-        
+        }        
     }
 }
+/* LISTING_END */
+
+/* @section HCI packet handler
+ * 
+ * @text The HCI packet handler has to start the scanning, 
+ * and to handle received advertisements. Advertisements are received 
+ * as HCI event packets of the GAP_LE_ADVERTISING_REPORT type,
+ * see Listing GAPLEAdvPacketHandler.  
+ */
+
+/* LISTING_START(GAPLEAdvPacketHandler): Scanning and receiving advertisements */
 
 static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return;
@@ -229,6 +262,7 @@ static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size
             break;
     }
 }
+/* LISTING_END */
 
 int btstack_main(void);
 int btstack_main(void)
