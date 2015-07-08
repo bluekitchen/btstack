@@ -2327,15 +2327,19 @@ void hci_run(void){
             // close all open connections
             connection =  (hci_connection_t *) hci_stack->connections;
             if (connection){
-                
-                // send disconnect
+                uint16_t con_handle = (uint16_t) connection->con_handle;
                 if (!hci_can_send_command_packet_now()) return;
-                
-                log_info("HCI_STATE_HALTING, connection %p, handle %u", connection, (uint16_t)connection->con_handle);
-                hci_send_cmd(&hci_disconnect, connection->con_handle, 0x13);  // remote closed connection
 
-                // send disconnected event right away - causes higher layer connections to get closed, too.
+                log_info("HCI_STATE_HALTING, connection %p, handle %u", connection, con_handle);
+
+                // cancel all l2cap connections right away instead of waiting for disconnection complete event ...
+                hci_emit_disconnection_complete(con_handle, 0x16); // terminated by local host
+
+                // ... which would be ignored anyway as we shutdown (free) the connection now
                 hci_shutdown_connection(connection);
+
+                // finally, send the disconnect command
+                hci_send_cmd(&hci_disconnect, con_handle, 0x13);  // remote closed connection
                 return;
             }
             log_info("HCI_STATE_HALTING, calling off");
