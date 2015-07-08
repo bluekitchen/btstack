@@ -127,27 +127,27 @@ static char * flags[] = {
  */
 
 /* LISTING_START(GAPLEAdvDataParsing): Parsing advertising data */
-char * dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
+void dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
     ad_context_t context;
-    
     for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
         uint8_t data_type = ad_iterator_get_data_type(&context);
         uint8_t size      = ad_iterator_get_data_len(&context);
         uint8_t * data    = ad_iterator_get_data(&context);
         
         if (data_type > 0 && data_type < 0x1B){
-            printf("%s: ", ad_types[data_type]);
+            printf("    %s: ", ad_types[data_type]);
         } 
         int i;
         // Assigned Numbers GAP
+    
         switch (data_type){
             case 0x01: // Flags
                 // show only first octet, ignore rest
-                printf("\n");
                 for (i=0; i<8;i++){
                     if (data[0] & (1<<i)){
-                        printf("Flags bit nr. %d : %s\n", i, flags[i]);
+                        printf("%s; ", flags[i]);
                     }
+
                 }
                 break;
             case 0x02: // Incomplete List of 16-bit Service Class UUIDs
@@ -156,35 +156,29 @@ char * dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
                 for (i=0; i<size;i+=2){
                     printf("%02X ", READ_BT_16(data, i));
                 }
-                printf("\n");
                 break;
             case 0x04: // Incomplete List of 32-bit Service Class UUIDs
             case 0x05: // Complete List of 32-bit Service Class UUIDs
                 for (i=0; i<size;i+=4){
                     printf("%04X ", READ_BT_32(data, i));
                 }
-                printf("\n");
                 break;
             case 0x06: // Incomplete List of 128-bit Service Class UUIDs
             case 0x07: // Complete List of 128-bit Service Class UUIDs
             case 0x15: // List of 128-bit Service Solicitation UUIDs
                 printUUID128(data);
-                printf("\n");
                 break;
             case 0x08: // Shortened Local Name
             case 0x09: // Complete Local Name
                 for (i=0; i<size;i++){
                     printf("%c", (char)(data[i]));
                 }
-                printf("\n");
                 break;
             case 0x0A: // Tx Power Level 
-                printf("%d dBm\n", *(int8_t*)data);
+                printf("%d dBm", *(int8_t*)data);
                 break;
             case 0x12: // Slave Connection Interval Range 
-                printf("\n");
-                printf("Minimum Connection Interval %u ms\n", READ_BT_16(data, 0) * 5/4);
-                printf("Maximum Connection Interval %u ms\n", READ_BT_16(data, 2) * 5/4);
+                printf("Connection Interval Min = %u ms, Max = %u ms", READ_BT_16(data, 0) * 5/4, READ_BT_16(data, 2) * 5/4);
                 break;
             case 0x16: // Service Data 
                 printf_hexdump(data, size);
@@ -192,14 +186,13 @@ char * dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
             case 0x17: // Public Target Address
             case 0x18: // Random Target Address
                 print_bd_addr(data);
-                printf("\n");
                 break;
             case 0x19: // Appearance 
                 // https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.gap.appearance.xml
-                printf("%02X\n", READ_BT_16(data, 0) );
+                printf("%02X", READ_BT_16(data, 0) );
                 break;
             case 0x1A: // Advertising Interval 
-                printf("%u ms\n", READ_BT_16(data, 0) * 5/8 );
+                printf("%u ms", READ_BT_16(data, 0) * 5/8 );
                 break;
             case 0x3D: // 3D Information Data 
                 printf_hexdump(data, size);
@@ -212,10 +205,12 @@ char * dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
             case 0x10: // Device ID 
             case 0x11: // Security Manager TK Value (16B)
             default:
-                printf("Unknown Advertising Data Type\n"); 
+                printf("Unknown Advertising Data Type"); 
                 break;
         }        
+        printf("\n");
     }
+    printf("\n");
 }
 /* LISTING_END */
 
@@ -252,7 +247,7 @@ static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size
             uint8_t length = packet[pos++];
             uint8_t * data = &packet[pos];
             
-            printf("\n\nAdvertisement event: evt-type %u, addr-type %u, addr %s, rssi %u, length adv %u, data: ", event_type,
+            printf("Advertisement event: evt-type %u, addr-type %u, addr %s, rssi %u, data[%u] ", event_type,
                address_type, bd_addr_to_str(address), rssi, length);
             printf_hexdump(data, length);
             dump_advertisement_data(data, length);
