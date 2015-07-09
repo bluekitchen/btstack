@@ -63,8 +63,6 @@
 
 static const char default_hfp_ag_service_name[] = "Voice gateway";
 
-static void hfp_run();
-
 void hfp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features){
     if (!name){
         name = default_hfp_ag_service_name;
@@ -80,14 +78,7 @@ void hfp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char 
 }
 
 void hfp_ag_connect(bd_addr_t bd_addr){
-    hfp_connect(bd_addr);
-    hfp_run();
+    hfp_connect(bd_addr, HFP_HANDSFREE_AUDIO_GATEWAY);
 }
 
-void hfp_ag_disconnect(){
-    hfp_run();
-}
-
-static void hfp_run(void){
-}
 

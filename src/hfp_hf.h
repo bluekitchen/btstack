@@ -56,7 +56,6 @@ extern "C" {
 
 void hfp_hf_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint16_t supported_features);
 void hfp_hf_connect(bd_addr_t bd_addr);
-void hfp_hf_disconnect();
 
 #if defined __cplusplus
 }

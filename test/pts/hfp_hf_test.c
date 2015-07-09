@@ -106,7 +106,7 @@ static int stdin_process(struct data_source *ds){
             break;
         case 'd':
             printf("Releasing audio connection.\n");
-            hfp_hf_disconnect();
+            hfp_disconnect(pts_addr);
             break;
         default:
             show_usage();

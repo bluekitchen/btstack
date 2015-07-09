@@ -53,6 +53,11 @@ extern "C" {
 #endif
 
 typedef enum {
+    HFP_HANDSFREE,
+    HFP_HANDSFREE_AUDIO_GATEWAY
+} hfp_role_t;
+
+typedef enum {
     HFP_IDLE,
     HFP_SDP_QUERY_RFCOMM_CHANNEL,
     HFP_W4_SDP_QUERY_COMPLETE,
@@ -74,6 +79,7 @@ typedef struct hfp_connection {
     uint16_t rfcomm_channel_nr;
     uint16_t rfcomm_cid;
     
+    hfp_role_t role;
     hfp_callback_t callback;
 } hfp_connection_t;
 
@@ -84,7 +90,8 @@ void hfp_init(uint16_t rfcomm_channel_nr);
 void hfp_register_packet_handler(hfp_callback_t callback);
 
 hfp_connection_t * provide_hfp_connection_context_for_conn_handle(uint16_t con_handle);
-void hfp_connect(bd_addr_t bd_addr);
+void hfp_connect(bd_addr_t bd_addr, hfp_role_t role);
+void hfp_disconnect(bd_addr_t bd_addr);
 
 #if defined __cplusplus
 }

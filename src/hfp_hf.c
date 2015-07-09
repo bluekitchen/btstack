@@ -64,7 +64,7 @@
 static const char default_hfp_hf_service_name[] = "Hands-Free unit";
 
 
-static void hfp_run();
+static linked_item_t * get_hfp_connections();
 
 void hfp_hf_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint16_t supported_features){
     if (!name){
@@ -84,16 +84,10 @@ void hfp_hf_create_service(uint8_t * service, int rfcomm_channel_nr, const char 
 // }
 
 void hfp_hf_connect(bd_addr_t bd_addr){
-    hfp_connect(bd_addr);
-    hfp_run();
+    hfp_connect(bd_addr, HFP_HANDSFREE);
 }
 
-void hfp_hf_disconnect(){
-    hfp_run();
-}
 
-static void hfp_run(void){
-}
 
 
 
