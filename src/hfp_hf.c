@@ -65,7 +65,6 @@ static const char default_hfp_hf_service_name[] = "Hands-Free unit";
 
 
 static void hfp_run();
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 void hfp_hf_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint16_t supported_features){
     if (!name){
@@ -96,11 +95,5 @@ void hfp_hf_disconnect(){
 static void hfp_run(void){
 }
 
-static void packet_handler (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
-    if (packet_type == RFCOMM_DATA_PACKET){
-    }
 
-    if (packet_type != HCI_EVENT_PACKET) return;
-}
 

@@ -1,3 +1,6 @@
+#ifndef __BTSTACK_CONFIG
+#define __BTSTACK_CONFIG
+
 #define EMBEDDED
 
 // #define HAVE_INIT_SCRIPT
@@ -28,3 +31,7 @@
 #define MAX_NO_DB_MEM_SERVICES 0
 #define MAX_NO_GATT_CLIENTS 1
 #define MAX_ATT_DB_SIZE 200
+#define MAX_NO_HFP_CONNECTIONS 0
+
+
+#endif
