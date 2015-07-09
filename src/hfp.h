@@ -37,25 +37,54 @@
 
 // *****************************************************************************
 //
-//  Minimal setup for HFP Audio Gateway (AG) unit (!! UNDER DEVELOPMENT !!)
+//  HFP Hands-Free (HF) unit and Audio-Gateway Commons
 //
 // *****************************************************************************
 
 
-#ifndef btstack_hfp_ag_h
-#define btstack_hfp_ag_h
+#ifndef btstack_hfp_h
+#define btstack_hfp_h
 
 #include "hci.h"
 #include "sdp_query_rfcomm.h"
-#include "hfp.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
-void hfp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features);
-void hfp_ag_connect(bd_addr_t bd_addr);
-void hfp_ag_disconnect();
+typedef enum {
+    HFP_IDLE,
+    HFP_SDP_QUERY_RFCOMM_CHANNEL,
+    HFP_W4_SDP_QUERY_COMPLETE,
+    HFP_W4_RFCOMM_CONNECTED,
+    HFP_ACTIVE,
+    HFP_W2_DISCONNECT_RFCOMM,
+    HFP_W4_RFCOMM_DISCONNECTED, 
+    HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN
+} hfp_state_t;
+
+typedef void (*hfp_callback_t)(uint8_t * event, uint16_t event_size);
+
+typedef struct hfp_connection {
+    linked_item_t    item;
+    hfp_state_t state;
+
+    bd_addr_t remote_addr;
+    uint16_t con_handle;
+    uint16_t rfcomm_channel_nr;
+    uint16_t rfcomm_cid;
+    
+    hfp_callback_t callback;
+} hfp_connection_t;
+
+
+void hfp_create_service(uint8_t * service, uint16_t service_uuid, int rfcomm_channel_nr, const char * name, uint16_t supported_features);
+
+void hfp_init(uint16_t rfcomm_channel_nr);
+void hfp_register_packet_handler(hfp_callback_t callback);
+
+hfp_connection_t * provide_hfp_connection_context_for_conn_handle(uint16_t con_handle);
+void hfp_connect(bd_addr_t bd_addr);
 
 #if defined __cplusplus
 }

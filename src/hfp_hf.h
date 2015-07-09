@@ -47,17 +47,14 @@
 
 #include "hci.h"
 #include "sdp_query_rfcomm.h"
+#include "hfp.h"
 
 #if defined __cplusplus
 extern "C" {
 #endif
 
-typedef void (*hfp_hf_callback_t)(uint8_t * event, uint16_t event_size);
-// Register callback (packet handler) for hsp headset
-void hfp_hf_register_packet_handler(hfp_hf_callback_t callback);
-void hfp_hf_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint16_t supported_features);
 
-void hfp_hf_init(uint8_t rfcomm_channel_nr);
+void hfp_hf_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint16_t supported_features);
 void hfp_hf_connect(bd_addr_t bd_addr);
 void hfp_hf_disconnect();
 

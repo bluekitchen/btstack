@@ -60,6 +60,7 @@ extern "C" {
 #include "l2cap.h"
 #include "rfcomm.h"
 #include "bnep.h"
+#include "hfp.h"
 #include "remote_device_db.h"
 
 #ifdef HAVE_BLE
@@ -99,10 +100,6 @@ cfile_header_begin = """
 
 #include <stdlib.h>
 
-#include "btstack-config.h"
-#include "hci.h"
-#include "l2cap.h"
-#include "rfcomm.h"
 """
 
 header_template = """STRUCT_NAME_t * btstack_memory_STRUCT_NAME_get(void);
@@ -155,7 +152,7 @@ def replacePlaceholder(template, struct_name):
     snippet = template.replace("STRUCT_TYPE", struct_type).replace("STRUCT_NAME", struct_name).replace("POOL_COUNT", pool_count)
     return snippet
     
-list_of_structs = [ ["hci_connection"], ["l2cap_service", "l2cap_channel"], ["rfcomm_multiplexer", "rfcomm_service", "rfcomm_channel"], ["db_mem_device_name", "db_mem_device_link_key", "db_mem_service"], ["bnep_service", "bnep_channel"]]
+list_of_structs = [ ["hci_connection"], ["l2cap_service", "l2cap_channel"], ["rfcomm_multiplexer", "rfcomm_service", "rfcomm_channel"], ["db_mem_device_name", "db_mem_device_link_key", "db_mem_service"], ["bnep_service", "bnep_channel"], ["hfp_connection"]]
 list_of_le_structs = [["gatt_client", "gatt_subclient"]]
 
 file_name = "../src/btstack_memory"

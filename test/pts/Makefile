@@ -37,10 +37,10 @@ hsp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_ag.o hsp_ag_test.c
 hsp_hs_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_hs.o hsp_hs_test.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-hfp_hf_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hfp_hf.o hfp_hf_test.c  
+hfp_hf_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hfp.o hfp_hf.o hfp_hf_test.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-hfp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hfp_ag.o hfp_ag_test.c  
+hfp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hfp.o hfp_ag.o hfp_ag_test.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 l2cap_test: ${CORE_OBJ} ${COMMON_OBJ} l2cap_test.c

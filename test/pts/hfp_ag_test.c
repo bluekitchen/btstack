@@ -62,6 +62,7 @@
 
 #include "hci.h"
 #include "l2cap.h"
+#include "rfcomm.h"
 #include "sdp.h"
 #include "debug.h"
 #include "hfp_ag.h"
@@ -74,7 +75,6 @@ const char hfp_ag_service_name[] = "Headset Test";
 static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t local_mac = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
 
-static char hs_cmd_buffer[100];
 
 // prototypes
 static void show_usage();
@@ -126,16 +126,21 @@ void packet_handler(uint8_t * event, uint16_t event_size){
 }
 
 int btstack_main(int argc, const char * argv[]){
+    // init L2CAP
+    l2cap_init();
+    rfcomm_init();
+    
+    hfp_init(rfcomm_channel_nr);
+    hfp_register_packet_handler(packet_handler);
+    
+    sdp_init();
+    
     // init SDP, create record for SPP and register with SDP
     memset((uint8_t *)hfp_service_buffer, 0, sizeof(hfp_service_buffer));
     hfp_ag_create_service((uint8_t *)hfp_service_buffer, rfcomm_channel_nr, hfp_ag_service_name, 0, 0);
-    
-    hfp_ag_init(rfcomm_channel_nr);
-    hfp_ag_register_packet_handler(packet_handler);
-    
-    sdp_init();
     sdp_register_service_internal(NULL, (uint8_t *)hfp_service_buffer);
 
+    
     // turn on!
     hci_power_control(HCI_POWER_ON);
     

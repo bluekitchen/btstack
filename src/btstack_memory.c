@@ -50,10 +50,6 @@
 
 #include <stdlib.h>
 
-#include "btstack-config.h"
-#include "hci.h"
-#include "l2cap.h"
-#include "rfcomm.h"
 
 
 // MARK: hci_connection_t
@@ -412,6 +408,39 @@ void btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel){
 #endif
 
 
+
+// MARK: hfp_connection_t
+#ifdef MAX_NO_HFP_CONNECTIONS
+#if MAX_NO_HFP_CONNECTIONS > 0
+static hfp_connection_t hfp_connection_storage[MAX_NO_HFP_CONNECTIONS];
+static memory_pool_t hfp_connection_pool;
+hfp_connection_t * btstack_memory_hfp_connection_get(void){
+    return (hfp_connection_t *) memory_pool_get(&hfp_connection_pool);
+}
+void btstack_memory_hfp_connection_free(hfp_connection_t *hfp_connection){
+    memory_pool_free(&hfp_connection_pool, hfp_connection);
+}
+#else
+hfp_connection_t * btstack_memory_hfp_connection_get(void){
+    return NULL;
+}
+void btstack_memory_hfp_connection_free(hfp_connection_t *hfp_connection){
+    // silence compiler warning about unused parameter in a portable way
+    (void) hfp_connection;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+hfp_connection_t * btstack_memory_hfp_connection_get(void){
+    return (hfp_connection_t*) malloc(sizeof(hfp_connection_t));
+}
+void btstack_memory_hfp_connection_free(hfp_connection_t *hfp_connection){
+    free(hfp_connection);
+}
+#else
+#error "Neither HAVE_MALLOC nor MAX_NO_HFP_CONNECTIONS for struct hfp_connection is defined. Please, edit the config file."
+#endif
+
+
 #ifdef HAVE_BLE
 
 // MARK: gatt_client_t
@@ -513,6 +542,9 @@ void btstack_memory_init(void){
 #endif
 #if MAX_NO_BNEP_CHANNELS > 0
     memory_pool_create(&bnep_channel_pool, bnep_channel_storage, MAX_NO_BNEP_CHANNELS, sizeof(bnep_channel_t));
+#endif
+#if MAX_NO_HFP_CONNECTIONS > 0
+    memory_pool_create(&hfp_connection_pool, hfp_connection_storage, MAX_NO_HFP_CONNECTIONS, sizeof(hfp_connection_t));
 #endif
 #ifdef HAVE_BLE
 #if MAX_NO_GATT_CLIENTS > 0

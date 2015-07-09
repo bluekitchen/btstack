@@ -57,6 +57,7 @@ extern "C" {
 #include "l2cap.h"
 #include "rfcomm.h"
 #include "bnep.h"
+#include "hfp.h"
 #include "remote_device_db.h"
 
 #ifdef HAVE_BLE
@@ -103,6 +104,10 @@ bnep_service_t * btstack_memory_bnep_service_get(void);
 void   btstack_memory_bnep_service_free(bnep_service_t *bnep_service);
 bnep_channel_t * btstack_memory_bnep_channel_get(void);
 void   btstack_memory_bnep_channel_free(bnep_channel_t *bnep_channel);
+
+// hfp_connection
+hfp_connection_t * btstack_memory_hfp_connection_get(void);
+void   btstack_memory_hfp_connection_free(hfp_connection_t *hfp_connection);
 
 #ifdef HAVE_BLE
 // gatt_client, gatt_subclient
