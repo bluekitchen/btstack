@@ -37,27 +37,30 @@
 
 #include <errno.h>
 #include <stdio.h>
-#include <termios.h>
 #include <btstack/run_loop.h>
 #include <stdlib.h>
 
 #include "stdin_support.h"
 
 #ifndef _WIN32
+#include <termios.h>
+#endif
 
 static data_source_t stdin_source;
 static int activated = 0;
 
 void btstack_stdin_setup(int (*stdin_process)(data_source_t *_ds)){
+
+#ifndef _WIN32
     struct termios term = {0};
     if (tcgetattr(0, &term) < 0)
             perror("tcsetattr()");
     term.c_lflag &= ~ICANON;
     term.c_lflag &= ~ECHO;
-    // term.c_cc[VMIN] = 1;
-    // term.c_cc[VTIME] = 0;
-    if (tcsetattr(0, TCSANOW, &term) < 0)
-            perror("tcsetattr ICANON");
+    if (tcsetattr(0, TCSANOW, &term) < 0) {
+        perror("tcsetattr ICANON");
+    }
+#endif
 
     stdin_source.fd = 0; // stdin
     stdin_source.process = stdin_process;
@@ -72,15 +75,17 @@ void btstack_stdin_reset(void){
     
     run_loop_remove_data_source(&stdin_source);    
 
+#ifndef _WIN32
     struct termios term = {0};
-    if (tcgetattr(0, &term) < 0)
-            perror("tcsetattr()");
+    if (tcgetattr(0, &term) < 0){
+        perror("tcsetattr()");
+    }
     term.c_lflag |= ICANON;
     term.c_lflag |= ECHO;
-    // term.c_cc[VMIN] = 1;
-    // term.c_cc[VTIME] = 0;
-    if (tcsetattr(0, TCSANOW, &term) < 0)
-            perror("tcsetattr ICANON");
+    if (tcsetattr(0, TCSANOW, &term) < 0){
+        perror("tcsetattr ICANON");
+    }
+#endif
 }
 
 int getstring(char *line, int size)
@@ -119,5 +124,4 @@ uint32_t btstack_stdin_query_hex(const char * fieldName){
     sscanf(buffer, "%x", &value);
     return value;
 }
-#endif
 
