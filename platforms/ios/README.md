@@ -1,3 +1,4 @@
+
 === BTstack for iOS ===
 
 BTstack for iOS provides an alternative Bluetooth stack for iOS devices with a public API.
@@ -26,7 +27,7 @@ to create apps & daemons for JB iOS devices instead of using Xcode.
 Install the following tools:
 - Xcode 6.4 as /Applications/Xcode.app
 - Xcode 4.4.1 as /Applications/Xcode-4.4.1.app/
-- rpetrich's theos fork with "lippoplastic" support from https://github.com/rpetrich/theos
+- [rpetrich's theos fork](https://github.com/rpetrich/theos) with "lippoplastic" support
 
 Set the $THEOS environment variable to the location of theos, e.g. like:
 
