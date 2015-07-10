@@ -63,9 +63,56 @@
 static hfp_callback_t hfp_callback;
 static linked_list_t hfp_connections = NULL;
 
+int send_str_over_rfcomm(uint16_t cid, char * command){
+    if (!rfcomm_can_send_packet_now(cid)) return 1;
+    int err = rfcomm_send_internal(cid, (uint8_t*) command, strlen(command));
+    if (err){
+        printf("rfcomm_send_internal -> error 0X%02x", err);
+    }
+    return err;
+}
+
+void join(char * buffer, int buffer_size, int buffer_offset, uint8_t * values, int values_nr){
+    int req_size = values_nr * 2;
+    if (buffer_size - buffer_offset < req_size ) {
+        log_error("join: buffer too small (size: %u. req: %u)", buffer_size, req_size);
+        return;
+    }
+    int pos = buffer_offset;
+    int i;
+    for (i = 0; i < values_nr-1; i++){
+        buffer[pos++] = values[i];
+        buffer[pos++] = ',';
+    }
+    buffer[pos++] = values[i];
+    buffer[pos] = '\0';
+}
+
+void emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value){
+    if (!callback) return;
+    uint8_t event[4];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = event_subtype;
+    event[3] = value; // status 0 == OK
+    (*callback)(event, sizeof(event));
+}
+
+
 static linked_item_t * get_hfp_connections(){
     return (linked_item_t *) &hfp_connections;
 } 
+
+hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid){
+    linked_item_t *it;
+    for (it = get_hfp_connections(); it ; it = it->next){
+        hfp_connection_t * connection = (hfp_connection_t *) it;
+        if (connection->rfcomm_cid == cid){
+            return connection;
+        }
+    }
+    return NULL;
+}
 
 static hfp_connection_t * get_hfp_connection_context_for_handle(uint16_t handle){
     linked_item_t *it;
@@ -122,6 +169,24 @@ void hfp_register_packet_handler(hfp_callback_t callback){
     }
     hfp_callback = callback;
 }
+
+/* @param suported_features
+ * HF bit 0: EC and/or NR function (yes/no, 1 = yes, 0 = no)
+ * HF bit 1: Call waiting or three-way calling(yes/no, 1 = yes, 0 = no)
+ * HF bit 2: CLI presentation capability (yes/no, 1 = yes, 0 = no)
+ * HF bit 3: Voice recognition activation (yes/no, 1= yes, 0 = no)
+ * HF bit 4: Remote volume control (yes/no, 1 = yes, 0 = no)
+ * HF bit 5: Wide band speech (yes/no, 1 = yes, 0 = no)
+ */
+ /* Bit position:
+ * AG bit 0: Three-way calling (yes/no, 1 = yes, 0 = no)
+ * AG bit 1: EC and/or NR function (yes/no, 1 = yes, 0 = no)
+ * AG bit 2: Voice recognition function (yes/no, 1 = yes, 0 = no)
+ * AG bit 3: In-band ring tone capability (yes/no, 1 = yes, 0 = no)
+ * AG bit 4: Attach a phone number to a voice tag (yes/no, 1 = yes, 0 = no)
+ * AG bit 5: Wide band speech (yes/no, 1 = yes, 0 = no)
+ */
+
 
 void hfp_create_service(uint8_t * service, uint16_t service_uuid, int rfcomm_channel_nr, const char * name, uint16_t supported_features){
     uint8_t* attribute;
@@ -187,14 +252,6 @@ void hfp_create_service(uint8_t * service, uint16_t service_uuid, int rfcomm_cha
     de_add_data(service,  DE_STRING, strlen(name), (uint8_t *) name);
     
     de_add_number(service, DE_UINT, DE_SIZE_16, supported_features);
-    /* Bit position:
-     * 0: EC and/or NR function (yes/no, 1 = yes, 0 = no)
-     * 1: Call waiting or three-way calling(yes/no, 1 = yes, 0 = no)
-     * 2: CLI presentation capability (yes/no, 1 = yes, 0 = no)
-     * 3: Voice recognition activation (yes/no, 1= yes, 0 = no)
-     * 4: Remote volume control (yes/no, 1 = yes, 0 = no)
-     * 5: Wide band speech (yes/no, 1 = yes, 0 = no)
-     */
 }
 
 static hfp_connection_t * connection_doing_sdp_query = NULL;
@@ -235,19 +292,8 @@ static void hfp_reset_state(hfp_connection_t * connection){
     connection->state = HFP_IDLE;
 }
 
-static void emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value){
-    if (!callback) return;
-    uint8_t event[4];
-    event[0] = HCI_EVENT_HFP_META;
-    event[1] = sizeof(event) - 2;
-    event[2] = event_subtype;
-    event[3] = value; // status 0 == OK
-    (*callback)(event, sizeof(event));
-}
 
-hfp_connection_t * handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
-    if (packet_type != HCI_EVENT_PACKET) return NULL;
-    
+hfp_connection_t * hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
     bd_addr_t event_addr;
     hfp_connection_t * context = NULL;
 
@@ -293,7 +339,7 @@ hfp_connection_t * handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16
                 context->con_handle = READ_BT_16(packet, 9);
                 context->rfcomm_cid = READ_BT_16(packet, 12);
                 uint16_t mtu = READ_BT_16(packet, 14);
-                
+                context->state = HFP_W4_SUPPORTED_FEATURES_EXCHANGE;
                 printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", context->rfcomm_cid, mtu);
             }
             break;
@@ -322,8 +368,9 @@ void hfp_connect(bd_addr_t bd_addr, uint16_t service_uuid){
     }
     if (connection->state != HFP_IDLE) return;
     
-    connection->state = HFP_W4_SDP_QUERY_COMPLETE;
     memcpy(connection->remote_addr, bd_addr, 6);
+    connection->state = HFP_W4_SDP_QUERY_COMPLETE;
+
     connection_doing_sdp_query = connection;
     sdp_query_rfcomm_channel_and_name_for_uuid(connection->remote_addr, service_uuid);
 }

@@ -54,9 +54,11 @@ extern "C" {
 #endif
 
 void hfp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features);
-void hfp_ag_init(uint16_t rfcomm_channel_nr);
+void hfp_ag_init(uint16_t rfcomm_channel_nr, uint16_t supported_features, uint8_t * codecs, int num_codecs);
 void hfp_ag_connect(bd_addr_t bd_addr);
 void hfp_ag_disconnect(bd_addr_t bd_addr);
+
+void hfp_ag_supported_features_exchange(uint16_t supported_features);
 
 #if defined __cplusplus
 }
