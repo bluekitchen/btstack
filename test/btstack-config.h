@@ -28,3 +28,6 @@
 #define MAX_NO_DB_MEM_SERVICES 1
 #define HAVE_MALLOC
 
+// DeLock 4.0 Dongle (Broadcom BCM20702A0)
+#define USB_VENDOR_ID   0x0a5c
+#define USB_PRODUCT_ID  0x21e8
