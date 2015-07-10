@@ -63,6 +63,8 @@
 
 static const char default_hfp_ag_service_name[] = "Voice gateway";
 
+static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
 void hfp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features){
     if (!name){
         name = default_hfp_ag_service_name;
@@ -77,8 +79,38 @@ void hfp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char 
      */
 }
 
-void hfp_ag_connect(bd_addr_t bd_addr){
-    hfp_connect(bd_addr, HFP_HANDSFREE_AUDIO_GATEWAY);
+
+static void hfp_run(hfp_connection_t * connection){
+    if (!connection) return;
+    
+    switch (connection->state){
+        default:
+            break;
+    }
 }
 
+static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
+    hfp_connection_t * context = NULL;
+
+    if (packet_type == RFCOMM_DATA_PACKET){
+        hfp_run(context);
+        return;  
+    }    
+    context = handle_hci_event(packet_type, packet, size);
+    hfp_run(context);
+}
+
+void hfp_ag_init(uint16_t rfcomm_channel_nr){
+    rfcomm_register_packet_handler(packet_handler);
+    hfp_init(rfcomm_channel_nr);
+}
+
+void hfp_ag_connect(bd_addr_t bd_addr){
+    hfp_connect(bd_addr, SDP_Handsfree);
+}
+
+void hfp_ag_disconnect(bd_addr_t bd_addr){
+
+}
 

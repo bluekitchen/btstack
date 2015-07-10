@@ -62,7 +62,6 @@
 
 static hfp_callback_t hfp_callback;
 static linked_list_t hfp_connections = NULL;
-static void hfp_run(void);
 
 static linked_item_t * get_hfp_connections(){
     return (linked_item_t *) &hfp_connections;
@@ -231,50 +230,13 @@ static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context)
     }
 }
 
-static void hfp_run(void){
-    linked_item_t *it;
-    for (it = get_hfp_connections(); it ; it = it->next){
-        hfp_connection_t * connection = (hfp_connection_t *) it;
-        
-        switch (connection->state){
-            case HFP_SDP_QUERY_RFCOMM_CHANNEL:
-                connection->state = HFP_W4_SDP_QUERY_COMPLETE;
-                switch (connection->role){
-                    case HFP_HANDSFREE:
-                        sdp_query_rfcomm_channel_and_name_for_uuid(connection->remote_addr, SDP_HandsfreeAudioGateway);
-                        break;
-                    case HFP_HANDSFREE_AUDIO_GATEWAY:
-                        sdp_query_rfcomm_channel_and_name_for_uuid(connection->remote_addr, SDP_Handsfree);
-                        break;
-
-                }
-                break;
-            
-            default:
-                break;
-        }
-    }
-}
-
-static void handle_rfcomm_data_packet(uint16_t channel, uint8_t *packet, uint16_t size){
-    // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);    
-}
-
-static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
-    uint8_t event = packet[0];
+hfp_connection_t * handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+    if (packet_type != HCI_EVENT_PACKET) return NULL;
+    
     bd_addr_t event_addr;
     hfp_connection_t * context = NULL;
 
-    if (packet_type == RFCOMM_DATA_PACKET){
-        handle_rfcomm_data_packet(channel, packet, size);
-        hfp_run();
-        return;  
-    } 
-
-    if (packet_type != HCI_EVENT_PACKET) return;
-    
-    switch (event) {
+    switch (packet[0]) {
         case BTSTACK_EVENT_STATE:
             // bt stack activated, get started 
             if (packet[2] == HCI_STATE_WORKING){
@@ -294,7 +256,7 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
             bt_flip_addr(event_addr, &packet[2]); 
             context = provide_hfp_connection_context_for_bd_addr(event_addr);
             
-            if (context && context->state != HFP_IDLE) return;
+            if (!context || context->state != HFP_IDLE) return context;
 
             context->rfcomm_cid = READ_BT_16(packet, 9);
             context->state = HFP_W4_RFCOMM_CONNECTED;
@@ -311,7 +273,7 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
                 bt_flip_addr(event_addr, &packet[2]); 
                 context = provide_hfp_connection_context_for_bd_addr(event_addr);
             
-                if (context && context->state != HFP_W4_RFCOMM_CONNECTED) return;
+                if (!context || context->state != HFP_W4_RFCOMM_CONNECTED) return context;
 
                 context->con_handle = READ_BT_16(packet, 9);
                 context->rfcomm_cid = READ_BT_16(packet, 12);
@@ -328,30 +290,25 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
         default:
             break;
     }
-    hfp_run();
+    return context;
 }
 
 void hfp_init(uint16_t rfcomm_channel_nr){
     rfcomm_register_service_internal(NULL, rfcomm_channel_nr, 0xffff);  
-    rfcomm_register_packet_handler(packet_handler);
-
     sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
 }
 
-void hfp_connect(bd_addr_t bd_addr, hfp_role_t role){
+void hfp_connect(bd_addr_t bd_addr, uint16_t service_uuid){
     hfp_connection_t * connection = provide_hfp_connection_context_for_bd_addr(bd_addr);
     if (!connection) {
         log_error("hfp_hf_connect for addr %s failed", bd_addr_to_str(bd_addr));
         return;
     }
-    
     if (connection->state != HFP_IDLE) return;
-    connection->state = HFP_SDP_QUERY_RFCOMM_CHANNEL;
+    
+    connection->state = HFP_W4_SDP_QUERY_COMPLETE;
     memcpy(connection->remote_addr, bd_addr, 6);
-    connection->role = role;
     connection_doing_sdp_query = connection;
-    hfp_run();
+    sdp_query_rfcomm_channel_and_name_for_uuid(connection->remote_addr, service_uuid);
 }
 
-void hfp_disconnect(bd_addr_t bd_addr){
-}
