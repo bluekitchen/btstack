@@ -230,6 +230,21 @@ static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context)
     }
 }
 
+static void hfp_reset_state(hfp_connection_t * connection){
+    if (!connection) return;
+    connection->state = HFP_IDLE;
+}
+
+static void emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value){
+    if (!callback) return;
+    uint8_t event[4];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = event_subtype;
+    event[3] = value; // status 0 == OK
+    (*callback)(event, sizeof(event));
+}
+
 hfp_connection_t * handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
     if (packet_type != HCI_EVENT_PACKET) return NULL;
     
@@ -266,18 +281,19 @@ hfp_connection_t * handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16
 
         case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
             // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
-            if (packet[2]) {
-                // hfp_hf_reset_state();
-                // emit_event(HFP_SUBEVENT_AUDIO_CONNECTION_COMPLETE, packet[2]);
-            } else {
-                bt_flip_addr(event_addr, &packet[2]); 
-                context = provide_hfp_connection_context_for_bd_addr(event_addr);
-            
-                if (!context || context->state != HFP_W4_RFCOMM_CONNECTED) return context;
+            bt_flip_addr(event_addr, &packet[2]); 
+            context = provide_hfp_connection_context_for_bd_addr(event_addr);
+        
+            if (!context || context->state != HFP_W4_RFCOMM_CONNECTED) return context;
 
+            if (packet[2]) {
+                hfp_reset_state(context);
+                emit_event(context->callback, HFP_SUBEVENT_AUDIO_CONNECTION_COMPLETE, packet[2]);
+            } else {
                 context->con_handle = READ_BT_16(packet, 9);
                 context->rfcomm_cid = READ_BT_16(packet, 12);
                 uint16_t mtu = READ_BT_16(packet, 14);
+                
                 printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", context->rfcomm_cid, mtu);
             }
             break;

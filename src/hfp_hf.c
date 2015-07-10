@@ -72,15 +72,6 @@ void hfp_hf_create_service(uint8_t * service, int rfcomm_channel_nr, const char 
     hfp_create_service(service, SDP_Handsfree, rfcomm_channel_nr, name, supported_features);
 }
 
-// static void hfp_hf_reset_state(uint16_t con_handle){
-//     hfp_connection_t * connection = provide_hfp_connection_context_for_conn_handle(con_handle);
-//     if (!connection) {
-//         log_error("hfp_hf_reset_state for handle 0x%02x failed", con_handle);
-//         return;
-//     }
-//     connection->state = HFP_IDLE;
-// }
-
 void hfp_hf_init(uint16_t rfcomm_channel_nr){
     hfp_init(rfcomm_channel_nr);
     rfcomm_register_packet_handler(packet_handler);
@@ -113,5 +104,5 @@ void hfp_hf_connect(bd_addr_t bd_addr){
 }
 
 void hfp_hf_disconnect(bd_addr_t bd_addr){
-    
+
 }

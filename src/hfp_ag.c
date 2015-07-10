@@ -102,8 +102,8 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
 }
 
 void hfp_ag_init(uint16_t rfcomm_channel_nr){
-    rfcomm_register_packet_handler(packet_handler);
     hfp_init(rfcomm_channel_nr);
+    rfcomm_register_packet_handler(packet_handler);
 }
 
 void hfp_ag_connect(bd_addr_t bd_addr){
