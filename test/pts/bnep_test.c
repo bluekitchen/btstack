@@ -287,11 +287,11 @@ static int stdin_process(struct data_source *ds){
             break;
         case 's':
             printf("Sending src only compressed ethernet packet\n");
-            send_ethernet_packet(1,0);
+            send_ethernet_packet(0,1);
             break;
         case 'd':
             printf("Sending dst only ethernet packet\n");
-            send_ethernet_packet(0,1);
+            send_ethernet_packet(1,0);
             break;
         case 'f':
             printf("Setting network protocol filter\n");
