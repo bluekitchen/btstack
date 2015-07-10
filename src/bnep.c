@@ -1552,7 +1552,7 @@ void bnep_register_packet_handler(void (*handler)(void * connection, uint8_t pac
 	app_packet_handler = handler;
 }
 
-int bnep_connect(void * connection, bd_addr_t addr, uint16_t l2cap_psm, uint16_t uuid_dest)
+int bnep_connect(void * connection, bd_addr_t addr, uint16_t l2cap_psm, uint16_t uuid_src, uint16_t uuid_dest)
 {
     bnep_channel_t *channel;
     log_info("BNEP_CONNECT addr %s", bd_addr_to_str(addr));
@@ -1562,7 +1562,7 @@ int bnep_connect(void * connection, bd_addr_t addr, uint16_t l2cap_psm, uint16_t
         return -1;
     }
 
-    channel->uuid_source = SDP_PANU;
+    channel->uuid_source = uuid_src;
     channel->uuid_dest   = uuid_dest;
 
     l2cap_create_channel_internal(connection, bnep_packet_handler, addr, l2cap_psm, l2cap_max_mtu());

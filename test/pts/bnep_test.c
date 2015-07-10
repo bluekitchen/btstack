@@ -77,6 +77,16 @@ static bd_addr_t other_addr = { 0,0,0,0,0,0};
 // broadcast
 static bd_addr_t broadcast_addr = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
+// Outgoing: Must match PTS TSPX_UUID_src_addresss 
+static uint16_t bnep_src_uuid     = 0x1115; 
+
+// Outgoing: Must match PTS TSPX_UUID_dest_address
+static uint32_t bnep_dest_uuid    = 0x1116;
+
+// Incoming: Must macht PTS TSPX_UUID_dest_address
+static uint16_t bnep_local_service_uuid = 0x1116;
+
+
 // Sample network protocol type filter set:
 //   Ethernet type/length values the range 0x0000 - 0x05dc (Length), 0x05dd - 0x05ff (Reserved in IEEE 802.3)
 //   Ethernet type 0x0600-0xFFFF
@@ -88,12 +98,10 @@ static bnep_net_filter_t network_protocol_filter [3] = {{0x0000, 0x05dc}, {0x05d
 static bnep_multi_filter_t multicast_filter [1] = {{{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}}};
 
 
+
 // state
 static bd_addr_t local_addr;
-//static uint16_t bnep_protocol_uuid  = 0x000f;
 static uint16_t bnep_l2cap_psm      = 0x000f;
-static uint32_t bnep_remote_uuid    = SDP_PANU;
-//static uint16_t bnep_version        = 0;
 static uint16_t bnep_cid            = 0;
 
 static uint8_t network_buffer[BNEP_MTU_MIN];
@@ -247,7 +255,9 @@ static void send_some_ipv6_packet_2(void){
 static void show_usage(void){
 
     printf("\n--- Bluetooth BNEP Test Console ---\n");
-    printf("Local UUID %04x, remote UUID %04x, \n", SDP_PANU, bnep_remote_uuid);
+    printf("Source        UUID %04x (== TSPX_UUID_src_address)\n", bnep_src_uuid);
+    printf("Destination   UUID %04x (== TSPX_UUID_dest_address)\n", bnep_dest_uuid);
+    printf("Local service UUID %04x (== TSPX_UUID_dest_address)\n", bnep_local_service_uuid);
     printf("---\n");
     printf("p - connect to PTS\n");
     printf("e - send general Ethernet packet\n");
@@ -275,7 +285,7 @@ static int stdin_process(struct data_source *ds){
     switch (buffer){
         case 'p':
             printf("Connecting to PTS at %s...\n", bd_addr_to_str(pts_addr));
-            bnep_connect(NULL, pts_addr, bnep_l2cap_psm, bnep_remote_uuid);
+            bnep_connect(NULL, pts_addr, bnep_l2cap_psm, bnep_src_uuid, bnep_dest_uuid);
             break;
         case 'e':
             printf("Sending general ethernet packet\n");
@@ -287,11 +297,11 @@ static int stdin_process(struct data_source *ds){
             break;
         case 's':
             printf("Sending src only compressed ethernet packet\n");
-            send_ethernet_packet(1,0);
+            send_ethernet_packet(0,1);
             break;
         case 'd':
             printf("Sending dst only ethernet packet\n");
-            send_ethernet_packet(0,1);
+            send_ethernet_packet(1,0);
             break;
         case 'f':
             printf("Setting network protocol filter\n");
@@ -343,6 +353,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     /* BT Stack activated, get started */ 
                     if (packet[2] == HCI_STATE_WORKING) {
                         printf("BNEP Test ready\n");
+                        show_usage();
                     }
                     break;
 
@@ -420,7 +431,7 @@ int btstack_main(int argc, const char * argv[]){
     /* Initialise BNEP */
     bnep_init();
     bnep_register_packet_handler(packet_handler);
-    bnep_register_service(NULL, SDP_PANU, 1691);  /* Minimum L2CAP MTU for bnep is 1691 bytes */
+    bnep_register_service(NULL, bnep_local_service_uuid, 1691);  /* Minimum L2CAP MTU for bnep is 1691 bytes */
 
     /* Turn on the device */
     hci_power_control(HCI_POWER_ON);

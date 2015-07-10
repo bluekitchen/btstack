@@ -21,7 +21,7 @@ VPATH += ${BTSTACK_ROOT}/platforms/libusb
 CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
 LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 
-EXAMPLES = hfp_hf_test hfp_ag_test ble_peripheral_test ble_central_test l2cap_test ancs_client classic_test bnep_test hsp_ag_test hsp_hs_test
+EXAMPLES = hfp_hf_test hfp_ag_test ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test
 
 all: ${BTSTACK_ROOT}/include/btstack/version.h ${EXAMPLES}
 
