@@ -106,7 +106,7 @@ static int stdin_process(struct data_source *ds){
             break;
         case 'd':
             printf("Releasing audio connection.\n");
-            hfp_disconnect(pts_addr);
+            hfp_hf_disconnect(pts_addr);
             break;
         default:
             show_usage();
@@ -129,7 +129,7 @@ int btstack_main(int argc, const char * argv[]){
     l2cap_init();
     rfcomm_init();
     
-    hfp_init(rfcomm_channel_nr);
+    hfp_hf_init(rfcomm_channel_nr);
     hfp_register_packet_handler(packet_handler);
 
     sdp_init();

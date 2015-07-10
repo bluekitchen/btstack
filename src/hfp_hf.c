@@ -63,8 +63,7 @@
 
 static const char default_hfp_hf_service_name[] = "Hands-Free unit";
 
-
-static linked_item_t * get_hfp_connections();
+static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
 void hfp_hf_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint16_t supported_features){
     if (!name){
@@ -72,7 +71,6 @@ void hfp_hf_create_service(uint8_t * service, int rfcomm_channel_nr, const char 
     }
     hfp_create_service(service, SDP_Handsfree, rfcomm_channel_nr, name, supported_features);
 }
-
 
 // static void hfp_hf_reset_state(uint16_t con_handle){
 //     hfp_connection_t * connection = provide_hfp_connection_context_for_conn_handle(con_handle);
@@ -83,11 +81,37 @@ void hfp_hf_create_service(uint8_t * service, int rfcomm_channel_nr, const char 
 //     connection->state = HFP_IDLE;
 // }
 
-void hfp_hf_connect(bd_addr_t bd_addr){
-    hfp_connect(bd_addr, HFP_HANDSFREE);
+void hfp_hf_init(uint16_t rfcomm_channel_nr){
+    hfp_init(rfcomm_channel_nr);
+    rfcomm_register_packet_handler(packet_handler);
 }
 
 
+static void hfp_run(hfp_connection_t * connection){
+    if (!connection) return;
 
+    switch (connection->state){
+        default:
+            break;
+    }
+}
 
+static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
+    hfp_connection_t * context = NULL;
 
+    if (packet_type == RFCOMM_DATA_PACKET){
+        hfp_run(context);
+        return;  
+    }    
+    context = handle_hci_event(packet_type, packet, size);
+    hfp_run(context);
+}
+
+void hfp_hf_connect(bd_addr_t bd_addr){
+    hfp_connect(bd_addr, SDP_HandsfreeAudioGateway);
+}
+
+void hfp_hf_disconnect(bd_addr_t bd_addr){
+    
+}
