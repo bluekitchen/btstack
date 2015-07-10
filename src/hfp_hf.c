@@ -61,7 +61,12 @@
 #include "hfp.h"
 #include "hfp_hf.h"
 
+
 static const char default_hfp_hf_service_name[] = "Hands-Free unit";
+static uint16_t hfp_supported_features = HFP_Default_HF_Supported_Features;
+static uint8_t hfp_codecs_nr = 0;
+static uint8_t hfp_codecs[HFP_MAX_NUM_CODECS];
+
 
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -72,40 +77,126 @@ void hfp_hf_create_service(uint8_t * service, int rfcomm_channel_nr, const char 
     hfp_create_service(service, SDP_Handsfree, rfcomm_channel_nr, name, supported_features);
 }
 
-// static void hfp_hf_reset_state(uint16_t con_handle){
-//     hfp_connection_t * connection = provide_hfp_connection_context_for_conn_handle(con_handle);
-//     if (!connection) {
-//         log_error("hfp_hf_reset_state for handle 0x%02x failed", con_handle);
-//         return;
-//     }
-//     connection->state = HFP_IDLE;
-// }
 
-void hfp_hf_init(uint16_t rfcomm_channel_nr){
-    hfp_init(rfcomm_channel_nr);
-    rfcomm_register_packet_handler(packet_handler);
+static int bit(uint16_t bitmap, int position){
+    return (bitmap >> position) & 1;
 }
 
+int hfp_hs_supported_features_exchange_cmd(uint16_t cid){
+    char buffer[20];
+    sprintf(buffer, "AT%s=%d\r\n", HFP_Supported_Features, hfp_supported_features);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+int hfp_hs_codec_negotiation_cmd(uint16_t cid){
+    char buffer[30];
+    int buffer_offset = sprintf(buffer, "AT%s=", HFP_Available_Codecs);
+    join(buffer, sizeof(buffer), buffer_offset, hfp_codecs, hfp_codecs_nr);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+void hfp_hs_retrieve_indicators_information();
+void hfp_hs_request_indicators_status();
+void hfp_hs_request_indicator_status_update();
+void hfp_hs_list_generic_status_indicators();
 
 static void hfp_run(hfp_connection_t * connection){
     if (!connection) return;
-
+    
+    int err = 0;
     switch (connection->state){
+        case HFP_W4_SUPPORTED_FEATURES_EXCHANGE:
+            err = hfp_hs_supported_features_exchange_cmd(connection->rfcomm_cid);
+            break;
+        case HFP_W4_CODEC_NEGOTIATION:
+            err = hfp_hs_codec_negotiation_cmd(connection->rfcomm_cid);
+            break;
+        case HFP_W4_INDICATORS:
+            break;
+        case HFP_W4_INDICATORS_STATUS:
+            break;
+        case HFP_W4_INDICATORS_STATUS_UPDATE:
+            break;
+        case HFP_W4_CAN_HOLD_CALL:
+            break;
+        case HFP_W4_GENERIC_STATUS_INDICATORS:
+            break;
+        case HFP_W4_HF_GENERIC_STATUS_INDICATORS:
+            break;
+        case HFP_W4_AG_GENERIC_STATUS_INDICATORS:
+            break;
+        case HFP_W4_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
+            break;
+
         default:
             break;
     }
+    if (!err) connection->state = HFP_CMD_SENT;
+}
+
+hfp_connection_t * hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    hfp_connection_t * context = get_hfp_connection_context_for_rfcomm_cid(channel);
+    if (!context) return NULL;
+    while (size > 0 && (packet[0] == '\n' || packet[0] == '\r')){
+        size--;
+        packet++;
+    }
+    
+    if (context->wait_ok){
+        if (strncmp((char *)packet, HFP_OK, strlen(HFP_OK)) == 0){
+            context->wait_ok = 0;
+            return context;
+        }
+    }
+
+    if (strncmp((char *)packet, HFP_Supported_Features, strlen(HFP_Supported_Features)) == 0){
+        uint16_t supported_features = (uint16_t)atoi((char*)&packet[strlen(HFP_Supported_Features+1)]);
+        if (bit(supported_features, 7) && bit(hfp_supported_features,9)){
+            context->state = HFP_W4_CODEC_NEGOTIATION;
+        } else {
+            context->state = HFP_W4_INDICATORS;
+        }
+        context->wait_ok = 1;
+    }
+    if (strncmp((char *)packet, HFP_Available_Codecs, strlen(HFP_Available_Codecs)) == 0){
+        // parse available codecs
+    }
+    return context;
 }
 
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
     hfp_connection_t * context = NULL;
 
-    if (packet_type == RFCOMM_DATA_PACKET){
-        hfp_run(context);
-        return;  
-    }    
-    context = handle_hci_event(packet_type, packet, size);
+    switch (packet_type){
+        case RFCOMM_DATA_PACKET:
+            context = hfp_handle_rfcomm_event(packet_type, channel, packet, size);
+            break;
+        case HCI_EVENT_PACKET:
+            context = hfp_handle_hci_event(packet_type, packet, size);
+            break;
+        default:
+            break;
+        }
     hfp_run(context);
+}
+
+void hfp_hf_init(uint16_t rfcomm_channel_nr, uint16_t supported_features, uint8_t * codecs, int codecs_nr){
+    if (codecs_nr > HFP_MAX_NUM_CODECS){
+        log_error("hfp_init: codecs_nr (%d) > HFP_MAX_NUM_CODECS (%d)", codecs_nr, HFP_MAX_NUM_CODECS);
+        return;
+    }
+    hfp_init(rfcomm_channel_nr);
+    rfcomm_register_packet_handler(packet_handler);
+    
+    // connection->codecs = codecs;
+    hfp_supported_features = supported_features;
+    hfp_codecs_nr = codecs_nr;
+
+    int i;
+    for (i=0; i<codecs_nr; i++){
+        hfp_codecs[i] = codecs[i];
+    }
 }
 
 void hfp_hf_connect(bd_addr_t bd_addr){
@@ -113,5 +204,5 @@ void hfp_hf_connect(bd_addr_t bd_addr){
 }
 
 void hfp_hf_disconnect(bd_addr_t bd_addr){
-    
+
 }

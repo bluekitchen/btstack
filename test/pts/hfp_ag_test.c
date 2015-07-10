@@ -130,7 +130,7 @@ int btstack_main(int argc, const char * argv[]){
     l2cap_init();
     rfcomm_init();
     
-    hfp_ag_init(rfcomm_channel_nr);
+    // TODO: hfp_ag_init(rfcomm_channel_nr);
     hfp_register_packet_handler(packet_handler);
     
     sdp_init();

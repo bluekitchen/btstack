@@ -62,6 +62,9 @@
 #include "hfp_ag.h"
 
 static const char default_hfp_ag_service_name[] = "Voice gateway";
+static uint16_t hfp_supported_features = HFP_Default_HF_Supported_Features;
+static uint8_t hfp_codecs_nr = 0;
+static uint8_t hfp_codecs[HFP_MAX_NUM_CODECS];
 
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -79,31 +82,61 @@ void hfp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char 
      */
 }
 
-
 static void hfp_run(hfp_connection_t * connection){
     if (!connection) return;
-    
+
     switch (connection->state){
+        case HFP_W4_SUPPORTED_FEATURES_EXCHANGE:
+            
+            break;
         default:
             break;
     }
+}
+
+hfp_connection_t * hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    hfp_connection_t * context = get_hfp_connection_context_for_rfcomm_cid(channel);
+    if (!context) return NULL;
+    while (size > 0 && (packet[0] == '\n' || packet[0] == '\r')){
+        size--;
+        packet++;
+    }
+
+    return context;
 }
 
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
     hfp_connection_t * context = NULL;
 
-    if (packet_type == RFCOMM_DATA_PACKET){
-        hfp_run(context);
-        return;  
-    }    
-    context = handle_hci_event(packet_type, packet, size);
+    switch (packet_type){
+        case RFCOMM_DATA_PACKET:
+            context = hfp_handle_rfcomm_event(packet_type, channel, packet, size);
+            break;
+        case HCI_EVENT_PACKET:
+            context = hfp_handle_hci_event(packet_type, packet, size);
+            break;
+        default:
+            break;
+        }
     hfp_run(context);
 }
 
-void hfp_ag_init(uint16_t rfcomm_channel_nr){
-    rfcomm_register_packet_handler(packet_handler);
+void hfp_ag_init(uint16_t rfcomm_channel_nr, uint16_t supported_features, uint8_t * codecs, int codecs_nr){
+    if (codecs_nr > HFP_MAX_NUM_CODECS){
+        log_error("hfp_init: codecs_nr (%d) > HFP_MAX_NUM_CODECS (%d)", codecs_nr, HFP_MAX_NUM_CODECS);
+        return;
+    }
     hfp_init(rfcomm_channel_nr);
+    rfcomm_register_packet_handler(packet_handler);
+    // connection->codecs = codecs;
+    hfp_supported_features = supported_features;
+    hfp_codecs_nr = codecs_nr;
+
+    int i;
+    for (i=0; i<codecs_nr; i++){
+        hfp_codecs[i] = codecs[i];
+    }
 }
 
 void hfp_ag_connect(bd_addr_t bd_addr){

@@ -614,6 +614,11 @@ extern "C" {
 #define HSP_SUBEVENT_ERROR                                 0x07
 #define HSP_SUBEVENT_RING                                  0x08
 
+#define HCI_EVENT_HFP_META                                 0xE9
+
+#define HFP_SUBEVENT_AUDIO_CONNECTION_COMPLETE             0x01
+#define HFP_SUBEVENT_SUPPORTED_FEATURES_EXCHANGE           0x02
+
 
 // ANCS Client
 #define ANCS_CLIENT_CONNECTED                              0xF0
