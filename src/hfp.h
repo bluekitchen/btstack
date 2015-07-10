@@ -145,7 +145,6 @@ hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 // TODO: move to utils
 int send_str_over_rfcomm(uint16_t cid, char * command);
 void join(char * buffer, int buffer_size, int buffer_offset, uint8_t * values, int values_nr);
-void emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value);
 
 #if defined __cplusplus
 }

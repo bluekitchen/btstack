@@ -88,7 +88,7 @@ void join(char * buffer, int buffer_size, int buffer_offset, uint8_t * values, i
     buffer[pos] = '\0';
 }
 
-void emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value){
+static void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value){
     if (!callback) return;
     uint8_t event[4];
     event[0] = HCI_EVENT_HFP_META;
@@ -334,7 +334,7 @@ hfp_connection_t * hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, ui
 
             if (packet[2]) {
                 hfp_reset_state(context);
-                emit_event(context->callback, HFP_SUBEVENT_AUDIO_CONNECTION_COMPLETE, packet[2]);
+                hfp_emit_event(context->callback, HFP_SUBEVENT_AUDIO_CONNECTION_COMPLETE, packet[2]);
             } else {
                 context->con_handle = READ_BT_16(packet, 9);
                 context->rfcomm_cid = READ_BT_16(packet, 12);
