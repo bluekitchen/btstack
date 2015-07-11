@@ -1172,6 +1172,8 @@ static int l2cap_channel_ready_for_open(l2cap_channel_t *channel){
     // log_info("l2cap_channel_ready_for_open 0x%02x", channel->state_var);
     if ((channel->state_var & L2CAP_CHANNEL_STATE_VAR_RCVD_CONF_RSP) == 0) return 0;
     if ((channel->state_var & L2CAP_CHANNEL_STATE_VAR_SENT_CONF_RSP) == 0) return 0;
+    // addition check that fixes re-entrance issue causing l2cap event channel opened twice
+    if (channel->state == L2CAP_STATE_OPEN) return 0;
     return 1;
 }
 
