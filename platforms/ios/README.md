@@ -35,12 +35,42 @@ Set the $THEOS environment variable to the location of theos, e.g. like:
 
 Go to btstack/platforms/ios and run make
 
-	cd btstack
+	cd btstack/platforms/ios
 	make package
 
 If everything went right, you'll end up with a .deb package that you can install via:
 
 	make install
+
+
+## Console Examples
+
+With THEOS set-up as before, you can compile and install a set of command line examples in the example folder:
+
+	cd btstack/platforms/ios/example
+	make
+
+You can copy the created examples to your device using scp
+
+
+## Wii Mote CoocaTouch example
+
+Similar as before, you can compile the WiiMoteOpenGLDemo by running make:
+
+	cd btstack/platforms/ios/example/WiiMoteOpenGLDemo
+	make package
+
+You'll end up with a deb file that you can install with
+
+ 	make install
+
+Note: as with any other JB application, you need to refresh the SpringBoard icon cache on the device to make the icon show up.
+	
+	su mobile
+	uicache
+	exit
+
+
 
 
 
