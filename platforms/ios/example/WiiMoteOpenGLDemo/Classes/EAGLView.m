@@ -275,7 +275,7 @@
                                                          texWidth, texHeight,
                                                          8, texWidth * 4,
                                                          CGImageGetColorSpace(textureImage),
-                                                         kCGImageAlphaPremultipliedLast);
+                                                         (CGBitmapInfo)kCGImageAlphaPremultipliedLast);
 	CGContextDrawImage(textureContext, CGRectMake(0.0, 0.0, (float)texWidth, (float)texHeight), textureImage);
 	CGContextRelease(textureContext);
 	
@@ -317,16 +317,6 @@
 - (void)setAnimationTimer:(NSTimer *)newTimer {
     [animationTimer invalidate];
     animationTimer = newTimer;
-}
-
-
-- (void)setAnimationInterval:(NSTimeInterval)interval {
-    
-    animationInterval = interval;
-    if (animationTimer) {
-        [self stopAnimation];
-        [self startAnimation];
-    }
 }
 
 - (void)checkGLError:(BOOL)visibleCheck {
