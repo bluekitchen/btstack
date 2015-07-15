@@ -54,7 +54,9 @@ extern "C" {
 
 #define HFP_Default_HF_Supported_Features 0x0000
 #define HFP_Default_AG_Supported_Features 0x0009
+
 #define HFP_MAX_NUM_CODECS 20
+#define HFP_MAX_NUM_INDICATORS 20
 
 /* AT+BRSF Result: 
 0: EC and/or NR function
@@ -92,24 +94,25 @@ extern "C" {
 #define HFP_Generic_Status_Indicator "+BIND"
 #define HFP_OK "OK"
 
+#define HFP_Codec_CSVD 0x01
+#define HFP_Codec_mSBC 0x02
+
 
 typedef enum {
     HFP_IDLE,
     HFP_SDP_QUERY_RFCOMM_CHANNEL,
     HFP_W4_SDP_QUERY_COMPLETE,
     HFP_W4_RFCOMM_CONNECTED,
-    HFP_W4_SUPPORTED_FEATURES_EXCHANGE,
-    HFP_W4_CODEC_NEGOTIATION,
-    HFP_W4_INDICATORS,
-    HFP_W4_INDICATORS_STATUS,
-    HFP_W4_INDICATORS_STATUS_UPDATE,
-    HFP_W4_CAN_HOLD_CALL,
-    HFP_W4_GENERIC_STATUS_INDICATORS,
-    HFP_W4_HF_GENERIC_STATUS_INDICATORS,
-    HFP_W4_AG_GENERIC_STATUS_INDICATORS,
-    HFP_W4_INITITAL_STATE_GENERIC_STATUS_INDICATORS,
-
-    HFP_CMD_SENT,
+    HFP_EXCHANGE_SUPPORTED_FEATURES,
+    HFP_NOTIFY_ON_CODECS,
+    HFP_RETRIEVE_INDICATORS,
+    HFP_RETRIEVE_INDICATORS_STATUS,
+    HFP_ENABLE_INDICATORS_STATUS_UPDATE,
+    HFP_RETRIEVE_CAN_HOLD_CALL,
+    
+    HFP_LIST_GENERIC_STATUS_INDICATORS,
+    HFP_RETRIEVE_GENERIC_STATUS_INDICATORS,
+    HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS,
     
     HFP_ACTIVE,
     HFP_W2_DISCONNECT_RFCOMM,
@@ -129,7 +132,17 @@ typedef struct hfp_connection {
     uint16_t rfcomm_cid;
 
     uint8_t  wait_ok;
-    uint8_t * codecs;
+    uint8_t  negotiated_codec;
+
+    uint32_t remote_supported_features;
+    uint8_t  remote_indicators_update_enabled;
+    uint8_t  remote_indicators_nr;
+    uint16_t remote_indicators[20];
+    uint32_t remote_indicators_status;
+
+    uint8_t  remote_hf_indicators_nr;
+    uint16_t remote_hf_indicators[20];
+    uint32_t remote_hf_indicators_status;
 
     hfp_callback_t callback;
 } hfp_connection_t;
@@ -144,7 +157,7 @@ hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 
 // TODO: move to utils
 int send_str_over_rfcomm(uint16_t cid, char * command);
-void join(char * buffer, int buffer_size, int buffer_offset, uint8_t * values, int values_nr);
+void join(char * buffer, int buffer_size, int buffer_offset, uint8_t * values, int values_nr, int value_size);
 
 #if defined __cplusplus
 }

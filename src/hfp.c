@@ -72,19 +72,24 @@ int send_str_over_rfcomm(uint16_t cid, char * command){
     return err;
 }
 
-void join(char * buffer, int buffer_size, int buffer_offset, uint8_t * values, int values_nr){
-    int req_size = values_nr * 2;
+void join(char * buffer, int buffer_size, int buffer_offset, uint8_t * values, int values_nr, int value_size){
+    int req_size = values_nr * (value_size + 1);
     if (buffer_size - buffer_offset < req_size ) {
         log_error("join: buffer too small (size: %u. req: %u)", buffer_size, req_size);
         return;
     }
     int pos = buffer_offset;
-    int i;
+    int i,j,k;
+    k = 0;
     for (i = 0; i < values_nr-1; i++){
-        buffer[pos++] = values[i];
+        for (j=0; j<value_size; j++){
+            buffer[pos++] = values[k++];
+        }
         buffer[pos++] = ',';
     }
-    buffer[pos++] = values[i];
+    for (j=0; j<value_size; j++){
+        buffer[pos++] = values[k++];
+    }
     buffer[pos] = '\0';
 }
 
@@ -141,6 +146,12 @@ static hfp_connection_t * create_hfp_connection_context(){
     if (!context) return NULL;
     // init state
     context->state = HFP_IDLE;
+    context->negotiated_codec = HFP_Codec_CSVD;
+    context->remote_supported_features = 0;
+    context->remote_indicators_update_enabled = 0;
+    context->remote_indicators_nr = 0;
+    context->remote_indicators_status = 0;
+
     linked_list_add(&hfp_connections, (linked_item_t*)context);
     return context;
 }
@@ -339,7 +350,7 @@ hfp_connection_t * hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, ui
                 context->con_handle = READ_BT_16(packet, 9);
                 context->rfcomm_cid = READ_BT_16(packet, 12);
                 uint16_t mtu = READ_BT_16(packet, 14);
-                context->state = HFP_W4_SUPPORTED_FEATURES_EXCHANGE;
+                context->state = HFP_EXCHANGE_SUPPORTED_FEATURES;
                 printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", context->rfcomm_cid, mtu);
             }
             break;
@@ -374,4 +385,18 @@ void hfp_connect(bd_addr_t bd_addr, uint16_t service_uuid){
     connection_doing_sdp_query = connection;
     sdp_query_rfcomm_channel_and_name_for_uuid(connection->remote_addr, service_uuid);
 }
+
+void hfp_set_codec(hfp_connection_t * context, uint8_t *packet, uint16_t size){
+    // parse available codecs
+    int pos = 0;
+    int i;
+    for (i=0; i<size; i++){
+        pos+=8;
+        if (packet[pos] > context->negotiated_codec){
+            context->negotiated_codec = packet[pos];
+        }
+    }
+    printf("Negotiated Codec 0x%02x\n", context->negotiated_codec);
+}
+
 
