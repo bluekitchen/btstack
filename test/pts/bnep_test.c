@@ -258,17 +258,21 @@ static void send_some_ipv6_packet_2(void){
 }
 #endif
 
+static uint16_t sum_ones_complement(uint16_t a, uint16_t b){
+    uint32_t sum = a + b;
+    while (sum > 0xffff){
+        sum = (sum & 0xffff) + 1;
+    }
+    return sum;
+}
+
 static uint16_t calc_internet_checksum(uint8_t * data, int size){
     uint32_t checksum = 0;
     while (size){
         // add 16-bit value
-        checksum += *(uint16_t*)data;
+        checksum = sum_ones_complement(checksum, *(uint16_t*)data);
         data += 2;
         size -= 2;
-        // handle end-aroud-carry
-        while (checksum > 0xffff){
-            checksum = (checksum & 0xffff) + 1;
-        }
     }
     return checksum;
 }
@@ -312,7 +316,53 @@ static void send_ping_request_ipv4(void){
     send_buffer(pos);
 }
 
-static void send_ping_response(bd_addr_t src_addr, bd_addr_t dst_addr){
+static void send_ping_request_ipv6(void){
+
+    uint8_t ipv6_packet[] = {
+        // ip
+        0x60, 0x00, 0x00, 0x00, // version (4) + traffic class (8) + flow label (24)
+        0x00, 0x00,   58, 0x01, // payload length(16), next header = IPv6-ICMP, hop limit
+        0x00, 0x00, 0x00, 0x00, // source IP address
+        0x00, 0x00, 0x00, 0x00, // source IP address
+        0x00, 0x00, 0x00, 0x00, // source IP address
+        0x00, 0x00, 0x00, 0x00, // source IP address
+        0x00, 0x00, 0x00, 0x00, // destination IP address
+        0x00, 0x00, 0x00, 0x00, // destination IP address
+        0x00, 0x00, 0x00, 0x00, // destination IP address
+        0x00, 0x00, 0x00, 0x00, // destination IP address
+    };
+
+    uint8_t icmp_packet[] = {
+        // icmp
+        0x80, 0x00, 0x00, 0x00, // type: 0x08 PING Request, codde = 0, checksum(16)
+        0x00, 0x00, 0x00, 0x00  // message
+    };
+
+    // ethernet header
+    int pos = setup_ethernet_header(1, 0, 0, NETWORK_TYPE_IPv4); // IPv4
+    
+    // ipv6
+    int payload_length = sizeof(icmp_packet);
+    net_store_16(ipv6_packet, 4, payload_length);
+    // TODO: also set src/dest ip address
+    int checksum = calc_internet_checksum(&ipv6_packet[8], 32);
+    checksum = sum_ones_complement(checksum, sizeof(ipv6_packet) + sizeof(icmp_packet));
+    checksum = sum_ones_complement(checksum, 58 << 8);
+    net_store_16(icmp_packet, 2, checksum);
+    memcpy(&network_buffer[pos], ipv6_packet, sizeof(ipv6_packet));
+    pos += sizeof(ipv6_packet);
+
+    // icmp
+    uint16_t icmp_checksum = calc_internet_checksum(icmp_packet, sizeof(icmp_packet));
+    net_store_16(icmp_packet, 2, icmp_checksum);    
+    memcpy(&network_buffer[pos], icmp_packet, sizeof(icmp_packet));
+    pos += sizeof(icmp_packet);
+
+    // send
+    send_buffer(pos);
+}
+
+static void send_ping_response_ipv4(void){
 
     uint8_t ipv4_packet[] = {
         // ip
@@ -367,6 +417,7 @@ static void show_usage(void){
     printf("m - set multicast network filter\n");
     printf("---\n");
     printf("1 - send ICMP Ping Request IPv4\n");
+    printf("2 - send ICMP Ping Request IPv6\n");
 #if 0
     printf("1 - get IP address via DHCP\n");
     printf("2 - send DNS request\n");
@@ -416,6 +467,10 @@ static int stdin_process(struct data_source *ds){
         case '1':
             printf("Sending ICMP Ping via IPv4\n");
             send_ping_request_ipv4();
+            break;
+        case '2':
+            printf("Sending ICMP Ping via IPv6\n");
+            send_ping_request_ipv6();
             break;
 #if 0
         case '4':
@@ -521,14 +576,19 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             break;
         case BNEP_DATA_PACKET:
             // show received packet on console
+
+            // TODO: fix BNEP to return BD ADDR in little endian, to use these lines
             // bt_flip_addr(dst_addr, &packet[0]);
             // bt_flip_addr(src_addr, &packet[6]);
+            // instead of these
             memcpy(dst_addr, &packet[0], 6);
             memcpy(src_addr, &packet[6], 6);
+            // END TOOD
+
             network_type = READ_NET_16(packet, 12);
             printf("BNEP packet received\n");
-            printf("Dst Addr: %s\n", bd_addr_to_str(&packet[0]));
-            printf("Src Addr: %s\n", bd_addr_to_str(&packet[6]));
+            printf("Dst Addr: %s\n", bd_addr_to_str(dst_addr));
+            printf("Src Addr: %s\n", bd_addr_to_str(src_addr));
             printf("Net Type: %04x\n", network_type);
             // ignore the next 60 bytes
             hexdumpf(&packet[74], size - 74);
@@ -543,7 +603,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     switch (icmp_type){
                         case ICMP_TYPE_PING_REQUEST:
                             printf("IPv4 Ping Request received, sending pong\n");
-                            send_ping_response(src_addr, dst_addr);
+                            send_ping_response_ipv4();
                             break;
                         break;
                     }
