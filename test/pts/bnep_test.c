@@ -160,6 +160,8 @@ static void set_multicast_filter(void){
     bnep_set_multicast_filter(bnep_cid, multicast_filter, 1);
 }
 
+#if 0
+
 /* From RFC 5227 - 2.1.1
    A host probes to see if an address is already in use by broadcasting
    an ARP Request for the desired address.  The client MUST fill in the
@@ -206,7 +208,6 @@ static void send_arp_probe_ipv6(void){
     
 }
 
-#if 0
 static void send_dhcp_discovery(void){
     
 }
@@ -218,7 +219,6 @@ static void send_dhcp_request(void){
 static void send_dns_request(void){
     
 }
-#endif
 
 static void send_some_ipv6_packet(void){
 
@@ -256,6 +256,7 @@ static void send_some_ipv6_packet_2(void){
     pos += sizeof(ipv6_packet);
     send_buffer(pos);
 }
+#endif
 
 static uint16_t calc_internet_checksum(uint8_t * data, int size){
     uint32_t checksum = 0;
@@ -270,6 +271,45 @@ static uint16_t calc_internet_checksum(uint8_t * data, int size){
         }
     }
     return checksum;
+}
+
+static void send_ping_request_ipv4(void){
+
+    uint8_t ipv4_packet[] = {
+        // ip
+        0x45, 0x00, 0x00, 0x00,   // version + ihl, dscp } ecn, total len
+        0x00, 0x00, 0x00, 0x00, // identification (16), flags + fragment offset
+        0x01, 0x01, 0x00, 0x00, // time to live, procotol: icmp, checksum (16),
+        0x00, 0x00, 0x00, 0x00, // source IP address
+        0x00, 0x00, 0x00, 0x00, // destination IP address
+    };
+
+    uint8_t icmp_packet[] = {
+        // icmp
+        0x08, 0x00, 0x00, 0x00, // type: 0x08 PING Request
+        0x00, 0x00, 0x00, 0x00
+    };
+
+    // ethernet header
+    int pos = setup_ethernet_header(1, 0, 0, NETWORK_TYPE_IPv4); // IPv4
+    
+    // ipv4
+    int total_length = sizeof(ipv4_packet) + sizeof(icmp_packet);
+    net_store_16(ipv4_packet, 2, total_length);
+    uint16_t ipv4_checksum = calc_internet_checksum(ipv4_packet, sizeof(ipv4_packet));
+    net_store_16(ipv4_packet, 10, ipv4_checksum);    
+    // TODO: also set src/dest ip address
+    memcpy(&network_buffer[pos], ipv4_packet, sizeof(ipv4_packet));
+    pos += sizeof(ipv4_packet);
+
+    // icmp
+    uint16_t icmp_checksum = calc_internet_checksum(icmp_packet, sizeof(icmp_packet));
+    net_store_16(icmp_packet, 2, icmp_checksum);    
+    memcpy(&network_buffer[pos], icmp_packet, sizeof(icmp_packet));
+    pos += sizeof(icmp_packet);
+
+    // send
+    send_buffer(pos);
 }
 
 static void send_ping_response(bd_addr_t src_addr, bd_addr_t dst_addr){
@@ -290,7 +330,7 @@ static void send_ping_response(bd_addr_t src_addr, bd_addr_t dst_addr){
     };
 
     // ethernet header
-    int pos = setup_ethernet_header(1, 0, 0, NETWORK_TYPE_IPv6); // IPv6
+    int pos = setup_ethernet_header(1, 0, 0, NETWORK_TYPE_IPv4); // IPv4
     
     // ipv4
     int total_length = sizeof(ipv4_packet) + sizeof(icmp_packet);
@@ -326,12 +366,15 @@ static void show_usage(void){
     printf("f - set network filter\n");
     printf("m - set multicast network filter\n");
     printf("---\n");
+    printf("1 - send ICMP Ping Request IPv4\n");
+#if 0
     printf("1 - get IP address via DHCP\n");
     printf("2 - send DNS request\n");
     printf("4 - send IPv4 ARP request\n");
     printf("6 - send IPv6 ARP request\n");
     printf("9 - send some IPv6 packet\n");
     printf("0 - send some IPv6 packet 2\n");
+#endif
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -370,6 +413,11 @@ static int stdin_process(struct data_source *ds){
             printf("Setting multicast filter\n");
             set_multicast_filter();
             break;
+        case '1':
+            printf("Sending ICMP Ping via IPv4\n");
+            send_ping_request_ipv4();
+            break;
+#if 0
         case '4':
             printf("Sending IPv4 ARP Probe\n");
             send_arp_probe_ipv4();
@@ -386,6 +434,7 @@ static int stdin_process(struct data_source *ds){
             printf("Sending some IPv6 packet 2\n");
             send_some_ipv6_packet_2();
             break;
+#endif
         default:
             show_usage();
             break;
