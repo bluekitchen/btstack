@@ -168,9 +168,11 @@ int has_hf_indicators_feature(hfp_connection_t * connection){
     return get_bit(hfp_supported_features,8) && get_bit(connection->remote_supported_features,10);
 }
 
-static void hfp_run(hfp_connection_t * connection){
+
+static void hfp_run_for_context(hfp_connection_t * connection){
     if (!connection) return;
-    
+    if (!rfcomm_can_send_packet_now(connection->rfcomm_cid)) return;
+
     int err = 0;
     switch (connection->state){
         case HFP_EXCHANGE_SUPPORTED_FEATURES:
@@ -178,30 +180,38 @@ static void hfp_run(hfp_connection_t * connection){
             err = hfp_hs_exchange_supported_features_cmd(connection->rfcomm_cid);
             break;
         case HFP_NOTIFY_ON_CODECS:
+            log_info("HFP_NOTIFY_ON_CODECS 0x%02x", connection->rfcomm_cid);
             err = hfp_hs_retrieve_codec_cmd(connection->rfcomm_cid);
             break;
         case HFP_RETRIEVE_INDICATORS:
+            log_info("HFP_RETRIEVE_INDICATORS 0x%02x", connection->rfcomm_cid);
             err = hfp_hs_retrieve_indicators_cmd(connection->rfcomm_cid);
             break;
         case HFP_RETRIEVE_INDICATORS_STATUS:
+            log_info("HFP_RETRIEVE_INDICATORS_STATUS 0x%02x", connection->rfcomm_cid);
             err = hfp_hs_retrieve_indicators_cmd(connection->rfcomm_cid);
             break;
         case HFP_ENABLE_INDICATORS_STATUS_UPDATE:
             err = 0;
             if (connection->remote_indicators_update_enabled == 0){
+                log_info("HFP_ENABLE_INDICATORS_STATUS_UPDATE 0x%02x", connection->rfcomm_cid);
                 err = hfp_hs_toggle_indicator_status_update_cmd(connection->rfcomm_cid);
             }
             break;
         case HFP_RETRIEVE_CAN_HOLD_CALL:
+            log_info("HFP_RETRIEVE_CAN_HOLD_CALL 0x%02x", connection->rfcomm_cid);
             err = hfp_hs_retrieve_can_hold_call_cmd(connection->rfcomm_cid);
             break;
         case HFP_LIST_GENERIC_STATUS_INDICATORS:
+            log_info("HFP_LIST_GENERIC_STATUS_INDICATORS 0x%02x", connection->rfcomm_cid);
             err = hfp_hs_list_supported_generic_status_indicators_cmd(connection->rfcomm_cid);
             break;
         case HFP_RETRIEVE_GENERIC_STATUS_INDICATORS:
+            log_info("HFP_RETRIEVE_GENERIC_STATUS_INDICATORS 0x%02x", connection->rfcomm_cid);
             err = hfp_hs_retrieve_supported_generic_status_indicators_cmd(connection->rfcomm_cid);
             break;
         case HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
+            log_info("HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS 0x%02x", connection->rfcomm_cid);
             err = hfp_hs_list_initital_supported_generic_status_indicators_cmd(connection->rfcomm_cid);
             break;
         default:
@@ -210,7 +220,7 @@ static void hfp_run(hfp_connection_t * connection){
 }
 
 hfp_connection_t * hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    hfp_connection_t * context = get_hfp_connection_context_for_rfcomm_cid(channel);
+    hfp_connection_t * context = provide_hfp_connection_context_for_rfcomm_cid(channel);
     int offset = 0;
 
     if (!context) return NULL;
@@ -218,7 +228,6 @@ hfp_connection_t * hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel
         size--;
         packet++;
     }
-    printf("packet_handler packet size %u\n", size);
     
     if (context->wait_ok){
         if (strncmp((char *)packet, HFP_OK, strlen(HFP_OK)) == 0){
@@ -351,21 +360,26 @@ hfp_connection_t * hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel
     return context;
 }
 
-static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    // printf("packet_handler type %u, packet[0] %x\n", packet_type, packet[0]);
-    hfp_connection_t * context = NULL;
+static void hfp_run(){
+    linked_item_t *it;
+    for (it = hfp_get_connections(); it ; it = it->next){
+        hfp_connection_t * connection = (hfp_connection_t *) it;
+        hfp_run_for_context(connection);
+    }
+}
 
+static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet_type){
         case RFCOMM_DATA_PACKET:
-            context = hfp_handle_rfcomm_event(packet_type, channel, packet, size);
+            hfp_handle_rfcomm_event(packet_type, channel, packet, size);
             break;
         case HCI_EVENT_PACKET:
-            context = hfp_handle_hci_event(packet_type, packet, size);
+            hfp_handle_hci_event(packet_type, packet, size);
             break;
         default:
             break;
     }
-    hfp_run(context);
+    hfp_run();
 }
 
 void hfp_hf_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, uint8_t * codecs, int codecs_nr, uint16_t * indicators, int indicators_nr, uint32_t indicators_status){
