@@ -106,13 +106,13 @@ static void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8
 }
 
 
-linked_item_t * hfp_get_connections(){
-    return (linked_item_t *) &hfp_connections;
+linked_list_t * hfp_get_connections(){
+    return (linked_list_t *) &hfp_connections;
 } 
 
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid){
     linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, &hfp_connections);
+    linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
         hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
         if (connection->rfcomm_cid == cid){
@@ -124,7 +124,7 @@ hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid){
 
 static hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr){
     linked_list_iterator_t it;  
-    linked_list_iterator_init(&it, &hfp_connections);
+    linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
         hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
         if (memcmp(connection->remote_addr, bd_addr, 6) == 0) {
@@ -164,6 +164,7 @@ hfp_connection_t * provide_hfp_connection_context_for_rfcomm_cid(uint16_t rfcomm
     hfp_connection_t * context = get_hfp_connection_context_for_rfcomm_cid(rfcomm_cid);
     if (context) return  context;
     context = create_hfp_connection_context();
+    printf("Set RFCOMM cid %p %u\n", context, context->rfcomm_cid);
     context->rfcomm_cid = rfcomm_cid;
     return context;
 }

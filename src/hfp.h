@@ -202,7 +202,7 @@ void hfp_init(uint16_t rfcomm_channel_nr);
 void hfp_connect(bd_addr_t bd_addr, uint16_t service_uuid);
 
 hfp_connection_t * provide_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
-linked_item_t * hfp_get_connections();
+linked_list_t * hfp_get_connections();
 
 // TODO: move to utils
 int send_str_over_rfcomm(uint16_t cid, char * command);
