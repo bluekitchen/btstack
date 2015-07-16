@@ -9,6 +9,7 @@ SUBDIRS =  \
 	linked_list \
 	remote_device_db \
 	sdp_client \
+	security_manager \
 
 #	security_manager \
 
