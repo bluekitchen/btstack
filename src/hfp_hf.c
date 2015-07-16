@@ -304,7 +304,8 @@ hfp_connection_t * hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel
 
     if (strncmp((char *)packet, HFP_Support_Call_Hold_And_Multiparty_Services, strlen(HFP_Support_Call_Hold_And_Multiparty_Services)) == 0){
         offset = strlen(HFP_Support_Call_Hold_And_Multiparty_Services) + 1; // +1 for =
-        // TODO
+        printf("AT+CHLD %s, offset %u, size %u\n", (char *)&packet[offset], offset, size);
+        
         context->wait_ok = 1;
         return context;
     } 
@@ -365,13 +366,13 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
     hfp_run(context);
 }
 
-void hfp_hf_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, uint8_t * codecs, int codecs_nr, uint16_t * indicators, int indicators_nr, uint8_t indicators_status){
+void hfp_hf_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, uint8_t * codecs, int codecs_nr, uint16_t * indicators, int indicators_nr, uint32_t indicators_status){
     if (codecs_nr > HFP_MAX_NUM_CODECS){
         log_error("hfp_init: codecs_nr (%d) > HFP_MAX_NUM_CODECS (%d)", codecs_nr, HFP_MAX_NUM_CODECS);
         return;
     }
-    hfp_init(rfcomm_channel_nr);
     rfcomm_register_packet_handler(packet_handler);
+    hfp_init(rfcomm_channel_nr);
     
     int i;
     

@@ -139,7 +139,7 @@ typedef struct hfp_connection {
     uint8_t  remote_indicators_nr;
     uint16_t remote_indicators[20];
     uint32_t remote_indicators_status;
-
+    
     uint8_t  remote_hf_indicators_nr;
     uint16_t remote_hf_indicators[20];
     uint32_t remote_hf_indicators_status;

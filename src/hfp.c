@@ -288,6 +288,7 @@ static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context)
             
             if (connection->rfcomm_channel_nr > 0){
                 connection->state = HFP_W4_RFCOMM_CONNECTED;
+                log_info("HFP: SDP_QUERY_COMPLETE context %p, addr %s, state %d", connection, bd_addr_to_str( connection->remote_addr),  connection->state);
                 rfcomm_create_channel_internal(NULL, connection->remote_addr, connection->rfcomm_channel_nr); 
                 break;
             }
@@ -338,11 +339,10 @@ hfp_connection_t * hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, ui
 
         case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
             // data: event(8), len(8), status (8), address (48), handle(16), server channel(8), rfcomm_cid(16), max frame size(16)
-            bt_flip_addr(event_addr, &packet[2]); 
+            bt_flip_addr(event_addr, &packet[3]); 
             context = provide_hfp_connection_context_for_bd_addr(event_addr);
-        
             if (!context || context->state != HFP_W4_RFCOMM_CONNECTED) return context;
-
+            
             if (packet[2]) {
                 hfp_reset_state(context);
                 hfp_emit_event(context->callback, HFP_SUBEVENT_AUDIO_CONNECTION_COMPLETE, packet[2]);
@@ -351,7 +351,6 @@ hfp_connection_t * hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, ui
                 context->rfcomm_cid = READ_BT_16(packet, 12);
                 uint16_t mtu = READ_BT_16(packet, 14);
                 context->state = HFP_EXCHANGE_SUPPORTED_FEATURES;
-                printf("RFCOMM channel open succeeded. New RFCOMM Channel ID %u, max frame size %u\n", context->rfcomm_cid, mtu);
             }
             break;
         case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -373,6 +372,8 @@ void hfp_init(uint16_t rfcomm_channel_nr){
 
 void hfp_connect(bd_addr_t bd_addr, uint16_t service_uuid){
     hfp_connection_t * connection = provide_hfp_connection_context_for_bd_addr(bd_addr);
+    log_info("hfp_connect %s, context %p", bd_addr_to_str(bd_addr), connection);
+    
     if (!connection) {
         log_error("hfp_hf_connect for addr %s failed", bd_addr_to_str(bd_addr));
         return;

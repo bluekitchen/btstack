@@ -70,11 +70,11 @@
 
 const uint32_t   hfp_service_buffer[150/4]; // implicit alignment to 4-byte memory address
 const uint8_t    rfcomm_channel_nr = 1;
-const char hfp_hf_service_name[] = "Headset Test";
+const char hfp_hf_service_name[] = "BTstack HF Test";
 
 static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t local_mac = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
-    
+
 // prototypes
 static void show_usage();
 
@@ -83,9 +83,9 @@ static void show_usage();
 static void show_usage(void){
     printf("\n--- Bluetooth HFP Hands-Free (HF) unit Test Console ---\n");
     printf("---\n");
-    printf("p - establish audio connection to PTS module\n");
-    printf("e - establish audio connection to local mac\n");
-    printf("d - release audio connection from Bluetooth Speaker\n");
+    printf("p - establish HFP connection to PTS module\n");
+    printf("e - establish HFP connection to local mac\n");
+    printf("d - release HFP connection\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -97,15 +97,15 @@ static int stdin_process(struct data_source *ds){
 
     switch (buffer){
         case 'p':
-            printf("Establishing audio connection to PTS module %s...\n", bd_addr_to_str(pts_addr));
+            printf("Establishing HFP connection to PTS module %s...\n", bd_addr_to_str(pts_addr));
             hfp_hf_connect(pts_addr);
             break;
         case 'e':
-            printf("Establishing audio connection to local mac %s...\n", bd_addr_to_str(local_mac));
+            printf("Establishing HFP connection to local mac %s...\n", bd_addr_to_str(local_mac));
             hfp_hf_connect(local_mac);
             break;
         case 'd':
-            printf("Releasing audio connection.\n");
+            printf("Releasing HFP connection.\n");
             hfp_hf_disconnect(pts_addr);
             break;
         default:
@@ -126,10 +126,14 @@ void packet_handler(uint8_t * event, uint16_t event_size){
 
 int btstack_main(int argc, const char * argv[]){
     // init L2CAP
+    uint8_t codecs[1] = {HFP_Codec_CSVD};
+    uint16_t indicators[1] = {0x01};
+
     l2cap_init();
     rfcomm_init();
     
-    // TODO: hfp_hf_init(rfcomm_channel_nr);
+    hfp_hf_init(rfcomm_channel_nr, HFP_Default_HF_Supported_Features, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
+
     hfp_register_packet_handler(packet_handler);
 
     sdp_init();
