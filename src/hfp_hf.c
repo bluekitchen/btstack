@@ -227,63 +227,57 @@ static void hfp_run_for_context(hfp_connection_t * connection){
 }
 
 void hfp_parse_indicators(hfp_connection_t * context, uint8_t *packet, uint16_t size){
-    uint8_t parse_indicator = 0;
-    uint8_t parse_range = 0;
-    uint8_t parse_max_range = 0;
-    uint8_t byte;
     char indicator[10];
     char min_range[3];
     char max_range[3];
+    int i, pos;
+    int index = 0;
+    int state = 0;
+    
+    for (pos = 0; pos < size; pos++){
+        uint8_t byte = packet[pos];
 
-    int i;
-    int pos = 0;
-
-    while ( pos < size ){
-        while (!parse_indicator && pos < size){
-            byte = packet[pos++];
-            if (byte == '"'){
-                parse_indicator = 1;
-                break;
-            }
-        }
-        i = 0;
-        while (parse_indicator && pos < size){
-            byte = packet[pos++];
-            if (byte == '"'){
-                parse_indicator = 0;
-                indicator[i] = 0;
-                break;
-            } 
-            indicator[i++] = byte;
-        }
-
-        while (!parse_range && pos < size){
-            byte = packet[pos++];
-            if (byte == '('){
-                parse_range = 1;
-            }
-        }
-        i = 0;
-        while (parse_range && pos < size){
-            byte = packet[pos++];
-            if (byte == ')'){
-                parse_range = 0;
-                parse_max_range = 0;
-                max_range[i] = 0;
-                printf("Indicator %s, min %d, max %d\n", indicator, atoi(min_range), atoi(max_range));
-                break;
-            } 
-            if (byte == ','){
-                parse_max_range = 1;
-                min_range[i] = 0;
+        switch (state){
+            case 0: // pre-indicator
+                if (byte != '"') break;
+                state++;
                 i = 0;
-                continue;
-            }
-            if (parse_max_range){
-                max_range[i++] = byte;
-            } else {
+                break;
+            case 1: // indicator
+                if (byte == '"'){
+                    state++;
+                    indicator[i] = 0;
+                    break;
+                }
+                indicator[i++] = byte;
+                break;
+            case 2: // pre-range
+                if (byte != '(') break;
+                state++;
+                i = 0;
+                break;
+            case 3: // min-range
+                if (byte == ','){
+                    state++;
+                    min_range[i] = 0;
+                    i = 0;
+                    break;
+                }
                 min_range[i++] = byte;
-            }
+                break;
+            case 4:
+                if (byte == ')'){
+                    state = 0;
+                    max_range[i] = 0;
+                    printf("Indicator %d: %s, range [%d, %d] \n", index, indicator, atoi(min_range), atoi(max_range));
+                    index++;
+                    i = 0;
+                    break;
+                }
+                max_range[i++] = byte;
+                break;
+            default:
+                break;
         }
     }
 }
