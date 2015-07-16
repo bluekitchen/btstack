@@ -17,19 +17,20 @@ Please visit the [project page at GitHub](https://github.com/bluekitchen/btstack
 
 ## How to develop
 
-To write BTstack-based applications, you don't need to compile the BTstack Cydia package. You can just install it on your 
-JB iOS device and copy /usr/lib/libBTstack.dylib into your project and add btstack/include to your project includes. 
-See btstack/platforms/example/WiiMoteOpenGLDemo for a Xcode-base example. In general, I highly recommend to use theos
-to create apps & daemons for JB iOS devices instead of using Xcode.
+To write BTstack-based applications, you don't need to compile the BTstack Cydia package.
+You can just install it on your JB iOS device and copy /usr/lib/libBTstack.dylib into your
+project and add btstack/include to your project includes. 
 
-## Compile Instructions
+While it's possible to use Xcode, I highly recommend to use theos to create apps & daemons for JB iOS devices instead.
+
+## Compile Instructions for BTstack package
 
 Install the following tools:
 * Xcode 6.4 as /Applications/Xcode.app
 * Xcode 4.4.1 as /Applications/Xcode-4.4.1.app/
 * [rpetrich's theos fork](https://github.com/rpetrich/theos) with "lippoplastic" support
 
-Set the $THEOS environment variable to the location of theos, e.g. like:
+Set the $THEOS environment variable to the location of the theos checkout, e.g. like:
 
 	export THEOS=/Projects/theos
 
@@ -38,7 +39,7 @@ Go to btstack/platforms/ios and run make
 	cd btstack/platforms/ios
 	make package
 
-If everything went right, you'll end up with a .deb package that you can install via:
+If everything went right, you'll end up with a .deb package that you could install via:
 
 	make install
 
@@ -50,7 +51,7 @@ With THEOS set-up as before, you can compile and install a set of command line e
 	cd btstack/platforms/ios/example
 	make
 
-You can copy the created examples to your device using scp
+You can copy the created examples to your device using scp and run it from there.
 
 
 ## Wii Mote CoocaTouch example
@@ -64,13 +65,8 @@ You'll end up with a deb file that you can install with
 
  	make install
 
-Note: as with any other JB application, you need to refresh the SpringBoard icon cache on the device to make the icon show up.
+Note: as with any other JB application, you need to refresh the SpringBoard icon cache on the device to make the icon show up. After SSH to your device as root, you can execute these commands:
 	
 	su mobile
 	uicache
 	exit
-
-
-
-
-

@@ -73,6 +73,9 @@
 #define NETWORK_TYPE_ARP        0x0806
 #define NETWORK_TYPE_IPv6       0x86DD
 
+#define IPv4_PROTOCOL_ICMP      0x0001
+#define IPv4_PROTOCOL_UDP       0x0011
+
 #define ICMP_V4_TYPE_PING_REQUEST  0x08
 #define ICMP_V4_TYPE_PING_RESPONSE 0x00
 
@@ -417,6 +420,52 @@ static void send_ndp_probe_ipv6(void){
     send_buffer(pos);    
 }
 
+static void send_llmnr_request_ipv4(void){
+
+    uint8_t ipv4_header[] = {
+        0x45, 0x00, 0x00, 0x00,   // version + ihl, dscp } ecn, total len
+        0x00, 0x00, 0x00, 0x00, // identification (16), flags + fragment offset
+        0x01, 0x11, 0x00, 0x00, // time to live, procotol: UDP, checksum (16),
+        192,   168, 167,  152,  // source IP address
+        224,     0,   0,  252, // destination IP address
+    };
+
+    uint8_t udp_header[8];
+    uint8_t llmnr_packet[12];
+
+    // ethernet header
+    int pos = setup_ethernet_header(1, 0, 0, NETWORK_TYPE_IPv4); // IPv4
+
+    // ipv4
+    int total_length = sizeof(ipv4_header) + sizeof(udp_header) + sizeof (llmnr_packet);
+    net_store_16(ipv4_header, 2, total_length);
+    uint16_t ipv4_checksum = calc_internet_checksum(ipv4_header, sizeof(ipv4_header));
+    net_store_16(ipv4_header, 10, ipv4_checksum);    
+    // TODO: also set src/dest ip address
+    memcpy(&network_buffer[pos], ipv4_header, sizeof(ipv4_header));
+    pos += sizeof(ipv4_header);
+
+    // udp packet
+    net_store_16(udp_header, 0, 5355);   // source port
+    net_store_16(udp_header, 2, 5355);   // destination port
+    net_store_16(udp_header, 4, sizeof(udp_header) + sizeof(llmnr_packet));
+    net_store_16(udp_header, 6, 0);      // no checksum
+    memcpy(&network_buffer[pos], udp_header, sizeof(udp_header));
+    pos += sizeof(udp_header);
+
+    // llmnr packet
+    bzero(llmnr_packet, sizeof(llmnr_packet));
+    net_store_16(llmnr_packet, 0, 0x1234);
+    net_store_16(llmnr_packet, 4, 1);   // one query
+
+    memcpy(&network_buffer[pos], llmnr_packet, sizeof(llmnr_packet));
+    pos += sizeof(llmnr_packet);
+
+    // send
+    send_buffer(pos);
+}
+
+
 static void show_usage(void){
 
     printf("\n--- Bluetooth BNEP Test Console ---\n");
@@ -436,6 +485,8 @@ static void show_usage(void){
     printf("2 - send ICMP Ping Request IPv6\n");
     printf("4 - send IPv4 ARP request\n");
     printf("6 - send IPv6 NDP request\n");
+    printf("7 - send IPv4 LLMNR request\n");
+    printf("8 - send IPv6 LLMNR request\n");
 #if 0
     printf("1 - get IP address via DHCP\n");
     printf("2 - send DNS request\n");
@@ -496,16 +547,15 @@ static int stdin_process(struct data_source *ds){
             printf("Sending IPv6 ARP Probe\n");
             send_ndp_probe_ipv6();
             break;
-#if 0
-        case '9':
-            printf("Sending some IPv6 packet\n");
-            send_some_ipv6_packet();
+        case '7':
+            printf("Sending IPv4 LLMNR Request\n");
+            send_llmnr_request_ipv4();
             break;
-        case '0':
-            printf("Sending some IPv6 packet 2\n");
-            send_some_ipv6_packet_2();
+        case '8':
+            printf("Sending IPv6 LLMNR Request\n");
+            printf("(Not implemented yet)\n");
+            // send_llmnr_request_ipv6();
             break;
-#endif
         default:
             show_usage();
             break;
@@ -525,6 +575,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     uint16_t  uuid_dest;
     uint16_t  mtu;    
     uint16_t  network_type;
+    uint8_t   protocol_type;
     uint8_t   icmp_type;
     int       ihl;
     int       payload_offset;
@@ -607,22 +658,41 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
             printf("Src Addr: %s\n", bd_addr_to_str(src_addr));
             printf("Net Type: %04x\n", network_type);
             // ignore the next 60 bytes
-            hexdumpf(&packet[74], size - 74);
+            // hexdumpf(&packet[74], size - 74);
             switch (network_type){
                 case NETWORK_TYPE_IPv4:
                     ihl = packet[14] & 0x0f;
                     payload_offset = 14 + (ihl << 2);
-                    // 
-                    icmp_type = packet[payload_offset];
-                    hexdumpf(&packet[payload_offset], size - payload_offset);
-                    printf("ICMP packet of type %x\n", icmp_type);
-                    switch (icmp_type){
-                        case ICMP_V4_TYPE_PING_REQUEST:
-                            printf("IPv4 Ping Request received, sending pong\n");
-                            send_ping_response_ipv4();
+                    // protocol
+                    protocol_type = packet[14 + 9]; // offset 9 into IPv4
+                    switch (protocol_type){
+                        case 0x01:  // ICMP
+                            icmp_type = packet[payload_offset];
+                            hexdumpf(&packet[payload_offset], size - payload_offset);
+                            printf("ICMP packet of type %x\n", icmp_type);
+                            switch (icmp_type){
+                                case ICMP_V4_TYPE_PING_REQUEST:
+                                    printf("IPv4 Ping Request received, sending pong\n");
+                                    send_ping_response_ipv4();
+                                    break;
+                                break;
+                            }
+                        case 0x11:  // UDP
+                            printf("UDP packet\n");                        
+                            hexdumpf(&packet[payload_offset], size - payload_offset);
                             break;
-                        break;
+                        default:
+                            printf("Unknown IPv4 protocol type %x", protocol_type);
+                            break;
                     }
+                    break;
+                case NETWORK_TYPE_IPv6:
+                    printf("IPV6 packet");
+                    hexdumpf(&packet[14], size - 14);
+                    break;
+                default:
+                    printf("Unknown network type %x", network_type);
+                    break;
             }
 
             break;            
