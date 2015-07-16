@@ -7,7 +7,6 @@ CFLAGS += -I.
 CFLAGS += -I${BTSTACK_ROOT}/ble
 CFLAGS += -I${BTSTACK_ROOT}/include 
 CFLAGS += -I${BTSTACK_ROOT}/src
-CFLAGS += -I${BTSTACK_ROOT}
 
 CORE += \
     btstack_memory.c            \
