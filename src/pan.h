@@ -91,9 +91,9 @@ typedef enum {
  * @note Make sure the buffer is big enough.
  *
  * @param service is an empty buffer to store service record
- * @param security_desc 
  * @param name if NULL, the default service name will be assigned
  * @param description if NULL, the default service description will be assigned
+ * @param security_desc 
  */
 void pan_create_panu_service(uint8_t *service, const char *name, const char *description, security_description_t security_desc);
 
@@ -102,9 +102,9 @@ void pan_create_panu_service(uint8_t *service, const char *name, const char *des
  * @note Make sure the buffer is big enough.
  *
  * @param service is an empty buffer to store service record
- * @param security_desc 
  * @param name if NULL, the default service name will be assigned
  * @param description if NULL, the default service description will be assigned
+ * @param security_desc 
  * @param IPv4Subnet is optional subnet definition, e.g. "10.0.0.0/8"
  * @param IPv6Subnet is optional subnet definition given in the standard IETF format with the absolute attribute IDs
  */
@@ -117,8 +117,8 @@ void pan_create_gn_service(uint8_t *service, const char *name, const char *descr
  *
  * @param service is an empty buffer to store service record
  * @param name if NULL, the default service name will be assigned
- * @param security_desc 
  * @param description if NULL, the default service description will be assigned
+ * @param security_desc 
  * @param net_access_type type of available network access
  * @param max_net_access_rate based on net_access_type measured in byte/s
  * @param IPv4Subnet is optional subnet definition, e.g. "10.0.0.0/8"
