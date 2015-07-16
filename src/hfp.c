@@ -68,6 +68,8 @@ int send_str_over_rfcomm(uint16_t cid, char * command){
     int err = rfcomm_send_internal(cid, (uint8_t*) command, strlen(command));
     if (err){
         printf("rfcomm_send_internal -> error 0X%02x", err);
+    } else {
+        printf("Sent   %s", command);
     }
     return err;
 }
@@ -135,6 +137,8 @@ static hfp_connection_t * create_hfp_connection_context(){
     if (!context) return NULL;
     // init state
     context->state = HFP_IDLE;
+    context->line_size = 0;
+    
     context->negotiated_codec = HFP_Codec_CSVD;
     context->remote_supported_features = 0;
     context->remote_indicators_update_enabled = 0;
@@ -396,5 +400,3 @@ void hfp_set_codec(hfp_connection_t * context, uint8_t *packet, uint16_t size){
     }
     printf("Negotiated Codec 0x%02x\n", context->negotiated_codec);
 }
-
-

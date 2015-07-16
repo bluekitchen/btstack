@@ -133,6 +133,7 @@ int btstack_main(int argc, const char * argv[]){
     rfcomm_init();
     
     hfp_hf_init(rfcomm_channel_nr, HFP_Default_HF_Supported_Features, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
+    // hfp_hf_init(rfcomm_channel_nr, 0x0009, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
 
     hfp_register_packet_handler(packet_handler);
 
