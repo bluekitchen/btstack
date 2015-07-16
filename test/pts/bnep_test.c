@@ -67,11 +67,23 @@
 #include "pan.h"
 #include "stdin_support.h"
 
+#define HARDWARE_TYPE_ETHERNET 0x0001
+
 #define NETWORK_TYPE_IPv4       0x0800
 #define NETWORK_TYPE_ARP        0x0806
 #define NETWORK_TYPE_IPv6       0x86DD
-#define ICMP_TYPE_PING_REQUEST  0x08
-#define ICMP_TYPE_PING_RESPONSE 0x00
+
+#define ICMP_V4_TYPE_PING_REQUEST  0x08
+#define ICMP_V4_TYPE_PING_RESPONSE 0x00
+
+#define ICMP_V6_TYPE_PING_REQUEST  0x80
+#define ICMP_V6_TYPE_PING_RESPONSE 0x81
+
+#define ICMP_V6_TYPE_NEIGHBOR_SOLICITATION  0x87
+#define ICMP_V6_TYPE_NEIGHBOR_ADVERTISEMENT 0x88
+
+#define ARP_OPERATION_REQUEST 1
+#define ARP_OPERATION_REPLY   2
 
 // prototypes
 static void show_usage();
@@ -177,9 +189,6 @@ static void set_multicast_filter(void){
    being probed.  An ARP Request constructed this way, with an all-zero
    'sender IP address', is referred to as an 'ARP Probe'.
 */
-#define HARDWARE_TYPE_ETHERNET 0x0001
-#define ARP_OPERATION_REQUEST 1
-#define ARP_OPERATION_REPLY   2
 
 static void send_arp_probe_ipv4(void){
 
@@ -187,7 +196,7 @@ static void send_arp_probe_ipv4(void){
     static uint8_t requested_address[4] = {169, 254, 1, 0};
     requested_address[3]++;
 
-    int pos = setup_ethernet_header(1, 0, 1, NETWORK_TYPE_ARP); 
+    int pos = setup_ethernet_header(1, 0, 1, NETWORK_TYPE_IPv4); 
     net_store_16(network_buffer, pos, HARDWARE_TYPE_ETHERNET);
     pos += 2;
     net_store_16(network_buffer, pos, NETWORK_TYPE_IPv4);
@@ -208,62 +217,6 @@ static void send_arp_probe_ipv4(void){
     pos += 18;
     send_buffer(pos);
 }
-
-static void send_arp_probe_ipv6(void){
-    
-}
-
-#if 0
-
-static void send_dhcp_discovery(void){
-    
-}
-
-static void send_dhcp_request(void){
-    
-}
-
-static void send_dns_request(void){
-    
-}
-
-static void send_some_ipv6_packet(void){
-
-    bd_addr_t an_addr = { 0x33, 0x33, 0x00, 0x00, 0x00, 0x16};
-    memcpy(other_addr, an_addr, 6);
-
-    int pos = setup_ethernet_header(1, 0, 0, NETWORK_TYPE_IPv6); // IPv6
-    uint8_t ipv6_packet[] = {
-        0x60, 0x00, 0x00, 0x00, 0x00, 0x24, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x02,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x16, 0x3a, 0x00, 0x05, 0x02, 0x00, 0x00, 0x01, 0x00, 0x8f, 0x00, 0xf3, 0xa2,
-        0x00, 0x00, 0x00, 0x01, 0x04, 0x00, 0x00, 0x00, 0xff, 0x02, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xff, 0x60, 0x7b, 0x87                 
-    };
-    memcpy(&network_buffer[pos], ipv6_packet, sizeof(ipv6_packet));
-    pos += sizeof(ipv6_packet);
-    send_buffer(pos);
-}
-
-static void send_some_ipv6_packet_2(void){
-
-    bd_addr_t an_addr = { 0x33, 0x33, 0xFF, 0x60, 0x7B, 0x87};
-    memcpy(other_addr, an_addr, 6);
-
-    int pos = setup_ethernet_header(1, 0, 0, NETWORK_TYPE_IPv6); // IPv6
-    uint8_t ipv6_packet[] = {
-        0x60, 0x00, 0x00, 0x00, 0x00, 0x18, 0x3a, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x02, 
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0xff, 0x60, 0x7b,
-        0x87, 0x87, 0x00, 0xb6, 0x64, 0x00, 0x00, 0x00, 0x00, 0xfe, 0x80, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x5e, 0xf3, 0x70, 0xff, 0xfe, 0x60, 0x7b, 0x87       
-    };
-    memcpy(&network_buffer[pos], ipv6_packet, sizeof(ipv6_packet));
-    pos += sizeof(ipv6_packet);
-    send_buffer(pos);
-}
-#endif
 
 static uint16_t sum_ones_complement(uint16_t a, uint16_t b){
     uint32_t sum = a + b;
@@ -323,52 +276,6 @@ static void send_ping_request_ipv4(void){
     send_buffer(pos);
 }
 
-static void send_ping_request_ipv6(void){
-
-    uint8_t ipv6_packet[] = {
-        // ip
-        0x60, 0x00, 0x00, 0x00, // version (4) + traffic class (8) + flow label (24)
-        0x00, 0x00,   58, 0x01, // payload length(16), next header = IPv6-ICMP, hop limit
-        0x00, 0x00, 0x00, 0x00, // source IP address
-        0x00, 0x00, 0x00, 0x00, // source IP address
-        0x00, 0x00, 0x00, 0x00, // source IP address
-        0x00, 0x00, 0x00, 0x00, // source IP address
-        0x00, 0x00, 0x00, 0x00, // destination IP address
-        0x00, 0x00, 0x00, 0x00, // destination IP address
-        0x00, 0x00, 0x00, 0x00, // destination IP address
-        0x00, 0x00, 0x00, 0x00, // destination IP address
-    };
-
-    uint8_t icmp_packet[] = {
-        // icmp
-        0x80, 0x00, 0x00, 0x00, // type: 0x08 PING Request, codde = 0, checksum(16)
-        0x00, 0x00, 0x00, 0x00  // message
-    };
-
-    // ethernet header
-    int pos = setup_ethernet_header(1, 0, 0, NETWORK_TYPE_IPv4); // IPv4
-    
-    // ipv6
-    int payload_length = sizeof(icmp_packet);
-    net_store_16(ipv6_packet, 4, payload_length);
-    // TODO: also set src/dest ip address
-    int checksum = calc_internet_checksum(&ipv6_packet[8], 32);
-    checksum = sum_ones_complement(checksum, sizeof(ipv6_packet) + sizeof(icmp_packet));
-    checksum = sum_ones_complement(checksum, 58 << 8);
-    net_store_16(icmp_packet, 2, checksum);
-    memcpy(&network_buffer[pos], ipv6_packet, sizeof(ipv6_packet));
-    pos += sizeof(ipv6_packet);
-
-    // icmp
-    uint16_t icmp_checksum = calc_internet_checksum(icmp_packet, sizeof(icmp_packet));
-    net_store_16(icmp_packet, 2, icmp_checksum);    
-    memcpy(&network_buffer[pos], icmp_packet, sizeof(icmp_packet));
-    pos += sizeof(icmp_packet);
-
-    // send
-    send_buffer(pos);
-}
-
 static void send_ping_response_ipv4(void){
 
     uint8_t ipv4_packet[] = {
@@ -408,6 +315,108 @@ static void send_ping_response_ipv4(void){
     send_buffer(pos);
 }
 
+static void send_ping_request_ipv6(void){
+
+    uint8_t ipv6_packet[] = {
+        // ip
+        0x60, 0x00, 0x00, 0x00, // version (4) + traffic class (8) + flow label (24)
+        0x00, 0x00,   58, 0x01, // payload length(16), next header = IPv6-ICMP, hop limit
+        0x00, 0x00, 0x00, 0x00, // source IP address
+        0x00, 0x00, 0x00, 0x00, // source IP address
+        0x00, 0x00, 0x00, 0x00, // source IP address
+        0x00, 0x00, 0x00, 0x00, // source IP address
+        0x00, 0x00, 0x00, 0x00, // destination IP address
+        0x00, 0x00, 0x00, 0x00, // destination IP address
+        0x00, 0x00, 0x00, 0x00, // destination IP address
+        0x00, 0x00, 0x00, 0x00, // destination IP address
+    };
+
+    uint8_t icmp_packet[] = {
+        // icmp
+        0x80, 0x00, 0x00, 0x00, // type: 0x80 PING Request, codde = 0, checksum(16)
+        0x00, 0x00, 0x00, 0x00  // message
+    };
+
+    // ethernet header
+    int pos = setup_ethernet_header(1, 0, 0, NETWORK_TYPE_IPv4); // IPv4
+    
+    // ipv6
+    int payload_length = sizeof(icmp_packet);
+    net_store_16(ipv6_packet, 4, payload_length);
+    // TODO: also set src/dest ip address
+    int checksum = calc_internet_checksum(&ipv6_packet[8], 32);
+    checksum = sum_ones_complement(checksum, sizeof(ipv6_packet) + sizeof(icmp_packet));
+    checksum = sum_ones_complement(checksum, 58 << 8);
+    net_store_16(icmp_packet, 2, checksum);
+    memcpy(&network_buffer[pos], ipv6_packet, sizeof(ipv6_packet));
+    pos += sizeof(ipv6_packet);
+
+    // icmp
+    uint16_t icmp_checksum = calc_internet_checksum(icmp_packet, sizeof(icmp_packet));
+    net_store_16(icmp_packet, 2, icmp_checksum);    
+    memcpy(&network_buffer[pos], icmp_packet, sizeof(icmp_packet));
+    pos += sizeof(icmp_packet);
+
+    // send
+    send_buffer(pos);
+}
+
+static void send_ndp_probe_ipv6(void){
+
+    uint8_t ipv6_packet[] = {
+        // ip
+        0x60, 0x00, 0x00, 0x00, // version (4) + traffic class (8) + flow label (24)
+        0x00, 0x00,   58, 0x01, // payload length(16), next header = IPv6-ICMP, hop limit
+        0x00, 0x00, 0x00, 0x00, // source IP address
+        0x00, 0x00, 0x00, 0x00, // source IP address
+        0x00, 0x00, 0x00, 0x00, // source IP address
+        0x00, 0x00, 0x00, 0x00, // source IP address
+        0xfe, 0x80, 0x00, 0x00, // destination IP address
+        0x00, 0x00, 0x00, 0x00, // destination IP address
+        0x00, 0x00, 0x00, 0x00, // destination IP address
+        0x00, 0x00, 0x00, 0x00, // destination IP address
+    };
+
+    uint8_t icmp_packet[] = {
+        // icmp
+        0x87, 0x00, 0x00, 0x00, // type: 0x80 PING Request, code = 0, checksum(16)
+        0x00, 0x00, 0x00, 0x00  // message
+    };
+
+    // ethernet header
+    int pos = setup_ethernet_header(1, 0, 0, NETWORK_TYPE_IPv6);
+
+    // ipv6
+    int payload_length = sizeof(icmp_packet);
+    net_store_16(ipv6_packet, 4, payload_length);
+    // source address ::
+    // dest addresss - Modified EUI-64
+    // ipv6_packet[24..31] = FE80::
+    ipv6_packet[32] = local_addr[0] ^ 0x2;
+    ipv6_packet[33] = local_addr[1];
+    ipv6_packet[34] = local_addr[2];
+    ipv6_packet[35] = 0xff;
+    ipv6_packet[36] = 0xfe;
+    ipv6_packet[37] = local_addr[3];
+    ipv6_packet[38] = local_addr[4];
+    ipv6_packet[39] = local_addr[5];
+    int checksum = calc_internet_checksum(&ipv6_packet[8], 32);
+    checksum = sum_ones_complement(checksum, sizeof(ipv6_packet) + sizeof(icmp_packet));
+    checksum = sum_ones_complement(checksum, 58 << 8);
+    net_store_16(icmp_packet, 2, checksum);
+    memcpy(&network_buffer[pos], ipv6_packet, sizeof(ipv6_packet));
+    pos += sizeof(ipv6_packet);
+
+    // icmp
+    uint16_t icmp_checksum = calc_internet_checksum(icmp_packet, sizeof(icmp_packet));
+    net_store_16(icmp_packet, 2, icmp_checksum);    
+    memcpy(&network_buffer[pos], icmp_packet, sizeof(icmp_packet));
+    pos += sizeof(icmp_packet);
+
+    // send
+    send_buffer(pos);    
+}
+
 static void show_usage(void){
 
     printf("\n--- Bluetooth BNEP Test Console ---\n");
@@ -426,7 +435,7 @@ static void show_usage(void){
     printf("1 - send ICMP Ping Request IPv4\n");
     printf("2 - send ICMP Ping Request IPv6\n");
     printf("4 - send IPv4 ARP request\n");
-    printf("6 - send IPv6 ARP request\n");
+    printf("6 - send IPv6 NDP request\n");
 #if 0
     printf("1 - get IP address via DHCP\n");
     printf("2 - send DNS request\n");
@@ -485,7 +494,7 @@ static int stdin_process(struct data_source *ds){
             break;
         case '6':
             printf("Sending IPv6 ARP Probe\n");
-            send_arp_probe_ipv6();
+            send_ndp_probe_ipv6();
             break;
 #if 0
         case '9':
@@ -608,7 +617,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     hexdumpf(&packet[payload_offset], size - payload_offset);
                     printf("ICMP packet of type %x\n", icmp_type);
                     switch (icmp_type){
-                        case ICMP_TYPE_PING_REQUEST:
+                        case ICMP_V4_TYPE_PING_REQUEST:
                             printf("IPv4 Ping Request received, sending pong\n");
                             send_ping_response_ipv4();
                             break;
