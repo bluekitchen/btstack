@@ -58,7 +58,7 @@ static const char default_nap_service_desc[] = "Personal Ad-hoc Network Service 
 static const char default_gn_service_name[] = "Group Ad-hoc Network Service";
 static const char default_gn_service_desc[] = "Personal Group Ad-hoc Network Service";
 
-void pan_create_service(uint32_t service_uuid, uint8_t *service, const char *name, const char *descriptor, 
+void pan_create_service(uint8_t *service, uint32_t service_uuid, uint16_t * network_packet_types, const char *name, const char *descriptor,
 	 security_description_t security_desc, net_access_type_t net_access_type, uint32_t max_net_access_rate,
 	 const char *IPv4Subnet, const char *IPv6Subnet){
 
@@ -96,8 +96,11 @@ void pan_create_service(uint32_t service_uuid, uint8_t *service, const char *nam
 
 			uint8_t * net_packet_type_list = de_push_sequence(bnep);
 			{		
-				// add Supported Network Packet Type List
-				// de_add_number(net_packet_type_list,  DE_UINT, DE_SIZE_16, 0x0100);  // version
+				if (network_packet_types){
+					while (*network_packet_types){
+						de_add_number(net_packet_type_list,  DE_UINT, DE_SIZE_16, *network_packet_types++);
+					}
+				}
 			}
 			de_pop_sequence(bnep, net_packet_type_list);
 		}
@@ -211,17 +214,17 @@ void pan_create_service(uint32_t service_uuid, uint8_t *service, const char *nam
 }
 
 
-void pan_create_nap_service(uint8_t *service, const char *name, const char *description, security_description_t security_desc, 
+void pan_create_nap_service(uint8_t *service, uint16_t * network_packet_types, const char *name, const char *description, security_description_t security_desc,
 	net_access_type_t net_access_type, uint32_t max_net_access_rate, const char *IPv4Subnet, const char *IPv6Subnet){
 
-	pan_create_service(SDP_NAP, service, name, description, security_desc, net_access_type, max_net_access_rate, IPv4Subnet, IPv6Subnet);
+	pan_create_service(service, SDP_NAP, network_packet_types, name, description, security_desc, net_access_type, max_net_access_rate, IPv4Subnet, IPv6Subnet);
 }
 
-void pan_create_gn_service(uint8_t *service, const char *name, const char *description, security_description_t security_desc, 
+void pan_create_gn_service(uint8_t *service, uint16_t * network_packet_types, const char *name, const char *description, security_description_t security_desc,
 	const char *IPv4Subnet, const char *IPv6Subnet){
-	pan_create_service(SDP_GN, service, name, description, security_desc, PAN_NET_ACCESS_TYPE_NONE, 0, IPv4Subnet, IPv6Subnet);
+	pan_create_service(service, SDP_GN, network_packet_types, name, description, security_desc, PAN_NET_ACCESS_TYPE_NONE, 0, IPv4Subnet, IPv6Subnet);
 }
 
-void pan_create_panu_service(uint8_t *service, const char *name, const char *description, security_description_t security_desc){
-	pan_create_service(SDP_PANU, service, name, description, security_desc, PAN_NET_ACCESS_TYPE_NONE, 0, NULL, NULL);
+void pan_create_panu_service(uint8_t *service, uint16_t * network_packet_types, const char *name, const char *description, security_description_t security_desc){
+	pan_create_service(service, SDP_PANU, network_packet_types, name, description, security_desc, PAN_NET_ACCESS_TYPE_NONE, 0, NULL, NULL);
 }
