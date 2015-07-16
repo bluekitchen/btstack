@@ -206,7 +206,7 @@ void hsp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char 
     }
 }
 
-static int send_str_over_rfcomm(uint16_t cid, char * command){
+int send_str_over_rfcomm(uint16_t cid, char * command){
     if (!rfcomm_can_send_packet_now(rfcomm_cid)) return 1;
     int err = rfcomm_send_internal(cid, (uint8_t*) command, strlen(command));
     if (err){

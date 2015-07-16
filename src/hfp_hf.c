@@ -174,6 +174,7 @@ static void hfp_run(hfp_connection_t * connection){
     int err = 0;
     switch (connection->state){
         case HFP_EXCHANGE_SUPPORTED_FEATURES:
+            log_info("HFP_EXCHANGE_SUPPORTED_FEATURES 0x%02x", connection->rfcomm_cid);
             err = hfp_hs_exchange_supported_features_cmd(connection->rfcomm_cid);
             break;
         case HFP_NOTIFY_ON_CODECS:
@@ -217,6 +218,7 @@ hfp_connection_t * hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel
         size--;
         packet++;
     }
+    printf("packet_handler packet size %u\n", size);
     
     if (context->wait_ok){
         if (strncmp((char *)packet, HFP_OK, strlen(HFP_OK)) == 0){

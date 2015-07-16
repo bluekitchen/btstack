@@ -349,7 +349,7 @@ hfp_connection_t * hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, ui
             } else {
                 context->con_handle = READ_BT_16(packet, 9);
                 context->rfcomm_cid = READ_BT_16(packet, 12);
-                uint16_t mtu = READ_BT_16(packet, 14);
+                // uint16_t mtu = READ_BT_16(packet, 14);
                 context->state = HFP_EXCHANGE_SUPPORTED_FEATURES;
             }
             break;
