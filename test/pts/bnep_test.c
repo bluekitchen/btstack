@@ -63,10 +63,12 @@
 #include "btstack_memory.h"
 #include "hci_dump.h"
 #include "l2cap.h"
+#include "sdp.h"
 #include "pan.h"
 #include "stdin_support.h"
 
-#define NETWORK_TYPE_IPv4       0x800
+#define NETWORK_TYPE_IPv4       0x0800
+#define NETWORK_TYPE_ARP        0x0806
 #define NETWORK_TYPE_IPv6       0x86DD
 #define ICMP_TYPE_PING_REQUEST  0x08
 #define ICMP_TYPE_PING_RESPONSE 0x00
@@ -111,6 +113,8 @@ static uint16_t bnep_cid            = 0;
 
 static uint8_t network_buffer[BNEP_MTU_MIN];
 static size_t  network_buffer_len = 0;
+
+static uint8_t panu_sdp_record[200];
 
 static uint16_t setup_ethernet_header(int src_compressed, int dst_compressed, int broadcast, uint16_t network_protocol_type){
     // setup packet
@@ -619,6 +623,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     
+
     /* Initialize L2CAP */
     l2cap_init();
     l2cap_register_packet_handler(packet_handler);
@@ -628,8 +633,24 @@ int btstack_main(int argc, const char * argv[]){
     bnep_register_packet_handler(packet_handler);
     bnep_register_service(NULL, bnep_local_service_uuid, 1691);  /* Minimum L2CAP MTU for bnep is 1691 bytes */
 
+    /* Initialize SDP and add PANU record */
+    sdp_init();
+
+    uint16_t network_packet_types[] = { NETWORK_TYPE_IPv4, NETWORK_TYPE_ARP, 0};    // 0 as end of list
+#ifdef EMBEDDED
+    service_record_item_t * service_record_item = (service_record_item_t *) panu_sdp_record;
+    pan_create_panu_service((uint8_t*) &service_record_item->service_record, network_packet_types, NULL, NULL, BNEP_SECURITY_NONE);
+    printf("SDP service buffer size: %u\n", (uint16_t) (sizeof(service_record_item_t) + de_get_len((uint8_t*) &service_record_item->service_record)));
+    sdp_register_service_internal(NULL, service_record_item);
+#else
+    pan_create_panu_service(panu_sdp_record, network_packet_types, NULL, NULL, BNEP_SECURITY_NONE);
+    printf("SDP service record size: %u\n", de_get_len((uint8_t*) panu_sdp_record));
+    sdp_register_service_internal(NULL, (uint8_t*)panu_sdp_record);
+#endif
+
     /* Turn on the device */
     hci_power_control(HCI_POWER_ON);
+    hci_discoverable_control(1);
 
     btstack_stdin_setup(stdin_process);
 
