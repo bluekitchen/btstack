@@ -98,6 +98,7 @@ static int store_bit(uint32_t bitmap, int position, uint8_t value){
 int hfp_hs_exchange_supported_features_cmd(uint16_t cid){
     char buffer[20];
     sprintf(buffer, "AT%s=%d\r\n", HFP_Supported_Features, hfp_supported_features);
+    // printf("exchange_supported_features %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -105,31 +106,36 @@ int hfp_hs_retrieve_codec_cmd(uint16_t cid){
     char buffer[30];
     int buffer_offset = sprintf(buffer, "AT%s=", HFP_Available_Codecs);
     join(buffer, sizeof(buffer), buffer_offset, hfp_codecs, hfp_codecs_nr, 1);
+    // printf("retrieve_codec %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 
 int hfp_hs_retrieve_indicators_cmd(uint16_t cid){
     char buffer[20];
-    sprintf(buffer, "AT%s=?\r\n", HFP_Codec_Indicator);
+    sprintf(buffer, "AT%s=?\r\n", HFP_Indicator);
+    // printf("retrieve_indicators %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 int hfp_hs_retrieve_indicators_status_cmd(uint16_t cid){
     char buffer[20];
-    sprintf(buffer, "AT%s?\r\n", HFP_Codec_Indicator);
+    sprintf(buffer, "AT%s?\r\n", HFP_Indicator);
+    // printf("retrieve_indicators_status %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 int hfp_hs_toggle_indicator_status_update_cmd(uint16_t cid){
     char buffer[20];
     sprintf(buffer, "AT%s\r\n", HFP_Enable_Indicator_Status_Update);
+    // printf("toggle_indicator_status_update %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 int hfp_hs_retrieve_can_hold_call_cmd(uint16_t cid){
     char buffer[20];
     sprintf(buffer, "AT%s\r\n", HFP_Support_Call_Hold_And_Multiparty_Services);
+    // printf("retrieve_can_hold_call %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -138,18 +144,21 @@ int hfp_hs_list_supported_generic_status_indicators_cmd(uint16_t cid){
     char buffer[30];
     int buffer_offset = sprintf(buffer, "AT%s=", HFP_Generic_Status_Indicator); 
     join(buffer, sizeof(buffer), buffer_offset, hfp_indicators, hfp_indicators_nr, 2); 
+    // printf("list_supported_generic_status_indicators %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 int hfp_hs_retrieve_supported_generic_status_indicators_cmd(uint16_t cid){
     char buffer[20];
     sprintf(buffer, "AT%s=?\r\rn", HFP_Generic_Status_Indicator); 
+    // printf("retrieve_supported_generic_status_indicators %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 int hfp_hs_list_initital_supported_generic_status_indicators_cmd(uint16_t cid){
     char buffer[20];
     sprintf(buffer, "AT%s?\r\n", HFP_Generic_Status_Indicator);
+    // printf("list_initital_supported_generic_status_indicators %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -168,7 +177,6 @@ int has_hf_indicators_feature(hfp_connection_t * connection){
     return get_bit(hfp_supported_features,8) && get_bit(connection->remote_supported_features,10);
 }
 
-
 static void hfp_run_for_context(hfp_connection_t * connection){
     if (!connection) return;
     if (!rfcomm_can_send_packet_now(connection->rfcomm_cid)) return;
@@ -176,66 +184,120 @@ static void hfp_run_for_context(hfp_connection_t * connection){
     int err = 0;
     switch (connection->state){
         case HFP_EXCHANGE_SUPPORTED_FEATURES:
-            log_info("HFP_EXCHANGE_SUPPORTED_FEATURES 0x%02x", connection->rfcomm_cid);
             err = hfp_hs_exchange_supported_features_cmd(connection->rfcomm_cid);
+            if (!err) connection->state = HFP_W4_EXCHANGE_SUPPORTED_FEATURES;
             break;
         case HFP_NOTIFY_ON_CODECS:
-            log_info("HFP_NOTIFY_ON_CODECS 0x%02x", connection->rfcomm_cid);
             err = hfp_hs_retrieve_codec_cmd(connection->rfcomm_cid);
+            if (!err) connection->state = HFP_W4_NOTIFY_ON_CODECS;
             break;
         case HFP_RETRIEVE_INDICATORS:
-            log_info("HFP_RETRIEVE_INDICATORS 0x%02x", connection->rfcomm_cid);
             err = hfp_hs_retrieve_indicators_cmd(connection->rfcomm_cid);
+            if (!err) connection->state = HFP_W4_RETRIEVE_INDICATORS;
             break;
         case HFP_RETRIEVE_INDICATORS_STATUS:
-            log_info("HFP_RETRIEVE_INDICATORS_STATUS 0x%02x", connection->rfcomm_cid);
             err = hfp_hs_retrieve_indicators_cmd(connection->rfcomm_cid);
+            if (!err) connection->state = HFP_W4_EXCHANGE_SUPPORTED_FEATURES;
             break;
         case HFP_ENABLE_INDICATORS_STATUS_UPDATE:
-            err = 0;
             if (connection->remote_indicators_update_enabled == 0){
-                log_info("HFP_ENABLE_INDICATORS_STATUS_UPDATE 0x%02x", connection->rfcomm_cid);
                 err = hfp_hs_toggle_indicator_status_update_cmd(connection->rfcomm_cid);
+                if (!err) connection->state = HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE;
             }
             break;
         case HFP_RETRIEVE_CAN_HOLD_CALL:
-            log_info("HFP_RETRIEVE_CAN_HOLD_CALL 0x%02x", connection->rfcomm_cid);
             err = hfp_hs_retrieve_can_hold_call_cmd(connection->rfcomm_cid);
+            if (!err) connection->state = HFP_W4_RETRIEVE_CAN_HOLD_CALL;
             break;
         case HFP_LIST_GENERIC_STATUS_INDICATORS:
-            log_info("HFP_LIST_GENERIC_STATUS_INDICATORS 0x%02x", connection->rfcomm_cid);
             err = hfp_hs_list_supported_generic_status_indicators_cmd(connection->rfcomm_cid);
+            if (!err) connection->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
             break;
         case HFP_RETRIEVE_GENERIC_STATUS_INDICATORS:
-            log_info("HFP_RETRIEVE_GENERIC_STATUS_INDICATORS 0x%02x", connection->rfcomm_cid);
             err = hfp_hs_retrieve_supported_generic_status_indicators_cmd(connection->rfcomm_cid);
+            if (!err) connection->state = HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS;
             break;
         case HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
-            log_info("HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS 0x%02x", connection->rfcomm_cid);
             err = hfp_hs_list_initital_supported_generic_status_indicators_cmd(connection->rfcomm_cid);
+            if (!err) connection->state = HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
             break;
         default:
             break;
     }
 }
 
-hfp_connection_t * hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    hfp_connection_t * context = provide_hfp_connection_context_for_rfcomm_cid(channel);
-    int offset = 0;
+void hfp_parse_indicators(hfp_connection_t * context, uint8_t *packet, uint16_t size){
+    uint8_t parse_indicator = 0;
+    uint8_t parse_range = 0;
+    uint8_t parse_max_range = 0;
+    uint8_t byte;
+    char indicator[10];
+    char min_range[3];
+    char max_range[3];
 
-    if (!context) return NULL;
-    while (size > 0 && (packet[0] == '\n' || packet[0] == '\r')){
-        size--;
-        packet++;
+    int i;
+    int pos = 0;
+
+    while ( pos < size ){
+        while (!parse_indicator && pos < size){
+            byte = packet[pos++];
+            if (byte == '"'){
+                parse_indicator = 1;
+                break;
+            }
+        }
+        i = 0;
+        while (parse_indicator && pos < size){
+            byte = packet[pos++];
+            if (byte == '"'){
+                parse_indicator = 0;
+                indicator[i] = 0;
+                break;
+            } 
+            indicator[i++] = byte;
+        }
+
+        while (!parse_range && pos < size){
+            byte = packet[pos++];
+            if (byte == '('){
+                parse_range = 1;
+            }
+        }
+        i = 0;
+        while (parse_range && pos < size){
+            byte = packet[pos++];
+            if (byte == ')'){
+                parse_range = 0;
+                parse_max_range = 0;
+                max_range[i] = 0;
+                printf("Indicator %s, min %d, max %d\n", indicator, atoi(min_range), atoi(max_range));
+                break;
+            } 
+            if (byte == ','){
+                parse_max_range = 1;
+                min_range[i] = 0;
+                i = 0;
+                continue;
+            }
+            if (parse_max_range){
+                max_range[i++] = byte;
+            } else {
+                min_range[i++] = byte;
+            }
+        }
     }
-    
+}
+
+hfp_connection_t * handle_message(hfp_connection_t * context, uint8_t *packet, uint16_t size){
+    int offset = 0;
     if (context->wait_ok){
         if (strncmp((char *)packet, HFP_OK, strlen(HFP_OK)) == 0){
+            printf("Parsed %s\n", HFP_OK);
             switch (context->state){
-                case HFP_NOTIFY_ON_CODECS:
+                case HFP_W4_NOTIFY_ON_CODECS:
                     context->state = HFP_RETRIEVE_INDICATORS;
                     break;
-                case HFP_ENABLE_INDICATORS_STATUS_UPDATE:
+                case HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE:
                     if (has_call_waiting_and_3way_calling_feature(context)){
                         context->state = HFP_RETRIEVE_CAN_HOLD_CALL;
                         break;
@@ -247,11 +309,11 @@ hfp_connection_t * hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel
                     }
                     break;
 
-                case HFP_LIST_GENERIC_STATUS_INDICATORS:
+                case HFP_W4_LIST_GENERIC_STATUS_INDICATORS:
                     context->state = HFP_RETRIEVE_GENERIC_STATUS_INDICATORS;
                     break;
 
-                case HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
+                case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
                     context->state = HFP_ACTIVE;
                     printf(" state Active! \n");
                     break;
@@ -266,7 +328,7 @@ hfp_connection_t * hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel
     if (strncmp((char *)packet, HFP_Supported_Features, strlen(HFP_Supported_Features)) == 0){
         offset = strlen(HFP_Supported_Features) + 1; // +1 for =
         context->remote_supported_features = atoi((char*)&packet[offset]);
-        
+        printf("Parsed %s: %d (expected 224)\n", HFP_Supported_Features, context->remote_supported_features);
         if (has_codec_negotiation_feature(context)){
             context->state = HFP_NOTIFY_ON_CODECS;
         } else {
@@ -276,28 +338,24 @@ hfp_connection_t * hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel
         return context;
     }
 
-    if (strncmp((char *)packet, HFP_Codec_Indicator, strlen(HFP_Codec_Indicator)) == 0){
+    if (strncmp((char *)packet, HFP_Indicator, strlen(HFP_Indicator)) == 0){
         // https://www.bluetooth.org/en-us/specification/assigned-numbers/hands-free-profile
         /* 
          * 0x01 Enhanced Safety​, on/off
          * 0x02 Battery Level,   0-100
          */
-        offset = strlen(HFP_Codec_Indicator) + 1;
+       // printf("Parsed %s, expected  ("service",(0,1)),("call",(0,1)),("callsetup",(0,3)),("callheld",(0,2)),("signal",(0,5)),("roam",(0,1)),("battchg",(0,5))\n", HFP_Indicator);
+        
+        offset = strlen(HFP_Indicator) + 1;
         char * token = strtok((char*)&packet[offset], ",");
-       
         int pos = 0;
         switch (context->state){
-            case HFP_RETRIEVE_INDICATORS:
-                while (token){
-                    printf("%s\n", token);
-                    context->remote_indicators[pos++] = atoi(token);
-                    token = strtok(NULL, ",");
-                }
-                context->remote_indicators_nr = pos;
+            case HFP_W4_RETRIEVE_INDICATORS:
+                hfp_parse_indicators(context, &packet[offset], size-offset);
                 context->remote_indicators_status = 0;
                 context->state = HFP_RETRIEVE_INDICATORS_STATUS; 
                 break;
-            case HFP_RETRIEVE_INDICATORS_STATUS:
+            case HFP_W4_RETRIEVE_INDICATORS_STATUS:
                 while (token){
                     printf("%s\n", token);
                     store_bit(context->remote_indicators_status, pos, atoi(token));
@@ -327,7 +385,7 @@ hfp_connection_t * hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel
        
         int pos = 0;
         switch (context->state){
-            case HFP_RETRIEVE_GENERIC_STATUS_INDICATORS:
+            case HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS:
                 while (token){
                     printf("%s\n", token);
                     context->remote_hf_indicators[pos++] = atoi(token);
@@ -337,7 +395,7 @@ hfp_connection_t * hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel
                 context->remote_hf_indicators_status = 0;
                 context->state = HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
                 break;
-            case HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:{
+            case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:{
                 uint16_t indicator = atoi(token);
                 int status = atoi(strtok(NULL, ","));
                 if (!status) break;
@@ -358,6 +416,34 @@ hfp_connection_t * hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel
     }
 
     return context;
+}
+
+static void hfp_parse(hfp_connection_t * context, uint8_t byte){
+    if (byte != '\n' && byte != '\r'){
+        context->line_buffer[context->line_size] = byte;
+        context->line_size++;
+        return;
+    }
+
+    context->line_buffer[context->line_size] = '\0';
+    if (context->line_size > 0){
+        handle_message(context, context->line_buffer, context->line_size);
+    }
+    context->line_size = 0;
+}
+
+static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    hfp_connection_t * context = provide_hfp_connection_context_for_rfcomm_cid(channel);
+    if (!context) return;
+
+    packet[size] = 0;
+    printf("Received %s\n", packet);
+
+    int i;
+    for (i=0;i<size;i++){
+        hfp_parse(context, packet[i]);
+    }
+
 }
 
 static void hfp_run(){

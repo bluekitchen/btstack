@@ -95,7 +95,7 @@ static void hfp_run(hfp_connection_t * connection){
 }
 
 hfp_connection_t * hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    hfp_connection_t * context = get_hfp_connection_context_for_rfcomm_cid(channel);
+    hfp_connection_t * context = provide_hfp_connection_context_for_rfcomm_cid(channel);
     if (!context) return NULL;
     while (size > 0 && (packet[0] == '\n' || packet[0] == '\r')){
         size--;

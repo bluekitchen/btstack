@@ -88,7 +88,7 @@ extern "C" {
 */
 #define HFP_Supported_Features "+BRSF"
 #define HFP_Available_Codecs "+BAC"
-#define HFP_Codec_Indicator "+CIND"
+#define HFP_Indicator "+CIND"
 #define HFP_Enable_Indicator_Status_Update "+CMER"
 #define HFP_Support_Call_Hold_And_Multiparty_Services "+CHLD"
 #define HFP_Generic_Status_Indicator "+BIND"
@@ -103,16 +103,33 @@ typedef enum {
     HFP_SDP_QUERY_RFCOMM_CHANNEL,
     HFP_W4_SDP_QUERY_COMPLETE,
     HFP_W4_RFCOMM_CONNECTED,
+    
     HFP_EXCHANGE_SUPPORTED_FEATURES,
+    HFP_W4_EXCHANGE_SUPPORTED_FEATURES,
+    
     HFP_NOTIFY_ON_CODECS,
+    HFP_W4_NOTIFY_ON_CODECS,
+    
     HFP_RETRIEVE_INDICATORS,
+    HFP_W4_RETRIEVE_INDICATORS,
+    
     HFP_RETRIEVE_INDICATORS_STATUS,
+    HFP_W4_RETRIEVE_INDICATORS_STATUS,
+    
     HFP_ENABLE_INDICATORS_STATUS_UPDATE,
+    HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE,
+    
     HFP_RETRIEVE_CAN_HOLD_CALL,
+    HFP_W4_RETRIEVE_CAN_HOLD_CALL,
     
     HFP_LIST_GENERIC_STATUS_INDICATORS,
+    HFP_W4_LIST_GENERIC_STATUS_INDICATORS,
+    
     HFP_RETRIEVE_GENERIC_STATUS_INDICATORS,
+    HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS,
+    
     HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS,
+    HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS,
     
     HFP_ACTIVE,
     HFP_W2_DISCONNECT_RFCOMM,
@@ -120,11 +137,42 @@ typedef enum {
     HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN
 } hfp_state_t;
 
+typedef enum {
+    HFP_AG_SERVICE,   /*    <value>=0 implies no service. No Home/Roam network available.
+                            <value>=1 implies presence of service. Home/Roam network available.
+                       */
+
+    HFP_AG_CALL,      /*    <value>=0 means there are no calls in progress
+                            <value>=1 means at least one call is in progress
+                       */
+
+    HFP_AG_CALLSETUP, /*    <value>=0 means not currently in call set up.
+                            <value>=1 means an incoming call process ongoing.
+                            <value>=2 means an outgoing call set up is ongoing.
+                            <value>=3 means remote party being alerted in an outgoing call.
+                       */
+    HFP_AG_CALLHELD,   /*   0 = No calls held
+                            1 = Call is placed on hold or active/held calls swapped
+                                    (The AG has both an active AND a held call) 
+                            2 = Call on hold, no active call
+                        */
+    HFP_AG_SIGNAL,      /*  ranges from 0 to 5, Signal Strength indicator */
+    HFP_AG_ROAM,        /*  <value>=0 means roaming is not active
+                            <value>=1 means a roaming is active
+                        */
+    HFP_AG_BATTCHG      /* ranges from 0 to 5, Battery Charge */
+
+} hfp_ag_indicators_t;
+
 typedef void (*hfp_callback_t)(uint8_t * event, uint16_t event_size);
+
 
 typedef struct hfp_connection {
     linked_item_t    item;
     hfp_state_t state;
+
+    uint32_t line_size;
+    uint8_t  line_buffer[20];
 
     bd_addr_t remote_addr;
     uint16_t con_handle;
