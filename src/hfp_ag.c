@@ -86,7 +86,7 @@ static void hfp_run(hfp_connection_t * connection){
     if (!connection) return;
 
     switch (connection->state){
-        case HFP_W4_SUPPORTED_FEATURES_EXCHANGE:
+        case HFP_EXCHANGE_SUPPORTED_FEATURES:
             
             break;
         default:
@@ -122,7 +122,7 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
     hfp_run(context);
 }
 
-void hfp_ag_init(uint16_t rfcomm_channel_nr, uint16_t supported_features, uint8_t * codecs, int codecs_nr){
+void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, uint8_t * codecs, int codecs_nr){
     if (codecs_nr > HFP_MAX_NUM_CODECS){
         log_error("hfp_init: codecs_nr (%d) > HFP_MAX_NUM_CODECS (%d)", codecs_nr, HFP_MAX_NUM_CODECS);
         return;
