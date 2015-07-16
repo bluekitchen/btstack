@@ -111,9 +111,10 @@ linked_item_t * hfp_get_connections(){
 } 
 
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid){
-    linked_item_t *it;
-    for (it = hfp_get_connections(); it ; it = it->next){
-        hfp_connection_t * connection = (hfp_connection_t *) it;
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, &hfp_connections);
+    while (linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
         if (connection->rfcomm_cid == cid){
             return connection;
         }
@@ -122,9 +123,10 @@ hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid){
 }
 
 static hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr){
-    linked_item_t *it;
-    for (it = hfp_get_connections(); it ; it = it->next){
-        hfp_connection_t * connection = (hfp_connection_t *) it;
+    linked_list_iterator_t it;  
+    linked_list_iterator_init(&it, &hfp_connections);
+    while (linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
         if (memcmp(connection->remote_addr, bd_addr, 6) == 0) {
             return connection;
         }
