@@ -197,8 +197,8 @@ static void hfp_run_for_context(hfp_connection_t * connection){
             if (!err) connection->state = HFP_W4_RETRIEVE_INDICATORS;
             break;
         case HFP_RETRIEVE_INDICATORS_STATUS:
-            err = hfp_hs_retrieve_indicators_cmd(connection->rfcomm_cid);
-            if (!err) connection->state = HFP_W4_EXCHANGE_SUPPORTED_FEATURES;
+            err = hfp_hs_retrieve_indicators_status_cmd(connection->rfcomm_cid);
+            if (!err) connection->state = HFP_W4_RETRIEVE_INDICATORS_STATUS;
             break;
         case HFP_ENABLE_INDICATORS_STATUS_UPDATE:
             if (connection->remote_indicators_update_enabled == 0){
@@ -283,6 +283,16 @@ void hfp_parse_indicators(hfp_connection_t * context, uint8_t *packet, uint16_t 
     }
 }
 
+void hfp_parse_indicators_status(hfp_connection_t * context, uint8_t *packet, uint16_t size){
+    int index = 0;
+    char * token = strtok((char*)&packet[0], ",");
+    while (token){
+        printf("Indicator %d status: %d \n", index, atoi(token));
+        index++;
+        token = strtok(NULL, ",");
+    }
+}
+
 hfp_connection_t * handle_message(hfp_connection_t * context, uint8_t *packet, uint16_t size){
     int offset = 0;
     if (context->wait_ok){
@@ -342,23 +352,17 @@ hfp_connection_t * handle_message(hfp_connection_t * context, uint8_t *packet, u
        // printf("Parsed %s, expected  ("service",(0,1)),("call",(0,1)),("callsetup",(0,3)),("callheld",(0,2)),("signal",(0,5)),("roam",(0,1)),("battchg",(0,5))\n", HFP_Indicator);
         
         offset = strlen(HFP_Indicator) + 1;
-        char * token = strtok((char*)&packet[offset], ",");
-        int pos = 0;
         switch (context->state){
             case HFP_W4_RETRIEVE_INDICATORS:
                 hfp_parse_indicators(context, &packet[offset], size-offset);
                 context->remote_indicators_status = 0;
                 context->state = HFP_RETRIEVE_INDICATORS_STATUS; 
                 break;
-            case HFP_W4_RETRIEVE_INDICATORS_STATUS:
-                while (token){
-                    printf("%s\n", token);
-                    store_bit(context->remote_indicators_status, pos, atoi(token));
-                    pos++;
-                    token = strtok(NULL, ",");
-                }
+            case HFP_W4_RETRIEVE_INDICATORS_STATUS:{
+                hfp_parse_indicators_status(context, &packet[offset], size-offset);
                 context->state = HFP_ENABLE_INDICATORS_STATUS_UPDATE;
                 break;
+            }
             default:
                 break;
         }

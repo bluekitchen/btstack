@@ -172,7 +172,7 @@ typedef struct hfp_connection {
     hfp_state_t state;
 
     uint32_t line_size;
-    uint8_t  line_buffer[20];
+    uint8_t  line_buffer[200];
 
     bd_addr_t remote_addr;
     uint16_t con_handle;
