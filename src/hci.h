@@ -329,6 +329,7 @@ typedef enum {
 typedef enum {
 
     // general states
+    // state = 0
     SM_GENERAL_IDLE,
     SM_GENERAL_SEND_PAIRING_FAILED,
     SM_GENERAL_TIMEOUT, // no other security messages are exchanged
@@ -349,6 +350,7 @@ typedef enum {
     SM_PH2_C1_W4_RANDOM_B,
 
     // calculate confirm value for local side
+    // state = 10
     SM_PH2_C1_GET_ENC_A,
     SM_PH2_C1_W4_ENC_A,
     SM_PH2_C1_GET_ENC_B,
@@ -364,6 +366,7 @@ typedef enum {
     SM_PH2_SEND_PAIRING_RANDOM,
 
     // calc STK
+    // state = 20
     SM_PH2_CALC_STK,
     SM_PH2_W4_STK,
 
@@ -379,6 +382,7 @@ typedef enum {
     SM_PH3_Y_GET_ENC,
     SM_PH3_Y_W4_ENC,
     SM_PH3_LTK_GET_ENC,
+    // state = 30
     SM_PH3_LTK_W4_ENC,
     SM_PH3_CSRK_GET_ENC,
     SM_PH3_CSRK_W4_ENC,
@@ -395,6 +399,7 @@ typedef enum {
     SM_PH4_SEND_LTK,
 
     // RESPONDER ROLE
+    // state = 40
     SM_RESPONDER_SEND_SECURITY_REQUEST,
     SM_RESPONDER_PH0_RECEIVED_LTK,
     SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY,

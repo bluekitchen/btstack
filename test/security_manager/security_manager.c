@@ -33,6 +33,10 @@ uint8_t test_command_packet_02[] = {
     0x17, 0x20, 0x20, 0x9f, 0x9e, 0x9d, 0x9c, 0x9b, 0x9a, 0x99, 0x98, 0x97, 0x96, 0x95, 0x94, 0x93,
     0x92, 0x91, 0x90, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, };
+uint8_t test_command_packet_02a[] = {
+    0x17, 0x20, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x68, 0xc9, 0x73, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00 };
 uint8_t test_acl_packet_03[] = {
     0x40, 0x00, 0x0b, 0x00, 0x07, 0x00, 0x06, 0x00, 0x02, 0x03, 0x00, 0x01, 0x10, 0x07, 0x07, };
 uint8_t test_command_packet_04[] = {
@@ -101,13 +105,14 @@ uint8_t test_acl_packet_22[] = {
     0x5b, 0x93, 0x93, 0xc1, 0x8b, 0x09, 0xd0, 0xb8, 0x80, };
 
 bd_addr_t test_device_addr = {0x34, 0xb1, 0xf7, 0xd1, 0x77, 0x9b};
- 
-void mock_simulate_hci_state_working();
+
+void mock_init(void);
+void mock_simulate_hci_state_working(void);
 void mock_simulate_hci_event(uint8_t * packet, uint16_t size);
-void aes128_report_result();
+void aes128_report_result(void);
 void mock_simulate_sm_data_packet(uint8_t * packet, uint16_t size);
 void mock_simulate_command_complete(const hci_cmd_t *cmd);
-void mock_simulate_connected();
+void mock_simulate_connected(void);
 uint8_t * mock_packet_buffer(void);
 uint16_t mock_packet_buffer_len(void);
 void mock_clear_packet_buffer(void);
@@ -141,9 +146,8 @@ TEST_GROUP(SecurityManager){
 
 TEST(SecurityManager, MainTest){
 
+    mock_init();
     mock_simulate_hci_state_working();
-
-	printf("0\n");
 
     // expect le encrypt commmand
     CHECK_HCI_COMMAND(test_command_packet_01);
@@ -154,25 +158,30 @@ TEST(SecurityManager, MainTest){
     CHECK_HCI_COMMAND(test_command_packet_02);
 
     aes128_report_result();
-	
-	printf("1\n");
+	mock_clear_packet_buffer();
 
     mock_simulate_connected();
-    
+
+    CHECK_HCI_COMMAND(test_command_packet_02a);
+    aes128_report_result();
+
+    CHECK_HCI_COMMAND(test_command_packet_02a);
+    aes128_report_result();
+
+    CHECK_HCI_COMMAND(test_command_packet_02a);
+    aes128_report_result();
+
+    CHECK_HCI_COMMAND(test_command_packet_02a);
+    aes128_report_result();
+
     uint8_t test_pairing_request_command[] = { 0x01, 0x04, 0x00, 0x01, 0x10, 0x07, 0x07 };
     mock_simulate_sm_data_packet(&test_pairing_request_command[0], sizeof(test_pairing_request_command));
-
-	printf("2\n");
 
     // expect send pairing response command
     CHECK_ACL_PACKET(test_acl_packet_03);
 
-	printf("3\n");
-
     uint8_t test_pairing_confirm_command[] = { 0x03, 0x84, 0x5a, 0x87, 0x9a, 0x0f, 0xa9, 0x42, 0xba, 0x48, 0xc5, 0x79, 0xa0, 0x70, 0x70, 0xa9, 0xc8 };
     mock_simulate_sm_data_packet(&test_pairing_confirm_command[0], sizeof(test_pairing_confirm_command));
-
-	printf("4\n");
 
     // expect le random command
     CHECK_HCI_COMMAND(test_command_packet_04);

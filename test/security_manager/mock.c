@@ -19,7 +19,13 @@ static uint16_t packet_buffer_len = 0;
 
 static uint8_t aes128_cyphertext[16];
 
+static hci_connection_t  the_connection;
 static linked_list_t     connections;
+
+void mock_init(void){
+	the_connection.item.next = NULL;
+	connections = (linked_item*) &the_connection;
+}
 
 uint8_t * mock_packet_buffer(void){
 	return packet_buffer;
@@ -119,17 +125,13 @@ int hci_can_send_packet_now_using_packet_buffer(uint8_t packet_type){
 	return 1;
 }
 
-// todo:
 hci_connection_t * hci_connection_for_bd_addr_and_type(bd_addr_t addr, bd_addr_type_t addr_type){
-	printf("hci_connection_for_bd_addr_and_type not implemented in mock backend\n");
-	return NULL;
+	return &the_connection;
 }
 hci_connection_t * hci_connection_for_handle(hci_con_handle_t con_handle){
-	printf("hci_connection_for_handle not implemented in mock backend\n");
-	return NULL;
+	return &the_connection;
 }
 void hci_connections_get_iterator(linked_list_iterator_t *it){
-	// printf("hci_connections_get_iterator not implemented in mock backend\n");
     linked_list_iterator_init(it, &connections);
 }
 

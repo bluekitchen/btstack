@@ -35,7 +35,7 @@ security_manager: ${CORE_OBJ} ${COMMON_OBJ} security_manager.c
 	${CC} ${CORE_OBJ} ${COMMON_OBJ} security_manager.c ${CFLAGS} ${LDFLAGS} -o $@
 
 aestest: aestest.c rijndael.c
-	${CC} ${CFLAGS} -m32 rijndael.c aestest.c -o $@
+	${CC} ${CFLAGS} rijndael.c aestest.c -o $@
 
 test: all
 	./security_manager
