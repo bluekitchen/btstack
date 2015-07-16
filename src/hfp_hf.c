@@ -179,6 +179,7 @@ int has_hf_indicators_feature(hfp_connection_t * connection){
 
 static void hfp_run_for_context(hfp_connection_t * connection){
     if (!connection) return;
+    printf("hfp send cmd: context %p, RFCOMM cid %u\n", connection, connection->rfcomm_cid );
     if (!rfcomm_can_send_packet_now(connection->rfcomm_cid)) return;
 
     int err = 0;
@@ -441,9 +442,10 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
 }
 
 static void hfp_run(){
-    linked_item_t *it;
-    for (it = hfp_get_connections(); it ; it = it->next){
-        hfp_connection_t * connection = (hfp_connection_t *) it;
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, hfp_get_connections());
+    while (linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
         hfp_run_for_context(connection);
     }
 }
