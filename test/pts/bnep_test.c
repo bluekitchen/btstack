@@ -164,8 +164,6 @@ static void set_multicast_filter(void){
     bnep_set_multicast_filter(bnep_cid, multicast_filter, 1);
 }
 
-#if 0
-
 /* From RFC 5227 - 2.1.1
    A host probes to see if an address is already in use by broadcasting
    an ARP Request for the desired address.  The client MUST fill in the
@@ -179,25 +177,28 @@ static void set_multicast_filter(void){
    being probed.  An ARP Request constructed this way, with an all-zero
    'sender IP address', is referred to as an 'ARP Probe'.
 */
+#define HARDWARE_TYPE_ETHERNET 0x0001
+#define ARP_OPERATION_REQUEST 1
+#define ARP_OPERATION_REPLY   2
+
 static void send_arp_probe_ipv4(void){
 
     // "random address"
     static uint8_t requested_address[4] = {169, 254, 1, 0};
     requested_address[3]++;
 
-    int pos = setup_ethernet_header(1, 0, 1, 0x0806); // ARP
-
-    net_store_16(network_buffer, pos, 0x0001);  // Hardware type (HTYPE), 1 = Ethernet
+    int pos = setup_ethernet_header(1, 0, 1, NETWORK_TYPE_ARP); 
+    net_store_16(network_buffer, pos, HARDWARE_TYPE_ETHERNET);
     pos += 2;
-    net_store_16(network_buffer, pos, NETWORK_TYPE_IPv4);  // Protocol type (PTYPE), 0x800 = IPv4
+    net_store_16(network_buffer, pos, NETWORK_TYPE_IPv4);
     pos += 2;
-    network_buffer[pos++] = 6;                  // Hardware length (HLEN) - 6 MAC  Address
-    network_buffer[pos++] = 4;                  // Protocol length (PLEN) - 4 IPv4 Address
-    net_store_16(network_buffer, pos, 1);       // Operation 1 = request, 2 = reply
+    network_buffer[pos++] = 6; // Hardware length (HLEN) - 6 MAC  Address
+    network_buffer[pos++] = 4; // Protocol length (PLEN) - 4 IPv4 Address
+    net_store_16(network_buffer, pos, ARP_OPERATION_REQUEST); 
     pos += 2;
     BD_ADDR_COPY(&network_buffer[pos], local_addr); // Sender Hardware Address (SHA)
     pos += 6;
-    bzero(&network_buffer[pos], 4);             // Sender Protocol Adress (SPA)
+    bzero(&network_buffer[pos], 4);                 // Sender Protocol Adress (SPA)
     pos += 4;
     BD_ADDR_COPY(&network_buffer[pos], other_addr); // Target Hardware Address (THA) (ignored for requests)
     pos += 6;
@@ -211,6 +212,8 @@ static void send_arp_probe_ipv4(void){
 static void send_arp_probe_ipv6(void){
     
 }
+
+#if 0
 
 static void send_dhcp_discovery(void){
     
@@ -422,11 +425,11 @@ static void show_usage(void){
     printf("---\n");
     printf("1 - send ICMP Ping Request IPv4\n");
     printf("2 - send ICMP Ping Request IPv6\n");
+    printf("4 - send IPv4 ARP request\n");
+    printf("6 - send IPv6 ARP request\n");
 #if 0
     printf("1 - get IP address via DHCP\n");
     printf("2 - send DNS request\n");
-    printf("4 - send IPv4 ARP request\n");
-    printf("6 - send IPv6 ARP request\n");
     printf("9 - send some IPv6 packet\n");
     printf("0 - send some IPv6 packet 2\n");
 #endif
@@ -476,7 +479,6 @@ static int stdin_process(struct data_source *ds){
             printf("Sending ICMP Ping via IPv6\n");
             send_ping_request_ipv6();
             break;
-#if 0
         case '4':
             printf("Sending IPv4 ARP Probe\n");
             send_arp_probe_ipv4();
@@ -485,6 +487,7 @@ static int stdin_process(struct data_source *ds){
             printf("Sending IPv6 ARP Probe\n");
             send_arp_probe_ipv6();
             break;
+#if 0
         case '9':
             printf("Sending some IPv6 packet\n");
             send_some_ipv6_packet();
