@@ -49,5 +49,5 @@ l2cap_test: ${CORE_OBJ} ${COMMON_OBJ} l2cap_test.c
 classic_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} classic_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
-bnep_test: ${CORE_OBJ} ${COMMON_OBJ} bnep_test.c
+bnep_test: ${CORE_OBJ} ${COMMON_OBJ} pan.o bnep_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
