@@ -94,7 +94,7 @@ extern "C" {
 #define HFP_Generic_Status_Indicator "+BIND"
 #define HFP_OK "OK"
 
-#define HFP_Codec_CSVD 0x01
+#define HFP_Codec_CVSD 0x01
 #define HFP_Codec_mSBC 0x02
 
 

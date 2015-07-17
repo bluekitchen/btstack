@@ -271,7 +271,7 @@ void hfp_parse_indicators(hfp_connection_t * context, uint8_t *packet, uint16_t 
                 i = 0;
                 break;
             case 3: // min-range
-                if (byte == ','){
+                if (byte == ',' || byte == '-'){
                     state++;
                     min_range[i] = 0;
                     i = 0;
