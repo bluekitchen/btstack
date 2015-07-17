@@ -52,13 +52,8 @@
 extern "C" {
 #endif
 
-#define HFP_DEFAULT_HF_SUPPORTED_FEATURES 0x0000
-#define HFP_DEFAULT_AG_SUPPORTED_FEATURES 0x0009
 
-#define HFP_MAX_NUM_CODECS 20
-#define HFP_MAX_NUM_INDICATORS 20
-
-/* AT+BRSF Result: 
+/* HF Supported Features: 
 0: EC and/or NR function
 1: Three-way calling
 2: CLI presentation capability
@@ -71,7 +66,13 @@ extern "C" {
 9: eSCO S4 (and T2) Settings Supported
 10-31: Reserved for future definition
 */
-/* +BRSF Result:
+#define HFP_HFSF_THREE_WAY_CALLING  1
+#define HFP_HFSF_EC_NR_FUNCTION     0
+#define HFP_HFSF_CODEC_NEGOTIATION  7
+#define HFP_HFSF_HF_INDICATORS      8
+#define HFP_HFSF_ESCO               9
+
+/* AG Supported Features:
 0: Three-way calling
 1: EC and/or NR function
 2: Voice recognition function
@@ -86,6 +87,18 @@ extern "C" {
 11: eSCO S4 (and T2) Settings Supported
 12-31: Reserved for future definition
 */
+#define HFP_AGSF_THREE_WAY_CALLING  0
+#define HFP_AGSF_EC_NR_FUNCTION     1
+#define HFP_AGSF_CODEC_NEGOTIATION  9
+#define HFP_AGSF_HF_INDICATORS      10
+#define HFP_AGSF_ESCO               11
+
+#define HFP_DEFAULT_HF_SUPPORTED_FEATURES 0x0000
+#define HFP_DEFAULT_AG_SUPPORTED_FEATURES 0x0009
+
+#define HFP_MAX_NUM_CODECS 20
+#define HFP_MAX_NUM_INDICATORS 20
+
 #define HFP_SUPPORTED_FEATURES "+BRSF"
 #define HFP_AVAILABLE_CODECS "+BAC"
 #define HFP_INDICATOR "+CIND"

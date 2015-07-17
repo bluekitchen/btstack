@@ -77,24 +77,23 @@ static int get_bit(uint16_t bitmap, int position){
 
 
 int has_codec_negotiation_feature(hfp_connection_t * connection){
-    int hf = get_bit(hfp_supported_features,7);
-    int ag = get_bit(connection->remote_supported_features,9);
+    int hf = get_bit(hfp_supported_features, HFP_HFSF_CODEC_NEGOTIATION);
+    int ag = get_bit(connection->remote_supported_features, HFP_AGSF_CODEC_NEGOTIATION);
     printf("\ncodec_negotiation_feature: HF %d, AG %d\n", hf, ag);
     return hf && ag;
 }
 
 int has_call_waiting_and_3way_calling_feature(hfp_connection_t * connection){
-    int hf = get_bit(hfp_supported_features,1);
-    int ag = get_bit(connection->remote_supported_features,0);
+    int hf = get_bit(hfp_supported_features, HFP_HFSF_THREE_WAY_CALLING);
+    int ag = get_bit(connection->remote_supported_features, HFP_AGSF_THREE_WAY_CALLING);
     printf("\n3way_calling_feature: HF %d, AG %d\n", hf, ag);
     return hf && ag;
 }
 
 
 int has_hf_indicators_feature(hfp_connection_t * connection){
-
-    int hf = get_bit(hfp_supported_features,8);
-    int ag = get_bit(connection->remote_supported_features,10);
+    int hf = get_bit(hfp_supported_features, HFP_HFSF_HF_INDICATORS);
+    int ag = get_bit(connection->remote_supported_features, HFP_AGSF_HF_INDICATORS);
     printf("\nhf_indicators_feature: HF %d, AG %d\n", hf, ag);
     return hf && ag;
 }
