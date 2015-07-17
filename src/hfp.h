@@ -207,7 +207,7 @@ linked_list_t * hfp_get_connections();
 
 // TODO: move to utils
 int send_str_over_rfcomm(uint16_t cid, char * command);
-void join(char * buffer, int buffer_size, int buffer_offset, uint8_t * values, int values_nr, int value_size);
+void join(char * buffer, int buffer_size, uint8_t * values, int values_nr);
 
 const char * hfp_hf_feature(int index);
 const char * hfp_ag_feature(int index);

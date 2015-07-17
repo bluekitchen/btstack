@@ -75,16 +75,28 @@ static int get_bit(uint16_t bitmap, int position){
     return (bitmap >> position) & 1;
 }
 
-int has_call_waiting_and_3way_calling_feature(hfp_connection_t * connection){
-    return get_bit(hfp_supported_features,1) && get_bit(connection->remote_supported_features,0);
-}
 
 int has_codec_negotiation_feature(hfp_connection_t * connection){
-    return get_bit(hfp_supported_features,7) && get_bit(connection->remote_supported_features,9);
+    int hf = get_bit(hfp_supported_features,7);
+    int ag = get_bit(connection->remote_supported_features,9);
+    printf("\ncodec_negotiation_feature: HF %d, AG %d\n", hf, ag);
+    return hf && ag;
 }
 
+int has_call_waiting_and_3way_calling_feature(hfp_connection_t * connection){
+    int hf = get_bit(hfp_supported_features,1);
+    int ag = get_bit(connection->remote_supported_features,0);
+    printf("\n3way_calling_feature: HF %d, AG %d\n", hf, ag);
+    return hf && ag;
+}
+
+
 int has_hf_indicators_feature(hfp_connection_t * connection){
-    return get_bit(hfp_supported_features,8) && get_bit(connection->remote_supported_features,10);
+
+    int hf = get_bit(hfp_supported_features,8);
+    int ag = get_bit(connection->remote_supported_features,10);
+    printf("\nhf_indicators_feature: HF %d, AG %d\n", hf, ag);
+    return hf && ag;
 }
 
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
@@ -114,8 +126,8 @@ int hfp_hs_exchange_supported_features_cmd(uint16_t cid){
 
 int hfp_hs_retrieve_codec_cmd(uint16_t cid){
     char buffer[30];
-    int buffer_offset = sprintf(buffer, "AT%s=", HFP_Available_Codecs);
-    join(buffer, sizeof(buffer), buffer_offset, hfp_codecs, hfp_codecs_nr, 1);
+    int buffer_offset = snprintf(buffer, sizeof(buffer), "AT%s=", HFP_Available_Codecs);
+    join(buffer+buffer_offset, sizeof(buffer)-buffer_offset, hfp_codecs, hfp_codecs_nr);
     // printf("retrieve_codec %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
@@ -145,7 +157,7 @@ int hfp_hs_toggle_indicator_status_update_cmd(uint16_t cid, uint8_t activate){
 
 int hfp_hs_retrieve_can_hold_call_cmd(uint16_t cid){
     char buffer[20];
-    sprintf(buffer, "AT%s\r\n", HFP_Support_Call_Hold_And_Multiparty_Services);
+    sprintf(buffer, "AT%s=?\r\n", HFP_Support_Call_Hold_And_Multiparty_Services);
     // printf("retrieve_can_hold_call %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
@@ -153,8 +165,8 @@ int hfp_hs_retrieve_can_hold_call_cmd(uint16_t cid){
 
 int hfp_hs_list_supported_generic_status_indicators_cmd(uint16_t cid){
     char buffer[30];
-    int buffer_offset = sprintf(buffer, "AT%s=", HFP_Generic_Status_Indicator); 
-    join(buffer, sizeof(buffer), buffer_offset, hfp_indicators, hfp_indicators_nr, 2); 
+    int buffer_offset = snprintf(buffer, sizeof(buffer), "AT%s=", HFP_Generic_Status_Indicator); 
+    join(buffer+buffer_offset, sizeof(buffer)-buffer_offset, hfp_indicators, hfp_indicators_nr); 
     // printf("list_supported_generic_status_indicators %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
@@ -185,9 +197,13 @@ static void hfp_run_for_context(hfp_connection_t * connection){
             if (!err) connection->state = HFP_W4_EXCHANGE_SUPPORTED_FEATURES;
             break;
         case HFP_NOTIFY_ON_CODECS:
-            err = hfp_hs_retrieve_codec_cmd(connection->rfcomm_cid);
-            if (!err) connection->state = HFP_W4_NOTIFY_ON_CODECS;
-            break;
+            if (has_codec_negotiation_feature(connection)){
+                err = hfp_hs_retrieve_codec_cmd(connection->rfcomm_cid);
+                if (!err) connection->state = HFP_W4_NOTIFY_ON_CODECS;
+                break;
+            } 
+            printf("fall through to HFP_RETRIEVE_INDICATORS (no codec feature)\n");
+            connection->state = HFP_RETRIEVE_INDICATORS;
         case HFP_RETRIEVE_INDICATORS:
             err = hfp_hs_retrieve_indicators_cmd(connection->rfcomm_cid);
             if (!err) connection->state = HFP_W4_RETRIEVE_INDICATORS;
@@ -306,10 +322,38 @@ void hfp_parse_indicators_status(hfp_connection_t * context, uint8_t *packet, ui
     }
 }
 
+void hfp_parse_comma_separated_tuple(hfp_connection_t * context, uint8_t *packet, uint16_t size){
+    char feature[5];
+    int i, pos;
+    int state = 0;
+    for (pos = 0; pos < size; pos++){
+        uint8_t byte = packet[pos];
+
+        switch (state){
+            case 0: // pre-feature
+                if (byte != '(') break;
+                state++;
+                i = 0;
+                break;
+            case 1: // feature
+                if (byte == ',' || byte == ')'){
+                    feature[i] = 0;
+                    printf("call_hold_and_multiparty value: %s\n", feature);
+                    i = 0;
+                    if (byte == ')') state++;
+                    break;
+                }
+                feature[i++] = byte;
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+
 hfp_connection_t * handle_message(hfp_connection_t * context, uint8_t *packet, uint16_t size){
     int offset = 0;
-    printf("Parsed %s, state %u\n", (char *)packet, context->state);
-            
     if (context->wait_ok){
         if (strncmp((char *)packet, HFP_OK, strlen(HFP_OK)) == 0){
             context->wait_ok = 0;
@@ -326,7 +370,6 @@ hfp_connection_t * handle_message(hfp_connection_t * context, uint8_t *packet, u
 
                 case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
                     context->state = HFP_ACTIVE;
-                    printf(" state Active! \n");
                     break;
                 default:
                     break;
@@ -344,11 +387,7 @@ hfp_connection_t * handle_message(hfp_connection_t * context, uint8_t *packet, u
                 printf("AG supported feature: %s\n", hfp_ag_feature(i));
             }
         }
-        if (has_codec_negotiation_feature(context)){
-            context->state = HFP_NOTIFY_ON_CODECS;
-        } else {
-            context->state = HFP_RETRIEVE_INDICATORS;
-        }
+        context->state = HFP_NOTIFY_ON_CODECS;
         context->wait_ok = 1;
         return context;
     }
@@ -374,8 +413,8 @@ hfp_connection_t * handle_message(hfp_connection_t * context, uint8_t *packet, u
 
     if (strncmp((char *)packet, HFP_Support_Call_Hold_And_Multiparty_Services, strlen(HFP_Support_Call_Hold_And_Multiparty_Services)) == 0){
         offset = strlen(HFP_Support_Call_Hold_And_Multiparty_Services) + 1; // +1 for =
-        printf("AT+CHLD %s, offset %u, size %u\n", (char *)&packet[offset], offset, size);
-        
+        hfp_parse_comma_separated_tuple(context, &packet[offset], size-offset);
+        context->state = HFP_LIST_GENERIC_STATUS_INDICATORS;
         context->wait_ok = 1;
         return context;
     } 
@@ -386,23 +425,19 @@ hfp_connection_t * handle_message(hfp_connection_t * context, uint8_t *packet, u
          * 0x01 Enhanced Safety​, on/off
          * 0x02 Battery Level,   0-100
          */
-
         offset = strlen(HFP_Generic_Status_Indicator) + 1; // +1 for =
-        char * token = strtok((char*)&packet[offset], ",");
-       
-        int pos = 0;
+                
         switch (context->state){
             case HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS:
-                while (token){
-                    printf("%s\n", token);
-                    context->remote_hf_indicators[pos++] = atoi(token);
-                    token = strtok(NULL, ",");
-                }
-                context->remote_hf_indicators_nr = pos;
+                printf("Supported generic status indicators \n");
+                hfp_parse_comma_separated_tuple(context, &packet[offset], size-offset);
                 context->remote_hf_indicators_status = 0;
                 context->state = HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
                 break;
             case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:{
+                printf("Supported initial state generic status indicators \n");
+                char * token = strtok((char*)&packet[offset], ",");
+       
                 uint16_t indicator = atoi(token);
                 int status = atoi(strtok(NULL, ","));
                 if (!status) break;

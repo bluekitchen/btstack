@@ -121,26 +121,21 @@ int send_str_over_rfcomm(uint16_t cid, char * command){
     return err;
 }
 
-void join(char * buffer, int buffer_size, int buffer_offset, uint8_t * values, int values_nr, int value_size){
-    int req_size = values_nr * (value_size + 1);
-    if (buffer_size - buffer_offset < req_size ) {
-        log_error("join: buffer too small (size: %u. req: %u)", buffer_size, req_size);
-        return;
+void join(char * buffer, int buffer_size, uint8_t * values, int values_nr){
+    if (buffer_size < values_nr * 3) return;
+    int i;
+    int offset = 0;
+    for (i = 0; i < values_nr-1; i++) {
+      offset += snprintf(buffer+offset, buffer_size-offset, "%d,", values[i]); // puts string into buffer
     }
-    int pos = buffer_offset;
-    int i,j,k;
-    k = 0;
-    for (i = 0; i < values_nr-1; i++){
-        for (j=0; j<value_size; j++){
-            buffer[pos++] = values[k++];
-        }
-        buffer[pos++] = ',';
+    if (i<values_nr){
+        offset += snprintf(buffer+offset, buffer_size-offset, "%d", values[i]);
     }
-    for (j=0; j<value_size; j++){
-        buffer[pos++] = values[k++];
-    }
-    buffer[pos] = '\0';
+
+    offset += snprintf(buffer+offset, buffer_size-offset, "\r\n");
+    buffer[offset] = 0;
 }
+
 
 static void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value){
     if (!callback) return;
@@ -188,7 +183,7 @@ static hfp_connection_t * create_hfp_connection_context(){
     context->state = HFP_IDLE;
     context->line_size = 0;
     
-    context->negotiated_codec = HFP_Codec_CSVD;
+    context->negotiated_codec = HFP_Codec_CVSD;
     context->remote_supported_features = 0;
     context->remote_indicators_update_enabled = 0;
     context->remote_indicators_nr = 0;
