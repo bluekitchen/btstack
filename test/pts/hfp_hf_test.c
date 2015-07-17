@@ -74,7 +74,7 @@ const char hfp_hf_service_name[] = "BTstack HF Test";
 
 static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t local_mac = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
-
+static bd_addr_t phone = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
 // prototypes
 static void show_usage();
 
@@ -101,8 +101,8 @@ static int stdin_process(struct data_source *ds){
             hfp_hf_connect(pts_addr);
             break;
         case 'e':
-            printf("Establishing HFP connection to local mac %s...\n", bd_addr_to_str(local_mac));
-            hfp_hf_connect(local_mac);
+            printf("Establishing HFP connection to %s...\n", bd_addr_to_str(phone));
+            hfp_hf_connect(phone);
             break;
         case 'd':
             printf("Releasing HFP connection.\n");
@@ -126,14 +126,14 @@ void packet_handler(uint8_t * event, uint16_t event_size){
 
 int btstack_main(int argc, const char * argv[]){
     // init L2CAP
-    uint8_t codecs[1] = {HFP_Codec_CSVD};
+    uint8_t codecs[1] = {HFP_Codec_CVSD};
     uint16_t indicators[1] = {0x01};
 
     l2cap_init();
     rfcomm_init();
     
-    hfp_hf_init(rfcomm_channel_nr, HFP_Default_HF_Supported_Features, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
-    // hfp_hf_init(rfcomm_channel_nr, 0x0009, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
+    // hfp_hf_init(rfcomm_channel_nr, HFP_Default_HF_Supported_Features, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
+    hfp_hf_init(rfcomm_channel_nr, 182, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
 
     hfp_register_packet_handler(packet_handler);
 

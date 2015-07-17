@@ -60,8 +60,55 @@
 #include "debug.h"
 #include "hfp_ag.h"
 
+#define HFP_HF_FEATURES_SIZE 10
+#define HFP_AG_FEATURES_SIZE 12
+
+static const char * hfp_hf_features[] = {
+    "EC and/or NR function",
+    "Three-way calling",
+    "CLI presentation capability",
+    "Voice recognition activation",
+    "Remote volume control",
+    "Enhanced call status",
+    "Enhanced call control",
+    "Codec negotiation",
+    "HF Indicators",
+    "eSCO S4 (and T2) Settings Supported",
+    "Reserved for future definition"
+};
+
+static const char * hfp_ag_features[] = {
+    "Three-way calling",
+    "EC and/or NR function",
+    "Voice recognition function",
+    "In-band ring tone capability",
+    "Attach a number to a voice tag",
+    "Ability to reject a call",
+    "Enhanced call status",
+    "Enhanced call control",
+    "Extended Error Result Codes",
+    "Codec negotiation",
+    "HF Indicators",
+    "eSCO S4 (and T2) Settings Supported",
+    "Reserved for future definition"
+};
+
 static hfp_callback_t hfp_callback;
 static linked_list_t hfp_connections = NULL;
+
+const char * hfp_hf_feature(int index){
+    if (index > HFP_HF_FEATURES_SIZE){
+        return hfp_hf_features[HFP_HF_FEATURES_SIZE];
+    }
+    return hfp_hf_features[index];
+}
+
+const char * hfp_ag_feature(int index){
+    if (index > HFP_AG_FEATURES_SIZE){
+        return hfp_ag_features[HFP_AG_FEATURES_SIZE];
+    }
+    return hfp_ag_features[index];
+}
 
 int send_str_over_rfcomm(uint16_t cid, char * command){
     // if (!rfcomm_can_send_packet_now(cid)) return 1;
@@ -69,31 +116,26 @@ int send_str_over_rfcomm(uint16_t cid, char * command){
     if (err){
         printf("rfcomm_send_internal -> error 0X%02x", err);
     } else {
-        printf("Sent   %s", command);
+        printf("\nSent %s", command);
     }
     return err;
 }
 
-void join(char * buffer, int buffer_size, int buffer_offset, uint8_t * values, int values_nr, int value_size){
-    int req_size = values_nr * (value_size + 1);
-    if (buffer_size - buffer_offset < req_size ) {
-        log_error("join: buffer too small (size: %u. req: %u)", buffer_size, req_size);
-        return;
+void join(char * buffer, int buffer_size, uint8_t * values, int values_nr){
+    if (buffer_size < values_nr * 3) return;
+    int i;
+    int offset = 0;
+    for (i = 0; i < values_nr-1; i++) {
+      offset += snprintf(buffer+offset, buffer_size-offset, "%d,", values[i]); // puts string into buffer
     }
-    int pos = buffer_offset;
-    int i,j,k;
-    k = 0;
-    for (i = 0; i < values_nr-1; i++){
-        for (j=0; j<value_size; j++){
-            buffer[pos++] = values[k++];
-        }
-        buffer[pos++] = ',';
+    if (i<values_nr){
+        offset += snprintf(buffer+offset, buffer_size-offset, "%d", values[i]);
     }
-    for (j=0; j<value_size; j++){
-        buffer[pos++] = values[k++];
-    }
-    buffer[pos] = '\0';
+
+    offset += snprintf(buffer+offset, buffer_size-offset, "\r\n");
+    buffer[offset] = 0;
 }
+
 
 static void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value){
     if (!callback) return;
@@ -141,7 +183,7 @@ static hfp_connection_t * create_hfp_connection_context(){
     context->state = HFP_IDLE;
     context->line_size = 0;
     
-    context->negotiated_codec = HFP_Codec_CSVD;
+    context->negotiated_codec = HFP_Codec_CVSD;
     context->remote_supported_features = 0;
     context->remote_indicators_update_enabled = 0;
     context->remote_indicators_nr = 0;
