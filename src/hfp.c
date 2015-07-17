@@ -60,8 +60,55 @@
 #include "debug.h"
 #include "hfp_ag.h"
 
+#define HFP_HF_FEATURES_SIZE 10
+#define HFP_AG_FEATURES_SIZE 12
+
+static const char * hfp_hf_features[] = {
+    "EC and/or NR function",
+    "Three-way calling",
+    "CLI presentation capability",
+    "Voice recognition activation",
+    "Remote volume control",
+    "Enhanced call status",
+    "Enhanced call control",
+    "Codec negotiation",
+    "HF Indicators",
+    "eSCO S4 (and T2) Settings Supported",
+    "Reserved for future definition"
+};
+
+static const char * hfp_ag_features[] = {
+    "Three-way calling",
+    "EC and/or NR function",
+    "Voice recognition function",
+    "In-band ring tone capability",
+    "Attach a number to a voice tag",
+    "Ability to reject a call",
+    "Enhanced call status",
+    "Enhanced call control",
+    "Extended Error Result Codes",
+    "Codec negotiation",
+    "HF Indicators",
+    "eSCO S4 (and T2) Settings Supported",
+    "Reserved for future definition"
+};
+
 static hfp_callback_t hfp_callback;
 static linked_list_t hfp_connections = NULL;
+
+const char * hfp_hf_feature(int index){
+    if (index > HFP_HF_FEATURES_SIZE){
+        return hfp_hf_features[HFP_HF_FEATURES_SIZE];
+    }
+    return hfp_hf_features[index];
+}
+
+const char * hfp_ag_feature(int index){
+    if (index > HFP_AG_FEATURES_SIZE){
+        return hfp_ag_features[HFP_AG_FEATURES_SIZE];
+    }
+    return hfp_ag_features[index];
+}
 
 int send_str_over_rfcomm(uint16_t cid, char * command){
     // if (!rfcomm_can_send_packet_now(cid)) return 1;
@@ -69,7 +116,7 @@ int send_str_over_rfcomm(uint16_t cid, char * command){
     if (err){
         printf("rfcomm_send_internal -> error 0X%02x", err);
     } else {
-        printf("Sent   %s", command);
+        printf("\nSent %s", command);
     }
     return err;
 }

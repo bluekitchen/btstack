@@ -99,13 +99,13 @@ extern "C" {
 
 
 typedef enum {
-    HFP_IDLE,
+    HFP_IDLE = 0, //50
     HFP_SDP_QUERY_RFCOMM_CHANNEL,
     HFP_W4_SDP_QUERY_COMPLETE,
     HFP_W4_RFCOMM_CONNECTED,
     
     HFP_EXCHANGE_SUPPORTED_FEATURES,
-    HFP_W4_EXCHANGE_SUPPORTED_FEATURES,
+    HFP_W4_EXCHANGE_SUPPORTED_FEATURES, // 5
     
     HFP_NOTIFY_ON_CODECS,
     HFP_W4_NOTIFY_ON_CODECS,
@@ -113,14 +113,14 @@ typedef enum {
     HFP_RETRIEVE_INDICATORS,
     HFP_W4_RETRIEVE_INDICATORS,
     
-    HFP_RETRIEVE_INDICATORS_STATUS,
+    HFP_RETRIEVE_INDICATORS_STATUS, // 10
     HFP_W4_RETRIEVE_INDICATORS_STATUS,
     
     HFP_ENABLE_INDICATORS_STATUS_UPDATE,
     HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE,
     
     HFP_RETRIEVE_CAN_HOLD_CALL,
-    HFP_W4_RETRIEVE_CAN_HOLD_CALL,
+    HFP_W4_RETRIEVE_CAN_HOLD_CALL, // 15
     
     HFP_LIST_GENERIC_STATUS_INDICATORS,
     HFP_W4_LIST_GENERIC_STATUS_INDICATORS,
@@ -128,7 +128,7 @@ typedef enum {
     HFP_RETRIEVE_GENERIC_STATUS_INDICATORS,
     HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS,
     
-    HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS,
+    HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS, // 20
     HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS,
     
     HFP_ACTIVE,
@@ -195,6 +195,7 @@ typedef struct hfp_connection {
     hfp_callback_t callback;
 } hfp_connection_t;
 
+
 void hfp_create_service(uint8_t * service, uint16_t service_uuid, int rfcomm_channel_nr, const char * name, uint16_t supported_features);
 void hfp_register_packet_handler(hfp_callback_t callback);
 hfp_connection_t * hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size);
@@ -207,6 +208,9 @@ linked_list_t * hfp_get_connections();
 // TODO: move to utils
 int send_str_over_rfcomm(uint16_t cid, char * command);
 void join(char * buffer, int buffer_size, int buffer_offset, uint8_t * values, int values_nr, int value_size);
+
+const char * hfp_hf_feature(int index);
+const char * hfp_ag_feature(int index);
 
 #if defined __cplusplus
 }
