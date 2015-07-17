@@ -63,7 +63,7 @@
 
 
 static const char default_hfp_hf_service_name[] = "Hands-Free unit";
-static uint16_t hfp_supported_features = HFP_Default_HF_Supported_Features;
+static uint16_t hfp_supported_features = HFP_DEFAULT_HF_SUPPORTED_FEATURES;
 static uint8_t hfp_codecs_nr = 0;
 static uint8_t hfp_codecs[HFP_MAX_NUM_CODECS];
 
@@ -119,14 +119,14 @@ static int store_bit(uint32_t bitmap, int position, uint8_t value){
 
 int hfp_hs_exchange_supported_features_cmd(uint16_t cid){
     char buffer[20];
-    sprintf(buffer, "AT%s=%d\r\n", HFP_Supported_Features, hfp_supported_features);
+    sprintf(buffer, "AT%s=%d\r\n", HFP_SUPPORTED_FEATURES, hfp_supported_features);
     // printf("exchange_supported_features %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 int hfp_hs_retrieve_codec_cmd(uint16_t cid){
     char buffer[30];
-    int buffer_offset = snprintf(buffer, sizeof(buffer), "AT%s=", HFP_Available_Codecs);
+    int buffer_offset = snprintf(buffer, sizeof(buffer), "AT%s=", HFP_AVAILABLE_CODECS);
     join(buffer+buffer_offset, sizeof(buffer)-buffer_offset, hfp_codecs, hfp_codecs_nr);
     // printf("retrieve_codec %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
@@ -135,21 +135,21 @@ int hfp_hs_retrieve_codec_cmd(uint16_t cid){
 
 int hfp_hs_retrieve_indicators_cmd(uint16_t cid){
     char buffer[20];
-    sprintf(buffer, "AT%s=?\r\n", HFP_Indicator);
+    sprintf(buffer, "AT%s=?\r\n", HFP_INDICATOR);
     // printf("retrieve_indicators %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 int hfp_hs_retrieve_indicators_status_cmd(uint16_t cid){
     char buffer[20];
-    sprintf(buffer, "AT%s?\r\n", HFP_Indicator);
+    sprintf(buffer, "AT%s?\r\n", HFP_INDICATOR);
     // printf("retrieve_indicators_status %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 int hfp_hs_toggle_indicator_status_update_cmd(uint16_t cid, uint8_t activate){
     char buffer[20];
-    sprintf(buffer, "AT%s=3,0,0,%d\r\n", HFP_Enable_Indicator_Status_Update, activate);
+    sprintf(buffer, "AT%s=3,0,0,%d\r\n", HFP_ENABLE_INDICATOR_STATUS_UPDATE, activate);
     // printf("toggle_indicator_status_update %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
@@ -157,7 +157,7 @@ int hfp_hs_toggle_indicator_status_update_cmd(uint16_t cid, uint8_t activate){
 
 int hfp_hs_retrieve_can_hold_call_cmd(uint16_t cid){
     char buffer[20];
-    sprintf(buffer, "AT%s=?\r\n", HFP_Support_Call_Hold_And_Multiparty_Services);
+    sprintf(buffer, "AT%s=?\r\n", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES);
     // printf("retrieve_can_hold_call %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
@@ -165,7 +165,7 @@ int hfp_hs_retrieve_can_hold_call_cmd(uint16_t cid){
 
 int hfp_hs_list_supported_generic_status_indicators_cmd(uint16_t cid){
     char buffer[30];
-    int buffer_offset = snprintf(buffer, sizeof(buffer), "AT%s=", HFP_Generic_Status_Indicator); 
+    int buffer_offset = snprintf(buffer, sizeof(buffer), "AT%s=", HFP_GENERIC_STATUS_INDICATOR); 
     join(buffer+buffer_offset, sizeof(buffer)-buffer_offset, hfp_indicators, hfp_indicators_nr); 
     // printf("list_supported_generic_status_indicators %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
@@ -173,14 +173,14 @@ int hfp_hs_list_supported_generic_status_indicators_cmd(uint16_t cid){
 
 int hfp_hs_retrieve_supported_generic_status_indicators_cmd(uint16_t cid){
     char buffer[20];
-    sprintf(buffer, "AT%s=?\r\rn", HFP_Generic_Status_Indicator); 
+    sprintf(buffer, "AT%s=?\r\rn", HFP_GENERIC_STATUS_INDICATOR); 
     // printf("retrieve_supported_generic_status_indicators %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
 int hfp_hs_list_initital_supported_generic_status_indicators_cmd(uint16_t cid){
     char buffer[20];
-    sprintf(buffer, "AT%s?\r\n", HFP_Generic_Status_Indicator);
+    sprintf(buffer, "AT%s?\r\n", HFP_GENERIC_STATUS_INDICATOR);
     // printf("list_initital_supported_generic_status_indicators %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
@@ -378,8 +378,8 @@ hfp_connection_t * handle_message(hfp_connection_t * context, uint8_t *packet, u
         }
     }
 
-    if (strncmp((char *)packet, HFP_Supported_Features, strlen(HFP_Supported_Features)) == 0){
-        offset = strlen(HFP_Supported_Features) + 1; // +1 for =
+    if (strncmp((char *)packet, HFP_SUPPORTED_FEATURES, strlen(HFP_SUPPORTED_FEATURES)) == 0){
+        offset = strlen(HFP_SUPPORTED_FEATURES) + 1; // +1 for =
         context->remote_supported_features = atoi((char*)&packet[offset]);
         int i = 0;
         for (i=0; i<16; i++){
@@ -392,8 +392,8 @@ hfp_connection_t * handle_message(hfp_connection_t * context, uint8_t *packet, u
         return context;
     }
 
-    if (strncmp((char *)packet, HFP_Indicator, strlen(HFP_Indicator)) == 0){
-        offset = strlen(HFP_Indicator) + 1;
+    if (strncmp((char *)packet, HFP_INDICATOR, strlen(HFP_INDICATOR)) == 0){
+        offset = strlen(HFP_INDICATOR) + 1;
         switch (context->state){
             case HFP_W4_RETRIEVE_INDICATORS:
                 hfp_parse_indicators(context, &packet[offset], size-offset);
@@ -411,21 +411,21 @@ hfp_connection_t * handle_message(hfp_connection_t * context, uint8_t *packet, u
         return context;
     }
 
-    if (strncmp((char *)packet, HFP_Support_Call_Hold_And_Multiparty_Services, strlen(HFP_Support_Call_Hold_And_Multiparty_Services)) == 0){
-        offset = strlen(HFP_Support_Call_Hold_And_Multiparty_Services) + 1; // +1 for =
+    if (strncmp((char *)packet, HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES, strlen(HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES)) == 0){
+        offset = strlen(HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES) + 1; // +1 for =
         hfp_parse_comma_separated_tuple(context, &packet[offset], size-offset);
         context->state = HFP_LIST_GENERIC_STATUS_INDICATORS;
         context->wait_ok = 1;
         return context;
     } 
 
-    if (strncmp((char *)packet, HFP_Generic_Status_Indicator, strlen(HFP_Generic_Status_Indicator)) == 0){
+    if (strncmp((char *)packet, HFP_GENERIC_STATUS_INDICATOR, strlen(HFP_GENERIC_STATUS_INDICATOR)) == 0){
         // https://www.bluetooth.org/en-us/specification/assigned-numbers/hands-free-profile
         /* HF Indicators
          * 0x01 Enhanced Safety​, on/off
          * 0x02 Battery Level,   0-100
          */
-        offset = strlen(HFP_Generic_Status_Indicator) + 1; // +1 for =
+        offset = strlen(HFP_GENERIC_STATUS_INDICATOR) + 1; // +1 for =
                 
         switch (context->state){
             case HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS:

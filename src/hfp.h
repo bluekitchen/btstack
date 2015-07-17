@@ -52,8 +52,8 @@
 extern "C" {
 #endif
 
-#define HFP_Default_HF_Supported_Features 0x0000
-#define HFP_Default_AG_Supported_Features 0x0009
+#define HFP_DEFAULT_HF_SUPPORTED_FEATURES 0x0000
+#define HFP_DEFAULT_AG_SUPPORTED_FEATURES 0x0009
 
 #define HFP_MAX_NUM_CODECS 20
 #define HFP_MAX_NUM_INDICATORS 20
@@ -86,16 +86,17 @@ extern "C" {
 11: eSCO S4 (and T2) Settings Supported
 12-31: Reserved for future definition
 */
-#define HFP_Supported_Features "+BRSF"
-#define HFP_Available_Codecs "+BAC"
-#define HFP_Indicator "+CIND"
-#define HFP_Enable_Indicator_Status_Update "+CMER"
-#define HFP_Support_Call_Hold_And_Multiparty_Services "+CHLD"
-#define HFP_Generic_Status_Indicator "+BIND"
+#define HFP_SUPPORTED_FEATURES "+BRSF"
+#define HFP_AVAILABLE_CODECS "+BAC"
+#define HFP_INDICATOR "+CIND"
+#define HFP_ENABLE_INDICATOR_STATUS_UPDATE "+CMER"
+#define HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES "+CHLD"
+#define HFP_GENERIC_STATUS_INDICATOR "+BIND"
 #define HFP_OK "OK"
 
-#define HFP_Codec_CVSD 0x01
-#define HFP_Codec_mSBC 0x02
+// Codecs 
+#define HFP_CODEC_CVSD 0x01
+#define HFP_CODEC_MSBC 0x02
 
 
 typedef enum {

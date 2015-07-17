@@ -62,7 +62,7 @@
 #include "hfp_ag.h"
 
 static const char default_hfp_ag_service_name[] = "Voice gateway";
-static uint16_t hfp_supported_features = HFP_Default_HF_Supported_Features;
+static uint16_t hfp_supported_features = HFP_DEFAULT_HF_SUPPORTED_FEATURES;
 static uint8_t hfp_codecs_nr = 0;
 static uint8_t hfp_codecs[HFP_MAX_NUM_CODECS];
 

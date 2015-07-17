@@ -126,13 +126,13 @@ void packet_handler(uint8_t * event, uint16_t event_size){
 
 int btstack_main(int argc, const char * argv[]){
     // init L2CAP
-    uint8_t codecs[1] = {HFP_Codec_CVSD};
+    uint8_t codecs[1] = {HFP_CODEC_CVSD};
     uint16_t indicators[1] = {0x01};
 
     l2cap_init();
     rfcomm_init();
     
-    // hfp_hf_init(rfcomm_channel_nr, HFP_Default_HF_Supported_Features, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
+    // hfp_hf_init(rfcomm_channel_nr, HFP_DEFAULT_HF_SUPPORTED_FEATURES, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
     hfp_hf_init(rfcomm_channel_nr, 182, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
 
     hfp_register_packet_handler(packet_handler);
