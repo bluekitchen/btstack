@@ -245,6 +245,7 @@ void handle_gatt_client_event(le_event_t * event){
 
 uint16_t value_handle = 1;
 uint16_t attribute_size = 1;
+int scanning_active = 0;
 
 void show_usage(void){
     printf("\e[1;1H\e[2J");
@@ -256,6 +257,8 @@ void show_usage(void){
     printf("Value Handle: %x\n", value_handle);
     printf("Attribute Size: %u\n", attribute_size);
     printf("---\n");
+    printf("s/S - passive/active scanning\n");
+#if 0
     printf("p/P - privacy flag off\n");
     printf("z   - send Connection Parameter Update Request\n");
     printf("t   - terminate connection\n");
@@ -273,6 +276,7 @@ void show_usage(void){
     printf("o/O - OOB data off/on ('%s')\n", sm_oob_data);
     printf("m/M - MITM protection off\n");
     printf("k/k - encryption key range [7..16]/[16..16]\n");
+#endif
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -308,6 +312,7 @@ int  stdin_process(struct data_source *ds){
     }
 
     switch (buffer){
+#if 0
         case 'e':
             sm_io_capabilities = "IO_CAPABILITY_DISPLAY_ONLY";
             sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
@@ -397,6 +402,30 @@ int  stdin_process(struct data_source *ds){
         case 'v':
             value_handle = btstack_stdin_query_hex("Value Handle");
             show_usage();
+            break;
+#endif
+        case 's':
+            if (scanning_active){
+                le_central_stop_scan();
+                scanning_active = 0;
+                break;
+            }
+            printf("Start passive scanning\n");
+            le_central_set_scan_parameters(0, 48, 48);
+            le_central_start_scan();
+            scanning_active = 1;
+            break;
+        case 'S':
+            if (scanning_active){
+                printf("Stop scanning\n");
+                le_central_stop_scan();
+                scanning_active = 0;
+                break;
+            }
+            printf("Start active scanning\n");
+            le_central_set_scan_parameters(1, 48, 48);
+            le_central_start_scan();
+            scanning_active = 1;
             break;
         default:
             show_usage();
