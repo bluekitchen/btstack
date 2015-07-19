@@ -473,6 +473,32 @@ static void hfp_parse(hfp_connection_t * context, uint8_t byte){
     context->line_size = 0;
 }
 
+
+static void hfp_parse2(hfp_connection_t * context, uint8_t byte){
+    if (byte == '\n' || byte == '\r') return;
+
+    switch (context->line_state){
+        case 0: // header
+            if (byte == ':') {
+                context->line_state = 1;
+                return;
+            } 
+            context->line_buffer[context->line_size] = byte;
+            context->line_size++;
+            break;
+        case 1: // values
+            if (byte == '"'){ // indicators
+                context->line_state = 2;
+                return;
+            } 
+            if (byte == '('){ // tuple sepparated mit comma
+                context->line_state = 5;
+            }
+        case 2:
+            break;
+    }
+}
+
 static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     hfp_connection_t * context = provide_hfp_connection_context_for_rfcomm_cid(channel);
     if (!context) return;

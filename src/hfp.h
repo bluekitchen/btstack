@@ -98,6 +98,7 @@ extern "C" {
 
 #define HFP_MAX_NUM_CODECS 20
 #define HFP_MAX_NUM_INDICATORS 20
+#define HFP_MAX_INDICATOR_DESC_SIZE 200 // TODO: change to 10
 
 #define HFP_SUPPORTED_FEATURES "+BRSF"
 #define HFP_AVAILABLE_CODECS "+BAC"
@@ -185,8 +186,9 @@ typedef struct hfp_connection {
     linked_item_t    item;
     hfp_state_t state;
 
-    uint32_t line_size;
-    uint8_t  line_buffer[200];
+    int      line_size;
+    uint8_t  line_buffer[HFP_MAX_INDICATOR_DESC_SIZE];
+    uint8_t  line_state;
 
     bd_addr_t remote_addr;
     uint16_t con_handle;
