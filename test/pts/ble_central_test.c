@@ -62,6 +62,16 @@
 #include "gap_le.h"
 #include "le_device_db.h"
 #include "stdin_support.h"
+#include "ad_parser.h"
+
+// test profile
+#include "profile.h"
+
+typedef enum {
+    CENTRAL_IDLE,
+    CENTRAL_W4_NAME_QUERY_COMPLETE,
+    CENTRAL_W4_NAME_VALUE,
+} central_state_t;
 
 typedef struct advertising_report {
     uint8_t   type;
@@ -72,7 +82,6 @@ typedef struct advertising_report {
     uint8_t   length;
     uint8_t * data;
 } advertising_report_t;
-
 
 static uint8_t test_irk[] =  { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
@@ -96,6 +105,8 @@ static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};
 static int tester_address_type = 0;
 uint16_t gc_id;
 
+static central_state_t central_state = CENTRAL_IDLE;
+static le_characteristic_t gap_name_characteristic;
 
 static void show_usage();
 static void fill_advertising_report_from_packet(advertising_report_t * report, uint8_t *packet);
@@ -109,12 +120,6 @@ static void printUUID(uint8_t * uuid128, uint16_t uuid16){
     } else {
         printUUID128(uuid128);
     }
-}
-
-static void dump_advertising_report(advertising_report_t * e){
-    printf("    * adv. event: evt-type %u, addr-type %u, addr %s, rssi %u, length adv %u, data: ", e->event_type,
-           e->address_type, bd_addr_to_str(e->address), e->rssi, e->length);
-    printf_hexdump(e->data, e->length);
 }
 
 static void dump_characteristic(le_characteristic_t * characteristic){
@@ -132,15 +137,52 @@ static void dump_service(le_service_t * service){
 
 static void fill_advertising_report_from_packet(advertising_report_t * report, uint8_t *packet){
     int pos = 2;
-    report->event_type = packet[pos++];
-    report->address_type = packet[pos++];
-    bt_flip_addr(report->address, &packet[pos]);
-    pos += 6;
-    report->rssi = packet[pos++];
-    report->length = packet[pos++];
-    report->data = &packet[pos];
+    report->event_type = packet[pos++];     // 2
+    report->address_type = packet[pos++];   // 3
+    bt_flip_addr(report->address, &packet[pos]); // 4
+    pos += 6;       
+    report->rssi = packet[pos++];   // 10
+    report->length = packet[pos++]; // 11
+    report->data = &packet[pos];    // 12
     pos += report->length;
-    dump_advertising_report(report);
+}
+
+const char * ad_event_types[] = {
+    "Connectable undirected advertising",
+    "Connectable directed advertising",
+    "Scannable undirected advertising",
+    "Non connectable undirected advertising",
+    "Scan Response"
+};
+
+static void handle_advertising_event(uint8_t * packet, int size){
+    // filter PTS
+    bd_addr_t addr;
+    bt_flip_addr(addr, &packet[4]);
+    if (memcmp(addr, tester_address, 6)) return;
+    printf("Advertisement: %s, ", ad_event_types[packet[2]]);
+    int adv_size = packet[11];
+    uint8_t * adv_data = &packet[12];
+
+    // check flags
+    ad_context_t context;
+    for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
+        uint8_t data_type = ad_iterator_get_data_type(&context);
+        uint8_t size      = ad_iterator_get_data_len(&context);
+        uint8_t * data    = ad_iterator_get_data(&context);
+        switch (data_type){
+            case 1: // AD_FLAGS
+                if (*data & 1) printf("LE Limited Discoverable Mode, ");
+                if (*data & 2) printf("LE General Discoverable Mode, ");
+                break;
+            default:
+                break;
+        }
+    }
+
+    // dump data
+    printf("Data: ");
+    printf_hexdump(adv_data, adv_size);
 }
 
 static void gap_run(void){
@@ -210,8 +252,9 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
                 }
 
                 case GAP_LE_ADVERTISING_REPORT:
-                    fill_advertising_report_from_packet(&report, packet);
-                    dump_advertising_report(&report);
+                    handle_advertising_event(packet, size);
+                    // fill_advertising_report_from_packet(&report, packet);
+                    // dump_advertising_report(&report);
                     break;
                 default:
                     break;
@@ -224,19 +267,44 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
 
 void handle_gatt_client_event(le_event_t * event){
     le_service_t service;
-    le_characteristic_t characteristic;
+    le_characteristic_value_event_t * value;
     switch(event->type){
         case GATT_SERVICE_QUERY_RESULT:
-            service = ((le_service_event_t *) event)->service;
-            dump_service(&service);
+            // service = ((le_service_event_t *) event)->service;
+            // dump_service(&service);
+            break;
+        case GATT_CHARACTERISTIC_VALUE_QUERY_RESULT:
+            value = (le_characteristic_value_event_t *) event;
+            switch (central_state){
+                case CENTRAL_W4_NAME_VALUE:
+                    central_state = CENTRAL_IDLE;
+                    value->blob[value->blob_length] = 0;
+                    printf("GAP Service: Device Name: %s\n", value->blob);
+                    break;
+                default:
+                    break;
+            }
+            // printf("\ntest client - CHARACTERISTIC for SERVICE ");
+            // printUUID128(service.uuid128); printf("\n");
             break;
         case GATT_QUERY_COMPLETE:
-            printf("\ntest client - CHARACTERISTIC for SERVICE ");
-            printUUID128(service.uuid128); printf("\n");
+            switch (central_state){
+                case CENTRAL_W4_NAME_QUERY_COMPLETE:
+                    central_state = CENTRAL_W4_NAME_VALUE;
+                    gatt_client_read_value_of_characteristic(gc_id, handle, &gap_name_characteristic);
+                    break;
+                default:
+                    break;
+            }
             break;
         case GATT_CHARACTERISTIC_QUERY_RESULT:
-            characteristic = ((le_characteristic_event_t *) event)->characteristic;
-            dump_characteristic(&characteristic);
+            switch (central_state) {
+                case CENTRAL_W4_NAME_QUERY_COMPLETE:
+                    gap_name_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    break;
+                default:
+                    break;
+            }
             break;
         default:
             break;
@@ -253,15 +321,17 @@ void show_usage(void){
     printf("SM: %s, MITM protection %u, OOB data %u, key range [%u..16]\n",
         sm_io_capabilities, sm_mitm_protection, sm_have_oob_data, sm_min_key_size);
     printf("Privacy %u\n", gap_privacy);
-    printf("Device name %s\n", gap_device_name);
+    printf("Device name: %s\n", gap_device_name);
     printf("Value Handle: %x\n", value_handle);
     printf("Attribute Size: %u\n", attribute_size);
     printf("---\n");
     printf("s/S - passive/active scanning\n");
+    printf("a   - enable Advertisements\n");
+    printf("n   - query GATT Device Name\n");
+    printf("t   - terminate connection\n");
 #if 0
     printf("p/P - privacy flag off\n");
     printf("z   - send Connection Parameter Update Request\n");
-    printf("t   - terminate connection\n");
     printf("j   - create L2CAP LE connection to %s\n", bd_addr_to_str(tester_address));
     printf("---\n");
     printf("d   - discover all services\n");
@@ -280,17 +350,6 @@ void show_usage(void){
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
-}
-
-void update_auth_req(void){
-    uint8_t auth_req = 0;
-    if (sm_mitm_protection){
-        auth_req |= SM_AUTHREQ_MITM_PROTECTION;
-    }
-    if (gap_bondable){
-        auth_req |= SM_AUTHREQ_BONDING;
-    }
-    sm_set_authentication_requirements(auth_req);
 }
 
 int  stdin_process(struct data_source *ds){
@@ -387,10 +446,6 @@ int  stdin_process(struct data_source *ds){
                 1000       // max ce length
                 );
             break;
-        case 't':
-            printf("Terminating connection\n");
-            hci_send_cmd(&hci_disconnect, handle, 0x13);
-            break;
         case 'd':
             printf("Discover all primary services\n");
             gatt_client_discover_primary_services(gc_id, handle);
@@ -404,6 +459,15 @@ int  stdin_process(struct data_source *ds){
             show_usage();
             break;
 #endif
+        case 'a':
+            hci_send_cmd(&hci_le_set_advertise_enable, 1);
+            break;
+
+        case 'n':
+            central_state = CENTRAL_W4_NAME_QUERY_COMPLETE;
+            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, 0x2a00);
+            break;
+
         case 's':
             if (scanning_active){
                 le_central_stop_scan();
@@ -427,6 +491,10 @@ int  stdin_process(struct data_source *ds){
             le_central_start_scan();
             scanning_active = 1;
             break;
+        case 't':
+            printf("Terminating connection\n");
+            hci_send_cmd(&hci_disconnect, handle, 0x13);
+            break;
         default:
             show_usage();
             break;
@@ -441,6 +509,31 @@ static int get_oob_data_callback(uint8_t addres_type, bd_addr_t addr, uint8_t * 
     return 1;
 }
 
+
+// ATT Client Read Callback for Dynamic Data
+// - if buffer == NULL, don't copy data, just return size of value
+// - if buffer != NULL, copy data and return number bytes copied
+// @param offset defines start of attribute value
+static uint16_t att_read_callback(uint16_t con_handle, uint16_t attribute_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
+
+    printf("READ Callback, handle %04x, offset %u, buffer size %u\n", handle, offset, buffer_size);
+    uint16_t  att_value_len;
+
+    uint16_t uuid16 = att_uuid_for_handle(handle);
+    switch (uuid16){
+        case 0x2a00:
+            att_value_len = strlen(gap_device_name);
+            if (buffer) {
+                memcpy(buffer, gap_device_name, att_value_len);
+            }
+            return att_value_len;        
+        default:
+            break;
+    }
+    return 0;
+}
+
+
 void setup(void){
 
 }
@@ -450,33 +543,38 @@ int btstack_main(int argc, const char * argv[]){
     
     printf("BTstack LE Peripheral starting up...\n");
 
+    strcpy(gap_device_name, "BTstack");
+
     // set up l2cap_le
     l2cap_init();
     
-    gatt_client_init();
-    gc_id = gatt_client_register_packet_handler(handle_gatt_client_event);;
-
-    // setup le device db
-    le_device_db_init();
-
-    // setup SM: Display only
+    // Setup SM: Display only
     sm_init();
     sm_register_packet_handler(app_packet_handler);
     sm_register_oob_data_callback(get_oob_data_callback);
-
-    sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
-    sm_set_authentication_requirements( SM_AUTHREQ_BONDING | SM_AUTHREQ_MITM_PROTECTION); 
-
-    btstack_stdin_setup(stdin_process);
-
-    gap_random_address_set_update_period(300000);
-    gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
-    strcpy(gap_device_name, "BTstack");
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
     sm_set_authentication_requirements(0);
     sm_set_encryption_key_size_range(sm_min_key_size, 16);
     sm_test_set_irk(test_irk);
+
+    // setup GATT Client
+    gatt_client_init();
+    gc_id = gatt_client_register_packet_handler(handle_gatt_client_event);;
+
+    // Setup ATT/GATT Server
+    att_server_init(profile_data, att_read_callback, NULL);    
+    att_server_register_packet_handler(app_packet_handler);
+
+    // Setup LE Device DB
+    le_device_db_init();
+
+    //
+    // gap_random_address_set_update_period(300000);
+    // gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
+
+    // allow foor terminal input
+    btstack_stdin_setup(stdin_process);
 
     // turn on!
     hci_power_control(HCI_POWER_ON);

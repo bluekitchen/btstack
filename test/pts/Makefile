@@ -28,7 +28,7 @@ all: ${BTSTACK_ROOT}/include/btstack/version.h ${EXAMPLES}
 ble_peripheral_test: profile.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral_test.o
 	${CC} $(filter-out profile.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-ble_central_test: ${CORE_OBJ} ${COMMON_OBJ} ${SM_REAL_OBJ} ${ATT_OBJ}  ${GATT_CLIENT_OBJ}  ble_central_test.c
+ble_central_test: ${CORE_OBJ} ${COMMON_OBJ} ${SM_REAL_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ad_parser.o ble_central_test.c
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
 hsp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_ag.o hsp_ag_test.c 
