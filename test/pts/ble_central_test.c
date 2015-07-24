@@ -67,6 +67,12 @@
 // test profile
 #include "profile.h"
 
+typedef enum {
+    CENTRAL_IDLE,
+    CENTRAL_W4_NAME_QUERY_COMPLETE,
+    CENTRAL_W4_NAME_VALUE,
+} central_state_t;
+
 typedef struct advertising_report {
     uint8_t   type;
     uint8_t   event_type;
@@ -76,7 +82,6 @@ typedef struct advertising_report {
     uint8_t   length;
     uint8_t * data;
 } advertising_report_t;
-
 
 static uint8_t test_irk[] =  { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
@@ -100,6 +105,8 @@ static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};
 static int tester_address_type = 0;
 uint16_t gc_id;
 
+static central_state_t central_state = CENTRAL_IDLE;
+static le_characteristic_t gap_name_characteristic;
 
 static void show_usage();
 static void fill_advertising_report_from_packet(advertising_report_t * report, uint8_t *packet);
@@ -260,19 +267,44 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
 
 void handle_gatt_client_event(le_event_t * event){
     le_service_t service;
-    le_characteristic_t characteristic;
+    le_characteristic_value_event_t * value;
     switch(event->type){
         case GATT_SERVICE_QUERY_RESULT:
-            service = ((le_service_event_t *) event)->service;
-            dump_service(&service);
+            // service = ((le_service_event_t *) event)->service;
+            // dump_service(&service);
+            break;
+        case GATT_CHARACTERISTIC_VALUE_QUERY_RESULT:
+            value = (le_characteristic_value_event_t *) event;
+            switch (central_state){
+                case CENTRAL_W4_NAME_VALUE:
+                    central_state = CENTRAL_IDLE;
+                    value->blob[value->blob_length] = 0;
+                    printf("GAP Service: Device Name: %s\n", value->blob);
+                    break;
+                default:
+                    break;
+            }
+            // printf("\ntest client - CHARACTERISTIC for SERVICE ");
+            // printUUID128(service.uuid128); printf("\n");
             break;
         case GATT_QUERY_COMPLETE:
-            printf("\ntest client - CHARACTERISTIC for SERVICE ");
-            printUUID128(service.uuid128); printf("\n");
+            switch (central_state){
+                case CENTRAL_W4_NAME_QUERY_COMPLETE:
+                    central_state = CENTRAL_W4_NAME_VALUE;
+                    gatt_client_read_value_of_characteristic(gc_id, handle, &gap_name_characteristic);
+                    break;
+                default:
+                    break;
+            }
             break;
         case GATT_CHARACTERISTIC_QUERY_RESULT:
-            characteristic = ((le_characteristic_event_t *) event)->characteristic;
-            dump_characteristic(&characteristic);
+            switch (central_state) {
+                case CENTRAL_W4_NAME_QUERY_COMPLETE:
+                    gap_name_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    break;
+                default:
+                    break;
+            }
             break;
         default:
             break;
@@ -296,10 +328,10 @@ void show_usage(void){
     printf("s/S - passive/active scanning\n");
     printf("a   - enable Advertisements\n");
     printf("n   - query GATT Device Name\n");
+    printf("t   - terminate connection\n");
 #if 0
     printf("p/P - privacy flag off\n");
     printf("z   - send Connection Parameter Update Request\n");
-    printf("t   - terminate connection\n");
     printf("j   - create L2CAP LE connection to %s\n", bd_addr_to_str(tester_address));
     printf("---\n");
     printf("d   - discover all services\n");
@@ -414,10 +446,6 @@ int  stdin_process(struct data_source *ds){
                 1000       // max ce length
                 );
             break;
-        case 't':
-            printf("Terminating connection\n");
-            hci_send_cmd(&hci_disconnect, handle, 0x13);
-            break;
         case 'd':
             printf("Discover all primary services\n");
             gatt_client_discover_primary_services(gc_id, handle);
@@ -433,6 +461,11 @@ int  stdin_process(struct data_source *ds){
 #endif
         case 'a':
             hci_send_cmd(&hci_le_set_advertise_enable, 1);
+            break;
+
+        case 'n':
+            central_state = CENTRAL_W4_NAME_QUERY_COMPLETE;
+            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, 0x2a00);
             break;
 
         case 's':
@@ -457,6 +490,10 @@ int  stdin_process(struct data_source *ds){
             le_central_set_scan_parameters(1, 48, 48);
             le_central_start_scan();
             scanning_active = 1;
+            break;
+        case 't':
+            printf("Terminating connection\n");
+            hci_send_cmd(&hci_disconnect, handle, 0x13);
             break;
         default:
             show_usage();
