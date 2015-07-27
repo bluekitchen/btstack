@@ -994,6 +994,10 @@ static void hci_initializing_run(void){
             hci_stack->substate = HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED;
             hci_send_cmd(&hci_write_le_host_supported, 1, 0);
             break;
+        case HCI_INIT_READ_WHITE_LIST_SIZE:
+            hci_stack->substate = HCI_INIT_W4_READ_WHITE_LIST_SIZE;
+            hci_send_cmd(&hci_le_read_white_list_size);
+            break;
         case HCI_INIT_LE_SET_SCAN_PARAMETERS:
             // LE Scan Parameters: active scanning, 300 ms interval, 30 ms window, public address, accept all advs
             hci_stack->substate = HCI_INIT_W4_LE_SET_SCAN_PARAMETERS;
@@ -1210,7 +1214,11 @@ static void event_handler(uint8_t *packet, int size){
                         hci_stack->le_data_packets_length = HCI_ACL_PAYLOAD_SIZE;
                     }
                 log_info("hci_le_read_buffer_size: size %u, count %u", hci_stack->le_data_packets_length, hci_stack->le_acl_packets_total_num);
-            }            
+            }         
+            if (COMMAND_COMPLETE_EVENT(packet, hci_le_read_white_list_size)){
+                hci_stack->le_white_list_capacity = READ_BT_16(packet, 6);
+                log_info("hci_le_read_white_list_size: size %u", hci_stack->le_white_list_capacity);
+            }   
 #endif
             // Dump local address
             if (COMMAND_COMPLETE_EVENT(packet, hci_read_bd_addr)) {

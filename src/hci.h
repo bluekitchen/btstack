@@ -578,6 +578,8 @@ typedef enum hci_init_state{
     HCI_INIT_W4_LE_READ_BUFFER_SIZE,
     HCI_INIT_WRITE_LE_HOST_SUPPORTED,
     HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED,
+    HCI_INIT_READ_WHITE_LIST_SIZE,
+    HCI_INIT_W4_READ_WHITE_LIST_SIZE,
 
     HCI_INIT_LE_SET_SCAN_PARAMETERS,
     HCI_INIT_W4_LE_SET_SCAN_PARAMETERS,
@@ -708,6 +710,9 @@ typedef struct {
     uint8_t  le_advertisements_channel_map;
     uint8_t  le_advertisements_filter_policy;
     bd_addr_t le_advertisements_direct_address;
+
+    // LE Whitelist Management
+    uint16_t le_white_list_capacity;
 
     // custom BD ADDR
     bd_addr_t custom_bd_addr; 
