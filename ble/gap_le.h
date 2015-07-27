@@ -109,6 +109,28 @@ void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, u
  */
 void gap_advertisements_enable(int enabled);
 
+/**
+ * @brief Auto Connection Establishment - Start Connecting to device
+ * @param address_typ
+ * @param address
+ * @returns 0 if ok
+ */
+int gap_auto_connection_start(uint8_t direct_address_typ, bd_addr_t direct_address);
+
+/**
+ * @brief Auto Connection Establishment - Stop Connecting to device
+ * @param address_typ
+ * @param address
+ * @returns 0 if ok
+ */
+int gap_auto_connection_stop(uint8_t direct_address_typ, bd_addr_t direct_address);
+
+/**
+ * @brief Auto Connection Establishment - Stop everything
+ * @note  Convenience function to stop all active auto connection attempts
+ */
+void gap_auto_connection_stop_all(void);
+
 /* API_END */
 
 #if defined __cplusplus
