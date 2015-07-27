@@ -115,7 +115,7 @@ void gap_advertisements_enable(int enabled);
  * @param address
  * @returns 0 if ok
  */
-int gap_auto_connection_start(uint8_t direct_address_typ, bd_addr_t direct_address);
+int gap_auto_connection_start(uint8_t address_typ, bd_addr_t address);
 
 /**
  * @brief Auto Connection Establishment - Stop Connecting to device
@@ -123,7 +123,7 @@ int gap_auto_connection_start(uint8_t direct_address_typ, bd_addr_t direct_addre
  * @param address
  * @returns 0 if ok
  */
-int gap_auto_connection_stop(uint8_t direct_address_typ, bd_addr_t direct_address);
+int gap_auto_connection_stop(uint8_t address_typ, bd_addr_t address);
 
 /**
  * @brief Auto Connection Establishment - Stop everything
