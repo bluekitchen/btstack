@@ -602,10 +602,9 @@ enum {
 };
 
 enum {
-    LE_WHITELIST_VALID                 = 1 << 0,
-    LE_WHITELIST_ON_CONTROLLER         = 1 << 1,
-    LE_WHITELIST_ADD_TO_CONTROLLER     = 1 << 2,
-    LE_WHITELIST_REMOVE_FROM_CONTROLLR = 1 << 3,
+    LE_WHITELIST_ON_CONTROLLER         = 1 << 0,
+    LE_WHITELIST_ADD_TO_CONTROLLER     = 1 << 1,
+    LE_WHITELIST_REMOVE_FROM_CONTROLLR = 1 << 2,
 };
 
 typedef struct {
