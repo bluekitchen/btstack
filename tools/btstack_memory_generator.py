@@ -147,13 +147,16 @@ def writeln(f, data):
 
 def replacePlaceholder(template, struct_name):
     struct_type = struct_name + '_t'
-    pool_count = "MAX_NO_" + struct_name.upper() + "S"
+    if struct_name.endswith('try'):
+        pool_count = "MAX_NO_" + struct_name.upper()[:-3] + "TRIES"
+    else:
+        pool_count = "MAX_NO_" + struct_name.upper() + "S"
     
     snippet = template.replace("STRUCT_TYPE", struct_type).replace("STRUCT_NAME", struct_name).replace("POOL_COUNT", pool_count)
     return snippet
     
 list_of_structs = [ ["hci_connection"], ["l2cap_service", "l2cap_channel"], ["rfcomm_multiplexer", "rfcomm_service", "rfcomm_channel"], ["db_mem_device_name", "db_mem_device_link_key", "db_mem_service"], ["bnep_service", "bnep_channel"], ["hfp_connection"]]
-list_of_le_structs = [["gatt_client", "gatt_subclient"]]
+list_of_le_structs = [["gatt_client", "gatt_subclient","whitelist_entry"]]
 
 file_name = "../src/btstack_memory"
 

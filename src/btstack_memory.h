@@ -110,11 +110,13 @@ hfp_connection_t * btstack_memory_hfp_connection_get(void);
 void   btstack_memory_hfp_connection_free(hfp_connection_t *hfp_connection);
 
 #ifdef HAVE_BLE
-// gatt_client, gatt_subclient
+// gatt_client, gatt_subclient, whitelist_entry
 gatt_client_t * btstack_memory_gatt_client_get(void);
 void   btstack_memory_gatt_client_free(gatt_client_t *gatt_client);
 gatt_subclient_t * btstack_memory_gatt_subclient_get(void);
 void   btstack_memory_gatt_subclient_free(gatt_subclient_t *gatt_subclient);
+whitelist_entry_t * btstack_memory_whitelist_entry_get(void);
+void   btstack_memory_whitelist_entry_free(whitelist_entry_t *whitelist_entry);
 #endif
 
 #if defined __cplusplus

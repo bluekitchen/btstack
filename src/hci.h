@@ -598,8 +598,21 @@ enum {
     LE_ADVERTISEMENT_TASKS_DISABLE     = 1 << 0,
     LE_ADVERTISEMENT_TASKS_SET_DATA    = 1 << 1,
     LE_ADVERTISEMENT_TASKS_SET_PARAMS  = 1 << 2,
-    LE_ADVERTISEMENT_TASKS_ENABLE      = 1 << 4,
+    LE_ADVERTISEMENT_TASKS_ENABLE      = 1 << 3,
 };
+
+enum {
+    LE_WHITELIST_VALID                 = 1 << 0,
+    LE_WHITELIST_ON_CONTROLLER         = 1 << 1,
+    LE_WHITELIST_ADD_TO_CONTROLLER     = 1 << 2,
+    LE_WHITELIST_REMOVE_FROM_CONTROLLR = 1 << 3,
+};
+
+typedef struct {
+    bd_addr_t      addr;
+    bd_addr_type_t type;
+    uint8_t        state;   
+} whitelist_entry_t;
 
 /**
  * main data structure
@@ -712,7 +725,7 @@ typedef struct {
     bd_addr_t le_advertisements_direct_address;
 
     // LE Whitelist Management
-    uint16_t le_white_list_capacity;
+    uint16_t      le_white_list_capacity;
 
     // custom BD ADDR
     bd_addr_t custom_bd_addr; 
