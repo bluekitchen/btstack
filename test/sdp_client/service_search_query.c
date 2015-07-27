@@ -50,7 +50,8 @@ static void handle_sdp_parser_event(sdp_query_event_t * event){
         case SDP_QUERY_SERVICE_RECORD_HANDLE:
             ve = (sdp_query_service_record_handle_event_t*) event;
             
-            CHECK_EQUAL(ve->record_handle, record_handle++);
+            CHECK_EQUAL(ve->record_handle, record_handle);
+            record_handle++;
 
             
             break;
