@@ -70,6 +70,12 @@ void            linked_list_add_tail(linked_list_t * list, linked_item_t *item);
 int             linked_list_remove(linked_list_t * list, linked_item_t *item);     // <-- remove item from list
 linked_item_t * linked_list_get_last_item(linked_list_t * list);                   // <-- find the last item in the list
 
+/**
+ * @brief Counts number of items in list
+ * @returns number of items in list
+ */
+int linked_list_count(linked_list_t * list);
+
 //
 // iterator for linked lists. alloes to remove current element. also robust against removal of current element by linked_list_remove
 //
