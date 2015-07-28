@@ -322,6 +322,12 @@ typedef enum {
     LE_STOP_SCAN,
 } le_scanning_state_t;
 
+typedef enum {
+    LE_CONNECTING_IDLE,
+    LE_CONNECTING_DIRECT,
+    LE_CONNECTING_WHITELIST,
+} le_connecting_state_t;
+
 //
 // SM internal types and globals
 //
@@ -698,7 +704,8 @@ typedef struct {
     uint8_t   adv_addr_type;
     bd_addr_t adv_address;
 
-    le_scanning_state_t le_scanning_state;
+    le_scanning_state_t   le_scanning_state;
+    le_connecting_state_t le_connecting_state;
 
     // buffer for le scan type command - 0xff not set
     uint8_t  le_scan_type;

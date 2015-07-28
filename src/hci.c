@@ -1705,6 +1705,7 @@ static void hci_state_reset(void){
     memset(hci_stack->adv_address, 0, 6);
     hci_stack->le_scanning_state = LE_SCAN_IDLE;
     hci_stack->le_scan_type = 0xff; 
+    hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
     hci_stack->le_connection_parameter_range.le_conn_interval_min = 0x0006;
     hci_stack->le_connection_parameter_range.le_conn_interval_max = 0x0C80;
     hci_stack->le_connection_parameter_range.le_conn_latency_min = 0x0000;
@@ -2504,6 +2505,25 @@ int hci_send_cmd_packet(uint8_t *packet, int size){
     }
     if (IS_COMMAND(packet, hci_le_set_advertise_enable)){
         hci_stack->le_advertisements_active = packet[3];
+    }
+    if (IS_COMMAND(packet, hci_le_create_connection)){
+        // white list used?
+        uint8_t initiator_filter_policy = packet[7];
+        switch (initiator_filter_policy){
+            case 0:
+                // whitelist not used
+                hci_stack->le_connecting_state = LE_CONNECTING_DIRECT;
+                break;
+            case 1:
+                hci_stack->le_connecting_state = LE_CONNECTING_WHITELIST;
+                break;
+            default:
+                log_error("Invalid initiator_filter_policy in LE Create Connection %u", initiator_filter_policy);
+                break;
+        }
+    }
+    if (IS_COMMAND(packet, hci_le_create_connection_cancel)){
+        hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
     }
 #endif
 
