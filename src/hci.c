@@ -3082,6 +3082,36 @@ le_command_status_t gap_disconnect(hci_con_handle_t handle){
 }
 
 /**
+ * @brief Auto Connection Establishment - Start Connecting to device
+ * @param address_typ
+ * @param address
+ * @returns 0 if ok
+ */
+int gap_auto_connection_start(uint8_t address_typ, bd_addr_t address){
+    log_error("gap_auto_connection_start not implemented yet");
+    return 1;
+}
+
+/**
+ * @brief Auto Connection Establishment - Stop Connecting to device
+ * @param address_typ
+ * @param address
+ * @returns 0 if ok
+ */
+int gap_auto_connection_stop(uint8_t address_typ, bd_addr_t address){
+    log_error("gap_auto_connection_stop not implemented yet");
+    return 1;
+}
+
+/**
+ * @brief Auto Connection Establishment - Stop everything
+ * @note  Convenience function to stop all active auto connection attempts
+ */
+void gap_auto_connection_stop_all(void){
+    log_error("gap_auto_connection_stop_all not implemented yet");
+}
+
+/**
  * @brief Set callback for Bluetooth Hardware Error
  */
 void hci_set_hardware_error_callback(void (*fn)(void)){
