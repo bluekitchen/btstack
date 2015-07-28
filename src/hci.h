@@ -731,7 +731,7 @@ typedef struct {
     bd_addr_t le_advertisements_direct_address;
 
     // LE Whitelist Management
-    uint16_t      le_white_list_capacity;
+    uint16_t      le_whitelist_capacity;
 
     // custom BD ADDR
     bd_addr_t custom_bd_addr; 

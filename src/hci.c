@@ -1216,8 +1216,8 @@ static void event_handler(uint8_t *packet, int size){
                 log_info("hci_le_read_buffer_size: size %u, count %u", hci_stack->le_data_packets_length, hci_stack->le_acl_packets_total_num);
             }         
             if (COMMAND_COMPLETE_EVENT(packet, hci_le_read_white_list_size)){
-                hci_stack->le_white_list_capacity = READ_BT_16(packet, 6);
-                log_info("hci_le_read_white_list_size: size %u", hci_stack->le_white_list_capacity);
+                hci_stack->le_whitelist_capacity = READ_BT_16(packet, 6);
+                log_info("hci_le_read_white_list_size: size %u", hci_stack->le_whitelist_capacity);
             }   
 #endif
             // Dump local address
