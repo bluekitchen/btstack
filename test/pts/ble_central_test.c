@@ -328,7 +328,9 @@ void show_usage(void){
     printf("s/S - passive/active scanning\n");
     printf("a   - enable Advertisements\n");
     printf("n   - query GATT Device Name\n");
-    printf("t   - terminate connection\n");
+    printf("t   - terminate connection, stop connecting\n");
+    printf("p   - auto connect to PTS\n");
+    printf("P   - direct connect to PTS\n");
 #if 0
     printf("p/P - privacy flag off\n");
     printf("z   - send Connection Parameter Update Request\n");
@@ -467,7 +469,14 @@ int  stdin_process(struct data_source *ds){
             central_state = CENTRAL_W4_NAME_QUERY_COMPLETE;
             gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, 0x2a00);
             break;
-
+        case 'p':
+            printf("Auto Connection Establishment to type %u, addr %s\n", tester_address_type, bd_addr_to_str(tester_address));
+            gap_auto_connection_start(tester_address_type, tester_address);
+            break;
+        case 'P':
+            printf("Direct Connection Establishment to type %u, addr %s\n", tester_address_type, bd_addr_to_str(tester_address));
+            le_central_connect(tester_address, tester_address_type);
+            break;
         case 's':
             if (scanning_active){
                 le_central_stop_scan();
@@ -494,6 +503,8 @@ int  stdin_process(struct data_source *ds){
         case 't':
             printf("Terminating connection\n");
             hci_send_cmd(&hci_disconnect, handle, 0x13);
+            gap_auto_connection_stop_all();
+            le_central_connect_cancel();
             break;
         default:
             show_usage();
