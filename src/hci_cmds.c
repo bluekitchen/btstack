@@ -857,7 +857,7 @@ OPCODE(OGF_LE_CONTROLLER, 0x10), ""
  * @param address_type (public (0), random (1))
  * @param bd_addr
  */
-const hci_cmd_t hci_le_add_device_to_whitelist = {
+const hci_cmd_t hci_le_add_device_to_white_list = {
 OPCODE(OGF_LE_CONTROLLER, 0x11), "1B"
 // return: status
 };
@@ -866,7 +866,7 @@ OPCODE(OGF_LE_CONTROLLER, 0x11), "1B"
  * @param address_type (public (0), random (1))
  * @param bd_addr
  */
-const hci_cmd_t hci_le_remove_device_from_whitelist = {
+const hci_cmd_t hci_le_remove_device_from_white_list = {
 OPCODE(OGF_LE_CONTROLLER, 0x12), "1B"
 // return: status
 };
