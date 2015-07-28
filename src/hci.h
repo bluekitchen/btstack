@@ -601,21 +601,21 @@ typedef enum hci_init_state{
 } hci_substate_t;
 
 enum {
-    LE_ADVERTISEMENT_TASKS_DISABLE     = 1 << 0,
-    LE_ADVERTISEMENT_TASKS_SET_DATA    = 1 << 1,
-    LE_ADVERTISEMENT_TASKS_SET_PARAMS  = 1 << 2,
-    LE_ADVERTISEMENT_TASKS_ENABLE      = 1 << 3,
+    LE_ADVERTISEMENT_TASKS_DISABLE      = 1 << 0,
+    LE_ADVERTISEMENT_TASKS_SET_DATA     = 1 << 1,
+    LE_ADVERTISEMENT_TASKS_SET_PARAMS   = 1 << 2,
+    LE_ADVERTISEMENT_TASKS_ENABLE       = 1 << 3,
 };
 
 enum {
-    LE_WHITELIST_ON_CONTROLLER         = 1 << 0,
-    LE_WHITELIST_ADD_TO_CONTROLLER     = 1 << 1,
-    LE_WHITELIST_REMOVE_FROM_CONTROLLR = 1 << 2,
+    LE_WHITELIST_ON_CONTROLLER          = 1 << 0,
+    LE_WHITELIST_ADD_TO_CONTROLLER      = 1 << 1,
+    LE_WHITELIST_REMOVE_FROM_CONTROLLER = 1 << 2,
 };
 
 typedef struct {
-    bd_addr_t      addr;
-    bd_addr_type_t type;
+    bd_addr_t      address;
+    bd_addr_type_t address_type;
     uint8_t        state;   
 } whitelist_entry_t;
 
@@ -732,6 +732,7 @@ typedef struct {
 
     // LE Whitelist Management
     uint16_t      le_whitelist_capacity;
+    linked_list_t le_whitelist;
 
     // custom BD ADDR
     bd_addr_t custom_bd_addr; 

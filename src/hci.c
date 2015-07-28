@@ -1706,6 +1706,8 @@ static void hci_state_reset(void){
     hci_stack->le_scanning_state = LE_SCAN_IDLE;
     hci_stack->le_scan_type = 0xff; 
     hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
+    hci_stack->le_whitelist = 0;
+    hci_stack->le_whitelist_capacity = 0;
     hci_stack->le_connection_parameter_range.le_conn_interval_min = 0x0006;
     hci_stack->le_connection_parameter_range.le_conn_interval_max = 0x0C80;
     hci_stack->le_connection_parameter_range.le_conn_latency_min = 0x0000;
@@ -3087,9 +3089,18 @@ le_command_status_t gap_disconnect(hci_con_handle_t handle){
  * @param address
  * @returns 0 if ok
  */
-int gap_auto_connection_start(uint8_t address_typ, bd_addr_t address){
+int gap_auto_connection_start(uint8_t address_type, bd_addr_t address){
     log_error("gap_auto_connection_start not implemented yet");
-    return 1;
+    // check capacity
+    int num_entries = linked_list_count(&hci_stack->le_whitelist);
+    if (num_entries > hci_stack->le_whitelist_capacity) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    whitelist_entry_t * entry = btstack_memory_whitelist_entry_get();
+    if (!entry) return BTSTACK_MEMORY_ALLOC_FAILED;
+    entry->address_type = address_type;
+    memcpy(entry->address, address, 6);
+    entry->state = LE_WHITELIST_ADD_TO_CONTROLLER;
+    hci_run();
+    return 0;
 }
 
 /**
@@ -3098,9 +3109,25 @@ int gap_auto_connection_start(uint8_t address_typ, bd_addr_t address){
  * @param address
  * @returns 0 if ok
  */
-int gap_auto_connection_stop(uint8_t address_typ, bd_addr_t address){
+int gap_auto_connection_stop(uint8_t address_type, bd_addr_t address){
     log_error("gap_auto_connection_stop not implemented yet");
-    return 1;
+    linked_list_iterator_t it;
+    linked_list_iterator_init(&it, &hci_stack->le_whitelist);
+    while (linked_list_iterator_has_next(&it)){
+        whitelist_entry_t * entry = (whitelist_entry_t*) linked_list_iterator_next(&it);
+        if (entry->address_type != address_type) continue;
+        if (memcmp(entry->address, address, 6) != 0) continue;
+        if (entry->state & LE_WHITELIST_ON_CONTROLLER){
+            // remove from controller if already present
+            entry->state |= LE_WHITELIST_REMOVE_FROM_CONTROLLER;
+            continue;
+        }
+        // direclty remove entry from whitelist
+        linked_list_iterator_remove(&it);
+        btstack_memory_whitelist_entry_free(entry);
+    }
+    hci_run();
+    return 0;
 }
 
 /**
@@ -3109,6 +3136,19 @@ int gap_auto_connection_stop(uint8_t address_typ, bd_addr_t address){
  */
 void gap_auto_connection_stop_all(void){
     log_error("gap_auto_connection_stop_all not implemented yet");
+    linked_list_iterator_t it;
+    while (linked_list_iterator_has_next(&it)){
+        whitelist_entry_t * entry = (whitelist_entry_t*) linked_list_iterator_next(&it);
+        if (entry->state & LE_WHITELIST_ON_CONTROLLER){
+            // remove from controller if already present
+            entry->state |= LE_WHITELIST_REMOVE_FROM_CONTROLLER;
+            continue;
+        }
+        // direclty remove entry from whitelist
+        linked_list_iterator_remove(&it);
+        btstack_memory_whitelist_entry_free(entry);
+    }
+    hci_run();
 }
 
 /**
