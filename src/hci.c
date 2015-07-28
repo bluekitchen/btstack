@@ -2168,6 +2168,68 @@ void hci_run(void){
             hci_send_cmd(&hci_le_set_advertise_enable, 1);
             return;
         }
+
+        //
+        // LE Whitelist Management
+        //
+
+        // check if whitelist needs modification
+        linked_list_iterator_t lit;
+        int modification_pending = 0;
+        linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
+        while (linked_list_iterator_has_next(&lit)){
+            whitelist_entry_t * entry = (whitelist_entry_t*) linked_list_iterator_next(&lit);
+            if (entry->state & (LE_WHITELIST_REMOVE_FROM_CONTROLLER | LE_WHITELIST_ADD_TO_CONTROLLER)){
+                modification_pending = 1;
+                break;
+            }
+        }
+        // top connnecting if modification pending
+        if (modification_pending){
+            if (hci_stack->le_connecting_state != LE_CONNECTING_IDLE){
+                hci_send_cmd(&hci_le_create_connection_cancel);
+                return;
+            }
+        }
+
+        // add/remove entries
+        linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
+        while (linked_list_iterator_has_next(&lit)){
+            whitelist_entry_t * entry = (whitelist_entry_t*) linked_list_iterator_next(&lit);
+            if (entry->state & LE_WHITELIST_ADD_TO_CONTROLLER){
+                entry->state = LE_WHITELIST_ON_CONTROLLER;
+                hci_send_cmd(&hci_le_add_device_to_white_list, entry->address_type, entry->address);
+                return;
+
+            }
+            if (entry->state & LE_WHITELIST_REMOVE_FROM_CONTROLLER){
+                linked_list_remove(&hci_stack->le_whitelist, (linked_item_t *) entry);
+                btstack_memory_whitelist_entry_free(entry);
+                hci_send_cmd(&hci_le_remove_device_from_white_list, entry->address_type, entry->address);
+                return;
+            }
+        }
+
+        // start connecting
+        if (!linked_list_empty(&hci_stack->le_whitelist)){
+            bd_addr_t null_addr;
+            memset(null_addr, 0, 6);
+            hci_send_cmd(&hci_le_create_connection,
+                 0x0060,    // scan interval: 60 ms
+                 0x0030,    // scan interval: 30 ms
+                 1,         // use whitelist
+                 0,         // peer address type
+                 null_addr,      // peer bd addr
+                 hci_stack->adv_addr_type, // our addr type:
+                 0x0008,    // conn interval min
+                 0x0018,    // conn interval max
+                 0,         // conn latency
+                 0x0048,    // supervision timeout
+                 0x0001,    // min ce length
+                 0x0001     // max ce length
+                 );
+            return;
+        }
     }
 #endif
     
@@ -2335,6 +2397,19 @@ void hci_run(void){
         case HCI_STATE_HALTING:
 
             log_info("HCI_STATE_HALTING");
+
+            // free whitelist entries
+#ifdef HAVE_BLE
+            {
+                linked_list_iterator_t lit;
+                linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
+                while (linked_list_iterator_has_next(&lit)){
+                    whitelist_entry_t * entry = (whitelist_entry_t*) linked_list_iterator_next(&lit);
+                    linked_list_remove(&hci_stack->le_whitelist, (linked_item_t *) entry);
+                    btstack_memory_whitelist_entry_free(entry);
+                }
+            }
+#endif
             // close all open connections
             connection =  (hci_connection_t *) hci_stack->connections;
             if (connection){
