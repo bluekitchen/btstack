@@ -362,6 +362,7 @@ void show_usage(void){
     printf("t   - terminate connection, stop connecting\n");
     printf("p   - auto connect to PTS\n");
     printf("P   - direct connect to PTS\n");
+    printf("z   - Update L2CAP Connection Parameters\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -438,6 +439,10 @@ int  stdin_process(struct data_source *ds){
             hci_send_cmd(&hci_disconnect, handle, 0x13);
             gap_auto_connection_stop_all();
             le_central_connect_cancel();
+            break;
+        case 'z':
+            printf("Updating l2cap connection parameters\n");
+            gap_update_connection_parameters(handle, 50, 120, 0, 550);
             break;
         default:
             show_usage();
