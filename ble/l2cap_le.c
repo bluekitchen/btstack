@@ -165,6 +165,7 @@ void l2cap_emit_connection_parameter_update_response(uint16_t handle, uint16_t r
 
 static void l2cap_run(void){ 
     // send l2cap con paramter update if necessary
+    linked_list_iterator_t it;
     hci_connections_get_iterator(&it);
     while(linked_list_iterator_has_next(&it)){
         hci_connection_t * connection = (hci_connection_t *) linked_list_iterator_next(&it);
