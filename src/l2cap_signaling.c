@@ -190,7 +190,7 @@ uint16_t l2cap_le_create_connection_parameter_update_response(uint8_t * acl_buff
     // 6 - L2CAP LE Signaling channel = 5
     bt_store_16(acl_buffer, 6, 5);
     // 8 - Code
-    acl_buffer[8] = CONNECTION_PARAMETER_UPDATE_REQUEST;
+    acl_buffer[8] = CONNECTION_PARAMETER_UPDATE_RESPONSE;
     // 9 - id (!= 0 sequentially)
     acl_buffer[9] = 1;
     uint16_t pos = 12;
