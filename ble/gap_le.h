@@ -43,7 +43,8 @@ extern "C" {
 #endif
 
 #include <btstack/utils.h>
-
+#include <btstack/hci_cmds.h>
+	
 /* API_START */
 
 typedef enum {
@@ -108,6 +109,28 @@ void gap_advertisements_set_params(uint16_t adv_int_min, uint16_t adv_int_max, u
  * @param enabled
  */
 void gap_advertisements_enable(int enabled);
+
+/**
+ * @brief Auto Connection Establishment - Start Connecting to device
+ * @param address_typ
+ * @param address
+ * @returns 0 if ok
+ */
+int gap_auto_connection_start(bd_addr_type_t address_typ, bd_addr_t address);
+
+/**
+ * @brief Auto Connection Establishment - Stop Connecting to device
+ * @param address_typ
+ * @param address
+ * @returns 0 if ok
+ */
+int gap_auto_connection_stop(bd_addr_type_t address_typ, bd_addr_t address);
+
+/**
+ * @brief Auto Connection Establishment - Stop everything
+ * @note  Convenience function to stop all active auto connection attempts
+ */
+void gap_auto_connection_stop_all(void);
 
 /* API_END */
 

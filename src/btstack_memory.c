@@ -507,6 +507,38 @@ void btstack_memory_gatt_subclient_free(gatt_subclient_t *gatt_subclient){
 #endif
 
 
+// MARK: whitelist_entry_t
+#ifdef MAX_NO_WHITELIST_ENTRIES
+#if MAX_NO_WHITELIST_ENTRIES > 0
+static whitelist_entry_t whitelist_entry_storage[MAX_NO_WHITELIST_ENTRIES];
+static memory_pool_t whitelist_entry_pool;
+whitelist_entry_t * btstack_memory_whitelist_entry_get(void){
+    return (whitelist_entry_t *) memory_pool_get(&whitelist_entry_pool);
+}
+void btstack_memory_whitelist_entry_free(whitelist_entry_t *whitelist_entry){
+    memory_pool_free(&whitelist_entry_pool, whitelist_entry);
+}
+#else
+whitelist_entry_t * btstack_memory_whitelist_entry_get(void){
+    return NULL;
+}
+void btstack_memory_whitelist_entry_free(whitelist_entry_t *whitelist_entry){
+    // silence compiler warning about unused parameter in a portable way
+    (void) whitelist_entry;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+whitelist_entry_t * btstack_memory_whitelist_entry_get(void){
+    return (whitelist_entry_t*) malloc(sizeof(whitelist_entry_t));
+}
+void btstack_memory_whitelist_entry_free(whitelist_entry_t *whitelist_entry){
+    free(whitelist_entry);
+}
+#else
+#error "Neither HAVE_MALLOC nor MAX_NO_WHITELIST_ENTRIES for struct whitelist_entry is defined. Please, edit the config file."
+#endif
+
+
 #endif
 // init
 void btstack_memory_init(void){
@@ -552,6 +584,9 @@ void btstack_memory_init(void){
 #endif
 #if MAX_NO_GATT_SUBCLIENTS > 0
     memory_pool_create(&gatt_subclient_pool, gatt_subclient_storage, MAX_NO_GATT_SUBCLIENTS, sizeof(gatt_subclient_t));
+#endif
+#if MAX_NO_WHITELIST_ENTRIES > 0
+    memory_pool_create(&whitelist_entry_pool, whitelist_entry_storage, MAX_NO_WHITELIST_ENTRIES, sizeof(whitelist_entry_t));
 #endif
 #endif
 }

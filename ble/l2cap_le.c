@@ -153,6 +153,106 @@ int l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t *data, uint
     return l2cap_send_prepared_connectionless(handle, cid, len);
 }
 
+void l2cap_emit_connection_parameter_update_response(uint16_t handle, uint16_t result){
+    uint8_t event[6];
+    event[0] = L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE;
+    event[1] = 4;
+    bt_store_16(event, 2, handle);
+    bt_store_16(event, 4, result);
+    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+    (*packet_handler)(NULL, HCI_EVENT_PACKET, 0, event, sizeof(event));
+}
+
+// copy & paste from src/l2cap_signalin.c
+uint16_t l2cap_le_create_connection_parameter_update_request(uint8_t * acl_buffer, uint16_t handle,  uint8_t identifier, uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency, uint16_t timeout_multiplier){
+
+    int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
+
+    // 0 - Connection handle : PB=pb : BC=00 
+    bt_store_16(acl_buffer, 0, handle | (pb << 12) | (0 << 14));
+    // 6 - L2CAP LE Signaling channel = 5
+    bt_store_16(acl_buffer, 6, 5);
+    // 8 - Code
+    acl_buffer[8] = CONNECTION_PARAMETER_UPDATE_REQUEST;
+    // 9 - id
+    acl_buffer[9] = identifier;
+    uint16_t pos = 12;
+    bt_store_16(acl_buffer, pos, interval_min);
+    pos += 2;
+    bt_store_16(acl_buffer, pos, interval_max);
+    pos += 2;
+    bt_store_16(acl_buffer, pos, slave_latency);
+    pos += 2;
+    bt_store_16(acl_buffer, pos, timeout_multiplier);
+    pos += 2;
+    // 2 - ACL length
+    bt_store_16(acl_buffer, 2,  pos - 4);
+    // 4 - L2CAP packet length
+    bt_store_16(acl_buffer, 4,  pos - 6 - 2);
+    // 10 - L2CAP signaling parameter length
+    bt_store_16(acl_buffer, 10, pos - 12);
+    return pos;
+} 
+
+// copy & paste from src/l2cap_signalin.c
+uint16_t l2cap_le_create_connection_parameter_update_response(uint8_t * acl_buffer, uint16_t handle,  uint8_t identifier, uint16_t response){
+
+    int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
+
+    // 0 - Connection handle : PB=pb : BC=00 
+    bt_store_16(acl_buffer, 0, handle | (pb << 12) | (0 << 14));
+    // 6 - L2CAP LE Signaling channel = 5
+    bt_store_16(acl_buffer, 6, 5);
+    // 8 - Code
+    acl_buffer[8] = CONNECTION_PARAMETER_UPDATE_RESPONSE;
+    // 9 - id
+    acl_buffer[9] = identifier;
+    uint16_t pos = 12;
+    bt_store_16(acl_buffer, pos, response);
+    pos += 2;
+    // 2 - ACL length
+    bt_store_16(acl_buffer, 2,  pos - 4);
+    // 4 - L2CAP packet length
+    bt_store_16(acl_buffer, 4,  pos - 6 - 2);
+    // 10 - L2CAP signaling parameter length
+    bt_store_16(acl_buffer, 10, pos - 12);
+    return pos;
+} 
+
+
+static void l2cap_run(void){ 
+    // send l2cap con paramter update if necessary
+    linked_list_iterator_t it;
+    hci_connections_get_iterator(&it);
+    while(linked_list_iterator_has_next(&it)){
+        hci_connection_t * connection = (hci_connection_t *) linked_list_iterator_next(&it);
+        int result;
+
+        switch (connection->le_con_parameter_update_state){
+            case CON_PARAMETER_UPDATE_SEND_RESPONSE:
+                result = 0;
+                break;
+            case CON_PARAMETER_UPDATE_DENY:
+                result = 1;
+                break;
+            default:
+                result = -1;
+                break;
+        }
+        if (result < 0) break;
+        
+        if (!hci_can_send_acl_packet_now(connection->con_handle)) break;
+        hci_reserve_packet_buffer();
+        uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
+        connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
+        uint16_t len = l2cap_le_create_connection_parameter_update_response(acl_buffer, connection->con_handle, connection->le_con_param_update_identifier, result);
+        hci_send_acl_packet_buffer(len);
+        if (result == 0){
+            connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_CHANGE_HCI_CON_PARAMETERS;
+        }
+    }
+}
+
 void l2cap_event_handler( uint8_t *packet, uint16_t size ){
     
     // pass on
@@ -187,9 +287,65 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
             }
             break;
             
-        default: {
+        
+        case L2CAP_CID_SIGNALING_LE:
+            switch (packet[8]){
+                case CONNECTION_PARAMETER_UPDATE_RESPONSE: {
+                    uint16_t result = READ_BT_16(packet, 12);
+                    l2cap_emit_connection_parameter_update_response(handle, result);
+                    break;
+                }
+                case CONNECTION_PARAMETER_UPDATE_REQUEST: {
+                    uint8_t event[10];
+                    event[0] = L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_REQUEST;
+                    event[1] = 8;
+                    memcpy(&event[2], &packet[12], 8);
+                
+                    hci_connection_t * connection = hci_connection_for_handle(handle);
+                    if (connection){ 
+                        int update_parameter = 1;
+                        le_connection_parameter_range_t existing_range = gap_le_get_connection_parameter_range();
+                        uint16_t le_conn_interval_min = READ_BT_16(packet,12);
+                        uint16_t le_conn_interval_max = READ_BT_16(packet,14);
+                        uint16_t le_conn_latency = READ_BT_16(packet,16);
+                        uint16_t le_supervision_timeout = READ_BT_16(packet,18);
+
+                        if (le_conn_interval_min < existing_range.le_conn_interval_min) update_parameter = 0;
+                        if (le_conn_interval_max > existing_range.le_conn_interval_max) update_parameter = 0;
+                        
+                        if (le_conn_latency < existing_range.le_conn_latency_min) update_parameter = 0;
+                        if (le_conn_latency > existing_range.le_conn_latency_max) update_parameter = 0;
+
+                        if (le_supervision_timeout < existing_range.le_supervision_timeout_min) update_parameter = 0;
+                        if (le_supervision_timeout > existing_range.le_supervision_timeout_max) update_parameter = 0;
+
+                        if (update_parameter){
+                            connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_SEND_RESPONSE;
+                            connection->le_conn_interval_min = le_conn_interval_min;
+                            connection->le_conn_interval_max = le_conn_interval_max;
+                            connection->le_conn_latency = le_conn_latency;
+                            connection->le_supervision_timeout = le_supervision_timeout;
+                        } else {
+                            connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_DENY;
+                        }
+                        connection->le_con_param_update_identifier = packet[COMPLETE_L2CAP_HEADER + 1];
+                    }
+                    hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
+                    (*packet_handler)(NULL, HCI_EVENT_PACKET, 0, event, sizeof(event));
+                    break;
+                }
+                default: {
+                    // TODO: send cmd unknown
+                    // uint8_t sig_id = packet[COMPLETE_L2CAP_HEADER + 1]; 
+                    // l2cap_register_signaling_response(handle, COMMAND_REJECT_LE, sig_id, L2CAP_REJ_CMD_UNKNOWN);
+                    break;
+                }
+            }
             break;
-        }
+
+        default:
+            break;
+
     }
 }
 
@@ -204,6 +360,7 @@ static void l2cap_packet_handler(uint8_t packet_type, uint8_t *packet, uint16_t 
         default:
             break;
     }
+    l2cap_run();
 }
 
 

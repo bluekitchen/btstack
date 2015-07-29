@@ -322,6 +322,12 @@ typedef enum {
     LE_STOP_SCAN,
 } le_scanning_state_t;
 
+typedef enum {
+    LE_CONNECTING_IDLE,
+    LE_CONNECTING_DIRECT,
+    LE_CONNECTING_WHITELIST,
+} le_connecting_state_t;
+
 //
 // SM internal types and globals
 //
@@ -516,11 +522,11 @@ typedef struct {
 
     // LE Connection parameter update
     le_con_parameter_update_state_t le_con_parameter_update_state;
+    uint8_t  le_con_param_update_identifier;
     uint16_t le_conn_interval_min;
     uint16_t le_conn_interval_max;
     uint16_t le_conn_latency;
     uint16_t le_supervision_timeout;
-    uint16_t le_update_con_parameter_response;
 
 #ifdef HAVE_BLE
     // LE Security Manager
@@ -578,6 +584,8 @@ typedef enum hci_init_state{
     HCI_INIT_W4_LE_READ_BUFFER_SIZE,
     HCI_INIT_WRITE_LE_HOST_SUPPORTED,
     HCI_INIT_W4_WRITE_LE_HOST_SUPPORTED,
+    HCI_INIT_READ_WHITE_LIST_SIZE,
+    HCI_INIT_W4_READ_WHITE_LIST_SIZE,
 
     HCI_INIT_LE_SET_SCAN_PARAMETERS,
     HCI_INIT_W4_LE_SET_SCAN_PARAMETERS,
@@ -593,11 +601,24 @@ typedef enum hci_init_state{
 } hci_substate_t;
 
 enum {
-    LE_ADVERTISEMENT_TASKS_DISABLE     = 1 << 0,
-    LE_ADVERTISEMENT_TASKS_SET_DATA    = 1 << 1,
-    LE_ADVERTISEMENT_TASKS_SET_PARAMS  = 1 << 2,
-    LE_ADVERTISEMENT_TASKS_ENABLE      = 1 << 4,
+    LE_ADVERTISEMENT_TASKS_DISABLE      = 1 << 0,
+    LE_ADVERTISEMENT_TASKS_SET_DATA     = 1 << 1,
+    LE_ADVERTISEMENT_TASKS_SET_PARAMS   = 1 << 2,
+    LE_ADVERTISEMENT_TASKS_ENABLE       = 1 << 3,
 };
+
+enum {
+    LE_WHITELIST_ON_CONTROLLER          = 1 << 0,
+    LE_WHITELIST_ADD_TO_CONTROLLER      = 1 << 1,
+    LE_WHITELIST_REMOVE_FROM_CONTROLLER = 1 << 2,
+};
+
+typedef struct {
+    linked_item_t  item;
+    bd_addr_t      address;
+    bd_addr_type_t address_type;
+    uint8_t        state;   
+} whitelist_entry_t;
 
 /**
  * main data structure
@@ -684,7 +705,8 @@ typedef struct {
     uint8_t   adv_addr_type;
     bd_addr_t adv_address;
 
-    le_scanning_state_t le_scanning_state;
+    le_scanning_state_t   le_scanning_state;
+    le_connecting_state_t le_connecting_state;
 
     // buffer for le scan type command - 0xff not set
     uint8_t  le_scan_type;
@@ -708,6 +730,10 @@ typedef struct {
     uint8_t  le_advertisements_channel_map;
     uint8_t  le_advertisements_filter_policy;
     bd_addr_t le_advertisements_direct_address;
+
+    // LE Whitelist Management
+    uint16_t      le_whitelist_capacity;
+    linked_list_t le_whitelist;
 
     // custom BD ADDR
     bd_addr_t custom_bd_addr; 

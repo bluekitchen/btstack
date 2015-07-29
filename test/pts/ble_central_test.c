@@ -88,6 +88,7 @@ static uint8_t test_irk[] =  { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0
 static int gap_privacy = 0;
 static int gap_bondable = 0;
 static char gap_device_name[20];
+static int gap_connectable = 0;
 
 static char * sm_io_capabilities = NULL;
 static int sm_mitm_protection = 0;
@@ -183,6 +184,33 @@ static void handle_advertising_event(uint8_t * packet, int size){
     // dump data
     printf("Data: ");
     printf_hexdump(adv_data, adv_size);
+}
+
+static uint8_t gap_adv_type(void){
+    // if (gap_scannable) return 0x02;
+    // if (gap_directed_connectable) return 0x01;
+    if (!gap_connectable) return 0x03;
+    return 0x00;
+}
+
+static void update_advertisment_params(void){
+    uint8_t adv_type = gap_adv_type();
+    printf("GAP: Connectable = %u -> advertising_type %u (%s)\n", gap_connectable, adv_type, ad_event_types[adv_type]);
+    bd_addr_t null_addr;
+    memset(null_addr, 0, 6);
+    uint16_t adv_int_min = 0x800;
+    uint16_t adv_int_max = 0x800;
+    switch (adv_type){
+        case 0:
+        case 2:
+        case 3:
+            gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, &null_addr, 0x07, 0x00);
+            break;
+        case 1:
+        case 4:
+            gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, tester_address_type, &tester_address, 0x07, 0x00);
+            break;
+        }
 }
 
 static void gap_run(void){
@@ -318,6 +346,7 @@ int scanning_active = 0;
 void show_usage(void){
     printf("\e[1;1H\e[2J");
     printf("--- CLI for LE Central ---\n");
+    printf("GAP: connectable %u\n", gap_connectable);
     printf("SM: %s, MITM protection %u, OOB data %u, key range [%u..16]\n",
         sm_io_capabilities, sm_mitm_protection, sm_have_oob_data, sm_min_key_size);
     printf("Privacy %u\n", gap_privacy);
@@ -325,28 +354,15 @@ void show_usage(void){
     printf("Value Handle: %x\n", value_handle);
     printf("Attribute Size: %u\n", attribute_size);
     printf("---\n");
+    printf("c/C - connectable off\n");
+    printf("---\n");
     printf("s/S - passive/active scanning\n");
     printf("a   - enable Advertisements\n");
     printf("n   - query GATT Device Name\n");
-    printf("t   - terminate connection\n");
-#if 0
-    printf("p/P - privacy flag off\n");
-    printf("z   - send Connection Parameter Update Request\n");
-    printf("j   - create L2CAP LE connection to %s\n", bd_addr_to_str(tester_address));
-    printf("---\n");
-    printf("d   - discover all services\n");
-    printf("v   - set value handle\n");
-    printf("s   - set attribute size\n");
-    printf("---\n");
-    printf("e   - IO_CAPABILITY_DISPLAY_ONLY\n");
-    printf("f   - IO_CAPABILITY_DISPLAY_YES_NO\n");
-    printf("g   - IO_CAPABILITY_NO_INPUT_NO_OUTPUT\n");
-    printf("h   - IO_CAPABILITY_KEYBOARD_ONLY\n");
-    printf("i   - IO_CAPABILITY_KEYBOARD_DISPLAY\n");
-    printf("o/O - OOB data off/on ('%s')\n", sm_oob_data);
-    printf("m/M - MITM protection off\n");
-    printf("k/k - encryption key range [7..16]/[16..16]\n");
-#endif
+    printf("t   - terminate connection, stop connecting\n");
+    printf("p   - auto connect to PTS\n");
+    printf("P   - direct connect to PTS\n");
+    printf("z   - Update L2CAP Connection Parameters\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -355,6 +371,7 @@ void show_usage(void){
 int  stdin_process(struct data_source *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
+    int res;
 
     // passkey input
     if (ui_digits_for_passkey){
@@ -371,103 +388,29 @@ int  stdin_process(struct data_source *ds){
     }
 
     switch (buffer){
-#if 0
-        case 'e':
-            sm_io_capabilities = "IO_CAPABILITY_DISPLAY_ONLY";
-            sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
-            show_usage();
-            break;
-        case 'f':
-            sm_io_capabilities = "IO_CAPABILITY_DISPLAY_YES_NO";
-            sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
-            show_usage();
-            break;
-        case 'g':
-            sm_io_capabilities = "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
-            sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
-            show_usage();
-            break;
-        case 'h':
-            sm_io_capabilities = "IO_CAPABILITY_KEYBOARD_ONLY";
-            sm_set_io_capabilities(IO_CAPABILITY_KEYBOARD_ONLY);
-            show_usage();
-            break;
-        case 'i':
-            sm_io_capabilities = "IO_CAPABILITY_KEYBOARD_DISPLAY";
-            sm_set_io_capabilities(IO_CAPABILITY_KEYBOARD_DISPLAY);
-            show_usage();
-            break;
-        case 'o':
-            sm_have_oob_data = 0;
-            show_usage();
-            break;
-        case 'O':
-            sm_have_oob_data = 1;
-            show_usage();
-            break;
-        case 'k':
-            sm_min_key_size = 7;
-            sm_set_encryption_key_size_range(7, 16);
-            show_usage();
-            break;
-        case 'K':
-            sm_min_key_size = 16;
-            sm_set_encryption_key_size_range(16, 16);
-            show_usage();
-            break;
-        case 'm':
-            sm_mitm_protection = 0;
-            update_auth_req();
-            show_usage();
-            break;
-        case 'M':
-            sm_mitm_protection = 1;
-            update_auth_req();
-            show_usage();
-            break;
-        case 'z':
-            printf("Sending l2cap connection update parameter request\n");
-            l2cap_le_request_connection_parameter_update(handle, 50, 120, 0, 550);
-            break;
-        case 'j':
-            printf("Create L2CAP Connection to %s\n", bd_addr_to_str(tester_address));
-            hci_send_cmd(&hci_le_create_connection, 
-                1000,      // scan interval: 625 ms
-                1000,      // scan interval: 625 ms
-                0,         // don't use whitelist
-                0,         // peer address type: public
-                tester_address,      // remote bd addr
-                tester_address_type, // random or public
-                80,        // conn interval min
-                80,        // conn interval max (3200 * 0.625)
-                0,         // conn latency
-                2000,      // supervision timeout
-                0,         // min ce length
-                1000       // max ce length
-                );
-            break;
-        case 'd':
-            printf("Discover all primary services\n");
-            gatt_client_discover_primary_services(gc_id, handle);
-            break;
-        case 's':
-            attribute_size = btstack_stdin_query_int("Attrbute Size");
-            show_usage();
-            break;
-        case 'v':
-            value_handle = btstack_stdin_query_hex("Value Handle");
-            show_usage();
-            break;
-#endif
         case 'a':
             hci_send_cmd(&hci_le_set_advertise_enable, 1);
             break;
-
+        case 'c':
+            gap_connectable = 1;
+            update_advertisment_params();
+            break;
+        case 'C':
+            gap_connectable = 0;
+            update_advertisment_params();
+            break;
         case 'n':
             central_state = CENTRAL_W4_NAME_QUERY_COMPLETE;
             gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, 0x2a00);
             break;
-
+        case 'p':
+            res = gap_auto_connection_start(tester_address_type, tester_address);
+            printf("Auto Connection Establishment to type %u, addr %s -> %x\n", tester_address_type, bd_addr_to_str(tester_address), res);
+            break;
+        case 'P':
+            printf("Direct Connection Establishment to type %u, addr %s\n", tester_address_type, bd_addr_to_str(tester_address));
+            le_central_connect(tester_address, tester_address_type);
+            break;
         case 's':
             if (scanning_active){
                 le_central_stop_scan();
@@ -494,6 +437,12 @@ int  stdin_process(struct data_source *ds){
         case 't':
             printf("Terminating connection\n");
             hci_send_cmd(&hci_disconnect, handle, 0x13);
+            gap_auto_connection_stop_all();
+            le_central_connect_cancel();
+            break;
+        case 'z':
+            printf("Updating l2cap connection parameters\n");
+            gap_update_connection_parameters(handle, 50, 120, 0, 550);
             break;
         default:
             show_usage();
@@ -572,6 +521,9 @@ int btstack_main(int argc, const char * argv[]){
     //
     // gap_random_address_set_update_period(300000);
     // gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
+
+    // set adv params
+    update_advertisment_params();
 
     // allow foor terminal input
     btstack_stdin_setup(stdin_process);

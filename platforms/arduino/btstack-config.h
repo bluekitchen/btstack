@@ -32,6 +32,7 @@
 #define MAX_NO_GATT_CLIENTS 1
 #define MAX_ATT_DB_SIZE 200
 #define MAX_NO_HFP_CONNECTIONS 0
+#define MAX_NO_WHITELIST_ENTRIES 1
 
 
 #endif

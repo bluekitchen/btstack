@@ -646,6 +646,7 @@ extern "C" {
 // from Bluetooth Core Specification
 #define ERROR_CODE_UNKNOWN_CONNECTION_IDENTIFIER           0x02
 #define ERROR_CODE_AUTHENTICATION_FAILURE				   0x05
+#define ERROR_CODE_MEMORY_CAPACITY_EXCEEDED	    		   0x07
 #define ERROR_CODE_COMMAND_DISALLOWED                      0x0C
 #define ERROR_CODE_PAIRING_NOT_ALLOWED                     0x18
 #define ERROR_CODE_INSUFFICIENT_SECURITY                   0x2F
@@ -855,7 +856,7 @@ extern const hci_cmd_t hci_write_scan_enable;
 extern const hci_cmd_t hci_write_simple_pairing_mode;
 extern const hci_cmd_t hci_write_synchronous_flow_control_enable;
 
-extern const hci_cmd_t hci_le_add_device_to_whitelist;
+extern const hci_cmd_t hci_le_add_device_to_white_list;
 extern const hci_cmd_t hci_le_clear_white_list;
 extern const hci_cmd_t hci_le_connection_update;
 extern const hci_cmd_t hci_le_create_connection;
@@ -872,7 +873,7 @@ extern const hci_cmd_t hci_le_read_supported_features;
 extern const hci_cmd_t hci_le_read_supported_states;
 extern const hci_cmd_t hci_le_read_white_list_size;
 extern const hci_cmd_t hci_le_receiver_test;
-extern const hci_cmd_t hci_le_remove_device_from_whitelist;
+extern const hci_cmd_t hci_le_remove_device_from_white_list;
 extern const hci_cmd_t hci_le_set_advertise_enable;
 extern const hci_cmd_t hci_le_set_advertising_data;
 extern const hci_cmd_t hci_le_set_advertising_parameters;
