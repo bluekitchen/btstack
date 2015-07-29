@@ -3079,6 +3079,7 @@ int gap_update_connection_parameters(hci_con_handle_t con_handle, uint16_t conn_
     connection->le_conn_interval_max = conn_interval_max;
     connection->le_conn_latency = conn_latency;
     connection->le_supervision_timeout = supervision_timeout;
+    connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_CHANGE_HCI_CON_PARAMETERS;
     hci_run();
     return 0;
 }
