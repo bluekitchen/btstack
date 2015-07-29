@@ -164,7 +164,7 @@ void l2cap_emit_connection_parameter_update_response(uint16_t handle, uint16_t r
 }
 
 // copy & paste from src/l2cap_signalin.c
-static uint16_t l2cap_le_create_connection_parameter_update_request(uint8_t * acl_buffer, uint16_t handle, uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency, uint16_t timeout_multiplier){
+uint16_t l2cap_le_create_connection_parameter_update_request(uint8_t * acl_buffer, uint16_t handle, uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency, uint16_t timeout_multiplier){
 
     int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
 
@@ -195,7 +195,7 @@ static uint16_t l2cap_le_create_connection_parameter_update_request(uint8_t * ac
 } 
 
 // copy & paste from src/l2cap_signalin.c
-static uint16_t l2cap_le_create_connection_parameter_update_response(uint8_t * acl_buffer, uint16_t handle, uint16_t response){
+uint16_t l2cap_le_create_connection_parameter_update_response(uint8_t * acl_buffer, uint16_t handle, uint16_t response){
 
     int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
 
