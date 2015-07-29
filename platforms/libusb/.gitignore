@@ -24,3 +24,6 @@ spp_and_le_counter.h
 spp_counter
 spp_streamerle_streamer
 le_streamer.h
+gap_le_advertisements
+le_streamer
+spp_streamer

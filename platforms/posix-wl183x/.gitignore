@@ -25,3 +25,6 @@ led_counter
 ble_peripheral_test
 le_counter
 le_counter.h
+gap_le_advertisements
+le_streamer
+le_streamer.h
