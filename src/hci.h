@@ -614,6 +614,7 @@ enum {
 };
 
 typedef struct {
+    linked_item_t  item;
     bd_addr_t      address;
     bd_addr_type_t address_type;
     uint8_t        state;   

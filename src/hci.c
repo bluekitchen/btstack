@@ -2184,34 +2184,36 @@ void hci_run(void){
                 break;
             }
         }
-        // top connnecting if modification pending
+
         if (modification_pending){
+            // stop connnecting if modification pending
             if (hci_stack->le_connecting_state != LE_CONNECTING_IDLE){
                 hci_send_cmd(&hci_le_create_connection_cancel);
                 return;
             }
-        }
 
-        // add/remove entries
-        linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
-        while (linked_list_iterator_has_next(&lit)){
-            whitelist_entry_t * entry = (whitelist_entry_t*) linked_list_iterator_next(&lit);
-            if (entry->state & LE_WHITELIST_ADD_TO_CONTROLLER){
-                entry->state = LE_WHITELIST_ON_CONTROLLER;
-                hci_send_cmd(&hci_le_add_device_to_white_list, entry->address_type, entry->address);
-                return;
+            // add/remove entries
+            linked_list_iterator_init(&lit, &hci_stack->le_whitelist);
+            while (linked_list_iterator_has_next(&lit)){
+                whitelist_entry_t * entry = (whitelist_entry_t*) linked_list_iterator_next(&lit);
+                if (entry->state & LE_WHITELIST_ADD_TO_CONTROLLER){
+                    entry->state = LE_WHITELIST_ON_CONTROLLER;
+                    hci_send_cmd(&hci_le_add_device_to_white_list, entry->address_type, entry->address);
+                    return;
 
-            }
-            if (entry->state & LE_WHITELIST_REMOVE_FROM_CONTROLLER){
-                linked_list_remove(&hci_stack->le_whitelist, (linked_item_t *) entry);
-                btstack_memory_whitelist_entry_free(entry);
-                hci_send_cmd(&hci_le_remove_device_from_white_list, entry->address_type, entry->address);
-                return;
+                }
+                if (entry->state & LE_WHITELIST_REMOVE_FROM_CONTROLLER){
+                    linked_list_remove(&hci_stack->le_whitelist, (linked_item_t *) entry);
+                    btstack_memory_whitelist_entry_free(entry);
+                    hci_send_cmd(&hci_le_remove_device_from_white_list, entry->address_type, entry->address);
+                    return;
+                }
             }
         }
 
         // start connecting
-        if (!linked_list_empty(&hci_stack->le_whitelist)){
+        if ( hci_stack->le_connecting_state == LE_CONNECTING_IDLE && 
+            !linked_list_empty(&hci_stack->le_whitelist)){
             bd_addr_t null_addr;
             memset(null_addr, 0, 6);
             hci_send_cmd(&hci_le_create_connection,
@@ -3041,6 +3043,7 @@ static hci_connection_t * le_central_get_outgoing_connection(void){
 
 le_command_status_t le_central_connect_cancel(void){
     hci_connection_t * conn = le_central_get_outgoing_connection();
+    if (!conn) return BLE_PERIPHERAL_OK;
     switch (conn->state){
         case SEND_CREATE_CONNECTION:
             // skip sending create connection and emit event instead
@@ -3165,15 +3168,16 @@ le_command_status_t gap_disconnect(hci_con_handle_t handle){
  * @returns 0 if ok
  */
 int gap_auto_connection_start(uint8_t address_type, bd_addr_t address){
-    log_error("gap_auto_connection_start not implemented yet");
     // check capacity
+    printf("autoconnect to %s\n", bd_addr_to_str(address));
     int num_entries = linked_list_count(&hci_stack->le_whitelist);
-    if (num_entries > hci_stack->le_whitelist_capacity) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
+    if (num_entries >= hci_stack->le_whitelist_capacity) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     whitelist_entry_t * entry = btstack_memory_whitelist_entry_get();
     if (!entry) return BTSTACK_MEMORY_ALLOC_FAILED;
     entry->address_type = address_type;
     memcpy(entry->address, address, 6);
     entry->state = LE_WHITELIST_ADD_TO_CONTROLLER;
+    linked_list_add(&hci_stack->le_whitelist, (linked_item_t*) entry);
     hci_run();
     return 0;
 }
@@ -3185,7 +3189,6 @@ int gap_auto_connection_start(uint8_t address_type, bd_addr_t address){
  * @returns 0 if ok
  */
 int gap_auto_connection_stop(uint8_t address_type, bd_addr_t address){
-    log_error("gap_auto_connection_stop not implemented yet");
     linked_list_iterator_t it;
     linked_list_iterator_init(&it, &hci_stack->le_whitelist);
     while (linked_list_iterator_has_next(&it)){
@@ -3210,8 +3213,8 @@ int gap_auto_connection_stop(uint8_t address_type, bd_addr_t address){
  * @note  Convenience function to stop all active auto connection attempts
  */
 void gap_auto_connection_stop_all(void){
-    log_error("gap_auto_connection_stop_all not implemented yet");
     linked_list_iterator_t it;
+    linked_list_iterator_init(&it, &hci_stack->le_whitelist);
     while (linked_list_iterator_has_next(&it)){
         whitelist_entry_t * entry = (whitelist_entry_t*) linked_list_iterator_next(&it);
         if (entry->state & LE_WHITELIST_ON_CONTROLLER){
@@ -3219,7 +3222,7 @@ void gap_auto_connection_stop_all(void){
             entry->state |= LE_WHITELIST_REMOVE_FROM_CONTROLLER;
             continue;
         }
-        // direclty remove entry from whitelist
+        // directly remove entry from whitelist
         linked_list_iterator_remove(&it);
         btstack_memory_whitelist_entry_free(entry);
     }
