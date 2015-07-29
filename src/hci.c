@@ -2993,7 +2993,7 @@ void le_central_set_scan_parameters(uint8_t scan_type, uint16_t scan_interval, u
     hci_run();
 }
 
-le_command_status_t le_central_connect(bd_addr_t  addr, bd_addr_type_t addr_type){
+le_command_status_t le_central_connect(bd_addr_t addr, bd_addr_type_t addr_type){
     hci_connection_t * conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
     if (!conn){
         log_info("le_central_connect: no connection exists yet, creating context");
@@ -3161,15 +3161,16 @@ le_command_status_t gap_disconnect(hci_con_handle_t handle){
     return BLE_PERIPHERAL_OK;
 }
 
+#ifdef HAVE_BLE
+
 /**
  * @brief Auto Connection Establishment - Start Connecting to device
  * @param address_typ
  * @param address
  * @returns 0 if ok
  */
-int gap_auto_connection_start(uint8_t address_type, bd_addr_t address){
+int gap_auto_connection_start(bd_addr_type_t address_type, bd_addr_t address){
     // check capacity
-    printf("autoconnect to %s\n", bd_addr_to_str(address));
     int num_entries = linked_list_count(&hci_stack->le_whitelist);
     if (num_entries >= hci_stack->le_whitelist_capacity) return ERROR_CODE_MEMORY_CAPACITY_EXCEEDED;
     whitelist_entry_t * entry = btstack_memory_whitelist_entry_get();
@@ -3188,7 +3189,7 @@ int gap_auto_connection_start(uint8_t address_type, bd_addr_t address){
  * @param address
  * @returns 0 if ok
  */
-int gap_auto_connection_stop(uint8_t address_type, bd_addr_t address){
+int gap_auto_connection_stop(bd_addr_type_t address_type, bd_addr_t address){
     linked_list_iterator_t it;
     linked_list_iterator_init(&it, &hci_stack->le_whitelist);
     while (linked_list_iterator_has_next(&it)){
@@ -3228,6 +3229,8 @@ void gap_auto_connection_stop_all(void){
     }
     hci_run();
 }
+
+#endif
 
 /**
  * @brief Set callback for Bluetooth Hardware Error
