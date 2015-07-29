@@ -183,13 +183,14 @@ static hfp_connection_t * create_hfp_connection_context(){
     context->state = HFP_IDLE;
     context->line_size = 0;
     context->cmd_value_state = HFP_CMD_HEADER;
-    context->cmd_state = HFP_CMD_NONE;
+    context->command = HFP_CMD_NONE;
 
     context->negotiated_codec = HFP_CODEC_CVSD;
     context->remote_supported_features = 0;
     context->remote_indicators_update_enabled = 0;
     context->remote_indicators_nr = 0;
     context->remote_indicators_status = 0;
+    context->generic_indicator_name_read = 0;
 
     linked_list_add(&hfp_connections, (linked_item_t*)context);
     return context;

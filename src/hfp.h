@@ -113,7 +113,7 @@ extern "C" {
 #define HFP_CODEC_MSBC 0x02
 
 typedef enum {
-    HFP_CMD_NONE,
+    HFP_CMD_NONE = 0,
     HFP_CMD_OK,
     HFP_CMD_SUPPORTED_FEATURES,
     HFP_CMD_AVAILABLE_CODECS,
@@ -121,10 +121,10 @@ typedef enum {
     HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE,
     HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES,
     HFP_CMD_GENERIC_STATUS_INDICATOR
-} hfp_cmd_state_t;
+} hfp_command_t;
 
 typedef enum {
-    HFP_CMD_HEADER,
+    HFP_CMD_HEADER = 0,
     HFP_CMD_SEQUENCE,
     HFP_CMD_INDICATOR_NAME,
     HFP_CMD_INDICATOR_MIN_RANGE,
@@ -133,7 +133,7 @@ typedef enum {
 
 
 typedef enum {
-    HFP_IDLE = 0, //50
+    HFP_IDLE = 0, //0
     HFP_SDP_QUERY_RFCOMM_CHANNEL,
     HFP_W4_SDP_QUERY_COMPLETE,
     HFP_W4_RFCOMM_CONNECTED,
@@ -205,7 +205,7 @@ typedef struct hfp_connection {
     linked_item_t    item;
     hfp_state_t state;
 
-    hfp_cmd_state_t cmd_state;
+    hfp_command_t command;
     hfp_cmd_value_state_t cmd_value_state;
     
     uint8_t  line_buffer[HFP_MAX_INDICATOR_DESC_SIZE];
@@ -218,10 +218,11 @@ typedef struct hfp_connection {
 
     uint8_t  wait_ok;
     uint8_t  negotiated_codec;
+    uint8_t  generic_indicator_name_read;
 
     uint32_t remote_supported_features;
     uint8_t  remote_indicators_update_enabled;
-    uint8_t  remote_indicators_nr;
+    int  remote_indicators_nr;
     char remote_indicators[20][HFP_MAX_INDICATOR_DESC_SIZE];
     int  remote_indicators_range[20][2];
 
