@@ -124,12 +124,12 @@ typedef enum {
 } hfp_command_t;
 
 typedef enum {
-    HFP_CMD_HEADER = 0,
-    HFP_CMD_SEQUENCE,
-    HFP_CMD_INDICATOR_NAME,
-    HFP_CMD_INDICATOR_MIN_RANGE,
-    HFP_CMD_INDICATOR_MAX_RANGE
-} hfp_cmd_value_state_t;
+    HFP_PARSER_CMD_HEADER = 0,
+    HFP_PARSER_CMD_SEQUENCE,
+    HFP_PARSER_CMD_INDICATOR_NAME,
+    HFP_PARSER_CMD_INDICATOR_MIN_RANGE,
+    HFP_PARSER_CMD_INDICATOR_MAX_RANGE
+} hfp_parser_state_t;
 
 
 typedef enum {
@@ -171,32 +171,6 @@ typedef enum {
     HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN
 } hfp_state_t;
 
-typedef enum {
-    HFP_AG_SERVICE,   /*    <value>=0 implies no service. No Home/Roam network available.
-                            <value>=1 implies presence of service. Home/Roam network available.
-                       */
-
-    HFP_AG_CALL,      /*    <value>=0 means there are no calls in progress
-                            <value>=1 means at least one call is in progress
-                       */
-
-    HFP_AG_CALLSETUP, /*    <value>=0 means not currently in call set up.
-                            <value>=1 means an incoming call process ongoing.
-                            <value>=2 means an outgoing call set up is ongoing.
-                            <value>=3 means remote party being alerted in an outgoing call.
-                       */
-    HFP_AG_CALLHELD,   /*   0 = No calls held
-                            1 = Call is placed on hold or active/held calls swapped
-                                    (The AG has both an active AND a held call) 
-                            2 = Call on hold, no active call
-                        */
-    HFP_AG_SIGNAL,      /*  ranges from 0 to 5, Signal Strength indicator */
-    HFP_AG_ROAM,        /*  <value>=0 means roaming is not active
-                            <value>=1 means a roaming is active
-                        */
-    HFP_AG_BATTCHG      /* ranges from 0 to 5, Battery Charge */
-
-} hfp_ag_indicators_t;
 
 typedef void (*hfp_callback_t)(uint8_t * event, uint16_t event_size);
 
@@ -206,7 +180,7 @@ typedef struct hfp_connection {
     hfp_state_t state;
 
     hfp_command_t command;
-    hfp_cmd_value_state_t cmd_value_state;
+    hfp_parser_state_t parser_state;
     
     uint8_t  line_buffer[HFP_MAX_INDICATOR_DESC_SIZE];
     int      line_size;
