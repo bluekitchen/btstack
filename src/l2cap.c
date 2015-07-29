@@ -724,7 +724,7 @@ void l2cap_run(void){
         hci_reserve_packet_buffer();
         uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
         connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
-        uint16_t len = l2cap_le_create_connection_parameter_update_response(acl_buffer, connection->con_handle, result);
+        uint16_t len = l2cap_le_create_connection_parameter_update_response(acl_buffer, connection->con_handle, connection->le_con_param_update_identifier, result);
         hci_send_acl_packet_buffer(len);
         if (result == 0){
             connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_CHANGE_HCI_CON_PARAMETERS;
@@ -1453,6 +1453,7 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
                         } else {
                             connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_DENY;
                         }
+                        connection->le_con_param_update_identifier = packet[COMPLETE_L2CAP_HEADER + 1];
                     }
                 
                     hci_dump_packet( HCI_EVENT_PACKET, 0, event, sizeof(event));
@@ -1596,7 +1597,8 @@ int l2cap_le_request_connection_parameter_update(uint16_t handle, uint16_t inter
     // log_info("l2cap_send_signaling_packet type %u", cmd);
     hci_reserve_packet_buffer();
     uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
-    uint16_t len = l2cap_le_create_connection_parameter_update_request(acl_buffer, handle, interval_min, interval_max, slave_latency, timeout_multiplier);
+    // TODO: find better way to get signaling identifier
+    uint16_t len = l2cap_le_create_connection_parameter_update_request(acl_buffer, handle, 1, interval_min, interval_max, slave_latency, timeout_multiplier);
     return hci_send_acl_packet_buffer(len);
 }
 #endif

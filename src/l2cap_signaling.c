@@ -151,7 +151,7 @@ uint16_t l2cap_create_signaling_le(uint8_t * acl_buffer, hci_con_handle_t handle
     return l2cap_create_signaling_internal(acl_buffer, handle, 5, cmd, identifier, argptr);
 }
 
-uint16_t l2cap_le_create_connection_parameter_update_request(uint8_t * acl_buffer, uint16_t handle, uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency, uint16_t timeout_multiplier){
+uint16_t l2cap_le_create_connection_parameter_update_request(uint8_t * acl_buffer, uint16_t handle,  uint8_t identifier, uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency, uint16_t timeout_multiplier){
 
     int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
 
@@ -161,8 +161,8 @@ uint16_t l2cap_le_create_connection_parameter_update_request(uint8_t * acl_buffe
     bt_store_16(acl_buffer, 6, 5);
     // 8 - Code
     acl_buffer[8] = CONNECTION_PARAMETER_UPDATE_REQUEST;
-    // 9 - id (!= 0 sequentially)
-    acl_buffer[9] = 1;
+    // 9 - id
+    acl_buffer[9] = identifier;
     uint16_t pos = 12;
     bt_store_16(acl_buffer, pos, interval_min);
     pos += 2;
@@ -181,7 +181,7 @@ uint16_t l2cap_le_create_connection_parameter_update_request(uint8_t * acl_buffe
     return pos;
 } 
 
-uint16_t l2cap_le_create_connection_parameter_update_response(uint8_t * acl_buffer, uint16_t handle, uint16_t response){
+uint16_t l2cap_le_create_connection_parameter_update_response(uint8_t * acl_buffer, uint16_t handle,  uint8_t identifier, uint16_t response){
 
     int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
 
@@ -191,8 +191,8 @@ uint16_t l2cap_le_create_connection_parameter_update_response(uint8_t * acl_buff
     bt_store_16(acl_buffer, 6, 5);
     // 8 - Code
     acl_buffer[8] = CONNECTION_PARAMETER_UPDATE_RESPONSE;
-    // 9 - id (!= 0 sequentially)
-    acl_buffer[9] = 1;
+    // 9 - id
+    acl_buffer[9] = identifier;
     uint16_t pos = 12;
     bt_store_16(acl_buffer, pos, response);
     pos += 2;

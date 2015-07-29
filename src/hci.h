@@ -522,11 +522,11 @@ typedef struct {
 
     // LE Connection parameter update
     le_con_parameter_update_state_t le_con_parameter_update_state;
+    uint8_t  le_con_param_update_identifier;
     uint16_t le_conn_interval_min;
     uint16_t le_conn_interval_max;
     uint16_t le_conn_latency;
     uint16_t le_supervision_timeout;
-    uint16_t le_update_con_parameter_response;
 
 #ifdef HAVE_BLE
     // LE Security Manager
