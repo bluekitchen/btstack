@@ -723,9 +723,12 @@ void l2cap_run(void){
         if (!hci_can_send_acl_packet_now(connection->con_handle)) break;
         hci_reserve_packet_buffer();
         uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
-        connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_CHANGE_HCI_CON_PARAMETERS;
-        uint16_t len = l2cap_le_create_connection_parameter_update_response(acl_buffer, connection->con_handle, 0);
+        connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
+        uint16_t len = l2cap_le_create_connection_parameter_update_response(acl_buffer, connection->con_handle, result);
         hci_send_acl_packet_buffer(len);
+        if (result == 0){
+            connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_CHANGE_HCI_CON_PARAMETERS;
+        }
     }
 #endif
 
