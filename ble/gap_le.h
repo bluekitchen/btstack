@@ -43,7 +43,8 @@ extern "C" {
 #endif
 
 #include <btstack/utils.h>
-
+#include <btstack/hci_cmds.h>
+	
 /* API_START */
 
 typedef enum {
