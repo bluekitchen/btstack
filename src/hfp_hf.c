@@ -192,14 +192,9 @@ static void hfp_run_for_context(hfp_connection_t * connection){
             connection->state = HFP_W4_EXCHANGE_SUPPORTED_FEATURES;
             break;
         case HFP_NOTIFY_ON_CODECS:
-            if (has_codec_negotiation_feature(connection)){
-                hfp_hs_retrieve_codec_cmd(connection->rfcomm_cid);
-                connection->state = HFP_W4_NOTIFY_ON_CODECS;
-                break;
-            } 
-            connection->state = HFP_RETRIEVE_INDICATORS;
-            printf("fall through to HFP_RETRIEVE_INDICATORS (no codec feature)\n");
-            // 
+            hfp_hs_retrieve_codec_cmd(connection->rfcomm_cid);
+            connection->state = HFP_W4_NOTIFY_ON_CODECS;
+            break;
         case HFP_RETRIEVE_INDICATORS:
             hfp_hs_retrieve_indicators_cmd(connection->rfcomm_cid);
             connection->state = HFP_W4_RETRIEVE_INDICATORS;
@@ -209,34 +204,16 @@ static void hfp_run_for_context(hfp_connection_t * connection){
             connection->state = HFP_W4_RETRIEVE_INDICATORS_STATUS;
             break;
         case HFP_ENABLE_INDICATORS_STATUS_UPDATE:
-            if (connection->remote_indicators_update_enabled == 0){
-                hfp_hs_toggle_indicator_status_update_cmd(connection->rfcomm_cid, 1);
-                connection->state = HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE;
-                connection->wait_ok = 1;
-                break;
-            }
-            printf("fall through to HFP_RETRIEVE_CAN_HOLD_CALL\n");
-            connection->state = HFP_RETRIEVE_CAN_HOLD_CALL;
-            // 
+            hfp_hs_toggle_indicator_status_update_cmd(connection->rfcomm_cid, 1);
+            connection->state = HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE;
+            break;
         case HFP_RETRIEVE_CAN_HOLD_CALL:
-            if (has_call_waiting_and_3way_calling_feature(connection)){
-                hfp_hs_retrieve_can_hold_call_cmd(connection->rfcomm_cid);
-                connection->state = HFP_W4_RETRIEVE_CAN_HOLD_CALL;
-                break;
-            }
-            printf("fall through to HFP_LIST_GENERIC_STATUS_INDICATORS (no CAN_HOLD_CALL feature)\n");
-            connection->state = HFP_LIST_GENERIC_STATUS_INDICATORS;
+            hfp_hs_retrieve_can_hold_call_cmd(connection->rfcomm_cid);
+            connection->state = HFP_W4_RETRIEVE_CAN_HOLD_CALL;
+            break;
         case HFP_LIST_GENERIC_STATUS_INDICATORS:
-            if (has_hf_indicators_feature(connection)){
-                hfp_hs_list_supported_generic_status_indicators_cmd(connection->rfcomm_cid);
-                connection->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
-                break;
-            } 
-            printf("fall through to HFP_ACTIVE (no hf indicators feature)\n");
-            connection->state = HFP_ACTIVE;
-            //
-        case HFP_ACTIVE:
-            printf("HFP_ACTIVE\n");
+            hfp_hs_list_supported_generic_status_indicators_cmd(connection->rfcomm_cid);
+            connection->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
             break;
         case HFP_RETRIEVE_GENERIC_STATUS_INDICATORS:
             hfp_hs_retrieve_supported_generic_status_indicators_cmd(connection->rfcomm_cid);
@@ -245,6 +222,9 @@ static void hfp_run_for_context(hfp_connection_t * connection){
         case HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
             hfp_hs_list_initital_supported_generic_status_indicators_cmd(connection->rfcomm_cid);
             connection->state = HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
+            break;
+        case HFP_ACTIVE:
+            printf("HFP_ACTIVE\n");
             break;
         default:
             break;
@@ -474,20 +454,53 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
 
     switch (context->state){
         case HFP_W4_EXCHANGE_SUPPORTED_FEATURES:
-            context->state = HFP_NOTIFY_ON_CODECS;
+            if (has_codec_negotiation_feature(context)){
+                context->state = HFP_NOTIFY_ON_CODECS;
+                break;
+            } 
+            context->state = HFP_RETRIEVE_INDICATORS;
             break;
-
         case HFP_W4_RETRIEVE_INDICATORS:
             context->remote_indicators_status = 0;
             context->state = HFP_RETRIEVE_INDICATORS_STATUS; 
             break;
+        
         case HFP_W4_RETRIEVE_INDICATORS_STATUS:
-            context->state = HFP_ENABLE_INDICATORS_STATUS_UPDATE;
+            if (context->remote_indicators_update_enabled == 0){
+                context->state = HFP_ENABLE_INDICATORS_STATUS_UPDATE;
+                break;
+            } 
+            if (has_call_waiting_and_3way_calling_feature(context)){
+                context->state = HFP_RETRIEVE_CAN_HOLD_CALL;
+                break;
+            }
+            if (has_hf_indicators_feature(context)){
+                context->state = HFP_LIST_GENERIC_STATUS_INDICATORS;
+                break;
+            } 
+            context->state = HFP_ACTIVE;
             break;
 
-        case HFP_W4_RETRIEVE_CAN_HOLD_CALL:
-            context->state = HFP_LIST_GENERIC_STATUS_INDICATORS;
+        case HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE:
+            if (has_call_waiting_and_3way_calling_feature(context)){
+                context->state = HFP_RETRIEVE_CAN_HOLD_CALL;
+                break;
+            }
+            if (has_hf_indicators_feature(context)){
+                context->state = HFP_LIST_GENERIC_STATUS_INDICATORS;
+                break;
+            } 
+            context->state = HFP_ACTIVE;
             break;
+        
+        case HFP_W4_RETRIEVE_CAN_HOLD_CALL:
+            if (has_hf_indicators_feature(context)){
+                context->state = HFP_LIST_GENERIC_STATUS_INDICATORS;
+                break;
+            } 
+            context->state = HFP_ACTIVE;
+            break;
+            
         case HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS:
             context->remote_hf_indicators_status = 0;
             context->state = HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
