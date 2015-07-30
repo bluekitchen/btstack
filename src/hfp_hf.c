@@ -338,13 +338,8 @@ static void hfp_parse(hfp_connection_t * context, uint8_t byte){
                         printf("Generic status indicator: %s\n", context->line_buffer);
                         break;
                     case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
-                        if (!context->generic_indicator_name_read){
-                            printf("Generic status indicator: %s, ", context->line_buffer); 
-                            context->generic_indicator_name_read = 1;
-                        } else {
-                            context->generic_indicator_name_read = 0;
-                            printf("status %s\n", context->line_buffer); 
-                        }
+                        printf("Generic status indicator: %s, ", context->line_buffer); 
+                        context->parser_state = HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
                         break;
                     default:
                         break;
@@ -363,7 +358,16 @@ static void hfp_parse(hfp_connection_t * context, uint8_t byte){
             }
             context->line_buffer[context->line_size++] = byte;
             break;
-
+        case HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
+            if (byte == '\n' || byte == '\r'){
+                context->line_buffer[context->line_size] = 0;
+                context->line_size = 0;
+                context->command = HFP_CMD_NONE;
+                context->parser_state = HFP_PARSER_CMD_HEADER;
+                printf("status %s [0-dissabled, 1-enabled]\n", context->line_buffer);
+                break;
+            }
+            break;
         case HFP_PARSER_CMD_INDICATOR_NAME: // parse indicator name
             if (byte == '"'){
                 context->line_buffer[context->line_size] = 0;

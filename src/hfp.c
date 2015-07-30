@@ -190,7 +190,6 @@ static hfp_connection_t * create_hfp_connection_context(){
     context->remote_indicators_update_enabled = 0;
     context->remote_indicators_nr = 0;
     context->remote_indicators_status = 0;
-    context->generic_indicator_name_read = 0;
 
     linked_list_add(&hfp_connections, (linked_item_t*)context);
     return context;

@@ -128,7 +128,8 @@ typedef enum {
     HFP_PARSER_CMD_SEQUENCE,
     HFP_PARSER_CMD_INDICATOR_NAME,
     HFP_PARSER_CMD_INDICATOR_MIN_RANGE,
-    HFP_PARSER_CMD_INDICATOR_MAX_RANGE
+    HFP_PARSER_CMD_INDICATOR_MAX_RANGE,
+    HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATORS
 } hfp_parser_state_t;
 
 
@@ -190,10 +191,8 @@ typedef struct hfp_connection {
     uint16_t rfcomm_channel_nr;
     uint16_t rfcomm_cid;
 
-    uint8_t  wait_ok;
     uint8_t  negotiated_codec;
-    uint8_t  generic_indicator_name_read;
-
+   
     uint32_t remote_supported_features;
     uint8_t  remote_indicators_update_enabled;
     int  remote_indicators_nr;
