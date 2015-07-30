@@ -757,8 +757,15 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
     }
 }
 
-static int sm_key_distribution_all_received(void){
-    int recv_flags = sm_key_distribution_flags_for_set(setup->sm_m_preq.initiator_key_distribution);
+static int sm_key_distribution_all_received(sm_connection_t * sm_conn){
+    int recv_flags;
+    if (sm_conn->sm_role){
+        // slave / responser
+        recv_flags = sm_key_distribution_flags_for_set(setup->sm_s_pres.initiator_key_distribution);
+    } else {
+        // master / initiator
+        recv_flags = sm_key_distribution_flags_for_set(setup->sm_s_pres.responder_key_distribution);
+    }        
     return recv_flags == setup->sm_key_distribution_received_set;
 }
 
@@ -810,9 +817,11 @@ static int sm_stk_generation_init(sm_connection_t * sm_conn){
     sm_pairing_packet_t * remote_packet;
     int                   remote_key_request;
     if (sm_conn->sm_role){
+        // slave / responser
         remote_packet      = &setup->sm_m_preq;
         remote_key_request = setup->sm_m_preq.responder_key_distribution;
     } else {
+        // master / initiator
         remote_packet      = &setup->sm_s_pres;
         remote_key_request = setup->sm_s_pres.initiator_key_distribution;
     }
@@ -1929,7 +1938,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                     break;
             }     
             // done with key distribution?         
-            if (sm_key_distribution_all_received()){
+            if (sm_key_distribution_all_received(sm_conn)){
 
                 // store, if: it's a public address, or, we got an IRK
                 if (setup->sm_peer_addr_type == 0 || (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION)) {
@@ -2120,6 +2129,7 @@ void sm_request_authorization(uint8_t addr_type, bd_addr_t address){
             sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;            
         }
     }
+    sm_run();
 }
 
 // called by client app on authorization request
