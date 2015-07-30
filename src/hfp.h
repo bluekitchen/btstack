@@ -97,8 +97,9 @@ extern "C" {
 #define HFP_DEFAULT_AG_SUPPORTED_FEATURES 0x0009
 
 #define HFP_MAX_NUM_CODECS 20
-#define HFP_MAX_NUM_INDICATORS 20
-#define HFP_MAX_INDICATOR_DESC_SIZE 200 // TODO: change to 10
+#define HFP_MAX_NUM_AG_INDICATORS 20
+#define HFP_MAX_NUM_HF_INDICATORS 20
+#define HFP_MAX_INDICATOR_DESC_SIZE 10 
 
 #define HFP_SUPPORTED_FEATURES "+BRSF"
 #define HFP_AVAILABLE_CODECS "+BAC"
@@ -175,6 +176,19 @@ typedef enum {
 
 typedef void (*hfp_callback_t)(uint8_t * event, uint16_t event_size);
 
+typedef struct{
+    uint16_t uuid;
+    uint8_t state;
+    uint8_t initial_state;
+} hfp_hf_indicator_t;
+
+typedef struct{
+    uint8_t index;
+    char name[HFP_MAX_INDICATOR_DESC_SIZE];
+    uint8_t min_range;
+    uint8_t max_range;
+    uint8_t status;
+} hfp_ag_indicator_t;
 
 typedef struct hfp_connection {
     linked_item_t    item;
@@ -191,19 +205,13 @@ typedef struct hfp_connection {
     uint16_t rfcomm_channel_nr;
     uint16_t rfcomm_cid;
 
+    int  ag_indicators_nr;
+
+    // Retrieved during connection setup, not used yet
     uint8_t  negotiated_codec;
    
     uint32_t remote_supported_features;
     uint8_t  remote_indicators_update_enabled;
-    int  remote_indicators_nr;
-    char remote_indicators[20][HFP_MAX_INDICATOR_DESC_SIZE];
-    int  remote_indicators_range[20][2];
-
-    uint32_t remote_indicators_status;
-    
-    uint8_t  remote_hf_indicators_nr;
-    uint16_t remote_hf_indicators[20];
-    uint32_t remote_hf_indicators_status;
 
     hfp_callback_t callback;
 } hfp_connection_t;
@@ -217,10 +225,13 @@ void hfp_connect(bd_addr_t bd_addr, uint16_t service_uuid);
 
 hfp_connection_t * provide_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 linked_list_t * hfp_get_connections();
+void hfp_parse(hfp_connection_t * context, uint8_t byte);
 
 // TODO: move to utils
 int send_str_over_rfcomm(uint16_t cid, char * command);
-void join(char * buffer, int buffer_size, uint8_t * values, int values_nr);
+int join(char * buffer, int buffer_size, uint8_t * values, int values_nr);
+int get_bit(uint16_t bitmap, int position);
+int store_bit(uint32_t bitmap, int position, uint8_t value);
 
 const char * hfp_hf_feature(int index);
 const char * hfp_ag_feature(int index);

@@ -70,11 +70,14 @@
 
 const uint32_t   hfp_service_buffer[150/4]; // implicit alignment to 4-byte memory address
 const uint8_t    rfcomm_channel_nr = 1;
-const char hfp_hf_service_name[] = "BTstack HF Test";
+const char hfp_hf_service_name[] = "BTstack HFP HF Test";
 
 static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t local_mac = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
 static bd_addr_t phone = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
+static uint8_t codecs[1] = {HFP_CODEC_CVSD};
+static uint16_t indicators[1] = {0x01};
+
 // prototypes
 static void show_usage();
 
@@ -94,7 +97,6 @@ static void show_usage(void){
 static int stdin_process(struct data_source *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
-
     switch (buffer){
         case 'p':
             printf("Establishing HFP connection to PTS module %s...\n", bd_addr_to_str(pts_addr));
@@ -126,9 +128,6 @@ void packet_handler(uint8_t * event, uint16_t event_size){
 
 int btstack_main(int argc, const char * argv[]){
     // init L2CAP
-    uint8_t codecs[1] = {HFP_CODEC_CVSD};
-    uint16_t indicators[1] = {0x01};
-
     l2cap_init();
     rfcomm_init();
     
@@ -147,6 +146,7 @@ int btstack_main(int argc, const char * argv[]){
     hci_power_control(HCI_POWER_ON);
     
     btstack_stdin_setup(stdin_process);
-
+    // printf("Establishing HFP connection to %s...\n", bd_addr_to_str(phone));
+    // hfp_hf_connect(phone);
     return 0;
 }
