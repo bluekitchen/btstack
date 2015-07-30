@@ -121,8 +121,8 @@ int send_str_over_rfcomm(uint16_t cid, char * command){
     return err;
 }
 
-void join(char * buffer, int buffer_size, uint8_t * values, int values_nr){
-    if (buffer_size < values_nr * 3) return;
+int join(char * buffer, int buffer_size, uint8_t * values, int values_nr){
+    if (buffer_size < values_nr * 3) return 0;
     int i;
     int offset = 0;
     for (i = 0; i < values_nr-1; i++) {
@@ -131,9 +131,7 @@ void join(char * buffer, int buffer_size, uint8_t * values, int values_nr){
     if (i<values_nr){
         offset += snprintf(buffer+offset, buffer_size-offset, "%d", values[i]);
     }
-
-    offset += snprintf(buffer+offset, buffer_size-offset, "\r\n");
-    buffer[offset] = 0;
+    return offset;
 }
 
 
@@ -446,4 +444,18 @@ void hfp_set_codec(hfp_connection_t * context, uint8_t *packet, uint16_t size){
         }
     }
     printf("Negotiated Codec 0x%02x\n", context->negotiated_codec);
+}
+
+// UTILS
+int get_bit(uint16_t bitmap, int position){
+    return (bitmap >> position) & 1;
+}
+
+int store_bit(uint32_t bitmap, int position, uint8_t value){
+    if (value){
+        bitmap |= 1 << position;
+    } else {
+        bitmap &= ~ (1 << position);
+    }
+    return bitmap;
 }

@@ -71,10 +71,6 @@ static uint8_t hfp_indicators_nr = 0;
 static uint8_t hfp_indicators[HFP_MAX_NUM_INDICATORS];
 static uint8_t hfp_indicators_status;
 
-static int get_bit(uint16_t bitmap, int position){
-    return (bitmap >> position) & 1;
-}
-
 
 int has_codec_negotiation_feature(hfp_connection_t * connection){
     int hf = get_bit(hfp_supported_features, HFP_HFSF_CODEC_NEGOTIATION);
@@ -104,27 +100,11 @@ void hfp_hf_create_service(uint8_t * service, int rfcomm_channel_nr, const char 
     hfp_create_service(service, SDP_Handsfree, rfcomm_channel_nr, name, supported_features);
 }
 
-static int store_bit(uint32_t bitmap, int position, uint8_t value){
-    if (value){
-        bitmap |= 1 << position;
-    } else {
-        bitmap &= ~ (1 << position);
-    }
-    return bitmap;
-}
 
 int hfp_hs_exchange_supported_features_cmd(uint16_t cid){
     char buffer[20];
     sprintf(buffer, "AT%s=%d\r\n", HFP_SUPPORTED_FEATURES, hfp_supported_features);
     // printf("exchange_supported_features %s\n", buffer);
-    return send_str_over_rfcomm(cid, buffer);
-}
-
-int hfp_hs_retrieve_codec_cmd(uint16_t cid){
-    char buffer[30];
-    int buffer_offset = snprintf(buffer, sizeof(buffer), "AT%s=", HFP_AVAILABLE_CODECS);
-    join(buffer+buffer_offset, sizeof(buffer)-buffer_offset, hfp_codecs, hfp_codecs_nr);
-    // printf("retrieve_codec %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -159,17 +139,27 @@ int hfp_hs_retrieve_can_hold_call_cmd(uint16_t cid){
 }
 
 
+int hfp_hs_retrieve_codec_cmd(uint16_t cid){
+    char buffer[30];
+    int offset = snprintf(buffer, sizeof(buffer), "AT%s=", HFP_AVAILABLE_CODECS);
+    offset += join(buffer+offset, sizeof(buffer)-offset, hfp_codecs, hfp_codecs_nr);
+    offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n");
+    buffer[offset] = 0;
+    return send_str_over_rfcomm(cid, buffer);
+}
+
 int hfp_hs_list_supported_generic_status_indicators_cmd(uint16_t cid){
     char buffer[30];
-    int buffer_offset = snprintf(buffer, sizeof(buffer), "AT%s=", HFP_GENERIC_STATUS_INDICATOR); 
-    join(buffer+buffer_offset, sizeof(buffer)-buffer_offset, hfp_indicators, hfp_indicators_nr); 
-    // printf("list_supported_generic_status_indicators %s\n", buffer);
+    int offset = snprintf(buffer, sizeof(buffer), "AT%s=", HFP_GENERIC_STATUS_INDICATOR);
+    offset += join(buffer+offset, sizeof(buffer)-offset, hfp_indicators, hfp_indicators_nr);
+    offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n");
+    buffer[offset] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
 int hfp_hs_retrieve_supported_generic_status_indicators_cmd(uint16_t cid){
     char buffer[20];
-    sprintf(buffer, "AT%s=?\r\rn", HFP_GENERIC_STATUS_INDICATOR); 
+    sprintf(buffer, "AT%s=?\r\n", HFP_GENERIC_STATUS_INDICATOR); 
     // printf("retrieve_supported_generic_status_indicators %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
@@ -533,12 +523,10 @@ void hfp_hf_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, uint8_
     rfcomm_register_packet_handler(packet_handler);
     hfp_init(rfcomm_channel_nr);
     
-    int i;
-    
-    // connection->codecs = codecs;
     hfp_supported_features = supported_features;
-    
     hfp_codecs_nr = codecs_nr;
+    
+    int i;
     for (i=0; i<codecs_nr; i++){
         hfp_codecs[i] = codecs[i];
     }

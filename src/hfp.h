@@ -191,6 +191,7 @@ typedef struct hfp_connection {
     uint16_t rfcomm_channel_nr;
     uint16_t rfcomm_cid;
 
+    // Retrieved during connection setup, not used yet
     uint8_t  negotiated_codec;
    
     uint32_t remote_supported_features;
@@ -220,7 +221,9 @@ linked_list_t * hfp_get_connections();
 
 // TODO: move to utils
 int send_str_over_rfcomm(uint16_t cid, char * command);
-void join(char * buffer, int buffer_size, uint8_t * values, int values_nr);
+int join(char * buffer, int buffer_size, uint8_t * values, int values_nr);
+int get_bit(uint16_t bitmap, int position);
+int store_bit(uint32_t bitmap, int position, uint8_t value);
 
 const char * hfp_hf_feature(int index);
 const char * hfp_ag_feature(int index);
