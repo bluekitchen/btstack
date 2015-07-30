@@ -268,10 +268,20 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
                     printf("\nGAP Bonding %s (%u): Display cancel\n", bd_addr_to_str(peer_address), peer_addr_type);
                     break;
 
-                case SM_AUTHORIZATION_REQUEST: {
+                case SM_JUST_WORKS_REQUEST:
+                {
                     // auto-authorize connection if requested
                     sm_event_t * event = (sm_event_t *) packet;
-                    sm_authorization_grant(event->addr_type, event->address);
+                    sm_just_works_confirm(current_pts_address_type, current_pts_address);
+                    printf("Just Works request confirmed\n");
+                    break;
+                }
+                break;
+                case SM_AUTHORIZATION_REQUEST:
+                {
+                    // auto-authorize connection if requested
+                    sm_event_t * event = (sm_event_t *) packet;
+                    sm_authorization_grant(current_pts_address_type, current_pts_address);
                     break;
                 }
 
@@ -386,6 +396,7 @@ void show_usage(void){
     printf("2   - clear Peripheral Privacy Flag on PTS\n");
     printf("s/S - passive/active scanning\n");
     printf("a   - enable Advertisements\n");
+    printf("b   - start bonding\n");
     printf("n   - query GAP Device Name\n");
     printf("o   - set GAP Reconnection Address\n");
     printf("t   - terminate connection, stop connecting\n");
@@ -425,6 +436,9 @@ int  stdin_process(struct data_source *ds){
             break;
         case 'a':
             hci_send_cmd(&hci_le_set_advertise_enable, 1);
+            break;
+        case 'b':
+            sm_request_authorization(current_pts_address_type, current_pts_address);
             break;
         case 'c':
             gap_connectable = 1;
@@ -546,7 +560,9 @@ int btstack_main(int argc, const char * argv[]){
     sm_register_oob_data_callback(get_oob_data_callback);
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
-    sm_set_authentication_requirements(0);
+    // sm_set_authentication_requirements(SM_AUTHREQ_NO_BONDING);
+    sm_set_authentication_requirements(SM_AUTHREQ_BONDING);
+
     sm_set_encryption_key_size_range(sm_min_key_size, 16);
     sm_test_set_irk(test_irk);
 
