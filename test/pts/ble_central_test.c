@@ -67,10 +67,14 @@
 // test profile
 #include "profile.h"
 
+// IXIT
+#define PTS_USES_RECONNECTION_ADDRESS_FOR_ITSELF
+
 typedef enum {
     CENTRAL_IDLE,
     CENTRAL_W4_NAME_QUERY_COMPLETE,
     CENTRAL_W4_NAME_VALUE,
+    CENTRAL_W4_RECONNECTION_ADDRESS_QUERY_COMPLETE,
 } central_state_t;
 
 typedef struct advertising_report {
@@ -104,10 +108,14 @@ static int ui_digits_for_passkey = 0;
 static uint16_t handle = 0;
 static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};
 static int tester_address_type = 0;
-uint16_t gc_id;
+static int reconnection_address_set = 0;
+static bd_addr_t non_resolvabe_address = { 0x33, 0x33, 0x33, 0x33, 0x33, 0x33};
+static bd_addr_t private_address;
+static uint16_t gc_id;
 
 static central_state_t central_state = CENTRAL_IDLE;
 static le_characteristic_t gap_name_characteristic;
+static le_characteristic_t gap_reconnection_address_characteristic;
 
 static void show_usage();
 static void fill_advertising_report_from_packet(advertising_report_t * report, uint8_t *packet);
@@ -296,6 +304,8 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
 void handle_gatt_client_event(le_event_t * event){
     le_service_t service;
     le_characteristic_value_event_t * value;
+    uint8_t address_type;
+    bd_addr_t flipped_address;
     switch(event->type){
         case GATT_SERVICE_QUERY_RESULT:
             // service = ((le_service_event_t *) event)->service;
@@ -321,6 +331,13 @@ void handle_gatt_client_event(le_event_t * event){
                     central_state = CENTRAL_W4_NAME_VALUE;
                     gatt_client_read_value_of_characteristic(gc_id, handle, &gap_name_characteristic);
                     break;
+                case CENTRAL_W4_RECONNECTION_ADDRESS_QUERY_COMPLETE:
+                    central_state = CENTRAL_IDLE;
+                    hci_le_advertisement_address(&address_type, private_address);
+                    printf("Private address: %s\n", bd_addr_to_str(private_address));
+                    bt_flip_addr(flipped_address, private_address);
+                    gatt_client_write_value_of_characteristic(gc_id, handle, gap_reconnection_address_characteristic.value_handle, 6, flipped_address);
+                    reconnection_address_set = 1;
                 default:
                     break;
             }
@@ -329,6 +346,11 @@ void handle_gatt_client_event(le_event_t * event){
             switch (central_state) {
                 case CENTRAL_W4_NAME_QUERY_COMPLETE:
                     gap_name_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    printf("GAP Name Characteristic found, value handle: 0x04%x\n", gap_name_characteristic.value_handle);
+                    break;
+                case CENTRAL_W4_RECONNECTION_ADDRESS_QUERY_COMPLETE:
+                    gap_reconnection_address_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    printf("GAP Reconnection Address Characteristic found, value handle: 0x04%x\n", gap_reconnection_address_characteristic.value_handle);
                     break;
                 default:
                     break;
@@ -356,9 +378,11 @@ void show_usage(void){
     printf("---\n");
     printf("c/C - connectable off\n");
     printf("---\n");
+    printf("1   - enable privacy using random non-resolvable private address\n");
     printf("s/S - passive/active scanning\n");
     printf("a   - enable Advertisements\n");
-    printf("n   - query GATT Device Name\n");
+    printf("n   - query GAP Device Name\n");
+    printf("o   - set GAP Reconnection Address\n");
     printf("t   - terminate connection, stop connecting\n");
     printf("p   - auto connect to PTS\n");
     printf("P   - direct connect to PTS\n");
@@ -388,6 +412,12 @@ int  stdin_process(struct data_source *ds){
     }
 
     switch (buffer){
+        case '1':
+            printf("Enabling non-resolvable private address\n");
+            gap_random_address_set_mode(GAP_RANDOM_ADDRESS_NON_RESOLVABLE);
+            update_advertisment_params(); 
+            gap_privacy = 1;
+            break;
         case 'a':
             hci_send_cmd(&hci_le_set_advertise_enable, 1);
             break;
@@ -401,13 +431,31 @@ int  stdin_process(struct data_source *ds){
             break;
         case 'n':
             central_state = CENTRAL_W4_NAME_QUERY_COMPLETE;
-            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, 0x2a00);
+            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, GAP_DEVICE_NAME_UUID);
+            break;
+        case 'o':
+            central_state = CENTRAL_W4_RECONNECTION_ADDRESS_QUERY_COMPLETE;
+            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, GAP_RECONNECTION_ADDRESS_UUID);
             break;
         case 'p':
+#ifdef PTS_USES_RECONNECTION_ADDRESS_FOR_ITSELF
+            if (reconnection_address_set){
+                res = gap_auto_connection_start(1, private_address);
+                printf("Auto Connection Establishment to type %u, addr %s -> %x\n", 1, bd_addr_to_str(private_address), res);
+                break;
+            }
+#endif
             res = gap_auto_connection_start(tester_address_type, tester_address);
             printf("Auto Connection Establishment to type %u, addr %s -> %x\n", tester_address_type, bd_addr_to_str(tester_address), res);
             break;
         case 'P':
+#ifdef PTS_USES_RECONNECTION_ADDRESS_FOR_ITSELF
+            if (reconnection_address_set){
+                printf("Direct Connection Establishment to type %u, addr %s\n", 1, bd_addr_to_str(non_resolvabe_address));
+                le_central_connect(non_resolvabe_address, 1);
+
+            }
+#endif
             printf("Direct Connection Establishment to type %u, addr %s\n", tester_address_type, bd_addr_to_str(tester_address));
             le_central_connect(tester_address, tester_address_type);
             break;
