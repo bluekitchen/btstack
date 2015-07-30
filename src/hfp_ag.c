@@ -66,9 +66,14 @@ static uint16_t hfp_supported_features = HFP_DEFAULT_AG_SUPPORTED_FEATURES;
 static uint8_t hfp_codecs_nr = 0;
 static uint8_t hfp_codecs[HFP_MAX_NUM_CODECS];
 
-static uint8_t hfp_indicators_nr = 0;
-static uint8_t hfp_indicators[HFP_MAX_NUM_INDICATORS];
-static uint8_t hfp_indicators_status;
+static uint8_t hfp_hf_indicators_nr = 0;
+static hfp_hf_indicator_t hfp_hf_indicators[HFP_MAX_NUM_HF_INDICATORS];
+
+static int  hfp_ag_indicators_nr = 0;
+static hfp_ag_indicator_t hfp_ag_indicators[HFP_MAX_NUM_AG_INDICATORS];
+
+static int  hfp_ag_call_hold_services_nr = 0;
+static char *hfp_ag_call_hold_services[6];
 
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
@@ -93,66 +98,130 @@ int hfp_ag_exchange_supported_features_cmd(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
+int hfp_ag_ok(uint16_t cid){
+    char buffer[5];
+    sprintf(buffer, "OK\r\n");
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+int hfp_ag_retrieve_codec_cmd(uint16_t cid){
+    return hfp_ag_ok(cid);
+}
+
+int hfp_ag_indicators_join(char * buffer, int buffer_size){
+    if (buffer_size < hfp_ag_indicators_nr * (1 + sizeof(hfp_ag_indicator_t))) return 0;
+    int i;
+    int offset = 0;
+    for (i = 0; i < hfp_ag_indicators_nr-1; i++) {
+        offset += snprintf(buffer+offset, buffer_size-offset, "\"%s\",(%d,%d),", hfp_ag_indicators[i].name, hfp_ag_indicators[i].min_range, hfp_ag_indicators[i].max_range);;
+    }
+    if (i<hfp_ag_indicators_nr){
+        offset += snprintf(buffer+offset, buffer_size-offset, "\"%s\",(%d,%d)", hfp_ag_indicators[i].name, hfp_ag_indicators[i].min_range, hfp_ag_indicators[i].max_range);
+    }
+    return offset;
+}
+
+int hfp_hf_indicators_join(char * buffer, int buffer_size){
+    if (buffer_size < hfp_ag_indicators_nr * 3) return 0;
+    int i;
+    int offset = 0;
+    for (i = 0; i < hfp_ag_indicators_nr-1; i++) {
+        offset += snprintf(buffer+offset, buffer_size-offset, "%d,", hfp_hf_indicators[i].uuid);
+    }
+    if (i<hfp_ag_indicators_nr){
+        offset += snprintf(buffer+offset, buffer_size-offset, "%d,", hfp_hf_indicators[i].uuid);
+    }
+    return offset;
+}
+
+int hfp_hf_indicators_initial_status_join(char * buffer, int buffer_size){
+    if (buffer_size < hfp_hf_indicators_nr * 3) return 0;
+    int i;
+    int offset = 0;
+    for (i = 0; i < hfp_hf_indicators_nr; i++) {
+        offset += snprintf(buffer+offset, buffer_size-offset, "%s=%d,%d\r\n", HFP_GENERIC_STATUS_INDICATOR, hfp_hf_indicators[i].uuid, hfp_hf_indicators[i].initial_state);
+    }
+    return offset;
+}
+
+int hfp_ag_indicators_status_join(char * buffer, int buffer_size){
+    if (buffer_size < hfp_ag_indicators_nr * 3) return 0;
+    int i;
+    int offset = 0;
+    for (i = 0; i < hfp_ag_indicators_nr-1; i++) {
+        offset += snprintf(buffer+offset, buffer_size-offset, "%d,", hfp_ag_indicators[i].status); 
+    }
+    if (i<hfp_ag_indicators_nr){
+        offset += snprintf(buffer+offset, buffer_size-offset, "%d", hfp_ag_indicators[i].status);
+    }
+    return offset;
+}
+
+int hfp_ag_call_services_join(char * buffer, int buffer_size){
+    if (buffer_size < hfp_ag_call_hold_services_nr * 3) return 0;
+    int i;
+    int offset = 0;
+    for (i = 0; i < hfp_ag_call_hold_services_nr-1; i++) {
+        offset += snprintf(buffer+offset, buffer_size-offset, "%s,", hfp_ag_call_hold_services[i]); 
+    }
+    if (i<hfp_ag_call_hold_services_nr){
+        offset += snprintf(buffer+offset, buffer_size-offset, "%s", hfp_ag_call_hold_services[i]);
+    }
+    return offset;
+}
 
 int hfp_ag_retrieve_indicators_cmd(uint16_t cid){
-    char buffer[20];
-    sprintf(buffer, "%s=?\r\nOK\r\n", HFP_INDICATOR);
-    // printf("retrieve_indicators %s\n", buffer);
+    char buffer[150];
+    int offset = snprintf(buffer, sizeof(buffer), "%s=", HFP_INDICATOR);
+    offset += hfp_ag_indicators_join(buffer+offset, sizeof(buffer)-offset);
+    offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\nOK\r\n");
+    buffer[offset] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
 int hfp_ag_retrieve_indicators_status_cmd(uint16_t cid){
     char buffer[20];
-    sprintf(buffer, "%s?\r\nOK\r\n", HFP_INDICATOR);
-    // printf("retrieve_indicators_status %s\n", buffer);
+    int offset = snprintf(buffer, sizeof(buffer), "%s=", HFP_INDICATOR);
+    offset += hfp_ag_indicators_status_join(buffer+offset, sizeof(buffer)-offset);
+    offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\nOK\r\n");
+    buffer[offset] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
 int hfp_ag_toggle_indicator_status_update_cmd(uint16_t cid, uint8_t activate){
-    char buffer[20];
-    sprintf(buffer, "%s=3,0,0,%d\r\nOK\r\n", HFP_ENABLE_INDICATOR_STATUS_UPDATE, activate);
-    // printf("toggle_indicator_status_update %s\n", buffer);
-    return send_str_over_rfcomm(cid, buffer);
+    // AT%s=3,0,0,%d\r\n
+    return hfp_ag_ok(cid);
 }
 
 
 int hfp_ag_retrieve_can_hold_call_cmd(uint16_t cid){
     char buffer[20];
-    sprintf(buffer, "%s=?\r\nOK\r\n", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES);
-    // printf("retrieve_can_hold_call %s\n", buffer);
-    return send_str_over_rfcomm(cid, buffer);
-}
-
-
-int hfp_ag_retrieve_codec_cmd(uint16_t cid){
-    char buffer[30];
-    int offset = snprintf(buffer, sizeof(buffer), "%s=", HFP_AVAILABLE_CODECS);
-    offset += join(buffer+offset, sizeof(buffer)-offset, hfp_codecs, hfp_codecs_nr);
+    int offset = snprintf(buffer, sizeof(buffer), "%s=", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES);
+    offset += hfp_ag_call_services_join(buffer+offset, sizeof(buffer)-offset);
     offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\nOK\r\n");
     buffer[offset] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
+
 
 int hfp_ag_list_supported_generic_status_indicators_cmd(uint16_t cid){
-    char buffer[30];
-    int offset = snprintf(buffer, sizeof(buffer), "%s=", HFP_GENERIC_STATUS_INDICATOR);
-    offset += join(buffer+offset, sizeof(buffer)-offset, hfp_indicators, hfp_indicators_nr);
-    offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\nOK\r\n");
-    buffer[offset] = 0;
-    return send_str_over_rfcomm(cid, buffer);
+    return hfp_ag_ok(cid);
 }
 
 int hfp_ag_retrieve_supported_generic_status_indicators_cmd(uint16_t cid){
-    char buffer[20];
-    sprintf(buffer, "%s=?\r\nOK\r\n", HFP_GENERIC_STATUS_INDICATOR); 
-    // printf("retrieve_supported_generic_status_indicators %s\n", buffer);
+    char buffer[30];
+    int offset = snprintf(buffer, sizeof(buffer), "%s=", HFP_GENERIC_STATUS_INDICATOR);
+    offset += hfp_hf_indicators_join(buffer+offset, sizeof(buffer)-offset);
+    offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\nOK\r\n");
+    buffer[offset] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
 int hfp_ag_list_initital_supported_generic_status_indicators_cmd(uint16_t cid){
-    char buffer[20];
-    sprintf(buffer, "%s?\r\nOK\r\n", HFP_GENERIC_STATUS_INDICATOR);
-    // printf("list_initital_supported_generic_status_indicators %s\n", buffer);
+    char buffer[30];
+    int offset = hfp_hf_indicators_initial_status_join(buffer, sizeof(buffer));
+    offset += snprintf(buffer+offset, sizeof(buffer)-offset, "OK\r\n");
+    buffer[offset] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -249,141 +318,11 @@ void update_command(hfp_connection_t * context){
     } 
 }
 
-static void hfp_parse(hfp_connection_t * context, uint8_t byte){
-    int i;
-    if (byte == ' ') return;
-    /*if ( (byte == '\n' || byte == '\r') && context->parser_state > HFP_PARSER_CMD_SEQUENCE) return;
-    
-    switch (context->parser_state){
-        case HFP_PARSER_CMD_HEADER: // header
-            if (byte == ':'){
-                context->parser_state = HFP_PARSER_CMD_SEQUENCE;
-                context->line_buffer[context->line_size] = 0;
-                context->line_size = 0;
-                update_command(context);
-                return;
-            }
-            if (byte == '\n' || byte == '\r'){
-                // received OK
-                context->line_buffer[context->line_size] = 0;
-                context->line_size = 0;
-                update_command(context);
-                return;
-            }
-            context->line_buffer[context->line_size++] = byte;
-            break;
-
-        case HFP_PARSER_CMD_SEQUENCE: // parse comma separated sequence, ignore breacktes
-            if (byte == '"'){  // indicators
-                context->parser_state = HFP_PARSER_CMD_INDICATOR_NAME;
-                context->line_size = 0;
-                break;
-            } 
-        
-            if (byte == '(' ){ // tuple separated mit comma
-                break;
-            }
-        
-            if (byte == ',' || byte == '\n' || byte == '\r' || byte == ')'){
-                context->line_buffer[context->line_size] = 0;
-                context->line_size = 0;
-                switch (context->state){
-                    case HFP_W4_EXCHANGE_SUPPORTED_FEATURES:
-                        context->remote_supported_features = atoi((char *)&context->line_buffer[0]);
-                        for (i=0; i<16; i++){
-                            if (get_bit(context->remote_supported_features,i)){
-                                printf("AG supported feature: %s\n", hfp_ag_feature(i));
-                            }
-                        }
-                        context->command = HFP_CMD_NONE;
-                        context->parser_state = HFP_PARSER_CMD_HEADER;
-                        break;
-                    case HFP_W4_RETRIEVE_INDICATORS:
-                        break;
-                    case HFP_W4_RETRIEVE_INDICATORS_STATUS:
-                        printf("Indicator with status: %s\n", context->line_buffer);
-                        break;
-                    case HFP_W4_RETRIEVE_CAN_HOLD_CALL:
-                        printf("Support call hold: %s\n", context->line_buffer);
-                        break;
-                    case HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS: // comma separated ints
-                        printf("Generic status indicator: %s\n", context->line_buffer);
-                        break;
-                    case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
-                        printf("Generic status indicator: %s, ", context->line_buffer); 
-                        context->parser_state = HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
-                        break;
-                    default:
-                        break;
-                }
-                if (byte == '\n' || byte == '\r'){
-                    context->command = HFP_CMD_NONE;
-                    context->parser_state = HFP_PARSER_CMD_HEADER;
-                    break;
-                }
-                if (byte == ')' && context->state == HFP_W4_RETRIEVE_CAN_HOLD_CALL){ // tuple separated mit comma
-                    context->command = HFP_CMD_NONE;
-                    context->parser_state = HFP_PARSER_CMD_HEADER;
-                    break;
-                }
-                break;
-            }
-            context->line_buffer[context->line_size++] = byte;
-            break;
-        case HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
-            if (byte == '\n' || byte == '\r'){
-                context->line_buffer[context->line_size] = 0;
-                context->line_size = 0;
-                context->command = HFP_CMD_NONE;
-                context->parser_state = HFP_PARSER_CMD_HEADER;
-                printf("status %s [0-dissabled, 1-enabled]\n", context->line_buffer);
-                break;
-            }
-            break;
-        case HFP_PARSER_CMD_INDICATOR_NAME: // parse indicator name
-            if (byte == '"'){
-                context->line_buffer[context->line_size] = 0;
-                printf("Indicator %d: %s (", context->remote_indicators_nr, context->line_buffer);
-                context->line_size = 0;
-                break;
-            }
-            if (byte == '('){ // parse indicator range
-                context->parser_state = HFP_PARSER_CMD_INDICATOR_MIN_RANGE;
-                break;
-            }
-            context->line_buffer[context->line_size++] = byte;
-            break;
-        case HFP_PARSER_CMD_INDICATOR_MIN_RANGE: 
-            if (byte == ',' || byte == '-'){ // end min_range
-                context->parser_state = HFP_PARSER_CMD_INDICATOR_MAX_RANGE;
-                context->line_buffer[context->line_size] = 0;
-                printf("%d, ", atoi((char *)&context->line_buffer[0]));
-                context->line_size = 0;
-                break;
-            }
-            // min. range
-            context->line_buffer[context->line_size++] = byte;
-            break;
-        case HFP_PARSER_CMD_INDICATOR_MAX_RANGE:
-            if (byte == ')'){ // end max_range
-                context->parser_state = HFP_PARSER_CMD_SEQUENCE;
-
-                context->line_buffer[context->line_size] = 0;
-                printf("%d)\n", atoi((char *)&context->line_buffer[0]));
-                context->line_size = 0;
-                context->remote_indicators_nr+=1;
-                break;
-            }
-            // 
-            context->line_buffer[context->line_size++] = byte;
-            break;   
-    }*/
-}
-
 
 void handle_switch_on_ok(hfp_connection_t *context){
     printf("handle switch on OK\n");
     switch (context->state){
+
         default:
             break;
     }
@@ -429,7 +368,11 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
     hfp_run();
 }
 
-void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, uint8_t * codecs, int codecs_nr, uint16_t * indicators, int indicators_nr, uint32_t indicators_status){
+void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, 
+    uint8_t * codecs, int codecs_nr, 
+    hfp_ag_indicator_t * ag_indicators, int ag_indicators_nr,
+    hfp_hf_indicator_t * hf_indicators, int hf_indicators_nr,
+    char *call_hold_services[], int call_hold_services_nr){
     if (codecs_nr > HFP_MAX_NUM_CODECS){
         log_error("hfp_init: codecs_nr (%d) > HFP_MAX_NUM_CODECS (%d)", codecs_nr, HFP_MAX_NUM_CODECS);
         return;
@@ -445,11 +388,14 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, uint8_
         hfp_codecs[i] = codecs[i];
     }
 
-    hfp_indicators_nr = indicators_nr;
-    hfp_indicators_status = indicators_status;
-    for (i=0; i<indicators_nr; i++){
-        hfp_indicators[i] = indicators[i];
-    }
+    hfp_ag_indicators_nr = ag_indicators_nr;
+    memcpy(hfp_ag_indicators, ag_indicators, ag_indicators_nr * sizeof(hfp_ag_indicator_t));
+
+    hfp_hf_indicators_nr = hf_indicators_nr;
+    memcpy(hfp_hf_indicators, hf_indicators, hf_indicators_nr * sizeof(hfp_hf_indicator_t));
+
+    hfp_ag_call_hold_services_nr = call_hold_services_nr;
+    memcpy(hfp_ag_call_hold_services, call_hold_services, sizeof(char *));
 }
 
 void hfp_ag_connect(bd_addr_t bd_addr){

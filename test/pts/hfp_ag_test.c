@@ -73,10 +73,28 @@ const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 
 static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t local_mac = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
-static bd_addr_t phone = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
+static bd_addr_t speaker = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
-static uint16_t indicators[1] = {0x01};
 
+static int ag_indicators_nr = 7;
+static hfp_ag_indicator_t ag_indicators[] = {
+    {1, "service", 0, 1, 1},
+    {2, "call", 0, 1, 0},
+    {3, "callsetup", 0, 3, 0},
+    {4, "battchg", 0, 5, 3},
+    {5, "signal", 0, 5, 5},
+    {6, "roam", 0, 1, 0},
+    {7, "callheld", 0, 2, 0},
+};
+
+static int call_hold_services_nr = 5;
+static char* call_hold_services[] = {"1", "1x", "2", "2x", "3"};
+
+static int hf_indicators_nr = 2;
+static hfp_hf_indicator_t hf_indicators[] = {
+    {1, 1, 1},
+    {2, 1, 1},
+};
 
 // prototypes
 static void show_usage(void);
@@ -102,8 +120,8 @@ static int stdin_process(struct data_source *ds){
             hfp_ag_connect(pts_addr);
             break;
         case 'e':
-            printf("Establishing HFP connection to %s...\n", bd_addr_to_str(phone));
-            hfp_ag_connect(phone);
+            printf("Establishing HFP connection to %s...\n", bd_addr_to_str(speaker));
+            hfp_ag_connect(speaker);
             break;
         case 'd':
             printf("Releasing HFP connection.\n");
@@ -131,8 +149,10 @@ int btstack_main(int argc, const char * argv[]){
     l2cap_init();
     rfcomm_init();
     
-    // hfp_ag_init(rfcomm_channel_nr, HFP_DEFAULT_HF_SUPPORTED_FEATURES, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
-    hfp_ag_init(rfcomm_channel_nr, 438, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
+    hfp_ag_init(rfcomm_channel_nr, 438, codecs, sizeof(codecs), 
+        ag_indicators, ag_indicators_nr, 
+        hf_indicators, hf_indicators_nr, 
+        call_hold_services, call_hold_services_nr);
 
     hfp_register_packet_handler(packet_handler);
 
@@ -147,7 +167,7 @@ int btstack_main(int argc, const char * argv[]){
     hci_power_control(HCI_POWER_ON);
     
     btstack_stdin_setup(stdin_process);
-    printf("Establishing HFP connection to %s...\n", bd_addr_to_str(phone));
-    hfp_ag_connect(phone);
+    printf("Establishing HFP connection to %s...\n", bd_addr_to_str(speaker));
+    hfp_ag_connect(speaker);
     return 0;
 }
