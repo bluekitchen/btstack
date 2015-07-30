@@ -149,8 +149,12 @@ extern "C" {
 #define GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION  1
 #define GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION    2
 
+// GAP Service and Characteristics
 #define GAP_SERVICE_UUID               0x1800
 #define GAP_DEVICE_NAME_UUID           0x2a00
+#define GAP_APPEARANCE_UUID            0x2a01
+#define GAP_PERIPHERAL_PRIVACY_FLAG    0x2a02
+#define GAP_RECONNECTION_ADDRESS_UUID  0x2a03
 
 
 typedef struct att_connection {

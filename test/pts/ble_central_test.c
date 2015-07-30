@@ -59,6 +59,7 @@
 
 #include "sm.h"
 #include "att.h"
+#include "att_server.h"
 #include "gap_le.h"
 #include "le_device_db.h"
 #include "stdin_support.h"
@@ -67,10 +68,15 @@
 // test profile
 #include "profile.h"
 
+// Non standard IXIT
+#define PTS_USES_RECONNECTION_ADDRESS_FOR_ITSELF
+
 typedef enum {
     CENTRAL_IDLE,
     CENTRAL_W4_NAME_QUERY_COMPLETE,
     CENTRAL_W4_NAME_VALUE,
+    CENTRAL_W4_RECONNECTION_ADDRESS_QUERY_COMPLETE,
+    CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE,
 } central_state_t;
 
 typedef struct advertising_report {
@@ -86,7 +92,7 @@ typedef struct advertising_report {
 static uint8_t test_irk[] =  { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 static int gap_privacy = 0;
-static int gap_bondable = 0;
+/* static */ int gap_bondable = 0;
 static char gap_device_name[20];
 static int gap_connectable = 0;
 
@@ -102,17 +108,21 @@ static int ui_passkey = 0;
 static int ui_digits_for_passkey = 0;
 
 static uint16_t handle = 0;
-static bd_addr_t tester_address = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};
-static int tester_address_type = 0;
-uint16_t gc_id;
+static uint16_t gc_id;
+
+static bd_addr_t public_pts_address = {0x00, 0x1B, 0xDC, 0x07, 0x32, 0xef};
+static int       public_pts_address_type = 0;
+static bd_addr_t current_pts_address;
+static int       current_pts_address_type;
+static int       reconnection_address_set = 0;
+static bd_addr_t our_private_address;
 
 static central_state_t central_state = CENTRAL_IDLE;
 static le_characteristic_t gap_name_characteristic;
+static le_characteristic_t gap_reconnection_address_characteristic;
+static le_characteristic_t gap_peripheral_privacy_flag_characteristic;
 
 static void show_usage();
-static void fill_advertising_report_from_packet(advertising_report_t * report, uint8_t *packet);
-static void dump_advertising_report(advertising_report_t * e);
-
 ///
 
 static void printUUID(uint8_t * uuid128, uint16_t uuid16){
@@ -123,29 +133,17 @@ static void printUUID(uint8_t * uuid128, uint16_t uuid16){
     }
 }
 
-static void dump_characteristic(le_characteristic_t * characteristic){
+void dump_characteristic(le_characteristic_t * characteristic){
     printf("    * characteristic: [0x%04x-0x%04x-0x%04x], properties 0x%02x, uuid ",
                             characteristic->start_handle, characteristic->value_handle, characteristic->end_handle, characteristic->properties);
     printUUID(characteristic->uuid128, characteristic->uuid16);
     printf("\n");
 }
 
-static void dump_service(le_service_t * service){
+void dump_service(le_service_t * service){
     printf("    * service: [0x%04x-0x%04x], uuid ", service->start_group_handle, service->end_group_handle);
     printUUID(service->uuid128, service->uuid16);
     printf("\n");
-}
-
-static void fill_advertising_report_from_packet(advertising_report_t * report, uint8_t *packet){
-    int pos = 2;
-    report->event_type = packet[pos++];     // 2
-    report->address_type = packet[pos++];   // 3
-    bt_flip_addr(report->address, &packet[pos]); // 4
-    pos += 6;       
-    report->rssi = packet[pos++];   // 10
-    report->length = packet[pos++]; // 11
-    report->data = &packet[pos];    // 12
-    pos += report->length;
 }
 
 const char * ad_event_types[] = {
@@ -160,7 +158,7 @@ static void handle_advertising_event(uint8_t * packet, int size){
     // filter PTS
     bd_addr_t addr;
     bt_flip_addr(addr, &packet[4]);
-    if (memcmp(addr, tester_address, 6)) return;
+    if (memcmp(addr, public_pts_address, 6)) return;
     printf("Advertisement: %s, ", ad_event_types[packet[2]]);
     int adv_size = packet[11];
     uint8_t * adv_data = &packet[12];
@@ -169,7 +167,7 @@ static void handle_advertising_event(uint8_t * packet, int size){
     ad_context_t context;
     for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
         uint8_t data_type = ad_iterator_get_data_type(&context);
-        uint8_t size      = ad_iterator_get_data_len(&context);
+        // uint8_t size      = ad_iterator_get_data_len(&context);
         uint8_t * data    = ad_iterator_get_data(&context);
         switch (data_type){
             case 1: // AD_FLAGS
@@ -204,11 +202,11 @@ static void update_advertisment_params(void){
         case 0:
         case 2:
         case 3:
-            gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, &null_addr, 0x07, 0x00);
+            gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, 0, null_addr, 0x07, 0x00);
             break;
         case 1:
         case 4:
-            gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, tester_address_type, &tester_address, 0x07, 0x00);
+            gap_advertisements_set_params(adv_int_min, adv_int_max, adv_type, public_pts_address_type, public_pts_address, 0x07, 0x00);
             break;
         }
 }
@@ -218,8 +216,6 @@ static void gap_run(void){
 }
 
 void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    advertising_report_t report;
-    
     switch (packet_type) {
             
         case HCI_EVENT_PACKET:
@@ -272,17 +268,25 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
                     printf("\nGAP Bonding %s (%u): Display cancel\n", bd_addr_to_str(peer_address), peer_addr_type);
                     break;
 
-                case SM_AUTHORIZATION_REQUEST: {
+                case SM_JUST_WORKS_REQUEST:
+                {
                     // auto-authorize connection if requested
                     sm_event_t * event = (sm_event_t *) packet;
-                    sm_authorization_grant(event->addr_type, event->address);
+                    sm_just_works_confirm(current_pts_address_type, current_pts_address);
+                    printf("Just Works request confirmed\n");
+                    break;
+                }
+                break;
+                case SM_AUTHORIZATION_REQUEST:
+                {
+                    // auto-authorize connection if requested
+                    sm_event_t * event = (sm_event_t *) packet;
+                    sm_authorization_grant(current_pts_address_type, current_pts_address);
                     break;
                 }
 
                 case GAP_LE_ADVERTISING_REPORT:
                     handle_advertising_event(packet, size);
-                    // fill_advertising_report_from_packet(&report, packet);
-                    // dump_advertising_report(&report);
                     break;
                 default:
                     break;
@@ -291,11 +295,16 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
     gap_run();
 }
 
-
+void use_public_pts_address(void){
+    memcpy(current_pts_address, public_pts_address, 6);
+    current_pts_address_type = public_pts_address_type;                    
+}
 
 void handle_gatt_client_event(le_event_t * event){
-    le_service_t service;
     le_characteristic_value_event_t * value;
+    uint8_t address_type;
+    uint8_t privacy_flag = 0;
+    bd_addr_t flipped_address;
     switch(event->type){
         case GATT_SERVICE_QUERY_RESULT:
             // service = ((le_service_event_t *) event)->service;
@@ -321,6 +330,24 @@ void handle_gatt_client_event(le_event_t * event){
                     central_state = CENTRAL_W4_NAME_VALUE;
                     gatt_client_read_value_of_characteristic(gc_id, handle, &gap_name_characteristic);
                     break;
+                case CENTRAL_W4_RECONNECTION_ADDRESS_QUERY_COMPLETE:
+                    central_state = CENTRAL_IDLE;
+                    hci_le_advertisement_address(&address_type, our_private_address);
+                    printf("Our private address: %s\n", bd_addr_to_str(our_private_address));
+                    bt_flip_addr(flipped_address, our_private_address);
+                    gatt_client_write_value_of_characteristic(gc_id, handle, gap_reconnection_address_characteristic.value_handle, 6, flipped_address);
+                    reconnection_address_set = 1;
+#ifdef PTS_USES_RECONNECTION_ADDRESS_FOR_ITSELF
+                    memcpy(current_pts_address, our_private_address, 6);
+                    current_pts_address_type = 1;
+#endif
+                    break;
+                case CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE:
+                    central_state = CENTRAL_IDLE;
+                    gatt_client_write_value_of_characteristic(gc_id, handle, gap_peripheral_privacy_flag_characteristic.value_handle, 1, &privacy_flag);
+                    use_public_pts_address();
+                    printf("Peripheral Privacy Flag set to FALSE, connecting to public PTS address again\n");
+                    break;
                 default:
                     break;
             }
@@ -329,7 +356,15 @@ void handle_gatt_client_event(le_event_t * event){
             switch (central_state) {
                 case CENTRAL_W4_NAME_QUERY_COMPLETE:
                     gap_name_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    printf("GAP Name Characteristic found, value handle: 0x04%x\n", gap_name_characteristic.value_handle);
                     break;
+                case CENTRAL_W4_RECONNECTION_ADDRESS_QUERY_COMPLETE:
+                    gap_reconnection_address_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    printf("GAP Reconnection Address Characteristic found, value handle: 0x04%x\n", gap_reconnection_address_characteristic.value_handle);
+                    break;
+                case CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE:
+                    gap_peripheral_privacy_flag_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    printf("GAP Peripheral Privacy Flag Characteristic found, value handle: 0x04%x\n", gap_peripheral_privacy_flag_characteristic.value_handle);
                 default:
                     break;
             }
@@ -349,6 +384,7 @@ void show_usage(void){
     printf("GAP: connectable %u\n", gap_connectable);
     printf("SM: %s, MITM protection %u, OOB data %u, key range [%u..16]\n",
         sm_io_capabilities, sm_mitm_protection, sm_have_oob_data, sm_min_key_size);
+    printf("PTS: addr type %u, addr %s\n", current_pts_address_type, current_pts_address);
     printf("Privacy %u\n", gap_privacy);
     printf("Device name: %s\n", gap_device_name);
     printf("Value Handle: %x\n", value_handle);
@@ -356,9 +392,13 @@ void show_usage(void){
     printf("---\n");
     printf("c/C - connectable off\n");
     printf("---\n");
+    printf("1   - enable privacy using random non-resolvable private address\n");
+    printf("2   - clear Peripheral Privacy Flag on PTS\n");
     printf("s/S - passive/active scanning\n");
     printf("a   - enable Advertisements\n");
-    printf("n   - query GATT Device Name\n");
+    printf("b   - start bonding\n");
+    printf("n   - query GAP Device Name\n");
+    printf("o   - set GAP Reconnection Address\n");
     printf("t   - terminate connection, stop connecting\n");
     printf("p   - auto connect to PTS\n");
     printf("P   - direct connect to PTS\n");
@@ -388,8 +428,17 @@ int  stdin_process(struct data_source *ds){
     }
 
     switch (buffer){
+        case '1':
+            printf("Enabling non-resolvable private address\n");
+            gap_random_address_set_mode(GAP_RANDOM_ADDRESS_NON_RESOLVABLE);
+            update_advertisment_params(); 
+            gap_privacy = 1;
+            break;
         case 'a':
             hci_send_cmd(&hci_le_set_advertise_enable, 1);
+            break;
+        case 'b':
+            sm_request_authorization(current_pts_address_type, current_pts_address);
             break;
         case 'c':
             gap_connectable = 1;
@@ -401,15 +450,23 @@ int  stdin_process(struct data_source *ds){
             break;
         case 'n':
             central_state = CENTRAL_W4_NAME_QUERY_COMPLETE;
-            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, 0x2a00);
+            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, GAP_DEVICE_NAME_UUID);
+            break;
+        case '2':
+            central_state = CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE;
+            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, GAP_PERIPHERAL_PRIVACY_FLAG);
+            break;
+        case 'o':
+            central_state = CENTRAL_W4_RECONNECTION_ADDRESS_QUERY_COMPLETE;
+            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, GAP_RECONNECTION_ADDRESS_UUID);
             break;
         case 'p':
-            res = gap_auto_connection_start(tester_address_type, tester_address);
-            printf("Auto Connection Establishment to type %u, addr %s -> %x\n", tester_address_type, bd_addr_to_str(tester_address), res);
+            res = gap_auto_connection_start(current_pts_address_type, current_pts_address);
+            printf("Auto Connection Establishment to type %u, addr %s -> %x\n", current_pts_address_type, bd_addr_to_str(current_pts_address), res);
             break;
         case 'P':
-            printf("Direct Connection Establishment to type %u, addr %s\n", tester_address_type, bd_addr_to_str(tester_address));
-            le_central_connect(tester_address, tester_address_type);
+            le_central_connect(current_pts_address, current_pts_address_type);
+            printf("Direct Connection Establishment to type %u, addr %s\n", current_pts_address_type, bd_addr_to_str(current_pts_address));
             break;
         case 's':
             if (scanning_active){
@@ -503,7 +560,9 @@ int btstack_main(int argc, const char * argv[]){
     sm_register_oob_data_callback(get_oob_data_callback);
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
-    sm_set_authentication_requirements(0);
+    // sm_set_authentication_requirements(SM_AUTHREQ_NO_BONDING);
+    sm_set_authentication_requirements(SM_AUTHREQ_BONDING);
+
     sm_set_encryption_key_size_range(sm_min_key_size, 16);
     sm_test_set_irk(test_irk);
 
@@ -518,12 +577,11 @@ int btstack_main(int argc, const char * argv[]){
     // Setup LE Device DB
     le_device_db_init();
 
-    //
-    // gap_random_address_set_update_period(300000);
-    // gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
-
     // set adv params
     update_advertisment_params();
+
+    memcpy(current_pts_address, public_pts_address, 6);
+    current_pts_address_type = public_pts_address_type;
 
     // allow foor terminal input
     btstack_stdin_setup(stdin_process);
