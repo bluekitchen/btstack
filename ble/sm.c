@@ -538,9 +538,6 @@ static void sm_setup_key_distribution(uint8_t key_set){
 
 // CSRK Key Lookup
 
-/* static */ int sm_address_resolution_lookup_active(void){
-    return sm_address_resolution_test >= 0;
-}
 
 static void sm_address_resolution_start_lookup(uint8_t addr_type, bd_addr_t addr, void * context){
     memcpy(sm_address_resolution_address, addr, 6);
@@ -549,6 +546,14 @@ static void sm_address_resolution_start_lookup(uint8_t addr_type, bd_addr_t addr
     sm_address_resolution_matched = -1;
     sm_address_resolution_context = context;
     sm_notify_client(SM_IDENTITY_RESOLVING_STARTED, addr_type, addr, 0, 0);
+}
+
+void sm_address_resolution_lookup(uint8_t addr_type, bd_addr_t addr){
+    sm_address_resolution_start_lookup(addr_type, addr, NULL);
+}
+
+int sm_address_resolution_idle(void){
+    return sm_address_resolution_test < 0;
 }
 
 // CMAC Implementation using AES128 engine
@@ -926,7 +931,7 @@ static void sm_run(void){
 
     // CSRK Lookup
     // -- if csrk lookup ready, find connection that require csrk lookup
-    if (!sm_address_resolution_lookup_active()){
+    if (sm_address_resolution_idle()){
         hci_connections_get_iterator(&it);
         while(linked_list_iterator_has_next(&it)){
             hci_connection_t * hci_connection = (hci_connection_t *) linked_list_iterator_next(&it);
@@ -943,7 +948,6 @@ static void sm_run(void){
     // -- Continue with CSRK device lookup by public or resolvable private address
     if (sm_address_resolution_test >= 0){
         log_info("LE Device Lookup: device %u/%u", sm_address_resolution_test, le_device_db_count());
-        sm_connection_t * sm_csrk_connection = (sm_connection_t *) sm_address_resolution_context;
         while (sm_address_resolution_test < le_device_db_count()){
             int addr_type;
             bd_addr_t addr;
@@ -953,9 +957,14 @@ static void sm_run(void){
 
             if (sm_address_resolution_addr_type == addr_type && memcmp(addr, sm_address_resolution_address, 6) == 0){
                 log_info("LE Device Lookup: found CSRK by { addr_type, address} ");
+                sm_connection_t * sm_csrk_connection = (sm_connection_t *) sm_address_resolution_context;
+                sm_address_resolution_context = NULL;
                 sm_address_resolution_matched = sm_address_resolution_test;
                 sm_address_resolution_test = -1;
                 sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_address_resolution_addr_type, sm_address_resolution_address, 0, sm_address_resolution_matched);
+
+                // if context given, we're resolving an active connection
+                if (!sm_csrk_connection) break;
 
                 // re-use stored LTK/EDIV/RAND if requested & we're master
                 // TODO: replace global with flag in sm_connection_t
@@ -966,7 +975,6 @@ static void sm_run(void){
 
                 // ready for other requests
                 sm_csrk_connection->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
-                sm_csrk_connection = NULL;
                 break;
             }
 
@@ -983,16 +991,20 @@ static void sm_run(void){
             sm_key_t r_prime;
             sm_ah_r_prime(sm_address_resolution_address, r_prime);
             sm_address_resolution_ah_calculation_active = 1;
-            sm_aes128_start(irk, r_prime, sm_csrk_connection);
+            sm_aes128_start(irk, r_prime, sm_address_resolution_context);   // keep context
             return;
         }
 
         if (sm_address_resolution_test >= le_device_db_count()){
             log_info("LE Device Lookup: not found");
+            sm_connection_t * sm_csrk_connection = (sm_connection_t *) sm_address_resolution_context;
+            sm_address_resolution_context = NULL;
             sm_address_resolution_test = -1;
-            sm_csrk_connection->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
-            sm_csrk_connection = NULL;
             sm_notify_client(SM_IDENTITY_RESOLVING_FAILED, sm_address_resolution_addr_type, sm_address_resolution_address, 0, 0);
+
+            if (sm_address_resolution_context) {
+                sm_csrk_connection->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
+            }
         }
     }
 
