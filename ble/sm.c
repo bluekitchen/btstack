@@ -157,7 +157,8 @@ static void *             sm_aes128_context;
 static void * sm_random_context;
 
 // CSRK calculation
-static sm_connection_t * sm_csrk_connection_source;
+static void * sm_csrk_context;
+
 //
 // Volume 3, Part H, Chapter 24
 // "Security shall be initiated by the Security Manager in the device in the master role.
@@ -548,7 +549,7 @@ static void sm_central_device_start_lookup(sm_connection_t * sm_conn, uint8_t ad
     sm_central_device_addr_type = addr_type;
     sm_central_device_test = 0;
     sm_central_device_matched = -1;
-    sm_csrk_connection_source = sm_conn;
+    sm_csrk_context = sm_conn;
     sm_notify_client(SM_IDENTITY_RESOLVING_STARTED, addr_type, addr, 0, 0);
 }
 
@@ -944,6 +945,7 @@ static void sm_run(void){
     // -- Continue with CSRK device lookup by public or resolvable private address
     if (sm_central_device_test >= 0){
         log_info("LE Device Lookup: device %u/%u", sm_central_device_test, le_device_db_count());
+        sm_connection_t * sm_csrk_connection = (sm_connection_t *) sm_csrk_context;
         while (sm_central_device_test < le_device_db_count()){
             int addr_type;
             bd_addr_t addr;
@@ -959,14 +961,14 @@ static void sm_run(void){
 
                 // re-use stored LTK/EDIV/RAND if requested & we're master
                 // TODO: replace global with flag in sm_connection_t
-                if (sm_authenticate_outgoing_connections && sm_csrk_connection_source->sm_role == 0){
-                    sm_csrk_connection_source->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
+                if (sm_authenticate_outgoing_connections && sm_csrk_connection->sm_role == 0){
+                    sm_csrk_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
                     log_info("sm: Setting up previous ltk/ediv/rand");
                 }
 
                 // ready for other requests
-                sm_csrk_connection_source->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
-                sm_csrk_connection_source = NULL;
+                sm_csrk_connection->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
+                sm_csrk_connection = NULL;
                 break;
             }
 
@@ -983,15 +985,15 @@ static void sm_run(void){
             sm_key_t r_prime;
             sm_ah_r_prime(sm_central_device_address, r_prime);
             sm_central_ah_calculation_active = 1;
-            sm_aes128_start(irk, r_prime, sm_csrk_connection_source);
+            sm_aes128_start(irk, r_prime, sm_csrk_connection);
             return;
         }
 
         if (sm_central_device_test >= le_device_db_count()){
             log_info("LE Device Lookup: not found");
             sm_central_device_test = -1;
-            sm_csrk_connection_source->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
-            sm_csrk_connection_source = NULL;
+            sm_csrk_connection->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
+            sm_csrk_connection = NULL;
             sm_notify_client(SM_IDENTITY_RESOLVING_FAILED, sm_central_device_addr_type, sm_central_device_address, 0, 0);
         }
     }
@@ -1356,8 +1358,9 @@ static void sm_handle_encryption_result(uint8_t * data){
             // found
             sm_central_device_matched = sm_central_device_test;
             sm_central_device_test = -1;
-            sm_csrk_connection_source->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
-            sm_csrk_connection_source = NULL;
+            sm_connection_t * sm_csrk_connection = (sm_connection_t *) sm_csrk_context;
+            sm_csrk_context = NULL;
+            sm_csrk_connection->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
             sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);
             log_info("LE Device Lookup: matched resolvable private address");
             return;
