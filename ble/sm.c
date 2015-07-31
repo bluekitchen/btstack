@@ -149,12 +149,12 @@ static int       sm_central_ah_calculation_active;
 static uint8_t   sm_central_device_addr_type;
 static bd_addr_t sm_central_device_address;
 
-// aes128 crypto engine. store current sm_connection_t in sm_aes128_connection_source
+// aes128 crypto engine. store current sm_connection_t in sm_aes128_context
 static sm_aes128_state_t  sm_aes128_state;
-static sm_connection_t  * sm_aes128_connection_source;
+static void *             sm_aes128_context;
 
-// random engine. store current sm_connection_t in sm_random
-static sm_connection_t * sm_random_connection_source;
+// random engine. store context (ususally sm_connection_t)
+static void * sm_random_context;
 
 // CSRK calculation
 static sm_connection_t * sm_csrk_connection_source;
@@ -351,19 +351,19 @@ static void gap_random_address_update_stop(void){
 }
 
 
-static void sm_random_start(sm_connection_t * sm_conn){
-    sm_random_connection_source = sm_conn;
+static void sm_random_start(void * context){
+    sm_random_context = context;
     hci_send_cmd(&hci_le_rand);
 }
 
 // pre: sm_aes128_state != SM_AES128_ACTIVE, hci_can_send_command == 1
-// sm_conn is made availabe to aes128 result handler by this
-static void sm_aes128_start(sm_key_t key, sm_key_t plaintext, sm_connection_t * sm_conn){
+// context is made availabe to aes128 result handler by this
+static void sm_aes128_start(sm_key_t key, sm_key_t plaintext, void * context){
     sm_aes128_state = SM_AES128_ACTIVE;
     sm_key_t key_flipped, plaintext_flipped;
     swap128(key, key_flipped);
     swap128(plaintext, plaintext_flipped);
-    sm_aes128_connection_source = sm_conn;
+    sm_aes128_context = context;
     hci_send_cmd(&hci_le_encrypt, key_flipped, plaintext_flipped);
 }
 
@@ -1412,7 +1412,7 @@ static void sm_handle_encryption_result(uint8_t * data){
     }
 
     // retrieve sm_connection provided to sm_aes128_start_encryption
-    sm_connection_t * connection = sm_aes128_connection_source;
+    sm_connection_t * connection = (sm_connection_t*) sm_aes128_context;
     if (!connection) return;
     switch (connection->sm_engine_state){
         case SM_PH2_C1_W4_ENC_A:
@@ -1534,7 +1534,7 @@ static void sm_handle_random_result(uint8_t * data){
     }
 
     // retrieve sm_connection provided to sm_random_start
-    sm_connection_t * connection = sm_random_connection_source;
+    sm_connection_t * connection = (sm_connection_t *) sm_random_context;
     if (!connection) return;
     switch (connection->sm_engine_state){
         case SM_PH2_W4_RANDOM_TK:
