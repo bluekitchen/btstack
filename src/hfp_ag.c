@@ -77,6 +77,26 @@ static char *hfp_ag_call_hold_services[6];
 
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
+
+static int has_codec_negotiation_feature(hfp_connection_t * connection){
+    int hf = get_bit(connection->remote_supported_features, HFP_HFSF_CODEC_NEGOTIATION);
+    int ag = get_bit(hfp_supported_features, HFP_AGSF_CODEC_NEGOTIATION);
+    return hf && ag;
+}
+
+static int has_call_waiting_and_3way_calling_feature(hfp_connection_t * connection){
+    int hf = get_bit(connection->remote_supported_features, HFP_HFSF_THREE_WAY_CALLING);
+    int ag = get_bit(hfp_supported_features, HFP_AGSF_THREE_WAY_CALLING);
+    return hf && ag;
+}
+
+
+static int has_hf_indicators_feature(hfp_connection_t * connection){
+    int hf = get_bit(connection->remote_supported_features, HFP_HFSF_HF_INDICATORS);
+    int ag = get_bit(hfp_supported_features, HFP_AGSF_HF_INDICATORS);
+    return hf && ag;
+}
+
 void hfp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features){
     if (!name){
         name = default_hfp_ag_service_name;
@@ -160,12 +180,12 @@ int hfp_ag_indicators_status_join(char * buffer, int buffer_size){
 int hfp_ag_call_services_join(char * buffer, int buffer_size){
     if (buffer_size < hfp_ag_call_hold_services_nr * 3) return 0;
     int i;
-    int offset = 0;
+    int offset = snprintf(buffer, buffer_size, "("); 
     for (i = 0; i < hfp_ag_call_hold_services_nr-1; i++) {
         offset += snprintf(buffer+offset, buffer_size-offset, "%s,", hfp_ag_call_hold_services[i]); 
     }
     if (i<hfp_ag_call_hold_services_nr){
-        offset += snprintf(buffer+offset, buffer_size-offset, "%s", hfp_ag_call_hold_services[i]);
+        offset += snprintf(buffer+offset, buffer_size-offset, "%s)", hfp_ag_call_hold_services[i]);
     }
     return offset;
 }
@@ -322,7 +342,13 @@ void update_command(hfp_connection_t * context){
 void handle_switch_on_ok(hfp_connection_t *context){
     printf("handle switch on OK\n");
     switch (context->state){
-
+        case HFP_W4_EXCHANGE_SUPPORTED_FEATURES:
+            if (has_codec_negotiation_feature(context)){
+                context->state = HFP_NOTIFY_ON_CODECS;
+                break;
+            } 
+            context->state = HFP_RETRIEVE_INDICATORS;
+            break;
         default:
             break;
     }

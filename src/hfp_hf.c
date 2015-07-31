@@ -68,24 +68,24 @@ static uint8_t hfp_codecs_nr = 0;
 static uint8_t hfp_codecs[HFP_MAX_NUM_CODECS];
 
 static uint8_t hfp_indicators_nr = 0;
-static uint8_t hfp_indicators[HFP_MAX_NUM_INDICATORS];
+static uint8_t hfp_indicators[HFP_MAX_NUM_HF_INDICATORS];
 static uint8_t hfp_indicators_status;
 
 
-int has_codec_negotiation_feature(hfp_connection_t * connection){
+static int has_codec_negotiation_feature(hfp_connection_t * connection){
     int hf = get_bit(hfp_supported_features, HFP_HFSF_CODEC_NEGOTIATION);
     int ag = get_bit(connection->remote_supported_features, HFP_AGSF_CODEC_NEGOTIATION);
     return hf && ag;
 }
 
-int has_call_waiting_and_3way_calling_feature(hfp_connection_t * connection){
+static int has_call_waiting_and_3way_calling_feature(hfp_connection_t * connection){
     int hf = get_bit(hfp_supported_features, HFP_HFSF_THREE_WAY_CALLING);
     int ag = get_bit(connection->remote_supported_features, HFP_AGSF_THREE_WAY_CALLING);
     return hf && ag;
 }
 
 
-int has_hf_indicators_feature(hfp_connection_t * connection){
+static int has_hf_indicators_feature(hfp_connection_t * connection){
     int hf = get_bit(hfp_supported_features, HFP_HFSF_HF_INDICATORS);
     int ag = get_bit(connection->remote_supported_features, HFP_AGSF_HF_INDICATORS);
     return hf && ag;
@@ -270,7 +270,6 @@ void handle_switch_on_ok(hfp_connection_t *context){
     printf("handle switch on OK\n");
     switch (context->state){
         case HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS:
-            context->remote_hf_indicators_status = 0;
             context->state = HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
             break;
 
@@ -291,7 +290,6 @@ void handle_switch_on_ok(hfp_connection_t *context){
             context->state = HFP_RETRIEVE_INDICATORS;
             break;
         case HFP_W4_RETRIEVE_INDICATORS:
-            context->remote_indicators_status = 0;
             context->state = HFP_RETRIEVE_INDICATORS_STATUS; 
             break;
         

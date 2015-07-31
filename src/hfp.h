@@ -212,6 +212,8 @@ typedef struct hfp_connection {
    
     uint32_t remote_supported_features;
     uint8_t  remote_indicators_update_enabled;
+    
+    uint32_t remote_indicators_status;
 
     hfp_callback_t callback;
 } hfp_connection_t;
