@@ -257,6 +257,18 @@ int  sm_cmac_ready(void);
 void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t hash[8]));
 
 /**
+ * @brief Address Resolution Engine idle
+ * @return 1 if idle, 0 otherwise
+ */
+int sm_address_resolution_idle(void);
+
+/*
+ * @brief Match address against bonded devices
+ * @note Triggers SM_IDENTITY_RESOLVING_* events
+ */
+ void sm_address_resolution_lookup(uint8_t addr_type, bd_addr_t addr);
+
+/**
  * @brief Identify device in LE Device DB.
  * @param handle
  * @return index from le_device_db or -1 if not found/identified

@@ -142,22 +142,21 @@ static uint8_t      sm_cmac_block_current;
 static uint8_t      sm_cmac_block_count;
 static void (*sm_cmac_done_handler)(uint8_t hash[8]);
 
-// resolvable private address lookup
-static int       sm_central_device_test;
-static int       sm_central_device_matched;
-static int       sm_central_ah_calculation_active;
-static uint8_t   sm_central_device_addr_type;
-static bd_addr_t sm_central_device_address;
+// resolvable private address lookup / CSRK calculation
+static int       sm_address_resolution_test;
+static int       sm_address_resolution_matched;
+static int       sm_address_resolution_ah_calculation_active;
+static uint8_t   sm_address_resolution_addr_type;
+static bd_addr_t sm_address_resolution_address;
+static void *    sm_address_resolution_context;
 
-// aes128 crypto engine. store current sm_connection_t in sm_aes128_connection_source
+// aes128 crypto engine. store current sm_connection_t in sm_aes128_context
 static sm_aes128_state_t  sm_aes128_state;
-static sm_connection_t  * sm_aes128_connection_source;
+static void *             sm_aes128_context;
 
-// random engine. store current sm_connection_t in sm_random
-static sm_connection_t * sm_random_connection_source;
+// random engine. store context (ususally sm_connection_t)
+static void * sm_random_context;
 
-// CSRK calculation
-static sm_connection_t * sm_csrk_connection_source;
 //
 // Volume 3, Part H, Chapter 24
 // "Security shall be initiated by the Security Manager in the device in the master role.
@@ -351,19 +350,19 @@ static void gap_random_address_update_stop(void){
 }
 
 
-static void sm_random_start(sm_connection_t * sm_conn){
-    sm_random_connection_source = sm_conn;
+static void sm_random_start(void * context){
+    sm_random_context = context;
     hci_send_cmd(&hci_le_rand);
 }
 
 // pre: sm_aes128_state != SM_AES128_ACTIVE, hci_can_send_command == 1
-// sm_conn is made availabe to aes128 result handler by this
-static void sm_aes128_start(sm_key_t key, sm_key_t plaintext, sm_connection_t * sm_conn){
+// context is made availabe to aes128 result handler by this
+static void sm_aes128_start(sm_key_t key, sm_key_t plaintext, void * context){
     sm_aes128_state = SM_AES128_ACTIVE;
     sm_key_t key_flipped, plaintext_flipped;
     swap128(key, key_flipped);
     swap128(plaintext, plaintext_flipped);
-    sm_aes128_connection_source = sm_conn;
+    sm_aes128_context = context;
     hci_send_cmd(&hci_le_encrypt, key_flipped, plaintext_flipped);
 }
 
@@ -539,17 +538,22 @@ static void sm_setup_key_distribution(uint8_t key_set){
 
 // CSRK Key Lookup
 
-/* static */ int sm_central_device_lookup_active(void){
-    return sm_central_device_test >= 0;
+
+static void sm_address_resolution_start_lookup(uint8_t addr_type, bd_addr_t addr, void * context){
+    memcpy(sm_address_resolution_address, addr, 6);
+    sm_address_resolution_addr_type = addr_type;
+    sm_address_resolution_test = 0;
+    sm_address_resolution_matched = -1;
+    sm_address_resolution_context = context;
+    sm_notify_client(SM_IDENTITY_RESOLVING_STARTED, addr_type, addr, 0, 0);
 }
 
-static void sm_central_device_start_lookup(sm_connection_t * sm_conn, uint8_t addr_type, bd_addr_t addr){
-    memcpy(sm_central_device_address, addr, 6);
-    sm_central_device_addr_type = addr_type;
-    sm_central_device_test = 0;
-    sm_central_device_matched = -1;
-    sm_csrk_connection_source = sm_conn;
-    sm_notify_client(SM_IDENTITY_RESOLVING_STARTED, addr_type, addr, 0, 0);
+void sm_address_resolution_lookup(uint8_t addr_type, bd_addr_t addr){
+    sm_address_resolution_start_lookup(addr_type, addr, NULL);
+}
+
+int sm_address_resolution_idle(void){
+    return sm_address_resolution_test < 0;
 }
 
 // CMAC Implementation using AES128 engine
@@ -927,14 +931,14 @@ static void sm_run(void){
 
     // CSRK Lookup
     // -- if csrk lookup ready, find connection that require csrk lookup
-    if (!sm_central_device_lookup_active()){
+    if (sm_address_resolution_idle()){
         hci_connections_get_iterator(&it);
         while(linked_list_iterator_has_next(&it)){
             hci_connection_t * hci_connection = (hci_connection_t *) linked_list_iterator_next(&it);
             sm_connection_t  * sm_connection  = &hci_connection->sm_connection;
             if (sm_connection->sm_csrk_lookup_state == CSRK_LOOKUP_W4_READY){
                 // and start lookup
-                sm_central_device_start_lookup(sm_connection, sm_connection->sm_peer_addr_type, sm_connection->sm_peer_address);
+                sm_address_resolution_start_lookup(sm_connection->sm_peer_addr_type, sm_connection->sm_peer_address, sm_connection);
                 sm_connection->sm_csrk_lookup_state = CSRK_LOOKUP_STARTED;
                 break;
             }
@@ -942,36 +946,40 @@ static void sm_run(void){
     }
 
     // -- Continue with CSRK device lookup by public or resolvable private address
-    if (sm_central_device_test >= 0){
-        log_info("LE Device Lookup: device %u/%u", sm_central_device_test, le_device_db_count());
-        while (sm_central_device_test < le_device_db_count()){
+    if (sm_address_resolution_test >= 0){
+        log_info("LE Device Lookup: device %u/%u", sm_address_resolution_test, le_device_db_count());
+        while (sm_address_resolution_test < le_device_db_count()){
             int addr_type;
             bd_addr_t addr;
             sm_key_t irk;
-            le_device_db_info(sm_central_device_test, &addr_type, addr, irk);
+            le_device_db_info(sm_address_resolution_test, &addr_type, addr, irk);
             log_info("device type %u, addr: %s", addr_type, bd_addr_to_str(addr));
 
-            if (sm_central_device_addr_type == addr_type && memcmp(addr, sm_central_device_address, 6) == 0){
+            if (sm_address_resolution_addr_type == addr_type && memcmp(addr, sm_address_resolution_address, 6) == 0){
                 log_info("LE Device Lookup: found CSRK by { addr_type, address} ");
-                sm_central_device_matched = sm_central_device_test;
-                sm_central_device_test = -1;
-                sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);
+                sm_connection_t * sm_csrk_connection = (sm_connection_t *) sm_address_resolution_context;
+                sm_address_resolution_context = NULL;
+                sm_address_resolution_matched = sm_address_resolution_test;
+                sm_address_resolution_test = -1;
+                sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_address_resolution_addr_type, sm_address_resolution_address, 0, sm_address_resolution_matched);
+
+                // if context given, we're resolving an active connection
+                if (!sm_csrk_connection) break;
 
                 // re-use stored LTK/EDIV/RAND if requested & we're master
                 // TODO: replace global with flag in sm_connection_t
-                if (sm_authenticate_outgoing_connections && sm_csrk_connection_source->sm_role == 0){
-                    sm_csrk_connection_source->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
+                if (sm_authenticate_outgoing_connections && sm_csrk_connection->sm_role == 0){
+                    sm_csrk_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
                     log_info("sm: Setting up previous ltk/ediv/rand");
                 }
 
                 // ready for other requests
-                sm_csrk_connection_source->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
-                sm_csrk_connection_source = NULL;
+                sm_csrk_connection->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
                 break;
             }
 
-            if (sm_central_device_addr_type == 0){
-                sm_central_device_test++;
+            if (sm_address_resolution_addr_type == 0){
+                sm_address_resolution_test++;
                 continue;
             }
 
@@ -981,18 +989,22 @@ static void sm_run(void){
             log_key("IRK", irk);
 
             sm_key_t r_prime;
-            sm_ah_r_prime(sm_central_device_address, r_prime);
-            sm_central_ah_calculation_active = 1;
-            sm_aes128_start(irk, r_prime, sm_csrk_connection_source);
+            sm_ah_r_prime(sm_address_resolution_address, r_prime);
+            sm_address_resolution_ah_calculation_active = 1;
+            sm_aes128_start(irk, r_prime, sm_address_resolution_context);   // keep context
             return;
         }
 
-        if (sm_central_device_test >= le_device_db_count()){
+        if (sm_address_resolution_test >= le_device_db_count()){
             log_info("LE Device Lookup: not found");
-            sm_central_device_test = -1;
-            sm_csrk_connection_source->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
-            sm_csrk_connection_source = NULL;
-            sm_notify_client(SM_IDENTITY_RESOLVING_FAILED, sm_central_device_addr_type, sm_central_device_address, 0, 0);
+            sm_connection_t * sm_csrk_connection = (sm_connection_t *) sm_address_resolution_context;
+            sm_address_resolution_context = NULL;
+            sm_address_resolution_test = -1;
+            sm_notify_client(SM_IDENTITY_RESOLVING_FAILED, sm_address_resolution_addr_type, sm_address_resolution_address, 0, 0);
+
+            if (sm_address_resolution_context) {
+                sm_csrk_connection->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
+            }
         }
     }
 
@@ -1347,23 +1359,24 @@ static void sm_handle_encryption_result(uint8_t * data){
 
     sm_aes128_state = SM_AES128_IDLE;
 
-    if (sm_central_ah_calculation_active){
-        sm_central_ah_calculation_active = 0;
+    if (sm_address_resolution_ah_calculation_active){
+        sm_address_resolution_ah_calculation_active = 0;
         // compare calulated address against connecting device
         uint8_t hash[3];
         swap24(data, hash);
-        if (memcmp(&sm_central_device_address[3], hash, 3) == 0){
+        if (memcmp(&sm_address_resolution_address[3], hash, 3) == 0){
             // found
-            sm_central_device_matched = sm_central_device_test;
-            sm_central_device_test = -1;
-            sm_csrk_connection_source->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
-            sm_csrk_connection_source = NULL;
-            sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_central_device_addr_type, sm_central_device_address, 0, sm_central_device_matched);
+            sm_address_resolution_matched = sm_address_resolution_test;
+            sm_address_resolution_test = -1;
+            sm_connection_t * sm_csrk_connection = (sm_connection_t *) sm_address_resolution_context;
+            sm_address_resolution_context = NULL;
+            sm_csrk_connection->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
+            sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_address_resolution_addr_type, sm_address_resolution_address, 0, sm_address_resolution_matched);
             log_info("LE Device Lookup: matched resolvable private address");
             return;
         }
         // no match
-        sm_central_device_test++;
+        sm_address_resolution_test++;
         return;
     }
     switch (dkg_state){
@@ -1412,7 +1425,7 @@ static void sm_handle_encryption_result(uint8_t * data){
     }
 
     // retrieve sm_connection provided to sm_aes128_start_encryption
-    sm_connection_t * connection = sm_aes128_connection_source;
+    sm_connection_t * connection = (sm_connection_t*) sm_aes128_context;
     if (!connection) return;
     switch (connection->sm_engine_state){
         case SM_PH2_C1_W4_ENC_A:
@@ -1534,7 +1547,7 @@ static void sm_handle_random_result(uint8_t * data){
     }
 
     // retrieve sm_connection provided to sm_random_start
-    sm_connection_t * connection = sm_random_connection_source;
+    sm_connection_t * connection = (sm_connection_t *) sm_random_context;
     if (!connection) return;
     switch (connection->sm_engine_state){
         case SM_PH2_W4_RANDOM_TK:
@@ -2063,8 +2076,8 @@ void sm_init(void){
     dkg_state = DKG_W4_WORKING;
     rau_state = RAU_W4_WORKING;
     sm_aes128_state = SM_AES128_IDLE;
-    sm_central_device_test = -1;    // no private address to resolve yet
-    sm_central_ah_calculation_active = 0;
+    sm_address_resolution_test = -1;    // no private address to resolve yet
+    sm_address_resolution_ah_calculation_active = 0;
 
     gap_random_adress_update_period = 15 * 60 * 1000L;
 
