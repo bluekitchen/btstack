@@ -420,7 +420,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
     
     switch (context->parser_state){
         case HFP_PARSER_CMD_HEADER: // header
-            if (byte == ':'){
+            if (byte == ':' || byte == '='){
                 context->parser_state = HFP_PARSER_CMD_SEQUENCE;
                 context->line_buffer[context->line_size] = 0;
                 context->line_size = 0;
@@ -459,7 +459,6 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                                 printf("AG supported feature: %s\n", hfp_ag_feature(i));
                             }
                         }
-                        context->command = HFP_CMD_NONE;
                         context->parser_state = HFP_PARSER_CMD_HEADER;
                         break;
                     case HFP_W4_RETRIEVE_INDICATORS:
@@ -481,12 +480,10 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                         break;
                 }
                 if (byte == '\n' || byte == '\r'){
-                    context->command = HFP_CMD_NONE;
                     context->parser_state = HFP_PARSER_CMD_HEADER;
                     break;
                 }
                 if (byte == ')' && context->state == HFP_W4_RETRIEVE_CAN_HOLD_CALL){ // tuple separated mit comma
-                    context->command = HFP_CMD_NONE;
                     context->parser_state = HFP_PARSER_CMD_HEADER;
                     break;
                 }

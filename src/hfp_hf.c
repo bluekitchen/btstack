@@ -267,21 +267,7 @@ void update_command(hfp_connection_t * context){
 
 
 void handle_switch_on_ok(hfp_connection_t *context){
-    printf("handle switch on OK\n");
     switch (context->state){
-        case HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS:
-            context->state = HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
-            break;
-
-        case HFP_W4_NOTIFY_ON_CODECS:
-            printf("switch on OK: HFP_RETRIEVE_INDICATORS\n");
-            context->state = HFP_RETRIEVE_INDICATORS;
-            break;
-        case HFP_W4_LIST_GENERIC_STATUS_INDICATORS:
-            printf("switch on OK: HFP_W4_LIST_GENERIC_STATUS_INDICATORS\n");
-            context->state = HFP_RETRIEVE_GENERIC_STATUS_INDICATORS;
-            break;
-
         case HFP_W4_EXCHANGE_SUPPORTED_FEATURES:
             if (has_codec_negotiation_feature(context)){
                 context->state = HFP_NOTIFY_ON_CODECS;
@@ -289,6 +275,11 @@ void handle_switch_on_ok(hfp_connection_t *context){
             } 
             context->state = HFP_RETRIEVE_INDICATORS;
             break;
+
+        case HFP_W4_NOTIFY_ON_CODECS:
+            context->state = HFP_RETRIEVE_INDICATORS;
+            break;   
+        
         case HFP_W4_RETRIEVE_INDICATORS:
             context->state = HFP_RETRIEVE_INDICATORS_STATUS; 
             break;
@@ -328,9 +319,18 @@ void handle_switch_on_ok(hfp_connection_t *context){
             } 
             context->state = HFP_ACTIVE;
             break;
-            
+        
+        case HFP_W4_LIST_GENERIC_STATUS_INDICATORS:
+            context->state = HFP_RETRIEVE_GENERIC_STATUS_INDICATORS;
+            break;
+
+        case HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS:
+            context->state = HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
+            break;
+                    
         case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
             printf("Supported initial state generic status indicators \n");
+            context->state = HFP_ACTIVE;
             break;
 
         default:
