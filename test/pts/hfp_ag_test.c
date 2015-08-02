@@ -149,7 +149,7 @@ int btstack_main(int argc, const char * argv[]){
     l2cap_init();
     rfcomm_init();
     
-    hfp_ag_init(rfcomm_channel_nr, 438, codecs, sizeof(codecs), 
+    hfp_ag_init(rfcomm_channel_nr, 1007, codecs, sizeof(codecs), 
         ag_indicators, ag_indicators_nr, 
         hf_indicators, hf_indicators_nr, 
         call_hold_services, call_hold_services_nr);
