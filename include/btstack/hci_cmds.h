@@ -559,17 +559,14 @@ extern "C" {
 // data: event(8), len(8), status (8), bnep source uuid (16), bnep destination uuid (16), mtu (16), remote_address (48) 
 #define BNEP_EVENT_OPEN_CHANNEL_COMPLETE                   0xC1
 
-// data: event(8), len(8), status (8), bnep source uuid (16), bnep destination uuid (16), mtu (16), remote_address (48) 
-#define BNEP_EVENT_INCOMING_CONNECTION                     0xC2
-
 // data: event(8), len(8), bnep source uuid (16), bnep destination uuid (16), remote_address (48) 
-#define BNEP_EVENT_CHANNEL_CLOSED                          0xC3
+#define BNEP_EVENT_CHANNEL_CLOSED                          0xC2
 
 // data: event(8), len(8), bnep source uuid (16), bnep destination uuid (16), remote_address (48), channel state (8)
-#define BNEP_EVENT_CHANNEL_TIMEOUT                         0xC4    
+#define BNEP_EVENT_CHANNEL_TIMEOUT                         0xC3    
     
 // data: event(8), len(8)
-#define BNEP_EVENT_READY_TO_SEND                           0xC5
+#define BNEP_EVENT_READY_TO_SEND                           0xC4
 
 // data: event(8), address_type(8), address (48), [number(32)]
 #define SM_JUST_WORKS_REQUEST                              0xD0
