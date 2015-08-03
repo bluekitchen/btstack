@@ -889,7 +889,14 @@ static int bnep_handle_connection_response(bnep_channel_t *channel, uint8_t *pac
 }
 
 static int bnep_can_handle_extensions(bnep_channel_t * channel){
-    return channel->state == BNEP_CHANNEL_STATE_CONNECTED;
+    /* Extension are primarily handled in CONNECTED state */
+    if (channel->state == BNEP_CHANNEL_STATE_CONNECTED) return 1;
+    /* and if we've received connection request, but haven't sent the reponse yet. */
+    if ((channel->state == BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_REQUEST) &&
+        (channel->state_var & BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_RESPONSE)) {
+        return 1;
+    }
+    return 0;
 }
 
 static int bnep_handle_filter_net_type_set(bnep_channel_t *channel, uint8_t *packet, uint16_t size)
