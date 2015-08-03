@@ -852,6 +852,44 @@ static int sm_stk_generation_init(sm_connection_t * sm_conn){
     return 0;
 }
 
+static void sm_address_resolution_succeeded(void){
+    sm_connection_t * sm_csrk_connection = (sm_connection_t *) sm_address_resolution_context;
+
+    // if context given, we're resolving an active connection
+    if (sm_csrk_connection){
+
+        // re-use stored LTK/EDIV/RAND if requested & we're master
+        // TODO: replace global with flag in sm_connection_t
+        if (sm_authenticate_outgoing_connections && sm_csrk_connection->sm_role == 0){
+            sm_csrk_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
+            log_info("sm: Setting up previous ltk/ediv/rand");
+        }
+
+        // ready for other requests
+        sm_csrk_connection->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
+    } 
+
+    sm_address_resolution_context = NULL;
+    sm_address_resolution_matched = sm_address_resolution_test;
+    sm_address_resolution_test = -1;
+    sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_address_resolution_addr_type, sm_address_resolution_address, 0, sm_address_resolution_matched);
+}
+
+static void sm_address_resolution_failed(void){
+    log_info("LE Device Lookup: not found");
+    sm_connection_t * sm_csrk_connection = (sm_connection_t *) sm_address_resolution_context;
+
+    // if context given, we're resolving an active connection
+    if (sm_csrk_connection) {
+        sm_csrk_connection->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
+    }
+
+    sm_address_resolution_context = NULL;
+    sm_address_resolution_test = -1;
+    sm_notify_client(SM_IDENTITY_RESOLVING_FAILED, sm_address_resolution_addr_type, sm_address_resolution_address, 0, 0);
+}
+
+
 static void sm_run(void){
 
     linked_list_iterator_t it;    
@@ -946,7 +984,7 @@ static void sm_run(void){
     }
 
     // -- Continue with CSRK device lookup by public or resolvable private address
-    if (sm_address_resolution_test >= 0){
+    if (!sm_address_resolution_idle()){
         log_info("LE Device Lookup: device %u/%u", sm_address_resolution_test, le_device_db_count());
         while (sm_address_resolution_test < le_device_db_count()){
             int addr_type;
@@ -957,24 +995,7 @@ static void sm_run(void){
 
             if (sm_address_resolution_addr_type == addr_type && memcmp(addr, sm_address_resolution_address, 6) == 0){
                 log_info("LE Device Lookup: found CSRK by { addr_type, address} ");
-                sm_connection_t * sm_csrk_connection = (sm_connection_t *) sm_address_resolution_context;
-                sm_address_resolution_context = NULL;
-                sm_address_resolution_matched = sm_address_resolution_test;
-                sm_address_resolution_test = -1;
-                sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_address_resolution_addr_type, sm_address_resolution_address, 0, sm_address_resolution_matched);
-
-                // if context given, we're resolving an active connection
-                if (!sm_csrk_connection) break;
-
-                // re-use stored LTK/EDIV/RAND if requested & we're master
-                // TODO: replace global with flag in sm_connection_t
-                if (sm_authenticate_outgoing_connections && sm_csrk_connection->sm_role == 0){
-                    sm_csrk_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
-                    log_info("sm: Setting up previous ltk/ediv/rand");
-                }
-
-                // ready for other requests
-                sm_csrk_connection->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
+                sm_address_resolution_succeeded();
                 break;
             }
 
@@ -997,14 +1018,7 @@ static void sm_run(void){
 
         if (sm_address_resolution_test >= le_device_db_count()){
             log_info("LE Device Lookup: not found");
-            sm_connection_t * sm_csrk_connection = (sm_connection_t *) sm_address_resolution_context;
-            sm_address_resolution_context = NULL;
-            sm_address_resolution_test = -1;
-            sm_notify_client(SM_IDENTITY_RESOLVING_FAILED, sm_address_resolution_addr_type, sm_address_resolution_address, 0, 0);
-
-            if (sm_address_resolution_context) {
-                sm_csrk_connection->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
-            }
+            sm_address_resolution_failed();
         }
     }
 
@@ -1365,20 +1379,15 @@ static void sm_handle_encryption_result(uint8_t * data){
         uint8_t hash[3];
         swap24(data, hash);
         if (memcmp(&sm_address_resolution_address[3], hash, 3) == 0){
-            // found
-            sm_address_resolution_matched = sm_address_resolution_test;
-            sm_address_resolution_test = -1;
-            sm_connection_t * sm_csrk_connection = (sm_connection_t *) sm_address_resolution_context;
-            sm_address_resolution_context = NULL;
-            sm_csrk_connection->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
-            sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_address_resolution_addr_type, sm_address_resolution_address, 0, sm_address_resolution_matched);
             log_info("LE Device Lookup: matched resolvable private address");
+            sm_address_resolution_succeeded();
             return;
         }
-        // no match
+        // no match, try next
         sm_address_resolution_test++;
         return;
     }
+    
     switch (dkg_state){
         case DKG_W4_IRK:
             swap128(data, sm_persistent_irk);
