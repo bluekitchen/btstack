@@ -456,7 +456,7 @@ static void send_llmnr_request_ipv4(void){
     // udp packet
     net_store_16(udp_header, 0, 5355);   // source port
     net_store_16(udp_header, 2, 5355);   // destination port
-    net_store_16(udp_header, 4, sizeof(udp_header) + sizeof(llmnr_packet));
+    net_store_16(udp_header, 4, sizeof(udp_header) + sizeof(llmnr_packet) + sizeof(dns_data));
     net_store_16(udp_header, 6, 0);      // no checksum
     memcpy(&network_buffer[pos], udp_header, sizeof(udp_header));
     pos += sizeof(udp_header);
