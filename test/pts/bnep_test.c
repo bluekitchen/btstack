@@ -437,11 +437,15 @@ static void send_llmnr_request_ipv4(void){
     uint8_t udp_header[8];
     uint8_t llmnr_packet[12];
 
+    uint8_t dns_data[] = { 0x08, 0x61, 0x61, 0x70,  0x70, 0x6c, 0x65, 0x74, 0x76,
+                           0x05, 0x6c, 0x6f, 0x63,  0x61, 0x6c, 0x00, 0x00,
+                           0x01, 0x00, 0x01 }; 
+
     // ethernet header
     int pos = setup_ethernet_header(1, 0, 0, NETWORK_TYPE_IPv4); // IPv4
 
     // ipv4
-    int total_length = sizeof(ipv4_header) + sizeof(udp_header) + sizeof (llmnr_packet);
+    int total_length = sizeof(ipv4_header) + sizeof(udp_header) + sizeof (llmnr_packet) + sizeof(dns_data);
     net_store_16(ipv4_header, 2, total_length);
     uint16_t ipv4_checksum = calc_internet_checksum(ipv4_header, sizeof(ipv4_header));
     net_store_16(ipv4_header, 10, ~ipv4_checksum);    
@@ -464,6 +468,9 @@ static void send_llmnr_request_ipv4(void){
 
     memcpy(&network_buffer[pos], llmnr_packet, sizeof(llmnr_packet));
     pos += sizeof(llmnr_packet);
+
+    memcpy(&network_buffer[pos], dns_data, sizeof(dns_data));
+    pos += sizeof(dns_data);
 
     // send
     send_buffer(pos);
