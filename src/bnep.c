@@ -1251,22 +1251,29 @@ static int bnep_hci_event_handler(uint8_t *packet, uint16_t size)
                 return 1;
             }
 
-            if (channel->state == BNEP_CHANNEL_STATE_CLOSED) {
-                log_info("L2CAP_EVENT_CHANNEL_OPENED: outgoing connection");
+            switch (channel->state){
+                case BNEP_CHANNEL_STATE_CLOSED:
+                    log_info("L2CAP_EVENT_CHANNEL_OPENED: outgoing connection");
 
-                bnep_channel_start_timer(channel, BNEP_CONNECTION_TIMEOUT_MS);
+                    bnep_channel_start_timer(channel, BNEP_CONNECTION_TIMEOUT_MS);
 
-                /* Assign connection handle and l2cap cid */
-                channel->l2cap_cid  = l2cap_cid;
-                channel->con_handle = con_handle;
+                    /* Assign connection handle and l2cap cid */
+                    channel->l2cap_cid  = l2cap_cid;
+                    channel->con_handle = con_handle;
 
-                /* Initiate the connection request */
-                channel->state = BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE;
-                bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_REQUEST); 
-                channel->max_frame_size = bnep_max_frame_size_for_l2cap_mtu(READ_BT_16(packet, 17));
-                bnep_run();
-            } else {              
-                log_error("L2CAP_EVENT_CHANNEL_OPENED: Invalid state: %d", channel->state);
+                    /* Initiate the connection request */
+                    channel->state = BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_RESPONSE;
+                    bnep_channel_state_add(channel, BNEP_CHANNEL_STATE_VAR_SND_CONNECTION_REQUEST); 
+                    channel->max_frame_size = bnep_max_frame_size_for_l2cap_mtu(READ_BT_16(packet, 17));
+                    bnep_run();
+                    break;
+                case BNEP_CHANNEL_STATE_WAIT_FOR_CONNECTION_REQUEST:
+                    /* New information: channel mtu */
+                    channel->max_frame_size = bnep_max_frame_size_for_l2cap_mtu(READ_BT_16(packet, 17));
+                    break;
+                default:
+                    log_error("L2CAP_EVENT_CHANNEL_OPENED: Invalid state: %d", channel->state);
+                    break;
             }
             return 1;
                     
