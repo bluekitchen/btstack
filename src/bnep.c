@@ -888,6 +888,10 @@ static int bnep_handle_connection_response(bnep_channel_t *channel, uint8_t *pac
     return 1 + 2;
 }
 
+static int bnep_can_handle_extensions(bnep_channel_t * channel){
+    return channel->state == BNEP_CHANNEL_STATE_CONNECTED;
+}
+
 static int bnep_handle_filter_net_type_set(bnep_channel_t *channel, uint8_t *packet, uint16_t size)
 {
     uint16_t list_length;
@@ -904,8 +908,7 @@ static int bnep_handle_filter_net_type_set(bnep_channel_t *channel, uint8_t *pac
         return 0;
     }
 
-    if (channel->state != BNEP_CHANNEL_STATE_CONNECTED) {
-        /* Ignore filter net type set in any state but CONNECTED */
+    if (!bnep_can_handle_extensions(channel)){
         log_error("BNEP_FILTER_NET_TYPE_SET: Ignored in channel state %d", channel->state);
         return 3 + list_length;
     }
@@ -955,8 +958,7 @@ static int bnep_handle_filter_net_type_response(bnep_channel_t *channel, uint8_t
         return 0;
     }
 
-    if (channel->state != BNEP_CHANNEL_STATE_CONNECTED) {
-        /* Ignore a filter net type response in any state but CONNECTED */
+    if (!bnep_can_handle_extensions(channel)){
         log_error("BNEP_FILTER_NET_TYPE_RESPONSE: Ignored in channel state %d", channel->state);
         return 1 + 2;
     }
@@ -988,8 +990,7 @@ static int bnep_handle_multi_addr_set(bnep_channel_t *channel, uint8_t *packet, 
         return 0;
     }
 
-    if (channel->state != BNEP_CHANNEL_STATE_CONNECTED) {
-        /* Ignore multicast filter address set in any state but CONNECTED */
+    if (!bnep_can_handle_extensions(channel)){
         log_error("BNEP_MULTI_ADDR_SET: Ignored in channel state %d", channel->state);
         return 3 + list_length;
     }
@@ -1042,8 +1043,7 @@ static int bnep_handle_multi_addr_response(bnep_channel_t *channel, uint8_t *pac
         return 0;
     }
 
-    if (channel->state != BNEP_CHANNEL_STATE_CONNECTED) {
-        /* Ignore multicast filter set response in any state but CONNECTED */
+    if (!bnep_can_handle_extensions(channel)){
         log_error("BNEP_MULTI_ADDR_RESPONSE: Ignored in channel state %d", channel->state);
         return 1 + 2;
     }
