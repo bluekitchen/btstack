@@ -322,6 +322,7 @@ static void send_ping_response_ipv4(void){
     send_buffer(pos);
 }
 
+/* Untested */
 static void send_ping_request_ipv6(void){
 
     uint8_t ipv6_header[] = {
@@ -352,7 +353,7 @@ static void send_ping_request_ipv6(void){
     net_store_16(ipv6_header, 4, payload_length);
     // TODO: also set src/dest ip address
     int checksum = calc_internet_checksum(&ipv6_header[8], 32);
-    checksum = sum_ones_complement(checksum, sizeof(ipv6_header) + sizeof(icmp_packet));
+    checksum = sum_ones_complement(checksum, payload_length);
     checksum = sum_ones_complement(checksum, 58 << 8);
     net_store_16(icmp_packet, 2, checksum);
     memcpy(&network_buffer[pos], ipv6_header, sizeof(ipv6_header));
@@ -372,7 +373,7 @@ static void send_ndp_probe_ipv6(void){
 
     uint8_t ipv6_header[] = {
         // ip
-        0x60, 0x00, 0x00, 0x00, // version (4) + traffic class (8) + flow label (24)
+        0x60, 0x00, 0x00, 0x00, // version (6) + traffic class (8) + flow label (24)
         0x00, 0x00,   58, 0x01, // payload length(16), next header = IPv6-ICMP, hop limit
         0x00, 0x00, 0x00, 0x00, // source IP address
         0x00, 0x00, 0x00, 0x00, // source IP address
@@ -408,8 +409,8 @@ static void send_ndp_probe_ipv6(void){
     ipv6_header[38] = local_addr[4];
     ipv6_header[39] = local_addr[5];
     int checksum = calc_internet_checksum(&ipv6_header[8], 32);
-    checksum = sum_ones_complement(checksum, sizeof(ipv6_header) + sizeof(icmp_packet));
-    checksum = sum_ones_complement(checksum, 58 << 8);
+    checksum = sum_ones_complement(checksum, payload_length);
+    checksum = sum_ones_complement(checksum, ipv6_header[6] << 8);
     memcpy(&network_buffer[pos], ipv6_header, sizeof(ipv6_header));
     pos += sizeof(ipv6_header);
 
@@ -458,7 +459,7 @@ static void send_llmnr_request_ipv4(void){
 
     // llmnr packet
     bzero(llmnr_packet, sizeof(llmnr_packet));
-    net_store_16(llmnr_packet, 0, 0x1234);
+    net_store_16(llmnr_packet, 0, 0x1234);  // transaction id
     net_store_16(llmnr_packet, 4, 1);   // one query
 
     memcpy(&network_buffer[pos], llmnr_packet, sizeof(llmnr_packet));
@@ -494,7 +495,7 @@ static void send_llmnr_request_ipv6(void){
 
     // llmnr header
     bzero(llmnr_packet, sizeof(llmnr_packet));
-    net_store_16(llmnr_packet, 0, 0x1235);
+    net_store_16(llmnr_packet, 0, 0x1235);  // transaction id
     net_store_16(llmnr_packet, 4, 1);   // one query
 
     // ipv6 header
@@ -506,7 +507,7 @@ static void send_llmnr_request_ipv6(void){
     net_store_16(udp_header, 2, 5355);   // destination port
     net_store_16(udp_header, 4, payload_length);
     int checksum = calc_internet_checksum(&ipv6_header[8], 32);
-    checksum = sum_ones_complement(checksum, ipv6_header[4]);       // payload len
+    checksum = sum_ones_complement(checksum, payload_length);       // payload len
     checksum = sum_ones_complement(checksum, ipv6_header[6] << 8);  // next header 
     checksum = sum_ones_complement(checksum, calc_internet_checksum(udp_header, sizeof(udp_header)));
     checksum = sum_ones_complement(checksum, calc_internet_checksum(llmnr_packet, sizeof(llmnr_packet)));
