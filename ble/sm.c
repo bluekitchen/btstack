@@ -154,7 +154,6 @@ static void (*sm_cmac_done_handler)(uint8_t hash[8]);
 
 // resolvable private address lookup / CSRK calculation
 static int       sm_address_resolution_test;
-static int       sm_address_resolution_matched;
 static int       sm_address_resolution_ah_calculation_active;
 static uint8_t   sm_address_resolution_addr_type;
 static bd_addr_t sm_address_resolution_address;
@@ -550,21 +549,22 @@ static void sm_setup_key_distribution(uint8_t key_set){
 // CSRK Key Lookup
 
 
-static void sm_address_resolution_start_lookup(uint8_t addr_type, bd_addr_t addr, void * context){
+static void sm_address_resolution_start_lookup(uint8_t addr_type, bd_addr_t addr, address_resolution_mode_t mode, void * context){
     memcpy(sm_address_resolution_address, addr, 6);
     sm_address_resolution_addr_type = addr_type;
     sm_address_resolution_test = 0;
-    sm_address_resolution_matched = -1;
+    sm_address_resolution_mode = mode;
     sm_address_resolution_context = context;
     sm_notify_client(SM_IDENTITY_RESOLVING_STARTED, addr_type, addr, 0, 0);
 }
 
 void sm_address_resolution_lookup(uint8_t addr_type, bd_addr_t addr){
-    sm_address_resolution_start_lookup(addr_type, addr, NULL);
+    sm_address_resolution_start_lookup(addr_type, addr, ADDRESS_RESOLUTION_GENERAL, NULL);
 }
 
 int sm_address_resolution_idle(void){
-    return sm_address_resolution_test < 0;
+    printf("sm_address_resolution_idle: mode %u\n",sm_address_resolution_mode);
+    return sm_address_resolution_mode == ADDRESS_RESOLUTION_IDLE;
 }
 
 // CMAC Implementation using AES128 engine
@@ -880,59 +880,62 @@ static void sm_address_resolution_succeeded_for_advertisement(void){
 static void sm_address_resolution_failed_for_advertisement(void){
 }
 
-static void sm_address_resolution_succeeded_for_connection(sm_connection_t * sm_connection){
-    // re-use stored LTK/EDIV/RAND if requested & we're master
-    // TODO: replace global with flag in sm_connection_t
-    if (sm_authenticate_outgoing_connections && sm_connection->sm_role == 0){
-        sm_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
-        log_info("sm: Setting up previous ltk/ediv/rand");
-    }
-    sm_connection->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
-}
-
-static void sm_address_resolution_failed_for_connection(sm_connection_t * sm_connection){
-    sm_connection->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
-}
-
-static void sm_address_resolution_succeeded(void){
-    sm_connection_t * sm_connection = (sm_connection_t *) sm_address_resolution_context;
-    if (sm_connection){
-        sm_address_resolution_succeeded_for_connection(sm_connection);
-    } 
-
-    if (sm_advertisement_resolving_active()){
-        sm_address_resolution_succeeded_for_advertisement();
-    }
-
-    sm_address_resolution_context = NULL;
-    sm_address_resolution_matched = sm_address_resolution_test;
-    sm_address_resolution_test = -1;
-    sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_address_resolution_addr_type, sm_address_resolution_address, 0, sm_address_resolution_matched);
-}
-
-static void sm_address_resolution_failed(void){
-    log_info("LE Device Lookup: not found");
-    sm_connection_t * sm_connection = (sm_connection_t *) sm_address_resolution_context;
-    if (sm_connection) {
-        sm_address_resolution_failed_for_connection(sm_connection);
-    }
-
-    if (sm_advertisement_resolving_active()){
-        sm_address_resolution_succeeded_for_advertisement();
-    }
-
-    sm_address_resolution_context = NULL;
-    sm_address_resolution_test = -1;
-    sm_notify_client(SM_IDENTITY_RESOLVING_FAILED, sm_address_resolution_addr_type, sm_address_resolution_address, 0, 0);
-}
-
 static void sm_address_resolution_handle_event(address_resolution_event_t event){
+
+    printf("sm_address handle event %u\n", event);
+
+    // cache and reset context
+    int matched_device_id = sm_address_resolution_test;
+    address_resolution_mode_t mode = sm_address_resolution_mode;
+    void * context = sm_address_resolution_context;
+    
+    // reset context
+    sm_address_resolution_mode = ADDRESS_RESOLUTION_IDLE;
+    sm_address_resolution_context = NULL;
+    sm_address_resolution_test = -1;
+
+    sm_connection_t * sm_connection;
+    switch (mode){
+        case ADDRESS_RESOLUTION_GENERAL:
+            switch (event){
+                case ADDRESS_RESOLUTION_SUCEEDED:
+                    if (sm_advertisement_resolving_active()){
+                        sm_address_resolution_succeeded_for_advertisement();
+                    }
+                    break;
+                case ADDRESS_RESOLUTION_FAILED:
+                    if (sm_advertisement_resolving_active()){
+                        sm_address_resolution_succeeded_for_advertisement();
+                    }
+                    break;
+            }
+            break;
+        case ADDRESS_RESOLUTION_FOR_CONNECTION:
+            sm_connection = (sm_connection_t *) context;
+            switch (event){
+                case ADDRESS_RESOLUTION_SUCEEDED:
+                    // re-use stored LTK/EDIV/RAND if requested & we're master
+                    // TODO: replace global with flag in sm_connection_t
+                    if (sm_authenticate_outgoing_connections && sm_connection->sm_role == 0){
+                        sm_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
+                        log_info("sm: Setting up previous ltk/ediv/rand");
+                    }
+                    break;
+                case ADDRESS_RESOLUTION_FAILED:
+                    break;
+            }
+            sm_connection->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
+            break;
+        default:
+            break;
+    }
+
     switch (event){
         case ADDRESS_RESOLUTION_SUCEEDED:
-            sm_address_resolution_succeeded();
+            sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_address_resolution_addr_type, sm_address_resolution_address, 0, matched_device_id);
             break;
         case ADDRESS_RESOLUTION_FAILED:
-            sm_address_resolution_failed();
+            sm_notify_client(SM_IDENTITY_RESOLVING_FAILED, sm_address_resolution_addr_type, sm_address_resolution_address, 0, 0);
             break;
     }
 }
@@ -1023,7 +1026,7 @@ static void sm_run(void){
             sm_connection_t  * sm_connection  = &hci_connection->sm_connection;
             if (sm_connection->sm_csrk_lookup_state == CSRK_LOOKUP_W4_READY){
                 // and start lookup
-                sm_address_resolution_start_lookup(sm_connection->sm_peer_addr_type, sm_connection->sm_peer_address, sm_connection);
+                sm_address_resolution_start_lookup(sm_connection->sm_peer_addr_type, sm_connection->sm_peer_address, ADDRESS_RESOLUTION_FOR_CONNECTION, sm_connection);
                 sm_connection->sm_csrk_lookup_state = CSRK_LOOKUP_STARTED;
                 break;
             }
@@ -1035,7 +1038,7 @@ static void sm_run(void){
         bd_addr_t address;
         bd_addr_type_t address_type;
         sm_advertisement_resolving_get_next(&address_type, address);
-        sm_address_resolution_start_lookup(address_type, address, NULL);
+        sm_address_resolution_start_lookup(address_type, address, ADDRESS_RESOLUTION_GENERAL, NULL);
     }
 
     // -- Continue with CSRK device lookup by public or resolvable private address
