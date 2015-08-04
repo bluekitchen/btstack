@@ -39,6 +39,8 @@
 #include <string.h>
 
 #include <btstack/linked_list.h>
+
+#include "btstack_memory.h"
 #include "debug.h"
 #include "hci.h"
 #include "l2cap.h"
@@ -159,6 +161,7 @@ static uint8_t   sm_address_resolution_addr_type;
 static bd_addr_t sm_address_resolution_address;
 static void *    sm_address_resolution_context;
 static address_resolution_mode_t sm_address_resolution_mode;
+static linked_list_t sm_address_resolution_general_queue;
 
 // aes128 crypto engine. store current sm_connection_t in sm_aes128_context
 static sm_aes128_state_t  sm_aes128_state;
@@ -549,6 +552,10 @@ static void sm_setup_key_distribution(uint8_t key_set){
 // CSRK Key Lookup
 
 
+static int sm_address_resolution_idle(void){
+    return sm_address_resolution_mode == ADDRESS_RESOLUTION_IDLE;
+}
+
 static void sm_address_resolution_start_lookup(uint8_t addr_type, bd_addr_t addr, address_resolution_mode_t mode, void * context){
     memcpy(sm_address_resolution_address, addr, 6);
     sm_address_resolution_addr_type = addr_type;
@@ -558,13 +565,25 @@ static void sm_address_resolution_start_lookup(uint8_t addr_type, bd_addr_t addr
     sm_notify_client(SM_IDENTITY_RESOLVING_STARTED, addr_type, addr, 0, 0);
 }
 
-void sm_address_resolution_lookup(uint8_t addr_type, bd_addr_t addr){
-    sm_address_resolution_start_lookup(addr_type, addr, ADDRESS_RESOLUTION_GENERAL, NULL);
-}
-
-int sm_address_resolution_idle(void){
-    printf("sm_address_resolution_idle: mode %u\n",sm_address_resolution_mode);
-    return sm_address_resolution_mode == ADDRESS_RESOLUTION_IDLE;
+int sm_address_resolution_lookup(uint8_t address_type, bd_addr_t address){
+    // check if already in list
+    linked_list_iterator_t it;
+    sm_lookup_entry_t * entry;
+    linked_list_iterator_init(&it, &sm_address_resolution_general_queue);
+    while(linked_list_iterator_has_next(&it)){
+        entry = (sm_lookup_entry_t *) linked_list_iterator_next(&it);
+        if (entry->address_type != address_type) continue;
+        if (memcmp(entry->address, address, 6))  continue;
+        // already in list
+        return BTSTACK_BUSY;
+    }
+    entry = btstack_memory_sm_lookup_entry_get();
+    if (!entry) return BTSTACK_MEMORY_ALLOC_FAILED;
+    entry->address_type = (bd_addr_type_t) address_type;
+    memcpy(entry->address, address, 6);
+    linked_list_add(&sm_address_resolution_general_queue, (linked_item_t *) entry);    
+    sm_run();
+    return 0;
 }
 
 // CMAC Implementation using AES128 engine
@@ -863,23 +882,6 @@ static int sm_stk_generation_init(sm_connection_t * sm_conn){
     return 0;
 }
 
-static int sm_advertisement_resolving_add_address(bd_addr_type_t address_type, bd_addr_t address){
-    return 0;
-}
-
-static int sm_advertisement_resolving_active(void){
-    return 0;
-}
-
-static void sm_advertisement_resolving_get_next(bd_addr_type_t * address_type, bd_addr_t address){
-}
-
-static void sm_address_resolution_succeeded_for_advertisement(void){
-}
-
-static void sm_address_resolution_failed_for_advertisement(void){
-}
-
 static void sm_address_resolution_handle_event(address_resolution_event_t event){
 
     printf("sm_address handle event %u\n", event);
@@ -899,14 +901,10 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
         case ADDRESS_RESOLUTION_GENERAL:
             switch (event){
                 case ADDRESS_RESOLUTION_SUCEEDED:
-                    if (sm_advertisement_resolving_active()){
-                        sm_address_resolution_succeeded_for_advertisement();
-                    }
+                    // sm_address_resolution_succeeded_for_advertisement();
                     break;
                 case ADDRESS_RESOLUTION_FAILED:
-                    if (sm_advertisement_resolving_active()){
-                        sm_address_resolution_succeeded_for_advertisement();
-                    }
+                    // sm_address_resolution_succeeded_for_advertisement();
                     break;
             }
             break;
@@ -1034,11 +1032,13 @@ static void sm_run(void){
     }
 
     // -- if csrk lookup ready, resolved addresses for received addresses
-    if (sm_address_resolution_idle() && sm_advertisement_resolving_active()){
-        bd_addr_t address;
-        bd_addr_type_t address_type;
-        sm_advertisement_resolving_get_next(&address_type, address);
-        sm_address_resolution_start_lookup(address_type, address, ADDRESS_RESOLUTION_GENERAL, NULL);
+    if (sm_address_resolution_idle()) {
+        if (!linked_list_empty(&sm_address_resolution_general_queue)){
+            sm_lookup_entry_t * entry = (sm_lookup_entry_t *) sm_address_resolution_general_queue;
+            linked_list_remove(&sm_address_resolution_general_queue, (linked_item_t *) entry);
+            sm_address_resolution_start_lookup(entry->address_type, entry->address, ADDRESS_RESOLUTION_GENERAL, NULL);
+            btstack_memory_sm_lookup_entry_free(entry);
+        }
     }
 
     // -- Continue with CSRK device lookup by public or resolvable private address
@@ -2146,7 +2146,8 @@ void sm_init(void){
     sm_address_resolution_test = -1;    // no private address to resolve yet
     sm_address_resolution_ah_calculation_active = 0;
     sm_address_resolution_mode = ADDRESS_RESOLUTION_IDLE;
-
+    sm_address_resolution_general_queue = NULL;
+    
     gap_random_adress_update_period = 15 * 60 * 1000L;
 
     sm_active_connection = 0;
