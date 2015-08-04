@@ -884,8 +884,6 @@ static int sm_stk_generation_init(sm_connection_t * sm_conn){
 
 static void sm_address_resolution_handle_event(address_resolution_event_t event){
 
-    printf("sm_address handle event %u\n", event);
-
     // cache and reset context
     int matched_device_id = sm_address_resolution_test;
     address_resolution_mode_t mode = sm_address_resolution_mode;
