@@ -158,8 +158,14 @@ static void handle_advertising_event(uint8_t * packet, int size){
     // filter PTS
     bd_addr_t addr;
     bt_flip_addr(addr, &packet[4]);
-    if (memcmp(addr, public_pts_address, 6)) return;
-    printf("Advertisement: %s, ", ad_event_types[packet[2]]);
+
+    // always request address resolution
+    sm_address_resolution_lookup(packet[3], addr);
+
+    // ignore advertisement from devices other than pts
+    if (memcmp(addr, current_pts_address, 6)) return;
+
+    printf("Advertisement: %s - %s, ", bd_addr_to_str(addr), ad_event_types[packet[2]]);
     int adv_size = packet[11];
     uint8_t * adv_data = &packet[12];
 
@@ -216,6 +222,7 @@ static void gap_run(void){
 }
 
 void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    uint16_t aHandle;
     switch (packet_type) {
             
         case HCI_EVENT_PACKET:
@@ -243,6 +250,8 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    aHandle = READ_BT_16(packet, 3);
+                    printf("Disconnected from handle 0x%04x\n", aHandle);
                     break;
                     
                 case SM_PASSKEY_INPUT_NUMBER: {
@@ -271,7 +280,8 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
                 case SM_JUST_WORKS_REQUEST:
                 {
                     // auto-authorize connection if requested
-                    sm_event_t * event = (sm_event_t *) packet;
+                    // sm_event_t * event = (sm_event_t *) packet;
+                    // TODO: check address
                     sm_just_works_confirm(current_pts_address_type, current_pts_address);
                     printf("Just Works request confirmed\n");
                     break;
@@ -280,13 +290,23 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
                 case SM_AUTHORIZATION_REQUEST:
                 {
                     // auto-authorize connection if requested
-                    sm_event_t * event = (sm_event_t *) packet;
+                    // TODO: check address
+                    // sm_event_t * event = (sm_event_t *) packet;
                     sm_authorization_grant(current_pts_address_type, current_pts_address);
                     break;
                 }
 
                 case GAP_LE_ADVERTISING_REPORT:
                     handle_advertising_event(packet, size);
+                    break;
+
+                case SM_IDENTITY_RESOLVING_SUCCEEDED:
+                    // skip already detected pts
+                    if (memcmp( ((sm_event_t*) packet)->address, current_pts_address, 6) == 0) break;
+                    memcpy(current_pts_address, ((sm_event_t*) packet)->address, 6);
+                    current_pts_address_type =  ((sm_event_t*) packet)->addr_type;
+                    printf("Address resolving succeeded: resolvable address %s, addr type %u\n",
+                        bd_addr_to_str(current_pts_address), current_pts_address_type);
                     break;
                 default:
                     break;
@@ -379,12 +399,18 @@ uint16_t attribute_size = 1;
 int scanning_active = 0;
 
 void show_usage(void){
+    uint8_t iut_address_type;
+    bd_addr_t      iut_address;
+    hci_le_advertisement_address(&iut_address_type, iut_address);
+
     printf("\e[1;1H\e[2J");
     printf("--- CLI for LE Central ---\n");
+    printf("PTS: addr type %u, addr %s\n", current_pts_address_type, bd_addr_to_str(current_pts_address));
+    printf("IUT: addr type %u, addr %s\n", iut_address_type, bd_addr_to_str(iut_address));
+    printf("--------------------------\n");
     printf("GAP: connectable %u\n", gap_connectable);
     printf("SM: %s, MITM protection %u, OOB data %u, key range [%u..16]\n",
         sm_io_capabilities, sm_mitm_protection, sm_have_oob_data, sm_min_key_size);
-    printf("PTS: addr type %u, addr %s\n", current_pts_address_type, current_pts_address);
     printf("Privacy %u\n", gap_privacy);
     printf("Device name: %s\n", gap_device_name);
     printf("Value Handle: %x\n", value_handle);
