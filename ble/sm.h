@@ -110,6 +110,13 @@ typedef enum {
 
 // Only for PTS testing
 void sm_test_set_irk(sm_key_t irk);
+
+typedef struct {
+    linked_item_t  item;
+    bd_addr_t      address;
+    bd_addr_type_t address_type;
+} sm_lookup_entry_t;
+
 /* API_START */
 
 /**
@@ -256,17 +263,12 @@ void sm_authorization_grant(uint8_t addr_type, bd_addr_t address);
 int  sm_cmac_ready(void);
 void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t hash[8]));
 
-/**
- * @brief Address Resolution Engine idle
- * @return 1 if idle, 0 otherwise
- */
-int sm_address_resolution_idle(void);
-
 /*
  * @brief Match address against bonded devices
+ * @return 0 if successfully added to lookup queue
  * @note Triggers SM_IDENTITY_RESOLVING_* events
  */
- void sm_address_resolution_lookup(uint8_t addr_type, bd_addr_t addr);
+int sm_address_resolution_lookup(uint8_t addr_type, bd_addr_t addr);
 
 /**
  * @brief Identify device in LE Device DB.

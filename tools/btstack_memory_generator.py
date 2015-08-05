@@ -41,7 +41,7 @@ copyright = """/*
 hfile_header_begin = """
 
 /*
- *  btstsack_memory.h
+ *  btstack_memory.h
  *
  *  @brief BTstack memory management via configurable memory pools
  *
@@ -65,6 +65,7 @@ extern "C" {
 
 #ifdef HAVE_BLE
 #include "gatt_client.h"
+#include "sm.h"
 #endif
 
 /* API_START */
@@ -156,7 +157,7 @@ def replacePlaceholder(template, struct_name):
     return snippet
     
 list_of_structs = [ ["hci_connection"], ["l2cap_service", "l2cap_channel"], ["rfcomm_multiplexer", "rfcomm_service", "rfcomm_channel"], ["db_mem_device_name", "db_mem_device_link_key", "db_mem_service"], ["bnep_service", "bnep_channel"], ["hfp_connection"]]
-list_of_le_structs = [["gatt_client", "gatt_subclient","whitelist_entry"]]
+list_of_le_structs = [["gatt_client", "gatt_subclient", "whitelist_entry", "sm_lookup_entry"]]
 
 file_name = "../src/btstack_memory"
 

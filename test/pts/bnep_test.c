@@ -73,8 +73,10 @@
 #define NETWORK_TYPE_ARP        0x0806
 #define NETWORK_TYPE_IPv6       0x86DD
 
-#define IPv4_PROTOCOL_ICMP      0x0001
-#define IPv4_PROTOCOL_UDP       0x0011
+#define IP_PROTOCOL_ICMP_IPv4   0x0001
+#define IP_PROTOCOL_ICMP_IPv6   0x003a
+#define IP_PROTOCOL_UDP         0x0011
+#define IPv4_
 
 #define ICMP_V4_TYPE_PING_REQUEST  0x08
 #define ICMP_V4_TYPE_PING_RESPONSE 0x00
@@ -96,8 +98,10 @@ static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 //static bd_addr_t pts_addr = {0xE0,0x06,0xE6,0xBB,0x95,0x79}; // Ole Thinkpad
 // static bd_addr_t other_addr = { 0x33, 0x33, 0x00, 0x00, 0x00, 0x16};
 static bd_addr_t other_addr = { 0,0,0,0,0,0};
+
 // broadcast
 static bd_addr_t broadcast_addr = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+// static bd_addr_t broadcast_addr = { 0x33, 0x33, 0x00, 0x01, 0x00, 0x03 };
 
 // Outgoing: Must match PTS TSPX_UUID_src_addresss 
 static uint16_t bnep_src_uuid     = 0x1115; 
@@ -242,7 +246,7 @@ static uint16_t calc_internet_checksum(uint8_t * data, int size){
 
 static void send_ping_request_ipv4(void){
 
-    uint8_t ipv4_packet[] = {
+    uint8_t ipv4_header[] = {
         // ip
         0x45, 0x00, 0x00, 0x00,   // version + ihl, dscp } ecn, total len
         0x00, 0x00, 0x00, 0x00, // identification (16), flags + fragment offset
@@ -261,13 +265,13 @@ static void send_ping_request_ipv4(void){
     int pos = setup_ethernet_header(1, 0, 0, NETWORK_TYPE_IPv4); // IPv4
     
     // ipv4
-    int total_length = sizeof(ipv4_packet) + sizeof(icmp_packet);
-    net_store_16(ipv4_packet, 2, total_length);
-    uint16_t ipv4_checksum = calc_internet_checksum(ipv4_packet, sizeof(ipv4_packet));
-    net_store_16(ipv4_packet, 10, ipv4_checksum);    
+    int total_length = sizeof(ipv4_header) + sizeof(icmp_packet);
+    net_store_16(ipv4_header, 2, total_length);
+    uint16_t ipv4_checksum = calc_internet_checksum(ipv4_header, sizeof(ipv4_header));
+    net_store_16(ipv4_header, 10, ipv4_checksum);    
     // TODO: also set src/dest ip address
-    memcpy(&network_buffer[pos], ipv4_packet, sizeof(ipv4_packet));
-    pos += sizeof(ipv4_packet);
+    memcpy(&network_buffer[pos], ipv4_header, sizeof(ipv4_header));
+    pos += sizeof(ipv4_header);
 
     // icmp
     uint16_t icmp_checksum = calc_internet_checksum(icmp_packet, sizeof(icmp_packet));
@@ -281,7 +285,7 @@ static void send_ping_request_ipv4(void){
 
 static void send_ping_response_ipv4(void){
 
-    uint8_t ipv4_packet[] = {
+    uint8_t ipv4_header[] = {
         // ip
         0x45, 0x00, 0x00, 0x00,   // version + ihl, dscp } ecn, total len
         0x00, 0x00, 0x00, 0x00, // identification (16), flags + fragment offset
@@ -300,13 +304,13 @@ static void send_ping_response_ipv4(void){
     int pos = setup_ethernet_header(1, 0, 0, NETWORK_TYPE_IPv4); // IPv4
     
     // ipv4
-    int total_length = sizeof(ipv4_packet) + sizeof(icmp_packet);
-    net_store_16(ipv4_packet, 2, total_length);
-    uint16_t ipv4_checksum = calc_internet_checksum(ipv4_packet, sizeof(ipv4_packet));
-    net_store_16(ipv4_packet, 10, ipv4_checksum);    
+    int total_length = sizeof(ipv4_header) + sizeof(icmp_packet);
+    net_store_16(ipv4_header, 2, total_length);
+    uint16_t ipv4_checksum = calc_internet_checksum(ipv4_header, sizeof(ipv4_header));
+    net_store_16(ipv4_header, 10, ipv4_checksum);    
     // TODO: also set src/dest ip address
-    memcpy(&network_buffer[pos], ipv4_packet, sizeof(ipv4_packet));
-    pos += sizeof(ipv4_packet);
+    memcpy(&network_buffer[pos], ipv4_header, sizeof(ipv4_header));
+    pos += sizeof(ipv4_header);
 
     // icmp
     uint16_t icmp_checksum = calc_internet_checksum(icmp_packet, sizeof(icmp_packet));
@@ -318,9 +322,10 @@ static void send_ping_response_ipv4(void){
     send_buffer(pos);
 }
 
+/* Untested */
 static void send_ping_request_ipv6(void){
 
-    uint8_t ipv6_packet[] = {
+    uint8_t ipv6_header[] = {
         // ip
         0x60, 0x00, 0x00, 0x00, // version (4) + traffic class (8) + flow label (24)
         0x00, 0x00,   58, 0x01, // payload length(16), next header = IPv6-ICMP, hop limit
@@ -345,14 +350,14 @@ static void send_ping_request_ipv6(void){
     
     // ipv6
     int payload_length = sizeof(icmp_packet);
-    net_store_16(ipv6_packet, 4, payload_length);
+    net_store_16(ipv6_header, 4, payload_length);
     // TODO: also set src/dest ip address
-    int checksum = calc_internet_checksum(&ipv6_packet[8], 32);
-    checksum = sum_ones_complement(checksum, sizeof(ipv6_packet) + sizeof(icmp_packet));
+    int checksum = calc_internet_checksum(&ipv6_header[8], 32);
+    checksum = sum_ones_complement(checksum, payload_length);
     checksum = sum_ones_complement(checksum, 58 << 8);
     net_store_16(icmp_packet, 2, checksum);
-    memcpy(&network_buffer[pos], ipv6_packet, sizeof(ipv6_packet));
-    pos += sizeof(ipv6_packet);
+    memcpy(&network_buffer[pos], ipv6_header, sizeof(ipv6_header));
+    pos += sizeof(ipv6_header);
 
     // icmp
     uint16_t icmp_checksum = calc_internet_checksum(icmp_packet, sizeof(icmp_packet));
@@ -366,9 +371,9 @@ static void send_ping_request_ipv6(void){
 
 static void send_ndp_probe_ipv6(void){
 
-    uint8_t ipv6_packet[] = {
+    uint8_t ipv6_header[] = {
         // ip
-        0x60, 0x00, 0x00, 0x00, // version (4) + traffic class (8) + flow label (24)
+        0x60, 0x00, 0x00, 0x00, // version (6) + traffic class (8) + flow label (24)
         0x00, 0x00,   58, 0x01, // payload length(16), next header = IPv6-ICMP, hop limit
         0x00, 0x00, 0x00, 0x00, // source IP address
         0x00, 0x00, 0x00, 0x00, // source IP address
@@ -391,24 +396,23 @@ static void send_ndp_probe_ipv6(void){
 
     // ipv6
     int payload_length = sizeof(icmp_packet);
-    net_store_16(ipv6_packet, 4, payload_length);
+    net_store_16(ipv6_header, 4, payload_length);
     // source address ::
     // dest addresss - Modified EUI-64
-    // ipv6_packet[24..31] = FE80::
-    ipv6_packet[32] = local_addr[0] ^ 0x2;
-    ipv6_packet[33] = local_addr[1];
-    ipv6_packet[34] = local_addr[2];
-    ipv6_packet[35] = 0xff;
-    ipv6_packet[36] = 0xfe;
-    ipv6_packet[37] = local_addr[3];
-    ipv6_packet[38] = local_addr[4];
-    ipv6_packet[39] = local_addr[5];
-    int checksum = calc_internet_checksum(&ipv6_packet[8], 32);
-    checksum = sum_ones_complement(checksum, sizeof(ipv6_packet) + sizeof(icmp_packet));
-    checksum = sum_ones_complement(checksum, 58 << 8);
-    net_store_16(icmp_packet, 2, checksum);
-    memcpy(&network_buffer[pos], ipv6_packet, sizeof(ipv6_packet));
-    pos += sizeof(ipv6_packet);
+    // ipv6_header[24..31] = FE80::
+    ipv6_header[32] = local_addr[0] ^ 0x2;
+    ipv6_header[33] = local_addr[1];
+    ipv6_header[34] = local_addr[2];
+    ipv6_header[35] = 0xff;
+    ipv6_header[36] = 0xfe;
+    ipv6_header[37] = local_addr[3];
+    ipv6_header[38] = local_addr[4];
+    ipv6_header[39] = local_addr[5];
+    int checksum = calc_internet_checksum(&ipv6_header[8], 32);
+    checksum = sum_ones_complement(checksum, payload_length);
+    checksum = sum_ones_complement(checksum, ipv6_header[6] << 8);
+    memcpy(&network_buffer[pos], ipv6_header, sizeof(ipv6_header));
+    pos += sizeof(ipv6_header);
 
     // icmp
     uint16_t icmp_checksum = calc_internet_checksum(icmp_packet, sizeof(icmp_packet));
@@ -423,24 +427,28 @@ static void send_ndp_probe_ipv6(void){
 static void send_llmnr_request_ipv4(void){
 
     uint8_t ipv4_header[] = {
-        0x45, 0x00, 0x00, 0x00,   // version + ihl, dscp } ecn, total len
+        0x45, 0x00, 0x00, 0x00, // version + ihl, dscp } ecn, total len
         0x00, 0x00, 0x00, 0x00, // identification (16), flags + fragment offset
         0x01, 0x11, 0x00, 0x00, // time to live, procotol: UDP, checksum (16),
         192,   168, 167,  152,  // source IP address
-        224,     0,   0,  252, // destination IP address
+        224,     0,   0,  252,  // destination IP address
     };
 
     uint8_t udp_header[8];
     uint8_t llmnr_packet[12];
 
+    uint8_t dns_data[] = { 0x08, 0x61, 0x61, 0x70,  0x70, 0x6c, 0x65, 0x74, 0x76,
+                           0x05, 0x6c, 0x6f, 0x63,  0x61, 0x6c, 0x00, 0x00,
+                           0x01, 0x00, 0x01 }; 
+
     // ethernet header
     int pos = setup_ethernet_header(1, 0, 0, NETWORK_TYPE_IPv4); // IPv4
 
     // ipv4
-    int total_length = sizeof(ipv4_header) + sizeof(udp_header) + sizeof (llmnr_packet);
+    int total_length = sizeof(ipv4_header) + sizeof(udp_header) + sizeof (llmnr_packet) + sizeof(dns_data);
     net_store_16(ipv4_header, 2, total_length);
     uint16_t ipv4_checksum = calc_internet_checksum(ipv4_header, sizeof(ipv4_header));
-    net_store_16(ipv4_header, 10, ipv4_checksum);    
+    net_store_16(ipv4_header, 10, ~ipv4_checksum);    
     // TODO: also set src/dest ip address
     memcpy(&network_buffer[pos], ipv4_header, sizeof(ipv4_header));
     pos += sizeof(ipv4_header);
@@ -448,23 +456,89 @@ static void send_llmnr_request_ipv4(void){
     // udp packet
     net_store_16(udp_header, 0, 5355);   // source port
     net_store_16(udp_header, 2, 5355);   // destination port
-    net_store_16(udp_header, 4, sizeof(udp_header) + sizeof(llmnr_packet));
+    net_store_16(udp_header, 4, sizeof(udp_header) + sizeof(llmnr_packet) + sizeof(dns_data));
     net_store_16(udp_header, 6, 0);      // no checksum
     memcpy(&network_buffer[pos], udp_header, sizeof(udp_header));
     pos += sizeof(udp_header);
 
     // llmnr packet
     bzero(llmnr_packet, sizeof(llmnr_packet));
-    net_store_16(llmnr_packet, 0, 0x1234);
+    net_store_16(llmnr_packet, 0, 0x1234);  // transaction id
     net_store_16(llmnr_packet, 4, 1);   // one query
 
     memcpy(&network_buffer[pos], llmnr_packet, sizeof(llmnr_packet));
     pos += sizeof(llmnr_packet);
 
+    memcpy(&network_buffer[pos], dns_data, sizeof(dns_data));
+    pos += sizeof(dns_data);
+
     // send
     send_buffer(pos);
 }
 
+static void send_llmnr_request_ipv6(void){
+    // https://msdn.microsoft.com/en-us/library/dd240361.aspx
+    uint8_t ipv6_header[] = {
+        0x60, 0x00, 0x00, 0x00, // version (6) + traffic class (8) + flow label (24)
+        0x00, 0x00,   17, 0x01, // payload length(16), next header = UDP, hop limit
+        0xfe, 0x80, 0x00, 0x00, // source IP address
+        0x00, 0x00, 0x00, 0x00, // source IP address
+        0xd9, 0xf6, 0xce, 0x2e, // source IP address
+        0x48, 0x75, 0xab, 0x03, // source IP address
+        0xff, 0x02, 0x00, 0x00, // destination IP address
+        0x00, 0x00, 0x00, 0x00, // destination IP address
+        0x00, 0x00, 0x00, 0x00, // destination IP address
+        0x00, 0x01, 0x00, 0x03, // destination IP address
+    };
+
+    uint8_t udp_header[8];
+    uint8_t llmnr_packet[12];
+
+    uint8_t dns_data[] = { 0x08, 0x61, 0x61, 0x70,  0x70, 0x6c, 0x65, 0x74, 0x76,
+                           0x05, 0x6c, 0x6f, 0x63,  0x61, 0x6c, 0x00, 0x00,
+                           0x01, 0x00, 0x01 }; 
+
+    int payload_length = sizeof(udp_header) + sizeof(llmnr_packet) + sizeof(dns_data);
+
+    // llmnr header
+    bzero(llmnr_packet, sizeof(llmnr_packet));
+    net_store_16(llmnr_packet, 0, 0x1235);  // transaction id
+    net_store_16(llmnr_packet, 4, 1);   // one query
+
+    // ipv6 header
+    net_store_16(ipv6_header, 4, payload_length);
+
+    // udp header
+    bzero(udp_header, sizeof(udp_header));
+    net_store_16(udp_header, 0, 5355);   // source port
+    net_store_16(udp_header, 2, 5355);   // destination port
+    net_store_16(udp_header, 4, payload_length);
+    int checksum = calc_internet_checksum(&ipv6_header[8], 32);
+    checksum = sum_ones_complement(checksum, payload_length);       // payload len
+    checksum = sum_ones_complement(checksum, ipv6_header[6] << 8);  // next header 
+    checksum = sum_ones_complement(checksum, calc_internet_checksum(udp_header, sizeof(udp_header)));
+    checksum = sum_ones_complement(checksum, calc_internet_checksum(llmnr_packet, sizeof(llmnr_packet)));
+    checksum = sum_ones_complement(checksum, calc_internet_checksum(dns_data, sizeof(dns_data)));
+    net_store_16(udp_header, 6, ~checksum);
+
+    // ethernet header
+    int pos = setup_ethernet_header(1, 0, 1, NETWORK_TYPE_IPv6); // IPv6
+
+    memcpy(&network_buffer[pos], ipv6_header, sizeof(ipv6_header));
+    pos += sizeof(ipv6_header);
+
+    memcpy(&network_buffer[pos], udp_header, sizeof(udp_header));
+    pos += sizeof(udp_header);
+
+    memcpy(&network_buffer[pos], llmnr_packet, sizeof(llmnr_packet));
+    pos += sizeof(llmnr_packet);
+
+    memcpy(&network_buffer[pos], dns_data, sizeof(dns_data));
+    pos += sizeof(dns_data);
+
+    // send
+    send_buffer(pos);
+}
 
 static void show_usage(void){
 
@@ -487,12 +561,6 @@ static void show_usage(void){
     printf("6 - send IPv6 NDP request\n");
     printf("7 - send IPv4 LLMNR request\n");
     printf("8 - send IPv6 LLMNR request\n");
-#if 0
-    printf("1 - get IP address via DHCP\n");
-    printf("2 - send DNS request\n");
-    printf("9 - send some IPv6 packet\n");
-    printf("0 - send some IPv6 packet 2\n");
-#endif
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -553,8 +621,7 @@ static int stdin_process(struct data_source *ds){
             break;
         case '8':
             printf("Sending IPv6 LLMNR Request\n");
-            printf("(Not implemented yet)\n");
-            // send_llmnr_request_ipv6();
+            send_llmnr_request_ipv6();
             break;
         default:
             show_usage();
@@ -678,7 +745,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                                 break;
                             }
                         case 0x11:  // UDP
-                            printf("UDP packet\n");                        
+                            printf("UDP IPv4 packet\n");                        
                             hexdumpf(&packet[payload_offset], size - payload_offset);
                             break;
                         default:
@@ -687,8 +754,21 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
                     }
                     break;
                 case NETWORK_TYPE_IPv6:
-                    printf("IPV6 packet");
-                    hexdumpf(&packet[14], size - 14);
+                    protocol_type = packet[6];
+                    switch(protocol_type){
+                        case 0x11: // UDP
+                            printf("UDP IPv6 packet\n");
+                            payload_offset = 40;    // fixed
+                            hexdumpf(&packet[payload_offset], size - payload_offset);
+
+                            // send response
+
+                            break;
+                        default:
+                            printf("IPv6 packet of protocol 0x%02x\n", protocol_type);
+                            hexdumpf(&packet[14], size - 14);
+                            break;
+                    }
                     break;
                 default:
                     printf("Unknown network type %x", network_type);

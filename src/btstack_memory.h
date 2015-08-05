@@ -38,7 +38,7 @@
 
 
 /*
- *  btstsack_memory.h
+ *  btstack_memory.h
  *
  *  @brief BTstack memory management via configurable memory pools
  *
@@ -62,6 +62,7 @@ extern "C" {
 
 #ifdef HAVE_BLE
 #include "gatt_client.h"
+#include "sm.h"
 #endif
 
 /* API_START */
@@ -110,13 +111,15 @@ hfp_connection_t * btstack_memory_hfp_connection_get(void);
 void   btstack_memory_hfp_connection_free(hfp_connection_t *hfp_connection);
 
 #ifdef HAVE_BLE
-// gatt_client, gatt_subclient, whitelist_entry
+// gatt_client, gatt_subclient, whitelist_entry, sm_lookup_entry
 gatt_client_t * btstack_memory_gatt_client_get(void);
 void   btstack_memory_gatt_client_free(gatt_client_t *gatt_client);
 gatt_subclient_t * btstack_memory_gatt_subclient_get(void);
 void   btstack_memory_gatt_subclient_free(gatt_subclient_t *gatt_subclient);
 whitelist_entry_t * btstack_memory_whitelist_entry_get(void);
 void   btstack_memory_whitelist_entry_free(whitelist_entry_t *whitelist_entry);
+sm_lookup_entry_t * btstack_memory_sm_lookup_entry_get(void);
+void   btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry);
 #endif
 
 #if defined __cplusplus

@@ -130,6 +130,7 @@ void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t irk)
  * @brief ltk
  */
 void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk){
+    log_info("Central Device DB set encryption for %u, ediv x%04x", index, ediv);
     le_devices[index].ediv = ediv;
     if (rand) memcpy(le_devices[index].rand, rand, 8);
     if (ltk) memcpy(le_devices[index].ltk, ltk, 16);
@@ -143,6 +144,7 @@ void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_k
  * @brief ltk
  */
 void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk){
+    log_info("Central Device DB encryption for %u, ediv x%04x", le_devices[index].ediv);
     if (ediv) *ediv = le_devices[index].ediv;
     if (rand) memcpy(rand, le_devices[index].rand, 8);
     if (ltk)  memcpy(ltk, le_devices[index].ltk, 16);    

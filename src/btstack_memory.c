@@ -539,6 +539,38 @@ void btstack_memory_whitelist_entry_free(whitelist_entry_t *whitelist_entry){
 #endif
 
 
+// MARK: sm_lookup_entry_t
+#ifdef MAX_NO_SM_LOOKUP_ENTRIES
+#if MAX_NO_SM_LOOKUP_ENTRIES > 0
+static sm_lookup_entry_t sm_lookup_entry_storage[MAX_NO_SM_LOOKUP_ENTRIES];
+static memory_pool_t sm_lookup_entry_pool;
+sm_lookup_entry_t * btstack_memory_sm_lookup_entry_get(void){
+    return (sm_lookup_entry_t *) memory_pool_get(&sm_lookup_entry_pool);
+}
+void btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry){
+    memory_pool_free(&sm_lookup_entry_pool, sm_lookup_entry);
+}
+#else
+sm_lookup_entry_t * btstack_memory_sm_lookup_entry_get(void){
+    return NULL;
+}
+void btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry){
+    // silence compiler warning about unused parameter in a portable way
+    (void) sm_lookup_entry;
+};
+#endif
+#elif defined(HAVE_MALLOC)
+sm_lookup_entry_t * btstack_memory_sm_lookup_entry_get(void){
+    return (sm_lookup_entry_t*) malloc(sizeof(sm_lookup_entry_t));
+}
+void btstack_memory_sm_lookup_entry_free(sm_lookup_entry_t *sm_lookup_entry){
+    free(sm_lookup_entry);
+}
+#else
+#error "Neither HAVE_MALLOC nor MAX_NO_SM_LOOKUP_ENTRIES for struct sm_lookup_entry is defined. Please, edit the config file."
+#endif
+
+
 #endif
 // init
 void btstack_memory_init(void){
@@ -587,6 +619,9 @@ void btstack_memory_init(void){
 #endif
 #if MAX_NO_WHITELIST_ENTRIES > 0
     memory_pool_create(&whitelist_entry_pool, whitelist_entry_storage, MAX_NO_WHITELIST_ENTRIES, sizeof(whitelist_entry_t));
+#endif
+#if MAX_NO_SM_LOOKUP_ENTRIES > 0
+    memory_pool_create(&sm_lookup_entry_pool, sm_lookup_entry_storage, MAX_NO_SM_LOOKUP_ENTRIES, sizeof(sm_lookup_entry_t));
 #endif
 #endif
 }

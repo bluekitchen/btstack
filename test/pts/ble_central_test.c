@@ -158,8 +158,14 @@ static void handle_advertising_event(uint8_t * packet, int size){
     // filter PTS
     bd_addr_t addr;
     bt_flip_addr(addr, &packet[4]);
-    if (memcmp(addr, public_pts_address, 6)) return;
-    printf("Advertisement: %s, ", ad_event_types[packet[2]]);
+
+    // always request address resolution
+    sm_address_resolution_lookup(packet[3], addr);
+
+    // ignore advertisement from devices other than pts
+    if (memcmp(addr, current_pts_address, 6)) return;
+
+    printf("Advertisement: %s - %s, ", bd_addr_to_str(addr), ad_event_types[packet[2]]);
     int adv_size = packet[11];
     uint8_t * adv_data = &packet[12];
 
@@ -216,6 +222,9 @@ static void gap_run(void){
 }
 
 void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    uint16_t aHandle;
+    sm_event_t * sm_event;
+
     switch (packet_type) {
             
         case HCI_EVENT_PACKET:
@@ -243,50 +252,55 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
                     break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
+                    aHandle = READ_BT_16(packet, 3);
+                    printf("Disconnected from handle 0x%04x\n", aHandle);
                     break;
                     
-                case SM_PASSKEY_INPUT_NUMBER: {
-                    // display number
-                    sm_event_t * event = (sm_event_t *) packet;
-                    memcpy(peer_address, event->address, 6);
-                    peer_addr_type = event->addr_type;
-                    printf("\nGAP Bonding %s (%u): Enter 6 digit passkey: '", bd_addr_to_str(peer_address), peer_addr_type);
+                case SM_PASSKEY_INPUT_NUMBER: 
+                    // store peer address for input
+                    sm_event = (sm_event_t *) packet;
+                    memcpy(peer_address, sm_event->address, 6);
+                    peer_addr_type = sm_event->addr_type;
+                    printf("\nGAP Bonding %s (%u): Enter 6 digit passkey: '", bd_addr_to_str(sm_event->address), sm_event->addr_type);
                     fflush(stdout);
                     ui_passkey = 0;
                     ui_digits_for_passkey = 6;
                     break;
-                }
 
-                case SM_PASSKEY_DISPLAY_NUMBER: {
-                    // display number
-                    sm_event_t * event = (sm_event_t *) packet;
-                    printf("\nGAP Bonding %s (%u): Display Passkey '%06u\n", bd_addr_to_str(peer_address), peer_addr_type, event->passkey);
+                case SM_PASSKEY_DISPLAY_NUMBER:
+                    sm_event = (sm_event_t *) packet;
+                    printf("\nGAP Bonding %s (%u): Display Passkey '%06u\n", bd_addr_to_str(sm_event->address), sm_event->addr_type, sm_event->passkey);
                     break;
-                }
 
                 case SM_PASSKEY_DISPLAY_CANCEL: 
-                    printf("\nGAP Bonding %s (%u): Display cancel\n", bd_addr_to_str(peer_address), peer_addr_type);
+                    sm_event = (sm_event_t *) packet;
+                    printf("\nGAP Bonding %s (%u): Display cancel\n", bd_addr_to_str(sm_event->address), sm_event->addr_type);
                     break;
 
                 case SM_JUST_WORKS_REQUEST:
-                {
                     // auto-authorize connection if requested
-                    sm_event_t * event = (sm_event_t *) packet;
-                    sm_just_works_confirm(current_pts_address_type, current_pts_address);
+                    sm_event = (sm_event_t *) packet;
+                    sm_just_works_confirm(sm_event->addr_type, sm_event->address);
                     printf("Just Works request confirmed\n");
                     break;
-                }
-                break;
+
                 case SM_AUTHORIZATION_REQUEST:
-                {
                     // auto-authorize connection if requested
-                    sm_event_t * event = (sm_event_t *) packet;
-                    sm_authorization_grant(current_pts_address_type, current_pts_address);
+                    sm_event = (sm_event_t *) packet;
+                    sm_authorization_grant(sm_event->addr_type, sm_event->address);
                     break;
-                }
 
                 case GAP_LE_ADVERTISING_REPORT:
                     handle_advertising_event(packet, size);
+                    break;
+
+                case SM_IDENTITY_RESOLVING_SUCCEEDED:
+                    // skip already detected pts
+                    if (memcmp( ((sm_event_t*) packet)->address, current_pts_address, 6) == 0) break;
+                    memcpy(current_pts_address, ((sm_event_t*) packet)->address, 6);
+                    current_pts_address_type =  ((sm_event_t*) packet)->addr_type;
+                    printf("Address resolving succeeded: resolvable address %s, addr type %u\n",
+                        bd_addr_to_str(current_pts_address), current_pts_address_type);
                     break;
                 default:
                     break;
@@ -379,12 +393,18 @@ uint16_t attribute_size = 1;
 int scanning_active = 0;
 
 void show_usage(void){
+    uint8_t iut_address_type;
+    bd_addr_t      iut_address;
+    hci_le_advertisement_address(&iut_address_type, iut_address);
+
     printf("\e[1;1H\e[2J");
     printf("--- CLI for LE Central ---\n");
+    printf("PTS: addr type %u, addr %s\n", current_pts_address_type, bd_addr_to_str(current_pts_address));
+    printf("IUT: addr type %u, addr %s\n", iut_address_type, bd_addr_to_str(iut_address));
+    printf("--------------------------\n");
     printf("GAP: connectable %u\n", gap_connectable);
     printf("SM: %s, MITM protection %u, OOB data %u, key range [%u..16]\n",
         sm_io_capabilities, sm_mitm_protection, sm_have_oob_data, sm_min_key_size);
-    printf("PTS: addr type %u, addr %s\n", current_pts_address_type, current_pts_address);
     printf("Privacy %u\n", gap_privacy);
     printf("Device name: %s\n", gap_device_name);
     printf("Value Handle: %x\n", value_handle);
@@ -576,6 +596,10 @@ int btstack_main(int argc, const char * argv[]){
 
     // Setup LE Device DB
     le_device_db_init();
+
+    // add bonded device with IRK 0x00112233..FF for gap-conn-prda-bv-2
+    uint8_t pts_irk[] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
+    le_device_db_add(public_pts_address_type, public_pts_address, pts_irk);
 
     // set adv params
     update_advertisment_params();

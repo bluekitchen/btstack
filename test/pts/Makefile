@@ -18,8 +18,11 @@ VPATH += ${BTSTACK_ROOT}/platforms/posix/src
 VPATH += ${BTSTACK_ROOT}/platforms/libusb
 
 # use pkg-config
-CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
-LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
+# CFLAGS  += $(shell pkg-config libusb-1.0 --cflags)
+# LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
+# hard coded flags for libusb in /usr/local/lib
+CFLAGS  += -I/usr/local/include
+LDFLAGS += -L/usr/local/lib -lusb-1.0
 
 EXAMPLES = hfp_hf_test hfp_ag_test ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test
 
