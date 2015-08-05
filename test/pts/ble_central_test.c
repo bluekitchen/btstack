@@ -223,6 +223,8 @@ static void gap_run(void){
 
 void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     uint16_t aHandle;
+    sm_event_t * sm_event;
+
     switch (packet_type) {
             
         case HCI_EVENT_PACKET:
@@ -254,47 +256,39 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
                     printf("Disconnected from handle 0x%04x\n", aHandle);
                     break;
                     
-                case SM_PASSKEY_INPUT_NUMBER: {
-                    // display number
-                    sm_event_t * event = (sm_event_t *) packet;
-                    memcpy(peer_address, event->address, 6);
-                    peer_addr_type = event->addr_type;
-                    printf("\nGAP Bonding %s (%u): Enter 6 digit passkey: '", bd_addr_to_str(peer_address), peer_addr_type);
+                case SM_PASSKEY_INPUT_NUMBER: 
+                    // store peer address for input
+                    sm_event = (sm_event_t *) packet;
+                    memcpy(peer_address, sm_event->address, 6);
+                    peer_addr_type = sm_event->addr_type;
+                    printf("\nGAP Bonding %s (%u): Enter 6 digit passkey: '", bd_addr_to_str(sm_event->address), sm_event->addr_type);
                     fflush(stdout);
                     ui_passkey = 0;
                     ui_digits_for_passkey = 6;
                     break;
-                }
 
-                case SM_PASSKEY_DISPLAY_NUMBER: {
-                    // display number
-                    sm_event_t * event = (sm_event_t *) packet;
-                    printf("\nGAP Bonding %s (%u): Display Passkey '%06u\n", bd_addr_to_str(peer_address), peer_addr_type, event->passkey);
+                case SM_PASSKEY_DISPLAY_NUMBER:
+                    sm_event = (sm_event_t *) packet;
+                    printf("\nGAP Bonding %s (%u): Display Passkey '%06u\n", bd_addr_to_str(sm_event->address), sm_event->addr_type, sm_event->passkey);
                     break;
-                }
 
                 case SM_PASSKEY_DISPLAY_CANCEL: 
-                    printf("\nGAP Bonding %s (%u): Display cancel\n", bd_addr_to_str(peer_address), peer_addr_type);
+                    sm_event = (sm_event_t *) packet;
+                    printf("\nGAP Bonding %s (%u): Display cancel\n", bd_addr_to_str(sm_event->address), sm_event->addr_type);
                     break;
 
                 case SM_JUST_WORKS_REQUEST:
-                {
                     // auto-authorize connection if requested
-                    // sm_event_t * event = (sm_event_t *) packet;
-                    // TODO: check address
-                    sm_just_works_confirm(current_pts_address_type, current_pts_address);
+                    sm_event = (sm_event_t *) packet;
+                    sm_just_works_confirm(sm_event->addr_type, sm_event->address);
                     printf("Just Works request confirmed\n");
                     break;
-                }
-                break;
+
                 case SM_AUTHORIZATION_REQUEST:
-                {
                     // auto-authorize connection if requested
-                    // TODO: check address
-                    // sm_event_t * event = (sm_event_t *) packet;
-                    sm_authorization_grant(current_pts_address_type, current_pts_address);
+                    sm_event = (sm_event_t *) packet;
+                    sm_authorization_grant(sm_event->addr_type, sm_event->address);
                     break;
-                }
 
                 case GAP_LE_ADVERTISING_REPORT:
                     handle_advertising_event(packet, size);
@@ -602,6 +596,10 @@ int btstack_main(int argc, const char * argv[]){
 
     // Setup LE Device DB
     le_device_db_init();
+
+    // add bonded device with IRK 0x00112233..FF for gap-conn-prda-bv-2
+    uint8_t pts_irk[] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
+    le_device_db_add(public_pts_address_type, public_pts_address, pts_irk);
 
     // set adv params
     update_advertisment_params();
