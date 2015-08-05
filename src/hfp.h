@@ -219,7 +219,7 @@ typedef struct hfp_connection {
 
 
 void hfp_create_service(uint8_t * service, uint16_t service_uuid, int rfcomm_channel_nr, const char * name, uint16_t supported_features);
-void hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size);
+void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t *packet, uint16_t size);
 void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value);
 
 void hfp_init(uint16_t rfcomm_channel_nr);

@@ -458,19 +458,7 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
             hfp_handle_rfcomm_event(packet_type, channel, packet, size);
             break;
         case HCI_EVENT_PACKET:
-            hfp_handle_hci_event(packet_type, packet, size);
-            switch(packet[0]){
-                case RFCOMM_EVENT_CHANNEL_CLOSED:
-                    hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
-                    break;
-                case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
-                    if (packet[2]){
-                        hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, packet[2]);
-                    }
-                    break;
-                default:
-                    break;
-            }
+            hfp_handle_hci_event(hfp_callback, packet_type, packet, size);
             break;
         default:
             break;

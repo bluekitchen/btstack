@@ -174,6 +174,18 @@ static hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_ad
     return NULL;
 }
 
+hfp_connection_t * get_hfp_connection_context_for_handle(uint16_t handle){
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, hfp_get_connections());
+    while (linked_list_iterator_has_next(&it)){
+        hfp_connection_t * connection = (hfp_connection_t *)linked_list_iterator_next(&it);
+        if (connection->con_handle == handle){
+            return connection;
+        }
+    }
+    return NULL;
+}
+
 static hfp_connection_t * create_hfp_connection_context(){
     hfp_connection_t * context = btstack_memory_hfp_connection_get();
     if (!context) return NULL;
@@ -326,9 +338,9 @@ static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context)
     }
 }
 
-void hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t *packet, uint16_t size){
     bd_addr_t event_addr;
-    uint16_t rfcomm_cid = 0;
+    uint16_t rfcomm_cid, handle;
     hfp_connection_t * context = NULL;
 
     switch (packet[0]) {
@@ -367,6 +379,7 @@ void hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
             if (!context || context->state != HFP_W4_RFCOMM_CONNECTED) return;
             
             if (packet[2]) {
+                hfp_emit_event(callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, packet[2]);
                 remove_hfp_connection_context(context);
             } else {
                 context->con_handle = READ_BT_16(packet, 9);
@@ -392,6 +405,15 @@ void hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
             rfcomm_cid = READ_BT_16(packet,2);
             context = get_hfp_connection_context_for_rfcomm_cid(rfcomm_cid);
             if (!context) break;
+            remove_hfp_connection_context(context);
+            hfp_emit_event(callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
+            break;
+
+        case HCI_EVENT_DISCONNECTION_COMPLETE:
+            handle = READ_BT_16(packet,3);
+            context = get_hfp_connection_context_for_handle(handle);
+            if (!context) break;
+            hfp_emit_event(callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, packet[2]);
             remove_hfp_connection_context(context);
             break;
 
