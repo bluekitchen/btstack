@@ -123,7 +123,6 @@ static uint8_t sm_min_encryption_key_size;
 static uint8_t sm_auth_req = 0;
 static uint8_t sm_io_capabilities = IO_CAPABILITY_NO_INPUT_NO_OUTPUT;
 static uint8_t sm_slave_request_security;
-static uint8_t sm_authenticate_outgoing_connections = 0;    // might go a934way
 
 // Security Manager Master Keys, please use sm_set_er(er) and sm_set_ir(ir) with your own 128 bit random values
 static sm_key_t sm_persistent_er;
@@ -910,11 +909,15 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
             sm_connection = (sm_connection_t *) context;
             switch (event){
                 case ADDRESS_RESOLUTION_SUCEEDED:
-                    // re-use stored LTK/EDIV/RAND if requested & we're master
-                    // TODO: replace global with flag in sm_connection_t
-                    if (sm_authenticate_outgoing_connections && sm_connection->sm_role == 0){
-                        sm_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
-                        log_info("sm: Setting up previous ltk/ediv/rand");
+                    // use stored LTK/EDIV/RAND if we're master and have a valid ediv/random/ltk combination
+                    sm_connection->sm_le_db_index = matched_device_id;
+                    if (sm_connection->sm_role == 0){
+                        uint16_t ediv;
+                        le_device_db_encryption_get(sm_connection->sm_le_db_index, &ediv, NULL, NULL);
+                        if (ediv){
+                            log_info("sm: Setting up previous ltk/ediv/rand for device index %u", sm_connection->sm_le_db_index);
+                            sm_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
+                        }
                     }
                     break;
                 case ADDRESS_RESOLUTION_FAILED:
@@ -1171,9 +1174,10 @@ static void sm_run(void){
 
         sm_key_t plaintext;
 
+        log_info("sm_run: state %u", connection->sm_engine_state);
+
         // responding state
         switch (connection->sm_engine_state){
-
 
             // general
             case SM_GENERAL_SEND_PAIRING_FAILED: {
@@ -1191,7 +1195,10 @@ static void sm_run(void){
                 sm_key_t peer_ltk_flipped;
                 swap128(setup->sm_peer_ltk, peer_ltk_flipped);
                 connection->sm_engine_state = SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED;
-                hci_send_cmd(&hci_le_start_encryption, connection->sm_handle, setup->sm_peer_rand, setup->sm_peer_ediv, peer_ltk_flipped);
+                log_info("sm: hci_le_start_encryption ediv 0x%04x", setup->sm_peer_ediv);
+                uint32_t rand_high = READ_NET_32(setup->sm_peer_rand, 0);
+                uint32_t rand_low  = READ_NET_32(setup->sm_peer_rand, 4);
+                hci_send_cmd(&hci_le_start_encryption, connection->sm_handle,rand_low, rand_high, setup->sm_peer_ediv, peer_ltk_flipped);
                 return;
             }
 
@@ -1766,6 +1773,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     sm_conn->sm_connection_encrypted = packet[5];
                     log_info("Encryption state change: %u, key size %u", sm_conn->sm_connection_encrypted,
                         sm_conn->sm_actual_encryption_key_size);
+                    log_info("event handler, state %u", sm_conn->sm_engine_state);
                     if (!sm_conn->sm_connection_encrypted) break;
                     // continue if part of initial pairing
                     switch (sm_conn->sm_engine_state){
@@ -1775,8 +1783,10 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             break;                        
                         case SM_PH2_W4_CONNECTION_ENCRYPTED:
                             if (sm_conn->sm_role){
+                                // slave
                                 sm_conn->sm_engine_state = SM_PH3_GET_RANDOM;
                             } else {
+                                // master
                                 sm_conn->sm_engine_state = SM_PH3_RECEIVE_KEYS;
                             }
                             break;
@@ -2018,24 +2028,41 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             // done with key distribution?         
             if (sm_key_distribution_all_received(sm_conn)){
 
-                // store, if: it's a public address, or, we got an IRK
-                if (setup->sm_peer_addr_type == 0 || (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION)) {
-                    sm_conn->sm_le_db_index = le_device_db_add(setup->sm_peer_addr_type, setup->sm_peer_address, setup->sm_peer_irk);
-                } 
+                sm_conn->sm_le_db_index = -1;
+                if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
+                    // lookup device based on IRK
+                    int i;
+                    for (i=0; i < le_device_db_count(); i++){
+                        sm_key_t irk;
+                        bd_addr_t address;
+                        int address_type;
+                        le_device_db_info(i, &address_type, address, irk);
+                        if (memcmp(irk, setup->sm_peer_irk, 16) == 0){
+                            log_info("sm: device found for IRK, updating");
+                            sm_conn->sm_le_db_index = i;
+                            break;
+                        }
+                    }
+                    // if not found, add to db
+                    if (sm_conn->sm_le_db_index < 0) {
+                        sm_conn->sm_le_db_index = le_device_db_add(setup->sm_peer_addr_type, setup->sm_peer_address, setup->sm_peer_irk);
+                    }
+                }
 
                 if (sm_conn->sm_le_db_index >= 0){
                     le_device_db_local_counter_set(sm_conn->sm_le_db_index, 0);
                     
                     // store CSRK
                     if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
+                        log_info("sm: set csrk");
                         le_device_db_csrk_set(sm_conn->sm_le_db_index, setup->sm_peer_csrk);
                         le_device_db_remote_counter_set(sm_conn->sm_le_db_index, 0);
                     }
 
-                    // store encryption information as Central
-                    if (sm_conn->sm_role == 0
-                        && setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION   
+                    // store encryption information
+                    if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION   
                         && setup->sm_key_distribution_received_set &  SM_KEYDIST_FLAG_MASTER_IDENTIFICATION){
+                        log_info("sm: set encryption information");
                         le_device_db_encryption_set(sm_conn->sm_le_db_index, setup->sm_peer_ediv, setup->sm_peer_rand, setup->sm_peer_ltk);
                     }                
                 }
@@ -2200,10 +2227,6 @@ void sm_request_authorization(uint8_t addr_type, bd_addr_t address){
         sm_conn->sm_connection_authorization_state = AUTHORIZATION_PENDING;
         sm_notify_client(SM_AUTHORIZATION_REQUEST, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0, 0);
     } else {
-
-        // HACK
-        sm_authenticate_outgoing_connections = 1;
-
         // used as a trigger to start central/master/initiator security procedures
         if (sm_conn->sm_engine_state == SM_INITIATOR_CONNECTED){
             sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;            
