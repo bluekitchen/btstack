@@ -71,6 +71,17 @@ static uint8_t hfp_indicators_nr = 0;
 static uint8_t hfp_indicators[HFP_MAX_NUM_HF_INDICATORS];
 static uint8_t hfp_indicators_status;
 
+static hfp_callback_t hfp_callback;
+
+void hfp_hf_register_packet_handler(hfp_callback_t callback){
+    hfp_callback = callback;
+    if (callback == NULL){
+        log_error("hfp_hf_register_packet_handler called with NULL callback");
+        return;
+    }
+    hfp_callback = callback;
+}
+
 
 static int has_codec_negotiation_feature(hfp_connection_t * connection){
     int hf = get_bit(hfp_supported_features, HFP_HFSF_CODEC_NEGOTIATION);
@@ -169,50 +180,54 @@ int hfp_hs_list_initital_supported_generic_status_indicators_cmd(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
-static void hfp_run_for_context(hfp_connection_t * connection){
-    if (!connection) return;
-    // printf("hfp send cmd: context %p, RFCOMM cid %u \n", connection, connection->rfcomm_cid );
-    if (!rfcomm_can_send_packet_now(connection->rfcomm_cid)) return;
+static void hfp_run_for_context(hfp_connection_t * context){
+    if (!context) return;
+    // printf("hfp send cmd: context %p, RFCOMM cid %u \n", context, context->rfcomm_cid );
+    if (!rfcomm_can_send_packet_now(context->rfcomm_cid)) return;
     
-    switch (connection->state){
+    switch (context->state){
         case HFP_EXCHANGE_SUPPORTED_FEATURES:
-            hfp_hs_exchange_supported_features_cmd(connection->rfcomm_cid);
-            connection->state = HFP_W4_EXCHANGE_SUPPORTED_FEATURES;
+            hfp_hs_exchange_supported_features_cmd(context->rfcomm_cid);
+            context->state = HFP_W4_EXCHANGE_SUPPORTED_FEATURES;
             break;
         case HFP_NOTIFY_ON_CODECS:
-            hfp_hs_retrieve_codec_cmd(connection->rfcomm_cid);
-            connection->state = HFP_W4_NOTIFY_ON_CODECS;
+            hfp_hs_retrieve_codec_cmd(context->rfcomm_cid);
+            context->state = HFP_W4_NOTIFY_ON_CODECS;
             break;
         case HFP_RETRIEVE_INDICATORS:
-            hfp_hs_retrieve_indicators_cmd(connection->rfcomm_cid);
-            connection->state = HFP_W4_RETRIEVE_INDICATORS;
+            hfp_hs_retrieve_indicators_cmd(context->rfcomm_cid);
+            context->state = HFP_W4_RETRIEVE_INDICATORS;
             break;
         case HFP_RETRIEVE_INDICATORS_STATUS:
-            hfp_hs_retrieve_indicators_status_cmd(connection->rfcomm_cid);
-            connection->state = HFP_W4_RETRIEVE_INDICATORS_STATUS;
+            hfp_hs_retrieve_indicators_status_cmd(context->rfcomm_cid);
+            context->state = HFP_W4_RETRIEVE_INDICATORS_STATUS;
             break;
         case HFP_ENABLE_INDICATORS_STATUS_UPDATE:
-            hfp_hs_toggle_indicator_status_update_cmd(connection->rfcomm_cid, 1);
-            connection->state = HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE;
+            hfp_hs_toggle_indicator_status_update_cmd(context->rfcomm_cid, 1);
+            context->state = HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE;
             break;
         case HFP_RETRIEVE_CAN_HOLD_CALL:
-            hfp_hs_retrieve_can_hold_call_cmd(connection->rfcomm_cid);
-            connection->state = HFP_W4_RETRIEVE_CAN_HOLD_CALL;
+            hfp_hs_retrieve_can_hold_call_cmd(context->rfcomm_cid);
+            context->state = HFP_W4_RETRIEVE_CAN_HOLD_CALL;
             break;
         case HFP_LIST_GENERIC_STATUS_INDICATORS:
-            hfp_hs_list_supported_generic_status_indicators_cmd(connection->rfcomm_cid);
-            connection->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
+            hfp_hs_list_supported_generic_status_indicators_cmd(context->rfcomm_cid);
+            context->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
             break;
         case HFP_RETRIEVE_GENERIC_STATUS_INDICATORS:
-            hfp_hs_retrieve_supported_generic_status_indicators_cmd(connection->rfcomm_cid);
-            connection->state = HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS;
+            hfp_hs_retrieve_supported_generic_status_indicators_cmd(context->rfcomm_cid);
+            context->state = HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS;
             break;
         case HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
-            hfp_hs_list_initital_supported_generic_status_indicators_cmd(connection->rfcomm_cid);
-            connection->state = HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
+            hfp_hs_list_initital_supported_generic_status_indicators_cmd(context->rfcomm_cid);
+            context->state = HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
             break;
-        case HFP_ACTIVE:
-            printf("HFP_ACTIVE\n");
+        case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
+            break;
+        case HFP_W2_DISCONNECT_RFCOMM:
+            context->state = HFP_W4_RFCOMM_DISCONNECTED;
+            rfcomm_disconnect_internal(context->rfcomm_cid);
             break;
         default:
             break;
@@ -297,7 +312,7 @@ void handle_switch_on_ok(hfp_connection_t *context){
                 context->state = HFP_LIST_GENERIC_STATUS_INDICATORS;
                 break;
             } 
-            context->state = HFP_ACTIVE;
+            context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
             break;
 
         case HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE:
@@ -309,7 +324,7 @@ void handle_switch_on_ok(hfp_connection_t *context){
                 context->state = HFP_LIST_GENERIC_STATUS_INDICATORS;
                 break;
             } 
-            context->state = HFP_ACTIVE;
+            context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
             break;
         
         case HFP_W4_RETRIEVE_CAN_HOLD_CALL:
@@ -317,7 +332,7 @@ void handle_switch_on_ok(hfp_connection_t *context){
                 context->state = HFP_LIST_GENERIC_STATUS_INDICATORS;
                 break;
             } 
-            context->state = HFP_ACTIVE;
+            context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
             break;
         
         case HFP_W4_LIST_GENERIC_STATUS_INDICATORS:
@@ -330,7 +345,7 @@ void handle_switch_on_ok(hfp_connection_t *context){
                     
         case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
             printf("Supported initial state generic status indicators \n");
-            context->state = HFP_ACTIVE;
+            context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
             break;
 
         default:
@@ -342,7 +357,7 @@ void handle_switch_on_ok(hfp_connection_t *context){
 }
 
 static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    hfp_connection_t * context = provide_hfp_connection_context_for_rfcomm_cid(channel);
+    hfp_connection_t * context = get_hfp_connection_context_for_rfcomm_cid(channel);
     if (!context) return;
 
     packet[size] = 0;
@@ -372,8 +387,21 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
             break;
         case HCI_EVENT_PACKET:
             hfp_handle_hci_event(packet_type, packet, size);
+            switch(packet[0]){
+                case RFCOMM_EVENT_CHANNEL_CLOSED:
+                    hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
+                    break;
+                case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+                    if (packet[2]){
+                        hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, packet[2]);
+                    }
+                    break;
+                default:
+                    break;
+            }
             break;
         default:
+            printf(" hf packet handler\n");
             break;
     }
     hfp_run();
@@ -407,5 +435,6 @@ void hfp_hf_connect(bd_addr_t bd_addr){
 }
 
 void hfp_hf_disconnect(bd_addr_t bd_addr){
-
+    hfp_connection_t * connection = hfp_disconnect(bd_addr);
+    hfp_run_for_context(connection);
 }

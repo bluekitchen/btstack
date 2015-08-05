@@ -74,8 +74,17 @@ static hfp_ag_indicator_t hfp_ag_indicators[HFP_MAX_NUM_AG_INDICATORS];
 
 static int  hfp_ag_call_hold_services_nr = 0;
 static char *hfp_ag_call_hold_services[6];
+static hfp_callback_t hfp_callback;
 
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
+void hfp_ag_register_packet_handler(hfp_callback_t callback){
+    if (callback == NULL){
+        log_error("hfp_ag_register_packet_handler called with NULL callback");
+        return;
+    }
+    hfp_callback = callback;
+}
 
 
 static int has_codec_negotiation_feature(hfp_connection_t * connection){
@@ -291,7 +300,7 @@ void update_command(hfp_connection_t * context){
 void hfp_run_for_context(hfp_connection_t *context){
     if (!context) return;
     if (!rfcomm_can_send_packet_now(context->rfcomm_cid)) return;
-    printf("hfp_run_for_context: command %d, state %d\n", context->command, context->state);
+    
     switch(context->command){
         case HFP_CMD_SUPPORTED_FEATURES:
             switch(context->state){
@@ -337,7 +346,8 @@ void hfp_run_for_context(hfp_connection_t *context){
                         context->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
                         break;
                     } 
-                    context->state = HFP_ACTIVE;
+                    context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+                    hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
                     break;
                 default:
                     break;
@@ -355,7 +365,8 @@ void hfp_run_for_context(hfp_connection_t *context){
                         context->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
                         break;
                     } 
-                    context->state = HFP_ACTIVE;
+                    context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+                    hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
                     break;
                 default:
                     break;
@@ -369,7 +380,8 @@ void hfp_run_for_context(hfp_connection_t *context){
                         context->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
                         break;
                     } 
-                    context->state = HFP_ACTIVE;
+                    context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+                    hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
                     break;
                 default:
                     break;
@@ -387,7 +399,20 @@ void hfp_run_for_context(hfp_connection_t *context){
                     break;
                 case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
                     hfp_ag_retrieve_initital_supported_generic_status_indicators_cmd(context->rfcomm_cid);
-                    context->state = HFP_ACTIVE;
+                    
+                    context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+                    hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case HFP_CMD_NONE:
+            switch(context->state){
+                case HFP_W2_DISCONNECT_RFCOMM:
+                    // printf("rfcomm_disconnect_internal cid 0x%02x\n", context->rfcomm_cid);
+                    context->state = HFP_W4_RFCOMM_DISCONNECTED;
+                    rfcomm_disconnect_internal(context->rfcomm_cid);
                     break;
                 default:
                     break;
@@ -401,7 +426,7 @@ void hfp_run_for_context(hfp_connection_t *context){
 }
 
 static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    hfp_connection_t * context = provide_hfp_connection_context_for_rfcomm_cid(channel);
+    hfp_connection_t * context = get_hfp_connection_context_for_rfcomm_cid(channel);
     if (!context) return;
     if (context->state == HFP_EXCHANGE_SUPPORTED_FEATURES){
         context->state = HFP_W4_EXCHANGE_SUPPORTED_FEATURES;   
@@ -434,6 +459,18 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
             break;
         case HCI_EVENT_PACKET:
             hfp_handle_hci_event(packet_type, packet, size);
+            switch(packet[0]){
+                case RFCOMM_EVENT_CHANNEL_CLOSED:
+                    hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
+                    break;
+                case RFCOMM_EVENT_OPEN_CHANNEL_COMPLETE:
+                    if (packet[2]){
+                        hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, packet[2]);
+                    }
+                    break;
+                default:
+                    break;
+            }
             break;
         default:
             break;
@@ -476,6 +513,7 @@ void hfp_ag_connect(bd_addr_t bd_addr){
 }
 
 void hfp_ag_disconnect(bd_addr_t bd_addr){
-
+    hfp_connection_t * connection = hfp_disconnect(bd_addr);
+    hfp_run_for_context(connection);
 }
 

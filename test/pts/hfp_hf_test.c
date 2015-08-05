@@ -108,7 +108,7 @@ static int stdin_process(struct data_source *ds){
             break;
         case 'd':
             printf("Releasing HFP connection.\n");
-            hfp_hf_disconnect(pts_addr);
+            hfp_hf_disconnect(phone);
             break;
         default:
             show_usage();
@@ -118,13 +118,31 @@ static int stdin_process(struct data_source *ds){
     return 0;
 }
 
+
 void packet_handler(uint8_t * event, uint16_t event_size){
+    if (event[0] != HCI_EVENT_HFP_META) return;
+
     switch (event[2]) {   
+        case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+            if (event[3] == 0){
+                printf("Service level connection established.\n\n");
+            } else {
+                printf("Service level connection establishment failed with status %u\n", event[3]);
+            }
+            break;
+        case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
+            if (event[3] == 0){
+                printf("Service level connection released.\n\n");
+            } else {
+                printf("Service level connection releasing failed with status %u\n", event[3]);
+            }
+            break;
         default:
             printf("event not handled %u\n", event[2]);
             break;
     }
 }
+
 
 int btstack_main(int argc, const char * argv[]){
     // init L2CAP
@@ -134,7 +152,7 @@ int btstack_main(int argc, const char * argv[]){
     // hfp_hf_init(rfcomm_channel_nr, HFP_DEFAULT_HF_SUPPORTED_FEATURES, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
     hfp_hf_init(rfcomm_channel_nr, 438, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
 
-    hfp_register_packet_handler(packet_handler);
+    hfp_hf_register_packet_handler(packet_handler);
 
     sdp_init();
     // init SDP, create record for SPP and register with SDP

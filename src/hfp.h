@@ -167,12 +167,12 @@ typedef enum {
     HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS, // 20
     HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS,
     
-    HFP_ACTIVE, // 22
+    HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED, // 22
+    
     HFP_W2_DISCONNECT_RFCOMM,
     HFP_W4_RFCOMM_DISCONNECTED, 
     HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN
 } hfp_state_t;
-
 
 typedef void (*hfp_callback_t)(uint8_t * event, uint16_t event_size);
 
@@ -193,7 +193,7 @@ typedef struct{
 typedef struct hfp_connection {
     linked_item_t    item;
     hfp_state_t state;
-
+    
     hfp_command_t command;
     hfp_parser_state_t parser_state;
     
@@ -215,17 +215,19 @@ typedef struct hfp_connection {
     
     uint32_t remote_indicators_status;
 
-    hfp_callback_t callback;
 } hfp_connection_t;
 
 
 void hfp_create_service(uint8_t * service, uint16_t service_uuid, int rfcomm_channel_nr, const char * name, uint16_t supported_features);
-void hfp_register_packet_handler(hfp_callback_t callback);
-hfp_connection_t * hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size);
-void hfp_init(uint16_t rfcomm_channel_nr);
-void hfp_connect(bd_addr_t bd_addr, uint16_t service_uuid);
+void hfp_handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size);
+void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value);
 
-hfp_connection_t * provide_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
+void hfp_init(uint16_t rfcomm_channel_nr);
+
+void hfp_connect(bd_addr_t bd_addr, uint16_t service_uuid);
+hfp_connection_t * hfp_disconnect(bd_addr_t bd_addr);
+
+hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
 linked_list_t * hfp_get_connections();
 void hfp_parse(hfp_connection_t * context, uint8_t byte);
 
