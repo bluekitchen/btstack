@@ -761,17 +761,17 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
         case PK_RESP_INPUT:
             if (sm_conn->sm_role){
                 setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-                sm_notify_client(SM_PASSKEY_INPUT_NUMBER, setup->sm_m_addr_type, setup->sm_m_address, 0, 0); 
+                sm_notify_client(SM_PASSKEY_INPUT_NUMBER, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0, 0); 
             } else {
-                sm_notify_client(SM_PASSKEY_DISPLAY_NUMBER, setup->sm_m_addr_type, setup->sm_m_address, READ_NET_32(setup->sm_tk, 12), 0); 
+                sm_notify_client(SM_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, READ_NET_32(setup->sm_tk, 12), 0); 
             }
             break;
         case PK_INIT_INPUT:
             if (sm_conn->sm_role){
-                sm_notify_client(SM_PASSKEY_DISPLAY_NUMBER, setup->sm_m_addr_type, setup->sm_m_address, READ_NET_32(setup->sm_tk, 12), 0); 
+                sm_notify_client(SM_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, READ_NET_32(setup->sm_tk, 12), 0); 
             } else {
                 setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-                sm_notify_client(SM_PASSKEY_INPUT_NUMBER, setup->sm_m_addr_type, setup->sm_m_address, 0, 0); 
+                sm_notify_client(SM_PASSKEY_INPUT_NUMBER, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0, 0); 
             }
             break;
         case JUST_WORKS:
@@ -779,7 +779,7 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
                 case IO_CAPABILITY_KEYBOARD_DISPLAY:
                 case IO_CAPABILITY_DISPLAY_YES_NO:
                     setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-                    sm_notify_client(SM_JUST_WORKS_REQUEST, setup->sm_m_addr_type, setup->sm_m_address, READ_NET_32(setup->sm_tk, 12), 0);
+                    sm_notify_client(SM_JUST_WORKS_REQUEST, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, READ_NET_32(setup->sm_tk, 12), 0);
                     break;
                 default:
                     // cannot ask user
@@ -1951,7 +1951,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // notify client to hide shown passkey
             if (setup->sm_stk_generation_method == PK_INIT_INPUT){
-                sm_notify_client(SM_PASSKEY_DISPLAY_CANCEL, setup->sm_m_addr_type, setup->sm_m_address, 0, 0);
+                sm_notify_client(SM_PASSKEY_DISPLAY_CANCEL, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0, 0);
             }
 
             // handle user cancel pairing?
@@ -2198,7 +2198,7 @@ void sm_request_authorization(uint8_t addr_type, bd_addr_t address){
     if (sm_conn->sm_role){
         // code has no effect so far
         sm_conn->sm_connection_authorization_state = AUTHORIZATION_PENDING;
-        sm_notify_client(SM_AUTHORIZATION_REQUEST, setup->sm_m_addr_type, setup->sm_m_address, 0, 0);
+        sm_notify_client(SM_AUTHORIZATION_REQUEST, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0, 0);
     } else {
 
         // HACK
@@ -2217,14 +2217,14 @@ void sm_authorization_decline(uint8_t addr_type, bd_addr_t address){
     sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
     if (!sm_conn) return;     // wrong connection
     sm_conn->sm_connection_authorization_state = AUTHORIZATION_DECLINED;
-    sm_notify_client_authorization(SM_AUTHORIZATION_RESULT, setup->sm_m_addr_type, setup->sm_m_address, 0);
+    sm_notify_client_authorization(SM_AUTHORIZATION_RESULT, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0);
 }
 
 void sm_authorization_grant(uint8_t addr_type, bd_addr_t address){
     sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
     if (!sm_conn) return;     // wrong connection
     sm_conn->sm_connection_authorization_state = AUTHORIZATION_GRANTED;
-    sm_notify_client_authorization(SM_AUTHORIZATION_RESULT, setup->sm_m_addr_type, setup->sm_m_address, 1);
+    sm_notify_client_authorization(SM_AUTHORIZATION_RESULT, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 1);
 }
 
 // GAP Bonding API
