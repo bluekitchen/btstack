@@ -241,7 +241,7 @@ static void handle_hci_event(uint8_t packet_type, uint8_t *packet, uint16_t size
             uint8_t event_type = packet[pos++];
             uint8_t address_type = packet[pos++];
             bd_addr_t address;
-            memcpy(address, &packet[pos], 6);
+            bt_flip_addr(address, &packet[pos]);
             pos += 6;
             uint8_t rssi = packet[pos++];
             uint8_t length = packet[pos++];
