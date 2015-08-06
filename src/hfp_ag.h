@@ -53,18 +53,46 @@
 extern "C" {
 #endif
 
-void hfp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features);;
+/* API_START */
+
+/**
+ * @brief Create HFP Audio Gateway (AG) SDP service record. 
+ */
+void hfp_ag_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features);;
+
+/**
+ * @brief Intialize HFP Audio Gateway (AG) device. 
+ * TODO:  move optional params into setters
+ */
 void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, 
     uint8_t * codecs, int codecs_nr, 
     hfp_ag_indicator_t * ag_indicators, int ag_indicators_nr,
     hfp_hf_indicator_t * hf_indicators, int hf_indicators_nr,
     char *call_hold_services[], int call_hold_services_nr);
+
+/**
+ * @brief Register callback for the HFP Audio Gateway (AG) client. 
+ */
 void hfp_ag_register_packet_handler(hfp_callback_t callback);
 
+/**
+ * @brief Establish RFCOMM connection, and perform service level connection agreement:
+ * - exchange of supported features
+ * - report Audio Gateway (AG) indicators and their status 
+ * - enable indicator status update in the AG
+ * - accept the information about available codecs in the Hands-Free (HF), if sent
+ * - report own information describing the call hold and multiparty services, if possible
+ * - report which HF indicators are enabled on the AG, if possible
+ */
 void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr);
+
+/**
+ * @brief Release the RFCOMM channel and the audio connection between the HF and the AG. 
+ * TODO: trigger release of the audio connection
+ */
 void hfp_ag_release_service_level_connection(bd_addr_t bd_addr);
 
-void hfp_ag_supported_features_exchange(uint16_t supported_features);
+/* API_END */
 
 #if defined __cplusplus
 }

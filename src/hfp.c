@@ -265,7 +265,7 @@ hfp_connection_t * provide_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr)
  */
 
 
-void hfp_create_service(uint8_t * service, uint16_t service_uuid, int rfcomm_channel_nr, const char * name, uint16_t supported_features){
+void hfp_create_sdp_record(uint8_t * service, uint16_t service_uuid, int rfcomm_channel_nr, const char * name, uint16_t supported_features){
     uint8_t* attribute;
     de_create_sequence(service);
 

@@ -53,13 +53,70 @@
 extern "C" {
 #endif
 
-void hfp_hf_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint16_t supported_features);
+/* API_START */
+
+
+/**
+ * @brief Create HFP Hands-Free (HF) SDP service record. 
+ */
+void hfp_hf_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const char * name, uint16_t supported_features);
+
+/**
+ * @brief Intialize HFP Hands-Free (HF) device. 
+ * TODO:  move optional params into setters
+ */
 void hfp_hf_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, uint8_t * codecs, int codecs_nr, uint16_t * indicators, int indicators_nr, uint32_t indicators_status);
+
+/**
+ * @brief Register callback for the HFP Hands-Free (HF) client. 
+ */
 void hfp_hf_register_packet_handler(hfp_callback_t callback);
 
+/**
+ * @brief Establish RFCOMM connection, and perform service level connection agreement:
+ * - exchange of supported features
+ * - retrieve Audio Gateway (AG) indicators and their status 
+ * - enable indicator status update in the AG
+ * - notify the AG about its own available codecs, if possible
+ * - retrieve the AG information describing the call hold and multiparty services, if possible
+ * - retrieve which HF indicators are enabled on the AG, if possible
+ */
 void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr);
+
+
+/**
+ * @brief Release the RFCOMM channel and the audio connection between the HF and the AG. 
+ * TODO: trigger release of the audio connection
+ */
 void hfp_hf_release_service_level_connection(bd_addr_t bd_addr);
 
+/**
+ * @brief Enable registration status update in the AG.
+ */
+void hfp_hf_transfer_registration_status(bd_addr_t bd_addr);
+
+/**
+ * @brief Deactivate/reactivate individual indicators in the AG.
+ */
+void hfp_hf_activate_ag_indicator(bd_addr_t bd_addr);
+
+
+/**
+ * @brief
+ */
+void hfp_hf_transfer_signal_strength_indication(bd_addr_t bd_addr);
+
+/**
+ * @brief
+ */
+void hfp_hf_transfer_roaming_status_indication(bd_addr_t bd_addr);
+
+/**
+ * @brief
+ */
+ void hfp_hf_transfer_battery_level_indication_of_ag(bd_addr_t bd_addr);
+
+/* API_END */
 
 #if defined __cplusplus
 }

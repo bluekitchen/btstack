@@ -104,11 +104,11 @@ static int has_hf_indicators_feature(hfp_connection_t * connection){
 
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-void hfp_hf_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint16_t supported_features){
+void hfp_hf_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const char * name, uint16_t supported_features){
     if (!name){
         name = default_hfp_hf_service_name;
     }
-    hfp_create_service(service, SDP_Handsfree, rfcomm_channel_nr, name, supported_features);
+    hfp_create_sdp_record(service, SDP_Handsfree, rfcomm_channel_nr, name, supported_features);
 }
 
 
@@ -423,4 +423,24 @@ void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr){
 void hfp_hf_release_service_level_connection(bd_addr_t bd_addr){
     hfp_connection_t * connection = hfp_release_service_level_connection(bd_addr);
     hfp_run_for_context(connection);
+}
+
+void hfp_hf_transfer_registration_status(bd_addr_t bd_addr){
+    
+}
+
+void hfp_hf_activate_ag_indicator(bd_addr_t bd_addr){
+    
+}
+
+void hfp_hf_transfer_signal_strength_indication(bd_addr_t bd_addr){
+
+}
+
+void hfp_hf_transfer_roaming_status_indication(bd_addr_t bd_addr){
+
+}
+
+void hfp_hf_transfer_battery_level_indication_of_ag(bd_addr_t bd_addr){
+
 }

@@ -106,11 +106,11 @@ static int has_hf_indicators_feature(hfp_connection_t * connection){
     return hf && ag;
 }
 
-void hfp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features){
+void hfp_ag_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const char * name, uint8_t ability_to_reject_call, uint16_t supported_features){
     if (!name){
         name = default_hfp_ag_service_name;
     }
-    hfp_create_service(service, SDP_HandsfreeAudioGateway, rfcomm_channel_nr, name, supported_features);
+    hfp_create_sdp_record(service, SDP_HandsfreeAudioGateway, rfcomm_channel_nr, name, supported_features);
     
     // Network
     de_add_number(service, DE_UINT, DE_SIZE_8, ability_to_reject_call);
@@ -500,6 +500,7 @@ void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr){
     hfp_establish_service_level_connection(bd_addr, SDP_Handsfree);
 }
 
+// TODO trigger release audio connection
 void hfp_ag_release_service_level_connection(bd_addr_t bd_addr){
     hfp_connection_t * connection = hfp_release_service_level_connection(bd_addr);
     hfp_run_for_context(connection);
