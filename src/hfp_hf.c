@@ -416,11 +416,11 @@ void hfp_hf_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, uint8_
     }
 }
 
-void hfp_hf_connect(bd_addr_t bd_addr){
-    hfp_connect(bd_addr, SDP_HandsfreeAudioGateway);
+void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr){
+    hfp_establish_service_level_connection(bd_addr, SDP_HandsfreeAudioGateway);
 }
 
-void hfp_hf_disconnect(bd_addr_t bd_addr){
-    hfp_connection_t * connection = hfp_disconnect(bd_addr);
+void hfp_hf_release_service_level_connection(bd_addr_t bd_addr){
+    hfp_connection_t * connection = hfp_release_service_level_connection(bd_addr);
     hfp_run_for_context(connection);
 }

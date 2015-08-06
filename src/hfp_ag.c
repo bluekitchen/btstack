@@ -496,12 +496,12 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features,
     memcpy(hfp_ag_call_hold_services, call_hold_services, call_hold_services_nr * sizeof(char *));
 }
 
-void hfp_ag_connect(bd_addr_t bd_addr){
-    hfp_connect(bd_addr, SDP_Handsfree);
+void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr){
+    hfp_establish_service_level_connection(bd_addr, SDP_Handsfree);
 }
 
-void hfp_ag_disconnect(bd_addr_t bd_addr){
-    hfp_connection_t * connection = hfp_disconnect(bd_addr);
+void hfp_ag_release_service_level_connection(bd_addr_t bd_addr){
+    hfp_connection_t * connection = hfp_release_service_level_connection(bd_addr);
     hfp_run_for_context(connection);
 }
 

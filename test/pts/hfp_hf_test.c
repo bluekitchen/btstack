@@ -99,16 +99,16 @@ static int stdin_process(struct data_source *ds){
     read(ds->fd, &buffer, 1);
     switch (buffer){
         case 'p':
-            printf("Establishing HFP connection to PTS module %s...\n", bd_addr_to_str(pts_addr));
-            hfp_hf_connect(pts_addr);
+            printf("Establishing HFP service level connection to PTS module %s...\n", bd_addr_to_str(pts_addr));
+            hfp_hf_establish_service_level_connection(pts_addr);
             break;
         case 'e':
-            printf("Establishing HFP connection to %s...\n", bd_addr_to_str(phone));
-            hfp_hf_connect(phone);
+            printf("Establishing HFP service level connection to %s...\n", bd_addr_to_str(phone));
+            hfp_hf_establish_service_level_connection(phone);
             break;
         case 'd':
-            printf("Releasing HFP connection.\n");
-            hfp_hf_disconnect(phone);
+            printf("Releasing HFP service level connection.\n");
+            hfp_hf_release_service_level_connection(phone);
             break;
         default:
             show_usage();

@@ -116,16 +116,16 @@ static int stdin_process(struct data_source *ds){
     read(ds->fd, &buffer, 1);
     switch (buffer){
         case 'p':
-            printf("Establishing HFP connection to PTS module %s...\n", bd_addr_to_str(pts_addr));
-            hfp_ag_connect(pts_addr);
+            printf("Establishing HFP service level connection to PTS module %s...\n", bd_addr_to_str(pts_addr));
+            hfp_ag_establish_service_level_connection(pts_addr);
             break;
         case 'e':
-            printf("Establishing HFP connection to %s...\n", bd_addr_to_str(speaker));
-            hfp_ag_connect(speaker);
+            printf("Establishing HFP service level connection to %s...\n", bd_addr_to_str(speaker));
+            hfp_ag_establish_service_level_connection(speaker);
             break;
         case 'd':
-            printf("Releasing HFP connection.\n");
-            hfp_ag_disconnect(speaker);
+            printf("Releasing HFP service level connection.\n");
+            hfp_ag_release_service_level_connection(speaker);
             break;
         default:
             show_usage();
@@ -183,7 +183,5 @@ int btstack_main(int argc, const char * argv[]){
     hci_power_control(HCI_POWER_ON);
     
     btstack_stdin_setup(stdin_process);
-    printf("Establishing HFP connection to %s...\n", bd_addr_to_str(speaker));
-    hfp_ag_connect(speaker);
     return 0;
 }

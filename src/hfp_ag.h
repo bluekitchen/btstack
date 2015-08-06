@@ -61,8 +61,8 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features,
     char *call_hold_services[], int call_hold_services_nr);
 void hfp_ag_register_packet_handler(hfp_callback_t callback);
 
-void hfp_ag_connect(bd_addr_t bd_addr);
-void hfp_ag_disconnect(bd_addr_t bd_addr);
+void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr);
+void hfp_ag_release_service_level_connection(bd_addr_t bd_addr);
 
 void hfp_ag_supported_features_exchange(uint16_t supported_features);
 

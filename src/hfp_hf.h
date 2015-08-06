@@ -56,8 +56,10 @@ extern "C" {
 void hfp_hf_create_service(uint8_t * service, int rfcomm_channel_nr, const char * name, uint16_t supported_features);
 void hfp_hf_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, uint8_t * codecs, int codecs_nr, uint16_t * indicators, int indicators_nr, uint32_t indicators_status);
 void hfp_hf_register_packet_handler(hfp_callback_t callback);
-void hfp_hf_connect(bd_addr_t bd_addr);
-void hfp_hf_disconnect(bd_addr_t bd_addr);
+
+void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr);
+void hfp_hf_release_service_level_connection(bd_addr_t bd_addr);
+
 
 #if defined __cplusplus
 }

@@ -121,6 +121,33 @@ int send_str_over_rfcomm(uint16_t cid, char * command){
     return err;
 }
 
+void hfp_set_codec(hfp_connection_t * context, uint8_t *packet, uint16_t size){
+    // parse available codecs
+    int pos = 0;
+    int i;
+    for (i=0; i<size; i++){
+        pos+=8;
+        if (packet[pos] > context->negotiated_codec){
+            context->negotiated_codec = packet[pos];
+        }
+    }
+    printf("Negotiated Codec 0x%02x\n", context->negotiated_codec);
+}
+
+// UTILS
+int get_bit(uint16_t bitmap, int position){
+    return (bitmap >> position) & 1;
+}
+
+int store_bit(uint32_t bitmap, int position, uint8_t value){
+    if (value){
+        bitmap |= 1 << position;
+    } else {
+        bitmap &= ~ (1 << position);
+    }
+    return bitmap;
+}
+
 int join(char * buffer, int buffer_size, uint8_t * values, int values_nr){
     if (buffer_size < values_nr * 3) return 0;
     int i;
@@ -558,7 +585,7 @@ void hfp_init(uint16_t rfcomm_channel_nr){
     sdp_query_rfcomm_register_callback(handle_query_rfcomm_event, NULL);
 }
 
-void hfp_connect(bd_addr_t bd_addr, uint16_t service_uuid){
+void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid){
     hfp_connection_t * context = provide_hfp_connection_context_for_bd_addr(bd_addr);
     log_info("hfp_connect %s, context %p", bd_addr_to_str(bd_addr), context);
     
@@ -575,7 +602,7 @@ void hfp_connect(bd_addr_t bd_addr, uint16_t service_uuid){
     sdp_query_rfcomm_channel_and_name_for_uuid(context->remote_addr, service_uuid);
 }
 
-hfp_connection_t * hfp_disconnect(bd_addr_t bd_addr){
+hfp_connection_t * hfp_release_service_level_connection(bd_addr_t bd_addr){
     hfp_connection_t * context = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (!context) {
         log_error("hfp_disconnect for addr %s failed", bd_addr_to_str(bd_addr));
@@ -595,29 +622,4 @@ hfp_connection_t * hfp_disconnect(bd_addr_t bd_addr){
     return context;
 }
 
-void hfp_set_codec(hfp_connection_t * context, uint8_t *packet, uint16_t size){
-    // parse available codecs
-    int pos = 0;
-    int i;
-    for (i=0; i<size; i++){
-        pos+=8;
-        if (packet[pos] > context->negotiated_codec){
-            context->negotiated_codec = packet[pos];
-        }
-    }
-    printf("Negotiated Codec 0x%02x\n", context->negotiated_codec);
-}
 
-// UTILS
-int get_bit(uint16_t bitmap, int position){
-    return (bitmap >> position) & 1;
-}
-
-int store_bit(uint32_t bitmap, int position, uint8_t value){
-    if (value){
-        bitmap |= 1 << position;
-    } else {
-        bitmap &= ~ (1 << position);
-    }
-    return bitmap;
-}

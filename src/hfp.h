@@ -217,25 +217,24 @@ typedef struct hfp_connection {
 
 } hfp_connection_t;
 
-
-void hfp_create_service(uint8_t * service, uint16_t service_uuid, int rfcomm_channel_nr, const char * name, uint16_t supported_features);
-void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t *packet, uint16_t size);
-void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value);
-
-void hfp_init(uint16_t rfcomm_channel_nr);
-
-void hfp_connect(bd_addr_t bd_addr, uint16_t service_uuid);
-hfp_connection_t * hfp_disconnect(bd_addr_t bd_addr);
-
-hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
-linked_list_t * hfp_get_connections();
-void hfp_parse(hfp_connection_t * context, uint8_t byte);
-
-// TODO: move to utils
+// UTILS_START : TODO move to utils
 int send_str_over_rfcomm(uint16_t cid, char * command);
 int join(char * buffer, int buffer_size, uint8_t * values, int values_nr);
 int get_bit(uint16_t bitmap, int position);
 int store_bit(uint32_t bitmap, int position, uint8_t value);
+// UTILS_END
+
+void hfp_create_service(uint8_t * service, uint16_t service_uuid, int rfcomm_channel_nr, const char * name, uint16_t supported_features);
+void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t *packet, uint16_t size);
+void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value);
+hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
+linked_list_t * hfp_get_connections();
+void hfp_parse(hfp_connection_t * context, uint8_t byte);
+
+void hfp_init(uint16_t rfcomm_channel_nr);
+void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid);
+hfp_connection_t * hfp_release_service_level_connection(bd_addr_t bd_addr);
+
 
 const char * hfp_hf_feature(int index);
 const char * hfp_ag_feature(int index);
