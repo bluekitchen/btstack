@@ -2855,6 +2855,13 @@ int hci_ssp_supported_on_both_sides(hci_con_handle_t handle){
 void gap_set_bondable_mode(int enable){
     hci_stack->bondable = enable ? 1 : 0;
 }
+/**  
+ * @brief Get bondable mode.
+ * @return 1 if bondable
+ */
+int gap_get_bondable_mode(void){
+    return hci_stack->bondable;
+}
 
 /**
  * @brief map link keys to security levels
