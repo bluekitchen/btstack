@@ -144,7 +144,7 @@ void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_k
  * @brief ltk
  */
 void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk){
-    log_info("Central Device DB encryption for %u, ediv x%04x", le_devices[index].ediv);
+    log_info("Central Device DB encryption for %u, ediv x%04x", index, le_devices[index].ediv);
     if (ediv) *ediv = le_devices[index].ediv;
     if (rand) memcpy(rand, le_devices[index].rand, 8);
     if (ltk)  memcpy(ltk, le_devices[index].ltk, 16);    
@@ -180,7 +180,7 @@ void le_device_db_local_counter_set(int index, uint32_t counter){
 }
 
 void le_device_db_dump(void){
-    log_info("Central Device DB dump, devices: %u", le_device_db_count);
+    log_info("Central Device DB dump, devices: %d", le_device_db_count());
     int i;
     for (i=0;i<LE_DEVICE_MEMORY_SIZE;i++){
         if (le_devices[i].addr_type == INVALID_ENTRY_ADDR_TYPE) continue;
