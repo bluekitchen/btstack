@@ -816,7 +816,7 @@ static int sm_key_distribution_flags_for_auth_req(void){
         // encryption information only if bonding requested
         flags |= SM_KEYDIST_ENC_KEY;
     }
-    return flags
+    return flags;
 }
 
 static void sm_init_setup(sm_connection_t * sm_conn){
@@ -1235,8 +1235,8 @@ static void sm_run(void){
                 // echo initiator for now
                 setup->sm_s_pres.code = SM_CODE_PAIRING_RESPONSE;
                 key_distribution_flags = sm_key_distribution_flags_for_auth_req();
-                setup->sm_s_pres.initiator_key_distribution = setup->sm_m_preq.initiator_key_distribution & auth_flags_mask;
-                setup->sm_s_pres.responder_key_distribution = setup->sm_m_preq.responder_key_distribution & auth_flags_mask;
+                setup->sm_s_pres.initiator_key_distribution = setup->sm_m_preq.initiator_key_distribution & key_distribution_flags;
+                setup->sm_s_pres.responder_key_distribution = setup->sm_m_preq.responder_key_distribution & key_distribution_flags;
                 connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_CONFIRM;
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);
