@@ -85,6 +85,12 @@ typedef enum {
  */
 void gap_set_bondable_mode(int enabled);
 
+/**  
+ * @brief Get bondable mode.
+ * @return 1 if bondable
+ */
+int gap_get_bondable_mode(void);
+
 /**
  * @brief Start dedicated bonding with device. Disconnect after bonding.
  * @param device
