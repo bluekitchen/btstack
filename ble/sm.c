@@ -919,11 +919,16 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                             sm_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
                         }
                     }
+                    sm_connection->sm_csrk_lookup_state = CSRK_LOOKUP_SUCCEEDED;
                     break;
                 case ADDRESS_RESOLUTION_FAILED:
+                    sm_connection->sm_csrk_lookup_state = CSRK_LOOKUP_FAILED;
+                    if (sm_connection->sm_security_request_received) {
+                        sm_connection->sm_security_request_received = 0;
+                        sm_connection->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
+                    }
                     break;
             }
-            sm_connection->sm_csrk_lookup_state = CSRK_LOOKUP_IDLE;
             break;
         default:
             break;
@@ -1892,6 +1897,20 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             return;
 
         // Initiator
+        case SM_INITIATOR_CONNECTED:
+            if ((packet[0] != SM_CODE_SECURITY_REQUEST) || (sm_conn->sm_role)){
+                sm_pdu_received_in_wrong_state(sm_conn);
+                break;
+            }
+            // if csrk over, but we didn't have LTK, start pairing
+            if (sm_conn->sm_csrk_lookup_state == CSRK_LOOKUP_FAILED || sm_conn->sm_csrk_lookup_state == CSRK_LOOKUP_SUCCEEDED){
+                sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
+                break;
+            }
+            // otherwise, store security request
+            sm_conn->sm_security_request_received = 1;
+            break;
+
         case SM_INITIATOR_PH1_W4_PAIRING_RESPONSE:
             if (packet[0] != SM_CODE_PAIRING_RESPONSE){
                 sm_pdu_received_in_wrong_state(sm_conn);
