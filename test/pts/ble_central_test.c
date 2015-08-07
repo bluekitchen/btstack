@@ -92,7 +92,7 @@ typedef struct advertising_report {
 static uint8_t test_irk[] =  { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 static int gap_privacy = 0;
-/* static */ int gap_bondable = 0;
+static int gap_bondable = 1;
 static char gap_device_name[20];
 static int gap_connectable = 0;
 
@@ -402,15 +402,16 @@ void show_usage(void){
     printf("PTS: addr type %u, addr %s\n", current_pts_address_type, bd_addr_to_str(current_pts_address));
     printf("IUT: addr type %u, addr %s\n", iut_address_type, bd_addr_to_str(iut_address));
     printf("--------------------------\n");
-    printf("GAP: connectable %u\n", gap_connectable);
+    printf("GAP: connectable %u, bondable %u\n", gap_connectable, gap_bondable);
     printf("SM: %s, MITM protection %u, OOB data %u, key range [%u..16]\n",
         sm_io_capabilities, sm_mitm_protection, sm_have_oob_data, sm_min_key_size);
     printf("Privacy %u\n", gap_privacy);
     printf("Device name: %s\n", gap_device_name);
-    printf("Value Handle: %x\n", value_handle);
-    printf("Attribute Size: %u\n", attribute_size);
+    // printf("Value Handle: %x\n", value_handle);
+    // printf("Attribute Size: %u\n", attribute_size);
     printf("---\n");
     printf("c/C - connectable off\n");
+    printf("d/D - bondable off/on\n");
     printf("---\n");
     printf("1   - enable privacy using random non-resolvable private address\n");
     printf("2   - clear Peripheral Privacy Flag on PTS\n");
@@ -451,22 +452,36 @@ int  stdin_process(struct data_source *ds){
         case '1':
             printf("Enabling non-resolvable private address\n");
             gap_random_address_set_mode(GAP_RANDOM_ADDRESS_NON_RESOLVABLE);
-            update_advertisment_params(); 
             gap_privacy = 1;
+            update_advertisment_params(); 
+            show_usage();
             break;
         case 'a':
             hci_send_cmd(&hci_le_set_advertise_enable, 1);
+            show_usage();
             break;
         case 'b':
             sm_request_authorization(current_pts_address_type, current_pts_address);
             break;
         case 'c':
-            gap_connectable = 1;
-            update_advertisment_params();
-            break;
-        case 'C':
             gap_connectable = 0;
             update_advertisment_params();
+            show_usage();
+            break;
+        case 'C':
+            gap_connectable = 1;
+            update_advertisment_params();
+            show_usage();
+            break;
+        case 'd':
+            gap_bondable = 0;
+            sm_set_authentication_requirements(SM_AUTHREQ_NO_BONDING);
+            show_usage();
+            break;
+        case 'D':
+            gap_bondable = 1;
+            sm_set_authentication_requirements(SM_AUTHREQ_BONDING);
+            show_usage();
             break;
         case 'n':
             central_state = CENTRAL_W4_NAME_QUERY_COMPLETE;
@@ -580,7 +595,6 @@ int btstack_main(int argc, const char * argv[]){
     sm_register_oob_data_callback(get_oob_data_callback);
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
-    // sm_set_authentication_requirements(SM_AUTHREQ_NO_BONDING);
     sm_set_authentication_requirements(SM_AUTHREQ_BONDING);
 
     sm_set_encryption_key_size_range(sm_min_key_size, 16);
