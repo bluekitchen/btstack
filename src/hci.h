@@ -436,6 +436,8 @@ typedef enum {
     CSRK_LOOKUP_IDLE,
     CSRK_LOOKUP_W4_READY,
     CSRK_LOOKUP_STARTED,
+    CSRK_LOOKUP_SUCCEEDED,
+    CSRK_LOOKUP_FAILED
 } csrk_lookup_state_t;
 
 // Authorization state
@@ -460,6 +462,7 @@ typedef struct sm_pairing_packet {
 typedef struct sm_connection {
     uint16_t                 sm_handle;
     uint8_t                  sm_role;   // 0 - IamMaster, 1 = IamSlave
+    uint8_t                  sm_security_request_received;
     bd_addr_t                sm_peer_address;
     uint8_t                  sm_peer_addr_type;
     security_manager_state_t sm_engine_state;
