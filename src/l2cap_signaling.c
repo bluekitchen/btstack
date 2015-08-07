@@ -99,7 +99,7 @@ uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_handle_t 
     uint16_t pos = 12;
     // skip AMP commands
     if (cmd >= CONNECTION_PARAMETER_UPDATE_REQUEST){
-        cmd -= 6;
+        cmd = (L2CAP_SIGNALING_COMMANDS) (((int) cmd) - 6);
     }
     const char *format = l2cap_signaling_commands_format[cmd-1];
     uint16_t word;

@@ -91,14 +91,14 @@ void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr);
 void hfp_hf_release_service_level_connection(bd_addr_t bd_addr);
 
 /**
- * @brief Enable registration status update in the AG.
+ * @brief Deactivate/reactivate status update for all indicators in the AG.
  */
-void hfp_hf_transfer_registration_status(bd_addr_t bd_addr);
+void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr, uint8_t enable);
 
 /**
- * @brief Deactivate/reactivate individual indicators in the AG.
+ * @brief Deactivate/reactivate status update for the individual indicators in the AG using bitmap.
  */
-void hfp_hf_activate_ag_indicator(bd_addr_t bd_addr);
+void hfp_hf_enable_status_update_for_ag_indicator(bd_addr_t bd_addr, uint32_t indicators_status_bitmap, uint8_t enable);
 
 
 /**

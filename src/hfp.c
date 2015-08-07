@@ -47,6 +47,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>
@@ -58,7 +59,6 @@
 #include "sdp_query_rfcomm.h"
 #include "sdp.h"
 #include "debug.h"
-#include "hfp_ag.h"
 
 #define HFP_HF_FEATURES_SIZE 10
 #define HFP_AG_FEATURES_SIZE 12
@@ -115,9 +115,7 @@ int send_str_over_rfcomm(uint16_t cid, char * command){
     int err = rfcomm_send_internal(cid, (uint8_t*) command, strlen(command));
     if (err){
         printf("rfcomm_send_internal -> error 0X%02x", err);
-    } else {
-        printf("\nSent %s", command);
-    }
+    } 
     return err;
 }
 
@@ -161,6 +159,18 @@ int join(char * buffer, int buffer_size, uint8_t * values, int values_nr){
     return offset;
 }
 
+int join_bitmap(char * buffer, int buffer_size, uint32_t values, int values_nr){
+    if (buffer_size < values_nr * 3) return 0;
+    int i;
+    int offset = 0;
+    for (i = 0; i < values_nr-1; i++) {
+      offset += snprintf(buffer+offset, buffer_size-offset, "%d,", get_bit(values,i)); // puts string into buffer
+    }
+    if (i<values_nr){
+        offset += snprintf(buffer+offset, buffer_size-offset, "%d", get_bit(values,i));
+    }
+    return offset;
+}
 
 void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value){
     if (!callback) return;
@@ -189,7 +199,7 @@ hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid){
     return NULL;
 }
 
-static hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr){
+hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr){
     linked_list_iterator_t it;  
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
@@ -201,7 +211,7 @@ static hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_ad
     return NULL;
 }
 
-hfp_connection_t * get_hfp_connection_context_for_handle(uint16_t handle){
+static hfp_connection_t * get_hfp_connection_context_for_handle(uint16_t handle){
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, hfp_get_connections());
     while (linked_list_iterator_has_next(&it)){
@@ -220,15 +230,12 @@ static hfp_connection_t * create_hfp_connection_context(){
     memset(context,0, sizeof(hfp_connection_t));
 
     context->state = HFP_IDLE;
-    context->line_size = 0;
     context->parser_state = HFP_PARSER_CMD_HEADER;
     context->command = HFP_CMD_NONE;
-
     context->negotiated_codec = HFP_CODEC_CVSD;
-    context->remote_supported_features = 0;
-    context->remote_indicators_update_enabled = 0;
     
-    context->ag_indicators_nr = 0;
+    context->enable_status_update_for_ag_indicators = 0xFF;
+    context->change_enable_status_update_for_individual_ag_indicators = 0xFF;
 
     linked_list_add(&hfp_connections, (linked_item_t*)context);
     return context;
@@ -451,11 +458,18 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
 
 void update_command(hfp_connection_t * context);
 
+uint32_t fromBinary(char *s) {
+    return (uint32_t) strtol(s, NULL, 2);
+}
+
 void hfp_parse(hfp_connection_t * context, uint8_t byte){
     int i;
+    int value;
+
     if (byte == ' ') return;
-    if ( (byte == '\n' || byte == '\r') && context->parser_state > HFP_PARSER_CMD_SEQUENCE) return;
-    
+    if (context->line_size == 0 && (byte == '\n' || byte == '\r')) return;
+    if ((byte == '\n' || byte == '\r') && (context->parser_state > HFP_PARSER_CMD_SEQUENCE && context->parser_state != HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATORS) )return;
+    //printf("%c", byte);
     switch (context->parser_state){
         case HFP_PARSER_CMD_HEADER: // header
             if (byte == ':' || byte == '='){
@@ -466,10 +480,11 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                 return;
             }
             if (byte == '\n' || byte == '\r'){
-                // received OK
                 context->line_buffer[context->line_size] = 0;
+                if (context->line_size == 2){
+                    update_command(context);
+                }
                 context->line_size = 0;
-                update_command(context);
                 return;
             }
             context->line_buffer[context->line_size++] = byte;
@@ -488,41 +503,68 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
         
             if (byte == ',' || byte == '\n' || byte == '\r' || byte == ')'){
                 context->line_buffer[context->line_size] = 0;
-                context->line_size = 0;
-                switch (context->state){
-                    case HFP_W4_EXCHANGE_SUPPORTED_FEATURES:
-                        context->remote_supported_features = atoi((char *)&context->line_buffer[0]);
+                
+                switch (context->command){
+                    case HFP_CMD_SUPPORTED_FEATURES:
+                        context->remote_supported_features = 0;
                         for (i=0; i<16; i++){
-                            if (get_bit(context->remote_supported_features,i)){
-                                printf("AG supported feature: %s\n", hfp_ag_feature(i));
-                            }
+                            if (context->line_buffer[i] == '1'){
+                                context->remote_supported_features = store_bit(context->remote_supported_features,15-i,1);
+                            } 
                         }
+                        // printf("Received supported feature %d\n", context->remote_supported_features);
                         context->parser_state = HFP_PARSER_CMD_HEADER;
                         break;
-                    case HFP_W4_RETRIEVE_INDICATORS:
+                    case HFP_CMD_AVAILABLE_CODECS:
+                        // printf("Received codec %s\n", context->line_buffer);
+                        context->remote_codecs[context->remote_codecs_nr] = (uint16_t)atoi((char*)context->line_buffer);
+                        context->remote_codecs_nr++;
                         break;
-                    case HFP_W4_RETRIEVE_INDICATORS_STATUS:
-                        printf("Indicator with status: %s\n", context->line_buffer);
+                    case HFP_CMD_INDICATOR_STATUS:
+                        // printf("Indicator %d with status: %s\n", context->parser_item_index+1, context->line_buffer);
+                        context->ag_indicators[context->parser_item_index].status = atoi((char *) context->line_buffer);
+                        context->parser_item_index++;
                         break;
-                    case HFP_W4_RETRIEVE_CAN_HOLD_CALL:
-                        printf("Support call hold: %s\n", context->line_buffer);
+                    case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
+                        if (context->parser_item_index == 3){
+                            printf("Enable indicators: %s\n", context->line_buffer);
+                            value = atoi((char *)&context->line_buffer[0]);
+                            context->enable_status_update_for_ag_indicators = (uint8_t) value;
+                        }
                         break;
-                    case HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS: // comma separated ints
-                        printf("Generic status indicator: %s\n", context->line_buffer);
+                    case HFP_CMD_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE:
+                        value = atoi((char *)&context->line_buffer[0]);
+                        printf("Indicator %d status: %d\n",  context->ag_indicators_nr, value);
+                        store_bit(context->ag_indicators_status_update_bitmap, context->ag_indicators_nr, (uint8_t)value);
                         break;
-                    case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
-                        printf("Generic status indicator: %s, ", context->line_buffer); 
+                    case HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES:
+                        //  printf("Support call hold: %s\n", context->line_buffer);
+                        if (context->line_size > 2 ) break;
+                        strcpy((char *)context->remote_call_services[context->remote_call_services_nr].name,  (char *)context->line_buffer);
+                        context->remote_call_services_nr++;
+                        break;
+                    case HFP_CMD_GENERIC_STATUS_INDICATOR:
+                        context->generic_status_indicators[context->generic_status_indicators_nr].uuid = (uint16_t)atoi((char*)context->line_buffer);
+                        context->generic_status_indicators_nr++;
+                        break;
+                    case HFP_CMD_GENERIC_STATUS_INDICATOR_STATE:
+                        printf("HFP_CMD_GENERIC_STATUS_INDICATOR_STATE %s, %d\n", context->line_buffer, context->command);
                         context->parser_state = HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
+                        context->generic_status_indicator_state_index = (uint8_t)atoi((char*)context->line_buffer);
                         break;
                     default:
                         break;
                 }
+                context->line_size = 0;
+
                 if (byte == '\n' || byte == '\r'){
                     context->parser_state = HFP_PARSER_CMD_HEADER;
+                    context->parser_item_index = 0;
                     break;
                 }
-                if (byte == ')' && context->state == HFP_W4_RETRIEVE_CAN_HOLD_CALL){ // tuple separated mit comma
+                if (byte == ')' && context->command == HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES){ // tuple separated mit comma
                     context->parser_state = HFP_PARSER_CMD_HEADER;
+                    context->parser_item_index = 0;
                     break;
                 }
                 break;
@@ -530,20 +572,31 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
             context->line_buffer[context->line_size++] = byte;
             break;
         case HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
+            context->line_buffer[context->line_size] = 0;
+            printf("HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATORS 1 %s\n", context->line_buffer);
+            if (byte == ',') break;
+            printf("HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATORS 2 %s\n", context->line_buffer);
             if (byte == '\n' || byte == '\r'){
+                printf("HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATORS 4%s\n", context->line_buffer);
+            
                 context->line_buffer[context->line_size] = 0;
                 context->line_size = 0;
-                context->command = HFP_CMD_NONE;
                 context->parser_state = HFP_PARSER_CMD_HEADER;
                 printf("status %s [0-dissabled, 1-enabled]\n", context->line_buffer);
+                context->generic_status_indicators[context->generic_status_indicator_state_index].state = (uint8_t)atoi((char*)context->line_buffer);
                 break;
             }
+            context->line_buffer[context->line_size++] = byte;
+            printf("HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATORS 3 %s\n", context->line_buffer);
             break;
+        
         case HFP_PARSER_CMD_INDICATOR_NAME: // parse indicator name
             if (byte == '"'){
                 context->line_buffer[context->line_size] = 0;
-                printf("Indicator %d: %s (", context->ag_indicators_nr, context->line_buffer);
                 context->line_size = 0;
+                //printf("Indicator %d: %s (", context->ag_indicators_nr+1, context->line_buffer);
+                strcpy((char *)context->ag_indicators[context->ag_indicators_nr].name,  (char *)context->line_buffer);
+                context->ag_indicators[context->ag_indicators_nr].index = context->ag_indicators_nr+1;
                 break;
             }
             if (byte == '('){ // parse indicator range
@@ -556,7 +609,8 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
             if (byte == ',' || byte == '-'){ // end min_range
                 context->parser_state = HFP_PARSER_CMD_INDICATOR_MAX_RANGE;
                 context->line_buffer[context->line_size] = 0;
-                printf("%d, ", atoi((char *)&context->line_buffer[0]));
+                //printf("%d, ", atoi((char *)&context->line_buffer[0]));
+                context->ag_indicators[context->ag_indicators_nr].min_range = atoi((char *)context->line_buffer);
                 context->line_size = 0;
                 break;
             }
@@ -566,14 +620,14 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
         case HFP_PARSER_CMD_INDICATOR_MAX_RANGE:
             if (byte == ')'){ // end max_range
                 context->parser_state = HFP_PARSER_CMD_SEQUENCE;
-
                 context->line_buffer[context->line_size] = 0;
-                printf("%d)\n", atoi((char *)&context->line_buffer[0]));
+                //printf("%d)\n", atoi((char *)&context->line_buffer[0]));
+                context->ag_indicators[context->ag_indicators_nr].max_range = atoi((char *)context->line_buffer);
                 context->line_size = 0;
-                context->ag_indicators_nr+=1;
+                context->ag_indicators_nr++;
                 break;
             }
-            // 
+           
             context->line_buffer[context->line_size++] = byte;
             break;
         
@@ -590,7 +644,7 @@ void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_
     log_info("hfp_connect %s, context %p", bd_addr_to_str(bd_addr), context);
     
     if (!context) {
-        log_error("hfp_connect for addr %s failed", bd_addr_to_str(bd_addr));
+        log_error("hfp_establish_service_level_connection for addr %s failed", bd_addr_to_str(bd_addr));
         return;
     }
     if (context->state != HFP_IDLE) return;
@@ -602,11 +656,10 @@ void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_
     sdp_query_rfcomm_channel_and_name_for_uuid(context->remote_addr, service_uuid);
 }
 
-hfp_connection_t * hfp_release_service_level_connection(bd_addr_t bd_addr){
-    hfp_connection_t * context = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_release_service_level_connection(hfp_connection_t * context){
     if (!context) {
-        log_error("hfp_disconnect for addr %s failed", bd_addr_to_str(bd_addr));
-        return NULL;
+        log_error("hfp_release_service_level_connection failed");
+        return;
     }
             
     switch (context->state){
@@ -619,7 +672,7 @@ hfp_connection_t * hfp_release_service_level_connection(bd_addr_t bd_addr){
         default:
             break;
     }
-    return context;
+    return;
 }
 
 

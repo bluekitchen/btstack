@@ -99,14 +99,16 @@ extern "C" {
 #define HFP_MAX_NUM_CODECS 20
 #define HFP_MAX_NUM_AG_INDICATORS 20
 #define HFP_MAX_NUM_HF_INDICATORS 20
-#define HFP_MAX_INDICATOR_DESC_SIZE 10 
+#define HFP_MAX_INDICATOR_DESC_SIZE 20 
 
 #define HFP_SUPPORTED_FEATURES "+BRSF"
 #define HFP_AVAILABLE_CODECS "+BAC"
 #define HFP_INDICATOR "+CIND"
-#define HFP_ENABLE_INDICATOR_STATUS_UPDATE "+CMER"
+#define HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS "+CMER"
+#define HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS "+BIA"
 #define HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES "+CHLD"
 #define HFP_GENERIC_STATUS_INDICATOR "+BIND"
+
 #define HFP_OK "OK"
 
 // Codecs 
@@ -119,9 +121,13 @@ typedef enum {
     HFP_CMD_SUPPORTED_FEATURES,
     HFP_CMD_AVAILABLE_CODECS,
     HFP_CMD_INDICATOR,
+    HFP_CMD_INDICATOR_STATUS, // 5
     HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE,
+    HFP_CMD_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE,
     HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES,
-    HFP_CMD_GENERIC_STATUS_INDICATOR
+    HFP_CMD_LIST_GENERIC_STATUS_INDICATOR,
+    HFP_CMD_GENERIC_STATUS_INDICATOR, // 10
+    HFP_CMD_GENERIC_STATUS_INDICATOR_STATE,
 } hfp_command_t;
 
 typedef enum {
@@ -180,7 +186,7 @@ typedef struct{
     uint16_t uuid;
     uint8_t state;
     uint8_t initial_state;
-} hfp_hf_indicator_t;
+} hfp_generic_status_indicators_t;
 
 typedef struct{
     uint8_t index;
@@ -190,36 +196,56 @@ typedef struct{
     uint8_t status;
 } hfp_ag_indicator_t;
 
+typedef struct{
+    char name[3];
+} hfp_call_service_t;
+
 typedef struct hfp_connection {
     linked_item_t    item;
-    hfp_state_t state;
-    
-    hfp_command_t command;
-    hfp_parser_state_t parser_state;
-    
-    uint8_t  line_buffer[HFP_MAX_INDICATOR_DESC_SIZE];
-    int      line_size;
     
     bd_addr_t remote_addr;
     uint16_t con_handle;
     uint16_t rfcomm_channel_nr;
     uint16_t rfcomm_cid;
-
-    int  ag_indicators_nr;
-
-    // Retrieved during connection setup, not used yet
-    uint8_t  negotiated_codec;
-   
-    uint32_t remote_supported_features;
-    uint8_t  remote_indicators_update_enabled;
     
-    uint32_t remote_indicators_status;
+    hfp_state_t state;
+    
+    // used during service level connection establishment
+    hfp_command_t command;
+    hfp_parser_state_t parser_state;
+    int      parser_item_index;
+    uint8_t  line_buffer[HFP_MAX_INDICATOR_DESC_SIZE];
+    int      line_size;
+    
+    uint32_t remote_supported_features;
+    int      remote_codecs_nr;
+    uint16_t remote_codecs[HFP_MAX_INDICATOR_DESC_SIZE];
+    int      ag_indicators_nr;
+    hfp_ag_indicator_t ag_indicators[HFP_MAX_INDICATOR_DESC_SIZE];
+    int      remote_call_services_nr;
+    hfp_call_service_t remote_call_services[HFP_MAX_INDICATOR_DESC_SIZE];
+    int      generic_status_indicators_nr;
+    hfp_generic_status_indicators_t generic_status_indicators[HFP_MAX_INDICATOR_DESC_SIZE];
+    uint8_t  generic_status_indicator_state_index;
 
+    // TODO: put in a bitmap
+    // 0 = deactivate, 1 = activate, 0xff = do nothing
+    uint8_t wait_ok;
+    hfp_command_t sent_command;
+    uint8_t enable_status_update_for_ag_indicators;
+    uint8_t change_enable_status_update_for_individual_ag_indicators; 
+    
+    uint32_t ag_indicators_status_update_bitmap;
+    
+    
+    // Retrieved during service level connection establishment, not used yet
+    uint8_t  negotiated_codec;
 } hfp_connection_t;
 
 // UTILS_START : TODO move to utils
 int send_str_over_rfcomm(uint16_t cid, char * command);
 int join(char * buffer, int buffer_size, uint8_t * values, int values_nr);
+int join_bitmap(char * buffer, int buffer_size, uint32_t values, int values_nr);
 int get_bit(uint16_t bitmap, int position);
 int store_bit(uint32_t bitmap, int position, uint8_t value);
 // UTILS_END
@@ -228,12 +254,14 @@ void hfp_create_sdp_record(uint8_t * service, uint16_t service_uuid, int rfcomm_
 void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t *packet, uint16_t size);
 void hfp_emit_event(hfp_callback_t callback, uint8_t event_subtype, uint8_t value);
 hfp_connection_t * get_hfp_connection_context_for_rfcomm_cid(uint16_t cid);
+hfp_connection_t * get_hfp_connection_context_for_bd_addr(bd_addr_t bd_addr);
+
 linked_list_t * hfp_get_connections();
 void hfp_parse(hfp_connection_t * context, uint8_t byte);
 
 void hfp_init(uint16_t rfcomm_channel_nr);
 void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid);
-hfp_connection_t * hfp_release_service_level_connection(bd_addr_t bd_addr);
+void hfp_release_service_level_connection(hfp_connection_t * connection);
 
 
 const char * hfp_hf_feature(int index);

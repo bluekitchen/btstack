@@ -142,13 +142,21 @@ int hfp_hs_retrieve_indicators_status_cmd(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
-int hfp_hs_toggle_indicator_status_update_cmd(uint16_t cid, uint8_t activate){
+int hfp_hs_activate_status_update_for_all_ag_indicators_cmd(uint16_t cid, uint8_t activate){
     char buffer[20];
-    sprintf(buffer, "AT%s=3,0,0,%d\r\n", HFP_ENABLE_INDICATOR_STATUS_UPDATE, activate);
+    sprintf(buffer, "AT%s=3,0,0,%d\r\n", HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS, activate);
     // printf("toggle_indicator_status_update %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
+int hfp_hs_activate_status_update_for_ag_indicator_cmd(uint16_t cid, uint32_t indicators_status, int indicators_nr, uint8_t activate){
+    char buffer[20];
+    int offset = snprintf(buffer, sizeof(buffer), "AT%s=", HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS);
+    offset += join_bitmap(buffer+offset, sizeof(buffer)-offset, indicators_status, indicators_nr);
+    offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n");
+    buffer[offset] = 0;
+    return send_str_over_rfcomm(cid, buffer);
+}
 
 int hfp_hs_retrieve_can_hold_call_cmd(uint16_t cid){
     char buffer[20];
@@ -197,13 +205,15 @@ static void hfp_run_for_context(hfp_connection_t * context){
         case HFP_RETRIEVE_INDICATORS:
             hfp_hs_retrieve_indicators_cmd(context->rfcomm_cid);
             context->state = HFP_W4_RETRIEVE_INDICATORS;
+            context->sent_command = HFP_CMD_INDICATOR;
             break;
         case HFP_RETRIEVE_INDICATORS_STATUS:
             hfp_hs_retrieve_indicators_status_cmd(context->rfcomm_cid);
             context->state = HFP_W4_RETRIEVE_INDICATORS_STATUS;
+            context->sent_command = HFP_CMD_INDICATOR_STATUS;
             break;
         case HFP_ENABLE_INDICATORS_STATUS_UPDATE:
-            hfp_hs_toggle_indicator_status_update_cmd(context->rfcomm_cid, 1);
+            hfp_hs_activate_status_update_for_all_ag_indicators_cmd(context->rfcomm_cid, 1);
             context->state = HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE;
             break;
         case HFP_RETRIEVE_CAN_HOLD_CALL:
@@ -213,21 +223,38 @@ static void hfp_run_for_context(hfp_connection_t * context){
         case HFP_LIST_GENERIC_STATUS_INDICATORS:
             hfp_hs_list_supported_generic_status_indicators_cmd(context->rfcomm_cid);
             context->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
+            context->sent_command = HFP_CMD_LIST_GENERIC_STATUS_INDICATOR;
             break;
         case HFP_RETRIEVE_GENERIC_STATUS_INDICATORS:
             hfp_hs_retrieve_supported_generic_status_indicators_cmd(context->rfcomm_cid);
             context->state = HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS;
+            context->sent_command = HFP_CMD_GENERIC_STATUS_INDICATOR;
             break;
         case HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
             hfp_hs_list_initital_supported_generic_status_indicators_cmd(context->rfcomm_cid);
             context->state = HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
-            break;
-        case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
+            context->sent_command = HFP_CMD_GENERIC_STATUS_INDICATOR_STATE;
             break;
         case HFP_W2_DISCONNECT_RFCOMM:
             context->state = HFP_W4_RFCOMM_DISCONNECTED;
             rfcomm_disconnect_internal(context->rfcomm_cid);
+            break;
+        case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+            if (context->wait_ok == 1) return;
+
+            if (context->enable_status_update_for_ag_indicators != 0xFF){
+                hfp_hs_activate_status_update_for_all_ag_indicators_cmd(context->rfcomm_cid, context->enable_status_update_for_ag_indicators);
+                context->wait_ok = 1;
+                break;
+            };
+            if (context->change_enable_status_update_for_individual_ag_indicators != 0xFF){
+                hfp_hs_activate_status_update_for_ag_indicator_cmd(context->rfcomm_cid, 
+                        context->ag_indicators_status_update_bitmap,
+                        context->ag_indicators_nr,
+                        context->change_enable_status_update_for_individual_ag_indicators);
+                context->wait_ok = 1;
+                break;
+            }
             break;
         default:
             break;
@@ -249,11 +276,11 @@ void update_command(hfp_connection_t * context){
     }
 
     if (strncmp((char *)context->line_buffer, HFP_INDICATOR, strlen(HFP_INDICATOR)) == 0){
-        printf("Received +CIND\n");
-        context->command = HFP_CMD_INDICATOR;
+        printf("Received +CIND, %d\n", context->sent_command);
+        context->command = context->sent_command;
+        context->sent_command = HFP_CMD_NONE;   
         return;
     }
-
 
     if (strncmp((char *)context->line_buffer, HFP_AVAILABLE_CODECS, strlen(HFP_AVAILABLE_CODECS)) == 0){
         printf("Received +BAC\n");
@@ -261,7 +288,7 @@ void update_command(hfp_connection_t * context){
         return;
     }
 
-    if (strncmp((char *)context->line_buffer, HFP_ENABLE_INDICATOR_STATUS_UPDATE, strlen(HFP_ENABLE_INDICATOR_STATUS_UPDATE)) == 0){
+    if (strncmp((char *)context->line_buffer, HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS, strlen(HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS)) == 0){
         printf("Received +CMER\n");
         context->command = HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE;
         return;
@@ -275,9 +302,17 @@ void update_command(hfp_connection_t * context){
 
     if (strncmp((char *)context->line_buffer, HFP_GENERIC_STATUS_INDICATOR, strlen(HFP_GENERIC_STATUS_INDICATOR)) == 0){
         printf("Received +BIND\n");
-        context->command = HFP_CMD_GENERIC_STATUS_INDICATOR;
+        context->command = context->sent_command;
+        printf("Received +BIND %d\n", context->sent_command);
         return;
     } 
+
+    if (strncmp((char *)context->line_buffer, HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS, strlen(HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS)) == 0){
+        printf("Received +BIA\n");
+        context->command = HFP_CMD_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE;
+        return;
+    } 
+       
 }
 
 
@@ -300,21 +335,9 @@ void handle_switch_on_ok(hfp_connection_t *context){
             break;
         
         case HFP_W4_RETRIEVE_INDICATORS_STATUS:
-            if (context->remote_indicators_update_enabled == 0){
-                context->state = HFP_ENABLE_INDICATORS_STATUS_UPDATE;
-                break;
-            } 
-            if (has_call_waiting_and_3way_calling_feature(context)){
-                context->state = HFP_RETRIEVE_CAN_HOLD_CALL;
-                break;
-            }
-            if (has_hf_indicators_feature(context)){
-                context->state = HFP_LIST_GENERIC_STATUS_INDICATORS;
-                break;
-            } 
-            context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+            context->state = HFP_ENABLE_INDICATORS_STATUS_UPDATE;
             break;
-
+            
         case HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE:
             if (has_call_waiting_and_3way_calling_feature(context)){
                 context->state = HFP_RETRIEVE_CAN_HOLD_CALL;
@@ -325,6 +348,7 @@ void handle_switch_on_ok(hfp_connection_t *context){
                 break;
             } 
             context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
             break;
         
         case HFP_W4_RETRIEVE_CAN_HOLD_CALL:
@@ -333,7 +357,8 @@ void handle_switch_on_ok(hfp_connection_t *context){
                 break;
             } 
             context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-            break;
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
+           break;
         
         case HFP_W4_LIST_GENERIC_STATUS_INDICATORS:
             context->state = HFP_RETRIEVE_GENERIC_STATUS_INDICATORS;
@@ -346,8 +371,12 @@ void handle_switch_on_ok(hfp_connection_t *context){
         case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
             printf("Supported initial state generic status indicators \n");
             context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
             break;
 
+        case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+            context->wait_ok = 0;
+            break;
         default:
             break;
 
@@ -421,16 +450,30 @@ void hfp_hf_establish_service_level_connection(bd_addr_t bd_addr){
 }
 
 void hfp_hf_release_service_level_connection(bd_addr_t bd_addr){
-    hfp_connection_t * connection = hfp_release_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    hfp_release_service_level_connection(connection);
     hfp_run_for_context(connection);
 }
 
-void hfp_hf_transfer_registration_status(bd_addr_t bd_addr){
-    
+void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr, uint8_t enable){
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (!connection){
+        log_error("HFP HF: connection doesn't exist.");
+        return;
+    }
+    connection->enable_status_update_for_ag_indicators = 1;
+    hfp_run_for_context(connection);
 }
 
-void hfp_hf_activate_ag_indicator(bd_addr_t bd_addr){
-    
+void hfp_hf_enable_status_update_for_ag_indicator(bd_addr_t bd_addr, uint32_t indicators_status_bitmap, uint8_t enable){
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (!connection){
+        log_error("HFP HF: connection doesn't exist.");
+        return;
+    }
+    connection->change_enable_status_update_for_individual_ag_indicators = 1;
+    connection->ag_indicators_status_update_bitmap = indicators_status_bitmap; 
+    hfp_run_for_context(connection);
 }
 
 void hfp_hf_transfer_signal_strength_indication(bd_addr_t bd_addr){

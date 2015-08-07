@@ -257,41 +257,45 @@ int hfp_ag_retrieve_initital_supported_generic_status_indicators_cmd(uint16_t ci
 
 void update_command(hfp_connection_t * context){
     context->command = HFP_CMD_NONE; 
-    
+    printf("Received %s\n", context->line_buffer);
+        
     if (strncmp((char *)context->line_buffer+2, HFP_SUPPORTED_FEATURES, strlen(HFP_SUPPORTED_FEATURES)) == 0){
-        printf("Received AT+BRSF\n");
         context->command = HFP_CMD_SUPPORTED_FEATURES;
         return;
     }
 
     if (strncmp((char *)context->line_buffer+2, HFP_INDICATOR, strlen(HFP_INDICATOR)) == 0){
-        printf("Received AT+CIND\n");
-        context->command = HFP_CMD_INDICATOR;
+        if (strncmp((char *)context->line_buffer+strlen(HFP_INDICATOR)+2, "?", 1) == 0){
+            context->command = HFP_CMD_INDICATOR_STATUS;    
+        } else {
+            context->command = HFP_CMD_INDICATOR;    
+        }
         return;
     }
 
 
     if (strncmp((char *)context->line_buffer+2, HFP_AVAILABLE_CODECS, strlen(HFP_AVAILABLE_CODECS)) == 0){
-        printf("Received AT+BAC\n");
         context->command = HFP_CMD_AVAILABLE_CODECS;
         return;
     }
 
-    if (strncmp((char *)context->line_buffer+2, HFP_ENABLE_INDICATOR_STATUS_UPDATE, strlen(HFP_ENABLE_INDICATOR_STATUS_UPDATE)) == 0){
-        printf("Received AT+CMER\n");
+    if (strncmp((char *)context->line_buffer+2, HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS, strlen(HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS)) == 0){
         context->command = HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE;
         return;
     }
 
     if (strncmp((char *)context->line_buffer+2, HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES, strlen(HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES)) == 0){
-        printf("Received AT+CHLD\n");
         context->command = HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES;
         return;
     } 
 
     if (strncmp((char *)context->line_buffer+2, HFP_GENERIC_STATUS_INDICATOR, strlen(HFP_GENERIC_STATUS_INDICATOR)) == 0){
-        printf("Received AT+BIND\n");
         context->command = HFP_CMD_GENERIC_STATUS_INDICATOR;
+        return;
+    } 
+
+    if (strncmp((char *)context->line_buffer+2, HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS, strlen(HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS)) == 0){
+        context->command = HFP_CMD_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE;
         return;
     } 
 }
@@ -332,22 +336,15 @@ void hfp_run_for_context(hfp_connection_t *context){
                     hfp_ag_retrieve_indicators_cmd(context->rfcomm_cid);
                     context->state = HFP_W4_RETRIEVE_INDICATORS_STATUS;
                     break;
+                default:
+                    break;
+            }
+            break;
+        case HFP_CMD_INDICATOR_STATUS:
+             switch(context->state){
                 case HFP_W4_RETRIEVE_INDICATORS_STATUS:
                     hfp_ag_retrieve_indicators_status_cmd(context->rfcomm_cid);
-                    if (context->remote_indicators_update_enabled == 0){
-                        context->state = HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE;
-                        break;
-                    } 
-                    if (has_call_waiting_and_3way_calling_feature(context)){
-                        context->state = HFP_W4_RETRIEVE_CAN_HOLD_CALL;
-                        break;
-                    }
-                    if (has_hf_indicators_feature(context)){
-                        context->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
-                        break;
-                    } 
-                    context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-                    hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
+                    context->state = HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE;
                     break;
                 default:
                     break;
@@ -367,6 +364,9 @@ void hfp_run_for_context(hfp_connection_t *context){
                     } 
                     context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
                     hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
+                    break;
+                case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+                    // TODO 
                     break;
                 default:
                     break;
@@ -407,6 +407,10 @@ void hfp_run_for_context(hfp_connection_t *context){
                     break;
             }
             break;
+        case HFP_CMD_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE:
+            
+            break;
+
         case HFP_CMD_NONE:
             switch(context->state){
                 case HFP_W2_DISCONNECT_RFCOMM:
@@ -432,6 +436,7 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
         context->state = HFP_W4_EXCHANGE_SUPPORTED_FEATURES;   
     }
 
+    printf("hfp_handle_rfcomm_event %s\n", &packet[0]);
     packet[size] = 0;
     int pos;
     for (pos = 0; pos < size ; pos++){
@@ -500,9 +505,9 @@ void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr){
     hfp_establish_service_level_connection(bd_addr, SDP_Handsfree);
 }
 
-// TODO trigger release audio connection
 void hfp_ag_release_service_level_connection(bd_addr_t bd_addr){
-    hfp_connection_t * connection = hfp_release_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    hfp_release_service_level_connection(connection);
     hfp_run_for_context(connection);
 }
 
