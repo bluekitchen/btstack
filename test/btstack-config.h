@@ -7,9 +7,10 @@
 #define SDP_DES_DUMP
 #define HAVE_BLE
 
+#define ENABLE_LOG_DEBUG
 #define ENABLE_LOG_INFO 
 #define ENABLE_LOG_ERROR
-// #define HAVE_HCI_DUMP
+
 #define HAVE_SDP_EXTRA_QUERIES
 #define USE_POSIX_RUN_LOOP
 
