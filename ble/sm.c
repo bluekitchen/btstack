@@ -810,6 +810,15 @@ static void sm_done_for_handle(uint16_t handle){
     }
 }
 
+static int sm_key_distribution_flags_for_auth_req(void){
+    int flags = SM_KEYDIST_ID_KEY | SM_KEYDIST_SIGN;
+    if (sm_auth_req & SM_AUTHREQ_BONDING){
+        // encryption information only if bonding requested
+        flags |= SM_KEYDIST_ENC_KEY;
+    }
+    return flags
+}
+
 static void sm_init_setup(sm_connection_t * sm_conn){
 
     // fill in sm setup
@@ -834,9 +843,10 @@ static void sm_init_setup(sm_connection_t * sm_conn){
         hci_le_advertisement_address(&setup->sm_m_addr_type, setup->sm_m_address);
         setup->sm_s_addr_type = sm_conn->sm_peer_addr_type;
         memcpy(setup->sm_s_address, sm_conn->sm_peer_address, 6);
-        
-        setup->sm_m_preq.initiator_key_distribution = 0x07;
-        setup->sm_m_preq.responder_key_distribution = 0x07;
+
+        int key_distribution_flags = sm_key_distribution_flags_for_auth_req();
+        setup->sm_m_preq.initiator_key_distribution = key_distribution_flags;
+        setup->sm_m_preq.responder_key_distribution = key_distribution_flags;
     }
 
     local_packet->io_capability = sm_io_capabilities;
@@ -1178,6 +1188,7 @@ static void sm_run(void){
         if (!connection) return;
 
         sm_key_t plaintext;
+        int key_distribution_flags;
 
         log_info("sm_run: state %u", connection->sm_engine_state);
 
@@ -1223,8 +1234,9 @@ static void sm_run(void){
             case SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE:
                 // echo initiator for now
                 setup->sm_s_pres.code = SM_CODE_PAIRING_RESPONSE;
-                setup->sm_s_pres.initiator_key_distribution = setup->sm_m_preq.initiator_key_distribution;
-                setup->sm_s_pres.responder_key_distribution = setup->sm_m_preq.responder_key_distribution;
+                key_distribution_flags = sm_key_distribution_flags_for_auth_req();
+                setup->sm_s_pres.initiator_key_distribution = setup->sm_m_preq.initiator_key_distribution & auth_flags_mask;
+                setup->sm_s_pres.responder_key_distribution = setup->sm_m_preq.responder_key_distribution & auth_flags_mask;
                 connection->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_CONFIRM;
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) &setup->sm_s_pres, sizeof(sm_pairing_packet_t));
                 sm_timeout_reset(connection);
