@@ -67,7 +67,7 @@ void hfp_ag_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const ch
 void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, 
     uint8_t * codecs, int codecs_nr, 
     hfp_ag_indicator_t * ag_indicators, int ag_indicators_nr,
-    hfp_hf_indicator_t * hf_indicators, int hf_indicators_nr,
+    hfp_generic_status_indicators_t * hf_indicators, int hf_indicators_nr,
     char *call_hold_services[], int call_hold_services_nr);
 
 /**

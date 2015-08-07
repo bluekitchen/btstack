@@ -67,7 +67,7 @@ static uint8_t hfp_codecs_nr = 0;
 static uint8_t hfp_codecs[HFP_MAX_NUM_CODECS];
 
 static uint8_t hfp_hf_indicators_nr = 0;
-static hfp_hf_indicator_t hfp_hf_indicators[HFP_MAX_NUM_HF_INDICATORS];
+static hfp_generic_status_indicators_t hfp_hf_indicators[HFP_MAX_NUM_HF_INDICATORS];
 
 static int  hfp_ag_indicators_nr = 0;
 static hfp_ag_indicator_t hfp_ag_indicators[HFP_MAX_NUM_AG_INDICATORS];
@@ -474,7 +474,7 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
 void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, 
     uint8_t * codecs, int codecs_nr, 
     hfp_ag_indicator_t * ag_indicators, int ag_indicators_nr,
-    hfp_hf_indicator_t * hf_indicators, int hf_indicators_nr,
+    hfp_generic_status_indicators_t * hf_indicators, int hf_indicators_nr,
     char *call_hold_services[], int call_hold_services_nr){
     if (codecs_nr > HFP_MAX_NUM_CODECS){
         log_error("hfp_init: codecs_nr (%d) > HFP_MAX_NUM_CODECS (%d)", codecs_nr, HFP_MAX_NUM_CODECS);
@@ -495,7 +495,7 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features,
     memcpy(hfp_ag_indicators, ag_indicators, ag_indicators_nr * sizeof(hfp_ag_indicator_t));
 
     hfp_hf_indicators_nr = hf_indicators_nr;
-    memcpy(hfp_hf_indicators, hf_indicators, hf_indicators_nr * sizeof(hfp_hf_indicator_t));
+    memcpy(hfp_hf_indicators, hf_indicators, hf_indicators_nr * sizeof(hfp_generic_status_indicators_t));
 
     hfp_ag_call_hold_services_nr = call_hold_services_nr;
     memcpy(hfp_ag_call_hold_services, call_hold_services, call_hold_services_nr * sizeof(char *));
