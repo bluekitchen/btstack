@@ -91,7 +91,7 @@ static int call_hold_services_nr = 5;
 static char* call_hold_services[] = {"1", "1x", "2", "2x", "3"};
 
 static int hf_indicators_nr = 2;
-static hfp_generic_status_indicators_t hf_indicators[] = {
+static hfp_generic_status_indicator_t hf_indicators[] = {
     {1, 1},
     {2, 1},
 };
