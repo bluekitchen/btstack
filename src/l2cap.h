@@ -260,11 +260,6 @@ void l2cap_accept_connection_internal(uint16_t local_cid);
 void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason);
 
 /** 
- * @brief Request LE connection parameter update
- */
-int l2cap_le_request_connection_parameter_update(uint16_t handle, uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency, uint16_t timeout_multiplier);
-
-/** 
  * @brief Non-blocking UART write
  */
 int  l2cap_can_send_packet_now(uint16_t local_cid);    

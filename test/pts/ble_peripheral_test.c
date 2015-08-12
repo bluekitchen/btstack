@@ -849,7 +849,7 @@ int  stdin_process(struct data_source *ds){
             break;
         case 'z':
             printf("Sending l2cap connection update parameter request\n");
-            l2cap_le_request_connection_parameter_update(handle, 50, 120, 0, 550);
+            gap_request_connection_parameter_update(handle, 50, 120, 0, 550);
             break;
         case 'l':
             att_default_value_long = 0;

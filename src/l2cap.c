@@ -1580,11 +1580,3 @@ void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint1
     }
 }
 
-#ifdef HAVE_BLE
-
-// Request LE connection parameter update
-int l2cap_le_request_connection_parameter_update(uint16_t handle, uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency, uint16_t timeout_multiplier){
-    return gap_request_connection_parameter_update(handle, interval_min, interval_max, slave_latency, timeout_multiplier);
-}
-#endif
-
