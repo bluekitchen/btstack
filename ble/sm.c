@@ -1654,6 +1654,10 @@ static void sm_handle_random_result(uint8_t * data){
             } else {
                 connection->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
                 sm_trigger_user_response(connection);
+                // response_idle == nothing <--> sm_trigger_user_response() did not require response
+                if (setup->sm_user_response == SM_USER_RESPONSE_IDLE){
+                    connection->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
+                }
             }
             return;
         }
