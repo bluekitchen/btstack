@@ -92,7 +92,7 @@ typedef struct advertising_report {
 static uint8_t test_irk[] =  { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 static int gap_privacy = 0;
-/* static */ int gap_bondable = 0;
+static int gap_bondable = 1;
 static char gap_device_name[20];
 static int gap_connectable = 0;
 
@@ -101,6 +101,7 @@ static int sm_mitm_protection = 0;
 static int sm_have_oob_data = 0;
 static uint8_t * sm_oob_data = (uint8_t *) "0123456789012345"; // = { 0x30...0x39, 0x30..0x35}
 static int sm_min_key_size = 7;
+static uint8_t pts_privacy_flag;
 
 static int peer_addr_type;
 static bd_addr_t peer_address;
@@ -317,7 +318,6 @@ void use_public_pts_address(void){
 void handle_gatt_client_event(le_event_t * event){
     le_characteristic_value_event_t * value;
     uint8_t address_type;
-    uint8_t privacy_flag = 0;
     bd_addr_t flipped_address;
     switch(event->type){
         case GATT_SERVICE_QUERY_RESULT:
@@ -358,9 +358,13 @@ void handle_gatt_client_event(le_event_t * event){
                     break;
                 case CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE:
                     central_state = CENTRAL_IDLE;
-                    gatt_client_write_value_of_characteristic(gc_id, handle, gap_peripheral_privacy_flag_characteristic.value_handle, 1, &privacy_flag);
-                    use_public_pts_address();
-                    printf("Peripheral Privacy Flag set to FALSE, connecting to public PTS address again\n");
+                    gatt_client_write_value_of_characteristic(gc_id, handle, gap_peripheral_privacy_flag_characteristic.value_handle, 1, &pts_privacy_flag);
+                    if (pts_privacy_flag){
+                        printf("Peripheral Privacy Flag set to TRUE\n");
+                    } else {
+                        use_public_pts_address();
+                        printf("Peripheral Privacy Flag set to FALSE, connecting to public PTS address again\n");
+                    }
                     break;
                 default:
                     break;
@@ -402,18 +406,21 @@ void show_usage(void){
     printf("PTS: addr type %u, addr %s\n", current_pts_address_type, bd_addr_to_str(current_pts_address));
     printf("IUT: addr type %u, addr %s\n", iut_address_type, bd_addr_to_str(iut_address));
     printf("--------------------------\n");
-    printf("GAP: connectable %u\n", gap_connectable);
+    printf("GAP: connectable %u, bondable %u\n", gap_connectable, gap_bondable);
     printf("SM: %s, MITM protection %u, OOB data %u, key range [%u..16]\n",
         sm_io_capabilities, sm_mitm_protection, sm_have_oob_data, sm_min_key_size);
     printf("Privacy %u\n", gap_privacy);
     printf("Device name: %s\n", gap_device_name);
-    printf("Value Handle: %x\n", value_handle);
-    printf("Attribute Size: %u\n", attribute_size);
+    // printf("Value Handle: %x\n", value_handle);
+    // printf("Attribute Size: %u\n", attribute_size);
     printf("---\n");
     printf("c/C - connectable off\n");
+    printf("d/D - bondable off/on\n");
     printf("---\n");
     printf("1   - enable privacy using random non-resolvable private address\n");
     printf("2   - clear Peripheral Privacy Flag on PTS\n");
+    printf("3   - set Peripheral Privacy Flag on PTS\n");
+    printf("9   - create HCI Classic connection to addr %s\n", bd_addr_to_str(public_pts_address));
     printf("s/S - passive/active scanning\n");
     printf("a   - enable Advertisements\n");
     printf("b   - start bonding\n");
@@ -451,30 +458,54 @@ int  stdin_process(struct data_source *ds){
         case '1':
             printf("Enabling non-resolvable private address\n");
             gap_random_address_set_mode(GAP_RANDOM_ADDRESS_NON_RESOLVABLE);
-            update_advertisment_params(); 
             gap_privacy = 1;
+            update_advertisment_params(); 
+            show_usage();
+            break;
+        case '2':
+            pts_privacy_flag = 0;
+            central_state = CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE;
+            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, GAP_PERIPHERAL_PRIVACY_FLAG);
+            break;
+        case '3':
+            pts_privacy_flag = 1;
+            central_state = CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE;
+            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, GAP_PERIPHERAL_PRIVACY_FLAG);
+            break;
+        case '9':
+            printf("Creating HCI Classic Connection to %s\n", bd_addr_to_str(public_pts_address));
+            hci_send_cmd(&hci_create_connection, public_pts_address, hci_usable_acl_packet_types(), 0, 0, 0, 1);
             break;
         case 'a':
             hci_send_cmd(&hci_le_set_advertise_enable, 1);
+            show_usage();
             break;
         case 'b':
             sm_request_authorization(current_pts_address_type, current_pts_address);
             break;
         case 'c':
-            gap_connectable = 1;
-            update_advertisment_params();
-            break;
-        case 'C':
             gap_connectable = 0;
             update_advertisment_params();
+            show_usage();
+            break;
+        case 'C':
+            gap_connectable = 1;
+            update_advertisment_params();
+            show_usage();
+            break;
+        case 'd':
+            gap_bondable = 0;
+            sm_set_authentication_requirements(SM_AUTHREQ_NO_BONDING);
+            show_usage();
+            break;
+        case 'D':
+            gap_bondable = 1;
+            sm_set_authentication_requirements(SM_AUTHREQ_BONDING);
+            show_usage();
             break;
         case 'n':
             central_state = CENTRAL_W4_NAME_QUERY_COMPLETE;
             gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, GAP_DEVICE_NAME_UUID);
-            break;
-        case '2':
-            central_state = CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE;
-            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, GAP_PERIPHERAL_PRIVACY_FLAG);
             break;
         case 'o':
             central_state = CENTRAL_W4_RECONNECTION_ADDRESS_QUERY_COMPLETE;
@@ -580,7 +611,6 @@ int btstack_main(int argc, const char * argv[]){
     sm_register_oob_data_callback(get_oob_data_callback);
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     sm_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
-    // sm_set_authentication_requirements(SM_AUTHREQ_NO_BONDING);
     sm_set_authentication_requirements(SM_AUTHREQ_BONDING);
 
     sm_set_encryption_key_size_range(sm_min_key_size, 16);
