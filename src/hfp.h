@@ -179,6 +179,7 @@ typedef enum {
     
     HFP_W2_DISCONNECT_RFCOMM,
     HFP_W4_RFCOMM_DISCONNECTED, 
+    HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART,
     HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN
 } hfp_state_t;
 
@@ -211,7 +212,9 @@ typedef struct hfp_connection {
     uint16_t rfcomm_cid;
     
     hfp_state_t state;
-    
+    // needed for reestablishing connection
+    uint16_t service_uuid;
+
     // used during service level connection establishment
     hfp_command_t command;
     hfp_parser_state_t parser_state;

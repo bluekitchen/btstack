@@ -459,6 +459,12 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
             rfcomm_cid = READ_BT_16(packet,2);
             context = get_hfp_connection_context_for_rfcomm_cid(rfcomm_cid);
             if (!context) break;
+            if (context->state == HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART){
+                context->state = HFP_IDLE;
+                hfp_establish_service_level_connection(context->remote_addr, context->service_uuid);
+                break;
+            }
+            
             remove_hfp_connection_context(context);
             hfp_emit_event(callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
             break;
@@ -467,6 +473,11 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
             handle = READ_BT_16(packet,3);
             context = get_hfp_connection_context_for_handle(handle);
             if (!context) break;
+            if (context->state == HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART){
+                context->state = HFP_IDLE;
+                hfp_establish_service_level_connection(context->remote_addr, context->service_uuid);
+                break;
+            }
             hfp_emit_event(callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, packet[2]);
             remove_hfp_connection_context(context);
             break;
@@ -677,13 +688,23 @@ void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_
         log_error("hfp_establish_service_level_connection for addr %s failed", bd_addr_to_str(bd_addr));
         return;
     }
-    if (context->state != HFP_IDLE) return;
-    
-    memcpy(context->remote_addr, bd_addr, 6);
-    context->state = HFP_W4_SDP_QUERY_COMPLETE;
-
-    connection_doing_sdp_query = context;
-    sdp_query_rfcomm_channel_and_name_for_uuid(context->remote_addr, service_uuid);
+    switch (context->state){
+        case HFP_W2_DISCONNECT_RFCOMM:
+            context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+            return;
+        case HFP_W4_RFCOMM_DISCONNECTED:
+            context->state = HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART;
+            return;
+        case HFP_IDLE:
+            memcpy(context->remote_addr, bd_addr, 6);
+            context->state = HFP_W4_SDP_QUERY_COMPLETE;
+            connection_doing_sdp_query = context;
+            context->service_uuid = service_uuid;
+            sdp_query_rfcomm_channel_and_name_for_uuid(context->remote_addr, service_uuid);
+            break;
+        default:
+            break;
+    }
 }
 
 void hfp_release_service_level_connection(hfp_connection_t * context){
