@@ -6,7 +6,7 @@ DIR=.
 BTSTACK_ROOT=${DIR}/../..
 DUMMY=$(shell )
 VERSION=`sed -n -e 's/^.*BTSTACK_VERSION \"\(.*\)\"/\1/p' ${BTSTACK_ROOT}/include/btstack/version.h`
-BTSTACK_PACKAGE=${DIR}/btstack
+BTSTACK_PACKAGE=/tmp/btstack
 ARCHIVE=btstack-arduino-${VERSION}.zip
 
 SRC_FILES  =btstack_memory.c linked_list.c memory_pool.c run_loop.c run_loop_embedded.c
@@ -28,6 +28,9 @@ ARDUINO_LIBS=~/Documents/arduino/libraries/BTstack
 
 all: release
 
+clean:
+	rm -rf ${BTSTACK_PACKAGE}
+
 update_version:
 	${BTSTACK_ROOT}/tools/get_version.sh 
 
@@ -41,5 +44,5 @@ release: update_version
 	mkdir ${BTSTACK_PACKAGE}
 	cp -r ${PATHS} ${BTSTACK_PACKAGE}
 	rm -f ${ARCHIVE}
-	zip -r ${ARCHIVE} btstack
+	zip -r ${ARCHIVE} ${BTSTACK_PACKAGE}
 	cp ${ARCHIVE} btstack-arduino-latest.zip

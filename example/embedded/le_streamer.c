@@ -184,8 +184,7 @@ static void packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *pack
                             test_data_len = ATT_DEFAULT_MTU - 3;
                             conn_handle = READ_BT_16(packet, 4);
                             // min con interval 20 ms 
-                            // res = gap_update_connection_parameters(conn_handle, 0x10, 0x10, 0, 0x0048);
-                            // l2cap_le_request_connection_parameter_update(conn_handle, 0x10, 0x18, 0, 0x0048);
+                            // gap_request_connection_parameter_update(conn_handle, 0x10, 0x18, 0, 0x0048);
                             // printf("Connected, requesting conn param update for handle 0x%04x\n", conn_handle);
                             break;
                     }

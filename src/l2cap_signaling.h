@@ -65,15 +65,17 @@ typedef enum {
     ECHO_RESPONSE,
     INFORMATION_REQUEST,
     INFORMATION_RESPONSE,
+    /* 0x0c - 0x11 used for AMP */
     CONNECTION_PARAMETER_UPDATE_REQUEST = 0x12,
     CONNECTION_PARAMETER_UPDATE_RESPONSE, 
-    COMMAND_REJECT_LE = 0x14,  // internal to BTstack
+    LE_CREDIT_BASED_CONNECTION_REQUEST,
+    LE_CREDIT_BASED_CONNECTION_RESPONSE,
+    LE_FLOW_CONTROL_CREDIT,
+    COMMAND_REJECT_LE = 0x1F  // internal to BTstack
 } L2CAP_SIGNALING_COMMANDS;
 
 uint16_t l2cap_create_signaling_classic(uint8_t * acl_buffer,hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr);
 uint16_t l2cap_create_signaling_le(uint8_t * acl_buffer, hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr);
-uint16_t l2cap_le_create_connection_parameter_update_request(uint8_t * acl_buffer, uint16_t handle,  uint8_t identifier, uint16_t interval_min, uint16_t interval_max, uint16_t slave_latency, uint16_t timeout_multiplier);
-uint16_t l2cap_le_create_connection_parameter_update_response(uint8_t * acl_buffer, uint16_t handle,  uint8_t identifier, uint16_t response);
 uint8_t  l2cap_next_sig_id(void);
 uint16_t l2cap_next_local_cid(void);
 

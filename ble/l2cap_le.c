@@ -226,29 +226,34 @@ static void l2cap_run(void){
     hci_connections_get_iterator(&it);
     while(linked_list_iterator_has_next(&it)){
         hci_connection_t * connection = (hci_connection_t *) linked_list_iterator_next(&it);
-        int result;
-
+        if (!hci_can_send_acl_packet_now(connection->con_handle)) continue;
+        uint8_t *acl_buffer;
+        uint16_t len;
         switch (connection->le_con_parameter_update_state){
+            case CON_PARAMETER_UPDATE_SEND_REQUEST:
+                connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
+                hci_reserve_packet_buffer();
+                acl_buffer = hci_get_outgoing_packet_buffer();
+                len = l2cap_le_create_connection_parameter_update_request(acl_buffer, connection->con_handle, connection->le_con_param_update_identifier,
+                      connection->le_conn_interval_min, connection->le_conn_interval_max, connection->le_conn_latency, connection->le_supervision_timeout);
+                hci_send_acl_packet_buffer(len);
+                break;
             case CON_PARAMETER_UPDATE_SEND_RESPONSE:
-                result = 0;
+                connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_CHANGE_HCI_CON_PARAMETERS;
+                hci_reserve_packet_buffer();
+                acl_buffer = hci_get_outgoing_packet_buffer();
+                len = l2cap_le_create_connection_parameter_update_response(acl_buffer, connection->con_handle, connection->le_con_param_update_identifier, 0);
+                hci_send_acl_packet_buffer(len);
                 break;
             case CON_PARAMETER_UPDATE_DENY:
-                result = 1;
+                connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
+                hci_reserve_packet_buffer();
+                acl_buffer = hci_get_outgoing_packet_buffer();
+                len = l2cap_le_create_connection_parameter_update_response(acl_buffer, connection->con_handle, connection->le_con_param_update_identifier, 1);
+                hci_send_acl_packet_buffer(len);
                 break;
             default:
-                result = -1;
                 break;
-        }
-        if (result < 0) break;
-        
-        if (!hci_can_send_acl_packet_now(connection->con_handle)) break;
-        hci_reserve_packet_buffer();
-        uint8_t *acl_buffer = hci_get_outgoing_packet_buffer();
-        connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_NONE;
-        uint16_t len = l2cap_le_create_connection_parameter_update_response(acl_buffer, connection->con_handle, connection->le_con_param_update_identifier, result);
-        hci_send_acl_packet_buffer(len);
-        if (result == 0){
-            connection->le_con_parameter_update_state = CON_PARAMETER_UPDATE_CHANGE_HCI_CON_PARAMETERS;
         }
     }
 }

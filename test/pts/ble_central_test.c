@@ -637,6 +637,10 @@ int btstack_main(int argc, const char * argv[]){
     memcpy(current_pts_address, public_pts_address, 6);
     current_pts_address_type = public_pts_address_type;
 
+    // classic discoverable / connectable
+    hci_connectable_control(1);
+    hci_discoverable_control(1);
+
     // allow foor terminal input
     btstack_stdin_setup(stdin_process);
 
