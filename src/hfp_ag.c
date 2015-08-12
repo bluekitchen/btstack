@@ -66,9 +66,6 @@ static uint16_t hfp_supported_features = HFP_DEFAULT_AG_SUPPORTED_FEATURES;
 static uint8_t hfp_codecs_nr = 0;
 static uint8_t hfp_codecs[HFP_MAX_NUM_CODECS];
 
-static uint8_t hfp_hf_indicators_nr = 0;
-static hfp_generic_status_indicators_t hfp_hf_indicators[HFP_MAX_NUM_HF_INDICATORS];
-
 static int  hfp_ag_indicators_nr = 0;
 static hfp_ag_indicator_t hfp_ag_indicators[HFP_MAX_NUM_AG_INDICATORS];
 
@@ -77,6 +74,24 @@ static char *hfp_ag_call_hold_services[6];
 static hfp_callback_t hfp_callback;
 
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
+
+hfp_generic_status_indicators_t * get_hfp_generic_status_indicators();
+int get_hfp_generic_status_indicators_nr();
+void set_hfp_generic_status_indicators(hfp_generic_status_indicators_t * indicators, int indicator_nr);
+
+static void set_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr){
+    int i;
+    if (indicator_nr > HFP_MAX_NUM_AG_INDICATORS) return;
+    for (i = 0; i<indicator_nr; i++){
+        hfp_ag_indicators[i].status = indicators[i].status;
+        hfp_ag_indicators[i].min_range = indicators[i].min_range;
+        hfp_ag_indicators[i].max_range = indicators[i].max_range;
+        strcpy(hfp_ag_indicators[i].name, indicators[i].name);
+           
+    }
+    hfp_ag_indicators_nr = indicator_nr;
+}
+
 
 void hfp_ag_register_packet_handler(hfp_callback_t callback){
     if (callback == NULL){
@@ -154,21 +169,21 @@ int hfp_hf_indicators_join(char * buffer, int buffer_size){
     if (buffer_size < hfp_ag_indicators_nr * 3) return 0;
     int i;
     int offset = 0;
-    for (i = 0; i < hfp_ag_indicators_nr-1; i++) {
-        offset += snprintf(buffer+offset, buffer_size-offset, "%d,", hfp_hf_indicators[i].uuid);
+    for (i = 0; i < get_hfp_generic_status_indicators_nr()-1; i++) {
+        offset += snprintf(buffer+offset, buffer_size-offset, "%d,", get_hfp_generic_status_indicators()[i].uuid);
     }
-    if (i<hfp_ag_indicators_nr){
-        offset += snprintf(buffer+offset, buffer_size-offset, "%d,", hfp_hf_indicators[i].uuid);
+    if (i < get_hfp_generic_status_indicators_nr()){
+        offset += snprintf(buffer+offset, buffer_size-offset, "%d,", get_hfp_generic_status_indicators()[i].uuid);
     }
     return offset;
 }
 
 int hfp_hf_indicators_initial_status_join(char * buffer, int buffer_size){
-    if (buffer_size < hfp_hf_indicators_nr * 3) return 0;
+    if (buffer_size < get_hfp_generic_status_indicators_nr() * 3) return 0;
     int i;
     int offset = 0;
-    for (i = 0; i < hfp_hf_indicators_nr; i++) {
-        offset += snprintf(buffer+offset, buffer_size-offset, "\r\n%s:%d,%d\r\n", HFP_GENERIC_STATUS_INDICATOR, hfp_hf_indicators[i].uuid, hfp_hf_indicators[i].initial_state);
+    for (i = 0; i < get_hfp_generic_status_indicators_nr(); i++) {
+        offset += snprintf(buffer+offset, buffer_size-offset, "\r\n%s:%d,%d\r\n", HFP_GENERIC_STATUS_INDICATOR, get_hfp_generic_status_indicators()[i].uuid, get_hfp_generic_status_indicators()[i].state);
     }
     return offset;
 }
@@ -494,8 +509,7 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features,
     hfp_ag_indicators_nr = ag_indicators_nr;
     memcpy(hfp_ag_indicators, ag_indicators, ag_indicators_nr * sizeof(hfp_ag_indicator_t));
 
-    hfp_hf_indicators_nr = hf_indicators_nr;
-    memcpy(hfp_hf_indicators, hf_indicators, hf_indicators_nr * sizeof(hfp_generic_status_indicators_t));
+    set_hfp_generic_status_indicators(hf_indicators, hf_indicators_nr);
 
     hfp_ag_call_hold_services_nr = call_hold_services_nr;
     memcpy(hfp_ag_call_hold_services, call_hold_services, call_hold_services_nr * sizeof(char *));

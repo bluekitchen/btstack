@@ -65,17 +65,13 @@ TEST_GROUP(HFPParser){
     int pos;
     int offset;
 
-    void parser_init(hfp_connection_t * context){
-        context->parser_state = HFP_PARSER_CMD_HEADER;
-        context->parser_item_index = 0;
-        context->line_size = 0;
-        context->ag_indicators_nr = 0;
-        context->remote_codecs_nr = 0;
-        memset(packet,0, sizeof(packet));
-    }
-
     void setup(void){
-        parser_init(&context);
+        context.parser_state = HFP_PARSER_CMD_HEADER;
+        context.parser_item_index = 0;
+        context.line_size = 0;
+        context.ag_indicators_nr = 0;
+        context.remote_codecs_nr = 0;
+        memset(packet,0, sizeof(packet)); 
     }
 };
 
@@ -96,18 +92,6 @@ TEST(HFPParser, HFP_HF_SUPPORTED_FEATURES){
     CHECK_EQUAL(1007, context.remote_supported_features);
 }
 
-TEST(HFPParser, HFP_HF_AVAILABLE_CODECS){
-    sprintf(packet, "\r\n%s:0,1,2\r\n", HFP_AVAILABLE_CODECS);
-    for (pos = 0; pos < strlen(packet); pos++){
-        hfp_parse(&context, packet[pos]);
-    }
-    CHECK_EQUAL(HFP_CMD_AVAILABLE_CODECS, context.command);
-    CHECK_EQUAL(3, context.remote_codecs_nr);
-    for (pos = 0; pos < 3; pos++){
-        CHECK_EQUAL(pos, context.remote_codecs[pos]);
-    }   
-}
-
 TEST(HFPParser, HFP_HF_INDICATORS){
     offset = 0;
     offset += snprintf(packet, sizeof(packet), "%s:", HFP_INDICATOR);
@@ -117,8 +101,7 @@ TEST(HFPParser, HFP_HF_INDICATORS){
     offset += snprintf(packet+offset, sizeof(packet)-offset, "\"%s\", (%d, %d)\r\n", ag_indicators[pos].name, ag_indicators[pos].min_range, ag_indicators[pos].max_range);
     
     context.sent_command = HFP_CMD_INDICATOR;
-    context.ag_indicators_nr = 0;
-
+    
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
@@ -195,12 +178,6 @@ TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR_STATE){
     CHECK_EQUAL(HFP_CMD_GENERIC_STATUS_INDICATOR_STATE, context.command);
     CHECK_EQUAL(1, context.generic_status_indicators[0].state);
 }
-
-// TEST(HFPParser, HFP_AG_ENABLE_INDICATOR_STATUS_UPDATE){
-// }
-
-// TEST(HFPParser, HFP_AG_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE){
-// }
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);

@@ -20,8 +20,6 @@ COMMON = \
     remote_device_db_memory.c   \
     sdp_util.c	                \
     utils.c			            \
-    hfp.c	                    \
-    hfp_hf.c	                \
     sdp_client.c		        \
     sdp_parser.c		        \
     sdp_query_util.c		    \
@@ -43,12 +41,15 @@ CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include -I$
 LDFLAGS += -lCppUTest -lCppUTestExt
 
 
-EXAMPLES = hfp_hf_parser_test 
+EXAMPLES = hfp_ag_parser_test hfp_hf_parser_test 
 
 all: ${BTSTACK_ROOT}/include/btstack/version.h ${EXAMPLES}
 
 clean:
 	rm -rf *.o $(EXAMPLES) *.dSYM
 
-hfp_hf_parser_test: ${COMMON_OBJ}  hfp.o hfp_hf_parser_test.c  
+hfp_ag_parser_test: ${COMMON_OBJ} hfp_ag.o hfp.o hfp_ag_parser_test.c  
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+hfp_hf_parser_test: ${COMMON_OBJ} hfp_hf.o hfp.o hfp_hf_parser_test.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
