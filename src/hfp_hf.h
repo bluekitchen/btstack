@@ -98,7 +98,7 @@ void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr, uint8_
 /**
  * @brief Deactivate/reactivate status update for the individual indicators in the AG using bitmap.
  */
-void hfp_hf_enable_status_update_for_ag_indicator(bd_addr_t bd_addr, uint32_t indicators_status_bitmap, uint8_t enable);
+void hfp_hf_enable_status_update_for_individual_ag_indicators(bd_addr_t bd_addr, uint32_t indicators_status_bitmap);
 
 
 /**

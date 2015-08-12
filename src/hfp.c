@@ -177,11 +177,13 @@ int join(char * buffer, int buffer_size, uint8_t * values, int values_nr){
 
 int join_bitmap(char * buffer, int buffer_size, uint32_t values, int values_nr){
     if (buffer_size < values_nr * 3) return 0;
+
     int i;
     int offset = 0;
     for (i = 0; i < values_nr-1; i++) {
       offset += snprintf(buffer+offset, buffer_size-offset, "%d,", get_bit(values,i)); // puts string into buffer
     }
+    
     if (i<values_nr){
         offset += snprintf(buffer+offset, buffer_size-offset, "%d", get_bit(values,i));
     }
@@ -251,7 +253,6 @@ static hfp_connection_t * create_hfp_connection_context(){
     context->negotiated_codec = HFP_CODEC_CVSD;
     
     context->enable_status_update_for_ag_indicators = 0xFF;
-    context->change_enable_status_update_for_individual_ag_indicators = 0xFF;
 
     context->generic_status_indicators_nr = hfp_generic_status_indicators_nr;
     memcpy(context->generic_status_indicators, hfp_generic_status_indicators, hfp_generic_status_indicators_nr * sizeof(hfp_generic_status_indicators_t));
@@ -524,14 +525,6 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                 context->line_buffer[context->line_size] = 0;
                 
                 switch (context->command){
-                    case HFP_CMD_INDICATOR:
-                        if (byte == ')'){
-                            context->parser_state = HFP_PARSER_CMD_SEQUENCE;
-                            context->parser_item_index = 0;
-                            context->line_size = 0;
-                            break;
-                        }
-                        break;
                     case HFP_CMD_SUPPORTED_FEATURES:
                         context->remote_supported_features = 0;
                         for (i=0; i<16; i++){
@@ -661,6 +654,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                 context->line_size = 0;
                 context->parser_item_index++;
                 context->ag_indicators_nr = context->parser_item_index;
+                printf("parser ag nr %d \n", context->ag_indicators_nr);
                 break;
             }
            

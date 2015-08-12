@@ -119,6 +119,11 @@ static int stdin_process(struct data_source *ds){
         case 'r':
             printf("Enabling HFP AG registration status update.\n");
             hfp_hf_enable_status_update_for_all_ag_indicators(device_addr, 1);
+            break;
+        case 'i':
+            printf("Enabling HFP AG registration status update for individual indicators.\n");
+            hfp_hf_enable_status_update_for_individual_ag_indicators(device_addr, 63);
+            break;
         default:
             show_usage();
             break;
@@ -141,7 +146,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
             printf("Service level connection released.\n\n");
             break;
-        case HFP_SUBEVENT_OK:
+        case HFP_SUBEVENT_COMPLETE:
             switch (cmd){
                 case 'r':
                     printf("HFP AG registration status update enabled.\n");

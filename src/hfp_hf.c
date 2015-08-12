@@ -149,8 +149,8 @@ int hfp_hs_activate_status_update_for_all_ag_indicators_cmd(uint16_t cid, uint8_
     return send_str_over_rfcomm(cid, buffer);
 }
 
-int hfp_hs_activate_status_update_for_ag_indicator_cmd(uint16_t cid, uint32_t indicators_status, int indicators_nr, uint8_t activate){
-    char buffer[20];
+int hfp_hs_activate_status_update_for_ag_indicator_cmd(uint16_t cid, uint32_t indicators_status, int indicators_nr){
+    char buffer[50];
     int offset = snprintf(buffer, sizeof(buffer), "AT%s=", HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS);
     offset += join_bitmap(buffer+offset, sizeof(buffer)-offset, indicators_status, indicators_nr);
     offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n");
@@ -245,14 +245,15 @@ static void hfp_run_for_context(hfp_connection_t * context){
             if (context->enable_status_update_for_ag_indicators != 0xFF){
                 hfp_hs_activate_status_update_for_all_ag_indicators_cmd(context->rfcomm_cid, context->enable_status_update_for_ag_indicators);
                 context->wait_ok = 1;
+                context->enable_status_update_for_ag_indicators = 0xFF;
                 break;
             };
-            if (context->change_enable_status_update_for_individual_ag_indicators != 0xFF){
+            if (context->change_status_update_for_individual_ag_indicators == 1){
                 hfp_hs_activate_status_update_for_ag_indicator_cmd(context->rfcomm_cid, 
                         context->ag_indicators_status_update_bitmap,
-                        context->ag_indicators_nr,
-                        context->change_enable_status_update_for_individual_ag_indicators);
+                        context->ag_indicators_nr);
                 context->wait_ok = 1;
+                context->change_status_update_for_individual_ag_indicators = 0;
                 break;
             }
             break;
@@ -263,6 +264,11 @@ static void hfp_run_for_context(hfp_connection_t * context){
 
 void update_command(hfp_connection_t * context){
     context->command = HFP_CMD_NONE; 
+    if (strncmp((char *)context->line_buffer, HFP_ERROR, strlen(HFP_ERROR)) == 0){
+        context->command = HFP_CMD_ERROR;
+        printf("Received ERROR\n");
+    }
+
     if (strncmp((char *)context->line_buffer, HFP_OK, strlen(HFP_OK)) == 0){
         context->command = HFP_CMD_OK;
         printf("Received OK\n");
@@ -377,7 +383,7 @@ void handle_switch_on_ok(hfp_connection_t *context){
 
         case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
             context->wait_ok = 0;
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_OK, 0);
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_COMPLETE, 0);
            
             break;
         default:
@@ -394,11 +400,21 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
 
     packet[size] = 0;
     int pos;
-    // printf("parse command: %s, state: %d\n", packet, context->parser_state);
+    printf("parse command: %s, state: %d\n", packet, context->parser_state);
     for (pos = 0; pos < size ; pos++){
         hfp_parse(context, packet[pos]);
 
         // trigger next action after CMD received
+        if (context->command == HFP_CMD_ERROR){
+            if (context->state == HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
+                context->wait_ok = 0;
+                // TODO: reset state? repeat commands? restore bitmaps? get ERROR codes.
+
+                hfp_emit_event(hfp_callback, HFP_SUBEVENT_COMPLETE, 1); 
+            } else {
+
+            }
+        }
         if (context->command != HFP_CMD_OK) continue;
         handle_switch_on_ok(context);
     }
@@ -469,13 +485,13 @@ void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr, uint8_
     hfp_run_for_context(connection);
 }
 
-void hfp_hf_enable_status_update_for_ag_indicator(bd_addr_t bd_addr, uint32_t indicators_status_bitmap, uint8_t enable){
+void hfp_hf_enable_status_update_for_individual_ag_indicators(bd_addr_t bd_addr, uint32_t indicators_status_bitmap){
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (!connection){
         log_error("HFP HF: connection doesn't exist.");
         return;
     }
-    connection->change_enable_status_update_for_individual_ag_indicators = 1;
+    connection->change_status_update_for_individual_ag_indicators = 1;
     connection->ag_indicators_status_update_bitmap = indicators_status_bitmap; 
     hfp_run_for_context(connection);
 }

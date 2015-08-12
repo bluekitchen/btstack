@@ -110,6 +110,7 @@ extern "C" {
 #define HFP_GENERIC_STATUS_INDICATOR "+BIND"
 
 #define HFP_OK "OK"
+#define HFP_ERROR "ERROR"
 
 // Codecs 
 #define HFP_CODEC_CVSD 0x01
@@ -117,6 +118,7 @@ extern "C" {
 
 typedef enum {
     HFP_CMD_NONE = 0,
+    HFP_CMD_ERROR,
     HFP_CMD_OK,
     HFP_CMD_SUPPORTED_FEATURES,
     HFP_CMD_AVAILABLE_CODECS,
@@ -235,7 +237,7 @@ typedef struct hfp_connection {
     // 0 = deactivate, 1 = activate, 0xff = do nothing
     uint8_t wait_ok;
     hfp_command_t sent_command;
-    uint8_t change_enable_status_update_for_individual_ag_indicators; 
+    uint8_t change_status_update_for_individual_ag_indicators; 
     
     uint32_t ag_indicators_status_update_bitmap;
     
