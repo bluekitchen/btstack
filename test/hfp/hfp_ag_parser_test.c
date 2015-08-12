@@ -51,10 +51,11 @@ hfp_generic_status_indicators_t * get_hfp_generic_status_indicators();
 void set_hfp_generic_status_indicators(hfp_generic_status_indicators_t * indicators, int indicator_nr);
 
 
-static int hf_indicators_nr = 2;
+static int hf_indicators_nr = 3;
 static hfp_generic_status_indicators_t hf_indicators[] = {
     {1, 1},
-    {2, 1}
+    {2, 1},
+    {3, 1}
 };
 
 static  hfp_connection_t context;
@@ -132,15 +133,12 @@ TEST(HFPParser, HFP_AG_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE){
         CHECK_EQUAL(context.generic_status_indicators[pos].uuid, hf_indicators[pos].uuid);
         CHECK_EQUAL(context.generic_status_indicators[pos].state, hf_indicators[pos].state);
     }
-    int indicator_index;
-    for (indicator_index = 0; indicator_index < hf_indicators_nr; indicator_index++){
-        sprintf(packet, "\r\nAT%s=%d,0\r\n", 
-            HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS, 
-            get_hfp_generic_status_indicators()[indicator_index].uuid);
-        for (pos = 0; pos < strlen(packet); pos++){
-            hfp_parse(&context, packet[pos]);
-        }
+    sprintf(packet, "\r\nAT%s=0,0,0\r\n", 
+        HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS);
+    for (pos = 0; pos < strlen(packet); pos++){
+        hfp_parse(&context, packet[pos]);
     }
+
     CHECK_EQUAL(HFP_CMD_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE, context.command);
 
     for (pos = 0; pos < hf_indicators_nr; pos++){

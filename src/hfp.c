@@ -93,23 +93,23 @@ static const char * hfp_ag_features[] = {
     "Reserved for future definition"
 };
 
-static int hfp_hf_indicators_nr = 0;
-static hfp_generic_status_indicators_t hfp_hf_indicators[HFP_MAX_NUM_HF_INDICATORS];
+static int hfp_generic_status_indicators_nr = 0;
+static hfp_generic_status_indicators_t hfp_generic_status_indicators[HFP_MAX_NUM_HF_INDICATORS];
 
 static linked_list_t hfp_connections = NULL;
 
 hfp_generic_status_indicators_t * get_hfp_generic_status_indicators(){
-    return (hfp_generic_status_indicators_t *) &hfp_hf_indicators;
+    return (hfp_generic_status_indicators_t *) &hfp_generic_status_indicators;
 }
 
 int get_hfp_generic_status_indicators_nr(){
-    return hfp_hf_indicators_nr;
+    return hfp_generic_status_indicators_nr;
 }
 
 void set_hfp_generic_status_indicators(hfp_generic_status_indicators_t * indicators, int indicator_nr){
     if (indicator_nr > HFP_MAX_NUM_HF_INDICATORS) return;
-    hfp_hf_indicators_nr = indicator_nr;
-    memcpy(hfp_hf_indicators, indicators, indicator_nr * sizeof(hfp_generic_status_indicators_t));
+    hfp_generic_status_indicators_nr = indicator_nr;
+    memcpy(hfp_generic_status_indicators, indicators, indicator_nr * sizeof(hfp_generic_status_indicators_t));
 }
 
 const char * hfp_hf_feature(int index){
@@ -253,8 +253,8 @@ static hfp_connection_t * create_hfp_connection_context(){
     context->enable_status_update_for_ag_indicators = 0xFF;
     context->change_enable_status_update_for_individual_ag_indicators = 0xFF;
 
-    context->generic_status_indicators_nr = hfp_hf_indicators_nr;
-    memcpy(context->generic_status_indicators, hfp_hf_indicators, hfp_hf_indicators_nr * sizeof(hfp_generic_status_indicators_t));
+    context->generic_status_indicators_nr = hfp_generic_status_indicators_nr;
+    memcpy(context->generic_status_indicators, hfp_generic_status_indicators, hfp_generic_status_indicators_nr * sizeof(hfp_generic_status_indicators_t));
 
     linked_list_add(&hfp_connections, (linked_item_t*)context);
     return context;
@@ -575,20 +575,8 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                     case HFP_CMD_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE:
                         // AG parses new gen. ind. state
                         value = atoi((char *)&context->line_buffer[0]);
-                        context->generic_status_indicator_state_index = 255;
-                        // TODO: match on uuid or index?
-                        for (i = 0; i < hfp_hf_indicators_nr; i++){
-                            if (hfp_hf_indicators[i].uuid == value ){
-                                context->generic_status_indicator_state_index = i;
-                                continue;
-                            }
-                        }
-                        if (context->generic_status_indicator_state_index >= 0 && context->generic_status_indicator_state_index < hfp_hf_indicators_nr){
-                            printf("Set state of the indicator wiht index %d, ", context->generic_status_indicator_state_index);
-                            context->parser_state = HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
-                            break;
-                        }
-                        context->parser_state = HFP_PARSER_CMD_HEADER;
+                        context->generic_status_indicators[context->parser_item_index].state = value;
+                        context->parser_item_index++;
                         break;
                     default:
                         break;
@@ -618,7 +606,6 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                 context->parser_state = HFP_PARSER_CMD_HEADER;
                 printf("to %s [0-dissabled, 1-enabled]\n", context->line_buffer);
                 // HF stores inital AG gen. ind. state
-                // AG stores new gen. ind. state
                 context->generic_status_indicators[context->generic_status_indicator_state_index].state = (uint8_t)atoi((char*)context->line_buffer);
                 break;
             }
