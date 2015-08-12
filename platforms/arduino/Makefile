@@ -28,6 +28,9 @@ ARDUINO_LIBS=~/Documents/arduino/libraries/BTstack
 
 all: release
 
+clean:
+	rm -rf ${BTSTACK_PACKAGE}
+
 update_version:
 	${BTSTACK_ROOT}/tools/get_version.sh 
 
