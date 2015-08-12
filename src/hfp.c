@@ -536,8 +536,10 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                         break;
                     case HFP_CMD_AVAILABLE_CODECS:
                         // printf("Received codec %s\n", context->line_buffer);
-                        context->remote_codecs[context->remote_codecs_nr] = (uint16_t)atoi((char*)context->line_buffer);
-                        context->remote_codecs_nr++;
+                        // context->remote_codecs[context->remote_codecs_nr] = (uint16_t)atoi((char*)context->line_buffer);
+                        context->remote_codecs[context->parser_item_index] = (uint16_t)atoi((char*)context->line_buffer);
+                        context->parser_item_index++;
+                        context->remote_codecs_nr = context->parser_item_index;
                         break;
                     case HFP_CMD_INDICATOR_STATUS:
                         // printf("Indicator %d with status: %s\n", context->parser_item_index+1, context->line_buffer);
@@ -560,9 +562,9 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                         context->remote_call_services_nr++;
                         break;
                     case HFP_CMD_GENERIC_STATUS_INDICATOR:
-
-                        context->generic_status_indicators[context->generic_status_indicators_nr].uuid = (uint16_t)atoi((char*)context->line_buffer);
-                        context->generic_status_indicators_nr++;
+                        context->generic_status_indicators[context->parser_item_index].uuid = (uint16_t)atoi((char*)context->line_buffer);
+                        context->parser_item_index++;
+                        context->generic_status_indicators_nr = context->parser_item_index;
                         break;
                     case HFP_CMD_GENERIC_STATUS_INDICATOR_STATE:
                         // HF parses inital AG gen. ind. state
@@ -628,8 +630,8 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                 context->line_buffer[context->line_size] = 0;
                 context->line_size = 0;
                 //printf("Indicator %d: %s (", context->ag_indicators_nr+1, context->line_buffer);
-                strcpy((char *)context->ag_indicators[context->ag_indicators_nr].name,  (char *)context->line_buffer);
-                context->ag_indicators[context->ag_indicators_nr].index = context->ag_indicators_nr+1;
+                strcpy((char *)context->ag_indicators[context->parser_item_index].name,  (char *)context->line_buffer);
+                context->ag_indicators[context->parser_item_index].index = context->parser_item_index+1;
                 break;
             }
             if (byte == '('){ // parse indicator range
@@ -643,7 +645,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                 context->parser_state = HFP_PARSER_CMD_INDICATOR_MAX_RANGE;
                 context->line_buffer[context->line_size] = 0;
                 //printf("%d, ", atoi((char *)&context->line_buffer[0]));
-                context->ag_indicators[context->ag_indicators_nr].min_range = atoi((char *)context->line_buffer);
+                context->ag_indicators[context->parser_item_index].min_range = atoi((char *)context->line_buffer);
                 context->line_size = 0;
                 break;
             }
@@ -655,9 +657,10 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                 context->parser_state = HFP_PARSER_CMD_SEQUENCE;
                 context->line_buffer[context->line_size] = 0;
                 //printf("%d)\n", atoi((char *)&context->line_buffer[0]));
-                context->ag_indicators[context->ag_indicators_nr].max_range = atoi((char *)context->line_buffer);
+                context->ag_indicators[context->parser_item_index].max_range = atoi((char *)context->line_buffer);
                 context->line_size = 0;
-                context->ag_indicators_nr++;
+                context->parser_item_index++;
+                context->ag_indicators_nr = context->parser_item_index;
                 break;
             }
            

@@ -71,7 +71,7 @@ TEST_GROUP(HFPParser){
         memset(packet,0, sizeof(packet));
     }
 };
-/*
+
 TEST(HFPParser, HFP_AG_SUPPORTED_FEATURES){
     sprintf(packet, "\r\nAT%s=0000001111101111\r\n", HFP_SUPPORTED_FEATURES);
     for (pos = 0; pos < strlen(packet); pos++){
@@ -97,7 +97,7 @@ TEST(HFPParser, HFP_AG_AVAILABLE_CODECS){
 TEST(HFPParser, HFP_AG_GENERIC_STATUS_INDICATOR){
     sprintf(packet, "\r\nAT%s=0,1\r\n", HFP_GENERIC_STATUS_INDICATOR);
     context.sent_command = HFP_CMD_GENERIC_STATUS_INDICATOR;
-    
+
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
@@ -118,11 +118,14 @@ TEST(HFPParser, HFP_AG_ENABLE_INDICATOR_STATUS_UPDATE){
     CHECK_EQUAL(HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE, context.command);
     CHECK_EQUAL(1, context.enable_status_update_for_ag_indicators);
 }
-*/
+
+
+
 TEST(HFPParser, HFP_AG_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE){
     set_hfp_generic_status_indicators((hfp_generic_status_indicators_t *)&hf_indicators, hf_indicators_nr);
     context.generic_status_indicators_nr = hf_indicators_nr;
     memcpy(context.generic_status_indicators, hf_indicators, hf_indicators_nr * sizeof(hfp_generic_status_indicators_t));
+    
     for (pos = 0; pos < hf_indicators_nr; pos++){
         CHECK_EQUAL(get_hfp_generic_status_indicators()[pos].uuid, hf_indicators[pos].uuid);
         CHECK_EQUAL(get_hfp_generic_status_indicators()[pos].state, hf_indicators[pos].state);

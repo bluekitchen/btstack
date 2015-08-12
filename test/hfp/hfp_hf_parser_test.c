@@ -101,8 +101,7 @@ TEST(HFPParser, HFP_HF_INDICATORS){
     offset += snprintf(packet+offset, sizeof(packet)-offset, "\"%s\", (%d, %d)\r\n", ag_indicators[pos].name, ag_indicators[pos].min_range, ag_indicators[pos].max_range);
     
     context.sent_command = HFP_CMD_INDICATOR;
-    context.ag_indicators_nr = 0;
-
+    
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
