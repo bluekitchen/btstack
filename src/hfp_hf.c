@@ -409,7 +409,6 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
             if (context->state == HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
                 context->wait_ok = 0;
                 // TODO: reset state? repeat commands? restore bitmaps? get ERROR codes.
-
                 hfp_emit_event(hfp_callback, HFP_SUBEVENT_COMPLETE, 1); 
             } else {
 
@@ -476,6 +475,7 @@ void hfp_hf_release_service_level_connection(bd_addr_t bd_addr){
 }
 
 void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr, uint8_t enable){
+    hfp_hf_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (!connection){
         log_error("HFP HF: connection doesn't exist.");
@@ -486,6 +486,7 @@ void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr, uint8_
 }
 
 void hfp_hf_enable_status_update_for_individual_ag_indicators(bd_addr_t bd_addr, uint32_t indicators_status_bitmap){
+    hfp_hf_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (!connection){
         log_error("HFP HF: connection doesn't exist.");
