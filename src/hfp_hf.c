@@ -315,7 +315,7 @@ void update_command(hfp_connection_t * context){
 
     if (strncmp((char *)context->line_buffer, HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS, strlen(HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS)) == 0){
         printf("Received +BIA\n");
-        context->command = HFP_CMD_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE;
+        context->command = HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE;
         return;
     } 
        
@@ -485,6 +485,7 @@ void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr, uint8_
     hfp_run_for_context(connection);
 }
 
+// TODO: returned ERROR - wrong format
 void hfp_hf_enable_status_update_for_individual_ag_indicators(bd_addr_t bd_addr, uint32_t indicators_status_bitmap){
     hfp_hf_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);

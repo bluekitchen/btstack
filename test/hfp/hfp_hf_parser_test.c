@@ -51,13 +51,13 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte);
 static  hfp_connection_t context;
 static int ag_indicators_nr = 7;
 static hfp_ag_indicator_t ag_indicators[] = {
-    {1, "service", 0, 1, 1},
-    {2, "call", 0, 1, 0},
-    {3, "callsetup", 0, 3, 0},
-    {4, "battchg", 0, 5, 3},
-    {5, "signal", 0, 5, 5},
-    {6, "roam", 0, 1, 0},
-    {7, "callheld", 0, 2, 0},
+    {1, "service",   0, 1, 1, 0, 0},
+    {2, "call",      0, 1, 0, 1, 1},
+    {3, "callsetup", 0, 3, 0, 1, 1},
+    {4, "battchg",   0, 5, 3, 0, 0},
+    {5, "signal",    0, 5, 5, 0, 0},
+    {6, "roam",      0, 1, 0, 0, 0},
+    {7, "callheld",  0, 2, 0, 1, 1}
 };
 
 TEST_GROUP(HFPParser){
