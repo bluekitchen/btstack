@@ -94,22 +94,22 @@ static const char * hfp_ag_features[] = {
 };
 
 static int hfp_generic_status_indicators_nr = 0;
-static hfp_generic_status_indicators_t hfp_generic_status_indicators[HFP_MAX_NUM_HF_INDICATORS];
+static hfp_generic_status_indicator_t hfp_generic_status_indicators[HFP_MAX_NUM_HF_INDICATORS];
 
 static linked_list_t hfp_connections = NULL;
 
-hfp_generic_status_indicators_t * get_hfp_generic_status_indicators(){
-    return (hfp_generic_status_indicators_t *) &hfp_generic_status_indicators;
+hfp_generic_status_indicator_t * get_hfp_generic_status_indicators(){
+    return (hfp_generic_status_indicator_t *) &hfp_generic_status_indicators;
 }
 
 int get_hfp_generic_status_indicators_nr(){
     return hfp_generic_status_indicators_nr;
 }
 
-void set_hfp_generic_status_indicators(hfp_generic_status_indicators_t * indicators, int indicator_nr){
+void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicators, int indicator_nr){
     if (indicator_nr > HFP_MAX_NUM_HF_INDICATORS) return;
     hfp_generic_status_indicators_nr = indicator_nr;
-    memcpy(hfp_generic_status_indicators, indicators, indicator_nr * sizeof(hfp_generic_status_indicators_t));
+    memcpy(hfp_generic_status_indicators, indicators, indicator_nr * sizeof(hfp_generic_status_indicator_t));
 }
 
 const char * hfp_hf_feature(int index){
@@ -255,7 +255,7 @@ static hfp_connection_t * create_hfp_connection_context(){
     context->enable_status_update_for_ag_indicators = 0xFF;
 
     context->generic_status_indicators_nr = hfp_generic_status_indicators_nr;
-    memcpy(context->generic_status_indicators, hfp_generic_status_indicators, hfp_generic_status_indicators_nr * sizeof(hfp_generic_status_indicators_t));
+    memcpy(context->generic_status_indicators, hfp_generic_status_indicators, hfp_generic_status_indicators_nr * sizeof(hfp_generic_status_indicator_t));
 
     linked_list_add(&hfp_connections, (linked_item_t*)context);
     return context;
@@ -586,14 +586,16 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                     case HFP_CMD_GENERIC_STATUS_INDICATOR_STATE:
                         // HF parses inital AG gen. ind. state
                         printf("Parsed List generic status indicator %s state: ", context->line_buffer);
-                        context->parser_state = HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
+                        context->parser_state = HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATOR;
                         context->generic_status_indicator_state_index = (uint8_t)atoi((char*)context->line_buffer);
                         break;
-                    case HFP_CMD_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE:
+                    case HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE:
                         // AG parses new gen. ind. state
-                        printf("Parsed Enable generic status indicator state: %s\n", context->line_buffer);
+                        printf("Parsed Enable ag indicator state: %s\n", context->line_buffer);
                         value = atoi((char *)&context->line_buffer[0]);
-                        context->generic_status_indicators[context->parser_item_index].state = value;
+                        if (!context->ag_indicators[context->parser_item_index].mandatory){
+                            context->ag_indicators[context->parser_item_index].enabled = value;
+                        }
                         context->parser_item_index++;
                         break;
                     default:
@@ -611,7 +613,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
             }
             context->line_buffer[context->line_size++] = byte;
             break;
-        case HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
+        case HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATOR:
             context->line_buffer[context->line_size] = 0;
             if (byte == ',') break;
             if (byte == '\n' || byte == '\r'){

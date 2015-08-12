@@ -125,7 +125,7 @@ typedef enum {
     HFP_CMD_INDICATOR,
     HFP_CMD_INDICATOR_STATUS, // 5
     HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE,
-    HFP_CMD_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE,
+    HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE,
     HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES,
     HFP_CMD_LIST_GENERIC_STATUS_INDICATOR,
     HFP_CMD_GENERIC_STATUS_INDICATOR, // 10
@@ -138,7 +138,7 @@ typedef enum {
     HFP_PARSER_CMD_INDICATOR_NAME,
     HFP_PARSER_CMD_INDICATOR_MIN_RANGE,
     HFP_PARSER_CMD_INDICATOR_MAX_RANGE,
-    HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATORS
+    HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATOR
 } hfp_parser_state_t;
 
 
@@ -188,7 +188,7 @@ typedef void (*hfp_callback_t)(uint8_t * event, uint16_t event_size);
 typedef struct{
     uint16_t uuid;
     uint8_t state; // enabled
-} hfp_generic_status_indicators_t;
+} hfp_generic_status_indicator_t;
 
 typedef struct{
     uint8_t index;
@@ -196,6 +196,7 @@ typedef struct{
     uint8_t min_range;
     uint8_t max_range;
     uint8_t status;
+    uint8_t mandatory;
     uint8_t enabled;
 } hfp_ag_indicator_t;
 
@@ -232,7 +233,7 @@ typedef struct hfp_connection {
     
     // TODO: use bitmap.
     int      generic_status_indicators_nr;
-    hfp_generic_status_indicators_t generic_status_indicators[HFP_MAX_INDICATOR_DESC_SIZE];
+    hfp_generic_status_indicator_t generic_status_indicators[HFP_MAX_INDICATOR_DESC_SIZE];
     uint8_t  generic_status_indicator_state_index;
     uint8_t  enable_status_update_for_ag_indicators;
     

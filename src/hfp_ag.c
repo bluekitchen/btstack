@@ -75,20 +75,18 @@ static hfp_callback_t hfp_callback;
 
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-hfp_generic_status_indicators_t * get_hfp_generic_status_indicators();
+hfp_generic_status_indicator_t * get_hfp_generic_status_indicators();
 int get_hfp_generic_status_indicators_nr();
-void set_hfp_generic_status_indicators(hfp_generic_status_indicators_t * indicators, int indicator_nr);
+void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicators, int indicator_nr);
 
-static void set_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr){
-    int i;
-    if (indicator_nr > HFP_MAX_NUM_AG_INDICATORS) return;
-    for (i = 0; i<indicator_nr; i++){
-        hfp_ag_indicators[i].status = indicators[i].status;
-        hfp_ag_indicators[i].min_range = indicators[i].min_range;
-        hfp_ag_indicators[i].max_range = indicators[i].max_range;
-        strcpy(hfp_ag_indicators[i].name, indicators[i].name);
-           
-    }
+hfp_ag_indicator_t * get_hfp_ag_indicators(){
+    return (hfp_ag_indicator_t *)&hfp_ag_indicators;
+}
+int get_hfp_ag_indicators_nr(){
+    return hfp_ag_indicators_nr;
+}
+void set_hfp_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr){
+    memcpy(hfp_ag_indicators, indicators, indicator_nr * sizeof(hfp_ag_indicator_t));
     hfp_ag_indicators_nr = indicator_nr;
 }
 
@@ -310,7 +308,7 @@ void update_command(hfp_connection_t * context){
     } 
 
     if (strncmp((char *)context->line_buffer+2, HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS, strlen(HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS)) == 0){
-        context->command = HFP_CMD_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE;
+        context->command = HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE;
         return;
     } 
 }
@@ -422,10 +420,7 @@ void hfp_run_for_context(hfp_connection_t *context){
                     break;
             }
             break;
-        case HFP_CMD_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE:
-            
-            break;
-
+       
         case HFP_CMD_NONE:
             switch(context->state){
                 case HFP_W2_DISCONNECT_RFCOMM:
@@ -489,7 +484,7 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
 void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, 
     uint8_t * codecs, int codecs_nr, 
     hfp_ag_indicator_t * ag_indicators, int ag_indicators_nr,
-    hfp_generic_status_indicators_t * hf_indicators, int hf_indicators_nr,
+    hfp_generic_status_indicator_t * hf_indicators, int hf_indicators_nr,
     char *call_hold_services[], int call_hold_services_nr){
     if (codecs_nr > HFP_MAX_NUM_CODECS){
         log_error("hfp_init: codecs_nr (%d) > HFP_MAX_NUM_CODECS (%d)", codecs_nr, HFP_MAX_NUM_CODECS);
