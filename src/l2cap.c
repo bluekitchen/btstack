@@ -75,6 +75,8 @@ static int signaling_responses_pending;
 
 static linked_list_t l2cap_channels;
 static linked_list_t l2cap_services;
+static linked_list_t l2cap_le_channels;
+static linked_list_t l2cap_le_services;
 static void (*packet_handler) (void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size) = null_packet_handler;
 static int new_credits_blocked = 0;
 
@@ -98,6 +100,8 @@ void l2cap_init(void){
     
     l2cap_channels = NULL;
     l2cap_services = NULL;
+    l2cap_le_services = NULL;
+    l2cap_le_channels = NULL;
 
     packet_handler = null_packet_handler;
     attribute_protocol_packet_handler = NULL;
@@ -1499,9 +1503,9 @@ void l2cap_finialize_channel_close(l2cap_channel_t *channel){
     btstack_memory_l2cap_channel_free(channel);
 }
 
-l2cap_service_t * l2cap_get_service(uint16_t psm){
+static l2cap_service_t * l2cap_get_service_internal(linked_list_t * services, uint16_t psm){
     linked_list_iterator_t it;
-    linked_list_iterator_init(&it, &l2cap_services);
+    linked_list_iterator_init(&it, services);
     while (linked_list_iterator_has_next(&it)){
         l2cap_service_t * service = (l2cap_service_t *) linked_list_iterator_next(&it);
         if ( service->psm == psm){
@@ -1509,6 +1513,10 @@ l2cap_service_t * l2cap_get_service(uint16_t psm){
         };
     }
     return NULL;
+}
+
+static inline l2cap_service_t * l2cap_get_service(uint16_t psm){
+    return l2cap_get_service_internal(&l2cap_services, psm);
 }
 
 void l2cap_register_service_internal(void *connection, btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level){
@@ -1564,7 +1572,6 @@ void l2cap_unregister_service_internal(void *connection, uint16_t psm){
     hci_connectable_control(0);
 }
 
-
 // Bluetooth 4.0 - allows to register handler for Attribute Protocol and Security Manager Protocol
 void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id) {
     switch(channel_id){
@@ -1580,3 +1587,61 @@ void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint1
     }
 }
 
+#ifdef HAVE_BLE
+
+static inline l2cap_service_t * l2cap_le_get_service(uint16_t psm){
+    return l2cap_get_service_internal(&l2cap_le_services, psm);
+}
+
+/**
+ * @brief Regster L2CAP LE Credit Based Flow Control Mode service
+ * @param
+ */
+void l2cap_le_register_service_internal(void * connection, btstack_packet_handler_t packet_handler, uint16_t psm,
+    uint16_t mtu, uint16_t mps, uint16_t initial_credits, gap_security_level_t security_level){
+    
+    log_info("L2CAP_LE_REGISTER_SERVICE psm 0x%x mtu %u connection %p", psm, mtu, connection);
+    
+    // check for alread registered psm 
+    // TODO: emit error event
+    l2cap_service_t *service = l2cap_le_get_service(psm);
+    if (service) {
+        log_error("l2cap_le_register_service_internal: PSM %u already registered", psm);
+        l2cap_emit_service_registered(connection, L2CAP_SERVICE_ALREADY_REGISTERED, psm);
+        return;
+    }
+    
+    // alloc structure
+    // TODO: emit error event
+    service = btstack_memory_l2cap_service_get();
+    if (!service) {
+        log_error("l2cap_register_service_internal: no memory for l2cap_service_t");
+        l2cap_emit_service_registered(connection, BTSTACK_MEMORY_ALLOC_FAILED, psm);
+        return;
+    }
+    
+    // fill in 
+    service->psm = psm;
+    service->mtu = mtu;
+    service->mps = mps;
+    service->connection = connection;
+    service->packet_handler = packet_handler;
+    service->required_security_level = security_level;
+
+    // add to services list
+    linked_list_add(&l2cap_le_services, (linked_item_t *) service);
+    
+    // done
+    l2cap_emit_service_registered(connection, 0, psm);
+}
+
+void l2cap_le_unregister_service_internal(void * connection, uint16_t psm) {
+
+    log_info("L2CAP_LE_UNREGISTER_SERVICE psm 0x%x", psm);
+
+    l2cap_service_t *service = l2cap_le_get_service(psm);
+    if (!service) return;
+    linked_list_remove(&l2cap_le_services, (linked_item_t *) service);
+    btstack_memory_l2cap_service_free(service);
+}
+#endif

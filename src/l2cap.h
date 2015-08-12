@@ -180,6 +180,9 @@ typedef struct {
     
     // incoming MTU
     uint16_t mtu;
+
+    // incoming MPS
+    uint16_t mps;
     
     // client connection
     void *connection;    
@@ -280,10 +283,20 @@ int l2cap_send_prepared_connectionless(uint16_t handle, uint16_t cid, uint16_t l
  */
 void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id);
 
+/**
+ * @brief Regster L2CAP LE Credit Based Flow Control Mode service
+ * @param
+ */
+void l2cap_le_register_service_internal(void * connection, btstack_packet_handler_t packet_handler, uint16_t psm,
+                                        uint16_t mtu, uint16_t mps, uint16_t initial_credits, gap_security_level_t security_level);
+void l2cap_le_unregister_service_internal(void * connection, uint16_t psm);
+
 uint16_t l2cap_max_mtu(void);
 uint16_t l2cap_max_le_mtu(void);
 
 int  l2cap_send_connectionless(uint16_t handle, uint16_t cid, uint8_t *data, uint16_t len);
+
+
 /* API_END */
 
 #if defined __cplusplus
