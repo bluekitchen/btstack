@@ -83,6 +83,18 @@ int gap_update_connection_parameters(hci_con_handle_t con_handle, uint16_t conn_
 	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout);
 
 /**
+ * @brief Request an update of the connection parameter for a given LE connection
+ * @param handle
+ * @param conn_interval_min (unit: 1.25ms)
+ * @param conn_interval_max (unit: 1.25ms)
+ * @param conn_latency
+ * @param supervision_timeout (unit: 10ms)
+ * @returns 0 if ok
+ */
+int gap_request_connection_parameter_update(hci_con_handle_t con_handle, uint16_t conn_interval_min,
+	uint16_t conn_interval_max, uint16_t conn_latency, uint16_t supervision_timeout);
+
+/**
  * @brief Set Advertisement Data
  * @param advertising_data_length
  * @param advertising_data (max 31 octets)
