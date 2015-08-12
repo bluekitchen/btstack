@@ -49,20 +49,23 @@
 
 static const char *l2cap_signaling_commands_format[] = {
 "2D",    // 0x01 command reject: reason {cmd not understood (0), sig MTU exceeded (2:max sig MTU), invalid CID (4:req CID)}, data len, data
-"22",   // 0x02 connection request: PSM, Source CID
-"2222", // 0x03 connection response: Dest CID, Source CID, Result, Status
-"22D",  // 0x04 config request: Dest CID, Flags, Configuration options
-"222D", // 0x05 config response: Source CID, Flags, Result, Configuration options
-"22",   // 0x06 disconection request: Dest CID, Source CID
-"22",   // 0x07 disconection response: Dest CID, Source CID
-"D",    // 0x08 echo request: Data
-"D",    // 0x09 echo response: Data
-"2",    // 0x0a information request: InfoType {1=Connectionless MTU, 2=Extended features supported}
-"22D",  // 0x0b information response: InfoType, Result, Data
+"22",    // 0x02 connection request: PSM, Source CID
+"2222",  // 0x03 connection response: Dest CID, Source CID, Result, Status
+"22D",   // 0x04 config request: Dest CID, Flags, Configuration options
+"222D",  // 0x05 config response: Source CID, Flags, Result, Configuration options
+"22",    // 0x06 disconection request: Dest CID, Source CID
+"22",    // 0x07 disconection response: Dest CID, Source CID
+"D",     // 0x08 echo request: Data
+"D",     // 0x09 echo response: Data
+"2",     // 0x0a information request: InfoType {1=Connectionless MTU, 2=Extended features supported}
+"22D",   // 0x0b information response: InfoType, Result, Data
 #ifdef HAVE_BLE
 // skip 6 not supported signaling pdus, see below
-"2222", // 0x12 connection parameter update request: interval min, interval max, slave latency, timeout multipler
-"2",    // 0x13 connection parameter update response: result
+"2222",  // 0x12 connection parameter update request: interval min, interval max, slave latency, timeout multipler
+"2",     // 0x13 connection parameter update response: result
+"22222", // 0X14 le credit based connection request: le psm, source cid, mtu, mps, initial credits
+"22222", // 0x15 le credit based connection respone: dest cid, mtu, mps, initial credits, result
+"22",    // 0x16 le flow control credit: source cid, credits
 #endif
 };
 
