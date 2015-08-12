@@ -615,7 +615,7 @@ extern "C" {
 
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED  0x01
 #define HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED     0x02
-
+#define HFP_SUBEVENT_OK                                    0x03
 
 // ANCS Client
 #define ANCS_CLIENT_CONNECTED                              0xF0

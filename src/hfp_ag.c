@@ -157,10 +157,10 @@ int hfp_ag_indicators_join(char * buffer, int buffer_size){
     int i;
     int offset = 0;
     for (i = 0; i < hfp_ag_indicators_nr-1; i++) {
-        offset += snprintf(buffer+offset, buffer_size-offset, "\"%s\",(%d,%d),", hfp_ag_indicators[i].name, hfp_ag_indicators[i].min_range, hfp_ag_indicators[i].max_range);;
+        offset += snprintf(buffer+offset, buffer_size-offset, "(\"%s\",(%d,%d)),", hfp_ag_indicators[i].name, hfp_ag_indicators[i].min_range, hfp_ag_indicators[i].max_range);;
     }
     if (i<hfp_ag_indicators_nr){
-        offset += snprintf(buffer+offset, buffer_size-offset, "\"%s\",(%d,%d)", hfp_ag_indicators[i].name, hfp_ag_indicators[i].min_range, hfp_ag_indicators[i].max_range);
+        offset += snprintf(buffer+offset, buffer_size-offset, "(\"%s\",(%d,%d))", hfp_ag_indicators[i].name, hfp_ag_indicators[i].min_range, hfp_ag_indicators[i].max_range);
     }
     return offset;
 }

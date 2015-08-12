@@ -105,7 +105,7 @@ extern "C" {
 #define HFP_AVAILABLE_CODECS "+BAC"
 #define HFP_INDICATOR "+CIND"
 #define HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS "+CMER"
-#define HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS "+BIA"
+#define HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS "+BIA" // list of [0,1] for every AG indicator
 #define HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES "+CHLD"
 #define HFP_GENERIC_STATUS_INDICATOR "+BIND"
 
@@ -225,6 +225,7 @@ typedef struct hfp_connection {
     int      remote_call_services_nr;
     hfp_call_service_t remote_call_services[HFP_MAX_INDICATOR_DESC_SIZE];
     
+    // TODO: use bitmap.
     int      generic_status_indicators_nr;
     hfp_generic_status_indicators_t generic_status_indicators[HFP_MAX_INDICATOR_DESC_SIZE];
     uint8_t  generic_status_indicator_state_index;

@@ -317,6 +317,7 @@ void update_command(hfp_connection_t * context){
 
 
 void handle_switch_on_ok(hfp_connection_t *context){
+    // printf("switch on ok\n");
     switch (context->state){
         case HFP_W4_EXCHANGE_SUPPORTED_FEATURES:
             if (has_codec_negotiation_feature(context)){
@@ -376,6 +377,8 @@ void handle_switch_on_ok(hfp_connection_t *context){
 
         case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
             context->wait_ok = 0;
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_OK, 0);
+           
             break;
         default:
             break;
@@ -391,6 +394,7 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
 
     packet[size] = 0;
     int pos;
+    // printf("parse command: %s, state: %d\n", packet, context->parser_state);
     for (pos = 0; pos < size ; pos++){
         hfp_parse(context, packet[pos]);
 
