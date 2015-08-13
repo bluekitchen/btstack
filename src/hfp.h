@@ -109,6 +109,8 @@ extern "C" {
 #define HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES "+CHLD"
 #define HFP_GENERIC_STATUS_INDICATOR "+BIND"
 #define HFP_TRANSFER_AG_INDICATOR_STATUS "+CIEV" // +CIEV: <index>,<value>
+#define HFP_QUERY_OPERATOR_SELECTION "+COPS"     // +COPS: <mode>,0,<opearator>
+
 
 #define HFP_OK "OK"
 #define HFP_ERROR "ERROR"
@@ -131,7 +133,8 @@ typedef enum {
     HFP_CMD_LIST_GENERIC_STATUS_INDICATOR,
     HFP_CMD_GENERIC_STATUS_INDICATOR, // 10
     HFP_CMD_GENERIC_STATUS_INDICATOR_STATE,
-    HFP_CMD_TRANSFER_AG_INDICATOR_STATUS
+    HFP_CMD_TRANSFER_AG_INDICATOR_STATUS,
+    HFP_CMD_QUERY_OPERATOR_SELECTION
 } hfp_command_t;
 
 typedef enum {
@@ -140,7 +143,8 @@ typedef enum {
     HFP_PARSER_CMD_INDICATOR_NAME,
     HFP_PARSER_CMD_INDICATOR_MIN_RANGE,
     HFP_PARSER_CMD_INDICATOR_MAX_RANGE,
-    HFP_PARSER_CMD_INDICATOR_STATUS
+    HFP_PARSER_CMD_INDICATOR_STATUS,
+    HFP_PARSER_CMD_NETWORK_OPERATOR
 } hfp_parser_state_t;
 
 
@@ -207,6 +211,14 @@ typedef struct{
     char name[3];
 } hfp_call_service_t;
 
+
+typedef struct{
+    uint8_t mode;
+    uint8_t format;
+    char name[17]; // enabled
+} hfp_network_opearator_t;
+
+
 typedef struct hfp_connection {
     linked_item_t    item;
     
@@ -248,7 +260,11 @@ typedef struct hfp_connection {
     
     uint32_t ag_indicators_status_update_bitmap;
     
-    
+    hfp_network_opearator_t network_operator;
+    uint8_t operator_name_format; // bit flag
+    uint8_t operator_name; // bit flag
+    uint8_t operator_name_changed;
+
     // Retrieved during service level connection establishment, not used yet
     uint8_t  negotiated_codec;
 } hfp_connection_t;

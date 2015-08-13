@@ -188,6 +188,19 @@ int hfp_hs_list_initital_supported_generic_status_indicators_cmd(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
+int hfp_hs_query_operator_name_format_cmd(uint16_t cid){
+    char buffer[20];
+    sprintf(buffer, "AT%s=3,0\r\n", HFP_QUERY_OPERATOR_SELECTION);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+int hfp_hs_query_operator_name_cmd(uint16_t cid){
+    char buffer[20];
+    sprintf(buffer, "AT%s?\r\n", HFP_QUERY_OPERATOR_SELECTION);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+                
 static void hfp_emit_ag_indicator_event(hfp_callback_t callback, hfp_ag_indicator_t indicator){
     if (!callback) return;
     uint8_t event[5];
@@ -251,6 +264,15 @@ static void hfp_run_for_context(hfp_connection_t * context){
             rfcomm_disconnect_internal(context->rfcomm_cid);
             break;
         case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:{
+            int i;
+            for (i = 0; i < context->ag_indicators_nr; i++){
+                if (context->ag_indicators[i].status_changed == 1) {
+                    hfp_emit_ag_indicator_event(hfp_callback, context->ag_indicators[i]);
+                    context->ag_indicators[i].status_changed = 0;
+                    break;
+                }
+            }
+
             if (context->wait_ok == 1) return;
 
             if (context->enable_status_update_for_ag_indicators != 0xFF){
@@ -268,11 +290,17 @@ static void hfp_run_for_context(hfp_connection_t * context){
                 break;
             }
 
-            int i;
-            for (i = 0; i < context->ag_indicators_nr; i++){
-                if (context->ag_indicators[i].status_changed == 1) {
-                    hfp_emit_ag_indicator_event(hfp_callback, context->ag_indicators[i]);
-                }
+            if (context->operator_name_format == 1){
+                hfp_hs_query_operator_name_format_cmd(context->rfcomm_cid);
+                context->operator_name_format = 0;
+                context->operator_name = 1;
+                context->wait_ok = 1;
+                break;
+            }
+            if (context->operator_name == 1){
+                hfp_hs_query_operator_name_cmd(context->rfcomm_cid);
+                context->wait_ok = 1;
+                context->operator_name = 0;
             }
             break;
         }
@@ -517,14 +545,13 @@ void hfp_hf_enable_status_update_for_individual_ag_indicators(bd_addr_t bd_addr,
     hfp_run_for_context(connection);
 }
 
-void hfp_hf_transfer_signal_strength_indication(bd_addr_t bd_addr){
-
-}
-
-void hfp_hf_transfer_roaming_status_indication(bd_addr_t bd_addr){
-
-}
-
-void hfp_hf_transfer_battery_level_indication_of_ag(bd_addr_t bd_addr){
-
+void hfp_hf_query_operator_selection(bd_addr_t bd_addr){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (!connection){
+        log_error("HFP HF: connection doesn't exist.");
+        return;
+    }
+    connection->operator_name_format = 1;
+    hfp_run_for_context(connection);
 }

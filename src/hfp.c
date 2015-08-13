@@ -604,6 +604,31 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                         context->parser_item_index = atoi((char *)&context->line_buffer[0]) - 1;
                         context->parser_state = HFP_PARSER_CMD_INDICATOR_STATUS;
                         break;
+                    case HFP_CMD_QUERY_OPERATOR_SELECTION:
+                        printf("Parsed Network operator: %s\n", context->line_buffer);
+
+                        if (context->operator_name_format == 1){
+                            if (context->line_size == 1 && context->line_buffer[0] == '3'){
+                                context->parser_state = HFP_PARSER_CMD_NETWORK_OPERATOR;
+                                context->line_size = 0;
+                                break;
+                            } 
+                            // TODO emit ERROR, wrong format
+                            break;
+                        }
+                        if (context->operator_name != 1) break;
+
+                        if (context->line_size == 0) {
+                            printf("No operator found\n");
+                            context->network_operator.mode = 0;
+                            context->network_operator.name[0] = 0;
+                            break;
+                        }
+                        context->network_operator.mode = atoi((char *)&context->line_buffer[0]);
+                        context->line_size = 0;
+                        context->parser_state = HFP_PARSER_CMD_NETWORK_OPERATOR;
+                        break;
+                    
                     default:
                         break;
                 }
@@ -619,6 +644,37 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
             }
             context->line_buffer[context->line_size++] = byte;
             break;
+        case HFP_PARSER_CMD_NETWORK_OPERATOR:
+            if (context->operator_name_format == 1){
+                if (context->line_size == 1 && context->line_buffer[0] == '0'){
+                    context->network_operator.format = 0;
+                    break;
+                } 
+                // TODO emit ERROR, wrong format
+                break;
+            }
+            
+            if (context->operator_name != 1) break;
+
+            if (byte == ','){
+                context->line_size = 0;
+                context->line_buffer[context->line_size] = 0;
+                break;
+            }
+            if (byte == '\n' || byte == '\r'){
+                context->line_buffer[context->line_size] = 0;
+                context->line_size = 0;
+                printf("opearator name %s\n", context->line_buffer);
+                strcpy(context->network_operator.name, (char *)context->line_buffer);
+                context->parser_state = HFP_PARSER_CMD_HEADER;
+                context->parser_item_index = 0;
+                break;
+            }
+            if (context->line_size < 16){
+                context->line_buffer[context->line_size++] = byte;
+            }
+            break;
+            
         case HFP_PARSER_CMD_INDICATOR_STATUS:
             context->line_buffer[context->line_size] = 0;
             if (byte == ',') break;

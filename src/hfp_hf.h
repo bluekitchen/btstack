@@ -102,19 +102,12 @@ void hfp_hf_enable_status_update_for_individual_ag_indicators(bd_addr_t bd_addr,
 
 
 /**
- * @brief
+ * @brief Find out the name of the currently selected Network operator by AG. 
+ * The name is restricted to max 16 characters.
  */
-void hfp_hf_transfer_signal_strength_indication(bd_addr_t bd_addr);
+void hfp_hf_query_operator_selection(bd_addr_t bd_addr);
 
-/**
- * @brief
- */
-void hfp_hf_transfer_roaming_status_indication(bd_addr_t bd_addr);
 
-/**
- * @brief
- */
- void hfp_hf_transfer_battery_level_indication_of_ag(bd_addr_t bd_addr);
 
 /* API_END */
 

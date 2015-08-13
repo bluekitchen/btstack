@@ -146,6 +146,12 @@ int hfp_ag_ok(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
+int hfp_ag_error(uint16_t cid){
+    char buffer[10];
+    sprintf(buffer, "\r\nERROR\r\n");
+    return send_str_over_rfcomm(cid, buffer);
+}
+
 int hfp_ag_retrieve_codec_cmd(uint16_t cid){
     return hfp_ag_ok(cid);
 }
@@ -269,10 +275,19 @@ int hfp_ag_retrieve_initital_supported_generic_status_indicators_cmd(uint16_t ci
 
 int hfp_ag_transfer_ag_indicators_status_cmd(uint16_t cid, hfp_ag_indicator_t indicator){
     char buffer[20];
-    sprintf(buffer, "\r\n%s:%d,%d", HFP_TRANSFER_AG_INDICATOR_STATUS, indicator.index, indicator.status);
+    sprintf(buffer, "\r\n%s:%d,%d\r\n\r\nOK\r\n", HFP_TRANSFER_AG_INDICATOR_STATUS, indicator.index, indicator.status);
     return send_str_over_rfcomm(cid, buffer);
 }
 
+int hfp_ag_report_network_operator_name_cmd(uint16_t cid, hfp_network_opearator_t op){
+    char buffer[40];
+    if (strlen(op.name) == 0){
+        sprintf(buffer, "\r\n%s:%d,,\r\n\r\nOK\r\n", HFP_QUERY_OPERATOR_SELECTION, op.mode);
+    } else {
+        sprintf(buffer, "\r\n%s:%d,%d,%s\r\n\r\nOK\r\n", HFP_QUERY_OPERATOR_SELECTION, op.mode, op.format, op.name);
+    }
+    return send_str_over_rfcomm(cid, buffer);
+}
 
 void update_command(hfp_connection_t * context){
     context->command = HFP_CMD_NONE; 
@@ -315,6 +330,18 @@ void update_command(hfp_connection_t * context){
 
     if (strncmp((char *)context->line_buffer+2, HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS, strlen(HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS)) == 0){
         context->command = HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE;
+        return;
+    } 
+
+    if (strncmp((char *)context->line_buffer+2, HFP_QUERY_OPERATOR_SELECTION, strlen(HFP_QUERY_OPERATOR_SELECTION)) == 0){
+        context->command = HFP_CMD_QUERY_OPERATOR_SELECTION;
+        if (strncmp((char *)context->line_buffer+strlen(HFP_QUERY_OPERATOR_SELECTION)+2, "?", 1) == 0){
+            context->operator_name_format = 1; 
+            context->operator_name = 0; 
+        } else {
+            context->operator_name_format = 1; 
+            context->operator_name = 0;    
+        }
         return;
     } 
 }
@@ -441,7 +468,21 @@ void hfp_run_for_context(hfp_connection_t *context){
                     break;
             }
             break;
-       
+        case HFP_CMD_QUERY_OPERATOR_SELECTION:
+            if (context->state != HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) break;
+            if (context->operator_name_format == 1){
+                if (context->network_operator.format != 0){
+                    hfp_ag_error(context->rfcomm_cid);
+                    break;
+                }
+                hfp_ag_ok(context->rfcomm_cid);    
+                break;
+            }
+            if (context->operator_name == 1){
+                hfp_ag_report_network_operator_name_cmd(context->rfcomm_cid, context->network_operator);
+                break;
+            }
+            break;
         case HFP_CMD_NONE:
             switch(context->state){
                 case HFP_W2_DISCONNECT_RFCOMM:
