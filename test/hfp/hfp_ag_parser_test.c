@@ -63,13 +63,14 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
 
 static int hfp_ag_indicators_nr = 7;
 static hfp_ag_indicator_t hfp_ag_indicators[] = {
-    {1, "service",   0, 1, 1, 0, 0},
-    {2, "call",      0, 1, 0, 1, 1},
-    {3, "callsetup", 0, 3, 0, 1, 1},
-    {4, "battchg",   0, 5, 3, 0, 0},
-    {5, "signal",    0, 5, 5, 0, 0},
-    {6, "roam",      0, 1, 0, 0, 0},
-    {7, "callheld",  0, 2, 0, 1, 1}
+    // index, name, min range, max range, status, mandatory, enabled, status changed
+    {1, "service",   0, 1, 1, 0, 0, 0},
+    {2, "call",      0, 1, 0, 1, 1, 0},
+    {3, "callsetup", 0, 3, 0, 1, 1, 0},
+    {4, "battchg",   0, 5, 3, 0, 0, 0},
+    {5, "signal",    0, 5, 5, 0, 0, 0},
+    {6, "roam",      0, 1, 0, 0, 0, 0},
+    {7, "callheld",  0, 2, 0, 1, 1, 0}
 };
 
 
@@ -166,6 +167,18 @@ TEST(HFPParser, HFP_AG_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE){
         }
     }
 
+    // sprintf(packet, "\r\nAT%s=1,,,1,1,1,\r\n", 
+    //     HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS);
+    // for (pos = 0; pos < strlen(packet); pos++){
+    //     hfp_parse(&context, packet[pos]);
+    // }
+
+    // CHECK_EQUAL(HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE, context.command);
+
+    // for (pos = 0; pos < hfp_ag_indicators_nr; pos++){
+    //     CHECK_EQUAL(get_hfp_ag_indicators()[pos].enabled, 1);
+    //     CHECK_EQUAL(context.ag_indicators[pos].enabled, 1);
+    // }
 }
 
 int main (int argc, const char * argv[]){

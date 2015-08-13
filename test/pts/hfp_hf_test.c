@@ -155,6 +155,9 @@ void packet_handler(uint8_t * event, uint16_t event_size){
                     break;
             }
             break;
+        case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
+            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator index: %d, status %d\n", event[3], event[4]);
+            break;
         default:
             printf("event not handled %u\n", event[2]);
             break;

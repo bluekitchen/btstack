@@ -267,6 +267,12 @@ int hfp_ag_retrieve_initital_supported_generic_status_indicators_cmd(uint16_t ci
     return send_str_over_rfcomm(cid, buffer);
 }
 
+int hfp_ag_transfer_ag_indicators_status_cmd(uint16_t cid, hfp_ag_indicator_t indicator){
+    char buffer[20];
+    sprintf(buffer, "\r\n%s:%d,%d", HFP_TRANSFER_AG_INDICATOR_STATUS, indicator.index, indicator.status);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
 
 void update_command(hfp_connection_t * context){
     context->command = HFP_CMD_NONE; 
@@ -318,6 +324,21 @@ void hfp_run_for_context(hfp_connection_t *context){
     if (!context) return;
     if (!rfcomm_can_send_packet_now(context->rfcomm_cid)) return;
     
+    if (context->state == HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
+        if (context->enable_status_update_for_ag_indicators == 1){
+            int i;
+            for (i = 0; i < context->ag_indicators_nr; i++){
+                if (context->ag_indicators[i].enabled == 0) continue;
+                if (context->ag_indicators[i].status_changed == 0) continue;
+                            
+                hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, context->ag_indicators[i]);
+                context->ag_indicators[i].status_changed = 0;
+                return;
+            }
+        }
+        return;
+    }
+
     switch(context->command){
         case HFP_CMD_SUPPORTED_FEATURES:
             switch(context->state){

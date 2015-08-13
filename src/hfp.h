@@ -105,9 +105,10 @@ extern "C" {
 #define HFP_AVAILABLE_CODECS "+BAC"
 #define HFP_INDICATOR "+CIND"
 #define HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS "+CMER"
-#define HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS "+BIA" // list of [0,1] for every AG indicator
+#define HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS "+BIA" // +BIA:<enabled>,,<enabled>,,,<enabled>
 #define HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES "+CHLD"
 #define HFP_GENERIC_STATUS_INDICATOR "+BIND"
+#define HFP_TRANSFER_AG_INDICATOR_STATUS "+CIEV" // +CIEV: <index>,<value>
 
 #define HFP_OK "OK"
 #define HFP_ERROR "ERROR"
@@ -129,7 +130,8 @@ typedef enum {
     HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES,
     HFP_CMD_LIST_GENERIC_STATUS_INDICATOR,
     HFP_CMD_GENERIC_STATUS_INDICATOR, // 10
-    HFP_CMD_GENERIC_STATUS_INDICATOR_STATE
+    HFP_CMD_GENERIC_STATUS_INDICATOR_STATE,
+    HFP_CMD_TRANSFER_AG_INDICATOR_STATUS
 } hfp_command_t;
 
 typedef enum {
@@ -138,7 +140,7 @@ typedef enum {
     HFP_PARSER_CMD_INDICATOR_NAME,
     HFP_PARSER_CMD_INDICATOR_MIN_RANGE,
     HFP_PARSER_CMD_INDICATOR_MAX_RANGE,
-    HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATOR
+    HFP_PARSER_CMD_INDICATOR_STATUS
 } hfp_parser_state_t;
 
 
@@ -198,6 +200,7 @@ typedef struct{
     uint8_t status;
     uint8_t mandatory;
     uint8_t enabled;
+    uint8_t status_changed;
 } hfp_ag_indicator_t;
 
 typedef struct{

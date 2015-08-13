@@ -188,6 +188,17 @@ int hfp_hs_list_initital_supported_generic_status_indicators_cmd(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
+static void hfp_emit_ag_indicator_event(hfp_callback_t callback, hfp_ag_indicator_t indicator){
+    if (!callback) return;
+    uint8_t event[5];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED;
+    event[3] = indicator.index; 
+    event[4] = indicator.status; 
+    (*callback)(event, sizeof(event));
+}
+
 static void hfp_run_for_context(hfp_connection_t * context){
     if (!context) return;
     // printf("hfp send cmd: context %p, RFCOMM cid %u \n", context, context->rfcomm_cid );
@@ -239,7 +250,7 @@ static void hfp_run_for_context(hfp_connection_t * context){
             context->state = HFP_W4_RFCOMM_DISCONNECTED;
             rfcomm_disconnect_internal(context->rfcomm_cid);
             break;
-        case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+        case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:{
             if (context->wait_ok == 1) return;
 
             if (context->enable_status_update_for_ag_indicators != 0xFF){
@@ -256,7 +267,15 @@ static void hfp_run_for_context(hfp_connection_t * context){
                 context->change_status_update_for_individual_ag_indicators = 0;
                 break;
             }
+
+            int i;
+            for (i = 0; i < context->ag_indicators_nr; i++){
+                if (context->ag_indicators[i].status_changed == 1) {
+                    hfp_emit_ag_indicator_event(hfp_callback, context->ag_indicators[i]);
+                }
+            }
             break;
+        }
         default:
             break;
     }
@@ -313,9 +332,9 @@ void update_command(hfp_connection_t * context){
         return;
     } 
 
-    if (strncmp((char *)context->line_buffer, HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS, strlen(HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS)) == 0){
-        printf("Received +BIA\n");
-        context->command = HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE;
+    if (strncmp((char *)context->line_buffer, HFP_TRANSFER_AG_INDICATOR_STATUS, strlen(HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS)) == 0){
+        printf("Received +CIEV\n");
+        context->command = HFP_CMD_TRANSFER_AG_INDICATOR_STATUS;
         return;
     } 
        
