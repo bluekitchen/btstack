@@ -1823,6 +1823,35 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     }
                     break;
 
+                case HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE:
+                    handle = READ_BT_16(packet, 3);
+                    sm_conn = sm_get_connection_for_handle(handle);
+                    if (!sm_conn) break;
+
+                    log_info("Encryption key refresh complete, key size %u", sm_conn->sm_connection_encrypted,
+                        sm_conn->sm_actual_encryption_key_size);
+                    log_info("event handler, state %u", sm_conn->sm_engine_state);
+                    // continue if part of initial pairing
+                    switch (sm_conn->sm_engine_state){
+                        case SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED:
+                            sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED; 
+                            sm_done_for_handle(sm_conn->sm_handle);
+                            break;                        
+                        case SM_PH2_W4_CONNECTION_ENCRYPTED:
+                            if (sm_conn->sm_role){
+                                // slave
+                                sm_conn->sm_engine_state = SM_PH3_GET_RANDOM;
+                            } else {
+                                // master
+                                sm_conn->sm_engine_state = SM_PH3_RECEIVE_KEYS;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                    
+
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
                     handle = READ_BT_16(packet, 3);
                     sm_done_for_handle(handle);
