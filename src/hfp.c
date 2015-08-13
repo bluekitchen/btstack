@@ -506,6 +506,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                 context->parser_state = HFP_PARSER_CMD_SEQUENCE;
                 context->line_buffer[context->line_size] = 0;
                 context->line_size = 0;
+                context->parser_item_index = 0;
                 update_command(context);
                 return;
             }
@@ -516,6 +517,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                     update_command(context);
                 }
                 context->line_size = 0;
+                context->parser_item_index = 0;
                 return;
             }
             context->line_buffer[context->line_size++] = byte;
@@ -552,7 +554,8 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                         context->parser_item_index++;
                         context->remote_codecs_nr = context->parser_item_index;
                         break;
-                    case HFP_CMD_INDICATOR_STATUS:
+                    case HFP_CMD_INDICATOR:
+                        if (context->retrieve_ag_indicators_status == 0) break; 
                         printf("Parsed Indicator %d with status: %s\n", context->parser_item_index+1, context->line_buffer);
                         context->ag_indicators[context->parser_item_index].status = atoi((char *) context->line_buffer);
                         context->parser_item_index++;
@@ -674,7 +677,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                 context->line_buffer[context->line_size++] = byte;
             }
             break;
-            
+
         case HFP_PARSER_CMD_INDICATOR_STATUS:
             context->line_buffer[context->line_size] = 0;
             if (byte == ',') break;

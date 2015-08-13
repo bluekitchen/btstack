@@ -299,10 +299,14 @@ void update_command(hfp_connection_t * context){
     }
 
     if (strncmp((char *)context->line_buffer+2, HFP_INDICATOR, strlen(HFP_INDICATOR)) == 0){
+        context->command = HFP_CMD_INDICATOR;
+
         if (strncmp((char *)context->line_buffer+strlen(HFP_INDICATOR)+2, "?", 1) == 0){
-            context->command = HFP_CMD_INDICATOR_STATUS;    
+            context->retrieve_ag_indicators_status = 1; 
+            context->retrieve_ag_indicators = 0;     
         } else {
-            context->command = HFP_CMD_INDICATOR;    
+            context->retrieve_ag_indicators = 1; 
+            context->retrieve_ag_indicators_status = 0;    
         }
         return;
     }
@@ -337,10 +341,10 @@ void update_command(hfp_connection_t * context){
         context->command = HFP_CMD_QUERY_OPERATOR_SELECTION;
         if (strncmp((char *)context->line_buffer+strlen(HFP_QUERY_OPERATOR_SELECTION)+2, "?", 1) == 0){
             context->operator_name_format = 1; 
-            context->operator_name = 0; 
+            context->operator_name = 0;
         } else {
-            context->operator_name_format = 1; 
-            context->operator_name = 0;    
+            context->operator_name_format = 0; 
+            context->operator_name = 1;    
         }
         return;
     } 
@@ -394,16 +398,12 @@ void hfp_run_for_context(hfp_connection_t *context){
         case HFP_CMD_INDICATOR:
             switch(context->state){
                 case HFP_W4_RETRIEVE_INDICATORS:
+                    if (context->retrieve_ag_indicators == 0) break;
                     hfp_ag_retrieve_indicators_cmd(context->rfcomm_cid);
                     context->state = HFP_W4_RETRIEVE_INDICATORS_STATUS;
                     break;
-                default:
-                    break;
-            }
-            break;
-        case HFP_CMD_INDICATOR_STATUS:
-             switch(context->state){
                 case HFP_W4_RETRIEVE_INDICATORS_STATUS:
+                    if (context->retrieve_ag_indicators_status == 0) break;
                     hfp_ag_retrieve_indicators_status_cmd(context->rfcomm_cid);
                     context->state = HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE;
                     break;

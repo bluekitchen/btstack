@@ -229,12 +229,14 @@ static void hfp_run_for_context(hfp_connection_t * context){
         case HFP_RETRIEVE_INDICATORS:
             hfp_hs_retrieve_indicators_cmd(context->rfcomm_cid);
             context->state = HFP_W4_RETRIEVE_INDICATORS;
-            context->sent_command = HFP_CMD_INDICATOR;
+            context->retrieve_ag_indicators = 1;
+            context->retrieve_ag_indicators_status = 0;
             break;
         case HFP_RETRIEVE_INDICATORS_STATUS:
             hfp_hs_retrieve_indicators_status_cmd(context->rfcomm_cid);
             context->state = HFP_W4_RETRIEVE_INDICATORS_STATUS;
-            context->sent_command = HFP_CMD_INDICATOR_STATUS;
+            context->retrieve_ag_indicators_status = 1;
+            context->retrieve_ag_indicators = 0;
             break;
         case HFP_ENABLE_INDICATORS_STATUS_UPDATE:
             hfp_hs_activate_status_update_for_all_ag_indicators_cmd(context->rfcomm_cid, 1);
@@ -248,16 +250,20 @@ static void hfp_run_for_context(hfp_connection_t * context){
             hfp_hs_list_supported_generic_status_indicators_cmd(context->rfcomm_cid);
             context->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
             context->sent_command = HFP_CMD_LIST_GENERIC_STATUS_INDICATOR;
+            context->list_generic_status_indicators = 1;
             break;
         case HFP_RETRIEVE_GENERIC_STATUS_INDICATORS:
             hfp_hs_retrieve_supported_generic_status_indicators_cmd(context->rfcomm_cid);
             context->state = HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS;
             context->sent_command = HFP_CMD_GENERIC_STATUS_INDICATOR;
+            context->retrieve_generic_status_indicators = 1;
             break;
         case HFP_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
             hfp_hs_list_initital_supported_generic_status_indicators_cmd(context->rfcomm_cid);
             context->state = HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS;
             context->sent_command = HFP_CMD_GENERIC_STATUS_INDICATOR_STATE;
+            context->retrieve_generic_status_indicators_state = 1;
+
             break;
         case HFP_W2_DISCONNECT_RFCOMM:
             context->state = HFP_W4_RFCOMM_DISCONNECTED;
@@ -330,8 +336,7 @@ void update_command(hfp_connection_t * context){
 
     if (strncmp((char *)context->line_buffer, HFP_INDICATOR, strlen(HFP_INDICATOR)) == 0){
         printf("Received +CIND, %d\n", context->sent_command);
-        context->command = context->sent_command;
-        context->sent_command = HFP_CMD_NONE;   
+        context->command = HFP_CMD_INDICATOR;
         return;
     }
 
@@ -386,10 +391,12 @@ void handle_switch_on_ok(hfp_connection_t *context){
         
         case HFP_W4_RETRIEVE_INDICATORS:
             context->state = HFP_RETRIEVE_INDICATORS_STATUS; 
+            context->retrieve_ag_indicators = 0;
             break;
         
         case HFP_W4_RETRIEVE_INDICATORS_STATUS:
             context->state = HFP_ENABLE_INDICATORS_STATUS_UPDATE;
+            context->retrieve_ag_indicators_status = 0;
             break;
             
         case HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE:
