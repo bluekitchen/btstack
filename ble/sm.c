@@ -1234,7 +1234,7 @@ static void sm_run(void){
 
             // responder side
             case SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY:
-                connection->sm_engine_state = SM_GENERAL_IDLE;
+                connection->sm_engine_state = SM_RESPONDER_IDLE;
                 hci_send_cmd(&hci_le_long_term_key_negative_reply, connection->sm_handle);
                 return;
 
@@ -1441,7 +1441,7 @@ static void sm_run(void){
                     connection->sm_engine_state = SM_PH3_RECEIVE_KEYS;
                 } else {
                     // master -> all done
-                    connection->sm_engine_state = SM_GENERAL_IDLE; 
+                    connection->sm_engine_state = SM_INITIATOR_CONNECTED; 
                     sm_done_for_handle(connection->sm_handle);
                 }
                 break;
@@ -1748,7 +1748,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             // just connected -> everything else happens in sm_run()
                             if (sm_conn->sm_role){
                                 // slave - state already could be SM_RESPONDER_SEND_SECURITY_REQUEST instead
-                                if (sm_conn->sm_engine_state == SM_GENERAL_IDLE){
+                                if (sm_conn->sm_engine_state == SM_GENERAL_IDLE || sm_conn->sm_engine_state == SM_RESPONDER_IDLE){
                                     if (sm_slave_request_security) {
                                         // request security if requested by app
                                         sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
@@ -1806,7 +1806,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     // continue if part of initial pairing
                     switch (sm_conn->sm_engine_state){
                         case SM_INITIATOR_PH0_W4_CONNECTION_ENCRYPTED:
-                            sm_conn->sm_engine_state = SM_GENERAL_IDLE; 
+                            sm_conn->sm_engine_state = SM_INITIATOR_CONNECTED; 
                             sm_done_for_handle(sm_conn->sm_handle);
                             break;                        
                         case SM_PH2_W4_CONNECTION_ENCRYPTED:
@@ -2112,7 +2112,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                 }
 
                 if (sm_conn->sm_role){
-                    sm_conn->sm_engine_state = SM_GENERAL_IDLE; 
+                    sm_conn->sm_engine_state = SM_RESPONDER_IDLE; 
                     sm_done_for_handle(sm_conn->sm_handle);
                 } else {
                     sm_conn->sm_engine_state = SM_PH3_GET_RANDOM; 
@@ -2181,6 +2181,7 @@ void sm_send_security_request(uint16_t handle){
     sm_connection_t * sm_conn = sm_get_connection_for_handle(handle);
     switch (sm_conn->sm_engine_state){
         case SM_GENERAL_IDLE:
+        case SM_RESPONDER_IDLE:
         case SM_RESPONDER_PH1_W4_PAIRING_REQUEST:
             sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
             sm_run();
