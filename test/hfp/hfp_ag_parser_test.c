@@ -90,14 +90,14 @@ TEST_GROUP(HFPParser){
 };
 
 TEST(HFPParser, HFP_AG_SUPPORTED_FEATURES){
-    sprintf(packet, "\r\nAT%s=0000001111101111\r\n", HFP_SUPPORTED_FEATURES);
+    sprintf(packet, "\r\nAT%s=159\r\n", HFP_SUPPORTED_FEATURES);
+    context.wait_question_mark = 0;
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
     CHECK_EQUAL(HFP_CMD_SUPPORTED_FEATURES, context.command);
-    CHECK_EQUAL(1007, context.remote_supported_features);
+    CHECK_EQUAL(159, context.remote_supported_features);
 }
-
 
 TEST(HFPParser, HFP_AG_AVAILABLE_CODECS){
     sprintf(packet, "\r\nAT%s=0,1,2\r\n", HFP_AVAILABLE_CODECS);
@@ -111,21 +111,26 @@ TEST(HFPParser, HFP_AG_AVAILABLE_CODECS){
     }   
 }
 
+
 TEST(HFPParser, HFP_AG_GENERIC_STATUS_INDICATOR){
-    sprintf(packet, "\r\nAT%s=0,1\r\n", HFP_GENERIC_STATUS_INDICATOR);
-    context.sent_command = HFP_CMD_GENERIC_STATUS_INDICATOR;
+    sprintf(packet, "\r\nAT%s=0,1,2,3,4\r\n", HFP_GENERIC_STATUS_INDICATOR);
 
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
+
+    CHECK_EQUAL(context.command, HFP_CMD_GENERIC_STATUS_INDICATOR);
+    CHECK_EQUAL(context.list_generic_status_indicators, 1);
+    CHECK_EQUAL(context.retrieve_generic_status_indicators, 0);
+    CHECK_EQUAL(context.retrieve_generic_status_indicators_state, 0);
     
-    CHECK_EQUAL(HFP_CMD_GENERIC_STATUS_INDICATOR, context.command);
-    CHECK_EQUAL(2, context.generic_status_indicators_nr);
+    CHECK_EQUAL(5, context.generic_status_indicators_nr);
     
     for (pos = 0; pos < context.generic_status_indicators_nr; pos++){
         CHECK_EQUAL(pos, context.generic_status_indicators[pos].uuid);
     } 
 }
+
 
 TEST(HFPParser, HFP_AG_ENABLE_INDICATOR_STATUS_UPDATE){
     sprintf(packet, "\r\nAT%s=3,0,0,1\r\n", HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS);

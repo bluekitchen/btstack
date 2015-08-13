@@ -125,13 +125,13 @@ typedef enum {
     HFP_CMD_OK,
     HFP_CMD_SUPPORTED_FEATURES,
     HFP_CMD_AVAILABLE_CODECS,
-    HFP_CMD_INDICATOR,
+    HFP_CMD_INDICATOR, // 5
     HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE,
     HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE,
     HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES,
-    HFP_CMD_LIST_GENERIC_STATUS_INDICATOR,
-    HFP_CMD_GENERIC_STATUS_INDICATOR, 
-    HFP_CMD_GENERIC_STATUS_INDICATOR_STATE,
+
+    HFP_CMD_GENERIC_STATUS_INDICATOR,
+
     HFP_CMD_TRANSFER_AG_INDICATOR_STATUS,
     HFP_CMD_QUERY_OPERATOR_SELECTION
 } hfp_command_t;
@@ -255,18 +255,17 @@ typedef struct hfp_connection {
     // Retrieved during service level connection establishment, not used yet
     uint8_t  negotiated_codec;
 
-    // TODO: remove
-    hfp_command_t sent_command;
-
     // TODO: put these bit flags in a bitmap
     uint8_t wait_ok;
     
+    uint8_t wait_question_mark;
+
     uint8_t retrieve_ag_indicators;        // HFP_CMD_INDICATOR, check if needed
     uint8_t retrieve_ag_indicators_status; 
 
-    uint8_t list_generic_status_indicators; 
-    uint8_t retrieve_generic_status_indicators;
-    uint8_t retrieve_generic_status_indicators_state;
+    uint8_t list_generic_status_indicators;           // HFP_CMD_LIST_GENERIC_STATUS_INDICATOR
+    uint8_t retrieve_generic_status_indicators;       // HFP_CMD_GENERIC_STATUS_INDICATOR
+    uint8_t retrieve_generic_status_indicators_state; // HFP_CMD_GENERIC_STATUS_INDICATOR_STATE
     
     uint8_t operator_name_format;       
     uint8_t operator_name;              

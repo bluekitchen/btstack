@@ -85,7 +85,7 @@ TEST(HFPParser, HFP_HF_OK){
 }
 
 TEST(HFPParser, HFP_HF_SUPPORTED_FEATURES){
-    sprintf(packet, "\r\n%s:0000001111101111\r\n", HFP_SUPPORTED_FEATURES);
+    sprintf(packet, "\r\n%s:1007\r\n", HFP_SUPPORTED_FEATURES);
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
@@ -157,15 +157,19 @@ TEST(HFPParser, HFP_HF_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES){
 } 
 
 TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR){
-    sprintf(packet, "\r\n%s:0,1\r\n", HFP_GENERIC_STATUS_INDICATOR);
-    context.sent_command = HFP_CMD_GENERIC_STATUS_INDICATOR;
+    sprintf(packet, "\r\n%s:0,1,2,3,4\r\n", HFP_GENERIC_STATUS_INDICATOR);
     
+    context.command = HFP_CMD_GENERIC_STATUS_INDICATOR;
+    context.list_generic_status_indicators = 0;
+    context.retrieve_generic_status_indicators = 1;
+    context.retrieve_generic_status_indicators_state = 0;
+
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
     
     CHECK_EQUAL(HFP_CMD_GENERIC_STATUS_INDICATOR, context.command);
-    CHECK_EQUAL(2, context.generic_status_indicators_nr);
+    CHECK_EQUAL(5, context.generic_status_indicators_nr);
     
     for (pos = 0; pos < context.generic_status_indicators_nr; pos++){
         CHECK_EQUAL(pos, context.generic_status_indicators[pos].uuid);
@@ -174,13 +178,16 @@ TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR){
 
 TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR_STATE){
     sprintf(packet, "\r\n%s:0,1\r\n", HFP_GENERIC_STATUS_INDICATOR);
-    context.sent_command = HFP_CMD_GENERIC_STATUS_INDICATOR_STATE;
+    context.command = HFP_CMD_GENERIC_STATUS_INDICATOR;
+    context.list_generic_status_indicators = 0;
+    context.retrieve_generic_status_indicators = 0;
+    context.retrieve_generic_status_indicators_state = 1;
     
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
     
-    CHECK_EQUAL(HFP_CMD_GENERIC_STATUS_INDICATOR_STATE, context.command);
+    CHECK_EQUAL(HFP_CMD_GENERIC_STATUS_INDICATOR, context.command);
     CHECK_EQUAL(1, context.generic_status_indicators[0].state);
 }
 
