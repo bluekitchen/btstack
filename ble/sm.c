@@ -923,7 +923,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                     sm_connection->sm_le_db_index = matched_device_id;
                     if (sm_connection->sm_role == 0){
                         uint16_t ediv;
-                        le_device_db_encryption_get(sm_connection->sm_le_db_index, &ediv, NULL, NULL);
+                        le_device_db_encryption_get(sm_connection->sm_le_db_index, &ediv, NULL, NULL, NULL, NULL, NULL);
                         if (ediv){
                             log_info("sm: Setting up previous ltk/ediv/rand for device index %u", sm_connection->sm_le_db_index);
                             sm_connection->sm_engine_state = SM_INITIATOR_PH0_HAS_LTK;
@@ -1111,6 +1111,9 @@ static void sm_run(void){
             // - if no connection locked and we're ready/waiting for setup context, fetch it and start
             int done = 1;
             int err;
+            int encryption_key_size;
+            int authenticated;
+            int authorized;
             switch (sm_connection->sm_engine_state) {
                 case SM_RESPONDER_SEND_SECURITY_REQUEST:
                     // send packet if possible,
@@ -1143,8 +1146,12 @@ static void sm_run(void){
                     sm_connection->sm_engine_state = SM_RESPONDER_PH1_SEND_PAIRING_RESPONSE;
                     break;
                 case SM_INITIATOR_PH0_HAS_LTK:
-                    // fetch data from device db
-                    le_device_db_encryption_get(sm_connection->sm_le_db_index, &setup->sm_peer_ediv, setup->sm_peer_rand, setup->sm_peer_ltk);
+                    // fetch data from device db - incl. authenticated/authorized/key size. Note all sm_connection_X require encryption enabled
+                    le_device_db_encryption_get(sm_connection->sm_le_db_index, &setup->sm_peer_ediv, setup->sm_peer_rand, setup->sm_peer_ltk,
+                                                &encryption_key_size, &authenticated, &authorized);
+                    sm_connection->sm_actual_encryption_key_size = encryption_key_size;
+                    sm_connection->sm_connection_authenticated = authenticated;
+                    sm_connection->sm_connection_authorization_state = authorized ? AUTHORIZATION_GRANTED : AUTHORIZATION_UNKNOWN; 
                     sm_connection->sm_engine_state = SM_INITIATOR_PH0_SEND_START_ENCRYPTION;
                     break;
                 case SM_RESPONDER_PH0_RECEIVED_LTK:
@@ -2098,7 +2105,8 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                     if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_ENCRYPTION_INFORMATION   
                         && setup->sm_key_distribution_received_set &  SM_KEYDIST_FLAG_MASTER_IDENTIFICATION){
                         log_info("sm: set encryption information");
-                        le_device_db_encryption_set(sm_conn->sm_le_db_index, setup->sm_peer_ediv, setup->sm_peer_rand, setup->sm_peer_ltk);
+                        le_device_db_encryption_set(sm_conn->sm_le_db_index, setup->sm_peer_ediv, setup->sm_peer_rand, setup->sm_peer_ltk,
+                            sm_conn->sm_actual_encryption_key_size, sm_conn->sm_connection_authenticated, sm_conn->sm_connection_authorization_state == AUTHORIZATION_GRANTED);
                     }                
                 }
 

@@ -49,23 +49,9 @@ int le_device_db_count(void){
 	return 0;
 }
 
-/**
- * @brief set remote encryption info
- * @brief index
- * @brief ediv 
- * @brief rand
- * @brief ltk
- */
-void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk){}
+void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk, int key_size, int authenticated, int authorized){}
 
-/**
- * @brief get remote encryption info
- * @brief index
- * @brief ediv 
- * @brief rand
- * @brief ltk
- */
-void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk){}
+void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk, int * key_size, int * authenticated, int * authorized){}
 
 // get device information: addr type and address
 void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t csrk){}
