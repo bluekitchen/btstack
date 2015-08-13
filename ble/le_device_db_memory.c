@@ -54,6 +54,9 @@ typedef struct le_device_memory_db {
     sm_key_t ltk;
     uint16_t ediv;
     uint8_t  rand[8];
+    uint8_t  key_size;
+    uint8_t  authenticated;
+    uint8_t  authorized;
 
     // Signed Writes by remote
     sm_key_t csrk;
@@ -122,32 +125,26 @@ void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t irk)
     if (irk) memcpy(irk, le_devices[index].irk, 16);
 }
 
-/**
- * @brief set remote encryption info
- * @brief index
- * @brief ediv 
- * @brief rand
- * @brief ltk
- */
-void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk){
-    log_info("Central Device DB set encryption for %u, ediv x%04x", index, ediv);
-    le_devices[index].ediv = ediv;
-    if (rand) memcpy(le_devices[index].rand, rand, 8);
-    if (ltk) memcpy(le_devices[index].ltk, ltk, 16);
+void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk, int key_size, int authenticated, int authorized){
+    log_info("Central Device DB set encryption for %u, ediv x%04x, key size %u, authenticated %u, authorized %u", index, ediv, key_size, authenticated, authorized);
+    le_device_memory_db_t * device = &le_devices[index];
+    device->ediv = ediv;
+    if (rand) memcpy(device->rand, rand, 8);
+    if (ltk) memcpy(device->ltk, ltk, 16);
+    device->key_size = key_size;
+    device->authenticated = authenticated;
+    device->authorized = authorized;
 }
 
-/**
- * @brief get remote encryption info
- * @brief index
- * @brief ediv 
- * @brief rand
- * @brief ltk
- */
-void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk){
-    log_info("Central Device DB encryption for %u, ediv x%04x", index, le_devices[index].ediv);
-    if (ediv) *ediv = le_devices[index].ediv;
-    if (rand) memcpy(rand, le_devices[index].rand, 8);
-    if (ltk)  memcpy(ltk, le_devices[index].ltk, 16);    
+void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk, int * key_size, int * authenticated, int * authorized){
+    le_device_memory_db_t * device = &le_devices[index];
+    log_info("Central Device DB encryption for %u, ediv x%04x", index, device->ediv);
+    if (ediv) *ediv = device->ediv;
+    if (rand) memcpy(rand, device->rand, 8);
+    if (ltk)  memcpy(ltk, device->ltk, 16);    
+    if (key_size) *key_size = device->key_size;
+    if (authenticated) *key_size = device->authenticated;
+    if (authorized) *key_size = device->authorized;
 }
 
 // get signature key

@@ -248,6 +248,13 @@ extern "C" {
  */
 #define HCI_EVENT_EXTENDED_INQUIRY_RESPONSE                0x2F
 
+ /** 
+  * @format 1H
+  * @param status
+  * @param handle
+  */
+#define HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE	       0x30
+
 #define HCI_EVENT_IO_CAPABILITY_REQUEST                    0x31
 #define HCI_EVENT_IO_CAPABILITY_RESPONSE                   0x32
 #define HCI_EVENT_USER_CONFIRMATION_REQUEST                0x33

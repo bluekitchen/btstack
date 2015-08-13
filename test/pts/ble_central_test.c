@@ -431,8 +431,27 @@ void show_usage(void){
     printf("P   - direct connect to PTS\n");
     printf("z   - Update L2CAP Connection Parameters\n");
     printf("---\n");
+    printf("4   - IO_CAPABILITY_DISPLAY_ONLY\n");
+    printf("5   - IO_CAPABILITY_DISPLAY_YES_NO\n");
+    printf("6   - IO_CAPABILITY_NO_INPUT_NO_OUTPUT\n");
+    printf("7   - IO_CAPABILITY_KEYBOARD_ONLY\n");
+    printf("8   - IO_CAPABILITY_KEYBOARD_DISPLAY\n");
+    printf("m/M - MITM protection off\n");
+    printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
+}
+
+
+void update_auth_req(void){
+    uint8_t auth_req = 0;
+    if (sm_mitm_protection){
+        auth_req |= SM_AUTHREQ_MITM_PROTECTION;
+    }
+    if (gap_bondable){
+        auth_req |= SM_AUTHREQ_BONDING;
+    }
+    sm_set_authentication_requirements(auth_req);
 }
 
 int  stdin_process(struct data_source *ds){
@@ -472,6 +491,31 @@ int  stdin_process(struct data_source *ds){
             central_state = CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE;
             gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, GAP_PERIPHERAL_PRIVACY_FLAG);
             break;
+        case '4':
+            sm_io_capabilities = "IO_CAPABILITY_DISPLAY_ONLY";
+            sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_ONLY);
+            show_usage();
+            break;
+        case '5':
+            sm_io_capabilities = "IO_CAPABILITY_DISPLAY_YES_NO";
+            sm_set_io_capabilities(IO_CAPABILITY_DISPLAY_YES_NO);
+            show_usage();
+            break;
+        case '6':
+            sm_io_capabilities = "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
+            sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
+            show_usage();
+            break;
+        case '7':
+            sm_io_capabilities = "IO_CAPABILITY_KEYBOARD_ONLY";
+            sm_set_io_capabilities(IO_CAPABILITY_KEYBOARD_ONLY);
+            show_usage();
+            break;
+        case '8':
+            sm_io_capabilities = "IO_CAPABILITY_KEYBOARD_DISPLAY";
+            sm_set_io_capabilities(IO_CAPABILITY_KEYBOARD_DISPLAY);
+            show_usage();
+            break;
         case '9':
             printf("Creating HCI Classic Connection to %s\n", bd_addr_to_str(public_pts_address));
             hci_send_cmd(&hci_create_connection, public_pts_address, hci_usable_acl_packet_types(), 0, 0, 0, 1);
@@ -495,12 +539,22 @@ int  stdin_process(struct data_source *ds){
             break;
         case 'd':
             gap_bondable = 0;
-            sm_set_authentication_requirements(SM_AUTHREQ_NO_BONDING);
+            update_auth_req();
             show_usage();
             break;
         case 'D':
             gap_bondable = 1;
-            sm_set_authentication_requirements(SM_AUTHREQ_BONDING);
+            update_auth_req();
+            show_usage();
+            break;
+        case 'm':
+            sm_mitm_protection = 0;
+            update_auth_req();
+            show_usage();
+            break;
+        case 'M':
+            sm_mitm_protection = 1;
+            update_auth_req();
             show_usage();
             break;
         case 'n':

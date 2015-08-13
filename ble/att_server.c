@@ -156,6 +156,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     break;
 
                 case HCI_EVENT_ENCRYPTION_CHANGE: 
+                case HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE: 
                 	// check handle
                 	if (att_connection.con_handle != READ_BT_16(packet, 3)) break;
                 	att_connection.encryption_key_size = sm_encryption_key_size(att_client_addr_type, att_client_address);

@@ -380,7 +380,6 @@ typedef enum {
     SM_PH2_W4_CONNECTION_ENCRYPTED,
 
     // Phase 3: Transport Specific Key Distribution
-    
     // calculate DHK, Y, EDIV, and LTK
     SM_PH3_GET_RANDOM,
     SM_PH3_W4_RANDOM,
@@ -398,15 +397,9 @@ typedef enum {
     SM_PH3_DISTRIBUTE_KEYS,
     SM_PH3_RECEIVE_KEYS,
 
-    // Phase 4: re-establish previously distributed LTK
-    SM_PH4_Y_GET_ENC,
-    SM_PH4_Y_W4_ENC,
-    SM_PH4_LTK_GET_ENC,
-    SM_PH4_LTK_W4_ENC,
-    SM_PH4_SEND_LTK,
-
     // RESPONDER ROLE
-    // state = 40
+    // state = 35
+    SM_RESPONDER_IDLE,
     SM_RESPONDER_SEND_SECURITY_REQUEST,
     SM_RESPONDER_PH0_RECEIVED_LTK,
     SM_RESPONDER_PH0_SEND_LTK_REQUESTED_NEGATIVE_REPLY,
@@ -418,8 +411,16 @@ typedef enum {
     SM_RESPONDER_PH2_W4_LTK_REQUEST,
     SM_RESPONDER_PH2_SEND_LTK_REPLY,
 
+    // Phase 4: re-establish previously distributed LTK
+    // state == 46
+    SM_RESPONDER_PH4_Y_GET_ENC,
+    SM_RESPONDER_PH4_Y_W4_ENC,
+    SM_RESPONDER_PH4_LTK_GET_ENC,
+    SM_RESPONDER_PH4_LTK_W4_ENC,
+    SM_RESPONDER_PH4_SEND_LTK,
+
     // INITITIATOR ROLE
-    // state = 50
+    // state = 51
     SM_INITIATOR_CONNECTED,
     SM_INITIATOR_PH0_HAS_LTK,
     SM_INITIATOR_PH0_SEND_START_ENCRYPTION,
