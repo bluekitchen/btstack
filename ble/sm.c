@@ -1980,6 +1980,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
         // Responder
         case SM_GENERAL_IDLE:
+        case SM_RESPONDER_IDLE:
         case SM_RESPONDER_SEND_SECURITY_REQUEST: 
         case SM_RESPONDER_PH1_W4_PAIRING_REQUEST:
             if (packet[0] != SM_CODE_PAIRING_REQUEST){
