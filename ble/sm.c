@@ -1165,7 +1165,7 @@ static void sm_run(void){
                     sm_connection->sm_connection_authenticated = (setup->sm_local_rand[7] & 0x10) >> 4;
                     log_info("sm: received ltk request with key size %u, authenticated %u",
                             sm_connection->sm_actual_encryption_key_size, sm_connection->sm_connection_authenticated);
-                    sm_connection->sm_engine_state = SM_PH4_Y_GET_ENC;
+                    sm_connection->sm_engine_state = SM_RESPONDER_PH4_Y_GET_ENC;
                     break;
                 case SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST:
                     sm_init_setup(sm_connection);
@@ -1207,7 +1207,7 @@ static void sm_run(void){
                 uint8_t buffer[2];
                 buffer[0] = SM_CODE_PAIRING_FAILED;
                 buffer[1] = setup->sm_pairing_failed_reason;
-                connection->sm_engine_state = SM_GENERAL_IDLE;
+                connection->sm_engine_state = connection->sm_role ? SM_RESPONDER_IDLE : SM_INITIATOR_CONNECTED;
                 l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                 sm_done_for_handle(connection->sm_handle);
                 break;
@@ -1282,7 +1282,7 @@ static void sm_run(void){
                 return;
 
             case SM_PH3_LTK_GET_ENC:
-            case SM_PH4_LTK_GET_ENC:
+            case SM_RESPONDER_PH4_LTK_GET_ENC:
                 // already busy?
                 if (sm_aes128_state == SM_AES128_IDLE) {
                     sm_key_t d_prime;
@@ -1368,14 +1368,14 @@ static void sm_run(void){
                 hci_send_cmd(&hci_le_start_encryption, connection->sm_handle, 0, 0, 0, stk_flipped);
                 return;
             }
-            case SM_PH4_SEND_LTK: {
+            case SM_RESPONDER_PH4_SEND_LTK: {
                 sm_key_t ltk_flipped;
                 swap128(setup->sm_ltk, ltk_flipped);
-                connection->sm_engine_state = SM_GENERAL_IDLE;
+                connection->sm_engine_state = SM_RESPONDER_IDLE;
                 hci_send_cmd(&hci_le_long_term_key_request_reply, connection->sm_handle, ltk_flipped);
                 return;
             }
-            case SM_PH4_Y_GET_ENC:
+            case SM_RESPONDER_PH4_Y_GET_ENC:
                 // already busy?
                 if (sm_aes128_state == SM_AES128_ACTIVE) break;
                 log_info("LTK Request: recalculating with ediv 0x%04x", setup->sm_local_ediv);
@@ -1578,7 +1578,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             connection->sm_engine_state = SM_PH3_LTK_GET_ENC;
             return;
         }
-        case SM_PH4_Y_W4_ENC:{
+        case SM_RESPONDER_PH4_Y_W4_ENC:{
             sm_key_t y128;
             swap128(data, y128);
             setup->sm_local_y = READ_NET_16(y128, 14);
@@ -1589,7 +1589,7 @@ static void sm_handle_encryption_result(uint8_t * data){
             log_info_hex16("ediv", setup->sm_local_ediv);
             // PH3B4 - calculate LTK         - enc
             // LTK = d1(ER, DIV, 0))
-            connection->sm_engine_state = SM_PH4_LTK_GET_ENC;
+            connection->sm_engine_state = SM_RESPONDER_PH4_LTK_GET_ENC;
             return;
         }
         case SM_PH3_LTK_W4_ENC:
@@ -1603,11 +1603,11 @@ static void sm_handle_encryption_result(uint8_t * data){
             log_key("csrk", setup->sm_local_csrk);
             connection->sm_engine_state = SM_PH3_DISTRIBUTE_KEYS;
             return;                                
-        case SM_PH4_LTK_W4_ENC:
+        case SM_RESPONDER_PH4_LTK_W4_ENC:
             swap128(data, setup->sm_ltk);
             sm_truncate_key(setup->sm_ltk, connection->sm_actual_encryption_key_size);
             log_key("ltk", setup->sm_ltk);
-            connection->sm_engine_state = SM_PH4_SEND_LTK;
+            connection->sm_engine_state = SM_RESPONDER_PH4_SEND_LTK;
             return;                                
         default:
             break;
@@ -1748,7 +1748,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             // just connected -> everything else happens in sm_run()
                             if (sm_conn->sm_role){
                                 // slave - state already could be SM_RESPONDER_SEND_SECURITY_REQUEST instead
-                                if (sm_conn->sm_engine_state == SM_GENERAL_IDLE || sm_conn->sm_engine_state == SM_RESPONDER_IDLE){
+                                if (sm_conn->sm_engine_state == SM_GENERAL_IDLE){
                                     if (sm_slave_request_security) {
                                         // request security if requested by app
                                         sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
@@ -1828,8 +1828,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                     sm_conn = sm_get_connection_for_handle(handle);
                     if (!sm_conn) break;
 
-                    log_info("Encryption key refresh complete, key size %u", sm_conn->sm_connection_encrypted,
-                        sm_conn->sm_actual_encryption_key_size);
+                    log_info("Encryption key refresh complete, key size %u", sm_conn->sm_actual_encryption_key_size);
                     log_info("event handler, state %u", sm_conn->sm_engine_state);
                     // continue if part of initial pairing
                     switch (sm_conn->sm_engine_state){
@@ -1917,7 +1916,7 @@ static int sm_validate_stk_generation_method(void){
 // helper for sm_packet_handler, calls sm_run on exit
 static void sm_pdu_received_in_wrong_state(sm_connection_t * sm_conn){
     setup->sm_pairing_failed_reason = SM_REASON_UNSPECIFIED_REASON;
-    sm_conn->sm_engine_state = SM_GENERAL_IDLE;
+    sm_conn->sm_engine_state = sm_conn->sm_role ? SM_RESPONDER_IDLE : SM_INITIATOR_CONNECTED;
     sm_done_for_handle(sm_conn->sm_handle);
 }
 
@@ -1934,7 +1933,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
     if (!sm_conn) return;
 
     if (packet[0] == SM_CODE_PAIRING_FAILED){
-        sm_conn->sm_engine_state = SM_GENERAL_IDLE;
+        sm_conn->sm_engine_state = sm_conn->sm_role ? SM_RESPONDER_IDLE : SM_INITIATOR_CONNECTED;
         return;
     }
 
@@ -2008,7 +2007,6 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             break;
 
         // Responder
-        case SM_GENERAL_IDLE:
         case SM_RESPONDER_IDLE:
         case SM_RESPONDER_SEND_SECURITY_REQUEST: 
         case SM_RESPONDER_PH1_W4_PAIRING_REQUEST:
