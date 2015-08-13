@@ -49,15 +49,16 @@
 void hfp_parse(hfp_connection_t * context, uint8_t byte);
 
 static  hfp_connection_t context;
-static int ag_indicators_nr = 7;
-static hfp_ag_indicator_t ag_indicators[] = {
-    {1, "service", 0, 1, 1},
-    {2, "call", 0, 1, 0},
-    {3, "callsetup", 0, 3, 0},
-    {4, "battchg", 0, 5, 3},
-    {5, "signal", 0, 5, 5},
-    {6, "roam", 0, 1, 0},
-    {7, "callheld", 0, 2, 0},
+static int hfp_ag_indicators_nr = 7;
+static hfp_ag_indicator_t hfp_ag_indicators[] = {
+    // index, name, min range, max range, status, mandatory, enabled, status changed
+    {1, "service",   0, 1, 1, 0, 0, 0},
+    {2, "call",      0, 1, 0, 1, 1, 0},
+    {3, "callsetup", 0, 3, 0, 1, 1, 0},
+    {4, "battchg",   0, 5, 3, 0, 0, 0},
+    {5, "signal",    0, 5, 5, 0, 0, 0},
+    {6, "roam",      0, 1, 0, 0, 0, 0},
+    {7, "callheld",  0, 2, 0, 1, 1, 0}
 };
 
 TEST_GROUP(HFPParser){
@@ -95,10 +96,10 @@ TEST(HFPParser, HFP_HF_SUPPORTED_FEATURES){
 TEST(HFPParser, HFP_HF_INDICATORS){
     offset = 0;
     offset += snprintf(packet, sizeof(packet), "%s:", HFP_INDICATOR);
-    for (pos = 0; pos < ag_indicators_nr - 1; pos++){
-        offset += snprintf(packet+offset, sizeof(packet)-offset, "\"%s\", (%d, %d),", ag_indicators[pos].name, ag_indicators[pos].min_range, ag_indicators[pos].max_range);
+    for (pos = 0; pos < hfp_ag_indicators_nr - 1; pos++){
+        offset += snprintf(packet+offset, sizeof(packet)-offset, "\"%s\", (%d, %d),", hfp_ag_indicators[pos].name, hfp_ag_indicators[pos].min_range, hfp_ag_indicators[pos].max_range);
     }
-    offset += snprintf(packet+offset, sizeof(packet)-offset, "\"%s\", (%d, %d)\r\n", ag_indicators[pos].name, ag_indicators[pos].min_range, ag_indicators[pos].max_range);
+    offset += snprintf(packet+offset, sizeof(packet)-offset, "\"%s\", (%d, %d)\r\n", hfp_ag_indicators[pos].name, hfp_ag_indicators[pos].min_range, hfp_ag_indicators[pos].max_range);
     
     context.sent_command = HFP_CMD_INDICATOR;
     
@@ -106,12 +107,12 @@ TEST(HFPParser, HFP_HF_INDICATORS){
         hfp_parse(&context, packet[pos]);
     }
     CHECK_EQUAL(HFP_CMD_INDICATOR, context.command);
-    CHECK_EQUAL(ag_indicators_nr, context.ag_indicators_nr);
-    for (pos = 0; pos < ag_indicators_nr; pos++){
-        CHECK_EQUAL(ag_indicators[pos].index, context.ag_indicators[pos].index);
-        CHECK_EQUAL(0, strcmp(ag_indicators[pos].name, context.ag_indicators[pos].name));
-        CHECK_EQUAL(ag_indicators[pos].min_range, context.ag_indicators[pos].min_range);
-        CHECK_EQUAL(ag_indicators[pos].max_range, context.ag_indicators[pos].max_range);
+    CHECK_EQUAL(hfp_ag_indicators_nr, context.ag_indicators_nr);
+    for (pos = 0; pos < hfp_ag_indicators_nr; pos++){
+        CHECK_EQUAL(hfp_ag_indicators[pos].index, context.ag_indicators[pos].index);
+        CHECK_EQUAL(0, strcmp(hfp_ag_indicators[pos].name, context.ag_indicators[pos].name));
+        CHECK_EQUAL(hfp_ag_indicators[pos].min_range, context.ag_indicators[pos].min_range);
+        CHECK_EQUAL(hfp_ag_indicators[pos].max_range, context.ag_indicators[pos].max_range);
     }   
 }
 
@@ -119,10 +120,10 @@ TEST(HFPParser, HFP_HF_INDICATOR_STATUS){
     // send status
     offset = 0;
     offset += snprintf(packet, sizeof(packet), "%s:", HFP_INDICATOR);
-    for (pos = 0; pos < ag_indicators_nr - 1; pos++){
-        offset += snprintf(packet+offset, sizeof(packet)-offset, "%d,", ag_indicators[pos].status);
+    for (pos = 0; pos < hfp_ag_indicators_nr - 1; pos++){
+        offset += snprintf(packet+offset, sizeof(packet)-offset, "%d,", hfp_ag_indicators[pos].status);
     }
-    offset += snprintf(packet+offset, sizeof(packet)-offset, "%d\r\n", ag_indicators[pos].status);
+    offset += snprintf(packet+offset, sizeof(packet)-offset, "%d\r\n", hfp_ag_indicators[pos].status);
     
     context.sent_command = HFP_CMD_INDICATOR_STATUS;
     
@@ -131,8 +132,8 @@ TEST(HFPParser, HFP_HF_INDICATOR_STATUS){
     }
 
     CHECK_EQUAL(HFP_CMD_INDICATOR_STATUS, context.command);
-    for (pos = 0; pos < ag_indicators_nr; pos++){
-        CHECK_EQUAL(ag_indicators[pos].status, context.ag_indicators[pos].status);
+    for (pos = 0; pos < hfp_ag_indicators_nr; pos++){
+        CHECK_EQUAL(hfp_ag_indicators[pos].status, context.ag_indicators[pos].status);
     } 
 }
 
@@ -177,6 +178,22 @@ TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR_STATE){
     
     CHECK_EQUAL(HFP_CMD_GENERIC_STATUS_INDICATOR_STATE, context.command);
     CHECK_EQUAL(1, context.generic_status_indicators[0].state);
+}
+
+TEST(HFPParser, HFP_HF_AG_INDICATOR_STATUS_UPDATE){
+    context.ag_indicators_nr = hfp_ag_indicators_nr;
+    memcpy(context.ag_indicators, hfp_ag_indicators, hfp_ag_indicators_nr * sizeof(hfp_ag_indicator_t));
+    
+    uint8_t index = 4;
+    uint8_t status = 5;
+
+    sprintf(packet, "\r\n%s=%d,%d\r\n", HFP_TRANSFER_AG_INDICATOR_STATUS, index, status);
+    for (pos = 0; pos < strlen(packet); pos++){
+        hfp_parse(&context, packet[pos]);
+    }
+
+    CHECK_EQUAL(HFP_CMD_TRANSFER_AG_INDICATOR_STATUS, context.command);
+    CHECK_EQUAL(context.ag_indicators[index - 1].status, status);
 }
 
 int main (int argc, const char * argv[]){

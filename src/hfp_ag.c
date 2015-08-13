@@ -75,20 +75,18 @@ static hfp_callback_t hfp_callback;
 
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size);
 
-hfp_generic_status_indicators_t * get_hfp_generic_status_indicators();
+hfp_generic_status_indicator_t * get_hfp_generic_status_indicators();
 int get_hfp_generic_status_indicators_nr();
-void set_hfp_generic_status_indicators(hfp_generic_status_indicators_t * indicators, int indicator_nr);
+void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicators, int indicator_nr);
 
-static void set_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr){
-    int i;
-    if (indicator_nr > HFP_MAX_NUM_AG_INDICATORS) return;
-    for (i = 0; i<indicator_nr; i++){
-        hfp_ag_indicators[i].status = indicators[i].status;
-        hfp_ag_indicators[i].min_range = indicators[i].min_range;
-        hfp_ag_indicators[i].max_range = indicators[i].max_range;
-        strcpy(hfp_ag_indicators[i].name, indicators[i].name);
-           
-    }
+hfp_ag_indicator_t * get_hfp_ag_indicators(){
+    return (hfp_ag_indicator_t *)&hfp_ag_indicators;
+}
+int get_hfp_ag_indicators_nr(){
+    return hfp_ag_indicators_nr;
+}
+void set_hfp_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr){
+    memcpy(hfp_ag_indicators, indicators, indicator_nr * sizeof(hfp_ag_indicator_t));
     hfp_ag_indicators_nr = indicator_nr;
 }
 
@@ -157,10 +155,10 @@ int hfp_ag_indicators_join(char * buffer, int buffer_size){
     int i;
     int offset = 0;
     for (i = 0; i < hfp_ag_indicators_nr-1; i++) {
-        offset += snprintf(buffer+offset, buffer_size-offset, "\"%s\",(%d,%d),", hfp_ag_indicators[i].name, hfp_ag_indicators[i].min_range, hfp_ag_indicators[i].max_range);;
+        offset += snprintf(buffer+offset, buffer_size-offset, "(\"%s\",(%d,%d)),", hfp_ag_indicators[i].name, hfp_ag_indicators[i].min_range, hfp_ag_indicators[i].max_range);;
     }
     if (i<hfp_ag_indicators_nr){
-        offset += snprintf(buffer+offset, buffer_size-offset, "\"%s\",(%d,%d)", hfp_ag_indicators[i].name, hfp_ag_indicators[i].min_range, hfp_ag_indicators[i].max_range);
+        offset += snprintf(buffer+offset, buffer_size-offset, "(\"%s\",(%d,%d))", hfp_ag_indicators[i].name, hfp_ag_indicators[i].min_range, hfp_ag_indicators[i].max_range);
     }
     return offset;
 }
@@ -269,6 +267,12 @@ int hfp_ag_retrieve_initital_supported_generic_status_indicators_cmd(uint16_t ci
     return send_str_over_rfcomm(cid, buffer);
 }
 
+int hfp_ag_transfer_ag_indicators_status_cmd(uint16_t cid, hfp_ag_indicator_t indicator){
+    char buffer[20];
+    sprintf(buffer, "\r\n%s:%d,%d", HFP_TRANSFER_AG_INDICATOR_STATUS, indicator.index, indicator.status);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
 
 void update_command(hfp_connection_t * context){
     context->command = HFP_CMD_NONE; 
@@ -310,7 +314,7 @@ void update_command(hfp_connection_t * context){
     } 
 
     if (strncmp((char *)context->line_buffer+2, HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS, strlen(HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS)) == 0){
-        context->command = HFP_CMD_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE;
+        context->command = HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE;
         return;
     } 
 }
@@ -320,6 +324,21 @@ void hfp_run_for_context(hfp_connection_t *context){
     if (!context) return;
     if (!rfcomm_can_send_packet_now(context->rfcomm_cid)) return;
     
+    if (context->state == HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
+        if (context->enable_status_update_for_ag_indicators == 1){
+            int i;
+            for (i = 0; i < context->ag_indicators_nr; i++){
+                if (context->ag_indicators[i].enabled == 0) continue;
+                if (context->ag_indicators[i].status_changed == 0) continue;
+                            
+                hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, context->ag_indicators[i]);
+                context->ag_indicators[i].status_changed = 0;
+                return;
+            }
+        }
+        return;
+    }
+
     switch(context->command){
         case HFP_CMD_SUPPORTED_FEATURES:
             switch(context->state){
@@ -422,10 +441,7 @@ void hfp_run_for_context(hfp_connection_t *context){
                     break;
             }
             break;
-        case HFP_CMD_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE:
-            
-            break;
-
+       
         case HFP_CMD_NONE:
             switch(context->state){
                 case HFP_W2_DISCONNECT_RFCOMM:
@@ -489,7 +505,7 @@ static void packet_handler(void * connection, uint8_t packet_type, uint16_t chan
 void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, 
     uint8_t * codecs, int codecs_nr, 
     hfp_ag_indicator_t * ag_indicators, int ag_indicators_nr,
-    hfp_generic_status_indicators_t * hf_indicators, int hf_indicators_nr,
+    hfp_generic_status_indicator_t * hf_indicators, int hf_indicators_nr,
     char *call_hold_services[], int call_hold_services_nr){
     if (codecs_nr > HFP_MAX_NUM_CODECS){
         log_error("hfp_init: codecs_nr (%d) > HFP_MAX_NUM_CODECS (%d)", codecs_nr, HFP_MAX_NUM_CODECS);

@@ -74,10 +74,14 @@ const char hfp_hf_service_name[] = "BTstack HFP HF Test";
 
 static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t local_mac = {0x04, 0x0C, 0xCE, 0xE4, 0x85, 0xD3};
-static bd_addr_t phone = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
+static bd_addr_t phone_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
+
+static bd_addr_t device_addr;
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
 static uint16_t indicators[1] = {0x01};
 
+char cmd;
+    
 // prototypes
 static void show_usage();
 
@@ -88,6 +92,7 @@ static void show_usage(void){
     printf("---\n");
     printf("p - establish HFP connection to PTS module\n");
     printf("e - establish HFP connection to local mac\n");
+    printf("r - enable registration status update\n");
     printf("d - release HFP connection\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
@@ -95,20 +100,29 @@ static void show_usage(void){
 }
 
 static int stdin_process(struct data_source *ds){
-    char buffer;
-    read(ds->fd, &buffer, 1);
-    switch (buffer){
+    read(ds->fd, &cmd, 1);
+    switch (cmd){
         case 'p':
-            printf("Establishing HFP service level connection to PTS module %s...\n", bd_addr_to_str(pts_addr));
-            hfp_hf_establish_service_level_connection(pts_addr);
+            memcpy(device_addr, pts_addr, 6);
+            printf("Establishing HFP service level connection to PTS module %s...\n", bd_addr_to_str(device_addr));
+            hfp_hf_establish_service_level_connection(device_addr);
             break;
         case 'e':
-            printf("Establishing HFP service level connection to %s...\n", bd_addr_to_str(phone));
-            hfp_hf_establish_service_level_connection(phone);
+            memcpy(device_addr, phone_addr, 6);
+            printf("Establishing HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
+            hfp_hf_establish_service_level_connection(device_addr);
             break;
         case 'd':
             printf("Releasing HFP service level connection.\n");
-            hfp_hf_release_service_level_connection(phone);
+            hfp_hf_release_service_level_connection(device_addr);
+            break;
+        case 'r':
+            printf("Enabling HFP AG registration status update.\n");
+            hfp_hf_enable_status_update_for_all_ag_indicators(device_addr, 1);
+            break;
+        case 'i':
+            printf("Enabling HFP AG registration status update for individual indicators.\n");
+            hfp_hf_enable_status_update_for_individual_ag_indicators(device_addr, 63);
             break;
         default:
             show_usage();
@@ -121,21 +135,28 @@ static int stdin_process(struct data_source *ds){
 
 void packet_handler(uint8_t * event, uint16_t event_size){
     if (event[0] != HCI_EVENT_HFP_META) return;
-
+    if (event[3]){
+        printf("Command \'%c\' failed with status %u\n", cmd, event[3]);
+        return;
+    }
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
-            if (event[3] == 0){
-                printf("Service level connection established.\n\n");
-            } else {
-                printf("Service level connection establishment failed with status %u\n", event[3]);
-            }
+            printf("Service level connection established.\n\n");
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
-            if (event[3] == 0){
-                printf("Service level connection released.\n\n");
-            } else {
-                printf("Service level connection releasing failed with status %u\n", event[3]);
+            printf("Service level connection released.\n\n");
+            break;
+        case HFP_SUBEVENT_COMPLETE:
+            switch (cmd){
+                case 'r':
+                    printf("HFP AG registration status update enabled.\n");
+                    break;
+                default:
+                    break;
             }
+            break;
+        case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
+            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator index: %d, status %d\n", event[3], event[4]);
             break;
         default:
             printf("event not handled %u\n", event[2]);
@@ -164,7 +185,7 @@ int btstack_main(int argc, const char * argv[]){
     hci_power_control(HCI_POWER_ON);
     
     btstack_stdin_setup(stdin_process);
-    // printf("Establishing HFP connection to %s...\n", bd_addr_to_str(phone));
-    // hfp_hf_connect(phone);
+    // printf("Establishing HFP connection to %s...\n", bd_addr_to_str(phone_addr));
+    // hfp_hf_connect(phone_addr);
     return 0;
 }

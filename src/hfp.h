@@ -105,11 +105,13 @@ extern "C" {
 #define HFP_AVAILABLE_CODECS "+BAC"
 #define HFP_INDICATOR "+CIND"
 #define HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS "+CMER"
-#define HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS "+BIA"
+#define HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS "+BIA" // +BIA:<enabled>,,<enabled>,,,<enabled>
 #define HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES "+CHLD"
 #define HFP_GENERIC_STATUS_INDICATOR "+BIND"
+#define HFP_TRANSFER_AG_INDICATOR_STATUS "+CIEV" // +CIEV: <index>,<value>
 
 #define HFP_OK "OK"
+#define HFP_ERROR "ERROR"
 
 // Codecs 
 #define HFP_CODEC_CVSD 0x01
@@ -117,17 +119,19 @@ extern "C" {
 
 typedef enum {
     HFP_CMD_NONE = 0,
+    HFP_CMD_ERROR,
     HFP_CMD_OK,
     HFP_CMD_SUPPORTED_FEATURES,
     HFP_CMD_AVAILABLE_CODECS,
     HFP_CMD_INDICATOR,
     HFP_CMD_INDICATOR_STATUS, // 5
     HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE,
-    HFP_CMD_ENABLE_INDIVIDUAL_INDICATOR_STATUS_UPDATE,
+    HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE,
     HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES,
     HFP_CMD_LIST_GENERIC_STATUS_INDICATOR,
     HFP_CMD_GENERIC_STATUS_INDICATOR, // 10
-    HFP_CMD_GENERIC_STATUS_INDICATOR_STATE
+    HFP_CMD_GENERIC_STATUS_INDICATOR_STATE,
+    HFP_CMD_TRANSFER_AG_INDICATOR_STATUS
 } hfp_command_t;
 
 typedef enum {
@@ -136,7 +140,7 @@ typedef enum {
     HFP_PARSER_CMD_INDICATOR_NAME,
     HFP_PARSER_CMD_INDICATOR_MIN_RANGE,
     HFP_PARSER_CMD_INDICATOR_MAX_RANGE,
-    HFP_PARSER_CMD_INITITAL_STATE_GENERIC_STATUS_INDICATORS
+    HFP_PARSER_CMD_INDICATOR_STATUS
 } hfp_parser_state_t;
 
 
@@ -177,6 +181,7 @@ typedef enum {
     
     HFP_W2_DISCONNECT_RFCOMM,
     HFP_W4_RFCOMM_DISCONNECTED, 
+    HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART,
     HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN
 } hfp_state_t;
 
@@ -185,7 +190,7 @@ typedef void (*hfp_callback_t)(uint8_t * event, uint16_t event_size);
 typedef struct{
     uint16_t uuid;
     uint8_t state; // enabled
-} hfp_generic_status_indicators_t;
+} hfp_generic_status_indicator_t;
 
 typedef struct{
     uint8_t index;
@@ -193,7 +198,9 @@ typedef struct{
     uint8_t min_range;
     uint8_t max_range;
     uint8_t status;
+    uint8_t mandatory;
     uint8_t enabled;
+    uint8_t status_changed;
 } hfp_ag_indicator_t;
 
 typedef struct{
@@ -209,7 +216,9 @@ typedef struct hfp_connection {
     uint16_t rfcomm_cid;
     
     hfp_state_t state;
-    
+    // needed for reestablishing connection
+    uint16_t service_uuid;
+
     // used during service level connection establishment
     hfp_command_t command;
     hfp_parser_state_t parser_state;
@@ -225,8 +234,9 @@ typedef struct hfp_connection {
     int      remote_call_services_nr;
     hfp_call_service_t remote_call_services[HFP_MAX_INDICATOR_DESC_SIZE];
     
+    // TODO: use bitmap.
     int      generic_status_indicators_nr;
-    hfp_generic_status_indicators_t generic_status_indicators[HFP_MAX_INDICATOR_DESC_SIZE];
+    hfp_generic_status_indicator_t generic_status_indicators[HFP_MAX_INDICATOR_DESC_SIZE];
     uint8_t  generic_status_indicator_state_index;
     uint8_t  enable_status_update_for_ag_indicators;
     
@@ -234,7 +244,7 @@ typedef struct hfp_connection {
     // 0 = deactivate, 1 = activate, 0xff = do nothing
     uint8_t wait_ok;
     hfp_command_t sent_command;
-    uint8_t change_enable_status_update_for_individual_ag_indicators; 
+    uint8_t change_status_update_for_individual_ag_indicators; 
     
     uint32_t ag_indicators_status_update_bitmap;
     

@@ -78,20 +78,21 @@ static uint8_t codecs[1] = {HFP_CODEC_CVSD};
 
 static int ag_indicators_nr = 7;
 static hfp_ag_indicator_t ag_indicators[] = {
-    {1, "service", 0, 1, 1},
-    {2, "call", 0, 1, 0},
-    {3, "callsetup", 0, 3, 0},
-    {4, "battchg", 0, 5, 3},
-    {5, "signal", 0, 5, 5},
-    {6, "roam", 0, 1, 0},
-    {7, "callheld", 0, 2, 0},
+    // index, name, min range, max range, status, mandatory, enabled, status changed
+    {1, "service",   0, 1, 1, 0, 0, 0},
+    {2, "call",      0, 1, 0, 1, 1, 0},
+    {3, "callsetup", 0, 3, 0, 1, 1, 0},
+    {4, "battchg",   0, 5, 3, 0, 0, 0},
+    {5, "signal",    0, 5, 5, 0, 0, 0},
+    {6, "roam",      0, 1, 0, 0, 0, 0},
+    {7, "callheld",  0, 2, 0, 1, 1, 0}
 };
 
 static int call_hold_services_nr = 5;
 static char* call_hold_services[] = {"1", "1x", "2", "2x", "3"};
 
 static int hf_indicators_nr = 2;
-static hfp_generic_status_indicators_t hf_indicators[] = {
+static hfp_generic_status_indicator_t hf_indicators[] = {
     {1, 1},
     {2, 1},
 };
