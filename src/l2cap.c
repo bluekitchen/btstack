@@ -87,7 +87,7 @@ static uint8_t require_security_level2_for_outgoing_sdp;
 
 // prototypes
 static void l2cap_finialize_channel_close(l2cap_channel_t *channel);
-static l2cap_service_t * l2cap_get_service(uint16_t psm);
+static inline l2cap_service_t * l2cap_get_service(uint16_t psm);
 static void l2cap_emit_channel_opened(l2cap_channel_t *channel, uint8_t status);
 static void l2cap_emit_channel_closed(l2cap_channel_t *channel);
 static void l2cap_emit_connection_request(l2cap_channel_t *channel);
