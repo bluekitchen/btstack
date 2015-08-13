@@ -1754,7 +1754,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                                         sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
                                     } else {
                                         // otherwise, wait for pairing request 
-                                        sm_conn->sm_engine_state = SM_RESPONDER_PH1_W4_PAIRING_REQUEST;
+                                        sm_conn->sm_engine_state = SM_RESPONDER_IDLE;
                                     }
                                 }
                                 break;
@@ -2209,7 +2209,6 @@ void sm_send_security_request(uint16_t handle){
     switch (sm_conn->sm_engine_state){
         case SM_GENERAL_IDLE:
         case SM_RESPONDER_IDLE:
-        case SM_RESPONDER_PH1_W4_PAIRING_REQUEST:
             sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
             sm_run();
             break;
