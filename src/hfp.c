@@ -510,6 +510,10 @@ static int hfp_parser_reached_end_of_line(uint8_t byte){
     return byte == '\n' || byte == '\r';
 }
 
+static int hfp_parser_reached_end_of_header(uint8_t byte){
+    return hfp_parser_reached_end_of_line(byte) || byte == ':' || byte == '?';
+}
+
 static int hfp_parser_reached_sequence_separator(uint8_t byte){
     return byte == ',';
 }
@@ -517,8 +521,8 @@ static int hfp_parser_reached_sequence_separator(uint8_t byte){
 static int hfp_parser_found_separator(hfp_connection_t * context, uint8_t byte){
     int found_separator =   byte == ',' || byte == '\n' || byte == '\r' || 
                             byte == ')' || byte == '(' || byte == ':' || 
-                            byte == '?' || byte == '-' || byte == '"';
-    return found_separator;
+                            byte == '-' || byte == '"' ||  byte == '?' || byte == '=';
+    return found_separator || context->keep_byte == 1;
 }
 
 static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
@@ -530,15 +534,11 @@ static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
     }
     switch (context->parser_state){
         case HFP_PARSER_CMD_HEADER:
-        case HFP_PARSER_SECOND_ITEM:
-            context->parser_state = (hfp_parser_state_t)((int)context->parser_state + 1);
-            break;
-        case HFP_PARSER_THIRD_ITEM:
-            if (context->command == HFP_CMD_INDICATOR && context->retrieve_ag_indicators){
-                context->parser_state = HFP_PARSER_CMD_SEQUENCE;
-                break;
+            context->parser_state = HFP_PARSER_CMD_SEQUENCE;
+            if (context->keep_byte == 1){
+                hfp_parser_store_byte(context, byte);
+                context->keep_byte = 0;
             }
-            context->parser_state = HFP_PARSER_CMD_HEADER;
             break;
         case HFP_PARSER_CMD_SEQUENCE:
             switch (context->command){
@@ -562,6 +562,16 @@ static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
                     break;
             }
             break;
+        case HFP_PARSER_SECOND_ITEM:
+            context->parser_state = HFP_PARSER_THIRD_ITEM;
+            break;
+        case HFP_PARSER_THIRD_ITEM:
+            if (context->command == HFP_CMD_INDICATOR && context->retrieve_ag_indicators){
+                context->parser_state = HFP_PARSER_CMD_SEQUENCE;
+                break;
+            }
+            context->parser_state = HFP_PARSER_CMD_HEADER;
+            break;
     }
 }
 
@@ -574,50 +584,29 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
     
     switch (context->parser_state){
         case HFP_PARSER_CMD_HEADER: // header
-            if (context->wait_question_mark == 1 ) {
-                context->wait_question_mark = 0;
-                if (byte != '?'){
-                    context->parser_state = HFP_PARSER_CMD_SEQUENCE;
-                    context->line_buffer[context->line_size] = 0;
-                    update_command(context);
-                    
-                    context->parser_item_index = 0;
-                    context->line_size = 0;
-                    context->line_buffer[context->line_size++] = byte;
-                    break;
-                }
+            if (!hfp_parser_found_separator(context, byte)){
+                hfp_parser_store_byte(context, byte);
+                break;
+            }
+            if (hfp_parser_buffer_empty(context)) break;
+            
+            if (byte == '='){
+                context->keep_byte = 1;
+                hfp_parser_store_byte(context, byte);
+                break;
+            }
+            
+            if (byte == '?'){
+                context->keep_byte = 0;
+                hfp_parser_store_byte(context, byte);
+                break;
             }
 
-            if (byte == '?' || byte == '='){
-                context->line_buffer[context->line_size++] = byte;
-                if (byte == '='){
-                    context->wait_question_mark = 1;
-                }
-            }
-
-            if (byte == ':' || byte == '?'){
-                context->parser_state = HFP_PARSER_CMD_SEQUENCE;
-                context->line_buffer[context->line_size] = 0;
+            if (hfp_parser_reached_end_of_header(byte) || context->keep_byte == 1){
                 update_command(context);
-                
-                context->line_size = 0;
-                context->parser_item_index = 0;
-                context->wait_question_mark = 0;
-                return;
             }
 
-            if (byte == '\n' || byte == '\r'){
-                context->line_buffer[context->line_size] = 0;
-                if (context->line_size == 2){
-                    update_command(context);
-                }
-                context->line_size = 0;
-                context->parser_item_index = 0;
-                return;
-            }
-            if (byte != '='){
-                context->line_buffer[context->line_size++] = byte;
-            }
+            hfp_parser_next_state(context, byte);
             break;
 
         case HFP_PARSER_CMD_SEQUENCE: // parse comma separated sequence, ignore breacktes

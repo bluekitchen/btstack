@@ -198,7 +198,7 @@ TEST(HFPParser, HFP_HF_AG_INDICATOR_STATUS_UPDATE){
     uint8_t index = 4;
     uint8_t status = 5;
 
-    sprintf(packet, "\r\n%s=%d,%d\r\n", HFP_TRANSFER_AG_INDICATOR_STATUS, index, status);
+    sprintf(packet, "\r\n%s:%d,%d\r\n", HFP_TRANSFER_AG_INDICATOR_STATUS, index, status);
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
@@ -208,7 +208,7 @@ TEST(HFPParser, HFP_HF_AG_INDICATOR_STATUS_UPDATE){
 }
 
 TEST(HFPParser, HFP_HF_AG_QUERY_OPERATOR_SELECTION){
-    sprintf(packet, "\r\n%s=1,0,sunrise\r\n", HFP_QUERY_OPERATOR_SELECTION);
+    sprintf(packet, "\r\n%s:1,0,sunrise\r\n", HFP_QUERY_OPERATOR_SELECTION);
     
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);

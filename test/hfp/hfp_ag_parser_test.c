@@ -91,7 +91,7 @@ TEST_GROUP(HFPParser){
 
 TEST(HFPParser, HFP_AG_SUPPORTED_FEATURES){
     sprintf(packet, "\r\nAT%s=159\r\n", HFP_SUPPORTED_FEATURES);
-    context.wait_question_mark = 0;
+    context.keep_byte = 0;
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
