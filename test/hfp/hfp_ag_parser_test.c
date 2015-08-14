@@ -54,12 +54,12 @@ hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context);
 int get_hfp_ag_indicators_nr(hfp_connection_t * context);
 void set_hfp_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr);
 
-static int hf_indicators_nr = 3;
-static hfp_generic_status_indicator_t hf_indicators[] = {
-    {1, 1},
-    {2, 1},
-    {3, 1}
-};
+// static int hf_indicators_nr = 3;
+// static hfp_generic_status_indicator_t hf_indicators[] = {
+//     {1, 1},
+//     {2, 1},
+//     {3, 1}
+// };
 
 static int hfp_ag_indicators_nr = 7;
 static hfp_ag_indicator_t hfp_ag_indicators[] = {
@@ -91,7 +91,7 @@ TEST_GROUP(HFPParser){
 
 TEST(HFPParser, HFP_AG_SUPPORTED_FEATURES){
     sprintf(packet, "\r\nAT%s=159\r\n", HFP_SUPPORTED_FEATURES);
-    context.keep_byte = 0;
+    context.keep_separator = 0;
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }

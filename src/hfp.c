@@ -502,32 +502,30 @@ static void hfp_parser_store_byte(hfp_connection_t * context, uint8_t byte){
     context->line_buffer[context->line_size++] = byte;
     context->line_buffer[context->line_size] = 0;
 }
-static int hfp_parser_buffer_empty(hfp_connection_t * context){
+static int hfp_parser_is_buffer_empty(hfp_connection_t * context){
     return context->line_size == 0;
 }
 
-static int hfp_parser_reached_end_of_line(uint8_t byte){
+static int hfp_parser_is_end_of_line(uint8_t byte){
     return byte == '\n' || byte == '\r';
 }
 
-static int hfp_parser_reached_end_of_header(uint8_t byte){
-    return hfp_parser_reached_end_of_line(byte) || byte == ':' || byte == '?';
-}
-
-static int hfp_parser_reached_sequence_separator(uint8_t byte){
-    return byte == ',';
+static int hfp_parser_is_end_of_header(uint8_t byte){
+    return hfp_parser_is_end_of_line(byte) || byte == ':' || byte == '?';
 }
 
 static int hfp_parser_found_separator(hfp_connection_t * context, uint8_t byte){
+    if (context->keep_separator == 1) return 1;
+
     int found_separator =   byte == ',' || byte == '\n' || byte == '\r' || 
                             byte == ')' || byte == '(' || byte == ':' || 
                             byte == '-' || byte == '"' ||  byte == '?' || byte == '=';
-    return found_separator || context->keep_byte == 1;
+    return found_separator;
 }
 
 static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
     context->line_size = 0;
-    if (hfp_parser_reached_end_of_line(byte)){
+    if (hfp_parser_is_end_of_line(byte)){
         context->parser_item_index = 0;
         context->parser_state =  HFP_PARSER_CMD_HEADER;
         return;
@@ -535,9 +533,9 @@ static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
     switch (context->parser_state){
         case HFP_PARSER_CMD_HEADER:
             context->parser_state = HFP_PARSER_CMD_SEQUENCE;
-            if (context->keep_byte == 1){
+            if (context->keep_separator == 1){
                 hfp_parser_store_byte(context, byte);
-                context->keep_byte = 0;
+                context->keep_separator = 0;
             }
             break;
         case HFP_PARSER_CMD_SEQUENCE:
@@ -577,45 +575,36 @@ static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
 
 void hfp_parse(hfp_connection_t * context, uint8_t byte){
     int value;
-    int reached_end = 0;
-    context->line_buffer[context->line_size] = 0;
-            
-    if (byte == ' ') return;
     
+    // TODO: handle space inside word        
+    if (byte == ' ') return;
+
+    if (!hfp_parser_found_separator(context, byte)){
+        hfp_parser_store_byte(context, byte);
+        return;
+    }
+    if (hfp_parser_is_buffer_empty(context)) return;
+
     switch (context->parser_state){
         case HFP_PARSER_CMD_HEADER: // header
-            if (!hfp_parser_found_separator(context, byte)){
-                hfp_parser_store_byte(context, byte);
-                break;
-            }
-            if (hfp_parser_buffer_empty(context)) break;
-            
             if (byte == '='){
-                context->keep_byte = 1;
+                context->keep_separator = 1;
                 hfp_parser_store_byte(context, byte);
-                break;
+                return;
             }
             
             if (byte == '?'){
-                context->keep_byte = 0;
+                context->keep_separator = 0;
                 hfp_parser_store_byte(context, byte);
-                break;
+                return;
             }
 
-            if (hfp_parser_reached_end_of_header(byte) || context->keep_byte == 1){
+            if (hfp_parser_is_end_of_header(byte) || context->keep_separator == 1){
                 update_command(context);
             }
-
-            hfp_parser_next_state(context, byte);
             break;
 
         case HFP_PARSER_CMD_SEQUENCE: // parse comma separated sequence, ignore breacktes
-            if (!hfp_parser_found_separator(context, byte)){
-                hfp_parser_store_byte(context, byte);
-                break;
-            }
-            if (hfp_parser_buffer_empty(context)) break;
-            
             switch (context->command){
                 case HFP_CMD_SUPPORTED_FEATURES:
                     context->remote_supported_features = atoi((char*)context->line_buffer);
@@ -642,13 +631,11 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                     }
                     break;
                 case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
-                    if (context->parser_item_index == 3){
-                        printf("Parsed Enable indicators: %s\n", context->line_buffer);
-                        value = atoi((char *)&context->line_buffer[0]);
-                        context->enable_status_update_for_ag_indicators = (uint8_t) value;
-                    } else {
-                        context->parser_item_index++;
-                    }
+                    context->parser_item_index++;
+                    if (context->parser_item_index != 4) break;
+                    printf("Parsed Enable indicators: %s\n", context->line_buffer);
+                    value = atoi((char *)&context->line_buffer[0]);
+                    context->enable_status_update_for_ag_indicators = (uint8_t) value;
                     break;
                 case HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES:
                     printf("Parsed Support call hold: %s\n", context->line_buffer);
@@ -712,17 +699,9 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                 default:
                     break;
             }
-
-            hfp_parser_next_state(context, byte);
             break;
 
         case HFP_PARSER_SECOND_ITEM:
-            if (!hfp_parser_found_separator(context, byte)){
-                hfp_parser_store_byte(context, byte);
-                break;
-            }
-            if (hfp_parser_buffer_empty(context)) break;
-
             switch (context->command){
                 case HFP_CMD_QUERY_OPERATOR_SELECTION:
                     if (context->operator_name_format == 1) {
@@ -751,17 +730,10 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                 default:
                     break;
             }
-            hfp_parser_next_state(context, byte);
             break;
 
         case HFP_PARSER_THIRD_ITEM:
-            if (!hfp_parser_found_separator(context, byte)){
-                hfp_parser_store_byte(context, byte);
-                break;
-            }
-            if (hfp_parser_buffer_empty(context)) break;
-
-            switch (context->command){
+             switch (context->command){
                 case HFP_CMD_QUERY_OPERATOR_SELECTION:
                     if (context->operator_name == 1){
                         strcpy(context->network_operator.name, (char *)context->line_buffer);
@@ -779,9 +751,9 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                 default:
                     break;
             }
-            hfp_parser_next_state(context, byte);
             break;
     }
+    hfp_parser_next_state(context, byte);
 }
 
 void hfp_init(uint16_t rfcomm_channel_nr){

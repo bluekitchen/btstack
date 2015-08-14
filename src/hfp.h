@@ -255,7 +255,7 @@ typedef struct hfp_connection {
     // TODO: put these bit flags in a bitmap
     uint8_t wait_ok;
     
-    uint8_t keep_byte;
+    uint8_t keep_separator;
 
     uint8_t retrieve_ag_indicators;        // HFP_CMD_INDICATOR, check if needed
     uint8_t retrieve_ag_indicators_status; 
