@@ -80,6 +80,7 @@ int get_hfp_generic_status_indicators_nr();
 void set_hfp_generic_status_indicators(hfp_generic_status_indicator_t * indicators, int indicator_nr);
 
 hfp_ag_indicator_t * get_hfp_ag_indicators(hfp_connection_t * context){
+    // TODO: save only value, and value changed in the context?
     if (context->ag_indicators_nr != hfp_ag_indicators_nr){
         context->ag_indicators_nr = hfp_ag_indicators_nr;
         memcpy(context->ag_indicators, hfp_ag_indicators, hfp_ag_indicators_nr * sizeof(hfp_ag_indicator_t));
@@ -94,6 +95,7 @@ int get_hfp_ag_indicators_nr(hfp_connection_t * context){
     }
     return context->ag_indicators_nr;
 }
+
 void set_hfp_ag_indicators(hfp_ag_indicator_t * indicators, int indicator_nr){
     memcpy(hfp_ag_indicators, indicators, indicator_nr * sizeof(hfp_ag_indicator_t));
     hfp_ag_indicators_nr = indicator_nr;
@@ -383,16 +385,14 @@ void update_command(hfp_connection_t * context){
         context->command = HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE;
         return;
     } 
-
+    
     if (strncmp((char *)context->line_buffer+2, HFP_QUERY_OPERATOR_SELECTION, strlen(HFP_QUERY_OPERATOR_SELECTION)) == 0){
         context->command = HFP_CMD_QUERY_OPERATOR_SELECTION;
-        if (strncmp((char *)context->line_buffer+strlen(HFP_QUERY_OPERATOR_SELECTION)+2, "?", 1) == 0){
+        context->operator_name_format = 0; 
+        if (strncmp((char *)context->line_buffer+strlen(HFP_QUERY_OPERATOR_SELECTION)+2, "=", 1) == 0){
             context->operator_name_format = 1; 
-            context->operator_name = 0;
-        } else {
-            context->operator_name_format = 0; 
-            context->operator_name = 1;    
-        }
+            context->operator_name = 0;    
+        } 
         return;
     } 
 }

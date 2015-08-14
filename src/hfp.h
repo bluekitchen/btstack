@@ -139,11 +139,8 @@ typedef enum {
 typedef enum {
     HFP_PARSER_CMD_HEADER = 0,
     HFP_PARSER_CMD_SEQUENCE,
-    HFP_PARSER_CMD_INDICATOR_NAME,
-    HFP_PARSER_CMD_INDICATOR_MIN_RANGE,
-    HFP_PARSER_CMD_INDICATOR_MAX_RANGE,
-    HFP_PARSER_CMD_INDICATOR_STATUS,
-    HFP_PARSER_CMD_NETWORK_OPERATOR
+    HFP_PARSER_SECOND_ITEM,
+    HFP_PARSER_THIRD_ITEM
 } hfp_parser_state_t;
 
 
@@ -258,7 +255,7 @@ typedef struct hfp_connection {
     // TODO: put these bit flags in a bitmap
     uint8_t wait_ok;
     
-    uint8_t wait_question_mark;
+    uint8_t keep_separator;
 
     uint8_t retrieve_ag_indicators;        // HFP_CMD_INDICATOR, check if needed
     uint8_t retrieve_ag_indicators_status; 

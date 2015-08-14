@@ -359,8 +359,15 @@ void update_command(hfp_connection_t * context){
         return;
     } 
 
-    if (strncmp((char *)context->line_buffer, HFP_TRANSFER_AG_INDICATOR_STATUS, strlen(HFP_UPDATE_ENABLE_STATUS_FOR_INDIVIDUAL_AG_INDICATORS)) == 0){
+    if (strncmp((char *)context->line_buffer, HFP_TRANSFER_AG_INDICATOR_STATUS, strlen(HFP_TRANSFER_AG_INDICATOR_STATUS)) == 0){
         context->command = HFP_CMD_TRANSFER_AG_INDICATOR_STATUS;
+        return;
+    } 
+
+    if (strncmp((char *)context->line_buffer, HFP_QUERY_OPERATOR_SELECTION, strlen(HFP_QUERY_OPERATOR_SELECTION)) == 0){
+        context->command = HFP_CMD_QUERY_OPERATOR_SELECTION;
+        context->operator_name = 1;
+        context->operator_name_format = 0;
         return;
     } 
        
