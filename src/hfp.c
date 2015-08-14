@@ -497,10 +497,13 @@ uint32_t fromBinary(char *s) {
     return (uint32_t) strtol(s, NULL, 2);
 }
 
-static void hfp_parser_write_buffer(hfp_connection_t * context, uint8_t byte){
+static void hfp_parser_store_byte(hfp_connection_t * context, uint8_t byte){
     // TODO: add limit
     context->line_buffer[context->line_size++] = byte;
     context->line_buffer[context->line_size] = 0;
+}
+static int hfp_parser_buffer_empty(hfp_connection_t * context){
+    return context->line_size == 0;
 }
 
 static int hfp_parser_reached_end_of_line(uint8_t byte){
@@ -511,8 +514,11 @@ static int hfp_parser_reached_sequence_separator(uint8_t byte){
     return byte == ',';
 }
 
-static int hfp_parser_item_done(uint8_t byte){
-    return byte == ',' || byte == '\n' || byte == '\r';
+static int hfp_parser_found_separator(hfp_connection_t * context, uint8_t byte){
+    int found_separator =   byte == ',' || byte == '\n' || byte == '\r' || 
+                            byte == ')' || byte == '(' || byte == ':' || 
+                            byte == '?' || byte == '-' || byte == '"';
+    return found_separator;
 }
 
 static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
@@ -529,15 +535,18 @@ static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
         case HFP_PARSER_SECOND_ITEM:
             context->parser_state = (hfp_parser_state_t)((int)context->parser_state + 1);
             break;
+        case HFP_PARSER_THIRD_ITEM:
+            context->parser_state = HFP_PARSER_CMD_HEADER;
+            break;
         case HFP_PARSER_CMD_INDICATOR_MAX_RANGE:
-        case HFP_PARSER_CMD_INDICATOR_STATUS:
             context->parser_state = HFP_PARSER_CMD_SEQUENCE;
             break;
         case HFP_PARSER_CMD_SEQUENCE:
             break;
-        case HFP_PARSER_THIRD_ITEM:
+        case HFP_PARSER_CMD_INDICATOR_STATUS:
             context->parser_state = HFP_PARSER_CMD_HEADER;
-
+            break;
+        
     }
 }
 
@@ -723,10 +732,12 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
             break;
 
         case HFP_PARSER_SECOND_ITEM:
-            if (!hfp_parser_item_done(byte)){
-                hfp_parser_write_buffer(context, byte);
+            if (!hfp_parser_found_separator(context, byte)){
+                hfp_parser_store_byte(context, byte);
                 break;
             }
+            if (hfp_parser_buffer_empty(context)) break;
+            
             switch (context->command){
                 case HFP_CMD_QUERY_OPERATOR_SELECTION:
                     if (context->operator_name_format == 1) {
@@ -746,10 +757,12 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
             break;
 
         case HFP_PARSER_THIRD_ITEM:
-            if (!hfp_parser_item_done(byte)){
-                hfp_parser_write_buffer(context, byte);
+            if (!hfp_parser_found_separator(context, byte)){
+                hfp_parser_store_byte(context, byte);
                 break;
             }
+            if (hfp_parser_buffer_empty(context)) break;
+
             switch (context->command){
                 case HFP_CMD_QUERY_OPERATOR_SELECTION:
                     if (context->operator_name == 1){
@@ -789,48 +802,43 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
             break;
         
         case HFP_PARSER_CMD_INDICATOR_NAME: // parse indicator name
-            //if (byte == '\n' || byte == '\r') return;
-            if (byte == '"'){
-                context->line_buffer[context->line_size] = 0;
-                context->line_size = 0;
-                printf("Indicator %d: %s (", context->ag_indicators_nr+1, context->line_buffer);
-                strcpy((char *)context->ag_indicators[context->parser_item_index].name,  (char *)context->line_buffer);
-                context->ag_indicators[context->parser_item_index].index = context->parser_item_index+1;
+            if (!hfp_parser_found_separator(context, byte)){
+                hfp_parser_store_byte(context, byte);
                 break;
             }
-            if (byte == '('){ // parse indicator range
-                context->parser_state = HFP_PARSER_CMD_INDICATOR_MIN_RANGE;
-                break;
-            }
-            context->line_buffer[context->line_size++] = byte;
+            if (hfp_parser_buffer_empty(context)) break;
+            
+            strcpy((char *)context->ag_indicators[context->parser_item_index].name,  (char *)context->line_buffer);
+            context->ag_indicators[context->parser_item_index].index = context->parser_item_index+1;
+            printf("Indicator %d: %s (", context->ag_indicators_nr+1, context->line_buffer);
+            
+            hfp_parser_next_state(context, byte);
             break;
         case HFP_PARSER_CMD_INDICATOR_MIN_RANGE: 
-            //if (byte == '\n' || byte == '\r') return;
-            if (byte == ',' || byte == '-'){ // end min_range
-                context->parser_state = HFP_PARSER_CMD_INDICATOR_MAX_RANGE;
-                context->line_buffer[context->line_size] = 0;
-                printf("%d, ", atoi((char *)&context->line_buffer[0]));
-                context->ag_indicators[context->parser_item_index].min_range = atoi((char *)context->line_buffer);
-                context->line_size = 0;
+            if (!hfp_parser_found_separator(context, byte)){
+                hfp_parser_store_byte(context, byte);
                 break;
             }
-            // min. range
-            context->line_buffer[context->line_size++] = byte;
+            if (hfp_parser_buffer_empty(context)) break;
+
+            context->ag_indicators[context->parser_item_index].min_range = atoi((char *)context->line_buffer);
+            printf("%s, ", context->line_buffer);
+            
+            hfp_parser_next_state(context, byte);
             break;
         case HFP_PARSER_CMD_INDICATOR_MAX_RANGE:
-            //if (byte == '\n' || byte == '\r') return;
-            if (byte == ')'){ // end max_range
-                context->parser_state = HFP_PARSER_CMD_SEQUENCE;
-                context->line_buffer[context->line_size] = 0;
-                printf("%d)\n", atoi((char *)&context->line_buffer[0]));
-                context->ag_indicators[context->parser_item_index].max_range = atoi((char *)context->line_buffer);
-                context->line_size = 0;
-                context->parser_item_index++;
-                context->ag_indicators_nr = context->parser_item_index;
+            if (!hfp_parser_found_separator(context, byte)){
+                hfp_parser_store_byte(context, byte);
                 break;
             }
-           
-            context->line_buffer[context->line_size++] = byte;
+            if (hfp_parser_buffer_empty(context)) break;
+
+            context->ag_indicators[context->parser_item_index].max_range = atoi((char *)context->line_buffer);
+            context->parser_item_index++;
+            context->ag_indicators_nr = context->parser_item_index;
+            printf("%s)\n", context->line_buffer);
+            
+            hfp_parser_next_state(context, byte);
             break;
         
     }
