@@ -533,15 +533,15 @@ static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
             context->parser_state = HFP_PARSER_SECOND_ITEM;
             break;
         case HFP_PARSER_CMD_HEADER:
-        case HFP_PARSER_CMD_INDICATOR_MIN_RANGE:
         case HFP_PARSER_SECOND_ITEM:
             context->parser_state = (hfp_parser_state_t)((int)context->parser_state + 1);
             break;
         case HFP_PARSER_THIRD_ITEM:
+            if (context->command == HFP_CMD_INDICATOR && context->retrieve_ag_indicators){
+                context->parser_state = HFP_PARSER_CMD_SEQUENCE;
+                break;
+            }
             context->parser_state = HFP_PARSER_CMD_HEADER;
-            break;
-        case HFP_PARSER_CMD_INDICATOR_MAX_RANGE:
-            context->parser_state = HFP_PARSER_CMD_SEQUENCE;
             break;
         case HFP_PARSER_CMD_SEQUENCE:
             break;
@@ -791,7 +791,6 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
             hfp_parser_next_state(context, byte);
             break;
 
-        
         case HFP_PARSER_CMD_INDICATOR_NAME: // parse indicator name
             if (!hfp_parser_found_separator(context, byte)){
                 hfp_parser_store_byte(context, byte);
@@ -813,37 +812,6 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
 
             hfp_parser_next_state(context, byte);
             break;
-        case HFP_PARSER_CMD_INDICATOR_MIN_RANGE: 
-            if (!hfp_parser_found_separator(context, byte)){
-                hfp_parser_store_byte(context, byte);
-                break;
-            }
-            if (hfp_parser_buffer_empty(context)) break;
-
-            switch (context->command){
-                
-                default:
-                    break;
-            }
-
-            hfp_parser_next_state(context, byte);
-            break;
-        case HFP_PARSER_CMD_INDICATOR_MAX_RANGE:
-            if (!hfp_parser_found_separator(context, byte)){
-                hfp_parser_store_byte(context, byte);
-                break;
-            }
-            if (hfp_parser_buffer_empty(context)) break;
-
-            switch (context->command){
-                
-                default:
-                    break;
-            }
-
-            hfp_parser_next_state(context, byte);
-            break;
-        
     }
 }
 
