@@ -798,7 +798,8 @@ static int sm_key_distribution_all_received(sm_connection_t * sm_conn){
     } else {
         // master / initiator
         recv_flags = sm_key_distribution_flags_for_set(setup->sm_s_pres.responder_key_distribution);
-    }        
+    } 
+    log_debug("sm_key_distribution_all_received: received 0x%02x, expecting 0x%02x", setup->sm_key_distribution_received_set, recv_flags);       
     return recv_flags == setup->sm_key_distribution_received_set;
 }
 
@@ -823,6 +824,8 @@ static void sm_init_setup(sm_connection_t * sm_conn){
 
     // fill in sm setup
     sm_reset_tk();
+    setup->sm_peer_addr_type = sm_conn->sm_peer_addr_type;
+    memcpy(setup->sm_peer_address, sm_conn->sm_peer_address, 6);
 
     // query client for OOB data
     int have_oob_data = 0;
@@ -2109,6 +2112,27 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                         le_device_db_info(i, &address_type, address, irk);
                         if (memcmp(irk, setup->sm_peer_irk, 16) == 0){
                             log_info("sm: device found for IRK, updating");
+                            sm_conn->sm_le_db_index = i;
+                            break;
+                        }
+                    }
+                    // if not found, add to db
+                    if (sm_conn->sm_le_db_index < 0) {
+                        sm_conn->sm_le_db_index = le_device_db_add(setup->sm_peer_addr_type, setup->sm_peer_address, setup->sm_peer_irk);
+                    }
+                }
+
+                // if no IRK available, lookup via public address if possible
+                log_info("sm peer addr type %u, peer addres %s", setup->sm_peer_addr_type, bd_addr_to_str(setup->sm_peer_address));
+                if (sm_conn->sm_le_db_index < 0 && setup->sm_peer_addr_type == BD_ADDR_TYPE_LE_PUBLIC){
+                    int i;
+                    for (i=0; i < le_device_db_count(); i++){
+                        bd_addr_t address;
+                        int address_type;
+                        le_device_db_info(i, &address_type, address, NULL);
+                        log_info("device %u, sm peer addr type %u, peer addres %s", i, address_type, bd_addr_to_str(address));
+                        if (address_type == BD_ADDR_TYPE_LE_PUBLIC && memcmp(address, setup->sm_peer_address, 6) == 0){
+                            log_info("sm: device found for public address, updating");
                             sm_conn->sm_le_db_index = i;
                             break;
                         }
