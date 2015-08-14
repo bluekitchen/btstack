@@ -529,9 +529,6 @@ static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
         return;
     }
     switch (context->parser_state){
-        case HFP_PARSER_CMD_INDICATOR_NAME:
-            context->parser_state = HFP_PARSER_SECOND_ITEM;
-            break;
         case HFP_PARSER_CMD_HEADER:
         case HFP_PARSER_SECOND_ITEM:
             context->parser_state = (hfp_parser_state_t)((int)context->parser_state + 1);
@@ -544,8 +541,12 @@ static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
             context->parser_state = HFP_PARSER_CMD_HEADER;
             break;
         case HFP_PARSER_CMD_SEQUENCE:
+            if (context->command == HFP_CMD_INDICATOR && context->retrieve_ag_indicators){
+                context->parser_state = HFP_PARSER_SECOND_ITEM;
+                break;
+            }
             break;
-        
+
     }
 }
 
@@ -605,11 +606,6 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
             break;
 
         case HFP_PARSER_CMD_SEQUENCE: // parse comma separated sequence, ignore breacktes
-            if (byte == '"'){  // indicators
-                context->parser_state = HFP_PARSER_CMD_INDICATOR_NAME;
-                break;
-            } 
-           
             if (!hfp_parser_found_separator(context, byte)){
                 hfp_parser_store_byte(context, byte);
                 break;
@@ -629,10 +625,19 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                     context->remote_codecs_nr = context->parser_item_index;
                     break;
                 case HFP_CMD_INDICATOR:
-                    if (context->retrieve_ag_indicators_status == 0) break; 
-                    printf("Parsed Indicator %d with status: %s\n", context->parser_item_index+1, context->line_buffer);
-                    context->ag_indicators[context->parser_item_index].status = atoi((char *) context->line_buffer);
-                    context->parser_item_index++;
+                    if (context->retrieve_ag_indicators == 1){
+                        context->parser_state = HFP_PARSER_SECOND_ITEM;
+                        strcpy((char *)context->ag_indicators[context->parser_item_index].name,  (char *)context->line_buffer);
+                        context->ag_indicators[context->parser_item_index].index = context->parser_item_index+1;
+                        printf("Indicator %d: %s (", context->ag_indicators_nr+1, context->line_buffer);
+                    }
+
+                    if (context->retrieve_ag_indicators_status == 1){ 
+                        printf("Parsed Indicator %d with status: %s\n", context->parser_item_index+1, context->line_buffer);
+                        context->ag_indicators[context->parser_item_index].status = atoi((char *) context->line_buffer);
+                        context->parser_item_index++;
+                        break;
+                    }
                     break;
                 case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
                     if (context->parser_item_index == 3){
@@ -788,28 +793,6 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                 default:
                     break;
             }
-            hfp_parser_next_state(context, byte);
-            break;
-
-        case HFP_PARSER_CMD_INDICATOR_NAME: // parse indicator name
-            if (!hfp_parser_found_separator(context, byte)){
-                hfp_parser_store_byte(context, byte);
-                break;
-            }
-            if (hfp_parser_buffer_empty(context)) break;
-            
-            switch (context->command){
-                case HFP_CMD_INDICATOR:
-                    if (context->retrieve_ag_indicators == 1){
-                        strcpy((char *)context->ag_indicators[context->parser_item_index].name,  (char *)context->line_buffer);
-                        context->ag_indicators[context->parser_item_index].index = context->parser_item_index+1;
-                        printf("Indicator %d: %s (", context->ag_indicators_nr+1, context->line_buffer);
-                    }
-                    break;
-                default:
-                    break;
-            }
-
             hfp_parser_next_state(context, byte);
             break;
     }
