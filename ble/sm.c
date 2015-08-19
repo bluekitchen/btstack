@@ -746,6 +746,7 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
             // done
             log_key("CMAC", data);
             sm_cmac_done_handler(data);
+            sm_cmac_state = CMAC_IDLE;
             break;
         default:
             log_info("sm_cmac_handle_encryption_result called in state %u", sm_cmac_state);
