@@ -622,7 +622,7 @@ static inline uint8_t sm_cmac_message_get_byte(int offset){
     if (offset < actual_len) {
         return sm_cmac_message[offset];
     } else {
-        return sm_cmac_message[offset - actual_len];
+        return sm_cmac_sign_counter[offset - actual_len];
     }
 }
 
@@ -642,6 +642,8 @@ void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, uint32_t
     if (sm_cmac_block_count==0){
         sm_cmac_block_count = 1;
     }
+
+    log_info("sm_cmac_start: len %u, block count %u", sm_cmac_message_len, sm_cmac_block_count);
 
     // first, we need to compute l for k1, k2, and m_last
     sm_cmac_state = CMAC_CALC_SUBKEYS;
@@ -732,6 +734,7 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
                     sm_cmac_m_last[i] = k2[i];
                 }
             }
+            log_key("last", sm_cmac_m_last);
 
 
             // next
@@ -1428,8 +1431,17 @@ static void sm_run(void){
                 }
                 if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
                     setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
+
                     uint8_t buffer[17];
                     buffer[0] = SM_CODE_SIGNING_INFORMATION;
+                    // optimization: use CSRK of Peripheral if received, to avoid storing two CSRKs in our DB
+                    if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
+                        log_info("sm: mirror CSRK");
+                        memcpy(setup->sm_local_csrk, setup->sm_peer_csrk, 16);
+                    } else {
+                        log_info("sm: store local CSRK");
+                        le_device_db_csrk_set(connection->sm_le_db_index, setup->sm_local_csrk);
+                    }
                     swap128(setup->sm_local_csrk, &buffer[1]);
                     l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                     sm_timeout_reset(connection);
@@ -2155,7 +2167,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                     
                     // store CSRK
                     if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
-                        log_info("sm: set csrk");
+                        log_info("sm: store remote CSRK");
                         le_device_db_csrk_set(le_db_index, setup->sm_peer_csrk);
                         le_device_db_remote_counter_set(le_db_index, 0);
                     }
@@ -2168,6 +2180,9 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                             sm_conn->sm_actual_encryption_key_size, sm_conn->sm_connection_authenticated, sm_conn->sm_connection_authorization_state == AUTHORIZATION_GRANTED);
                     }                
                 }
+
+                // keep le_db_index
+                sm_conn->sm_le_db_index = le_db_index;
 
                 if (sm_conn->sm_role){
                     sm_conn->sm_engine_state = SM_RESPONDER_IDLE; 
