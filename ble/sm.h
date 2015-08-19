@@ -261,7 +261,7 @@ void sm_authorization_grant(uint8_t addr_type, bd_addr_t address);
  * @note Message and result are in little endian to allows passing in ATT PDU without flipping them first.
  */
 int  sm_cmac_ready(void);
-void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t hash[8]));
+void sm_cmac_start(sm_key_t k, uint8_t opcode, uint16_t attribute_handle, uint16_t message_len, uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t hash[8]));
 
 /*
  * @brief Match address against bonded devices

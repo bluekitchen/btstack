@@ -293,8 +293,7 @@ static void att_signed_write_request(uint16_t request_type, uint16_t peripheral_
     bt_store_16(request, 1, attribute_handle);
     memcpy(&request[3], value, value_length);
     bt_store_32(request, 3 + value_length, sign_counter);
-    memcpy(&request[3 + value_length+4], sgn, 8);
-    
+    swap64(sgn, &request[3 + value_length + 4]);
     l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3 + value_length + 12);
 }
 
@@ -859,7 +858,7 @@ static void gatt_client_run(void){
                     le_device_db_csrk_get(peripheral->le_device_index, csrk);
                     uint32_t sign_counter = le_device_db_local_counter_get(peripheral->le_device_index); 
                     peripheral->gatt_client_state = P_W4_CMAC_RESULT;
-                    sm_cmac_start(csrk, peripheral->attribute_length, peripheral->attribute_value, sign_counter, att_signed_write_handle_cmac_result);
+                    sm_cmac_start(csrk, ATT_SIGNED_WRITE_COMMAND, peripheral->attribute_handle, peripheral->attribute_length, peripheral->attribute_value, sign_counter, att_signed_write_handle_cmac_result);
                 }
                 return;
 

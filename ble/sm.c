@@ -144,6 +144,7 @@ static bd_addr_t sm_random_address;
 // CMAC calculation
 static cmac_state_t sm_cmac_state;
 static sm_key_t     sm_cmac_k;
+static uint8_t      sm_cmac_header[3];
 static uint16_t     sm_cmac_message_len;
 static uint8_t *    sm_cmac_message;
 static uint8_t      sm_cmac_sign_counter[4];
@@ -618,19 +619,27 @@ static inline uint8_t sm_cmac_message_get_byte(int offset){
         log_error("sm_cmac_message_get_byte. out of bounds, access %u, len %u", offset, sm_cmac_message_len);
         return 0;
     }
-    int actual_len = sm_cmac_message_len - 4;
-    if (offset < actual_len) {
-        return sm_cmac_message[offset];
-    } else {
-        return sm_cmac_sign_counter[offset - actual_len];
+
+    offset = sm_cmac_message_len - 1 - offset;
+
+    // sm_cmac_header[3] | message[] | sm_cmac_sign_counter[4]
+    if (offset < 3){
+        return sm_cmac_header[offset];
     }
+    int actual_message_len_incl_header = sm_cmac_message_len - 4;
+    if (offset <  actual_message_len_incl_header){
+        return sm_cmac_message[offset - 3];
+    }
+    return sm_cmac_sign_counter[offset - actual_message_len_incl_header];
 }
 
-void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t hash[8])){
+void sm_cmac_start(sm_key_t k, uint8_t opcode, uint16_t handle, uint16_t message_len, uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t hash[8])){
     memcpy(sm_cmac_k, k, 16);
-    sm_cmac_message_len = message_len + 4;  // incl. virtually appended sign_counter in LE
-    sm_cmac_message = message;
+    sm_cmac_header[0] = opcode;
+    bt_store_16(sm_cmac_header, 1, handle);
     bt_store_32(sm_cmac_sign_counter, 0, sign_counter);
+    sm_cmac_message_len = 3 + message_len + 4;  // incl. virtually prepended att opcode, handle and appended sign_counter in LE
+    sm_cmac_message = message;
     sm_cmac_done_handler = done_handler;
     sm_cmac_block_current = 0;
     memset(sm_cmac_x, 0, 16);
@@ -734,8 +743,6 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
                     sm_cmac_m_last[i] = k2[i];
                 }
             }
-            log_key("last", sm_cmac_m_last);
-
 
             // next
             sm_cmac_state = sm_cmac_block_current < sm_cmac_block_count - 1 ? CMAC_CALC_MI : CMAC_CALC_MLAST;  
