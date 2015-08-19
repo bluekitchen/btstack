@@ -216,6 +216,7 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
         att_server_state = ATT_SERVER_IDLE;
         return;
     }
+    log_info("ATT Signed Write, valid signature");
 
     // update sequence number
     uint32_t counter_packet = READ_BT_32(att_request_buffer, att_request_size-12);
