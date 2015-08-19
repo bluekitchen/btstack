@@ -318,62 +318,6 @@ static void hfp_run_for_context(hfp_connection_t * context){
     }
 }
 
-void update_command(hfp_connection_t * context){
-    context->command = HFP_CMD_NONE; 
-    if (strncmp((char *)context->line_buffer, HFP_ERROR, strlen(HFP_ERROR)) == 0){
-        context->command = HFP_CMD_ERROR;
-    }
-
-    if (strncmp((char *)context->line_buffer, HFP_OK, strlen(HFP_OK)) == 0){
-        context->command = HFP_CMD_OK;
-        return;
-    }
-
-    if (strncmp((char *)context->line_buffer, HFP_SUPPORTED_FEATURES, strlen(HFP_SUPPORTED_FEATURES)) == 0){
-        context->command = HFP_CMD_SUPPORTED_FEATURES;
-        return;
-    }
-
-    if (strncmp((char *)context->line_buffer, HFP_INDICATOR, strlen(HFP_INDICATOR)) == 0){
-        context->command = HFP_CMD_INDICATOR;
-        return;
-    }
-
-    if (strncmp((char *)context->line_buffer, HFP_AVAILABLE_CODECS, strlen(HFP_AVAILABLE_CODECS)) == 0){
-        context->command = HFP_CMD_AVAILABLE_CODECS;
-        return;
-    }
-
-    if (strncmp((char *)context->line_buffer, HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS, strlen(HFP_ENABLE_STATUS_UPDATE_FOR_AG_INDICATORS)) == 0){
-        context->command = HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE;
-        return;
-    }
-
-    if (strncmp((char *)context->line_buffer, HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES, strlen(HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES)) == 0){
-        context->command = HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES;
-        return;
-    } 
-
-    if (strncmp((char *)context->line_buffer, HFP_GENERIC_STATUS_INDICATOR, strlen(HFP_GENERIC_STATUS_INDICATOR)) == 0){
-        context->command = HFP_CMD_GENERIC_STATUS_INDICATOR;
-        return;
-    } 
-
-    if (strncmp((char *)context->line_buffer, HFP_TRANSFER_AG_INDICATOR_STATUS, strlen(HFP_TRANSFER_AG_INDICATOR_STATUS)) == 0){
-        context->command = HFP_CMD_TRANSFER_AG_INDICATOR_STATUS;
-        return;
-    } 
-
-    if (strncmp((char *)context->line_buffer, HFP_QUERY_OPERATOR_SELECTION, strlen(HFP_QUERY_OPERATOR_SELECTION)) == 0){
-        context->command = HFP_CMD_QUERY_OPERATOR_SELECTION;
-        context->operator_name = 1;
-        context->operator_name_format = 0;
-        return;
-    } 
-       
-}
-
-
 void handle_switch_on_ok(hfp_connection_t *context){
     // printf("switch on ok\n");
     switch (context->state){
