@@ -918,7 +918,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
             sm_connection = (sm_connection_t *) context;
             switch (event){
                 case ADDRESS_RESOLUTION_SUCEEDED:
-                    sm_connection->sm_csrk_lookup_state = CSRK_LOOKUP_SUCCEEDED;
+                    sm_connection->sm_irk_lookup_state = IRK_LOOKUP_SUCCEEDED;
                     sm_connection->sm_le_db_index = matched_device_id;
                     log_info("ADDRESS_RESOLUTION_SUCEEDED, index %d", sm_connection->sm_le_db_index);
                     if (sm_connection->sm_role) break;
@@ -933,7 +933,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                     }
                     break;
                 case ADDRESS_RESOLUTION_FAILED:
-                    sm_connection->sm_csrk_lookup_state = CSRK_LOOKUP_FAILED;
+                    sm_connection->sm_irk_lookup_state = IRK_LOOKUP_FAILED;
                     if (sm_connection->sm_role) break;
                     if (!sm_connection->sm_bonding_requested && !sm_connection->sm_security_request_received) break;
                     sm_connection->sm_security_request_received = 0;
@@ -1040,10 +1040,10 @@ static void sm_run(void){
         while(linked_list_iterator_has_next(&it)){
             hci_connection_t * hci_connection = (hci_connection_t *) linked_list_iterator_next(&it);
             sm_connection_t  * sm_connection  = &hci_connection->sm_connection;
-            if (sm_connection->sm_csrk_lookup_state == CSRK_LOOKUP_W4_READY){
+            if (sm_connection->sm_irk_lookup_state == IRK_LOOKUP_W4_READY){
                 // and start lookup
                 sm_address_resolution_start_lookup(sm_connection->sm_peer_addr_type, sm_connection->sm_peer_address, ADDRESS_RESOLUTION_FOR_CONNECTION, sm_connection);
-                sm_connection->sm_csrk_lookup_state = CSRK_LOOKUP_STARTED;
+                sm_connection->sm_irk_lookup_state = IRK_LOOKUP_STARTED;
                 break;
             }
         }
@@ -1746,7 +1746,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_conn->sm_le_db_index = -1;
 
                             // prepare CSRK lookup (does not involve setup)
-                            sm_conn->sm_csrk_lookup_state = CSRK_LOOKUP_W4_READY;
+                            sm_conn->sm_irk_lookup_state = IRK_LOOKUP_W4_READY;
 
                             // just connected -> everything else happens in sm_run()
                             if (sm_conn->sm_role){
@@ -1956,11 +1956,11 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
-            if (sm_conn->sm_csrk_lookup_state == CSRK_LOOKUP_FAILED){
+            if (sm_conn->sm_irk_lookup_state == IRK_LOOKUP_FAILED){
                 sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
                 break;
             }
-            if (sm_conn->sm_csrk_lookup_state == CSRK_LOOKUP_SUCCEEDED){
+            if (sm_conn->sm_irk_lookup_state == IRK_LOOKUP_SUCCEEDED){
                 uint16_t ediv;
                 le_device_db_encryption_get(sm_conn->sm_le_db_index, &ediv, NULL, NULL, NULL, NULL, NULL);
                 if (ediv){
@@ -2342,11 +2342,11 @@ void sm_request_authorization(uint8_t addr_type, bd_addr_t address){
         // used as a trigger to start central/master/initiator security procedures
             uint16_t ediv;
             if (sm_conn->sm_engine_state == SM_INITIATOR_CONNECTED){
-            switch (sm_conn->sm_csrk_lookup_state){
-                case CSRK_LOOKUP_FAILED:
+            switch (sm_conn->sm_irk_lookup_state){
+                case IRK_LOOKUP_FAILED:
                     sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;            
                     break;
-                case CSRK_LOOKUP_SUCCEEDED:
+                case IRK_LOOKUP_SUCCEEDED:
                         le_device_db_encryption_get(sm_conn->sm_le_db_index, &ediv, NULL, NULL, NULL, NULL, NULL);
                         if (ediv){
                             log_info("sm: Setting up previous ltk/ediv/rand for device index %u", sm_conn->sm_le_db_index);
