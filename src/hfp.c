@@ -493,6 +493,8 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
 
 // translates command string into hfp_command_t CMD and flags to distinguish between CMD=, CMD?, CMD=?
 void process_command(hfp_connection_t * context){
+    if (context->line_size < 2) return;
+    // printf("process_command %s\n", context->line_buffer);
     context->command = HFP_CMD_NONE;
     int offset = 0;
     int isHandsFree = 1;
@@ -508,6 +510,7 @@ void process_command(hfp_connection_t * context){
     }
 
     if (strncmp((char *)context->line_buffer+offset, HFP_OK, strlen(HFP_OK)) == 0){
+        //printf("parsed HFP_CMD_OK \n");
         context->command = HFP_CMD_OK;
         return;
     }
@@ -518,6 +521,7 @@ void process_command(hfp_connection_t * context){
     }
 
     if (strncmp((char *)context->line_buffer+offset, HFP_INDICATOR, strlen(HFP_INDICATOR)) == 0){
+        //printf("parsed HFP_INDICATOR \n");
         context->command = HFP_CMD_INDICATOR;
         if (isHandsFree) return;
         
@@ -615,9 +619,9 @@ static int hfp_parser_is_end_of_header(uint8_t byte){
 static int hfp_parser_found_separator(hfp_connection_t * context, uint8_t byte){
     if (context->keep_separator == 1) return 1;
 
-    int found_separator =   byte == ',' || byte == '\n' || byte == '\r' || 
+    int found_separator =   byte == ',' || byte == '\n'|| byte == '\r'||
                             byte == ')' || byte == '(' || byte == ':' || 
-                            byte == '-' || byte == '"' ||  byte == '?' || byte == '=';
+                            byte == '-' || byte == '"' ||  byte == '?'|| byte == '=';
     return found_separator;
 }
 
@@ -625,7 +629,7 @@ static void hfp_parser_next_state(hfp_connection_t * context, uint8_t byte){
     context->line_size = 0;
     if (hfp_parser_is_end_of_line(byte)){
         context->parser_item_index = 0;
-        context->parser_state =  HFP_PARSER_CMD_HEADER;
+        context->parser_state = HFP_PARSER_CMD_HEADER;
         return;
     }
     switch (context->parser_state){
@@ -681,10 +685,17 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
         hfp_parser_store_byte(context, byte);
         return;
     }
+    if (hfp_parser_is_end_of_line(byte)) {
+        if (hfp_parser_is_buffer_empty(context)){
+            context->parser_state = HFP_PARSER_CMD_HEADER;
+        }
+    }
     if (hfp_parser_is_buffer_empty(context)) return;
+
 
     switch (context->parser_state){
         case HFP_PARSER_CMD_HEADER: // header
+            // printf(" parse header 1 \n");
             if (byte == '='){
                 context->keep_separator = 1;
                 hfp_parser_store_byte(context, byte);
@@ -696,8 +707,9 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                 hfp_parser_store_byte(context, byte);
                 return;
             }
-
+            // printf(" parse header 2 %s, keep separator $ %d\n", context->line_buffer, context->keep_separator);
             if (hfp_parser_is_end_of_header(byte) || context->keep_separator == 1){
+                // printf(" parse header 3 %s, keep separator $ %d\n", context->line_buffer, context->keep_separator);
                 process_command(context);
             }
             break;

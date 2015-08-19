@@ -93,6 +93,9 @@ static void show_usage(void){
     printf("e - establish HFP connection to local mac\n");
     printf("r - enable registration status update\n");
     printf("d - release HFP connection\n");
+    printf("i - enabling HFP AG registration status update for individual indicators\n");
+    printf("o - query network operator\n");
+    
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -123,6 +126,11 @@ static int stdin_process(struct data_source *ds){
             printf("Enabling HFP AG registration status update for individual indicators.\n");
             hfp_hf_enable_status_update_for_individual_ag_indicators(device_addr, 63);
             break;
+        case 'o':
+            printf("Query network operator.\n");
+            hfp_hf_query_operator_selection(device_addr);
+            break;
+
         default:
             show_usage();
             break;
@@ -150,12 +158,17 @@ void packet_handler(uint8_t * event, uint16_t event_size){
                 case 'r':
                     printf("HFP AG registration status update enabled.\n");
                     break;
+                case 'i':
+                    printf("HFP AG registration status update for individual indicators set.\n");
                 default:
                     break;
             }
             break;
         case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
-            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator index: %d, status %d\n", event[3], event[4]);
+            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator index: %d, status: %d\n", event[4], event[5]);
+            break;
+        case HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED:
+            printf("HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", event[4], event[5], (char *) &event[6]);
             break;
         default:
             printf("event not handled %u\n", event[2]);

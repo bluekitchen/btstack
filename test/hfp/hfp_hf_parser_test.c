@@ -76,6 +76,7 @@ TEST_GROUP(HFPParser){
     }
 };
 
+
 TEST(HFPParser, HFP_HF_OK){
     sprintf(packet, "\r\n%s\r\n", HFP_OK);
     for (pos = 0; pos < strlen(packet); pos++){
@@ -85,13 +86,14 @@ TEST(HFPParser, HFP_HF_OK){
 }
 
 TEST(HFPParser, HFP_HF_SUPPORTED_FEATURES){
-    sprintf(packet, "\r\n%s:1007\r\n", HFP_SUPPORTED_FEATURES);
+    sprintf(packet, "\r\n%s:1007\r\n\r\nOK\r\n", HFP_SUPPORTED_FEATURES);
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
-    CHECK_EQUAL(HFP_CMD_SUPPORTED_FEATURES, context.command);
+    CHECK_EQUAL(HFP_CMD_OK, context.command);
     CHECK_EQUAL(1007, context.remote_supported_features);
 }
+
 
 TEST(HFPParser, HFP_HF_INDICATORS){
     offset = 0;
@@ -99,7 +101,7 @@ TEST(HFPParser, HFP_HF_INDICATORS){
     for (pos = 0; pos < hfp_ag_indicators_nr - 1; pos++){
         offset += snprintf(packet+offset, sizeof(packet)-offset, "\"%s\", (%d, %d),", hfp_ag_indicators[pos].name, hfp_ag_indicators[pos].min_range, hfp_ag_indicators[pos].max_range);
     }
-    offset += snprintf(packet+offset, sizeof(packet)-offset, "\"%s\", (%d, %d)\r\n", hfp_ag_indicators[pos].name, hfp_ag_indicators[pos].min_range, hfp_ag_indicators[pos].max_range);
+    offset += snprintf(packet+offset, sizeof(packet)-offset, "\"%s\", (%d, %d)\r\n\r\nOK\r\n", hfp_ag_indicators[pos].name, hfp_ag_indicators[pos].min_range, hfp_ag_indicators[pos].max_range);
 
     context.command = HFP_CMD_INDICATOR;
     context.retrieve_ag_indicators = 1;
@@ -108,7 +110,7 @@ TEST(HFPParser, HFP_HF_INDICATORS){
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
-    CHECK_EQUAL(HFP_CMD_INDICATOR, context.command);
+    CHECK_EQUAL(HFP_CMD_OK, context.command);
     CHECK_EQUAL(hfp_ag_indicators_nr, context.ag_indicators_nr);
     for (pos = 0; pos < hfp_ag_indicators_nr; pos++){
         CHECK_EQUAL(hfp_ag_indicators[pos].index, context.ag_indicators[pos].index);
@@ -125,7 +127,7 @@ TEST(HFPParser, HFP_HF_INDICATOR_STATUS){
     for (pos = 0; pos < hfp_ag_indicators_nr - 1; pos++){
         offset += snprintf(packet+offset, sizeof(packet)-offset, "%d,", hfp_ag_indicators[pos].status);
     }
-    offset += snprintf(packet+offset, sizeof(packet)-offset, "%d\r\n", hfp_ag_indicators[pos].status);
+    offset += snprintf(packet+offset, sizeof(packet)-offset, "%d\r\n\r\nOK\r\n", hfp_ag_indicators[pos].status);
     
     context.command = HFP_CMD_INDICATOR;
     context.retrieve_ag_indicators_status = 1;
@@ -135,18 +137,19 @@ TEST(HFPParser, HFP_HF_INDICATOR_STATUS){
         hfp_parse(&context, packet[pos]);
     }
 
-    CHECK_EQUAL(HFP_CMD_INDICATOR, context.command);
+    CHECK_EQUAL(HFP_CMD_OK, context.command);
     for (pos = 0; pos < hfp_ag_indicators_nr; pos++){
         CHECK_EQUAL(hfp_ag_indicators[pos].status, context.ag_indicators[pos].status);
     } 
 }
 
+
 TEST(HFPParser, HFP_HF_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES){
-    sprintf(packet, "\r\n%s:(1,1x,2,2x,3)\r\n", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES);
+    sprintf(packet, "\r\n%s:(1,1x,2,2x,3)\r\n\r\nOK\r\n", HFP_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES);
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
-    CHECK_EQUAL(HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES, context.command);
+    CHECK_EQUAL(HFP_CMD_OK, context.command);
     CHECK_EQUAL(5, context.remote_call_services_nr);
    
     CHECK_EQUAL(0, strcmp("1", (char*)context.remote_call_services[0].name));
@@ -157,7 +160,7 @@ TEST(HFPParser, HFP_HF_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES){
 } 
 
 TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR){
-    sprintf(packet, "\r\n%s:0,1,2,3,4\r\n", HFP_GENERIC_STATUS_INDICATOR);
+    sprintf(packet, "\r\n%s:0,1,2,3,4\r\n\r\nOK\r\n", HFP_GENERIC_STATUS_INDICATOR);
     
     context.command = HFP_CMD_GENERIC_STATUS_INDICATOR;
     context.list_generic_status_indicators = 0;
@@ -168,7 +171,7 @@ TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR){
         hfp_parse(&context, packet[pos]);
     }
     
-    CHECK_EQUAL(HFP_CMD_GENERIC_STATUS_INDICATOR, context.command);
+    CHECK_EQUAL(HFP_CMD_OK, context.command);
     CHECK_EQUAL(5, context.generic_status_indicators_nr);
     
     for (pos = 0; pos < context.generic_status_indicators_nr; pos++){
@@ -177,7 +180,7 @@ TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR){
 }
 
 TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR_STATE){
-    sprintf(packet, "\r\n%s:0,1\r\n", HFP_GENERIC_STATUS_INDICATOR);
+    sprintf(packet, "\r\n%s:0,1\r\n\r\nOK\r\n", HFP_GENERIC_STATUS_INDICATOR);
     context.command = HFP_CMD_GENERIC_STATUS_INDICATOR;
     context.list_generic_status_indicators = 0;
     context.retrieve_generic_status_indicators = 0;
@@ -187,7 +190,7 @@ TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR_STATE){
         hfp_parse(&context, packet[pos]);
     }
     
-    CHECK_EQUAL(HFP_CMD_GENERIC_STATUS_INDICATOR, context.command);
+    CHECK_EQUAL(HFP_CMD_OK, context.command);
     CHECK_EQUAL(1, context.generic_status_indicators[0].state);
 }
 
@@ -198,23 +201,23 @@ TEST(HFPParser, HFP_HF_AG_INDICATOR_STATUS_UPDATE){
     uint8_t index = 4;
     uint8_t status = 5;
 
-    sprintf(packet, "\r\n%s:%d,%d\r\n", HFP_TRANSFER_AG_INDICATOR_STATUS, index, status);
+    sprintf(packet, "\r\n%s:%d,%d\r\n\r\nOK\r\n", HFP_TRANSFER_AG_INDICATOR_STATUS, index, status);
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
 
-    CHECK_EQUAL(HFP_CMD_TRANSFER_AG_INDICATOR_STATUS, context.command);
+    CHECK_EQUAL(HFP_CMD_OK, context.command);
     CHECK_EQUAL(context.ag_indicators[index - 1].status, status);
 }
 
 TEST(HFPParser, HFP_HF_AG_QUERY_OPERATOR_SELECTION){
-    sprintf(packet, "\r\n%s:1,0,sunrise\r\n", HFP_QUERY_OPERATOR_SELECTION);
+    sprintf(packet, "\r\n%s:1,0,sunrise\r\n\r\nOK\r\n", HFP_QUERY_OPERATOR_SELECTION);
     
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
     }
 
-    CHECK_EQUAL(context.command, HFP_CMD_QUERY_OPERATOR_SELECTION);
+    CHECK_EQUAL(context.command, HFP_CMD_OK);
     CHECK_EQUAL(context.operator_name_format, 0);       
     CHECK_EQUAL(context.operator_name, 1);              
     CHECK_EQUAL(context.operator_name_changed, 0); 

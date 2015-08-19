@@ -201,14 +201,28 @@ int hfp_hs_query_operator_name_cmd(uint16_t cid){
 }
 
                 
-static void hfp_emit_ag_indicator_event(hfp_callback_t callback, hfp_ag_indicator_t indicator){
+static void hfp_emit_ag_indicator_event(hfp_callback_t callback, int status, hfp_ag_indicator_t indicator){
     if (!callback) return;
-    uint8_t event[5];
+    uint8_t event[6];
     event[0] = HCI_EVENT_HFP_META;
     event[1] = sizeof(event) - 2;
     event[2] = HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED;
-    event[3] = indicator.index; 
-    event[4] = indicator.status; 
+    event[3] = status;
+    event[4] = indicator.index; 
+    event[5] = indicator.status; 
+    (*callback)(event, sizeof(event));
+}
+
+static void hfp_emit_network_operator_event(hfp_callback_t callback, int status, hfp_network_opearator_t network_operator){
+    if (!callback) return;
+    uint8_t event[24];
+    event[0] = HCI_EVENT_HFP_META;
+    event[1] = sizeof(event) - 2;
+    event[2] = HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED;
+    event[3] = status;
+    event[4] = network_operator.mode;
+    event[5] = network_operator.format;
+    strcpy((char*)&event[6], network_operator.name); 
     (*callback)(event, sizeof(event));
 }
 
@@ -276,7 +290,7 @@ static void hfp_run_for_context(hfp_connection_t * context){
             int i;
             for (i = 0; i < context->ag_indicators_nr; i++){
                 if (context->ag_indicators[i].status_changed == 1) {
-                    hfp_emit_ag_indicator_event(hfp_callback, context->ag_indicators[i]);
+                    hfp_emit_ag_indicator_event(hfp_callback, 0, context->ag_indicators[i]);
                     context->ag_indicators[i].status_changed = 0;
                     break;
                 }
@@ -287,7 +301,6 @@ static void hfp_run_for_context(hfp_connection_t * context){
             if (context->enable_status_update_for_ag_indicators != 0xFF){
                 hfp_hs_activate_status_update_for_all_ag_indicators_cmd(context->rfcomm_cid, context->enable_status_update_for_ag_indicators);
                 context->wait_ok = 1;
-                context->enable_status_update_for_ag_indicators = 0xFF;
                 break;
             };
             if (context->change_status_update_for_individual_ag_indicators == 1){
@@ -295,21 +308,17 @@ static void hfp_run_for_context(hfp_connection_t * context){
                         context->ag_indicators_status_update_bitmap,
                         context->ag_indicators_nr);
                 context->wait_ok = 1;
-                context->change_status_update_for_individual_ag_indicators = 0;
                 break;
             }
 
             if (context->operator_name_format == 1){
                 hfp_hs_query_operator_name_format_cmd(context->rfcomm_cid);
-                context->operator_name_format = 0;
-                context->operator_name = 1;
                 context->wait_ok = 1;
                 break;
             }
             if (context->operator_name == 1){
                 hfp_hs_query_operator_name_cmd(context->rfcomm_cid);
                 context->wait_ok = 1;
-                context->operator_name = 0;
             }
             break;
         }
@@ -383,8 +392,29 @@ void handle_switch_on_ok(hfp_connection_t *context){
 
         case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
             context->wait_ok = 0;
-            hfp_emit_event(hfp_callback, HFP_SUBEVENT_COMPLETE, 0);
-           
+            
+            if (context->enable_status_update_for_ag_indicators != 0xFF){
+                context->enable_status_update_for_ag_indicators = 0xFF;
+                hfp_emit_event(hfp_callback, HFP_SUBEVENT_COMPLETE, 0);
+                break;
+            };
+            if (context->change_status_update_for_individual_ag_indicators == 1){
+                context->change_status_update_for_individual_ag_indicators = 0;
+                hfp_emit_event(hfp_callback, HFP_SUBEVENT_COMPLETE, 0);
+                break;
+            }
+
+            if (context->operator_name_format == 1){
+                context->operator_name_format = 0;
+                context->operator_name = 1;
+                break;
+            }
+            if (context->operator_name == 1){
+                context->operator_name = 0;
+                hfp_emit_network_operator_event(hfp_callback, 0, context->network_operator);
+                break;
+            }
+
             break;
         default:
             break;
@@ -404,7 +434,6 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
     for (pos = 0; pos < size ; pos++){
         hfp_parse(context, packet[pos]);
 
-        // trigger next action after CMD received
         if (context->command == HFP_CMD_ERROR){
             if (context->state == HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
                 context->wait_ok = 0;
