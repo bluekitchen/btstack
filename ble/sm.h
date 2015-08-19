@@ -148,14 +148,6 @@ void sm_set_er(sm_key_t er);
 void sm_set_ir(sm_key_t ir);
 
 /**
- * @brief Set signning counnter used with Connection Signature Resolving Key (CSRK)
- * @note Needs to be stored in persistent memory as a signed writes are invalid if a higher counter was 
- *       recevied before
- * @param signing counter
- */
-void sm_set_signing_counter(uint32_t signing_counter);
-
-/**
  *
  * @brief Registers OOB Data Callback. The callback should set the oob_data and return 1 if OOB data is availble
  * @param get_oob_data_callback
@@ -270,11 +262,6 @@ void sm_authorization_grant(uint8_t addr_type, bd_addr_t address);
  */
 int  sm_cmac_ready(void);
 void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t hash[8]));
-
-/**
- * @brief Get global signing counter and increment it
- */
-uint32_t sm_signing_counter_next(void);
 
 /*
  * @brief Match address against bonded devices

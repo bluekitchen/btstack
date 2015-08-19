@@ -137,8 +137,6 @@ static derived_key_generation_t dkg_state;
 // derived from sm_persistent_er
 // ..
 
-static uint32_t     sm_signing_counter = 0;
-
 // random address update
 static random_address_update_t rau_state;
 static bd_addr_t sm_random_address;
@@ -2225,14 +2223,6 @@ void sm_set_er(sm_key_t er){
 
 void sm_set_ir(sm_key_t ir){
     memcpy(sm_persistent_ir, ir, 16);
-}
-
-void sm_set_signing_counter(uint32_t signing_counter){
-    sm_signing_counter = signing_counter;
-}
-
-uint32_t sm_signing_counter_next(void){
-    return sm_signing_counter++;
 }
 
 // Testing support only
