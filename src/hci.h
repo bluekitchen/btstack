@@ -465,8 +465,9 @@ typedef struct sm_connection {
     uint16_t                 sm_handle;
     uint8_t                  sm_role;   // 0 - IamMaster, 1 = IamSlave
     uint8_t                  sm_security_request_received;
-    bd_addr_t                sm_peer_address;
+    uint8_t                  sm_bonding_requested;
     uint8_t                  sm_peer_addr_type;
+    bd_addr_t                sm_peer_address;
     security_manager_state_t sm_engine_state;
     csrk_lookup_state_t      sm_csrk_lookup_state;
     uint8_t                  sm_connection_encrypted;

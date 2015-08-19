@@ -126,7 +126,8 @@ void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t irk)
 }
 
 void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_key_t ltk, int key_size, int authenticated, int authorized){
-    log_info("Central Device DB set encryption for %u, ediv x%04x, key size %u, authenticated %u, authorized %u", index, ediv, key_size, authenticated, authorized);
+    log_info("Central Device DB set encryption for %u, ediv x%04x, key size %u, authenticated %u, authorized %u",
+        index, ediv, key_size, authenticated, authorized);
     le_device_memory_db_t * device = &le_devices[index];
     device->ediv = ediv;
     if (rand) memcpy(device->rand, rand, 8);
@@ -138,13 +139,14 @@ void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_k
 
 void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk, int * key_size, int * authenticated, int * authorized){
     le_device_memory_db_t * device = &le_devices[index];
-    log_info("Central Device DB encryption for %u, ediv x%04x", index, device->ediv);
+    log_info("Central Device DB encryption for %u, ediv x%04x, keysize %u, authenticated %u, authorized %u",
+        index, device->ediv, device->key_size, device->authenticated, device->authorized);
     if (ediv) *ediv = device->ediv;
     if (rand) memcpy(rand, device->rand, 8);
     if (ltk)  memcpy(ltk, device->ltk, 16);    
     if (key_size) *key_size = device->key_size;
-    if (authenticated) *key_size = device->authenticated;
-    if (authorized) *key_size = device->authorized;
+    if (authenticated) *authenticated = device->authenticated;
+    if (authorized) *authorized = device->authorized;
 }
 
 // get signature key

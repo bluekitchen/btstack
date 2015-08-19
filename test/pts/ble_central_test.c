@@ -358,13 +358,24 @@ void handle_gatt_client_event(le_event_t * event){
                     break;
                 case CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE:
                     central_state = CENTRAL_IDLE;
-                    gatt_client_write_value_of_characteristic(gc_id, handle, gap_peripheral_privacy_flag_characteristic.value_handle, 1, &pts_privacy_flag);
-                    if (pts_privacy_flag){
-                        printf("Peripheral Privacy Flag set to TRUE\n");
-                    } else {
-                        use_public_pts_address();
-                        printf("Peripheral Privacy Flag set to FALSE, connecting to public PTS address again\n");
-                    }
+                    switch (pts_privacy_flag){
+                        case 0:
+                            use_public_pts_address();
+                            printf("Peripheral Privacy Flag set to FALSE, connecting to public PTS address again\n");
+                            gatt_client_write_value_of_characteristic(gc_id, handle, gap_peripheral_privacy_flag_characteristic.value_handle, 1, &pts_privacy_flag);
+                            break;
+                        case 1:
+                            printf("Peripheral Privacy Flag set to TRUE\n");
+                            gatt_client_write_value_of_characteristic(gc_id, handle, gap_peripheral_privacy_flag_characteristic.value_handle, 1, &pts_privacy_flag);
+                            break;
+                        case 2:
+                            printf("Signed write on Peripheral Privacy Flag to TRUE\n");
+                            pts_privacy_flag = 1;
+                            gatt_client_signed_write_without_response(gc_id, handle, gap_peripheral_privacy_flag_characteristic.value_handle, 1, &pts_privacy_flag);
+                            break;
+                        default:
+                            break;
+                        }
                     break;
                 default:
                     break;
@@ -429,6 +440,7 @@ void show_usage(void){
     printf("t   - terminate connection, stop connecting\n");
     printf("p   - auto connect to PTS\n");
     printf("P   - direct connect to PTS\n");
+    printf("w   - signed write on Privacy Flag\n");
     printf("z   - Update L2CAP Connection Parameters\n");
     printf("---\n");
     printf("4   - IO_CAPABILITY_DISPLAY_ONLY\n");
@@ -601,6 +613,11 @@ int  stdin_process(struct data_source *ds){
             hci_send_cmd(&hci_disconnect, handle, 0x13);
             gap_auto_connection_stop_all();
             le_central_connect_cancel();
+            break;
+        case 'w':
+            pts_privacy_flag = 2;
+            central_state = CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE;
+            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, GAP_PERIPHERAL_PRIVACY_FLAG);
             break;
         case 'z':
             printf("Updating l2cap connection parameters\n");
