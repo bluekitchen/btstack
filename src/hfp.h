@@ -110,7 +110,8 @@ extern "C" {
 #define HFP_GENERIC_STATUS_INDICATOR "+BIND"
 #define HFP_TRANSFER_AG_INDICATOR_STATUS "+CIEV" // +CIEV: <index>,<value>
 #define HFP_QUERY_OPERATOR_SELECTION "+COPS"     // +COPS: <mode>,0,<opearator>
-
+#define HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR "+CMEE"
+#define HFP_EXTENDED_AUDIO_GATEWAY_ERROR "+CME ERROR"
 
 #define HFP_OK "OK"
 #define HFP_ERROR "ERROR"
@@ -133,8 +134,66 @@ typedef enum {
     HFP_CMD_GENERIC_STATUS_INDICATOR,
 
     HFP_CMD_TRANSFER_AG_INDICATOR_STATUS,
-    HFP_CMD_QUERY_OPERATOR_SELECTION
+    HFP_CMD_QUERY_OPERATOR_SELECTION,
+
+    HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR,
+    HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR
+    
 } hfp_command_t;
+
+typedef enum {
+    HFP_CME_ERROR_AG_FAILURE = 0, 
+    HFP_CME_ERROR_NO_CONNECTION_TO_PHONE,
+    HFP_CME_ERROR_2,
+    HFP_CME_ERROR_OPERATION_NOT_ALLOWED, 
+    HFP_CME_ERROR_OPERATION_NOT_SUPPORTED,
+    HFP_CME_ERROR_PH_SIM_PIN_REQUIRED,
+    HFP_CME_ERROR_6,
+    HFP_CME_ERROR_7,
+    HFP_CME_ERROR_8,
+    HFP_CME_ERROR_9,
+    HFP_CME_ERROR_SIM_NOT_INSERTED,
+    HFP_CME_ERROR_SIM_PIN_REQUIRED,
+    HFP_CME_ERROR_SIM_PUK_REQUIRED,
+    HFP_CME_ERROR_SIM_FAILURE,
+    HFP_CME_ERROR_SIM_BUSY,
+    HFP_CME_ERROR_15,
+    HFP_CME_ERROR_INCORRECT_PASSWORD, 
+    HFP_CME_ERROR_SIM_PIN2_REQUIRED,
+    HFP_CME_ERROR_SIM_PUK2_REQUIRED,
+    HFP_CME_ERROR_19,
+    HFP_CME_ERROR_MEMORY_FULL,
+    HFP_CME_ERROR_INVALID_INDEX,
+    HFP_CME_ERROR_22,
+    HFP_CME_ERROR_MEMORY_FAILURE,
+    HFP_CME_ERROR_TEXT_STRING_TOO_LONG,
+    HFP_CME_ERROR_INVALID_CHARACTERS_IN_TEXT_STRING,
+    HFP_CME_ERROR_DIAL_STRING_TOO_LONG,
+    HFP_CME_ERROR_INVALID_CHARACTERS_IN_DIAL_STRING,
+    HFP_CME_ERROR_28,
+    HFP_CME_ERROR_29,
+    HFP_CME_ERROR_NO_NETWORK_SERVICE,
+    HFP_CME_ERROR_NETWORK_TIMEOUT,
+    HFP_CME_ERROR_NETWORK_NOT_ALLOWED_EMERGENCY_CALLS_ONLY
+} hfp_cme_error_t;
+
+typedef enum {
+    HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS = 0,
+    HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT
+} hfp_call_status_t;
+
+typedef enum {  
+    HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS = 0, 
+    HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS,
+    HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_DIALING_STATE,
+    HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE
+} hfp_callsetup_status_t;
+
+typedef enum {
+    HFP_HELDCALL_STATUS_NO_CALLS_HELD = 0,
+    HFP_HELDCALL_STATUS_CALL_ON_HOLD_OR_SWAPPED,
+    HFP_HELDCALL_STATUS_CALL_ON_HOLD_AND_NO_ACTIVE_CALLS 
+} hfp_callheld_status_t;
 
 typedef enum {
     HFP_PARSER_CMD_HEADER = 0,
@@ -246,6 +305,7 @@ typedef struct hfp_connection {
     int      generic_status_indicators_nr;
     hfp_generic_status_indicator_t generic_status_indicators[HFP_MAX_INDICATOR_DESC_SIZE];
     uint8_t  enable_status_update_for_ag_indicators;
+
     uint32_t ag_indicators_status_update_bitmap;
     hfp_network_opearator_t network_operator;
     
@@ -254,7 +314,9 @@ typedef struct hfp_connection {
 
     // TODO: put these bit flags in a bitmap
     uint8_t wait_ok;
-    
+    uint8_t send_ok;
+    uint8_t send_error;
+
     uint8_t keep_separator;
 
     uint8_t retrieve_ag_indicators;        // HFP_CMD_INDICATOR, check if needed
@@ -264,11 +326,15 @@ typedef struct hfp_connection {
     uint8_t retrieve_generic_status_indicators;       // HFP_CMD_GENERIC_STATUS_INDICATOR
     uint8_t retrieve_generic_status_indicators_state; // HFP_CMD_GENERIC_STATUS_INDICATOR_STATE
     
+    uint8_t change_status_update_for_individual_ag_indicators; 
+
     uint8_t operator_name_format;       
     uint8_t operator_name;              
     uint8_t operator_name_changed;      
 
-    uint8_t change_status_update_for_individual_ag_indicators; 
+    uint8_t enable_extended_audio_gateway_error_report;
+    uint8_t extended_audio_gateway_error;
+
 
 } hfp_connection_t;
 

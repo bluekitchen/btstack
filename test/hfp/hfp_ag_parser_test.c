@@ -211,6 +211,18 @@ TEST(HFPParser, HFP_AG_HF_QUERY_OPERATOR_SELECTION){
     CHECK_EQUAL(context.operator_name_changed, 0); 
 }
 
+TEST(HFPParser, HFP_AG_EXTENDED_AUDIO_GATEWAY_ERROR){
+    sprintf(packet, "\r\nAT%s=1\r\n", HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR);
+    
+    for (pos = 0; pos < strlen(packet); pos++){
+        hfp_parse(&context, packet[pos]);
+    }
+
+    CHECK_EQUAL(context.command, HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR);
+    CHECK_EQUAL(context.enable_extended_audio_gateway_error_report, 1);
+}
+
+
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

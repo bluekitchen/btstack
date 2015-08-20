@@ -509,7 +509,7 @@ void process_command(hfp_connection_t * context){
         return;
     }
 
-    if (strncmp((char *)context->line_buffer+offset, HFP_OK, strlen(HFP_OK)) == 0){
+    if (isHandsFree && strncmp((char *)context->line_buffer+offset, HFP_OK, strlen(HFP_OK)) == 0){
         //printf("parsed HFP_CMD_OK \n");
         context->command = HFP_CMD_OK;
         return;
@@ -593,6 +593,19 @@ void process_command(hfp_connection_t * context){
         context->command = HFP_CMD_TRANSFER_AG_INDICATOR_STATUS;
         return;
     } 
+
+    if (isHandsFree && strncmp((char *)context->line_buffer+offset, HFP_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0){
+        printf(" process command 1 %s \n", context->line_buffer);
+        context->command = HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR;
+        return;
+    }
+
+    if (!isHandsFree && strncmp((char *)context->line_buffer+offset, HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0){
+        printf(" process command 2 %s \n", context->line_buffer);
+        context->command = HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR;
+        return;
+    }
+    printf(" process unknown command 3 %s \n", context->line_buffer);
 }
 
 uint32_t fromBinary(char *s) {
@@ -679,7 +692,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
     int value;
     
     // TODO: handle space inside word        
-    if (byte == ' ') return;
+    if (byte == ' ' && context->parser_state > HFP_PARSER_CMD_HEADER) return;
 
     if (!hfp_parser_found_separator(context, byte)){
         hfp_parser_store_byte(context, byte);
@@ -805,7 +818,16 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                         break;
                     }
                     break;
-                    
+                case HFP_CMD_ERROR:
+                    break;
+                case HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR:
+                    context->extended_audio_gateway_error = (uint8_t)atoi((char*)context->line_buffer);
+                    break;
+                case HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR:
+                    context->enable_extended_audio_gateway_error_report = (uint8_t)atoi((char*)context->line_buffer);
+                    context->send_ok = 1;
+                    context->extended_audio_gateway_error = 0;
+                    break;
                 default:
                     break;
             }

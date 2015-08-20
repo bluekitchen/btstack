@@ -110,6 +110,23 @@ void hfp_ag_register_packet_handler(hfp_callback_t callback){
     hfp_callback = callback;
 }
 
+static uint8_t hfp_get_indicator_index_by_name(hfp_connection_t * context, const char * name){
+    int i;
+    for (i=0; i<context->ag_indicators_nr; i++){
+        if (strcmp(context->ag_indicators[i].name, name) == 0){
+            return i;
+        }
+    } 
+    return 0xFF;
+}
+
+static void hfp_ag_update_indicator_status(hfp_connection_t * context, const char * indicator_name, uint8_t status){
+    int index = hfp_get_indicator_index_by_name(context, indicator_name);
+    if (index == 0xFF) return;
+    if (context->ag_indicators[index].status == status) return;
+    context->ag_indicators[index].status = status;
+    context->ag_indicators[index].status_changed = 1;   
+}
 
 static int has_codec_negotiation_feature(hfp_connection_t * connection){
     int hf = get_bit(connection->remote_supported_features, HFP_HFSF_CODEC_NEGOTIATION);
@@ -122,7 +139,6 @@ static int has_call_waiting_and_3way_calling_feature(hfp_connection_t * connecti
     int ag = get_bit(hfp_supported_features, HFP_AGSF_THREE_WAY_CALLING);
     return hf && ag;
 }
-
 
 static int has_hf_indicators_feature(hfp_connection_t * connection){
     int hf = get_bit(connection->remote_supported_features, HFP_HFSF_HF_INDICATORS);
@@ -160,6 +176,12 @@ int hfp_ag_ok(uint16_t cid){
 int hfp_ag_error(uint16_t cid){
     char buffer[10];
     sprintf(buffer, "\r\nERROR\r\n");
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+int hfp_ag_report_extended_audio_gateway_error(uint16_t cid, uint8_t error){
+    char buffer[20];
+    sprintf(buffer, "\r\n%s=%d\r\n", HFP_EXTENDED_AUDIO_GATEWAY_ERROR, error);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -333,14 +355,33 @@ void hfp_run_for_context(hfp_connection_t *context){
     //printf(" hfp_run_for_context 1 state %d, command %d\n", context->state, context->command);
     
     if (context->state == HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
-        if (context->enable_status_update_for_ag_indicators == 1){
+        if (context->send_ok){
+            hfp_ag_ok(context->rfcomm_cid);
+            context->send_ok = 0;
+            return;
+        }
+
+        if (context->send_error){
+            hfp_ag_error(context->rfcomm_cid); 
+            context->send_error = 0;
+            return;
+        }
+
+        if (context->enable_status_update_for_ag_indicators){
             int i;
             for (i = 0; i < context->ag_indicators_nr; i++){
                 if (context->ag_indicators[i].enabled == 0) continue;
                 if (context->ag_indicators[i].status_changed == 0) continue;
-                            
                 hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, context->ag_indicators[i]);
                 context->ag_indicators[i].status_changed = 0;
+                return;
+            }
+        }
+
+        if (context->enable_extended_audio_gateway_error_report){
+            if (context->extended_audio_gateway_error){
+                hfp_ag_report_extended_audio_gateway_error(context->rfcomm_cid, context->extended_audio_gateway_error);
+                context->extended_audio_gateway_error = 0;
                 return;
             }
         }
@@ -568,3 +609,47 @@ void hfp_ag_release_service_level_connection(bd_addr_t bd_addr){
     hfp_run_for_context(connection);
 }
 
+void hfp_ag_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, hfp_cme_error_t error){
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (!connection){
+        log_error("HFP HF: connection doesn't exist.");
+        return;
+    }
+    connection->extended_audio_gateway_error = 0;
+    if (!connection->enable_extended_audio_gateway_error_report){
+        return;
+    }
+    connection->extended_audio_gateway_error = error;
+    hfp_run_for_context(connection);
+}
+
+void hfp_ag_transfer_call_status(bd_addr_t bd_addr, hfp_callsetup_status_t status){
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (!connection){
+        log_error("HFP HF: connection doesn't exist.");
+        return;
+    }
+    if (!connection->enable_status_update_for_ag_indicators) return;
+    hfp_ag_update_indicator_status(connection, (char *)"call", status);
+}
+
+void hfp_ag_transfer_callsetup_status(bd_addr_t bd_addr, hfp_callsetup_status_t status){
+        hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (!connection){
+        log_error("HFP HF: connection doesn't exist.");
+        return;
+    }
+    if (!connection->enable_status_update_for_ag_indicators) return;
+    hfp_ag_update_indicator_status(connection, (char *)"callsetup", status);
+}
+
+void hfp_ag_transfer_callheld_status(bd_addr_t bd_addr, hfp_callheld_status_t status){
+        hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (!connection){
+        log_error("HFP HF: connection doesn't exist.");
+        return;
+    }
+    if (!connection->enable_status_update_for_ag_indicators) return;
+    hfp_ag_update_indicator_status(connection, (char *)"callheld", status); 
+    hfp_run_for_context(connection);
+}

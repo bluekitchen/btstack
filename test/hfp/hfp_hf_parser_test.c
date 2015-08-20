@@ -60,6 +60,10 @@ static hfp_ag_indicator_t hfp_ag_indicators[] = {
     {6, "roam",      0, 1, 0, 0, 0, 0},
     {7, "callheld",  0, 2, 0, 1, 1, 0}
 };
+static uint8_t call_status_index = 2;
+static uint8_t callsetup_status_index = 3;
+static uint8_t callheld_status_index = 7;
+
 
 TEST_GROUP(HFPParser){
     char packet[200];
@@ -103,7 +107,6 @@ TEST(HFPParser, HFP_HF_INDICATORS){
     }
     offset += snprintf(packet+offset, sizeof(packet)-offset, "\"%s\", (%d, %d)\r\n\r\nOK\r\n", hfp_ag_indicators[pos].name, hfp_ag_indicators[pos].min_range, hfp_ag_indicators[pos].max_range);
 
-    context.command = HFP_CMD_INDICATOR;
     context.retrieve_ag_indicators = 1;
     context.retrieve_ag_indicators_status = 0;
 
@@ -161,8 +164,6 @@ TEST(HFPParser, HFP_HF_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES){
 
 TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR){
     sprintf(packet, "\r\n%s:0,1,2,3,4\r\n\r\nOK\r\n", HFP_GENERIC_STATUS_INDICATOR);
-    
-    context.command = HFP_CMD_GENERIC_STATUS_INDICATOR;
     context.list_generic_status_indicators = 0;
     context.retrieve_generic_status_indicators = 1;
     context.retrieve_generic_status_indicators_state = 0;
@@ -181,7 +182,6 @@ TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR){
 
 TEST(HFPParser, HFP_HF_GENERIC_STATUS_INDICATOR_STATE){
     sprintf(packet, "\r\n%s:0,1\r\n\r\nOK\r\n", HFP_GENERIC_STATUS_INDICATOR);
-    context.command = HFP_CMD_GENERIC_STATUS_INDICATOR;
     context.list_generic_status_indicators = 0;
     context.retrieve_generic_status_indicators = 0;
     context.retrieve_generic_status_indicators_state = 1;
@@ -211,7 +211,7 @@ TEST(HFPParser, HFP_HF_AG_INDICATOR_STATUS_UPDATE){
 }
 
 TEST(HFPParser, HFP_HF_AG_QUERY_OPERATOR_SELECTION){
-    sprintf(packet, "\r\n%s:1,0,sunrise\r\n\r\nOK\r\n", HFP_QUERY_OPERATOR_SELECTION);
+    sprintf(packet, "\r\n%s:1,0,\"sunrise\"\r\n\r\nOK\r\n", HFP_QUERY_OPERATOR_SELECTION);
     
     for (pos = 0; pos < strlen(packet); pos++){
         hfp_parse(&context, packet[pos]);
@@ -222,6 +222,61 @@ TEST(HFPParser, HFP_HF_AG_QUERY_OPERATOR_SELECTION){
     CHECK_EQUAL(context.operator_name, 1);              
     CHECK_EQUAL(context.operator_name_changed, 0); 
     CHECK_EQUAL( strcmp("sunrise", context.network_operator.name), 0);
+}
+
+TEST(HFPParser, HFP_HF_ERROR){
+    sprintf(packet, "\r\n%s\r\n", HFP_ERROR);
+    
+    for (pos = 0; pos < strlen(packet); pos++){
+        hfp_parse(&context, packet[pos]);
+    }
+
+    CHECK_EQUAL(context.command, HFP_CMD_ERROR);       
+}
+
+TEST(HFPParser, HFP_HF_EXTENDED_AUDIO_GATEWAY_ERROR){
+    sprintf(packet, "\r\n%s:%d\r\n", HFP_EXTENDED_AUDIO_GATEWAY_ERROR, HFP_CME_ERROR_NO_NETWORK_SERVICE);
+    
+    for (pos = 0; pos < strlen(packet); pos++){
+        hfp_parse(&context, packet[pos]);
+    }
+
+    CHECK_EQUAL(context.command, HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR);
+    CHECK_EQUAL(context.extended_audio_gateway_error, HFP_CME_ERROR_NO_NETWORK_SERVICE);       
+}
+
+
+TEST(HFPParser, HFP_HF_AG_INDICATOR_CALLS_STATUS_UPDATE){
+    context.ag_indicators_nr = hfp_ag_indicators_nr;
+    memcpy(context.ag_indicators, hfp_ag_indicators, hfp_ag_indicators_nr * sizeof(hfp_ag_indicator_t));
+    uint8_t status = 1;
+
+    // call status
+    uint8_t index = call_status_index;
+    sprintf(packet, "\r\n%s:%d,%d\r\n\r\nOK\r\n", HFP_TRANSFER_AG_INDICATOR_STATUS, index, status);
+    for (pos = 0; pos < strlen(packet); pos++){
+        hfp_parse(&context, packet[pos]);
+    }
+    CHECK_EQUAL(HFP_CMD_OK, context.command);
+    CHECK_EQUAL(context.ag_indicators[index - 1].status, status);
+
+    // callsetup status
+    index = callsetup_status_index;
+    sprintf(packet, "\r\n%s:%d,%d\r\n\r\nOK\r\n", HFP_TRANSFER_AG_INDICATOR_STATUS, index, status);
+    for (pos = 0; pos < strlen(packet); pos++){
+        hfp_parse(&context, packet[pos]);
+    }
+    CHECK_EQUAL(HFP_CMD_OK, context.command);
+    CHECK_EQUAL(context.ag_indicators[index - 1].status, status);
+
+    // callheld status
+    index = callheld_status_index;
+    sprintf(packet, "\r\n%s:%d,%d\r\n\r\nOK\r\n", HFP_TRANSFER_AG_INDICATOR_STATUS, index, status);
+    for (pos = 0; pos < strlen(packet); pos++){
+        hfp_parse(&context, packet[pos]);
+    }
+    CHECK_EQUAL(HFP_CMD_OK, context.command);
+    CHECK_EQUAL(context.ag_indicators[index - 1].status, status);
 }
 
 int main (int argc, const char * argv[]){

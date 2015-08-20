@@ -92,6 +92,64 @@ void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr);
  */
 void hfp_ag_release_service_level_connection(bd_addr_t bd_addr);
 
+/**
+ * @brief Report Extended Audio Gateway Error result codes in the AG.
+ * Whenever there is an error relating to the functionality of the AG as a 
+ * result of AT command, the AG shall send +CME ERROR:
+ * - +CME ERROR: 0  - AG failure
+ * - +CME ERROR: 1  - no connection to phone 
+ * - +CME ERROR: 3  - operation not allowed 
+ * - +CME ERROR: 4  - operation not supported 
+ * - +CME ERROR: 5  - PH-SIM PIN required 
+ * - +CME ERROR: 10 - SIM not inserted 
+ * - +CME ERROR: 11 - SIM PIN required 
+ * - +CME ERROR: 12 - SIM PUK required 
+ * - +CME ERROR: 13 - SIM failure
+ * - +CME ERROR: 14 - SIM busy
+ * - +CME ERROR: 16 - incorrect password 
+ * - +CME ERROR: 17 - SIM PIN2 required 
+ * - +CME ERROR: 18 - SIM PUK2 required 
+ * - +CME ERROR: 20 - memory full
+ * - +CME ERROR: 21 - invalid index
+ * - +CME ERROR: 23 - memory failure
+ * - +CME ERROR: 24 - text string too long
+ * - +CME ERROR: 25 - invalid characters in text string
+ * - +CME ERROR: 26 - dial string too long
+ * - +CME ERROR: 27 - invalid characters in dial string
+ * - +CME ERROR: 30 - no network service
+ * - +CME ERROR: 31 - network Timeout.
+ * - +CME ERROR: 32 - network not allowed – Emergency calls only
+ */
+void hfp_ag_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, hfp_cme_error_t error);
+
+/**
+ * @brief Report the change in AG's call status. 
+ * Call status:
+ * - 0 = No calls (held or active)
+ * - 1 = Call is present (active or held) 
+ */
+void hfp_ag_transfer_call_status(bd_addr_t bd_addr, uint8_t index, hfp_call_status_t status);
+
+/**
+ * @brief Report the change in AG's call setup status.
+ * Call setup status:
+ * - 0 = No call setup in progress 
+ * - 1 = Incoming call setup in progress
+ * - 2 = Outgoing call setup in dialing state
+ * - 3 = Outgoing call setup in alerting state
+ */
+void hfp_ag_transfer_callsetup_status(bd_addr_t bd_addr, uint8_t index, hfp_callsetup_status_t status);
+
+/**
+ * @brief Report the change in AG's held call status.
+ * Held call status:
+ * - 0 = No calls held
+ * - 1 = Call is placed on hold or active/held calls are swapped
+ * - 2 = Call on hold, no active calls
+ */
+void hfp_ag_transfer_callheld_status(bd_addr_t bd_addr, uint8_t index, hfp_callheld_status_t status);
+
+
 /* API_END */
 
 #if defined __cplusplus

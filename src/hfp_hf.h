@@ -107,6 +107,36 @@ void hfp_hf_enable_status_update_for_individual_ag_indicators(bd_addr_t bd_addr,
  */
 void hfp_hf_query_operator_selection(bd_addr_t bd_addr);
 
+/**
+ * @brief Enable/disable Extended Audio Gateway Error result codes in the AG.
+ * Whenever there is an error relating to the functionality of the AG as a 
+ * result of AT command, the AG shall send +CME ERROR:
+ * - +CME ERROR: 0  - AG failure
+ * - +CME ERROR: 1  - no connection to phone 
+ * - +CME ERROR: 3  - operation not allowed 
+ * - +CME ERROR: 4  - operation not supported 
+ * - +CME ERROR: 5  - PH-SIM PIN required 
+ * - +CME ERROR: 10 - SIM not inserted 
+ * - +CME ERROR: 11 - SIM PIN required 
+ * - +CME ERROR: 12 - SIM PUK required 
+ * - +CME ERROR: 13 - SIM failure
+ * - +CME ERROR: 14 - SIM busy
+ * - +CME ERROR: 16 - incorrect password 
+ * - +CME ERROR: 17 - SIM PIN2 required 
+ * - +CME ERROR: 18 - SIM PUK2 required 
+ * - +CME ERROR: 20 - memory full
+ * - +CME ERROR: 21 - invalid index
+ * - +CME ERROR: 23 - memory failure
+ * - +CME ERROR: 24 - text string too long
+ * - +CME ERROR: 25 - invalid characters in text string
+ * - +CME ERROR: 26 - dial string too long
+ * - +CME ERROR: 27 - invalid characters in dial string
+ * - +CME ERROR: 30 - no network service
+ * - +CME ERROR: 31 - network Timeout.
+ * - +CME ERROR: 32 - network not allowed – Emergency calls only
+ */
+void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, uint8_t enable);
+
 
 
 /* API_END */
