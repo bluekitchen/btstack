@@ -118,6 +118,49 @@ uint16_t mock_packet_buffer_len(void);
 void mock_clear_packet_buffer(void);
 
 
+void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
+    uint16_t aHandle;
+    sm_event_t * sm_event;
+    switch (packet_type) {
+        case HCI_EVENT_PACKET:
+            switch (packet[0]) {
+                case SM_PASSKEY_INPUT_NUMBER: 
+                    // store peer address for input
+                    sm_event = (sm_event_t *) packet;
+                    printf("\nGAP Bonding %s (%u): Enter 6 digit passkey: '", bd_addr_to_str(sm_event->address), sm_event->addr_type);
+                    fflush(stdout);
+                    break;
+
+                case SM_PASSKEY_DISPLAY_NUMBER:
+                    sm_event = (sm_event_t *) packet;
+                    printf("\nGAP Bonding %s (%u): Display Passkey '%06u\n", bd_addr_to_str(sm_event->address), sm_event->addr_type, sm_event->passkey);
+                    break;
+
+                case SM_PASSKEY_DISPLAY_CANCEL: 
+                    sm_event = (sm_event_t *) packet;
+                    printf("\nGAP Bonding %s (%u): Display cancel\n", bd_addr_to_str(sm_event->address), sm_event->addr_type);
+                    break;
+
+                case SM_JUST_WORKS_REQUEST:
+                    // auto-authorize connection if requested
+                    sm_event = (sm_event_t *) packet;
+                    sm_just_works_confirm(sm_event->addr_type, sm_event->address);
+                    printf("Just Works request confirmed\n");
+                    break;
+
+                case SM_AUTHORIZATION_REQUEST:
+                    // auto-authorize connection if requested
+                    sm_event = (sm_event_t *) packet;
+                    sm_authorization_grant(sm_event->addr_type, sm_event->address);
+                    break;
+
+                default:
+                    break;
+            }
+    }
+}
+
+
 void CHECK_EQUAL_ARRAY(uint8_t * expected, uint8_t * actual, int size){
 	int i;
 	for (i=0; i<size; i++){
@@ -141,6 +184,7 @@ TEST_GROUP(SecurityManager){
 	    sm_init();
 	    sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
 	    sm_set_authentication_requirements( SM_AUTHREQ_BONDING ); 
+        sm_register_packet_handler(app_packet_handler);
 	}
 };
 
