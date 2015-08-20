@@ -88,8 +88,8 @@ authorization_state_t sm_authorization_state(uint8_t addr_type, bd_addr_t addres
 	return AUTHORIZATION_DECLINED;
 }
 
-// request authorization
-void sm_request_authorization(uint8_t addr_type, bd_addr_t address){}
+// request pairing
+void sm_request_pairing(uint8_t addr_type, bd_addr_t address){}
 
 // called by client app on authorization request
 void sm_authorization_decline(uint8_t addr_type, bd_addr_t address){}

@@ -2378,11 +2378,11 @@ void sm_send_security_request(uint16_t handle){
 }
 
 // request pairing
-void sm_request_authorization(uint8_t addr_type, bd_addr_t address){
+void sm_request_pairing(uint8_t addr_type, bd_addr_t address){
     sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
     if (!sm_conn) return;     // wrong connection
 
-    log_info("sm_request_authorization in role %u, state %u", sm_conn->sm_role, sm_conn->sm_engine_state);
+    log_info("sm_request_pairing in role %u, state %u", sm_conn->sm_role, sm_conn->sm_engine_state);
     if (sm_conn->sm_role){
         sm_send_security_request_for_connection(sm_conn);
     } else {

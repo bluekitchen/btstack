@@ -292,7 +292,7 @@ static void att_run(void){
             	switch (sm_authorization_state(att_client_addr_type, att_client_address)){
             		case AUTHORIZATION_UNKNOWN:
                         l2cap_release_packet_buffer();
-		             	sm_request_authorization(att_client_addr_type, att_client_address);
+		             	sm_request_pairing(att_client_addr_type, att_client_address);
 	    		        return;
 	    		    case AUTHORIZATION_PENDING:
                         l2cap_release_packet_buffer();

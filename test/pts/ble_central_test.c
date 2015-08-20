@@ -582,7 +582,7 @@ int  stdin_process(struct data_source *ds){
             show_usage();
             break;
         case 'b':
-            sm_request_authorization(current_pts_address_type, current_pts_address);
+            sm_request_pairing(current_pts_address_type, current_pts_address);
             break;
         case 'c':
             gap_connectable = 0;
