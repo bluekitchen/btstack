@@ -509,6 +509,9 @@ static void sm_setup_tk(void){
         return;
     }
 
+    // Reset TK as it has been setup in sm_init_setup
+    sm_reset_tk();
+
     // If both devices have not set the MITM option in the Authentication Requirements
     // Flags, then the IO capabilities shall be ignored and the Just Works association
     // model shall be used. 
