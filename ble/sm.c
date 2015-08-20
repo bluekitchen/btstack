@@ -144,6 +144,7 @@ static bd_addr_t sm_random_address;
 // CMAC calculation
 static cmac_state_t sm_cmac_state;
 static sm_key_t     sm_cmac_k;
+static uint8_t      sm_cmac_header[3];
 static uint16_t     sm_cmac_message_len;
 static uint8_t *    sm_cmac_message;
 static uint8_t      sm_cmac_sign_counter[4];
@@ -618,19 +619,27 @@ static inline uint8_t sm_cmac_message_get_byte(int offset){
         log_error("sm_cmac_message_get_byte. out of bounds, access %u, len %u", offset, sm_cmac_message_len);
         return 0;
     }
-    int actual_len = sm_cmac_message_len - 4;
-    if (offset < actual_len) {
-        return sm_cmac_message[offset];
-    } else {
-        return sm_cmac_message[offset - actual_len];
+
+    offset = sm_cmac_message_len - 1 - offset;
+
+    // sm_cmac_header[3] | message[] | sm_cmac_sign_counter[4]
+    if (offset < 3){
+        return sm_cmac_header[offset];
     }
+    int actual_message_len_incl_header = sm_cmac_message_len - 4;
+    if (offset <  actual_message_len_incl_header){
+        return sm_cmac_message[offset - 3];
+    }
+    return sm_cmac_sign_counter[offset - actual_message_len_incl_header];
 }
 
-void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t hash[8])){
+void sm_cmac_start(sm_key_t k, uint8_t opcode, uint16_t handle, uint16_t message_len, uint8_t * message, uint32_t sign_counter, void (*done_handler)(uint8_t hash[8])){
     memcpy(sm_cmac_k, k, 16);
-    sm_cmac_message_len = message_len + 4;  // incl. virtually appended sign_counter in LE
-    sm_cmac_message = message;
+    sm_cmac_header[0] = opcode;
+    bt_store_16(sm_cmac_header, 1, handle);
     bt_store_32(sm_cmac_sign_counter, 0, sign_counter);
+    sm_cmac_message_len = 3 + message_len + 4;  // incl. virtually prepended att opcode, handle and appended sign_counter in LE
+    sm_cmac_message = message;
     sm_cmac_done_handler = done_handler;
     sm_cmac_block_current = 0;
     memset(sm_cmac_x, 0, 16);
@@ -642,6 +651,8 @@ void sm_cmac_start(sm_key_t k, uint16_t message_len, uint8_t * message, uint32_t
     if (sm_cmac_block_count==0){
         sm_cmac_block_count = 1;
     }
+
+    log_info("sm_cmac_start: len %u, block count %u", sm_cmac_message_len, sm_cmac_block_count);
 
     // first, we need to compute l for k1, k2, and m_last
     sm_cmac_state = CMAC_CALC_SUBKEYS;
@@ -732,7 +743,6 @@ static void sm_cmac_handle_encryption_result(sm_key_t data){
                     sm_cmac_m_last[i] = k2[i];
                 }
             }
-
 
             // next
             sm_cmac_state = sm_cmac_block_current < sm_cmac_block_count - 1 ? CMAC_CALC_MI : CMAC_CALC_MLAST;  
@@ -916,7 +926,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
             sm_connection = (sm_connection_t *) context;
             switch (event){
                 case ADDRESS_RESOLUTION_SUCEEDED:
-                    sm_connection->sm_csrk_lookup_state = CSRK_LOOKUP_SUCCEEDED;
+                    sm_connection->sm_irk_lookup_state = IRK_LOOKUP_SUCCEEDED;
                     sm_connection->sm_le_db_index = matched_device_id;
                     log_info("ADDRESS_RESOLUTION_SUCEEDED, index %d", sm_connection->sm_le_db_index);
                     if (sm_connection->sm_role) break;
@@ -931,7 +941,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
                     }
                     break;
                 case ADDRESS_RESOLUTION_FAILED:
-                    sm_connection->sm_csrk_lookup_state = CSRK_LOOKUP_FAILED;
+                    sm_connection->sm_irk_lookup_state = IRK_LOOKUP_FAILED;
                     if (sm_connection->sm_role) break;
                     if (!sm_connection->sm_bonding_requested && !sm_connection->sm_security_request_received) break;
                     sm_connection->sm_security_request_received = 0;
@@ -1038,10 +1048,10 @@ static void sm_run(void){
         while(linked_list_iterator_has_next(&it)){
             hci_connection_t * hci_connection = (hci_connection_t *) linked_list_iterator_next(&it);
             sm_connection_t  * sm_connection  = &hci_connection->sm_connection;
-            if (sm_connection->sm_csrk_lookup_state == CSRK_LOOKUP_W4_READY){
+            if (sm_connection->sm_irk_lookup_state == IRK_LOOKUP_W4_READY){
                 // and start lookup
                 sm_address_resolution_start_lookup(sm_connection->sm_peer_addr_type, sm_connection->sm_peer_address, ADDRESS_RESOLUTION_FOR_CONNECTION, sm_connection);
-                sm_connection->sm_csrk_lookup_state = CSRK_LOOKUP_STARTED;
+                sm_connection->sm_irk_lookup_state = IRK_LOOKUP_STARTED;
                 break;
             }
         }
@@ -1428,8 +1438,17 @@ static void sm_run(void){
                 }
                 if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
                     setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
+
                     uint8_t buffer[17];
                     buffer[0] = SM_CODE_SIGNING_INFORMATION;
+                    // optimization: use CSRK of Peripheral if received, to avoid storing two CSRKs in our DB
+                    if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
+                        log_info("sm: mirror CSRK");
+                        memcpy(setup->sm_local_csrk, setup->sm_peer_csrk, 16);
+                    } else {
+                        log_info("sm: store local CSRK");
+                        le_device_db_csrk_set(connection->sm_le_db_index, setup->sm_local_csrk);
+                    }
                     swap128(setup->sm_local_csrk, &buffer[1]);
                     l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                     sm_timeout_reset(connection);
@@ -1744,7 +1763,7 @@ static void sm_event_packet_handler (uint8_t packet_type, uint16_t channel, uint
                             sm_conn->sm_le_db_index = -1;
 
                             // prepare CSRK lookup (does not involve setup)
-                            sm_conn->sm_csrk_lookup_state = CSRK_LOOKUP_W4_READY;
+                            sm_conn->sm_irk_lookup_state = IRK_LOOKUP_W4_READY;
 
                             // just connected -> everything else happens in sm_run()
                             if (sm_conn->sm_role){
@@ -1954,11 +1973,11 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                 sm_pdu_received_in_wrong_state(sm_conn);
                 break;
             }
-            if (sm_conn->sm_csrk_lookup_state == CSRK_LOOKUP_FAILED){
+            if (sm_conn->sm_irk_lookup_state == IRK_LOOKUP_FAILED){
                 sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;
                 break;
             }
-            if (sm_conn->sm_csrk_lookup_state == CSRK_LOOKUP_SUCCEEDED){
+            if (sm_conn->sm_irk_lookup_state == IRK_LOOKUP_SUCCEEDED){
                 uint16_t ediv;
                 le_device_db_encryption_get(sm_conn->sm_le_db_index, &ediv, NULL, NULL, NULL, NULL, NULL);
                 if (ediv){
@@ -2155,7 +2174,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                     
                     // store CSRK
                     if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
-                        log_info("sm: set csrk");
+                        log_info("sm: store remote CSRK");
                         le_device_db_csrk_set(le_db_index, setup->sm_peer_csrk);
                         le_device_db_remote_counter_set(le_db_index, 0);
                     }
@@ -2168,6 +2187,9 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                             sm_conn->sm_actual_encryption_key_size, sm_conn->sm_connection_authenticated, sm_conn->sm_connection_authorization_state == AUTHORIZATION_GRANTED);
                     }                
                 }
+
+                // keep le_db_index
+                sm_conn->sm_le_db_index = le_db_index;
 
                 if (sm_conn->sm_role){
                     sm_conn->sm_engine_state = SM_RESPONDER_IDLE; 
@@ -2332,11 +2354,11 @@ void sm_request_authorization(uint8_t addr_type, bd_addr_t address){
         // used as a trigger to start central/master/initiator security procedures
             uint16_t ediv;
             if (sm_conn->sm_engine_state == SM_INITIATOR_CONNECTED){
-            switch (sm_conn->sm_csrk_lookup_state){
-                case CSRK_LOOKUP_FAILED:
+            switch (sm_conn->sm_irk_lookup_state){
+                case IRK_LOOKUP_FAILED:
                     sm_conn->sm_engine_state = SM_INITIATOR_PH1_W2_SEND_PAIRING_REQUEST;            
                     break;
-                case CSRK_LOOKUP_SUCCEEDED:
+                case IRK_LOOKUP_SUCCEEDED:
                         le_device_db_encryption_get(sm_conn->sm_le_db_index, &ediv, NULL, NULL, NULL, NULL, NULL);
                         if (ediv){
                             log_info("sm: Setting up previous ltk/ediv/rand for device index %u", sm_conn->sm_le_db_index);

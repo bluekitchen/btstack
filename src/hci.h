@@ -435,12 +435,12 @@ typedef enum {
 } security_manager_state_t;
 
 typedef enum {
-    CSRK_LOOKUP_IDLE,
-    CSRK_LOOKUP_W4_READY,
-    CSRK_LOOKUP_STARTED,
-    CSRK_LOOKUP_SUCCEEDED,
-    CSRK_LOOKUP_FAILED
-} csrk_lookup_state_t;
+    IRK_LOOKUP_IDLE,
+    IRK_LOOKUP_W4_READY,
+    IRK_LOOKUP_STARTED,
+    IRK_LOOKUP_SUCCEEDED,
+    IRK_LOOKUP_FAILED
+} irk_lookup_state_t;
 
 // Authorization state
 typedef enum {
@@ -469,7 +469,7 @@ typedef struct sm_connection {
     uint8_t                  sm_peer_addr_type;
     bd_addr_t                sm_peer_address;
     security_manager_state_t sm_engine_state;
-    csrk_lookup_state_t      sm_csrk_lookup_state;
+    irk_lookup_state_t      sm_irk_lookup_state;
     uint8_t                  sm_connection_encrypted;
     uint8_t                  sm_connection_authenticated;   // [0..1]
     uint8_t                  sm_actual_encryption_key_size;
