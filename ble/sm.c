@@ -797,7 +797,6 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
             break;
         case OOB:
             // client already provided OOB data, let's skip notification.
-            sm_conn->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
             break;
     }
 }
@@ -2013,6 +2012,10 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             }
             sm_conn->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
             sm_trigger_user_response(sm_conn);
+            // response_idle == nothing <--> sm_trigger_user_response() did not require response
+            if (setup->sm_user_response == SM_USER_RESPONSE_IDLE){
+                sm_conn->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
+            } 
             break;                        
 
         case SM_INITIATOR_PH2_W4_PAIRING_CONFIRM:
