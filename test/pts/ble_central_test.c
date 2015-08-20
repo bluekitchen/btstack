@@ -121,7 +121,10 @@ static int       reconnection_address_set = 0;
 static bd_addr_t our_private_address;
 
 static uint16_t pts_signed_write_characteristic_uuid = 0xb00d;
-static uint8_t signed_write_value = 0;
+static uint16_t pts_signed_write_characteristic_handle = 0x0100;
+static uint8_t signed_write_value[] = { 0x12 };
+static int le_device_db_index;
+static sm_key_t signing_csrk;
 
 static central_state_t central_state = CENTRAL_IDLE;
 static le_characteristic_t gap_name_characteristic;
@@ -302,10 +305,11 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
                     break;
 
                 case SM_IDENTITY_RESOLVING_SUCCEEDED:
-                    // skip already detected pts
-                    if (memcmp( ((sm_event_t*) packet)->address, current_pts_address, 6) == 0) break;
                     memcpy(current_pts_address, ((sm_event_t*) packet)->address, 6);
                     current_pts_address_type =  ((sm_event_t*) packet)->addr_type;
+                    le_device_db_index       =  ((sm_event_t*) packet)->le_device_db_index;
+                    // skip already detected pts
+                    if (memcmp( ((sm_event_t*) packet)->address, current_pts_address, 6) == 0) break;
                     printf("Address resolving succeeded: resolvable address %s, addr type %u\n",
                         bd_addr_to_str(current_pts_address), current_pts_address_type);
                     break;
@@ -380,7 +384,7 @@ void handle_gatt_client_event(le_event_t * event){
                     break;
                 case CENTRAL_W4_SIGNED_WRITE_QUERY_COMPLETE:
                     printf("Signed write on Characteristic with UUID 0x%04x\n", pts_signed_write_characteristic_uuid);
-                    gatt_client_signed_write_without_response(gc_id, handle, signed_write_characteristic.value_handle, 1, &signed_write_value);
+                    gatt_client_signed_write_without_response(gc_id, handle, signed_write_characteristic.value_handle, sizeof(signed_write_value), signed_write_value);
                     break;
 
                 default:
@@ -462,7 +466,8 @@ void show_usage(void){
     printf("t   - terminate connection, stop connecting\n");
     printf("p   - auto connect to PTS\n");
     printf("P   - direct connect to PTS\n");
-    printf("w   - signed write on Privacy Flag\n");
+    printf("w   - signed write on characteristic with UUID %04x\n", pts_signed_write_characteristic_uuid);
+    printf("W   - signed write on attribute with handle 0x%04x and value 0x12\n", pts_signed_write_characteristic_handle);
     printf("z   - Update L2CAP Connection Parameters\n");
     printf("---\n");
     printf("4   - IO_CAPABILITY_DISPLAY_ONLY\n");
@@ -488,6 +493,18 @@ void update_auth_req(void){
         auth_req |= SM_AUTHREQ_BONDING;
     }
     sm_set_authentication_requirements(auth_req);
+}
+
+static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
+    int value_length = sizeof(signed_write_value);
+    l2cap_reserve_packet_buffer();
+    uint8_t * request = l2cap_get_outgoing_buffer();
+    request[0] = ATT_SIGNED_WRITE_COMMAND;
+    bt_store_16(request, 1, pts_signed_write_characteristic_handle);
+    memcpy(&request[3], signed_write_value, value_length);
+    bt_store_32(request, 3 + value_length, 0);
+    swap64(hash, &request[3 + value_length + 4]);
+    l2cap_send_prepared_connectionless(handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3 + value_length + 12);
 }
 
 int  stdin_process(struct data_source *ds){
@@ -648,6 +665,12 @@ int  stdin_process(struct data_source *ds){
             pts_privacy_flag = 2;
             central_state = CENTRAL_W4_SIGNED_WRITE_QUERY_COMPLETE;
             gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, pts_signed_write_characteristic_uuid);
+            break;
+        case 'W':
+            // fetch csrk
+            le_device_db_csrk_get(le_device_db_index, signing_csrk);
+            // calc signature
+            sm_cmac_start(signing_csrk, ATT_SIGNED_WRITE_COMMAND, pts_signed_write_characteristic_handle, sizeof(signed_write_value), signed_write_value, 0, att_signed_write_handle_cmac_result);
             break;
         case 'x':
             sm_min_key_size = 7;
