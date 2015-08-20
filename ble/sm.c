@@ -2286,23 +2286,6 @@ void sm_test_set_irk(sm_key_t irk){
     sm_persistent_irk_ready = 1;
 }
 
-
-/** 
- * @brief Trigger Security Request
- */
-void sm_send_security_request(uint16_t handle){
-    sm_connection_t * sm_conn = sm_get_connection_for_handle(handle);
-    switch (sm_conn->sm_engine_state){
-        case SM_GENERAL_IDLE:
-        case SM_RESPONDER_IDLE:
-            sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
-            sm_run();
-            break;
-        default:
-            break;
-    }
-}
-
 void sm_init(void){
     // set some (BTstack default) ER and IR
     int i;
@@ -2373,16 +2356,35 @@ authorization_state_t sm_authorization_state(uint8_t addr_type, bd_addr_t addres
     return sm_conn->sm_connection_authorization_state;
 }
 
-// request authorization
+static void sm_send_security_request_for_connection(sm_connection_t * sm_conn){
+    switch (sm_conn->sm_engine_state){
+        case SM_GENERAL_IDLE:
+        case SM_RESPONDER_IDLE:
+            sm_conn->sm_engine_state = SM_RESPONDER_SEND_SECURITY_REQUEST;
+            sm_run();
+            break;
+        default:
+            break;
+    }
+}
+
+/** 
+ * @brief Trigger Security Request
+ */
+void sm_send_security_request(uint16_t handle){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(handle);
+    if (!sm_conn) return;
+    sm_send_security_request_for_connection(sm_conn);
+}
+
+// request pairing
 void sm_request_authorization(uint8_t addr_type, bd_addr_t address){
     sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
     if (!sm_conn) return;     // wrong connection
 
     log_info("sm_request_authorization in role %u, state %u", sm_conn->sm_role, sm_conn->sm_engine_state);
     if (sm_conn->sm_role){
-        // code has no effect so far - what's the difference between sm_send_security_request and this in slave role 
-        sm_conn->sm_connection_authorization_state = AUTHORIZATION_PENDING;
-        sm_notify_client(SM_AUTHORIZATION_REQUEST, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0, 0);
+        sm_send_security_request_for_connection(sm_conn);
     } else {
         // used as a trigger to start central/master/initiator security procedures
             uint16_t ediv;
