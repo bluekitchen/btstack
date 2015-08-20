@@ -137,6 +137,15 @@ void hfp_hf_query_operator_selection(bd_addr_t bd_addr);
  */
 void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, uint8_t enable);
 
+/**
+ * @brief 
+ */
+void hfp_hf_audio_connection_setup(bd_addr_t bd_addr);
+
+/**
+ * @brief 
+ */
+void hfp_hf_audio_connection_release(bd_addr_t bd_addr);
 
 
 /* API_END */
