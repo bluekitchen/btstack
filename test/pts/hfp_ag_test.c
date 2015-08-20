@@ -73,7 +73,7 @@ const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 
 static bd_addr_t device_addr;
 static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
-static bd_addr_t speaker = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
+static bd_addr_t speaker_addr = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
 
 static int ag_indicators_nr = 7;
@@ -97,27 +97,27 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
     {2, 1},
 };
 
-uint8_t hfp_connect = 1;
 
 char cmd;
 // prototypes
 static void show_usage();
 
 static void reset_pst_flags(){
-    hfp_connect = 1;
 }
 
 // Testig User Interface 
 static void show_usage(void){
     printf("\n--- Bluetooth HFP Hands-Free (HF) unit Test Console ---\n");
     printf("---\n");
-    if (hfp_connect){
-        printf("p - establish HFP connection to PTS module\n");
-        printf("c - establish HFP connection to local mac\n");
-    } else {
-        printf("p - release HFP connection to PTS module\n");
-        printf("c - release HFP connection to local mac\n");
-    }
+    
+    printf("a - establish HFP connection to PTS module\n");
+    printf("A - release HFP connection to PTS module\n");
+    
+    printf("b - establish AUDIO connection\n");
+    printf("B - release AUDIO connection\n");
+    
+    printf("z - establish HFP connection to local mac\n");
+    printf("Z - release HFP connection to local mac\n");
 
     printf("d - report AG failure\n");
 
@@ -129,29 +129,32 @@ static void show_usage(void){
 static int stdin_process(struct data_source *ds){
     read(ds->fd, &cmd, 1);
     switch (cmd){
-        case 'p':
+        case 'a':
             memcpy(device_addr, pts_addr, 6);
-            if (hfp_connect){
-                printf("Establish HFP service level connection to PTS module %s...\n", bd_addr_to_str(device_addr));
-                hfp_ag_establish_service_level_connection(device_addr);
-            } else {
-                printf("Release HFP service level connection.\n");
-                hfp_ag_release_service_level_connection(device_addr);
-            }
-            hfp_connect = !hfp_connect;
+            printf("Establish HFP service level connection to PTS module %s...\n", bd_addr_to_str(device_addr));
+            hfp_ag_establish_service_level_connection(device_addr);
             break;
-        case 'c':
-            memcpy(device_addr, speaker, 6);
-            if (hfp_connect){
-                printf("Establish HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
-                hfp_ag_establish_service_level_connection(device_addr);
-            } else {
-                printf("Release HFP service level connection.\n");
-                hfp_ag_release_service_level_connection(device_addr);
-            }
-            hfp_connect = !hfp_connect;
+        case 'A':
+            printf("Release HFP service level connection.\n");
+            hfp_ag_release_service_level_connection(device_addr);
             break;
-
+        case 'z':
+            memcpy(device_addr, speaker_addr, 6);
+            printf("Establish HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
+            hfp_ag_establish_service_level_connection(device_addr);
+            break;
+        case 'Z':
+            printf("Release HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
+            hfp_ag_release_service_level_connection(device_addr);
+            break;
+        case 'b':
+            printf("Establish Audio connection %s...\n", bd_addr_to_str(device_addr));
+            hfp_ag_audio_connection_setup(device_addr);
+            break;
+        case 'B':
+            printf("Release Audio connection.\n");
+            hfp_ag_audio_connection_release(device_addr);
+            break;
         case 'd':
             printf("Report AG failure\n");
             hfp_ag_report_extended_audio_gateway_error_result_code(device_addr, HFP_CME_ERROR_AG_FAILURE);

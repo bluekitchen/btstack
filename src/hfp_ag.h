@@ -128,7 +128,7 @@ void hfp_ag_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, h
  * - 0 = No calls (held or active)
  * - 1 = Call is present (active or held) 
  */
-void hfp_ag_transfer_call_status(bd_addr_t bd_addr, uint8_t index, hfp_call_status_t status);
+void hfp_ag_transfer_call_status(bd_addr_t bd_addr, hfp_call_status_t status);
 
 /**
  * @brief Report the change in AG's call setup status.
@@ -138,7 +138,7 @@ void hfp_ag_transfer_call_status(bd_addr_t bd_addr, uint8_t index, hfp_call_stat
  * - 2 = Outgoing call setup in dialing state
  * - 3 = Outgoing call setup in alerting state
  */
-void hfp_ag_transfer_callsetup_status(bd_addr_t bd_addr, uint8_t index, hfp_callsetup_status_t status);
+void hfp_ag_transfer_callsetup_status(bd_addr_t bd_addr, hfp_callsetup_status_t status);
 
 /**
  * @brief Report the change in AG's held call status.
@@ -147,7 +147,17 @@ void hfp_ag_transfer_callsetup_status(bd_addr_t bd_addr, uint8_t index, hfp_call
  * - 1 = Call is placed on hold or active/held calls are swapped
  * - 2 = Call on hold, no active calls
  */
-void hfp_ag_transfer_callheld_status(bd_addr_t bd_addr, uint8_t index, hfp_callheld_status_t status);
+void hfp_ag_transfer_callheld_status(bd_addr_t bd_addr, hfp_callheld_status_t status);
+
+/**
+ * @brief 
+ */
+void hfp_ag_audio_connection_setup(bd_addr_t bd_addr);
+
+/**
+ * @brief 
+ */
+void hfp_ag_audio_connection_release(bd_addr_t bd_addr);
 
 
 /* API_END */

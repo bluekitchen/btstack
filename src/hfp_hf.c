@@ -571,3 +571,26 @@ void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_
     hfp_run_for_context(connection);
 }
 
+void hfp_hf_audio_connection_setup(bd_addr_t bd_addr){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (!connection){
+        log_error("HFP HF: connection doesn't exist.");
+        return;
+    }
+    // TODO:
+    hfp_run_for_context(connection);
+}
+
+void hfp_hf_audio_connection_release(bd_addr_t bd_addr){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (!connection){
+        log_error("HFP HF: connection doesn't exist.");
+        return;
+    }
+    // TODO:
+    hfp_run_for_context(connection);
+}
+
+

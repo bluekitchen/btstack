@@ -623,7 +623,7 @@ void hfp_ag_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, h
     hfp_run_for_context(connection);
 }
 
-void hfp_ag_transfer_call_status(bd_addr_t bd_addr, hfp_callsetup_status_t status){
+void hfp_ag_transfer_call_status(bd_addr_t bd_addr, hfp_call_status_t status){
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (!connection){
         log_error("HFP HF: connection doesn't exist.");
@@ -634,7 +634,7 @@ void hfp_ag_transfer_call_status(bd_addr_t bd_addr, hfp_callsetup_status_t statu
 }
 
 void hfp_ag_transfer_callsetup_status(bd_addr_t bd_addr, hfp_callsetup_status_t status){
-        hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (!connection){
         log_error("HFP HF: connection doesn't exist.");
         return;
@@ -651,5 +651,27 @@ void hfp_ag_transfer_callheld_status(bd_addr_t bd_addr, hfp_callheld_status_t st
     }
     if (!connection->enable_status_update_for_ag_indicators) return;
     hfp_ag_update_indicator_status(connection, (char *)"callheld", status); 
+    hfp_run_for_context(connection);
+}
+
+void hfp_ag_audio_connection_setup(bd_addr_t bd_addr){
+    hfp_ag_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (!connection){
+        log_error("HFP HF: connection doesn't exist.");
+        return;
+    }
+    // TODO:
+    hfp_run_for_context(connection);
+}
+
+void hfp_ag_audio_connection_release(bd_addr_t bd_addr){
+    hfp_ag_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (!connection){
+        log_error("HFP HF: connection doesn't exist.");
+        return;
+    }
+    // TODO:
     hfp_run_for_context(connection);
 }
