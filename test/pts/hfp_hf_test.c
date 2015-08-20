@@ -80,22 +80,46 @@ static uint8_t codecs[1] = {HFP_CODEC_CVSD};
 static uint16_t indicators[1] = {0x01};
 
 char cmd;
-    
+
+uint8_t hfp_enable_extended_audio_gateway_error_report = 1;
+uint8_t hfp_connect = 1;
+uint8_t hfp_enable_status_update_for_all_ag_indicators = 1;
+
 // prototypes
 static void show_usage();
 
+static void reset_pst_flags(){
+    hfp_enable_extended_audio_gateway_error_report = 1;
+    hfp_connect = 1;
+    hfp_enable_status_update_for_all_ag_indicators = 1;
+}
 
 // Testig User Interface 
 static void show_usage(void){
     printf("\n--- Bluetooth HFP Hands-Free (HF) unit Test Console ---\n");
     printf("---\n");
-    printf("p - establish HFP connection to PTS module\n");
-    printf("e - establish HFP connection to local mac\n");
-    printf("r - enable registration status update\n");
-    printf("d - release HFP connection\n");
-    printf("i - enabling HFP AG registration status update for individual indicators\n");
-    printf("o - query network operator\n");
+    if (hfp_connect){
+        printf("p - establish HFP connection to PTS module\n");
+        printf("c - establish HFP connection to local mac\n");
+    } else {
+        printf("p - release HFP connection to PTS module\n");
+        printf("c - release HFP connection to local mac\n");
+    }
+
+    if (hfp_enable_status_update_for_all_ag_indicators){
+        printf("d - enable registration status update\n");
+    } else {
+        printf("d - disable registration status update\n");
+    }
+
+    printf("e - enable HFP AG registration status update for individual indicators\n");
     
+    printf("f - query network operator\n");
+    if (hfp_enable_extended_audio_gateway_error_report){
+        printf("g - enable reporting of the extended AG error result code\n");
+    } else {
+        printf("g - disable reporting of the extended AG error result code\n");
+    }
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -106,31 +130,52 @@ static int stdin_process(struct data_source *ds){
     switch (cmd){
         case 'p':
             memcpy(device_addr, pts_addr, 6);
-            printf("Establishing HFP service level connection to PTS module %s...\n", bd_addr_to_str(device_addr));
-            hfp_hf_establish_service_level_connection(device_addr);
+            if (hfp_connect){
+                printf("Establish HFP service level connection to PTS module %s...\n", bd_addr_to_str(device_addr));
+                hfp_hf_establish_service_level_connection(device_addr);
+            } else {
+                printf("Release HFP service level connection.\n");
+                hfp_hf_release_service_level_connection(device_addr);
+            }
+            hfp_connect = !hfp_connect;
             break;
-        case 'e':
+        case 'c':
             memcpy(device_addr, phone_addr, 6);
-            printf("Establishing HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
-            hfp_hf_establish_service_level_connection(device_addr);
+            if (hfp_connect){
+                printf("Establish HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
+                hfp_hf_establish_service_level_connection(device_addr);
+            } else {
+                printf("Release HFP service level connection.\n");
+                hfp_hf_release_service_level_connection(device_addr);
+            }
+            hfp_connect = !hfp_connect;
             break;
         case 'd':
-            printf("Releasing HFP service level connection.\n");
-            hfp_hf_release_service_level_connection(device_addr);
+            if (hfp_enable_status_update_for_all_ag_indicators){
+                printf("Enable HFP AG registration status update.\n");
+            } else {
+                printf("Disable HFP AG registration status update.\n");
+            }
+            hfp_hf_enable_status_update_for_all_ag_indicators(device_addr, hfp_enable_status_update_for_all_ag_indicators);
+            hfp_enable_status_update_for_all_ag_indicators = !hfp_enable_status_update_for_all_ag_indicators;
             break;
-        case 'r':
-            printf("Enabling HFP AG registration status update.\n");
-            hfp_hf_enable_status_update_for_all_ag_indicators(device_addr, 1);
-            break;
-        case 'i':
-            printf("Enabling HFP AG registration status update for individual indicators.\n");
+        case 'e':
+            printf("Enable HFP AG registration status update for individual indicators.\n");
             hfp_hf_enable_status_update_for_individual_ag_indicators(device_addr, 63);
             break;
-        case 'o':
+        case 'f':
             printf("Query network operator.\n");
             hfp_hf_query_operator_selection(device_addr);
             break;
-
+        case 'g':
+            if (hfp_enable_extended_audio_gateway_error_report){
+                printf("Enable reporting of the extended AG error result code.\n");
+            } else {
+                printf("Disable reporting of the extended AG error result code.\n");
+            }
+            hfp_hf_enable_report_extended_audio_gateway_error_result_code(device_addr, hfp_enable_extended_audio_gateway_error_report);
+            hfp_enable_extended_audio_gateway_error_report = !hfp_enable_extended_audio_gateway_error_report;
+            break;
         default:
             show_usage();
             break;
@@ -142,8 +187,8 @@ static int stdin_process(struct data_source *ds){
 
 void packet_handler(uint8_t * event, uint16_t event_size){
     if (event[0] != HCI_EVENT_HFP_META) return;
-    if (event[3]){
-        printf("Command \'%c\' failed with status %u\n", cmd, event[3]);
+    if (event[3] && event[2] != HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR){
+        printf("ERROR, status: %u\n", event[3]);
         return;
     }
     switch (event[2]) {   
@@ -152,13 +197,14 @@ void packet_handler(uint8_t * event, uint16_t event_size){
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
             printf("Service level connection released.\n\n");
+            reset_pst_flags();
             break;
         case HFP_SUBEVENT_COMPLETE:
             switch (cmd){
-                case 'r':
+                case 'd':
                     printf("HFP AG registration status update enabled.\n");
                     break;
-                case 'i':
+                case 'e':
                     printf("HFP AG registration status update for individual indicators set.\n");
                 default:
                     break;
@@ -168,7 +214,11 @@ void packet_handler(uint8_t * event, uint16_t event_size){
             printf("AG_INDICATOR_STATUS_CHANGED, AG indicator index: %d, status: %d\n", event[4], event[5]);
             break;
         case HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED:
-            printf("HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", event[4], event[5], (char *) &event[6]);
+            printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", event[4], event[5], (char *) &event[6]);
+            break;
+        case HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR:
+            if (event[4])
+            printf("EXTENDED_AUDIO_GATEWAY_ERROR_REPORT, status : %d\n", event[3]);
             break;
         default:
             printf("event not handled %u\n", event[2]);

@@ -200,6 +200,11 @@ int hfp_hs_query_operator_name_cmd(uint16_t cid){
     return send_str_over_rfcomm(cid, buffer);
 }
 
+int hfp_hs_enable_extended_audio_gateway_error_report_cmd(uint16_t cid, uint8_t enable){
+    char buffer[20];
+    sprintf(buffer, "AT%s=%d\r\n", HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR, enable);
+    return send_str_over_rfcomm(cid, buffer);
+}
                 
 static void hfp_emit_ag_indicator_event(hfp_callback_t callback, int status, hfp_ag_indicator_t indicator){
     if (!callback) return;
@@ -289,21 +294,21 @@ static void hfp_run_for_context(hfp_connection_t * context){
         case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:{
             int i;
             for (i = 0; i < context->ag_indicators_nr; i++){
-                if (context->ag_indicators[i].status_changed == 1) {
+                if (context->ag_indicators[i].status_changed) {
                     hfp_emit_ag_indicator_event(hfp_callback, 0, context->ag_indicators[i]);
                     context->ag_indicators[i].status_changed = 0;
                     break;
                 }
             }
 
-            if (context->wait_ok == 1) return;
+            if (context->wait_ok) return;
 
             if (context->enable_status_update_for_ag_indicators != 0xFF){
                 hfp_hs_activate_status_update_for_all_ag_indicators_cmd(context->rfcomm_cid, context->enable_status_update_for_ag_indicators);
                 context->wait_ok = 1;
                 break;
             };
-            if (context->change_status_update_for_individual_ag_indicators == 1){
+            if (context->change_status_update_for_individual_ag_indicators){
                 hfp_hs_activate_status_update_for_ag_indicator_cmd(context->rfcomm_cid, 
                         context->ag_indicators_status_update_bitmap,
                         context->ag_indicators_nr);
@@ -311,15 +316,23 @@ static void hfp_run_for_context(hfp_connection_t * context){
                 break;
             }
 
-            if (context->operator_name_format == 1){
+            if (context->operator_name_format){
                 hfp_hs_query_operator_name_format_cmd(context->rfcomm_cid);
                 context->wait_ok = 1;
                 break;
             }
-            if (context->operator_name == 1){
+            if (context->operator_name){
                 hfp_hs_query_operator_name_cmd(context->rfcomm_cid);
                 context->wait_ok = 1;
+                break;
             }
+
+            if (context->enable_extended_audio_gateway_error_report){
+                hfp_hs_enable_extended_audio_gateway_error_report_cmd(context->rfcomm_cid, context->enable_extended_audio_gateway_error_report);
+                context->wait_ok = 1;
+                break;   
+            }
+
             break;
         }
         default:
@@ -398,20 +411,26 @@ void handle_switch_on_ok(hfp_connection_t *context){
                 hfp_emit_event(hfp_callback, HFP_SUBEVENT_COMPLETE, 0);
                 break;
             };
+
             if (context->change_status_update_for_individual_ag_indicators == 1){
                 context->change_status_update_for_individual_ag_indicators = 0;
                 hfp_emit_event(hfp_callback, HFP_SUBEVENT_COMPLETE, 0);
                 break;
             }
 
-            if (context->operator_name_format == 1){
+            if (context->operator_name_format){
                 context->operator_name_format = 0;
                 context->operator_name = 1;
                 break;
             }
-            if (context->operator_name == 1){
+            
+            if (context->operator_name){
                 context->operator_name = 0;
                 hfp_emit_network_operator_event(hfp_callback, 0, context->network_operator);
+                break;
+            }
+            if (context->enable_extended_audio_gateway_error_report){
+                context->enable_extended_audio_gateway_error_report = 0;
                 break;
             }
 
@@ -435,14 +454,17 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
         hfp_parse(context, packet[pos]);
 
         if (context->command == HFP_CMD_ERROR){
-            if (context->state == HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
-                context->wait_ok = 0;
-                // TODO: reset state? repeat commands? restore bitmaps? get ERROR codes.
-                hfp_emit_event(hfp_callback, HFP_SUBEVENT_COMPLETE, 1); 
-            } else {
-
-            }
+            context->wait_ok = 0;
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_COMPLETE, 1); 
+            return;
         }
+        if (context->command == HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR){
+            context->wait_ok = 0;
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR, context->extended_audio_gateway_error); 
+            context->extended_audio_gateway_error = 0;
+            return;   
+        }
+
         if (context->command != HFP_CMD_OK) continue;
         handle_switch_on_ok(context);
     }
@@ -510,7 +532,7 @@ void hfp_hf_enable_status_update_for_all_ag_indicators(bd_addr_t bd_addr, uint8_
         log_error("HFP HF: connection doesn't exist.");
         return;
     }
-    connection->enable_status_update_for_ag_indicators = 1;
+    connection->enable_status_update_for_ag_indicators = enable;
     hfp_run_for_context(connection);
 }
 
@@ -537,3 +559,15 @@ void hfp_hf_query_operator_selection(bd_addr_t bd_addr){
     connection->operator_name_format = 1;
     hfp_run_for_context(connection);
 }
+
+void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, uint8_t enable){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (!connection){
+        log_error("HFP HF: connection doesn't exist.");
+        return;
+    }
+    connection->enable_extended_audio_gateway_error_report = enable;
+    hfp_run_for_context(connection);
+}
+

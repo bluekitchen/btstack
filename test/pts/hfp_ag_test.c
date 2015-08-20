@@ -71,6 +71,7 @@ const uint32_t   hfp_service_buffer[150/4]; // implicit alignment to 4-byte memo
 const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_ag_service_name[] = "BTstack HFP AG Test";
 
+static bd_addr_t device_addr;
 static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t speaker = {0x00, 0x21, 0x3C, 0xAC, 0xF7, 0x38};
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
@@ -96,37 +97,65 @@ static hfp_generic_status_indicator_t hf_indicators[] = {
     {2, 1},
 };
 
+uint8_t hfp_connect = 1;
+
+char cmd;
 // prototypes
-static void show_usage(void);
+static void show_usage();
+
+static void reset_pst_flags(){
+    hfp_connect = 1;
+}
 
 // Testig User Interface 
 static void show_usage(void){
     printf("\n--- Bluetooth HFP Hands-Free (HF) unit Test Console ---\n");
     printf("---\n");
-    printf("p - establish HFP connection to PTS module\n");
-    printf("e - establish HFP connection to local mac\n");
-    printf("d - release HFP connection\n");
+    if (hfp_connect){
+        printf("p - establish HFP connection to PTS module\n");
+        printf("c - establish HFP connection to local mac\n");
+    } else {
+        printf("p - release HFP connection to PTS module\n");
+        printf("c - release HFP connection to local mac\n");
+    }
+
+    printf("d - report AG failure\n");
+
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
 }
 
 static int stdin_process(struct data_source *ds){
-    char buffer;
-    read(ds->fd, &buffer, 1);
-    switch (buffer){
+    read(ds->fd, &cmd, 1);
+    switch (cmd){
         case 'p':
-            printf("Establishing HFP service level connection to PTS module %s...\n", bd_addr_to_str(pts_addr));
-            hfp_ag_establish_service_level_connection(pts_addr);
+            memcpy(device_addr, pts_addr, 6);
+            if (hfp_connect){
+                printf("Establish HFP service level connection to PTS module %s...\n", bd_addr_to_str(device_addr));
+                hfp_ag_establish_service_level_connection(device_addr);
+            } else {
+                printf("Release HFP service level connection.\n");
+                hfp_ag_release_service_level_connection(device_addr);
+            }
+            hfp_connect = !hfp_connect;
             break;
-        case 'e':
-            printf("Establishing HFP service level connection to %s...\n", bd_addr_to_str(speaker));
-            hfp_ag_establish_service_level_connection(speaker);
+        case 'c':
+            memcpy(device_addr, speaker, 6);
+            if (hfp_connect){
+                printf("Establish HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
+                hfp_ag_establish_service_level_connection(device_addr);
+            } else {
+                printf("Release HFP service level connection.\n");
+                hfp_ag_release_service_level_connection(device_addr);
+            }
+            hfp_connect = !hfp_connect;
             break;
+
         case 'd':
-            printf("Releasing HFP service level connection.\n");
-            hfp_ag_release_service_level_connection(speaker);
-            break;
+            printf("Report AG failure\n");
+            hfp_ag_report_extended_audio_gateway_error_result_code(device_addr, HFP_CME_ERROR_AG_FAILURE);
+
         default:
             show_usage();
             break;
@@ -135,23 +164,21 @@ static int stdin_process(struct data_source *ds){
     return 0;
 }
 
+
 void packet_handler(uint8_t * event, uint16_t event_size){
     if (event[0] != HCI_EVENT_HFP_META) return;
+    if (event[3]){
+        printf("ERROR, status: %u\n", event[3]);
+        return;
+    }
 
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
-            if (event[3] == 0){
-                printf("Service level connection established.\n\n");
-            } else {
-                printf("Service level connection establishment failed with status %u\n", event[3]);
-            }
+            printf("Service level connection established.\n\n");
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
-            if (event[3] == 0){
-                printf("Service level connection released.\n\n");
-            } else {
-                printf("Service level connection releasing failed with status %u\n", event[3]);
-            }
+            printf("Service level connection released.\n\n");
+            reset_pst_flags();
             break;
         default:
             printf("event not handled %u\n", event[2]);
