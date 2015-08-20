@@ -735,9 +735,8 @@ static void gatt_client_run(void){
         switch (peripheral->gatt_client_state){
             case P_W2_SEND_WRITE_CHARACTERISTIC_VALUE:
             case P_W2_SEND_WRITE_CHARACTERISTIC_DESCRIPTOR:
-
-                if (peripheral->attribute_length < peripheral_mtu(peripheral) - 3) break;
-                printf(".. ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH %u > %u\n", peripheral->attribute_length, peripheral_mtu(peripheral));
+                if (peripheral->attribute_length <= peripheral_mtu(peripheral) - 3) break;
+                log_error("gatt_client_run: value len %u > MTU %u - 3\n", peripheral->attribute_length, peripheral_mtu(peripheral));
                 gatt_client_handle_transaction_complete(peripheral);
                 emit_gatt_complete_event(peripheral, ATT_ERROR_INVALID_ATTRIBUTE_VALUE_LENGTH);
                 return;
@@ -1418,7 +1417,7 @@ le_command_status_t gatt_client_write_value_of_characteristic_without_response(u
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
     if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
     
-    if (value_length >= peripheral_mtu(peripheral) - 3) return BLE_VALUE_TOO_LONG;
+    if (value_length > peripheral_mtu(peripheral) - 3) return BLE_VALUE_TOO_LONG;
     if (!l2cap_can_send_fixed_channel_packet_now(peripheral->handle)) return BLE_PERIPHERAL_BUSY;
 
     peripheral->subclient_id = gatt_client_id;
