@@ -33,10 +33,11 @@ uint8_t * mock_packet_buffer(void){
 
 void mock_clear_packet_buffer(void){
 	packet_buffer_len = 0;
+	memset(packet_buffer, 0, sizeof(packet_buffer));
 }
 
 static void dump_packet(int packet_type, uint8_t * buffer, uint16_t size){
-#if 0
+#if 1
 	static int packet_counter = 1;
 	char var_name[80];
 	sprintf(var_name, "test_%s_packet_%02u", packet_type == HCI_COMMAND_DATA_PACKET ? "command" : "acl", packet_counter);
