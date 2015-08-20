@@ -784,11 +784,17 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
                 sm_notify_client(SM_PASSKEY_INPUT_NUMBER, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0, 0); 
             }
             break;
+        case OK_BOTH_INPUT:
+            setup->sm_user_response = SM_USER_RESPONSE_PENDING;
+            sm_notify_client(SM_PASSKEY_INPUT_NUMBER, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0, 0); 
+            break;        
         case JUST_WORKS:
             setup->sm_user_response = SM_USER_RESPONSE_PENDING;
             sm_notify_client(SM_JUST_WORKS_REQUEST, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, READ_NET_32(setup->sm_tk, 12), 0);
             break;
-        default:
+        case OOB:
+            // client already provided OOB data, let's skip notification.
+            sm_conn->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
             break;
     }
 }
