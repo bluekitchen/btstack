@@ -509,6 +509,9 @@ static void sm_setup_tk(void){
         return;
     }
 
+    // Reset TK as it has been setup in sm_init_setup
+    sm_reset_tk();
+
     // If both devices have not set the MITM option in the Authentication Requirements
     // Flags, then the IO capabilities shall be ignored and the Just Works association
     // model shall be used. 
@@ -784,19 +787,16 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
                 sm_notify_client(SM_PASSKEY_INPUT_NUMBER, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0, 0); 
             }
             break;
+        case OK_BOTH_INPUT:
+            setup->sm_user_response = SM_USER_RESPONSE_PENDING;
+            sm_notify_client(SM_PASSKEY_INPUT_NUMBER, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0, 0); 
+            break;        
         case JUST_WORKS:
-            switch (setup->sm_s_pres.io_capability){
-                case IO_CAPABILITY_KEYBOARD_DISPLAY:
-                case IO_CAPABILITY_DISPLAY_YES_NO:
-                    setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-                    sm_notify_client(SM_JUST_WORKS_REQUEST, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, READ_NET_32(setup->sm_tk, 12), 0);
-                    break;
-                default:
-                    // cannot ask user
-                    break;  
-            }
+            setup->sm_user_response = SM_USER_RESPONSE_PENDING;
+            sm_notify_client(SM_JUST_WORKS_REQUEST, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, READ_NET_32(setup->sm_tk, 12), 0);
             break;
-        default:
+        case OOB:
+            // client already provided OOB data, let's skip notification.
             break;
     }
 }
@@ -2012,6 +2012,10 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
             }
             sm_conn->sm_engine_state = SM_PH1_W4_USER_RESPONSE;
             sm_trigger_user_response(sm_conn);
+            // response_idle == nothing <--> sm_trigger_user_response() did not require response
+            if (setup->sm_user_response == SM_USER_RESPONSE_IDLE){
+                sm_conn->sm_engine_state = SM_PH2_C1_GET_RANDOM_A;
+            } 
             break;                        
 
         case SM_INITIATOR_PH2_W4_PAIRING_CONFIRM:
