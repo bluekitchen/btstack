@@ -785,16 +785,8 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
             }
             break;
         case JUST_WORKS:
-            switch (setup->sm_s_pres.io_capability){
-                case IO_CAPABILITY_KEYBOARD_DISPLAY:
-                case IO_CAPABILITY_DISPLAY_YES_NO:
-                    setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-                    sm_notify_client(SM_JUST_WORKS_REQUEST, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, READ_NET_32(setup->sm_tk, 12), 0);
-                    break;
-                default:
-                    // cannot ask user
-                    break;  
-            }
+            setup->sm_user_response = SM_USER_RESPONSE_PENDING;
+            sm_notify_client(SM_JUST_WORKS_REQUEST, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, READ_NET_32(setup->sm_tk, 12), 0);
             break;
         default:
             break;
