@@ -110,6 +110,23 @@ void hfp_ag_register_packet_handler(hfp_callback_t callback){
     hfp_callback = callback;
 }
 
+static uint8_t hfp_get_indicator_index_by_name(hfp_connection_t * context, const char * name){
+    int i;
+    for (i=0; i<context->ag_indicators_nr; i++){
+        if (strcmp(context->ag_indicators[i].name, name) == 0){
+            return i;
+        }
+    } 
+    return 0xFF;
+}
+
+static void hfp_ag_update_indicator_status(hfp_connection_t * context, const char * indicator_name, uint8_t status){
+    int index = hfp_get_indicator_index_by_name(context, indicator_name);
+    if (index == 0xFF) return;
+    if (context->ag_indicators[index].status == status) return;
+    context->ag_indicators[index].status = status;
+    context->ag_indicators[index].status_changed = 1;   
+}
 
 static int has_codec_negotiation_feature(hfp_connection_t * connection){
     int hf = get_bit(connection->remote_supported_features, HFP_HFSF_CODEC_NEGOTIATION);
@@ -122,7 +139,6 @@ static int has_call_waiting_and_3way_calling_feature(hfp_connection_t * connecti
     int ag = get_bit(hfp_supported_features, HFP_AGSF_THREE_WAY_CALLING);
     return hf && ag;
 }
-
 
 static int has_hf_indicators_feature(hfp_connection_t * connection){
     int hf = get_bit(connection->remote_supported_features, HFP_HFSF_HF_INDICATORS);
@@ -604,5 +620,36 @@ void hfp_ag_report_extended_audio_gateway_error_result_code(bd_addr_t bd_addr, h
         return;
     }
     connection->extended_audio_gateway_error = error;
+    hfp_run_for_context(connection);
+}
+
+void hfp_ag_transfer_call_status(bd_addr_t bd_addr, hfp_callsetup_status_t status){
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (!connection){
+        log_error("HFP HF: connection doesn't exist.");
+        return;
+    }
+    if (!connection->enable_status_update_for_ag_indicators) return;
+    hfp_ag_update_indicator_status(connection, (char *)"call", status);
+}
+
+void hfp_ag_transfer_callsetup_status(bd_addr_t bd_addr, hfp_callsetup_status_t status){
+        hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (!connection){
+        log_error("HFP HF: connection doesn't exist.");
+        return;
+    }
+    if (!connection->enable_status_update_for_ag_indicators) return;
+    hfp_ag_update_indicator_status(connection, (char *)"callsetup", status);
+}
+
+void hfp_ag_transfer_callheld_status(bd_addr_t bd_addr, hfp_callheld_status_t status){
+        hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (!connection){
+        log_error("HFP HF: connection doesn't exist.");
+        return;
+    }
+    if (!connection->enable_status_update_for_ag_indicators) return;
+    hfp_ag_update_indicator_status(connection, (char *)"callheld", status); 
     hfp_run_for_context(connection);
 }

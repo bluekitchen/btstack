@@ -60,6 +60,10 @@ static hfp_ag_indicator_t hfp_ag_indicators[] = {
     {6, "roam",      0, 1, 0, 0, 0, 0},
     {7, "callheld",  0, 2, 0, 1, 1, 0}
 };
+static uint8_t call_status_index = 2;
+static uint8_t callsetup_status_index = 3;
+static uint8_t callheld_status_index = 7;
+
 
 TEST_GROUP(HFPParser){
     char packet[200];
@@ -239,6 +243,40 @@ TEST(HFPParser, HFP_HF_EXTENDED_AUDIO_GATEWAY_ERROR){
 
     CHECK_EQUAL(context.command, HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR);
     CHECK_EQUAL(context.extended_audio_gateway_error, HFP_CME_ERROR_NO_NETWORK_SERVICE);       
+}
+
+
+TEST(HFPParser, HFP_HF_AG_INDICATOR_CALLS_STATUS_UPDATE){
+    context.ag_indicators_nr = hfp_ag_indicators_nr;
+    memcpy(context.ag_indicators, hfp_ag_indicators, hfp_ag_indicators_nr * sizeof(hfp_ag_indicator_t));
+    uint8_t status = 1;
+
+    // call status
+    uint8_t index = call_status_index;
+    sprintf(packet, "\r\n%s:%d,%d\r\n\r\nOK\r\n", HFP_TRANSFER_AG_INDICATOR_STATUS, index, status);
+    for (pos = 0; pos < strlen(packet); pos++){
+        hfp_parse(&context, packet[pos]);
+    }
+    CHECK_EQUAL(HFP_CMD_OK, context.command);
+    CHECK_EQUAL(context.ag_indicators[index - 1].status, status);
+
+    // callsetup status
+    index = callsetup_status_index;
+    sprintf(packet, "\r\n%s:%d,%d\r\n\r\nOK\r\n", HFP_TRANSFER_AG_INDICATOR_STATUS, index, status);
+    for (pos = 0; pos < strlen(packet); pos++){
+        hfp_parse(&context, packet[pos]);
+    }
+    CHECK_EQUAL(HFP_CMD_OK, context.command);
+    CHECK_EQUAL(context.ag_indicators[index - 1].status, status);
+
+    // callheld status
+    index = callheld_status_index;
+    sprintf(packet, "\r\n%s:%d,%d\r\n\r\nOK\r\n", HFP_TRANSFER_AG_INDICATOR_STATUS, index, status);
+    for (pos = 0; pos < strlen(packet); pos++){
+        hfp_parse(&context, packet[pos]);
+    }
+    CHECK_EQUAL(HFP_CMD_OK, context.command);
+    CHECK_EQUAL(context.ag_indicators[index - 1].status, status);
 }
 
 int main (int argc, const char * argv[]){

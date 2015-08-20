@@ -178,6 +178,24 @@ typedef enum {
 } hfp_cme_error_t;
 
 typedef enum {
+    HFP_CALL_STATUS_NO_HELD_OR_ACTIVE_CALLS = 0,
+    HFP_CALL_STATUS_ACTIVE_OR_HELD_CALL_IS_PRESENT
+} hfp_call_status_t;
+
+typedef enum {  
+    HFP_CALLSETUP_STATUS_NO_CALL_SETUP_IN_PROGRESS = 0, 
+    HFP_CALLSETUP_STATUS_INCOMING_CALL_SETUP_IN_PROGRESS,
+    HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_DIALING_STATE,
+    HFP_CALLSETUP_STATUS_OUTGOING_CALL_SETUP_IN_ALERTING_STATE
+} hfp_callsetup_status_t;
+
+typedef enum {
+    HFP_HELDCALL_STATUS_NO_CALLS_HELD = 0,
+    HFP_HELDCALL_STATUS_CALL_ON_HOLD_OR_SWAPPED,
+    HFP_HELDCALL_STATUS_CALL_ON_HOLD_AND_NO_ACTIVE_CALLS 
+} hfp_callheld_status_t;
+
+typedef enum {
     HFP_PARSER_CMD_HEADER = 0,
     HFP_PARSER_CMD_SEQUENCE,
     HFP_PARSER_SECOND_ITEM,
@@ -287,6 +305,7 @@ typedef struct hfp_connection {
     int      generic_status_indicators_nr;
     hfp_generic_status_indicator_t generic_status_indicators[HFP_MAX_INDICATOR_DESC_SIZE];
     uint8_t  enable_status_update_for_ag_indicators;
+
     uint32_t ag_indicators_status_update_bitmap;
     hfp_network_opearator_t network_operator;
     
@@ -315,6 +334,7 @@ typedef struct hfp_connection {
 
     uint8_t enable_extended_audio_gateway_error_report;
     uint8_t extended_audio_gateway_error;
+
 
 } hfp_connection_t;
 
