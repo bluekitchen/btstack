@@ -222,6 +222,28 @@ TEST(HFPParser, HFP_AG_EXTENDED_AUDIO_GATEWAY_ERROR){
     CHECK_EQUAL(context.enable_extended_audio_gateway_error_report, 1);
 }
 
+TEST(HFPParser, HFP_AG_TRIGGER_CODEC_CONNECTION_SETUP){
+    sprintf(packet, "\r\nAT%s\r\n", HFP_TRIGGER_CODEC_CONNECTION_SETUP);
+    
+    for (pos = 0; pos < strlen(packet); pos++){
+        hfp_parse(&context, packet[pos]);
+    }
+
+    CHECK_EQUAL(context.command, HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP);
+    CHECK_EQUAL(context.trigger_codec_connection_setup, 1);
+}
+
+TEST(HFPParser, HFP_AG_CONFIRM_COMMON_CODEC){
+    int codec = 2;
+    sprintf(packet, "\r\nAT%s=%d\r\n", HFP_CONFIRM_COMMON_CODEC, codec);
+    
+    for (pos = 0; pos < strlen(packet); pos++){
+        hfp_parse(&context, packet[pos]);
+    }
+
+    CHECK_EQUAL(context.command, HFP_CMD_CONFIRM_COMMON_CODEC);
+    CHECK_EQUAL(context.remote_codec_received, codec);
+}
 
 int main (int argc, const char * argv[]){
     return CommandLineTestRunner::RunAllTests(argc, argv);

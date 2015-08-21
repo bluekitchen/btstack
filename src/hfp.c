@@ -696,11 +696,13 @@ void process_command(hfp_connection_t * context){
 
     if (strncmp((char *)context->line_buffer+offset, HFP_TRIGGER_CODEC_CONNECTION_SETUP, strlen(HFP_TRIGGER_CODEC_CONNECTION_SETUP)) == 0){
         context->command = HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP;
+        context->trigger_codec_connection_setup = 1;
         return;
     } 
 
     if (strncmp((char *)context->line_buffer+offset, HFP_CONFIRM_COMMON_CODEC, strlen(HFP_CONFIRM_COMMON_CODEC)) == 0){
         context->command = HFP_CMD_CONFIRM_COMMON_CODEC;
+
         return;
     } 
 
@@ -828,6 +830,9 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
 
         case HFP_PARSER_CMD_SEQUENCE: // parse comma separated sequence, ignore breacktes
             switch (context->command){
+                case HFP_CMD_CONFIRM_COMMON_CODEC:
+                    context->remote_codec_received = atoi((char*)context->line_buffer);
+                    break;
                 case HFP_CMD_SUPPORTED_FEATURES:
                     context->remote_supported_features = atoi((char*)context->line_buffer);
                     printf("Parsed supported feature %d\n", context->remote_supported_features);
