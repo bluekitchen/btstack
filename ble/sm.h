@@ -242,7 +242,7 @@ authorization_state_t sm_authorization_state(uint8_t addr_type, bd_addr_t addres
  * @brief Used by att_server.c to request user authorization.
  * @param addr_type and address
  */
-void sm_request_authorization(uint8_t addr_type, bd_addr_t address);
+void sm_request_pairing(uint8_t addr_type, bd_addr_t address);
 
 /**
  * @brief Report user authorization decline.

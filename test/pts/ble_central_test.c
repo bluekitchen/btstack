@@ -77,6 +77,7 @@ typedef enum {
     CENTRAL_W4_NAME_VALUE,
     CENTRAL_W4_RECONNECTION_ADDRESS_QUERY_COMPLETE,
     CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE,
+    CENTRAL_W4_SIGNED_WRITE_QUERY_COMPLETE
 } central_state_t;
 
 typedef struct advertising_report {
@@ -99,7 +100,8 @@ static int gap_connectable = 0;
 static char * sm_io_capabilities = NULL;
 static int sm_mitm_protection = 0;
 static int sm_have_oob_data = 0;
-static uint8_t * sm_oob_data = (uint8_t *) "0123456789012345"; // = { 0x30...0x39, 0x30..0x35}
+static uint8_t * sm_oob_data_A = (uint8_t *) "0123456789012345"; // = { 0x30...0x39, 0x30..0x35}
+static uint8_t * sm_oob_data_B = (uint8_t *) "3333333333333333"; // = { 0x30...0x39, 0x30..0x35}
 static int sm_min_key_size = 7;
 static uint8_t pts_privacy_flag;
 
@@ -118,10 +120,17 @@ static int       current_pts_address_type;
 static int       reconnection_address_set = 0;
 static bd_addr_t our_private_address;
 
+static uint16_t pts_signed_write_characteristic_uuid = 0xb00d;
+static uint16_t pts_signed_write_characteristic_handle = 0x0100;
+static uint8_t signed_write_value[] = { 0x12 };
+static int le_device_db_index;
+static sm_key_t signing_csrk;
+
 static central_state_t central_state = CENTRAL_IDLE;
 static le_characteristic_t gap_name_characteristic;
 static le_characteristic_t gap_reconnection_address_characteristic;
 static le_characteristic_t gap_peripheral_privacy_flag_characteristic;
+static le_characteristic_t signed_write_characteristic;
 
 static void show_usage();
 ///
@@ -296,10 +305,11 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
                     break;
 
                 case SM_IDENTITY_RESOLVING_SUCCEEDED:
-                    // skip already detected pts
-                    if (memcmp( ((sm_event_t*) packet)->address, current_pts_address, 6) == 0) break;
                     memcpy(current_pts_address, ((sm_event_t*) packet)->address, 6);
                     current_pts_address_type =  ((sm_event_t*) packet)->addr_type;
+                    le_device_db_index       =  ((sm_event_t*) packet)->le_device_db_index;
+                    // skip already detected pts
+                    if (memcmp( ((sm_event_t*) packet)->address, current_pts_address, 6) == 0) break;
                     printf("Address resolving succeeded: resolvable address %s, addr type %u\n",
                         bd_addr_to_str(current_pts_address), current_pts_address_type);
                     break;
@@ -368,15 +378,15 @@ void handle_gatt_client_event(le_event_t * event){
                             printf("Peripheral Privacy Flag set to TRUE\n");
                             gatt_client_write_value_of_characteristic(gc_id, handle, gap_peripheral_privacy_flag_characteristic.value_handle, 1, &pts_privacy_flag);
                             break;
-                        case 2:
-                            printf("Signed write on Peripheral Privacy Flag to TRUE\n");
-                            pts_privacy_flag = 1;
-                            gatt_client_signed_write_without_response(gc_id, handle, gap_peripheral_privacy_flag_characteristic.value_handle, 1, &pts_privacy_flag);
-                            break;
                         default:
                             break;
                         }
                     break;
+                case CENTRAL_W4_SIGNED_WRITE_QUERY_COMPLETE:
+                    printf("Signed write on Characteristic with UUID 0x%04x\n", pts_signed_write_characteristic_uuid);
+                    gatt_client_signed_write_without_response(gc_id, handle, signed_write_characteristic.value_handle, sizeof(signed_write_value), signed_write_value);
+                    break;
+
                 default:
                     break;
             }
@@ -394,6 +404,11 @@ void handle_gatt_client_event(le_event_t * event){
                 case CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE:
                     gap_peripheral_privacy_flag_characteristic = ((le_characteristic_event_t *) event)->characteristic;
                     printf("GAP Peripheral Privacy Flag Characteristic found, value handle: 0x04%x\n", gap_peripheral_privacy_flag_characteristic.value_handle);
+                    break;
+                case CENTRAL_W4_SIGNED_WRITE_QUERY_COMPLETE:
+                    signed_write_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    printf("Characteristic for Signed Write found, value handle: 0x%04x\n", signed_write_characteristic.value_handle);
+                    break;
                 default:
                     break;
             }
@@ -418,8 +433,19 @@ void show_usage(void){
     printf("IUT: addr type %u, addr %s\n", iut_address_type, bd_addr_to_str(iut_address));
     printf("--------------------------\n");
     printf("GAP: connectable %u, bondable %u\n", gap_connectable, gap_bondable);
-    printf("SM: %s, MITM protection %u, OOB data %u, key range [%u..16]\n",
-        sm_io_capabilities, sm_mitm_protection, sm_have_oob_data, sm_min_key_size);
+    printf("SM: %s, MITM protection %u, key range [%u..16], OOB data: ",
+        sm_io_capabilities, sm_mitm_protection, sm_min_key_size);
+    switch (sm_have_oob_data){
+        case 1:
+            printf_hexdump(sm_oob_data_A, 16);
+            break;
+        case 2:
+            printf_hexdump(sm_oob_data_B, 16);
+            break;
+        default:
+            printf ("None\n");
+            break;
+    }
     printf("Privacy %u\n", gap_privacy);
     printf("Device name: %s\n", gap_device_name);
     // printf("Value Handle: %x\n", value_handle);
@@ -440,7 +466,8 @@ void show_usage(void){
     printf("t   - terminate connection, stop connecting\n");
     printf("p   - auto connect to PTS\n");
     printf("P   - direct connect to PTS\n");
-    printf("w   - signed write on Privacy Flag\n");
+    printf("w   - signed write on characteristic with UUID %04x\n", pts_signed_write_characteristic_uuid);
+    printf("W   - signed write on attribute with handle 0x%04x and value 0x12\n", pts_signed_write_characteristic_handle);
     printf("z   - Update L2CAP Connection Parameters\n");
     printf("---\n");
     printf("4   - IO_CAPABILITY_DISPLAY_ONLY\n");
@@ -449,6 +476,8 @@ void show_usage(void){
     printf("7   - IO_CAPABILITY_KEYBOARD_ONLY\n");
     printf("8   - IO_CAPABILITY_KEYBOARD_DISPLAY\n");
     printf("m/M - MITM protection off\n");
+    printf("x/X - encryption key range [7..16]/[16..16]\n");
+    printf("y/Y - OOB data off/on/toggle A/B\n");
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -466,20 +495,36 @@ void update_auth_req(void){
     sm_set_authentication_requirements(auth_req);
 }
 
+static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
+    int value_length = sizeof(signed_write_value);
+    l2cap_reserve_packet_buffer();
+    uint8_t * request = l2cap_get_outgoing_buffer();
+    request[0] = ATT_SIGNED_WRITE_COMMAND;
+    bt_store_16(request, 1, pts_signed_write_characteristic_handle);
+    memcpy(&request[3], signed_write_value, value_length);
+    bt_store_32(request, 3 + value_length, 0);
+    swap64(hash, &request[3 + value_length + 4]);
+    l2cap_send_prepared_connectionless(handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3 + value_length + 12);
+}
+
 int  stdin_process(struct data_source *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
     int res;
 
+
     // passkey input
     if (ui_digits_for_passkey){
-        if (buffer < '0' || buffer > '9') return 0;
+        if (buffer < '0' || buffer > '9') {
+            printf("stdinprocess: invalid input 0x%02x\n", buffer);
+            return 0;
+        }
         printf("%c", buffer);
         fflush(stdout);
         ui_passkey = ui_passkey * 10 + buffer - '0';
         ui_digits_for_passkey--;
         if (ui_digits_for_passkey == 0){
-            printf("\nSending Passkey '%06x'\n", ui_passkey);
+            printf("\nSending Passkey %u (0x%x)\n", ui_passkey, ui_passkey);
             sm_passkey_input(peer_addr_type, peer_address, ui_passkey);
         }
         return 0;
@@ -537,16 +582,18 @@ int  stdin_process(struct data_source *ds){
             show_usage();
             break;
         case 'b':
-            sm_request_authorization(current_pts_address_type, current_pts_address);
+            sm_request_pairing(current_pts_address_type, current_pts_address);
             break;
         case 'c':
             gap_connectable = 0;
             update_advertisment_params();
+            hci_connectable_control(gap_connectable);
             show_usage();
             break;
         case 'C':
             gap_connectable = 1;
             update_advertisment_params();
+            hci_connectable_control(gap_connectable);
             show_usage();
             break;
         case 'd':
@@ -616,8 +663,35 @@ int  stdin_process(struct data_source *ds){
             break;
         case 'w':
             pts_privacy_flag = 2;
-            central_state = CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE;
-            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, GAP_PERIPHERAL_PRIVACY_FLAG);
+            central_state = CENTRAL_W4_SIGNED_WRITE_QUERY_COMPLETE;
+            gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 1, 0xffff, pts_signed_write_characteristic_uuid);
+            break;
+        case 'W':
+            // fetch csrk
+            le_device_db_csrk_get(le_device_db_index, signing_csrk);
+            // calc signature
+            sm_cmac_start(signing_csrk, ATT_SIGNED_WRITE_COMMAND, pts_signed_write_characteristic_handle, sizeof(signed_write_value), signed_write_value, 0, att_signed_write_handle_cmac_result);
+            break;
+        case 'x':
+            sm_min_key_size = 7;
+            sm_set_encryption_key_size_range(7, 16);
+            show_usage();
+            break;
+        case 'X':
+            sm_min_key_size = 16;
+            sm_set_encryption_key_size_range(16, 16);
+            show_usage();
+            break;        case 'y':
+            sm_have_oob_data = 0;
+            show_usage();
+            break;
+        case 'Y':
+            if (sm_have_oob_data){
+                sm_have_oob_data = 3 - sm_have_oob_data;
+            } else {
+                sm_have_oob_data = 1;
+            }
+            show_usage();
             break;
         case 'z':
             printf("Updating l2cap connection parameters\n");
@@ -632,11 +706,17 @@ int  stdin_process(struct data_source *ds){
 }
 
 static int get_oob_data_callback(uint8_t addres_type, bd_addr_t addr, uint8_t * oob_data){
-    if(!sm_have_oob_data) return 0;
-    memcpy(oob_data, sm_oob_data, 16);
-    return 1;
+    switch(sm_have_oob_data){
+        case 1:
+            memcpy(oob_data, sm_oob_data_A, 16);
+            return 1;
+        case 2:
+            memcpy(oob_data, sm_oob_data_B, 16);
+            return 1;
+        default:
+            return 0;
+    }
 }
-
 
 // ATT Client Read Callback for Dynamic Data
 // - if buffer == NULL, don't copy data, just return size of value
@@ -709,7 +789,7 @@ int btstack_main(int argc, const char * argv[]){
     current_pts_address_type = public_pts_address_type;
 
     // classic discoverable / connectable
-    hci_connectable_control(1);
+    hci_connectable_control(0);
     hci_discoverable_control(1);
 
     // allow foor terminal input

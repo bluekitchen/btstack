@@ -33,6 +33,7 @@ uint8_t * mock_packet_buffer(void){
 
 void mock_clear_packet_buffer(void){
 	packet_buffer_len = 0;
+	memset(packet_buffer, 0, sizeof(packet_buffer));
 }
 
 static void dump_packet(int packet_type, uint8_t * buffer, uint16_t size){

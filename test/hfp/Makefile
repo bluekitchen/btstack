@@ -53,3 +53,7 @@ hfp_ag_parser_test: ${COMMON_OBJ} hfp_ag.o hfp.o hfp_ag_parser_test.c
 
 hfp_hf_parser_test: ${COMMON_OBJ} hfp_hf.o hfp.o hfp_hf_parser_test.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
+test: all
+	./hfp_ag_parser_test
+	./hfp_hf_parser_test

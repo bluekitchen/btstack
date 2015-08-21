@@ -10,6 +10,7 @@
 #define ENABLE_LOG_DEBUG
 #define ENABLE_LOG_INFO 
 #define ENABLE_LOG_ERROR
+#define HAVE_HCI_DUMP
 
 #define HAVE_SDP_EXTRA_QUERIES
 #define USE_POSIX_RUN_LOOP
@@ -32,6 +33,13 @@
 #define MAX_NO_WHITELIST_ENTRIES 1
 #define HAVE_MALLOC
 
+#if 0
 // DeLock 4.0 Dongle (Broadcom BCM20702A0)
 #define USB_VENDOR_ID   0x0a5c
 #define USB_PRODUCT_ID  0x21e8
+
+#else
+// Generic CSR 4.0 Dongle
+// #define USB_VENDOR_ID   0x0a12
+// #define USB_PRODUCT_ID  0x0001
+#endif
