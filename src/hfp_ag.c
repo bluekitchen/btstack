@@ -348,6 +348,27 @@ int hfp_ag_report_network_operator_name_cmd(uint16_t cid, hfp_network_opearator_
     return send_str_over_rfcomm(cid, buffer);
 }
 
+
+int hfp_ag_cmd_confirm_codec(uint16_t cid, uint8_t codec){
+    char buffer[30];
+    sprintf(buffer, "\r\nOK\r\n%s=%d\r\n", HFP_CONFIRM_COMMON_CODEC, codec);
+    return send_str_over_rfcomm(cid, buffer);
+}
+
+static uint8_t hfp_ag_choose_codec(hfp_connection_t *context){
+    int i,j;
+    uint8_t codec = 0;
+    for (i = 0; i < hfp_codecs_nr; i++){
+        for (j = 0; j < context->remote_codecs_nr; j++){
+            if (context->remote_codecs[j] == hfp_codecs[i]){
+                codec = context->remote_codecs[j];
+                continue;
+            }
+        }
+    }
+    return codec;
+}
+
 void hfp_run_for_context(hfp_connection_t *context){
     // printf(" hfp_run_for_context \n");
     if (!context) return;
@@ -387,7 +408,37 @@ void hfp_run_for_context(hfp_connection_t *context){
         }
     }
 
+    
+    if (context->state == HFP_AUDIO_CONNECTION_ESTABLISHED){
+        // TODO
+    }
+    
     switch(context->command){
+        // START codec setup
+        case HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP:
+            if (!hfp_ag_choose_codec(context)){
+                hfp_ag_error(context->rfcomm_cid);
+                break;
+            }
+            switch (context->state){
+                case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+                    // hfp_ag_ok(context->rfcomm_cid);
+                    context->negotiated_codec = hfp_ag_choose_codec(context);
+                    hfp_ag_cmd_confirm_codec(context->rfcomm_cid, context->negotiated_codec);
+                    context->state = HFP_SLE_W4_EXCHANGE_COMMON_CODEC;
+                    break;
+                default:
+                    hfp_ag_error(context->rfcomm_cid);
+                    break;
+            } 
+            break;
+
+        case HFP_CMD_CONFIRM_COMMON_CODEC:
+            hfp_ag_ok(context->rfcomm_cid);
+            context->state = HFP_CODECS_CONNECTION_ESTABLISHED;
+            break;
+        // END codec setup
+
         case HFP_CMD_SUPPORTED_FEATURES:
             switch(context->state){
                 case HFP_W4_EXCHANGE_SUPPORTED_FEATURES:
@@ -644,9 +695,9 @@ void hfp_ag_transfer_callsetup_status(bd_addr_t bd_addr, hfp_callsetup_status_t 
 }
 
 void hfp_ag_transfer_callheld_status(bd_addr_t bd_addr, hfp_callheld_status_t status){
-        hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (!connection){
-        log_error("HFP HF: connection doesn't exist.");
+        log_error("HFP AG: connection doesn't exist.");
         return;
     }
     if (!connection->enable_status_update_for_ag_indicators) return;
@@ -654,24 +705,58 @@ void hfp_ag_transfer_callheld_status(bd_addr_t bd_addr, hfp_callheld_status_t st
     hfp_run_for_context(connection);
 }
 
-void hfp_ag_audio_connection_setup(bd_addr_t bd_addr){
-    hfp_ag_establish_service_level_connection(bd_addr);
-    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+void hfp_ag_codec_connection_setup(hfp_connection_t * connection){
     if (!connection){
-        log_error("HFP HF: connection doesn't exist.");
+        log_error("HFP AG: connection doesn't exist.");
         return;
     }
     // TODO:
     hfp_run_for_context(connection);
 }
 
-void hfp_ag_audio_connection_release(bd_addr_t bd_addr){
+/** 
+ * @param handle
+ * @param transmit_bandwidth 8000(64kbps)
+ * @param receive_bandwidth  8000(64kbps)
+ * @param max_latency        >= 7ms for eSCO, 0xFFFF do not care
+ * @param voice_settings     e.g. CVSD, Input Coding: Linear, Input Data Format: 2’s complement, data 16bit: 00011000000 == 0x60
+ * @param retransmission_effort  e.g. 0xFF do not care
+ * @param packet_type        at least EV3 for eSCO
+ 
+ hci_send_cmd(&hci_setup_synchronous_connection, rfcomm_handle, 8000, 8000, 0xFFFF, 0x0060, 0xFF, 0x003F);
+
+ */
+
+void hfp_ag_establish_audio_connection(bd_addr_t bd_addr){
     hfp_ag_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (!connection){
-        log_error("HFP HF: connection doesn't exist.");
+        log_error("HFP AG: connection doesn't exist.");
         return;
     }
+    if (connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return;
+    // if (connection->remote_codecs_nr == 0) {
+    //     log_error("HFP AG: codecs not exchanged, or no codecs specified in HF.");
+    //     return;
+    // }
+    connection->trigger_codec_connection_setup = 1;
+    connection->establish_audio_connection = 1;
+
+    if (!has_codec_negotiation_feature(connection)){
+        connection->trigger_codec_connection_setup = 0;
+        connection->establish_audio_connection = 0;
+        return;
+    }
+    
+    if (connection->state == HFP_CODECS_CONNECTION_ESTABLISHED){
+        connection->trigger_codec_connection_setup = 0;
+        return;
+    }
+    hfp_run_for_context(connection);
+}
+
+void hfp_ag_release_audio_connection(bd_addr_t bd_addr){
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     // TODO:
     hfp_run_for_context(connection);
 }

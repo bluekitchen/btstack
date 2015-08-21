@@ -112,6 +112,8 @@ extern "C" {
 #define HFP_QUERY_OPERATOR_SELECTION "+COPS"     // +COPS: <mode>,0,<opearator>
 #define HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR "+CMEE"
 #define HFP_EXTENDED_AUDIO_GATEWAY_ERROR "+CME ERROR"
+#define HFP_TRIGGER_CODEC_CONNECTION_SETUP "+BCC"
+#define HFP_CONFIRM_COMMON_CODEC "+BCS"
 
 #define HFP_OK "OK"
 #define HFP_ERROR "ERROR"
@@ -137,7 +139,9 @@ typedef enum {
     HFP_CMD_QUERY_OPERATOR_SELECTION,
 
     HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR,
-    HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR
+    HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR,
+    HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP,
+    HFP_CMD_CONFIRM_COMMON_CODEC
     
 } hfp_command_t;
 
@@ -238,6 +242,19 @@ typedef enum {
     
     HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED, // 22
     
+    HFP_SLE_W2_EXCHANGE_COMMON_CODEC,
+    HFP_SLE_W4_EXCHANGE_COMMON_CODEC,
+    
+    HFP_CODECS_CONNECTION_ESTABLISHED,
+    
+    HFP_CCE_W2_ESTABLISH_SCO,
+    HFP_CCE_W4_SCO_CONNECTION_ESTABLISHED,
+    
+    HFP_AUDIO_CONNECTION_ESTABLISHED,
+    
+    HFP_W2_DISCONNECT_SCO,
+    HFP_W4_SCO_DISCONNECTED,
+
     HFP_W2_DISCONNECT_RFCOMM,
     HFP_W4_RFCOMM_DISCONNECTED, 
     HFP_W4_RFCOMM_DISCONNECTED_AND_RESTART,
@@ -279,6 +296,7 @@ typedef struct hfp_connection {
     
     bd_addr_t remote_addr;
     uint16_t con_handle;
+    uint16_t sco_handle;
     uint16_t rfcomm_channel_nr;
     uint16_t rfcomm_cid;
     
@@ -294,6 +312,8 @@ typedef struct hfp_connection {
     int      line_size;
     
     uint32_t remote_supported_features;
+
+    // TODO: rename into hf_codecs_nr
     int      remote_codecs_nr;
     uint16_t remote_codecs[HFP_MAX_INDICATOR_DESC_SIZE];
     int      ag_indicators_nr;
@@ -335,6 +355,17 @@ typedef struct hfp_connection {
     uint8_t enable_extended_audio_gateway_error_report;
     uint8_t extended_audio_gateway_error;
 
+    // can come any time (here taken into account only after SLE),
+    // if codec negotiation feature is set
+    uint8_t notify_ag_on_new_codecs;
+    
+    // establish codecs connection
+    uint8_t trigger_codec_connection_setup;
+    uint8_t ag_ready_for_codecs_connection_setup;
+    uint8_t remote_codec_received;
+
+    uint8_t establish_audio_connection; 
+    uint8_t release_audio_connection; 
 
 } hfp_connection_t;
 
@@ -358,7 +389,9 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte);
 void hfp_init(uint16_t rfcomm_channel_nr);
 void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid);
 void hfp_release_service_level_connection(hfp_connection_t * connection);
-
+void hfp_establish_audio_connection(hfp_connection_t * context, uint8_t codec_negotiation_feature_enabled);
+void hfp_release_audio_connection(hfp_connection_t * context);
+void hfp_reset_context_flags(hfp_connection_t * context);
 
 const char * hfp_hf_feature(int index);
 const char * hfp_ag_feature(int index);

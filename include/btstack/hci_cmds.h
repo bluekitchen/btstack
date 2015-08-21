@@ -628,7 +628,8 @@ extern "C" {
 #define HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED           0x06
 #define HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED              0x07
 #define HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR          0x08
-
+#define HFP_SUBEVENT_AUDIO_CONNECTION_COMPLETE             0x09
+ 
 // ANCS Client
 #define ANCS_CLIENT_CONNECTED                              0xF0
 #define ANCS_CLIENT_NOTIFICATION                           0xF1
