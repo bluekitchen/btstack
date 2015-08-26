@@ -38,11 +38,10 @@ void inject_rfcomm_command(uint8_t * data, int len){
 }
 
 int  rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
-	// printf("rfcomm_send_internal\n");
+	printf("rfcomm_send_internal %s\n", data);
 	memset(&rfcomm_payload, 0, 200);
 	rfcomm_payload_len = len;
 	memcpy((char*)&rfcomm_payload, data, rfcomm_payload_len);
-
 	return 0;
 }
 

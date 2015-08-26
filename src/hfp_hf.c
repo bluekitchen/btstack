@@ -485,14 +485,17 @@ static void hfp_run_for_context(hfp_connection_t * context){
             break;
             
         case HFP_CODECS_CONNECTION_ESTABLISHED:
-
+            printf("HFP_CODECS_CONNECTION_ESTABLISHED \n");
             if (context->notify_ag_on_new_codecs){
+                printf("restart codecs negotiation \n"); 
                 hfp_hf_cmd_notify_on_codecs(context->rfcomm_cid);
                 context->negotiated_codec = 0;
                 context->wait_ok = 1;
                 context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
                 break;
             }
+
+            hfp_emit_event(hfp_callback, HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE, 0);
 
             if (context->establish_audio_connection){
                 // TODO AUDIO CONNECTION
@@ -564,7 +567,7 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
 
     packet[size] = 0;
     int pos, i;
-    printf("parse command: %s\n", packet+2);
+    printf("response: %s\n", packet+2);
     for (pos = 0; pos < size ; pos++){
         hfp_parse(context, packet[pos]);
         
@@ -705,6 +708,26 @@ void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_
         return;
     }
     connection->enable_extended_audio_gateway_error_report = enable;
+    hfp_run_for_context(connection);
+}
+
+void hfp_hf_negotiate_codecs(bd_addr_t bd_addr){
+    hfp_hf_establish_service_level_connection(bd_addr);
+    hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
+    if (!connection){
+        log_error("HFP HF: connection doesn't exist.");
+        return;
+    }
+    connection->trigger_codec_connection_setup = 0;
+
+    if (connection->state == HFP_CODECS_CONNECTION_ESTABLISHED) return;
+    
+    if (!has_codec_negotiation_feature(connection)){
+        connection->trigger_codec_connection_setup = 0;
+        return;
+    }
+    connection->trigger_codec_connection_setup = 1;
+
     hfp_run_for_context(connection);
 }
 

@@ -64,119 +64,20 @@
 #include "hfp_hf.h"
 
 const uint8_t    rfcomm_channel_nr = 1;
-const char hfp_hf_service_name[] = "BTstack HFP HF Test";
 
-static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
-static bd_addr_t phone_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
+static bd_addr_t device_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
 
-static bd_addr_t device_addr;
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
 static uint16_t indicators[1] = {0x01};
 
+static uint8_t service_level_connection_established = 0;
+static uint8_t codecs_connection_established = 0;
+static uint8_t audio_connection_established = 0;
+
 // prototypes
-static void show_usage();
 uint8_t * get_rfcomm_payload();
 uint16_t  get_rfcomm_payload_len();
 void inject_rfcomm_command(uint8_t * payload, int len);
-
-// Testig User Interface 
-static void show_usage(void){
-    printf("\n--- Bluetooth HFP Hands-Free (HF) unit Test Console ---\n");
-    printf("---\n");
-    printf("y - use PTS module as Audiogateway\n");
-    printf("z - use iPhone as Audiogateway\n");
-
-    printf("h - establish HFP connection to device\n");
-    printf("H - release HFP connection to device\n");
-    
-    printf("a - establish Audio connection to device\n");
-    printf("A - release Audio connection to device\n");
-    
-    printf("b - establish AUDIO connection\n");
-    printf("B - release AUDIO connection\n");
-    
-    printf("d - enable registration status update\n");
-    printf("D - disable registration status update\n");
-    
-    printf("e - enable HFP AG registration status update for individual indicators\n");
-    
-    printf("f - query network operator\n");
-    
-    printf("g - enable reporting of the extended AG error result code\n");
-    printf("G - disable reporting of the extended AG error result code\n");
-    
-    printf("---\n");
-    printf("Ctrl-c - exit\n");
-    printf("---\n");
-}
-
-static int process(char cmd){
-    switch (cmd){
-        case 'a':
-            memcpy(device_addr, pts_addr, 6);
-            printf("Establish Audio connection to device with Bluetooth address %s...\n", bd_addr_to_str(device_addr));
-            hfp_hf_establish_audio_connection(device_addr);
-            break;
-        case 'A':
-            printf("Release Audio service level connection.\n");
-            hfp_hf_release_audio_connection(device_addr);
-            break;
-        case 'h':
-            memcpy(device_addr, pts_addr, 6);
-            printf("Establish HFP service level connection to device with Bluetooth address %s...\n", bd_addr_to_str(device_addr));
-            hfp_hf_establish_service_level_connection(device_addr);
-            break;
-        case 'H':
-            printf("Release HFP service level connection.\n");
-            hfp_hf_release_service_level_connection(device_addr);
-            break;
-        case 'b':
-            printf("Establish Audio connection %s...\n", bd_addr_to_str(device_addr));
-            hfp_hf_establish_audio_connection(device_addr);
-            break;
-        case 'B':
-            printf("Release Audio connection.\n");
-            hfp_hf_release_audio_connection(device_addr);
-            break;
-        case 'd':
-            printf("Enable HFP AG registration status update.\n");
-            hfp_hf_enable_status_update_for_all_ag_indicators(device_addr, 1);
-        case 'D':
-            printf("Disable HFP AG registration status update.\n");
-            hfp_hf_enable_status_update_for_all_ag_indicators(device_addr, 0);
-            break;
-        case 'e':
-            printf("Enable HFP AG registration status update for individual indicators.\n");
-            hfp_hf_enable_status_update_for_individual_ag_indicators(device_addr, 63);
-            break;
-        case 'f':
-            printf("Query network operator.\n");
-            hfp_hf_query_operator_selection(device_addr);
-            break;
-        case 'g':
-            printf("Enable reporting of the extended AG error result code.\n");
-            hfp_hf_enable_report_extended_audio_gateway_error_result_code(device_addr, 1);
-            break;
-        case 'G':
-            printf("Disable reporting of the extended AG error result code.\n");
-            hfp_hf_enable_report_extended_audio_gateway_error_result_code(device_addr, 0);
-            break;
-
-        case 'y':
-            memcpy(device_addr, phone_addr, 6);
-            printf("Use iPhone %s as Audiogateway.\n", bd_addr_to_str(device_addr));
-            break;
-        case 'z':
-            memcpy(device_addr, pts_addr, 6);
-            printf("Use PTS module %s as Audiogateway.\n", bd_addr_to_str(device_addr));
-            break;
-        default:
-            show_usage();
-            break;
-    }
-    return 0;
-}
-
 
 void packet_handler(uint8_t * event, uint16_t event_size){
     if (event[0] != HCI_EVENT_HFP_META) return;
@@ -186,8 +87,12 @@ void packet_handler(uint8_t * event, uint16_t event_size){
     }
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
-            printf("Service level connection established.\n\n");
+            service_level_connection_established = 1;
             break;
+        case HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE:
+            codecs_connection_established = 1;
+            break;
+
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
             printf("Service level connection released.\n\n");
             break;
@@ -211,7 +116,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
 }
 
 static int expected_rfcomm_command(const char * cmd){
-    printf("%s\n", get_rfcomm_payload());
+    //printf("%s\n", get_rfcomm_payload());
     return strcmp((char *)cmd, (char *)get_rfcomm_payload());
 }
     
@@ -219,22 +124,95 @@ static void verify_expected_rfcomm_command(const char * cmd){
     CHECK_EQUAL(expected_rfcomm_command(cmd),0);
 }
 
-const char hf_supported_features[] = "AT+BRSF=438\r\n";
-const char ag_supported_features[] = "\r\n+BRSF=1007\r\n\r\nOK\r\n";
+const char ag_ok[] = "\r\nOK\r\n";
 
-    
+/* START SERVICE LEVEL CONNECTION SEQUENCE */
+const char hf_supported_features[] = "AT+BRSF=438\r\n";
+const char ag_supported_features[] = "\r\n+BRSF:1007\r\n";
+
+const char hf_supported_codecs[] = "AT+BAC=1\r\n";
+
+const char hf_get_ag_indicators[] = "AT+CIND=?\r\n";
+const char ag_indicators[] = "\r\n+CIND:\"service\",(0,1),\"call\",(0,1),\"callsetup\",(0,3),\"battchg\",(0,5),\"signal\",(0,5),\"roam\",(0,1),\"callheld\",(0,2)\r\n";
+
+const char hf_get_ag_indicators_status[] = "AT+CIND?\r\n";
+const char ag_indicators_status[] = "\r\n+CIND:1,0,0,3,5,0,0\r\n";
+
+const char hf_enable_indicator_status[] = "AT+CMER=3,0,0,1\r\n";
+
+const char hf_get_ag_call_and_multiparty_services[] = "AT+CHLD=?\r\n";
+const char ag_call_and_multiparty_services[] = "\r\n+CHLD:(1,1x,2,2x,3)\r\n";
+/* END SERVICE LEVEL CONNECTION SEQUENCE */
+
+
+/* START CODECS CONNECTION SEQUENCE */
+const char hf_trigger_codecs_connection[] = "AT+BCC\r\n";
+
+const char ag_report_selected_codec[] = "\r\n+BCS:1\r\n";
+const char hf_confirm_selected_codec[] = "AT+BCS=1\r\n";
+/* END CODECS CONNECTION SEQUENCE */
+
 TEST_GROUP(HandsfreeClient){
     void setup(void){
-        process('y');
+        service_level_connection_established = 0;
+        codecs_connection_established = 0;
+        audio_connection_established = 0;
+    }
+
+    void test_hfp_service_level_connection_state_machine(){
+        service_level_connection_established = 0;
+        hfp_hf_establish_service_level_connection(device_addr);
+        verify_expected_rfcomm_command(hf_supported_features);
+        inject_rfcomm_command((uint8_t*)ag_supported_features, strlen(ag_supported_features));
+        inject_rfcomm_command((uint8_t*)ag_ok, strlen(ag_ok));
+
+        verify_expected_rfcomm_command(hf_supported_codecs);
+        inject_rfcomm_command((uint8_t*)ag_ok, strlen(ag_ok));
+
+        verify_expected_rfcomm_command(hf_get_ag_indicators);
+        inject_rfcomm_command((uint8_t*)ag_indicators, strlen(ag_indicators));
+        inject_rfcomm_command((uint8_t*)ag_ok, strlen(ag_ok));
+
+        verify_expected_rfcomm_command(hf_get_ag_indicators_status);
+        inject_rfcomm_command((uint8_t*)ag_indicators_status, strlen(ag_indicators_status));
+        inject_rfcomm_command((uint8_t*)ag_ok, strlen(ag_ok));
+
+        verify_expected_rfcomm_command(hf_enable_indicator_status);
+        inject_rfcomm_command((uint8_t*)ag_ok, strlen(ag_ok));
+
+        verify_expected_rfcomm_command(hf_get_ag_call_and_multiparty_services);
+        inject_rfcomm_command((uint8_t*)ag_call_and_multiparty_services, strlen(ag_call_and_multiparty_services));
+        inject_rfcomm_command((uint8_t*)ag_ok, strlen(ag_ok));
+        CHECK_EQUAL(service_level_connection_established, 1);
+    }
+
+    void test_hfp_codecs_connection_state_machine(){
+        codecs_connection_established = 0;
+        hfp_hf_negotiate_codecs(device_addr);
+
+        verify_expected_rfcomm_command(hf_trigger_codecs_connection);
+        inject_rfcomm_command((uint8_t*)ag_ok, strlen(ag_ok));
+
+        inject_rfcomm_command((uint8_t*)ag_report_selected_codec, strlen(ag_report_selected_codec));
+        verify_expected_rfcomm_command(hf_confirm_selected_codec);
+        inject_rfcomm_command((uint8_t*)ag_ok, strlen(ag_ok));
+        CHECK_EQUAL(codecs_connection_established, 1);
+    }
+
+    void test_audio_connection_state_machine(){
+        audio_connection_established = 0;
+        hfp_hf_establish_audio_connection(device_addr);
     }
 };
 
-TEST(HandsfreeClient, HFAudioConnection){
-    process('a');
-    verify_expected_rfcomm_command(hf_supported_features);
-    inject_rfcomm_command((uint8_t*)ag_supported_features, strlen(ag_supported_features));
-    
+
+TEST(HandsfreeClient, HFCodecsConnectionEstablished1){
+    test_hfp_service_level_connection_state_machine();
+    // test_hfp_codecs_connection_state_machine();
+
+    // hfp_hf_set_codecs(codecs, 2);
 }
+
 
 
 int main (int argc, const char * argv[]){
