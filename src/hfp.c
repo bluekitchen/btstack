@@ -246,6 +246,7 @@ static hfp_connection_t * get_hfp_connection_context_for_handle(uint16_t handle)
 }
 
 void hfp_reset_context_flags(hfp_connection_t * context){
+    if (!context) return;
     context->wait_ok = 0;
     context->send_ok = 0;
     context->send_error = 0;
@@ -289,7 +290,7 @@ static hfp_connection_t * create_hfp_connection_context(){
     context->state = HFP_IDLE;
     context->parser_state = HFP_PARSER_CMD_HEADER;
     context->command = HFP_CMD_NONE;
-    context->negotiated_codec = HFP_CODEC_CVSD;
+    context->negotiated_codec = 0;
     
     context->enable_status_update_for_ag_indicators = 0xFF;
 
@@ -557,8 +558,8 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
                 break;
             }
             
-            remove_hfp_connection_context(context);
             hfp_emit_event(callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED, 0);
+            remove_hfp_connection_context(context);
             break;
 
         case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -1005,6 +1006,7 @@ void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_
         log_error("hfp_establish_service_level_connection for addr %s failed", bd_addr_to_str(bd_addr));
         return;
     }
+    printf("hfp_establish_service_level_connection context state %d\n", context->state);
     switch (context->state){
         case HFP_W2_DISCONNECT_RFCOMM:
             context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
@@ -1026,17 +1028,27 @@ void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_
 
 void hfp_release_service_level_connection(hfp_connection_t * context){
     if (!context) return;
-            
-    switch (context->state){
-        case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
-            context->state = HFP_W2_DISCONNECT_RFCOMM;
-            break;
-        case HFP_W4_RFCOMM_CONNECTED:
-            context->state = HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN;
-            break;
-        default:
-            break;
+    
+    if (context->state < HFP_W4_RFCOMM_CONNECTED){
+        context->state = HFP_IDLE;
+        return;
     }
+
+    if (context->state == HFP_W4_RFCOMM_CONNECTED){
+        context->state = HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN;
+        return;
+    }
+
+    if (context->state < HFP_CCE_W4_SCO_CONNECTION_ESTABLISHED){
+        context->state = HFP_W2_DISCONNECT_RFCOMM;
+        return;
+    }
+
+    if (context->state < HFP_W4_SCO_DISCONNECTED){
+        context->state = HFP_W2_DISCONNECT_SCO;
+        return;
+    }
+
     return;
 }
 

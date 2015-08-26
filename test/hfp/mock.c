@@ -101,7 +101,11 @@ void rfcomm_create_channel_internal(void * connection, bd_addr_t addr, uint8_t c
 
 
 void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
-	printf("rfcomm_disconnect_internal\n");
+	uint8_t event[4];
+	event[0] = RFCOMM_EVENT_CHANNEL_CLOSED;
+    event[1] = sizeof(event) - 2;
+    bt_store_16(event, 2, rfcomm_cid);
+    (*registered_rfcomm_packet_handler)(active_connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
 }
 
 void rfcomm_register_packet_handler(void (*handler)(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size)){
