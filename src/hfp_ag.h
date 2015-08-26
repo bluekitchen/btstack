@@ -152,12 +152,12 @@ void hfp_ag_transfer_callheld_status(bd_addr_t bd_addr, hfp_callheld_status_t st
 /**
  * @brief 
  */
-void hfp_ag_audio_connection_setup(bd_addr_t bd_addr);
+void hfp_ag_establish_audio_connection(bd_addr_t bd_addr);
 
 /**
  * @brief 
  */
-void hfp_ag_audio_connection_release(bd_addr_t bd_addr);
+void hfp_ag_release_audio_connection(bd_addr_t bd_addr);
 
 
 /* API_END */

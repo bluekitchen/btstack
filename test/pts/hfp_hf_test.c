@@ -148,11 +148,11 @@ static int stdin_process(struct data_source *ds){
             break;
         case 'b':
             printf("Establish Audio connection %s...\n", bd_addr_to_str(device_addr));
-            hfp_hf_audio_connection_setup(device_addr);
+            hfp_hf_establish_audio_connection(device_addr);
             break;
         case 'B':
             printf("Release Audio connection.\n");
-            hfp_hf_audio_connection_release(device_addr);
+            hfp_hf_release_audio_connection(device_addr);
             break;
         
         case 'd':
@@ -238,8 +238,9 @@ int btstack_main(int argc, const char * argv[]){
     rfcomm_init();
     
     // hfp_hf_init(rfcomm_channel_nr, HFP_DEFAULT_HF_SUPPORTED_FEATURES, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
-    hfp_hf_init(rfcomm_channel_nr, 438, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
-
+    hfp_hf_init(rfcomm_channel_nr, 438, indicators, sizeof(indicators)/sizeof(uint16_t), 1);
+    hfp_hf_set_codecs(codecs, sizeof(codecs));
+    
     hfp_hf_register_packet_handler(packet_handler);
 
     sdp_init();

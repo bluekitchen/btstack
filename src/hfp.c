@@ -245,6 +245,41 @@ static hfp_connection_t * get_hfp_connection_context_for_handle(uint16_t handle)
     return NULL;
 }
 
+void hfp_reset_context_flags(hfp_connection_t * context){
+    context->wait_ok = 0;
+    context->send_ok = 0;
+    context->send_error = 0;
+
+    context->keep_separator = 0;
+
+    context->retrieve_ag_indicators = 0;        // HFP_CMD_INDICATOR, check if needed
+    context->retrieve_ag_indicators_status = 0; 
+
+    context->list_generic_status_indicators = 0;           // HFP_CMD_LIST_GENERIC_STATUS_INDICATOR
+    context->retrieve_generic_status_indicators = 0;       // HFP_CMD_GENERIC_STATUS_INDICATOR
+    context->retrieve_generic_status_indicators_state = 0; // HFP_CMD_GENERIC_STATUS_INDICATOR_STATE
+    
+    context->change_status_update_for_individual_ag_indicators = 0; 
+
+    context->operator_name_format = 0;       
+    context->operator_name = 0;              
+    context->operator_name_changed = 0;      
+
+    context->enable_extended_audio_gateway_error_report = 0;
+    context->extended_audio_gateway_error = 0;
+
+    // can come any time (here taken into account only after SLE),
+    // if codec negotiation feature is set
+    context->notify_ag_on_new_codecs = 0;
+    
+    // establish codecs connection
+    context->trigger_codec_connection_setup = 0;
+    context->remote_codec_received = 0;
+
+    context->establish_audio_connection = 0; 
+    context->release_audio_connection = 0; 
+}
+
 static hfp_connection_t * create_hfp_connection_context(){
     hfp_connection_t * context = btstack_memory_hfp_connection_get();
     if (!context) return NULL;
@@ -459,6 +494,59 @@ void hfp_handle_hci_event(hfp_callback_t callback, uint8_t packet_type, uint8_t 
             }
             break;
         
+        case HCI_EVENT_SYNCHRONOUS_CONNECTION_COMPLETE:{
+            int index = 2;
+            uint8_t status = packet[index++];
+            uint16_t sco_handle = READ_BT_16(packet, index);
+            index+=2;
+            bd_addr_t address; 
+            memcpy(address, &packet[index], 6);
+            index+=6;
+            uint8_t link_type = packet[index++];
+            uint8_t transmission_interval = packet[index++];  // measured in slots
+            uint8_t retransmission_interval = packet[index++];// measured in slots
+            uint16_t rx_packet_length = READ_BT_16(packet, index); // measured in bytes
+            index+=2;
+            uint16_t tx_packet_length = READ_BT_16(packet, index); // measured in bytes
+            index+=2;
+            uint8_t air_mode = packet[index];
+
+            if (status != 0){
+                log_error("(e)SCO Connection is not established, status %u", status);
+                break;
+            }
+            switch (link_type){
+                case 0x00:
+                    printf("SCO Connection established. \n");
+                    if (transmission_interval != 0) log_error("SCO Connection: transmission_interval not zero: %d.", transmission_interval);
+                    if (retransmission_interval != 0) log_error("SCO Connection: retransmission_interval not zero: %d.", retransmission_interval);
+                    if (rx_packet_length != 0) log_error("SCO Connection: rx_packet_length not zero: %d.", rx_packet_length);
+                    if (tx_packet_length != 0) log_error("SCO Connection: tx_packet_length not zero: %d.", tx_packet_length);
+                    break;
+                case 0x02:
+                    printf("eSCO Connection established. \n");
+                    break;
+                default:
+                    log_error("(e)SCO reserved link_type 0x%2x", link_type);
+                    break;
+            }
+            log_info("sco_handle 0x%2x, address %s, transmission_interval %u slots, retransmission_interval %u slots, " 
+                 " rx_packet_length %u bytes, tx_packet_length %u bytes, air_mode 0x%2x (0x02 == CVSD)", sco_handle,
+                 bd_addr_to_str(address), transmission_interval, retransmission_interval, rx_packet_length, tx_packet_length, air_mode);
+
+            context = get_hfp_connection_context_for_bd_addr(address);
+
+            if (context->state == HFP_W4_CONNECTION_ESTABLISHED_TO_SHUTDOWN){
+                context->state = HFP_W2_DISCONNECT_SCO;
+                break;
+            }
+            
+            context->sco_handle = sco_handle;
+            context->state = HFP_AUDIO_CONNECTION_ESTABLISHED;
+            hfp_emit_event(callback, HFP_SUBEVENT_AUDIO_CONNECTION_COMPLETE, packet[2]);
+            break;                
+        }
+
         case RFCOMM_EVENT_CHANNEL_CLOSED:
             rfcomm_cid = READ_BT_16(packet,2);
             context = get_hfp_connection_context_for_rfcomm_cid(rfcomm_cid);
@@ -605,6 +693,19 @@ void process_command(hfp_connection_t * context){
         context->command = HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR;
         return;
     }
+
+    if (strncmp((char *)context->line_buffer+offset, HFP_TRIGGER_CODEC_CONNECTION_SETUP, strlen(HFP_TRIGGER_CODEC_CONNECTION_SETUP)) == 0){
+        context->command = HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP;
+        context->trigger_codec_connection_setup = 1;
+        return;
+    } 
+
+    if (strncmp((char *)context->line_buffer+offset, HFP_CONFIRM_COMMON_CODEC, strlen(HFP_CONFIRM_COMMON_CODEC)) == 0){
+        context->command = HFP_CMD_CONFIRM_COMMON_CODEC;
+
+        return;
+    } 
+
     printf(" process unknown command 3 %s \n", context->line_buffer);
 }
 
@@ -729,6 +830,9 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
 
         case HFP_PARSER_CMD_SEQUENCE: // parse comma separated sequence, ignore breacktes
             switch (context->command){
+                case HFP_CMD_CONFIRM_COMMON_CODEC:
+                    context->remote_codec_received = atoi((char*)context->line_buffer);
+                    break;
                 case HFP_CMD_SUPPORTED_FEATURES:
                     context->remote_supported_features = atoi((char*)context->line_buffer);
                     printf("Parsed supported feature %d\n", context->remote_supported_features);
@@ -921,10 +1025,7 @@ void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_
 }
 
 void hfp_release_service_level_connection(hfp_connection_t * context){
-    if (!context) {
-        log_error("hfp_release_service_level_connection failed");
-        return;
-    }
+    if (!context) return;
             
     switch (context->state){
         case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
@@ -939,4 +1040,9 @@ void hfp_release_service_level_connection(hfp_connection_t * context){
     return;
 }
 
+void hfp_establish_audio_connection(hfp_connection_t * context, uint8_t codec_negotiation_feature_enabled){
+}
+
+void hfp_release_audio_connection(hfp_connection_t * context){    
+}
 

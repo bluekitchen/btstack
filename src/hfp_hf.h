@@ -65,7 +65,8 @@ void hfp_hf_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const ch
  * @brief Intialize HFP Hands-Free (HF) device. 
  * TODO:  move optional params into setters
  */
-void hfp_hf_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, uint8_t * codecs, int codecs_nr, uint16_t * indicators, int indicators_nr, uint32_t indicators_status);
+void hfp_hf_init(uint16_t rfcomm_channel_nr, uint32_t supported_features, uint16_t * indicators, int indicators_nr, uint32_t indicators_status);
+void hfp_hf_set_codecs(uint8_t * codecs, int codecs_nr);
 
 /**
  * @brief Register callback for the HFP Hands-Free (HF) client. 
@@ -140,12 +141,12 @@ void hfp_hf_enable_report_extended_audio_gateway_error_result_code(bd_addr_t bd_
 /**
  * @brief 
  */
-void hfp_hf_audio_connection_setup(bd_addr_t bd_addr);
+void hfp_hf_establish_audio_connection(bd_addr_t bd_addr);
 
 /**
  * @brief 
  */
-void hfp_hf_audio_connection_release(bd_addr_t bd_addr);
+void hfp_hf_release_audio_connection(bd_addr_t bd_addr);
 
 
 /* API_END */

@@ -149,11 +149,11 @@ static int stdin_process(struct data_source *ds){
             break;
         case 'b':
             printf("Establish Audio connection %s...\n", bd_addr_to_str(device_addr));
-            hfp_ag_audio_connection_setup(device_addr);
+            hfp_ag_establish_audio_connection(device_addr);
             break;
         case 'B':
             printf("Release Audio connection.\n");
-            hfp_ag_audio_connection_release(device_addr);
+            hfp_ag_release_audio_connection(device_addr);
             break;
         case 'd':
             printf("Report AG failure\n");
