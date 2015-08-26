@@ -47,14 +47,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <net/if_arp.h>
-#include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <errno.h>
+
+#include "CppUTest/TestHarness.h"
+#include "CppUTest/CommandLineTestRunner.h"
 
 #include <btstack/hci_cmds.h>
 #include <btstack/run_loop.h>
@@ -64,11 +59,10 @@
 #include "l2cap.h"
 #include "rfcomm.h"
 #include "sdp.h"
+#include "sdp_parser.h"
 #include "debug.h"
 #include "hfp_hf.h"
-#include "stdin_support.h"
 
-const uint32_t   hfp_service_buffer[150/4]; // implicit alignment to 4-byte memory address
 const uint8_t    rfcomm_channel_nr = 1;
 const char hfp_hf_service_name[] = "BTstack HFP HF Test";
 
@@ -79,10 +73,11 @@ static bd_addr_t device_addr;
 static uint8_t codecs[1] = {HFP_CODEC_CVSD};
 static uint16_t indicators[1] = {0x01};
 
-char cmd;
-
 // prototypes
 static void show_usage();
+uint8_t * get_rfcomm_payload();
+uint16_t  get_rfcomm_payload_len();
+void inject_rfcomm_command(uint8_t * payload, int len);
 
 // Testig User Interface 
 static void show_usage(void){
@@ -115,8 +110,7 @@ static void show_usage(void){
     printf("---\n");
 }
 
-static int stdin_process(struct data_source *ds){
-    read(ds->fd, &cmd, 1);
+static int process(char cmd){
     switch (cmd){
         case 'a':
             memcpy(device_addr, pts_addr, 6);
@@ -176,12 +170,10 @@ static int stdin_process(struct data_source *ds){
             memcpy(device_addr, pts_addr, 6);
             printf("Use PTS module %s as Audiogateway.\n", bd_addr_to_str(device_addr));
             break;
-
         default:
             show_usage();
             break;
     }
-
     return 0;
 }
 
@@ -200,15 +192,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
             printf("Service level connection released.\n\n");
             break;
         case HFP_SUBEVENT_COMPLETE:
-            switch (cmd){
-                case 'd':
-                    printf("HFP AG registration status update enabled.\n");
-                    break;
-                case 'e':
-                    printf("HFP AG registration status update for individual indicators set.\n");
-                default:
-                    break;
-            }
+            printf("HFP_SUBEVENT_COMPLETE.\n\n");
             break;
         case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
             printf("AG_INDICATOR_STATUS_CHANGED, AG indicator index: %d, status: %d\n", event[4], event[5]);
@@ -226,29 +210,37 @@ void packet_handler(uint8_t * event, uint16_t event_size){
     }
 }
 
-
-int btstack_main(int argc, const char * argv[]){
-    // init L2CAP
-    l2cap_init();
-    rfcomm_init();
+static int expected_rfcomm_command(const char * cmd){
+    printf("%s\n", get_rfcomm_payload());
+    return strcmp((char *)cmd, (char *)get_rfcomm_payload());
+}
     
-    // hfp_hf_init(rfcomm_channel_nr, HFP_DEFAULT_HF_SUPPORTED_FEATURES, codecs, sizeof(codecs), indicators, sizeof(indicators)/sizeof(uint16_t), 1);
+static void verify_expected_rfcomm_command(const char * cmd){
+    CHECK_EQUAL(expected_rfcomm_command(cmd),0);
+}
+
+const char hf_supported_features[] = "AT+BRSF=438\r\n";
+const char ag_supported_features[] = "\r\n+BRSF=1007\r\n\r\nOK\r\n";
+
+    
+TEST_GROUP(HandsfreeClient){
+    void setup(void){
+        process('y');
+    }
+};
+
+TEST(HandsfreeClient, HFAudioConnection){
+    process('a');
+    verify_expected_rfcomm_command(hf_supported_features);
+    inject_rfcomm_command((uint8_t*)ag_supported_features, strlen(ag_supported_features));
+    
+}
+
+
+int main (int argc, const char * argv[]){
     hfp_hf_init(rfcomm_channel_nr, 438, indicators, sizeof(indicators)/sizeof(uint16_t), 1);
     hfp_hf_set_codecs(codecs, sizeof(codecs));
-    
     hfp_hf_register_packet_handler(packet_handler);
 
-    sdp_init();
-    // init SDP, create record for SPP and register with SDP
-    memset((uint8_t *)hfp_service_buffer, 0, sizeof(hfp_service_buffer));
-    hfp_hf_create_sdp_record((uint8_t *)hfp_service_buffer, rfcomm_channel_nr, hfp_hf_service_name, 0);
-    sdp_register_service_internal(NULL, (uint8_t *)hfp_service_buffer);
-
-    // turn on!
-    hci_power_control(HCI_POWER_ON);
-    
-    btstack_stdin_setup(stdin_process);
-    // printf("Establishing HFP connection to %s...\n", bd_addr_to_str(phone_addr));
-    // hfp_hf_connect(phone_addr);
-    return 0;
+    return CommandLineTestRunner::RunAllTests(argc, argv);
 }

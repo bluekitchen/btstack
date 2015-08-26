@@ -25,9 +25,22 @@ COMMON = \
     sdp_query_util.c		    \
 	sdp_query_rfcomm.c		    \
 	sdp.c			            \
+	mock.c 						\
 
+
+MOCK = \
+    btstack_memory.c            \
+    linked_list.c	            \
+    memory_pool.c               \
+    remote_device_db_memory.c   \
+    hci_cmds.c					\
+    hci_dump.c     				\
+    sdp_util.c	                \
+    utils.c			            \
+	mock.c 						\
 
 COMMON_OBJ  = $(COMMON:.c=.o) 
+MOCK_OBJ  = $(MOCK:.c=.o)
 
 # CC = gcc-fsf-4.9
 CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include
@@ -41,7 +54,8 @@ CFLAGS  = -g -Wall -I. -I../ -I${BTSTACK_ROOT}/src -I${BTSTACK_ROOT}/include -I$
 LDFLAGS += -lCppUTest -lCppUTestExt
 
 
-EXAMPLES = hfp_ag_parser_test hfp_hf_parser_test 
+EXAMPLES =  hfp_hf_client_test
+# hfp_ag_parser_test hfp_hf_parser_test
 
 all: ${BTSTACK_ROOT}/include/btstack/version.h ${EXAMPLES}
 
@@ -54,6 +68,10 @@ hfp_ag_parser_test: ${COMMON_OBJ} hfp_ag.o hfp.o hfp_ag_parser_test.c
 hfp_hf_parser_test: ${COMMON_OBJ} hfp_hf.o hfp.o hfp_hf_parser_test.c  
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
 
+hfp_hf_client_test: ${MOCK_OBJ} hfp_hf.o hfp.o hfp_hf_client_test.c  
+	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+
 test: all
 	./hfp_ag_parser_test
 	./hfp_hf_parser_test
+	./hfp_hf_client_test
