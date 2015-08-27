@@ -275,10 +275,10 @@ void hfp_reset_context_flags(hfp_connection_t * context){
     
     // establish codecs connection
     context->trigger_codec_connection_setup = 0;
-    context->remote_codec_received = 0;
-
+    context->suggested_codec = 0;
+    
     context->establish_audio_connection = 0; 
-    context->release_audio_connection = 0; 
+    
 }
 
 static hfp_connection_t * create_hfp_connection_context(){
@@ -702,7 +702,11 @@ void process_command(hfp_connection_t * context){
     } 
 
     if (strncmp((char *)context->line_buffer+offset, HFP_CONFIRM_COMMON_CODEC, strlen(HFP_CONFIRM_COMMON_CODEC)) == 0){
-        context->command = HFP_CMD_RECEIVED_COMMON_CODEC;
+        if (isHandsFree){
+            context->command = HFP_CMD_HF_CONFIRMED_CODEC;
+        } else {
+            context->command = HFP_CMD_AG_SUGGESTED_CODEC;
+        }
         return;
     } 
 
@@ -830,8 +834,11 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
 
         case HFP_PARSER_CMD_SEQUENCE: // parse comma separated sequence, ignore breacktes
             switch (context->command){
-                case HFP_CMD_RECEIVED_COMMON_CODEC:
-                    context->remote_codec_received = atoi((char*)context->line_buffer);
+                case HFP_CMD_HF_CONFIRMED_CODEC:
+                    context->codec_confirmed = atoi((char*)context->line_buffer);
+                    break;
+                case HFP_CMD_AG_SUGGESTED_CODEC:
+                    context->suggested_codec = atoi((char*)context->line_buffer);
                     break;
                 case HFP_CMD_SUPPORTED_FEATURES:
                     context->remote_supported_features = atoi((char*)context->line_buffer);
@@ -1050,9 +1057,36 @@ void hfp_release_service_level_connection(hfp_connection_t * context){
     return;
 }
 
-void hfp_establish_audio_connection(hfp_connection_t * context, uint8_t codec_negotiation_feature_enabled){
+void hfp_negotiate_codecs(hfp_connection_t * connection){
+    if (!connection){
+        log_error("HFP HF: connection doesn't exist.");
+        return;
+    }
+    
+    if (connection->state >= HFP_W2_DISCONNECT_SCO) return;
+    
+    if (connection->state != HFP_SLE_W4_EXCHANGE_COMMON_CODEC){
+        connection->trigger_codec_connection_setup = 1;
+    }
 }
 
-void hfp_release_audio_connection(hfp_connection_t * context){    
+
+void hfp_establish_audio_connection(hfp_connection_t * connection){
+    connection->establish_audio_connection = 0;
+    if (connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return;
+    if (connection->state >= HFP_W2_DISCONNECT_SCO) return;
+    
+    connection->establish_audio_connection = 1;
+    if (connection->state < HFP_SLE_W4_EXCHANGE_COMMON_CODEC){
+        connection->trigger_codec_connection_setup = 1;
+    }
 }
+
+
+void hfp_release_audio_connection(hfp_connection_t * connection){
+    if (!connection) return;
+    if (connection->state >= HFP_W2_DISCONNECT_SCO) return;
+    connection->release_audio_connection = 1; 
+}
+
 
