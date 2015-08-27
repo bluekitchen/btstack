@@ -373,7 +373,7 @@ void hfp_run_for_context(hfp_connection_t *context){
     // printf(" hfp_run_for_context \n");
     if (!context) return;
     if (!rfcomm_can_send_packet_now(context->rfcomm_cid)) return;
-    //printf(" hfp_run_for_context 1 state %d, command %d\n", context->state, context->command);
+    printf("AG hfp_run_for_context 1 state %d, command %d\n", context->state, context->command);
     
     if (context->state == HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED){
         if (context->send_ok){

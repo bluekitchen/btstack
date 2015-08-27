@@ -702,8 +702,7 @@ void process_command(hfp_connection_t * context){
     } 
 
     if (strncmp((char *)context->line_buffer+offset, HFP_CONFIRM_COMMON_CODEC, strlen(HFP_CONFIRM_COMMON_CODEC)) == 0){
-        context->command = HFP_CMD_CONFIRM_COMMON_CODEC;
-
+        context->command = HFP_CMD_RECEIVED_COMMON_CODEC;
         return;
     } 
 
@@ -831,12 +830,12 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
 
         case HFP_PARSER_CMD_SEQUENCE: // parse comma separated sequence, ignore breacktes
             switch (context->command){
-                case HFP_CMD_CONFIRM_COMMON_CODEC:
+                case HFP_CMD_RECEIVED_COMMON_CODEC:
                     context->remote_codec_received = atoi((char*)context->line_buffer);
                     break;
                 case HFP_CMD_SUPPORTED_FEATURES:
                     context->remote_supported_features = atoi((char*)context->line_buffer);
-                    printf("Parsed supported feature %d\n", context->remote_supported_features);
+                    log_info("Parsed supported feature %d\n", context->remote_supported_features);
                     break;
                 case HFP_CMD_AVAILABLE_CODECS:
                     printf("Parsed codec %s\n", context->line_buffer);
@@ -848,11 +847,11 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                     if (context->retrieve_ag_indicators == 1){
                         strcpy((char *)context->ag_indicators[context->parser_item_index].name,  (char *)context->line_buffer);
                         context->ag_indicators[context->parser_item_index].index = context->parser_item_index+1;
-                        printf("Indicator %d: %s (", context->ag_indicators_nr+1, context->line_buffer);
+                        log_info("Indicator %d: %s (", context->ag_indicators_nr+1, context->line_buffer);
                     }
 
                     if (context->retrieve_ag_indicators_status == 1){ 
-                        printf("Parsed Indicator %d with status: %s\n", context->parser_item_index+1, context->line_buffer);
+                        log_info("Parsed Indicator %d with status: %s\n", context->parser_item_index+1, context->line_buffer);
                         context->ag_indicators[context->parser_item_index].status = atoi((char *) context->line_buffer);
                         context->parser_item_index++;
                         break;
@@ -861,32 +860,32 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                 case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
                     context->parser_item_index++;
                     if (context->parser_item_index != 4) break;
-                    printf("Parsed Enable indicators: %s\n", context->line_buffer);
+                    log_info("Parsed Enable indicators: %s\n", context->line_buffer);
                     value = atoi((char *)&context->line_buffer[0]);
                     context->enable_status_update_for_ag_indicators = (uint8_t) value;
                     break;
                 case HFP_CMD_SUPPORT_CALL_HOLD_AND_MULTIPARTY_SERVICES:
-                    printf("Parsed Support call hold: %s\n", context->line_buffer);
+                    log_info("Parsed Support call hold: %s\n", context->line_buffer);
                     if (context->line_size > 2 ) break;
                     strcpy((char *)context->remote_call_services[context->remote_call_services_nr].name,  (char *)context->line_buffer);
                     context->remote_call_services_nr++;
                     break;
                 case HFP_CMD_GENERIC_STATUS_INDICATOR:
-                    printf("parser HFP_CMD_GENERIC_STATUS_INDICATOR 1 (%d, %d, %d)\n", 
+                    log_info("parser HFP_CMD_GENERIC_STATUS_INDICATOR 1 (%d, %d, %d)\n", 
                             context->list_generic_status_indicators, 
                             context->retrieve_generic_status_indicators,
                             context->retrieve_generic_status_indicators_state);
                     if (context->retrieve_generic_status_indicators == 1 || context->list_generic_status_indicators == 1){
-                        printf("Parsed Generic status indicator: %s\n", context->line_buffer);
+                        log_info("Parsed Generic status indicator: %s\n", context->line_buffer);
                         context->generic_status_indicators[context->parser_item_index].uuid = (uint16_t)atoi((char*)context->line_buffer);
                         context->parser_item_index++;
                         context->generic_status_indicators_nr = context->parser_item_index;
                         break;    
                     }
-                    printf("parser HFP_CMD_GENERIC_STATUS_INDICATOR 2\n");
+                    log_info("parser HFP_CMD_GENERIC_STATUS_INDICATOR 2\n");
                     if (context->retrieve_generic_status_indicators_state == 1){
                         // HF parses inital AG gen. ind. state
-                        printf("Parsed List generic status indicator %s state: ", context->line_buffer);
+                        log_info("Parsed List generic status indicator %s state: ", context->line_buffer);
                         context->parser_item_index = (uint8_t)atoi((char*)context->line_buffer);
                         break;
                     }
@@ -894,7 +893,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
     
                 case HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE:
                     // AG parses new gen. ind. state
-                    printf("Parsed Enable ag indicator state: %s\n", context->line_buffer);
+                    log_info("Parsed Enable ag indicator state: %s\n", context->line_buffer);
                     value = atoi((char *)&context->line_buffer[0]);
                     if (!context->ag_indicators[context->parser_item_index].mandatory){
                         context->ag_indicators[context->parser_item_index].enabled = value;
@@ -904,22 +903,22 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                 case HFP_CMD_TRANSFER_AG_INDICATOR_STATUS:
                     // indicators are indexed starting with 1
                     context->parser_item_index = atoi((char *)&context->line_buffer[0]) - 1;
-                    printf("Parsed status of the AG indicator %d, status ", context->parser_item_index);
+                    log_info("Parsed status of the AG indicator %d, status ", context->parser_item_index);
                     break;
                 case HFP_CMD_QUERY_OPERATOR_SELECTION:
                     if (context->operator_name_format == 1){
                         if (context->line_buffer[0] == '3'){
-                            printf("Parsed Set network operator format : %s, ", context->line_buffer);
+                            log_info("Parsed Set network operator format : %s, ", context->line_buffer);
                             break;
                         }
                         // TODO emit ERROR, wrong format
-                        printf("ERROR Set network operator format: index %s not supported\n", context->line_buffer);
+                        log_info("ERROR Set network operator format: index %s not supported\n", context->line_buffer);
                         break;
                     }
 
                     if (context->operator_name == 1) {
                         context->network_operator.mode = atoi((char *)&context->line_buffer[0]);
-                        printf("Parsed network operator mode: %d, ", context->network_operator.mode);
+                        log_info("Parsed network operator mode: %d, ", context->network_operator.mode);
                         break;
                     }
                     break;
@@ -942,12 +941,12 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
             switch (context->command){
                 case HFP_CMD_QUERY_OPERATOR_SELECTION:
                     if (context->operator_name_format == 1) {
-                        printf("format %s \n", context->line_buffer);
+                        log_info("format %s \n", context->line_buffer);
                         context->network_operator.format =  atoi((char *)&context->line_buffer[0]);
                         break;
                     }
                     if (context->operator_name == 1){
-                        printf("format %s, ", context->line_buffer);
+                        log_info("format %s, ", context->line_buffer);
                         context->network_operator.format =  atoi((char *)&context->line_buffer[0]);
                     }
                     break;
@@ -961,7 +960,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                 case HFP_CMD_INDICATOR:
                     if (context->retrieve_ag_indicators == 1){
                         context->ag_indicators[context->parser_item_index].min_range = atoi((char *)context->line_buffer);
-                        printf("%s, ", context->line_buffer);
+                        log_info("%s, ", context->line_buffer);
                     }
                     break;
                 default:
@@ -974,7 +973,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                 case HFP_CMD_QUERY_OPERATOR_SELECTION:
                     if (context->operator_name == 1){
                         strcpy(context->network_operator.name, (char *)context->line_buffer);
-                        printf("name %s\n", context->line_buffer);
+                        log_info("name %s\n", context->line_buffer);
                     }
                     break;
                 case HFP_CMD_INDICATOR:
@@ -982,7 +981,7 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
                         context->ag_indicators[context->parser_item_index].max_range = atoi((char *)context->line_buffer);
                         context->parser_item_index++;
                         context->ag_indicators_nr = context->parser_item_index;
-                        printf("%s)\n", context->line_buffer);
+                        log_info("%s)\n", context->line_buffer);
                     }
                     break;
                 default:
@@ -1006,7 +1005,6 @@ void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_
         log_error("hfp_establish_service_level_connection for addr %s failed", bd_addr_to_str(bd_addr));
         return;
     }
-    printf("hfp_establish_service_level_connection context state %d\n", context->state);
     switch (context->state){
         case HFP_W2_DISCONNECT_RFCOMM:
             context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;

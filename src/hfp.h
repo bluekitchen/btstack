@@ -141,7 +141,7 @@ typedef enum {
     HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR,
     HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR,
     HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP,
-    HFP_CMD_CONFIRM_COMMON_CODEC
+    HFP_CMD_RECEIVED_COMMON_CODEC
     
 } hfp_command_t;
 
@@ -363,6 +363,7 @@ typedef struct hfp_connection {
     uint8_t trigger_codec_connection_setup;
     uint8_t ag_ready_for_codecs_connection_setup;
     uint8_t remote_codec_received;
+    uint8_t codec_confirmed;
 
     uint8_t establish_audio_connection; 
     uint8_t release_audio_connection; 
