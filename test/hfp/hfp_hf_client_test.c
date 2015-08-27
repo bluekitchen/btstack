@@ -131,36 +131,40 @@ void packet_handler(uint8_t * event, uint16_t event_size){
 }
 
 static int expected_rfcomm_command(const char * cmd){
-    //printf("%s\n", get_rfcomm_payload());
-    // return strcmp((char *)cmd, (char *)get_rfcomm_payload());
-    return memcmp((char *)cmd, (char *)get_rfcomm_payload(), get_rfcomm_payload_len()-2);
+    if (memcmp(cmd, "AT", 2) == 0){
+        return memcmp((char *)cmd, (char *)get_rfcomm_payload(), get_rfcomm_payload_len()-2);
+    }
+    if (cmd[0] == '+'){
+        return memcmp((char *)cmd, (char *)get_rfcomm_payload()+2, get_rfcomm_payload_len()-2);
+    }
+    if (memcmp(cmd, "OK", 2) == 0) return 0;
+    if (memcmp(cmd, "ERROR", 5) == 0) return 0;
+    return 1;
 }
     
 static void verify_expected_rfcomm_command(const char * cmd){
     CHECK_EQUAL(expected_rfcomm_command(cmd),0);
 }
 
-const char HFP_AG_OK[] = "\r\nOK\r\n";
-    
 /* Service Level Connection (slc) test sequences */
 
 const char * hf_slc_test1[] = {
-    "AT+BRSF=438\r\n",
-    "\r\n+BRSF:1007\r\n", 
-    HFP_AG_OK,
-    "AT+BAC=1\r\n", 
-    HFP_AG_OK,
-    "AT+CIND=?\r\n",
-    "\r\n+CIND:\"service\",(0,1),\"call\",(0,1),\"callsetup\",(0,3),\"battchg\",(0,5),\"signal\",(0,5),\"roam\",(0,1),\"callheld\",(0,2)\r\n",
-    HFP_AG_OK,
-    "AT+CIND?\r\n",
-    "\r\n+CIND:1,0,0,3,5,0,0\r\n",
-    HFP_AG_OK,
-    "AT+CMER=3,0,0,1\r\n",
-    HFP_AG_OK,
-    "AT+CHLD=?\r\n",
-    "\r\n+CHLD:(1,1x,2,2x,3)\r\n",
-    HFP_AG_OK
+    "AT+BRSF=438",
+    "+BRSF:1007", 
+    HFP_OK,
+    "AT+BAC=1", 
+    HFP_OK,
+    "AT+CIND=?",
+    "+CIND:\"service\",(0,1),\"call\",(0,1),\"callsetup\",(0,3),\"battchg\",(0,5),\"signal\",(0,5),\"roam\",(0,1),\"callheld\",(0,2)",
+    HFP_OK,
+    "AT+CIND?",
+    "+CIND:1,0,0,3,5,0,0",
+    HFP_OK,
+    "AT+CMER=3,0,0,1",
+    HFP_OK,
+    "AT+CHLD=?",
+    "+CHLD:(1,1x,2,2x,3)",
+    HFP_OK
 };
 
 hfp_test_item_t hfp_slc_tests[] = {
@@ -170,11 +174,11 @@ hfp_test_item_t hfp_slc_tests[] = {
 /* Codecs Connection (cc) test sequences */
 
 const char * hf_cc_test1[] = {
-    "AT+BCC\r\n", 
-    HFP_AG_OK,
-    "\r\n+BCS:1\r\n",
-    "AT+BCS=1\r\n",
-    HFP_AG_OK
+    "AT+BCC", 
+    HFP_OK,
+    "+BCS:1",
+    "AT+BCS=1",
+    HFP_OK
 };
 
 hfp_test_item_t hfp_cc_tests[] = {
@@ -265,8 +269,8 @@ TEST(HandsfreeClient, HFCodecChange){
 
     uint8_t new_codecs[] = {1,2};
     hfp_hf_set_codecs(new_codecs, 2);
-    inject_rfcomm_command((uint8_t*)HFP_AG_OK, strlen(HFP_AG_OK));
-    verify_expected_rfcomm_command(HFP_AG_OK);
+    inject_rfcomm_command((uint8_t*)HFP_OK, strlen(HFP_OK));
+    verify_expected_rfcomm_command(HFP_OK);
     CHECK_EQUAL(service_level_connection_established, 1);
 }
 

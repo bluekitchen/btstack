@@ -584,7 +584,7 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
     }
 
     packet[size] = 0;
-    printf("\nresponse: %s\n", packet);
+    printf("HF response: %s\n", packet);
     int pos;
     for (pos = 0; pos < size ; pos++){
         hfp_parse(context, packet[pos]);

@@ -30,18 +30,35 @@ uint16_t get_rfcomm_payload_len(){
 	return rfcomm_payload_len;
 }
 
-void inject_rfcomm_command(uint8_t * data, int len){
+static void prepare_rfcomm_buffer(uint8_t * data, int len){
 	memset(&rfcomm_payload, 0, 200);
-	rfcomm_payload_len = len;
-	memcpy((char*)&rfcomm_payload[0], data, rfcomm_payload_len);
+	int pos = 0;
+	if (memcmp((char*)data, "AT", 2) != 0){
+		rfcomm_payload[pos++] = '\r';
+		rfcomm_payload[pos++] = '\n';
+	}
+	memcpy((char*)&rfcomm_payload[pos], data, len);
+	pos += len;
+	if (memcmp((char*)data, "AT", 2) != 0){
+		rfcomm_payload[pos++] = '\r';
+		rfcomm_payload[pos] = '\n';
+	}
+	rfcomm_payload_len = pos;
+}	
+
+
+void inject_rfcomm_command(uint8_t * data, int len){
+	prepare_rfcomm_buffer(data, len);
 	(*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &rfcomm_payload[0], rfcomm_payload_len);
 }
 
 int  rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
-	printf("rfcomm_send_internal %s\n", data);
-	memset(&rfcomm_payload, 0, 200);
-	rfcomm_payload_len = len;
-	memcpy((char*)&rfcomm_payload, data, rfcomm_payload_len);
+	if (memcmp((char*)data, "AT", 2) == 0){
+		printf("HF send: %s", data);
+	} else {
+		printf("AG send: %s", data);
+	}
+	prepare_rfcomm_buffer(data, len);
 	return 0;
 }
 
