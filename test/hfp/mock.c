@@ -4,7 +4,6 @@
 #include <string.h>
 
 #include <btstack/btstack.h>
-// #include "att.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "sdp_query_rfcomm.h"
@@ -13,7 +12,6 @@
 static void *registered_sdp_app_context;
 static uint8_t sdp_rfcomm_channel_nr = 1;
 const char sdp_rfcomm_service_name[] = "BTstackMock";
-static rfcomm_channel_t rfcomm_channel;
 static uint16_t rfcomm_cid = 1;
 static uint8_t rfcomm_payload[200];
 static uint16_t rfcomm_payload_len;
@@ -115,7 +113,9 @@ void rfcomm_create_channel_internal(void * connection, bd_addr_t addr, uint8_t c
     (*registered_rfcomm_packet_handler)(connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, pos);
 }
 
-
+int rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
+	return 1;
+}
 
 void rfcomm_disconnect_internal(uint16_t rfcomm_cid){
 	uint8_t event[4];

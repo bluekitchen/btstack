@@ -283,12 +283,12 @@ TEST_GROUP(HandsfreeClient){
 };
 
 
-TEST(HandsfreeClient, HFCodecsConnectionEstablished){
-    setup_hfp_service_level_connection(default_slc_setup, default_slc_setup_size);
-    for (int i = 0; i < cc_tests_size; i++){
-        setup_hfp_codecs_connection_state_machine(hfp_cc_tests[i].test, hfp_cc_tests[i].len);
-    }
-}
+// TEST(HandsfreeClient, HFCodecsConnectionEstablished){
+//     setup_hfp_service_level_connection(default_slc_setup, default_slc_setup_size);
+//     for (int i = 0; i < cc_tests_size; i++){
+//         setup_hfp_codecs_connection_state_machine(hfp_cc_tests[i].test, hfp_cc_tests[i].len);
+//     }
+// }
 
 TEST(HandsfreeClient, HFCodecChange){
     setup_hfp_service_level_connection(default_slc_setup, default_slc_setup_size);
