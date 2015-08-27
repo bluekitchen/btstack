@@ -76,7 +76,7 @@ static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t phone_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
 
 static bd_addr_t device_addr;
-static uint8_t codecs[1] = {HFP_CODEC_CVSD};
+static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
 static uint16_t indicators[1] = {0x01};
 
 char cmd;
@@ -119,7 +119,6 @@ static int stdin_process(struct data_source *ds){
     read(ds->fd, &cmd, 1);
     switch (cmd){
         case 'a':
-            memcpy(device_addr, pts_addr, 6);
             printf("Establish Audio connection to device with Bluetooth address %s...\n", bd_addr_to_str(device_addr));
             hfp_hf_establish_audio_connection(device_addr);
             break;
@@ -128,7 +127,6 @@ static int stdin_process(struct data_source *ds){
             hfp_hf_release_audio_connection(device_addr);
             break;
         case 'h':
-            memcpy(device_addr, pts_addr, 6);
             printf("Establish HFP service level connection to device with Bluetooth address %s...\n", bd_addr_to_str(device_addr));
             hfp_hf_establish_service_level_connection(device_addr);
             break;

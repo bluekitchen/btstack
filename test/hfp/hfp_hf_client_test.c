@@ -280,10 +280,6 @@ TEST_GROUP(HandsfreeClient){
         CHECK_EQUAL(codecs_connection_established, 1);
     }
 
-    void test_audio_connection_state_machine(){
-        audio_connection_established = 0;
-        hfp_hf_establish_audio_connection(device_addr);
-    }
 };
 
 

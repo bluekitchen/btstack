@@ -433,7 +433,7 @@ void hfp_run_for_context(hfp_connection_t *context){
             } 
             break;
 
-        case HFP_CMD_CONFIRM_COMMON_CODEC:
+        case HFP_CMD_RECEIVED_COMMON_CODEC:
             hfp_ag_ok(context->rfcomm_cid);
             context->state = HFP_CODECS_CONNECTION_ESTABLISHED;
             break;
@@ -566,6 +566,8 @@ void hfp_run_for_context(hfp_connection_t *context){
                     rfcomm_disconnect_internal(context->rfcomm_cid);
                     break;
                 default:
+                    printf("Unhandled command, send default ERROR\n");
+                    hfp_ag_error(context->rfcomm_cid);
                     break;
             }
             break;
