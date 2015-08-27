@@ -63,6 +63,14 @@
 #include "debug.h"
 #include "hfp_hf.h"
 
+#define TEST_SEQUENCE(name) { (char**)name, sizeof(name) / sizeof(char *)}
+
+typedef struct hfp_test_item{
+    char ** test;
+    int len;
+} hfp_test_item_t;
+
+
 const uint8_t    rfcomm_channel_nr = 1;
 
 static bd_addr_t device_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
@@ -124,47 +132,66 @@ void packet_handler(uint8_t * event, uint16_t event_size){
 
 static int expected_rfcomm_command(const char * cmd){
     //printf("%s\n", get_rfcomm_payload());
-    return strcmp((char *)cmd, (char *)get_rfcomm_payload());
+    // return strcmp((char *)cmd, (char *)get_rfcomm_payload());
+    return memcmp((char *)cmd, (char *)get_rfcomm_payload(), get_rfcomm_payload_len()-2);
 }
     
 static void verify_expected_rfcomm_command(const char * cmd){
     CHECK_EQUAL(expected_rfcomm_command(cmd),0);
 }
 
-const char ag_ok[] = "\r\nOK\r\n";
-
+const char HFP_AG_OK[] = "\r\nOK\r\n";
+    
 /* Service Level Connection (slc) test sequences */
 
 const char * hf_slc_test1[] = {
     "AT+BRSF=438\r\n",
     "\r\n+BRSF:1007\r\n", 
-    ag_ok,
+    HFP_AG_OK,
     "AT+BAC=1\r\n", 
-    ag_ok,
+    HFP_AG_OK,
     "AT+CIND=?\r\n",
     "\r\n+CIND:\"service\",(0,1),\"call\",(0,1),\"callsetup\",(0,3),\"battchg\",(0,5),\"signal\",(0,5),\"roam\",(0,1),\"callheld\",(0,2)\r\n",
-    ag_ok,
+    HFP_AG_OK,
     "AT+CIND?\r\n",
     "\r\n+CIND:1,0,0,3,5,0,0\r\n",
-    ag_ok,
+    HFP_AG_OK,
     "AT+CMER=3,0,0,1\r\n",
-    ag_ok,
+    HFP_AG_OK,
     "AT+CHLD=?\r\n",
     "\r\n+CHLD:(1,1x,2,2x,3)\r\n",
-    ag_ok
+    HFP_AG_OK
+};
+
+hfp_test_item_t hfp_slc_tests[] = {
+    TEST_SEQUENCE(hf_slc_test1)
 };
 
 /* Codecs Connection (cc) test sequences */
+
 const char * hf_cc_test1[] = {
     "AT+BCC\r\n", 
-    ag_ok,
+    HFP_AG_OK,
     "\r\n+BCS:1\r\n",
     "AT+BCS=1\r\n",
-    ag_ok
- };
+    HFP_AG_OK
+};
+
+hfp_test_item_t hfp_cc_tests[] = {
+    TEST_SEQUENCE(hf_cc_test1)
+};
 
 
 TEST_GROUP(HandsfreeClient){
+    int test_item_size;
+    int cc_tests_size;
+    int slc_tests_size;
+
+    char ** default_slc_setup;
+    int default_slc_setup_size;
+
+    char ** default_cc_setup;
+    int default_cc_setup_size;
     
     void setup(void){
         service_level_connection_established = 0;
@@ -172,7 +199,16 @@ TEST_GROUP(HandsfreeClient){
         audio_connection_established = 0;
         service_level_connection_released = 0;
         hfp_hf_set_codecs(codecs, 1);
-    
+
+        test_item_size = sizeof(hfp_test_item_t);
+        slc_tests_size = sizeof(hfp_slc_tests)/test_item_size;
+        cc_tests_size  = sizeof(hfp_cc_tests) /test_item_size;
+
+        default_slc_setup = (char **)hf_slc_test1;
+        default_slc_setup_size = sizeof(hf_slc_test1)/sizeof(char*);
+
+        default_cc_setup =  (char **)hf_cc_test1;
+        default_cc_setup_size = sizeof(hf_cc_test1)/sizeof(char*);
     }
 
     void teardown(void){
@@ -217,22 +253,27 @@ TEST_GROUP(HandsfreeClient){
 
 
 TEST(HandsfreeClient, HFCodecsConnectionEstablished1){
-    setup_hfp_service_level_connection((char **) hf_slc_test1, sizeof(hf_slc_test1)/sizeof(char*));
-    setup_hfp_codecs_connection_state_machine((char **) hf_cc_test1, sizeof(hf_cc_test1)/sizeof(char*));   
+    setup_hfp_service_level_connection(default_slc_setup, default_slc_setup_size);
+
+    for (int i = 0; i < cc_tests_size; i++){
+        setup_hfp_codecs_connection_state_machine(hfp_cc_tests[i].test, hfp_cc_tests[i].len);
+    }
 }
 
 TEST(HandsfreeClient, HFCodecChange){
-    setup_hfp_service_level_connection((char **) hf_slc_test1, sizeof(hf_slc_test1)/sizeof(char*));
-    
+    setup_hfp_service_level_connection(default_slc_setup, default_slc_setup_size);
+
     uint8_t new_codecs[] = {1,2};
     hfp_hf_set_codecs(new_codecs, 2);
-    inject_rfcomm_command((uint8_t*)ag_ok, strlen(ag_ok));
-    verify_expected_rfcomm_command(ag_ok);
+    inject_rfcomm_command((uint8_t*)HFP_AG_OK, strlen(HFP_AG_OK));
+    verify_expected_rfcomm_command(HFP_AG_OK);
     CHECK_EQUAL(service_level_connection_established, 1);
 }
 
-TEST(HandsfreeClient, HFServiceLevelConnectionEstablished1){
-    setup_hfp_service_level_connection((char **) hf_slc_test1, sizeof(hf_slc_test1)/sizeof(char*));
+TEST(HandsfreeClient, HFServiceLevelConnectionEstablished){
+    for (int i = 0; i < slc_tests_size; i++){
+        setup_hfp_service_level_connection(hfp_slc_tests[i].test, hfp_slc_tests[i].len);
+    }
 }
 
 
