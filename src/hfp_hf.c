@@ -249,9 +249,9 @@ static void hfp_emit_network_operator_event(hfp_callback_t callback, int status,
     (*callback)(event, sizeof(event));
 }
 
-static void hfp_hf_run_for_context_handle_service_level_connection_establishment(hfp_connection_t * context){
+static void hfp_hf_run_for_context_service_level_connection_establishment(hfp_connection_t * context){
     if (context->state >= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return;
-    printf("hfp_hf_run_for_context_handle_service_level_connection_establishment %d \n", context->state);
+    printf("hfp_hf_run_for_context_service_level_connection_establishment %d \n", context->state);
     switch (context->state){
         case HFP_EXCHANGE_SUPPORTED_FEATURES:
             hfp_hf_cmd_exchange_supported_features(context->rfcomm_cid);
@@ -307,9 +307,8 @@ static void hfp_hf_run_for_context_handle_service_level_connection_establishment
     }
 }
 
-void hfp_hf_switch_on_ok_handle_service_level_connection_establishment(hfp_connection_t *context){
+void hfp_hf_handle_ok_service_level_connection_establishment(hfp_connection_t *context){
     if (context->state >= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return;
-    printf("hfp_hf_switch_on_ok_handle_service_level_connection_establishment %d\n", context->state);
     switch (context->state){
         case HFP_W4_EXCHANGE_SUPPORTED_FEATURES:
             if (has_codec_negotiation_feature(context)){
@@ -375,7 +374,7 @@ void hfp_hf_switch_on_ok_handle_service_level_connection_establishment(hfp_conne
     }
 }
 
-static void hfp_hf_run_for_context_handle_service_level_connection_queries(hfp_connection_t * context){
+static void hfp_hf_run_for_context_service_level_connection_queries(hfp_connection_t * context){
     if (context->state != HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return;
     if (context->wait_ok) return;
     
@@ -410,7 +409,7 @@ static void hfp_hf_run_for_context_handle_service_level_connection_queries(hfp_c
     }
 }
 
-static void hfp_hf_switch_on_ok_handle_service_level_connection_queries(hfp_connection_t * context){
+static void hfp_hf_handle_ok_service_level_connection_queries(hfp_connection_t * context){
     if (context->state != HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return;
             
     if (context->enable_status_update_for_ag_indicators != 0xFF){
@@ -448,8 +447,8 @@ static void hfp_run_for_context(hfp_connection_t * context){
     if (!context) return;
     if (!rfcomm_can_send_packet_now(context->rfcomm_cid)) return;
     
-    hfp_hf_run_for_context_handle_service_level_connection_establishment(context);
-    hfp_hf_run_for_context_handle_service_level_connection_queries(context);
+    hfp_hf_run_for_context_service_level_connection_establishment(context);
+    hfp_hf_run_for_context_service_level_connection_queries(context);
     
     // if (context->state >= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED && context->state <= HFP_AUDIO_CONNECTION_ESTABLISHED){
         
@@ -550,8 +549,8 @@ void hfp_hf_switch_on_ok(hfp_connection_t *context){
     // printf("switch on ok\n");
     context->wait_ok = 0;
     
-    hfp_hf_switch_on_ok_handle_service_level_connection_establishment(context);
-    hfp_hf_switch_on_ok_handle_service_level_connection_queries(context);
+    hfp_hf_handle_ok_service_level_connection_establishment(context);
+    hfp_hf_handle_ok_service_level_connection_queries(context);
     
     // handle audio connection setup
     switch (context->state){
