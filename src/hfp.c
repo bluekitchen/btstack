@@ -702,7 +702,7 @@ void process_command(hfp_connection_t * context){
     } 
 
     if (strncmp((char *)context->line_buffer+offset, HFP_CONFIRM_COMMON_CODEC, strlen(HFP_CONFIRM_COMMON_CODEC)) == 0){
-        if (isHandsFree){
+        if (!isHandsFree){
             context->command = HFP_CMD_HF_CONFIRMED_CODEC;
         } else {
             context->command = HFP_CMD_AG_SUGGESTED_CODEC;

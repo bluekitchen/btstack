@@ -491,9 +491,19 @@ static void hfp_run_for_context(hfp_connection_t * context){
                 break;
             }
             if (context->suggested_codec){
-                context->codec_confirmed = 1;
-                context->wait_ok = 1;
-                hfp_hf_cmd_confirm_codec(context->rfcomm_cid, context->suggested_codec);
+                if (hfp_hf_supports_codec(context->suggested_codec)){
+                    context->codec_confirmed = context->suggested_codec;
+                    context->wait_ok = 1;
+                    hfp_hf_cmd_confirm_codec(context->rfcomm_cid, context->suggested_codec);
+                } else {
+                    context->notify_ag_on_new_codecs = 1;
+                    context->wait_ok = 1;
+                    context->codec_confirmed = 0;
+                    context->suggested_codec = 0;
+                    context->negotiated_codec = 0;
+                    hfp_hf_cmd_notify_on_codecs(context->rfcomm_cid);
+                }
+                
                 break;
             }
             
