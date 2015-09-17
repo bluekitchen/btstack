@@ -76,50 +76,40 @@ static bd_addr_t pts_addr = {0x00,0x1b,0xDC,0x07,0x32,0xEF};
 static bd_addr_t phone_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
 
 static bd_addr_t device_addr;
-static uint8_t codecs[1] = {HFP_CODEC_CVSD};
+static uint8_t codecs[] = {HFP_CODEC_CVSD, HFP_CODEC_MSBC};
 static uint16_t indicators[1] = {0x01};
 
 char cmd;
 
-uint8_t hfp_enable_extended_audio_gateway_error_report = 1;
-uint8_t hfp_enable_status_update_for_all_ag_indicators = 1;
-
 // prototypes
 static void show_usage();
-
-static void reset_pst_flags(){
-    hfp_enable_extended_audio_gateway_error_report = 1;
-    hfp_enable_status_update_for_all_ag_indicators = 1;
-}
 
 // Testig User Interface 
 static void show_usage(void){
     printf("\n--- Bluetooth HFP Hands-Free (HF) unit Test Console ---\n");
     printf("---\n");
+    printf("y - use PTS module as Audiogateway\n");
+    printf("z - use iPhone as Audiogateway\n");
+
+    printf("h - establish HFP connection to device\n");
+    printf("H - release HFP connection to device\n");
     
-    printf("a - establish HFP connection to PTS module\n");
-    printf("A - release HFP connection to PTS module\n");
+    printf("a - establish Audio connection to device\n");
+    printf("A - release Audio connection to device\n");
     
     printf("b - establish AUDIO connection\n");
     printf("B - release AUDIO connection\n");
     
-    printf("z - establish HFP connection to local mac\n");
-    printf("Z - release HFP connection to local mac\n");
+    printf("d - enable registration status update\n");
+    printf("D - disable registration status update\n");
     
-    if (hfp_enable_status_update_for_all_ag_indicators){
-        printf("d - enable registration status update\n");
-    } else {
-        printf("d - disable registration status update\n");
-    }
-
     printf("e - enable HFP AG registration status update for individual indicators\n");
     
     printf("f - query network operator\n");
-    if (hfp_enable_extended_audio_gateway_error_report){
-        printf("g - enable reporting of the extended AG error result code\n");
-    } else {
-        printf("g - disable reporting of the extended AG error result code\n");
-    }
+    
+    printf("g - enable reporting of the extended AG error result code\n");
+    printf("G - disable reporting of the extended AG error result code\n");
+    
     printf("---\n");
     printf("Ctrl-c - exit\n");
     printf("---\n");
@@ -129,21 +119,19 @@ static int stdin_process(struct data_source *ds){
     read(ds->fd, &cmd, 1);
     switch (cmd){
         case 'a':
-            memcpy(device_addr, pts_addr, 6);
-            printf("Establish HFP service level connection to PTS module %s...\n", bd_addr_to_str(device_addr));
-            hfp_hf_establish_service_level_connection(device_addr);
+            printf("Establish Audio connection to device with Bluetooth address %s...\n", bd_addr_to_str(device_addr));
+            hfp_hf_establish_audio_connection(device_addr);
             break;
         case 'A':
-            printf("Release HFP service level connection.\n");
-            hfp_hf_release_service_level_connection(device_addr);
+            printf("Release Audio service level connection.\n");
+            hfp_hf_release_audio_connection(device_addr);
             break;
-        case 'z':
-            memcpy(device_addr, phone_addr, 6);
-            printf("Establish HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
+        case 'h':
+            printf("Establish HFP service level connection to device with Bluetooth address %s...\n", bd_addr_to_str(device_addr));
             hfp_hf_establish_service_level_connection(device_addr);
             break;
-        case 'Z':
-            printf("Release HFP service level connection to %s...\n", bd_addr_to_str(device_addr));
+        case 'H':
+            printf("Release HFP service level connection.\n");
             hfp_hf_release_service_level_connection(device_addr);
             break;
         case 'b':
@@ -154,15 +142,12 @@ static int stdin_process(struct data_source *ds){
             printf("Release Audio connection.\n");
             hfp_hf_release_audio_connection(device_addr);
             break;
-        
         case 'd':
-            if (hfp_enable_status_update_for_all_ag_indicators){
-                printf("Enable HFP AG registration status update.\n");
-            } else {
-                printf("Disable HFP AG registration status update.\n");
-            }
-            hfp_hf_enable_status_update_for_all_ag_indicators(device_addr, hfp_enable_status_update_for_all_ag_indicators);
-            hfp_enable_status_update_for_all_ag_indicators = !hfp_enable_status_update_for_all_ag_indicators;
+            printf("Enable HFP AG registration status update.\n");
+            hfp_hf_enable_status_update_for_all_ag_indicators(device_addr, 1);
+        case 'D':
+            printf("Disable HFP AG registration status update.\n");
+            hfp_hf_enable_status_update_for_all_ag_indicators(device_addr, 0);
             break;
         case 'e':
             printf("Enable HFP AG registration status update for individual indicators.\n");
@@ -173,14 +158,23 @@ static int stdin_process(struct data_source *ds){
             hfp_hf_query_operator_selection(device_addr);
             break;
         case 'g':
-            if (hfp_enable_extended_audio_gateway_error_report){
-                printf("Enable reporting of the extended AG error result code.\n");
-            } else {
-                printf("Disable reporting of the extended AG error result code.\n");
-            }
-            hfp_hf_enable_report_extended_audio_gateway_error_result_code(device_addr, hfp_enable_extended_audio_gateway_error_report);
-            hfp_enable_extended_audio_gateway_error_report = !hfp_enable_extended_audio_gateway_error_report;
+            printf("Enable reporting of the extended AG error result code.\n");
+            hfp_hf_enable_report_extended_audio_gateway_error_result_code(device_addr, 1);
             break;
+        case 'G':
+            printf("Disable reporting of the extended AG error result code.\n");
+            hfp_hf_enable_report_extended_audio_gateway_error_result_code(device_addr, 0);
+            break;
+
+        case 'y':
+            memcpy(device_addr, phone_addr, 6);
+            printf("Use iPhone %s as Audiogateway.\n", bd_addr_to_str(device_addr));
+            break;
+        case 'z':
+            memcpy(device_addr, pts_addr, 6);
+            printf("Use PTS module %s as Audiogateway.\n", bd_addr_to_str(device_addr));
+            break;
+
         default:
             show_usage();
             break;
@@ -202,7 +196,6 @@ void packet_handler(uint8_t * event, uint16_t event_size){
             break;
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
             printf("Service level connection released.\n\n");
-            reset_pst_flags();
             break;
         case HFP_SUBEVENT_COMPLETE:
             switch (cmd){

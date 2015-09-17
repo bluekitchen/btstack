@@ -141,7 +141,8 @@ typedef enum {
     HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR,
     HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR,
     HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP,
-    HFP_CMD_CONFIRM_COMMON_CODEC
+    HFP_CMD_AG_SUGGESTED_CODEC,
+    HFP_CMD_HF_CONFIRMED_CODEC
     
 } hfp_command_t;
 
@@ -245,7 +246,7 @@ typedef enum {
     HFP_SLE_W2_EXCHANGE_COMMON_CODEC,
     HFP_SLE_W4_EXCHANGE_COMMON_CODEC,
     
-    HFP_CODECS_CONNECTION_ESTABLISHED,
+    HFP_CODECS_CONNECTION_ESTABLISHED, // 25
     
     HFP_CCE_W2_ESTABLISH_SCO,
     HFP_CCE_W4_SCO_CONNECTION_ESTABLISHED,
@@ -253,7 +254,7 @@ typedef enum {
     HFP_AUDIO_CONNECTION_ESTABLISHED,
     
     HFP_W2_DISCONNECT_SCO,
-    HFP_W4_SCO_DISCONNECTED,
+    HFP_W4_SCO_DISCONNECTED, // 30
 
     HFP_W2_DISCONNECT_RFCOMM,
     HFP_W4_RFCOMM_DISCONNECTED, 
@@ -362,7 +363,8 @@ typedef struct hfp_connection {
     // establish codecs connection
     uint8_t trigger_codec_connection_setup;
     uint8_t ag_ready_for_codecs_connection_setup;
-    uint8_t remote_codec_received;
+    uint8_t suggested_codec;
+    uint8_t codec_confirmed;
 
     uint8_t establish_audio_connection; 
     uint8_t release_audio_connection; 
@@ -389,12 +391,16 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte);
 void hfp_init(uint16_t rfcomm_channel_nr);
 void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_uuid);
 void hfp_release_service_level_connection(hfp_connection_t * connection);
-void hfp_establish_audio_connection(hfp_connection_t * context, uint8_t codec_negotiation_feature_enabled);
-void hfp_release_audio_connection(hfp_connection_t * context);
 void hfp_reset_context_flags(hfp_connection_t * context);
+
+void hfp_negotiate_codecs(hfp_connection_t * context);
+void hfp_establish_audio_connection(hfp_connection_t * context);
+void hfp_release_audio_connection(hfp_connection_t * context);
 
 const char * hfp_hf_feature(int index);
 const char * hfp_ag_feature(int index);
+
+int send_str_over_rfcomm(uint16_t cid, char * command);
 
 #if defined __cplusplus
 }
