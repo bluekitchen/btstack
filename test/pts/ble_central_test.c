@@ -77,7 +77,9 @@ typedef enum {
     CENTRAL_W4_NAME_VALUE,
     CENTRAL_W4_RECONNECTION_ADDRESS_QUERY_COMPLETE,
     CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE,
-    CENTRAL_W4_SIGNED_WRITE_QUERY_COMPLETE
+    CENTRAL_W4_SIGNED_WRITE_QUERY_COMPLETE,
+    CENTRAL_W4_PRIMARY_SERVICES,
+    CENTRAL_W4_CHARACTERISTICS,
 } central_state_t;
 
 typedef struct advertising_report {
@@ -109,6 +111,11 @@ static int peer_addr_type;
 static bd_addr_t peer_address;
 static int ui_passkey = 0;
 static int ui_digits_for_passkey = 0;
+static int ui_uuid16_request = 0;
+static int ui_uuid16 = 0;
+static int ui_uuid128_request = 0;
+static int ui_uuid128_pos     = 0;
+static uint8_t ui_uuid128[16];
 
 static uint16_t handle = 0;
 static uint16_t gc_id;
@@ -329,10 +336,50 @@ void handle_gatt_client_event(le_event_t * event){
     le_characteristic_value_event_t * value;
     uint8_t address_type;
     bd_addr_t flipped_address;
+    le_service_t * service;
     switch(event->type){
         case GATT_SERVICE_QUERY_RESULT:
-            // service = ((le_service_event_t *) event)->service;
-            // dump_service(&service);
+            switch (central_state){
+                case CENTRAL_W4_PRIMARY_SERVICES:
+                    service = &((le_service_event_t *) event)->service;
+                    printf("Primary Service with UUID ");
+                    printUUID(service->uuid128, service->uuid16);
+                    printf(", start group handle 0x%04x, end group handle 0x%04x\n", service->start_group_handle, service->end_group_handle);
+                    break;
+                default:
+                    break;
+                }
+            break;
+        case GATT_INCLUDED_SERVICE_QUERY_RESULT:
+            service = &((le_service_event_t *) event)->service;
+            printf("Included Service with UUID ");
+            printUUID(service->uuid128, service->uuid16);
+            printf(", start group handle 0x%04x, end group handle 0x%04x\n", service->start_group_handle, service->end_group_handle);
+            break;
+        case GATT_CHARACTERISTIC_QUERY_RESULT:
+            switch (central_state) {
+                case CENTRAL_W4_NAME_QUERY_COMPLETE:
+                    gap_name_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    printf("GAP Name Characteristic found, value handle: 0x04%x\n", gap_name_characteristic.value_handle);
+                    break;
+                case CENTRAL_W4_RECONNECTION_ADDRESS_QUERY_COMPLETE:
+                    gap_reconnection_address_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    printf("GAP Reconnection Address Characteristic found, value handle: 0x04%x\n", gap_reconnection_address_characteristic.value_handle);
+                    break;
+                case CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE:
+                    gap_peripheral_privacy_flag_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    printf("GAP Peripheral Privacy Flag Characteristic found, value handle: 0x04%x\n", gap_peripheral_privacy_flag_characteristic.value_handle);
+                    break;
+                case CENTRAL_W4_SIGNED_WRITE_QUERY_COMPLETE:
+                    signed_write_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    printf("Characteristic for Signed Write found, value handle: 0x%04x\n", signed_write_characteristic.value_handle);
+                    break;
+                case CENTRAL_W4_CHARACTERISTICS:
+                    printf("Characteristic found with handle 0x%04x\n", (((le_characteristic_event_t *) event)->characteristic).value_handle);
+                    break;
+                default:
+                    break;
+            }
             break;
         case GATT_CHARACTERISTIC_VALUE_QUERY_RESULT:
             value = (le_characteristic_value_event_t *) event;
@@ -348,6 +395,8 @@ void handle_gatt_client_event(le_event_t * event){
             // printf("\ntest client - CHARACTERISTIC for SERVICE ");
             // printUUID128(service.uuid128); printf("\n");
             break;
+
+
         case GATT_QUERY_COMPLETE:
             switch (central_state){
                 case CENTRAL_W4_NAME_QUERY_COMPLETE:
@@ -386,29 +435,11 @@ void handle_gatt_client_event(le_event_t * event){
                     printf("Signed write on Characteristic with UUID 0x%04x\n", pts_signed_write_characteristic_uuid);
                     gatt_client_signed_write_without_response(gc_id, handle, signed_write_characteristic.value_handle, sizeof(signed_write_value), signed_write_value);
                     break;
+                case CENTRAL_W4_PRIMARY_SERVICES:
+                    printf("Primary Service Discovery complete\n");
+                    central_state = CENTRAL_IDLE;
+                    break;
 
-                default:
-                    break;
-            }
-            break;
-        case GATT_CHARACTERISTIC_QUERY_RESULT:
-            switch (central_state) {
-                case CENTRAL_W4_NAME_QUERY_COMPLETE:
-                    gap_name_characteristic = ((le_characteristic_event_t *) event)->characteristic;
-                    printf("GAP Name Characteristic found, value handle: 0x04%x\n", gap_name_characteristic.value_handle);
-                    break;
-                case CENTRAL_W4_RECONNECTION_ADDRESS_QUERY_COMPLETE:
-                    gap_reconnection_address_characteristic = ((le_characteristic_event_t *) event)->characteristic;
-                    printf("GAP Reconnection Address Characteristic found, value handle: 0x04%x\n", gap_reconnection_address_characteristic.value_handle);
-                    break;
-                case CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE:
-                    gap_peripheral_privacy_flag_characteristic = ((le_characteristic_event_t *) event)->characteristic;
-                    printf("GAP Peripheral Privacy Flag Characteristic found, value handle: 0x04%x\n", gap_peripheral_privacy_flag_characteristic.value_handle);
-                    break;
-                case CENTRAL_W4_SIGNED_WRITE_QUERY_COMPLETE:
-                    signed_write_characteristic = ((le_characteristic_event_t *) event)->characteristic;
-                    printf("Characteristic for Signed Write found, value handle: 0x%04x\n", signed_write_characteristic.value_handle);
-                    break;
                 default:
                     break;
             }
@@ -470,6 +501,12 @@ void show_usage(void){
     printf("W   - signed write on attribute with handle 0x%04x and value 0x12\n", pts_signed_write_characteristic_handle);
     printf("z   - Update L2CAP Connection Parameters\n");
     printf("---\n");
+    printf("e   - Discover all Primary Services\n");
+    printf("f   - Discover Primary Service by UUID16\n");
+    printf("F   - Discover Primary Service by UUID128\n");
+    printf("g   - Discover all characteristics by UUID16\n");
+    printf("i   - Find all included services\n");
+    printf("---\n");
     printf("4   - IO_CAPABILITY_DISPLAY_ONLY\n");
     printf("5   - IO_CAPABILITY_DISPLAY_YES_NO\n");
     printf("6   - IO_CAPABILITY_NO_INPUT_NO_OUTPUT\n");
@@ -507,7 +544,20 @@ static void att_signed_write_handle_cmac_result(uint8_t hash[8]){
     l2cap_send_prepared_connectionless(handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 3 + value_length + 12);
 }
 
-int  stdin_process(struct data_source *ds){
+int hexForChar(char c){
+    if (c >= '0' && c <= '9'){
+        return c - '0';
+    } 
+    if (c >= 'a' && c <= 'f'){
+        return c - 'a' + 10;
+    }      
+    if (c >= 'A' && c <= 'F'){
+        return c - 'A' + 10;
+    } 
+    return -1;
+} 
+
+int stdin_process(struct data_source *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
     int res;
@@ -528,6 +578,78 @@ int  stdin_process(struct data_source *ds){
             sm_passkey_input(peer_addr_type, peer_address, ui_passkey);
         }
         return 0;
+    }
+
+    // uuid input
+    if (ui_uuid16_request){
+        if (buffer == '\n' || buffer == '\r'){
+            switch (central_state){
+                case CENTRAL_W4_PRIMARY_SERVICES:
+                    printf("\nDiscover Primary Services with UUID16 %04x\n", ui_uuid16);
+                    ui_uuid16_request = 0;
+                    gatt_client_discover_primary_services_by_uuid16(gc_id, handle, ui_uuid16);
+                    return 0;
+                case CENTRAL_W4_CHARACTERISTICS:
+                    printf("\nDiscover Characteristics with UUID16 %04x\n", ui_uuid16);
+                    ui_uuid16_request = 0;
+                    gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 0x0001, 0xffff, ui_uuid16);
+                default:
+                    return 0;
+            }
+        }
+        int hex = hexForChar(buffer);
+        if (hex < 0){
+            printf("stdinprocess: invalid input 0x%02x\n", buffer);
+            return 0;
+        }
+        printf("%c", buffer);
+        fflush(stdout);
+        ui_uuid16 = ui_uuid16 << 4 | hex;
+        return 0;
+    }
+
+    if (ui_uuid128_request){
+        if (buffer == '-') return 0;    // skip - 
+        int hex = hexForChar(buffer);
+        if (hex < 0){
+            printf("stdinprocess: invalid input 0x%02x\n", buffer);
+            return 0;
+        }
+        printf("%c", buffer);
+        fflush(stdout);
+        if (ui_uuid128_pos & 1){
+            ui_uuid128[ui_uuid128_pos >> 1] |= hex;
+        } else {
+            ui_uuid128[ui_uuid128_pos >> 1] = hex << 4;
+        }
+        ui_uuid128_pos++;
+        if (ui_uuid128_pos == 32){
+            switch (central_state){
+                case CENTRAL_W4_PRIMARY_SERVICES:
+                    printf("\nDiscover Primary Services with UUID128 ");
+                    printUUID128(ui_uuid128);
+                    printf("\n");
+                    ui_uuid128_request = 0;
+                    gatt_client_discover_primary_services_by_uuid128(gc_id, handle, ui_uuid128);
+                    return 0;
+                default:
+                    return 0;
+            }
+        }
+        switch(ui_uuid128_pos){
+            case 8:
+            case 12:
+            case 16:
+            case 20:
+                printf("-");
+                fflush(stdout);
+                break;
+            default:
+                break;
+        }
+        return 0;
+
+
     }
 
     switch (buffer){
@@ -696,6 +818,50 @@ int  stdin_process(struct data_source *ds){
         case 'z':
             printf("Updating l2cap connection parameters\n");
             gap_update_connection_parameters(handle, 50, 120, 0, 550);
+            break;
+
+        // GATT commands
+        case 'e':
+            central_state = CENTRAL_W4_PRIMARY_SERVICES;
+            gatt_client_discover_primary_services(gc_id, handle);
+            break;
+        case 'f':
+            central_state = CENTRAL_W4_PRIMARY_SERVICES;
+            printf("Please enter UUID16: ");
+            fflush(stdout);
+            ui_uuid16_request = 1;
+            ui_uuid16 = 0;
+            break;
+        case 'F':
+            central_state = CENTRAL_W4_PRIMARY_SERVICES;
+            printf("Please enter UUID128: ");
+            fflush(stdout);
+            ui_uuid128_request = 1;
+            ui_uuid128_pos = 0;
+            memset(ui_uuid128, 0, 16);
+            break;
+        case 'g':
+            // central_state = CENTRAL_W4_CHARACTERISTICS;
+            // printf("Please enter UUID16: ");
+            // fflush(stdout);
+            // ui_uuid16_request = 1;
+            // ui_uuid16 = 0;
+            // break;
+            {
+                central_state = CENTRAL_W4_CHARACTERISTICS;
+                le_service_t service;
+                service.start_group_handle = 0x0001;
+                service.end_group_handle   = 0xffff;
+                gatt_client_discover_characteristics_for_service(gc_id, handle, &service);
+            }
+        case 'i':
+            {
+                central_state = CENTRAL_W4_CHARACTERISTICS;
+                le_service_t service;
+                service.start_group_handle = 0x0001;
+                service.end_group_handle   = 0xffff;
+                gatt_client_find_included_services_for_service(gc_id, handle, &service);
+            }
             break;
         default:
             show_usage();
