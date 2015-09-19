@@ -1,8 +1,5 @@
 # Makefile for MSP-EXP430F5438 board with CC2560B/CC2564B/CC2567 modules
-#
-# Please check instructions at https://code.google.com/p/btstack/wiki/CC256x on downloading
-# and converting the init scripts for use with BTstack
-#
+##
 # mspgcc is used: http://sourceforge.net/apps/mediawiki/mspgcc/index.php?title=MSPGCC_Wiki
 #
 
@@ -96,14 +93,14 @@ LCD_OBJ    = $(LCD:.c=.o)
 
 # create firmware image from common objects and example source file
 
-all: led_counter.hex spp_counter.hex  gap_inquiry.hex spp_flowcontrol.hex \
-	sdp_rfcomm_query.hex sdp_general_query.hex 
+all: led_counter.hex gap_inquiry.hex 
 
 # fetch and convert init scripts
 include ${BTSTACK_ROOT}/chipset-cc256x/Makefile.inc
 
 # compiling requires a 20-bit mspgcc version
-# spp_and_le_counter.hex spp_accel.hex
+# spp_and_le_counter.hex spp_accel.hex spp_flowcontrol.hex spp_counter.hex
+# sdp_rfcomm_query.hex sdp_general_query.hex 
 
 # compiling ant-test requires special ant init script
 # ant-test.hex

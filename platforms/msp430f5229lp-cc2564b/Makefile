@@ -1,8 +1,5 @@
 # Makefile for MSP-EXP430F5438 board with CC2560B/CC2564B/CC2567 modules
 #
-# Please check instructions at https://code.google.com/p/btstack/wiki/CC256x on downloading
-# and converting the init scripts for use with BTstack
-#
 # mspgcc is used: http://sourceforge.net/apps/mediawiki/mspgcc/index.php?title=MSPGCC_Wiki
 #
 
