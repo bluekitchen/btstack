@@ -54,6 +54,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #ifndef EMBEDDED
 #ifdef _WIN32
@@ -829,7 +830,7 @@ static void hci_initialization_timeout_handler(timer_source_t * ds){
             hci_stack->num_cmd_packets = 1;
             hci_run();
         case HCI_INIT_W4_SEND_BAUD_CHANGE:
-            log_info("Local baud rate change to %u", ((hci_uart_config_t *)hci_stack->config)->baudrate_main);
+            log_info("Local baud rate change to %"PRIu32, ((hci_uart_config_t *)hci_stack->config)->baudrate_main);
             hci_stack->hci_transport->set_baudrate(((hci_uart_config_t *)hci_stack->config)->baudrate_main);
             break;
         default:
@@ -1103,7 +1104,7 @@ static void hci_initializing_event_handler(uint8_t * packet, uint16_t size){
             // for CC256x, baud rate gets changed now
             if (hci_stack->manufacturer != 0x0030){
                 uint32_t new_baud = ((hci_uart_config_t *)hci_stack->config)->baudrate_main;
-                log_info("Local baud rate change to %u", new_baud);
+                log_info("Local baud rate change to %"PRIu32, new_baud);
                 hci_stack->hci_transport->set_baudrate(new_baud);
             }   
             hci_stack->substate = HCI_INIT_CUSTOM_INIT;

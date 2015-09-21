@@ -37,6 +37,7 @@
  
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include <btstack/linked_list.h>
 
@@ -470,7 +471,7 @@ static void sm_notify_client(uint8_t type, uint8_t addr_type, bd_addr_t address,
     event.passkey = passkey;
     event.le_device_db_index = index;
 
-    log_info("sm_notify_client %02x, addres_type %u, address %s, num '%06u', index %u", event.type, event.addr_type, bd_addr_to_str(event.address), event.passkey, event.le_device_db_index);
+    log_info("sm_notify_client %02x, addres_type %u, address %s, num '%06"PRIu32"', index %u", event.type, event.addr_type, bd_addr_to_str(event.address), event.passkey, event.le_device_db_index);
 
     if (!sm_client_packet_handler) return;
     sm_client_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));

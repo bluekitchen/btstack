@@ -44,6 +44,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "btstack-config.h"
 
@@ -257,7 +258,7 @@ static void att_run(void){
                 // check counter
                 uint32_t counter_packet = READ_BT_32(att_request_buffer, att_request_size-12);
                 uint32_t counter_db     = le_device_db_remote_counter_get(att_ir_le_device_db_index);
-                log_info("ATT Signed Write, DB counter %u, packet counter %u", counter_db, counter_packet);
+                log_info("ATT Signed Write, DB counter %"PRIu32", packet counter %"PRIu32, counter_db, counter_packet);
                 if (counter_packet < counter_db){
                     log_info("ATT Signed Write, db reports higher counter, abort");
                     att_server_state = ATT_SERVER_IDLE;
