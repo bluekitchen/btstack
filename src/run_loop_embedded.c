@@ -83,7 +83,7 @@ static linked_list_t timers;
 #endif
 
 #ifdef HAVE_TICK
-static uint32_t system_ticks;
+static volatile uint32_t system_ticks;
 #endif
 
 static int trigger_event_received = 0;
