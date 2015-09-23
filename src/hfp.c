@@ -813,7 +813,6 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
 
     switch (context->parser_state){
         case HFP_PARSER_CMD_HEADER: // header
-            // printf(" parse header 1 \n");
             if (byte == '='){
                 context->keep_separator = 1;
                 hfp_parser_store_byte(context, byte);
