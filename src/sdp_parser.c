@@ -145,7 +145,7 @@ void parse(uint8_t eventByte){
         case GET_ATTRIBUTE_ID_HEADER_LENGTH:
             if (!de_state_size(eventByte, &de_header_state)) break;
             attribute_id = 0;
-            log_info("ID data is stored in %d bytes.", de_header_state.de_size);
+            log_info("ID data is stored in %d bytes.", (int) de_header_state.de_size);
             state = GET_ATTRIBUTE_ID;
             break;
         

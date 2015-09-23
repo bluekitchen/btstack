@@ -426,19 +426,19 @@ static void send_gatt_signed_write_request(gatt_client_t * peripheral, uint32_t 
     att_signed_write_request(ATT_SIGNED_WRITE_COMMAND, peripheral->handle, peripheral->attribute_handle, peripheral->attribute_length, peripheral->attribute_value, sign_counter, peripheral->cmac);
 }
 
-
-static uint16_t get_last_result_handle(uint8_t * packet, uint16_t size){
+static uint16_t get_last_result_handle_from_service_list(uint8_t * packet, uint16_t size){
     uint8_t attr_length = packet[1];
-    uint8_t handle_offset = 0;
-    switch (packet[0]){
-        case ATT_READ_BY_TYPE_RESPONSE:
-            handle_offset = 3;
-            break;
-        case ATT_READ_BY_GROUP_TYPE_RESPONSE:
-            handle_offset = 2;
-            break;
-    }
-    return READ_BT_16(packet, size - attr_length + handle_offset);
+    return READ_BT_16(packet, size - attr_length + 2);
+}
+
+static uint16_t get_last_result_handle_from_characteristics_list(uint8_t * packet, uint16_t size){
+    uint8_t attr_length = packet[1];
+    return READ_BT_16(packet, size - attr_length + 3);
+}
+
+static uint16_t get_last_result_handle_from_included_services_list(uint8_t * packet, uint16_t size){
+    uint8_t attr_length = packet[1];
+    return READ_BT_16(packet, size - attr_length);
 }
 
 static void gatt_client_handle_transaction_complete(gatt_client_t * peripheral){
@@ -948,7 +948,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             switch(peripheral->gatt_client_state){
                 case P_W4_SERVICE_QUERY_RESULT:
                     report_gatt_services(peripheral, packet, size);
-                    trigger_next_service_query(peripheral, get_last_result_handle(packet, size));
+                    trigger_next_service_query(peripheral, get_last_result_handle_from_service_list(packet, size));
                     // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
                 default:
@@ -968,12 +968,12 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             switch (peripheral->gatt_client_state){
                 case P_W4_ALL_CHARACTERISTICS_OF_SERVICE_QUERY_RESULT:
                     report_gatt_characteristics(peripheral, packet, size);
-                    trigger_next_characteristic_query(peripheral, get_last_result_handle(packet, size));
+                    trigger_next_characteristic_query(peripheral, get_last_result_handle_from_characteristics_list(packet, size));
                     // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
                 case P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT:
                     report_gatt_characteristics(peripheral, packet, size);
-                    trigger_next_characteristic_query(peripheral, get_last_result_handle(packet, size));
+                    trigger_next_characteristic_query(peripheral, get_last_result_handle_from_characteristics_list(packet, size));
                     // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
                 case P_W4_INCLUDED_SERVICE_QUERY_RESULT:
@@ -998,7 +998,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                         report_gatt_included_service(peripheral, NULL, uuid16);
                     }
                     
-                    trigger_next_included_service_query(peripheral, get_last_result_handle(packet, size));
+                    trigger_next_included_service_query(peripheral, get_last_result_handle_from_included_services_list(packet, size));
                     // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
                 }

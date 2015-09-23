@@ -176,6 +176,10 @@ the BLE part. The conversion script has been updated to detect
 *bluetooth_init_cc256x_1.2.bts* and adds *BLE_init_cc256x_1.2.bts*
 if present and merges them into a single .c file.
 
+**Update 2:** In May 2015, TI renamed the init scripts to match
+the naming scheme previously used on Linux systems. The conversion
+script has been updated to also detect *initscripts_TIInit_6.7.16_bt_spec_4.1.bts*
+and integrates *initscripts_TIInit_6.7.16_ble_add-on.bts* if present.
 
 ### MSP-EXP430F5438 + CC256x Platform {#sec:platformMSP430QuickStart}
 

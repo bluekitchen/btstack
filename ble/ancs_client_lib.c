@@ -293,7 +293,7 @@ static void handle_gatt_client_event(le_event_t * event){
             } else if (value_event->value_handle == ancs_notification_source_characteristic.value_handle){
                 ancs_notification_uid = READ_BT_32(value_event->blob, 4);
                 printf("Notification received: EventID %02x, EventFlags %02x, CategoryID %02x, CategoryCount %u, UID %04x\n",
-                    value_event->blob[0], value_event->blob[1], value_event->blob[2], value_event->blob[3], ancs_notification_uid);
+                    value_event->blob[0], value_event->blob[1], value_event->blob[2], value_event->blob[3], (int) ancs_notification_uid);
                 static uint8_t get_notification_attributes[] = {0, 0,0,0,0,  0,  1,32,0,  2,32,0, 3,32,0, 4, 5};
                 bt_store_32(get_notification_attributes, 1, ancs_notification_uid);
                 ancs_notification_uid = 0;
