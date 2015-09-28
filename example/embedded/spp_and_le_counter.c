@@ -187,6 +187,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 static uint16_t att_read_callback(uint16_t con_handle, uint16_t att_handle, uint16_t offset, uint8_t * buffer, uint16_t buffer_size){
     if (att_handle == ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE){
         if (buffer){
+            log_info("att_read_callback for Characteristic *FF11*, value %s", counter_string);
             memcpy(buffer, &counter_string[offset], counter_string_len - offset);
         }
         return counter_string_len - offset;
@@ -216,7 +217,7 @@ static void  heartbeat_handler(struct timer *ts){
 
     counter++;
     counter_string_len = sprintf(counter_string, "BTstack counter %04u\n", counter);
-    // printf("%s", counter_string);
+    // log_info("%s", counter_string);
 
     if (rfcomm_channel_id){
         if (rfcomm_can_send_packet_now(rfcomm_channel_id)){
@@ -228,7 +229,10 @@ static void  heartbeat_handler(struct timer *ts){
     }
 
     if (le_notification_enabled) {
-        att_server_notify(ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
+        int err = att_server_notify(ATT_CHARACTERISTIC_0000FF11_0000_1000_8000_00805F9B34FB_01_VALUE_HANDLE, (uint8_t*) counter_string, counter_string_len);
+        if (err){
+            log_error("att_server_notify -> error 0X%02x", err);
+        }
     }
     run_loop_set_timer(ts, HEARTBEAT_PERIOD_MS);
     run_loop_add_timer(ts);
