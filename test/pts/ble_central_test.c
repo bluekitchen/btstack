@@ -80,6 +80,9 @@ typedef enum {
     CENTRAL_W4_SIGNED_WRITE_QUERY_COMPLETE,
     CENTRAL_W4_PRIMARY_SERVICES,
     CENTRAL_W4_CHARACTERISTICS,
+    CENTRAL_W4_READ_CHARACTERISITC_VALUE_BY_HANDLE,
+    CENTRAL_W4_READ_CHARACTERISITC_VALUE_BY_UUID,
+    CENTRAL_W4_READ_LONG_CHARACTERISITC_VALUE_BY_HANDLE,
 } central_state_t;
 
 typedef struct advertising_report {
@@ -111,8 +114,8 @@ static int peer_addr_type;
 static bd_addr_t peer_address;
 static int ui_passkey = 0;
 static int ui_digits_for_passkey = 0;
-static int ui_uuid16_request = 0;
-static int ui_uuid16 = 0;
+static int ui_uint16_request = 0;
+static int ui_uint16 = 0;
 static int ui_uuid128_request = 0;
 static int ui_uuid128_pos     = 0;
 static uint8_t ui_uuid128[16];
@@ -389,6 +392,12 @@ void handle_gatt_client_event(le_event_t * event){
                     value->blob[value->blob_length] = 0;
                     printf("GAP Service: Device Name: %s\n", value->blob);
                     break;
+                case CENTRAL_W4_READ_CHARACTERISITC_VALUE_BY_HANDLE:
+                case CENTRAL_W4_READ_LONG_CHARACTERISITC_VALUE_BY_HANDLE:
+                    central_state = CENTRAL_IDLE;
+                    printf("Result: ");
+                    printf_hexdump(value->blob, value->blob_length);
+                    break;
                 default:
                     break;
             }
@@ -506,6 +515,10 @@ void show_usage(void){
     printf("F   - Discover Primary Service by UUID128\n");
     printf("g   - Discover all characteristics by UUID16\n");
     printf("i   - Find all included services\n");
+    printf("j   - Read Characteristic Value by handle\n");
+    printf("J   - Read Long Characteristic Value by handle\n");
+    printf("k   - Read Characteristic Value by UUID16\n");
+    printf("K   - Read Characteristic Value by UUID128\n");
     printf("---\n");
     printf("4   - IO_CAPABILITY_DISPLAY_ONLY\n");
     printf("5   - IO_CAPABILITY_DISPLAY_YES_NO\n");
@@ -557,6 +570,20 @@ int hexForChar(char c){
     return -1;
 } 
 
+static void ui_request_uint16(const char * message){
+    printf("%s", message);
+    fflush(stdout);
+    ui_uint16_request = 1;
+    ui_uint16 = 0;
+}
+
+static void ui_request_uud128(const char * message){
+    printf("%s", message);
+    fflush(stdout);
+    ui_uuid128_request = 1;
+    memset(ui_uuid128, 0, 16);
+}
+
 int stdin_process(struct data_source *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
@@ -581,18 +608,29 @@ int stdin_process(struct data_source *ds){
     }
 
     // uuid input
-    if (ui_uuid16_request){
+    if (ui_uint16_request){
         if (buffer == '\n' || buffer == '\r'){
+            ui_uint16_request = 0;
             switch (central_state){
                 case CENTRAL_W4_PRIMARY_SERVICES:
-                    printf("\nDiscover Primary Services with UUID16 %04x\n", ui_uuid16);
-                    ui_uuid16_request = 0;
-                    gatt_client_discover_primary_services_by_uuid16(gc_id, handle, ui_uuid16);
+                    printf("\nDiscover Primary Services with UUID16 %04x\n", ui_uint16);
+                    gatt_client_discover_primary_services_by_uuid16(gc_id, handle, ui_uint16);
                     return 0;
                 case CENTRAL_W4_CHARACTERISTICS:
-                    printf("\nDiscover Characteristics with UUID16 %04x\n", ui_uuid16);
-                    ui_uuid16_request = 0;
-                    gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 0x0001, 0xffff, ui_uuid16);
+                    printf("\nDiscover Characteristics with UUID16 %04x\n", ui_uint16);
+                    gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 0x0001, 0xffff, ui_uint16);
+                    return 0;
+                case CENTRAL_W4_READ_CHARACTERISITC_VALUE_BY_HANDLE:
+                    printf("\nRead Characteristic Value with handle 0x%04x\n", ui_uint16);
+                    gatt_client_read_value_of_characteristic_using_value_handle(gc_id, handle, ui_uint16);
+                    return 0;
+                case CENTRAL_W4_READ_LONG_CHARACTERISITC_VALUE_BY_HANDLE:
+                    printf("\nRead LongCharacteristic Value with handle 0x%04x\n", ui_uint16);
+                    gatt_client_read_long_value_of_characteristic_using_value_handle(gc_id, handle, ui_uint16);
+                    return 0;
+                case CENTRAL_W4_READ_CHARACTERISITC_VALUE_BY_UUID:
+                    printf("\nSorry, read characteristic value by UUID is not implemented yet");
+                    return 0;
                 default:
                     return 0;
             }
@@ -604,7 +642,7 @@ int stdin_process(struct data_source *ds){
         }
         printf("%c", buffer);
         fflush(stdout);
-        ui_uuid16 = ui_uuid16 << 4 | hex;
+        ui_uint16 = ui_uint16 << 4 | hex;
         return 0;
     }
 
@@ -624,13 +662,16 @@ int stdin_process(struct data_source *ds){
         }
         ui_uuid128_pos++;
         if (ui_uuid128_pos == 32){
+            ui_uuid128_request = 0;
             switch (central_state){
                 case CENTRAL_W4_PRIMARY_SERVICES:
                     printf("\nDiscover Primary Services with UUID128 ");
                     printUUID128(ui_uuid128);
                     printf("\n");
-                    ui_uuid128_request = 0;
                     gatt_client_discover_primary_services_by_uuid128(gc_id, handle, ui_uuid128);
+                    return 0;
+                case CENTRAL_W4_READ_CHARACTERISITC_VALUE_BY_UUID:
+                    printf("\nSorry, read characteristic value by UUID is not implemented yet");
                     return 0;
                 default:
                     return 0;
@@ -827,32 +868,20 @@ int stdin_process(struct data_source *ds){
             break;
         case 'f':
             central_state = CENTRAL_W4_PRIMARY_SERVICES;
-            printf("Please enter UUID16: ");
-            fflush(stdout);
-            ui_uuid16_request = 1;
-            ui_uuid16 = 0;
+            ui_request_uint16("Please enter UUID16: ");
             break;
         case 'F':
             central_state = CENTRAL_W4_PRIMARY_SERVICES;
-            printf("Please enter UUID128: ");
-            fflush(stdout);
-            ui_uuid128_request = 1;
-            ui_uuid128_pos = 0;
-            memset(ui_uuid128, 0, 16);
+            ui_request_uud128("Please enter UUID128: ");
             break;
         case 'g':
-            // central_state = CENTRAL_W4_CHARACTERISTICS;
-            // printf("Please enter UUID16: ");
-            // fflush(stdout);
-            // ui_uuid16_request = 1;
-            // ui_uuid16 = 0;
-            // break;
             {
                 central_state = CENTRAL_W4_CHARACTERISTICS;
                 le_service_t service;
                 service.start_group_handle = 0x0001;
                 service.end_group_handle   = 0xffff;
                 gatt_client_discover_characteristics_for_service(gc_id, handle, &service);
+                break;
             }
         case 'i':
             {
@@ -862,6 +891,22 @@ int stdin_process(struct data_source *ds){
                 service.end_group_handle   = 0xffff;
                 gatt_client_find_included_services_for_service(gc_id, handle, &service);
             }
+            break;
+        case 'j':
+            central_state = CENTRAL_W4_READ_CHARACTERISITC_VALUE_BY_HANDLE;
+            ui_request_uint16("Please enter handle: ");
+            break;
+        case 'J':
+            central_state = CENTRAL_W4_READ_LONG_CHARACTERISITC_VALUE_BY_HANDLE;
+            ui_request_uint16("Please enter handle: ");
+            break;
+        case 'k':
+            central_state = CENTRAL_W4_READ_CHARACTERISITC_VALUE_BY_UUID;
+            ui_request_uint16("Please enter UUID16: ");
+            break;
+        case 'K':
+            central_state = CENTRAL_W4_READ_CHARACTERISITC_VALUE_BY_UUID;
+            ui_request_uud128("Please enter UUID128: ");
             break;
         default:
             show_usage();
