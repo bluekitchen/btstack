@@ -37,7 +37,7 @@
  
 // *****************************************************************************
 //
-// HFG HF state machine tests
+// HFG AG state machine tests
 //
 // *****************************************************************************
 
@@ -61,7 +61,7 @@
 #include "sdp.h"
 #include "sdp_parser.h"
 #include "debug.h"
-#include "hfp_hf.h"
+#include "hfp_ag.h"
 
 #include "mock.h"
 #include "test_sequences.h"
@@ -70,36 +70,49 @@ const uint8_t    rfcomm_channel_nr = 1;
 
 static bd_addr_t device_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
 
-static uint8_t codecs[2] = {1,2};
-static uint16_t indicators[1] = {0x01};
+static uint8_t codecs[1] = {HFP_CODEC_CVSD};
+
+static int ag_indicators_nr = 7;
+static hfp_ag_indicator_t ag_indicators[] = {
+    // index, name, min range, max range, status, mandatory, enabled, status changed
+    {1, "service",   0, 1, 1, 0, 0, 0},
+    {2, "call",      0, 1, 0, 1, 1, 0},
+    {3, "callsetup", 0, 3, 0, 1, 1, 0},
+    {4, "battchg",   0, 5, 3, 0, 0, 0},
+    {5, "signal",    0, 5, 5, 0, 0, 0},
+    {6, "roam",      0, 1, 0, 0, 0, 0},
+    {7, "callheld",  0, 2, 0, 1, 1, 0}
+};
+
+static int call_hold_services_nr = 5;
+static const char* call_hold_services[] = {"1", "1x", "2", "2x", "3"};
+
+static int hf_indicators_nr = 2;
+static hfp_generic_status_indicator_t hf_indicators[] = {
+    {1, 1},
+    {2, 1},
+};
+
 
 static uint8_t service_level_connection_established = 0;
 static uint8_t codecs_connection_established = 0;
 static uint8_t audio_connection_established = 0;
 static uint8_t service_level_connection_released = 0;
 
-void hfp_hf_run_test_sequence(char ** test_steps, int nr_test_steps){
+void hfp_ag_run_test_sequence(char ** test_steps, int nr_test_steps){
     int i = 0;
     for (i=0; i < nr_test_steps; i++){
         char * cmd = test_steps[i];
-        // printf("---> next step %s\n", cmd);
+        if (memcmp(cmd, "OK", 2) == 0) continue;
         if (memcmp(cmd, "AT", 2) == 0){
-            int parsed_codecs[2];
-            uint8_t new_codecs[2];
-            if (memcmp(cmd, "AT+BAC=", 7) == 0){
-                sscanf(&cmd[7],"%d,%d", &parsed_codecs[0], &parsed_codecs[1]);
-                new_codecs[0] = parsed_codecs[0];
-                new_codecs[1] = parsed_codecs[1];
-                hfp_hf_set_codecs((uint8_t*)new_codecs, 2);
-            } else {
-                int expected_cmd = expected_rfcomm_command(cmd);
-                if (expected_cmd){
-                    printf("\nError: Expected:'%s', but got:'%s'", cmd, (char *)get_rfcomm_payload());
-                    return;
-                }
-            }
-        } else {
+            printf("---> next step %s\n", cmd);
             inject_rfcomm_command((uint8_t*)cmd, strlen(cmd));
+        } else {
+            int expected_cmd = expected_rfcomm_command(cmd);
+            if (!expected_cmd){
+                printf("\nError: Expected:'%s', but got:'%s'", cmd, (char *)get_rfcomm_payload());
+                return;
+            }
         }
     }
 }
@@ -110,6 +123,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
         printf("ERROR, status: %u\n", event[3]);
         return;
     }
+    
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
             service_level_connection_established = 1;
@@ -126,20 +140,6 @@ void packet_handler(uint8_t * event, uint16_t event_size){
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_RELEASED:
             service_level_connection_released = 1;
             break;
-
-        case HFP_SUBEVENT_COMPLETE:
-            printf("HFP_SUBEVENT_COMPLETE.\n\n");
-            break;
-        case HFP_SUBEVENT_AG_INDICATOR_STATUS_CHANGED:
-            printf("AG_INDICATOR_STATUS_CHANGED, AG indicator index: %d, status: %d\n", event[4], event[5]);
-            break;
-        case HFP_SUBEVENT_NETWORK_OPERATOR_CHANGED:
-            printf("NETWORK_OPERATOR_CHANGED, operator mode: %d, format: %d, name: %s\n", event[4], event[5], (char *) &event[6]);
-            break;
-        case HFP_SUBEVENT_EXTENDED_AUDIO_GATEWAY_ERROR:
-            if (event[4])
-            printf("EXTENDED_AUDIO_GATEWAY_ERROR_REPORT, status : %d\n", event[3]);
-            break;
         default:
             printf("event not handled %u\n", event[2]);
             break;
@@ -147,9 +147,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
 }
 
 
-
-TEST_GROUP(HandsfreeClient){
-
+TEST_GROUP(AudiogatewayClient){
     void setup(void){
         service_level_connection_established = 0;
         codecs_connection_established = 0;
@@ -159,44 +157,21 @@ TEST_GROUP(HandsfreeClient){
 
     void teardown(void){
         if (service_level_connection_established){
-            hfp_hf_release_service_level_connection(device_addr);
+            hfp_ag_release_service_level_connection(device_addr);
             CHECK_EQUAL(service_level_connection_released, 1);
         }
     }
 
     void setup_hfp_service_level_connection(char ** test_steps, int nr_test_steps){
         service_level_connection_established = 0;
-        hfp_hf_establish_service_level_connection(device_addr);
-        hfp_hf_run_test_sequence((char **) test_steps, nr_test_steps);
+        hfp_ag_establish_service_level_connection(device_addr);
+        hfp_ag_run_test_sequence((char **) test_steps, nr_test_steps);
         CHECK_EQUAL(service_level_connection_established, 1);
-        hfp_hf_set_codecs(codecs, 1);
-        inject_rfcomm_command((uint8_t*)HFP_OK, strlen(HFP_OK));
     }
-
-    void setup_hfp_codecs_connection_state_machine(char ** test_steps, int nr_test_steps){
-        codecs_connection_established = 0;
-        hfp_hf_negotiate_codecs(device_addr);
-        hfp_hf_run_test_sequence((char **) test_steps, nr_test_steps);
-        CHECK_EQUAL(codecs_connection_established, 1);
-    }
-
 };
 
 
-TEST(HandsfreeClient, HFCodecsConnectionEstablished){
-    setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
-    for (int i = 0; i < cc_tests_size(); i++){
-        setup_hfp_codecs_connection_state_machine(hfp_cc_tests()[i].test, hfp_cc_tests()[i].len);
-    }
-}
-
-TEST(HandsfreeClient, HFCodecChange){
-    setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
-    hfp_hf_run_test_sequence(default_cc_setup(), default_cc_setup_size());
-    CHECK_EQUAL(service_level_connection_established, 1);
-}
-
-TEST(HandsfreeClient, HFServiceLevelConnectionEstablished){
+TEST(AudiogatewayClient, HFServiceLevelConnectionEstablished){
     for (int i = 0; i < slc_tests_size(); i++){
         setup_hfp_service_level_connection(hfp_slc_tests()[i].test, hfp_slc_tests()[i].len);
     }
@@ -204,9 +179,12 @@ TEST(HandsfreeClient, HFServiceLevelConnectionEstablished){
 
 
 int main (int argc, const char * argv[]){
-    hfp_hf_init(rfcomm_channel_nr, 438, indicators, sizeof(indicators)/sizeof(uint16_t), 1);
-    hfp_hf_set_codecs(codecs, sizeof(codecs));
-    hfp_hf_register_packet_handler(packet_handler);
+    hfp_ag_init(rfcomm_channel_nr, 1007, codecs, sizeof(codecs), 
+        ag_indicators, ag_indicators_nr, 
+        hf_indicators, hf_indicators_nr, 
+        call_hold_services, call_hold_services_nr);
+
+    hfp_ag_register_packet_handler(packet_handler);
 
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

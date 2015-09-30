@@ -241,8 +241,8 @@ TEST(HFPParser, HFP_AG_CONFIRM_COMMON_CODEC){
         hfp_parse(&context, packet[pos]);
     }
 
-    CHECK_EQUAL(context.command, HFP_CMD_CONFIRM_COMMON_CODEC);
-    CHECK_EQUAL(context.remote_codec_received, codec);
+    CHECK_EQUAL(context.command, HFP_CMD_HF_CONFIRMED_CODEC);
+    CHECK_EQUAL(context.codec_confirmed, codec);
 }
 
 int main (int argc, const char * argv[]){

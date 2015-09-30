@@ -68,7 +68,7 @@ void hfp_ag_init(uint16_t rfcomm_channel_nr, uint32_t supported_features,
     uint8_t * codecs, int codecs_nr, 
     hfp_ag_indicator_t * ag_indicators, int ag_indicators_nr,
     hfp_generic_status_indicator_t * hf_indicators, int hf_indicators_nr,
-    char *call_hold_services[], int call_hold_services_nr);
+    const char *call_hold_services[], int call_hold_services_nr);
 
 /**
  * @brief Register callback for the HFP Audio Gateway (AG) client. 

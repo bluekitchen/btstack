@@ -1,3 +1,46 @@
+/*
+ * Copyright (C) 2014 BlueKitchen GmbH
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holders nor the names of
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ * 4. Any redistribution, use, or modification is done solely for
+ *    personal benefit and not for any commercial purpose or for
+ *    monetary gain.
+ *
+ * THIS SOFTWARE IS PROVIDED BY BLUEKITCHEN GMBH AND CONTRIBUTORS
+ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MATTHIAS
+ * RINGWALD OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+ * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ * Please inquire about commercial licensing options at 
+ * contact@bluekitchen-gmbh.com
+ *
+ */
+ 
+// *****************************************************************************
+//
+// HFP BTstack Mocks
+//
+// *****************************************************************************
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,6 +51,9 @@
 #include "hci_dump.h"
 #include "sdp_query_rfcomm.h"
 #include "rfcomm.h"
+#include "hfp_hf.h"
+
+#include "mock.h"
 
 static void *registered_sdp_app_context;
 static uint8_t sdp_rfcomm_channel_nr = 1;
@@ -39,16 +85,15 @@ static void prepare_rfcomm_buffer(uint8_t * data, int len){
 	pos += len;
 	if (memcmp((char*)data, "AT", 2) != 0){
 		rfcomm_payload[pos++] = '\r';
-		rfcomm_payload[pos] = '\n';
-	}
+		rfcomm_payload[pos++] = '\n';
+        rfcomm_payload[pos++] = 'O';
+        rfcomm_payload[pos++] = 'K';
+    }   
+    rfcomm_payload[pos++] = '\r';
+    rfcomm_payload[pos] = '\n';
 	rfcomm_payload_len = pos;
 }	
 
-
-void inject_rfcomm_command(uint8_t * data, int len){
-	prepare_rfcomm_buffer(data, len);
-	(*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &rfcomm_payload[0], rfcomm_payload_len);
-}
 
 int  rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 	if (memcmp((char*)data, "AT", 2) == 0){
@@ -142,4 +187,48 @@ void sdp_query_rfcomm_channel_and_name_for_search_pattern(bd_addr_t remote, uint
 void rfcomm_accept_connection_internal(uint16_t rfcomm_cid){
 	printf("rfcomm_accept_connection_internal \n");
 }
+
+// HFP Mock API
+
+int expected_rfcomm_command(const char * cmd){
+    char * ag_cmd = (char *)get_rfcomm_payload();
+    int offset = 0;
+    int cmd_size = strlen(cmd);
+
+    if (memcmp(ag_cmd, "OK", 2) == 0){
+        int ok_found = memcmp(ag_cmd+offset, "OK", 2) == 0;
+        while (!ok_found && get_rfcomm_payload_len() - 2 >= offset){
+            offset++;
+            ok_found = memcmp(ag_cmd+offset, "OK", 2) == 0;
+        }
+        return ok_found;
+    }
+
+    int cmd_found = memcmp(ag_cmd, cmd, cmd_size) == 0;
+    while (!cmd_found && get_rfcomm_payload_len() - cmd_size >= offset){
+        offset++;
+        cmd_found = strncmp(ag_cmd+offset, cmd, cmd_size) == 0;
+    }
+    
+    if (!cmd_found) return 0;
+    offset += strlen(cmd);
+
+    int ok_found = memcmp(ag_cmd+offset, "OK", 2) == 0;
+    while (!ok_found && get_rfcomm_payload_len() - 2 >= offset){
+        offset++;
+        ok_found = memcmp(ag_cmd+offset, "OK", 2) == 0;
+    }
+  
+    return cmd_found && ok_found;
+}
+
+
+void inject_rfcomm_command(uint8_t * data, int len){
+    prepare_rfcomm_buffer(data, len);
+    (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &rfcomm_payload[0], rfcomm_payload_len);
+}
+
+
+
+
 
