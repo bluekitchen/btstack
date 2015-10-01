@@ -338,6 +338,7 @@ le_command_status_t gatt_client_read_characteristic_descriptor_using_descriptor_
  */
 le_command_status_t gatt_client_read_long_characteristic_descriptor(uint16_t gatt_client_id, uint16_t con_handle, le_characteristic_descriptor_t  * descriptor);
 le_command_status_t gatt_client_read_long_characteristic_descriptor_using_descriptor_handler(uint16_t gatt_client_id, uint16_t con_handle, uint16_t descriptor_handle);
+le_command_status_t gatt_client_read_long_characteristic_descriptor_using_descriptor_handler_with_offset(uint16_t gatt_client_id, uint16_t con_handle, uint16_t descriptor_handle, uint16_t offset);
 
 /** 
  * @brief Writes the characteristic descriptor using its handle. The gatt_complete_event_t with type set to GATT_QUERY_COMPLETE, marks the end of write. The write is successfully performed, if the event's status field is set to 0.

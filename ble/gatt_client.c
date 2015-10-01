@@ -1519,7 +1519,7 @@ le_command_status_t gatt_client_read_characteristic_descriptor(uint16_t gatt_cli
     return gatt_client_read_characteristic_descriptor_using_descriptor_handle(gatt_client_id, con_handle, descriptor->handle);
 }
 
-le_command_status_t gatt_client_read_long_characteristic_descriptor_using_descriptor_handler(uint16_t gatt_client_id, uint16_t con_handle, uint16_t descriptor_handle){
+le_command_status_t gatt_client_read_long_characteristic_descriptor_using_descriptor_handler_with_offset(uint16_t gatt_client_id, uint16_t con_handle, uint16_t descriptor_handle, uint16_t offset){
     gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
     
     if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
@@ -1527,10 +1527,14 @@ le_command_status_t gatt_client_read_long_characteristic_descriptor_using_descri
     
     peripheral->subclient_id = gatt_client_id;
     peripheral->attribute_handle = descriptor_handle;
-    peripheral->attribute_offset = 0;
+    peripheral->attribute_offset = offset;
     peripheral->gatt_client_state = P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY;
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
+}
+
+le_command_status_t gatt_client_read_long_characteristic_descriptor_using_descriptor_handler(uint16_t gatt_client_id, uint16_t con_handle, uint16_t descriptor_handle){
+    return gatt_client_read_long_characteristic_descriptor_using_descriptor_handler_with_offset(gatt_client_id, con_handle, descriptor_handle, 0);
 }
 
 le_command_status_t gatt_client_read_long_characteristic_descriptor(uint16_t gatt_client_id, uint16_t con_handle, le_characteristic_descriptor_t * descriptor){
