@@ -304,6 +304,7 @@ le_command_status_t gatt_client_read_value_of_characteristic_using_value_handle(
  */
 le_command_status_t gatt_client_read_long_value_of_characteristic(uint16_t gatt_client_id, uint16_t con_handle, le_characteristic_t  *characteristic);
 le_command_status_t gatt_client_read_long_value_of_characteristic_using_value_handle(uint16_t gatt_client_id, uint16_t con_handle, uint16_t characteristic_value_handle);
+le_command_status_t gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(uint16_t gatt_client_id, uint16_t con_handle, uint16_t characteristic_value_handle, uint16_t offset);
 
 /** 
  * @brief Writes the characteristic value using the characteristic's value handle without an acknowledgment that the write was successfully performed.
