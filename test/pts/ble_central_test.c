@@ -81,6 +81,7 @@ typedef enum {
     CENTRAL_W4_PRIMARY_SERVICES,
     CENTRAL_W4_CHARACTERISTICS,
     CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_HANDLE,
+    CENTRAL_ENTER_HANDLE_4_READ_CHARACTERISTIC_VALUE_BY_UUID,
     CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_UUID,
     CENTRAL_ENTER_OFFSET_4_READ_LONG_CHARACTERISTIC_VALUE_BY_HANDLE,
     CENTRAL_W4_READ_LONG_CHARACTERISTIC_VALUE_BY_HANDLE,
@@ -120,6 +121,7 @@ static int ui_passkey = 0;
 static int ui_digits_for_passkey = 0;
 static int ui_uint16_request = 0;
 static int ui_uint16 = 0;
+static int ui_uuid16 = 0;
 static int ui_uuid128_request = 0;
 static int ui_uuid128_pos     = 0;
 static uint8_t ui_uuid128[16];
@@ -219,7 +221,7 @@ static void handle_advertising_event(uint8_t * packet, int size){
     sm_address_resolution_lookup(packet[3], addr);
 
     // ignore advertisement from devices other than pts
-    if (memcmp(addr, current_pts_address, 6)) return;
+    // if (memcmp(addr, current_pts_address, 6)) return;
 
     printf("Advertisement: %s - %s, ", bd_addr_to_str(addr), ad_event_types[packet[2]]);
     int adv_size = packet[11];
@@ -430,6 +432,7 @@ void handle_gatt_client_event(le_event_t * event){
                     printf("GAP Service: Device Name: %s\n", value->blob);
                     break;
                 case CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_HANDLE:
+                case CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_UUID:
                     printf("Value: ");
                     printf_hexdump(value->blob, value->blob_length);
                     break;
@@ -704,8 +707,14 @@ int stdin_process(struct data_source *ds){
                     printf("Read Long Characteristic Descriptor with handle 0x%04x, offset 0x%04x\n", ui_attribute_handle, ui_uint16);
                     gatt_client_read_long_characteristic_descriptor_using_descriptor_handler_with_offset(gc_id, handle, ui_attribute_handle, ui_uint16);
                     return 0;
+                case CENTRAL_ENTER_HANDLE_4_READ_CHARACTERISTIC_VALUE_BY_UUID:
+                    ui_uuid16 = ui_uint16;
+                    ui_request_uint16("Please enter start handle: ");
+                    central_state = CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_UUID;
+                    return 0;
                 case CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_UUID:
-                    printf("Sorry, read characteristic value by UUID is not implemented yet\n");
+                    printf("Read Characteristic Value with UUID16 0x%04x\n", ui_uint16);
+                    gatt_client_read_value_of_characteristics_by_uuid16(gc_id, handle, ui_uint16, 0xffff, ui_uuid16);
                     return 0;
                 default:
                     return 0;
@@ -739,15 +748,19 @@ int stdin_process(struct data_source *ds){
         ui_uuid128_pos++;
         if (ui_uuid128_pos == 32){
             ui_uuid128_request = 0;
+            printf("\n");
             switch (central_state){
                 case CENTRAL_W4_PRIMARY_SERVICES:
-                    printf("\nDiscover Primary Services with UUID128 ");
+                    printf("Discover Primary Services with UUID128 ");
                     printUUID128(ui_uuid128);
                     printf("\n");
                     gatt_client_discover_primary_services_by_uuid128(gc_id, handle, ui_uuid128);
                     return 0;
                 case CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_UUID:
-                    printf("\nSorry, read characteristic value by UUID is not implemented yet\n");
+                    printf("Read Characteristic Value with UUID128 ");
+                    printUUID128(ui_uuid128);
+                    printf("\n");
+                    gatt_client_read_value_of_characteristics_by_uuid128(gc_id, handle, 0x0001, 0xffff, ui_uuid128);
                     return 0;
                 default:
                     return 0;
@@ -985,7 +998,7 @@ int stdin_process(struct data_source *ds){
             ui_request_uint16("Please enter handle: ");
             break;
         case 'k':
-            central_state = CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_UUID;
+            central_state = CENTRAL_ENTER_HANDLE_4_READ_CHARACTERISTIC_VALUE_BY_UUID;
             ui_request_uint16("Please enter UUID16: ");
             break;
         case 'K':
