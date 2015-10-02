@@ -253,15 +253,27 @@ static void att_find_by_type_value_request(uint16_t request_type, uint16_t attri
 }
 
 // precondition: can_send_packet_now == TRUE
-static void att_read_by_type_or_group_request(uint16_t request_type, uint16_t attribute_group_type, uint16_t peripheral_handle, uint16_t start_handle, uint16_t end_handle){
+static void att_read_by_type_or_group_request_for_uuid16(uint16_t request_type, uint16_t uuid16, uint16_t peripheral_handle, uint16_t start_handle, uint16_t end_handle){
     l2cap_reserve_packet_buffer();
     uint8_t * request = l2cap_get_outgoing_buffer();
     request[0] = request_type;
     bt_store_16(request, 1, start_handle);
     bt_store_16(request, 3, end_handle);
-    bt_store_16(request, 5, attribute_group_type);
+    bt_store_16(request, 5, uuid16);
     
     l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 7);
+}
+
+// precondition: can_send_packet_now == TRUE
+static void att_read_by_type_or_group_request_for_uuid128(uint16_t request_type, uint8_t * uuid128, uint16_t peripheral_handle, uint16_t start_handle, uint16_t end_handle){
+    l2cap_reserve_packet_buffer();
+    uint8_t * request = l2cap_get_outgoing_buffer();
+    request[0] = request_type;
+    bt_store_16(request, 1, start_handle);
+    bt_store_16(request, 3, end_handle);
+    swap128(uuid128, &request[5]);
+    
+    l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 21);
 }
 
 // precondition: can_send_packet_now == TRUE
@@ -351,7 +363,7 @@ static uint16_t write_blob_length(gatt_client_t * peripheral){
 }
 
 static void send_gatt_services_request(gatt_client_t *peripheral){
-    att_read_by_type_or_group_request(ATT_READ_BY_GROUP_TYPE_REQUEST, GATT_PRIMARY_SERVICE_UUID, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle);
+    att_read_by_type_or_group_request_for_uuid16(ATT_READ_BY_GROUP_TYPE_REQUEST, GATT_PRIMARY_SERVICE_UUID, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle);
 }
 
 static void send_gatt_by_uuid_request(gatt_client_t *peripheral, uint16_t attribute_group_type){
@@ -375,11 +387,11 @@ static void send_gatt_included_service_uuid_request(gatt_client_t *peripheral){
 }
 
 static void send_gatt_included_service_request(gatt_client_t *peripheral){
-    att_read_by_type_or_group_request(ATT_READ_BY_TYPE_REQUEST, GATT_INCLUDE_SERVICE_UUID, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle);
+    att_read_by_type_or_group_request_for_uuid16(ATT_READ_BY_TYPE_REQUEST, GATT_INCLUDE_SERVICE_UUID, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle);
 }
 
 static void send_gatt_characteristic_request(gatt_client_t *peripheral){
-    att_read_by_type_or_group_request(ATT_READ_BY_TYPE_REQUEST, GATT_CHARACTERISTICS_UUID, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle);
+    att_read_by_type_or_group_request_for_uuid16(ATT_READ_BY_TYPE_REQUEST, GATT_CHARACTERISTICS_UUID, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle);
 }
 
 static void send_gatt_characteristic_descriptor_request(gatt_client_t *peripheral){
@@ -388,6 +400,14 @@ static void send_gatt_characteristic_descriptor_request(gatt_client_t *periphera
 
 static void send_gatt_read_characteristic_value_request(gatt_client_t *peripheral){
     att_read_request(ATT_READ_REQUEST, peripheral->handle, peripheral->attribute_handle);
+}
+
+static void send_gatt_read_by_type_request(gatt_client_t * peripheral){
+    if (peripheral->uuid16){
+        att_read_by_type_or_group_request_for_uuid16(ATT_READ_BY_TYPE_REQUEST, peripheral->uuid16, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle);
+    } else {
+        att_read_by_type_or_group_request_for_uuid128(ATT_READ_BY_TYPE_REQUEST, peripheral->uuid128, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle);
+    }
 }
 
 static void send_gatt_read_blob_request(gatt_client_t *peripheral){
@@ -415,7 +435,7 @@ static void send_gatt_cancel_prepared_write_request(gatt_client_t * peripheral){
 }
 
 static void send_gatt_read_client_characteristic_configuration_request(gatt_client_t * peripheral){
-    att_read_by_type_or_group_request(ATT_READ_BY_TYPE_REQUEST, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle);
+    att_read_by_type_or_group_request_for_uuid16(ATT_READ_BY_TYPE_REQUEST, GATT_CLIENT_CHARACTERISTICS_CONFIGURATION, peripheral->handle, peripheral->start_group_handle, peripheral->end_group_handle);
 }
 
 static void send_gatt_read_characteristic_descriptor_request(gatt_client_t * peripheral){
@@ -547,7 +567,6 @@ static void report_gatt_characteristics(gatt_client_t * peripheral, uint8_t * pa
     }
 }
 
-
 static void report_gatt_included_service(gatt_client_t * peripheral, uint8_t *uuid128, uint16_t uuid16){
     le_service_t service;
     service.uuid16 = uuid16;
@@ -668,6 +687,10 @@ static inline void trigger_next_characteristic_descriptor_query(gatt_client_t * 
     trigger_next_query(peripheral, last_result_handle, P_W2_SEND_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY);
 }
 
+static inline void trigger_next_read_by_type_query(gatt_client_t * peripheral, uint16_t last_result_handle){
+    trigger_next_query(peripheral, last_result_handle, P_W2_SEND_READ_BY_TYPE_REQUEST);
+}
+
 static inline void trigger_next_prepare_write_query(gatt_client_t * peripheral, gatt_client_state_t next_query_state, gatt_client_state_t done_state){
     peripheral->attribute_offset += write_blob_length(peripheral);
     uint16_t next_blob_length =  write_blob_length(peripheral);
@@ -691,6 +714,7 @@ static inline void trigger_next_blob_query(gatt_client_t * peripheral, gatt_clie
     peripheral->attribute_offset += received_blob_length;
     peripheral->gatt_client_state = next_query_state;
 }
+
 
 static int is_value_valid(gatt_client_t *peripheral, uint8_t *packet, uint16_t size){
     uint16_t attribute_handle = READ_BT_16(packet, 1);
@@ -791,6 +815,11 @@ static void gatt_client_run(void){
                 send_gatt_read_blob_request(peripheral);
                 return;
                 
+            case P_W2_SEND_READ_BY_TYPE_REQUEST:
+                peripheral->gatt_client_state = P_W4_READ_BY_TYPE_RESPONSE;
+                send_gatt_read_by_type_request(peripheral);
+                break;
+
             case P_W2_SEND_WRITE_CHARACTERISTIC_VALUE:
                 peripheral->gatt_client_state = P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT;
                 send_gatt_write_attribute_value_request(peripheral);
@@ -1006,6 +1035,18 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     peripheral->client_characteristic_configuration_handle = READ_BT_16(packet, 2);
                     peripheral->gatt_client_state = P_W2_WRITE_CLIENT_CHARACTERISTIC_CONFIGURATION;
                     break;
+                case P_W4_READ_BY_TYPE_RESPONSE: {
+                    uint16_t pair_size = packet[1];
+                    uint16_t offset;
+                    uint16_t last_result_handle = 0;
+                    for (offset = 2; offset < size ; offset += pair_size){
+                        uint16_t value_handle = READ_BT_16(packet, offset);
+                        report_gatt_characteristic_value(peripheral, value_handle, &packet[offset+2], pair_size-2);
+                        last_result_handle = value_handle;
+                    }
+                    trigger_next_read_by_type_query(peripheral, last_result_handle);
+                    break;
+                }
                 default:
                     break;
             }
@@ -1179,6 +1220,14 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                             characteristic_end_found(peripheral, peripheral->end_group_handle);
                             gatt_client_handle_transaction_complete(peripheral);
                             emit_gatt_complete_event(peripheral, 0);
+                            break;
+                        case P_W4_READ_BY_TYPE_RESPONSE:
+                            gatt_client_handle_transaction_complete(peripheral);
+                            if (peripheral->start_group_handle == peripheral->query_start_handle){
+                                emit_gatt_complete_event(peripheral, ATT_ERROR_ATTRIBUTE_NOT_FOUND);
+                            } else {
+                                emit_gatt_complete_event(peripheral, 0);
+                            }
                             break;
                         default:
                             gatt_client_report_error_if_pending(peripheral, packet[4]);
@@ -1387,6 +1436,43 @@ le_command_status_t gatt_client_read_value_of_characteristic_using_value_handle(
     gatt_client_run();
     return BLE_PERIPHERAL_OK;
 }
+
+le_command_status_t gatt_client_read_value_of_characteristics_by_uuid16(uint16_t gatt_client_id, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16){
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
+    
+    if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
+    
+    peripheral->subclient_id = gatt_client_id;
+    peripheral->start_group_handle = start_handle;
+    peripheral->end_group_handle = end_handle;
+    peripheral->query_start_handle = start_handle;
+    peripheral->query_end_handle = end_handle;
+    peripheral->uuid16 = uuid16;
+    sdp_normalize_uuid((uint8_t*) &(peripheral->uuid128), uuid16);
+    peripheral->gatt_client_state = P_W2_SEND_READ_BY_TYPE_REQUEST;
+    gatt_client_run();
+    return BLE_PERIPHERAL_OK;
+}
+
+le_command_status_t gatt_client_read_value_of_characteristics_by_uuid128(uint16_t gatt_client_id, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle, uint8_t * uuid128){
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
+    
+    if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
+    
+    peripheral->subclient_id = gatt_client_id;
+    peripheral->start_group_handle = start_handle;
+    peripheral->end_group_handle = end_handle;
+    peripheral->query_start_handle = start_handle;
+    peripheral->query_end_handle = end_handle;
+    peripheral->uuid16 = 0;
+    memcpy(peripheral->uuid128, uuid128, 16);
+    peripheral->gatt_client_state = P_W2_SEND_READ_BY_TYPE_REQUEST;
+    gatt_client_run();
+    return BLE_PERIPHERAL_OK;
+}
+
 
 le_command_status_t gatt_client_read_value_of_characteristic(uint16_t gatt_client_id, uint16_t handle, le_characteristic_t *characteristic){
     return gatt_client_read_value_of_characteristic_using_value_handle(gatt_client_id, handle, characteristic->value_handle);

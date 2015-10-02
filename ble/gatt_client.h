@@ -77,6 +77,9 @@ typedef enum {
     
     P_W2_SEND_READ_BLOB_QUERY,
     P_W4_READ_BLOB_RESULT,
+
+    P_W2_SEND_READ_BY_TYPE_REQUEST,
+    P_W4_READ_BY_TYPE_RESPONSE,
     
     P_W2_SEND_WRITE_CHARACTERISTIC_VALUE,
     P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT,
@@ -298,6 +301,12 @@ le_command_status_t gatt_client_discover_characteristic_descriptors(uint16_t gat
  */
 le_command_status_t gatt_client_read_value_of_characteristic(uint16_t gatt_client_id, uint16_t con_handle, le_characteristic_t  *characteristic);
 le_command_status_t gatt_client_read_value_of_characteristic_using_value_handle(uint16_t gatt_client_id, uint16_t con_handle, uint16_t characteristic_value_handle);
+
+/**
+ * @brief Reads the characteric value of all characteristics with the uuid. For each found, an le_characteristic_value_event_t with type set to GATT_CHARACTERISTIC_VALUE_QUERY_RESULT will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_QUERY_COMPLETE, marks the end of read.
+ */
+le_command_status_t gatt_client_read_value_of_characteristics_by_uuid16(uint16_t gatt_client_id, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle, uint16_t uuid16);
+le_command_status_t gatt_client_read_value_of_characteristics_by_uuid128(uint16_t gatt_client_id, uint16_t con_handle, uint16_t start_handle, uint16_t end_handle, uint8_t * uuid128);
 
 /** 
  * @brief Reads the long characteristic value using the characteristic's value handle. The value will be returned in several blobs. For each blob, an le_characteristic_value_event_t with type set to GATT_CHARACTERISTIC_VALUE_QUERY_RESULT and updated value offset will be generated and passed to the registered callback. The gatt_complete_event_t with type set to GATT_QUERY_COMPLETE, mark the end of read.
