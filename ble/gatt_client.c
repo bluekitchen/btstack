@@ -297,6 +297,19 @@ static void att_read_blob_request(uint16_t request_type, uint16_t peripheral_han
     l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, 5);
 }
 
+static void att_read_multiple_request(uint16_t peripheral_handle, uint16_t num_value_handles, uint16_t * value_handles){
+    l2cap_reserve_packet_buffer();
+    uint8_t * request = l2cap_get_outgoing_buffer();
+    request[0] = ATT_READ_MULTIPLE_REQUEST;
+    int i;
+    int offset = 1;
+    for (i=0;i<num_value_handles;i++){
+        bt_store_16(request, offset, value_handles[i]);
+        offset += 2;
+    }
+    l2cap_send_prepared_connectionless(peripheral_handle, L2CAP_CID_ATTRIBUTE_PROTOCOL, offset);
+}
+
 // precondition: can_send_packet_now == TRUE
 static void att_signed_write_request(uint16_t request_type, uint16_t peripheral_handle, uint16_t attribute_handle, uint16_t value_length, uint8_t * value, uint32_t sign_counter, uint8_t sgn[8]){
     l2cap_reserve_packet_buffer();
@@ -412,6 +425,10 @@ static void send_gatt_read_by_type_request(gatt_client_t * peripheral){
 
 static void send_gatt_read_blob_request(gatt_client_t *peripheral){
     att_read_blob_request(ATT_READ_BLOB_REQUEST, peripheral->handle, peripheral->attribute_handle, peripheral->attribute_offset);
+}
+
+static void send_gatt_read_multiple_request(gatt_client_t * peripheral){
+    att_read_multiple_request(peripheral->handle, peripheral->read_multiple_handle_count, peripheral->read_multiple_handles);
 }
 
 static void send_gatt_write_attribute_value_request(gatt_client_t * peripheral){
@@ -820,6 +837,11 @@ static void gatt_client_run(void){
                 send_gatt_read_by_type_request(peripheral);
                 break;
 
+            case P_W2_SEND_READ_MULTIPLE_REQUEST:
+                peripheral->gatt_client_state = P_W4_READ_MULTIPLE_RESPONSE;
+                send_gatt_read_multiple_request(peripheral);
+                break;
+
             case P_W2_SEND_WRITE_CHARACTERISTIC_VALUE:
                 peripheral->gatt_client_state = P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT;
                 send_gatt_write_attribute_value_request(peripheral);
@@ -937,7 +959,7 @@ static void gatt_client_hci_event_packet_handler(uint8_t packet_type, uint8_t *p
             
             linked_list_remove(&gatt_client_connections, (linked_item_t *) peripheral);
             btstack_memory_gatt_client_free(peripheral);
-
+ 
             // Forward event to all subclients
             emit_event_to_all_subclients((le_event_t *) packet);
             break;
@@ -1200,6 +1222,18 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 default:
                     break;
                     
+            }
+            break;
+
+        case ATT_READ_MULTIPLE_RESPONSE:
+            switch(peripheral->gatt_client_state){
+                case P_W4_READ_MULTIPLE_RESPONSE:
+                    report_gatt_characteristic_value(peripheral, 0, &packet[1], size-1);
+                    gatt_client_handle_transaction_complete(peripheral);
+                    emit_gatt_complete_event(peripheral, 0);
+                    break;
+                default:
+                    break;
             }
             break;
 
@@ -1498,6 +1532,20 @@ le_command_status_t gatt_client_read_long_value_of_characteristic_using_value_ha
 
 le_command_status_t gatt_client_read_long_value_of_characteristic(uint16_t gatt_client_id, uint16_t handle, le_characteristic_t *characteristic){
     return gatt_client_read_long_value_of_characteristic_using_value_handle(gatt_client_id, handle, characteristic->value_handle);
+}
+
+le_command_status_t gatt_client_read_multiple_characteristic_values(uint16_t gatt_client_id, uint16_t con_handle, int num_value_handles, uint16_t * value_handles){
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
+    
+    if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
+    
+    peripheral->subclient_id = gatt_client_id;
+    peripheral->read_multiple_handle_count = num_value_handles;
+    peripheral->read_multiple_handles = value_handles;
+    peripheral->gatt_client_state = P_W2_SEND_READ_MULTIPLE_REQUEST;
+    gatt_client_run();
+    return BLE_PERIPHERAL_OK;
 }
 
 le_command_status_t gatt_client_write_value_of_characteristic_without_response(uint16_t gatt_client_id, uint16_t con_handle, uint16_t value_handle, uint16_t value_length, uint8_t * value){

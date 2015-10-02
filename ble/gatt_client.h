@@ -81,6 +81,9 @@ typedef enum {
     P_W2_SEND_READ_BY_TYPE_REQUEST,
     P_W4_READ_BY_TYPE_RESPONSE,
     
+    P_W2_SEND_READ_MULTIPLE_REQUEST,
+    P_W4_READ_MULTIPLE_RESPONSE,
+
     P_W2_SEND_WRITE_CHARACTERISTIC_VALUE,
     P_W4_WRITE_CHARACTERISTIC_VALUE_RESULT,
     
@@ -158,8 +161,12 @@ typedef struct gatt_client{
     uint16_t attribute_length;
     uint8_t* attribute_value;
     
+    // read multiple characteristic values
+    uint16_t    read_multiple_handle_count;
+    uint16_t  * read_multiple_handles;
+
     uint16_t client_characteristic_configuration_handle;
-    uint8_t client_characteristic_configuration_value[2];
+    uint8_t  client_characteristic_configuration_value[2];
     
     uint8_t  filter_with_uuid;
     uint8_t  send_confirmation;
@@ -314,6 +321,13 @@ le_command_status_t gatt_client_read_value_of_characteristics_by_uuid128(uint16_
 le_command_status_t gatt_client_read_long_value_of_characteristic(uint16_t gatt_client_id, uint16_t con_handle, le_characteristic_t  *characteristic);
 le_command_status_t gatt_client_read_long_value_of_characteristic_using_value_handle(uint16_t gatt_client_id, uint16_t con_handle, uint16_t characteristic_value_handle);
 le_command_status_t gatt_client_read_long_value_of_characteristic_using_value_handle_with_offset(uint16_t gatt_client_id, uint16_t con_handle, uint16_t characteristic_value_handle, uint16_t offset);
+
+/*
+ * @brief Read multiple characteristic values
+ * @param number handles
+ * @param list_of_handles list of handles 
+ */
+le_command_status_t gatt_client_read_multiple_characteristic_values(uint16_t gatt_client_id, uint16_t con_handle, int num_value_handles, uint16_t * value_handles);
 
 /** 
  * @brief Writes the characteristic value using the characteristic's value handle without an acknowledgment that the write was successfully performed.
