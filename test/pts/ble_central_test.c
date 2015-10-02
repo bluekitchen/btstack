@@ -88,6 +88,7 @@ typedef enum {
     CENTRAL_W4_READ_CHARACTERISTIC_DESCRIPTOR_BY_HANDLE,
     CENTRAL_ENTER_OFFSET_4_READ_LONG_CHARACTERISTIC_DESCRIPTOR_BY_HANDLE,
     CENTRAL_W4_READ_LONG_CHARACTERISTIC_DESCRIPTOR_BY_HANDLE,
+    CENTRAL_W4_READ_MULTIPLE_CHARACTERISTIC_VALUES,
 } central_state_t;
 
 typedef struct advertising_report {
@@ -125,6 +126,8 @@ static int ui_uuid16 = 0;
 static int ui_uuid128_request = 0;
 static int ui_uuid128_pos     = 0;
 static uint8_t ui_uuid128[16];
+static int ui_num_handles;
+static uint16_t ui_handles[10];
 static uint16_t ui_attribute_handle;
 static uint16_t handle = 0;
 static uint16_t gc_id;
@@ -433,6 +436,7 @@ void handle_gatt_client_event(le_event_t * event){
                     break;
                 case CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_HANDLE:
                 case CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_UUID:
+                case CENTRAL_W4_READ_MULTIPLE_CHARACTERISTIC_VALUES:
                     printf("Value: ");
                     printf_hexdump(value->blob, value->blob_length);
                     break;
@@ -579,6 +583,7 @@ void show_usage(void){
     printf("K   - Read Characteristic Value by UUID128\n");
     printf("l   - Read Characteristic Descriptor by handle\n");
     printf("L   - Read Long Characteristic Descriptor by handle\n");
+    printf("N   - Read Multiple Characteristic Values\n");
     printf("---\n");
     printf("4   - IO_CAPABILITY_DISPLAY_ONLY\n");
     printf("5   - IO_CAPABILITY_DISPLAY_YES_NO\n");
@@ -715,6 +720,20 @@ int stdin_process(struct data_source *ds){
                 case CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_UUID:
                     printf("Read Characteristic Value with UUID16 0x%04x\n", ui_uint16);
                     gatt_client_read_value_of_characteristics_by_uuid16(gc_id, handle, ui_uint16, 0xffff, ui_uuid16);
+                    return 0;
+                case CENTRAL_W4_READ_MULTIPLE_CHARACTERISTIC_VALUES:
+                    if (ui_uint16){
+                        ui_handles[ui_num_handles++] = ui_uint16;
+                        ui_request_uint16("Please enter handle: ");
+                    } else {
+                        int i;                        
+                        printf("Read multiple values, handles: ");
+                        for (i=0;i<ui_num_handles;i++){
+                            printf("0x%04x, ", ui_handles[i]);
+                        }
+                        printf("\n");
+                        gatt_client_read_multiple_characteristic_values(gc_id, handle, ui_num_handles, ui_handles);
+                    }
                     return 0;
                 default:
                     return 0;
@@ -1004,6 +1023,11 @@ int stdin_process(struct data_source *ds){
         case 'K':
             central_state = CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_UUID;
             ui_request_uud128("Please enter UUID128: ");
+            break;
+        case 'N':
+            ui_request_uint16("Read Multiple Characteristic Values - enter 0 to complete list.\nPlease enter handle: ");
+            ui_num_handles = 0;
+            central_state = CENTRAL_W4_READ_MULTIPLE_CHARACTERISTIC_VALUES;
             break;
         default:
             show_usage();
