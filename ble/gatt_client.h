@@ -344,6 +344,7 @@ le_command_status_t gatt_client_signed_write_without_response(uint16_t gatt_clie
  */
 le_command_status_t gatt_client_write_value_of_characteristic(uint16_t gatt_client_id, uint16_t con_handle, uint16_t characteristic_value_handle, uint16_t length, uint8_t  * data);
 le_command_status_t gatt_client_write_long_value_of_characteristic(uint16_t gatt_client_id, uint16_t con_handle, uint16_t characteristic_value_handle, uint16_t length, uint8_t  * data);
+le_command_status_t gatt_client_write_long_value_of_characteristic_with_offset(uint16_t gatt_client_id, uint16_t con_handle, uint16_t characteristic_value_handle, uint16_t offset, uint16_t length, uint8_t  * data);
 
 /** 
  * @brief Writes of the long characteristic value using the characteristic's value handle. It uses server response to validate that the write was correctly received. The gatt_complete_event_t with type set to GATT_QUERY_COMPLETE marks the end of write. The write is successfully performed, if the event's status field is set to 0.
@@ -370,6 +371,7 @@ le_command_status_t gatt_client_write_characteristic_descriptor(uint16_t gatt_cl
 le_command_status_t gatt_client_write_characteristic_descriptor_using_descriptor_handle(uint16_t gatt_client_id, uint16_t con_handle, uint16_t descriptor_handle, uint16_t length, uint8_t  * data);
 le_command_status_t gatt_client_write_long_characteristic_descriptor(uint16_t gatt_client_id, uint16_t con_handle, le_characteristic_descriptor_t  * descriptor, uint16_t length, uint8_t  * data);
 le_command_status_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle(uint16_t gatt_client_id, uint16_t con_handle, uint16_t descriptor_handle, uint16_t length, uint8_t  * data);
+le_command_status_t gatt_client_write_long_characteristic_descriptor_using_descriptor_handle_with_offset(uint16_t gatt_client_id, uint16_t con_handle, uint16_t descriptor_handle, uint16_t offset, uint16_t length, uint8_t  * data);
 
 /** 
  * @brief Writes the client characteristic configuration of the specified characteristic. It is used to subscribe for notifications or indications of the characteristic value. For notifications or indications specify: GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION resp. GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION as configuration value.
