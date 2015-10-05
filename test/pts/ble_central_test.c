@@ -136,7 +136,7 @@ static int ui_num_handles;
 static uint16_t ui_handles[10];
 static uint16_t ui_attribute_handle;
 static int      ui_value_request = 0;
-static uint8_t  ui_value_data[30];
+static uint8_t  ui_value_data[50];
 static int      ui_value_pos = 0;
 static uint16_t handle = 0;
 static uint16_t gc_id;
@@ -662,7 +662,7 @@ static void ui_request_data(const char * message){
     printf("%s", message);
     fflush(stdout);
     ui_value_request = 1;
-    ui_value_request = 0;
+    ui_value_pos = 0;
     memset(ui_value_data, 0, sizeof(ui_value_data));
 }
 
@@ -750,7 +750,7 @@ static int ui_process_uint16_request(char buffer){
             case CENTRAL_W4_RELIABLE_WRITE:
             case CENTRAL_W4_WRITE_CHARACTERISTIC_DESCRIPTOR:
             case CENTRAL_W4_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR:
-                ui_request_data("Please enter data");
+                ui_request_data("Please enter data: ");
                 return 0;
             default:
                 return 0;
@@ -825,7 +825,7 @@ static void ui_announce_write(const char * method){
 
 static int ui_process_data_request(char buffer){
     if (buffer == '\n' || buffer == '\r'){
-        ui_uint16_request = 0;
+        ui_value_request = 0;
         printf("\n");
     
         switch (central_state){
@@ -868,9 +868,9 @@ static int ui_process_data_request(char buffer){
     fflush(stdout);
 
     if (ui_value_pos & 1){
-        ui_uuid128[ui_value_pos >> 1] |= hex;
+        ui_value_data[ui_value_pos >> 1] |= hex;
     } else {
-        ui_uuid128[ui_value_pos >> 1] = hex << 4;
+        ui_value_data[ui_value_pos >> 1] = hex << 4;
     }
     ui_value_pos++;
 
