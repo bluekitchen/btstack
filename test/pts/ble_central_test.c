@@ -91,10 +91,13 @@ typedef enum {
     CENTRAL_W4_READ_MULTIPLE_CHARACTERISTIC_VALUES,
     CENTRAL_W4_WRITE_WITHOUT_RESPONSE,
     CENTRAL_W4_WRITE_CHARACTERICISTIC_VALUE,
+    CENTRAL_ENTER_HANDLE_4_WRITE_LONG_CHARACTERISTIC_VALUE,
     CENTRAL_W4_WRITE_LONG_CHARACTERISTIC_VALUE,
     CENTRAL_W4_RELIABLE_WRITE,
     CENTRAL_W4_WRITE_CHARACTERISTIC_DESCRIPTOR,
+    CENTRAL_ENTER_HANDLE_4_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR,
     CENTRAL_W4_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR,
+    CENTRAL_W4_SIGNED_WRITE,
 } central_state_t;
 
 typedef struct advertising_report {
@@ -135,6 +138,7 @@ static uint8_t ui_uuid128[16];
 static int ui_num_handles;
 static uint16_t ui_handles[10];
 static uint16_t ui_attribute_handle;
+static int      ui_attribute_offset;
 static int      ui_value_request = 0;
 static uint8_t  ui_value_data[50];
 static int      ui_value_pos = 0;
@@ -589,9 +593,10 @@ void show_usage(void){
     printf("k/K - Read Characteristic Value by UUID16/UUID128\n");
     printf("l/L - Read (Long) Characteristic Descriptor by handle\n");
     printf("N   - Read Multiple Characteristic Values\n");
-    printf("O   - Write without Respose\n");
+    printf("O   - Write without Response\n");
     printf("q/Q - Write (Long) Characteristic Value\n");
     printf("r   - Characteristic Reliable Write\n");
+    printf("R   - Signed Write\n");
     printf("u/U - Write (Long) Characteristic Descriptor\n");
     printf("---\n");
     printf("4   - IO_CAPABILITY_DISPLAY_ONLY\n");
@@ -744,12 +749,28 @@ static int ui_process_uint16_request(char buffer){
                     gatt_client_read_multiple_characteristic_values(gc_id, handle, ui_num_handles, ui_handles);
                 }
                 return 0;
+
+            case CENTRAL_ENTER_HANDLE_4_WRITE_LONG_CHARACTERISTIC_VALUE:
+                ui_attribute_handle = ui_uint16;
+                ui_request_uint16("Please enter offset: ");
+                central_state = CENTRAL_W4_WRITE_LONG_CHARACTERISTIC_VALUE;
+                return 0;
+            case CENTRAL_ENTER_HANDLE_4_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR:
+                ui_attribute_handle = ui_uint16;
+                ui_request_uint16("Please enter offset: ");
+                central_state = CENTRAL_W4_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR;
+                return 0;
+            case CENTRAL_W4_WRITE_LONG_CHARACTERISTIC_VALUE:
+            case CENTRAL_W4_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR:
+                ui_attribute_offset = ui_uint16;
+                ui_request_data("Please enter data: ");
+                return 0;
             case CENTRAL_W4_WRITE_WITHOUT_RESPONSE:
             case CENTRAL_W4_WRITE_CHARACTERICISTIC_VALUE:
-            case CENTRAL_W4_WRITE_LONG_CHARACTERISTIC_VALUE:
             case CENTRAL_W4_RELIABLE_WRITE:
             case CENTRAL_W4_WRITE_CHARACTERISTIC_DESCRIPTOR:
-            case CENTRAL_W4_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR:
+            case CENTRAL_W4_SIGNED_WRITE:            
+                ui_attribute_handle = ui_uint16;
                 ui_request_data("Please enter data: ");
                 return 0;
             default:
@@ -827,32 +848,35 @@ static int ui_process_data_request(char buffer){
     if (buffer == '\n' || buffer == '\r'){
         ui_value_request = 0;
         printf("\n");
-    
+        uint16_t value_len = ui_value_pos >> 1;
         switch (central_state){
             case CENTRAL_W4_WRITE_WITHOUT_RESPONSE:
                 ui_announce_write("Write without response");
-                gatt_client_write_value_of_characteristic_without_response(gc_id, handle, ui_uint16, ui_value_pos >> 1, ui_value_data);
+                gatt_client_write_value_of_characteristic_without_response(gc_id, handle, ui_attribute_handle, value_len, ui_value_data);
                 break;
             case CENTRAL_W4_WRITE_CHARACTERICISTIC_VALUE:
                 ui_announce_write("Write Characteristic Value");
-                gatt_client_write_value_of_characteristic(gc_id, handle, ui_uint16, ui_value_pos >> 1, ui_value_data);
+                gatt_client_write_value_of_characteristic(gc_id, handle, ui_attribute_handle, value_len, ui_value_data);
                 break;
             case CENTRAL_W4_WRITE_LONG_CHARACTERISTIC_VALUE:
                 ui_announce_write("Write Long Characteristic Value");
-                gatt_client_write_long_value_of_characteristic(gc_id, handle, ui_uint16, ui_value_pos >> 1, ui_value_data);
+                gatt_client_write_long_value_of_characteristic_with_offset(gc_id, handle, ui_attribute_handle, ui_attribute_offset, value_len, ui_value_data);
                 break;
             case CENTRAL_W4_RELIABLE_WRITE:
                 ui_announce_write("Reliabe Write");
-                gatt_client_reliable_write_long_value_of_characteristic(gc_id, handle, ui_uint16, ui_value_pos >> 1, ui_value_data);
+                gatt_client_reliable_write_long_value_of_characteristic(gc_id, handle, ui_attribute_handle, value_len, ui_value_data);
                 break;
             case CENTRAL_W4_WRITE_CHARACTERISTIC_DESCRIPTOR:
                 ui_announce_write("Write Characteristic Descriptor");
-                gatt_client_write_characteristic_descriptor_using_descriptor_handle(gc_id, handle, ui_uint16, ui_value_pos >> 1, ui_value_data);
+                gatt_client_write_characteristic_descriptor_using_descriptor_handle(gc_id, handle, ui_attribute_handle, value_len, ui_value_data);
                 break;
             case CENTRAL_W4_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR:
                 ui_announce_write("Write Long Characteristic Descriptor");
-                gatt_client_write_long_characteristic_descriptor_using_descriptor_handle(gc_id, handle, ui_uint16, ui_value_pos >> 1, ui_value_data);
+                gatt_client_write_long_characteristic_descriptor_using_descriptor_handle_with_offset(gc_id, handle, ui_attribute_handle, ui_attribute_offset, value_len, ui_value_data);
                 break;
+            case CENTRAL_W4_SIGNED_WRITE:
+                ui_announce_write("Signed Write");
+                gatt_client_signed_write_without_response(gc_id, handle, ui_attribute_handle, value_len, ui_value_data);
             default:
                 break;
         }             
@@ -1117,7 +1141,7 @@ static void ui_process_command(char buffer){
             ui_request_uint16("Please enter handle: ");
             break;
         case 'Q':
-            central_state = CENTRAL_W4_WRITE_LONG_CHARACTERISTIC_VALUE;
+            central_state = CENTRAL_ENTER_HANDLE_4_WRITE_LONG_CHARACTERISTIC_VALUE;
             ui_request_uint16("Please enter handle: ");
             break;
         case 'r':
@@ -1129,7 +1153,11 @@ static void ui_process_command(char buffer){
             ui_request_uint16("Please enter handle: ");
             break;
         case 'U':
-            central_state = CENTRAL_W4_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR;
+            central_state = CENTRAL_ENTER_HANDLE_4_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR;
+            ui_request_uint16("Please enter handle: ");
+            break;
+        case 'R':
+            central_state = CENTRAL_W4_SIGNED_WRITE;
             ui_request_uint16("Please enter handle: ");
             break;
         default:
