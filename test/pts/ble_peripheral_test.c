@@ -567,6 +567,13 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     att_write_queue_init();
                     break;
                     
+                case SM_JUST_WORKS_REQUEST: {
+                    printf("SM_JUST_WORKS_REQUEST\n");
+                    sm_event_t * event = (sm_event_t *) packet;
+                    sm_just_works_confirm(event->addr_type, event->address);
+                    break;
+                }
+
                 case SM_PASSKEY_INPUT_NUMBER: {
                     // display number
                     sm_event_t * event = (sm_event_t *) packet;
