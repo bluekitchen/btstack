@@ -966,9 +966,11 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
 }
 
 static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
+
     int le_db_index = -1;
+
+    // lookup device based on IRK
     if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_IDENTITY_INFORMATION){
-        // lookup device based on IRK
         int i;
         for (i=0; i < le_device_db_count(); i++){
             sm_key_t irk;
@@ -981,13 +983,9 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
                 break;
             }
         }
-        // if not found, add to db
-        if (le_db_index < 0) {
-            le_db_index = le_device_db_add(setup->sm_peer_addr_type, setup->sm_peer_address, setup->sm_peer_irk);
-        }
     }
 
-    // if no IRK available, lookup via public address if possible
+    // if not found, lookup via public address if possible
     log_info("sm peer addr type %u, peer addres %s", setup->sm_peer_addr_type, bd_addr_to_str(setup->sm_peer_address));
     if (le_db_index < 0 && setup->sm_peer_addr_type == BD_ADDR_TYPE_LE_PUBLIC){
         int i;
@@ -1002,10 +1000,11 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
                 break;
             }
         }
-        // if not found, add to db
-        if (le_db_index < 0) {
-            le_db_index = le_device_db_add(setup->sm_peer_addr_type, setup->sm_peer_address, setup->sm_peer_irk);
-        }
+    }
+
+    // if not found, add to db
+    if (le_db_index < 0) {
+        le_db_index = le_device_db_add(setup->sm_peer_addr_type, setup->sm_peer_address, setup->sm_peer_irk);
     }
 
     if (le_db_index >= 0){
@@ -2208,7 +2207,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
                 case SM_CODE_IDENTITY_ADDRESS_INFORMATION:
                     setup->sm_key_distribution_received_set |= SM_KEYDIST_FLAG_IDENTITY_ADDRESS_INFORMATION;
                     setup->sm_peer_addr_type = packet[1];
-                    BD_ADDR_COPY(setup->sm_peer_address, &packet[2]); 
+                    bt_flip_addr(setup->sm_peer_address, &packet[2]); 
                     break;
 
                 case SM_CODE_SIGNING_INFORMATION:
