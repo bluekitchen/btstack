@@ -672,6 +672,7 @@ void BTstackManager::bleConnect(BD_ADDR_TYPE address_type, const uint8_t address
 
 void BTstackManager::bleDisconnect(BLEDevice * device){
     run_loop_remove_timer(&connection_timer);
+    gap_disconnect(device->getHandle());
 }
 
 void BTstackManager::setPublicBdAddr(bd_addr_t addr){
