@@ -638,8 +638,10 @@ static void report_gatt_notification(uint16_t con_handle, uint16_t value_handle,
     emit_event_to_all_subclients((le_event_t*)&event);
 }
 
-static void report_gatt_indication(gatt_client_t * peripheral, uint16_t handle, uint8_t * value, int length){
-    send_characteristic_value_event(peripheral, handle, value, length, 0, GATT_INDICATION);
+static void report_gatt_indication(uint16_t con_handle, uint16_t value_handle, uint8_t * value, int length){
+    le_characteristic_value_event_t event;
+    setup_characteristic_value_event(&event, con_handle, value_handle, value, length, 0, GATT_INDICATION);
+    emit_event_to_all_subclients((le_event_t*)&event);
 }
 
 static void report_gatt_characteristic_value(gatt_client_t * peripheral, uint16_t handle, uint8_t * value, int length){
@@ -995,13 +997,20 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
 
     if (packet_type != ATT_DATA_PACKET) return;
 
-    // notification doens't need the gatt_client_t struct
-    if (packet[0] == ATT_HANDLE_VALUE_NOTIFICATION){
-        report_gatt_notification(handle, READ_BT_16(packet,1), &packet[3], size-3);
-        return;                
+    // special cases: notifications don't need a context while indications motivate creating one
+    gatt_client_t * peripheral;
+    switch (packet[0]){
+        case ATT_HANDLE_VALUE_NOTIFICATION:
+            report_gatt_notification(handle, READ_BT_16(packet,1), &packet[3], size-3);
+            return;                
+        case ATT_HANDLE_VALUE_INDICATION:
+            peripheral = provide_context_for_conn_handle(handle);
+            break;
+        default:
+            peripheral = get_gatt_client_context_for_handle(handle);
+            break;
     }
-    
-    gatt_client_t * peripheral = get_gatt_client_context_for_handle(handle);
+
     if (!peripheral) return;
     
     switch (packet[0]){
@@ -1026,7 +1035,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             }
             break;
         case ATT_HANDLE_VALUE_INDICATION:
-            report_gatt_indication(peripheral, READ_BT_16(packet,1), &packet[3], size-3);
+            report_gatt_indication(handle, READ_BT_16(packet,1), &packet[3], size-3);
             peripheral->send_confirmation = 1;
             break;
             
