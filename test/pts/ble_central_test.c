@@ -200,11 +200,13 @@ static const char * att_errors[] = {
 static const char * att_error_reserved = "Reserved";
 static const char * att_error_application = "Application Error";
 static const char * att_error_common_error = "Common Profile and Service Error Codes";
+static const char * att_error_timeout = "Timeout";
 
 const char * att_error_string_for_code(uint8_t code){
     if (code >= 0xe0) return att_error_common_error;
     if (code >= 0xa0) return att_error_reserved;
     if (code >= 0x80) return att_error_application;
+    if (code == 0x7f) return att_error_timeout;
     if (code >= 0x12) return att_error_reserved;
     return att_errors[code];
 }
