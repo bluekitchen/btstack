@@ -672,17 +672,20 @@ static void report_gatt_all_characteristic_descriptors(gatt_client_t * periphera
     
 }
 
-static void trigger_next_query(gatt_client_t * peripheral, uint16_t last_result_handle, gatt_client_state_t next_query_state){
-    if (last_result_handle < peripheral->end_group_handle){
-        peripheral->start_group_handle = last_result_handle + 1;
-        peripheral->gatt_client_state = next_query_state;
-        return;
-    }
-    // DONE
-    gatt_client_handle_transaction_complete(peripheral);
-    emit_gatt_complete_event(peripheral, 0);
+static int is_query_done(gatt_client_t * peripheral, uint16_t last_result_handle){
+    return last_result_handle >= peripheral->end_group_handle;
 }
 
+static void trigger_next_query(gatt_client_t * peripheral, uint16_t last_result_handle, gatt_client_state_t next_query_state){
+    if (is_query_done(peripheral, last_result_handle)){
+        gatt_client_handle_transaction_complete(peripheral);
+        emit_gatt_complete_event(peripheral, 0);
+        return;
+    }
+    // next
+    peripheral->start_group_handle = last_result_handle + 1;
+    peripheral->gatt_client_state = next_query_state;
+}
 
 static inline void trigger_next_included_service_query(gatt_client_t * peripheral, uint16_t last_result_handle){
     trigger_next_query(peripheral, last_result_handle, P_W2_SEND_INCLUDED_SERVICE_QUERY);
@@ -697,6 +700,10 @@ static inline void trigger_next_service_by_uuid_query(gatt_client_t * peripheral
 }
 
 static inline void trigger_next_characteristic_query(gatt_client_t * peripheral, uint16_t last_result_handle){
+    if (is_query_done(peripheral, last_result_handle)){
+        // report last characteristic
+        characteristic_end_found(peripheral, peripheral->end_group_handle);
+    }
     trigger_next_query(peripheral, last_result_handle, P_W2_SEND_ALL_CHARACTERISTICS_OF_SERVICE_QUERY);
 }
 
@@ -1020,12 +1027,12 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 case P_W4_ALL_CHARACTERISTICS_OF_SERVICE_QUERY_RESULT:
                     report_gatt_characteristics(peripheral, packet, size);
                     trigger_next_characteristic_query(peripheral, get_last_result_handle_from_characteristics_list(packet, size));
-                    // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
+                    // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done, or by ATT_ERROR
                     break;
                 case P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT:
                     report_gatt_characteristics(peripheral, packet, size);
                     trigger_next_characteristic_query(peripheral, get_last_result_handle_from_characteristics_list(packet, size));
-                    // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
+                    // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done, or by ATT_ERROR
                     break;
                 case P_W4_INCLUDED_SERVICE_QUERY_RESULT:
                 {
