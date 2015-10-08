@@ -535,6 +535,16 @@ void handle_gatt_client_event(le_event_t * event){
                     break;
             }
             break;
+        case GATT_NOTIFICATION:
+            value = (le_characteristic_value_event_t *) event;
+            printf("Notification handle 0x%04x, value: ", value->value_handle);
+            printf_hexdump(value->blob, value->blob_length);
+            break;
+        case GATT_INDICATION:
+            value = (le_characteristic_value_event_t *) event;
+            printf("Indication handle 0x%04x, value: ", value->value_handle);
+            printf_hexdump(value->blob, value->blob_length);
+            break;
         default:
             break;
     }
@@ -911,15 +921,16 @@ static int ui_process_data_request(char buffer){
     }
 
     printf("%c", buffer);
-    fflush(stdout);
 
     if (ui_value_pos & 1){
         ui_value_data[ui_value_pos >> 1] |= hex;
+        printf(" ");
     } else {
         ui_value_data[ui_value_pos >> 1] = hex << 4;
     }
     ui_value_pos++;
 
+    fflush(stdout);
     return 0;
 }
 
