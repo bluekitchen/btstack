@@ -79,6 +79,8 @@ typedef enum {
     CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE,
     CENTRAL_W4_SIGNED_WRITE_QUERY_COMPLETE,
     CENTRAL_W4_PRIMARY_SERVICES,
+    CENTRAL_ENTER_START_HANDLE_4_DISCOVER_CHARACTERISTICS,
+    CENTRAL_ENTER_END_HANDLE_4_DISCOVER_CHARACTERISTICS,
     CENTRAL_W4_CHARACTERISTICS,
     CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_HANDLE,
     CENTRAL_ENTER_HANDLE_4_READ_CHARACTERISTIC_VALUE_BY_UUID,
@@ -434,7 +436,12 @@ void handle_gatt_client_event(le_event_t * event){
                     printf("Characteristic for Signed Write found, value handle: 0x%04x\n", signed_write_characteristic.value_handle);
                     break;
                 case CENTRAL_W4_CHARACTERISTICS:
-                    printf("Characteristic found with handle 0x%04x\n", (((le_characteristic_event_t *) event)->characteristic).value_handle);
+                    printf("Characteristic found with handle 0x%04x, uuid ", (((le_characteristic_event_t *) event)->characteristic).value_handle);
+                    if ((((le_characteristic_event_t *) event)->characteristic).uuid16){
+                        printf("%04x\n", (((le_characteristic_event_t *) event)->characteristic).uuid16);
+                    } else {
+                        printf_hexdump((((le_characteristic_event_t *) event)->characteristic).uuid128, 16);                        
+                    }
                     break;
                 default:
                     break;
@@ -588,6 +595,7 @@ void show_usage(void){
     printf("e   - Discover all Primary Services\n");
     printf("f/F - Discover Primary Service by UUID16/UUID128\n");
     printf("g   - Discover all characteristics by UUID16\n");
+    printf("h   - Discover all characteristics in range\n");
     printf("i   - Find all included services\n");
     printf("j/J - Read (Long) Characteristic Value by handle\n");
     printf("k/K - Read Characteristic Value by UUID16/UUID128\n");
@@ -696,6 +704,20 @@ static int ui_process_uint16_request(char buffer){
                 printf("Discover Primary Services with UUID16 %04x\n", ui_uint16);
                 gatt_client_discover_primary_services_by_uuid16(gc_id, handle, ui_uint16);
                 return 0;
+            case CENTRAL_ENTER_START_HANDLE_4_DISCOVER_CHARACTERISTICS:
+                ui_attribute_handle = ui_uint16;
+                ui_request_uint16("Please enter end handle: ");
+                central_state = CENTRAL_ENTER_END_HANDLE_4_DISCOVER_CHARACTERISTICS;
+                return 0;
+            case CENTRAL_ENTER_END_HANDLE_4_DISCOVER_CHARACTERISTICS: {
+                printf("Discover Characteristics from 0x%04x to 0x%04x\n", ui_attribute_handle, ui_uint16);
+                central_state = CENTRAL_W4_CHARACTERISTICS;
+                le_service_t service;
+                service.start_group_handle = ui_attribute_handle;
+                service.end_group_handle   = ui_uint16;
+                gatt_client_discover_characteristics_for_service(gc_id, handle, &service);
+                return 0;
+            }
             case CENTRAL_W4_CHARACTERISTICS:
                 printf("Discover Characteristics with UUID16 %04x\n", ui_uint16);
                 gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 0x0001, 0xffff, ui_uint16);
@@ -1094,6 +1116,10 @@ static void ui_process_command(char buffer){
                 gatt_client_discover_characteristics_for_service(gc_id, handle, &service);
                 break;
             }
+        case 'h':
+            central_state = CENTRAL_ENTER_START_HANDLE_4_DISCOVER_CHARACTERISTICS;
+            ui_request_uint16("Please enter start_handle: ");
+            break;
         case 'i':
             {
                 central_state = CENTRAL_W4_CHARACTERISTICS;
