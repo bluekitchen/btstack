@@ -184,6 +184,7 @@ static gatt_client_t * provide_context_for_conn_handle(uint16_t con_handle){
     context = btstack_memory_gatt_client_get();
     if (!context) return NULL;
     // init state
+    memset(context, 0, sizeof(gatt_client_t));
     context->handle = con_handle;
     context->mtu = ATT_DEFAULT_MTU;
     context->mtu_state = SEND_MTU_EXCHANGE;
