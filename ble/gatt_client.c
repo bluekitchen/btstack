@@ -937,7 +937,7 @@ static void gatt_client_run(void){
             case P_W4_CMAC_READY:
                 if (sm_cmac_ready()){
                     sm_key_t csrk;
-                    le_device_db_csrk_get(peripheral->le_device_index, csrk);
+                    le_device_db_local_csrk_get(peripheral->le_device_index, csrk);
                     uint32_t sign_counter = le_device_db_local_counter_get(peripheral->le_device_index); 
                     peripheral->gatt_client_state = P_W4_CMAC_RESULT;
                     sm_cmac_start(csrk, ATT_SIGNED_WRITE_COMMAND, peripheral->attribute_handle, peripheral->attribute_length, peripheral->attribute_value, sign_counter, att_signed_write_handle_cmac_result);

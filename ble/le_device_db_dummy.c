@@ -57,7 +57,15 @@ void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm
 void le_device_db_info(int index, int * addr_type, bd_addr_t addr, sm_key_t csrk){}
 
 // get signature key
-void le_device_db_csrk_get(int index, sm_key_t csrk){}
+void le_device_db_remote_csrk_get(int index, sm_key_t csrk){}
+
+void le_device_db_remote_csrk_set(int index, sm_key_t csrk){}
+
+// get signature key
+void le_device_db_local_csrk_get(int index, sm_key_t csrk){}
+
+void le_device_db_local_csrk_set(int index, sm_key_t csrk){}
+
 
 // query last used/seen signing counter
 uint32_t le_device_db_remote_counter_get(int index){ 

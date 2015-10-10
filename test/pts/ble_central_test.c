@@ -1275,7 +1275,7 @@ static void ui_process_command(char buffer){
             break;
         case 'W':
             // fetch csrk
-            le_device_db_csrk_get(le_device_db_index, signing_csrk);
+            le_device_db_local_csrk_get(le_device_db_index, signing_csrk);
             // calc signature
             sm_cmac_start(signing_csrk, ATT_SIGNED_WRITE_COMMAND, pts_signed_write_characteristic_handle, sizeof(signed_write_value), signed_write_value, 0, att_signed_write_handle_cmac_result);
             break;

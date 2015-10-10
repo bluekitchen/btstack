@@ -1013,7 +1013,7 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
         // store CSRK
         if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
             log_info("sm: store remote CSRK");
-            le_device_db_csrk_set(le_db_index, setup->sm_peer_csrk);
+            le_device_db_remote_csrk_set(le_db_index, setup->sm_peer_csrk);
             le_device_db_remote_counter_set(le_db_index, 0);
         }
 
@@ -1507,14 +1507,8 @@ static void sm_run(void){
 
                     uint8_t buffer[17];
                     buffer[0] = SM_CODE_SIGNING_INFORMATION;
-                    // optimization: use CSRK of Peripheral if received, to avoid storing two CSRKs in our DB
-                    if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
-                        log_info("sm: mirror CSRK");
-                        memcpy(setup->sm_local_csrk, setup->sm_peer_csrk, 16);
-                    } else {
-                        log_info("sm: store local CSRK");
-                        le_device_db_csrk_set(connection->sm_le_db_index, setup->sm_local_csrk);
-                    }
+                    log_info("sm: store local CSRK");
+                    le_device_db_local_csrk_set(connection->sm_le_db_index, setup->sm_local_csrk);
                     swap128(setup->sm_local_csrk, &buffer[1]);
                     l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                     sm_timeout_reset(connection);
