@@ -1494,6 +1494,7 @@ int btstack_main(int argc, const char * argv[]){
 
     sm_set_encryption_key_size_range(sm_min_key_size, 16);
     sm_test_set_irk(test_irk);
+    sm_test_use_fixed_local_csrk();
 
     // setup GATT Client
     gatt_client_init();
