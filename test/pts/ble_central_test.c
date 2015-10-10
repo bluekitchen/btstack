@@ -180,7 +180,7 @@ static int       reconnection_address_set = 0;
 static bd_addr_t our_private_address;
 
 static uint16_t pts_signed_write_characteristic_uuid = 0xb00d;
-static uint16_t pts_signed_write_characteristic_handle = 0x0100;
+static uint16_t pts_signed_write_characteristic_handle = 0x00b1;
 static uint8_t signed_write_value[] = { 0x12 };
 static int le_device_db_index;
 static sm_key_t signing_csrk;
