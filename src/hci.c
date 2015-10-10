@@ -3125,7 +3125,7 @@ void gap_advertisements_set_data(uint8_t advertising_data_length, uint8_t * adve
     hci_stack->le_advertisements_data = advertising_data;
     hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_DATA;
     // disable advertisements before setting data
-    if (hci_stack->le_advertisements_enabled){
+    if (hci_stack->le_advertisements_active){
         hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_DISABLE | LE_ADVERTISEMENT_TASKS_ENABLE;
     }
     hci_run();
@@ -3159,7 +3159,7 @@ void gap_advertisements_set_data(uint8_t advertising_data_length, uint8_t * adve
 
     hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_SET_PARAMS;
     // disable advertisements before changing params
-    if (hci_stack->le_advertisements_enabled){
+    if (hci_stack->le_advertisements_active){
         hci_stack->le_advertisements_todo |= LE_ADVERTISEMENT_TASKS_DISABLE | LE_ADVERTISEMENT_TASKS_ENABLE;
     }
     hci_run();
