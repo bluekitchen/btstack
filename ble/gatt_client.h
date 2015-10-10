@@ -379,6 +379,9 @@ le_command_status_t gatt_client_write_long_characteristic_descriptor_using_descr
 le_command_status_t gatt_client_write_client_characteristic_configuration(uint16_t gatt_client_id, uint16_t con_handle, le_characteristic_t * characteristic, uint16_t configuration);
 /* API_END */
 
+// only used for testing
+void gatt_client_pts_suppress_mtu_exchange();
+
 #if defined __cplusplus
 }
 #endif

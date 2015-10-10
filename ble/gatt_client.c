@@ -62,6 +62,7 @@
 static linked_list_t gatt_client_connections = NULL;
 static linked_list_t gatt_subclients = NULL;
 static uint16_t gatt_client_id = 0;
+static uint8_t  pts_suppress_mtu_exchange;
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
 static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8_t error_code);
@@ -128,6 +129,7 @@ void gatt_client_unregister_packet_handler(uint16_t gatt_client_id){
 
 void gatt_client_init(void){
     gatt_client_connections = NULL;
+    pts_suppress_mtu_exchange = 0;
     att_dispatch_register_client(gatt_client_att_packet_handler);
 }
 
@@ -190,6 +192,11 @@ static gatt_client_t * provide_context_for_conn_handle(uint16_t con_handle){
     context->mtu_state = SEND_MTU_EXCHANGE;
     context->gatt_client_state = P_READY;
     linked_list_add(&gatt_client_connections, (linked_item_t*)context);
+
+    // skip mtu exchange for testing sm with pts
+    if (pts_suppress_mtu_exchange){
+         context->mtu_state = MTU_EXCHANGED;
+    }
     return context;
 }
 
@@ -1749,4 +1756,7 @@ le_command_status_t gatt_client_write_long_characteristic_descriptor(uint16_t ga
     return gatt_client_write_long_characteristic_descriptor_using_descriptor_handle(gatt_client_id, con_handle, descriptor->handle, length, value);
 }
 
+void gatt_client_pts_suppress_mtu_exchange(void){
+    pts_suppress_mtu_exchange = 1;
+}
 
