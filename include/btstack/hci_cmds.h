@@ -575,17 +575,117 @@ extern "C" {
 // data: event(8), len(8)
 #define BNEP_EVENT_READY_TO_SEND                           0xC4
 
-// data: event(8), address_type(8), address (48), [number(32)]
+/** @note same event structure is used for all SM events, unused fields are listed, too */
+
+ /**
+  * @format H1B421
+  * @param handle
+  * @param addr_type
+  * @param address
+  * @param passkey
+  * @param le_device_db_index
+  * @param authorization_result
+  */
 #define SM_JUST_WORKS_REQUEST                              0xD0
+ /**
+  * @format H1B421
+  * @param handle
+  * @param addr_type
+  * @param address
+  * @param passkey
+  * @param le_device_db_index
+  * @param authorization_result
+  */
 #define SM_JUST_WORKS_CANCEL                               0xD1 
+ /**
+  * @format H1B421
+  * @param handle
+  * @param addr_type
+  * @param address
+  * @param passkey
+  * @param le_device_db_index
+  * @param authorization_result
+  */
 #define SM_PASSKEY_DISPLAY_NUMBER                          0xD2
+ /**
+  * @format H1B421
+  * @param handle
+  * @param addr_type
+  * @param address
+  * @param passkey
+  * @param le_device_db_index
+  * @param authorization_result
+  */
 #define SM_PASSKEY_DISPLAY_CANCEL                          0xD3
+ /**
+  * @format H1B421
+  * @param handle
+  * @param addr_type
+  * @param address
+  * @param passkey
+  * @param le_device_db_index
+  * @param authorization_result
+  */
 #define SM_PASSKEY_INPUT_NUMBER                            0xD4
+ /**
+  * @format H1B421
+  * @param handle
+  * @param addr_type
+  * @param address
+  * @param passkey
+  * @param le_device_db_index
+  * @param authorization_result
+  */
 #define SM_PASSKEY_INPUT_CANCEL                            0xD5
+ /**
+  * @format H1B421
+  * @param handle
+  * @param addr_type
+  * @param address
+  * @param passkey
+  * @param le_device_db_index
+  * @param authorization_result
+  */
 #define SM_IDENTITY_RESOLVING_STARTED                      0xD6
+ /**
+  * @format H1B421
+  * @param handle
+  * @param addr_type
+  * @param address
+  * @param passkey
+  * @param le_device_db_index
+  * @param authorization_result
+  */
 #define SM_IDENTITY_RESOLVING_FAILED                       0xD7
+ /**
+  * @format H1B421
+  * @param handle
+  * @param addr_type
+  * @param address
+  * @param passkey
+  * @param le_device_db_index
+  * @param authorization_result
+  */
 #define SM_IDENTITY_RESOLVING_SUCCEEDED                    0xD8
+ /**
+  * @format H1B421
+  * @param handle
+  * @param addr_type
+  * @param address
+  * @param passkey
+  * @param le_device_db_index
+  * @param authorization_result
+  */
 #define SM_AUTHORIZATION_REQUEST                           0xD9
+ /**
+  * @format H1B421
+  * @param handle
+  * @param addr_type
+  * @param address
+  * @param passkey
+  * @param le_device_db_index
+  * @param authorization_result
+  */
 #define SM_AUTHORIZATION_RESULT                            0xDA
 
 // GAP
