@@ -144,14 +144,14 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
                 case SM_JUST_WORKS_REQUEST:
                     // auto-authorize connection if requested
                     sm_event = (sm_event_t *) packet;
-                    sm_just_works_confirm(sm_event->addr_type, sm_event->address);
+                    sm_just_works_confirm(sm_event->handle);
                     printf("Just Works request confirmed\n");
                     break;
 
                 case SM_AUTHORIZATION_REQUEST:
                     // auto-authorize connection if requested
                     sm_event = (sm_event_t *) packet;
-                    sm_authorization_grant(sm_event->addr_type, sm_event->address);
+                    sm_authorization_grant(sm_event->handle);
                     break;
 
                 default:

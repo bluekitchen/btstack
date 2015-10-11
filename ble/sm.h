@@ -202,20 +202,20 @@ void sm_send_security_request(uint16_t handle);
  * @brief Decline bonding triggered by event before
  * @param addr_type and address
  */
-void sm_bonding_decline(uint8_t addr_type, bd_addr_t address);
+void sm_bonding_decline(uint16_t handle);
 
 /**
  * @brief Confirm Just Works bonding 
  * @param addr_type and address
  */
-void sm_just_works_confirm(uint8_t addr_type, bd_addr_t address);
+void sm_just_works_confirm(uint16_t handle);
 
 /**
  * @brief Reports passkey input by user
  * @param addr_type and address
  * @param passkey in [0..999999]
  */
-void sm_passkey_input(uint8_t addr_type, bd_addr_t address, uint32_t passkey);
+void sm_passkey_input(uint16_t handle, uint32_t passkey);
 
 /**
  *
@@ -223,39 +223,39 @@ void sm_passkey_input(uint8_t addr_type, bd_addr_t address, uint32_t passkey);
  * @param addr_type and address
  * @return 0 if not encrypted, 7-16 otherwise
  */
-int sm_encryption_key_size(uint8_t addr_type, bd_addr_t address);
+int sm_encryption_key_size(uint16_t handle);
 
 /**
  * @brief Get authentication property.
  * @param addr_type and address
  * @return 1 if bonded with OOB/Passkey (AND MITM protection)
  */
-int sm_authenticated(uint8_t addr_type, bd_addr_t address);
+int sm_authenticated(uint16_t handle);
 
 /**
  * @brief Queries authorization state.
  * @param addr_type and address
  * @return authorization_state for the current session
  */
-authorization_state_t sm_authorization_state(uint8_t addr_type, bd_addr_t address);
+authorization_state_t sm_authorization_state(uint16_t handle);
 
 /**
  * @brief Used by att_server.c to request user authorization.
  * @param addr_type and address
  */
-void sm_request_pairing(uint8_t addr_type, bd_addr_t address);
+void sm_request_pairing(uint16_t handle);
 
 /**
  * @brief Report user authorization decline.
  * @param addr_type and address
  */
-void sm_authorization_decline(uint8_t addr_type, bd_addr_t address);
+void sm_authorization_decline(uint16_t handle);
 
 /**
  * @brief Report user authorization grant.
  * @param addr_type and address
  */
-void sm_authorization_grant(uint8_t addr_type, bd_addr_t address);
+void sm_authorization_grant(uint16_t handle);
 
 /**
  * @brief Support for signed writes, used by att_server.

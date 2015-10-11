@@ -69,9 +69,9 @@ void sm_set_authentication_requirements(uint8_t auth_req){}
 void sm_set_io_capabilities(io_capability_t io_capability){}
 void sm_send_security_request(uint16_t handle){}
 
-void sm_bonding_decline(uint8_t addr_type, bd_addr_t address){}
-void sm_just_works_confirm(uint8_t addr_type, bd_addr_t address){}
-void sm_passkey_input(uint8_t addr_type, bd_addr_t address, uint32_t passkey){}
+void sm_bonding_decline(uint16_t handle){}
+void sm_just_works_confirm(uint16_t handle){}
+void sm_passkey_input(uint16_t handle, uint32_t passkey){}
 
 // @returns 0 if not encrypted, 7-16 otherwise
 int sm_encryption_key_size(uint8_t addr_type, bd_addr_t address){

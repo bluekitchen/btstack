@@ -2338,29 +2338,23 @@ static sm_connection_t * sm_get_connection_for_handle(uint16_t con_handle){
     return &hci_con->sm_connection;    
 }
 
-static sm_connection_t * sm_get_connection(uint8_t addr_type, bd_addr_t address){
-    hci_connection_t * hci_con = hci_connection_for_bd_addr_and_type(address, (bd_addr_type_t)addr_type);
-    if (!hci_con)  return NULL;
-    return &hci_con->sm_connection;
-}
-
 // @returns 0 if not encrypted, 7-16 otherwise
-int sm_encryption_key_size(uint8_t addr_type, bd_addr_t address){
-    sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
+int sm_encryption_key_size(uint16_t handle){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(handle);
     if (!sm_conn) return 0;     // wrong connection
     if (!sm_conn->sm_connection_encrypted) return 0;
     return sm_conn->sm_actual_encryption_key_size;
 }
 
-int sm_authenticated(uint8_t addr_type, bd_addr_t address){
-    sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
+int sm_authenticated(uint16_t handle){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(handle);
     if (!sm_conn) return 0;     // wrong connection
     if (!sm_conn->sm_connection_encrypted) return 0; // unencrypted connection cannot be authenticated
     return sm_conn->sm_connection_authenticated;
 }
 
-authorization_state_t sm_authorization_state(uint8_t addr_type, bd_addr_t address){
-    sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
+authorization_state_t sm_authorization_state(uint16_t handle){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(handle);
     if (!sm_conn) return AUTHORIZATION_UNKNOWN;     // wrong connection
     if (!sm_conn->sm_connection_encrypted)               return AUTHORIZATION_UNKNOWN; // unencrypted connection cannot be authorized
     if (!sm_conn->sm_connection_authenticated)           return AUTHORIZATION_UNKNOWN; // unauthenticatd connection cannot be authorized
@@ -2389,8 +2383,8 @@ void sm_send_security_request(uint16_t handle){
 }
 
 // request pairing
-void sm_request_pairing(uint8_t addr_type, bd_addr_t address){
-    sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
+void sm_request_pairing(uint16_t handle){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(handle);
     if (!sm_conn) return;     // wrong connection
 
     log_info("sm_request_pairing in role %u, state %u", sm_conn->sm_role, sm_conn->sm_engine_state);
@@ -2423,15 +2417,15 @@ void sm_request_pairing(uint8_t addr_type, bd_addr_t address){
 }
 
 // called by client app on authorization request
-void sm_authorization_decline(uint8_t addr_type, bd_addr_t address){
-    sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
+void sm_authorization_decline(uint16_t handle){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(handle);
     if (!sm_conn) return;     // wrong connection
     sm_conn->sm_connection_authorization_state = AUTHORIZATION_DECLINED;
     sm_notify_client_authorization(SM_AUTHORIZATION_RESULT, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0);
 }
 
-void sm_authorization_grant(uint8_t addr_type, bd_addr_t address){
-    sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
+void sm_authorization_grant(uint16_t handle){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(handle);
     if (!sm_conn) return;     // wrong connection
     sm_conn->sm_connection_authorization_state = AUTHORIZATION_GRANTED;
     sm_notify_client_authorization(SM_AUTHORIZATION_RESULT, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 1);
@@ -2439,8 +2433,8 @@ void sm_authorization_grant(uint8_t addr_type, bd_addr_t address){
 
 // GAP Bonding API
 
-void sm_bonding_decline(uint8_t addr_type, bd_addr_t address){
-    sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
+void sm_bonding_decline(uint16_t handle){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(handle);
     if (!sm_conn) return;     // wrong connection
     setup->sm_user_response = SM_USER_RESPONSE_DECLINE;
 
@@ -2452,8 +2446,8 @@ void sm_bonding_decline(uint8_t addr_type, bd_addr_t address){
     sm_run();
 }
 
-void sm_just_works_confirm(uint8_t addr_type, bd_addr_t address){
-    sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
+void sm_just_works_confirm(uint16_t handle){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(handle);
     if (!sm_conn) return;     // wrong connection
     setup->sm_user_response = SM_USER_RESPONSE_CONFIRM;
     if (sm_conn->sm_engine_state == SM_PH1_W4_USER_RESPONSE){
@@ -2462,8 +2456,8 @@ void sm_just_works_confirm(uint8_t addr_type, bd_addr_t address){
     sm_run();
 }
 
-void sm_passkey_input(uint8_t addr_type, bd_addr_t address, uint32_t passkey){
-    sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
+void sm_passkey_input(uint16_t handle, uint32_t passkey){
+    sm_connection_t * sm_conn = sm_get_connection_for_handle(handle);
     if (!sm_conn) return;     // wrong connection
     sm_reset_tk();
     net_store_32(setup->sm_tk, 12, passkey);

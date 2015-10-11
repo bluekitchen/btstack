@@ -570,7 +570,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case SM_JUST_WORKS_REQUEST: {
                     printf("SM_JUST_WORKS_REQUEST\n");
                     sm_event_t * event = (sm_event_t *) packet;
-                    sm_just_works_confirm(event->addr_type, event->address);
+                    sm_just_works_confirm(event->handle);
                     break;
                 }
 
@@ -600,7 +600,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                 case SM_AUTHORIZATION_REQUEST: {
                     // auto-authorize connection if requested
                     sm_event_t * event = (sm_event_t *) packet;
-                    sm_authorization_grant(event->addr_type, event->address);
+                    sm_authorization_grant(event->handle);
                     break;
                 }
                 case ATT_HANDLE_VALUE_INDICATION_COMPLETE:
@@ -718,7 +718,7 @@ int  stdin_process(struct data_source *ds){
         ui_digits_for_passkey--;
         if (ui_digits_for_passkey == 0){
             printf("\nSending Passkey '%06x'\n", ui_passkey);
-            sm_passkey_input(master_addr_type, master_address, ui_passkey);
+            sm_passkey_input(handle, ui_passkey);
         }
         return 0;
     }

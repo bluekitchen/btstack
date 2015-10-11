@@ -383,14 +383,14 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
                 case SM_JUST_WORKS_REQUEST:
                     // auto-authorize connection if requested
                     sm_event = (sm_event_t *) packet;
-                    sm_just_works_confirm(sm_event->addr_type, sm_event->address);
+                    sm_just_works_confirm(sm_event->handle);
                     printf("Just Works request confirmed\n");
                     break;
 
                 case SM_AUTHORIZATION_REQUEST:
                     // auto-authorize connection if requested
                     sm_event = (sm_event_t *) packet;
-                    sm_authorization_grant(sm_event->addr_type, sm_event->address);
+                    sm_authorization_grant(sm_event->handle);
                     break;
 
                 case GAP_LE_ADVERTISING_REPORT:
@@ -886,7 +886,7 @@ static int ui_process_digits_for_passkey(char buffer){
     ui_digits_for_passkey--;
     if (ui_digits_for_passkey == 0){
         printf("\nSending Passkey %u (0x%x)\n", ui_passkey, ui_passkey);
-        sm_passkey_input(peer_addr_type, peer_address, ui_passkey);
+        sm_passkey_input(handle, ui_passkey);
     }
     return 0;
 }
@@ -1189,7 +1189,7 @@ static void ui_process_command(char buffer){
             show_usage();
             break;
         case 'b':
-            sm_request_pairing(current_pts_address_type, current_pts_address);
+            sm_request_pairing(handle);
             break;
         case 'c':
             gap_connectable = 0;

@@ -160,8 +160,8 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                 case HCI_EVENT_ENCRYPTION_KEY_REFRESH_COMPLETE: 
                 	// check handle
                 	if (att_connection.con_handle != READ_BT_16(packet, 3)) break;
-                	att_connection.encryption_key_size = sm_encryption_key_size(att_client_addr_type, att_client_address);
-                	att_connection.authenticated = sm_authenticated(att_client_addr_type, att_client_address);
+                	att_connection.encryption_key_size = sm_encryption_key_size(att_connection.con_handle);
+                	att_connection.authenticated = sm_authenticated(att_connection.con_handle);
                 	break;
 
                 case HCI_EVENT_DISCONNECTION_COMPLETE:
@@ -290,10 +290,10 @@ static void att_run(void){
             && (att_response_buffer[4] == ATT_ERROR_INSUFFICIENT_AUTHORIZATION)
             && (att_connection.authenticated)){
 
-            	switch (sm_authorization_state(att_client_addr_type, att_client_address)){
+            	switch (sm_authorization_state(att_connection.con_handle)){
             		case AUTHORIZATION_UNKNOWN:
                         l2cap_release_packet_buffer();
-		             	sm_request_pairing(att_client_addr_type, att_client_address);
+		             	sm_request_pairing(att_connection.con_handle);
 	    		        return;
 	    		    case AUTHORIZATION_PENDING:
                         l2cap_release_packet_buffer();
