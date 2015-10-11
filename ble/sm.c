@@ -263,7 +263,7 @@ static const stk_generation_method_t stk_generation_method[5][5] = {
 
 static void sm_run(void);
 static void sm_done_for_handle(uint16_t handle);
-static void sm_notify_client(uint8_t type, uint8_t addr_type, bd_addr_t address, uint32_t passkey, uint16_t index);
+static void sm_notify_client(uint8_t type, uint16_t handle, uint8_t addr_type, bd_addr_t address, uint32_t passkey, uint16_t index);
 static sm_connection_t * sm_get_connection_for_handle(uint16_t handle);
 static inline int sm_calc_actual_encryption_key_size(int other);
 static int sm_validate_stk_generation_method(void);
@@ -464,10 +464,11 @@ static void sm_s1_r_prime(sm_key_t r1, sm_key_t r2, sm_key_t r_prime){
     memcpy(&r_prime[0], &r1[8], 8);
 }
 
-static void sm_notify_client(uint8_t type, uint8_t addr_type, bd_addr_t address, uint32_t passkey, uint16_t index){
+static void sm_notify_client(uint8_t type, uint16_t handle, uint8_t addr_type, bd_addr_t address, uint32_t passkey, uint16_t index){
 
     sm_event_t event;
     event.type = type;
+    event.handle = handle;
     event.addr_type = addr_type;
     BD_ADDR_COPY(event.address, address);
     event.passkey = passkey;
@@ -479,10 +480,11 @@ static void sm_notify_client(uint8_t type, uint8_t addr_type, bd_addr_t address,
     sm_client_packet_handler(HCI_EVENT_PACKET, 0, (uint8_t*) &event, sizeof(event));
 }
 
-static void sm_notify_client_authorization(uint8_t type, uint8_t addr_type, bd_addr_t address, uint8_t result){
+static void sm_notify_client_authorization(uint8_t type, uint16_t handle, uint8_t addr_type, bd_addr_t address, uint8_t result){
 
     sm_event_t event;
     event.type = type;
+    event.handle = handle;
     event.addr_type = addr_type;
     BD_ADDR_COPY(event.address, address);
     event.authorization_result = result;
@@ -562,13 +564,13 @@ static int sm_address_resolution_idle(void){
     return sm_address_resolution_mode == ADDRESS_RESOLUTION_IDLE;
 }
 
-static void sm_address_resolution_start_lookup(uint8_t addr_type, bd_addr_t addr, address_resolution_mode_t mode, void * context){
+static void sm_address_resolution_start_lookup(uint8_t addr_type, uint16_t handle, bd_addr_t addr, address_resolution_mode_t mode, void * context){
     memcpy(sm_address_resolution_address, addr, 6);
     sm_address_resolution_addr_type = addr_type;
     sm_address_resolution_test = 0;
     sm_address_resolution_mode = mode;
     sm_address_resolution_context = context;
-    sm_notify_client(SM_IDENTITY_RESOLVING_STARTED, addr_type, addr, 0, 0);
+    sm_notify_client(SM_IDENTITY_RESOLVING_STARTED, handle, addr_type, addr, 0, 0);
 }
 
 int sm_address_resolution_lookup(uint8_t address_type, bd_addr_t address){
@@ -777,26 +779,26 @@ static void sm_trigger_user_response(sm_connection_t * sm_conn){
         case PK_RESP_INPUT:
             if (sm_conn->sm_role){
                 setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-                sm_notify_client(SM_PASSKEY_INPUT_NUMBER, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0, 0); 
+                sm_notify_client(SM_PASSKEY_INPUT_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0, 0); 
             } else {
-                sm_notify_client(SM_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, READ_NET_32(setup->sm_tk, 12), 0); 
+                sm_notify_client(SM_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, READ_NET_32(setup->sm_tk, 12), 0); 
             }
             break;
         case PK_INIT_INPUT:
             if (sm_conn->sm_role){
-                sm_notify_client(SM_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, READ_NET_32(setup->sm_tk, 12), 0); 
+                sm_notify_client(SM_PASSKEY_DISPLAY_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, READ_NET_32(setup->sm_tk, 12), 0); 
             } else {
                 setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-                sm_notify_client(SM_PASSKEY_INPUT_NUMBER, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0, 0); 
+                sm_notify_client(SM_PASSKEY_INPUT_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0, 0); 
             }
             break;
         case OK_BOTH_INPUT:
             setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-            sm_notify_client(SM_PASSKEY_INPUT_NUMBER, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0, 0); 
+            sm_notify_client(SM_PASSKEY_INPUT_NUMBER, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0, 0); 
             break;        
         case JUST_WORKS:
             setup->sm_user_response = SM_USER_RESPONSE_PENDING;
-            sm_notify_client(SM_JUST_WORKS_REQUEST, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, READ_NET_32(setup->sm_tk, 12), 0);
+            sm_notify_client(SM_JUST_WORKS_REQUEST, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, READ_NET_32(setup->sm_tk, 12), 0);
             break;
         case OOB:
             // client already provided OOB data, let's skip notification.
@@ -919,6 +921,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
     sm_address_resolution_mode = ADDRESS_RESOLUTION_IDLE;
     sm_address_resolution_context = NULL;
     sm_address_resolution_test = -1;
+    uint16_t handle = 0;
 
     sm_connection_t * sm_connection;
     uint16_t ediv;
@@ -927,6 +930,7 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
             break;
         case ADDRESS_RESOLUTION_FOR_CONNECTION:
             sm_connection = (sm_connection_t *) context;
+            handle = sm_connection->sm_handle;
             switch (event){
                 case ADDRESS_RESOLUTION_SUCEEDED:
                     sm_connection->sm_irk_lookup_state = IRK_LOOKUP_SUCCEEDED;
@@ -959,10 +963,10 @@ static void sm_address_resolution_handle_event(address_resolution_event_t event)
 
     switch (event){
         case ADDRESS_RESOLUTION_SUCEEDED:
-            sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, sm_address_resolution_addr_type, sm_address_resolution_address, 0, matched_device_id);
+            sm_notify_client(SM_IDENTITY_RESOLVING_SUCCEEDED, handle, sm_address_resolution_addr_type, sm_address_resolution_address, 0, matched_device_id);
             break;
         case ADDRESS_RESOLUTION_FAILED:
-            sm_notify_client(SM_IDENTITY_RESOLVING_FAILED, sm_address_resolution_addr_type, sm_address_resolution_address, 0, 0);
+            sm_notify_client(SM_IDENTITY_RESOLVING_FAILED, handle, sm_address_resolution_addr_type, sm_address_resolution_address, 0, 0);
             break;
     }
 }
@@ -1118,7 +1122,7 @@ static void sm_run(void){
             sm_connection_t  * sm_connection  = &hci_connection->sm_connection;
             if (sm_connection->sm_irk_lookup_state == IRK_LOOKUP_W4_READY){
                 // and start lookup
-                sm_address_resolution_start_lookup(sm_connection->sm_peer_addr_type, sm_connection->sm_peer_address, ADDRESS_RESOLUTION_FOR_CONNECTION, sm_connection);
+                sm_address_resolution_start_lookup(sm_connection->sm_peer_addr_type, sm_connection->sm_handle, sm_connection->sm_peer_address, ADDRESS_RESOLUTION_FOR_CONNECTION, sm_connection);
                 sm_connection->sm_irk_lookup_state = IRK_LOOKUP_STARTED;
                 break;
             }
@@ -1130,7 +1134,7 @@ static void sm_run(void){
         if (!linked_list_empty(&sm_address_resolution_general_queue)){
             sm_lookup_entry_t * entry = (sm_lookup_entry_t *) sm_address_resolution_general_queue;
             linked_list_remove(&sm_address_resolution_general_queue, (linked_item_t *) entry);
-            sm_address_resolution_start_lookup(entry->address_type, entry->address, ADDRESS_RESOLUTION_GENERAL, NULL);
+            sm_address_resolution_start_lookup(entry->address_type, 0, entry->address, ADDRESS_RESOLUTION_GENERAL, NULL);
             btstack_memory_sm_lookup_entry_free(entry);
         }
     }
@@ -2156,7 +2160,7 @@ static void sm_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *pac
 
             // notify client to hide shown passkey
             if (setup->sm_stk_generation_method == PK_INIT_INPUT){
-                sm_notify_client(SM_PASSKEY_DISPLAY_CANCEL, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0, 0);
+                sm_notify_client(SM_PASSKEY_DISPLAY_CANCEL, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0, 0);
             }
 
             // handle user cancel pairing?
@@ -2423,14 +2427,14 @@ void sm_authorization_decline(uint8_t addr_type, bd_addr_t address){
     sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
     if (!sm_conn) return;     // wrong connection
     sm_conn->sm_connection_authorization_state = AUTHORIZATION_DECLINED;
-    sm_notify_client_authorization(SM_AUTHORIZATION_RESULT, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0);
+    sm_notify_client_authorization(SM_AUTHORIZATION_RESULT, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 0);
 }
 
 void sm_authorization_grant(uint8_t addr_type, bd_addr_t address){
     sm_connection_t * sm_conn = sm_get_connection(addr_type, address);
     if (!sm_conn) return;     // wrong connection
     sm_conn->sm_connection_authorization_state = AUTHORIZATION_GRANTED;
-    sm_notify_client_authorization(SM_AUTHORIZATION_RESULT, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 1);
+    sm_notify_client_authorization(SM_AUTHORIZATION_RESULT, sm_conn->sm_handle, sm_conn->sm_peer_addr_type, sm_conn->sm_peer_address, 1);
 }
 
 // GAP Bonding API

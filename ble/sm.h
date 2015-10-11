@@ -124,6 +124,7 @@ typedef struct {
  */
 typedef struct sm_event {
     uint8_t   type;                 ///< See <btstack/hci_cmds.h> SM_...
+    uint16_t  handle;               
     uint8_t   addr_type;
     bd_addr_t address;
     uint32_t  passkey;              ///< only used for SM_PASSKEY_DISPLAY_NUMBER 
