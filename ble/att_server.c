@@ -127,6 +127,7 @@ static void att_handle_value_indication_timeout(timer_source_t *ts){
 
 static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     
+    bd_addr_t event_address;
     switch (packet_type) {
             
         case HCI_EVENT_PACKET:
@@ -179,7 +180,7 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     break;
                 case SM_IDENTITY_RESOLVING_SUCCEEDED:
                     att_ir_lookup_active = 0;
-                    att_ir_le_device_db_index = ((sm_event_t*) packet)->le_device_db_index;
+                    att_ir_le_device_db_index = READ_BT_16(packet, 11);
                     log_info("SM_IDENTITY_RESOLVING_SUCCEEDED id %u", att_ir_le_device_db_index);
                     att_run();
                     break;
@@ -191,10 +192,10 @@ static void att_event_packet_handler (uint8_t packet_type, uint16_t channel, uin
                     break;
 
                 case SM_AUTHORIZATION_RESULT: {
-                    sm_event_t * event = (sm_event_t *) packet;
-                    if (event->addr_type != att_client_addr_type) break;
-                    if (memcmp(event->address, att_client_address, 6) != 0) break;
-                    att_connection.authorized = event->authorization_result;
+                    if (packet[4] != att_client_addr_type) break;
+                    bt_flip_addr(event_address, &packet[5]);
+                    if (memcmp(event_address, att_client_address, 6) != 0) break;
+                    att_connection.authorized = packet[11];
                     att_run();
                 	break;
                 }

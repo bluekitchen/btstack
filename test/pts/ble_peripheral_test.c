@@ -528,7 +528,7 @@ static void gap_run(void){
 }
 
 static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
-    
+    bd_addr_t event_address;
     switch (packet_type) {
             
         case HCI_EVENT_PACKET:
@@ -567,42 +567,35 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
                     att_write_queue_init();
                     break;
                     
-                case SM_JUST_WORKS_REQUEST: {
+                case SM_JUST_WORKS_REQUEST:
                     printf("SM_JUST_WORKS_REQUEST\n");
-                    sm_event_t * event = (sm_event_t *) packet;
-                    sm_just_works_confirm(event->handle);
+                    sm_just_works_confirm(READ_BT_16(packet, 2));
                     break;
-                }
 
-                case SM_PASSKEY_INPUT_NUMBER: {
+                case SM_PASSKEY_INPUT_NUMBER:
                     // display number
-                    sm_event_t * event = (sm_event_t *) packet;
-                    memcpy(master_address, event->address, 6);
-                    master_addr_type = event->addr_type;
+                    master_addr_type = packet[4];
+                    bt_flip_addr(event_address, &packet[5]);
                     printf("\nGAP Bonding %s (%u): Enter 6 digit passkey: '", bd_addr_to_str(master_address), master_addr_type);
                     fflush(stdout);
                     ui_passkey = 0;
                     ui_digits_for_passkey = 6;
                     break;
-                }
 
-                case SM_PASSKEY_DISPLAY_NUMBER: {
+                case SM_PASSKEY_DISPLAY_NUMBER:
                     // display number
-                    sm_event_t * event = (sm_event_t *) packet;
-                    printf("\nGAP Bonding %s (%u): Display Passkey '%06u\n", bd_addr_to_str(master_address), master_addr_type, event->passkey);
+                    printf("\nGAP Bonding %s (%u): Display Passkey '%06u\n", bd_addr_to_str(master_address), master_addr_type, READ_BT_32(packet, 11));
                     break;
-                }
 
                 case SM_PASSKEY_DISPLAY_CANCEL: 
                     printf("\nGAP Bonding %s (%u): Display cancel\n", bd_addr_to_str(master_address), master_addr_type);
                     break;
 
-                case SM_AUTHORIZATION_REQUEST: {
+                case SM_AUTHORIZATION_REQUEST:
                     // auto-authorize connection if requested
-                    sm_event_t * event = (sm_event_t *) packet;
-                    sm_authorization_grant(event->handle);
+                    sm_authorization_grant(READ_BT_16(packet, 2));
                     break;
-                }
+
                 case ATT_HANDLE_VALUE_INDICATION_COMPLETE:
                     printf("ATT_HANDLE_VALUE_INDICATION_COMPLETE status %u\n", packet[2]);
                     break;

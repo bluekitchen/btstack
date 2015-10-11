@@ -147,8 +147,6 @@ static uint8_t * sm_oob_data_B = (uint8_t *) "3333333333333333"; // = { 0x30...0
 static int sm_min_key_size = 7;
 static uint8_t pts_privacy_flag;
 
-static int peer_addr_type;
-static bd_addr_t peer_address;
 static int ui_passkey = 0;
 static int ui_digits_for_passkey = 0;
 static int ui_uint16_request = 0;
@@ -326,7 +324,7 @@ static void gap_run(void){
 
 void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     uint16_t aHandle;
-    sm_event_t * sm_event;
+    bd_addr_t event_address;
 
     switch (packet_type) {
             
@@ -361,36 +359,29 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
                     
                 case SM_PASSKEY_INPUT_NUMBER: 
                     // store peer address for input
-                    sm_event = (sm_event_t *) packet;
-                    memcpy(peer_address, sm_event->address, 6);
-                    peer_addr_type = sm_event->addr_type;
-                    printf("\nGAP Bonding %s (%u): Enter 6 digit passkey: '", bd_addr_to_str(sm_event->address), sm_event->addr_type);
+                    printf("\nGAP Bonding: Enter 6 digit passkey: '");
                     fflush(stdout);
                     ui_passkey = 0;
                     ui_digits_for_passkey = 6;
                     break;
 
                 case SM_PASSKEY_DISPLAY_NUMBER:
-                    sm_event = (sm_event_t *) packet;
-                    printf("\nGAP Bonding %s (%u): Display Passkey '%06u\n", bd_addr_to_str(sm_event->address), sm_event->addr_type, sm_event->passkey);
+                    printf("\nGAP Bonding: Display Passkey '%06u\n", READ_BT_32(packet, 11));
                     break;
 
                 case SM_PASSKEY_DISPLAY_CANCEL: 
-                    sm_event = (sm_event_t *) packet;
-                    printf("\nGAP Bonding %s (%u): Display cancel\n", bd_addr_to_str(sm_event->address), sm_event->addr_type);
+                    printf("\nGAP Bonding: Display cancel\n");
                     break;
 
                 case SM_JUST_WORKS_REQUEST:
                     // auto-authorize connection if requested
-                    sm_event = (sm_event_t *) packet;
-                    sm_just_works_confirm(sm_event->handle);
+                    sm_just_works_confirm(READ_BT_16(packet, 2));
                     printf("Just Works request confirmed\n");
                     break;
 
                 case SM_AUTHORIZATION_REQUEST:
                     // auto-authorize connection if requested
-                    sm_event = (sm_event_t *) packet;
-                    sm_authorization_grant(sm_event->handle);
+                    sm_authorization_grant(READ_BT_16(packet, 2));
                     break;
 
                 case GAP_LE_ADVERTISING_REPORT:
@@ -398,11 +389,12 @@ void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *packet,
                     break;
 
                 case SM_IDENTITY_RESOLVING_SUCCEEDED:
-                    memcpy(current_pts_address, ((sm_event_t*) packet)->address, 6);
-                    current_pts_address_type =  ((sm_event_t*) packet)->addr_type;
-                    le_device_db_index       =  ((sm_event_t*) packet)->le_device_db_index;
+                    bt_flip_addr(event_address, &packet[5]);
                     // skip already detected pts
-                    if (memcmp( ((sm_event_t*) packet)->address, current_pts_address, 6) == 0) break;
+                    if (memcmp(event_address, current_pts_address, 6) == 0) break;
+                    memcpy(current_pts_address, event_address, 6);
+                    current_pts_address_type =  packet[4];
+                    le_device_db_index       =  READ_BT_16(packet, 11);
                     printf("Address resolving succeeded: resolvable address %s, addr type %u\n",
                         bd_addr_to_str(current_pts_address), current_pts_address_type);
                     break;
