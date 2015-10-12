@@ -142,6 +142,23 @@ static void verify_blob(uint16_t value_length, uint16_t value_offset, uint8_t * 
     result_counter++;
 }
 
+static void handle_ble_client_event_new(uint8_t packet_type, uint8_t *packet, uint16_t size){
+	if (packet_type != HCI_EVENT_PACKET) return;
+	uint8_t status;
+	switch (packet[0]){
+		case GATT_QUERY_COMPLETE:
+			status = packet[4];
+            gatt_query_complete = 1;
+            if (status){
+                gatt_query_complete = 0;
+                printf("GATT_QUERY_COMPLETE failed with status 0x%02X\n", status);
+            }
+            break;
+        default:
+        	break;
+	}
+}
+
 static void handle_ble_client_event(le_event_t * event){
 	
 	switch(event->type){
@@ -194,7 +211,8 @@ static void handle_ble_client_event(le_event_t * event){
         	result_counter++;
         	break;
 		}
-		case GATT_QUERY_COMPLETE:{
+#if 0
+        case GATT_QUERY_COMPLETE:{
             gatt_complete_event_t *gce = (gatt_complete_event_t *)event;
             gatt_query_complete = 1;
 
@@ -204,6 +222,7 @@ static void handle_ble_client_event(le_event_t * event){
             }
             break;
         }
+#endif
 		default:
 			break;
 	}
@@ -700,7 +719,8 @@ int main (int argc, const char * argv[]){
 	att_set_read_callback(&att_read_callback);
 
 	gatt_client_init();
-	gatt_client_id = gatt_client_register_packet_handler(handle_ble_client_event);
+	gatt_client_id = gatt_client_register_packet_handler_new(handle_ble_client_event, handle_ble_client_event_new);
+	// gatt_client_id = gatt_client_register_packet_handler(handle_ble_client_event);
 	
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }
