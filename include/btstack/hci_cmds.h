@@ -539,7 +539,18 @@ extern "C" {
  */
 #define GATT_INDICATION                                    0xA8
 
+/**
+ * @format HZ
+ * @param handle
+ * @param characteristic_descriptor
+ */
 #define GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT        0xA9
+
+/**
+ * @format HZ
+ * @param handle
+ * @param characteristic_descriptor
+ */
 #define GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT   0xAA
 
 /** 
