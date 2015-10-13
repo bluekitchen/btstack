@@ -145,6 +145,7 @@ static void verify_blob(uint16_t value_length, uint16_t value_offset, uint8_t * 
 static void handle_ble_client_event_new(uint8_t packet_type, uint8_t *packet, uint16_t size){
 	if (packet_type != HCI_EVENT_PACKET) return;
 	uint8_t status;
+	le_service_t service;
 	switch (packet[0]){
 		case GATT_QUERY_COMPLETE:
 			status = packet[4];
@@ -154,6 +155,17 @@ static void handle_ble_client_event_new(uint8_t packet_type, uint8_t *packet, ui
                 printf("GATT_QUERY_COMPLETE failed with status 0x%02X\n", status);
             }
             break;
+		case GATT_SERVICE_QUERY_RESULT:
+			service.start_group_handle = READ_BT_16(packet, 4);
+			service.end_group_handle   = READ_BT_16(packet, 6);
+			service.uuid16 = 0;
+			swap128(&packet[8], service.uuid128);
+			if (sdp_has_blueooth_base_uuid(service.uuid128)){
+				service.uuid16 = READ_NET_32(service.uuid128, 0);
+			}
+			services[result_index++] = service;
+			result_counter++;
+            break;
         default:
         	break;
 	}
@@ -162,10 +174,12 @@ static void handle_ble_client_event_new(uint8_t packet_type, uint8_t *packet, ui
 static void handle_ble_client_event(le_event_t * event){
 	
 	switch(event->type){
+#if 0
 		case GATT_SERVICE_QUERY_RESULT:
 			services[result_index++] = ((le_service_event_t *) event)->service;
 			result_counter++;
             break;
+#endif
 
         case GATT_INCLUDED_SERVICE_QUERY_RESULT:
             included_services[result_index++] = ((le_service_event_t *) event)->service;

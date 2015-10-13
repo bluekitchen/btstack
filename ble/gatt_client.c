@@ -526,41 +526,12 @@ static void gatt_client_handle_transaction_complete(gatt_client_t * peripheral){
 #if 0
 // borrowed from daemon.c
 
-static void send_gatt_query_complete(connection_t * connection, uint16_t handle, uint8_t status){
-    // @format H1
-    uint8_t event[5];
-    event[0] = GATT_QUERY_COMPLETE;
-    event[1] = 3;
-    bt_store_16(event, 2, handle);
-    event[4] = status;
-    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-    socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
-static void send_gatt_mtu_event(connection_t * connection, uint16_t handle, uint16_t mtu){
-    uint8_t event[6];
-    int pos = 0;
-    event[pos++] = GATT_MTU;
-    event[pos++] = sizeof(event) - 2;
-    bt_store_16(event, pos, handle);
-    pos += 2;
-    bt_store_16(event, pos, mtu);
-    pos += 2;
-    hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-    socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
-}
-
 void daemon_gatt_deserialize_service(uint8_t *packet, int offset, le_service_t *service){
     service->start_group_handle = READ_BT_16(packet, offset);
     service->end_group_handle = READ_BT_16(packet, offset + 2);
     swap128(&packet[offset + 4], service->uuid128);
 }
 
-void daemon_gatt_serialize_service(le_service_t * service, uint8_t * event, int offset){
-    bt_store_16(event, offset, service->start_group_handle);
-    bt_store_16(event, offset+2, service->end_group_handle);
-    swap128(service->uuid128, &event[offset + 4]);
-}
 
 void daemon_gatt_deserialize_characteristic(uint8_t * packet, int offset, le_characteristic_t * characteristic){
     characteristic->start_handle = READ_BT_16(packet, offset);
@@ -571,23 +542,11 @@ void daemon_gatt_deserialize_characteristic(uint8_t * packet, int offset, le_cha
     swap128(&packet[offset+10], characteristic->uuid128);
 }
 
-void daemon_gatt_serialize_characteristic(le_characteristic_t * characteristic, uint8_t * event, int offset){
-    bt_store_16(event, offset, characteristic->start_handle);
-    bt_store_16(event, offset+2, characteristic->value_handle);
-    bt_store_16(event, offset+4, characteristic->end_handle);
-    bt_store_16(event, offset+6, characteristic->properties);
-    swap128(characteristic->uuid128, &event[offset+8]);
-}
-
 void daemon_gatt_deserialize_characteristic_descriptor(uint8_t * packet, int offset, le_characteristic_descriptor_t * descriptor){
     descriptor->handle = READ_BT_16(packet, offset);
     swap128(&packet[offset+2], descriptor->uuid128);
 }
 
-void daemon_gatt_serialize_characteristic_descriptor(le_characteristic_descriptor_t * characteristic_descriptor, uint8_t * event, int offset){
-    bt_store_16(event, offset, characteristic_descriptor->handle);
-    swap128(characteristic_descriptor->uuid128, &event[offset+2]);
-}
 
 // setup events
 void daemon_setup_service_event(le_event_t *le_event, uint8_t* event) {
@@ -674,6 +633,20 @@ static void emit_event_to_all_subclients(le_event_t * event){
 
 ///
 
+static void gatt_serialize_characteristic(le_characteristic_t * characteristic, uint8_t * event, int offset){
+    bt_store_16(event, offset, characteristic->start_handle);
+    bt_store_16(event, offset+2, characteristic->value_handle);
+    bt_store_16(event, offset+4, characteristic->end_handle);
+    bt_store_16(event, offset+6, characteristic->properties);
+    swap128(characteristic->uuid128, &event[offset+8]);
+}
+
+static void gatt_serialize_characteristic_descriptor(le_characteristic_descriptor_t * characteristic_descriptor, uint8_t * event, int offset){
+    bt_store_16(event, offset, characteristic_descriptor->handle);
+    swap128(characteristic_descriptor->uuid128, &event[offset+2]);
+}
+
+///
 
 static void emit_gatt_complete_event(gatt_client_t * peripheral, uint8_t status){
 
@@ -695,31 +668,55 @@ static void emit_gatt_complete_event(gatt_client_t * peripheral, uint8_t status)
     emit_event_new(peripheral->subclient_id, packet, sizeof(packet));
 }
 
+static void emit_gatt_service_query_result_event(gatt_client_t * peripheral, uint16_t start_group_handle, uint16_t end_group_handle, uint8_t * uuid128){
+    uint8_t packet[24];
+    packet[0] = GATT_SERVICE_QUERY_RESULT;
+    packet[1] = sizeof(packet) - 2;
+    bt_store_16(packet, 2, peripheral->handle);
+    ///
+    bt_store_16(packet, 4, start_group_handle);
+    bt_store_16(packet, 6, end_group_handle);
+    swap128(uuid128, &packet[8]);
+    emit_event_new(peripheral->subclient_id, packet, sizeof(packet));
+}
+
+///
+
 static void report_gatt_services(gatt_client_t * peripheral, uint8_t * packet,  uint16_t size){
     uint8_t attr_length = packet[1];
     uint8_t uuid_length = attr_length - 4;
     
+#ifdef OLD
     le_service_t service;
     le_service_event_t event;
     event.type = GATT_SERVICE_QUERY_RESULT;
     event.handle = peripheral->handle;
+#endif
 
     int i;
     for (i = 2; i < size; i += attr_length){
-        service.start_group_handle = READ_BT_16(packet,i);
-        service.end_group_handle = READ_BT_16(packet,i+2);
-        
+        uint16_t start_group_handle = READ_BT_16(packet,i);
+        uint16_t end_group_handle   = READ_BT_16(packet,i+2);
+        uint8_t  uuid128[16];
+        uint16_t uuid16 = 0;
+
         if (uuid_length == 2){
-            service.uuid16 = READ_BT_16(packet, i+4);
-            sdp_normalize_uuid((uint8_t*) &service.uuid128, service.uuid16);
+            uuid16 = READ_BT_16(packet, i+4);
+            sdp_normalize_uuid((uint8_t*) &uuid128, uuid16);
         } else {
-            service.uuid16 = 0;
-            swap128(&packet[i+4], service.uuid128);
+            swap128(&packet[i+4], uuid128);
         }
+        emit_gatt_service_query_result_event(peripheral, start_group_handle, end_group_handle, uuid128);
+
+#ifdef OLD
+        service.uuid16 = uuid16;
+        memcpy((uint8_t*) &service.uuid128, uuid128, 16);
+        service.start_group_handle = start_group_handle;
+        service.end_group_handle = end_group_handle;
         event.service = service;
         // log_info(" report_gatt_services 0x%02x : 0x%02x-0x%02x", service.uuid16, service.start_group_handle, service.end_group_handle);
-        
         emit_event(peripheral->subclient_id, (le_event_t*)&event);
+#endif
     }
     // log_info("report_gatt_services for %02X done", peripheral->handle);
 }
@@ -1314,12 +1311,17 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
         case ATT_FIND_BY_TYPE_VALUE_RESPONSE:
         {
             uint8_t pair_size = 4;
+#ifdef OLD
             le_service_t service;
             le_service_event_t event;
             event.type = GATT_SERVICE_QUERY_RESULT;
-            
+#endif            
             int i;
             for (i = 1; i<size; i+=pair_size){
+                uint16_t start_group_handle = READ_BT_16(packet,i);
+                uint16_t   end_group_handle = READ_BT_16(packet,i+2);
+                emit_gatt_service_query_result_event(peripheral, start_group_handle, end_group_handle, peripheral->uuid128);
+#ifdef OLD
                 service.start_group_handle = READ_BT_16(packet,i);
                 service.end_group_handle = READ_BT_16(packet,i+2);
                 memcpy(service.uuid128,  peripheral->uuid128, 16);
@@ -1327,6 +1329,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 event.service = service;
                 event.handle  = peripheral->handle;
                 emit_event(peripheral->subclient_id, (le_event_t*)&event);
+#endif
             }
             
             trigger_next_service_by_uuid_query(peripheral, service.end_group_handle);
