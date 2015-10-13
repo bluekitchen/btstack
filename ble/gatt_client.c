@@ -658,7 +658,6 @@ static void emit_gatt_complete_event(gatt_client_t * peripheral, uint8_t status)
     event.status = status;
     emit_event(peripheral->subclient_id, (le_event_t*)&event);
 #endif
-
     // @format H1
     uint8_t packet[5];
     packet[0] = GATT_QUERY_COMPLETE;
@@ -669,6 +668,7 @@ static void emit_gatt_complete_event(gatt_client_t * peripheral, uint8_t status)
 }
 
 static void emit_gatt_service_query_result_event(gatt_client_t * peripheral, uint16_t start_group_handle, uint16_t end_group_handle, uint8_t * uuid128){
+    // @format HX
     uint8_t packet[24];
     packet[0] = GATT_SERVICE_QUERY_RESULT;
     packet[1] = sizeof(packet) - 2;
@@ -677,6 +677,22 @@ static void emit_gatt_service_query_result_event(gatt_client_t * peripheral, uin
     bt_store_16(packet, 4, start_group_handle);
     bt_store_16(packet, 6, end_group_handle);
     swap128(uuid128, &packet[8]);
+    emit_event_new(peripheral->subclient_id, packet, sizeof(packet));
+}
+
+static void emit_gatt_characteristic_query_result_event(gatt_client_t * peripheral, uint16_t start_handle, uint16_t value_handle, uint16_t end_handle,
+        uint16_t properties, uint8_t * uuid128){
+    // @format HY
+    uint8_t packet[28];
+    packet[0] = GATT_CHARACTERISTIC_QUERY_RESULT;
+    packet[1] = sizeof(packet) - 2;
+    bt_store_16(packet, 2, peripheral->handle);
+    ///
+    bt_store_16(packet, 4,  start_handle);
+    bt_store_16(packet, 6,  value_handle);
+    bt_store_16(packet, 8,  end_handle);
+    bt_store_16(packet, 10, properties);
+    swap128(uuid128, &packet[12]);
     emit_event_new(peripheral->subclient_id, packet, sizeof(packet));
 }
 
@@ -748,7 +764,10 @@ static void characteristic_end_found(gatt_client_t * peripheral, uint16_t end_ha
     // TODO: stop searching if filter and uuid found
     
     if (!peripheral->characteristic_start_handle) return;
-    
+
+    emit_gatt_characteristic_query_result_event(peripheral, peripheral->characteristic_start_handle, peripheral->attribute_handle,
+        end_handle, peripheral->characteristic_properties, peripheral->uuid128);    
+#ifdef OLD
     le_characteristic_event_t event;
     event.type = GATT_CHARACTERISTIC_QUERY_RESULT;
     event.handle = peripheral->handle;
@@ -760,7 +779,8 @@ static void characteristic_end_found(gatt_client_t * peripheral, uint16_t end_ha
     memcpy(event.characteristic.uuid128, peripheral->uuid128, 16);
     
     emit_event(peripheral->subclient_id, (le_event_t*)&event);
-    
+#endif
+
     peripheral->characteristic_start_handle = 0;
 }
 

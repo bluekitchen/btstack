@@ -146,6 +146,7 @@ static void handle_ble_client_event_new(uint8_t packet_type, uint8_t *packet, ui
 	if (packet_type != HCI_EVENT_PACKET) return;
 	uint8_t status;
 	le_service_t service;
+	le_characteristic_t characteristic;
 	switch (packet[0]){
 		case GATT_QUERY_COMPLETE:
 			status = packet[4];
@@ -166,6 +167,19 @@ static void handle_ble_client_event_new(uint8_t packet_type, uint8_t *packet, ui
 			services[result_index++] = service;
 			result_counter++;
             break;
+        case GATT_CHARACTERISTIC_QUERY_RESULT:
+        	characteristic.start_handle = READ_BT_16(packet, 4);
+        	characteristic.value_handle = READ_BT_16(packet, 6);
+        	characteristic.end_handle =   READ_BT_16(packet, 8);
+        	characteristic.properties =   READ_BT_16(packet, 10);
+			characteristic.uuid16 = 0;
+			swap128(&packet[12], characteristic.uuid128);
+			if (sdp_has_blueooth_base_uuid(characteristic.uuid128)){
+				characteristic.uuid16 = READ_NET_32(characteristic.uuid128, 0);
+			}
+        	characteristics[result_index++] = characteristic;
+        	result_counter++;
+            break;
         default:
         	break;
 	}
@@ -174,23 +188,10 @@ static void handle_ble_client_event_new(uint8_t packet_type, uint8_t *packet, ui
 static void handle_ble_client_event(le_event_t * event){
 	
 	switch(event->type){
-#if 0
-		case GATT_SERVICE_QUERY_RESULT:
-			services[result_index++] = ((le_service_event_t *) event)->service;
-			result_counter++;
-            break;
-#endif
-
         case GATT_INCLUDED_SERVICE_QUERY_RESULT:
             included_services[result_index++] = ((le_service_event_t *) event)->service;
             result_counter++;
             break;
-        
-        case GATT_CHARACTERISTIC_QUERY_RESULT:{
-        	characteristics[result_index++] = ((le_characteristic_event_t *) event)->characteristic;
-        	result_counter++;
-            break;
-        }
         case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:{
         	le_characteristic_descriptor_event *descriptor_event = (le_characteristic_descriptor_event_t *) event;
         	descriptors[result_index++] = descriptor_event->characteristic_descriptor;
@@ -225,18 +226,6 @@ static void handle_ble_client_event(le_event_t * event){
         	result_counter++;
         	break;
 		}
-#if 0
-        case GATT_QUERY_COMPLETE:{
-            gatt_complete_event_t *gce = (gatt_complete_event_t *)event;
-            gatt_query_complete = 1;
-
-            if (gce->status != 0){
-                gatt_query_complete = 0;
-                printf("GATT_QUERY_COMPLETE failed with status 0x%02X\n", gce->status);
-            }
-            break;
-        }
-#endif
 		default:
 			break;
 	}
