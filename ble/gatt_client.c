@@ -667,10 +667,10 @@ static void emit_gatt_complete_event(gatt_client_t * peripheral, uint8_t status)
     emit_event_new(peripheral->subclient_id, packet, sizeof(packet));
 }
 
-static void emit_gatt_service_query_result_event(gatt_client_t * peripheral, uint16_t start_group_handle, uint16_t end_group_handle, uint8_t * uuid128){
+static void emit_gatt_service_query_result_event(gatt_client_t * peripheral, uint8_t type, uint16_t start_group_handle, uint16_t end_group_handle, uint8_t * uuid128){
     // @format HX
     uint8_t packet[24];
-    packet[0] = GATT_SERVICE_QUERY_RESULT;
+    packet[0] = type;
     packet[1] = sizeof(packet) - 2;
     bt_store_16(packet, 2, peripheral->handle);
     ///
@@ -722,7 +722,7 @@ static void report_gatt_services(gatt_client_t * peripheral, uint8_t * packet,  
         } else {
             swap128(&packet[i+4], uuid128);
         }
-        emit_gatt_service_query_result_event(peripheral, start_group_handle, end_group_handle, uuid128);
+        emit_gatt_service_query_result_event(peripheral, GATT_SERVICE_QUERY_RESULT, start_group_handle, end_group_handle, uuid128);
 
 #ifdef OLD
         service.uuid16 = uuid16;
@@ -797,7 +797,20 @@ static void report_gatt_characteristics(gatt_client_t * peripheral, uint8_t * pa
     }
 }
 
+// pre: uuid16 != 0 OR uuid128 != NULL
+// maybe inline this into the two callers
 static void report_gatt_included_service(gatt_client_t * peripheral, uint8_t *uuid128, uint16_t uuid16){
+    if (uuid16){
+        uint8_t normalized_uuid128[16];
+        sdp_normalize_uuid(normalized_uuid128, uuid16);
+        emit_gatt_service_query_result_event(peripheral, GATT_INCLUDED_SERVICE_QUERY_RESULT, peripheral->query_start_handle,
+            peripheral->query_end_handle, normalized_uuid128);
+    } else if (uuid128){
+        emit_gatt_service_query_result_event(peripheral, GATT_INCLUDED_SERVICE_QUERY_RESULT, peripheral->query_start_handle,
+            peripheral->query_end_handle, uuid128);
+    }
+
+#ifdef OLD
     le_service_t service;
     service.uuid16 = uuid16;
     if (service.uuid16){
@@ -815,6 +828,7 @@ static void report_gatt_included_service(gatt_client_t * peripheral, uint8_t *uu
     event.service = service;
     event.handle = peripheral->handle;
     emit_event(peripheral->subclient_id, (le_event_t*)&event);
+#endif
 }
 
 static void setup_characteristic_value_event(le_characteristic_value_event_t * event, uint16_t handle, uint16_t value_handle, uint8_t * value, uint16_t length, uint16_t offset, uint8_t event_type){
@@ -1340,7 +1354,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             for (i = 1; i<size; i+=pair_size){
                 uint16_t start_group_handle = READ_BT_16(packet,i);
                 uint16_t   end_group_handle = READ_BT_16(packet,i+2);
-                emit_gatt_service_query_result_event(peripheral, start_group_handle, end_group_handle, peripheral->uuid128);
+                emit_gatt_service_query_result_event(peripheral, GATT_SERVICE_QUERY_RESULT, start_group_handle, end_group_handle, peripheral->uuid128);
 #ifdef OLD
                 service.start_group_handle = READ_BT_16(packet,i);
                 service.end_group_handle = READ_BT_16(packet,i+2);
