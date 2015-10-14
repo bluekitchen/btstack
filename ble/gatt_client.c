@@ -595,7 +595,7 @@ static void emit_event_new(uint16_t gatt_client_id, uint8_t * packet, uint16_t s
     (*gatt_client_callback)(HCI_EVENT_PACKET, packet, size);
 }
 
-static void emit_event_to_all_subclients_new(uint16_t gatt_client_id, uint8_t * packet, uint16_t size){
+static void emit_event_to_all_subclients_new(uint8_t * packet, uint16_t size){
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, &gatt_subclients);
     while (linked_list_iterator_has_next(&it)){
@@ -840,29 +840,45 @@ static void send_characteristic_value_event(gatt_client_t * peripheral, uint16_t
     emit_event(peripheral->subclient_id, (le_event_t*)&event);
 }
 
+// @returns packet pointer
+// @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
+static const int characteristic_value_event_header_size = 8;
+static uint8_t * setup_characteristic_value_packet(uint8_t type, uint16_t con_handle, uint16_t attribute_handle, uint8_t * value, uint16_t length){
+    // before the value inside the ATT PDU
+    uint8_t * packet = value - characteristic_value_event_header_size;
+    packet[0] = type;
+    packet[1] = characteristic_value_event_header_size - 2 + length;
+    bt_store_16(packet, 2, con_handle);
+    bt_store_16(packet, 4, attribute_handle);
+    bt_store_16(packet, 6, length);
+    return packet;
+}
+
+// @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
 static void report_gatt_notification(uint16_t con_handle, uint16_t value_handle, uint8_t * value, int length){
+    uint8_t * packet = setup_characteristic_value_packet(GATT_NOTIFICATION, con_handle, value_handle, value, length);
+    emit_event_to_all_subclients_new(packet, characteristic_value_event_header_size + 8);
+#ifdef OLD
     le_characteristic_value_event_t event;
     setup_characteristic_value_event(&event, con_handle, value_handle, value, length, 0, GATT_NOTIFICATION);
     emit_event_to_all_subclients((le_event_t*)&event);
+#endif
 }
 
+// @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
 static void report_gatt_indication(uint16_t con_handle, uint16_t value_handle, uint8_t * value, int length){
+    uint8_t * packet = setup_characteristic_value_packet(GATT_INDICATION, con_handle, value_handle, value, length);
+    emit_event_to_all_subclients_new(packet, characteristic_value_event_header_size + 8);
+#ifdef OLD
     le_characteristic_value_event_t event;
     setup_characteristic_value_event(&event, con_handle, value_handle, value, length, 0, GATT_INDICATION);
     emit_event_to_all_subclients((le_event_t*)&event);
+#endif
 }
 
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
 static void report_gatt_characteristic_value(gatt_client_t * peripheral, uint16_t attribute_handle, uint8_t * value, uint16_t length){
-    // before the value inside the ATT PDU
-    const int header_size = 8;
-    uint8_t * packet = value - header_size;
-    packet[0] = GATT_CHARACTERISTIC_VALUE_QUERY_RESULT;
-    packet[1] = header_size - 2 + length;
-    bt_store_16(packet, 2, peripheral->handle);
-    bt_store_16(packet, 4, attribute_handle);
-    bt_store_16(packet, 6, length);
-    // packet + 8 == value
+    uint8_t * packet = setup_characteristic_value_packet(GATT_CHARACTERISTIC_VALUE_QUERY_RESULT, peripheral->handle, attribute_handle, value, length);
     emit_event_new(peripheral->subclient_id, packet, length + 8);
 #ifdef OLD    
     send_characteristic_value_event(peripheral, attribute_handle, value, length, 0, GATT_CHARACTERISTIC_VALUE_QUERY_RESULT);
