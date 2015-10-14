@@ -582,16 +582,6 @@ void daemon_setup_long_characteristic_value_event(uint8_t* event, uint16_t conne
     memcpy(&event[8], data, data_length);
 }
 
-void daemon_setup_characteristic_value_event(le_event_t *le_event, uint8_t* event) {
-    le_characteristic_value_event_t * cvalue_event = (le_characteristic_value_event_t *) le_event;
-    event[0] = le_event->type;
-    event[1] = 2 + (2 + 2 + cvalue_event->blob_length);
-    bt_store_16(event, 2, cvalue_event->handle);
-    bt_store_16(event, 4, cvalue_event->value_handle);
-    bt_store_16(event, 6, cvalue_event->blob_length);
-    memcpy(&event[8], cvalue_event->blob, cvalue_event->blob_length);
-}
-
 ///
 
 ///
@@ -688,7 +678,7 @@ static void emit_gatt_characteristic_query_result_event(gatt_client_t * peripher
     emit_event_new(peripheral->subclient_id, packet, sizeof(packet));
 }
 
-static void emit_gatt_all_characteristic_descriptors_resutl_event(
+static void emit_gatt_all_characteristic_descriptors_result_event(
     gatt_client_t * peripheral, uint16_t descriptor_handle, uint8_t * uuid128){
     // @format HZ
     uint8_t packet[22];
@@ -866,8 +856,20 @@ static void report_gatt_indication(uint16_t con_handle, uint16_t value_handle, u
     emit_event_to_all_subclients((le_event_t*)&event);
 }
 
+// @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
 static void report_gatt_characteristic_value(gatt_client_t * peripheral, uint16_t handle, uint8_t * value, int length){
+    // before the value inside the ATT PDU
+    uint8_t * packet = value - 8;
+    packet[0] = GATT_CHARACTERISTIC_VALUE_QUERY_RESULT;
+    packet[1] = 2 + 2 + 2 + length;
+    bt_store_16(packet, 2, peripheral->handle);
+    bt_store_16(packet, 4, handle);
+    bt_store_16(packet, 6, length);
+    // packet + 8 == value
+    emit_event_new(peripheral->subclient_id, packet, length + 8);
+#ifdef OLD    
     send_characteristic_value_event(peripheral, handle, value, length, 0, GATT_CHARACTERISTIC_VALUE_QUERY_RESULT);
+#endif
 }
 
 static void report_gatt_characteristic_descriptor(gatt_client_t * peripheral, uint16_t handle, uint8_t *value, uint16_t value_length, uint16_t value_offset, uint8_t event_type){
@@ -899,7 +901,7 @@ static void report_gatt_all_characteristic_descriptors(gatt_client_t * periphera
         } else {
             swap128(&packet[i+2], uuid128);
         }        
-        emit_gatt_all_characteristic_descriptors_resutl_event(peripheral, descriptor_handle, uuid128);
+        emit_gatt_all_characteristic_descriptors_result_event(peripheral, descriptor_handle, uuid128);
 
 #ifdef OLD
         le_characteristic_descriptor_t descriptor;
