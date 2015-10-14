@@ -633,14 +633,6 @@ static void emit_event_to_all_subclients(le_event_t * event){
 
 ///
 
-static void gatt_serialize_characteristic(le_characteristic_t * characteristic, uint8_t * event, int offset){
-    bt_store_16(event, offset, characteristic->start_handle);
-    bt_store_16(event, offset+2, characteristic->value_handle);
-    bt_store_16(event, offset+4, characteristic->end_handle);
-    bt_store_16(event, offset+6, characteristic->properties);
-    swap128(characteristic->uuid128, &event[offset+8]);
-}
-
 static void gatt_serialize_characteristic_descriptor(le_characteristic_descriptor_t * characteristic_descriptor, uint8_t * event, int offset){
     bt_store_16(event, offset, characteristic_descriptor->handle);
     swap128(characteristic_descriptor->uuid128, &event[offset+2]);
@@ -696,6 +688,18 @@ static void emit_gatt_characteristic_query_result_event(gatt_client_t * peripher
     emit_event_new(peripheral->subclient_id, packet, sizeof(packet));
 }
 
+static void emit_gatt_all_characteristic_descriptors_resutl_event(
+    gatt_client_t * peripheral, uint16_t descriptor_handle, uint8_t * uuid128){
+    // @format HZ
+    uint8_t packet[22];
+    packet[0] = GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT;
+    packet[1] = sizeof(packet) - 2;
+    bt_store_16(packet, 2, peripheral->handle);
+    ///
+    bt_store_16(packet, 4,  descriptor_handle);
+    swap128(uuid128, &packet[6]);
+    emit_event_new(peripheral->subclient_id, packet, sizeof(packet));
+}
 ///
 
 static void report_gatt_services(gatt_client_t * peripheral, uint8_t * packet,  uint16_t size){
@@ -884,25 +888,31 @@ static void report_gatt_characteristic_descriptor(gatt_client_t * peripheral, ui
 }
 
 static void report_gatt_all_characteristic_descriptors(gatt_client_t * peripheral, uint8_t * packet, uint16_t size, uint16_t pair_size){
-    le_characteristic_descriptor_t descriptor;
-    le_characteristic_descriptor_event_t event;
-    event.type = GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT;
-    event.handle = peripheral->handle;
-
     int i;
     for (i = 0; i<size; i+=pair_size){
-        descriptor.handle = READ_BT_16(packet,i);
+        uint16_t descriptor_handle = READ_BT_16(packet,i);
+        uint8_t uuid128[16];
+        uint16_t uuid16 = 0;
         if (pair_size == 4){
-            descriptor.uuid16 = READ_BT_16(packet,i+2);
-            sdp_normalize_uuid((uint8_t*) &descriptor.uuid128, descriptor.uuid16);
+            uuid16 = READ_BT_16(packet,i+2);
+            sdp_normalize_uuid(uuid128, uuid16);
         } else {
-            descriptor.uuid16 = 0;
-            swap128(&packet[i+2], descriptor.uuid128);
-        }
+            swap128(&packet[i+2], uuid128);
+        }        
+        emit_gatt_all_characteristic_descriptors_resutl_event(peripheral, descriptor_handle, uuid128);
+
+#ifdef OLD
+        le_characteristic_descriptor_t descriptor;
+        le_characteristic_descriptor_event_t event;
+        event.type = GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT;
+        event.handle = peripheral->handle;
+        descriptor.handle = descriptor_handle;
+        descriptor.uuid16 = uuid16;
+        memcpy(descriptor.uuid128, uuid128, 16);
         event.value_length = 0;
-        
         event.characteristic_descriptor = descriptor;
         emit_event(peripheral->subclient_id, (le_event_t*)&event);
+#endif
     }
     
 }

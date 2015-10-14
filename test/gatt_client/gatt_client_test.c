@@ -147,6 +147,7 @@ static void handle_ble_client_event_new(uint8_t packet_type, uint8_t *packet, ui
 	uint8_t status;
 	le_service_t service;
 	le_characteristic_t characteristic;
+	le_characteristic_descriptor_t descriptor;
 	switch (packet[0]){
 		case GATT_QUERY_COMPLETE:
 			status = packet[4];
@@ -191,6 +192,15 @@ static void handle_ble_client_event_new(uint8_t packet_type, uint8_t *packet, ui
         	characteristics[result_index++] = characteristic;
         	result_counter++;
             break;
+        case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
+        	descriptor.handle = READ_BT_16(packet, 4);
+			swap128(&packet[6], descriptor.uuid128);
+			if (sdp_has_blueooth_base_uuid(descriptor.uuid128)){
+				descriptor.uuid16 = READ_NET_32(descriptor.uuid128, 0);
+			}
+        	descriptors[result_index++] = descriptor;
+        	result_counter++;
+        	break;
         default:
         	break;
 	}
@@ -199,12 +209,6 @@ static void handle_ble_client_event_new(uint8_t packet_type, uint8_t *packet, ui
 static void handle_ble_client_event(le_event_t * event){
 	
 	switch(event->type){
-        case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:{
-        	le_characteristic_descriptor_event *descriptor_event = (le_characteristic_descriptor_event_t *) event;
-        	descriptors[result_index++] = descriptor_event->characteristic_descriptor;
-        	result_counter++;
-        	break;
-        }
         case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT: {
         	le_characteristic_descriptor_event *descriptor_event = (le_characteristic_descriptor_event_t *) event;
         	CHECK_EQUAL(short_value_length, descriptor_event->value_length);
