@@ -840,10 +840,6 @@ static void send_characteristic_value_event(gatt_client_t * peripheral, uint16_t
     emit_event(peripheral->subclient_id, (le_event_t*)&event);
 }
 
-static void report_gatt_long_characteristic_value_blob(gatt_client_t * peripheral, uint8_t * value, uint16_t blob_length, int value_offset){
-    send_characteristic_value_event(peripheral, peripheral->attribute_handle, value, blob_length, value_offset, GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT);
-}
-
 static void report_gatt_notification(uint16_t con_handle, uint16_t value_handle, uint8_t * value, int length){
     le_characteristic_value_event_t event;
     setup_characteristic_value_event(&event, con_handle, value_handle, value, length, 0, GATT_NOTIFICATION);
@@ -857,18 +853,37 @@ static void report_gatt_indication(uint16_t con_handle, uint16_t value_handle, u
 }
 
 // @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
-static void report_gatt_characteristic_value(gatt_client_t * peripheral, uint16_t handle, uint8_t * value, int length){
+static void report_gatt_characteristic_value(gatt_client_t * peripheral, uint16_t attribute_handle, uint8_t * value, uint16_t length){
     // before the value inside the ATT PDU
-    uint8_t * packet = value - 8;
+    const int header_size = 8;
+    uint8_t * packet = value - header_size;
     packet[0] = GATT_CHARACTERISTIC_VALUE_QUERY_RESULT;
-    packet[1] = 2 + 2 + 2 + length;
+    packet[1] = header_size - 2 + length;
     bt_store_16(packet, 2, peripheral->handle);
-    bt_store_16(packet, 4, handle);
+    bt_store_16(packet, 4, attribute_handle);
     bt_store_16(packet, 6, length);
     // packet + 8 == value
     emit_event_new(peripheral->subclient_id, packet, length + 8);
 #ifdef OLD    
-    send_characteristic_value_event(peripheral, handle, value, length, 0, GATT_CHARACTERISTIC_VALUE_QUERY_RESULT);
+    send_characteristic_value_event(peripheral, attribute_handle, value, length, 0, GATT_CHARACTERISTIC_VALUE_QUERY_RESULT);
+#endif
+}
+
+// @note assume that value is part of an l2cap buffer - overwrite parts of the HCI/L2CAP/ATT packet (4/4/3) bytes 
+static void report_gatt_long_characteristic_value_blob(gatt_client_t * peripheral, uint16_t attribute_handle, uint8_t * blob, uint16_t blob_length, int value_offset){
+    // before the value inside the ATT PDU
+    const int header_size = 10;
+    uint8_t * packet = blob - header_size;
+    packet[0] = GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT;
+    packet[1] = header_size - 2 + blob_length;
+    bt_store_16(packet, 2, peripheral->handle);
+    bt_store_16(packet, 4, attribute_handle);
+    bt_store_16(packet, 6, value_offset);
+    bt_store_16(packet, 8, blob_length);
+    // packet + 10 == blob
+    emit_event_new(peripheral->subclient_id, packet, blob_length + header_size);
+#ifdef OLD
+    send_characteristic_value_event(peripheral, attribute_handle, blob, blob_length, value_offset, GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT);
 #endif
 }
 
@@ -1420,7 +1435,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             
             switch(peripheral->gatt_client_state){
                 case P_W4_READ_BLOB_RESULT:
-                    report_gatt_long_characteristic_value_blob(peripheral, &packet[1], received_blob_length, peripheral->attribute_offset);
+                    report_gatt_long_characteristic_value_blob(peripheral, peripheral->attribute_handle, &packet[1], received_blob_length, peripheral->attribute_offset);
                     trigger_next_blob_query(peripheral, P_W2_SEND_READ_BLOB_QUERY, received_blob_length);
                     // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
