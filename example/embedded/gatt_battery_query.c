@@ -109,9 +109,9 @@ static void dump_advertising_report(advertising_report_t * e){
     
 }
 
-static void dump_characteristic_value(le_characteristic_value_event_t * event){
-    printf("    * characteristic value of length %d *** ", event->blob_length );
-    printf_hexdump(event->blob , event->blob_length);
+static void dump_characteristic_value(uint8_t * blob, uint16_t blob_length){
+    printf("    * characteristic value of length %d *** ", blob_length );
+    printf_hexdump(blob , blob_length);
     printf("\n");
 }
 
@@ -138,17 +138,41 @@ static void error_code(int status){
             break;
     }
 }
-void handle_gatt_client_event(le_event_t * event){
+
+static void extract_service(le_service_t * service, uint8_t * packet){
+    service->start_group_handle = READ_BT_16(packet, 4);
+    service->end_group_handle   = READ_BT_16(packet, 6);
+    service->uuid16 = 0;
+    swap128(&packet[8], service->uuid128);
+    if (sdp_has_blueooth_base_uuid(service->uuid128)){
+        service->uuid16 = READ_NET_32(service->uuid128, 0);
+    }
+}
+
+static void extract_characteristic(le_characteristic_t * characteristic, uint8_t * packet){
+    characteristic->start_handle = READ_BT_16(packet, 4);
+    characteristic->value_handle = READ_BT_16(packet, 6);
+    characteristic->end_handle =   READ_BT_16(packet, 8);
+    characteristic->properties =   READ_BT_16(packet, 10);
+    characteristic->uuid16 = 0;
+    swap128(&packet[12], characteristic->uuid128);
+    if (sdp_has_blueooth_base_uuid(characteristic->uuid128)){
+        characteristic->uuid16 = READ_NET_32(characteristic->uuid128, 0);
+    }
+}
+
+void handle_gatt_client_event(int8_t packet_type, uint8_t *packet, uint16_t size){
+
     switch(state){
         case TC_W4_SERVICE_RESULT:
-            switch(event->type){
+            switch(packet[0]){
                 case GATT_SERVICE_QUERY_RESULT:
-                    battery_service = ((le_service_event_t *) event)->service;
+                    extract_service(&battery_service, packet);
                     printf("Battery service found:\n");
                     dump_service(&battery_service);
                     break;
                 case GATT_QUERY_COMPLETE:
-                    if (!((gatt_complete_event_t *) event)->status){
+                    if (!packet[4]){
                         printf("Battery service not found. Restart scan.\n");
                         state = TC_W4_SCAN_RESULT;
                         le_central_start_scan();
@@ -164,10 +188,10 @@ void handle_gatt_client_event(le_event_t * event){
             break;
             
         case TC_W4_CHARACTERISTIC_RESULT:
-            switch(event->type){
+            switch(packet[0]){
                 case GATT_CHARACTERISTIC_QUERY_RESULT:
                     printf("Battery level characteristic found:\n");
-                    config_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    extract_characteristic(&config_characteristic, packet);
                     dump_characteristic(&config_characteristic);
                     break;
                 case GATT_QUERY_COMPLETE:
@@ -180,16 +204,16 @@ void handle_gatt_client_event(le_event_t * event){
             }
             break;
         case TC_W4_BATTERY_DATA:
-            if (event->type == GATT_QUERY_COMPLETE){
-                if (((gatt_complete_event_t*)event)->status != 0){
+            if (packet[0] == GATT_QUERY_COMPLETE){
+                if (packet[4] != 0){
                     printf("\nNotification is not possible: ");
-                    error_code(((gatt_complete_event_t*)event)->status);
+                    error_code(packet[4]);
                 }
                 break;    
             }
-            if (event->type != GATT_NOTIFICATION) break;
+            if (packet[0] != GATT_NOTIFICATION) break;
             printf("\nBattery Data:\n");
-            dump_characteristic_value((le_characteristic_value_event_t *) event);
+            dump_characteristic_value(&packet[8], READ_BT_16(packet, 6));
             break;
 
         default:

@@ -110,7 +110,7 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
 
 // Handles GATT client query results, sends queries and the 
 // GAP disconnect command when the querying is done.
-void handle_gatt_client_event(le_event_t * event);
+void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 static void gatt_client_setup(void){
     // Initialize L2CAP and register HCI event handler
@@ -236,17 +236,39 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
 /* LISTING_START(GATTBrowserQueryHandler): Handling of the GATT client queries */
 static int search_services = 1;
 
-void handle_gatt_client_event(le_event_t * event){
+static void extract_service(le_service_t * service, uint8_t * packet){
+    service->start_group_handle = READ_BT_16(packet, 4);
+    service->end_group_handle   = READ_BT_16(packet, 6);
+    service->uuid16 = 0;
+    swap128(&packet[8], service->uuid128);
+    if (sdp_has_blueooth_base_uuid(service->uuid128)){
+        service->uuid16 = READ_NET_32(service->uuid128, 0);
+    }
+}
+
+static void extract_characteristic(le_characteristic_t * characteristic, uint8_t * packet){
+    characteristic->start_handle = READ_BT_16(packet, 4);
+    characteristic->value_handle = READ_BT_16(packet, 6);
+    characteristic->end_handle =   READ_BT_16(packet, 8);
+    characteristic->properties =   READ_BT_16(packet, 10);
+    characteristic->uuid16 = 0;
+    swap128(&packet[12], characteristic->uuid128);
+    if (sdp_has_blueooth_base_uuid(characteristic->uuid128)){
+        characteristic->uuid16 = READ_NET_32(characteristic->uuid128, 0);
+    }
+}
+
+void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
     le_service_t service;
     le_characteristic_t characteristic;
-    switch(event->type){
-        case GATT_SERVICE_QUERY_RESULT:
-            service = ((le_service_event_t *) event)->service;
+    switch(packet[0]){
+        case GATT_SERVICE_QUERY_RESULT:\
+            extract_service(&service, packet);
             dump_service(&service);
             services[service_count++] = service;
             break;
         case GATT_CHARACTERISTIC_QUERY_RESULT:
-            characteristic = ((le_characteristic_event_t *) event)->characteristic;
+            extract_characteristic(&characteristic, packet);
             dump_characteristic(&characteristic);
             break;
         case GATT_QUERY_COMPLETE:

@@ -43,6 +43,7 @@
 #include <string.h>
 
 #include <btstack/run_loop.h>
+#include <btstack/sdp_util.h>
 
 #include "ancs_client_lib.h"
 
@@ -159,9 +160,30 @@ static void ancs_chunk_parser_handle_byte(uint8_t data){
     }
 }
 
-static void handle_gatt_client_event(le_event_t * event){
+static void extract_service(le_service_t * service, uint8_t * packet){
+    service->start_group_handle = READ_BT_16(packet, 4);
+    service->end_group_handle   = READ_BT_16(packet, 6);
+    service->uuid16 = 0;
+    swap128(&packet[8], service->uuid128);
+    if (sdp_has_blueooth_base_uuid(service->uuid128)){
+        service->uuid16 = READ_NET_32(service->uuid128, 0);
+    }
+}
 
-    uint8_t * packet = (uint8_t*) event;
+static void extract_characteristic(le_characteristic_t * characteristic, uint8_t * packet){
+    characteristic->start_handle = READ_BT_16(packet, 4);
+    characteristic->value_handle = READ_BT_16(packet, 6);
+    characteristic->end_handle =   READ_BT_16(packet, 8);
+    characteristic->properties =   READ_BT_16(packet, 10);
+    characteristic->uuid16 = 0;
+    swap128(&packet[12], characteristic->uuid128);
+    if (sdp_has_blueooth_base_uuid(characteristic->uuid128)){
+        characteristic->uuid16 = READ_NET_32(characteristic->uuid128, 0);
+    }
+}
+
+static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
+
     int connection_encrypted;
 
     // handle connect / disconncet events first
@@ -203,12 +225,15 @@ static void handle_gatt_client_event(le_event_t * event){
     }
 
     le_characteristic_t characteristic;
-    le_characteristic_value_event_t * value_event;
+    uint8_t *           value;
+    uint16_t            value_handle;
+    uint16_t            value_length;
+
     switch(tc_state){
         case TC_W4_SERVICE_RESULT:
-            switch(event->type){
+            switch(packet[0]){
                 case GATT_SERVICE_QUERY_RESULT:
-                    ancs_service = ((le_service_event_t *) event)->service;
+                    extract_service(&ancs_service, packet);
                     ancs_service_found = 1;
                     break;
                 case GATT_QUERY_COMPLETE:
@@ -227,9 +252,9 @@ static void handle_gatt_client_event(le_event_t * event){
             break;
             
         case TC_W4_CHARACTERISTIC_RESULT:
-            switch(event->type){
+            switch(packet[0]){
                 case GATT_CHARACTERISTIC_QUERY_RESULT:
-                    characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    extract_characteristic(&characteristic, packet);
                     if (memcmp(characteristic.uuid128, ancs_notification_source_uuid, 16) == 0){
                         printf("ANCS Notification Source Characterisic found\n");
                         ancs_notification_source_characteristic = characteristic;
@@ -260,7 +285,7 @@ static void handle_gatt_client_event(le_event_t * event){
             }
             break;
         case TC_W4_NOTIFICATION_SOURCE_SUBSCRIBED:
-            switch(event->type){
+            switch(packet[0]){
                 case GATT_QUERY_COMPLETE:
                     printf("ANCS Notification Source subscribed\n");
                     tc_state = TC_W4_DATA_SOURCE_SUBSCRIBED;
@@ -272,7 +297,7 @@ static void handle_gatt_client_event(le_event_t * event){
             }
             break;
         case TC_W4_DATA_SOURCE_SUBSCRIBED:
-            switch(event->type){
+            switch(packet[0]){
                 case GATT_QUERY_COMPLETE:
                     printf("ANCS Data Source subscribed\n");
                     tc_state = TC_SUBSCRIBED;
@@ -283,17 +308,21 @@ static void handle_gatt_client_event(le_event_t * event){
             }
             break;
         case TC_SUBSCRIBED:
-            if ( event->type != GATT_NOTIFICATION && event->type != GATT_INDICATION ) break;
-            value_event = (le_characteristic_value_event_t *) event;
-            if (value_event->value_handle == ancs_data_source_characteristic.value_handle){
+            if (packet[0] != GATT_NOTIFICATION && packet[0] != GATT_INDICATION ) break;
+
+            value_handle = READ_BT_16(packet, 4);
+            value_length = READ_BT_16(packet, 6);
+            value = &packet[8];
+
+            if (value_handle == ancs_data_source_characteristic.value_handle){
                 int i;
-                for (i=0;i<value_event->blob_length;i++) {
-                    ancs_chunk_parser_handle_byte(value_event->blob[i]);
+                for (i=0;i<value_length;i++) {
+                    ancs_chunk_parser_handle_byte(value[i]);
                 }
-            } else if (value_event->value_handle == ancs_notification_source_characteristic.value_handle){
-                ancs_notification_uid = READ_BT_32(value_event->blob, 4);
+            } else if (value_handle == ancs_notification_source_characteristic.value_handle){
+                ancs_notification_uid = READ_BT_32(value, 4);
                 printf("Notification received: EventID %02x, EventFlags %02x, CategoryID %02x, CategoryCount %u, UID %04x\n",
-                    value_event->blob[0], value_event->blob[1], value_event->blob[2], value_event->blob[3], (int) ancs_notification_uid);
+                    value[0], value[1], value[2], value[3], (int) ancs_notification_uid);
                 static uint8_t get_notification_attributes[] = {0, 0,0,0,0,  0,  1,32,0,  2,32,0, 3,32,0, 4, 5};
                 bt_store_32(get_notification_attributes, 1, ancs_notification_uid);
                 ancs_notification_uid = 0;
@@ -302,7 +331,7 @@ static void handle_gatt_client_event(le_event_t * event){
                     sizeof(get_notification_attributes), get_notification_attributes);
             } else {
                 printf("Unknown Source: ");
-                printf_hexdump(value_event->blob , value_event->blob_length);
+                printf_hexdump(value , value_length);
             }
             break;
         default:
