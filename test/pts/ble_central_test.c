@@ -769,83 +769,135 @@ uint16_t value_handle = 1;
 uint16_t attribute_size = 1;
 int scanning_active = 0;
 
+int num_rows = 0;
+int num_lines = 0;
+const char * rows[100];
+const char * lines[100];
+const char * empty_string = "";
+const int width = 70;
+
+void reset_screen(void){
+    // free memory
+    int i = 0;
+    for (i=0;i<num_rows;i++) {
+        free((void*)rows[i]);
+        rows[i] = NULL;
+    }
+    num_rows = 0;
+}
+
+void print_line(const char * format, ...){
+    va_list argptr;
+    va_start(argptr, format);
+    char * line = malloc(80);
+    vsnprintf(line, 80, format, argptr);
+    va_end(argptr);
+    lines[num_lines] = line;
+    num_lines++;
+}
+
+void printf_row(const char * format, ...){
+    va_list argptr;
+    va_start(argptr, format);
+    char * row = malloc(80);
+    vsnprintf(row, 80, format, argptr);
+    va_end(argptr);
+    rows[num_rows] = row;
+    num_rows++;
+}
+
+void print_screen(void){
+
+    // clear screen
+    printf("\e[1;1H\e[2J");
+
+    // full lines on top
+    int i;
+    for (i=0;i<num_lines;i++){
+        printf("%s\n", lines[i]);
+    }
+    printf("\n");
+
+    // two columns
+    int second_half = (num_rows + 1) / 2;
+    for (i=0;i<second_half;i++){
+        int pos = strlen(rows[i]);
+        printf("%s", rows[i]);
+        while (pos < width){
+            printf(" ");
+            pos++;
+        }
+        printf("|  %s\n", rows[i+second_half]);
+    }
+}
+
 void show_usage(void){
     uint8_t iut_address_type;
     bd_addr_t      iut_address;
     hci_le_advertisement_address(&iut_address_type, iut_address);
 
-    printf("\e[1;1H\e[2J");
-    printf("--- CLI for LE Central ---\n");
-    printf("PTS: addr type %u, addr %s\n", current_pts_address_type, bd_addr_to_str(current_pts_address));
-    printf("IUT: addr type %u, addr %s\n", iut_address_type, bd_addr_to_str(iut_address));
-    printf("--------------------------\n");
-    printf("GAP: connectable %u, bondable %u\n", gap_connectable, gap_bondable);
-    printf("SM: %s, MITM protection %u, key range [%u..16], OOB data: ",
-        sm_io_capabilities, sm_mitm_protection, sm_min_key_size);
-    switch (sm_have_oob_data){
-        case 1:
-            printf_hexdump(sm_oob_data_A, 16);
-            break;
-        case 2:
-            printf_hexdump(sm_oob_data_B, 16);
-            break;
-        default:
-            printf ("None\n");
-            break;
-    }
-    printf("Privacy %u\n", gap_privacy);
-    printf("Device name: %s\n", gap_device_name);
-    // printf("Value Handle: %x\n", value_handle);
-    // printf("Attribute Size: %u\n", attribute_size);
-    printf("---\n");
-    printf("c/C - connectable off\n");
-    printf("d/D - bondable off/on\n");
-    printf("---\n");
-    printf("1   - enable privacy using random non-resolvable private address\n");
-    printf("2   - clear Peripheral Privacy Flag on PTS\n");
-    printf("3   - set Peripheral Privacy Flag on PTS\n");
-    printf("9   - create HCI Classic connection to addr %s\n", bd_addr_to_str(public_pts_address));
-    printf("s/S - passive/active scanning\n");
-    printf("a   - enable Advertisements\n");
-    printf("b   - start bonding\n");
-    printf("n   - query GAP Device Name\n");
-    printf("o   - set GAP Reconnection Address\n");
-    printf("t   - terminate connection, stop connecting\n");
-    printf("p   - auto connect to PTS\n");
-    printf("P   - direct connect to PTS\n");
-    printf("w   - signed write on characteristic with UUID %04x\n", pts_signed_write_characteristic_uuid);
-    printf("W   - signed write on attribute with handle 0x%04x and value 0x12\n", pts_signed_write_characteristic_handle);
-    printf("z   - Update L2CAP Connection Parameters\n");
-    printf("---\n");
-    printf("e   - Discover all Primary Services\n");
-    printf("f/F - Discover Primary Service by UUID16/UUID128\n");
-    printf("g   - Discover all characteristics by UUID16\n");
-    printf("h   - Discover all characteristics in range\n");
-    printf("i   - Find all included services\n");
-    printf("j/J - Read (Long) Characteristic Value by handle\n");
-    printf("k/K - Read Characteristic Value by UUID16/UUID128\n");
-    printf("l/L - Read (Long) Characteristic Descriptor by handle\n");
-    printf("N   - Read Multiple Characteristic Values\n");
-    printf("O   - Write without Response\n");
-    printf("q/Q - Write (Long) Characteristic Value\n");
-    printf("r   - Characteristic Reliable Write\n");
-    printf("R   - Signed Write\n");
-    printf("u/U - Write (Long) Characteristic Descriptor\n");
-    printf("T   - Read Generic Profile Attributes by Type\n");
-    printf("---\n");
-    printf("4   - IO_CAPABILITY_DISPLAY_ONLY\n");
-    printf("5   - IO_CAPABILITY_DISPLAY_YES_NO\n");
-    printf("6   - IO_CAPABILITY_NO_INPUT_NO_OUTPUT\n");
-    printf("7   - IO_CAPABILITY_KEYBOARD_ONLY\n");
-    printf("8   - IO_CAPABILITY_KEYBOARD_DISPLAY\n");
-    printf("m/M - MITM protection off\n");
-    printf("x/X - encryption key range [7..16]/[16..16]\n");
-    printf("y/Y - OOB data off/on/toggle A/B\n");
-    printf("---\n");
-    printf("Ctrl-c - exit\n");
-    printf("---\n");
-}
+    reset_screen();
 
+    print_line("--- CLI for LE Central ---");
+    print_line("PTS: addr type %u, addr %s", current_pts_address_type, bd_addr_to_str(current_pts_address));
+    print_line("IUT: addr type %u, addr %s", iut_address_type, bd_addr_to_str(iut_address));
+    print_line("--------------------------");
+    print_line("GAP: connectable %u, bondable %u", gap_connectable, gap_bondable);
+    print_line("SM: %s, MITM protection %u", sm_io_capabilities, sm_mitm_protection);
+    print_line("SM: key range [%u..16], OOB data: %s", sm_min_key_size, 
+        sm_have_oob_data ? (sm_have_oob_data == 1 ? (const char*) sm_oob_data_A : (const char*) sm_oob_data_B) : "None");
+    print_line("Privacy %u", gap_privacy);
+    print_line("Device name: %s", gap_device_name);
+
+    printf_row("c/C - connectable off");
+    printf_row("d/D - bondable off/on");
+    printf_row("---");
+    printf_row("1   - enable privacy using random non-resolvable private address");
+    printf_row("2   - clear Peripheral Privacy Flag on PTS");
+    printf_row("3   - set Peripheral Privacy Flag on PTS");
+    printf_row("9   - create HCI Classic connection to addr %s", bd_addr_to_str(public_pts_address));
+    printf_row("s/S - passive/active scanning");
+    printf_row("a   - enable Advertisements");
+    printf_row("b   - start bonding");
+    printf_row("n   - query GAP Device Name");
+    printf_row("o   - set GAP Reconnection Address");
+    printf_row("t   - terminate connection, stop connecting");
+    printf_row("p   - auto connect to PTS");
+    printf_row("P   - direct connect to PTS");
+    printf_row("w   - signed write on characteristic with UUID %04x", pts_signed_write_characteristic_uuid);
+    printf_row("W   - signed write on attribute with handle 0x%04x and value 0x12", pts_signed_write_characteristic_handle);
+    printf_row("z   - Update L2CAP Connection Parameters");
+    printf_row("---");
+    printf_row("e   - Discover all Primary Services");
+    printf_row("f/F - Discover Primary Service by UUID16/UUID128");
+    printf_row("g   - Discover all characteristics by UUID16");
+    printf_row("h   - Discover all characteristics in range");
+    printf_row("i   - Find all included services");
+    printf_row("j/J - Read (Long) Characteristic Value by handle");
+    printf_row("k/K - Read Characteristic Value by UUID16/UUID128");
+    printf_row("l/L - Read (Long) Characteristic Descriptor by handle");
+    printf_row("N   - Read Multiple Characteristic Values");
+    printf_row("O   - Write without Response");
+    printf_row("q/Q - Write (Long) Characteristic Value");
+    printf_row("r   - Characteristic Reliable Write");
+    printf_row("R   - Signed Write");
+    printf_row("u/U - Write (Long) Characteristic Descriptor");
+    printf_row("T   - Read Generic Profile Attributes by Type");
+    printf_row("---");
+    printf_row("4   - IO_CAPABILITY_DISPLAY_ONLY");
+    printf_row("5   - IO_CAPABILITY_DISPLAY_YES_NO");
+    printf_row("6   - IO_CAPABILITY_NO_INPUT_NO_OUTPUT");
+    printf_row("7   - IO_CAPABILITY_KEYBOARD_ONLY");
+    printf_row("8   - IO_CAPABILITY_KEYBOARD_DISPLAY");
+    printf_row("m/M - MITM protection off");
+    printf_row("x/X - encryption key range [7..16]/[16..16]");
+    printf_row("y/Y - OOB data off/on/toggle A/B");
+    printf_row("---");
+    printf_row("Ctrl-c - exit");
+    printf_row("---");
+
+    print_screen();
+}
 
 void update_auth_req(void){
     uint8_t auth_req = 0;
@@ -1512,6 +1564,9 @@ int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     
     printf("BTstack LE Peripheral starting up...\n");
+
+    memset(rows, 0, sizeof(char *) * 100);
+    memset(lines, 0, sizeof(char *) * 100);
 
     strcpy(gap_device_name, "BTstack");
 
