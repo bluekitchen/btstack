@@ -2204,9 +2204,12 @@ void hci_run(void){
 
                 }
                 if (entry->state & LE_WHITELIST_REMOVE_FROM_CONTROLLER){
+                    bd_addr_t address;
+                    bd_addr_type_t address_type = entry->address_type;                    
+                    memcpy(address, entry->address, 6);
                     linked_list_remove(&hci_stack->le_whitelist, (linked_item_t *) entry);
                     btstack_memory_whitelist_entry_free(entry);
-                    hci_send_cmd(&hci_le_remove_device_from_white_list, entry->address_type, entry->address);
+                    hci_send_cmd(&hci_le_remove_device_from_white_list, address_type, address);
                     return;
                 }
             }
