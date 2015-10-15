@@ -150,7 +150,9 @@ typedef struct linked_list_gatt_client_helper{
     connection_t * active_connection;   // the one that started the current query
     linked_list_t  all_connections;     // list of all connections that ever used this helper
     uint16_t characteristic_length;
-    uint8_t  characteristic_buffer[ATT_MAX_LONG_ATTRIBUTE_SIZE];
+    uint16_t characteristic_handle;
+    uint8_t  characteristic_buffer[10 + ATT_MAX_LONG_ATTRIBUTE_SIZE];   // header for sending event right away
+    uint8_t  long_query_type;
 } linked_list_gatt_client_helper_t;
 
 // MARK: prototypes
@@ -648,50 +650,6 @@ void daemon_gatt_deserialize_characteristic_descriptor(uint8_t * packet, int off
 void daemon_gatt_serialize_characteristic_descriptor(le_characteristic_descriptor_t * characteristic_descriptor, uint8_t * event, int offset){
     bt_store_16(event, offset, characteristic_descriptor->handle);
     swap128(characteristic_descriptor->uuid128, &event[offset+2]);
-}
-
-// setup events
-void daemon_setup_service_event(le_event_t *le_event, uint8_t* event) {
-    le_service_event_t * service_event = (le_service_event_t *) le_event;
-    event[0] = le_event->type;
-    event[1] = SERVICE_LENGTH;
-    bt_store_16(event, 2, service_event->handle);
-    daemon_gatt_serialize_service(&service_event->service, event, 4);
-}
-
-void daemon_gatt_setup_characteristic_event(le_event_t *le_event, uint8_t* event) {
-    le_characteristic_event_t * characteristic_event = (le_characteristic_event_t *) le_event;
-    event[0] = le_event->type;
-    event[1] = CHARACTERISTIC_LENGTH;
-    bt_store_16(event, 2, characteristic_event->handle);
-    daemon_gatt_serialize_characteristic(&characteristic_event->characteristic, event, 4);
-}
-
-void daemon_setup_characteristic_descriptor_event(le_event_t *le_event, uint8_t* event) {
-    le_characteristic_descriptor_event_t * descriptor_event = (le_characteristic_descriptor_event_t *) le_event;
-    event[0] = le_event->type;
-    event[1] = CHARACTERISTIC_DESCRIPTOR_LENGTH;
-    bt_store_16(event, 2, descriptor_event->handle);
-    daemon_gatt_serialize_characteristic_descriptor(&descriptor_event->characteristic_descriptor, event, 4);
-}
-
-void daemon_setup_long_characteristic_value_event(uint8_t* event, uint16_t connection_handle, uint16_t value_handle, uint16_t data_length, uint8_t * data) {
-    event[0] = GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT;
-    event[1] = 2 + (2 + 2 + data_length);
-    bt_store_16(event, 2, connection_handle);
-    bt_store_16(event, 4, value_handle);
-    bt_store_16(event, 6, data_length);
-    memcpy(&event[8], data, data_length);
-}
-
-void daemon_setup_characteristic_value_event(le_event_t *le_event, uint8_t* event) {
-    le_characteristic_value_event_t * cvalue_event = (le_characteristic_value_event_t *) le_event;
-    event[0] = le_event->type;
-    event[1] = 2 + (2 + 2 + cvalue_event->blob_length);
-    bt_store_16(event, 2, cvalue_event->handle);
-    bt_store_16(event, 4, cvalue_event->value_handle);
-    bt_store_16(event, 6, cvalue_event->blob_length);
-    memcpy(&event[8], cvalue_event->blob, cvalue_event->blob_length);
 }
 
 #endif
@@ -1551,40 +1509,54 @@ static void * run_loop_thread(void *context){
 
 #ifdef HAVE_BLE
 
-static void handle_gatt_client_event(le_event_t * le_event){
+static void handle_gatt_client_event(uint8_t packet_type, uint8_t * packet, uint16_t size){
 
     // hack: handle disconnection_complete_here instead of main hci event packet handler
     // we receive a HCI event packet in disguise
-    if (le_event->type == HCI_EVENT_DISCONNECTION_COMPLETE){
+    if (packet[0] == HCI_EVENT_DISCONNECTION_COMPLETE){
         log_info("daemon hack: handle disconnection_complete in handle_gatt_client_event instead of main hci event packet handler");
-        uint8_t * packet = (uint8_t*) le_event;
         uint16_t handle = READ_BT_16(packet, 3);
         daemon_remove_gatt_client_helper(handle);
         return;
     }
 
-    gatt_complete_event_t * complete_event = (gatt_complete_event_t *) le_event;
+    // only handle GATT Events
+    switch(packet[0]){
+        case GATT_SERVICE_QUERY_RESULT:
+        case GATT_INCLUDED_SERVICE_QUERY_RESULT:
+        case GATT_NOTIFICATION:
+        case GATT_INDICATION:
+        case GATT_CHARACTERISTIC_QUERY_RESULT:
+        case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
+        case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
+        case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
+        case GATT_CHARACTERISTIC_VALUE_QUERY_RESULT:
+        case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
+        case GATT_QUERY_COMPLETE:
+           break;
+        default:
+            return;
+    }
 
-    linked_list_gatt_client_helper_t * gatt_client_helper = daemon_get_gatt_client_helper(le_event->handle);
+    uint16_t con_handle = READ_BT_16(packet, 2);
+    linked_list_gatt_client_helper_t * gatt_client_helper = daemon_get_gatt_client_helper(con_handle);
     if (!gatt_client_helper){
-        log_info("daemon handle_gatt_client_event: gc helper for handle 0x%2x is NULL.", le_event->handle);
+        log_info("daemon handle_gatt_client_event: gc helper for handle 0x%2x is NULL.", con_handle);
         return;
     } 
 
     connection_t *connection = NULL;
 
     // daemon doesn't track which connection subscribed to this particular handle, so we just notify all connections
-    switch(le_event->type){
+    switch(packet[0]){
         case GATT_NOTIFICATION:
         case GATT_INDICATION:{
-            uint8_t event[4 + 2 + 1 + ATT_MAX_ATTRIBUTE_SIZE];  // (type, len, handle), handle, len, data
-            daemon_setup_characteristic_value_event(le_event, event);
-            hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
+            hci_dump_packet(HCI_EVENT_PACKET, 0, packet, size);
             
             linked_item_t *it;
             for (it = (linked_item_t *) clients; it ; it = it->next){
                 client_state_t * client_state = (client_state_t *) it;
-                socket_connection_send_packet(client_state->connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+                socket_connection_send_packet(client_state->connection, HCI_EVENT_PACKET, 0, packet, size);
             }
             return;
         }
@@ -1594,73 +1566,51 @@ static void handle_gatt_client_event(le_event_t * le_event){
 
     // otherwise, we have to have an active connection
     connection = gatt_client_helper->active_connection;
+    uint16_t offset;
+    uint16_t length;
+
     if (!connection) return;
 
-#if defined(HAVE_MALLOC)
-    uint8_t  * data;
-    uint8_t  gatt_chunk = 0;
-#endif
-    
-    switch(le_event->type){
+    switch(packet[0]){
 
         case GATT_SERVICE_QUERY_RESULT:
-        case GATT_INCLUDED_SERVICE_QUERY_RESULT:{
-            uint8_t event[4 + SERVICE_LENGTH];
-            daemon_setup_service_event(le_event, event);
-            hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-            socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
-            break;
-        }
-        case GATT_CHARACTERISTIC_QUERY_RESULT:{
-            uint8_t event[4 + CHARACTERISTIC_LENGTH];
-            daemon_gatt_setup_characteristic_event(le_event, event);
-            hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-            socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
-            break;
-        }
-            
-        case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
+        case GATT_INCLUDED_SERVICE_QUERY_RESULT:
+        case GATT_CHARACTERISTIC_QUERY_RESULT:
+        case GATT_CHARACTERISTIC_VALUE_QUERY_RESULT:
         case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
-        case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:{
-            uint8_t event[4 + CHARACTERISTIC_DESCRIPTOR_LENGTH];
-            daemon_setup_characteristic_descriptor_event(le_event, event);
-            hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-            socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
+        case GATT_ALL_CHARACTERISTIC_DESCRIPTORS_QUERY_RESULT:
+            hci_dump_packet(HCI_EVENT_PACKET, 0, packet, size);
+            socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, packet, size);
             break;
-        }
-        
-        case GATT_CHARACTERISTIC_VALUE_QUERY_RESULT: {
-            uint8_t event[4 + 2 + 1 + ATT_MAX_ATTRIBUTE_SIZE];  // (type, len, handle), handle, len, data 
-            daemon_setup_characteristic_value_event(le_event, event);
-            hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-            socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
-            break;
-        }
             
-        case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:{
-#if defined(HAVE_MALLOC)
-            gatt_chunk = 1;
-            le_characteristic_value_event_t * cvalue_event = (le_characteristic_value_event_t *) le_event;
-            data = gatt_client_helper->characteristic_buffer;
-            gatt_client_helper->characteristic_length = cvalue_event->value_offset + cvalue_event->blob_length;
-            memcpy(&data[cvalue_event->value_offset], cvalue_event->blob, cvalue_event->blob_length);
-#endif
+        case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
+        case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
+            offset = READ_BT_16(packet, 6);
+            length = READ_BT_16(packet, 8);
+            gatt_client_helper->characteristic_buffer[0] = packet[0];               // store type (characteristic/descriptor)
+            gatt_client_helper->characteristic_handle    = READ_BT_16(packet, 4);   // store attribute handle
+            gatt_client_helper->characteristic_length = offset + length;            // update length
+            memcpy(&gatt_client_helper->characteristic_buffer[10 + offset], &packet[10], length);
             break;
-        }
 
         case GATT_QUERY_COMPLETE:{
             gatt_client_helper->active_connection = NULL;
-            if (gatt_chunk){
-                data = gatt_client_helper->characteristic_buffer;
-                uint8_t event[4 + 2 + 1 + gatt_client_helper->characteristic_length];
-                daemon_setup_long_characteristic_value_event(event, complete_event->handle,
-                                                             complete_event->attribute_handle,
-                                                             gatt_client_helper->characteristic_length, data);
-                hci_dump_packet(HCI_EVENT_PACKET, 0, event, sizeof(event));
-                socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
-                gatt_chunk = 0;
+            if (gatt_client_helper->characteristic_length){
+                // send re-combined long characteristic value or long characteristic descriptor value
+                uint8_t * event = gatt_client_helper->characteristic_buffer;
+                uint16_t event_size = 10 + gatt_client_helper->characteristic_length;
+                // event[0] == already set by previsous case
+                event[1] = 8 + gatt_client_helper->characteristic_length;
+                bt_store_16(event, 2, READ_BT_16(packet, 2));
+                bt_store_16(event, 4, gatt_client_helper->characteristic_handle);
+                bt_store_16(event, 6, 0);   // offset
+                bt_store_16(event, 8, gatt_client_helper->characteristic_length);
+                hci_dump_packet(HCI_EVENT_PACKET, 0, event, event_size);
+                socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, event, event_size);
+                gatt_client_helper->characteristic_length = 0;
             }
-            send_gatt_query_complete(connection, complete_event->handle, complete_event->status);
+            hci_dump_packet(HCI_EVENT_PACKET, 0, packet, size);
+            socket_connection_send_packet(connection, HCI_EVENT_PACKET, 0, packet, size);
             break;
         }
         default:
