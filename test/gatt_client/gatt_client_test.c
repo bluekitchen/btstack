@@ -142,7 +142,7 @@ static void verify_blob(uint16_t value_length, uint16_t value_offset, uint8_t * 
     result_counter++;
 }
 
-static void handle_ble_client_event_new(uint8_t packet_type, uint8_t *packet, uint16_t size){
+static void handle_ble_client_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
 	if (packet_type != HCI_EVENT_PACKET) return;
 	uint8_t status;
 	le_service_t service;
@@ -213,9 +213,6 @@ static void handle_ble_client_event_new(uint8_t packet_type, uint8_t *packet, ui
         	result_counter++;
         	break;
 	}
-}
-
-static void handle_ble_client_event(le_event_t * event){
 }
 
 extern "C" int att_write_callback(uint16_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
@@ -709,8 +706,7 @@ int main (int argc, const char * argv[]){
 	att_set_read_callback(&att_read_callback);
 
 	gatt_client_init();
-	gatt_client_id = gatt_client_register_packet_handler_new(handle_ble_client_event, handle_ble_client_event_new);
-	// gatt_client_id = gatt_client_register_packet_handler(handle_ble_client_event);
+	gatt_client_id = gatt_client_register_packet_handler(handle_ble_client_event);
 	
     return CommandLineTestRunner::RunAllTests(argc, argv);
 }

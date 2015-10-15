@@ -50,8 +50,7 @@ typedef struct le_event {
     uint16_t handle;
 } le_event_t;
 
-typedef void (*gatt_client_callback_t)(le_event_t * event);
-typedef void (*gatt_client_callback_new_t)(uint8_t packet_type, uint8_t *packet, uint16_t size);
+typedef void (*gatt_client_callback_t)(uint8_t packet_type, uint8_t *packet, uint16_t size);
 
 typedef enum {
     P_READY,
@@ -182,17 +181,9 @@ typedef struct gatt_subclient {
     linked_item_t   item;
     uint16_t        id;
     gatt_client_callback_t callback;
-    gatt_client_callback_new_t callback_new;
 } gatt_subclient_t;
 
 /* API_START */
-
-typedef struct gatt_complete_event{
-    uint8_t   type;
-    uint16_t handle;
-    uint16_t attribute_handle;
-    uint8_t status;
-} gatt_complete_event_t;
 
 typedef struct le_service{
     uint16_t start_group_handle;
@@ -200,12 +191,6 @@ typedef struct le_service{
     uint16_t uuid16;
     uint8_t  uuid128[16];
 } le_service_t;
-
-typedef struct le_service_event{
-    uint8_t  type;
-    uint16_t handle;
-    le_service_t service;
-} le_service_event_t;
 
 typedef struct le_characteristic{
     uint16_t start_handle;
@@ -216,35 +201,11 @@ typedef struct le_characteristic{
     uint8_t  uuid128[16];
 } le_characteristic_t;
 
-typedef struct le_characteristic_event{
-    uint8_t  type;
-    uint16_t handle;
-    le_characteristic_t characteristic;
-} le_characteristic_event_t;
-
-typedef struct le_characteristic_value_event{
-    uint8_t   type;
-    uint16_t  handle;
-    uint16_t  value_handle;
-    uint16_t  value_offset;
-    uint16_t  blob_length;
-    uint8_t * blob;
-} le_characteristic_value_event_t;
-
 typedef struct le_characteristic_descriptor{
     uint16_t handle;
     uint16_t uuid16;
     uint8_t  uuid128[16];
 } le_characteristic_descriptor_t;
-
-typedef struct le_characteristic_descriptor_event{
-    uint8_t  type;
-    uint16_t handle;
-    le_characteristic_descriptor_t characteristic_descriptor;
-    uint16_t value_length;
-    uint16_t value_offset;
-    uint8_t * value;
-} le_characteristic_descriptor_event_t;
 
 /** 
  * @brief Set up GATT client.
@@ -255,7 +216,6 @@ void gatt_client_init(void);
  * @brief Register callback (packet handler) for GATT client. Returns GATT client ID.
  */
 uint16_t gatt_client_register_packet_handler (gatt_client_callback_t callback);
-uint16_t gatt_client_register_packet_handler_new (gatt_client_callback_t callback, gatt_client_callback_new_t callback_new);
 
 /** 
  * @brief Unregister callback (packet handler) for GATT client.
