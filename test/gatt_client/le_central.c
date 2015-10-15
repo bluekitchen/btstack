@@ -15,7 +15,7 @@
 #include "CppUTest/CommandLineTestRunner.h"
 #include "CppUTestExt/MockSupport.h"
 
-#include <btstack/hci_cmds.h>
+#include "hci_cmds.h"
 
 #include "btstack_memory.h"
 #include "hci.h"

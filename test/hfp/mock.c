@@ -46,7 +46,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <btstack/btstack.h>
+#include "btstack.h"
 #include "hci.h"
 #include "hci_dump.h"
 #include "sdp_query_rfcomm.h"

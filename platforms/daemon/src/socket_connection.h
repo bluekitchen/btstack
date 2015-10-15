@@ -45,7 +45,7 @@
 #ifndef __SOCKET_CONNECTION_H
 #define __SOCKET_CONNECTION_H
 
-#include <btstack/run_loop.h>
+#include "run_loop.h"
 
 #include <stdint.h>
 

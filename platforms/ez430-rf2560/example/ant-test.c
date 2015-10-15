@@ -57,10 +57,10 @@
 #include "hal_usb.h"
 
 #include <btstack/ant_cmds.h>
-#include <btstack/hci_cmds.h>
-#include <btstack/run_loop.h>
-#include <btstack/sdp_util.h>
-#include <btstack/utils.h>
+#include "hci_cmds.h"
+#include "run_loop.h"
+#include "sdp_util.h"
+#include "utils.h"
 
 #include "hci.h"
 #include "l2cap.h"

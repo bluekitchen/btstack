@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <btstack/btstack.h>
+#include "btstack.h"
 #include "att.h"
 #include "hci.h"
 #include "hci_dump.h"

@@ -45,10 +45,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <btstack/run_loop.h>
-#include <btstack/hci_cmds.h>
-#include <btstack/utils.h>
-#include <btstack/sdp_util.h>
+#include "run_loop.h"
+#include "hci_cmds.h"
+#include "utils.h"
+#include "sdp_util.h"
 
 #include "btstack-config.h"
 

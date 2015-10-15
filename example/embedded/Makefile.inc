@@ -94,7 +94,7 @@ PAN_OBJ = $(PAN:.c=.o)
 
 default_target: all
 
-${BTSTACK_ROOT}/include/btstack/version.h:
+${BTSTACK_ROOT}/src/version.h:
 	${BTSTACK_ROOT}/tools/get_version.sh
 
 # compile .gatt descriptions
@@ -168,7 +168,7 @@ gap_le_advertisements: ${CORE_OBJ} ${COMMON_OBJ} ad_parser.c gap_le_advertisemen
 clean:
 	rm -f ${EXAMPLES}
 	rm -f  *.o *.out *.hex 
-	rm -f  ${BTSTACK_ROOT}/include/btstack/version.h
+	rm -f  ${BTSTACK_ROOT}/src/version.h
 	rm -f  ancs_client.h profile.h spp_and_le_counter.h
 	rm -rf *.dSYM
 	rm -rf ${BTSTACK_ROOT}/ble/*.o

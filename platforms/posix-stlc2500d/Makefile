@@ -38,4 +38,4 @@ endif
 # no BLE here
 EXAMPLES:= $(filter-out ${EXAMPLES_USING_LE},$(EXAMPLES))
 
-all: ${BTSTACK_ROOT}/include/btstack/version.h ${EXAMPLES}
+all: ${BTSTACK_ROOT}/src/version.h ${EXAMPLES}

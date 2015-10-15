@@ -55,11 +55,11 @@
 
 #include <getopt.h>
 
-#include <btstack/btstack.h>
-#include <btstack/linked_list.h>
-#include <btstack/run_loop.h>
-#include <btstack/hci_cmds.h>
-#include <btstack/version.h>
+#include "btstack.h"
+#include "linked_list.h"
+#include "run_loop.h"
+#include "hci_cmds.h"
+#include "version.h"
 
 #include "debug.h"
 #include "hci.h"

@@ -49,9 +49,9 @@
 #include "debug.h"
 #include "hci.h"
 #include "hci_transport.h"
-#include <btstack/run_loop.h>
+#include "run_loop.h"
 
-#include <btstack/hal_uart_dma.h>
+#include "hal_uart_dma.h"
 
 typedef enum {
     H4_W4_PACKET_TYPE = 1,

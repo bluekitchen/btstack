@@ -37,7 +37,7 @@
 #ifndef __ATT_SERVER_H
 #define __ATT_SERVER_H
 
-#include <btstack/btstack.h>
+#include "btstack.h"
 #include <stdint.h>
 #include "att.h"
 

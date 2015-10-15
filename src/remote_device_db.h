@@ -42,7 +42,7 @@
 #ifndef __REMOTE_DEVICE_DB_H
 #define __REMOTE_DEVICE_DB_H
 
-#include <btstack/utils.h>
+#include "utils.h"
 #include "gap.h"
 
 #if defined __cplusplus
@@ -90,7 +90,7 @@ extern const remote_device_db_t remote_device_db_fs;
 /* API_END */
 
 // MARK: non-persistent implementation
-#include <btstack/linked_list.h>
+#include "linked_list.h"
 #define MAX_NAME_LEN 32
 typedef struct {
     // linked list - assert: first field

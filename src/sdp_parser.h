@@ -49,8 +49,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <btstack/sdp_util.h>
-#include <btstack/utils.h>
+#include "sdp_util.h"
+#include "utils.h"
 
 #if defined __cplusplus
 extern "C" {

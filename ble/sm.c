@@ -39,7 +39,7 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include <btstack/linked_list.h>
+#include "linked_list.h"
 
 #include "btstack_memory.h"
 #include "debug.h"

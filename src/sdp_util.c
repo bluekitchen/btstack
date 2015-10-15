@@ -39,8 +39,8 @@
  *  sdp_util.c
  */
 
-#include <btstack/sdp_util.h>
-#include <btstack/utils.h>
+#include "sdp_util.h"
+#include "utils.h"
 #include "btstack-config.h"
 
 #include <stdio.h>

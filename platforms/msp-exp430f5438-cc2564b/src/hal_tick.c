@@ -47,7 +47,7 @@
 #include <stdlib.h>
 #include "hal_compat.h"
 
-#include <btstack/hal_tick.h>
+#include "hal_tick.h"
 
 static void dummy_handler(void){};
 

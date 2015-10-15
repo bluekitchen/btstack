@@ -50,7 +50,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <btstack/hci_cmds.h>
+#include "hci_cmds.h"
 
 #include "btstack_memory.h"
 #include "hci.h"

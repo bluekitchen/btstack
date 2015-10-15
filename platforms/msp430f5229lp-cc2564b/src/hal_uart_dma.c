@@ -43,7 +43,7 @@
 #include <msp430.h>
 #include "hal_compat.h"
 
-#include <btstack/hal_uart_dma.h>
+#include "hal_uart_dma.h"
 
 extern void hal_cpu_set_uart_needed_during_sleep(uint8_t enabled);
 

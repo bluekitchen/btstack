@@ -38,7 +38,7 @@
 #import <BTstack/BTInquiryViewController.h>
 #import <BTstack/BTDevice.h>
 
-#include <btstack/btstack.h>
+#include "btstack.h"
 #include <dlfcn.h>
 #define INQUIRY_INTERVAL 3
 

@@ -1,6 +1,6 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
-#include <btstack/linked_list.h>
+#include "linked_list.h"
 
 linked_list_t testList;
 linked_item_t itemA;

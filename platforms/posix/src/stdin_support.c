@@ -37,7 +37,7 @@
 
 #include <errno.h>
 #include <stdio.h>
-#include <btstack/run_loop.h>
+#include "run_loop.h"
 #include <stdlib.h>
 
 #include "stdin_support.h"

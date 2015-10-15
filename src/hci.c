@@ -62,15 +62,15 @@
 #else
 #include <unistd.h> // gethostbyname
 #endif
-#include <btstack/version.h>
+#include "version.h"
 #endif
 
 #include "btstack_memory.h"
 #include "debug.h"
 #include "hci_dump.h"
 
-#include <btstack/linked_list.h>
-#include <btstack/hci_cmds.h>
+#include "linked_list.h"
+#include "hci_cmds.h"
 
 #define HCI_CONNECTION_TIMEOUT_MS 10000
 

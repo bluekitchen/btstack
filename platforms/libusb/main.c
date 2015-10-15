@@ -49,8 +49,8 @@
 
 #include "btstack-config.h"
 
-#include <btstack/run_loop.h>
-#include <btstack/hal_led.h>
+#include "run_loop.h"
+#include "hal_led.h"
 
 #include "debug.h"
 #include "btstack_memory.h"

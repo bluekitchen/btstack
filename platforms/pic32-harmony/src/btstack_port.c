@@ -5,7 +5,7 @@
 #include "btstack_port.h"
 #include "system_config.h"
 #include "bt_control_csr.h"
-#include <btstack/run_loop.h>
+#include "run_loop.h"
 #include "hci_dump.h"
 #include "hci.h"
 #include "hci_transport.h"
@@ -25,7 +25,7 @@ int btstack_main(int argc, const char * argv[]);
 
 
 /// HAL Tick ///
-#include <btstack/hal_tick.h>
+#include "hal_tick.h"
 
 #define APP_TMR_ALARM_PERIOD                48825
 #define APP_LED_PORT                        PORT_CHANNEL_A
@@ -85,7 +85,7 @@ static void msleep(uint32_t delay) {
 }
 
 /// HAL CPU ///
-#include <btstack/hal_cpu.h>
+#include "hal_cpu.h"
 
 void hal_cpu_disable_irqs(void){
     // TODO implement
@@ -101,7 +101,7 @@ void hal_cpu_enable_irqs_and_sleep(void){
 
 
 /// HAL UART DMA ///
-#include <btstack/hal_uart_dma.h>
+#include "hal_uart_dma.h"
 
 // handlers
 static void (*rx_done_handler)(void) = dummy_handler;

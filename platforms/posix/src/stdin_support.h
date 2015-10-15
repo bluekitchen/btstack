@@ -38,7 +38,7 @@
 #ifndef __STDIN_SUPPORT_H
 #define __STDIN_SUPPORT_H
 
-#include <btstack/run_loop.h>
+#include "run_loop.h"
 
 #if defined __cplusplus
 extern "C" {

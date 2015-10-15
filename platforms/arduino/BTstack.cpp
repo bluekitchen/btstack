@@ -16,12 +16,12 @@
 #include "BTstack.h"
 
 #include "btstack_memory.h"
-#include "btstack/hal_tick.h"
-#include "btstack/hal_cpu.h"
-#include "btstack/hci_cmds.h"
-#include <btstack/utils.h>
-#include <btstack/run_loop.h>
-#include <btstack/sdp_util.h>
+#include "hal_tick.h"
+#include "hal_cpu.h"
+#include "hci_cmds.h"
+#include "utils.h"
+#include "run_loop.h"
+#include "sdp_util.h"
 
 #include "bt_control_em9301.h"
 #include "hci.h"

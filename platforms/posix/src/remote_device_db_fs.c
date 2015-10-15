@@ -43,7 +43,7 @@
 #include "remote_device_db.h"
 #include "debug.h"
 
-#include <btstack/utils.h>
+#include "utils.h"
 
 #define LINK_KEY_PATH "/tmp/"
 #define LINK_KEY_PREFIX "btstack_link_key_"

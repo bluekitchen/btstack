@@ -38,8 +38,8 @@
 #ifndef __SM_H
 #define __SM_H
 
-#include <btstack/utils.h>
-#include <btstack/btstack.h>
+#include "utils.h"
+#include "btstack.h"
 #include <stdint.h>
 
 #if defined __cplusplus

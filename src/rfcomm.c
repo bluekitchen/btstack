@@ -44,11 +44,10 @@
 #include <string.h> // memcpy
 #include <stdint.h>
 
-#include <btstack/btstack.h>
-#include <btstack/hci_cmds.h>
-#include <btstack/utils.h>
+#include "hci_cmds.h"
+#include "utils.h"
 
-#include <btstack/utils.h>
+#include "utils.h"
 #include "btstack_memory.h"
 #include "hci.h"
 #include "hci_dump.h"

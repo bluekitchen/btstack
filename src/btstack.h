@@ -47,9 +47,9 @@
 #ifndef __BTSTACK_H
 #define __BTSTACK_H
 
-#include <btstack/hci_cmds.h>
-#include <btstack/run_loop.h>
-#include <btstack/utils.h>
+#include "hci_cmds.h"
+#include "run_loop.h"
+#include "utils.h"
 
 #include "btstack-config.h"
 

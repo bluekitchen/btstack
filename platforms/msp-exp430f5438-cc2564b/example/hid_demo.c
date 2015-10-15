@@ -54,8 +54,8 @@
 #include "UserExperienceGraphics.h"
 #include  <msp430x54x.h>
 
-#include <btstack/run_loop.h>
-#include <btstack/hci_cmds.h>
+#include "run_loop.h"
+#include "hci_cmds.h"
 #include "btstack_memory.h"
 #include "hci.h"
 #include "l2cap.h"

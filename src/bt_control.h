@@ -48,7 +48,7 @@
 #define __BT_CONTROL_H
 
 #include <stdint.h>
-#include <btstack/utils.h>
+#include "utils.h"
 
 #if defined __cplusplus
 extern "C" {

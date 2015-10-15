@@ -47,9 +47,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <btstack/utils.h>
-#include <btstack/sdp_util.h>
-#include <btstack/hci_cmds.h>
+#include "utils.h"
+#include "sdp_util.h"
+#include "hci_cmds.h"
 
 #include "hci.h"
 #include "ad_parser.h"

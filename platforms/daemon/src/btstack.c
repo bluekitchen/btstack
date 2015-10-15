@@ -43,11 +43,11 @@
  *  BTstack client API
  */
 
-#include <btstack/btstack.h>
+#include "btstack.h"
 
 #include "l2cap.h"
 #include "socket_connection.h"
-#include <btstack/run_loop.h>
+#include "run_loop.h"
 
 #include <string.h>
 #include <unistd.h>

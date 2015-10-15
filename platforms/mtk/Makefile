@@ -82,7 +82,7 @@ shell:
 
 version:
 	$(BTSTACK_ROOT)/tools/get_version.sh
-	grep BTSTACK_DATE $(BTSTACK_ROOT)/include/btstack/version.h
+	grep BTSTACK_DATE $(BTSTACK_ROOT)/src/version.h
 
 BTstackDaemon: $(BTdaemon_OBJS) libbluetoothdrv.so
 	$(GCC) $(LDFLAGS) -o $@ libbluetoothdrv.so $^

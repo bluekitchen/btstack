@@ -43,7 +43,7 @@
  *
  */
 
-#include <btstack/hal_cpu.h>
+#include "hal_cpu.h"
 
 #include "hal_board.h"
 #include "hal_compat.h"

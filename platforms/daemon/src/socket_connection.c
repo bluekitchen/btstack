@@ -51,7 +51,7 @@
 
 #include "btstack-config.h"
 
-#include <btstack/btstack.h>
+#include "btstack.h"
 
 #include <errno.h>
 #include <fcntl.h>

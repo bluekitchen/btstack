@@ -55,8 +55,8 @@
 
 #include "btstack-config.h"
 
-#include <btstack/run_loop.h>
-#include <btstack/sdp_util.h>
+#include "run_loop.h"
+#include "sdp_util.h"
 
 #include "debug.h"
 #include "btstack_memory.h"

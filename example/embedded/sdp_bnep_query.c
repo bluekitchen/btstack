@@ -51,9 +51,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <btstack/hci_cmds.h>
-#include <btstack/run_loop.h>
-#include <btstack/sdp_util.h>
+#include "hci_cmds.h"
+#include "run_loop.h"
+#include "sdp_util.h"
 
 #include "hci.h"
 #include "btstack_memory.h"

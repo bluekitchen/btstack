@@ -12,7 +12,7 @@
 #endif
 #include <SPI.h>
 
-#include "btstack/hal_uart_dma.h"
+#include "hal_uart_dma.h"
 
 #define HAVE_SHUTDOWN
 

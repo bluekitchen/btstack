@@ -44,9 +44,9 @@
 #include <stdlib.h>
 #include <strings.h>
 
-#include <btstack/btstack.h>
-#include <btstack/run_loop.h>
-#include <btstack/hci_cmds.h>
+#include "btstack.h"
+#include "run_loop.h"
+#include "hci_cmds.h"
 
 void packet_handler(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
 }

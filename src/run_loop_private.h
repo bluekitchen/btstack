@@ -44,7 +44,7 @@
 #ifndef __RUN_LOOP_PRIVATE_H
 #define __RUN_LOOP_PRIVATE_H
 
-#include <btstack/run_loop.h>
+#include "run_loop.h"
 
 #ifdef HAVE_TIME
 #include <sys/time.h>

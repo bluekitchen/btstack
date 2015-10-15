@@ -42,7 +42,7 @@
 #include "btstack-config.h"
 #include "sdp_client.h"
 
-#include <btstack/hci_cmds.h>
+#include "hci_cmds.h"
 
 #include "l2cap.h"
 #include "sdp_parser.h"

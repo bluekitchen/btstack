@@ -42,8 +42,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <btstack/run_loop.h>
-#include <btstack/sdp_util.h>
+#include "run_loop.h"
+#include "sdp_util.h"
 
 #include "ancs_client_lib.h"
 

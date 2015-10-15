@@ -38,7 +38,7 @@
 /*
  *  sdp_parser.c
  */
-#include <btstack/hci_cmds.h>
+#include "hci_cmds.h"
 #include "sdp_parser.h"
 #include "debug.h"
 

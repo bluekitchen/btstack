@@ -42,8 +42,8 @@
 #include "btstack_memory.h"
 #include "debug.h"
 
-#include <btstack/utils.h>
-#include <btstack/linked_list.h>
+#include "utils.h"
+#include "linked_list.h"
 
 // This lists should be only accessed by tests.
 linked_list_t db_mem_link_keys = NULL;

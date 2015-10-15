@@ -14,7 +14,7 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 
-#include <btstack/hci_cmds.h>
+#include "hci_cmds.h"
 
 #include "btstack_memory.h"
 #include "hci.h"

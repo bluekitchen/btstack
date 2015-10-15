@@ -46,7 +46,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <btstack/btstack.h>
+#include "btstack.h"
 
 #define MAX_DEVICES 10
 struct device {

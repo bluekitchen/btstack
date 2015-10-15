@@ -46,8 +46,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <btstack/btstack.h>
-#include <btstack/hci_cmds.h>
+#include "btstack.h"
+#include "hci_cmds.h"
 
 #define PSM_TEST 0xdead
 #define PACKET_SIZE 1000

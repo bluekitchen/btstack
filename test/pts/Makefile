@@ -26,7 +26,7 @@ LDFLAGS += $(shell pkg-config libusb-1.0 --libs)
 
 EXAMPLES = hfp_hf_test hfp_ag_test ble_peripheral_test ble_central_test l2cap_test classic_test bnep_test hsp_ag_test hsp_hs_test
 
-all: ${BTSTACK_ROOT}/include/btstack/version.h ${EXAMPLES}
+all: ${BTSTACK_ROOT}/src/version.h ${EXAMPLES}
 
 ble_peripheral_test: profile.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral_test.o
 	${CC} $(filter-out profile.h,$^) ${CFLAGS} ${LDFLAGS} -o $@

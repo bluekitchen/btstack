@@ -52,7 +52,7 @@
 
 #include "btstack-config.h"
 
-#include <btstack/run_loop.h>
+#include "run_loop.h"
 
 #include "debug.h"
 #include "btstack_memory.h"

@@ -40,7 +40,7 @@
 
 #include "att_db_util.h"
 #include "att.h"
-#include <btstack/utils.h>
+#include "utils.h"
 #include "debug.h"
 
 // ATT DB Storage

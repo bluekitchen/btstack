@@ -39,7 +39,7 @@
 #define __ANT_CMDS_H
 
 #include <stdint.h>
-#include <btstack/hci_cmds.h>
+#include "hci_cmds.h"
 
 #if defined __cplusplus
 extern "C" {

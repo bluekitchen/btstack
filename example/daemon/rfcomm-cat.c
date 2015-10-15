@@ -53,8 +53,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <btstack/btstack.h>
-#include <btstack/sdp_util.h>
+#include "btstack.h"
+#include "sdp_util.h"
 
 // input from command line arguments
 bd_addr_t addr = { };

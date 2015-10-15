@@ -47,8 +47,8 @@
 
 #include "btstack-config.h"
 
-#include <btstack/hci_cmds.h>
-#include <btstack/utils.h>
+#include "hci_cmds.h"
+#include "utils.h"
 #include "hci_transport.h"
 #include "bt_control.h"
 #include "remote_device_db.h"
@@ -56,7 +56,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <btstack/linked_list.h>
+#include "linked_list.h"
 
 #if defined __cplusplus
 extern "C" {

@@ -44,8 +44,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <btstack/hci_cmds.h>
-#include <btstack/sdp_util.h>
+#include "hci_cmds.h"
+#include "sdp_util.h"
 
 #include "sdp_client.h"
 #include "sdp_query_rfcomm.h"

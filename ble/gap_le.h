@@ -42,8 +42,8 @@
 extern "C" {
 #endif
 
-#include <btstack/utils.h>
-#include <btstack/hci_cmds.h>
+#include "utils.h"
+#include "hci_cmds.h"
 	
 /* API_START */
 

@@ -52,8 +52,8 @@
 #include "hci_dump.h"
 #include "hci.h"
 #include "hci_transport.h"
-#include <btstack/hci_cmds.h>
-#include <btstack/run_loop.h>
+#include "hci_cmds.h"
+#include "run_loop.h"
 #include <stdio.h>
 
 #ifndef EMBEDDED

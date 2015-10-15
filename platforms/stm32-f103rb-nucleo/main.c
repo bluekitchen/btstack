@@ -48,7 +48,7 @@
 #include <errno.h>
 #include <unistd.h>
 
-#include <btstack/run_loop.h>
+#include "run_loop.h"
 #include "hci.h"
 #include "bt_control_cc256x.h"
 #include "btstack_memory.h"
@@ -80,7 +80,7 @@ void btstack_main(void);
 static void bluetooth_power_cycle(void);
 
 // hal_tick.h inmplementation
-#include <btstack/hal_tick.h>
+#include "hal_tick.h"
 
 static void dummy_handler(void);
 static void (*tick_handler)(void) = &dummy_handler;
@@ -117,7 +117,7 @@ static void msleep(uint32_t delay) {
 }
 
 // hal_led.h implementation
-#include <btstack/hal_led.h>
+#include "hal_led.h"
 void hal_led_off(void);
 void hal_led_on(void);
 
@@ -132,7 +132,7 @@ void hal_led_toggle(void){
 }
 
 // hal_cpu.h implementation
-#include <btstack/hal_cpu.h>
+#include "hal_cpu.h"
 
 void hal_cpu_disable_irqs(void){
 	__disable_irq();
@@ -152,7 +152,7 @@ void hal_cpu_enable_irqs_and_sleep(void){
 }
 
 // hal_uart_dma.c implementation
-#include <btstack/hal_uart_dma.h>
+#include "hal_uart_dma.h"
 
 // handlers
 static void (*rx_done_handler)(void) = dummy_handler;

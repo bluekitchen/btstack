@@ -36,7 +36,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#include <btstack/utils.h>
+#include "utils.h"
 
 #define kCODHID      0x2540
 #define kCODZeeMote   0x584
