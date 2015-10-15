@@ -784,6 +784,11 @@ void reset_screen(void){
         rows[i] = NULL;
     }
     num_rows = 0;
+    for (i=0;i<num_lines;i++) {
+        free((void*)lines[i]);
+        lines[i] = NULL;
+    }
+    num_lines = 0;
 }
 
 void print_line(const char * format, ...){
@@ -827,8 +832,12 @@ void print_screen(void){
             printf(" ");
             pos++;
         }
-        printf("|  %s\n", rows[i+second_half]);
+        if (i + second_half < num_rows){
+            printf("|  %s", rows[i+second_half]);
+        }
+        printf("\n");
     }
+    printf("\n");
 }
 
 void show_usage(void){
@@ -894,7 +903,6 @@ void show_usage(void){
     printf_row("y/Y - OOB data off/on/toggle A/B");
     printf_row("---");
     printf_row("Ctrl-c - exit");
-    printf_row("---");
 
     print_screen();
 }
