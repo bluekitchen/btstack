@@ -16,7 +16,7 @@ static void (*registered_l2cap_packet_handler) (void * connection, uint8_t packe
 
 static linked_list_t     connections;
 static const uint16_t max_mtu = 23;
-static uint8_t  l2cap_stack_buffer[max_mtu];
+static uint8_t  l2cap_stack_buffer[HCI_INCOMING_PRE_BUFFER_SIZE + 8 + max_mtu];	// pre buffer + HCI Header + L2CAP header
 uint16_t gatt_client_handle = 0x40;
 
 uint16_t get_gatt_client_handle(void){
