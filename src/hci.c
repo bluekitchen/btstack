@@ -85,6 +85,7 @@ static void hci_connection_timestamp(hci_connection_t *connection);
 static int  hci_power_control_on(void);
 static void hci_power_control_off(void);
 static void hci_state_reset(void);
+static void hci_remove_from_whitelist(bd_addr_type_t address_type, bd_addr_t address);
 
 // the STACK is here
 #ifndef HAVE_MALLOC
@@ -1573,27 +1574,35 @@ static void event_handler(uint8_t *packet, int size){
                     addr_type = (bd_addr_type_t)packet[7];
                     log_info("LE Connection_complete (status=%u) type %u, %s", packet[3], addr_type, bd_addr_to_str(addr));
                     conn = hci_connection_for_bd_addr_and_type(addr, addr_type);
-                    // handle error first
+                    // if auto-connect, remove from whitelist in both roles
+                    if (hci_stack->le_connecting_state == LE_CONNECTING_WHITELIST){
+                        hci_remove_from_whitelist(addr_type, addr);  
+                    }
+                    // handle error: error is reported only to the initiator -> outgoing connection
                     if (packet[3]){
+                        // outgoing connection establishment is done
+                        hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
+                        // remove entry
                         if (conn){
-                            // outgoing connection failed, remove entry
                             linked_list_remove(&hci_stack->connections, (linked_item_t *) conn);
                             btstack_memory_hci_connection_free( conn );
                         }
-                        // if authentication error, also delete link key
-                        if (packet[3] == 0x05) {
-                            hci_drop_link_key_for_bd_addr(addr);
-                        }
                         break;
                     }
-                    if (!conn){
-                        // advertisemts are stopped on incoming connection
+                    // on success, both hosts receive connection complete event
+                    if (packet[6] == 0){
+                        // if we're master, it was an outgoing connection and we're done with it
+                        hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
+                    } else {
+                        // if we're slave, it was an incoming connection, advertisements have stopped
                         hci_stack->le_advertisements_active = 0;
-                        // LE connections are auto-accepted, so just create a connection if there isn't one already
+                    }
+                    // LE connections are auto-accepted, so just create a connection if there isn't one already
+                    if (!conn){
                         conn = create_connection_for_bd_addr_and_type(addr, addr_type);
                     }
+                    // no memory, sorry.
                     if (!conn){
-                        // no memory
                         break;
                     }
                     
@@ -3217,13 +3226,7 @@ int gap_auto_connection_start(bd_addr_type_t address_type, bd_addr_t address){
     return 0;
 }
 
-/**
- * @brief Auto Connection Establishment - Stop Connecting to device
- * @param address_typ
- * @param address
- * @returns 0 if ok
- */
-int gap_auto_connection_stop(bd_addr_type_t address_type, bd_addr_t address){
+static void hci_remove_from_whitelist(bd_addr_type_t address_type, bd_addr_t address){
     linked_list_iterator_t it;
     linked_list_iterator_init(&it, &hci_stack->le_whitelist);
     while (linked_list_iterator_has_next(&it)){
@@ -3239,6 +3242,16 @@ int gap_auto_connection_stop(bd_addr_type_t address_type, bd_addr_t address){
         linked_list_iterator_remove(&it);
         btstack_memory_whitelist_entry_free(entry);
     }
+}
+
+/**
+ * @brief Auto Connection Establishment - Stop Connecting to device
+ * @param address_typ
+ * @param address
+ * @returns 0 if ok
+ */
+int gap_auto_connection_stop(bd_addr_type_t address_type, bd_addr_t address){
+    hci_remove_from_whitelist(address_type, address);
     hci_run();
     return 0;
 }
