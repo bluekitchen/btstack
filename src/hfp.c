@@ -132,9 +132,9 @@ int send_str_over_rfcomm(uint16_t cid, char * command){
     if (!rfcomm_can_send_packet_now(cid)) return 1;
     int err = rfcomm_send_internal(cid, (uint8_t*) command, strlen(command));
     if (err){
-        printf("rfcomm_send_internal -> error 0x%02x \n", err);
+        log_error("rfcomm_send_internal -> error 0x%02x \n", err);
     } 
-    return err;
+    return 1;
 }
 
 #if 0
@@ -274,11 +274,13 @@ void hfp_reset_context_flags(hfp_connection_t * context){
     context->notify_ag_on_new_codecs = 0;
     
     // establish codecs connection
-    context->trigger_codec_connection_setup = 0;
+    context->ag_trigger_codec_connection_setup = 0;
+    context->hf_trigger_codec_connection_setup = 0;
     context->suggested_codec = 0;
-    
+    context->negotiated_codec = 0;
+    context->codec_confirmed = 0;
+
     context->establish_audio_connection = 0; 
-    
 }
 
 static hfp_connection_t * create_hfp_connection_context(){
@@ -684,20 +686,25 @@ static void process_command(hfp_connection_t * context){
     } 
 
     if (isHandsFree && strncmp((char *)context->line_buffer+offset, HFP_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0){
-        printf(" process command 1 %s \n", context->line_buffer);
         context->command = HFP_CMD_EXTENDED_AUDIO_GATEWAY_ERROR;
         return;
     }
 
     if (!isHandsFree && strncmp((char *)context->line_buffer+offset, HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR, strlen(HFP_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR)) == 0){
-        printf(" process command 2 %s \n", context->line_buffer);
         context->command = HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR;
         return;
     }
 
     if (strncmp((char *)context->line_buffer+offset, HFP_TRIGGER_CODEC_CONNECTION_SETUP, strlen(HFP_TRIGGER_CODEC_CONNECTION_SETUP)) == 0){
         context->command = HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP;
-        context->trigger_codec_connection_setup = 1;
+        // printf("HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP update command\n");
+        if (isHandsFree){
+            context->hf_trigger_codec_connection_setup = 1;
+            printf("TRIGGER_CODEC_CONNECTION_SETUP hf_trigger_codec_connection_setup = 1\n");
+        } else {
+            context->hf_trigger_codec_connection_setup = 1;
+            printf("TRIGGER_CODEC_CONNECTION_SETUP hf_trigger_codec_connection_setup = 1\n");
+        }
         return;
     } 
 
@@ -837,9 +844,11 @@ void hfp_parse(hfp_connection_t * context, uint8_t byte){
             switch (context->command){
                 case HFP_CMD_HF_CONFIRMED_CODEC:
                     context->codec_confirmed = atoi((char*)context->line_buffer);
+                    printf("hfp parse HFP_CMD_HF_CONFIRMED_CODEC %d\n", context->codec_confirmed);
                     break;
                 case HFP_CMD_AG_SUGGESTED_CODEC:
                     context->suggested_codec = atoi((char*)context->line_buffer);
+                    printf("hfp parse HFP_CMD_AG_SUGGESTED_CODEC %d\n", context->suggested_codec);
                     break;
                 case HFP_CMD_SUPPORTED_FEATURES:
                     context->remote_supported_features = atoi((char*)context->line_buffer);
@@ -1057,32 +1066,6 @@ void hfp_release_service_level_connection(hfp_connection_t * context){
 
     return;
 }
-
-void hfp_negotiate_codecs(hfp_connection_t * connection){
-    if (!connection){
-        log_error("HFP HF: connection doesn't exist.");
-        return;
-    }
-    
-    if (connection->state >= HFP_W2_DISCONNECT_SCO) return;
-    
-    if (connection->state != HFP_SLE_W4_EXCHANGE_COMMON_CODEC){
-        connection->trigger_codec_connection_setup = 1;
-    }
-}
-
-
-void hfp_establish_audio_connection(hfp_connection_t * connection){
-    connection->establish_audio_connection = 0;
-    if (connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return;
-    if (connection->state >= HFP_W2_DISCONNECT_SCO) return;
-    
-    connection->establish_audio_connection = 1;
-    if (connection->state < HFP_SLE_W4_EXCHANGE_COMMON_CODEC){
-        connection->trigger_codec_connection_setup = 1;
-    }
-}
-
 
 void hfp_release_audio_connection(hfp_connection_t * connection){
     if (!connection) return;

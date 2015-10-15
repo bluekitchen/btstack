@@ -78,6 +78,35 @@ static uint8_t codecs_connection_established = 0;
 static uint8_t audio_connection_established = 0;
 static uint8_t service_level_connection_released = 0;
 
+int expected_rfcomm_command(const char * cmd){
+    char * ag_cmd = (char *)get_rfcomm_payload();
+    int offset = 2;
+    int cmd_size = strlen(cmd);
+
+    int cmd_found = memcmp(ag_cmd+offset, cmd, cmd_size) == 0;
+    while (!cmd_found && get_rfcomm_payload_len() - cmd_size >= offset){
+        offset++;
+        cmd_found = strncmp(ag_cmd+offset, cmd, cmd_size) == 0;
+    }
+    if (!cmd_found) return 0;
+    
+    // AG cmds that are not followed by OK
+    if (memcmp(ag_cmd+offset, "+BCS", 4) == 0){
+        return cmd_found;
+    }
+
+    offset += strlen(cmd)+4;
+    // printf("cmd found, offset %d, cmd %s\n", offset, ag_cmd+offset);
+    int ok_found = memcmp(ag_cmd+offset, "OK", 2) == 0;
+    while (!ok_found && get_rfcomm_payload_len() - 2 >= offset){
+        offset++;
+        // printf("cmd found, offset %d, cmd %s\n", offset, ag_cmd+offset);
+        ok_found = memcmp(ag_cmd+offset, "OK", 2) == 0;
+    }
+    // printf("cmd found, ok found %d\n", ok_found);
+    return cmd_found && ok_found;
+}
+
 void hfp_hf_run_test_sequence(char ** test_steps, int nr_test_steps){
     int i = 0;
     for (i=0; i < nr_test_steps; i++){
@@ -148,7 +177,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
 
 
 
-TEST_GROUP(HandsfreeClient){
+TEST_GROUP(HFPClient){
 
     void setup(void){
         service_level_connection_established = 0;
@@ -164,7 +193,7 @@ TEST_GROUP(HandsfreeClient){
         }
     }
 
-    void setup_hfp_service_level_connection(char ** test_steps, int nr_test_steps){
+    void verify_hfp_service_level_connection_established(char ** test_steps, int nr_test_steps){
         service_level_connection_established = 0;
         hfp_hf_establish_service_level_connection(device_addr);
         hfp_hf_run_test_sequence((char **) test_steps, nr_test_steps);
@@ -173,7 +202,7 @@ TEST_GROUP(HandsfreeClient){
         inject_rfcomm_command((uint8_t*)HFP_OK, strlen(HFP_OK));
     }
 
-    void setup_hfp_codecs_connection_state_machine(char ** test_steps, int nr_test_steps){
+    void verify_hfp_codecs_connection_established(char ** test_steps, int nr_test_steps){
         codecs_connection_established = 0;
         hfp_hf_negotiate_codecs(device_addr);
         hfp_hf_run_test_sequence((char **) test_steps, nr_test_steps);
@@ -183,22 +212,24 @@ TEST_GROUP(HandsfreeClient){
 };
 
 
-TEST(HandsfreeClient, HFCodecsConnectionEstablished){
-    setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
+TEST(HFPClient, HFCodecsConnectionEstablished){
+    verify_hfp_service_level_connection_established(default_slc_setup(), default_slc_setup_size());
     for (int i = 0; i < cc_tests_size(); i++){
-        setup_hfp_codecs_connection_state_machine(hfp_cc_tests()[i].test, hfp_cc_tests()[i].len);
+        verify_hfp_codecs_connection_established(hfp_cc_tests()[i].test, hfp_cc_tests()[i].len);
     }
 }
 
-TEST(HandsfreeClient, HFCodecChange){
-    setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
-    hfp_hf_run_test_sequence(default_cc_setup(), default_cc_setup_size());
+TEST(HFPClient, HFServiceLevelConnectionCommands){
+    verify_hfp_service_level_connection_established(default_slc_setup(), default_slc_setup_size());
+    for (int i = 0; i < slc_cmds_tests_size(); i++){
+        hfp_hf_run_test_sequence(hfp_slc_cmds_tests()[i].test, hfp_slc_cmds_tests()[i].len);
+    }
     CHECK_EQUAL(service_level_connection_established, 1);
 }
 
-TEST(HandsfreeClient, HFServiceLevelConnectionEstablished){
+TEST(HFPClient, HFServiceLevelConnectionEstablished){
     for (int i = 0; i < slc_tests_size(); i++){
-        setup_hfp_service_level_connection(hfp_slc_tests()[i].test, hfp_slc_tests()[i].len);
+        verify_hfp_service_level_connection_established(hfp_slc_tests()[i].test, hfp_slc_tests()[i].len);
     }
 }
 

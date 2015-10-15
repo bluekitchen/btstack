@@ -75,33 +75,43 @@ uint16_t get_rfcomm_payload_len(){
 }
 
 static void prepare_rfcomm_buffer(uint8_t * data, int len){
-	memset(&rfcomm_payload, 0, 200);
+    if (len <= 0) return;
+    memset(&rfcomm_payload, 0, 200);
 	int pos = 0;
-	if (memcmp((char*)data, "AT", 2) != 0){
-		rfcomm_payload[pos++] = '\r';
+
+    if (strncmp((char*)data, "AT", 2) == 0){
+        strncpy((char*)&rfcomm_payload[pos], (char*)data, len);
+        pos += len;
+    } else {
+    	rfcomm_payload[pos++] = '\r';
 		rfcomm_payload[pos++] = '\n';
-	}
-	memcpy((char*)&rfcomm_payload[pos], data, len);
-	pos += len;
-	if (memcmp((char*)data, "AT", 2) != 0){
-		rfcomm_payload[pos++] = '\r';
-		rfcomm_payload[pos++] = '\n';
-        rfcomm_payload[pos++] = 'O';
-        rfcomm_payload[pos++] = 'K';
-    }   
-    rfcomm_payload[pos++] = '\r';
-    rfcomm_payload[pos] = '\n';
+        strncpy((char*)&rfcomm_payload[pos], (char*)data, len);
+        pos += len;
+    
+        if (memcmp((char*)data, "+BAC", 4) != 0 &&
+            memcmp((char*)data, "+BCS", 4) != 0){
+            rfcomm_payload[pos++] = '\r';
+            rfcomm_payload[pos++] = '\n';
+            rfcomm_payload[pos++] = 'O';
+            rfcomm_payload[pos++] = 'K';
+        }   
+    
+    }
+	rfcomm_payload[pos++] = '\r';
+    rfcomm_payload[pos++] = '\n';
+    rfcomm_payload[pos] = 0;
 	rfcomm_payload_len = pos;
 }	
 
 
 int  rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
-	if (memcmp((char*)data, "AT", 2) == 0){
-		printf("HF send: %s", data);
+	if (strncmp((char*)data, "AT", 2) == 0){
+		printf("Verify HF state machine response: %s", data);
 	} else {
-		printf("AG send: %s", data);
+        printf("Verify AG state machine response: %s", data+2);
 	}
-	prepare_rfcomm_buffer(data, len);
+	strncpy((char*)&rfcomm_payload[0], (char*)data, len);
+    rfcomm_payload_len = len;
 	return 0;
 }
 
@@ -188,46 +198,42 @@ void rfcomm_accept_connection_internal(uint16_t rfcomm_cid){
 	printf("rfcomm_accept_connection_internal \n");
 }
 
-// HFP Mock API
-
-int expected_rfcomm_command(const char * cmd){
-    char * ag_cmd = (char *)get_rfcomm_payload();
-    int offset = 0;
-    int cmd_size = strlen(cmd);
-
-    if (memcmp(ag_cmd, "OK", 2) == 0){
-        int ok_found = memcmp(ag_cmd+offset, "OK", 2) == 0;
-        while (!ok_found && get_rfcomm_payload_len() - 2 >= offset){
-            offset++;
-            ok_found = memcmp(ag_cmd+offset, "OK", 2) == 0;
-        }
-        return ok_found;
-    }
-
-    int cmd_found = memcmp(ag_cmd, cmd, cmd_size) == 0;
-    while (!cmd_found && get_rfcomm_payload_len() - cmd_size >= offset){
-        offset++;
-        cmd_found = strncmp(ag_cmd+offset, cmd, cmd_size) == 0;
-    }
-    
-    if (!cmd_found) return 0;
-    offset += strlen(cmd);
-
-    int ok_found = memcmp(ag_cmd+offset, "OK", 2) == 0;
-    while (!ok_found && get_rfcomm_payload_len() - 2 >= offset){
-        offset++;
-        ok_found = memcmp(ag_cmd+offset, "OK", 2) == 0;
-    }
-  
-    return cmd_found && ok_found;
-}
-
 
 void inject_rfcomm_command(uint8_t * data, int len){
     prepare_rfcomm_buffer(data, len);
+    if (memcmp((char*)data, "AT", 2) == 0){
+        printf("\n\n ---> Send cmd to AG state machine: %s", data);
+    } else if (memcmp((char*)data, "+", 1) == 0){
+
+    } else {
+        printf("\n\n ---> Send cmd to HF state machine: %s", data);
+    }
     (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &rfcomm_payload[0], rfcomm_payload_len);
 }
 
+void inject_rfcomm_command_to_hf(uint8_t * data, int len){
+    if (memcmp((char*)data, "AT", 2) == 0) return;
+    
+    prepare_rfcomm_buffer(data, len);
+    if (data[0] == '+'){
+        printf("\n\n ---> Send cmd to HF state machine: %s", data);
+    } else {
+        printf("\n\n ---> trigger HF state machine: %s", data);
+    }
+    (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &rfcomm_payload[0], rfcomm_payload_len);
+}
+
+void inject_rfcomm_command_to_ag(uint8_t * data, int len){
+    if (data[0] == '+') return;
+    
+    prepare_rfcomm_buffer(data, len);
+    if (memcmp((char*)data, "AT", 2) == 0){
+        printf("\n\n ---> Send cmd to AG state machine: %s", data);
+    } else {
+        printf("\n\n ---> trigger AG state machine: %s", data);
+    }
+    (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &rfcomm_payload[0], rfcomm_payload_len);
+}
 
 
 

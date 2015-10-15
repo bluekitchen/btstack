@@ -99,20 +99,38 @@ static uint8_t codecs_connection_established = 0;
 static uint8_t audio_connection_established = 0;
 static uint8_t service_level_connection_released = 0;
 
-void hfp_ag_run_test_sequence(char ** test_steps, int nr_test_steps){
+
+int expected_rfcomm_command(const char * expected_cmd){
+    char * ag_cmd = (char *)get_rfcomm_payload();
+    int ag_len = get_rfcomm_payload_len();
+    int expected_len = strlen(expected_cmd);
+    for (int i = 0; i < ag_len; i++){
+        if ( (ag_cmd+i)[0] == '\r' || (ag_cmd+i)[0] == '\n' ) {
+            continue;
+        }
+        if (memcmp(ag_cmd + i, expected_cmd, expected_len) == 0) return 1;
+    }
+    return 0;
+}
+
+#define HFP_NOP_CMD ""
+void simulate_test_sequence(char ** test_steps, int nr_test_steps){
     int i = 0;
     for (i=0; i < nr_test_steps; i++){
         char * cmd = test_steps[i];
-        if (memcmp(cmd, "OK", 2) == 0) continue;
+        printf(" test step %d %s\n", i, cmd);
         if (memcmp(cmd, "AT", 2) == 0){
-            printf("---> next step %s\n", cmd);
-            inject_rfcomm_command((uint8_t*)cmd, strlen(cmd));
+            inject_rfcomm_command_to_ag((uint8_t*)cmd, strlen(cmd));
+        } else if (memcmp(cmd, "NOP", 3) == 0){
+            printf("Trigger AG to run state machine\n");
+            inject_rfcomm_command_to_ag((uint8_t*)"NOP",3);
         } else {
             int expected_cmd = expected_rfcomm_command(cmd);
             if (!expected_cmd){
                 printf("\nError: Expected:'%s', but got:'%s'", cmd, (char *)get_rfcomm_payload());
                 return;
-            }
+            } 
+            printf("AG response verified %s\n", cmd);
         }
     }
 }
@@ -126,11 +144,13 @@ void packet_handler(uint8_t * event, uint16_t event_size){
     
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+            printf("\n\n\n\n ** SLC established **\n\n\n\n\n");
             service_level_connection_established = 1;
             codecs_connection_established = 0;
             audio_connection_established = 0;
             break;
         case HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE:
+            printf("\n\n\n\n ** CC established **\n\n\n\n\n");
             codecs_connection_established = 1;
             audio_connection_established = 0;
             break;
@@ -147,7 +167,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
 }
 
 
-TEST_GROUP(AudiogatewayClient){
+TEST_GROUP(HFPClient){
     void setup(void){
         service_level_connection_established = 0;
         codecs_connection_established = 0;
@@ -165,17 +185,41 @@ TEST_GROUP(AudiogatewayClient){
     void setup_hfp_service_level_connection(char ** test_steps, int nr_test_steps){
         service_level_connection_established = 0;
         hfp_ag_establish_service_level_connection(device_addr);
-        hfp_ag_run_test_sequence((char **) test_steps, nr_test_steps);
-        CHECK_EQUAL(service_level_connection_established, 1);
+        simulate_test_sequence((char **) test_steps, nr_test_steps);
     }
+
+    void setup_hfp_codecs_connection(char ** test_steps, int nr_test_steps){
+        codecs_connection_established = 0;
+        //hfp_ag_negotiate_codecs(device_addr);
+        simulate_test_sequence((char **) test_steps, nr_test_steps);
+    }
+
 };
 
-
-TEST(AudiogatewayClient, HFServiceLevelConnectionEstablished){
-    for (int i = 0; i < slc_tests_size(); i++){
-        setup_hfp_service_level_connection(hfp_slc_tests()[i].test, hfp_slc_tests()[i].len);
+TEST(HFPClient, HFCodecsConnectionEstablished){
+    setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
+    CHECK_EQUAL(service_level_connection_established, 1);
+    
+    for (int i = 0; i < cc_tests_size(); i++){
+        setup_hfp_codecs_connection(hfp_cc_tests()[i].test, hfp_cc_tests()[i].len);
+        CHECK_EQUAL(codecs_connection_established, 1);
     }
 }
+
+// TEST(HFPClient, HFServiceLevelConnectionCommands){
+//     setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
+//     for (int i = 0; i < slc_cmds_tests_size(); i++){
+//         simulate_test_sequence(hfp_slc_cmds_tests()[i].test, hfp_slc_cmds_tests()[i].len);
+//     }
+//     CHECK_EQUAL(service_level_connection_established, 1);
+// }
+
+// TEST(HFPClient, HFServiceLevelConnectionEstablished){
+//     for (int i = 0; i < slc_tests_size(); i++){
+//         setup_hfp_service_level_connection(hfp_slc_tests()[i].test, hfp_slc_tests()[i].len);
+//         CHECK_EQUAL(service_level_connection_established, 1);
+//     }
+// }
 
 
 int main (int argc, const char * argv[]){

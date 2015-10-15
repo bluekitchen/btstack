@@ -60,6 +60,9 @@ int default_slc_setup_size();
 
 /* Service Level Connection (slc) common commands */
 hfp_test_item_t * hfp_slc_cmds_tests();
+int slc_cmds_tests_size();
+char ** default_slc_cmds_setup();
+int default_slc_cmds_setup_size();
 
 /* Codecs Connection (cc) test sequences */
 hfp_test_item_t * hfp_cc_tests();

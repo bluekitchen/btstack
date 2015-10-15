@@ -361,7 +361,8 @@ typedef struct hfp_connection {
     uint8_t notify_ag_on_new_codecs;
     
     // establish codecs connection
-    uint8_t trigger_codec_connection_setup;
+    uint8_t hf_trigger_codec_connection_setup;
+    uint8_t ag_trigger_codec_connection_setup;
     uint8_t ag_ready_for_codecs_connection_setup;
     uint8_t suggested_codec;
     uint8_t codec_confirmed;
@@ -396,8 +397,6 @@ void hfp_establish_service_level_connection(bd_addr_t bd_addr, uint16_t service_
 void hfp_release_service_level_connection(hfp_connection_t * connection);
 void hfp_reset_context_flags(hfp_connection_t * context);
 
-void hfp_negotiate_codecs(hfp_connection_t * context);
-void hfp_establish_audio_connection(hfp_connection_t * context);
 void hfp_release_audio_connection(hfp_connection_t * context);
 
 const char * hfp_hf_feature(int index);
