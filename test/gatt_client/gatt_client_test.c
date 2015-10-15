@@ -202,29 +202,21 @@ static void handle_ble_client_event_new(uint8_t packet_type, uint8_t *packet, ui
         	result_counter++;
         	break;
         case GATT_CHARACTERISTIC_VALUE_QUERY_RESULT:
+        case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
         	CHECK_EQUAL(short_value_length, READ_BT_16(packet, 6));
         	CHECK_EQUAL_ARRAY((uint8_t*)short_value, &packet[8], short_value_length);
         	result_counter++;
         	break;
-
-        case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:{
+        case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
         	verify_blob(READ_BT_16(packet, 8), READ_BT_16(packet, 6), &packet[10]);
         	result_counter++;
         	break;
-		}
 	}
 }
 
 static void handle_ble_client_event(le_event_t * event){
 	
 	switch(event->type){
-        case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT: {
-        	le_characteristic_descriptor_event *descriptor_event = (le_characteristic_descriptor_event_t *) event;
-        	CHECK_EQUAL(short_value_length, descriptor_event->value_length);
-        	CHECK_EQUAL_ARRAY((uint8_t*)short_value, descriptor_event->value, short_value_length);
-        	result_counter++;
-        	break;
-        }
         
         case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:{
         	le_characteristic_descriptor_event_t *descriptor_event = (le_characteristic_descriptor_event_t *) event;

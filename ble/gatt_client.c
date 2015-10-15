@@ -903,9 +903,31 @@ static void report_gatt_long_characteristic_value_blob(gatt_client_t * periphera
 #endif
 }
 
-static void report_gatt_characteristic_descriptor(gatt_client_t * peripheral, uint16_t handle, uint8_t *value, uint16_t value_length, uint16_t value_offset, uint8_t event_type){
+static void report_gatt_characteristic_descriptor(gatt_client_t * peripheral, uint16_t descriptor_handle, uint8_t *value, uint16_t value_length, uint16_t value_offset){
+    uint8_t * packet = setup_characteristic_value_packet(GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT, peripheral->handle, descriptor_handle, value, value_length);
+    emit_event_new(peripheral->subclient_id, packet, value_length + 8);
+#ifdef OLD
     le_characteristic_descriptor_event_t event;
-    event.type = event_type;
+    event.type = GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT;
+    event.handle = peripheral->handle;
+    
+    le_characteristic_descriptor_t descriptor;
+    descriptor.handle = descriptor_handle;
+    descriptor.uuid16 = peripheral->uuid16;
+    memcpy(descriptor.uuid128, peripheral->uuid128, 16);
+    event.value_offset = value_offset;
+    
+    event.value = value;
+    event.value_length = value_length;
+    event.characteristic_descriptor = descriptor;
+    emit_event(peripheral->subclient_id, (le_event_t*)&event);
+#endif
+}
+
+static void report_gatt_long_characteristic_descriptor(gatt_client_t * peripheral, uint16_t handle, uint8_t *value, uint16_t value_length, uint16_t value_offset){
+#ifdef OLD
+    le_characteristic_descriptor_event_t event;
+    event.type = GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT;
     event.handle = peripheral->handle;
     
     le_characteristic_descriptor_t descriptor;
@@ -918,6 +940,7 @@ static void report_gatt_characteristic_descriptor(gatt_client_t * peripheral, ui
     event.value_length = value_length;
     event.characteristic_descriptor = descriptor;
     emit_event(peripheral->subclient_id, (le_event_t*)&event);
+#endif
 }
 
 static void report_gatt_all_characteristic_descriptors(gatt_client_t * peripheral, uint8_t * packet, uint16_t size, uint16_t pair_size){
@@ -1376,7 +1399,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     
                 case P_W4_READ_CHARACTERISTIC_DESCRIPTOR_RESULT:{
                     gatt_client_handle_transaction_complete(peripheral);
-                    report_gatt_characteristic_descriptor(peripheral, peripheral->attribute_handle, &packet[1], size-1, 0, GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT);
+                    report_gatt_characteristic_descriptor(peripheral, peripheral->attribute_handle, &packet[1], size-1, 0);
                     emit_gatt_complete_event(peripheral, 0);
                     break;
                 }
@@ -1456,9 +1479,9 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
                 case P_W4_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_RESULT:
-                    report_gatt_characteristic_descriptor(peripheral, peripheral->attribute_handle,
+                    report_gatt_long_characteristic_descriptor(peripheral, peripheral->attribute_handle,
                                                           &packet[1], received_blob_length,
-                                                          peripheral->attribute_offset, GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT);
+                                                          peripheral->attribute_offset);
                     trigger_next_blob_query(peripheral, P_W2_SEND_READ_BLOB_CHARACTERISTIC_DESCRIPTOR_QUERY, received_blob_length);
                     // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;

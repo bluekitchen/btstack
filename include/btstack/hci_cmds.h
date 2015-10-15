@@ -516,6 +516,7 @@ extern "C" {
  * @format H2LV
  * @param handle
  * @param value_handle
+ * @param value_offset
  * @param value_length
  * @param value
  */
@@ -540,16 +541,19 @@ extern "C" {
 #define GATT_INDICATION                                    0xA8
 
 /**
- * @format HZ
- * @param handle
- * @param characteristic_descriptor
+ * @format H2LV
+ * @param descriptor_handle
+ * @param descriptor_length
+ * @param descriptor
  */
 #define GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT        0xA9
 
 /**
- * @format HZ
+ * @format H2LV
  * @param handle
- * @param characteristic_descriptor
+ * @param descriptor_offset
+ * @param descriptor_length
+ * @param descriptor
  */
 #define GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT   0xAA
 
