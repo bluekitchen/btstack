@@ -1145,6 +1145,10 @@ static int ui_process_data_request(char buffer){
         }             
         return 0;   
     }
+
+    // ignore spaces
+    if (buffer == ' ') return 0;
+
     int hex = hexForChar(buffer);
     if (hex < 0){
         printf("stdinprocess: invalid input 0x%02x\n", buffer);
