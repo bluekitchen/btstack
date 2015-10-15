@@ -14,7 +14,7 @@ VPATH += firmware
 VPATH += src
 VPATH += ${BTSTACK_ROOT}/platforms/msp430
 VPATH += $(BTSTACK_ROOT)/ble
-VPATH += $(BTSTACK_ROOT)/chipset-cc256x
+VPATH += $(BTSTACK_ROOT)/chipset/cc256x
 VPATH += $(BTSTACK_ROOT)/example/embedded
 VPATH += $(BTSTACK_ROOT)/src
 
@@ -27,7 +27,7 @@ CFLAGS += \
 	-I$(BTSTACK_ROOT)/include \
   	-I$(BTSTACK_ROOT)/src \
 	-I$(BTSTACK_ROOT)/ble \
-	-I$(BTSTACK_ROOT)/chipset-cc256x \
+	-I$(BTSTACK_ROOT)/chipset/cc256x \
     -I${BTSTACK_ROOT}/platforms/msp430 \
 
 LDFLAGS = -mmcu=msp430f5438a
@@ -96,7 +96,7 @@ LCD_OBJ    = $(LCD:.c=.o)
 all: led_counter.hex gap_inquiry.hex 
 
 # fetch and convert init scripts
-include ${BTSTACK_ROOT}/chipset-cc256x/Makefile.inc
+include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
 # compiling requires a 20-bit mspgcc version
 # spp_and_le_counter.hex spp_accel.hex spp_flowcontrol.hex spp_counter.hex

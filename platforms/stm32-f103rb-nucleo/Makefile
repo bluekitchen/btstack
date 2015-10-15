@@ -11,7 +11,7 @@ BTSTACK_ROOT = ../..
 VPATH  = $(BTSTACK_ROOT)/example/embedded
 VPATH += $(BTSTACK_ROOT)/src
 VPATH += $(BTSTACK_ROOT)/ble
-VPATH += $(BTSTACK_ROOT)/chipset-cc256x
+VPATH += $(BTSTACK_ROOT)/chipset/cc256x
 
 CORE   = \
 	main.c 					  \
@@ -54,17 +54,17 @@ BLE_OBJ   = $(BLE:.c=.o)
 
 OBJS += $(CORE_OBJ) $(COMMON_OBJ) $(BLE_OBJ)
 
-CFLAGS = -I. -I$(BTSTACK_ROOT)/include -I$(BTSTACK_ROOT)/src -I$(BTSTACK_ROOT)/ble -I$(BTSTACK_ROOT)/chipset-cc256x
+CFLAGS = -I. -I$(BTSTACK_ROOT)/include -I$(BTSTACK_ROOT)/src -I$(BTSTACK_ROOT)/ble -I$(BTSTACK_ROOT)/chipset/cc256x
 
 examples: libopencm3/lib/libopencm3_stm32f1.a spp_and_le_counter.h spp_and_le_counter.elf
 
 include libopencm3.stm32f1.mk
 
 # fetch and convert init scripts
-include ${BTSTACK_ROOT}/chipset-cc256x/Makefile.inc
+include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
 # clean:
-#	rm -f *.map *.o *.d *.out *.elf *.bin *.hex ../driver/*.o ../../src/*.o ../../ble/*.o ../firmware/*.o ${BTSTACK_ROOT}/chipset-cc256x/*.o ${BTSTACK_ROOT}/src/*.o
+#	rm -f *.map *.o *.d *.out *.elf *.bin *.hex ../driver/*.o ../../src/*.o ../../ble/*.o ../firmware/*.o ${BTSTACK_ROOT}/chipset/cc256x/*.o ${BTSTACK_ROOT}/src/*.o
 
 # git clone and compile libopencm3
 libopencm3/lib/libopencm3_stm32f1.a:

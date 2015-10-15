@@ -119,7 +119,7 @@
           <itemPath>../../../ble/sm.c</itemPath>
         </logicalFolder>
         <logicalFolder name="chipset-csr" displayName="chipset-csr" projectFiles="true">
-          <itemPath>../../../chipset-csr/bt_control_csr.c</itemPath>
+          <itemPath>../../../chipset/csr/bt_control_csr.c</itemPath>
         </logicalFolder>
         <logicalFolder name="src" displayName="src" projectFiles="true">
           <itemPath>../../../src/bnep.c</itemPath>
@@ -196,7 +196,7 @@
     <Elem>../../../include</Elem>
     <Elem>../../../src</Elem>
     <Elem>../../../ble</Elem>
-    <Elem>../../../chipset-csr</Elem>
+    <Elem>../../../chipset/csr</Elem>
     <Elem>../../../example/embedded</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
@@ -243,7 +243,7 @@
         <property key="enable-unroll-loops" value="false"/>
         <property key="exclude-floating-point" value="false"/>
         <property key="extra-include-directories"
-                  value=".;../../../..;../src;../src/system_config/bk-audio-dk;../../../include;../../../src;../../../ble;../../../chipset-csr"/>
+                  value=".;../../../..;../src;../src/system_config/bk-audio-dk;../../../include;../../../src;../../../ble;../../../chipset/csr"/>
         <property key="generate-16-bit-code" value="false"/>
         <property key="generate-micro-compressed-code" value="false"/>
         <property key="isolate-each-function" value="false"/>

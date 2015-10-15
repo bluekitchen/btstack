@@ -14,7 +14,7 @@ VPATH += firmware
 VPATH += src
 VPATH += ${BTSTACK_ROOT}/platforms/msp430
 VPATH += $(BTSTACK_ROOT)/ble
-VPATH += $(BTSTACK_ROOT)/chipset-cc256x
+VPATH += $(BTSTACK_ROOT)/chipset/cc256x
 VPATH += $(BTSTACK_ROOT)/example/embedded
 VPATH += $(BTSTACK_ROOT)/src
 
@@ -29,7 +29,7 @@ CFLAGS += \
 	-I$(BTSTACK_ROOT)/include \
   	-I$(BTSTACK_ROOT)/src \
 	-I$(BTSTACK_ROOT)/ble \
-	-I$(BTSTACK_ROOT)/chipset-cc256x \
+	-I$(BTSTACK_ROOT)/chipset/cc256x \
     -I${BTSTACK_ROOT}/platforms/msp430 \
 
 LDFLAGS = -mmcu=${MCU}
@@ -98,7 +98,7 @@ all: led_counter.hex spp_counter.hex gap_inquiry.hex spp_flowcontrol.hex \
 	 sdp_rfcomm_query.hex sdp_general_query.hex ble_server.hex
 
 # fetch and convert init scripts
-include ${BTSTACK_ROOT}/chipset-cc256x/Makefile.inc
+include ${BTSTACK_ROOT}/chipset/cc256x/Makefile.inc
 
 # compiling requires a 20-bit mspgcc version
 # spp_and_le_counter.hex
@@ -139,7 +139,7 @@ sdp_general_query.out: ${CORE_OBJ} ${COMMON_OBJ} ${SPP_OBJ} ${SDP_CLIENT} ${CC25
 	${CC} $^ ${LDFLAGS} -o $@
 
 clean:
-	rm -f $ *.o *.out *.hex profile.h spp_and_le_counter.h ../driver/*.o ../../src/*.o ../src/*.o ../firmware/*.o ${BTSTACK_ROOT}/chipset-cc256x/*.o ${BTSTACK_ROOT}/src/*.o
+	rm -f $ *.o *.out *.hex profile.h spp_and_le_counter.h ../driver/*.o ../../src/*.o ../src/*.o ../firmware/*.o ${BTSTACK_ROOT}/chipset/cc256x/*.o ${BTSTACK_ROOT}/src/*.o
 
 size: all
 	msp430-size *.o

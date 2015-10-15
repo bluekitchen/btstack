@@ -156,7 +156,7 @@ obtained separately as follows:
 
 -   Copy the included .bts file into
 
--   In [chipset-cc256x](), run the Python script: 
+-   In [chipset/cc256x](), run the Python script: 
 
 <!-- -->
 

@@ -9,14 +9,14 @@ COMMON += hci_transport_h4.c run_loop_posix.c remote_device_db_fs.c
 include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 
 
-CFLAGS += -I$(BTSTACK_ROOT)/chipset-stlc2500d
+CFLAGS += -I$(BTSTACK_ROOT)/chipset/stlc2500d
 
 # CC = gcc-fsf-4.9
 CFLAGS  += -g -Wall 
 # CFLAGS += -Werror
 
 VPATH += ${BTSTACK_ROOT}/platforms/posix/src
-VPATH += ${BTSTACK_ROOT}/chipset-stlc2500d
+VPATH += ${BTSTACK_ROOT}/chipset/stlc2500d
 
 ifeq ($(OS),Windows_NT)
 LDFLAGS += -lws2_32

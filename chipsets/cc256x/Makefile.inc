@@ -29,7 +29,7 @@ TIInit_12.8.32.bts:
 	curl -O $(BASE_URL)/TIInit_12.8.32.bts
 
 # convert to .c files
-CONVERSION_SCRIPT=$(BTSTACK_ROOT)/chipset-cc256x/convert_bts_init_scripts.py
+CONVERSION_SCRIPT=$(BTSTACK_ROOT)/chipset/cc256x/convert_bts_init_scripts.py
 
 bluetooth_init_cc2560B_1.2_BT_Spec_4.0.c: bluetooth_init_cc2560B_1.2_BT_Spec_4.0.bts
 	$(CONVERSION_SCRIPT)
