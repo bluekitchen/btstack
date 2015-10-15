@@ -506,15 +506,6 @@ static void emit_event_to_all_subclients_new(uint8_t * packet, uint16_t size){
     } 
 }
 
-///
-
-static void gatt_serialize_characteristic_descriptor(le_characteristic_descriptor_t * characteristic_descriptor, uint8_t * event, int offset){
-    bt_store_16(event, offset, characteristic_descriptor->handle);
-    swap128(characteristic_descriptor->uuid128, &event[offset+2]);
-}
-
-///
-
 static void emit_gatt_complete_event(gatt_client_t * peripheral, uint8_t status){
     // @format H1
     uint8_t packet[5];
