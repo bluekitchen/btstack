@@ -208,6 +208,7 @@ static void handle_ble_client_event_new(uint8_t packet_type, uint8_t *packet, ui
         	result_counter++;
         	break;
         case GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT:
+        case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
         	verify_blob(READ_BT_16(packet, 8), READ_BT_16(packet, 6), &packet[10]);
         	result_counter++;
         	break;
@@ -215,18 +216,6 @@ static void handle_ble_client_event_new(uint8_t packet_type, uint8_t *packet, ui
 }
 
 static void handle_ble_client_event(le_event_t * event){
-	
-	switch(event->type){
-        
-        case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:{
-        	le_characteristic_descriptor_event_t *descriptor_event = (le_characteristic_descriptor_event_t *) event;
-        	verify_blob(descriptor_event->value_length, descriptor_event->value_offset, descriptor_event->value);
-        	result_counter++;
-        	break;
-        }
-		default:
-			break;
-	}
 }
 
 extern "C" int att_write_callback(uint16_t con_handle, uint16_t attribute_handle, uint16_t transaction_mode, uint16_t offset, uint8_t *buffer, uint16_t buffer_size){
