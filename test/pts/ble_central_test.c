@@ -564,7 +564,9 @@ void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint16_t siz
                             if (value_length < 19){
                                 printf("%04x\n", READ_BT_16(value, 3));
                             } else {
-                                printUUID128(&value[3]);
+                                uint8_t uuid128[16];
+                                swap128(&value[3], uuid128);
+                                printUUID128(uuid128);
                                 printf("\n");
                             }
                             break;
