@@ -70,6 +70,7 @@
 
 // Non standard IXIT
 #define PTS_USES_RECONNECTION_ADDRESS_FOR_ITSELF
+#define PTS_UUID128_REPRESENTATION
 
 typedef enum {
     CENTRAL_IDLE,
@@ -149,8 +150,9 @@ static uint8_t pts_privacy_flag;
 
 static int ui_passkey = 0;
 static int ui_digits_for_passkey = 0;
-static int ui_uint16_request = 0;
 static int ui_uint16 = 0;
+static int ui_uint16_request = 0;
+static int ui_uint16_pos = 0;
 static int ui_uuid16 = 0;
 static int ui_uuid128_request = 0;
 static int ui_uuid128_pos     = 0;
@@ -948,12 +950,14 @@ static void ui_request_uint16(const char * message){
     fflush(stdout);
     ui_uint16_request = 1;
     ui_uint16 = 0;
+    ui_uint16_pos = 0;
 }
 
 static void ui_request_uud128(const char * message){
     printf("%s", message);
     fflush(stdout);
     ui_uuid128_request = 1;
+    ui_uuid128_pos = 0;
     memset(ui_uuid128, 0, 16);
 }
 
@@ -967,7 +971,6 @@ static void ui_request_data(const char * message){
 
 static int ui_process_digits_for_passkey(char buffer){
     if (buffer < '0' || buffer > '9') {
-        printf("stdinprocess: invalid input 0x%02x\n", buffer);
         return 0;
     }
     printf("%c", buffer);
@@ -982,6 +985,15 @@ static int ui_process_digits_for_passkey(char buffer){
 }
 
 static int ui_process_uint16_request(char buffer){
+    if (buffer == 0x7f || buffer == 0x08) {
+        if (ui_uint16_pos){
+            printf("\b \b");
+            fflush(stdout);
+            ui_uint16 >>= 4;
+            ui_uint16_pos--;
+        }
+        return 0;
+    }
     if (buffer == '\n' || buffer == '\r'){
         ui_uint16_request = 0;
         printf("\n");
@@ -1102,26 +1114,55 @@ static int ui_process_uint16_request(char buffer){
     }
     int hex = hexForChar(buffer);
     if (hex < 0){
-        printf("stdinprocess: invalid input 0x%02x\n", buffer);
         return 0;
     }
     printf("%c", buffer);
     fflush(stdout);
     ui_uint16 = ui_uint16 << 4 | hex;
+    ui_uint16_pos++;
     return 0;    
+}
+
+static int uuid128_pos_starts_with_dash(int pos){
+    switch(pos){
+        case 8:
+        case 12:
+        case 16:
+        case 20:
+#ifdef PTS_UUID128_REPRESENTATION
+        case 4:
+        case 24:
+#endif
+            return 1;
+        default:
+            return 0;
+    }
 }
 
 static int ui_process_uuid128_request(char buffer){
     if (buffer == '-') return 0;    // skip - 
+
+    if (buffer == 0x7f || buffer == 0x08) {
+        if (ui_uuid128_pos){
+            if (uuid128_pos_starts_with_dash(ui_uuid128_pos)){
+                printf("\b \b");
+                fflush(stdout);
+            }
+            printf("\b \b");
+            fflush(stdout);
+            ui_uuid128_pos--;
+        }
+        return 0;
+    }
+
     int hex = hexForChar(buffer);
     if (hex < 0){
-        printf("stdinprocess: invalid input 0x%02x\n", buffer);
         return 0;
     }
     printf("%c", buffer);
     fflush(stdout);
     if (ui_uuid128_pos & 1){
-        ui_uuid128[ui_uuid128_pos >> 1] |= hex;
+        ui_uuid128[ui_uuid128_pos >> 1] = (ui_uuid128[ui_uuid128_pos >> 1] & 0xf0) | hex;
     } else {
         ui_uuid128[ui_uuid128_pos >> 1] = hex << 4;
     }
@@ -1146,19 +1187,11 @@ static int ui_process_uuid128_request(char buffer){
                 return 0;
         }
     }
-    switch(ui_uuid128_pos){
-        case 8:
-        case 12:
-        case 16:
-        case 20:
-            printf("-");
-            fflush(stdout);
-            break;
-        default:
-            break;
+    if (uuid128_pos_starts_with_dash(ui_uuid128_pos)){
+        printf("-");
+        fflush(stdout);
     }
     return 0;
-
 }
 
 static void ui_announce_write(const char * method){
@@ -1168,6 +1201,17 @@ static void ui_announce_write(const char * method){
 }
 
 static int ui_process_data_request(char buffer){
+    if (buffer == 0x7f || buffer == 0x08) {
+        if (ui_value_pos){
+            if ((ui_value_pos & 1) == 0){
+                printf("\b");
+            }
+            printf("\b \b");
+            fflush(stdout);
+            ui_value_pos--;
+        }
+        return 0;
+    }
     if (buffer == '\n' || buffer == '\r'){
         ui_value_request = 0;
         printf("\n");
@@ -1211,14 +1255,13 @@ static int ui_process_data_request(char buffer){
 
     int hex = hexForChar(buffer);
     if (hex < 0){
-        printf("stdinprocess: invalid input 0x%02x\n", buffer);
         return 0;
     }
 
     printf("%c", buffer);
 
     if (ui_value_pos & 1){
-        ui_value_data[ui_value_pos >> 1] |= hex;
+        ui_value_data[ui_value_pos >> 1] = (ui_value_data[ui_value_pos >> 1] & 0xf0) | hex;
         printf(" ");
     } else {
         ui_value_data[ui_value_pos >> 1] = hex << 4;
