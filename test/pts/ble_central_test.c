@@ -412,11 +412,11 @@ void use_public_pts_address(void){
     current_pts_address_type = public_pts_address_type;                    
 }
 
-void extract_service(le_service_t * service, uint8_t * packet){
-    service->start_group_handle = READ_BT_16(packet, 4);
-    service->end_group_handle   = READ_BT_16(packet, 6);
+void extract_service(le_service_t * service, uint8_t * data){
+    service->start_group_handle = READ_BT_16(data, 0);
+    service->end_group_handle   = READ_BT_16(data, 2);
     service->uuid16 = 0;
-    swap128(&packet[8], service->uuid128);
+    swap128(&data[4], service->uuid128);
     if (sdp_has_blueooth_base_uuid(service->uuid128)){
         service->uuid16 = READ_NET_32(service->uuid128, 0);
     }
@@ -452,7 +452,7 @@ void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint16_t siz
         case GATT_SERVICE_QUERY_RESULT:
             switch (central_state){
                 case CENTRAL_W4_PRIMARY_SERVICES:
-                    extract_service(&service, packet);
+                    extract_service(&service, &packet[4]);
                     printf("Primary Service with UUID ");
                     printUUID(service.uuid128, service.uuid16);
                     printf(", start group handle 0x%04x, end group handle 0x%04x\n", service.start_group_handle, service.end_group_handle);
@@ -462,10 +462,12 @@ void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint16_t siz
                 }
             break;
         case GATT_INCLUDED_SERVICE_QUERY_RESULT:
-            extract_service(&service, packet);
-            printf("Included Service with UUID ");
+            value_handle = READ_BT_16(packet, 4);
+            extract_service(&service, &packet[6]);
+            printf("Included Service at 0x%004x: ", value_handle);
+            printf("start group handle 0x%04x, end group handle 0x%04x with UUID ", service.start_group_handle, service.end_group_handle);
             printUUID(service.uuid128, service.uuid16);
-            printf(", start group handle 0x%04x, end group handle 0x%04x\n", service.start_group_handle, service.end_group_handle);
+            printf("\n");
             break;
         case GATT_CHARACTERISTIC_QUERY_RESULT:
             extract_characteristic(&characteristic, packet);

@@ -516,16 +516,31 @@ static void emit_gatt_complete_event(gatt_client_t * peripheral, uint8_t status)
     emit_event_new(peripheral->subclient_id, packet, sizeof(packet));
 }
 
-static void emit_gatt_service_query_result_event(gatt_client_t * peripheral, uint8_t type, uint16_t start_group_handle, uint16_t end_group_handle, uint8_t * uuid128){
+static void emit_gatt_service_query_result_event(gatt_client_t * peripheral, uint16_t start_group_handle, uint16_t end_group_handle, uint8_t * uuid128){
     // @format HX
     uint8_t packet[24];
-    packet[0] = type;
+    packet[0] = GATT_SERVICE_QUERY_RESULT;
     packet[1] = sizeof(packet) - 2;
     bt_store_16(packet, 2, peripheral->handle);
     ///
     bt_store_16(packet, 4, start_group_handle);
     bt_store_16(packet, 6, end_group_handle);
     swap128(uuid128, &packet[8]);
+    emit_event_new(peripheral->subclient_id, packet, sizeof(packet));
+}
+
+static void emit_gatt_included_service_query_result_event(gatt_client_t * peripheral, uint16_t include_handle, uint16_t start_group_handle, uint16_t end_group_handle, uint8_t * uuid128){
+    // @format HX
+    uint8_t packet[26];
+    packet[0] = GATT_INCLUDED_SERVICE_QUERY_RESULT;
+    packet[1] = sizeof(packet) - 2;
+    bt_store_16(packet, 2, peripheral->handle);
+    ///
+    bt_store_16(packet, 4, include_handle);
+    //
+    bt_store_16(packet, 6, start_group_handle);
+    bt_store_16(packet, 8, end_group_handle);
+    swap128(uuid128, &packet[10]);
     emit_event_new(peripheral->subclient_id, packet, sizeof(packet));
 }
 
@@ -576,7 +591,7 @@ static void report_gatt_services(gatt_client_t * peripheral, uint8_t * packet,  
         } else {
             swap128(&packet[i+4], uuid128);
         }
-        emit_gatt_service_query_result_event(peripheral, GATT_SERVICE_QUERY_RESULT, start_group_handle, end_group_handle, uuid128);
+        emit_gatt_service_query_result_event(peripheral, start_group_handle, end_group_handle, uuid128);
     }
     // log_info("report_gatt_services for %02X done", peripheral->handle);
 }
@@ -628,18 +643,16 @@ static void report_gatt_characteristics(gatt_client_t * peripheral, uint8_t * pa
     }
 }
 
-// pre: uuid16 != 0 OR uuid128 != NULL
-// maybe inline this into the two callers
-static void report_gatt_included_service(gatt_client_t * peripheral, uint8_t *uuid128, uint16_t uuid16){
-    if (uuid16){
-        uint8_t normalized_uuid128[16];
-        sdp_normalize_uuid(normalized_uuid128, uuid16);
-        emit_gatt_service_query_result_event(peripheral, GATT_INCLUDED_SERVICE_QUERY_RESULT, peripheral->query_start_handle,
-            peripheral->query_end_handle, normalized_uuid128);
-    } else if (uuid128){
-        emit_gatt_service_query_result_event(peripheral, GATT_INCLUDED_SERVICE_QUERY_RESULT, peripheral->query_start_handle,
-            peripheral->query_end_handle, uuid128);
-    }
+static void report_gatt_included_service_uuid16(gatt_client_t * peripheral, uint16_t include_handle, uint16_t uuid16){
+    uint8_t normalized_uuid128[16];
+    sdp_normalize_uuid(normalized_uuid128, uuid16);
+    emit_gatt_included_service_query_result_event(peripheral, include_handle, peripheral->query_start_handle,
+        peripheral->query_end_handle, normalized_uuid128);
+}
+
+static void report_gatt_included_service_uuid128(gatt_client_t * peripheral, uint16_t include_handle, uint8_t *uuid128){
+    emit_gatt_included_service_query_result_event(peripheral, include_handle, peripheral->query_start_handle,
+        peripheral->query_end_handle, uuid128);
 }
 
 // @returns packet pointer
@@ -1105,10 +1118,11 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     
                     uint16_t offset;
                     for (offset = 2; offset < size; offset += pair_size){
+                        uint16_t include_handle = READ_BT_16(packet, offset);
                         peripheral->query_start_handle = READ_BT_16(packet,offset+2);
                         peripheral->query_end_handle = READ_BT_16(packet,offset+4);
                         uuid16 = READ_BT_16(packet, offset+6);
-                        report_gatt_included_service(peripheral, NULL, uuid16);
+                        report_gatt_included_service_uuid16(peripheral, include_handle, uuid16);
                     }
                     
                     trigger_next_included_service_query(peripheral, get_last_result_handle_from_included_services_list(packet, size));
@@ -1140,7 +1154,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 case P_W4_INCLUDED_SERVICE_UUID_WITH_QUERY_RESULT: {
                     uint8_t uuid128[16];
                     swap128(&packet[1], uuid128);
-                    report_gatt_included_service(peripheral, uuid128, 0);
+                    report_gatt_included_service_uuid128(peripheral, peripheral->start_group_handle, uuid128);
                     trigger_next_included_service_query(peripheral, peripheral->start_group_handle);
                     // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                     break;
@@ -1171,7 +1185,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
             for (i = 1; i<size; i+=pair_size){
                 start_group_handle = READ_BT_16(packet,i);
                 end_group_handle = READ_BT_16(packet,i+2);
-                emit_gatt_service_query_result_event(peripheral, GATT_SERVICE_QUERY_RESULT, start_group_handle, end_group_handle, peripheral->uuid128);
+                emit_gatt_service_query_result_event(peripheral, start_group_handle, end_group_handle, peripheral->uuid128);
             }
             trigger_next_service_by_uuid_query(peripheral, end_group_handle);
             // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done

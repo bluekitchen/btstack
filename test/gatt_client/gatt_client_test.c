@@ -169,10 +169,10 @@ static void handle_ble_client_event(uint8_t packet_type, uint8_t *packet, uint16
 			result_counter++;
             break;
         case GATT_INCLUDED_SERVICE_QUERY_RESULT:
-			service.start_group_handle = READ_BT_16(packet, 4);
-			service.end_group_handle   = READ_BT_16(packet, 6);
+			service.start_group_handle = READ_BT_16(packet, 6);
+			service.end_group_handle   = READ_BT_16(packet, 8);
 			service.uuid16 = 0;
-			swap128(&packet[8], service.uuid128);
+			swap128(&packet[10], service.uuid128);
 			if (sdp_has_blueooth_base_uuid(service.uuid128)){
 				service.uuid16 = READ_NET_32(service.uuid128, 0);
 			}

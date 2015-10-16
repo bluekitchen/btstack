@@ -490,8 +490,9 @@ extern "C" {
 #define GATT_CHARACTERISTIC_QUERY_RESULT                   0xA2
 
 /**
- * @format HX
+ * @format H2X
  * @param handle
+ * @param include_handle
  * @param service
  */
 #define GATT_INCLUDED_SERVICE_QUERY_RESULT                 0xA3
