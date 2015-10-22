@@ -97,7 +97,7 @@ cfile_header_begin = """
  */
 
 #include "btstack_memory.h"
-#include <btstack/memory_pool.h>
+#include "memory_pool.h"
 
 #include <stdlib.h>
 
