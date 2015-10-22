@@ -56,7 +56,7 @@
 #include "hal_compat.h"
 #include "hal_usb.h"
 
-#include <btstack/ant_cmds.h>
+#include "ant_cmds.h"
 #include "hci_cmds.h"
 #include "run_loop.h"
 #include "sdp_util.h"

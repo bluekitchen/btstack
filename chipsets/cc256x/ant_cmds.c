@@ -37,10 +37,10 @@
  *  Created by Matthias Ringwald on 2012-11-06.
  */
 
-#include <btstack/ant_cmds.h>
 
 #include <string.h>
 
+#include "ant_cmds.h"
 #include "sdp_util.h"
 #include "btstack-config.h"
 #include "hci.h"
