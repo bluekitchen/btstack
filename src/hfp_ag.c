@@ -561,11 +561,11 @@ static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connectio
 }
 
 
-static void hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context){
-    if (context->state <= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return;
-    if (context->state > HFP_CODECS_CONNECTION_ESTABLISHED) return;
+static int hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context){
+    if (context->state <= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED ||
+        context->state > HFP_CODECS_CONNECTION_ESTABLISHED) return 0;
 
-
+    int done = 0;
     printf(" AG run for context_codecs_connection: ");
     switch (context->state){
         case HFP_SLE_W2_EXCHANGE_COMMON_CODEC:
@@ -575,7 +575,8 @@ static void hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context)
                 context->state = HFP_SLE_W4_EXCHANGE_COMMON_CODEC;
                 context->suggested_codec = hfp_ag_suggest_codec(context);
                 hfp_ag_cmd_suggest_codec(context->rfcomm_cid, context->suggested_codec);
-                return;
+                done = 1;
+                break;
             }
             break;
         case HFP_SLE_W4_EXCHANGE_COMMON_CODEC:
@@ -589,7 +590,8 @@ static void hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context)
                             context->state = HFP_SLE_W4_EXCHANGE_COMMON_CODEC;
                         }
                         hfp_ag_ok(context->rfcomm_cid);
-                        return;
+                        done = 1;
+                        break;
                     }
                     break;
                 case HFP_CMD_HF_CONFIRMED_CODEC:
@@ -597,12 +599,14 @@ static void hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context)
                     if (context->codec_confirmed != context->suggested_codec){
                         context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
                         hfp_ag_error(context->rfcomm_cid);
-                        return;
+                        done = 1;
+                        break;
                     } 
                     context->negotiated_codec = context->codec_confirmed;
                     context->state = HFP_CODECS_CONNECTION_ESTABLISHED;
                     hfp_emit_event(hfp_callback, HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE, 0);
                     hfp_ag_ok(context->rfcomm_cid);
+                    done = 1;
                     break; 
                 default:
                     break;
@@ -620,7 +624,8 @@ static void hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context)
                             context->state = HFP_SLE_W4_EXCHANGE_COMMON_CODEC;
                         }
                         hfp_ag_ok(context->rfcomm_cid);
-                        return;
+                        done = 1;
+                        break;
                     }
                     break;
                 case HFP_CMD_AG_SUGGESTED_CODEC:
@@ -630,6 +635,8 @@ static void hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context)
                             context->state = HFP_SLE_W4_EXCHANGE_COMMON_CODEC;
                             context->suggested_codec = hfp_ag_suggest_codec(context);
                             hfp_ag_cmd_suggest_codec(context->rfcomm_cid, context->suggested_codec);
+                            done = 1;
+                            break;
                         }
                     }
                     break;
@@ -640,8 +647,7 @@ static void hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context)
         default:
             break;
     }
-
-
+    return done;
 }
 
 
@@ -669,7 +675,7 @@ void hfp_run_for_context(hfp_connection_t *context){
     if (!rfcomm_can_send_packet_now(context->rfcomm_cid)) return;
     done = hfp_ag_run_for_context_service_level_connection_queries(context);
     if (!rfcomm_can_send_packet_now(context->rfcomm_cid) || done) return;
-    hfp_ag_run_for_context_codecs_connection(context);
+    done = hfp_ag_run_for_context_codecs_connection(context);
 
     if (context->command == HFP_CMD_NONE){
         switch(context->state){
