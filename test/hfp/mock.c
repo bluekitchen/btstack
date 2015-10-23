@@ -103,12 +103,30 @@ static void prepare_rfcomm_buffer(uint8_t * data, int len){
 	rfcomm_payload_len = pos;
 }	
 
+static void print_without_newlines(uint8_t *data, uint16_t len){
+    int found_newline = 0;
+    int found_item = 0;
+    printf("\n");
+    for (int i=0; i<len; i++){
+        if (data[i] == '\r' || data[i] == '\n'){
+            if (!found_newline && found_item) printf("\n");
+            found_newline = 1;
+        } else {
+            printf("%c", data[i]);
+            found_newline = 0;
+            found_item = 1;
+        }
+    }
+    printf("\n");
+}
 
 int  rfcomm_send_internal(uint16_t rfcomm_cid, uint8_t *data, uint16_t len){
 	if (strncmp((char*)data, "AT", 2) == 0){
-		printf("Verify HF state machine response: %s", data);
+		printf("Verify HF state machine response: ");
+        print_without_newlines(data,len);
 	} else {
-        printf("Verify AG state machine response: %s", data+2);
+        printf("Verify AG state machine response: ");
+        print_without_newlines(data,len);
 	}
 	strncpy((char*)&rfcomm_payload[0], (char*)data, len);
     rfcomm_payload_len = len;
@@ -216,9 +234,9 @@ void inject_rfcomm_command_to_hf(uint8_t * data, int len){
     
     prepare_rfcomm_buffer(data, len);
     if (data[0] == '+'){
-        printf("\n\n ---> Send cmd to HF state machine: %s", data);
+        printf("Send cmd to HF state machine: %s", data);
     } else {
-        printf("\n\n ---> trigger HF state machine: %s", data);
+        printf("Trigger HF state machine: %s", data);
     }
     (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &rfcomm_payload[0], rfcomm_payload_len);
 }
@@ -228,9 +246,9 @@ void inject_rfcomm_command_to_ag(uint8_t * data, int len){
     
     prepare_rfcomm_buffer(data, len);
     if (memcmp((char*)data, "AT", 2) == 0){
-        printf("\n\n ---> Send cmd to AG state machine: %s", data);
+        printf("Send cmd to AG state machine: %s\n", data);
     } else {
-        printf("\n\n ---> trigger AG state machine: %s", data);
+        printf("Trigger AG state machine: %s", data);
     }
     (*registered_rfcomm_packet_handler)(active_connection, RFCOMM_DATA_PACKET, rfcomm_cid, (uint8_t *) &rfcomm_payload[0], rfcomm_payload_len);
 }
