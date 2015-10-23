@@ -117,6 +117,8 @@ typedef enum {
 // GLOBAL DATA
 //
 
+static uint8_t test_use_fixed_local_csrk;
+
 // configuration
 static uint8_t sm_accepted_stk_generation_methods;
 static uint8_t sm_max_encryption_key_size;
@@ -1013,7 +1015,7 @@ static void sm_key_distribution_handle_all_received(sm_connection_t * sm_conn){
         // store CSRK
         if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
             log_info("sm: store remote CSRK");
-            le_device_db_csrk_set(le_db_index, setup->sm_peer_csrk);
+            le_device_db_remote_csrk_set(le_db_index, setup->sm_peer_csrk);
             le_device_db_remote_counter_set(le_db_index, 0);
         }
 
@@ -1505,16 +1507,15 @@ static void sm_run(void){
                 if (setup->sm_key_distribution_send_set &   SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
                     setup->sm_key_distribution_send_set &= ~SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION;
 
+                    // hack to reproduce test runs
+                    if (test_use_fixed_local_csrk){
+                        memset(setup->sm_local_csrk, 0xcc, 16);
+                    }
+
                     uint8_t buffer[17];
                     buffer[0] = SM_CODE_SIGNING_INFORMATION;
-                    // optimization: use CSRK of Peripheral if received, to avoid storing two CSRKs in our DB
-                    if (setup->sm_key_distribution_received_set & SM_KEYDIST_FLAG_SIGNING_IDENTIFICATION){
-                        log_info("sm: mirror CSRK");
-                        memcpy(setup->sm_local_csrk, setup->sm_peer_csrk, 16);
-                    } else {
-                        log_info("sm: store local CSRK");
-                        le_device_db_csrk_set(connection->sm_le_db_index, setup->sm_local_csrk);
-                    }
+                    log_info("sm: store local CSRK");
+                    le_device_db_local_csrk_set(connection->sm_le_db_index, setup->sm_local_csrk);
                     swap128(setup->sm_local_csrk, &buffer[1]);
                     l2cap_send_connectionless(connection->sm_handle, L2CAP_CID_SECURITY_MANAGER_PROTOCOL, (uint8_t*) buffer, sizeof(buffer));
                     sm_timeout_reset(connection);
@@ -2286,6 +2287,10 @@ void sm_test_set_irk(sm_key_t irk){
     sm_persistent_irk_ready = 1;
 }
 
+void sm_test_use_fixed_local_csrk(void){
+    test_use_fixed_local_csrk = 1;
+}
+
 void sm_init(void){
     // set some (BTstack default) ER and IR
     int i;
@@ -2316,6 +2321,8 @@ void sm_init(void){
     gap_random_adress_update_period = 15 * 60 * 1000L;
 
     sm_active_connection = 0;
+
+    test_use_fixed_local_csrk = 0;
 
     // attach to lower layers
     l2cap_register_fixed_channel(sm_packet_handler, L2CAP_CID_SECURITY_MANAGER_PROTOCOL);

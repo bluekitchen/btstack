@@ -12,24 +12,23 @@ SUBDIRS =  \
 	sdp_client \
 	security_manager \
 
-#	security_manager \
-
-EXCLUDED = ios
-
 subdirs:
 	echo Building all tests
+	@set -e; \
 	for dir in $(SUBDIRS); do \
 	  $(MAKE) -C $$dir; \
 	done
 
 clean:
 	echo Clean all test
+	@set -e; \
 	for dir in $(SUBDIRS); do \
 	  $(MAKE) -C $$dir clean; \
 	done
 
 test:
 	echo Run all test
+	@set -e; \
 	for dir in $(SUBDIRS); do \
 	  $(MAKE) -C $$dir test; \
 	done

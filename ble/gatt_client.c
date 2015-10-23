@@ -62,6 +62,7 @@
 static linked_list_t gatt_client_connections = NULL;
 static linked_list_t gatt_subclients = NULL;
 static uint16_t gatt_client_id = 0;
+static uint8_t  pts_suppress_mtu_exchange;
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
 static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8_t error_code);
@@ -128,6 +129,7 @@ void gatt_client_unregister_packet_handler(uint16_t gatt_client_id){
 
 void gatt_client_init(void){
     gatt_client_connections = NULL;
+    pts_suppress_mtu_exchange = 0;
     att_dispatch_register_client(gatt_client_att_packet_handler);
 }
 
@@ -184,11 +186,17 @@ static gatt_client_t * provide_context_for_conn_handle(uint16_t con_handle){
     context = btstack_memory_gatt_client_get();
     if (!context) return NULL;
     // init state
+    memset(context, 0, sizeof(gatt_client_t));
     context->handle = con_handle;
     context->mtu = ATT_DEFAULT_MTU;
     context->mtu_state = SEND_MTU_EXCHANGE;
     context->gatt_client_state = P_READY;
     linked_list_add(&gatt_client_connections, (linked_item_t*)context);
+
+    // skip mtu exchange for testing sm with pts
+    if (pts_suppress_mtu_exchange){
+         context->mtu_state = MTU_EXCHANGED;
+    }
     return context;
 }
 
@@ -489,6 +497,15 @@ static void emit_event(uint16_t gatt_client_id, le_event_t* event){
     (*gatt_client_callback)(event);
 }
 
+static void emit_event_to_all_subclients(le_event_t * event){
+    linked_list_iterator_t it;    
+    linked_list_iterator_init(&it, &gatt_subclients);
+    while (linked_list_iterator_has_next(&it)){
+        gatt_subclient_t * subclient = (gatt_subclient_t*) linked_list_iterator_next(&it);
+        (*subclient->callback)(event);
+    } 
+}
+
 static void emit_gatt_complete_event(gatt_client_t * peripheral, uint8_t status){
     gatt_complete_event_t event;
     event.type = GATT_QUERY_COMPLETE;
@@ -604,14 +621,18 @@ static void report_gatt_included_service(gatt_client_t * peripheral, uint8_t *uu
     emit_event(peripheral->subclient_id, (le_event_t*)&event);
 }
 
+static void setup_characteristic_value_event(le_characteristic_value_event_t * event, uint16_t handle, uint16_t value_handle, uint8_t * value, uint16_t length, uint16_t offset, uint8_t event_type){
+    event->type = event_type;
+    event->handle = handle;
+    event->value_handle = value_handle;
+    event->value_offset = offset;
+    event->blob_length = length;
+    event->blob = value;
+}
+
 static void send_characteristic_value_event(gatt_client_t * peripheral, uint16_t value_handle, uint8_t * value, uint16_t length, uint16_t offset, uint8_t event_type){
     le_characteristic_value_event_t event;
-    event.type = event_type;
-    event.handle = peripheral->handle;
-    event.value_handle = value_handle;
-    event.value_offset = offset;
-    event.blob_length = length;
-    event.blob = value;
+    setup_characteristic_value_event(&event, peripheral->handle, value_handle, value, length, offset, event_type);
     emit_event(peripheral->subclient_id, (le_event_t*)&event);
 }
 
@@ -619,12 +640,16 @@ static void report_gatt_long_characteristic_value_blob(gatt_client_t * periphera
     send_characteristic_value_event(peripheral, peripheral->attribute_handle, value, blob_length, value_offset, GATT_LONG_CHARACTERISTIC_VALUE_QUERY_RESULT);
 }
 
-static void report_gatt_notification(gatt_client_t * peripheral, uint16_t handle, uint8_t * value, int length){
-    send_characteristic_value_event(peripheral, handle, value, length, 0, GATT_NOTIFICATION);
+static void report_gatt_notification(uint16_t con_handle, uint16_t value_handle, uint8_t * value, int length){
+    le_characteristic_value_event_t event;
+    setup_characteristic_value_event(&event, con_handle, value_handle, value, length, 0, GATT_NOTIFICATION);
+    emit_event_to_all_subclients((le_event_t*)&event);
 }
 
-static void report_gatt_indication(gatt_client_t * peripheral, uint16_t handle, uint8_t * value, int length){
-    send_characteristic_value_event(peripheral, handle, value, length, 0, GATT_INDICATION);
+static void report_gatt_indication(uint16_t con_handle, uint16_t value_handle, uint8_t * value, int length){
+    le_characteristic_value_event_t event;
+    setup_characteristic_value_event(&event, con_handle, value_handle, value, length, 0, GATT_INDICATION);
+    emit_event_to_all_subclients((le_event_t*)&event);
 }
 
 static void report_gatt_characteristic_value(gatt_client_t * peripheral, uint16_t handle, uint8_t * value, int length){
@@ -672,17 +697,20 @@ static void report_gatt_all_characteristic_descriptors(gatt_client_t * periphera
     
 }
 
-static void trigger_next_query(gatt_client_t * peripheral, uint16_t last_result_handle, gatt_client_state_t next_query_state){
-    if (last_result_handle < peripheral->end_group_handle){
-        peripheral->start_group_handle = last_result_handle + 1;
-        peripheral->gatt_client_state = next_query_state;
-        return;
-    }
-    // DONE
-    gatt_client_handle_transaction_complete(peripheral);
-    emit_gatt_complete_event(peripheral, 0);
+static int is_query_done(gatt_client_t * peripheral, uint16_t last_result_handle){
+    return last_result_handle >= peripheral->end_group_handle;
 }
 
+static void trigger_next_query(gatt_client_t * peripheral, uint16_t last_result_handle, gatt_client_state_t next_query_state){
+    if (is_query_done(peripheral, last_result_handle)){
+        gatt_client_handle_transaction_complete(peripheral);
+        emit_gatt_complete_event(peripheral, 0);
+        return;
+    }
+    // next
+    peripheral->start_group_handle = last_result_handle + 1;
+    peripheral->gatt_client_state = next_query_state;
+}
 
 static inline void trigger_next_included_service_query(gatt_client_t * peripheral, uint16_t last_result_handle){
     trigger_next_query(peripheral, last_result_handle, P_W2_SEND_INCLUDED_SERVICE_QUERY);
@@ -697,6 +725,10 @@ static inline void trigger_next_service_by_uuid_query(gatt_client_t * peripheral
 }
 
 static inline void trigger_next_characteristic_query(gatt_client_t * peripheral, uint16_t last_result_handle){
+    if (is_query_done(peripheral, last_result_handle)){
+        // report last characteristic
+        characteristic_end_found(peripheral, peripheral->end_group_handle);
+    }
     trigger_next_query(peripheral, last_result_handle, P_W2_SEND_ALL_CHARACTERISTICS_OF_SERVICE_QUERY);
 }
 
@@ -905,7 +937,7 @@ static void gatt_client_run(void){
             case P_W4_CMAC_READY:
                 if (sm_cmac_ready()){
                     sm_key_t csrk;
-                    le_device_db_csrk_get(peripheral->le_device_index, csrk);
+                    le_device_db_local_csrk_get(peripheral->le_device_index, csrk);
                     uint32_t sign_counter = le_device_db_local_counter_get(peripheral->le_device_index); 
                     peripheral->gatt_client_state = P_W4_CMAC_RESULT;
                     sm_cmac_start(csrk, ATT_SIGNED_WRITE_COMMAND, peripheral->attribute_handle, peripheral->attribute_length, peripheral->attribute_value, sign_counter, att_signed_write_handle_cmac_result);
@@ -930,15 +962,6 @@ static void gatt_client_run(void){
         }
     }
     
-}
-
-static void emit_event_to_all_subclients(le_event_t * event){
-    linked_list_iterator_t it;    
-    linked_list_iterator_init(&it, &gatt_subclients);
-    while (linked_list_iterator_has_next(&it)){
-        gatt_subclient_t * subclient = (gatt_subclient_t*) linked_list_iterator_next(&it);
-        (*subclient->callback)(event);
-    } 
 }
 
 static void gatt_client_report_error_if_pending(gatt_client_t *peripheral, uint8_t error_code) {
@@ -981,8 +1004,21 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
     }
 
     if (packet_type != ATT_DATA_PACKET) return;
-    
-    gatt_client_t * peripheral = get_gatt_client_context_for_handle(handle);
+
+    // special cases: notifications don't need a context while indications motivate creating one
+    gatt_client_t * peripheral;
+    switch (packet[0]){
+        case ATT_HANDLE_VALUE_NOTIFICATION:
+            report_gatt_notification(handle, READ_BT_16(packet,1), &packet[3], size-3);
+            return;                
+        case ATT_HANDLE_VALUE_INDICATION:
+            peripheral = provide_context_for_conn_handle(handle);
+            break;
+        default:
+            peripheral = get_gatt_client_context_for_handle(handle);
+            break;
+    }
+
     if (!peripheral) return;
     
     switch (packet[0]){
@@ -1006,12 +1042,8 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     break;
             }
             break;
-        case ATT_HANDLE_VALUE_NOTIFICATION:
-            report_gatt_notification(peripheral, READ_BT_16(packet,1), &packet[3], size-3);
-            break;
-            
         case ATT_HANDLE_VALUE_INDICATION:
-            report_gatt_indication(peripheral, READ_BT_16(packet,1), &packet[3], size-3);
+            report_gatt_indication(handle, READ_BT_16(packet,1), &packet[3], size-3);
             peripheral->send_confirmation = 1;
             break;
             
@@ -1020,12 +1052,12 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 case P_W4_ALL_CHARACTERISTICS_OF_SERVICE_QUERY_RESULT:
                     report_gatt_characteristics(peripheral, packet, size);
                     trigger_next_characteristic_query(peripheral, get_last_result_handle_from_characteristics_list(packet, size));
-                    // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
+                    // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done, or by ATT_ERROR
                     break;
                 case P_W4_CHARACTERISTIC_WITH_UUID_QUERY_RESULT:
                     report_gatt_characteristics(peripheral, packet, size);
                     trigger_next_characteristic_query(peripheral, get_last_result_handle_from_characteristics_list(packet, size));
-                    // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
+                    // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done, or by ATT_ERROR
                     break;
                 case P_W4_INCLUDED_SERVICE_QUERY_RESULT:
                 {
@@ -1724,4 +1756,7 @@ le_command_status_t gatt_client_write_long_characteristic_descriptor(uint16_t ga
     return gatt_client_write_long_characteristic_descriptor_using_descriptor_handle(gatt_client_id, con_handle, descriptor->handle, length, value);
 }
 
+void gatt_client_pts_suppress_mtu_exchange(void){
+    pts_suppress_mtu_exchange = 1;
+}
 

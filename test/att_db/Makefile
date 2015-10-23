@@ -13,6 +13,7 @@ VPATH += ${BTSTACK_ROOT}/platforms/posix/src
 
 COMMON = \
     utils.c		  \
+    hci_dump.c    \
     att_db_util.c \
 	
 COMMON_OBJ = $(COMMON:.c=.o)

@@ -70,6 +70,7 @@
 
 // Non standard IXIT
 #define PTS_USES_RECONNECTION_ADDRESS_FOR_ITSELF
+#define PTS_UUID128_REPRESENTATION
 
 typedef enum {
     CENTRAL_IDLE,
@@ -79,6 +80,8 @@ typedef enum {
     CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE,
     CENTRAL_W4_SIGNED_WRITE_QUERY_COMPLETE,
     CENTRAL_W4_PRIMARY_SERVICES,
+    CENTRAL_ENTER_START_HANDLE_4_DISCOVER_CHARACTERISTICS,
+    CENTRAL_ENTER_END_HANDLE_4_DISCOVER_CHARACTERISTICS,
     CENTRAL_W4_CHARACTERISTICS,
     CENTRAL_W4_READ_CHARACTERISTIC_VALUE_BY_HANDLE,
     CENTRAL_ENTER_HANDLE_4_READ_CHARACTERISTIC_VALUE_BY_UUID,
@@ -98,6 +101,13 @@ typedef enum {
     CENTRAL_ENTER_HANDLE_4_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR,
     CENTRAL_W4_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR,
     CENTRAL_W4_SIGNED_WRITE,
+    CENTRAL_GPA_ENTER_UUID,
+    CENTRAL_GPA_ENTER_START_HANDLE,
+    CENTRAL_GPA_ENTER_END_HANDLE,
+    CENTRAL_GPA_W4_RESPONSE,
+    CENTRAL_GPA_W4_RESPONSE2,
+    CENTRAL_GPA_W4_RESPONSE3,
+    CENTRAL_GPA_W4_RESPONSE4,
 } central_state_t;
 
 typedef struct advertising_report {
@@ -109,6 +119,19 @@ typedef struct advertising_report {
     uint8_t   length;
     uint8_t * data;
 } advertising_report_t;
+
+static const uint8_t gpa_format_type_len[] = {
+    /* 0x00 */
+    1,1,1,1,1,
+    /* 0x05 */
+    2,2,
+    /* 0x07 */
+    3,4,6,8,16,
+    /* 0x0c */
+    1,2,2,3,4,6,8,16,
+    /* 0x14 */
+    4,8,2,4,4
+};
 
 static uint8_t test_irk[] =  { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
@@ -129,19 +152,25 @@ static int peer_addr_type;
 static bd_addr_t peer_address;
 static int ui_passkey = 0;
 static int ui_digits_for_passkey = 0;
-static int ui_uint16_request = 0;
 static int ui_uint16 = 0;
+static int ui_uint16_request = 0;
+static int ui_uint16_pos = 0;
 static int ui_uuid16 = 0;
 static int ui_uuid128_request = 0;
 static int ui_uuid128_pos     = 0;
 static uint8_t ui_uuid128[16];
-static int ui_num_handles;
+static int      ui_handles_count;
+static int      ui_handles_index;
 static uint16_t ui_handles[10];
 static uint16_t ui_attribute_handle;
 static int      ui_attribute_offset;
 static int      ui_value_request = 0;
 static uint8_t  ui_value_data[50];
 static int      ui_value_pos = 0;
+static uint16_t ui_start_handle;
+static uint16_t ui_end_handle;
+static uint8_t ui_presentation_format[7];
+static uint16_t ui_aggregate_handle;
 static uint16_t handle = 0;
 static uint16_t gc_id;
 
@@ -153,7 +182,7 @@ static int       reconnection_address_set = 0;
 static bd_addr_t our_private_address;
 
 static uint16_t pts_signed_write_characteristic_uuid = 0xb00d;
-static uint16_t pts_signed_write_characteristic_handle = 0x0100;
+static uint16_t pts_signed_write_characteristic_handle = 0x00b1;
 static uint8_t signed_write_value[] = { 0x12 };
 static int le_device_db_index;
 static sm_key_t signing_csrk;
@@ -198,11 +227,13 @@ static const char * att_errors[] = {
 static const char * att_error_reserved = "Reserved";
 static const char * att_error_application = "Application Error";
 static const char * att_error_common_error = "Common Profile and Service Error Codes";
+static const char * att_error_timeout = "Timeout";
 
 const char * att_error_string_for_code(uint8_t code){
     if (code >= 0xe0) return att_error_common_error;
     if (code >= 0xa0) return att_error_reserved;
     if (code >= 0x80) return att_error_application;
+    if (code == 0x7f) return att_error_timeout;
     if (code >= 0x12) return att_error_reserved;
     return att_errors[code];
 }
@@ -391,6 +422,7 @@ void use_public_pts_address(void){
 
 void handle_gatt_client_event(le_event_t * event){
     le_characteristic_value_event_t * value;
+    le_characteristic_event_t * characteristic_event;
     uint8_t address_type;
     bd_addr_t flipped_address;
     le_service_t * service;
@@ -416,25 +448,41 @@ void handle_gatt_client_event(le_event_t * event){
             printf(", start group handle 0x%04x, end group handle 0x%04x\n", service->start_group_handle, service->end_group_handle);
             break;
         case GATT_CHARACTERISTIC_QUERY_RESULT:
+            characteristic_event = ((le_characteristic_event_t *) event);
             switch (central_state) {
                 case CENTRAL_W4_NAME_QUERY_COMPLETE:
-                    gap_name_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    gap_name_characteristic = characteristic_event->characteristic;
                     printf("GAP Name Characteristic found, value handle: 0x04%x\n", gap_name_characteristic.value_handle);
                     break;
                 case CENTRAL_W4_RECONNECTION_ADDRESS_QUERY_COMPLETE:
-                    gap_reconnection_address_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    gap_reconnection_address_characteristic = characteristic_event->characteristic;
                     printf("GAP Reconnection Address Characteristic found, value handle: 0x04%x\n", gap_reconnection_address_characteristic.value_handle);
                     break;
                 case CENTRAL_W4_PERIPHERAL_PRIVACY_FLAG_QUERY_COMPLETE:
-                    gap_peripheral_privacy_flag_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    gap_peripheral_privacy_flag_characteristic = characteristic_event->characteristic;
                     printf("GAP Peripheral Privacy Flag Characteristic found, value handle: 0x04%x\n", gap_peripheral_privacy_flag_characteristic.value_handle);
                     break;
                 case CENTRAL_W4_SIGNED_WRITE_QUERY_COMPLETE:
-                    signed_write_characteristic = ((le_characteristic_event_t *) event)->characteristic;
+                    signed_write_characteristic = characteristic_event->characteristic;
                     printf("Characteristic for Signed Write found, value handle: 0x%04x\n", signed_write_characteristic.value_handle);
                     break;
                 case CENTRAL_W4_CHARACTERISTICS:
-                    printf("Characteristic found with handle 0x%04x\n", (((le_characteristic_event_t *) event)->characteristic).value_handle);
+                    printf("Characteristic found with handle 0x%04x, uuid ", (characteristic_event->characteristic).value_handle);
+                    if ((characteristic_event->characteristic).uuid16){
+                        printf("%04x\n", (characteristic_event->characteristic).uuid16);
+                    } else {
+                        printf_hexdump((characteristic_event->characteristic).uuid128, 16);                        
+                    }
+                    break;
+                case CENTRAL_GPA_W4_RESPONSE2:
+                    switch (ui_uuid16){
+                        case GATT_CHARACTERISTIC_PRESENTATION_FORMAT:
+                        case GATT_CHARACTERISTIC_AGGREGATE_FORMAT:
+                            ui_attribute_handle = characteristic_event->characteristic.value_handle;
+                            break;
+                        default:
+                            break;
+                    }
                     break;
                 default:
                     break;
@@ -453,7 +501,80 @@ void handle_gatt_client_event(le_event_t * event){
                     printf("Value: ");
                     printf_hexdump(value->blob, value->blob_length);
                     break;
-                default:
+                case CENTRAL_GPA_W4_RESPONSE:
+                    switch (ui_uuid16){
+                        case GATT_PRIMARY_SERVICE_UUID:
+                            printf ("Attribute handle 0x%04x, primary service 0x%04x\n", value->value_handle, READ_BT_16(value->blob,0));
+                            break;
+                        case GATT_SECONDARY_SERVICE_UUID:
+                            printf ("Attribute handle 0x%04x, secondary service 0x%04x\n", value->value_handle, READ_BT_16(value->blob,0));
+                            break;
+                        case GATT_INCLUDE_SERVICE_UUID:
+                            printf ("Attribute handle 0x%04x, included service attribute handle 0x%04x, end group handle 0x%04x, uuid %04x\n",
+                             value->value_handle, READ_BT_16(value->blob,0), READ_BT_16(value->blob,2), READ_BT_16(value->blob,4));
+                            break;
+                        case GATT_CHARACTERISTICS_UUID:
+                            printf ("Attribute handle 0x%04x, properties 0x%02x, value handle 0x%04x, uuid ",
+                             value->value_handle, value->blob[0], READ_BT_16(value->blob,1));
+                            if (value->blob_length < 19){
+                                printf("%04x\n", READ_BT_16(value->blob, 3));
+                            } else {
+                                printUUID128(&value->blob[3]);
+                                printf("\n");
+                            }
+                            break;
+                        case GATT_CHARACTERISTIC_EXTENDED_PROPERTIES:
+                            printf ("Attribute handle 0x%04x, gatt characteristic properties 0x%04x\n", value->value_handle, READ_BT_16(value->blob,0));
+                            break;
+                        case GATT_CHARACTERISTIC_USER_DESCRIPTION:
+                            // go the value, but PTS 6.3 requires another request
+                            printf("Read by type request received, store attribute handle for read request\n");
+                            ui_attribute_handle = value->value_handle;
+                            break;                            
+                        case GATT_CLIENT_CHARACTERISTICS_CONFIGURATION:
+                            printf ("Attribute handle 0x%04x, gatt client characteristic configuration 0x%04x\n", value->value_handle, READ_BT_16(value->blob,0));
+                            break;
+                        case GATT_CHARACTERISTIC_AGGREGATE_FORMAT:
+                            ui_handles_count = value->blob_length >> 1;
+                            printf ("Attribute handle 0x%04x, gatt characteristic aggregate format. Handles: ", value->value_handle);
+                            for (ui_handles_index = 0; ui_handles_index < ui_handles_count ; ui_handles_index++){
+                                ui_handles[ui_handles_index] = READ_BT_16(value->blob, (ui_handles_index << 1));
+                                printf("0x%04x, ", ui_handles[ui_handles_index]);
+                            }
+                            printf("\n");
+                            ui_handles_index = 0;
+                            ui_aggregate_handle = value->value_handle;
+                            break;
+                        case GATT_CHARACTERISTIC_PRESENTATION_FORMAT:
+                            printf("Presentation format: ");
+                            printf_hexdump(value->blob, value->blob_length);
+                            memcpy(ui_presentation_format, value->blob, 7);
+                            break;
+                        default:
+                            printf("Value: ");
+                            printf_hexdump(value->blob, value->blob_length);
+                            break;
+                    }
+                    break;
+                case CENTRAL_GPA_W4_RESPONSE3:
+                    switch (ui_uuid16){
+                        case GATT_CHARACTERISTIC_PRESENTATION_FORMAT:
+                            printf("Value: ");
+                            printf_hexdump(value->blob, value->blob_length);
+                            printf("Format 0x%02x, Exponent 0x%02x, Unit 0x%04x\n",
+                                ui_presentation_format[0], ui_presentation_format[1], READ_BT_16(ui_presentation_format, 2));                            
+                            break;
+                        case GATT_CHARACTERISTIC_AGGREGATE_FORMAT:
+                            printf("Aggregated value: ");
+                            printf_hexdump(value->blob, value->blob_length);
+                            memcpy(ui_value_data, value->blob, value->blob_length);
+                            ui_value_pos = 0;      
+                            central_state = CENTRAL_GPA_W4_RESPONSE4;                 
+                        default:
+                            break;
+                    }
+                    break;
+               default:
                     break;
             }
             break;
@@ -465,8 +586,32 @@ void handle_gatt_client_event(le_event_t * event){
             break;
         case GATT_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
             characteristic_descriptor_event = (le_characteristic_descriptor_event_t *) event;
-            printf("Value: ");
-            printf_hexdump(characteristic_descriptor_event->value, characteristic_descriptor_event->value_length);
+            switch (central_state){
+                case CENTRAL_GPA_W4_RESPONSE2:
+                    switch (ui_uuid16){
+                        case GATT_CHARACTERISTIC_USER_DESCRIPTION:
+                            characteristic_descriptor_event->value[characteristic_descriptor_event->value_length] = 0;
+                            printf ("Attribute handle 0x%04x, characteristic user descriptor: %s\n",
+                                characteristic_descriptor_event->handle, characteristic_descriptor_event->value);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case CENTRAL_GPA_W4_RESPONSE4:
+                    // only characteristic aggregate format
+                    printf("Value: ");
+                    printf_hexdump(&ui_value_data[ui_value_pos], gpa_format_type_len[characteristic_descriptor_event->value[0]]);
+                    ui_value_pos +=  gpa_format_type_len[characteristic_descriptor_event->value[0]];
+                    printf("Format 0x%02x, Exponent 0x%02x, Unit 0x%04x\n",
+                        characteristic_descriptor_event->value[0], characteristic_descriptor_event->value[1],
+                        READ_BT_16(characteristic_descriptor_event->value, 2));                            
+                    break;
+                default:
+                    printf("Value: ");
+                    printf_hexdump(characteristic_descriptor_event->value, characteristic_descriptor_event->value_length);
+                    break;
+            }
             break;
         case GATT_LONG_CHARACTERISTIC_DESCRIPTOR_QUERY_RESULT:
             characteristic_descriptor_event = (le_characteristic_descriptor_event_t *) event;
@@ -523,10 +668,69 @@ void handle_gatt_client_event(le_event_t * event){
                     printf("Primary Service Discovery complete\n");
                     central_state = CENTRAL_IDLE;
                     break;
+                case CENTRAL_GPA_W4_RESPONSE:
+                    switch (ui_uuid16){
+                        case GATT_CHARACTERISTIC_USER_DESCRIPTION:
+                            central_state = CENTRAL_GPA_W4_RESPONSE2;
+                            printf("Sending Read Characteristic Descriptor at 0x%04x\n", ui_attribute_handle);
+                            gatt_client_read_characteristic_descriptor_using_descriptor_handle(gc_id, handle, ui_attribute_handle);
+                            break;
+                        case GATT_CHARACTERISTIC_PRESENTATION_FORMAT:
+                        case GATT_CHARACTERISTIC_AGGREGATE_FORMAT:
+                            {
+                                printf("Searching Characteristic Declaration\n");
+                                central_state = CENTRAL_GPA_W4_RESPONSE2;
+                                le_service_t service;                  
+                                service.start_group_handle = ui_start_handle;
+                                service.end_group_handle   = ui_end_handle;
+                                gatt_client_discover_characteristics_for_service(gc_id, handle, &service);
+                                break;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case CENTRAL_GPA_W4_RESPONSE2:
+                    switch(ui_uuid16){
+                        case GATT_CHARACTERISTIC_PRESENTATION_FORMAT:
+                        case GATT_CHARACTERISTIC_AGGREGATE_FORMAT:
+                            printf("Reading characteristic value at 0x%04x\n", ui_attribute_handle);
+                            central_state = CENTRAL_GPA_W4_RESPONSE3;
+                            gatt_client_read_value_of_characteristic_using_value_handle(gc_id, handle, ui_attribute_handle);
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case CENTRAL_GPA_W4_RESPONSE4:
+                    // so far, only GATT_CHARACTERISTIC_AGGREGATE_FORMAT
+                    if (ui_handles_index < ui_handles_count) {
+                        printf("Reading Characteristic Presentation Format at 0x%04x\n", ui_handles[ui_handles_index]);
+                        gatt_client_read_characteristic_descriptor_using_descriptor_handle(gc_id, handle, ui_handles[ui_handles_index]);
+                        ui_handles_index++;
+                        break;
+                    }
+                    if (ui_handles_index == ui_handles_count ) {
+                        // PTS rqequires to read the characteristic aggregate descriptor again (no idea why)
+                        gatt_client_read_value_of_characteristic_using_value_handle(gc_id, handle, ui_aggregate_handle);
+                        ui_handles_index++;
+                    }
+                    break;
                 default:
                     central_state = CENTRAL_IDLE;
                     break;
             }
+            break;
+        case GATT_NOTIFICATION:
+            value = (le_characteristic_value_event_t *) event;
+            printf("Notification handle 0x%04x, value: ", value->value_handle);
+            printf_hexdump(value->blob, value->blob_length);
+            break;
+        case GATT_INDICATION:
+            value = (le_characteristic_value_event_t *) event;
+            printf("Indication handle 0x%04x, value: ", value->value_handle);
+            printf_hexdump(value->blob, value->blob_length);
             break;
         default:
             break;
@@ -537,81 +741,143 @@ uint16_t value_handle = 1;
 uint16_t attribute_size = 1;
 int scanning_active = 0;
 
+int num_rows = 0;
+int num_lines = 0;
+const char * rows[100];
+const char * lines[100];
+const char * empty_string = "";
+const int width = 70;
+
+void reset_screen(void){
+    // free memory
+    int i = 0;
+    for (i=0;i<num_rows;i++) {
+        free((void*)rows[i]);
+        rows[i] = NULL;
+    }
+    num_rows = 0;
+    for (i=0;i<num_lines;i++) {
+        free((void*)lines[i]);
+        lines[i] = NULL;
+    }
+    num_lines = 0;
+}
+
+void print_line(const char * format, ...){
+    va_list argptr;
+    va_start(argptr, format);
+    char * line = malloc(80);
+    vsnprintf(line, 80, format, argptr);
+    va_end(argptr);
+    lines[num_lines] = line;
+    num_lines++;
+}
+
+void printf_row(const char * format, ...){
+    va_list argptr;
+    va_start(argptr, format);
+    char * row = malloc(80);
+    vsnprintf(row, 80, format, argptr);
+    va_end(argptr);
+    rows[num_rows] = row;
+    num_rows++;
+}
+
+void print_screen(void){
+
+    // clear screen
+    printf("\e[1;1H\e[2J");
+
+    // full lines on top
+    int i;
+    for (i=0;i<num_lines;i++){
+        printf("%s\n", lines[i]);
+    }
+    printf("\n");
+
+    // two columns
+    int second_half = (num_rows + 1) / 2;
+    for (i=0;i<second_half;i++){
+        int pos = strlen(rows[i]);
+        printf("%s", rows[i]);
+        while (pos < width){
+            printf(" ");
+            pos++;
+        }
+        if (i + second_half < num_rows){
+            printf("|  %s", rows[i+second_half]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+}
+
 void show_usage(void){
     uint8_t iut_address_type;
     bd_addr_t      iut_address;
     hci_le_advertisement_address(&iut_address_type, iut_address);
 
-    printf("\e[1;1H\e[2J");
-    printf("--- CLI for LE Central ---\n");
-    printf("PTS: addr type %u, addr %s\n", current_pts_address_type, bd_addr_to_str(current_pts_address));
-    printf("IUT: addr type %u, addr %s\n", iut_address_type, bd_addr_to_str(iut_address));
-    printf("--------------------------\n");
-    printf("GAP: connectable %u, bondable %u\n", gap_connectable, gap_bondable);
-    printf("SM: %s, MITM protection %u, key range [%u..16], OOB data: ",
-        sm_io_capabilities, sm_mitm_protection, sm_min_key_size);
-    switch (sm_have_oob_data){
-        case 1:
-            printf_hexdump(sm_oob_data_A, 16);
-            break;
-        case 2:
-            printf_hexdump(sm_oob_data_B, 16);
-            break;
-        default:
-            printf ("None\n");
-            break;
-    }
-    printf("Privacy %u\n", gap_privacy);
-    printf("Device name: %s\n", gap_device_name);
-    // printf("Value Handle: %x\n", value_handle);
-    // printf("Attribute Size: %u\n", attribute_size);
-    printf("---\n");
-    printf("c/C - connectable off\n");
-    printf("d/D - bondable off/on\n");
-    printf("---\n");
-    printf("1   - enable privacy using random non-resolvable private address\n");
-    printf("2   - clear Peripheral Privacy Flag on PTS\n");
-    printf("3   - set Peripheral Privacy Flag on PTS\n");
-    printf("9   - create HCI Classic connection to addr %s\n", bd_addr_to_str(public_pts_address));
-    printf("s/S - passive/active scanning\n");
-    printf("a   - enable Advertisements\n");
-    printf("b   - start bonding\n");
-    printf("n   - query GAP Device Name\n");
-    printf("o   - set GAP Reconnection Address\n");
-    printf("t   - terminate connection, stop connecting\n");
-    printf("p   - auto connect to PTS\n");
-    printf("P   - direct connect to PTS\n");
-    printf("w   - signed write on characteristic with UUID %04x\n", pts_signed_write_characteristic_uuid);
-    printf("W   - signed write on attribute with handle 0x%04x and value 0x12\n", pts_signed_write_characteristic_handle);
-    printf("z   - Update L2CAP Connection Parameters\n");
-    printf("---\n");
-    printf("e   - Discover all Primary Services\n");
-    printf("f/F - Discover Primary Service by UUID16/UUID128\n");
-    printf("g   - Discover all characteristics by UUID16\n");
-    printf("i   - Find all included services\n");
-    printf("j/J - Read (Long) Characteristic Value by handle\n");
-    printf("k/K - Read Characteristic Value by UUID16/UUID128\n");
-    printf("l/L - Read (Long) Characteristic Descriptor by handle\n");
-    printf("N   - Read Multiple Characteristic Values\n");
-    printf("O   - Write without Response\n");
-    printf("q/Q - Write (Long) Characteristic Value\n");
-    printf("r   - Characteristic Reliable Write\n");
-    printf("R   - Signed Write\n");
-    printf("u/U - Write (Long) Characteristic Descriptor\n");
-    printf("---\n");
-    printf("4   - IO_CAPABILITY_DISPLAY_ONLY\n");
-    printf("5   - IO_CAPABILITY_DISPLAY_YES_NO\n");
-    printf("6   - IO_CAPABILITY_NO_INPUT_NO_OUTPUT\n");
-    printf("7   - IO_CAPABILITY_KEYBOARD_ONLY\n");
-    printf("8   - IO_CAPABILITY_KEYBOARD_DISPLAY\n");
-    printf("m/M - MITM protection off\n");
-    printf("x/X - encryption key range [7..16]/[16..16]\n");
-    printf("y/Y - OOB data off/on/toggle A/B\n");
-    printf("---\n");
-    printf("Ctrl-c - exit\n");
-    printf("---\n");
-}
+    reset_screen();
 
+    print_line("--- CLI for LE Central ---");
+    print_line("PTS: addr type %u, addr %s", current_pts_address_type, bd_addr_to_str(current_pts_address));
+    print_line("IUT: addr type %u, addr %s", iut_address_type, bd_addr_to_str(iut_address));
+    print_line("--------------------------");
+    print_line("GAP: connectable %u, bondable %u", gap_connectable, gap_bondable);
+    print_line("SM: %s, MITM protection %u", sm_io_capabilities, sm_mitm_protection);
+    print_line("SM: key range [%u..16], OOB data: %s", sm_min_key_size, 
+        sm_have_oob_data ? (sm_have_oob_data == 1 ? (const char*) sm_oob_data_A : (const char*) sm_oob_data_B) : "None");
+    print_line("Privacy %u", gap_privacy);
+    print_line("Device name: %s", gap_device_name);
+
+    printf_row("c/C - connectable off");
+    printf_row("d/D - bondable off/on");
+    printf_row("---");
+    printf_row("1   - enable privacy using random non-resolvable private address");
+    printf_row("2   - clear Peripheral Privacy Flag on PTS");
+    printf_row("3   - set Peripheral Privacy Flag on PTS");
+    printf_row("9   - create HCI Classic connection to addr %s", bd_addr_to_str(public_pts_address));
+    printf_row("s/S - passive/active scanning");
+    printf_row("a   - enable Advertisements");
+    printf_row("b   - start bonding");
+    printf_row("n   - query GAP Device Name");
+    printf_row("o   - set GAP Reconnection Address");
+    printf_row("t   - terminate connection, stop connecting");
+    printf_row("p   - auto connect to PTS");
+    printf_row("P   - direct connect to PTS");
+    printf_row("w   - signed write on characteristic with UUID %04x", pts_signed_write_characteristic_uuid);
+    printf_row("W   - signed write on attribute with handle 0x%04x and value 0x12", pts_signed_write_characteristic_handle);
+    printf_row("z   - Update L2CAP Connection Parameters");
+    printf_row("---");
+    printf_row("e   - Discover all Primary Services");
+    printf_row("f/F - Discover Primary Service by UUID16/UUID128");
+    printf_row("g   - Discover all characteristics by UUID16");
+    printf_row("h   - Discover all characteristics in range");
+    printf_row("i   - Find all included services");
+    printf_row("j/J - Read (Long) Characteristic Value by handle");
+    printf_row("k/K - Read Characteristic Value by UUID16/UUID128");
+    printf_row("l/L - Read (Long) Characteristic Descriptor by handle");
+    printf_row("N   - Read Multiple Characteristic Values");
+    printf_row("O   - Write without Response");
+    printf_row("q/Q - Write (Long) Characteristic Value");
+    printf_row("r   - Characteristic Reliable Write");
+    printf_row("R   - Signed Write");
+    printf_row("u/U - Write (Long) Characteristic Descriptor");
+    printf_row("T   - Read Generic Profile Attributes by Type");
+    printf_row("---");
+    printf_row("4   - IO_CAPABILITY_DISPLAY_ONLY");
+    printf_row("5   - IO_CAPABILITY_DISPLAY_YES_NO");
+    printf_row("6   - IO_CAPABILITY_NO_INPUT_NO_OUTPUT");
+    printf_row("7   - IO_CAPABILITY_KEYBOARD_ONLY");
+    printf_row("8   - IO_CAPABILITY_KEYBOARD_DISPLAY");
+    printf_row("m/M - MITM protection off");
+    printf_row("x/X - encryption key range [7..16]/[16..16]");
+    printf_row("y/Y - OOB data off/on/toggle A/B");
+    printf_row("---");
+    printf_row("Ctrl-c - exit");
+
+    print_screen();
+}
 
 void update_auth_req(void){
     uint8_t auth_req = 0;
@@ -654,12 +920,14 @@ static void ui_request_uint16(const char * message){
     fflush(stdout);
     ui_uint16_request = 1;
     ui_uint16 = 0;
+    ui_uint16_pos = 0;
 }
 
 static void ui_request_uud128(const char * message){
     printf("%s", message);
     fflush(stdout);
     ui_uuid128_request = 1;
+    ui_uuid128_pos = 0;
     memset(ui_uuid128, 0, 16);
 }
 
@@ -673,7 +941,6 @@ static void ui_request_data(const char * message){
 
 static int ui_process_digits_for_passkey(char buffer){
     if (buffer < '0' || buffer > '9') {
-        printf("stdinprocess: invalid input 0x%02x\n", buffer);
         return 0;
     }
     printf("%c", buffer);
@@ -688,6 +955,15 @@ static int ui_process_digits_for_passkey(char buffer){
 }
 
 static int ui_process_uint16_request(char buffer){
+    if (buffer == 0x7f || buffer == 0x08) {
+        if (ui_uint16_pos){
+            printf("\b \b");
+            fflush(stdout);
+            ui_uint16 >>= 4;
+            ui_uint16_pos--;
+        }
+        return 0;
+    }
     if (buffer == '\n' || buffer == '\r'){
         ui_uint16_request = 0;
         printf("\n");
@@ -696,6 +972,20 @@ static int ui_process_uint16_request(char buffer){
                 printf("Discover Primary Services with UUID16 %04x\n", ui_uint16);
                 gatt_client_discover_primary_services_by_uuid16(gc_id, handle, ui_uint16);
                 return 0;
+            case CENTRAL_ENTER_START_HANDLE_4_DISCOVER_CHARACTERISTICS:
+                ui_attribute_handle = ui_uint16;
+                ui_request_uint16("Please enter end handle: ");
+                central_state = CENTRAL_ENTER_END_HANDLE_4_DISCOVER_CHARACTERISTICS;
+                return 0;
+            case CENTRAL_ENTER_END_HANDLE_4_DISCOVER_CHARACTERISTICS: {
+                printf("Discover Characteristics from 0x%04x to 0x%04x\n", ui_attribute_handle, ui_uint16);
+                central_state = CENTRAL_W4_CHARACTERISTICS;
+                le_service_t service;
+                service.start_group_handle = ui_attribute_handle;
+                service.end_group_handle   = ui_uint16;
+                gatt_client_discover_characteristics_for_service(gc_id, handle, &service);
+                return 0;
+            }
             case CENTRAL_W4_CHARACTERISTICS:
                 printf("Discover Characteristics with UUID16 %04x\n", ui_uint16);
                 gatt_client_discover_characteristics_for_handle_range_by_uuid16(gc_id, handle, 0x0001, 0xffff, ui_uint16);
@@ -737,16 +1027,16 @@ static int ui_process_uint16_request(char buffer){
                 return 0;
             case CENTRAL_W4_READ_MULTIPLE_CHARACTERISTIC_VALUES:
                 if (ui_uint16){
-                    ui_handles[ui_num_handles++] = ui_uint16;
+                    ui_handles[ui_handles_count++] = ui_uint16;
                     ui_request_uint16("Please enter handle: ");
                 } else {
                     int i;                        
                     printf("Read multiple values, handles: ");
-                    for (i=0;i<ui_num_handles;i++){
+                    for (i=0;i<ui_handles_count;i++){
                         printf("0x%04x, ", ui_handles[i]);
                     }
                     printf("\n");
-                    gatt_client_read_multiple_characteristic_values(gc_id, handle, ui_num_handles, ui_handles);
+                    gatt_client_read_multiple_characteristic_values(gc_id, handle, ui_handles_count, ui_handles);
                 }
                 return 0;
 
@@ -773,32 +1063,76 @@ static int ui_process_uint16_request(char buffer){
                 ui_attribute_handle = ui_uint16;
                 ui_request_data("Please enter data: ");
                 return 0;
+            case CENTRAL_GPA_ENTER_START_HANDLE:
+                ui_start_handle = ui_uint16;
+                central_state = CENTRAL_GPA_ENTER_END_HANDLE;
+                ui_request_uint16("Please enter end handle: ");
+                return 0;
+            case CENTRAL_GPA_ENTER_END_HANDLE:
+                ui_end_handle = ui_uint16;
+                central_state = CENTRAL_GPA_W4_RESPONSE;
+                ui_request_uint16("Please enter uuid: ");
+                return 0;
+            case CENTRAL_GPA_W4_RESPONSE:
+                ui_uuid16 = ui_uint16;
+                printf("Read by type: range 0x%04x-0x%04x, uuid %04x\n", ui_start_handle, ui_end_handle, ui_uuid16);
+                gatt_client_read_value_of_characteristics_by_uuid16(gc_id, handle, ui_start_handle, ui_end_handle, ui_uuid16);
+                return 0;
             default:
                 return 0;
         }
     }
     int hex = hexForChar(buffer);
     if (hex < 0){
-        printf("stdinprocess: invalid input 0x%02x\n", buffer);
         return 0;
     }
     printf("%c", buffer);
     fflush(stdout);
     ui_uint16 = ui_uint16 << 4 | hex;
+    ui_uint16_pos++;
     return 0;    
+}
+
+static int uuid128_pos_starts_with_dash(int pos){
+    switch(pos){
+        case 8:
+        case 12:
+        case 16:
+        case 20:
+#ifdef PTS_UUID128_REPRESENTATION
+        case 4:
+        case 24:
+#endif
+            return 1;
+        default:
+            return 0;
+    }
 }
 
 static int ui_process_uuid128_request(char buffer){
     if (buffer == '-') return 0;    // skip - 
+
+    if (buffer == 0x7f || buffer == 0x08) {
+        if (ui_uuid128_pos){
+            if (uuid128_pos_starts_with_dash(ui_uuid128_pos)){
+                printf("\b \b");
+                fflush(stdout);
+            }
+            printf("\b \b");
+            fflush(stdout);
+            ui_uuid128_pos--;
+        }
+        return 0;
+    }
+
     int hex = hexForChar(buffer);
     if (hex < 0){
-        printf("stdinprocess: invalid input 0x%02x\n", buffer);
         return 0;
     }
     printf("%c", buffer);
     fflush(stdout);
     if (ui_uuid128_pos & 1){
-        ui_uuid128[ui_uuid128_pos >> 1] |= hex;
+        ui_uuid128[ui_uuid128_pos >> 1] = (ui_uuid128[ui_uuid128_pos >> 1] & 0xf0) | hex;
     } else {
         ui_uuid128[ui_uuid128_pos >> 1] = hex << 4;
     }
@@ -823,19 +1157,11 @@ static int ui_process_uuid128_request(char buffer){
                 return 0;
         }
     }
-    switch(ui_uuid128_pos){
-        case 8:
-        case 12:
-        case 16:
-        case 20:
-            printf("-");
-            fflush(stdout);
-            break;
-        default:
-            break;
+    if (uuid128_pos_starts_with_dash(ui_uuid128_pos)){
+        printf("-");
+        fflush(stdout);
     }
     return 0;
-
 }
 
 static void ui_announce_write(const char * method){
@@ -845,6 +1171,17 @@ static void ui_announce_write(const char * method){
 }
 
 static int ui_process_data_request(char buffer){
+    if (buffer == 0x7f || buffer == 0x08) {
+        if (ui_value_pos){
+            if ((ui_value_pos & 1) == 0){
+                printf("\b");
+            }
+            printf("\b \b");
+            fflush(stdout);
+            ui_value_pos--;
+        }
+        return 0;
+    }
     if (buffer == '\n' || buffer == '\r'){
         ui_value_request = 0;
         printf("\n");
@@ -884,20 +1221,20 @@ static int ui_process_data_request(char buffer){
     }
     int hex = hexForChar(buffer);
     if (hex < 0){
-        printf("stdinprocess: invalid input 0x%02x\n", buffer);
         return 0;
     }
 
     printf("%c", buffer);
-    fflush(stdout);
 
     if (ui_value_pos & 1){
-        ui_value_data[ui_value_pos >> 1] |= hex;
+        ui_value_data[ui_value_pos >> 1] = (ui_value_data[ui_value_pos >> 1] & 0xf0) | hex;
+        printf(" ");
     } else {
         ui_value_data[ui_value_pos >> 1] = hex << 4;
     }
     ui_value_pos++;
 
+    fflush(stdout);
     return 0;
 }
 
@@ -1041,7 +1378,7 @@ static void ui_process_command(char buffer){
             break;
         case 'W':
             // fetch csrk
-            le_device_db_csrk_get(le_device_db_index, signing_csrk);
+            le_device_db_local_csrk_get(le_device_db_index, signing_csrk);
             // calc signature
             sm_cmac_start(signing_csrk, ATT_SIGNED_WRITE_COMMAND, pts_signed_write_characteristic_handle, sizeof(signed_write_value), signed_write_value, 0, att_signed_write_handle_cmac_result);
             break;
@@ -1094,6 +1431,10 @@ static void ui_process_command(char buffer){
                 gatt_client_discover_characteristics_for_service(gc_id, handle, &service);
                 break;
             }
+        case 'h':
+            central_state = CENTRAL_ENTER_START_HANDLE_4_DISCOVER_CHARACTERISTICS;
+            ui_request_uint16("Please enter start_handle: ");
+            break;
         case 'i':
             {
                 central_state = CENTRAL_W4_CHARACTERISTICS;
@@ -1129,7 +1470,7 @@ static void ui_process_command(char buffer){
             break;
         case 'N':
             ui_request_uint16("Read Multiple Characteristic Values - enter 0 to complete list.\nPlease enter handle: ");
-            ui_num_handles = 0;
+            ui_handles_count = 0;
             central_state = CENTRAL_W4_READ_MULTIPLE_CHARACTERISTIC_VALUES;
             break;
         case 'O':
@@ -1159,6 +1500,10 @@ static void ui_process_command(char buffer){
         case 'R':
             central_state = CENTRAL_W4_SIGNED_WRITE;
             ui_request_uint16("Please enter handle: ");
+            break;
+        case 'T': 
+            central_state = CENTRAL_GPA_ENTER_START_HANDLE;
+            ui_request_uint16("Please enter start handle: ");
             break;
         default:
             show_usage();
@@ -1237,6 +1582,9 @@ int btstack_main(int argc, const char * argv[]){
     
     printf("BTstack LE Peripheral starting up...\n");
 
+    memset(rows, 0, sizeof(char *) * 100);
+    memset(lines, 0, sizeof(char *) * 100);
+
     strcpy(gap_device_name, "BTstack");
 
     // set up l2cap_le
@@ -1252,6 +1600,7 @@ int btstack_main(int argc, const char * argv[]){
 
     sm_set_encryption_key_size_range(sm_min_key_size, 16);
     sm_test_set_irk(test_irk);
+    sm_test_use_fixed_local_csrk();
 
     // setup GATT Client
     gatt_client_init();

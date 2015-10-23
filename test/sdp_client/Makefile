@@ -16,6 +16,7 @@ VPATH += ${BTSTACK_ROOT}/platforms/posix/src
 COMMON = \
     sdp_util.c	              \
 	sdp_parser.c		      \
+	hci_dump.c                \
     utils.c			          \
  
 COMMON_OBJ = $(COMMON:.c=.o)

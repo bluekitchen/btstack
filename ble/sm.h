@@ -279,6 +279,9 @@ int sm_address_resolution_lookup(uint8_t addr_type, bd_addr_t addr);
 int sm_le_device_index(uint16_t handle );
 /* API_END */
 
+// testing only
+void sm_test_use_fixed_local_csrk(void);
+
 #if defined __cplusplus
 }
 #endif

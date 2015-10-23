@@ -128,7 +128,7 @@ static void verify_included_services_uuid128(void){
 }
 
 static void verify_charasteristics(void){
-	CHECK_EQUAL(14, result_index);
+	CHECK_EQUAL(15, result_index);
 	for (int i=0; i<result_index; i++){
 		CHECK_EQUAL_GATT_ATTRIBUTE(characteristic_uuids[i], characteristic_handles[i], characteristics[i].uuid128, characteristics[i].start_handle, characteristics[i].end_handle);	
     }

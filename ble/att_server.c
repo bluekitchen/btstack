@@ -267,7 +267,7 @@ static void att_run(void){
 
                 // signature is { sequence counter, secure hash }
                 sm_key_t csrk;
-                le_device_db_csrk_get(att_ir_le_device_db_index, csrk);
+                le_device_db_remote_csrk_get(att_ir_le_device_db_index, csrk);
                 att_server_state = ATT_SERVER_W4_SIGNED_WRITE_VALIDATION;
                 log_info("Orig Signature: ");
                 hexdump( &att_request_buffer[att_request_size-8], 8);

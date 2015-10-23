@@ -59,10 +59,11 @@ typedef struct le_device_memory_db {
     uint8_t  authorized;
 
     // Signed Writes by remote
-    sm_key_t csrk;
+    sm_key_t remote_csrk;
     uint32_t remote_counter;
 
-    // Signed Writes to remote (local CSRK is fixed)
+    // Signed Writes by us
+    sm_key_t local_csrk;
     uint32_t local_counter;
 
 } le_device_memory_db_t;
@@ -150,12 +151,20 @@ void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm
 }
 
 // get signature key
-void le_device_db_csrk_get(int index, sm_key_t csrk){
-    if (csrk) memcpy(csrk, le_devices[index].csrk, 16);
+void le_device_db_remote_csrk_get(int index, sm_key_t csrk){
+    if (csrk) memcpy(csrk, le_devices[index].remote_csrk, 16);
 }
 
-void le_device_db_csrk_set(int index, sm_key_t csrk){
-    if (csrk) memcpy(le_devices[index].csrk, csrk, 16);
+void le_device_db_remote_csrk_set(int index, sm_key_t csrk){
+    if (csrk) memcpy(le_devices[index].remote_csrk, csrk, 16);
+}
+
+void le_device_db_local_csrk_get(int index, sm_key_t csrk){
+    if (csrk) memcpy(csrk, le_devices[index].local_csrk, 16);
+}
+
+void le_device_db_local_csrk_set(int index, sm_key_t csrk){
+    if (csrk) memcpy(le_devices[index].local_csrk, csrk, 16);
 }
 
 // query last used/seen signing counter
@@ -185,6 +194,7 @@ void le_device_db_dump(void){
         if (le_devices[i].addr_type == INVALID_ENTRY_ADDR_TYPE) continue;
         log_info("%u: %u %s", i, le_devices[i].addr_type, bd_addr_to_str(le_devices[i].addr));
         log_key("irk", le_devices[i].irk);
-        log_key("csrk", le_devices[i].csrk);
+        log_key("local csrk", le_devices[i].local_csrk);
+        log_key("remote csrk", le_devices[i].remote_csrk);
     }
 }

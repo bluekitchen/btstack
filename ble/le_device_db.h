@@ -115,18 +115,32 @@ void le_device_db_encryption_set(int index, uint16_t ediv, uint8_t rand[8], sm_k
 void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm_key_t ltk,  int * key_size, int * authenticated, int * authorized);
 
 /**
- * @brief set signing key for this device
+ * @brief set local signing key for this device
  * @param index
  * @param signing key as input
  */
-void le_device_db_csrk_set(int index, sm_key_t csrk);
+void le_device_db_local_csrk_set(int index, sm_key_t csrk);
 
 /**
- * @brief get signing key for this device
+ * @brief get local signing key for this device
  * @param index
  * @param signing key as output
  */
-void le_device_db_csrk_get(int index, sm_key_t csrk);
+void le_device_db_local_csrk_get(int index, sm_key_t csrk);
+
+/**
+ * @brief set remote signing key for this device
+ * @param index
+ * @param signing key as input
+ */
+void le_device_db_remote_csrk_set(int index, sm_key_t csrk);
+
+/**
+ * @brief get remote signing key for this device
+ * @param index
+ * @param signing key as output
+ */
+void le_device_db_remote_csrk_get(int index, sm_key_t csrk);
 
 /**
  * @brief query last used/seen signing counter
