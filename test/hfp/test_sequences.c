@@ -82,6 +82,26 @@ const char * slc_cmds_test1[] = {
     "OK"
 };
 
+const char * slc_cmds_test2[] = {
+    "AT+BAC=1,3", 
+    "OK"
+};
+
+const char * slc_cmds_test3[] = {
+    "AT+BAC=1,3", 
+    "OK"
+};
+
+const char * slc_cmds_test4[] = {
+    "AT+BAC=1,3", 
+    "OK"
+};
+
+const char * slc_cmds_test5[] = {
+    "AT+BAC=1,3", 
+    "OK"
+};
+
 hfp_test_item_t slc_cmds_tests[] = {
     TEST_SEQUENCE(slc_cmds_test1)
 };
@@ -89,58 +109,55 @@ hfp_test_item_t slc_cmds_tests[] = {
 const char * cc_test1[] = {
     "AT+BCC", 
     "OK",
+    "NOP",
     "+BCS:1",
     "AT+BCS=1",
     "OK"
 };
 
 const char * cc_test2[] = {
-    "AT+BCC", 
+    "AT+BAC=1,2", 
     "OK",
-    "NOP",
+    "AT+BCC",
+    "OK",
     "NOP+BCS:1",
     "AT+BCS=1",
     "OK"
 };
+
 
 const char * cc_test3[] = {
     "AT+BAC=1,2", 
     "OK",
     "AT+BCC",
     "OK",
-    "+BCS:1",
-    "AT+BCS=1",
-    "OK"
-};
-
-
-const char * cc_test4[] = {
-    "AT+BAC=1,2", 
-    "OK",
-    "AT+BCC",
-    "OK",
+    "NOP",
     "+BCS:1",
     "AT+BAC=2,3", 
     "OK",
+    "NOP",
     "+BCS:2",
     "AT+BCS=2",
     "OK"
 };
 
-const char * cc_test5[] = {
+const char * cc_test4[] = {
     "AT+BCC", 
     "OK",
+    "NOP",
     "+BCS:1",
     "AT+BAC=2,3", 
     "OK",
+    "NOP",
     "+BCS:2",
     "AT+BCS=2",
     "OK"
 };
 
 hfp_test_item_t cc_tests[] = {
-    TEST_SEQUENCE(cc_test1)//,
-    // TEST_SEQUENCE(cc_test2),
+    TEST_SEQUENCE(cc_test1),
+    TEST_SEQUENCE(cc_test2),
+    // TEST_SEQUENCE(cc_test3),
     // TEST_SEQUENCE(cc_test3)
 };
 

@@ -606,7 +606,7 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
 
     packet[size] = 0;
     int pos, i;
-    printf("AG response: %s\n", packet+2);
+    printf("\nHF received: %s", packet+2);
     for (pos = 0; pos < size ; pos++){
         hfp_parse(context, packet[pos]);
         
@@ -649,7 +649,6 @@ static void hfp_run(){
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet_type){
         case RFCOMM_DATA_PACKET:
-            printf("\nHF received: %s\n", packet);
             hfp_handle_rfcomm_event(packet_type, channel, packet, size);
             break;
         case HCI_EVENT_PACKET:
