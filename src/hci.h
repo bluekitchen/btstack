@@ -61,7 +61,11 @@
 #if defined __cplusplus
 extern "C" {
 #endif
-    
+ 
+// HCI roles
+#define HCI_ROLE_MASTER 0
+#define HCI_ROLE_SLAVE  1
+
 // packet header sizes
 #define HCI_CMD_HEADER_SIZE          3
 #define HCI_ACL_HEADER_SIZE   	     4
@@ -492,6 +496,9 @@ typedef struct {
 
     // le public, le random, classic
     bd_addr_type_t address_type;
+
+    // role: 0 - master, 1 - slave
+    uint8_t role;
 
     // connection state
     CONNECTION_STATE state;
