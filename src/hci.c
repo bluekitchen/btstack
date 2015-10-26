@@ -1718,12 +1718,12 @@ static void hci_state_reset(void){
     hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
     hci_stack->le_whitelist = 0;
     hci_stack->le_whitelist_capacity = 0;
-    hci_stack->le_connection_parameter_range.le_conn_interval_min = 0x0006;
-    hci_stack->le_connection_parameter_range.le_conn_interval_max = 0x0C80;
-    hci_stack->le_connection_parameter_range.le_conn_latency_min = 0x0000;
-    hci_stack->le_connection_parameter_range.le_conn_latency_max = 0x03E8;
-    hci_stack->le_connection_parameter_range.le_supervision_timeout_min = 0x000A;
-    hci_stack->le_connection_parameter_range.le_supervision_timeout_max = 0x0C80;
+    hci_stack->le_connection_parameter_range.le_conn_interval_min =          6; 
+    hci_stack->le_connection_parameter_range.le_conn_interval_max =       3200;
+    hci_stack->le_connection_parameter_range.le_conn_latency_min =           0;
+    hci_stack->le_connection_parameter_range.le_conn_latency_max =         500;
+    hci_stack->le_connection_parameter_range.le_supervision_timeout_min =   10;
+    hci_stack->le_connection_parameter_range.le_supervision_timeout_max = 3200;
 }
 
 void hci_init(hci_transport_t *transport, void *config, bt_control_t *control, remote_device_db_t const* remote_device_db){
