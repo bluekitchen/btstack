@@ -966,7 +966,7 @@ int btstack_main(int argc, const char * argv[]){
 
     btstack_stdin_setup(stdin_process);
 
-    gap_random_address_set_update_period(300000);
+    gap_random_address_set_update_period(5000);
     gap_random_address_set_mode(GAP_RANDOM_ADDRESS_RESOLVABLE);
     strcpy(gap_device_name, "BTstack");
     sm_set_io_capabilities(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
