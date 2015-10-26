@@ -1426,6 +1426,12 @@ void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
                 
                     hci_connection_t * connection = hci_connection_for_handle(handle);
                     if (connection){ 
+                        if (connection->role != HCI_ROLE_MASTER){
+                            // reject command without notifying upper layer when not in master role
+                            uint8_t sig_id = packet[COMPLETE_L2CAP_HEADER + 1]; 
+                            l2cap_register_signaling_response(handle, COMMAND_REJECT_LE, sig_id, L2CAP_REJ_CMD_UNKNOWN);
+                            break;
+                        }
                         int update_parameter = 1;
                         le_connection_parameter_range_t existing_range = gap_le_get_connection_parameter_range();
                         uint16_t le_conn_interval_min = READ_BT_16(packet,12);
