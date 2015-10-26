@@ -152,18 +152,34 @@ void le_device_db_encryption_get(int index, uint16_t * ediv, uint8_t rand[8], sm
 
 // get signature key
 void le_device_db_remote_csrk_get(int index, sm_key_t csrk){
+    if (index < 0 || index >= LE_DEVICE_MEMORY_SIZE){
+        log_error("le_device_db_remote_csrk_get called with invalid index %d", index);
+        return;
+    }
     if (csrk) memcpy(csrk, le_devices[index].remote_csrk, 16);
 }
 
 void le_device_db_remote_csrk_set(int index, sm_key_t csrk){
+    if (index < 0 || index >= LE_DEVICE_MEMORY_SIZE){
+        log_error("le_device_db_remote_csrk_set called with invalid index %d", index);
+        return;
+    }
     if (csrk) memcpy(le_devices[index].remote_csrk, csrk, 16);
 }
 
 void le_device_db_local_csrk_get(int index, sm_key_t csrk){
+    if (index < 0 || index >= LE_DEVICE_MEMORY_SIZE){
+        log_error("le_device_db_local_csrk_get called with invalid index %d", index);
+        return;
+    }
     if (csrk) memcpy(csrk, le_devices[index].local_csrk, 16);
 }
 
 void le_device_db_local_csrk_set(int index, sm_key_t csrk){
+    if (index < 0 || index >= LE_DEVICE_MEMORY_SIZE){
+        log_error("le_device_db_local_csrk_set called with invalid index %d", index);
+        return;
+    }
     if (csrk) memcpy(le_devices[index].local_csrk, csrk, 16);
 }
 
