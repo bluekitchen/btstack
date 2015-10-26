@@ -1313,6 +1313,7 @@ static void event_handler(uint8_t *packet, int size){
                 BD_ADDR_COPY(hci_stack->decline_addr, addr);
                 break;
             }
+            conn->role  = HCI_ROLE_SLAVE;
             conn->state = RECEIVED_CONNECTION_REQUEST;
             hci_run();
             break;
@@ -1550,6 +1551,14 @@ static void event_handler(uint8_t *packet, int size){
             }
             break;
 
+        case HCI_EVENT_ROLE_CHANGE:
+            if (packet[2]) break;   // status != 0
+            handle = READ_BT_16(packet, 3);
+            conn = hci_connection_for_handle(handle);
+            if (!conn) break;       // no conn
+            conn->role = packet[9];
+            break;
+
         case DAEMON_EVENT_HCI_PACKET_SENT:
             // release packet buffer only for asynchronous transport and if there are not further fragements
             if (hci_transport_synchronous()) {
@@ -1590,7 +1599,7 @@ static void event_handler(uint8_t *packet, int size){
                         break;
                     }
                     // on success, both hosts receive connection complete event
-                    if (packet[6] == 0){
+                    if (packet[6] == HCI_ROLE_MASTER){
                         // if we're master, it was an outgoing connection and we're done with it
                         hci_stack->le_connecting_state = LE_CONNECTING_IDLE;
                     } else {
@@ -1607,6 +1616,7 @@ static void event_handler(uint8_t *packet, int size){
                     }
                     
                     conn->state = OPEN;
+                    conn->role  = packet[6];
                     conn->con_handle = READ_BT_16(packet, 4);
                     
                     // TODO: store - role, peer address type, conn_interval, conn_latency, supervision timeout, master clock
@@ -2286,6 +2296,7 @@ void hci_run(void){
             case RECEIVED_CONNECTION_REQUEST:
                 log_info("sending hci_accept_connection_request");
                 connection->state = ACCEPTED_CONNECTION_REQUEST;
+                connection->role  = HCI_ROLE_SLAVE;
                 if (connection->address_type == BD_ADDR_TYPE_CLASSIC){
                     hci_send_cmd(&hci_accept_connection_request, connection->address, 1);
                 } else {
