@@ -804,7 +804,6 @@ extern "C" {
 
 #define GATT_CLIENT_NOT_CONNECTED                          0x93
 #define GATT_CLIENT_BUSY                                   0x94
-#define GATT_CLIENT_DATA_MISMATCH                          0x95
 
 #define BNEP_SERVICE_ALREADY_REGISTERED                    0xA0
 #define BNEP_CHANNEL_NOT_CONNECTED                         0xA1

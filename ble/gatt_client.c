@@ -1257,7 +1257,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                     if (is_value_valid(peripheral, packet, size)){
                         emit_gatt_complete_event(peripheral, 0);
                     } else {
-                        emit_gatt_complete_event(peripheral, GATT_CLIENT_DATA_MISMATCH);
+                        emit_gatt_complete_event(peripheral, ATT_ERROR_DATA_MISMATCH);
                     }
                     break;
 

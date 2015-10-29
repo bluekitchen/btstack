@@ -105,8 +105,8 @@ extern "C" {
 #define ATT_ERROR_UNSUPPORTED_GROUP_TYPE           0x10
 #define ATT_ERROR_INSUFFICIENT_RESOURCES           0x11
 // custom BTstack ATT error coders
+#define ATT_ERROR_DATA_MISMATCH                    0x7e
 #define ATT_ERROR_TIMEOUT                          0x7F
-
     
 // custom BTstack error codes
 #define ATT_ERROR_HCI_DISCONNECT_RECEIVED          0x1f
