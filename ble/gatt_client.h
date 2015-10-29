@@ -110,11 +110,16 @@ typedef enum {
     
     P_W2_SEND_WRITE_CHARACTERISTIC_DESCRIPTOR,
     P_W4_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT,
-    
+
+    // all long writes use this    
     P_W2_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR,
     P_W4_PREPARE_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT,
     P_W2_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR,
     P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT,
+
+    // gatt reliable write API use this (manual version of the above)
+    P_W2_PREPARE_WRITE_SINGLE,
+    P_W4_PREPARE_WRITE_SINGLE_RESULT,
 
     P_W4_CMAC_READY,
     P_W4_CMAC_RESULT,
@@ -340,6 +345,23 @@ le_command_status_t gatt_client_write_long_characteristic_descriptor_using_descr
  * @brief Writes the client characteristic configuration of the specified characteristic. It is used to subscribe for notifications or indications of the characteristic value. For notifications or indications specify: GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_NOTIFICATION resp. GATT_CLIENT_CHARACTERISTICS_CONFIGURATION_INDICATION as configuration value.
  */
 le_command_status_t gatt_client_write_client_characteristic_configuration(uint16_t gatt_client_id, uint16_t con_handle, le_characteristic_t * characteristic, uint16_t configuration);
+
+/**
+ * @brief -> gatt complete event
+ */
+le_command_status_t gatt_client_prepare_write(uint16_t gatt_client_id, uint16_t con_handle, uint16_t attribute_handle, uint16_t offset, uint16_t length, uint8_t * data);
+
+/**
+ * @brief -> gatt complete event
+ */
+le_command_status_t gatt_client_execute_write(uint16_t gatt_client_id, uint16_t con_handle);
+
+/**
+ * @brief -> gatt complete event
+ */
+le_command_status_t gatt_client_cancel_write(uint16_t gatt_client_id, uint16_t con_handle);
+
+
 /* API_END */
 
 // only used for testing

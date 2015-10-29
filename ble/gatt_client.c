@@ -930,6 +930,11 @@ static void gatt_client_run(void){
                 send_gatt_prepare_write_request(peripheral);
                 return;
                 
+            case P_W2_PREPARE_WRITE_SINGLE:
+                peripheral->gatt_client_state = P_W4_PREPARE_WRITE_SINGLE_RESULT;
+                send_gatt_prepare_write_request(peripheral);
+                return;
+            
             case P_W2_PREPARE_RELIABLE_WRITE:
                 peripheral->gatt_client_state = P_W4_PREPARE_RELIABLE_WRITE_RESULT;
                 send_gatt_prepare_write_request(peripheral);
@@ -1247,6 +1252,15 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
         }
         case ATT_PREPARE_WRITE_RESPONSE:
             switch (peripheral->gatt_client_state){
+                case P_W4_PREPARE_WRITE_SINGLE_RESULT:
+                    gatt_client_handle_transaction_complete(peripheral);
+                    if (is_value_valid(peripheral, packet, size)){
+                        emit_gatt_complete_event(peripheral, 0);
+                    } else {
+                        emit_gatt_complete_event(peripheral, GATT_CLIENT_DATA_MISMATCH);
+                    }
+                    break;
+
                 case P_W4_PREPARE_WRITE_RESULT:{
                     peripheral->attribute_offset = READ_BT_16(packet, 3);
                     trigger_next_prepare_write_query(peripheral, P_W2_PREPARE_WRITE, P_W2_EXECUTE_PREPARED_WRITE);
@@ -1791,6 +1805,55 @@ le_command_status_t gatt_client_write_long_characteristic_descriptor_using_descr
 
 le_command_status_t gatt_client_write_long_characteristic_descriptor(uint16_t gatt_client_id, uint16_t con_handle, le_characteristic_descriptor_t * descriptor, uint16_t length, uint8_t * value){
     return gatt_client_write_long_characteristic_descriptor_using_descriptor_handle(gatt_client_id, con_handle, descriptor->handle, length, value);
+}
+
+/**
+ * @brief -> gatt complete event
+ */
+le_command_status_t gatt_client_prepare_write(uint16_t gatt_client_id, uint16_t con_handle, uint16_t attribute_handle, uint16_t offset, uint16_t length, uint8_t * data){
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
+    
+    if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
+    
+    peripheral->subclient_id = gatt_client_id;
+    peripheral->attribute_handle = attribute_handle;
+    peripheral->attribute_length = length;
+    peripheral->attribute_offset = offset;
+    peripheral->attribute_value = data;
+    peripheral->gatt_client_state = P_W2_PREPARE_WRITE_SINGLE;
+    gatt_client_run();
+    return BLE_PERIPHERAL_OK;
+}
+
+/**
+ * @brief -> gatt complete event
+ */
+le_command_status_t gatt_client_execute_write(uint16_t gatt_client_id, uint16_t con_handle){
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
+
+    if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
+    
+    peripheral->subclient_id = gatt_client_id;
+    peripheral->gatt_client_state = P_W2_EXECUTE_PREPARED_WRITE;
+    gatt_client_run();
+    return BLE_PERIPHERAL_OK;
+}
+
+/**
+ * @brief -> gatt complete event
+ */
+le_command_status_t gatt_client_cancel_write(uint16_t gatt_client_id, uint16_t con_handle){
+    gatt_client_t * peripheral = provide_context_for_conn_handle_and_start_timer(con_handle);
+    
+    if (!peripheral) return (le_command_status_t) BTSTACK_MEMORY_ALLOC_FAILED; 
+    if (!is_ready(peripheral)) return BLE_PERIPHERAL_IN_WRONG_STATE;
+    
+    peripheral->subclient_id = gatt_client_id;
+    peripheral->gatt_client_state = P_W2_CANCEL_PREPARED_WRITE;
+    gatt_client_run();
+    return BLE_PERIPHERAL_OK;    
 }
 
 void gatt_client_pts_suppress_mtu_exchange(void){
