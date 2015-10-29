@@ -120,7 +120,8 @@ const char * cc_test2[] = {
     "OK",
     "AT+BCC",
     "OK",
-    "NOP+BCS:1",
+    "NOP",
+    "BCS:1",
     "AT+BCS=1",
     "OK"
 };
@@ -136,8 +137,8 @@ const char * cc_test3[] = {
     "AT+BAC=2,3", 
     "OK",
     "NOP",
-    "+BCS:2",
-    "AT+BCS=2",
+    "+BCS:3",
+    "AT+BCS=3",
     "OK"
 };
 
@@ -149,16 +150,16 @@ const char * cc_test4[] = {
     "AT+BAC=2,3", 
     "OK",
     "NOP",
-    "+BCS:2",
-    "AT+BCS=2",
+    "+BCS:3",
+    "AT+BCS=3",
     "OK"
 };
 
 hfp_test_item_t cc_tests[] = {
     TEST_SEQUENCE(cc_test1),
     TEST_SEQUENCE(cc_test2),
-    // TEST_SEQUENCE(cc_test3),
-    // TEST_SEQUENCE(cc_test3)
+    TEST_SEQUENCE(cc_test3),
+    TEST_SEQUENCE(cc_test4)
 };
 
 
