@@ -543,13 +543,11 @@ int  stdin_process(struct data_source *ds){
             break;
         case 'b':
             gap_bondable = 0;
-            // gap_set_bondable_mode(0);
             update_auth_req();
             show_usage();
             break;
         case 'B':
             gap_bondable = 1;
-            // gap_set_bondable_mode(1);
             update_auth_req();
             show_usage();
             break;
@@ -787,7 +785,7 @@ int btstack_main(int argc, const char * argv[]){
     gap_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
     hci_ssp_set_authentication_requirement(0);
     hci_ssp_set_auto_accept(0);
-    // gap_set_bondable_mode(0);
+    update_auth_req();
 
     l2cap_init();
     l2cap_register_packet_handler(&packet_handler2);
