@@ -107,7 +107,7 @@ int expected_rfcomm_command(const char * cmd){
     return cmd_found && ok_found;
 }
 
-void hfp_hf_run_test_sequence(char ** test_steps, int nr_test_steps){
+void simulate_test_sequence(char ** test_steps, int nr_test_steps){
     int i = 0;
     for (i=0; i < nr_test_steps; i++){
         char * cmd = test_steps[i];
@@ -196,7 +196,7 @@ TEST_GROUP(HFPClient){
     void verify_hfp_service_level_connection_established(char ** test_steps, int nr_test_steps){
         service_level_connection_established = 0;
         hfp_hf_establish_service_level_connection(device_addr);
-        hfp_hf_run_test_sequence((char **) test_steps, nr_test_steps);
+        simulate_test_sequence((char **) test_steps, nr_test_steps);
         CHECK_EQUAL(service_level_connection_established, 1);
         hfp_hf_set_codecs(codecs, 1);
         inject_rfcomm_command((uint8_t*)HFP_OK, strlen(HFP_OK));
@@ -205,7 +205,7 @@ TEST_GROUP(HFPClient){
     void verify_hfp_codecs_connection_established(char ** test_steps, int nr_test_steps){
         codecs_connection_established = 0;
         hfp_hf_negotiate_codecs(device_addr);
-        hfp_hf_run_test_sequence((char **) test_steps, nr_test_steps);
+        simulate_test_sequence((char **) test_steps, nr_test_steps);
         CHECK_EQUAL(codecs_connection_established, 1);
     }
 
@@ -222,7 +222,7 @@ TEST(HFPClient, HFCodecsConnectionEstablished){
 TEST(HFPClient, HFServiceLevelConnectionCommands){
     verify_hfp_service_level_connection_established(default_slc_setup(), default_slc_setup_size());
     for (int i = 0; i < slc_cmds_tests_size(); i++){
-        hfp_hf_run_test_sequence(hfp_slc_cmds_tests()[i].test, hfp_slc_cmds_tests()[i].len);
+        simulate_test_sequence(hfp_slc_cmds_tests()[i].test, hfp_slc_cmds_tests()[i].len);
     }
     CHECK_EQUAL(service_level_connection_established, 1);
 }
