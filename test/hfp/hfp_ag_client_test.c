@@ -70,7 +70,7 @@ const uint8_t    rfcomm_channel_nr = 1;
 
 static bd_addr_t device_addr = {0xD8,0xBb,0x2C,0xDf,0xF1,0x08};
 
-static uint8_t codecs[1] = {HFP_CODEC_CVSD};
+static uint8_t codecs[2] = {1, 3};
 
 static int ag_indicators_nr = 7;
 static hfp_ag_indicator_t ag_indicators[] = {
@@ -142,7 +142,6 @@ void packet_handler(uint8_t * event, uint16_t event_size){
         printf("ERROR, status: %u\n", event[3]);
         return;
     }
-    
     switch (event[2]) {   
         case HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
             printf("\n** SLC established **\n\n");
@@ -209,14 +208,13 @@ TEST(HFPClient, HFCodecsConnectionEstablished){
     }
 }
 
-// TEST(HFPClient, HFServiceLevelConnectionCommands){
-//     for (int i = 0; i < slc_cmds_tests_size(); i++){
-//         setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
-//         CHECK_EQUAL(service_level_connection_established, 1);
-//         simulate_test_sequence(hfp_slc_cmds_tests()[i].test, hfp_slc_cmds_tests()[i].len);
-//         teardown();
-//     }
-// }
+TEST(HFPClient, HFServiceLevelConnectionCommands){
+    setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
+    CHECK_EQUAL(service_level_connection_established, 1);
+    for (int i = 0; i < slc_cmds_tests_size(); i++){
+        simulate_test_sequence(hfp_slc_cmds_tests()[i].test, hfp_slc_cmds_tests()[i].len);
+    }
+}
 
 TEST(HFPClient, HFServiceLevelConnectionEstablished){
     for (int i = 0; i < slc_tests_size(); i++){
