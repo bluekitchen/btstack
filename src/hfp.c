@@ -699,13 +699,7 @@ void process_command(hfp_connection_t * context){
     if (strncmp((char *)context->line_buffer+offset, HFP_TRIGGER_CODEC_CONNECTION_SETUP, strlen(HFP_TRIGGER_CODEC_CONNECTION_SETUP)) == 0){
         context->command = HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP;
         // printf("HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP update command\n");
-        if (isHandsFree){
-            context->hf_trigger_codec_connection_setup = 1;
-            printf("update command: hf_trigger_codec_connection_setup = 1\n");
-        } else {
-            context->hf_trigger_codec_connection_setup = 1;
-            printf("update command: hf_trigger_codec_connection_setup = 1\n");
-        }
+        context->hf_trigger_codec_connection_setup = 1;
         return;
     } 
 
