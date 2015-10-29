@@ -227,13 +227,13 @@ TEST_GROUP(HFPClient){
 //     }
 // }
 
-// TEST(HFPClient, HFServiceLevelConnectionCommands){
-//     setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
-//     CHECK_EQUAL(service_level_connection_established, 1);
-//     for (int i = 0; i < slc_cmds_tests_size(); i++){
-//         simulate_test_sequence(hfp_slc_cmds_tests()[i].test, hfp_slc_cmds_tests()[i].len);
-//     }
-// }
+TEST(HFPClient, HFServiceLevelConnectionCommands){
+    setup_hfp_service_level_connection(default_slc_setup(), default_slc_setup_size());
+    CHECK_EQUAL(service_level_connection_established, 1);
+    for (int i = 0; i < slc_cmds_tests_size(); i++){
+        simulate_test_sequence(hfp_slc_cmds_tests()[i].test, hfp_slc_cmds_tests()[i].len);
+    }
+}
 
 TEST(HFPClient, HFServiceLevelConnectionEstablished){
     for (int i = 0; i < slc_tests_size(); i++){
