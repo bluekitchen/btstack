@@ -103,6 +103,10 @@ typedef enum {
     CENTRAL_ENTER_HANDLE_4_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR,
     CENTRAL_W4_WRITE_LONG_CHARACTERISTIC_DESCRIPTOR,
     CENTRAL_W4_SIGNED_WRITE,
+
+    CENTRAL_W4_ENTER_HANDLE_4_PREPARE_WRITE,
+    CENTRAL_W4_ENTER_OFFSET_4_PREPARE_WRITE,
+
     CENTRAL_GPA_ENTER_UUID,
     CENTRAL_GPA_ENTER_START_HANDLE,
     CENTRAL_GPA_ENTER_END_HANDLE,
@@ -924,6 +928,9 @@ void show_usage(void){
     printf_row("R   - Signed Write");
     printf_row("u/U - Write (Long) Characteristic Descriptor");
     printf_row("T   - Read Generic Profile Attributes by Type");
+    printf_row("E   - Prepare Write");
+    printf_row("v   - Execute Write");
+    printf_row("V   - Cancel Write");
     printf_row("---");
     printf_row("4   - IO_CAPABILITY_DISPLAY_ONLY");
     printf_row("5   - IO_CAPABILITY_DISPLAY_YES_NO");
@@ -1130,9 +1137,18 @@ static int ui_process_uint16_request(char buffer){
             case CENTRAL_W4_WRITE_CHARACTERICISTIC_VALUE:
             case CENTRAL_W4_RELIABLE_WRITE:
             case CENTRAL_W4_WRITE_CHARACTERISTIC_DESCRIPTOR:
-            case CENTRAL_W4_SIGNED_WRITE:            
+            case CENTRAL_W4_SIGNED_WRITE:
                 ui_attribute_handle = ui_uint16;
                 ui_request_data("Please enter data: ");
+                return 0;
+            case CENTRAL_W4_ENTER_OFFSET_4_PREPARE_WRITE:
+                ui_attribute_offset = ui_uint16;
+                ui_request_data("Please enter data: ");
+                return 0;
+            case CENTRAL_W4_ENTER_HANDLE_4_PREPARE_WRITE:
+                ui_attribute_handle = ui_uint16;
+                ui_request_uint16("Please enter offset: ");
+                central_state = CENTRAL_W4_ENTER_OFFSET_4_PREPARE_WRITE;
                 return 0;
             case CENTRAL_GPA_ENTER_START_HANDLE:
                 ui_start_handle = ui_uint16;
@@ -1285,6 +1301,11 @@ static int ui_process_data_request(char buffer){
             case CENTRAL_W4_SIGNED_WRITE:
                 ui_announce_write("Signed Write");
                 gatt_client_signed_write_without_response(gc_id, handle, ui_attribute_handle, value_len, ui_value_data);
+                break;
+            case CENTRAL_W4_ENTER_OFFSET_4_PREPARE_WRITE:
+                ui_announce_write("Preprare Write");
+                gatt_client_prepare_write(gc_id, handle, ui_attribute_handle, ui_attribute_offset, value_len, ui_value_data);
+                break;
             default:
                 break;
         }             
@@ -1562,6 +1583,16 @@ static void ui_process_command(char buffer){
         case 'r':
             central_state = CENTRAL_W4_RELIABLE_WRITE;
             ui_request_uint16("Please enter handle: ");
+            break;
+        case 'E':
+            central_state = CENTRAL_W4_ENTER_HANDLE_4_PREPARE_WRITE;
+            ui_request_uint16("Please enter handle: ");
+            break;
+        case 'v':
+            gatt_client_execute_write(gc_id, handle);
+            break;
+        case 'V':
+            gatt_client_cancel_write(gc_id, handle);
             break;
         case 'u':
             central_state = CENTRAL_W4_WRITE_CHARACTERISTIC_DESCRIPTOR;
