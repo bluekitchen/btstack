@@ -950,6 +950,11 @@ static void gatt_client_run(void){
                 send_gatt_cancel_prepared_write_request(peripheral);
                 return;
                 
+            case P_W2_CANCEL_PREPARED_WRITE_DATA_MISMATCH:
+                peripheral->gatt_client_state = P_W4_CANCEL_PREPARED_WRITE_DATA_MISMATCH_RESULT;
+                send_gatt_cancel_prepared_write_request(peripheral);
+                return;
+
             case P_W2_SEND_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY:
                 peripheral->gatt_client_state = P_W4_READ_CLIENT_CHARACTERISTIC_CONFIGURATION_QUERY_RESULT;
                 send_gatt_read_client_characteristic_configuration_request(peripheral);
@@ -1280,7 +1285,7 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                         // GATT_QUERY_COMPLETE is emitted by trigger_next_xxx when done
                         break;
                     }
-                    peripheral->gatt_client_state = P_W2_CANCEL_PREPARED_WRITE;
+                    peripheral->gatt_client_state = P_W2_CANCEL_PREPARED_WRITE_DATA_MISMATCH;
                     break;
                 }
                 default:
@@ -1297,6 +1302,10 @@ static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle,
                 case P_W4_CANCEL_PREPARED_WRITE_RESULT:
                     gatt_client_handle_transaction_complete(peripheral);
                     emit_gatt_complete_event(peripheral, 0);
+                    break;
+                case P_W4_CANCEL_PREPARED_WRITE_DATA_MISMATCH_RESULT:
+                    gatt_client_handle_transaction_complete(peripheral);
+                    emit_gatt_complete_event(peripheral, ATT_ERROR_DATA_MISMATCH);
                     break;
                 case P_W4_EXECUTE_PREPARED_WRITE_CHARACTERISTIC_DESCRIPTOR_RESULT:
                     gatt_client_handle_transaction_complete(peripheral);
