@@ -41,6 +41,7 @@ assigned_uuids = {
     'GATT_SERVICE'         : 0x1801, 
     'GAP_DEVICE_NAME'      : 0x2a00,
     'GAP_APPEARANCE'       : 0x2a01,
+    'GAP_PERIPHERAL_PREFERRED_CONNECTION_PARAMETERS' : 0x2A04,
     'GATT_SERVICE_CHANGED' : 0x2a05,
 }
 
