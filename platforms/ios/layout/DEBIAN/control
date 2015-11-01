@@ -9,4 +9,4 @@ Depends: firmware (>= 3.0), ch.ringwald.springboardaccess (>= 0.3), preferencelo
 Author: Mattthias Ringwald <tickets@btstack.uservoice.com>
 Maintainer: Mattthias Ringwald <tickets@btstack.uservoice.com>
 Section: Development
-Version: 1.0
+Version: 1.1
