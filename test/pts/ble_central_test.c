@@ -66,7 +66,7 @@
 #include "ad_parser.h"
 
 // test profile
-#include "profile.h"
+#include "ble_central_test.h"
 
 // Non standard IXIT
 #define PTS_USES_RECONNECTION_ADDRESS_FOR_ITSELF

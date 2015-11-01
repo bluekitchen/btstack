@@ -10,3 +10,5 @@ hsp_hs_test
 l2cap_test
 profile.h
 
+ble_peripheral_test.h
+ble_central_test.h

@@ -28,11 +28,17 @@ EXAMPLES = hfp_hf_test hfp_ag_test ble_peripheral_test ble_central_test l2cap_te
 
 all: ${BTSTACK_ROOT}/include/btstack/version.h ${EXAMPLES}
 
-ble_peripheral_test: profile.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral_test.o
-	${CC} $(filter-out profile.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
+# compile .gatt descriptions
+ble_peripheral_test.h: ble_peripheral_test.gatt
+	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
+ble_central_test.h: ble_central_test.gatt
+	python ${BTSTACK_ROOT}/ble/compile-gatt.py $< $@ 
+	
+ble_peripheral_test: ble_peripheral_test.h ${CORE_OBJ} ${COMMON_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${SM_REAL_OBJ} ble_peripheral_test.o
+	${CC} $(filter-out ble_peripheral_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
-ble_central_test: ${CORE_OBJ} ${COMMON_OBJ} ${SM_REAL_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ad_parser.o ble_central_test.c
-	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
+ble_central_test: ble_central_test.h ${CORE_OBJ} ${COMMON_OBJ} ${SM_REAL_OBJ} ${ATT_OBJ} ${GATT_SERVER_OBJ} ${GATT_CLIENT_OBJ} ad_parser.o ble_central_test.c
+	${CC} $(filter-out ble_central_test.h,$^) ${CFLAGS} ${LDFLAGS} -o $@
 
 hsp_ag_test: ${CORE_OBJ} ${COMMON_OBJ} ${SDP_CLIENT} hsp_ag.o hsp_ag_test.c 
 	${CC} $^ ${CFLAGS} ${LDFLAGS} -o $@
