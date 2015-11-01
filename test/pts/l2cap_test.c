@@ -157,7 +157,7 @@ int  stdin_process(struct data_source *ds){
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
 
-    hci_set_class_of_device(0x200404);
+    hci_set_class_of_device(0x220404);
     hci_discoverable_control(1);
 
     l2cap_init();

@@ -779,7 +779,7 @@ int btstack_main(int argc, const char * argv[]){
 
     printf("Starting up..\n");
 
-    hci_set_class_of_device(0x200404);
+    hci_set_class_of_device(0x220404);
     hci_disable_l2cap_timeout_check();
     hci_ssp_set_io_capability(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
     gap_io_capabilities =  "IO_CAPABILITY_NO_INPUT_NO_OUTPUT";
