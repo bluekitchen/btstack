@@ -85,7 +85,10 @@ static void hci_connection_timestamp(hci_connection_t *connection);
 static int  hci_power_control_on(void);
 static void hci_power_control_off(void);
 static void hci_state_reset(void);
+
+#ifdef HAVE_BLE
 static void hci_remove_from_whitelist(bd_addr_type_t address_type, bd_addr_t address);
+#endif
 
 // the STACK is here
 #ifndef HAVE_MALLOC
