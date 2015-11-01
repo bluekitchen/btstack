@@ -10,7 +10,7 @@ ARCHS = armv6 arm64
 BTSTACK_ROOT=../../..
 VPATH += $(BTSTACK_ROOT)/example/daemon
 
-ADDITIONAL_CFLAGS =  -I.. -I$(BTSTACK_ROOT)/include
+ADDITIONAL_CFLAGS =  -I.. -I$(BTSTACK_ROOT)/src -I$(BTSTACK_ROOT)/ble
 ADDITIONAL_LDFLAGS = -L../src/.theos/obj -lBTstack
 
 TOOL_NAME = inquiry l2cap-test rfcomm-echo rfcomm-cat rfcomm-test l2cap-server l2cap-throughput

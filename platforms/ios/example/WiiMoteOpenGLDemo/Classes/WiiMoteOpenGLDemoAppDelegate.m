@@ -40,8 +40,8 @@
 #import "EAGLView.h"
 #import "EAGLViewController.h"
 
-#import <btstack/btstack.h>
-#import <btstack/run_loop.h>
+#import "btstack.h"
+#import "run_loop.h"
 #import <btstack/hci_cmds.h>
 
 @interface UIDevice (privateAPI)

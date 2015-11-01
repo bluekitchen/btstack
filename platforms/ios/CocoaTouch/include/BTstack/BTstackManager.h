@@ -34,7 +34,7 @@
 
 #import <Foundation/Foundation.h>
 #import <stdint.h>
-#import <btstack/btstack.h>
+#import "btstack.h"
 
 #define PREFS_REMOTE_NAME  @"RemoteName"
 #define PREFS_LINK_KEY     @"LinkKey"

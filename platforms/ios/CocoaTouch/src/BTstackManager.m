@@ -31,7 +31,7 @@
 
 #import <BTstack/BTstackManager.h>
 
-#import <btstack/btstack.h>
+#import "btstack.h"
 #import <btstack/BTDevice.h>
 
 #define INQUIRY_INTERVAL 3
