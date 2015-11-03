@@ -709,6 +709,7 @@ void l2cap_run(void){
     hci_connections_get_iterator(&it);
     while(linked_list_iterator_has_next(&it)){
         hci_connection_t * connection = (hci_connection_t *) linked_list_iterator_next(&it);
+        if (connection->address_type != BD_ADDR_TYPE_LE_PUBLIC && connection->address_type != BD_ADDR_TYPE_LE_RANDOM) continue;
         if (!hci_can_send_acl_packet_now(connection->con_handle)) continue;
         switch (connection->le_con_parameter_update_state){
             case CON_PARAMETER_UPDATE_SEND_REQUEST:
