@@ -2032,7 +2032,7 @@ int rfcomm_can_send_packet_now(uint16_t rfcomm_cid){
     rfcomm_channel_t * channel = rfcomm_channel_for_rfcomm_cid(rfcomm_cid);
     if (!channel){
         log_error("rfcomm_send_internal cid 0x%02x doesn't exist!", rfcomm_cid);
-        return 0;
+        return 1;
     }
     if (!channel->credits_outgoing) return 0;
     if (!channel->packets_granted)  return 0;
