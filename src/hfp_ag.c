@@ -163,7 +163,6 @@ void hfp_ag_create_sdp_record(uint8_t * service, int rfcomm_channel_nr, const ch
 int hfp_ag_exchange_supported_features_cmd(uint16_t cid){
     char buffer[40];
     sprintf(buffer, "\r\n%s:%d\r\n\r\nOK\r\n", HFP_SUPPORTED_FEATURES, hfp_supported_features);
-    // printf("exchange_supported_features %s\n", buffer);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -263,7 +262,6 @@ int hfp_ag_retrieve_indicators_cmd(uint16_t cid, hfp_connection_t * context){
     offset += hfp_ag_indicators_join(buffer+offset, sizeof(buffer)-offset, context);
     
     buffer[offset] = 0;
-    printf("hfp_ag_retrieve_indicators_cmd send %s\n", buffer+2);
     
     offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n\r\nOK\r\n");
     buffer[offset] = 0;
@@ -276,14 +274,13 @@ int hfp_ag_retrieve_indicators_status_cmd(uint16_t cid){
     offset += hfp_ag_indicators_status_join(buffer+offset, sizeof(buffer)-offset);
     
     buffer[offset] = 0;
-    printf("send %s\n", buffer+2);
     
     offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n\r\nOK\r\n");
     buffer[offset] = 0;
     return send_str_over_rfcomm(cid, buffer);
 }
 
-int hfp_ag_toggle_indicator_status_update_cmd(uint16_t cid, uint8_t activate){
+int hfp_ag_set_indicator_status_update_cmd(uint16_t cid, uint8_t activate){
     // AT\r\n%s:3,0,0,%d\r\n
     return hfp_ag_ok(cid);
 }
@@ -295,7 +292,6 @@ int hfp_ag_retrieve_can_hold_call_cmd(uint16_t cid){
     offset += hfp_ag_call_services_join(buffer+offset, sizeof(buffer)-offset);
     
     buffer[offset] = 0;
-    printf("send %s\n", buffer+2);
     
     offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n\r\nOK\r\n");
     buffer[offset] = 0;
@@ -313,7 +309,6 @@ int hfp_ag_retrieve_supported_generic_status_indicators_cmd(uint16_t cid){
     offset += hfp_hf_indicators_join(buffer+offset, sizeof(buffer)-offset);
     
     buffer[offset] = 0;
-    printf("send %s\n", buffer+2);
     
     offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\n\r\nOK\r\n");
     buffer[offset] = 0;
@@ -325,8 +320,6 @@ int hfp_ag_retrieve_initital_supported_generic_status_indicators_cmd(uint16_t ci
     int offset = hfp_hf_indicators_initial_status_join(buffer, sizeof(buffer));
     
     buffer[offset] = 0;
-    printf("send %s\n", buffer+2);
-    
     offset += snprintf(buffer+offset, sizeof(buffer)-offset, "\r\nOK\r\n");
     buffer[offset] = 0;
     return send_str_over_rfcomm(cid, buffer);
@@ -351,7 +344,7 @@ int hfp_ag_report_network_operator_name_cmd(uint16_t cid, hfp_network_opearator_
 
 int hfp_ag_cmd_suggest_codec(uint16_t cid, uint8_t codec){
     char buffer[30];
-    sprintf(buffer, "\r\nOK\r\n%s=%d\r\n", HFP_CONFIRM_COMMON_CODEC, codec);
+    sprintf(buffer, "\r\n%s:%d\r\n", HFP_CONFIRM_COMMON_CODEC, codec);
     return send_str_over_rfcomm(cid, buffer);
 }
 
@@ -369,12 +362,18 @@ static uint8_t hfp_ag_suggest_codec(hfp_connection_t *context){
     return codec;
 }
 
-static void hfp_ag_run_for_context_service_level_connection(hfp_connection_t * context){
+
+static int hfp_ag_run_for_context_service_level_connection(hfp_connection_t * context){
+    if (context->state >= HFP_CODECS_CONNECTION_ESTABLISHED) return 0;
+    printf(" AG run for context_service_level_connection \n");
+    int done = 0;
+
     switch(context->command){
         case HFP_CMD_SUPPORTED_FEATURES:
             switch(context->state){
                 case HFP_W4_EXCHANGE_SUPPORTED_FEATURES:
                     hfp_ag_exchange_supported_features_cmd(context->rfcomm_cid);
+                    done = 1;
                     if (has_codec_negotiation_feature(context)){
                         context->state = HFP_W4_NOTIFY_ON_CODECS;
                         break;
@@ -389,8 +388,16 @@ static void hfp_ag_run_for_context_service_level_connection(hfp_connection_t * c
             switch(context->state){
                 case HFP_W4_NOTIFY_ON_CODECS:
                     hfp_ag_retrieve_codec_cmd(context->rfcomm_cid);
+                    done = 1;
                     context->state = HFP_W4_RETRIEVE_INDICATORS;
                     break;
+                case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
+                    context->suggested_codec = hfp_ag_suggest_codec(context);
+                    printf("received BAC == new HF codecs, suggested codec %d\n", context->suggested_codec);
+                    hfp_ag_ok(context->rfcomm_cid);
+                    done = 1;
+                    break;
+
                 default:
                     break;
             }
@@ -400,11 +407,13 @@ static void hfp_ag_run_for_context_service_level_connection(hfp_connection_t * c
                 case HFP_W4_RETRIEVE_INDICATORS:
                     if (context->retrieve_ag_indicators == 0) break;
                     hfp_ag_retrieve_indicators_cmd(context->rfcomm_cid, context);
+                    done = 1;
                     context->state = HFP_W4_RETRIEVE_INDICATORS_STATUS;
                     break;
                 case HFP_W4_RETRIEVE_INDICATORS_STATUS:
                     if (context->retrieve_ag_indicators_status == 0) break;
                     hfp_ag_retrieve_indicators_status_cmd(context->rfcomm_cid);
+                    done = 1;
                     context->state = HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE;
                     break;
                 default:
@@ -414,7 +423,8 @@ static void hfp_ag_run_for_context_service_level_connection(hfp_connection_t * c
         case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
             switch(context->state){
                 case HFP_W4_ENABLE_INDICATORS_STATUS_UPDATE:
-                    hfp_ag_toggle_indicator_status_update_cmd(context->rfcomm_cid, 1);
+                    hfp_ag_set_indicator_status_update_cmd(context->rfcomm_cid, 1);
+                    done = 1;
                     if (has_call_waiting_and_3way_calling_feature(context)){
                         context->state = HFP_W4_RETRIEVE_CAN_HOLD_CALL;
                         break;
@@ -426,9 +436,6 @@ static void hfp_ag_run_for_context_service_level_connection(hfp_connection_t * c
                     context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
                     hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
                     break;
-                case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
-                    // TODO 
-                    break;
                 default:
                     break;
             }
@@ -437,6 +444,7 @@ static void hfp_ag_run_for_context_service_level_connection(hfp_connection_t * c
             switch(context->state){
                 case HFP_W4_RETRIEVE_CAN_HOLD_CALL:
                     hfp_ag_retrieve_can_hold_call_cmd(context->rfcomm_cid);
+                    done = 1;
                     if (has_hf_indicators_feature(context)){
                         context->state = HFP_W4_LIST_GENERIC_STATUS_INDICATORS;
                         break;
@@ -453,18 +461,21 @@ static void hfp_ag_run_for_context_service_level_connection(hfp_connection_t * c
                 case HFP_W4_LIST_GENERIC_STATUS_INDICATORS:
                     if (context->list_generic_status_indicators == 0) break;
                     hfp_ag_list_supported_generic_status_indicators_cmd(context->rfcomm_cid);
+                    done = 1;
                     context->state = HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS;
                     context->list_generic_status_indicators = 0;
                     break;
                 case HFP_W4_RETRIEVE_GENERIC_STATUS_INDICATORS:
                     if (context->retrieve_generic_status_indicators == 0) break;
                     hfp_ag_retrieve_supported_generic_status_indicators_cmd(context->rfcomm_cid);
+                    done = 1;
                     context->state = HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS; 
                     context->retrieve_generic_status_indicators = 0;
                     break;
                 case HFP_W4_RETRIEVE_INITITAL_STATE_GENERIC_STATUS_INDICATORS:
                     if (context->retrieve_generic_status_indicators_state == 0) break;
                     hfp_ag_retrieve_initital_supported_generic_status_indicators_cmd(context->rfcomm_cid);
+                    done = 1;
                     context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
                     context->retrieve_generic_status_indicators_state = 0;
                     hfp_emit_event(hfp_callback, HFP_SUBEVENT_SERVICE_LEVEL_CONNECTION_ESTABLISHED, 0);
@@ -473,172 +484,229 @@ static void hfp_ag_run_for_context_service_level_connection(hfp_connection_t * c
                     break;
             }
             break;
+
+        default:
+            break;
+    }
+    return done;
+}
+
+static int hfp_ag_run_for_context_service_level_connection_queries(hfp_connection_t * context){
+    if (context->state != HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return 0;
+    int done = 0;
+    printf("    SLC queries: ");
+    
+    switch(context->command){
+        case HFP_CMD_AVAILABLE_CODECS:
+            context->suggested_codec = hfp_ag_suggest_codec(context);
+            printf("received BAC == new HF codecs, suggested codec %d\n", context->suggested_codec);
+            hfp_ag_ok(context->rfcomm_cid);
+            done = 1;
+            break;
+
         case HFP_CMD_QUERY_OPERATOR_SELECTION:
-            if (context->state != HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) break;
             if (context->operator_name_format == 1){
                 if (context->network_operator.format != 0){
                     hfp_ag_error(context->rfcomm_cid);
+                    done = 1;
                     break;
                 }
                 hfp_ag_ok(context->rfcomm_cid);
+                done = 1;
                 context->operator_name_format = 0;    
                 break;
             }
             if (context->operator_name == 1){
                 hfp_ag_report_network_operator_name_cmd(context->rfcomm_cid, context->network_operator);
                 context->operator_name = 0;
+                done = 1;
                 break;
             }
             break;
-        case HFP_CMD_NONE:
-            switch(context->state){
-                case HFP_W2_DISCONNECT_RFCOMM:
-                    // printf("rfcomm_disconnect_internal cid 0x%02x\n", context->rfcomm_cid);
-                    context->state = HFP_W4_RFCOMM_DISCONNECTED;
-                    rfcomm_disconnect_internal(context->rfcomm_cid);
-                    break;
-                default:
-                    printf("Unhandled command, send default ERROR\n");
-                    hfp_ag_error(context->rfcomm_cid);
-                    break;
+        case HFP_CMD_ENABLE_INDIVIDUAL_AG_INDICATOR_STATUS_UPDATE:{
+                int i;
+                for (i = 0; i < context->ag_indicators_nr; i++){
+                    if (context->ag_indicators[i].enabled == 0) continue;
+                    if (context->ag_indicators[i].status_changed == 0) continue;
+                    hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, context->ag_indicators[i]);
+                    done = 1;
+                    context->ag_indicators[i].status_changed = 0;
+                    return done;
+                }
+                break;
             }
+        case HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP:
+            if (context->hf_trigger_codec_connection_setup){ // received BCC
+                printf(" received BCC \n");
+                context->hf_trigger_codec_connection_setup = 0;
+                context->ag_trigger_codec_connection_setup = 1;
+                context->state = HFP_SLE_W2_EXCHANGE_COMMON_CODEC;
+                hfp_ag_ok(context->rfcomm_cid);
+                done = 1;
+                return done;
+            }
+            
+            if (context->ag_trigger_codec_connection_setup){ // received BCS
+                printf(" send BCS \n");
+                context->ag_trigger_codec_connection_setup = 0;
+                context->state = HFP_SLE_W4_EXCHANGE_COMMON_CODEC;
+                context->suggested_codec = hfp_ag_suggest_codec(context);
+                hfp_ag_cmd_suggest_codec(context->rfcomm_cid, context->suggested_codec);
+                done = 1;
+                return done;
+            }
+            break;
+        case HFP_CMD_ENABLE_EXTENDED_AUDIO_GATEWAY_ERROR:
+            if (context->extended_audio_gateway_error){
+                hfp_ag_report_extended_audio_gateway_error(context->rfcomm_cid, context->extended_audio_gateway_error);
+                context->extended_audio_gateway_error = 0;
+                done = 1;
+                break;
+            }
+        case HFP_CMD_ENABLE_INDICATOR_STATUS_UPDATE:
+            printf("TODO\n");
             break;
         default:
-            printf("default: hfp_ag_run_for_context_service_level_connection \n");
             break;
     }
+    return done;
 }
 
-static void hfp_ag_run_for_context_service_level_connection_queries(hfp_connection_t * context){
-    if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return;
-    if (context->enable_status_update_for_ag_indicators){
-        int i;
-        for (i = 0; i < context->ag_indicators_nr; i++){
-            if (context->ag_indicators[i].enabled == 0) continue;
-            if (context->ag_indicators[i].status_changed == 0) continue;
-            hfp_ag_transfer_ag_indicators_status_cmd(context->rfcomm_cid, context->ag_indicators[i]);
-            context->ag_indicators[i].status_changed = 0;
-            return;
-        }
-    }
 
-    if (context->enable_extended_audio_gateway_error_report){
-        if (context->extended_audio_gateway_error){
-            hfp_ag_report_extended_audio_gateway_error(context->rfcomm_cid, context->extended_audio_gateway_error);
-            context->extended_audio_gateway_error = 0;
-            return;
-        }
-    }
-}
+static int hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context){
+    if (context->state <= HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED ||
+        context->state > HFP_CODECS_CONNECTION_ESTABLISHED) return 0;
 
-static void hfp_ag_run_for_context_codecs_connection(hfp_connection_t * context){
-    if (context->state < HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED) return;
+    int done = 0;
+    printf(" AG run for context_codecs_connection: ");
     switch (context->state){
-        case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
-            if (context->notify_ag_on_new_codecs){
-                context->notify_ag_on_new_codecs = 0;
-                hfp_ag_ok(context->rfcomm_cid);
-                if (!context->negotiated_codec) return;
-                if (hfp_ag_suggest_codec(context) == context->negotiated_codec) return;
-                context->suggested_codec = hfp_ag_suggest_codec(context);
-                context->trigger_codec_connection_setup = 1;
-                context->state = HFP_SLE_W2_EXCHANGE_COMMON_CODEC;
-                return;
-            }
         case HFP_SLE_W2_EXCHANGE_COMMON_CODEC:
-            if (context->notify_ag_on_new_codecs){
-                context->notify_ag_on_new_codecs = 0;
-                hfp_ag_ok(context->rfcomm_cid);
-                if (!context->negotiated_codec) return;
-                if (hfp_ag_suggest_codec(context) == context->negotiated_codec) return;
-                context->suggested_codec = hfp_ag_suggest_codec(context);
-                context->trigger_codec_connection_setup = 1;
-                context->state = HFP_SLE_W2_EXCHANGE_COMMON_CODEC;
-                return;
-            }
-
-            if (context->trigger_codec_connection_setup){
-                context->trigger_codec_connection_setup = 0;
-                hfp_ag_cmd_suggest_codec(context->rfcomm_cid, context->suggested_codec);
+            if (context->ag_trigger_codec_connection_setup){ // received BCS
+                printf(" send BCS \n");
+                context->ag_trigger_codec_connection_setup = 0;
                 context->state = HFP_SLE_W4_EXCHANGE_COMMON_CODEC;
+                context->suggested_codec = hfp_ag_suggest_codec(context);
+                hfp_ag_cmd_suggest_codec(context->rfcomm_cid, context->suggested_codec);
+                done = 1;
+                break;
             }
             break;
         case HFP_SLE_W4_EXCHANGE_COMMON_CODEC:
-            if (context->codec_confirmed){
-                // TODO check if they are equal?
-                if (context->codec_confirmed == context->suggested_codec){
+            switch(context->command){
+                case HFP_CMD_AVAILABLE_CODECS:
+                    if (context->notify_ag_on_new_codecs){ // received BAC
+                        printf(" received BAC\n");
+                        context->notify_ag_on_new_codecs = 0;
+                        if (context->suggested_codec != hfp_ag_suggest_codec(context)){
+                            context->suggested_codec = hfp_ag_suggest_codec(context);
+                            context->state = HFP_SLE_W2_EXCHANGE_COMMON_CODEC;
+                            context->ag_trigger_codec_connection_setup = 1;
+                        }
+                        hfp_ag_ok(context->rfcomm_cid);
+                        done = 1;
+                        break;
+                    }
+                    break;
+                case HFP_CMD_HF_CONFIRMED_CODEC:
+                    printf(" received AT+BCS\n");
+                    if (context->codec_confirmed != context->suggested_codec){
+                        context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
+                        hfp_ag_error(context->rfcomm_cid);
+                        done = 1;
+                        break;
+                    } 
                     context->negotiated_codec = context->codec_confirmed;
-                    hfp_ag_ok(context->rfcomm_cid);
                     context->state = HFP_CODECS_CONNECTION_ESTABLISHED;
-                    return;
-                } else {
-                    hfp_ag_error(context->rfcomm_cid);
-                    context->state = HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED;
-                }
-                context->codec_confirmed = 0;
-                context->suggested_codec = 0;
-                break;
+                    hfp_emit_event(hfp_callback, HFP_SUBEVENT_CODECS_CONNECTION_COMPLETE, 0);
+                    hfp_ag_ok(context->rfcomm_cid);
+                    done = 1;
+                    break; 
+                default:
+                    break;
             }
-        default:
             break;
-    }
+            
+        case HFP_CODECS_CONNECTION_ESTABLISHED:
+            switch(context->command){
+                case HFP_CMD_AVAILABLE_CODECS:
 
-    switch(context->command){
-        // START codec setup
-        case HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP:
-            switch (context->state){
-                case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
-                    // hfp_ag_ok(context->rfcomm_cid);
-                    context->trigger_codec_connection_setup = 1;
-                    context->suggested_codec = hfp_ag_suggest_codec(context);
-                    hfp_ag_cmd_suggest_codec(context->rfcomm_cid, context->negotiated_codec);
-                    context->state = HFP_SLE_W4_EXCHANGE_COMMON_CODEC;
+                    if (context->notify_ag_on_new_codecs){ // received BAC
+                        context->notify_ag_on_new_codecs = 0;
+                        if (context->suggested_codec != hfp_ag_suggest_codec(context)){
+                            context->suggested_codec = hfp_ag_suggest_codec(context);
+                            context->state = HFP_SLE_W4_EXCHANGE_COMMON_CODEC;
+                        }
+                        hfp_ag_ok(context->rfcomm_cid);
+                        done = 1;
+                        break;
+                    }
                     break;
-                default:
-                    hfp_ag_error(context->rfcomm_cid);
-                    break;
-            } 
-            break;
-        case HFP_CMD_AVAILABLE_CODECS:
-            switch(context->state){
-                case HFP_SERVICE_LEVEL_CONNECTION_ESTABLISHED:
-                case HFP_SLE_W2_EXCHANGE_COMMON_CODEC:
-                case HFP_SLE_W4_EXCHANGE_COMMON_CODEC:
-                    context->notify_ag_on_new_codecs = 1;
+                case HFP_CMD_AG_SUGGESTED_CODEC:
+                    if (context->ag_trigger_codec_connection_setup){ 
+                        context->ag_trigger_codec_connection_setup = 0;
+                        if (context->negotiated_codec != hfp_ag_suggest_codec(context)){
+                            context->state = HFP_SLE_W4_EXCHANGE_COMMON_CODEC;
+                            context->suggested_codec = hfp_ag_suggest_codec(context);
+                            hfp_ag_cmd_suggest_codec(context->rfcomm_cid, context->suggested_codec);
+                            done = 1;
+                            break;
+                        }
+                    }
                     break;
                 default:
                     break;
             }
-            break;
+
         default:
             break;
     }
+    return done;
 }
 
 
 void hfp_run_for_context(hfp_connection_t *context){
     if (!context) return;
+
     if (!rfcomm_can_send_packet_now(context->rfcomm_cid)) return;
+
     // printf("AG hfp_run_for_context 1 state %d, command %d\n", context->state, context->command);
     if (context->send_ok){
         hfp_ag_ok(context->rfcomm_cid);
         context->send_ok = 0;
+        context->command = HFP_CMD_NONE;
         return;
     }
 
     if (context->send_error){
         hfp_ag_error(context->rfcomm_cid); 
         context->send_error = 0;
+        context->command = HFP_CMD_NONE;
         return;
     }
 
-    hfp_ag_run_for_context_service_level_connection(context);
-    hfp_ag_run_for_context_service_level_connection_queries(context);
-    hfp_ag_run_for_context_codecs_connection(context);
-
+    int done = hfp_ag_run_for_context_service_level_connection(context);
     
-    // done
-    context->command = HFP_CMD_NONE;
+    if (rfcomm_can_send_packet_now(context->rfcomm_cid) && !done){
+        done = hfp_ag_run_for_context_service_level_connection_queries(context);
+        if (rfcomm_can_send_packet_now(context->rfcomm_cid) && !done){
+            done = hfp_ag_run_for_context_codecs_connection(context);
+        }
+    }
+
+
+    if (context->command == HFP_CMD_NONE && !done){
+        switch(context->state){
+            case HFP_W2_DISCONNECT_RFCOMM:
+                context->state = HFP_W4_RFCOMM_DISCONNECTED;
+                rfcomm_disconnect_internal(context->rfcomm_cid);
+                break;
+            default:
+                break;
+        }
+    }
+    if (done){
+        context->command = HFP_CMD_NONE;
+    }
 }
 
 static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
@@ -672,7 +740,6 @@ static void hfp_run(){
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet_type){
         case RFCOMM_DATA_PACKET:
-            printf("\nAG received: %s\n", packet);
             hfp_handle_rfcomm_event(packet_type, channel, packet, size);
             break;
         case HCI_EVENT_PACKET:
@@ -722,7 +789,6 @@ void hfp_ag_establish_service_level_connection(bd_addr_t bd_addr){
 }
 
 void hfp_ag_release_service_level_connection(bd_addr_t bd_addr){
-    printf(" hfp_ag_release_service_level_connection \n");
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     hfp_release_service_level_connection(connection);
     hfp_run_for_context(connection);
@@ -799,7 +865,15 @@ void hfp_ag_negotiate_codecs(bd_addr_t bd_addr){
     hfp_ag_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (!has_codec_negotiation_feature(connection)) return;
-    hfp_negotiate_codecs(connection);
+    if (connection->remote_codecs_nr == 0) return;
+    
+    if (connection->state >= HFP_W2_DISCONNECT_SCO) return;
+    
+    if (connection->state != HFP_SLE_W2_EXCHANGE_COMMON_CODEC &&
+        connection->state != HFP_SLE_W4_EXCHANGE_COMMON_CODEC){
+        connection->ag_trigger_codec_connection_setup = 1;
+    }
+
     hfp_run_for_context(connection);
 }
 
@@ -808,7 +882,14 @@ void hfp_ag_establish_audio_connection(bd_addr_t bd_addr){
     hfp_ag_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (!has_codec_negotiation_feature(connection)) return;
-    hfp_establish_audio_connection(connection);
+    connection->establish_audio_connection = 0;
+    if (connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return;
+    if (connection->state >= HFP_W2_DISCONNECT_SCO) return;
+    
+    connection->establish_audio_connection = 1;
+    if (connection->state < HFP_SLE_W4_EXCHANGE_COMMON_CODEC){
+        connection->ag_trigger_codec_connection_setup = 1;
+    }
     hfp_run_for_context(connection);
 }
 

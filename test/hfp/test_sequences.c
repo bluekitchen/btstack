@@ -82,69 +82,112 @@ const char * slc_cmds_test1[] = {
     "OK"
 };
 
+const char * slc_cmds_test2[] = {
+    "AT+BAC=1,3", 
+    "OK"
+};
+
+const char * slc_cmds_test3[] = {
+    "AT+BAC=1,3", 
+    "OK"
+};
+
+const char * slc_cmds_test4[] = {
+    "AT+BAC=1,3", 
+    "OK"
+};
+
+const char * slc_cmds_test5[] = {
+    "AT+BAC=1,3", 
+    "OK"
+};
+
 hfp_test_item_t slc_cmds_tests[] = {
     TEST_SEQUENCE(slc_cmds_test1)
 };
 /* Codecs Connection (cc) test sequences */
-
 const char * cc_test1[] = {
     "AT+BCC", 
     "OK",
+    "NOP",
     "+BCS:1",
     "AT+BCS=1",
     "OK"
 };
 
 const char * cc_test2[] = {
-    "AT+BCC", 
+    "AT+BAC=1,2", 
     "OK",
+    "AT+BCC",
+    "OK",
+    "NOP",
+    "BCS:1",
+    "AT+BCS=1",
+    "OK"
+};
+
+
+const char * cc_test3[] = {
+    "AT+BAC=1,2", 
+    "OK",
+    "AT+BCC",
+    "OK",
+    "NOP",
     "+BCS:1",
     "AT+BAC=2,3", 
     "OK",
-    "+BCS:2",
-    "AT+BCS=2",
+    "NOP",
+    "+BCS:3",
+    "AT+BCS=3",
+    "OK"
+};
+
+const char * cc_test4[] = {
+    "AT+BCC", 
+    "OK",
+    "NOP",
+    "+BCS:1",
+    "AT+BAC=2,3", 
+    "OK",
+    "NOP",
+    "+BCS:3",
+    "AT+BCS=3",
     "OK"
 };
 
 hfp_test_item_t cc_tests[] = {
     TEST_SEQUENCE(cc_test1),
-    TEST_SEQUENCE(cc_test2)
+    TEST_SEQUENCE(cc_test2),
+    TEST_SEQUENCE(cc_test3),
+    TEST_SEQUENCE(cc_test4)
 };
 
 
 
 //////////////
 
-int test_item_size = sizeof(hfp_test_item_t);
+static int test_item_size = sizeof(hfp_test_item_t);
 
 // SLC
-hfp_test_item_t * hfp_slc_tests(){
-    return slc_tests;
-}
+hfp_test_item_t * hfp_slc_tests(){ return slc_tests;}
+int slc_tests_size(){ return sizeof(slc_tests)/test_item_size;}
 
-int slc_tests_size(){
-    return sizeof(slc_tests)/test_item_size;
-}
+char ** default_slc_setup() { return (char **)slc_test1;}
+int default_slc_setup_size(){ return sizeof(slc_test1)/sizeof(char*);}
 
-char ** default_slc_setup(){
-    return (char **)slc_test1;
-}
+// SLC commands
+hfp_test_item_t * hfp_slc_cmds_tests(){ return slc_cmds_tests;}
+int slc_cmds_tests_size(){ return sizeof(slc_cmds_tests)/test_item_size;}
 
-int default_slc_setup_size(){
-    return sizeof(slc_test1)/sizeof(char*);
-}
+char ** default_slc_cmds_setup() { return (char **)slc_cmds_test1;}
+int default_slc_cmds_setup_size(){ return sizeof(slc_cmds_test1)/sizeof(char*);}
 
 // CC
-hfp_test_item_t * hfp_cc_tests(){
-    return cc_tests;
+hfp_test_item_t * hfp_cc_tests(){ return cc_tests;}
+int cc_tests_size(){ return sizeof(cc_tests) /test_item_size;
 }
-int cc_tests_size(){
-    return sizeof(cc_tests) /test_item_size;
-}
-char ** default_cc_setup(){
-    return (char **)cc_test1;
-}
-int default_cc_setup_size(){
-    return sizeof(cc_test1)/sizeof(char*);  
-}
+char ** default_cc_setup() { return (char **)cc_test1;}
+int default_cc_setup_size(){ return sizeof(cc_test1)/sizeof(char*);}
+
+
  

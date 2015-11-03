@@ -230,7 +230,7 @@ TEST(HFPParser, HFP_AG_TRIGGER_CODEC_CONNECTION_SETUP){
     }
 
     CHECK_EQUAL(context.command, HFP_CMD_TRIGGER_CODEC_CONNECTION_SETUP);
-    CHECK_EQUAL(context.trigger_codec_connection_setup, 1);
+    CHECK_EQUAL(context.ag_trigger_codec_connection_setup, 1);
 }
 
 TEST(HFPParser, HFP_AG_CONFIRM_COMMON_CODEC){

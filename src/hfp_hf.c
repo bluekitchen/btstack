@@ -456,7 +456,7 @@ static void hfp_hf_run_for_context_codecs_connection(hfp_connection_t * context)
                 break;
             }
 
-            if (context->trigger_codec_connection_setup){
+            if (context->hf_trigger_codec_connection_setup){
                 context->state = HFP_SLE_W2_EXCHANGE_COMMON_CODEC;
                 context->wait_ok = 1;
                 hfp_hf_cmd_trigger_codec_connection_setup(context->rfcomm_cid);
@@ -509,7 +509,7 @@ static void hfp_hf_run_for_context_codecs_connection(hfp_connection_t * context)
                 break;
             }
 
-            if (context->trigger_codec_connection_setup){
+            if (context->hf_trigger_codec_connection_setup){
                 context->state = HFP_SLE_W2_EXCHANGE_COMMON_CODEC;
                 context->wait_ok = 1;
                 hfp_hf_cmd_trigger_codec_connection_setup(context->rfcomm_cid);
@@ -534,8 +534,8 @@ static void hfp_hf_handle_ok_codecs_connection(hfp_connection_t * context){
                 break;
             }
         case HFP_SLE_W2_EXCHANGE_COMMON_CODEC:
-            if (context->trigger_codec_connection_setup){
-                context->trigger_codec_connection_setup = 0;
+            if (context->hf_trigger_codec_connection_setup){
+                context->hf_trigger_codec_connection_setup = 0;
                 context->state = HFP_SLE_W4_EXCHANGE_COMMON_CODEC;
                 break;
             }
@@ -606,7 +606,7 @@ static void hfp_handle_rfcomm_event(uint8_t packet_type, uint16_t channel, uint8
 
     packet[size] = 0;
     int pos, i;
-    printf("AG response: %s\n", packet+2);
+    printf("\nHF received: %s", packet+2);
     for (pos = 0; pos < size ; pos++){
         hfp_parse(context, packet[pos]);
         
@@ -649,7 +649,6 @@ static void hfp_run(){
 static void packet_handler(void * connection, uint8_t packet_type, uint16_t channel, uint8_t *packet, uint16_t size){
     switch (packet_type){
         case RFCOMM_DATA_PACKET:
-            printf("\nHF received: %s\n", packet);
             hfp_handle_rfcomm_event(packet_type, channel, packet, size);
             break;
         case HCI_EVENT_PACKET:
@@ -761,7 +760,14 @@ void hfp_hf_negotiate_codecs(bd_addr_t bd_addr){
     hfp_hf_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (!has_codec_negotiation_feature(connection)) return;
-    hfp_negotiate_codecs(connection);
+    if (connection->remote_codecs_nr == 0) return;
+    
+    if (connection->state >= HFP_W2_DISCONNECT_SCO) return;
+    
+    if (connection->state != HFP_SLE_W2_EXCHANGE_COMMON_CODEC &&
+        connection->state != HFP_SLE_W4_EXCHANGE_COMMON_CODEC){
+        connection->hf_trigger_codec_connection_setup = 1;
+    }
     hfp_run_for_context(connection);
 }
 
@@ -770,7 +776,14 @@ void hfp_hf_establish_audio_connection(bd_addr_t bd_addr){
     hfp_hf_establish_service_level_connection(bd_addr);
     hfp_connection_t * connection = get_hfp_connection_context_for_bd_addr(bd_addr);
     if (!has_codec_negotiation_feature(connection)) return;
-    hfp_establish_audio_connection(connection);
+        connection->establish_audio_connection = 0;
+    if (connection->state == HFP_AUDIO_CONNECTION_ESTABLISHED) return;
+    if (connection->state >= HFP_W2_DISCONNECT_SCO) return;
+    
+    connection->establish_audio_connection = 1;
+    if (connection->state < HFP_SLE_W4_EXCHANGE_COMMON_CODEC){
+        connection->hf_trigger_codec_connection_setup = 1;
+    }
     hfp_run_for_context(connection);
 }
 
