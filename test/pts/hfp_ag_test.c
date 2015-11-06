@@ -89,7 +89,7 @@ static hfp_ag_indicator_t ag_indicators[] = {
 };
 
 static int call_hold_services_nr = 5;
-static char* call_hold_services[] = {"1", "1x", "2", "2x", "3"};
+static const char* call_hold_services[] = {"1", "1x", "2", "2x", "3"};
 
 static int hf_indicators_nr = 2;
 static hfp_generic_status_indicator_t hf_indicators[] = {
@@ -168,7 +168,7 @@ static int stdin_process(struct data_source *ds){
 }
 
 
-void packet_handler(uint8_t * event, uint16_t event_size){
+static void packet_handler(uint8_t * event, uint16_t event_size){
     if (event[0] != HCI_EVENT_HFP_META) return;
     if (event[3]){
         printf("ERROR, status: %u\n", event[3]);
@@ -189,7 +189,7 @@ void packet_handler(uint8_t * event, uint16_t event_size){
     }
 }
 
-
+int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
     // init L2CAP
     l2cap_init();

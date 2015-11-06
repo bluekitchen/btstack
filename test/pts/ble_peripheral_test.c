@@ -225,16 +225,16 @@ static void att_write_queue_init(void){
     }
 }
 
-static int att_write_queue_for_handle(uint16_t handle){
+static int att_write_queue_for_handle(uint16_t aHandle){
     int i;
     for (i=0;i<ATT_NUM_WRITE_QUEUES;i++){
-        if (att_write_queues[i].handle == handle){
+        if (att_write_queues[i].handle == aHandle){
             return i;
         }
     }
     for (i=0;i<ATT_NUM_WRITE_QUEUES;i++){
         if (att_write_queues[i].handle == 0){
-            att_write_queues[i].handle = handle;
+            att_write_queues[i].handle = aHandle;
             memset(att_write_queues[i].value, 0, ATT_VALUE_MAX_LEN);
             att_write_queues[i].len = 0;
             return i;
@@ -251,10 +251,10 @@ static void att_attributes_init(void){
 }
 
 // handle == 0 finds free attribute
-static int att_attribute_for_handle(uint16_t handle){
+static int att_attribute_for_handle(uint16_t aHandle){
     int i;
     for (i=0;i<ATT_NUM_ATTRIBUTES;i++){
-        if (att_attributes[i].handle == handle) {
+        if (att_attributes[i].handle == aHandle) {
             return i;
         }
     }
@@ -455,13 +455,13 @@ static int att_write_callback(uint16_t con_handle, uint16_t attribute_handle, ui
             break;
         case ATT_TRANSACTION_MODE_EXECUTE:
             for (writes_index=0 ; writes_index<ATT_NUM_WRITE_QUEUES ; writes_index++){
-                uint16_t handle = att_write_queues[writes_index].handle;
-                if (handle == 0) continue;
-                attributes_index = att_attribute_for_handle(handle);
+                uint16_t aHandle = att_write_queues[writes_index].handle;
+                if (aHandle == 0) continue;
+                attributes_index = att_attribute_for_handle(aHandle);
                 if (attributes_index < 0){
                     attributes_index = att_attribute_for_handle(0);
                     if (attributes_index < 0) continue;
-                    att_attributes[attributes_index].handle = handle;
+                    att_attributes[attributes_index].handle = aHandle;
                 }
                 att_attributes[attributes_index].len = att_write_queues[writes_index].len;
                 memcpy(att_attributes[attributes_index].value, att_write_queues[writes_index].value, att_write_queues[writes_index].len);
@@ -707,7 +707,7 @@ void update_advertisements(void){
     gap_run();
 }
 
-void update_auth_req(void){
+static void update_auth_req(void){
     uint8_t auth_req = 0;
     if (sm_mitm_protection){
         auth_req |= SM_AUTHREQ_MITM_PROTECTION;
@@ -718,7 +718,7 @@ void update_auth_req(void){
     sm_set_authentication_requirements(auth_req);
 }
 
-int  stdin_process(struct data_source *ds){
+static int stdin_process(struct data_source *ds){
     char buffer;
     read(ds->fd, &buffer, 1);
 
@@ -956,9 +956,6 @@ static hci_uart_config_t hci_uart_config = {
 };
 #endif
 
-void setup(void){
-
-}
 
 int btstack_main(int argc, const char * argv[]);
 int btstack_main(int argc, const char * argv[]){
