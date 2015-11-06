@@ -402,8 +402,6 @@ void hfp_release_audio_connection(hfp_connection_t * context);
 const char * hfp_hf_feature(int index);
 const char * hfp_ag_feature(int index);
 
-int send_str_over_rfcomm(uint16_t cid, char * command);
-
 #if defined __cplusplus
 }
 #endif
