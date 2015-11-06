@@ -126,7 +126,7 @@ void l2cap_register_packet_handler(void (*handler)(void * connection, uint8_t pa
 }
 
 //  notify client/protocol handler
-void l2cap_dispatch(l2cap_channel_t *channel, uint8_t type, uint8_t * data, uint16_t size){
+static void l2cap_dispatch(l2cap_channel_t *channel, uint8_t type, uint8_t * data, uint16_t size){
     if (channel->packet_handler) {
         (* (channel->packet_handler))(type, channel->local_cid, data, size);
     } else {
@@ -179,7 +179,7 @@ void l2cap_emit_connection_request(l2cap_channel_t *channel) {
     l2cap_dispatch(channel, HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-void l2cap_emit_connection_parameter_update_response(uint16_t handle, uint16_t result){
+static void l2cap_emit_connection_parameter_update_response(uint16_t handle, uint16_t result){
     uint8_t event[6];
     event[0] = L2CAP_EVENT_CONNECTION_PARAMETER_UPDATE_RESPONSE;
     event[1] = 4;
@@ -200,7 +200,7 @@ static void l2cap_emit_service_registered(void *connection, uint8_t status, uint
     (*packet_handler)(connection, HCI_EVENT_PACKET, 0, event, sizeof(event));
 }
 
-void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
+static void l2cap_emit_credits(l2cap_channel_t *channel, uint8_t credits) {
     
     log_info("L2CAP_EVENT_CREDITS local_cid 0x%x credits %u", channel->local_cid, credits);
     // track credits
@@ -219,7 +219,7 @@ void l2cap_block_new_credits(uint8_t blocked){
     new_credits_blocked = blocked;
 }
 
-void l2cap_hand_out_credits(void){
+static void l2cap_hand_out_credits(void){
 
     if (new_credits_blocked) return;    // we're told not to. used by daemon
 
@@ -235,7 +235,7 @@ void l2cap_hand_out_credits(void){
     }
 }
 
-l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
+static l2cap_channel_t * l2cap_get_channel_for_local_cid(uint16_t local_cid){
     linked_list_iterator_t it;    
     linked_list_iterator_init(&it, &l2cap_channels);
     while (linked_list_iterator_has_next(&it)){
@@ -330,7 +330,7 @@ static int l2cap_security_level_0_allowed_for_PSM(uint16_t psm){
     return (psm == PSM_SDP) && (!require_security_level2_for_outgoing_sdp);
 }
 
-int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...){
+static int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...){
 
     if (!hci_can_send_acl_packet_now(handle)){
         log_info("l2cap_send_signaling_packet, cannot send");
@@ -349,7 +349,7 @@ int l2cap_send_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMAND
 }
 
 #ifdef HAVE_BLE
-int l2cap_send_le_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...){
+static int l2cap_send_le_signaling_packet(hci_con_handle_t handle, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, ...){
 
     if (!hci_can_send_acl_packet_now(handle)){
         log_info("l2cap_send_signaling_packet, cannot send");
@@ -520,7 +520,7 @@ static inline void channelStateVarClearFlag(l2cap_channel_t *channel, L2CAP_CHAN
 
 // MARK: L2CAP_RUN
 // process outstanding signaling tasks
-void l2cap_run(void){
+static void l2cap_run(void){
     
     // log_info("l2cap_run: entered");
 
@@ -872,7 +872,7 @@ static void l2cap_handle_connection_success_for_addr(bd_addr_t address, hci_con_
     l2cap_run();
 }
 
-void l2cap_event_handler(uint8_t *packet, uint16_t size){
+static void l2cap_event_handler(uint8_t *packet, uint16_t size){
     
     bd_addr_t address;
     hci_con_handle_t handle;
@@ -1133,7 +1133,7 @@ void l2cap_decline_connection_internal(uint16_t local_cid, uint8_t reason){
     l2cap_run();
 }
 
-void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t *command){
+static void l2cap_signaling_handle_configure_request(l2cap_channel_t *channel, uint8_t *command){
 
     channel->remote_sig_id = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
 
@@ -1180,7 +1180,7 @@ static int l2cap_channel_ready_for_open(l2cap_channel_t *channel){
 }
 
 
-void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command){
+static void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command){
 
     uint8_t  code       = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
     uint8_t  identifier = command[L2CAP_SIGNALING_COMMAND_SIGID_OFFSET];
@@ -1310,7 +1310,7 @@ void l2cap_signaling_handler_channel(l2cap_channel_t *channel, uint8_t *command)
 }
 
 
-void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t * command){
+static void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t * command){
     
     // get code, signalind identifier and command len
     uint8_t code   = command[L2CAP_SIGNALING_COMMAND_CODE_OFFSET];
@@ -1372,7 +1372,7 @@ void l2cap_signaling_handler_dispatch( hci_con_handle_t handle, uint8_t * comman
     }
 }
 
-void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
+static void l2cap_acl_handler( uint8_t *packet, uint16_t size ){
         
     // Get Channel ID
     uint16_t channel_id = READ_L2CAP_CHANNEL_ID(packet); 
@@ -1596,10 +1596,11 @@ void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint1
 
 #ifdef HAVE_BLE
 
+
+#if 0
 static inline l2cap_service_t * l2cap_le_get_service(uint16_t psm){
     return l2cap_get_service_internal(&l2cap_le_services, psm);
 }
-
 /**
  * @brief Regster L2CAP LE Credit Based Flow Control Mode service
  * @param
@@ -1651,4 +1652,5 @@ void l2cap_le_unregister_service_internal(void * connection, uint16_t psm) {
     linked_list_remove(&l2cap_le_services, (linked_item_t *) service);
     btstack_memory_l2cap_service_free(service);
 }
+#endif
 #endif

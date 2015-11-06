@@ -97,7 +97,7 @@ static void app_packet_handler (uint8_t packet_type, uint16_t channel, uint8_t *
     }
 }
 
-void ancs_callback(ancs_event_t * event){
+static void ancs_callback(ancs_event_t * event){
     const char * attribute_name;
     switch (event->type){
         case ANCS_CLIENT_CONNECTED:

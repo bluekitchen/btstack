@@ -85,7 +85,7 @@ uint16_t l2cap_next_local_cid(void){
     return source_cid++;
 }
 
-uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_handle_t handle, uint16_t cid, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
+static uint16_t l2cap_create_signaling_internal(uint8_t * acl_buffer, hci_con_handle_t handle, uint16_t cid, L2CAP_SIGNALING_COMMANDS cmd, uint8_t identifier, va_list argptr){
     
     int pb = hci_non_flushable_packet_boundary_flag_supported() ? 0x00 : 0x02;
 

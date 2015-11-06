@@ -176,6 +176,8 @@ void le_device_db_local_counter_set(int index, uint32_t counter);
  */
 void le_device_db_remove(int index);
 
+void le_device_db_dump(void);
+
 /* API_END */
 
 #if defined __cplusplus

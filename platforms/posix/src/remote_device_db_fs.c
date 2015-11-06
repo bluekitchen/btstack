@@ -51,13 +51,6 @@
 
 static char keypath[sizeof(LINK_KEY_PATH) + sizeof(LINK_KEY_PREFIX) + 17 + sizeof(LINK_KEY_SUFIX) + 1];
 
-static char char_for_nibble(int nibble){
-    if (nibble < 10) return '0' + nibble;
-    nibble -= 10;
-    if (nibble < 6) return 'A' + nibble;
-    return '?';
-}
-
 static char bd_addr_to_dash_str_buffer[6*3];  // 12-45-78-01-34-67\0
 static char * bd_addr_to_dash_str(bd_addr_t addr){
     char * p = bd_addr_to_dash_str_buffer;

@@ -107,7 +107,7 @@ int de_state_size(uint8_t eventByte, de_state_t *de_state){
     return 1;
 }
 
-void dummy_notify(sdp_query_event_t* event){}
+static void dummy_notify(sdp_query_event_t* event){}
 
 void sdp_parser_register_callback(void (*sdp_callback)(sdp_query_event_t* event)){
     sdp_query_callback = dummy_notify;
@@ -116,7 +116,7 @@ void sdp_parser_register_callback(void (*sdp_callback)(sdp_query_event_t* event)
     } 
 }
 
-void parse(uint8_t eventByte){
+static void parse(uint8_t eventByte){
     // count all bytes
     list_offset++;
     record_offset++;

@@ -289,9 +289,6 @@ void des_iterator_next(des_iterator_t * it){
     it->pos += element_len;
 }
 
-void sdp_add_attribute(uint8_t *seq, uint16_t attributeID, uint8_t attributeValue){
-}
-
 // MARK: DataElementSequence traversal
 typedef int (*de_traversal_callback_t)(uint8_t * element, de_type_t type, de_size_t size, void *context);
 static void de_traverse_sequence(uint8_t * element, de_traversal_callback_t handler, void *context){
@@ -359,6 +356,7 @@ static int sdp_traversal_attributeID_search(uint8_t * element, de_type_t type, d
     }
     return 0;
 }
+
 int sdp_attribute_list_constains_id(uint8_t *attributeIDList, uint16_t attributeID){
     struct sdp_context_attributeID_search attributeID_search;
     attributeID_search.result = 0;
@@ -607,6 +605,7 @@ struct sdp_context_match_pattern {
     uint8_t * record;
     int result;
 };
+
 int sdp_traversal_match_pattern(uint8_t * element, de_type_t attributeType, de_size_t size, void *my_context){
     struct sdp_context_match_pattern * context = (struct sdp_context_match_pattern *) my_context;
     uint8_t normalizedUUID[16];

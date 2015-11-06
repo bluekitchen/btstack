@@ -84,7 +84,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     }
 }
 
-void store_found_service(uint8_t * name, uint8_t port){
+static void store_found_service(uint8_t * name, uint8_t port){
     printf("APP: Service name: '%s', RFCOMM port %u\n", name, port);
     channel_nr[service_index] = port;
     service_name[service_index] = (char*) malloc(SDP_SERVICE_NAME_LEN+1);
@@ -93,7 +93,7 @@ void store_found_service(uint8_t * name, uint8_t port){
     service_index++;
 }
 
-void report_found_services(void){
+static void report_found_services(void){
     printf("\n *** Client query response done. ");
     if (service_index == 0){
         printf("No service found.\n\n");
@@ -107,7 +107,7 @@ void report_found_services(void){
     printf(" ***\n\n");
 }
 
-void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
+static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
     sdp_query_rfcomm_service_event_t * ve;
     sdp_query_complete_event_t * ce;
             
