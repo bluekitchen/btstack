@@ -106,7 +106,7 @@ static libusb_device_handle * handle;
 #define ASYNC_BUFFERS 2
 #define AYSNC_POLLING_INTERVAL_MS 1
 #define NUM_ISO_PACKETS 4
-#define SCO_PACKET_SIZE 64
+#define SCO_PACKET_SIZE 49
 
 static struct libusb_transfer *command_out_transfer;
 static struct libusb_transfer *acl_out_transfer;
@@ -188,7 +188,7 @@ static void async_callback(struct libusb_transfer *transfer)
             log_error("Error re-submitting transfer %d", r);
         }
     } else {
-        log_info("async_callback resubmit transfer, endpoint %x, status %x, length %u", transfer->endpoint, transfer->status, transfer->actual_length);
+        log_info("async_callback. not data -> resubmit transfer, endpoint %x, status %x, length %u", transfer->endpoint, transfer->status, transfer->actual_length);
         // No usable data, just resubmit packet
         r = libusb_submit_transfer(transfer);
         if (r) {
@@ -247,6 +247,7 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
         packet_handler(HCI_ACL_DATA_PACKET, transfer-> buffer, transfer->actual_length);
         resubmit = 1;
     } else if (transfer->endpoint == sco_in_addr) {
+        // log_info("handle_completed_transfer for SCO IN! num packets %u", transfer->num_iso_packets);
         int i;
         for (i = 0; i < transfer->num_iso_packets; i++) {
             struct libusb_iso_packet_descriptor *pack = &transfer->iso_packet_desc[i];
@@ -254,7 +255,11 @@ static void handle_completed_transfer(struct libusb_transfer *transfer){
                 log_error("Error: pack %u status %d\n", i, pack->status);
                 continue;
             }
-            handle_isochronous_data(libusb_get_iso_packet_buffer_simple(transfer, i), pack->actual_length);
+            if (!pack->actual_length) continue;
+            uint8_t * data = libusb_get_iso_packet_buffer_simple(transfer, i);
+            // printf_hexdump(data, pack->actual_length);
+            // log_debug("handle_isochronous_data,size %u/%u", pack->length, pack->actual_length);
+            handle_isochronous_data(data, pack->actual_length);
         }
         resubmit = 1;
     } else if (transfer->endpoint == 0){
