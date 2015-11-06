@@ -376,7 +376,7 @@ static void hsp_run(void){
         case HSP_W2_CONNECT_SCO:
             if (!hci_can_send_command_packet_now()) break;
             hsp_state = HSP_W4_SCO_CONNECTED;
-            hci_send_cmd(&hci_setup_synchronous_connection, rfcomm_handle, 8000, 8000, 0xFFFF, 0x0060, 0xFF, 0x003F);
+            hci_send_cmd(&hci_setup_synchronous_connection, rfcomm_handle, 8000, 8000, 0xFFFF, 0x0043, 0xFF, 0x003F);
             break;
         
         case HSP_W2_DISCONNECT_SCO:
