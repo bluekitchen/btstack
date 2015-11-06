@@ -355,7 +355,7 @@ uint8_t hci_number_free_acl_slots_for_handle(hci_con_handle_t con_handle){
     }
 }
 
-int hci_number_free_sco_slots_for_handle(hci_con_handle_t handle){
+static int hci_number_free_sco_slots_for_handle(hci_con_handle_t handle){
     int num_sco_packets_sent = 0;
     linked_item_t *it;
     for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
@@ -432,7 +432,7 @@ void hci_release_packet_buffer(void){
 }
 
 // assumption: synchronous implementations don't provide can_send_packet_now as they don't keep the buffer after the call
-int hci_transport_synchronous(void){
+static int hci_transport_synchronous(void){
     return hci_stack->hci_transport->can_send_packet_now == NULL;
 }
 
@@ -762,17 +762,17 @@ int hci_non_flushable_packet_boundary_flag_supported(void){
     return (hci_stack->local_supported_features[6] & (1 << 6)) != 0;
 }
 
-int hci_ssp_supported(void){
+static int hci_ssp_supported(void){
     // No. 51, byte 6, bit 3
     return (hci_stack->local_supported_features[6] & (1 << 3)) != 0;
 }
 
-int hci_classic_supported(void){
+static int hci_classic_supported(void){
     // No. 37, byte 4, bit 5, = No BR/EDR Support
     return (hci_stack->local_supported_features[4] & (1 << 5)) == 0;
 }
 
-int hci_le_supported(void){
+static int hci_le_supported(void){
 #ifdef HAVE_BLE
     // No. 37, byte 4, bit 6 = LE Supported (Controller)
     return (hci_stack->local_supported_features[4] & (1 << 6)) != 0;
@@ -792,7 +792,7 @@ void hci_le_advertisement_address(uint8_t * addr_type, bd_addr_t  addr){
 }
 
 #ifdef HAVE_BLE
-void le_handle_advertisement_report(uint8_t *packet, int size){
+static void le_handle_advertisement_report(uint8_t *packet, int size){
     int offset = 3;
     int num_reports = packet[offset];
     offset += 1;
@@ -2729,7 +2729,7 @@ void hci_emit_connection_complete(hci_connection_t *conn, uint8_t status){
     hci_stack->packet_handler(HCI_EVENT_PACKET, event, sizeof(event));
 }
 
-void hci_emit_le_connection_complete(uint8_t address_type, bd_addr_t address, uint16_t conn_handle, uint8_t status){
+static void hci_emit_le_connection_complete(uint8_t address_type, bd_addr_t address, uint16_t conn_handle, uint8_t status){
     uint8_t event[21];
     event[0] = HCI_EVENT_LE_META;
     event[1] = sizeof(event) - 2;

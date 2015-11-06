@@ -311,7 +311,7 @@ static const uint8_t crc8table[256] = {    /* reversed, 8-bit, poly=0x07 */
 #define CRC8_INIT  0xFF          // Initial FCS value 
 #define CRC8_OK    0xCF          // Good final FCS value 
 /*-----------------------------------------------------------------------------------*/
-uint8_t crc8(uint8_t *data, uint16_t len)
+static uint8_t crc8(uint8_t *data, uint16_t len)
 {
     uint16_t count;
     uint8_t crc = CRC8_INIT;

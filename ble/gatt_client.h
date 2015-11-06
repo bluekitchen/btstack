@@ -367,7 +367,7 @@ le_command_status_t gatt_client_cancel_write(uint16_t gatt_client_id, uint16_t c
 /* API_END */
 
 // only used for testing
-void gatt_client_pts_suppress_mtu_exchange();
+void gatt_client_pts_suppress_mtu_exchange(void);
 
 #if defined __cplusplus
 }

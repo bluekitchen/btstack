@@ -107,7 +107,7 @@ void sdp_query_rfcomm_register_callback(void (*sdp_callback)(sdp_query_event_t* 
     sdp_app_context = context;
 }
 
-void handleProtocolDescriptorListData(uint32_t attribute_value_length, uint32_t data_offset, uint8_t data){
+static void handleProtocolDescriptorListData(uint32_t attribute_value_length, uint32_t data_offset, uint8_t data){
     // init state on first byte
     if (data_offset == 0){
         pdl_state = GET_PROTOCOL_LIST_LENGTH;
@@ -206,7 +206,7 @@ void handleProtocolDescriptorListData(uint32_t attribute_value_length, uint32_t 
     }
 }
 
-void handleServiceNameData(uint32_t attribute_value_length, uint32_t data_offset, uint8_t data){
+static void handleServiceNameData(uint32_t attribute_value_length, uint32_t data_offset, uint8_t data){
 
     // Get Header Len
     if (data_offset == 0){
@@ -289,7 +289,7 @@ static void handle_sdp_parser_event(sdp_query_event_t * event){
     // insert higher level code HERE
 }
 
-void sdp_query_rfcomm_init(void){
+static void sdp_query_rfcomm_init(void){
     // init
     de_state_init(&de_header_state);
     de_state_init(&sn_de_header_state);

@@ -89,7 +89,7 @@ static uint32_t  spp_service_buffer[150/4];  // implicit alignment to 4-byte mem
  */
 
 /* LISTING_START(SPPSetup): SPP service setup */ 
-void spp_service_setup(void){
+static void spp_service_setup(void){
     l2cap_init();
     l2cap_register_packet_handler(packet_handler);
 

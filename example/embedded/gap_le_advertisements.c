@@ -127,7 +127,7 @@ static char * flags[] = {
  */
 
 /* LISTING_START(GAPLEAdvDataParsing): Parsing advertising data */
-void dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
+static void dump_advertisement_data(uint8_t * adv_data, uint8_t adv_size){
     ad_context_t context;
     for (ad_iterator_init(&context, adv_size, adv_data) ; ad_iterator_has_more(&context) ; ad_iterator_next(&context)){
         uint8_t data_type = ad_iterator_get_data_type(&context);

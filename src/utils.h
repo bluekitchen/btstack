@@ -142,6 +142,8 @@ void swap56(const uint8_t  src[7],  uint8_t dst[7]);
 void swap64(const uint8_t  src[8],  uint8_t dst[8]);
 void swap128(const uint8_t src[16], uint8_t dst[16]);
 
+char char_for_nibble(int nibble);
+
 void printf_hexdump(const void *data, int size);
 void hexdump(const void *data, int size);
 void hexdumpf(const void *data, int size);

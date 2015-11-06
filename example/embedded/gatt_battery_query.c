@@ -161,7 +161,7 @@ static void extract_characteristic(le_characteristic_t * characteristic, uint8_t
     }
 }
 
-void handle_gatt_client_event(int8_t packet_type, uint8_t *packet, uint16_t size){
+static void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint16_t size){
 
     switch(state){
         case TC_W4_SERVICE_RESULT:
@@ -284,7 +284,7 @@ static void handle_hci_event(void * connection, uint8_t packet_type, uint16_t ch
     }
 }
 
-void usage(const char *name){
+static void usage(const char *name){
 	fprintf(stderr, "\nUsage: %s [-a|--address aa:bb:cc:dd:ee:ff]\n", name);
 	fprintf(stderr, "If no argument is provided, GATT browser will start scanning and connect to the first found device.\nTo connect to a specific device use argument [-a].\n\n");
 }

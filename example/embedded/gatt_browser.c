@@ -300,7 +300,7 @@ void handle_gatt_client_event(uint8_t packet_type, uint8_t *packet, uint16_t siz
 }
 /* LISTING_END */
 
-void usage(const char *name){
+static void usage(const char *name){
 	fprintf(stderr, "\nUsage: %s [-a|--address aa:bb:cc:dd:ee:ff]\n", name);
 	fprintf(stderr, "If no argument is provided, GATT browser will start scanning and connect to the first found device.\nTo connect to a specific device use argument [-a].\n\n");
 }

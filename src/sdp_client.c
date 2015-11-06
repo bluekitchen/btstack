@@ -78,7 +78,7 @@ static sdp_client_state_t sdp_client_state = INIT;
 static SDP_PDU_ID_t PDU_ID = SDP_Invalid;
 
 // TODO: inline if not needed (des(des))
-void parse_attribute_lists(uint8_t* packet, uint16_t length){
+static void parse_attribute_lists(uint8_t* packet, uint16_t length){
     sdp_parser_handle_chunk(packet, length);
 }
 

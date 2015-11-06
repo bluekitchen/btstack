@@ -88,7 +88,7 @@ void btstack_stdin_reset(void){
 #endif
 }
 
-int getstring(char *line, int size)
+static int getstring(char *line, int size)
 {
     int i = 0;
     while (1){

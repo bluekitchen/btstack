@@ -131,7 +131,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
 }
 /* LISTING_END */
 
-char * get_string_from_data_element(uint8_t * element){
+static char * get_string_from_data_element(uint8_t * element){
     de_size_t de_size = de_get_size_type(element);
     int pos     = de_get_header_size(element);
     int len = 0;

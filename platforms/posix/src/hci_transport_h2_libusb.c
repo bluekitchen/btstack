@@ -325,7 +325,7 @@ static int usb_process_ds(struct data_source *ds) {
     return 0;
 }
 
-void usb_process_ts(timer_source_t *timer) {
+static void usb_process_ts(timer_source_t *timer) {
     // log_info("in usb_process_ts");
 
     // timer is deactive, when timer callback gets called

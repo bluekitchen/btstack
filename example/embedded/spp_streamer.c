@@ -150,7 +150,7 @@ static void packet_handler (void * connection, uint8_t packet_type, uint16_t cha
     }
 }
 
-void handle_found_service(char * name, uint8_t port){
+static void handle_found_service(char * name, uint8_t port){
     printf("APP: Service name: '%s', RFCOMM port %u\n", name, port);
 
     if (strncmp(name, spp_service_name_prefix, strlen(spp_service_name_prefix)) != 0) return;
@@ -160,7 +160,7 @@ void handle_found_service(char * name, uint8_t port){
     state = W4_SDP_COMPLETE;
 }
 
-void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
+static void handle_query_rfcomm_event(sdp_query_event_t * event, void * context){
     sdp_query_rfcomm_service_event_t * ve;
             
     switch (event->type){
