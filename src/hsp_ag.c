@@ -206,7 +206,7 @@ void hsp_ag_create_service(uint8_t * service, int rfcomm_channel_nr, const char 
     }
 }
 
-int send_str_over_rfcomm(uint16_t cid, char * command){
+static int hsp_ag_send_str_over_rfcomm(uint16_t cid, char * command){
     if (!rfcomm_can_send_packet_now(rfcomm_cid)) return 1;
     int err = rfcomm_send_internal(cid, (uint8_t*) command, strlen(command));
     if (err){
@@ -223,7 +223,7 @@ void hsp_ag_support_custom_commands(int enable){
 
 int hsp_ag_send_result(char * result){
     if (!ag_support_custom_commands) return 1;
-    return send_str_over_rfcomm(rfcomm_cid, result);
+    return hsp_ag_send_str_over_rfcomm(rfcomm_cid, result);
 }
 
 
@@ -337,7 +337,7 @@ static void hsp_run(void){
     int err;
 
     if (ag_send_ok){
-        err = send_str_over_rfcomm(rfcomm_cid, HSP_AG_OK);
+        err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_OK);
         if (!err){
             ag_send_ok = 0;  
         } 
@@ -345,7 +345,7 @@ static void hsp_run(void){
     }
 
     if (ag_send_error){
-        err = send_str_over_rfcomm(rfcomm_cid, HSP_AG_ERROR);
+        err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_ERROR);
         if (!err) ag_send_error = 0;
         return;
     }
@@ -359,14 +359,14 @@ static void hsp_run(void){
 
         case HSP_W4_RING_ANSWER:
             if (ag_ring){
-                err = send_str_over_rfcomm(rfcomm_cid, HSP_AG_RING);
+                err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_RING);
                 if (!err) ag_ring = 0;
                 break;
             }
 
             if (!ag_num_button_press_received) break;    
             
-            err = send_str_over_rfcomm(rfcomm_cid, HSP_AG_OK);
+            err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, HSP_AG_OK);
             if (!err) {
                 hsp_state = HSP_W2_CONNECT_SCO;
                 ag_send_ok = 0;
@@ -395,7 +395,7 @@ static void hsp_run(void){
             if (ag_microphone_gain >= 0){
                 char buffer[10];
                 sprintf(buffer, "%s=%d\r\n", HSP_MICROPHONE_GAIN, ag_microphone_gain);
-                err = send_str_over_rfcomm(rfcomm_cid, buffer);
+                err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, buffer);
                 if (!err) ag_microphone_gain = -1;
                 break;
             }
@@ -403,7 +403,7 @@ static void hsp_run(void){
             if (ag_speaker_gain >= 0){
                 char buffer[10];
                 sprintf(buffer, "%s=%d\r\n", HSP_SPEAKER_GAIN, ag_speaker_gain);
-                err = send_str_over_rfcomm(rfcomm_cid, buffer);
+                err = hsp_ag_send_str_over_rfcomm(rfcomm_cid, buffer);
                 if (!err) ag_speaker_gain = -1;
                 break;
             }
