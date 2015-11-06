@@ -61,7 +61,7 @@
 
 static linked_list_t gatt_client_connections = NULL;
 static linked_list_t gatt_subclients = NULL;
-static uint16_t gatt_client_id = 0;
+static uint16_t next_gatt_client_id = 0;
 static uint8_t  pts_suppress_mtu_exchange;
 
 static void gatt_client_att_packet_handler(uint8_t packet_type, uint16_t handle, uint8_t *packet, uint16_t size);
@@ -77,12 +77,12 @@ static uint16_t peripheral_mtu(gatt_client_t *peripheral){
 }
 
 static uint16_t gatt_client_next_id(void){
-    if (gatt_client_id < 0xFFFF) {
-        gatt_client_id++;
+    if (next_gatt_client_id < 0xFFFF) {
+        next_gatt_client_id++;
     } else {
-        gatt_client_id = 1;
+        next_gatt_client_id = 1;
     }
-    return gatt_client_id;
+    return next_gatt_client_id;
 }
 
 static gatt_client_callback_t gatt_client_callback_for_id_new(uint16_t id){

@@ -1145,12 +1145,12 @@ static void rfcomm_multiplexer_state_machine(rfcomm_multiplexer_t * multiplexer,
         rfcomm_send_uih_fc_rsp(multiplexer, multiplexer->fcon);
         if (multiplexer->fcon == 0) return;
         // trigger client to send again after sending FCon Response
-        uint8_t event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0};
+        uint8_t packet_sent_event[] = { DAEMON_EVENT_HCI_PACKET_SENT, 0};
         linked_item_t *it;
         for (it = (linked_item_t *) rfcomm_channels; it ; it = it->next){
             rfcomm_channel_t * channel = ((rfcomm_channel_t *) it);
             if (channel->multiplexer != multiplexer) continue;
-            (*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) event, sizeof(event));
+            (*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, 0, (uint8_t *) packet_sent_event, sizeof(packet_sent_event));
         }
         return;
     }
@@ -1713,11 +1713,11 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
     if (event->type == CH_EVT_RCVD_MSC_CMD){
         // notify client about new settings
         rfcomm_channel_event_msc_t *event_msc = (rfcomm_channel_event_msc_t*) event;
-        uint8_t event[2+1];
-        event[0] = RFCOMM_EVENT_REMOTE_MODEM_STATUS;
-        event[1] = 1;
-        event[2] = event_msc->modem_status;
-        (*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->rfcomm_cid, (uint8_t*)&event, sizeof(event));
+        uint8_t modem_status_event[2+1];
+        modem_status_event[0] = RFCOMM_EVENT_REMOTE_MODEM_STATUS;
+        modem_status_event[1] = 1;
+        modem_status_event[2] = event_msc->modem_status;
+        (*app_packet_handler)(channel->connection, HCI_EVENT_PACKET, channel->rfcomm_cid, (uint8_t*)&modem_status_event, sizeof(modem_status_event));
         // no return, MSC_CMD will be handled by state machine below
     }
 
@@ -1902,8 +1902,8 @@ static void rfcomm_channel_state_machine(rfcomm_channel_t *channel, rfcomm_chann
                     break;
                 case CH_EVT_RCVD_CREDITS: {
                     // notify daemon -> might trigger re-try of parked connections
-                    uint8_t event[2] = { DAEMON_EVENT_NEW_RFCOMM_CREDITS, 0 };
-                    (*app_packet_handler)(channel->connection, DAEMON_EVENT_PACKET, channel->rfcomm_cid, event, sizeof(event));
+                    uint8_t credits_event[2] = { DAEMON_EVENT_NEW_RFCOMM_CREDITS, 0 };
+                    (*app_packet_handler)(channel->connection, DAEMON_EVENT_PACKET, channel->rfcomm_cid, credits_event, sizeof(credits_event));
                     break;
                 }
                 default:
