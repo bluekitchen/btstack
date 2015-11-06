@@ -72,11 +72,11 @@ static void (*sdp_query_callback)(sdp_query_event_t * event);
 static de_state_t de_header_state;
 
 
-void de_state_init(de_state_t * state){
-    state->in_state_GET_DE_HEADER_LENGTH = 1;
-    state->addon_header_bytes = 0;
-    state->de_size = 0;
-    state->de_offset = 0;
+void de_state_init(de_state_t * de_state){
+    de_state->in_state_GET_DE_HEADER_LENGTH = 1;
+    de_state->addon_header_bytes = 0;
+    de_state->de_size = 0;
+    de_state->de_offset = 0;
 }
 
 int de_state_size(uint8_t eventByte, de_state_t *de_state){

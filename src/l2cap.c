@@ -769,7 +769,7 @@ static void l2cap_handle_remote_supported_features_received(l2cap_channel_t * ch
 }
 
 // open outgoing L2CAP channel
-void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t packet_handler,
+void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t channel_packet_handler,
                                    bd_addr_t address, uint16_t psm, uint16_t mtu){
     
     log_info("L2CAP_CREATE_CHANNEL_MTU addr %s psm 0x%x mtu %u", bd_addr_to_str(address), psm, mtu);
@@ -796,7 +796,7 @@ void l2cap_create_channel_internal(void * connection, btstack_packet_handler_t p
     chan->psm = psm;
     chan->handle = 0;
     chan->connection = connection;
-    chan->packet_handler = packet_handler;
+    chan->packet_handler = channel_packet_handler;
     chan->remote_mtu = L2CAP_MINIMAL_MTU;
     chan->local_mtu = mtu;
     chan->packets_granted = 0;
@@ -1526,7 +1526,7 @@ static inline l2cap_service_t * l2cap_get_service(uint16_t psm){
     return l2cap_get_service_internal(&l2cap_services, psm);
 }
 
-void l2cap_register_service_internal(void *connection, btstack_packet_handler_t packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level){
+void l2cap_register_service_internal(void *connection, btstack_packet_handler_t service_packet_handler, uint16_t psm, uint16_t mtu, gap_security_level_t security_level){
     
     log_info("L2CAP_REGISTER_SERVICE psm 0x%x mtu %u connection %p", psm, mtu, connection);
     
@@ -1552,7 +1552,7 @@ void l2cap_register_service_internal(void *connection, btstack_packet_handler_t 
     service->psm = psm;
     service->mtu = mtu;
     service->connection = connection;
-    service->packet_handler = packet_handler;
+    service->packet_handler = service_packet_handler;
     service->required_security_level = security_level;
 
     // add to services list
@@ -1580,16 +1580,16 @@ void l2cap_unregister_service_internal(void *connection, uint16_t psm){
 }
 
 // Bluetooth 4.0 - allows to register handler for Attribute Protocol and Security Manager Protocol
-void l2cap_register_fixed_channel(btstack_packet_handler_t packet_handler, uint16_t channel_id) {
+void l2cap_register_fixed_channel(btstack_packet_handler_t the_packet_handler, uint16_t channel_id) {
     switch(channel_id){
         case L2CAP_CID_ATTRIBUTE_PROTOCOL:
-            attribute_protocol_packet_handler = packet_handler;
+            attribute_protocol_packet_handler = the_packet_handler;
             break;
         case L2CAP_CID_SECURITY_MANAGER_PROTOCOL:
-            security_protocol_packet_handler = packet_handler;
+            security_protocol_packet_handler = the_packet_handler;
             break;
         case L2CAP_CID_CONNECTIONLESS_CHANNEL:
-            connectionless_channel_packet_handler = packet_handler;
+            connectionless_channel_packet_handler = the_packet_handler;
             break;
     }
 }

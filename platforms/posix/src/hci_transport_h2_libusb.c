@@ -466,25 +466,25 @@ static int scan_for_bt_device(libusb_device **devs, int start_index) {
 }
 #endif
 
-static int prepare_device(libusb_device_handle * handle){
+static int prepare_device(libusb_device_handle * aHandle){
 
     int r;
     int kernel_driver_detached = 0;
 
     // Detach OS driver (not possible for OS X and WIN32)
 #if !defined(__APPLE__) && !defined(_WIN32)
-    r = libusb_kernel_driver_active(handle, 0);
+    r = libusb_kernel_driver_active(aHandle, 0);
     if (r < 0) {
         log_error("libusb_kernel_driver_active error %d", r);
-        libusb_close(handle);
+        libusb_close(aHandle);
         return r;
     }
 
     if (r == 1) {
-        r = libusb_detach_kernel_driver(handle, 0);
+        r = libusb_detach_kernel_driver(aHandle, 0);
         if (r < 0) {
             log_error("libusb_detach_kernel_driver error %d", r);
-            libusb_close(handle);
+            libusb_close(aHandle);
             return r;
         }
         kernel_driver_detached = 1;
@@ -494,43 +494,43 @@ static int prepare_device(libusb_device_handle * handle){
 
     const int configuration = 1;
     log_info("setting configuration %d...", configuration);
-    r = libusb_set_configuration(handle, configuration);
+    r = libusb_set_configuration(aHandle, configuration);
     if (r < 0) {
         log_error("Error libusb_set_configuration: %d", r);
         if (kernel_driver_detached){
-            libusb_attach_kernel_driver(handle, 0);
+            libusb_attach_kernel_driver(aHandle, 0);
         }
-        libusb_close(handle);
+        libusb_close(aHandle);
         return r;
     }
 
     // reserve access to device
     log_info("claiming interface 0...");
-    r = libusb_claim_interface(handle, 0);
+    r = libusb_claim_interface(aHandle, 0);
     if (r < 0) {
         log_error("Error claiming interface %d", r);
         if (kernel_driver_detached){
-            libusb_attach_kernel_driver(handle, 0);
+            libusb_attach_kernel_driver(aHandle, 0);
         }
-        libusb_close(handle);
+        libusb_close(aHandle);
         return r;
     }
 
 #ifdef HAVE_SCO
     log_info("claiming interface 1...");
-    r = libusb_claim_interface(handle, 1);
+    r = libusb_claim_interface(aHandle, 1);
     if (r < 0) {
         log_error("Error claiming interface %d", r);
         if (kernel_driver_detached){
-            libusb_attach_kernel_driver(handle, 0);
+            libusb_attach_kernel_driver(aHandle, 0);
         }
-        libusb_close(handle);
+        libusb_close(aHandle);
         return r;
     }
-    r = libusb_set_interface_alt_setting(handle, 1, 5); // 3 x 8 kHz voice channels
+    r = libusb_set_interface_alt_setting(aHandle, 1, 5); // 3 x 8 kHz voice channels
     if (r < 0) {
         fprintf(stderr, "Error setting alternative setting 5 for interface 1: %s\n", libusb_error_name(r));
-        libusb_close(handle);
+        libusb_close(aHandle);
         return r;
     }
 #endif

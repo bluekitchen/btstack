@@ -1663,13 +1663,13 @@ static void event_handler(uint8_t *packet, int size){
     if (packet[0] == HCI_EVENT_DISCONNECTION_COMPLETE){
         if (!packet[2]){
             handle = READ_BT_16(packet, 3);
-            hci_connection_t * conn = hci_connection_for_handle(handle);
-            if (conn) {
-                uint8_t status = conn->bonding_status;
-                uint16_t flags = conn->bonding_flags;
+            hci_connection_t * aConn = hci_connection_for_handle(handle);
+            if (aConn) {
+                uint8_t status = aConn->bonding_status;
+                uint16_t flags = aConn->bonding_flags;
                 bd_addr_t bd_address;
-                memcpy(&bd_address, conn->address, 6);
-                hci_shutdown_connection(conn);
+                memcpy(&bd_address, aConn->address, 6);
+                hci_shutdown_connection(aConn);
                 // connection struct is gone, don't access anymore
                 if (flags & BONDING_EMIT_COMPLETE_ON_DISCONNECT){
                     hci_emit_dedicated_bonding_result(bd_address, status);
@@ -2098,7 +2098,6 @@ void hci_local_bd_addr(bd_addr_t address_buffer){
 void hci_run(void){
     
     // log_info("hci_run: entered");
-    hci_connection_t * connection;
     linked_item_t * it;
 
     // send continuation fragments first, as they block the prepared packet buffer
@@ -2263,7 +2262,7 @@ void hci_run(void){
     
     // send pending HCI commands
     for (it = (linked_item_t *) hci_stack->connections; it ; it = it->next){
-        connection = (hci_connection_t *) it;
+        hci_connection_t * connection = (hci_connection_t *) it;
         
         switch(connection->state){
             case SEND_CREATE_CONNECTION:
@@ -2417,7 +2416,8 @@ void hci_run(void){
         }
 #endif
     }
-
+    
+    hci_connection_t * connection;
     switch (hci_stack->state){
         case HCI_STATE_INITIALIZING:
             hci_initializing_run();
