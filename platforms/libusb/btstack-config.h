@@ -21,4 +21,6 @@
 #define HAVE_HCI_DUMP
 #define SDP_DES_DUMP
 
+#define HAVE_SCO
+
 #endif
