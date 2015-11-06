@@ -11,7 +11,7 @@ include ${BTSTACK_ROOT}/example/embedded/Makefile.inc
 
 CFLAGS += -I${POSIX_ROOT}/src -I${BTSTACK_ROOT}/platforms/libusb
 # CC = gcc-fsf-4.9
-CFLAGS  += -g -Wall 
+CFLAGS  += -g -Wall -Wmissing-prototypes -Werror
 # CFLAGS += -Werror
 
 VPATH += ${BTSTACK_ROOT}/platforms/posix/src
